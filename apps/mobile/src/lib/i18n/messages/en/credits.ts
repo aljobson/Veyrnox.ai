@@ -1,5 +1,6 @@
 // English strings for credits. Add keys here; keep their original wording and placeholders.
 export default {
+    "credits.nothingToRestore": "Nothing to restore",
     'credits.title': 'Credits and AI Generation',
     'credits.lead': 'Choose a monthly creation plan or add one-off credits. Purchases use the App Store or Google Play in the mobile app.',
     'credits.unavailable': 'Credit packs are not available right now.',

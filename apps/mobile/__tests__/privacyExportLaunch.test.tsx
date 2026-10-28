@@ -1,3 +1,4 @@
+jest.mock('../src/lib/crash', () => ({ captureIssue: jest.fn() }));
 import { act } from 'react';
 import * as ReactNative from 'react-native';
 import { createRoot } from 'test-renderer';

@@ -1,9 +1,10 @@
 import { tOr } from '../../../lib/i18n/translate.mjs';
 
 export const FACELESS_REEL_MODEL = 'wan-2.5-kie';
+export const FACELESS_REEL_PROMPT_MAX = 800;
 
 const fallbackTranslator = Object.assign((key) => key, { messages: {} });
-const copy = (t, key, fallback) => tOr(t || fallbackTranslator, key, fallback);
+const copy = (t, key, fallback, vars) => tOr(t || fallbackTranslator, key, fallback, vars);
 
 export const FACELESS_REEL_FORMATS = Object.freeze([
   { id: 'explainer' },
@@ -29,22 +30,18 @@ export function facelessReelFormatCopy(t, id) {
     explainer: {
       label: tOr(t || fallbackTranslator, 'app.facelessReel.format.explainer.label', 'Visual explainer'),
       description: tOr(t || fallbackTranslator, 'app.facelessReel.format.explainer.description', 'One clear idea revealed through objects, places and purposeful motion.'),
-      direction: tOr(t || fallbackTranslator, 'app.facelessReel.format.explainer.direction', 'Build one visually legible explanation with a clear setup, reveal and resolved final frame.'),
     },
     list: {
       label: tOr(t || fallbackTranslator, 'app.facelessReel.format.list.label', 'List rhythm'),
       description: tOr(t || fallbackTranslator, 'app.facelessReel.format.list.description', 'Three distinct visual beats with room for captions added later.'),
-      direction: tOr(t || fallbackTranslator, 'app.facelessReel.format.list.direction', 'Create three readable visual beats without rendering numbers, captions or interface text into the video.'),
     },
     'micro-story': {
       label: tOr(t || fallbackTranslator, 'app.facelessReel.format.microStory.label', 'Micro-story'),
       description: tOr(t || fallbackTranslator, 'app.facelessReel.format.microStory.description', 'A compact beginning, turn and ending without a presenter.'),
-      direction: tOr(t || fallbackTranslator, 'app.facelessReel.format.microStory.direction', 'Tell a tiny story with an immediate setup, one visual turn and a conclusive final image.'),
     },
     mood: {
       label: tOr(t || fallbackTranslator, 'app.facelessReel.format.mood.label', 'Mood reel'),
       description: tOr(t || fallbackTranslator, 'app.facelessReel.format.mood.description', 'Texture, atmosphere and movement led by a consistent visual motif.'),
-      direction: tOr(t || fallbackTranslator, 'app.facelessReel.format.mood.direction', 'Build a cohesive atmospheric sequence around one recurring visual motif and controlled transitions.'),
     },
   };
   return formats[id] || formats.explainer;
@@ -54,15 +51,12 @@ export function facelessReelPacingCopy(t, id) {
   const pacing = {
     measured: {
       label: tOr(t || fallbackTranslator, 'app.facelessReel.pacing.measured.label', 'Measured'),
-      direction: tOr(t || fallbackTranslator, 'app.facelessReel.pacing.measured.direction', 'Use calm, deliberate motion and hold the final composition long enough to read.'),
     },
     balanced: {
       label: tOr(t || fallbackTranslator, 'app.facelessReel.pacing.balanced.label', 'Balanced'),
-      direction: tOr(t || fallbackTranslator, 'app.facelessReel.pacing.balanced.direction', 'Use a clear opening hook, purposeful middle beat and stable finish.'),
     },
     fast: {
       label: tOr(t || fallbackTranslator, 'app.facelessReel.pacing.fast.label', 'Fast'),
-      direction: tOr(t || fallbackTranslator, 'app.facelessReel.pacing.fast.direction', 'Use energetic but readable motion, decisive transitions and no strobing.'),
     },
   };
   return pacing[id] || pacing.balanced;
@@ -90,38 +84,55 @@ export function facelessReelValidation(values, t) {
   if (![5, 10].includes(Number(values?.duration))) return copy(t, 'app.facelessReel.error.duration', 'Choose a supported 5- or 10-second render.');
   if (values?.sound && Number(values?.duration) > 8) return copy(t, 'app.facelessReel.error.soundDuration', 'Generated sound is available only for the 5-second reel. Choose 5 seconds or finish the longer clip separately.');
   if (!values?.originality || !values?.faceless) return copy(t, 'app.facelessReel.error.review', 'Confirm the originality and faceless-media review before continuing.');
+  if (buildFacelessReelPrompt(values).length > FACELESS_REEL_PROMPT_MAX) return copy(t, 'app.facelessReel.error.promptLong', 'Shorten the brief or hook: this model accepts {max} characters in all.', { max: FACELESS_REEL_PROMPT_MAX });
   return null;
 }
 
-export function buildFacelessReelPrompt(values, t) {
-  const format = pick(FACELESS_REEL_FORMATS, values?.format);
-  const pacing = pick(FACELESS_REEL_PACING, values?.pacing);
+// Model instructions are English data, matching the phone template verbatim.
+const promptFormats = {
+  explainer: ['Visual explainer', 'Clear setup, reveal and resolved final frame.'],
+  list: ['List rhythm', 'Three clear beats; no numbers, captions or interface text.'],
+  'micro-story': ['Micro-story', 'Immediate setup, one turn, conclusive final image.'],
+  mood: ['Mood reel', 'Atmosphere, recurring motif, controlled transitions.'],
+};
+const promptPacing = {
+  measured: ['Measured', 'Calm motion; hold the readable final frame.'],
+  balanced: ['Balanced', 'Clear hook, purposeful middle, stable finish.'],
+  fast: ['Fast', 'Brisk readable motion, decisive cuts; no strobing.'],
+};
+const platformLabels = { reels: 'Reels / TikTok', shorts: 'YouTube Shorts', web: 'Web / YouTube' };
+const clean = (value) => String(value || '').trim().replace(/[.!?]+$/, '');
+
+export function buildFacelessReelPrompt(values) {
+  const f = promptFormats[pick(FACELESS_REEL_FORMATS, values?.format).id];
+  const p = promptPacing[pick(FACELESS_REEL_PACING, values?.pacing).id];
   const platform = pick(FACELESS_REEL_PLATFORMS, values?.platform);
-  const formatCopy = facelessReelFormatCopy(t, format.id);
-  const pacingCopy = facelessReelPacingCopy(t, pacing.id);
-  const platformLabel = facelessReelPlatformCopy(t, platform.id);
-  const topic = String(values?.topic || '').trim().replace(/[.!?]+$/, '');
-  const hook = String(values?.hook || '').trim().replace(/[.!?]+$/, '');
-  const duration = Number(values?.duration) === 10 ? 10 : 5;
+  const hook = clean(values?.hook);
   return [
-    copy(t, 'app.facelessReel.prompt.open', 'Create an original {duration}-second faceless short-form video about: {topic}.').replace('{duration}', duration).replace('{topic}', topic),
-    hook
-      ? copy(t, 'app.facelessReel.prompt.hook', 'Editorial hook for later captioning: {hook}. Do not render the words into the generated video.').replace('{hook}', hook)
-      : copy(t, 'app.facelessReel.prompt.noHook', 'Open with an immediate visual hook that needs no presenter or baked-in text.'),
-    copy(t, 'app.facelessReel.prompt.structure', 'Structure: {label}. {direction}').replace('{label}', formatCopy.label).replace('{direction}', formatCopy.direction),
-    copy(t, 'app.facelessReel.prompt.pacing', 'Pacing: {label}. {direction}').replace('{label}', pacingCopy.label).replace('{direction}', pacingCopy.direction),
-    copy(t, 'app.facelessReel.prompt.delivery', 'Delivery: {label}, {aspect}. Keep the main action inside mobile-safe framing and reserve uncluttered lower-third space for captions added during finishing.').replace('{label}', platformLabel).replace('{aspect}', platform.aspect),
-    copy(t, 'app.facelessReel.prompt.people', 'Use original environments, objects, graphics and non-identifying human details only when useful. Do not show an identifiable face, a speaking presenter, a celebrity likeness, copied creator styling, private information, platform interface, logos or watermarks.'),
-    copy(t, 'app.facelessReel.prompt.continuity', 'Keep continuity, lighting and the central visual motif stable. Avoid illegible generated text, subtitles, title cards and unsupported factual claims.'),
-    copy(t, 'app.facelessReel.prompt.silent', 'Deliver a silent visual master. Narration, music, sound design, captions and publishing are separate reviewed steps.'),
+    `Original ${Number(values?.duration) === 10 ? 10 : 5}-second faceless short-form video about: ${clean(values?.topic)}.`,
+    hook ? `Hook for later captions: ${hook}. Do not render it as text.` : 'Open on an immediate visual hook; no presenter or baked-in text.',
+    `Structure: ${f[0]}. ${f[1]}`,
+    `Pacing: ${p[0]}. ${p[1]}`,
+    `Delivery: ${platformLabels[platform.id]}, ${platform.aspect}; keep action mobile-safe and the lower third clear.`,
+    'No identifiable face, presenter, celebrity likeness, copied creator style, private information, platform interface, logos or watermarks.',
+    'Stable continuity, lighting and motif; no generated text, subtitles or unsupported claims.',
+    'Silent visual master.',
   ].join(' ');
 }
 
-export function facelessReelLaunch(values, t) {
+export function facelessBriefLength(values) {
+  return clean(values?.topic).length;
+}
+
+export function facelessBriefRoom(values, max = FACELESS_REEL_PROMPT_MAX) {
+  return max - buildFacelessReelPrompt({ ...values, topic: '' }).length;
+}
+
+export function facelessReelLaunch(values) {
   const platform = pick(FACELESS_REEL_PLATFORMS, values?.platform);
   return {
     model: FACELESS_REEL_MODEL,
-    prompt: buildFacelessReelPrompt(values, t),
+    prompt: buildFacelessReelPrompt(values),
     aspect: platform.aspect,
     durationSeconds: Number(values?.duration) === 10 ? 10 : 5,
     ...(values?.sound ? { followup: 'generated-sound' } : {}),

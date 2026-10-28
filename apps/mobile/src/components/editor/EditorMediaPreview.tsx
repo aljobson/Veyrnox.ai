@@ -1,3 +1,4 @@
+import { useEditorFrame, type FrameStore } from './editorFrameStore';
 import { t } from '../../lib/i18n';
 import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView, type VideoPlayer } from 'expo-video';
@@ -11,13 +12,13 @@ interface Props {
     readonly api: Pick<ApiClient, 'request'>;
     readonly clip: Clip;
     readonly media: Media;
-    readonly frame: number;
+    readonly frameStore: FrameStore;
     readonly fps: number;
     readonly playing: boolean;
     readonly localUri?: string;
 }
 
-export function EditorMediaPreview({ api, clip, media, frame, fps, playing, localUri }: Props) {
+export function EditorMediaPreview({ api, clip, media, frameStore, fps, playing, localUri }: Props) {
     const localKind = media.kind === 'video' || media.kind === 'image' ? media.kind : null;
     const [state, setState] = useState<{ key: string; source: EditorMediaSource | null; error: boolean }>({ key: '', source: null, error: false });
     const sourceProjectId = media.assetSource?.projectId;
@@ -46,10 +47,11 @@ export function EditorMediaPreview({ api, clip, media, frame, fps, playing, loca
     if (source.kind === 'image') {
         return <Image accessibilityLabel={t('editor.preview2', { value1: media.name || t('editor.imageFallback') })} alt={media.name || t('editor.imagePreviewAlt')} source={{ uri: source.uri }} contentFit={clip.fit === 'cover' ? 'cover' : 'contain'} style={StyleSheet.absoluteFill} />;
     }
-    return <EditorVideo source={source} clip={clip} frame={frame} fps={fps} playing={playing} label={media.name || t('editor.video')} />;
+    return <EditorVideo source={source} clip={clip} frameStore={frameStore} fps={fps} playing={playing} label={media.name || t('editor.video')} />;
 }
 
-function EditorVideo({ source, clip, frame, fps, playing, label }: { source: EditorMediaSource; clip: Clip; frame: number; fps: number; playing: boolean; label: string }) {
+function EditorVideo({ source, clip, frameStore, fps, playing, label }: { source: EditorMediaSource; clip: Clip; frameStore: FrameStore; fps: number; playing: boolean; label: string }) {
+    const frame = useEditorFrame(frameStore);
     const [failed, setFailed] = useState(false);
     const player = useVideoPlayer(source.uri, (next) => {
         next.loop = false;

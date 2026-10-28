@@ -35,6 +35,7 @@ type Outcome =
     | { kind: 'credited'; balance: number }
     | { kind: 'subscribed' }
     | { kind: 'restored' }
+    | { kind: 'nothingToRestore' }
     | { kind: 'cancelled' }
     | { kind: 'pending' }
     | { kind: 'error' }
@@ -134,17 +135,21 @@ export default function Credits() {
         setBusyId(id);
         setOutcome(null);
         setChosenId(id);
+        let purchased = false;
         try {
             const before = (await api.getBalance()).balance;
-            if ((await billing.purchase(pkg)) === 'cancelled') {
+            const purchase = await billing.purchase(pkg);
+            if (purchase === 'cancelled') {
                 setOutcome({ kind: 'cancelled' });
                 return;
             }
+            purchased = true;
+            if (purchase === 'pending') { setOutcome({ kind: 'pending' }); return; }
             const result = await waitForBalanceChange(async () => (await api.getBalance()).balance, before, { minimumIncrease: expectedCredits });
             setOutcome(result.changed ? { kind: 'credited', balance: result.balance } : { kind: 'pending' });
             if (result.changed && user && user === getCacheUser()) { publishBalance(user, result.balance); await balance.refresh().catch(() => {}); }
         } catch {
-            setOutcome({ kind: 'error' });
+            setOutcome({ kind: purchased ? 'pending' : 'error' });
         } finally {
             void refreshSubscription().catch(() => {});
             setBusyId(null);
@@ -157,7 +162,8 @@ export default function Credits() {
         setBusyId(pkg.identifier);
         setOutcome(null);
         try {
-            setOutcome((await billing.purchase(pkg)) === 'cancelled' ? { kind: 'cancelled' } : { kind: 'subscribed' });
+            const purchase = await billing.purchase(pkg);
+            setOutcome({ kind: purchase === 'cancelled' ? 'cancelled' : purchase === 'pending' ? 'pending' : 'subscribed' });
         } catch {
             setOutcome({ kind: 'error' });
         } finally {
@@ -172,8 +178,8 @@ export default function Credits() {
         setBusyId('restore');
         setOutcome(null);
         try {
-            await billing.restore();
-            setOutcome({ kind: 'restored' });
+            const restored = await billing.restore();
+            setOutcome({ kind: restored ? 'restored' : 'nothingToRestore' });
             await refreshBalance(user).catch(() => {});
         } catch {
             setOutcome({ kind: 'error' });
@@ -251,6 +257,7 @@ export default function Credits() {
             {outcome?.kind === 'credited' ? <Text variant="body" tone="secondary" style={styles.balance} accessibilityLiveRegion="polite">{t('credits.added', { balance: outcome.balance })}</Text> : null}
             {outcome?.kind === 'subscribed' ? <Text variant="body" tone="accent" accessibilityLiveRegion="polite" style={styles.ok}>{t('credits.subscriptions.started')}</Text> : null}
             {outcome?.kind === 'restored' ? <Text variant="body" tone="accent" accessibilityLiveRegion="polite" style={styles.ok}>{t('credits.restored')}</Text> : null}
+            {outcome?.kind === 'nothingToRestore' ? <Text variant="body" tone="secondary" accessibilityLiveRegion="polite">{t('credits.nothingToRestore')}</Text> : null}
             {outcome?.kind === 'cancelled' ? <Text variant="body" tone="tertiary" accessibilityLiveRegion="polite" style={styles.muted}>{t('credits.cancelled')}</Text> : null}
             {outcome?.kind === 'pending' ? <Text variant="body" tone="tertiary" accessibilityLiveRegion="polite" style={styles.muted}>{t('credits.pending')}</Text> : null}
             {outcome?.kind === 'error' ? <Text variant="body" tone="danger" accessibilityLiveRegion="polite" style={styles.error}>{t('credits.error')}</Text> : null}

@@ -21,7 +21,7 @@ describe('wiping', () => {
         const storage = createMemoryStorage();
         const cache = createCache(storage);
         await cache.write(POLICIES.library, ['mine'], 'u1');
-        await cache.write(POLICIES.balance, { balance: 3 }, 'u1');
+        await cache.write(POLICIES.balance, { balance: 3, free_credits: 0, free_expires_at: null }, 'u1');
         await cache.write(POLICIES.catalog, [1]);
         return { storage, cache };
     }

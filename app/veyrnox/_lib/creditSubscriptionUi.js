@@ -36,3 +36,7 @@ export function subscriptionReturnFrom(url) {
       }
     : null;
 }
+
+export function canCheckCoolingOffRefund(sub) {
+  return sub?.status === 'ended' && sub?.end_reason === 'cancelled_cooling_off';
+}

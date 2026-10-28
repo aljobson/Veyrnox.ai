@@ -1,3 +1,5 @@
+import { flushInstallResetIssue } from '../lib/installReset';
+import { revokeDiscardedSession } from '../lib/auth/discardedSession';
 export { ErrorFallback as ErrorBoundary } from '../components/ErrorFallback';
 import { AnalyticsHost } from '../components/AnalyticsHost';
 import { FontStatus } from '../components/ui/FontStatus';
@@ -15,10 +17,11 @@ import { LanguageGate } from '../components/LanguageGate';
 import { setIssueReporter } from '../lib/requestGuard';
 import { getAppearance, getThemePreference, resolveScheme, takeThemeReturnPath } from '../theme';
 
-initCrashReporting();
+if (initCrashReporting()) flushInstallResetIssue(captureIssue);
 setIssueReporter(captureIssue);
 
 function RootLayout() {
+    useEffect(() => { void revokeDiscardedSession(); }, []);
     // The headings use Archivo; a failed load (error) falls back to the system font rather than blocking the app.
     const [loaded, error] = useFonts(typefaceFonts[getAppearance().typeface]);
     const loadedFonts = useMemo(() => new Set(loaded ? Object.keys(typefaceFonts[getAppearance().typeface]) : []), [loaded]);
@@ -48,7 +51,7 @@ function ThemeRouteRestorer() {
     useEffect(() => {
         void takeThemeReturnPath().then((next) => {
             if (next && next !== pathname) router.replace(next as never);
-        });
+        }).catch(() => captureIssue('theme_return_failed', {}));
     }, [pathname, router]);
     return null;
 }
