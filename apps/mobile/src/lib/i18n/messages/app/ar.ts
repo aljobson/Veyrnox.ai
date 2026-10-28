@@ -5561,5 +5561,7 @@ export default {
   "modelPage.field.aspectRatio": "نسبة العرض إلى الارتفاع",
   "sourceDuration.follows": "تتبع المصدر الذي رفعته",
   "sourceDuration.limit": "حتى {max} ثانية بالسعر المعروض.",
-  "sourceDuration.speech": "يجب ألا يتجاوز الكلام مدة الفيديو. نتحقق من مدة الصورة قبل الخصم؛ استخدم كلامًا أقصر أو فيديو أطول عند الحاجة."
+  "sourceDuration.speech": "يجب ألا يتجاوز الكلام مدة الفيديو. نتحقق من مدة الصورة قبل الخصم؛ استخدم كلامًا أقصر أو فيديو أطول عند الحاجة.",
+  "job.stillWorking": "لا يزال العمل جاريًا. سيظهر في مكتبتك عند اكتماله.",
+  "credits.nothingToRestore": "لا يوجد شيء لاستعادته"
 } as const;

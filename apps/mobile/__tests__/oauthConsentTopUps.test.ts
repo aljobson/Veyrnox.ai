@@ -28,8 +28,8 @@ describe('consent request', () => {
 describe('where the decision sends the person', () => {
     test('opens https and the assistant\'s own app scheme', () => {
         expect(safeRedirect('https://app.example/cb?code=1')).toBe('https://app.example/cb?code=1');
-        expect(safeRedirect('myassistant://auth/callback?code=1')).toBe('myassistant://auth/callback?code=1');
-        expect(safeRedirect('http://localhost:8080/cb')).toBe('http://localhost:8080/cb');
+        expect(safeRedirect('myassistant://auth/callback?code=1', 'myassistant://auth/callback')).toBe('myassistant://auth/callback?code=1');
+        expect(safeRedirect('http://localhost:8080/cb')).toBeNull();
     });
     test('refuses scripts, data, files, plain http elsewhere and junk', () => {
         for (const bad of ['javascript:alert(1)', 'data:text/html,x', 'file:///etc/passwd', 'http://evil.example/cb', 'intent://x#Intent;end', 'not a url', '', 'https://x.example/' + 'a'.repeat(2100)]) {
@@ -114,4 +114,17 @@ describe('purchase history', () => {
         expect(statusKey('credited')).toBe('topup.status.credited');
         expect(statusKey('refunded')).toBe('topup.status.other');
     });
+});
+
+test('registered callbacks preserve destination and query; only OAuth response parameters may be added', () => {
+    const registered = 'myassistant://auth/callback?tenant=one';
+    for (const response of ['code=approved&state=nonce', 'error=access_denied&error_description=Declined&state=nonce', 'iss=https%3A%2F%2Fissuer.example&error_uri=https%3A%2F%2Fissuer.example%2Ferror']) {
+        expect(safeRedirect(`${registered}&${response}`, registered)).toBe(`${registered}&${response}`);
+    }
+    for (const bad of ['myassistant://other/callback?tenant=one&code=1', 'other://auth/callback?tenant=one', 'myassistant://auth/elsewhere?tenant=one', 'myassistant://auth/callback?tenant=two', `${registered}&tenant=two`, `${registered}&extra=1`, `${registered}#other`, 'https://other.example/callback']) {
+        expect(safeRedirect(bad, registered)).toBeNull();
+    }
+    expect(safeRedirect('myassistant://auth/callback')).toBeNull();
+    expect(safeRedirect('javascript:alert(1)', 'javascript:alert(1)')).toBeNull();
+    expect(safeRedirect('https://example.com/cb?code=1', 'https://example.com/cb')).toBe('https://example.com/cb?code=1');
 });

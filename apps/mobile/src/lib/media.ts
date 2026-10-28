@@ -209,8 +209,19 @@ export async function waitForJob(
 ): Promise<JobState> {
     const started = Date.now();
     let last: JobState = 'queued';
+    let failures = 0;
     while (!signal.aborted && Date.now() - started < POLL_LIMIT_MS) {
-        const job = await api.getJob(id);
+        let job: Awaited<ReturnType<typeof api.getJob>>;
+        try {
+            job = await api.getJob(id);
+            failures = 0;
+        } catch (error) {
+            if (signal.aborted) return last;
+            if (++failures >= 5) throw error;
+            await sleep(Math.min(POLL_MS * 2 ** (failures - 1), 30_000, Math.max(0, POLL_LIMIT_MS - (Date.now() - started))));
+            continue;
+        }
+        if (signal.aborted) return last;
         last = job.state;
         onState(last);
         if (last === 'succeeded' || last === 'failed') {

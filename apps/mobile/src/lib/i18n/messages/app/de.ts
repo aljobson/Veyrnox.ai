@@ -5305,5 +5305,7 @@ export default {
   "modelPage.field.aspectRatio": "Seitenverhältnis",
   "sourceDuration.follows": "Entspricht deiner hochgeladenen Quelle",
   "sourceDuration.limit": "Bis zu {max} Sekunden zum angezeigten Preis.",
-  "sourceDuration.speech": "Die Sprache darf nicht länger als das Video sein. Wir prüfen die Bilddauer vor der Berechnung; nutze bei Bedarf kürzere Sprache oder ein längeres Video."
+  "sourceDuration.speech": "Die Sprache darf nicht länger als das Video sein. Wir prüfen die Bilddauer vor der Berechnung; nutze bei Bedarf kürzere Sprache oder ein längeres Video.",
+  "job.stillWorking": "Noch in Arbeit. Sobald es fertig ist, erscheint es in deiner Bibliothek.",
+  "credits.nothingToRestore": "Nichts zum Wiederherstellen"
 } as const;

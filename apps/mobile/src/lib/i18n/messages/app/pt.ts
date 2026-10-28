@@ -5369,5 +5369,7 @@ export default {
   "modelPage.field.aspectRatio": "Proporção",
   "sourceDuration.follows": "Segue a fonte enviada",
   "sourceDuration.limit": "Até {max} segundos pelo preço exibido.",
-  "sourceDuration.speech": "A fala não pode ser mais longa que o vídeo. Verificamos a duração visual antes de cobrar; use uma fala mais curta ou um vídeo mais longo, se necessário."
+  "sourceDuration.speech": "A fala não pode ser mais longa que o vídeo. Verificamos a duração visual antes de cobrar; use uma fala mais curta ou um vídeo mais longo, se necessário.",
+  "job.stillWorking": "Ainda em andamento. Aparecerá na sua Biblioteca quando estiver pronto.",
+  "credits.nothingToRestore": "Nada para restaurar"
 } as const;

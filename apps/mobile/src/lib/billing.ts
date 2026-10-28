@@ -172,3 +172,8 @@ export async function waitForBalanceChange(
     }
     return { changed: false, balance };
 }
+
+// The public test-store key must never replace a release production platform key.
+export function revenueCatKey(dev: boolean, environment: string, testKey?: string, platformKey?: string): string {
+    return ((dev || environment === 'staging') && testKey) || platformKey || '';
+}

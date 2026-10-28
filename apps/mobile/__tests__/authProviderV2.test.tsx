@@ -1,3 +1,5 @@
+import { captureIssue } from '../src/lib/crash';
+jest.mock('../src/lib/crash', () => ({ captureIssue: jest.fn() }));
 import { act, type ReactElement } from 'react';
 import { createRoot } from 'test-renderer';
 import { AuthProvider, useAuth } from '../src/auth/AuthProvider';
@@ -69,7 +71,7 @@ jest.mock('../src/lib/cinemaUploadStore', () => ({ setOwner: jest.fn(async () =>
 jest.mock('../src/lib/oddlingsAccountStore', () => ({ claimLegacyOddlings: jest.fn(async () => {}) }));
 jest.mock('../src/lib/aiConsentStore', () => ({ aiConsent: { setUser: jest.fn(), forget: jest.fn(async () => {}), ensure: jest.fn(async () => {}) } }));
 jest.mock('../src/lib/cinemaProgress', () => ({ cinemaProgressIdentity: { setUser: jest.fn() } }));
-jest.mock('../src/lib/auth/sessionStore', () => ({ readRefreshToken: jest.fn(async () => null), writeRefreshToken: jest.fn(async () => {}), clearRefreshToken: jest.fn(async () => {}) }));
+jest.mock('../src/lib/auth/sessionStore', () => ({ ...jest.requireActual('../src/lib/auth/sessionStore'), readRefreshToken: jest.fn(async () => null), writeRefreshToken: jest.fn(async () => {}), clearRefreshToken: jest.fn(async () => {}) }));
 jest.mock('../src/lib/auth/supabaseAuth', () => ({ ...jest.requireActual('../src/lib/auth/supabaseAuth'), revokeSession: jest.fn(async () => {}) }));
 jest.mock('../src/lib/appCache', () => ({ userIdFromToken: (token: string) => token, bindCacheUser: jest.fn(async () => {}), wipeCache: jest.fn(async () => {}), clearExportFiles: jest.fn() }));
 
@@ -153,5 +155,38 @@ test('reset token never becomes an AuthProvider session, including during discar
         jest.restoreAllMocks();
         jest.clearAllTimers();
         jest.useRealTimers();
+    }
+});
+
+test.each([true, false])('Keychain startup read retries without deleting the token; eventual success=%s', async succeeds => {
+    (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+    jest.clearAllMocks(); jest.useFakeTimers();
+    const read = jest.mocked(sessionStore.readRefreshToken);
+    read.mockReset().mockRejectedValue(new sessionStore.SessionReadError());
+    if (succeeds) read.mockRejectedValueOnce(new sessionStore.SessionReadError()).mockResolvedValueOnce('kept-token');
+    const refresh = jest.spyOn(require('../src/lib/auth/supabaseAuth'), 'refreshSession').mockResolvedValue({ accessToken: 'alice', refreshToken: 'rotated', expiresAt: Date.now() + 3600000 });
+    const root = createRoot(); let auth!: ReturnType<typeof useAuth>;
+    function Probe() { auth = useAuth(); return null; }
+    try {
+        await act(async () => root.render(<AuthProvider><Probe /></AuthProvider>));
+        expect(auth.status).toBe('loading');
+        await act(async () => { await jest.advanceTimersByTimeAsync(1000); });
+        expect(auth.status).toBe(succeeds ? 'signedIn' : 'signedOut');
+        expect(read).toHaveBeenCalledTimes(succeeds ? 2 : 3);
+        expect(sessionStore.clearRefreshToken).not.toHaveBeenCalled(); expect(wipeCache).not.toHaveBeenCalled();
+        if (succeeds) {
+            expect(refresh).toHaveBeenCalledWith('kept-token'); expect(captureIssue).not.toHaveBeenCalled();
+        } else {
+            expect(captureIssue).toHaveBeenCalledWith('session_read_failed', {});
+            expect(refresh).not.toHaveBeenCalled(); expect(sessionStore.writeRefreshToken).not.toHaveBeenCalled();
+            await act(async () => auth.onSessionLost());
+            expect(sessionStore.clearRefreshToken).not.toHaveBeenCalled();
+            // A later retry can recover the same stored credential without signing in again.
+            read.mockResolvedValue('kept-token');
+            await act(async () => { expect(await auth.getAccessToken()).toBe('alice'); });
+            expect(auth.status).toBe('signedIn'); expect(refresh).toHaveBeenCalledWith('kept-token');
+        }
+    } finally {
+        await act(async () => root.unmount()); read.mockReset().mockResolvedValue(null); refresh.mockRestore(); jest.useRealTimers();
     }
 });

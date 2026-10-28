@@ -5241,5 +5241,7 @@ export default {
   "modelPage.field.aspectRatio": "화면 비율",
   "sourceDuration.follows": "업로드한 원본을 따릅니다",
   "sourceDuration.limit": "표시된 가격으로 최대 {max}초까지 가능합니다.",
-  "sourceDuration.speech": "음성이 동영상보다 길면 안 됩니다. 요금 청구 전에 영상 길이를 확인합니다. 필요하면 음성을 줄이거나 더 긴 동영상을 사용하세요."
+  "sourceDuration.speech": "음성이 동영상보다 길면 안 됩니다. 요금 청구 전에 영상 길이를 확인합니다. 필요하면 음성을 줄이거나 더 긴 동영상을 사용하세요.",
+  "job.stillWorking": "아직 처리 중입니다. 완료되면 라이브러리에 표시됩니다.",
+  "credits.nothingToRestore": "복원할 항목이 없습니다"
 } as const;
