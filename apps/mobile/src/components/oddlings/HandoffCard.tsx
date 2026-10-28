@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../ui/Text';
 import { useAuth } from '../../auth/AuthProvider';
 import { getCacheUser, subscribeCacheUser } from '../../lib/appCache';
 import { chatApi } from '../../lib/chat';
@@ -106,7 +107,7 @@ export function HandoffCard({ picks, scene, motionId, onLeave, references = [], 
             <Pressable accessibilityRole="button" accessibilityState={{ disabled: !!opening }} disabled={!!opening} style={styles.choice} onPress={() => void go('chat')}>
                 <Text style={styles.choiceText}>{t(opening === 'chat' ? 'oddlingsStudio.openingChat' : 'oddlingsStudio.refineChat')}</Text>
             </Pressable>
-            {problem ? <Text style={styles.problem} accessibilityLiveRegion="polite">{problem}</Text> : null}
+            {problem ? <StatusText variant="inherit" style={styles.problem} accessibilityLiveRegion="polite">{problem}</StatusText> : null}
         </View>
     );
 }

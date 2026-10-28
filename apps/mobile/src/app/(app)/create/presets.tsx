@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, AppState, FlatList, ScrollView, View } from 'react-native';
@@ -42,7 +43,7 @@ export default function Templates() {
     return <View style={styles.screen}>
         <Stack.Screen options={{ title: t('presets.templates') }} />
         <Text variant="title1" accessibilityRole="header">{t('presets.templates')}</Text>
-        {unavailableId ? <Text accessibilityLiveRegion="assertive">{unavailablePreset ? t('presets.isnotavailablerightnow', { value1: unavailablePreset.title }) : t('presets.thattemplateisnotavailablerightnow')}</Text> : null}
+        {unavailableId ? <StatusText variant="inherit" accessibilityLiveRegion="assertive">{unavailablePreset ? t('presets.isnotavailablerightnow', { value1: unavailablePreset.title }) : t('presets.thattemplateisnotavailablerightnow')}</StatusText> : null}
         {failed ? <View><Text tone="danger">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text><Button label={t('recovery.retry')} onPress={() => setAttempt(n => n + 1)} /></View>
             : presets === null ? <ActivityIndicator /> : <FlatList data={shown.slice(0, limit)} numColumns={2} keyExtractor={p => p.id} contentContainerStyle={styles.list}
                 ListHeaderComponent={<View style={styles.header}>

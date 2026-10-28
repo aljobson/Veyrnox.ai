@@ -1,3 +1,4 @@
+import { Text as StatusText } from './ui/Text';
 import { Image } from 'expo-image';
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -78,8 +79,8 @@ export function FaceFilterResult({ api, owner, id, original, onAnother }: { api:
             <Text style={styles.text}>{t('job.keepsRunning')}</Text>
             {settled && state !== 'failed' ? <Pressable accessibilityRole="button" accessibilityLabel={t('job.checkAgain')} style={styles.button} onPress={() => setAttempt(n => n + 1)}><Text style={styles.text}>{t('job.checkAgain')}</Text></Pressable> : null}
         </>}
-        {error ? <Text style={styles.error} accessibilityLiveRegion="polite">{error}</Text> : null}
-        {note ? <Text style={styles.text} accessibilityLiveRegion="polite">{note}</Text> : null}
+        {error ? <StatusText variant="inherit" style={styles.error} accessibilityLiveRegion="polite">{error}</StatusText> : null}
+        {note ? <StatusText variant="inherit" style={styles.text} accessibilityLiveRegion="polite">{note}</StatusText> : null}
         <Pressable accessibilityRole="button" accessibilityLabel={t('faceFilters.another')} disabled={acting} style={styles.button} onPress={onAnother}><Text style={styles.text}>{t('faceFilters.another')}</Text></Pressable>
     </ScrollView>;
 }

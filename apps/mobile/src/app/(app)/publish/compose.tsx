@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../../components/ui/Text';
 import { Button, Text as ThemedText } from '../../../components/ui';
 import { NetworkLogo } from '../../../components/publish/NetworkLogo';
 import { MediaLibraryGrid } from '../../../components/publish/MediaLibraryGrid';
@@ -210,13 +211,13 @@ export default function Compose() {
         <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
             <Stack.Screen options={{ title: t('publish.newpost') }} />
             <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-                {scopeNote ? <Text style={styles.muted} accessibilityLiveRegion="polite">{t('publishDepth.presets.scopeCleared')}</Text> : null}
+                {scopeNote ? <StatusText variant="inherit" style={styles.muted} accessibilityLiveRegion="polite">{t('publishDepth.presets.scopeCleared')}</StatusText> : null}
                 <Text style={styles.heading} accessibilityRole="header">{t('publish.1Creation')}</Text>
                 {picks.length === 0 ? <Text style={styles.muted}>{t('publish.nofinishedimagesorvideosyetMake')}</Text> : null}
                 <MediaLibraryGrid api={api} picks={picks} choices={choices} max={maxMedia} disabled={preparing || busy} onToggle={p => { if (preparingRef.current) return; setChoices(old => toggleChoice(old, p, maxMedia)); if (maxMedia === 1) setAccountIds([]); }} />
                 <ChosenMediaPreview api={api} choice={chosen} />
                 <PublishMediaSelection items={choices} max={maxMedia} onChange={setChoices} disabled={preparing || busy} />
-                {blocker ? <Text style={styles.error} accessibilityRole="alert">{blocker}</Text> : null}
+                {blocker ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{blocker}</StatusText> : null}
                 <PublishUploadPanel api={api} enabled={uploadsEnabled} max={maxMedia} nonUploadCount={choices.filter(item => item.kind === 'job').length}
                     selectedUploads={choices.flatMap(item => item.kind === 'upload' ? [{ uploadId: item.uploadId, mediaType: item.mediaType }] : [])}
                     onSelect={uploads => {

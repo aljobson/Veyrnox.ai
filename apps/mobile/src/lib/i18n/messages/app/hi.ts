@@ -1,6 +1,9 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+    "recovery.title": "कुछ गड़बड़ हो गई",
+    "recovery.body": "आपका काम सुरक्षित है। फिर से कोशिश करें या होम स्क्रीन पर वापस जाएँ।",
+    "recovery.home": "होम पर जाएँ",
   "abt.contact": "संपर्क और नीतियाँ",
   "abt.details": "कंपनी का विवरण",
   "abt.emailUs": "{email} पर ईमेल करें",

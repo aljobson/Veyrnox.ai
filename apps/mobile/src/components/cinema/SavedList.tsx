@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../ui/Text';
 import * as Crypto from 'expo-crypto';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -52,7 +53,7 @@ export function SavedList({ kind }: { readonly kind: FollowKind }) {
         );
     }
     const message = note ?? (view.error ? t(view.error) : null);
-    if (view.items.length === 0) return <View style={styles.center}><Text style={styles.muted}>{t(`cinemaSocial.empty.${kind}`)}</Text>{message ? <Text style={styles.error} accessibilityRole="alert">{message}</Text> : null}</View>;
+    if (view.items.length === 0) return <View style={styles.center}><Text style={styles.muted}>{t(`cinemaSocial.empty.${kind}`)}</Text>{message ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{message}</StatusText> : null}</View>;
     return (
         <FlatList
             data={view.items}
@@ -60,7 +61,7 @@ export function SavedList({ kind }: { readonly kind: FollowKind }) {
             contentContainerStyle={styles.list}
             onEndReached={() => { void list.current?.loadMore(); }}
             onEndReachedThreshold={0.6}
-            ListHeaderComponent={message ? <Text style={styles.error} accessibilityRole="alert">{message}</Text> : undefined}
+            ListHeaderComponent={message ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{message}</StatusText> : undefined}
             renderItem={({ item }) => (
                 <View style={styles.row}>
                     <Pressable accessibilityRole="button" style={styles.main} onPress={() => router.push({ pathname: '/cinema/[id]', params: { id: item.contentId } })}>

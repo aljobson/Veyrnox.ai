@@ -1,6 +1,9 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+    "recovery.title": "出了点问题",
+    "recovery.body": "你的作品是安全的。请重试，或返回主屏幕。",
+    "recovery.home": "返回首页",
   "abt.contact": "联系方式与政策",
   "abt.details": "公司详情",
   "abt.emailUs": "发送邮件至 {email}",

@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../../components/ui/Text';
 import { Image } from 'expo-image';
 import { Stack, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
@@ -50,7 +51,7 @@ export default function OddlingGallery() {
                             })}
                         </ScrollView>
                         <OddlingFilters tab={tab} kind={kind} onTab={(id) => { setTab(id); setKind((k) => reconcileKind(id, k)); }} onKind={(id) => setKind((k) => toggleKind(k, id))} />
-                        <Text style={styles.count} accessibilityLiveRegion="polite">{plural('oddlings.count', items.length)}</Text>
+                        <StatusText variant="inherit" style={styles.count} accessibilityLiveRegion="polite">{plural('oddlings.count', items.length)}</StatusText>
                     </View>
                 }
                 ListEmptyComponent={<Text style={styles.empty}>{t('oddlings.empty')}</Text>}

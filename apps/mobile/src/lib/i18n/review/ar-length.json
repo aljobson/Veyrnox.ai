@@ -1,5 +1,11 @@
 [
   {
+    "id": "recovery.home",
+    "english": "Go home",
+    "translation": "العودة إلى الرئيسية",
+    "ratio": 2.71
+  },
+  {
     "id": "account.helpSection",
     "english": "Help",
     "translation": "المساعدة",

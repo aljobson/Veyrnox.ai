@@ -1,6 +1,9 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+    "recovery.title": "Etwas ist schiefgelaufen",
+    "recovery.body": "Deine Arbeit ist sicher. Versuch es noch einmal oder geh zurück zur Startseite.",
+    "recovery.home": "Zur Startseite",
   "abt.contact": "Kontakt und Richtlinien",
   "abt.details": "Unternehmensdaten",
   "abt.emailUs": "E-Mail an {email}",

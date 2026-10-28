@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -52,7 +53,7 @@ export default function HelpGuide() {
                     ))}
                 </>
             ) : <Text style={styles.body}>{t('helpGuides.unavailable')}</Text>}
-            {unavailable ? <Text style={styles.body} accessibilityLiveRegion="polite">{t('helpGuides.unavailable')}</Text> : null}
+            {unavailable ? <StatusText variant="inherit" style={styles.body} accessibilityLiveRegion="polite">{t('helpGuides.unavailable')}</StatusText> : null}
         </ScrollView>
     );
 }

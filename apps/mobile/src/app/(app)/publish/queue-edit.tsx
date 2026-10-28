@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
@@ -125,7 +126,7 @@ export default function QueueEdit() {
                     <Text style={styles.label}>{t('queues.enabled')}</Text>
                     <Switch value={enabled} onValueChange={setEnabled} accessibilityLabel={t('queues.enabled')} />
                 </View>
-                {problem ? <Text style={styles.error} accessibilityRole="alert">{problem}</Text> : null}
+                {problem ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{problem}</StatusText> : null}
                 <Pressable accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy }} style={[styles.button, touchTarget, busy && styles.off]} onPress={save}>
                     {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{t('queues.save')}</Text>}
                 </Pressable>

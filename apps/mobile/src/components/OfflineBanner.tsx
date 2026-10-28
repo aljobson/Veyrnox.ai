@@ -10,8 +10,8 @@ export function OfflineBanner({ topInset = false }: { topInset?: boolean }) {
     const insets = useSafeAreaInsets();
     const styles = useThemedStyles(sheets);
     if (!offline) return null;
-    return <View style={[styles.bar, topInset && { paddingTop: insets.top + 8 }]} accessibilityRole="alert">
-        <Text variant="footnote" tone="warning">{t('net.offline')}</Text>
+    return <View style={[styles.bar, topInset && { paddingTop: insets.top + 8 }]}>
+        <Text accessibilityRole="alert" variant="footnote" tone="warning">{t('net.offline')}</Text>
     </View>;
 }
 const sheets = themedStyles(p => ({

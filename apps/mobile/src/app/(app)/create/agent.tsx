@@ -211,8 +211,8 @@ export default function Agent() {
                                 loading={busy === 'approving'} textStyle={styles.approveText} label={t('videoAgent.approve', { credits: String(plan.credits) })} />
                         </View>
                         {balanceState === 'unavailable' ? (
-                            <View accessibilityLiveRegion="polite">
-                                <Text variant="footnote">{t(retrying ? 'videoAgentBalance.checking' : 'videoAgentBalance.unavailable')}</Text>
+                            <View>
+                                <Text accessibilityLiveRegion="polite" variant="footnote">{t(retrying ? 'videoAgentBalance.checking' : 'videoAgentBalance.unavailable')}</Text>
                                 <Button label={t('videoAgentBalance.retry')} disabled={retrying || !!busy} onPress={() => void retryBalance()} />
                             </View>
                         ) : null}

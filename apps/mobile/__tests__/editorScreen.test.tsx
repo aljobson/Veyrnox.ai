@@ -1,5 +1,5 @@
 import { act } from 'react';
-import { Alert, AppState, ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, View, type AppStateStatus } from 'react-native';
+import { AccessibilityInfo, Alert, AppState, ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, View, type AppStateStatus } from 'react-native';
 import { createRoot, type Root } from 'test-renderer';
 import { usePreventRemove } from 'expo-router';
 import Editor from '../src/app/(app)/editor/[projectId]';
@@ -286,4 +286,18 @@ test.each(['autosave', 'Done'])('%s saves native-held changes after two kills wi
     expect(mockMounts).toBe(2); expect(Alert.alert).not.toHaveBeenCalled();
     if (trigger === 'Done') expect(mockRouter.back).toHaveBeenCalledTimes(1);
     else expect(visible('Saved')).toBe(true);
+});
+
+test('editor status has one iOS announcement owner per change', async () => {
+    const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
+    await render(); await hello();
+    announce.mockClear();
+    await change();
+    expect(announce.mock.calls.filter(([text]) => text === 'Not saved yet, will retry')).toHaveLength(1);
+    let finish!: (value: object) => void;
+    mockRequest.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    await advance(3000);
+    expect(announce.mock.calls.filter(([text]) => text === 'Saving…')).toHaveLength(1);
+    await act(async () => finish({ revision: 5 }));
+    expect(announce.mock.calls.filter(([text]) => text === 'Saved')).toHaveLength(1);
 });

@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../../components/ui/Text';
 import * as Crypto from 'expo-crypto';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
@@ -42,7 +43,7 @@ export default function ReportComment() {
             <Stack.Screen options={{ title: t('comments.reportTitle') }} />
             {done ? (
                 <>
-                    <Text style={styles.ok} accessibilityRole="alert">{t('comments.reported')}</Text>
+                    <StatusText variant="inherit" style={styles.ok} accessibilityRole="alert">{t('comments.reported')}</StatusText>
                     <Pressable accessibilityRole="button" style={[styles.button, touchTarget]} onPress={() => router.back()}>
                         <Text style={styles.buttonText}>{t('comments.done')}</Text>
                     </Pressable>
@@ -68,7 +69,7 @@ export default function ReportComment() {
                         onChangeText={setDetails}
                     />
                     <Text style={styles.muted}>{t('comments.reportCount', { min: DETAILS_MIN, left: DETAILS_MAX - [...details].length })}</Text>
-                    {error ? <Text style={styles.error} accessibilityRole="alert">{error}</Text> : null}
+                    {error ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{error}</StatusText> : null}
                     <Pressable accessibilityRole="button" accessibilityState={{ busy, disabled: !ready || busy }} disabled={!ready || busy} style={[styles.button, touchTarget, (!ready || busy) && styles.off]} onPress={send}>
                         {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{t('comments.send')}</Text>}
                     </Pressable>

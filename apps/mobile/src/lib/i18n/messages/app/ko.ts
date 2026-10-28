@@ -1,6 +1,9 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+    "recovery.title": "문제가 발생했어요",
+    "recovery.body": "작업 내용은 안전해요. 다시 시도하거나 홈 화면으로 돌아가세요.",
+    "recovery.home": "홈으로 이동",
   "abt.contact": "문의 및 정책",
   "abt.details": "회사 정보",
   "abt.emailUs": "{email}(으)로 이메일 보내기",

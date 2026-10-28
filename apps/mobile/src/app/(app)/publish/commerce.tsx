@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../../components/ui/Text';
 import { ComingToApp } from '../../../components/ComingToApp';
 import { Image } from 'expo-image';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
@@ -57,7 +58,7 @@ export default function Commerce() {
             {locked ? (
                 <UnlockCard feature="commerce" onUnlocked={() => setReload((n) => n + 1)} />
             ) : error && !products ? (
-                <Text style={styles.error} accessibilityRole="alert">{error}</Text>
+                <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{error}</StatusText>
             ) : !products ? (
                 <ActivityIndicator color={colors.accent} />
             ) : (
@@ -66,7 +67,7 @@ export default function Commerce() {
                     keyExtractor={(p) => p.id}
                     contentContainerStyle={{ paddingBottom: LIST_END_PADDING }}
                     refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.accent} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}
-                    ListHeaderComponent={<View><Text style={styles.muted}>{t('commerce.intro2')}</Text>{notice ? <Text style={styles.notice} accessibilityLiveRegion="polite">{notice}</Text> : null}</View>}
+                    ListHeaderComponent={<View><Text style={styles.muted}>{t('commerce.intro2')}</Text>{notice ? <StatusText variant="inherit" style={styles.notice} accessibilityLiveRegion="polite">{notice}</StatusText> : null}</View>}
                     ListEmptyComponent={<Text style={styles.muted}>{t('commerce.none')}</Text>}
                     ListFooterComponent={
                         <View>

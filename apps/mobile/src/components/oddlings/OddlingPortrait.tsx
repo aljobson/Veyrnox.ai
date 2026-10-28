@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../ui/Text';
 import { Image } from 'expo-image';
 import { useIsFocused } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentProps, type ComponentType, type Ref } from 'react';
@@ -110,8 +111,8 @@ export function OddlingPortrait({ id, name }: { id: string; name: string }) {
                     <Text style={styles.toggleText}>{phase === 'preparing' ? t('oddlings.puppet.preparing') : label}</Text>
                 </Pressable>
             )}
-            {phase === 'failed' ? <Text style={styles.problem} accessibilityLiveRegion="polite">{t('oddlings.puppet.failed')}</Text> : null}
-            {phase === 'offline' ? <Text style={styles.problem} accessibilityLiveRegion="polite">{t('oddlings.puppet.offline')}</Text> : null}
+            {phase === 'failed' ? <StatusText variant="inherit" style={styles.problem} accessibilityLiveRegion="polite">{t('oddlings.puppet.failed')}</StatusText> : null}
+            {phase === 'offline' ? <StatusText variant="inherit" style={styles.problem} accessibilityLiveRegion="polite">{t('oddlings.puppet.offline')}</StatusText> : null}
         </View>
     );
 }

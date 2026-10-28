@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
@@ -71,7 +72,7 @@ export default function Reports() {
         <View style={styles.screen}>
             <Stack.Screen options={{ title: t('reports.title') }} />
             {error && !reports ? (
-                <Text style={styles.error} accessibilityRole="alert">{error}</Text>
+                <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{error}</StatusText>
             ) : !reports ? (
                 <ActivityIndicator color={colors.accent} />
             ) : (
@@ -80,7 +81,7 @@ export default function Reports() {
                     keyExtractor={(r) => r.id}
                     contentContainerStyle={{ paddingBottom: LIST_END_PADDING }}
                     refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.accent} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}
-                    ListHeaderComponent={<View><Text style={styles.muted}>{t('publishReporting.intro')}</Text>{notice ? <Text style={styles.muted} accessibilityLiveRegion="polite">{notice}</Text> : null}{busy ? <Text style={styles.muted} accessibilityLiveRegion="polite">{t('publishReporting.working')}</Text> : null}</View>}
+                    ListHeaderComponent={<View><Text style={styles.muted}>{t('publishReporting.intro')}</Text>{notice ? <StatusText variant="inherit" style={styles.muted} accessibilityLiveRegion="polite">{notice}</StatusText> : null}{busy ? <StatusText variant="inherit" style={styles.muted} accessibilityLiveRegion="polite">{t('publishReporting.working')}</StatusText> : null}</View>}
                     ListFooterComponent={canEdit ? <Pressable accessibilityRole="button" style={[styles.btn, touchTarget]} onPress={() => router.push('/publish/report-edit')}><Text style={styles.btnText}>{t('publishReporting.new')}</Text></Pressable> : <Text style={styles.muted}>{t('publishReporting.roleNote')}</Text>}
                     ListEmptyComponent={<Text style={styles.muted}>{t('reports.none')}</Text>}
                     renderItem={({ item }) => (

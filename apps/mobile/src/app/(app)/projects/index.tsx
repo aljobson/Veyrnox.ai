@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -116,7 +117,7 @@ export default function Projects() {
                             <Text style={styles.newText}>{t('projects.newproject')}</Text>
                         </Pressable>
                     )}
-                    {formError ? <Text style={styles.error} accessibilityRole="alert">{formError}</Text> : null}
+                    {formError ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{formError}</StatusText> : null}
                     {!projects ? (
                         <ActivityIndicator color={colors.accent} />
                     ) : (

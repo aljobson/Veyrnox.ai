@@ -1,3 +1,4 @@
+import { Text as StatusText } from './ui/Text';
 import { english } from '../lib/i18n/binding';
 import * as DocumentPicker from 'expo-document-picker';
 import { Image } from 'expo-image';
@@ -186,8 +187,8 @@ export function PublishUploadPanel(props: Props) {
             {progress >= 1 ? t('publishUploads.checking') : t('publishUploads.uploading', { percent: Math.round(progress * 100) })}
         </Text> : null}
         {busy ? button('publishUploads.cancel', () => controller.current?.abort()) : null}
-        {message ? <Text accessibilityRole={message.error ? "alert" : "status"} accessibilityLiveRegion="polite" style={styles.text}>{message.text}</Text> : null}
-        {loadFailed ? <View><Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.text}>{t('publishUploads.loadFailed')}</Text>{button('publishUploads.retry', () => void load(), busy)}</View> : null}
+        {message ? <StatusText variant="inherit" accessibilityRole={message.error ? "alert" : "status"} accessibilityLiveRegion="polite" style={styles.text}>{message.text}</StatusText> : null}
+        {loadFailed ? <View><StatusText variant="inherit" accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.text}>{t('publishUploads.loadFailed')}</StatusText>{button('publishUploads.retry', () => void load(), busy)}</View> : null}
         {rows.map(row => <View key={row.id} style={styles.row}>
             {row.mime_type.startsWith('image/') ? <Image source={{ uri: row.url }} cachePolicy="none" transition={0} style={styles.preview} /> : null}
             <Text style={styles.text}>{t(row.mime_type.startsWith('video/') ? 'publishUploads.video' : 'publishUploads.image')} · {t('publishUploads.size', { size: (row.size_bytes / 1048576).toFixed(1) })}</Text>

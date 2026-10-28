@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -54,7 +55,7 @@ export default function BestTime() {
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.body}>
             <Stack.Screen options={{ title: t('insights.title') }} />
-            {error ? <Text style={styles.error} accessibilityRole="alert">{error}</Text> : null}
+            {error ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{error}</StatusText> : null}
             {!accounts && !error ? <ActivityIndicator color={colors.accent} /> : null}
             {accounts && accounts.length === 0 ? <Text style={styles.muted}>{t('insights.noAccounts')}</Text> : null}
             {accounts && accounts.length > 1 ? (

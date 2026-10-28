@@ -1,3 +1,4 @@
+import { Text as StatusText } from './ui/Text';
 import { english } from '../lib/i18n/binding';
 import { useAnnouncement } from '../lib/useAnnouncement';
 import { discardCacheCopy } from '../lib/cacheFiles';
@@ -5,7 +6,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Platform, ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ApiError, type ApiClient } from '../lib/api';
 import { getCacheUser, subscribeCacheUser } from '../lib/appCache';
 import { faceDefaults, faceFilterMessage, faceFilterUploadMessage, faceFilters, faceInputs, faceRequest, faceSelectors, type FaceValues } from '../lib/faceFilters';
@@ -154,7 +155,7 @@ export function FaceFiltersFlow({ api, owner }: { api: ApiClient; owner: string 
                 <Pressable accessibilityRole="link" accessibilityLabel={t('faceFilters.policy')} style={styles.card} onPress={() => { router.push('/legal/aup'); }}><Text style={styles.text}>{t('faceFilters.policy')}</Text></Pressable>
                 <Pressable accessibilityRole="button" accessibilityLabel={`${t('faceFilters.run')}. ${t('faceFilters.price', { credits: String(model.credits) })}`} accessibilityState={{ disabled: !ready || busy, busy }} disabled={!ready || busy} style={[styles.card, (!ready || busy) && styles.disabled]} onPress={run}><Text style={styles.text}>{t('faceFilters.run')}</Text>{busy ? <ActivityIndicator /> : null}</Pressable>
             </>}
-            {error ? <Text style={styles.error} accessibilityLiveRegion="polite">{error}</Text> : null}
+            {error ? <StatusText variant="inherit" style={styles.error} accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : undefined}>{error}</StatusText> : null}
         </ScrollView>
     );
 }

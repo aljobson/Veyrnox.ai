@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../../components/ui/Text';
 import { useAnnouncement } from '../../../lib/useAnnouncement';
 import { randomUUID } from 'expo-crypto';
 import { Stack, useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
@@ -297,12 +298,12 @@ function Editor({ projectId, jobId }: { projectId: string; jobId?: string }) {
     const statusKey = session.dirty && session.localCopy === 'failed' ? 'editor.notKept'
         : session.status === 'saving' ? 'editor.saving' : paused ? 'editor.paused'
         : session.status === 'offline' ? 'editor.offline' : session.status === 'rejected' ? 'editor.rejected' : session.dirty ? 'editor.retry' : 'editor.saved';
-    useAnnouncement(t(statusKey));
     useAnnouncement(problem ? t(problem) : null);
+    useAnnouncement((['offline', 'paused'].includes(session.status) || problem) && !choice ? retryLabel : null);
     return <View style={{ flex: 1, backgroundColor: colors.background, padding: 12 }}>
         <Stack.Screen options={{ title: t('editor.title') }} />
         <Text accessibilityRole="header" style={{ color: colors.text, fontSize: 20 }}>{project?.name ?? t('editor.title')}</Text>
-        <Text accessibilityLiveRegion="polite" style={{ color: colors.body }}>{t(statusKey)}</Text>
+        <StatusText variant="inherit" accessibilityLiveRegion="polite" style={{ color: colors.body }}>{t(statusKey)}</StatusText>
         <Button label={t('editor.done')} onPress={guard.done} />
         {engineVisible && <EngineView ref={engine} html={html} baseUrl={ENGINE_BASE_URL} reloadKey={session.reloadKey} onMessage={message} onKilled={killed} />}
         {problem && !choice && <Text>{t(problem)}</Text>}
@@ -310,7 +311,7 @@ function Editor({ projectId, jobId }: { projectId: string; jobId?: string }) {
         {session.status === 'protocol_mismatch' && <Text>{t('editor.update')}</Text>}
         {session.status === 'start_failed' && <><Text>{t('editor.startFailed')}</Text><Button label={t('editor.retryNow')} onPress={reopen} /></>}
         {session.engineStopped && <><Text>{t(session.dirty && session.localCopy === 'failed' ? 'editor.notKept' : 'editor.killed')}</Text><Button label={t('editor.reopen')} onPress={reopen} /></>}
-        {(['offline', 'paused'].includes(session.status) || problem) && !choice && <View accessibilityLiveRegion="polite"><Button label={retryLabel} disabled={paused} onPress={() => { if (!project) void load(); else void save(true); }} /></View>}
+        {(['offline', 'paused'].includes(session.status) || problem) && !choice && <View testID="editor-retry" accessibilityLiveRegion="polite"><Button label={retryLabel} disabled={paused} onPress={() => { if (!project) void load(); else void save(true); }} /></View>}
         {choice && <Modal visible animationType="none" onRequestClose={guard.done}>
             <View style={{ padding: 20 }}><Text accessibilityRole="header">{t(choice === 'restore' ? 'editor.restore' : 'editor.conflict')}</Text>
                 {problem && <Text>{t(problem)}</Text>}

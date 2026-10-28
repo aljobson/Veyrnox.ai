@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -36,7 +37,7 @@ export default function InboxAnalytics() {
     return <ScrollView style={styles.screen} contentContainerStyle={styles.body}>
         <Stack.Screen options={{ title: t('publishDepth.analytics.title') }} />
         <View style={styles.chips}>{([7, 30, 90] as const).map(value => <Pressable key={value} style={[touchTarget, styles.card]} accessibilityRole="button" accessibilityState={{ selected: days === value }} onPress={() => setDays(value)}><Text style={days === value ? styles.action : styles.text}>{t('analytics.range', { days: value })}</Text></Pressable>)}</View>
-        {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : !data ? <ActivityIndicator accessibilityState={{ busy: true }} /> : <>
+        {error ? <StatusText variant="inherit" accessibilityRole="alert" style={styles.error}>{error}</StatusText> : !data ? <ActivityIndicator accessibilityState={{ busy: true }} /> : <>
             <View style={styles.chips}>{(['conversations', 'received', 'sent', 'failed', 'read_actions', 'median'] as const).map(key => <View style={styles.card} key={key}>
                 <Text style={styles.muted}>{t(`publishDepth.analytics.${key}`)}</Text><Text style={styles.text}>{key === 'median' ? duration : number.format(data.summary[key])}</Text>
             </View>)}</View>

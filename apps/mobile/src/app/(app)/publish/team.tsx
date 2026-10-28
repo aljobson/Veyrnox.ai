@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -120,13 +121,13 @@ export default function TeamScreen() {
         <ScrollView style={styles.screen} contentContainerStyle={styles.body} refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.accent} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}>
             <Stack.Screen options={{ title: t('team.title') }} />
             {error ? (
-                <Text style={styles.error} accessibilityRole="alert">{error}</Text>
+                <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{error}</StatusText>
             ) : !team ? (
                 <ActivityIndicator color={colors.accent} />
             ) : (
                 <>
                     {team.brandName ? <Text style={styles.intro}>{t('team.intro', { brand: team.brandName })}</Text> : null}
-                    {notice ? <Text style={styles.notice} accessibilityLiveRegion="polite">{notice}</Text> : null}
+                    {notice ? <StatusText variant="inherit" style={styles.notice} accessibilityLiveRegion="polite">{notice}</StatusText> : null}
                     <Text style={styles.heading} accessibilityRole="header">{t('team.members')}</Text>
                     {team.members.map((m) => {
                         const editable = mayChange && canManage(team.actorRole, m.role);

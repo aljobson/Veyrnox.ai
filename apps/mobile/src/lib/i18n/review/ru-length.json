@@ -1,5 +1,11 @@
 [
   {
+    "id": "recovery.home",
+    "english": "Go home",
+    "translation": "На главный экран",
+    "ratio": 2.29
+  },
+  {
     "id": "abt.f.legal",
     "english": "Legal name",
     "translation": "Юридическое название",

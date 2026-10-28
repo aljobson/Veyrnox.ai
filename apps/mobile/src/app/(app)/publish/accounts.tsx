@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../../components/ui/Text';
 import { Button, Card, Text as ThemedText, themedStyles, useThemedStyles } from '../../../components/ui';
 import { NetworkLogo } from '../../../components/publish/NetworkLogo';
 import { networkName } from '../../../lib/networkLogos';
@@ -87,7 +88,7 @@ export default function Accounts() {
                     data={data.accounts}
                     keyExtractor={(a) => a.id}
                     refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.accent} onRefresh={async () => { setRefreshing(true); await load(); }} />}
-                    ListHeaderComponent={<View><Text style={styles.muted}>{t('publish.ofaccounts', { value1: data.accounts.length, value2: data.accountLimit })}</Text>{data.brandRole !== 'owner' ? <ThemedText tone="secondary">{t('publishParity.accounts.ownerOnly')}</ThemedText> : null}{notice ? <Text style={styles.notice} accessibilityLiveRegion="polite">{notice}</Text> : null}</View>}
+                    ListHeaderComponent={<View><Text style={styles.muted}>{t('publish.ofaccounts', { value1: data.accounts.length, value2: data.accountLimit })}</Text>{data.brandRole !== 'owner' ? <ThemedText tone="secondary">{t('publishParity.accounts.ownerOnly')}</ThemedText> : null}{notice ? <StatusText variant="inherit" style={styles.notice} accessibilityLiveRegion="polite">{notice}</StatusText> : null}</View>}
                     ListEmptyComponent={<Text style={styles.muted}>{t('publish.noaccountsareconnectedyet')}</Text>}
                     ListFooterComponent={data.brandRole === 'owner' ?
                         <View>

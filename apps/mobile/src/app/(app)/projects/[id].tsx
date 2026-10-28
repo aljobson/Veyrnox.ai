@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../../components/ui/Text';
 import * as Crypto from 'expo-crypto';
 import { removeProjectMedia } from '../../../lib/editorDeviceMedia';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -140,7 +141,7 @@ export default function ProjectDetail() {
                     <Pressable accessibilityRole="button" disabled={busy} style={touchTarget} onPress={confirmDelete}><Text style={styles.danger}>{t('projects.delete')}</Text></Pressable>
                 </View>
             )}
-            {note ? <Text style={styles.error} accessibilityRole="alert">{note}</Text> : null}
+            {note ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{note}</StatusText> : null}
             <Text style={styles.meta}>{t('projects.version', { value1: project.version, value2: project.createdAt ? t('projects.created', { value1: new Date(project.createdAt).toLocaleDateString(formatLocale()) }) : '', value3: project.updatedAt ? t('projects.updated', { value1: new Date(project.updatedAt).toLocaleString(formatLocale()) }) : '' })}</Text>
             <Text style={styles.heading} accessibilityRole="header">{t('projects.savedversions')}</Text>
             <FlatList

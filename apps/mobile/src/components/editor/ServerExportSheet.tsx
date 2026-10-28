@@ -1,4 +1,5 @@
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Text as StatusText } from '../ui/Text';
+import { Alert, Platform, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { touchTarget } from '../../lib/a11y';
 import { t } from '../../lib/i18n';
 import { colors } from '../../theme';
@@ -17,8 +18,8 @@ export function ServerExportSheet(props: ServerExportProps) {
     return <Modal visible={props.visible} animationType="none" transparent onRequestClose={state.close}>
         <View style={styles.backdrop}><ScrollView style={styles.sheet} contentContainerStyle={styles.content}>
             <Text accessibilityRole="header" style={styles.heading}>{t('editorServerExport.title')}</Text>
-            {state.message ? <Text accessibilityRole="alert" style={styles.text}>{state.message}</Text> : null}
-            {working ? <Text accessibilityLiveRegion="polite" style={styles.text}>{t(`editorServerExport.${state.phase}` as Parameters<typeof t>[0])}</Text> : null}
+            {state.message ? <StatusText variant="inherit" accessibilityRole={Platform.OS === 'android' ? 'alert' : undefined} style={styles.text}>{state.message}</StatusText> : null}
+            {working ? <StatusText variant="inherit" accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : undefined} style={styles.text}>{t(`editorServerExport.${state.phase}` as Parameters<typeof t>[0])}</StatusText> : null}
             {state.phase === 'uploading' ? <View accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: 100, now: Math.round(state.progress * 100) }} style={styles.track}><View style={[styles.fill, { width: `${state.progress * 100}%` }]} /></View> : null}
             {!working && !state.job ? <View>
                 {(['1080p', '720p'] as const).map(value => <Pressable key={value} accessibilityRole="button" accessibilityLabel={value} accessibilityState={{ selected: state.resolution === value }} onPress={() => state.choose(value)} style={[styles.button, touchTarget]}>

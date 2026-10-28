@@ -1,5 +1,11 @@
 [
   {
+    "id": "recovery.home",
+    "english": "Go home",
+    "translation": "Zur Startseite",
+    "ratio": 2
+  },
+  {
     "id": "account.legal.refunds",
     "english": "Refunds",
     "translation": "Erstattungen",

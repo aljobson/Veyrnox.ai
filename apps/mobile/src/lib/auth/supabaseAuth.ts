@@ -1,3 +1,4 @@
+import { fetchWithTimeout } from '../fetchWithTimeout';
 import { config } from '../config';
 
 export interface Session {
@@ -38,7 +39,7 @@ export function toSession(body: TokenResponse, now: number): Session {
 async function authPost<T = TokenResponse>(path: string, payload: Record<string, unknown>): Promise<T> {
     let res: Response;
     try {
-        res = await fetch(`${config.supabaseUrl}${path}`, {
+        res = await fetchWithTimeout(fetch, `${config.supabaseUrl}${path}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', apikey: config.publishableKey },
             body: JSON.stringify(payload),
@@ -97,7 +98,7 @@ export function refreshSession(refreshToken: string): Promise<Session> {
 // Best effort: the local session is cleared whether or not this reaches the server.
 export async function revokeSession(accessToken: string): Promise<void> {
     try {
-        await fetch(`${config.supabaseUrl}/auth/v1/logout`, {
+        await fetchWithTimeout(fetch, `${config.supabaseUrl}/auth/v1/logout`, {
             method: 'POST',
             headers: { apikey: config.publishableKey, Authorization: `Bearer ${accessToken}` },
         });

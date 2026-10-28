@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../components/ui/Text';
 import { ReviewMedia } from '../components/ReviewMedia';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -47,7 +48,7 @@ export default function ReviewLink() {
         <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
             <Text style={shared.label}>{t('review.vEYRNOXPUBLISH')}</Text>
             <Text style={styles.title} accessibilityRole="header">{t('share.review.title')}</Text>
-            {!validToken(token) ? <Text style={shared.help} accessibilityRole="alert">{t('share.review.err.gone')}</Text> : null}
+            {!validToken(token) ? <StatusText variant="inherit" style={shared.help} accessibilityRole="alert">{t('share.review.err.gone')}</StatusText> : null}
             {error && !review ? <Status text={error} error /> : null}
             {validToken(token) && !review && !error ? <ActivityIndicator color={colors.accent} accessibilityLabel={t('share.loading')} /> : null}
             {review ? (
@@ -73,7 +74,7 @@ export default function ReviewLink() {
                             <Action label={busy === 'rejected' ? t('share.review.saving') : t('share.review.reject')} danger disabled={busy !== null} onPress={() => void decide('rejected')} />
                         </>
                     ) : (
-                        <Text style={shared.name} accessibilityLiveRegion="polite">{t('share.review.result', { decision: review.decision, status: review.requestStatus })}</Text>
+                        <StatusText variant="inherit" style={shared.name} accessibilityLiveRegion="polite">{t('share.review.result', { decision: review.decision, status: review.requestStatus })}</StatusText>
                     )}
                     <Status text={error} error />
                 </Card>

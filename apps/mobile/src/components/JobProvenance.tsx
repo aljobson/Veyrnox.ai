@@ -1,3 +1,4 @@
+import { useAnnouncement } from '../lib/useAnnouncement';
 import { Text, Button, Card, themedStyles, useThemedStyles } from './ui';
 import { useState } from 'react';
 import { ActivityIndicator, Platform, View } from 'react-native';
@@ -18,6 +19,15 @@ export function JobProvenance({ api, jobId }: { readonly api: ApiClient; readonl
     const [state, setState] = useState<'idle' | 'loading' | 'error' | 'notReady'>('idle');
     const [prov, setProv] = useState<Provenance | null>(null);
 
+    const visibleText = !open ? null : state === 'error' ? t('prov.error') : state === 'notReady' ? t('prov.notReady') : prov ? [
+        t('prov.model', { model: prov.model }),
+        prov.madeAt ? t('prov.when', { date: new Date(prov.madeAt).toLocaleString(formatLocale()) }) : '',
+        prov.credits !== null ? t('prov.cost', { credits: prov.credits > 0 ? plural('library.cost', prov.credits) : t('library.costFree') }) : '',
+        prov.mime ? t('prov.file', { type: prov.mime, size: sizeLabel(prov.sizeBytes) ?? '—' }) : '',
+        prov.sha256 ? `${t('prov.hash')}. ${prov.sha256}. ${t('prov.hashHelp')}` : t('prov.noHash'),
+    ].filter(Boolean).join('. ') : null;
+    useAnnouncement(visibleText);
+
     async function toggle() {
         const next = !open;
         setOpen(next);
@@ -36,7 +46,7 @@ export function JobProvenance({ api, jobId }: { readonly api: ApiClient; readonl
         <Card style={styles.box}>
             <Button variant="tertiary" label={t('prov.title')} accessibilityRole="button" accessibilityLabel={open ? t('prov.hide') : t('prov.show')} accessibilityState={{ expanded: open }} icon={open ? 'caretDown' : 'caretRight'} onPress={toggle} />
             {open ? (
-                <View style={styles.body} accessibilityLiveRegion="polite">
+                <View testID="provenance-status" style={styles.body} accessibilityLiveRegion="polite">
                     {state === 'loading' ? <ActivityIndicator color={styles.accentInk.color} /> : null}
                     {state === 'error' ? <Text variant="body" tone="danger" style={styles.error}>{t('prov.error')}</Text> : null}
                     {state === 'notReady' ? <Text variant="footnote" tone="tertiary" style={styles.muted}>{t('prov.notReady')}</Text> : null}
