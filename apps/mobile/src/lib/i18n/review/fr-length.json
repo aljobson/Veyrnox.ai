@@ -4254,6 +4254,18 @@
     "ratio": 2.25
   },
   {
+    "id": "filmWorkspace.banList",
+    "english": "Ban list",
+    "translation": "Liste des interdits",
+    "ratio": 2.38
+  },
+  {
+    "id": "filmWorkspace.retry",
+    "english": "Retry",
+    "translation": "Réessayer",
+    "ratio": 1.8
+  },
+  {
     "id": "creditsPage.stop",
     "english": "Stop renewal at period end",
     "translation": "Arrêter le renouvellement en fin de période",

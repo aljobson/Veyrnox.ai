@@ -1590,6 +1590,18 @@
     "ratio": 1.8
   },
   {
+    "id": "filmWorkspace.revise",
+    "english": "Revise",
+    "translation": "संशोधित करें",
+    "ratio": 2
+  },
+  {
+    "id": "filmWorkspace.retry",
+    "english": "Retry",
+    "translation": "फिर कोशिश करें",
+    "ratio": 2.8
+  },
+  {
     "id": "developers.share",
     "english": "Share",
     "translation": "साझा करें",

@@ -1,4 +1,5 @@
-import { CLOUD_FILMS_PATH, cloudFilmPath, cloudStatus, fetchCloudFilm, fetchCloudFilms, getOpenedFilm, loadActiveStudio, openCloudFilm, parseCloudFilms, replaceActiveStudio, saveActiveStudioToCloud } from '../src/lib/filmCloud';
+import { t } from '../src/lib/i18n';
+import { clearOpenedFilm, CLOUD_FILMS_PATH, cloudFilmPath, cloudStatus, fetchCloudFilm, fetchCloudFilms, getOpenedFilm, loadActiveStudio, openCloudFilm, parseCloudFilms, replaceActiveStudio, saveActiveStudioToCloud } from '../src/lib/filmCloud';
 import { bindCacheUser, resetCacheUser, wipeCache } from '../src/lib/appCache';
 import { createCache, createMemoryStorage } from '../src/lib/cache';
 import { loadStudio, saveStudio } from '../src/lib/filmStudioStore';
@@ -132,4 +133,57 @@ test('aborted screen operation cannot populate the slot', async () => {
     const result = openCloudFilm({ request: jest.fn().mockReturnValue(pending.promise) }, id, undefined, controller.signal);
     controller.abort(); pending.resolve(response());
     expect(await result).toEqual({ ok: false, reason: 'switched' }); expect(getOpenedFilm()).toBeNull();
+});
+
+test('a swallowed storage failure fails saveStudio and rejects replaceActiveStudio with the translated message', async () => {
+    const storage = createMemoryStorage(); storage.set = jest.fn().mockRejectedValue(new Error('disk full'));
+    const cache = createCache(storage);
+    expect(await saveStudio(raw(), cache, 'alice')).toEqual({ ok: false, error: t('filmWorkspace.saveFailed') });
+    await expect(replaceActiveStudio(baseFilm(), cache)).rejects.toThrow(t('filmWorkspace.saveFailed'));
+});
+test.each(['clear', 'account', 'open'])('a late cloud save after %s cannot repopulate the old film', async action => {
+    const pending = deferred<unknown>();
+    const saving = saveActiveStudioToCloud({ request: jest.fn().mockReturnValue(pending.promise) }, baseFilm(), 'first');
+    if (action === 'clear') clearOpenedFilm();
+    if (action === 'account') { await wipeCache(); await bindCacheUser('alice'); }
+    if (action === 'open') await openCloudFilm(api(response('Other')), id);
+    pending.resolve({ project: row() }); await saving;
+    if (action === 'open') expect(getOpenedFilm()?.film.name).toBe('Other');
+    else expect(getOpenedFilm()).toBeNull();
+});
+test('cloud completion keeps newer local text while advancing the cloud revision', async () => {
+    const pending = deferred<unknown>(); const film = baseFilm();
+    const saving = saveActiveStudioToCloud({ request: jest.fn().mockReturnValue(pending.promise) }, film, 'first');
+    await replaceActiveStudio({ ...film, name: 'Newer' });
+    pending.resolve({ project: row({ revision: 3 }) }); await saving;
+    expect(getOpenedFilm()).toMatchObject({ film: { name: 'Newer' }, raw: JSON.stringify({ ...film, name: 'Newer' }), cloud: { id, revision: 3 } });
+});
+test('module serialization makes a second pending save a PUT through the first POST link', async () => {
+    const pending = deferred<unknown>();
+    const request = jest.fn().mockReturnValueOnce(pending.promise).mockResolvedValueOnce({ project: row({ revision: 2 }) });
+    const first = saveActiveStudioToCloud({ request }, baseFilm(), 'first');
+    const second = saveActiveStudioToCloud({ request }, { ...baseFilm(), name: 'Second' }, 'second');
+    expect(request).toHaveBeenCalledTimes(1);
+    pending.resolve({ project: row() }); await first; await second;
+    expect(request.mock.calls.map(c => c[1].method)).toEqual(['POST', 'PUT']);
+    expect(JSON.parse(request.mock.calls[1][1].body)).toEqual({ expected_revision: 1, studio_json: JSON.stringify({ ...baseFilm(), name: 'Second' }) });
+    expect(getOpenedFilm()?.film.name).toBe('Second');
+});
+test('a retry of identical text keeps its original idempotency key', async () => {
+    const request = jest.fn().mockRejectedValueOnce(new Error('network')).mockResolvedValueOnce({ project: row() });
+    await expect(saveActiveStudioToCloud({ request }, baseFilm(), 'original')).rejects.toThrow('network');
+    await saveActiveStudioToCloud({ request }, baseFilm(), 'new-key');
+    expect(request.mock.calls.map(c => c[1].headers['Idempotency-Key'])).toEqual(['original', 'original']);
+});
+test('identical concurrent saves share the first result', async () => {
+    const pending = deferred<unknown>(); const request = jest.fn().mockReturnValue(pending.promise);
+    const first = saveActiveStudioToCloud({ request }, baseFilm(), 'first');
+    const second = saveActiveStudioToCloud({ request }, baseFilm(), 'second');
+    pending.resolve({ project: row() }); expect(await first).toEqual(await second); expect(request).toHaveBeenCalledTimes(1);
+});
+
+test('an unsuccessful open preserves the previously opened film', async () => {
+    await openCloudFilm(api(response('Kept')), id);
+    expect(await openCloudFilm(api({}), id)).toEqual({ ok: false, reason: 'invalid' });
+    expect(getOpenedFilm()?.film.name).toBe('Kept');
 });

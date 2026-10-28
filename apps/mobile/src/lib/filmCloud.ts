@@ -55,15 +55,24 @@ export function cloudStatus(err: unknown): 'offline' | 'unavailable' | 'busy' | 
 
 export interface ActiveCloudLink { readonly id: string; readonly revision: number }
 let opened: { owner: string; raw: string; film: Film; openedAt: number; cloud: ActiveCloudLink | null } | null = null;
-subscribeCacheUser(() => { opened = null; });
+let generation = 0;
+let latest: { owner: string; generation: number; raw: string; film: Film } | null = null;
+let inFlight: { owner: string; generation: number; promise: Promise<CloudFilm> } | null = null;
+let lastSaved: { raw: string; project: CloudFilm } | null = null;
+const retryKeys = new Map<string, string>();
+subscribeCacheUser(clearOpenedFilm);
 export const getOpenedFilm = () => opened?.owner === getCacheUser() ? opened : null;
 export const getActiveCloudLink = (): ActiveCloudLink | null => getOpenedFilm()?.cloud ?? null;
-export function clearOpenedFilm(): void { opened = null; }
+export function clearOpenedFilm(): void {
+    generation++;
+    opened = null; latest = null; inFlight = null; lastSaved = null; retryKeys.clear();
+}
 
 export async function replaceActiveStudio(film: Film, cache: Cache = appCache): Promise<void> {
     const owner = getCacheUser();
     if (!owner) throw new Error(t('filmCloud.signintokeepastudioon'));
     const raw = JSON.stringify(film);
+    latest = { owner, generation, raw, film };
     const active = getOpenedFilm();
     if (active) {
         opened = { ...active, raw, film, openedAt: Date.now() };
@@ -74,22 +83,48 @@ export async function replaceActiveStudio(film: Film, cache: Cache = appCache): 
 }
 
 export async function saveActiveStudioToCloud(api: Reader, film: Film, idempotencyKey: string): Promise<CloudFilm> {
-    const owner = getCacheUser();
+    const owner = getCacheUser(), captured = generation;
     if (!owner) throw new Error('not_authenticated');
     const raw = JSON.stringify(film);
     const parsed = parseFilm(raw);
     if (!parsed.ok) throw new Error(parsed.error);
-    const link = getActiveCloudLink();
-    const body = link ? { expected_revision: link.revision, studio_json: raw } : { studio_json: raw };
-    const response = record(await api.request(link ? cloudFilmPath(link.id) : CLOUD_FILMS_PATH, {
-        method: link ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json', 'Idempotency-Key': idempotencyKey },
-        body: JSON.stringify(body),
-    }));
-    const [project] = parseCloudFilms({ projects: [response.project] });
-    if (!project) throw new Error('invalid_cloud_response');
-    opened = { owner, raw, film: parsed.film, openedAt: Date.now(), cloud: { id: project.id, revision: project.revision } };
-    return project;
+    const current = () => owner === getCacheUser() && captured === generation;
+    // Adopt the caller's edit before the request; completion may update only its cloud link.
+    latest = { owner, generation: captured, raw, film: parsed.film };
+    const active = getOpenedFilm();
+    if (active) opened = { ...active, raw, film: parsed.film };
+    const previous = inFlight?.owner === owner && inFlight.generation === captured ? inFlight.promise : null;
+    const run = async (): Promise<CloudFilm> => {
+        if (previous) await previous.catch(() => undefined);
+        if (!current()) throw new Error('film_session_changed');
+        if (previous && lastSaved?.raw === raw) return lastSaved.project;
+        const link = getActiveCloudLink();
+        const body = link ? { expected_revision: link.revision, studio_json: raw } : { studio_json: raw };
+        const fingerprint = JSON.stringify([link, raw]);
+        const key = retryKeys.get(fingerprint) ?? idempotencyKey;
+        retryKeys.set(fingerprint, key);
+        const response = record(await api.request(link ? cloudFilmPath(link.id) : CLOUD_FILMS_PATH, {
+            method: link ? 'PUT' : 'POST',
+            headers: { 'Content-Type': 'application/json', 'Idempotency-Key': key },
+            body: JSON.stringify(body),
+        }));
+        const [project] = parseCloudFilms({ projects: [response.project] });
+        if (!project) throw new Error('invalid_cloud_response');
+        if (current()) {
+            const now = getOpenedFilm();
+            const edit = latest?.owner === owner && latest.generation === captured ? latest : { raw, film: parsed.film };
+            opened = { owner, raw: now?.raw ?? edit.raw, film: now?.film ?? edit.film,
+                openedAt: now?.openedAt ?? Date.now(), cloud: { id: project.id, revision: project.revision } };
+            lastSaved = { raw, project };
+            retryKeys.delete(fingerprint);
+        }
+        return project;
+    };
+    const promise = run();
+    const pending = { owner, generation: captured, promise };
+    inFlight = pending;
+    try { return await promise; }
+    finally { if (inFlight === pending) inFlight = null; }
 }
 
 export async function loadActiveStudio(cache: Cache = appCache): Promise<{ film: Film; savedAt: number } | null> {
@@ -102,9 +137,11 @@ type OpenResult = { ok: true; film: Film } | { ok: false; reason: ReturnType<typ
 export async function openCloudFilm(api: Reader, id: string, _cache: Cache = appCache, signal?: AbortSignal): Promise<OpenResult> {
     const owner = getCacheUser();
     if (owner === undefined) return { ok: false, reason: 'unavailable' };
+    const captured = ++generation;
+    latest = null; inFlight = null; lastSaved = null; retryKeys.clear();
     let invalidated = false;
     const unsubscribe = subscribeCacheUser(() => { invalidated = true; });
-    const switched = () => invalidated || getCacheUser() !== owner || signal?.aborted;
+    const switched = () => captured !== generation || invalidated || getCacheUser() !== owner || signal?.aborted;
     try {
         const result = await fetchCloudFilm(api, id);
         if (switched()) return { ok: false, reason: 'switched' };

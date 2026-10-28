@@ -2628,6 +2628,36 @@
     "ratio": 1.75
   },
   {
+    "id": "filmWorkspace.frameFormat",
+    "english": "Frame format",
+    "translation": "Formato de fotograma",
+    "ratio": 1.67
+  },
+  {
+    "id": "filmWorkspace.shotCards",
+    "english": "Shot cards",
+    "translation": "Tarjetas de tomas",
+    "ratio": 1.7
+  },
+  {
+    "id": "filmWorkspace.banList",
+    "english": "Ban list",
+    "translation": "Lista de prohibiciones",
+    "ratio": 2.75
+  },
+  {
+    "id": "filmWorkspace.retry",
+    "english": "Retry",
+    "translation": "Reintentar",
+    "ratio": 2
+  },
+  {
+    "id": "filmWorkspace.stay",
+    "english": "Stay",
+    "translation": "Quedarse",
+    "ratio": 2
+  },
+  {
     "id": "developers.api.kicker",
     "english": "Developer API",
     "translation": "API para desarrolladores",

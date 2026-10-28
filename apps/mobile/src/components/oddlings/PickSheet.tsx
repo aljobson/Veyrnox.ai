@@ -11,6 +11,7 @@ export interface PickChoice {
 
 interface Props {
     title: string;
+    noneLabel?: string | null;
     choices: readonly PickChoice[];
     value: string;
     onPick: (value: string) => void;
@@ -18,8 +19,8 @@ interface Props {
 }
 
 // One group's options in a list. "Not set" clears the pick.
-export function PickSheet({ title, choices, value, onPick, onClose }: Props) {
-    const rows: readonly PickChoice[] = [{ value: '', label: t('oddlings.build.notSet') }, ...choices];
+export function PickSheet({ title, choices, value, onPick, onClose, noneLabel }: Props) {
+    const rows: readonly PickChoice[] = noneLabel === null ? choices : [{ value: '', label: noneLabel ?? t('oddlings.build.notSet') }, ...choices];
     return (
         <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
             <View style={styles.sheet}>
