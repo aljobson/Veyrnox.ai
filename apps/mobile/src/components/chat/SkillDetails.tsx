@@ -10,6 +10,7 @@ import { MAX_SELECTED_SKILLS, skillOverview, type Skill } from '../../lib/studio
 import { ds, LIST_END_PADDING } from '../../theme';
 import { Button, Card, IconBadge, Text, themedStyles, useThemedStyles } from '../ui';
 import { useReducedMotion } from '../ui/useReducedMotion';
+import { useAnnouncement } from '../../lib/useAnnouncement';
 
 export function SkillDetails({ skill, chosen, count, busy, model, onClose, onUse, onToggle }: {
     skill: Skill | null; chosen: boolean; count: number; busy: boolean; model?: ChatModel;
@@ -19,6 +20,9 @@ export function SkillDetails({ skill, chosen, count, busy, model, onClose, onUse
     const reducedMotion = useReducedMotion();
     const insets = useSafeAreaInsets();
     const [copied, setCopied] = useState(false);
+    // iOS ignores live regions; announce the selection count and the copy result (announcementsIos rule).
+    useAnnouncement(skill ? t('chatDepth.selected', { count, max: MAX_SELECTED_SKILLS }) : null);
+    useAnnouncement(copied ? t('skillsUi.copied') : null);
     const generation = useRef(0);
     const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
     useEffect(() => {
@@ -56,13 +60,13 @@ export function SkillDetails({ skill, chosen, count, busy, model, onClose, onUse
                     </View>)}
                 </Card>
                 <Button label={t('skillsUi.use')} icon="arrowRight" disabled={busy || !model} onPress={() => onUse(skill)} />
-                <View accessibilityLiveRegion="polite">
+                <View>
                     <Button variant="secondary" label={t(chosen ? 'skillsUi.removeFromSelection' : 'skillsUi.addToSelection')}
                         disabled={busy || !model || atLimit} onPress={() => onToggle(skill)} />
-                    <Text variant="caption" accessibilityLiveRegion="polite">{t('chatDepth.selected', { count, max: MAX_SELECTED_SKILLS })}</Text>
+                    <Text variant="caption">{t('chatDepth.selected', { count, max: MAX_SELECTED_SKILLS })}</Text>
                 </View>
                 {atLimit ? <Text variant="caption">{t('skillsUi.limit', { max: MAX_SELECTED_SKILLS })}</Text> : null}
-                <Button variant="tertiary" label={t(copied ? 'skillsUi.copied' : 'skillsUi.copyLink')} onPress={() => void copyLink(skill)}><Text accessibilityLiveRegion="polite">{t(copied ? 'skillsUi.copied' : 'skillsUi.copyLink')}</Text></Button>
+                <Button variant="tertiary" label={t(copied ? 'skillsUi.copied' : 'skillsUi.copyLink')} onPress={() => void copyLink(skill)}><Text>{t(copied ? 'skillsUi.copied' : 'skillsUi.copyLink')}</Text></Button>
                 {model ? <Text variant="caption" tone="tertiary">{plural('chat.creditsPerReply', model.credits_per_reply)}{' · '}{t('skillsUi.generationSeparate')}</Text> : null}
             </ScrollView>
         </View> : null}
