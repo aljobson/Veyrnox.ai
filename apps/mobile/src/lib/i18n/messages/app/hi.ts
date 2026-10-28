@@ -1,6 +1,14 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+    "faceFilterSwitch.current": "फ़िल्टर: {name}",
+    "faceFilterSwitch.change": "बदलें",
+    "faceFilterSwitch.changeLabel": "फ़िल्टर बदलें, मौजूदा: {name}",
+    "faceFilterSwitch.attached": "संलग्न फ़ोटो",
+    "faceFilterSwitch.kept": "आपकी फ़ोटो संलग्न रहेगी। एक फ़िल्टर चुनें।",
+    "faceFilterSwitch.resultAttached": "परिणाम संलग्न है। एक फ़िल्टर चुनें।",
+    "faceFilterSwitch.applyResult": "इस परिणाम पर दूसरा फ़िल्टर लगाएँ",
+    "faceFilterSwitch.sameFilter": "इस फ़िल्टर को नई फ़ोटो पर आज़माएँ",
   "recovery.title": "कुछ गड़बड़ हो गई",
   "recovery.body": "आपका काम सुरक्षित है। फिर से कोशिश करें या होम स्क्रीन पर वापस जाएँ।",
   "recovery.home": "होम पर जाएँ",
@@ -2091,12 +2099,10 @@ export default {
   "explore.type.image": "इमेज",
   "explore.type.video": "वीडियो",
   "faceFilters.after": "बाद में",
-  "faceFilters.another": "एक और बनाएँ",
   "faceFilters.artistic": "कलात्मक",
   "faceFilters.before": "पहले",
   "faceFilters.bold_lips": "उभरे होंठ",
   "faceFilters.bridal": "दुल्हन का लुक",
-  "faceFilters.change": "दूसरा फ़िल्टर चुनें",
   "faceFilters.closed": "फ़ेस फ़िल्टर अभी शुरू नहीं हुए हैं",
   "faceFilters.consentRequired": "इस रन के लिए इस फ़ोटो के अधिकारों की पुष्टि करें।",
   "faceFilters.dramatic": "नाटकीय",

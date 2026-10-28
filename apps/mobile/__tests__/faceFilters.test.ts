@@ -155,3 +155,10 @@ test('the owner-bound client shares AuthProvider session-loss and stream options
         expect(source).toContain('beforeSend: aiConsent.ensure');
     }
 });
+
+test('a result source uses only its asset id and requires a nonempty id', () => {
+    const result = faceRequest(model(), { assetId: 'job-1' }, '', {}, true);
+    expect(result.assets).toEqual([{ assetId: 'job-1', slot: 'image' }]);
+    expect(result.sources).toBeUndefined();
+    expect(() => faceRequest(model(), { assetId: '' }, '', {}, true)).toThrow('api_invalid_inputs');
+});

@@ -1,6 +1,14 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+    "faceFilterSwitch.current": "滤镜：{name}",
+    "faceFilterSwitch.change": "更换",
+    "faceFilterSwitch.changeLabel": "更换滤镜，当前：{name}",
+    "faceFilterSwitch.attached": "已附加的照片",
+    "faceFilterSwitch.kept": "你的照片会保留。请选择滤镜。",
+    "faceFilterSwitch.resultAttached": "已附加结果。请选择滤镜。",
+    "faceFilterSwitch.applyResult": "为此结果应用其他滤镜",
+    "faceFilterSwitch.sameFilter": "在新照片上试用此滤镜",
   "recovery.title": "出了点问题",
   "recovery.body": "你的作品是安全的。请重试，或返回主屏幕。",
   "recovery.home": "返回首页",
@@ -2053,12 +2061,10 @@ export default {
   "explore.type.image": "图像",
   "explore.type.video": "视频",
   "faceFilters.after": "之后",
-  "faceFilters.another": "再做一个",
   "faceFilters.artistic": "艺术风",
   "faceFilters.before": "之前",
   "faceFilters.bold_lips": "浓艳唇妆",
   "faceFilters.bridal": "新娘妆",
-  "faceFilters.change": "选择其他滤镜",
   "faceFilters.closed": "人脸滤镜尚未开放",
   "faceFilters.consentRequired": "请确认你在此次处理中有权使用这张照片。",
   "faceFilters.dramatic": "戏剧风",
