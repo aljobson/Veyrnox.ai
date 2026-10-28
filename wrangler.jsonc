@@ -128,10 +128,6 @@
     // ADR-0257: daily check-in streak rewards. Migration 0368 applied on production 2026-10-23 (apply-migrations run 40022370873); owner
     // approved going live 2026-10-24. Rollback: remove this line (absent means off) and deploy; credits already granted stay.
     "CHECKIN_ENABLED": "true",
-    // ADR-0111: in-app account deletion (App Store 5.1.1(v)). Migration 0347 applied on production 2026-10-18 (apply-migrations run
-    // 39105180213); the privacy policy states the email hash (legal privacy b058). Owner approved going live 2026-10-27.
-    // Rollback: remove this line (absent means off) and deploy; accounts already erased stay erased.
-    "ACCOUNT_DELETION_ENABLED": "true",
     // docs/editor/CAPTIONS.md: the Clip Editor's captions step. On 2026-10-08 at the owner's request: 0225 is applied on production, both
     // paths passed on staging. The edit sheet still hides it behind localStorage.veyrnox_editor_captions. Rollback: set "false" and deploy.
     "CLIP_EDIT_CAPTIONS_ENABLED": "true",
