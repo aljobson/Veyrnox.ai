@@ -1656,6 +1656,24 @@
     "ratio": 1.83
   },
   {
+    "id": "filmOutput.locked",
+    "english": "Locked",
+    "translation": "लॉक किया गया",
+    "ratio": 2
+  },
+  {
+    "id": "filmOutput.copy",
+    "english": "Copy prompt",
+    "translation": "प्रॉम्प्ट कॉपी करें",
+    "ratio": 1.73
+  },
+  {
+    "id": "filmOutput.copied",
+    "english": "Copied",
+    "translation": "कॉपी किया गया",
+    "ratio": 2.17
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

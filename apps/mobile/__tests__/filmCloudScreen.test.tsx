@@ -2,9 +2,10 @@ import { act } from 'react';
 import * as RN from 'react-native';
 import { createRoot, type Root } from 'test-renderer';
 import Screen from '../src/app/(app)/film/cloud';
+import * as keepPhone from '../src/components/film/FilmCloudBar';
 import { ApiError } from '../src/lib/api';
-import { bindCacheUser, resetCacheUser, wipeCache } from '../src/lib/appCache';
-import { getOpenedFilm, openCloudFilm } from '../src/lib/filmCloud';
+import { appCache, bindCacheUser, resetCacheUser, wipeCache } from '../src/lib/appCache';
+import { getActiveCloudLink, getOpenedFilm, openCloudFilm, prepareKeepOnPhone, type Prepared, saveActiveStudioToCloud, SAVE_SETTLE_MS } from '../src/lib/filmCloud';
 import { loadStudio, saveStudio } from '../src/lib/filmStudioStore';
 import { plural, t } from '../src/lib/i18n';
 declare const __dirname: string;
@@ -45,8 +46,8 @@ afterEach(async () => { if (root) await act(async () => root.unmount()); jest.re
 test('accessible heading, row labels, counts and optional dates', async () => {
     await mount();
     expect(root.container.queryAll(n => n.props.accessibilityRole === 'header')).toHaveLength(1);
-    expect(buttons()).toHaveLength(2);
-    expect(buttons().map(n => n.props.accessibilityLabel)).toEqual([rowLabel(), rowLabel(second as any)]);
+    expect(buttons()).toHaveLength(4);
+    expect(buttons().map(n => n.props.accessibilityLabel)).toEqual([rowLabel(), `${t('filmOutput.remove')}: ${row.name}`, rowLabel(second as any), `${t('filmOutput.remove')}: ${second.name}`]);
     expect(has(t('filmCloud.note'))).toBe(true);
 });
 test('empty list has neutral copy and no web action', async () => {
@@ -119,4 +120,109 @@ test('stale confirmation cannot start an open for a different session', async ()
     const replace = jest.mocked(RN.Alert.alert).mock.calls[0][2]![1];
     await act(async () => bindCacheUser('bob')); const calls = mockRequest.mock.calls.length;
     await act(async () => replace.onPress!()); expect(mockRequest).toHaveBeenCalledTimes(calls); expect(mockDismiss).not.toHaveBeenCalled();
+});
+
+const removeLabel = () => `${t('filmOutput.remove')}: ${row.name}`;
+const answer = async (index: number) => act(async () => { jest.mocked(RN.Alert.alert).mock.calls.at(-1)![2]![index].onPress!(); });
+const deletes = () => mockRequest.mock.calls.filter(c => c[1]?.method === 'DELETE');
+function removalApi(status?: number) {
+    mockRequest.mockImplementation(async (_path, options) => {
+        if (options?.method === 'DELETE') { if (status) throw new ApiError(status, 'unknown'); return { removed: true }; }
+        return { projects: [row] };
+    });
+}
+test('other row names the film and says it is not saved on the phone; success reloads', async () => {
+    removalApi(); await mount(); await press(removeLabel());
+    expect(jest.mocked(RN.Alert.alert).mock.calls.at(-1)![1]).toBe(t('filmOutput.removeOther', { value1: row.name }));
+    const calls = mockRequest.mock.calls.length; await answer(1); expect(deletes()).toHaveLength(1); expect(mockRequest.mock.calls.length).toBe(calls + 2);
+});
+test('local conflict Keep preserves A, then requires a second removal confirmation for B', async () => {
+    await saveStudio(raw('Film A')); await openCloudFilm({ request: jest.fn().mockResolvedValue(detail) }, id);
+    removalApi(); await mount(); await press(removeLabel());
+    expect(jest.mocked(RN.Alert.alert).mock.calls.at(-1)![1]).toBe(t('filmOutput.removeLocal', { value1: row.name }));
+    await answer(1); expect(jest.mocked(RN.Alert.alert).mock.calls.at(-1)![0]).toBe(t('filmOutput.localConflict', { value1: 'Film A', value2: row.name }));
+    await answer(0); expect(deletes()).toHaveLength(0);
+    expect(jest.mocked(RN.Alert.alert).mock.calls.at(-1)![1]).toBe(t('filmOutput.removeMemory', { value1: row.name }));
+    await answer(1); expect(deletes()).toHaveLength(1); expect((await loadStudio())?.film.name).toBe('Film A');
+    expect(getOpenedFilm()?.film.name).toBe('Film B'); expect(getActiveCloudLink()).toBeNull();
+});
+test('cancelling the second confirm keeps B linked and A on disk', async () => {
+    await saveStudio(raw('Film A')); await openCloudFilm({ request: jest.fn().mockResolvedValue(detail) }, id);
+    removalApi(); await mount(); await press(removeLabel()); await answer(1); await answer(0); await answer(0);
+    expect(deletes()).toHaveLength(0); expect(getActiveCloudLink()).toEqual({ id, revision: 1 }); expect((await loadStudio())?.film.name).toBe('Film A');
+});
+test('unreadable slot has Retry and Retry reads again before removing', async () => {
+    await openCloudFilm({ request: jest.fn().mockResolvedValue(detail) }, id);
+    const checked = jest.spyOn(appCache as Required<typeof appCache>, 'readChecked').mockResolvedValueOnce({ state: 'error' });
+    removalApi(); await mount(); await press(removeLabel()); await answer(1);
+    expect(has(t('filmOutput.unreadable'))).toBe(true); expect(deletes()).toHaveLength(0);
+    await press(t('filmCloud.retry')); expect(checked).toHaveBeenCalledTimes(2); expect(deletes()).toHaveLength(1);
+});
+test('failed local write sends no DELETE and leaves the link', async () => {
+    await openCloudFilm({ request: jest.fn().mockResolvedValue(detail) }, id);
+    jest.spyOn(appCache, 'write').mockResolvedValue(undefined); removalApi(); await mount(); await press(removeLabel()); await answer(1);
+    expect(has(t('filmOutput.notKept'))).toBe(true); expect(deletes()).toHaveLength(0); expect(getActiveCloudLink()).toEqual({ id, revision: 1 });
+});
+test('409 removal shows changed and reloads', async () => {
+    removalApi(409); await mount(); await press(removeLabel()); const calls = mockRequest.mock.calls.length; await answer(1);
+    expect(has(t('filmOutput.changed'))).toBe(true); expect(mockRequest.mock.calls.length).toBe(calls + 2);
+});
+
+
+test('a pending save makes removal busy without sending DELETE', async () => {
+    jest.useFakeTimers();
+    try {
+        await openCloudFilm({ request: jest.fn().mockResolvedValue(detail) }, id);
+        const held = deferred<unknown>();
+        const saving = saveActiveStudioToCloud({ request: jest.fn().mockReturnValue(held.promise) }, getOpenedFilm()!.film, 'pending');
+        removalApi(); await mount(); await press(removeLabel()); await answer(1);
+        await act(async () => { await jest.advanceTimersByTimeAsync(SAVE_SETTLE_MS); });
+        expect(has(t('filmOutput.busy'))).toBe(true); expect(deletes()).toHaveLength(0); expect(getActiveCloudLink()).toEqual({ id, revision: 1 });
+        await act(async () => { held.resolve({ project: { ...row, revision: 2 } }); await saving; });
+    } finally { jest.useRealTimers(); }
+});
+
+
+test.each(['generation', 'unmount'])('Replace restores A when %s invalidates preparation before DELETE', async invalidation => {
+    await saveStudio(raw('Film A')); await openCloudFilm({ request: jest.fn().mockResolvedValue(detail) }, id);
+    const held = deferred<Prepared>(), started = deferred<Prepared>();
+    jest.spyOn(keepPhone, 'askKeepOnPhone').mockImplementationOnce(async owner => {
+        const prepared = await prepareKeepOnPhone(owner, 'replace');
+        if (prepared.kind !== 'kept') throw Error(prepared.kind);
+        started.resolve(prepared); return held.promise;
+    });
+    removalApi(); await mount(); await press(removeLabel()); await answer(1);
+    const prepared = await started.promise; expect((await loadStudio())?.film.name).toBe('Film B');
+    await act(async () => {
+        if (invalidation === 'unmount') root.unmount();
+        else await openCloudFilm({ request: jest.fn().mockResolvedValue({ ...detail, project: { ...row, revision: 2 } }) }, id);
+    });
+    await act(async () => { held.resolve(prepared); });
+    expect(deletes()).toHaveLength(0); expect((await loadStudio())?.film.name).toBe('Film A');
+    expect(getActiveCloudLink()).toEqual({ id, revision: invalidation === 'generation' ? 2 : 1 });
+});
+test('the real Replace helper restores A when unmounted during its write', async () => {
+    await saveStudio(raw('Film A')); await openCloudFilm({ request: jest.fn().mockResolvedValue(detail) }, id);
+    removalApi(); await mount(); await press(removeLabel()); await answer(1);
+    const held = deferred<void>(), write = appCache.write.bind(appCache);
+    jest.spyOn(appCache, 'write').mockImplementationOnce(async (...args) => { await write(...args); await held.promise; });
+    await answer(1); expect((await loadStudio())?.film.name).toBe('Film B');
+    await act(async () => { root.unmount(); });
+    await act(async () => { held.resolve(); });
+    expect(deletes()).toHaveLength(0); expect((await loadStudio())?.film.name).toBe('Film A');
+    expect(getActiveCloudLink()).toEqual({ id, revision: 1 });
+});
+test.each(['generation', 'unmount', 'confirmed'])('Replace rollback after a held DELETE: %s', async invalidation => {
+    await saveStudio(raw('Film A')); await openCloudFilm({ request: jest.fn().mockResolvedValue(detail) }, id);
+    const held = deferred<unknown>();
+    mockRequest.mockImplementation(async (_path, options) => options?.method === 'DELETE' ? held.promise : { projects: [row] });
+    await mount(); await press(removeLabel()); await answer(1); await answer(1);
+    expect(deletes()).toHaveLength(1); expect((await loadStudio())?.film.name).toBe('Film B');
+    await act(async () => {
+        if (invalidation === 'generation') await openCloudFilm({ request: jest.fn().mockResolvedValue({ ...detail, project: { ...row, revision: 2 } }) }, id);
+        else root.unmount();
+    });
+    await act(async () => { held.resolve(invalidation === 'confirmed' ? { removed: true } : {}); });
+    expect((await loadStudio())?.film.name).toBe(invalidation === 'confirmed' ? 'Film B' : 'Film A');
+    expect(getActiveCloudLink()).toEqual({ id, revision: invalidation === 'generation' ? 2 : 1 });
 });

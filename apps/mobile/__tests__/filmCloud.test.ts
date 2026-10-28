@@ -1,7 +1,7 @@
 import { t } from '../src/lib/i18n';
-import { clearOpenedFilm, CLOUD_FILMS_PATH, cloudFilmPath, cloudStatus, fetchCloudFilm, fetchCloudFilms, getOpenedFilm, loadActiveStudio, openCloudFilm, parseCloudFilms, replaceActiveStudio, saveActiveStudioToCloud } from '../src/lib/filmCloud';
+import { cloudSaveError, commitUnlink, getActiveCloudLink, prepareKeepOnPhone, removeCloudFilm, restorePhoneSlot, SAVE_SETTLE_MS, clearOpenedFilm, CLOUD_FILMS_PATH, cloudFilmPath, cloudStatus, fetchCloudFilm, fetchCloudFilms, getOpenedFilm, loadActiveStudio, openCloudFilm, parseCloudFilms, replaceActiveStudio, saveActiveStudioToCloud } from '../src/lib/filmCloud';
 import { bindCacheUser, resetCacheUser, wipeCache } from '../src/lib/appCache';
-import { createCache, createMemoryStorage } from '../src/lib/cache';
+import { POLICIES, createCache, createMemoryStorage } from '../src/lib/cache';
 import { loadStudio, saveStudio } from '../src/lib/filmStudioStore';
 import { isLocked, promptContext, shotRow } from '../src/lib/filmStudio';
 declare const __dirname: string;
@@ -186,4 +186,179 @@ test('an unsuccessful open preserves the previously opened film', async () => {
     await openCloudFilm(api(response('Kept')), id);
     expect(await openCloudFilm(api({}), id)).toEqual({ ok: false, reason: 'invalid' });
     expect(getOpenedFilm()?.film.name).toBe('Kept');
+});
+
+const secondId = '22222222-2222-4222-8222-222222222222';
+const failure = (status: number, code?: string, retryAfterSeconds?: number) => ({ status, body: { error: { code } }, retryAfterSeconds });
+const cloudRow = () => parseCloudFilms({ projects: [row()] })[0];
+const open = async (revision = 1) => openCloudFilm(api({ ...response('B'), project: row({ revision }) }), id);
+const preparedCopy = async (cache = createCache(createMemoryStorage())) => {
+    const p = await prepareKeepOnPhone('alice', undefined, cache);
+    if (p.kind !== 'kept' && p.kind !== 'memoryOnly') throw new Error(p.kind);
+    return p;
+};
+test.each([[409, undefined, undefined, 'conflict'], [429, 'LIMIT_REACHED', undefined, 'limit'], [429, 'RATE_LIMITED', 12, 'rateLimited'], [429, undefined, undefined, 'rateLimited'], [0, undefined, undefined, 'offline'], [503, undefined, undefined, 'unavailable']])('save error %p/%p is classified', async (status, code, seconds, kind) => {
+    expect(await cloudSaveError(failure(status as number, code as string, seconds as number))).toEqual({ kind, ...(kind === 'rateLimited' ? { seconds: seconds ?? 60 } : {}) });
+});
+test('PUT 404 needs a successful list proving absence', async () => {
+    expect(await cloudSaveError(failure(404), api({ projects: [] }), id)).toEqual({ kind: 'removedElsewhere' });
+    expect(await cloudSaveError(failure(404), api({ projects: [row()] }), id)).toEqual({ kind: 'unavailable' });
+    expect(await cloudSaveError(failure(404), { request: jest.fn().mockRejectedValue(failure(0)) }, id)).toEqual({ kind: 'unavailable' });
+    expect(await cloudSaveError(failure(404))).toEqual({ kind: 'unavailable' });
+});
+test.each([{ removed: true }, { removed: true, idempotent: true }])('DELETE %p confirms removal but only commitUnlink unlinks', async body => {
+    await open(); const cache = createCache(createMemoryStorage()), p = await preparedCopy(cache);
+    const client = api(body); expect(await removeCloudFilm(client, cloudRow())).toBe('removed');
+    expect(JSON.parse(client.request.mock.calls[0][1].body)).toEqual({ expected_revision: 1 });
+    expect(getActiveCloudLink()).toEqual({ id, revision: 1 });
+    await commitUnlink(id, p); clearOpenedFilm(); expect((await loadActiveStudio(cache))?.film.name).toBe('B');
+});
+test.each([[404, 'unavailable'], [503, 'unavailable'], [409, 'changed']])('failed DELETE %p preserves link and restores A after Replace', async (status, reason) => {
+    const cache = createCache(createMemoryStorage()); await saveStudio(raw('A'), cache, 'alice'); await open();
+    expect(await prepareKeepOnPhone('alice', undefined, cache)).toEqual({ kind: 'localConflict', localName: 'A' });
+    const p = await prepareKeepOnPhone('alice', 'replace', cache);
+    if (p.kind !== 'kept') throw Error(p.kind);
+    expect((await loadStudio(cache, 'alice'))?.film.name).toBe('B');
+    expect(await removeCloudFilm({ request: jest.fn().mockRejectedValue(failure(status as number)) }, cloudRow())).toBe(reason);
+    expect(await restorePhoneSlot(p)).toBe(true); expect((await loadStudio(cache, 'alice'))?.film.name).toBe('A');
+    expect(getActiveCloudLink()).toEqual({ id, revision: 1 }); expect(getOpenedFilm()?.film.name).toBe('B');
+});
+test('unreadable slot is never overwritten, including removed elsewhere recovery', async () => {
+    await open(); const storage = createMemoryStorage(); storage.get = jest.fn().mockRejectedValue(Error('unreadable')); storage.set = jest.fn();
+    const client = api({ projects: [] }); expect(await cloudSaveError(failure(404), client, id)).toEqual({ kind: 'removedElsewhere' });
+    expect(await prepareKeepOnPhone('alice', undefined, createCache(storage))).toEqual({ kind: 'unreadable' });
+    expect(storage.set).not.toHaveBeenCalled(); expect(client.request).toHaveBeenCalledTimes(1); expect(getActiveCloudLink()).toEqual({ id, revision: 1 });
+});
+test('readChecked leaves an expired entry stored and marks it present', async () => {
+    const storage = createMemoryStorage(), cache = createCache(storage, () => 0); await cache.write(POLICIES.filmStudio, raw('A'), 'alice');
+    const keys = await storage.keys(); const expired = createCache(storage, () => POLICIES.filmStudio.maxAgeMs + 1);
+    expect(await expired.readChecked!(POLICIES.filmStudio, 'alice')).toEqual({ state: 'present', value: null }); expect(await storage.keys()).toEqual(keys);
+});
+test('Keep preserves local A and keeps B in memory only after confirmed unlink', async () => {
+    const cache = createCache(createMemoryStorage()); await saveStudio(raw('A'), cache, 'alice'); await open();
+    const p = await prepareKeepOnPhone('alice', 'keep', cache); if (p.kind !== 'memoryOnly') throw Error(p.kind);
+    expect(getActiveCloudLink()).toEqual({ id, revision: 1 });
+    await commitUnlink(id, p); await replaceActiveStudio({ ...getOpenedFilm()!.film, name: 'Edited B' }, cache);
+    expect((await loadActiveStudio(cache))?.film.name).toBe('Edited B');
+    clearOpenedFilm(); expect((await loadActiveStudio(cache))?.film.name).toBe('A');
+});
+test('failed local persistence keeps the exact open link', async () => {
+    await open(); const storage = createMemoryStorage(); storage.set = jest.fn().mockRejectedValue(Error('full'));
+    expect(await prepareKeepOnPhone('alice', undefined, createCache(storage))).toEqual({ kind: 'notKept' }); expect(getActiveCloudLink()).toEqual({ id, revision: 1 });
+});
+test('edit during held persistence is written a second time and survives restart', async () => {
+    await open(); const held = deferred<void>(), started = deferred<void>(), storage = createMemoryStorage(), set = storage.set;
+    storage.set = jest.fn().mockImplementationOnce(async (key, value) => { started.resolve(); await held.promise; return set(key, value); }).mockImplementation(set);
+    const cache = createCache(storage), preparing = prepareKeepOnPhone('alice', undefined, cache);
+    await started.promise;
+    await replaceActiveStudio({ ...getOpenedFilm()!.film, name: 'Edited' }, cache); held.resolve();
+    const p = await preparing; if (p.kind !== 'kept') throw Error(p.kind);
+    expect(storage.set).toHaveBeenCalledTimes(2); await commitUnlink(id, p); clearOpenedFilm(); expect((await loadActiveStudio(cache))?.film.name).toBe('Edited');
+});
+test('delayed revision 2 reply is adopted even after list fetch shows revision 2', async () => {
+    await open(); const held = deferred<unknown>(); const saving = saveActiveStudioToCloud({ request: jest.fn().mockReturnValue(held.promise) }, getOpenedFilm()!.film, 'k');
+    await fetchCloudFilms(api({ projects: [row({ revision: 2 })] })); held.resolve({ project: row({ revision: 2 }) }); await saving;
+    expect(getActiveCloudLink()).toEqual({ id, revision: 2 });
+});
+test.each([{ revision: 1 }, { revision: 3 }, { id: secondId, revision: 2 }])('stale or foreign reply %p is ignored', async reply => {
+    await open(); await saveActiveStudioToCloud(api({ project: row(reply) }), getOpenedFilm()!.film, 'k'); expect(getActiveCloudLink()).toEqual({ id, revision: 1 });
+});
+test('held reply cannot reinstall link after confirmed DELETE and unlink', async () => {
+    await open(); const p = await preparedCopy(), deletion = deferred<unknown>(), reply = deferred<unknown>();
+    const removing = removeCloudFilm({ request: jest.fn().mockReturnValue(deletion.promise) }, cloudRow());
+    const saving = saveActiveStudioToCloud({ request: jest.fn().mockReturnValue(reply.promise) }, getOpenedFilm()!.film, 'k');
+    deletion.resolve({ removed: true }); expect(await removing).toBe('removed'); await commitUnlink(id, p);
+    reply.resolve({ project: row({ revision: 2 }) }); await saving; expect(getActiveCloudLink()).toBeNull(); expect(getOpenedFilm()).toBeNull();
+});
+test.each([false, true])('removal replays unconfirmed PUT with original key; conflict=%p', async conflict => {
+    await open(); const request = jest.fn().mockRejectedValueOnce(failure(0)).mockRejectedValueOnce(failure(0));
+    await expect(saveActiveStudioToCloud({ request }, getOpenedFilm()!.film, 'same-key')).rejects.toMatchObject({ status: 0 });
+    if (conflict) request.mockRejectedValueOnce(failure(409)); else request.mockResolvedValueOnce({ project: row({ revision: 2 }) }).mockResolvedValueOnce({ removed: true });
+    expect(await removeCloudFilm({ request }, cloudRow())).toBe(conflict ? 'changed' : 'removed');
+    expect(request.mock.calls.slice(0, 3).map(c => c[1].headers['Idempotency-Key'])).toEqual(['same-key', 'same-key', 'same-key']);
+    if (conflict) expect(request).toHaveBeenCalledTimes(3); else expect(JSON.parse(request.mock.calls[3][1].body)).toEqual({ expected_revision: 2 });
+});
+test('removal waits SAVE_SETTLE_MS then returns busy without DELETE', async () => {
+    jest.useFakeTimers(); await open(); const held = deferred<unknown>(), request = jest.fn().mockReturnValue(held.promise);
+    const saving = saveActiveStudioToCloud({ request }, getOpenedFilm()!.film, 'k'); const removing = removeCloudFilm({ request }, cloudRow());
+    await jest.advanceTimersByTimeAsync(SAVE_SETTLE_MS); expect(await removing).toBe('busy'); expect(request).toHaveBeenCalledTimes(1);
+    held.resolve({ project: row({ revision: 2 }) }); await saving; jest.useRealTimers();
+});
+test('Save as a new film POST retains origin until adoption; queued save PUTs new id', async () => {
+    await open(3); const held = deferred<unknown>(), request = jest.fn().mockReturnValueOnce(held.promise).mockResolvedValueOnce({ project: row({ id: secondId, revision: 2 }) });
+    const film = getOpenedFilm()!.film, saving = saveActiveStudioToCloud({ request }, film, 'new', { asNew: true });
+    const queued = saveActiveStudioToCloud({ request }, { ...film, name: 'Next' }, 'next');
+    expect(getActiveCloudLink()).toEqual({ id, revision: 3 }); expect(request.mock.calls[0][1].method).toBe('POST'); expect(JSON.parse(request.mock.calls[0][1].body)).not.toHaveProperty('expected_revision');
+    held.resolve({ project: row({ id: secondId }) }); await saving; await queued;
+    expect(request.mock.calls[1][0]).toBe(cloudFilmPath(secondId)); expect(JSON.parse(request.mock.calls[1][1].body).expected_revision).toBe(1);
+    expect(getActiveCloudLink()).toEqual({ id: secondId, revision: 2 });
+});
+test.each([503, 0])('failed asNew status %p retains origin and retry key, and is not replayed by removal', async status => {
+    await open(3); const film = getOpenedFilm()!.film, request = jest.fn().mockRejectedValue(failure(status));
+    await expect(saveActiveStudioToCloud({ request }, film, 'original-key', { asNew: true })).rejects.toMatchObject({ status });
+    await expect(saveActiveStudioToCloud({ request }, film, 'second-key', { asNew: true })).rejects.toMatchObject({ status });
+    expect(request.mock.calls.map(c => c[1].headers['Idempotency-Key'])).toEqual(Array(4).fill('original-key'));
+    expect(getActiveCloudLink()).toEqual({ id, revision: 3 });
+    const next = api({ project: row({ revision: 4 }) }); await saveActiveStudioToCloud(next, film, 'ordinary'); expect(next.request.mock.calls[0][0]).toBe(cloudFilmPath(id));
+    const deletion = api({ removed: true }); await removeCloudFilm(deletion, cloudRow()); expect(deletion.request.mock.calls[0][1].method).toBe('DELETE');
+});
+test.each(['open', 'unlink'])('held asNew reply is ignored after %s', async action => {
+    await open(3); const p = await preparedCopy(), held = deferred<unknown>();
+    const saving = saveActiveStudioToCloud({ request: jest.fn().mockReturnValue(held.promise) }, getOpenedFilm()!.film, 'k', { asNew: true });
+    if (action === 'open') await open(4); else await commitUnlink(id, p);
+    held.resolve({ project: row({ id: secondId }) }); await saving;
+    expect(getActiveCloudLink()).toEqual(action === 'open' ? { id, revision: 4 } : null);
+});
+
+
+test('oversized UTF-8 text is rejected before sending', async () => {
+    const client = api({});
+    await expect(saveActiveStudioToCloud(client, { ...web.emptyFilm(), script: '界'.repeat(340000) }, 'too-big')).rejects.toMatchObject({ code: 'tooLarge' });
+    expect(client.request).not.toHaveBeenCalled(); expect(await cloudSaveError({ code: 'tooLarge' })).toEqual({ kind: 'tooLarge' });
+});
+test('legacy caches without readChecked cannot authorize a local overwrite', async () => {
+    await open(); const cache = createCache(createMemoryStorage()); const { readChecked: _checked, ...legacy } = cache;
+    expect(await prepareKeepOnPhone('alice', undefined, legacy)).toEqual({ kind: 'unreadable' });
+});
+test('a PUT conflict can be saved as new and the next save uses the new revision', async () => {
+    await open(3); const film = getOpenedFilm()!.film;
+    await expect(saveActiveStudioToCloud({ request: jest.fn().mockRejectedValue(failure(409)) }, film, 'put')).rejects.toMatchObject({ status: 409 });
+    const request = jest.fn().mockResolvedValueOnce({ project: row({ id: secondId }) }).mockResolvedValueOnce({ project: row({ id: secondId, revision: 2 }) });
+    await saveActiveStudioToCloud({ request }, film, 'post', { asNew: true });
+    expect(getActiveCloudLink()).toEqual({ id: secondId, revision: 1 });
+    await saveActiveStudioToCloud({ request }, { ...film, name: 'Edited' }, 'put-new');
+    expect(request.mock.calls[0][0]).toBe(CLOUD_FILMS_PATH); expect(request.mock.calls[1][0]).toBe(cloudFilmPath(secondId));
+    expect(JSON.parse(request.mock.calls[1][1].body).expected_revision).toBe(1);
+});
+
+test('Replace rollback survives a same-owner generation change but never writes for another owner', async () => {
+    const cache = createCache(createMemoryStorage()); await saveStudio(raw('A'), cache, 'alice'); await open();
+    const p = await prepareKeepOnPhone('alice', 'replace', cache); if (p.kind !== 'kept') throw Error(p.kind);
+    await open(2); expect(await restorePhoneSlot(p)).toBe(true);
+    expect((await loadStudio(cache, 'alice'))?.film.name).toBe('A');
+    expect(getActiveCloudLink()).toEqual({ id, revision: 2 });
+    await saveStudio(raw('B'), cache, 'alice'); await bindCacheUser('bob');
+    const write = jest.spyOn(cache, 'write'); await restorePhoneSlot(p);
+    expect(write).not.toHaveBeenCalled();
+});
+test('generation change during Replace persistence restores A before reporting notKept', async () => {
+    const cache = createCache(createMemoryStorage()); await saveStudio(raw('A'), cache, 'alice'); await open();
+    const held = deferred<void>(), started = deferred<void>(), write = cache.write.bind(cache);
+    jest.spyOn(cache, 'write').mockImplementationOnce(async (...args) => { await write(...args); started.resolve(); await held.promise; });
+    const preparing = prepareKeepOnPhone('alice', 'replace', cache); await started.promise;
+    await open(2); held.resolve(); expect(await preparing).toEqual({ kind: 'notKept' });
+    expect((await loadStudio(cache, 'alice'))?.film.name).toBe('A');
+    expect(getActiveCloudLink()).toEqual({ id, revision: 2 });
+});
+test('confirmed unlink detaches before a late generation change during the final write', async () => {
+    const cache = createCache(createMemoryStorage()); await open(); const p = await preparedCopy(cache);
+    await replaceActiveStudio({ ...getOpenedFilm()!.film, name: 'Edited' }, cache);
+    const held = deferred<void>(), started = deferred<void>(), write = cache.write.bind(cache);
+    jest.spyOn(cache, 'write').mockImplementationOnce(async (...args) => { started.resolve(); await held.promise; await write(...args); });
+    const unlinking = commitUnlink(id, p); await started.promise;
+    expect(getActiveCloudLink()).toBeNull();
+    // A failed account open bumps generation while retaining the current in-memory film.
+    await openCloudFilm({ request: jest.fn().mockRejectedValue(failure(503)) }, secondId);
+    held.resolve(); expect(await unlinking).toBeNull();
+    expect(getActiveCloudLink()).toBeNull(); expect(getOpenedFilm()?.film.name).toBe('Edited');
 });

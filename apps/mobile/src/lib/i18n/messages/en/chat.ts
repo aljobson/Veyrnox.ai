@@ -88,7 +88,7 @@ export default {
     'chat.resume.pending': 'We are still checking whether your reply finished. If it did, it is charged once and will appear in this chat.',
     // Film skill chats (ADR-0182)
     'chat.skills.group.Film': 'Film',
-    "chat.skills.filmNote": "Film Studio is coming to the app. These chats help you write what it needs; they never make, approve or lock anything.",
+    "chat.skills.filmNote": "Film Studio is in the app. These chats help you write what it needs; they never make, approve or lock anything.",
 
     // Make from chat (ADR-0180)
     'chat.make.open': 'Make',

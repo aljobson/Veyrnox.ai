@@ -57,7 +57,7 @@ function hostOf(url: string): string {
 
 export default function CreateWithModel() {
     const styles = useThemedStyles(sheets);
-    const { modelId, prompt: presetPrompt, duration: presetDuration, startOddling, tpl, tid, tneeds, tratio, tposter, recipe, sourceHandoff } = useLocalSearchParams<{ modelId: string; prompt?: string; duration?: string; startOddling?: string; tpl?: string; tid?: string; tneeds?: string; tratio?: string; tposter?: string; recipe?: string; sourceHandoff?: string }>();
+    const { modelId, prompt: presetPrompt, duration: presetDuration, aspect: presetAspect, startOddling, tpl, tid, tneeds, tratio, tposter, recipe, sourceHandoff } = useLocalSearchParams<{ modelId: string; prompt?: string; duration?: string; aspect?: string; startOddling?: string; tpl?: string; tid?: string; tneeds?: string; tratio?: string; tposter?: string; recipe?: string; sourceHandoff?: string }>();
     // A template also brings its name, picture, shape and what it needs; each is checked before it is used.
     const template = useMemo(() => readTemplate({ tpl, tid, tneeds, tratio, tposter }, ['veyrnox.ai', hostOf(API_BASE)]), [tpl, tid, tneeds, tratio, tposter]);
     const handedSources = useMemo(() => readCreativeSourceHandoff(typeof sourceHandoff === 'string' ? sourceHandoff : undefined, typeof recipe === 'string' ? recipe : undefined, modelId), [modelId, recipe, sourceHandoff]);
@@ -132,7 +132,8 @@ export default function CreateWithModel() {
                 const vibe = await loadVibe();
                 // A template that has a shape of its own opens in the model's nearest one; otherwise the usual default.
                 const guidedAspect = handedSources?.aspect;
-                const aspect = (guidedAspect && o.aspects.includes(guidedAspect) ? guidedAspect : null) ?? nearestAspect(template?.ratio ?? null, o.aspects) ?? defaultAspect(o.aspects, vibe?.answers ?? null);
+                const handedAspect = presetAspect && o.aspects.includes(presetAspect) ? presetAspect : null;
+                const aspect = handedAspect ?? (guidedAspect && o.aspects.includes(guidedAspect) ? guidedAspect : null) ?? nearestAspect(template?.ratio ?? null, o.aspects) ?? defaultAspect(o.aspects, vibe?.answers ?? null);
                 const base: OptionValues = { aspect, count: 1, seed: '', negative: '', voice: '', audioSeconds: '' };
                 // A template brings its own words; only a form opened bare gets the unsent draft back.
                 if (typeof presetPrompt === 'string' || handedSources?.picks) {
@@ -151,7 +152,7 @@ export default function CreateWithModel() {
                     if (d) {
                         setPrompt(d.prompt);
                         if (d.duration !== null && found.durations.includes(d.duration)) setDuration(d.duration);
-                        setOpts({ aspect: d.aspect && o.aspects.includes(d.aspect) ? d.aspect : base.aspect, count: imageCount(found, d.count), seed: d.seed, negative: d.negative, voice: d.voice ?? '', audioSeconds: d.audioSeconds ?? '' });
+                        setOpts({ aspect: handedAspect ?? (d.aspect && o.aspects.includes(d.aspect) ? d.aspect : base.aspect), count: imageCount(found, d.count), seed: d.seed, negative: d.negative, voice: d.voice ?? '', audioSeconds: d.audioSeconds ?? '' });
                         setCameraOn(d.cinemaOn === true);
                         setCinema(sanitizeCinema(d.cinema));
                         setCharacterOn(d.characterOn === true);
@@ -162,7 +163,7 @@ export default function CreateWithModel() {
                 });
             })
             .catch(() => setError(t('form.modelLoad')));
-    }, [modelId, presetDuration, handedSources, presetPrompt, template]);
+    }, [modelId, presetDuration, presetAspect, handedSources, presetPrompt, template]);
 
     const takesStartImage = !!model && slotsFor(model).some((s) => s.slot === 'image' && s.kind === 'image');
     useEffect(() => {

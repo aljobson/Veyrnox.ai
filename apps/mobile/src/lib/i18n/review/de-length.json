@@ -2940,6 +2940,18 @@
     "ratio": 1.69
   },
   {
+    "id": "filmOutput.logged",
+    "english": "Result logged",
+    "translation": "Ergebnis protokolliert",
+    "ratio": 1.69
+  },
+  {
+    "id": "filmOutput.openShot",
+    "english": "Open shot",
+    "translation": "Einstellung öffnen",
+    "ratio": 2
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

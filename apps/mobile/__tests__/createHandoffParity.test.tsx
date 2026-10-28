@@ -7,6 +7,7 @@ import { fetchCatalog, type CatalogModel } from '../src/lib/media';
 import { stageCreativeSourceHandoff } from '../src/lib/creativeSourceHandoff';
 import { buildCharacterPrompt } from '../src/lib/oddlingsBuilder';
 import { t } from '../src/lib/i18n';
+import { loadDraft } from '../src/lib/createDraftStore';
 import { english } from '../src/lib/i18n/binding';
 const mockReplace = jest.fn();
 const mockRun = jest.fn();
@@ -68,4 +69,23 @@ test.each(['faceless-reel','faceless-sound','oddlings'])('%s does not pre-tick s
     handoff({ references:[{ slot:'video',origin:'asset',asset_id:'source-job' }] },recipe); await render();
     const rights = root.container.queryAll(n => n.props.accessibilityLabel === english('form.sourceRights'))[0];
     expect(rights.props.accessibilityState.checked).toBe(false);
+});
+
+test.each([['9:16', '9:16'], ['unsupported', '16:9']])('Film Studio aspect %s opens as %s', async (aspect, expected) => {
+    jest.mocked(fetchCatalog).mockResolvedValue([{ ...video, capabilities: { inputs: { prompt: { max: 800 }, aspect_ratio: { values: ['9:16', '16:9'] } } } }]);
+    mockParams.aspect = aspect; await render();
+    const generate = root.container.queryAll(n => typeof n.props.accessibilityLabel === 'string' && n.props.accessibilityLabel.startsWith(t('slip.generate')+'.'))[0];
+    await act(async () => generate.props.onClick(event));
+    expect(mockRun.mock.calls[0][1].extraInputs.aspect_ratio).toBe(expected);
+});
+
+
+test('a valid aspect parameter also wins over a restored draft', async () => {
+    jest.mocked(fetchCatalog).mockResolvedValue([{ ...video, capabilities: { inputs: { prompt: { max: 800 }, aspect_ratio: { values: ['9:16', '16:9'] } } } }]);
+    delete mockParams.prompt; mockParams.aspect = '9:16';
+    jest.mocked(loadDraft).mockResolvedValueOnce({ v: 1, modelId: video.id, prompt: 'Restored scene', duration: 5, aspect: '16:9', count: 1, seed: '', negative: '' } as any);
+    await render();
+    const generate = root.container.queryAll(n => typeof n.props.accessibilityLabel === 'string' && n.props.accessibilityLabel.startsWith(t('slip.generate')+'.'))[0];
+    await act(async () => generate.props.onClick(event));
+    expect(mockRun.mock.calls[0][1].extraInputs.aspect_ratio).toBe('9:16');
 });

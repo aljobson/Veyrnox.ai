@@ -1,0 +1,44 @@
+import { act } from 'react';
+import * as RN from 'react-native';
+import { createRoot, type Root } from 'test-renderer';
+import Screen from '../src/app/(app)/film/workspace';
+import { appCache, bindCacheUser, resetCacheUser, wipeCache } from '../src/lib/appCache';
+import { openCloudFilm } from '../src/lib/filmCloud';
+import { emptyFilm, FILM_STAGES } from '../src/lib/filmStudio';
+import { t } from '../src/lib/i18n';
+const mockRequest = jest.fn(), mockApi = { request: mockRequest }, mockRouter = { back: jest.fn(), push: jest.fn() };
+jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () => mockRouter,
+    useFocusEffect: (effect: () => void) => require('react').useEffect(effect, [effect]), usePreventRemove: () => () => {} }));
+jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi }) }));
+jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalogCached: jest.fn().mockResolvedValue({ value: [] }) }));
+void [RN.View, RN.Text, RN.TextInput, RN.ScrollView, RN.Pressable, RN.StyleSheet];
+const id = '11111111-1111-4111-8111-111111111111';
+const film = (name: string) => ({ ...emptyFilm(), name, stack: { ...emptyFilm().stack, image: 'image', video: 'video' } });
+const project = (revision: number) => ({ id, revision, name: 'Account', shot_count: 0, updated_at: null });
+let root: Root;
+const field = () => root.container.queryAll(n => n.props.accessibilityLabel === t('film.studioname') && n.props.onChangeText)[0];
+const click = async (node: any) => act(async () => { node.props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }); });
+const press = async (label: string) => click(root.container.queryAll(n => n.props.accessibilityRole === 'button' && n.props.accessibilityLabel === label)[0]);
+beforeEach(async () => {
+    (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; jest.useFakeTimers(); jest.clearAllMocks(); resetCacheUser(); await wipeCache(); await bindCacheUser('alice');
+    jest.spyOn(RN.Alert, 'alert').mockImplementation(() => {}); jest.spyOn(RN.AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
+    await openCloudFilm({ request: jest.fn().mockResolvedValue({ project: project(1), studio_json: JSON.stringify(film('Old')) }) }, id);
+    root = createRoot();
+});
+afterEach(async () => { await act(async () => root.unmount()); jest.restoreAllMocks(); jest.useRealTimers(); resetCacheUser(); });
+test('conflict replacement cancels a queued edit; next PUT contains only the opened account text', async () => {
+    const writes = jest.spyOn(appCache, 'write');
+    mockRequest.mockRejectedValueOnce({ status: 409 });
+    await act(async () => root.render(<Screen />));
+    await click(root.container.queryAll(n => n.props.accessibilityRole === 'tab' && n.props.accessibilityLabel === FILM_STAGES[1][1])[0]);
+    await press(t('film.savetoaccount'));
+    await act(async () => field().props.onChangeText('Queued old edit'));
+    await press(t('filmOutput.openAccount'));
+    mockRequest.mockResolvedValueOnce({ project: project(2), studio_json: JSON.stringify(film('Opened account')) });
+    await act(async () => { jest.mocked(RN.Alert.alert).mock.calls.at(-1)![2]![1].onPress!(); });
+    await act(async () => { jest.advanceTimersByTime(601); });
+    expect(field().props.value).toBe('Opened account'); expect(writes).not.toHaveBeenCalled();
+    mockRequest.mockResolvedValueOnce({ project: project(3) }); await press(t('film.savetoaccount'));
+    const last = mockRequest.mock.calls.at(-1)!;
+    expect(last[1].method).toBe('PUT'); expect(JSON.parse(last[1].body)).toEqual({ expected_revision: 2, studio_json: JSON.stringify(film('Opened account')) });
+});

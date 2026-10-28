@@ -4428,6 +4428,30 @@
     "ratio": 2.67
   },
   {
+    "id": "filmOutput.savePassport",
+    "english": "Save draft passport",
+    "translation": "Enregistrer le brouillon de la fiche",
+    "ratio": 1.89
+  },
+  {
+    "id": "filmOutput.locked",
+    "english": "Locked",
+    "translation": "Verrouillé",
+    "ratio": 1.67
+  },
+  {
+    "id": "filmOutput.draft",
+    "english": "Draft",
+    "translation": "Brouillon",
+    "ratio": 1.8
+  },
+  {
+    "id": "filmOutput.saveNew",
+    "english": "Save as a new film",
+    "translation": "Enregistrer comme nouveau film",
+    "ratio": 1.67
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",
