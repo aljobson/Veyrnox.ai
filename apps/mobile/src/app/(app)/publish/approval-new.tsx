@@ -1,3 +1,8 @@
+import { MediaLibraryGrid } from '../../../components/publish/MediaLibraryGrid';
+import { ChosenMediaPreview } from '../../../components/publish/ChosenMediaPreview';
+import { Text as ThemedText } from '../../../components/ui';
+import { usePublishRole } from '../../../lib/usePublishRole';
+import { canPublish } from '../../../lib/publishDashboard';
 import { PublishMediaSelection } from '../../../components/PublishMediaSelection';
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
@@ -16,7 +21,7 @@ import { brandStore } from '../../../lib/publishBrand';
 import { useBrandScopedVariants } from '../../../lib/useBrandScopedVariants';
 import { usePublishApi } from '../../../lib/usePublishApi';
 import { PublishUploadPanel } from '../../../components/PublishUploadPanel';
-import { choiceId, choiceMedia, toggleChoice, type CreationPick, type MediaChoice } from '../../../lib/publishMediaChoice';
+import { choiceMedia, toggleChoice, type CreationPick, type MediaChoice } from '../../../lib/publishMediaChoice';
 import { colors, LIST_END_PADDING } from '../../../theme';
 
 const draftKeys = createDraftKeys(appStorage);
@@ -24,6 +29,7 @@ const draftKeys = createDraftKeys(appStorage);
 export default function ApprovalNew() {
     const api = usePublishApi();
     const router = useRouter();
+    const role = usePublishRole(api);
     const [picks, setPicks] = useState<CreationPick[] | null>(null);
     const [accounts, setAccounts] = useState<PublishAccount[] | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -65,7 +71,7 @@ export default function ApprovalNew() {
                     const mediaType = model ? mediaTypeOf(model.modality) : null;
                     if (job.state === 'succeeded' && job.has_asset && model && mediaType) list.push({ kind: 'job', job, mediaType, name: job.label || model.name });
                 }
-                setPicks(list);
+                setPicks(list.slice(0, 24));
                 setAccounts(acc.accounts);
                 setUploadsEnabled(acc.uploadsEnabled);
                 setCarouselEnabled(acc.carouselEnabled === true);
@@ -140,8 +146,9 @@ export default function ApprovalNew() {
         }
     }
 
+    if (role !== null && !canPublish(role)) return <View style={styles.pad}><ThemedText>{t('publishParity.compose.readOnly')}</ThemedText></View>;
     if (error) return <View style={styles.pad}><Text style={styles.error}>{error}</Text></View>;
-    if (!picks || !accounts) return <View style={styles.pad}><ActivityIndicator color={colors.accent} /></View>;
+    if (role === null || !picks || !accounts) return <View style={styles.pad}><ActivityIndicator color={colors.accent} /></View>;
 
     if (created) {
         return (
@@ -173,12 +180,8 @@ export default function ApprovalNew() {
                 <Text style={styles.muted}>{t('approvals.newIntro')}</Text>
                 <Text style={styles.heading} accessibilityRole="header">{t('approvals.step.creation')}</Text>
                 {picks.length === 0 ? <Text style={styles.muted}>{t('approvals.noCreations')}</Text> : null}
-                {picks.slice(0, 30).map((p) => (
-                    <Pressable key={p.job.job_id} accessibilityRole="button" disabled={preparing} accessibilityState={{ disabled: preparing, selected: choices.some(item => choiceId(item) === choiceId(p)) }} style={[styles.row, touchTarget, choices.some(item => choiceId(item) === choiceId(p)) && styles.rowOn]} onPress={() => { if (preparingRef.current) return; setChoices(old => toggleChoice(old, p, maxMedia)); if (maxMedia === 1) setAccountIds([]); }}>
-                        <Text style={styles.name}>{p.name}</Text>
-                        <Text style={styles.muted}>{p.mediaType} · {new Date(p.job.created_at).toLocaleDateString(formatLocale())}</Text>
-                    </Pressable>
-                ))}
+                <MediaLibraryGrid api={api} picks={picks} choices={choices} max={maxMedia} disabled={preparing || busy} onToggle={p => { if (preparingRef.current) return; setChoices(old => toggleChoice(old, p, maxMedia)); if (maxMedia === 1) setAccountIds([]); }} />
+                <ChosenMediaPreview api={api} choice={chosen} />
                 <PublishMediaSelection items={choices} max={maxMedia} onChange={setChoices} disabled={preparing || busy} />
                 {blocker ? <Text style={styles.error} accessibilityRole="alert">{blocker}</Text> : null}
                 <PublishUploadPanel api={api} enabled={uploadsEnabled} max={maxMedia} nonUploadCount={choices.filter(item => item.kind === 'job').length}

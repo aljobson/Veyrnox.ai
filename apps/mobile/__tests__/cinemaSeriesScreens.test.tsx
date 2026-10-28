@@ -14,7 +14,7 @@ declare const require: { (id: string): any; resolve(id: string): string };
 jest.setTimeout(30000);
 const mockRequest = jest.fn();
 const mockAuth = { api: { request: mockRequest }, getAccessToken: jest.fn() };
-const mockRouter = { push: jest.fn(), dismissTo: jest.fn(), replace: jest.fn(), back: jest.fn() };
+const mockRouter = { push: jest.fn(), dismissTo: jest.fn(), replace: jest.fn(), back: jest.fn(), canGoBack: jest.fn(() => false) };
 const mockGetState = jest.fn(() => ({ routes: [] as any[] }));
 let mockParams: Record<string, string> = {};
 let mockFocused = true;
@@ -83,6 +83,7 @@ beforeEach(() => {
     mockRouter.push.mockReset(); mockRouter.dismissTo.mockReset(); mockRouter.replace.mockReset();
     mockGetState.mockReturnValue({ routes: [] });
     mockParams = {}; mockFocused = true; mockPage = 0;
+    native.AppState.currentState = 'active';
     mockPlayer.currentTime = 0; mockPlayer.playing = false; mockPlaying = undefined;
     jest.mocked(WebBrowser.openBrowserAsync).mockResolvedValue({ type: 'dismiss' } as any);
     jest.mocked(fetchDiscovery).mockResolvedValue({ kind: 'closed' });
@@ -93,6 +94,7 @@ beforeEach(() => {
             if (path.endsWith(ids[2])) throw new ApiError(503, 'unlocks_not_open');
             return { access: 'free', credits: 0 };
         }
+        if (path.includes('/comments?')) throw new ApiError(503, 'comments_not_open');
         if (path === '/api/v1/cinema/play') return { token: 'head.body.sig', customer_code: 'abc', expires_at: new Date(Date.now() + 900000).toISOString(), watch_session_id: seriesId };
         return {};
     });
@@ -187,6 +189,7 @@ test('entitlement reads skip detail locks and run sequentially in episode order'
     const release: Array<() => void> = [];
     mockRequest.mockImplementation((url: string) => {
         if (url.includes('/titles/')) return Promise.resolve(body);
+        if (!url.includes('/entitlement?')) return Promise.reject(new ApiError(503, 'comments_not_open'));
         requested.push(url.split('content_id=')[1]);
         maximum = Math.max(maximum, ++active);
         return new Promise(resolve => release.push(() => { active--; resolve({ access: 'free', credits: 0 }); }));
@@ -212,6 +215,7 @@ test('rapid refocus serializes replacement reads and ignores the stale batch', a
     const release: Array<(body: unknown) => void> = [];
     mockRequest.mockImplementation((url: string) => {
         if (url.includes('/titles/')) return Promise.resolve(detail);
+        if (!url.includes('/entitlement?')) return Promise.reject(new ApiError(503, 'comments_not_open'));
         requested.push(url.split('content_id=')[1]);
         maximum = Math.max(maximum, ++active);
         return new Promise(resolve => release.push(body => { active--; resolve(body); }));
@@ -258,7 +262,7 @@ test('series Play skips an exhausted first episode and refreshes on return to fo
 test.each([403, 404, 503])('title error %s has no raw code', async status => {
     mockRequest.mockRejectedValue(new ApiError(status, 'title_not_found'));
     mockParams = { id: seriesId }; await render(<TitleScreen />);
-    expect(allText()).toBe('This title is not available.');
+    expect(allText()).toBe(status === 404 ? 'This title is not available.Back to Social Cinema' : 'Could not load this title. Try again in a moment.Try againBack to Social Cinema');
 });
 test.each(['FILM', 'SHORT'])('%s Play keeps the existing route without a series parameter', async content_type => {
     mockRequest.mockResolvedValue({ title: { id: seriesId, content_type, title: 'Standalone', access: 'free' } });

@@ -52,6 +52,7 @@ export interface PublishAccountsState {
     readonly accounts: PublishAccount[];
     readonly uploadsEnabled: boolean;
     readonly carouselEnabled?: boolean;
+    readonly youtubeVisibilityEnabled?: boolean;
     readonly features: PublishFeatures;
 }
 
@@ -92,6 +93,7 @@ export function parseAccounts(body: unknown): PublishAccountsState {
         accounts,
         uploadsEnabled: flag(b, 'uploadsEnabled'),
         carouselEnabled: flag(b, 'carouselEnabled'),
+        youtubeVisibilityEnabled: flag(b, 'youtubeVisibilityEnabled'),
         features: {
             inbox: flag(b, 'inboxEnabled'),
             inboxWorkflows: flag(b, 'inboxWorkflowsEnabled'),

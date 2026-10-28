@@ -39,6 +39,7 @@ beforeEach(() => {
     jest.clearAllMocks();
     mockRequest.mockImplementation(async (path: string, init?: RequestInit) => {
         if (init?.method === 'PUT') return { revision: 5 };
+        if (path.endsWith('/media-info')) return { seconds: 4 };
         if (path.endsWith('/document')) return { revision: 4, document: serverDocument };
         return { project: { id: projectId, workspace_id: 'workspace', name: 'Native cut' } };
     });
@@ -63,7 +64,9 @@ test('opens a native project workspace without loading a website', async () => {
     expect(visible('PREVIEW')).toBe(true);
     expect(visible('TIMELINE')).toBe(true);
     expect(root.container.queryAll((node) => node.type === 'WebView')).toHaveLength(0);
-    for (const label of ['Media', 'Audio', 'Generate', 'Templates', 'Elements', 'Text', 'Captions', 'Transcript', 'Scenes', 'Clips', 'Assistant', 'Effects', 'Transitions', 'Filters', 'Animation', 'Plugins', 'Brand kit', 'Review', 'Adjust']) expect(root.container.queryAll((node) => node.props.accessibilityLabel === label).length).toBeGreaterThan(0);
+    for (const label of ['Media', 'Audio', 'Generate', 'Text', 'Captions', 'Transcript', 'Effects', 'Transitions', 'Filters', 'Animation', 'Markers', 'Brand kit', 'Adjust']) expect(root.container.queryAll((node) => node.props.accessibilityLabel === label).length).toBeGreaterThan(0);
+    for (const label of ['Templates', 'Elements', 'Scenes', 'Clips', 'Assistant', 'Plugins', 'Review']) expect(root.container.queryAll(node => node.props.accessibilityLabel === label)).toHaveLength(0);
+    expect(visible('Detected cuts')).toBe(false);
     for (const label of ['Undo', 'Redo', 'Select multiple', 'Duplicate', 'Split', 'Copy', 'Paste at playhead', 'Delete', 'Group', 'Ungroup', 'Add video track', 'Add audio track', 'Add text track', 'Add marker', 'Add text', 'Export', 'Credits']) expect(root.container.queryAll((node) => node.props.accessibilityLabel === label).length).toBeGreaterThan(0);
 });
 
@@ -82,7 +85,7 @@ test('adds a native text layer and autosaves it to the shared project document',
 test('splits a clip, copies it and pastes it at the playhead', async () => {
     serverDocument = { ...document, schema_version: 3, timeline: { schemaVersion: 3, fps: 30, seq: 1, aspect: '16:9', background: '#000000', media: { media1: { id: 'media1', kind: 'video', name: 'Scene one', frames: 60 } }, video: [{ id: 'v1', mediaId: 'media1', start: 0, in: 0, len: 60, trackId: 'video-0' }], audio: [], text: [], tracks: [{ id: 'video-0', kind: 'video', name: 'Video 1', locked: false, muted: false, hidden: false }, { id: 'audio-0', kind: 'audio', name: 'Audio 1', locked: false, muted: false, hidden: false }, { id: 'text-0', kind: 'text', name: 'Text 1', locked: false, muted: false, hidden: false }], markers: [] } };
     await render();
-    await press('video Scene one');
+    await act(async () => root.container.queryAll(node => node.props.testID === 'clip-v1')[0].props.onAccessibilityTap());
     await press('Next frame');
     await press('Split');
     await press('Copy');
@@ -117,6 +120,7 @@ test('keeps the user in the editor when saving fails', async () => {
     serverDocument = { ...document, schema_version: 2, timeline: { schemaVersion: 2, fps: 30, seq: 0, aspect: 'source', media: {}, video: [], audio: [], text: [] } };
     mockRequest.mockImplementation(async (path: string, init?: RequestInit) => {
         if (init?.method === 'PUT') throw new Error('offline');
+        if (path.endsWith('/media-info')) return { seconds: 4 };
         if (path.endsWith('/document')) return { revision: 4, document: serverDocument };
         return { project: { id: projectId, name: 'Native cut' } };
     });
@@ -134,7 +138,7 @@ test('adds existing project media to the timeline and selects the new clip', asy
     await act(async () => jest.advanceTimersByTimeAsync(900));
     const saved = JSON.parse(puts().at(-1)![1].body).document.timeline;
     expect(saved.video).toEqual([expect.objectContaining({ id: 'v1', mediaId: 'media1', trackId: 'video-0' })]);
-    expect(root.container.queryAll((node) => node.props.accessibilityLabel === 'video Existing shot' && node.props.accessibilityState?.selected)).toHaveLength(1);
+    expect(root.container.queryAll((node) => node.props.testID === 'clip-v1' && node.props.accessibilityState?.selected)).toHaveLength(1);
 });
 
 test('chooses a Library asset inside the editor and adds it to the project', async () => {
@@ -144,7 +148,7 @@ test('chooses a Library asset inside the editor and adds it to the project', asy
     await act(async () => jest.advanceTimersByTimeAsync(900));
     const saved = JSON.parse(puts().at(-1)![1].body).document.timeline;
     expect(saved.media['j-22222222-2222-2222-2222-222222222222']).toMatchObject({ name: 'Library shot', kind: 'video' });
-    expect(saved.video).toEqual([expect.objectContaining({ mediaId: 'j-22222222-2222-2222-2222-222222222222' })]);
+    expect(saved.video).toEqual([expect.objectContaining({ mediaId: 'j-22222222-2222-2222-2222-222222222222', len: 120 })]);
 });
 
 test('chooses device media and adds it to the project without leaving the editor', async () => {
@@ -164,7 +168,7 @@ test('keeps the Library item selected while a new project opens in the full nati
     await act(async () => jest.advanceTimersByTimeAsync(900));
     const saved = JSON.parse(puts().at(-1)![1].body).document.timeline;
     expect(saved.media['j-33333333-3333-3333-3333-333333333333']).toBeDefined();
-    expect(saved.video).toEqual([expect.objectContaining({ mediaId: 'j-33333333-3333-3333-3333-333333333333' })]);
+    expect(saved.video).toEqual([expect.objectContaining({ mediaId: 'j-33333333-3333-3333-3333-333333333333', len: 120 })]);
 });
 
 test('flag off Export saves and pushes compose without server-render requests', async () => {
@@ -210,4 +214,83 @@ test('an account change during duration probing cannot copy a pick into the next
     picker.getDocumentAsync.mockResolvedValueOnce({ canceled: false, assets: [{ uri: 'file:///picked/old-owner.mp4', name: 'Old pick', mimeType: 'video/mp4' }] });
     await render(); await press('Files'); owner = 'next-owner'; await act(async () => finish(4));
     expect(editorDeviceMedia.copy).not.toHaveBeenCalled(); expect(puts()).toHaveLength(0); getOwner.mockRestore();
+});
+
+const savedTimeline = async () => {
+    await act(async () => jest.advanceTimersByTimeAsync(900));
+    return JSON.parse(puts().at(-1)![1].body).document.timeline;
+};
+function deferLength() {
+    const previous = mockRequest.getMockImplementation()!;
+    let finish!: (answer: unknown) => void;
+    mockRequest.mockImplementation((path, init) => path.endsWith('/media-info') ? new Promise(resolve => { finish = resolve; }) : previous(path, init));
+    return (answer: unknown) => finish(answer);
+}
+
+test('marker rename makes one history entry at end editing', async () => {
+    await render(); await press('Add marker'); await press('Markers');
+    const input = root.container.queryAll(node => node.props.accessibilityLabel === 'Rename Marker 1' && typeof node.props.onEndEditing === 'function')[0];
+    expect(input.props.onChangeText).toBeUndefined();
+    await act(async () => input.props.onEndEditing({ nativeEvent: { text: 'Beat' } }));
+    expect((await savedTimeline()).markers[0].label).toBe('Beat');
+    await press('Undo'); expect((await savedTimeline()).markers[0].label).toBe('Marker 1');
+});
+test('a deferred Library import preserves intervening text and allocates a fresh sequence id', async () => {
+    const finish = deferLength(); await render(); await press('Library video'); await press('Choose Library item');
+    for (const label of ['Library video', 'Library image', 'Library audio']) expect(root.container.queryAll(n => n.props.accessibilityLabel === label && n.props.accessibilityState?.disabled)).toHaveLength(1);
+    await press('Add text'); await act(async () => finish({ seconds: 4 }));
+    const tl = await savedTimeline(); expect(tl.text[0].id).toBe('t1'); expect(tl.video[0]).toMatchObject({ id: 'v2', len: 120 }); expect(tl.seq).toBe(2);
+});
+test('an unknown Library length adds nothing and shows the problem', async () => {
+    const { probeDuration } = require('../src/lib/editorMediaDuration'); const previous = mockRequest.getMockImplementation()!;
+    probeDuration.mockResolvedValueOnce(null);
+    mockRequest.mockImplementation((path, init) => path.endsWith('/media-info') ? Promise.resolve({}) : path.endsWith('/asset') ? Promise.resolve({ url: 'https://example.com/media.mp4', mime_type: 'video/mp4' }) : previous(path, init));
+    await render(); await press('Library video'); await press('Choose Library item'); await act(async () => jest.advanceTimersByTimeAsync(900));
+    expect(puts()).toHaveLength(0); expect(visible('Could not determine the media length. Nothing was added.')).toBe(true);
+});
+test.each(['unmount', 'account'])('Library import discards a result after %s', async reason => {
+    const cache = require('../src/lib/appCache'); let owner = 'first'; const spy = jest.spyOn(cache, 'getCacheUser').mockImplementation(() => owner);
+    try {
+        const finish = deferLength(); await render(); await press('Library video'); await press('Choose Library item');
+        if (reason === 'unmount') await act(async () => root.unmount()); else owner = 'second';
+        await act(async () => finish({ seconds: 4 })); await act(async () => jest.advanceTimersByTimeAsync(900)); expect(puts()).toHaveLength(0);
+    } finally { spy.mockRestore(); }
+});
+test('entry import caps a 601 second source to the sequence limit without losing source length', async () => {
+    const finish = deferLength(); await render('33333333-3333-3333-3333-333333333333'); await act(async () => finish({ seconds: 601 }));
+    const tl = await savedTimeline(); expect(tl.video[0].len).toBe(18000); expect(tl.media[tl.video[0].mediaId].frames).toBe(18030);
+});
+test.each(['unmount', 'account'])('entry import discards a result after %s', async reason => {
+    const cache = require('../src/lib/appCache'); let owner = 'first'; const spy = jest.spyOn(cache, 'getCacheUser').mockImplementation(() => owner);
+    try {
+        const finish = deferLength(); await render('33333333-3333-3333-3333-333333333333');
+        if (reason === 'unmount') await act(async () => root.unmount()); else owner = 'second';
+        await act(async () => finish({ seconds: 4 })); await act(async () => jest.advanceTimersByTimeAsync(900)); expect(puts()).toHaveLength(0);
+    } finally { spy.mockRestore(); }
+});
+test('entry import of unknown length adds nothing', async () => {
+    const finish = deferLength(); await render('33333333-3333-3333-3333-333333333333'); await act(async () => finish({}));
+    await act(async () => jest.advanceTimersByTimeAsync(900)); expect(puts()).toHaveLength(0); expect(visible('Could not determine the media length. Nothing was added.')).toBe(true);
+});
+
+test('Adjust length uses source bounds, clamps fades, and offers a fine frame step', async () => {
+    const { emptyTimeline } = require('../src/lib/nativeEditorModel');
+    serverDocument = { ...document, schema_version: 3, timeline: { ...emptyTimeline(), media: { m: { id: 'm', kind: 'video', frames: 90 } }, video: [{ id: 'v1', mediaId: 'm', trackId: 'video-0', start: 0, in: 0, len: 90, fadeOut: 80 }] } };
+    await render(); await act(async () => root.container.queryAll(n => n.props.testID === 'clip-v1')[0].props.onAccessibilityTap()); await press('Adjust');
+    await press('Decrease Duration: 3.0 seconds'); const first = await savedTimeline(); expect(first.video[0]).toMatchObject({ len: 60, fadeOut: 60 });
+    await press('Length +1 frame'); expect((await savedTimeline()).video[0].len).toBe(61);
+    await press('Increase Duration: 2.0 seconds'); expect((await savedTimeline()).video[0].len).toBe(90);
+});
+test('protected clips disable Adjust length steppers and explain web trimming', async () => {
+    const { emptyTimeline } = require('../src/lib/nativeEditorModel');
+    serverDocument = { ...document, schema_version: 3, timeline: { ...emptyTimeline(), media: { m: { id: 'm', kind: 'video', frames: 90 } }, video: [{ id: 'v1', mediaId: 'm', trackId: 'video-0', start: 0, in: 0, len: 90, words: [] }] } };
+    await render(); await act(async () => root.container.queryAll(n => n.props.testID === 'clip-v1')[0].props.onAccessibilityTap()); await press('Adjust');
+    expect(visible('Trim this clip on the web editor.')).toBe(true);
+    for (const label of ['Decrease Duration: 3.0 seconds', 'Increase Duration: 3.0 seconds', 'Length +1 frame', 'Length −1 frame']) expect(root.container.queryAll(n => n.props.accessibilityLabel === label && n.props.accessibilityState?.disabled)).toHaveLength(1);
+});
+test('a track locked while Library length resolves is rechecked at completion', async () => {
+    const finish = deferLength(); await render(); await press('Library video'); await press('Choose Library item'); await press('Adjust');
+    const locks = root.container.queryAll(n => n.props.accessibilityLabel === 'Lock' && typeof n.props.onClick === 'function');
+    await act(async () => locks[0].props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }));
+    await act(async () => finish({ seconds: 4 })); expect((await savedTimeline()).video).toHaveLength(0);
 });

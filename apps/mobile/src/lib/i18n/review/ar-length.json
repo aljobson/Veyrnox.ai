@@ -1620,6 +1620,18 @@
     "ratio": 1.69
   },
   {
+    "id": "editorCore.goToEnd",
+    "english": "Go to end",
+    "translation": "الانتقال إلى النهاية",
+    "ratio": 2.22
+  },
+  {
+    "id": "editorCore.fit",
+    "english": "Fit",
+    "translation": "ملاءمة",
+    "ratio": 2
+  },
+  {
     "id": "oddlingsStudio.any",
     "english": "Any",
     "translation": "أي خيار",
@@ -1642,5 +1654,17 @@
     "english": "Day 6+",
     "translation": "اليوم 6 وما بعده",
     "ratio": 2.67
+  },
+  {
+    "id": "cinema.type.SHORT",
+    "english": "Short",
+    "translation": "فيلم قصير",
+    "ratio": 1.8
+  },
+  {
+    "id": "cinema.type.TRAILER",
+    "english": "Trailer",
+    "translation": "إعلان تشويقي",
+    "ratio": 1.71
   }
 ]

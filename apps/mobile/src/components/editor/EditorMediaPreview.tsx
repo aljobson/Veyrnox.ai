@@ -64,15 +64,15 @@ function EditorVideo({ source, clip, frame, fps, playing, label }: { source: Edi
 
     useEffect(() => {
         const wanted = editorSourceTimeSeconds(clip, frame, fps);
-        syncPlayer(player, clip, wanted, playing);
+        syncPlayer(player, clip, wanted, playing, fps);
     }, [clip, fps, frame, player, playing]);
 
     if (failed) return <View accessibilityLabel={t('editor.mediapreviewunavailable')} style={styles.center}><Text style={styles.problem}>{t('editor.previewunavailable')}</Text></View>;
     return <VideoView accessibilityLabel={t('editor.preview2', { value1: label })} player={player} contentFit={clip.fit === 'cover' ? 'cover' : 'contain'} nativeControls={false} style={StyleSheet.absoluteFill} />;
 }
 
-function syncPlayer(player: VideoPlayer, clip: Clip, wanted: number, playing: boolean) {
-    if (Math.abs(player.currentTime - wanted) > 0.2 || clip.reverse) player.currentTime = wanted;
+function syncPlayer(player: VideoPlayer, clip: Clip, wanted: number, playing: boolean, fps: number) {
+    if (Math.abs(player.currentTime - wanted) > (playing ? 0.2 : 0.5 * Math.max(0.1, clip.rate ?? 1) / fps) || clip.reverse) player.currentTime = wanted;
     player.playbackRate = Math.max(0.1, Math.min(16, clip.rate ?? 1));
     player.volume = Math.max(0, Math.min(1, clip.volume ?? 1));
     if (playing && !clip.reverse) player.play(); else player.pause();

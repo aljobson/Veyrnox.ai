@@ -1,3 +1,4 @@
+import { PHONE_CATALOGUE } from './publishConnect';
 import { ApiError, type ApiClient } from './api';
 import { parsePost, type PublishPost } from './publish';
 
@@ -68,10 +69,14 @@ export function dayGroups(posts: readonly CalendarPost[]): DayGroup[] {
     return [...groups.entries()].map(([key, g]) => ({ key, date: g.date, posts: g.posts }));
 }
 
-export async function fetchCalendar(api: ApiClient, from: Date, to: Date, cursor?: CalendarCursor | null) {
+export type CalendarStatus = 'scheduled' | 'published' | 'failed' | 'canceled';
+export const CALENDAR_STATUSES: readonly CalendarStatus[] = ['scheduled', 'published', 'failed', 'canceled'];
+export async function fetchCalendar(api: ApiClient, from: Date, to: Date, cursor?: CalendarCursor | null, filter?: { status?: CalendarStatus | null; network?: string | null }) {
     const q = `from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}`;
     const c = cursor ? `&after_at=${encodeURIComponent(cursor.at)}&after_id=${encodeURIComponent(cursor.id)}` : '';
-    return parseCalendar(await api.request(`/api/v1/social/calendar?${q}${c}`));
+    const status = filter?.status && CALENDAR_STATUSES.includes(filter.status) ? `&status=${encodeURIComponent(filter.status)}` : '';
+    const network = filter?.network && PHONE_CATALOGUE.some(key => key === filter.network) ? `&network=${encodeURIComponent(filter.network)}` : '';
+    return parseCalendar(await api.request(`/api/v1/social/calendar?${q}${c}${status}${network}`));
 }
 
 // Catalog keys for what the person should know, looked up when shown.

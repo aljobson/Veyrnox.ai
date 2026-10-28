@@ -1,12 +1,18 @@
-import { Icon } from '../../../components/ui';
+import { NetworkLogo } from '../../../components/publish/NetworkLogo';
+import { networkName } from '../../../lib/networkLogos';
+import { PHONE_CATALOGUE } from '../../../lib/publishConnect';
+import { publishScope } from '../../../lib/usePublishRole';
+import { subscribeCacheUser } from '../../../lib/appCache';
+import { brandStore } from '../../../lib/publishBrand';
+import { Button, Text as ThemedText, themedStyles, useThemedStyles, Icon } from '../../../components/ui';
 import { Stack, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { touchTarget } from '../../../lib/a11y';
 import { formatLocale, t } from '../../../lib/i18n';
 import { postStatusLabel, targetStatusLabel } from '../../../lib/publish';
 import { ApiError } from '../../../lib/api';
-import { calendarErrorKey, countByDay, dayGroups, fetchCalendar, monthBounds, weekBounds, type CalendarPost } from '../../../lib/publishCalendar';
+import { CALENDAR_STATUSES, type CalendarStatus, calendarErrorKey, countByDay, dayGroups, fetchCalendar, monthBounds, weekBounds, type CalendarPost } from '../../../lib/publishCalendar';
 import { CalendarMonth } from '../../../components/CalendarMonth';
 import { UnlockCard } from '../../../components/UnlockCard';
 import { usePublishApi } from '../../../lib/usePublishApi';
@@ -19,6 +25,11 @@ const time = (iso: string | null) => (iso ? new Date(iso).toLocaleTimeString(for
 export default function Calendar() {
     const api = usePublishApi();
     const router = useRouter();
+    const filterStyles = useThemedStyles(filterSheets);
+    const [status, setStatus] = useState<CalendarStatus | null>(null);
+    const [network, setNetwork] = useState<string | null>(null);
+    const generation = useRef(0), currentApi = useRef(api);
+    currentApi.current = api;
     const [view, setView] = useState<'week' | 'month'>('week');
     const [offset, setOffset] = useState(0);
     const [picked, setPicked] = useState<string | null>(null);
@@ -30,32 +41,51 @@ export default function Calendar() {
     const [refreshing, setRefreshing] = useState(false);
     const week = useMemo(() => (view === 'week' ? weekBounds(new Date(), offset) : monthBounds(new Date(), offset)), [view, offset]);
 
+    const query = JSON.stringify([week.start, week.end, status, network]);
+    const currentQuery = useRef(query); currentQuery.current = query;
     const load = useCallback(async () => {
+        const version = ++generation.current, scope = publishScope();
+        const valid = () => version === generation.current && scope === publishScope() && api === currentApi.current && query === currentQuery.current;
+        setPosts(null); setError(null); setLocked(false); setTruncated(false);
         try {
             const all: CalendarPost[] = [];
             let cursor = null as { at: string; id: string } | null;
             let pages = 0;
             do {
-                const page = await fetchCalendar(api, week.start, week.end, cursor);
+                const page = await fetchCalendar(api, week.start, week.end, cursor, { status, network });
+                if (!valid()) return;
                 all.push(...page.posts);
                 cursor = page.next;
                 pages += 1;
             } while (cursor && pages < MAX_PAGES);
-            setPosts(all);
-            setTruncated(cursor !== null);
-            setError(null);
-            setLocked(false);
+            if (!valid()) return;
+            setPosts(all); setTruncated(cursor !== null); setError(null); setLocked(false);
         } catch (err) {
+            if (!valid()) return;
             setPosts(null);
             if (err instanceof ApiError && err.status === 402) setLocked(true);
             else setError(t(calendarErrorKey(err)));
-        }
-    }, [api, week]);
+        } finally { if (valid()) setRefreshing(false); }
+    }, [api, week, status, network, query]);
 
     useEffect(() => {
-        setPosts(null);
-        load();
+        const reset = () => {
+            generation.current++; setPosts(null); setError(null); setLocked(false); setTruncated(false); setRefreshing(false);
+            setReloadKey(value => value + 1);
+        };
+        const userOff = subscribeCacheUser(reset), brandOff = brandStore.subscribe(reset);
+        return () => { generation.current++; userOff(); brandOff(); };
+    }, []);
+    useEffect(() => {
+        void load();
+        return () => { generation.current++; };
     }, [load, reloadKey]);
+
+    function filter(nextStatus: CalendarStatus | null, nextNetwork: string | null) {
+        if (nextStatus === status && nextNetwork === network) return;
+        generation.current++; setPosts(null); setPicked(null);
+        setStatus(nextStatus); setNetwork(nextNetwork);
+    }
 
     function switchView(next: 'week' | 'month') {
         setView(next);
@@ -87,6 +117,16 @@ export default function Calendar() {
                     </Pressable>
                 ))}
             </View>
+            <ThemedText accessibilityRole="header" variant="bodyStrong">{t('publishParity.calendar.status')}</ThemedText>
+            <ScrollView horizontal contentContainerStyle={filterStyles.chips} style={filterStyles.scroll}>
+                {([null, ...CALENDAR_STATUSES] as const).map(value => <Button key={value ?? 'all'} size="md" variant="secondary" label={value ? postStatusLabel(value) : t('publishParity.calendar.allStatuses')} accessibilityState={{ selected: status === value }} style={status === value ? filterStyles.selected : undefined} onPress={() => filter(value, network)} />)}
+            </ScrollView>
+            <ThemedText accessibilityRole="header" variant="bodyStrong">{t('publishParity.calendar.network')}</ThemedText>
+            <ScrollView horizontal contentContainerStyle={filterStyles.chips} style={filterStyles.scroll}>
+                <Button size="md" variant="secondary" label={t('publishParity.calendar.allNetworks')} accessibilityState={{ selected: network === null }} style={network === null ? filterStyles.selected : undefined} onPress={() => filter(status, null)} />
+                {PHONE_CATALOGUE.map(value => <Button key={value} size="md" variant="secondary" label={networkName(value)} accessibilityState={{ selected: network === value }} style={network === value ? filterStyles.selected : undefined} onPress={() => filter(status, value)}><NetworkLogo network={value} /><ThemedText>{networkName(value)}</ThemedText></Button>)}
+            </ScrollView>
+            <ThemedText tone="secondary">{t('publishParity.calendar.timezone', { zone: Intl.DateTimeFormat().resolvedOptions().timeZone })}</ThemedText>
             {locked ? (
                 <UnlockCard feature="calendar" onUnlocked={() => setReloadKey((n) => n + 1)} />
             ) : error ? (
@@ -94,9 +134,9 @@ export default function Calendar() {
             ) : !posts ? (
                 <ActivityIndicator color={colors.accent} />
             ) : (
-                <ScrollView refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.accent} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}>
+                <ScrollView refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.accent} onRefresh={async () => { setRefreshing(true); await load(); }} />}>
                     {view === 'month' ? <CalendarMonth monthStart={week.start} counts={counts} selected={picked} onSelect={(k) => setPicked((cur) => (cur === k ? null : k))} /> : null}
-                    {groups.length === 0 ? <Text style={styles.muted}>{t(view === 'week' ? 'calendar.none' : picked ? 'calendar.noneDay' : 'calendar.noneMonth')}</Text> : null}
+                    {groups.length === 0 ? <Text style={styles.muted}>{t(status || network ? 'publishParity.calendar.noneFiltered' : view === 'week' ? 'calendar.none' : picked ? 'calendar.noneDay' : 'calendar.noneMonth')}</Text> : null}
                     {groups.map((g) => (
                         <View key={g.key}>
                             <Text style={styles.day} accessibilityRole="header">{g.date.toLocaleDateString(formatLocale(undefined), { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
@@ -113,8 +153,8 @@ export default function Calendar() {
                                         <Text style={styles.text} numberOfLines={2}>{p.text || t('calendar.noText')}</Text>
                                         <Text style={[styles.status, p.status === 'failed' && styles.bad]}>
                                             {postStatusLabel(p.status)}
-                                            {p.targets.length ? `  ·  ${p.targets.map((x) => `${x.network}${x.publishStatus === 'failed' ? ` (${targetStatusLabel(x.publishStatus)})` : ''}`).join(', ')}` : ''}
                                         </Text>
+                                        {p.targets.map(target => <View key={target.id} style={filterStyles.target}><NetworkLogo network={target.network} /><ThemedText tone={target.publishStatus === 'failed' ? 'danger' : 'secondary'}>{target.publishStatus === 'failed' ? t('publishParity.networkStatus', { network: networkName(target.network), status: targetStatusLabel(target.publishStatus) }) : networkName(target.network)}</ThemedText></View>)}
                                     </View>
                                 </Pressable>
                             ))}
@@ -149,3 +189,9 @@ const styles = StyleSheet.create({
     viewText: { color: colors.body },
     viewTextOn: { color: colors.accentInk, fontWeight: '600' },
 });
+
+const filterSheets = themedStyles(p => ({
+    chips: { gap: 8, paddingVertical: 8 }, scroll: { flexGrow: 0, flexShrink: 0 },
+    selected: { borderWidth: 2, borderColor: p.accent },
+    target: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+}));

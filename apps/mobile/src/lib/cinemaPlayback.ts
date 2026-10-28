@@ -182,6 +182,8 @@ export function createPlaybackSession(deps: SessionDeps) {
     let contentId = '';
     let grant: PlayGrant | null = null;
     let active = false;
+    let visible = true;
+    let autoPlay = false;
     let blocked = false;
     let minting = false;
     let resume: { time: number; playing: boolean } | null = null;
@@ -207,7 +209,7 @@ export function createPlaybackSession(deps: SessionDeps) {
 
     function block(reason: BlockReason) {
         if (blocked) return;
-        saveProgress(true);
+        if (visible) saveProgress(true);
         blocked = true;
         meter.setPlaying(false);
         player.pause();
@@ -229,7 +231,7 @@ export function createPlaybackSession(deps: SessionDeps) {
             grant = next;
             if (renewal) {
                 // Keep the place: swap the source, then seek back and resume once the new one has loaded.
-                resume = { time: player.currentTime, playing: player.playing };
+                resume = { time: player.currentTime, playing: player.playing && visible };
                 meter.setPlaying(false);
                 coverage.reset();
             }
@@ -240,12 +242,12 @@ export function createPlaybackSession(deps: SessionDeps) {
                 resume = null;
                 if (prior) {
                     player.currentTime = prior.time;
-                    if (prior.playing) player.play();
+                    if (prior.playing && visible) player.play();
                 }
             } else {
                 player.currentTime = initialPosition;
                 loaded = true;
-                player.play();
+                if (visible && autoPlay) player.play();
                 onState({ kind: 'playing' });
             }
         } catch (err) {
@@ -260,7 +262,7 @@ export function createPlaybackSession(deps: SessionDeps) {
     }
 
     function flushAudience() {
-        if (audienceSending || !grant?.watchSessionId) return;
+        if (!visible || audienceSending || !grant?.watchSessionId) return;
         if (!pendingAudience) {
             const data = coverage.take();
             if (data) pendingAudience = { key: newKey(), body: JSON.stringify({ action: 'watch', session_id: grant.watchSessionId, ...data }) };
@@ -305,6 +307,7 @@ export function createPlaybackSession(deps: SessionDeps) {
         start(id: string, position = 0) {
             contentId = id;
             active = true;
+            autoPlay = true;
             blocked = false;
             grant = null;
             resume = null;
@@ -320,19 +323,26 @@ export function createPlaybackSession(deps: SessionDeps) {
             if (!active || blocked) return;
             if (resume) return; // the swap is still loading
             meter.setPlaying(value);
-            if (!value) { saveProgress(true); coverage.reset(); flush(); }
+            if (!value && visible) { saveProgress(true); coverage.reset(); flush(); }
         },
         setVisible(value: boolean) {
+            if (value === visible) return;
+            if (!value) {
+                autoPlay = false;
+                if (resume) resume.playing = false;
+                saveProgress(true);
+            }
+            visible = value;
             meter.setVisible(value);
-            if (!value) { saveProgress(true); player.pause(); flush(); }
+            if (!value) { player.pause(); flush(); }
         },
-        // Router blur only saves progress; the mounted session still owns its original grant.
+        // The mounted session keeps its original grant when focus changes.
         saveFinalProgress() { saveProgress(true); },
         // The player itself failed (a bad or expired manifest).
         fail() { block('error'); },
         // Called about once a second while mounted.
         tick() {
-            if (!active || blocked || !grant) return;
+            if (!active || blocked || !grant || !visible) return;
             if (!resume) coverage.sample(player.currentTime, player.playing && meter.isPlaying());
             if (!resume && player.playing && meter.isPlaying() && now() - lastProgress >= 15_000) saveProgress(false);
             if (now() - lastBeat >= HEARTBEAT_SECONDS * 1000) flush();

@@ -1,3 +1,6 @@
+import { Text as ThemedText, themedStyles, useThemedStyles } from '../../../components/ui';
+import { NetworkLogo } from '../../../components/publish/NetworkLogo';
+import { networkName } from '../../../lib/networkLogos';
 import { EmptyState } from '../../../components/EmptyState';
 import { formatLocale, t, t as tr } from '../../../lib/i18n';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -12,6 +15,7 @@ const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString(formatL
 
 export default function Posts() {
     const api = usePublishApi();
+    const networkStyles = useThemedStyles(networkSheets);
     const router = useRouter();
     const { done } = useLocalSearchParams<{ done?: string }>();
     const doneKey = done === 'scheduled' ? 'compose.doneScheduled' : done === 'queued' ? 'compose.doneQueued' : done === 'posted' ? 'compose.donePosted' : null;
@@ -72,7 +76,7 @@ export default function Posts() {
                         <Pressable accessibilityRole="button" accessibilityLabel={t('publish.post2', { value1: postStatusLabel(item.status), value2: item.text.slice(0, 60) })} style={styles.row} onPress={() => router.push({ pathname: '/publish/post/[id]', params: { id: item.id } })}>
                             <Text style={[styles.status, (item.status === 'failed') && styles.bad]}>{postStatusLabel(item.status)}{item.scheduledAt ? `  ·  ${when(item.scheduledAt)}` : ''}</Text>
                             <Text style={styles.text} numberOfLines={2}>{item.text || t('publish.notext')}</Text>
-                            <Text style={styles.muted}>{item.targets.map((t) => t.network).join(', ') || t('publish.nonetworks')}</Text>
+                            {item.targets.length ? item.targets.map(target => <View key={target.id} style={networkStyles.row}><NetworkLogo network={target.network} /><ThemedText tone="secondary">{networkName(target.network)}</ThemedText></View>) : <Text style={styles.muted}>{t('publish.nonetworks')}</Text>}
                         </Pressable>
                     )}
                 />
@@ -91,3 +95,5 @@ const styles = StyleSheet.create({
     error: { color: colors.danger, paddingTop: 16 },
     done: { color: colors.text, backgroundColor: colors.surface, borderRadius: 10, padding: 12, marginBottom: 12, fontSize: 14 },
 });
+
+const networkSheets = themedStyles(() => ({ row: { flexDirection: 'row', alignItems: 'center', gap: 6 } }));

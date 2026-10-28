@@ -29,7 +29,7 @@ beforeEach(() => {
     alert = jest.spyOn(RN.Alert, 'alert').mockImplementation(() => {});
     mockRequest.mockImplementation(async (url: string) => {
         if (url.endsWith('/presets')) return { presets: [raw] };
-        if (url.endsWith('/accounts')) return { contentPresetsEnabled: true, brandRole: 'owner', accounts: [{ id: ID, network: 'instagram', display_name: 'Studio', status: 'active', publishingEnabled: true, supportedMedia: ['image'] }] };
+        if (url.endsWith('/accounts')) return { contentPresetsEnabled: true, variantsEnabled: true, plansEnabled: true, planTier: 'publish', brandRole: 'owner', accounts: [{ id: ID, network: 'instagram', display_name: 'Studio', status: 'active', publishingEnabled: true, supportedMedia: ['image'] }] };
         if (url.endsWith('/queues')) return { queues: [{ id: OTHER, name: 'Queue', enabled: true, account_ids: [ID], slots: [] }] };
         return {};
     });
