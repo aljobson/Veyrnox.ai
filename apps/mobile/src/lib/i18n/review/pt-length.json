@@ -2790,6 +2790,24 @@
     "ratio": 2.67
   },
   {
+    "id": "skillsUi.skillsTitle",
+    "english": "Skills",
+    "translation": "Habilidades",
+    "ratio": 1.83
+  },
+  {
+    "id": "skillsUi.select",
+    "english": "Select",
+    "translation": "Selecionar",
+    "ratio": 1.67
+  },
+  {
+    "id": "skillsUi.blankChat",
+    "english": "Blank chat",
+    "translation": "Conversa em branco",
+    "ratio": 1.8
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",

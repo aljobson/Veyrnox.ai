@@ -1,11 +1,12 @@
+import { SkillCard } from './SkillCard';
 import { displayLabel } from '../../lib/displayLabels';
 import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 import { SKILL_GROUPS, SKILLS, MAX_SELECTED_SKILLS, type Skill } from '../../lib/studioSkills';
 import { t } from '../../lib/i18n';
-import { Button, Card, Icon, Text, themedStyles, useThemedStyles } from '../ui';
+import { Button, Icon, Text, themedStyles, useThemedStyles } from '../ui';
 
-export function ConversationEmpty({ selectedIds = [], saving = false, onToggle, applyStarter }: { selectedIds?: readonly string[]; saving?: boolean; onToggle?: (skill: Skill) => Promise<void>; skillNote?: string | null; applyStarter?: (skill: Skill) => Promise<void> }) {
+export function ConversationEmpty({ selectedIds = [], lockedIds = [], saving = false, onToggle, applyStarter }: { selectedIds?: readonly string[]; lockedIds?: readonly string[]; saving?: boolean; onToggle?: (skill: Skill) => Promise<void>; skillNote?: string | null; applyStarter?: (skill: Skill) => Promise<void> }) {
     const styles = useThemedStyles(sheets);
     const router = useRouter();
     return (
@@ -18,24 +19,16 @@ export function ConversationEmpty({ selectedIds = [], saving = false, onToggle, 
                 <Text variant="caption">{t('chatDepth.selected', { count: selectedIds.length, max: MAX_SELECTED_SKILLS })}</Text>
                 {SKILL_GROUPS.filter((group) => group !== 'Film').map((group) => (
                     <View key={displayLabel(group)} style={styles.skillGroup}>
-                        <Text variant="footnote" style={styles.skillGroupLabel}>{displayLabel(group)}</Text>
+                        <Text variant="footnote" accessibilityRole="header" style={styles.skillGroupLabel}>{displayLabel(group)}</Text>
                         <View style={styles.skillGrid}>
                             {SKILLS.filter((skill) => skill.group === group).map((skill) => {
                                 const selected = selectedIds.includes(skill.id);
                                 return (
-                                    <Card
-                                        key={skill.id}
-                                        accessibilityRole="button"
-                                        accessibilityLabel={`${skill.name}. ${skill.blurb}`}
-                                        accessibilityState={{ selected }}
-                                        selected={selected}
-                                        style={[styles.starter]}
-                                        disabled={saving || (!selected && selectedIds.length >= MAX_SELECTED_SKILLS)}
-                                        onPress={() => void (onToggle ?? applyStarter)?.(skill)}
-                                    >
-                                        <Text variant="callout" style={styles.starterName}>{skill.name}</Text>
-                                        <Text variant="caption" style={styles.starterBlurb}>{skill.blurb}</Text>
-                                    </Card>
+                                    <View key={skill.id} style={styles.starter}>
+                                        <SkillCard skill={skill} selected={selected}
+                                            disabled={saving || lockedIds.includes(skill.id) || (!selected && selectedIds.length >= MAX_SELECTED_SKILLS)}
+                                            onPress={() => { if (!lockedIds.includes(skill.id)) void (onToggle ?? applyStarter)?.(skill); }} />
+                                    </View>
                                 );
                             })}
                         </View>
@@ -59,9 +52,7 @@ const sheets = themedStyles((p) => ({
     skillGroup: { marginBottom: 18 },
     skillGroupLabel: { color: p.textPrimary, marginBottom: 8 },
     skillGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-    starter: { width: '48.7%', minHeight: 108, padding: 13, gap: 5 },
-    starterName: { color: p.textPrimary },
-    starterBlurb: { color: p.textTertiary },
+    starter: { width: '48.7%', minHeight: 108 },
     filmLink: { minHeight: 44, alignSelf: 'flex-start', justifyContent: 'center' },
     filmLinkText: { color: p.textPrimary },
 }));

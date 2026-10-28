@@ -420,7 +420,7 @@ export default function Conversation() {
                     contentContainerStyle={[styles.list, (messages?.length ?? 0) === 0 && styles.emptyList]}
                     keyboardShouldPersistTaps="handled"
                     ListEmptyComponent={
-                        starredOnly ? <Text>{t('chatDepth.noStars')}</Text> : <ConversationEmpty selectedIds={selectedIds} saving={savingSkills} onToggle={toggleSkill} />
+                        starredOnly ? <Text>{t('chatDepth.noStars')}</Text> : <ConversationEmpty lockedIds={oddLocked ? ['oddling-continuity'] : []} selectedIds={selectedIds} saving={savingSkills} onToggle={toggleSkill} />
                     }
                     ListFooterComponent={
                         lastUser && !sending && model && price !== null ? (

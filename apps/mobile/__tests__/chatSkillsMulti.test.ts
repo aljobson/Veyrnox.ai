@@ -1,3 +1,4 @@
+import { SKILLS as ODDLING_SKILLS } from '../src/lib/oddlingsChat';
 import { catalogLines, estimateInstructionTokens, fittingSkills, MAX_SELECTED_SKILLS, PREAMBLE, selectedSkillIds, skillById, skillInstructions, skillsInstructions, SKILLS } from '../src/lib/studioSkills';
 import { workflowById, workflowSteps } from '../src/lib/studioWorkflows';
 import type { CatalogModel } from '../src/lib/media';
@@ -32,4 +33,8 @@ test('whole skills only, four maximum, and both budgets for long combinations', 
     kept.forEach(s => expect(prompt).toContain(s.body));
     const huge = { ...chosen[0], body: '漢'.repeat(1200) };
     expect(fittingSkills([huge], catalog)).toEqual([]);
+});
+
+test('Oddling continuity shares the hand-off instruction body', () => {
+    expect(skillById('oddling-continuity')!.body).toBe(ODDLING_SKILLS[0].body);
 });

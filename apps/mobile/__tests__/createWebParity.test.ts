@@ -24,6 +24,12 @@ describe('the native Create workspace mirrors the website contract', () => {
         expect(screen).toContain('confirmedCredits: unit');
     });
 
+    test('skill links open their own details sheets', () => {
+        expect(screen).toContain("params: { skill: 'prompt-writer' }");
+        expect(screen).toContain("params: { skill: 'fix-my-prompt' }");
+        expect(screen).not.toContain("router.push('/chat/skills')");
+    });
+
     test('keeps references, drafts, model options, character and cinema controls', () => {
         expect(screen).toContain('<SourcePicker');
         expect(screen).toContain('<CreateOptions');

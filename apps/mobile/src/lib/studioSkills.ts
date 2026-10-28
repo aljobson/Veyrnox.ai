@@ -1,5 +1,5 @@
 import { t } from './i18n';
-import { parseOddlingInstructions } from './oddlingsChat';
+import { parseOddlingInstructions, SKILLS as ODDLING_SKILLS } from './oddlingsChat';
 // Studio skills (ADR-0073, ADR-0167): built-in assistants that help prepare ONE thing to make. A skill is only
 // instructions copied onto a new chat; it never makes anything and never spends credits beyond the chat's own replies. Its
 // result is a "Studio draft" block the chat shows as an Open in Create button; only the person's own Create press charges.
@@ -81,6 +81,10 @@ export const SKILLS: readonly Skill[] = [
     body: 'Skill: Storyboard. Ask for the idea, the length and the platform if not given. Plan 3 to 6 short shots, one line each: what we see, the camera, the mood. Keep the characters and style consistent. Then give one draft block per shot in order, using the same model for all so the look matches. Models do not remember earlier shots, so every prompt repeats the character and style description in full.',
   },
   {
+    id: 'oddling-continuity', name: t('skillsUi.oddling.name'), group: 'Plan',
+    blurb: t('skillsUi.oddling.blurb'), starter: t('skillsUi.oddling.starter'), body: ODDLING_SKILLS[0].body,
+  },
+  {
     id: 'fix-my-prompt', name: t('studioSkills.fixmyprompt'), group: 'Make',
     blurb: t('studioSkills.findoutwhyapromptwentwrong'),
     starter: t('studioSkills.pastethepromptandsaywhatwent'),
@@ -88,6 +92,15 @@ export const SKILLS: readonly Skill[] = [
   },
     ...FILM_SKILLS,
 ];
+
+// The starter is already localized on the skill; overview copy stays as translation keys.
+export function skillOverview(skill: Skill) {
+    return {
+        bestForKey: `skillsUi.bestFor.${skill.group}`,
+        outputKey: `skillsUi.output.${skill.group}`,
+        howTo: ['skillsUi.howMissing', skill.group === 'Film' ? 'skillsUi.howFilm' : 'skillsUi.howStudio'],
+    };
+}
 
 export const skillById = (id: string): Skill | null => SKILLS.find((s) => s.id === id) ?? null;
 

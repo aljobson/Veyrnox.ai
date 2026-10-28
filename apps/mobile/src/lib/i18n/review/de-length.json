@@ -2934,6 +2934,18 @@
     "ratio": 2.67
   },
   {
+    "id": "skillsUi.skillsTitle",
+    "english": "Skills",
+    "translation": "Fähigkeiten",
+    "ratio": 1.83
+  },
+  {
+    "id": "skillsUi.use",
+    "english": "Use this skill",
+    "translation": "Diese Fähigkeit verwenden",
+    "ratio": 1.79
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

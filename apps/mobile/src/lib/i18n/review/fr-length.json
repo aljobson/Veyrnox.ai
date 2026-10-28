@@ -4428,6 +4428,30 @@
     "ratio": 2.67
   },
   {
+    "id": "skillsUi.skillsTitle",
+    "english": "Skills",
+    "translation": "Compétences",
+    "ratio": 1.83
+  },
+  {
+    "id": "skillsUi.use",
+    "english": "Use this skill",
+    "translation": "Utiliser cette compétence",
+    "ratio": 1.79
+  },
+  {
+    "id": "skillsUi.select",
+    "english": "Select",
+    "translation": "Sélectionner",
+    "ratio": 2
+  },
+  {
+    "id": "skillsUi.blankChat",
+    "english": "Blank chat",
+    "translation": "Discussion vierge",
+    "ratio": 1.7
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",
