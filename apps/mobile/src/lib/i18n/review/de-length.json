@@ -1338,6 +1338,12 @@
     "ratio": 1.93
   },
   {
+    "id": "film.noshotsyetAddtheminthe",
+    "english": "No shots yet. Add them in the breakdown.",
+    "translation": "Noch keine Einstellungen. Füge sie in der Aufschlüsselung im Web hinzu.",
+    "ratio": 1.77
+  },
+  {
     "id": "film.savedonphone",
     "english": "Saved on phone",
     "translation": "Auf Telefon gespeichert",
@@ -2956,6 +2962,18 @@
     "english": "Open shot",
     "translation": "Einstellung öffnen",
     "ratio": 2
+  },
+  {
+    "id": "skillsUi.skillsTitle",
+    "english": "Skills",
+    "translation": "Fähigkeiten",
+    "ratio": 1.83
+  },
+  {
+    "id": "skillsUi.use",
+    "english": "Use this skill",
+    "translation": "Diese Fähigkeit verwenden",
+    "ratio": 1.79
   },
   {
     "id": "publishOps.inbox.anyone",

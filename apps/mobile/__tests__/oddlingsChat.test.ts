@@ -38,7 +38,7 @@ test('reader handles a catalog header with and without its trailing newline', ()
     expect(parsed?.skillIds).toEqual(SKILLS.map(s => s.id));
     expect(parseOddlingInstructions(oddlingChatInstructions(input, []))).toEqual(parsed);
     expect(parseOddlingInstructions(web.empty)).toEqual(parsed);
-    expect(selectedSkillIds(oddlingChatInstructions(input, models))).toEqual(['storyboard', 'prompt-writer', 'bring-to-life']);
+    expect(selectedSkillIds(oddlingChatInstructions(input, models))).toEqual(['oddling-continuity', 'storyboard', 'prompt-writer', 'bring-to-life']);
 });
 test('old-format skill detection is unchanged for every card and multiple cards', () => {
     for (const skills of [...PHONE_SKILLS.map(s => [s]), PHONE_SKILLS.slice(0, 3)]) {
