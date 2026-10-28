@@ -1620,6 +1620,12 @@
     "ratio": 1.69
   },
   {
+    "id": "facelessReel.seconds",
+    "english": "{n} s",
+    "translation": "{n} सेकंड",
+    "ratio": 1.8
+  },
+  {
     "id": "publishParity.post.readOnly",
     "english": "Read only",
     "translation": "केवल पढ़ने के लिए",

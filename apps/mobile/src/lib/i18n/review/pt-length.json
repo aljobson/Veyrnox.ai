@@ -2694,6 +2694,48 @@
     "ratio": 2.06
   },
   {
+    "id": "facelessReel.workflow.rhythm",
+    "english": "Set rhythm & frame",
+    "translation": "Escolher ritmo e enquadramento",
+    "ratio": 1.67
+  },
+  {
+    "id": "facelessReel.storyBrief",
+    "english": "Story brief",
+    "translation": "Resumo da história",
+    "ratio": 1.64
+  },
+  {
+    "id": "facelessReel.formatLabel",
+    "english": "Format",
+    "translation": "Formato narrativo",
+    "ratio": 2.83
+  },
+  {
+    "id": "facelessReel.frame",
+    "english": "FRAME",
+    "translation": "ENQUADRAMENTO",
+    "ratio": 2.6
+  },
+  {
+    "id": "facelessReel.format.mood.label",
+    "english": "Mood reel",
+    "translation": "Reel de atmosfera",
+    "ratio": 1.89
+  },
+  {
+    "id": "facelessReel.seconds",
+    "english": "{n} s",
+    "translation": "{n} segundos",
+    "ratio": 2.4
+  },
+  {
+    "id": "videoAgentBalance.retry",
+    "english": "Retry balance",
+    "translation": "Verificar saldo novamente",
+    "ratio": 1.92
+  },
+  {
     "id": "publishParity.preview.title",
     "english": "Post previews",
     "translation": "Prévias das publicações",

@@ -4344,6 +4344,42 @@
     "ratio": 2.06
   },
   {
+    "id": "facelessReel.workflow.rhythm",
+    "english": "Set rhythm & frame",
+    "translation": "Choisir le rythme et le cadre",
+    "ratio": 1.61
+  },
+  {
+    "id": "facelessReel.hookAria",
+    "english": "Faceless reel caption hook",
+    "translation": "Accroche de sous-titre du reel sans visage",
+    "ratio": 1.62
+  },
+  {
+    "id": "facelessReel.formatLabel",
+    "english": "Format",
+    "translation": "Type de récit",
+    "ratio": 2.17
+  },
+  {
+    "id": "facelessReel.captionSafe",
+    "english": "CAPTION-SAFE LOWER THIRD",
+    "translation": "TIERS INFÉRIEUR LIBRE POUR LES SOUS-TITRES",
+    "ratio": 1.75
+  },
+  {
+    "id": "facelessReel.format.mood.label",
+    "english": "Mood reel",
+    "translation": "Reel d’ambiance",
+    "ratio": 1.67
+  },
+  {
+    "id": "facelessReel.seconds",
+    "english": "{n} s",
+    "translation": "{n} secondes",
+    "ratio": 2.4
+  },
+  {
     "id": "publishParity.preview.title",
     "english": "Post previews",
     "translation": "Aperçus des publications",

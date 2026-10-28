@@ -24,3 +24,13 @@ describe('guided creative source handoff', () => {
         expect(consumeCreativeSourceHandoff(expired, 'video-dubbing', 'sync', 15 * 60 * 1000 + 101)).toBeNull();
     });
 });
+
+test('16:9, followup and independent picks survive stage and read', () => {
+    const picks = { character_type: 'Human' };
+    const token = stageCreativeSourceHandoff({ recipe: 'faceless-reel', modelId: 'wan-2.5-kie', aspect: '16:9', followup: 'generated-sound', picks, uploaded: {}, fromLibrary: {} });
+    picks.character_type = 'changed';
+    const first = readCreativeSourceHandoff(token, 'faceless-reel', 'wan-2.5-kie')!;
+    expect(first).toMatchObject({ aspect: '16:9', followup: 'generated-sound', picks: { character_type: 'Human' }, rightsConfirmed: false });
+    (first.picks as Record<string, string>).character_type = 'changed again';
+    expect(readCreativeSourceHandoff(token, 'faceless-reel', 'wan-2.5-kie')?.picks).toEqual({ character_type: 'Human' });
+});
