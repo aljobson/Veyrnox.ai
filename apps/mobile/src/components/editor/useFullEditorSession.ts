@@ -1,3 +1,5 @@
+import { PPF_DEFAULT, SEQUENCE_MAX } from '../../lib/editorTimeline';
+import { libraryMedia } from '../../lib/editorLibraryLength';
 import { useAnnouncement } from '../../lib/useAnnouncement';
 import { randomUUID } from 'expo-crypto';
 import * as SecureStore from 'expo-secure-store';
@@ -19,7 +21,7 @@ import { framesIn, timelineOf, type Clipboard, type Media, type Selection, type 
 import { fetchProject } from '../../lib/projects';
 import type { SlotKind } from '../../lib/sources';
 
-type Tool = 'media' | 'audio' | 'generate' | 'templates' | 'elements' | 'text' | 'captions' | 'transcript' | 'scenes' | 'clips' | 'assistant' | 'effects' | 'transitions' | 'filters' | 'animation' | 'plugins' | 'brand' | 'review' | 'adjust';
+type Tool = 'media' | 'audio' | 'generate' | 'text' | 'captions' | 'transcript' | 'effects' | 'transitions' | 'filters' | 'animation' | 'markers' | 'brand' | 'adjust';
 type Ripple = 'none' | 'lane' | 'all';
 
 export function useFullEditorSession({ projectId, jobId }: { projectId: string; jobId?: string }) {
@@ -47,7 +49,7 @@ export function useFullEditorSession({ projectId, jobId }: { projectId: string; 
     const [clipboard, setClipboard] = useState<Clipboard>(null);
     const [snap, setSnap] = useState(true);
     const [ripple, setRipple] = useState<Ripple>('none');
-    const [zoom, setZoom] = useState(1);
+    const [zoom, setZoom] = useState(PPF_DEFAULT);
     const [privacyNotice, setPrivacyNotice] = useState(false);
     const [history, setHistory] = useState({ canUndo: false, canRedo: false });
     const [frame, setFrame] = useState(0);
@@ -121,27 +123,13 @@ export function useFullEditorSession({ projectId, jobId }: { projectId: string; 
 
     useEffect(() => {
         mounted.current = true;
+        let cancelled = false;
+        const owner = getCacheUser();
         void Promise.all([fetchProject(api, projectId), getDocument(api, projectId), listEditorProjectAssets(api, projectId)])
-            .then(([project, head, assets]) => {
-                if (!mounted.current) return;
+            .then(async ([project, head, assets]) => {
+                if (cancelled || !mounted.current || owner !== getCacheUser()) return;
                 if (project) setName(project.name);
-                let loaded = head.document;
-                if (jobId && !initialImport.current) {
-                    initialImport.current = true;
-                    const base = timelineOf(loaded.timeline);
-                    const mediaId = `j-${jobId}`;
-                    if (!base.media[mediaId]) {
-                        const media: Media = { id: mediaId, name: project?.name || t('editor.libraryvideo2'), kind: 'video', frames: 300, hasAudio: true, width: 0, height: 0 };
-                        const trackId = base.tracks.find((track) => track.kind === 'video' && !track.locked)?.id;
-                        if (trackId) {
-                            const seq = base.seq + 1;
-                            const timeline: Timeline = { ...base, seq, media: { ...base.media, [mediaId]: media }, video: [...base.video, { id: `v${seq}`, mediaId, start: 0, in: 0, len: media.frames!, trackId, volume: 1, transition: 0, rate: 1 }] };
-                            loaded = { ...loaded, schema_version: 3, timeline };
-                            dirtyRef.current = true;
-                            setDirty(true);
-                        }
-                    }
-                }
+                const loaded = head.document;
                 documentRef.current = loaded;
                 revisionRef.current = head.revision;
                 pastRef.current = [];
@@ -154,13 +142,27 @@ export function useFullEditorSession({ projectId, jobId }: { projectId: string; 
                 setDocument(loaded);
                 void editorDeviceMedia.hydrate(projectId, loaded).then(uris => { if (mounted.current) setLocalMediaUris(uris); }).catch(() => {});
                 setRevision(head.revision);
+                if (jobId && !initialImport.current) {
+                    initialImport.current = true;
+                    if (timelineOf(loaded.timeline).media[`j-${jobId}`]) return;
+                    const media = await libraryMedia(api, { jobId, name: project?.name || t('editor.libraryvideo2') }, 'video');
+                    if (cancelled || !mounted.current || owner !== getCacheUser()) return;
+                    if (!media) { setProblem(t('editorCore.lengthUnknown')); return; }
+                    const current = documentRef.current;
+                    if (!current) return;
+                    const base = timelineOf(current.timeline);
+                    const trackId = base.tracks.find(track => track.kind === 'video' && !track.locked)?.id;
+                    if (!trackId) { setProblem(t('editor.unlockoraddatrackfirst', { value1: 'video' })); return; }
+                    const seq = base.seq + 1;
+                    markDocument({ ...current, schema_version: 3, timeline: { ...base, seq, media: { ...base.media, [media.id]: media }, video: [...base.video, { id: `v${seq}`, mediaId: media.id, start: 0, in: 0, len: Math.min(media.frames!, SEQUENCE_MAX), trackId, volume: 1, transition: 0, rate: 1 }] } });
+                }
             })
             .catch(() => { if (mounted.current) setProblem(t('editor.fullFailed')); });
         SecureStore.getItemAsync('veyrnox.editorPrivacyNotice.v1')
             .then((value) => { if (mounted.current && value !== 'seen') setPrivacyNotice(true); })
             .catch(() => { if (mounted.current) setPrivacyNotice(true); });
-        return () => { mounted.current = false; };
-    }, [api, jobId, projectId]);
+        return () => { cancelled = true; mounted.current = false; };
+    }, [api, jobId, markDocument, projectId]);
 
     useEffect(() => {
         if (!dirty) return;

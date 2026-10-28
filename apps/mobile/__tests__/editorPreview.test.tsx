@@ -89,4 +89,19 @@ describe('EditorMediaPreview', () => {
         await act(async () => root.render(<EditorMediaPreview api={api} clip={{ ...clip, mediaId: media.id }} media={{ ...media }} frame={46} fps={30} playing />));
         expect(request).toHaveBeenCalledTimes(1);
     });
+    test.each([
+        [1, false, 1, 31, 31 / 30],
+        [2, false, 1, 16, 32 / 30],
+        [2, false, 1.02, 15, 1.02],
+        [1, true, 0.9, 30, 0.9],
+    ])('seek threshold at rate %s playing %s from %s to timeline frame %s', async (rate, playing, current, frame, expected) => {
+        const media: Media = { id: 'l-preview', kind: 'video', name: 'Preview', frames: 300 };
+        const api = { request: jest.fn() };
+        const sourceClip = { ...clip, start: 0, in: 0, rate, mediaId: media.id };
+        await act(async () => root.render(<EditorMediaPreview api={api} clip={sourceClip} media={media} frame={0} fps={30} playing={playing} localUri="file:///preview.mp4" />));
+        mockPlayer.currentTime = current;
+        await act(async () => root.render(<EditorMediaPreview api={api} clip={sourceClip} media={media} frame={frame} fps={30} playing={playing} localUri="file:///preview.mp4" />));
+        expect(mockPlayer.currentTime).toBeCloseTo(expected);
+    });
+
 });

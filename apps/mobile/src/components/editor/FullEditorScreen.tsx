@@ -1,4 +1,10 @@
-import { useState } from 'react';
+import { Command, Action, Choice, Stepper, LabeledInput, PanelHeading, EmptyPanel, WorkflowPanel } from './EditorControls';
+import { EditorTimeline } from './EditorTimeline';
+import { EditorTransport } from './EditorTransport';
+import { canTrim, fitPpf, formatTimecode as timecode, moveItems, trimItem, PPF_MIN, PPF_MAX, SEQUENCE_MAX } from '../../lib/editorTimeline';
+import { libraryMedia } from '../../lib/editorLibraryLength';
+import { getCacheUser } from '../../lib/appCache';
+import { useEffect, useRef, useState } from 'react';
 import { EDITOR_SERVER_EXPORT_ENABLED } from '../../lib/editorFlag';
 import { requireOnline, OFFLINE_PAID_MESSAGE } from '../../lib/network';
 import { exportUnavailable } from '../../lib/editorServerExport';
@@ -25,37 +31,31 @@ import { HeaderAction } from '../HeaderAction';
 import { LibraryChooser } from '../LibraryChooser';
 import { EditorMediaPreview } from './EditorMediaPreview';
 
-type Tool = 'media' | 'audio' | 'generate' | 'templates' | 'elements' | 'text' | 'captions' | 'transcript' | 'scenes' | 'clips' | 'assistant' | 'effects' | 'transitions' | 'filters' | 'animation' | 'plugins' | 'brand' | 'review' | 'adjust';
+type Tool = 'media' | 'audio' | 'generate' | 'text' | 'captions' | 'transcript' | 'effects' | 'transitions' | 'filters' | 'animation' | 'markers' | 'brand' | 'adjust';
 
 const tools: readonly { id: Tool; icon: string; label: string }[] = [
     { id: 'media', icon: '▣', label: t('editor.media2') },
     { id: 'audio', icon: '♫', label: t('editor.audio') },
     { id: 'generate', icon: '✦', label: t('editor.generate') },
-    { id: 'templates', icon: '▦', label: t('editor.templates') },
-    { id: 'elements', icon: '◇', label: t('editor.elements') },
     { id: 'text', icon: 'T', label: t('editor.text2') },
     { id: 'captions', icon: 'CC', label: t('editor.captions') },
     { id: 'transcript', icon: '≡', label: t('editor.transcript') },
-    { id: 'scenes', icon: '▥', label: t('editor.scenes') },
-    { id: 'clips', icon: '▶', label: t('editor.clips') },
-    { id: 'assistant', icon: '✧', label: t('editor.assistant') },
     { id: 'effects', icon: '✺', label: t('editor.effects') },
     { id: 'transitions', icon: '⇄', label: t('editor.transitions') },
     { id: 'filters', icon: '☼', label: t('editor.filters') },
     { id: 'animation', icon: '↝', label: t('editor.animation') },
-    { id: 'plugins', icon: '⌘', label: t('editor.plugins') },
+    { id: 'markers', icon: '', label: t('editorCore.markersTool') },
     { id: 'brand', icon: '◆', label: t('editor.brandkit') },
-    { id: 'review', icon: '◉', label: t('editor.review') },
     { id: 'adjust', icon: '☷', label: t('editor.adjust2') },
 ];
 const seconds = (frames = 0, fps = 30) => `${Math.max(0, frames / fps).toFixed(1)}s`;
-const timecode = (frames = 0, fps = 30) => {
-    const whole = Math.max(0, Math.floor(frames / fps));
-    return `00:${String(Math.floor(whole / 60)).padStart(2, '0')}:${String(whole % 60).padStart(2, '0')}:${String(Math.max(0, frames % fps)).padStart(2, '0')}`;
-};
 
 import { useFullEditorSession } from './useFullEditorSession';
 export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobId?: string }) {
+    const mounted = useRef(true);
+    const [libraryPending, setLibraryPending] = useState(false);
+    const [viewport, setViewport] = useState(0);
+    useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
     const [exportVisible, setExportVisible] = useState(false);
     const { currentDocument, preparePicked, savedDocument, api, router, name, document, revision, dirty, saving, problem, setProblem, tool, setTool, selection, setSelection, selections, setSelections, multiSelect, setMultiSelect, clipboard, setClipboard, snap, setSnap, ripple, setRipple, zoom, setZoom, privacyNotice, history, frame, setFrame, playing, setPlaying, projectAssets, localMediaUris, libraryKind, setLibraryKind, markDocument, save, done, acknowledgePrivacy, travel } = useFullEditorSession({ projectId, jobId });
     if (!document) return <View style={styles.loading}><Stack.Screen options={{ title: t('editor.title') }} /><ActivityIndicator color={colors.accent} /><Text style={styles.muted}>{problem ?? t('editor.fullLoading')}</Text></View>;
@@ -127,11 +127,14 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
         if (!selection) return;
         applyTimeline(updateClip(timeline, selection, patch));
     };
+    const adjustStart = (delta: number) => { if (selection) { const next = moveItems(timeline, [selection], selection, delta, undefined, false, frame); if (next) applyTimeline(next); } };
+    const adjustLength = (delta: number) => { if (selection) { const next = trimItem(timeline, selection, 'out', delta, false, frame); if (next) applyTimeline(next); } };
     const changeSpeed = (rate: number) => {
-        if (!selection || selection.track === 'text' || !selected) return;
+        if (!selection || selection.track === 'text' || !selected || !canTrim(selected)) return;
         const clip = selected as Clip;
         const sourceSpan = clip.len * (clip.rate ?? 1);
-        patchSelected({ rate, len: Math.max(1, Math.floor(sourceSpan / rate)) });
+        const next = trimItem(updateClip(timeline, selection, { rate }), selection, 'out', Math.max(1, Math.floor(sourceSpan / rate)) - clip.len, false, frame);
+        if (next) applyTimeline(next);
     };
     const toggleReverse = () => {
         if (!selection || selection.track === 'text' || !selected) return;
@@ -170,16 +173,21 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
         const trackId = sourceTimeline.tracks.find((track) => track.kind === kind && !track.locked)?.id;
         if (!trackId) { setProblem(t('editor.unlockoraddatrackfirst', { value1: kind })); return; }
         const seq = sourceTimeline.seq + 1;
-        const item: Clip = { id: `${kind[0]}${seq}`, mediaId: media.id, start: snap ? Math.round(frame) : frame, in: 0, len: Math.max(1, Math.min(media.frames || 90, 18_000 - frame)), trackId, volume: 1, transition: 0, rate: 1 };
+        const item: Clip = { id: `${kind[0]}${seq}`, mediaId: media.id, start: frame, in: 0, len: Math.max(1, Math.min(media.frames || 90, 18_000 - frame)), trackId, volume: 1, transition: 0, rate: 1 };
         applyTimeline({ ...sourceTimeline, seq, media: { ...sourceTimeline.media, [media.id]: media }, [kind]: [...sourceTimeline[kind], item] } as Timeline);
         const nextSelection = { track: kind, id: item.id };
         setSelection(nextSelection);
         setSelections([nextSelection]);
     };
-    const importLibrary = (choice: LibraryChoice, kind: SlotKind) => {
-        const id = `j-${choice.jobId}`;
-        addMediaToTimeline({ id, name: choice.name, kind, frames: kind === 'image' ? 90 : 300, hasAudio: kind !== 'image', width: 0, height: 0 });
-        setLibraryKind(null);
+    const importLibrary = async (choice: LibraryChoice, kind: SlotKind) => {
+        const owner = getCacheUser();
+        setLibraryKind(null); setLibraryPending(true); setProblem(null);
+        try {
+            const media = await libraryMedia(api, choice, kind);
+            if (!mounted.current || getCacheUser() !== owner) return;
+            if (!media) { setProblem(t('editorCore.lengthUnknown')); return; }
+            addMediaToTimeline(media, timelineOf(currentDocument()?.timeline));
+        } finally { if (mounted.current) setLibraryPending(false); }
     };
     const importPicked = async (asset: { uri: string; fileName?: string | null; name?: string; mimeType?: string | null; duration?: number | null; width?: number; height?: number }) => {
         const mime = String(asset.mimeType || '').toLowerCase();
@@ -259,9 +267,10 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
             {(['none', 'lane', 'all'] as const).map((value) => <Choice key={value} label={value === 'none' ? t('editor.off') : value === 'lane' ? t('editor.selectedtrack') : t('editor.alltracks')} selected={ripple === value} onPress={() => setRipple(value)} compact />)}
             <View style={styles.optionSpacer} />
             <Text style={styles.optionLabel}>{t('editor.zoom')}</Text>
-            <Action label="−" disabled={zoom <= 0.5} onPress={() => setZoom((value) => Math.max(0.5, value - 0.25))} compact />
-            <Text style={styles.zoomValue}>{zoom.toFixed(2)}×</Text>
-            <Action label="+" disabled={zoom >= 2} onPress={() => setZoom((value) => Math.min(2, value + 0.25))} compact />
+            <Action label={t('editorCore.zoomOut')} disabled={zoom <= PPF_MIN} onPress={() => setZoom(value => Math.max(PPF_MIN, value / 2))} compact />
+            <Text style={styles.zoomValue}>{t('editorCore.zoomValue', { value1: zoom.toFixed(2) })}</Text>
+            <Action label={t('editorCore.zoomIn')} disabled={zoom >= PPF_MAX} onPress={() => setZoom(value => Math.min(PPF_MAX, value * 2))} compact />
+            <Action label={t('editorCore.fit')} onPress={() => setZoom(fitPpf(viewport, total))} compact />
         </View>
 
         <View style={styles.previewArea}>
@@ -277,13 +286,7 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
                     {previewText ? <Text style={styles.previewCaption}>{previewText}</Text> : null}
                 </View>
             </View>
-            <View style={styles.transport}>
-                <Pressable accessibilityRole="button" accessibilityLabel={t('editor.gotostart')} disabled={!total} onPress={() => setFrame(0)} style={({ pressed }) => [styles.transportButton, pressed && styles.pressed, !total && styles.disabled]}><Text style={styles.transportIcon}>|‹</Text></Pressable>
-                <Pressable accessibilityRole="button" accessibilityLabel={playing ? t('editor.pause') : t('editor.play')} disabled={!total} onPress={() => setPlaying((value) => !value)} style={({ pressed }) => [styles.playButton, pressed && styles.pressed, !total && styles.disabled]}><Text style={styles.playIcon}>{playing ? 'Ⅱ' : '▶'}</Text></Pressable>
-                <Pressable accessibilityRole="button" accessibilityLabel={t('editor.nextframe')} disabled={!total || frame >= total - 1} onPress={() => setFrame((value) => Math.min(total - 1, value + 1))} style={({ pressed }) => [styles.transportButton, pressed && styles.pressed, (!total || frame >= total - 1) && styles.disabled]}><Text style={styles.transportIcon}>›</Text></Pressable>
-                <Text accessibilityLabel={t('editor.playheadtimecode')} style={styles.timecode}>{timecode(frame, timeline.fps)}</Text>
-                <Text style={styles.totalTime}>/ {seconds(total, timeline.fps)}</Text>
-            </View>
+            <EditorTransport frame={frame} total={total} fps={timeline.fps} playing={playing} onSeek={setFrame} onPlaying={setPlaying} />
         </View>
 
         <View style={styles.timelineSection}>
@@ -291,16 +294,12 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
                 <Text style={styles.eyebrow}>{t('editor.tIMELINE')}</Text>
                 <Text style={styles.timelineHelp}>{multiSelect ? t('editor.selectedtapclipstoadd', { value1: selections.length }) : selection ? t('editor.tapacommandtoeditselection') : t('editor.tapacliptoselect')}</Text>
             </View>
-            <View style={styles.ruler}><Text style={styles.rulerText}>{t('editor.0s')}</Text><View style={styles.rulerTicks} />{timeline.markers.map((marker) => <Pressable key={marker.id} accessibilityRole="button" accessibilityLabel={t('editor.goto', { value1: marker.label })} onPress={() => setFrame(marker.frame)} style={styles.marker}><Text style={styles.markerGlyph}>◆</Text></Pressable>)}<Text style={styles.rulerText}>{seconds(total, timeline.fps)}</Text></View>
-            <View style={styles.lanes}>
-                {timeline.tracks.map((track) => <TimelineTrack key={track.id} track={track} items={timeline[track.kind].filter((item) => item.trackId === track.id)} timeline={timeline} selections={selections} zoom={zoom} onSelect={selectClip} />)}
-                <View pointerEvents="none" style={[styles.playhead, { start: total ? `${18 + (frame / Math.max(1, total)) * 76}%` : '18%' }]}><View style={styles.playheadHead} /></View>
-            </View>
+            <EditorTimeline timeline={timeline} selections={selections} ppf={zoom} total={total} frame={frame} playing={playing} snap={snap} onViewport={setViewport} onSeek={value => { setPlaying(false); setFrame(value); }} onSelect={selectClip} onApply={applyTimeline} />
         </View>
 
         <ScrollView testID="editor-tool-rail" horizontal showsHorizontalScrollIndicator={false} style={styles.toolRail} contentContainerStyle={styles.toolContent}>
             {tools.map((item) => <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={item.label} accessibilityState={{ selected: tool === item.id }} onPress={() => setTool(item.id)} style={({ pressed }) => [styles.tool, tool === item.id && styles.toolActive, pressed && styles.pressed]}>
-                <Text style={[styles.toolIcon, tool === item.id && styles.toolIconActive]}>{item.icon}</Text>
+                {item.id === 'markers' ? <View style={{ width: 12, height: 12, backgroundColor: colors.accent, transform: [{ rotate: '45deg' }] }} /> : <Text style={[styles.toolIcon, tool === item.id && styles.toolIconActive]}>{item.icon}</Text>}
                 <Text style={[styles.toolLabel, tool === item.id && styles.toolLabelActive]}>{item.label}</Text>
             </Pressable>)}
         </ScrollView>
@@ -309,7 +308,7 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
             {tool === 'media' ? <>
                 <PanelHeading title={t('editor.projectmedia')} detail={plural('editor.itemsCount', availableMedia.length)} />
                 {availableMedia.length ? availableMedia.map((item) => <ProjectMediaRow key={item.id} item={item} fps={timeline.fps} onAdd={addMediaToTimeline} />) : <EmptyPanel title={t('editor.nomediayet')} body={t('editor.chooseanexistingVeyrnoxcreationaproject')} />}
-                <View style={styles.quickActions}><Action label={t('editor.libraryvideo')} onPress={() => setLibraryKind('video')} /><Action label={t('editor.libraryimage')} onPress={() => setLibraryKind('image')} /><Action label={t('editor.libraryaudio')} onPress={() => setLibraryKind('audio')} /><Action label={t('editor.photosvideos')} onPress={() => void choosePhotos()} /><Action label={t('editor.files')} onPress={() => void chooseFiles()} /></View>
+                <View style={styles.quickActions}><Action label={t('editor.libraryvideo')} disabled={libraryPending} onPress={() => setLibraryKind('video')} /><Action label={t('editor.libraryimage')} disabled={libraryPending} onPress={() => setLibraryKind('image')} /><Action label={t('editor.libraryaudio')} disabled={libraryPending} onPress={() => setLibraryKind('audio')} /><Action label={t('editor.photosvideos')} onPress={() => void choosePhotos()} /><Action label={t('editor.files')} onPress={() => void chooseFiles()} /></View>
             </> : null}
             {tool === 'audio' ? <>
                 <PanelHeading title={t('editor.audio')} detail={plural('editor.clips2Count', timeline.audio.length)} />
@@ -317,8 +316,7 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
                 <View style={styles.quickActions}><Action label={t('editor.generatevoiceormusic')} onPress={() => void openWorkflow('/create')} /><Action label={t('editor.addaudiotrack')} onPress={() => addTimelineTrack('audio')} /></View>
             </> : null}
             {tool === 'generate' ? <WorkflowPanel title={t('editor.generate')} body={t('editor.createvideoimagesmusicorspeechwith')} action={t('editor.openGenerate')} onPress={() => void openWorkflow('/create')} /> : null}
-            {tool === 'templates' ? <WorkflowPanel title={t('editor.templates')} body={t('editor.startwithaproductionreadyVeyrnoxtemplate')} action={t('editor.browsetemplates')} onPress={() => void openWorkflow('/create/presets')} /> : null}
-            {tool === 'elements' ? <WorkflowPanel title={t('editor.elements')} body={t('editor.creategraphicsfaceeffectsandreusablevisual')} action={t('editor.browseelements')} onPress={() => void openWorkflow('/create/tools')} /> : null}
+
             {tool === 'text' ? <>
                 <PanelHeading title={t('editor.text2')} detail={selection?.track === 'text' ? t('editor.layerselected') : t('editor.layers', { value1: timeline.text.length })} />
                 <Pressable accessibilityRole="button" accessibilityLabel={t('editor.addText')} style={({ pressed }) => [styles.primary, touchTarget, pressed && styles.pressed]} onPress={addText}><Text style={styles.primaryText}>＋ {t('editor.addText')}</Text></Pressable>
@@ -340,16 +338,7 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
                 <PanelHeading title={t('editor.transcript')} detail={t('editor.cues', { value1: timeline.text.length })} />
                 {timeline.text.length ? [...timeline.text].sort((a, b) => a.start - b.start).map((item) => <TranscriptRow key={item.id} item={item} fps={timeline.fps} selected={selection?.track === 'text' && selection.id === item.id} onPress={() => { selectClip({ track: 'text', id: item.id }); setFrame(item.start); }} />) : <EmptyPanel title={t('editor.notranscriptyet')} body={t('editor.captionandtextcuesbecomeatime')} />}
             </> : null}
-            {tool === 'scenes' ? <>
-                <PanelHeading title={t('editor.scenes')} detail={t('editor.detectedcuts', { value1: timeline.video.length })} />
-                <Action label={t('editor.splitselectedclipatplayhead')} disabled={selection?.track !== 'video'} onPress={splitSelection} />
-                <ClipBrowser kinds={['video']} timeline={timeline} selections={selections} onSelect={(value) => { selectClip(value); const item = clipAt(timeline, value); if (item) setFrame(item.start); }} />
-            </> : null}
-            {tool === 'clips' ? <>
-                <PanelHeading title={t('editor.clips')} detail={t('editor.layers', { value1: clipCount })} />
-                <ClipBrowser kinds={['video', 'audio', 'text']} timeline={timeline} selections={selections} onSelect={selectClip} />
-            </> : null}
-            {tool === 'assistant' ? <WorkflowPanel title={t('editor.assistant')} body={t('editor.asktheVeyrnoxassistanttoplanshots')} action={t('editor.openAssistant')} onPress={() => void openWorkflow('/chat/new')} /> : null}
+
             {tool === 'effects' ? <>
                 <PanelHeading title={t('editor.effects')} detail={selection ? t('editor.selectedlayer') : t('editor.selectaclip')} />
                 {selection && selected && selection.track !== 'text' ? <><View style={styles.choices}>{[{ id: 'none', label: t('editor.none') }, { id: 'soft-glow', label: t('editor.softglow') }, { id: 'grain', label: t('editor.filmgrain') }, { id: 'vignette', label: t('editor.vignette') }, { id: 'old-film', label: t('editor.oldfilm') }].map(({ id, label }) => <Choice key={id} label={label} selected={(selected as Clip).effect?.type === id || (id === 'none' && !(selected as Clip).effect)} onPress={() => patchSelected({ effect: id === 'none' ? undefined : { type: id, intensity: .5 } })} />)}</View>{(selected as Clip).effect ? <Stepper label={t('editor.effectintensity')} value={(selected as Clip).effect!.intensity * 100} min={0} max={100} step={5} suffix="%" onChange={(value) => patchSelected({ effect: { ...(selected as Clip).effect!, intensity: value / 100 } })} /> : null}</> : <EmptyPanel title={t('editor.choosevideooraudio')} body={t('editor.effectsarestoredontheselectedlayer')} />}
@@ -366,20 +355,23 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
                 <PanelHeading title={t('editor.animation')} detail={selection ? t('editor.layermotion') : t('editor.selectalayer')} />
                 {selection && selected ? <><Text style={styles.fieldLabel}>{t('editor.animatein')}</Text><View style={styles.choices}>{['none', 'fade', 'slide-left', 'zoom'].map((value) => <Choice key={value} label={value} selected={(selected.animation?.in ?? 'none') === value} onPress={() => patchSelected({ animation: { in: value, out: selected.animation?.out ?? 'none', duration: selected.animation?.duration ?? 15 } })} />)}</View><Text style={styles.fieldLabel}>{t('editor.animateout')}</Text><View style={styles.choices}>{['none', 'fade', 'slide-right', 'zoom'].map((value) => <Choice key={value} label={value} selected={(selected.animation?.out ?? 'none') === value} onPress={() => patchSelected({ animation: { in: selected.animation?.in ?? 'none', out: value, duration: selected.animation?.duration ?? 15 } })} />)}</View><Stepper label={t('editor.animationduration')} value={selected.animation?.duration ?? 15} min={1} max={90} step={1} suffix={t('editor.frames')} onChange={(duration) => patchSelected({ animation: { in: selected.animation?.in ?? 'none', out: selected.animation?.out ?? 'none', duration } })} /></> : <EmptyPanel title={t('editor.selectalayer')} body={t('editor.animationcontrolsworkonvideoaudioand')} />}
             </> : null}
-            {tool === 'plugins' ? <WorkflowPanel title={t('editor.plugins')} body={t('editor.useVeyrnoxnativecreativetoolsandinstalled')} action={t('editor.opentools')} onPress={() => void openWorkflow('/create/tools')} /> : null}
+
             {tool === 'brand' ? <WorkflowPanel title={t('editor.brandkit')} body={t('editor.managelogosfontscoloursandapprovedassets')} action={t('editor.openBrandkit')} onPress={() => void openWorkflow('/brand-kit')} /> : null}
-            {tool === 'review' ? <>
-                <PanelHeading title={t('editor.review')} detail={t('editor.markers', { value1: timeline.markers.length })} />
-                <Action label={t('editor.addreviewmarkeratplayhead')} onPress={addTimelineMarker} />
-                {timeline.markers.map((marker) => <View key={marker.id} style={styles.markerRow}><Pressable accessibilityRole="button" accessibilityLabel={t('editor.goto', { value1: marker.label })} onPress={() => setFrame(marker.frame)} style={styles.markerJump}><Text style={styles.markerGlyph}>◆</Text><Text style={styles.markerTime}>{timecode(marker.frame, timeline.fps)}</Text></Pressable><TextInput accessibilityLabel={t('editor.rename', { value1: marker.label })} value={marker.label} maxLength={80} style={[styles.input, styles.markerInput]} onChangeText={(label) => applyTimeline({ ...timeline, markers: timeline.markers.map((item) => item.id === marker.id ? { ...item, label } : item) })} /><Action label="×" danger compact onPress={() => applyTimeline({ ...timeline, markers: timeline.markers.filter((item) => item.id !== marker.id) })} /></View>)}
+            {tool === 'markers' ? <>
+                <PanelHeading title={t('editorCore.markersTool')} detail={t('editor.markers', { value1: timeline.markers.length })} />
+                <Action label={t('editor.addmarker')} onPress={addTimelineMarker} />
+                {timeline.markers.map(marker => <View key={marker.id} style={styles.markerRow}><Pressable accessibilityRole="button" accessibilityLabel={t('editor.goto', { value1: marker.label })} onPress={() => { setPlaying(false); setFrame(marker.frame); }} style={styles.markerJump}><Text style={styles.markerTime}>{timecode(marker.frame, timeline.fps)}</Text></Pressable><TextInput key={`${marker.id}-${marker.label}`} accessibilityLabel={t('editor.rename', { value1: marker.label })} defaultValue={marker.label} maxLength={80} style={[styles.input, styles.markerInput]} onEndEditing={event => { const label = event.nativeEvent.text; const current = timelineOf(currentDocument()?.timeline); if (label !== marker.label) applyTimeline({ ...current, markers: current.markers.map(item => item.id === marker.id ? { ...item, label } : item) }); }} /><Action label={t('editor.remove')} danger compact onPress={() => applyTimeline({ ...timeline, markers: timeline.markers.filter(item => item.id !== marker.id) })} /></View>)}
             </> : null}
             {tool === 'adjust' ? <>
                 <PanelHeading title={selection ? selectedMedia?.name || t('editor.layer', { value1: selection.track[0].toUpperCase(), value2: selection.track.slice(1) }) : t('editor.projectSettings')} detail={selection ? seconds(selected?.len, timeline.fps) : t('editor.sequence')} />
                 {selection ? <View style={styles.quickActions}><Action label={t('editor.moveLeft')} disabled={selectedIndex <= 0} onPress={() => moveSelection(-1)} /><Action label={t('editor.moveRight')} disabled={selectedIndex >= timeline[selection.track].length - 1} onPress={() => moveSelection(1)} /><Action label={t('editor.remove')} danger onPress={removeSelection} /></View> : null}
                 {selection && selected ? <>
                     <Text style={styles.fieldLabel}>{t('editor.track')}</Text><View style={styles.choices}>{timeline.tracks.filter((track) => track.kind === selection.track).map((track) => <Choice key={track.id} label={track.name} selected={selected.trackId === track.id} onPress={() => patchSelected({ trackId: track.id })} />)}</View>
-                    <Stepper label={t('editor.clipstart')} value={selected.start} min={0} max={18_000 - selected.len} step={1} suffix={t('editor.frames')} onChange={(start) => patchSelected({ start })} />
-                    <Stepper label={t('editor.clipduration')} value={selected.len} min={1} max={18_000 - selected.start} step={1} suffix={t('editor.frames')} onChange={(len) => patchSelected({ len })} />
+                    <Stepper label={t('editorCore.startSeconds', { value1: t('editorCore.seconds', { value1: (selected.start / timeline.fps).toFixed(1) }) })} value={selected.start} min={selectedTrack?.locked ? selected.start : 0} max={selectedTrack?.locked ? selected.start : (SEQUENCE_MAX - selected.len)} step={timeline.fps} suffix={t('editor.frames')} onChange={value => adjustStart(value - selected.start)} />
+                    <View style={styles.quickActions}><Action label={t('editorCore.startEarlierFrame')} disabled={!!selectedTrack?.locked} onPress={() => adjustStart(-1)} /><Action label={t('editorCore.startLaterFrame')} disabled={!!selectedTrack?.locked} onPress={() => adjustStart(1)} /></View>
+                    <Stepper label={t('editorCore.durationSeconds', { value1: t('editorCore.seconds', { value1: (selected.len / timeline.fps).toFixed(1) }) })} value={selected.len} min={!canTrim(selected) || selectedTrack?.locked ? selected.len : 1} max={!canTrim(selected) || selectedTrack?.locked ? selected.len : (SEQUENCE_MAX - selected.start)} step={timeline.fps} suffix={t('editor.frames')} onChange={value => adjustLength(value - selected.len)} />
+                    <View style={styles.quickActions}><Action label={t('editorCore.shortenFrame')} disabled={!canTrim(selected) || !!selectedTrack?.locked} onPress={() => adjustLength(-1)} /><Action label={t('editorCore.lengthenFrame')} disabled={!canTrim(selected) || !!selectedTrack?.locked} onPress={() => adjustLength(1)} /></View>
+                    {!canTrim(selected) ? <Text style={styles.body}>{t('editorCore.trimOnWeb')}</Text> : null}
                     {selection.track !== 'text' ? <><Stepper label={t('editor.speed')} value={(selected as Clip).rate ?? 1} min={0.1} max={8} step={0.1} suffix="×" onChange={changeSpeed} /><Choice label={t('editor.reverse')} selected={!!(selected as Clip).reverse} onPress={toggleReverse} /><Stepper label={t('editor.volume')} value={((selected as Clip).volume ?? 1) * 100} min={0} max={200} step={5} suffix="%" onChange={(volume) => patchSelected({ volume: volume / 100 })} /><Stepper label={t('editor.fadein')} value={(selected as Clip).fadeIn ?? 0} min={0} max={selected.len} step={1} suffix={t('editor.frames')} onChange={(fadeIn) => patchSelected({ fadeIn })} /><Stepper label={t('editor.fadeout')} value={(selected as Clip).fadeOut ?? 0} min={0} max={selected.len} step={1} suffix={t('editor.frames')} onChange={(fadeOut) => patchSelected({ fadeOut })} /><Stepper label={t('editor.pan')} value={(selected as Clip).pan ?? 0} min={-1} max={1} step={0.1} onChange={(pan) => patchSelected({ pan })} /></> : null}
                     {selection.track === 'video' ? <><Stepper label={t('editor.scale')} value={transformOf(selected as Clip).scale * 100} min={5} max={800} step={5} suffix="%" onChange={(value) => patchSelected({ transform: { ...transformOf(selected as Clip), scale: value / 100 } })} /><Stepper label={t('editor.rotation')} value={transformOf(selected as Clip).rotation} min={-360} max={360} step={5} suffix="°" onChange={(rotation) => patchSelected({ transform: { ...transformOf(selected as Clip), rotation } })} /><Stepper label={t('editor.opacity')} value={transformOf(selected as Clip).opacity * 100} min={0} max={100} step={5} suffix="%" onChange={(value) => patchSelected({ transform: { ...transformOf(selected as Clip), opacity: value / 100 } })} /><View style={styles.choices}><Choice label={t('editor.contain')} selected={((selected as Clip).fit ?? 'contain') === 'contain'} onPress={() => patchSelected({ fit: 'contain' })} /><Choice label={t('editor.cover')} selected={(selected as Clip).fit === 'cover'} onPress={() => patchSelected({ fit: 'cover' })} /></View></> : null}
                 </> : null}
@@ -396,25 +388,6 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
     </View>;
 }
 
-function Command({ icon, label, onPress, disabled = false, danger = false, selected = false }: { icon: string; label: string; onPress(): void; disabled?: boolean; danger?: boolean; selected?: boolean }) {
-    return <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled, selected }} disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.command, selected && styles.commandSelected, pressed && styles.pressed, disabled && styles.disabled]}><Text style={[styles.commandIcon, selected && styles.toolIconActive, danger && styles.danger]}>{icon}</Text><Text style={[styles.commandLabel, selected && styles.toolLabelActive, danger && styles.danger]}>{label}</Text></Pressable>;
-}
-function TimelineTrack({ track, items, timeline, selections, zoom, onSelect }: { track: EditorTrack; items: readonly (Clip | TextClip)[]; timeline: Timeline; selections: readonly Selection[]; zoom: number; onSelect(value: Selection): void }) {
-    return <View style={styles.track}>
-        <View style={styles.trackName}><Text style={styles.trackGlyph}>{track.kind === 'video' ? '▣' : track.kind === 'audio' ? '♫' : 'T'}</Text><View style={styles.trackCopy}><Text style={styles.trackLabel} numberOfLines={1}>{track.name.toUpperCase()}</Text><Text style={styles.trackState}>{track.locked ? t('editor.lOCK') : ''}{track.muted ? t('editor.mUTE') : ''}{track.hidden ? t('editor.hIDE') : ''}</Text></View></View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.clips}>
-            {items.length ? items.map((item) => {
-                const active = selections.some((selection) => selection.track === track.kind && selection.id === item.id);
-                const label = track.kind === 'text' ? (item as TextClip).text : timeline.media[(item as Clip).mediaId || '']?.name || item.id;
-                return <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={`${track.kind} ${label}`} accessibilityState={{ selected: active }} onPress={() => onSelect({ track: track.kind, id: item.id })} style={({ pressed }) => [styles.clip, styles[`${track.kind}Clip`], { width: Math.max(78, Math.min(240, item.len / Math.max(1, timeline.fps) * 34 * zoom)) }, active && styles.clipSelected, pressed && styles.pressed]}>
-                    <Text style={styles.clipTitle} numberOfLines={1}>{label}</Text><Text style={styles.clipMeta}>{seconds(item.len, timeline.fps)}</Text>
-                </Pressable>;
-            }) : <View style={styles.emptyTrack}><View style={styles.emptyTrackLine} /><Text style={styles.trackEmpty}>{t('editor.empty2')}</Text></View>}
-        </ScrollView>
-    </View>;
-}
-function PanelHeading({ title, detail }: { title: string; detail: string }) { return <View style={styles.panelHeading}><Text accessibilityRole="header" style={styles.sectionTitle}>{title}</Text><Text style={styles.panelDetail}>{detail}</Text></View>; }
-function EmptyPanel({ title, body }: { title: string; body: string }) { return <View style={styles.emptyPanel}><Text style={styles.emptyTitle}>{title}</Text><Text style={styles.emptyBody}>{body}</Text></View>; }
 function ProjectMediaRow({ item, fps, onAdd }: { item: Media; fps: number; onAdd(item: Media): void }) {
     const name = item.name || t('editor.untitledMedia');
     const label = t('editor.addtotimeline', { value1: name });
@@ -424,25 +397,7 @@ function ProjectMediaRow({ item, fps, onAdd }: { item: Media; fps: number; onAdd
 function InspectorClip({ track, item, timeline, selected, onPress }: { track: TrackKind; item: Clip; timeline: Timeline; selected: boolean; onPress(): void }) {
     return <Pressable accessibilityRole="button" accessibilityLabel={timeline.media[item.mediaId || '']?.name || item.id} accessibilityState={{ selected }} onPress={onPress} style={[styles.mediaRow, selected && styles.mediaRowSelected]}><View style={styles.mediaThumb}><Text style={styles.mediaThumbText}>♫</Text></View><View style={styles.rowCopy}><Text style={styles.rowTitle}>{timeline.media[item.mediaId || '']?.name || t('editor.clip', { value1: track })}</Text><Text style={styles.muted}>{seconds(item.len, timeline.fps)}</Text></View></Pressable>;
 }
-function Action({ label, onPress, disabled = false, danger = false, compact = false }: { label: string; onPress(): void; disabled?: boolean; danger?: boolean; compact?: boolean }) { return <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled }} disabled={disabled} style={({ pressed }) => [styles.action, touchTarget, compact && styles.compactControl, disabled && styles.disabled, pressed && styles.pressed]} onPress={onPress}><Text style={[styles.actionText, danger && styles.danger]}>{label}</Text></Pressable>; }
-function Choice({ label, selected, onPress, compact = false }: { label: string; selected: boolean; onPress(): void; compact?: boolean }) { return <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected }} style={({ pressed }) => [styles.choice, touchTarget, compact && styles.compactControl, selected && styles.choiceSelected, pressed && styles.pressed]} onPress={onPress}><Text style={[styles.choiceText, selected && styles.choiceTextSelected]}>{label}</Text></Pressable>; }
-function LabeledInput({ label, value, multiline = false, onChangeText }: { label: string; value: string; multiline?: boolean; onChangeText(value: string): void }) { return <View style={styles.field}><Text style={styles.fieldLabel}>{label}</Text><TextInput accessibilityLabel={label} value={value} multiline={multiline} maxLength={multiline ? 6000 : 120} style={[styles.input, multiline && styles.inputMultiline]} placeholderTextColor={colors.muted} onChangeText={onChangeText} /></View>; }
-function Stepper({ label, value, min, max, step, suffix = '', onChange }: { label: string; value: number; min: number; max: number; step: number; suffix?: string; onChange(value: number): void }) {
-    const digits = step < 1 ? 1 : 0;
-    const set = (next: number) => onChange(Math.max(min, Math.min(max, Number(next.toFixed(digits)))));
-    return <View style={styles.stepper}><View style={styles.stepperCopy}><Text style={styles.fieldLabel}>{label}</Text><Text style={styles.stepperValue}>{value.toFixed(digits)}{suffix}</Text></View><View style={styles.stepperActions}><Pressable accessibilityRole="button" accessibilityLabel={t('editor.decrease', { value1: label })} accessibilityState={{ disabled: value <= min }} disabled={value <= min} onPress={() => set(value - step)} style={({ pressed }) => [styles.stepperButton, value <= min && styles.disabled, pressed && styles.pressed]}><Text style={styles.stepperButtonText}>−</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel={t('editor.increase', { value1: label })} accessibilityState={{ disabled: value >= max }} disabled={value >= max} onPress={() => set(value + step)} style={({ pressed }) => [styles.stepperButton, value >= max && styles.disabled, pressed && styles.pressed]}><Text style={styles.stepperButtonText}>+</Text></Pressable></View></View>;
-}
-function WorkflowPanel({ title, body, action, onPress }: { title: string; body: string; action: string; onPress(): void }) {
-    return <><PanelHeading title={title} detail={t('editor.nativeworkflow')} /><View style={styles.workflowCard}><Text style={styles.body}>{body}</Text><Pressable accessibilityRole="button" accessibilityLabel={action} style={({ pressed }) => [styles.primary, touchTarget, pressed && styles.pressed]} onPress={onPress}><Text style={styles.primaryText}>{action}</Text></Pressable></View></>;
-}
+
 function TranscriptRow({ item, fps, selected, onPress }: { item: TextClip; fps: number; selected: boolean; onPress(): void }) {
     return <Pressable accessibilityRole="button" accessibilityLabel={`${timecode(item.start, fps)} ${item.text}`} accessibilityState={{ selected }} onPress={onPress} style={({ pressed }) => [styles.transcriptRow, selected && styles.mediaRowSelected, pressed && styles.pressed]}><Text style={styles.transcriptTime}>{timecode(item.start, fps)}</Text><Text style={styles.transcriptText} numberOfLines={2}>{item.text}</Text></Pressable>;
-}
-function ClipBrowser({ kinds, timeline, selections, onSelect }: { kinds: readonly TrackKind[]; timeline: Timeline; selections: readonly Selection[]; onSelect(value: Selection): void }) {
-    const items = kinds.flatMap((track) => timeline[track].map((item) => ({ track, item })));
-    return <>{items.length ? items.sort((a, b) => a.item.start - b.item.start).map(({ track, item }) => {
-        const label = track === 'text' ? (item as TextClip).text : timeline.media[(item as Clip).mediaId || '']?.name || item.id;
-        const active = selections.some((selection) => selection.track === track && selection.id === item.id);
-        return <Pressable key={`${track}:${item.id}`} accessibilityRole="button" accessibilityLabel={`${track} ${label}`} accessibilityState={{ selected: active }} onPress={() => onSelect({ track, id: item.id })} style={({ pressed }) => [styles.clipBrowserRow, active && styles.mediaRowSelected, pressed && styles.pressed]}><View style={styles.mediaThumb}><Text style={styles.mediaThumbText}>{track === 'audio' ? '♫' : track === 'text' ? 'T' : '▶'}</Text></View><View style={styles.rowCopy}><Text style={styles.rowTitle} numberOfLines={1}>{label}</Text><Text style={styles.muted}>{timecode(item.start, timeline.fps)} · {seconds(item.len, timeline.fps)}</Text></View></Pressable>;
-    }) : <EmptyPanel title={t('editor.noclips')} body={t('editor.addmediaortexttothetimeline')} />}</>;
 }
