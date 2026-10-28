@@ -144,7 +144,9 @@ export async function gatewayFetch(path, init = {}, brandRetried = false, brandS
       assertCurrentAccount();
       return recovered;
     }
-    if (res.status >= 500) {
+    // A `*_not_open` reply is a feature switched off on purpose, not a server failure.
+    const featureClosed = typeof body?.error === 'string' && body.error.endsWith('_not_open');
+    if (res.status >= 500 && !featureClosed) {
       captureOperationalError('gateway_server_error', {
         route: normaliseGatewayPath(path),
         method: String(init.method || 'GET').toUpperCase(),

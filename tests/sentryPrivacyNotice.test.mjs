@@ -7,7 +7,7 @@ import { fixture } from './helpers/publicSiteRender.mjs';
 test('every privacy notice discloses necessary Sentry error reporting independently of analytics consent', async () => {
   for (const { code } of LOCALES) {
     const { messages, blocks, updated } = await legalDocument(code, 'privacy');
-    assert.equal(updated, '21 October 2026');
+    assert.equal(updated, '28 October 2026');
     assert.match(messages.b060, /Sentry/);
     assert.match(messages.b072, /Sentry/);
     assert.ok(blocks.some(block => block.key === 'b072'));

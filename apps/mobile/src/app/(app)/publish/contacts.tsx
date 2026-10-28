@@ -1,3 +1,7 @@
+import { Button } from '../../../components/ui';
+import { NetworkLogo } from '../../../components/publish/NetworkLogo';
+import { networkName } from '../../../lib/networkLogos';
+import { usePublishRole } from '../../../lib/usePublishRole';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -11,6 +15,8 @@ import { colors, LIST_END_PADDING } from '../../../theme';
 export default function Contacts() {
     const api = usePublishApi();
     const router = useRouter();
+    const role = usePublishRole(api);
+    const canImport = role !== null && ['owner', 'manager', 'editor'].includes(role);
     const [contacts, setContacts] = useState<Contact[] | null>(null);
     const [search, setSearch] = useState('');
     const [status, setStatus] = useState<Subscription | null>(null);
@@ -32,6 +38,7 @@ export default function Contacts() {
     return (
         <View style={styles.screen}>
             <Stack.Screen options={{ title: t('contacts.title') }} />
+            {canImport ? <Button label={t('publishOps.import.title')} onPress={() => router.push('/publish/contact-import')} /> : null}
             <TextInput style={styles.input} value={search} onChangeText={setSearch} onSubmitEditing={load} returnKeyType="search" placeholder={t('contacts.search')} accessibilityLabel={t('contacts.search')} autoCapitalize="none" placeholderTextColor={colors.muted} maxLength={100} />
             <View style={styles.chips}>
                 {([null, ...STATUSES] as (Subscription | null)[]).map((s) => (
@@ -52,9 +59,9 @@ export default function Contacts() {
                     refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.accent} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}
                     ListEmptyComponent={<Text style={styles.muted}>{t('contacts.none')}</Text>}
                     renderItem={({ item }) => (
-                        <Pressable accessibilityRole="button" accessibilityLabel={`${item.name}, ${item.network}, ${t(`contacts.status.${item.status}`)}`} style={[styles.row, touchTarget]} onPress={() => router.push({ pathname: '/publish/contact-edit', params: { accountId: item.accountId, externalId: item.externalId } })}>
+                        <Pressable accessibilityRole="button" accessibilityLabel={`${item.name}, ${networkName(item.network)}, ${t(`contacts.status.${item.status}`)}`} style={[styles.row, touchTarget]} onPress={() => router.push({ pathname: '/publish/contact-edit', params: { accountId: item.accountId, externalId: item.externalId } })}>
                             <Text style={styles.name}>{item.name}</Text>
-                            <Text style={styles.muted}>{item.network} · {item.accountName} · {t(`contacts.status.${item.status}`)}</Text>
+                            <View style={styles.chips}><NetworkLogo network={item.network} /><Text style={styles.muted}>{t('publishOps.inbox.meta', { network: networkName(item.network), account: item.accountName, kind: t(`contacts.status.${item.status}`) })}</Text></View>
                             {item.tags.length ? <Text style={styles.tags}>{item.tags.join(', ')}</Text> : null}
                         </Pressable>
                     )}

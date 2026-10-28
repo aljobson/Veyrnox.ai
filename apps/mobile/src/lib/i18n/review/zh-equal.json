@@ -44,5 +44,10 @@
   "vibe.destination.tiktok": "Social platform brand name.",
   "vibe.destination.youtube": "Social platform brand name.",
   "whenPicker.hHMM": "Literal required time input format.",
-  "whenPicker.yYYYMMDD": "Literal required date input format."
+  "whenPicker.yYYYMMDD": "Literal required date input format.",
+  "publishOps.inbox.rowLabel": "Formatting template; words are localized separately.",
+  "publishOps.accountLabel": "Formatting template; words are localized separately.",
+  "publishOps.inbox.count": "Formatting template; words are localized separately.",
+  "publishOps.inbox.meta": "Formatting template; words are localized separately.",
+  "publishOps.queue.excludedAccount": "Formatting template; words are localized separately."
 }

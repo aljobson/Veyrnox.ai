@@ -44,6 +44,7 @@ const SKILL_ICONS: Readonly<Record<string, MenuIcon>> = {
     'bring-to-life': 'filmReel',
     'add-sound': 'speaker',
     storyboard: 'slideshow',
+    'oddling-continuity': 'smiley',
     'fix-my-prompt': 'wrench',
     'film-setup': 'slate',
     'film-studio-init': 'folderPlus',
@@ -55,3 +56,12 @@ const SKILL_ICONS: Readonly<Record<string, MenuIcon>> = {
 };
 const GROUP_HUE: Readonly<Record<SkillGroup, Hue>> = { Make: 'mint', Edit: 'sky', Plan: 'iris', Film: 'amber' };
 export const skillIcon = (id: string, group: SkillGroup): FeatureIcon => ({ icon: SKILL_ICONS[id] ?? 'chat', hue: GROUP_HUE[group] });
+
+const WORKFLOW_ICONS: Readonly<Record<string, FeatureIcon>> = {
+    'viral-short': { icon: 'lightning', hue: 'mint' },
+    'product-ad': { icon: 'bag', hue: 'iris' },
+    'photo-to-motion': { icon: 'play', hue: 'sky' },
+    'consistent-film': { icon: 'film', hue: 'rose' },
+    'oddling-series': { icon: 'smiley', hue: 'amber' },
+};
+export const workflowIcon = (id: string): FeatureIcon => WORKFLOW_ICONS[id] ?? OTHER_TOOL;

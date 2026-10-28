@@ -3006,6 +3006,54 @@
     "ratio": 1.83
   },
   {
+    "id": "skillsUi.use",
+    "english": "Use this skill",
+    "translation": "Использовать этот навык",
+    "ratio": 1.64
+  },
+  {
+    "id": "skillsUi.copyLink",
+    "english": "Copy link",
+    "translation": "Копировать ссылку",
+    "ratio": 1.89
+  },
+  {
+    "id": "skillsUi.copied",
+    "english": "Link copied",
+    "translation": "Ссылка скопирована",
+    "ratio": 1.64
+  },
+  {
+    "id": "publishOps.inbox.anyone",
+    "english": "Anyone",
+    "translation": "Любой участник",
+    "ratio": 2.33
+  },
+  {
+    "id": "publishOps.priority.high",
+    "english": "High",
+    "translation": "Высокий",
+    "ratio": 1.75
+  },
+  {
+    "id": "publishOps.import.add",
+    "english": "Add",
+    "translation": "Добавить",
+    "ratio": 2.67
+  },
+  {
+    "id": "modelPage.fact.optional",
+    "english": "Optional",
+    "translation": "Необязательно",
+    "ratio": 1.63
+  },
+  {
+    "id": "modelPage.mode.imageToImage",
+    "english": "image to image",
+    "translation": "Изображение в изображение",
+    "ratio": 1.79
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

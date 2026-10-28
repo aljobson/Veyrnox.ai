@@ -2808,6 +2808,72 @@
     "ratio": 1.67
   },
   {
+    "id": "skillsUi.skillsTitle",
+    "english": "Skills",
+    "translation": "Habilidades",
+    "ratio": 1.83
+  },
+  {
+    "id": "skillsUi.select",
+    "english": "Select",
+    "translation": "Seleccionar",
+    "ratio": 1.83
+  },
+  {
+    "id": "publishOps.inbox.anyone",
+    "english": "Anyone",
+    "translation": "Cualquiera",
+    "ratio": 1.67
+  },
+  {
+    "id": "publishOps.inbox.tags",
+    "english": "Tags",
+    "translation": "Etiquetas",
+    "ratio": 2.25
+  },
+  {
+    "id": "publishOps.inbox.anyTag",
+    "english": "Any tag",
+    "translation": "Cualquier etiqueta",
+    "ratio": 2.57
+  },
+  {
+    "id": "publishOps.inbox.saveTags",
+    "english": "Save tags",
+    "translation": "Guardar etiquetas",
+    "ratio": 1.89
+  },
+  {
+    "id": "publishOps.import.add",
+    "english": "Add",
+    "translation": "Añadir",
+    "ratio": 2
+  },
+  {
+    "id": "publishOps.queue.excludedTitle",
+    "english": "Not kept on save",
+    "translation": "No se conservarán al guardar",
+    "ratio": 1.75
+  },
+  {
+    "id": "modelPage.all",
+    "english": "All models",
+    "translation": "Todos los modelos",
+    "ratio": 1.7
+  },
+  {
+    "id": "modelPage.packs",
+    "english": "Credit packs",
+    "translation": "Paquetes de créditos",
+    "ratio": 1.67
+  },
+  {
+    "id": "modelPage.fact.prompt",
+    "english": "Prompt",
+    "translation": "Instrucción",
+    "ratio": 1.83
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

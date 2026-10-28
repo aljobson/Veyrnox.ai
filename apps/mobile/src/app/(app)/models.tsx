@@ -20,7 +20,7 @@ export default function Models() {
                             const from = priceLines(m)[0].credits;
                             const extra = needs(m);
                             return (
-                                <Link key={m.id} href={`/create/${encodeURIComponent(m.id)}`} asChild>
+                                <Link key={m.id} href={`/model/${encodeURIComponent(m.id)}`} asChild>
                                     <Pressable accessibilityRole="button" accessibilityLabel={t('mdl.rowLabel', { name: m.name, credits: from })} style={styles.row}>
                                         <Text style={styles.name}>{m.name}</Text>
                                         <Text style={styles.note}>

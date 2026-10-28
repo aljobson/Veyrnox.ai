@@ -45,7 +45,7 @@ describe('attachments', () => {
 
 describe('studio skills', () => {
     test('the eight Studio skills are present', () => {
-        expect(SKILLS.filter((s) => s.group !== 'Film').map((s) => s.id).sort()).toEqual(['add-sound', 'bring-to-life', 'edit-with-words', 'fix-my-photo', 'fix-my-prompt', 'model-picker', 'prompt-writer', 'storyboard']);
+        expect(SKILLS.filter((s) => s.group !== 'Film').map((s) => s.id).sort()).toEqual(['add-sound', 'bring-to-life', 'edit-with-words', 'fix-my-photo', 'fix-my-prompt', 'model-picker', 'oddling-continuity', 'prompt-writer', 'storyboard']);
     });
     test('the seven Film skills are present, in stage order, each fitting a chat with the live model list', () => {
         const film = SKILLS.filter((s) => s.group === 'Film');

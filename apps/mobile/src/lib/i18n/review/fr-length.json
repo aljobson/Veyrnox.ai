@@ -4458,6 +4458,84 @@
     "ratio": 1.67
   },
   {
+    "id": "skillsUi.skillsTitle",
+    "english": "Skills",
+    "translation": "Compétences",
+    "ratio": 1.83
+  },
+  {
+    "id": "skillsUi.use",
+    "english": "Use this skill",
+    "translation": "Utiliser cette compétence",
+    "ratio": 1.79
+  },
+  {
+    "id": "skillsUi.select",
+    "english": "Select",
+    "translation": "Sélectionner",
+    "ratio": 2
+  },
+  {
+    "id": "skillsUi.blankChat",
+    "english": "Blank chat",
+    "translation": "Discussion vierge",
+    "ratio": 1.7
+  },
+  {
+    "id": "publishOps.inbox.anyone",
+    "english": "Anyone",
+    "translation": "Tout le monde",
+    "ratio": 2.17
+  },
+  {
+    "id": "publishOps.inbox.tags",
+    "english": "Tags",
+    "translation": "Étiquettes",
+    "ratio": 2.5
+  },
+  {
+    "id": "publishOps.inbox.anyTag",
+    "english": "Any tag",
+    "translation": "Toute étiquette",
+    "ratio": 2.14
+  },
+  {
+    "id": "publishOps.inbox.saveTags",
+    "english": "Save tags",
+    "translation": "Enregistrer les étiquettes",
+    "ratio": 2.89
+  },
+  {
+    "id": "publishOps.import.title",
+    "english": "Add contacts",
+    "translation": "Ajouter des contacts",
+    "ratio": 1.67
+  },
+  {
+    "id": "publishOps.import.confirmTitle",
+    "english": "Add or update contacts?",
+    "translation": "Ajouter ou mettre à jour des contacts ?",
+    "ratio": 1.7
+  },
+  {
+    "id": "publishOps.import.add",
+    "english": "Add",
+    "translation": "Ajouter",
+    "ratio": 2.33
+  },
+  {
+    "id": "publishOps.queue.excludedTitle",
+    "english": "Not kept on save",
+    "translation": "Non conservés à l’enregistrement",
+    "ratio": 2
+  },
+  {
+    "id": "modelPage.fact.mode",
+    "english": "Mode",
+    "translation": "Mode de génération",
+    "ratio": 4.5
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

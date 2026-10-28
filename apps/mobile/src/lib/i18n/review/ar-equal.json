@@ -37,5 +37,10 @@
   "vibe.destination.tiktok": "Brand or product name retained as on the Arabic website: TikTok.",
   "vibe.destination.youtube": "Brand or product name retained as on the Arabic website: YouTube.",
   "whenPicker.hHMM": "Required time input syntax.",
-  "whenPicker.yYYYMMDD": "Required date input syntax."
+  "whenPicker.yYYYMMDD": "Required date input syntax.",
+  "publishOps.inbox.rowLabel": "Formatting template; words are localized separately.",
+  "publishOps.accountLabel": "Formatting template; words are localized separately.",
+  "publishOps.inbox.count": "Formatting template; words are localized separately.",
+  "publishOps.inbox.meta": "Formatting template; words are localized separately.",
+  "publishOps.queue.excludedAccount": "Formatting template; words are localized separately."
 }

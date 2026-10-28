@@ -41,5 +41,10 @@
   "vibe.destination.tiktok": "Brand or product name retained as on the website: TikTok.",
   "vibe.destination.youtube": "Brand or product name retained as on the website: YouTube.",
   "whenPicker.hHMM": "Literal input-format example, not translatable prose: HH:MM.",
-  "whenPicker.yYYYMMDD": "Literal input-format example, not translatable prose: YYYY-MM-DD."
+  "whenPicker.yYYYMMDD": "Literal input-format example, not translatable prose: YYYY-MM-DD.",
+  "publishOps.inbox.rowLabel": "Formatting template; words are localized separately.",
+  "publishOps.accountLabel": "Formatting template; words are localized separately.",
+  "publishOps.inbox.count": "Formatting template; words are localized separately.",
+  "publishOps.inbox.meta": "Formatting template; words are localized separately.",
+  "publishOps.queue.excludedAccount": "Formatting template; words are localized separately."
 }

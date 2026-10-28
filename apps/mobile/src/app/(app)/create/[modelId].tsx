@@ -8,6 +8,7 @@ import { KeyboardFormScrollView } from '../../../components/KeyboardFormScrollVi
 import { KeyboardScreen } from '../../../components/KeyboardScreen';
 import { FormHeader } from '../../../components/create/FormHeader';
 import { SectionLabel } from '../../../components/create/SectionLabel';
+import { SourceDurationCard } from '../../../components/create/SourceDurationCard';
 import { Text, TextField, Button, Card, Chip, Checkbox, themedStyles, useThemedStyles } from '../../../components/ui';
 
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -335,8 +336,8 @@ export default function CreateWithModel() {
                         />
                         <View style={styles.skillsRow}>
                             <Text variant="caption" tone="tertiary" style={styles.skillsIntro}>{t('create.workspace.skills')}</Text>
-                            <Button variant="tertiary" accessibilityRole="link" onPress={() => router.push('/chat/skills')} label={t('create.workspace.promptWriter')} />
-                            <Button variant="tertiary" accessibilityRole="link" onPress={() => router.push('/chat/skills')} label={t('create.workspace.fixPrompt')} />
+                            <Button variant="tertiary" accessibilityRole="link" onPress={() => router.push({ pathname: '/chat/skills', params: { skill: 'prompt-writer' } })} label={t('create.workspace.promptWriter')} />
+                            <Button variant="tertiary" accessibilityRole="link" onPress={() => router.push({ pathname: '/chat/skills', params: { skill: 'fix-my-prompt' } })} label={t('create.workspace.fixPrompt')} />
                         </View>
                     </View>
                 ) : null}
@@ -365,6 +366,7 @@ export default function CreateWithModel() {
                         {takesCamera ? <CameraPanel on={cameraOn} value={cinema} onToggle={setCameraOn} onChange={setCinema} /> : null}
                     </View>
                 ) : null}
+                <SourceDurationCard model={model} />
                 {missing > 0 ? (
                     <View style={styles.short}>
                         <Text variant="callout" tone="secondary" accessibilityLiveRegion="polite" style={styles.shortText}>{plural('create.short', missing, { have: String(balance ?? 0), need: String(price) })}</Text>

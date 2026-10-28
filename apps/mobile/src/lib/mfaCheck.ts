@@ -1,4 +1,5 @@
 import * as SecureStore from 'expo-secure-store';
+import { getInstallId } from './installReset';
 
 // Which accounts have already passed the two-factor check in this launch. The check asks the server who the person is,
 // so a screen that remounts must not ask again: it reads this instead. Held in memory only, so every launch asks once.
@@ -18,12 +19,17 @@ export function forgetMfaCleared(): void {
 // What the last completed check on this phone said about each account: does it have a verified authenticator?
 // Used only when a check cannot finish (offline, slow server): an account this phone has seen without two-factor
 // opens as before. Unknown counts as enrolled, so a fresh install signed in with a stolen password still stops.
-const enrolmentKey = (userId: string) => `veyrnox_mfa_enrolled_${userId.replace(/[^A-Za-z0-9_-]/g, '')}`;
+const enrolmentKey = (userId: string) => {
+    const installId = getInstallId();
+    return installId ? `veyrnox_mfa_enrolled_${installId}_${userId.replace(/[^A-Za-z0-9_-]/g, '')}` : null;
+};
 
 export async function knownMfaEnrolment(userId: string | null): Promise<boolean | null> {
     if (!userId) return null;
+    const key = enrolmentKey(userId);
+    if (!key) return null; // Unwritable marker: never trust a previous install's unenrolled flag.
     try {
-        const stored = await SecureStore.getItemAsync(enrolmentKey(userId));
+        const stored = await SecureStore.getItemAsync(key);
         return stored === '1' ? true : stored === '0' ? false : null;
     } catch {
         return null;
@@ -32,8 +38,10 @@ export async function knownMfaEnrolment(userId: string | null): Promise<boolean 
 
 export async function rememberMfaEnrolment(userId: string | null, enrolled: boolean): Promise<void> {
     if (!userId) return;
+    const key = enrolmentKey(userId);
+    if (!key) return;
     try {
-        await SecureStore.setItemAsync(enrolmentKey(userId), enrolled ? '1' : '0', {
+        await SecureStore.setItemAsync(key, enrolled ? '1' : '0', {
             keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY,
         });
     } catch {

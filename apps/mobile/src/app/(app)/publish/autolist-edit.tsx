@@ -1,6 +1,10 @@
+import { subscribeCacheUser } from '../../../lib/appCache';
+import { brandStore } from '../../../lib/publishBrand';
+import { publishScope, usePublishRole } from '../../../lib/usePublishRole';
+import { canPublish } from '../../../lib/publishDashboard';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { touchTarget } from '../../../lib/a11y';
 import { t } from '../../../lib/i18n';
@@ -13,6 +17,26 @@ const intervalText = (m: number) => (m < 60 ? t('autolists.everyMinutes', { coun
 
 export default function AutolistEdit() {
     const api = usePublishApi();
+    const role = usePublishRole(api);
+    const canWrite = role !== null && canPublish(role);
+    const canWriteRef = useRef(canWrite); canWriteRef.current = canWrite;
+    const generation = useRef(0), currentApi = useRef(api), running = useRef(false);
+    currentApi.current = api;
+    const [scopeTick, setScopeTick] = useState(0);
+    function guard() {
+        const version = generation.current, scope = publishScope();
+        return () => version === generation.current && scope === publishScope() && currentApi.current === api;
+    }
+    useEffect(() => {
+        const reset = () => {
+            generation.current++; canWriteRef.current = false; running.current = false;
+            setQueues(null); setName(''); setFeedUrl('https://'); setQueueId(''); setTemplate(DEFAULT_TEMPLATE); setInterval(360); setEnabled(true); setAutoSchedule(false); setReady(false); setBusy(false); setProblem(null);
+            setScopeTick(n => n + 1);
+        };
+        const userOff = subscribeCacheUser(reset), brandOff = brandStore.subscribe(reset);
+        return () => { generation.current++; canWriteRef.current = false; userOff(); brandOff(); };
+    }, []);
+
     const router = useRouter();
     const { id } = useLocalSearchParams<{ id?: string }>();
     const [queues, setQueues] = useState<Queue[] | null>(null);
@@ -29,9 +53,10 @@ export default function AutolistEdit() {
 
     useEffect(() => {
         let cancelled = false;
+        const valid = guard();
         Promise.all([fetchQueueList(api), id ? fetchAutolists(api) : Promise.resolve([])])
             .then(([q, lists]) => {
-                if (cancelled) return;
+                if (cancelled || !valid()) return;
                 setQueues(q);
                 const a = lists.find((x) => x.id === id);
                 if (a) {
@@ -48,32 +73,33 @@ export default function AutolistEdit() {
                 setReady(true);
             })
             .catch((err) => {
-                if (cancelled) return;
-                setProblem(t(autolistErrorKey(err)));
+                if (cancelled || !valid()) return;
+                if (valid()) setProblem(t(autolistErrorKey(err)));
                 setReady(true);
             });
         return () => {
             cancelled = true;
         };
-    }, [api, id]);
+    }, [api, id, scopeTick]);
 
     async function save() {
-        if (busy) return;
+        if (running.current || !canWriteRef.current) return;
+        const valid = guard();
         const input = { id: id ?? null, queueId, name, feedUrl, captionTemplate: template, refreshIntervalMinutes: interval, enabled, autoSchedule };
         const invalid = validateAutolist(input);
         if (invalid) {
             setProblem(t(invalid));
             return;
         }
-        setBusy(true);
+        running.current = true; setBusy(true);
         setProblem(null);
         try {
             await saveAutolist(api, input);
-            router.back();
+            if (valid()) router.back();
         } catch (err) {
-            setProblem(t(autolistErrorKey(err)));
+            if (valid()) setProblem(t(autolistErrorKey(err)));
         } finally {
-            setBusy(false);
+            if (valid()) { running.current = false; setBusy(false); }
         }
     }
 
@@ -83,43 +109,45 @@ export default function AutolistEdit() {
         <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
             <Stack.Screen options={{ title: id ? t('autolists.edit') : t('autolists.new') }} />
             <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+            {!canWrite ? <Text style={styles.muted}>{t('publishOps.readOnly')}</Text> : null}
+
                 <Text style={styles.label}>{t('autolists.name')}</Text>
-                <TextInput style={styles.input} value={name} onChangeText={setName} maxLength={80} accessibilityLabel={t('autolists.name')} placeholderTextColor={colors.muted} />
+                <TextInput editable={canWrite && !busy} style={styles.input} value={name} onChangeText={setName} maxLength={80} accessibilityLabel={t('autolists.name')} placeholderTextColor={colors.muted} />
                 <Text style={styles.label}>{t('autolists.feed')}</Text>
-                <TextInput style={styles.input} value={feedUrl} onChangeText={setFeedUrl} autoCapitalize="none" autoCorrect={false} keyboardType="url" accessibilityLabel={t('autolists.feed')} placeholderTextColor={colors.muted} />
+                <TextInput editable={canWrite && !busy} style={styles.input} value={feedUrl} onChangeText={setFeedUrl} autoCapitalize="none" autoCorrect={false} keyboardType="url" accessibilityLabel={t('autolists.feed')} placeholderTextColor={colors.muted} />
                 <Text style={styles.label} accessibilityRole="header">{t('autolists.queue')}</Text>
                 {queues && queues.length === 0 ? <Text style={styles.muted}>{t('autolists.noQueues')}</Text> : null}
                 <View style={styles.chips}>
                     {(queues ?? []).map((q) => (
-                        <Pressable key={q.id} accessibilityRole="button" accessibilityState={{ selected: queueId === q.id }} style={[styles.chip, touchTarget, queueId === q.id && styles.chipOn]} onPress={() => setQueueId(q.id)}>
+                        <Pressable disabled={!canWrite || busy} key={q.id} accessibilityRole="button" accessibilityState={{ selected: queueId === q.id }} style={[styles.chip, touchTarget, queueId === q.id && styles.chipOn]} onPress={() => setQueueId(q.id)}>
                             <Text style={[styles.chipText, queueId === q.id && styles.chipTextOn]}>{q.name}</Text>
                         </Pressable>
                     ))}
                 </View>
                 <Text style={styles.label}>{t('autolists.template')}</Text>
-                <TextInput style={[styles.input, styles.multi]} multiline value={template} onChangeText={setTemplate} maxLength={4000} accessibilityLabel={t('autolists.template')} placeholderTextColor={colors.muted} />
+                <TextInput editable={canWrite && !busy} style={[styles.input, styles.multi]} multiline value={template} onChangeText={setTemplate} maxLength={4000} accessibilityLabel={t('autolists.template')} placeholderTextColor={colors.muted} />
                 <Text style={styles.muted}>{t('autolists.templateHint')}</Text>
                 <Text style={styles.label} accessibilityRole="header">{t('autolists.interval')}</Text>
                 <View style={styles.chips}>
                     {INTERVALS.map((m) => (
-                        <Pressable key={m} accessibilityRole="button" accessibilityState={{ selected: interval === m }} style={[styles.chip, touchTarget, interval === m && styles.chipOn]} onPress={() => setInterval(m)}>
+                        <Pressable disabled={!canWrite || busy} key={m} accessibilityRole="button" accessibilityState={{ selected: interval === m }} style={[styles.chip, touchTarget, interval === m && styles.chipOn]} onPress={() => setInterval(m)}>
                             <Text style={[styles.chipText, interval === m && styles.chipTextOn]}>{intervalText(m)}</Text>
                         </Pressable>
                     ))}
                 </View>
                 <View style={styles.switchRow}>
                     <Text style={styles.label}>{t('autolists.enabled')}</Text>
-                    <Switch value={enabled} onValueChange={setEnabled} accessibilityLabel={t('autolists.enabled')} />
+                    <Switch disabled={!canWrite || busy} value={enabled} onValueChange={setEnabled} accessibilityLabel={t('autolists.enabled')} />
                 </View>
                 <View style={styles.switchRow}>
                     <Text style={styles.label}>{t('autolists.autoSchedule')}</Text>
-                    <Switch value={autoSchedule} onValueChange={setAutoSchedule} accessibilityLabel={t('autolists.autoSchedule')} />
+                    <Switch disabled={!canWrite || busy} value={autoSchedule} onValueChange={setAutoSchedule} accessibilityLabel={t('autolists.autoSchedule')} />
                 </View>
                 <Text style={styles.muted}>{t('autolists.autoScheduleHint')}</Text>
                 {problem ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{problem}</StatusText> : null}
-                <Pressable accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy }} style={[styles.button, touchTarget, busy && styles.off]} onPress={save}>
+                {canWrite ? <Pressable accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy }} style={[styles.button, touchTarget, busy && styles.off]} onPress={save}>
                     {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{t('autolists.save')}</Text>}
-                </Pressable>
+                </Pressable> : null}
             </ScrollView>
         </KeyboardAvoidingView>
     );

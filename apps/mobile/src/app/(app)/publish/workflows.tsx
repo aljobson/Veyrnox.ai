@@ -1,6 +1,10 @@
+import { subscribeCacheUser } from '../../../lib/appCache';
+import { brandStore } from '../../../lib/publishBrand';
+import { publishScope, usePublishRole } from '../../../lib/usePublishRole';
+import { canPublish } from '../../../lib/publishDashboard';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, FlatList, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { WorkflowEditor } from '../../../components/publish/WorkflowEditor';
 import { touchTarget } from '../../../lib/a11y';
@@ -19,6 +23,26 @@ const displayNumber = (value: number | null): string => value === null ? t('publ
 
 export default function Workflows() {
     const api = usePublishApi();
+    const role = usePublishRole(api);
+    const canWrite = role !== null && canPublish(role);
+    const canWriteRef = useRef(canWrite); canWriteRef.current = canWrite;
+    const generation = useRef(0), currentApi = useRef(api), running = useRef(false);
+    currentApi.current = api;
+    const [scopeTick, setScopeTick] = useState(0);
+    function guard() {
+        const version = generation.current, scope = publishScope();
+        return () => version === generation.current && scope === publishScope() && currentApi.current === api;
+    }
+    useEffect(() => {
+        const reset = () => {
+            generation.current++; canWriteRef.current = false; running.current = false;
+            setWorkflows(null); setPlan(null); setExpanded(null); setEditing(null); setBusy(false); setNote(null);
+            setScopeTick(n => n + 1);
+        };
+        const userOff = subscribeCacheUser(reset), brandOff = brandStore.subscribe(reset);
+        return () => { generation.current++; canWriteRef.current = false; userOff(); brandOff(); };
+    }, []);
+
     const [workflows, setWorkflows] = useState<ReadState<Workflow[]> | null>(null);
     const [plan, setPlan] = useState<ReadState<WorkflowPlan> | null>(null);
     const [expanded, setExpanded] = useState<string | null>(null);
@@ -30,44 +54,50 @@ export default function Workflows() {
     const BLANK: WorkflowDraft = { id: null, accountId: null, name: '', kind: null, matchMode: 'contains', keyword: '', replyText: '', enabled: true };
 
     async function write(run: () => Promise<unknown>) {
-        if (busy) return;
+        if (running.current || !canWriteRef.current) return;
+        const valid = guard(); running.current = true;
         setBusy(true);
         setNote(null);
         try {
             await run();
+            if (!valid()) return;
             setEditing(null);
             setReload((n) => n + 1);
         } catch (err) {
-            setNote(t(workflowErrorKey(err)));
+            if (valid()) setNote(t(workflowErrorKey(err)));
         } finally {
-            setBusy(false);
+            if (valid()) { running.current = false; setBusy(false); }
         }
     }
 
     const toggle = (w: Workflow, enabled: boolean) => write(() => saveWorkflow(api, { ...draftOf(w), enabled }));
-    const confirmDelete = (w: Workflow) =>
+    const confirmDelete = (w: Workflow) => {
+        if (!canWriteRef.current) return;
+        const valid = guard();
         Alert.alert(t('publish.deletethisworkflow'), t('publish.itstopssuggestingrepliesThiscannotbe'), [
             { text: t('publish.cancel2'), style: 'cancel' },
-            { text: t('publish.delete'), style: 'destructive', onPress: () => void write(() => deleteWorkflow(api, w.id)) },
+            { text: t('publish.delete'), style: 'destructive', onPress: () => { if (valid()) void write(() => deleteWorkflow(api, w.id)); } },
         ]);
+    };
 
     useFocusEffect(useCallback(() => {
         // Drop old-brand results on focus/refresh, and ignore requests completed after blur or a brand change.
         let active = true;
+        const valid = guard();
         setWorkflows(null);
         setPlan(null);
         setExpanded(null);
         void fetchWorkflows(api).then(
-            (value) => { if (active) setWorkflows({ api, value, message: null }); },
-            (error) => { if (active) setWorkflows({ api, value: null, message: workflowErrorKey(error) }); },
+            (value) => { if (active && valid()) setWorkflows({ api, value, message: null }); },
+            (error) => { if (active && valid()) setWorkflows({ api, value: null, message: workflowErrorKey(error) }); },
         );
         // Independent reads: a closed inbox must not hide a person's plan status.
         void fetchWorkflowPlan(api).then(
-            (value) => { if (active) setPlan({ api, value, message: value ? null : 'publishWorkflows.unavailable' }); },
-            (error) => { if (active) setPlan({ api, value: null, message: workflowErrorKey(error) }); },
+            (value) => { if (active && valid()) setPlan({ api, value, message: value ? null : 'publishWorkflows.unavailable' }); },
+            (error) => { if (active && valid()) setPlan({ api, value: null, message: workflowErrorKey(error) }); },
         );
         return () => { active = false; };
-    }, [api, reload]));
+    }, [api, reload, scopeTick]));
 
     const currentWorkflows = workflows?.api === api ? workflows : null;
     const currentPlan = plan?.api === api ? plan : null;
@@ -76,6 +106,7 @@ export default function Workflows() {
     return (
         <View style={styles.screen}>
             <Stack.Screen options={{ title: t('publishWorkflows.title') }} />
+            {!canWrite ? <Text style={styles.muted}>{t('publishOps.readOnly')}</Text> : null}
             <FlatList
                 data={currentWorkflows?.value ?? []}
                 keyExtractor={(item) => item.id}
@@ -88,7 +119,7 @@ export default function Workflows() {
                         <Pressable accessibilityRole="button" style={[styles.action, touchTarget]} onPress={() => setReload((n) => n + 1)}>
                             <Text style={styles.link}>{t('publishWorkflows.refresh')}</Text>
                         </Pressable>
-                        {currentWorkflows?.value ? (
+                        {canWrite && currentWorkflows?.value ? (
                             editing === 'new' ? (
                                 <View style={styles.card}>
                                     <Text accessibilityRole="header" style={styles.name}>{t('publish.newworkflow')}</Text>
@@ -117,7 +148,7 @@ export default function Workflows() {
                                 <Switch
                                     accessibilityLabel={`${item.name || t('publishWorkflows.unnamed')}: ${t(item.enabled ? 'publishWorkflows.on' : 'publishWorkflows.off')}`}
                                     value={item.enabled}
-                                    disabled={busy}
+                                    disabled={!canWrite || busy}
                                     onValueChange={(on) => void toggle(item, on)}
                                     trackColor={{ true: colors.accent, false: colors.border }}
                                 />
@@ -141,14 +172,14 @@ export default function Workflows() {
                         >
                             <Text style={styles.link}>{t(expanded === item.id ? 'publishWorkflows.hideDetails' : 'publishWorkflows.details')}</Text>
                         </Pressable>
-                        {editing === item.id ? (
+                        {canWrite ? (editing === item.id ? (
                             <WorkflowEditor initial={draftOf(item)} busy={busy} onSave={(d) => void write(() => saveWorkflow(api, d))} onCancel={() => setEditing(null)} />
                         ) : (
                             <View style={styles.titleRow}>
-                                <Pressable accessibilityRole="button" disabled={busy} style={[styles.action, touchTarget]} onPress={() => setEditing(item.id)}><Text style={styles.link}>{t('publish.edit')}</Text></Pressable>
-                                <Pressable accessibilityRole="button" disabled={busy} style={[styles.action, touchTarget]} onPress={() => confirmDelete(item)}><Text style={styles.danger}>{t('publish.delete')}</Text></Pressable>
+                                <Pressable accessibilityRole="button" disabled={!canWrite || busy} style={[styles.action, touchTarget]} onPress={() => setEditing(item.id)}><Text style={styles.link}>{t('publish.edit')}</Text></Pressable>
+                                <Pressable accessibilityRole="button" disabled={!canWrite || busy} style={[styles.action, touchTarget]} onPress={() => confirmDelete(item)}><Text style={styles.danger}>{t('publish.delete')}</Text></Pressable>
                             </View>
-                        )}
+                        )) : null}
                         {expanded === item.id ? (
                             <View style={styles.section}>
                                 <Text style={styles.body}>{item.allAccounts ? t('publishWorkflows.allAccounts') : t('publishWorkflows.accounts', {

@@ -295,3 +295,26 @@ test('grant revocation retains cancel, confirmation, client ID, refresh and busy
     await press(t('acct.oauth.refresh'));
     expect(calls.fetchGrantsRaw).toHaveBeenCalledTimes(2);
 });
+
+
+test('retained pre-install unenrolled flag cannot open MFA gate when remote enabled profile times out', async () => {
+    jest.useFakeTimers();
+    const store = require('expo-secure-store');
+    const install = require('../src/lib/installReset');
+    jest.spyOn(install, 'getInstallId').mockReturnValue('new-install-11111111');
+    jest.spyOn(store, 'getItemAsync').mockImplementation(async (key: unknown) =>
+        key === 'veyrnox_mfa_enrolled_00000000-0000-4000-8000-000000000001' ? '0' : null);
+    const actual = jest.requireActual<typeof import('../src/lib/mfaCheck')>('../src/lib/mfaCheck');
+    jest.mocked(knownMfaEnrolment).mockImplementationOnce(actual.knownMfaEnrolment);
+    const pending = deferred<Awaited<ReturnType<typeof calls.fetchProfile>>>();
+    jest.mocked(calls.fetchProfile).mockReturnValueOnce(pending.promise);
+    try {
+        await render(<MfaGate><RN.Text>Inside</RN.Text></MfaGate>);
+        await act(async () => { jest.advanceTimersByTime(GATE_TIMEOUT_MS + 1); });
+        expect(texts('Inside')).toHaveLength(0);
+        expect(texts(t('acct.mfa.unavailable'))).toHaveLength(1);
+        await act(async () => pending.resolve(profile()));
+        expect(texts('Inside')).toHaveLength(0);
+        expect(texts(t('acct.mfa.challengeTitle'))).toHaveLength(1);
+    } finally { jest.useRealTimers(); }
+});

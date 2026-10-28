@@ -17,6 +17,13 @@ export interface CatalogModel {
     // Clip lengths in seconds a video model may be bought at.
     readonly durations: number[];
     readonly capabilities: {
+        readonly kind?: string;
+        readonly presentation?: {
+            readonly fixedDurationLabel?: string;
+            readonly durationByOption?: Readonly<Record<string, string>>;
+            readonly resolutionLabel?: string;
+            readonly audioIncluded?: boolean;
+        };
         readonly inputs?: Record<string, unknown>;
         readonly media?: Record<string, { readonly required?: boolean; readonly label?: string; readonly maxFiles?: number; readonly maxSeconds?: number }>;
         // Present on stem-splitting models (six labelled files from one audio file). The server marks the model
