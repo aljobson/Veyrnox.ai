@@ -72,7 +72,7 @@ export default function StudioSkills() {
                     {SKILL_GROUPS.map((g) => (
                         <View key={g}>
                             <Text variant="footnote" style={styles.heading} accessibilityRole="header">{t(`chat.skills.group.${g}`)}</Text>
-                            {g === 'Film' ? <Text style={styles.muted}>{t('chat.skills.filmNote')}</Text> : null}
+                            {g === 'Film' ? <><Text style={styles.muted}>{t('chat.skills.filmNote')}</Text><Button label={t('chat.openFilmStudio')} onPress={() => router.push('/film')} /></> : null}
                             {SKILLS.filter((s) => s.group === g).map((s) => (
                                 <Card key={s.id} accessibilityRole="button" accessibilityLabel={`${s.name}. ${s.blurb}`} selected={selected.some(skill => skill.id === s.id)} accessibilityState={{ selected: selected.some(skill => skill.id === s.id) }} disabled={creating || !models || (selected.length >= MAX_SELECTED_SKILLS && !selected.some(skill => skill.id === s.id))} style={styles.row} onPress={() => toggle(s)}>
                                     <IconBadge {...skillIcon(s.id, s.group)} />

@@ -1,11 +1,12 @@
 import { Stack, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { AccessibilityInfo, ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { touchTarget } from '../../../lib/a11y';
 import { getCacheUser, subscribeCacheUser } from '../../../lib/appCache';
-import { cloudStatus, fetchCloudFilms, loadActiveStudio, openCloudFilm, type CloudFilm } from '../../../lib/filmCloud';
+import { commitUnlink, getActiveCloudLink, getFilmGeneration, removeCloudFilm, restorePhoneSlot, cloudStatus, fetchCloudFilms, loadActiveStudio, openCloudFilm, type CloudFilm } from '../../../lib/filmCloud';
 import { formatLocale, plural, t } from '../../../lib/i18n';
+import { askKeepOnPhone, confirmFilm, KEEP_PHONE_ERROR_KEYS } from '../../../components/film/FilmCloudBar';
 import { colors } from '../../../theme';
 
 type State = 'loading' | 'list' | 'unavailable' | 'offline' | 'busy' | 'error';
@@ -18,6 +19,7 @@ export default function CloudFilms() {
     const [state, setState] = useState<State>('loading');
     const [openingId, setOpeningId] = useState<string | null>(null);
     const [problem, setProblem] = useState<string | null>(null);
+    const [retryRow, setRetryRow] = useState<CloudFilm | null>(null);
     const generation = useRef(0);
     const operation = useRef(0);
     const opening = useRef(false);
@@ -47,7 +49,7 @@ export default function CloudFilms() {
             controller.current?.abort();
             opening.current = false;
             setOpeningId(null);
-            setProblem(null);
+            setProblem(null); setRetryRow(null);
             void reload();
         });
         void reload();
@@ -93,6 +95,50 @@ export default function CloudFilms() {
         }
     }
 
+    async function remove(row: CloudFilm, retry = false) {
+        if (opening.current) return;
+        const owner = getCacheUser(), token = ++operation.current;
+        if (!owner) return;
+        const current = () => owner === getCacheUser() && token === operation.current;
+        const linked = getActiveCloudLink()?.id === row.id;
+        opening.current = true; setOpeningId(row.id); setProblem(null); setRetryRow(null);
+        const tell = (text: string) => { if (current()) { setProblem(text); AccessibilityInfo.announceForAccessibility(text); } };
+        let prepared: Awaited<ReturnType<typeof askKeepOnPhone>> | null = null;
+        let removed = false;
+        try {
+            if (!retry && !await confirmFilm(t('filmOutput.remove'), t(linked ? 'filmOutput.removeLocal' : 'filmOutput.removeOther', { value1: row.name }), t('filmOutput.remove'))) return;
+            if (!current()) return;
+            prepared = linked ? await askKeepOnPhone(owner, row.name, current) : null;
+            if (!current()) return;
+            if (prepared && prepared.kind !== 'kept' && prepared.kind !== 'memoryOnly') {
+                if (prepared.kind !== 'cancelled') tell(t(KEEP_PHONE_ERROR_KEYS[prepared.kind]));
+                if (prepared.kind === 'unreadable') setRetryRow(row);
+                return;
+            }
+            if (prepared?.kind === 'memoryOnly' && !await confirmFilm(t('filmOutput.remove'), t('filmOutput.removeMemory', { value1: row.name }), t('filmOutput.remove'))) return;
+            if (!current()) return;
+            if (prepared && (prepared.generation !== getFilmGeneration() || getActiveCloudLink()?.id !== row.id)) { tell(t('filmOutput.changed')); await reload(); return; }
+            AccessibilityInfo.announceForAccessibility(t('filmCloud.loading'));
+            const result = await removeCloudFilm(api, row);
+            removed = result === 'removed';
+            if (!current()) return;
+            if (result === 'removed') {
+                const unlinked = prepared ? await commitUnlink(row.id, prepared) : null;
+                if (unlinked?.memoryOnly) tell(t('filmOutput.memoryOnly', { value1: row.name }));
+                else tell(t('filmOutput.removed'));
+                await reload();
+            } else {
+                tell(t(result === 'unavailable' ? 'filmCloud.unavailable' : result === 'busy' ? 'filmOutput.busy' : result === 'changed' ? 'filmOutput.changed' : 'filmOutput.failed'));
+                if (result === 'changed') await reload();
+            }
+        } finally {
+            if (!removed && prepared && (prepared.kind === 'kept' || prepared.kind === 'memoryOnly') && !await restorePhoneSlot(prepared)) {
+                tell(t('filmOutput.restoreFailed', { value1: prepared.restore?.name ?? '' }));
+            }
+            if (current()) { opening.current = false; setOpeningId(null); }
+        }
+    }
+
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
             <Stack.Screen options={{ title: t('filmCloud.title') }} />
@@ -105,16 +151,19 @@ export default function CloudFilms() {
                 const shots = plural('filmCloud.shots', row.shotCount);
                 const date = row.updatedAt ? new Date(row.updatedAt).toLocaleDateString(formatLocale()) : '';
                 return (
-                    <Pressable key={row.id} accessibilityRole="button" accessibilityLabel={t('filmCloud.rowLabel', { name: row.name, shots, date })}
+                    <View key={row.id}><Pressable accessibilityRole="button" accessibilityLabel={t('filmCloud.rowLabel', { name: row.name, shots, date })}
                         accessibilityState={{ busy: openingId === row.id, disabled: openingId !== null }} disabled={openingId !== null}
                         style={[styles.row, touchTarget]} onPress={() => { void choose(row); }}>
                         <Text style={styles.name}>{row.name}</Text>
                         <Text style={styles.body}>{shots}{date ? ` · ${date}` : ''}</Text>
-                        {openingId === row.id ? <Text style={styles.body}>{t('filmCloud.opening')}</Text> : null}
+                        {openingId === row.id ? <Text accessibilityLiveRegion="polite" style={styles.body}>{t('filmCloud.opening')}</Text> : null}
+                        <Text style={styles.name}>{t('filmOutput.open')}</Text>
                     </Pressable>
+                    <Pressable accessibilityRole="button" accessibilityLabel={`${t('filmOutput.remove')}: ${row.name}`} disabled={openingId !== null} accessibilityState={{ disabled: openingId !== null }} style={touchTarget} onPress={() => void remove(row)}><Text style={styles.name}>{t('filmOutput.remove')}</Text></Pressable></View>
                 );
             })}
             {problem ? <Text style={styles.body} accessibilityLiveRegion="polite">{problem}</Text> : null}
+            {retryRow ? <Pressable accessibilityRole="button" accessibilityLabel={t('filmCloud.retry')} style={touchTarget} onPress={() => void remove(retryRow, true)}><Text style={styles.name}>{t('filmCloud.retry')}</Text></Pressable> : null}
             {state === 'busy' || problem === t('filmCloud.busy') ? (
                 <Pressable accessibilityRole="button" accessibilityLabel={t('filmCloud.retry')} style={touchTarget} onPress={() => { setProblem(null); void reload(); }}>
                     <Text style={styles.name}>{t('filmCloud.retry')}</Text>

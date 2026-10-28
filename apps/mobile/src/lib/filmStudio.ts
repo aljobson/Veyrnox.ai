@@ -232,7 +232,7 @@ export function nextPromptVersion(film: Film, shot: Shot, content: string): Prom
     if (headings.length !== 15 || PROMPT_BLOCKS.some((title, index) => headings[index] !== `${index + 1}. ${title}`)) throw new Error(t('filmStudio.preserveallfifteenpromptblocksintheir'));
     const previous = film.prompts.filter((prompt) => prompt.shot === shot.id).sort((a, b) => a.version - b.version);
     const last = previous.at(-1);
-    if (last && !film.attempts.some((attempt) => attempt.shot === shot.id && attempt.version === last.version)) throw new Error(t('filmStudio.logthepreviousgenerationresultandverdict'));
+    if (last && last.context === promptContext(film, shot) && !film.attempts.some((attempt) => attempt.shot === shot.id && attempt.version === last.version)) throw new Error(t('filmStudio.logthepreviousgenerationresultandverdict'));
     if (last && last.context === promptContext(film, shot)) {
         const before = last.content.split('\n');
         const after = content.split('\n');

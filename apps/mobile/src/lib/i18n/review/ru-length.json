@@ -2982,6 +2982,24 @@
     "ratio": 1.62
   },
   {
+    "id": "filmOutput.locked",
+    "english": "Locked",
+    "translation": "Заблокирован",
+    "ratio": 2
+  },
+  {
+    "id": "filmOutput.open",
+    "english": "Open",
+    "translation": "Открыть",
+    "ratio": 1.75
+  },
+  {
+    "id": "filmOutput.copied",
+    "english": "Copied",
+    "translation": "Скопировано",
+    "ratio": 1.83
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

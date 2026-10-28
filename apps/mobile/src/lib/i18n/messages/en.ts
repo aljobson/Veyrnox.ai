@@ -83,6 +83,7 @@ import area_features from './en/features';
 import area_files from './en/files';
 import area_film from './en/film';
 import area_filmCloud from './en/filmCloud';
+import area_filmOutput from './en/filmOutput';
 import area_filmSkills from './en/filmSkills';
 import area_filmStudio from './en/filmStudio';
 import area_filmStudioStore from './en/filmStudioStore';
@@ -272,6 +273,7 @@ const catalog = {
     ...area_files,
     ...area_film,
     ...area_filmCloud,
+    ...area_filmOutput,
     ...area_filmSkills,
     ...area_filmStudio,
     ...area_filmStudioStore,

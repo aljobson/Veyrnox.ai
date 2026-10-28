@@ -1,7 +1,8 @@
+import { copyText } from '../../../../lib/clipboard';
 import { t } from '../../../../lib/i18n';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { AccessibilityInfo, ActivityIndicator, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { touchTarget } from '../../../../lib/a11y';
 import { SHOT_LANES, handoffFor, latestPrompt, shotRow, type Film } from '../../../../lib/filmStudio';
 import { loadActiveStudio } from '../../../../lib/filmCloud';
@@ -82,13 +83,18 @@ export default function FilmShot() {
                 <>
                     <Text style={styles.money}>{t('film.creditsseconds', { value1: offer.credits, value2: offer.model.name, value3: offer.seconds })}</Text>
                     <Text style={styles.muted}>{t('film.thisopensCreatewiththepromptfilled')}</Text>
-                    <Pressable accessibilityRole="button" style={styles.primary} onPress={() => { if (current()) router.push({ pathname: '/create/[modelId]', params: { modelId: offer.model.id, prompt: offer.prompt, duration: String(offer.seconds) } }); }}>
+                    <Pressable accessibilityRole="button" style={styles.primary} onPress={() => { if (current()) router.push({ pathname: '/create/[modelId]', params: { modelId: offer.model.id, prompt: offer.prompt, duration: String(offer.seconds), aspect: offer.aspect } }); }}>
                         <Text style={styles.primaryText}>{t('film.openinCreate')}</Text>
                     </Pressable>
                 </>
             ) : offer ? (
                 <Text style={styles.muted}>{offer.reason}</Text>
             ) : null}
+            {prompt ? <Pressable accessibilityRole="button" style={[styles.secondary, touchTarget]} onPress={async () => {
+                if (!current()) return;
+                const ok = await copyText(prompt.content);
+                if (current()) AccessibilityInfo.announceForAccessibility(t(ok ? 'filmOutput.copied' : 'filmOutput.copyFailed'));
+            }}><Text style={styles.secondaryText}>{t('filmOutput.copy')}</Text></Pressable> : null}
             {prompt ? (
                 <Pressable accessibilityRole="button" style={[styles.secondary, touchTarget]} onPress={() => { if (current()) void Share.share({ message: prompt.content }); }}>
                     <Text style={styles.secondaryText}>{t('film.sharethefullprompt')}</Text>

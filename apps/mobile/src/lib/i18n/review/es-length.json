@@ -2796,6 +2796,12 @@
     "ratio": 3.33
   },
   {
+    "id": "filmOutput.verdict",
+    "english": "Take verdict",
+    "translation": "Veredicto de la toma",
+    "ratio": 1.67
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

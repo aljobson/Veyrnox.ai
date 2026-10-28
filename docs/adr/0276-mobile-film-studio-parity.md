@@ -1,4 +1,4 @@
-# ADR-0000: Mobile Film Studio control parity
+# ADR-0286: Mobile Film Studio control parity
 
 Status: Accepted for implementation in two parts.
 
@@ -17,3 +17,13 @@ Cloud saves serialize per owner and film generation at module scope so remounts 
 The app length-review script now uses the translation test's English fallback for plural forms: the exact English key, or the family's .other when English has both .one and .other. This preserves existing reviews while adding only new expanded strings. New Film Studio messages live in the filmWorkspace area. The frozen order requested filmStudio-prefixed messages in that area, but the existing catalog reader rejects mismatched prefixes; the three new validation messages therefore use filmWorkspace keys instead. Existing locale catalog and length-review files already exceed the 500-line limit and retain their mandated structure; new implementation files remain below it.
 
 Part B uses these shared selectors and helpers for passports, tests and prompts. Its scope includes prompt output, the one-line revision loop and fifteen-miss limit, copying via the host-provided copyText share-sheet helper, aspect handoff, account removal, and conflict actions. Part A introduces no Copy action or clipboard dependency. Part B does not need to revise this ADR.
+
+## Amendment 1 (film-parity-b)
+
+Phone stages 5–7 now expose passport drafts, generated reference and test prompts, test scores and locks, and shot prompt revisions and results. Unlike the web, a stale unlogged prompt may be rebuilt: the previous-result requirement applies only when its context is still current. A current unlogged prompt still cannot be revised. Copy uses copyText alongside Share; Create receives the supported aspect and duration without charging here.
+
+Cloud save replies are accepted against the sent id and expected revision, the current link, owner and generation, and removed ids. List fetches never advance the link. Save as a new film POSTs while retaining the original link and moves it only on its own confirmed reply while that origin still matches. Unanswered sends retain their idempotency keys; removal replays only unconfirmed PUTs before choosing the DELETE revision. Saves and retries remain serialized.
+
+Keeping a film on the phone and unlinking it are separate steps. An additive checked cache read distinguishes absence from unreadability and preserves expired or damaged entries. Another local film requires an explicit Replace/Keep choice. An edit counter retries persistence when the text changes; account and generation guards discard stale work. Failed removal restores a replaced local film, and restoration failure is shown. Only confirmed removal changes the link and invalidates pending saves. Memory-only films remain open without overwriting the local slot. DELETE 404 is unavailable; a PUT 404 means removed elsewhere only after a successful list confirms absence.
+
+Mounted workspace replacement cancels queued autosaves and rebinds the film and keyed stage drafts. The existing chat.openFilmStudio key is reused. Existing generated catalogs and length reviews already exceed 500 lines and retain their structure; new implementation files stay below 500 lines.

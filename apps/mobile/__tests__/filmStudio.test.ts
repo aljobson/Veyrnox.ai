@@ -218,3 +218,12 @@ test('handoff refuses External before lookup, refuses unsupported aspect after d
     expect(handoffFor(film, film.shots[0], [portrait])).toEqual({ ok: false, reason: t('filmWorkspace.incompatibleAspect') });
     expect(handoffFor(film, film.shots[0], [catalogModel()])).toMatchObject({ ok: true, aspect: '16:9' });
 });
+
+test('stale unlogged prompts can be rebuilt; current unlogged prompts cannot', () => {
+    const film = withPrompt(lockedFilm());
+    expect(() => nextPromptVersion(film, film.shots[0], film.prompts[0].content)).toThrow(t('filmStudio.logthepreviousgenerationresultandverdict'));
+    const shot = { ...film.shots[0], goal: 'A new goal' };
+    const changed = { ...film, shots: [shot] };
+    const details = Object.fromEntries(PROMPT_DETAILS.map(([key]) => [key, `detail ${key}`]));
+    expect(nextPromptVersion(changed, shot, buildShotPrompt(changed, shot, details)).version).toBe(2);
+});
