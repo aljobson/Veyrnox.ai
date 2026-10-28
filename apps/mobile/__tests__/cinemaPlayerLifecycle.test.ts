@@ -51,7 +51,10 @@ test('one mount requests one initial play grant; blur saves progress and refocus
         mockPlayer.currentTime = 42;
         if (blur) blur(); await settle();
         expect(mockSave).toHaveBeenLastCalledWith(42, true);
-        expect(mockPlayer.pause).not.toHaveBeenCalled();
+        expect(mockPlayer.pause).toHaveBeenCalled();
+        mockPlayer.play.mockClear();
+        jest.advanceTimersByTime(61000); await settle();
+        expect(mockPlayer.play).not.toHaveBeenCalled();
         blur = mockFocusEffects[0](); await settle();
         expect(mockRequest.mock.calls.filter(([path]) => path === '/api/v1/cinema/play')).toHaveLength(1);
         expect(mockPlayer.replaceAsync).toHaveBeenCalledTimes(1);

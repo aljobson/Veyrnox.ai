@@ -1626,6 +1626,24 @@
     "ratio": 1.8
   },
   {
+    "id": "editorCore.fit",
+    "english": "Fit",
+    "translation": "फ़िट करें",
+    "ratio": 3
+  },
+  {
+    "id": "publishParity.post.readOnly",
+    "english": "Read only",
+    "translation": "केवल पढ़ने के लिए",
+    "ratio": 1.89
+  },
+  {
+    "id": "oddlingsStudio.any",
+    "english": "Any",
+    "translation": "कोई भी",
+    "ratio": 2
+  },
+  {
     "id": "libraryCreate.copied",
     "english": "Copied",
     "translation": "कॉपी हो गया",
@@ -1671,6 +1689,12 @@
     "id": "checkin.lastDay",
     "english": "Day 6+",
     "translation": "दिन 6 और आगे",
+    "ratio": 2
+  },
+  {
+    "id": "cinema.type.SHORT",
+    "english": "Short",
+    "translation": "लघु फ़िल्म",
     "ratio": 2
   }
 ]

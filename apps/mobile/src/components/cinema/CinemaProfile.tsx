@@ -2,6 +2,7 @@ import * as Crypto from 'expo-crypto';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
+import { AnalyticsEntry } from './AnalyticsEntry';
 import { CreatorUploadShell } from './CreatorUploadShell';
 import { PassCard } from './PassCard';
 import { MIN_TARGET } from '../../lib/a11y';
@@ -28,7 +29,7 @@ export function CinemaProfile() {
         <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
                 <PassCard />
-                {profile.value ? <><ProfileCard profile={profile.value} />{profile.value.role === 'creator' ? <CreatorUploadShell /> : <Apply />}</> : <NewProfile onDone={load} />}
+                {profile.value ? <><ProfileCard profile={profile.value} />{profile.value.role === 'creator' ? <><CreatorUploadShell /><AnalyticsEntry /></> : <Apply />}</> : <NewProfile onDone={load} />}
             </ScrollView>
         </KeyboardAvoidingView>
     );

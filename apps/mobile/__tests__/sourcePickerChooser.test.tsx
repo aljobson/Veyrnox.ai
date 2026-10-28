@@ -1,0 +1,31 @@
+import { act } from 'react';
+import * as RN from 'react-native';
+import { createRoot, type Root } from 'test-renderer';
+import { SourcePicker } from '../src/components/SourcePicker';
+import { launchImageLibraryAsync } from 'expo-image-picker';
+import { uploadSource } from '../src/lib/uploads';
+let mockOwner = 'A';
+var mockListeners: Set<() => void>;
+jest.mock('../src/lib/appCache', () => ({ ...jest.requireActual('../src/lib/appCache'), getCacheUser: () => mockOwner, subscribeCacheUser: (fn: () => void) => { (mockListeners ??= new Set()).add(fn); return () => mockListeners.delete(fn); } }));
+jest.mock('expo-image', () => ({ Image: jest.requireActual('react-native').Image }));
+jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: jest.fn(), UIImagePickerPreferredAssetRepresentationMode: { Compatible: 'compatible' } }));
+jest.mock('../src/lib/uploads', () => ({ uploadSource: jest.fn(), uploadMessage: () => 'Upload failed' }));
+void [RN.View, RN.Text, RN.Pressable, RN.ScrollView, RN.Image, RN.ActivityIndicator];
+let root: Root;
+const onChange = jest.fn(), onBusy = jest.fn();
+const asset = { canceled: false, assets: [{ uri: 'file:///photo.jpg', mimeType: 'image/jpeg', fileSize: 123, width: 10, height: 10 }] } as const;
+beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; jest.clearAllMocks(); mockOwner = 'A'; root = createRoot(); jest.mocked(uploadSource).mockResolvedValue('key'); });
+afterEach(async () => { await act(async () => root.unmount()); });
+test.each(['account', 'unmount', 'same', 'error'] as const)('pending native chooser: %s', async action => {
+    let resolve!: (value: any) => void, reject!: (error: Error) => void;
+    jest.mocked(launchImageLibraryAsync).mockReturnValue(new Promise((yes, no) => { resolve = yes; reject = no; }));
+    await act(async () => root.render(<SourcePicker slot={{ slot: 'image', kind: 'image', label: 'Image', required: false }} api={{} as any} onChange={onChange} onBusy={onBusy} />));
+    const button = root.container.queryAll(n => n.props.accessibilityLabel === 'Choose image for Image')[0];
+    await act(async () => { button.props.onClick({ nativeEvent: {}, target: 1, currentTarget: 1 }); });
+    if (action === 'account' || action === 'error') await act(async () => { mockOwner = 'B'; mockListeners.forEach(fn => fn()); });
+    if (action === 'unmount') await act(async () => root.unmount());
+    await act(async () => { if (action === 'error') reject(Error('chooser')); else resolve(asset); });
+    expect(uploadSource).toHaveBeenCalledTimes(action === 'same' ? 1 : 0);
+    if (action !== 'same') { expect(onChange).not.toHaveBeenCalled(); expect(onBusy).not.toHaveBeenCalledWith(true); }
+    else expect(onChange).toHaveBeenLastCalledWith('key');
+});

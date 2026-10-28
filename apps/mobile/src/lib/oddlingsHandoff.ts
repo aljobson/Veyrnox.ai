@@ -1,6 +1,9 @@
 // Sending an Oddling on to Create. Nothing here charges or sends anything: it only works out which catalog model to
 // open, the words to fill in and the price to show first. Create shows the price again and charges only on its own
 // Generate button; the price is the catalog's, never worked out here.
+import { stageCreativeSourceHandoff } from './creativeSourceHandoff';
+import type { GenerationReference } from './sources';
+import { buildDirection } from './oddlingsBuilder';
 import { promptHref } from './explore';
 import { estimateCredits, isSupported, kindOf, textInput, type CatalogModel } from './media';
 import { MOTIONS, buildStudioPrompt, characterTraits, oddlingIdentity, type Picks } from './oddlingsBuilder';
@@ -12,9 +15,30 @@ const LOOK_TRAITS = 6;
 
 const open = (models: readonly CatalogModel[]) => models.filter((m) => !m.gated && isSupported(m));
 
-export function portraitModel(models: readonly CatalogModel[]): CatalogModel | null {
-    const usable = open(models);
-    return usable.find((m) => m.id === PORTRAIT_MODEL_ID) ?? null;
+export function portraitModel(models: readonly CatalogModel[], { reference = false } = {}): CatalogModel | null {
+    const eligible = models.filter(model => {
+        const inputs = model.capabilities?.inputs ?? {};
+        const media = model.capabilities?.media ?? {};
+        return kindOf(model.modality) === 'image' && !model.gated
+            && !('clips' in inputs) && !('plan_id' in inputs) && !('topic' in inputs) && 'prompt' in inputs
+            && Number.isFinite(model.credits)
+            && Object.values(media).some(slot => slot?.required) === reference
+            && (!reference || media.image?.required === true)
+            && (!reference || !Object.entries(media).some(([slot, spec]) => slot !== 'image' && spec?.required));
+    });
+    const priority = reference ? ['nano-banana-pro-edit-grsai', 'nano-banana-pro-edit'] : [PORTRAIT_MODEL_ID, 'nano-banana-pro-grsai', 'seedream-4', 'nano-banana-kie'];
+    return priority.map(id => eligible.find(model => model.id === id)).find(Boolean)
+        ?? eligible.find(model => model.bestValue === true) ?? eligible[0] ?? null;
+}
+
+export function portraitHandoff({ models, picks, scene, references = [], referenceNote = '' }: {
+    models: readonly CatalogModel[]; picks: Picks; scene: string; references?: readonly GenerationReference[]; referenceNote?: string;
+}) {
+    const hasReference = references.length > 0;
+    const model = portraitModel(models, { reference: hasReference });
+    if (!model) return null;
+    const sourceHandoff = stageCreativeSourceHandoff({ recipe: 'oddling', modelId: model.id, aspect: '9:16', uploaded: {}, fromLibrary: {}, references, picks });
+    return { model, href: { pathname: '/create/[modelId]' as const, params: { modelId: model.id, prompt: buildDirection({ scene, referenceNote, hasReference }), recipe: 'oddling', sourceHandoff } } };
 }
 
 // Auto Short is the catalog model that takes a topic instead of a prompt.

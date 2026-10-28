@@ -2898,6 +2898,42 @@
     "ratio": 1.69
   },
   {
+    "id": "editorCore.moveLater",
+    "english": "Move later by one second",
+    "translation": "Um eine Sekunde nach hinten verschieben",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorCore.fit",
+    "english": "Fit",
+    "translation": "Einpassen",
+    "ratio": 3
+  },
+  {
+    "id": "editorCore.markersTool",
+    "english": "Markers",
+    "translation": "Markierungen",
+    "ratio": 1.71
+  },
+  {
+    "id": "publishParity.calendar.status",
+    "english": "Status",
+    "translation": "Beitragsstatus",
+    "ratio": 2.33
+  },
+  {
+    "id": "cinemaViewer.access.free",
+    "english": "Free",
+    "translation": "Kostenlos",
+    "ratio": 2.25
+  },
+  {
+    "id": "oddlingsStudio.any",
+    "english": "Any",
+    "translation": "Beliebig",
+    "ratio": 2.67
+  },
+  {
     "id": "libraryCreate.copyFailed",
     "english": "Could not copy. Try again.",
     "translation": "Kopieren fehlgeschlagen. Versuche es erneut.",

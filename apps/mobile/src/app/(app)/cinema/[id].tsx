@@ -1,5 +1,10 @@
 import * as Crypto from 'expo-crypto';
-import { Image } from 'expo-image';
+import { ApiError } from '../../../lib/api';
+import { Button, Chip } from '../../../components/ui';
+import { CinemaPosterImage } from '../../../components/cinema/CinemaPosterImage';
+import { SeasonList } from '../../../components/cinema/SeasonList';
+import { CommentsPreview } from '../../../components/cinema/CommentsPreview';
+import { typeLabel } from '../../../lib/cinemaViewer';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
@@ -9,7 +14,7 @@ import { VotePolls } from '../../../components/cinema/VotePolls';
 import { useAuth } from '../../../auth/AuthProvider';
 import { blockMember, blocksErrorKey } from '../../../lib/cinemaBlocks';
 import { plural, t } from '../../../lib/i18n';
-import { formatDuration, parseTitleDetail, posterUrl, type TitleDetail } from '../../../lib/cinema';
+import { parseTitleDetail, type TitleDetail } from '../../../lib/cinema';
 import { categoryKey, fetchEntitlement, firstEpisode, firstWatchable, lockMessageKey, titleShareUrl, type LockReason } from '../../../lib/cinemaBrowse';
 import { parseEpisodeLocks } from '../../../lib/cinemaSeries';
 import { colors, fonts } from '../../../theme';
@@ -21,20 +26,29 @@ export default function CinemaTitlePage() {
     const [detail, setDetail] = useState<TitleDetail | null>(null);
     const [detailLocks, setDetailLocks] = useState<ReadonlyMap<string, LockReason | null>>(new Map());
     const [episodeLocks, setEpisodeLocks] = useState<ReadonlyMap<string, LockReason | null>>(new Map());
-    const [failed, setFailed] = useState(false);
+    const [failed, setFailed] = useState<string | null>(null);
+    const [retry, setRetry] = useState(0);
+    const back = () => router.canGoBack() ? router.back() : router.replace('/cinema');
 
     useEffect(() => {
         let live = true;
+        setFailed(null);
+        setDetail(null);
         api.request<unknown>(`/api/v1/cinema/titles/${encodeURIComponent(id)}`)
             .then((body) => {
                 const parsed = parseTitleDetail(body);
                 if (!live) return;
                 if (parsed) { setDetailLocks(parseEpisodeLocks(body)); setDetail(parsed); }
-                else setFailed(true);
+                else setFailed('cinema.titlePage.couldNotLoadThisTitleTry');
             })
-            .catch(() => live && setFailed(true));
+            .catch(err => {
+                if (!live) return;
+                setFailed(err instanceof ApiError && [400, 404].includes(err.status) ? 'cinema.thistitleisnotavailable'
+                    : err instanceof ApiError && err.status === 503 && err.code === 'viewing_not_open' ? 'cinema.discovery.socialCinemaViewingIsNotOpen'
+                    : 'cinema.titlePage.couldNotLoadThisTitleTry');
+            });
         return () => { live = false; };
-    }, [api, id]);
+    }, [api, id, retry]);
 
     // Detail's free access is unmetered. Check only free candidates, serially:
     // entitlement shares the account's read quota with Play and other requests.
@@ -125,19 +139,27 @@ export default function CinemaTitlePage() {
         ]);
     };
 
-    if (failed) return <View style={styles.center}><Text style={styles.muted}>{t('cinema.thistitleisnotavailable')}</Text></View>;
-    if (!detail) return <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>;
+    if (failed) return <View style={styles.center}><Text style={styles.muted}>{t(failed)}</Text>
+        {failed === 'cinema.titlePage.couldNotLoadThisTitleTry' ? <Button label={t('recovery.retry')} onPress={() => setRetry(n => n + 1)} /> : null}
+        <Button variant="tertiary" label={t('cinema.back')} onPress={back} /></View>;
+    if (!detail) return <View style={styles.center}><ActivityIndicator color={colors.accent} /><Button variant="tertiary" label={t('cinema.back')} onPress={back} /></View>;
 
     const { title } = detail;
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
             <Stack.Screen options={{ title: title.title }} />
-            <Image source={{ uri: posterUrl(title.id) }} style={styles.poster} contentFit="cover" accessibilityLabel={t('cinema.posterfor', { value1: title.title })} accessibilityIgnoresInvertColors />
+            <Chip label={typeLabel(title.contentType)} />
+            <CinemaPosterImage id={title.id} style={styles.poster} label={t('cinema.posterfor', { value1: title.title })} />
             <Text style={styles.title} accessibilityRole="header">{title.title}</Text>
-            {title.creator ? <Text style={styles.muted}>{title.creator}</Text> : null}
-            {title.categories.length ? <Text style={styles.muted}>{title.categories.map((c) => t(categoryKey(c))).join(' · ')}</Text> : null}
+            {title.creator ? <Text style={styles.muted}>{t('cinemaSeries.by', { creator: title.creator })}</Text> : null}
+            {title.language ? <Text style={styles.muted}>{t('cinemaViewer.language', { language: title.language })}</Text> : null}
+            <View style={styles.badges}>{title.categories.map(c => <Chip key={c} label={t(categoryKey(c))} />)}</View>
             {title.contentType === 'SERIES' ? <Text style={styles.muted}>{plural('cinemaBrowse.episodes', title.episodeCount || detail.episodes.length)}</Text> : null}
             {title.synopsis ? <Text style={styles.body}>{title.synopsis}</Text> : null}
+            {title.aiDisclosures.length ? <View style={{ gap: 8 }}>
+                <Text style={styles.lockedTitle} accessibilityRole="header">{t('cinemaViewer.aiUse')}</Text>
+                <View style={styles.badges}>{title.aiDisclosures.map(code => <Chip key={code} label={t(`cinemaUpload.disclosure.${code}`)} />)}</View>
+            </View> : null}
             {title.contentType === 'SERIES' && firstWatchable(episodes) ? (
                 <Pressable accessibilityRole="button" style={styles.play} onPress={() => { const e = firstWatchable(episodes); if (e) watch(e.id, e.title, title.id); }}>
                     <Text style={styles.playText}>{t('cinemaBrowse.watch')}</Text>
@@ -158,46 +180,27 @@ export default function CinemaTitlePage() {
                     <Text style={styles.muted}>{t('cinema.thistitleisnotavailabletowatch')}</Text>
                 )
             ) : (
-                episodes.map((e) => (
-                    <Pressable
-                        key={e.id}
-                        accessibilityRole="button"
-                        accessibilityState={{ disabled: !e.watchable }}
-                        disabled={!e.watchable}
-                        style={[styles.row, !e.watchable && styles.rowOff]}
-                        onPress={() => watch(e.id, e.title, title.id)}
-                    >
-                        <Text style={styles.rowTitle} numberOfLines={1}>{t('cinema.sE', { value1: e.season, value2: e.position, value3: e.title })}</Text>
-                        <Text style={styles.muted}>{e.watchable ? formatDuration(e.durationSeconds) : t(episodeLocks.get(e.id) === 'free_ceiling' ? 'cinemaSeries.state.free_ceiling' : (episodeLocks.get(e.id) ?? detailLocks.get(e.id)) === 'paid' ? 'cinemaSeries.state.paid' : 'cinemaSeries.state.locked')}</Text>
-                    </Pressable>
-                ))
+                <SeasonList detail={detail} episodes={episodes} locks={episodeLocks} detailLocks={detailLocks} onWatch={e => watch(e.id, e.title, title.id)} />
             )}
             <SaveFollow contentId={title.id} />
             <VotePolls contentId={title.id} />
-            <Pressable accessibilityRole="button" style={styles.report} onPress={share}>
-                <Text style={styles.muted}>{t('cinemaBrowse.share')}</Text>
-            </Pressable>
-            <Pressable accessibilityRole="button" style={styles.report} onPress={() => router.push({ pathname: '/cinema/comments', params: { id: title.id } })}>
-                <Text style={styles.muted}>{t('comments.title')}</Text>
-            </Pressable>
-            <Pressable accessibilityRole="button" style={styles.report} onPress={report}>
-                <Text style={styles.muted}>{t('cinema.reportthistitle')}</Text>
-            </Pressable>
-            {title.creatorUsername ? (
-                <Pressable accessibilityRole="button" accessibilityState={{ busy: blocking, disabled: blocking }} disabled={blocking} style={styles.report} onPress={block}>
-                    <Text style={styles.muted}>{t('blocks.blockMember', { name: title.creator || title.creatorUsername })}</Text>
-                </Pressable>
-            ) : null}
+            <CommentsPreview contentId={title.id} />
+            <Button variant="secondary" label={t('cinemaBrowse.share')} onPress={share} />
+            <Button variant="tertiary" label={t('cinema.reportthistitle')} onPress={report} />
+            {title.creatorUsername ? <Button variant="tertiary" loading={blocking} disabled={blocking}
+                label={t('blocks.blockMember', { name: title.creator || title.creatorUsername })} onPress={block} /> : null}
+            <Button variant="tertiary" label={t('cinema.back')} onPress={back} />
             {blockNote ? <Text style={styles.muted} accessibilityRole="alert">{blockNote}</Text> : null}
         </ScrollView>
     );
 }
 
 const styles = StyleSheet.create({
+    badges: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
     screen: { flex: 1, backgroundColor: colors.background },
     content: { padding: 16, gap: 10 },
     center: { flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
-    poster: { width: '100%', aspectRatio: 9 / 16, maxHeight: 420, borderRadius: 12, backgroundColor: colors.surface },
+    poster: { width: '100%', aspectRatio: 16 / 9, borderRadius: 12, backgroundColor: colors.surface },
     title: { color: colors.text, fontFamily: fonts.display, fontSize: 24 },
     body: { color: colors.body, fontSize: 16 },
     muted: { color: colors.muted },

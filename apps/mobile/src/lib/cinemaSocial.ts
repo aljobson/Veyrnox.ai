@@ -382,6 +382,7 @@ export interface StoryPoll {
     readonly isOpen: boolean;
     readonly options: readonly PollOption[];
     readonly myOptionId: string | null;
+    readonly myChoiceStatus: VoteStatus | null;
 }
 export function parseStoryPolls(body: unknown): StoryPoll[] {
     if (!isObject(body) || !Array.isArray(body.polls)) return [];
@@ -391,7 +392,7 @@ export function parseStoryPolls(body: unknown): StoryPoll[] {
         const options: PollOption[] = [];
         for (const o of p.options) if (isObject(o) && isUuid(o.id)) options.push({ id: o.id, label: str(o.label, 120), votes: num(o.votes) });
         if (options.length < 2) continue;
-        out.push({ id: p.id, question: str(p.question), closesAt: str(p.closes_at, 40), isOpen: p.is_open === true, options, myOptionId: isObject(p.my_choice) && isUuid(p.my_choice.option_id) ? p.my_choice.option_id : null });
+        out.push({ myChoiceStatus: isObject(p.my_choice) && VOTE_STATUSES.includes(str(p.my_choice.status)) ? p.my_choice.status as VoteStatus : null, id: p.id, question: str(p.question), closesAt: str(p.closes_at, 40), isOpen: p.is_open === true, options, myOptionId: isObject(p.my_choice) && isUuid(p.my_choice.option_id) ? p.my_choice.option_id : null });
     }
     return out;
 }

@@ -1,11 +1,13 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import { posterUrl } from '../../lib/cinema';
+import { ActivityIndicator, FlatList, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { discoveryTarget, typeLabel } from '../../lib/cinemaViewer';
+import { CinemaPosterImage } from './CinemaPosterImage';
+import { Card, Text as UiText } from '../ui';
 import { fetchDiscovery, type BrowseMode, type DiscoveryCursor, type DiscoveryTitle } from '../../lib/cinemaBrowse';
 import { editorialSeriesList, phoneCategories, type EditorialSeries } from '../../lib/cinemaSeries';
-import { plural, t } from '../../lib/i18n';
+import { formatLocale, plural, t } from '../../lib/i18n';
 import { MIN_TARGET } from '../../lib/a11y';
 import { colors } from '../../theme';
 
@@ -71,10 +73,11 @@ export function DiscoveryList({ mode, category }: Props) {
             contentContainerStyle={styles.list}
             onEndReached={() => next && load(next)}
             onEndReachedThreshold={0.6}
+            ListHeaderComponent={mode === 'voting' && titles.length ? <UiText tone="secondary">{t('cinema.discovery.exploreTitlesEligibleForAnOpen')}</UiText> : undefined}
             ListFooterComponent={moreFailed ? (
                 <Pressable accessibilityRole="button" style={styles.more} onPress={() => next && load(next)}><Text style={styles.error}>{t('cinemaBrowse.moreFailed')}</Text></Pressable>
             ) : undefined}
-            renderItem={({ item }) => 'slug' in item ? <EditorialRow series={item} onOpen={() => router.push({ pathname: '/cinema/series/[slug]', params: { slug: item.slug } })} /> : <Row item={item} mode={mode} onOpen={() => router.push({ pathname: '/cinema/[id]', params: { id: item.id } })} />}
+            renderItem={({ item }) => 'slug' in item ? <EditorialRow series={item} onOpen={() => router.push({ pathname: '/cinema/series/[slug]', params: { slug: item.slug } })} /> : <Row item={item} mode={mode} onOpen={() => router.push(discoveryTarget(item))} />}
         />
     );
 }
@@ -98,24 +101,34 @@ function EditorialRow({ series, onOpen }: { series: EditorialSeries; onOpen: () 
 
 function Row({ item, mode, onOpen }: { item: DiscoveryTitle; mode: BrowseMode; onOpen: () => void }) {
     const series = item.contentType === 'SERIES';
-    const meta = [item.creator, series ? plural('cinemaBrowse.episodes', item.episodeCount) : null].filter(Boolean).join(' · ');
-    const comp = mode === 'voting' ? item.competitions[0] : undefined;
     return (
-        <Pressable accessibilityRole="button" accessibilityLabel={`${item.title}. ${meta}`} style={styles.row} onPress={onOpen}>
-            <Image source={{ uri: posterUrl(item.id) }} style={styles.poster} contentFit="cover" accessible={false} accessibilityIgnoresInvertColors />
-            <View style={styles.body}>
-                <Text style={styles.name} numberOfLines={2}>{item.title}</Text>
-                <Text style={styles.muted} numberOfLines={1}>{meta}</Text>
-                {item.categories.length ? <Text style={styles.cats} numberOfLines={1}>{item.categories.map((c) => t(`cinemaBrowse.cat.${c}`)).join(' · ')}</Text> : null}
-                {comp ? <Text style={styles.comp} numberOfLines={2}>{t('cinemaBrowse.competition', { name: comp.name })}</Text> : null}
-                {item.synopsis ? <Text style={styles.synopsis} numberOfLines={2}>{item.synopsis}</Text> : null}
-                <View style={styles.watch}><Text style={styles.watchText}>{series ? t('cinemaBrowse.watch') : mode === 'voting' ? t('cinemaBrowse.openTitle') : t('cinemaBrowse.play')}</Text></View>
+        <Card accessibilityLabel={item.title} style={{ padding: 0, overflow: 'hidden' }} onPress={onOpen}>
+            <CinemaPosterImage id={item.id} style={{ borderTopLeftRadius: 12, borderTopRightRadius: 12 }} />
+            <View style={{ padding: 12, gap: 8 }}>
+                <View style={styles.badges}>
+                    <UiText variant="micro" style={styles.badge}>{typeLabel(item.contentType)}</UiText>
+                    {series ? <UiText variant="micro" style={styles.badge}>{plural('cinemaBrowse.episodes', item.episodeCount)}</UiText>
+                        : item.durationSeconds !== null ? <UiText variant="micro" style={styles.badge}>{t('cinema.duration', { n: Math.max(1, Math.round(item.durationSeconds / 60)) })}</UiText> : null}
+                </View>
+                <UiText variant="title3" accessibilityRole="header">{item.title}</UiText>
+                {item.contentType === 'EPISODE' && item.seriesTitle ? <UiText tone="secondary">{t('cinemaViewer.fromSeries', { series: item.seriesTitle })}</UiText> : null}
+                {item.creator ? <UiText tone="secondary">{t('cinemaSeries.by', { creator: item.creator })}</UiText> : null}
+                <View style={styles.badges}>{item.categories.map(c => <UiText key={c} variant="micro" style={styles.badge}>{t(`cinemaBrowse.cat.${c}`)}</UiText>)}</View>
+                {item.synopsis ? <UiText numberOfLines={2}>{item.synopsis}</UiText> : null}
+                {mode === 'voting' ? item.competitions.map(comp => <View key={comp.id} style={{ gap: 4 }}>
+                    <UiText variant="bodyStrong">{comp.name}</UiText>
+                    <UiText tone="secondary">{t('cinemaSocial.voteCount', { count: comp.qualifiedVotes })}</UiText>
+                    {Number.isFinite(Date.parse(comp.endsAt)) ? <UiText tone="secondary">{t('cinemaSocial.endsOn', { date: new Date(comp.endsAt).toLocaleDateString(formatLocale()) })}</UiText> : null}
+                </View>) : null}
+                <View style={styles.watch}><UiText style={styles.watchText}>{series ? t('cinemaBrowse.watch') : mode === 'voting' ? t('cinemaBrowse.openTitle') : t('cinemaBrowse.play')}</UiText></View>
             </View>
-        </Pressable>
+        </Card>
     );
 }
 
 const styles = StyleSheet.create({
+    badges: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+    badge: { fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', backgroundColor: colors.surface, padding: 4, borderRadius: 4 },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
     list: { padding: 12, gap: 12 },
     row: { flexDirection: 'row', gap: 12, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 10 },

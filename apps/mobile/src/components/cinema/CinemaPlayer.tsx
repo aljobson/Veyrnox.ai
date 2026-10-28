@@ -4,13 +4,16 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, AppState, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
-import { BLOCK_COPY, createPlaybackSession, type PlaybackSession, type SessionState } from '../../lib/cinemaPlayback';
+import { BLOCK_COPY, createPlaybackSession, type BlockReason, type PlaybackSession, type SessionState } from '../../lib/cinemaPlayback';
 import { getCinemaProgress } from '../../lib/cinemaProgress';
 
 // Plays one title. It mints a token when it mounts (the viewer pressed Play), never before.
-export function CinemaPlayer({ contentId, resumePosition = 0 }: { readonly contentId: string; readonly resumePosition?: number }) {
+export function CinemaPlayer({ contentId, resumePosition = 0, onBlocked }: { readonly contentId: string; readonly resumePosition?: number; readonly onBlocked?: (reason: BlockReason) => void }) {
     const { api, getAccessToken } = useAuth();
     const [state, setState] = useState<SessionState>({ kind: 'loading' });
+    const focused = useRef(true);
+    const blockedCallback = useRef(onBlocked);
+    blockedCallback.current = onBlocked;
     const playback = useRef<PlaybackSession | null>(null);
     const player = useVideoPlayer(null, (p) => {
         p.keepScreenOnWhilePlaying = true;
@@ -19,17 +22,18 @@ export function CinemaPlayer({ contentId, resumePosition = 0 }: { readonly conte
     useEffect(() => {
         const progress = getCinemaProgress(api, getAccessToken);
         const saveProgress = progress.recorder(contentId);
-        const session = createPlaybackSession({ api, player, onState: setState, saveProgress });
+        const session = createPlaybackSession({ api, player, onState: next => { setState(next); if (next.kind === 'blocked') blockedCallback.current?.(next.reason); }, saveProgress });
         playback.current = session;
         const subs = [
             player.addListener('statusChange', ({ status }) => {
                 if (status === 'error') session.fail();
             }),
             player.addListener('playingChange', ({ isPlaying }) => session.setPlaying(isPlaying)),
-            AppState.addEventListener('change', (next) => session.setVisible(next === 'active')),
+            AppState.addEventListener('change', (next) => session.setVisible(next === 'active' && focused.current)),
         ];
         const timer = setInterval(() => session.tick(), 1000);
         session.start(contentId, resumePosition);
+        session.setVisible(AppState.currentState === 'active' && focused.current);
         return () => {
             clearInterval(timer);
             subs.forEach((s) => s.remove());
@@ -39,8 +43,16 @@ export function CinemaPlayer({ contentId, resumePosition = 0 }: { readonly conte
         };
     }, [api, getAccessToken, player, contentId, resumePosition]);
 
-    // Leaving a mounted screen saves its position without changing the grant/session lifecycle.
-    useFocusEffect(useCallback(() => () => { playback.current?.saveFinalProgress(); }, []));
+    // Comments can cover a mounted Watch: suspend metering and playback, keeping the grant.
+    useFocusEffect(useCallback(() => {
+        focused.current = true;
+        playback.current?.setVisible(AppState.currentState === 'active');
+        return () => {
+            focused.current = false;
+            playback.current?.saveFinalProgress();
+            playback.current?.setVisible(false);
+        };
+    }, []));
 
     return (
         <View style={styles.box}>
