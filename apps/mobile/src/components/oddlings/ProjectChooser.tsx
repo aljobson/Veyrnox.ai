@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../ui/Text';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import type { ApiClient } from '../../lib/api';
@@ -75,7 +76,7 @@ export function ProjectChooser({ api, engine, record, onResult }: {
         </View> : null}
         {projects.map(p => <View key={p.id}>
             {button(p.name, () => { void choose(p.id); }, record?.projectId === p.id, busy || blocked.includes(p.id))}
-            {blocked.includes(p.id) ? <Text accessibilityLiveRegion="polite" style={styles.text}>{t('oddlingsProjects.other')}</Text> : null}
+            {blocked.includes(p.id) ? <StatusText variant="inherit" accessibilityLiveRegion="polite" style={styles.text}>{t('oddlingsProjects.other')}</StatusText> : null}
         </View>)}
         <TextInput accessibilityLabel={t('oddlingsProjects.name')} value={name} onChangeText={setName} maxLength={120} style={styles.input} />
         {button(t('oddlingsProjects.new'), () => {

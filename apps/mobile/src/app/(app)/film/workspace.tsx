@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../../components/ui/Text';
 import { plural, t } from '../../../lib/i18n';
 import { Button } from '../../../components/ui';
 import { Field, Choices } from '../../../components/film/FilmFields';
@@ -146,7 +147,7 @@ export default function FilmWorkspace() {
                 {stage === 5 ? <FilmTestsStage key={generation.current} film={film} change={change} catalog={catalog} live={live} /> : null}
                 {stage === 6 ? <FilmPromptsStage key={generation.current} film={film} change={change} catalog={catalog} live={live} /> : null}
                 {stage < 6 ? <Button label={t('filmWorkspace.continue', { value1: FILM_STAGES[stage + 1][1] })} disabled={issues.length > 0} onPress={() => setStage(stage + 1)} /> : null}
-                <Text accessibilityLiveRegion="polite" style={styles.help}>{autosave.status === 'saving' ? t('film.saving') : autosave.status === 'failed' ? t('filmWorkspace.notSaved', { reason: autosave.reason }) : cloudLink ? t('filmWorkspace.memorySaved') : t('filmWorkspace.saved')}</Text>
+                <StatusText variant="inherit" accessibilityLiveRegion="polite" style={styles.help}>{autosave.status === 'saving' ? t('film.saving') : autosave.status === 'failed' ? t('filmWorkspace.notSaved', { reason: autosave.reason }) : cloudLink ? t('filmWorkspace.memorySaved') : t('filmWorkspace.saved')}</StatusText>
                 <FilmCloudBar key={`cloud-${generation.current}`} api={api} film={film} flush={flush} snapshot={() => latestFilm.current ?? film} valid={valid}
                     onSaved={() => setCloudLink(getActiveCloudLink())}
                     beginInstall={() => { installing.current = true; cancel(); }} endInstall={() => { cloudGeneration.current = getFilmGeneration(); installing.current = false; }} installFilm={installFilm} />

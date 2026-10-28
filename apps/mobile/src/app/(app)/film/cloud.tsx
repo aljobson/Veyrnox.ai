@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -146,7 +147,7 @@ export default function CloudFilms() {
             <Text style={styles.body}>{t('filmCloud.note')}</Text>
             {state === 'loading' ? <ActivityIndicator accessibilityLabel={t('filmCloud.loading')} /> : null}
             {state === 'list' && rows.length === 0 ? <Text style={styles.body}>{t('filmCloud.empty')}</Text> : null}
-            {state !== 'list' && state !== 'loading' ? <Text style={styles.body} accessibilityLiveRegion="polite">{failureText(state)}</Text> : null}
+            {state !== 'list' && state !== 'loading' ? <StatusText variant="inherit" style={styles.body} accessibilityLiveRegion="polite">{failureText(state)}</StatusText> : null}
             {rows.map(row => {
                 const shots = plural('filmCloud.shots', row.shotCount);
                 const date = row.updatedAt ? new Date(row.updatedAt).toLocaleDateString(formatLocale()) : '';
@@ -162,7 +163,7 @@ export default function CloudFilms() {
                     <Pressable accessibilityRole="button" accessibilityLabel={`${t('filmOutput.remove')}: ${row.name}`} disabled={openingId !== null} accessibilityState={{ disabled: openingId !== null }} style={touchTarget} onPress={() => void remove(row)}><Text style={styles.name}>{t('filmOutput.remove')}</Text></Pressable></View>
                 );
             })}
-            {problem ? <Text style={styles.body} accessibilityLiveRegion="polite">{problem}</Text> : null}
+            {problem ? <StatusText variant="inherit" style={styles.body} accessibilityLiveRegion="polite">{problem}</StatusText> : null}
             {retryRow ? <Pressable accessibilityRole="button" accessibilityLabel={t('filmCloud.retry')} style={touchTarget} onPress={() => void remove(retryRow, true)}><Text style={styles.name}>{t('filmCloud.retry')}</Text></Pressable> : null}
             {state === 'busy' || problem === t('filmCloud.busy') ? (
                 <Pressable accessibilityRole="button" accessibilityLabel={t('filmCloud.retry')} style={touchTarget} onPress={() => { setProblem(null); void reload(); }}>

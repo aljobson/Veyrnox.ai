@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../ui/Text';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import type { ApiClient } from '../../lib/api';
@@ -38,8 +39,8 @@ export function BlueskyConnectForm({ api, onCancel }: { api: ApiClient; onCancel
         <Text style={styles.text}>{t('publishDepth.bluesky.password')}</Text>
         <TextInput style={styles.input} accessibilityLabel={t('publishDepth.bluesky.password')} value={password} onChangeText={setPassword} secureTextEntry autoComplete="off" textContentType="none" importantForAutofill="no" autoCapitalize="none" autoCorrect={false} maxLength={19} editable={!busy} />
         <Text style={styles.muted}>{t('publishDepth.bluesky.instructions')}</Text>
-        {error ? <Text accessibilityRole="alert" style={styles.error}>{t(error)}</Text> : null}
-        {done ? <Text accessibilityLiveRegion="polite" style={styles.text}>{t('connect.done', { name: 'Bluesky' })}</Text> : null}
+        {error ? <StatusText variant="inherit" accessibilityRole="alert" style={styles.error}>{t(error)}</StatusText> : null}
+        {done ? <StatusText variant="inherit" accessibilityLiveRegion="polite" style={styles.text}>{t('connect.done', { name: 'Bluesky' })}</StatusText> : null}
         {busy ? <ActivityIndicator accessibilityLabel={t('connect.button')} accessibilityState={{ busy: true }} /> : null}
         <Pressable style={touchTarget} accessibilityRole="button" accessibilityState={{ disabled: busy, busy }} disabled={busy} onPress={submit}><Text style={styles.action}>{t('connect.button')}</Text></Pressable>
         <Pressable style={touchTarget} accessibilityRole="button" accessibilityState={{ disabled: busy }} disabled={busy} onPress={() => { setPassword(''); onCancel(); }}><Text style={styles.action}>{t('publish.cancel')}</Text></Pressable>

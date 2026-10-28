@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../ui/Text';
 import { bodyKeys } from '../../lib/cinemaDrafts';
 import { Button } from '../ui';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -87,7 +88,7 @@ function Voting({ contentId }: { contentId: string }) {
                     </View>
                 );
             })}
-            {note ? <Text style={styles.error} accessibilityRole="alert">{note}</Text> : null}
+            {note ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{note}</StatusText> : null}
         </View>
     );
 }
@@ -151,7 +152,7 @@ function Polls({ contentId }: { contentId: string }) {
                     </View>
                 );
             })}
-            {note ? <Text style={styles.error} accessibilityRole="alert">{note}</Text> : null}
+            {note ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{note}</StatusText> : null}
         </View>
     );
 }

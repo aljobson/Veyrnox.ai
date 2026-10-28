@@ -28,7 +28,8 @@ export const TextField = forwardRef<ComponentRef<typeof TextInput>, TextFieldPro
                     allowFontScaling
                     maxFontSizeMultiplier={BODY_MAX_FONT_SCALE}
                     placeholderTextColor={s.placeholder.color}
-                    style={[I18nManager.isRTL ? { textAlign: 'right', writingDirection: 'rtl' } : undefined, s.input, style, family && !loadedFonts.has(family) ? fallback : undefined]}
+                    // Fabric single/multiline inputs share RCTAttributedTextUtils: natural alignment + RTL resolves right.
+                    style={[I18nManager.isRTL ? { writingDirection: 'rtl' } : undefined, s.input, style, family && !loadedFonts.has(family) ? fallback : undefined]}
                     onFocus={(e) => {
                         setFocused(true);
                         revealFocused?.();

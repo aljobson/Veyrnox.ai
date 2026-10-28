@@ -1,5 +1,11 @@
 [
   {
+    "id": "recovery.home",
+    "english": "Go home",
+    "translation": "Retour à l’accueil",
+    "ratio": 2.57
+  },
+  {
     "id": "abt.details",
     "english": "Company details",
     "translation": "Informations sur la société",

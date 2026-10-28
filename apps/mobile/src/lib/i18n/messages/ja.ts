@@ -21,7 +21,7 @@ const ja = {
     'model.media.image': '画像',
     'model.media.video': '動画',
     'model.media.audio': '音声',
-    'slip.generate': 'Generate',
+    'slip.generate': '生成',
     'mobile.prompt': 'プロンプト',
     'recovery.retry': '再試行',
     'cinema.creatorWorkspace.cancel': 'キャンセル',

@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../ui/Text';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { touchTarget } from '../../lib/a11y';
@@ -44,7 +45,7 @@ export function WorkflowEditor({ initial, busy, onSave, onCancel }: Props) {
             </View>
             <Field label={t('publish.keyword')} value={draft.keyword} max={100} onChange={(keyword) => setDraft({ ...draft, keyword })} />
             <Field label={t('publish.suggestedreply')} value={draft.replyText} max={8000} multiline onChange={(replyText) => setDraft({ ...draft, replyText })} />
-            {problem ? <Text style={styles.error} accessibilityRole="alert">{problem}</Text> : null}
+            {problem ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{problem}</StatusText> : null}
             <View style={styles.row}>
                 <Pressable accessibilityRole="button" disabled={busy} style={[styles.save, touchTarget, busy && styles.off]} onPress={save}>
                     <Text style={styles.saveText}>{busy ? '…' : t('publish.save')}</Text>

@@ -1,3 +1,4 @@
+import { Text as StatusText } from './ui/Text';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { touchTarget } from '../lib/a11y';
@@ -8,8 +9,8 @@ import { colors } from '../theme';
 export function LowBalanceNote({ balance }: { balance: number }) {
     const router = useRouter();
     return (
-        <View style={styles.box} accessibilityLiveRegion="polite">
-            <Text style={styles.text}>{t('lowBalance.body', { credits: plural('home.credits', balance) })}</Text>
+        <View style={styles.box}>
+            <StatusText variant="inherit" accessibilityLiveRegion="polite" style={styles.text}>{t('lowBalance.body', { credits: plural('home.credits', balance) })}</StatusText>
             <Pressable accessibilityRole="button" style={[touchTarget, styles.action]} onPress={() => router.push('/credits')}>
                 <Text style={styles.actionText}>{t('lowBalance.buy')}</Text>
             </Pressable>

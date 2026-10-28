@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../../components/ui/Text';
 import { NetworkLogo } from '../../../components/publish/NetworkLogo';
 import { networkName } from '../../../lib/networkLogos';
 import { PHONE_CATALOGUE } from '../../../lib/publishConnect';
@@ -130,7 +131,7 @@ export default function Calendar() {
             {locked ? (
                 <UnlockCard feature="calendar" onUnlocked={() => setReloadKey((n) => n + 1)} />
             ) : error ? (
-                <Text style={styles.error} accessibilityRole="alert">{error}</Text>
+                <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{error}</StatusText>
             ) : !posts ? (
                 <ActivityIndicator color={colors.accent} />
             ) : (

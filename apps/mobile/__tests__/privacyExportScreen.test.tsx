@@ -88,3 +88,18 @@ test('the real AuthProvider launch effect removes a previous-process file before
         expect(localFile().exists).toBe(false);
     } finally { await act(async () => launch.unmount()); }
 });
+
+test('export progress announces once on appearance and once per section change', async () => {
+    const announce = jest.spyOn(ReactNative.AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
+    const { t } = require('../src/lib/i18n');
+    let finish!: (value: object) => void;
+    mockRequest.mockImplementation(async (path: string) => path.includes('?') ? new Promise(resolve => { finish = resolve; }) :
+        { export_id: id, as_of: new Date().toISOString(), expires_at: new Date(Date.now() + 3600000).toISOString(), resumed: false, sections: ['profile', 'jobs'] });
+    await press(label('privacyExport.prepare'));
+    expect(announce.mock.calls.filter(([text]) => text === t('privacyExport.progress', { section: 1, total: 2 }))).toHaveLength(1);
+    await act(async () => finish({ rows: [{}], next: null }));
+    expect(announce.mock.calls.filter(([text]) => text === t('privacyExport.progress', { section: 2, total: 2 }))).toHaveLength(1);
+    await act(async () => finish({ rows: [], next: null }));
+    expect(announce.mock.calls.filter(([text]) => text === t('privacyExport.ready'))).toHaveLength(1);
+    announce.mockRestore();
+});

@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
@@ -45,7 +46,7 @@ export default function Queues() {
         <View style={styles.screen}>
             <Stack.Screen options={{ title: t('queues.title') }} />
             {error && !queues ? (
-                <Text style={styles.error} accessibilityRole="alert">{error}</Text>
+                <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{error}</StatusText>
             ) : !queues ? (
                 <ActivityIndicator color={colors.accent} />
             ) : (
@@ -53,7 +54,7 @@ export default function Queues() {
                     data={queues}
                     keyExtractor={(q) => q.id}
                     refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.accent} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}
-                    ListHeaderComponent={<View><Text style={styles.muted}>{t('queues.intro')}</Text>{notice ? <Text style={styles.notice} accessibilityLiveRegion="polite">{notice}</Text> : null}</View>}
+                    ListHeaderComponent={<View><Text style={styles.muted}>{t('queues.intro')}</Text>{notice ? <StatusText variant="inherit" style={styles.notice} accessibilityLiveRegion="polite">{notice}</StatusText> : null}</View>}
                     ListEmptyComponent={<Text style={styles.muted}>{t('queues.none')}</Text>}
                     ListFooterComponent={
                         <Pressable accessibilityRole="button" style={[styles.add, touchTarget]} onPress={() => router.push('/publish/queue-edit')}>

@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../../components/ui/Text';
 import { displayLabel } from '../../../lib/displayLabels';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -151,14 +152,14 @@ export default function OddlingBuilder() {
             <Stack.Screen options={{ title: t('oddlings.build.title') }} />
             <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
                 <OddlingFigure picks={picks} focus={CATEGORY_FOCUS[categoryId] || 'body'} />
-                <Text style={styles.count} accessibilityLiveRegion="polite">{plural('oddlings.build.chosen', chosen)}</Text>
+                <StatusText variant="inherit" style={styles.count} accessibilityLiveRegion="polite">{plural('oddlings.build.chosen', chosen)}</StatusText>
                 <Text style={styles.note}>{t('oddlings.build.adults')}</Text>
                 <View style={styles.actions}>
                     <Action label={t('oddlings.build.randomize')} onPress={() => { setPicks((c) => randomizeStyle(c)); setNotice(t('oddlings.build.remixed')); }} />
                     <Action label={t('oddlings.build.surprise')} onPress={() => { setPicks((c) => randomizeAll(c)); setNotice(t('oddlings.build.surprised')); }} />
                     <Action label={t('oddlings.build.clear')} disabled={!chosen} onPress={clearLook} />
                 </View>
-                {notice ? <Text style={styles.notice} accessibilityLiveRegion="polite">{notice}</Text> : null}
+                {notice ? <StatusText variant="inherit" style={styles.notice} accessibilityLiveRegion="polite">{notice}</StatusText> : null}
                 {choose ? <Action label={t('oddlingsProjects.choose')} onPress={() => router.push('/oddlings/saved')} /> : null}
                 <Section>
                     <OddlingCatalog categoryId={categoryId} picks={picks} onCategory={setCategoryId} onPick={setPick} />

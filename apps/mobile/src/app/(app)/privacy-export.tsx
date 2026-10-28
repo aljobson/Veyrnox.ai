@@ -1,9 +1,10 @@
+import { Text as StatusText } from '../../components/ui/Text';
 import { useAnnouncement } from '../../lib/useAnnouncement';
 import { File } from 'expo-file-system';
 import { Stack } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import { useEffect, useRef, useState } from 'react';
-import { ScrollView, Text } from 'react-native';
+import { Platform, ScrollView, Text } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { CodeField } from '../../components/account/CodeField';
 import { Action, styles } from '../../components/account/shared';
@@ -112,11 +113,11 @@ export default function PrivacyExportScreen() {
         <Text style={styles.help}>{t('privacyExport.more', { email: PRIVACY_EMAIL })}</Text>
         {state === 'idle' && <Action label={t('privacyExport.prepare')} onPress={() => void prepare()} />}
         {state === 'preparing' && <>
-            <Text style={styles.status} accessibilityLiveRegion="polite">{progress.waiting ? t('privacyExport.waiting') : t('privacyExport.progress', { section: progress.section, total: progress.total })}</Text>
+            <StatusText variant="inherit" style={styles.status} accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : undefined}>{progress.waiting ? t('privacyExport.waiting') : t('privacyExport.progress', { section: progress.section, total: progress.total })}</StatusText>
             <Action label={t('privacyExport.cancel')} onPress={() => { controller.current?.abort(); remove(); }} />
         </>}
         {state === 'ready' && <>
-            <Text style={styles.status} accessibilityLiveRegion="polite">{t('privacyExport.ready')}</Text>
+            <StatusText variant="inherit" style={styles.status} accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : undefined}>{t('privacyExport.ready')}</StatusText>
             <Action label={t('privacyExport.share')} onPress={() => void share()} />
         </>}
         {state === 'expired' && <>
@@ -128,7 +129,7 @@ export default function PrivacyExportScreen() {
         {state === 'mfa' && <>
             <Text style={styles.help}>{t('privacyExport.mfa')}</Text>
             <CodeField value={code} onChange={setCode} />
-            {codeError && <Text accessibilityRole="alert" style={styles.danger}>{t('privacyExport.codeError')}</Text>}
+            {codeError && <StatusText variant="inherit" accessibilityRole="alert" style={styles.danger}>{t('privacyExport.codeError')}</StatusText>}
             <Action label={t('privacyExport.verify')} disabled={verifying || !validCode(code)} onPress={() => void verify()} />
         </>}
     </ScrollView>;

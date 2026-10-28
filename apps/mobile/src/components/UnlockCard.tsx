@@ -1,3 +1,4 @@
+import { Text as StatusText } from './ui/Text';
 import { useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useBilling } from '../billing/BillingProvider';
@@ -82,7 +83,7 @@ export function UnlockCard({ feature, onUnlocked }: { feature: LockedFeature; on
                     </Pressable>
                 </>
             )}
-            {message ? <Text style={styles.muted} accessibilityLiveRegion="polite">{message}</Text> : null}
+            {message ? <StatusText variant="inherit" style={styles.muted} accessibilityLiveRegion="polite">{message}</StatusText> : null}
             {status === 'ready' ? (
                 <Pressable accessibilityRole="button" disabled={busy || !canPurchase} style={[styles.restore, touchTarget, !canPurchase && styles.off]} onPress={onRestore}>
                     <Text style={styles.restoreText}>{t('unlock.restore')}</Text>

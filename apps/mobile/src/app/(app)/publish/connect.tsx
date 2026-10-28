@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../../components/ui/Text';
 import * as WebBrowser from 'expo-web-browser';
 import { Stack } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -94,7 +95,7 @@ export default function Connect() {
             {chooser ? <View><Text accessibilityRole="header" style={styles.name}>{t('publishDepth.connect.choose')}</Text>
                 {chooser.choices.map(c => <Pressable key={c.id} style={[touchTarget, styles.row]} accessibilityRole="button" accessibilityState={{ disabled: busy !== null, busy: busy !== null }} disabled={busy !== null} onPress={() => choose(c.id)}><Text style={styles.name}>{c.label}</Text></Pressable>)}
             </View> : null}
-            {note ? <Text style={[styles.note, note.bad && styles.bad]} accessibilityRole={note.bad ? 'alert' : undefined} accessibilityLiveRegion="polite">{note.text}</Text> : null}
+            {note ? <StatusText variant="inherit" style={[styles.note, note.bad && styles.bad]} accessibilityRole={note.bad ? 'alert' : undefined} accessibilityLiveRegion="polite">{note.text}</StatusText> : null}
             <View style={styles.footer}>
                 <Text style={styles.muted}>{t('connect.own')}</Text>
                 <Text style={styles.muted}>{t('connect.remove')}</Text>

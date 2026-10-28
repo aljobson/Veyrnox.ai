@@ -1,5 +1,11 @@
 [
   {
+    "id": "recovery.home",
+    "english": "Go home",
+    "translation": "Ir al inicio",
+    "ratio": 1.71
+  },
+  {
     "id": "abt.emailUs",
     "english": "Email {email}",
     "translation": "Enviar un correo a {email}",

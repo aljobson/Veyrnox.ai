@@ -1,5 +1,5 @@
+import { Text as StatusText } from '../ui/Text';
 import { CreditBanner } from './CreditBanner';
-import { I18nManager } from 'react-native';
 import { displayLabel } from '../../lib/displayLabels';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -60,7 +60,7 @@ export function AnimateCard({ id }: { id: string }) {
                 <Text style={styles.price}>{price}</Text>
             </Pressable>
             <CreditBanner cost={model ? animationCredits(model) : null} animation />
-            {problem ? <Text style={styles.problem} accessibilityLiveRegion="polite">{problem}</Text> : null}
+            {problem ? <StatusText variant="inherit" style={styles.problem} accessibilityLiveRegion="polite">{problem}</StatusText> : null}
         </View>
     );
 }
@@ -78,6 +78,7 @@ const styles = StyleSheet.create({
     choice: { minHeight: MIN_TARGET, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, backgroundColor: colors.background, borderRadius: 10, borderWidth: 1, borderColor: colors.borderStrong, paddingHorizontal: 14, paddingVertical: 8 },
     off: { opacity: 0.5 },
     choiceText: { color: colors.text, fontSize: 15, fontWeight: '700', flex: 1 },
-    price: { color: colors.money, fontSize: 14, fontWeight: '700', flexShrink: 1, textAlign: I18nManager.isRTL ? 'left' : 'right' },
+    // Native RTL swaps right to the visual end (left).
+    price: { color: colors.money, fontSize: 14, fontWeight: '700', flexShrink: 1, textAlign: 'right' },
     problem: { color: colors.danger, fontSize: 13 },
 });

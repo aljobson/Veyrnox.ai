@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../ui/Text';
 import * as Crypto from 'expo-crypto';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
@@ -79,7 +80,7 @@ export function SaveFollow({ contentId }: { readonly contentId: string }) {
                 </Pressable>
             ) : null}
             {closed ? <Text style={styles.muted}>{t('cinema.retention.unavailable')}</Text> : null}
-            {note ? <Text style={styles.error} accessibilityRole="alert">{note}</Text> : null}
+            {note ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{note}</StatusText> : null}
         </View>
     );
 }

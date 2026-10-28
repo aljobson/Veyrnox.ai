@@ -5,6 +5,7 @@ import { formatTimecode, parseTimecode } from '../../lib/editorTimeline';
 import { t } from '../../lib/i18n';
 import { colors } from '../../theme';
 import { Icon } from '../ui/Icon';
+import { Text as StatusText } from '../ui/Text';
 import { styles } from './fullEditorStyles';
 
 type Props = { frame: number; total: number; fps: number; playing: boolean; onSeek(frame: number): void; onPlaying(playing: boolean): void };
@@ -35,7 +36,7 @@ export function EditorTransport({ frame, total, fps, playing, onSeek, onPlaying 
                 : <TextInput autoFocus accessibilityLabel={t('editorCore.enterTimecode')} value={entry} keyboardType="numbers-and-punctuation" returnKeyType="done" submitBehavior="submit" onChangeText={setEntry} onSubmitEditing={submit} onBlur={() => { setEntry(null); setInvalid(false); }} style={styles.input} />}
             <Text style={styles.totalTime}>{t('editorCore.totalTime', { value1: formatTimecode(total, fps) })}</Text>
         </View>
-        {invalid ? <Text accessibilityRole="alert" style={styles.problem}>{t('editorCore.timecodeInvalid')}</Text> : null}
+        {invalid ? <StatusText variant="inherit" accessibilityRole="alert" style={styles.problem}>{t('editorCore.timecodeInvalid')}</StatusText> : null}
     </View>;
 }
 const local = StyleSheet.create({ buttons: { flexDirection: 'row', justifyContent: 'center' }, button: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }, symbol: { flexDirection: 'row', alignItems: 'center', gap: 4 }, bar: { width: 3, height: 16, backgroundColor: colors.text }, time: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 } });

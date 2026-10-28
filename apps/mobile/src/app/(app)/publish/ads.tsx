@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../../components/ui/Text';
 import { ComingToApp } from '../../../components/ComingToApp';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -56,7 +57,7 @@ export default function Ads() {
             {locked ? (
                 <UnlockCard feature="ads" onUnlocked={() => setReload((n) => n + 1)} />
             ) : error && !campaigns ? (
-                <Text style={styles.error} accessibilityRole="alert">{error}</Text>
+                <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{error}</StatusText>
             ) : !campaigns ? (
                 <ActivityIndicator color={colors.accent} />
             ) : (
@@ -65,7 +66,7 @@ export default function Ads() {
                     keyExtractor={(c) => c.id}
                     contentContainerStyle={{ paddingBottom: LIST_END_PADDING }}
                     refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.accent} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}
-                    ListHeaderComponent={<View><Text style={styles.muted}>{t('ads.intro')}</Text>{notice ? <Text style={styles.notice} accessibilityLiveRegion="polite">{notice}</Text> : null}</View>}
+                    ListHeaderComponent={<View><Text style={styles.muted}>{t('ads.intro')}</Text>{notice ? <StatusText variant="inherit" style={styles.notice} accessibilityLiveRegion="polite">{notice}</StatusText> : null}</View>}
                     ListEmptyComponent={<Text style={styles.muted}>{t('ads.none')}</Text>}
                     ListFooterComponent={
                         <View>

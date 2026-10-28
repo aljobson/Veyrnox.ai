@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
@@ -127,8 +128,8 @@ export default function ReportEdit() {
             <View style={styles.row}>{(['pdf', 'pptx'] as const).map(format => <Choice key={format} label={t(formatKeys[format])} selected={form.deliveryFormat === format} disabled={disabled || !mode.deliveryEditable} onPress={() => change('deliveryFormat', format)} />)}</View>
             <Field label={t('publishReporting.replyTo')} value={form.deliveryReplyTo} onChangeText={v => change('deliveryReplyTo', v)} disabled={disabled || !mode.deliveryEditable} maxLength={254} />
             <Field label={t('publishReporting.message')} value={form.deliveryMessage} onChangeText={v => change('deliveryMessage', v)} disabled={disabled || !mode.deliveryEditable} maxLength={1000} multiline />
-            {error ? <Text style={styles.muted} accessibilityLiveRegion="polite">{error}</Text> : null}
-            {busy ? <Text style={styles.muted} accessibilityLiveRegion="polite">{t('publishReporting.saving')}</Text> : null}
+            {error ? <StatusText variant="inherit" style={styles.muted} accessibilityLiveRegion="polite">{error}</StatusText> : null}
+            {busy ? <StatusText variant="inherit" style={styles.muted} accessibilityLiveRegion="polite">{t('publishReporting.saving')}</StatusText> : null}
             {canEdit ? <Pressable accessibilityRole="button" accessibilityLabel={mode.readOnly ? t('publishReporting.schedule.convert') : t('publishReporting.save')}
                 accessibilityState={{ busy, disabled: busy }} disabled={busy} style={[styles.choice, styles.selected, touchTarget]} onPress={() => save(mode.readOnly)}>
                 <Text style={styles.text}>{mode.readOnly ? t('publishReporting.schedule.convert') : t('publishReporting.save')}</Text>

@@ -1,6 +1,9 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+    "recovery.title": "حدث خطأ ما",
+    "recovery.body": "عملك محفوظ. حاول مرة أخرى أو عد إلى الشاشة الرئيسية.",
+    "recovery.home": "العودة إلى الرئيسية",
   "abt.contact": "التواصل والسياسات",
   "abt.details": "بيانات الشركة",
   "abt.emailUs": "راسل {email}",

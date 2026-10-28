@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -61,11 +62,11 @@ export default function SavedPassports() {
                 contentContainerStyle={styles.list}
                 ListHeaderComponent={<View>
                     <Text accessibilityRole="header" style={styles.name}>{t('oddlings.saved.title')}</Text>
-                    <Text accessibilityLiveRegion="polite" style={styles.empty}>{t(`oddlingsProjects.${state === 'unavailable' ? state : record?.blocked ? 'full' : state}`)}</Text>
-                    {notice ? <Text accessibilityLiveRegion="polite" style={styles.empty}>{notice}</Text> : null}
+                    <StatusText variant="inherit" accessibilityLiveRegion="polite" style={styles.empty}>{t(`oddlingsProjects.${state === 'unavailable' ? state : record?.blocked ? 'full' : state}`)}</StatusText>
+                    {notice ? <StatusText variant="inherit" accessibilityLiveRegion="polite" style={styles.empty}>{notice}</StatusText> : null}
                     {state !== 'unavailable' ? <ProjectChooser key={owner} api={api} engine={engine} record={record} onResult={setState} /> : null}
                 </View>}
-                ListEmptyComponent={<Text accessibilityLiveRegion="polite" style={styles.empty}>{t('oddlings.saved.empty')}</Text>}
+                ListEmptyComponent={<StatusText variant="inherit" accessibilityLiveRegion="polite" style={styles.empty}>{t('oddlings.saved.empty')}</StatusText>}
                 renderItem={({ item }) => {
                     const phoneOnly = !record?.projectId || record.ops.some(o => o.kind === 'upsert' && o.id === item.id);
                     return (

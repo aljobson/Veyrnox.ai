@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../../components/ui/Text';
 import { Text as ThemedText, themedStyles, useThemedStyles } from '../../../components/ui';
 import { NetworkLogo } from '../../../components/publish/NetworkLogo';
 import { networkName } from '../../../lib/networkLogos';
@@ -59,7 +60,7 @@ export default function Posts() {
     return (
         <View style={styles.screen}>
             <Stack.Screen options={{ title: t('publish.posts'), headerRight: () => <HeaderAction label={t('publish.newpost')} onPress={() => router.push('/publish/compose')} /> }} />
-            {doneKey ? <Text style={styles.done} accessibilityRole="alert" accessibilityLiveRegion="polite">{tr(doneKey)}</Text> : null}
+            {doneKey ? <StatusText variant="inherit" style={styles.done} accessibilityRole="alert" accessibilityLiveRegion="polite">{tr(doneKey)}</StatusText> : null}
             {error && !posts ? (
                 <Text style={styles.error}>{error}</Text>
             ) : !posts ? (

@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../ui/Text';
 import * as Crypto from 'expo-crypto';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -80,7 +81,7 @@ function NewProfile({ onDone }: { onDone: () => void }) {
             <TextInput accessibilityLabel={t('cinemaCreator.displayName')} style={styles.input} value={name} onChangeText={setName} maxLength={NAME_MAX} />
             <Text style={styles.label}>{t('cinemaCreator.bio')}</Text>
             <TextInput accessibilityLabel={t('cinemaCreator.bio')} style={[styles.input, styles.multi]} value={bio} onChangeText={setBio} maxLength={BIO_MAX} multiline />
-            {note ? <Text style={styles.error} accessibilityRole="alert">{note}</Text> : null}
+            {note ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{note}</StatusText> : null}
             <Pressable accessibilityRole="button" accessibilityState={{ busy, disabled: busy || !valid }} disabled={busy || !valid} style={[styles.button, (busy || !valid) && styles.off]} onPress={save}>
                 {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{t('cinemaCreator.createProfile')}</Text>}
             </Pressable>
@@ -130,7 +131,7 @@ function Apply() {
             <Text style={styles.muted}>{t('cinemaCreator.applyIntro')}</Text>
             <TextInput accessibilityLabel={t('cinemaCreator.statement')} style={[styles.input, styles.multi]} value={statement} onChangeText={setStatement} maxLength={STATEMENT_MAX} multiline />
             <Text style={styles.hint}>{t('cinemaCreator.statementHint', { min: STATEMENT_MIN, left })}</Text>
-            {note ? <Text style={styles.error} accessibilityRole="alert">{note}</Text> : null}
+            {note ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{note}</StatusText> : null}
             <Pressable accessibilityRole="button" accessibilityState={{ busy, disabled: busy || !statementOk(statement) }} disabled={busy || !statementOk(statement)} style={[styles.button, (busy || !statementOk(statement)) && styles.off]} onPress={submit}>
                 {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{t('cinemaCreator.apply')}</Text>}
             </Pressable>

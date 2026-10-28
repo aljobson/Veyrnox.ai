@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -60,7 +61,7 @@ export default function ContactEdit() {
         }
     }
 
-    if (!contact) return <View style={styles.screen}><Stack.Screen options={{ title: t('contacts.edit') }} />{problem ? <Text style={styles.error} accessibilityRole="alert">{problem}</Text> : <ActivityIndicator color={colors.accent} />}</View>;
+    if (!contact) return <View style={styles.screen}><Stack.Screen options={{ title: t('contacts.edit') }} />{problem ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{problem}</StatusText> : <ActivityIndicator color={colors.accent} />}</View>;
 
     return (
         <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
@@ -82,7 +83,7 @@ export default function ContactEdit() {
                 <Text style={styles.label}>{t('contacts.notes')}</Text>
                 <TextInput editable={canEdit} style={[styles.input, styles.multi]} multiline value={notes} onChangeText={setNotes} maxLength={2000} accessibilityLabel={t('contacts.notes')} placeholderTextColor={colors.muted} />
                 {!canEdit ? <Text style={styles.muted}>{t('contacts.readOnly')}</Text> : null}
-                {problem ? <Text style={styles.error} accessibilityRole="alert">{problem}</Text> : null}
+                {problem ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{problem}</StatusText> : null}
                 {canEdit ? (
                     <Pressable accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy }} style={[styles.button, touchTarget, busy && styles.off]} onPress={save}>
                         {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{t('contacts.save')}</Text>}

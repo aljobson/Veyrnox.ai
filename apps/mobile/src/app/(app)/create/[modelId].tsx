@@ -341,8 +341,8 @@ export default function CreateWithModel() {
                     </View>
                 ) : null}
                 {restored ? (
-                    <View style={styles.restored} accessibilityLiveRegion="polite">
-                        <Text variant="body" tone="secondary" style={styles.restoredText}>{t('opt.draftRestored')}</Text>
+                    <View style={styles.restored}>
+                        <Text variant="body" tone="secondary" accessibilityLiveRegion="polite" style={styles.restoredText}>{t('opt.draftRestored')}</Text>
                         <Button variant="tertiary" accessibilityRole="button" accessibilityLabel={t('opt.draftClear')} onPress={discardDraft} label={t('opt.draftClear')} />
                     </View>
                 ) : null}
@@ -366,8 +366,8 @@ export default function CreateWithModel() {
                     </View>
                 ) : null}
                 {missing > 0 ? (
-                    <View style={styles.short} accessibilityLiveRegion="polite">
-                        <Text variant="callout" tone="secondary" style={styles.shortText} accessibilityLiveRegion="polite">{plural('create.short', missing, { have: String(balance ?? 0), need: String(price) })}</Text>
+                    <View style={styles.short}>
+                        <Text variant="callout" tone="secondary" accessibilityLiveRegion="polite" style={styles.shortText}>{plural('create.short', missing, { have: String(balance ?? 0), need: String(price) })}</Text>
                         <Button variant="tertiary" accessibilityRole="button" accessibilityLabel={t('lowBalance.buy')} onPress={async () => { await flushDraft(); router.push('/credits'); }} label={t('lowBalance.buy')} />
                     </View>
                 ) : null}

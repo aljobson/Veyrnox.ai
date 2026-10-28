@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { File } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
@@ -159,14 +160,14 @@ export default function AnalyticsScreen() {
                 </View>
             ) : null}
             {accounts && accounts.length === 0 ? <Text style={styles.muted}>{t('analytics.connect')}</Text> : null}
-            {error ? <View><Text style={styles.error} accessibilityRole="alert">{error}</Text><Pressable accessibilityRole="button" style={touchTarget} onPress={() => accounts ? setReload(n => n + 1) : setAccountsReload(n => n + 1)}><Text style={styles.text}>{t('publishReporting.retry')}</Text></Pressable></View> : !locked && (!accounts || loading) ? <ActivityIndicator color={colors.accent} /> : null}
+            {error ? <View><StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{error}</StatusText><Pressable accessibilityRole="button" style={touchTarget} onPress={() => accounts ? setReload(n => n + 1) : setAccountsReload(n => n + 1)}><Text style={styles.text}>{t('publishReporting.retry')}</Text></Pressable></View> : !locked && (!accounts || loading) ? <ActivityIndicator color={colors.accent} /> : null}
             {!locked && entries.length ? <>
                 <Pressable accessibilityRole="button" accessibilityLabel={t('publishReporting.csvFor', { name: accountId ? entries[0].account.displayName : t('publishReporting.all') })}
                     accessibilityState={{ disabled: csvBusy, busy: csvBusy }} disabled={csvBusy} style={[styles.chip, touchTarget]} onPress={exportCsv}>
                     <Text style={styles.text}>{t('publishReporting.csv')}</Text>
                 </Pressable>
-                {csvBusy ? <Text style={styles.muted} accessibilityLiveRegion="polite">{t('publishReporting.sharing')}</Text> : null}
-                {csvNotice ? <Text style={styles.muted} accessibilityLiveRegion="polite">{csvNotice}</Text> : null}
+                {csvBusy ? <StatusText variant="inherit" style={styles.muted} accessibilityLiveRegion="polite">{t('publishReporting.sharing')}</StatusText> : null}
+                {csvNotice ? <StatusText variant="inherit" style={styles.muted} accessibilityLiveRegion="polite">{csvNotice}</StatusText> : null}
                 {accountId === '' ? <AnalyticsPortfolio entries={entries} previous={previous} failed={failed} includeContent={options.includeContent} compare={compare} /> : null}
             </> : null}
             {data && summary ? (
