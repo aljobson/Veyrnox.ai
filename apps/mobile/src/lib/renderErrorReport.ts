@@ -8,11 +8,19 @@ export function safeErrorName(error: Error): string {
     return SAFE_NAME.test(error.name) ? error.name : 'Error';
 }
 
+// The stack after its "Name: message" header. The whole header is cut by its exact text, so a message
+// line shaped like a frame never survives; a stack that does not start with that header gives no frames.
+function framesOf(error: Error): string[] {
+    if (typeof error.stack !== 'string') return [];
+    const header = error.message ? `${error.name}: ${error.message}` : error.name;
+    if (!error.stack.startsWith(`${header}\n`)) return [];
+    return error.stack.slice(header.length + 1).split('\n').filter((line) => FRAME.test(line));
+}
+
 export function renderErrorReport(error: Error): Error {
     const name = safeErrorName(error);
-    const frames = typeof error.stack === 'string' ? error.stack.split('\n').filter((line) => FRAME.test(line)) : [];
     const report = new Error('render_error');
     report.name = name;
-    report.stack = [`${name}: render_error`, ...frames].join('\n');
+    report.stack = [`${name}: render_error`, ...framesOf(error)].join('\n');
     return report;
 }

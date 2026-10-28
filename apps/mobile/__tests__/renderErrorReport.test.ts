@@ -28,6 +28,27 @@ test('a message spread over several lines never reaches the report', () => {
     expect(renderErrorReport(error).stack).toBe('Error: render_error\n    at Screen (address at main.jsbundle:1:9)');
 });
 
+test('a message line shaped like a stack frame is cut with the header', () => {
+    const message = 'bad input\n    at person@example.com (address at main.jsbundle:1:99)';
+    const error = new Error(message);
+    error.stack = `Error: ${message}\n    at Screen (address at main.jsbundle:1:9)`;
+    const report = renderErrorReport(error);
+    expect(report.stack).toBe('Error: render_error\n    at Screen (address at main.jsbundle:1:9)');
+    expect(report.stack).not.toContain('person@example.com');
+});
+
+test('a stack that does not start with its own header gives no frames', () => {
+    const error = new Error('private');
+    error.stack = 'Something else\n    at person@example.com (address at main.jsbundle:1:99)';
+    expect(renderErrorReport(error).stack).toBe('Error: render_error');
+});
+
+test('an error with an empty message keeps its frames', () => {
+    const error = new RangeError('');
+    error.stack = 'RangeError\n    at Screen (address at main.jsbundle:1:9)';
+    expect(renderErrorReport(error).stack).toBe('RangeError: render_error\n    at Screen (address at main.jsbundle:1:9)');
+});
+
 test('an odd class name is reported as Error', () => {
     const error = new Error('x');
     error.name = 'Bad name with spaces';
