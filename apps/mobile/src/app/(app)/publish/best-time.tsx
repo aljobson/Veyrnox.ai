@@ -1,3 +1,5 @@
+import { BestTimeHeatmap } from '../../../components/publish/BestTimeHeatmap';
+import { dayName, hourText as hour, scoreText as num } from '../../../lib/publishHeatmap';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -9,21 +11,18 @@ import { fetchInsights, insightsErrorKey, MIN_HISTORY_DAYS, MIN_MEASURED_POSTS, 
 import { usePublishApi } from '../../../lib/usePublishApi';
 import { colors } from '../../../theme';
 
-const DAYS = [t('publish.monday'), t('publish.tuesday'), t('publish.wednesday'), t('publish.thursday'), t('publish.friday'), t('publish.saturday'), t('publish.sunday')];
-const hour = (h: number) => `${String(h).padStart(2, '0')}:00`;
-const num = (n: number) => (Math.round(n * 10) / 10).toString();
-
 export default function BestTime() {
     const api = usePublishApi();
     const [accounts, setAccounts] = useState<PublishAccount[] | null>(null);
     const [accountId, setAccountId] = useState<string | null>(null);
-    const [insights, setInsights] = useState<Insights | null | undefined>(undefined);
+    const [loaded, setLoaded] = useState<{ accountId: string; api: typeof api; insights: Insights | null }>();
+    const insights = loaded?.accountId === accountId && loaded?.api === api ? loaded.insights : undefined;
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         let cancelled = false;
         setAccounts(null);
-        setAccountId(null);
+        setAccountId(null); setLoaded(undefined); setError(null);
         fetchAccounts(api)
             .then(({ accounts: list }) => {
                 if (cancelled) return;
@@ -40,16 +39,17 @@ export default function BestTime() {
     useEffect(() => {
         if (!accountId) return;
         let cancelled = false;
-        setInsights(undefined);
+        setLoaded(undefined);
         setError(null);
         fetchInsights(api, accountId)
-            .then((i) => !cancelled && setInsights(i))
+            .then((i) => !cancelled && setLoaded({ accountId, api, insights: i }))
             .catch((err) => !cancelled && setError(t(insightsErrorKey(err))));
         return () => {
             cancelled = true;
         };
     }, [api, accountId]);
 
+    const selectAccount = (id: string) => { if (id === accountId) return; setAccountId(id); setLoaded(undefined); setError(null); };
     const summary = insights ? summarizeInsights(insights) : null;
 
     return (
@@ -61,7 +61,7 @@ export default function BestTime() {
             {accounts && accounts.length > 1 ? (
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
                     {accounts.map((a) => (
-                        <Pressable key={a.id} accessibilityRole="button" accessibilityLabel={`${a.displayName}, ${a.network}, ${accountStatusLabel(a.status)}`} accessibilityState={{ selected: a.id === accountId }} style={[styles.chip, a.id === accountId && styles.chipOn, touchTarget]} onPress={() => setAccountId(a.id)}>
+                        <Pressable key={a.id} accessibilityRole="button" accessibilityLabel={`${a.displayName}, ${a.network}, ${accountStatusLabel(a.status)}`} accessibilityState={{ selected: a.id === accountId }} style={[styles.chip, a.id === accountId && styles.chipOn, touchTarget]} onPress={() => selectAccount(a.id)}>
                             <Text style={[styles.chipText, a.id === accountId && styles.chipTextOn]}>{a.displayName}</Text>
                         </Pressable>
                     ))}
@@ -75,14 +75,15 @@ export default function BestTime() {
                     <Text style={styles.muted}>{t('insights.basis', { tz: insights.timezone, start: insights.periodStart ?? '', end: insights.periodEnd ?? '' })}</Text>
                     {summary.topSlots.length > 0 ? (
                         summary.topSlots.map((s, i) => (
-                            <View key={`${s.day}-${s.hour}`} style={styles.slot} accessible accessibilityLabel={`${i + 1}. ${DAYS[s.day - 1]} ${hour(s.hour)}, ${num(s.score ?? 0)} ${t('insights.perPost')}, ${plural('insights.posts', s.posts)}`}>
-                                <Text style={styles.slotTime}>{DAYS[s.day - 1]} {hour(s.hour)}</Text>
+                            <View key={`${s.day}-${s.hour}`} style={styles.slot} accessible accessibilityLabel={`${i + 1}. ${dayName(s.day)} ${hour(s.hour)}, ${num(s.score ?? 0)} ${t('insights.perPost')}, ${plural('insights.posts', s.posts)}`}>
+                                <Text style={styles.slotTime}>{dayName(s.day)} {hour(s.hour)}</Text>
                                 <Text style={styles.muted}>{num(s.score ?? 0)} {t('insights.perPost')} · {plural('insights.posts', s.posts)}</Text>
                             </View>
                         ))
                     ) : (
                         <Text style={styles.body2}>{t('insights.notEnough', { posts: MIN_MEASURED_POSTS, days: MIN_HISTORY_DAYS })}</Text>
                     )}
+                    {summary.topSlots.length > 0 && loaded ? <BestTimeHeatmap key={loaded.accountId} insights={insights} /> : null}
                     <Text style={styles.note}>{t('insights.measured', { measured: insights.measuredPosts, recorded: insights.recordedPosts, slot: MIN_SLOT_POSTS })}</Text>
                     {summary.frequency.length > 0 ? (
                         <>
