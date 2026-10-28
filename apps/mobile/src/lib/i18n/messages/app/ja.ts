@@ -4987,5 +4987,14 @@ export default {
   "publishParity.calendar.network": "ネットワーク",
   "publishParity.calendar.noneFiltered": "この条件に一致する投稿はありません。",
   "publishParity.calendar.timezone": "時刻は {zone} で表示されます",
-  "publishParity.networkStatus": "{network}：{status}"
+  "publishParity.networkStatus": "{network}：{status}",
+  "cinemaViewer.episodeNumber": "エピソード{number}",
+  "cinemaViewer.access.free": "無料",
+  "cinemaViewer.access.passLimit": "今月のCinema Passの上限に達しました",
+  "cinemaViewer.language": "言語：{language}",
+  "cinemaViewer.aiUse": "クリエイターが申告したAIの使用",
+  "cinemaViewer.fromSeries": "{series}より",
+  "cinemaViewer.pollClosesAt": "締め切り：{date}",
+  "cinemaViewer.pollClosedAt": "終了：{date}",
+  "cinemaViewer.openComments": "コメントを読む・書く"
 } as const;

@@ -5179,5 +5179,14 @@ export default {
   "publishParity.calendar.network": "Сеть",
   "publishParity.calendar.noneFiltered": "Нет публикаций с такими фильтрами.",
   "publishParity.calendar.timezone": "Время указано в часовом поясе {zone}",
-  "publishParity.networkStatus": "{network}: {status}"
+  "publishParity.networkStatus": "{network}: {status}",
+  "cinemaViewer.episodeNumber": "Эпизод {number}",
+  "cinemaViewer.access.free": "Бесплатно",
+  "cinemaViewer.access.passLimit": "Лимит Cinema Pass на этот месяц достигнут",
+  "cinemaViewer.language": "Язык: {language}",
+  "cinemaViewer.aiUse": "Использование ИИ, заявленное автором",
+  "cinemaViewer.fromSeries": "Из {series}",
+  "cinemaViewer.pollClosesAt": "Завершается {date}",
+  "cinemaViewer.pollClosedAt": "Завершено {date}",
+  "cinemaViewer.openComments": "Читать и писать комментарии"
 } as const;

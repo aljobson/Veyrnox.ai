@@ -1,6 +1,7 @@
-import * as Crypto from 'expo-crypto';
-import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { bodyKeys } from '../../lib/cinemaDrafts';
+import { Button } from '../ui';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { MIN_TARGET } from '../../lib/a11y';
 import { castChoice, castVote, competitionOpen, fetchStoryPolls, fetchVoting, readOf, socialErrorKey, type StoryPoll, type VoteCompetition } from '../../lib/cinemaSocial';
@@ -27,46 +28,57 @@ function useRead<T>(run: () => Promise<T>): [Load<T>, () => void] {
     const [n, setN] = useState(0);
     useEffect(() => {
         let live = true;
+        setState({ kind: 'loading' });
         readOf(run).then((r) => {
             if (!live) return;
             setState(r.kind === 'ok' ? { kind: 'ok', value: r.value } : r.kind === 'closed' ? { kind: 'hidden' } : { kind: 'error', key: r.key });
         });
         return () => { live = false; };
-        // eslint-disable-next-line react-hooks/exhaustive-deps -- re-run only when asked
-    }, [n]);
-    return [state, () => setN((x) => x + 1)];
+    }, [n, run]);
+    const reload = useCallback(() => setN(x => x + 1), []);
+    return [state, reload];
 }
 
 function Voting({ contentId }: { contentId: string }) {
     const { api } = useAuth();
-    const [state, reload] = useRead(() => fetchVoting(api, contentId));
+    const [state, reload] = useRead(useCallback(() => fetchVoting(api, contentId), [api, contentId]));
     const [note, setNote] = useState<string | null>(null);
     const [busy, setBusy] = useState<string | null>(null);
+    const keys = useRef(bodyKeys());
+    const submitting = useRef(false);
     const vote = useCallback(async (c: VoteCompetition) => {
+        if (submitting.current) return;
+        submitting.current = true;
+        const body = { content_id: contentId, competition_id: c.id };
         setBusy(c.id);
         setNote(null);
         try {
-            await castVote(api, contentId, c.id, Crypto.randomUUID());
+            await castVote(api, contentId, c.id, keys.current.for(body));
+            keys.current.finish(body);
             reload();
         } catch (err) {
+            keys.current.finish(body, err);
             setNote(t(socialErrorKey(err)));
         } finally {
+            submitting.current = false;
             setBusy(null);
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [api, contentId]);
-    if (state.kind === 'loading') return <ActivityIndicator color={colors.accent} />;
-    if (state.kind === 'hidden' || (state.kind === 'ok' && state.value.length === 0)) return null;
+    }, [api, contentId, reload]);
+    if (state.kind === 'loading') return null;
+    if (state.kind === 'hidden') return null;
     if (state.kind === 'error') return <Pressable accessibilityRole="button" style={styles.retry} onPress={reload}><Text style={styles.error}>{t(state.key)} {t('cinemaSocial.tapRetry')}</Text></Pressable>;
     return (
         <View style={styles.box}>
             <Text style={styles.heading} accessibilityRole="header">{t('cinemaSocial.voting')}</Text>
+            <Text style={styles.muted}>{t('cinema.voting.oneVotePerTitleInEach')}</Text>
+            {!state.value.length ? <Text style={styles.muted}>{t('cinema.voting.noOpenCompetitionForThisTitle')}</Text> : null}
             {state.value.map((c) => {
                 const open = competitionOpen(c);
                 return (
                     <View key={c.id} style={styles.card}>
                         <Text style={styles.name}>{c.name}</Text>
-                        <Text style={styles.muted}>{t('cinemaSocial.voteCount', { count: c.qualifiedVotes })}{open ? ` · ${t('cinemaSocial.endsOn', { date: day(c.endsAt) })}` : ` · ${t('cinemaSocial.ended')}`}</Text>
+                        <Text style={styles.muted}>{t('cinemaSocial.voteCount', { count: c.qualifiedVotes })}</Text>
+                        <Text style={styles.muted}>{open ? t('cinemaSocial.endsOn', { date: day(c.endsAt) }) : t('cinemaSocial.ended')}</Text>
                         {c.myVote ? <Text style={styles.mine}>{t(`cinemaSocial.myVote.${c.myVote}`)}</Text> : open ? (
                             <Pressable accessibilityRole="button" accessibilityLabel={t('cinemaSocial.voteFor', { name: c.name })} accessibilityState={{ busy: busy === c.id, disabled: busy !== null }} disabled={busy !== null} style={styles.btn} onPress={() => vote(c)}>
                                 <Text style={styles.btnText}>{t('cinemaSocial.vote')}</Text>
@@ -82,18 +94,27 @@ function Voting({ contentId }: { contentId: string }) {
 
 function Polls({ contentId }: { contentId: string }) {
     const { api } = useAuth();
-    const [state, reload] = useRead(() => fetchStoryPolls(api, contentId));
+    const [state, reload] = useRead(useCallback(() => fetchStoryPolls(api, contentId), [api, contentId]));
     const [note, setNote] = useState<string | null>(null);
     const [busy, setBusy] = useState<string | null>(null);
+    const keys = useRef(bodyKeys());
+    const submitting = useRef(false);
+    const [selected, setSelected] = useState<Record<string, string>>({});
     async function choose(p: StoryPoll, optionId: string) {
+        if (submitting.current) return;
+        submitting.current = true;
+        const body = { poll_id: p.id, option_id: optionId };
         setBusy(p.id);
         setNote(null);
         try {
-            await castChoice(api, p.id, optionId, Crypto.randomUUID());
+            await castChoice(api, p.id, optionId, keys.current.for(body));
+            keys.current.finish(body);
             reload();
         } catch (err) {
+            keys.current.finish(body, err);
             setNote(t(socialErrorKey(err)));
         } finally {
+            submitting.current = false;
             setBusy(null);
         }
     }
@@ -109,19 +130,24 @@ function Polls({ contentId }: { contentId: string }) {
                     <View key={p.id} style={styles.card}>
                         <Text style={styles.name}>{p.question}</Text>
                         {canChoose ? <Text style={styles.muted}>{t('cinemaSocial.choiceFinal')}</Text> : <Text style={styles.muted}>{p.isOpen ? t('cinemaSocial.choiceMade') : t('cinemaSocial.pollClosed')}</Text>}
+                        {Number.isFinite(Date.parse(p.closesAt)) ? <Text style={styles.muted}>{p.isOpen ? t('cinemaViewer.pollClosesAt', { date: new Date(p.closesAt).toLocaleString(formatLocale()) }) : t('cinemaViewer.pollClosedAt', { date: new Date(p.closesAt).toLocaleString(formatLocale()) })}</Text> : null}
+                        {p.myChoiceStatus ? <Text style={styles.mine}>{p.myChoiceStatus === 'qualified' ? t('cinema.storyPolls.yourChoiceIsCounted') : p.myChoiceStatus === 'under_review' ? t('cinema.storyPolls.yourChoiceIsAwaitingReview') : t('cinema.storyPolls.yourChoiceWasExcludedByModeration')}</Text> : null}
                         {p.options.map((o) => (
                             <Pressable
                                 key={o.id}
-                                accessibilityRole="button"
-                                accessibilityState={{ selected: p.myOptionId === o.id, disabled: !canChoose || busy !== null }}
+                                accessibilityRole="radio"
+                                accessibilityLabel={o.label}
+                                accessibilityState={{ checked: (p.myOptionId ?? selected[p.id]) === o.id, disabled: !canChoose || busy !== null }}
                                 disabled={!canChoose || busy !== null}
-                                style={[styles.option, p.myOptionId === o.id && styles.optionOn]}
-                                onPress={() => choose(p, o.id)}
+                                style={[styles.option, (p.myOptionId ?? selected[p.id]) === o.id && styles.optionOn]}
+                                onPress={() => setSelected(prev => ({ ...prev, [p.id]: o.id }))}
                             >
                                 <Text style={styles.optionText}>{o.label}</Text>
                                 <Text style={styles.muted}>{o.votes}</Text>
                             </Pressable>
                         ))}
+                        {canChoose ? <Button label={t('cinema.storyPolls.submitStoryChoice')} disabled={!selected[p.id] || busy !== null} onPress={() => choose(p, selected[p.id])} /> : null}
+                        <Text style={styles.muted}>{t('cinema.storyPolls.answersHeldForReviewAreExcluded')}</Text>
                     </View>
                 );
             })}

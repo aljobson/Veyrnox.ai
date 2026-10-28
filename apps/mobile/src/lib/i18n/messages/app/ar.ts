@@ -5307,5 +5307,14 @@ export default {
   "publishParity.calendar.network": "الشبكة",
   "publishParity.calendar.noneFiltered": "لا توجد منشورات تطابق هذه المرشحات.",
   "publishParity.calendar.timezone": "تُعرض الأوقات بتوقيت {zone}",
-  "publishParity.networkStatus": "{network} — {status}"
+  "publishParity.networkStatus": "{network} — {status}",
+  "cinemaViewer.episodeNumber": "الحلقة {number}",
+  "cinemaViewer.access.free": "مجاني",
+  "cinemaViewer.access.passLimit": "تم بلوغ حد Cinema Pass لهذا الشهر",
+  "cinemaViewer.language": "اللغة: {language}",
+  "cinemaViewer.aiUse": "استخدام الذكاء الاصطناعي الذي أعلنه المبدع",
+  "cinemaViewer.fromSeries": "من {series}",
+  "cinemaViewer.pollClosesAt": "يغلق في {date}",
+  "cinemaViewer.pollClosedAt": "أُغلق في {date}",
+  "cinemaViewer.openComments": "قراءة التعليقات وكتابتها"
 } as const;

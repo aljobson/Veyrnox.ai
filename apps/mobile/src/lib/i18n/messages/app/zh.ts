@@ -4987,5 +4987,14 @@ export default {
   "publishParity.calendar.network": "平台",
   "publishParity.calendar.noneFiltered": "没有符合这些筛选条件的帖子。",
   "publishParity.calendar.timezone": "时间以 {zone} 时区显示",
-  "publishParity.networkStatus": "{network}（{status}）"
+  "publishParity.networkStatus": "{network}（{status}）",
+  "cinemaViewer.episodeNumber": "第 {number} 集",
+  "cinemaViewer.access.free": "免费",
+  "cinemaViewer.access.passLimit": "本月 Cinema Pass 额度已用完",
+  "cinemaViewer.language": "语言：{language}",
+  "cinemaViewer.aiUse": "创作者声明的 AI 使用情况",
+  "cinemaViewer.fromSeries": "来自《{series}》",
+  "cinemaViewer.pollClosesAt": "截止于 {date}",
+  "cinemaViewer.pollClosedAt": "已于 {date} 结束",
+  "cinemaViewer.openComments": "阅读和撰写评论"
 } as const;

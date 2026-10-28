@@ -4987,5 +4987,14 @@ export default {
   "publishParity.calendar.network": "네트워크",
   "publishParity.calendar.noneFiltered": "이 필터와 일치하는 게시물이 없습니다.",
   "publishParity.calendar.timezone": "{zone} 시간대로 표시됩니다",
-  "publishParity.networkStatus": "{network}: {status}"
+  "publishParity.networkStatus": "{network}: {status}",
+  "cinemaViewer.episodeNumber": "에피소드 {number}",
+  "cinemaViewer.access.free": "무료",
+  "cinemaViewer.access.passLimit": "이번 달 Cinema Pass 한도에 도달했습니다",
+  "cinemaViewer.language": "언어: {language}",
+  "cinemaViewer.aiUse": "크리에이터가 신고한 AI 사용",
+  "cinemaViewer.fromSeries": "{series}에서",
+  "cinemaViewer.pollClosesAt": "마감: {date}",
+  "cinemaViewer.pollClosedAt": "마감됨: {date}",
+  "cinemaViewer.openComments": "댓글 읽기 및 작성"
 } as const;

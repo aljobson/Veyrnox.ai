@@ -5115,5 +5115,14 @@ export default {
   "publishParity.calendar.network": "Rede",
   "publishParity.calendar.noneFiltered": "Nenhuma publicação corresponde a estes filtros.",
   "publishParity.calendar.timezone": "Horários exibidos em {zone}",
-  "publishParity.networkStatus": "{network}: {status}"
+  "publishParity.networkStatus": "{network}: {status}",
+  "cinemaViewer.episodeNumber": "Episódio {number}",
+  "cinemaViewer.access.free": "Grátis",
+  "cinemaViewer.access.passLimit": "Limite do Cinema Pass atingido este mês",
+  "cinemaViewer.language": "Idioma: {language}",
+  "cinemaViewer.aiUse": "Uso de IA declarado pelo criador",
+  "cinemaViewer.fromSeries": "De {series}",
+  "cinemaViewer.pollClosesAt": "Encerra em {date}",
+  "cinemaViewer.pollClosedAt": "Encerrado em {date}",
+  "cinemaViewer.openComments": "Ler e escrever comentários"
 } as const;

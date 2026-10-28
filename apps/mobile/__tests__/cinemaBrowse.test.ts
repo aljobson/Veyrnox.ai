@@ -62,7 +62,7 @@ describe('entitlement', () => {
 });
 
 test('episode order and the first watchable one', () => {
-    const e = (id: string, season: number, position: number, watchable: boolean) => ({ id, title: id, season, position, durationSeconds: null, watchable });
+    const e = (id: string, season: number, position: number, watchable: boolean) => ({ id, title: id, season, position, durationSeconds: null, synopsis: '', access: 'free', reason: null, watchable });
     const list = [e('b', 1, 2, true), e('a', 1, 1, false), e('c', 2, 1, true)];
     expect(firstEpisode(list)?.id).toBe('a');
     expect(firstWatchable(list)?.id).toBe('b');

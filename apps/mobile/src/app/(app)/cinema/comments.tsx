@@ -48,7 +48,7 @@ export default function Comments() {
     }, [load]);
 
     // Withdrawing takes the person's own comment down; it cannot be put back, so ask first.
-    function withdraw(o: OwnComment) {
+    function withdraw(o: Pick<OwnComment, 'id'>) {
         Alert.alert(t('comments.withdrawTitle'), t('comments.withdrawBody'), [
             { text: t('comments.withdrawKeep'), style: 'cancel' },
             {
@@ -165,7 +165,7 @@ export default function Comments() {
                                         <View key={o.id} style={styles.own}>
                                             <Text style={styles.body}>{o.body}</Text>
                                             <Text style={styles.muted}>{t(STATUS[o.status] ?? 'comments.status.pending')}{o.createdAt ? ` · ${when(o.createdAt)}` : ''}</Text>
-                                            {o.status === 'pending' || o.status === 'approved' ? (
+                                            {o.status !== 'withdrawn' ? (
                                                 <Pressable accessibilityRole="button" accessibilityLabel={t('comments.withdrawLabel')} style={[touchTarget, styles.act]} onPress={() => withdraw(o)}>
                                                     <Text style={styles.link}>{t('comments.withdraw')}</Text>
                                                 </Pressable>
@@ -183,6 +183,9 @@ export default function Comments() {
                         <View style={styles.card}>
                             <Text style={styles.author}>{item.displayName}{item.createdAt ? ` · ${when(item.createdAt)}` : ''}</Text>
                             <Text style={styles.body}>{item.body}</Text>
+                            {item.own ? <Pressable accessibilityRole="button" accessibilityLabel={t('comments.withdrawLabel')} style={[touchTarget, styles.act]} onPress={() => withdraw(item)}>
+                                <Text style={styles.link}>{t('comments.withdraw')}</Text>
+                            </Pressable> : null}
                             {!item.own ? (
                                 <View style={styles.actions}>
                                     <Pressable accessibilityRole="button" accessibilityLabel={t('comments.reportBy', { name: item.displayName })} style={[touchTarget, styles.act]} onPress={() => router.push({ pathname: '/cinema/report-comment', params: { commentId: item.id } })}>

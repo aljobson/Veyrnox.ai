@@ -5051,5 +5051,14 @@ export default {
   "publishParity.calendar.network": "नेटवर्क",
   "publishParity.calendar.noneFiltered": "इन फ़िल्टर से कोई पोस्ट मेल नहीं खाती।",
   "publishParity.calendar.timezone": "समय {zone} में दिखाए गए हैं",
-  "publishParity.networkStatus": "{network}: {status}"
+  "publishParity.networkStatus": "{network}: {status}",
+  "cinemaViewer.episodeNumber": "एपिसोड {number}",
+  "cinemaViewer.access.free": "मुफ़्त",
+  "cinemaViewer.access.passLimit": "इस महीने Cinema Pass की सीमा पूरी हो गई",
+  "cinemaViewer.language": "भाषा: {language}",
+  "cinemaViewer.aiUse": "क्रिएटर द्वारा घोषित एआई का उपयोग",
+  "cinemaViewer.fromSeries": "{series} से",
+  "cinemaViewer.pollClosesAt": "{date} को बंद होगा",
+  "cinemaViewer.pollClosedAt": "{date} को बंद हुआ",
+  "cinemaViewer.openComments": "टिप्पणियाँ पढ़ें और लिखें"
 } as const;

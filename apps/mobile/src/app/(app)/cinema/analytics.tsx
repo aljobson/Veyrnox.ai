@@ -1,6 +1,10 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Button, Chip } from '../../../components/ui';
+import { ApiError } from '../../../lib/api';
+import { ownPublishedTitles } from '../../../lib/cinemaViewer';
+import { isTitleId } from '../../../lib/cinemaBrowse';
 import { useAuth } from '../../../auth/AuthProvider';
 import { MIN_TARGET } from '../../../lib/a11y';
 import { fetchAnalytics, type Analytics } from '../../../lib/cinemaCreator';
@@ -14,19 +18,47 @@ const ROWS = ['viewers', 'completions', 'voters', 'sharers', 'commenters'] as co
 // A creator's own audience counts for one title over the last 28 days (CINEMA_CREATOR_ANALYTICS_ENABLED). Counts under
 // the server's minimum viewer number are hidden by the server, and the screen says so rather than showing zeros.
 export default function CreatorAnalytics() {
-    const { id } = useLocalSearchParams<{ id: string }>();
+    const { id } = useLocalSearchParams<{ id?: string }>();
     const { api } = useAuth();
+    const [titles, setTitles] = useState<Awaited<ReturnType<typeof ownPublishedTitles>> | null>(null);
+    const [selected, setSelected] = useState<string | null>(null);
+    const [listError, setListError] = useState<'closed' | 'error' | null>(null);
+    const [retry, setRetry] = useState(0);
     const [result, setResult] = useState<Read<Analytics> | null>(null);
-    const load = useCallback(async () => {
+    const [metricRetry, setMetricRetry] = useState(0);
+    const load = useCallback(() => setMetricRetry(n => n + 1), []);
+    useEffect(() => {
+        let live = true;
+        setTitles(null);
+        setSelected(null);
+        setListError(null);
+        void ownPublishedTitles(api).then(rows => {
+            if (!live) return;
+            setTitles(rows);
+            setSelected(id && isTitleId(id) && rows.some(row => row.id === id) ? id : rows[0]?.id ?? null);
+        }).catch(err => { if (live) setListError(err instanceof ApiError && [403, 404, 503].includes(err.status) ? 'closed' : 'error'); });
+        return () => { live = false; };
+    }, [api, id, retry]);
+    useEffect(() => {
+        let live = true;
         setResult(null);
-        setResult(await readOf(() => fetchAnalytics(api, id)));
-    }, [api, id]);
-    useEffect(() => { void load(); }, [load]);
+        if (selected) void readOf(() => fetchAnalytics(api, selected)).then(value => { if (live) setResult(value); });
+        return () => { live = false; };
+    }, [api, selected, metricRetry]);
 
     return (
         <View style={styles.screen}>
             <Stack.Screen options={{ title: t('cinemaCreator.analytics.title') }} />
-            {!result ? <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>
+            {listError === 'closed' ? <Text style={styles.muted}>{t('cinemaCreator.analytics.closed')}</Text>
+                : listError === 'error' ? <Button variant="tertiary" label={t('recovery.retry')} onPress={() => setRetry(n => n + 1)} />
+                : titles?.length === 0 ? <Text style={styles.body}>{t('cinema.creatorAnalytics.publishATitleToStartSeeing')}</Text> : null}
+            {titles?.length ? <View style={{ padding: 16, gap: 8 }}>
+                <Text accessibilityRole="header" style={styles.label}>{t('cinema.creatorAnalytics.publishedTitle')}</Text>
+                <ScrollView horizontal contentContainerStyle={{ gap: 8 }} accessibilityLabel={t('cinema.creatorAnalytics.publishedTitle')}>
+                    {titles.map(title => <Chip key={title.id} label={title.title} selected={selected === title.id} onPress={() => setSelected(title.id)} />)}
+                </ScrollView>
+            </View> : null}
+            {!selected && (listError || titles) ? null : !result ? <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>
                 : result.kind === 'closed' ? <View style={styles.center}><Text style={styles.muted}>{t('cinemaCreator.analytics.closed')}</Text></View>
                     : result.kind === 'error' ? <Pressable accessibilityRole="button" style={styles.center} onPress={load}><Text style={styles.error}>{t(result.key)} {t('cinemaSocial.tapRetry')}</Text></Pressable>
                         : (
@@ -40,6 +72,7 @@ export default function CreatorAnalytics() {
                                 )) : <Text style={styles.body}>{plural('cinemaCreator.analytics.suppressed', result.value.minimumViewers)}</Text>}
                             </ScrollView>
                         )}
+            {selected ? <Text style={[styles.muted, { padding: 16 }]}>{t('cinema.creatorAnalytics.completionMeansAtLeast90Of')}</Text> : null}
         </View>
     );
 }
