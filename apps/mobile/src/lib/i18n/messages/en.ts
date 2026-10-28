@@ -44,6 +44,7 @@ import area_cinemaBrowse from './en/cinemaBrowse';
 import area_cinemaComments from './en/cinemaComments';
 import area_cinemaCreator from './en/cinemaCreator';
 import area_cinemaDrafts from './en/cinemaDrafts';
+import area_cinemaEmbed from './en/cinemaEmbed';
 import area_cinemaPass from './en/cinemaPass';
 import area_cinemaPlayback from './en/cinemaPlayback';
 import area_cinemaSeries from './en/cinemaSeries';
@@ -242,6 +243,7 @@ const catalog = {
     ...area_cinemaComments,
     ...area_cinemaCreator,
     ...area_cinemaDrafts,
+    ...area_cinemaEmbed,
     ...area_cinemaPass,
     ...area_cinemaPlayback,
     ...area_cinemaSeries,

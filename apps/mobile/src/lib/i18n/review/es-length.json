@@ -516,6 +516,12 @@
     "ratio": 2
   },
   {
+    "id": "cinemaEmbed.retry",
+    "english": "Try again",
+    "translation": "Intentar de nuevo",
+    "ratio": 1.89
+  },
+  {
     "id": "cinemaSocial.ended",
     "english": "ended",
     "translation": "finalizada",
