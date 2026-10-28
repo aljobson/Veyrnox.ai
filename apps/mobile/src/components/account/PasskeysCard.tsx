@@ -1,3 +1,4 @@
+import { isAccountChanged } from '../../auth/sessionTask';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
@@ -10,7 +11,7 @@ const when = (iso: string | null) => (iso && !Number.isNaN(Date.parse(iso)) ? ne
 
 export function PasskeysCard() {
     const styles = useThemedStyles(sheets);
-    const { getAccessToken } = useAuth();
+    const { getAccessToken, beginSessionTask } = useAuth();
     const [list, setList] = useState<Passkey[] | null>(null);
     const [name, setName] = useState('');
     const adding = useRef(false);
@@ -32,21 +33,24 @@ export function PasskeysCard() {
     }, [load]);
 
     async function add() {
+        const task = beginSessionTask();
         if (!passkeyGate() || busy || adding.current) return;
         adding.current = true;
         setBusy(true);
         setNote(null);
         try {
-            const result = await addPasskey(getAccessToken, name);
+            const result = await addPasskey(task.tokens, name);
+            if (!task.current()) return;
             if (result === null) return;
             setName('');
             setNote({ text: t('passkey.added'), error: false });
             try {
-                setList(await fetchPasskeys(getAccessToken));
+                setList(await fetchPasskeys(task.tokens));
             } catch {
                 // The passkey was added; a failed list reload must not report a failure.
             }
         } catch (err) {
+            if (!task.current() || isAccountChanged(err)) return;
             const key = passkeyAddErrorKey(err);
             if (key) setNote({ text: t(key), error: true });
         } finally {

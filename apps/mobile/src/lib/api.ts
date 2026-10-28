@@ -1,3 +1,4 @@
+import { tokenUser, isAccountChanged } from './auth/tokenUser';
 import { fetchWithTimeout, RequestTimeout } from './fetchWithTimeout';
 export { REQUEST_TIMEOUT_MS } from './fetchWithTimeout';
 import { markOffline, markOnline } from './networkState';
@@ -23,13 +24,22 @@ export class ApiError extends Error {
 
 export const isServiceUnavailable = (err: unknown): boolean => err instanceof ApiError && err.isServiceUnavailable;
 
+export interface ClientTask {
+    readonly gen: number;
+    readonly user: string | null;
+    current(): boolean;
+}
+
+export interface CallOptions { readonly owner?: string; readonly task?: ClientTask }
+
 export interface ApiClientOptions {
+    readonly beginSessionTask?: () => ClientTask;
     readonly baseUrl: string;
     // Returns a valid access token, refreshing first when it is about to expire
     // or when forceRefresh is set (after a 401).
-    readonly getAccessToken: (forceRefresh?: boolean) => Promise<string | null>;
+    readonly getAccessToken: (forceRefresh?: boolean, expected?: number) => Promise<string | null>;
     // Called on a 401 after one forced refresh failed to help.
-    readonly onSessionLost: () => void;
+    readonly onSessionLost: (generation?: number) => void;
     // Used for streamed responses; React Native's own fetch cannot stream a body.
     readonly streamFetch?: typeof fetch;
     // Runs before a call leaves the phone; throws to stop it (the AI-sharing consent, ADR-0128).
@@ -43,9 +53,9 @@ export interface Balance {
 }
 
 export interface ApiClient {
-    request<T>(path: string, init?: RequestInit): Promise<T>;
+    request<T>(path: string, init?: RequestInit, options?: CallOptions): Promise<T>;
     // Authenticated request whose response body the caller reads (server-sent events).
-    stream(path: string, init?: RequestInit): Promise<Response>;
+    stream(path: string, init?: RequestInit, options?: CallOptions): Promise<Response>;
     getBalance(): Promise<Balance>;
 }
 
@@ -66,27 +76,48 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
     }
 
     // Sends with the current token; after a 401 refreshes once and retries.
-    async function authed(path: string, init: RequestInit, doFetch: typeof fetch): Promise<Response> {
-        const token = await options.getAccessToken();
+    async function authed(path: string, init: RequestInit, doFetch: typeof fetch, task?: ClientTask, owner?: string): Promise<Response> {
+        const check = () => { if (task && !task.current()) throw new ApiError(401, 'account_changed'); };
+        const tokenFor = async (force: boolean) => {
+            check();
+            try {
+                return await (task ? options.getAccessToken(force, task.gen) : options.getAccessToken(force));
+            } catch (err) {
+                if (isAccountChanged(err)) throw new ApiError(401, 'account_changed');
+                throw err;
+            }
+        };
+        const lost = () => task ? options.onSessionLost(task.gen) : options.onSessionLost();
+        const token = await tokenFor(false);
+        check();
         if (!token) {
-            options.onSessionLost();
+            lost();
             throw new ApiError(401, 'not_authenticated');
         }
+        if ((task?.user != null && tokenUser(token) !== task.user) || (owner !== undefined && tokenUser(token) !== owner)) {
+            throw new ApiError(401, 'account_changed');
+        }
+        const user = task?.user ?? tokenUser(token);
         let res = await send(path, init, token, doFetch);
         if (res.status === 401) {
-            const retryToken = await options.getAccessToken(true);
+            check();
+            const retryToken = await tokenFor(true);
+            check();
+            if (task && retryToken && tokenUser(retryToken) !== user) throw new ApiError(401, 'account_changed');
             if (retryToken && retryToken !== token) res = await send(path, init, retryToken, doFetch);
             if (res.status === 401) {
-                options.onSessionLost();
+                check();
+                lost();
                 throw new ApiError(401, 'not_authenticated');
             }
         }
         return res;
     }
 
-    async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+    async function request<T>(path: string, init: RequestInit = {}, call: CallOptions = {}): Promise<T> {
+        const task = call.task ?? options.beginSessionTask?.();
         await options.beforeSend?.(path, init.method ?? 'GET');
-        const res = await authed(path, init, fetch);
+        const res = await authed(path, init, fetch, task, call.owner);
         const body = (await res.json().catch(() => ({}))) as { error?: string };
         if (!res.ok) {
             const wait = Number(res.headers.get('retry-after'));
@@ -96,9 +127,10 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
         return body as T;
     }
 
-    async function stream(path: string, init: RequestInit = {}): Promise<Response> {
+    async function stream(path: string, init: RequestInit = {}, call: CallOptions = {}): Promise<Response> {
+        const task = call.task ?? options.beginSessionTask?.();
         await options.beforeSend?.(path, init.method ?? 'GET');
-        return authed(path, init, options.streamFetch ?? fetch);
+        return authed(path, init, options.streamFetch ?? fetch, task, call.owner);
     }
 
     return {

@@ -37,7 +37,7 @@ beforeEach(() => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
     jest.clearAllMocks();
     token = fixture.initial.access_token;
-    jest.mocked(useAuth).mockReturnValue({ status: 'signedIn', getAccessToken, adoptSession, signOut } as any);
+    jest.mocked(useAuth).mockReturnValue({ status: 'signedIn', generation: 0, sessionGeneration: () => 0, beginSessionTask: () => ({ gen: 0, user: '00000000-0000-4000-8000-000000000001', current: () => true, tokens: getAccessToken }), getAccessToken, adoptSession, signOut } as any);
     jest.mocked(calls.fetchProfile).mockResolvedValue(profile());
     jest.mocked(calls.enrollTotp).mockResolvedValue({ factorId: 'mock-enrolment', secret: fixture.secret, uri: fixture.uri });
     jest.mocked(calls.verifyFactor).mockResolvedValue(fixture.tokens);
@@ -98,7 +98,7 @@ test('TOTP enrolment keeps secret, otpauth action, one-time-code field, wrong-co
     expect(control(t('acct.mfa.openApp')).props.accessibilityState.disabled).toBe(false);
     await act(async () => verifying.resolve(fixture.tokens));
     expect(calls.verifyFactor).toHaveBeenLastCalledWith(getAccessToken, 'mock-enrolment', '123456');
-    expect(adoptSession).toHaveBeenCalledWith(expect.objectContaining({ accessToken: fixture.tokens.access_token, refreshToken: fixture.tokens.refresh_token }));
+    expect(adoptSession).toHaveBeenCalledWith(expect.objectContaining({ accessToken: fixture.tokens.access_token, refreshToken: fixture.tokens.refresh_token }), 0);
     expect(texts(t('acct.mfa.on'))).toHaveLength(1);
 });
 
@@ -159,7 +159,7 @@ test('MFA gate preserves wrong-code recovery, session adoption, busy validation 
     expect(signOut).toHaveBeenCalledTimes(1);
     await act(async () => pending.resolve(fixture.tokens));
     expect(calls.verifyFactor).toHaveBeenLastCalledWith(getAccessToken, 'mock-totp', '123456');
-    expect(adoptSession).toHaveBeenCalledWith(expect.objectContaining({ accessToken: fixture.tokens.access_token }));
+    expect(adoptSession).toHaveBeenCalledWith(expect.objectContaining({ accessToken: fixture.tokens.access_token }), 0);
     expect(markMfaCleared).toHaveBeenCalledWith('00000000-0000-4000-8000-000000000001');
     expect(rememberMfaEnrolment).toHaveBeenCalledWith('00000000-0000-4000-8000-000000000001', true);
     expect(texts('Inside')).toHaveLength(1);

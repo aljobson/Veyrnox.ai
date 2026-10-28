@@ -166,8 +166,8 @@ test('AuthProvider only adds the upload owner import and one call each after bin
     expect(source.match(/setCinemaUploadOwner/g)).toHaveLength(3);
     const adopt = source.slice(source.indexOf('const adopt = useCallback'), source.indexOf('const drop = useCallback'));
     const drop = source.slice(source.indexOf('const drop = useCallback'), source.indexOf('const refresh = useCallback'));
-    expect(adopt).toMatch(/await bindCacheUser\(userId\);\n\s*await setCinemaUploadOwner\(userId\)\.catch\(/);
-    expect(drop).toMatch(/await wipeCache\(\)\.catch\(\(\) => undefined\);\n\s*await setCinemaUploadOwner\(null\)\.catch\(/);
+    expect(adopt).toMatch(/await bindCacheUser\(userId\);\n\s*if \(!live\(\)\) return;\n\s*await setCinemaUploadOwner\(userId\)\.catch\(/);
+    expect(drop).toMatch(/await wipeCache\(\)\.catch\(\(\) => undefined\);\n\s*if \(generationRef.current !== gen\) return;\n\s*await setCinemaUploadOwner\(null\)\.catch\(/);
     const lines = (text: string) => text.split('\n').map(x => x.trim()).filter(Boolean);
     const { execFileSync } = require('child_process');
     const root = execFileSync('git', ['rev-parse', '--show-toplevel'], { cwd: __dirname, encoding: 'utf8' }).trim();

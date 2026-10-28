@@ -17,7 +17,7 @@ const mockScreens: any[] = [];
 const spanish = CATALOGS.es as Record<string, string>;
 const originalTab = spanish['tabs.library'];
 jest.mock('../src/lib/languageStore', () => ({ readLanguage: () => mockStored, loadLanguage: async () => mockStored, saveLanguage: jest.fn(async (code: string) => { mockStored = code; return true; }), saveAccountLanguage: jest.fn(), syncPendingAccountLanguage: jest.fn() }));
-jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ status: mockStatus, canReloadSession: () => false, api: {} }) }));
+jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ generation: 0, sessionGeneration: () => 0, beginSessionTask: () => ({ gen: 0, user: 'u', current: () => true, tokens: async () => null }), status: mockStatus, canReloadSession: () => false, api: {} }) }));
 jest.mock('expo', () => ({ reloadAppAsync: jest.fn() }));
 jest.mock('expo-router', () => {
     const React = require('react');

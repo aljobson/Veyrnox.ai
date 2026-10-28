@@ -1,3 +1,4 @@
+import { isAccountChanged, type SessionTask } from '../../auth/sessionTask';
 import { Text as StatusText } from '../../components/ui/Text';
 import { useAnnouncement } from '../../lib/useAnnouncement';
 import { File } from 'expo-file-system';
@@ -19,7 +20,7 @@ import { exportErrorState, runExport, type ExportProgress, type ExportState } fr
 import { colors } from '../../theme';
 
 export default function PrivacyExportScreen() {
-    const { api, getAccessToken, adoptSession } = useAuth();
+    const { api, beginSessionTask, adoptSession } = useAuth();
     const [state, setState] = useState<ExportState>('idle');
     const [now, setNow] = useState(Date.now);
     const [progress, setProgress] = useState<ExportProgress>({ section: 0, total: 0, waiting: false });
@@ -52,7 +53,8 @@ export default function PrivacyExportScreen() {
         }, Math.max(0, waitUntil - Date.now()));
         return () => { clearTimeout(timer); clearInterval(tick); };
     }, [state, waitUntil]);
-    async function prepare() {
+    async function prepare(task: SessionTask = beginSessionTask()) {
+        if (!task.current()) return;
         if (!live.current || controller.current) return;
         remove();
         const abort = new AbortController(); controller.current = abort;
@@ -60,6 +62,7 @@ export default function PrivacyExportScreen() {
         try {
             const request = await runExport(api, {
                 create(request) {
+                    if (!task.current()) throw new ApiError(401, 'account_changed');
                     setWindowUntil(Date.parse(request.expires_at));
                     setWaitUntil(Date.parse(request.expires_at) + 23 * 60 * 60 * 1000);
                     const directory = exportDirectory();
@@ -67,13 +70,15 @@ export default function PrivacyExportScreen() {
                     file.current = new File(directory, `veyrnox-data-${request.export_id.slice(0, 8)}.json`);
                     file.current.create({ overwrite: true });
                 },
-                async append(text) { if (!file.current) throw new Error('export_file_removed'); await file.current.write(text, { append: true }); },
-                delete: remove,
+                async append(text) { if (!task.current()) throw new ApiError(401, 'account_changed'); if (!file.current) throw new Error('export_file_removed'); await file.current.write(text, { append: true }); },
+                delete: () => { if (task.current()) remove(); },
             }, p => { if (live.current) setProgress(p); }, abort.signal);
+            if (!task.current()) return;
             // Resumed requests can be nearly a day older; the server remains authoritative on a later start.
             setWaitUntil(Date.parse(request.expires_at) + 23 * 60 * 60 * 1000);
             if (live.current && !abort.signal.aborted) setState('ready');
         } catch (err) {
+            if (!task.current() || isAccountChanged(err)) return;
             if (live.current) {
                 setNow(Date.now());
                 if (err instanceof ApiError && err.code === 'rate_limited') {
@@ -85,24 +90,27 @@ export default function PrivacyExportScreen() {
         } finally { controller.current = null; }
     }
     async function verify() {
+        const task = beginSessionTask();
         setVerifying(true); setCodeError(false);
         try {
-            const profile = await fetchProfile(getAccessToken, 'privacy-export');
+            const profile = await fetchProfile(task.tokens, 'privacy-export');
+            if (!task.current()) return;
             const factor = verifiedFactors(profile.factors)[0];
             if (!factor) throw new Error('factor_missing');
-            const session = toSession(await verifyFactor(getAccessToken, factor.id, code), Date.now());
-            if (!live.current) return;
-            await adoptSession(session);
-            if (!live.current) return;
-            setCode(''); await prepare();
-        } catch { if (live.current) setCodeError(true); }
+            const session = toSession(await verifyFactor(task.tokens, factor.id, code), Date.now());
+            if (!live.current || !task.current()) return;
+            await adoptSession(session, task.gen);
+            if (!live.current || !task.current()) return;
+            setCode(''); await prepare(task);
+        } catch (err) { if (live.current && task.current() && !isAccountChanged(err)) setCodeError(true); }
         finally { if (live.current) setVerifying(false); }
     }
     async function share() {
+        const task = beginSessionTask();
         if (!live.current) return;
         if (!file.current?.exists) { setNow(Date.now()); setState('expired'); return; }
         try { await Sharing.shareAsync(file.current.uri, { mimeType: 'application/json' }); }
-        catch { remove(); if (live.current) setState('unavailable'); }
+        catch { if (!task.current()) return; remove(); if (live.current) setState('unavailable'); }
     }
     const hours = Math.max(1, Math.ceil((waitUntil - now) / 3600000));
     return <ScrollView contentContainerStyle={{ padding: 24, gap: 16 }} style={{ backgroundColor: colors.background }}>

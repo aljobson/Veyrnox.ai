@@ -65,7 +65,7 @@ beforeEach(() => {
     jest.mocked(passkeysServerAvailable).mockResolvedValue(true);
     jest.mocked(addPasskey).mockResolvedValue({ id: 'new-passkey' });
     signIn = jest.fn(async () => false);
-    authSpy = jest.spyOn(auth, 'useAuth').mockReturnValue({ status: 'signedOut', getAccessToken: async () => 'token', signInWithPasskey: signIn } as unknown as ReturnType<typeof auth.useAuth>);
+    authSpy = jest.spyOn(auth, 'useAuth').mockReturnValue({ status: 'signedOut', generation: 0, sessionGeneration: () => 0, beginSessionTask: () => ({ gen: 0, user: 'passkey-user', current: () => true, tokens: async () => 'token' }), getAccessToken: async () => 'token', signInWithPasskey: signIn } as unknown as ReturnType<typeof auth.useAuth>);
     root = createRoot();
 });
 afterEach(async () => {

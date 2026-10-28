@@ -147,7 +147,7 @@ test('the owner-bound client shares AuthProvider session-loss and stream options
     expect(screen).toContain('onSessionLost,');
     expect(screen).not.toContain('signOut');
     expect(screen).toContain('getCacheUser() !== owner');
-    expect(auth).toContain('const onSessionLost = useCallback(() => void drop(), [drop])');
+    expect(auth).toContain('if (expected === undefined || expected === generationRef.current) void drop()');
     for (const source of [screen, auth]) {
         expect(source).toContain('streamFetch: expoFetch as unknown as typeof fetch');
         expect(source).toContain('beforeSend: aiConsent.ensure');
