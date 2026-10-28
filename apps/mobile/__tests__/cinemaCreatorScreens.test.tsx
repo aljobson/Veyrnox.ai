@@ -84,7 +84,7 @@ test('list reads only top-level content and shows type, moderation, note and rea
     mockEnabled = true; mockRequest.mockResolvedValue({ content: [{ id: 'one', content_type: 'FILM', title: 'Test title', lifecycle_status: 'UNDER_REVIEW', review_note: 'Please check', video_ready: true }, { id: 'two', title: 'Series title', content_type: 'SERIES', lifecycle_status: 'DRAFT' }] });
     render(CreatorIndex); const cleanup = mockEffects.map(f => f()); await settle(); mockCollect = false;
     const text = words(render(CreatorIndex));
-    for (const expected of ['Test title', 'FILM', 'Under review', 'Please check', 'Video ready', t('common.comingToApp')]) expect(text).toContain(expected);
+    for (const expected of ['Test title', 'FILM', 'Under review', 'Please check', 'Video ready', 'Series title']) expect(text).toContain(expected);
     expect(mockRequest).toHaveBeenCalledWith('/api/v1/cinema/content'); cleanup.forEach(fn => fn?.());
 });
 test.each(['creator_required', 'account_not_active', 'content_not_open'])('list explains %s quietly', async code => {

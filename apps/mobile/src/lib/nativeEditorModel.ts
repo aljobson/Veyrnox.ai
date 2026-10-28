@@ -1,4 +1,5 @@
 import { t } from './i18n';
+export const DEFAULT_TEXT_STYLE = { font: 'sans-serif', weight: 'bold', align: 'center', color: '#ffffff', stroke: '#000000', strokeWidth: 0, background: '#000000', backgroundOpacity: 0 } as const;
 export type TrackKind = 'video' | 'audio' | 'text';
 export type Selection = { track: TrackKind; id: string };
 export type Canvas = { aspect_ratio: '16:9' | '9:16' | '1:1'; frame_rate: 24 | 25 | 30 | 60 };

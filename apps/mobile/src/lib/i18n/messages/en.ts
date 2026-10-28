@@ -34,6 +34,7 @@ import area_cameraPanel from './en/cameraPanel';
 import area_catalog from './en/catalog';
 import area_char from './en/char';
 import area_chat from './en/chat';
+import area_chatDepth from './en/chatDepth';
 import area_chatLibrary from './en/chatLibrary';
 import area_checkin from './en/checkin';
 import area_chrome from './en/chrome';
@@ -46,6 +47,7 @@ import area_cinemaPass from './en/cinemaPass';
 import area_cinemaPlayback from './en/cinemaPlayback';
 import area_cinemaSeries from './en/cinemaSeries';
 import area_cinemaSocial from './en/cinemaSocial';
+import area_cinemaStudio from './en/cinemaStudio';
 import area_cinemaUpload from './en/cinemaUpload';
 import area_comments from './en/comments';
 import area_commerce from './en/commerce';
@@ -68,6 +70,7 @@ import area_draw from './en/draw';
 import area_edit from './en/edit';
 import area_editor from './en/editor';
 import area_editorProjects from './en/editorProjects';
+import area_editorServerExport from './en/editorServerExport';
 import area_editorSpike from './en/editorSpike';
 import area_email from './en/email';
 import area_empty from './en/empty';
@@ -138,6 +141,7 @@ import area_publishInbox from './en/publishInbox';
 import area_publishLinks from './en/publishLinks';
 import area_publishQueueAdmin from './en/publishQueueAdmin';
 import area_publishQueues from './en/publishQueues';
+import area_publishReporting from './en/publishReporting';
 import area_publishTeam from './en/publishTeam';
 import area_publishUploads from './en/publishUploads';
 import area_publishWorkflows from './en/publishWorkflows';
@@ -211,6 +215,7 @@ const catalog = {
     ...area_catalog,
     ...area_char,
     ...area_chat,
+    ...area_chatDepth,
     ...area_chatLibrary,
     ...area_checkin,
     ...area_chrome,
@@ -223,6 +228,7 @@ const catalog = {
     ...area_cinemaPlayback,
     ...area_cinemaSeries,
     ...area_cinemaSocial,
+    ...area_cinemaStudio,
     ...area_cinemaUpload,
     ...area_comments,
     ...area_commerce,
@@ -245,6 +251,7 @@ const catalog = {
     ...area_edit,
     ...area_editor,
     ...area_editorProjects,
+    ...area_editorServerExport,
     ...area_editorSpike,
     ...area_email,
     ...area_empty,
@@ -315,6 +322,7 @@ const catalog = {
     ...area_publishLinks,
     ...area_publishQueueAdmin,
     ...area_publishQueues,
+    ...area_publishReporting,
     ...area_publishTeam,
     ...area_publishUploads,
     ...area_publishWorkflows,

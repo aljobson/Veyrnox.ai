@@ -10,5 +10,17 @@
     "english": "New",
     "translation": "새로 시작",
     "ratio": 1.67
+  },
+  {
+    "id": "publishReporting.pdf",
+    "english": "PDF",
+    "translation": "PDF 문서",
+    "ratio": 2
+  },
+  {
+    "id": "publishReporting.pptx",
+    "english": "PowerPoint",
+    "translation": "PowerPoint 프레젠테이션",
+    "ratio": 1.7
   }
 ]

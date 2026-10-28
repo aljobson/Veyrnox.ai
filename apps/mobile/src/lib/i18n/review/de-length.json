@@ -2688,6 +2688,138 @@
     "ratio": 1.79
   },
   {
+    "id": "publishReporting.edit",
+    "english": "Edit",
+    "translation": "Bearbeiten",
+    "ratio": 2.5
+  },
+  {
+    "id": "publishReporting.editReport",
+    "english": "Edit report",
+    "translation": "Bericht bearbeiten",
+    "ratio": 1.64
+  },
+  {
+    "id": "publishReporting.likes",
+    "english": "Likes",
+    "translation": "Gefällt mir",
+    "ratio": 2.2
+  },
+  {
+    "id": "publishReporting.pdf",
+    "english": "PDF",
+    "translation": "PDF-Dokument",
+    "ratio": 4
+  },
+  {
+    "id": "publishReporting.pptx",
+    "english": "PowerPoint",
+    "translation": "PowerPoint-Präsentation",
+    "ratio": 2.3
+  },
+  {
+    "id": "publishReporting.rank",
+    "english": "Rank by",
+    "translation": "Sortieren nach",
+    "ratio": 2
+  },
+  {
+    "id": "publishReporting.reach",
+    "english": "Reach",
+    "translation": "Reichweite",
+    "ratio": 2
+  },
+  {
+    "id": "publishReporting.retry",
+    "english": "Retry",
+    "translation": "Erneut versuchen",
+    "ratio": 3.2
+  },
+  {
+    "id": "publishReporting.save",
+    "english": "Save",
+    "translation": "Speichern",
+    "ratio": 2.25
+  },
+  {
+    "id": "publishReporting.saves",
+    "english": "Saves",
+    "translation": "Speicherungen",
+    "ratio": 2.6
+  },
+  {
+    "id": "publishReporting.saving",
+    "english": "Saving report…",
+    "translation": "Bericht wird gespeichert…",
+    "ratio": 1.79
+  },
+  {
+    "id": "publishReporting.type.post",
+    "english": "Post",
+    "translation": "Beitrag",
+    "ratio": 1.75
+  },
+  {
+    "id": "publishReporting.type.video",
+    "english": "Video",
+    "translation": "Videobeitrag",
+    "ratio": 2.4
+  },
+  {
+    "id": "publishReporting.weekly",
+    "english": "Weekly",
+    "translation": "Wöchentlich",
+    "ratio": 1.83
+  },
+  {
+    "id": "chatDepth.free",
+    "english": "Free",
+    "translation": "Kostenlos",
+    "ratio": 2.25
+  },
+  {
+    "id": "chatDepth.sendFree",
+    "english": "Send free",
+    "translation": "Kostenlos senden",
+    "ratio": 1.78
+  },
+  {
+    "id": "chatDepth.starLabel",
+    "english": "Star reply",
+    "translation": "Antwort markieren",
+    "ratio": 1.7
+  },
+  {
+    "id": "chatDepth.showAll",
+    "english": "Show all",
+    "translation": "Alle anzeigen",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorServerExport.uploading",
+    "english": "Uploading files…",
+    "translation": "Dateien werden hochgeladen…",
+    "ratio": 1.69
+  },
+  {
+    "id": "editorServerExport.close",
+    "english": "Close",
+    "translation": "Schließen",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorServerExport.edit",
+    "english": "Timeline edit",
+    "translation": "Zeitleistenbearbeitung",
+    "ratio": 1.69
+  },
+  {
+    "id": "editorServerExport.crop",
+    "english": "Crop",
+    "translation": "Zuschneiden",
+    "ratio": 2.75
+  },
+  {
     "id": "creditsPage.best",
     "english": "Best value",
     "translation": "Bestes Preis-Leistungs-Verhältnis",
@@ -2770,5 +2902,11 @@
     "english": "Add audio",
     "translation": "Audio hinzufügen",
     "ratio": 1.78
+  },
+  {
+    "id": "cinema.creator.first",
+    "english": "Add your first {type}.",
+    "translation": "Füge dein erstes Element hinzu: {type}.",
+    "ratio": 1.77
   }
 ]

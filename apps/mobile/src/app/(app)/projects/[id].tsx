@@ -1,4 +1,5 @@
 import * as Crypto from 'expo-crypto';
+import { removeProjectMedia } from '../../../lib/editorDeviceMedia';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -51,6 +52,7 @@ export default function ProjectDetail() {
                     setBusy(true);
                     try {
                         await deleteProject(api, project.id, project.version);
+                        void removeProjectMedia(project.id).catch(() => undefined);
                         router.back();
                     } catch (err) {
                         setNote(projectsErrorMessage(err));

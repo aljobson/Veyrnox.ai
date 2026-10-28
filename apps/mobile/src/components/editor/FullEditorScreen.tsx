@@ -1,3 +1,8 @@
+import { useState } from 'react';
+import { EDITOR_SERVER_EXPORT_ENABLED } from '../../lib/editorFlag';
+import { requireOnline, OFFLINE_PAID_MESSAGE } from '../../lib/network';
+import { exportUnavailable } from '../../lib/editorServerExport';
+import { ServerExportSheet } from './ServerExportSheet';
 import { styles } from './fullEditorStyles';
 
 import { randomUUID } from 'expo-crypto';
@@ -12,7 +17,7 @@ import { touchTarget } from '../../lib/a11y';
 import { plural, t } from '../../lib/i18n';
 import { activeEditorMedia } from '../../lib/editorPreview';
 import type { LibraryChoice } from '../../lib/librarySource';
-import { addMarker, addTrack, canvasOf, clipAt, copySelections, duplicateSelections, framesIn, groupSelections, pasteClipboard, removeSelections, splitClip, timelineOf, updateClip, type Canvas, type Clip, type EditorTrack, type Media, type Selection, type TextClip, type Timeline, type TrackKind } from '../../lib/nativeEditorModel';
+import { DEFAULT_TEXT_STYLE, addMarker, addTrack, canvasOf, clipAt, copySelections, duplicateSelections, framesIn, groupSelections, pasteClipboard, removeSelections, splitClip, timelineOf, updateClip, type Canvas, type Clip, type EditorTrack, type Media, type Selection, type TextClip, type Timeline, type TrackKind } from '../../lib/nativeEditorModel';
 
 import type { SlotKind } from '../../lib/sources';
 import { colors } from '../../theme';
@@ -51,7 +56,8 @@ const timecode = (frames = 0, fps = 30) => {
 
 import { useFullEditorSession } from './useFullEditorSession';
 export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobId?: string }) {
-    const { api, router, name, document, revision, dirty, saving, problem, setProblem, tool, setTool, selection, setSelection, selections, setSelections, multiSelect, setMultiSelect, clipboard, setClipboard, snap, setSnap, ripple, setRipple, zoom, setZoom, privacyNotice, history, frame, setFrame, playing, setPlaying, projectAssets, localMediaUris, setLocalMediaUris, libraryKind, setLibraryKind, markDocument, save, done, acknowledgePrivacy, travel } = useFullEditorSession({ projectId, jobId });
+    const [exportVisible, setExportVisible] = useState(false);
+    const { currentDocument, preparePicked, savedDocument, api, router, name, document, revision, dirty, saving, problem, setProblem, tool, setTool, selection, setSelection, selections, setSelections, multiSelect, setMultiSelect, clipboard, setClipboard, snap, setSnap, ripple, setRipple, zoom, setZoom, privacyNotice, history, frame, setFrame, playing, setPlaying, projectAssets, localMediaUris, libraryKind, setLibraryKind, markDocument, save, done, acknowledgePrivacy, travel } = useFullEditorSession({ projectId, jobId });
     if (!document) return <View style={styles.loading}><Stack.Screen options={{ title: t('editor.title') }} /><ActivityIndicator color={colors.accent} /><Text style={styles.muted}>{problem ?? t('editor.fullLoading')}</Text></View>;
 
     const canvas = canvasOf(document.canvas);
@@ -67,7 +73,7 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
     const availableMedia = [...Object.values(timeline.media), ...projectAssets.filter((asset) => !Object.values(timeline.media).some((item) => item.assetSource?.assetId === asset.assetSource?.assetId))];
     const activePreview = activeEditorMedia(timeline, frame);
 
-    const applyTimeline = (next: Timeline) => markDocument({ ...document, schema_version: 3, timeline: next });
+    const applyTimeline = (next: Timeline) => markDocument({ ...(currentDocument() ?? document), schema_version: 3, timeline: next });
     const updateCanvas = (patch: Partial<Canvas>) => {
         const nextCanvas = { ...canvas, ...patch };
         const nextTimeline = { ...timeline, aspect: nextCanvas.aspect_ratio };
@@ -107,7 +113,7 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
     const addText = () => {
         const seq = timeline.seq + 1;
         const trackId = timeline.tracks.find((track) => track.kind === 'text' && !track.locked)?.id;
-        const item: TextClip = { id: `t${seq}`, text: t('editor.yourtitle'), start: Math.min(frame, Math.max(0, total)), len: 90, x: 0.5, y: 0.85, size: 6, trackId, style: { font: 'sans-serif', weight: 'bold', align: 'center', color: '#ffffff', stroke: '#000000', strokeWidth: 0, background: '#000000', backgroundOpacity: 0 } };
+        const item: TextClip = { id: `t${seq}`, text: t('editor.yourtitle'), start: Math.min(frame, Math.max(0, total)), len: 90, x: 0.5, y: 0.85, size: 6, trackId, style: DEFAULT_TEXT_STYLE };
         applyTimeline({ ...timeline, seq, text: [...timeline.text, item] });
         setSelection({ track: 'text', id: item.id });
         setSelections([{ track: 'text', id: item.id }]);
@@ -175,33 +181,33 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
         addMediaToTimeline({ id, name: choice.name, kind, frames: kind === 'image' ? 90 : 300, hasAudio: kind !== 'image', width: 0, height: 0 });
         setLibraryKind(null);
     };
-    const importPicked = (asset: { uri: string; fileName?: string | null; name?: string; mimeType?: string | null; duration?: number | null; width?: number; height?: number }) => {
+    const importPicked = async (asset: { uri: string; fileName?: string | null; name?: string; mimeType?: string | null; duration?: number | null; width?: number; height?: number }) => {
         const mime = String(asset.mimeType || '').toLowerCase();
         const kind = mime.startsWith('audio/') ? 'audio' : mime.startsWith('image/') ? 'image' : mime.startsWith('video/') ? 'video' : null;
         if (!kind) { setProblem(t('editor.chooseavideoimageoraudiofile')); return; }
-        const durationSeconds = typeof asset.duration === 'number' && asset.duration > 0 ? asset.duration / 1000 : kind === 'image' ? 3 : 10;
         const id = `l-${randomUUID()}`;
+        const durationSeconds = await preparePicked(asset, id, kind);
+        if (durationSeconds === null) return;
         const media: Media = {
             id,
             name: String(asset.fileName || asset.name || `Device ${kind}`).slice(0, 120),
             kind, frames: Math.max(1, Math.floor(durationSeconds * timeline.fps)), hasAudio: kind !== 'image',
             width: Math.max(0, Math.round(asset.width || 0)), height: Math.max(0, Math.round(asset.height || 0)),
         };
-        setLocalMediaUris((current) => ({ ...current, [id]: asset.uri }));
-        addMediaToTimeline(media);
+        addMediaToTimeline(media, timelineOf(currentDocument()?.timeline));
     };
     const choosePhotos = async () => {
         setProblem(null);
         try {
             const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images', 'videos'], allowsMultipleSelection: false, quality: 1, preferredAssetRepresentationMode: ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible });
-            if (!result.canceled && result.assets[0]) importPicked(result.assets[0]);
+            if (!result.canceled && result.assets[0]) await importPicked(result.assets[0]);
         } catch { setProblem(t('editor.couldnotopenPhotosCheckVeyrnoxaccess')); }
     };
     const chooseFiles = async () => {
         setProblem(null);
         try {
             const result = await DocumentPicker.getDocumentAsync({ type: ['video/*', 'audio/*', 'image/jpeg', 'image/png', 'image/webp'], copyToCacheDirectory: true });
-            if (!result.canceled && result.assets[0]) importPicked(result.assets[0]);
+            if (!result.canceled && result.assets[0]) await importPicked(result.assets[0]);
         } catch { setProblem(t('editor.couldnotopenFilesTryagain')); }
     };
     const openWorkflow = async (path: string) => {
@@ -209,7 +215,10 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
         if (saved) router.push(path as never);
     };
 
+    const openExport = async () => { if (!EDITOR_SERVER_EXPORT_ENABLED) { await openWorkflow('/publish/compose'); return; } try { requireOnline(); } catch { setProblem(OFFLINE_PAID_MESSAGE); return; } if (exportUnavailable()) { await openWorkflow('/publish/compose'); return; } if (await savedDocument()) setExportVisible(true); };
+
     return <View style={styles.screen}>
+        {EDITOR_SERVER_EXPORT_ENABLED ? <ServerExportSheet api={api} router={router} now={Date.now} projectId={projectId} name={name} document={document} dirty={dirty} visible={exportVisible} onOpen={() => setExportVisible(true)} onClose={() => setExportVisible(false)} onFallback={() => void openWorkflow('/publish/compose')} /> : null}
         <Stack.Screen options={{ title: t('editor.cut'), headerRight: () => <HeaderAction label={t('editor.done')} onPress={done} /> }} />
         <View style={styles.projectBar}>
             <View style={styles.cutBadge}><Text style={styles.cutMark}>{t('editor.v')}</Text><Text style={styles.cutLabel}>{t('editor.cUT')}</Text></View>
@@ -240,7 +249,7 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
             <Command icon="◆" label={t('editor.addmarker')} onPress={addTimelineMarker} />
             <Command icon="＋" label={t('editor.addtext')} onPress={addText} />
             <View style={styles.commandDivider} />
-            <Command icon="⇩" label={t('editor.export')} onPress={() => void openWorkflow('/publish/compose')} />
+            <Command icon="⇩" label={t('editor.export')} onPress={() => void openExport()} />
             <Command icon="◈" label={t('editor.credits')} onPress={() => void openWorkflow('/credits')} />
         </ScrollView>
 

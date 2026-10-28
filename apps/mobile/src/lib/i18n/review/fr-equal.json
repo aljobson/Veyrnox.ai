@@ -176,5 +176,6 @@
   "videoAgent.brief": "Established French term or label: Brief.",
   "videoAgent.format": "Established French term or label: Format {aspect}.",
   "whenPicker.hHMM": "Standard notation, unit, format example or typeface specimen.",
-  "whenPicker.yYYYMMDD": "Standard notation, unit, format example or typeface specimen."
+  "whenPicker.yYYYMMDD": "Standard notation, unit, format example or typeface specimen.",
+  "chatDepth.wfTitle": "Established local term, retained from the website translation."
 }
