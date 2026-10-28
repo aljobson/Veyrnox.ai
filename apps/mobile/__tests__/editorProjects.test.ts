@@ -1,5 +1,5 @@
 import { ApiError, type ApiClient } from '../src/lib/api';
-import { conflictCopyName, createProject, defaultWorkspace, editorErrorKey, getDocument, putDocument, resolveAsset } from '../src/lib/editorProjects';
+import { conflictCopyName, createProject, defaultWorkspace, editorErrorKey, getDocumentAt, getDocument, putDocument, resolveAsset } from '../src/lib/editorProjects';
 import { resetNetworkState, isOffline } from '../src/lib/network';
 const id = '11111111-1111-1111-1111-111111111111';
 const doc = { schema_version: 1 as const, project_id: id, brief: '' };
@@ -57,4 +57,13 @@ test('a v4 Oddlings head degrades to editor unavailable', async () => {
     request.mockResolvedValue({ revision: 1, document: { schema_version: 4, project_id: id, brief: '', canvas: { aspect_ratio: '16:9', frame_rate: 30 }, oddlings: { version: 1, items: [], draft: null } } });
     await expect(getDocument(api, id)).rejects.toMatchObject({ status: 503 });
     expect(editorErrorKey(503)).toBe('editor.unavailable');
+});
+
+test('getDocumentAt encodes the id and revision and rejects an invalid document', async () => {
+    const odd = 'a/b?c';
+    request.mockResolvedValue({ revision: 3, document: { ...doc, project_id: odd } });
+    await getDocumentAt(api, odd, 3);
+    expect(request).toHaveBeenCalledWith('/api/v1/projects/a%2Fb%3Fc/document?revision=3');
+    request.mockResolvedValue({ revision: 3, document: { ...doc, project_id: 'other' } });
+    await expect(getDocumentAt(api, odd, 3)).rejects.toMatchObject({ status: 503 });
 });

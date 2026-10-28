@@ -3090,6 +3090,18 @@
     "ratio": 1.8
   },
   {
+    "id": "editorSave.loadOlder",
+    "english": "Load older",
+    "translation": "Загрузить предыдущие",
+    "ratio": 2
+  },
+  {
+    "id": "editorSave.retryRestore",
+    "english": "Retry restore",
+    "translation": "Повторить восстановление",
+    "ratio": 1.85
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

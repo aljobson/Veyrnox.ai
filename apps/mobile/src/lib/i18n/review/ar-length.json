@@ -1698,6 +1698,12 @@
     "ratio": 1.74
   },
   {
+    "id": "editorSave.retryRestore",
+    "english": "Retry restore",
+    "translation": "إعادة محاولة الاستعادة",
+    "ratio": 1.69
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "تسجيل الدخول",

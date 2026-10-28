@@ -5310,5 +5310,19 @@ export default {
   "publishTiming.heat.lower": "较低",
   "publishTiming.heat.higher": "较高",
   "publishTiming.heat.insufficient": "— = 帖子不足",
-  "publishTiming.move.expected": "请求的原始时间：{time}"
+  "publishTiming.move.expected": "请求的原始时间：{time}",
+  "editorSave.versions": "版本",
+  "editorSave.loadOlder": "加载更早版本",
+  "editorSave.versionRow": "版本 {value1}",
+  "editorSave.current": "（当前）",
+  "editorSave.restoredFrom": "从版本 {value1} 恢复",
+  "editorSave.saveFirst": "恢复版本前请先保存更改。",
+  "editorSave.importDropped": "项目已更改，导入已停止。请重新添加。",
+  "editorSave.waitingImport": "正在等待导入完成…",
+  "editorSave.copyChanged": "复制期间项目已更改。请重试。",
+  "editorSave.retryRestore": "重试恢复",
+  "editorSave.restoreUnknown": "尚不确定恢复是否已保存。正在重试…",
+  "editorSave.recovered": "已恢复更改，尚未保存",
+  "editorSave.close": "关闭",
+  "editorSave.draftUnreadable": "无法检查此设备上未保存的更改。新的编辑仍会保存。"
 } as const;

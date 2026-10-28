@@ -5505,5 +5505,19 @@ export default {
   "publishTiming.heat.lower": "Меньше",
   "publishTiming.heat.higher": "Больше",
   "publishTiming.heat.insufficient": "— = недостаточно публикаций",
-  "publishTiming.move.expected": "Исходное время запроса: {time}"
+  "publishTiming.move.expected": "Исходное время запроса: {time}",
+  "editorSave.versions": "Версии",
+  "editorSave.loadOlder": "Загрузить предыдущие",
+  "editorSave.versionRow": "Версия {value1}",
+  "editorSave.current": " (текущая)",
+  "editorSave.restoredFrom": "Восстановлено из версии {value1}",
+  "editorSave.saveFirst": "Сохраните изменения перед восстановлением версии.",
+  "editorSave.importDropped": "Импорт остановлен, поскольку проект изменился. Добавьте его снова.",
+  "editorSave.waitingImport": "Ожидание завершения импорта…",
+  "editorSave.copyChanged": "Проект изменился во время копирования. Попробуйте снова.",
+  "editorSave.retryRestore": "Повторить восстановление",
+  "editorSave.restoreUnknown": "Пока неизвестно, сохранилось ли восстановление. Повторяем попытку…",
+  "editorSave.recovered": "Изменения восстановлены, но ещё не сохранены",
+  "editorSave.close": "Закрыть",
+  "editorSave.draftUnreadable": "Не удалось проверить несохранённые изменения на этом устройстве. Новые правки по-прежнему сохраняются."
 } as const;

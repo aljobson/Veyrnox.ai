@@ -5310,5 +5310,19 @@ export default {
   "publishTiming.heat.lower": "低い",
   "publishTiming.heat.higher": "高い",
   "publishTiming.heat.insufficient": "— = 投稿数が不足",
-  "publishTiming.move.expected": "リクエスト時の元の日時：{time}"
+  "publishTiming.move.expected": "リクエスト時の元の日時：{time}",
+  "editorSave.versions": "バージョン",
+  "editorSave.loadOlder": "以前の履歴を読み込む",
+  "editorSave.versionRow": "バージョン {value1}",
+  "editorSave.current": "（現在）",
+  "editorSave.restoredFrom": "バージョン {value1} から復元",
+  "editorSave.saveFirst": "バージョンを復元する前に変更を保存してください。",
+  "editorSave.importDropped": "プロジェクトが変更されたため、読み込みを停止しました。もう一度追加してください。",
+  "editorSave.waitingImport": "読み込みの完了を待っています…",
+  "editorSave.copyChanged": "コピー中にプロジェクトが変更されました。再試行してください。",
+  "editorSave.retryRestore": "復元を再試行",
+  "editorSave.restoreUnknown": "復元が保存されたかまだ確認できません。再試行中…",
+  "editorSave.recovered": "変更を復元しました。まだ保存されていません",
+  "editorSave.close": "閉じる",
+  "editorSave.draftUnreadable": "この端末の未保存の変更を確認できませんでした。新しい編集は引き続き保存されます。"
 } as const;

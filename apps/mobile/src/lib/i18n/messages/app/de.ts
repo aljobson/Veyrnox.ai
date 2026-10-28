@@ -5375,5 +5375,19 @@ export default {
   "publishTiming.heat.lower": "Niedriger",
   "publishTiming.heat.higher": "Höher",
   "publishTiming.heat.insufficient": "— = nicht genügend Beiträge",
-  "publishTiming.move.expected": "Angefragt ausgehend von: {time}"
+  "publishTiming.move.expected": "Angefragt ausgehend von: {time}",
+  "editorSave.versions": "Versionen",
+  "editorSave.loadOlder": "Ältere laden",
+  "editorSave.versionRow": "Version {value1}",
+  "editorSave.current": " (aktuell)",
+  "editorSave.restoredFrom": "Aus Version {value1} wiederhergestellt",
+  "editorSave.saveFirst": "Speichere deine Änderungen, bevor du eine Version wiederherstellst.",
+  "editorSave.importDropped": "Der Import wurde gestoppt, weil sich das Projekt geändert hat. Füge ihn erneut hinzu.",
+  "editorSave.waitingImport": "Warten auf den Abschluss des Imports…",
+  "editorSave.copyChanged": "Das Projekt hat sich beim Kopieren geändert. Versuche es erneut.",
+  "editorSave.retryRestore": "Wiederherstellung erneut versuchen",
+  "editorSave.restoreUnknown": "Noch unklar, ob die Wiederherstellung gespeichert wurde. Neuer Versuch…",
+  "editorSave.recovered": "Änderungen wiederhergestellt, noch nicht gespeichert",
+  "editorSave.close": "Schließen",
+  "editorSave.draftUnreadable": "Ungespeicherte Änderungen auf diesem Gerät konnten nicht geprüft werden. Neue Änderungen werden weiterhin gespeichert."
 } as const;

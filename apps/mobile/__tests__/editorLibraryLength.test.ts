@@ -1,4 +1,4 @@
-import { libraryMedia } from '../src/lib/editorLibraryLength';
+import { libraryMedia, LIBRARY_STOPPED } from '../src/lib/editorLibraryLength';
 import { probeDuration } from '../src/lib/editorMediaDuration';
 import { exportSourceLink } from '../src/lib/editorServerExport';
 jest.mock('../src/lib/editorMediaDuration', () => ({ probeDuration: jest.fn() }));
@@ -25,4 +25,16 @@ test('unknown and invalid durations fail closed', async () => {
     expect(await libraryMedia(api, choice, 'video')).toBeNull();
     jest.mocked(exportSourceLink).mockResolvedValue('https://example.com/media');
     for (const value of [null, 0, -1, NaN, Infinity]) { jest.mocked(probeDuration).mockResolvedValue(value); expect(await libraryMedia(api, choice, 'audio')).toBeNull(); }
+});
+
+test('libraryMedia does not call exportSourceLink when alive() turns false after the media-info request', async () => {
+    let alive = true;
+    api.request.mockImplementation(async () => { alive = false; throw new (require('../src/lib/api').ApiError)(401, 'account_changed'); });
+    expect(await libraryMedia(api, choice, 'video', () => alive)).toBe(LIBRARY_STOPPED);
+    expect(exportSourceLink).not.toHaveBeenCalled(); expect(probeDuration).not.toHaveBeenCalled();
+});
+test('rethrows account_changed instead of returning null', async () => {
+    const error = new (require('../src/lib/api').ApiError)(401, 'account_changed');
+    jest.mocked(exportSourceLink).mockRejectedValue(error);
+    await expect(libraryMedia(api, choice, 'audio', () => true)).rejects.toBe(error);
 });

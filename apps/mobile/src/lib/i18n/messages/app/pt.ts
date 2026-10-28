@@ -5440,5 +5440,19 @@ export default {
   "publishTiming.heat.lower": "Menor",
   "publishTiming.heat.higher": "Maior",
   "publishTiming.heat.insufficient": "— = publicações insuficientes",
-  "publishTiming.move.expected": "Horário original da solicitação: {time}"
+  "publishTiming.move.expected": "Horário original da solicitação: {time}",
+  "editorSave.versions": "Versões",
+  "editorSave.loadOlder": "Carregar anteriores",
+  "editorSave.versionRow": "Versão {value1}",
+  "editorSave.current": " (atual)",
+  "editorSave.restoredFrom": "Restaurado da versão {value1}",
+  "editorSave.saveFirst": "Salve suas alterações antes de restaurar uma versão.",
+  "editorSave.importDropped": "A importação foi interrompida porque o projeto mudou. Adicione novamente.",
+  "editorSave.waitingImport": "Aguardando a conclusão da importação…",
+  "editorSave.copyChanged": "O projeto mudou durante a cópia. Tente novamente.",
+  "editorSave.retryRestore": "Tentar restaurar novamente",
+  "editorSave.restoreUnknown": "Ainda não sabemos se a restauração foi salva. Tentando novamente…",
+  "editorSave.recovered": "Alterações recuperadas, ainda não salvas",
+  "editorSave.close": "Fechar",
+  "editorSave.draftUnreadable": "Não foi possível verificar alterações não salvas neste dispositivo. As novas edições continuam sendo salvas."
 } as const;

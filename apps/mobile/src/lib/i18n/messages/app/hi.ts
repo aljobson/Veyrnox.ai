@@ -5375,5 +5375,19 @@ export default {
   "publishTiming.heat.lower": "कम",
   "publishTiming.heat.higher": "अधिक",
   "publishTiming.heat.insufficient": "— = पर्याप्त पोस्ट नहीं हैं",
-  "publishTiming.move.expected": "अनुरोध का मूल समय: {time}"
+  "publishTiming.move.expected": "अनुरोध का मूल समय: {time}",
+  "editorSave.versions": "संस्करण",
+  "editorSave.loadOlder": "पुराने लोड करें",
+  "editorSave.versionRow": "संस्करण {value1}",
+  "editorSave.current": " (वर्तमान)",
+  "editorSave.restoredFrom": "संस्करण {value1} से बहाल किया गया",
+  "editorSave.saveFirst": "किसी संस्करण को बहाल करने से पहले अपने बदलाव सहेजें।",
+  "editorSave.importDropped": "प्रोजेक्ट बदलने के कारण आयात रोक दिया गया। इसे फिर से जोड़ें।",
+  "editorSave.waitingImport": "आयात पूरा होने की प्रतीक्षा है…",
+  "editorSave.copyChanged": "कॉपी करते समय प्रोजेक्ट बदल गया। फिर कोशिश करें।",
+  "editorSave.retryRestore": "बहाली फिर आज़माएँ",
+  "editorSave.restoreUnknown": "अभी पता नहीं कि बहाली सहेजी गई या नहीं। फिर कोशिश कर रहे हैं…",
+  "editorSave.recovered": "बदलाव पुनर्प्राप्त हुए, अभी सहेजे नहीं गए",
+  "editorSave.close": "बंद करें",
+  "editorSave.draftUnreadable": "इस डिवाइस पर बिना सहेजे बदलावों की जाँच नहीं हो सकी। नए बदलाव अब भी सहेजे जा रहे हैं।"
 } as const;
