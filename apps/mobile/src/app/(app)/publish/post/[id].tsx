@@ -1,5 +1,9 @@
+import { NetworkLogo } from '../../../../components/publish/NetworkLogo';
+import { networkName } from '../../../../lib/networkLogos';
+import { usePublishRole } from '../../../../lib/usePublishRole';
+import { postActions } from '../../../../lib/publishComposeGates';
 import { formatLocale, t } from '../../../../lib/i18n';
-import { Button } from '../../../../components/ui';
+import { Button, Card, Text as ThemedText, themedStyles, useThemedStyles } from '../../../../components/ui';
 import { AddressText } from '../../../../components/AddressText';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
@@ -14,6 +18,8 @@ import { usePublishApi } from '../../../../lib/usePublishApi';
 export default function PostDetail() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const api = usePublishApi();
+    const role = usePublishRole(api);
+    const targetStyles = useThemedStyles(targetSheets);
     const [state, setState] = useState<{ post: PublishPost | null } | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [editing, setEditing] = useState(false);
@@ -67,6 +73,7 @@ export default function PostDetail() {
     const post = state.post;
     if (!post) return <View style={styles.screen}><Stack.Screen options={{ title: t('publish.post') }} /><Text style={styles.muted}>{t('publish.thispostisnotinyourmost')}</Text></View>;
 
+    const actions = postActions(post, role);
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.body}>
             <Stack.Screen options={{ title: postStatusLabel(post.status) }} />
@@ -75,15 +82,17 @@ export default function PostDetail() {
             {post.targets.map((t) => {
                 const err = boundedError(t.lastError);
                 return (
-                    <View key={t.id} style={styles.target} accessible accessibilityLabel={`${t.network}, ${targetStatusLabel(t.publishStatus)}`}>
-                        <Text style={styles.net}>{t.network}</Text>
+                    <Card key={t.id} style={targetStyles.card} accessible accessibilityLabel={`${networkName(t.network)}, ${targetStatusLabel(t.publishStatus)}`}>
+                        <View style={targetStyles.row}><NetworkLogo network={t.network} /><ThemedText variant="bodyStrong">{networkName(t.network)}</ThemedText></View>
                         <Text style={[styles.state, t.publishStatus === 'failed' && styles.bad]}>{targetStatusLabel(t.publishStatus)}</Text>
                         {err ? <Text style={styles.errBox}>{err}</Text> : null}
                         {t.url ? <AddressText address={t.url} /> : null}
-                    </View>
+                    </Card>
                 );
             })}
-            {post.status === 'scheduled' || post.status === 'canceled' ? (
+            {!post.updatedAt && (post.status === 'scheduled' || post.status === 'canceled') ? <Text style={styles.muted2}>{t('publish.cancellingandschedulingagainarenotavailable')}</Text> : null}
+            {actions.note ? <Text style={styles.muted2}>{t(actions.note)}</Text> : null}
+            {actions.reschedule || actions.cancel || actions.restore ? (
                 <View style={styles.actions}>
                     {editing ? (
                         <>
@@ -100,15 +109,14 @@ export default function PostDetail() {
                         </>
                     ) : (
                         <>
-                            {post.status === 'scheduled' ? <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => setEditing(true)}><Text style={styles.secondaryText}>{t('publish.changethetime')}</Text></Pressable> : null}
-                            {post.status === 'canceled' && post.updatedAt ? <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => setEditing(true)}><Text style={styles.secondaryText}>{t('publish.scheduleitagain')}</Text></Pressable> : null}
-                            {post.status === 'scheduled' && post.updatedAt ? (
+                            {actions.reschedule ? <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => setEditing(true)}><Text style={styles.secondaryText}>{t('publish.changethetime')}</Text></Pressable> : null}
+                            {actions.restore ? <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => setEditing(true)}><Text style={styles.secondaryText}>{t('publish.scheduleitagain')}</Text></Pressable> : null}
+                            {actions.cancel ? (
                                 <Button variant="tertiary" tone="danger" label={t('publish.cancelthispost')} disabled={busy} onPress={() => Alert.alert(t('publish.cancelthispost2'), t('publish.itwillnotbepublishedYoucan'), [
                                     { text: t('publish.keepit'), style: 'cancel' },
                                     { text: t('publish.cancelpost'), style: 'destructive', onPress: () => void change(() => cancelPost(api, post.id, post.updatedAt as string)) },
                                 ])} />
                             ) : null}
-                            {!post.updatedAt ? <Text style={styles.muted2}>{t('publish.cancellingandschedulingagainarenotavailable')}</Text> : null}
                         </>
                     )}
                     {problem ? <Text style={styles.error2}>{problem}</Text> : null}
@@ -140,3 +148,5 @@ const styles = StyleSheet.create({
     muted2: { color: colors.muted, fontSize: 13 },
     error2: { color: colors.danger },
 });
+
+const targetSheets = themedStyles(() => ({ card: { gap: 4 }, row: { flexDirection: 'row', alignItems: 'center', gap: 6 } }));

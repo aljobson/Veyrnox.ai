@@ -4344,6 +4344,24 @@
     "ratio": 2.06
   },
   {
+    "id": "publishParity.preview.title",
+    "english": "Post previews",
+    "translation": "Aperçus des publications",
+    "ratio": 1.85
+  },
+  {
+    "id": "publishParity.calendar.noneFiltered",
+    "english": "No posts match these filters.",
+    "translation": "Aucune publication ne correspond à ces filtres.",
+    "ratio": 1.62
+  },
+  {
+    "id": "publishParity.calendar.timezone",
+    "english": "Times shown in {zone}",
+    "translation": "Heures affichées dans le fuseau {zone}",
+    "ratio": 1.81
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

@@ -2850,6 +2850,12 @@
     "ratio": 2.38
   },
   {
+    "id": "publishParity.calendar.status",
+    "english": "Status",
+    "translation": "Beitragsstatus",
+    "ratio": 2.33
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

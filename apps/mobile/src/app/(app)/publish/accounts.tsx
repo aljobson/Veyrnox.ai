@@ -1,8 +1,14 @@
+import { Button, Card, Text as ThemedText, themedStyles, useThemedStyles } from '../../../components/ui';
+import { NetworkLogo } from '../../../components/publish/NetworkLogo';
+import { networkName } from '../../../lib/networkLogos';
+import { publishScope } from '../../../lib/usePublishRole';
+import { subscribeCacheUser } from '../../../lib/appCache';
+import { brandStore } from '../../../lib/publishBrand';
 import { Image } from 'expo-image';
 import { Stack, useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
-import { accountStatusLabel, fetchAccounts, publishErrorMessage, type PublishAccount } from '../../../lib/publish';
+import { accountStatusLabel, fetchAccounts, publishErrorMessage, type PublishAccount, type PublishAccountsState } from '../../../lib/publish';
 import { disconnectAccount, disconnectErrorKey } from '../../../lib/publishAccounts';
 import { touchTarget } from '../../../lib/a11y';
 import { formatLocale, t } from '../../../lib/i18n';
@@ -14,39 +20,56 @@ const date = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(for
 export default function Accounts() {
     const api = usePublishApi();
     const router = useRouter();
-    const [data, setData] = useState<{ accountLimit: number; accounts: PublishAccount[] } | null>(null);
+    const rowStyles = useThemedStyles(rowSheets);
+    const generation = useRef(0), currentApi = useRef(api), pending = useRef<string | null>(null);
+    currentApi.current = api;
+    const [data, setData] = useState<PublishAccountsState | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [refreshing, setRefreshing] = useState(false);
     const [notice, setNotice] = useState<string | null>(null);
 
     const load = useCallback(async () => {
+        pending.current = null;
+        const version = ++generation.current, scope = publishScope();
+        const valid = () => version === generation.current && scope === publishScope() && api === currentApi.current;
         try {
-            setData(await fetchAccounts(api));
-            setError(null);
+            const result = await fetchAccounts(api);
+            if (!valid()) return;
+            setData(result); setError(null);
         } catch (err) {
-            setError(publishErrorMessage(err));
-        }
+            if (valid()) setError(publishErrorMessage(err));
+        } finally { if (valid()) setRefreshing(false); }
     }, [api]);
 
     useEffect(() => {
-        load();
+        const reset = () => {
+            generation.current++; pending.current = null;
+            setData(null); setNotice(null); setError(null); setRefreshing(false);
+            void load();
+        };
+        const userOff = subscribeCacheUser(reset), brandOff = brandStore.subscribe(reset);
+        reset();
+        return () => { generation.current++; pending.current = null; userOff(); brandOff(); };
     }, [load]);
 
     function confirmDisconnect(a: PublishAccount) {
-        const vars = { name: a.displayName, network: a.network };
+        if (data?.brandRole !== 'owner' || pending.current) return;
+        const version = generation.current, scope = publishScope();
+        const valid = () => version === generation.current && scope === publishScope() && api === currentApi.current;
+        const vars = { name: a.displayName, network: networkName(a.network) };
         Alert.alert(t('accounts.disconnectTitle', vars), t('accounts.disconnectBody', vars), [
             { text: t('publish.cancel'), style: 'cancel' },
             {
-                text: t('accounts.disconnectAction'),
-                style: 'destructive',
+                text: t('accounts.disconnectAction'), style: 'destructive',
                 onPress: () => {
-                    setNotice(null);
-                    disconnectAccount(api, a.id)
-                        .then(() => {
-                            setData((d) => (d ? { ...d, accounts: d.accounts.filter((x) => x.id !== a.id) } : d));
-                            setNotice(t('accounts.disconnected', vars));
-                        })
-                        .catch((err) => setNotice(t(disconnectErrorKey(err))));
+                    if (!valid() || pending.current) return;
+                    pending.current = a.id; setNotice(null);
+                    disconnectAccount(api, a.id).then(() => {
+                        if (!valid()) return;
+                        setData(d => d ? { ...d, accounts: d.accounts.filter(x => x.id !== a.id) } : d);
+                        setNotice(t('accounts.disconnected', vars));
+                    }).catch(err => { if (valid()) setNotice(t(disconnectErrorKey(err))); })
+                        .finally(() => { if (valid()) pending.current = null; });
                 },
             },
         ]);
@@ -63,29 +86,27 @@ export default function Accounts() {
                 <FlatList
                     data={data.accounts}
                     keyExtractor={(a) => a.id}
-                    refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.accent} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}
-                    ListHeaderComponent={<View><Text style={styles.muted}>{t('publish.ofaccounts', { value1: data.accounts.length, value2: data.accountLimit })}</Text>{notice ? <Text style={styles.notice} accessibilityLiveRegion="polite">{notice}</Text> : null}</View>}
+                    refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.accent} onRefresh={async () => { setRefreshing(true); await load(); }} />}
+                    ListHeaderComponent={<View><Text style={styles.muted}>{t('publish.ofaccounts', { value1: data.accounts.length, value2: data.accountLimit })}</Text>{data.brandRole !== 'owner' ? <ThemedText tone="secondary">{t('publishParity.accounts.ownerOnly')}</ThemedText> : null}{notice ? <Text style={styles.notice} accessibilityLiveRegion="polite">{notice}</Text> : null}</View>}
                     ListEmptyComponent={<Text style={styles.muted}>{t('publish.noaccountsareconnectedyet')}</Text>}
-                    ListFooterComponent={
+                    ListFooterComponent={data.brandRole === 'owner' ?
                         <View>
                             <Pressable accessibilityRole="button" style={[styles.connect, touchTarget]} onPress={() => router.push('/publish/connect')}>
                                 <Text style={styles.connectText}>{t('connect.title')}</Text>
                             </Pressable>
-                        </View>
+                        </View> : undefined
                     }
                     renderItem={({ item }) => (
-                        <View style={styles.row}>
-                            {item.avatarUrl ? <Image source={{ uri: item.avatarUrl }} style={styles.avatar} contentFit="cover" /> : <View style={styles.avatar} />}
-                            <View style={styles.text} accessible accessibilityLabel={`${item.displayName}, ${item.network}, ${accountStatusLabel(item.status)}`}>
-                                <Text style={styles.name}>{item.displayName}</Text>
-                                <Text style={styles.muted}>{item.network}</Text>
-                                <Text style={[styles.status, item.status !== 'active' && styles.warn]}>{accountStatusLabel(item.status)}</Text>
-                                {item.tokenExpiresAt && item.status === 'active' ? <Text style={styles.muted}>{t('publish.accessrenewsby', { value1: date(item.tokenExpiresAt) ?? '' })}</Text> : null}
+                        <Card style={rowStyles.row}>
+                            {item.avatarUrl ? <Image source={{ uri: item.avatarUrl }} style={rowStyles.avatar} contentFit="cover" accessibilityElementsHidden importantForAccessibility="no" /> : <View style={rowStyles.avatar}><NetworkLogo network={item.network} size={24} /></View>}
+                            <View style={rowStyles.text}>
+                                <ThemedText variant="bodyStrong">{item.displayName}</ThemedText>
+                                <View style={rowStyles.network}><NetworkLogo network={item.network} /><ThemedText tone="secondary">{networkName(item.network)}</ThemedText></View>
+                                <ThemedText tone={item.status === 'active' ? 'accent' : 'warning'}>{accountStatusLabel(item.status)}</ThemedText>
+                                {item.tokenExpiresAt && item.status === 'active' ? <ThemedText tone="secondary">{t('publish.accessrenewsby', { value1: date(item.tokenExpiresAt) ?? '' })}</ThemedText> : null}
+                                {data.brandRole === 'owner' ? <Button variant="tertiary" tone="danger" label={t('accounts.disconnectAction')} accessibilityLabel={t('accounts.disconnect', { name: item.displayName })} onPress={() => confirmDisconnect(item)} /> : null}
                             </View>
-                            <Pressable accessibilityRole="button" accessibilityLabel={t('accounts.disconnect', { name: item.displayName })} style={[styles.disconnect, touchTarget]} onPress={() => confirmDisconnect(item)}>
-                                <Text style={styles.disconnectText}>{t('accounts.disconnectAction')}</Text>
-                            </Pressable>
-                        </View>
+                        </Card>
                     )}
                 />
             )}
@@ -109,3 +130,10 @@ const styles = StyleSheet.create({
     disconnectText: { color: colors.danger, fontWeight: '600' },
     error: { color: colors.danger, paddingTop: 16 },
 });
+
+const rowSheets = themedStyles(p => ({
+    row: { flexDirection: 'row', gap: 12, marginTop: 8 },
+    avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: p.bgElevated1, justifyContent: 'center', alignItems: 'center' },
+    text: { flex: 1, gap: 4 },
+    network: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+}));

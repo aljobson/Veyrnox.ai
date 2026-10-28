@@ -1,3 +1,12 @@
+import { Button, Text as ThemedText } from '../../../components/ui';
+import { NetworkLogo } from '../../../components/publish/NetworkLogo';
+import { MediaLibraryGrid } from '../../../components/publish/MediaLibraryGrid';
+import { ChosenMediaPreview } from '../../../components/publish/ChosenMediaPreview';
+import { NetworkPreviews } from '../../../components/publish/NetworkPreviews';
+import { networkName } from '../../../lib/networkLogos';
+import { usePublishRole } from '../../../lib/usePublishRole';
+import { canPublish } from '../../../lib/publishDashboard';
+import { composeGates, toggleAccount } from '../../../lib/publishComposeGates';
 import { ComposePresets } from '../../../components/publish/ComposePresets';
 import { brandStore } from '../../../lib/publishBrand';
 import { presetScopeToken } from '../../../lib/publishPresets';
@@ -15,7 +24,7 @@ import { WhenPicker, whenFrom } from '../../../components/WhenPicker';
 import { appStorage, getCacheUser, subscribeCacheUser } from '../../../lib/appCache';
 import { createDraftKeys, draftSignature, isDefiniteRefusal } from '../../../lib/draftKey';
 import { PublishUploadPanel } from '../../../components/PublishUploadPanel';
-import { choiceId, choiceMedia, toggleChoice, type CreationPick, type MediaChoice } from '../../../lib/publishMediaChoice';
+import { choiceMedia, toggleChoice, type CreationPick, type MediaChoice } from '../../../lib/publishMediaChoice';
 import { colors } from '../../../theme';
 import { usePublishApi } from '../../../lib/usePublishApi';
 
@@ -24,6 +33,7 @@ const draftKeys = createDraftKeys(appStorage);
 export default function Compose() {
     const api = usePublishApi();
     const router = useRouter();
+    const role = usePublishRole(api);
     const { jobId: presetJob } = useLocalSearchParams<{ jobId?: string }>();
     const [picks, setPicks] = useState<CreationPick[] | null>(null);
     const [accounts, setAccounts] = useState<PublishAccount[] | null>(null);
@@ -33,7 +43,8 @@ export default function Compose() {
     const [carouselEnabled, setCarouselEnabled] = useState(false);
     const [accountIds, setAccountIds] = useState<string[]>([]);
 
-    const [presetsEnabled, setPresetsEnabled] = useState(false);
+    const [gates, setGates] = useState<ReturnType<typeof composeGates> | null>(null);
+    const [freePlan, setFreePlan] = useState(false);
     const presetScope = useRef<string | null>(null);
     const prefillAllowed = useRef(true);
     const [scopeVersion, setScopeVersion] = useState(0);
@@ -57,7 +68,7 @@ export default function Compose() {
     useEffect(() => {
         const reset = () => {
             scopeGeneration.current++; prefillAllowed.current = false;
-            setAccountIds([]); setChoices([]); setQueueId(null); setAccounts(null); setQueues([]); setPresetsEnabled(false); setError(null); setProblem(null);
+            setAccountIds([]); setChoices([]); setQueueId(null); setAccounts(null); setQueues([]); setGates(null); setFreePlan(false); setMode('schedule'); setPicks(null); setError(null); setProblem(null);
             if (presetScope.current) { setText(''); setNetworkText({}); presetScope.current = null; setScopeNote(true); }
             setScopeVersion(v => v + 1);
         };
@@ -70,10 +81,12 @@ export default function Compose() {
         const scope = presetScopeToken(), version = scopeGeneration.current;
         const valid = () => !cancelled && scope === presetScopeToken() && version === scopeGeneration.current && api === currentApi.current;
         setAccounts(null); setError(null);
-        Promise.all([mediaApi(api).listJobs(), fetchCatalog(), fetchAccounts(api), fetchQueues(api).catch(() => [] as PublishQueue[])])
-            .then(([page, catalog, acc, queueList]) => {
+        Promise.all([mediaApi(api).listJobs(), fetchCatalog(), fetchAccounts(api)])
+            .then(async ([page, catalog, acc]) => {
                 if (!valid()) return;
-                setQueues(queueList.filter((q) => q.enabled));
+                const nextGates = composeGates(acc);
+                setGates(nextGates); setFreePlan(acc.plansEnabled && acc.planTier === 'free');
+                if (!nextGates.schedule) setMode('now');
                 const byId = new Map<string, CatalogModel>(catalog.map((m) => [m.id, m]));
                 const list: CreationPick[] = [];
                 for (const job of page.jobs) {
@@ -81,12 +94,13 @@ export default function Compose() {
                     const mediaType = model ? mediaTypeOf(model.modality) : null;
                     if (job.state === 'succeeded' && job.has_asset && model && mediaType) list.push({ kind: 'job', job, mediaType, name: job.label || model.name });
                 }
-                setPicks(list);
+                setPicks(list.slice(0, 24));
                 setAccounts(acc.accounts);
                 setUploadsEnabled(acc.uploadsEnabled);
-                setPresetsEnabled(acc.features.contentPresets);
+
                 setCarouselEnabled(acc.carouselEnabled === true);
                 if (presetJob && prefillAllowed.current) { setChoices(list.filter(p => p.job.job_id === presetJob)); prefillAllowed.current = false; }
+                if (nextGates.queues) { const queueList = await fetchQueues(api).catch(() => [] as PublishQueue[]); if (valid()) setQueues(queueList.filter(q => q.enabled)); }
             })
             .catch((err) => valid() && setError(publishErrorMessage(err)));
         return () => {
@@ -95,7 +109,7 @@ export default function Compose() {
     }, [api, presetJob, scopeVersion]);
 
     const eligible = (accounts || []).filter(a => a.status === 'active' && a.publishingEnabled && a.supportedMedia.length > 0);
-    const queue = mode === 'queue' ? queues.find((q) => q.id === queueId) ?? null : null;
+    const queue = gates?.queues && mode === 'queue' ? queues.find((q) => q.id === queueId) ?? null : null;
     const queueAccounts = queue && accounts ? accounts.filter((a) => queue.accountIds.includes(a.id)) : [];
     const queueUsable = !!queue && queueAccounts.length === queue.accountIds.length && queueAccounts.every((a) => eligible.some((e) => e.id === a.id));
     const selected = queue ? queueAccounts : eligible.filter((a) => accountIds.includes(a.id));
@@ -103,17 +117,17 @@ export default function Compose() {
     const maxMedia = carouselEnabled ? Math.min(10, ...chosenAccounts.map(a => a.carousel?.max || 1)) : 1;
     const blockedNetwork = mediaBlocker(choiceMedia(choices), chosenAccounts);
     const blocker = choices.length > 1 && !carouselEnabled ? t('app.publish.carousel.closed') : blockedNetwork ? t('app.publish.carousel.blocked', { network: networkLabel(blockedNetwork) }) : null;
-    const when: When | null = mode !== 'schedule' ? { kind: 'now' } : (() => { const d = whenFrom(date, time); return d ? { kind: 'at', at: d } : null; })();
+    const when: When | null = !gates?.schedule || mode !== 'schedule' ? { kind: 'now' } : (() => { const d = whenFrom(date, time); return d ? { kind: 'at', at: d } : null; })();
     const networks = [...new Set(selected.map((a) => a.network))];
     const warn = captionWarning(text, networks);
     const showYoutube = networks.includes('youtube');
 
     function toggle(id: string) {
-        setAccountIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
+        setAccountIds(ids => toggleAccount(ids, id, gates?.multiAccount === true));
     }
 
     function submit() {
-        if (!chosen || !accounts || busy || preparingRef.current) return;
+        if (role === null || !canPublish(role) || !chosen || !accounts || busy || preparingRef.current) return;
         const capturedScope = presetScopeToken(), capturedVersion = scopeGeneration.current;
         const stillCurrent = () => capturedScope === presetScopeToken() && capturedVersion === scopeGeneration.current && api === currentApi.current;
         if (blocker) { setProblem(blocker); return; }
@@ -125,7 +139,7 @@ export default function Compose() {
             setProblem(queue ? t('compose.queueNoMatch') : t('compose.queuePick'));
             return;
         }
-        const draft: Draft = { jobId: chosen.kind === 'job' ? chosen.job.job_id : '', ...(chosen.kind === 'upload' ? { uploadId: chosen.uploadId } : {}), mediaType: chosen.mediaType, media: choiceMedia(choices), accountIds: selected.map((a) => a.id), text, when, networkText: cleanNetworkText(networkText, networks), ...(showYoutube ? { youtubeVisibility: ytVisibility } : {}), ...(queue ? { queue: { id: queue.id, name: queue.name } } : {}) };
+        const draft: Draft = { jobId: chosen.kind === 'job' ? chosen.job.job_id : '', ...(chosen.kind === 'upload' ? { uploadId: chosen.uploadId } : {}), mediaType: chosen.mediaType, media: choiceMedia(choices), accountIds: selected.map((a) => a.id), text, when, networkText: gates?.variants ? cleanNetworkText(networkText, networks) : {}, ...(showYoutube && gates?.youtubeVisibility ? { youtubeVisibility: ytVisibility } : {}), ...(queue ? { queue: { id: queue.id, name: queue.name } } : {}) };
         const now = new Date();
         const invalid = validateDraft(draft, accounts ?? [], now);
         if (invalid) {
@@ -188,8 +202,9 @@ export default function Compose() {
         }
     }
 
+    if (role !== null && !canPublish(role)) return <View style={styles.screen}><ThemedText>{t('publishParity.compose.readOnly')}</ThemedText></View>;
     if (error) return <View style={styles.screen}><Text style={styles.error}>{error}</Text></View>;
-    if (!picks || !accounts) return <View style={styles.screen}><ActivityIndicator color={colors.accent} /></View>;
+    if (role === null || !gates || !picks || !accounts) return <View style={styles.screen}><ActivityIndicator color={colors.accent} /></View>;
 
     return (
         <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
@@ -198,13 +213,8 @@ export default function Compose() {
                 {scopeNote ? <Text style={styles.muted} accessibilityLiveRegion="polite">{t('publishDepth.presets.scopeCleared')}</Text> : null}
                 <Text style={styles.heading} accessibilityRole="header">{t('publish.1Creation')}</Text>
                 {picks.length === 0 ? <Text style={styles.muted}>{t('publish.nofinishedimagesorvideosyetMake')}</Text> : null}
-                {picks.slice(0, 30).map((p) => (
-                    <Pressable key={p.job.job_id} accessibilityRole="button" disabled={preparing} accessibilityState={{ disabled: preparing, selected: choices.some(item => choiceId(item) === choiceId(p)) }} style={[styles.row, choices.some(item => choiceId(item) === choiceId(p)) && styles.rowOn]} onPress={() => { if (preparingRef.current) return; setChoices(old => toggleChoice(old, p, maxMedia)); if (maxMedia === 1) setAccountIds([]); }}>
-                        <Text style={styles.rowText}>{p.name}</Text>
-                        <Text style={styles.muted}>{p.mediaType} · {new Date(p.job.created_at).toLocaleDateString(formatLocale())}</Text>
-                    </Pressable>
-                ))}
-
+                <MediaLibraryGrid api={api} picks={picks} choices={choices} max={maxMedia} disabled={preparing || busy} onToggle={p => { if (preparingRef.current) return; setChoices(old => toggleChoice(old, p, maxMedia)); if (maxMedia === 1) setAccountIds([]); }} />
+                <ChosenMediaPreview api={api} choice={chosen} />
                 <PublishMediaSelection items={choices} max={maxMedia} onChange={setChoices} disabled={preparing || busy} />
                 {blocker ? <Text style={styles.error} accessibilityRole="alert">{blocker}</Text> : null}
                 <PublishUploadPanel api={api} enabled={uploadsEnabled} max={maxMedia} nonUploadCount={choices.filter(item => item.kind === 'job').length}
@@ -226,31 +236,34 @@ export default function Compose() {
                         <View style={styles.chips}>
                             {(queue ? [] : eligible).map((a) => (
                                 <Pressable key={a.id} accessibilityRole="button" accessibilityState={{ selected: accountIds.includes(a.id) }} style={[styles.chip, accountIds.includes(a.id) && styles.chipOn]} onPress={() => toggle(a.id)}>
-                                    <Text style={[styles.chipText, accountIds.includes(a.id) && styles.chipTextOn]}>{a.displayName} · {a.network}</Text>
+                                    <Text style={[styles.chipText, accountIds.includes(a.id) && styles.chipTextOn]}>{a.displayName}</Text><NetworkLogo network={a.network} /><ThemedText>{networkName(a.network)}</ThemedText>
                                 </Pressable>
                             ))}
                         </View>
 
+                        {!gates.multiAccount && eligible.length > 1 ? <ThemedText tone="secondary">{t('publishCompose.postingtomorethanoneaccountneeds')}</ThemedText> : null}
                         <Text style={styles.heading} accessibilityRole="header">{t('publish.3Text')}</Text>
-                        {presetsEnabled ? <ComposePresets api={api} text={text} networkText={networkText} mode={mode} selected={selected} eligible={eligible} disabled={busy || preparing || !accounts}
+                        {gates.presets ? <ComposePresets api={api} text={text} networkText={networkText} mode={mode} selected={selected} eligible={eligible} disabled={busy || preparing || !accounts}
                             onApply={(value, scope) => {
                                 if (scope !== presetScopeToken() || api !== currentApi.current) return;
-                                setText(value.text); setAccountIds(value.accountIds); setNetworkText({}); presetScope.current = scope; setScopeNote(false);
+                                setText(value.text); setAccountIds(gates.multiAccount ? value.accountIds : value.accountIds.slice(0, 1)); setNetworkText({}); presetScope.current = scope; setScopeNote(false);
                             }} /> : null}
                         <TextInput style={styles.input} multiline value={text} onChangeText={setText} placeholder={t('publish.writethecaption')} accessibilityLabel={t('publish.caption')} placeholderTextColor={colors.muted} maxLength={MAX_TEXT} />
                         <Text style={styles.muted}>{text.length} / {MAX_TEXT}</Text>
                         {warn ? <Text style={styles.warn}>{warn}</Text> : null}
-                        <NetworkTextFields networks={networks} values={networkText} onChange={(n, v) => setNetworkText((m) => ({ ...m, [n]: v }))} />
-                        {showYoutube ? <YoutubeVisibilityChips value={ytVisibility} onChange={setYtVisibility} /> : null}
+                        {gates.variants ? <NetworkTextFields networks={networks} values={networkText} onChange={(n, v) => setNetworkText((m) => ({ ...m, [n]: v }))} /> : <ThemedText tone="secondary">{t(freePlan ? 'publishCompose.differenttextforeachnetworkneedsthe' : 'publishLinks.variantsOffNote')}</ThemedText>}
+                        <NetworkPreviews api={api} accounts={selected} choice={chosen} text={text} networkText={networkText} variants={gates.variants} />
+                        {showYoutube ? gates.youtubeVisibility ? <><YoutubeVisibilityChips value={ytVisibility} onChange={setYtVisibility} /><ThemedText tone="secondary">{t(`publishParity.youtube.${ytVisibility}`)}</ThemedText><ThemedText tone="secondary">{t('publishParity.youtube.only')}</ThemedText></> : <ThemedText tone="secondary">{t('publishParity.youtube.publicDefault')}</ThemedText> : null}
 
                         <Text style={styles.heading} accessibilityRole="header">{t('publish.4When')}</Text>
                         <View style={styles.chips}>
                             <Pressable accessibilityRole="button" accessibilityState={{ selected: mode === 'now' }} style={[styles.chip, mode === 'now' && styles.chipOn]} onPress={() => setMode('now')}><Text style={[styles.chipText, mode === 'now' && styles.chipTextOn]}>{t('publish.postnow2')}</Text></Pressable>
-                            <Pressable accessibilityRole="button" accessibilityState={{ selected: mode === 'schedule' }} style={[styles.chip, mode === 'schedule' && styles.chipOn]} onPress={() => setMode('schedule')}><Text style={[styles.chipText, mode === 'schedule' && styles.chipTextOn]}>{t('publish.schedule')}</Text></Pressable>
-                            {queues.length > 0 ? <Pressable accessibilityRole="button" accessibilityState={{ selected: mode === 'queue' }} style={[styles.chip, mode === 'queue' && styles.chipOn]} onPress={() => setMode('queue')}><Text style={[styles.chipText, mode === 'queue' && styles.chipTextOn]}>{t('compose.queue')}</Text></Pressable> : null}
+                            {gates.schedule ? <Pressable accessibilityRole="button" accessibilityState={{ selected: mode === 'schedule' }} style={[styles.chip, mode === 'schedule' && styles.chipOn]} onPress={() => setMode('schedule')}><Text style={[styles.chipText, mode === 'schedule' && styles.chipTextOn]}>{t('publish.schedule')}</Text></Pressable> : null}
+                            {gates.queues && queues.length > 0 ? <Pressable accessibilityRole="button" accessibilityState={{ selected: mode === 'queue' }} style={[styles.chip, mode === 'queue' && styles.chipOn]} onPress={() => setMode('queue')}><Text style={[styles.chipText, mode === 'queue' && styles.chipTextOn]}>{t('compose.queue')}</Text></Pressable> : null}
                         </View>
-                        {mode === 'queue' ? <QueuePicker queues={queues} value={queueId} onChange={setQueueId} /> : null}
-                        {mode === 'schedule' ? (
+                        {!gates.schedule ? <><ThemedText tone="secondary">{t('publishCompose.schedulingneedsthePublishPlanYoucan')}</ThemedText><Button variant="secondary" label={t('publishParity.plan.see')} onPress={() => router.push('/publish')} /></> : null}
+                        {gates.queues && mode === 'queue' ? <QueuePicker queues={queues} value={queueId} onChange={setQueueId} /> : null}
+                        {gates.schedule && mode === 'schedule' ? (
                             <WhenPicker date={date} time={time} onChange={(d, t) => { setDate(d); setTime(t); }} />
                         ) : null}
 
@@ -274,7 +287,7 @@ const styles = StyleSheet.create({
     rowOn: { borderColor: colors.accent },
     rowText: { color: colors.text, fontSize: 15 },
     chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-    chip: { paddingVertical: 9, paddingHorizontal: 12, borderRadius: 10, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
+    chip: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 9, paddingHorizontal: 12, borderRadius: 10, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
     chipOn: { backgroundColor: colors.accent, borderColor: colors.accent },
     chipText: { color: colors.body },
     chipTextOn: { color: colors.accentInk, fontWeight: '600' },

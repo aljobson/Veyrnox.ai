@@ -22,7 +22,7 @@ beforeEach(() => {
     (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     jest.clearAllMocks(); root = createRoot(); alert = jest.spyOn(RN.Alert, 'alert').mockImplementation(() => {});
     mockRequest.mockImplementation(async (path: string) => {
-        if (path.endsWith('/accounts')) return { uploadsEnabled: true, accounts: [{ id: 'a', network: 'instagram', display_name: 'Studio', status: 'active', publishingEnabled: true, supportedMedia: ['image', 'video'] }] };
+        if (path.endsWith('/accounts')) return { brandRole: 'owner', uploadsEnabled: true, accounts: [{ id: 'a', network: 'instagram', display_name: 'Studio', status: 'active', publishingEnabled: true, supportedMedia: ['image', 'video'] }] };
         if (path.endsWith('/queues')) return { queues: [{ id: 'q', name: 'Queue', enabled: true, account_ids: ['a'], slots: [] }] };
         return {};
     });
@@ -85,7 +85,7 @@ for (const approval of [false, true]) {
 
 test('queue reservation accounts block a carousel even when the configured queue allows it', async () => {
     mockRequest.mockImplementation(async (path: string) => {
-        if (path.endsWith('/accounts')) return { uploadsEnabled: true, carouselEnabled: true, accounts: [
+        if (path.endsWith('/accounts')) return { brandRole: 'owner', queuesEnabled: true, uploadsEnabled: true, carouselEnabled: true, accounts: [
             { id: 'a', network: 'instagram', display_name: 'Studio', status: 'active', publishingEnabled: true, supportedMedia: ['image'], carousel: { min: 2, max: 10, types: ['image'] } },
             { id: 'b', network: 'twitter', display_name: 'X account', status: 'active', publishingEnabled: true, supportedMedia: ['image'], carousel: { min: 2, max: 4, types: ['image'] } },
         ] };
