@@ -2940,6 +2940,24 @@
     "ratio": 2.67
   },
   {
+    "id": "publishParity.media.previewImage",
+    "english": "Chosen image preview",
+    "translation": "Предпросмотр выбранного изображения",
+    "ratio": 1.75
+  },
+  {
+    "id": "publishParity.preview.title",
+    "english": "Post previews",
+    "translation": "Предпросмотр публикаций",
+    "ratio": 1.77
+  },
+  {
+    "id": "publishParity.calendar.timezone",
+    "english": "Times shown in {zone}",
+    "translation": "Время указано в часовом поясе {zone}",
+    "ratio": 1.71
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

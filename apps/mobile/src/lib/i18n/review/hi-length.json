@@ -1632,6 +1632,12 @@
     "ratio": 3
   },
   {
+    "id": "publishParity.post.readOnly",
+    "english": "Read only",
+    "translation": "केवल पढ़ने के लिए",
+    "ratio": 1.89
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

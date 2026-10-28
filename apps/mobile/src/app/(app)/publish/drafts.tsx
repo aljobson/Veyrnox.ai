@@ -1,3 +1,6 @@
+import { Text as ThemedText, themedStyles, useThemedStyles } from '../../../components/ui';
+import { NetworkLogo } from '../../../components/publish/NetworkLogo';
+import { networkName } from '../../../lib/networkLogos';
 import { Stack } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -11,6 +14,7 @@ const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString(formatL
 
 export default function Drafts() {
     const api = usePublishApi();
+    const networkStyles = useThemedStyles(networkSheets);
     const [drafts, setDrafts] = useState<Draft[] | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [refreshing, setRefreshing] = useState(false);
@@ -97,10 +101,10 @@ export default function Drafts() {
                                 </View>
                             ) : null}
                             {g.drafts.map((d) => (
-                                <View key={d.id} style={styles.card} accessible accessibilityLabel={`${d.text.slice(0, 80)}. ${d.networks.join(', ')}`}>
+                                <View key={d.id} style={styles.card} accessible accessibilityLabel={`${d.text.slice(0, 80)}. ${d.networks.map(networkName).join(', ')}`}>
                                     <Text style={styles.text} numberOfLines={4}>{d.text || t('drafts.noText')}</Text>
                                     {d.scheduledAt ? <Text style={styles.muted}>{t('drafts.plannedFor', { when: when(d.scheduledAt) ?? '' })}</Text> : null}
-                                    {d.networks.length ? <Text style={styles.networks}>{d.networks.join(', ')}</Text> : null}
+                                    {d.networks.map(network => <View key={network} style={networkStyles.row}><NetworkLogo network={network} /><ThemedText tone="secondary">{networkName(network)}</ThemedText></View>)}
                                     {d.mediaTypes.length ? <Text style={styles.muted}>{d.mediaTypes.join(', ')}</Text> : null}
                                     {g.batchId ? (
                                         <Pressable accessibilityRole="button" accessibilityLabel={t('drafts.discardOne')} disabled={busy} style={[styles.discardBtn, touchTarget, busy && styles.off]} onPress={() => discard(g.batchId as string, [d], d.id)}>
@@ -138,3 +142,5 @@ const styles = StyleSheet.create({
     discardBtn: { paddingHorizontal: 12, alignItems: 'flex-start' },
     discardText: { color: colors.danger, fontWeight: '600' },
 });
+
+const networkSheets = themedStyles(() => ({ row: { flexDirection: 'row', alignItems: 'center', gap: 6 } }));
