@@ -8,12 +8,13 @@ import { KeyboardScreen } from '../../../components/KeyboardScreen';
 import { useChatAutoScroll } from '../../../lib/useChatAutoScroll';
 import * as Crypto from 'expo-crypto';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActionSheetIOS, ActivityIndicator, Alert, AppState, FlatList, Platform, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../../auth/AuthProvider';
 import { ChatComposerDeck } from '../../../components/chat/ChatComposerDeck';
-import { MessageBubble } from '../../../components/chat/MessageBubble';
+import { ChatMessageRow } from '../../../components/chat/ChatMessageRow';
+import { useChatDeltas } from '../../../lib/useChatDeltas';
 import { ConversationEmpty } from '../../../components/chat/ConversationEmpty';
 import { ChatSettings } from '../../../components/chat/ChatSettings';
 import { ModelPicker } from '../../../components/chat/ModelPicker';
@@ -25,12 +26,11 @@ import { chatApi, cleanOptions, cleanTitle, imagesExtra, isModelSwitch, NO_OPTIO
 import { attachmentRefs, MAX_ATTACHMENTS, roomFor, type ChatImage } from '../../../lib/chatAttach';
 import { pickPhotos, pickVideoFrames, uploadChatImages } from '../../../lib/chatPhotos';
 import { fetchCatalog, type CatalogModel, type Kind } from '../../../lib/media';
-import { parseStudioDrafts, skillsInstructions, fittingSkills, selectedSkillIds, skillById, MAX_SELECTED_SKILLS, type Skill } from '../../../lib/studioSkills';
+import { skillsInstructions, fittingSkills, selectedSkillIds, skillById, MAX_SELECTED_SKILLS, type Skill } from '../../../lib/studioSkills';
 import { isQuiet, makeSendKey, resolveResumedSend, resolveStoppedSend, RESUME_QUIET_MS, resumeNoticeKey, stopNoticeKey, type StopOutcome } from '../../../lib/chatStop';
 import { plural, t } from '../../../lib/i18n';
 import { ensureOnline, OFFLINE_PAID_MESSAGE, OfflineError } from '../../../lib/network';
 import { Text, TextField, Button, Icon, themedStyles, useThemedStyles } from '../../../components/ui';
-
 const ERROR_TEXT: Record<string, string> = {
     insufficient_credits: t('chat.notenoughcreditsforthisreply'),
     insufficient_balance: t('chat.notenoughcreditsforthisreply'),
@@ -39,7 +39,6 @@ const ERROR_TEXT: Record<string, string> = {
     chat_not_open: t('chat.chatisnotavailablerightnow'),
     consent_declined: t('chat.youneedtoagreetoAIsharing'),
 };
-
 export default function Conversation() {
     const styles = useThemedStyles(sheets);
     const { id, starter, asset } = useLocalSearchParams<{ id: string; starter?: string; asset?: string }>();
@@ -50,6 +49,7 @@ export default function Conversation() {
     const [pinned, setPinned] = useState(false);
     const [renaming, setRenaming] = useState<string | null>(null);
     const [messages, setMessages] = useState<ChatMessage[] | null>(null);
+    const deltas = useChatDeltas(setMessages);
     const { draft, setDraft, stars, star, starredOnly, setStarredOnly, mounted } = useChatLocal(id);
     const [round, setRound] = useState(0);
     const { left, loadedFor } = useChatFreeLeft(api, round);
@@ -127,7 +127,6 @@ export default function Conversation() {
     useEffect(() => {
         if (hasDrafts && !catalog) fetchCatalog().then(setCatalog, () => undefined);
     }, [hasDrafts, catalog]);
-    const draftsOf = useMemo(() => (content: string) => (catalog ? parseStudioDrafts(content, catalog) : []), [catalog]);
 
     useEffect(() => {
         let timer: ReturnType<typeof setTimeout> | undefined;
@@ -189,6 +188,7 @@ export default function Conversation() {
             if (again === undefined) setDraft('');
             const knownIds = new Set(messages.map((m) => m.id));
             const stamp = Date.now();
+            deltas.begin(`a${stamp}`);
             setMessages((m) => [...(m ?? []), { id: `u${stamp}`, role: 'user', content: text }, { id: `a${stamp}`, role: 'assistant', content: '' }]);
             const controller = new AbortController();
             abort.current = controller;
@@ -208,8 +208,9 @@ export default function Conversation() {
                             jobId = e.jobId;
                             if (live.current) live.current.jobId = e.jobId;
                         }
-                        else if (e.type === 'delta') setMessages((m) => (m ?? []).map((x) => (x.id === `a${stamp}` ? { ...x, content: x.content + e.text } : x)));
-                        else if (e.type === 'error') failed = e.error;
+                        else if (e.type === 'delta') deltas.add(e.text);
+                        else if (e.type === 'error') { deltas.flush(); failed = e.error; }
+                        else if (e.type === 'done') deltas.flush();
                     },
                     controller.signal,
                     chosen,
@@ -226,6 +227,7 @@ export default function Conversation() {
                 if (controller.signal.aborted || !(err instanceof ApiError && err.status > 0)) unanswered = true;
                 else failed = err.code;
             }
+            deltas.close();
             const giveBack = async () => {
                 setMessages((m) => (m ?? []).filter((x) => x.id !== `a${stamp}` && x.id !== `u${stamp}`));
                 if (again === undefined) {
@@ -275,7 +277,7 @@ export default function Conversation() {
             setSending(false);
             busy.current = false; setRound(r => r + 1);
         },
-        [api, draft, id, images, messages, model, options],
+        [api, draft, id, images, messages, model, options, deltas],
     );
 
     // Switching the model changes what the next reply costs; the choices the new model does not offer are dropped.
@@ -430,7 +432,7 @@ export default function Conversation() {
                         ) : undefined
                     }
                     renderItem={({ item }) => (
-                        <MessageBubble selected={stars.includes(item.id)} onStar={() => void star(item.id)} message={item} sending={sending} drafts={item.role === 'assistant' ? draftsOf(item.content) : []} />
+                        <ChatMessageRow selected={stars.includes(item.id)} onStar={star} message={item} sending={sending && item.id === deltas.messageId} catalog={catalog} />
                     )}
                 />
             )}
@@ -471,7 +473,6 @@ export default function Conversation() {
         </KeyboardScreen>
     );
 }
-
 const sheets = themedStyles((p) => ({
     field: { flex: 1 },
     accentInk: { color: p.accent },

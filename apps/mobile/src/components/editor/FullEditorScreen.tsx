@@ -1,7 +1,6 @@
 import { Text as StatusText } from '../ui/Text';
 import { Command, Action, Choice, Stepper, LabeledInput, PanelHeading, EmptyPanel, WorkflowPanel } from './EditorControls';
-import { EditorTimeline } from './EditorTimeline';
-import { EditorTransport } from './EditorTransport';
+import { PlaybackPreview, PlaybackTimeline, PlaybackTransport } from './EditorPlayback';
 import { canTrim, fitPpf, formatTimecode as timecode, moveItems, trimItem, PPF_MIN, PPF_MAX, SEQUENCE_MAX } from '../../lib/editorTimeline';
 import { libraryMedia } from '../../lib/editorLibraryLength';
 import { getCacheUser } from '../../lib/appCache';
@@ -22,7 +21,6 @@ import { Platform, ActivityIndicator, Modal, Pressable, ScrollView, Text, TextIn
 import { touchTarget } from '../../lib/a11y';
 
 import { plural, t } from '../../lib/i18n';
-import { activeEditorMedia } from '../../lib/editorPreview';
 import type { LibraryChoice } from '../../lib/librarySource';
 import { DEFAULT_TEXT_STYLE, addMarker, addTrack, canvasOf, clipAt, copySelections, duplicateSelections, framesIn, groupSelections, pasteClipboard, removeSelections, splitClip, timelineOf, updateClip, type Canvas, type Clip, type EditorTrack, type Media, type Selection, type TextClip, type Timeline, type TrackKind } from '../../lib/nativeEditorModel';
 
@@ -30,7 +28,6 @@ import type { SlotKind } from '../../lib/sources';
 import { colors } from '../../theme';
 import { HeaderAction } from '../HeaderAction';
 import { LibraryChooser } from '../LibraryChooser';
-import { EditorMediaPreview } from './EditorMediaPreview';
 
 type Tool = 'media' | 'audio' | 'generate' | 'text' | 'captions' | 'transcript' | 'effects' | 'transitions' | 'filters' | 'animation' | 'markers' | 'brand' | 'adjust';
 
@@ -58,7 +55,7 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
     const [viewport, setViewport] = useState(0);
     useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
     const [exportVisible, setExportVisible] = useState(false);
-    const { currentDocument, preparePicked, savedDocument, api, router, name, document, revision, dirty, saving, problem, setProblem, tool, setTool, selection, setSelection, selections, setSelections, multiSelect, setMultiSelect, clipboard, setClipboard, snap, setSnap, ripple, setRipple, zoom, setZoom, privacyNotice, history, frame, setFrame, playing, setPlaying, projectAssets, localMediaUris, libraryKind, setLibraryKind, markDocument, save, done, acknowledgePrivacy, travel } = useFullEditorSession({ projectId, jobId });
+    const { currentDocument, preparePicked, savedDocument, api, router, name, document, revision, dirty, saving, problem, setProblem, tool, setTool, selection, setSelection, selections, setSelections, multiSelect, setMultiSelect, clipboard, setClipboard, snap, setSnap, ripple, setRipple, zoom, setZoom, privacyNotice, history, frameStore, setFrame, playing, setPlaying, projectAssets, localMediaUris, libraryKind, setLibraryKind, markDocument, save, done, acknowledgePrivacy, travel } = useFullEditorSession({ projectId, jobId });
     if (!document) return <View style={styles.loading}><Stack.Screen options={{ title: t('editor.title') }} /><ActivityIndicator color={colors.accent} /><Text style={styles.muted}>{problem ?? t('editor.fullLoading')}</Text></View>;
 
     const canvas = canvasOf(document.canvas);
@@ -67,12 +64,10 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
     const selected = clipAt(timeline, selection);
     const selectedIndex = selection ? timeline[selection.track].findIndex((item) => item.id === selection.id) : -1;
     const selectedMedia = selected && 'mediaId' in selected && selected.mediaId ? timeline.media[selected.mediaId] : undefined;
-    const previewText = timeline.text.find((item) => frame >= item.start && frame < item.start + item.len)?.text ?? timeline.text[0]?.text;
     const clipCount = timeline.video.length + timeline.audio.length + timeline.text.length;
     const selectedGroup = selected?.groupId;
     const selectedTrack = selection ? timeline.tracks.find((track) => track.id === selected?.trackId) : undefined;
     const availableMedia = [...Object.values(timeline.media), ...projectAssets.filter((asset) => !Object.values(timeline.media).some((item) => item.assetSource?.assetId === asset.assetSource?.assetId))];
-    const activePreview = activeEditorMedia(timeline, frame);
 
     const applyTimeline = (next: Timeline) => markDocument({ ...(currentDocument() ?? document), schema_version: 3, timeline: next });
     const updateCanvas = (patch: Partial<Canvas>) => {
@@ -114,7 +109,7 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
     const addText = () => {
         const seq = timeline.seq + 1;
         const trackId = timeline.tracks.find((track) => track.kind === 'text' && !track.locked)?.id;
-        const item: TextClip = { id: `t${seq}`, text: t('editor.yourtitle'), start: Math.min(frame, Math.max(0, total)), len: 90, x: 0.5, y: 0.85, size: 6, trackId, style: DEFAULT_TEXT_STYLE };
+        const item: TextClip = { id: `t${seq}`, text: t('editor.yourtitle'), start: Math.min(frameStore.get(), Math.max(0, total)), len: 90, x: 0.5, y: 0.85, size: 6, trackId, style: DEFAULT_TEXT_STYLE };
         applyTimeline({ ...timeline, seq, text: [...timeline.text, item] });
         setSelection({ track: 'text', id: item.id });
         setSelections([{ track: 'text', id: item.id }]);
@@ -128,13 +123,13 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
         if (!selection) return;
         applyTimeline(updateClip(timeline, selection, patch));
     };
-    const adjustStart = (delta: number) => { if (selection) { const next = moveItems(timeline, [selection], selection, delta, undefined, false, frame); if (next) applyTimeline(next); } };
-    const adjustLength = (delta: number) => { if (selection) { const next = trimItem(timeline, selection, 'out', delta, false, frame); if (next) applyTimeline(next); } };
+    const adjustStart = (delta: number) => { if (selection) { const next = moveItems(timeline, [selection], selection, delta, undefined, false, frameStore.get()); if (next) applyTimeline(next); } };
+    const adjustLength = (delta: number) => { if (selection) { const next = trimItem(timeline, selection, 'out', delta, false, frameStore.get()); if (next) applyTimeline(next); } };
     const changeSpeed = (rate: number) => {
         if (!selection || selection.track === 'text' || !selected || !canTrim(selected)) return;
         const clip = selected as Clip;
         const sourceSpan = clip.len * (clip.rate ?? 1);
-        const next = trimItem(updateClip(timeline, selection, { rate }), selection, 'out', Math.max(1, Math.floor(sourceSpan / rate)) - clip.len, false, frame);
+        const next = trimItem(updateClip(timeline, selection, { rate }), selection, 'out', Math.max(1, Math.floor(sourceSpan / rate)) - clip.len, false, frameStore.get());
         if (next) applyTimeline(next);
     };
     const toggleReverse = () => {
@@ -147,12 +142,12 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
     const filterOf = (clip: Clip) => ({ brightness: 1, contrast: 1, saturate: 1, hue: 0, blur: 0, ...clip.filter });
     const splitSelection = () => {
         if (!selection) return;
-        const next = splitClip(timeline, selection, frame);
+        const next = splitClip(timeline, selection, frameStore.get());
         if (!next) { setProblem(t('editor.movetheplayheadinsidetheselectedclip')); return; }
         applyTimeline(next);
     };
     const paste = () => {
-        const result = pasteClipboard(timeline, clipboard, frame);
+        const result = pasteClipboard(timeline, clipboard, frameStore.get());
         if (!result) return;
         applyTimeline(result.timeline);
         setSelections(result.selections);
@@ -167,9 +162,10 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
         applyTimeline(groupSelections(timeline, targets, grouped));
     };
     const addTimelineTrack = (kind: TrackKind) => applyTimeline(addTrack(timeline, kind));
-    const addTimelineMarker = () => applyTimeline(addMarker(timeline, frame));
+    const addTimelineMarker = () => applyTimeline(addMarker(timeline, frameStore.get()));
     const updateTrack = (track: EditorTrack, patch: Partial<EditorTrack>) => applyTimeline({ ...timeline, tracks: timeline.tracks.map((item) => item.id === track.id ? { ...item, ...patch, id: item.id, kind: item.kind } : item) });
     const addMediaToTimeline = (media: Media, sourceTimeline = timeline) => {
+        const frame = frameStore.get();
         const kind: TrackKind = media.kind === 'audio' ? 'audio' : 'video';
         const trackId = sourceTimeline.tracks.find((track) => track.kind === kind && !track.locked)?.id;
         if (!trackId) { setProblem(t('editor.unlockoraddatrackfirst', { value1: kind })); return; }
@@ -281,13 +277,10 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
             </View>
             <View style={styles.previewFrame}>
                 <View style={[styles.canvas, { aspectRatio: canvas.aspect_ratio === '9:16' ? 9 / 16 : canvas.aspect_ratio === '1:1' ? 1 : 16 / 9 }]}>
-                    {activePreview ? <EditorMediaPreview api={api} clip={activePreview.clip} media={activePreview.media} frame={frame} fps={timeline.fps} playing={playing} localUri={localMediaUris[activePreview.media.id]} /> : null}
-                    <View style={styles.safeFrame} />
-                    {!activePreview ? <><Text style={styles.previewMark}>{t('editor.v')}</Text><Text style={styles.previewLabel}>{timeline.video.length ? t('editor.movetheplayheadontoavisualclip') : t('editor.previewEmpty')}</Text></> : null}
-                    {previewText ? <Text style={styles.previewCaption}>{previewText}</Text> : null}
+                    <PlaybackPreview frameStore={frameStore} timeline={timeline} api={api} playing={playing} localMediaUris={localMediaUris} />
                 </View>
             </View>
-            <EditorTransport frame={frame} total={total} fps={timeline.fps} playing={playing} onSeek={setFrame} onPlaying={setPlaying} />
+            <PlaybackTransport frameStore={frameStore} total={total} fps={timeline.fps} playing={playing} onSeek={setFrame} onPlaying={setPlaying} />
         </View>
 
         <View style={styles.timelineSection}>
@@ -295,7 +288,7 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
                 <Text style={styles.eyebrow}>{t('editor.tIMELINE')}</Text>
                 <Text style={styles.timelineHelp}>{multiSelect ? t('editor.selectedtapclipstoadd', { value1: selections.length }) : selection ? t('editor.tapacommandtoeditselection') : t('editor.tapacliptoselect')}</Text>
             </View>
-            <EditorTimeline timeline={timeline} selections={selections} ppf={zoom} total={total} frame={frame} playing={playing} snap={snap} onViewport={setViewport} onSeek={value => { setPlaying(false); setFrame(value); }} onSelect={selectClip} onApply={applyTimeline} />
+            <PlaybackTimeline timeline={timeline} selections={selections} ppf={zoom} total={total} frameStore={frameStore} playing={playing} snap={snap} onViewport={setViewport} onSeek={value => { setPlaying(false); setFrame(value); }} onSelect={selectClip} onApply={applyTimeline} />
         </View>
 
         <ScrollView testID="editor-tool-rail" horizontal showsHorizontalScrollIndicator={false} style={styles.toolRail} contentContainerStyle={styles.toolContent}>
