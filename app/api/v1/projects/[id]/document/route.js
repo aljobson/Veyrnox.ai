@@ -38,7 +38,7 @@ export async function PUT(request, { params }) {
     const result = await tenantRequest(request, context, 'rpc/save_project_document', { method: 'POST', body: {
       p_project_id: id, p_expected_revision: body.expected_revision, p_document: restore ? null : body.document,
       p_idempotency_key: idempotencyKey(request), p_restore_revision: restore ? body.restore_revision : null,
-    } });
+    }, limitAware: true });
     return Response.json(result);
   });
 }
