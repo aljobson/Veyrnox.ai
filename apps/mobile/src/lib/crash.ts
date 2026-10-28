@@ -1,5 +1,7 @@
 import * as Sentry from '@sentry/react-native';
+import * as Device from 'expo-device';
 import { APP_ENV } from './config';
+import { crashEnvironment } from './crashEnvironment';
 import { scrubBreadcrumb, scrubEvent } from './scrub';
 
 // The DSN is public by design (it only allows sending events). No DSN, or a development build, means
@@ -12,7 +14,7 @@ export function initCrashReporting(): boolean {
     if (started || __DEV__ || !DSN) return started;
     Sentry.init({
         dsn: DSN,
-        environment: APP_ENV,
+        environment: crashEnvironment(APP_ENV, Device.isDevice),
         sendDefaultPii: false,
         tracesSampleRate: 0,
         beforeSend: (event) => scrubEvent(event),
