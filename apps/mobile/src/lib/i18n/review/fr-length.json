@@ -4530,6 +4530,12 @@
     "ratio": 2
   },
   {
+    "id": "modelPage.fact.mode",
+    "english": "Mode",
+    "translation": "Mode de génération",
+    "ratio": 4.5
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

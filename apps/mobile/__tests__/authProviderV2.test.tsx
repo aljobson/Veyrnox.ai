@@ -7,6 +7,12 @@ import { bindCacheUser, wipeCache } from '../src/lib/appCache';
 import { revokeSession } from '../src/lib/auth/supabaseAuth';
 import { AuthProviderButton } from '../src/components/ui/AuthProviderButton';
 import * as Apple from 'expo-apple-authentication';
+import * as SecureStore from 'expo-secure-store';
+import * as Crypto from 'expo-crypto';
+import { File, Paths } from 'expo-file-system';
+import * as sessionStore from '../src/lib/auth/sessionStore';
+import { INSTALL_MARKER, resetInstall } from '../src/lib/installReset';
+import { revokeDiscardedSession } from '../src/lib/auth/discardedSession';
 let mockScheme: 'light' | 'dark' = 'light';
 jest.mock('../src/components/ui/AppearanceContext', () => ({
     themedStyles: (fn: Function) => fn,
@@ -99,4 +105,53 @@ test('auth adoption, account change and sign-out fence editor media beside cinem
         expect(bindCacheUser).toHaveBeenLastCalledWith(users[1]); expect(wipeCache).toHaveBeenCalledTimes(1);
         expect(revokeSession).toHaveBeenCalledWith(users[1]);
     } finally { await act(async () => root.unmount()); }
+});
+
+test('reset token never becomes an AuthProvider session, including during discarded-session logout', async () => {
+    (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+    jest.useFakeTimers();
+    jest.clearAllMocks();
+    jest.spyOn(Crypto, 'randomUUID').mockReturnValue('11111111-1111-4111-8111-111111111111');
+    const stored = new Map([['veyrnox_refresh_token', 'discarded-refresh']]);
+    jest.spyOn(SecureStore, 'getItem').mockImplementation(key => stored.get(key) ?? null);
+    jest.spyOn(SecureStore, 'getItemAsync').mockImplementation(async key => stored.get(key) ?? null);
+    const writeSync = jest.spyOn(SecureStore, 'setItem').mockImplementation((key, value) => { stored.set(key, value); });
+    const writeAsync = jest.spyOn(SecureStore, 'setItemAsync').mockResolvedValue();
+    jest.spyOn(SecureStore, 'deleteItemAsync').mockImplementation(async key => { stored.delete(key); });
+    jest.mocked(sessionStore.readRefreshToken).mockImplementation(
+        jest.requireActual<typeof import('../src/lib/auth/sessionStore')>('../src/lib/auth/sessionStore').readRefreshToken,
+    );
+    const marker = new File(Paths.document, INSTALL_MARKER);
+    if (marker.exists) marker.delete();
+    const originalFetch = globalThis.fetch;
+    const fetchMock = jest.fn()
+        .mockResolvedValueOnce(new Response(null, { status: 200 })) // anonymous online probe
+        .mockResolvedValueOnce(new Response(JSON.stringify({ access_token: 'discarded-access', refresh_token: 'rotated', expires_in: 3600 })))
+        .mockResolvedValueOnce(new Response(null, { status: 204 }));
+    globalThis.fetch = fetchMock;
+    const root = createRoot();
+    let auth!: ReturnType<typeof useAuth>;
+    function Probe() { auth = useAuth(); return null; }
+    try {
+        resetInstall();
+        expect(stored.get('veyrnox_refresh_token')).toBeFalsy();
+        await act(async () => root.render(<AuthProvider><Probe /></AuthProvider>));
+        expect(auth.status).toBe('signedOut');
+        expect(fetchMock).not.toHaveBeenCalled();
+        await act(async () => { await revokeDiscardedSession(); });
+        expect(fetchMock).toHaveBeenCalledTimes(3);
+        expect(fetchMock.mock.calls[2][0]).toMatch(/\/logout\?scope=local$/);
+        expect(auth.status).toBe('signedOut');
+        await act(async () => { expect(await auth.getAccessToken()).toBeNull(); });
+        expect(sessionStore.writeRefreshToken).not.toHaveBeenCalled();
+        expect(writeAsync).not.toHaveBeenCalled();
+        expect(writeSync.mock.calls.every(([, value]) => value === '')).toBe(true);
+        expect(bindCacheUser).not.toHaveBeenCalled();
+    } finally {
+        await act(async () => root.unmount());
+        globalThis.fetch = originalFetch;
+        jest.restoreAllMocks();
+        jest.clearAllTimers();
+        jest.useRealTimers();
+    }
 });
