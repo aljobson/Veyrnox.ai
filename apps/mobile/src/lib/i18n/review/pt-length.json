@@ -2736,6 +2736,48 @@
     "ratio": 1.92
   },
   {
+    "id": "editorCore.enterTimecode",
+    "english": "Enter timecode",
+    "translation": "Inserir código de tempo",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorCore.fit",
+    "english": "Fit",
+    "translation": "Ajustar",
+    "ratio": 2.33
+  },
+  {
+    "id": "editorCore.zoomOut",
+    "english": "Zoom out",
+    "translation": "Diminuir zoom",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorCore.zoomIn",
+    "english": "Zoom in",
+    "translation": "Aumentar zoom",
+    "ratio": 1.86
+  },
+  {
+    "id": "publishParity.preview.title",
+    "english": "Post previews",
+    "translation": "Prévias das publicações",
+    "ratio": 1.77
+  },
+  {
+    "id": "publishParity.post.readOnly",
+    "english": "Read only",
+    "translation": "Somente leitura",
+    "ratio": 1.67
+  },
+  {
+    "id": "publishParity.calendar.noneFiltered",
+    "english": "No posts match these filters.",
+    "translation": "Nenhuma publicação corresponde a estes filtros.",
+    "ratio": 1.62
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",

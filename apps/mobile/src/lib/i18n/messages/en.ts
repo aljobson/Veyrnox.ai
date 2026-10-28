@@ -70,6 +70,7 @@ import area_drafts from './en/drafts';
 import area_draw from './en/draw';
 import area_edit from './en/edit';
 import area_editor from './en/editor';
+import area_editorCore from './en/editorCore';
 import area_editorProjects from './en/editorProjects';
 import area_editorServerExport from './en/editorServerExport';
 import area_editorSpike from './en/editorSpike';
@@ -142,6 +143,7 @@ import area_publishDeveloper from './en/publishDeveloper';
 import area_publishHome from './en/publishHome';
 import area_publishInbox from './en/publishInbox';
 import area_publishLinks from './en/publishLinks';
+import area_publishParity from './en/publishParity';
 import area_publishQueueAdmin from './en/publishQueueAdmin';
 import area_publishQueues from './en/publishQueues';
 import area_publishReporting from './en/publishReporting';
@@ -255,6 +257,7 @@ const catalog = {
     ...area_draw,
     ...area_edit,
     ...area_editor,
+    ...area_editorCore,
     ...area_editorProjects,
     ...area_editorServerExport,
     ...area_editorSpike,
@@ -327,6 +330,7 @@ const catalog = {
     ...area_publishHome,
     ...area_publishInbox,
     ...area_publishLinks,
+    ...area_publishParity,
     ...area_publishQueueAdmin,
     ...area_publishQueues,
     ...area_publishReporting,

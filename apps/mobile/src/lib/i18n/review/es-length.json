@@ -2742,6 +2742,54 @@
     "ratio": 2.4
   },
   {
+    "id": "editorCore.enterTimecode",
+    "english": "Enter timecode",
+    "translation": "Introducir código de tiempo",
+    "ratio": 1.93
+  },
+  {
+    "id": "editorCore.timecodeInvalid",
+    "english": "Enter a valid timecode.",
+    "translation": "Introduce un código de tiempo válido.",
+    "ratio": 1.61
+  },
+  {
+    "id": "editorCore.fit",
+    "english": "Fit",
+    "translation": "Ajustar",
+    "ratio": 2.33
+  },
+  {
+    "id": "editorCore.totalTime",
+    "english": "Total {value1}",
+    "translation": "Duración total {value1}",
+    "ratio": 1.64
+  },
+  {
+    "id": "publishParity.media.previewImage",
+    "english": "Chosen image preview",
+    "translation": "Vista previa de la imagen elegida",
+    "ratio": 1.65
+  },
+  {
+    "id": "publishParity.preview.title",
+    "english": "Post previews",
+    "translation": "Vistas previas de publicaciones",
+    "ratio": 2.38
+  },
+  {
+    "id": "publishParity.preview.label",
+    "english": "{network} post preview",
+    "translation": "Vista previa de publicación en {network}",
+    "ratio": 1.82
+  },
+  {
+    "id": "publishParity.calendar.noneFiltered",
+    "english": "No posts match these filters.",
+    "translation": "Ninguna publicación coincide con estos filtros.",
+    "ratio": 1.62
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

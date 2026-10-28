@@ -25,9 +25,13 @@ test('the canonical About URL routes to the internal About page', () => {
 test('production rolls retained static assets forward across releases', () => {
     assert.match(workflow, /permissions:\n\s+actions: read\n\s+contents: read/);
     assert.match(workflow, /gh run list --workflow deploy-production\.yml --branch main --status completed --limit 300/);
+    // History follows the Deploy step, not the whole job: a build whose later checks failed or
+    // rolled back may still be live, and its files must stay retained (deploy-failure #1716).
     assert.match(workflow,
-        /\.jobs\[\] \| select\(\.name == "deploy" and \.conclusion == "success"\)[\s\S]*\.steps\[\] \| select\(\.name == "Deploy" and \.conclusion == "success"\)/,
-        'history requires both a successful deploy job and an actual successful Deploy step');
+        /\.jobs\[\] \| select\(\.name == "deploy"\)\s*\n\s*\| \.steps\[\] \| select\(\.name == "Deploy" and \.conclusion == "success"\)/,
+        'history requires an actual successful Deploy step');
+    assert.doesNotMatch(workflow, /select\(\.name == "deploy" and \.conclusion == "success"\)/,
+        'a failed later check must not drop a build that reached production from retention');
     assert.match(workflow, /successful_deploy_runs\+=\("\$previous_run"\)/);
     assert.match(workflow, /retention_bootstrap_predecessor=12448acb867057589159f312cf0e7eabb28a3ff0/);
     assert.match(workflow, /latest successful production deployment has no retained static artifact; refusing an unprotected cutover/,
