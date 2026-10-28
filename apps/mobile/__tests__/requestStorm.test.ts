@@ -99,7 +99,7 @@ describe('the welcome redirect is sent once per launch', () => {
 describe('where the pieces sit', () => {
     test('the first-run gate is inside the two-factor gate, so it cannot run while that gate is still checking', () => {
         const layout = read('app', '(app)', '_layout.tsx');
-        const open = layout.indexOf('<MfaGate>');
+        const open = layout.indexOf('<MfaGate key={generation}>');
         const gate = layout.indexOf('<FirstRunGate />');
         const close = layout.indexOf('</MfaGate>');
         expect(open).toBeGreaterThan(-1);
@@ -109,7 +109,7 @@ describe('where the pieces sit', () => {
 
     test('every screen that reads the profile says who it is', () => {
         for (const file of [['app', '(app)', 'account.tsx'], ['app', '(app)', 'privacy-export.tsx'], ['components', 'MenuDrawer.tsx'], ['components', 'account', 'MfaGate.tsx'], ['components', 'account', 'MfaCard.tsx']]) {
-            expect(read(...file)).toMatch(/fetchProfile\(getAccessToken, '[a-z-]+'\)/);
+            expect(read(...file)).toMatch(/fetchProfile\((?:getAccessToken|task\.tokens), '[a-z-]+'\)/);
         }
     });
 

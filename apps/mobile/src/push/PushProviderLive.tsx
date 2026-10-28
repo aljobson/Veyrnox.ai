@@ -1,3 +1,4 @@
+import type { SessionTask } from '../auth/sessionTask';
 import { t } from '../lib/i18n';
 import Constants from 'expo-constants';
 import * as Crypto from 'expo-crypto';
@@ -61,12 +62,13 @@ async function writePref(on: boolean): Promise<void> {
 }
 
 export function PushProviderLive({ children }: { children: ReactNode }) {
-    const { status, api } = useAuth();
+    const { status, api, generation, beginSessionTask } = useAuth();
     const router = useRouter();
     const [enabled, setEnabledState] = useState(false);
-    const token = useRef<string | null>(null);
+    const token = useRef<{ readonly value: string; readonly gen: number } | null>(null);
 
-    const register = useCallback(async (): Promise<boolean> => {
+    const register = useCallback(async (task: SessionTask): Promise<boolean> => {
+        if (!task.current()) return false;
         try {
             if (Platform.OS === 'android') {
                 await Notifications.setNotificationChannelAsync(JOBS_CHANNEL, {
@@ -74,17 +76,22 @@ export function PushProviderLive({ children }: { children: ReactNode }) {
                     importance: Notifications.AndroidImportance.DEFAULT,
                 });
             }
+            if (!task.current()) return false;
             const projectId = Constants.expoConfig?.extra?.eas?.projectId as string | undefined;
             if (!projectId) return false;
             const pushToken = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
-            const out = await registerDevice(api, {
+            if (!task.current()) return false;
+            const id = await deviceId();
+            if (!task.current()) return false;
+            const out = await registerDevice({ request: (path, init) => api.request(path, init, { task }) }, {
                 token: pushToken,
                 platform: Platform.OS === 'android' ? 'android' : 'ios',
-                deviceId: await deviceId(),
+                deviceId: id,
                 appVersion: Constants.expoConfig?.version ?? '0',
                 notifyJobs: true,
             });
-            if (out.kind === 'registered') token.current = pushToken;
+            if (!task.current()) return false;
+            if (out.kind === 'registered') token.current = { value: pushToken, gen: task.gen };
             return out.kind === 'registered';
         } catch {
             return false;
@@ -94,25 +101,29 @@ export function PushProviderLive({ children }: { children: ReactNode }) {
     // On every launch and sign-in, register again if the person switched notifications on
     // and the OS still allows them. Never prompts.
     useEffect(() => {
-        if (!SUPPORTED || status !== 'signedIn') return;
+        const task = beginSessionTask();
+        if (task.gen !== generation || !task.current() || !SUPPORTED || status !== 'signedIn') return;
         let cancelled = false;
         void (async () => {
             const wanted = await readPref();
-            if (cancelled) return;
+            if (cancelled || !task.current()) return;
             setEnabledState(wanted);
             if (!wanted) return;
             const perm = await Notifications.getPermissionsAsync();
-            if (!cancelled && perm.granted) await register();
+            if (!cancelled && task.current() && perm.granted) await register(task);
         })();
         return () => {
             cancelled = true;
         };
-    }, [status, register]);
+    }, [status, register, generation, beginSessionTask]);
 
     // Open the creation a push is about, both when the app was closed and when it is open.
     useEffect(() => {
-        if (!SUPPORTED || status !== 'signedIn') return;
+        const task = beginSessionTask();
+        if (task.gen !== generation || !task.current() || !SUPPORTED || status !== 'signedIn') return;
+        let live = true;
         const open = (data: unknown) => {
+            if (!live || !task.current()) return;
             const route = jobRouteFromPush(data);
             if (route) router.push(route as never);
         };
@@ -120,33 +131,45 @@ export function PushProviderLive({ children }: { children: ReactNode }) {
             if (last) open(last.notification.request.content.data);
         });
         const sub = Notifications.addNotificationResponseReceivedListener((r) => open(r.notification.request.content.data));
-        return () => sub.remove();
-    }, [status, router]);
+        return () => { live = false; sub.remove(); };
+    }, [status, router, generation, beginSessionTask]);
 
     const setEnabled = useCallback(
         async (on: boolean): Promise<EnableResult> => {
+            const task = beginSessionTask();
             if (!SUPPORTED) return 'unavailable';
             if (!on) {
-                if (token.current) await removeDevice(api, token.current);
-                token.current = null;
+                const held = token.current;
+                if (held && held.gen === task.gen) {
+                    await removeDevice({ request: (path, init) => api.request(path, init, { task }) }, held.value);
+                    if (token.current === held) token.current = null;
+                }
+                if (!task.current()) return 'unavailable';
                 await writePref(false);
+                if (!task.current()) return 'unavailable';
                 setEnabledState(false);
                 return 'off';
             }
             const perm = await Notifications.requestPermissionsAsync();
+            if (!task.current()) return 'unavailable';
             if (!perm.granted) return 'denied';
-            if (!(await register())) return 'unavailable';
+            if (!(await register(task)) || !task.current()) return 'unavailable';
             await writePref(true);
+            if (!task.current()) return 'unavailable';
             setEnabledState(true);
             return 'on';
         },
-        [api, register],
+        [api, register, beginSessionTask],
     );
 
     const unregister = useCallback(async () => {
-        if (token.current) await removeDevice(api, token.current);
-        token.current = null;
-    }, [api]);
+        const task = beginSessionTask();
+        const held = token.current;
+        if (held && held.gen === task.gen) {
+            await removeDevice({ request: (path, init) => api.request(path, init, { task }) }, held.value);
+            if (token.current === held) token.current = null;
+        }
+    }, [api, beginSessionTask]);
 
     const value = useMemo(() => ({ supported: SUPPORTED, enabled, setEnabled, unregister }), [enabled, setEnabled, unregister]);
     return <PushContext.Provider value={value}>{children}</PushContext.Provider>;

@@ -3060,6 +3060,30 @@
     "ratio": 2.2
   },
   {
+    "id": "publishTiming.move.title",
+    "english": "Move post",
+    "translation": "Перенести публикацию",
+    "ratio": 2.22
+  },
+  {
+    "id": "publishTiming.move.save",
+    "english": "Move post",
+    "translation": "Перенести публикацию",
+    "ratio": 2.22
+  },
+  {
+    "id": "publishTiming.move.keep",
+    "english": "Keep time",
+    "translation": "Сохранить время",
+    "ratio": 1.67
+  },
+  {
+    "id": "publishTiming.move.check",
+    "english": "Check",
+    "translation": "Проверить",
+    "ratio": 1.8
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

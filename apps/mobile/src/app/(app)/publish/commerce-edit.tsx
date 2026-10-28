@@ -1,7 +1,8 @@
 import { rawText } from '../../../lib/i18n/translate';
+import { usePublishScope } from '../../../lib/usePublishScope';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { UnlockCard } from '../../../components/UnlockCard';
 import { touchTarget } from '../../../lib/a11y';
@@ -21,59 +22,69 @@ export default function CommerceEdit() {
     const [form, setForm] = useState<ProductForm>(emptyProductForm());
     const [ready, setReady] = useState(false);
     const [locked, setLocked] = useState(false);
-    const [canEdit, setCanEdit] = useState(true);
+    const [canEdit, setCanEdit] = useState(false);
     const [editable, setEditable] = useState(true);
     const [busy, setBusy] = useState(false);
     const [problem, setProblem] = useState<string | null>(null);
     const [reload, setReload] = useState(0);
 
+    const canEditRef = useRef(false), saving = useRef<symbol | null>(null);
+    const { guard, nextRead, scopeTick } = usePublishScope(api, () => {
+        canEditRef.current = false; saving.current = null;
+        setCanEdit(false); setProblem(null); setBusy(false);
+        setReady(false); setForm(emptyProductForm()); setEditable(true); setLocked(false);
+    });
+
     useEffect(() => {
-        let cancelled = false;
+        const valid = nextRead('page');
+        canEditRef.current = false; setCanEdit(false);
         fetchProductPage(api)
             .then((page) => {
-                if (cancelled) return;
-                setCanEdit(page.canEdit);
+                if (!valid()) return;
+                canEditRef.current = page.canEdit; setCanEdit(page.canEdit);
                 const found = id ? page.products.find((p) => p.id === id) : undefined;
                 if (found) {
                     setForm(formFromProduct(found));
-                    setEditable(found.editable);
+                    setEditable(found.editable); canEditRef.current = page.canEdit && found.editable;
                     if (!found.editable) setProblem(t(found.keep ? 'commerce.err.notEditable' : 'commerce.err.editOnWeb'));
                 } else if (id) {
-                    setEditable(false);
+                    setEditable(false); canEditRef.current = false;
                     setProblem(t('commerce.err.gone'));
                 }
                 setLocked(false);
                 setReady(true);
             })
             .catch((err) => {
-                if (cancelled) return;
+                if (!valid()) return;
                 if (err instanceof ApiError && err.status === 402) setLocked(true);
                 else setProblem(t(commerceErrorKey(err)));
                 setReady(true);
             });
-        return () => { cancelled = true; };
-    }, [api, id, reload]);
+    }, [api, id, reload, nextRead, scopeTick]);
 
     const set = <K extends keyof ProductForm>(key: K, value: ProductForm[K]) => setForm((f) => ({ ...f, [key]: value }));
     const writable = canEdit && editable;
 
     async function save() {
-        if (busy || !writable) return;
+        if (saving.current || !canEditRef.current) return;
+        const valid = guard();
         const built = buildProductBody(form);
         if ('errorKey' in built) {
             setProblem(t(built.errorKey));
             return;
         }
+        const token = Symbol(); saving.current = token;
         setBusy(true);
         setProblem(null);
         try {
             await saveProduct(api, built.body);
-            router.back();
+            if (valid()) router.back();
         } catch (err) {
+            if (!valid()) return;
             if (err instanceof ApiError && err.status === 402) setLocked(true);
             else setProblem(t(commerceErrorKey(err)));
         } finally {
-            setBusy(false);
+            if (valid() && saving.current === token) { saving.current = null; setBusy(false); }
         }
     }
 

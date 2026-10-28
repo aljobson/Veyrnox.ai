@@ -84,7 +84,7 @@ export interface Cache {
     read<T>(policy: CachePolicy, userId?: string): Promise<{ readonly value: T; readonly meta: CacheMeta } | null>;
     write<T>(policy: CachePolicy, value: T, userId?: string): Promise<void>;
     // Removes every saved copy. Called on sign-out and on account deletion.
-    clear(): Promise<void>;
+    clear(live?: () => boolean): Promise<void>;
 }
 
 export function createCache(storage: CacheStorage, now: () => number = Date.now): Cache {
@@ -153,9 +153,10 @@ export function createCache(storage: CacheStorage, now: () => number = Date.now)
         }
     }
 
-    async function clear() {
+    async function clear(live: () => boolean = () => true) {
         const keys = await storage.keys().catch(() => [] as string[]);
-        await Promise.all(keys.filter((k) => k.startsWith(PREFIX)).map((k) => storage.remove(k).catch(() => undefined)));
+        if (!live()) return;
+        await Promise.all(keys.filter((k) => k.startsWith(PREFIX)).map((k) => live() ? storage.remove(k).catch(() => undefined) : undefined));
     }
 
     async function readChecked(policy: CachePolicy, userId?: string): Promise<CheckedRead> {

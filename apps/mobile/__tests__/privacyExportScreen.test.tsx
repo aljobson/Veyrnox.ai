@@ -13,7 +13,7 @@ import strings from '../src/lib/i18n/messages/en/privacyExport';
 const mockRequest = jest.fn();
 jest.mock('expo-router', () => ({ Stack: { Screen: () => null } }));
 jest.mock('expo-sharing', () => ({ shareAsync: jest.fn().mockResolvedValue(undefined) }));
-jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: { request: mockRequest }, getAccessToken: jest.fn(), adoptSession: jest.fn() }) }));
+jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ generation: 0, sessionGeneration: () => 0, beginSessionTask: () => ({ gen: 0, user: 'u', current: () => true, tokens: async () => null }), api: { request: mockRequest }, getAccessToken: jest.fn(), adoptSession: jest.fn() }) }));
 jest.mock('../src/lib/auth/accountCalls', () => ({ fetchProfile: jest.fn(), verifyFactor: jest.fn() }));
 // Use the same in-memory filesystem provided by jest-expo as appCache.test.ts.
 void [ReactNative.ScrollView, ReactNative.Text, ReactNative.TextInput, ReactNative.Pressable, ReactNative.StyleSheet, ReactNative.View];

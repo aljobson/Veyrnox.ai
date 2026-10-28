@@ -1,9 +1,13 @@
 import { rawText } from '../../../lib/i18n/translate';
+import { canMove, overlay } from '../../../lib/publishCalendarMove';
+import { useCalendarDrag, measureDropTargets } from '../../../components/publish/useCalendarDrag';
+import { CalendarWeekStrip } from '../../../components/publish/CalendarWeekStrip';
+import { CalendarMoveSheet, useCalendarMoves } from '../../../components/publish/CalendarMoveSheet';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { NetworkLogo } from '../../../components/publish/NetworkLogo';
 import { networkName } from '../../../lib/networkLogos';
 import { PHONE_CATALOGUE } from '../../../lib/publishConnect';
-import { publishScope } from '../../../lib/usePublishRole';
+import { publishScope, usePublishRole } from '../../../lib/usePublishRole';
 import { subscribeCacheUser } from '../../../lib/appCache';
 import { brandStore } from '../../../lib/publishBrand';
 import { Button, Text as ThemedText, themedStyles, useThemedStyles, Icon } from '../../../components/ui';
@@ -43,9 +47,18 @@ export default function Calendar() {
     const [refreshing, setRefreshing] = useState(false);
     const week = useMemo(() => (view === 'week' ? weekBounds(new Date(), offset) : monthBounds(new Date(), offset)), [view, offset]);
 
+    const role = usePublishRole(api);
+    const openMove = useRef<(post: CalendarPost, when: Date) => void>(() => {});
+    const drag = useCalendarDrag((post, when) => openMove.current(post, when), JSON.stringify([view, offset, status, network, picked]), posts, measureDropTargets);
+    const reloadMoves = () => { generation.current++; setReloadKey(n => n + 1); };
+    const move = useCalendarMoves(api, posts, setPosts, reloadMoves, drag.cancelDrag);
+    openMove.current = move.open;
+    const shown = overlay(posts ?? [], move.moves);
+
     const query = JSON.stringify([week.start, week.end, status, network]);
     const currentQuery = useRef(query); currentQuery.current = query;
     const load = useCallback(async () => {
+        drag.cancelDrag();
         const version = ++generation.current, scope = publishScope();
         const valid = () => version === generation.current && scope === publishScope() && api === currentApi.current && query === currentQuery.current;
         setPosts(null); setError(null); setLocked(false); setTruncated(false);
@@ -68,7 +81,7 @@ export default function Calendar() {
             if (err instanceof ApiError && err.status === 402) setLocked(true);
             else setError(t(calendarErrorKey(err)));
         } finally { if (valid()) setRefreshing(false); }
-    }, [api, week, status, network, query]);
+    }, [api, week, status, network, query, drag.cancelDrag]);
 
     useEffect(() => {
         const reset = () => {
@@ -96,10 +109,10 @@ export default function Calendar() {
     }
 
     const groups = useMemo(() => {
-        const all = posts ? dayGroups(posts) : [];
+        const all = dayGroups(shown);
         return view === 'month' && picked ? all.filter((g) => g.key === picked) : all;
-    }, [posts, view, picked]);
-    const counts = useMemo(() => countByDay(posts ?? []), [posts]);
+    }, [shown, view, picked]);
+    const counts = useMemo(() => countByDay(shown), [shown]);
     const last = new Date(week.end.getFullYear(), week.end.getMonth(), week.end.getDate() - 1);
 
     return (
@@ -129,6 +142,8 @@ export default function Calendar() {
                 {PHONE_CATALOGUE.map(value => <Button key={value} size="md" variant="secondary" label={networkName(value)} accessibilityState={{ selected: network === value }} style={network === value ? filterStyles.selected : undefined} onPress={() => filter(status, value)}><NetworkLogo network={value} /><ThemedText>{networkName(value)}</ThemedText></Button>)}
             </ScrollView>
             <ThemedText tone="secondary">{t('publishParity.calendar.timezone', { zone: Intl.DateTimeFormat().resolvedOptions().timeZone })}</ThemedText>
+            {move.message ? <Text style={styles.muted}>{move.message}</Text> : null}
+            <View style={styles.listArea}>
             {locked ? (
                 <UnlockCard feature="calendar" onUnlocked={() => setReloadKey((n) => n + 1)} />
             ) : error ? (
@@ -136,15 +151,18 @@ export default function Calendar() {
             ) : !posts ? (
                 <ActivityIndicator color={colors.accent} />
             ) : (
-                <ScrollView refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.accent} onRefresh={async () => { setRefreshing(true); await load(); }} />}>
-                    {view === 'month' ? <CalendarMonth monthStart={week.start} counts={counts} selected={picked} onSelect={(k) => setPicked((cur) => (cur === k ? null : k))} /> : null}
+                <ScrollView scrollEnabled={!drag.armed} refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.accent} onRefresh={async () => { setRefreshing(true); await load(); }} />}>
+                    {view === 'month' ? <CalendarMonth dropRef={drag.dropRef} dropKey={drag.dropKey} monthStart={week.start} counts={counts} selected={picked} onSelect={(k) => setPicked((cur) => (cur === k ? null : k))} /> : null}
                     {groups.length === 0 ? <Text style={styles.muted}>{t(status || network ? 'publishParity.calendar.noneFiltered' : view === 'week' ? 'calendar.none' : picked ? 'calendar.noneDay' : 'calendar.noneMonth')}</Text> : null}
                     {groups.map((g) => (
                         <View key={g.key}>
                             <Text style={styles.day} accessibilityRole="header">{g.date.toLocaleDateString(formatLocale(undefined), { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
-                            {g.posts.map((p) => (
+                            {g.posts.map((p) => {
+                                const movable = canMove(p, role) && !move.moves.has(p.id);
+                                const label = t('publishTiming.move.to', { time: time(p.scheduledAt) });
+                                return <View key={p.id} ref={drag.rowRef(p.id)} {...(movable ? drag.responderProps(p) : {})} style={drag.armed === p.id ? styles.lifted : undefined}>
                                 <Pressable
-                                    key={p.id}
+                                    {...(movable ? { ...drag.rowProps(p), accessibilityActions: [{ name: 'move', label }], onAccessibilityAction: (event: { nativeEvent: { actionName: string } }) => { if (event.nativeEvent.actionName === 'move') move.open(p, new Date(p.scheduledAt!)); } } : {})}
                                     accessibilityRole="button"
                                     accessibilityLabel={rawText(`${time(p.scheduledAt)}, ${postStatusLabel(p.status)}. ${p.text.slice(0, 80)}`)}
                                     style={[styles.row, touchTarget]}
@@ -156,20 +174,30 @@ export default function Calendar() {
                                         <Text style={[styles.status, p.status === 'failed' && styles.bad]}>
                                             {postStatusLabel(p.status)}
                                         </Text>
+                                        {drag.armed === p.id ? <Text style={styles.status}>{t('publishTiming.move.moving')}</Text> : null}
+                                        {move.marker(p.id) ? <Text style={styles.status}>{move.marker(p.id)}</Text> : null}
                                         {p.targets.map(target => <View key={target.id} style={filterStyles.target}><NetworkLogo network={target.network} /><ThemedText tone={target.publishStatus === 'failed' ? 'danger' : 'secondary'}>{target.publishStatus === 'failed' ? t('publishParity.networkStatus', { network: networkName(target.network), status: targetStatusLabel(target.publishStatus) }) : networkName(target.network)}</ThemedText></View>)}
                                     </View>
                                 </Pressable>
-                            ))}
+                                {movable ? <Button label={label} variant="secondary" style={touchTarget} onPress={() => move.open(p, new Date(p.scheduledAt!))} /> : null}
+                                {move.moves.get(p.id)?.phase === 'pending' && move.sheet?.post.id !== p.id ? <Button label={t('publishTiming.move.check')} variant="secondary" disabled={move.moves.get(p.id)?.busy} onPress={() => move.checkPost(p.id)} /> : null}
+                                </View>;
+                            })}
                         </View>
                     ))}
                     {truncated ? <Text style={styles.muted}>{t('calendar.more')}</Text> : null}
                 </ScrollView>
             )}
+            {drag.armed && view === 'week' ? <CalendarWeekStrip start={week.start} dropKey={drag.dropKey} dropRef={drag.dropRef} onLayout={drag.measure} /> : null}
+            </View>
+            <CalendarMoveSheet move={move} />
         </View>
     );
 }
 
 const styles = StyleSheet.create({
+    listArea: { flex: 1 },
+    lifted: { borderWidth: 2, borderColor: colors.accent },
     screen: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 16 },
     nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8 },
     arrow: { alignItems: 'center', justifyContent: 'center' },

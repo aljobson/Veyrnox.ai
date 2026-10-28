@@ -1674,6 +1674,30 @@
     "ratio": 2
   },
   {
+    "id": "publishTiming.move.moving",
+    "english": "Moving",
+    "translation": "جارٍ النقل",
+    "ratio": 1.67
+  },
+  {
+    "id": "publishTiming.move.keep",
+    "english": "Keep time",
+    "translation": "الاحتفاظ بالوقت",
+    "ratio": 1.67
+  },
+  {
+    "id": "publishTiming.move.reload",
+    "english": "Reload",
+    "translation": "إعادة التحميل",
+    "ratio": 2.17
+  },
+  {
+    "id": "publishTiming.heat.zone",
+    "english": "Brand time zone: {zone}",
+    "translation": "المنطقة الزمنية للعلامة التجارية: {zone}",
+    "ratio": 1.74
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "تسجيل الدخول",

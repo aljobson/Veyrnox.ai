@@ -4542,6 +4542,54 @@
     "ratio": 3
   },
   {
+    "id": "publishTiming.move.title",
+    "english": "Move post",
+    "translation": "Déplacer la publication",
+    "ratio": 2.56
+  },
+  {
+    "id": "publishTiming.move.now",
+    "english": "Now: {time}",
+    "translation": "Actuellement : {time}",
+    "ratio": 1.91
+  },
+  {
+    "id": "publishTiming.move.moving",
+    "english": "Moving",
+    "translation": "Déplacement",
+    "ratio": 1.83
+  },
+  {
+    "id": "publishTiming.move.save",
+    "english": "Move post",
+    "translation": "Déplacer la publication",
+    "ratio": 2.56
+  },
+  {
+    "id": "publishTiming.move.keep",
+    "english": "Keep time",
+    "translation": "Garder l’horaire",
+    "ratio": 1.78
+  },
+  {
+    "id": "publishTiming.heat.title",
+    "english": "Best-time heatmap",
+    "translation": "Carte des meilleurs horaires",
+    "ratio": 1.65
+  },
+  {
+    "id": "publishTiming.heat.scroll",
+    "english": "Scroll sideways for more hours.",
+    "translation": "Faites défiler horizontalement pour voir plus d’heures.",
+    "ratio": 1.77
+  },
+  {
+    "id": "publishTiming.move.expected",
+    "english": "Requested from: {time}",
+    "translation": "Horaire initial de la demande : {time}",
+    "ratio": 1.73
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

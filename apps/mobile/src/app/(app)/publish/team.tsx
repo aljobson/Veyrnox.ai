@@ -1,12 +1,13 @@
 import { rawText } from '../../../lib/i18n/translate';
+import { usePublishScope } from '../../../lib/usePublishScope';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, TextInput, View } from 'react-native';
 import { touchTarget } from '../../../lib/a11y';
 import { formatLocale, t } from '../../../lib/i18n';
 import { roleLabel } from '../../../lib/publishBrand';
-import { canManage, changeRole, fetchTeam, inviteErrorKey, inviteMember, removeMember, revokeInvite, rolesFor, teamActionErrorKey, teamErrorKey, validEmail, type ChangeableRole, type Invitation_, type Member, type Team } from '../../../lib/publishTeam';
+import { canManage, canRevoke, changeRole, fetchTeam, inviteErrorKey, inviteMember, removeMember, revokeInvite, rolesFor, teamActionErrorKey, teamErrorKey, validEmail, type ChangeableRole, type Invitation_, type Member, type Team } from '../../../lib/publishTeam';
 import { usePublishApi } from '../../../lib/usePublishApi';
 import { colors, LIST_END_PADDING } from '../../../theme';
 
@@ -24,84 +25,97 @@ export default function TeamScreen() {
     const [invited, setInvited] = useState<Invitation_ | null>(null);
     const [refreshing, setRefreshing] = useState(false);
 
+    const teamRef = useRef(team), running = useRef(false);
+    teamRef.current = team;
+    const { guard, nextRead, scopeTick } = usePublishScope(api, () => {
+        teamRef.current = null; running.current = false;
+        setTeam(null); setInvited(null); setInviteEmail(''); setInviteRole('editor');
+        setNotice(null); setError(null); setOpen(null); setBusy(false); setRefreshing(false);
+    });
+
     const load = useCallback(async () => {
+        const valid = nextRead('team');
         try {
-            setTeam(await fetchTeam(api));
+            const next = await fetchTeam(api);
+            if (!valid()) return;
+            teamRef.current = next; setTeam(next);
+            setInviteRole(role => rolesFor(next.actorRole).includes(role) ? role : 'editor');
             setError(null);
         } catch (err) {
-            setTeam(null);
+            if (!valid()) return;
+            teamRef.current = null; setTeam(null);
             setError(t(teamErrorKey(err)));
+        } finally { if (valid()) setRefreshing(false); }
+    }, [api, nextRead, scopeTick]);
+
+    useEffect(() => { void load(); }, [load]);
+    useEffect(() => () => setInvited(null), []);
+
+    // The confirmation owns its scope guard, including a round trip A → B → A.
+    async function run(action: () => Promise<unknown>, done: string, valid: () => boolean, allowed: () => boolean) {
+        if (!valid() || !allowed() || running.current) return;
+        running.current = true; setBusy(true); setNotice(null);
+        try { await action(); if (valid()) setNotice(done); }
+        catch (err) { if (valid()) setNotice(t(teamActionErrorKey(err))); }
+        finally {
+            if (valid()) { running.current = false; setBusy(false); setOpen(null); void load(); }
         }
-    }, [api]);
-
-    useEffect(() => {
-        setTeam(null);
-        load();
-    }, [load]);
-
-    // Each change is one request; the list is read again afterwards so it shows what the server now holds.
-    function run(action: () => Promise<unknown>, done: string) {
-        if (busy) return;
-        setBusy(true);
-        setNotice(null);
-        action()
-            .then(() => setNotice(done))
-            .catch((err) => setNotice(t(teamActionErrorKey(err))))
-            .finally(() => {
-                setBusy(false);
-                setOpen(null);
-                void load();
-            });
     }
 
     function pickRole(m: Member, role: ChangeableRole) {
-        if (!team || role === m.role) return;
+        const allowed = () => !!teamRef.current && canManage(teamRef.current.actorRole, m.role) && rolesFor(teamRef.current.actorRole).includes(role);
+        if (!team || role === m.role || !allowed()) return;
+        const valid = guard(); let used = false;
         Alert.alert(t('team.roleTitle', { email: m.email }), t('team.roleBody', { role: roleLabel(role) }), [
             { text: t('team.cancel'), style: 'cancel' },
-            { text: t('team.roleAction'), onPress: () => run(() => changeRole(api, team.brandId, m.userId, role), t('team.roleDone', { email: m.email, role: roleLabel(role) })) },
+            { text: t('team.roleAction'), onPress: () => { if (used) return; used = true; void run(() => changeRole(api, team.brandId, m.userId, role), t('team.roleDone', { email: m.email, role: roleLabel(role) }), valid, allowed); } },
         ]);
     }
 
     function remove(m: Member) {
-        if (!team) return;
+        const allowed = () => !!teamRef.current && canManage(teamRef.current.actorRole, m.role);
+        if (!team || !allowed()) return;
+        const valid = guard(); let used = false;
         Alert.alert(t('team.removeTitle', { email: m.email }), t('team.removeBody'), [
             { text: t('team.cancel'), style: 'cancel' },
-            { text: t('team.removeAction'), style: 'destructive', onPress: () => run(() => removeMember(api, team.brandId, m.userId), t('team.removed', { email: m.email })) },
+            { text: t('team.removeAction'), style: 'destructive', onPress: () => { if (used) return; used = true; void run(() => removeMember(api, team.brandId, m.userId), t('team.removed', { email: m.email }), valid, allowed); } },
         ]);
     }
 
     function revoke(id: string, email: string) {
-        if (!team) return;
+        const allowed = () => {
+            const current = teamRef.current, invitation = current?.invitations.find(i => i.id === id);
+            return !!current && !!invitation && invitation.status === 'pending' && canRevoke(current.actorRole, invitation.role);
+        };
+        if (!team || !allowed()) return;
+        const valid = guard(); let used = false;
         Alert.alert(t('team.revokeTitle', { email }), t('team.revokeBody'), [
             { text: t('team.cancel'), style: 'cancel' },
-            { text: t('team.revokeAction'), style: 'destructive', onPress: () => run(() => revokeInvite(api, team.brandId, id), t('team.revoked', { email })) },
+            { text: t('team.revokeAction'), style: 'destructive', onPress: () => { if (used) return; used = true; void run(() => revokeInvite(api, team.brandId, id), t('team.revoked', { email }), valid, allowed); } },
         ]);
     }
 
     function invite() {
-        if (!team || busy) return;
+        const allowed = () => !!teamRef.current && ['owner', 'manager'].includes(teamRef.current.actorRole) && rolesFor(teamRef.current.actorRole).includes(inviteRole);
+        if (!team || running.current) return;
+        if (!allowed()) { setInviteRole('editor'); return; }
         const email = inviteEmail.trim().toLowerCase();
-        if (!validEmail(email)) {
-            setNotice(t('team.err.inviteEmail'));
-            return;
-        }
+        if (!validEmail(email)) { setNotice(t('team.err.inviteEmail')); return; }
+        const valid = guard(); let used = false;
         Alert.alert(t('team.inviteTitle', { email }), t('team.inviteBody', { role: roleLabel(inviteRole) }), [
             { text: t('team.cancel'), style: 'cancel' },
             {
                 text: t('team.inviteAction'),
-                onPress: () => {
-                    setBusy(true);
-                    setNotice(null);
-                    setInvited(null);
-                    inviteMember(api, team.brandId, email, inviteRole)
-                        .then((r) => {
-                            setInvited(r.invitation);
-                            setInviteEmail('');
-                            setNotice(t('team.invitedDone', { email }));
-                            void load();
-                        })
-                        .catch((err) => setNotice(t(inviteErrorKey(err))))
-                        .finally(() => setBusy(false));
+                onPress: async () => {
+                    if (used || !valid() || running.current) return;
+                    if (!allowed()) { setInviteRole('editor'); return; }
+                    used = true; running.current = true; setBusy(true); setNotice(null); setInvited(null);
+                    try {
+                        const r = await inviteMember(api, team.brandId, email, inviteRole);
+                        if (!valid()) return;
+                        setInvited(r.invitation); setInviteEmail(''); setNotice(t('team.invitedDone', { email })); void load();
+                    } catch (err) { if (valid()) setNotice(t(inviteErrorKey(err))); }
+                    finally { if (valid()) { running.current = false; setBusy(false); } }
                 },
             },
         ]);
@@ -109,17 +123,18 @@ export default function TeamScreen() {
 
     // The link goes only to the share sheet, on a tap.
     async function shareInvite(url: string) {
+        const valid = guard();
         try {
             await Share.share({ message: url });
         } catch {
-            setNotice(t('team.err.share'));
+            if (valid()) setNotice(t('team.err.share'));
         }
     }
 
     const mayChange = team ? team.actorRole === 'owner' || team.actorRole === 'manager' : false;
 
     return (
-        <ScrollView style={styles.screen} contentContainerStyle={styles.body} refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.accent} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}>
+        <ScrollView style={styles.screen} contentContainerStyle={styles.body} refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.accent} onRefresh={async () => { setRefreshing(true); await load(); }} />}>
             <Stack.Screen options={{ title: t('team.title') }} />
             {error ? (
                 <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{error}</StatusText>
@@ -167,8 +182,8 @@ export default function TeamScreen() {
                                 <Text style={styles.name}>{i.email}</Text>
                                 <Text style={styles.muted}>{roleLabel(i.role)} · {i.status}{i.expiresAt ? ` · ${t('team.expires', { date: day(i.expiresAt) })}` : ''}</Text>
                             </View>
-                            {mayChange && i.status === 'pending' ? (
-                                <Pressable disabled={busy} accessibilityRole="button" accessibilityLabel={rawText(t('team.revokeLabel', { email: i.email }))} style={[styles.link, touchTarget]} onPress={() => revoke(i.id, i.email)}>
+                            {canRevoke(team.actorRole, i.role) && i.status === 'pending' ? (
+                                <Pressable disabled={busy} accessibilityRole="button" accessibilityLabel={t('team.revokeLabel', { email: i.email })} style={[styles.link, touchTarget]} onPress={() => revoke(i.id, i.email)}>
                                     <Text style={styles.danger}>{t('team.revokeAction')}</Text>
                                 </Pressable>
                             ) : null}

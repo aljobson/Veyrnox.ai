@@ -1,7 +1,8 @@
 import { rawText } from '../../../lib/i18n/translate';
+import { usePublishScope } from '../../../lib/usePublishScope';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { UnlockCard } from '../../../components/UnlockCard';
 import { touchTarget } from '../../../lib/a11y';
@@ -22,31 +23,50 @@ export default function Ads() {
     const [refreshing, setRefreshing] = useState(false);
     const [reload, setReload] = useState(0);
 
+    const canEditRef = useRef(false), running = useRef(false);
+    const { guard, nextRead, scopeTick } = usePublishScope(api, () => {
+        canEditRef.current = false; running.current = false;
+        setCampaigns(null); setCanEdit(false); setNotice(null); setError(null); setLocked(false); setRefreshing(false);
+    });
+
     const load = useCallback(async () => {
+        const valid = nextRead('list');
         try {
             const page = await fetchCampaignPage(api);
+            if (!valid()) return;
+            canEditRef.current = page.canEdit;
             setCampaigns(page.campaigns);
             setCanEdit(page.canEdit);
             setError(null);
             setLocked(false);
         } catch (err) {
+            if (!valid()) return;
+            canEditRef.current = false; setCanEdit(false);
             setCampaigns(null);
             if (err instanceof ApiError && err.status === 402) setLocked(true);
             else setError(t(adsErrorKey(err)));
+        } finally {
+            if (valid()) setRefreshing(false);
         }
-    }, [api]);
+    }, [api, nextRead, scopeTick]);
 
     useFocusEffect(useCallback(() => { void load(); }, [load, reload]));
 
     function confirmDelete(c: CampaignDetail) {
+        if (!canEditRef.current) return;
+        const valid = guard(); let used = false;
         Alert.alert(t('ads.deleteTitle', { name: c.name }), t('ads.deleteBody'), [
             { text: t('ads.cancel'), style: 'cancel' },
             {
                 text: t('ads.delete'),
                 style: 'destructive',
-                onPress: () => deleteCampaign(api, c.id)
-                    .then(() => { setNotice(t('ads.deleted', { name: c.name })); void load(); })
-                    .catch((err) => setNotice(t(adsErrorKey(err)))),
+                onPress: async () => {
+                    if (used || !valid() || !canEditRef.current || running.current) return;
+                    used = true; running.current = true;
+                    try { await deleteCampaign(api, c.id); if (valid()) { setNotice(t('ads.deleted', { name: c.name })); void load(); } }
+                    catch (err) { if (valid()) setNotice(t(adsErrorKey(err))); }
+                    finally { if (valid()) running.current = false; }
+                },
             },
         ]);
     }
@@ -65,7 +85,7 @@ export default function Ads() {
                     data={campaigns}
                     keyExtractor={(c) => c.id}
                     contentContainerStyle={{ paddingBottom: LIST_END_PADDING }}
-                    refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.accent} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}
+                    refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.accent} onRefresh={async () => { setRefreshing(true); await load(); }} />}
                     ListHeaderComponent={<View><Text style={styles.muted}>{t('ads.intro')}</Text>{notice ? <StatusText variant="inherit" style={styles.notice} accessibilityLiveRegion="polite">{notice}</StatusText> : null}</View>}
                     ListEmptyComponent={<Text style={styles.muted}>{t('ads.none')}</Text>}
                     ListFooterComponent={

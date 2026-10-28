@@ -1,4 +1,5 @@
 import { rawText } from '../../lib/i18n/translate';
+import { isAccountChanged } from '../../auth/sessionTask';
 import { t } from '../../lib/i18n';
 import { english } from '../../lib/i18n/binding';
 import { Stack, useRouter } from 'expo-router';
@@ -14,7 +15,7 @@ const CONFIRM_WORD = 'DELETE';
 type View_ = { readonly step: 'loading' } | { readonly step: 'prepared'; readonly result: Prepared } | { readonly step: 'erasing' };
 
 export default function DeleteAccount() {
-    const { api, signOut } = useAuth();
+    const { api, signOut, sessionGeneration, beginSessionTask } = useAuth();
     const router = useRouter();
     const [view, setView] = useState<View_>({ step: 'loading' });
     const [typed, setTyped] = useState('');
@@ -34,28 +35,37 @@ export default function DeleteAccount() {
     }, [prepare]);
 
     async function erase(token: string) {
-        setNote(null);
-        setView({ step: 'erasing' });
-        const out = await confirmDeletion(api, token);
-        if (out.kind === 'deleted') {
-            // The server has removed the sign-in; this only clears what the app holds.
-            await signOut().catch(() => undefined);
-            router.replace('/sign-in');
-            return;
+        const task = beginSessionTask();
+        try {
+            setNote(null);
+            setView({ step: 'erasing' });
+            const out = await confirmDeletion(api, token);
+            if (!task.current()) return;
+            if (out.kind === 'deleted') {
+                // The server has removed the sign-in; this only clears what the app holds.
+                const done = signOut(task.gen);
+                const ended = sessionGeneration();
+                await done.catch(() => undefined);
+                if (ended !== task.gen && sessionGeneration() === ended) router.replace('/sign-in');
+                return;
+            }
+            if (out.kind === 'expired') {
+                setNote(t('deleteaccount.thattooktoolongPleaseconfirmagain'));
+                await prepare();
+                return;
+            }
+            if (out.kind === 'retry') {
+                setNote(t('deleteaccount.yourdataiserasedbutfinishingtook'));
+            } else if (out.kind === 'blocked') {
+                setNote(out.blockers.map(blockerText).join('\n'));
+            } else {
+                setNote(t('deleteaccount.couldnotdeleteyouraccountNothingwas'));
+            }
+            setView({ step: 'prepared', result: { kind: 'ready', forfeit, token } });
+        } catch (err) {
+            if (!task.current() || isAccountChanged(err)) return;
+            throw err;
         }
-        if (out.kind === 'expired') {
-            setNote(t('deleteaccount.thattooktoolongPleaseconfirmagain'));
-            await prepare();
-            return;
-        }
-        if (out.kind === 'retry') {
-            setNote(t('deleteaccount.yourdataiserasedbutfinishingtook'));
-        } else if (out.kind === 'blocked') {
-            setNote(out.blockers.map(blockerText).join('\n'));
-        } else {
-            setNote(t('deleteaccount.couldnotdeleteyouraccountNothingwas'));
-        }
-        setView({ step: 'prepared', result: { kind: 'ready', forfeit, token } });
     }
 
     return (

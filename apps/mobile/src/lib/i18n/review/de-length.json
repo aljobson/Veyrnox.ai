@@ -1,5 +1,11 @@
 [
   {
+    "id": "faceFilterSwitch.current",
+    "english": "Filter: {name}",
+    "translation": "Aktueller Filter: {name}",
+    "ratio": 1.71
+  },
+  {
     "id": "recovery.home",
     "english": "Go home",
     "translation": "Zur Startseite",
@@ -1270,12 +1276,6 @@
     "english": "Try this",
     "translation": "Probiere dies",
     "ratio": 1.63
-  },
-  {
-    "id": "faceFilters.another",
-    "english": "Make another",
-    "translation": "Noch etwas erstellen",
-    "ratio": 1.67
   },
   {
     "id": "faceFilters.bold_lips",
@@ -3009,6 +3009,48 @@
     "id": "cinema.pause",
     "english": "Pause",
     "translation": "Pausieren",
+    "ratio": 1.8
+  },
+  {
+    "id": "publishTiming.move.title",
+    "english": "Move post",
+    "translation": "Beitrag verschieben",
+    "ratio": 2.11
+  },
+  {
+    "id": "publishTiming.move.moving",
+    "english": "Moving",
+    "translation": "Wird verschoben",
+    "ratio": 2.5
+  },
+  {
+    "id": "publishTiming.move.save",
+    "english": "Move post",
+    "translation": "Beitrag verschieben",
+    "ratio": 2.11
+  },
+  {
+    "id": "publishTiming.move.keep",
+    "english": "Keep time",
+    "translation": "Zeit beibehalten",
+    "ratio": 1.78
+  },
+  {
+    "id": "publishTiming.move.close",
+    "english": "Close",
+    "translation": "Schließen",
+    "ratio": 1.8
+  },
+  {
+    "id": "publishTiming.move.retry",
+    "english": "Try again",
+    "translation": "Erneut versuchen",
+    "ratio": 1.78
+  },
+  {
+    "id": "publishTiming.heat.lower",
+    "english": "Lower",
+    "translation": "Niedriger",
     "ratio": 1.8
   },
   {

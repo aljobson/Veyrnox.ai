@@ -1,17 +1,22 @@
 import { Text as StatusText } from './ui/Text';
 import { Image } from 'expo-image';
 import { Stack, useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ApiError, type ApiClient } from '../lib/api';
 import { getCacheUser, subscribeCacheUser } from '../lib/appCache';
+import { kindForMime } from '../lib/creativeReuse';
 import { comparisonUri, faceFilterMessage } from '../lib/faceFilters';
 import { mediaApi, waitForJob, type JobState } from '../lib/media';
 import { saveOutput, shareOutput } from '../lib/output';
 import { t } from '../lib/i18n';
 import { colors } from '../theme';
 
-export function FaceFilterResult({ api, owner, id, original, onAnother }: { api: ApiClient; owner: string; id: string; original: string; onAnother: () => void }) {
+export function FaceFilterResult({ api, owner, id, original, onAnother, onApplyResult, onOriginalError, onOriginalLoad, originalFallback }: {
+    api: ApiClient; owner: string; id: string; original: string; onAnother: () => void;
+    onApplyResult: (source: { jobId: string; uri: string }) => void;
+    onOriginalError?: () => void; onOriginalLoad?: () => void; originalFallback?: ReactNode;
+}) {
     const router = useRouter();
     const [state, setState] = useState<JobState>('queued');
     const [asset, setAsset] = useState<{ url: string; mime_type: string } | null>(null);
@@ -64,14 +69,27 @@ export function FaceFilterResult({ api, owner, id, original, onAnother }: { api:
         } catch { if (live.current) setNote(t(kind === 'share' ? 'job.shareFailed' : 'job.saveFailed')); }
         finally { working.current = false; if (live.current) setActing(false); }
     }
+    async function applyResult() {
+        if (!asset || working.current || !live.current || getCacheUser() !== owner) return;
+        working.current = true; setActing(true); setNote(null);
+        try {
+            const fresh = await mediaApi(api).getAsset(id);
+            if (!live.current || getCacheUser() !== owner) return;
+            if (kindForMime(fresh.mime_type) !== 'image') throw new Error('invalid_image');
+            onApplyResult({ jobId: id, uri: fresh.url });
+        } catch { if (live.current && getCacheUser() === owner) setNote(t('common.error')); }
+        finally { working.current = false; if (live.current) setActing(false); }
+    }
     return <ScrollView style={styles.screen} contentContainerStyle={styles.body}>
         <Stack.Screen options={{ title: t('faceFilters.title') }} />
         <Text style={styles.heading} accessibilityRole="header">{t(`job.${state}`)}</Text>
         {!settled && !asset ? <ActivityIndicator /> : null}
         {asset ? <>
             <View style={styles.toggle}>{(['before', 'after'] as const).map(choice => <Pressable key={choice} accessibilityRole="button" accessibilityLabel={t(`faceFilters.${choice}`)} accessibilityState={{ selected: view === choice }} style={[styles.button, view === choice && styles.selected]} onPress={() => setView(choice)}><Text style={styles.text}>{t(`faceFilters.${choice}`)}</Text></Pressable>)}</View>
-            <Image source={{ uri: comparisonUri(view, original, asset.url) }} accessibilityLabel={t(`faceFilters.${view}`)} cachePolicy="none" transition={0} contentFit="contain" style={styles.photo} />
+            <Image source={{ uri: comparisonUri(view, original, asset.url) }} accessibilityLabel={t(`faceFilters.${view}`)} cachePolicy="none" transition={0} contentFit="contain" style={styles.photo} onError={view === 'before' ? onOriginalError : undefined} onLoad={view === 'before' ? onOriginalLoad : undefined} />
+            {view === 'before' ? originalFallback : null}
             <Text style={styles.text}>{t('faceFilters.saved')}</Text>
+            <Pressable accessibilityRole="button" accessibilityLabel={t('faceFilterSwitch.applyResult')} disabled={acting} accessibilityState={{ disabled: acting }} style={styles.button} onPress={applyResult}><Text style={styles.text}>{t('faceFilterSwitch.applyResult')}</Text></Pressable>
             <Pressable accessibilityRole="button" accessibilityLabel={t('faceFilters.openLibrary')} style={styles.button} onPress={() => router.push('/library')}><Text style={styles.text}>{t('faceFilters.openLibrary')}</Text></Pressable>
             <Pressable accessibilityRole="button" accessibilityLabel={t('job.savePhotos')} accessibilityState={{ disabled: acting }} disabled={acting} style={styles.button} onPress={() => output('save')}><Text style={styles.text}>{t('job.savePhotos')}</Text></Pressable>
             <Pressable accessibilityRole="button" accessibilityLabel={t('cinema.share.share')} accessibilityState={{ disabled: acting }} disabled={acting} style={styles.button} onPress={() => output('share')}><Text style={styles.text}>{t('cinema.share.share')}</Text></Pressable>
@@ -81,7 +99,7 @@ export function FaceFilterResult({ api, owner, id, original, onAnother }: { api:
         </>}
         {error ? <StatusText variant="inherit" style={styles.error} accessibilityLiveRegion="polite">{error}</StatusText> : null}
         {note ? <StatusText variant="inherit" style={styles.text} accessibilityLiveRegion="polite">{note}</StatusText> : null}
-        <Pressable accessibilityRole="button" accessibilityLabel={t('faceFilters.another')} disabled={acting} style={styles.button} onPress={onAnother}><Text style={styles.text}>{t('faceFilters.another')}</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('faceFilterSwitch.sameFilter')} disabled={acting} accessibilityState={{ disabled: acting }} style={styles.button} onPress={onAnother}><Text style={styles.text}>{t('faceFilterSwitch.sameFilter')}</Text></Pressable>
     </ScrollView>;
 }
 const styles = StyleSheet.create({

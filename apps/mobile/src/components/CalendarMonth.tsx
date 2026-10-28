@@ -1,4 +1,4 @@
-import { rawText } from '../lib/i18n/translate';
+import type { ElementRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { plural, formatNumber, formatLocale, t } from '../lib/i18n';
 import { dayKey, monthGrid } from '../lib/publishCalendar';
@@ -7,7 +7,7 @@ import { colors } from '../theme';
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 0]; // Monday first, as getDay numbers
 
 // ADR-0162: a month grid. Each day shows how many posts fall on it; tapping a day selects it. Day cells are 44 pt tall.
-export function CalendarMonth({ monthStart, counts, selected, onSelect }: { monthStart: Date; counts: Map<string, number>; selected: string | null; onSelect: (key: string) => void }) {
+export function CalendarMonth({ monthStart, counts, selected, onSelect, dropRef, dropKey }: { dropRef?: (key: string, ref: ElementRef<typeof View> | null) => void; dropKey?: string | null; monthStart: Date; counts: Map<string, number>; selected: string | null; onSelect: (key: string) => void }) {
     const weeks = monthGrid(monthStart);
     const today = dayKey(new Date());
     const refMonday = new Date(2024, 0, 1); // a Monday, only used to name the weekdays
@@ -26,10 +26,11 @@ export function CalendarMonth({ monthStart, counts, selected, onSelect }: { mont
                         return (
                             <Pressable
                                 key={c.key}
+                                ref={dropRef ? ref => dropRef(c.key, ref) : undefined}
                                 accessibilityRole="button"
                                 accessibilityState={{ selected: on }}
-                                accessibilityLabel={rawText(`${c.date.toLocaleDateString(formatLocale(undefined), { weekday: 'long', day: 'numeric', month: 'long' })}, ${plural('calendar.posts', n)}`)}
-                                style={[styles.cell, on && styles.cellOn, !c.inMonth && styles.dim]}
+                                accessibilityLabel={`${c.date.toLocaleDateString(formatLocale(undefined), { weekday: 'long', day: 'numeric', month: 'long' })}, ${plural('calendar.posts', n)}`}
+                                style={[styles.cell, on && styles.cellOn, !c.inMonth && styles.dim, dropKey === c.key && styles.over]}
                                 onPress={() => onSelect(c.key)}
                             >
                                 <Text style={[styles.num, c.key === today && styles.today, on && styles.numOn]}>{formatNumber(c.date.getDate())}</Text>
@@ -47,6 +48,7 @@ const styles = StyleSheet.create({
     row: { flexDirection: 'row' },
     head: { flex: 1, textAlign: 'center', color: colors.muted, fontSize: 12, paddingVertical: 6 },
     cell: { flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 10, margin: 1 },
+    over: { borderWidth: 2, borderColor: colors.accent },
     cellOn: { backgroundColor: colors.accent },
     dim: { opacity: 0.4 },
     num: { color: colors.text, fontSize: 15 },
