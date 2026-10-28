@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { ChatMessage } from '../../lib/chat';
@@ -15,11 +16,11 @@ export const MessageBubble = memo(function MessageBubble({ message, sending, dra
     const actions = replyActions(shown);
     return (
         <View style={[styles.bubble, message.role === 'user' ? styles.user : styles.assistant]}>
-            {message.role === 'assistant' ? <View accessible accessibilityLabel={label}
+            {message.role === 'assistant' ? <View accessible accessibilityLabel={rawText(label)}
                 accessibilityActions={actions.map(({ name, label }) => ({ name, label }))}
                 onAccessibilityAction={event => { void actions.find(a => a.name === event.nativeEvent.actionName)?.run(); }}>
                 <ChatText content={shown || (sending && !message.content ? '…' : '')} />
-            </View> : <Text accessible accessibilityLabel={label} variant="body" style={[styles.text, styles.userText]}>{shown}</Text>}
+            </View> : <Text accessible accessibilityLabel={rawText(label)} variant="body" style={[styles.text, styles.userText]}>{shown}</Text>}
             {eligibleReply(message) ? <ReplyFooter message={message} selected={selected} onStar={onStar} /> : null}
             {drafts.length ? <DraftCards drafts={drafts} /> : null}
             {message.role === 'assistant' && !eligibleReply(message) && message.credits ? <Text variant="caption" style={styles.cost}>{plural('chat.replyCost', message.credits)}</Text> : null}

@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -77,7 +78,7 @@ export default function Ads() {
                         </View>
                     }
                     renderItem={({ item }) => (
-                        <View style={styles.card} accessible={!(canEdit && item.status === 'draft')} accessibilityLabel={`${item.name}, ${t(`ads.status.${item.status}`)}, ${money(item.dailyBudgetCents, item.currency)} ${t('ads.perDay')}`}>
+                        <View style={styles.card} accessible={!(canEdit && item.status === 'draft')} accessibilityLabel={rawText(`${item.name}, ${t(`ads.status.${item.status}`)}, ${money(item.dailyBudgetCents, item.currency)} ${t('ads.perDay')}`)}>
                             <Text style={styles.name}>{item.name}</Text>
                             <Text style={styles.status}>{t(`ads.status.${item.status}`)} · {item.network} · {t(`ads.mode.${item.mode}`)}</Text>
                             <Text style={styles.muted}>{t(`ads.objective.${item.objective}`)} · {money(item.dailyBudgetCents, item.currency)} {t('ads.perDay')}</Text>
@@ -85,10 +86,10 @@ export default function Ads() {
                             {item.destinationHost ? <Text style={styles.muted}>{t('ads.sendsTo', { host: item.destinationHost })}</Text> : null}
                             {canEdit && item.status === 'draft' ? (
                                 <View style={styles.actions}>
-                                    <Pressable accessibilityRole="button" accessibilityLabel={t('ads.editLabel', { name: item.name })} style={[styles.act, touchTarget]} onPress={() => router.push({ pathname: '/publish/ads-edit', params: { id: item.id } })}>
+                                    <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('ads.editLabel', { name: item.name }))} style={[styles.act, touchTarget]} onPress={() => router.push({ pathname: '/publish/ads-edit', params: { id: item.id } })}>
                                         <Text style={styles.webText}>{t('ads.edit')}</Text>
                                     </Pressable>
-                                    <Pressable accessibilityRole="button" accessibilityLabel={t('ads.deleteLabel', { name: item.name })} style={[styles.act, touchTarget]} onPress={() => confirmDelete(item)}>
+                                    <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('ads.deleteLabel', { name: item.name }))} style={[styles.act, touchTarget]} onPress={() => confirmDelete(item)}>
                                         <Text style={styles.delText}>{t('ads.delete')}</Text>
                                     </Pressable>
                                 </View>

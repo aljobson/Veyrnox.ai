@@ -1,3 +1,4 @@
+import { rawText } from '../lib/i18n/translate';
 import { displayLabel } from '../lib/displayLabels';
 import { Text, Card, Chip, themedStyles, useThemedStyles } from './ui';
 import { ScrollView, Switch, View } from 'react-native';
@@ -40,11 +41,11 @@ export function CameraPanel({ on, value, onToggle, onChange }: Props) {
 function Row({ label, options, selected, suffix = '', onPick }: { readonly label: string; readonly options: readonly string[]; readonly selected: string; readonly suffix?: string; readonly onPick: (v: string) => void }) {
     const styles = useThemedStyles(sheets);
     return (
-        <View style={styles.row} accessibilityLabel={label}>
+        <View style={styles.row} accessibilityLabel={rawText(label)}>
             <Text variant="bodyStrong" tone="secondary" style={styles.label}>{label}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
                 {options.map((o) => (
-                    <Chip selected={selected === o} key={o} accessibilityRole="button" accessibilityLabel={`${displayLabel(o)}${suffix}`} accessibilityState={selectedState(selected === o)} onPress={() => onPick(o)} label={`${displayLabel(o)}${suffix}`} />
+                    <Chip selected={selected === o} key={o} accessibilityRole="button" accessibilityLabel={rawText(`${displayLabel(o)}${suffix}`)} accessibilityState={selectedState(selected === o)} onPress={() => onPick(o)} label={`${displayLabel(o)}${suffix}`} />
                 ))}
             </ScrollView>
         </View>

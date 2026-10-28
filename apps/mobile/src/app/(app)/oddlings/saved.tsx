@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -71,16 +72,16 @@ export default function SavedPassports() {
                     const phoneOnly = !record?.projectId || record.ops.some(o => o.kind === 'upsert' && o.id === item.id);
                     return (
                         <View style={styles.card}>
-                            <Pressable accessibilityRole="button" accessibilityLabel={t('oddlings.saved.edit', { name: item.name })}
+                            <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('oddlings.saved.edit', { name: item.name }))}
                                 accessibilityValue={phoneOnly ? { text: t('oddlingsProjects.phoneOnly') } : undefined}
-                                accessibilityHint={phoneOnly ? t('oddlingsProjects.signOutHint') : undefined} style={styles.main} onPress={() => router.push({ pathname: '/oddlings/build', params: { passport: item.id } })}>
+                                accessibilityHint={rawText(phoneOnly ? t('oddlingsProjects.signOutHint') : undefined)} style={styles.main} onPress={() => router.push({ pathname: '/oddlings/build', params: { passport: item.id } })}>
                                 <Text style={styles.name}>{item.name}</Text>
                                 <Text style={styles.sub} numberOfLines={2}>{item.picks.oddling_obsession || t('oddlings.saved.noPremise')}</Text>
                                 {phoneOnly ?
                                     <Text style={styles.sub}>{t('oddlingsProjects.phoneOnly')}</Text> : null}
                                 <Text style={styles.date}>{new Date(item.savedAt).toLocaleString(formatLocale())}</Text>
                             </Pressable>
-                            <Pressable accessibilityRole="button" accessibilityLabel={t('oddlings.saved.delete', { name: item.name })} style={styles.del} onPress={() => confirmDelete(item)}>
+                            <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('oddlings.saved.delete', { name: item.name }))} style={styles.del} onPress={() => confirmDelete(item)}>
                                 <Text style={styles.delText}>✕</Text>
                             </Pressable>
                         </View>

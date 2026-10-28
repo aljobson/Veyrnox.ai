@@ -1,3 +1,4 @@
+import { rawText } from '../lib/i18n/translate';
 import { Icon } from './ui';
 import { Image } from 'expo-image';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -24,7 +25,7 @@ export function TryThisRow({ presets, onOpen }: Props) {
                           <Pressable
                               key={p.id}
                               accessibilityRole="button"
-                              accessibilityLabel={`${p.title}, ${presetPrice(p)}`}
+                              accessibilityLabel={rawText(`${p.title}, ${presetPrice(p)}`)}
                               accessibilityHint={t(needsPhoto(p) ? 'explore.tryPhoto' : 'explore.tryIt')}
                               style={({ pressed }) => [styles.card, pressed && styles.pressed]}
                               onPress={() => onOpen(p)}

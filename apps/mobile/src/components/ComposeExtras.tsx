@@ -1,3 +1,4 @@
+import { rawText } from '../lib/i18n/translate';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { touchTarget } from '../lib/a11y';
 import { t } from '../lib/i18n';
@@ -20,7 +21,7 @@ export function NetworkTextFields({ networks, values, onChange }: { networks: re
                 return (
                     <View key={n} style={styles.field}>
                         <Text style={styles.label}>{label}</Text>
-                        <TextInput style={styles.input} multiline value={v} onChangeText={(x) => onChange(n, x)} accessibilityLabel={label} accessibilityHint={t('compose.networkTextHint')} placeholder={t('compose.networkTextHint')} placeholderTextColor={colors.muted} />
+                        <TextInput style={styles.input} multiline value={v} onChangeText={(x) => onChange(n, x)} accessibilityLabel={rawText(label)} accessibilityHint={t('compose.networkTextHint')} placeholder={t('compose.networkTextHint')} placeholderTextColor={colors.muted} />
                         {limit !== null && v.length > 0 ? <Text style={[styles.muted, [...v].length > limit && styles.over]}>{t('compose.networkTextCount', { count: [...v].length, limit })}</Text> : null}
                     </View>
                 );

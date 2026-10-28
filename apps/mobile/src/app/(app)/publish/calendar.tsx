@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { NetworkLogo } from '../../../components/publish/NetworkLogo';
 import { networkName } from '../../../lib/networkLogos';
@@ -145,7 +146,7 @@ export default function Calendar() {
                                 <Pressable
                                     key={p.id}
                                     accessibilityRole="button"
-                                    accessibilityLabel={`${time(p.scheduledAt)}, ${postStatusLabel(p.status)}. ${p.text.slice(0, 80)}`}
+                                    accessibilityLabel={rawText(`${time(p.scheduledAt)}, ${postStatusLabel(p.status)}. ${p.text.slice(0, 80)}`)}
                                     style={[styles.row, touchTarget]}
                                     onPress={() => router.push({ pathname: '/publish/post/[id]', params: { id: p.id } })}
                                 >

@@ -42,6 +42,7 @@ function Document({ doc, locale = getLocale(), anchor, onNavigate }: Props) {
         }
         const parts = text.split(/(\{\w+\})/g).map((part, i) => <Fragment key={i}>{/^\{\w+\}$/.test(part) ? slots[part.slice(1, -1)] ?? part : numeric(part)}</Fragment>);
         if (block.tag === 'a') {
+            // URL parsing deliberately uses raw slots, never RTL display isolation.
             const target = legalLink(fill(block.attrs?.href ?? '', data.entity), doc);
             if (target.kind === 'plain') return <Text key={key} {...anchorProps} selectable>{parts} ({numeric(target.href)})</Text>;
             return <Text key={key} {...anchorProps} selectable accessibilityRole="link" style={styles.link}
@@ -53,7 +54,7 @@ function Document({ doc, locale = getLocale(), anchor, onNavigate }: Props) {
         </Text>;
     }
     const updated = legalUpdated(data.updated, data.locale, data.tag);
-    const company = fill(data.chrome.company, { ...data.entity, updated });
+    const company = fill(data.chrome.company, { ...data.entity, updated }, data.locale === 'ar');
     return <ScrollView ref={scroll} onContentSizeChange={scrollToAnchor} style={styles.screen} contentContainerStyle={styles.content}>
         <View ref={content} collapsable={false} style={data.locale === 'ar' ? styles.rtl : styles.ltr} accessibilityLanguage={data.tag}>
             <Text variant="title1" selectable>{data.messages.title}</Text>

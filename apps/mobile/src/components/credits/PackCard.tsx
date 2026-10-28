@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import type { ReactNode } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import type { DisplayPackage } from '../../lib/billing';
@@ -17,7 +18,7 @@ export function PackCard({ pack, best, saving, costs, busy, chosen, disabled, re
     const example = videos && images ? t('creditsPage.examples', { videos, images }) : videos ? t('creditsPage.videos', { videos }) : images ? t('creditsPage.images', { images }) : null;
     const save = saving != null && saving >= 1 ? t('creditsPage.save', { pct: saving }) : null;
     return <Card onPress={readOnly ? undefined : onPress} disabled={disabled} accessibilityRole={readOnly ? undefined : 'button'}
-        accessibilityLabel={[credits, pack.priceString, best && t('creditsPage.best'), save].filter(Boolean).join(', ')} style={[s.card, chosen && s.peek]}>
+        accessibilityLabel={rawText([credits, pack.priceString, best && t('creditsPage.best'), save].filter(Boolean).join(', '))} style={[s.card, chosen && s.peek]}>
         {children}
         <View style={s.row}><Text variant="caption" tone="tertiary">{t('creditsPage.pack')}</Text>{best ? <Chip selected label={t('creditsPage.best')} /> : null}</View>
         <View style={s.band}><Icon name="coins" tint={s.money.color} /><Text variant="title2" tone="warning">{credits}</Text></View>

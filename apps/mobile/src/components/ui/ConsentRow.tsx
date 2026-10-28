@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { LegalSheet } from '../legal/LegalSheet';
@@ -16,7 +17,7 @@ export function ConsentRow({ agreed, onChange }: { agreed: boolean; onChange: (v
     const label = english('signIn.agree', { age: MIN_AGE, terms: english('label.Terms'), privacy: english('chrome.privacyPolicy') });
     return (<>
         <View style={styles.row}>
-            <Checkbox checked={agreed} onChange={onChange} accessibilityLabel={label} accessibilityLanguage="en" />
+            <Checkbox checked={agreed} onChange={onChange} accessibilityLabel={rawText(label)} accessibilityLanguage="en" />
             <View style={styles.copy}>
                 <Pressable onPress={() => onChange(!agreed)} accessibilityRole="button" accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.sentence}>
                     <Text variant="footnote" tone="secondary" accessible={false}>{label}</Text>

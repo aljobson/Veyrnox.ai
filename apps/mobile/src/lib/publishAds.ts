@@ -1,4 +1,4 @@
-import { formatLocale } from './i18n';
+import { formatCurrency } from './i18n';
 import { ApiError, type ApiClient } from './api';
 
 // ADR-0185: ad campaigns, read-only. Drafts and their status only; spending money on ads is switched off on the web
@@ -61,11 +61,7 @@ export const fetchCampaigns = async (api: ApiClient) => parseCampaigns(await api
 
 // 1250 + USD -> "$12.50". An unknown currency code falls back to plain digits and the code.
 export function money(cents: number, currency: string): string {
-    try {
-        return new Intl.NumberFormat(formatLocale(), { style: 'currency', currency }).format(cents / 100);
-    } catch {
-        return `${(cents / 100).toFixed(2)} ${currency}`;
-    }
+    return formatCurrency(cents / 100, currency);
 }
 
 export function adsErrorKey(err: unknown): string {

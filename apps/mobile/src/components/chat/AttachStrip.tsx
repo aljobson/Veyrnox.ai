@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { Image } from 'expo-image';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { MIN_TARGET } from '../../lib/a11y';
@@ -40,8 +41,8 @@ export function AttachStrip({ items, extra, max = MAX_ATTACHMENTS, disabled, emb
                 <ScrollView keyboardShouldPersistTaps="handled" horizontal contentContainerStyle={styles.thumbs}>
                     {items.map((it, i) => (
                         <View key={it.id} style={styles.thumb}>
-                            <Image source={it.preview ? { uri: it.preview } : undefined} style={styles.img} accessibilityLabel={t('chat.attach.imageN', { n: String(i + 1) })} />
-                            <Button accessibilityRole="button" accessibilityLabel={t('chat.attach.removeN', { n: String(i + 1) })} disabled={disabled} containerStyle={styles.x} style={styles.removeBadge} hitSlop={{ top: 0, right: 0, bottom: 20, left: 20 }} onPress={() => onRemove(it.id)} variant="secondary" size="md" label={t('chat.attach.removeN', { n: String(i + 1) })}>
+                            <Image source={it.preview ? { uri: it.preview } : undefined} style={styles.img} accessibilityLabel={rawText(t('chat.attach.imageN', { n: String(i + 1) }))} />
+                            <Button accessibilityRole="button" accessibilityLabel={rawText(t('chat.attach.removeN', { n: String(i + 1) }))} disabled={disabled} containerStyle={styles.x} style={styles.removeBadge} hitSlop={{ top: 0, right: 0, bottom: 20, left: 20 }} onPress={() => onRemove(it.id)} variant="secondary" size="md" label={t('chat.attach.removeN', { n: String(i + 1) })}>
                                 <Icon name="close" size={16} />
                             </Button>
                         </View>

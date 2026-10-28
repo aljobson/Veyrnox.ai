@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Linking, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
@@ -107,7 +108,7 @@ export function MfaCard() {
                     <Text variant="footnote" tone="secondary">{t('acct.mfa.setupHelp')}</Text>
                     {isTotpUri(pending.uri) ? <Button variant="tertiary" label={t('acct.mfa.openApp')} onPress={() => void Linking.openURL(pending.uri).catch(() => setNote({ text: t('acct.mfa.noApp'), error: true }))} /> : null}
                     <Text variant="footnote" tone="secondary">{t('acct.mfa.secret')}</Text>
-                    <Text selectable variant="bodyStrong" accessibilityLabel={t('acct.mfa.secretSpoken', { secret: pending.secret.split('').join(' ') })}>{pending.secret}</Text>
+                    <Text selectable variant="bodyStrong" accessibilityLabel={rawText(t('acct.mfa.secretSpoken', { secret: pending.secret.split('').join(' ') }))}>{pending.secret}</Text>
                     <CodeField value={code} onChange={setCode} />
                     <Button variant="secondary" label={t('acct.mfa.confirm')} disabled={busy || !validCode(code)} onPress={() => void verify(pending.factorId, t('acct.mfa.on'))} />
                     <Button variant="tertiary" label={t('acct.mfa.cancelSetup')} disabled={busy} onPress={() => { setPending(null); setCode(''); setNote(null); }} />

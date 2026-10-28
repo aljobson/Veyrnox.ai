@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { Stack, useRouter } from 'expo-router';
 import { Share, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { GrantsCard } from '../../components/account/GrantsCard';
@@ -25,7 +26,7 @@ export default function Mcp() {
 
             <View style={styles.card}>
                 <Text style={styles.label}>{t('mcp.endpoint')}</Text>
-                <Text selectable accessibilityLabel={`${t('mcp.endpoint')}: ${MCP_ENDPOINT}`} style={styles.endpoint}>{MCP_ENDPOINT}</Text>
+                <Text selectable accessibilityLabel={rawText(`${t('mcp.endpoint')}: ${MCP_ENDPOINT}`)} style={styles.endpoint}>{MCP_ENDPOINT}</Text>
                 <Pressable accessibilityRole="button" style={({ pressed }) => [styles.primary, pressed && styles.pressed]} onPress={() => void Share.share({ title: t('mcp.title'), message: MCP_ENDPOINT })}>
                     <Text style={styles.primaryText}>{t('mcp.share')}</Text>
                 </Pressable>

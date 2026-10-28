@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { nextOddlingInstructions, parseOddlingInstructions, watchOddlingAction } from '../../../lib/oddlingsChat';
 import { useChatLocal } from '../../../lib/useChatLocal';
 import { captureChat, restoreDraft } from '../../../lib/chatLocal';
@@ -426,7 +427,7 @@ export default function Conversation() {
                     }
                     ListFooterComponent={
                         lastUser && !sending && model && price !== null ? (
-                            <Button accessibilityRole="button" accessibilityLabel={plural('chat.againLabel', price)} containerStyle={styles.again} onPress={() => void send(lastUser.content)} variant="tertiary" size="md" label={plural('chat.againLabel', price)}>
+                            <Button accessibilityRole="button" accessibilityLabel={rawText(plural('chat.againLabel', price))} containerStyle={styles.again} onPress={() => void send(lastUser.content)} variant="tertiary" size="md" label={plural('chat.againLabel', price)}>
                                 <Text variant="callout" tone="warning">{plural('chat.again', price)}</Text>
                             </Button>
                         ) : undefined

@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -61,7 +62,7 @@ export default function BestTime() {
             {accounts && accounts.length > 1 ? (
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
                     {accounts.map((a) => (
-                        <Pressable key={a.id} accessibilityRole="button" accessibilityLabel={`${a.displayName}, ${a.network}, ${accountStatusLabel(a.status)}`} accessibilityState={{ selected: a.id === accountId }} style={[styles.chip, a.id === accountId && styles.chipOn, touchTarget]} onPress={() => setAccountId(a.id)}>
+                        <Pressable key={a.id} accessibilityRole="button" accessibilityLabel={rawText(`${a.displayName}, ${a.network}, ${accountStatusLabel(a.status)}`)} accessibilityState={{ selected: a.id === accountId }} style={[styles.chip, a.id === accountId && styles.chipOn, touchTarget]} onPress={() => setAccountId(a.id)}>
                             <Text style={[styles.chipText, a.id === accountId && styles.chipTextOn]}>{a.displayName}</Text>
                         </Pressable>
                     ))}
@@ -75,7 +76,7 @@ export default function BestTime() {
                     <Text style={styles.muted}>{t('insights.basis', { tz: insights.timezone, start: insights.periodStart ?? '', end: insights.periodEnd ?? '' })}</Text>
                     {summary.topSlots.length > 0 ? (
                         summary.topSlots.map((s, i) => (
-                            <View key={`${s.day}-${s.hour}`} style={styles.slot} accessible accessibilityLabel={`${i + 1}. ${DAYS[s.day - 1]} ${hour(s.hour)}, ${num(s.score ?? 0)} ${t('insights.perPost')}, ${plural('insights.posts', s.posts)}`}>
+                            <View key={`${s.day}-${s.hour}`} style={styles.slot} accessible accessibilityLabel={rawText(`${i + 1}. ${DAYS[s.day - 1]} ${hour(s.hour)}, ${num(s.score ?? 0)} ${t('insights.perPost')}, ${plural('insights.posts', s.posts)}`)}>
                                 <Text style={styles.slotTime}>{DAYS[s.day - 1]} {hour(s.hour)}</Text>
                                 <Text style={styles.muted}>{num(s.score ?? 0)} {t('insights.perPost')} · {plural('insights.posts', s.posts)}</Text>
                             </View>
@@ -89,7 +90,7 @@ export default function BestTime() {
                             <Text style={styles.heading} accessibilityRole="header">{t('insights.frequency')}</Text>
                             <Text style={styles.muted}>{t('insights.frequencyNote')}</Text>
                             {summary.frequency.map((g) => (
-                                <View key={g.postsPerWeek} style={styles.freq} accessible accessibilityLabel={`${plural('insights.postsPerWeek', g.postsPerWeek)}, ${plural('insights.weeks', g.weeks)}, ${g.score === null ? t('insights.noScore') : `${num(g.score)} ${t('insights.perPost')}`}`}>
+                                <View key={g.postsPerWeek} style={styles.freq} accessible accessibilityLabel={rawText(`${plural('insights.postsPerWeek', g.postsPerWeek)}, ${plural('insights.weeks', g.weeks)}, ${g.score === null ? t('insights.noScore') : `${num(g.score)} ${t('insights.perPost')}`}`)}>
                                     <Text style={styles.freqMain}>{plural('insights.postsPerWeek', g.postsPerWeek)}</Text>
                                     <Text style={styles.freqCell}>{plural('insights.weeks', g.weeks)} · {g.score === null ? '—' : num(g.score)}</Text>
                                 </View>

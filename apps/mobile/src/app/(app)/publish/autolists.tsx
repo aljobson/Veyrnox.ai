@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { subscribeCacheUser } from '../../../lib/appCache';
 import { brandStore } from '../../../lib/publishBrand';
 import { publishScope, usePublishRole } from '../../../lib/usePublishRole';
@@ -97,13 +98,13 @@ export default function Autolists() {
                     }
                     renderItem={({ item }) => (
                         <View style={styles.row}>
-                            <Pressable accessibilityRole="button" accessibilityLabel={`${item.name}. ${item.enabled ? t('autolists.on') : t('autolists.off')}`} style={[styles.main, touchTarget]} onPress={() => router.push({ pathname: '/publish/autolist-edit', params: { id: item.id } })}>
+                            <Pressable accessibilityRole="button" accessibilityLabel={rawText(`${item.name}. ${item.enabled ? t('autolists.on') : t('autolists.off')}`)} style={[styles.main, touchTarget]} onPress={() => router.push({ pathname: '/publish/autolist-edit', params: { id: item.id } })}>
                                 <Text style={styles.name}>{item.name}</Text>
                                 <Text style={styles.muted} numberOfLines={1}>{item.enabled ? t('autolists.on') : t('autolists.off')} · {item.queueName}</Text>
                                 <Text style={styles.muted} numberOfLines={1}>{item.feedUrl}</Text>
                                 {item.lastError ? <Text style={styles.bad} numberOfLines={2}>{item.lastError}</Text> : item.lastRefreshedAt ? <Text style={styles.muted}>{t('autolists.refreshed', { when: new Date(item.lastRefreshedAt).toLocaleString(formatLocale()) })}</Text> : null}
                             </Pressable>
-                            {canWrite ? <Pressable accessibilityRole="button" accessibilityLabel={t('autolists.deleteLabel', { name: item.name })} style={[styles.del, touchTarget]} onPress={() => confirmDelete(item)}>
+                            {canWrite ? <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('autolists.deleteLabel', { name: item.name }))} style={[styles.del, touchTarget]} onPress={() => confirmDelete(item)}>
                                 <Text style={styles.delText}>{t('autolists.delete')}</Text>
                             </Pressable> : null}
                         </View>

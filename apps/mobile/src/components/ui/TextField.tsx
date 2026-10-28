@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { I18nManager } from 'react-native';
 import { KeyboardFocusContext } from '../KeyboardFocusContext';
 import { useContext } from 'react';
@@ -24,7 +25,7 @@ export const TextField = forwardRef<ComponentRef<typeof TextInput>, TextFieldPro
                 <TextInput
                     {...props}
                     ref={ref}
-                    accessibilityLabel={props.accessibilityLabel ?? label}
+                    accessibilityLabel={rawText([props.accessibilityLabel ?? label ?? props.placeholder, typeof error === 'string' ? error : undefined].filter(Boolean).join(', '))}
                     allowFontScaling
                     maxFontSizeMultiplier={BODY_MAX_FONT_SCALE}
                     placeholderTextColor={s.placeholder.color}

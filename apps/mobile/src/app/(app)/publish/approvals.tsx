@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
@@ -48,7 +49,7 @@ export default function Approvals() {
                     ListHeaderComponent={<View><Text style={styles.intro}>{t('approvals.intro')}</Text><Pressable accessibilityRole="button" style={[styles.ask, touchTarget]} onPress={() => router.push('/publish/approval-new')}><Text style={styles.askText}>{t('approvals.new')}</Text></Pressable></View>}
                     ListEmptyComponent={<Text style={styles.muted}>{t('approvals.none')}</Text>}
                     renderItem={({ item }) => (
-                        <View style={styles.card} accessible accessibilityLabel={`${approvalStatusLabel(item.status)}. ${item.text}`}>
+                        <View style={styles.card} accessible accessibilityLabel={rawText(`${approvalStatusLabel(item.status)}. ${item.text}`)}>
                             <Text style={[styles.status, item.status === 'rejected' && styles.bad]}>{approvalStatusLabel(item.status)}</Text>
                             {item.text ? <Text style={styles.text} numberOfLines={4}>{item.text}</Text> : null}
                             {item.scheduledAt ? <Text style={styles.muted}>{t('approvals.scheduledFor', { when: when(item.scheduledAt) ?? '' })}</Text> : null}

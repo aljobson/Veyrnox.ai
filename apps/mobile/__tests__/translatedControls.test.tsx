@@ -35,7 +35,7 @@ let root: Root;
 beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = createRoot(); });
 afterEach(async () => { await act(async () => root.unmount()); setLocaleFromDevice(['en']); });
 const textOf = (node: TestInstance): string => node.children.map(c => typeof c === 'string' ? c : textOf(c)).join('');
-const nativeText = () => root.container.queryAll(n => n.type === 'Text');
+const nativeText = () => root.container.queryAll(n => n.type === 'Text' && !n.props.accessibilityElementsHidden);
 function expectFit(node: TestInstance, lines: number) {
     expect(node.props.numberOfLines).toBe(lines);
     expect(node.props.adjustsFontSizeToFit).toBe(true);

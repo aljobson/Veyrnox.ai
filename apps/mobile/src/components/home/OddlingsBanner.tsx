@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { Image } from 'expo-image';
 import { Link, type Href } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -11,8 +12,8 @@ export function OddlingsBanner({ href, accessibilityLabel, accessibilityHint, im
         <Link href={href} asChild>
             <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={accessibilityLabel}
-                accessibilityHint={accessibilityHint}
+                accessibilityLabel={rawText(accessibilityLabel)}
+                accessibilityHint={rawText(accessibilityHint)}
                 style={styles.heroCard}
             >
                 <Card style={styles.mediaCard}>

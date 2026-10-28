@@ -37,4 +37,6 @@ export default {
     "projects.somethingwentwrongTryagain": "Something went wrong. Try again.",
     "projects.created": " · created {value1}",
     "projects.updated": " · updated {value1}",
+    "projects.revisionLabel": "Version {version}",
+    "projects.restoredVersion": "Version {version}, restored from version {source}",
 } as const;

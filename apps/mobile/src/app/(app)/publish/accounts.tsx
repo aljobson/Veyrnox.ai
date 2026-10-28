@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { Button, Card, Text as ThemedText, themedStyles, useThemedStyles } from '../../../components/ui';
 import { NetworkLogo } from '../../../components/publish/NetworkLogo';
@@ -105,7 +106,7 @@ export default function Accounts() {
                                 <View style={rowStyles.network}><NetworkLogo network={item.network} /><ThemedText tone="secondary">{networkName(item.network)}</ThemedText></View>
                                 <ThemedText tone={item.status === 'active' ? 'accent' : 'warning'}>{accountStatusLabel(item.status)}</ThemedText>
                                 {item.tokenExpiresAt && item.status === 'active' ? <ThemedText tone="secondary">{t('publish.accessrenewsby', { value1: date(item.tokenExpiresAt) ?? '' })}</ThemedText> : null}
-                                {data.brandRole === 'owner' ? <Button variant="tertiary" tone="danger" label={t('accounts.disconnectAction')} accessibilityLabel={t('accounts.disconnect', { name: item.displayName })} onPress={() => confirmDisconnect(item)} /> : null}
+                                {data.brandRole === 'owner' ? <Button variant="tertiary" tone="danger" label={t('accounts.disconnectAction')} accessibilityLabel={rawText(t('accounts.disconnect', { name: item.displayName }))} onPress={() => confirmDisconnect(item)} /> : null}
                             </View>
                         </Card>
                     )}

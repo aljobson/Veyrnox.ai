@@ -29,7 +29,7 @@ jest.mock('../src/components/VeyCardPeek', () => ({ VeyCardPeek: () => null, pee
 jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalog: async () => [] }));
 void [RN.View, RN.Text, RN.Pressable, RN.ScrollView, RN.ActivityIndicator];
 let root: Root, serial = 0;
-const textOf = (node: TestInstance): string => node.children.map(c => typeof c === 'string' ? c : textOf(c)).join('');
+const textOf = (node: TestInstance): string => node.props.accessibilityElementsHidden ? '' : node.children.map(c => typeof c === 'string' ? c : textOf(c)).join('');
 const text = () => textOf(root.container);
 const controls = (label: string) => root.container.queryAll(n => n.props.accessibilityLabel === label && n.props.accessibilityRole === 'button');
 async function click(node: TestInstance) { await act(async () => node.props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 })); }

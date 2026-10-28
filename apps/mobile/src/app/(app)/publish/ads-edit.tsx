@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -106,7 +107,7 @@ export default function AdsEdit() {
     const input = (label: string, value: string, onChange: (v: string) => void, extra: object = {}) => (
         <>
             <Text style={styles.label}>{label}</Text>
-            <TextInput style={styles.input} value={value} onChangeText={onChange} editable={canEdit} accessibilityLabel={label} placeholderTextColor={colors.muted} {...extra} />
+            <TextInput style={styles.input} value={value} onChangeText={onChange} editable={canEdit} accessibilityLabel={rawText(label)} placeholderTextColor={colors.muted} {...extra} />
         </>
     );
 

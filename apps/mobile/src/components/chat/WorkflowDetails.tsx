@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { Modal, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { t } from '../../lib/i18n';
@@ -14,7 +15,7 @@ export function WorkflowDetails({ workflow, busy, onClose, onOpen, onStart }: { 
     const reducedMotion = useReducedMotion();
     const insets = useSafeAreaInsets();
     return <Modal visible={!!workflow} animationType={reducedMotion ? 'none' : 'slide'} presentationStyle="pageSheet" onRequestClose={onClose}>
-        {workflow ? <View style={styles.screen}>
+        {workflow ? <View style={styles.screen} onAccessibilityEscape={onClose}>
             <Button variant="tertiary" label={t('chatDepth.wfClose')} icon="close" containerStyle={styles.close} onPress={onClose} />
             <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.content, { paddingBottom: LIST_END_PADDING + insets.bottom }]}>
                 <IconBadge {...workflowIcon(workflow.id)} size="xl" />
@@ -27,7 +28,7 @@ export function WorkflowDetails({ workflow, busy, onClose, onOpen, onStart }: { 
                     <View style={styles.number}><Text variant="caption">{i + 1}</Text></View>
                     <IconBadge {...skillIcon(skill.id, skill.group)} size="sm" />
                     <View style={styles.copy}><Text variant="callout">{skill.name}</Text><Text variant="caption" tone="tertiary">{skill.blurb}</Text></View>
-                    <Button variant="secondary" size="sm" label={t('chatDepth.wfOpen')} accessibilityLabel={`${t('chatDepth.wfOpen')}: ${skill.name}`} disabled={busy} style={touchTarget} onPress={() => onOpen(skill)} />
+                    <Button variant="secondary" size="sm" label={t('chatDepth.wfOpen')} accessibilityLabel={rawText(`${t('chatDepth.wfOpen')}: ${skill.name}`)} disabled={busy} style={touchTarget} onPress={() => onOpen(skill)} />
                 </Card>)}
                 <Card style={styles.outcome}><Text variant="title3" accessibilityRole="header">{t('chatDepth.wfOutcome')}</Text><Text>{workflow.outcome}</Text></Card>
                 <Button variant="primary" label={t('chatDepth.wfStart')} icon="arrowRight" disabled={busy} onPress={() => onStart(workflow)} />

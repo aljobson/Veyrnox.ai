@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -16,13 +17,13 @@ const frequencyKeys = { weekly: 'publishReporting.everyWeek', monthly: 'publishR
 const swatches = { '#38bdf8': 'publishReporting.sky', '#a78bfa': 'publishReporting.purple', '#34d399': 'publishReporting.green' } as const;
 
 function Choice({ label, selected, disabled, onPress, color }: { label: string; selected: boolean; disabled?: boolean; onPress: () => void; color?: string }) {
-    return <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected, disabled: !!disabled }} disabled={disabled}
+    return <Pressable accessibilityRole="button" accessibilityLabel={rawText(label)} accessibilityState={{ selected, disabled: !!disabled }} disabled={disabled}
         style={[styles.choice, touchTarget, selected && styles.selected, color ? { borderStartColor: color, borderStartWidth: 4 } : null]} onPress={onPress}>
         <Text style={styles.text}>{label}</Text>
     </Pressable>;
 }
 function Field({ label, value, onChangeText, disabled, maxLength, multiline }: { label: string; value: string; onChangeText: (v: string) => void; disabled: boolean; maxLength: number; multiline?: boolean }) {
-    return <View style={styles.group}><Text style={styles.muted}>{label}</Text><TextInput accessibilityLabel={label} style={styles.input}
+    return <View style={styles.group}><Text style={styles.muted}>{label}</Text><TextInput accessibilityLabel={rawText(label)} style={styles.input}
         value={value} onChangeText={onChangeText} editable={!disabled} maxLength={maxLength} multiline={multiline} autoCapitalize="none" /></View>;
 }
 export default function ReportEdit() {
@@ -130,7 +131,7 @@ export default function ReportEdit() {
             <Field label={t('publishReporting.message')} value={form.deliveryMessage} onChangeText={v => change('deliveryMessage', v)} disabled={disabled || !mode.deliveryEditable} maxLength={1000} multiline />
             {error ? <StatusText variant="inherit" style={styles.muted} accessibilityLiveRegion="polite">{error}</StatusText> : null}
             {busy ? <StatusText variant="inherit" style={styles.muted} accessibilityLiveRegion="polite">{t('publishReporting.saving')}</StatusText> : null}
-            {canEdit ? <Pressable accessibilityRole="button" accessibilityLabel={mode.readOnly ? t('publishReporting.schedule.convert') : t('publishReporting.save')}
+            {canEdit ? <Pressable accessibilityRole="button" accessibilityLabel={rawText(mode.readOnly ? t('publishReporting.schedule.convert') : t('publishReporting.save'))}
                 accessibilityState={{ busy, disabled: busy }} disabled={busy} style={[styles.choice, styles.selected, touchTarget]} onPress={() => save(mode.readOnly)}>
                 <Text style={styles.text}>{mode.readOnly ? t('publishReporting.schedule.convert') : t('publishReporting.save')}</Text>
             </Pressable> : null}

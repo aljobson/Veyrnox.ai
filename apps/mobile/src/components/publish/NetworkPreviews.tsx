@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { View } from 'react-native';
 import type { ApiClient } from '../../lib/api';
 import type { PublishAccount } from '../../lib/publish';
@@ -21,7 +22,7 @@ export function NetworkPreviews({ api, accounts, choice, text, networkText, vari
             const own = variants && !!networkText[network]?.trim();
             const caption = own ? networkText[network] : text;
             const count = [...caption].length, limit = captionLimit(network);
-            return <Card key={network} accessibilityLabel={t('publishParity.preview.label', { network: networkName(network) })} style={s.list}>
+            return <Card key={network} accessibilityLabel={rawText(t('publishParity.preview.label', { network: networkName(network) }))} style={s.list}>
                 <View style={s.header}><NetworkLogo network={network} size={20} /><Text variant="bodyStrong">{networkName(network)}</Text></View>
                 {accounts.filter(account => account.network === network).map(account => <Text key={account.id} tone="secondary">{account.displayName}</Text>)}
                 {choice?.kind === 'job' ? <MediaPreview api={api} choice={choice} thumbnail /> : null}

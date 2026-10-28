@@ -1,3 +1,4 @@
+import { rawText } from '../lib/i18n/translate';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { plural, formatNumber, formatLocale, t } from '../lib/i18n';
 import { dayKey, monthGrid } from '../lib/publishCalendar';
@@ -27,7 +28,7 @@ export function CalendarMonth({ monthStart, counts, selected, onSelect }: { mont
                                 key={c.key}
                                 accessibilityRole="button"
                                 accessibilityState={{ selected: on }}
-                                accessibilityLabel={`${c.date.toLocaleDateString(formatLocale(undefined), { weekday: 'long', day: 'numeric', month: 'long' })}, ${plural('calendar.posts', n)}`}
+                                accessibilityLabel={rawText(`${c.date.toLocaleDateString(formatLocale(undefined), { weekday: 'long', day: 'numeric', month: 'long' })}, ${plural('calendar.posts', n)}`)}
                                 style={[styles.cell, on && styles.cellOn, !c.inMonth && styles.dim]}
                                 onPress={() => onSelect(c.key)}
                             >

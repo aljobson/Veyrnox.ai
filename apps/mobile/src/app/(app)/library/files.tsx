@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { t } from '../../../lib/i18n';
 import { Stack, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
@@ -98,10 +99,10 @@ export default function LibraryFiles() {
                                 {expiry ? <Text style={[styles.muted, gone && styles.warn]}>{expiry}</Text> : null}
                                 {!gone ? (
                                     <View style={styles.actions}>
-                                        <Pressable accessibilityRole="button" accessibilityLabel={t('files.share', { value1: item.label })} disabled={!!acting} style={[styles.action, !!acting && styles.off]} onPress={() => act(item, 'share')}>
+                                        <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('files.share', { value1: item.label }))} disabled={!!acting} style={[styles.action, !!acting && styles.off]} onPress={() => act(item, 'share')}>
                                             <Text style={styles.actionText}>{acting === `share:${item.id}` ? t('files.preparing') : t('files.share2')}</Text>
                                         </Pressable>
-                                        <Pressable accessibilityRole="button" accessibilityLabel={t('files.savetoPhotos', { value1: item.label })} disabled={!!acting} style={[styles.action, !!acting && styles.off]} onPress={() => act(item, 'save')}>
+                                        <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('files.savetoPhotos', { value1: item.label }))} disabled={!!acting} style={[styles.action, !!acting && styles.off]} onPress={() => act(item, 'save')}>
                                             <Text style={styles.actionText}>{acting === `save:${item.id}` ? t('files.saving') : t('files.savetoPhotos2')}</Text>
                                         </Pressable>
                                     </View>

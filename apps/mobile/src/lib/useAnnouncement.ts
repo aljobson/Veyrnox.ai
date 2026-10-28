@@ -1,3 +1,4 @@
+import { rawText } from './i18n/translate';
 import { useEffect, useRef, type ReactNode, isValidElement } from 'react';
 import { AccessibilityInfo, Platform } from 'react-native';
 
@@ -15,6 +16,6 @@ export function useAnnouncement(message: string | null | undefined, { onMount = 
         const next = message?.trim() || null;
         if (next === last.current) return;
         last.current = next;
-        if (next && Platform.OS === 'ios') AccessibilityInfo.announceForAccessibility(next);
+        if (next && Platform.OS === 'ios') AccessibilityInfo.announceForAccessibility(rawText(next));
     }, [message]);
 }

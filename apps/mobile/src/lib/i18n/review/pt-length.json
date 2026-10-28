@@ -2902,5 +2902,29 @@
     "english": "Add audio",
     "translation": "Adicionar áudio",
     "ratio": 1.67
+  },
+  {
+    "id": "presets.cat.ALL",
+    "english": "All",
+    "translation": "Todos",
+    "ratio": 1.67
+  },
+  {
+    "id": "presets.cat.NEW",
+    "english": "New",
+    "translation": "Novos",
+    "ratio": 1.67
+  },
+  {
+    "id": "presets.cat.CINEMATIC",
+    "english": "Cinematic",
+    "translation": "Cinematográficos",
+    "ratio": 1.78
+  },
+  {
+    "id": "presets.cat.ADS",
+    "english": "Ads",
+    "translation": "Anúncios",
+    "ratio": 2.67
   }
 ]

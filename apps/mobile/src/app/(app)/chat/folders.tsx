@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { plural, t } from '../../../lib/i18n';
 import { Stack } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
@@ -62,7 +63,7 @@ export default function Folders() {
         <View style={styles.screen}>
             <Stack.Screen options={{ title: t('chat.folders') }} />
             <View style={styles.form}>
-                <TextField containerStyle={styles.field} accessibilityLabel={editing ? t('chat.newfoldername') : t('chat.foldername')} style={styles.input} value={name} onChangeText={setName} placeholder={editing ? t('chat.rename2', { value1: editing.name }) : t('chat.newfolder')} maxLength={60} />
+                <TextField containerStyle={styles.field} accessibilityLabel={rawText(editing ? t('chat.newfoldername') : t('chat.foldername'))} style={styles.input} value={name} onChangeText={setName} placeholder={editing ? t('chat.rename2', { value1: editing.name }) : t('chat.newfolder')} maxLength={60} />
                 <Button accessibilityRole="button" disabled={busy} containerStyle={styles.button} onPress={save} variant="secondary" size="md" label={(editing ? t('chat.rename3') : t('chat.add'))}>
                     {busy ? <ActivityIndicator color={styles.accentInkInk.color} /> : <Text variant="bodyStrong" style={styles.buttonText}>{editing ? t('chat.rename3') : t('chat.add')}</Text>}
                 </Button>
@@ -82,8 +83,8 @@ export default function Folders() {
                                 <Text variant="body" style={styles.name}>{item.name}</Text>
                                 <Text style={styles.muted}>{plural('chat.folderCount', item.count)}</Text>
                             </View>
-                            <Button accessibilityRole="button" accessibilityLabel={t('chat.rename4', { value1: item.name })} containerStyle={styles.action} onPress={() => { setEditing(item); setName(item.name); }} variant="tertiary" size="md" label={t('chat.rename4', { value1: item.name })}><Text style={styles.link}>{t('chat.rename3')}</Text></Button>
-                            <Button accessibilityRole="button" accessibilityLabel={t('chat.delete2', { value1: item.name })} containerStyle={styles.action} onPress={() => remove(item)} variant="tertiary" size="md" label={t('chat.delete2', { value1: item.name })}><Text style={styles.danger}>{t('chat.delete3')}</Text></Button>
+                            <Button accessibilityRole="button" accessibilityLabel={rawText(t('chat.rename4', { value1: item.name }))} containerStyle={styles.action} onPress={() => { setEditing(item); setName(item.name); }} variant="tertiary" size="md" label={t('chat.rename4', { value1: item.name })}><Text style={styles.link}>{t('chat.rename3')}</Text></Button>
+                            <Button accessibilityRole="button" accessibilityLabel={rawText(t('chat.delete2', { value1: item.name }))} containerStyle={styles.action} onPress={() => remove(item)} variant="tertiary" size="md" label={t('chat.delete2', { value1: item.name })}><Text style={styles.danger}>{t('chat.delete3')}</Text></Button>
                         </Card>
                     )}
                 />

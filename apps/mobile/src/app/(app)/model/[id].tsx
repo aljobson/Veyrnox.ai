@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, View } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -42,12 +43,12 @@ export default function ModelDetail() {
                 <Text variant="title2">{t('modelPage.price', { credits: model.credits })}</Text>
                 <Text tone="secondary">{priceUnit(model)}</Text>
                 <Button label={`${t('modelPage.generate', { title: model.name })} · ${t('modelPage.price', { credits: model.credits })}`}
-                    accessibilityLabel={t('modelPage.generateLabel', { title: model.name, credits: model.credits })}
+                    accessibilityLabel={rawText(t('modelPage.generateLabel', { title: model.name, credits: model.credits }))}
                     onPress={() => router.push({ pathname: '/create/[modelId]', params: { modelId: model.id } })} style={styles.target} />
                 <Button variant="secondary" label={t('modelPage.packs')} onPress={() => router.push('/pricing')} style={styles.target} />
                 <Text variant="footnote" tone="secondary">{t('modelPage.note')}</Text>
                 <Card style={styles.facts}>
-                    {modelFacts(model).map((fact, index) => <View key={index} accessible accessibilityLabel={`${fact.label}: ${fact.value}`} style={styles.fact}>
+                    {modelFacts(model).map((fact, index) => <View key={index} accessible accessibilityLabel={rawText(`${fact.label}: ${fact.value}`)} style={styles.fact}>
                         <Text variant="bodyStrong">{fact.label}</Text>
                         <Text tone="secondary">{fact.value}</Text>
                     </View>)}

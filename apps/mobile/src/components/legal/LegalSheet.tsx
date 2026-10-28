@@ -12,13 +12,13 @@ export function LegalSheetContent({ doc, onClose }: { doc: LegalDoc; onClose(): 
     const styles = useThemedStyles(sheets);
     const [history, setHistory] = useState<LegalLocation[]>([{ doc }]);
     const current = history[history.length - 1];
-    return <SafeAreaView style={styles.screen}>
+    return <SafeAreaView style={styles.screen}><View style={{ flex: 1 }} onAccessibilityEscape={onClose}>
         <View style={styles.toolbar}>
             {history.length > 1 && <Button variant="tertiary" label={t('common.back')} onPress={() => setHistory(items => items.slice(0, -1))} />}
             <Button variant="tertiary" label={t('common.close')} onPress={onClose} />
         </View>
         <LegalDocumentView {...current} onNavigate={location => setHistory(items => [...items, location])} />
-    </SafeAreaView>;
+    </View></SafeAreaView>;
 }
 export function LegalSheet({ doc, onClose }: { doc: LegalDoc | null; onClose(): void }) {
     if (!doc) return null;

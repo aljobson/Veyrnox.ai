@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { Image } from 'expo-image';
 import { CreateResult, type ResultBatch } from '../../../components/create/CreateResult';
 import { refreshBalance } from '../../../lib/createResult';
@@ -330,7 +331,7 @@ export default function CreateWithModel() {
                             onChangeText={setPrompt}
                             placeholder={t(PLACEHOLDER[text_.key] ?? (promptRequired(model) ? 'form.describeCreate' : 'form.describeChange'))}
                             placeholderTextColor={styles.mutedInk.color}
-                            accessibilityLabel={text_.key === 'topic' ? t('form.topic') : t('mobile.prompt')}
+                            accessibilityLabel={rawText(text_.key === 'topic' ? t('form.topic') : t('mobile.prompt'))}
                             multiline
                             maxLength={text_.max}
                         />
@@ -357,7 +358,7 @@ export default function CreateWithModel() {
                         {isVideo && model.durations.length > 1 ? (
                             <View style={styles.chips}>
                                 {model.durations.map((d) => (
-                                    <Chip key={d} label={t('create.s', { value1: d })} accessibilityRole="button" accessibilityLabel={plural('form.seconds', d)} accessibilityState={selectedState(duration === d)} selected={duration === d} onPress={() => setDuration(d)} />
+                                    <Chip key={d} label={t('create.s', { value1: d })} accessibilityRole="button" accessibilityLabel={rawText(plural('form.seconds', d))} accessibilityState={selectedState(duration === d)} selected={duration === d} onPress={() => setDuration(d)} />
                                 ))}
                             </View>
                         ) : null}
@@ -384,7 +385,7 @@ export default function CreateWithModel() {
                         </View>
                         <Text variant="caption" tone="secondary" style={styles.balance}>{t('create.workspace.balance', { credits: balance === null ? '—' : String(balance) })}</Text>
                     </View>
-                    <Button variant="primary" accessibilityRole="button" accessibilityLabel={complete ? t('libraryCreate.newNoCharge') : generateLabel} accessibilityState={{ busy, disabled }} disabled={disabled} onPress={complete ? newGeneration : generate} label={complete ? t('libraryCreate.newGeneration') : price === 0 ? t('create.workspace.generateFree') : t('create.workspace.generate', { credits: String(price) })} loading={busy} />
+                    <Button variant="primary" accessibilityRole="button" accessibilityLabel={rawText(complete ? t('libraryCreate.newNoCharge') : generateLabel)} accessibilityState={{ busy, disabled }} disabled={disabled} onPress={complete ? newGeneration : generate} label={complete ? t('libraryCreate.newGeneration') : price === 0 ? t('create.workspace.generateFree') : t('create.workspace.generate', { credits: String(price) })} loading={busy} />
                     <SectionLabel style={styles.refund}>{t('create.workspace.refund')}</SectionLabel>
                     <View style={styles.terms}>
                         <Text variant="caption" tone="tertiary">{t('create.workspace.terms')}{' '}</Text>

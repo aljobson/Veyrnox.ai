@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { Image } from 'expo-image';
@@ -43,9 +44,9 @@ export function MediaPreview({ api, choice, thumbnail = false }: { api: ApiClien
     const label = t(choice.mediaType === 'image' ? 'publishParity.media.previewImage' : 'publishParity.media.previewVideo');
     if (uri && failed !== uri && choice.kind === 'job') {
         if (choice.mediaType === 'video') return thumbnail ? <VideoThumbnail key={uri} uri={uri} label={label} /> : <InlineMedia url={uri} label={label} />;
-        if (choice.mediaType === 'image') return <Image source={{ uri }} cachePolicy="none" contentFit="cover" accessibilityLabel={label} style={s.media} onError={() => setFailed(uri)} />;
+        if (choice.mediaType === 'image') return <Image source={{ uri }} cachePolicy="none" contentFit="cover" accessibilityLabel={rawText(label)} style={s.media} onError={() => setFailed(uri)} />;
     }
-    return <View style={s.placeholder} accessibilityLabel={label}><Icon name={choice.mediaType === 'video' ? 'play' : 'image'} size={24} />
+    return <View style={s.placeholder} accessibilityLabel={rawText(label)}><Icon name={choice.mediaType === 'video' ? 'play' : 'image'} size={24} />
         {choice.kind === 'upload' ? <Text tone="secondary">{t('publishParity.media.upload')}</Text> : null}
     </View>;
 }
@@ -60,8 +61,8 @@ function VideoThumbnail({ uri, label }: { uri: string; label: string }) {
         const subscription = player.addListener('statusChange', event => { if (event.status === 'error') setFailed(true); });
         return () => subscription.remove();
     }, [player]);
-    return failed ? <View style={s.placeholder} accessibilityLabel={label}><Icon name="video" size={24} /></View> :
-        <VideoView player={player} nativeControls={false} contentFit="cover" accessibilityLabel={label} style={s.media} />;
+    return failed ? <View style={s.placeholder} accessibilityLabel={rawText(label)}><Icon name="video" size={24} /></View> :
+        <VideoView player={player} nativeControls={false} contentFit="cover" accessibilityLabel={rawText(label)} style={s.media} />;
 }
 
 export function ChosenMediaPreview({ api, choice }: { api: ApiClient; choice: MediaChoice | null }) {

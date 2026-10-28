@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { Text as ThemedText, themedStyles, useThemedStyles } from '../../../components/ui';
 import { NetworkLogo } from '../../../components/publish/NetworkLogo';
@@ -102,7 +103,7 @@ export default function Drafts() {
                                 </View>
                             ) : null}
                             {g.drafts.map((d) => (
-                                <View key={d.id} style={styles.card} accessible accessibilityLabel={`${d.text.slice(0, 80)}. ${d.networks.map(networkName).join(', ')}`}>
+                                <View key={d.id} style={styles.card} accessible accessibilityLabel={rawText(`${d.text.slice(0, 80)}. ${d.networks.map(networkName).join(', ')}`)}>
                                     <Text style={styles.text} numberOfLines={4}>{d.text || t('drafts.noText')}</Text>
                                     {d.scheduledAt ? <Text style={styles.muted}>{t('drafts.plannedFor', { when: when(d.scheduledAt) ?? '' })}</Text> : null}
                                     {d.networks.map(network => <View key={network} style={networkStyles.row}><NetworkLogo network={network} /><ThemedText tone="secondary">{networkName(network)}</ThemedText></View>)}

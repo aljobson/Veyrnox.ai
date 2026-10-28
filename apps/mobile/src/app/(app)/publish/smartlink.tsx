@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { subscribeCacheUser } from '../../../lib/appCache';
 import { brandStore } from '../../../lib/publishBrand';
 import { publishScope, usePublishRole } from '../../../lib/usePublishRole';
@@ -129,7 +130,7 @@ export default function SmartlinkScreen() {
                             <Text style={styles.muted}>{t('smartlink.itemClicks', { count: it.clicks })}</Text>
                             <View style={styles.row}>
                                 <Switch disabled={!canWrite || busy} value={it.enabled} onValueChange={(v) => setItem(i, { enabled: v })} accessibilityLabel={t('smartlink.itemShown')} />
-                                {canWrite ? <Pressable disabled={busy} accessibilityRole="button" accessibilityLabel={t('smartlink.removeItem', { label: it.label || String(i + 1) })} style={[styles.rm, touchTarget]} onPress={() => set({ items: link.items.filter((_, k) => k !== i) })}>
+                                {canWrite ? <Pressable disabled={busy} accessibilityRole="button" accessibilityLabel={rawText(t('smartlink.removeItem', { label: it.label || String(i + 1) }))} style={[styles.rm, touchTarget]} onPress={() => set({ items: link.items.filter((_, k) => k !== i) })}>
                                     <Text style={styles.rmText}>{t('smartlink.remove')}</Text>
                                 </Pressable> : null}
                             </View>

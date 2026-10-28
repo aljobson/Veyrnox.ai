@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -26,7 +27,7 @@ export function WinnersList() {
                 <View key={w.id} style={styles.week}>
                     <Text style={styles.heading} accessibilityRole="header">{w.name}</Text>
                     {w.titles.map((x) => (
-                        <Pressable key={x.id} accessibilityRole="button" accessibilityLabel={t('cinemaSocial.winnerRow', { rank: x.rank, title: x.title })} style={styles.row} onPress={() => router.push({ pathname: '/cinema/[id]', params: { id: x.id } })}>
+                        <Pressable key={x.id} accessibilityRole="button" accessibilityLabel={rawText(t('cinemaSocial.winnerRow', { rank: x.rank, title: x.title }))} style={styles.row} onPress={() => router.push({ pathname: '/cinema/[id]', params: { id: x.id } })}>
                             <Text style={styles.rank}>{x.rank}</Text>
                             <Text style={styles.name} numberOfLines={2}>{x.title}</Text>
                         </Pressable>

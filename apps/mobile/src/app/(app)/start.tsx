@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { captureEvent } from '../../lib/analytics/events';
 import { markWelcomeSeen } from '../../lib/markWelcomeSeen';
 import { t } from '../../lib/i18n';
@@ -89,7 +90,7 @@ export default function Start() {
                             <Pressable
                                 key={template.id}
                                 accessibilityRole="button"
-                                accessibilityLabel={t('start.try', { value1: template.title })}
+                                accessibilityLabel={rawText(t('start.try', { value1: template.title }))}
                                 style={({ pressed }) => [styles.template, pressed && styles.templatePressed]}
                                 onPress={() => {
                                     captureEvent('onboarding_step', { step: 'start', action: 'next' }); noteOnboardingCompleted();
@@ -136,7 +137,7 @@ export default function Start() {
             </ScrollView>
             <View style={styles.footer}>
                 <Button
-                    label={picked ? t('start.continuewith', { value1: picked.label.toLowerCase() }) : t('start.choosewheretostart')}
+                    label={picked ? t(`start.continue.${picked.key}`) : t('start.choosewheretostart')}
                     disabled={!source}
                     onPress={() => {
                         if (source) {

@@ -1,9 +1,10 @@
+import { rawText } from '../../lib/i18n/translate';
 import { Text as StatusText } from '../ui/Text';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { colors } from '../../theme';
 
 export function Field({ label, value, onChange, onBlur, onSubmitEditing, placeholder, multiline = false, maxLength = 2_000, hint, error }: { label: string; value: string; onChange: (value: string) => void; onBlur?: () => void; onSubmitEditing?: () => void; placeholder?: string; multiline?: boolean; maxLength?: number; hint?: string; error?: string }) {
-    return <View style={styles.field}><Text style={styles.label}>{label}</Text><TextInput accessibilityLabel={label} style={[styles.input, multiline && styles.multiline]} value={value} onChangeText={onChange} onBlur={onBlur} onSubmitEditing={onSubmitEditing} placeholder={placeholder} placeholderTextColor={colors.muted} multiline={multiline} maxLength={maxLength} />{hint ? <Text style={styles.help}>{hint}</Text> : null}{error ? <StatusText variant="inherit" accessibilityLiveRegion="polite" style={styles.error}>{error}</StatusText> : null}</View>;
+    return <View style={styles.field}><Text style={styles.label}>{label}</Text><TextInput accessibilityLabel={rawText(label)} style={[styles.input, multiline && styles.multiline]} value={value} onChangeText={onChange} onBlur={onBlur} onSubmitEditing={onSubmitEditing} placeholder={placeholder} placeholderTextColor={colors.muted} multiline={multiline} maxLength={maxLength} />{hint ? <Text style={styles.help}>{hint}</Text> : null}{error ? <StatusText variant="inherit" accessibilityLiveRegion="polite" style={styles.error}>{error}</StatusText> : null}</View>;
 }
 export function Choices({ values, selected, onPick, suffix = '' }: { values: readonly string[]; selected: string; onPick: (value: string) => void; suffix?: string }) {
     return <View style={styles.choices}>{values.map((value) => <Pressable key={value} accessibilityRole="radio" accessibilityState={{ selected: value === selected }} style={[styles.choice, value === selected && styles.choiceOn]} onPress={() => onPick(value)}><Text style={[styles.choiceText, value === selected && styles.choiceTextOn]}>{value}{suffix}</Text></Pressable>)}</View>;

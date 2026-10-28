@@ -22,4 +22,8 @@ export default {
     "start.usesomethingfrommyLibrary": "Use something from my Library",
     "start.continuewith": "Continue with {value1}",
     "start.choosewheretostart": "Choose where to start",
+    "start.continue.photo": "Continue with my photo",
+    "start.continue.video": "Continue with my video",
+    "start.continue.reference": "Continue with a reference",
+    "start.continue.prompt": "Continue with an idea",
 } as const;

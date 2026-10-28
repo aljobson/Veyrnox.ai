@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { Link, type Href } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 import type { MenuIcon } from '../../lib/menuIcons';
@@ -10,8 +11,8 @@ export function StartOption({ href, icon, title, body, hint, divided = false, st
         <Link href={href} asChild>
             <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={title}
-                accessibilityHint={hint}
+                accessibilityLabel={rawText(title)}
+                accessibilityHint={rawText(hint)}
                 style={StyleSheet.flatten([styles.startOption, divided && styles.startOptionDivided, style])}
             >
                 <View style={styles.startIcon}>

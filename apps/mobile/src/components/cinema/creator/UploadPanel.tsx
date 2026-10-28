@@ -11,7 +11,7 @@ import { ApiError } from '../../../lib/api';
 import { bodyKeys, creatorMessage, jsonWrite } from '../../../lib/cinemaDrafts';
 import { cleanupFor, readUpload, runTransfer, type UploadReply } from '../../../lib/cinemaUpload';
 import { cinemaUploadStore as store, type UploadRecord } from '../../../lib/cinemaUploadStore';
-import { t } from '../../../lib/i18n';
+import { formatNumber, t } from '../../../lib/i18n';
 import { Action, CreatorClosed, ui, useCreatorScope } from './RulesLinks';
 
 export const SUPPORT_MAIL_URL = `mailto:${SUPPORT_EMAIL}`;
@@ -203,7 +203,7 @@ export function UploadPanel({ contentId, editable, onChange }: { contentId: stri
         {reply && !reply.proxy_uploads_enabled && !closed && <Text style={ui.text}>{t('cinemaUpload.paused')}</Text>}
         {other && <><Text style={ui.text}>{t('cinemaUpload.another')}</Text><Link style={ui.button} href={{ pathname: '/cinema/creator/[id]', params: { id: runningTitle } }}><Text style={ui.link}>{t('cinemaUpload.openRunning')}</Text></Link></>}
         {record && <View accessibilityRole="progressbar" accessibilityLabel={t('cinemaUpload.progressLabel')} accessibilityValue={{ min: 0, max: 100, now: Math.floor(record.offset / record.size * 100) }}>
-            <Text style={ui.text}>{t('cinemaUpload.progress', { percent: Math.floor(record.offset / record.size * 100), sent: (record.offset / 1000000).toFixed(1), total: (record.size / 1000000).toFixed(1) })}</Text>
+            <Text style={ui.text}>{t('cinemaUpload.progress', { percent: Math.floor(record.offset / record.size * 100), sent: formatNumber(record.offset / 1000000, 1), total: formatNumber(record.size / 1000000, 1) })}</Text>
         </View>}
         {editable && reply?.library_uploads_enabled === true && !reply.upload && !record && !runningTitle && <Action label={t('cinema.videoUpload.fromLibrary')} disabled={busy || preparing || checking} onPress={() => setLibraryOpen(true)} />}
         {LibraryChooser && <LibraryChooser api={api} kind="video" onPick={choice => { void importVideo(choice.jobId); }} onClose={() => { if (scope.live()) setLibraryOpen(false); }} />}

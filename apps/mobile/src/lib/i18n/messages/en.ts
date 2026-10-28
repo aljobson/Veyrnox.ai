@@ -110,6 +110,7 @@ import area_logo from './en/logo';
 import area_lowBalance from './en/lowBalance';
 import area_mcp from './en/mcp';
 import area_mdl from './en/mdl';
+import area_mediaKind from './en/mediaKind';
 import area_menu from './en/menu';
 import area_mobile from './en/mobile';
 import area_model from './en/model';
@@ -305,6 +306,7 @@ const catalog = {
     ...area_lowBalance,
     ...area_mcp,
     ...area_mdl,
+    ...area_mediaKind,
     ...area_menu,
     ...area_mobile,
     ...area_model,

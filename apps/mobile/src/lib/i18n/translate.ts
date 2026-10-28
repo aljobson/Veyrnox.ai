@@ -1,4 +1,4 @@
-import { DEFAULT_LOCALE, type LocaleCode } from './locales';
+import { isRtl, DEFAULT_LOCALE, type LocaleCode } from './locales';
 
 export type Messages = Readonly<Record<string, string>>;
 export type Catalogs = Readonly<Partial<Record<LocaleCode, Messages>>>;
@@ -7,9 +7,11 @@ export type Vars = Readonly<Record<string, string | number>>;
 const SLOT = /\{([a-zA-Z0-9_]+)\}/g;
 
 // Fills {slot} placeholders. A slot with no value is left as written.
-export function fill(text: string, vars?: Vars): string {
+export const rawText = <T extends string | undefined>(value: T): T => value?.replace(/[\u2068\u2069]/g, '') as T;
+
+export function fill(text: string, vars?: Vars, rtl = false): string {
     if (!vars) return text;
-    return text.replace(SLOT, (whole, name: string) => (name in vars ? String(vars[name]) : whole));
+    return text.replace(SLOT, (whole, name: string) => (name in vars ? (rtl ? `\u2068${vars[name]}\u2069` : String(vars[name])) : whole));
 }
 
 export interface Translator {
@@ -35,12 +37,12 @@ export function createTranslator(locale: LocaleCode, catalogs: Catalogs): Transl
 
     return {
         locale,
-        t: (key, vars) => fill(lookup(key) ?? key, vars),
+        t: (key, vars) => fill(lookup(key) ?? key, vars, isRtl(locale)),
         plural: (key, count, vars) => {
             const category = pluralCategory(locale, count);
             // The locale's own forms win over English ones, including its `.other`.
             const text = own?.[`${key}.${category}`] ?? own?.[`${key}.other`] ?? english[`${key}.${category}`] ?? english[`${key}.other`] ?? key;
-            return fill(text, { count, ...vars });
+            return fill(text, { count, ...vars }, isRtl(locale));
         },
     };
 }

@@ -4536,6 +4536,12 @@
     "ratio": 4.5
   },
   {
+    "id": "cinema.pause",
+    "english": "Pause",
+    "translation": "Mettre en pause",
+    "ratio": 3
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",
@@ -4630,5 +4636,23 @@
     "english": "Trailer",
     "translation": "Bande-annonce",
     "ratio": 1.86
+  },
+  {
+    "id": "presets.cat.NEW",
+    "english": "New",
+    "translation": "Nouveautés",
+    "ratio": 3.33
+  },
+  {
+    "id": "presets.cat.CARTOONS",
+    "english": "Cartoons",
+    "translation": "Dessins animés",
+    "ratio": 1.75
+  },
+  {
+    "id": "presets.cat.ADS",
+    "english": "Ads",
+    "translation": "Publicités",
+    "ratio": 3.33
   }
 ]
