@@ -98,7 +98,7 @@ export function refreshSession(refreshToken: string): Promise<Session> {
 // Best effort: the local session is cleared whether or not this reaches the server.
 export async function revokeSession(accessToken: string): Promise<void> {
     try {
-        await fetchWithTimeout(fetch, `${config.supabaseUrl}/auth/v1/logout`, {
+        await fetchWithTimeout(fetch, `${config.supabaseUrl}/auth/v1/logout?scope=local`, {
             method: 'POST',
             headers: { apikey: config.publishableKey, Authorization: `Bearer ${accessToken}` },
         });
