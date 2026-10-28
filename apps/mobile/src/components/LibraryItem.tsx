@@ -1,13 +1,15 @@
-import { Text, Button, Card, Icon, themedStyles, useThemedStyles } from './ui';
+import { Text, Button, Card, themedStyles, useThemedStyles } from './ui';
 import { StyleSheet, View } from 'react-native';
 
 import { formatLocale, plural, t } from '../lib/i18n';
 import { expiryOf, rowStatus } from '../lib/libraryView';
 import type { Job, Kind } from '../lib/media';
+import { LibraryMedia, type LibraryMediaProps } from './library/LibraryMedia';
 import { ds } from '../theme';
 
 interface Props {
     readonly job: Job;
+    readonly media?: Omit<LibraryMediaProps, 'job' | 'kind'>;
     readonly name: string;
     readonly kind: Kind | undefined;
     readonly grid: boolean;
@@ -24,7 +26,7 @@ interface Props {
 
 // One creation in the Library: what it is, its state, its price, when its file goes, and the actions that apply.
 // A failed job says how many credits came back; a file near the end of its life says when.
-export function LibraryItem({ job, name, kind, grid, starred, canSchedule, canReuse, canAsk, onAsk, onOpen, onStar, onSchedule, onReuse }: Props) {
+export function LibraryItem({ job, name, kind, grid, starred, canSchedule, canReuse, canAsk, onAsk, onOpen, onStar, onSchedule, onReuse, media }: Props) {
     const styles = useThemedStyles(sheets);
     const status = rowStatus(job);
     const expiry = expiryOf(job);
@@ -37,12 +39,17 @@ export function LibraryItem({ job, name, kind, grid, starred, canSchedule, canRe
 
     return (
         <Card style={[styles.card, grid ? styles.gridCard : styles.listRow]}>
-            <Card accessibilityRole="button" accessibilityLabel={[name, statusText, cost, when, expiryText].filter(Boolean).join(', ')} style={styles.main} onPress={onOpen}>
-                {kind ? <Icon name={kind} size={grid ? 28 : 24} /> : null}
+            <Card accessibilityRole="button" accessibilityLabel={[name, statusText, cost, when, expiryText].filter(Boolean).join(', ')} style={[styles.main, !grid && styles.horizontal]} onPress={onOpen}>
+                <View style={grid ? styles.square : styles.thumbnail}>
+                    <LibraryMedia job={job} kind={kind} {...media} />
+                    {grid ? <View style={styles.statusChip}><Text variant="caption" tone={bad ? 'danger' : 'accent'}>{statusText}</Text></View> : null}
+                </View>
+                <View style={styles.copy}>
                 <Text variant="bodyStrong" tone="primary" style={styles.name} numberOfLines={grid ? 2 : 1}>{name}</Text>
-                <Text variant="body" tone="accent" style={[styles.status, bad && styles.statusBad]}>{statusText}</Text>
-                <Text variant="footnote" tone="tertiary"><Text variant="footnote" tone="warning">{cost}</Text>{` · ${when}`}</Text>
+                {!grid ? <Text variant="body" tone="accent" style={[styles.status, bad && styles.statusBad]}>{statusText}</Text> : null}
+                <Text variant="footnote" tone="tertiary">{t('libraryCreate.costDate', { cost, date: when })}</Text>
                 {expiryText ? <Text variant="footnote" tone="tertiary" style={[styles.muted, expiry.kind === 'gone' && styles.statusBad]}>{expiryText}</Text> : null}
+                </View>
             </Card>
             <View style={styles.actions}>
                 <Button variant="tertiary" accessibilityRole="button" accessibilityLabel={t('library.favouriteLabel', { name })} accessibilityState={{ selected: starred }} onPress={onStar} label={t('library.favouriteLabel', { name })} icon={starred ? 'starFill' : 'star'} iconOnly />
@@ -64,6 +71,11 @@ const sheets = themedStyles((p) => ({
     listRow: { borderWidth: 0, borderBottomWidth: StyleSheet.hairlineWidth, boxShadow: 'none', borderRadius: 0, paddingHorizontal: 0, backgroundColor: p.bg },
     gridCard: { flex: 1, margin: ds.space.xs, padding: ds.space.md, backgroundColor: p.bgElevated1, borderColor: p.borderSubtle, borderWidth: 1, borderRadius: ds.radius.md },
     main: { padding: 0, borderWidth: 0, borderRadius: 0, backgroundColor: 'transparent', boxShadow: 'none', gap: ds.space.xs, minHeight: 44 },
+    square: { width: '100%', aspectRatio: 1 },
+    thumbnail: { width: 72, height: 72 },
+    horizontal: { flexDirection: 'row' },
+    copy: { flex: 1, gap: ds.space.xs },
+    statusChip: { position: 'absolute', top: 4, start: 4, borderRadius: 8, padding: 4, backgroundColor: p.bgElevated1 },
     name: { color: p.textPrimary, },
     status: { color: p.accent, },
     statusBad: { color: p.danger },

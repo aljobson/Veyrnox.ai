@@ -23,12 +23,11 @@ function timeout<T>(work: Promise<T>): Promise<T> {
         work.then(value => { clearTimeout(timer); resolve(value); }, error => { clearTimeout(timer); reject(error); });
     });
 }
-export async function extractFrames(uri: string, count: number, deps?: FrameDeps): Promise<string[]> {
+export async function loadVideo(uri: string, deps?: Pick<FrameDeps, 'createPlayer'>) {
     let player: ReturnType<FrameDeps['createPlayer']> | undefined;
     const subscriptions: { remove(): void }[] = [];
     try {
-        const lib = deps ?? nativeDeps();
-        player = lib.createPlayer(uri);
+        player = (deps ?? nativeDeps()).createPlayer(uri);
         const p = player;
         await timeout(new Promise<void>((resolve, reject) => {
             const check = () => {
@@ -40,6 +39,15 @@ export async function extractFrames(uri: string, count: number, deps?: FrameDeps
             check();
         }));
         subscriptions.splice(0).forEach(s => s.remove());
+        return player;
+    } catch { player?.release(); throw new Error('video_unreadable'); }
+    finally { subscriptions.forEach(s => s.remove()); }
+}
+export async function extractFrames(uri: string, count: number, deps?: FrameDeps): Promise<string[]> {
+    let player: ReturnType<FrameDeps['createPlayer']> | undefined;
+    try {
+        const lib = deps ?? nativeDeps();
+        player = await loadVideo(uri, lib);
         const times = frameTimes(player.duration, count);
         if (!times.length) throw new Error('video_unreadable');
         const thumbnails = await timeout(player.generateThumbnailsAsync(times, { maxWidth: 1280, maxHeight: 1280 }));
@@ -54,5 +62,5 @@ export async function extractFrames(uri: string, count: number, deps?: FrameDeps
         }
         return uris;
     } catch { throw new Error('video_unreadable'); }
-    finally { subscriptions.forEach(s => s.remove()); player?.release(); }
+    finally { player?.release(); }
 }

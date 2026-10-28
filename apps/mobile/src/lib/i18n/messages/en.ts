@@ -101,6 +101,7 @@ import area_jobCancel from './en/jobCancel';
 import area_label from './en/label';
 import area_language from './en/language';
 import area_library from './en/library';
+import area_libraryCreate from './en/libraryCreate';
 import area_libraryFiles from './en/libraryFiles';
 import area_libsrc from './en/libsrc';
 import area_logo from './en/logo';
@@ -289,6 +290,7 @@ const catalog = {
     ...area_label,
     ...area_language,
     ...area_library,
+    ...area_libraryCreate,
     ...area_libraryFiles,
     ...area_libsrc,
     ...area_logo,

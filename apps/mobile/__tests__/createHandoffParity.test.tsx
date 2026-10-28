@@ -16,7 +16,7 @@ jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () =
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi }) }));
 jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalog: jest.fn() }));
 jest.mock('../src/lib/useBalance', () => ({ useBalance: () => 1000 }));
-jest.mock('../src/lib/useFreeLeft', () => ({ useFreeLeft: () => ({}) }));
+jest.mock('../src/lib/useFreeLeft', () => ({ useFreeLeft: () => ({}), useFreeLeftState: () => ({ left: {}, loading: false }) }));
 jest.mock('../src/lib/creatorProfileStore', () => ({ loadVibe: jest.fn().mockResolvedValue(null) }));
 jest.mock('../src/lib/createDraftStore', () => ({ loadDraft: jest.fn().mockResolvedValue(null), saveDraft: jest.fn().mockResolvedValue(undefined), clearDraft: jest.fn().mockResolvedValue(undefined) }));
 jest.mock('../src/lib/generationSubmit', () => ({ ...jest.requireActual('../src/lib/generationSubmit'), createGenerationSubmit: () => ({ run: mockRun }) }));
@@ -30,7 +30,7 @@ const event = { nativeEvent: {}, currentTarget: 1, target: 1 };
 const video: CatalogModel = { id: 'wan-2.5-kie', name: 'Wan', modality: 'text-to-video', credits: 2, gated: false, durations: [5,10], capabilities: { inputs: { prompt: { max: 800 }, aspect: { values: ['9:16','16:9'] } } } };
 const input = () => root.container.queryAll(n => n.props.accessibilityLabel === t('mobile.prompt'))[0];
 beforeEach(() => {
-    (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = createRoot(); mockReplace.mockClear(); mockRun.mockReset().mockResolvedValue('job'); jest.mocked(CharacterPanel).mockClear();
+    (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = createRoot(); mockReplace.mockClear(); mockRun.mockReset().mockImplementation(async (_api: unknown, _request: unknown, _count: number, onStarted?: (n: number) => void, onJob?: (id: string, index: number) => void) => { onStarted?.(1); onJob?.('job', 0); return 'job'; }); jest.mocked(CharacterPanel).mockClear();
     mockParams = { modelId: video.id, prompt: 'A quiet original scene', duration: '5' };
     jest.mocked(fetchCatalog).mockResolvedValue([video]);
 });
@@ -59,7 +59,9 @@ test.each([{ duration:'5', hand:true, sound:true, follow:true },{ duration:'10',
     expect(generate.props.accessibilityState.disabled).toBe(false);
     await act(async () => generate.props.onClick(event));
     expect(mockRun).toHaveBeenCalled();
-    expect(mockReplace).toHaveBeenCalledWith({ pathname:'/job/[id]',params:{id:'job',...(c.follow ? {followup:'faceless-sound'} : {})} });
+    // Results stay on Create (library-create-a); only the qualified Faceless Reel clip opens its job page for the sound step.
+    if (c.follow) expect(mockReplace).toHaveBeenCalledWith({ pathname:'/job/[id]',params:{id:'job',followup:'faceless-sound'} });
+    else expect(mockReplace).not.toHaveBeenCalled();
 });
 test.each(['faceless-reel','faceless-sound','oddlings'])('%s does not pre-tick source rights', async recipe => {
     jest.mocked(fetchCatalog).mockResolvedValue([{ ...video, capabilities: { ...video.capabilities, media: { video: { required:true } } } }]);

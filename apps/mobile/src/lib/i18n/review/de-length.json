@@ -2934,6 +2934,12 @@
     "ratio": 2.67
   },
   {
+    "id": "libraryCreate.copyFailed",
+    "english": "Could not copy. Try again.",
+    "translation": "Kopieren fehlgeschlagen. Versuche es erneut.",
+    "ratio": 1.69
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

@@ -2970,6 +2970,18 @@
     "ratio": 1.67
   },
   {
+    "id": "libraryCreate.copied",
+    "english": "Copied",
+    "translation": "Скопировано",
+    "ratio": 1.83
+  },
+  {
+    "id": "libraryCreate.copyFailed",
+    "english": "Could not copy. Try again.",
+    "translation": "Не удалось скопировать. Повторите попытку.",
+    "ratio": 1.62
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",
