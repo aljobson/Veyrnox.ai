@@ -69,7 +69,7 @@
       }
     },
     "privacy": {
-      "translationsReviewedAgainstEnglishDated": "21 October 2026",
+      "translationsReviewedAgainstEnglishDated": "28 October 2026",
       "hashes": {
         "title": "506ff394621596dd88138642eddfc1e41833b3ae92d95e5c77c94327098abd9a",
         "description": "9a947e06da6b04c331677eb2f632b0a2a73371115df7dd1b1f5adac91972f186",
@@ -80,6 +80,8 @@
         "b004": "ff29bf08447e4259049e2d471cc1ea8dc8854d6313323469cf49205f723e35d2",
         "b007": "f5347e6a024ad71d7f112e631752207d340824a797136937a501bc4f3b86fea3",
         "b006": "4e9bdf10c8be509201dd90f0b6ca3c2c989f42b557c66b3b6571fe25e9b831a7",
+        "b074": "ba1a0eea98b255458589d145564f1d4ab6fb5637d5de78597985bf3f54e02692",
+        "b073": "f5a73c3ba6a95a2384555ba059a81695b935df98dc785df16a954a3a5a028a7f",
         "b009": "34b01fd1cae54ed88cd565510a0693d477b7d97baf896a18729d20f7b515564f",
         "b008": "dc3628764f6fd201fab08e56141f2dc3d2eef26d7f0f6d93dbf3d9b238a8a223",
         "b011": "9c13b4955af8b36c8f969e42ce093e83a9af946f1b6b69f52818a4f7e2bf13ea",
