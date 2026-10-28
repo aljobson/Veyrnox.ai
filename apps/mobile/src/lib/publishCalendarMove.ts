@@ -22,7 +22,7 @@ export function moveAttempt(post: CalendarPost, when: Date) {
 }
 export type MoveAttempt = ReturnType<typeof moveAttempt>;
 export function moveOutcome(err: unknown): 'refused' | 'changed' | 'unknown' {
-    if (!(err instanceof ApiError) || err.status === 0) return 'unknown';
+    if (!(err instanceof ApiError) || err.status === 0 || err.status === 408) return 'unknown';
     if (err.status === 503 && ['calendar_not_open', 'supabase_not_configured'].includes(err.code)) return 'refused';
     if (err.status >= 500) return 'unknown';
     if (err.status === 409 && err.code === 'SCHEDULE_CHANGED') return 'changed';

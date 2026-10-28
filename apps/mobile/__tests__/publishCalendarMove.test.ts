@@ -32,6 +32,7 @@ test('frozen CAS, future validation and bounded backoff', () => {
 });
 test.each([
     [new Error(), 'unknown'], [new ApiError(0, 'network'), 'unknown'], [new ApiError(0, 'network', { timedOut: true }), 'unknown'],
+    [new ApiError(408, 'request_timeout'), 'unknown'],
     ...[429, 400, 403, 404].map(status => [new ApiError(status, 'error'), 'refused'] as [ApiError, string]),
     [new ApiError(409, 'SCHEDULE_CHANGED'), 'changed'], [new ApiError(409, 'POST_STARTED'), 'refused'], [new ApiError(409, 'POST_BUSY'), 'refused'],
     [new ApiError(502, 'internal'), 'unknown'], [new ApiError(503, 'calendar_not_open'), 'refused'], [new ApiError(503, 'supabase_not_configured'), 'refused'], [new ApiError(503, 'service_unavailable'), 'unknown'],

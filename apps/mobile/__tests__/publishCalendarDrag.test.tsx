@@ -98,6 +98,31 @@ test('timeout committed on server resolves by timestamp equality without another
     await render(); await move(); pending(); await advance(2000);
     expect(patch).toHaveBeenCalledTimes(1); expect(announce).toHaveBeenCalledWith(status('done')); expect(text()).not.toContain(status('pending'));
 });
+test('HTTP 408 keeps the optimistic move pending until a read confirms the commit', async () => {
+    patch.mockRejectedValue(new ApiError(408, 'request_timeout'));
+    await render(); await move(); pending();
+    expect(row().props.accessibilityActions).toBeUndefined();
+    await advance(2000); pending();
+    read.mockImplementation(async () => { rows[0] = raw('A', NEW.toISOString()); return { post: rows[0] }; });
+    await advance(4000);
+    expect(announce).toHaveBeenCalledWith(status('done')); expect(patch).toHaveBeenCalledTimes(1);
+});
+test('expired time and exhausted checks cannot disprove a late commit; manual Check remains available', async () => {
+    jest.setSystemTime(new Date(+NEW - 61_000));
+    patch.mockRejectedValue(new ApiError(408, 'request_timeout'));
+    await render(); await move();
+    for (const delay of pendingDelays) await advance(delay);
+    expect(read).toHaveBeenCalledTimes(4); expect(text()).toContain(status('stillPending'));
+    await advance(60_000);
+    expect(read).toHaveBeenCalledTimes(4);
+    expect(buttons(root, t('publishTiming.move.retry'))).toHaveLength(0);
+    expect(buttons(root, t('publishTiming.move.check'))).toHaveLength(1);
+    expect(buttons(root, t('publishTiming.move.keep'))).toHaveLength(0);
+    expect(row().props.accessibilityActions).toBeUndefined();
+    read.mockImplementation(async () => { rows[0] = raw('A', NEW.toISOString()); return { post: rows[0] }; });
+    await click('check');
+    expect(announce).toHaveBeenCalledWith(status('done')); expect(text()).not.toContain(status('stillPending'));
+});
 test('old snapshots before commit keep the new day until the third read', async () => {
     patch.mockRejectedValue(new ApiError(0, 'network', { timedOut: true }));
     read.mockResolvedValueOnce({ post: raw() }).mockResolvedValueOnce({ post: raw() }).mockImplementation(async () => { rows[0] = raw('A', NEW.toISOString()); return { post: rows[0] }; });
@@ -189,6 +214,28 @@ test('another successful move reload preserves pending A and announcements name 
     await render(); await move(); await click('close'); await move('B'); expect(text()).toContain(status('pending')); expect(announce).toHaveBeenCalledWith(status('done', 'B'));
     read.mockImplementation(async () => { rows[0] = raw('A', NEW.toISOString()); return { post: rows[0] }; }); await advance(2000);
     expect(announce).toHaveBeenCalledWith(status('done')); expect(status('done')).not.toBe(status('done', 'B'));
+});
+test('identical captions resolving to the same time each announce once, including after the sheet closes', async () => {
+    rows = rows.map(p => ({ ...p, global_text: 'Same caption' }));
+    const a = deferred<unknown>(), b = deferred<unknown>();
+    patch.mockRejectedValue(new ApiError(0, 'network'));
+    read.mockImplementation((id: string) => id === 'A' ? a.promise : b.promise);
+    await render();
+    const label = t('publishTiming.move.to', { time: OLD.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) });
+    for (let i = 0; i < 2; i++) {
+        await act(async () => buttons(root, label)[0].props.onClick(event()));
+        await input(root, t('whenPicker.dateyearmonthday'), dateText(NEW));
+        await input(root, t('whenPicker.timehourminute'), timeText(NEW));
+        await click('save'); await click('close');
+    }
+    await advance(2000);
+    const done = t('publishTiming.move.done', { post: 'Same caption', time: moveTime(NEW.toISOString()) });
+    for (const [index, held] of [a, b].entries()) {
+        rows[index] = { ...rows[index], scheduled_at: NEW.toISOString() };
+        await act(async () => held.resolve({ post: rows[index] }));
+        expect(announce.mock.calls.filter(([message]) => message === done)).toHaveLength(index + 1);
+    }
+    await render(); expect(announce.mock.calls.filter(([message]) => message === done)).toHaveLength(2);
 });
 test('one in-flight request disables manual actions and prevents timer overlap', async () => {
     const held = deferred<unknown>(); patch.mockRejectedValue(new ApiError(0, 'network')); read.mockReturnValue(held.promise);

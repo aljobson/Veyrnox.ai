@@ -25,15 +25,16 @@ const postName = (post: CalendarPost) => post.text.slice(0, 40) || t('calendar.n
 export function useCalendarMoves(api: ApiClient, posts: CalendarPost[] | null, setPosts: Dispatch<SetStateAction<CalendarPost[] | null>>, reload: () => void, cancelDrag: () => void) {
     const entries = useRef(new Map<string, Entry>()), epoch = useRef(0), currentApi = useRef(api), livePosts = useRef(posts);
     currentApi.current = api; livePosts.current = posts;
-    const [, render] = useState(0), [sheet, setSheet] = useState<Sheet | null>(null), [message, setMessage] = useState('');
+    const [, render] = useState(0), [sheet, setSheet] = useState<Sheet | null>(null);
+    const [notice, setNotice] = useState({ postId: '', text: '' });
+    const setMessage = (text: string, postId: string) => setNotice({ postId, text });
     const sheetRef = useRef(sheet); sheetRef.current = sheet;
-    useAnnouncement(message);
     const update = () => render(n => n + 1);
     const valid = (e: Entry) => entries.current.get(e.attempt.postId)?.token === e.token && e.scope.epoch === epoch.current && e.scope.api === currentApi.current && e.scope.publishScope === publishScope();
     const reset = useCallback(() => {
         epoch.current++;
         entries.current.forEach(e => clearTimeout(e.timer)); entries.current.clear();
-        cancelDrag(); setSheet(null); setMessage(''); render(n => n + 1);
+        cancelDrag(); setSheet(null); setNotice({ postId: '', text: '' }); render(n => n + 1);
     }, [cancelDrag]);
     useEffect(() => {
         reset();
@@ -48,7 +49,7 @@ export function useCalendarMoves(api: ApiClient, posts: CalendarPost[] | null, s
         setPosts(rows => rows?.flatMap(row => row.id !== e.attempt.postId ? [row] : post ? [scheduleOnly ? { ...row, scheduledAt: post.scheduledAt } : { ...row, scheduledAt: post.scheduledAt, status: post.status, targets: post.targets }] : []) ?? null);
         const key = result === 'new' ? 'done' : result === 'other' ? 'serverHas' : result;
         const text = result === 'gone' ? `${postName(e.post)}: ${t('publishCompose.thatpostisnolongerthere')}` : t(`publishTiming.move.${key}`, { post: postName(e.post), time: moveTime(post?.scheduledAt ?? null) });
-        setMessage(text);
+        setMessage(text, e.attempt.postId);
         if (result === 'new') setSheet(s => s?.post.id === e.attempt.postId ? null : s);
         else tellSheet(e.attempt.postId, { message: text, action: 'reload' });
         reload();
@@ -57,7 +58,7 @@ export function useCalendarMoves(api: ApiClient, posts: CalendarPost[] | null, s
     function schedule(e: Entry) {
         if (!valid(e) || e.timer || e.busy) return;
         if (e.checks >= pendingDelays.length) {
-            if (!e.exhausted) setMessage(t('publishTiming.move.stillPending', { post: postName(e.post), time: moveTime(e.attempt.scheduledAt) }));
+            if (!e.exhausted) setMessage(t('publishTiming.move.stillPending', { post: postName(e.post), time: moveTime(e.attempt.scheduledAt) }), e.attempt.postId);
             e.exhausted = true; update(); return;
         }
         e.timer = setTimeout(() => { e.timer = undefined; if (valid(e)) void check(e, true); }, pendingDelays[e.checks]);
@@ -77,7 +78,7 @@ export function useCalendarMoves(api: ApiClient, posts: CalendarPost[] | null, s
             remove(e);
             const text = composeErrorMessage(new ApiError(409, 'SCHEDULE_CHANGED'));
             tellSheet(e.attempt.postId, { message: text, action: 'reload' });
-            setMessage(`${postName(e.post)}: ${text}`);
+            setMessage(`${postName(e.post)}: ${text}`, e.attempt.postId);
         }
     }
     async function check(e: Entry, automatic = false) {
@@ -103,11 +104,11 @@ export function useCalendarMoves(api: ApiClient, posts: CalendarPost[] | null, s
                 remove(e);
                 const text = composeErrorMessage(err);
                 tellSheet(e.attempt.postId, { message: text, action: err instanceof ApiError && err.status === 429 ? 'retry' : err instanceof ApiError && err.status === 409 ? 'reload' : undefined });
-                setMessage(`${postName(e.post)}: ${text}`);
+                setMessage(`${postName(e.post)}: ${text}`, e.attempt.postId);
             } else {
                 e.phase = 'pending';
                 if (outcome === 'changed') await read(e, true);
-                if (valid(e)) setMessage(t('publishTiming.move.pending', { post: postName(e.post), time: moveTime(e.attempt.scheduledAt) }));
+                if (valid(e)) setMessage(t('publishTiming.move.pending', { post: postName(e.post), time: moveTime(e.attempt.scheduledAt) }), e.attempt.postId);
             }
         } finally {
             if (valid(e)) { e.busy = false; update(); if (e.phase === 'pending') schedule(e); }
@@ -135,7 +136,7 @@ export function useCalendarMoves(api: ApiClient, posts: CalendarPost[] | null, s
     };
     const entry = sheet ? entries.current.get(sheet.post.id) : undefined;
     return {
-        moves: entries.current, sheet, entry, message, marker, open, submit,
+        moves: entries.current, sheet, entry, message: notice.text, announcementPostId: notice.postId, marker, open, submit,
         currentPost: sheet ? posts?.find(p => p.id === sheet.post.id) ?? sheet.post : null,
         close: () => { if (!entry?.busy) setSheet(null); },
         edit: (date: string, time: string) => { if (!entry) setSheet(s => s ? { ...s, date, time, edited: true, action: undefined, message: undefined } : s); },
@@ -152,6 +153,15 @@ export function useCalendarMoves(api: ApiClient, posts: CalendarPost[] | null, s
     };
 }
 export function CalendarMoveSheet({ move }: { move: ReturnType<typeof useCalendarMoves> }) {
+    // A different post gets a fresh deduplication scope, even with identical captions and times.
+    // Keep this mounted when the sheet closes so successful moves are still announced.
+    return <><MoveAnnouncement key={move.announcementPostId} message={move.message} /><MoveSheetContent move={move} /></>;
+}
+function MoveAnnouncement({ message }: { message: string }) {
+    useAnnouncement(message, { onMount: true });
+    return null;
+}
+function MoveSheetContent({ move }: { move: ReturnType<typeof useCalendarMoves> }) {
     const styles = useThemedStyles(sheets), { sheet, entry, currentPost } = move;
     const [clock, setClock] = useState(Date.now);
     useEffect(() => {
