@@ -236,15 +236,19 @@ export function randomizeAll(picks: Picks, random: Random = Math.random): Picks 
 }
 
 // Everything in the studio prompt except the character head.
-export function buildDirection({ mode = 'portrait', motionId = '', scene = '' }: { mode?: 'portrait' | 'motion'; motionId?: string; scene?: string }): string {
-    const motion = MOTIONS.find((m) => m.id === motionId);
+export function buildDirection({ mode = 'portrait', motionId = '', scene = '', referenceNote = '', hasReference = false }: { mode?: 'portrait' | 'motion'; motionId?: string; scene?: string; referenceNote?: string; hasReference?: boolean }): string {
+    const motion = MOTIONS.find((item) => item.id === motionId);
     return [
-        mode === 'motion' ? 'vertical short-form creator video, full body visible at the opening, consistent identity throughout the shot' : 'full-body editorial creator portrait, complete silhouette visible, character-sheet clarity',
+        mode === 'motion'
+            ? 'vertical short-form creator video, full body visible at the opening, consistent identity throughout the shot'
+            : 'full-body editorial creator portrait, complete silhouette visible, character-sheet clarity',
         motion?.phrase,
+        hasReference ? 'use the supplied image as the base composition and visual material; apply the requested Oddling traits while keeping the result an original fictional adult character' : '',
+        String(referenceNote || '').trim() ? `visual reference direction: ${String(referenceNote).trim()}` : '',
         String(scene || '').trim(),
     ].filter(Boolean).join(', ');
 }
 
-export const buildStudioPrompt = (args: { picks: Picks; mode?: 'portrait' | 'motion'; motionId?: string; scene?: string }): string => buildCharacterPrompt(buildDirection(args), args.picks);
+export const buildStudioPrompt = (args: { picks: Picks; mode?: 'portrait' | 'motion'; motionId?: string; scene?: string; referenceNote?: string; hasReference?: boolean }): string => buildCharacterPrompt(buildDirection(args), args.picks);
 
 export const optionLabel = (groupId: string, value: string): string => groupById(groupId)?.options.find(([v]) => v === value)?.[2] ?? value;

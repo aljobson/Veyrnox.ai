@@ -5124,5 +5124,22 @@ export default {
   "cinemaViewer.fromSeries": "De {series}",
   "cinemaViewer.pollClosesAt": "Encerra em {date}",
   "cinemaViewer.pollClosedAt": "Encerrado em {date}",
-  "cinemaViewer.openComments": "Ler e escrever comentários"
+  "cinemaViewer.openComments": "Ler e escrever comentários",
+  "oddlingsStudio.optionalReference": "IMAGEM PARA TRANSFORMAR · OPCIONAL",
+  "oddlingsStudio.moodboard": "Envie uma imagem para manipulá-la com o fluxo de edição recomendado e descreva a mudança.",
+  "oddlingsStudio.referencePlaceholder": "Aproveite a maquiagem xadrez e a gola alta, não a identidade",
+  "oddlingsStudio.low": "Os créditos estão acabando.",
+  "oddlingsStudio.insufficient": "Créditos insuficientes.",
+  "oddlingsStudio.balancePortrait": "Você tem {balance} cr; este retrato custa {cost} cr.",
+  "oddlingsStudio.balanceAnimation": "Você tem {balance} cr; esta animação custa {cost} cr.",
+  "oddlingsStudio.getCredits": "Obter créditos",
+  "oddlingsStudio.refineChat": "Desenvolver história no Chat",
+  "oddlingsStudio.openingChat": "Abrindo o LLM Chat…",
+  "oddlingsStudio.none": "Nenhum selecionado",
+  "oddlingsStudio.anyLabel": "{label}: Qualquer",
+  "oddlingsStudio.any": "Qualquer",
+  "oddlingsStudio.chatStarter": "O que deve acontecer a seguir nesta história do Oddling?",
+  "oddlingsStudio.chatHandoffFailed": "Não foi possível abrir o chat LLM com este Oddling. Verifique a conexão e toque novamente em Desenvolver história no Chat.",
+  "oddlingsStudio.chatSkillLocked": "Este chat de Oddling mantém suas habilidades narrativas. Inicie um novo chat para usar outras habilidades.",
+  "oddlingsStudio.instructionsLocked": "Este chat de Oddling mantém as instruções da história para preservar o personagem. Inicie um novo chat para escrever suas próprias instruções."
 } as const;

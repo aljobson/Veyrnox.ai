@@ -2964,6 +2964,12 @@
     "ratio": 2.25
   },
   {
+    "id": "oddlingsStudio.any",
+    "english": "Any",
+    "translation": "Любой",
+    "ratio": 1.67
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

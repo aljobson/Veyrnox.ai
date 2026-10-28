@@ -5060,5 +5060,22 @@ export default {
   "cinemaViewer.fromSeries": "{series} से",
   "cinemaViewer.pollClosesAt": "{date} को बंद होगा",
   "cinemaViewer.pollClosedAt": "{date} को बंद हुआ",
-  "cinemaViewer.openComments": "टिप्पणियाँ पढ़ें और लिखें"
+  "cinemaViewer.openComments": "टिप्पणियाँ पढ़ें और लिखें",
+  "oddlingsStudio.optionalReference": "बदलने के लिए छवि · वैकल्पिक",
+  "oddlingsStudio.moodboard": "छवि अपलोड करें और सुझाए गए संपादन प्रवाह में होने वाला बदलाव बताएं।",
+  "oddlingsStudio.referencePlaceholder": "चौखाने वाला मेकअप और ऊंचा कॉलर लें—पहचान नहीं",
+  "oddlingsStudio.low": "क्रेडिट कम हो रहे हैं।",
+  "oddlingsStudio.insufficient": "पर्याप्त क्रेडिट नहीं हैं।",
+  "oddlingsStudio.balancePortrait": "आपके पास {balance} cr हैं; इस पोर्ट्रेट की कीमत {cost} cr है।",
+  "oddlingsStudio.balanceAnimation": "आपके पास {balance} cr हैं; इस एनिमेशन की कीमत {cost} cr है।",
+  "oddlingsStudio.getCredits": "क्रेडिट पाएं",
+  "oddlingsStudio.refineChat": "Chat में कहानी विकसित करें",
+  "oddlingsStudio.openingChat": "LLM Chat खुल रहा है…",
+  "oddlingsStudio.none": "कुछ नहीं चुना",
+  "oddlingsStudio.anyLabel": "{label}: कोई भी",
+  "oddlingsStudio.any": "कोई भी",
+  "oddlingsStudio.chatStarter": "इस Oddling कहानी में आगे क्या होना चाहिए?",
+  "oddlingsStudio.chatHandoffFailed": "इस Oddling के साथ LLM चैट नहीं खुल सकी। अपना कनेक्शन जाँचें, फिर चैट में कहानी विकसित करें पर दोबारा टैप करें।",
+  "oddlingsStudio.chatSkillLocked": "इस Oddling चैट में कहानी के कौशल बने रहते हैं। दूसरे कौशल इस्तेमाल करने के लिए नई चैट शुरू करें।",
+  "oddlingsStudio.instructionsLocked": "इस Oddling चैट में कहानी के निर्देश बने रहते हैं ताकि किरदार वही रहे। अपने निर्देश लिखने के लिए नई चैट शुरू करें।"
 } as const;

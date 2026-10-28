@@ -10,18 +10,29 @@ import { observe } from './network';
 export function useBalance(): number | null {
     const { api } = useAuth();
     const [balance, setBalance] = useState<number | null>(null);
-    const revision = useRef(0);
-    useEffect(() => subscribeBalance((owner, next) => {
-        if (owner === getCacheUser()) { revision.current++; setBalance(next); }
+    const [owner, setOwner] = useState(getCacheUser());
+    const read = useRef(0);
+    const mounted = useRef(true);
+    useEffect(() => {
+        mounted.current = true;
+        const unsubscribe = subscribeCacheUser(() => {
+            read.current++; setBalance(null); setOwner(getCacheUser());
+        });
+        return () => { mounted.current = false; read.current++; unsubscribe(); };
+    }, []);
+    useEffect(() => subscribeBalance((user, next) => {
+        read.current++;
+        if (mounted.current && user === getCacheUser()) setBalance(next);
     }), []);
     useFocusEffect(
         useCallback(() => {
-            const version = revision.current;
-            const owner = getCacheUser();
+            const version = ++read.current;
             void appCache
-                .swr({ policy: POLICIES.balance, userId: owner, fetcher: () => observe(api.getBalance()), onData: (v) => { if (version === revision.current && owner === getCacheUser()) setBalance(v.balance); } })
+                .swr({ policy: POLICIES.balance, userId: owner, fetcher: () => observe(api.getBalance()), onData: (v) => {
+                    if (version === read.current && owner === getCacheUser() && mounted.current) setBalance(v.balance);
+                } })
                 .catch(() => {});
-        }, [api]),
+        }, [api, owner]),
     );
     return balance;
 }

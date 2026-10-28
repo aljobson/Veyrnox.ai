@@ -1,3 +1,4 @@
+import { CreditBanner } from './CreditBanner';
 import { I18nManager } from 'react-native';
 import { displayLabel } from '../../lib/displayLabels';
 import { useRouter } from 'expo-router';
@@ -58,6 +59,7 @@ export function AnimateCard({ id }: { id: string }) {
                 <Text style={styles.choiceText}>{t('oddlings.animate.action')}</Text>
                 <Text style={styles.price}>{price}</Text>
             </Pressable>
+            <CreditBanner cost={model ? animationCredits(model) : null} animation />
             {problem ? <Text style={styles.problem} accessibilityLiveRegion="polite">{problem}</Text> : null}
         </View>
     );

@@ -2778,6 +2778,18 @@
     "ratio": 1.62
   },
   {
+    "id": "oddlingsStudio.none",
+    "english": "None picked",
+    "translation": "Nenhum selecionado",
+    "ratio": 1.64
+  },
+  {
+    "id": "oddlingsStudio.any",
+    "english": "Any",
+    "translation": "Qualquer",
+    "ratio": 2.67
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",

@@ -4996,5 +4996,22 @@ export default {
   "cinemaViewer.fromSeries": "来自《{series}》",
   "cinemaViewer.pollClosesAt": "截止于 {date}",
   "cinemaViewer.pollClosedAt": "已于 {date} 结束",
-  "cinemaViewer.openComments": "阅读和撰写评论"
+  "cinemaViewer.openComments": "阅读和撰写评论",
+  "oddlingsStudio.optionalReference": "要转换的图片 · 可选",
+  "oddlingsStudio.moodboard": "上传图片，并说明希望推荐编辑流程完成的更改。",
+  "oddlingsStudio.referencePlaceholder": "借鉴棋盘格妆容和高领，而非身份",
+  "oddlingsStudio.low": "积分即将用完。",
+  "oddlingsStudio.insufficient": "积分不足。",
+  "oddlingsStudio.balancePortrait": "你有 {balance} cr；此肖像需 {cost} cr。",
+  "oddlingsStudio.balanceAnimation": "你有 {balance} cr；此动画需 {cost} cr。",
+  "oddlingsStudio.getCredits": "获取积分",
+  "oddlingsStudio.refineChat": "在 Chat 中发展故事",
+  "oddlingsStudio.openingChat": "正在打开 LLM Chat…",
+  "oddlingsStudio.none": "尚未选择",
+  "oddlingsStudio.anyLabel": "{label}：不限",
+  "oddlingsStudio.any": "任意",
+  "oddlingsStudio.chatStarter": "这个 Oddling 故事接下来应该发生什么？",
+  "oddlingsStudio.chatHandoffFailed": "无法使用此Oddling打开LLM聊天。请检查连接，然后再次点击“在聊天中发展故事”。",
+  "oddlingsStudio.chatSkillLocked": "此Oddling聊天会保留故事技能。若要使用其他技能，请开始新聊天。",
+  "oddlingsStudio.instructionsLocked": "此Oddling聊天会保留故事指令，以保持角色一致。若要编写自己的指令，请开始新聊天。"
 } as const;

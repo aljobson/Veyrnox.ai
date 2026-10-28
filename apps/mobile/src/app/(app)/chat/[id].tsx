@@ -1,3 +1,4 @@
+import { nextOddlingInstructions, parseOddlingInstructions, watchOddlingAction } from '../../../lib/oddlingsChat';
 import { useChatLocal } from '../../../lib/useChatLocal';
 import { captureChat, restoreDraft } from '../../../lib/chatLocal';
 import { useChatFreeLeft } from '../../../lib/useChatFreeLeft';
@@ -74,6 +75,7 @@ export default function Conversation() {
     const [catalog, setCatalog] = useState<CatalogModel[] | null>(null);
     const [savingSkills, setSavingSkills] = useState(false);
     const skillBusy = useRef(false);
+    const oddLocked = !!parseOddlingInstructions(thread?.system_prompt);
     const selectedIds = selectedSkillIds(thread?.system_prompt);
     useAskAbout(api, asset, model, maxImages, setImages, setNotice);
     const abort = useRef<AbortController | null>(null);
@@ -86,14 +88,19 @@ export default function Conversation() {
         const ids = selectedIds.includes(skill.id) ? selectedIds.filter(id => id !== skill.id) : [...selectedIds, skill.id];
         if (ids.length > MAX_SELECTED_SKILLS) return;
         skillBusy.current = true; setSavingSkills(true);
+        const action = watchOddlingAction(mounted);
         try {
             const list = catalog ?? (await fetchCatalog().catch(() => []));
+            if (!action.current()) return;
+            const odd = nextOddlingInstructions(thread?.system_prompt, skill.id, list);
+            if (odd && 'error' in odd) { setError(t(odd.error === 'locked' ? 'oddlingsStudio.chatSkillLocked' : 'chatDepth.skillsTooLong')); return; }
             const selected = ids.map(id => skillById(id)!).filter(Boolean);
-            if (fittingSkills(selected, list).length !== selected.length) { setError(t('chatDepth.skillsTooLong')); return; }
-            const updated = await chatApi(api).updateThread(id, { system_prompt: skillsInstructions(selected, list) });
+            if (!odd && fittingSkills(selected, list).length !== selected.length) { setError(t('chatDepth.skillsTooLong')); return; }
+            const updated = await chatApi(api).updateThread(id, { system_prompt: odd?.instructions ?? skillsInstructions(selected, list) });
+            if (!action.current()) return;
             setThread(th => th ? { ...th, system_prompt: updated.system_prompt ?? null } : th);
-        } catch { setError(t('chat.skills.failed')); }
-        finally { skillBusy.current = false; setSavingSkills(false); }
+        } catch { if (action.current()) setError(t('chat.skills.failed')); }
+        finally { skillBusy.current = false; if (action.current()) setSavingSkills(false); action.close(); }
     }
 
     useEffect(() => {
@@ -273,7 +280,12 @@ export default function Conversation() {
 
     // Switching the model changes what the next reply costs; the choices the new model does not offer are dropped.
     async function saveSettings(patch: { model_id?: string; system_prompt?: string }) {
+        if (oddLocked) { const { system_prompt: _ignored, ...rest } = patch; patch = rest; }
+        if (!Object.keys(patch).length) return;
+        const action = watchOddlingAction(mounted);
+        try {
         const updated = await chatApi(api).updateThread(id, patch);
+        if (!action.current()) return;
         const model_id = updated.model_id ?? patch.model_id ?? thread?.model_id ?? '';
         setThread({ model_id, system_prompt: updated.system_prompt ?? patch.system_prompt ?? thread?.system_prompt ?? null });
         const next = allModels.find((m) => m.id === model_id);
@@ -281,6 +293,7 @@ export default function Conversation() {
             setModel(next);
             setOptions((o) => cleanOptions(next, o));
         }
+        } finally { action.close(); }
     }
 
     // Two taps from the chat: the model name, then a model. A same-model tap just closes; a failed save keeps the old model.
@@ -425,7 +438,7 @@ export default function Conversation() {
             {error ? <Text style={styles.error} accessibilityRole="alert">{error}</Text> : null}
             {error && lowBalance ? <Button label={t('lowBalance.buy')} accessibilityLabel={t('lowBalance.buy')} variant="secondary" onPress={() => router.push('/credits')} /> : null}
             {thread && pickerModelsOpen ? <ModelPicker visible currentId={thread.model_id} models={allModels} onPick={(mid) => void pickModel(mid)} onClose={() => setPickerModelsOpen(false)} /> : null}
-            {thread && settingsOpen ? <ChatSettings visible thread={thread} models={allModels} onSave={saveSettings} onClose={() => setSettingsOpen(false)} /> : null}
+            {thread && settingsOpen ? <ChatSettings visible instructionsLocked={oddLocked} thread={thread} models={allModels} onSave={saveSettings} onClose={() => setSettingsOpen(false)} /> : null}
             <MakePanel visible={makeOpen} initialKind={makeKind} initialPrompt={draft.trim().slice(0, 2000)} onClose={() => setMakeOpen(false)} />
             <LibraryImagePicker visible={pickerOpen} chosen={images} max={maxImages} onClose={() => setPickerOpen(false)} onPick={(img) => setImages((cur) => (cur.length < maxImages && !cur.some((c) => c.assetId === img.assetId) ? [...cur, img] : cur))} />
             {model && price !== null ? (

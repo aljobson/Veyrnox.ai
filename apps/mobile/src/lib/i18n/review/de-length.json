@@ -2928,6 +2928,12 @@
     "ratio": 2.25
   },
   {
+    "id": "oddlingsStudio.any",
+    "english": "Any",
+    "translation": "Beliebig",
+    "ratio": 2.67
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

@@ -1,4 +1,5 @@
 import { t } from './i18n';
+import { parseOddlingInstructions } from './oddlingsChat';
 // Studio skills (ADR-0073, ADR-0167): built-in assistants that help prepare ONE thing to make. A skill is only
 // instructions copied onto a new chat; it never makes anything and never spends credits beyond the chat's own replies. Its
 // result is a "Studio draft" block the chat shows as an Open in Create button; only the person's own Create press charges.
@@ -143,7 +144,7 @@ export function skillsInstructions(skills: readonly Skill[], models: readonly Ca
 }
 export const skillInstructions = (skill: Skill, models: readonly CatalogModel[]): string => skillsInstructions([skill], models);
 export function selectedSkillIds(prompt: string | null | undefined): string[] {
-    if (!prompt?.startsWith(PREAMBLE)) return [];
+    if (!prompt?.startsWith(PREAMBLE)) return parseOddlingInstructions(prompt)?.skillIds.filter(id => SKILLS.some(skill => skill.id === id)) ?? [];
     return SKILLS.map(skill => ({ id: skill.id, at: prompt.indexOf(skill.body) })).filter(s => s.at >= 0)
         .sort((a, b) => a.at - b.at).slice(0, MAX_SELECTED_SKILLS).map(s => s.id);
 }

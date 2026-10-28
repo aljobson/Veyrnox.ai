@@ -5188,5 +5188,22 @@ export default {
   "cinemaViewer.fromSeries": "Из {series}",
   "cinemaViewer.pollClosesAt": "Завершается {date}",
   "cinemaViewer.pollClosedAt": "Завершено {date}",
-  "cinemaViewer.openComments": "Читать и писать комментарии"
+  "cinemaViewer.openComments": "Читать и писать комментарии",
+  "oddlingsStudio.optionalReference": "ИЗОБРАЖЕНИЕ ДЛЯ ИЗМЕНЕНИЯ · НЕОБЯЗАТЕЛЬНО",
+  "oddlingsStudio.moodboard": "Загрузите изображение, измените его рекомендованным способом и опишите нужные изменения.",
+  "oddlingsStudio.referencePlaceholder": "Перенять клетчатый макияж и высокий воротник, но не личность",
+  "oddlingsStudio.low": "Кредиты заканчиваются.",
+  "oddlingsStudio.insufficient": "Недостаточно кредитов.",
+  "oddlingsStudio.balancePortrait": "У вас {balance} cr; этот портрет стоит {cost} cr.",
+  "oddlingsStudio.balanceAnimation": "У вас {balance} cr; эта анимация стоит {cost} cr.",
+  "oddlingsStudio.getCredits": "Получить кредиты",
+  "oddlingsStudio.refineChat": "Развить историю в Chat",
+  "oddlingsStudio.openingChat": "Открываем LLM Chat…",
+  "oddlingsStudio.none": "Ничего не выбрано",
+  "oddlingsStudio.anyLabel": "{label}: любой",
+  "oddlingsStudio.any": "Любой",
+  "oddlingsStudio.chatStarter": "Что должно произойти дальше в этой истории Oddling?",
+  "oddlingsStudio.chatHandoffFailed": "Не удалось открыть LLM-чат с этим Oddling. Проверьте подключение и снова нажмите «Развить историю в чате».",
+  "oddlingsStudio.chatSkillLocked": "Этот чат Oddling сохраняет навыки для работы с историей. Начните новый чат, чтобы использовать другие навыки.",
+  "oddlingsStudio.instructionsLocked": "Этот чат Oddling сохраняет инструкции для истории, чтобы персонаж оставался прежним. Начните новый чат, чтобы написать свои инструкции."
 } as const;

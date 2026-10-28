@@ -8,6 +8,7 @@ import { Text, TextField, Button, Card, Icon, themedStyles, useThemedStyles } fr
 
 interface Props {
     readonly visible: boolean;
+    readonly instructionsLocked?: boolean;
     readonly thread: Pick<ChatThread, 'model_id' | 'system_prompt'>;
     readonly models: readonly ChatModel[];
     readonly onSave: (patch: { model_id?: string; system_prompt?: string }) => Promise<void>;
@@ -16,14 +17,14 @@ interface Props {
 
 // Which model answers, and the chat's instructions. Nothing is sent until the person sends a message, and the price of the
 // model shows next to its name; changing the model changes what the next reply costs, not what an earlier one did.
-export function ChatSettings({ visible, thread, models, onSave, onClose }: Props) {
+export function ChatSettings({ visible, thread, models, onSave, onClose, instructionsLocked = false }: Props) {
     const styles = useThemedStyles(sheets);
     const reducedMotion = useReducedMotion();
     const [modelId, setModelId] = useState(thread.model_id);
     const [instructions, setInstructions] = useState(thread.system_prompt ?? '');
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const patch = settingsPatch(thread, { model_id: modelId, instructions });
+    const patch = settingsPatch(thread, { model_id: modelId, instructions: instructionsLocked ? thread.system_prompt ?? '' : instructions });
 
     async function save() {
         if (!patch || busy) return;
@@ -52,8 +53,10 @@ export function ChatSettings({ visible, thread, models, onSave, onClose }: Props
                     </Card>
                 ))}
                 <Text variant="footnote" style={styles.heading} accessibilityRole="header">{t('chat.settings.instructions')}</Text>
+                {instructionsLocked ? <><Text selectable>{thread.system_prompt ?? ''}</Text><Text variant="footnote">{t('oddlingsStudio.instructionsLocked')}</Text></> : <>
                 <TextField style={styles.input} value={instructions} onChangeText={setInstructions} multiline maxLength={MAX_SYSTEM_PROMPT} placeholder={t('chat.settings.instructionsHint')} accessibilityLabel={t('chat.settings.instructions')} />
-                <Text variant="footnote" style={styles.note}>{t('chat.settings.count', { n: String(instructions.length), max: String(MAX_SYSTEM_PROMPT) })}</Text>
+                <Text variant="footnote" style={styles.note}>{t('chat.settings.count', { n: String(instructions.length), max: String(MAX_SYSTEM_PROMPT) })}</Text></>}
+
                 {error ? <Text style={styles.error} accessibilityRole="alert">{error}</Text> : null}
                 <Button accessibilityRole="button" disabled={!patch || busy} containerStyle={styles.save} onPress={save} variant="secondary" size="md" label={(t('chat.settings.save'))}>
                     {busy ? <ActivityIndicator color={styles.accentInkInk.color} /> : <Text variant="bodyStrong" style={styles.saveText}>{t('chat.settings.save')}</Text>}

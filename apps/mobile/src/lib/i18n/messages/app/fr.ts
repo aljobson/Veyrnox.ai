@@ -5124,5 +5124,22 @@ export default {
   "cinemaViewer.fromSeries": "De {series}",
   "cinemaViewer.pollClosesAt": "Clôture le {date}",
   "cinemaViewer.pollClosedAt": "Clôturé le {date}",
-  "cinemaViewer.openComments": "Lire et écrire des commentaires"
+  "cinemaViewer.openComments": "Lire et écrire des commentaires",
+  "oddlingsStudio.optionalReference": "IMAGE À TRANSFORMER · FACULTATIF",
+  "oddlingsStudio.moodboard": "Importez une image à modifier avec le pipeline de retouche recommandé, puis décrivez le changement.",
+  "oddlingsStudio.referencePlaceholder": "Reprenez le maquillage en damier et le col haut, pas l’identité",
+  "oddlingsStudio.low": "Votre solde de crédits est faible.",
+  "oddlingsStudio.insufficient": "Crédits insuffisants.",
+  "oddlingsStudio.balancePortrait": "Vous avez {balance} cr ; ce portrait coûte {cost} cr.",
+  "oddlingsStudio.balanceAnimation": "Vous avez {balance} cr ; cette animation coûte {cost} cr.",
+  "oddlingsStudio.getCredits": "Obtenir des crédits",
+  "oddlingsStudio.refineChat": "Développer l’histoire dans Chat",
+  "oddlingsStudio.openingChat": "Ouverture de LLM Chat…",
+  "oddlingsStudio.none": "Aucun choix",
+  "oddlingsStudio.anyLabel": "{label} : au choix",
+  "oddlingsStudio.any": "Au choix",
+  "oddlingsStudio.chatStarter": "Que doit-il se passer ensuite dans cette histoire d’Oddling ?",
+  "oddlingsStudio.chatHandoffFailed": "Impossible d’ouvrir le chat LLM avec cet Oddling. Vérifiez votre connexion, puis appuyez à nouveau sur Développer l’histoire dans le Chat.",
+  "oddlingsStudio.chatSkillLocked": "Ce chat Oddling conserve ses compétences narratives. Démarrez un nouveau chat pour utiliser d’autres compétences.",
+  "oddlingsStudio.instructionsLocked": "Ce chat Oddling conserve les instructions de l’histoire pour préserver le personnage. Démarrez un nouveau chat pour écrire vos propres instructions."
 } as const;
