@@ -164,6 +164,7 @@ import area_reports from './en/reports';
 import area_review from './en/review';
 import area_share from './en/share';
 import area_signIn from './en/signIn';
+import area_skillsUi from './en/skillsUi';
 import area_slip from './en/slip';
 import area_smartlink from './en/smartlink';
 import area_social from './en/social';
@@ -354,6 +355,7 @@ const catalog = {
     ...area_review,
     ...area_share,
     ...area_signIn,
+    ...area_skillsUi,
     ...area_slip,
     ...area_smartlink,
     ...area_social,

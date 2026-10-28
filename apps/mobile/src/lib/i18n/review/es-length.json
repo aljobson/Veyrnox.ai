@@ -2808,6 +2808,18 @@
     "ratio": 1.67
   },
   {
+    "id": "skillsUi.skillsTitle",
+    "english": "Skills",
+    "translation": "Habilidades",
+    "ratio": 1.83
+  },
+  {
+    "id": "skillsUi.select",
+    "english": "Select",
+    "translation": "Seleccionar",
+    "ratio": 1.83
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

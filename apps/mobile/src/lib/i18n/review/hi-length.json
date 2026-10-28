@@ -1674,6 +1674,12 @@
     "ratio": 2.17
   },
   {
+    "id": "skillsUi.bestFor",
+    "english": "Best for",
+    "translation": "इसके लिए उपयुक्त",
+    "ratio": 2
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

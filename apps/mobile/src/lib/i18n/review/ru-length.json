@@ -3006,6 +3006,24 @@
     "ratio": 1.83
   },
   {
+    "id": "skillsUi.use",
+    "english": "Use this skill",
+    "translation": "Использовать этот навык",
+    "ratio": 1.64
+  },
+  {
+    "id": "skillsUi.copyLink",
+    "english": "Copy link",
+    "translation": "Копировать ссылку",
+    "ratio": 1.89
+  },
+  {
+    "id": "skillsUi.copied",
+    "english": "Link copied",
+    "translation": "Ссылка скопирована",
+    "ratio": 1.64
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",
