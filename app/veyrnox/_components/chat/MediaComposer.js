@@ -145,7 +145,7 @@ export function MediaComposer({ kind, media, prompt, onPrompt }) {
 
         {model && Object.keys(model.media || {}).length > 0 && (
           <div className="border-b border-vx-border px-3 pb-3">
-            <SourcePickers media={model.media} sources={sources} onPick={pickSource} onConvertingChange={setSourcesConverting} onReorder={reorderSources} onDraw={null} onLibrary={setLibraryFor} />
+            <SourcePickers media={model.media} sources={sources} onPick={pickSource} onConvertingChange={setSourcesConverting} resetKey={model.id} onReorder={reorderSources} onDraw={null} onLibrary={setLibraryFor} />
             {hasSource && (
               <BindingText id="mediaRights"  slots={{ policy: <BindingPolicyLink policy="aup" /> }}><label lang="en" dir="ltr" className="mt-2 flex items-start gap-2 text-xs text-vx-fg-muted">
                 <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} className="mt-0.5 accent-vx-accent" />

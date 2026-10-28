@@ -27,8 +27,9 @@ const pill = 'font-vx-mono text-[11px] font-bold rounded-full px-3.5 py-1.5 bord
  * @param {(() => void)|null} props.onDraw  shown for the image slot when set
  * @param {((slot:string) => void)|null} props.onLibrary  "From library" for each known media slot
  * @param {(busy:boolean) => void} [props.onConvertingChange]  true while any slot is converting; the caller must not generate then
+ * @param {string} [props.resetKey]  changes when the model or account changes: every conversion still running is dropped
  */
-export function SourcePickers({ media, sources, onPick, onDraw, onLibrary, onReorder, onConvertingChange }) {
+export function SourcePickers({ media, sources, onPick, onDraw, onLibrary, onReorder, onConvertingChange, resetKey = '' }) {
   const { t, locale } = useI18n();
   // HEIC, AVIF, GIF, MOV and WebM are converted here before they reach onPick.
   // Each pick or removal bumps the slot's token, so a conversion that finishes
@@ -42,6 +43,15 @@ export function SourcePickers({ media, sources, onPick, onDraw, onLibrary, onReo
   useEffect(() => { onConvertingChange?.(busy); }, [busy, onConvertingChange]);
   useEffect(() => () => { onConvertingChange?.(false); }, [onConvertingChange]);
   const nextToken = slot => (tokens.current[slot] = (tokens.current[slot] || 0) + 1);
+  // A new model, a new account or leaving the page drops every conversion in flight.
+  const mediaKey = Object.keys(media || {}).sort().join(',');
+  useEffect(() => {
+    const live = tokens.current;
+    for (const slot of Object.keys(live)) live[slot] += 1;
+    setConverting({});
+    setConvertError({});
+    return () => { for (const slot of Object.keys(live)) live[slot] += 1; };
+  }, [resetKey, mediaKey]);
   async function pickFile(slot, file, index) {
     const token = nextToken(slot);
     setConvertError(previous => ({ ...previous, [slot]: '' }));
@@ -99,7 +109,7 @@ export function SourcePickers({ media, sources, onPick, onDraw, onLibrary, onReo
         )}
         <label className={`${pill} cursor-pointer has-focus-visible:outline-solid has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-vx-accent`}>
           {picked ? t("app.oddlings.replace") : t(ui.add)}
-          <input data-testid={`source-upload-${slot}`} type="file" accept={pickerAccept(kind)} className="sr-only"
+          <input data-testid={`source-upload-${slot}`} type="file" accept={pickerAccept(kind)} disabled={Boolean(converting[slot])} className="sr-only"
             onChange={(e) => { const f = e.target.files && e.target.files[0]; e.target.value = ''; if (f) pickFile(slot, f); }} />
         </label>
         {picked && (
@@ -117,7 +127,7 @@ export function SourcePickers({ media, sources, onPick, onDraw, onLibrary, onReo
       {files.map((picked, index) => <div key={index} className="flex items-center gap-3">
         {kind === 'image' && picked.previewUrl && <img src={picked.previewUrl} alt={t(slot === 'endImage' ? 'app.create.sources.endAlt' : 'app.create.sources.startAlt')} className="w-16 h-16 rounded-sm object-cover" />}
         <span className="min-w-0 flex-1 truncate text-xs">{picked.file?.name || picked.label || t('app.create.sources.image.label')}</span>
-        {picked.needsUpload && <label className={pill}>{t('app.create.reattach')}<input type="file" className="sr-only" accept={pickerAccept(kind)} onChange={e => { const file = e.target.files?.[0]; e.target.value = ''; if (file) pickFile(slot, file, index); }} /></label>}
+        {picked.needsUpload && <label className={pill}>{t('app.create.reattach')}<input type="file" className="sr-only" accept={pickerAccept(kind)} disabled={Boolean(converting[slot])} onChange={e => { const file = e.target.files?.[0]; e.target.value = ''; if (file) pickFile(slot, file, index); }} /></label>}
         {picked.file && slot === 'image' && index === 0 && onDraw && <button type="button" onClick={onDraw} className={pill}>{t('app.create.sources.draw')}</button>}
         {onReorder && index > 0 && <button type="button" className={pill} onClick={() => onReorder(slot, index, index - 1)} aria-label={t('app.create.sources.moveEarlier')}>↑</button>}
         {onReorder && index < files.length - 1 && <button type="button" className={pill} onClick={() => onReorder(slot, index, index + 1)} aria-label={t('app.create.sources.moveLater')}>↓</button>}
@@ -127,7 +137,7 @@ export function SourcePickers({ media, sources, onPick, onDraw, onLibrary, onReo
         {onLibrary && <button data-assistant-control="create.upload" type="button" onClick={() => onLibrary(slot)} className={pill}>{t('app.create.sources.library')}</button>}
         <label className={`${pill} cursor-pointer`}>
           {files.length && max === 1 ? t('app.oddlings.replace') : t(ui.add)}
-          <input data-testid={`source-upload-${slot}`} type="file" accept={pickerAccept(kind)} className="sr-only"
+          <input data-testid={`source-upload-${slot}`} type="file" accept={pickerAccept(kind)} disabled={Boolean(converting[slot])} className="sr-only"
             onChange={e => { const file = e.target.files?.[0]; e.target.value = ''; if (file) pickFile(slot, file); }} />
         </label>
       </div>}

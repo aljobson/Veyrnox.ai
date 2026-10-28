@@ -93,6 +93,7 @@ export default function CreateStudio() {
   const [modelId, setModelId] = useState(() => starterModel(catalogModels, 'image')?.id || '');
   const [goal, setGoal] = useState('image');
   const [presetParam, setPresetParam] = useState(null);
+  const [accountEpoch, setAccountEpoch] = useState(0); // bumped when the account changes; drops conversions in flight
   const [tier, setTier] = useState(null);
   const [duration, setDuration] = useState('5s');
   const [audioDurations, setAudioDurations] = useState({});
@@ -214,6 +215,8 @@ export default function CreateStudio() {
       setDuration('5s'); setAspect('16:9'); setCount(1); setCharacterOn(false); setCharacter({}); setOddlingTransfer(null);
       setCinemaOn(false); setCinema(DEFAULT_CINEMA); setSeed(''); setNegative(''); setVoice(''); setAudioDurations({});
       setAnimationPortrait(null); setPresetParam(null); setTier(null); clearJobs(); setError(null);
+      // A conversion the previous account started must not land in this one's form.
+      attachSeq.current += 1; setAttachConverting(false); setAccountEpoch(epoch => epoch + 1);
     },
   });
 
@@ -671,7 +674,7 @@ export default function CreateStudio() {
           {attachNotice && <p role="status" className="mt-2 text-xs text-vx-fg-muted">{attachNotice}</p>}
           {templatesOpen && <TemplatePicker models={models} goal={goal} onPick={applyTemplate} onClose={() => setTemplatesOpen(false)} />}
           <div className="scroll-mt-24" data-assistant-target={Object.keys(media).length ? 'create.upload' : undefined}>
-            <SourcePickers media={media} sources={sources} onPick={pickSource} onConvertingChange={setSourcesConverting} onReorder={(slot, from, to) => { setConsent(false); setSources(prev => moveSlotSource(prev, slot, from, to)); }}
+            <SourcePickers media={media} sources={sources} onPick={pickSource} onConvertingChange={setSourcesConverting} resetKey={`${modelId}|${accountEpoch}`} onReorder={(slot, from, to) => { setConsent(false); setSources(prev => moveSlotSource(prev, slot, from, to)); }}
               onDraw={model?.kind === 'image' ? () => setDrawing(true) : null} onLibrary={setLibraryFor} />
           </div>
           {Object.values(sources).flatMap(sourceList).some(source => source.file) && <p className="mt-2 text-xs text-vx-fg-muted">{t("app.create.reattach")}</p>}
