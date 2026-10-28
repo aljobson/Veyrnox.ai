@@ -56,6 +56,7 @@ export default function JobScreen() {
     const [held, setHeld] = useState(false);
     const [expiresAt, setExpiresAt] = useState<string | null>(null);
     const [error, setError] = useState(false);
+    const [pollEnded, setPollEnded] = useState(false);
     const [attempt, setAttempt] = useState(0);
     const [seconds, setSeconds] = useState(0);
     const [note, setNote] = useState<string | null>(null);
@@ -83,7 +84,7 @@ export default function JobScreen() {
     useRatingFocusEffect(useCallback(() => () => ratingAbort.current?.abort(), []));
 
     useEffect(() => {
-        setError(false);
+        setError(false); setPollEnded(false); setSeconds(0);
         setHeld(false); setAsset(null); setStems([]); setExpiresAt(null);
         setResultReady(false);
         setReview(null);
@@ -111,6 +112,7 @@ export default function JobScreen() {
         }, controller.signal)
             .then(async (final) => {
                 if (controller.signal.aborted) return;
+                if (final === 'queued' || final === 'running') { setPollEnded(true); return; }
                 // The model lets a failed job offer "Try again" on the same model.
                 const job = await media.getJob(id).catch(() => null);
                 if (controller.signal.aborted) return;
@@ -137,7 +139,7 @@ export default function JobScreen() {
         return () => { unsubscribe(); controller.abort(); ratingController.abort(); };
     }, [api, id, attempt]);
 
-    const waiting = !asset && !error && (state === 'queued' || state === 'running');
+    const waiting = !pollEnded && !held && !asset && !error && (state === 'queued' || state === 'running');
     useEffect(() => {
         if (!waiting) return;
         const timer = setInterval(() => setSeconds((s) => s + 1), 1000);
@@ -247,9 +249,9 @@ export default function JobScreen() {
                     {waiting ? <ActivityIndicator color={styles.accentInk.color} /> : null}
                     <Text accessibilityLiveRegion="polite" variant="body" tone="danger" style={state === 'failed' ? styles.error : styles.status}>{cancelledCredits !== null
                         ? cancelledCredits > 0 ? plural('jobCancel.cancelled', cancelledCredits) : t('jobCancel.cancelledFree')
-                        : t(LABEL[state])}</Text>
+                        : pollEnded ? t('job.stillWorking') : t(LABEL[state])}</Text>
                     {cancelNote ? <Text variant="body" tone="secondary" style={styles.note} accessibilityLiveRegion="polite">{cancelNote}</Text> : null}
-                    {waiting && state === 'queued' && cancelStatus?.cancellable ? (
+                    {(waiting || (pollEnded && !held)) && state === 'queued' && cancelStatus?.cancellable ? (
                         <Button variant="secondary" accessibilityRole="button" accessibilityLabel={t(cancelling ? 'jobCancel.cancelling' : 'jobCancel.confirm')} accessibilityState={{ busy: cancelling, disabled: cancelling }} disabled={cancelling} onPress={confirmCancel} label={t(cancelling ? 'jobCancel.cancelling' : 'jobCancel.confirm')} />
                     ) : null}
                     {waiting ? (

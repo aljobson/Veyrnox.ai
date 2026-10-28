@@ -4,19 +4,18 @@ import { Platform } from 'react-native';
 import Purchases, { type CustomerInfo, type PurchasesOfferings, type PurchasesPackage } from 'react-native-purchases';
 import { useAuth } from '../auth/AuthProvider';
 import { ApiError } from '../lib/api';
-import { generationPlanFor, stayDiscountFor } from '../lib/billing';
+import { revenueCatKey, generationPlanFor, stayDiscountFor } from '../lib/billing';
 import { getCacheUser } from '../lib/appCache';
+import { APP_ENV } from '../lib/config';
 
 // Store billing is a build-time switch (ADR-0108); the server has its own flag and answers 404 while it is off.
 const ENABLED = process.env.EXPO_PUBLIC_STORE_BILLING_ENABLED === 'true';
 // Public SDK keys (not secrets). The Test Store key is for development without store accounts.
-const API_KEY =
-    process.env.EXPO_PUBLIC_REVENUECAT_TEST_KEY ||
-    (Platform.OS === 'ios' ? process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY : process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY) ||
-    '';
+const API_KEY = revenueCatKey(__DEV__, APP_ENV, process.env.EXPO_PUBLIC_REVENUECAT_TEST_KEY,
+    Platform.OS === 'ios' ? process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY : process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY);
 
 export type BillingStatus = 'off' | 'loading' | 'ready' | 'unavailable';
-export type PurchaseResult = 'purchased' | 'cancelled';
+export type PurchaseResult = 'purchased' | 'cancelled' | 'pending';
 
 interface BillingValue {
     readonly status: BillingStatus;
@@ -38,14 +37,14 @@ interface BillingValue {
     readonly debug: string | null;
     purchase(pkg: PurchasesPackage): Promise<PurchaseResult>;
     purchaseStayOffer(pkg: PurchasesPackage): Promise<PurchaseResult>;
-    restore(): Promise<void>;
+    restore(): Promise<boolean>;
     refreshGenerationAccess(): Promise<boolean>;
 }
 
 const BillingContext = createContext<BillingValue>({
     status: 'off', offerings: null, canPurchase: false, publishActive: false, generationActive: false, generationAccessResolved: false, generationPurchaseReady: false,
     paidAccess: false, accessResolved: false, activeProductIds: [], managementURL: null, debug: null,
-    purchase: async () => 'cancelled', purchaseStayOffer: async () => 'cancelled', restore: async () => {}, refreshGenerationAccess: async () => false,
+    purchase: async () => 'cancelled', purchaseStayOffer: async () => 'cancelled', restore: async () => false, refreshGenerationAccess: async () => false,
 });
 
 export const useBilling = () => useContext(BillingContext);
@@ -212,8 +211,11 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         }
         const product = pkg.product.subscriptionPeriod ? 'subscription' : 'pack';
         captureEvent('purchase_started', { product });
+        let purchased = false;
         try {
-            const { customerInfo } = await Purchases.purchasePackage(pkg);
+            const result = await Purchases.purchasePackage(pkg);
+            purchased = true;
+            const { customerInfo } = result;
             setPublishActive(isPublishActive(customerInfo));
             setGenerationActive(isGenerationActive(customerInfo));
             setActiveProductIds(customerInfo.activeSubscriptions);
@@ -221,6 +223,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             captureEvent('purchase_finished', { product, outcome: 'succeeded' });
             return 'purchased';
         } catch (err) {
+            if (purchased) return 'pending';
             captureEvent('purchase_finished', { product, outcome: (err as { userCancelled?: boolean }).userCancelled ? 'cancelled' : 'failed' });
             if ((err as { userCancelled?: boolean }).userCancelled) return 'cancelled';
             throw err;
@@ -259,6 +262,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         setActiveProductIds(info.activeSubscriptions);
         setManagementURL(info.managementURL);
         setAccessResolved(true);
+        return Object.keys(info.entitlements.active).length > 0 || info.activeSubscriptions.length > 0;
     }, [canPurchase]);
 
     const publishEntitled = publishActive || serverPublishActive;

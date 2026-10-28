@@ -5241,5 +5241,7 @@ export default {
   "modelPage.field.aspectRatio": "アスペクト比",
   "sourceDuration.follows": "アップロードしたソースに合わせます",
   "sourceDuration.limit": "表示価格で最大 {max} 秒。",
-  "sourceDuration.speech": "音声は動画より長くできません。課金前に映像の長さを確認します。必要に応じて音声を短くするか、長い動画を使用してください。"
+  "sourceDuration.speech": "音声は動画より長くできません。課金前に映像の長さを確認します。必要に応じて音声を短くするか、長い動画を使用してください。",
+  "job.stillWorking": "まだ処理中です。完了するとライブラリに表示されます。",
+  "credits.nothingToRestore": "復元するものはありません"
 } as const;

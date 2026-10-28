@@ -12,7 +12,7 @@ import { bindCacheUser, wipeCache } from '../src/lib/appCache';
 import { getAnalyticsChoice, writeConsent } from '../src/lib/analytics/consent';
 import * as SecureStore from 'expo-secure-store';
 const mockRouter = { push: jest.fn(), replace: jest.fn() };
-const mockRequest = jest.fn(async (path: string) => path.includes('checkin') ? { enabled: true, claimed_today: false, streak: 0, next_day: 1, rewards: [1,2,3,4,5,6] } : { created_at: new Date().toISOString() });
+const mockRequest = jest.fn(async (path: string) => path.includes('checkin') ? { ok: true, claimed_today: false, streak: 0, next_day: 1, next_credits: 1, rewards: [1,2,3,4,5,6] } : { created_at: new Date().toISOString() });
 const mockApi = { request: mockRequest };
 jest.mock('expo-router', () => ({ useRouter: () => mockRouter, usePathname: () => '/', useRootNavigationState: () => ({ key: 'ready' }) }));
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ status: 'signedIn', api: mockApi }) }));

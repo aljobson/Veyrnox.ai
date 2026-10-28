@@ -10,10 +10,10 @@ function setup() {
 test('balance and Library always refetch but show the saved copy first', async () => {
     const storage = createMemoryStorage();
     const cache = createCache(storage, () => 5000);
-    await cache.write(POLICIES.balance, { balance: 1 }, 'u1');
+    await cache.write(POLICIES.balance, { balance: 1, free_credits: 0, free_expires_at: null }, 'u1');
     const seen: unknown[] = [];
-    await cache.swr({ policy: POLICIES.balance, userId: 'u1', fetcher: async () => ({ balance: 2 }), onData: (v) => seen.push(v) });
-    expect(seen).toEqual([{ balance: 1 }, { balance: 2 }]);
+    await cache.swr({ policy: POLICIES.balance, userId: 'u1', fetcher: async () => ({ balance: 2, free_credits: 0, free_expires_at: null }), onData: (v) => seen.push(v) });
+    expect(seen).toEqual([{ balance: 1, free_credits: 0, free_expires_at: null }, { balance: 2, free_credits: 0, free_expires_at: null }]);
 });
 
 test('formats the age of a saved copy', () => {
@@ -27,11 +27,11 @@ describe('cache', () => {
     test('a miss fetches, stores and reports a live value', async () => {
         const { cache } = setup();
         const seen: unknown[] = [];
-        const fetcher = jest.fn(async () => ({ balance: 5 }));
+        const fetcher = jest.fn(async () => ({ balance: 5, free_credits: 0, free_expires_at: null }));
         const out = await cache.swr({ policy: POLICIES.balance, userId: 'u1', fetcher, onData: (v, m) => seen.push([v, m.fromCache]) });
-        expect(out.value).toEqual({ balance: 5 });
+        expect(out.value).toEqual({ balance: 5, free_credits: 0, free_expires_at: null });
         expect(out.meta.fromCache).toBe(false);
-        expect(seen).toEqual([[{ balance: 5 }, false]]);
+        expect(seen).toEqual([[{ balance: 5, free_credits: 0, free_expires_at: null }, false]]);
     });
 
     test('a fresh copy is used without a fetch', async () => {
@@ -71,7 +71,7 @@ describe('cache', () => {
 
     test('a copy past its max age is discarded', async () => {
         const { cache, advance, storage } = setup();
-        await cache.write(POLICIES.balance, { balance: 1 }, 'u1');
+        await cache.write(POLICIES.balance, { balance: 1, free_credits: 0, free_expires_at: null }, 'u1');
         advance(POLICIES.balance.maxAgeMs + 1);
         expect(await cache.read(POLICIES.balance, 'u1')).toBeNull();
         expect(await storage.keys()).toEqual([]);
@@ -101,7 +101,7 @@ describe('cache', () => {
 
     test('clear removes every saved copy and nothing else', async () => {
         const { cache, storage } = setup();
-        await cache.write(POLICIES.balance, { balance: 1 }, 'u1');
+        await cache.write(POLICIES.balance, { balance: 1, free_credits: 0, free_expires_at: null }, 'u1');
         await cache.write(POLICIES.catalog, [1]);
         await storage.set('other.key', 'keep');
         await cache.clear();

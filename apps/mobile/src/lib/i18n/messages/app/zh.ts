@@ -5241,5 +5241,7 @@ export default {
   "modelPage.field.aspectRatio": "宽高比",
   "sourceDuration.follows": "跟随上传的源文件",
   "sourceDuration.limit": "显示的价格最多支持 {max} 秒。",
-  "sourceDuration.speech": "语音不能长于视频。收费前我们会验证视频画面时长；必要时请缩短语音或使用更长的视频。"
+  "sourceDuration.speech": "语音不能长于视频。收费前我们会验证视频画面时长；必要时请缩短语音或使用更长的视频。",
+  "job.stillWorking": "仍在处理中。完成后会显示在你的作品库中。",
+  "credits.nothingToRestore": "没有可恢复的购买项目"
 } as const;

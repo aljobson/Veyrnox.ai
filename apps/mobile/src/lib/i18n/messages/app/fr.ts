@@ -5369,5 +5369,7 @@ export default {
   "modelPage.field.aspectRatio": "Format d’image",
   "sourceDuration.follows": "Suit la source importée",
   "sourceDuration.limit": "Jusqu’à {max} secondes au prix affiché.",
-  "sourceDuration.speech": "La parole ne doit pas dépasser la durée de la vidéo. Nous vérifions la durée visuelle avant facturation ; raccourcissez la parole ou utilisez une vidéo plus longue si nécessaire."
+  "sourceDuration.speech": "La parole ne doit pas dépasser la durée de la vidéo. Nous vérifions la durée visuelle avant facturation ; raccourcissez la parole ou utilisez une vidéo plus longue si nécessaire.",
+  "job.stillWorking": "Toujours en cours. Le résultat apparaîtra dans votre Bibliothèque une fois terminé.",
+  "credits.nothingToRestore": "Rien à restaurer"
 } as const;
