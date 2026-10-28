@@ -8,7 +8,8 @@ jest.mock('react-native-purchases', () => ({ __esModule: true, default: {
     logIn: jest.fn(), logOut: jest.fn(), purchasePackage: jest.fn(), restorePurchases: jest.fn(),
 } }));
 const mockApi = { request: jest.fn(async (path: string) => path.includes('/customer') ? { rc_customer_id: 'customer' } : {}) };
-jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ status: 'signedIn', api: mockApi }) }));
+const mockBeginSessionTask = () => ({ gen: 0, user: 'alice', current: () => true, tokens: async () => null });
+jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ status: 'signedIn', api: mockApi, generation: 0, beginSessionTask: mockBeginSessionTask }) }));
 jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => 'alice' }));
 jest.mock('../src/lib/analytics/events', () => ({ captureEvent: jest.fn() }));
 process.env.EXPO_PUBLIC_STORE_BILLING_ENABLED = 'true';

@@ -134,6 +134,9 @@ export function canManage(actorRole: string, memberRole: string): boolean {
     return actorRole === 'manager' && memberRole !== 'manager';
 }
 
+export const canRevoke = (actorRole: string, inviteRole: string): boolean =>
+    actorRole === 'owner' || actorRole === 'manager' && inviteRole !== 'manager';
+
 // Roles the actor may give: a manager cannot make another manager.
 export const rolesFor = (actorRole: string): readonly ChangeableRole[] => (actorRole === 'owner' ? CHANGEABLE_ROLES : CHANGEABLE_ROLES.filter((r) => r !== 'manager'));
 

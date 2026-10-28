@@ -1,7 +1,7 @@
 export function mockInbox(req, res, path, body, respond) {
     const send = (...args) => { respond(...args); return true; };
     // Publish inbox: one conversation you can reply to, resolve and assign. State is kept while the mock runs.
-    const INBOX = (globalThis.__MOCK_INBOX ??= { status: 'open', unread: 1, priority: 'normal', tags: [], assigned: null, messages: [
+    const INBOX = (globalThis.__MOCK_INBOX ??= { status: 'open', unread: 1, priority: 'normal', tags: [], assigned: null, assignedId: null, messages: [
         { id: 'm1', direction: 'inbound', body: 'Hi! Do you ship the poster set to Canada?', sent_at: '2026-10-20T09:00:00Z' },
         { id: 'm2', direction: 'outbound', body: 'Hello Maya, yes we do. Usually 5 to 7 days.', sent_at: '2026-10-20T09:10:00Z', delivery_status: 'sent' },
         { id: 'm3', direction: 'inbound', body: 'Great, can I pay with a gift card?', sent_at: '2026-10-21T08:30:00Z' },
@@ -11,8 +11,12 @@ export function mockInbox(req, res, path, body, respond) {
     const inboxThread = () => ({ id: INBOX_ID, network: 'instagram', account_name: 'Veyrnox Studio', kind: 'message', participant_name: 'Maya', subject: '', status: INBOX.status, unread_count: INBOX.unread, latest_message_at: INBOX.messages.at(-1).sent_at, priority: INBOX.priority, assigned_email: INBOX.assigned, tags: INBOX.tags, can_reply: true });
     if (path === '/api/v1/social/inbox' && req.method === 'GET') {
         const query = new URL(req.url, 'http://localhost').searchParams;
+        const assignee = query.get('assignee'), search = (query.get('search') ?? '').toLowerCase();
+        const thread = inboxThread();
         const matches = (!query.get('priority') || query.get('priority') === INBOX.priority)
-            && (!query.get('tag') || INBOX.tags.includes(query.get('tag')));
+            && (!query.get('tag') || INBOX.tags.includes(query.get('tag')))
+            && (!assignee || (assignee === 'unassigned' ? !INBOX.assignedId : assignee === INBOX.assignedId))
+            && (!search || [thread.participant_name, thread.subject, ...INBOX.messages.map(message => message.body)].some(text => text.toLowerCase().includes(search)));
         send(res, 200, { counts: { all: 1, unread: INBOX.unread > 0 ? 1 : 0, unresolved: INBOX.status === 'resolved' ? 0 : 1, resolved: INBOX.status === 'resolved' ? 1 : 0 }, members: MEMBERS, tags: INBOX.tags, threads: matches ? [inboxThread()] : [] });
         return true;
     }
@@ -24,7 +28,10 @@ export function mockInbox(req, res, path, body, respond) {
             else if (body.action === 'priority' && ['normal', 'high', 'urgent'].includes(body.priority)) INBOX.priority = body.priority;
             else if (body.action === 'tags' && Array.isArray(body.tags) && body.tags.length <= 10 && body.tags.every(tag => typeof tag === 'string' && tag.trim().length > 0 && tag.trim().length <= 32)) INBOX.tags = [...new Set(body.tags.map(tag => tag.trim().toLowerCase()))];
             else if (body.action === 'resolve') INBOX.status = 'resolved'; else if (body.action === 'reopen') INBOX.status = 'open';
-            else if (body.action === 'assign') INBOX.assigned = (MEMBERS.find((x) => x.user_id === body.userId) || {}).email ?? null; else if (body.action === 'unassign') INBOX.assigned = null;
+            else if (body.action === 'assign') {
+                const member = MEMBERS.find(x => x.user_id === body.userId);
+                INBOX.assigned = member?.email ?? null; INBOX.assignedId = member?.user_id ?? null;
+            } else if (body.action === 'unassign') { INBOX.assigned = null; INBOX.assignedId = null; }
             return send(res, 200, { ok: true });
         }
         if (m[2] && req.method === 'POST') {

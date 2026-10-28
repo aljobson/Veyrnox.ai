@@ -1,3 +1,4 @@
+import { isAccountChanged } from '../../auth/sessionTask';
 import { useState } from 'react';
 import { Alert } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
@@ -8,19 +9,22 @@ import { Card, Status } from './AccountParts';
 import { Button } from '../ui';
 
 export function DevicesCard() {
-    const { getAccessToken, signOut } = useAuth();
+    const { beginSessionTask, signOut } = useAuth();
     const [busy, setBusy] = useState(false);
     const [note, setNote] = useState<{ text: string; error: boolean } | null>(null);
 
     async function end(scope: SessionScope) {
+        const task = beginSessionTask();
         setBusy(true);
         setNote(null);
         try {
-            await revokeSessions(getAccessToken, scope);
+            await revokeSessions(task.tokens, scope);
+            if (!task.current()) return;
             // Everywhere includes this phone: leave the same way the Sign out button does.
-            if (scope === 'global') return await signOut();
+            if (scope === 'global') return await signOut(task.gen);
             setNote({ text: t('acct.dev.othersDone'), error: false });
         } catch (err) {
+            if (!task.current() || isAccountChanged(err)) return;
             setNote({ text: t(accountErrorKey(err)), error: true });
         } finally {
             setBusy(false);

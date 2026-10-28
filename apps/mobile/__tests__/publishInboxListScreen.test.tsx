@@ -5,7 +5,7 @@ import Inbox from '../src/app/(app)/publish/inbox';
 import { ApiError } from '../src/lib/api';
 import { t } from '../src/lib/i18n';
 import { brandStore } from '../src/lib/publishBrand';
-import { ID, OTHER, deferred, press, textOf } from './publishDepthTestHelpers';
+import { ID, OTHER, deferred, field, input, press, textOf } from './publishDepthTestHelpers';
 const mockRequest = jest.fn(), mockApi = { request: mockRequest };
 jest.mock('../src/components/UnlockCard', () => ({ UnlockCard: () => require('react').createElement(require('react-native').Text, null, 'Locked inbox') }));
 jest.mock('../src/lib/usePublishApi', () => ({ usePublishApi: () => mockApi }));
@@ -73,4 +73,15 @@ test('accounts failure leaves rows and listing state untouched', async () => {
     const acc = deferred<unknown>(); mockRequest.mockImplementation((path: string) => path.endsWith('/accounts') ? acc.promise : Promise.resolve(listing('Unaffected')));
     await render(); await act(async () => acc.reject(new ApiError(402, 'accounts'))); await filters();
     expect(text()).toContain('Unaffected'); expect(text()).not.toContain(t('inbox.err.plan')); expect(text()).not.toContain('Locked inbox');
+});
+
+test('assignee filter sends unassigned and member ids', async () => {
+    await render(); await filters(); await press(root, t('publishOps.inbox.unassigned'));
+    expect(mockRequest.mock.calls.at(-1)[0]).toContain('assignee=unassigned');
+    await press(root, 'Current@example.com'); expect(mockRequest.mock.calls.at(-1)[0]).toContain(`assignee=${OTHER}`);
+});
+test('search is trimmed and sent on submit', async () => {
+    await render(); mockRequest.mockClear(); await input(root, t('publishOps.inbox.search'), '  gift card  ');
+    expect(mockRequest).not.toHaveBeenCalled(); await act(async () => field(root, t('publishOps.inbox.search')).props.onSubmitEditing());
+    expect(mockRequest.mock.calls.at(-1)[0]).toContain('search=gift%20card');
 });

@@ -19,7 +19,7 @@ import { getThemePreference, paletteForScheme, resolveScheme } from '../../theme
 
 export default function AppLayout() {
     useOfflineRecovery();
-    const { status } = useAuth();
+    const { status, generation } = useAuth();
     const systemScheme = useColorScheme();
     const palette = paletteForScheme(resolveScheme(getThemePreference(), systemScheme));
     if (status === 'signedOut') return <Redirect href="/sign-in" />;
@@ -27,7 +27,7 @@ export default function AppLayout() {
         <>
             <AiConsentHost />
             <CelebrationHost />
-            <MfaGate>
+            <MfaGate key={generation}>
                 <FirstRunGate />
                 <CheckInModal />
                 <PaywallPrompt />
