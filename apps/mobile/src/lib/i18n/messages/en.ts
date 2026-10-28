@@ -11,6 +11,7 @@ import area_acct from './en/acct';
 import area_activity from './en/activity';
 import area_ads from './en/ads';
 import area_agent from './en/agent';
+import area_agentResume from './en/agentResume';
 import area_aiConsent from './en/aiConsent';
 import area_analytics from './en/analytics';
 import area_analyticsConsent from './en/analyticsConsent';
@@ -112,6 +113,7 @@ import area_mdl from './en/mdl';
 import area_menu from './en/menu';
 import area_mobile from './en/mobile';
 import area_model from './en/model';
+import area_modelPage from './en/modelPage';
 import area_montage from './en/montage';
 import area_nativeEditorModel from './en/nativeEditorModel';
 import area_net from './en/net';
@@ -169,6 +171,7 @@ import area_skillsUi from './en/skillsUi';
 import area_slip from './en/slip';
 import area_smartlink from './en/smartlink';
 import area_social from './en/social';
+import area_sourceDuration from './en/sourceDuration';
 import area_sourcePicker from './en/sourcePicker';
 import area_sources from './en/sources';
 import area_srch from './en/srch';
@@ -203,6 +206,7 @@ const catalog = {
     ...area_activity,
     ...area_ads,
     ...area_agent,
+    ...area_agentResume,
     ...area_aiConsent,
     ...area_analytics,
     ...area_analyticsConsent,
@@ -304,6 +308,7 @@ const catalog = {
     ...area_menu,
     ...area_mobile,
     ...area_model,
+    ...area_modelPage,
     ...area_montage,
     ...area_nativeEditorModel,
     ...area_net,
@@ -361,6 +366,7 @@ const catalog = {
     ...area_slip,
     ...area_smartlink,
     ...area_social,
+    ...area_sourceDuration,
     ...area_sourcePicker,
     ...area_sources,
     ...area_srch,

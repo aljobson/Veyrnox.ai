@@ -2856,6 +2856,24 @@
     "ratio": 1.75
   },
   {
+    "id": "modelPage.all",
+    "english": "All models",
+    "translation": "Todos los modelos",
+    "ratio": 1.7
+  },
+  {
+    "id": "modelPage.packs",
+    "english": "Credit packs",
+    "translation": "Paquetes de créditos",
+    "ratio": 1.67
+  },
+  {
+    "id": "modelPage.fact.prompt",
+    "english": "Prompt",
+    "translation": "Instrucción",
+    "ratio": 1.83
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

@@ -2,10 +2,43 @@ import { t } from './i18n';
 import { noteLocalSubmission } from './celebrate';
 import { API_BASE, ApiError, type ApiClient } from './api';
 import { OFFLINE_PAID_MESSAGE, OfflineError, ensureOnline } from './network';
+import type { Job, JobPage } from './media';
 
 // The video agent (ADR-0074): a brief is planned first (no charge), then approved. The server prices
 // the plan and signs a ticket; the app shows what the server says and never works out a price.
 export const AGENT_MODEL_ID = 'video-agent';
+export const RESUME_MAX_AGE_MS = 60 * 60 * 1000;
+export const RESUME_MAX_PAGES = 5;
+
+export function pickResumableAgentJob(jobs: readonly Job[], nowMs = Date.now()): { jobId: string; credits: number } | null {
+    const job = jobs.find(job => {
+        const time = Date.parse(job.created_at);
+        const age = nowMs - time;
+        return job.model_id === AGENT_MODEL_ID && (job.state === 'queued' || job.state === 'running') &&
+            !!job.job_id && Number.isFinite(time) && age >= 0 && age < RESUME_MAX_AGE_MS;
+    });
+    return job ? { jobId: job.job_id, credits: Number(job.credits) || 0 } : null;
+}
+
+export async function findResumableAgentJob(
+    listPage: (cursor?: JobPage['next']) => Promise<JobPage>,
+    isCurrent: () => boolean,
+    nowMs = Date.now(),
+): Promise<{ jobId: string; credits: number } | null | undefined> {
+    let cursor: JobPage['next'] | undefined;
+    for (let pageNumber = 0; pageNumber < RESUME_MAX_PAGES; pageNumber++) {
+        const page = await listPage(cursor);
+        if (!isCurrent()) return undefined;
+        const job = pickResumableAgentJob(page.jobs, nowMs);
+        if (job) return job;
+        if (!page.next || !page.jobs.length) return null;
+        const lastTime = Date.parse(page.jobs[page.jobs.length - 1].created_at);
+        if (!Number.isFinite(lastTime) || nowMs - lastTime >= RESUME_MAX_AGE_MS) return null;
+        cursor = page.next;
+    }
+    return null;
+}
+
 export const ASPECTS = ['9:16', '16:9', '1:1'] as const;
 export type Aspect = (typeof ASPECTS)[number];
 export const MAX_NARRATION_LENGTH = 300;
