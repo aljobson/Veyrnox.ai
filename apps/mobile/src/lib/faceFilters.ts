@@ -96,6 +96,7 @@ const UPLOAD_REASONS: Readonly<Record<string, string>> = {
     source_not_admitted: 'faceFilters.upload.notAdmitted',
 };
 export function faceFilterUploadMessage(err: ApiError): string {
+    if (err.code === 'bad_response') return t('common.error');
     const key = UPLOAD_REASONS[err.code];
     return t('faceFilters.uploadRejected', { reason: key ? t(key) : err.code });
 }

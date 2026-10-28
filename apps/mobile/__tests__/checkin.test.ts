@@ -63,3 +63,21 @@ test('the cache settles on spendable credits when expired buckets remain in ledg
     await claimCheckin(mockApi);
     expect((await appCache.read<{ balance: number }>(POLICIES.balance, 'alice'))?.value.balance).toBe(12);
 });
+
+test('malformed claim and failed subsequent balance refresh keep the last valid display and cache', async () => {
+    (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+    const root = createRoot();
+    try {
+        await act(async () => root.render(createElement(CreditsChip)));
+        request.mockResolvedValue({ ...claim, balance_after: undefined });
+        (mockApi.getBalance as jest.Mock).mockRejectedValue(new Error('offline'));
+        await act(async () => { await expect(claimCheckin(mockApi)).rejects.toMatchObject({ code: 'bad_response' }); });
+        await act(async () => { await appCache.swr({ policy: POLICIES.balance, userId: 'alice', fetcher: mockApi.getBalance }); });
+        expect(root.container.queryAll(n => n.props.accessibilityLabel === '10 credits').length).toBeGreaterThan(0);
+        expect((await appCache.read(POLICIES.balance, 'alice'))?.value).toEqual({ balance: 10, free_credits: 10, free_expires_at: null });
+    } finally { await act(async () => root.unmount()); }
+});
+test.each([null, {}, { rewards: [] }])('bad status %p fails with bad_response', async body => {
+    request.mockResolvedValue(body);
+    await expect(getCheckinStatus(mockApi)).rejects.toMatchObject({ code: 'bad_response' });
+});

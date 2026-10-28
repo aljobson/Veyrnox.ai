@@ -127,7 +127,7 @@ describe('every AI POST goes through the gate in the real client', () => {
     const fetchMock = jest.fn();
     beforeEach(() => {
         fetchMock.mockReset();
-        fetchMock.mockResolvedValue(new Response('{}', { status: 200 }));
+        fetchMock.mockImplementation(async () => new Response('{}', { status: 200 }));
         globalThis.fetch = fetchMock as unknown as typeof fetch;
     });
 
@@ -162,4 +162,29 @@ describe('every AI POST goes through the gate in the real client', () => {
         await api.request('/api/v1/chat/threads');
         expect(ask).not.toHaveBeenCalled();
     });
+});
+
+test('an answer given after the account changed is not stored for the old account', async () => {
+    const storage = memory(), gate = createConsentGate(storage);
+    let answer!: (v: boolean) => void;
+    const ask = jest.fn(() => new Promise<boolean>(r => { answer = r; }));
+    gate.setUser('A'); gate.setPrompter(ask);
+    const run = gate.ensure('/api/v1/generations', 'POST');
+    for (let i = 0; i < 20; i++) await Promise.resolve();
+    gate.setUser('B'); answer(true); await run;
+    expect(storage.map.size).toBe(0);
+});
+test('a send for B does not join A open question', async () => {
+    const storage = memory(), gate = createConsentGate(storage);
+    const answers: ((v: boolean) => void)[] = [];
+    const ask = jest.fn(() => new Promise<boolean>(r => answers.push(r)));
+    gate.setUser('A'); gate.setPrompter(ask);
+    const a = gate.ensure('/api/v1/generations', 'POST');
+    for (let i = 0; i < 20; i++) await Promise.resolve();
+    gate.setUser('B'); const b = gate.ensure('/api/v1/generations', 'POST');
+    for (let i = 0; i < 20; i++) await Promise.resolve();
+    expect(ask).toHaveBeenCalledTimes(1); answers[0](true); await a;
+    for (let i = 0; i < 20; i++) await Promise.resolve();
+    expect(ask).toHaveBeenCalledTimes(2); expect(storage.map.size).toBe(0);
+    answers[1](true); await b; expect([...storage.map.keys()].every(k => k.endsWith('.B'))).toBe(true);
 });

@@ -22,3 +22,24 @@ test('mock inbox read, priority, tags, filtering, resolve, assign and reply pers
     `]);
 });
 export {};
+
+test('mock inbox filters by assignee and search', () => {
+    execFileSync('node', ['--input-type=module', '-e', `
+        import assert from 'node:assert/strict';
+        import { mockInbox } from ${JSON.stringify(resolve(__dirname, '../dev/mockInbox.mjs'))};
+        const base='/api/v1/social/inbox', id='33333333-3333-4333-8333-333333333333', member='44444444-4444-4444-8444-444444444444';
+        const call=(url=base,method='GET',body={}) => { let result; mockInbox({url,method}, {}, url.split('?')[0], body, (res,s,b)=>{result=b}); return result; };
+        assert.equal(call(base+'?assignee=unassigned').threads.length,1);
+        assert.equal(call(base+'?assignee='+member).threads.length,0);
+        for (const search of ['maya','GIFT CARD','poster set']) assert.equal(call(base+'?search='+encodeURIComponent(search)).threads.length,1);
+        assert.equal(call(base+'?search=zzz').threads.length,0);
+        call(base+'/'+id,'PATCH',{action:'assign',userId:member});
+        assert.equal(call(base+'?assignee=unassigned').threads.length,0);
+        assert.equal(call(base+'?assignee='+member+'&search=gift%20card').threads.length,1);
+        assert.equal(call(base+'?assignee=55555555-5555-4555-8555-555555555555').threads.length,0);
+        call(base+'/'+id,'PATCH',{action:'unassign'});
+        assert.equal(call(base+'?assignee=unassigned').threads.length,1);
+        call(base+'/'+id+'/reply','POST',{body:'Unique reply text'});
+        assert.equal(call(base+'?search=UNIQUE').threads.length,1);
+    `]);
+});

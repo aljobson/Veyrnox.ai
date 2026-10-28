@@ -1,3 +1,4 @@
+import { usePublishScope } from '../../lib/usePublishScope';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
 import { usePublishApi } from '../../lib/usePublishApi';
@@ -16,21 +17,29 @@ export function DeveloperLogs() {
     const [q, setQ] = useState('');
     const [error, setError] = useState<string | null>(null);
 
+    const { nextRead, scopeTick } = usePublishScope(api, () => {
+        setLogs(null); setError(null); setStatus(undefined); setQ('');
+    });
+
     const load = useCallback(async () => {
+        const valid = nextRead('logs');
+        setLogs(null);
         setError(null);
         try {
-            setLogs(await fetchLogs(api, { status, q }));
+            const next = await fetchLogs(api, { status, q });
+            if (valid()) setLogs(next);
         } catch (err) {
+            if (!valid()) return;
             setLogs(null);
             setError(t(devErrorKey(err)));
         }
-    }, [api, status, q]);
+    }, [api, status, q, nextRead, scopeTick]);
 
     useEffect(() => {
         void load();
         // Typing searches when the person submits, not on every key.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [api, status]);
+    }, [api, status, scopeTick]);
 
     return (
         <Card title={t('dev.logs.title')} help={t('dev.logs.help')}>

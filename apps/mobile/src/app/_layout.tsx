@@ -51,7 +51,7 @@ function ThemeRouteRestorer() {
     useEffect(() => {
         void takeThemeReturnPath().then((next) => {
             if (next && next !== pathname) router.replace(next as never);
-        });
+        }).catch(() => captureIssue('theme_return_failed', {}));
     }, [pathname, router]);
     return null;
 }

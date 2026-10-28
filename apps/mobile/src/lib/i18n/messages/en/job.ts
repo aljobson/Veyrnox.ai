@@ -1,5 +1,6 @@
 // English strings for job. Add keys here; keep their original wording and placeholders.
 export default {
+    "job.stillWorking": "Still working. It will appear in your Library when it's done.",
     'job.next.title': 'What next?',
     'job.next.edit': 'Edit this video',
     'job.next.publish': 'Publish this',

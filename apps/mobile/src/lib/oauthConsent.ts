@@ -46,14 +46,23 @@ export function parseRequest(body: unknown): Request {
 // Where to send the person after the decision. Only a web address or the assistant's own app scheme is opened:
 // never a script, data, file or local-network address.
 const BLOCKED = new Set(['javascript:', 'data:', 'file:', 'blob:', 'about:', 'vbscript:', 'content:', 'intent:']);
-export function safeRedirect(value: unknown): string | null {
+const RESPONSE_PARAMS = new Set(['code', 'state', 'error', 'error_description', 'error_uri', 'iss']);
+export function safeRedirect(value: unknown, registered?: string | null): string | null {
     if (typeof value !== 'string' || value.length > 2048) return null;
     try {
         const u = new URL(value);
         if (BLOCKED.has(u.protocol)) return null;
-        if (u.protocol === 'https:') return u.toString();
-        if (u.protocol === 'http:') return ['localhost', '127.0.0.1', '[::1]'].includes(u.hostname) ? u.toString() : null;
-        return /^[a-z][a-z0-9+.-]*:$/.test(u.protocol) ? u.toString() : null;
+        if (!registered) return u.protocol === 'https:' ? u.toString() : null;
+        const trusted = new URL(registered);
+        if (u.protocol !== trusted.protocol || u.host !== trusted.host || u.pathname !== trusted.pathname
+            || u.username !== trusted.username || u.password !== trusted.password || u.hash !== trusted.hash) return null;
+        for (const key of new Set(trusted.searchParams.keys())) {
+            if (JSON.stringify(u.searchParams.getAll(key)) !== JSON.stringify(trusted.searchParams.getAll(key))) return null;
+        }
+        for (const key of u.searchParams.keys()) {
+            if (!trusted.searchParams.has(key) && !RESPONSE_PARAMS.has(key)) return null;
+        }
+        return u.toString();
     } catch {
         return null;
     }
@@ -66,10 +75,10 @@ export async function fetchRequest(getToken: TokenSource, id: string): Promise<R
     return parseRequest(await authedCall(getToken, `/auth/v1/oauth/authorizations/${enc(id)}`, { method: 'GET' }));
 }
 
-export async function decide(getToken: TokenSource, id: string, action: 'approve' | 'deny'): Promise<string> {
+export async function decide(getToken: TokenSource, id: string, action: 'approve' | 'deny', registered?: string | null): Promise<string> {
     if (!validAuthorizationId(id)) throw new AuthError(400, 'invalid_request');
     const out = rec(await authedCall(getToken, `/auth/v1/oauth/authorizations/${enc(id)}/consent`, { method: 'POST', body: JSON.stringify({ action }) }));
-    const target = safeRedirect(out.redirect_url ?? out.redirect_uri);
+    const target = safeRedirect(out.redirect_url ?? out.redirect_uri, registered);
     if (!target) throw new AuthError(502, 'no_redirect');
     return target;
 }

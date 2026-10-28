@@ -16,7 +16,7 @@ import {
 import { getSession, onSessionChange } from '../../lib/authClient';
 import { gatewayFetch, notifyBalanceChanged } from '../_lib/gateway';
 import {
-  subscriptionCheckoutUrl,
+  subscriptionCheckoutUrl, canCheckCoolingOffRefund,
   subscriptionReturnFrom,
 } from '../_lib/creditSubscriptionUi';
 import { subscriptionSavingPercent, yearlySaving } from '../_lib/subscriptionPlans';
@@ -543,7 +543,7 @@ function Billing({ account, recovery, setRecovery }) {
                 {t("app.credits.subscription.cancelUnused")}</button>
             </div>
           )}
-          {sub.status === 'ended' && sub.end_reason === 'cooling_off' && (
+          {canCheckCoolingOffRefund(sub) && (
             <button
               className="mt-4 underline"
               disabled={busy}

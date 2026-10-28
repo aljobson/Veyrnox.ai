@@ -172,3 +172,39 @@ test('a balance publication during the first read keeps its amount and receives 
     expect(text()).toContain('1,800'); expect(text()).toContain('20 credits'); expect(text()).toContain('Nov 1, 2026');
     expect(mockApi.getBalance).toHaveBeenCalledTimes(1);
 });
+
+test.each([true, false])('restore feedback reflects returned active access=%s', async restored => {
+    mockBilling.restore.mockResolvedValue(restored); await mount(); await press(t('credits.restore'));
+    expect(text()).toContain(t(restored ? 'credits.restored' : 'credits.nothingToRestore'));
+    expect(text()).not.toContain(t(restored ? 'credits.nothingToRestore' : 'credits.restored'));
+});
+test('restore failure retains the existing error path', async () => {
+    mockBilling.restore.mockRejectedValue(new Error('offline')); await mount(); await press(t('credits.restore'));
+    expect(text()).toContain(t('credits.error')); expect(text()).not.toContain(t('credits.restored'));
+});
+test.each(['pending', 'throwAfterPurchase', 'cancelled', 'failed'])('purchase result %s uses the correct feedback', async result => {
+    await mount();
+    const unsubscribe = result === 'throwAfterPurchase'
+        ? require('../src/lib/balanceEvents').subscribeBalance(() => { throw new Error('bookkeeping'); }) : () => {};
+    if (result === 'failed') mockBilling.purchase.mockRejectedValue(new Error('store failed'));
+    else mockBilling.purchase.mockImplementation(async () => {
+        if (result === 'throwAfterPurchase') mockBalance = { ...mockBalance, balance: 1334 };
+        return result === 'throwAfterPurchase' ? 'purchased' : result;
+    });
+    try {
+        await press('100 credits, £10.00');
+        const key = result === 'cancelled' ? 'credits.cancelled' : result === 'failed' ? 'credits.error' : 'credits.pending';
+        expect(text()).toContain(t(key));
+        if (key !== 'credits.error') expect(text()).not.toContain(t('credits.error'));
+    } finally { unsubscribe(); }
+});
+
+test.each([true, false])('cached {} never reaches BalanceCard; refresh succeeds=%s', async succeeds => {
+    const { appStorage } = require('../src/lib/appCache');
+    await appStorage.set(`veyrnox.cache.v1.balance.${getCacheUser()}`, JSON.stringify({ savedAt: Date.now(), value: {} }));
+    if (!succeeds) mockApi.getBalance.mockRejectedValue(new Error('offline'));
+    await mount();
+    expect(text()).not.toContain('NaN');
+    if (succeeds) expect(text()).toContain('1,234');
+    else { expect(text()).toContain('—'); expect(text()).toContain(t('creditsPage.balanceUnavailable')); }
+});

@@ -1,36 +1,9 @@
-import { DEFAULT_LOCALE, isRtl, matchTag, resolveLocale, type LocaleCode } from './locales';
-import { createTranslator, type Catalogs, type Translator, type Vars } from './translate';
-import en from './messages/en';
-import es from './messages/es';
-import appEs from './messages/app/es';
-import zh from './messages/zh';
-import appZh from './messages/app/zh';
-import hi from './messages/hi';
-import appHi from './messages/app/hi';
-import ar from './messages/ar';
-import appAr from './messages/app/ar';
-import fr from './messages/fr';
-import appFr from './messages/app/fr';
-import pt from './messages/pt';
-import appPt from './messages/app/pt';
-import ru from './messages/ru';
-import appRu from './messages/app/ru';
-import ja from './messages/ja';
-import appJa from './messages/app/ja';
-import de from './messages/de';
-import appDe from './messages/app/de';
-import ko from './messages/ko';
-import appKo from './messages/app/ko';
+import { isRtl, matchTag, resolveLocale, type LocaleCode } from './locales';
+import { createTranslator, type Translator, type Vars } from './translate';
+import { CATALOGS } from './catalogs';
+export { CATALOGS, WEB_CATALOGS, APP_CATALOGS, CATALOG_LOADERS, loadCatalog } from './catalogs';
 import { readLanguage } from '../languageStore';
 import { deviceLanguageTags, readDeviceSources, resolveActive } from './device';
-
-// Website keys always win; generated catalogs remain byte-for-byte copies of the site.
-export const WEB_CATALOGS: Catalogs = { es, zh, hi, ar, fr, pt, ru, ja, de, ko };
-export const APP_CATALOGS = { es: appEs, zh: appZh, hi: appHi, ar: appAr, fr: appFr, pt: appPt, ru: appRu, ja: appJa, de: appDe, ko: appKo } as const;
-export const CATALOGS: Catalogs = {
-    en,
-    ...Object.fromEntries(Object.entries(APP_CATALOGS).map(([locale, app]) => [locale, { ...app, ...WEB_CATALOGS[locale as LocaleCode] }])),
-};
 
 // ADR-0270: all ten complete app catalogs, in LANGUAGES order.
 export const ACTIVE_LOCALES: readonly LocaleCode[] = ['en', 'es', 'zh', 'hi', 'ar', 'fr', 'pt', 'ru', 'ja', 'de', 'ko'];

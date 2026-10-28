@@ -60,6 +60,7 @@ export function createConsentGate(storage: ConsentStorage): ConsentGate {
     let userId: string | null = null;
     let ask: (() => Promise<boolean>) | null = null;
     let pending: Promise<boolean> | null = null;
+    let pendingFor: string | null = null;
 
     const keyFor = (id: string) => `veyrnox.consent.${AI_CONSENT_VERSION}.${id}`;
     const agreed = async (id: string) => (await storage.get(keyFor(id)).catch(() => null)) === 'agreed';
@@ -83,14 +84,18 @@ export function createConsentGate(storage: ConsentStorage): ConsentGate {
             // No known account or no screen to ask on: refuse rather than send without asking.
             if (!id || !ask) throw new ConsentDeclinedError();
             if (await agreed(id)) return;
-            // Two sends at once share one question, and the answer is stored before either goes on.
+            // Different accounts cannot share the same answer.
+            while (pending && pendingFor !== id) await pending.catch(() => false);
+            if (userId !== id) return;
+            pendingFor = id;
             pending ??= ask()
                 .then(async (ok) => {
-                    if (ok) await storage.set(keyFor(id), 'agreed').catch(() => undefined);
+                    if (ok && userId === id) await storage.set(keyFor(id), 'agreed').catch(() => undefined);
                     return ok;
                 })
                 .finally(() => {
                     pending = null;
+                    pendingFor = null;
                 });
             if (!(await pending)) throw new ConsentDeclinedError();
         },

@@ -1,3 +1,4 @@
+import { tokenUser } from './tokenUser';
 import { t } from '../i18n';
 import { config } from '../config';
 import { createRateGuard, reportIssue } from '../requestGuard';
@@ -5,7 +6,11 @@ import { AuthError, type TokenResponse } from './supabaseAuth';
 
 // Account calls that go straight to Supabase Auth with the user's own access token, as the web does
 // (app/lib/accountSecurity.js, app/lib/authClient.js). Nothing here touches sign-in itself.
-export type TokenSource = (forceRefresh?: boolean) => Promise<string | null>;
+export type TokenSource = {
+    (forceRefresh?: boolean, expected?: number): Promise<string | null>;
+    readonly generation?: () => number;
+    readonly expected?: number;
+};
 
 export interface Profile {
     readonly email: string | null;
@@ -39,11 +44,19 @@ async function send(token: string, path: string, init: RequestInit): Promise<Res
 
 // Sends with the current token; after a 401 refreshes once and retries (like the API client).
 export async function authedCall<T>(getToken: TokenSource, path: string, init: RequestInit = {}): Promise<T> {
-    const token = await getToken();
+    const gen = getToken.expected ?? getToken.generation?.();
+    const check = () => { if (gen !== undefined && getToken.generation?.() !== gen) throw new AuthError(401, 'account_changed'); };
+    check();
+    const token = await (gen === undefined ? getToken() : getToken(false, gen));
+    check();
     if (!token) throw new AuthError(401, 'not_authenticated');
+    const user = tokenUser(token);
     let res = await send(token, path, init);
     if (res.status === 401) {
-        const retry = await getToken(true);
+        check();
+        const retry = await (gen === undefined ? getToken(true) : getToken(true, gen));
+        check();
+        if (retry && tokenUser(retry) !== user) throw new AuthError(401, 'account_changed');
         if (retry && retry !== token) res = await send(retry, path, init);
     }
     const text = await res.text();

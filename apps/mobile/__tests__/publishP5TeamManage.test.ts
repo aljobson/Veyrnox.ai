@@ -1,5 +1,5 @@
 import { ApiError, type ApiClient } from '../src/lib/api';
-import { canManage, changeRole, parseTeam, removeMember, revokeInvite, rolesFor, teamActionErrorKey } from '../src/lib/publishTeam';
+import { canManage, canRevoke, changeRole, parseTeam, removeMember, revokeInvite, rolesFor, teamActionErrorKey } from '../src/lib/publishTeam';
 
 const apiWith = () => {
     const request = jest.fn(async (_p: string, _i?: RequestInit) => ({ ok: true }));
@@ -42,4 +42,12 @@ describe('team manage', () => {
         expect(teamActionErrorKey(new ApiError(400, 'INVALID_ROLE'))).toBe('team.err.invalid');
         expect(teamActionErrorKey(new ApiError(0, 'network'))).toBe('team.err.network');
     });
+});
+
+test('canRevoke matches the revoke RPC', () => {
+    for (const actor of ['owner', 'manager', 'editor', 'reviewer', 'analyst', 'viewer']) {
+        for (const invite of ['manager', 'editor', 'reviewer', 'analyst', 'viewer']) {
+            expect(canRevoke(actor, invite)).toBe(actor === 'owner' || actor === 'manager' && invite !== 'manager');
+        }
+    }
 });

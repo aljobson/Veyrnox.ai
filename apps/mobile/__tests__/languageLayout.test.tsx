@@ -1,3 +1,4 @@
+jest.mock('../src/lib/crash', () => ({ captureIssue: jest.fn() }));
 import { act } from 'react';
 import * as RN from 'react-native';
 import { createRoot, type Root } from 'test-renderer';
@@ -16,8 +17,8 @@ const mockBack = jest.fn();
 const mockScreens: any[] = [];
 const spanish = CATALOGS.es as Record<string, string>;
 const originalTab = spanish['tabs.library'];
-jest.mock('../src/lib/languageStore', () => ({ readLanguage: () => mockStored, loadLanguage: async () => mockStored, saveLanguage: jest.fn(async (code: string) => { mockStored = code; return true; }), saveAccountLanguage: jest.fn(), syncPendingAccountLanguage: jest.fn() }));
-jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ status: mockStatus, canReloadSession: () => false, api: {} }) }));
+jest.mock('../src/lib/languageStore', () => ({ readLanguage: () => mockStored, loadLanguage: async () => mockStored, saveLanguage: jest.fn(async (code: string) => { mockStored = code; return true; }), saveAccountLanguage: jest.fn(), syncPendingAccountLanguage: jest.fn(async () => {}) }));
+jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ generation: 0, sessionGeneration: () => 0, beginSessionTask: () => ({ gen: 0, user: 'u', current: () => true, tokens: async () => null }), status: mockStatus, canReloadSession: () => false, api: {} }) }));
 jest.mock('expo', () => ({ reloadAppAsync: jest.fn() }));
 jest.mock('expo-router', () => {
     const React = require('react');
@@ -126,4 +127,15 @@ test('the recovery startup does not consume or send a pending account-language c
         await act(async () => root.render(<LanguageGate><RN.Text>App</RN.Text></LanguageGate>));
         expect(syncPendingAccountLanguage).not.toHaveBeenCalled();
     } finally { repaired.mockRestore(); }
+});
+
+test('a rejected direction reconciliation reports a fixed issue and leaves children usable', async () => {
+    mockStored = 'en'; mockStatus = 'signedIn';
+    const report = jest.spyOn(require('../src/lib/crash'), 'captureIssue').mockImplementation(() => {});
+    const reconcile = jest.spyOn(direction, 'reconcileLanguageDirection').mockRejectedValue(new Error('private native value'));
+    try {
+        await act(async () => root.render(<LanguageGate><RN.Text>App remains usable</RN.Text></LanguageGate>));
+        expect(report).toHaveBeenCalledWith('language_direction_failed', {});
+        expect(root.container.queryAll(n => n.props.children === 'App remains usable')).toHaveLength(1);
+    } finally { report.mockRestore(); reconcile.mockRestore(); }
 });

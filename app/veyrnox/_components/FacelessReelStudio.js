@@ -7,6 +7,9 @@ import { Button } from './Button';
 import { Chip } from './Chip';
 import { writeStudioDraft } from '../_lib/landingDraft';
 import {
+  FACELESS_REEL_PROMPT_MAX,
+  facelessBriefLength,
+  facelessBriefRoom,
   FACELESS_REEL_FORMATS,
   FACELESS_REEL_PACING,
   FACELESS_REEL_PLATFORMS,
@@ -57,7 +60,11 @@ export default function FacelessReelStudio() {
   const platformOptions = FACELESS_REEL_PLATFORMS.map((item) => ({ ...item, label: facelessReelPlatformCopy(t, item.id) }));
   const selectedPlatform = platformOptions.find((item) => item.id === platform) || platformOptions[0];
   const selectedFormat = formatOptions.find((item) => item.id === format) || formatOptions[0];
-  const previewPrompt = topic.trim() ? buildFacelessReelPrompt(values, t) : '';
+  const used = facelessBriefLength(values);
+  const room = facelessBriefRoom(values);
+  const promptLong = used > room;
+  const visibleError = promptLong ? t('app.facelessReel.error.promptLong', { max: FACELESS_REEL_PROMPT_MAX }) : error;
+  const previewPrompt = topic.trim() ? buildFacelessReelPrompt(values) : '';
 
   function launch() {
     const issue = facelessReelValidation(values, t);
@@ -65,7 +72,7 @@ export default function FacelessReelStudio() {
       setError(issue);
       return;
     }
-    const draft = facelessReelLaunch(values, t);
+    const draft = facelessReelLaunch(values);
     if (!writeStudioDraft(window.sessionStorage, draft)) {
       setError(t('app.facelessReel.error.handoff'));
       return;
@@ -91,7 +98,7 @@ export default function FacelessReelStudio() {
         <div className="mt-8 grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
           <div className="space-y-6">
             <section className={`${card} p-4 sm:p-5`}>
-              <div className="flex items-start justify-between gap-4"><div><p className="font-vx-mono text-[10px] font-bold tracking-[0.14em] text-vx-accent">{t('app.facelessReel.step1')}</p><h2 className="mt-1 text-lg font-black">{t('app.facelessReel.storyBrief')}</h2></div><span className="font-vx-mono text-[11px] text-vx-fg-faint">{topic.length}/800</span></div>
+              <div className="flex items-start justify-between gap-4"><div><p className="font-vx-mono text-[10px] font-bold tracking-[0.14em] text-vx-accent">{t('app.facelessReel.step1')}</p><h2 className="mt-1 text-lg font-black">{t('app.facelessReel.storyBrief')}</h2></div><span aria-live="polite" className={`font-vx-mono text-[11px] ${promptLong ? 'text-vx-danger' : 'text-vx-fg-faint'}`}>{t('app.facelessReel.counter', { n: used, room })}{promptLong && ` · ${t('app.facelessReel.over', { over: used - room })}`}</span></div>
               <textarea aria-label={t('app.facelessReel.briefLabel')} value={topic} maxLength={800} rows={6} onChange={(event) => { setTopic(event.target.value); setError(''); }} placeholder={t('app.facelessReel.briefPlaceholder')} className={`${field} mt-4 resize-y`} />
               <label className="mt-4 block text-xs font-bold text-vx-fg-body">{t('app.facelessReel.hookLabel')}<input aria-label={t('app.facelessReel.hookAria')} value={hook} maxLength={160} onChange={(event) => setHook(event.target.value)} placeholder={t('app.facelessReel.hookPlaceholder')} className={`${field} mt-2 font-normal`} /></label>
               <p className="mt-2 text-[11px] leading-4 text-vx-fg-faint">{t('app.facelessReel.hookHelp')}</p>
@@ -123,8 +130,8 @@ export default function FacelessReelStudio() {
             <section className={`${card} p-5`}>
               <p className="font-vx-mono text-[10px] font-bold tracking-[0.14em] text-vx-accent">{t('app.facelessReel.originalityTitle')}</p>
               <div className="mt-4 space-y-3"><label className="flex cursor-pointer gap-3 rounded-xl border border-vx-border bg-vx-base p-3 text-xs leading-5"><input type="checkbox" checked={originality} onChange={(event) => setOriginality(event.target.checked)} className="mt-1 h-4 w-4 accent-[var(--vx-accent)]"/><span>{t('app.facelessReel.originality')}</span></label><label className="flex cursor-pointer gap-3 rounded-xl border border-vx-border bg-vx-base p-3 text-xs leading-5"><input type="checkbox" checked={faceless} onChange={(event) => setFaceless(event.target.checked)} className="mt-1 h-4 w-4 accent-[var(--vx-accent)]"/><span>{t('app.facelessReel.noImitation')}</span></label></div>
-              {error && <p role="alert" className="mt-4 rounded-xl border border-vx-danger/35 bg-vx-danger/[0.06] px-4 py-3 text-xs leading-5 text-vx-danger">{error}</p>}
-              <Button className="mt-5 w-full justify-center" size="lg" onClick={launch}>{t('app.facelessReel.openCreate')}</Button>
+              {visibleError && <p role="alert" className="mt-4 rounded-xl border border-vx-danger/35 bg-vx-danger/[0.06] px-4 py-3 text-xs leading-5 text-vx-danger">{visibleError}</p>}
+              <Button className="mt-5 w-full justify-center" size="lg" disabled={promptLong} onClick={launch}>{t('app.facelessReel.openCreate')}</Button>
               <p className="mt-3 text-center text-[11px] leading-4 text-vx-fg-faint">{t('app.facelessReel.noSpend')}</p>
             </section>
 
