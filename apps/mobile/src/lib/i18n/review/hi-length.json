@@ -1722,6 +1722,42 @@
     "ratio": 2
   },
   {
+    "id": "projectDocument.fps",
+    "english": "{value1} fps",
+    "translation": "{value1} फ़्रेम/सेकंड",
+    "ratio": 1.75
+  },
+  {
+    "id": "projectDocument.saving",
+    "english": "Saving…",
+    "translation": "सहेजा जा रहा है…",
+    "ratio": 2.29
+  },
+  {
+    "id": "projectDocument.held",
+    "english": "Saving paused. Tap Save now to try again.",
+    "translation": "सहेजना रुका हुआ है। फिर कोशिश करने के लिए \"अभी सहेजें\" पर टैप करें।",
+    "ratio": 1.63
+  },
+  {
+    "id": "projectDocument.noBrief",
+    "english": "No brief yet",
+    "translation": "अभी कोई संक्षेप नहीं",
+    "ratio": 1.67
+  },
+  {
+    "id": "projectDocument.useSaved",
+    "english": "Use saved version",
+    "translation": "सहेजा गया संस्करण उपयोग करें",
+    "ratio": 1.65
+  },
+  {
+    "id": "projectDocument.reloadLatest",
+    "english": "Reload latest",
+    "translation": "नवीनतम फिर से लोड करें",
+    "ratio": 1.69
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

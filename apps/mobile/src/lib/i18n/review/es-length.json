@@ -2910,6 +2910,48 @@
     "ratio": 1.68
   },
   {
+    "id": "projectDocument.frameRate",
+    "english": "Frame rate",
+    "translation": "Fotogramas por segundo",
+    "ratio": 2.2
+  },
+  {
+    "id": "projectDocument.tooBig",
+    "english": "Too long to save",
+    "translation": "Demasiado largo para guardarlo",
+    "ratio": 1.88
+  },
+  {
+    "id": "projectDocument.saveNow",
+    "english": "Save now",
+    "translation": "Guardar ahora",
+    "ratio": 1.63
+  },
+  {
+    "id": "projectDocument.retrySave",
+    "english": "Retry save",
+    "translation": "Reintentar guardado",
+    "ratio": 1.9
+  },
+  {
+    "id": "projectDocument.reviewLatest",
+    "english": "Review latest",
+    "translation": "Revisar la más reciente",
+    "ratio": 1.77
+  },
+  {
+    "id": "projectDocument.retry",
+    "english": "Try again",
+    "translation": "Intentar de nuevo",
+    "ratio": 1.89
+  },
+  {
+    "id": "projectDocument.reloadLatest",
+    "english": "Reload latest",
+    "translation": "Cargar la más reciente",
+    "ratio": 1.69
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

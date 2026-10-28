@@ -168,5 +168,7 @@
   "publishOps.accountLabel": "Formatting template; words are localized separately.",
   "publishOps.inbox.tags": "Shared term in this language.",
   "publishOps.priority.normal": "Shared term in this language.",
-  "publishOps.import.name": "Shared term in this language."
+  "publishOps.import.name": "Shared term in this language.",
+  "projectDocument.counter": "Numeric counter pattern; only the localized numbers change.",
+  "projectDocument.versionTitle": "Version is the standard word in this language for a saved revision."
 }

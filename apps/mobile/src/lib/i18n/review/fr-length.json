@@ -4584,6 +4584,96 @@
     "ratio": 1.73
   },
   {
+    "id": "projectDocument.frameRate",
+    "english": "Frame rate",
+    "translation": "Fréquence d’images",
+    "ratio": 1.8
+  },
+  {
+    "id": "projectDocument.saving",
+    "english": "Saving…",
+    "translation": "Enregistrement…",
+    "ratio": 2.14
+  },
+  {
+    "id": "projectDocument.unsaved",
+    "english": "Unsaved changes",
+    "translation": "Modifications non enregistrées",
+    "ratio": 2
+  },
+  {
+    "id": "projectDocument.noChanges",
+    "english": "No changes yet",
+    "translation": "Aucune modification pour le moment",
+    "ratio": 2.43
+  },
+  {
+    "id": "projectDocument.held",
+    "english": "Saving paused. Tap Save now to try again.",
+    "translation": "Enregistrement en pause. Touchez « Enregistrer maintenant » pour réessayer.",
+    "ratio": 1.83
+  },
+  {
+    "id": "projectDocument.tooBig",
+    "english": "Too long to save",
+    "translation": "Trop long pour être enregistré",
+    "ratio": 1.88
+  },
+  {
+    "id": "projectDocument.saveNow",
+    "english": "Save now",
+    "translation": "Enregistrer maintenant",
+    "ratio": 2.75
+  },
+  {
+    "id": "projectDocument.retrySave",
+    "english": "Retry save",
+    "translation": "Réessayer l’enregistrement",
+    "ratio": 2.6
+  },
+  {
+    "id": "projectDocument.reviewLatest",
+    "english": "Review latest",
+    "translation": "Voir la dernière version",
+    "ratio": 1.85
+  },
+  {
+    "id": "projectDocument.useSaved",
+    "english": "Use saved version",
+    "translation": "Utiliser la version enregistrée",
+    "ratio": 1.82
+  },
+  {
+    "id": "projectDocument.saveDraftInstead",
+    "english": "Save my draft instead",
+    "translation": "Enregistrer mon brouillon à la place",
+    "ratio": 1.71
+  },
+  {
+    "id": "projectDocument.reloadLatest",
+    "english": "Reload latest",
+    "translation": "Recharger la dernière version",
+    "ratio": 2.23
+  },
+  {
+    "id": "projectDocument.latestNotSaved",
+    "english": "Your latest changes aren't saved.",
+    "translation": "Vos dernières modifications ne sont pas enregistrées.",
+    "ratio": 1.61
+  },
+  {
+    "id": "projectDocument.keepEditing",
+    "english": "Keep editing",
+    "translation": "Continuer à modifier",
+    "ratio": 1.67
+  },
+  {
+    "id": "projectDocument.olderFailed",
+    "english": "Could not load older versions.",
+    "translation": "Impossible de charger les versions plus anciennes.",
+    "ratio": 1.67
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

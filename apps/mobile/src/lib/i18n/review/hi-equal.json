@@ -52,5 +52,6 @@
   "publishOps.accountLabel": "Formatting template; words are localized separately.",
   "publishOps.inbox.count": "Formatting template; words are localized separately.",
   "publishOps.inbox.meta": "Formatting template; words are localized separately.",
-  "publishOps.queue.excludedAccount": "Formatting template; words are localized separately."
+  "publishOps.queue.excludedAccount": "Formatting template; words are localized separately.",
+  "projectDocument.counter": "Numeric counter pattern; only the localized numbers change."
 }
