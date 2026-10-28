@@ -17,6 +17,13 @@ export function editorialEpisodeWebUrl(slug: string, episodeId: string): string 
     return series?.episodes.some(e => e.id === episodeId)
         ? `${WEB_ORIGIN}/social-cinema/watch/${encodeURIComponent(episodeId)}?series=${encodeURIComponent(slug)}` : null;
 }
+export function editorialEpisodeContext(slug: string | undefined, id: string | undefined) {
+    const series = editorialSeriesBySlug(slug);
+    if (!series || typeof id !== 'string' || !/^[a-z0-9-]{1,80}$/.test(id)) return null;
+    const index = series.episodes.findIndex(episode => episode.id === id);
+    if (index < 0) return null;
+    return { series, episode: series.episodes[index], next: series.episodes[index + 1] ?? null };
+}
 export const phoneCategories = (list: readonly string[]): string[] => list.filter(slug => CATEGORIES.some(c => c.slug === slug));
 
 type Raw = Record<string, unknown>;

@@ -510,6 +510,18 @@
     "ratio": 2.25
   },
   {
+    "id": "cinemaEmbed.close",
+    "english": "Close",
+    "translation": "Schließen",
+    "ratio": 1.8
+  },
+  {
+    "id": "cinemaEmbed.retry",
+    "english": "Try again",
+    "translation": "Erneut versuchen",
+    "ratio": 1.78
+  },
+  {
     "id": "cinemaSeries.state.free_ceiling",
     "english": "Free viewing used this month",
     "translation": "Kostenloses Sehkontingent diesen Monat verbraucht",

@@ -1,6 +1,5 @@
 import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { ComingToApp } from '../../../../components/ComingToApp';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { touchTarget } from '../../../../lib/a11y';
 import { formatDuration } from '../../../../lib/cinema';
@@ -28,13 +27,18 @@ export default function EditorialSeriesPage() {
             <Text style={styles.muted}>{plural('cinemaSeries.season', series.episodes.length, { season: series.season, title: series.seasonTitle, n: series.episodes.length })}</Text>
             <Text style={styles.body}>{series.description}</Text>
             <Text style={styles.muted}>{t('cinemaSeries.creator', { creator: series.creatorName, source: series.sourceName })}</Text>
-            <ComingToApp />
+            <Pressable accessibilityRole="button" accessibilityLabel={t('cinemaSeries.playFirst')} style={styles.play}
+                onPress={() => router.push({ pathname: '/editorial/[id]', params: { id: series.episodes[0].id, series: series.slug } })}>
+                <Text style={styles.playText}>{t('cinemaSeries.playFirst')}</Text>
+            </Pressable>
             <Text style={styles.title} accessibilityRole="header">{t('cinemaSeries.episodes')}</Text>
             {series.episodes.map(episode => (
-                <View key={episode.id} style={styles.episode}>
+                <Pressable key={episode.id} style={styles.episode} accessibilityRole="button"
+                    accessibilityLabel={t('cinemaEmbed.playEpisode', { position: episode.position, title: episode.title })}
+                    onPress={() => router.push({ pathname: '/editorial/[id]', params: { id: episode.id, series: series.slug } })}>
                     <Text style={styles.muted}>{t('cinemaSeries.episode', { position: episode.position, duration: formatDuration(episode.durationSeconds) })}</Text>
                     <Text style={styles.body}>{episode.title}</Text>
-                </View>
+                </Pressable>
             ))}
         </ScrollView>
     );

@@ -294,6 +294,12 @@
     "ratio": 2.4
   },
   {
+    "id": "cinemaEmbed.retry",
+    "english": "Try again",
+    "translation": "फिर से कोशिश करें",
+    "ratio": 1.89
+  },
+  {
     "id": "cinemaSeries.state.free_ceiling",
     "english": "Free viewing used this month",
     "translation": "इस महीने का मुफ़्त देखने का कोटा इस्तेमाल हो गया",
