@@ -1,5 +1,4 @@
 import { Text as StatusText } from '../../../components/ui/Text';
-import { ComingToApp } from '../../../components/ComingToApp';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
@@ -75,7 +74,6 @@ export default function Ads() {
                                     <Text style={styles.addText}>{t('ads.new')}</Text>
                                 </Pressable>
                             ) : null}
-                            <ComingToApp />
                         </View>
                     }
                     renderItem={({ item }) => (

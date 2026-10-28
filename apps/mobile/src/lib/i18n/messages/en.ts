@@ -146,6 +146,7 @@ import area_publishDeveloper from './en/publishDeveloper';
 import area_publishHome from './en/publishHome';
 import area_publishInbox from './en/publishInbox';
 import area_publishLinks from './en/publishLinks';
+import area_publishOps from './en/publishOps';
 import area_publishParity from './en/publishParity';
 import area_publishQueueAdmin from './en/publishQueueAdmin';
 import area_publishQueues from './en/publishQueues';
@@ -337,6 +338,7 @@ const catalog = {
     ...area_publishHome,
     ...area_publishInbox,
     ...area_publishLinks,
+    ...area_publishOps,
     ...area_publishParity,
     ...area_publishQueueAdmin,
     ...area_publishQueues,

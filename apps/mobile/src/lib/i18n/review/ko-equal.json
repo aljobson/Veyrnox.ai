@@ -46,5 +46,10 @@
   "vibe.destination.tiktok": "Brand or product name, retained as on the Korean website.",
   "vibe.destination.youtube": "Brand or product name, retained as on the Korean website.",
   "whenPicker.hHMM": "Standard notation, unit, format example or style abbreviation.",
-  "whenPicker.yYYYMMDD": "Standard notation, unit, format example or style abbreviation."
+  "whenPicker.yYYYMMDD": "Standard notation, unit, format example or style abbreviation.",
+  "publishOps.inbox.rowLabel": "Formatting template; words are localized separately.",
+  "publishOps.accountLabel": "Formatting template; words are localized separately.",
+  "publishOps.inbox.count": "Formatting template; words are localized separately.",
+  "publishOps.inbox.meta": "Formatting template; words are localized separately.",
+  "publishOps.queue.excludedAccount": "Formatting template; words are localized separately."
 }

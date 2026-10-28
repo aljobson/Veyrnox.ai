@@ -177,5 +177,10 @@
   "videoAgent.format": "Established French term or label: Format {aspect}.",
   "whenPicker.hHMM": "Standard notation, unit, format example or typeface specimen.",
   "whenPicker.yYYYMMDD": "Standard notation, unit, format example or typeface specimen.",
-  "chatDepth.wfTitle": "Established local term, retained from the website translation."
+  "chatDepth.wfTitle": "Established local term, retained from the website translation.",
+  "publishOps.inbox.meta": "Formatting template; words are localized separately.",
+  "publishOps.queue.excludedAccount": "Formatting template; words are localized separately.",
+  "publishOps.inbox.count": "Formatting template; words are localized separately.",
+  "publishOps.inbox.rowLabel": "Formatting template; words are localized separately.",
+  "publishOps.accountLabel": "Formatting template; words are localized separately."
 }

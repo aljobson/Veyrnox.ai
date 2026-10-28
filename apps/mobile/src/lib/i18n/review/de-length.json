@@ -2970,6 +2970,42 @@
     "ratio": 1.79
   },
   {
+    "id": "publishOps.inbox.anyone",
+    "english": "Anyone",
+    "translation": "Alle Personen",
+    "ratio": 2.17
+  },
+  {
+    "id": "publishOps.inbox.anyTag",
+    "english": "Any tag",
+    "translation": "Beliebiger Tag",
+    "ratio": 2
+  },
+  {
+    "id": "publishOps.import.confirmTitle",
+    "english": "Add or update contacts?",
+    "translation": "Kontakte hinzufügen oder aktualisieren?",
+    "ratio": 1.7
+  },
+  {
+    "id": "publishOps.import.add",
+    "english": "Add",
+    "translation": "Hinzufügen",
+    "ratio": 3.33
+  },
+  {
+    "id": "publishOps.csv.quote",
+    "english": "Close every quoted field.",
+    "translation": "Schließe jedes Feld in Anführungszeichen ab.",
+    "ratio": 1.76
+  },
+  {
+    "id": "publishOps.queue.reason.publishingOff",
+    "english": "Publishing is off",
+    "translation": "Veröffentlichung deaktiviert",
+    "ratio": 1.65
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

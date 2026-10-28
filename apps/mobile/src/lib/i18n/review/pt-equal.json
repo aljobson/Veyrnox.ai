@@ -125,5 +125,11 @@
   "vibe.destination.tiktok": "Brand or product name retained as in the Portuguese website catalog.",
   "vibe.destination.youtube": "Brand or product name retained as in the Portuguese website catalog.",
   "whenPicker.hHMM": "Technical notation, unit, format example or typeface specimen; no translatable prose.",
-  "whenPicker.yYYYMMDD": "Technical notation, unit, format example or typeface specimen; no translatable prose."
+  "whenPicker.yYYYMMDD": "Technical notation, unit, format example or typeface specimen; no translatable prose.",
+  "publishOps.inbox.meta": "Formatting template; words are localized separately.",
+  "publishOps.queue.excludedAccount": "Formatting template; words are localized separately.",
+  "publishOps.inbox.count": "Formatting template; words are localized separately.",
+  "publishOps.inbox.rowLabel": "Formatting template; words are localized separately.",
+  "publishOps.accountLabel": "Formatting template; words are localized separately.",
+  "publishOps.priority.normal": "Shared term in this language."
 }

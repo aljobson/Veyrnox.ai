@@ -1,5 +1,4 @@
 import { Text as StatusText } from '../../../components/ui/Text';
-import { ComingToApp } from '../../../components/ComingToApp';
 import { Image } from 'expo-image';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -76,7 +75,6 @@ export default function Commerce() {
                                     <Text style={styles.addText}>{t('commerce.new')}</Text>
                                 </Pressable>
                             ) : null}
-                            <ComingToApp />
                         </View>
                     }
                     renderItem={({ item }) => (

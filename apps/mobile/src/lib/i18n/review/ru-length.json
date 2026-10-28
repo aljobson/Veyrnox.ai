@@ -3024,6 +3024,24 @@
     "ratio": 1.64
   },
   {
+    "id": "publishOps.inbox.anyone",
+    "english": "Anyone",
+    "translation": "Любой участник",
+    "ratio": 2.33
+  },
+  {
+    "id": "publishOps.priority.high",
+    "english": "High",
+    "translation": "Высокий",
+    "ratio": 1.75
+  },
+  {
+    "id": "publishOps.import.add",
+    "english": "Add",
+    "translation": "Добавить",
+    "ratio": 2.67
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

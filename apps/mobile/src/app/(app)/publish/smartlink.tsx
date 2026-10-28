@@ -1,6 +1,10 @@
+import { subscribeCacheUser } from '../../../lib/appCache';
+import { brandStore } from '../../../lib/publishBrand';
+import { publishScope, usePublishRole } from '../../../lib/usePublishRole';
+import { canPublish } from '../../../lib/publishDashboard';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, Share, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { touchTarget } from '../../../lib/a11y';
 import { t } from '../../../lib/i18n';
@@ -10,6 +14,26 @@ import { colors, LIST_END_PADDING } from '../../../theme';
 
 export default function SmartlinkScreen() {
     const api = usePublishApi();
+    const role = usePublishRole(api);
+    const canWrite = role !== null && canPublish(role);
+    const canWriteRef = useRef(canWrite); canWriteRef.current = canWrite;
+    const generation = useRef(0), currentApi = useRef(api), running = useRef(false);
+    currentApi.current = api;
+    const [scopeTick, setScopeTick] = useState(0);
+    function guard() {
+        const version = generation.current, scope = publishScope();
+        return () => version === generation.current && scope === publishScope() && currentApi.current === api;
+    }
+    useEffect(() => {
+        const reset = () => {
+            generation.current++; canWriteRef.current = false; running.current = false;
+            setLink(null); setError(null); setProblem(null); setNotice(null); setBusy(false);
+            setScopeTick(n => n + 1);
+        };
+        const userOff = subscribeCacheUser(reset), brandOff = brandStore.subscribe(reset);
+        return () => { generation.current++; canWriteRef.current = false; userOff(); brandOff(); };
+    }, []);
+
     const [link, setLink] = useState<SmartLink | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [problem, setProblem] = useState<string | null>(null);
@@ -17,14 +41,18 @@ export default function SmartlinkScreen() {
     const [busy, setBusy] = useState(false);
 
     const load = useCallback(async () => {
+        const valid = guard();
         try {
-            setLink(await fetchSmartlink(api));
+            const next = await fetchSmartlink(api);
+            if (!valid()) return;
+            setLink(next);
             setError(null);
         } catch (err) {
+            if (!valid()) return;
             setLink(null);
             setError(t(smartlinkErrorKey(err)));
         }
-    }, [api]);
+    }, [api, scopeTick]);
 
     useEffect(() => {
         setLink(null);
@@ -35,23 +63,23 @@ export default function SmartlinkScreen() {
     const setItem = (i: number, patch: Partial<LinkItem>) => setLink((l) => (l ? { ...l, items: l.items.map((x, k) => (k === i ? { ...x, ...patch } : x)) } : l));
 
     async function save() {
-        if (!link || busy) return;
+        if (!link || running.current || !canWriteRef.current) return;
+        const valid = guard();
         const invalid = validateSmartlink(link);
         if (invalid) {
             setProblem(t(invalid));
             return;
         }
-        setBusy(true);
+        running.current = true; setBusy(true);
         setProblem(null);
         setNotice(null);
         try {
             await saveSmartlink(api, link);
-            setNotice(t('smartlink.saved'));
-            await load();
+            if (valid()) { setNotice(t('smartlink.saved')); await load(); }
         } catch (err) {
-            setProblem(t(smartlinkErrorKey(err)));
+            if (valid()) setProblem(t(smartlinkErrorKey(err)));
         } finally {
-            setBusy(false);
+            if (valid()) { running.current = false; setBusy(false); }
         }
     }
 
@@ -72,20 +100,22 @@ export default function SmartlinkScreen() {
         <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
             <Stack.Screen options={{ title: t('smartlink.title') }} />
             <ScrollView style={styles.flex} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+            {!canWrite ? <Text style={styles.muted}>{t('publishOps.readOnly')}</Text> : null}
+
                 <Text style={styles.muted}>{t('smartlink.intro')}</Text>
                 {saved ? <Text style={styles.muted}>{t('smartlink.totals', { views: link.views, clicks: link.clicks })}</Text> : null}
                 <Text style={styles.label}>{t('smartlink.address')}</Text>
-                <TextInput style={styles.input} value={link.slug} onChangeText={(v) => set({ slug: slugFrom(v) })} autoCapitalize="none" autoCorrect={false} maxLength={48} accessibilityLabel={t('smartlink.address')} placeholderTextColor={colors.muted} />
+                <TextInput editable={canWrite && !busy} style={styles.input} value={link.slug} onChangeText={(v) => set({ slug: slugFrom(v) })} autoCapitalize="none" autoCorrect={false} maxLength={48} accessibilityLabel={t('smartlink.address')} placeholderTextColor={colors.muted} />
                 <Text style={styles.label}>{t('smartlink.name')}</Text>
-                <TextInput style={styles.input} value={link.title} onChangeText={(v) => set({ title: v })} maxLength={80} accessibilityLabel={t('smartlink.name')} placeholderTextColor={colors.muted} />
+                <TextInput editable={canWrite && !busy} style={styles.input} value={link.title} onChangeText={(v) => set({ title: v })} maxLength={80} accessibilityLabel={t('smartlink.name')} placeholderTextColor={colors.muted} />
                 <Text style={styles.label}>{t('smartlink.bio')}</Text>
-                <TextInput style={[styles.input, styles.multi]} multiline value={link.bio} onChangeText={(v) => set({ bio: v })} maxLength={280} accessibilityLabel={t('smartlink.bio')} placeholderTextColor={colors.muted} />
+                <TextInput editable={canWrite && !busy} style={[styles.input, styles.multi]} multiline value={link.bio} onChangeText={(v) => set({ bio: v })} maxLength={280} accessibilityLabel={t('smartlink.bio')} placeholderTextColor={colors.muted} />
                 <Text style={styles.label}>{t('smartlink.avatar')}</Text>
-                <TextInput style={styles.input} value={link.avatarUrl} onChangeText={(v) => set({ avatarUrl: v })} autoCapitalize="none" autoCorrect={false} keyboardType="url" accessibilityLabel={t('smartlink.avatar')} placeholderTextColor={colors.muted} />
+                <TextInput editable={canWrite && !busy} style={styles.input} value={link.avatarUrl} onChangeText={(v) => set({ avatarUrl: v })} autoCapitalize="none" autoCorrect={false} keyboardType="url" accessibilityLabel={t('smartlink.avatar')} placeholderTextColor={colors.muted} />
                 <Text style={styles.label} accessibilityRole="header">{t('smartlink.theme')}</Text>
                 <View style={styles.chips}>
                     {THEMES.map((th) => (
-                        <Pressable key={th} accessibilityRole="button" accessibilityState={{ selected: link.theme === th }} style={[styles.chip, touchTarget, link.theme === th && styles.chipOn]} onPress={() => set({ theme: th })}>
+                        <Pressable disabled={!canWrite || busy} key={th} accessibilityRole="button" accessibilityState={{ selected: link.theme === th }} style={[styles.chip, touchTarget, link.theme === th && styles.chipOn]} onPress={() => set({ theme: th })}>
                             <Text style={[styles.chipText, link.theme === th && styles.chipTextOn]}>{t(`smartlink.theme.${th}`)}</Text>
                         </Pressable>
                     ))}
@@ -93,34 +123,34 @@ export default function SmartlinkScreen() {
                 <Text style={styles.label} accessibilityRole="header">{t('smartlink.buttons')}</Text>
                 {link.items.map((it, i) => (
                     <View key={it.id ?? `new-${i}`} style={styles.card}>
-                        <TextInput style={styles.input} value={it.label} onChangeText={(v) => setItem(i, { label: v })} maxLength={60} placeholder={t('smartlink.itemLabel')} accessibilityLabel={t('smartlink.itemLabel')} placeholderTextColor={colors.muted} />
-                        <TextInput style={styles.input} value={it.url} onChangeText={(v) => setItem(i, { url: v })} autoCapitalize="none" autoCorrect={false} keyboardType="url" placeholder={t('publish.https')} accessibilityLabel={t('smartlink.itemUrl')} placeholderTextColor={colors.muted} />
+                        <TextInput editable={canWrite && !busy} style={styles.input} value={it.label} onChangeText={(v) => setItem(i, { label: v })} maxLength={60} placeholder={t('smartlink.itemLabel')} accessibilityLabel={t('smartlink.itemLabel')} placeholderTextColor={colors.muted} />
+                        <TextInput editable={canWrite && !busy} style={styles.input} value={it.url} onChangeText={(v) => setItem(i, { url: v })} autoCapitalize="none" autoCorrect={false} keyboardType="url" placeholder={t('publish.https')} accessibilityLabel={t('smartlink.itemUrl')} placeholderTextColor={colors.muted} />
                         <View style={styles.row}>
                             <Text style={styles.muted}>{t('smartlink.itemClicks', { count: it.clicks })}</Text>
                             <View style={styles.row}>
-                                <Switch value={it.enabled} onValueChange={(v) => setItem(i, { enabled: v })} accessibilityLabel={t('smartlink.itemShown')} />
-                                <Pressable accessibilityRole="button" accessibilityLabel={t('smartlink.removeItem', { label: it.label || String(i + 1) })} style={[styles.rm, touchTarget]} onPress={() => set({ items: link.items.filter((_, k) => k !== i) })}>
+                                <Switch disabled={!canWrite || busy} value={it.enabled} onValueChange={(v) => setItem(i, { enabled: v })} accessibilityLabel={t('smartlink.itemShown')} />
+                                {canWrite ? <Pressable disabled={busy} accessibilityRole="button" accessibilityLabel={t('smartlink.removeItem', { label: it.label || String(i + 1) })} style={[styles.rm, touchTarget]} onPress={() => set({ items: link.items.filter((_, k) => k !== i) })}>
                                     <Text style={styles.rmText}>{t('smartlink.remove')}</Text>
-                                </Pressable>
+                                </Pressable> : null}
                             </View>
                         </View>
                     </View>
                 ))}
-                {link.items.length < MAX_ITEMS ? (
-                    <Pressable accessibilityRole="button" style={[styles.add, touchTarget]} onPress={() => set({ items: [...link.items, { id: null, label: '', url: 'https://', enabled: true, clicks: 0 }] })}>
+                {canWrite && link.items.length < MAX_ITEMS ? (
+                    <Pressable disabled={busy} accessibilityRole="button" style={[styles.add, touchTarget]} onPress={() => set({ items: [...link.items, { id: null, label: '', url: 'https://', enabled: true, clicks: 0 }] })}>
                         <Text style={styles.addText}>{t('smartlink.addItem')}</Text>
                     </Pressable>
                 ) : null}
                 <View style={styles.rowWide}>
                     <Text style={styles.label}>{t('smartlink.published')}</Text>
-                    <Switch value={link.published} onValueChange={(v) => set({ published: v })} accessibilityLabel={t('smartlink.published')} />
+                    <Switch disabled={!canWrite || busy} value={link.published} onValueChange={(v) => set({ published: v })} accessibilityLabel={t('smartlink.published')} />
                 </View>
                 <Text style={styles.muted}>{t('smartlink.publishedHint')}</Text>
                 {problem ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{problem}</StatusText> : null}
                 {notice ? <StatusText variant="inherit" style={styles.notice} accessibilityLiveRegion="polite">{notice}</StatusText> : null}
-                <Pressable accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy }} style={[styles.button, touchTarget, busy && styles.off]} onPress={save}>
+                {canWrite ? <Pressable accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy }} style={[styles.button, touchTarget, busy && styles.off]} onPress={save}>
                     {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{t('smartlink.save')}</Text>}
-                </Pressable>
+                </Pressable> : null}
                 {saved && link.published ? (
                     <Pressable accessibilityRole="button" style={[styles.add, touchTarget]} onPress={share}>
                         <Text style={styles.addText}>{t('smartlink.share')}</Text>
