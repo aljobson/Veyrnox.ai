@@ -1674,6 +1674,24 @@
     "ratio": 2.17
   },
   {
+    "id": "publishOps.inbox.unassigned",
+    "english": "Unassigned",
+    "translation": "किसी को नहीं सौंपा गया",
+    "ratio": 2.2
+  },
+  {
+    "id": "publishOps.priority.urgent",
+    "english": "Urgent",
+    "translation": "अत्यावश्यक",
+    "ratio": 1.67
+  },
+  {
+    "id": "publishOps.import.add",
+    "english": "Add",
+    "translation": "जोड़ें",
+    "ratio": 2
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

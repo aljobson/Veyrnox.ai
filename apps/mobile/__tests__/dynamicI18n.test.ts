@@ -10,6 +10,9 @@ const fs = require('fs'), path = require('path'), ts = require('typescript');
 // Fixed id domains for the dynamic t() families in production source. New families require a fixture;
 // these are input ids, deliberately independent of translated output and the current catalog contents.
 const domains: Record<string, readonly string[]> = {
+    "publishOps.priority.{}": ["normal", "high", "urgent"],
+    "publishOps.queue.reason.{}": ["publishingOff", "disconnected"],
+    "publishOps.csv.{}": ["empty", "headers", "columns", "row", "quote", "tooMany", "duplicate", "type", "size"],
     "publishParity.youtube.{}": ["private", "unlisted", "public"],
     "ads.mode.{}": ["standalone", "boost"],
     "ads.objective.{}": ["awareness", "traffic", "engagement", "leads", "sales"],

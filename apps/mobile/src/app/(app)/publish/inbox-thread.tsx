@@ -7,6 +7,10 @@ import { touchTarget } from '../../../lib/a11y';
 import { formatLocale, t } from '../../../lib/i18n';
 import { addNote, assignThread, cleanNote, cleanReply, fetchMembers, fetchSuggestions, fetchThread, inboxErrorKey, inboxScope, noteErrorKey, parseThreadView, replyOutcome, replyToThread, setThreadStatus, type Member, type Suggestion } from '../../../lib/publishInbox';
 import { usePublishApi } from '../../../lib/usePublishApi';
+import { InboxTriage } from '../../../components/publish/InboxTriage';
+import { NetworkLogo } from '../../../components/publish/NetworkLogo';
+import { networkName } from '../../../lib/networkLogos';
+import { markThreadRead, setThreadPriority, setThreadTags } from '../../../lib/publishInboxList';
 import { InboxSuggestions } from '../../../components/publish/InboxSuggestions';
 import { subscribeCacheUser } from '../../../lib/appCache';
 import { brandStore, type BrandRole } from '../../../lib/publishBrand';
@@ -31,6 +35,9 @@ export default function InboxThread() {
     const [attempt, setAttempt] = useState<Attempt | null>(null);
     const attemptRef = useRef<Attempt | null>(null), running = useRef(false);
     const [role, setRole] = useState<BrandRole>('viewer');
+    const triage = ['owner', 'manager', 'editor', 'reviewer'].includes(role);
+    const reply = ['owner', 'manager', 'editor'].includes(role);
+    const readOnce = useRef<string | null>(null);
     const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
     const [noteDraft, setNoteDraft] = useState('');
     const [scopeVersion, setScopeVersion] = useState(0);
@@ -75,8 +82,16 @@ export default function InboxThread() {
         return () => { generation.current++; };
     }, [api, id, scopeVersion]);
 
+    useEffect(() => {
+        const key = JSON.stringify([id, inboxScope(), generation.current]);
+        if (triage && view?.thread && view.thread.unread > 0 && readOnce.current !== key) {
+            readOnce.current = key;
+            void markThreadRead(api, view.thread.id).catch(() => {});
+        }
+    }, [api, id, triage, view]);
+
     async function act(run: () => Promise<unknown>) {
-        if (running.current) return;
+        if (running.current || !triage) return;
         const valid = guard();
         running.current = true; setBusy(true); setNote(null);
         try { await run(); if (valid()) await load(); }
@@ -85,7 +100,7 @@ export default function InboxThread() {
     }
 
     async function send(newKey = false) {
-        if (running.current || !view?.canReply) return;
+        if (running.current || !reply || !view?.canReply) return;
         const previous = attemptRef.current;
         const body = previous?.body ?? cleanReply(draft);
         if (!body) return setNote(t('publish.writeareplyofupto8000'));
@@ -106,7 +121,7 @@ export default function InboxThread() {
     }
 
     function confirmHeld(action: 'anyway' | 'discard') {
-        if (running.current || !attemptRef.current?.mayBeSent) return;
+        if (running.current || !reply || !attemptRef.current?.mayBeSent) return;
         const valid = guard(), captured = attemptRef.current;
         let used = false;
         Alert.alert(t(`publishDepth.reply.${action}Title`), t(`publishDepth.reply.${action}Body`), [
@@ -134,6 +149,7 @@ export default function InboxThread() {
     }
 
     async function openAssign() {
+        if (!triage) return;
         setPicking(on => !on);
         if (members) return;
         const valid = guard();
@@ -151,8 +167,8 @@ export default function InboxThread() {
         <View style={styles.screen} accessibilityState={{ busy }}>
         <ScrollView style={styles.screen} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
             <Stack.Screen options={{ title: th?.name || t('inbox.title') }} />
-            {th ? <Text style={styles.muted}>{th.network} · {th.accountName} · {t(`inbox.kind.${th.kind}`)}{th.priority !== 'normal' ? ` · ${th.priority}` : ''}</Text> : null}
-            {th ? (
+            {th ? <View style={styles.actions}><NetworkLogo network={th.network} size={20} /><Text style={styles.muted}>{t('publishOps.inbox.meta', { network: networkName(th.network), account: th.accountName, kind: t(`inbox.kind.${th.kind}`) })}</Text><Text style={styles.muted}>{t(`publishOps.priority.${th.priority}`)}</Text></View> : null}
+            {th && triage ? (
                 <View style={styles.actions}>
                     <Pressable accessibilityRole="button" disabled={busy} style={touchTarget} onPress={() => act(() => setThreadStatus(api, String(id), resolved ? 'reopen' : 'resolve'))}>
                         <Text style={styles.action}>{resolved ? t('publish.reopen') : t('publish.resolve')}</Text>
@@ -162,7 +178,7 @@ export default function InboxThread() {
                     </Pressable>
                 </View>
             ) : null}
-            {picking ? (
+            {triage && picking ? (
                 <View style={styles.picker}>
                     {members === null ? <ActivityIndicator color={colors.accent} /> : null}
                     {members?.map((m) => (
@@ -178,6 +194,7 @@ export default function InboxThread() {
                 </View>
             ) : null}
             {note ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{note}</StatusText> : null}
+            {th && triage ? <InboxTriage key={`${id}:${scopeVersion}`} priority={th.priority} tags={th.tags} busy={busy} onPriority={p => void act(() => setThreadPriority(api, String(id), p))} onTags={tags => void act(() => setThreadTags(api, String(id), tags))} /> : null}
             {th?.tags.length ? <Text style={styles.tags}>{th.tags.join(', ')}</Text> : null}
             {view.messages.length === 0 ? <Text style={styles.muted}>{t('inbox.noMessages')}</Text> : null}
             {view.messages.map((m) => (
@@ -201,15 +218,15 @@ export default function InboxThread() {
                     <Text style={styles.meta}>{n.author}{n.createdAt ? ` · ${new Date(n.createdAt).toLocaleString(formatLocale())}` : ''}</Text>
                 </View>
             ))}
-            {!view.canReply ? <Text style={styles.muted}>{t('inbox.replyOnWeb')}</Text> : null}
+            {!(reply && view.canReply) ? <Text style={styles.muted}>{t(reply ? 'publishOps.inbox.readOnlyConnection' : triage ? 'publishOps.inbox.triageRole' : 'publishOps.inbox.readOnlyRole')}</Text> : null}
         </ScrollView>
-        {attempt?.mayBeSent ? <View style={styles.held}>
+        {reply && attempt?.mayBeSent ? <View style={styles.held}>
             <StatusText variant="inherit" style={styles.muted} accessibilityLiveRegion="polite">{t('publishDepth.reply.pending', { network: networkLabel(th?.network ?? '') })}</StatusText>
             <View style={styles.actions}>{(['anyway', 'discard'] as const).map(action => <Pressable key={action} style={touchTarget} accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy }} onPress={() => confirmHeld(action)}><Text style={styles.action}>{t(`publishDepth.reply.${action}`)}</Text></Pressable>)}</View>
         </View> : null}
-        {view.canReply ? (
+        {reply && view.canReply ? (
             <View style={[styles.composer, keyboard > 0 && { marginBottom: keyboard, paddingBottom: 12 }]}>
-                <TextInput style={styles.input} value={draft} onChangeText={setDraft} placeholder={t('publish.reply')} accessibilityLabel={t('publish.reply')} placeholderTextColor={colors.muted} multiline maxLength={8000} editable={!busy && !attempt?.mayBeSent} />
+                <View style={{ flex: 1 }}><TextInput style={styles.input} value={draft} onChangeText={setDraft} placeholder={t('publish.reply')} accessibilityLabel={t('publish.reply')} placeholderTextColor={colors.muted} multiline maxLength={8000} editable={!busy && !attempt?.mayBeSent} /><Text style={styles.meta}>{t('compose.networkTextCount', { count: draft.length, limit: 8000 })}</Text></View>
                 <Pressable accessibilityRole="button" accessibilityLabel={t('publish.sendreply')} disabled={busy || !draft.trim()} style={[styles.send, (busy || !draft.trim()) && styles.off]} accessibilityState={{ busy, disabled: busy || !draft.trim() }} onPress={() => send()}>
                     <Text style={styles.sendText}>{busy ? '…' : t('publish.send')}</Text>
                 </Pressable>

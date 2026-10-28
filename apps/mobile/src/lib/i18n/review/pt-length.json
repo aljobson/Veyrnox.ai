@@ -2796,6 +2796,36 @@
     "ratio": 2.67
   },
   {
+    "id": "publishOps.inbox.anyone",
+    "english": "Anyone",
+    "translation": "Qualquer pessoa",
+    "ratio": 2.5
+  },
+  {
+    "id": "publishOps.inbox.tags",
+    "english": "Tags",
+    "translation": "Etiquetas",
+    "ratio": 2.25
+  },
+  {
+    "id": "publishOps.inbox.anyTag",
+    "english": "Any tag",
+    "translation": "Qualquer etiqueta",
+    "ratio": 2.43
+  },
+  {
+    "id": "publishOps.inbox.saveTags",
+    "english": "Save tags",
+    "translation": "Salvar etiquetas",
+    "ratio": 1.78
+  },
+  {
+    "id": "publishOps.import.add",
+    "english": "Add",
+    "translation": "Adicionar",
+    "ratio": 3
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",

@@ -47,5 +47,10 @@
   "vibe.destination.tiktok": "Platform brand name retained by the Japanese website.",
   "vibe.destination.youtube": "Platform brand name retained by the Japanese website.",
   "whenPicker.hHMM": "Required time-entry syntax; not translated.",
-  "whenPicker.yYYYMMDD": "Required date-entry syntax; not translated."
+  "whenPicker.yYYYMMDD": "Required date-entry syntax; not translated.",
+  "publishOps.inbox.rowLabel": "Formatting template; words are localized separately.",
+  "publishOps.accountLabel": "Formatting template; words are localized separately.",
+  "publishOps.inbox.count": "Formatting template; words are localized separately.",
+  "publishOps.inbox.meta": "Formatting template; words are localized separately.",
+  "publishOps.queue.excludedAccount": "Formatting template; words are localized separately."
 }

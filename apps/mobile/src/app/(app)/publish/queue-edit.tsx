@@ -1,17 +1,47 @@
+import { Chip, Text as UiText } from '../../../components/ui';
+import { themedStyles, useThemedStyles } from '../../../components/ui/AppearanceContext';
+import { NetworkLogo } from '../../../components/publish/NetworkLogo';
+import { networkName } from '../../../lib/networkLogos';
+import { subscribeCacheUser } from '../../../lib/appCache';
+import { brandStore } from '../../../lib/publishBrand';
+import { publishScope } from '../../../lib/usePublishRole';
+import { canPublish } from '../../../lib/publishDashboard';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { touchTarget } from '../../../lib/a11y';
 import { t } from '../../../lib/i18n';
-import { fetchAccounts, type PublishAccount } from '../../../lib/publish';
+import { fetchAccounts, type PublishAccount, type PublishRole } from '../../../lib/publish';
 import { DAYS, fetchQueueList, parseMinute, queueAdminErrorKey, saveQueue, slotKey, slotText, sortSlots, validateQueue, type QueueSlot } from '../../../lib/publishQueueAdmin';
 import { usePublishApi } from '../../../lib/usePublishApi';
 import { colors } from '../../../theme';
 
 export default function QueueEdit() {
     const api = usePublishApi();
+    const [role, setRole] = useState<PublishRole | null>(null);
+    const canWrite = role !== null && canPublish(role);
+    const canWriteRef = useRef(canWrite); canWriteRef.current = canWrite;
+    const generation = useRef(0), currentApi = useRef(api), running = useRef(false);
+    currentApi.current = api;
+    const [scopeTick, setScopeTick] = useState(0);
+    function guard() {
+        const version = generation.current, scope = publishScope();
+        return () => version === generation.current && scope === publishScope() && currentApi.current === api;
+    }
+    useEffect(() => {
+        const reset = () => {
+            generation.current++; canWriteRef.current = false; running.current = false;
+            setAccounts(null); setRole(null); setExcluded([]); setName(''); setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'); setAccountIds([]); setSlots([]); setEnabled(true); setDay(1); setTime('09:00'); setReady(false); setBusy(false); setProblem(null);
+            setScopeTick(n => n + 1);
+        };
+        const userOff = subscribeCacheUser(reset), brandOff = brandStore.subscribe(reset);
+        return () => { generation.current++; canWriteRef.current = false; userOff(); brandOff(); };
+    }, []);
+
     const router = useRouter();
+    const themed = useThemedStyles(excludedSheets);
+    const [excluded, setExcluded] = useState<(PublishAccount | null)[]>([]);
     const { id } = useLocalSearchParams<{ id?: string }>();
     const [accounts, setAccounts] = useState<PublishAccount[] | null>(null);
     const [name, setName] = useState('');
@@ -27,31 +57,36 @@ export default function QueueEdit() {
 
     useEffect(() => {
         let cancelled = false;
+        const valid = guard();
         Promise.all([fetchAccounts(api), id ? fetchQueueList(api) : Promise.resolve([])])
             .then(([acc, queues]) => {
-                if (cancelled) return;
-                setAccounts(acc.accounts.filter((a) => a.status === 'active'));
+                if (cancelled || !valid()) return;
+                const allAccounts = acc.accounts.map(a => ({ ...a, displayName: a.displayName.replace(/[\u0000-\u001f\u007f]/g, '').slice(0, 80) }));
+                const eligible = allAccounts.filter(a => a.status === 'active' && a.publishingEnabled);
+                setAccounts(eligible); setRole(acc.brandRole);
                 const q = queues.find((x) => x.id === id);
                 if (q) {
                     setName(q.name);
                     setTimezone(q.timezone);
-                    setAccountIds(q.accountIds);
+                    setAccountIds(q.accountIds.filter(id => eligible.some(a => a.id === id)));
+                    setExcluded(q.accountIds.filter(id => !eligible.some(a => a.id === id)).map(id => allAccounts.find(a => a.id === id) ?? null));
                     setSlots(q.slots);
                     setEnabled(q.enabled);
                 }
                 setReady(true);
             })
             .catch((err) => {
-                if (cancelled) return;
-                setProblem(t(queueAdminErrorKey(err)));
-                setReady(true);
+                if (cancelled || !valid()) return;
+                setAccounts([]); setRole('viewer');
+                setProblem(t(queueAdminErrorKey(err))); setReady(true);
             });
         return () => {
             cancelled = true;
         };
-    }, [api, id]);
+    }, [api, id, scopeTick]);
 
     function addSlot() {
+        if (!canWriteRef.current || running.current) return;
         const minute = parseMinute(time);
         if (minute === null) {
             setProblem(t('queues.err.time'));
@@ -62,22 +97,23 @@ export default function QueueEdit() {
     }
 
     async function save() {
-        if (busy) return;
-        const input = { id: id ?? null, name, timezone, accountIds, slots, enabled };
+        if (running.current || !canWriteRef.current) return;
+        const valid = guard();
+        const input = { id: id ?? null, name, timezone, accountIds: accountIds.filter(id => accounts?.some(a => a.id === id && a.status === 'active' && a.publishingEnabled)), slots, enabled };
         const invalid = validateQueue(input);
         if (invalid) {
             setProblem(t(invalid));
             return;
         }
-        setBusy(true);
+        running.current = true; setBusy(true);
         setProblem(null);
         try {
             await saveQueue(api, input);
-            router.back();
+            if (valid()) router.back();
         } catch (err) {
-            setProblem(t(queueAdminErrorKey(err)));
+            if (valid()) setProblem(t(queueAdminErrorKey(err)));
         } finally {
-            setBusy(false);
+            if (valid()) { running.current = false; setBusy(false); }
         }
     }
 
@@ -87,49 +123,59 @@ export default function QueueEdit() {
         <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
             <Stack.Screen options={{ title: id ? t('queues.edit') : t('queues.new') }} />
             <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+            {!canWrite ? <Text style={styles.muted}>{t('publishOps.readOnly')}</Text> : null}
+
                 <Text style={styles.label}>{t('queues.name')}</Text>
-                <TextInput style={styles.input} value={name} onChangeText={setName} maxLength={80} accessibilityLabel={t('queues.name')} placeholderTextColor={colors.muted} />
+                <TextInput editable={canWrite && !busy} style={styles.input} value={name} onChangeText={setName} maxLength={80} accessibilityLabel={t('queues.name')} placeholderTextColor={colors.muted} />
                 <Text style={styles.label}>{t('queues.timezone')}</Text>
-                <TextInput style={styles.input} value={timezone} onChangeText={setTimezone} autoCapitalize="none" autoCorrect={false} accessibilityLabel={t('queues.timezone')} placeholderTextColor={colors.muted} />
+                <TextInput editable={canWrite && !busy} style={styles.input} value={timezone} onChangeText={setTimezone} autoCapitalize="none" autoCorrect={false} accessibilityLabel={t('queues.timezone')} placeholderTextColor={colors.muted} />
                 <Text style={styles.label} accessibilityRole="header">{t('queues.accounts')}</Text>
                 {accounts.length === 0 ? <Text style={styles.muted}>{t('queues.noAccounts')}</Text> : null}
                 <View style={styles.chips}>
                     {accounts.map((a) => {
                         const on = accountIds.includes(a.id);
                         return (
-                            <Pressable key={a.id} accessibilityRole="button" accessibilityState={{ selected: on }} style={[styles.chip, touchTarget, on && styles.chipOn]} onPress={() => setAccountIds((cur) => (on ? cur.filter((x) => x !== a.id) : [...cur, a.id]))}>
-                                <Text style={[styles.chipText, on && styles.chipTextOn]}>{a.displayName} · {a.network}</Text>
-                            </Pressable>
+                            <Chip key={a.id} disabled={!canWrite || busy} selected={on} label={t('publishOps.accountLabel', { network: networkName(a.network), name: a.displayName })} onPress={() => setAccountIds(cur => on ? cur.filter(x => x !== a.id) : [...cur, a.id])}>
+                                <NetworkLogo network={a.network} /><UiText>{t('publishOps.accountLabel', { network: networkName(a.network), name: a.displayName })}</UiText>
+                            </Chip>
                         );
                     })}
                 </View>
+                {excluded.length ? <View style={themed.group}>
+                    <UiText accessibilityRole="header">{t('publishOps.queue.excludedTitle')}</UiText>
+                    {excluded.filter((a): a is PublishAccount => a !== null).map(a => <View key={a.id} style={themed.row} accessibilityState={{ disabled: true }}>
+                        <NetworkLogo network={a.network} /><UiText tone="secondary">{t('publishOps.queue.excludedAccount', { name: a.displayName, network: networkName(a.network), reason: t(`publishOps.queue.reason.${a.status === 'active' ? 'publishingOff' : 'disconnected'}`) })}</UiText>
+                    </View>)}
+                    {excluded.some(a => a === null) ? <UiText tone="secondary">{t('publishOps.queue.unknownAccounts', { count: excluded.filter(a => a === null).length })}</UiText> : null}
+                    <UiText tone="secondary">{t('publishOps.queue.excludedNote')}</UiText>
+                </View> : null}
                 <Text style={styles.label} accessibilityRole="header">{t('queues.slots')}</Text>
                 <View style={styles.chips}>
                     {sortSlots(slots).map((s) => (
-                        <Pressable key={slotKey(s)} accessibilityRole="button" accessibilityLabel={t('queues.removeSlot', { slot: slotText(s) })} style={[styles.chip, touchTarget]} onPress={() => setSlots((cur) => cur.filter((x) => slotKey(x) !== slotKey(s)))}>
-                            <Text style={styles.chipText}>{slotText(s)}  ✕</Text>
+                        <Pressable disabled={!canWrite || busy} key={slotKey(s)} accessibilityRole="button" accessibilityLabel={canWrite ? t('queues.removeSlot', { slot: slotText(s) }) : slotText(s)} style={[styles.chip, touchTarget]} onPress={() => setSlots((cur) => cur.filter((x) => slotKey(x) !== slotKey(s)))}>
+                            <Text style={styles.chipText}>{canWrite ? t('publishOps.queue.removeSlot', { slot: slotText(s) }) : slotText(s)}</Text>
                         </Pressable>
                     ))}
                 </View>
                 <View style={styles.chips}>
                     {DAYS.map((d, i) => (
-                        <Pressable key={d} accessibilityRole="button" accessibilityState={{ selected: day === i + 1 }} style={[styles.chip, touchTarget, day === i + 1 && styles.chipOn]} onPress={() => setDay(i + 1)}>
+                        <Pressable disabled={!canWrite || busy} key={d} accessibilityRole="button" accessibilityState={{ selected: day === i + 1 }} style={[styles.chip, touchTarget, day === i + 1 && styles.chipOn]} onPress={() => setDay(i + 1)}>
                             <Text style={[styles.chipText, day === i + 1 && styles.chipTextOn]}>{d}</Text>
                         </Pressable>
                     ))}
                 </View>
                 <View style={styles.timeRow}>
-                    <TextInput style={[styles.input, styles.time]} value={time} onChangeText={setTime} placeholder={t('publish.hHMM')} autoCapitalize="none" keyboardType="numbers-and-punctuation" accessibilityLabel={t('queues.time')} placeholderTextColor={colors.muted} />
-                    <Pressable accessibilityRole="button" style={[styles.chip, touchTarget]} onPress={addSlot}><Text style={styles.chipText}>{t('queues.addSlot')}</Text></Pressable>
+                    <TextInput editable={canWrite && !busy} style={[styles.input, styles.time]} value={time} onChangeText={setTime} placeholder={t('publish.hHMM')} autoCapitalize="none" keyboardType="numbers-and-punctuation" accessibilityLabel={t('queues.time')} placeholderTextColor={colors.muted} />
+                    {canWrite ? <Pressable disabled={busy} accessibilityRole="button" style={[styles.chip, touchTarget]} onPress={addSlot}><Text style={styles.chipText}>{t('queues.addSlot')}</Text></Pressable> : null}
                 </View>
                 <View style={styles.switchRow}>
                     <Text style={styles.label}>{t('queues.enabled')}</Text>
-                    <Switch value={enabled} onValueChange={setEnabled} accessibilityLabel={t('queues.enabled')} />
+                    <Switch disabled={!canWrite || busy} value={enabled} onValueChange={setEnabled} accessibilityLabel={t('queues.enabled')} />
                 </View>
                 {problem ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{problem}</StatusText> : null}
-                <Pressable accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy }} style={[styles.button, touchTarget, busy && styles.off]} onPress={save}>
+                {canWrite ? <Pressable accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy }} style={[styles.button, touchTarget, busy && styles.off]} onPress={save}>
                     {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{t('queues.save')}</Text>}
-                </Pressable>
+                </Pressable> : null}
             </ScrollView>
         </KeyboardAvoidingView>
     );
@@ -154,3 +200,5 @@ const styles = StyleSheet.create({
     off: { opacity: 0.4 },
     buttonText: { color: colors.accentInk, fontWeight: '700', fontSize: 16 },
 });
+
+const excludedSheets = themedStyles(() => ({ group: { gap: 8 }, row: { flexDirection: 'row', gap: 8, alignItems: 'center' } }));
