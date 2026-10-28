@@ -59,9 +59,11 @@ import area_create from './en/create';
 import area_creativeFeatures from './en/creativeFeatures';
 import area_creditHistory from './en/creditHistory';
 import area_credits from './en/credits';
+import area_creditsPage from './en/creditsPage';
 import area_deleteCreation from './en/deleteCreation';
 import area_deleteaccount from './en/deleteaccount';
 import area_dev from './en/dev';
+import area_developers from './en/developers';
 import area_devs1editor from './en/devs1editor';
 import area_drafts from './en/drafts';
 import area_draw from './en/draw';
@@ -239,9 +241,11 @@ const catalog = {
     ...area_creativeFeatures,
     ...area_creditHistory,
     ...area_credits,
+    ...area_creditsPage,
     ...area_deleteCreation,
     ...area_deleteaccount,
     ...area_dev,
+    ...area_developers,
     ...area_devs1editor,
     ...area_drafts,
     ...area_draw,

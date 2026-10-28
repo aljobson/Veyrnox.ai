@@ -48,7 +48,7 @@ jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media')
 jest.mock('../src/lib/presets', () => ({ ...jest.requireActual('../src/lib/presets'), fetchPresets: async () => [] }));
 jest.mock('../src/lib/montage', () => ({ ...jest.requireActual('../src/lib/montage'), fetchAgentListing: async () => null }));
 jest.mock('../src/lib/creatorProfileStore', () => ({ loadVibe: async () => null }));
-jest.mock('../src/lib/useBalance', () => ({ useBalance: () => 100 }));
+jest.mock('../src/lib/useBalance', () => ({ useBalance: () => 100, useBalanceDetails: () => ({ details: null, failed: false, refresh: async () => {} }) }));
 jest.mock('../src/lib/useFreeLeft', () => ({ useFreeLeft: () => ({}) }));
 jest.mock('../src/lib/useFaceFiltersAvailable', () => ({ useFaceFiltersAvailable: () => false }));
 jest.mock('../src/lib/usePublishApi', () => ({ usePublishApi: () => mockApi }));
