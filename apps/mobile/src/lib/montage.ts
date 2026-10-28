@@ -170,3 +170,8 @@ export async function fetchAgentListing(): Promise<{ readonly credits: number } 
         return null;
     }
 }
+
+export function videoAgentBalanceState(balance: number | null, credits: number): 'unavailable' | 'insufficient' | 'ready' {
+    if (balance === null || !Number.isFinite(balance) || balance < 0 || !Number.isFinite(credits) || credits < 0) return 'unavailable';
+    return balance < credits ? 'insufficient' : 'ready';
+}
