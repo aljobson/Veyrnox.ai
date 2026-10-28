@@ -2442,6 +2442,192 @@
     "ratio": 2.25
   },
   {
+    "id": "publishDepth.bluesky.handle",
+    "english": "Bluesky handle",
+    "translation": "Identificador de Bluesky",
+    "ratio": 1.71
+  },
+  {
+    "id": "publishDepth.bluesky.password",
+    "english": "App password",
+    "translation": "Contraseña de aplicación",
+    "ratio": 2
+  },
+  {
+    "id": "publishDepth.reply.anyway",
+    "english": "Send anyway",
+    "translation": "Enviar de todos modos",
+    "ratio": 1.91
+  },
+  {
+    "id": "publishDepth.analytics.title",
+    "english": "Inbox analytics",
+    "translation": "Estadísticas de la bandeja",
+    "ratio": 1.73
+  },
+  {
+    "id": "publishDepth.analytics.sent",
+    "english": "Sent",
+    "translation": "Enviados",
+    "ratio": 2
+  },
+  {
+    "id": "publishDepth.analytics.read_actions",
+    "english": "Marked read",
+    "translation": "Marcados como leídos",
+    "ratio": 1.82
+  },
+  {
+    "id": "publishDepth.presets.name",
+    "english": "Preset name",
+    "translation": "Nombre del preajuste",
+    "ratio": 1.82
+  },
+  {
+    "id": "publishReporting.manual",
+    "english": "Manual",
+    "translation": "Envío manual",
+    "ratio": 2
+  },
+  {
+    "id": "publishReporting.name",
+    "english": "Report name",
+    "translation": "Nombre del informe",
+    "ratio": 1.64
+  },
+  {
+    "id": "publishReporting.pdf",
+    "english": "PDF",
+    "translation": "Documento PDF",
+    "ratio": 4.33
+  },
+  {
+    "id": "publishReporting.pptx",
+    "english": "PowerPoint",
+    "translation": "Presentación PowerPoint",
+    "ratio": 2.3
+  },
+  {
+    "id": "publishReporting.retry",
+    "english": "Retry",
+    "translation": "Reintentar",
+    "ratio": 2
+  },
+  {
+    "id": "publishReporting.save",
+    "english": "Save",
+    "translation": "Guardar",
+    "ratio": 1.75
+  },
+  {
+    "id": "publishReporting.saves",
+    "english": "Saves",
+    "translation": "Guardados",
+    "ratio": 1.8
+  },
+  {
+    "id": "publishReporting.shares",
+    "english": "Shares",
+    "translation": "Compartidos",
+    "ratio": 1.83
+  },
+  {
+    "id": "publishReporting.sharing",
+    "english": "Opening share sheet…",
+    "translation": "Abriendo opciones para compartir…",
+    "ratio": 1.65
+  },
+  {
+    "id": "publishReporting.top",
+    "english": "Top content",
+    "translation": "Contenido destacado",
+    "ratio": 1.73
+  },
+  {
+    "id": "publishReporting.type.post",
+    "english": "Post",
+    "translation": "Publicación",
+    "ratio": 2.75
+  },
+  {
+    "id": "publishReporting.views",
+    "english": "Views",
+    "translation": "Visualizaciones",
+    "ratio": 3
+  },
+  {
+    "id": "chatDepth.starLabel",
+    "english": "Star reply",
+    "translation": "Destacar respuesta",
+    "ratio": 1.8
+  },
+  {
+    "id": "chatDepth.wfTitle",
+    "english": "Workflows",
+    "translation": "Flujos de trabajo",
+    "ratio": 1.89
+  },
+  {
+    "id": "chatDepth.wfClose",
+    "english": "Close workflow",
+    "translation": "Cerrar flujo de trabajo",
+    "ratio": 1.64
+  },
+  {
+    "id": "chatDepth.wf.product-ad.name",
+    "english": "Product ad",
+    "translation": "Anuncio de producto",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorServerExport.title",
+    "english": "Editor export",
+    "translation": "Exportación del editor",
+    "ratio": 1.69
+  },
+  {
+    "id": "editorServerExport.checkAgain",
+    "english": "Check again",
+    "translation": "Comprobar de nuevo",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorServerExport.share",
+    "english": "Share export",
+    "translation": "Compartir exportación",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorServerExport.version",
+    "english": "Timeline version",
+    "translation": "Versión de la línea de tiempo",
+    "ratio": 1.81
+  },
+  {
+    "id": "editorServerExport.frameRate",
+    "english": "Frame rate",
+    "translation": "Frecuencia de fotogramas",
+    "ratio": 2.4
+  },
+  {
+    "id": "editorServerExport.edit",
+    "english": "Timeline edit",
+    "translation": "Edición de la línea de tiempo",
+    "ratio": 2.23
+  },
+  {
+    "id": "editorServerExport.crop",
+    "english": "Crop",
+    "translation": "Recortar",
+    "ratio": 2
+  },
+  {
+    "id": "editorServerExport.mask",
+    "english": "Mask",
+    "translation": "Máscara",
+    "ratio": 1.75
+  },
+  {
     "id": "filmWorkspace.frameFormat",
     "english": "Frame format",
     "translation": "Formato de fotograma",

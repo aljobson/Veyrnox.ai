@@ -1512,6 +1512,84 @@
     "ratio": 2
   },
   {
+    "id": "publishDepth.suggestions.use",
+    "english": "Use",
+    "translation": "उपयोग करें",
+    "ratio": 3.33
+  },
+  {
+    "id": "publishDepth.analytics.sent",
+    "english": "Sent",
+    "translation": "भेजे गए",
+    "ratio": 1.75
+  },
+  {
+    "id": "publishDepth.analytics.platforms",
+    "english": "By network",
+    "translation": "नेटवर्क के अनुसार",
+    "ratio": 1.7
+  },
+  {
+    "id": "publishDepth.presets.apply",
+    "english": "Apply",
+    "translation": "लागू करें",
+    "ratio": 1.8
+  },
+  {
+    "id": "publishReporting.csv",
+    "english": "Export CSV",
+    "translation": "CSV एक्सपोर्ट करें",
+    "ratio": 1.8
+  },
+  {
+    "id": "publishReporting.pdf",
+    "english": "PDF",
+    "translation": "PDF दस्तावेज़",
+    "ratio": 4.33
+  },
+  {
+    "id": "publishReporting.pptx",
+    "english": "PowerPoint",
+    "translation": "PowerPoint प्रस्तुति",
+    "ratio": 2
+  },
+  {
+    "id": "publishReporting.rank",
+    "english": "Rank by",
+    "translation": "इसके अनुसार रैंक करें",
+    "ratio": 3
+  },
+  {
+    "id": "publishReporting.retry",
+    "english": "Retry",
+    "translation": "फिर कोशिश करें",
+    "ratio": 2.8
+  },
+  {
+    "id": "publishReporting.save",
+    "english": "Save",
+    "translation": "सेव करें",
+    "ratio": 2
+  },
+  {
+    "id": "publishReporting.saves",
+    "english": "Saves",
+    "translation": "सेव की संख्या",
+    "ratio": 2.6
+  },
+  {
+    "id": "publishReporting.shares",
+    "english": "Shares",
+    "translation": "शेयर की संख्या",
+    "ratio": 2.33
+  },
+  {
+    "id": "chatDepth.starLabel",
+    "english": "Star reply",
+    "translation": "जवाब तारांकित करें",
+    "ratio": 1.8
+  },
+  {
     "id": "filmWorkspace.revise",
     "english": "Revise",
     "translation": "संशोधित करें",

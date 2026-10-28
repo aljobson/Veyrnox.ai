@@ -16,7 +16,7 @@ export const SKILL_GROUPS: readonly SkillGroup[] = ['Make', 'Edit', 'Plan', 'Fil
 // 1 credit, reads images: the cheapest chat model that can look at a picture the person attached.
 export const SKILL_MODEL = 'chat-gpt-6-luna';
 
-const PREAMBLE = [
+export const PREAMBLE = [
   'You are a Studio assistant inside Veyrnox.ai, which makes images, video and audio with credit-metered models.',
   'You help the person prepare ONE thing to make. You never make anything yourself and never spend Credits.',
   'When a Studio job is ready, end your reply with a draft block, exactly like this, using only an id from the model list below:',
@@ -108,15 +108,44 @@ export function catalogLines(models: readonly CatalogModel[]): string[] {
         .map((m) => `${m.id}|${kindOf(m.modality)}|${m.credits}${needsOf(m).length ? `|needs ${needsOf(m).join('+')}` : ''}`);
 }
 
-// The text copied onto a new chat: the preamble, the skill, then the live model list. Never over the chat's limit; if the
-// list does not fit, whole lines are dropped from the end.
-export function skillInstructions(skill: Skill, models: readonly CatalogModel[]): string {
-    let out = `${PREAMBLE}\n\n${skill.body}\n\nModels (id|kind|Credits per generation):\n`;
-    for (const line of catalogLines(models)) {
-        if (out.length + line.length + 1 > MAX_INSTRUCTIONS) break;
+export const MAX_SELECTED_SKILLS = 4;
+export const MAX_INSTRUCTION_TOKENS = 1000;
+export function estimateInstructionTokens(text: string): number {
+    let ascii = 0, other = 0;
+    for (const ch of text) { if (ch.codePointAt(0)! < 0x80) ascii++; else other++; }
+    return Math.ceil(ascii / 4) + other;
+}
+const withinLimits = (text: string) => text.length <= MAX_INSTRUCTIONS && estimateInstructionTokens(text) <= MAX_INSTRUCTION_TOKENS;
+export function prioritizedCatalogLines(models: readonly CatalogModel[]): string[] {
+    const lines = catalogLines(models);
+    const first = ['image', 'video', 'audio'].map(kind => lines.find(line => line.includes(`|${kind}|`))).filter((line): line is string => !!line);
+    return [...first, ...lines.filter(line => !first.includes(line))];
+}
+const instructionHead = (skills: readonly Skill[]) => `${PREAMBLE}\n\n${skills.length === 1 ? skills[0].body : `Active skills — use them together for one result:\n\n${skills.map((s, i) => `${i + 1}. ${s.body}`).join('\n\n')}`}\n\nModels (id|kind|Credits per generation):\n`;
+export function fittingSkills(skills: readonly Skill[], models: readonly CatalogModel[] = []): Skill[] {
+    const kept: Skill[] = [];
+    const reserve = prioritizedCatalogLines(models).slice(0, 3).join('\n');
+    for (const skill of [...new Map(skills.map(s => [s.id, s])).values()].slice(0, MAX_SELECTED_SKILLS)) {
+        if (withinLimits(`${instructionHead([...kept, skill])}${reserve}${reserve ? '\n' : ''}`)) kept.push(skill);
+    }
+    return kept;
+}
+export function skillsInstructions(skills: readonly Skill[], models: readonly CatalogModel[] = []): string {
+    const selected = fittingSkills(skills, models);
+    if (!selected.length) return '';
+    let out = instructionHead(selected);
+    // Preserve the phone's existing single-skill format, including catalog order.
+    for (const line of selected.length === 1 ? catalogLines(models) : prioritizedCatalogLines(models)) {
+        if (!withinLimits(`${out}${line}\n`)) break;
         out += `${line}\n`;
     }
     return out.trimEnd();
+}
+export const skillInstructions = (skill: Skill, models: readonly CatalogModel[]): string => skillsInstructions([skill], models);
+export function selectedSkillIds(prompt: string | null | undefined): string[] {
+    if (!prompt?.startsWith(PREAMBLE)) return [];
+    return SKILLS.map(skill => ({ id: skill.id, at: prompt.indexOf(skill.body) })).filter(s => s.at >= 0)
+        .sort((a, b) => a.at - b.at).slice(0, MAX_SELECTED_SKILLS).map(s => s.id);
 }
 
 const FENCE = /```studio[ \t]*\r?\n([\s\S]*?)```/g;

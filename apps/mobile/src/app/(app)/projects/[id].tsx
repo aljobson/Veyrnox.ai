@@ -1,3 +1,5 @@
+import * as Crypto from 'expo-crypto';
+import { removeProjectMedia } from '../../../lib/editorDeviceMedia';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -17,6 +19,8 @@ export default function ProjectDetail() {
     const [next, setNext] = useState<number | null>(null);
     const [problem, setProblem] = useState<string | null>(null);
     const loadingMore = useRef(false);
+    // One key per restore target, so a retried tap does not save the copy twice.
+    const restoreKeys = useRef(new Map<string, string>());
     const [renaming, setRenaming] = useState<string | null>(null);
     const [busy, setBusy] = useState(false);
     const [note, setNote] = useState<string | null>(null);
@@ -48,6 +52,7 @@ export default function ProjectDetail() {
                     setBusy(true);
                     try {
                         await deleteProject(api, project.id, project.version);
+                        void removeProjectMedia(project.id).catch(() => undefined);
                         router.back();
                     } catch (err) {
                         setNote(projectsErrorMessage(err));
@@ -69,7 +74,11 @@ export default function ProjectDetail() {
                     setNote(null);
                     try {
                         const current = versions?.[0]?.revision ?? project.version;
-                        await restoreVersion(api, project.id, current, v.revision);
+                        const slot = `${current}:${v.revision}`;
+                        const key = restoreKeys.current.get(slot) ?? Crypto.randomUUID();
+                        restoreKeys.current.set(slot, key);
+                        await restoreVersion(api, project.id, current, v.revision, key);
+                        restoreKeys.current.delete(slot);
                         await load();
                     } catch (err) {
                         setNote(projectsErrorMessage(err));

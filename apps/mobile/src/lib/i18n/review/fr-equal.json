@@ -153,6 +153,8 @@
   "projects.version3": "Established French term or label: Version {value1}{value2}.",
   "publish.hHMM": "Standard notation, unit, format example or typeface specimen.",
   "publish.https": "Standard notation, unit, format example or typeface specimen.",
+  "publishDepth.analytics.conversations": "Established local term or standard time-unit abbreviation.",
+  "publishDepth.analytics.minutes": "Established local term or standard time-unit abbreviation.",
   "publishDeveloper.webhook": "Established French term or label: Webhook.",
   "publishHome.attention": "Established French term or label: Attention.",
   "publishLinks.confirmVariant": "Established French term or label: {network}: {text}.",
@@ -174,5 +176,6 @@
   "videoAgent.brief": "Established French term or label: Brief.",
   "videoAgent.format": "Established French term or label: Format {aspect}.",
   "whenPicker.hHMM": "Standard notation, unit, format example or typeface specimen.",
-  "whenPicker.yYYYMMDD": "Standard notation, unit, format example or typeface specimen."
+  "whenPicker.yYYYMMDD": "Standard notation, unit, format example or typeface specimen.",
+  "chatDepth.wfTitle": "Established local term, retained from the website translation."
 }

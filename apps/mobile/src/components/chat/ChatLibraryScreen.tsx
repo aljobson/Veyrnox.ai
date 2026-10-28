@@ -1,3 +1,4 @@
+import { forgetThread } from '../../lib/chatLocal';
 import { Link, Stack, useFocusEffect, useRouter } from 'expo-router';
 
 import { useCallback, useMemo, useState } from 'react';
@@ -41,6 +42,7 @@ export function ChatLibraryScreen() {
                 onPress: async () => {
                     try {
                         await chatApi(api).deleteThread(thread.id);
+                        await forgetThread(thread.id);
                         setThreads((current) => (current ?? []).filter((candidate) => candidate.id !== thread.id));
                     } catch {
                         Alert.alert(t('chat.delete.failed'));
