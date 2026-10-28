@@ -23,7 +23,7 @@
   },
   {
     "area": "sources",
-    "text": "START IMAGE · REQUIREDPNG, JPEG or WebP, up to 20 MB, up to 4 MPFrom libraryAdd imageEND IMAGE · OPTIONALPNG, JPEG or WebP, up to 20 MBFrom libraryAdd end imageVIDEO · OPTIONALMP4, up to 100 MB, up to 20sFrom libraryAdd videoAUDIO · OPTIONALMP3 or WAV, up to 20 MBFrom libraryAdd audio",
+    "text": "START IMAGE · REQUIREDJPEG, PNG, WebP, HEIC, AVIF or GIF, up to 20 MB, up to 4 MPFrom libraryAdd imageEND IMAGE · OPTIONALJPEG, PNG, WebP, HEIC, AVIF or GIF, up to 20 MBFrom libraryAdd end imageVIDEO · OPTIONALMP4, MOV or WebM, up to 100 MB, up to 20sFrom libraryAdd videoAUDIO · OPTIONALMP3 or WAV, up to 20 MBFrom libraryAdd audio",
     "labels": []
   },
   {

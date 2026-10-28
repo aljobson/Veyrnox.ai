@@ -3,6 +3,7 @@ import { generationSourceState, sourceList, publicSlotMax, editSlotSource, moveS
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { GatewayError, gatewayFetch, makeIdempotencyKey, notifyBalanceChanged } from '../../_lib/gateway';
 import { planAttachments } from '../../../../lib/createAttach.mjs';
+import { prepareUploads, needsConversion } from '../../_lib/uploadConvert.mjs';
 import { pushJobHistory } from '../../_lib/jobHistory';
 import { useStudioJobs } from '../../_lib/useStudioJobs';
 import { useFreeAllowance } from '../../_lib/useFreeAllowance';
@@ -134,11 +135,15 @@ export function useChatMediaGeneration({ kind, models, catalogLive }) {
   // The paperclip shown for every model: the files' types pick the slots, and the model
   // switches to this composer's one that takes the most of them. The notice is codes
   // ('unsupported'; 'switched' with the model's name; 'unused' with a count) for the composer to word.
-  function attachFromDevice(fileList) {
-    const plan = planAttachments(availableModels.filter((item) => !item.gated), model, Array.from(fileList || []));
-    if (!plan) { setAttachNotice({ unsupported: true }); return; }
+  // HEIC, AVIF, GIF, MOV and WebM are converted first ('converting'; 'failed' carries the first failure's code).
+  async function attachFromDevice(fileList) {
+    const picked = Array.from(fileList || []);
+    if (picked.some(needsConversion)) setAttachNotice({ converting: true });
+    const { files, failed } = await prepareUploads(picked);
+    const plan = planAttachments(availableModels.filter((item) => !item.gated), model, files);
+    if (!plan) { setAttachNotice(failed.length ? { failed: failed[0].code } : { unsupported: true }); return; }
     const switched = plan.model.id !== model?.id;
-    setAttachNotice({ switched: switched ? plan.model.name : null, unused: plan.unused.length });
+    setAttachNotice({ switched: switched ? plan.model.name : null, unused: plan.unused.length, failed: failed[0]?.code || null });
     if (switched) selectModel(plan.model.id);
     else clearSources();
     const positions = {};

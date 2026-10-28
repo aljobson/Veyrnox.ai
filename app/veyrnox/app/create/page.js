@@ -30,7 +30,7 @@ import { takeStudioDraft } from '../../_lib/landingDraft';
 import { takeVideoSoundContinuation, writeVideoSoundContinuation } from '../../_lib/resultContinuation';
 import { oddlingPortrait, buildOddlingAnimationPrompt } from '../../_lib/oddlingStudio';
 import { templateById } from '../../_lib/templates';
-import { resolveTemplateDraft } from '../../_lib/templateDraft';
+import { resolveTemplateDraft, draftForTemplate } from '../../_lib/templateDraft';
 import { templateStartId } from '../../../../lib/templateStart';
 import { DEFAULT_CINEMA, buildCinemaPrompt } from '../../_lib/cinema';
 import { CameraPanel } from '../../_components/CameraPanel';
@@ -39,12 +39,14 @@ import { buildCharacterPrompt, sanitizeOddlingPicks } from '../../_lib/character
 import { DrawOnImage } from '../../_components/DrawOnImage';
 import { SourcePickers } from '../../_components/SourcePickers';
 import { attachAccept, planAttachments } from '../../../../lib/createAttach.mjs';
+import { prepareUploads, needsConversion } from '../../_lib/uploadConvert.mjs';
 import SourceRightsConfirmation from '../../_components/SourceRightsConfirmation';
 import { LibraryPicker } from '../../_components/LibraryPicker';
 import { GenerationSettings } from '../../_components/GenerationSettings';
 import { VoiceDescription } from '../../_components/VoiceDescription';
 import { ControlRow } from '../../_components/ControlRow';
 import { TemplateHandoffCard } from '../../_components/TemplateHandoffCard';
+import { TemplatePicker } from '../../_components/TemplatePicker';
 import { CreateGoalPicker } from '../../_components/CreateGoalPicker';
 import { TIERS, TIER_LABEL, filterByTier } from '../../_lib/modelTiers';
 import { modelsForGoal, starterModel } from '../../_lib/starterModels';
@@ -309,13 +311,54 @@ export default function CreateStudio() {
   }
 
   const [attachNotice, setAttachNotice] = useState('');
+  const [templatesOpen, setTemplatesOpen] = useState(false);
+  // Picking a template here does what arriving on ?preset=<id> does: its model,
+  // prompt and settings load, and the user's own files stay where the new model
+  // has a slot for them. The template is a reference only; nothing is charged.
+  function applyTemplate(preset) {
+    setTemplatesOpen(false);
+    const nextId = modelIdForName(preset.model);
+    const nextModel = models.find((m) => m.id === nextId);
+    const draft = draftForTemplate(preset, nextId);
+    if (!nextModel || !draft) return;
+    setPresetParam(preset.id);
+    setGoal('all');
+    setTier(null);
+    setModelId(nextId);
+    setPrompt(draft.prompt);
+    setDuration(`${draft.durationSeconds}s`);
+    setNegative(draft.negativePrompt);
+    if (draft.aspect) {
+      if (nextId === modelId && aspectOptions.includes(draft.aspect)) setAspect(draft.aspect);
+      else incomingAspect.current = draft.aspect;
+    }
+    setSources((previous) => {
+      const kept = {};
+      for (const [slot, value] of Object.entries(previous)) {
+        if (nextModel.media?.[slot]) kept[slot] = value;
+        else for (const item of sourceList(value)) if (item?.file) URL.revokeObjectURL(item.previewUrl);
+      }
+      return kept;
+    });
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('preset', preset.id);
+      url.searchParams.set('model', nextId);
+      window.history.replaceState(window.history.state, '', url);
+    } catch { /* the template still applies; only a reload would lose it */ }
+  }
   // The always-visible paperclip: the files' types pick the slots, and the model
   // switches to the one that takes the most of them when the current one cannot.
-  function attachFromDevice(fileList) {
-    const plan = planAttachments(models, model, Array.from(fileList || []));
-    if (!plan) { setAttachNotice(t('app.create.attach.unsupported')); return; }
+  // HEIC, AVIF, GIF, MOV and WebM are converted to a stored type first (uploadConvert.mjs).
+  async function attachFromDevice(fileList) {
+    const picked = Array.from(fileList || []);
+    if (picked.some(needsConversion)) setAttachNotice(t('app.create.convert.working'));
+    const { files, failed } = await prepareUploads(picked);
+    const failure = failed.length ? t(`app.create.convert.${failed[0].code}`) : '';
+    const plan = planAttachments(models, model, files);
+    if (!plan) { setAttachNotice(failure || t('app.create.attach.unsupported')); return; }
     const switched = plan.model.id !== model?.id;
-    setAttachNotice([switched && t('app.create.attach.switched', { name: plan.model.name }), plan.unused.length && t('app.create.attach.unused', { count: plan.unused.length })].filter(Boolean).join(' '));
+    setAttachNotice([failure, switched && t('app.create.attach.switched', { name: plan.model.name }), plan.unused.length && t('app.create.attach.unused', { count: plan.unused.length })].filter(Boolean).join(' '));
     if (switched) { setPresetParam(null); setGoal(plan.model.kind); setModelId(plan.model.id); }
     for (const source of Object.values(sources).flatMap(sourceList)) if (source.file) URL.revokeObjectURL(source.previewUrl);
     setSources({});
@@ -615,9 +658,13 @@ export default function CreateStudio() {
                   onChange={(e) => { attachFromDevice(e.target.files); e.target.value = ''; }} />
               </label>
               <span className="text-xs text-vx-fg-muted">{t('app.create.attach.hint')}</span>
+              <button type="button" data-testid="create-open-templates" onClick={() => setTemplatesOpen(true)}
+                className="ms-auto shrink-0 rounded-full border border-vx-accent/50 px-3.5 py-1.5 font-vx-mono text-[11px] font-bold text-vx-accent hover:bg-vx-accent/10">
+                {t('app.create.templates.open')}</button>
             </div>
           )}
           {attachNotice && <p role="status" className="mt-2 text-xs text-vx-fg-muted">{attachNotice}</p>}
+          {templatesOpen && <TemplatePicker models={models} goal={goal} onPick={applyTemplate} onClose={() => setTemplatesOpen(false)} />}
           <div className="scroll-mt-24" data-assistant-target={Object.keys(media).length ? 'create.upload' : undefined}>
             <SourcePickers media={media} sources={sources} onPick={pickSource} onReorder={(slot, from, to) => { setConsent(false); setSources(prev => moveSlotSource(prev, slot, from, to)); }}
               onDraw={model?.kind === 'image' ? () => setDrawing(true) : null} onLibrary={setLibraryFor} />

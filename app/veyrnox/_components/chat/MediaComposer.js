@@ -135,7 +135,8 @@ export function MediaComposer({ kind, media, prompt, onPrompt }) {
         )}
         {attachNotice && (
           <p role="status" className="border-b border-vx-border px-4 py-2 text-xs text-vx-fg-muted">
-            {attachNotice.unsupported ? t('app.create.attach.unsupported') : [
+            {attachNotice.converting ? t('app.create.convert.working') : attachNotice.unsupported ? t('app.create.attach.unsupported') : [
+              attachNotice.failed && t(`app.create.convert.${attachNotice.failed}`),
               attachNotice.switched && t('app.create.attach.switched', { name: attachNotice.switched }),
               attachNotice.unused > 0 && t('app.create.attach.unused', { count: number(attachNotice.unused) }),
             ].filter(Boolean).join(' ')}
