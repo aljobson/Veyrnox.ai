@@ -1,3 +1,4 @@
+import { createFrameStore } from '../src/components/editor/editorFrameStore';
 import { act } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { createRoot, type Root } from 'test-renderer';
@@ -62,17 +63,20 @@ test('maps the timeline playhead into source time', () => {
 
 describe('EditorMediaPreview', () => {
     let root: Root;
+    let frameStore = createFrameStore();
     beforeEach(() => {
         (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
         jest.clearAllMocks();
         mockPlayer.currentTime = 0;
         root = createRoot();
+        frameStore = createFrameStore();
     });
     afterEach(async () => { await act(async () => root.unmount()); });
 
     test('renders a picked device image immediately from its session URI', async () => {
         const media: Media = { id: 'l-local', kind: 'image', name: 'Device image', frames: 90 };
-        await act(async () => root.render(<EditorMediaPreview api={{ request: jest.fn() }} clip={{ ...clip, mediaId: media.id }} media={media} frame={30} fps={30} playing={false} localUri="file:///device/photo.jpg" />));
+        frameStore.set(30);
+        await act(async () => root.render(<EditorMediaPreview api={{ request: jest.fn() }} clip={{ ...clip, mediaId: media.id }} media={media} frameStore={frameStore} fps={30} playing={false} localUri="file:///device/photo.jpg" />));
         await act(async () => Promise.resolve());
         expect(root.container.queryAll((node) => node.props.accessibilityLabel === 'Preview Device image')).toHaveLength(1);
     });
@@ -81,12 +85,13 @@ describe('EditorMediaPreview', () => {
         const media: Media = { id: `j-${jobId}`, kind: 'video', name: 'Library clip', frames: 90 };
         const request = jest.fn().mockResolvedValue({ url: 'https://assets.example/clip.mp4', mime_type: 'video/mp4' });
         const api = { request };
-        await act(async () => root.render(<EditorMediaPreview api={api} clip={{ ...clip, mediaId: media.id }} media={media} frame={45} fps={30} playing />));
+        frameStore.set(45);
+        await act(async () => root.render(<EditorMediaPreview api={api} clip={{ ...clip, mediaId: media.id }} media={media} frameStore={frameStore} fps={30} playing />));
         await act(async () => Promise.resolve());
         expect(root.container.queryAll((node) => node.props.accessibilityLabel === 'Preview Library clip')).toHaveLength(1);
         expect(mockPlayer.play).toHaveBeenCalled();
         expect(mockPlayer.currentTime).toBe(1.5);
-        await act(async () => root.render(<EditorMediaPreview api={api} clip={{ ...clip, mediaId: media.id }} media={{ ...media }} frame={46} fps={30} playing />));
+        await act(async () => frameStore.set(46));
         expect(request).toHaveBeenCalledTimes(1);
     });
     test.each([
@@ -98,10 +103,23 @@ describe('EditorMediaPreview', () => {
         const media: Media = { id: 'l-preview', kind: 'video', name: 'Preview', frames: 300 };
         const api = { request: jest.fn() };
         const sourceClip = { ...clip, start: 0, in: 0, rate, mediaId: media.id };
-        await act(async () => root.render(<EditorMediaPreview api={api} clip={sourceClip} media={media} frame={0} fps={30} playing={playing} localUri="file:///preview.mp4" />));
+        await act(async () => root.render(<EditorMediaPreview api={api} clip={sourceClip} media={media} frameStore={frameStore} fps={30} playing={playing} localUri="file:///preview.mp4" />));
         mockPlayer.currentTime = current;
-        await act(async () => root.render(<EditorMediaPreview api={api} clip={sourceClip} media={media} frame={frame} fps={30} playing={playing} localUri="file:///preview.mp4" />));
+        await act(async () => frameStore.set(frame));
         expect(mockPlayer.currentTime).toBeCloseTo(expected);
+    });
+
+    test('reverse playback follows each subscribed frame and keeps the player paused', async () => {
+        const media: Media = { id: 'l-reverse', kind: 'video', frames: 120 };
+        const reverse = { ...clip, start: 0, in: 90, rate: 2, reverse: true };
+        await act(async () => root.render(<EditorMediaPreview api={{ request: jest.fn() }} clip={reverse} media={media} frameStore={frameStore} fps={30} playing localUri="file:///reverse.mp4" />));
+        expect(mockPlayer.currentTime).toBe(3);
+        for (const frame of [1, 2, 15]) {
+            await act(async () => frameStore.set(frame));
+            expect(mockPlayer.currentTime).toBeCloseTo((90 - frame * 2) / 30);
+        }
+        expect(mockPlayer.play).not.toHaveBeenCalled();
+        expect(mockPlayer.pause).toHaveBeenCalled();
     });
 
 });

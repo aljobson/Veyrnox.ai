@@ -1,3 +1,4 @@
+import { createFrameStore } from './editorFrameStore';
 import { PPF_DEFAULT, SEQUENCE_MAX } from '../../lib/editorTimeline';
 import { libraryMedia } from '../../lib/editorLibraryLength';
 import { useAnnouncement } from '../../lib/useAnnouncement';
@@ -52,7 +53,8 @@ export function useFullEditorSession({ projectId, jobId }: { projectId: string; 
     const [zoom, setZoom] = useState(PPF_DEFAULT);
     const [privacyNotice, setPrivacyNotice] = useState(false);
     const [history, setHistory] = useState({ canUndo: false, canRedo: false });
-    const [frame, setFrame] = useState(0);
+    const [frameStore] = useState(createFrameStore);
+    const setFrame = frameStore.set;
     const [playing, setPlaying] = useState(false);
     const [projectAssets, setProjectAssets] = useState<Media[]>([]);
     const [localMediaUris, setLocalMediaUris] = useState<Record<string, string>>({});
@@ -173,16 +175,15 @@ export function useFullEditorSession({ projectId, jobId }: { projectId: string; 
     useEffect(() => {
         if (!playing || playbackTotal <= 0) return;
         const timer = setInterval(() => {
-            setFrame((current) => {
-                if (current >= playbackTotal - 1) {
-                    setPlaying(false);
-                    return 0;
-                }
-                return current + 1;
-            });
+            const current = frameStore.get();
+            if (current >= playbackTotal - 1) {
+                clearInterval(timer);
+                setPlaying(false);
+                frameStore.set(0);
+            } else frameStore.set(current + 1);
         }, Math.max(16, Math.round(1000 / playbackTimeline.fps)));
         return () => clearInterval(timer);
-    }, [playing, playbackTimeline.fps, playbackTotal]);
+    }, [playing, playbackTimeline.fps, playbackTotal, frameStore]);
 
     const done = useCallback(async () => {
         const saved = await save();
@@ -219,5 +220,5 @@ export function useFullEditorSession({ projectId, jobId }: { projectId: string; 
         return documentRef.current;
     };
 
-    return { currentDocument: () => documentRef.current, preparePicked, savedDocument, applyBackup, api, router, name, document, revision, dirty, saving, problem, setProblem, tool, setTool, selection, setSelection, selections, setSelections, multiSelect, setMultiSelect, clipboard, setClipboard, snap, setSnap, ripple, setRipple, zoom, setZoom, privacyNotice, history, frame, setFrame, playing, setPlaying, projectAssets, localMediaUris, setLocalMediaUris, libraryKind, setLibraryKind, markDocument, save, done, acknowledgePrivacy, travel };
+    return { currentDocument: () => documentRef.current, preparePicked, savedDocument, applyBackup, api, router, name, document, revision, dirty, saving, problem, setProblem, tool, setTool, selection, setSelection, selections, setSelections, multiSelect, setMultiSelect, clipboard, setClipboard, snap, setSnap, ripple, setRipple, zoom, setZoom, privacyNotice, history, frameStore, setFrame, playing, setPlaying, projectAssets, localMediaUris, setLocalMediaUris, libraryKind, setLibraryKind, markDocument, save, done, acknowledgePrivacy, travel };
 }
