@@ -4519,7 +4519,7 @@ export default {
   "whenPicker.yYYYMMDD": "YYYY-MM-DD",
   "analyticsConsent.title": "Hilfst du, Veyrnox zu verbessern?",
   "analyticsConsent.choices": "Datenschutzeinstellungen",
-  "analyticsConsent.body": "Mit deiner Erlaubnis senden wir über veyrnox.ai an PostHog in der EU, welche Seiten du öffnest und welche Funktionen du nutzt, verknüpft mit deiner Konto-ID statt mit deinem Namen oder deiner E-Mail-Adresse, um die App zu verbessern. Wir senden niemals Prompts, Chattexte, deine Medien, E-Mail-Adressen oder Zahlungsdaten.",
+  "analyticsConsent.body": "Mit deiner Erlaubnis senden wir an unseren Analysedienst in der EU, welche Seiten du öffnest und welche Funktionen du nutzt, verknüpft mit deiner Konto-ID statt mit deinem Namen oder deiner E-Mail-Adresse, um die App zu verbessern. Wir senden niemals Prompts, Chattexte, deine Medien, E-Mail-Adressen oder Zahlungsdaten.",
   "analyticsConsent.change": "Du kannst dies unter Konto → Datenschutzeinstellungen ändern.",
   "analyticsConsent.policy": "Datenschutzerklärung",
   "analyticsConsent.allow": "Erlauben",

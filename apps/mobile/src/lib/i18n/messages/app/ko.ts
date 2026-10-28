@@ -4455,7 +4455,7 @@ export default {
   "whenPicker.yYYYMMDD": "YYYY-MM-DD",
   "analyticsConsent.title": "Veyrnox 개선에 참여하시겠어요?",
   "analyticsConsent.choices": "개인정보 선택",
-  "analyticsConsent.body": "허용하시면 앱 개선을 위해 여는 화면과 사용하는 기능에 관한 정보를 이름이나 이메일이 아닌 계정 ID와 연결하여 veyrnox.ai를 통해 EU에 있는 PostHog로 보냅니다. 프롬프트, 채팅 내용, 미디어, 이메일 또는 결제 정보는 절대 보내지 않습니다.",
+  "analyticsConsent.body": "허용하시면 앱 개선을 위해 여는 화면과 사용하는 기능에 관한 정보를 이름이나 이메일이 아닌 계정 ID와 연결하여 EU에 있는 당사 분석 서비스로 보냅니다. 프롬프트, 채팅 내용, 미디어, 이메일 또는 결제 정보는 절대 보내지 않습니다.",
   "analyticsConsent.change": "계정 → 개인정보 선택에서 언제든 변경할 수 있습니다.",
   "analyticsConsent.policy": "개인정보 처리방침",
   "analyticsConsent.allow": "허용",
