@@ -4455,7 +4455,7 @@ export default {
   "whenPicker.yYYYMMDD": "YYYY-MM-DD",
   "analyticsConsent.title": "Veyrnox の改善に協力しますか？",
   "analyticsConsent.choices": "プライバシー設定",
-  "analyticsConsent.body": "許可をいただいた場合、アプリの改善のため、開いた画面と使用した機能の情報を、氏名やメールアドレスではなくアカウント ID に紐づけて、veyrnox.ai 経由で EU 内の PostHog に送信します。プロンプト、チャットの文章、あなたのメディア、メールアドレス、支払い情報は一切送信しません。",
+  "analyticsConsent.body": "許可をいただいた場合、アプリの改善のため、開いた画面と使用した機能の情報を、氏名やメールアドレスではなくアカウント ID に紐づけて、EU 内の当社の分析サービスに送信します。プロンプト、チャットの文章、あなたのメディア、メールアドレス、支払い情報は一切送信しません。",
   "analyticsConsent.change": "この設定は「アカウント → プライバシー設定」で変更できます。",
   "analyticsConsent.policy": "プライバシーポリシー",
   "analyticsConsent.allow": "許可する",
@@ -5241,5 +5241,7 @@ export default {
   "modelPage.field.aspectRatio": "アスペクト比",
   "sourceDuration.follows": "アップロードしたソースに合わせます",
   "sourceDuration.limit": "表示価格で最大 {max} 秒。",
-  "sourceDuration.speech": "音声は動画より長くできません。課金前に映像の長さを確認します。必要に応じて音声を短くするか、長い動画を使用してください。"
+  "sourceDuration.speech": "音声は動画より長くできません。課金前に映像の長さを確認します。必要に応じて音声を短くするか、長い動画を使用してください。",
+  "job.stillWorking": "まだ処理中です。完了するとライブラリに表示されます。",
+  "credits.nothingToRestore": "復元するものはありません"
 } as const;

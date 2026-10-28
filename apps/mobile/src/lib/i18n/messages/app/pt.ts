@@ -4583,7 +4583,7 @@ export default {
   "whenPicker.yYYYMMDD": "YYYY-MM-DD",
   "analyticsConsent.title": "Ajudar a melhorar o Veyrnox?",
   "analyticsConsent.choices": "Opções de privacidade",
-  "analyticsConsent.body": "Com sua permissão, enviamos ao PostHog na UE, por meio de veyrnox.ai, quais telas você abre e quais recursos usa, vinculados ao ID da sua conta, e não ao seu nome ou e-mail, para melhorar o app. Nunca enviamos instruções, textos de conversas, suas mídias, e-mail ou dados de pagamento.",
+  "analyticsConsent.body": "Com sua permissão, enviamos ao nosso serviço de análise na UE quais telas você abre e quais recursos usa, vinculados ao ID da sua conta, e não ao seu nome ou e-mail, para melhorar o app. Nunca enviamos instruções, textos de conversas, suas mídias, e-mail ou dados de pagamento.",
   "analyticsConsent.change": "Você pode mudar isso em Conta → Opções de privacidade.",
   "analyticsConsent.policy": "Política de Privacidade",
   "analyticsConsent.allow": "Permitir",
@@ -5369,5 +5369,7 @@ export default {
   "modelPage.field.aspectRatio": "Proporção",
   "sourceDuration.follows": "Segue a fonte enviada",
   "sourceDuration.limit": "Até {max} segundos pelo preço exibido.",
-  "sourceDuration.speech": "A fala não pode ser mais longa que o vídeo. Verificamos a duração visual antes de cobrar; use uma fala mais curta ou um vídeo mais longo, se necessário."
+  "sourceDuration.speech": "A fala não pode ser mais longa que o vídeo. Verificamos a duração visual antes de cobrar; use uma fala mais curta ou um vídeo mais longo, se necessário.",
+  "job.stillWorking": "Ainda em andamento. Aparecerá na sua Biblioteca quando estiver pronto.",
+  "credits.nothingToRestore": "Nada para restaurar"
 } as const;

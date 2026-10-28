@@ -4455,7 +4455,7 @@ export default {
   "whenPicker.yYYYMMDD": "YYYY-MM-DD",
   "analyticsConsent.title": "Veyrnox 개선에 참여하시겠어요?",
   "analyticsConsent.choices": "개인정보 선택",
-  "analyticsConsent.body": "허용하시면 앱 개선을 위해 여는 화면과 사용하는 기능에 관한 정보를 이름이나 이메일이 아닌 계정 ID와 연결하여 veyrnox.ai를 통해 EU에 있는 PostHog로 보냅니다. 프롬프트, 채팅 내용, 미디어, 이메일 또는 결제 정보는 절대 보내지 않습니다.",
+  "analyticsConsent.body": "허용하시면 앱 개선을 위해 여는 화면과 사용하는 기능에 관한 정보를 이름이나 이메일이 아닌 계정 ID와 연결하여 EU에 있는 당사 분석 서비스로 보냅니다. 프롬프트, 채팅 내용, 미디어, 이메일 또는 결제 정보는 절대 보내지 않습니다.",
   "analyticsConsent.change": "계정 → 개인정보 선택에서 언제든 변경할 수 있습니다.",
   "analyticsConsent.policy": "개인정보 처리방침",
   "analyticsConsent.allow": "허용",
@@ -5241,5 +5241,7 @@ export default {
   "modelPage.field.aspectRatio": "화면 비율",
   "sourceDuration.follows": "업로드한 원본을 따릅니다",
   "sourceDuration.limit": "표시된 가격으로 최대 {max}초까지 가능합니다.",
-  "sourceDuration.speech": "음성이 동영상보다 길면 안 됩니다. 요금 청구 전에 영상 길이를 확인합니다. 필요하면 음성을 줄이거나 더 긴 동영상을 사용하세요."
+  "sourceDuration.speech": "음성이 동영상보다 길면 안 됩니다. 요금 청구 전에 영상 길이를 확인합니다. 필요하면 음성을 줄이거나 더 긴 동영상을 사용하세요.",
+  "job.stillWorking": "아직 처리 중입니다. 완료되면 라이브러리에 표시됩니다.",
+  "credits.nothingToRestore": "복원할 항목이 없습니다"
 } as const;

@@ -1,5 +1,5 @@
 import { act } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { AccessibilityInfo, ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { createRoot, type Root } from 'test-renderer';
 import { FullEditorScreen } from '../src/components/editor/FullEditorScreen';
 import * as ImagePicker from 'expo-image-picker';
@@ -12,6 +12,7 @@ let serverDocument: any = document;
 const mockRouter = { back: jest.fn(), push: jest.fn() };
 const mockRequest = jest.fn();
 const mockApi = { request: mockRequest };
+const mockScreenRender = jest.fn();
 
 jest.mock('../src/lib/editorDeviceMedia', () => ({ editorDeviceMedia: { hydrate: jest.fn().mockResolvedValue({}), copy: jest.fn().mockResolvedValue(null), backup: jest.fn().mockResolvedValue(null) } }));
 jest.mock('../src/lib/editorMediaDuration', () => ({ probeDuration: jest.fn().mockResolvedValue(4) }));
@@ -20,7 +21,7 @@ jest.mock('expo-secure-store', () => ({ getItemAsync: jest.fn().mockResolvedValu
 jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: jest.fn(), UIImagePickerPreferredAssetRepresentationMode: { Compatible: 'compatible' } }));
 jest.mock('expo-document-picker', () => ({ getDocumentAsync: jest.fn() }));
 jest.mock('expo-router', () => ({ Stack: { Screen: ({ options }: any) => options?.headerRight?.() ?? null }, useRouter: () => mockRouter }));
-jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi }) }));
+jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => { mockScreenRender(); return { api: mockApi }; } }));
 jest.mock('../src/components/editor/EditorMediaPreview', () => ({ EditorMediaPreview: ({ media, localUri }: any) => require('react').createElement(require('react-native').View, { accessibilityLabel: `Real preview ${media.name}`, testID: localUri }) }));
 jest.mock('../src/components/LibraryChooser', () => ({ LibraryChooser: ({ onPick }: any) => require('react').createElement(require('react-native').Pressable, { accessibilityRole: 'button', accessibilityLabel: 'Choose Library item', onPress: () => onPick({ jobId: '22222222-2222-2222-2222-222222222222', name: 'Library shot', createdAt: '2026-10-23T00:00:00Z' }) }) }));
 
@@ -293,4 +294,98 @@ test('a track locked while Library length resolves is rechecked at completion', 
     const locks = root.container.queryAll(n => n.props.accessibilityLabel === 'Lock' && typeof n.props.onClick === 'function');
     await act(async () => locks[0].props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }));
     await act(async () => finish({ seconds: 4 })); expect((await savedTimeline()).video).toHaveLength(0);
+});
+
+
+function playbackDocument() {
+    const { emptyTimeline } = require('../src/lib/nativeEditorModel');
+    serverDocument = { ...document, schema_version: 3, timeline: {
+        ...emptyTimeline(), seq: 2,
+        media: { first: { id: 'first', kind: 'image', name: 'First', frames: 60 }, second: { id: 'second', kind: 'image', name: 'Second', frames: 60 } },
+        video: [{ id: 'v1', mediaId: 'first', start: 0, len: 30, trackId: 'video-0' }, { id: 'v2', mediaId: 'second', start: 30, len: 30, trackId: 'video-0' }],
+        text: [{ id: 't1', text: 'First caption', start: 0, len: 30, trackId: 'text-0' }, { id: 't2', text: 'Second caption', start: 30, len: 30, trackId: 'text-0' }],
+    } };
+}
+const playhead = () => root.container.queryAll(n => n.props.testID === 'timeline-ruler')[0].props.accessibilityValue.text;
+async function seekTime(text: string) {
+    await press('Enter timecode');
+    const input = () => root.container.queryAll(n => n.props.accessibilityLabel === 'Enter timecode' && typeof n.props.onChangeText === 'function')[0];
+    await act(async () => input().props.onChangeText(text));
+    await act(async () => input().props.onSubmitEditing());
+}
+
+test('playback updates timecode, caption and media without rendering the screen per frame; pause, seek and end stop still work', async () => {
+    playbackDocument(); await render();
+    expect(playhead()).toBe('00:00:00:00');
+    expect(root.container.queryAll(n => n.props.accessibilityLabel === 'Real preview First')).toHaveLength(1);
+    await press('Play');
+    const renders = mockScreenRender.mock.calls.length;
+    for (let i = 0; i < 31; i++) await act(async () => jest.advanceTimersByTime(33));
+    expect(playhead()).toBe('00:00:01:01');
+    expect(mockScreenRender).toHaveBeenCalledTimes(renders);
+    expect(root.container.queryAll(n => n.props.accessibilityLabel === 'Real preview Second')).toHaveLength(1);
+    expect(root.container.queryAll(n => n.children.includes('Second caption')).length).toBeGreaterThan(0);
+    await press('Pause');
+    await act(async () => jest.advanceTimersByTime(200));
+    expect(playhead()).toBe('00:00:01:01');
+    const pausedRenders = mockScreenRender.mock.calls.length;
+    await seekTime('00:00:15');
+    expect(playhead()).toBe('00:00:00:15');
+    expect(mockScreenRender).toHaveBeenCalledTimes(pausedRenders);
+    expect(root.container.queryAll(n => n.props.accessibilityLabel === 'Real preview First')).toHaveLength(1);
+    await press('Go to end'); expect(playhead()).toBe('00:00:01:29');
+    await press('Play'); await act(async () => jest.advanceTimersByTime(33));
+    expect(playhead()).toBe('00:00:00:00');
+    expect(root.container.queryAll(n => n.props.accessibilityLabel === 'Play')).toHaveLength(1);
+    await act(async () => jest.advanceTimersByTime(100)); expect(playhead()).toBe('00:00:00:00');
+});
+
+test('invalid timecode announces once and does not move the playhead', async () => {
+    playbackDocument(); await render();
+    const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility');
+    announce.mockClear();
+    try {
+        await seekTime('1:75');
+        expect(playhead()).toBe('00:00:00:00');
+        expect(announce).toHaveBeenCalledTimes(1);
+        expect(root.container.queryAll(n => n.props.accessibilityRole === 'alert').length).toBeGreaterThan(0);
+    } finally { announce.mockRestore(); }
+});
+
+test('split, paste, text, markers and media insertion read the position after seeking', async () => {
+    playbackDocument(); await render();
+    await act(async () => root.container.queryAll(n => n.props.testID === 'clip-v1')[0].props.onAccessibilityTap());
+    await seekTime('00:00:10'); await press('Split'); await press('Copy');
+    await seekTime('00:00:20'); await press('Paste at playhead');
+    await seekTime('00:01:10'); await press('Add text');
+    await seekTime('00:01:15'); await press('Add marker');
+    await press('Media'); await seekTime('00:01:20'); await press('Add First to timeline');
+    const tl = await savedTimeline();
+    expect(tl.video.some((clip: any) => clip.start === 0 && clip.len === 10)).toBe(true);
+    expect(tl.video.some((clip: any) => clip.start === 20 && clip.len === 10)).toBe(true);
+    expect(tl.text.find((clip: any) => clip.text === 'Your title').start).toBe(40);
+    expect(tl.markers[0].frame).toBe(45);
+    expect(tl.video.at(-1).start).toBe(50);
+});
+
+test('a deferred media insertion uses the frame at completion after another seek', async () => {
+    playbackDocument(); const finish = deferLength(); await render();
+    await seekTime('00:00:10'); await press('Library video'); await press('Choose Library item');
+    await seekTime('00:01:20'); await act(async () => finish({ seconds: 4 }));
+    expect((await savedTimeline()).video.at(-1).start).toBe(50);
+});
+
+
+test('timeline follow-scroll responds to subscribed playback frames', async () => {
+    playbackDocument(); await render();
+    const scroll = jest.spyOn(ScrollView.prototype, 'scrollTo');
+    try {
+        const scroller = root.container.queryAll(n => n.props.scrollEventThrottle === 16 && typeof n.props.onLayout === 'function')[0];
+        await act(async () => scroller.props.onLayout({ nativeEvent: { layout: { width: 40 } } }));
+        await press('Play'); scroll.mockClear();
+        const renders = mockScreenRender.mock.calls.length;
+        for (let i = 0; i < 20; i++) await act(async () => jest.advanceTimersByTime(33));
+        expect(scroll).toHaveBeenCalledWith(expect.objectContaining({ x: 26 }));
+        expect(mockScreenRender).toHaveBeenCalledTimes(renders);
+    } finally { scroll.mockRestore(); }
 });

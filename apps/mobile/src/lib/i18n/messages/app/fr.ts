@@ -4583,7 +4583,7 @@ export default {
   "whenPicker.yYYYMMDD": "YYYY-MM-DD",
   "analyticsConsent.title": "Aider à améliorer Veyrnox ?",
   "analyticsConsent.choices": "Choix de confidentialité",
-  "analyticsConsent.body": "Avec votre accord, nous envoyons à PostHog dans l’UE, via veyrnox.ai, les écrans que vous ouvrez et les fonctions que vous utilisez, associés à l’identifiant de votre compte et non à votre nom ou adresse e-mail, pour améliorer l’application. Nous n’envoyons jamais vos instructions, discussions, médias, adresse e-mail ou données de paiement.",
+  "analyticsConsent.body": "Avec votre accord, nous envoyons à notre service d’analyse dans l’UE les écrans que vous ouvrez et les fonctions que vous utilisez, associés à l’identifiant de votre compte et non à votre nom ou adresse e-mail, pour améliorer l’application. Nous n’envoyons jamais vos instructions, discussions, médias, adresse e-mail ou données de paiement.",
   "analyticsConsent.change": "Vous pouvez modifier ce choix dans Compte → Choix de confidentialité.",
   "analyticsConsent.policy": "Politique de confidentialité",
   "analyticsConsent.allow": "Autoriser",
@@ -5369,5 +5369,7 @@ export default {
   "modelPage.field.aspectRatio": "Format d’image",
   "sourceDuration.follows": "Suit la source importée",
   "sourceDuration.limit": "Jusqu’à {max} secondes au prix affiché.",
-  "sourceDuration.speech": "La parole ne doit pas dépasser la durée de la vidéo. Nous vérifions la durée visuelle avant facturation ; raccourcissez la parole ou utilisez une vidéo plus longue si nécessaire."
+  "sourceDuration.speech": "La parole ne doit pas dépasser la durée de la vidéo. Nous vérifions la durée visuelle avant facturation ; raccourcissez la parole ou utilisez une vidéo plus longue si nécessaire.",
+  "job.stillWorking": "Toujours en cours. Le résultat apparaîtra dans votre Bibliothèque une fois terminé.",
+  "credits.nothingToRestore": "Rien à restaurer"
 } as const;

@@ -1,6 +1,8 @@
 import { tokenUser, isAccountChanged } from '../lib/auth/tokenUser';
 import type { TokenSource } from '../lib/auth/accountCalls';
 import type { SessionTask } from './sessionTask';
+import { captureIssue } from '../lib/crash';
+import { SessionReadError } from '../lib/auth/sessionStore';
 import { setEditorMediaOwner } from '../lib/editorDeviceMedia';
 import { captureEvent, setAnalyticsUser } from '../lib/analytics';
 import { setFirstRunUser } from '../lib/firstRunPending';
@@ -171,8 +173,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const superseded = () => generationRef.current === gen ? sessionRef.current : null;
         const run = (async () => {
             if (!from && gen !== 0) return null;
-            const stored = from?.refreshToken ?? (await readRefreshToken());
-            if (!live()) return superseded();
+            let stored = from?.refreshToken;
+            if (!stored) {
+                for (let attempt = 0; attempt < 3; attempt++) {
+                    try { stored = (await readRefreshToken()) ?? undefined; break; }
+                    catch (error) {
+                        if (!live()) return superseded();
+                        if (!(error instanceof SessionReadError)) throw error;
+                        if (attempt < 2) {
+                            await new Promise(resolve => setTimeout(resolve, 250 * (attempt + 1)));
+                            if (!live()) return superseded();
+                        } else {
+                            transientFailure.current = true;
+                            captureIssue('session_read_failed', {});
+                            return null;
+                        }
+                    }
+                }
+                if (!live()) return superseded();
+            }
             if (!stored) { transientFailure.current = false; return null; }
             try {
                 const next = await refreshSession(stored);
@@ -226,7 +245,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, [adopt]);
 
     const onSessionLost = useCallback((expected?: number) => {
-        if (expected === undefined || expected === generationRef.current) void drop();
+        if (expected !== undefined && expected !== generationRef.current) return;
+        if (!transientFailure.current) void drop();
     }, [drop]);
 
     const api = useMemo(

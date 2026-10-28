@@ -2,13 +2,17 @@ import * as SecureStore from 'expo-secure-store';
 
 const REFRESH_KEY = 'veyrnox_refresh_token';
 
+export class SessionReadError extends Error {
+    constructor() { super('session_read_failed'); this.name = 'SessionReadError'; }
+}
+
 // Only the refresh token is persisted, in the Keychain / Keystore. Access
 // tokens stay in memory, matching the web app (CLAUDE.md "Identity & sessions").
 export async function readRefreshToken(): Promise<string | null> {
     try {
-        return await SecureStore.getItemAsync(REFRESH_KEY);
+        return (await SecureStore.getItemAsync(REFRESH_KEY)) || null;
     } catch {
-        return null;
+        throw new SessionReadError();
     }
 }
 

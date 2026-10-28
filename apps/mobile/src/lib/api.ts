@@ -3,6 +3,7 @@ import { fetchWithTimeout, RequestTimeout } from './fetchWithTimeout';
 export { REQUEST_TIMEOUT_MS } from './fetchWithTimeout';
 import { markOffline, markOnline } from './networkState';
 import { config } from './config';
+import { isBalance, isRecord } from './responseShapes';
 
 export class ApiError extends Error {
     constructor(readonly status: number, readonly code: string, readonly body: Record<string, unknown> = {}) {
@@ -118,11 +119,14 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
         const task = call.task ?? options.beginSessionTask?.();
         await options.beforeSend?.(path, init.method ?? 'GET');
         const res = await authed(path, init, fetch, task, call.owner);
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        let body: unknown;
+        try { body = await res.json(); }
+        catch { if (res.ok) throw new ApiError(res.status, 'bad_response'); }
         if (!res.ok) {
+            const errorBody = isRecord(body) ? body : {};
             const wait = Number(res.headers.get('retry-after'));
-            throw new ApiError(res.status, typeof body.error === 'string' ? body.error : 'unknown',
-                wait > 0 ? { ...body, retryAfterSeconds: wait } : body);
+            throw new ApiError(res.status, typeof errorBody.error === 'string' ? errorBody.error : 'unknown',
+                wait > 0 ? { ...errorBody, retryAfterSeconds: wait } : errorBody);
         }
         return body as T;
     }
@@ -136,7 +140,11 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
     return {
         request,
         stream,
-        getBalance: () => request<Balance>('/api/v1/balance'),
+        getBalance: async () => {
+            const value = await request<unknown>('/api/v1/balance');
+            if (!isBalance(value)) throw new ApiError(200, 'bad_response');
+            return value;
+        },
     };
 }
 

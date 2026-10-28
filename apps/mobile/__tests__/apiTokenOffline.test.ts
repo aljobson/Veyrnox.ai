@@ -1,3 +1,4 @@
+jest.mock('../src/lib/crash', () => ({ captureIssue: jest.fn() }));
 import { act, createElement } from 'react';
 import { createRoot, type Root } from 'test-renderer';
 import { AuthProvider, useAuth } from '../src/auth/AuthProvider';

@@ -16,7 +16,8 @@ export default function OAuthConsent() {
     const id = typeof raw === 'string' ? raw : '';
     const { getAccessToken, beginSessionTask } = useAuth();
     const router = useRouter();
-    const [request, setRequest] = useState<Request | null>(null);
+    const [loaded, setLoaded] = useState<{ id: string; request: Request } | null>(null);
+    const request = loaded?.id === id ? loaded.request : null;
     const [error, setError] = useState<string | null>(null);
     const [busy, setBusy] = useState<'approve' | 'deny' | null>(null);
 
@@ -24,7 +25,7 @@ export default function OAuthConsent() {
         if (!validAuthorizationId(id)) return;
         let live = true;
         fetchRequest(getAccessToken, id).then(
-            (r) => live && setRequest(r),
+            (r) => live && setLoaded({ id, request: r }),
             (err) => live && setError(t(consentErrorKey(err))),
         );
         return () => {
@@ -33,11 +34,12 @@ export default function OAuthConsent() {
     }, [getAccessToken, id]);
 
     async function choose(action: 'approve' | 'deny') {
+        if (!request || busy) return;
         const task = beginSessionTask();
         setBusy(action);
         setError(null);
         try {
-            const target = await decide(task.tokens, id, action);
+            const target = await decide(task.tokens, id, action, request.redirect);
             if (!task.current()) return;
             await Linking.openURL(target);
             if (!task.current()) return;

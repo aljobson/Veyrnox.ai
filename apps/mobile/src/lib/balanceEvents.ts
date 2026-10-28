@@ -6,5 +6,6 @@ export function subscribeBalance(listener: Listener): () => void {
     return () => { listeners.delete(listener); };
 }
 export function publishBalance(userId: string, balance: number): void {
+    if (!Number.isFinite(balance)) return;
     listeners.forEach(listener => listener(userId, balance));
 }

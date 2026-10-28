@@ -1,3 +1,4 @@
+import { isCheckinStatus } from '../lib/responseShapes';
 import { Text as StatusText } from './ui/Text';
 import { useFirstRunPending } from '../lib/firstRunPending';
 import { useEffect, useMemo, useState } from 'react';
@@ -78,7 +79,7 @@ function CheckInForUser({ owner, api }: { owner: string; api: ApiClient }) {
         }
         finally { setBusy(false); }
     }
-    if (!status) return null;
+    if (!isCheckinStatus(status)) return null;
     const day = status.claimed_today ? Math.min(status.streak, 6) : status.next_day;
     return <Modal visible={open} transparent animationType="fade" onRequestClose={close} accessibilityViewIsModal>
         <View style={styles.backdrop}><ScrollView style={styles.scroll} contentContainerStyle={styles.card}>

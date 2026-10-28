@@ -2,6 +2,9 @@
 // the model catalog. Nothing else is cached, and nothing the screen does not already show. Cleared on sign-out and
 // on account deletion. Paid actions never go through here.
 
+import { isBalance } from './responseShapes';
+import { ApiError } from './api';
+
 export interface CacheStorage {
     get(key: string): Promise<string | null>;
     set(key: string, value: string): Promise<void>;
@@ -108,6 +111,10 @@ export function createCache(storage: CacheStorage, now: () => number = Date.now)
             await storage.remove(key).catch(() => undefined);
             return null;
         }
+        if (!stored || (policy.name === 'balance' && !isBalance(stored.value))) {
+            await storage.remove(key).catch(() => undefined);
+            return null;
+        }
         const ageMs = now() - stored.savedAt;
         if (typeof stored.savedAt !== 'number' || ageMs < 0 || ageMs > policy.maxAgeMs) {
             await storage.remove(key).catch(() => undefined);
@@ -120,6 +127,7 @@ export function createCache(storage: CacheStorage, now: () => number = Date.now)
     async function write<T>(policy: CachePolicy, value: T, userId?: string) {
         const key = keyFor(policy, userId);
         if (!key) return;
+        if (policy.name === 'balance' && !isBalance(value)) return;
         const stored: Stored = { savedAt: now(), value };
         // A full or unavailable disk must never break the screen that has live data.
         await storage.set(key, JSON.stringify(stored)).catch(() => undefined);
@@ -133,6 +141,7 @@ export function createCache(storage: CacheStorage, now: () => number = Date.now)
         }
         try {
             const value = await fetcher();
+            if (policy.name === 'balance' && !isBalance(value)) throw new ApiError(200, 'bad_response');
             await write(policy, value, userId);
             const meta: CacheMeta = { fromCache: false, stale: false, savedAt: now(), ageMs: 0 };
             onData?.(value, meta);
@@ -158,6 +167,7 @@ export function createCache(storage: CacheStorage, now: () => number = Date.now)
         if (raw === null) return { state: 'absent' };
         try {
             const entry = JSON.parse(raw);
+            if (policy.name === 'balance' && !isBalance(entry?.value)) return { state: 'present', value: null };
             const age = now() - entry.savedAt;
             return { state: 'present', value: typeof entry.savedAt === 'number' && age >= 0 && age <= policy.maxAgeMs ? entry.value : null };
         } catch { return { state: 'present', value: null }; }
