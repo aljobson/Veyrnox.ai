@@ -145,9 +145,14 @@ jobs:
           retention_bootstrap_predecessor=12448acb867057589159f312cf0e7eabb28a3ff0
           successful_deploy_runs=()
           latest_deployed_sha=""
+          # A run counts when its Deploy step succeeded, even if a later check failed or
+          # rolled it back: that build was live, and open pages may still reference its
+          # files. Requiring the whole job to succeed (until 2026-10-28) left a rolled-back
+          # but still-live build's files out, so every later deploy 404'd on them and
+          # rolled back too (deploy-failure #1716).
           while IFS=$'\t' read -r previous_run deployed_sha; do
             deployed=$(gh run view "$previous_run" --json jobs \
-              --jq '[.jobs[] | select(.name == "deploy" and .conclusion == "success")
+              --jq '[.jobs[] | select(.name == "deploy")
                      | .steps[] | select(.name == "Deploy" and .conclusion == "success")] | length')
             if [ "$deployed" -eq 0 ]; then
               continue
