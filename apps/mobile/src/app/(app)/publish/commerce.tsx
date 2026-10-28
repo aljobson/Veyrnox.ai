@@ -1,7 +1,9 @@
+import { rawText } from '../../../lib/i18n/translate';
+import { usePublishScope } from '../../../lib/usePublishScope';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { Image } from 'expo-image';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { UnlockCard } from '../../../components/UnlockCard';
 import { touchTarget } from '../../../lib/a11y';
@@ -22,31 +24,50 @@ export default function Commerce() {
     const [error, setError] = useState<string | null>(null);
     const [refreshing, setRefreshing] = useState(false);
 
+    const canEditRef = useRef(false), running = useRef(false);
+    const { guard, nextRead, scopeTick } = usePublishScope(api, () => {
+        canEditRef.current = false; running.current = false;
+        setProducts(null); setCanEdit(false); setNotice(null); setError(null); setLocked(false); setRefreshing(false);
+    });
+
     const load = useCallback(async () => {
+        const valid = nextRead('list');
         try {
             const page = await fetchProductPage(api);
+            if (!valid()) return;
+            canEditRef.current = page.canEdit;
             setProducts(page.products);
             setCanEdit(page.canEdit);
             setError(null);
             setLocked(false);
         } catch (err) {
+            if (!valid()) return;
+            canEditRef.current = false; setCanEdit(false);
             setProducts(null);
             if (err instanceof ApiError && err.status === 402) setLocked(true);
             else setError(t(commerceErrorKey(err)));
+        } finally {
+            if (valid()) setRefreshing(false);
         }
-    }, [api]);
+    }, [api, nextRead, scopeTick]);
 
     useFocusEffect(useCallback(() => { void load(); }, [load, reload]));
 
     function confirmArchive(p: ProductDetail) {
+        if (!canEditRef.current) return;
+        const valid = guard(); let used = false;
         Alert.alert(t('commerce.archiveTitle', { name: p.title }), t('commerce.archiveBody'), [
             { text: t('commerce.cancel'), style: 'cancel' },
             {
                 text: t('commerce.archive'),
                 style: 'destructive',
-                onPress: () => archiveProduct(api, p.id)
-                    .then(() => { setNotice(t('commerce.archived', { name: p.title })); void load(); })
-                    .catch((err) => setNotice(t(commerceErrorKey(err)))),
+                onPress: async () => {
+                    if (used || !valid() || !canEditRef.current || running.current) return;
+                    used = true; running.current = true;
+                    try { await archiveProduct(api, p.id); if (valid()) { setNotice(t('commerce.archived', { name: p.title })); void load(); } }
+                    catch (err) { if (valid()) setNotice(t(commerceErrorKey(err))); }
+                    finally { if (valid()) running.current = false; }
+                },
             },
         ]);
     }
@@ -65,7 +86,7 @@ export default function Commerce() {
                     data={products}
                     keyExtractor={(p) => p.id}
                     contentContainerStyle={{ paddingBottom: LIST_END_PADDING }}
-                    refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.accent} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}
+                    refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.accent} onRefresh={async () => { setRefreshing(true); await load(); }} />}
                     ListHeaderComponent={<View><Text style={styles.muted}>{t('commerce.intro2')}</Text>{notice ? <StatusText variant="inherit" style={styles.notice} accessibilityLiveRegion="polite">{notice}</StatusText> : null}</View>}
                     ListEmptyComponent={<Text style={styles.muted}>{t('commerce.none')}</Text>}
                     ListFooterComponent={
@@ -78,7 +99,7 @@ export default function Commerce() {
                         </View>
                     }
                     renderItem={({ item }) => (
-                        <View style={styles.card} accessible={!(canEdit && item.status !== 'archived')} accessibilityLabel={`${item.title}, ${money(item.priceCents, item.currency)}, ${t('commerce.stock', { count: item.inventory })}`}>
+                        <View style={styles.card} accessible={!(canEdit && item.status !== 'archived')} accessibilityLabel={rawText(`${item.title}, ${money(item.priceCents, item.currency)}, ${t('commerce.stock', { count: item.inventory })}`)}>
                             {item.imageUrl ? <Image source={{ uri: item.imageUrl }} style={styles.pic} contentFit="cover" accessibilityIgnoresInvertColors /> : <View style={styles.pic} />}
                             <View style={styles.text}>
                                 <Text style={styles.name} numberOfLines={2}>{item.title}</Text>
@@ -90,11 +111,11 @@ export default function Commerce() {
                                 {canEdit && item.status !== 'archived' ? (
                                     <View style={styles.actions}>
                                         {item.editable ? (
-                                            <Pressable accessibilityRole="button" accessibilityLabel={t('commerce.editLabel', { name: item.title })} style={[styles.act, touchTarget]} onPress={() => router.push({ pathname: '/publish/commerce-edit', params: { id: item.id } })}>
+                                            <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('commerce.editLabel', { name: item.title }))} style={[styles.act, touchTarget]} onPress={() => router.push({ pathname: '/publish/commerce-edit', params: { id: item.id } })}>
                                                 <Text style={styles.webText}>{t('commerce.edit')}</Text>
                                             </Pressable>
                                         ) : null}
-                                        <Pressable accessibilityRole="button" accessibilityLabel={t('commerce.archiveLabel', { name: item.title })} style={[styles.act, touchTarget]} onPress={() => confirmArchive(item)}>
+                                        <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('commerce.archiveLabel', { name: item.title }))} style={[styles.act, touchTarget]} onPress={() => confirmArchive(item)}>
                                             <Text style={styles.delText}>{t('commerce.archive')}</Text>
                                         </Pressable>
                                     </View>

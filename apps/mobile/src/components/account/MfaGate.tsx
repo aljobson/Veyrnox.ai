@@ -5,7 +5,7 @@ import { useAuth } from '../../auth/AuthProvider';
 import { fetchProfile, verifyFactor } from '../../lib/auth/accountCalls';
 import { toSession } from '../../lib/auth/supabaseAuth';
 import { t } from '../../lib/i18n';
-import { userIdFromToken } from '../../lib/appCache';
+import { isAccountChanged } from '../../auth/sessionTask';
 import { aalFromToken, mfaErrorKey, needsChallenge, validCode, verifiedFactors } from '../../lib/mfa';
 import { knownMfaEnrolment, markMfaCleared, mfaClearedFor, rememberMfaEnrolment } from '../../lib/mfaCheck';
 import { CodeField } from './CodeField';
@@ -23,7 +23,7 @@ type Phase = 'checking' | 'challenge' | 'clear' | 'unavailable';
 // passed it. Sign out is always on screen: a lost phone must not trap the person on this step.
 export function MfaGate({ children }: { children: ReactNode }) {
     const styles = useThemedStyles(sheets);
-    const { status, getAccessToken, adoptSession, signOut } = useAuth();
+    const { status, generation, beginSessionTask, adoptSession, signOut } = useAuth();
     const [phase, setPhase] = useState<Phase>('checking');
     const [factorId, setFactorId] = useState<string | null>(null);
     const [code, setCode] = useState('');
@@ -32,26 +32,28 @@ export function MfaGate({ children }: { children: ReactNode }) {
     const [attempt, setAttempt] = useState(0);
 
     useEffect(() => {
-        if (status !== 'signedIn') return;
+        const task = beginSessionTask();
+        if (task.gen !== generation || !task.current() || status !== 'signedIn') return;
         let live = true;
-        const userIdOf = getAccessToken().then((token) => (token ? userIdFromToken(token) : null)).catch(() => null);
+        const current = () => live && task.current();
+        const userId = task.user;
         // The check did not finish: open only for an account known here to have no authenticator.
         const undecided = async () => {
-            const known = await knownMfaEnrolment(await userIdOf);
-            if (live) setPhase((p) => (p === 'checking' ? (known === false ? 'clear' : 'unavailable') : p));
+            const known = await knownMfaEnrolment(userId);
+            if (current()) setPhase((p) => (p === 'checking' ? (known === false ? 'clear' : 'unavailable') : p));
         };
         const timer = setTimeout(() => void undecided(), GATE_TIMEOUT_MS);
         (async () => {
             try {
-                const userId = await userIdOf;
                 // Already passed in this launch: a remount of this gate must not ask the server again.
                 if (mfaClearedFor(userId)) {
-                    if (live) setPhase('clear');
+                    if (current()) setPhase('clear');
                     return;
                 }
-                const profile = await fetchProfile(getAccessToken, 'mfa-gate');
-                const aal = aalFromToken(await getAccessToken());
-                if (!live) return;
+                const profile = await fetchProfile(task.tokens, 'mfa-gate');
+                if (!current()) return;
+                const aal = aalFromToken(await task.tokens(false, task.gen));
+                if (!current()) return;
                 void rememberMfaEnrolment(userId, verifiedFactors(profile.factors).length > 0);
                 if (needsChallenge(profile, aal)) {
                     setFactorId(verifiedFactors(profile.factors)[0].id);
@@ -60,7 +62,8 @@ export function MfaGate({ children }: { children: ReactNode }) {
                     markMfaCleared(userId);
                     setPhase('clear');
                 }
-            } catch {
+            } catch (err) {
+                if (!current() || isAccountChanged(err)) return;
                 clearTimeout(timer);
                 await undecided();
             }
@@ -69,19 +72,23 @@ export function MfaGate({ children }: { children: ReactNode }) {
             live = false;
             clearTimeout(timer);
         };
-    }, [status, getAccessToken, attempt]);
+    }, [status, generation, beginSessionTask, attempt]);
 
     async function submit() {
+        const task = beginSessionTask();
         if (!factorId) return;
         setBusy(true);
         setError(null);
         try {
-            const session = toSession(await verifyFactor(getAccessToken, factorId, code), Date.now());
-            await adoptSession(session);
-            markMfaCleared(userIdFromToken(session.accessToken));
+            const session = toSession(await verifyFactor(task.tokens, factorId, code), Date.now());
+            if (!task.current()) return;
+            await adoptSession(session, task.gen);
+            if (!task.current()) return;
+            markMfaCleared(task.user);
             setCode('');
             setPhase('clear');
         } catch (err) {
+            if (!task.current() || isAccountChanged(err)) return;
             setError(t(mfaErrorKey(err)));
         } finally {
             setBusy(false);

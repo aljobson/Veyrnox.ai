@@ -1,3 +1,4 @@
+import { rawText } from '../lib/i18n/translate';
 import { isCheckinStatus } from '../lib/responseShapes';
 import { Text as StatusText } from './ui/Text';
 import { useFirstRunPending } from '../lib/firstRunPending';
@@ -82,7 +83,7 @@ function CheckInForUser({ owner, api }: { owner: string; api: ApiClient }) {
     if (!isCheckinStatus(status)) return null;
     const day = status.claimed_today ? Math.min(status.streak, 6) : status.next_day;
     return <Modal visible={open} transparent animationType="fade" onRequestClose={close} accessibilityViewIsModal>
-        <View style={styles.backdrop}><ScrollView style={styles.scroll} contentContainerStyle={styles.card}>
+        <View style={styles.backdrop} onAccessibilityEscape={close}><ScrollView style={styles.scroll} contentContainerStyle={styles.card}>
             <Text accessibilityRole="header" style={styles.title}>{t('checkin.title')}</Text>
             <Text style={styles.body}>{t('checkin.copy')}</Text>
             <View style={styles.grid}>
@@ -90,7 +91,7 @@ function CheckInForUser({ owner, api }: { owner: string; api: ApiClient }) {
                     style={[styles.tile, day === i + 1 && styles.current, i + 1 < day && styles.past]}>
                     <Text style={styles.body}>{i === 5 ? t('checkin.lastDay') : t('checkin.day', { day: i + 1 })}</Text>
                     <Text style={styles.amount}>{plural('checkin.credits', credits, { credits })}</Text>
-                    <Text style={styles.tick} accessibilityLabel={status.claimed_today && day === i + 1 ? t('checkin.claimed') : undefined}>
+                    <Text style={styles.tick} accessibilityLabel={rawText(status.claimed_today && day === i + 1 ? t('checkin.claimed') : undefined)}>
                         {status.claimed_today && day === i + 1 ? '✓' : ''}
                     </Text>
                 </View>)}

@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { Platform, ScrollView, Share, View } from 'react-native';
 import { parseMarkdown, safeHref, type Inline } from '../../lib/chatMarkdown';
 import { t } from '../../lib/i18n';
@@ -25,7 +26,7 @@ export function ChatText({ content }: { content: string }) {
     const styles = useThemedStyles(sheets);
     const inline = (nodes: Inline[], heading = false) => nodes.map((node, i) => (
         <Text key={i} style={[heading && styles.bold, node.t === 'code' ? styles.mono : node.t === 'strong' ? styles.bold : node.t === 'link' ? styles.link : undefined]}
-            accessibilityRole={node.t === 'link' ? 'link' : undefined} accessibilityLabel={node.t === 'link' ? t('chatDepth.openLink', { label: node.v }) : undefined} onPress={node.t === 'link' ? () => void shareReplyLink(node.href!) : undefined}>{node.v}</Text>
+            accessibilityRole={node.t === 'link' ? 'link' : undefined} accessibilityLabel={rawText(node.t === 'link' ? t('chatDepth.openLink', { label: node.v }) : undefined)} onPress={node.t === 'link' ? () => void shareReplyLink(node.href!) : undefined}>{node.v}</Text>
     ));
     return <>{parseMarkdown(content).map((block, i) => {
         if (block.type === 'code') return <View key={i} style={styles.code}>

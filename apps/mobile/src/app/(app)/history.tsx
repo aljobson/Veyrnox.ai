@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { t } from '../../lib/i18n';
 import { Stack } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -84,7 +85,7 @@ export default function History() {
                     onEndReachedThreshold={0.5}
                     ListHeaderComponent={
                         usage ? (
-                            <View style={styles.summary} accessibilityLabel={t('history.creditsspent', { value1: usageLines(usage).join('. ') })}>
+                            <View style={styles.summary} accessibilityLabel={rawText(t('history.creditsspent', { value1: usageLines(usage).join('. ') }))}>
                                 <Text style={styles.label}>{t('history.creditsspentoncreations')}</Text>
                                 {usageLines(usage).map((line) => (
                                     <Text key={line} style={styles.summaryLine}>
@@ -117,7 +118,7 @@ function Entry({ entry }: { entry: LedgerEntry }) {
     const label = kindLabel(entry.kind);
     const date = entryDate(entry.createdAt);
     return (
-        <View style={styles.row} accessible accessibilityLabel={`${label}, ${amount}, ${date}${note ? `, ${note}` : ''}`}>
+        <View style={styles.row} accessible accessibilityLabel={rawText(`${label}, ${amount}, ${date}${note ? `, ${note}` : ''}`)}>
             <View style={styles.rowText}>
                 <Text style={styles.name}>{label}</Text>
                 <Text style={styles.muted}>{date}</Text>

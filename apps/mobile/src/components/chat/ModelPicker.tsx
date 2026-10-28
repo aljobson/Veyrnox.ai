@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { useReducedMotion } from '../ui/useReducedMotion';
 import { Modal, Pressable, ScrollView, View } from 'react-native';
 import { MIN_TARGET } from '../../lib/a11y';
@@ -22,11 +23,11 @@ export function ModelPicker({ visible, currentId, models, onPick, onClose }: Pro
     return (
         <Modal visible={visible} transparent animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={onClose}>
             <Pressable style={styles.backdrop} accessibilityRole="button" accessibilityLabel={t('chat.model.close')} onPress={onClose} />
-            <View style={styles.sheet}>
+            <View style={styles.sheet} onAccessibilityEscape={onClose}>
                 <Text variant="title3" style={styles.title} accessibilityRole="header">{t('chat.model.title')}</Text>
                 <ScrollView contentContainerStyle={styles.list}>
                     {switchableModels(models).map((m) => (
-                        <Card key={m.id} accessibilityRole="radio" accessibilityLabel={`${m.name}, ${plural('chat.perReply', m.credits_per_reply)}`} accessibilityState={{ selected: m.id === currentId }} style={[styles.row]} onPress={() => onPick(m.id)} selected={m.id === currentId}>
+                        <Card key={m.id} accessibilityRole="radio" accessibilityLabel={rawText(`${m.name}, ${plural('chat.perReply', m.credits_per_reply)}`)} accessibilityState={{ selected: m.id === currentId }} style={[styles.row]} onPress={() => onPick(m.id)} selected={m.id === currentId}>
                             <Text variant="body" style={styles.name}>{m.name}</Text>
                             <Text variant="footnote" style={styles.note}>{m.maker_label} · <Text variant="footnote" tone="warning">{plural('chat.perReply', m.credits_per_reply)}</Text></Text>
                         </Card>

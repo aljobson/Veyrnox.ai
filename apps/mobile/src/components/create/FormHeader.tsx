@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
 import { Text, Icon, themedStyles, useThemedStyles } from '../ui';
@@ -19,14 +20,14 @@ export function FormHeader({ modelLabel, modality, stageLine, stage }: { modelLa
                             <SectionLabel style={styles.savedText}>{t('create.workspace.saved')}</SectionLabel>
                         </View>
                     </View>
-                    <View style={styles.modelPill} accessibilityLabel={t('create.workspace.modelLabel', { name: modelLabel })}>
+                    <View style={styles.modelPill} accessibilityLabel={rawText(t('create.workspace.modelLabel', { name: modelLabel }))}>
                         <SectionLabel style={styles.modelLive}>{t('create.livePrices')}</SectionLabel>
                         <Text variant="footnote" tone="primary" style={styles.modelName}>{modelLabel}</Text>
                         <SectionLabel style={styles.modelKind}>{modality}</SectionLabel>
                     </View>
                 </View>
 
-                {stage ?? <View style={styles.stage} accessibilityLabel={stageLine}>
+                {stage ?? <View style={styles.stage} accessibilityLabel={rawText(stageLine)}>
                     <View style={styles.stageIconBox}>
                         <Icon name="play" size={28} tint={styles.accentInk.color} />
                     </View>

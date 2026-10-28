@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { captureEvent } from '../../lib/analytics/events';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -152,7 +153,7 @@ export default function Vibe() {
                                 <Pressable
                                     key={l.code}
                                     accessibilityRole="button"
-                                    accessibilityLabel={l.name}
+                                    accessibilityLabel={rawText(l.name)}
                                     accessibilityLanguage={l.tag}
                                     accessibilityState={selectedState(picked === l.code)}
                                     style={({ pressed }) => [touchTarget, styles.choice, styles.languageRow, picked === l.code && styles.choiceOn, pressed && styles.pressed]}
@@ -202,7 +203,7 @@ export default function Vibe() {
                                 <View key={s} style={[styles.progressStep, i < step && styles.progressStepOn]} />
                             ))}
                         </View>
-                        <Text style={styles.step} accessibilityLabel={t('vibe.step', { n: step, total: TOTAL })}>
+                        <Text style={styles.step} accessibilityLabel={rawText(t('vibe.step', { n: step, total: TOTAL }))}>
                             {t('vibe.step', { n: step, total: TOTAL })}
                         </Text>
                         <Text variant="title1" style={styles.title} accessibilityRole="header">
@@ -327,7 +328,7 @@ function Card({ answers, synced }: { answers: CreatorAnswers; synced: boolean })
     const card = { ...raw, name: creatorCardName(answers), traits: raw.traits.map(displayLabel) };
     return (
         <View style={styles.cardWrap}>
-            <SurfaceCard style={styles.card} accessible accessibilityLabel={`${card.studio ?? t('vibe.card.kicker')}. ${card.name}. ${card.traits.join(', ')}`}>
+            <SurfaceCard style={styles.card} accessible accessibilityLabel={rawText(`${card.studio ?? t('vibe.card.kicker')}. ${card.name}. ${card.traits.join(', ')}`)}>
                 <Text variant="footnote" style={styles.cardKicker}>
                     {card.studio ?? t('vibe.card.kicker')}
                 </Text>

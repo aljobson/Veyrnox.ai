@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { useState } from 'react';
 import { AccessibilityInfo, Platform, Pressable, Share, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -11,14 +12,14 @@ import { Text as StatusText } from '../ui/Text';
 
 export type StageProps = { film: Film; change: (film: Film) => void; catalog: readonly CatalogModel[]; live: boolean };
 export function FilmAction({ label, onPress, disabled = false }: { label: string; onPress: () => void; disabled?: boolean }) {
-    return <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled }} disabled={disabled} onPress={onPress}
+    return <Pressable accessibilityRole="button" accessibilityLabel={rawText(label)} accessibilityState={{ disabled }} disabled={disabled} onPress={onPress}
         style={{ minHeight: 44, justifyContent: 'center', padding: 12, borderWidth: 1, borderColor: colors.border, borderRadius: 12, opacity: disabled ? 0.5 : 1 }}>
         <Text style={{ color: colors.accent }}>{label}</Text></Pressable>;
 }
 export function FilmInput({ label, value, onChange, disabled = false, multiline = false }: {
     label: string; value: string; onChange: (value: string) => void; disabled?: boolean; multiline?: boolean;
 }) {
-    return <View style={{ gap: 6 }}><Text style={{ color: colors.body }}>{label}</Text><TextInput accessibilityLabel={label}
+    return <View style={{ gap: 6 }}><Text style={{ color: colors.body }}>{label}</Text><TextInput accessibilityLabel={rawText(label)}
         accessibilityState={{ disabled }} editable={!disabled} value={value} onChangeText={v => { if (!disabled) onChange(v); }}
         multiline={multiline} maxLength={24000} style={{ minHeight: multiline ? 110 : 44, color: colors.text, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12 }} /></View>;
 }

@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { t } from '../../lib/i18n';
 import { Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -26,7 +27,7 @@ export default function Referrals() {
 
     async function share(link: string) {
         // The system share sheet also offers Copy.
-        await Share.share({ message: t('referrals.makeAIimagesvideoandaudiowith', { value1: link }) }).catch(() => undefined);
+        await Share.share({ message: rawText(t('referrals.makeAIimagesvideoandaudiowith', { value1: link })) }).catch(() => undefined);
     }
 
     async function useCode() {
@@ -59,7 +60,7 @@ export default function Referrals() {
                         <Text style={styles.body1}>{t('referrals.whenafriendyoureferbuystheir')}</Text>
                         <View style={styles.codeBox}>
                             <Text style={styles.label}>{t('referrals.yourcode')}</Text>
-                            <Text selectable style={styles.code} accessibilityLabel={t('referrals.yourreferralcode', { value1: info.code.split('').join(' ') })}>
+                            <Text selectable style={styles.code} accessibilityLabel={rawText(t('referrals.yourreferralcode', { value1: info.code.split('').join(' ') }))}>
                                 {info.code}
                             </Text>
                         </View>

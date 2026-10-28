@@ -1,3 +1,4 @@
+import { isAccountChanged } from '../../auth/sessionTask';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, AppState, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from 'react-native';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
@@ -32,7 +33,7 @@ const MIN_TOKEN_SECONDS = 20 * 60;
 const TICK_MS = 2_000;
 
 export function EditorSpikeHarness() {
-    const { getAccessToken } = useAuth();
+    const { getAccessToken, beginSessionTask, generation } = useAuth();
     // WebView<unknown>: the default type parameter is `undefined`, which makes every prop `never` when a ref is attached.
     const web = useRef<WebView<unknown>>(null);
     const [seedScript, setSeedScript] = useState<string | null>(null);
@@ -52,25 +53,27 @@ export function EditorSpikeHarness() {
 
     // The token is fetched fresh, checked for life left, and handed to the page by script, never in a URL.
     useEffect(() => {
+        const task = beginSessionTask();
+        if (task.gen !== generation || !task.current()) return;
         let alive = true;
         void (async () => {
             try {
-                const token = await getAccessToken(true);
-                if (!alive) return;
+                const token = await getAccessToken(true, task.gen);
+                if (!alive || !task.current()) return;
                 const seed = token ? buildSessionSeed(token) : null;
                 if (!seed) return setProblem('No usable session. Sign in again, then reopen this screen.');
                 const left = seedSecondsLeft(seed, Date.now());
                 if (left < MIN_TOKEN_SECONDS) return setProblem(`The session has only ${Math.floor(left / 60)} min left. Reopen to refresh it.`);
                 setSeedScript(sessionInjection(seed, new URL(config.apiBase).origin));
                 note('note', `session handed in, ${Math.floor(left / 60)} min left, ${Platform.OS} ${Platform.Version}`);
-            } catch {
-                if (alive) setProblem('Could not read the session.');
+            } catch (err) {
+                if (alive && task.current() && !isAccountChanged(err)) setProblem('Could not read the session.');
             }
         })();
         return () => {
             alive = false;
         };
-    }, [getAccessToken, note, reloadKey]);
+    }, [getAccessToken, beginSessionTask, generation, note, reloadKey]);
 
     useEffect(() => {
         const sub = AppState.addEventListener('change', (state) => {

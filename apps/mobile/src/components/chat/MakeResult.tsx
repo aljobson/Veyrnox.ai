@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { Image } from 'expo-image';
 import { View } from 'react-native';
 import { t } from '../../lib/i18n';
@@ -17,7 +18,7 @@ export function MakeResult({ jobs, count, canMakeAnother, onOpen, onLibrary, onM
                 <Text accessibilityLiveRegion="polite">{t(`job.${job.state}`)}</Text>
                 {job.asset?.mime_type.startsWith('image/') ? <Image source={{ uri: job.asset.url }} contentFit="cover" accessibilityLabel={t('job.title')} style={styles.image} /> : null}
                 {job.asset && /^(video|audio)\//.test(job.asset.mime_type) ? <InlineMedia url={job.asset.url} audio={job.asset.mime_type.startsWith('audio/')} label={t(job.asset.mime_type.startsWith('audio/') ? 'job.playAudio' : 'job.playVideo')} /> : null}
-                <Button variant="secondary" label={t('chatDepth.wfOpen')} accessibilityLabel={`${t('chatDepth.wfOpen')}: ${t('job.title')}`} onPress={() => onOpen(job.id)} />
+                <Button variant="secondary" label={t('chatDepth.wfOpen')} accessibilityLabel={rawText(`${t('chatDepth.wfOpen')}: ${t('job.title')}`)} onPress={() => onOpen(job.id)} />
             </Card>)}
         </View>
         {jobs.some(job => job.state === 'queued' || job.state === 'running') ? <Text variant="footnote" tone="secondary">{t('job.keepsRunning')}</Text> : null}

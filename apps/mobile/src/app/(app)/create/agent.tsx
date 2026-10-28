@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { getCacheUser } from '../../../lib/appCache';
 import { publishBalance } from '../../../lib/balanceEvents';
 import { observe } from '../../../lib/network';
@@ -185,7 +186,7 @@ export default function Agent() {
                                 <Chip key={value} accessibilityRole="radio" accessibilityState={{ selected: aspect === value }} disabled={formDisabled} onPress={() => changeAspect(value)} label={(value)} selected={aspect === value} />
                             ))}
                         </View>
-                        <Button accessibilityRole="button" accessibilityLabel={t('agent.free', { value1: t('videoAgent.plan') })} accessibilityState={{ busy: busy === 'planning' }}
+                        <Button accessibilityRole="button" accessibilityLabel={rawText(t('agent.free', { value1: t('videoAgent.plan') }))} accessibilityState={{ busy: busy === 'planning' }}
                             disabled={!!problem || !narrationResult.ok || !!busy} onPress={() => void makePlan()}
                             variant={plan ? 'secondary' : 'primary'} loading={busy === 'planning'} label={plan ? t('videoAgent.replan') : t('videoAgent.plan')} />
                     </View>
@@ -217,7 +218,7 @@ export default function Agent() {
                                 </Text>
                                 <Text variant="caption" style={expired ? styles.inlineError : styles.expiry}>{expired ? t('videoAgent.expired') : t('videoAgent.expires', { minutes: String(left) })}</Text>
                             </View>
-                            <Button accessibilityRole="button" accessibilityLabel={t('videoAgent.approve', { credits: String(plan.credits) })} accessibilityState={{ busy: busy === 'approving' }}
+                            <Button accessibilityRole="button" accessibilityLabel={rawText(t('videoAgent.approve', { credits: String(plan.credits) }))} accessibilityState={{ busy: busy === 'approving' }}
                                 disabled={!!busy || expired || balanceState !== 'ready'} onPress={() => void approve()} variant="primary"
                                 loading={busy === 'approving'} textStyle={styles.approveText} label={t('videoAgent.approve', { credits: String(plan.credits) })} />
                         </View>

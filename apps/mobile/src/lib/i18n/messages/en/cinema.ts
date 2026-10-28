@@ -80,4 +80,6 @@ export default {
     "cinema.creatorAnalytics.publishedTitle": "Published title",
     "cinema.creatorAnalytics.publishATitleToStartSeeing": "Publish a title to start seeing audience insights.",
     "cinema.creatorAnalytics.completionMeansAtLeast90Of": "Completion means at least 90% of watched media; series counts cover watched episodes. Shares are copy or share actions, rather than confirmed deliveries. Comments count approved, unreported comments. These insights do not calculate earnings or weekly ranking scores.",
+    "cinema.pause": "Pause",
+    "cinema.position": "{position} / {duration}",
 } as const;

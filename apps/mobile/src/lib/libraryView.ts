@@ -1,3 +1,4 @@
+import { formatNumber } from './i18n';
 import { POLICIES, type Cache } from './cache';
 import { kindOf, type CatalogModel, type Job, type JobState, type Kind } from './media';
 
@@ -116,7 +117,7 @@ export function parseProvenance(body: unknown): Provenance | null {
 
 export function sizeLabel(bytes: number | null): string | null {
     if (bytes === null) return null;
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    if (bytes < 1024) return `${formatNumber(bytes)} B`;
+    if (bytes < 1024 * 1024) return `${formatNumber(bytes / 1024, 0)} KB`;
+    return `${formatNumber(bytes / (1024 * 1024), 1)} MB`;
 }

@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
 import * as Crypto from 'expo-crypto';
 import { Stack, useLocalSearchParams } from 'expo-router';
@@ -34,9 +35,9 @@ export default function InboxThread() {
     const [picking, setPicking] = useState(false);
     const [attempt, setAttempt] = useState<Attempt | null>(null);
     const attemptRef = useRef<Attempt | null>(null), running = useRef(false);
-    const [role, setRole] = useState<BrandRole>('viewer');
-    const triage = ['owner', 'manager', 'editor', 'reviewer'].includes(role);
-    const reply = ['owner', 'manager', 'editor'].includes(role);
+    const [role, setRole] = useState<BrandRole | null>(null);
+    const triage = role !== null && ['owner', 'manager', 'editor', 'reviewer'].includes(role);
+    const reply = role !== null && ['owner', 'manager', 'editor'].includes(role);
     const readOnce = useRef<string | null>(null);
     const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
     const [noteDraft, setNoteDraft] = useState('');
@@ -51,7 +52,7 @@ export default function InboxThread() {
     useEffect(() => {
         const reset = () => {
             generation.current++; running.current = false; updateAttempt(null);
-            setView(null); setRole('viewer'); setSuggestions([]); setDraft(''); setNoteDraft(''); setNote(null); setError(null); setBusy(false); setMembers(null); setPicking(false);
+            setView(null); setRole(null); setSuggestions([]); setDraft(''); setNoteDraft(''); setNote(null); setError(null); setBusy(false); setMembers(null); setPicking(false);
             setScopeVersion(v => v + 1);
         };
         const userOff = subscribeCacheUser(reset), brandOff = brandStore.subscribe(reset);
@@ -74,7 +75,7 @@ export default function InboxThread() {
     useEffect(() => {
         const version = ++generation.current, token = inboxScope();
         const valid = () => version === generation.current && token === inboxScope() && currentApi.current === api;
-        setView(null); setError(null); setRole('viewer'); setSuggestions([]); setMembers(null); setPicking(false);
+        setView(null); setError(null); setRole(null); setSuggestions([]); setMembers(null); setPicking(false);
         setDraft(''); setNoteDraft(''); setNote(null); updateAttempt(null); running.current = false; setBusy(false);
         fetchThread(api, String(id ?? '')).then(v => { if (valid()) setView(v); }).catch(err => { if (valid()) setError(t(inboxErrorKey(err))); });
         fetchAccounts(api).then(a => { if (valid()) setRole(a.brandRole); }).catch(() => { if (valid()) setRole('viewer'); });
@@ -136,7 +137,7 @@ export default function InboxThread() {
     }
 
     async function saveNote() {
-        if (running.current || !['owner', 'manager', 'editor', 'reviewer'].includes(role)) return;
+        if (running.current || !triage) return;
         const value = cleanNote(noteDraft);
         if (!value) return setNote(t('publishDepth.note.invalid'));
         const valid = guard();
@@ -198,16 +199,16 @@ export default function InboxThread() {
             {th?.tags.length ? <Text style={styles.tags}>{th.tags.join(', ')}</Text> : null}
             {view.messages.length === 0 ? <Text style={styles.muted}>{t('inbox.noMessages')}</Text> : null}
             {view.messages.map((m) => (
-                <View key={m.id} style={[styles.bubble, m.outgoing ? styles.out : styles.in]} accessible accessibilityLabel={`${m.outgoing ? t('inbox.you') : th?.name ?? ''}: ${m.body}`}>
+                <View key={m.id} style={[styles.bubble, m.outgoing ? styles.out : styles.in]} accessible accessibilityLabel={rawText(`${m.outgoing ? t('inbox.you') : th?.name ?? ''}: ${m.body}`)}>
                     <Text style={styles.text}>{m.body || (m.hasMedia ? t('inbox.attachment') : '')}</Text>
                     {m.body && m.hasMedia ? <Text style={styles.muted}>{t('inbox.attachment')}</Text> : null}
                     <Text style={styles.meta}>{m.sentAt ? new Date(m.sentAt).toLocaleString(formatLocale()) : ''}{m.deliveryStatus && m.outgoing ? ` · ${m.deliveryStatus}` : ''}</Text>
                 </View>
             ))}
-            <InboxSuggestions api={api} threadId={String(id)} rows={suggestions} role={role} canReply={view.canReply} pendingReply={busy || !!attempt?.mayBeSent}
+            <InboxSuggestions api={api} threadId={String(id)} rows={suggestions} role={role ?? 'viewer'} canReply={view.canReply} pendingReply={busy || !!attempt?.mayBeSent}
                 onUse={value => { if (!running.current && !attemptRef.current?.mayBeSent) setDraft(value); }} onRemove={suggestionId => setSuggestions(rows => rows.filter(row => row.id !== suggestionId))} />
             <Text style={styles.heading} accessibilityRole="header">{t('inbox.notes')}</Text>
-            {['owner', 'manager', 'editor', 'reviewer'].includes(role) ? <View>
+            {triage ? <View>
                 <Text style={styles.text}>{t('publishDepth.note.add')}</Text>
                 <TextInput style={[styles.input, touchTarget]} accessibilityLabel={t('publishDepth.note.add')} multiline maxLength={2000} value={noteDraft} onChangeText={setNoteDraft} editable={!busy} />
                 <Pressable style={touchTarget} accessibilityRole="button" disabled={busy || !noteDraft.trim()} accessibilityState={{ busy, disabled: busy || !noteDraft.trim() }} onPress={saveNote}><Text style={styles.action}>{t('publishDepth.note.add')}</Text></Pressable>
@@ -218,7 +219,7 @@ export default function InboxThread() {
                     <Text style={styles.meta}>{n.author}{n.createdAt ? ` · ${new Date(n.createdAt).toLocaleString(formatLocale())}` : ''}</Text>
                 </View>
             ))}
-            {!(reply && view.canReply) ? <Text style={styles.muted}>{t(reply ? 'publishOps.inbox.readOnlyConnection' : triage ? 'publishOps.inbox.triageRole' : 'publishOps.inbox.readOnlyRole')}</Text> : null}
+            {role !== null && !(reply && view.canReply) ? <Text style={styles.muted}>{t(reply ? 'publishOps.inbox.readOnlyConnection' : triage ? 'publishOps.inbox.triageRole' : 'publishOps.inbox.readOnlyRole')}</Text> : null}
         </ScrollView>
         {reply && attempt?.mayBeSent ? <View style={styles.held}>
             <StatusText variant="inherit" style={styles.muted} accessibilityLiveRegion="polite">{t('publishDepth.reply.pending', { network: networkLabel(th?.network ?? '') })}</StatusText>

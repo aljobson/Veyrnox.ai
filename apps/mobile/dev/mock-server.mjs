@@ -259,6 +259,7 @@ createServer(async (req, res) => {
         return send(res, 200, { brand_id: BRAND_CLIENT, accountLimit: 5, planTier: 'publish', ...publishDashboardFlags('editor'), ...(uploadsEnabled ? { uploadsEnabled: true } : {}), accounts: [
             { id: 'acc-c1', network: 'linkedin', display_name: 'Acme Corp Page', avatar_url: null, status: 'active', connected_at: '2026-10-02T10:00:00Z', token_expires_at: '2026-12-02T10:00:00Z', publishingEnabled: true, supportedMedia: ['image'] } ] });
     }
+    if (path === '/api/v1/social/accounts' && brandHeader === BRAND_VIEW) return send(res, 200, { brand_id: BRAND_VIEW, accountLimit: 5, planTier: 'publish', ...publishDashboardFlags('viewer'), ...(uploadsEnabled ? { uploadsEnabled: true } : {}), accounts: [] });
     if (path === '/api/v1/social/accounts') return send(res, 200, { brand_id: 'b1', accountLimit: 5, planTier: 'publish', ...publishDashboardFlags('owner'), ...(uploadsEnabled ? { uploadsEnabled: true } : {}), accounts: ([
         { id: 'acc-1', network: 'instagram', display_name: 'Veyrnox Studio', avatar_url: null, status: 'active', connected_at: '2026-10-01T10:00:00Z', token_expires_at: '2026-12-01T10:00:00Z', publishingEnabled: true, supportedMedia: ['image', 'video'] },
         { id: 'acc-2', network: 'tiktok', display_name: 'veyrnox.ai', avatar_url: null, status: 'expired', connected_at: '2026-09-01T10:00:00Z', token_expires_at: '2026-10-01T10:00:00Z', publishingEnabled: true, supportedMedia: ['image', 'video'] },

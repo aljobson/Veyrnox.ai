@@ -10,7 +10,7 @@ const mockApi = {};
 jest.mock('../src/lib/i18n', () => ({ ...jest.requireActual('../src/lib/i18n'), ACTIVE_LOCALES: ['en'] }));
 jest.mock('../src/lib/creatorProfileStore', () => ({ loadVibe: async () => null, clearVibe: jest.fn(), storeVibe: jest.fn() }));
 jest.mock('../src/lib/languageStore', () => ({ readLanguage: () => mockStored, loadLanguage: async () => mockStored }));
-jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ status: 'signedIn', api: mockApi, getAccessToken: jest.fn() }) }));
+jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ generation: 0, sessionGeneration: () => 0, beginSessionTask: () => ({ gen: 0, user: 'u', current: () => true, tokens: async () => null }), status: 'signedIn', api: mockApi, getAccessToken: jest.fn() }) }));
 jest.mock('../src/lib/auth/accountCalls', () => ({ fetchProfile: async () => null }));
 jest.mock('../src/billing/BillingProvider', () => ({ useBilling: () => ({ status: 'off', activeProductIds: [] }) }));
 jest.mock('../src/push/pushContext', () => ({ usePush: () => ({ supported: false }) }));

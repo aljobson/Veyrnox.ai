@@ -1,3 +1,4 @@
+import { rawText } from '../../../../lib/i18n/translate';
 import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -22,7 +23,7 @@ export default function EditorialSeriesPage() {
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
             <Stack.Screen options={{ title: series.title }} />
-            <Image source={{ uri: series.posterUrl }} style={styles.poster} contentFit="cover" accessibilityLabel={t('cinemaSeries.poster', { title: series.title })} accessibilityIgnoresInvertColors />
+            <Image source={{ uri: series.posterUrl }} style={styles.poster} contentFit="cover" accessibilityLabel={rawText(t('cinemaSeries.poster', { title: series.title }))} accessibilityIgnoresInvertColors />
             <Text style={styles.title} accessibilityRole="header">{series.title}</Text>
             <Text style={styles.muted}>{plural('cinemaSeries.season', series.episodes.length, { season: series.season, title: series.seasonTitle, n: series.episodes.length })}</Text>
             <Text style={styles.body}>{series.description}</Text>

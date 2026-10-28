@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { controlKind } from '../../lib/oddlingsCatalog';
 import { SwatchGroup, SliderGroup, TileGroup } from './CatalogControls';
 import { displayLabel } from '../../lib/displayLabels';
@@ -26,7 +27,7 @@ export function OddlingCatalog({ categoryId, picks, onCategory, onPick }: Props)
                     const on = item.id === category.id;
                     const n = pickedIn(item, picks);
                     return (
-                        <Pressable key={item.id} accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={n ? `${displayLabel(item.label)}, ${plural('oddlings.build.chosen', n)}` : displayLabel(item.label)} style={[styles.chip, on && styles.chipOn]} onPress={() => onCategory(item.id)}>
+                        <Pressable key={item.id} accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={rawText(n ? `${displayLabel(item.label)}, ${plural('oddlings.build.chosen', n)}` : displayLabel(item.label))} style={[styles.chip, on && styles.chipOn]} onPress={() => onCategory(item.id)}>
                             <Text style={[styles.chipText, on && styles.chipTextOn]}>{displayLabel(item.label)}{n ? ` · ${n}` : ''}</Text>
                         </Pressable>
                     );

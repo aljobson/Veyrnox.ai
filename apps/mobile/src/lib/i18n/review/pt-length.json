@@ -2850,6 +2850,42 @@
     "ratio": 3
   },
   {
+    "id": "publishTiming.move.title",
+    "english": "Move post",
+    "translation": "Mover publicação",
+    "ratio": 1.78
+  },
+  {
+    "id": "publishTiming.move.save",
+    "english": "Move post",
+    "translation": "Mover publicação",
+    "ratio": 1.78
+  },
+  {
+    "id": "publishTiming.move.check",
+    "english": "Check",
+    "translation": "Verificar",
+    "ratio": 1.8
+  },
+  {
+    "id": "publishTiming.move.retry",
+    "english": "Try again",
+    "translation": "Tentar novamente",
+    "ratio": 1.78
+  },
+  {
+    "id": "publishTiming.move.reload",
+    "english": "Reload",
+    "translation": "Recarregar",
+    "ratio": 1.67
+  },
+  {
+    "id": "publishTiming.move.expected",
+    "english": "Requested from: {time}",
+    "translation": "Horário original da solicitação: {time}",
+    "ratio": 1.77
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",
@@ -2908,5 +2944,29 @@
     "english": "Add audio",
     "translation": "Adicionar áudio",
     "ratio": 1.67
+  },
+  {
+    "id": "presets.cat.ALL",
+    "english": "All",
+    "translation": "Todos",
+    "ratio": 1.67
+  },
+  {
+    "id": "presets.cat.NEW",
+    "english": "New",
+    "translation": "Novos",
+    "ratio": 1.67
+  },
+  {
+    "id": "presets.cat.CINEMATIC",
+    "english": "Cinematic",
+    "translation": "Cinematográficos",
+    "ratio": 1.78
+  },
+  {
+    "id": "presets.cat.ADS",
+    "english": "Ads",
+    "translation": "Anúncios",
+    "ratio": 2.67
   }
 ]

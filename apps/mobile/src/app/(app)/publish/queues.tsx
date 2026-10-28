@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { subscribeCacheUser } from '../../../lib/appCache';
 import { brandStore } from '../../../lib/publishBrand';
 import { publishScope, usePublishRole } from '../../../lib/usePublishRole';
@@ -98,12 +99,12 @@ export default function Queues() {
                     }
                     renderItem={({ item }) => (
                         <View style={styles.row}>
-                            <Pressable accessibilityRole="button" accessibilityLabel={`${item.name}. ${item.enabled ? t('queues.on') : t('queues.off')}`} style={[styles.main, touchTarget]} onPress={() => router.push({ pathname: '/publish/queue-edit', params: { id: item.id } })}>
+                            <Pressable accessibilityRole="button" accessibilityLabel={rawText(`${item.name}. ${item.enabled ? t('queues.on') : t('queues.off')}`)} style={[styles.main, touchTarget]} onPress={() => router.push({ pathname: '/publish/queue-edit', params: { id: item.id } })}>
                                 <Text style={styles.name}>{item.name}</Text>
                                 <Text style={styles.muted}>{item.enabled ? t('queues.on') : t('queues.off')} · {item.timezone}</Text>
                                 <Text style={styles.muted} numberOfLines={2}>{sortSlots(item.slots).map(slotText).join(', ')}</Text>
                             </Pressable>
-                            {canWrite ? <Pressable accessibilityRole="button" accessibilityLabel={t('queues.deleteLabel', { name: item.name })} style={[styles.del, touchTarget]} onPress={() => confirmDelete(item)}>
+                            {canWrite ? <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('queues.deleteLabel', { name: item.name }))} style={[styles.del, touchTarget]} onPress={() => confirmDelete(item)}>
                                 <Text style={styles.delText}>{t('queues.delete')}</Text>
                             </Pressable> : null}
                         </View>

@@ -167,6 +167,22 @@ const pt = {
     'cinema.creatorAnalytics.publishedTitle': 'Título publicado',
     'cinema.creatorAnalytics.publishATitleToStartSeeing': 'Publique um título para começar a ver informações sobre o público.',
     'cinema.creatorAnalytics.completionMeansAtLeast90Of': 'Conclusão significa pelo menos 90% da mídia assistida; a contagem de séries abrange episódios assistidos. Compartilhamentos são ações de copiar ou compartilhar, não entregas confirmadas. Os comentários contabilizados são aprovados e não denunciados. Essas análises não calculam ganhos nem pontuações semanais.',
+    'presets.cat.ALL': 'Todos',
+    'presets.cat.NEW': 'Novos',
+    'presets.cat.POPULAR': 'Populares',
+    'presets.cat.YOUR PHOTO': 'Sua foto',
+    'presets.cat.CINEMATIC': 'Cinematográficos',
+    'presets.cat.ANIME': 'Anime',
+    'presets.cat.CARTOONS': 'Desenhos',
+    'presets.cat.MOVIES': 'Filmes',
+    'presets.cat.FANTASY': 'Fantasia',
+    'presets.cat.REALISTIC': 'Realistas',
+    'presets.cat.FASHION': 'Moda',
+    'presets.cat.PRODUCTS': 'Produtos',
+    'presets.cat.VFX': 'VFX',
+    'presets.cat.UGC': 'UGC',
+    'presets.cat.ADS': 'Anúncios',
+    'presets.cat.KIDS BIRTHDAY': 'Aniversário infantil',
 } as const;
 
 export default pt;

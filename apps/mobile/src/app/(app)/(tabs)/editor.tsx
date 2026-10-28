@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { directionalStyle } from '../../../lib/rtl';
 import { Button, Card, Text, themedStyles, useThemedStyles, useAppearance } from '../../../components/ui';
 import { Image } from 'expo-image';
@@ -144,7 +145,7 @@ export default function EditorHome() {
                 renderItem={({ item }) => (
                     <Card
                         accessibilityRole="button"
-                        accessibilityLabel={t('editor.home.openProject', { name: item.name })}
+                        accessibilityLabel={rawText(t('editor.home.openProject', { name: item.name }))}
                         accessibilityHint={t('editor.home.openHint')}
                         style={[styles.project]}
                         onPress={() => router.push({ pathname: '/editor/[projectId]', params: { projectId: item.id } })}

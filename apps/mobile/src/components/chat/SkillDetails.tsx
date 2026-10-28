@@ -44,7 +44,7 @@ export function SkillDetails({ skill, chosen, count, busy, model, onClose, onUse
     const overview = skill ? skillOverview(skill) : null;
     const atLimit = !chosen && count >= MAX_SELECTED_SKILLS;
     return <Modal visible={!!skill} presentationStyle="pageSheet" animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={onClose}>
-        {skill && overview ? <View style={styles.screen}>
+        {skill && overview ? <View style={styles.screen} onAccessibilityEscape={onClose}>
             <Button variant="tertiary" label={t('common.close')} icon="close" onPress={onClose} containerStyle={styles.close} />
             <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.content, { paddingBottom: LIST_END_PADDING + insets.bottom }]}>
                 <IconBadge {...skillIcon(skill.id, skill.group)} size="xl" />

@@ -1,3 +1,4 @@
+import { categoryLabel } from '../../../lib/presetCategoryLabel';
 import { CheckInEntry } from '../../../components/credits/CheckInEntry';
 import { Link, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -30,7 +31,6 @@ const SHOWN = 24;
 const TYPES: readonly TypeFilter[] = [ALL_TYPES, 'image', 'video', 'audio'];
 const RECENT = 6;
 
-const titleCase = (s: string) => s.charAt(0) + s.slice(1).toLowerCase();
 
 // Explore is the home: say what to make, or start from a template, or pick up what you were making.
 export default function Explore() {
@@ -252,7 +252,7 @@ export default function Explore() {
                                 <Button
                                     size="md"
                                     variant="tertiary"
-                                    label={category !== ALL_CATEGORIES ? titleCase(category) : t('explore.categories')}
+                                    label={category !== ALL_CATEGORIES ? categoryLabel(category) : t('explore.categories')}
                                     accessibilityState={{
                                         expanded: categoriesOpen,
                                         selected: category !== ALL_CATEGORIES,
@@ -264,7 +264,7 @@ export default function Explore() {
                         {categories.length > 1 && categoriesOpen ? (
                             <ScrollView keyboardShouldPersistTaps="handled" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
                                 {categories.map((c) => (
-                                    <Chip key={c} label={c === ALL_CATEGORIES ? t('explore.categoryAll') : titleCase(c)} selected={c === category} onPress={() => setCategory(c)} />
+                                    <Chip key={c} label={c === ALL_CATEGORIES ? t('explore.categoryAll') : categoryLabel(c)} selected={c === category} onPress={() => setCategory(c)} />
                                 ))}
                             </ScrollView>
                         ) : null}

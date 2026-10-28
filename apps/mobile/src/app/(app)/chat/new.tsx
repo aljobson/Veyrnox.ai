@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { isAssetId } from '../../../lib/useAskAbout';
 import { plural, t } from '../../../lib/i18n';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
@@ -113,7 +114,7 @@ export default function NewChat() {
                                     </Card> : null}
                                     <Text variant="footnote" style={styles.heading} accessibilityRole="header">{t('chat.startfromapersona')}</Text>
                                     {personas.map((p) => (
-                                        <Card key={p.id} accessibilityRole="button" accessibilityLabel={t('chat.startachatwiththepersona', { value1: p.name })} disabled={creating} accessibilityState={{ disabled: creating }} style={styles.row} onPress={() => pickPersona(p)}>
+                                        <Card key={p.id} accessibilityRole="button" accessibilityLabel={rawText(t('chat.startachatwiththepersona', { value1: p.name }))} disabled={creating} accessibilityState={{ disabled: creating }} style={styles.row} onPress={() => pickPersona(p)}>
                                             <Text variant="bodyStrong" style={styles.name}>{p.name}</Text>
                                             <Text style={styles.muted} numberOfLines={1}>{p.instructions}</Text>
                                         </Card>
@@ -126,7 +127,7 @@ export default function NewChat() {
                     data={models ?? []}
                     keyExtractor={(m) => m.id}
                     renderItem={({ item }) => (
-                        <Card accessibilityRole="button" accessibilityLabel={item.name} accessibilityState={{ disabled: creating || item.gated }} disabled={creating || item.gated} style={[styles.row, item.gated && styles.gated]} onPress={() => pick(item)}>
+                        <Card accessibilityRole="button" accessibilityLabel={rawText(item.name)} accessibilityState={{ disabled: creating || item.gated }} disabled={creating || item.gated} style={[styles.row, item.gated && styles.gated]} onPress={() => pick(item)}>
                             <Text variant="bodyStrong" style={styles.name}>{item.name}</Text>
                             <Text style={styles.muted}>
                                 {item.maker_label} · <Text tone="warning">{plural('chat.creditsPerReply', item.credits_per_reply)}</Text>

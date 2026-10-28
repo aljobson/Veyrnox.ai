@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { useFaceFiltersAvailable } from '../../../lib/useFaceFiltersAvailable';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
@@ -62,7 +63,7 @@ export default function CreateTools() {
                         {g.tools.map((m) => (
                             <ListRow
                                 key={m.id}
-                                accessibilityLabel={`${m.name}. ${t('toolsDir.needs', { what: toolNeeds(m) })}. ${plural('create.from', m.credits)}`}
+                                accessibilityLabel={rawText(`${m.name}. ${t('toolsDir.needs', { what: toolNeeds(m) })}. ${plural('create.from', m.credits)}`)}
                                 leading={<IconBadge {...toolIcon(g.key)} />}
                                 title={m.name}
                                 subtitle={t('toolsDir.needs', { what: toolNeeds(m) })}

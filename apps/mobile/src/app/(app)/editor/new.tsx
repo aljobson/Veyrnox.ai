@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { directionalStyle } from '../../../lib/rtl';
 import { randomUUID } from 'expo-crypto';
@@ -26,7 +27,7 @@ export default function NewEditorRoute() {
 
 function Choice({ icon, title, body, disabled, onPress }: { readonly icon: MenuIcon; readonly title: string; readonly body: string; readonly disabled: boolean; readonly onPress: () => void }) {
     return (
-        <Pressable accessibilityRole="button" accessibilityLabel={title} accessibilityState={{ disabled }} disabled={disabled} style={({ pressed }) => [styles.choice, touchTarget, disabled && styles.disabled, pressed && styles.pressed]} onPress={onPress}>
+        <Pressable accessibilityRole="button" accessibilityLabel={rawText(title)} accessibilityState={{ disabled }} disabled={disabled} style={({ pressed }) => [styles.choice, touchTarget, disabled && styles.disabled, pressed && styles.pressed]} onPress={onPress}>
             <View style={styles.iconBox}>
                 <Image source={MENU_ICONS[icon]} style={styles.icon} tintColor={colors.accent} contentFit="contain" alt="" accessibilityElementsHidden />
             </View>

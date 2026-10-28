@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -127,7 +128,7 @@ export default function Projects() {
                             ListEmptyComponent={<Text style={styles.muted}>{t('projects.noprojectsinthisworkspaceyet')}</Text>}
                             ListFooterComponent={<Text style={styles.note}>{t('projects.openaprojecttorenameitdelete')}</Text>}
                             renderItem={({ item }) => (
-                                <Pressable accessibilityRole="button" accessibilityLabel={t('projects.version2', { value1: item.name, value2: item.version })} style={styles.row} onPress={() => router.push({ pathname: '/projects/[id]', params: { id: item.id } })}>
+                                <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('projects.version2', { value1: item.name, value2: item.version }))} style={styles.row} onPress={() => router.push({ pathname: '/projects/[id]', params: { id: item.id } })}>
                                     <Text style={styles.name}>{item.name}</Text>
                                     <Text style={styles.muted}>{t('projects.version3', { value1: item.version, value2: item.updatedAt ? t('projects.updated', { value1: new Date(item.updatedAt).toLocaleDateString(formatLocale()) }) : '' })}</Text>
                                 </Pressable>

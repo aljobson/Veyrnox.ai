@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { Text as StatusText } from '../../components/ui/Text';
 import { Link, Stack } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
@@ -47,7 +48,7 @@ export default function Search() {
                 contentContainerStyle={{ gap: 8, paddingBottom: LIST_END_PADDING }}
                 renderItem={({ item }) => (
                     <Link href={item.href as never} asChild>
-                        <Pressable accessibilityRole="button" accessibilityLabel={`${item.title}, ${t(item.kind === 'model' ? 'srch.kindModel' : 'srch.kindScreen')}`} style={styles.row}>
+                        <Pressable accessibilityRole="button" accessibilityLabel={rawText(`${item.title}, ${t(item.kind === 'model' ? 'srch.kindModel' : 'srch.kindScreen')}`)} style={styles.row}>
                             <Text style={styles.name}>{item.title}</Text>
                             <Text style={styles.note}>{item.kind === 'model' ? `${t('srch.kindModel')} · ${item.detail}` : t('srch.kindScreen')}</Text>
                         </Pressable>

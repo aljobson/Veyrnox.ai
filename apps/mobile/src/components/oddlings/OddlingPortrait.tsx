@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { Text as StatusText } from '../ui/Text';
 import { Image } from 'expo-image';
 import { useIsFocused } from 'expo-router';
@@ -80,7 +81,7 @@ export function OddlingPortrait({ id, name }: { id: string; name: string }) {
     return (
         <View>
             <View style={styles.frame}>
-                <Image source={{ uri: portraitUrl(id) }} style={StyleSheet.absoluteFill} contentFit="cover" cachePolicy="disk" accessibilityLabel={t('oddlings.portrait', { name })} accessibilityIgnoresInvertColors />
+                <Image source={{ uri: portraitUrl(id) }} style={StyleSheet.absoluteFill} contentFit="cover" cachePolicy="disk" accessibilityLabel={rawText(t('oddlings.portrait', { name }))} accessibilityIgnoresInvertColors />
                 {mount && data ? (
                     <View style={[StyleSheet.absoluteFill, phase === 'ready' ? null : styles.hidden]} pointerEvents="none" importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
                         <Web
@@ -107,7 +108,7 @@ export function OddlingPortrait({ id, name }: { id: string; name: string }) {
                 ) : null}
             </View>
             {reduce === null || phase === 'failed' ? null : (
-                <Pressable accessibilityRole="button" accessibilityLabel={label} style={styles.toggle} onPress={() => { if (phase === 'offline') setPhase('idle'); setWanted(!playing); }}>
+                <Pressable accessibilityRole="button" accessibilityLabel={rawText(label)} style={styles.toggle} onPress={() => { if (phase === 'offline') setPhase('idle'); setWanted(!playing); }}>
                     <Text style={styles.toggleText}>{phase === 'preparing' ? t('oddlings.puppet.preparing') : label}</Text>
                 </Pressable>
             )}

@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { plural, t } from '../../lib/i18n';
 import { Image } from 'expo-image';
 import { StyleSheet, Pressable, Text, View } from 'react-native';
@@ -43,7 +44,7 @@ export function TitleCard({ item, height, playing, onPlay, onOpen, onReport }: P
                             <Text style={styles.playText}>{series ? t('cinema.episodes') : t('cinema.play')}</Text>
                         </Pressable>
                     ) : null}
-                    <Pressable accessibilityRole="button" accessibilityLabel={t('cinema.report', { value1: item.title })} style={styles.report} onPress={onReport}>
+                    <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('cinema.report', { value1: item.title }))} style={styles.report} onPress={onReport}>
                         <Image source={MENU_ICONS.flag} style={styles.reportIcon} tintColor={ON_POSTER_SOFT} contentFit="contain" accessibilityElementsHidden />
                     </Pressable>
                 </View>
@@ -58,7 +59,7 @@ const ON_POSTER_SOFT = '#d4d4d8';
 
 const styles = StyleSheet.create({
     page: { backgroundColor: colors.background, justifyContent: 'flex-end' },
-    shade: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(10,10,11,0.55)' },
+    shade: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(10,10,11,0.72)' },
     info: { padding: 16, paddingBottom: 28, gap: 12 },
     title: { color: ON_POSTER, fontSize: 22, fontWeight: '700' },
     meta: { color: ON_POSTER_SOFT, marginTop: 2 },

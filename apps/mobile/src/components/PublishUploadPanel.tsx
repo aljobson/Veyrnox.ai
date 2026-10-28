@@ -1,3 +1,4 @@
+import { rawText } from '../lib/i18n/translate';
 import { Text as StatusText } from './ui/Text';
 import { english } from '../lib/i18n/binding';
 import * as DocumentPicker from 'expo-document-picker';
@@ -9,7 +10,7 @@ import { touchTarget } from '../lib/a11y';
 import { ApiError, type ApiClient } from '../lib/api';
 import { getCacheUser, subscribeCacheUser } from '../lib/appCache';
 import { discardCacheCopy } from '../lib/cacheFiles';
-import { t } from '../lib/i18n';
+import { formatNumber, t } from '../lib/i18n';
 import type { UploadPick } from '../lib/publishMediaChoice';
 import { assertAttempt, listUploads, prepareImage, publishUploadMessage, removeUpload, SOCIAL_UPLOAD_TYPES, uploadToPublish, type UploadRow } from '../lib/publishUploads';
 import { colors } from '../theme';
@@ -168,12 +169,12 @@ export function PublishUploadPanel(props: Props) {
     }
     if (!enabled || hidden) return null;
     const button = (key: string, action: () => void, disabled = false, selected?: boolean, label = t(key)) => (
-        <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled, ...(selected === undefined ? {} : { selected }) }} disabled={disabled} onPress={action} style={[styles.button, touchTarget]}>
+        <Pressable accessibilityRole="button" accessibilityLabel={rawText(label)} accessibilityState={{ disabled, ...(selected === undefined ? {} : { selected }) }} disabled={disabled} onPress={action} style={[styles.button, touchTarget]}>
             <Text style={styles.text}>{t(key)}</Text>
         </Pressable>
     );
     const rowLabel = (action: 'select' | 'remove', row: UploadRow) =>
-        t(`publishUploads.${action}${row.mime_type.startsWith('video/') ? 'Video' : 'Image'}`, { size: (row.size_bytes / 1048576).toFixed(1) });
+        t(`publishUploads.${action}${row.mime_type.startsWith('video/') ? 'Video' : 'Image'}`, { size: formatNumber(row.size_bytes / 1048576, 1) });
     return <View style={styles.panel}>
         <Text accessibilityRole="header" style={styles.heading}>{t('publishUploads.title')}</Text>
         <Text style={styles.text}>{t('publishUploads.limits')}</Text>
@@ -191,7 +192,7 @@ export function PublishUploadPanel(props: Props) {
         {loadFailed ? <View><StatusText variant="inherit" accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.text}>{t('publishUploads.loadFailed')}</StatusText>{button('publishUploads.retry', () => void load(), busy)}</View> : null}
         {rows.map(row => <View key={row.id} style={styles.row}>
             {row.mime_type.startsWith('image/') ? <Image source={{ uri: row.url }} cachePolicy="none" transition={0} style={styles.preview} /> : null}
-            <Text style={styles.text}>{t(row.mime_type.startsWith('video/') ? 'publishUploads.video' : 'publishUploads.image')} · {t('publishUploads.size', { size: (row.size_bytes / 1048576).toFixed(1) })}</Text>
+            <Text style={styles.text}>{t(row.mime_type.startsWith('video/') ? 'publishUploads.video' : 'publishUploads.image')} · {t('publishUploads.size', { size: formatNumber(row.size_bytes / 1048576, 1) })}</Text>
             {button('publishUploads.select', () => select(row), busy || (remaining === 0 && !selectedUploads.some(item => item.uploadId === row.id)), selectedUploads.some(item => item.uploadId === row.id), rowLabel('select', row))}
             {button('publishUploads.remove', () => void remove(row), busy, undefined, rowLabel('remove', row))}
         </View>)}

@@ -2880,6 +2880,42 @@
     "ratio": 1.83
   },
   {
+    "id": "publishTiming.move.title",
+    "english": "Move post",
+    "translation": "Mover publicación",
+    "ratio": 1.89
+  },
+  {
+    "id": "publishTiming.move.save",
+    "english": "Move post",
+    "translation": "Mover publicación",
+    "ratio": 1.89
+  },
+  {
+    "id": "publishTiming.move.keep",
+    "english": "Keep time",
+    "translation": "Mantener horario",
+    "ratio": 1.78
+  },
+  {
+    "id": "publishTiming.move.check",
+    "english": "Check",
+    "translation": "Comprobar",
+    "ratio": 1.8
+  },
+  {
+    "id": "publishTiming.heat.insufficient",
+    "english": "— = not enough posts",
+    "translation": "— = no hay suficientes publicaciones",
+    "ratio": 1.8
+  },
+  {
+    "id": "publishTiming.move.expected",
+    "english": "Requested from: {time}",
+    "translation": "Hora original de la solicitud: {time}",
+    "ratio": 1.68
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",
@@ -2908,5 +2944,35 @@
     "english": "Film",
     "translation": "Película",
     "ratio": 2
+  },
+  {
+    "id": "presets.cat.ALL",
+    "english": "All",
+    "translation": "Todas",
+    "ratio": 1.67
+  },
+  {
+    "id": "presets.cat.NEW",
+    "english": "New",
+    "translation": "Novedades",
+    "ratio": 3
+  },
+  {
+    "id": "presets.cat.CINEMATIC",
+    "english": "Cinematic",
+    "translation": "Cinematográfico",
+    "ratio": 1.67
+  },
+  {
+    "id": "presets.cat.CARTOONS",
+    "english": "Cartoons",
+    "translation": "Dibujos animados",
+    "ratio": 2
+  },
+  {
+    "id": "presets.cat.ADS",
+    "english": "Ads",
+    "translation": "Anuncios",
+    "ratio": 2.67
   }
 ]

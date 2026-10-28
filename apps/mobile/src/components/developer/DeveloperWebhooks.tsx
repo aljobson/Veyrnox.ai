@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { usePublishScope } from '../../lib/usePublishScope';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Text, TextInput } from 'react-native';
 import { usePublishApi } from '../../lib/usePublishApi';
 import { plural, t } from '../../lib/i18n';
@@ -17,14 +18,23 @@ export function DeveloperWebhooks() {
     const [busy, setBusy] = useState(false);
     const [note, setNote] = useState<{ text: string; error: boolean } | null>(null);
 
+    const running = useRef(false);
+    const { guard, nextRead, scopeTick } = usePublishScope(api, () => {
+        running.current = false; setData(null); setNote(null); setBusy(false); setLabel(''); setSecret(null);
+        setUrl('https://'); setEvents(['post.published']);
+    });
+
     const load = useCallback(async () => {
+        const valid = nextRead('list');
         try {
-            setData(await fetchWebhooks(api));
+            const next = await fetchWebhooks(api);
+            if (valid()) { setData(next); setNote(null); }
         } catch (err) {
+            if (!valid()) return;
             setData(null);
             setNote({ text: t(devErrorKey(err)), error: true });
         }
-    }, [api]);
+    }, [api, nextRead, scopeTick]);
 
     useEffect(() => {
         void load();
@@ -32,33 +42,41 @@ export function DeveloperWebhooks() {
     useEffect(() => () => setSecret(null), []);
 
     async function create() {
+        if (running.current) return;
+        const valid = guard();
         const problem = webhookProblem({ label, url, events });
         if (problem) return setNote({ text: t(`dev.problem.${problem}`), error: true });
-        setBusy(true);
+        running.current = true; setBusy(true);
         setNote(null);
         try {
-            setSecret((await createWebhook(api, { label, url, events })).secret);
+            const created = await createWebhook(api, { label, url, events });
+            if (!valid()) return;
+            setSecret(created.secret);
             setLabel('');
             setUrl('https://');
             await load();
         } catch (err) {
+            if (!valid()) return;
             setNote({ text: t(devErrorKey(err)), error: true });
         } finally {
-            setBusy(false);
+            if (valid()) { running.current = false; setBusy(false); }
         }
     }
 
     function confirmRevoke(w: Webhook) {
+        const valid = guard(); let used = false;
         Alert.alert(t('dev.hooks.revokeTitle', { name: w.label }), t('dev.hooks.revokeBody'), [
             { text: t('acct.cancel'), style: 'cancel' },
             {
                 text: t('dev.revoke'),
                 style: 'destructive',
-                onPress: () =>
-                    void revokeWebhook(api, w.id).then(
-                        () => load(),
-                        (err) => setNote({ text: t(devErrorKey(err)), error: true }),
-                    ),
+                onPress: async () => {
+                    if (used || !valid() || running.current) return;
+                    used = true; running.current = true; setBusy(true);
+                    try { await revokeWebhook(api, w.id); if (valid()) await load(); }
+                    catch (err) { if (valid()) setNote({ text: t(devErrorKey(err)), error: true }); }
+                    finally { if (valid()) { running.current = false; setBusy(false); } }
+                },
             },
         ]);
     }

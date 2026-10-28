@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, View } from 'react-native';
@@ -69,7 +70,7 @@ export default function Inbox() {
             ListHeaderComponent={header} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(); }} />}
             ListEmptyComponent={listing ? <Text tone="secondary">{t(filter.accountId ? 'publishOps.inbox.emptyAccount' : active ? 'publishOps.inbox.emptyFiltered' : 'inbox.none')}</Text> : undefined}
             renderItem={({ item }) => <Card style={s.card} onPress={() => router.push({ pathname: '/publish/inbox-thread', params: { id: item.id } })}
-                accessibilityLabel={t('publishOps.inbox.rowLabel', { name: item.name, network: networkName(item.network), kind: t(`inbox.kind.${item.kind}`), unread: item.unread ? t('inbox.unread', { count: item.unread }) : '', priority: t(`publishOps.priority.${item.priority}`) })}>
+                accessibilityLabel={rawText(t('publishOps.inbox.rowLabel', { name: item.name, network: networkName(item.network), kind: t(`inbox.kind.${item.kind}`), unread: item.unread ? t('inbox.unread', { count: item.unread }) : '', priority: t(`publishOps.priority.${item.priority}`) }))}>
                 <View style={s.chips}><NetworkLogo network={item.network} size={20} /><Text variant={item.unread ? 'bodyStrong' : 'body'}>{item.name || networkName(item.network)}</Text>{item.unread ? <Chip selected label={t('inbox.unread', { count: item.unread })} /> : null}</View>
                 <Text numberOfLines={2}>{item.preview || item.subject || t(`inbox.kind.${item.kind}`)}</Text>
                 <Text tone="secondary" variant="caption">{t('publishOps.inbox.meta', { network: networkName(item.network), kind: t(`inbox.kind.${item.kind}`), account: item.accountName })}</Text>

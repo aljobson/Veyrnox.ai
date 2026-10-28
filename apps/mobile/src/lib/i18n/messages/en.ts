@@ -79,6 +79,7 @@ import area_editorSpike from './en/editorSpike';
 import area_email from './en/email';
 import area_empty from './en/empty';
 import area_explore from './en/explore';
+import area_faceFilterSwitch from './en/faceFilterSwitch';
 import area_faceFilters from './en/faceFilters';
 import area_facelessReel from './en/facelessReel';
 import area_features from './en/features';
@@ -111,6 +112,7 @@ import area_logo from './en/logo';
 import area_lowBalance from './en/lowBalance';
 import area_mcp from './en/mcp';
 import area_mdl from './en/mdl';
+import area_mediaKind from './en/mediaKind';
 import area_menu from './en/menu';
 import area_mobile from './en/mobile';
 import area_model from './en/model';
@@ -155,6 +157,7 @@ import area_publishQueueAdmin from './en/publishQueueAdmin';
 import area_publishQueues from './en/publishQueues';
 import area_publishReporting from './en/publishReporting';
 import area_publishTeam from './en/publishTeam';
+import area_publishTiming from './en/publishTiming';
 import area_publishUploads from './en/publishUploads';
 import area_publishWorkflows from './en/publishWorkflows';
 import area_push from './en/push';
@@ -275,6 +278,7 @@ const catalog = {
     ...area_email,
     ...area_empty,
     ...area_explore,
+    ...area_faceFilterSwitch,
     ...area_faceFilters,
     ...area_facelessReel,
     ...area_features,
@@ -307,6 +311,7 @@ const catalog = {
     ...area_lowBalance,
     ...area_mcp,
     ...area_mdl,
+    ...area_mediaKind,
     ...area_menu,
     ...area_mobile,
     ...area_model,
@@ -351,6 +356,7 @@ const catalog = {
     ...area_publishQueues,
     ...area_publishReporting,
     ...area_publishTeam,
+    ...area_publishTiming,
     ...area_publishUploads,
     ...area_publishWorkflows,
     ...area_push,

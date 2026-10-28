@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
 import * as Crypto from 'expo-crypto';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -189,11 +190,11 @@ export default function Comments() {
                             </Pressable> : null}
                             {!item.own ? (
                                 <View style={styles.actions}>
-                                    <Pressable accessibilityRole="button" accessibilityLabel={t('comments.reportBy', { name: item.displayName })} style={[touchTarget, styles.act]} onPress={() => router.push({ pathname: '/cinema/report-comment', params: { commentId: item.id } })}>
+                                    <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('comments.reportBy', { name: item.displayName }))} style={[touchTarget, styles.act]} onPress={() => router.push({ pathname: '/cinema/report-comment', params: { commentId: item.id } })}>
                                         <Text style={styles.link}>{t('comments.report')}</Text>
                                     </Pressable>
                                     {item.username ? (
-                                        <Pressable accessibilityRole="button" accessibilityLabel={t('blocks.blockMember', { name: item.displayName })} style={[touchTarget, styles.act]} onPress={() => block(item)}>
+                                        <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('blocks.blockMember', { name: item.displayName }))} style={[touchTarget, styles.act]} onPress={() => block(item)}>
                                             <Text style={styles.link}>{t('blocks.block')}</Text>
                                         </Pressable>
                                     ) : null}

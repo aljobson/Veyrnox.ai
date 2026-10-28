@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { Link, Stack } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { CatalogList, kindTitleKey } from '../../components/CatalogList';
@@ -21,7 +22,7 @@ export default function Models() {
                             const extra = needs(m);
                             return (
                                 <Link key={m.id} href={`/model/${encodeURIComponent(m.id)}`} asChild>
-                                    <Pressable accessibilityRole="button" accessibilityLabel={t('mdl.rowLabel', { name: m.name, credits: from })} style={styles.row}>
+                                    <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('mdl.rowLabel', { name: m.name, credits: from }))} style={styles.row}>
                                         <Text style={styles.name}>{m.name}</Text>
                                         <Text style={styles.note}>
                                             {t('mdl.from', { credits: from })}

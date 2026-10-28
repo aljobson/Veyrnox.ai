@@ -1,3 +1,4 @@
+import { rawText } from '../lib/i18n/translate';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { MIN_TARGET } from '../lib/a11y';
@@ -47,7 +48,7 @@ export function LibraryChooser({ api, kind, onPick, onClose }: Props) {
 
     return (
         <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-            <View style={styles.sheet}>
+            <View style={styles.sheet} onAccessibilityEscape={onClose}>
                 <View style={styles.bar}>
                     <Text style={styles.title} accessibilityRole="header">{t('libsrc.title')}</Text>
                     <Pressable accessibilityRole="button" accessibilityLabel={t('oddlings.build.done')} style={styles.done} onPress={onClose}>
@@ -66,7 +67,7 @@ export function LibraryChooser({ api, kind, onPick, onClose }: Props) {
                         ListEmptyComponent={<Text style={styles.muted}>{t(next ? 'libsrc.emptyMore' : 'libsrc.empty', { kind: t(`libsrc.kind.${kind}`) })}</Text>}
                         ListFooterComponent={next ? <Pressable accessibilityRole="button" style={styles.more} onPress={() => load(next)}><Text style={styles.moreText}>{t('libsrc.older')}</Text></Pressable> : undefined}
                         renderItem={({ item }) => (
-                            <Pressable accessibilityRole="button" accessibilityLabel={`${item.name}, ${new Date(item.createdAt).toLocaleDateString(formatLocale())}`} style={styles.row} onPress={() => { onPick(item); onClose(); }}>
+                            <Pressable accessibilityRole="button" accessibilityLabel={rawText(`${item.name}, ${new Date(item.createdAt).toLocaleDateString(formatLocale())}`)} style={styles.row} onPress={() => { onPick(item); onClose(); }}>
                                 <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
                                 <Text style={styles.muted}>{new Date(item.createdAt).toLocaleDateString(formatLocale())}</Text>
                             </Pressable>

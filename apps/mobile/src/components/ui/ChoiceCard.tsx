@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { Pressable, View } from 'react-native';
 import { ds } from '../../theme';
 import type { MenuIcon } from '../../lib/menuIcons';
@@ -8,7 +9,7 @@ import { themedStyles, useThemedStyles } from './AppearanceContext';
 export function ChoiceCard({ icon, title, detail, selected, onPress }: { icon: MenuIcon; title: string; detail?: string; selected?: boolean; onPress: () => void }) {
     const s = useThemedStyles(sheets);
     return (
-        <Pressable accessibilityRole="button" accessibilityLabel={detail ? `${title}. ${detail}` : title} accessibilityState={{ selected }} onPress={onPress}>
+        <Pressable accessibilityRole="button" accessibilityLabel={rawText(detail ? `${title}. ${detail}` : title)} accessibilityState={{ selected }} onPress={onPress}>
             <Card selected={selected} style={s.card}>
                 <View style={s.top}>
                     <View style={s.circle}>

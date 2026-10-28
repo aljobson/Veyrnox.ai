@@ -47,7 +47,7 @@ describe('translator', () => {
         expect(es.plural('n', 5)).toBe('5 archivos');
         const ar = createTranslator('ar', catalogs);
         expect(ar.plural('n', 0)).toBe('لا ملفات');
-        expect(ar.plural('n', 1)).toBe('1 ملف'); // Arabic "one" has no entry, so other
+        expect(ar.plural('n', 1)).toBe('\u20681\u2069 ملف'); // Arabic "one" has no entry, so other
         expect(createTranslator('en', catalogs).plural('absent', 2)).toBe('absent');
     });
 });

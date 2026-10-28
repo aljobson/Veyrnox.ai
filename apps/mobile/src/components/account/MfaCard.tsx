@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Linking, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
@@ -6,7 +7,7 @@ import { enrollTotp, fetchProfile, unenrollFactor, verifyFactor, type Enrolment,
 import { toSession } from '../../lib/auth/supabaseAuth';
 import { t } from '../../lib/i18n';
 import { aalFromToken, enrolmentName, isTotpUri, mfaErrorKey, mfaState, validCode, verifiedFactors } from '../../lib/mfa';
-import { userIdFromToken } from '../../lib/appCache';
+import { isAccountChanged, type SessionTask } from '../../auth/sessionTask';
 import { rememberMfaEnrolment } from '../../lib/mfaCheck';
 import { CodeField } from './CodeField';
 import { Card, Status } from './AccountParts';
@@ -17,7 +18,7 @@ import { Button, Text, themedStyles, useThemedStyles } from '../ui';
 // without that proof.
 export function MfaCard() {
     const styles = useThemedStyles(sheets);
-    const { getAccessToken, adoptSession } = useAuth();
+    const { getAccessToken, adoptSession, beginSessionTask } = useAuth();
     const [profile, setProfile] = useState<Profile | null>(null);
     const [aal, setAal] = useState<'aal1' | 'aal2' | null>(null);
     const [failed, setFailed] = useState(false);
@@ -26,31 +27,37 @@ export function MfaCard() {
     const [busy, setBusy] = useState(false);
     const [note, setNote] = useState<{ text: string; error: boolean } | null>(null);
 
-    const load = useCallback(async () => {
+    const load = useCallback(async (task: SessionTask = beginSessionTask()) => {
+        if (!task.current()) return;
         setFailed(false);
         try {
-            const p = await fetchProfile(getAccessToken, 'mfa-card');
-            const token = await getAccessToken();
+            const p = await fetchProfile(task.tokens, 'mfa-card');
+            if (!task.current()) return;
+            const token = await task.tokens(false, task.gen);
+            if (!task.current()) return;
             setAal(aalFromToken(token));
             setProfile(p);
             // Keeps the gate's offline fallback current after turning two-factor on or off here.
-            void rememberMfaEnrolment(token ? userIdFromToken(token) : null, verifiedFactors(p.factors).length > 0);
-        } catch {
+            void rememberMfaEnrolment(task.user, verifiedFactors(p.factors).length > 0);
+        } catch (err) {
+            if (!task.current() || isAccountChanged(err)) return;
             setProfile(null);
             setFailed(true);
         }
-    }, [getAccessToken]);
+    }, [beginSessionTask]);
 
     useEffect(() => {
         void load();
     }, [load]);
 
-    async function run(action: () => Promise<void>, errKey: (e: unknown) => string) {
+    async function run(action: (task: SessionTask) => Promise<void>, errKey: (e: unknown) => string) {
+        const task = beginSessionTask();
         setBusy(true);
         setNote(null);
         try {
-            await action();
+            await action(task);
         } catch (err) {
+            if (!task.current() || isAccountChanged(err)) return;
             setNote({ text: t(errKey(err) as Parameters<typeof t>[0]), error: true });
         } finally {
             setBusy(false);
@@ -62,11 +69,15 @@ export function MfaCard() {
 
     // Verifying returns a new aal2 token pair; adopt it before reading the state again.
     async function verify(factorId: string, done: string) {
-        await run(async () => {
-            await adoptSession(toSession(await verifyFactor(getAccessToken, factorId, code), Date.now()));
+        await run(async task => {
+            const session = toSession(await verifyFactor(task.tokens, factorId, code), Date.now());
+            if (!task.current()) return;
+            await adoptSession(session, task.gen);
+            if (!task.current()) return;
             setPending(null);
             setCode('');
-            await load();
+            await load(task);
+            if (!task.current()) return;
             setNote({ text: done, error: false });
         }, mfaErrorKey);
     }
@@ -78,9 +89,11 @@ export function MfaCard() {
                 text: t('acct.mfa.remove'),
                 style: 'destructive',
                 onPress: () =>
-                    void run(async () => {
-                        await unenrollFactor(getAccessToken, factorId);
-                        await load();
+                    void run(async task => {
+                        await unenrollFactor(task.tokens, factorId);
+                        if (!task.current()) return;
+                        await load(task);
+                        if (!task.current()) return;
                         setNote({ text: t('acct.mfa.removed'), error: false });
                     }, accountErrorKey),
             },
@@ -107,7 +120,7 @@ export function MfaCard() {
                     <Text variant="footnote" tone="secondary">{t('acct.mfa.setupHelp')}</Text>
                     {isTotpUri(pending.uri) ? <Button variant="tertiary" label={t('acct.mfa.openApp')} onPress={() => void Linking.openURL(pending.uri).catch(() => setNote({ text: t('acct.mfa.noApp'), error: true }))} /> : null}
                     <Text variant="footnote" tone="secondary">{t('acct.mfa.secret')}</Text>
-                    <Text selectable variant="bodyStrong" accessibilityLabel={t('acct.mfa.secretSpoken', { secret: pending.secret.split('').join(' ') })}>{pending.secret}</Text>
+                    <Text selectable variant="bodyStrong" accessibilityLabel={rawText(t('acct.mfa.secretSpoken', { secret: pending.secret.split('').join(' ') }))}>{pending.secret}</Text>
                     <CodeField value={code} onChange={setCode} />
                     <Button variant="secondary" label={t('acct.mfa.confirm')} disabled={busy || !validCode(code)} onPress={() => void verify(pending.factorId, t('acct.mfa.on'))} />
                     <Button variant="tertiary" label={t('acct.mfa.cancelSetup')} disabled={busy} onPress={() => { setPending(null); setCode(''); setNote(null); }} />

@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { Link, type Href } from 'expo-router';
 import { ListRow } from '../ui';
 
@@ -6,7 +7,7 @@ import { ListRow } from '../ui';
 export function EntryRow({ href, title, body, hint }: { href: Href; title: string; body?: string; hint?: string }) {
     return (
         <Link href={href} asChild>
-            <ListRow title={title} subtitle={body} accessibilityHint={hint} />
+            <ListRow title={title} subtitle={body} accessibilityHint={rawText(hint)} />
         </Link>
     );
 }
