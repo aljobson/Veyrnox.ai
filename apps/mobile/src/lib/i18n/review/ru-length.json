@@ -2820,6 +2820,42 @@
     "ratio": 1.75
   },
   {
+    "id": "filmWorkspace.imageWorkflow",
+    "english": "Image workflow",
+    "translation": "Процесс работы с изображением",
+    "ratio": 2.07
+  },
+  {
+    "id": "filmWorkspace.banList",
+    "english": "Ban list",
+    "translation": "Список запретов",
+    "ratio": 1.88
+  },
+  {
+    "id": "filmWorkspace.revise",
+    "english": "Revise",
+    "translation": "Доработать",
+    "ratio": 1.67
+  },
+  {
+    "id": "filmWorkspace.retry",
+    "english": "Retry",
+    "translation": "Повторить",
+    "ratio": 1.8
+  },
+  {
+    "id": "filmWorkspace.textTask",
+    "english": "Text task",
+    "translation": "Задача для текста",
+    "ratio": 1.89
+  },
+  {
+    "id": "filmWorkspace.stay",
+    "english": "Stay",
+    "translation": "Остаться",
+    "ratio": 2
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

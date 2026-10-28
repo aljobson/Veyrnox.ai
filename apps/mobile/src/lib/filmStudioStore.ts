@@ -18,7 +18,9 @@ export async function saveStudio(raw: string, cache: Cache = appCache, userId: s
     const parsed = parseFilm(raw);
     if (!parsed.ok) return parsed;
     if (!userId) return { ok: false, error: t('filmStudioStore.signintokeepastudioon') };
-    await cache.write(POLICIES.filmStudio, raw, userId);
+    await cache.write(POLICIES.filmStudio, raw, userId).catch(() => undefined);
+    const saved = await cache.read<unknown>(POLICIES.filmStudio, userId).catch(() => null);
+    if (saved?.value !== raw) return { ok: false, error: t('filmWorkspace.saveFailed') };
     return { ok: true, film: parsed.film };
 }
 
