@@ -13,7 +13,7 @@ import { afterCelebration, celebrateOutput, type CelebrationResult } from '../..
 import { REVIEW_ASK_DELAY_MS, claimReviewAsk, shouldAskForReview } from '../../../lib/reviewAsk';
 import { loadReviewAsk } from '../../../lib/storeReview';
 import { mediaApi, waitForJob, type JobState } from '../../../lib/media';
-import { editHref, makeAnotherHref, nextStepsFor, publishHref } from '../../../lib/nextSteps';
+import { askAboutHref, editHref, makeAnotherHref, nextStepsFor, publishHref } from '../../../lib/nextSteps';
 import { creativeReuseHref, kindForMime } from '../../../lib/creativeReuse';
 import { saveOutput, shareOutput } from '../../../lib/output';
 import { ds } from '../../../theme';
@@ -263,6 +263,7 @@ export default function JobScreen() {
                         <View style={styles.nextBlock}>
                             <Text variant="title3" tone="primary" style={styles.nextTitle} accessibilityRole="header">{t('job.next.title')}</Text>
                             <View style={styles.nextRow}>
+                                {asset.mime.startsWith('image/') ? <Button variant="secondary" label={t('chatDepth.ask')} accessibilityLabel={t('chatDepth.ask')} onPress={() => router.push(askAboutHref(id))} /> : null}
                                 {next.edit ? (
                                     <Button variant="secondary" accessibilityRole="button" onPress={() => router.push(editHref(id))} label={t('job.next.edit')} />
                                 ) : null}

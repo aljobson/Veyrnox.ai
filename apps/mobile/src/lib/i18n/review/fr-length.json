@@ -4182,6 +4182,78 @@
     "ratio": 1.62
   },
   {
+    "id": "chatDepth.free",
+    "english": "Free",
+    "translation": "Gratuit",
+    "ratio": 1.75
+  },
+  {
+    "id": "chatDepth.sendFree",
+    "english": "Send free",
+    "translation": "Envoyer gratuitement",
+    "ratio": 2.22
+  },
+  {
+    "id": "chatDepth.starLabel",
+    "english": "Star reply",
+    "translation": "Marquer la réponse",
+    "ratio": 1.8
+  },
+  {
+    "id": "chatDepth.showAll",
+    "english": "Show all",
+    "translation": "Tout afficher",
+    "ratio": 1.63
+  },
+  {
+    "id": "chatDepth.ask",
+    "english": "Ask about this",
+    "translation": "Poser une question à ce sujet",
+    "ratio": 2.07
+  },
+  {
+    "id": "chatDepth.wf.product-ad.name",
+    "english": "Product ad",
+    "translation": "Publicité produit",
+    "ratio": 1.7
+  },
+  {
+    "id": "editorServerExport.checkAgain",
+    "english": "Check again",
+    "translation": "Vérifier à nouveau",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorServerExport.credits",
+    "english": "Get credits",
+    "translation": "Obtenir des crédits",
+    "ratio": 1.73
+  },
+  {
+    "id": "editorServerExport.library",
+    "english": "Open in Library",
+    "translation": "Ouvrir dans la bibliothèque",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorServerExport.frameRate",
+    "english": "Frame rate",
+    "translation": "Fréquence d’images",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorServerExport.edit",
+    "english": "Timeline edit",
+    "translation": "Modification de la chronologie",
+    "ratio": 2.31
+  },
+  {
+    "id": "editorServerExport.crop",
+    "english": "Crop",
+    "translation": "Recadrage",
+    "ratio": 2.25
+  },
+  {
     "id": "facelessReel.workflow.rhythm",
     "english": "Set rhythm & frame",
     "translation": "Choisir le rythme et le cadre",

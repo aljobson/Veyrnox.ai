@@ -1572,6 +1572,12 @@
     "ratio": 1.8
   },
   {
+    "id": "chatDepth.showStarred",
+    "english": "Starred",
+    "translation": "المميزة بنجمة",
+    "ratio": 1.86
+  },
+  {
     "id": "facelessReel.seconds",
     "english": "{n} s",
     "translation": "{n} ثانية",

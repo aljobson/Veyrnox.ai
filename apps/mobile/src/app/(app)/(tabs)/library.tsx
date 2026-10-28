@@ -10,7 +10,7 @@ import { POLICIES, type CacheMeta } from '../../../lib/cache';
 import { observe } from '../../../lib/network';
 import { KIND_FILTERS, STATE_FILTERS, canReuse, canSchedule, filterJobs, kindMap, readFavourites, toggled, writeFavourites, type KindFilter, type StateFilter, type View as LayoutView } from '../../../lib/libraryView';
 import { fetchCatalogCached, mediaApi, type CatalogModel, type Job, type JobPage } from '../../../lib/media';
-import { publishHref } from '../../../lib/nextSteps';
+import { publishHref, askAboutHref } from '../../../lib/nextSteps';
 import { creativeReuseHref } from '../../../lib/creativeReuse';
 import { ds, LIST_END_PADDING } from '../../../theme';
 import { t } from '../../../lib/i18n';
@@ -138,6 +138,8 @@ export default function Library() {
                             grid={view === 'grid'}
                             starred={favourites.includes(item.job_id)}
                             canSchedule={canSchedule(item, kinds)}
+                            canAsk={kind === 'image' && item.state === 'succeeded' && item.has_asset}
+                            onAsk={() => router.push(askAboutHref(item.job_id))}
                             canReuse={canReuse(item, kinds)}
                             onOpen={() => router.push({ pathname: '/job/[id]', params: { id: item.job_id } })}
                             onStar={() => star(item.job_id)}

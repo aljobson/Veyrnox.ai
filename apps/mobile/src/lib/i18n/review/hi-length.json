@@ -1584,6 +1584,12 @@
     "ratio": 2.33
   },
   {
+    "id": "chatDepth.starLabel",
+    "english": "Star reply",
+    "translation": "जवाब तारांकित करें",
+    "ratio": 1.8
+  },
+  {
     "id": "facelessReel.seconds",
     "english": "{n} s",
     "translation": "{n} सेकंड",

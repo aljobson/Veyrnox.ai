@@ -1,3 +1,4 @@
+import { setEditorMediaOwner } from '../lib/editorDeviceMedia';
 import { captureEvent, setAnalyticsUser } from '../lib/analytics';
 import { setFirstRunUser } from '../lib/firstRunPending';
 import { claimLegacyOddlings } from '../lib/oddlingsAccountStore';
@@ -91,6 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         aiConsent.setUser(userId);
         await bindCacheUser(userId);
         await setCinemaUploadOwner(userId).catch(() => undefined);
+        await setEditorMediaOwner(userId).catch(() => undefined);
         await claimLegacyOddlings(userId).catch(() => undefined);
         // A valid remote session must become usable even when the native
         // credential store is temporarily unavailable (for example, an
@@ -121,6 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await aiConsent.forget();
         await wipeCache().catch(() => undefined);
         await setCinemaUploadOwner(null).catch(() => undefined);
+        await setEditorMediaOwner(null).catch(() => undefined);
         await clearRefreshToken();
         setStatus('signedOut');
         setSessionRevision(value => value + 1);

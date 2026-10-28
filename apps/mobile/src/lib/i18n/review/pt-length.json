@@ -2544,6 +2544,78 @@
     "ratio": 2.6
   },
   {
+    "id": "chatDepth.copy",
+    "english": "Copy or share",
+    "translation": "Copiar ou compartilhar",
+    "ratio": 1.69
+  },
+  {
+    "id": "chatDepth.copyLabel",
+    "english": "Copy or share reply",
+    "translation": "Copiar ou compartilhar resposta",
+    "ratio": 1.63
+  },
+  {
+    "id": "chatDepth.copyCode",
+    "english": "Copy or share code",
+    "translation": "Copiar ou compartilhar código",
+    "ratio": 1.61
+  },
+  {
+    "id": "chatDepth.wfTitle",
+    "english": "Workflows",
+    "translation": "Fluxos de trabalho",
+    "ratio": 2
+  },
+  {
+    "id": "chatDepth.wfClose",
+    "english": "Close workflow",
+    "translation": "Fechar fluxo de trabalho",
+    "ratio": 1.71
+  },
+  {
+    "id": "chatDepth.wf.product-ad.name",
+    "english": "Product ad",
+    "translation": "Anúncio de produto",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorServerExport.failed",
+    "english": "Export could not finish. Check again.",
+    "translation": "Não foi possível concluir a exportação. Verifique novamente.",
+    "ratio": 1.62
+  },
+  {
+    "id": "editorServerExport.checkAgain",
+    "english": "Check again",
+    "translation": "Verificar novamente",
+    "ratio": 1.73
+  },
+  {
+    "id": "editorServerExport.share",
+    "english": "Share export",
+    "translation": "Compartilhar exportação",
+    "ratio": 1.92
+  },
+  {
+    "id": "editorServerExport.edit",
+    "english": "Timeline edit",
+    "translation": "Edição da linha do tempo",
+    "ratio": 1.85
+  },
+  {
+    "id": "editorServerExport.crop",
+    "english": "Crop",
+    "translation": "Recortar",
+    "ratio": 2
+  },
+  {
+    "id": "editorServerExport.mask",
+    "english": "Mask",
+    "translation": "Máscara",
+    "ratio": 1.75
+  },
+  {
     "id": "facelessReel.workflow.rhythm",
     "english": "Set rhythm & frame",
     "translation": "Escolher ritmo e enquadramento",
