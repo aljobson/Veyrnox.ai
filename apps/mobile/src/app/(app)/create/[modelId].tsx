@@ -8,6 +8,7 @@ import { KeyboardFormScrollView } from '../../../components/KeyboardFormScrollVi
 import { KeyboardScreen } from '../../../components/KeyboardScreen';
 import { FormHeader } from '../../../components/create/FormHeader';
 import { SectionLabel } from '../../../components/create/SectionLabel';
+import { SourceDurationCard } from '../../../components/create/SourceDurationCard';
 import { Text, TextField, Button, Card, Chip, Checkbox, themedStyles, useThemedStyles } from '../../../components/ui';
 
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -365,6 +366,7 @@ export default function CreateWithModel() {
                         {takesCamera ? <CameraPanel on={cameraOn} value={cinema} onToggle={setCameraOn} onChange={setCinema} /> : null}
                     </View>
                 ) : null}
+                <SourceDurationCard model={model} />
                 {missing > 0 ? (
                     <View style={styles.short}>
                         <Text variant="callout" tone="secondary" accessibilityLiveRegion="polite" style={styles.shortText}>{plural('create.short', missing, { have: String(balance ?? 0), need: String(price) })}</Text>

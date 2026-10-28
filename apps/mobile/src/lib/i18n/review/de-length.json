@@ -3006,6 +3006,12 @@
     "ratio": 1.65
   },
   {
+    "id": "modelPage.fact.prompt",
+    "english": "Prompt",
+    "translation": "Texteingabe",
+    "ratio": 1.83
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

@@ -12,6 +12,8 @@ import { MIN_TARGET } from '../../../lib/a11y';
 import { splitSlots, t } from '../../../lib/i18n';
 import { ASPECTS, videoAgentBalanceState, approvePlan, briefProblem, MAX_NARRATION_LENGTH, minutesLeft, normaliseNarration, planMessage, requestPlan, type Aspect, type Plan } from '../../../lib/montage';
 import { useBalance } from '../../../lib/useBalance';
+import { useAgentResume } from '../../../lib/useAgentResume';
+import { useAnnouncement } from '../../../lib/useAnnouncement';
 import { Text, TextField, Button, Card, Chip, themedStyles, useThemedStyles } from '../../../components/ui';
 import { radius } from '../../../theme';
 
@@ -25,6 +27,7 @@ export default function Agent() {
     const { api } = useAuth();
     const router = useRouter();
     const balance = useBalance();
+    const resume = useAgentResume(api);
     const [brief, setBrief] = useState('');
     const [narration, setNarration] = useState('');
     const [aspect, setAspect] = useState<Aspect>('9:16');
@@ -34,6 +37,7 @@ export default function Agent() {
     const [now, setNow] = useState(Date.now());
     const [showLibrary, setShowLibrary] = useState(false);
     const [retrying, setRetrying] = useState(false);
+    useAnnouncement(resume.job && busy !== 'approving' ? t('agentResume.title') : null);
 
     useEffect(() => {
         if (!plan) return;
@@ -104,7 +108,7 @@ export default function Agent() {
         } catch (err) {
             setError(planMessage(err));
             if (err instanceof ApiError && REPLAN.has(err.code)) setPlan(null);
-            if (err instanceof ApiError && err.code === 'video_agent_in_progress') setShowLibrary(true);
+            if (err instanceof ApiError && err.code === 'video_agent_in_progress') { setShowLibrary(true); resume.check(); }
         } finally {
             setBusy(null);
         }
@@ -130,6 +134,13 @@ export default function Agent() {
                     ))}
                 </View>
 
+                {resume.job && busy !== 'approving' ? (
+                    <Card style={styles.card} accessibilityLiveRegion="polite">
+                        <Text variant="title2" accessibilityRole="header">{t('agentResume.title')}</Text>
+                        <Text>{t('agentResume.body')}</Text>
+                        <Button label={t('agentResume.open')} onPress={() => router.push({ pathname: '/job/[id]', params: { id: resume.job!.jobId } })} />
+                    </Card>
+                ) : null}
                 <Card style={styles.card}>
                     <View style={styles.labelRow}>
                         <Text variant="caption" style={styles.label}>{t('videoAgent.brief')}</Text>
