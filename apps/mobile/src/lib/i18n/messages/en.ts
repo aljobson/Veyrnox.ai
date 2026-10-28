@@ -68,6 +68,7 @@ import area_draw from './en/draw';
 import area_edit from './en/edit';
 import area_editor from './en/editor';
 import area_editorProjects from './en/editorProjects';
+import area_editorServerExport from './en/editorServerExport';
 import area_editorSpike from './en/editorSpike';
 import area_email from './en/email';
 import area_empty from './en/empty';
@@ -246,6 +247,7 @@ const catalog = {
     ...area_edit,
     ...area_editor,
     ...area_editorProjects,
+    ...area_editorServerExport,
     ...area_editorSpike,
     ...area_email,
     ...area_empty,

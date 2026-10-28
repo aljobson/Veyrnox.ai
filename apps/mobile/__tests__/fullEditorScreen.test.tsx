@@ -9,10 +9,12 @@ void [ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInp
 const projectId = '11111111-1111-1111-1111-111111111111';
 const document = { schema_version: 1 as const, project_id: projectId, brief: 'Opening scene', canvas: { aspect_ratio: '16:9', frame_rate: 30 } };
 let serverDocument: any = document;
-const mockRouter = { back: jest.fn() };
+const mockRouter = { back: jest.fn(), push: jest.fn() };
 const mockRequest = jest.fn();
 const mockApi = { request: mockRequest };
 
+jest.mock('../src/lib/editorDeviceMedia', () => ({ editorDeviceMedia: { hydrate: jest.fn().mockResolvedValue({}), copy: jest.fn().mockResolvedValue(null), backup: jest.fn().mockResolvedValue(null) } }));
+jest.mock('../src/lib/editorMediaDuration', () => ({ probeDuration: jest.fn().mockResolvedValue(4) }));
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'native-save-key' }));
 jest.mock('expo-secure-store', () => ({ getItemAsync: jest.fn().mockResolvedValue('seen'), setItemAsync: jest.fn().mockResolvedValue(undefined) }));
 jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: jest.fn(), UIImagePickerPreferredAssetRepresentationMode: { Compatible: 'compatible' } }));
@@ -163,4 +165,49 @@ test('keeps the Library item selected while a new project opens in the full nati
     const saved = JSON.parse(puts().at(-1)![1].body).document.timeline;
     expect(saved.media['j-33333333-3333-3333-3333-333333333333']).toBeDefined();
     expect(saved.video).toEqual([expect.objectContaining({ mediaId: 'j-33333333-3333-3333-3333-333333333333' })]);
+});
+
+test('flag off Export saves and pushes compose without server-render requests', async () => {
+    await render(); await press('Add text'); await press('Export');
+    expect(mockRouter.push).toHaveBeenCalledWith('/publish/compose');
+    expect(mockRequest.mock.calls.some(([path]) => path.includes('/editor/server-render'))).toBe(false);
+});
+
+test('a backup completing after another edit survives undo and redo without inserting media into older snapshots', async () => {
+    const { editorDeviceMedia } = require('../src/lib/editorDeviceMedia');
+    editorDeviceMedia.copy.mockResolvedValueOnce({ file: 'file:///durable/clip.mp4', type: 'video/mp4', size: 100, seconds: 2, verified: true });
+    let finish!: (source: { projectId: string; assetId: string }) => void;
+    editorDeviceMedia.backup.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    jest.mocked(ImagePicker.launchImageLibraryAsync).mockResolvedValueOnce({ canceled: false, assets: [{ uri: 'file:///device/clip.mp4', fileName: 'Clip', mimeType: 'video/mp4', duration: 2000, width: 1920, height: 1080 }] });
+    await render(); await press('Photos & videos'); await press('Add text');
+    await act(async () => finish({ projectId, assetId: 'backup-asset' }));
+    const saved = async () => { await act(async () => jest.advanceTimersByTimeAsync(900)); return JSON.parse(puts().at(-1)![1].body).document; };
+    const backedUp = await saved(); expect(backedUp.timeline.text).toHaveLength(1);
+    expect(backedUp.timeline.media['l-native-save-key'].assetSource).toEqual({ projectId, assetId: 'backup-asset' });
+    await press('Undo'); expect((await saved()).timeline.media['l-native-save-key'].assetSource.assetId).toBe('backup-asset');
+    await press('Undo'); expect((await saved()).timeline?.media?.['l-native-save-key']).toBeUndefined();
+    await press('Redo'); expect((await saved()).timeline.media['l-native-save-key'].assetSource.assetId).toBe('backup-asset');
+    await press('Redo'); const restored = await saved(); expect(restored.timeline.text).toHaveLength(1); expect(restored.timeline.media['l-native-save-key'].assetSource.assetId).toBe('backup-asset');
+});
+
+test.each([4, 20])('Files import probes %s seconds before adding its media and clip', async seconds => {
+    const picker = require('expo-document-picker');
+    const { probeDuration } = require('../src/lib/editorMediaDuration');
+    probeDuration.mockResolvedValueOnce(seconds);
+    picker.getDocumentAsync.mockResolvedValueOnce({ canceled: false, assets: [{ uri: 'file:///picked/from-files.mp4', name: 'Files clip', mimeType: 'video/mp4' }] });
+    await render(); await press('Files'); await act(async () => jest.advanceTimersByTimeAsync(900));
+    const saved = JSON.parse(puts().at(-1)![1].body).document.timeline;
+    expect(probeDuration).toHaveBeenCalledWith('file:///picked/from-files.mp4');
+    expect(saved.media['l-native-save-key'].frames).toBe(seconds * 30); expect(saved.video[0].len).toBe(seconds * 30);
+});
+
+test('an account change during duration probing cannot copy a pick into the next account', async () => {
+    const cache = require('../src/lib/appCache'); const { editorDeviceMedia } = require('../src/lib/editorDeviceMedia');
+    const picker = require('expo-document-picker'); const { probeDuration } = require('../src/lib/editorMediaDuration');
+    let owner = 'first-owner'; const getOwner = jest.spyOn(cache, 'getCacheUser').mockImplementation(() => owner);
+    let finish!: (seconds: number) => void;
+    probeDuration.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    picker.getDocumentAsync.mockResolvedValueOnce({ canceled: false, assets: [{ uri: 'file:///picked/old-owner.mp4', name: 'Old pick', mimeType: 'video/mp4' }] });
+    await render(); await press('Files'); owner = 'next-owner'; await act(async () => finish(4));
+    expect(editorDeviceMedia.copy).not.toHaveBeenCalled(); expect(puts()).toHaveLength(0); getOwner.mockRestore();
 });

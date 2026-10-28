@@ -4218,6 +4218,42 @@
     "ratio": 1.7
   },
   {
+    "id": "editorServerExport.checkAgain",
+    "english": "Check again",
+    "translation": "Vérifier à nouveau",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorServerExport.credits",
+    "english": "Get credits",
+    "translation": "Obtenir des crédits",
+    "ratio": 1.73
+  },
+  {
+    "id": "editorServerExport.library",
+    "english": "Open in Library",
+    "translation": "Ouvrir dans la bibliothèque",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorServerExport.frameRate",
+    "english": "Frame rate",
+    "translation": "Fréquence d’images",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorServerExport.edit",
+    "english": "Timeline edit",
+    "translation": "Modification de la chronologie",
+    "ratio": 2.31
+  },
+  {
+    "id": "editorServerExport.crop",
+    "english": "Crop",
+    "translation": "Recadrage",
+    "ratio": 2.25
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

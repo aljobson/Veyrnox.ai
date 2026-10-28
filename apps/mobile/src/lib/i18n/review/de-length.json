@@ -2796,6 +2796,30 @@
     "ratio": 1.63
   },
   {
+    "id": "editorServerExport.uploading",
+    "english": "Uploading files…",
+    "translation": "Dateien werden hochgeladen…",
+    "ratio": 1.69
+  },
+  {
+    "id": "editorServerExport.close",
+    "english": "Close",
+    "translation": "Schließen",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorServerExport.edit",
+    "english": "Timeline edit",
+    "translation": "Zeitleistenbearbeitung",
+    "ratio": 1.69
+  },
+  {
+    "id": "editorServerExport.crop",
+    "english": "Crop",
+    "translation": "Zuschneiden",
+    "ratio": 2.75
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",
