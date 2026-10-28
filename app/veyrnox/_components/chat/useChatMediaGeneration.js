@@ -46,6 +46,8 @@ export function useChatMediaGeneration({ kind, models, catalogLive }) {
   const [attachConverting, setAttachConverting] = useState(false);
   const [sourcesConverting, setSourcesConverting] = useState(false);
   const converting = attachConverting || sourcesConverting;
+  // Bumped at the moment the model changes, so a conversion started for the old model never lands.
+  const sourceEpoch = useRef(0);
   const [balance, setBalance] = useState(null);
   const [error, setError] = useState(null);
   const [jobKind, setJobKind] = useState(null);
@@ -119,6 +121,7 @@ export function useChatMediaGeneration({ kind, models, catalogLive }) {
   }, [enabled, loadBalance]);
 
   const selectModel = useCallback((id) => {
+    sourceEpoch.current += 1;
     setModelIds((previous) => ({ ...previous, [kind]: id }));
     clearSources();
     setError(null);
@@ -145,11 +148,13 @@ export function useChatMediaGeneration({ kind, models, catalogLive }) {
   // A newer attach supersedes one still converting; the plan uses the composer as it is when conversion ends.
   async function attachFromDevice(fileList) {
     const seq = ++attachSeq.current;
+    const epoch = sourceEpoch.current;
     const picked = Array.from(fileList || []);
     if (picked.some(needsConversion)) { setAttachNotice({ converting: true }); setAttachConverting(true); }
     let prepared;
     try { prepared = await prepareUploads(picked); } finally { if (attachSeq.current === seq) setAttachConverting(false); }
     if (attachSeq.current !== seq) return;
+    if (sourceEpoch.current !== epoch) { setAttachNotice(null); return; }
     const { files, failed } = prepared;
     const { availableModels: currentModels, model: currentModel } = latestAttach.current;
     const plan = planAttachments(currentModels.filter((item) => !item.gated), currentModel, files);
@@ -268,6 +273,8 @@ export function useChatMediaGeneration({ kind, models, catalogLive }) {
     attachFromDevice,
     attachNotice,
     converting,
+    attachConverting,
+    sourceEpoch,
     setSourcesConverting,
     libraryFor,
     setLibraryFor,

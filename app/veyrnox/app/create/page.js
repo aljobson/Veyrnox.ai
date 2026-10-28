@@ -94,6 +94,9 @@ export default function CreateStudio() {
   const [goal, setGoal] = useState('image');
   const [presetParam, setPresetParam] = useState(null);
   const [accountEpoch, setAccountEpoch] = useState(0); // bumped when the account changes; drops conversions in flight
+  // Bumped at the moment the model or account changes, so a conversion started before cannot land after.
+  const sourceEpoch = useRef(0);
+  const chooseModel = (id) => { sourceEpoch.current += 1; setModelId(id); };
   const [tier, setTier] = useState(null);
   const [duration, setDuration] = useState('5s');
   const [audioDurations, setAudioDurations] = useState({});
@@ -203,7 +206,7 @@ export default function CreateStudio() {
     incoming: incomingDraft,
     draft: { modelId, goal, prompt: typed, duration, aspect, count, sources, seed, negative, voice, audioDurations, cinemaOn, cinema, characterOn, character },
     apply: (saved, restoredSources) => {
-      setModelId(saved.modelId); setGoal(saved.goal); setPrompt(saved.prompt); setDuration(saved.duration);
+      chooseModel(saved.modelId); setGoal(saved.goal); setPrompt(saved.prompt); setDuration(saved.duration);
       setAspect(saved.aspect); setCount(saved.count); setSeed(saved.seed); setNegative(saved.negative); setVoice(saved.voice);
       setAudioDurations(saved.audioDurations); setCinemaOn(saved.cinemaOn); setCinema({ ...DEFAULT_CINEMA, ...saved.cinema });
       setCharacterOn(saved.characterOn); setCharacter(sanitizeOddlingPicks(saved.character));
@@ -211,12 +214,12 @@ export default function CreateStudio() {
     },
     reset: () => {
       setPrompt(null); setSources(current => { Object.values(current).flatMap(sourceList).forEach(source => { if (source.file) URL.revokeObjectURL(source.previewUrl); }); return {}; });
-      setConsent(false); setGoal('image'); setModelId(starterModel(catalogModels, 'image')?.id || '');
+      setConsent(false); setGoal('image'); chooseModel(starterModel(catalogModels, 'image')?.id || '');
       setDuration('5s'); setAspect('16:9'); setCount(1); setCharacterOn(false); setCharacter({}); setOddlingTransfer(null);
       setCinemaOn(false); setCinema(DEFAULT_CINEMA); setSeed(''); setNegative(''); setVoice(''); setAudioDurations({});
       setAnimationPortrait(null); setPresetParam(null); setTier(null); clearJobs(); setError(null);
       // A conversion the previous account started must not land in this one's form.
-      attachSeq.current += 1; setAttachConverting(false); setAccountEpoch(epoch => epoch + 1);
+      sourceEpoch.current += 1; attachSeq.current += 1; setAttachConverting(false); setAttachNotice(''); setAccountEpoch(epoch => epoch + 1);
     },
   });
 
@@ -228,7 +231,7 @@ export default function CreateStudio() {
     if (draftRecovery.restoring || catalogLoading || !catalogLive || !models.length) return;
     if (models.some((m) => m.id === modelId)) return;
     const first = starterModel(models, goal) || starterModel(models, 'all') || models[0];
-    setModelId(first.id);
+    chooseModel(first.id);
   }, [models, modelId, catalogLoading, catalogLive, goal, draftRecovery.restoring]);
 
   const model = models.find((m) => m.id === modelId) || null;
@@ -322,6 +325,7 @@ export default function CreateStudio() {
     setTemplatesOpen(false);
     attachSeq.current += 1; // a paperclip conversion still running must not undo this choice
     setAttachConverting(false);
+    setAttachNotice('');
     const nextId = modelIdForName(preset.model);
     const nextModel = models.find((m) => m.id === nextId);
     const draft = draftForTemplate(preset, nextId);
@@ -329,7 +333,7 @@ export default function CreateStudio() {
     setPresetParam(preset.id);
     setGoal('all');
     setTier(null);
-    setModelId(nextId);
+    chooseModel(nextId);
     setPrompt(draft.prompt);
     setDuration(`${draft.durationSeconds}s`);
     setNegative(draft.negativePrompt);
@@ -355,11 +359,13 @@ export default function CreateStudio() {
   useEffect(() => { latestAttach.current = { models, model, sources }; });
   async function attachFromDevice(fileList) {
     const seq = ++attachSeq.current;
+    const epoch = sourceEpoch.current;
     const picked = Array.from(fileList || []);
     if (picked.some(needsConversion)) { setAttachNotice(t('app.create.convert.working')); setAttachConverting(true); }
     let prepared;
     try { prepared = await prepareUploads(picked); } finally { if (attachSeq.current === seq) setAttachConverting(false); }
     if (attachSeq.current !== seq) return;
+    if (sourceEpoch.current !== epoch) { setAttachNotice(''); return; }
     const { files, failed } = prepared;
     const { models: currentModels, model: currentModel, sources: currentSources } = latestAttach.current;
     const failure = failed.length ? t(`app.create.convert.${failed[0].code}`) : '';
@@ -367,7 +373,7 @@ export default function CreateStudio() {
     if (!plan) { setAttachNotice(failure || t('app.create.attach.unsupported')); return; }
     const switched = plan.model.id !== currentModel?.id;
     setAttachNotice([failure, switched && t('app.create.attach.switched', { name: plan.model.name }), plan.unused.length && t('app.create.attach.unused', { count: plan.unused.length })].filter(Boolean).join(' '));
-    if (switched) { setPresetParam(null); setGoal(plan.model.kind); setModelId(plan.model.id); }
+    if (switched) { setPresetParam(null); setGoal(plan.model.kind); chooseModel(plan.model.id); }
     for (const source of Object.values(currentSources).flatMap(sourceList)) if (source.file) URL.revokeObjectURL(source.previewUrl);
     setSources({});
     const positions = {};
@@ -552,7 +558,7 @@ export default function CreateStudio() {
     // kind is the deliberate replacement path and clears the attribution.
     if (activeTemplate && model && (nextGoal === 'all' || model.kind === nextGoal)) return;
     setPresetParam(null);
-    setModelId(next?.id || '');
+    chooseModel(next?.id || '');
   }
 
   return (
@@ -660,21 +666,21 @@ export default function CreateStudio() {
           {animationPortrait && <div role="status" className="mt-4 rounded-xl border border-vx-accent/30 bg-vx-panel p-4 text-sm text-vx-fg-body">{portraitStatus}{animationMismatch && <p className="mt-2 text-vx-danger">{t("app.create.animationModel")}</p>}</div>}
           {(
             <div className="mt-3 flex flex-wrap items-center gap-3">
-              <label className="font-vx-mono text-[11px] font-bold rounded-full px-3.5 py-1.5 border border-vx-border text-vx-fg-muted hover:text-vx-fg cursor-pointer has-focus-visible:outline-solid has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-vx-accent">
+              <label className="font-vx-mono text-[11px] font-bold rounded-full px-3.5 py-1.5 border border-vx-border text-vx-fg-muted hover:text-vx-fg cursor-pointer has-disabled:opacity-50 has-focus-visible:outline-solid has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-vx-accent">
                 {t('app.create.attach.button')}
-                <input data-testid="create-attach" type="file" multiple accept={attachAccept()} className="sr-only"
+                <input data-testid="create-attach" type="file" multiple accept={attachAccept()} disabled={attachConverting || sourcesConverting} className="sr-only"
                   onChange={(e) => { attachFromDevice(e.target.files); e.target.value = ''; }} />
               </label>
               <span className="text-xs text-vx-fg-muted">{t('app.create.attach.hint')}</span>
-              <button type="button" data-testid="create-open-templates" onClick={() => setTemplatesOpen(true)}
-                className="ms-auto shrink-0 rounded-full border border-vx-accent/50 px-3.5 py-1.5 font-vx-mono text-[11px] font-bold text-vx-accent hover:bg-vx-accent/10">
+              <button type="button" data-testid="create-open-templates" disabled={attachConverting || sourcesConverting} onClick={() => setTemplatesOpen(true)}
+                className="ms-auto shrink-0 rounded-full border border-vx-accent/50 px-3.5 py-1.5 font-vx-mono text-[11px] font-bold text-vx-accent hover:bg-vx-accent/10 disabled:opacity-50">
                 {t('app.create.templates.open')}</button>
             </div>
           )}
           {attachNotice && <p role="status" className="mt-2 text-xs text-vx-fg-muted">{attachNotice}</p>}
           {templatesOpen && <TemplatePicker models={models} goal={goal} onPick={applyTemplate} onClose={() => setTemplatesOpen(false)} />}
           <div className="scroll-mt-24" data-assistant-target={Object.keys(media).length ? 'create.upload' : undefined}>
-            <SourcePickers media={media} sources={sources} onPick={pickSource} onConvertingChange={setSourcesConverting} resetKey={`${modelId}|${accountEpoch}`} onReorder={(slot, from, to) => { setConsent(false); setSources(prev => moveSlotSource(prev, slot, from, to)); }}
+            <SourcePickers media={media} sources={sources} onPick={pickSource} onConvertingChange={setSourcesConverting} resetKey={`${modelId}|${accountEpoch}`} epochRef={sourceEpoch} locked={attachConverting} onReorder={(slot, from, to) => { setConsent(false); setSources(prev => moveSlotSource(prev, slot, from, to)); }}
               onDraw={model?.kind === 'image' ? () => setDrawing(true) : null} onLibrary={setLibraryFor} />
           </div>
           {Object.values(sources).flatMap(sourceList).some(source => source.file) && <p className="mt-2 text-xs text-vx-fg-muted">{t("app.create.reattach")}</p>}
@@ -807,7 +813,7 @@ export default function CreateStudio() {
                 <select
                   id="studio-model"
                   value={modelId}
-                  onChange={(event) => setModelId(event.target.value)}
+                  onChange={(event) => chooseModel(event.target.value)}
                   className="min-h-11 w-full rounded-xl border border-vx-field bg-vx-base px-3 py-2.5 text-sm font-bold text-vx-fg focus:border-vx-accent focus:outline-hidden"
                 >
                   {visibleModels.map((item) => (
@@ -829,7 +835,7 @@ export default function CreateStudio() {
                     key={m.id}
                     data-model-kind={m.kind}
                     data-requires-image={m.media?.image?.required ? 'true' : undefined}
-                    onClick={() => setModelId(m.id)}
+                    onClick={() => chooseModel(m.id)}
                     aria-pressed={modelId === m.id}
                     className={`flex items-center justify-between rounded-lg px-3 py-2.5 border ${
                       modelId === m.id
