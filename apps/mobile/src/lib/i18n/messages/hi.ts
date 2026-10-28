@@ -21,7 +21,7 @@ const hi = {
     'model.media.image': 'इमेज',
     'model.media.video': 'वीडियो',
     'model.media.audio': 'ऑडियो',
-    'slip.generate': 'Generate',
+    'slip.generate': 'जनरेट करें',
     'mobile.prompt': 'प्रॉम्प्ट',
     'recovery.retry': 'फिर कोशिश करें',
     'cinema.creatorWorkspace.cancel': 'रद्द करें',

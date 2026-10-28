@@ -28,3 +28,9 @@ export async function clearStudio(cache: Cache = appCache, userId: string | unde
     if (!userId) return;
     await cache.write(POLICIES.filmStudio, null, userId);
 }
+
+// Unlike loadStudio, a failed or damaged read must never authorize overwriting the slot.
+export async function readStudioSlot(cache: Cache = appCache, owner = getCacheUser()) {
+    if (!cache.readChecked) return { state: 'error' } as const;
+    return cache.readChecked(POLICIES.filmStudio, owner).catch(() => ({ state: 'error' } as const));
+}

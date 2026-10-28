@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -102,7 +103,7 @@ export default function CommerceEdit() {
                 {input(t('commerce.productUrl'), form.productUrl, (v) => set('productUrl', v), { autoCapitalize: 'none', autoCorrect: false, keyboardType: 'url' })}
                 {input(t('commerce.imageUrl'), form.imageUrl, (v) => set('imageUrl', v), { autoCapitalize: 'none', autoCorrect: false, keyboardType: 'url' })}
                 <Text style={styles.muted}>{t('commerce.optionsWeb')}</Text>
-                {problem ? <Text style={styles.error} accessibilityRole="alert">{problem}</Text> : null}
+                {problem ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{problem}</StatusText> : null}
                 {writable ? (
                     <Pressable accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy }} style={[styles.button, touchTarget, busy && styles.off]} onPress={save}>
                         {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{t('commerce.save')}</Text>}

@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../../components/ui/Text';
 import * as Crypto from 'expo-crypto';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -140,7 +141,7 @@ export default function InboxThread() {
         catch (err) { if (valid()) setNote(t(inboxErrorKey(err))); }
     }
 
-    if (error) return <View style={styles.pad}><Stack.Screen options={{ title: t('inbox.title') }} /><Text style={styles.error} accessibilityRole="alert">{error}</Text></View>;
+    if (error) return <View style={styles.pad}><Stack.Screen options={{ title: t('inbox.title') }} /><StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{error}</StatusText></View>;
     if (!view) return <View style={styles.pad}><ActivityIndicator color={colors.accent} /></View>;
     const th = view.thread;
 
@@ -176,7 +177,7 @@ export default function InboxThread() {
                     ) : null}
                 </View>
             ) : null}
-            {note ? <Text style={styles.error} accessibilityRole="alert">{note}</Text> : null}
+            {note ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{note}</StatusText> : null}
             {th?.tags.length ? <Text style={styles.tags}>{th.tags.join(', ')}</Text> : null}
             {view.messages.length === 0 ? <Text style={styles.muted}>{t('inbox.noMessages')}</Text> : null}
             {view.messages.map((m) => (
@@ -203,7 +204,7 @@ export default function InboxThread() {
             {!view.canReply ? <Text style={styles.muted}>{t('inbox.replyOnWeb')}</Text> : null}
         </ScrollView>
         {attempt?.mayBeSent ? <View style={styles.held}>
-            <Text style={styles.muted} accessibilityLiveRegion="polite">{t('publishDepth.reply.pending', { network: networkLabel(th?.network ?? '') })}</Text>
+            <StatusText variant="inherit" style={styles.muted} accessibilityLiveRegion="polite">{t('publishDepth.reply.pending', { network: networkLabel(th?.network ?? '') })}</StatusText>
             <View style={styles.actions}>{(['anyway', 'discard'] as const).map(action => <Pressable key={action} style={touchTarget} accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy }} onPress={() => confirmHeld(action)}><Text style={styles.action}>{t(`publishDepth.reply.${action}`)}</Text></Pressable>)}</View>
         </View> : null}
         {view.canReply ? (

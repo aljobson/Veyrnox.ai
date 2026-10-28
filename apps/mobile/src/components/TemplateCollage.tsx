@@ -2,7 +2,8 @@ import { Image } from 'expo-image';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Pressable, StyleSheet, Text, View, useWindowDimensions, type ViewProps } from 'react-native';
 import { t } from '../lib/i18n';
-import { presetPrice, type Preset } from '../lib/presets';
+import type { Preset } from '../lib/presets';
+import { templatePrice } from '../lib/templateFilters';
 import { BAND_HEIGHT, STEP, TILE_CURVE, centredIndex, offsetsFor, posterOpacity, stackOrder, tileShape } from '../lib/templateCollage';
 import { colors } from '../theme';
 
@@ -98,7 +99,7 @@ function Tile({ preset, index, tall, scrollX, still, onOpen }: { preset: Preset;
               opacity: curve(TILE_CURVE.opacity),
               transform: [{ perspective: 700 }, { translateY: curve(TILE_CURVE.lift) }, { rotateY: turn }, { scale: curve(TILE_CURVE.scale) }],
           };
-    const label = `${preset.title}, ${preset.modelName}, ${presetPrice(preset)}${preset.isNew ? `, ${t('explore.new')}` : ''}${preset.available ? '' : `, ${t('templateCollage.unavailableHint')}`}`;
+    const label = `${preset.title}, ${preset.modelName}, ${templatePrice(preset)}${preset.isNew ? `, ${t('explore.new')}` : ''}${preset.available ? '' : `, ${t('templateCollage.unavailableHint')}`}`;
     return (
         <View style={styles.slot}>
             <Animated.View style={[styles.tile, { width: shape.width, height: shape.height, top: shape.top, left: (STEP - shape.width) / 2 }, motion]}>
@@ -112,7 +113,7 @@ function Tile({ preset, index, tall, scrollX, still, onOpen }: { preset: Preset;
                     <View style={styles.info}>
                         <Text style={styles.tileName} numberOfLines={1}>{preset.title}</Text>
                         <Text style={styles.model} numberOfLines={1}>{preset.modelName}</Text>
-                        <Text style={styles.price}>{presetPrice(preset)}</Text>
+                        <Text style={styles.price}>{templatePrice(preset)}</Text>
                         {!preset.available ? <Text style={styles.unavailable}>{t('templateCollage.notavailablerightnow')}</Text> : null}
                     </View>
                 </Pressable>

@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../components/ui/Text';
 import { Stack } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
@@ -55,7 +56,7 @@ export default function TopUps() {
             <Stack.Screen options={{ title: t('topup.title') }} />
             {failed ? (
                 <View style={{ gap: 12, padding: 16 }}>
-                    <Text style={styles.note} accessibilityRole="alert">{t('topup.failed')}</Text>
+                    <StatusText variant="inherit" style={styles.note} accessibilityRole="alert">{t('topup.failed')}</StatusText>
                     <Action label={t('acct.mfa.retry')} onPress={() => void load()} />
                 </View>
             ) : !items ? (

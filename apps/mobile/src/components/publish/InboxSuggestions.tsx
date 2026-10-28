@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../ui/Text';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { touchTarget } from '../../lib/a11y';
@@ -38,7 +39,7 @@ export function InboxSuggestions({ api, threadId, rows, role, canReply, pendingR
     return <View style={styles.list} accessibilityState={{ busy }}>
         <Text accessibilityRole="header" style={styles.text}>{t('publishDepth.suggestions.title')}</Text>
         <Text style={styles.muted}>{t('publishDepth.suggestions.intro')}</Text>
-        {error ? <Text style={styles.error} accessibilityRole="alert">{t('publishDepth.suggestions.failed')}</Text> : null}
+        {error ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{t('publishDepth.suggestions.failed')}</StatusText> : null}
         {pendingReply && allowed && canReply ? <Text style={styles.muted}>{t('publishDepth.suggestions.pendingReply')}</Text> : null}
         {rows.map(row => <View key={row.id} style={styles.card}>
             <View style={styles.source}><Text style={styles.muted}>{row.workflowName}</Text><Text style={[styles.muted, styles.keyword]}>{row.keyword}</Text></View><Text style={styles.text}>{row.text}</Text>

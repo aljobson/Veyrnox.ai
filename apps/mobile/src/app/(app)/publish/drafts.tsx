@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../../components/ui/Text';
 import { Text as ThemedText, themedStyles, useThemedStyles } from '../../../components/ui';
 import { NetworkLogo } from '../../../components/publish/NetworkLogo';
 import { networkName } from '../../../lib/networkLogos';
@@ -77,13 +78,13 @@ export default function Drafts() {
         <ScrollView style={styles.screen} contentContainerStyle={styles.body} refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.accent} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}>
             <Stack.Screen options={{ title: t('drafts.title') }} />
             {error ? (
-                <Text style={styles.error} accessibilityRole="alert">{error}</Text>
+                <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{error}</StatusText>
             ) : !drafts ? (
                 <ActivityIndicator color={colors.accent} />
             ) : (
                 <>
                     <Text style={styles.intro}>{t('drafts.intro')}</Text>
-                    {notice ? <Text style={styles.notice} accessibilityLiveRegion="polite">{notice}</Text> : null}
+                    {notice ? <StatusText variant="inherit" style={styles.notice} accessibilityLiveRegion="polite">{notice}</StatusText> : null}
                     {groups.length === 0 ? <Text style={styles.muted}>{t('drafts.none')}</Text> : null}
                     {groups.map((g, gi) => (
                         <View key={g.batchId ?? `none-${gi}`} style={styles.group}>

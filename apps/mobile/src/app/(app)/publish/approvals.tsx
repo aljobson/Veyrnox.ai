@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
@@ -35,7 +36,7 @@ export default function Approvals() {
         <View style={styles.screen}>
             <Stack.Screen options={{ title: t('approvals.title') }} />
             {error ? (
-                <Text style={styles.error} accessibilityRole="alert">{error}</Text>
+                <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{error}</StatusText>
             ) : !requests ? (
                 <ActivityIndicator color={colors.accent} />
             ) : (

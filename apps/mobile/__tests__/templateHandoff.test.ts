@@ -86,7 +86,7 @@ describe('a template tap from the feed', () => {
     test('the feed keeps the template shape, and the link carries it into Create', () => {
         const [p] = parsePresets(feed);
         expect(p.previewAspect).toBe('406 / 720');
-        expect(presetHref(p).params).toEqual({ modelId: 'kling-3.0-i2v', prompt: 'a car spins', duration: '10', tpl: 'Wild Ride', tneeds: 'A clear photo', tratio: '406 / 720', tposter: 'https://veyrnox.ai/w.jpg' });
+        expect(presetHref(p).params).toEqual({ tid: 'w', modelId: 'kling-3.0-i2v', prompt: 'a car spins', duration: '10', tpl: 'Wild Ride', tneeds: 'A clear photo', tratio: '406 / 720', tposter: 'https://veyrnox.ai/w.jpg' });
     });
 });
 

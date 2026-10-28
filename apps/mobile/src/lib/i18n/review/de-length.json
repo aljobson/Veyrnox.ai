@@ -1,5 +1,11 @@
 [
   {
+    "id": "recovery.home",
+    "english": "Go home",
+    "translation": "Zur Startseite",
+    "ratio": 2
+  },
+  {
     "id": "account.legal.refunds",
     "english": "Refunds",
     "translation": "Erstattungen",
@@ -1330,6 +1336,12 @@
     "english": "Make this shot",
     "translation": "Diese Einstellung erstellen",
     "ratio": 1.93
+  },
+  {
+    "id": "film.noshotsyetAddtheminthe",
+    "english": "No shots yet. Add them in the breakdown.",
+    "translation": "Noch keine Einstellungen. Füge sie in der Aufschlüsselung im Web hinzu.",
+    "ratio": 1.77
   },
   {
     "id": "film.savedonphone",
@@ -2932,6 +2944,24 @@
     "english": "Any",
     "translation": "Beliebig",
     "ratio": 2.67
+  },
+  {
+    "id": "libraryCreate.copyFailed",
+    "english": "Could not copy. Try again.",
+    "translation": "Kopieren fehlgeschlagen. Versuche es erneut.",
+    "ratio": 1.69
+  },
+  {
+    "id": "filmOutput.logged",
+    "english": "Result logged",
+    "translation": "Ergebnis protokolliert",
+    "ratio": 1.69
+  },
+  {
+    "id": "filmOutput.openShot",
+    "english": "Open shot",
+    "translation": "Einstellung öffnen",
+    "ratio": 2
   },
   {
     "id": "skillsUi.skillsTitle",

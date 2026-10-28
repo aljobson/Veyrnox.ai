@@ -35,7 +35,7 @@ jest.mock('../src/components/ui', () => {
         theme = require('../src/theme');
     const control = (props: any) => React.createElement(View, { ...props, testID: props.provider ?? props.label });
     return {
-        Text,
+        Text: jest.requireActual('../src/components/ui/Text').Text,
         Button: control,
         AuthProviderButton: control,
         TextField: control,
@@ -122,4 +122,16 @@ test('email submit requires captcha and prevents duplicate requests without cons
     expect(mockEmail).toHaveBeenCalledWith('person@example.test', 'password123', 'proof');
     await act(async () => finish());
     expect(control('email.signInCta').props.disabled).toBe(true);
+});
+
+test('email error announces once when it appears', async () => {
+    const announce = jest.spyOn(RN.AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
+    const { t } = require('../src/lib/i18n');
+    mockNative = true;
+    mockApple.mockRejectedValueOnce(new Error('private auth details'));
+    await act(async () => root.render(<EmailAuth />));
+    await act(async () => root.container.queryAll(n => n.props.testID === 'apple')[0].props.onPress());
+    expect(announce).toHaveBeenCalledTimes(1);
+    expect(announce).toHaveBeenCalledWith(t('signIn.failed'));
+    announce.mockRestore();
 });

@@ -1,3 +1,4 @@
+import { Text as StatusText } from './ui/Text';
 import { useFirstRunPending } from '../lib/firstRunPending';
 import { useEffect, useMemo, useState } from 'react';
 import { AppState, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -93,7 +94,7 @@ function CheckInForUser({ owner, api }: { owner: string; api: ApiClient }) {
                     </Text>
                 </View>)}
             </View>
-            <Text accessibilityLiveRegion="polite" style={styles.message}>{error ? t(error) : earned && earned > 0 ? plural('checkin.earned', earned, { credits: earned }) : status.claimed_today ? t('checkin.claimed') : ''}</Text>
+            <StatusText variant="inherit" accessibilityLiveRegion="polite" style={styles.message}>{error ? t(error) : earned && earned > 0 ? plural('checkin.earned', earned, { credits: earned }) : status.claimed_today ? t('checkin.claimed') : ''}</StatusText>
             <Pressable accessibilityRole="button" accessibilityLabel={t('checkin.claim')} accessibilityState={{ disabled: busy || status.claimed_today }} disabled={busy || status.claimed_today} onPress={claim} style={styles.primary}>
                 <Text style={styles.primaryText}>{t(busy ? 'checkin.claiming' : status.claimed_today ? 'checkin.claimed' : 'checkin.claim')}</Text>
             </Pressable>

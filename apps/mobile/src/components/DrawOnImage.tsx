@@ -1,3 +1,4 @@
+import { Text as StatusText } from './ui/Text';
 import { Canvas, Picture, Skia, type SkImage, type SkPicture } from '@shopify/react-native-skia';
 import { File } from 'expo-file-system';
 import { useEffect, useRef, useState } from 'react';
@@ -246,7 +247,7 @@ export function DrawOnImage({ uri, maxPixels, onCancel, onDone, resizer = defaul
                             onAccessibilityAction={event => { if (!busy) update({ type: 'adjustBox', index: newest, action: event.nativeEvent.actionName as BoxAction, image: dimensions }); }} style={styles.button}>
                             <Text style={styles.text}>{t('draw.box')}</Text>
                         </View> : null}
-                        <View accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : undefined}>{notice ? <Text style={styles.text}>{notice}</Text> : null}</View>
+                        <View>{notice ? <StatusText variant="inherit" accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : undefined} style={styles.text}>{notice}</StatusText> : null}</View>
                     </ScrollView>
                     <View style={styles.row}>{button(t('draw.cancel'), cancel)}{button(t('draw.use'), useDrawing, !image || !ops.length || busy)}</View>
                 </>}

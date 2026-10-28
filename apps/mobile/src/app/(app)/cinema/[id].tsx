@@ -1,3 +1,5 @@
+import { Text as StatusText } from '../../../components/ui/Text';
+import { useAnnouncement } from '../../../lib/useAnnouncement';
 import * as Crypto from 'expo-crypto';
 import { ApiError } from '../../../lib/api';
 import { Button, Chip } from '../../../components/ui';
@@ -56,6 +58,7 @@ export default function CinemaTitlePage() {
     const checked = useRef<{ api: typeof api; detail: TitleDetail; detailLocks: typeof detailLocks } | null>(null);
     const entitlementQueue = useRef(Promise.resolve());
     const [lock, setLock] = useState<LockReason | 'checking' | null>(null);
+    useAnnouncement(lock && lock !== 'checking' ? `${t('cinemaBrowse.lock.title')}. ${t(lockMessageKey(lock))}` : null, { onMount: true });
     const [entOpen, setEntOpen] = useState(false);
     useFocusEffect(useCallback(() => {
         if (!detail || detail.title.contentType !== 'SERIES') return;
@@ -166,7 +169,7 @@ export default function CinemaTitlePage() {
                 </Pressable>
             ) : null}
             {lock === 'checking' ? <ActivityIndicator color={colors.accent} /> : lock ? (
-                <View style={styles.locked} accessibilityRole="alert">
+                <View testID="cinema-lock" style={styles.locked} accessibilityRole="alert">
                     <Text style={styles.lockedTitle}>{t('cinemaBrowse.lock.title')}</Text>
                     <Text style={styles.body}>{t(lockMessageKey(lock))}</Text>
                 </View>
@@ -190,7 +193,7 @@ export default function CinemaTitlePage() {
             {title.creatorUsername ? <Button variant="tertiary" loading={blocking} disabled={blocking}
                 label={t('blocks.blockMember', { name: title.creator || title.creatorUsername })} onPress={block} /> : null}
             <Button variant="tertiary" label={t('cinema.back')} onPress={back} />
-            {blockNote ? <Text style={styles.muted} accessibilityRole="alert">{blockNote}</Text> : null}
+            {blockNote ? <StatusText variant="inherit" style={styles.muted} accessibilityRole="alert">{blockNote}</StatusText> : null}
         </ScrollView>
     );
 }

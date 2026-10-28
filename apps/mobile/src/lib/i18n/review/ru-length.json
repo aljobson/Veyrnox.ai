@@ -1,5 +1,11 @@
 [
   {
+    "id": "recovery.home",
+    "english": "Go home",
+    "translation": "На главный экран",
+    "ratio": 2.29
+  },
+  {
     "id": "abt.f.legal",
     "english": "Legal name",
     "translation": "Юридическое название",
@@ -2968,6 +2974,36 @@
     "english": "Any",
     "translation": "Любой",
     "ratio": 1.67
+  },
+  {
+    "id": "libraryCreate.copied",
+    "english": "Copied",
+    "translation": "Скопировано",
+    "ratio": 1.83
+  },
+  {
+    "id": "libraryCreate.copyFailed",
+    "english": "Could not copy. Try again.",
+    "translation": "Не удалось скопировать. Повторите попытку.",
+    "ratio": 1.62
+  },
+  {
+    "id": "filmOutput.locked",
+    "english": "Locked",
+    "translation": "Заблокирован",
+    "ratio": 2
+  },
+  {
+    "id": "filmOutput.open",
+    "english": "Open",
+    "translation": "Открыть",
+    "ratio": 1.75
+  },
+  {
+    "id": "filmOutput.copied",
+    "english": "Copied",
+    "translation": "Скопировано",
+    "ratio": 1.83
   },
   {
     "id": "skillsUi.use",

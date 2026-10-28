@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../components/ui/Text';
 import { Link, Stack } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -38,7 +39,7 @@ export default function Search() {
                 value={query}
                 onChangeText={setQuery}
             />
-            {query.trim() && results.length === 0 ? <Text style={styles.note} accessibilityLiveRegion="polite">{t('srch.none', { query: query.trim() })}</Text> : null}
+            {query.trim() && results.length === 0 ? <StatusText variant="inherit" style={styles.note} accessibilityLiveRegion="polite">{t('srch.none', { query: query.trim() })}</StatusText> : null}
             <FlatList
                 data={results}
                 keyboardShouldPersistTaps="handled"

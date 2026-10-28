@@ -73,7 +73,10 @@ interface Stored {
     readonly value: unknown;
 }
 
+export type CheckedRead = { state: 'absent' } | { state: 'present'; value: unknown } | { state: 'error' };
+
 export interface Cache {
+    readChecked?(policy: CachePolicy, userId?: string): Promise<CheckedRead>;
     swr<T>(options: SwrOptions<T>): Promise<{ readonly value: T; readonly meta: CacheMeta }>;
     read<T>(policy: CachePolicy, userId?: string): Promise<{ readonly value: T; readonly meta: CacheMeta } | null>;
     write<T>(policy: CachePolicy, value: T, userId?: string): Promise<void>;
@@ -146,7 +149,19 @@ export function createCache(storage: CacheStorage, now: () => number = Date.now)
         await Promise.all(keys.filter((k) => k.startsWith(PREFIX)).map((k) => storage.remove(k).catch(() => undefined)));
     }
 
-    return { swr, read, write, clear };
+    async function readChecked(policy: CachePolicy, userId?: string): Promise<CheckedRead> {
+        const key = keyFor(policy, userId);
+        if (!key) return { state: 'error' };
+        let raw: string | null;
+        try { raw = await storage.get(key); } catch { return { state: 'error' }; }
+        if (raw === null) return { state: 'absent' };
+        try {
+            const entry = JSON.parse(raw);
+            const age = now() - entry.savedAt;
+            return { state: 'present', value: typeof entry.savedAt === 'number' && age >= 0 && age <= policy.maxAgeMs ? entry.value : null };
+        } catch { return { state: 'present', value: null }; }
+    }
+    return { swr, read, readChecked, write, clear };
 }
 
 // "just now", "5 min", "3 h", "2 d": the age part of the saved-copy label.

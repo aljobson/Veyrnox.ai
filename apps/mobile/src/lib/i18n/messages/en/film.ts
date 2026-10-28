@@ -10,7 +10,7 @@ export default {
     "film.tofix": "{value1} to fix. {value2}",
     "film.openthenativeworkspace": "Open the native workspace",
     "film.shots": "Shots",
-    "film.noshotsyetAddtheminthe": "No shots yet. Add them in the breakdown on the web.",
+    "film.noshotsyetAddtheminthe": "No shots yet. Add them in the breakdown.",
     "film.removefromthisphone": "Remove from this phone",
     "film.filmchats": "Film chats",
     "film.sevenhelpersforsetupbreakdownreferencespassports": "Seven helpers for setup, breakdown, references, passports, stress tests and prompts.",

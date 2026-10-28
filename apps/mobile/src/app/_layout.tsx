@@ -1,3 +1,4 @@
+export { ErrorFallback as ErrorBoundary } from '../components/ErrorFallback';
 import { AnalyticsHost } from '../components/AnalyticsHost';
 import { FontStatus } from '../components/ui/FontStatus';
 import { typefaceFonts } from '../components/ui/FontCatalog';

@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../components/ui/Text';
 import { Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
@@ -58,7 +59,7 @@ export default function Blocked() {
         <View style={styles.screen}>
             <Stack.Screen options={{ title: t('blocks.title') }} />
             {error ? (
-                <Text style={styles.error} accessibilityRole="alert">{error}</Text>
+                <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{error}</StatusText>
             ) : !members ? (
                 <ActivityIndicator color={colors.accent} />
             ) : (
@@ -69,7 +70,7 @@ export default function Blocked() {
                     ListHeaderComponent={
                         <View>
                             <Text style={styles.intro}>{t('blocks.intro')}</Text>
-                            {note ? <Text style={styles.note} accessibilityLiveRegion="polite">{note}</Text> : null}
+                            {note ? <StatusText variant="inherit" style={styles.note} accessibilityLiveRegion="polite">{note}</StatusText> : null}
                         </View>
                     }
                     ListEmptyComponent={<Text style={styles.muted}>{t('blocks.none')}</Text>}

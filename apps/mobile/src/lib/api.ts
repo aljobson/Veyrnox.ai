@@ -1,3 +1,5 @@
+import { fetchWithTimeout, RequestTimeout } from './fetchWithTimeout';
+export { REQUEST_TIMEOUT_MS } from './fetchWithTimeout';
 import { markOffline, markOnline } from './networkState';
 import { config } from './config';
 
@@ -50,15 +52,16 @@ export interface ApiClient {
 export function createApiClient(options: ApiClientOptions): ApiClient {
     async function send(path: string, init: RequestInit, token: string, doFetch: typeof fetch): Promise<Response> {
         try {
-            const response = await doFetch(`${options.baseUrl}${path}`, {
+            const response = await fetchWithTimeout(doFetch, `${options.baseUrl}${path}`, {
                 ...init,
                 headers: { ...(init.headers as Record<string, string>), Authorization: `Bearer ${token}` },
             });
             markOnline();
             return response;
-        } catch {
+        } catch (error) {
+            if (!(error instanceof RequestTimeout) && init.signal?.aborted) throw error;
             markOffline();
-            throw new ApiError(0, 'network');
+            throw new ApiError(0, 'network', error instanceof RequestTimeout ? { timedOut: true } : {});
         }
     }
 

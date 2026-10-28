@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack } from 'expo-router';
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
@@ -33,7 +34,7 @@ export default function Brands() {
         <View style={styles.screen}>
             <Stack.Screen options={{ title: t('brands.title') }} />
             {error && !brands ? (
-                <Text style={styles.error} accessibilityRole="alert">{t('common.error')}</Text>
+                <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{t('common.error')}</StatusText>
             ) : !brands ? (
                 <ActivityIndicator color={colors.accent} />
             ) : (

@@ -1,5 +1,11 @@
 [
   {
+    "id": "recovery.home",
+    "english": "Go home",
+    "translation": "العودة إلى الرئيسية",
+    "ratio": 2.71
+  },
+  {
     "id": "account.helpSection",
     "english": "Help",
     "translation": "المساعدة",
@@ -1636,6 +1642,12 @@
     "english": "Any",
     "translation": "أي خيار",
     "ratio": 2.33
+  },
+  {
+    "id": "libraryCreate.generated",
+    "english": "AI generated",
+    "translation": "مُنشأ بالذكاء الاصطناعي",
+    "ratio": 1.92
   },
   {
     "id": "oauth.signIn",

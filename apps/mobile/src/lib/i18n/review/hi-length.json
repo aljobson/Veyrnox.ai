@@ -1644,6 +1644,36 @@
     "ratio": 2
   },
   {
+    "id": "libraryCreate.copied",
+    "english": "Copied",
+    "translation": "कॉपी हो गया",
+    "ratio": 1.83
+  },
+  {
+    "id": "libraryCreate.useTemplate",
+    "english": "Use template",
+    "translation": "टेम्पलेट इस्तेमाल करें",
+    "ratio": 1.83
+  },
+  {
+    "id": "filmOutput.locked",
+    "english": "Locked",
+    "translation": "लॉक किया गया",
+    "ratio": 2
+  },
+  {
+    "id": "filmOutput.copy",
+    "english": "Copy prompt",
+    "translation": "प्रॉम्प्ट कॉपी करें",
+    "ratio": 1.73
+  },
+  {
+    "id": "filmOutput.copied",
+    "english": "Copied",
+    "translation": "कॉपी किया गया",
+    "ratio": 2.17
+  },
+  {
     "id": "skillsUi.bestFor",
     "english": "Best for",
     "translation": "इसके लिए उपयुक्त",

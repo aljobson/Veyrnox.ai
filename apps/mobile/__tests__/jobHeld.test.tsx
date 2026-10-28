@@ -1,0 +1,24 @@
+import { act } from 'react';
+import * as RN from 'react-native';
+import { createRoot } from 'test-renderer';
+import JobScreen from '../src/app/(app)/job/[id]';
+import { ApiError } from '../src/lib/api';
+import { t } from '../src/lib/i18n';
+const mockClient = {};
+jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockClient }) }));
+jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, Link: () => null, useLocalSearchParams: () => ({ id: 'held' }), useRouter: () => ({ replace: jest.fn(), push: jest.fn() }) }));
+jest.mock('../src/components/JobProvenance', () => ({ JobProvenance: () => null }));
+jest.mock('../src/components/StemList', () => ({ StemList: () => null }));
+jest.mock('../src/components/InlineMedia', () => ({ InlineMedia: () => null }));
+jest.mock('../src/lib/output', () => ({ saveOutput: jest.fn(), shareOutput: jest.fn() }));
+const mockApi = { getJob: async () => ({ state: 'succeeded', model_id: 'm' }), getAsset: async () => { throw new ApiError(404, 'held'); } };
+jest.mock('../src/lib/media', () => ({ mediaApi: () => mockApi, waitForJob: async (_api: any, _id: string, update: any) => { update('succeeded'); return 'succeeded'; } }));
+void [RN.ActivityIndicator, RN.View, RN.Text, RN.StyleSheet, RN.ScrollView, RN.Pressable];
+test('held output has Under review and Library, never Check again', async () => {
+    (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; const root = createRoot();
+    await act(async () => root.render(<JobScreen />));
+    expect(root.container.queryAll(n => n.children.includes(t('library.status.held')))).toHaveLength(1);
+    expect(root.container.queryAll(n => n.children.includes(t('job.checkAgain')))).toHaveLength(0);
+    expect(root.container.queryAll(n => n.props.accessibilityLabel === t('label.Library')).length).toBeGreaterThan(0);
+    await act(async () => root.unmount());
+});

@@ -88,4 +88,34 @@ describe('AuthProvider refresh through the real ApiClient', () => {
         expect(writeRefreshToken).toHaveBeenCalledWith('rotated-refresh');
         expect(wipeCache).not.toHaveBeenCalled();
     });
+    test.each(['startup', 'expired', 'forced', 'concurrent'] as const)('%s stalled refresh settles with the session retained', async mode => {
+        jest.useFakeTimers();
+        const actual = jest.requireActual('../src/lib/auth/supabaseAuth') as typeof import('../src/lib/auth/supabaseAuth');
+        const transport = jest.spyOn(globalThis, 'fetch').mockImplementation(() => new Promise(() => {}));
+        try {
+            if (mode !== 'startup') {
+                jest.mocked(refreshSession).mockResolvedValueOnce({ accessToken: 'access', refreshToken: 'rotated-refresh', expiresAt: mode === 'forced' ? Date.now() + 3600000 : 0 });
+                await mount();
+            }
+            jest.mocked(refreshSession).mockImplementation(actual.refreshSession);
+            if (mode === 'startup') await act(async () => root.render(createElement(AuthProvider, { children: createElement(Probe) })));
+            if (mode === 'forced') transport.mockResolvedValueOnce({ status: 401 } as Response);
+            const count = mode === 'concurrent' ? 4 : 1;
+            let checks: Promise<unknown>[] = [];
+            await act(async () => {
+                checks = Array.from({ length: count }, () => expect(auth.api.request('/api/v1/projects')).rejects.toMatchObject({ status: 0, code: 'network' }));
+            });
+            await act(async () => { await jest.advanceTimersByTimeAsync(30000); await Promise.all(checks); });
+            expect(auth.status).toBe(mode === 'startup' ? 'signedOut' : 'signedIn');
+            expect(clearRefreshToken).not.toHaveBeenCalled(); expect(wipeCache).not.toHaveBeenCalled();
+            expect(transport.mock.calls.filter(([url]) => String(url).includes('grant_type=refresh_token'))).toHaveLength(1);
+            // A second refresh can run, proving refreshInFlight was cleared after timeout.
+            transport.mockResolvedValue({ ok: true, json: async () => ({ access_token: 'recovered', refresh_token: 'durable', expires_in: 3600 }) } as Response);
+            await act(async () => { await expect(auth.getAccessToken(true)).resolves.toBe('recovered'); });
+            expect(auth.status).toBe('signedIn'); expect(writeRefreshToken).toHaveBeenLastCalledWith('durable');
+            await act(async () => { await jest.advanceTimersByTimeAsync(0); });
+            expect(jest.getTimerCount()).toBe(0);
+        } finally { transport.mockRestore(); jest.useRealTimers(); }
+    });
+
 });

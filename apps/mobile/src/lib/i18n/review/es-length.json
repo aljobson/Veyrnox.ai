@@ -1,5 +1,11 @@
 [
   {
+    "id": "recovery.home",
+    "english": "Go home",
+    "translation": "Ir al inicio",
+    "ratio": 1.71
+  },
+  {
     "id": "abt.emailUs",
     "english": "Email {email}",
     "translation": "Enviar un correo a {email}",
@@ -2794,6 +2800,12 @@
     "english": "Any",
     "translation": "Cualquiera",
     "ratio": 3.33
+  },
+  {
+    "id": "filmOutput.verdict",
+    "english": "Take verdict",
+    "translation": "Veredicto de la toma",
+    "ratio": 1.67
   },
   {
     "id": "skillsUi.skillsTitle",

@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../../components/ui/Text';
 import * as Crypto from 'expo-crypto';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -178,7 +179,7 @@ export default function QuickEdit() {
                 {audio ? <Text style={styles.line}>{t('edit.audio.with', { name: audio.label, seconds: seconds(audio.offset) })}</Text> : null}
                 {captions ? <Text style={styles.line}>{t('edit.captionsWith', { preset: captions })}</Text> : null}
                 <Text style={styles.price}>{plural('edit.costs', credits)}</Text>
-                {problem ? <Text style={styles.error} accessibilityRole="alert">{problem}</Text> : null}
+                {problem ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{problem}</StatusText> : null}
                 <Pressable accessibilityRole="button" disabled={busy} accessibilityState={{ busy }} style={[styles.button, busy && styles.off]} onPress={confirm}>
                     {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{t('edit.confirm')}</Text>}
                 </Pressable>
@@ -271,7 +272,7 @@ export default function QuickEdit() {
                 ) : null}
 
                 <Text style={[styles.muted, total > MAX_OUTPUT_S && styles.warn]}>{t('edit.total', { seconds: seconds(total), max: MAX_OUTPUT_S })}</Text>
-                {problem ? <Text style={styles.error} accessibilityRole="alert">{problem}</Text> : null}
+                {problem ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{problem}</StatusText> : null}
                 <Pressable accessibilityRole="button" disabled={busy || pending.length > 0} accessibilityState={{ busy }} style={[styles.button, (busy || pending.length > 0 || !!check) && styles.off]} onPress={review}>
                     {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{t('edit.review')}</Text>}
                 </Pressable>

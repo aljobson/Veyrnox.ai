@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../components/ui/Text';
 import { Redirect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEffect, useRef, useState } from 'react';
@@ -21,7 +22,7 @@ export default function PasskeyAuth() {
                 <Text style={styles.back}>{t('public.vey.back')}</Text>
             </Pressable>
             <Text accessibilityRole="header" style={styles.heading}>{t('passkey.title')}</Text>
-            {passkeyGate() ? <PasskeyAttempt /> : <Text style={styles.message} accessibilityLiveRegion="polite">{t('passkey.err.off')}</Text>}
+            {passkeyGate() ? <PasskeyAttempt /> : <StatusText variant="inherit" style={styles.message} accessibilityLiveRegion="polite">{t('passkey.err.off')}</StatusText>}
         </ScrollView>
     );
 }
@@ -82,13 +83,13 @@ function PasskeyAttempt() {
     return <>
         <TurnstileView resetKey={resetKey} onMessage={onCaptcha} />
         {!captcha && !captchaError ? <Text style={styles.message}>{t('email.checking')}</Text> : null}
-        {captchaError ? <Text style={styles.error} accessibilityRole="alert">{t('email.captchaFailed')}</Text> : null}
+        {captchaError ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{t('email.captchaFailed')}</StatusText> : null}
         <Pressable accessibilityRole="button" accessibilityLabel={t('passkey.continue')} accessibilityState={{ busy, disabled: !ready }}
             disabled={!ready} style={[styles.submit, !ready && styles.off]} onPress={() => void submit()}>
             {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.submitText}>{t('passkey.continue')}</Text>}
         </Pressable>
-        {busy ? <Text style={styles.message} accessibilityLiveRegion="polite">{t('passkey.busy')}</Text> : null}
-        {message ? <Text style={styles.message} accessibilityLiveRegion="polite">{message}</Text> : null}
+        {busy ? <StatusText variant="inherit" style={styles.message} accessibilityLiveRegion="polite">{t('passkey.busy')}</StatusText> : null}
+        {message ? <StatusText variant="inherit" style={styles.message} accessibilityLiveRegion="polite">{message}</StatusText> : null}
     </>;
 }
 

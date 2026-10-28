@@ -1,98 +1,59 @@
+import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, AppState, FlatList, ScrollView, View } from 'react-native';
+import { Button, Chip, Text, TextField, themedStyles, useThemedStyles } from '../../../components/ui';
+import { TemplateCollage } from '../../../components/TemplateCollage';
+import { TemplateCard } from '../../../components/templates/TemplateCard';
 import { t } from '../../../lib/i18n';
-import { Image } from 'expo-image';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, SectionList, StyleSheet, Text, TextInput, View } from 'react-native';
-import { fetchPresets, groupByTheme, presetHref, presetPrice, searchPresets, themeTitle, type Preset } from '../../../lib/presets';
-import { colors } from '../../../theme';
+import { fetchPresets, searchPresets, themeTitle, type Preset } from '../../../lib/presets';
+import { fetchPopularIds, templateChips, templatesFor, previewRatio, templatePageHref } from '../../../lib/templateFilters';
+import { rankPresets } from '../../../lib/creatorTaste';
+import { loadVibe } from '../../../lib/creatorProfileStore';
+import type { CreatorAnswers } from '../../../lib/creatorAnswers';
 
 export default function Templates() {
+    const styles = useThemedStyles(sheets);
     const router = useRouter();
     const params = useLocalSearchParams<{ unavailable?: string | string[] }>();
     const [presets, setPresets] = useState<Preset[] | null>(null);
+    const [popular, setPopular] = useState<string[]>([]);
+    const [vibe, setVibe] = useState<CreatorAnswers | null>(null);
     const [failed, setFailed] = useState(false);
     const [query, setQuery] = useState('');
-
+    const [chip, setChip] = useState('ALL');
+    const [limit, setLimit] = useState(50);
+    const [playing, setPlaying] = useState<string | null>(null);
+    const [attempt, setAttempt] = useState(0);
     useEffect(() => {
-        fetchPresets().then(setPresets).catch(() => setFailed(true));
-    }, []);
-
-    const sections = useMemo(() => groupByTheme(searchPresets(presets ?? [], query)).map((g) => ({ title: themeTitle(g.category), data: g.items })), [presets, query]);
+        let live = true; setFailed(false);
+        fetchPresets().then(value => { if (live) setPresets(value); }).catch(() => { if (live) setFailed(true); });
+        fetchPopularIds().then(value => { if (live) setPopular(value); });
+        loadVibe().then(value => { if (live) setVibe(value?.answers ?? null); }).catch(() => {});
+        return () => { live = false; };
+    }, [attempt]);
+    useFocusEffect(useCallback(() => () => setPlaying(null), []));
+    useEffect(() => { const sub = AppState.addEventListener('change', state => { if (state !== 'active') setPlaying(null); }); return () => sub.remove(); }, []);
+    useEffect(() => { setLimit(50); setPlaying(null); }, [chip, query]);
+    const chips = useMemo(() => templateChips(presets ?? [], popular), [presets, popular]);
+    const shown = useMemo(() => searchPresets(templatesFor(rankPresets(presets ?? [], vibe), chip, popular), query), [presets, vibe, chip, popular, query]);
     const unavailableId = Array.isArray(params.unavailable) ? params.unavailable[0] : params.unavailable;
-    const unavailablePreset = presets?.find((p) => p.id === unavailableId);
-
-    function open(p: Preset) {
-        router.push(presetHref(p));
-    }
-
-    return (
-        <View style={styles.screen}>
-            <Stack.Screen options={{ title: t('presets.templates') }} />
-            {unavailableId ? (
-                <Text style={styles.unavailable} accessibilityLiveRegion="assertive">
-                    {unavailablePreset ? t('presets.isnotavailablerightnow', { value1: unavailablePreset.title }) : t('presets.thattemplateisnotavailablerightnow')}
-                </Text>
-            ) : null}
-            {failed ? (
-                <Text style={styles.error}>{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text>
-            ) : presets === null ? (
-                <ActivityIndicator color={colors.accent} />
-            ) : (
-                <SectionList
-                    sections={sections}
-                    keyExtractor={(p) => p.id}
-                    stickySectionHeadersEnabled={false}
-                    ListHeaderComponent={(
-                        <TextInput
-                            accessibilityLabel={t('presets.searcheffects')}
-                            value={query}
-                            onChangeText={setQuery}
-                            placeholder={t('presets.search1000effects')}
-                            placeholderTextColor={colors.muted}
-                            autoCapitalize="none"
-                            autoCorrect={false}
-                            returnKeyType="search"
-                            style={styles.search}
-                        />
-                    )}
-                    ListEmptyComponent={<Text style={styles.muted}>{query ? t('presets.nomatchingeffects') : t('presets.notemplatesavailablerightnow')}</Text>}
-                    renderSectionHeader={({ section }) => <Text style={styles.header} accessibilityRole="header">{section.title}</Text>}
-                    renderItem={({ item }) => (
-                        <Pressable
-                            accessibilityRole="button"
-                            accessibilityLabel={`${item.title}, ${presetPrice(item)}${item.available ? '' : t('presets.notAvailableSuffix')}`}
-                            style={styles.row}
-                            onPress={() => open(item)}
-                        >
-                            {item.posterUrl ? <Image source={{ uri: item.posterUrl }} style={styles.poster} contentFit="cover" /> : <View style={styles.poster} />}
-                            <View style={styles.text}>
-                                <Text style={styles.name}>
-                                    {item.title}
-                                    {item.isNew ? t('presets.nEW') : ''}
-                                </Text>
-                                <Text style={styles.price}>{presetPrice(item)}</Text>
-                                {!item.available ? <Text style={styles.unavailableText}>{t('presets.notavailablerightnow')}</Text> : null}
-                                {item.needs ? <Text style={styles.muted}>{t('presets.needs', { value1: item.needs })}</Text> : null}
-                            </View>
-                        </Pressable>
-                    )}
-                />
-            )}
-        </View>
-    );
+    const unavailablePreset = presets?.find(p => p.id === unavailableId);
+    const open = (p: Preset) => { setPlaying(null); router.push(templatePageHref(p)); };
+    return <View style={styles.screen}>
+        <Stack.Screen options={{ title: t('presets.templates') }} />
+        <Text variant="title1" accessibilityRole="header">{t('presets.templates')}</Text>
+        {unavailableId ? <Text accessibilityLiveRegion="assertive">{unavailablePreset ? t('presets.isnotavailablerightnow', { value1: unavailablePreset.title }) : t('presets.thattemplateisnotavailablerightnow')}</Text> : null}
+        {failed ? <View><Text tone="danger">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text><Button label={t('recovery.retry')} onPress={() => setAttempt(n => n + 1)} /></View>
+            : presets === null ? <ActivityIndicator /> : <FlatList data={shown.slice(0, limit)} numColumns={2} keyExtractor={p => p.id} contentContainerStyle={styles.list}
+                ListHeaderComponent={<View style={styles.header}>
+                    <Text>{t('explore.templateCount', { templates: String(shown.length), models: String(new Set(shown.map(p => p.modelId)).size) })}</Text>
+                    <TextField accessibilityLabel={t('libraryCreate.searchTemplates')} placeholder={t('libraryCreate.searchTemplates')} value={query} onChangeText={setQuery} />
+                    <ScrollView horizontal contentContainerStyle={styles.chips}>{chips.map(c => <Chip key={c} selected={chip === c} accessibilityState={{ selected: chip === c }} label={c === 'ALL' ? t('explore.type.all') : c === 'NEW' ? t('explore.new') : c === 'POPULAR' ? t('libraryCreate.popular') : themeTitle(c)} onPress={() => setChip(c)} />)}</ScrollView>
+                    {chip === 'ALL' && !query.trim() ? <TemplateCollage presets={shown.filter(p => p.posterUrl).slice(0, 24)} isTall={p => previewRatio(p) < 1} onOpen={open} /> : null}
+                </View>}
+                ListEmptyComponent={<Text tone="secondary">{t(query ? 'presets.nomatchingeffects' : 'presets.notemplatesavailablerightnow')}</Text>}
+                ListFooterComponent={shown.length > limit ? <Button label={t('libraryCreate.showMore')} onPress={() => setLimit(n => n + 50)} /> : undefined}
+                renderItem={({ item }) => <TemplateCard preset={item} playing={playing === item.id} onPlay={() => setPlaying(id => id === item.id ? null : item.id)} onOpen={() => open(item)} />} />}
+    </View>;
 }
-
-const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 16 },
-    header: { color: colors.muted, fontSize: 12, fontWeight: '700', letterSpacing: 1, paddingTop: 20, paddingBottom: 6 },
-    search: { minHeight: 48, marginTop: 12, marginBottom: 4, borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.borderStrong, backgroundColor: colors.surface, color: colors.text, paddingHorizontal: 14, fontSize: 16 },
-    row: { flexDirection: 'row', gap: 12, paddingVertical: 10, borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth },
-    poster: { width: 64, height: 96, borderRadius: 8, backgroundColor: colors.surface },
-    text: { flex: 1, gap: 3 },
-    name: { color: colors.text, fontSize: 16 },
-    price: { color: colors.money },
-    unavailable: { color: colors.body, paddingTop: 16 },
-    unavailableText: { color: colors.muted, fontSize: 13, fontWeight: '600' },
-    muted: { color: colors.muted, fontSize: 13 },
-    error: { color: colors.danger, paddingTop: 16 },
-});
+const sheets = themedStyles(p => ({ screen: { flex: 1, backgroundColor: p.bg, padding: 16 }, list: { paddingBottom: 80 }, header: { gap: 12 }, chips: { gap: 8 } }));

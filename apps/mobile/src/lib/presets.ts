@@ -129,7 +129,7 @@ export function searchPresets(items: readonly Preset[], query: string): Preset[]
 // returns to Templates with an explicit unavailable state.
 export function presetHref(p: Preset) {
     if (!p.available) return { pathname: '/create/presets', params: { unavailable: p.id } } as const;
-    return { pathname: '/create/[modelId]', params: { modelId: p.modelId, prompt: p.prompt, ...(p.durationSeconds ? { duration: String(p.durationSeconds) } : {}), ...templateParams(p) } } as const;
+    return { pathname: '/create/[modelId]', params: { modelId: p.modelId, prompt: p.prompt, ...(p.durationSeconds ? { duration: String(p.durationSeconds) } : {}), ...templateParams(p), ...(/^[a-z0-9-]{1,40}$/.test(p.id) ? { tid: p.id } : {}) } } as const;
 }
 
 export function presetPrice(p: Preset): string {

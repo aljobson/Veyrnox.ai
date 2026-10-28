@@ -1,5 +1,11 @@
 [
   {
+    "id": "recovery.home",
+    "english": "Go home",
+    "translation": "Retour à l’accueil",
+    "ratio": 2.57
+  },
+  {
     "id": "abt.details",
     "english": "Company details",
     "translation": "Informations sur la société",
@@ -748,6 +754,12 @@
     "english": "Save",
     "translation": "Enregistrer",
     "ratio": 2.75
+  },
+  {
+    "id": "chat.skills.filmNote",
+    "english": "Film Studio is in the app. These chats help you write what it needs; they never make, approve or lock anything.",
+    "translation": "Le studio cinéma sera bientôt disponible dans l’application. Ces discussions vous aident à préparer les textes nécessaires ; elles ne créent, n’approuvent ni ne verrouillent rien.",
+    "ratio": 1.61
   },
   {
     "id": "chat.skills.group.Edit",
@@ -2182,6 +2194,12 @@
     "english": "No prompt yet.",
     "translation": "Aucun prompt pour le moment.",
     "ratio": 2
+  },
+  {
+    "id": "film.noshotsyetAddtheminthe",
+    "english": "No shots yet. Add them in the breakdown.",
+    "translation": "Aucun plan pour le moment. Ajoutez-les dans le découpage sur le web.",
+    "ratio": 1.7
   },
   {
     "id": "film.savedonphone",
@@ -4426,6 +4444,30 @@
     "english": "Any",
     "translation": "Au choix",
     "ratio": 2.67
+  },
+  {
+    "id": "filmOutput.savePassport",
+    "english": "Save draft passport",
+    "translation": "Enregistrer le brouillon de la fiche",
+    "ratio": 1.89
+  },
+  {
+    "id": "filmOutput.locked",
+    "english": "Locked",
+    "translation": "Verrouillé",
+    "ratio": 1.67
+  },
+  {
+    "id": "filmOutput.draft",
+    "english": "Draft",
+    "translation": "Brouillon",
+    "ratio": 1.8
+  },
+  {
+    "id": "filmOutput.saveNew",
+    "english": "Save as a new film",
+    "translation": "Enregistrer comme nouveau film",
+    "ratio": 1.67
   },
   {
     "id": "skillsUi.skillsTitle",

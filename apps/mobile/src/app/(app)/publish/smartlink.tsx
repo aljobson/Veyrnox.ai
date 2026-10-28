@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, Share, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
@@ -63,7 +64,7 @@ export default function SmartlinkScreen() {
         }
     }
 
-    if (error && !link) return <View style={styles.screen}><Stack.Screen options={{ title: t('smartlink.title') }} /><Text style={styles.error} accessibilityRole="alert">{error}</Text></View>;
+    if (error && !link) return <View style={styles.screen}><Stack.Screen options={{ title: t('smartlink.title') }} /><StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{error}</StatusText></View>;
     if (!link) return <View style={styles.screen}><ActivityIndicator color={colors.accent} /></View>;
     const saved = link !== EMPTY && link.slug !== '';
 
@@ -115,8 +116,8 @@ export default function SmartlinkScreen() {
                     <Switch value={link.published} onValueChange={(v) => set({ published: v })} accessibilityLabel={t('smartlink.published')} />
                 </View>
                 <Text style={styles.muted}>{t('smartlink.publishedHint')}</Text>
-                {problem ? <Text style={styles.error} accessibilityRole="alert">{problem}</Text> : null}
-                {notice ? <Text style={styles.notice} accessibilityLiveRegion="polite">{notice}</Text> : null}
+                {problem ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{problem}</StatusText> : null}
+                {notice ? <StatusText variant="inherit" style={styles.notice} accessibilityLiveRegion="polite">{notice}</StatusText> : null}
                 <Pressable accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy }} style={[styles.button, touchTarget, busy && styles.off]} onPress={save}>
                     {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{t('smartlink.save')}</Text>}
                 </Pressable>

@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -150,7 +151,7 @@ export default function AdsEdit() {
                 <WhenPicker date={endDate} time={endTime} onChange={(d, tm) => { setEndDate(d); setEndTime(tm); }} />
                 <Pressable accessibilityRole="button" style={[styles.clear, touchTarget]} onPress={() => setEndDate('')}><Text style={styles.clearText}>{t('ads.clearDate')}</Text></Pressable>
                 <Text style={styles.muted}>{t('ads.launchWeb')}</Text>
-                {problem ? <Text style={styles.error} accessibilityRole="alert">{problem}</Text> : null}
+                {problem ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{problem}</StatusText> : null}
                 {canEdit ? (
                     <Pressable accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy }} style={[styles.button, touchTarget, busy && styles.off]} onPress={save}>
                         {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{t('ads.save')}</Text>}

@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../ui/Text';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { touchTarget } from '../../lib/a11y';
 import { colors } from '../../theme';
@@ -29,7 +30,7 @@ export function Action({ label, onPress, disabled, danger }: { label: string; on
 
 export function Status({ text, error }: { text: string | null; error?: boolean }) {
     if (!text) return null;
-    return <Text accessibilityRole={error ? 'alert' : undefined} accessibilityLiveRegion="polite" style={[styles.status, error && styles.danger]}>{text}</Text>;
+    return <StatusText variant="inherit" accessibilityRole={error ? 'alert' : undefined} accessibilityLiveRegion="polite" style={[styles.status, error && styles.danger]}>{text}</StatusText>;
 }
 
 export const styles = StyleSheet.create({

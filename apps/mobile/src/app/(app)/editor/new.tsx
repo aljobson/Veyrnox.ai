@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../../components/ui/Text';
 import { directionalStyle } from '../../../lib/rtl';
 import { randomUUID } from 'expo-crypto';
 import { Image } from 'expo-image';
@@ -86,8 +87,8 @@ function NewEditor() {
             <Text style={styles.eyebrow}>{t('editor.home.eyebrow')}</Text>
             <Text style={styles.heading} accessibilityRole="header">{automatic ? t('editor.openingTitle') : t('editor.new')}</Text>
             <Text style={styles.intro}>{automatic ? t('editor.openingBody') : t('editor.newIntro')}</Text>
-            {pending ? <View style={styles.progress} accessibilityLiveRegion="polite"><ActivityIndicator color={colors.accent} /><Text style={styles.progressText}>{t('editor.opening')}</Text></View> : null}
-            {problem ? <Text style={styles.error} accessibilityLiveRegion="polite">{t(problem)}</Text> : null}
+            {pending ? <View style={styles.progress}><ActivityIndicator color={colors.accent} /><StatusText variant="inherit" accessibilityLiveRegion="polite" style={styles.progressText}>{t('editor.opening')}</StatusText></View> : null}
+            {problem ? <StatusText variant="inherit" style={styles.error} accessibilityLiveRegion="polite">{t(problem)}</StatusText> : null}
             {!pending && (attempt.current || jobId) ? (
                 <Pressable style={[styles.retry, touchTarget]} accessibilityRole="button" accessibilityLabel={t('editor.retryNow')} onPress={() => { void create(jobId); }}><Text style={styles.retryText}>{t('editor.retryNow')}</Text></Pressable>
             ) : !automatic ? <View style={styles.choices}>

@@ -8,9 +8,9 @@ export function announcementText(node: ReactNode): string {
     return '';
 }
 // Deduplicate rendered status text, not renders, timers or object identities.
-// Android already implements live regions. Alerts announce natively on both platforms.
-export function useAnnouncement(message: string | null | undefined) {
-    const last = useRef<string | null>(message?.trim() || null);
+// Android implements live regions and alerts; iOS needs explicit announcements for both.
+export function useAnnouncement(message: string | null | undefined, { onMount = false }: { onMount?: boolean } = {}) {
+    const last = useRef<string | null>(onMount ? null : message?.trim() || null);
     useEffect(() => {
         const next = message?.trim() || null;
         if (next === last.current) return;

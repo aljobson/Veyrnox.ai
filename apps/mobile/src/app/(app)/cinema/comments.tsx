@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../../components/ui/Text';
 import * as Crypto from 'expo-crypto';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -129,7 +130,7 @@ export default function Comments() {
         <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <Stack.Screen options={{ title: t('comments.title') }} />
             {error && !loaded ? (
-                <Text style={styles.error} accessibilityRole="alert">{error}</Text>
+                <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{error}</StatusText>
             ) : !loaded ? (
                 <ActivityIndicator color={colors.accent} />
             ) : (
@@ -139,7 +140,7 @@ export default function Comments() {
                     keyboardShouldPersistTaps="handled"
                     ListHeaderComponent={
                         <View style={styles.compose}>
-                            {error ? <Text style={styles.error} accessibilityRole="alert">{error}</Text> : null}
+                            {error ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{error}</StatusText> : null}
                             <TextInput
                                 accessibilityLabel={t('comments.write')}
                                 placeholder={t('comments.write')}
@@ -157,7 +158,7 @@ export default function Comments() {
                             <Pressable accessibilityRole="button" accessibilityState={{ busy: posting, disabled: posting || !bodyOk(draft) }} disabled={posting || !bodyOk(draft)} style={[styles.button, (posting || !bodyOk(draft)) && styles.off]} onPress={post}>
                                 {posting ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{t('comments.post')}</Text>}
                             </Pressable>
-                            {note ? <Text style={[styles.note, note.bad && styles.warn]} accessibilityRole={note.bad ? 'alert' : undefined} accessibilityLiveRegion="polite">{note.text}</Text> : null}
+                            {note ? <StatusText variant="inherit" style={[styles.note, note.bad && styles.warn]} accessibilityRole={note.bad ? 'alert' : undefined} accessibilityLiveRegion="polite">{note.text}</StatusText> : null}
                             {own.length > 0 ? (
                                 <View style={styles.ownBox}>
                                     <Text style={styles.heading} accessibilityRole="header">{t('comments.yours')}</Text>

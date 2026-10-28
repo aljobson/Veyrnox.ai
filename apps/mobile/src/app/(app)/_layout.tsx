@@ -1,3 +1,4 @@
+export { SignedInErrorBoundary as ErrorBoundary } from '../../components/ErrorFallback';
 import { t } from '../../lib/i18n';
 import { useOfflineRecovery } from '../../lib/useOfflineRecovery';
 import { Text } from '../../components/ui';

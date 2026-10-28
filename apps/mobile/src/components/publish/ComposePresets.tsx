@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../ui/Text';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { touchTarget } from '../../lib/a11y';
@@ -109,7 +110,7 @@ export function ComposePresets({ api, text, networkText, mode, selected, eligibl
             {button('publishDepth.presets.save', save, mode === 'queue')}
             {button('publishDepth.presets.delete', remove, !current)}
         </View>
-        {error ? <Text style={styles.error} accessibilityRole="alert">{t(error)}</Text> : null}
+        {error ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{t(error)}</StatusText> : null}
     </View>;
 }
 const styles = StyleSheet.create({ list: { gap: 6 }, chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 }, chip: { paddingHorizontal: 10, borderRadius: 10, backgroundColor: colors.surface }, input: { color: colors.text, backgroundColor: colors.surface, padding: 12, minHeight: 44 }, text: { color: colors.text }, muted: { color: colors.muted }, action: { color: colors.accent }, error: { color: colors.danger }, off: { opacity: 0.4 } });

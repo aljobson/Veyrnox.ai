@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Alert, FlatList, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
@@ -99,14 +100,14 @@ export default function Workflows() {
                                 </Pressable>
                             )
                         ) : null}
-                        {note ? <Text style={styles.muted} accessibilityRole="alert">{note}</Text> : null}
+                        {note ? <StatusText variant="inherit" style={styles.muted} accessibilityRole="alert">{note}</StatusText> : null}
                         <PlanCard state={currentPlan} />
                     </View>
                 }
                 ListEmptyComponent={
-                    <Text style={styles.muted} accessibilityLiveRegion="polite">
+                    <StatusText variant="inherit" style={styles.muted} accessibilityLiveRegion="polite">
                         {t(currentWorkflows?.message ?? (currentWorkflows ? 'publishWorkflows.empty' : 'publishWorkflows.loading'))}
-                    </Text>
+                    </StatusText>
                 }
                 renderItem={({ item }) => (
                     <View style={styles.card}>

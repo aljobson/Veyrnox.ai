@@ -1,3 +1,4 @@
+import { Text as StatusText } from './ui/Text';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { groupModels, type Group } from '../lib/catalogPages';
@@ -27,7 +28,7 @@ export function CatalogList({ render, includeGated = false }: { includeGated?: b
     if (failed) {
         return (
             <View style={{ gap: 12 }}>
-                <Text style={styles.note} accessibilityRole="alert">{t('catalog.failed')}</Text>
+                <StatusText variant="inherit" style={styles.note} accessibilityRole="alert">{t('catalog.failed')}</StatusText>
                 <Action label={t('acct.mfa.retry')} onPress={() => setAttempt((n) => n + 1)} />
             </View>
         );

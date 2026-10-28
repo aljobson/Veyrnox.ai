@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
@@ -56,7 +57,7 @@ export default function ActivityScreen() {
         <View style={styles.screen}>
             <Stack.Screen options={{ title: t('activity.title') }} />
             {error && !events ? (
-                <Text style={styles.error} accessibilityRole="alert">{error}</Text>
+                <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{error}</StatusText>
             ) : !events ? (
                 <ActivityIndicator color={colors.accent} />
             ) : (

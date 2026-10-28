@@ -1,3 +1,4 @@
+import { Text as StatusText } from '../../../components/ui/Text';
 import { MediaLibraryGrid } from '../../../components/publish/MediaLibraryGrid';
 import { ChosenMediaPreview } from '../../../components/publish/ChosenMediaPreview';
 import { Text as ThemedText } from '../../../components/ui';
@@ -165,7 +166,7 @@ export default function ApprovalNew() {
                         </Pressable>
                     </View>
                 ))}
-                {problem ? <Text style={styles.error} accessibilityRole="alert">{problem}</Text> : null}
+                {problem ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{problem}</StatusText> : null}
                 <Pressable accessibilityRole="button" style={[styles.plain, touchTarget]} onPress={() => router.replace('/publish/approvals')}>
                     <Text style={styles.plainText}>{t('approvals.done')}</Text>
                 </Pressable>
@@ -183,7 +184,7 @@ export default function ApprovalNew() {
                 <MediaLibraryGrid api={api} picks={picks} choices={choices} max={maxMedia} disabled={preparing || busy} onToggle={p => { if (preparingRef.current) return; setChoices(old => toggleChoice(old, p, maxMedia)); if (maxMedia === 1) setAccountIds([]); }} />
                 <ChosenMediaPreview api={api} choice={chosen} />
                 <PublishMediaSelection items={choices} max={maxMedia} onChange={setChoices} disabled={preparing || busy} />
-                {blocker ? <Text style={styles.error} accessibilityRole="alert">{blocker}</Text> : null}
+                {blocker ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{blocker}</StatusText> : null}
                 <PublishUploadPanel api={api} enabled={uploadsEnabled} max={maxMedia} nonUploadCount={choices.filter(item => item.kind === 'job').length}
                     selectedUploads={choices.flatMap(item => item.kind === 'upload' ? [{ uploadId: item.uploadId, mediaType: item.mediaType }] : [])}
                     onSelect={uploads => {
@@ -226,7 +227,7 @@ export default function ApprovalNew() {
                                 </Pressable>
                             ))}
                         </View>
-                        {problem ? <Text style={styles.error} accessibilityRole="alert">{problem}</Text> : null}
+                        {problem ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{problem}</StatusText> : null}
                         <Pressable accessibilityRole="button" disabled={busy || preparing || accountIds.length === 0} accessibilityState={{ disabled: busy || preparing || accountIds.length === 0 }} style={[styles.button, touchTarget, (busy || preparing || accountIds.length === 0) && styles.off]} onPress={submit}>
                             {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{t('approvals.send')}</Text>}
                         </Pressable>

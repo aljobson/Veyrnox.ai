@@ -4,6 +4,7 @@ import type { Preset } from './presets';
 // what it needs from the person. It travels in the route's parameters, so everything read back is checked: a link from
 // outside the app can put anything there.
 export interface TemplateInfo {
+    readonly id: string | null;
     readonly title: string;
     readonly needs: string | null;
     // Width over height of the template's own preview, when the server said.
@@ -73,6 +74,7 @@ export function readTemplate(params: Params, posterHosts: readonly string[]): Te
     const needs = one(params.tneeds);
     const poster = one(params.tposter);
     return {
+        id: typeof params.tid === 'string' && /^[a-z0-9-]{1,40}$/.test(params.tid) ? params.tid : null,
         title: title.slice(0, TITLE_MAX),
         needs: needs ? needs.slice(0, NEEDS_MAX) : null,
         ratio: parseRatio(params.tratio),

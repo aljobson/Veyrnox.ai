@@ -1,3 +1,6 @@
+import { subscribeCacheUser } from '../../../lib/appCache';
+import { GeneratedChip } from '../../../components/library/GeneratedChip';
+import { ApiError } from '../../../lib/api';
 import { FacelessSoundCard } from '../../../components/FacelessSoundCard';
 import { Text, Button, themedStyles, useThemedStyles } from '../../../components/ui';
 import { Image } from 'expo-image';
@@ -17,7 +20,7 @@ import { askAboutHref, editHref, makeAnotherHref, nextStepsFor, publishHref } fr
 import { creativeReuseHref, kindForMime } from '../../../lib/creativeReuse';
 import { saveOutput, shareOutput } from '../../../lib/output';
 import { ds } from '../../../theme';
-import { plural, t } from '../../../lib/i18n';
+import { plural, t, formatLocale } from '../../../lib/i18n';
 
 import { cancelErrorKey, cancelJob, getCancelStatus, type CancelStatus } from '../../../lib/cancelJob';
 
@@ -50,6 +53,8 @@ export default function JobScreen() {
     // A stem-splitting job has six tracks instead of one file.
     const [stems, setStems] = useState<string[]>([]);
     const [modelId, setModelId] = useState<string | null>(null);
+    const [held, setHeld] = useState(false);
+    const [expiresAt, setExpiresAt] = useState<string | null>(null);
     const [error, setError] = useState(false);
     const [attempt, setAttempt] = useState(0);
     const [seconds, setSeconds] = useState(0);
@@ -79,12 +84,17 @@ export default function JobScreen() {
 
     useEffect(() => {
         setError(false);
+        setHeld(false); setAsset(null); setStems([]); setExpiresAt(null);
         setResultReady(false);
         setReview(null);
         setCancelStatus(null);
         const controller = new AbortController();
         const ratingController = new AbortController();
         ratingAbort.current = ratingController;
+        const unsubscribe = subscribeCacheUser(() => {
+            controller.abort(); ratingController.abort(); setAsset(null); setStems([]); setHeld(false); setExpiresAt(null);
+            void Image.clearMemoryCache?.().catch(() => {});
+        });
         const media = mediaApi(api);
         // Only a creation you waited for gets the buzz; opening a finished one from the library does not.
         let waited = false;
@@ -115,6 +125,7 @@ export default function JobScreen() {
                 const a = await media.getAsset(id);
                 if (controller.signal.aborted) return;
                 setAsset({ url: a.url, mime: a.mime_type });
+                setExpiresAt(a.asset_expires_at ?? null);
                 setStems(a.output_stems ?? []);
                 const celebration = celebrateOutput(id, a.mime_type, waited);
                 // Keep the original rating eligibility, and wait for the celebration to finish.
@@ -122,8 +133,8 @@ export default function JobScreen() {
                 if (controller.signal.aborted || ratingController.signal.aborted || !shouldAskForReview(asked, { waited, hasOutput: true })) return;
                 setReview(celebration);
             })
-            .catch(() => !controller.signal.aborted && setError(true));
-        return () => { controller.abort(); ratingController.abort(); };
+            .catch(err => { if (!controller.signal.aborted) { if (err instanceof ApiError && err.code === 'held') setHeld(true); else setError(true); } });
+        return () => { unsubscribe(); controller.abort(); ratingController.abort(); };
     }, [api, id, attempt]);
 
     const waiting = !asset && !error && (state === 'queued' || state === 'running');
@@ -216,21 +227,21 @@ export default function JobScreen() {
     return (
         <View style={styles.screen}>
             <Stack.Screen options={{ title: t('job.title') }} />
-            {error ? (
+            {held ? <View style={styles.center}><Text variant="title2" accessibilityRole="header">{t('library.status.held')}</Text><Text>{t('libraryCreate.heldBody')}</Text><Button label={t('label.Library')} onPress={() => router.replace('/library')} /></View> : error ? (
                 <View style={styles.center}>
                     <Text variant="body" tone="danger" style={styles.error}>{t('job.checkError')}</Text>
                     <Button variant="secondary" accessibilityRole="button" onPress={() => setAttempt((n) => n + 1)} label={t('job.checkAgain')} />
                 </View>
             ) : asset && stems.length > 0 ? (
                 <ScrollView contentContainerStyle={styles.actionsBody}>
-                    <StemList onReady={outputReady} api={api} jobId={id} stems={stems} />
+                    <GeneratedChip /><StemList onReady={outputReady} api={api} jobId={id} stems={stems} />
                 </ScrollView>
             ) : asset ? (
-                asset.mime.startsWith('image/') ? (
-                    <Image onLoad={outputReady} source={{ uri: asset.url }} style={styles.image} contentFit="contain" accessibilityLabel={t('job.title')} accessibilityIgnoresInvertColors />
-                ) : (
-                    <InlineMedia onReady={outputReady} key={asset.url} url={asset.url} audio={!asset.mime.startsWith('video/')} label={asset.mime.startsWith('video/') ? t('job.playVideo') : t('job.playAudio')} />
-                )
+                <View style={styles.output}>
+                    {asset.mime.startsWith('image/') ? <Image onLoad={outputReady} source={{ uri: asset.url }} style={styles.image} contentFit="contain" cachePolicy="memory" accessibilityLabel={t('job.title')} accessibilityIgnoresInvertColors />
+                        : <InlineMedia onReady={outputReady} key={asset.url} url={asset.url} audio={!asset.mime.startsWith('video/')} label={asset.mime.startsWith('video/') ? t('job.playVideo') : t('job.playAudio')} />}
+                    <GeneratedChip />
+                </View>
             ) : (
                 <View style={styles.center}>
                     {waiting ? <ActivityIndicator color={styles.accentInk.color} /> : null}
@@ -257,6 +268,7 @@ export default function JobScreen() {
                     ) : null}
                 </View>
             )}
+            {asset && expiresAt && Number.isFinite(Date.parse(expiresAt)) ? <Text variant="caption">{Date.parse(expiresAt) <= Date.now() ? t('library.expired') : t('library.expires', { date: new Date(expiresAt).toLocaleDateString(formatLocale(), { day: 'numeric', month: 'short', year: 'numeric' }) })}</Text> : null}
             {asset && stems.length === 0 ? (
                 <ScrollView style={styles.actions} contentContainerStyle={styles.actionsBody}>
                     {next.edit || next.publish || next.makeAnother || next.reuse ? (
@@ -306,6 +318,7 @@ const sheets = themedStyles((p) => ({
     status: { color: p.textSecondary, },
     hint: { color: p.textTertiary, textAlign: 'center' },
     error: { color: p.danger, textAlign: 'center' },
+    output: { flex: 1, justifyContent: 'center' },
     image: { flex: 1, width: '100%' },
     actions: { flexGrow: 0, flexShrink: 1 },
     nextBlock: { gap: ds.space.sm },
