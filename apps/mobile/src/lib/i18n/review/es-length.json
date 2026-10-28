@@ -2556,6 +2556,30 @@
     "ratio": 3
   },
   {
+    "id": "chatDepth.starLabel",
+    "english": "Star reply",
+    "translation": "Destacar respuesta",
+    "ratio": 1.8
+  },
+  {
+    "id": "chatDepth.wfTitle",
+    "english": "Workflows",
+    "translation": "Flujos de trabajo",
+    "ratio": 1.89
+  },
+  {
+    "id": "chatDepth.wfClose",
+    "english": "Close workflow",
+    "translation": "Cerrar flujo de trabajo",
+    "ratio": 1.64
+  },
+  {
+    "id": "chatDepth.wf.product-ad.name",
+    "english": "Product ad",
+    "translation": "Anuncio de producto",
+    "ratio": 1.9
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

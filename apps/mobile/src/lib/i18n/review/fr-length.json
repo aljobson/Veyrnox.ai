@@ -4182,6 +4182,42 @@
     "ratio": 1.62
   },
   {
+    "id": "chatDepth.free",
+    "english": "Free",
+    "translation": "Gratuit",
+    "ratio": 1.75
+  },
+  {
+    "id": "chatDepth.sendFree",
+    "english": "Send free",
+    "translation": "Envoyer gratuitement",
+    "ratio": 2.22
+  },
+  {
+    "id": "chatDepth.starLabel",
+    "english": "Star reply",
+    "translation": "Marquer la réponse",
+    "ratio": 1.8
+  },
+  {
+    "id": "chatDepth.showAll",
+    "english": "Show all",
+    "translation": "Tout afficher",
+    "ratio": 1.63
+  },
+  {
+    "id": "chatDepth.ask",
+    "english": "Ask about this",
+    "translation": "Poser une question à ce sujet",
+    "ratio": 2.07
+  },
+  {
+    "id": "chatDepth.wf.product-ad.name",
+    "english": "Product ad",
+    "translation": "Publicité produit",
+    "ratio": 1.7
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

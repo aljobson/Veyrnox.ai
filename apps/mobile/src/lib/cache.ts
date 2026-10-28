@@ -36,6 +36,8 @@ const DAY = 24 * HOUR;
 export const POLICIES = {
     // Balance and Library freshMs 0: a screen always refetches on focus (a purchase or a creation elsewhere must show
     // at once); the saved copy only fills the gap while that runs, or stands in when it fails.
+    chatDrafts: { name: 'chat-drafts', perUser: true, freshMs: 0, maxAgeMs: 30 * DAY },
+    chatStars: { name: 'chat-stars', perUser: true, freshMs: 0, maxAgeMs: 365 * DAY },
     balance: { name: 'balance', perUser: true, freshMs: 0, maxAgeMs: DAY },
     library: { name: 'library', perUser: true, freshMs: 0, maxAgeMs: 7 * DAY },
     // Starred creations (ADR-0156): job ids only, local, per account, wiped with the cache on sign-out.

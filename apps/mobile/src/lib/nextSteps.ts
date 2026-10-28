@@ -31,3 +31,5 @@ export function preloadJob(listed: readonly Job[], jobId: string | undefined): J
     if (found) return found;
     return { job_id: jobId, state: 'succeeded', credits: 0, model_id: '', created_at: '', has_asset: true };
 }
+
+export const askAboutHref = (jobId: string) => ({ pathname: '/chat/new', params: { asset: jobId } }) as const;

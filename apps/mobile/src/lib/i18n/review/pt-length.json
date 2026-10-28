@@ -2544,6 +2544,42 @@
     "ratio": 2.6
   },
   {
+    "id": "chatDepth.copy",
+    "english": "Copy or share",
+    "translation": "Copiar ou compartilhar",
+    "ratio": 1.69
+  },
+  {
+    "id": "chatDepth.copyLabel",
+    "english": "Copy or share reply",
+    "translation": "Copiar ou compartilhar resposta",
+    "ratio": 1.63
+  },
+  {
+    "id": "chatDepth.copyCode",
+    "english": "Copy or share code",
+    "translation": "Copiar ou compartilhar código",
+    "ratio": 1.61
+  },
+  {
+    "id": "chatDepth.wfTitle",
+    "english": "Workflows",
+    "translation": "Fluxos de trabalho",
+    "ratio": 2
+  },
+  {
+    "id": "chatDepth.wfClose",
+    "english": "Close workflow",
+    "translation": "Fechar fluxo de trabalho",
+    "ratio": 1.71
+  },
+  {
+    "id": "chatDepth.wf.product-ad.name",
+    "english": "Product ad",
+    "translation": "Anúncio de produto",
+    "ratio": 1.8
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",
