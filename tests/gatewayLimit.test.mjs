@@ -72,3 +72,16 @@ test('upload opt-in cannot leak a non-string code or become a fetch option', asy
   const g = load(Response.json({ error: 'upload_budget_exceeded' }, { status: 429 }));
   await assert.rejects(g.gatewayFetch('/other', { preserveUploadErrors: true }), e => e.code === 'rate_limited');
 });
+
+test('a switched-off feature (5xx *_not_open) is not reported as a server error', async () => {
+  for (const error of ['retention_not_open', 'publish_inbox_not_open', 'calendar_not_open']) {
+    const g = load(Response.json({ error }, { status: 503 }));
+    await assert.rejects(g.gatewayFetch('/cinema/retention'), e => e.status === 503 && e.code === error);
+    assert.deepEqual(g.telemetry, []);
+  }
+  for (const body of [{ error: 'temporarily_unavailable' }, { error: 'not_open_yet' }, { error: { code: 'retention_not_open' } }, {}]) {
+    const g = load(Response.json(body, { status: 503 }));
+    await assert.rejects(g.gatewayFetch('/cinema/retention'));
+    assert.equal(g.telemetry[0]?.[0], 'gateway_server_error');
+  }
+});
