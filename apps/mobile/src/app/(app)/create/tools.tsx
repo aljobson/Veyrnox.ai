@@ -2,17 +2,22 @@ import { rawText } from '../../../lib/i18n/translate';
 import { useFaceFiltersAvailable } from '../../../lib/useFaceFiltersAvailable';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Button, IconBadge, ListRow } from '../../../components/ui';
+import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
+import { Icon, IconBadge, Text, themedStyles, useThemedStyles } from '../../../components/ui';
 import { toolIcon } from '../../../lib/featureIcons';
 import { plural, t } from '../../../lib/i18n';
 import { fetchCatalogCached, type CatalogModel } from '../../../lib/media';
-import { requiresSource, toolGroups, toolNeeds } from '../../../lib/toolDirectory';
-import { colors, LIST_END_PADDING } from '../../../theme';
+import { TOOL_TASKS, requiresSource, toolGroups, toolNeeds, type ToolGroup } from '../../../lib/toolDirectory';
+import { ds, LIST_END_PADDING } from '../../../theme';
 
-// Models that work on a file you already have, grouped by the job they do (the web's /tools page). Each opens the same
-// Create form as any other model, where the file is chosen and the price is shown before Generate.
+const FACE = 'face-filters';
+const FACE_TASK = TOOL_TASKS.find((task) => task.key === FACE);
+
+// The web's /tools page on the phone: one card per job, in the web's order, with the job's models under it. A model
+// row opens the Create form, where the file is chosen and Generate shows the exact cost. Face filters is one card
+// that opens its own screen (the filters are chosen there), so it never repeats once per filter model.
 export default function CreateTools() {
+    const styles = useThemedStyles(sheets);
     const faceAvailable = useFaceFiltersAvailable();
     const router = useRouter();
     const params = useLocalSearchParams<{ source?: string; mode?: string }>();
@@ -24,7 +29,16 @@ export default function CreateTools() {
     }, []);
 
     const source = params.source === 'image' || params.source === 'video' ? params.source : null;
-    const groups = useMemo(() => toolGroups(source ? (models ?? []).filter((model) => requiresSource(model, source)) : (models ?? [])), [models, source]);
+    const showFace = faceAvailable && source !== 'video';
+    const groups = useMemo(() => {
+        const found = toolGroups(source ? (models ?? []).filter((model) => requiresSource(model, source)) : (models ?? [])).filter((g) => g.key !== FACE);
+        if (!showFace || !FACE_TASK) return found;
+        // Face filters keeps its place in the web's order even when the saved catalog has no face models.
+        const order = (key: string) => { const i = TOOL_TASKS.findIndex((task) => task.key === key); return i < 0 ? TOOL_TASKS.length : i; };
+        const face: ToolGroup = { key: FACE, label: FACE_TASK.label, blurb: t('faceFilters.lead'), tools: [] };
+        const at = found.findIndex((g) => order(g.key) > order(FACE));
+        return at < 0 ? [...found, face] : [...found.slice(0, at), face, ...found.slice(at)];
+    }, [models, source, showFace]);
     const lead = params.mode === 'reference'
         ? t('tools.choosewhatyourreferenceshouldguideYou')
         : source === 'image'
@@ -36,61 +50,62 @@ export default function CreateTools() {
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.body}>
             <Stack.Screen options={{ title: t('toolsDir.title') }} />
-            <Text style={styles.lead}>{lead}</Text>
-            {source !== 'video' && faceAvailable ? (
-                <ListRow
-                    accessibilityLabel={t('faceFilters.title')}
-                    leading={<IconBadge {...toolIcon('face-filters')} />}
-                    title={t('faceFilters.title')}
-                    subtitle={t('faceFilters.lead')}
-                    style={styles.featured}
-                    onPress={() => router.push('/face-filters')}
-                />
-            ) : null}
+            <Text variant="body" tone="secondary">{lead}</Text>
             {failed && !models ? (
-                <Text style={styles.error}>{t('create.loadError')}</Text>
+                <Text variant="body" tone="danger">{t('create.loadError')}</Text>
             ) : models === null ? (
-                <ActivityIndicator color={colors.accent} />
+                <ActivityIndicator color={styles.accentInk.color} />
             ) : groups.length === 0 ? (
-                <Text style={styles.muted}>{t('toolsDir.empty')}</Text>
-            ) : (
-                groups.filter(g => g.key !== 'face-filters' || faceAvailable).map((g) => (
-                    <View key={g.key} style={styles.group}>
-                        <View style={styles.groupHead}>
-                            <Text style={styles.groupTitle} accessibilityRole="header">{g.label}</Text>
-                            <Text style={styles.muted}>{g.blurb}</Text>
+                <Text variant="footnote" tone="secondary">{t('toolsDir.empty')}</Text>
+            ) : groups.map((g) => g.key === FACE ? (
+                <Pressable key={g.key} accessibilityRole="button" accessibilityLabel={rawText(`${g.label}. ${g.blurb}`)} onPress={() => router.push('/face-filters')}
+                    style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
+                    <View style={styles.head}>
+                        <IconBadge {...toolIcon(g.key)} />
+                        <View style={styles.headText}>
+                            <Text variant="bodyStrong" tone="primary" accessibilityRole="header">{g.label}</Text>
+                            <Text variant="footnote" tone="secondary">{g.blurb}</Text>
                         </View>
-                        {g.tools.map((m) => (
-                            <View key={m.id}>
-                                <ListRow
-                                    accessibilityLabel={rawText(`${m.name}. ${t('toolsDir.needs', { what: toolNeeds(m) })}. ${plural('create.from', m.credits)}`)}
-                                    leading={<IconBadge {...toolIcon(g.key)} />}
-                                    title={m.name}
-                                    subtitle={t('toolsDir.needs', { what: toolNeeds(m) })}
-                                    trailing={<Text style={styles.price}>{plural('create.from', m.credits)}</Text>}
-                                    onPress={() => g.key === 'face-filters' ? router.push('/face-filters') : router.push({ pathname: '/create/[modelId]', params: { modelId: m.id } })}
-                                />
-                                <Button variant="tertiary" size="md" label={t('projectHome.details')}
-                                    accessibilityLabel={rawText(`${m.name}, ${t('projectHome.details')}`)}
-                                    onPress={() => router.push({ pathname: '/model/[id]', params: { id: m.id } })} />
-                            </View>
-                        ))}
+                        <Icon name="caretRight" size={20} />
                     </View>
-                ))
-            )}
+                </Pressable>
+            ) : (
+                <View key={g.key} style={styles.card}>
+                    <View style={styles.head}>
+                        <IconBadge {...toolIcon(g.key)} />
+                        <View style={styles.headText}>
+                            <Text variant="bodyStrong" tone="primary" accessibilityRole="header">{g.label}</Text>
+                            <Text variant="footnote" tone="secondary">{g.blurb}</Text>
+                        </View>
+                    </View>
+                    {g.tools.map((m) => (
+                        <Pressable key={m.id} accessibilityRole="button"
+                            accessibilityLabel={rawText(`${m.name}. ${t('toolsDir.needs', { what: toolNeeds(m) })}. ${plural('library.cost', m.credits)}`)}
+                            onPress={() => router.push({ pathname: '/create/[modelId]', params: { modelId: m.id } })}
+                            style={({ pressed }) => [styles.tool, pressed && styles.pressed]}>
+                            <View style={styles.toolText}>
+                                <Text variant="callout" tone="primary">{m.name}</Text>
+                                <Text variant="footnote" tone="secondary">{t('toolsDir.needs', { what: toolNeeds(m) })}</Text>
+                            </View>
+                            <Text variant="footnote" tone="secondary" style={styles.price}>{plural('library.cost', m.credits)}</Text>
+                            <Icon name="caretRight" size={16} />
+                        </Pressable>
+                    ))}
+                </View>
+            ))}
         </ScrollView>
     );
 }
 
-const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: colors.background },
-    body: { padding: 16, gap: 24, paddingBottom: LIST_END_PADDING },
-    lead: { color: colors.body, fontSize: 15, lineHeight: 22 },
-    featured: { paddingHorizontal: 12, borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, backgroundColor: colors.surface },
-    group: { gap: 2 },
-    groupHead: { gap: 2, marginBottom: 4 },
-    groupTitle: { color: colors.text, fontSize: 17, fontWeight: '700' },
-    price: { color: colors.money, fontSize: 13, fontWeight: '600' },
-    muted: { color: colors.muted, fontSize: 13 },
-    error: { color: colors.danger },
-});
+const sheets = themedStyles((p) => ({
+    accentInk: { color: p.accent },
+    screen: { flex: 1, backgroundColor: p.bg },
+    body: { padding: ds.space.lg, gap: ds.space.md, paddingBottom: LIST_END_PADDING },
+    card: { borderRadius: ds.radius.lg, borderWidth: 1, borderColor: p.borderSubtle, backgroundColor: p.bgElevated1, paddingHorizontal: ds.space.md, paddingVertical: ds.space.sm },
+    pressed: { opacity: 0.7 },
+    head: { flexDirection: 'row', alignItems: 'center', gap: ds.space.md, paddingVertical: ds.space.sm },
+    headText: { flex: 1, gap: ds.space.xxs },
+    tool: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: ds.space.sm, paddingVertical: ds.space.sm, borderTopWidth: 0.5, borderColor: p.borderSubtle },
+    toolText: { flex: 1, gap: ds.space.xxs },
+    price: { fontVariant: ['tabular-nums'] },
+}));

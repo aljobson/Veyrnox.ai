@@ -8,6 +8,7 @@ import { english } from '../../../lib/i18n/binding';
 import { KeyboardFormScrollView } from '../../../components/KeyboardFormScrollView';
 import { KeyboardScreen } from '../../../components/KeyboardScreen';
 import { FormHeader } from '../../../components/create/FormHeader';
+import { ModelPickerSheet } from '../../../components/create/ModelPickerSheet';
 import { SectionLabel } from '../../../components/create/SectionLabel';
 import { SourceDurationCard } from '../../../components/create/SourceDurationCard';
 import { Text, TextField, Button, Card, Chip, Checkbox, themedStyles, useThemedStyles } from '../../../components/ui';
@@ -27,7 +28,7 @@ import { SourcePicker } from '../../../components/SourcePicker';
 import { TemplateBanner } from '../../../components/TemplateBanner';
 import { DEFAULT_CINEMA, buildCinemaPrompt, sanitizeCinema, type Cinema } from '../../../lib/cinemaCamera';
 import { clearDraft, loadDraft, saveDraft } from '../../../lib/createDraftStore';
-import { SAVED_DRAFT_VERSION, type CreateDraft, audioLengthInvalid, batchCost, freeLeftFor, hasAnyOption, imageCount, optionsFor, resolveAudio, resolveResolution, seedIsInvalid, settingsInputs, takesImageCount, voiceIsMissing } from '../../../lib/createOptions';
+import { SAVED_DRAFT_VERSION, pickerModels, type CreateDraft, audioLengthInvalid, batchCost, freeLeftFor, hasAnyOption, imageCount, optionsFor, resolveAudio, resolveResolution, seedIsInvalid, settingsInputs, takesImageCount, voiceIsMissing } from '../../../lib/createOptions';
 import { loadVibe } from '../../../lib/creatorProfileStore';
 import { defaultAspect } from '../../../lib/creatorTaste';
 import { nearestAspect, readTemplate } from '../../../lib/templateHandoff';
@@ -91,6 +92,7 @@ export default function CreateWithModel() {
     const { left: freeMap, loading: freeLoading } = useFreeLeftState(refreshKey);
     const [catalog, setCatalog] = useState<CatalogModel[]>([]);
     const [results, setResults] = useState<ResultBatch | null>(null);
+    const [picking, setPicking] = useState(false);
     const [complete, setComplete] = useState(false);
     const [confirmed, setConfirmed] = useState(0);
     const batch = useRef(0);
@@ -200,6 +202,14 @@ export default function CreateWithModel() {
     // Closing the screen saves what was typed in the last moments too.
     useEffect(() => () => void flushDraft(), [flushDraft]);
 
+    // Another model for the same job replaces this form; the words typed so far go with it.
+    async function changeModel(id: string) {
+        setPicking(false);
+        if (busy || !model || id === model.id) return;
+        await flushDraft();
+        router.replace({ pathname: '/create/[modelId]', params: prompt.trim() ? { modelId: id, prompt } : { modelId: id } });
+    }
+
     const discardDraft = useCallback(() => {
         setPrompt('');
         setOpts((o) => ({ ...o, seed: '', negative: '', count: 1, voice: '', audioSeconds: '' }));
@@ -283,6 +293,7 @@ export default function CreateWithModel() {
     const resultSettled = () => { if (generation === batch.current) void refreshBalance(api, owner, () => generation === batch.current, balanceSeq); };
 
     const missing = complete ? 0 : shortfall(balance, price);
+    const alternatives = pickerModels(catalog, model);
     const disabled = busy || (!complete && (freeLoading || (!ready && !matchingRetry) || missing > 0));
     const generateLabel = `${n > 1 ? t('opt.generateCount', { count: String(n) }) : t('slip.generate')}. ${costLine(price, n, freeLeft, unit)}`;
 
@@ -290,7 +301,9 @@ export default function CreateWithModel() {
         <KeyboardScreen style={styles.screen}>
             <Stack.Screen options={{ title: t('label.Create') }} />
             <KeyboardFormScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-                <FormHeader modelLabel={modelLabel} modality={kindOf(model.modality) ?? model.modality} stageLine={stageLine} stage={results ? <CreateResult api={api} batch={results} catalog={catalog} onTerminal={resultSettled} /> : undefined} />
+                <FormHeader modelLabel={modelLabel} modality={kindOf(model.modality) ?? model.modality} stageLine={stageLine} stage={results ? <CreateResult api={api} batch={results} catalog={catalog} onTerminal={resultSettled} /> : undefined}
+                    onChangeModel={alternatives.length > 1 && !busy ? () => setPicking(true) : undefined} />
+                <ModelPickerSheet visible={picking} models={alternatives} currentId={model.id} freeLeft={freeMap} onPick={(id) => void changeModel(id)} onClose={() => setPicking(false)} />
 
                 {template ? <TemplateBanner template={template} aspect={options.aspects.length ? opts.aspect : null} /> : null}
                 {startId && takesStartImage ? <Text variant="caption" tone="tertiary" style={styles.consent} accessibilityLiveRegion="polite">{startProblem ?? t('oddlings.animate.startNote')}</Text> : null}
