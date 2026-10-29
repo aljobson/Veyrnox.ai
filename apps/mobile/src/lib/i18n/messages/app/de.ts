@@ -5547,5 +5547,17 @@ export default {
   "vibeInvite.title": "Kurzer Vibe-Check?",
   "vibeInvite.body": "Sieben Taps, und Entdecken zeigt zuerst Templates, die zu deiner Arbeitsweise passen.",
   "vibeInvite.start": "Los geht's",
-  "vibeInvite.later": "Jetzt nicht"
+  "vibeInvite.later": "Jetzt nicht",
+    "editorAi.body": "Erstelle ein Video, Bild oder einen Klang. Sobald das Ergebnis fertig ist, wird es an der Abspielposition in diese Timeline eingefügt.",
+    "editorAi.note": "Sobald es fertig ist, wird es bei {time} in die Timeline dieses Projekts eingefügt.",
+    "editorAi.added": "{name} wurde zur Timeline hinzugefügt.",
+    "editorAi.notAdded": "Fertig, konnte hier aber nicht hinzugefügt werden.",
+    "editorAi.addAtPlayhead": "An Abspielposition hinzufügen",
+    "editorAi.dismiss": "Verwerfen",
+    "editorAi.projectFull": "Dieses Projekt ist voll. Entferne zuerst einen Clip oder eine Datei.",
+    "editorAi.stemsBody": "Wähle eine Tonspur zum Einfügen an der Abspielposition. Du kannst mehrere hinzufügen.",
+    "editorAi.addStem": "{stem} hinzufügen",
+    "editorAi.stemName": "{name} — {stem}",
+    "editorAi.done": "Fertig",
+    "editorAi.removed": "Aus der Timeline entfernt. Erneut hinzufügen oder verwerfen."
 } as const;

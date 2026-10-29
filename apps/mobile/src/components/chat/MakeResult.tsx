@@ -8,7 +8,7 @@ import { Button, Card, Text, themedStyles, useThemedStyles } from '../ui';
 
 export function MakeResult({ jobs, count, canMakeAnother, onOpen, onLibrary, onMakeAnother }: {
     jobs: readonly MakeJob[]; count: number; canMakeAnother: boolean;
-    onOpen: (id: string) => void; onLibrary: () => void; onMakeAnother: () => void;
+    onOpen: (id: string) => void; onLibrary?: () => void; onMakeAnother: () => void;
 }) {
     const styles = useThemedStyles(sheets);
     if (!jobs.length) return null;
@@ -22,7 +22,7 @@ export function MakeResult({ jobs, count, canMakeAnother, onOpen, onLibrary, onM
             </Card>)}
         </View>
         {jobs.some(job => job.state === 'queued' || job.state === 'running') ? <Text variant="footnote" tone="secondary">{t('job.keepsRunning')}</Text> : null}
-        <Button variant="secondary" label={t('faceFilters.openLibrary')} onPress={onLibrary} />
+        {onLibrary ? <Button variant="secondary" label={t('faceFilters.openLibrary')} onPress={onLibrary} /> : null}
         <Button variant="secondary" label={t('job.next.makeAnother')} disabled={!canMakeAnother} onPress={onMakeAnother} />
     </View>;
 }

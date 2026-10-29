@@ -24,12 +24,14 @@ interface Props {
     readonly initialPrompt?: string;
     readonly initialKind?: Kind;
     readonly onClose: () => void;
+    readonly onJobStarted?: (jobId: string, model: CatalogModel) => void;
+    readonly resultNote?: string;
 }
 const defaults = (model?: CatalogModel | null): OptionValues => ({
     aspect: model ? optionsFor(model).aspects[0] ?? null : null, count: 1, seed: '', negative: '', voice: '', audioSeconds: '',
 });
 
-export function MakePanel({ visible, initialPrompt = '', initialKind = 'image', onClose }: Props) {
+export function MakePanel({ visible, initialPrompt = '', initialKind = 'image', onClose, onJobStarted, resultNote }: Props) {
     const styles = useThemedStyles(sheets);
     const reducedMotion = useReducedMotion();
     const { api } = useAuth();
@@ -100,8 +102,9 @@ export function MakePanel({ visible, initialPrompt = '', initialKind = 'image', 
                 <Text variant="title2" accessibilityRole="header">{t('chat.make.title')}</Text>
                 <MakeResult jobs={state.jobs} count={state.count} canMakeAnother={!state.submitting && !state.retry?.blocked}
                     onOpen={id => { close(); router.push({ pathname: '/job/[id]', params: { id } }); }}
-                    onLibrary={() => { close(); router.push('/library'); }}
+                    onLibrary={onJobStarted ? undefined : () => { close(); router.push('/library'); }}
                     onMakeAnother={() => { if (state.makeAnother()) clearSources(); }} />
+                {resultNote ? <Text variant="footnote">{resultNote}</Text> : null}
                 <View style={styles.row} accessibilityRole="radiogroup" accessibilityLabel={t('chat.make.kind')}>
                     {MEDIA_KINDS.map(k => <Chip key={k} accessibilityRole="radio" disabled={state.submitting}
                         accessibilityState={{ selected: kind === k, disabled: state.submitting }}
@@ -135,7 +138,7 @@ export function MakePanel({ visible, initialPrompt = '', initialKind = 'image', 
                 {state.note ? <Text variant="caption" accessibilityLiveRegion="polite">{state.note}</Text> : null}
                 {missing > 0 || state.lowBalance ? <Button label={t('lowBalance.buy')} variant="secondary" onPress={buy} /> : null}
                 <Button accessibilityRole="button" accessibilityLabel={rawText(label)} disabled={!ready} containerStyle={styles.go}
-                    onPress={() => { if (ready && request) void state.run(request, n); }} variant="secondary" label={label}>
+                    onPress={() => { if (ready && request && model) void state.run(request, n, onJobStarted ? id => onJobStarted(id, model) : undefined); }} variant="secondary" label={label}>
                     {state.submitting ? <ActivityIndicator color={styles.ink.color} /> : <Text tone={price !== null ? 'warning' : 'primary'}>{price === null ? t('chat.make.button') : price === 0 ? t('create.workspace.generateFree') : plural('chat.make.buttonPrice', price)}</Text>}
                 </Button>
                 <Button variant="tertiary" onPress={close} label={t('chat.make.close')} />

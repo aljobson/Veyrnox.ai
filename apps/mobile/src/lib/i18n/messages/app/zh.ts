@@ -5482,5 +5482,17 @@ export default {
   "vibeInvite.title": "来个快速氛围测试？",
   "vibeInvite.body": "只需点七下，探索页就会优先展示适合你创作方式的模板。",
   "vibeInvite.start": "开始",
-  "vibeInvite.later": "暂不"
+  "vibeInvite.later": "暂不",
+    "editorAi.body": "创建视频、图像或声音。完成后会添加到此时间线的播放头位置。",
+    "editorAi.note": "完成后会添加到此项目时间线的 {time} 位置。",
+    "editorAi.added": "已将 {name} 添加到时间线。",
+    "editorAi.notAdded": "已完成，但无法在此处添加。",
+    "editorAi.addAtPlayhead": "添加到播放头位置",
+    "editorAi.dismiss": "忽略",
+    "editorAi.projectFull": "此项目已满。请先移除一个片段或文件。",
+    "editorAi.stemsBody": "选择要添加到播放头位置的分离音轨。您可以添加多个。",
+    "editorAi.addStem": "添加{stem}",
+    "editorAi.stemName": "{name}：{stem}",
+    "editorAi.done": "完成",
+    "editorAi.removed": "已从时间线移除。请重新添加或忽略。"
 } as const;

@@ -5482,5 +5482,17 @@ export default {
   "vibeInvite.title": "ちょっとバイブチェック？",
   "vibeInvite.body": "たった七タップで、探索の先頭にあなたのつくり方に合うテンプレートが並びます。",
   "vibeInvite.start": "はじめる",
-  "vibeInvite.later": "あとで"
+  "vibeInvite.later": "あとで",
+    "editorAi.body": "動画、画像、音声を作成します。完成すると、このタイムラインの再生ヘッド位置に追加されます。",
+    "editorAi.note": "完成すると、このプロジェクトのタイムラインの {time} に追加されます。",
+    "editorAi.added": "{name} をタイムラインに追加しました。",
+    "editorAi.notAdded": "完成しましたが、ここには追加できませんでした。",
+    "editorAi.addAtPlayhead": "再生ヘッド位置に追加",
+    "editorAi.dismiss": "閉じる",
+    "editorAi.projectFull": "このプロジェクトは上限に達しています。先にクリップかファイルを削除してください。",
+    "editorAi.stemsBody": "再生ヘッド位置に追加する分離音声を選んでください。複数追加できます。",
+    "editorAi.addStem": "{stem} を追加",
+    "editorAi.stemName": "{name}：{stem}",
+    "editorAi.done": "完了",
+    "editorAi.removed": "タイムラインから削除されました。もう一度追加するか、閉じてください。"
 } as const;

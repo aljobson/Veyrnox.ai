@@ -5612,5 +5612,17 @@ export default {
   "vibeInvite.title": "Um papo rápido sobre seu estilo?",
   "vibeInvite.body": "Sete toques e o Explorar começa com modelos que combinam com o seu jeito de criar.",
   "vibeInvite.start": "Começar",
-  "vibeInvite.later": "Agora não"
+  "vibeInvite.later": "Agora não",
+    "editorAi.body": "Crie um vídeo, uma imagem ou um som. Quando estiver pronto, será adicionado a esta linha do tempo na posição de reprodução.",
+    "editorAi.note": "Quando estiver pronto, será adicionado à linha do tempo deste projeto em {time}.",
+    "editorAi.added": "{name} foi adicionado à linha do tempo.",
+    "editorAi.notAdded": "Pronto, mas não foi possível adicionar aqui.",
+    "editorAi.addAtPlayhead": "Adicionar na posição atual",
+    "editorAi.dismiss": "Dispensar",
+    "editorAi.projectFull": "Este projeto está cheio. Remova um clipe ou arquivo primeiro.",
+    "editorAi.stemsBody": "Escolha uma faixa separada para adicionar na posição atual. Você pode adicionar mais de uma.",
+    "editorAi.addStem": "Adicionar {stem}",
+    "editorAi.stemName": "{name} — {stem}",
+    "editorAi.done": "Concluído",
+    "editorAi.removed": "Removido da linha do tempo. Adicione novamente ou dispense."
 } as const;

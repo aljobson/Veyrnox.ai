@@ -5807,5 +5807,17 @@ export default {
   "vibeInvite.title": "فحص سريع للأجواء؟",
   "vibeInvite.body": "سبع نقرات وتبدأ صفحة الاستكشاف بالقوالب التي تناسب طريقتك في الإبداع.",
   "vibeInvite.start": "ابدأ",
-  "vibeInvite.later": "ليس الآن"
+  "vibeInvite.later": "ليس الآن",
+    "editorAi.body": "أنشئ فيديو أو صورة أو صوتًا. عند اكتماله، يُضاف إلى هذا المخطط الزمني عند مؤشر التشغيل.",
+    "editorAi.note": "عند اكتماله، يُضاف إلى المخطط الزمني لهذا المشروع عند {time}.",
+    "editorAi.added": "تمت إضافة {name} إلى المخطط الزمني.",
+    "editorAi.notAdded": "جاهز، لكن تعذرت إضافته هنا.",
+    "editorAi.addAtPlayhead": "إضافة عند مؤشر التشغيل",
+    "editorAi.dismiss": "تجاهل",
+    "editorAi.projectFull": "هذا المشروع ممتلئ. احذف مقطعًا أو ملفًا أولًا.",
+    "editorAi.stemsBody": "اختر مسارًا صوتيًا لإضافته عند مؤشر التشغيل. يمكنك إضافة أكثر من مسار.",
+    "editorAi.addStem": "إضافة {stem}",
+    "editorAi.stemName": "{name} — {stem}",
+    "editorAi.done": "تم",
+    "editorAi.removed": "أُزيل من المخطط الزمني. أضفه مجددًا أو تجاهله."
 } as const;
