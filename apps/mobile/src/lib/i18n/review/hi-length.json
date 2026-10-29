@@ -1734,6 +1734,12 @@
     "ratio": 2
   },
   {
+    "id": "commerce.amountOff",
+    "english": "Amount off",
+    "translation": "निश्चित राशि की छूट",
+    "ratio": 1.9
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

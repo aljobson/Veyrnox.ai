@@ -4590,6 +4590,18 @@
     "ratio": 1.73
   },
   {
+    "id": "commerce.percentOff",
+    "english": "Percent off",
+    "translation": "Réduction en pourcentage",
+    "ratio": 2.18
+  },
+  {
+    "id": "commerce.syncNote",
+    "english": "Shop sync and product posts are coming to the app.",
+    "translation": "La synchronisation des boutiques et les publications de produits arriveront dans l’application.",
+    "ratio": 1.9
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

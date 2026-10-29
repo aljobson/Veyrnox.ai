@@ -2916,6 +2916,12 @@
     "ratio": 1.68
   },
   {
+    "id": "commerce.percentOff",
+    "english": "Percent off",
+    "translation": "Descuento porcentual",
+    "ratio": 1.82
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",
