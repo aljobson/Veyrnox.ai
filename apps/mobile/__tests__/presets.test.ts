@@ -30,8 +30,8 @@ describe('parsePresets', () => {
     });
 
     test('keeps an exact source prompt separate from the compatible generation prompt', () => {
-        const [p] = parsePresets({ presets: [{ ...base, sourcePrompt: 'Exact community text', sourcePromptOrigin: 'community-source-exact' }] });
-        expect(p).toMatchObject({ prompt: 'Animate the product.', sourcePrompt: 'Exact community text', sourcePromptOrigin: 'community-source-exact' });
+        const [p] = parsePresets({ presets: [{ ...base, sourcePrompt: 'Exact community text', sourcePromptOrigin: 'community-source-exact', sourcePromptStatus: 'exact', sourcePromptRunnable: false, sourcePromptIssues: ['source-input-contract-not-wired'], sourcePromptDuplicateOf: 'earlier-template' }] });
+        expect(p).toMatchObject({ prompt: 'Animate the product.', sourcePrompt: 'Exact community text', sourcePromptOrigin: 'community-source-exact', sourcePromptStatus: 'exact', sourcePromptRunnable: false, sourcePromptIssues: ['source-input-contract-not-wired'], sourcePromptDuplicateOf: 'earlier-template' });
         expect((presetHref(p) as { params: { prompt: string } }).params.prompt).toBe('Animate the product.');
         const [invalidOrigin] = parsePresets({ presets: [{ ...base, sourcePrompt: '', sourcePromptOrigin: 'community-source-exact' }] });
         expect(invalidOrigin).toMatchObject({ sourcePrompt: null, sourcePromptOrigin: null });
@@ -40,6 +40,13 @@ describe('parsePresets', () => {
         const verbatim = `  Начало\n${'界'.repeat(2200)}  `;
         const [longSource] = parsePresets({ presets: [{ ...base, sourcePrompt: verbatim, sourcePromptOrigin: 'community-source-exact' }] });
         expect(longSource.sourcePrompt).toBe(verbatim);
+    });
+
+    test('keeps source prompt gap states even when no exact text exists', () => {
+        const [unavailable] = parsePresets({ presets: [{ ...base, sourcePromptStatus: 'unavailable', sourcePromptRunnable: false, sourcePromptIssues: ['source-prompt-unavailable'] }] });
+        expect(unavailable).toMatchObject({ sourcePrompt: null, sourcePromptStatus: 'unavailable', sourcePromptRunnable: false, sourcePromptIssues: ['source-prompt-unavailable'] });
+        const [legacy] = parsePresets({ presets: [base] });
+        expect(legacy.sourcePromptStatus).toBe('adaptation-only');
     });
 
     test('drops gated presets, since the app does not offer those models', () => {

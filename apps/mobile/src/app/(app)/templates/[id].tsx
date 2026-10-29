@@ -24,6 +24,10 @@ export default function TemplatePage() {
     const [prompt, setPrompt] = useState('');
     const [copied, setCopied] = useState<string | null>(null);
     const hasExactSourcePrompt = preset?.sourcePromptOrigin === 'community-source-exact' && typeof preset.sourcePrompt === 'string';
+    const sourcePromptUnavailable = preset?.sourcePromptStatus === 'unavailable';
+    const sourcePromptNotRecorded = preset?.sourcePromptStatus === 'adaptation-only';
+    const sourcePromptTruncated = preset?.sourcePromptStatus === 'exact-truncated';
+    const sourcePromptDuplicate = typeof preset?.sourcePromptDuplicateOf === 'string';
     // An exact community prompt is the only prompt: shown, copied and sent as received.
     const promptLabel = t(hasExactSourcePrompt ? 'public.TemplateRecipe.exactCommunityPrompt' : preset?.promptOrigin === 'veyrnox-adaptation' ? 'public.TemplateRecipe.generationPrompt' : 'mobile.prompt');
     const tooLong = prompt.length > TEMPLATE_PROMPT_MAX;
@@ -40,11 +44,15 @@ export default function TemplatePage() {
             <Text>{t('libraryCreate.runsOn', { model: preset.modelName })}</Text>
             {preset.needs ? <Card><Text>{t('presets.needs', { value1: preset.needs })}</Text>{preset.sourceAspect ? <Text>{t('presets.detail.sourceAspect', { aspect: preset.sourceAspect })}</Text> : null}</Card> : null}
             {preset.previewUrl ? <InlineMedia url={preset.previewUrl} label={t('job.playVideo')} /> : preset.posterUrl ? <Image source={{ uri: preset.posterUrl }} cachePolicy="memory" contentFit="contain" style={{ width: '100%', aspectRatio: previewRatio(preset) }} accessibilityLabel={rawText(preset.title)} /> : null}
+            {sourcePromptUnavailable ? <Card><Text>{t('public.TemplateRecipe.sourcePromptUnavailable')}</Text></Card> : null}
+            {sourcePromptNotRecorded ? <Card><Text>{t('public.TemplateRecipe.sourcePromptNotRecorded')}</Text></Card> : null}
             <TextField label={promptLabel} accessibilityLabel={promptLabel} value={prompt} onChangeText={value => { setPrompt(value); setCopied(null); }} multiline maxLength={hasExactSourcePrompt ? undefined : TEMPLATE_PROMPT_MAX} style={hasExactSourcePrompt ? { writingDirection: 'auto', textAlign: 'auto' } : undefined} />
             <Button label={t(hasExactSourcePrompt ? 'public.TemplateRecipe.copyExactCommunityPrompt' : 'editor.copy')} onPress={async () => setCopied(t(await copyText(prompt) ? 'libraryCreate.copied' : 'libraryCreate.copyFailed'))} />
             {copied ? <Text accessibilityLiveRegion="polite">{copied}</Text> : null}
             {tooLong ? <Text tone="danger" accessibilityLiveRegion="polite">{t('public.TemplateRecipe.promptTooLong', { count: prompt.length, max: TEMPLATE_PROMPT_MAX })}</Text> : null}
             {hasExactSourcePrompt ? <Text>{t('public.TemplateRecipe.exactCommunityPromptHelp')}</Text> : null}
+            {hasExactSourcePrompt && sourcePromptTruncated ? <Card><Text>{t('public.TemplateRecipe.sourcePromptTruncated')}</Text></Card> : null}
+            {hasExactSourcePrompt && sourcePromptDuplicate ? <Card><Text>{t('public.TemplateRecipe.sourcePromptDuplicate')}</Text></Card> : null}
             <Text tone="warning">{templatePrice(preset)}</Text>
             {preset.available ? <Button label={t('libraryCreate.useTemplate')} disabled={tooLong || !prompt.trim()} onPress={() => router.push(presetHref({ ...preset, prompt }))} /> : <Text>{t('presets.notavailablerightnow')}</Text>}
         </>}

@@ -6,7 +6,7 @@
  * takes no input and reads no identity header. Every web template is listed. Credits come from its active catalog row when present;
  * otherwise the web gallery's template fallback is returned with available: false, so clients can show it without offering generation.
  *
- * Response: { presets: [{ id, title, category, modelId, modelName, modality, prompt, promptOrigin, sourcePrompt, sourcePromptOrigin, needs, durationSeconds, credits, gated, available,
+ * Response: { presets: [{ id, title, category, modelId, modelName, modality, prompt, promptOrigin, sourcePrompt, sourcePromptOrigin, sourcePromptStatus, sourcePromptRunnable, sourcePromptIssues, needs, durationSeconds, credits, gated, available,
  * isNew, previewUrl, posterUrl, previewAspect }] }. Errors: 503 not_configured, 502 presets_unavailable (catalog unreachable).
  */
 import { NextResponse } from 'next/server';
