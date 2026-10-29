@@ -1229,6 +1229,7 @@ export default {
   "commerce.was": "antes {price}",
   "common.back": "Voltar",
   "common.close": "Fechar",
+  "common.loading": "Carregando",
   "common.comingToApp": "Este recurso está chegando ao aplicativo.",
   "common.error": "Algo deu errado. Tente novamente.",
   "compose.donePosted": "Publicando agora. O status aparece abaixo.",

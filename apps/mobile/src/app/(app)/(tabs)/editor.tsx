@@ -1,11 +1,12 @@
 import { rawText } from '../../../lib/i18n/translate';
 import { directionalStyle } from '../../../lib/rtl';
 import { Button, Card, Text, themedStyles, useThemedStyles, useAppearance } from '../../../components/ui';
+import { VeyLoader } from '../../../components/VeyLoader';
 import { Image } from 'expo-image';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, View } from 'react-native';
+import { FlatList, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { EDITOR_ENABLED } from '../../../lib/editorFlag';
 import { formatLocale, t } from '../../../lib/i18n';
@@ -133,7 +134,7 @@ export default function EditorHome() {
                                 <Text style={styles.error}>{problem}</Text>
                                 <Text variant="bodyStrong" style={styles.retry}>{t('editor.home.retry')}</Text>
                             </Button>
-                        ) : projects === null ? <ActivityIndicator color={styles.accentInk.color} style={styles.loading} /> : null}
+                        ) : projects === null ? <View style={styles.loading}><VeyLoader /></View> : null}
                     </View>
                 }
                 ListEmptyComponent={projects !== null && !problem ? (

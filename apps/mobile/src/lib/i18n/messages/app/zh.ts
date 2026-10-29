@@ -1185,6 +1185,7 @@ export default {
   "commerce.was": "原价 {price}",
   "common.back": "返回",
   "common.close": "关闭",
+  "common.loading": "正在加载",
   "common.comingToApp": "此功能即将在应用中推出。",
   "common.error": "出了点问题。请重试。",
   "compose.donePosted": "正在发布。状态显示在下方。",
