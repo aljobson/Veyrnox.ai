@@ -38,3 +38,15 @@ test('the start route refuses unknown providers and malformed challenges', async
     assert.deepEqual(await res.json(), { error: 'invalid_request' }, query);
   }
 });
+
+test('production sign-in starts on the auth.veyrnox.ai custom domain, not the project host', () => {
+  const previous = process.env.SUPABASE_URL;
+  process.env.SUPABASE_URL = 'https://xdxdzmsztyzbnzeforxx.supabase.co';
+  try {
+    const target = new URL(call(`?provider=google&code_challenge=${CHALLENGE}`).headers.get('location'));
+    assert.equal(target.origin + target.pathname, 'https://auth.veyrnox.ai/auth/v1/authorize');
+    assert.equal(target.searchParams.get('redirect_to'), 'https://veyrnox.test/auth/mobile');
+  } finally {
+    process.env.SUPABASE_URL = previous;
+  }
+});
