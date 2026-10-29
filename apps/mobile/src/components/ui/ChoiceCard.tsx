@@ -1,19 +1,24 @@
 import { rawText } from '../../lib/i18n/translate';
+import { useMemo } from 'react';
 import { Pressable, View } from 'react-native';
-import { ds } from '../../theme';
+import { ds, featureHue, type FeatureHue } from '../../theme';
 import type { MenuIcon } from '../../lib/menuIcons';
 import { Card } from './Card';
 import { Text } from './Text';
 import { Icon } from './Icon';
-import { themedStyles, useThemedStyles } from './AppearanceContext';
-export function ChoiceCard({ icon, title, detail, selected, onPress }: { icon: MenuIcon; title: string; detail?: string; selected?: boolean; onPress: () => void }) {
+import { themedStyles, useThemedStyles, useAppearance } from './AppearanceContext';
+// `hue` gives the card a soft wash of a feature colour and tints its icon, like the Tools tiles (IconBadge).
+export function ChoiceCard({ icon, title, detail, selected, hue, onPress }: { icon: MenuIcon; title: string; detail?: string; selected?: boolean; hue?: FeatureHue; onPress: () => void }) {
     const s = useThemedStyles(sheets);
+    const { scheme } = useAppearance();
+    const colour = hue ? featureHue(hue, scheme) : null;
+    const tint = useMemo(() => colour ? { card: { backgroundColor: colour.wash, borderColor: selected ? undefined : colour.edge }, circle: { backgroundColor: colour.wash, borderWidth: 1, borderColor: colour.edge } } : null, [colour?.wash, colour?.edge, selected]);
     return (
         <Pressable accessibilityRole="button" accessibilityLabel={rawText(detail ? `${title}. ${detail}` : title)} accessibilityState={{ selected }} onPress={onPress}>
-            <Card selected={selected} style={s.card}>
+            <Card selected={selected} style={[s.card, tint?.card]}>
                 <View style={s.top}>
-                    <View style={s.circle}>
-                        <Icon name={icon} />
+                    <View style={[s.circle, tint?.circle]}>
+                        <Icon name={icon} tint={colour?.ink} />
                     </View>
                     {selected ? (
                         <View style={s.check}>

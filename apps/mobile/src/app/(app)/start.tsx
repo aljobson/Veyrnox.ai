@@ -8,18 +8,18 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 import { selectedState, touchTarget } from '../../lib/a11y';
 import { fetchPresets, presetHref, type Preset } from '../../lib/presets';
-import { colors, ds } from '../../theme';
+import { colors, ds, type FeatureHue } from '../../theme';
 import { Button, Card, Text, ChoiceCard, themedStyles, useThemedStyles } from '../../components/ui';
 import { noteOnboardingCompleted } from '../../lib/celebrate';
 import type { MenuIcon } from '../../lib/menuIcons';
 
 type Source = 'photo' | 'video' | 'reference' | 'prompt';
 
-const SOURCES: readonly { key: Source; icon: MenuIcon; label: string; detail: string }[] = [
-    { key: 'photo', icon: 'camera', label: t('start.myphoto'), detail: t('start.animateortransformit') },
-    { key: 'video', icon: 'film', label: t('start.myvideo'), detail: t('start.addsoundsyncorenhance') },
-    { key: 'reference', icon: 'brush', label: t('start.areference'), detail: t('start.guideastyleorcharacter') },
-    { key: 'prompt', icon: 'sparkle', label: t('start.justanidea'), detail: t('start.describethevideoinwords') },
+const SOURCES: readonly { key: Source; icon: MenuIcon; hue: FeatureHue; label: string; detail: string }[] = [
+    { key: 'photo', icon: 'camera', hue: 'sky', label: t('start.myphoto'), detail: t('start.animateortransformit') },
+    { key: 'video', icon: 'film', hue: 'iris', label: t('start.myvideo'), detail: t('start.addsoundsyncorenhance') },
+    { key: 'reference', icon: 'brush', hue: 'amber', label: t('start.areference'), detail: t('start.guideastyleorcharacter') },
+    { key: 'prompt', icon: 'sparkle', hue: 'rose', label: t('start.justanidea'), detail: t('start.describethevideoinwords') },
 ];
 const TEMPLATE_IDEAS = [
     { icon: 'camera', title: t('start.animateaportrait') },
@@ -66,7 +66,7 @@ export default function Start() {
                 <View style={styles.sourceGrid}>
                     {SOURCES.map((item) => (
                         <View key={item.key} style={styles.tile}>
-                            <ChoiceCard icon={item.icon} title={item.label} detail={item.detail} selected={source === item.key} onPress={() => setSource(item.key)} />
+                            <ChoiceCard icon={item.icon} hue={item.hue} title={item.label} detail={item.detail} selected={source === item.key} onPress={() => setSource(item.key)} />
                         </View>
                     ))}
                 </View>
