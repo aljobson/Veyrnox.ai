@@ -5576,5 +5576,9 @@ export default {
   "projectHome.premium": "ПРЕМИУМ",
   "projectHome.notOpen": "Пока недоступно",
   "projectHome.premiumClosed": "ПРЕМИУМ-МОДЕЛЬ · ПОКА НЕДОСТУПНА",
-  "projectHome.details": "Подробнее"
+  "projectHome.details": "Подробнее",
+  "vibeInvite.title": "Быстрая проверка вайба?",
+  "vibeInvite.body": "Семь касаний, и в «Обзоре» сверху будут шаблоны, подходящие вашему стилю.",
+  "vibeInvite.start": "Поехали",
+  "vibeInvite.later": "Не сейчас"
 } as const;

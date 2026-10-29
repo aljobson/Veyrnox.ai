@@ -5381,5 +5381,9 @@ export default {
   "projectHome.premium": "프리미엄",
   "projectHome.notOpen": "아직 이용할 수 없음",
   "projectHome.premiumClosed": "프리미엄 모델 · 아직 이용할 수 없음",
-  "projectHome.details": "상세 정보"
+  "projectHome.details": "상세 정보",
+  "vibeInvite.title": "바이브 체크 잠깐 해볼까요?",
+  "vibeInvite.body": "일곱 번만 탭하면 둘러보기 맨 위에 만드는 스타일에 맞는 템플릿이 나와요.",
+  "vibeInvite.start": "시작",
+  "vibeInvite.later": "나중에"
 } as const;

@@ -8,8 +8,7 @@ import { t } from '../../../lib/i18n';
 import { fetchPresets, searchPresets, themeTitle, type Preset } from '../../../lib/presets';
 import { fetchPopularIds, templateChips, templatesFor, previewRatio, templatePageHref } from '../../../lib/templateFilters';
 import { rankPresets } from '../../../lib/creatorTaste';
-import { loadVibe } from '../../../lib/creatorProfileStore';
-import type { CreatorAnswers } from '../../../lib/creatorAnswers';
+import { useVibeAnswers } from '../../../lib/useVibeAnswers';
 
 export default function Templates() {
     const styles = useThemedStyles(sheets);
@@ -17,18 +16,17 @@ export default function Templates() {
     const params = useLocalSearchParams<{ unavailable?: string | string[] }>();
     const [presets, setPresets] = useState<Preset[] | null>(null);
     const [popular, setPopular] = useState<string[]>([]);
-    const [vibe, setVibe] = useState<CreatorAnswers | null>(null);
     const [failed, setFailed] = useState(false);
     const [query, setQuery] = useState('');
     const [chip, setChip] = useState('ALL');
     const [limit, setLimit] = useState(50);
     const [playing, setPlaying] = useState<string | null>(null);
     const [attempt, setAttempt] = useState(0);
+    const vibe = useVibeAnswers(attempt);
     useEffect(() => {
         let live = true; setFailed(false);
         fetchPresets().then(value => { if (live) setPresets(value); }).catch(() => { if (live) setFailed(true); });
         fetchPopularIds().then(value => { if (live) setPopular(value); });
-        loadVibe().then(value => { if (live) setVibe(value?.answers ?? null); }).catch(() => {});
         return () => { live = false; };
     }, [attempt]);
     useFocusEffect(useCallback(() => () => setPlaying(null), []));

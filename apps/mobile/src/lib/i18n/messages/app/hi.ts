@@ -5446,5 +5446,9 @@ export default {
   "projectHome.premium": "प्रीमियम",
   "projectHome.notOpen": "अभी उपलब्ध नहीं",
   "projectHome.premiumClosed": "प्रीमियम मॉडल · अभी उपलब्ध नहीं",
-  "projectHome.details": "विवरण"
+  "projectHome.details": "विवरण",
+  "vibeInvite.title": "एक छोटा-सा वाइब चेक?",
+  "vibeInvite.body": "बस सात टैप, और एक्सप्लोर में सबसे ऊपर वे टेम्पलेट होंगे जो आपके बनाने के अंदाज़ से मेल खाते हैं।",
+  "vibeInvite.start": "शुरू करें",
+  "vibeInvite.later": "अभी नहीं"
 } as const;

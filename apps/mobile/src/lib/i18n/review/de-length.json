@@ -3198,6 +3198,12 @@
     "ratio": 1.71
   },
   {
+    "id": "vibeInvite.start",
+    "english": "Start",
+    "translation": "Los geht's",
+    "ratio": 2
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

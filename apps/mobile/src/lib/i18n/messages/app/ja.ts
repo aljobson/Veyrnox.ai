@@ -5381,5 +5381,9 @@ export default {
   "projectHome.premium": "プレミアム",
   "projectHome.notOpen": "まだ利用できません",
   "projectHome.premiumClosed": "プレミアムモデル · まだ利用できません",
-  "projectHome.details": "詳細"
+  "projectHome.details": "詳細",
+  "vibeInvite.title": "ちょっとバイブチェック？",
+  "vibeInvite.body": "たった七タップで、探索の先頭にあなたのつくり方に合うテンプレートが並びます。",
+  "vibeInvite.start": "はじめる",
+  "vibeInvite.later": "あとで"
 } as const;

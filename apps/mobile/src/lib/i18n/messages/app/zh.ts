@@ -5381,5 +5381,9 @@ export default {
   "projectHome.premium": "高级",
   "projectHome.notOpen": "暂未开放",
   "projectHome.premiumClosed": "高级模型 · 暂未开放",
-  "projectHome.details": "详情"
+  "projectHome.details": "详情",
+  "vibeInvite.title": "来个快速氛围测试？",
+  "vibeInvite.body": "只需点七下，探索页就会优先展示适合你创作方式的模板。",
+  "vibeInvite.start": "开始",
+  "vibeInvite.later": "暂不"
 } as const;

@@ -2928,6 +2928,12 @@
     "ratio": 1.67
   },
   {
+    "id": "vibeInvite.title",
+    "english": "Quick vibe check?",
+    "translation": "Um papo rápido sobre seu estilo?",
+    "ratio": 1.88
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",

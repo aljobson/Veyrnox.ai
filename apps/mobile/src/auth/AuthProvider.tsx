@@ -1,3 +1,4 @@
+import { clearAllVibes } from '../lib/creatorProfileStore';
 import { tokenUser, isAccountChanged } from '../lib/auth/tokenUser';
 import type { TokenSource } from '../lib/auth/accountCalls';
 import type { SessionTask } from './sessionTask';
@@ -152,6 +153,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await aiConsent.forget();
         if (generationRef.current !== gen) return;
         await wipeCache().catch(() => undefined);
+        if (generationRef.current !== gen) return;
+        await clearAllVibes().catch(() => undefined);
         if (generationRef.current !== gen) return;
         await setCinemaUploadOwner(null).catch(() => undefined);
         if (generationRef.current !== gen) return;

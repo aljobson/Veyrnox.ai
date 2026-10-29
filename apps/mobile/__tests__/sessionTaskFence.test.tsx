@@ -73,8 +73,7 @@ import OAuthConsent from '../src/app/(app)/oauth-consent';
 import PrivacyExport from '../src/app/(app)/privacy-export';
 import Account from '../src/app/(app)/account';
 import { decide, fetchRequest } from '../src/lib/oauthConsent';
-import { resetVibe } from '../src/lib/creatorProfile';
-import { clearVibe } from '../src/lib/creatorProfileStore';
+import { runVibeIntent } from '../src/lib/creatorProfileStore';
 import { ApiError } from '../src/lib/api';
 import { runExport } from '../src/lib/privacyExport';
 declare const require: (id: string) => any;
@@ -91,10 +90,11 @@ jest.mock('expo-secure-store', () => ({ getItem: jest.fn(() => null), getItemAsy
     setItemAsync: jest.fn(async (key: string, value: string) => { mockStorage.set(key, value); }) }));
 const mockRouter = { replace: jest.fn(), push: jest.fn() };
 jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, Link: ({ children }: any) => children, useRouter: () => mockRouter,
+    useFocusEffect: (fn: any) => require('react').useEffect(fn, [fn]),
     useLocalSearchParams: () => ({ authorization_id: '00000000-0000-4000-8000-000000000001' }) }));
 jest.mock('../src/lib/oauthConsent', () => ({ ...jest.requireActual('../src/lib/oauthConsent'), decide: jest.fn(), fetchRequest: jest.fn() }));
-jest.mock('../src/lib/creatorProfile', () => ({ ...jest.requireActual('../src/lib/creatorProfile'), CREATOR_PROFILE_ENABLED: true, resetVibe: jest.fn() }));
-jest.mock('../src/lib/creatorProfileStore', () => ({ clearVibe: jest.fn() }));
+jest.mock('../src/lib/creatorProfile', () => ({ ...jest.requireActual('../src/lib/creatorProfile'), CREATOR_PROFILE_ENABLED: true, fetchVibeStatus: jest.fn(async () => ({ kind: 'none' })) }));
+jest.mock('../src/lib/creatorProfileStore', () => ({ clearVibe: jest.fn(async () => { mockStorage.delete('veyrnox.vibe.v2'); }), clearAllVibes: jest.fn(async () => {}), runVibeIntent: jest.fn() }));
 jest.mock('../src/billing/BillingProvider', () => ({ useBilling: () => ({ status: 'off' }) }));
 jest.mock('../src/lib/privacyExport', () => ({ ...jest.requireActual('../src/lib/privacyExport'), runExport: jest.fn() }));
 
@@ -185,12 +185,19 @@ test('oauth consent decided after switch opens no URL and does not navigate', as
     expect(open).not.toHaveBeenCalled(); expect(mockRouter.replace).not.toHaveBeenCalled();
 });
 test('vibe reset finishing after switch does not clear B device slot or show note', async () => {
-    const gate = deferred<any>(); jest.mocked(resetVibe).mockReturnValueOnce(gate.promise); await mount(<Account />); await adopt();
+    const gate = deferred<any>(); jest.mocked(runVibeIntent).mockReturnValueOnce(gate.promise); await mount(<Account />); await adopt();
     const label = t('vibe.account.reset');
     const contains = (node: any): boolean => node.children?.some((child: any) => typeof child === 'string' ? child === label : contains(child));
     const button = root.container.queryAll(n => n.props.accessibilityRole === 'button' && contains(n))[0];
-    await act(async () => button.props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 })); await switchToB(); await act(async () => gate.resolve({ kind: 'ok' }));
-    expect(clearVibe).not.toHaveBeenCalled(); expect(texts(t('vibe.account.resetDone'))).toHaveLength(0);
+    await act(async () => button.props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }));
+    expect(runVibeIntent).toHaveBeenCalledTimes(1);
+    const started = jest.mocked(runVibeIntent).mock.calls[0][1];
+    expect(started.user).toBe('A'); await switchToB(); expect(started.current()).toBe(false);
+    const bRecord = JSON.stringify({ owner: 'B', value: JSON.stringify({ version: 1, state: 'skipped', answers: null, synced: true }) });
+    mockStorage.set('veyrnox.vibe.v2', bRecord); jest.mocked(SecureStore.setItemAsync).mockClear();
+    await act(async () => gate.resolve({ kind: 'applied', result: 'ok' }));
+    expect(mockStorage.get('veyrnox.vibe.v2')).toBe(bRecord); expect(SecureStore.setItemAsync).not.toHaveBeenCalled();
+    expect(texts(t('vibe.account.resetDone'))).toHaveLength(0); expect(texts(t('vibe.error'))).toHaveLength(0);
 });
 test('MfaGate token refresh crossing a switch cannot remember or clear the new user', async () => {
     await mount(); await adopt();

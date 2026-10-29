@@ -5511,5 +5511,9 @@ export default {
   "projectHome.premium": "PRÉMIUM",
   "projectHome.notOpen": "Aún no disponible",
   "projectHome.premiumClosed": "MODELO PRÉMIUM · AÚN NO DISPONIBLE",
-  "projectHome.details": "Detalles"
+  "projectHome.details": "Detalles",
+  "vibeInvite.title": "¿Un test rápido de vibra?",
+  "vibeInvite.body": "Siete toques y Explorar abre con plantillas que encajan con tu forma de crear.",
+  "vibeInvite.start": "Empezar",
+  "vibeInvite.later": "Ahora no"
 } as const;

@@ -5511,5 +5511,9 @@ export default {
   "projectHome.premium": "HAUT DE GAMME",
   "projectHome.notOpen": "Pas encore disponible",
   "projectHome.premiumClosed": "MODÈLE HAUT DE GAMME · PAS ENCORE DISPONIBLE",
-  "projectHome.details": "Détails"
+  "projectHome.details": "Détails",
+  "vibeInvite.title": "Un petit vibe check ?",
+  "vibeInvite.body": "Sept clics et Explorer met en avant les templates qui collent à votre façon de créer.",
+  "vibeInvite.start": "C’est parti",
+  "vibeInvite.later": "Pas maintenant"
 } as const;

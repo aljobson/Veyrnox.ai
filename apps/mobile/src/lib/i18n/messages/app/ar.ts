@@ -5706,5 +5706,9 @@ export default {
   "projectHome.premium": "مميز",
   "projectHome.notOpen": "غير متاح بعد",
   "projectHome.premiumClosed": "نموذج مميز · غير متاح بعد",
-  "projectHome.details": "التفاصيل"
+  "projectHome.details": "التفاصيل",
+  "vibeInvite.title": "فحص سريع للأجواء؟",
+  "vibeInvite.body": "سبع نقرات وتبدأ صفحة الاستكشاف بالقوالب التي تناسب طريقتك في الإبداع.",
+  "vibeInvite.start": "ابدأ",
+  "vibeInvite.later": "ليس الآن"
 } as const;

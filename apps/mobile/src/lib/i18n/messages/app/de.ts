@@ -5446,5 +5446,9 @@ export default {
   "projectHome.premium": "EXKLUSIV",
   "projectHome.notOpen": "Noch nicht verfügbar",
   "projectHome.premiumClosed": "EXKLUSIVES MODELL · NOCH NICHT VERFÜGBAR",
-  "projectHome.details": "Einzelheiten"
+  "projectHome.details": "Einzelheiten",
+  "vibeInvite.title": "Kurzer Vibe-Check?",
+  "vibeInvite.body": "Sieben Taps, und Entdecken zeigt zuerst Templates, die zu deiner Arbeitsweise passen.",
+  "vibeInvite.start": "Los geht's",
+  "vibeInvite.later": "Jetzt nicht"
 } as const;

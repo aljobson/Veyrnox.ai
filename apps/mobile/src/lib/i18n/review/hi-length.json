@@ -1770,6 +1770,12 @@
     "ratio": 1.69
   },
   {
+    "id": "vibeInvite.start",
+    "english": "Start",
+    "translation": "शुरू करें",
+    "ratio": 1.8
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",
