@@ -73,7 +73,7 @@ describe('the builder', () => {
             expect(p.length).toBeLessThanOrEqual(PROMPT_MAX);
         }
         const creatorText = 'y'.repeat(5000);
-        expect(buildCharacterPrompt(creatorText, {})).toEndWith(creatorText);
+        expect(buildCharacterPrompt(creatorText, {}).endsWith(creatorText)).toBe(true);
     });
 
     test('the character is never cut to fit the creator text', () => {
