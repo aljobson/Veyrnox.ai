@@ -13,6 +13,7 @@ import { styles } from './fullEditorStyles';
 
 type Props = {
     timeline: Timeline; selections: readonly Selection[]; ppf: number; total: number; frame: number; playing: boolean; snap: boolean;
+    onGestureActive?(active: boolean): void;
     onSeek(frame: number): void; onSelect(selection: Selection): void; onApply(timeline: Timeline): void; onViewport(width: number): void;
 };
 type Gesture = {
@@ -23,9 +24,11 @@ type Gesture = {
 const ROW = 56;
 const position = (item: Clip | TextClip, ppf: number) => ({ position: 'absolute' as const, left: item.start * ppf, top: 6, width: Math.max(8, item.len * ppf - 2), height: 44 });
 
-export function EditorTimeline({ timeline, selections, ppf, total, frame, playing, snap, onSeek, onSelect, onApply, onViewport }: Props) {
+export function EditorTimeline({ timeline, selections, ppf, total, frame, playing, snap, onSeek, onSelect, onApply, onViewport, onGestureActive }: Props) {
     const scroller = useRef<ComponentRef<typeof ScrollView>>(null);
     const gesture = useRef<Gesture | null>(null);
+    const sentActive = useRef(false), gestureCallback = useRef(onGestureActive); gestureCallback.current = onGestureActive;
+    const sendActive = (active: boolean) => { if (sentActive.current !== active) { sentActive.current = active; gestureCallback.current?.(active); } };
     const scrub = useRef<{ x: number; page: number } | null>(null);
     const emptyTap = useRef<{ x: number; page: number; y: number } | null>(null);
     const scrollX = useRef(0);
@@ -34,7 +37,7 @@ export function EditorTimeline({ timeline, selections, ppf, total, frame, playin
     const [ghost, setGhost] = useState<Timeline | null>(null);
     const reducedMotion = useReducedMotion();
     const width = Math.max(viewport, (total + 150) * ppf);
-    useEffect(() => () => { if (gesture.current?.timer) clearTimeout(gesture.current.timer); }, []);
+    useEffect(() => () => { if (gesture.current?.timer) clearTimeout(gesture.current.timer); sendActive(false); }, []);
     useEffect(() => {
         const x = frame * ppf;
         if (playing && viewport > 0 && (x < scrollX.current + viewport * 0.15 || x > scrollX.current + viewport * 0.85)) {
@@ -43,13 +46,13 @@ export function EditorTimeline({ timeline, selections, ppf, total, frame, playin
     }, [frame, playing, ppf, reducedMotion, viewport]);
     const cancel = () => {
         if (gesture.current?.timer) clearTimeout(gesture.current.timer);
-        gesture.current = null; setGhost(null); setScrollEnabled(true);
+        gesture.current = null; setGhost(null); setScrollEnabled(true); sendActive(false);
     };
     const begin = (event: GestureResponderEvent, selection: Selection, row: number, edge?: 'in' | 'out') => {
         cancel();
         const { pageX, pageY, locationY } = event.nativeEvent;
         const g: Gesture = { selection, timeline, selections, edge, x: pageX, y: pageY, offset: locationY + 6, row, active: !!edge, abandoned: false, snapped: false };
-        gesture.current = g;
+        gesture.current = g; sendActive(true);
         if (edge) { setScrollEnabled(false); return; }
         if (timeline.tracks[row].locked) return;
         g.timer = setTimeout(() => {

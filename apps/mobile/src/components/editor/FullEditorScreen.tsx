@@ -1,3 +1,12 @@
+import { getCacheUser, subscribeCacheUser } from '../../lib/appCache';
+import { addPending } from '../../lib/editorGenerationReturns';
+import { clampFrame, insertMediaAt } from '../../lib/editorInsertMedia';
+import { libraryStems, type EditorStem } from '../../lib/editorStems';
+import { kindOf, type Kind } from '../../lib/media';
+import { MakePanel } from '../chat/MakePanel';
+import { EditorGeneratePanel } from './EditorGeneratePanel';
+import { EditorStemSheet } from './EditorStemSheet';
+import { useEditorGenerationReturns, type InsertResult } from './useEditorGenerationReturns';
 import { editorTrackLabel } from '../../lib/editorTrackLabel';
 import { rawText } from '../../lib/i18n/translate';
 import { Text as StatusText } from '../ui/Text';
@@ -63,6 +72,20 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
     const [exportVisible, setExportVisible] = useState(false);
     const { beginImport, replacing, leaveEditor, saveStatus, sync, currentDocument, preparePicked, savedDocument, api, router, name, document, dirty, problem, setProblem, tool, setTool, selection, setSelection, selections, setSelections, multiSelect, setMultiSelect, clipboard, setClipboard, snap, setSnap, ripple, setRipple, zoom, setZoom, privacyNotice, history, frameStore, setFrame, playing, setPlaying, projectAssets, localMediaUris, libraryKind, setLibraryKind, markDocument, save, acknowledgePrivacy, travel } = useFullEditorSession({ projectId, jobId, onOwnerChange: () => guard.teardown(() => router.back()), onCopy: id => guard.teardown(() => router.replace({ pathname: '/editor/[projectId]', params: { projectId: id } })) });
     const guard = useEditorLeaveGuard(leaveEditor, router.back);
+    const [generate, setGenerate] = useState<{ visible: boolean; kind: Kind; frame: number; owner?: string } | null>(null);
+    const [stemChoice, setStemChoice] = useState<{ choice: LibraryChoice; stems: EditorStem[] } | null>(null);
+    const isReady = () => currentDocument()?.project_id === projectId && sync.draftDecided && !sync.sheet && !sync.replacing && sync.live(), ready = isReady();
+    const liveProject = useRef(projectId), readiness = useRef(ready); liveProject.current = projectId; readiness.current = ready;
+    useEffect(() => { setGenerate(null); setStemChoice(null); return subscribeCacheUser(() => { setGenerate(null); setStemChoice(null); }); }, [projectId]);
+    const returns = useEditorGenerationReturns({ api, projectId, announce: tool !== 'generate', get ready() { return isReady(); }, currentDocument, get dirty() { return sync.dirty; }, get saving() { return sync.saving; }, get revision() { return sync.revision; }, beginImport, insert: insertMedia });
+    function insertMedia(media: Media, at: number, select = false): InsertResult {
+        const current = currentDocument(); if (!isReady() || !current || current.project_id !== projectId) return 'dropped';
+        const result = insertMediaAt(timelineOf(current.timeline), media, at);
+        if ('error' in result) { setProblem(result.error === 'full' ? t('editorAi.projectFull') : t('editor.unlockoraddatrackfirst', { value1: media.kind === 'audio' ? 'audio' : 'video' })); return result.error; }
+        markDocument({ ...current, schema_version: 3, timeline: result.timeline });
+        if (select) { setSelection(result.selection); setSelections([result.selection]); } return 'placed';
+    }
+    const openGenerate = (kind: Kind) => setGenerate({ visible: true, kind, frame: clampFrame(frameStore.get()), owner: getCacheUser() });
     if (!document) return <View style={styles.loading}><Stack.Screen options={{ title: t('editor.title') }} /><ActivityIndicator color={colors.accent} /><Text style={styles.muted}>{problem ?? t('editor.fullLoading')}</Text></View>;
 
     const canvas = canvasOf(document.canvas);
@@ -171,26 +194,20 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
     const addTimelineTrack = (kind: TrackKind) => applyTimeline(addTrack(timeline, kind));
     const addTimelineMarker = () => applyTimeline(addMarker(timeline, frameStore.get()));
     const updateTrack = (track: EditorTrack, patch: Partial<EditorTrack>) => applyTimeline({ ...timeline, tracks: timeline.tracks.map((item) => item.id === track.id ? { ...item, ...patch, id: item.id, kind: item.kind } : item) });
-    const addMediaToTimeline = (media: Media, sourceTimeline = timeline) => {
-        const frame = frameStore.get();
-        const kind: TrackKind = media.kind === 'audio' ? 'audio' : 'video';
-        const trackId = sourceTimeline.tracks.find((track) => track.kind === kind && !track.locked)?.id;
-        if (!trackId) { setProblem(t('editor.unlockoraddatrackfirst', { value1: kind })); return; }
-        const seq = sourceTimeline.seq + 1;
-        const item: Clip = { id: `${kind[0]}${seq}`, mediaId: media.id, start: frame, in: 0, len: Math.max(1, Math.min(media.frames || 90, 18_000 - frame)), trackId, volume: 1, transition: 0, rate: 1 };
-        applyTimeline({ ...sourceTimeline, seq, media: { ...sourceTimeline.media, [media.id]: media }, [kind]: [...sourceTimeline[kind], item] } as Timeline);
-        const nextSelection = { track: kind, id: item.id };
-        setSelection(nextSelection);
-        setSelections([nextSelection]);
-    };
+    const addMediaToTimeline = (media: Media) => returns.place(media, clampFrame(frameStore.get()), true);
     const importLibrary = async (choice: LibraryChoice, kind: SlotKind) => {
         const token = beginImport(); if (!token) return;
         setLibraryKind(null); setLibraryPending(true); setProblem(null);
         try {
+            if (kind === 'audio') {
+                const stems = await libraryStems(api, choice.jobId);
+                if (!mounted.current || !readiness.current || liveProject.current !== projectId || !token.valid()) return;
+                if (stems.length) { setStemChoice({ choice, stems }); return; }
+            }
             const media = await libraryMedia(api, choice, kind, () => token.valid());
             if (media === LIBRARY_STOPPED || !token.valid()) return;
             if (!media) { setProblem(t('editorCore.lengthUnknown')); return; }
-            addMediaToTimeline(media, timelineOf(currentDocument()?.timeline));
+            addMediaToTimeline(media);
         } catch (error) { if (isAccountChanged(error)) sync.accountChanged(); else if (token.valid()) setProblem(t('editorCore.lengthUnknown')); }
         finally { token.end(); if (mounted.current) setLibraryPending(false); }
     };
@@ -209,7 +226,7 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
                 kind, frames: Math.max(1, Math.floor(durationSeconds * timeline.fps)), hasAudio: kind !== 'image',
                 width: Math.max(0, Math.round(asset.width || 0)), height: Math.max(0, Math.round(asset.height || 0)),
             };
-            addMediaToTimeline(media, timelineOf(currentDocument()?.timeline));
+            addMediaToTimeline(media);
         } finally { token.end(); }
     };
     const choosePhotos = async () => {
@@ -300,7 +317,7 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
                 <Text style={styles.eyebrow}>{t('editor.tIMELINE')}</Text>
                 <Text style={styles.timelineHelp}>{multiSelect ? t('editor.selectedtapclipstoadd', { value1: selections.length }) : selection ? t('editor.tapacommandtoeditselection') : t('editor.tapacliptoselect')}</Text>
             </View>
-            <PlaybackTimeline timeline={timeline} selections={selections} ppf={zoom} total={total} frameStore={frameStore} playing={playing} snap={snap} onViewport={setViewport} onSeek={value => { setPlaying(false); setFrame(value); }} onSelect={selectClip} onApply={applyTimeline} />
+            <PlaybackTimeline onGestureActive={returns.gestureActive} timeline={timeline} selections={selections} ppf={zoom} total={total} frameStore={frameStore} playing={playing} snap={snap} onViewport={setViewport} onSeek={value => { setPlaying(false); setFrame(value); }} onSelect={selectClip} onApply={applyTimeline} />
         </View>
 
         <ScrollView testID="editor-tool-rail" horizontal showsHorizontalScrollIndicator={false} style={styles.toolRail} contentContainerStyle={styles.toolContent}>
@@ -319,9 +336,9 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
             {tool === 'audio' ? <>
                 <PanelHeading title={t('editor.audio')} detail={plural('editor.clips2Count', timeline.audio.length)} />
                 {timeline.audio.length ? timeline.audio.map((item) => <InspectorClip key={item.id} track="audio" item={item} timeline={timeline} selected={selections.some((value) => value.track === 'audio' && value.id === item.id)} onPress={() => selectClip({ track: 'audio', id: item.id })} />) : <EmptyPanel title={t('editor.noaudioclips')} body={t('editor.audiolayersfromyourprojectappearhere')} />}
-                <View style={styles.quickActions}><Action label={t('editor.generatevoiceormusic')} onPress={() => void openWorkflow('/create')} /><Action label={t('editor.addaudiotrack')} onPress={() => addTimelineTrack('audio')} /></View>
+                <View style={styles.quickActions}><Action label={t('editor.generatevoiceormusic')} onPress={() => openGenerate('audio')} /><Action label={t('editor.addaudiotrack')} onPress={() => addTimelineTrack('audio')} /></View>
             </> : null}
-            {tool === 'generate' ? <WorkflowPanel title={t('editor.generate')} body={t('editor.createvideoimagesmusicorspeechwith')} action={t('editor.openGenerate')} onPress={() => void openWorkflow('/create')} /> : null}
+            {tool === 'generate' ? <EditorGeneratePanel rows={returns.rows} note={returns.note} onOpen={() => openGenerate('video')} onAdd={id => void returns.addAtPlayhead(id, clampFrame(frameStore.get()))} onDismiss={id => void returns.dismiss(id)} /> : null}
 
             {tool === 'text' ? <>
                 <PanelHeading title={t('editor.text2')} detail={selection?.track === 'text' ? t('editor.layerselected') : t('editor.layers', { value1: timeline.text.length })} />
@@ -389,6 +406,11 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
                 {timeline.tracks.map((track) => <View key={track.id} style={styles.trackControl}><View style={styles.rowCopy}><Text style={styles.rowTitle}>{editorTrackLabel(track)}</Text><Text style={styles.muted}>{t(`editor.track.${track.kind}`)}</Text></View><Choice label={t('editor.lock')} selected={track.locked} onPress={() => updateTrack(track, { locked: !track.locked })} compact /><Choice label={t('editor.mute')} selected={track.muted} onPress={() => updateTrack(track, { muted: !track.muted })} compact /><Choice label={t('editor.hide')} selected={track.hidden} onPress={() => updateTrack(track, { hidden: !track.hidden })} compact /></View>)}
             </> : null}
         </ScrollView>
+        {generate ? <MakePanel visible={generate.visible && ready} initialKind={generate.kind} onClose={() => setGenerate(value => value && { ...value, visible: false })} resultNote={t('editorAi.note', { time: timecode(generate.frame, timeline.fps) })} onJobStarted={(id, model) => {
+            const kind = kindOf(model.modality); if (!kind || generate.owner !== getCacheUser()) return;
+            void addPending(projectId, { jobId: id, kind, frame: generate.frame, name: model.name, createdAt: Date.now() }).then(() => { if (mounted.current && liveProject.current === projectId && generate.owner === getCacheUser() && currentDocument()?.project_id === projectId) void returns.refresh(); });
+        }} /> : null}
+        {stemChoice ? <EditorStemSheet api={api} {...stemChoice} ready={ready} beginImport={beginImport} onAdd={addMediaToTimeline} onClose={() => setStemChoice(null)} /> : null}
         <EditorSaveSheets sync={sync} /><EditorVersionsSheet sync={sync} api={api} projectId={projectId} />
         {libraryKind ? <LibraryChooser api={api} kind={libraryKind} onClose={() => setLibraryKind(null)} onPick={(choice) => importLibrary(choice, libraryKind)} /> : null}
         {/* Required privacy acknowledgement: escape must not imply consent. */}

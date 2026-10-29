@@ -4758,6 +4758,18 @@
     "ratio": 2
   },
   {
+    "id": "editorAi.addAtPlayhead",
+    "english": "Add at playhead",
+    "translation": "Ajouter à la tête de lecture",
+    "ratio": 1.87
+  },
+  {
+    "id": "editorAi.done",
+    "english": "Done",
+    "translation": "Terminé",
+    "ratio": 1.75
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

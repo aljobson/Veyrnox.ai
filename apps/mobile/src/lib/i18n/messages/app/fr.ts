@@ -5609,5 +5609,17 @@ export default {
   "vibeInvite.title": "Un petit vibe check ?",
   "vibeInvite.body": "Sept clics et Explorer met en avant les templates qui collent à votre façon de créer.",
   "vibeInvite.start": "C’est parti",
-  "vibeInvite.later": "Pas maintenant"
+  "vibeInvite.later": "Pas maintenant",
+    "editorAi.body": "Créez une vidéo, une image ou un son. Une fois prêt, le résultat est ajouté à cette timeline à la tête de lecture.",
+    "editorAi.note": "Une fois prêt, le résultat sera ajouté à la timeline de ce projet à {time}.",
+    "editorAi.added": "{name} a été ajouté à la timeline.",
+    "editorAi.notAdded": "Prêt, mais impossible de l’ajouter ici.",
+    "editorAi.addAtPlayhead": "Ajouter à la tête de lecture",
+    "editorAi.dismiss": "Ignorer",
+    "editorAi.projectFull": "Ce projet est plein. Supprimez d’abord un clip ou un fichier.",
+    "editorAi.stemsBody": "Choisissez une piste séparée à ajouter à la tête de lecture. Vous pouvez en ajouter plusieurs.",
+    "editorAi.addStem": "Ajouter {stem}",
+    "editorAi.stemName": "{name} — {stem}",
+    "editorAi.done": "Terminé",
+    "editorAi.removed": "Retiré de la timeline. Ajoutez-le à nouveau ou ignorez-le."
 } as const;

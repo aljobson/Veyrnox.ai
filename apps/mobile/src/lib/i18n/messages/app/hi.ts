@@ -5544,5 +5544,17 @@ export default {
   "vibeInvite.title": "एक छोटा-सा वाइब चेक?",
   "vibeInvite.body": "बस सात टैप, और एक्सप्लोर में सबसे ऊपर वे टेम्पलेट होंगे जो आपके बनाने के अंदाज़ से मेल खाते हैं।",
   "vibeInvite.start": "शुरू करें",
-  "vibeInvite.later": "अभी नहीं"
+  "vibeInvite.later": "अभी नहीं",
+    "editorAi.body": "वीडियो, इमेज या ध्वनि बनाएँ। तैयार होने पर इसे इस टाइमलाइन में प्लेहेड पर जोड़ दिया जाएगा।",
+    "editorAi.note": "तैयार होने पर इसे इस प्रोजेक्ट की टाइमलाइन में {time} पर जोड़ दिया जाएगा।",
+    "editorAi.added": "{name} को टाइमलाइन में जोड़ दिया गया।",
+    "editorAi.notAdded": "तैयार है, लेकिन यहाँ जोड़ा नहीं जा सका।",
+    "editorAi.addAtPlayhead": "प्लेहेड पर जोड़ें",
+    "editorAi.dismiss": "खारिज करें",
+    "editorAi.projectFull": "यह प्रोजेक्ट भर गया है। पहले कोई क्लिप या फ़ाइल हटाएँ।",
+    "editorAi.stemsBody": "प्लेहेड पर जोड़ने के लिए अलग ऑडियो ट्रैक चुनें। आप एक से अधिक जोड़ सकते हैं।",
+    "editorAi.addStem": "{stem} जोड़ें",
+    "editorAi.stemName": "{name} — {stem}",
+    "editorAi.done": "हो गया",
+    "editorAi.removed": "टाइमलाइन से हटा दिया गया। फिर से जोड़ें या खारिज करें।"
 } as const;

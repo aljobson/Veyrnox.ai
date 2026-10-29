@@ -5479,5 +5479,17 @@ export default {
   "vibeInvite.title": "바이브 체크 잠깐 해볼까요?",
   "vibeInvite.body": "일곱 번만 탭하면 둘러보기 맨 위에 만드는 스타일에 맞는 템플릿이 나와요.",
   "vibeInvite.start": "시작",
-  "vibeInvite.later": "나중에"
+  "vibeInvite.later": "나중에",
+    "editorAi.body": "동영상, 이미지 또는 소리를 만드세요. 준비되면 이 타임라인의 재생 헤드 위치에 추가됩니다.",
+    "editorAi.note": "준비되면 이 프로젝트 타임라인의 {time} 위치에 추가됩니다.",
+    "editorAi.added": "{name}을(를) 타임라인에 추가했습니다.",
+    "editorAi.notAdded": "준비되었지만 여기에 추가할 수 없습니다.",
+    "editorAi.addAtPlayhead": "재생 헤드에 추가",
+    "editorAi.dismiss": "닫기",
+    "editorAi.projectFull": "프로젝트가 가득 찼습니다. 먼저 클립이나 파일을 삭제하세요.",
+    "editorAi.stemsBody": "재생 헤드에 추가할 분리된 오디오 트랙을 선택하세요. 여러 개를 추가할 수 있습니다.",
+    "editorAi.addStem": "{stem} 추가",
+    "editorAi.stemName": "{name} — {stem}",
+    "editorAi.done": "완료",
+    "editorAi.removed": "타임라인에서 삭제되었습니다. 다시 추가하거나 닫으세요."
 } as const;

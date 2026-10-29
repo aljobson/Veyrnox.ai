@@ -237,3 +237,23 @@ test('the latest allowance refresh wins across retries', async () => {
     await act(async () => newer.resolve({})); await act(async () => older.resolve({ image: 1 }));
     expect(control(paid())).toBeDefined(); expect(hasText(t('create.workspace.generateFree'))).toBe(false);
 });
+
+test('onJobStarted keeps the pressed model and every id after close, fences accounts, and leaves chat Library intact', async () => {
+    const started = jest.fn();
+    await act(async () => root.render(<MakePanel visible initialPrompt="A quiet lake" onClose={mockClose} onJobStarted={started} resultNote="Returns to editor" />));
+    const second = deferred<{ job_id: string }>();
+    mockCreate.mockResolvedValueOnce({ job_id: 'one' }).mockReturnValueOnce(second.promise).mockResolvedValueOnce({ job_id: 'three' });
+    await press('3'); await press(paid(6));
+    expect(started).toHaveBeenCalledWith('one', model);
+    expect(control(t('faceFilters.openLibrary'))).toBeUndefined(); expect(hasText('Returns to editor')).toBe(true);
+    await press(t('chat.make.close'));
+    await act(async () => root.render(<MakePanel visible={false} initialPrompt="A quiet lake" onClose={mockClose} onJobStarted={started} />));
+    await act(async () => second.resolve({ job_id: 'two' }));
+    expect(started.mock.calls).toEqual([['one', model], ['two', model], ['three', model]]);
+    await act(async () => root.render(<MakePanel visible initialPrompt="A quiet lake" onClose={mockClose} onJobStarted={started} />));
+    const late = deferred<{ job_id: string }>(); mockCreate.mockReturnValueOnce(late.promise);
+    await press(paid()); mockOwner = 'other'; await act(async () => late.resolve({ job_id: 'other-owner' }));
+    expect(started).toHaveBeenCalledTimes(3);
+    mockOwner = 'owner'; await reopen(); await press(paid());
+    expect(control(t('faceFilters.openLibrary'))).toBeDefined();
+});

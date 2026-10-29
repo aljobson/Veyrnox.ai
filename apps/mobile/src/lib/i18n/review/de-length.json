@@ -3240,6 +3240,18 @@
     "ratio": 2
   },
   {
+    "id": "editorAi.addAtPlayhead",
+    "english": "Add at playhead",
+    "translation": "An Abspielposition hinzufügen",
+    "ratio": 1.93
+  },
+  {
+    "id": "editorAi.addStem",
+    "english": "Add {stem}",
+    "translation": "{stem} hinzufügen",
+    "ratio": 1.7
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

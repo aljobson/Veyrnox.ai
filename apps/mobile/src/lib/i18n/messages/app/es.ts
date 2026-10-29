@@ -5609,5 +5609,17 @@ export default {
   "vibeInvite.title": "¿Un test rápido de vibra?",
   "vibeInvite.body": "Siete toques y Explorar abre con plantillas que encajan con tu forma de crear.",
   "vibeInvite.start": "Empezar",
-  "vibeInvite.later": "Ahora no"
+  "vibeInvite.later": "Ahora no",
+    "editorAi.body": "Crea un vídeo, una imagen o un sonido. Cuando esté listo, se añadirá a esta línea de tiempo en el cabezal de reproducción.",
+    "editorAi.note": "Cuando esté listo, se añadirá a la línea de tiempo de este proyecto en {time}.",
+    "editorAi.added": "Se añadió {name} a la línea de tiempo.",
+    "editorAi.notAdded": "Listo, pero no se pudo añadir aquí.",
+    "editorAi.addAtPlayhead": "Añadir en el cabezal",
+    "editorAi.dismiss": "Descartar",
+    "editorAi.projectFull": "Este proyecto está lleno. Elimina primero un clip o archivo.",
+    "editorAi.stemsBody": "Elige una pista separada para añadirla en el cabezal. Puedes añadir más de una.",
+    "editorAi.addStem": "Añadir {stem}",
+    "editorAi.stemName": "{name} — {stem}",
+    "editorAi.done": "Listo",
+    "editorAi.removed": "Eliminado de la línea de tiempo. Añádelo de nuevo o descártalo."
 } as const;
