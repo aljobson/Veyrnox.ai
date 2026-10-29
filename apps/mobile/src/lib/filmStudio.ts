@@ -5,10 +5,14 @@ import { optionsFor } from './createOptions';
 // The checks below are copies of app/veyrnox/_lib/filmStudio.js and filmStudioStorage.js; __tests__/filmStudio.test.ts
 // runs both on the same studio so a change on the web that this file misses fails a test.
 import { estimateCredits, kindOf, textInput, type CatalogModel } from './media';
+import { GENERATION_PROMPT_MAX } from './promptLimits';
 
 export const MAX_FILM_BYTES = 1_000_000;
 export const FILM_STUDIO_WEB_PATH = '/app/film-studio';
 const FIELD_MAX = 24_000;
+const stringLimit = (key: string): number => key === 'context'
+    ? MAX_FILM_BYTES
+    : ['script', 'content'].includes(key) ? GENERATION_PROMPT_MAX : FIELD_MAX;
 
 export const FILM_STAGES: readonly (readonly [string, string])[] = [
     ['setup', t('filmStudio.setupyourtools')],
@@ -59,7 +63,7 @@ export function emptyFilm(): Film {
 type Obj = Record<string, unknown>;
 const isObj = (v: unknown): v is Obj => !!v && typeof v === 'object' && !Array.isArray(v);
 const strings = (v: unknown, keys: readonly string[]): boolean =>
-    isObj(v) && keys.every((k) => typeof v[k] === 'string' && (v[k] as string).length <= (k === 'context' ? MAX_FILM_BYTES : FIELD_MAX) && !(v[k] as string).includes('\0'));
+    isObj(v) && keys.every((k) => typeof v[k] === 'string' && (v[k] as string).length <= stringLimit(k) && !(v[k] as string).includes('\0'));
 const list = (v: unknown, limit: number, valid: (x: any) => boolean): boolean => Array.isArray(v) && v.length <= limit && v.every(valid);
 const byteLength = (text: string): number => {
     let n = 0;

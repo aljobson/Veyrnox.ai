@@ -20,7 +20,7 @@ test('GrsAI pins the verified 2K, single image polling request', () => {
     const record = capabilityFor(ENDPOINT);
     assert.equal(record.provider, 'grsai');
     assert.deepEqual(declaredInputs(record, { ...job.inputs, imageSize: '4K', num_images: 10, image_url: 'https://evil.test/a' }), job.inputs);
-    for (const inputs of [{ prompt: '' }, { prompt: 'x'.repeat(2001) }, { prompt: 'p', imageSize: '4K' },
+    for (const inputs of [{ prompt: '' }, { prompt: 'x'.repeat(30001) }, { prompt: 'p', imageSize: '4K' },
         { prompt: 'p', duration_seconds: 10 }, { prompt: 'p', aspect_ratio: '2:1' }]) {
         assert.equal(buildRequest(ENDPOINT, inputs).ok, false);
     }

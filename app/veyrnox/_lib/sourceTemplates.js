@@ -7,6 +7,10 @@ import {
   REPLACED_HIGGSFIELD_TEMPLATE_IDS,
   SOURCE_TEMPLATE_EXPANSION_12,
 } from './sourceTemplateExpansion12.js';
+import { SEEDANCE_SOURCE_TEMPLATE_EXPANSION } from './sourceTemplateExpansion13.js';
+import { SEEDANCE_200_TEMPLATE_METADATA } from './seedanceTemplateMetadata.js';
+import { sourcePromptAuditForModel } from './sourcePromptAudit.js';
+import { fallbackCapabilitiesFor } from '../../../lib/fallbackModelCapabilities.js';
 
 import { SOURCE_TEMPLATE_EXPANSION_6 } from './sourceTemplateExpansion6.js';
 import { SOURCE_TEMPLATE_EXPANSION } from './sourceTemplateExpansion.js';
@@ -385,6 +389,7 @@ const AUDIT_SOURCE_TEMPLATES = [
 ];
 
 const REPLACED_HIGGSFIELD_TEMPLATE_ID_SET = new Set(REPLACED_HIGGSFIELD_TEMPLATE_IDS);
+const RUNNABLE_MODEL_IDS = Object.freeze({ 'Seedance 2.0 Fast': 'seedance-2.0-fast' });
 
 // Keep the old promptless Higgsfield recipes in the audit expansion files, but
 // replace their public catalog positions one-for-one with same-record pairs
@@ -392,4 +397,29 @@ const REPLACED_HIGGSFIELD_TEMPLATE_ID_SET = new Set(REPLACED_HIGGSFIELD_TEMPLATE
 export const SOURCE_TEMPLATES = [
   ...AUDIT_SOURCE_TEMPLATES.filter(({ id }) => !REPLACED_HIGGSFIELD_TEMPLATE_ID_SET.has(id)),
   ...SOURCE_TEMPLATE_EXPANSION_12,
-];
+  ...SEEDANCE_SOURCE_TEMPLATE_EXPANSION,
+].map((template) => {
+  const source = SEEDANCE_200_TEMPLATE_METADATA[template.id];
+  if (!source) return template;
+  const promptMax = fallbackCapabilitiesFor(RUNNABLE_MODEL_IDS[source.runnableModel])?.inputs?.prompt?.max;
+  const audit = sourcePromptAuditForModel(template.id, promptMax);
+  const modelLimitOnly = audit.issues.includes('model-prompt-limit-exceeded')
+    && audit.issues.every(issue => ['model-prompt-limit-exceeded', 'source-input-contract-not-wired'].includes(issue));
+  const blockedNeeds = template.promptOrigin === 'community-source-exact' && !audit.runnable
+    ? modelLimitOnly
+      ? 'Copy the exact prompt; it exceeds the assigned model’s verified prompt limit'
+      : 'Copy the exact prompt; its required reference media or preserved audio is not wired into generation'
+    : null;
+  return {
+    ...template,
+    model: source.runnableModel,
+    credits: 19,
+    sourcePlatform: source.sourcePlatform,
+    sourceModel: source.sourceModel,
+    sourceUrl: source.sourceUrl,
+    sourcePromptRunnable: audit.runnable,
+    sourcePromptIssues: [...audit.issues],
+    sourcePromptModelPromptMax: audit.modelPromptMax ?? null,
+    ...(blockedNeeds ? { needs: blockedNeeds, needsKey: modelLimitOnly ? 'community.modelLimitCopyOnly' : 'community.copyOnly' } : {}),
+  };
+});

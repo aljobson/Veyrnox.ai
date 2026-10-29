@@ -12,6 +12,7 @@ import { ModelPickerSheet } from '../../../components/create/ModelPickerSheet';
 import { SectionLabel } from '../../../components/create/SectionLabel';
 import { SourceDurationCard } from '../../../components/create/SourceDurationCard';
 import { Text, TextField, Button, Card, Chip, Checkbox, themedStyles, useThemedStyles } from '../../../components/ui';
+import { GENERATION_PROMPT_MAX } from '../../../lib/promptLimits';
 
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -68,7 +69,7 @@ export default function CreateWithModel() {
     const router = useRouter();
     const [model, setModel] = useState<CatalogModel | null>(null);
     // A template (ADR-0120) opens this form with its prompt and length filled in; both stay editable.
-    const [prompt, setPrompt] = useState(typeof presetPrompt === 'string' ? presetPrompt.slice(0, 4000) : '');
+    const [prompt, setPrompt] = useState(typeof presetPrompt === 'string' ? presetPrompt : '');
     const [duration, setDuration] = useState<number | null>(null);
     const [busy, setBusy] = useState(false);
     // Storage keys of the files already uploaded, by slot, and the slots still uploading.
@@ -237,11 +238,12 @@ export default function CreateWithModel() {
     // Character first, then the camera, as on the web. Both only rewrite the prompt.
     const withCharacter = takesCharacter && characterOn ? buildCharacterPrompt(prompt, character) : prompt.trim();
     const text = takesCamera && cameraOn ? buildCinemaPrompt(withCharacter, cinema) : withCharacter;
+    const text_ = textInput(model);
+    const promptTooLong = !!text_ && text.length > text_.max;
     const slots = slotsFor(model);
     const waiting = Object.values(sending).some(Boolean);
     const hasReference = references.length > 0 || !!startFile;
-    const ready = !waiting && (!hasReference || sourceRights) && slots.every(slot => (!slot.required || references.some(ref => ref.slot === slot.slot)) && references.filter(ref => ref.slot === slot.slot).length <= (slot.maxFiles ?? 1)) && (!promptRequired(model) || !!text) && !seedIsInvalid(opts.seed) && !voiceIsMissing(options, opts.voice) && !audioLengthInvalid(options, opts.audioSeconds);
-    const text_ = textInput(model);
+    const ready = !waiting && !promptTooLong && (!hasReference || sourceRights) && slots.every(slot => (!slot.required || references.some(ref => ref.slot === slot.slot)) && references.filter(ref => ref.slot === slot.slot).length <= (slot.maxFiles ?? 1)) && (!promptRequired(model) || !!text) && !seedIsInvalid(opts.seed) && !voiceIsMissing(options, opts.voice) && !audioLengthInvalid(options, opts.audioSeconds);
     const request: SubmitRequest = { analyticsKind: kindOf(model.modality), modelId: model.id, prompt: text, durationSeconds: isVideo ? duration : null, confirmedCredits: unit, references, sourceRights: hasReference ? sourceRights : undefined, textKey: text_?.key, extraInputs: settingsInputs(options, { seed: opts.seed, negative: opts.negative, aspect: opts.aspect, voice: opts.voice, audioSeconds: opts.audioSeconds, resolution, audio }), preset: template?.id ?? undefined };
     const signature = JSON.stringify({ ...request, count: n });
     const matchingRetry = retry.current?.signature === signature ? retry.current : null;
@@ -346,8 +348,8 @@ export default function CreateWithModel() {
                             placeholderTextColor={styles.mutedInk.color}
                             accessibilityLabel={rawText(text_.key === 'topic' ? t('form.topic') : t('mobile.prompt'))}
                             multiline
-                            maxLength={text_.max}
                         />
+                        {promptTooLong ? <Text tone="danger" accessibilityLiveRegion="polite">{t(text_.key === 'topic' ? 'public.TemplateRecipe.topicTooLong' : text_.max < GENERATION_PROMPT_MAX ? 'public.TemplateRecipe.promptTooLong' : 'public.TemplateRecipe.productPromptTooLong', { count: text.length, max: text_.max })}</Text> : null}
                         <View style={styles.skillsRow}>
                             <Text variant="caption" tone="tertiary" style={styles.skillsIntro}>{t('create.workspace.skills')}</Text>
                             <Button variant="tertiary" accessibilityRole="link" onPress={() => router.push({ pathname: '/chat/skills', params: { skill: 'prompt-writer' } })} label={t('create.workspace.promptWriter')} />

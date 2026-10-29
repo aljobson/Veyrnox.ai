@@ -1,5 +1,6 @@
 import { generationSlotKind, generationMimeTypes, sourceList, setSlotSources } from '../../../lib/generationSourceSlots.mjs';
 import { isUploadKey } from '../../../lib/uploadSource.js';
+import { GENERATION_PROMPT_MAX, NEGATIVE_PROMPT_MAX } from '../../../lib/generationPromptLimits.js';
 
 // The landing hero's prompt, handed to app/create through sessionStorage so
 // it never travels in a URL. Read once and cleared, so a reload of the studio
@@ -45,7 +46,7 @@ export function takeStudioDraft(storage, modelId, now = Date.now()) {
     if (!raw) return null;
     storage.removeItem(LANDING_DRAFT_KEY);
     const draft = JSON.parse(raw);
-    if (!draft || typeof draft.prompt !== 'string' || !draft.prompt) return null;
+    if (!draft || typeof draft.prompt !== 'string' || !draft.prompt || draft.prompt.length > GENERATION_PROMPT_MAX) return null;
     if (!Number.isFinite(draft.at) || now - draft.at > MAX_AGE_MS) return null;
     if (!modelId || draft.model !== modelId) return null;
     const sources = safeDraftSources(draft.sources);
@@ -53,7 +54,7 @@ export function takeStudioDraft(storage, modelId, now = Date.now()) {
       prompt: draft.prompt,
       aspect: typeof draft.aspect === 'string' ? draft.aspect : null,
       ...(Number.isInteger(draft.durationSeconds) && draft.durationSeconds >= 1 && draft.durationSeconds <= 60 ? { durationSeconds: draft.durationSeconds } : {}),
-      ...(typeof draft.negativePrompt === 'string' ? { negativePrompt: draft.negativePrompt } : {}),
+      ...(typeof draft.negativePrompt === 'string' && draft.negativePrompt.length <= NEGATIVE_PROMPT_MAX ? { negativePrompt: draft.negativePrompt } : {}),
       ...(typeof draft.templateId === 'string' ? { templateId: draft.templateId } : {}),
       ...(draft.followup === 'generated-sound' ? { followup: draft.followup } : {}),
       ...(draft.oddlingPicks && typeof draft.oddlingPicks === 'object'
@@ -74,6 +75,8 @@ export function takeLandingDraft(storage, modelId, now = Date.now()) {
 /** Hand a prompt (and optional aspect) to the studio. False if storage is blocked. */
 export function writeStudioDraft(storage, { prompt, model, aspect = null, durationSeconds, negativePrompt, templateId, oddlingPicks, followup, sources, consent }, now = Date.now()) {
   try {
+    if (typeof prompt !== 'string' || !prompt || prompt.length > GENERATION_PROMPT_MAX) return false;
+    if (typeof negativePrompt === 'string' && negativePrompt.length > NEGATIVE_PROMPT_MAX) return false;
     const safeSources = safeDraftSources(sources);
     if (sources && Object.keys(sources).length && !safeSources) return false;
     storage.setItem(LANDING_DRAFT_KEY, JSON.stringify({

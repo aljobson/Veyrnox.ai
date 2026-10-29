@@ -8,6 +8,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { register } from 'node:module';
+import { GENERATION_BODY_LIMIT } from '../lib/requestBodyLimit.js';
 
 register('data:text/javascript,' + encodeURIComponent(`
   export async function resolve(s, c, next) {
@@ -157,7 +158,7 @@ test('the earlier refusals still come first', async () => {
         const admin = await worker.fetch(new Request(`${ORIGIN}/api/v1/admin/metrics`, { headers: INTERNAL }), refusing, {});
         assert.equal(admin.status, 429);
         const big = await worker.fetch(new Request(`${ORIGIN}/api/v1/generations`, {
-            method: 'POST', headers: { ...INTERNAL, 'content-length': '70000' }, body: 'x',
+            method: 'POST', headers: { ...INTERNAL, 'content-length': String(GENERATION_BODY_LIMIT + 1) }, body: 'x',
         }), allow, {});
         assert.equal(big.status, 413);
     });

@@ -97,7 +97,7 @@ test('source-gap clips stay outside the public manifest', () => {
         .filter((id) => Object.hasOwn(AUDIT_SHOWCASE_CLIPS, id));
     assert.equal(REMOVED_PROMPT_GAP_TEMPLATE_IDS.length, 45);
     assert.equal(removedAuditKeys.length, 44, 'Keyboard Duo uses the independent ACE Step landing clip');
-    assert.equal(Object.keys(SHOWCASE_CLIPS).length, 277, '270 template clips plus seven dedicated landing clips');
+    assert.equal(Object.keys(SHOWCASE_CLIPS).length, 399, '392 template clips plus seven dedicated landing clips');
     for (const key of removedAuditKeys) assert.equal(Object.hasOwn(SHOWCASE_CLIPS, key), false, key);
     assert.equal(Object.hasOwn(SHOWCASE_CLIPS, 'ace-step'), true);
 });
@@ -139,11 +139,13 @@ test('every homepage template has its own wall placement', () => {
     }
 });
 
-test('previews keep their titles without exposing source-platform metadata', () => {
+test('previews keep titles and expose source names only on verified Seedance asset paths', () => {
     for (const [key, clip] of Object.entries(SHOWCASE_CLIPS)) {
         assert.ok(clip.title?.trim(), `${key} has no title`);
         assert.ok(!Object.hasOwn(clip, 'source'), `${key} exposes source metadata`);
-        assert.doesNotMatch(JSON.stringify(clip), /buzzy|higgsfield|syntx|capcut|film\.fun|cliptrend|trendai|vynoa|viralance/i, `${key} exposes a platform name`);
+        const serialized = JSON.stringify(clip);
+        assert.doesNotMatch(serialized, /buzzy|capcut|film\.fun|cliptrend|trendai|vynoa|viralance/i, `${key} exposes an unverified platform name`);
+        if (/higgsfield|syntx/i.test(serialized)) assert.match(clip.video, /^\/showcase\/viral-seedance-(?:higgs|syntx)-/, key);
     }
 });
 
@@ -162,7 +164,7 @@ test('every media-backed preset has a distinct preview and poster', () => {
 
 test('every preview-backed template has a real local video and poster', () => {
     const previewBacked = PRESETS.filter((preset) => preset.clipKey);
-    assert.equal(previewBacked.length, 270);
+    assert.equal(previewBacked.length, 392);
     for (const preset of previewBacked) {
         const clip = SHOWCASE_CLIPS[preset.clipKey];
         assert.ok(clip?.video, `${preset.id} has no video`);

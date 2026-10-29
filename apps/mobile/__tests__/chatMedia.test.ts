@@ -39,7 +39,8 @@ describe('price and length', () => {
     });
     test('the words are trimmed and capped', () => {
         expect(cleanMediaPrompt('  hi  ')).toBe('hi');
-        expect(cleanMediaPrompt('x'.repeat(MAX_MEDIA_PROMPT + 50))).toHaveLength(MAX_MEDIA_PROMPT);
+        expect(cleanMediaPrompt('x'.repeat(MAX_MEDIA_PROMPT))).toHaveLength(MAX_MEDIA_PROMPT);
+        expect(cleanMediaPrompt('x'.repeat(MAX_MEDIA_PROMPT + 1))).toBe('');
     });
 });
 

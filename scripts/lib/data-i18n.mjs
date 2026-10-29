@@ -41,7 +41,8 @@ export function dataInventory(tree, file, english) {
       if (ts.isIdentifier(node)) { dependencies(node); return; }
       if (ts.isObjectLiteralExpression(node)) {
         const identity = node.properties.find(p => ts.isPropertyAssignment(p) && ['id','slug'].includes(p.name.text))?.initializer?.text || id;
-        for (const p of node.properties) visit(p, field, identity);
+        const sharedNeedsKey = node.properties.find(p => ts.isPropertyAssignment(p) && p.name.text === 'needsKey')?.initializer?.text;
+        for (const p of node.properties) visit(p, field, p.name?.text === 'needs' && sharedNeedsKey ? sharedNeedsKey : identity);
         return;
       }
       if (ts.isPropertyAssignment(node)) { visit(node.initializer, node.name.text || node.name.getText(tree), id); return; }

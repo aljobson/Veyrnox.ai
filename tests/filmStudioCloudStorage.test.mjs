@@ -18,6 +18,12 @@ test('legacy films remain byte-identical and unlinked', () => {
   assert.deepEqual(readFilm(store, 'alice'), { film, cloud: null, error: null });
   writeFilm(store, 'alice', film); assert.equal(store.getItem(key), text);
 });
+test('a complete 30,000-character template prompt round-trips through Film Studio storage', () => {
+  const store = storage(), film = { ...emptyFilm(), script: '界'.repeat(30000) };
+  assert.equal(writeFilm(store, 'alice', film), true);
+  assert.equal(readFilm(store, 'alice').film.script, film.script);
+  assert.throws(() => writeFilm(store, 'alice', { ...film, script: `${film.script}界` }), /not a valid Film Studio export/);
+});
 test('one atomic record preserves integer-like test keys and excludes snapshot/content from prefix', () => {
   const store = storage(), film = emptyFilm();
   film.assets = [{ tag: '@room', version: 1, type: 'location', descriptor: 'Private descriptor', references: [], tests: { '20': { result: 'twenty', verdict: 'pass' }, '2': { result: 'two', verdict: 'pass' }, angle: { result: 'side', verdict: 'pass' } }, lock: null }];

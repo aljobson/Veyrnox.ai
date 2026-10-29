@@ -442,7 +442,7 @@ export default function Conversation() {
             {error && lowBalance ? <Button label={t('lowBalance.buy')} accessibilityLabel={t('lowBalance.buy')} variant="secondary" onPress={() => router.push('/credits')} /> : null}
             {thread && pickerModelsOpen ? <ModelPicker visible currentId={thread.model_id} models={allModels} onPick={(mid) => void pickModel(mid)} onClose={() => setPickerModelsOpen(false)} /> : null}
             {thread && settingsOpen ? <ChatSettings visible instructionsLocked={oddLocked} thread={thread} models={allModels} onSave={saveSettings} onClose={() => setSettingsOpen(false)} /> : null}
-            <MakePanel visible={makeOpen} initialKind={makeKind} initialPrompt={draft.trim().slice(0, 2000)} onClose={() => setMakeOpen(false)} />
+            <MakePanel visible={makeOpen} initialKind={makeKind} initialPrompt={draft.trim()} onClose={() => setMakeOpen(false)} />
             <LibraryImagePicker visible={pickerOpen} chosen={images} max={maxImages} onClose={() => setPickerOpen(false)} onPick={(img) => setImages((cur) => (cur.length < maxImages && !cur.some((c) => c.assetId === img.assetId) ? [...cur, img] : cur))} />
             {model && price !== null ? (
                 <View style={[styles.composerDock, { paddingBottom: Math.max(insets.bottom, 8) }]}>

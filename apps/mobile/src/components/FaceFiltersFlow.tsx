@@ -23,6 +23,7 @@ import { FaceFilterResult } from './FaceFilterResult';
 import { Button, Icon, IconBadge } from './ui';
 import { kindForMime } from '../lib/creativeReuse';
 import { faceIcon } from '../lib/featureIcons';
+import { GENERATION_PROMPT_MAX } from '../lib/promptLimits';
 
 export const RESULT_LINK_REFRESH_MS = 10 * 60 * 1000;
 type ResultSource = { jobId: string; uri: string; fetchedAt: number };
@@ -155,10 +156,13 @@ export function FaceFiltersFlow({ api, owner }: { api: ApiClient; owner: string 
     let invalid = false;
     if (model) { try { faceInputs(model, values); } catch { invalid = true; } }
     const missing = model ? shortfall(balance, model.credits) : 0;
-    const ready = !!(photo || fromResult) && checked && !invalid && (model?.id !== 'face-relight' || !!prompt.trim()) && missing === 0;
+    const promptLimit = model ? textInput(model)?.max ?? GENERATION_PROMPT_MAX : GENERATION_PROMPT_MAX;
+    const promptLimitKey = promptLimit < GENERATION_PROMPT_MAX ? 'public.TemplateRecipe.promptTooLong' : 'public.TemplateRecipe.productPromptTooLong';
+    const promptTooLong = prompt.trim().length > promptLimit;
+    const ready = !!(photo || fromResult) && checked && !invalid && !promptTooLong && (model?.id !== 'face-relight' || !!prompt.trim()) && missing === 0;
 
     async function run() {
-        if (!model || !(photo || fromResult) || !ready || working.current || !current()) return;
+        if (!model || !(photo || fromResult) || !ready || promptTooLong || working.current || !current()) return;
         working.current = true; setBusy(true); setError(null);
         // Snapshot the checked attestation for this one attempt, then require another
         // deliberate tick for every later attempt. AI-sharing is a separate gate.
@@ -231,7 +235,7 @@ export function FaceFiltersFlow({ api, owner }: { api: ApiClient; owner: string 
                     {invalid ? <Text style={styles.error}>{t('faceFilters.invalidAge')}</Text> : null}
                 </> : null}
                 {selectors?.identity ? <Pressable accessibilityRole="checkbox" accessibilityLabel={t('faceFilters.preserve_identity')} accessibilityState={{ checked: values.preserve_identity === true, disabled: busy }} disabled={busy} style={styles.card} onPress={() => { setValues(v => ({ ...v, preserve_identity: !v.preserve_identity })); setChecked(false); }}><Text style={styles.text}>{values.preserve_identity ? '☑ ' : '☐ '}{t('faceFilters.preserve_identity')}</Text></Pressable> : null}
-                {model.id === 'face-relight' ? <TextInput accessibilityLabel={t('faceFilters.prompt')} placeholder={t('faceFilters.prompt')} placeholderTextColor={colors.muted} style={styles.input} editable={!busy} multiline maxLength={textInput(model)?.max ?? 2000} value={prompt} onChangeText={value => { setPrompt(value); setChecked(false); }} /> : null}
+                {model.id === 'face-relight' ? <><TextInput accessibilityLabel={t('faceFilters.prompt')} placeholder={t('faceFilters.prompt')} placeholderTextColor={colors.muted} style={styles.input} editable={!busy} multiline value={prompt} onChangeText={value => { setPrompt(value); setChecked(false); }} />{promptTooLong ? <Text style={styles.error} accessibilityRole="alert">{t(promptLimitKey, { count: String(prompt.trim().length), max: String(promptLimit) })}</Text> : null}</> : null}
                 <View style={styles.card}><Text style={styles.price}>{t('faceFilters.price', { credits: String(model.credits) })}</Text></View>
                 {missing > 0 ? <Pressable accessibilityRole="button" accessibilityLabel={t('lowBalance.buy')} style={styles.card} onPress={() => router.push('/credits')}><Text style={styles.text}>{t('form.err.insufficient')} {t('lowBalance.buy')}</Text></Pressable> : null}
                 <Pressable accessibilityRole="checkbox" accessibilityLanguage="en" accessibilityLabel={english('faceFilters.rights')} accessibilityState={{ checked, disabled: busy }} disabled={busy} style={[styles.card, checked && styles.selected]} onPress={() => setChecked(v => !v)}><Text style={styles.text}>{checked ? '☑ ' : '☐ '}{english('faceFilters.rights')}</Text></Pressable>

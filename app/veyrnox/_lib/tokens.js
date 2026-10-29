@@ -122,6 +122,9 @@ export function presetDraftForModel(presetId, modelId) {
  * user. Shared by the /presets gallery cards and the landing wall.
  */
 export function presetHref(preset, durationSeconds = preset.durationSeconds) {
+  if (preset.promptOrigin === 'community-source-exact' && preset.sourcePromptRunnable === false) {
+    return `/presets/${encodeURIComponent(preset.id)}`;
+  }
   const modelId = modelIdForName(preset.model);
   return modelId
     ? `/app/create?model=${encodeURIComponent(modelId)}&preset=${encodeURIComponent(preset.id)}${durationSeconds === 10 ? '&duration=10s' : ''}`

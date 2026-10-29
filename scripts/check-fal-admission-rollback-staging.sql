@@ -30,7 +30,7 @@ BEGIN
     SELECT count(*) INTO original_claims FROM public.model_free_allowance_claims WHERE user_id=fixture_user;
     SELECT count(*) INTO original_dispatch FROM public.fal_dispatch;
     SELECT count(*) INTO original_reservations FROM public.fal_capacity_reservations;
-    IF octet_length(payload::text)>16384 OR octet_length((payload||'{"image_size":{"width":1024,"height":768}}'::jsonb)::text)<=16384 THEN
+    IF octet_length(payload::text)>262144 OR octet_length((payload||'{"image_size":{"width":1024,"height":768}}'::jsonb)::text)<=262144 THEN
         RAISE EXCEPTION 'invalid boundary fixture';
     END IF;
     UPDATE public.model_catalog SET active=true,provider_endpoint='fal-ai/flux-2-pro',modality='text-to-image',

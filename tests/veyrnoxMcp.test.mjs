@@ -144,6 +144,20 @@ test('through the real MCP handler, a wrong price confirmation is refused before
   assert.ok(paths.every((p) => p === '/rest/v1/model_catalog'), JSON.stringify(paths));
 });
 
+test('the MCP transport accepts a complete 30,000-character non-ASCII generation prompt', async (t) => {
+  const prompt = '界'.repeat(30000), paths = [];
+  const result = await callTool('generate_image', {
+    model_id: 'flux-fal-30k', prompt, confirmed_credits: 1, idempotency_key: 'mcp-wiring-30k-prompt',
+  }, async (url) => {
+    const path = new URL(String(url)).pathname; paths.push(path);
+    if (path === '/rest/v1/model_catalog') return Response.json([{ ...IMAGE_ROW, id: 'flux-fal-30k', provider: 'fal', provider_endpoint: 'fal-ai/flux-2-pro' }]);
+    assert.fail(`the connector reached ${path} after a wrong confirmation`);
+  }, t);
+  assert.equal(result.isError, true);
+  assert.equal(result.structuredContent.error, 'credit_confirmation_mismatch');
+  assert.deepEqual(paths, ['/rest/v1/model_catalog']);
+});
+
 test('through the real MCP handler, a video model is refused as image-only and nothing else is called', async (t) => {
   const result = await callTool('generate_image', {
     model_id: 'kling-3.0-i2v', prompt: 'x', confirmed_credits: 34, idempotency_key: 'mcp-wiring-0002',

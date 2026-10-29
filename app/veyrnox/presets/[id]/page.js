@@ -13,7 +13,8 @@ import { ClipBadge } from '../../_components/ClipBadge';
 import { SHOWCASE_CLIPS } from '../../_lib/showcase';
 import { ALL_TEMPLATES, templateById, presetTitle, modelIdForName } from '../../_lib/tokens';
 import { exactSourcePromptRecord } from '../../_lib/sourcePromptRecords.js';
-import { sourcePromptAuditRecord } from '../../_lib/sourcePromptAudit.js';
+import { sourcePromptAuditForModel } from '../../_lib/sourcePromptAudit.js';
+import { fallbackCapabilitiesFor } from '../../../../lib/fallbackModelCapabilities.js';
 import { OPEN_GRAPH_BASE } from '../../../seo';
 
 // Templates are static data, so each page is built once; the price is read
@@ -43,8 +44,9 @@ export default async function TemplatePage({ params }) {
   const { id } = await params;
   const template = templateById(id);
   if (!template) notFound();
+  const modelId = modelIdForName(template.model);
   const sourcePrompt = exactSourcePromptRecord(template.id)?.prompt ?? null;
-  const sourceAudit = sourcePromptAuditRecord(template.id);
+  const sourceAudit = sourcePromptAuditForModel(template.id, fallbackCapabilitiesFor(modelId)?.inputs?.prompt?.max);
   const recipe = {
     ...template,
     sourcePrompt,
@@ -52,9 +54,9 @@ export default async function TemplatePage({ params }) {
     sourcePromptStatus: sourceAudit.status,
     sourcePromptRunnable: sourceAudit.runnable,
     sourcePromptIssues: [...sourceAudit.issues],
+    sourcePromptModelPromptMax: sourceAudit.modelPromptMax ?? null,
     sourcePromptDuplicateOf: sourceAudit.duplicateOf,
   };
-  const modelId = modelIdForName(template.model);
   const clip = SHOWCASE_CLIPS[template.clipKey];
   return (
     <div className="min-h-dvh">
@@ -78,6 +80,9 @@ export default async function TemplatePage({ params }) {
             <p className="mt-4 text-vx-fg-body">
               {rich(t('presets.detail.runsOn'), { model: modelId ? <Link href={localizedHref(locale, `/models/${encodeURIComponent(modelId)}`)} className="font-bold underline underline-offset-4">{template.model}</Link> : <span className="font-bold">{template.model}</span> })}
             </p>
+            {template.sourceModel && <p className="mt-2 font-vx-mono text-[11px] tracking-[0.08em] text-vx-fg-muted" data-source-model={template.sourceModel}>
+              {template.sourcePlatform} · {template.sourceModel}
+            </p>}
             {template.needs && (template.sourceAspect ? (
               <div className="mt-4 rounded-xl border border-vx-border px-4 py-3 text-[14px] text-vx-fg-body">
                 <p>{t('presets.detail.inputs', { inputs: tOr(t, `presets.needs.${template.needsKey || template.id}`, template.needs) })}</p>

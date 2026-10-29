@@ -1,5 +1,7 @@
 // Model instructions are English data, independent of the interface locale.
 export const FACELESS_REEL_MODEL = 'wan-2.5-kie';
+// Wan 2.5 on Kie has a narrower provider contract than the general media cap.
+export const FACELESS_REEL_PROMPT_MAX = 800;
 export const FACELESS_SOUND_MODEL = 'mmaudio-v2-video';
 export const FACELESS_SOUND_PROMPT = 'Natural sound design precisely synchronized to the visible motion and setting. Build a clean, restrained ambience with believable object and environmental sounds. No speech, narration, music, branded sonic logo or exaggerated impact.';
 export const FACELESS_REEL_FORMATS = ['explainer', 'list', 'micro-story', 'mood'] as const;
@@ -59,7 +61,7 @@ export function facelessReelValidation(values: FacelessReelValues) {
     if (![5, 10].includes(Number(values.duration))) return 'duration';
     if (values.sound && Number(values.duration) > 8) return 'soundDuration';
     if (!values.originality || !values.faceless) return 'review';
-    if (buildFacelessReelPrompt(values).length > (values.promptMax ?? 800)) return 'promptLong';
+    if (buildFacelessReelPrompt(values).length > (values.promptMax ?? FACELESS_REEL_PROMPT_MAX)) return 'promptLong';
     return null;
 }
 export function facelessReelLaunch(values: FacelessReelValues) {

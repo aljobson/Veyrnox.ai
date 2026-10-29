@@ -1,7 +1,9 @@
 import { modelIdForName } from './tokens.js';
+import { GENERATION_PROMPT_MAX } from '../../../lib/generationPromptLimits.js';
+import { sourcePromptAuditRecord } from './sourcePromptAudit.js';
 
 // The longest prompt POST /api/v1/generations accepts (app/api/v1/generations/route.js).
-export const TEMPLATE_PROMPT_MAX = 2000;
+export const TEMPLATE_PROMPT_MAX = GENERATION_PROMPT_MAX;
 
 const nonEmptyString = (value) => typeof value === 'string' && value.trim().length > 0;
 const supportedDuration = (value) => value === 5 || value === 10;
@@ -13,6 +15,8 @@ export function draftForTemplate(preset, modelId) {
   if (!preset || typeof modelId !== 'string' || !modelId
     || modelIdForName(preset.model) !== modelId
     || !nonEmptyString(preset.prompt) || !nonEmptyString(preset.id)) return null;
+  if ((preset.promptOrigin === 'community-source-exact' || preset.sourcePromptOrigin === 'community-source-exact')
+    && (preset.sourcePromptRunnable === false || !sourcePromptAuditRecord(preset.id).runnable)) return null;
   return {
     prompt: preset.prompt,
     aspect: nonEmptyString(preset.aspect) ? preset.aspect : null,

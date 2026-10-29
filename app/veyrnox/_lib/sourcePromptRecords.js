@@ -1,11 +1,13 @@
 import { GENJUTSU_SOURCE_PROMPT_RECORDS } from './genjutsuSourcePromptRecords.js';
 import { HIGGSFIELD_90_SOURCE_PROMPT_RECORDS } from './higgsfieldCommunityExpansion90Records.js';
 import { SYNTX_SOURCE_PROMPT_RECORDS } from './syntxSourcePromptRecords.js';
+import { SEEDANCE_SOURCE_PROMPT_RECORDS } from './seedanceSourcePromptRecords.js';
 
 export const SOURCE_PROMPT_RECORDS = Object.freeze({
   ...GENJUTSU_SOURCE_PROMPT_RECORDS,
   ...HIGGSFIELD_90_SOURCE_PROMPT_RECORDS,
   ...SYNTX_SOURCE_PROMPT_RECORDS,
+  ...SEEDANCE_SOURCE_PROMPT_RECORDS,
 });
 
 export function exactSourcePromptRecord(templateId) {

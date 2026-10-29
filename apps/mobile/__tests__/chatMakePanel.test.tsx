@@ -56,6 +56,17 @@ beforeEach(async () => {
 });
 afterEach(async () => { await act(async () => root.unmount()); jest.useRealTimers(); });
 
+test('an over-limit prompt remains visible, explains the model limit, and cannot submit', async () => {
+    const field = control(t('chat.make.promptLabel'));
+    expect(field.props.maxLength).toBeUndefined();
+    const full = 'x'.repeat(2001);
+    await act(async () => field.props.onChangeText(full));
+    expect(control(t('chat.make.promptLabel')).props.value).toBe(full);
+    expect(hasText(t('public.TemplateRecipe.promptTooLong', { count: '2001', max: '2000' }))).toBe(true);
+    expect(disabled(paid())).toBe(true);
+    expect(mockCreate).not.toHaveBeenCalled();
+});
+
 test.each(['insufficient_balance', 'insufficient_credits'])('Make refusal %s offers native top-up and preserves the prompt', async code => {
     expect(control(t('lowBalance.buy'))).toBeUndefined();
     mockCreate.mockRejectedValueOnce(new ApiError(402, code)); await press(paid());

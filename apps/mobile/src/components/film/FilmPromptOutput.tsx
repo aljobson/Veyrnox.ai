@@ -16,12 +16,12 @@ export function FilmAction({ label, onPress, disabled = false }: { label: string
         style={{ minHeight: 44, justifyContent: 'center', padding: 12, borderWidth: 1, borderColor: colors.border, borderRadius: 12, opacity: disabled ? 0.5 : 1 }}>
         <Text style={{ color: colors.accent }}>{label}</Text></Pressable>;
 }
-export function FilmInput({ label, value, onChange, disabled = false, multiline = false }: {
-    label: string; value: string; onChange: (value: string) => void; disabled?: boolean; multiline?: boolean;
+export function FilmInput({ label, value, onChange, disabled = false, multiline = false, maxLength = 24_000 }: {
+    label: string; value: string; onChange: (value: string) => void; disabled?: boolean; multiline?: boolean; maxLength?: number;
 }) {
     return <View style={{ gap: 6 }}><Text style={{ color: colors.body }}>{label}</Text><TextInput accessibilityLabel={rawText(label)}
         accessibilityState={{ disabled }} editable={!disabled} value={value} onChangeText={v => { if (!disabled) onChange(v); }}
-        multiline={multiline} maxLength={24000} style={{ minHeight: multiline ? 110 : 44, color: colors.text, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12 }} /></View>;
+        multiline={multiline} maxLength={maxLength} style={{ minHeight: multiline ? 110 : 44, color: colors.text, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12 }} /></View>;
 }
 export function FilmPromptOutput({ title, prompt, modelId, access, catalog, live, aspect, duration }: {
     title: string; prompt: string; modelId: string; access: string; catalog: readonly CatalogModel[]; live: boolean; aspect?: string; duration?: number;

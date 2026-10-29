@@ -6,10 +6,11 @@ import { parseOddlingInstructions, SKILLS as ODDLING_SKILLS } from './oddlingsCh
 // The wording is the web's (app/veyrnox/_lib/studioSkills.js); the Film group is in filmSkills.ts.
 import { FILM_SKILLS } from './filmSkills';
 import { kindOf, type CatalogModel } from './media';
+import { GENERATION_PROMPT_MAX } from './promptLimits';
 
 export const MAX_INSTRUCTIONS = 4000;
 export const MAX_DRAFTS = 6;
-export const MAX_DRAFT_PROMPT = 2000;
+export const MAX_DRAFT_PROMPT = GENERATION_PROMPT_MAX;
 
 export type SkillGroup = 'Make' | 'Edit' | 'Plan' | 'Film';
 export const SKILL_GROUPS: readonly SkillGroup[] = ['Make', 'Edit', 'Plan', 'Film'];
@@ -189,7 +190,8 @@ export function parseStudioDrafts(text: string, models: readonly CatalogModel[])
         if (!raw || typeof raw !== 'object' || Array.isArray(raw)) continue;
         const r = raw as { model?: unknown; prompt?: unknown };
         const m = typeof r.model === 'string' ? byId.get(r.model) : undefined;
-        const prompt = typeof r.prompt === 'string' ? r.prompt.trim().slice(0, MAX_DRAFT_PROMPT) : '';
+        const prompt = typeof r.prompt === 'string' ? r.prompt.trim() : '';
+        if (prompt.length > MAX_DRAFT_PROMPT) continue;
         if (!m || !prompt) continue;
         drafts.push({ model: m.id, name: m.name, credits: m.credits, prompt, needs: needsOf(m) });
     }

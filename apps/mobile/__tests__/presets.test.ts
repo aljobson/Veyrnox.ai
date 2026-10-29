@@ -127,6 +127,12 @@ describe('presetHref', () => {
         expect(presetHref(available).pathname).toBe('/create/[modelId]');
         expect(presetHref(unavailable)).toEqual({ pathname: '/create/presets', params: { unavailable: 'a' } });
     });
+
+    test('opens a runnable adaptation while blocking the unsupported exact source text', () => {
+        const [adapted] = parsePresets({ presets: [{ ...base, sourcePrompt: 'Exact @image1 source text', sourcePromptOrigin: 'community-source-exact', sourcePromptRunnable: false }] });
+        expect(presetHref(adapted)).toMatchObject({ pathname: '/create/[modelId]', params: { prompt: 'Animate the product.' } });
+        expect(presetHref({ ...adapted, prompt: adapted.sourcePrompt! })).toEqual({ pathname: '/templates/[id]', params: { id: 'a' } });
+    });
 });
 
 describe('fetchPresets', () => {
