@@ -1,49 +1,46 @@
 import { rawText } from '../../lib/i18n/translate';
 import { Link, Stack } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { ScrollView, View } from 'react-native';
+import { Card, Icon, Text, themedStyles, useThemedStyles } from '../../components/ui';
 import { CatalogList, kindTitleKey } from '../../components/CatalogList';
 import { needs, priceLines } from '../../lib/catalogPages';
 import { t } from '../../lib/i18n';
-import { colors, LIST_END_PADDING } from '../../theme';
+import { LIST_END_PADDING } from '../../theme';
 
-// Every model the app can use, from the public catalogue (read-only). A row opens Create on that model, where the
-// price is shown again before anything is bought.
+// Open and gated catalog rows share their kind group and link to model details.
 export default function Models() {
+    const styles = useThemedStyles(sheets);
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
             <Stack.Screen options={{ title: t('mdl.title') }} />
-            <Text style={styles.note}>{t('mdl.intro')}</Text>
-            <CatalogList
-                render={(g) => (
-                    <>
-                        <Text style={styles.heading} accessibilityRole="header">{t(kindTitleKey(g.kind))}</Text>
-                        {g.models.map((m) => {
-                            const from = priceLines(m)[0].credits;
-                            const extra = needs(m);
-                            return (
-                                <Link key={m.id} href={`/model/${encodeURIComponent(m.id)}`} asChild>
-                                    <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('mdl.rowLabel', { name: m.name, credits: from }))} style={styles.row}>
-                                        <Text style={styles.name}>{m.name}</Text>
-                                        <Text style={styles.note}>
-                                            {t('mdl.from', { credits: from })}
-                                            {extra.length ? ` · ${t('mdl.needs', { items: extra.join(', ') })}` : ''}
-                                        </Text>
-                                    </Pressable>
-                                </Link>
-                            );
-                        })}
-                    </>
-                )}
-            />
+            <Text variant="footnote" tone="secondary">{t('mdl.intro')}</Text>
+            <CatalogList includeGated render={group => <>
+                <Text variant="title3" accessibilityRole="header">{t(kindTitleKey(group.kind))}</Text>
+                {group.models.map(model => {
+                    const extra = needs(model);
+                    const from = priceLines(model)[0].credits;
+                    return <Link key={model.id} href={`/model/${encodeURIComponent(model.id)}`} asChild>
+                        <Card style={styles.row} accessibilityRole="button"
+                            accessibilityLabel={rawText(`${t('mdl.rowLabel', { name: model.name, credits: from })}${model.gated ? `, ${t('projectHome.premium')}` : ''}`)}>
+                            <Text variant="bodyStrong">{model.name}</Text>
+                            {model.gated ? <View style={styles.tag}>
+                                <Icon name="sparkleFill" size={20} /><Text>{t('projectHome.premium')}</Text>
+                            </View> : null}
+                            <Text variant="footnote" tone="secondary">
+                                {t('mdl.from', { credits: from })}
+                                {extra.length ? ` · ${t('mdl.needs', { items: extra.join(', ') })}` : ''}
+                            </Text>
+                        </Card>
+                    </Link>;
+                })}
+            </>} />
         </ScrollView>
     );
 }
 
-const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: colors.background },
+const sheets = themedStyles(p => ({
+    screen: { flex: 1, backgroundColor: p.bg },
     content: { padding: 16, paddingBottom: 16 + LIST_END_PADDING, gap: 20 },
-    heading: { color: colors.muted, fontSize: 14, textTransform: 'uppercase' },
-    row: { minHeight: 44, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 14, gap: 2 },
-    name: { color: colors.text, fontSize: 16, fontWeight: '600' },
-    note: { color: colors.muted, fontSize: 13 },
-});
+    row: { minHeight: 44, padding: 14, gap: 4 },
+    tag: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+}));

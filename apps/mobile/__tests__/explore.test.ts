@@ -128,7 +128,7 @@ describe('the Explore screen', () => {
 
     test('starts a creation from words or from a template', () => {
         expect(screen()).toContain('router.push(promptHref(model.id, prompt))');
-        expect(screen()).toContain('router.push(presetHref(p))');
+        expect(screen()).toContain('router.push(templatePageHref(p))');
     });
 
     test('nothing the old Home linked to became unreachable: the tabs, the chip and avatar, Vey, and the More row cover it', () => {

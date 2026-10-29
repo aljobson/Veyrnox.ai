@@ -6,7 +6,7 @@ import { type ComponentRef, useCallback, useEffect, useMemo, useRef, useState } 
 import { ActivityIndicator, ScrollView, TextInput, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { celebrateFinished } from '../../../lib/celebrate';
-import { ALL_CATEGORIES, ALL_TYPES, categoriesFor, filterPresets, firstModelFor, pickUp, promptHref, recentCreations, type TypeFilter } from '../../../lib/explore';
+import { ALL_CATEGORIES, ALL_TYPES, filterPresets, firstModelFor, pickUp, promptHref, recentCreations, type TypeFilter } from '../../../lib/explore';
 import { t } from '../../../lib/i18n';
 import { fetchCatalogCached, mediaApi, type CatalogModel, type Job, type Kind } from '../../../lib/media';
 import { LowBalanceNote } from '../../../components/LowBalanceNote';
@@ -16,7 +16,8 @@ import type { CreatorAnswers } from '../../../lib/creatorAnswers';
 import { rankPresets } from '../../../lib/creatorTaste';
 import { cheapestCredits, isLowBalance } from '../../../lib/lowBalance';
 import { useBalance } from '../../../lib/useBalance';
-import { fetchPresets, presetHref, presetPrice, type Preset } from '../../../lib/presets';
+import { fetchPresets, presetPrice, type Preset } from '../../../lib/presets';
+import { fetchPopularIds, templateChips, templatesFor, templatePageHref } from '../../../lib/templateFilters';
 import { colors, ds, LIST_END_PADDING } from '../../../theme';
 import { Button, Card, Text, TextField, Chip, themedStyles, useThemedStyles, useAppearance } from '../../../components/ui';
 
@@ -55,6 +56,7 @@ export default function Explore() {
     const [catalog, setCatalog] = useState<CatalogModel[]>([]);
     const [note, setNote] = useState<string | null>(null);
     const [presets, setPresets] = useState<Preset[] | null>(null);
+    const [popularIds, setPopularIds] = useState<string[]>([]);
     const [presetsFailed, setPresetsFailed] = useState(false);
     const [type, setType] = useState<TypeFilter>(ALL_TYPES);
     const balance = useBalance();
@@ -76,6 +78,11 @@ export default function Explore() {
             .catch(() => setPresetsFailed(true));
     }, []);
     useEffect(loadPresets, [loadPresets]);
+    useEffect(() => {
+        let live = true;
+        void fetchPopularIds().then(ids => { if (live) setPopularIds(ids); });
+        return () => { live = false; };
+    }, []);
 
     // The vibe check answers on this phone steer the order of templates. A choice the server has not seen yet is sent now.
     const [vibe, setVibe] = useState<CreatorAnswers | null>(null);
@@ -112,8 +119,9 @@ export default function Explore() {
         }, [api]),
     );
 
-    const categories = useMemo(() => categoriesFor(presets ?? [], type), [presets, type]);
-    const shown = useMemo(() => rankPresets(filterPresets(presets ?? [], { type, category, query }), vibe).slice(0, SHOWN), [presets, type, category, query, vibe]);
+    const typedPresets = useMemo(() => filterPresets(presets ?? [], { type, category: ALL_CATEGORIES, query: '' }), [presets, type]);
+    const categories = useMemo(() => templateChips(typedPresets, popularIds), [typedPresets, popularIds]);
+    const shown = useMemo(() => rankPresets(filterPresets(templatesFor(typedPresets, category, popularIds), { type, category: ALL_CATEGORIES, query }), vibe).slice(0, SHOWN), [typedPresets, type, category, popularIds, query, vibe]);
     const modelCount = useMemo(() => new Set((presets ?? []).map((preset) => preset.modelId)).size, [presets]);
 
     function pickType(next: TypeFilter) {
@@ -132,7 +140,7 @@ export default function Explore() {
     }
 
     function openPreset(p: Preset) {
-        router.push(presetHref(p));
+        router.push(templatePageHref(p));
     }
 
     const empty = prompt.trim().length === 0;

@@ -3,7 +3,7 @@ import { useFaceFiltersAvailable } from '../../../lib/useFaceFiltersAvailable';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { IconBadge, ListRow } from '../../../components/ui';
+import { Button, IconBadge, ListRow } from '../../../components/ui';
 import { toolIcon } from '../../../lib/featureIcons';
 import { plural, t } from '../../../lib/i18n';
 import { fetchCatalogCached, type CatalogModel } from '../../../lib/media';
@@ -61,15 +61,19 @@ export default function CreateTools() {
                             <Text style={styles.muted}>{g.blurb}</Text>
                         </View>
                         {g.tools.map((m) => (
-                            <ListRow
-                                key={m.id}
-                                accessibilityLabel={rawText(`${m.name}. ${t('toolsDir.needs', { what: toolNeeds(m) })}. ${plural('create.from', m.credits)}`)}
-                                leading={<IconBadge {...toolIcon(g.key)} />}
-                                title={m.name}
-                                subtitle={t('toolsDir.needs', { what: toolNeeds(m) })}
-                                trailing={<Text style={styles.price}>{plural('create.from', m.credits)}</Text>}
-                                onPress={() => g.key === 'face-filters' ? router.push('/face-filters') : router.push({ pathname: '/create/[modelId]', params: { modelId: m.id } })}
-                            />
+                            <View key={m.id}>
+                                <ListRow
+                                    accessibilityLabel={rawText(`${m.name}. ${t('toolsDir.needs', { what: toolNeeds(m) })}. ${plural('create.from', m.credits)}`)}
+                                    leading={<IconBadge {...toolIcon(g.key)} />}
+                                    title={m.name}
+                                    subtitle={t('toolsDir.needs', { what: toolNeeds(m) })}
+                                    trailing={<Text style={styles.price}>{plural('create.from', m.credits)}</Text>}
+                                    onPress={() => g.key === 'face-filters' ? router.push('/face-filters') : router.push({ pathname: '/create/[modelId]', params: { modelId: m.id } })}
+                                />
+                                <Button variant="tertiary" size="md" label={t('projectHome.details')}
+                                    accessibilityLabel={rawText(`${m.name}, ${t('projectHome.details')}`)}
+                                    onPress={() => router.push({ pathname: '/model/[id]', params: { id: m.id } })} />
+                            </View>
                         ))}
                     </View>
                 ))
