@@ -29,7 +29,9 @@ describe('the Cinema camera matches the web', () => {
         expect(web).toContain("lens: 'Premium Modern Prime'");
         expect(web).toContain('focal: 35');
         expect(web).toContain("aperture: 'f/1.4'");
-        expect(web).toContain(`PROMPT_MAX = ${PROMPT_MAX}`);
+        expect(web).toContain("import { GENERATION_PROMPT_MAX } from '../../../lib/generationPromptLimits.js'");
+        expect(web).toContain('PROMPT_MAX = GENERATION_PROMPT_MAX');
+        expect(PROMPT_MAX).toBe(30_000);
     });
 });
 

@@ -57,7 +57,7 @@ beforeEach(async () => {
 afterEach(async () => { await act(async () => root.unmount()); jest.useRealTimers(); });
 
 test('an over-limit prompt remains visible, explains the model limit, and cannot submit', async () => {
-    const field = control(t('chat.make.promptLabel'));
+    const field = root.container.queryAll(n => n.props.accessibilityLabel === t('chat.make.promptLabel') && typeof n.props.onChangeText === 'function')[0];
     expect(field.props.maxLength).toBeUndefined();
     const full = 'x'.repeat(2001);
     await act(async () => field.props.onChangeText(full));
