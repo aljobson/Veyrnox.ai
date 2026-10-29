@@ -1,4 +1,4 @@
-import { ApiError, type ApiClient } from './api';
+import { ApiError, REQUEST_TIMEOUT_MS, type ApiClient } from './api';
 import { isCreatorAnswers, type CreatorAnswers } from './creatorAnswers';
 
 // The Vibe Check on the phone (server ADR-0251, routes /api/v1/creator-profile). The server answers 404 while its own
@@ -50,15 +50,55 @@ function toResult(err: unknown): VibeResult {
     return err instanceof ApiError && err.status === 404 ? { kind: 'unavailable' } : { kind: 'failed' };
 }
 
-// The server's copy, if it has one: lets a second phone, or a reinstall, skip the interview.
-export async function fetchVibe(api: Pick<ApiClient, 'request'>): Promise<StoredVibe | null> {
+export const VIBE_REQUEST_DEADLINE_MS = REQUEST_TIMEOUT_MS + 5_000;
+
+// Covers token refresh, consent, headers AND the response body. Late transport results are inert.
+export function withVibeDeadline(api: Pick<ApiClient, 'request'>): Pick<ApiClient, 'request'> {
+    return { async request<T>(path: string, init?: RequestInit, options?: Parameters<ApiClient['request']>[2]): Promise<T> {
+        const controller = new AbortController();
+        const signal = init?.signal ? AbortSignal.any([init.signal, controller.signal]) : controller.signal;
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        const request = Promise.resolve().then(() => api.request<T>(path, { ...init, signal }, options));
+        const deadline = new Promise<never>((_, reject) => {
+            timer = setTimeout(() => {
+                controller.abort();
+                reject(new ApiError(0, 'network', { timedOut: true }));
+            }, VIBE_REQUEST_DEADLINE_MS);
+        });
+        void request.catch(() => undefined);
+        try { return await Promise.race([request, deadline]); }
+        finally { clearTimeout(timer); }
+    } };
+}
+
+export type VibeStatus = { kind: 'none' } | { kind: 'chosen'; vibe: StoredVibe } |
+    { kind: 'unavailable' } | { kind: 'failed' };
+
+export async function fetchVibeStatus(api: Pick<ApiClient, 'request'>): Promise<VibeStatus> {
     try {
         const r = await api.request<{ status?: unknown; answers?: unknown }>('/api/v1/creator-profile');
-        if (r.status === 'skipped') return { version: 1, state: 'skipped', answers: null, synced: true };
-        if (r.status === 'completed' && isCreatorAnswers(r.answers)) return { version: 1, state: 'completed', answers: r.answers, synced: true };
-        return null;
-    } catch {
-        return null;
+        if (r.status === 'none') return { kind: 'none' };
+        if (r.status === 'skipped') return { kind: 'chosen', vibe: { version: 1, state: 'skipped', answers: null, synced: true } };
+        if (r.status === 'completed' && isCreatorAnswers(r.answers)) return { kind: 'chosen', vibe: { version: 1, state: 'completed', answers: r.answers, synced: true } };
+        return { kind: 'failed' };
+    } catch (err) {
+        return err instanceof ApiError && err.status === 404 ? { kind: 'unavailable' } : { kind: 'failed' };
+    }
+}
+
+export async function fetchVibe(api: Pick<ApiClient, 'request'>): Promise<StoredVibe | null> {
+    const r = await fetchVibeStatus(api);
+    return r.kind === 'chosen' ? r.vibe : null;
+}
+
+export async function skipVibeStatus(api: Pick<ApiClient, 'request'>): Promise<
+    { kind: 'skipped' | 'kept' | 'unavailable' | 'failed' }
+> {
+    try {
+        const r = await api.request<{ status?: unknown }>('/api/v1/creator-profile/skip', { method: 'POST' });
+        return { kind: r.status === 'skipped' ? 'skipped' : r.status === 'completed' ? 'kept' : 'failed' };
+    } catch (err) {
+        return { kind: err instanceof ApiError && err.status === 404 ? 'unavailable' : 'failed' };
     }
 }
 

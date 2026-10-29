@@ -5605,5 +5605,9 @@ export default {
   "brand.upload.err.type": "Use uma imagem JPEG, PNG ou WebP, um vídeo MP4 ou um ficheiro MP3 ou WAV.",
   "brand.upload.err.rejected": "Não foi possível aceitar esse ficheiro.",
   "brand.upload.full": "Carregado, mas o kit já contém 24 recursos. Remova um e adicione este a partir do espaço de trabalho.",
-  "brand.err.saveNotFound": "Não foi possível guardar. Um ficheiro pode ter sido removido. Recarregue o kit e tente novamente."
+  "brand.err.saveNotFound": "Não foi possível guardar. Um ficheiro pode ter sido removido. Recarregue o kit e tente novamente.",
+  "vibeInvite.title": "Um papo rápido sobre seu estilo?",
+  "vibeInvite.body": "Sete toques e o Explorar começa com modelos que combinam com o seu jeito de criar.",
+  "vibeInvite.start": "Começar",
+  "vibeInvite.later": "Agora não"
 } as const;

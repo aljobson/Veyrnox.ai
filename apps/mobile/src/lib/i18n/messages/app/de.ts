@@ -5540,5 +5540,9 @@ export default {
   "brand.upload.err.type": "Verwende ein JPEG-, PNG- oder WebP-Bild, ein MP4-Video oder eine MP3- oder WAV-Datei.",
   "brand.upload.err.rejected": "Diese Datei konnte nicht angenommen werden.",
   "brand.upload.full": "Hochgeladen, aber das Kit enthält bereits 24 Dateien. Entferne eine und füge die Datei aus diesem Arbeitsbereich hinzu.",
-  "brand.err.saveNotFound": "Speichern fehlgeschlagen. Eine Datei wurde möglicherweise entfernt. Lade das Kit neu und versuche es erneut."
+  "brand.err.saveNotFound": "Speichern fehlgeschlagen. Eine Datei wurde möglicherweise entfernt. Lade das Kit neu und versuche es erneut.",
+  "vibeInvite.title": "Kurzer Vibe-Check?",
+  "vibeInvite.body": "Sieben Taps, und Entdecken zeigt zuerst Templates, die zu deiner Arbeitsweise passen.",
+  "vibeInvite.start": "Los geht's",
+  "vibeInvite.later": "Jetzt nicht"
 } as const;

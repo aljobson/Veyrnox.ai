@@ -5800,5 +5800,9 @@ export default {
   "brand.upload.err.type": "استخدم صورة JPEG أو PNG أو WebP، أو فيديو MP4، أو ملف MP3 أو WAV.",
   "brand.upload.err.rejected": "تعذر قبول هذا الملف.",
   "brand.upload.full": "تم الرفع، لكن المجموعة تحتوي بالفعل على 24 أصلًا. أزل أحدها ثم أضف الملف من مساحة العمل هذه.",
-  "brand.err.saveNotFound": "تعذر الحفظ. ربما أُزيل أحد الملفات. أعد تحميل المجموعة وحاول مجددًا."
+  "brand.err.saveNotFound": "تعذر الحفظ. ربما أُزيل أحد الملفات. أعد تحميل المجموعة وحاول مجددًا.",
+  "vibeInvite.title": "فحص سريع للأجواء؟",
+  "vibeInvite.body": "سبع نقرات وتبدأ صفحة الاستكشاف بالقوالب التي تناسب طريقتك في الإبداع.",
+  "vibeInvite.start": "ابدأ",
+  "vibeInvite.later": "ليس الآن"
 } as const;

@@ -5605,5 +5605,9 @@ export default {
   "brand.upload.err.type": "Usa una imagen JPEG, PNG o WebP, un vídeo MP4 o un archivo MP3 o WAV.",
   "brand.upload.err.rejected": "No se pudo aceptar ese archivo.",
   "brand.upload.full": "Subido, pero el kit ya tiene 24 recursos. Quita uno y añade este desde el espacio de trabajo.",
-  "brand.err.saveNotFound": "No se pudo guardar. Puede que se haya quitado un archivo. Recarga el kit e inténtalo de nuevo."
+  "brand.err.saveNotFound": "No se pudo guardar. Puede que se haya quitado un archivo. Recarga el kit e inténtalo de nuevo.",
+  "vibeInvite.title": "¿Un test rápido de vibra?",
+  "vibeInvite.body": "Siete toques y Explorar abre con plantillas que encajan con tu forma de crear.",
+  "vibeInvite.start": "Empezar",
+  "vibeInvite.later": "Ahora no"
 } as const;

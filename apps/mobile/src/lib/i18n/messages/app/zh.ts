@@ -5475,5 +5475,9 @@ export default {
   "brand.upload.err.type": "请使用 JPEG、PNG 或 WebP 图片、MP4 视频或 MP3、WAV 文件。",
   "brand.upload.err.rejected": "无法接受此文件。",
   "brand.upload.full": "已上传，但套件已有 24 个素材。请移除一个，再从此工作区添加。",
-  "brand.err.saveNotFound": "无法保存。某个文件可能已被移除。请重新加载套件后重试。"
+  "brand.err.saveNotFound": "无法保存。某个文件可能已被移除。请重新加载套件后重试。",
+  "vibeInvite.title": "来个快速氛围测试？",
+  "vibeInvite.body": "只需点七下，探索页就会优先展示适合你创作方式的模板。",
+  "vibeInvite.start": "开始",
+  "vibeInvite.later": "暂不"
 } as const;

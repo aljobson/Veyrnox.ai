@@ -4746,6 +4746,18 @@
     "ratio": 2.22
   },
   {
+    "id": "vibeInvite.start",
+    "english": "Start",
+    "translation": "C’est parti",
+    "ratio": 2.2
+  },
+  {
+    "id": "vibeInvite.later",
+    "english": "Not now",
+    "translation": "Pas maintenant",
+    "ratio": 2
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

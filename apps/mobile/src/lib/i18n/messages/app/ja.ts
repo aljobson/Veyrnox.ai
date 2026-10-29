@@ -5475,5 +5475,9 @@ export default {
   "brand.upload.err.type": "JPEG、PNG、WebP画像、MP4動画、またはMP3、WAVファイルを使用してください。",
   "brand.upload.err.rejected": "このファイルは受け付けられませんでした。",
   "brand.upload.full": "アップロードしましたが、キットには既に24個の素材があります。1個外してから、このワークスペースから追加してください。",
-  "brand.err.saveNotFound": "保存できませんでした。ファイルが削除された可能性があります。キットを再読み込みしてお試しください。"
+  "brand.err.saveNotFound": "保存できませんでした。ファイルが削除された可能性があります。キットを再読み込みしてお試しください。",
+  "vibeInvite.title": "ちょっとバイブチェック？",
+  "vibeInvite.body": "たった七タップで、探索の先頭にあなたのつくり方に合うテンプレートが並びます。",
+  "vibeInvite.start": "はじめる",
+  "vibeInvite.later": "あとで"
 } as const;

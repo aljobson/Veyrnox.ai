@@ -5475,5 +5475,9 @@ export default {
   "brand.upload.err.type": "JPEG, PNG, WebP 이미지, MP4 동영상 또는 MP3, WAV 파일을 사용하세요.",
   "brand.upload.err.rejected": "이 파일을 수락할 수 없습니다.",
   "brand.upload.full": "업로드했지만 키트에 이미 24개 자료가 있습니다. 하나를 제거한 뒤 이 작업 공간에서 추가하세요.",
-  "brand.err.saveNotFound": "저장할 수 없습니다. 파일이 제거되었을 수 있습니다. 키트를 새로 불러온 뒤 다시 시도하세요."
+  "brand.err.saveNotFound": "저장할 수 없습니다. 파일이 제거되었을 수 있습니다. 키트를 새로 불러온 뒤 다시 시도하세요.",
+  "vibeInvite.title": "바이브 체크 잠깐 해볼까요?",
+  "vibeInvite.body": "일곱 번만 탭하면 둘러보기 맨 위에 만드는 스타일에 맞는 템플릿이 나와요.",
+  "vibeInvite.start": "시작",
+  "vibeInvite.later": "나중에"
 } as const;

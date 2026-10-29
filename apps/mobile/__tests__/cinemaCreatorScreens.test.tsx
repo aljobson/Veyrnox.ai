@@ -156,7 +156,7 @@ test('a staged file is hashed once per launch: never right after pick, again onl
     expect(source.match(/stagedValid\(scope\.ticket, saved\)/g)).toHaveLength(2);
     expect(source).toMatch(/store\.pick\([^\n]*\n\s*markVerified\(next\);/);
 });
-test('AuthProvider only adds the upload owner import and one call each after bindCacheUser and wipeCache', () => {
+test('AuthProvider fences upload ownership after cache and vibe cleanup', () => {
     const path = 'apps/mobile/src/auth/AuthProvider.tsx';
     const source = readFileSync(resolve(__dirname, '../src/auth/AuthProvider.tsx'), 'utf8');
     const added = ["import { setOwner as setCinemaUploadOwner } from '../lib/cinemaUploadStore';",
@@ -167,7 +167,7 @@ test('AuthProvider only adds the upload owner import and one call each after bin
     const adopt = source.slice(source.indexOf('const adopt = useCallback'), source.indexOf('const drop = useCallback'));
     const drop = source.slice(source.indexOf('const drop = useCallback'), source.indexOf('const refresh = useCallback'));
     expect(adopt).toMatch(/await bindCacheUser\(userId\);\n\s*if \(!live\(\)\) return;\n\s*await setCinemaUploadOwner\(userId\)\.catch\(/);
-    expect(drop).toMatch(/await wipeCache\(\)\.catch\(\(\) => undefined\);\n\s*if \(generationRef.current !== gen\) return;\n\s*await setCinemaUploadOwner\(null\)\.catch\(/);
+    expect(drop).toMatch(/await wipeCache\(\)\.catch\(\(\) => undefined\);\n\s*if \(generationRef.current !== gen\) return;\n\s*await clearAllVibes\(\)\.catch\(\(\) => undefined\);\n\s*if \(generationRef.current !== gen\) return;\n\s*await setCinemaUploadOwner\(null\)\.catch\(/);
     const lines = (text: string) => text.split('\n').map(x => x.trim()).filter(Boolean);
     const { execFileSync } = require('child_process');
     const root = execFileSync('git', ['rev-parse', '--show-toplevel'], { cwd: __dirname, encoding: 'utf8' }).trim();

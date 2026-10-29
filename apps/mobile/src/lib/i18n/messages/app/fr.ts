@@ -5605,5 +5605,9 @@ export default {
   "brand.upload.err.type": "Utilisez une image JPEG, PNG ou WebP, une vidéo MP4 ou un fichier MP3 ou WAV.",
   "brand.upload.err.rejected": "Ce fichier n’a pas pu être accepté.",
   "brand.upload.full": "Importé, mais le kit contient déjà 24 éléments. Retirez-en un, puis ajoutez ce fichier depuis cet espace.",
-  "brand.err.saveNotFound": "Enregistrement impossible. Un fichier a peut-être été retiré. Rechargez le kit et réessayez."
+  "brand.err.saveNotFound": "Enregistrement impossible. Un fichier a peut-être été retiré. Rechargez le kit et réessayez.",
+  "vibeInvite.title": "Un petit vibe check ?",
+  "vibeInvite.body": "Sept clics et Explorer met en avant les templates qui collent à votre façon de créer.",
+  "vibeInvite.start": "C’est parti",
+  "vibeInvite.later": "Pas maintenant"
 } as const;
