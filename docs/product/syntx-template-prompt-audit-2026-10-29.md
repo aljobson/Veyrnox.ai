@@ -104,13 +104,13 @@ These neutral Veyrnox template names differ from the current Syntx trend title. 
 
 The regression suite checks:
 
-1. all 58 Syntx-linked template IDs have source records;
+1. all 58 Syntx-linked source IDs have audit records;
 2. all 57 available prompt strings match their locked SHA-256 values byte-for-byte;
 3. the only exact prompt duplicates are the two documented groups;
 4. Keyboard Duo remains explicitly unresolved with a null source prompt;
 5. all 58 local preview-video SHA-256 values are different;
 6. the 29 recovered/new downloaded source variants match their locked source-asset SHA-256 evidence;
-7. all 57 exact prompts reach the public API, while shared detail-page wiring and a representative exact/unresolved render are covered; and
+7. all 57 exact prompts reach the public API, while the unresolved Keyboard Duo record stays outside every public template surface; and
 8. runnable generation prompts remain within the supported 2,000-character boundary.
 
 This audit used Syntx’s public read-only Trends API on 29 October 2026. It did not run a paid generation or infer private prompts.

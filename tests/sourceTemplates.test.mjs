@@ -11,9 +11,9 @@ import { sourcePromptAuditRecord } from '../app/veyrnox/_lib/sourcePromptAudit.j
 import { GENJUTSU_PROMPT_SHA256 } from './fixtures/genjutsuPromptHashes.mjs';
 import { SYNTX_PROMPT_SHA256 } from './fixtures/syntxPromptHashes.mjs';
 import { SYNTX_EXPANSION_SOURCE_ASSET_SHA256, SYNTX_RECOVERED_PREVIEW_SSIM } from './fixtures/syntxSourceAssetHashes.mjs';
-import { ALL_TEMPLATES, PRESETS, WALL_PRESETS, templateById } from '../app/veyrnox/_lib/templates.js';
+import { ALL_TEMPLATES, PRESETS, REMOVED_PROMPT_GAP_TEMPLATE_IDS, WALL_PRESETS, templateById } from '../app/veyrnox/_lib/templates.js';
 import { MODELS, modelIdForName, presetCredits, presetHref } from '../app/veyrnox/_lib/tokens.js';
-import { SHOWCASE_CLIPS } from '../app/veyrnox/_lib/showcase.js';
+import { AUDIT_SHOWCASE_CLIPS } from '../app/veyrnox/_lib/showcase.js';
 import { isUnknownStaticPage } from '../lib/unknownStaticPage.js';
 import { templateStartId } from '../lib/templateStart.js';
 
@@ -53,7 +53,7 @@ test('every imported clip has its own matching recipe and a supported video mode
   assert.equal(SOURCE_TEMPLATES.length, 275);
   assert.equal(new Set(SOURCE_TEMPLATES.map((p) => p.clipKey)).size, 275);
   for (const preset of SOURCE_TEMPLATES) {
-    const clip = SHOWCASE_CLIPS[preset.clipKey];
+    const clip = AUDIT_SHOWCASE_CLIPS[preset.clipKey];
     assert.ok(clip, preset.id);
     assert.equal(clip.title.toUpperCase(), preset.name, preset.id);
     assert.ok(clip.video.endsWith(`-${preset.id}.mp4`), preset.id);
@@ -70,7 +70,7 @@ test('every imported clip has its own matching recipe and a supported video mode
 });
 
 test('Genjutsu-inspired I2V recipes describe source framing without claiming provider aspect support', () => {
-  const community = SOURCE_TEMPLATES.filter((preset) => SHOWCASE_CLIPS[preset.clipKey].video.startsWith('/showcase/creator-'));
+  const community = SOURCE_TEMPLATES.filter((preset) => AUDIT_SHOWCASE_CLIPS[preset.clipKey].video.startsWith('/showcase/creator-'));
   assert.equal(community.length, 100);
   for (const preset of community) {
     assert.equal(Object.hasOwn(preset, 'aspect'), false, preset.id);
@@ -84,7 +84,7 @@ test('Genjutsu-inspired I2V recipes describe source framing without claiming pro
 });
 
 test('Genjutsu templates preserve every published source prompt exactly', () => {
-  const community = SOURCE_TEMPLATES.filter((preset) => SHOWCASE_CLIPS[preset.clipKey].video.startsWith('/showcase/creator-'));
+  const community = SOURCE_TEMPLATES.filter((preset) => AUDIT_SHOWCASE_CLIPS[preset.clipKey].video.startsWith('/showcase/creator-'));
   const otherTemplates = SOURCE_TEMPLATES.filter((preset) => !community.includes(preset));
   const exact = community.filter((preset) => GENJUTSU_SOURCE_PROMPT_RECORDS[preset.id]?.sourcePromptAvailable);
   const derived = community.filter((preset) => !GENJUTSU_SOURCE_PROMPT_RECORDS[preset.id]?.sourcePromptAvailable);
@@ -118,20 +118,29 @@ test('verbatim Genjutsu provenance preserves public attribution and feed-empty r
   assert.match(GENJUTSU_SOURCE_PROMPT_RECORDS['community-survivor-memory-shift'].prompt, /\nAt$/);
 });
 
-test('every public template discloses an exact prompt, a source gap, or adaptation-only provenance', () => {
+test('public templates are exact or adaptation-only and all source-gap records are removed', () => {
   const audit = PRESETS.map((preset) => [preset.id, sourcePromptAuditRecord(preset.id)]);
   const groups = Object.groupBy(audit, ([, record]) => record.status);
   assert.equal(groups.exact.length, 113);
-  assert.equal(groups['exact-truncated'].length, 1);
-  assert.equal(groups.unavailable.length, 44);
   assert.equal(groups['adaptation-only'].length, 117);
-  assert.equal(audit.length, 275);
+  assert.equal(groups['exact-truncated'], undefined);
+  assert.equal(groups.unavailable, undefined);
+  assert.equal(audit.length, 230);
   assert.ok(audit.every(([, record]) => record.runnable === false));
-  assert.equal(audit.filter(([, record]) => record.issues.includes('prompt-over-2000')).length, 67);
-  assert.equal(audit.filter(([, record]) => record.issues.includes('more-than-two-reference-images')).length, 12);
-  assert.equal(audit.filter(([, record]) => record.issues.includes('audio-preservation-not-supported')).length, 60);
+  assert.equal(audit.filter(([, record]) => record.issues.includes('prompt-over-2000')).length, 66);
+  assert.equal(audit.filter(([, record]) => record.issues.includes('more-than-two-reference-images')).length, 11);
+  assert.equal(audit.filter(([, record]) => record.issues.includes('audio-preservation-not-supported')).length, 59);
   assert.equal(sourcePromptAuditRecord('community-survivor-memory-shift').status, 'exact-truncated');
   assert.equal(sourcePromptAuditRecord('keyboard-duo-swap').status, 'unavailable');
+  assert.equal(REMOVED_PROMPT_GAP_TEMPLATE_IDS.length, 45);
+  const removedGroups = Object.groupBy(REMOVED_PROMPT_GAP_TEMPLATE_IDS, (id) => sourcePromptAuditRecord(id).status);
+  assert.equal(removedGroups['exact-truncated'].length, 1);
+  assert.equal(removedGroups.unavailable.length, 44);
+  for (const id of REMOVED_PROMPT_GAP_TEMPLATE_IDS) {
+    assert.equal(templateById(id), null, id);
+    assert.equal(PRESETS.some((preset) => preset.id === id), false, id);
+    assert.equal(isUnknownStaticPage(`/presets/${id}`), true, id);
+  }
   assert.equal(sourcePromptAuditRecord('product-hero-360').status, 'adaptation-only');
   assert.equal(sourcePromptAuditRecord('curtain-reveal').duplicateOf, 'who-was-that-business');
   const report = readFileSync(new URL('../docs/product/template-prompt-audit-2026-10-29.md', import.meta.url), 'utf8');
@@ -223,7 +232,7 @@ test('Syntx templates preserve every currently published source prompt exactly',
 
   const previewHashes = records.map(([id]) => {
     const template = SOURCE_TEMPLATES.find((preset) => preset.id === id);
-    const video = SHOWCASE_CLIPS[template.clipKey].video;
+    const video = AUDIT_SHOWCASE_CLIPS[template.clipKey].video;
     const data = readFileSync(new URL(`../public${video}`, import.meta.url));
     let offset = 0;
     while ((offset = data.indexOf('hdlr', offset, 'ascii')) !== -1) {
@@ -274,8 +283,8 @@ test('generated ensembles keep single-subject starting-image guidance', () => {
 });
 
 test('source-aspect orientation agrees with every community preview', () => {
-  for (const preset of SOURCE_TEMPLATES.filter((entry) => SHOWCASE_CLIPS[entry.clipKey].video.startsWith('/showcase/creator-'))) {
-    const [w, h] = SHOWCASE_CLIPS[preset.clipKey].aspectRatio.split('/').map(Number);
+  for (const preset of SOURCE_TEMPLATES.filter((entry) => AUDIT_SHOWCASE_CLIPS[entry.clipKey].video.startsWith('/showcase/creator-'))) {
+    const [w, h] = AUDIT_SHOWCASE_CLIPS[preset.clipKey].aspectRatio.split('/').map(Number);
     const ratio = w / h;
     if (preset.sourceAspect === '1:1') assert.ok(Math.abs(Math.log(ratio)) < 0.16, `${preset.id} should be approximately square`);
     else if (preset.sourceAspect === '16:9') assert.ok(ratio > 1, `${preset.id} should be landscape`);
@@ -284,10 +293,10 @@ test('source-aspect orientation agrees with every community preview', () => {
 });
 
 test('gallery and homepage templates have reachable recipe URLs', () => {
-  assert.equal(PRESETS.length, 275);
+  assert.equal(PRESETS.length, 230);
   assert.equal(WALL_PRESETS.length, 24);
   const visible = [...PRESETS, ...WALL_PRESETS];
-  assert.equal(new Set(visible.map((p) => p.clipKey).filter(Boolean)).size, 275);
+  assert.equal(new Set(visible.map((p) => p.clipKey).filter(Boolean)).size, 230);
   for (const preset of visible) {
     assert.equal(templateById(preset.id), preset);
     assert.equal(isUnknownStaticPage(`/presets/${preset.id}`), false);
@@ -334,21 +343,21 @@ test('all source-backed generation prompts remain distinct', () => {
   assert.equal(new Set(prompts).size, prompts.length);
 });
 
-test('public template data and media paths are source-platform neutral', () => {
+test('retained source-template audit data and media paths are source-platform neutral', () => {
   for (const preset of SOURCE_TEMPLATES) {
     assert.equal(preset.inspired, true, preset.id);
     assert.ok(!Object.hasOwn(preset, 'sourceRecipe'), preset.id);
   }
-  const publicData = JSON.stringify({ SOURCE_TEMPLATES, SHOWCASE_CLIPS });
+  const publicData = JSON.stringify({ SOURCE_TEMPLATES, AUDIT_SHOWCASE_CLIPS });
   assert.doesNotMatch(publicData, /buzzy|higgsfield|syntx|capcut|film\.fun|cliptrend|trendai|vynoa|viralance/i);
-  for (const clip of Object.values(SHOWCASE_CLIPS)) {
+  for (const clip of Object.values(AUDIT_SHOWCASE_CLIPS)) {
     assert.doesNotMatch(clip.video, /buzzy|higgsfield|syntx|capcut|film\.fun|cliptrend|trendai|vynoa|viralance/i);
     assert.doesNotMatch(clip.poster, /buzzy|higgsfield|syntx|capcut|film\.fun|cliptrend|trendai|vynoa|viralance/i);
   }
 });
 
-test('every public video and poster is a unique local asset', () => {
-  const clips = Object.values(SHOWCASE_CLIPS);
+test('every retained source video and poster is a unique local asset', () => {
+  const clips = Object.values(AUDIT_SHOWCASE_CLIPS);
   assert.equal(clips.length, 275);
   for (const field of ['video', 'poster']) {
     const paths = clips.map((clip) => clip[field]);
@@ -361,7 +370,7 @@ test('every public video and poster is a unique local asset', () => {
 });
 
 test('community inspiration previews contain no audio track', () => {
-  const videos = Object.values(SHOWCASE_CLIPS).map((clip) => clip.video).filter((path) => path.startsWith('/showcase/creator-'));
+  const videos = Object.values(AUDIT_SHOWCASE_CLIPS).map((clip) => clip.video).filter((path) => path.startsWith('/showcase/creator-'));
   assert.equal(videos.length, 100);
   for (const path of videos) {
     const data = readFileSync(fileURLToPath(new URL(`../public${path}`, import.meta.url)));

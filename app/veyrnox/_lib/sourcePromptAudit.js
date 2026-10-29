@@ -69,6 +69,14 @@ export function sourcePromptAuditRecord(templateId) {
   });
 }
 
+// Public templates must either carry a complete exact source prompt or be an
+// explicitly independent Veyrnox adaptation. Matched records whose prompt is
+// absent or truncated remain audit evidence, but are not publishable.
+export function isPublishableSourcePromptTemplate(templateId) {
+  const status = sourcePromptAuditRecord(templateId).status;
+  return status === 'exact' || status === 'adaptation-only';
+}
+
 export const SOURCE_PROMPT_AUDIT_STATUSES = Object.freeze([
   'exact',
   'exact-truncated',

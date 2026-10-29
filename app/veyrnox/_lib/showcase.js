@@ -11,8 +11,9 @@ import { SHOWCASE_CLIP_EXPANSION_6 } from './sourceTemplateExpansion6.js';
 // Local files keep playback within the existing same-origin media policy.
 import { SHOWCASE_CLIP_EXPANSION_4 } from './sourceTemplateExpansion4.js';
 import { SHOWCASE_CLIP_EXPANSION_5 } from './sourceTemplateExpansion5.js';
+import { isPublishableSourcePromptTemplate } from './sourcePromptAudit.js';
 
-export const SHOWCASE_CLIPS = {
+export const AUDIT_SHOWCASE_CLIPS = {
   'product-hero-360': {
     video: '/showcase/viral-product-hero-360.mp4',
     aspectRatio: '482 / 720',
@@ -451,6 +452,17 @@ export const SHOWCASE_CLIPS = {
 
   ...SHOWCASE_CLIP_EXPANSION_6,
 };
+
+// The ACE Step clip is also a landing feature preview, so it remains public
+// after the unrelated Keyboard Duo template is removed. All other clips owned
+// only by prompt-gap templates stay in the audit manifest above.
+const REMOVED_TEMPLATE_ONLY_CLIP_KEYS = new Set(Object.keys(AUDIT_SHOWCASE_CLIPS)
+  .filter((clipKey) => clipKey !== 'ace-step' && !isPublishableSourcePromptTemplate(clipKey)));
+
+export const SHOWCASE_CLIPS = Object.freeze(Object.fromEntries(
+  Object.entries(AUDIT_SHOWCASE_CLIPS)
+    .filter(([clipKey]) => !REMOVED_TEMPLATE_ONLY_CLIP_KEYS.has(clipKey)),
+));
 
 // Give each public placement its own clip, including templates also on /presets.
 export const WALL_SHOWCASE_KEYS = {

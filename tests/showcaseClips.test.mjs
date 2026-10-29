@@ -10,7 +10,8 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, wri
 import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { SHOWCASE_CLIPS, MODEL_SHOWCASE_KEYS, WALL_SHOWCASE_KEYS, MAX_CLIP_BYTES } from '../app/veyrnox/_lib/showcase.js';
+import { AUDIT_SHOWCASE_CLIPS, SHOWCASE_CLIPS, MODEL_SHOWCASE_KEYS, WALL_SHOWCASE_KEYS, MAX_CLIP_BYTES } from '../app/veyrnox/_lib/showcase.js';
+import { REMOVED_PROMPT_GAP_TEMPLATE_IDS } from '../app/veyrnox/_lib/templates.js';
 import { FEATURE_CARDS, PRESETS, WALL_PRESETS } from '../app/veyrnox/_lib/tokens.js';
 
 const PUBLIC = new URL('../public', import.meta.url).pathname;
@@ -91,6 +92,16 @@ test('the real manifest is sound', () => {
     assert.deepEqual(problems(SHOWCASE_CLIPS, opts), []);
 });
 
+test('source-gap clips stay outside the public manifest', () => {
+    const removedAuditKeys = REMOVED_PROMPT_GAP_TEMPLATE_IDS
+        .filter((id) => Object.hasOwn(AUDIT_SHOWCASE_CLIPS, id));
+    assert.equal(REMOVED_PROMPT_GAP_TEMPLATE_IDS.length, 45);
+    assert.equal(removedAuditKeys.length, 44, 'Keyboard Duo uses the independent ACE Step landing clip');
+    assert.equal(Object.keys(SHOWCASE_CLIPS).length, 231, '230 template clips plus the ACE Step landing clip');
+    for (const key of removedAuditKeys) assert.equal(Object.hasOwn(SHOWCASE_CLIPS, key), false, key);
+    assert.equal(Object.hasOwn(SHOWCASE_CLIPS, 'ace-step'), true);
+});
+
 test('every landing tile has a distinct viral preview and a small poster', () => {
     const videos = new Set();
     for (const key of LANDING_KEYS) {
@@ -151,7 +162,7 @@ test('every media-backed preset has a distinct preview and poster', () => {
 
 test('every preview-backed template has a real local video and poster', () => {
     const previewBacked = PRESETS.filter((preset) => preset.clipKey);
-    assert.equal(previewBacked.length, 275);
+    assert.equal(previewBacked.length, 230);
     for (const preset of previewBacked) {
         const clip = SHOWCASE_CLIPS[preset.clipKey];
         assert.ok(clip?.video, `${preset.id} has no video`);
