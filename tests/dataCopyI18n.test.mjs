@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import * as React from 'react';
 import ts from 'typescript';
-import { ALL_TEMPLATES } from '../app/veyrnox/_lib/templates.js';
+import { ALL_TEMPLATES, templateById } from '../app/veyrnox/_lib/templates.js';
 import { GENJUTSU_SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/genjutsuSourcePromptRecords.js';
 import { SYNTX_SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/syntxSourcePromptRecords.js';
 import { CATALOGS, translator, tOr } from '../lib/i18n/translate.mjs';
@@ -134,12 +134,12 @@ test('Genjutsu recipe SSR shows only the exact source prompt and hands that same
   assert.doesNotMatch(html, /readonly=""/i);
 });
 
-test('Syntx recipe SSR uses the exact prompt when available and the recipe prompt otherwise', () => {
+test('Syntx recipe SSR uses the exact prompt and the unavailable source stays removed', () => {
   const exactTemplate = ALL_TEMPLATES.find((preset) => preset.id === 'medieval-runway-look');
   const exactPrompt = SYNTX_SOURCE_PROMPT_RECORDS[exactTemplate.id].prompt;
   const exactPreset = { ...exactTemplate, sourcePrompt: exactPrompt, sourcePromptOrigin: 'community-source-exact' };
-  const unresolvedTemplate = ALL_TEMPLATES.find((preset) => preset.id === 'keyboard-duo-swap');
-  assert.equal(SYNTX_SOURCE_PROMPT_RECORDS[unresolvedTemplate.id].prompt, null);
+  assert.equal(templateById('keyboard-duo-swap'), null);
+  assert.equal(SYNTX_SOURCE_PROMPT_RECORDS['keyboard-duo-swap'].prompt, null);
 
   const exactFixture = fixture('en', `/presets/${exactPreset.id}`, { moduleMocks: {
     './UseTemplate': { UseTemplate: ({ preset: actual, prompt }) => {
@@ -148,18 +148,10 @@ test('Syntx recipe SSR uses the exact prompt when available and the recipe promp
       return React.createElement('div', { 'data-use-template': actual.id });
     } },
   } });
-  const unresolvedFixture = fixture('en', `/presets/${unresolvedTemplate.id}`, { moduleMocks: {
-    './UseTemplate': { UseTemplate: ({ preset: actual, prompt }) => {
-      assert.equal(actual, unresolvedTemplate);
-      assert.equal(prompt, unresolvedTemplate.prompt);
-      return React.createElement('div', { 'data-use-template': actual.id });
-    } },
-  } });
   const exactHtml = exactFixture.render(React.createElement(exactFixture.load('app/veyrnox/_components/TemplateRecipe.js').TemplateRecipe, { preset: exactPreset }));
-  const unresolvedHtml = unresolvedFixture.render(React.createElement(unresolvedFixture.load('app/veyrnox/_components/TemplateRecipe.js').TemplateRecipe, { preset: unresolvedTemplate }));
   assert.ok(exactHtml.includes(exactPrompt.slice(0, 80)));
   assert.ok(!exactHtml.includes('VEYRNOX GENERATION PROMPT'));
-  assert.ok(!unresolvedHtml.includes('EXACT COMMUNITY PROMPT'));
+  assert.doesNotMatch(exactHtml, /readonly=""/i);
 });
 
 test('an exact prompt longer than the generation limit is shown whole and blocks generation', () => {

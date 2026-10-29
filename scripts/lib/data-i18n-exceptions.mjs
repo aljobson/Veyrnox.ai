@@ -19,7 +19,7 @@ export function dataException({ file, owner, field, text, templateFile }) {
   if (templateFile && ['prompt','negativePrompt','promptOrigin','model','name'].includes(field)) return 'Exact model input, provenance or catalog name; templates are never mutated for display.';
   if (templateFile && owner === 'base' && field === 'negativePrompt') return 'Provider negative prompt shared by the template factory.';
   if (/\/_lib\/tokens\.js$/.test(file) && owner === 'MODELS' && field === 'name') return 'Provider model name; stable catalog identity.';
-  if (/\/_lib\/showcase\.js$/.test(file) && owner === 'SHOWCASE_CLIPS' && field === 'title') return 'Film title from the source showcase catalog; proper title remains unchanged.';
+  if (/\/_lib\/showcase\.js$/.test(file) && ['SHOWCASE_CLIPS', 'AUDIT_SHOWCASE_CLIPS'].includes(owner) && field === 'title') return 'Film title from the source showcase catalog; proper title remains unchanged.';
   if (/\/_lib\/character\.js$/.test(file) && owner === 'CHARACTER_BASE') return 'Canonical character generation prompt.';
   if (/\/_lib\/editorGeneration\.mjs$/.test(file) && ['CAMERA_MOVEMENTS','MOVEMENT_PACES'].includes(owner) && field === 'direction') return 'Camera direction appended to model prompts, never translated.';
   if (/\/_lib\/cinema\.js$/.test(file) && owner === 'CAMERAS') return 'Camera descriptor appended to the provider prompt by cinemaSuffix.';
