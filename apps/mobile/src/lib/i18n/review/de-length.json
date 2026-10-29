@@ -3198,6 +3198,42 @@
     "ratio": 1.71
   },
   {
+    "id": "commerce.optionName",
+    "english": "Name",
+    "translation": "Name der Variante",
+    "ratio": 4.25
+  },
+  {
+    "id": "commerce.percentOff",
+    "english": "Percent off",
+    "translation": "Prozentualer Rabatt",
+    "ratio": 1.73
+  },
+  {
+    "id": "brand.style.edit",
+    "english": "Edit",
+    "translation": "Bearbeiten",
+    "ratio": 2.5
+  },
+  {
+    "id": "brand.style.font",
+    "english": "Font",
+    "translation": "Schriftart",
+    "ratio": 2.5
+  },
+  {
+    "id": "brand.style.weight",
+    "english": "Weight",
+    "translation": "Schriftstärke",
+    "ratio": 2.17
+  },
+  {
+    "id": "brand.upload.sending",
+    "english": "Uploading",
+    "translation": "Wird hochgeladen",
+    "ratio": 1.78
+  },
+  {
     "id": "vibeInvite.start",
     "english": "Start",
     "translation": "Los geht's",

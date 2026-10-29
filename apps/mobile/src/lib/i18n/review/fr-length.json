@@ -4716,6 +4716,36 @@
     "ratio": 1.75
   },
   {
+    "id": "commerce.percentOff",
+    "english": "Percent off",
+    "translation": "Réduction en pourcentage",
+    "ratio": 2.18
+  },
+  {
+    "id": "commerce.syncNote",
+    "english": "Shop sync and product posts are coming to the app.",
+    "translation": "La synchronisation des boutiques et les publications de produits arriveront dans l’application.",
+    "ratio": 1.9
+  },
+  {
+    "id": "brand.style.edit",
+    "english": "Edit",
+    "translation": "Modifier",
+    "ratio": 2
+  },
+  {
+    "id": "brand.style.done",
+    "english": "Done",
+    "translation": "Terminé",
+    "ratio": 1.75
+  },
+  {
+    "id": "brand.upload.sending",
+    "english": "Uploading",
+    "translation": "Importation en cours",
+    "ratio": 2.22
+  },
+  {
     "id": "vibeInvite.start",
     "english": "Start",
     "translation": "C’est parti",

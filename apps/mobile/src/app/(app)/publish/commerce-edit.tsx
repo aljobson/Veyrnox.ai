@@ -1,3 +1,4 @@
+import { CommerceOptionsEditor } from '../../../components/publish/CommerceOptionsEditor';
 import { rawText } from '../../../lib/i18n/translate';
 import { usePublishScope } from '../../../lib/usePublishScope';
 import { Text as StatusText } from '../../../components/ui/Text';
@@ -46,7 +47,7 @@ export default function CommerceEdit() {
                 if (found) {
                     setForm(formFromProduct(found));
                     setEditable(found.editable); canEditRef.current = page.canEdit && found.editable;
-                    if (!found.editable) setProblem(t(found.keep ? 'commerce.err.notEditable' : 'commerce.err.editOnWeb'));
+                    if (!found.editable) setProblem(t(found.keep ? 'commerce.err.notEditable' : 'commerce.err.optionsUnreadable'));
                 } else if (id) {
                     setEditable(false); canEditRef.current = false;
                     setProblem(t('commerce.err.gone'));
@@ -100,7 +101,7 @@ export default function CommerceEdit() {
 
     return (
         <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
-            <Stack.Screen options={{ title: id ? t('commerce.edit') : t('commerce.new') }} />
+            <Stack.Screen options={{ title: id ? t(writable ? 'commerce.edit' : 'commerce.view') : t('commerce.new') }} />
             <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
                 <Text style={styles.note}>{t('commerce.note')}</Text>
                 {!canEdit ? <Text style={styles.muted}>{t('commerce.readOnly')}</Text> : null}
@@ -114,7 +115,8 @@ export default function CommerceEdit() {
                 {input(t('commerce.stockLabel'), form.stock, (v) => set('stock', v), { keyboardType: 'number-pad', maxLength: 9 })}
                 {input(t('commerce.productUrl'), form.productUrl, (v) => set('productUrl', v), { autoCapitalize: 'none', autoCorrect: false, keyboardType: 'url' })}
                 {input(t('commerce.imageUrl'), form.imageUrl, (v) => set('imageUrl', v), { autoCapitalize: 'none', autoCorrect: false, keyboardType: 'url' })}
-                <Text style={styles.muted}>{t('commerce.optionsWeb')}</Text>
+                <CommerceOptionsEditor value={form.options} onChange={(o) => set('options', o)} writable={writable} defaultPrice={form.price} />
+                <Text style={styles.muted}>{t('commerce.syncNote')}</Text>
                 {problem ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{problem}</StatusText> : null}
                 {writable ? (
                     <Pressable accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy }} style={[styles.button, touchTarget, busy && styles.off]} onPress={save}>

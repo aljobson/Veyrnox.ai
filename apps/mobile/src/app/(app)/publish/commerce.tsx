@@ -99,27 +99,31 @@ export default function Commerce() {
                         </View>
                     }
                     renderItem={({ item }) => (
-                        <View style={styles.card} accessible={!(canEdit && item.status !== 'archived')} accessibilityLabel={rawText(`${item.title}, ${money(item.priceCents, item.currency)}, ${t('commerce.stock', { count: item.inventory })}`)}>
+                        <View style={styles.card} accessible={false}>
                             {item.imageUrl ? <Image source={{ uri: item.imageUrl }} style={styles.pic} contentFit="cover" accessibilityIgnoresInvertColors /> : <View style={styles.pic} />}
                             <View style={styles.text}>
-                                <Text style={styles.name} numberOfLines={2}>{item.title}</Text>
-                                <Text style={styles.price}>{money(item.priceCents, item.currency)}{item.compareAtCents && item.compareAtCents > item.priceCents ? `  ${t('commerce.was', { price: money(item.compareAtCents, item.currency) })}` : ''}</Text>
-                                <Text style={styles.muted}>{t(`commerce.status.${item.status}`)} · {t('commerce.stock', { count: item.inventory })}{item.variants ? ` · ${t('commerce.variants', { count: item.variants })}` : ''}</Text>
-                                {item.host ? <Text style={styles.muted}>{item.host}</Text> : null}
-                                {item.syncError ? <Text style={styles.bad}>{item.syncError}</Text> : null}
-                                {item.source !== 'manual' ? <Text style={styles.muted}>{t('commerce.fromShop')}</Text> : null}
-                                {canEdit && item.status !== 'archived' ? (
-                                    <View style={styles.actions}>
-                                        {item.editable ? (
-                                            <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('commerce.editLabel', { name: item.title }))} style={[styles.act, touchTarget]} onPress={() => router.push({ pathname: '/publish/commerce-edit', params: { id: item.id } })}>
-                                                <Text style={styles.webText}>{t('commerce.edit')}</Text>
-                                            </Pressable>
-                                        ) : null}
-                                        <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('commerce.archiveLabel', { name: item.title }))} style={[styles.act, touchTarget]} onPress={() => confirmArchive(item)}>
-                                            <Text style={styles.delText}>{t('commerce.archive')}</Text>
+                                <View accessible testID={`commerce-summary-${item.id}`} accessibilityLabel={rawText(`${item.title}, ${money(item.priceCents, item.currency)}, ${t('commerce.stock', { count: item.inventory })}`)}>
+                                    <Text style={styles.name} numberOfLines={2}>{item.title}</Text>
+                                    <Text style={styles.price}>{money(item.priceCents, item.currency)}{item.compareAtCents && item.compareAtCents > item.priceCents ? `  ${t('commerce.was', { price: money(item.compareAtCents, item.currency) })}` : ''}</Text>
+                                    <Text style={styles.muted}>{t(`commerce.status.${item.status}`)} · {t('commerce.stock', { count: item.inventory })}{item.variants ? ` · ${t('commerce.variants', { count: item.variants })}` : ''}</Text>
+                                    {item.host ? <Text style={styles.muted}>{item.host}</Text> : null}
+                                    {item.syncError ? <Text style={styles.bad}>{item.syncError}</Text> : null}
+                                    {item.source !== 'manual' ? <Text style={styles.muted}>{t('commerce.fromShop')}</Text> : null}
+                                </View>
+                                <View style={styles.actions}>
+                                    {canEdit && item.editable ? (
+                                        <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('commerce.editLabel', { name: item.title }))} style={[styles.act, touchTarget]} onPress={() => router.push({ pathname: '/publish/commerce-edit', params: { id: item.id } })}>
+                                            <Text style={styles.webText}>{t('commerce.edit')}</Text>
                                         </Pressable>
-                                    </View>
-                                ) : null}
+                                    ) : (
+                                        <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('commerce.viewLabel', { name: item.title }))} style={[styles.act, touchTarget]} onPress={() => router.push({ pathname: '/publish/commerce-edit', params: { id: item.id } })}>
+                                            <Text style={styles.webText}>{t('commerce.view')}</Text>
+                                        </Pressable>
+                                    )}
+                                    {canEdit && item.status !== 'archived' ? <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('commerce.archiveLabel', { name: item.title }))} style={[styles.act, touchTarget]} onPress={() => confirmArchive(item)}>
+                                        <Text style={styles.delText}>{t('commerce.archive')}</Text>
+                                    </Pressable> : null}
+                                </View>
                             </View>
                         </View>
                     )}

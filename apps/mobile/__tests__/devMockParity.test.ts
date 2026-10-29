@@ -30,6 +30,9 @@ describe('development mock parity', () => {
     test('serves workspace brand kits and assets', () => {
         expect(source).toContain('brand-kit$/);');
         expect(source).toContain('brand-assets$/);');
+        const ids = [...source.matchAll(/id: '(b[56][^']+)'/g)].map(m => m[1]);
+        expect(ids).toHaveLength(2);
+        expect(ids.every(id => /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id))).toBe(true);
     });
 
     test('accepts the raw upload target minted for generation sources', () => {
@@ -52,4 +55,15 @@ test('mock accounts reports viewer for the Agency brand', () => {
     respond('/api/v1/social/accounts', 'agency', 'agency', false, send, {});
     expect(send).toHaveBeenCalledWith({}, 200, expect.objectContaining({ brandRole: 'viewer', accounts: [] }));
     expect(source.indexOf(branch!)).toBeLessThan(source.indexOf("if (path === '/api/v1/social/accounts')"));
+});
+
+test('serves commerce products with a viewer brand', () => {
+    const commerce = fs.readFileSync(path.join(__dirname, '..', 'dev', 'mockCommerce.mjs'), 'utf8');
+    expect(source).toContain('mockCommerce(req, res, path, body, send, brandHeader, BRAND_VIEW)');
+    expect(commerce).toContain("brandHeader === BRAND_VIEW ? 'viewer' : 'owner'");
+    expect(commerce).toContain("send(403, { error: 'forbidden' })");
+});
+test('the commerce mock refuses oversized products', () => {
+    const commerce = fs.readFileSync(path.join(__dirname, '..', 'dev', 'mockCommerce.mjs'), 'utf8');
+    expect(commerce).toContain('body_too_large'); expect(commerce).toContain('invalid_product');
 });

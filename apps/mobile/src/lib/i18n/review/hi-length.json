@@ -1770,6 +1770,36 @@
     "ratio": 1.69
   },
   {
+    "id": "commerce.amountOff",
+    "english": "Amount off",
+    "translation": "निश्चित राशि की छूट",
+    "ratio": 1.9
+  },
+  {
+    "id": "brand.style.editLabel",
+    "english": "Edit {name}",
+    "translation": "{name} संपादित करें",
+    "ratio": 1.73
+  },
+  {
+    "id": "brand.style.edit",
+    "english": "Edit",
+    "translation": "संपादित करें",
+    "ratio": 3
+  },
+  {
+    "id": "brand.style.done",
+    "english": "Done",
+    "translation": "पूरा हुआ",
+    "ratio": 2
+  },
+  {
+    "id": "brand.upload.sending",
+    "english": "Uploading",
+    "translation": "अपलोड हो रहा है",
+    "ratio": 1.67
+  },
+  {
     "id": "vibeInvite.start",
     "english": "Start",
     "translation": "शुरू करें",

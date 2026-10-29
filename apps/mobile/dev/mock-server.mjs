@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { mockCommerce } from './mockCommerce.mjs';
 import { mockInbox } from './mockInbox.mjs';
 // Local stand-in for Supabase Auth and the /api/v1 routes the app uses, so every signed-in screen can be
 // previewed in the simulator without an account. Development only: `node dev/mock-server.mjs` (port 8799).
@@ -480,6 +481,7 @@ createServer(async (req, res) => {
         return send(res, 200, { deleted: true });
     }
     if (mockInbox(req, res, path, body, send)) return;
+    if (mockCommerce(req, res, path, body, send, brandHeader, BRAND_VIEW)) return;
     // Workspaces and projects (create, rename, delete and restore keep their state while the mock runs). The real routes answer errors as {error:{code,message}}, an object.
     const PROJECTS = (globalThis.__MOCK_PROJECTS ??= [
         { id: 'c1111111-1111-4111-8111-111111111111', workspace_id: 'a1111111-1111-4111-8111-111111111111', owner_id: 'u1', name: 'Spring launch reel', version: 54, created_at: '2026-10-01T10:00:00Z', updated_at: '2026-10-18T09:00:00Z' },
@@ -498,6 +500,7 @@ createServer(async (req, res) => {
         if (req.method === 'GET') return send(res, 200, { ...saved, canEdit: true });
         if (req.method === 'PUT') {
             if (body.expected_version !== saved.version) return send(res, 409, { error: { code: 'REVISION_CONFLICT', message: 'The brand kit changed.' } });
+            if (body.kit?.assets?.some(a => !['b5555555-5555-4555-8555-555555555555', 'b6666666-6666-4666-8666-666666666666'].includes(a?.assetId))) return send(res, 404, { error: { code: 'NOT_FOUND' } });
             const next = { kit: body.kit, version: saved.version + 1 };
             state.brandKits.set(m[1], next);
             return send(res, 200, { ...next, canEdit: true });
@@ -505,8 +508,8 @@ createServer(async (req, res) => {
     }
     m = path.match(/^\/api\/v1\/workspaces\/([^/]+)\/brand-assets$/);
     if (m && req.method === 'GET') return send(res, 200, { assets: [
-        { id: 'brand-asset-image', project_id: PROJECTS[0].id, sniffed_type: 'image/png', byte_size: PNG.length, width: 256, height: 256, duration_ms: null },
-        { id: 'brand-asset-video', project_id: PROJECTS[1].id, sniffed_type: 'video/mp4', byte_size: 40099, width: 320, height: 568, duration_ms: CLIP_LENGTH_S * 1000 },
+        { id: 'b5555555-5555-4555-8555-555555555555', project_id: PROJECTS[0].id, sniffed_type: 'image/png', byte_size: PNG.length, width: 256, height: 256, duration_ms: null },
+        { id: 'b6666666-6666-4666-8666-666666666666', project_id: PROJECTS[1].id, sniffed_type: 'video/mp4', byte_size: 40099, width: 320, height: 568, duration_ms: CLIP_LENGTH_S * 1000 },
     ], truncated: false });
     if (path === '/api/v1/projects' && req.method === 'GET') {
         const w = new URL(req.url, 'http://x').searchParams.get('workspace_id');

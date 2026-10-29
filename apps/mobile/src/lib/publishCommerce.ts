@@ -1,9 +1,9 @@
+import { buildOptions, emptyOptions, optionsFromKeep, toCents, utf8Bytes, MAX_BODY_BYTES, type OptionsForm, type VariantOut, type DiscountOut } from './publishCommerceOptions';
 import { formatCurrency } from './i18n';
 import { ApiError, type ApiClient } from './api';
 
-// ADR-0186: the product catalogue, read-only. Titles, prices and stock as the brand keeps them; changing a product,
-// syncing a shop and discounts stay on veyrnox.ai. Text is third-party-editable: plain and bounded; a picture is shown
-// only from an https address and a product link only as its host.
+// ADR-0186/0229: the brand product catalogue. Text is third-party-editable: plain and bounded;
+// a picture is shown only from an https address and a product link only as its host.
 
 const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v : null);
 const isObject = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -81,25 +81,27 @@ export function commerceErrorKey(err: unknown): string {
     if (err.code === 'product_not_found') return 'commerce.err.gone';
     if (err.status === 404) return 'commerce.err.notOpen';
     if (err.status === 429) return 'commerce.err.rate';
+    if (err.status === 413) return 'commerce.err.tooLarge';
+    if (err.code === 'invalid_variant') return 'commerce.err.optionInvalid';
+    if (err.code === 'invalid_collections') return 'commerce.err.collections';
+    if (err.code === 'invalid_discount') return 'commerce.err.discountInvalid';
     if (err.status === 400) return 'commerce.err.invalid';
     return 'commerce.err.later';
 }
 
-// ADR-0229: products can be added, edited and archived from the phone. Same routes, plan gate and error codes as the
+// ADR-0229: products, options, collections and discounts can be edited from the phone. Same routes, plan gate and error codes as the
 // web (`PUT`/`DELETE /api/v1/social/commerce/products`). Catalogue only: no checkout, no payment, no credits, nothing is
 // posted. The server only edits a manual product; a shop-synced product is changed in the shop or on veyrnox.ai.
 const EDIT_ROLES = new Set(['owner', 'manager', 'editor']);
 export const canEditProducts = (body: unknown): boolean => isObject(body) && typeof body.brandRole === 'string' && EDIT_ROLES.has(body.brandRole);
 
-interface VariantOut { title: string; sku: string; priceCents: number; inventoryQuantity: number }
-interface DiscountOut { type: 'percent' | 'fixed'; value: number }
 const wholeCents = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= 100000000;
 
 export interface ProductDetail extends Product {
     readonly description: string;
     readonly productUrl: string | null;
-    // Variants, collections and the discount are not edited on the phone but must go back unchanged, because a save
-    // replaces the whole product. Null when one does not fit the server's shape: the product is then edited on the web.
+    // Stored options seed the editable form. A save replaces the whole product, so unreadable
+    // options remain null and the product stays read-only to avoid losing stored data.
     readonly keep: { variants: VariantOut[]; collections: string[]; discount: DiscountOut | null } | null;
     readonly editable: boolean;
 }
@@ -158,11 +160,12 @@ export interface ProductForm {
     readonly productUrl: string;
     readonly imageUrl: string;
     readonly keep: ProductDetail['keep'];
+    readonly options: OptionsForm;
 }
 
 export const emptyProductForm = (): ProductForm => ({
     id: null, title: '', description: '', currency: 'GBP', price: '', compareAt: '', stock: '0', productUrl: '', imageUrl: '',
-    keep: { variants: [], collections: [], discount: null },
+    keep: { variants: [], collections: [], discount: null }, options: emptyOptions(),
 });
 
 const amount = (cents: number): string => (cents / 100).toFixed(2);
@@ -170,6 +173,7 @@ const amount = (cents: number): string => (cents / 100).toFixed(2);
 export const formFromProduct = (p: ProductDetail): ProductForm => ({
     id: p.id, title: p.title, description: p.description, currency: p.currency, price: amount(p.priceCents),
     compareAt: p.compareAtCents == null ? '' : amount(p.compareAtCents), stock: String(p.inventory), productUrl: p.productUrl ?? '', imageUrl: p.imageUrl ?? '', keep: p.keep,
+    options: p.keep ? optionsFromKeep(p.keep) : emptyOptions(),
 });
 
 export interface ProductBody {
@@ -186,13 +190,6 @@ export interface ProductBody {
     readonly collections: string[];
     readonly discount: DiscountOut | null;
 }
-
-const toCents = (text: string): number | null => {
-    const s = text.trim().replace(',', '.');
-    if (!/^\d{1,7}(\.\d{1,2})?$/.test(s)) return null;
-    const c = Math.round(Number(s) * 100);
-    return c <= 100000000 ? c : null;
-};
 
 // Mirrors the server's checks so a bad form is caught before the request. Returns the body or a catalog key.
 export function buildProductBody(f: ProductForm): { body: ProductBody } | { errorKey: string } {
@@ -211,13 +208,15 @@ export function buildProductBody(f: ProductForm): { body: ProductBody } | { erro
     const url = f.productUrl.trim();
     const image = f.imageUrl.trim();
     if ((url && !https(url)) || (image && !https(image))) return { errorKey: 'commerce.err.url' };
-    if (!f.keep) return { errorKey: 'commerce.err.editOnWeb' };
-    return {
-        body: {
-            id: f.id, title, description: f.description.trim(), currency, priceCents: price, compareAtPriceCents: compare, inventoryQuantity: stock,
-            productUrl: url || null, imageUrl: image || null, variants: f.keep.variants, collections: f.keep.collections, discount: f.keep.discount,
-        },
+    if (!f.keep) return { errorKey: 'commerce.err.optionsUnreadable' };
+    const options = buildOptions(f.options);
+    if ('errorKey' in options) return options;
+    const body: ProductBody = {
+        id: f.id, title, description: f.description.trim(), currency, priceCents: price, compareAtPriceCents: compare, inventoryQuantity: stock,
+        productUrl: url || null, imageUrl: image || null, ...options,
     };
+    if (utf8Bytes(JSON.stringify(body)) > MAX_BODY_BYTES) return { errorKey: 'commerce.err.tooLarge' };
+    return { body };
 }
 
 export const saveProduct = (api: ApiClient, body: ProductBody) =>
