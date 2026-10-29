@@ -55,7 +55,7 @@ test('preview and poster addresses are absolute https on our own host', () => {
 });
 
 test('the payload carries source framing and exact public source prompts but no per-user or internal field', () => {
-    const allowed = new Set(['id', 'title', 'category', 'theme', 'modelId', 'modelName', 'modality', 'prompt', 'promptOrigin', 'sourcePrompt', 'sourcePromptOrigin', 'needs', 'sourceAspect', 'durationSeconds', 'credits', 'gated', 'available', 'isNew', 'previewUrl', 'posterUrl', 'previewAspect']);
+    const allowed = new Set(['id', 'title', 'category', 'theme', 'modelId', 'modelName', 'modality', 'prompt', 'promptOrigin', 'sourcePrompt', 'sourcePromptOrigin', 'sourcePromptStatus', 'sourcePromptRunnable', 'sourcePromptIssues', 'sourcePromptCharacterCount', 'sourcePromptReferenceImageCount', 'sourcePromptReferenceVideoCount', 'sourcePromptDuplicateOf', 'needs', 'sourceAspect', 'durationSeconds', 'credits', 'gated', 'available', 'isNew', 'previewUrl', 'posterUrl', 'previewAspect']);
     for (const p of toPublicPresets(catalog)) for (const k of Object.keys(p)) assert.ok(allowed.has(k), `unexpected field ${k}`);
     const framed = toPublicPresets(catalog).filter((p) => p.sourceAspect);
     assert.equal(framed.length, 100);
@@ -67,6 +67,17 @@ test('the payload carries source framing and exact public source prompts but no 
     assert.ok(exact.every((p) => p.sourcePrompt === SOURCE_PROMPT_RECORDS[p.id]?.prompt));
     assert.equal(exact.filter((p) => GENJUTSU_SOURCE_PROMPT_RECORDS[p.id]).length, 57);
     assert.equal(exact.filter((p) => SOURCE_PROMPT_RECORDS[p.id] && !GENJUTSU_SOURCE_PROMPT_RECORDS[p.id]).length, 57);
+    const statuses = Object.groupBy(toPublicPresets(catalog), (p) => p.sourcePromptStatus);
+    assert.equal(statuses.exact.length, 113);
+    assert.equal(statuses['exact-truncated'].length, 1);
+    assert.equal(statuses.unavailable.length, 44);
+    assert.equal(statuses['adaptation-only'].length, 117);
+    assert.ok(exact.every((p) => p.sourcePromptRunnable === false));
+    assert.ok(exact.every((p) => p.sourcePromptIssues.includes('source-input-contract-not-wired')));
+    assert.equal(exact.filter((p) => p.sourcePromptIssues.includes('prompt-over-2000')).length, 67);
+    assert.equal(exact.filter((p) => p.sourcePromptIssues.includes('more-than-two-reference-images')).length, 12);
+    assert.equal(exact.filter((p) => p.sourcePromptIssues.includes('audio-preservation-not-supported')).length, 60);
+    assert.equal(exact.filter((p) => p.sourcePromptDuplicateOf).length, 2);
 });
 
 function stubCatalog(rows) {

@@ -21,6 +21,10 @@ export interface Preset {
     // prompt remains the compatible text sent to this preset's Veyrnox model.
     readonly sourcePrompt?: string | null;
     readonly sourcePromptOrigin?: 'community-source-exact' | null;
+    readonly sourcePromptStatus?: 'exact' | 'exact-truncated' | 'unavailable' | 'adaptation-only';
+    readonly sourcePromptRunnable?: boolean;
+    readonly sourcePromptIssues?: readonly string[];
+    readonly sourcePromptDuplicateOf?: string | null;
     readonly needs: string | null;
     // Desired crop of the starting image for source-framed I2V models. This is guidance, not a provider aspect option.
     readonly sourceAspect?: string | null;
@@ -37,6 +41,7 @@ export interface Preset {
 
 const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v : null);
 const https = (v: unknown): string | null => (typeof v === 'string' && v.startsWith('https://') ? v : null);
+const SOURCE_PROMPT_STATUSES = new Set(['exact', 'exact-truncated', 'unavailable', 'adaptation-only']);
 
 function parseOne(raw: unknown): Preset | null {
     if (!raw || typeof raw !== 'object') return null;
@@ -47,6 +52,10 @@ function parseOne(raw: unknown): Preset | null {
     const modelId = str(r.modelId);
     const prompt = str(r.prompt);
     const sourcePrompt = r.sourcePromptOrigin === 'community-source-exact' ? str(r.sourcePrompt) : null;
+    const requestedSourceStatus = SOURCE_PROMPT_STATUSES.has(String(r.sourcePromptStatus)) ? String(r.sourcePromptStatus) : null;
+    const sourcePromptStatus: Preset['sourcePromptStatus'] = sourcePrompt
+        ? requestedSourceStatus === 'exact-truncated' ? 'exact-truncated' : 'exact'
+        : requestedSourceStatus === 'unavailable' ? 'unavailable' : 'adaptation-only';
     if (!id || !title || !modelId || !prompt) return null;
     if (typeof r.credits !== 'number' || !Number.isInteger(r.credits) || r.credits <= 0) return null;
     return {
@@ -61,6 +70,10 @@ function parseOne(raw: unknown): Preset | null {
         promptOrigin: r.promptOrigin === 'veyrnox-adaptation' ? 'veyrnox-adaptation' : null,
         sourcePrompt,
         sourcePromptOrigin: sourcePrompt && r.sourcePromptOrigin === 'community-source-exact' ? 'community-source-exact' : null,
+        sourcePromptStatus,
+        sourcePromptRunnable: r.sourcePromptRunnable === true,
+        sourcePromptIssues: Array.isArray(r.sourcePromptIssues) ? r.sourcePromptIssues.map(str).filter((v): v is string => v !== null) : [],
+        sourcePromptDuplicateOf: str(r.sourcePromptDuplicateOf),
         needs: str(r.needs),
         sourceAspect: str(r.sourceAspect),
         durationSeconds: typeof r.durationSeconds === 'number' && r.durationSeconds > 0 ? r.durationSeconds : null,
