@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useI18n } from '../../../components/I18nProvider';
-import { getSession } from '../../lib/authClient.js';
+import { getFreshAccessToken, onSessionChange } from '../../lib/authClient.js';
 import { saveAccountLanguage } from '../../lib/accountLanguageClient.js';
 import { LOCALES } from '../../../lib/i18n/locales.mjs';
 import { rememberLocale } from '../../../lib/i18n/localeCookie.mjs';
@@ -67,7 +67,14 @@ export function VibeCheck({ retake = false }) {
   const [failed, setFailed] = useState(false);
   const [saved, setSaved] = useState(null);
 
-  useEffect(() => { if (!getSession()) setStep(-2); }, []);
+  // After a full page load the access token is restored from the HttpOnly cookie, so ask for a fresh one instead of
+  // reading memory once: reading it on mount showed "Sign in" to people who were signed in (QA 2026-10-29).
+  useEffect(() => {
+    let live = true;
+    getFreshAccessToken().then((token) => { if (live && !token) setStep(-2); });
+    const off = onSessionChange((s) => { if (live) setStep((cur) => (s ? (cur === -2 ? 0 : cur) : -2)); });
+    return () => { live = false; off(); };
+  }, []);
   useEffect(() => {
     try { if (sessionStorage.getItem(LANGUAGE_DONE_KEY)) { sessionStorage.removeItem(LANGUAGE_DONE_KEY); setLanguage('done'); } } catch { /* ask again */ }
   }, []);

@@ -1,10 +1,15 @@
 import Link from 'next/link';
 import { useI18n } from '../../../components/I18nProvider';
 import { featuredModels, modelSummary, modelTag } from '../_lib/modelSummaries';
+import { useCatalog } from '../_lib/useCatalog';
 
 export function ModelsMenu({ active = false }) {
   const { t } = useI18n();
-  const models = featuredModels();
+  // Names and blurbs come from the built-in list; prices only from the live catalog. The built-in prices drifted
+  // (Wan 2.5 showed 19 cr against a catalog price of 17, QA 2026-10-29), so none is shown until the catalog answers.
+  const catalog = useCatalog();
+  const livePrice = catalog.live ? new Map(catalog.models.map((m) => [m.id, m.credits])) : null;
+  const models = featuredModels().filter((model) => !livePrice || livePrice.has(model.id));
 
   return (
     <details className="group relative">
@@ -58,7 +63,7 @@ export function ModelsMenu({ active = false }) {
                   </span>
                   <span className="flex shrink-0 flex-col items-end justify-center gap-0.5">
                     <span className="text-[10px] font-semibold text-vx-fg-muted">{t(`model.media.${model.kind}`)}</span>
-                    <span className="font-vx-mono text-[11px] font-black text-vx-money">{model.credits} cr</span>
+                    {livePrice ? <span className="font-vx-mono text-[11px] font-black text-vx-money">{livePrice.get(model.id)} cr</span> : null}
                   </span>
                 </Link>
               </li>
