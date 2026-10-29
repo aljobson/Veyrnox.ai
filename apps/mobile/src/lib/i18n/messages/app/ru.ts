@@ -5718,5 +5718,8 @@ export default {
   "editorVoiceover.name": "Озвучка {time}",
   "editorVoiceover.discardTitle": "Удалить эту запись?",
   "editorVoiceover.keep": "Оставить",
-  "editorVoiceover.discard": "Удалить"
+  "editorVoiceover.discard": "Удалить",
+  "vey.touch.label": "Vey",
+  "vey.touch.hint": "Нажмите, чтобы поздороваться",
+  "vey.touch.wave": "Помахать"
 } as const;

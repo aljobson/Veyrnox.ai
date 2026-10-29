@@ -121,5 +121,6 @@
   "publishOps.priority.normal": "Shared term in this language.",
   "mediaKind.audio": "Reviewed: shared media terminology or language-neutral playback position notation.",
   "cinema.position": "Reviewed: shared media terminology or language-neutral playback position notation.",
-  "projectDocument.counter": "Numeric counter pattern; only the localized numbers change."
+  "projectDocument.counter": "Numeric counter pattern; only the localized numbers change.",
+  "vey.touch.label": "Vey is the mascot’s proper name and stays unchanged across languages."
 }

@@ -189,8 +189,8 @@ export default function Vibe() {
 
                 {step === 0 && language === 'done' ? (
                     <View style={styles.center}>
-                        <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-                            <VeyCharacter width={140} />
+                        <View>
+                            <VeyCharacter width={140} interactive />
                         </View>
                         <Text variant="title1" style={styles.title} accessibilityRole="header">
                             {t('vibe.intro.title')}

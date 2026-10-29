@@ -5588,5 +5588,8 @@ export default {
   "editorVoiceover.name": "वॉइसओवर: {time}",
   "editorVoiceover.discardTitle": "यह टेक हटाएँ?",
   "editorVoiceover.keep": "रखें",
-  "editorVoiceover.discard": "हटाएँ"
+  "editorVoiceover.discard": "हटाएँ",
+  "vey.touch.label": "Vey",
+  "vey.touch.hint": "नमस्ते कहने के लिए टैप करें",
+  "vey.touch.wave": "हाथ हिलाएँ"
 } as const;

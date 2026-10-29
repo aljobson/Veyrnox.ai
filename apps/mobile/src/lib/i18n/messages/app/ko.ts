@@ -5523,5 +5523,8 @@ export default {
   "editorVoiceover.name": "보이스오버 {time}",
   "editorVoiceover.discardTitle": "이 테이크를 삭제할까요?",
   "editorVoiceover.keep": "유지",
-  "editorVoiceover.discard": "삭제"
+  "editorVoiceover.discard": "삭제",
+  "vey.touch.label": "Vey",
+  "vey.touch.hint": "탭하여 인사하기",
+  "vey.touch.wave": "손 흔들기"
 } as const;

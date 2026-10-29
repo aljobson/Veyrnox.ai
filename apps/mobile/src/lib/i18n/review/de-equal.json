@@ -177,5 +177,6 @@
   "projects.revisionLabel": "Reviewed: shared media terminology or language-neutral playback position notation.",
   "editorSave.versionRow": "Established German term or label: Version {value1}.",
   "projectDocument.counter": "Numeric counter pattern; only the localized numbers change.",
-  "projectDocument.versionTitle": "Version is the standard word in this language for a saved revision."
+  "projectDocument.versionTitle": "Version is the standard word in this language for a saved revision.",
+  "vey.touch.label": "Vey is the mascot’s proper name and stays unchanged across languages."
 }

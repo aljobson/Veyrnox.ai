@@ -7,8 +7,9 @@ import { Image } from 'expo-image';
 import { InlineMedia } from '../../../components/InlineMedia';
 import { Link, Stack, useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, View } from 'react-native';
+import { Alert, ScrollView, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
+import { VeyCharacter } from '../../../components/VeyCharacter';
 import { JobProvenance } from '../../../components/JobProvenance';
 import { StemList } from '../../../components/StemList';
 import { CONFIRM_MESSAGE, CONFIRM_TITLE, deleteCreation, deleteMessage, isAlreadyGone } from '../../../lib/deleteCreation';
@@ -279,7 +280,9 @@ export default function JobScreen() {
                 </View>
             ) : (
                 <View style={styles.center}>
-                    {waiting ? <ActivityIndicator color={styles.accentInk.color} /> : null}
+                    {waiting || pollEnded || state === 'failed' ? (
+                        <VeyCharacter width={96} interactive mood={cancelledCredits !== null ? 'idle' : state === 'failed' ? 'worried' : 'working'} />
+                    ) : null}
                     <Text accessibilityLiveRegion="polite" variant="body" tone="danger" style={state === 'failed' ? styles.error : styles.status}>{cancelledCredits !== null
                         ? cancelledCredits > 0 ? plural('jobCancel.cancelled', cancelledCredits) : t('jobCancel.cancelledFree')
                         : pollEnded ? t('job.stillWorking') : t(LABEL[state])}</Text>

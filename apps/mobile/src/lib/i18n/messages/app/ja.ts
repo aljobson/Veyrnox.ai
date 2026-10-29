@@ -5523,5 +5523,8 @@ export default {
   "editorVoiceover.name": "ボイスオーバー {time}",
   "editorVoiceover.discardTitle": "このテイクを破棄しますか？",
   "editorVoiceover.keep": "保持",
-  "editorVoiceover.discard": "破棄"
+  "editorVoiceover.discard": "破棄",
+  "vey.touch.label": "Vey",
+  "vey.touch.hint": "タップしてあいさつ",
+  "vey.touch.wave": "手を振る"
 } as const;

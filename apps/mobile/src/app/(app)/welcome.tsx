@@ -50,8 +50,8 @@ export default function Welcome() {
             <ScrollView contentContainerStyle={styles.body}>
                 {card === 'hello' ? (
                     <Card style={styles.card}>
-                        <View style={styles.hero} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-                            <VeyCharacter width={160} />
+                        <View style={styles.hero}>
+                            <VeyCharacter width={160} interactive />
                         </View>
                         <Text variant="title1" style={styles.title} accessibilityRole="header">
                             {t('welcome.hello.title')}
@@ -77,8 +77,8 @@ export default function Welcome() {
                 ) : null}
                 {card === 'start' ? (
                     <Card style={styles.card}>
-                        <View style={styles.hero} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-                            <VeyCharacter width={160} />
+                        <View style={styles.hero}>
+                            <VeyCharacter width={160} interactive />
                         </View>
                         <Text variant="title1" style={styles.title} accessibilityRole="header">
                             {t('welcome.start.title')}

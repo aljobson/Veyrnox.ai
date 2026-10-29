@@ -10,7 +10,7 @@ export function EmptyState({ title, body, actionLabel, href }: { title: string; 
     const styles = useThemedStyles(sheets);
     return (
         <View style={styles.box}>
-            <VeyCharacter width={64} />
+            <VeyCharacter width={64} mood="wave" interactive />
             <Text variant="title3" tone="primary" style={styles.title} accessibilityRole="header">{title}</Text>
             {body ? <Text variant="callout" tone="secondary" style={styles.body}>{body}</Text> : null}
             {actionLabel && href ? (
