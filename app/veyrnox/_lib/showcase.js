@@ -3,6 +3,12 @@ import { SHOWCASE_CLIP_EXPANSION_8 } from './sourceTemplateExpansion8.js';
 import { SHOWCASE_CLIP_EXPANSION_9 } from './sourceTemplateExpansion9.js';
 import { SHOWCASE_CLIP_EXPANSION_10 } from './sourceTemplateExpansion10.js';
 import { SHOWCASE_CLIP_EXPANSION_11 } from './sourceTemplateExpansion11.js';
+import {
+  HIGGSFIELD_90_WALL_SHOWCASE_KEYS,
+  REPLACED_HIGGSFIELD_CLIP_KEYS,
+  REPLACED_HIGGSFIELD_TEMPLATE_IDS,
+  SHOWCASE_CLIP_EXPANSION_12,
+} from './sourceTemplateExpansion12.js';
 
 import { SHOWCASE_CLIP_EXPANSION_6 } from './sourceTemplateExpansion6.js';
 // Public clip records intentionally use neutral asset paths and contain no
@@ -451,6 +457,7 @@ export const AUDIT_SHOWCASE_CLIPS = {
   ...SHOWCASE_CLIP_EXPANSION_9,
   ...SHOWCASE_CLIP_EXPANSION_10,
   ...SHOWCASE_CLIP_EXPANSION_11,
+  ...SHOWCASE_CLIP_EXPANSION_12,
 
   ...SHOWCASE_CLIP_EXPANSION_6,
 };
@@ -460,14 +467,21 @@ export const AUDIT_SHOWCASE_CLIPS = {
 // only by prompt-gap templates stay in the audit manifest above.
 const REMOVED_TEMPLATE_ONLY_CLIP_KEYS = new Set(Object.keys(AUDIT_SHOWCASE_CLIPS)
   .filter((clipKey) => clipKey !== 'ace-step' && !isPublishableSourcePromptTemplate(clipKey)));
+const REPLACED_HIGGSFIELD_CLIP_KEY_SET = new Set(REPLACED_HIGGSFIELD_CLIP_KEYS);
+const PRESERVED_REPLACED_LANDING_CLIP_KEYS = new Set([
+  'wan-2.5-kie', 'kling-26', 'presets',
+  'model-video', 'model-image', 'model-audio',
+]);
 
 export const SHOWCASE_CLIPS = Object.freeze(Object.fromEntries(
   Object.entries(AUDIT_SHOWCASE_CLIPS)
-    .filter(([clipKey]) => !REMOVED_TEMPLATE_ONLY_CLIP_KEYS.has(clipKey)),
+    .filter(([clipKey]) => !REMOVED_TEMPLATE_ONLY_CLIP_KEYS.has(clipKey))
+    .filter(([clipKey]) => !REPLACED_HIGGSFIELD_CLIP_KEY_SET.has(clipKey)
+      || PRESERVED_REPLACED_LANDING_CLIP_KEYS.has(clipKey)),
 ));
 
 // Give each public placement its own clip, including templates also on /presets.
-export const WALL_SHOWCASE_KEYS = {
+const LEGACY_WALL_SHOWCASE_KEYS = {
   'miniature-crew-wall': 'wall-product-hero-360',
   'lidar': 'wall-cctv-night',
   'boarding-pass': 'wall-sunset-drift',
@@ -493,6 +507,12 @@ export const WALL_SHOWCASE_KEYS = {
   'dolphin-surf-ride': 'wall-dolphin-surf-ride',
   'event-character-swap': 'wall-event-character-swap',
 };
+const REPLACED_HIGGSFIELD_TEMPLATE_ID_SET = new Set(REPLACED_HIGGSFIELD_TEMPLATE_IDS);
+export const WALL_SHOWCASE_KEYS = Object.freeze({
+  ...Object.fromEntries(Object.entries(LEGACY_WALL_SHOWCASE_KEYS)
+    .filter(([templateId]) => !REPLACED_HIGGSFIELD_TEMPLATE_ID_SET.has(templateId))),
+  ...HIGGSFIELD_90_WALL_SHOWCASE_KEYS,
+});
 
 export const MODEL_SHOWCASE_KEYS = {
   video: 'model-video',

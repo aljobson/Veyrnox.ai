@@ -97,7 +97,7 @@ test('source-gap clips stay outside the public manifest', () => {
         .filter((id) => Object.hasOwn(AUDIT_SHOWCASE_CLIPS, id));
     assert.equal(REMOVED_PROMPT_GAP_TEMPLATE_IDS.length, 45);
     assert.equal(removedAuditKeys.length, 44, 'Keyboard Duo uses the independent ACE Step landing clip');
-    assert.equal(Object.keys(SHOWCASE_CLIPS).length, 271, '270 template clips plus the ACE Step landing clip');
+    assert.equal(Object.keys(SHOWCASE_CLIPS).length, 277, '270 template clips plus seven dedicated landing clips');
     for (const key of removedAuditKeys) assert.equal(Object.hasOwn(SHOWCASE_CLIPS, key), false, key);
     assert.equal(Object.hasOwn(SHOWCASE_CLIPS, 'ace-step'), true);
 });

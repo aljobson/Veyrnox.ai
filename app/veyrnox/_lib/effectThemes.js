@@ -28,6 +28,8 @@ const OVERRIDES = {
   'MORPH ME': [
     'world-morphing', 'trick-or-skin', 'event-character-swap', 'character-takeover',
     'vanish', 'clones', 'infinite-clones', 'action-figure', 'marble-statue',
+    'community-orbital-truck-morph', 'community-subway-landmark-swap',
+    'community-period-character-swap',
   ],
   'AI DANCE': [
     'storm-starring', 'superstar', 'moonwalk', 'blood-moon-dance',
@@ -36,6 +38,8 @@ const OVERRIDES = {
   'SOCCER FEVER': [
     'fat-parkour', 'wild-ride', 'incline', 'motorcycle-double', 'race-track',
     'high-flip', 'ink-sprint', 'mighty-fighter', 'football',
+    'community-soccer-dribble', 'community-tunnel-wheelie',
+    'community-athlete-dance-swap',
   ],
   'SHOT LANGUAGE': [
     'lidar', 'bullet-time', 'frozen-in-motion', 'earth-zoom', 'orbit-360',

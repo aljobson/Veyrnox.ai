@@ -14,19 +14,19 @@ byte-for-byte on their template pages. Their runnable status remains explicit.
 
 | Source population | Templates | Exact source text | Gap |
 |---|---:|---:|---:|
-| Higgsfield Genjutsu | 56 | 56 | 43 promptless records and 1 truncated record removed |
-| Other Higgsfield previews | 90 | 0 | no prompt capture tied to those media IDs |
+| Higgsfield Genjutsu | 146 | 146 | 56 retained exact pairs plus 90 new same-record exact pairs |
+| Older Higgsfield previews | 0 | 0 | 90 promptless adaptations replaced; old media retained only as audit evidence |
 | Syntx Trends | 97 | 97 | `keyboard-duo-swap` removed because its prompt is unavailable |
 | CapCut | 6 | 0 | source pages/previews recorded; no exact prompt capture |
 | Mixkit/Pexels birthday footage | 12 | 0 | stock footage, not a prompt-bearing source recipe |
 | Veyrnox-generated preview | 1 | 0 source prompt | the Veyrnox generation prompt remains the runnable prompt |
 | Historical source not proven | 8 | 0 | must not be attributed by title similarity |
-| **Total** | **270** | **153** | **117 independent adaptations** |
+| **Total** | **270** | **243** | **27 independent adaptations** |
 
 The API exposes one of two statuses for every public row:
 
-- `exact`: 153 complete captured prompts;
-- `adaptation-only`: 117 previews without a matched exact prompt record.
+- `exact`: 243 complete captured prompts;
+- `adaptation-only`: 27 previews without a matched exact prompt record.
 
 On 29 October 2026, 45 media-backed templates were removed from the gallery,
 API, search, sitemap and direct template routes: the one `exact-truncated` row
@@ -48,11 +48,21 @@ video and ordered reference assets assumed by the source prompt.
   all 48 retained the same prompt/null status and exact text. The moving feed
   did not relocate the other 52, so they remain captured evidence rather than
   newly verified records.
+- A separate current-feed capture accepted 90 further Genjutsu records only
+  when the exact prompt and published generation video belonged to the same
+  immutable community record. The capture has 90 unique prompt hashes, media
+  IDs, source-asset hashes, local-preview hashes and normalized visual
+  signatures. It rejected 54 prompt/title collisions before selection and
+  found no accepted byte-level or visual duplicate. The 90 exact pairs replace
+  the 90 older promptless Higgsfield adaptations one-for-one, keeping the
+  public gallery at 270. Full record IDs, source URLs, exact text, reference
+  roles and hashes are in
+  [`source-audit/higgsfield-90-exact-2026-10-29.json`](source-audit/higgsfield-90-exact-2026-10-29.json).
 - The 1,312 addressable Veyrnox generation recipes contain no exact or
   whitespace-normalized duplicate runnable prompts.
 - All 270 public preview videos and posters remain byte-unique. The additional
-  40 Syntx videos also have distinct normalized visual signatures against the
-  previous 58 Syntx previews.
+  40 Syntx videos and 90 Higgsfield videos also have distinct normalized visual
+  signatures against the earlier public previews and within their own batches.
 
 ## Capability result
 
@@ -65,10 +75,10 @@ The exact prompt corpus currently contains these incompatibilities:
 
 | Constraint | Exact prompts affected |
 |---|---:|
-| More than 2,000 characters | 102 |
-| More than two explicit image references | 17 |
-| Audio, music, voice, dialogue or lip-sync requirement | 88 |
-| Source input contract not wired into the public template | 153 |
+| More than 2,000 characters | 125 |
+| More than two explicit image references | 28 |
+| Audio, music, voice, dialogue or lip-sync requirement | 100 |
+| Source input contract not wired into the public template | 243 |
 
 Syntx additionally has 48 matched source videos longer than ten seconds. In the
 48 currently relocated Genjutsu records, 44 source videos exceed ten seconds
@@ -104,8 +114,10 @@ unattributed rather than being guessed as Buzzy or LipSync.video.
 
 1. Keep the 43 null Genjutsu records removed unless the same immutable media ID
    publishes complete text. Never reconstruct them from the video.
-2. Recover the 90 older Higgsfield prompts through immutable media IDs or mark
-   each permanently unavailable.
+2. **Completed for the public catalog:** replace the 90 older promptless
+   Higgsfield adaptations with 90 current community records containing an
+   immutable same-record exact prompt and video. The older 90 remain audit
+   evidence and are not presented as exact.
 3. Keep `keyboard-duo-swap` removed unless its Syntx media ID returns a prompt.
 4. Capture CapCut, Buzzy and LipSync.video prompts only from a prompt-bearing
    source record tied to the same media. Record source URL, media ID, capture

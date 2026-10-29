@@ -14,10 +14,14 @@ import { EFFECT_CONCEPT_TEMPLATES } from './effectConceptTemplates.js';
 import { EFFECT_THEMES, effectThemeId, themedTemplates } from './effectThemes.js';
 import { SHOWCASE_CLIPS } from './showcase.js';
 import { isPublishableSourcePromptTemplate } from './sourcePromptAudit.js';
+import {
+  HIGGSFIELD_90_WALL_CLIP_KEYS,
+  REPLACED_HIGGSFIELD_CLIP_KEYS,
+} from './sourceTemplateExpansion12.js';
 
 const CATEGORY_ORDER = ['YOUR PHOTO', 'KIDS BIRTHDAY', 'CINEMATIC', 'ANIME', 'CARTOONS', 'MOVIES', 'FANTASY', 'REALISTIC', 'FASHION', 'PRODUCTS', 'VFX', 'UGC', 'ADS'];
 
-const WALL_CLIP_KEYS = [
+const LEGACY_WALL_CLIP_KEYS = [
   'wall-product-hero-360',
   'wall-cctv-night',
   'wall-sunset-drift',
@@ -42,6 +46,11 @@ const WALL_CLIP_KEYS = [
   'wall-sticker-peel-reveal',
   'wall-dolphin-surf-ride',
   'wall-event-character-swap',
+];
+const REPLACED_HIGGSFIELD_CLIP_KEY_SET = new Set(REPLACED_HIGGSFIELD_CLIP_KEYS);
+const WALL_CLIP_KEYS = [
+  ...LEGACY_WALL_CLIP_KEYS.filter((key) => !REPLACED_HIGGSFIELD_CLIP_KEY_SET.has(key)),
+  ...HIGGSFIELD_90_WALL_CLIP_KEYS,
 ];
 const TEMPLATE_CANDIDATES = [...SOURCE_TEMPLATES, ...EFFECT_CONCEPT_TEMPLATES, ...REFERENCE_TEMPLATES];
 export const REMOVED_PROMPT_GAP_TEMPLATE_IDS = Object.freeze(TEMPLATE_CANDIDATES

@@ -3,6 +3,10 @@ import { SOURCE_TEMPLATE_EXPANSION_8 } from './sourceTemplateExpansion8.js';
 import { SOURCE_TEMPLATE_EXPANSION_9 } from './sourceTemplateExpansion9.js';
 import { SOURCE_TEMPLATE_EXPANSION_10 } from './sourceTemplateExpansion10.js';
 import { SOURCE_TEMPLATE_EXPANSION_11 } from './sourceTemplateExpansion11.js';
+import {
+  REPLACED_HIGGSFIELD_TEMPLATE_IDS,
+  SOURCE_TEMPLATE_EXPANSION_12,
+} from './sourceTemplateExpansion12.js';
 
 import { SOURCE_TEMPLATE_EXPANSION_6 } from './sourceTemplateExpansion6.js';
 import { SOURCE_TEMPLATE_EXPANSION } from './sourceTemplateExpansion.js';
@@ -14,7 +18,7 @@ import { SOURCE_TEMPLATE_EXPANSION_5 } from './sourceTemplateExpansion5.js';
 // Matched recipes inspected on 10 October 2026. Prompts are Veyrnox adaptations;
 // public template objects intentionally contain no source-platform names or URLs.
 // Internal provenance is retained in docs/product/showcase-clips.md.
-export const SOURCE_TEMPLATES = [
+const AUDIT_SOURCE_TEMPLATES = [
   {
     "id": "product-hero-360", "name": "PRODUCT HERO 360", "clipKey": "product-hero-360",
     "model": "Kling 3.0 · I2V", "credits": 32, "durationSeconds": 10,
@@ -378,4 +382,14 @@ export const SOURCE_TEMPLATES = [
   ...SOURCE_TEMPLATE_EXPANSION_11,
 
   ...SOURCE_TEMPLATE_EXPANSION_6,
+];
+
+const REPLACED_HIGGSFIELD_TEMPLATE_ID_SET = new Set(REPLACED_HIGGSFIELD_TEMPLATE_IDS);
+
+// Keep the old promptless Higgsfield recipes in the audit expansion files, but
+// replace their public catalog positions one-for-one with same-record pairs
+// whose exact prompt and video are both available from the community feed.
+export const SOURCE_TEMPLATES = [
+  ...AUDIT_SOURCE_TEMPLATES.filter(({ id }) => !REPLACED_HIGGSFIELD_TEMPLATE_ID_SET.has(id)),
+  ...SOURCE_TEMPLATE_EXPANSION_12,
 ];
