@@ -3,6 +3,7 @@
 // Keep these strings byte-for-byte exact; tests lock every available prompt.
 // Runnable Veyrnox adaptations remain in sourceTemplates.js.
 import { SYNTX_SOURCE_PROMPT_EXPANSION_RECORDS } from './syntxSourcePromptExpansionRecords.js';
+import { SYNTX_SOURCE_PROMPT_EXPANSION_40_RECORDS } from './syntxSourcePromptExpansion40Records.js';
 
 const SYNTX_BASE_SOURCE_PROMPT_RECORDS = Object.freeze({
   "medieval-runway-look": {
@@ -242,4 +243,5 @@ const SYNTX_BASE_SOURCE_PROMPT_RECORDS = Object.freeze({
 export const SYNTX_SOURCE_PROMPT_RECORDS = Object.freeze({
   ...SYNTX_BASE_SOURCE_PROMPT_RECORDS,
   ...SYNTX_SOURCE_PROMPT_EXPANSION_RECORDS,
+  ...SYNTX_SOURCE_PROMPT_EXPANSION_40_RECORDS,
 });
