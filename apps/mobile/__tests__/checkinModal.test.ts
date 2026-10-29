@@ -45,14 +45,14 @@ test('dismissal is remembered for this viewer and UTC date', async () => {
     await act(async () => root.unmount()); root = createRoot();
     await mount(); expect(has('Earn Credits by Checking In')).toBe(false);
 });
-test('BUSY permits a retry; a successful claim shows the earned amount', async () => {
+test('BUSY permits a retry; a successful claim closes the modal at once', async () => {
     await mount();
     mockRequest.mockRejectedValueOnce(new ApiError(409, 'checkin_busy'));
     await press('Check in'); expect(has('Please try again in a moment.')).toBe(true);
     mockRequest.mockResolvedValueOnce({ ok: true, already_claimed: false, streak: 1, day: 1, credits: 1, balance_after: 11 });
-    await press('Check in'); expect(has('You earned 1 credit.')).toBe(true);
-    expect(has('Claimed today')).toBe(true);
-    expect(root.container.queryAll(n => n.props.accessibilityLabel === 'Claimed today' && n.children.includes('✓'))).toHaveLength(1);
+    await press('Check in');
+    expect(root.container.queryAll(n => n.props.visible === true)).toHaveLength(0);
+    expect(await appStorage.get(`checkin.${getCacheUser()}`)).toBe(new Date().toISOString().slice(0,10));
 });
 test('a previous UTC day dismissal does not suppress the next invitation', async () => {
     await appStorage.set(`checkin.${getCacheUser()}`, new Date(Date.now()-86400000).toISOString().slice(0,10));

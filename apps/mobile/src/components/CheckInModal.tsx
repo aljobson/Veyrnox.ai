@@ -31,7 +31,6 @@ function CheckInForUser({ owner, api }: { owner: string; api: ApiClient }) {
     const [open, setOpen] = useState(false);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [earned, setEarned] = useState<number | null>(null);
     useEffect(() => {
         let live = true;
         async function load() {
@@ -39,7 +38,7 @@ function CheckInForUser({ owner, api }: { owner: string; api: ApiClient }) {
                 const next = await reader.read();
                 const saved = await appStorage.get(`checkin.${owner}`).catch(() => null);
                 if (!live || owner !== getCacheUser()) return;
-                setStatus(next); announceCheckin(owner, next); setError(null); setEarned(null);
+                setStatus(next); announceCheckin(owner, next); setError(null);
                 setOpen(!!next && !next.claimed_today && saved !== today() && dismissed.get(owner) !== today());
             } catch { /* A display-storage failure does not trigger another API read. */ }
         }
@@ -67,7 +66,7 @@ function CheckInForUser({ owner, api }: { owner: string; api: ApiClient }) {
             const result = await claimCheckin(api);
             if (owner !== getCacheUser()) return;
             if (!result) { reader.stop(); announceCheckin(owner, null); setOpen(false); setStatus(null); return; }
-            remember(); setEarned(result.credits);
+            remember(); setOpen(false);
             if (status) {
                 const next = { ...status, claimed_today: true, streak: result.streak };
                 reader.update(next); setStatus(next); announceCheckin(owner, next);
@@ -96,7 +95,7 @@ function CheckInForUser({ owner, api }: { owner: string; api: ApiClient }) {
                     </Text>
                 </View>)}
             </View>
-            <StatusText variant="inherit" accessibilityLiveRegion="polite" style={styles.message}>{error ? t(error) : earned && earned > 0 ? plural('checkin.earned', earned, { credits: earned }) : status.claimed_today ? t('checkin.claimed') : ''}</StatusText>
+            <StatusText variant="inherit" accessibilityLiveRegion="polite" style={styles.message}>{error ? t(error) : status.claimed_today ? t('checkin.claimed') : ''}</StatusText>
             <Pressable accessibilityRole="button" accessibilityLabel={t('checkin.claim')} accessibilityState={{ disabled: busy || status.claimed_today }} disabled={busy || status.claimed_today} onPress={claim} style={styles.primary}>
                 <Text style={styles.primaryText}>{t(busy ? 'checkin.claiming' : status.claimed_today ? 'checkin.claimed' : 'checkin.claim')}</Text>
             </Pressable>
