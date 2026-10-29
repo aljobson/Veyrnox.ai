@@ -2922,6 +2922,12 @@
     "ratio": 1.92
   },
   {
+    "id": "projectHome.notOpen",
+    "english": "Not open yet",
+    "translation": "Ainda não disponível",
+    "ratio": 1.67
+  },
+  {
     "id": "brand.style.add",
     "english": "Add a text style",
     "translation": "Adicionar um estilo de texto",

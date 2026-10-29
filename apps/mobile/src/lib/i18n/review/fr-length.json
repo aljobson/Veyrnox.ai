@@ -4704,6 +4704,18 @@
     "ratio": 1.67
   },
   {
+    "id": "projectHome.premium",
+    "english": "PREMIUM",
+    "translation": "HAUT DE GAMME",
+    "ratio": 1.86
+  },
+  {
+    "id": "projectHome.notOpen",
+    "english": "Not open yet",
+    "translation": "Pas encore disponible",
+    "ratio": 1.75
+  },
+  {
     "id": "brand.style.edit",
     "english": "Edit",
     "translation": "Modifier",
