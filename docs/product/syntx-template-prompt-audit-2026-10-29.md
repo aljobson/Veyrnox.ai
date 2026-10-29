@@ -2,17 +2,19 @@
 
 ## Result
 
-Veyrnox now contains 58 video templates linked to licensed Syntx community trends. Records were matched using the public read-only Trends API and the source media identifiers retained with each template.
+Veyrnox now contains 98 video templates linked to licensed Syntx community trends. Records were matched using the public read-only Trends API and the source media identifiers retained with each template.
 
-- **57 exact source prompts are complete.** Their verbatim text is stored in the Syntx source-record modules, shown read-only on template pages, returned by `/api/presets`, and locked by full SHA-256 fixtures.
+- **97 exact source prompts are complete.** Their verbatim text is stored in the Syntx source-record modules, loaded as the template-page prompt, returned by `/api/presets`, and locked by full SHA-256 fixtures.
 - **1 source prompt remains unresolved:** `keyboard-duo-swap`. Its licensed media file is still reachable, but Syntx no longer returns its source record. Veyrnox keeps a null exact-source prompt rather than inventing text.
-- **20 new Syntx video templates were added in this audit.** Their source prompts and source media are distinct from the previously recorded Syntx set.
+- **60 new Syntx video templates were added in this audit:** the earlier 20-record batch and a further 40 exact prompt/video pairs. Their source prompts and source media are distinct from the previously recorded Syntx set.
 - **9 older Syntx-derived Veyrnox templates were recovered into the exact-prompt audit.**
-- **Independent source-file evidence is locked for the 9 recovered and 20 new records.** Each downloaded Syntx variant has a full SHA-256 in `syntxSourceAssetHashes.mjs`; all 29 source downloads are byte-unique. The nine recovered provenance rows were reconstructed from the public Trends API on 29 October rather than assumed to be records made at their original import.
+- **Independent source-file evidence is locked for the 9 recovered and 60 new records.** Each downloaded Syntx variant has a full SHA-256 in `syntxSourceAssetHashes.mjs`; all 69 source downloads are byte-unique. The nine recovered provenance rows were reconstructed from the public Trends API on 29 October rather than assumed to be records made at their original import.
 - **2 exact-prompt duplicate groups are documented:** `who-was-that-business` / `curtain-reveal`, and `event-character-swap` / `rap-takeover`. Each pair represents different preview placements associated with the same underlying Syntx trend; the local videos remain different.
-- **All 58 local Syntx preview videos are byte-unique.**
-- Editable generation prompts remain `veyrnox-adaptation` values. Exact source prompts are read-only provenance because many exceed provider limits or require reference inputs the Veyrnox generation route does not accept.
+- **All 98 local Syntx preview videos are byte-unique.** The additional 40 also have distinct normalized five-second visual signatures, both within their batch and against the 58 previously recorded Syntx previews.
+- Exact source prompts are displayed and loaded byte-for-byte when a verified template is selected. They remain marked non-runnable where they exceed provider limits or require source-video/reference inputs the current public generation route does not accept; the shorter `veyrnox-adaptation` value remains separate fallback metadata.
 - Verbatim creator text can contain third-party references. For example, `pizzeria-hide-and-seek` names a game franchise in its exact read-only source prompt. The owner requested exact copying; Veyrnox does not edit that provenance text, while the editable Veyrnox adaptation uses an original neutral mechanical mascot.
+
+The complete source record, exact prompt, source-media URL, source-file hash, normalized visual signature, local preview hash and rejection ledger for the additional 40 are in the [machine-readable 40-record manifest](source-audit/syntx-40-2026-10-29.json). Candidate selection rejected 39 records already present, four normalized prompt duplicates and four records without a complete same-record prompt/video pair.
 
 ## Historical batch exclusions
 
@@ -37,7 +39,9 @@ These neutral Veyrnox template names differ from the current Syntx trend title. 
 | `sheep-kingdom` | Among Sheep |
 | `fashion-catch` | Catch the Look |
 
-## Completion matrix
+## Earlier completion matrix
+
+The table below covers the original 58 audited records. The linked machine-readable manifest above is the completion matrix for the additional 40 and is verified by the same regression contract.
 
 | Veyrnox template | Batch | Syntx source title | Exact prompt | Matched media ID | Prompt SHA-256 |
 | --- | --- | --- | --- | --- | --- |
@@ -104,13 +108,13 @@ These neutral Veyrnox template names differ from the current Syntx trend title. 
 
 The regression suite checks:
 
-1. all 58 Syntx-linked source IDs have audit records;
-2. all 57 available prompt strings match their locked SHA-256 values byte-for-byte;
+1. all 98 Syntx-linked source IDs have audit records;
+2. all 97 available prompt strings match their locked SHA-256 values byte-for-byte;
 3. the only exact prompt duplicates are the two documented groups;
 4. Keyboard Duo remains explicitly unresolved with a null source prompt;
-5. all 58 local preview-video SHA-256 values are different;
-6. the 29 recovered/new downloaded source variants match their locked source-asset SHA-256 evidence;
-7. all 57 exact prompts reach the public API, while the unresolved Keyboard Duo record stays outside every public template surface; and
+5. all 98 local preview-video SHA-256 values are different, and the additional 40 normalized visual signatures are distinct;
+6. the 69 recovered/new downloaded source variants match their locked source-asset SHA-256 evidence;
+7. all 97 exact prompts reach the public API, while the unresolved Keyboard Duo record stays outside every public template surface; and
 8. runnable generation prompts remain within the supported 2,000-character boundary.
 
 This audit used Syntx’s public read-only Trends API on 29 October 2026. It did not run a paid generation or infer private prompts.

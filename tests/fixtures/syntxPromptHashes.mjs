@@ -1,3 +1,5 @@
+import { SYNTX_40_PROMPT_SHA256 } from './syntx40PromptHashes.mjs';
+
 export const SYNTX_PROMPT_SHA256 = Object.freeze({
   "medieval-runway-look": "de1ef4dd0b3a0b0b520d72ae95ea7186eeb1051b67dbf79f7c252fdef91d78c0",
   "shadow-warriors": "bef144410977912e72a3e5bfa3ef22dd9040d05a8bf9ba2e318bfeef6ee1317e",
@@ -55,5 +57,6 @@ export const SYNTX_PROMPT_SHA256 = Object.freeze({
   "mystery-unboxing": "2a7a68c925a68efce5d3612b33aead26638d5e321cb7856b87b60cfa0fa0a632",
   "whiskey-gun-trick": "711f6a12fa20cad6f3fccc874c10fc3995ca359a7265bb00d206d5ea443b4748", // gitleaks:allow -- public prompt SHA-256 fixture
   "cyber-mask-transformation": "9ad057c46ad72f4fea54c87da6ec33673679c0796da586d0a4f1a6a0752684bc",
-  "pizzeria-hide-and-seek": "9b57e9a88d805e89fa8b6c9b43b9ea5de1c9b6208e7cb9b9af076bdcb7af73da"
+  "pizzeria-hide-and-seek": "9b57e9a88d805e89fa8b6c9b43b9ea5de1c9b6208e7cb9b9af076bdcb7af73da",
+  ...SYNTX_40_PROMPT_SHA256
 });

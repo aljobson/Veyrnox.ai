@@ -8,24 +8,24 @@ inferred from the preview is not exact.
 
 ## Public Veyrnox template result
 
-The live gallery contains 230 unique media-backed templates. All 230 generation
-prompts are `veyrnox-adaptation`; an exact source prompt is separate read-only
-provenance and is never silently substituted into generation.
+The live gallery contains 270 unique media-backed templates. Verified exact
+source prompts are preserved separately from the Veyrnox adaptations and load
+byte-for-byte on their template pages. Their runnable status remains explicit.
 
 | Source population | Templates | Exact source text | Gap |
 |---|---:|---:|---:|
 | Higgsfield Genjutsu | 56 | 56 | 43 promptless records and 1 truncated record removed |
 | Other Higgsfield previews | 90 | 0 | no prompt capture tied to those media IDs |
-| Syntx Trends | 57 | 57 | `keyboard-duo-swap` removed because its prompt is unavailable |
+| Syntx Trends | 97 | 97 | `keyboard-duo-swap` removed because its prompt is unavailable |
 | CapCut | 6 | 0 | source pages/previews recorded; no exact prompt capture |
 | Mixkit/Pexels birthday footage | 12 | 0 | stock footage, not a prompt-bearing source recipe |
 | Veyrnox-generated preview | 1 | 0 source prompt | the Veyrnox generation prompt remains the runnable prompt |
 | Historical source not proven | 8 | 0 | must not be attributed by title similarity |
-| **Total** | **230** | **113** | **117 independent adaptations** |
+| **Total** | **270** | **153** | **117 independent adaptations** |
 
 The API exposes one of two statuses for every public row:
 
-- `exact`: 113 complete captured prompts;
+- `exact`: 153 complete captured prompts;
 - `adaptation-only`: 117 previews without a matched exact prompt record.
 
 On 29 October 2026, 45 media-backed templates were removed from the gallery,
@@ -39,7 +39,7 @@ video and ordered reference assets assumed by the source prompt.
 
 ## Exact-text and duplicate checks
 
-- The 57 available Syntx prompts still match the current 378-record public API
+- The 97 available Syntx prompts still match the current 378-record public API
   byte-for-byte. Two duplicate prompt pairs are source-authentic and retained:
   `who-was-that-business` / `curtain-reveal`, and
   `event-character-swap` / `rap-takeover`.
@@ -48,9 +48,11 @@ video and ordered reference assets assumed by the source prompt.
   all 48 retained the same prompt/null status and exact text. The moving feed
   did not relocate the other 52, so they remain captured evidence rather than
   newly verified records.
-- The 1,272 addressable Veyrnox generation recipes contain no exact or
+- The 1,312 addressable Veyrnox generation recipes contain no exact or
   whitespace-normalized duplicate runnable prompts.
-- All 230 public preview videos and posters remain byte-unique.
+- All 270 public preview videos and posters remain byte-unique. The additional
+  40 Syntx videos also have distinct normalized visual signatures against the
+  previous 58 Syntx previews.
 
 ## Capability result
 
@@ -63,12 +65,12 @@ The exact prompt corpus currently contains these incompatibilities:
 
 | Constraint | Exact prompts affected |
 |---|---:|
-| More than 2,000 characters | 66 |
-| More than two explicit image references | 11 |
-| Audio, music, voice, dialogue or lip-sync requirement | 59 |
-| Source input contract not wired into the public template | 113 |
+| More than 2,000 characters | 102 |
+| More than two explicit image references | 17 |
+| Audio, music, voice, dialogue or lip-sync requirement | 88 |
+| Source input contract not wired into the public template | 153 |
 
-Syntx additionally has 27 matched source videos longer than ten seconds. In the
+Syntx additionally has 48 matched source videos longer than ten seconds. In the
 48 currently relocated Genjutsu records, 44 source videos exceed ten seconds
 and 16 use more than two actual reference assets. Exact text alone therefore
 cannot reproduce the preview through the staged two-picture route.
@@ -90,7 +92,7 @@ not disclose exact prompts. No attribution or prompt is added by name alone.
 LipSync.video is also explicit audit scope. Veyrnox has 21 separately tracked
 creative-feature examples in `creativeFeatures.js`, each linked to its public
 LipSync.video page and exact example media. They are feature references, not
-members of the 230-template gallery, and do not contain captured source
+members of the 270-template gallery, and do not contain captured source
 prompts. They must not be counted as fixed template prompts until a prompt-bearing
 source record exists.
 
@@ -113,6 +115,6 @@ unattributed rather than being guessed as Buzzy or LipSync.video.
    and no retained audio.
 6. For longer or richer contracts, add a qualified provider route or keep the
    exact prompt read-only. Never truncate it into a different runnable prompt.
-7. A future audit passes only when all 230 API rows are `exact` or
+7. A future audit passes only when all 270 API rows are `exact` or
    `adaptation-only`, exact text hashes remain stable, source-media hashes
    remain unique, and removed source-gap records stay outside public routes.
