@@ -183,6 +183,7 @@ const fr = {
     'presets.cat.UGC': 'UGC',
     'presets.cat.ADS': 'Publicités',
     'presets.cat.KIDS BIRTHDAY': 'Anniversaire enfant',
+    'presets.detail.sourceAspect': 'Recadrez l’image de départ au format {aspect} ; ce modèle conserve le cadrage de l’image envoyée.',
 } as const;
 
 export default fr;

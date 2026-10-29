@@ -183,6 +183,7 @@ const ja = {
     'presets.cat.UGC': 'UGC',
     'presets.cat.ADS': '広告',
     'presets.cat.KIDS BIRTHDAY': '子どもの誕生日',
+    'presets.detail.sourceAspect': '開始画像を {aspect} にトリミングしてください。このモデルはアップロード画像の構図を維持します。',
 } as const;
 
 export default ja;

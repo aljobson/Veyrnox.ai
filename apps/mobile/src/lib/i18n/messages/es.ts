@@ -183,6 +183,7 @@ const es = {
     'presets.cat.UGC': 'UGC',
     'presets.cat.ADS': 'Anuncios',
     'presets.cat.KIDS BIRTHDAY': 'Cumpleaños infantil',
+    'presets.detail.sourceAspect': 'Recorta la imagen inicial a {aspect}; este modelo conserva el encuadre de la imagen subida.',
 } as const;
 
 export default es;

@@ -1,6 +1,6 @@
 # Landing showcase clips
 
-Every landing feature card, every tile in the 24-template wall, all 142
+Every landing feature card, every tile in the 24-template wall, all 255
 public template cards and the three model-category cards have viral previews. The owner requested footage and prompts from [SYNTX Trends](https://syntx.ai/trends),
 [Higgsfield](https://higgsfield.ai/) and [CapCut](https://www.capcut.com/my-edit?start_tab=video) on 14 October 2026. This replaces the
 previous requirement to use only clips generated on Veyrnox.
@@ -18,7 +18,8 @@ the supported Veyrnox adaptation. Live credit prices come from the catalog.
 On 24 October 2026, the 1,036 additional effect ideas without preview videos
 were removed from public browsing, search, API output and template routes. Their
 deduplicated names remain an internal reference inventory only. The public
-gallery contains the 142 media-backed recipes, each with a unique local video
+gallery contained 155 media-backed recipes before the Genjutsu community
+expansion, each with a unique local video
 and poster; concepts are not promoted to templates until that media exists.
 
 `app/veyrnox/_lib/showcase.js` maps all five `FEATURE_CARDS` keys and all
@@ -28,7 +29,7 @@ Audio cards in `/#models`. `WALL_SHOWCASE_KEYS` selects 24 dedicated
 homepage previews with their own recipes. The shared
 `PresetCard` also brings the gallery previews to the studio Explore gallery.
 
-All 142 public templates use different footage. Product Hero 360 appears in the
+All 255 public templates use different footage. Product Hero 360 appears in the
 gallery while Miniature Crew has its own template, prompt, video and poster,
 preserving distinct content as requested by the owner.
 
@@ -182,7 +183,7 @@ Every public placement remains backed by a different source clip.
 The 50-template expansion adds 40 transformation and visual-style recipes plus
 10 cinematic and trend-driven recipes to the gallery. Each one has its own
 neutral public name, adapted ten-second prompt, source-native preview crop and
-local poster. The same SHA-256 uniqueness checks cover all 142 placements.
+local poster. The same SHA-256 uniqueness checks now cover all 255 placements.
 
 The kids-birthday expansion adds 12 gallery templates in a dedicated
 `KIDS BIRTHDAY` category. The prompts are original Veyrnox adaptations of the
@@ -322,3 +323,113 @@ The original source files are kept unscaled; their 600-pixel width is a preview 
 - Northern lights journey: https://cdn.higgsfield.ai/kling_motion/90207a63-b601-4078-9932-b99ebbea82c8.mp4
 - Fairy lights: https://cdn.higgsfield.ai/kling_motion/563f6c3f-b689-407d-a75c-bbe771343e69.mp4
 - Outfit switch: https://cdn.higgsfield.ai/seedance_motion/970e676b-6a57-4dfc-b5a6-132533d9180d.mp4
+
+### Genjutsu community-trending previews (2026-10-29)
+
+These public community previews were returned by the user-supplied Genjutsu community-trending feed. Public recipes are original Veyrnox image-to-video adaptations and do not expose usernames or source-platform metadata. “Prompt” records whether the feed published community prompt text; Veyrnox does not reproduce that text verbatim. Where the feed published no prompt, the adaptation uses the public title, description and preview concept.
+
+- Cash Fan Performance — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/afea009d-6400-443d-a3bc-c727b27093e5/generation-genjutsu-h264-600-v1.mp4
+- Miniature Car Window Journey — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/956447fc-cb9c-4793-8856-0c2676bc7e67/generation-genjutsu-h264-600-v1.mp4
+- Square Character Recast — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/8569920f-1307-45fc-a9b1-a4fdedfcd534/generation-genjutsu-h264-600-v1.mp4
+- Football Showstopper — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/47472360-3fbd-417b-ba01-74c1a93e1dc0/generation-genjutsu-h264-600-v1.mp4
+- Ancient Attire Dance — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/db981a23-dd15-4128-93e0-0698db1bbaeb/generation-genjutsu-h264-600-v1.mp4
+- Costume Dance Duo — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/fb6c5f64-2b66-44a8-a22e-8134aab5d86f/generation-genjutsu-h264-600-v1.mp4
+- Cinematic Car Cast — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/1adb89f1-0242-4dc7-867b-12a9306ea12f/generation-genjutsu-h264-600-v1.mp4
+- Identity-Locked Performance — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/20ceae5f-a949-41e8-bd19-08b4fc80e2be/generation-genjutsu-h264-600-v1.mp4
+- Night Party Dancer — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/bd9d4678-a69b-4141-ba5e-87a7ce9e636d/generation-genjutsu-h264-600-v1.mp4
+- Red Room Performance — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/3a9d5c91-c68d-4ab5-8172-598d5efc57d6/generation-genjutsu-h264-600-v1.mp4
+- Miniature Car Road Trip — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/ee6bcfea-748f-48a8-98b1-c309602418a8/generation-genjutsu-h264-600-v1.mp4
+- Desert Truck Jump — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/aa0340d0-1c2a-4e7f-9b75-e93c9c626fc8/generation-genjutsu-h264-600-v1.mp4
+- Skyway Chase — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/79134f0b-0fa7-4f9d-b82b-129c1cd576ca/generation-genjutsu-h264-600-v1.mp4
+- Outdoor Duo Dance — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/e4489c3e-b828-4c50-af75-49a031fd9381/generation-genjutsu-h264-600-v1.mp4
+- Studio Rap Duo — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/f5283f3b-1880-49ce-a4d8-12d5d0fed8a7/generation-genjutsu-h264-600-v1.mp4
+- Fireball Walkaway — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/491d98de-2176-4db8-9573-78308ec37c12/generation-genjutsu-h264-600-v1.mp4
+- Football Character Recast — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/2fbda770-2968-49d7-a834-9dd3435fff49/generation-genjutsu-h264-600-v1.mp4
+- K9 Dance Groove — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/70deac90-e44f-4024-aed8-f15dcbe4e312/generation-genjutsu-h264-600-v1.mp4
+- Twilight Field Memory — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/2f6a1c9d-3ad5-4b6a-a631-1870dec8d2b3/generation-genjutsu-h264-600-v1.mp4
+- Cash Stack Flex — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/ee31efb8-07f7-4a73-925d-c701eaea07c9/generation-genjutsu-h264-600-v1.mp4
+
+The paginated continuation contributes 80 more unique previews. One repeated
+night-plaza render in the feed was excluded and replaced with Luxe Pajama
+Dance, so every public video and poster remains byte-unique:
+
+- Urban Trio Performance — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/19b84b4a-462f-4d56-af25-e121c3def049/generation-genjutsu-h264-600-v1.mp4
+- Overhead Performance — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/73336bb9-5c1f-45c4-8f10-84081019ea49/generation-genjutsu-h264-600-v1.mp4
+- Roadside Celebration — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/65bb709c-0682-4bc3-b0c1-8ba9d32db983/generation-genjutsu-h264-600-v1.mp4
+- Night Vehicle Portrait — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/ca8ccf70-bb62-4825-bde7-580aa2206ad5/generation-genjutsu-h264-600-v1.mp4
+- Ballroom Entrance — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/178da30b-6dd1-4a85-b967-19545e509012/generation-genjutsu-h264-600-v1.mp4
+- Overhead Expression — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/857a2046-5cfd-4f62-94fa-c8f2ba9730bf/generation-genjutsu-h264-600-v1.mp4
+- Street Dance Ensemble — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/f47145c5-a531-4276-addb-bffb9dea2adf/generation-genjutsu-h264-600-v1.mp4
+- Highway Drift Showcase — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/f7bc51d0-1564-467d-893a-bf5026c57dd2/generation-genjutsu-h264-600-v1.mp4
+- Luxe Pajama Dance — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/3b80001f-a3af-4a28-bb27-60b3157e851d/generation-genjutsu-h264-600-v1.mp4
+- Suit Exchange Dance — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/62e06562-b526-45b5-a0ac-d2bca6e402a9/generation-genjutsu-h264-600-v1.mp4
+- Pitch Footwork — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/77721a18-0abb-44d1-a97a-0ae3cbaa0042/generation-genjutsu-h264-600-v1.mp4
+- Survivor Memory Shift — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/d5092b1d-3dfd-4199-91e0-ea2c52f79eca/generation-genjutsu-h264-600-v1.mp4
+- Dancing Dog — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/43263091-077d-4bed-ab50-cd9883c5ae7f/generation-genjutsu-h264-600-v1.mp4
+- Cinematic Blast Walk — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/d57c5854-3e41-4c98-ab59-8e8f343d4e39/generation-genjutsu-h264-600-v1.mp4
+- Jester Pitch Run — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/99973b74-3280-43dc-b2fb-052630bfcc2e/generation-genjutsu-h264-600-v1.mp4
+- Cathedral Entrance Walk — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/d31b53eb-fb57-4d4b-914e-1db56e550d5d/generation-genjutsu-h264-600-v1.mp4
+- Suit Choir Groove — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/ab783827-2255-449e-933d-d049f45a99a1/generation-genjutsu-h264-600-v1.mp4
+- Driver Portrait — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/2689ce5d-3996-420d-9de3-f5cc923d5c59/generation-genjutsu-h264-600-v1.mp4
+- Club DJ Set — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/78ee34ec-f4b0-4efe-9d64-3227f1accdfc/generation-genjutsu-h264-600-v1.mp4
+- Biker Dog Adventure — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/7e8ec0b8-d726-47d2-9d64-c76c09f890f5/generation-genjutsu-h264-600-v1.mp4
+- Foggy Street Dance — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/83929fb9-b4c9-4ad4-b614-214adbc16e20/generation-genjutsu-h264-600-v1.mp4
+- Noir Leading Role — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/c265c06f-a9fd-4364-8692-acee37350d79/generation-genjutsu-h264-600-v1.mp4
+- Kitchen Snack Heist — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/b8dc033c-c865-4a38-8b70-b72e7eb386d1/generation-genjutsu-h264-600-v1.mp4
+- Candle Wish Drift — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/27c7cbeb-8387-4a4d-bd93-350a90cc0ede/generation-genjutsu-h264-600-v1.mp4
+- Action Hero Strut — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/2e3f53d1-a6cb-4175-a440-528d33fe8d9c/generation-genjutsu-h264-600-v1.mp4
+- Supercar Card Reveal — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/9bb44da4-63a3-4bba-8358-6a1a5e0a6eee/generation-genjutsu-h264-600-v1.mp4
+- Convertible Joyride — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/90773282-51e7-42a6-bdd7-44b9df5286f3/generation-genjutsu-h264-600-v1.mp4
+- Corporate Duo Jam — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/f5b6c36f-a717-4767-8fca-ed79e5049f58/generation-genjutsu-h264-600-v1.mp4
+- Elevator Duo Routine — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/d1cc2ce6-c75e-4a02-9119-b4445d489d13/generation-genjutsu-h264-600-v1.mp4
+- Midnight Wolf Greeting — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/54607705-84f8-4945-b49d-bceecd557589/generation-genjutsu-h264-600-v1.mp4
+- Luxury Car Exit — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/dc921178-525a-4e72-a9ad-e366cee32683/generation-genjutsu-h264-600-v1.mp4
+- Monster Street Dance — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/b6dc2ccd-361f-4f50-919d-a448fde854a5/generation-genjutsu-h264-600-v1.mp4
+- Feline Runway Duo — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/8043b847-23c4-4445-b592-d39c47823603/generation-genjutsu-h264-600-v1.mp4
+- Portrait Performance Recast — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/946a270d-01bb-454b-a11a-5142e3e7e15e/generation-genjutsu-h264-600-v1.mp4
+- Rug Outfit Morph — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/291935e1-8c1f-4578-aaec-5df30febf4f1/generation-genjutsu-h264-600-v1.mp4
+- Meadow Duo Dance — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/47dc3055-78f7-4d01-9138-420b2df04877/generation-genjutsu-h264-600-v1.mp4
+- Urban Character Portrait — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/68418e34-20cf-4569-864c-ef6a74f9488b/generation-genjutsu-h264-600-v1.mp4
+- Night Pop Trio — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/89b34768-0791-443f-99e3-1013f18ceb93/generation-genjutsu-h264-600-v1.mp4
+- Rotating Wardrobe Wipe — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/a50cfada-44d9-4b0d-b2bb-1a1da610c13d/generation-genjutsu-h264-600-v1.mp4
+- Ensemble Performance Recast — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/1ea2fe79-98c6-4098-bccb-0deddb1730cb/generation-genjutsu-h264-600-v1.mp4
+- Golden Gown Walk — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/393b4256-b07e-446d-afc0-730d0e25f61b/generation-genjutsu-h264-600-v1.mp4
+- Convertible Style Drive — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/6abc3a0e-a18c-4cd1-a77a-5995807707fd/generation-genjutsu-h264-600-v1.mp4
+- Octagon Victory — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/dfe314e9-dc63-4b81-8911-f72978fc8910/generation-genjutsu-h264-600-v1.mp4
+- Supercar Getaway — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/c670d254-ae08-4339-9187-c6121c2fb29e/generation-genjutsu-h264-600-v1.mp4
+- Truck Stop Celebration — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/0aa656a2-6001-4603-bd39-bb854ed8b98d/generation-genjutsu-h264-600-v1.mp4
+- Kitchen Duo — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/7652cf01-0859-4b1a-8ff9-f06946ec59f5/generation-genjutsu-h264-600-v1.mp4
+- Savannah Encounter — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/a8af7884-c0c9-4d31-a91f-5987a0668684/generation-genjutsu-h264-600-v1.mp4
+- Court Character Run — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/ec38b09d-cf0c-4605-80a6-9d31b58ec91d/generation-genjutsu-h264-600-v1.mp4
+- Wide Supercar Card Reveal — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/40fd0d7a-b12f-4eef-8d13-1f08ea2c2ba5/generation-genjutsu-h264-600-v1.mp4
+- Vintage Style Montage — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/2ffea383-9fa1-49d2-8c5c-4a0c528d2587/generation-genjutsu-h264-600-v1.mp4
+- Canine Recording Session — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/f4417c32-fd41-49a6-b16a-b687944a0106/generation-genjutsu-h264-600-v1.mp4
+- Streetwear Intersection — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/6f63f6d7-5db7-49a8-ab21-75505c0e94a0/generation-genjutsu-h264-600-v1.mp4
+- Stone Arcade Pose — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/b5907e42-aa45-4657-adf1-8239a160612d/generation-genjutsu-h264-600-v1.mp4
+- Star Power Trio — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/eaed1ba5-dd2f-4b75-8759-48325118dce4/generation-genjutsu-h264-600-v1.mp4
+- Balcony Club Encounter — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/3a6f97ec-5c29-4829-a089-f0ad057c4d28/generation-genjutsu-h264-600-v1.mp4
+- Masked Card Reveal — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/a925cabf-fe8d-4a6a-8d4a-0ed51fb0b5b6/generation-genjutsu-h264-600-v1.mp4
+- Street Dance Trio — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/27b87ee7-0fa7-452d-b6f7-22451e836fe8/generation-genjutsu-h264-600-v1.mp4
+- Stage Dance Routine — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/d1e71e35-5447-4864-9233-7160e54bf4bf/generation-genjutsu-h264-600-v1.mp4
+- Layered Suit Transition — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/86372cab-a487-4f65-8e7c-b8463a1fc411/generation-genjutsu-h264-600-v1.mp4
+- Giant City Stride — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/79d6c195-6ac0-4b4d-84ed-25ac09782806/generation-genjutsu-h264-600-v1.mp4
+- Dramatic Character Performance — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/60abdc96-3aaa-4e2e-96c5-93528797be44/generation-genjutsu-h264-600-v1.mp4
+- Courtside Crossover — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/ea7619a3-c1a1-4b36-ba2a-6717db0aef5f/generation-genjutsu-h264-600-v1.mp4
+- Lounge Group Performance — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/d031cc73-c4d6-430d-968a-c46707ff5154/generation-genjutsu-h264-600-v1.mp4
+- Car Selfie Performance — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/35a48b18-9143-4584-8aba-25e50cfea58b/generation-genjutsu-h264-600-v1.mp4
+- Night Celebration Drive — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/9732a8cf-772b-4a1c-aefe-408bc5822840/generation-genjutsu-h264-600-v1.mp4
+- Feline Dance Duo — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/46597a1d-ae86-4ec1-99f7-a211d7778fc4/generation-genjutsu-h264-600-v1.mp4
+- Feline Dance Solo — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/2178e0d9-0ff8-4ed6-8a5a-d92a1e3ab38d/generation-genjutsu-h264-600-v1.mp4
+- Cast Carpool — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/dcdd03d6-9ded-4651-a1c5-d4c3d4c7cd6d/generation-genjutsu-h264-600-v1.mp4
+- Liquid Truck Assembly — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/2f411508-aca9-49e2-8c6e-5d27e6d0fd95/generation-genjutsu-h264-600-v1.mp4
+- Supercar Streetwear Exit — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/0912be55-8299-48dc-b7f9-24d5540a0143/generation-genjutsu-h264-600-v1.mp4
+- Dual Character Performance — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/d26b8a7c-3d60-46b9-a36f-ccabe39b14b0/generation-genjutsu-h264-600-v1.mp4
+- Stage Performance Sync — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/b64e3a4a-888f-4c9e-8696-0ab1dc45b35a/generation-genjutsu-h264-600-v1.mp4
+- Marble Hallway Pose — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/c03f9975-8eb7-4b4c-85ca-86d319f67e4e/generation-genjutsu-h264-600-v1.mp4
+- Athletic Pose Sequence — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/994d2346-64fd-4f39-bc65-f0c2b257f640/generation-genjutsu-h264-600-v1.mp4
+- Convertible Cast Drive — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/43d9975b-8f16-4116-8bfe-756965865a90/generation-genjutsu-h264-600-v1.mp4
+- Ballroom Dance Switch — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/e6685b3c-2ed6-47b4-93e2-3bfcb39010e9/generation-genjutsu-h264-600-v1.mp4
+- Nightclub Rhythm — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/ee340393-85e5-46c4-b0e5-6b6aafc0fa4e/generation-genjutsu-h264-600-v1.mp4
+- Mansion Trio Performance — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/72a97780-550d-4f55-81cf-35586fd01f53/generation-genjutsu-h264-600-v1.mp4
+- Riverside Branch Comedy — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/fd620b90-6374-4aec-a54f-af753b30f4de/generation-genjutsu-h264-600-v1.mp4
+- Urban Street Pose — prompt: yes — https://d8j0ntlcm91z4.cloudfront.net/community-presets/690a2493-a15a-47f9-87fd-034cb76d9158/generation-genjutsu-h264-600-v1.mp4

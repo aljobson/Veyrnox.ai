@@ -11,12 +11,13 @@ import { ds } from '../theme';
 export function TemplateBanner({ template, aspect }: { template: TemplateInfo; aspect: string | null }) {
     const styles = useThemedStyles(sheets);
     return (
-        <Card style={styles.row} accessible accessibilityLabel={rawText(`${t('create.template.label')}: ${template.title}${aspect ? `. ${t('create.template.format', { aspect })}` : ''}`)}>
+        <Card style={styles.row} accessible accessibilityLabel={rawText(`${t('create.template.label')}: ${template.title}${aspect ? `. ${t('create.template.format', { aspect })}` : ''}${template.sourceAspect ? `. ${t('presets.detail.sourceAspect', { aspect: template.sourceAspect })}` : ''}`)}>
             {template.poster ? <Image source={{ uri: template.poster }} style={styles.poster} contentFit="cover" accessibilityIgnoresInvertColors /> : null}
             <View style={styles.text}>
                 <Text variant="bodyStrong" tone="secondary">{t('create.template.label')}</Text>
                 <Text variant="bodyStrong" tone="primary" style={styles.name} numberOfLines={2}>{template.title}</Text>
                 {aspect ? <Text variant="footnote" tone="tertiary" style={styles.format}>{t('create.template.format', { aspect })}</Text> : null}
+                {template.sourceAspect ? <Text variant="footnote" tone="tertiary" style={styles.format}>{t('presets.detail.sourceAspect', { aspect: template.sourceAspect })}</Text> : null}
             </View>
         </Card>
     );

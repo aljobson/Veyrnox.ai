@@ -46,16 +46,16 @@ describe('the nearest aspect a model offers', () => {
 });
 
 describe('what travels in the link, and what is read back', () => {
-    const preset = { title: 'Wild Ride', needs: 'A clear starting photo', posterUrl: 'https://veyrnox.ai/p/wild.jpg', previewAspect: '406 / 720' };
+    const preset = { title: 'Wild Ride', needs: 'A clear starting photo', sourceAspect: '9:16', posterUrl: 'https://veyrnox.ai/p/wild.jpg', previewAspect: '406 / 720' };
 
     test('a template sends its name, need, shape and picture; a bare one only its name', () => {
-        expect(templateParams(preset)).toEqual({ tpl: 'Wild Ride', tneeds: 'A clear starting photo', tratio: '406 / 720', tposter: 'https://veyrnox.ai/p/wild.jpg' });
+        expect(templateParams(preset)).toEqual({ tpl: 'Wild Ride', tneeds: 'A clear starting photo', tsource: '9:16', tratio: '406 / 720', tposter: 'https://veyrnox.ai/p/wild.jpg' });
         expect(templateParams({ title: 'T', needs: null, posterUrl: null })).toEqual({ tpl: 'T' });
     });
 
     test('what was sent reads back the same', () => {
         const read = readTemplate(templateParams(preset), HOSTS);
-        expect(read).toMatchObject({ title: 'Wild Ride', needs: 'A clear starting photo', poster: 'https://veyrnox.ai/p/wild.jpg' });
+        expect(read).toMatchObject({ title: 'Wild Ride', needs: 'A clear starting photo', sourceAspect: '9:16', poster: 'https://veyrnox.ai/p/wild.jpg' });
         expect(read?.ratio).toBeCloseTo(0.5639, 3);
     });
 
@@ -69,6 +69,7 @@ describe('what travels in the link, and what is read back', () => {
         expect(read?.title).toHaveLength(80);
         expect(read?.needs).toHaveLength(200);
         expect(readTemplate({ tpl: ['a', 'b'] }, HOSTS)).toBeNull();
+        expect(readTemplate({ tpl: 'T', tsource: '4:5' }, HOSTS)?.sourceAspect).toBeNull();
     });
 
     test('a picture only from our own host over https', () => {
@@ -80,13 +81,14 @@ describe('what travels in the link, and what is read back', () => {
 
 describe('a template tap from the feed', () => {
     const feed = {
-        presets: [{ id: 'w', title: 'Wild Ride', category: 'VFX', modelId: 'kling-3.0-i2v', modelName: 'Kling 3.0', modality: 'image-to-video', prompt: 'a car spins', needs: 'A clear photo', durationSeconds: 10, credits: 20, posterUrl: 'https://veyrnox.ai/w.jpg', previewAspect: '406 / 720' }],
+        presets: [{ id: 'w', title: 'Wild Ride', category: 'VFX', modelId: 'kling-3.0-i2v', modelName: 'Kling 3.0', modality: 'image-to-video', prompt: 'a car spins', needs: 'A clear photo', sourceAspect: '9:16', durationSeconds: 10, credits: 20, posterUrl: 'https://veyrnox.ai/w.jpg', previewAspect: '406 / 720' }],
     };
 
     test('the feed keeps the template shape, and the link carries it into Create', () => {
         const [p] = parsePresets(feed);
         expect(p.previewAspect).toBe('406 / 720');
-        expect(presetHref(p).params).toEqual({ tid: 'w', modelId: 'kling-3.0-i2v', prompt: 'a car spins', duration: '10', tpl: 'Wild Ride', tneeds: 'A clear photo', tratio: '406 / 720', tposter: 'https://veyrnox.ai/w.jpg' });
+        expect(p.sourceAspect).toBe('9:16');
+        expect(presetHref(p).params).toEqual({ tid: 'w', modelId: 'kling-3.0-i2v', prompt: 'a car spins', duration: '10', tpl: 'Wild Ride', tneeds: 'A clear photo', tsource: '9:16', tratio: '406 / 720', tposter: 'https://veyrnox.ai/w.jpg' });
     });
 });
 
@@ -97,6 +99,7 @@ describe('where it shows on Create', () => {
         expect(screen).toContain('readTemplate(');
         expect(screen).toContain('nearestAspect(template?.ratio ?? null, o.aspects)');
         expect(screen).toContain('<TemplateBanner');
+        expect(screen).toContain('tsource');
         expect(screen).toMatch(/hint=\{s\.slot === 'image' && template\?\.needs/);
     });
 });

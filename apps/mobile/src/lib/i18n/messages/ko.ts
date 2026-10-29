@@ -183,6 +183,7 @@ const ko = {
     'presets.cat.UGC': 'UGC',
     'presets.cat.ADS': '광고',
     'presets.cat.KIDS BIRTHDAY': '어린이 생일',
+    'presets.detail.sourceAspect': '시작 이미지를 {aspect}로 자르세요. 이 모델은 업로드한 이미지의 구도를 유지합니다.',
 } as const;
 
 export default ko;

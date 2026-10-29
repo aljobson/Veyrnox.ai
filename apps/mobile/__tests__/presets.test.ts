@@ -11,6 +11,7 @@ const base = {
     modality: 'image-to-video',
     prompt: 'Animate the product.',
     needs: 'A clean product image',
+    sourceAspect: '9:16',
     durationSeconds: 10,
     credits: 68,
     gated: false,
@@ -24,7 +25,7 @@ const base = {
 describe('parsePresets', () => {
     test('keeps well-formed presets and reads the price from the response', () => {
         const [p] = parsePresets({ presets: [base] });
-        expect(p).toMatchObject({ id: 'a', title: 'Product Hero', modelId: 'kling-3.0-i2v', credits: 68, durationSeconds: 10, needs: 'A clean product image', available: true });
+        expect(p).toMatchObject({ id: 'a', title: 'Product Hero', modelId: 'kling-3.0-i2v', credits: 68, durationSeconds: 10, needs: 'A clean product image', sourceAspect: '9:16', available: true });
     });
 
     test('drops gated presets, since the app does not offer those models', () => {

@@ -7,6 +7,7 @@ export interface TemplateInfo {
     readonly id: string | null;
     readonly title: string;
     readonly needs: string | null;
+    readonly sourceAspect: string | null;
     // Width over height of the template's own preview, when the server said.
     readonly ratio: number | null;
     readonly poster: string | null;
@@ -44,10 +45,11 @@ export function nearestAspect(ratio: number | null, aspects: readonly string[]):
     return best;
 }
 
-export function templateParams(p: Pick<Preset, 'title' | 'needs' | 'posterUrl'> & { readonly previewAspect?: string | null }): Record<string, string> {
+export function templateParams(p: Pick<Preset, 'title' | 'needs' | 'posterUrl'> & { readonly sourceAspect?: string | null; readonly previewAspect?: string | null }): Record<string, string> {
     return {
         tpl: p.title.slice(0, TITLE_MAX),
         ...(p.needs ? { tneeds: p.needs.slice(0, NEEDS_MAX) } : {}),
+        ...(p.sourceAspect && /^(?:1:1|9:16|16:9)$/.test(p.sourceAspect) ? { tsource: p.sourceAspect } : {}),
         ...(p.previewAspect ? { tratio: p.previewAspect } : {}),
         ...(p.posterUrl && p.posterUrl.length <= POSTER_MAX ? { tposter: p.posterUrl } : {}),
     };
@@ -77,6 +79,7 @@ export function readTemplate(params: Params, posterHosts: readonly string[]): Te
         id: typeof params.tid === 'string' && /^[a-z0-9-]{1,40}$/.test(params.tid) ? params.tid : null,
         title: title.slice(0, TITLE_MAX),
         needs: needs ? needs.slice(0, NEEDS_MAX) : null,
+        sourceAspect: typeof params.tsource === 'string' && /^(?:1:1|9:16|16:9)$/.test(params.tsource) ? params.tsource : null,
         ratio: parseRatio(params.tratio),
         poster: poster && isPosterUrl(poster, posterHosts) ? poster : null,
     };
