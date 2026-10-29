@@ -31,7 +31,7 @@ function namedModels(rows) {
 // bundled list deliberately carries fewer facts than the catalog; do not
 // invent provider capabilities just to make the fallback look richer.
 export function fallbackModels() {
-  return MODELS.map((model) => ({
+  return MODELS.filter((model) => !model.staged).map((model) => ({
     ...model,
     modality: model.kind,
     capabilities: { inputs: {}, media: {} },

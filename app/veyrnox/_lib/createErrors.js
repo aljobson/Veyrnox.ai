@@ -2,6 +2,8 @@ import { ACCOUNT_PAUSED_COPY, ACCOUNT_ON_HOLD_COPY } from './gateway';
 
 // What the create page says for each gateway error code.
 export const ERROR_COPY = {
+  source_too_short: "That video is too short. Use a clip of at least 3 seconds.",
+  source_resolution_out_of_range: "That video's size isn't supported. Use a clip between 720 and 2160 pixels on each side.",
   body_too_large: "This request is too large. Shorten the text or remove attachments, then try again. Nothing was charged.",
   references_ambiguous: "The attachment list conflicts. Clear it and add the files again. Nothing was charged.",
   references_invalid: "Some reference files could not be read. Remove them and attach them again. Nothing was charged.",

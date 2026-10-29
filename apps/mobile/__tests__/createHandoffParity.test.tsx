@@ -3,6 +3,8 @@ import * as RN from 'react-native';
 import { createRoot, type Root } from 'test-renderer';
 import Create from '../src/app/(app)/create/[modelId]';
 import { CharacterPanel } from '../src/components/CharacterPanel';
+import { SourcePicker } from '../src/components/SourcePicker';
+import { templateParams } from '../src/lib/templateHandoff';
 import { fetchCatalog, type CatalogModel } from '../src/lib/media';
 import { stageCreativeSourceHandoff } from '../src/lib/creativeSourceHandoff';
 import { buildCharacterPrompt } from '../src/lib/oddlingsBuilder';
@@ -23,7 +25,7 @@ jest.mock('../src/lib/createDraftStore', () => ({ loadDraft: jest.fn().mockResol
 jest.mock('../src/lib/generationSubmit', () => ({ ...jest.requireActual('../src/lib/generationSubmit'), createGenerationSubmit: () => ({ run: mockRun }) }));
 jest.mock('../src/components/CharacterPanel', () => ({ CharacterPanel: jest.fn(() => null) }));
 jest.mock('../src/components/CameraPanel', () => ({ CameraPanel: () => null }));
-jest.mock('../src/components/SourcePicker', () => ({ SourcePicker: () => null }));
+jest.mock('../src/components/SourcePicker', () => ({ SourcePicker: jest.fn(() => null) }));
 jest.mock('../src/components/AttachFromDevice', () => ({ AttachFromDevice: () => null }));
 void [RN.View, RN.Text, RN.TextInput, RN.Pressable];
 let root: Root;
@@ -37,6 +39,27 @@ beforeEach(() => {
 });
 afterEach(async () => { await act(async () => root.unmount()); });
 const render = async () => act(async () => root.render(<Create />));
+
+test('a reference template handoff renders video and two-picture slots with its needs on the image slot', async () => {
+    const needs = 'One video (3–10 s, at least 720p) and two reference pictures';
+    const model: CatalogModel = { ...video, id: 'kling-o1-reference', name: 'Kling O1 · Reference', capabilities: {
+        inputs: { prompt: { max: 2000 } }, media: {
+            video: { required: true, minSeconds: 3, maxSeconds: 10, minSide: 720, maxSide: 2160 },
+            image: { required: true, maxFiles: 2, label: 'Reference pictures' },
+        },
+    } };
+    mockParams = { ...mockParams, modelId: model.id, ...templateParams({ title: 'Paper Landscape', needs, posterUrl: null }) };
+    jest.mocked(fetchCatalog).mockResolvedValue([model]);
+    jest.mocked(SourcePicker).mockClear();
+    await render();
+    const props = jest.mocked(SourcePicker).mock.calls.map(([props]) => props);
+    const image = props.find(props => props.slot.slot === 'image');
+    const clip = props.find(props => props.slot.slot === 'video');
+    expect(image?.slot).toMatchObject({ required: true, maxFiles: 2, label: 'Reference pictures' });
+    expect(image?.hint).toBe(t('create.template.needs', { what: needs }));
+    expect(clip?.slot).toMatchObject({ required: true, minSeconds: 3, maxSeconds: 10, minSide: 720, maxSide: 2160 });
+    expect(clip?.hint).toBeUndefined();
+});
 function handoff(extra: object, recipe = 'faceless-reel') {
     mockParams.recipe = recipe;
     mockParams.sourceHandoff = stageCreativeSourceHandoff({ recipe, modelId: mockParams.modelId, uploaded: {}, fromLibrary: {}, ...extra });

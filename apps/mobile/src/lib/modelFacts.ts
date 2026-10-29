@@ -16,6 +16,8 @@ const MODES: Record<string, string> = {
 const MEDIA: Record<string, string> = { image: 'model.media.image', video: 'model.media.video', audio: 'model.media.audio' };
 
 export function sourceDurationLimit(model: CatalogModel): number | null {
+    // Selectable output lengths take precedence over the input clip limit.
+    if ((model?.durations?.length || 0) > 1) return null;
     const presentation = model.capabilities?.presentation;
     if (presentation?.fixedDurationLabel || Object.keys(presentation?.durationByOption ?? {}).length) return null;
     const media = model.capabilities?.media;

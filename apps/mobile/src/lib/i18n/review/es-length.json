@@ -3052,5 +3052,11 @@
     "english": "Ads",
     "translation": "Anuncios",
     "ratio": 2.67
+  },
+  {
+    "id": "label.End frame",
+    "english": "End frame",
+    "translation": "Fotograma final",
+    "ratio": 1.67
   }
 ]

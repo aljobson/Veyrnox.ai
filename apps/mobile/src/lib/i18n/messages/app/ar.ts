@@ -1,6 +1,8 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "sourceLimits.tooShort": "هذا الفيديو قصير جداً لهذا النموذج. اختر مقطعاً ضمن نطاق المدة المعروض.",
+  "sourceLimits.resolution": "دقة هذا الملف خارج حدود النموذج. اختر ملفاً ضمن نطاق الأبعاد المعروض.",
   "faceFilterSwitch.current": "الفلتر: {name}",
   "faceFilterSwitch.change": "تغيير",
   "faceFilterSwitch.changeLabel": "تغيير الفلتر، الحالي: {name}",

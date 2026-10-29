@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { modelPriceUnit, creditLabel, generationCostLabel } from '../app/veyrnox/_lib/modelPricing.js';
+import { modelPriceUnit, sourceDurationLimit, creditLabel, generationCostLabel } from '../app/veyrnox/_lib/modelPricing.js';
 import { findModel, modelFacts, shelfModels } from '../app/veyrnox/_lib/modelPages.js';
 import { toPublicModels } from '../lib/publicCatalog.js';
 import { REGISTRY } from '../lib/modelCapabilities.js';
@@ -10,6 +10,35 @@ import { MODELS } from '../app/veyrnox/_lib/tokens.js';
 const catalogModel = (endpoint, modality) => shelfModels(toPublicModels([
   { id: 'test', name: 'Test', provider_endpoint: endpoint, modality, credits_5s: 1 },
 ]))[0];
+
+test('Kling O1 selectable output lengths override source limits in live and static facts', () => {
+  const live = catalogModel('fal-ai/kling-video/o1/video-to-video/reference', 'video-to-video');
+  assert.deepEqual(live.durations, [5, 10]);
+  assert.deepEqual(live.capabilities.presentation.durationByOption, { 5: '5', 10: '10' });
+  const bundled = MODELS.find(model => model.id === 'kling-o1-reference');
+  for (const model of [live, bundled]) {
+    assert.equal(sourceDurationLimit(model), null);
+    assert.equal(modelPriceUnit(model), 'per 5 s clip; 10 s costs double.');
+    assert.ok(modelFacts({ ...model, kind: 'video' }).some(fact => fact.label === 'Clip lengths' && fact.value === '5 s, 10 s'));
+  }
+});
+
+test('existing source-driven and fixed MMAudio output contracts remain unchanged', () => {
+  for (const [endpoint, max] of [
+    ['fal-ai/latentsync', 40], ['fal-ai/topaz/upscale/video', 10], ['fal-ai/kling-video/ai-avatar/v2/standard', 10],
+  ]) {
+    const model = catalogModel(endpoint, 'video-to-video');
+    assert.deepEqual(model.durations, [5]);
+    assert.equal(sourceDurationLimit(model), max);
+    assert.equal(modelPriceUnit(model), `per generation (source up to ${max} s).`);
+    assert.ok(modelFacts(model).some(fact => fact.label === 'Clip lengths' && fact.value === `Follows source duration (up to ${max} s)`));
+  }
+  const mmaudio = catalogModel('fal-ai/mmaudio-v2', 'video-to-video');
+  assert.equal(sourceDurationLimit(mmaudio), null);
+  assert.equal(modelPriceUnit(mmaudio), 'per 8 s clip.');
+  assert.ok(modelFacts(mmaudio).some(fact => fact.label === 'Clip lengths' && fact.value === '8 s'));
+  assert.equal(sourceDurationLimit({ ...mmaudio, capabilities: { media: mmaudio.capabilities.media } }), 8);
+});
 
 test('video price units describe the output bought by the base credit price', () => {
   assert.equal(modelPriceUnit(catalogModel('veo:veo3_lite', 'text-to-video')), 'per 8 s clip.');
