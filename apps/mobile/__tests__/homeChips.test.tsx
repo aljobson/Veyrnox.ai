@@ -81,3 +81,13 @@ test('category toggle and search still work with popular filtering', async () =>
     await click(t('presets.cat.POPULAR'));
     expect(control(t('presets.cat.NEW'))).toBeUndefined();
 });
+test('Home shows 50 templates at a time and Show more adds the next 50', async () => {
+    const many = parsePresets({ presets: Array.from({ length: 120 }, (_, i) => ({ id: `tpl-${i}`, title: `Template ${i}`, modality: 'text-to-image', isNew: false, category: 'CINEMATIC', modelId: 'model', modelName: 'Model', prompt: 'p', credits: 3 })) });
+    mockFetch.mockResolvedValue(many); mockPopular.mockResolvedValue([]);
+    await render();
+    const count = () => buttons().filter(n => /^Template \d+,/.test(String(n.props.accessibilityLabel))).length;
+    expect(count()).toBe(50);
+    await click(t('libraryCreate.showMore')); expect(count()).toBe(100);
+    await click(t('libraryCreate.showMore')); expect(count()).toBe(120);
+    expect(control(t('libraryCreate.showMore'))).toBeUndefined();
+});

@@ -31,7 +31,8 @@ import { OddlingsBanner } from '../../../components/home/OddlingsBanner';
 import { VeyLoader } from '../../../components/VeyLoader';
 
 // How many templates the home shows; the rest are on the Templates screen.
-const SHOWN = 24;
+// Templates shown at once on Home; Show more adds the next page (the gallery behind See all pages the same way).
+const PAGE = 50;
 // The type chips are always all four, so an empty type can say it is coming soon instead of vanishing.
 const TYPES: readonly TypeFilter[] = [ALL_TYPES, 'image', 'video', 'audio'];
 const RECENT = 6;
@@ -153,7 +154,10 @@ export default function Explore() {
 
     const typedPresets = useMemo(() => filterPresets(presets ?? [], { type, category: ALL_CATEGORIES, query: '' }), [presets, type]);
     const categories = useMemo(() => templateChips(typedPresets, popularIds), [typedPresets, popularIds]);
-    const shown = useMemo(() => rankPresets(filterPresets(templatesFor(typedPresets, category, popularIds), { type, category: ALL_CATEGORIES, query }), vibe).slice(0, SHOWN), [typedPresets, type, category, popularIds, query, vibe]);
+    const [limit, setLimit] = useState(PAGE);
+    const matching = useMemo(() => rankPresets(filterPresets(templatesFor(typedPresets, category, popularIds), { type, category: ALL_CATEGORIES, query }), vibe), [typedPresets, type, category, popularIds, query, vibe]);
+    useEffect(() => setLimit(PAGE), [type, category, query]);
+    const shown = useMemo(() => matching.slice(0, limit), [matching, limit]);
     const modelCount = useMemo(() => new Set((presets ?? []).map((preset) => preset.modelId)).size, [presets]);
 
     function pickType(next: TypeFilter) {
@@ -322,6 +326,9 @@ export default function Explore() {
                                 ))}
                             </View>
                         )}
+                        {matching.length > shown.length ? (
+                            <Button variant="secondary" label={t('libraryCreate.showMore')} onPress={() => setLimit((n) => n + PAGE)} />
+                        ) : null}
                     </>
                 )}
 
