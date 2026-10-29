@@ -1185,6 +1185,7 @@ export default {
   "commerce.was": "旧価格 {price}",
   "common.back": "戻る",
   "common.close": "閉じる",
+  "common.loading": "読み込み中",
   "common.comingToApp": "この機能はアプリ向けに準備中です。",
   "common.error": "問題が発生しました。もう一度お試しください。",
   "compose.donePosted": "投稿中です。ステータスは下に表示されます。",

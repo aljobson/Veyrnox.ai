@@ -3,7 +3,7 @@ import { CheckInEntry } from '../../../components/credits/CheckInEntry';
 import { Link, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { type ComponentRef, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { ActivityIndicator, ScrollView, TextInput, View } from 'react-native';
+import { ScrollView, TextInput, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { celebrateFinished } from '../../../lib/celebrate';
 import { ALL_CATEGORIES, ALL_TYPES, filterPresets, firstModelFor, pickUp, promptHref, recentCreations, type TypeFilter } from '../../../lib/explore';
@@ -28,6 +28,7 @@ import { StartOption } from '../../../components/home/StartOption';
 import { EntryRow } from '../../../components/home/EntryRow';
 import { PresetCard } from '../../../components/home/PresetCard';
 import { OddlingsBanner } from '../../../components/home/OddlingsBanner';
+import { VeyLoader } from '../../../components/VeyLoader';
 
 // How many templates the home shows; the rest are on the Templates screen.
 const SHOWN = 24;
@@ -268,7 +269,7 @@ export default function Explore() {
                 {presetsFailed ? (
                     <Button variant="tertiary" label={t('explore.templatesError')} onPress={loadPresets} />
                 ) : presets === null ? (
-                    <ActivityIndicator color={colors.accent} />
+                    <VeyLoader />
                 ) : (
                     <>
                         {searchShown ? (

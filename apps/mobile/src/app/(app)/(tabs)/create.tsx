@@ -7,8 +7,9 @@ import { Text, Card, Chip, Icon, ListRow, SegmentedControl, themedStyles, useThe
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, View, useWindowDimensions } from 'react-native';
+import { FlatList, View, useWindowDimensions } from 'react-native';
 import { FreeAllowanceCard } from '../../../components/FreeAllowanceCard';
+import { VeyLoader } from '../../../components/VeyLoader';
 import { fetchCatalogCached, kindOf, type CatalogModel } from '../../../lib/media';
 import { fetchPremiumModels } from '../../../lib/premiumModels';
 import { GOALS, TIERS, filterByTier, freeLeftFor, modelsForGoal, type Goal, type Tier } from '../../../lib/createOptions';
@@ -68,7 +69,7 @@ export default function Create() {
             {failed ? (
                 <View style={styles.body}><Text variant="body" tone="danger" style={styles.error}>{t('create.loadError')}</Text></View>
             ) : models === null ? (
-                <ActivityIndicator color={styles.accentInk.color} />
+                <VeyLoader />
             ) : (
                 <FlatList
                     contentContainerStyle={styles.list}

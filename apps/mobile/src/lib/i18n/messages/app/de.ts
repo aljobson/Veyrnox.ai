@@ -1207,6 +1207,7 @@ export default {
   "commerce.was": "vorher {price}",
   "common.back": "Zurück",
   "common.close": "Schließen",
+  "common.loading": "Laden",
   "common.comingToApp": "Diese Funktion kommt in die App.",
   "common.error": "Etwas ist schiefgelaufen. Versuche es erneut.",
   "compose.donePosted": "Wird jetzt veröffentlicht. Der Status erscheint unten.",

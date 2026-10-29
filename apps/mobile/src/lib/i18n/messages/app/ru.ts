@@ -1251,6 +1251,7 @@ export default {
   "commerce.was": "было {price}",
   "common.back": "Назад",
   "common.close": "Закрыть",
+  "common.loading": "Загрузка",
   "common.comingToApp": "Эта функция скоро появится в приложении.",
   "common.error": "Что-то пошло не так. Повторите попытку.",
   "compose.donePosted": "Публикуется. Статус показан ниже.",

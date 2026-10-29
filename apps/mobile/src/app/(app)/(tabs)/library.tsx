@@ -6,7 +6,7 @@ import { applyStatus, inFlightIds, mergePage } from '../../../lib/libraryPoll';
 import { Text, Button, Chip, themedStyles, useThemedStyles } from '../../../components/ui';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, AppState, FlatList, ScrollView, View } from 'react-native';
+import { AppState, FlatList, ScrollView, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { LibraryItem } from '../../../components/LibraryItem';
 import { StaleNote } from '../../../components/StaleNote';
@@ -21,6 +21,7 @@ import { ds, LIST_END_PADDING } from '../../../theme';
 import { t } from '../../../lib/i18n';
 
 import { EmptyState } from '../../../components/EmptyState';
+import { VeyLoader } from '../../../components/VeyLoader';
 
 export default function Library() {
     const styles = useThemedStyles(sheets);
@@ -212,7 +213,7 @@ export default function Library() {
                     <Button variant="tertiary" accessibilityRole="button" accessibilityLabel={t('library.loadError')} onPress={load} label={t('recovery.retry')} />
                 </View>
             ) : jobs === null ? (
-                <ActivityIndicator color={styles.accentInk.color} />
+                <VeyLoader />
             ) : (
                 <FlatList
                     contentContainerStyle={styles.list}
