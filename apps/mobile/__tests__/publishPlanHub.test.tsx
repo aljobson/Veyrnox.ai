@@ -8,7 +8,7 @@ const mockBaseRequest = jest.fn(), mockBrandRequest = jest.fn();
 const mockBaseApi = { request: mockBaseRequest }, mockApi = { request: mockBrandRequest };
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockBaseApi }) }));
 jest.mock('../src/lib/usePublishApi', () => ({ usePublishApi: () => mockApi }));
-jest.mock('../src/billing/BillingProvider', () => ({ useBilling: () => ({ status: 'ready', publishActive: false, offerings: null, canPurchase: false }) }));
+jest.mock('../src/billing/BillingProvider', () => ({ useBilling: () => ({ status: 'ready', publishActive: false, offerings: null, canPurchase: false, canRestore: true, refreshSales: jest.fn() }) }));
 jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () => ({ push: jest.fn() }), useFocusEffect: (fn: () => void) => require('react').useEffect(fn, [fn]) }));
 jest.mock('expo-image', () => ({ Image: () => null }));
 jest.mock('../src/components/VeyCardPeek', () => ({ VeyCardPeek: () => null, peekRoom: () => ({}) }));

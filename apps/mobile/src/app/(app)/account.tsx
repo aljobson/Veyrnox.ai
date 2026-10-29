@@ -31,7 +31,8 @@ export default function Account() {
     const push = usePush();
     const [pushNote, setPushNote] = useState<string | null>(null);
     const router = useRouter();
-    const { status: billing, offerings, canPurchase, paidAccess, activeProductIds, managementURL, purchaseStayOffer, restore } = useBilling();
+    const { status: billing, offerings, canPurchase, canRestore, paidAccess, activeProductIds, managementURL, purchaseStayOffer, restore, refreshSales } = useBilling();
+    useFocusEffect(useCallback(() => { void refreshSales(); }, [refreshSales]));
     const [restoreNote, setRestoreNote] = useState<string | null>(null);
     const [stayBusy, setStayBusy] = useState(false);
     const [stayNote, setStayNote] = useState<string | null>(null);
@@ -144,8 +145,8 @@ export default function Account() {
 
             {billing !== 'off' ? (
                 <Section title={t('account.purchases')}>
-                    <Row icon="coins" label={t('account.restore')} onPress={onRestore} disabled={!canPurchase} />
-                    {paidAccess && stayDiscount ? <Row icon="heart" price={stayDiscount.priceString} label={t('account.stay', { price: stayDiscount.priceString, cycles: stayDiscount.cycles })} onPress={() => void onStay()} disabled={stayBusy} /> : null}
+                    <Row icon="coins" label={t('account.restore')} onPress={onRestore} disabled={!canRestore} />
+                    {paidAccess && stayDiscount ? <Row icon="heart" price={stayDiscount.priceString} label={t('account.stay', { price: stayDiscount.priceString, cycles: stayDiscount.cycles })} onPress={() => void onStay()} disabled={stayBusy || !canPurchase} /> : null}
                     {paidAccess && managementURL ? <Row icon="wrench" label={t('account.manageSubscription')} onPress={() => void Linking.openURL(managementURL)} /> : null}
                     {restoreNote ? <Text variant="footnote" style={styles.note}>{restoreNote}</Text> : null}
                     {stayNote ? <Text variant="footnote" style={styles.note} accessibilityLiveRegion="polite">{stayNote}</Text> : null}

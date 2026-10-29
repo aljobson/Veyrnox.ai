@@ -1,7 +1,7 @@
 import { isAccountChanged, type SessionTask } from '../auth/sessionTask';
 import { captureEvent } from '../lib/analytics/events';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import Purchases, { type CustomerInfo, type PurchasesOfferings, type PurchasesPackage } from 'react-native-purchases';
 import { useAuth } from '../auth/AuthProvider';
 import { ApiError } from '../lib/api';
@@ -24,6 +24,9 @@ interface BillingValue {
     // True once this signed-in account's secret customer id is set; until then buying is refused,
     // because a purchase under an anonymous id could never be credited.
     readonly canPurchase: boolean;
+    readonly canRestore: boolean;
+    readonly salesOpen: boolean;
+    refreshSales(): Promise<boolean>;
     readonly publishActive: boolean;
     readonly generationActive: boolean;
     readonly generationAccessResolved: boolean;
@@ -43,7 +46,7 @@ interface BillingValue {
 }
 
 const BillingContext = createContext<BillingValue>({
-    status: 'off', offerings: null, canPurchase: false, publishActive: false, generationActive: false, generationAccessResolved: false, generationPurchaseReady: false,
+    status: 'off', offerings: null, canPurchase: false, canRestore: false, salesOpen: false, refreshSales: async () => false, publishActive: false, generationActive: false, generationAccessResolved: false, generationPurchaseReady: false,
     paidAccess: false, accessResolved: false, activeProductIds: [], managementURL: null, debug: null,
     purchase: async () => 'cancelled', purchaseStayOffer: async () => 'cancelled', restore: async () => false, refreshGenerationAccess: async () => false,
 });
@@ -53,10 +56,10 @@ export const useBilling = () => useContext(BillingContext);
 const isPublishActive = (info: CustomerInfo) => Boolean(info.entitlements.active.publish);
 const isGenerationActive = (info: CustomerInfo) => Boolean(info.entitlements.active.generation);
 
-const emptyStore = (gen: number) => ({ gen, canPurchase: false, publishActive: false, generationActive: false,
+const emptyStore = (gen: number) => ({ gen, canRestore: false, publishActive: false, generationActive: false,
     productIds: [] as readonly string[], managementURL: null as string | null, resolved: false });
 const emptyServer = (gen: number) => ({ gen, resolved: false, publishActive: false, generationActive: false, generationResolved: false });
-const storeInfo = (gen: number, info: CustomerInfo) => ({ gen, canPurchase: true, publishActive: isPublishActive(info),
+const storeInfo = (gen: number, info: CustomerInfo) => ({ gen, canRestore: true, publishActive: isPublishActive(info),
     generationActive: isGenerationActive(info), productIds: info.activeSubscriptions, managementURL: info.managementURL, resolved: true });
 
 export function BillingProvider({ children }: { children: ReactNode }) {
@@ -67,7 +70,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
     const [server, setServer] = useState(() => emptyServer(-1));
     const currentStore = store.gen === generation ? store : emptyStore(generation);
     const currentServer = server.gen === generation ? server : emptyServer(generation);
-    const { canPurchase, publishActive, generationActive, productIds: activeProductIds, managementURL, resolved: accessResolved } = currentStore;
+    const { canRestore: storeReady, publishActive, generationActive, productIds: activeProductIds, managementURL, resolved: accessResolved } = currentStore;
     const { publishActive: serverPublishActive, generationActive: serverGenerationActive,
         generationResolved: serverGenerationResolved, resolved: serverAccessResolved } = currentServer;
     const [debug, setDebug] = useState<string | null>(null);
@@ -75,6 +78,48 @@ export function BillingProvider({ children }: { children: ReactNode }) {
     const loggedIn = useRef(false);
     const bound = useRef<{ gen: number } | null>(null);
     const identityChain = useRef(Promise.resolve());
+    const [sales, setSales] = useState({ gen: -1, open: false });
+    const salesRead = useRef(0);
+    const salesOpen = sales.gen === generation && sales.open;
+    const canRestore = authStatus === 'signedIn' && storeReady;
+    const canPurchase = canRestore && salesOpen;
+
+    const readCustomer = useCallback(async (task: SessionTask) => {
+        const read = ++salesRead.current;
+        try {
+            const customer = await api.request<{ rc_customer_id: string; sales_open?: boolean }>(
+                '/api/v1/store-purchases/customer', { cache: 'no-store' }, { task });
+            if (!task.current()) throw new Error('sales_closed');
+            if (read === salesRead.current) setSales({ gen: task.gen, open: customer.sales_open === true });
+            return customer;
+        } catch (error) {
+            if (task.current() && read === salesRead.current) setSales({ gen: task.gen, open: false });
+            throw error;
+        }
+    }, [api]);
+
+    const refreshSales = useCallback(async () => {
+        const task = beginSessionTask();
+        if (!ENABLED || !API_KEY || authStatus !== 'signedIn' || !task.current()) return false;
+        try { return (await readCustomer(task)).sales_open === true; }
+        catch { return false; }
+    }, [authStatus, beginSessionTask, readCustomer]);
+
+    const ensureSalesOpen = useCallback(async (task: SessionTask) => {
+        try {
+            const customer = await readCustomer(task);
+            if (task.current() && bound.current?.gen === task.gen && customer.sales_open === true) return;
+        } catch { /* A failed fresh read must close sales, even if the cached state was open. */ }
+        throw new Error('sales_closed');
+    }, [readCustomer]);
+
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', state => {
+            if (state === 'active') void refreshSales();
+        });
+        return () => subscription.remove();
+    }, [refreshSales]);
+
 
     const refreshGenerationAccess = useCallback(async (task: SessionTask = beginSessionTask()): Promise<boolean> => {
         if (!task.current()) return false;
@@ -116,11 +161,17 @@ export function BillingProvider({ children }: { children: ReactNode }) {
                 }
                 const all = await Purchases.getOfferings();
                 if (!cancelled) {
-                    setOfferings(all);
+                    // Some stores return packages before their products are available.
+                    const clean = (offering: NonNullable<PurchasesOfferings['current']>) => ({
+                        ...offering, availablePackages: offering.availablePackages.filter(pkg => pkg?.product),
+                    });
+                    setOfferings({ ...all, current: all.current ? clean(all.current) : null,
+                        all: Object.fromEntries(Object.entries(all.all).map(([id, offering]) => [id, clean(offering)])) });
                     setStatus('ready');
                 }
             } catch (err) {
                 if (!cancelled) {
+                    setOfferings(null);
                     setStatus('unavailable');
                     if (__DEV__) setDebug(String((err as Error)?.message ?? err));
                 }
@@ -145,7 +196,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             });
         };
         if (authStatus === 'signedIn') {
-            void api.request<{ rc_customer_id: string }>('/api/v1/store-purchases/customer', {}, { task }).then(({ rc_customer_id }) => {
+            void readCustomer(task).then(({ rc_customer_id }) => {
                 if (!live()) return;
                 enqueue(async () => {
                     if (!live()) return;
@@ -173,7 +224,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             });
         }
         return () => { cancelled = true; };
-    }, [authStatus, api, status, generation, beginSessionTask]);
+    }, [authStatus, readCustomer, status, generation, beginSessionTask]);
 
     // Website and other-store access is owned by the same rendered generation.
     useEffect(() => {
@@ -203,7 +254,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
 
     const purchase = useCallback(async (pkg: PurchasesPackage): Promise<PurchaseResult> => {
         const task = beginSessionTask();
-        if (!canPurchase || bound.current?.gen !== task.gen) throw new Error('billing_not_ready');
+        if (!canRestore || bound.current?.gen !== task.gen) throw new Error('billing_not_ready');
         if (generationPlanFor(pkg.product.identifier) !== null && (generationActive || await refreshGenerationAccess(task))) {
             if (!task.current()) return 'cancelled';
             throw new Error('generation_already_active');
@@ -213,6 +264,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         captureEvent('purchase_started', { product });
         let purchased = false;
         try {
+            await ensureSalesOpen(task);
             const result = await Purchases.purchasePackage(pkg);
             purchased = true;
             if (!task.current()) return 'purchased';
@@ -225,11 +277,11 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             if ((err as { userCancelled?: boolean }).userCancelled) return 'cancelled';
             throw err;
         }
-    }, [canPurchase, generationActive, refreshGenerationAccess, beginSessionTask]);
+    }, [canRestore, ensureSalesOpen, generationActive, refreshGenerationAccess, beginSessionTask]);
 
     const purchaseStayOffer = useCallback(async (pkg: PurchasesPackage): Promise<PurchaseResult> => {
         const task = beginSessionTask();
-        if (!canPurchase || bound.current?.gen !== task.gen) throw new Error('billing_not_ready');
+        if (!canRestore || bound.current?.gen !== task.gen) throw new Error('billing_not_ready');
         if (!stayDiscountFor(pkg)) throw new Error('stay_offer_unavailable');
         const product = 'subscription';
         const discount = pkg.product.discounts?.find((item) => item.identifier === 'stay15');
@@ -239,6 +291,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             if (!task.current()) return 'cancelled';
             if (!offer) throw new Error('stay_offer_ineligible');
             captureEvent('purchase_started', { product });
+            await ensureSalesOpen(task);
             const { customerInfo } = await Purchases.purchaseDiscountedPackage(pkg, offer);
             if (!task.current()) return 'purchased';
             setStore(storeInfo(task.gen, customerInfo));
@@ -249,16 +302,16 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             if ((err as { userCancelled?: boolean }).userCancelled) return 'cancelled';
             throw err;
         }
-    }, [canPurchase, beginSessionTask]);
+    }, [canRestore, ensureSalesOpen, beginSessionTask]);
 
     const restore = useCallback(async () => {
         const task = beginSessionTask();
-        if (!canPurchase || bound.current?.gen !== task.gen) throw new Error('billing_not_ready');
+        if (!canRestore || bound.current?.gen !== task.gen) throw new Error('billing_not_ready');
         const info = await Purchases.restorePurchases();
         if (!task.current()) return false;
         setStore(storeInfo(task.gen, info));
         return Object.keys(info.entitlements.active).length > 0 || info.activeSubscriptions.length > 0;
-    }, [canPurchase, beginSessionTask]);
+    }, [canRestore, beginSessionTask]);
 
     const publishEntitled = publishActive || serverPublishActive;
     const generationEntitled = generationActive || serverGenerationActive;
@@ -267,8 +320,8 @@ export function BillingProvider({ children }: { children: ReactNode }) {
     const paidAccessResolved = accessResolved || serverAccessResolved;
 
     const value = useMemo(
-        () => ({ status, offerings, canPurchase, publishActive: publishEntitled, generationActive: generationEntitled, generationAccessResolved: serverGenerationResolved, generationPurchaseReady, paidAccess, accessResolved: paidAccessResolved, activeProductIds, managementURL, debug, purchase, purchaseStayOffer, restore, refreshGenerationAccess }),
-        [status, offerings, canPurchase, publishEntitled, generationEntitled, serverGenerationResolved, generationPurchaseReady, paidAccess, paidAccessResolved, activeProductIds, managementURL, debug, purchase, purchaseStayOffer, restore, refreshGenerationAccess],
+        () => ({ status, offerings, canPurchase, canRestore, salesOpen, refreshSales, publishActive: publishEntitled, generationActive: generationEntitled, generationAccessResolved: serverGenerationResolved, generationPurchaseReady, paidAccess, accessResolved: paidAccessResolved, activeProductIds, managementURL, debug, purchase, purchaseStayOffer, restore, refreshGenerationAccess }),
+        [status, offerings, canPurchase, canRestore, salesOpen, refreshSales, publishEntitled, generationEntitled, serverGenerationResolved, generationPurchaseReady, paidAccess, paidAccessResolved, activeProductIds, managementURL, debug, purchase, purchaseStayOffer, restore, refreshGenerationAccess],
     );
     return <BillingContext.Provider value={value}>{children}</BillingContext.Provider>;
 }

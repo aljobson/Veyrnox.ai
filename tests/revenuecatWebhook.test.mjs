@@ -65,6 +65,7 @@ beforeEach(() => {
         SUPABASE_URL: 'https://db.test', SUPABASE_SERVICE_ROLE_KEY: 'srk', STORE_BILLING_ENABLED: 'true', REVENUECAT_WEBHOOK_SECRET: SECRET,
     });
     delete process.env.STORE_BILLING_ALLOW_SANDBOX;
+    delete process.env.STORE_SALES_ENABLED;
     globalThis.fetch = async (url, init = {}) => {
         const u = new URL(String(url));
         const name = u.pathname.startsWith('/rest/v1/rpc/') ? u.pathname.slice('/rest/v1/rpc/'.length) : u.pathname.slice('/rest/v1/'.length);
@@ -184,7 +185,7 @@ test('the customer id route is off, authenticated, and returns only the caller\'
     assert.equal((await get({ 'x-veyrnox-auth-id': 'not-a-uuid' })).status, 401);
     handlers.get_or_create_store_customer = json({ ok: true, rc_customer_id: CUSTOMER });
     const res = await get({ 'x-veyrnox-auth-id': '11111111-1111-4111-8111-111111111111' });
-    assert.deepEqual(await res.json(), { rc_customer_id: CUSTOMER });
+    assert.deepEqual(await res.json(), { rc_customer_id: CUSTOMER, sales_open: false });
     assert.equal(res.headers.get('cache-control'), 'no-store');
     assert.deepEqual(rpcCalls('get_or_create_store_customer')[0].body, { p_auth_id: '11111111-1111-4111-8111-111111111111' });
 });
@@ -280,4 +281,17 @@ test('tries the original customer id when the current one is unknown, for subscr
     handlers.apply_store_publish_event = () => json(n++ === 0 ? { ok: false, code: 'CUSTOMER_NOT_FOUND' } : { ok: true })();
     assert.equal((await send(sub('RENEWAL', { app_user_id: other }))).status, 200);
     assert.deepEqual(rpcCalls('apply_store_publish_event').map((c) => c.body.p_rc_customer_id), [other, CUSTOMER]);
+});
+
+test('customer route remains 200 with sales open or closed, independent of recording', async () => {
+    handlers.get_or_create_store_customer = json({ ok: true, rc_customer_id: CUSTOMER });
+    for (const value of ['true', 'false', '']) {
+        process.env.STORE_SALES_ENABLED = value;
+        const res = await customerGet(new Request('https://x.test/api/v1/store-purchases/customer', {
+            headers: { 'x-veyrnox-auth-id': '11111111-1111-4111-8111-111111111111' },
+        }));
+        assert.equal(res.status, 200);
+        assert.equal(res.headers.get('cache-control'), 'no-store');
+        assert.deepEqual(await res.json(), { rc_customer_id: CUSTOMER, sales_open: value === 'true' });
+    }
 });

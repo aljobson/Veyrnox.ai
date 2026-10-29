@@ -115,7 +115,7 @@ beforeEach(() => {
     jest.mocked(Notifications.getExpoPushTokenAsync).mockReset().mockResolvedValueOnce({ data: 'ExpoPushToken[A]', type: 'expo' }).mockResolvedValue({ data: 'ExpoPushToken[B]', type: 'expo' });
     send.mockImplementation(async (url: string, init: RequestInit) => {
         const a = (init.headers as any).Authorization === `Bearer ${jwt('A')}`;
-        if (url.includes('/store-purchases/customer')) return response(200, { rc_customer_id: a ? 'rc-A' : 'rc-B' });
+        if (url.includes('/store-purchases/customer')) return response(200, { rc_customer_id: a ? 'rc-A' : 'rc-B', sales_open: true });
         if (url.includes('/subscriptions')) return response(200, { subscription: a ? { status: 'active' } : null });
         if (url.includes('/social/plan')) return response(200, { entitlement: { tier: a ? 'publish' : 'free' } });
         return response(200, { notify_jobs: true, factors: [] });

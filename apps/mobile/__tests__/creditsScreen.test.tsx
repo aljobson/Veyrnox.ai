@@ -18,7 +18,7 @@ const mockApi = { getBalance: jest.fn(async () => mockBalance), request: jest.fn
     if (path === '/api/v1/subscriptions') return { subscription: mockRow };
     return { plans: [{ id: 'starter-monthly', credits: 200 }, { id: 'starter-yearly', credits: 200 }] };
 }) };
-const mockBilling = { status: 'ready', canPurchase: true, generationActive: false, generationAccessResolved: true, generationPurchaseReady: true,
+const mockBilling = { status: 'ready', canPurchase: true, canRestore: true, refreshSales: jest.fn(), generationActive: false, generationAccessResolved: true, generationPurchaseReady: true,
     activeProductIds: [] as string[], managementURL: null, offerings: { all: { generation: { availablePackages: [monthly, annual] }, credits: { availablePackages: [pkg('pack', 'ai.veyrnox.credits.100', 10), pkg('large', 'ai.veyrnox.credits.1000', 70)] } } },
     purchase: jest.fn(), restore: jest.fn(), refreshGenerationAccess: jest.fn(),
 };
@@ -46,6 +46,8 @@ beforeEach(async () => {
     await wipeCache(); await bindCacheUser(`credits-${++serial}`); root = createRoot();
     mockRow = null; mockBalance = { balance: 1234, free_credits: 20, free_expires_at: '2026-11-01T00:00:00Z' };
     mockApi.getBalance.mockReset().mockImplementation(async () => mockBalance); mockApi.request.mockClear(); mockPost.mockReset();
+    mockBilling.status = 'ready'; mockBilling.canPurchase = true; mockBilling.canRestore = true; mockBilling.refreshSales.mockClear();
+    mockBilling.offerings = { all: { generation: { availablePackages: [monthly, annual] }, credits: { availablePackages: [pkg('pack', 'ai.veyrnox.credits.100', 10), pkg('large', 'ai.veyrnox.credits.1000', 70)] } } };
     mockBilling.generationActive = false; mockBilling.activeProductIds = []; mockBilling.offerings.all.generation.availablePackages = [monthly, annual];
     mockBilling.purchase.mockReset().mockResolvedValue('purchased'); mockBilling.restore.mockReset().mockResolvedValue(undefined); mockBilling.refreshGenerationAccess.mockReset().mockResolvedValue(false);
 });
@@ -207,4 +209,20 @@ test.each([true, false])('cached {} never reaches BalanceCard; refresh succeeds=
     expect(text()).not.toContain('NaN');
     if (succeeds) expect(text()).toContain('1,234');
     else { expect(text()).toContain('—'); expect(text()).toContain(t('creditsPage.balanceUnavailable')); }
+});
+
+test('closed sales retain Restore and still refresh sales on focus', async () => {
+    mockBilling.canPurchase = false; await mount();
+    expect(mockBilling.refreshSales).toHaveBeenCalled();
+    expect(controls(t('credits.restore'))[0].props.accessibilityState.disabled).toBe(false);
+    await press(t('credits.restore')); expect(mockBilling.restore).toHaveBeenCalled();
+});
+test.each(['missing', 'null-products', 'error'])('catalog %s shows unavailable copy without fallback prices', async kind => {
+    mockBilling.offerings = (kind === 'missing' ? { current: null, all: {} } : kind === 'error' ? null : {
+        all: { credits: { availablePackages: [{ identifier: 'empty', product: null }] }, generation: { availablePackages: [] } },
+    }) as any;
+    if (kind === 'error') mockBilling.status = 'unavailable';
+    await mount(); expect(text()).toContain(t('credits.unavailable'));
+    expect(text()).not.toContain('£'); expect(text()).not.toContain('$');
+    expect(root.container.queryAll(n => n.props.accessibilityRole === 'radio')).toHaveLength(0);
 });

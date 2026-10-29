@@ -15,7 +15,7 @@ const store = Platform.OS === 'ios' ? 'ios' : 'android';
 // monthly and annual, read from RevenueCat; there is no link to a web checkout (ADR-0109). `onUnlocked` runs after a
 // completed purchase so the screen can load again; the server stays the authority on whether the plan is on.
 export function UnlockCard({ feature, onUnlocked }: { feature: LockedFeature; onUnlocked: () => void }) {
-    const { status, offerings, canPurchase, publishActive, purchase, restore } = useBilling();
+    const { status, offerings, canPurchase, canRestore, publishActive, purchase, restore } = useBilling();
     const [selected, setSelected] = useState<string | null>(null);
     const [busy, setBusy] = useState(false);
     const [message, setMessage] = useState<string | null>(null);
@@ -85,7 +85,7 @@ export function UnlockCard({ feature, onUnlocked }: { feature: LockedFeature; on
             )}
             {message ? <StatusText variant="inherit" style={styles.muted} accessibilityLiveRegion="polite">{message}</StatusText> : null}
             {status === 'ready' ? (
-                <Pressable accessibilityRole="button" disabled={busy || !canPurchase} style={[styles.restore, touchTarget, !canPurchase && styles.off]} onPress={onRestore}>
+                <Pressable accessibilityRole="button" disabled={busy || !canRestore} style={[styles.restore, touchTarget, !canRestore && styles.off]} onPress={onRestore}>
                     <Text style={styles.restoreText}>{t('unlock.restore')}</Text>
                 </Pressable>
             ) : null}

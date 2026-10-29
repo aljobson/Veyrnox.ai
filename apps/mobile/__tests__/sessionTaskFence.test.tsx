@@ -95,7 +95,7 @@ jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, Link: ({ childr
 jest.mock('../src/lib/oauthConsent', () => ({ ...jest.requireActual('../src/lib/oauthConsent'), decide: jest.fn(), fetchRequest: jest.fn() }));
 jest.mock('../src/lib/creatorProfile', () => ({ ...jest.requireActual('../src/lib/creatorProfile'), CREATOR_PROFILE_ENABLED: true, fetchVibeStatus: jest.fn(async () => ({ kind: 'none' })) }));
 jest.mock('../src/lib/creatorProfileStore', () => ({ clearVibe: jest.fn(async () => { mockStorage.delete('veyrnox.vibe.v2'); }), clearAllVibes: jest.fn(async () => {}), runVibeIntent: jest.fn() }));
-jest.mock('../src/billing/BillingProvider', () => ({ useBilling: () => ({ status: 'off' }) }));
+jest.mock('../src/billing/BillingProvider', () => ({ useBilling: () => ({ status: 'off', refreshSales: jest.fn() }) }));
 jest.mock('../src/lib/privacyExport', () => ({ ...jest.requireActual('../src/lib/privacyExport'), runExport: jest.fn() }));
 
 let push: ReturnType<typeof usePush>;

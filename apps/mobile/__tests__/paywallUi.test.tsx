@@ -39,7 +39,7 @@ describe('paywall UI wiring', () => {
         const provider = source('src/billing/BillingProvider.tsx');
         expect(provider).toContain('generationPurchaseReady = canPurchase && serverGenerationResolved && !generationEntitled');
         expect(provider).toContain('generationPlanFor(pkg.product.identifier) !== null && (generationActive || await refreshGenerationAccess(task))');
-        expect(provider).toContain("if (!canPurchase || bound.current?.gen !== task.gen) throw new Error('billing_not_ready')");
+        expect(provider).toContain("if (!canRestore || bound.current?.gen !== task.gen) throw new Error('billing_not_ready')");
     });
 
     test('store catalog and owner checklist use the deployed web pack sizes', () => {

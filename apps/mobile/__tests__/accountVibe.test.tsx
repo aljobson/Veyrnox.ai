@@ -39,7 +39,7 @@ void [RN.View, RN.ScrollView, RN.KeyboardAvoidingView, RN.Pressable, RN.TextInpu
 import Account from '../src/app/(app)/account';
 import { VIBE_REQUEST_DEADLINE_MS } from '../src/lib/creatorProfile';
 jest.mock('../src/lib/auth/accountCalls', () => ({ fetchProfile: async () => null }));
-jest.mock('../src/billing/BillingProvider', () => ({ useBilling: () => ({ status: 'off', activeProductIds: [] }) }));
+jest.mock('../src/billing/BillingProvider', () => ({ useBilling: () => ({ status: 'off', activeProductIds: [], refreshSales: jest.fn() }) }));
 jest.mock('../src/push/pushContext', () => ({ usePush: () => ({ supported: false }) }));
 test.each(['none', 'completed', '404', 'network'])('Account server eligibility: %s', async status => {
     if (status === '404' || status === 'network') mockApi.request.mockRejectedValue(new ApiError(status === '404' ? 404 : 0, 'error'));
