@@ -1806,6 +1806,30 @@
     "ratio": 1.8
   },
   {
+    "id": "editorVoiceover.record",
+    "english": "Record",
+    "translation": "रिकॉर्ड करें",
+    "ratio": 2
+  },
+  {
+    "id": "editorVoiceover.pause",
+    "english": "Pause",
+    "translation": "विराम दें",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorVoiceover.rerecord",
+    "english": "Re-record",
+    "translation": "फिर से रिकॉर्ड करें",
+    "ratio": 2.11
+  },
+  {
+    "id": "editorVoiceover.started",
+    "english": "Recording",
+    "translation": "रिकॉर्ड हो रहा है",
+    "ratio": 1.89
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

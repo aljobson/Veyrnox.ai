@@ -2994,6 +2994,36 @@
     "ratio": 2.25
   },
   {
+    "id": "editorVoiceover.stop",
+    "english": "Stop",
+    "translation": "Detener",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorVoiceover.play",
+    "english": "Play take",
+    "translation": "Reproducir toma",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorVoiceover.rerecord",
+    "english": "Re-record",
+    "translation": "Volver a grabar",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorVoiceover.add",
+    "english": "Add to timeline",
+    "translation": "Añadir a la línea de tiempo",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorVoiceover.keep",
+    "english": "Keep",
+    "translation": "Conservar",
+    "ratio": 2.25
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

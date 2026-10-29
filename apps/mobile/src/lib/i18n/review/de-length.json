@@ -3252,6 +3252,48 @@
     "ratio": 1.7
   },
   {
+    "id": "editorVoiceover.stop",
+    "english": "Stop",
+    "translation": "Stoppen",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorVoiceover.play",
+    "english": "Play take",
+    "translation": "Aufnahme abspielen",
+    "ratio": 2
+  },
+  {
+    "id": "editorVoiceover.pause",
+    "english": "Pause",
+    "translation": "Pausieren",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorVoiceover.rerecord",
+    "english": "Re-record",
+    "translation": "Erneut aufnehmen",
+    "ratio": 1.78
+  },
+  {
+    "id": "editorVoiceover.add",
+    "english": "Add to timeline",
+    "translation": "Zur Zeitleiste hinzufügen",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorVoiceover.close",
+    "english": "Close",
+    "translation": "Schließen",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorVoiceover.keep",
+    "english": "Keep",
+    "translation": "Behalten",
+    "ratio": 2
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

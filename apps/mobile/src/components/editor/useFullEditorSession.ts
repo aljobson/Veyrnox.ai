@@ -167,7 +167,7 @@ export function useFullEditorSession({ projectId, jobId, onOwnerChange = () => {
         setHistory({ canUndo: pastRef.current.length > 0, canRedo: futureRef.current.length > 0 });
     }, [markDocument, mergeBackups]);
 
-    const preparePicked = async (asset: { uri: string; mimeType?: string | null; duration?: number | null }, mediaId: string, kind: string) => {
+    const preparePicked = async (asset: { uri: string; mimeType?: string | null; duration?: number | null }, mediaId: string, kind: string, requireCopy = false) => {
         const token = sync.beginImport(); if (!token) return null;
         const task = beginSessionTask();
         try {
@@ -175,6 +175,7 @@ export function useFullEditorSession({ projectId, jobId, onOwnerChange = () => {
             if (!token.valid()) return null;
             const file = await editorDeviceMedia.copy(projectId, mediaId, asset.uri, asset.mimeType || '', seconds);
             if (!token.valid()) return null;
+            if (requireCopy && !file) return null;
             setLocalMediaUris(current => ({ ...current, [mediaId]: file?.file || asset.uri }));
             if (file) void editorDeviceMedia.backup(api, projectId, mediaId, file).then(source => { if (source && sync.live() && task.current()) applyBackup(mediaId, source); });
             return seconds ?? (kind === 'image' ? 3 : 10);

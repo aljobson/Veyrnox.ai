@@ -173,6 +173,9 @@
             "DEFAULT"
           ]
         }
+      ],
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "plugins": [
@@ -200,7 +203,7 @@
         {
           "photosPermission": "Veyrnox.ai reads the photo or video you choose, to use as a starting point for a creation or to post with Publish.",
           "cameraPermission": "Veyrnox.ai uses the camera when you take a photo to post with Publish.",
-          "microphonePermission": false
+          "microphonePermission": "Veyrnox.ai uses the microphone only while you record a voiceover in the editor."
         }
       ],
       [
@@ -210,7 +213,16 @@
           "isAccessMediaLocationEnabled": false
         }
       ],
-      "expo-video"
+      "expo-video",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Veyrnox.ai uses the microphone only while you record a voiceover in the editor.",
+          "recordAudioAndroid": false,
+          "enableBackgroundRecording": false,
+          "enableBackgroundPlayback": false
+        }
+      ]
     ],
     "scheme": "ai.veyrnox.app",
     "experiments": {

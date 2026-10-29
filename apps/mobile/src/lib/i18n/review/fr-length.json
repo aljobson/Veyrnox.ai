@@ -4770,6 +4770,42 @@
     "ratio": 1.75
   },
   {
+    "id": "editorVoiceover.record",
+    "english": "Record",
+    "translation": "Enregistrer",
+    "ratio": 1.83
+  },
+  {
+    "id": "editorVoiceover.stop",
+    "english": "Stop",
+    "translation": "Arrêter",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorVoiceover.play",
+    "english": "Play take",
+    "translation": "Écouter la prise",
+    "ratio": 1.78
+  },
+  {
+    "id": "editorVoiceover.pause",
+    "english": "Pause",
+    "translation": "Mettre en pause",
+    "ratio": 3
+  },
+  {
+    "id": "editorVoiceover.started",
+    "english": "Recording",
+    "translation": "Enregistrement en cours",
+    "ratio": 2.56
+  },
+  {
+    "id": "editorVoiceover.keep",
+    "english": "Keep",
+    "translation": "Conserver",
+    "ratio": 2.25
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

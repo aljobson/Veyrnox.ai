@@ -1,3 +1,6 @@
+import { VoiceoverSheet } from './VoiceoverSheet';
+import { VOICEOVER_AVAILABLE } from '../../lib/voiceoverRecorder';
+import { useAnnouncement } from '../../lib/useAnnouncement';
 import { getCacheUser, subscribeCacheUser } from '../../lib/appCache';
 import { addPending } from '../../lib/editorGenerationReturns';
 import { clampFrame, insertMediaAt } from '../../lib/editorInsertMedia';
@@ -69,6 +72,8 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
     const [libraryPending, setLibraryPending] = useState(false);
     const [viewport, setViewport] = useState(0);
     useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+    const [voiceoverAt, setVoiceoverAt] = useState<number | null>(null);
+    const [voiceoverMessage, setVoiceoverMessage] = useState<string | null>(null); useAnnouncement(voiceoverMessage); const onVoiceoverAdded = () => { setVoiceoverMessage(t('editorVoiceover.added')); setVoiceoverAt(null); };
     const [exportVisible, setExportVisible] = useState(false);
     const { beginImport, replacing, leaveEditor, saveStatus, sync, currentDocument, preparePicked, savedDocument, api, router, name, document, dirty, problem, setProblem, tool, setTool, selection, setSelection, selections, setSelections, multiSelect, setMultiSelect, clipboard, setClipboard, snap, setSnap, ripple, setRipple, zoom, setZoom, privacyNotice, history, frameStore, setFrame, playing, setPlaying, projectAssets, localMediaUris, libraryKind, setLibraryKind, markDocument, save, acknowledgePrivacy, travel } = useFullEditorSession({ projectId, jobId, onOwnerChange: () => guard.teardown(() => router.back()), onCopy: id => guard.teardown(() => router.replace({ pathname: '/editor/[projectId]', params: { projectId: id } })) });
     const guard = useEditorLeaveGuard(leaveEditor, router.back);
@@ -100,6 +105,7 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
     const availableMedia = [...Object.values(timeline.media), ...projectAssets.filter((asset) => !Object.values(timeline.media).some((item) => item.assetSource?.assetId === asset.assetSource?.assetId))];
 
     const applyTimeline = (next: Timeline) => markDocument({ ...(currentDocument() ?? document), schema_version: 3, timeline: next });
+    const placeVoiceover = (media: Media): 'placed' | 'track' | 'full' => { const result = insertMediaAt(timelineOf(currentDocument()?.timeline), media, voiceoverAt ?? 0); if ('error' in result) return result.error; applyTimeline(result.timeline); setSelection(result.selection); setSelections([result.selection]); return 'placed'; };
     const updateCanvas = (patch: Partial<Canvas>) => {
         const nextCanvas = { ...canvas, ...patch };
         const nextTimeline = { ...timeline, aspect: nextCanvas.aspect_ratio };
@@ -336,7 +342,7 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
             {tool === 'audio' ? <>
                 <PanelHeading title={t('editor.audio')} detail={plural('editor.clips2Count', timeline.audio.length)} />
                 {timeline.audio.length ? timeline.audio.map((item) => <InspectorClip key={item.id} track="audio" item={item} timeline={timeline} selected={selections.some((value) => value.track === 'audio' && value.id === item.id)} onPress={() => selectClip({ track: 'audio', id: item.id })} />) : <EmptyPanel title={t('editor.noaudioclips')} body={t('editor.audiolayersfromyourprojectappearhere')} />}
-                <View style={styles.quickActions}><Action label={t('editor.generatevoiceormusic')} onPress={() => openGenerate('audio')} /><Action label={t('editor.addaudiotrack')} onPress={() => addTimelineTrack('audio')} /></View>
+                <View style={styles.quickActions}>{VOICEOVER_AVAILABLE ? <Action label={t('editorVoiceover.open')} disabled={replacing} onPress={() => { setPlaying(false); setVoiceoverAt(clampFrame(frameStore.get())); setVoiceoverMessage(null); }} /> : null}<Action label={t('editor.generatevoiceormusic')} onPress={() => openGenerate('audio')} /><Action label={t('editor.addaudiotrack')} onPress={() => addTimelineTrack('audio')} /></View>
             </> : null}
             {tool === 'generate' ? <EditorGeneratePanel rows={returns.rows} note={returns.note} onOpen={() => openGenerate('video')} onAdd={id => void returns.addAtPlayhead(id, clampFrame(frameStore.get()))} onDismiss={id => void returns.dismiss(id)} /> : null}
 
@@ -411,6 +417,7 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
             void addPending(projectId, { jobId: id, kind, frame: generate.frame, name: model.name, createdAt: Date.now() }).then(() => { if (mounted.current && liveProject.current === projectId && generate.owner === getCacheUser() && currentDocument()?.project_id === projectId) void returns.refresh(); });
         }} /> : null}
         {stemChoice ? <EditorStemSheet api={api} {...stemChoice} ready={ready} beginImport={beginImport} onAdd={addMediaToTimeline} onClose={() => setStemChoice(null)} /> : null}
+        {voiceoverAt !== null ? <VoiceoverSheet key={projectId} projectId={projectId} startFrame={voiceoverAt} fps={timeline.fps} ready={ready} beginImport={beginImport} preparePicked={preparePicked} insert={placeVoiceover} onAdded={onVoiceoverAdded} onClose={() => setVoiceoverAt(null)} /> : null}
         <EditorSaveSheets sync={sync} /><EditorVersionsSheet sync={sync} api={api} projectId={projectId} />
         {libraryKind ? <LibraryChooser api={api} kind={libraryKind} onClose={() => setLibraryKind(null)} onPick={(choice) => importLibrary(choice, libraryKind)} /> : null}
         {/* Required privacy acknowledgement: escape must not imply consent. */}

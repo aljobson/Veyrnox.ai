@@ -2982,6 +2982,24 @@
     "ratio": 2.25
   },
   {
+    "id": "editorVoiceover.play",
+    "english": "Play take",
+    "translation": "Reproduzir tomada",
+    "ratio": 1.89
+  },
+  {
+    "id": "editorVoiceover.rerecord",
+    "english": "Re-record",
+    "translation": "Gravar novamente",
+    "ratio": 1.78
+  },
+  {
+    "id": "editorVoiceover.add",
+    "english": "Add to timeline",
+    "translation": "Adicionar à linha do tempo",
+    "ratio": 1.73
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",
