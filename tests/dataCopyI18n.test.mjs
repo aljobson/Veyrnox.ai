@@ -4,6 +4,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import * as React from 'react';
 import ts from 'typescript';
 import { ALL_TEMPLATES } from '../app/veyrnox/_lib/templates.js';
+import { GENJUTSU_SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/genjutsuSourcePromptRecords.js';
 import { CATALOGS, translator, tOr } from '../lib/i18n/translate.mjs';
 import { appMessagesFor } from '../lib/i18n/appMessages.mjs';
 import { PRESET_STEP_KEYS, presetStep } from '../lib/i18n/presetSteps.mjs';
@@ -107,7 +108,28 @@ test('recipe SSR translates steps but forwards exact prompt and preset data to U
     assert.ok(html.includes(step));
     assert.equal(html.includes(preset.steps[0]), code === 'en');
     assert.ok(html.includes('data-use-template="product-hero-360"'));
+    assert.ok(html.includes(translator(code)('public.TemplateRecipe.generationPrompt')));
   }
+});
+
+test('Genjutsu recipe SSR shows the exact source prompt but hands the compatible prompt to generation', () => {
+  const template = ALL_TEMPLATES.find(p => GENJUTSU_SOURCE_PROMPT_RECORDS[p.id]?.sourcePromptAvailable);
+  const sourcePrompt = GENJUTSU_SOURCE_PROMPT_RECORDS[template?.id]?.prompt;
+  const preset = { ...template, sourcePrompt, sourcePromptOrigin: 'community-source-exact' };
+  assert.ok(sourcePrompt);
+  const f = fixture('en', `/presets/${preset.id}`, { moduleMocks: {
+    './UseTemplate': { UseTemplate: ({ preset: actual, prompt }) => {
+      assert.equal(actual, preset);
+      assert.equal(prompt, preset.prompt);
+      assert.ok(prompt.length <= 2000);
+      return React.createElement('div', { 'data-use-template': actual.id });
+    } },
+  } });
+  const html = f.render(React.createElement(f.load('app/veyrnox/_components/TemplateRecipe.js').TemplateRecipe, { preset }));
+  assert.ok(html.includes('EXACT COMMUNITY PROMPT'));
+  assert.ok(html.includes('VEYRNOX GENERATION PROMPT'));
+  assert.ok(html.includes(sourcePrompt.slice(0, 80)));
+  assert.match(html, /readonly=""/);
 });
 
 test('app data areas preserve keys, placeholders and numeric facts in all languages', async () => {

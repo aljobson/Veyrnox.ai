@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { register } from 'node:module';
 import { PRESETS } from '../app/veyrnox/_lib/templates.js';
+import { GENJUTSU_SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/genjutsuSourcePromptRecords.js';
 import { MODELS, modelIdForName } from '../app/veyrnox/_lib/tokens.js';
 import { toPublicPresets } from '../lib/publicPresets.js';
 
@@ -52,12 +53,17 @@ test('preview and poster addresses are absolute https on our own host', () => {
     assert.ok(toPublicPresets(catalog).some((p) => p.posterUrl));
 });
 
-test('the payload carries source framing but no per-user or internal field', () => {
-    const allowed = new Set(['id', 'title', 'category', 'theme', 'modelId', 'modelName', 'modality', 'prompt', 'needs', 'sourceAspect', 'durationSeconds', 'credits', 'gated', 'available', 'isNew', 'previewUrl', 'posterUrl', 'previewAspect']);
+test('the payload carries source framing and exact public source prompts but no per-user or internal field', () => {
+    const allowed = new Set(['id', 'title', 'category', 'theme', 'modelId', 'modelName', 'modality', 'prompt', 'promptOrigin', 'sourcePrompt', 'sourcePromptOrigin', 'needs', 'sourceAspect', 'durationSeconds', 'credits', 'gated', 'available', 'isNew', 'previewUrl', 'posterUrl', 'previewAspect']);
     for (const p of toPublicPresets(catalog)) for (const k of Object.keys(p)) assert.ok(allowed.has(k), `unexpected field ${k}`);
     const framed = toPublicPresets(catalog).filter((p) => p.sourceAspect);
     assert.equal(framed.length, 100);
     assert.ok(framed.every((p) => /^(?:1:1|9:16|16:9)$/.test(p.sourceAspect)));
+    const exact = toPublicPresets(catalog).filter((p) => p.sourcePromptOrigin === 'community-source-exact');
+    assert.equal(exact.length, 57);
+    assert.ok(exact.every((p) => typeof p.sourcePrompt === 'string' && p.sourcePrompt.length > 0));
+    assert.ok(exact.every((p) => p.prompt.length <= 2000));
+    assert.ok(exact.every((p) => p.sourcePrompt === GENJUTSU_SOURCE_PROMPT_RECORDS[p.id]?.prompt));
 });
 
 function stubCatalog(rows) {

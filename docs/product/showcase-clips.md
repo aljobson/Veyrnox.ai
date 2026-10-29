@@ -10,14 +10,18 @@ approved output generated through Veyrnox with its published template prompt.
 Template clips now link to their own matching recipes and compatible remix
 prompts (see [template recipes](template-recipes.md)). Imported tiles display a generic “Viral inspiration”
 badge; the tested example displays “Generated on Veyrnox”. Public cards,
-template data, page copy and media filenames contain no source-platform names,
-links or credits. Internal provenance remains recorded in this document only.
-Model-category and feature cards remain inspiration; template pages show only
-the supported Veyrnox adaptation. Live credit prices come from the catalog.
+generation-template data, page copy and media filenames contain no
+source-platform names, links or credits. Exact read-only `sourcePrompt` text is
+the exception and may contain creator-supplied attribution or reference tokens.
+Internal provenance remains recorded in this document only.
+Model-category and feature cards remain inspiration. Template pages use the
+supported Veyrnox adaptation as the editable generation prompt; Genjutsu
+community templates with a published prompt also show that exact source text
+read-only (see below). Live credit prices come from the catalog.
 
 On 24 October 2026, the 1,036 additional effect ideas without preview videos
-were removed from public browsing, search, API output and template routes. Their
-deduplicated names remain an internal reference inventory only. The public
+were removed from public browsing, search and API output. They remain available
+as direct-link effect recipes but are excluded from `PRESETS`. The public
 gallery contained 155 media-backed recipes before the Genjutsu community
 expansion, each with a unique local video
 and poster; concepts are not promoted to templates until that media exists.
@@ -326,7 +330,7 @@ The original source files are kept unscaled; their 600-pixel width is a preview 
 
 ### Genjutsu community-trending previews (2026-10-29)
 
-These public community previews were returned by the user-supplied Genjutsu community-trending feed. Public recipes are original Veyrnox image-to-video adaptations and do not expose usernames or source-platform metadata. “Prompt” records whether the feed published community prompt text; Veyrnox does not reproduce that text verbatim. Where the feed published no prompt, the adaptation uses the public title, description and preview concept.
+These public community previews were returned by the user-supplied Genjutsu community-trending feed. “Prompt” records whether the feed published community prompt text. Veyrnox preserves that text exactly in the read-only `sourcePrompt` field for all 57 prompt-bearing records and marks it `community-source-exact`. This includes creator-supplied attribution, reference tokens and empty reference slots as serialized by the public feed; Veyrnox does not guess or repair missing references. The feed also returns the Survivor Memory Shift prompt cut off at `At`; that record is explicitly marked `sourcePromptTruncated`. The normalized 100-record capture has SHA-256 `c54a2734c2ae117b02727677abebe213d610e807b95dbbf48cb2dd3269d62103`. The 43 records with no published prompt have a null `sourcePrompt`; they must not be described as exact source prompts. Every template separately keeps a `veyrnox-adaptation` generation prompt because the current Kling image-to-video route accepts at most 2,000 characters and does not receive the Genjutsu reference video assumed by many source prompts.
 
 - Cash Fan Performance — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/afea009d-6400-443d-a3bc-c727b27093e5/generation-genjutsu-h264-600-v1.mp4
 - Miniature Car Window Journey — prompt: no — https://d8j0ntlcm91z4.cloudfront.net/community-presets/956447fc-cb9c-4793-8856-0c2676bc7e67/generation-genjutsu-h264-600-v1.mp4

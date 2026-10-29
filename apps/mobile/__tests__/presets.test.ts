@@ -10,6 +10,7 @@ const base = {
     modelName: 'Kling 3.0',
     modality: 'image-to-video',
     prompt: 'Animate the product.',
+    promptOrigin: 'veyrnox-adaptation',
     needs: 'A clean product image',
     sourceAspect: '9:16',
     durationSeconds: 10,
@@ -25,7 +26,20 @@ const base = {
 describe('parsePresets', () => {
     test('keeps well-formed presets and reads the price from the response', () => {
         const [p] = parsePresets({ presets: [base] });
-        expect(p).toMatchObject({ id: 'a', title: 'Product Hero', modelId: 'kling-3.0-i2v', credits: 68, durationSeconds: 10, needs: 'A clean product image', sourceAspect: '9:16', available: true });
+        expect(p).toMatchObject({ id: 'a', title: 'Product Hero', modelId: 'kling-3.0-i2v', promptOrigin: 'veyrnox-adaptation', credits: 68, durationSeconds: 10, needs: 'A clean product image', sourceAspect: '9:16', available: true });
+    });
+
+    test('keeps an exact source prompt separate from the compatible generation prompt', () => {
+        const [p] = parsePresets({ presets: [{ ...base, sourcePrompt: 'Exact community text', sourcePromptOrigin: 'community-source-exact' }] });
+        expect(p).toMatchObject({ prompt: 'Animate the product.', sourcePrompt: 'Exact community text', sourcePromptOrigin: 'community-source-exact' });
+        expect((presetHref(p) as { params: { prompt: string } }).params.prompt).toBe('Animate the product.');
+        const [invalidOrigin] = parsePresets({ presets: [{ ...base, sourcePrompt: '', sourcePromptOrigin: 'community-source-exact' }] });
+        expect(invalidOrigin).toMatchObject({ sourcePrompt: null, sourcePromptOrigin: null });
+        const [missingOrigin] = parsePresets({ presets: [{ ...base, sourcePrompt: 'Unverified source text' }] });
+        expect(missingOrigin).toMatchObject({ sourcePrompt: null, sourcePromptOrigin: null });
+        const verbatim = `  Начало\n${'界'.repeat(2200)}  `;
+        const [longSource] = parsePresets({ presets: [{ ...base, sourcePrompt: verbatim, sourcePromptOrigin: 'community-source-exact' }] });
+        expect(longSource.sourcePrompt).toBe(verbatim);
     });
 
     test('drops gated presets, since the app does not offer those models', () => {
