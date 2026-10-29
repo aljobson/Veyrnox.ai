@@ -1,4 +1,4 @@
-# ADR-0301: Phone editor voiceover recorder
+# ADR-0302: Phone editor voiceover recorder
 
 Status: Implemented; native device verification pending.
 
