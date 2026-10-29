@@ -55,3 +55,10 @@ export const creativeFeature = (slug: string | undefined): CreativeFeature | nul
 export function featurePrompt(feature: CreativeFeature, brief: string): string {
     return `${feature.prompt}${brief.trim()}`.trim();
 }
+
+// The phone's native player (AVPlayer on iOS) cannot decode WebM, so a WebM example shows its first-frame still there
+// and keeps its Source link to the clip. Android plays WebM. Every WebM example carries a posterUrl for this.
+export function examplePlaysOn(example: CreativeFeature['example'], os: string): boolean {
+    if (example.kind !== 'video') return false;
+    return !(os === 'ios' && /\.webm(?:[?#]|$)/i.test(example.url));
+}

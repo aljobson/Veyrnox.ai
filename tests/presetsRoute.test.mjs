@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { register } from 'node:module';
 import { PRESETS } from '../app/veyrnox/_lib/templates.js';
 import { GENJUTSU_SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/genjutsuSourcePromptRecords.js';
+import { SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/sourcePromptRecords.js';
 import { MODELS, modelIdForName } from '../app/veyrnox/_lib/tokens.js';
 import { toPublicPresets } from '../lib/publicPresets.js';
 
@@ -60,10 +61,12 @@ test('the payload carries source framing and exact public source prompts but no 
     assert.equal(framed.length, 100);
     assert.ok(framed.every((p) => /^(?:1:1|9:16|16:9)$/.test(p.sourceAspect)));
     const exact = toPublicPresets(catalog).filter((p) => p.sourcePromptOrigin === 'community-source-exact');
-    assert.equal(exact.length, 57);
+    assert.equal(exact.length, 114);
     assert.ok(exact.every((p) => typeof p.sourcePrompt === 'string' && p.sourcePrompt.length > 0));
     assert.ok(exact.every((p) => p.prompt.length <= 2000));
-    assert.ok(exact.every((p) => p.sourcePrompt === GENJUTSU_SOURCE_PROMPT_RECORDS[p.id]?.prompt));
+    assert.ok(exact.every((p) => p.sourcePrompt === SOURCE_PROMPT_RECORDS[p.id]?.prompt));
+    assert.equal(exact.filter((p) => GENJUTSU_SOURCE_PROMPT_RECORDS[p.id]).length, 57);
+    assert.equal(exact.filter((p) => SOURCE_PROMPT_RECORDS[p.id] && !GENJUTSU_SOURCE_PROMPT_RECORDS[p.id]).length, 57);
 });
 
 function stubCatalog(rows) {
