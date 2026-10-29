@@ -60,7 +60,7 @@ test('a catalog without an explicit prompt maximum uses the 30,000-character def
 test('Film Studio fields stay at 24,000 unless a prompt field explicitly opts into 30,000', async () => {
     const onChange = jest.fn();
     await act(async () => root.render(<FilmInput label="Descriptor" value="" onChange={onChange} multiline />));
-    expect(root.container.queryAllByType(RN.TextInput)[0].props.maxLength).toBe(24_000);
+    expect(root.container.queryAll(n => typeof n.props.onChangeText === 'function')[0].props.maxLength).toBe(24_000);
     await act(async () => root.render(<FilmInput label="Prompt" value="" onChange={onChange} multiline maxLength={30_000} />));
-    expect(root.container.queryAllByType(RN.TextInput)[0].props.maxLength).toBe(30_000);
+    expect(root.container.queryAll(n => typeof n.props.onChangeText === 'function')[0].props.maxLength).toBe(30_000);
 });
