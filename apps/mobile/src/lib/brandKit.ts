@@ -1,10 +1,9 @@
+import { STYLE_MAX, textStyleProblem } from './brandKitStyles';
 import { t } from './i18n';
-import { ApiError, type ApiClient } from './api';
+import { ApiError, type ApiClient, type CallOptions } from './api';
 
-// Brand kit for a workspace (parity P7; the editor's BrandKitPanel). GET/PUT /api/v1/workspaces/:id/brand-kit and the
-// read-only list GET .../brand-assets. The routes answer 404 while EDITOR_SHARED_TOOLS_ENABLED is off. The rules below
-// are the server's (lib/editorShared.js brandKitProblem); this screen edits the name, colours and fonts, and keeps
-// text styles and attached assets exactly as they were, so saving can never lose them.
+// Parity P7 amended by ADR-0299: phone drafts edit styles and attachments; removal only detaches.
+// GET/PUT brand-kit and GET brand-assets remain gated by EDITOR_SHARED_TOOLS_ENABLED.
 export const FONTS = ['sans-serif', 'serif', 'monospace', 'Arial', 'Helvetica', 'Verdana', 'Georgia', 'Times New Roman', 'Courier New', 'Impact'] as const;
 export const NAME_MAX = 80;
 export const PALETTE_MAX = 12;
@@ -59,13 +58,15 @@ export function normaliseColour(input: string): string | null {
     return HEX_RE.test(v) ? v : null;
 }
 
-export type KitProblem = 'name' | 'palette' | 'fonts' | 'size' | null;
+export type KitProblem = 'name' | 'palette' | 'fonts' | 'size' | 'styles' | 'assets' | null;
 
 export function kitProblem(kit: Kit): KitProblem {
     if (!kit.name.trim() || kit.name.length > NAME_MAX || /[\u0000-\u001f\u007f]/.test(kit.name)) return 'name';
     if (kit.palette.length === 0 || kit.palette.length > PALETTE_MAX || kit.palette.some((c) => !HEX_RE.test(c))) return 'palette';
     if (kit.fonts.length === 0 || kit.fonts.length > FONTS_MAX || kit.fonts.some((f) => !(FONTS as readonly string[]).includes(f))) return 'fonts';
     if (new TextEncoder().encode(JSON.stringify(kit)).byteLength > SAVE_LIMIT_BYTES) return 'size';
+    if (kit.textStyles.length > STYLE_MAX || kit.textStyles.some(s => textStyleProblem(s))) return 'styles';
+    if (kit.assets.length > ASSET_MAX || kit.assets.some(a => assetProblem(a))) return 'assets';
     return null;
 }
 
@@ -74,12 +75,12 @@ export const newSaveKey = (): string => `brand-${Date.now().toString(36)}-${Math
 
 const enc = encodeURIComponent;
 
-export async function fetchKit(api: Pick<ApiClient, 'request'>, workspaceId: string): Promise<KitState> {
+export async function fetchKit(api: Pick<ApiClient, 'request'>, workspaceId: string, call?: CallOptions): Promise<KitState> {
     if (!UUID_RE.test(workspaceId)) throw new ApiError(400, 'invalid_workspace');
-    return parseKitState(await api.request(`/api/v1/workspaces/${enc(workspaceId)}/brand-kit`));
+    return parseKitState(await api.request(`/api/v1/workspaces/${enc(workspaceId)}/brand-kit`, undefined, call));
 }
 
-export async function saveKit(api: Pick<ApiClient, 'request'>, workspaceId: string, state: KitState, kit: Kit, key: string): Promise<KitState> {
+export async function saveKit(api: Pick<ApiClient, 'request'>, workspaceId: string, state: KitState, kit: Kit, key: string, call?: CallOptions): Promise<KitState> {
     if (!UUID_RE.test(workspaceId)) throw new ApiError(400, 'invalid_workspace');
     if (kitProblem(kit)) throw new ApiError(400, 'invalid_brand_kit');
     return parseKitState(
@@ -87,7 +88,7 @@ export async function saveKit(api: Pick<ApiClient, 'request'>, workspaceId: stri
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'Idempotency-Key': key },
             body: JSON.stringify({ expected_version: state.version, kit }),
-        }),
+        }, call),
     );
 }
 
@@ -123,22 +124,57 @@ export function parseAssets(body: unknown): { assets: BrandAsset[]; truncated: b
     return { assets, truncated: r.truncated === true };
 }
 
-export async function fetchBrandAssets(api: Pick<ApiClient, 'request'>, workspaceId: string) {
+export async function fetchBrandAssets(api: Pick<ApiClient, 'request'>, workspaceId: string, call?: CallOptions) {
     if (!UUID_RE.test(workspaceId)) throw new ApiError(400, 'invalid_workspace');
-    return parseAssets(await api.request(`/api/v1/workspaces/${enc(workspaceId)}/brand-assets`));
+    return parseAssets(await api.request(`/api/v1/workspaces/${enc(workspaceId)}/brand-assets`, undefined, call));
 }
 
-export type KitErrorKey = 'brand.err.off' | 'brand.err.conflict' | 'brand.err.rate' | 'brand.err.network' | 'brand.err.invalid' | 'brand.err.failed';
+export type KitErrorKey = 'brand.err.saveNotFound' | 'brand.err.off' | 'brand.err.conflict' | 'brand.err.rate' | 'brand.err.network' | 'brand.err.invalid' | 'brand.err.failed';
 
 // Errors from these routes are { error: { code, message } }, which the API client reports with the code 'unknown':
 // the wording follows the HTTP status.
-export function kitErrorKey(err: unknown): KitErrorKey {
+export function kitErrorKey(err: unknown, phase?: 'read' | 'save'): KitErrorKey {
     if (err instanceof ApiError) {
         if (err.status === 0) return 'brand.err.network';
-        if (err.status === 404) return 'brand.err.off';
+        if (err.status === 404) return phase === 'save' ? 'brand.err.saveNotFound' : 'brand.err.off';
         if (err.status === 409) return 'brand.err.conflict';
         if (err.status === 429) return 'brand.err.rate';
         if (err.status === 400) return 'brand.err.invalid';
     }
     return 'brand.err.failed';
 }
+
+export const ASSET_MAX = 24;
+export type KitAsset = { projectId: string; assetId: string; name: string; credit: string; usage: string; url: string };
+export function assetProblem(v: unknown): 'name' | 'credit' | 'usage' | 'url' | 'shape' | null {
+    const a = rec(v), keys = ['projectId', 'assetId', 'name', 'credit', 'usage', 'url'];
+    if (!a || Object.keys(a).length !== keys.length || Object.keys(a).some(k => !keys.includes(k)) ||
+        typeof a.projectId !== 'string' || !UUID_RE.test(a.projectId) || typeof a.assetId !== 'string' || !UUID_RE.test(a.assetId) ||
+        ['name', 'credit', 'usage', 'url'].some(k => typeof a[k] !== 'string')) return 'shape';
+    for (const [key, max] of [['name', 120], ['credit', 120], ['usage', 240], ['url', 1000]] as const) {
+        const value = a[key] as string;
+        if (value.length > max || /[\u0000-\u001f\u007f]/.test(value) || (key === 'name' && !value.trim())) return key;
+    }
+    if (a.url !== '') {
+        if (!/^https:\/\/[^/@\s]+([/?#]|$)/.test(a.url as string)) return 'url';
+        try { const u = new URL(a.url as string); if (u.protocol !== 'https:' || u.username || u.password) return 'url'; }
+        catch { return 'url'; }
+    }
+    return null;
+}
+export type AssetRow = { readonly key: string; readonly value: unknown };
+export const toAssetRows = (assets: readonly unknown[], makeKey: () => string): AssetRow[] => assets.map(value => ({ key: makeKey(), value }));
+export const assetsOf = (rows: readonly AssetRow[]): unknown[] => rows.map(r => r.value);
+export const editAssetRow = (rows: readonly AssetRow[], key: string, patch: Partial<Pick<KitAsset, 'name' | 'credit' | 'usage' | 'url'>>): AssetRow[] =>
+    rows.map(r => r.key === key && assetProblem(r.value) !== 'shape' ? { ...r, value: { ...(r.value as KitAsset), ...patch } } : r);
+export const removeAssetRow = (rows: readonly AssetRow[], key: string): AssetRow[] => rows.filter(r => r.key !== key);
+export function attachAsset(rows: readonly AssetRow[], entry: KitAsset, key: string): { next: AssetRow[]; outcome: 'added' | 'duplicate' | 'full' } {
+    if (rows.some(r => rec(r.value)?.assetId === entry.assetId)) return { next: [...rows], outcome: 'duplicate' };
+    if (rows.length >= ASSET_MAX) return { next: [...rows], outcome: 'full' };
+    return { next: [...rows, { key, value: entry }], outcome: 'added' };
+}
+export const isAttachable = (a: BrandAsset): boolean => UUID_RE.test(a.id) && UUID_RE.test(a.projectId);
+export const assetFromCatalog = (a: BrandAsset): KitAsset => ({ projectId: a.projectId, assetId: a.id, name: t('brand.assetDefault', { type: a.type, id: a.id.slice(0, 8) }), credit: '', usage: '', url: '' });
+
+let assetKey = 0;
+export const nextAssetKey = () => `asset-${++assetKey}`;

@@ -2976,6 +2976,24 @@
     "ratio": 1.82
   },
   {
+    "id": "brand.style.name",
+    "english": "Style name",
+    "translation": "Nombre del estilo",
+    "ratio": 1.7
+  },
+  {
+    "id": "brand.style.bold",
+    "english": "Bold",
+    "translation": "Negrita",
+    "ratio": 1.75
+  },
+  {
+    "id": "brand.style.left",
+    "english": "Left",
+    "translation": "Izquierda",
+    "ratio": 2.25
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

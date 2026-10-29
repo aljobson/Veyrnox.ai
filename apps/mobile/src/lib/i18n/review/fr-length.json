@@ -4728,6 +4728,24 @@
     "ratio": 1.9
   },
   {
+    "id": "brand.style.edit",
+    "english": "Edit",
+    "translation": "Modifier",
+    "ratio": 2
+  },
+  {
+    "id": "brand.style.done",
+    "english": "Done",
+    "translation": "Terminé",
+    "ratio": 1.75
+  },
+  {
+    "id": "brand.upload.sending",
+    "english": "Uploading",
+    "translation": "Importation en cours",
+    "ratio": 2.22
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

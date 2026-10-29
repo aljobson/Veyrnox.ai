@@ -3156,6 +3156,24 @@
     "ratio": 1.64
   },
   {
+    "id": "brand.style.edit",
+    "english": "Edit",
+    "translation": "Изменить",
+    "ratio": 2
+  },
+  {
+    "id": "brand.style.weight",
+    "english": "Weight",
+    "translation": "Насыщенность",
+    "ratio": 2
+  },
+  {
+    "id": "brand.asset.add",
+    "english": "Add from this workspace",
+    "translation": "Добавить из этого рабочего пространства",
+    "ratio": 1.7
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

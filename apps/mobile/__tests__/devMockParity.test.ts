@@ -30,6 +30,9 @@ describe('development mock parity', () => {
     test('serves workspace brand kits and assets', () => {
         expect(source).toContain('brand-kit$/);');
         expect(source).toContain('brand-assets$/);');
+        const ids = [...source.matchAll(/id: '(b[56][^']+)'/g)].map(m => m[1]);
+        expect(ids).toHaveLength(2);
+        expect(ids.every(id => /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id))).toBe(true);
     });
 
     test('accepts the raw upload target minted for generation sources', () => {

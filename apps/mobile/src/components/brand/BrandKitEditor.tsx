@@ -1,30 +1,44 @@
 import { rawText } from '../../lib/i18n/translate';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { Action, Card, Status, styles } from '../account/shared';
 import { selectedState } from '../../lib/a11y';
 import { FONTS, FONTS_MAX, NAME_MAX, PALETTE_MAX, kitErrorKey, kitProblem, newSaveKey, normaliseColour, saveKit, type Kit, type KitState } from '../../lib/brandKit';
 import { t } from '../../lib/i18n';
+import { isAccountChanged } from '../../auth/sessionTask';
+import type { Project } from '../../lib/projects';
+import { assetsOf, nextAssetKey, toAssetRows, type AssetRow, type BrandAsset } from '../../lib/brandKit';
+import { BrandTextStyles } from './BrandTextStyles';
+import { BrandAssetsEditor } from './BrandAssetsEditor';
 import { colors } from '../../theme';
 
-// Edits the name, colours and fonts of one workspace's kit. Text styles and attached assets are carried through
-// untouched on every save.
-export function BrandKitEditor({ workspaceId, state, onSaved }: { workspaceId: string; state: KitState; onSaved: (s: KitState) => void }) {
-    const { api } = useAuth();
-    const [kit, setKit] = useState<Kit>(state.kit);
+type Draft = { kit: Kit; rows: AssetRow[] };
+export function BrandKitEditor({ workspaceId, state, onSaved, catalog = null, projects = null, onCatalogChanged = () => {} }: {
+    workspaceId: string; state: KitState; onSaved: (s: KitState) => void;
+    catalog?: { list: BrandAsset[]; truncated: boolean } | null; projects?: Project[] | null; onCatalogChanged?: () => void;
+}) {
+    const { api, beginSessionTask } = useAuth();
+    const [draft, setDraft] = useState<Draft>(() => ({ kit: state.kit, rows: toAssetRows(state.kit.assets, nextAssetKey) }));
+    const draftRef = useRef(draft), mounted = useRef(false);
+    useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+    const kit = draft.kit;
     const [colour, setColour] = useState('');
     const [busy, setBusy] = useState(false);
     const [note, setNote] = useState<{ text: string; error: boolean } | null>(null);
     const attempt = useRef<{ json: string; key: string } | null>(null);
     const locked = !state.canEdit;
 
-    const set = (patch: Partial<Kit>) => {
-        setNote(null);
-        setKit((k) => ({ ...k, ...patch }));
-    };
+    const commit = (next: Draft) => { draftRef.current = next; setDraft(next); setNote(null); };
+    const set = (patch: Partial<Kit>) => commit({ ...draftRef.current, kit: { ...draftRef.current.kit, ...patch } });
+    function onAssetsChange<T>(change: (rows: readonly AssetRow[]) => { next: AssetRow[]; result: T }): T {
+        const { next, result } = change(draftRef.current.rows);
+        commit({ ...draftRef.current, rows: next });
+        return result;
+    }
 
     function addColour() {
+        const kit = draftRef.current.kit;
         const c = normaliseColour(colour);
         if (!c) return setNote({ text: t('brand.colourInvalid'), error: true });
         if (kit.palette.includes(c)) return setColour('');
@@ -34,12 +48,17 @@ export function BrandKitEditor({ workspaceId, state, onSaved }: { workspaceId: s
     }
 
     function toggleFont(font: string) {
+        const kit = draftRef.current.kit;
         const has = kit.fonts.includes(font);
         if (!has && kit.fonts.length >= FONTS_MAX) return;
         set({ fonts: has ? kit.fonts.filter((f) => f !== font) : [...kit.fonts, font] });
     }
 
     async function save() {
+        if (locked || busy) return;
+        const kit = { ...draftRef.current.kit, assets: assetsOf(draftRef.current.rows) };
+        const task = beginSessionTask();
+        const live = () => task.current() && mounted.current;
         const problem = kitProblem(kit);
         if (problem) return setNote({ text: t(`brand.problem.${problem}`), error: true });
         // A retry of the same unsent change reuses its key; a different change gets a new one.
@@ -48,14 +67,16 @@ export function BrandKitEditor({ workspaceId, state, onSaved }: { workspaceId: s
         setBusy(true);
         setNote(null);
         try {
-            const next = await saveKit(api, workspaceId, state, kit, attempt.current.key);
+            const next = await saveKit(api, workspaceId, state, kit, attempt.current.key, { task });
+            if (!live()) return;
             attempt.current = null;
             onSaved(next);
             setNote({ text: t('brand.saved'), error: false });
         } catch (err) {
-            setNote({ text: t(kitErrorKey(err)), error: true });
+            if (isAccountChanged(err) || !live()) return;
+            setNote({ text: t(kitErrorKey(err, 'save')), error: true });
         } finally {
-            setBusy(false);
+            if (live()) setBusy(false);
         }
     }
 
@@ -72,7 +93,7 @@ export function BrandKitEditor({ workspaceId, state, onSaved }: { workspaceId: s
                             accessibilityRole="button"
                             accessibilityLabel={rawText(t('brand.removeColour', { colour: c }))}
                             disabled={locked || kit.palette.length <= 1}
-                            onPress={() => set({ palette: kit.palette.filter((x) => x !== c) })}
+                            onPress={() => set({ palette: draftRef.current.kit.palette.filter((x) => x !== c) })}
                             style={{ minHeight: 44, minWidth: 44, borderRadius: 10, borderWidth: 1, borderColor: colors.border, backgroundColor: c, justifyContent: 'flex-end', padding: 4 }}
                         >
                             <Text style={{ fontSize: 11, color: '#000', backgroundColor: '#ffffffcc', paddingHorizontal: 3, borderRadius: 4 }}>{c}</Text>
@@ -115,9 +136,8 @@ export function BrandKitEditor({ workspaceId, state, onSaved }: { workspaceId: s
                     );
                 })}
             </Card>
-            <Card title={t('brand.kept')} help={t('brand.keptHelp', { styles: kit.textStyles.length, assets: kit.assets.length })}>
-                <Text style={styles.help}>{t('brand.keptNote')}</Text>
-            </Card>
+            <BrandTextStyles styles={kit.textStyles} locked={locked} onChange={textStyles => set({ textStyles })} />
+            <BrandAssetsEditor workspaceId={workspaceId} rows={draft.rows} catalog={catalog} projects={projects} locked={locked} onAssetsChange={onAssetsChange} onCatalogChanged={onCatalogChanged} />
             {locked ? <Text style={styles.help}>{t('brand.readOnly')}</Text> : <Action label={busy ? t('brand.saving') : t('brand.save')} disabled={busy} onPress={() => void save()} />}
             <Status text={note?.text ?? null} error={note?.error} />
         </>

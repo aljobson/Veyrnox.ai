@@ -500,6 +500,7 @@ createServer(async (req, res) => {
         if (req.method === 'GET') return send(res, 200, { ...saved, canEdit: true });
         if (req.method === 'PUT') {
             if (body.expected_version !== saved.version) return send(res, 409, { error: { code: 'REVISION_CONFLICT', message: 'The brand kit changed.' } });
+            if (body.kit?.assets?.some(a => !['b5555555-5555-4555-8555-555555555555', 'b6666666-6666-4666-8666-666666666666'].includes(a?.assetId))) return send(res, 404, { error: { code: 'NOT_FOUND' } });
             const next = { kit: body.kit, version: saved.version + 1 };
             state.brandKits.set(m[1], next);
             return send(res, 200, { ...next, canEdit: true });
@@ -507,8 +508,8 @@ createServer(async (req, res) => {
     }
     m = path.match(/^\/api\/v1\/workspaces\/([^/]+)\/brand-assets$/);
     if (m && req.method === 'GET') return send(res, 200, { assets: [
-        { id: 'brand-asset-image', project_id: PROJECTS[0].id, sniffed_type: 'image/png', byte_size: PNG.length, width: 256, height: 256, duration_ms: null },
-        { id: 'brand-asset-video', project_id: PROJECTS[1].id, sniffed_type: 'video/mp4', byte_size: 40099, width: 320, height: 568, duration_ms: CLIP_LENGTH_S * 1000 },
+        { id: 'b5555555-5555-4555-8555-555555555555', project_id: PROJECTS[0].id, sniffed_type: 'image/png', byte_size: PNG.length, width: 256, height: 256, duration_ms: null },
+        { id: 'b6666666-6666-4666-8666-666666666666', project_id: PROJECTS[1].id, sniffed_type: 'video/mp4', byte_size: 40099, width: 320, height: 568, duration_ms: CLIP_LENGTH_S * 1000 },
     ], truncated: false });
     if (path === '/api/v1/projects' && req.method === 'GET') {
         const w = new URL(req.url, 'http://x').searchParams.get('workspace_id');

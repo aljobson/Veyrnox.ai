@@ -2934,6 +2934,36 @@
     "ratio": 1.73
   },
   {
+    "id": "brand.style.add",
+    "english": "Add a text style",
+    "translation": "Adicionar um estilo de texto",
+    "ratio": 1.75
+  },
+  {
+    "id": "brand.style.font",
+    "english": "Font",
+    "translation": "Tipo de letra",
+    "ratio": 3.25
+  },
+  {
+    "id": "brand.style.bold",
+    "english": "Bold",
+    "translation": "Negrito",
+    "ratio": 1.75
+  },
+  {
+    "id": "brand.style.left",
+    "english": "Left",
+    "translation": "Esquerda",
+    "ratio": 2
+  },
+  {
+    "id": "brand.style.done",
+    "english": "Done",
+    "translation": "Concluído",
+    "ratio": 2.25
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",

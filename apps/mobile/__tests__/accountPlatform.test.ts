@@ -1,3 +1,5 @@
+import { assetProblem, attachAsset, assetsOf, editAssetRow, removeAssetRow, toAssetRows, isAttachable, type KitAsset } from '../src/lib/brandKit';
+import { TEXT_DEFAULTS } from '../src/lib/brandKitStyles';
 import { ApiError } from '../src/lib/api';
 import { emptyKit, fetchKit, kitErrorKey, kitProblem, normaliseColour, parseAssets, parseKitState, saveKit } from '../src/lib/brandKit';
 import { groupModels, needs, priceLines } from '../src/lib/catalogPages';
@@ -131,4 +133,47 @@ test('Face Filters search entry is hidden until availability is known open', () 
     expect(hrefs()).not.toContain('/face-filters');
     expect(hrefs(false)).not.toContain('/face-filters');
     expect(hrefs(true)).toContain('/face-filters');
+});
+
+describe('brand kit style and asset parity', () => {
+    const a: KitAsset = { projectId: WS, assetId: WS, name: 'Logo', credit: '', usage: '', url: '' };
+    const rows = (n: number) => toAssetRows(Array.from({ length: n }, (_, i) => ({ ...a, assetId: `00000000-0000-0000-0000-${String(i).padStart(12, '0')}` })), (() => { let i = 0; return () => String(++i); })());
+    test('kit problems include styles and assets after the size check', () => {
+        expect(kitProblem({ ...emptyKit(), textStyles: [null] })).toBe('styles');
+        expect(kitProblem({ ...emptyKit(), assets: [null] })).toBe('assets');
+        expect(kitProblem({ ...emptyKit(), textStyles: [null], assets: [{ pad: 'x'.repeat(9000) }] })).toBe('size');
+        expect(kitProblem({ ...emptyKit(), textStyles: Array(13).fill({ name: 'Title', size: 6, style: TEXT_DEFAULTS }) })).toBe('styles');
+        expect(kitProblem({ ...emptyKit(), assets: Array(25).fill(a) })).toBe('assets');
+    });
+    test.each([{ url: 'http://x' }, { url: 'https://user@x' }, { url: 'https://x y' }, { name: 'x'.repeat(121) }, { usage: 'x'.repeat(241) }, { assetId: 'bad' }, { projectId: 'bad' }, { extra: 1 }])('asset rules match the RPC (%#)', patch => {
+        expect(assetProblem({ ...a, ...patch })).not.toBeNull();
+        expect(assetProblem({ ...a, url: 'https://example.com/licence' })).toBeNull();
+    });
+    test('catalog rows without UUIDs are not offered for attaching', () => {
+        for (const [id, project_id, valid] of [['a', 'p', false], [WS, 'p', false], ['a', WS, false], [WS, WS, true]] as const) {
+            const parsed = parseAssets({ assets: [{ id, project_id }] }).assets;
+            expect(parsed).toHaveLength(1); expect(isAttachable(parsed[0])).toBe(valid);
+        }
+    });
+    test('a 404 on save means a missing file, on read means brand kits are off', () => {
+        expect(kitErrorKey(new ApiError(404, 'unknown'), 'save')).toBe('brand.err.saveNotFound');
+        expect(kitErrorKey(new ApiError(404, 'unknown'), 'read')).toBe('brand.err.off');
+    });
+    test('attaching against the current list rejects duplicates and the 25th asset', () => {
+        const initial = rows(23), snapshot = JSON.stringify(initial);
+        const added = attachAsset(initial, a, 'new'); expect(added.outcome).toBe('added'); expect(added.next).toHaveLength(24);
+        expect(attachAsset(added.next, { ...a, assetId: '22222222-2222-2222-2222-222222222222' }, 'full').outcome).toBe('full');
+        expect(attachAsset(added.next, a, 'duplicate').outcome).toBe('duplicate');
+        expect(JSON.stringify(initial)).toBe(snapshot);
+    });
+    test('rows keep duplicate and malformed stored assets apart', () => {
+        const values = [{ ...a, credit: 'x' }, { ...a, credit: 'y' }, null, { foo: 1 }];
+        let counter = 0; const initial = toAssetRows(values, () => `test-${++counter}`), snapshot = JSON.stringify(initial);
+        expect(new Set(initial.map(r => r.key)).size).toBe(4);
+        const edited = editAssetRow(initial, initial[1].key, { credit: 'z' });
+        expect(assetsOf(edited)).toEqual([values[0], { ...a, credit: 'z' }, null, { foo: 1 }]);
+        const remaining = removeAssetRow(removeAssetRow(edited, initial[0].key), initial[2].key);
+        expect(assetsOf(remaining)).toEqual([{ ...a, credit: 'z' }, { foo: 1 }]);
+        expect(JSON.stringify(initial)).toBe(snapshot); expect(values[1]).toMatchObject({ credit: 'y' });
+    });
 });
