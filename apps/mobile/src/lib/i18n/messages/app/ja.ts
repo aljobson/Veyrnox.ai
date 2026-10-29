@@ -5326,5 +5326,9 @@ export default {
   "editorSave.restoreUnknown": "復元が保存されたかまだ確認できません。再試行中…",
   "editorSave.recovered": "変更を復元しました。まだ保存されていません",
   "editorSave.close": "閉じる",
-  "editorSave.draftUnreadable": "この端末の未保存の変更を確認できませんでした。新しい編集は引き続き保存されます。"
+  "editorSave.draftUnreadable": "この端末の未保存の変更を確認できませんでした。新しい編集は引き続き保存されます。",
+  "projectHome.premium": "プレミアム",
+  "projectHome.notOpen": "まだ利用できません",
+  "projectHome.premiumClosed": "プレミアムモデル · まだ利用できません",
+  "projectHome.details": "詳細"
 } as const;

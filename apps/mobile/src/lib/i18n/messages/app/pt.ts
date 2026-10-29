@@ -5456,5 +5456,9 @@ export default {
   "editorSave.restoreUnknown": "Ainda não sabemos se a restauração foi salva. Tentando novamente…",
   "editorSave.recovered": "Alterações recuperadas, ainda não salvas",
   "editorSave.close": "Fechar",
-  "editorSave.draftUnreadable": "Não foi possível verificar alterações não salvas neste dispositivo. As novas edições continuam sendo salvas."
+  "editorSave.draftUnreadable": "Não foi possível verificar alterações não salvas neste dispositivo. As novas edições continuam sendo salvas.",
+  "projectHome.premium": "EXCLUSIVO",
+  "projectHome.notOpen": "Ainda não disponível",
+  "projectHome.premiumClosed": "MODELO EXCLUSIVO · AINDA NÃO DISPONÍVEL",
+  "projectHome.details": "Detalhes"
 } as const;

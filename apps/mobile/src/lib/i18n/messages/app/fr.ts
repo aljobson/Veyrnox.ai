@@ -5456,5 +5456,9 @@ export default {
   "editorSave.restoreUnknown": "La sauvegarde de la restauration est incertaine. Nouvelle tentative…",
   "editorSave.recovered": "Modifications récupérées, pas encore enregistrées",
   "editorSave.close": "Fermer",
-  "editorSave.draftUnreadable": "Impossible de vérifier les modifications non enregistrées sur cet appareil. Les nouvelles modifications sont toujours enregistrées."
+  "editorSave.draftUnreadable": "Impossible de vérifier les modifications non enregistrées sur cet appareil. Les nouvelles modifications sont toujours enregistrées.",
+  "projectHome.premium": "HAUT DE GAMME",
+  "projectHome.notOpen": "Pas encore disponible",
+  "projectHome.premiumClosed": "MODÈLE HAUT DE GAMME · PAS ENCORE DISPONIBLE",
+  "projectHome.details": "Détails"
 } as const;

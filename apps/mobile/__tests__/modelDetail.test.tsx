@@ -58,3 +58,31 @@ test('loading is labelled and a resolution after unmount causes no update warnin
         expect(error).not.toHaveBeenCalled();
     } finally { error.mockRestore(); }
 });
+
+// Premium discovery must not change any of the supported-model behavior above.
+import { fetchPremiumModels } from '../src/lib/premiumModels';
+jest.mock('../src/lib/premiumModels');
+beforeEach(() => { jest.mocked(fetchPremiumModels).mockReset().mockResolvedValue([]); });
+test('a gated model from the premium list shows the Premium tag and a disabled closed button and never pushes Create', async () => {
+    const premium = { ...model, id: 'premium', gated: true };
+    mockId = premium.id;
+    jest.mocked(fetchPremiumModels).mockResolvedValue([premium]);
+    await render();
+    expect(hasText(t('projectHome.premium'))).toBe(true);
+    expect(hasText(t('modelPage.unavailable'))).toBe(false);
+    const closed = control(t('projectHome.premiumClosed'));
+    expect(closed.props.accessibilityState.disabled).toBe(true);
+    expect(control(t('modelPage.generateLabel', { title: model.name, credits: 7 }))).toBeUndefined();
+    await act(async () => closed.props.onClick?.(event));
+    expect(mockPush).not.toHaveBeenCalled();
+    await click(t('modelPage.packs'));
+    expect(mockPush).toHaveBeenCalledWith('/pricing');
+});
+test('a premium-list failure still renders a supported model', async () => {
+    jest.mocked(fetchPremiumModels).mockRejectedValue(Error('premium outage'));
+    await render();
+    expect(hasText('7 cr')).toBe(true);
+    expect(hasText(t('catalog.failed'))).toBe(false);
+    await click(t('modelPage.generateLabel', { title: model.name, credits: 7 }));
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/create/[modelId]', params: { modelId: model.id } });
+});

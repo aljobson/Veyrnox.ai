@@ -5391,5 +5391,9 @@ export default {
   "editorSave.restoreUnknown": "अभी पता नहीं कि बहाली सहेजी गई या नहीं। फिर कोशिश कर रहे हैं…",
   "editorSave.recovered": "बदलाव पुनर्प्राप्त हुए, अभी सहेजे नहीं गए",
   "editorSave.close": "बंद करें",
-  "editorSave.draftUnreadable": "इस डिवाइस पर बिना सहेजे बदलावों की जाँच नहीं हो सकी। नए बदलाव अब भी सहेजे जा रहे हैं।"
+  "editorSave.draftUnreadable": "इस डिवाइस पर बिना सहेजे बदलावों की जाँच नहीं हो सकी। नए बदलाव अब भी सहेजे जा रहे हैं।",
+  "projectHome.premium": "प्रीमियम",
+  "projectHome.notOpen": "अभी उपलब्ध नहीं",
+  "projectHome.premiumClosed": "प्रीमियम मॉडल · अभी उपलब्ध नहीं",
+  "projectHome.details": "विवरण"
 } as const;

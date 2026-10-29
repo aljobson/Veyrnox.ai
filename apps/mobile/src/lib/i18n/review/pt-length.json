@@ -2898,6 +2898,12 @@
     "ratio": 2
   },
   {
+    "id": "projectHome.notOpen",
+    "english": "Not open yet",
+    "translation": "Ainda não disponível",
+    "ratio": 1.67
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",

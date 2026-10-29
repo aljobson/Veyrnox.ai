@@ -5651,5 +5651,9 @@ export default {
   "editorSave.restoreUnknown": "لم نتأكد من حفظ الاستعادة بعد. نحاول مجددًا…",
   "editorSave.recovered": "تمت استعادة التغييرات ولم تُحفظ بعد",
   "editorSave.close": "إغلاق",
-  "editorSave.draftUnreadable": "تعذّر التحقق من وجود تغييرات غير محفوظة على هذا الجهاز. لا تزال التعديلات الجديدة تُحفظ."
+  "editorSave.draftUnreadable": "تعذّر التحقق من وجود تغييرات غير محفوظة على هذا الجهاز. لا تزال التعديلات الجديدة تُحفظ.",
+  "projectHome.premium": "مميز",
+  "projectHome.notOpen": "غير متاح بعد",
+  "projectHome.premiumClosed": "نموذج مميز · غير متاح بعد",
+  "projectHome.details": "التفاصيل"
 } as const;

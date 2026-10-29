@@ -5391,5 +5391,9 @@ export default {
   "editorSave.restoreUnknown": "Noch unklar, ob die Wiederherstellung gespeichert wurde. Neuer Versuch…",
   "editorSave.recovered": "Änderungen wiederhergestellt, noch nicht gespeichert",
   "editorSave.close": "Schließen",
-  "editorSave.draftUnreadable": "Ungespeicherte Änderungen auf diesem Gerät konnten nicht geprüft werden. Neue Änderungen werden weiterhin gespeichert."
+  "editorSave.draftUnreadable": "Ungespeicherte Änderungen auf diesem Gerät konnten nicht geprüft werden. Neue Änderungen werden weiterhin gespeichert.",
+  "projectHome.premium": "EXKLUSIV",
+  "projectHome.notOpen": "Noch nicht verfügbar",
+  "projectHome.premiumClosed": "EXKLUSIVES MODELL · NOCH NICHT VERFÜGBAR",
+  "projectHome.details": "Einzelheiten"
 } as const;

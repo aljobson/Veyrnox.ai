@@ -5326,5 +5326,9 @@ export default {
   "editorSave.restoreUnknown": "尚不确定恢复是否已保存。正在重试…",
   "editorSave.recovered": "已恢复更改，尚未保存",
   "editorSave.close": "关闭",
-  "editorSave.draftUnreadable": "无法检查此设备上未保存的更改。新的编辑仍会保存。"
+  "editorSave.draftUnreadable": "无法检查此设备上未保存的更改。新的编辑仍会保存。",
+  "projectHome.premium": "高级",
+  "projectHome.notOpen": "暂未开放",
+  "projectHome.premiumClosed": "高级模型 · 暂未开放",
+  "projectHome.details": "详情"
 } as const;

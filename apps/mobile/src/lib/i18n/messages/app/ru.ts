@@ -5521,5 +5521,9 @@ export default {
   "editorSave.restoreUnknown": "Пока неизвестно, сохранилось ли восстановление. Повторяем попытку…",
   "editorSave.recovered": "Изменения восстановлены, но ещё не сохранены",
   "editorSave.close": "Закрыть",
-  "editorSave.draftUnreadable": "Не удалось проверить несохранённые изменения на этом устройстве. Новые правки по-прежнему сохраняются."
+  "editorSave.draftUnreadable": "Не удалось проверить несохранённые изменения на этом устройстве. Новые правки по-прежнему сохраняются.",
+  "projectHome.premium": "ПРЕМИУМ",
+  "projectHome.notOpen": "Пока недоступно",
+  "projectHome.premiumClosed": "ПРЕМИУМ-МОДЕЛЬ · ПОКА НЕДОСТУПНА",
+  "projectHome.details": "Подробнее"
 } as const;

@@ -5456,5 +5456,9 @@ export default {
   "editorSave.restoreUnknown": "Aún no sabemos si se guardó la restauración. Reintentando…",
   "editorSave.recovered": "Cambios recuperados, aún sin guardar",
   "editorSave.close": "Cerrar",
-  "editorSave.draftUnreadable": "No se pudo comprobar si hay cambios sin guardar en este dispositivo. Los cambios nuevos se siguen guardando."
+  "editorSave.draftUnreadable": "No se pudo comprobar si hay cambios sin guardar en este dispositivo. Los cambios nuevos se siguen guardando.",
+  "projectHome.premium": "PRÉMIUM",
+  "projectHome.notOpen": "Aún no disponible",
+  "projectHome.premiumClosed": "MODELO PRÉMIUM · AÚN NO DISPONIBLE",
+  "projectHome.details": "Detalles"
 } as const;

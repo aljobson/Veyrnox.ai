@@ -5326,5 +5326,9 @@ export default {
   "editorSave.restoreUnknown": "복원이 저장되었는지 아직 확인되지 않았습니다. 다시 시도 중…",
   "editorSave.recovered": "변경 사항을 복구했으며 아직 저장하지 않았습니다",
   "editorSave.close": "닫기",
-  "editorSave.draftUnreadable": "이 기기에서 저장되지 않은 변경 사항을 확인할 수 없습니다. 새 편집 내용은 계속 저장됩니다."
+  "editorSave.draftUnreadable": "이 기기에서 저장되지 않은 변경 사항을 확인할 수 없습니다. 새 편집 내용은 계속 저장됩니다.",
+  "projectHome.premium": "프리미엄",
+  "projectHome.notOpen": "아직 이용할 수 없음",
+  "projectHome.premiumClosed": "프리미엄 모델 · 아직 이용할 수 없음",
+  "projectHome.details": "상세 정보"
 } as const;

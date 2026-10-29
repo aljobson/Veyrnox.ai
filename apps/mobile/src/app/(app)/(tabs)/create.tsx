@@ -10,6 +10,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, View, useWindowDimensions } from 'react-native';
 import { FreeAllowanceCard } from '../../../components/FreeAllowanceCard';
 import { fetchCatalogCached, kindOf, type CatalogModel } from '../../../lib/media';
+import { fetchPremiumModels } from '../../../lib/premiumModels';
 import { GOALS, TIERS, filterByTier, freeLeftFor, modelsForGoal, type Goal, type Tier } from '../../../lib/createOptions';
 import { useFreeLeft } from '../../../lib/useFreeLeft';
 import { selectedState } from '../../../lib/a11y';
@@ -39,6 +40,7 @@ export default function Create() {
     const router = useRouter();
     const params = useLocalSearchParams<{ goal?: string }>();
     const [models, setModels] = useState<CatalogModel[] | null>(null);
+    const [premium, setPremium] = useState<CatalogModel[]>([]);
     const [failed, setFailed] = useState(false);
     const [goal, setGoal] = useState<Goal>(params.goal === 'video' || params.goal === 'audio' ? params.goal : 'image');
     const [tier, setTier] = useState<Tier | null>(null);
@@ -49,6 +51,9 @@ export default function Create() {
         // Browsing the list works from a saved copy; the next screen loads the live catalog and prices.
         fetchCatalogCached((list) => setModels(list)).catch(() => setFailed(true));
         fetchAgentListing().then(setAgent);
+        let live = true;
+        void fetchPremiumModels().then(list => { if (live) setPremium(list); });
+        return () => { live = false; };
     }, []);
 
     const goalModels = useMemo(() => modelsForGoal(models ?? [], goal), [models, goal]);
@@ -118,6 +123,16 @@ export default function Create() {
                             ) : null}
                         </View>
                     }
+                    ListFooterComponent={premium.length ? <View style={styles.header}>
+                        <Text variant="title3" accessibilityRole="header">{t('projectHome.premium')}</Text>
+                        {premium.map(model => <Card key={model.id} accessibilityLabel={rawText(`${model.name}, ${t(`library.type.${kindOf(model.modality)}`)}, ${t('projectHome.premium')}, ${t('projectHome.notOpen')}`)}
+                            onPress={() => router.push({ pathname: '/model/[id]', params: { id: model.id } })}>
+                            <Text variant="bodyStrong">{model.name}</Text>
+                            <Text tone="secondary">{t(`library.type.${kindOf(model.modality)}`)}</Text>
+                            <View style={styles.premiumTag}><Icon name="sparkleFill" size={20} /><Text>{t('projectHome.premium')}</Text></View>
+                            <Text tone="secondary">{t('projectHome.notOpen')}</Text>
+                        </Card>)}
+                    </View> : undefined}
                     keyExtractor={(m) => m.id}
                     ListEmptyComponent={<Text variant="body" tone="tertiary" style={styles.muted}>{t('create.noModels', { kind: kindWord })}</Text>}
                     renderItem={({ item }) => {
@@ -150,6 +165,7 @@ const sheets = themedStyles((p) => ({
     list: { padding: ds.space.lg, paddingTop: ds.space.xl, paddingBottom: LIST_END_PADDING, gap: ds.space.sm },
     body: { padding: ds.space.lg },
     screen: { flex: 1, backgroundColor: p.bg },
+    premiumTag: { flexDirection: 'row', alignItems: 'center', gap: ds.space.sm },
     header: { gap: ds.space.md, marginBottom: ds.space.xs },
     intro: { gap: ds.space.sm, marginBottom: ds.space.sm },
     heading: { color: p.textPrimary, },
