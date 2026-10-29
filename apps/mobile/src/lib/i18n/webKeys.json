@@ -23,6 +23,7 @@
   "public.TemplateRecipe.exactCommunityPrompt",
   "public.TemplateRecipe.copyExactCommunityPrompt",
   "public.TemplateRecipe.exactCommunityPromptHelp",
+  "public.TemplateRecipe.promptTooLong",
   "public.TemplateRecipe.generationPrompt",
   "recovery.retry",
   "cinema.creatorWorkspace.cancel",

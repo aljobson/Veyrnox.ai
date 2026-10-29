@@ -8,6 +8,7 @@ import { writeTemplateChatDraft } from '../_lib/chatTemplateDraft';
 import { useCatalog } from '../_lib/useCatalog';
 import { writeFilmStarter } from '../_lib/filmTemplateDraft';
 import { writeStudioDraft } from '../_lib/landingDraft';
+import { TEMPLATE_PROMPT_MAX } from '../_lib/templateDraft';
 import { modelAspectRatios, modelIdForName, presetCredits, presetHref } from '../_lib/tokens';
 
 // The aspect the studio will actually use: the template's, when its model
@@ -30,13 +31,15 @@ export function UseTemplate({ preset, prompt = preset.prompt }) {
   const [targetSeconds, setTargetSeconds] = useState(60);
   const credits = presetCredits(preset, models, durationSeconds);
   const [handoffError, setHandoffError] = useState('');
+  // The studio, film planner and chat all cap a prompt at this length; an exact community prompt can be longer.
+  const blocked = !prompt.trim() || prompt.length > TEMPLATE_PROMPT_MAX;
 
   function use() {
     // The URL restores the recipe if storage is blocked; preserve edited text.
     if (modelId) {
       let saved = false;
       try { saved = writeStudioDraft(window.sessionStorage, { prompt, model: modelId, aspect, durationSeconds, negativePrompt: preset.negativePrompt, templateId: preset.id }); } catch { /* The unedited URL recipe still works. */ }
-      if (!saved && prompt !== preset.prompt) { setHandoffError('studio'); return; }
+      if (!saved && (prompt !== preset.prompt || preset.sourcePromptOrigin === 'community-source-exact')) { setHandoffError('studio'); return; }
     }
     router.push(presetHref(preset, durationSeconds));
   }
@@ -51,6 +54,7 @@ export function UseTemplate({ preset, prompt = preset.prompt }) {
   }
 
   function handToChat(event) {
+    if (blocked) { event.preventDefault(); return; }
     let saved = false;
     try { saved = writeTemplateChatDraft(window.sessionStorage, preset, prompt); } catch { /* Browser storage can be unavailable. */ }
     if (saved) return;
@@ -68,7 +72,7 @@ export function UseTemplate({ preset, prompt = preset.prompt }) {
       <button
         type="button"
         onClick={use}
-        disabled={!prompt.trim()}
+        disabled={blocked}
         className="vx-press mt-6 inline-flex items-center gap-4 rounded-full bg-vx-accent px-6 py-3.5 font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover disabled:opacity-50"
       >
         <span>{preset.inspired ? t("presets.use.similar") : t("presets.use.template")}</span>
@@ -81,13 +85,13 @@ export function UseTemplate({ preset, prompt = preset.prompt }) {
           <select aria-label={t("presets.use.target")} value={targetSeconds} onChange={(event) => setTargetSeconds(Number(event.target.value))} className="rounded-lg border border-vx-border bg-vx-base px-3 py-2 text-sm font-bold">
             {[30, 60, 90, 120].map((seconds) => <option key={seconds} value={seconds}>{t('presets.use.seconds', { count: seconds })}</option>)}
           </select>
-          <button type="button" onClick={buildFilm} disabled={!prompt.trim()} className="vx-press rounded-full border border-vx-accent px-5 py-2 text-sm font-extrabold text-vx-accent disabled:opacity-50">{t("presets.use.build")}</button>
+          <button type="button" onClick={buildFilm} disabled={blocked} className="vx-press rounded-full border border-vx-accent px-5 py-2 text-sm font-extrabold text-vx-accent disabled:opacity-50">{t("presets.use.build")}</button>
         </div>
       </div>
       <div className="mt-3 rounded-xl border border-vx-border bg-vx-panel/40 p-4">
         <p className="font-bold">{t("presets.use.chatTitle")}</p>
         <p className="mt-1 text-[13px] text-vx-fg-muted">{t("presets.use.chatPlan")}</p>
-        <Link href="/app/chat?skill=prompt-writer" onClick={handToChat} className="vx-press mt-3 inline-flex rounded-full border border-vx-accent px-5 py-2 text-sm font-extrabold text-vx-accent">
+        <Link href="/app/chat?skill=prompt-writer" onClick={handToChat} aria-disabled={blocked} className="vx-press mt-3 inline-flex aria-disabled:opacity-50 rounded-full border border-vx-accent px-5 py-2 text-sm font-extrabold text-vx-accent">
           {t("presets.use.openChat")}
         </Link>
       </div>
