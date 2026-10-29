@@ -67,3 +67,5 @@ flag enabled on one iPhone and one Android phone. Enrol, sign out, sign in, and 
 from the same card. Setup errors indicate association/configuration investigation; a server refusal on
 Android requires checking Auth logs for origin rejection. Do not enable Android shipping builds until
 that proof succeeds.
+
+**Amendment (2026-10-29): iOS on.** The owner turned passkeys on for phone builds. `EXPO_PUBLIC_PASSKEYS_IOS_ENABLED` is `"true"` in the `preview` and `production` EAS profiles, and the AASA file now carries `webcredentials` for `R54268MWFV.ai.veyrnox.app` (`lib/mobileAppLinks.js`). Android stays off until assetlinks has `get_login_creds` with the signing fingerprints and Supabase Auth allows the `android:apk-key-hash` origins. Rollback: remove the env entries and make a new build.

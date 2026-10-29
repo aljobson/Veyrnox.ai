@@ -32,6 +32,7 @@ test('apple file shape and paths', () => {
     assert.deepEqual(d.components.map((c) => c['/']), APP_LINK_PATHS);
     assert.ok(APP_LINK_PATHS.every((p) => p.startsWith('/app/') || p === '/social/team/invite/*'));
     assert.ok(d.components.some((c) => c['/'] === '/social/team/invite/*'));
+    assert.deepEqual(body.webcredentials, { apps: ['ABCDE12345.ai.veyrnox.app'] });
 });
 
 test('android file shape', () => {
