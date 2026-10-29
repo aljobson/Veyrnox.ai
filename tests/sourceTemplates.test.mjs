@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { SOURCE_TEMPLATES } from '../app/veyrnox/_lib/sourceTemplates.js';
 import { GENJUTSU_SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/genjutsuSourcePromptRecords.js';
+import { HIGGSFIELD_90_SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/higgsfieldCommunityExpansion90Records.js';
 import { SYNTX_SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/syntxSourcePromptRecords.js';
 import { exactSourcePromptRecord } from '../app/veyrnox/_lib/sourcePromptRecords.js';
 import { sourcePromptAuditRecord } from '../app/veyrnox/_lib/sourcePromptAudit.js';
@@ -13,6 +14,16 @@ import { SYNTX_PROMPT_SHA256 } from './fixtures/syntxPromptHashes.mjs';
 import { SYNTX_EXPANSION_SOURCE_ASSET_SHA256, SYNTX_RECOVERED_PREVIEW_SSIM } from './fixtures/syntxSourceAssetHashes.mjs';
 import { SYNTX_40_VIDEO_SIGNATURES } from './fixtures/syntx40SourceAssetHashes.mjs';
 import { SYNTX_40_TEMPLATE_IDS } from '../app/veyrnox/_lib/sourceTemplateExpansion11.js';
+import {
+  HIGGSFIELD_90_TEMPLATE_IDS,
+  REPLACED_HIGGSFIELD_TEMPLATE_IDS,
+} from '../app/veyrnox/_lib/sourceTemplateExpansion12.js';
+import { HIGGSFIELD_90_PROMPT_SHA256 } from './fixtures/higgsfield90PromptHashes.mjs';
+import {
+  HIGGSFIELD_90_PREVIEW_SHA256,
+  HIGGSFIELD_90_SOURCE_ASSET_SHA256,
+  HIGGSFIELD_90_VIDEO_SIGNATURES,
+} from './fixtures/higgsfield90SourceAssetHashes.mjs';
 import { ALL_TEMPLATES, PRESETS, REMOVED_PROMPT_GAP_TEMPLATE_IDS, WALL_PRESETS, templateById } from '../app/veyrnox/_lib/templates.js';
 import { MODELS, modelIdForName, presetCredits, presetHref } from '../app/veyrnox/_lib/tokens.js';
 import { AUDIT_SHOWCASE_CLIPS } from '../app/veyrnox/_lib/showcase.js';
@@ -121,18 +132,69 @@ test('verbatim Genjutsu provenance preserves public attribution and feed-empty r
   assert.match(GENJUTSU_SOURCE_PROMPT_RECORDS['community-survivor-memory-shift'].prompt, /\nAt$/);
 });
 
+test('the 90 replacement Higgsfield templates preserve exact same-record prompts and unique videos', () => {
+  const audit = JSON.parse(readFileSync(new URL('../docs/product/source-audit/higgsfield-90-exact-2026-10-29.json', import.meta.url)));
+  const auditById = Object.fromEntries(audit.records.map((record) => [record.id, record]));
+  const oldPromptHashes = new Set(Object.values({
+    ...GENJUTSU_SOURCE_PROMPT_RECORDS,
+    ...SYNTX_SOURCE_PROMPT_RECORDS,
+  }).filter((record) => record.sourcePromptAvailable && typeof record.prompt === 'string')
+    .map((record) => createHash('sha256').update(record.prompt).digest('hex')));
+
+  assert.equal(HIGGSFIELD_90_TEMPLATE_IDS.length, 90);
+  assert.equal(REPLACED_HIGGSFIELD_TEMPLATE_IDS.length, 90);
+  assert.equal(Object.keys(HIGGSFIELD_90_SOURCE_PROMPT_RECORDS).length, 90);
+  assert.equal(Object.keys(HIGGSFIELD_90_PROMPT_SHA256).length, 90);
+  assert.equal(Object.keys(HIGGSFIELD_90_SOURCE_ASSET_SHA256).length, 90);
+  assert.equal(new Set(Object.values(HIGGSFIELD_90_VIDEO_SIGNATURES)).size, 90);
+  assert.equal(new Set(Object.values(HIGGSFIELD_90_PREVIEW_SHA256)).size, 90);
+  assert.equal(audit.requested, 90);
+  assert.equal(audit.accepted, 90);
+  assert.deepEqual(audit.duplicateChecks, {
+    uniquePromptHashes: 90,
+    uniqueSourceMediaIds: 90,
+    uniqueSourceAssetHashes: 90,
+    uniquePreviewHashes: 90,
+    uniqueNormalizedVideoSignatures: 90,
+  });
+
+  const publicIds = new Set(SOURCE_TEMPLATES.map(({ id }) => id));
+  for (const replacedId of REPLACED_HIGGSFIELD_TEMPLATE_IDS) assert.equal(publicIds.has(replacedId), false, replacedId);
+  for (const id of HIGGSFIELD_90_TEMPLATE_IDS) {
+    const source = HIGGSFIELD_90_SOURCE_PROMPT_RECORDS[id];
+    const record = auditById[id];
+    const template = SOURCE_TEMPLATES.find((candidate) => candidate.id === id);
+    const promptHash = createHash('sha256').update(source.prompt).digest('hex');
+    assert.ok(template, id);
+    assert.equal(source.sourcePromptAvailable, true, id);
+    assert.equal(source.prompt, record.prompt, id);
+    assert.equal(promptHash, HIGGSFIELD_90_PROMPT_SHA256[id], id);
+    assert.equal(oldPromptHashes.has(promptHash), false, `${id} duplicates an earlier exact prompt`);
+    assert.equal(record.sourceAssetSha256, HIGGSFIELD_90_SOURCE_ASSET_SHA256[id], id);
+    assert.equal(record.sourceVideoSignature, HIGGSFIELD_90_VIDEO_SIGNATURES[id], id);
+    const localPreviewHash = createHash('sha256').update(readFileSync(
+      fileURLToPath(new URL(`../public/showcase/viral-${id}.mp4`, import.meta.url)),
+    )).digest('hex');
+    assert.equal(localPreviewHash, record.localPreviewSha256, id);
+    assert.equal(localPreviewHash, HIGGSFIELD_90_PREVIEW_SHA256[id], id);
+    const localPoster = readFileSync(fileURLToPath(new URL(`../public/showcase/viral-${id}.jpg`, import.meta.url)));
+    assert.equal(createHash('sha256').update(localPoster).digest('hex'), record.localPosterSha256, id);
+    assert.equal(localPoster.byteLength, record.localPosterBytes, id);
+  }
+});
+
 test('public templates are exact or adaptation-only and all source-gap records are removed', () => {
   const audit = PRESETS.map((preset) => [preset.id, sourcePromptAuditRecord(preset.id)]);
   const groups = Object.groupBy(audit, ([, record]) => record.status);
-  assert.equal(groups.exact.length, 153);
-  assert.equal(groups['adaptation-only'].length, 117);
+  assert.equal(groups.exact.length, 243);
+  assert.equal(groups['adaptation-only'].length, 27);
   assert.equal(groups['exact-truncated'], undefined);
   assert.equal(groups.unavailable, undefined);
   assert.equal(audit.length, 270);
   assert.ok(audit.every(([, record]) => record.runnable === false));
-  assert.equal(audit.filter(([, record]) => record.issues.includes('prompt-over-2000')).length, 102);
-  assert.equal(audit.filter(([, record]) => record.issues.includes('more-than-two-reference-images')).length, 17);
-  assert.equal(audit.filter(([, record]) => record.issues.includes('audio-preservation-not-supported')).length, 88);
+  assert.equal(audit.filter(([, record]) => record.issues.includes('prompt-over-2000')).length, 125);
+  assert.equal(audit.filter(([, record]) => record.issues.includes('more-than-two-reference-images')).length, 28);
+  assert.equal(audit.filter(([, record]) => record.issues.includes('audio-preservation-not-supported')).length, 100);
   assert.equal(sourcePromptAuditRecord('community-survivor-memory-shift').status, 'exact-truncated');
   assert.equal(sourcePromptAuditRecord('keyboard-duo-swap').status, 'unavailable');
   assert.equal(REMOVED_PROMPT_GAP_TEMPLATE_IDS.length, 45);
@@ -334,13 +396,10 @@ test('removed legacy recipes stay unavailable while effect recipes are addressab
 test('source-backed generation prompts match the published preview behaviour', () => {
   const byId = Object.fromEntries(SOURCE_TEMPLATES.map((preset) => [preset.id, preset]));
   const prompts = Object.fromEntries(Object.entries(byId).map(([id, preset]) => [id, preset.prompt]));
-  assert.match(prompts['high-flip'], /transform both the person and location/i);
-  assert.doesNotMatch(byId['high-flip'].negativePrompt, /identity|character blending/i);
-  assert.match(prompts['earth-zoom'], /Begin on the uploaded outdoor subject.+Earth is visible from orbit.+plunge.+lands back on the subject/s);
-  assert.match(prompts.pigeons, /one pigeon forms beneath each foot.+roller skates/s);
-  assert.match(prompts['raven-transition'], /three distinct coordinated looks.+ravens/s);
-  assert.match(prompts['motion-tracking'], /free of text and brand marks/i);
-  assert.doesNotMatch(prompts['motion-tracking'], /labels/i);
+  assert.match(prompts['community-noir-leading-role'], /black-and-white montage.+training.+intense close portraits/s);
+  assert.match(prompts['identity-locked-performance'], /speech-like mouth motion.+facial proportions/s);
+  assert.match(prompts['community-kitchen-snack-heist'], /opens the refrigerator.+one spoonful of dessert/s);
+  assert.match(prompts['community-parking-lot-recast'], /parking lot recast.+recognizable identity/s);
 });
 
 test('all source-backed generation prompts remain distinct', () => {
@@ -363,7 +422,7 @@ test('retained source-template audit data and media paths are source-platform ne
 
 test('every retained source video and poster is a unique local asset', () => {
   const clips = Object.values(AUDIT_SHOWCASE_CLIPS);
-  assert.equal(clips.length, 315);
+  assert.equal(clips.length, 405);
   for (const field of ['video', 'poster']) {
     const paths = clips.map((clip) => clip[field]);
     assert.equal(new Set(paths).size, paths.length, `${field} paths must be unique`);
@@ -375,8 +434,9 @@ test('every retained source video and poster is a unique local asset', () => {
 });
 
 test('community inspiration previews contain no audio track', () => {
-  const videos = Object.values(AUDIT_SHOWCASE_CLIPS).map((clip) => clip.video).filter((path) => path.startsWith('/showcase/creator-'));
-  assert.equal(videos.length, 100);
+  const videos = Object.values(AUDIT_SHOWCASE_CLIPS).map((clip) => clip.video)
+    .filter((path) => path.startsWith('/showcase/creator-') || path.startsWith('/showcase/viral-community-'));
+  assert.equal(videos.length, 190);
   for (const path of videos) {
     const data = readFileSync(fileURLToPath(new URL(`../public${path}`, import.meta.url)));
     let offset = 0;

@@ -4,11 +4,12 @@ On 10 October 2026 the owner requested usable recipes for the imported previews,
 including prompts and inputs, rather than unrelated footage in preset cards.
 The source template workflows were inspected with Agent Reach and the REA skill.
 
-`sourceTemplates.js` retains 315 audited media-backed source recipes with their title,
+`sourceTemplates.js` exposes 315 media-backed source recipes with their title,
 clip key, Veyrnox remix prompt, supported video model, duration, upload guidance
 and neutral inspiration marker. The public filter removes 44 records whose
-matched prompt is unavailable and one whose matched prompt is truncated. The
-gallery exposes the remaining 270 recipes and the
+matched prompt is unavailable and one whose matched prompt is truncated. It
+also replaces 90 older promptless Higgsfield adaptations one-for-one with 90
+current same-record exact prompt/video pairs. The gallery exposes 270 recipes and the
 homepage wall features 24 of them. Every public template has a distinct local
 video and poster. A detail page intentionally reuses the preview of the card it describes.
 Source-platform names, record IDs and URLs are not included in public template
@@ -47,8 +48,8 @@ claiming access to a private internal prompt.
 Lidar's public description incorrectly repeats Incline; its adaptation follows
 the verified cyan point-cloud flower-field footage instead.
 
-On 29 October 2026 the prompt provenance audit covered all 100 Genjutsu
-community previews, all 98 Syntx-linked templates and all 91 other
+On 29 October 2026 the prompt provenance audit covered all 100 original Genjutsu
+community previews, all 98 Syntx-linked templates and all 91 older
 Higgsfield-sourced previews. The public
 Genjutsu feed published an exact prompt for 57 records. One was already
 truncated and was removed; the other 56 strings are preserved verbatim in the
@@ -59,11 +60,14 @@ Verbatim preservation includes creator attribution, reference tokens and empty
 reference slots emitted by the public feed; Veyrnox does not guess missing
 references or silently repair source text. The other 43 Genjutsu records expose
 no exact public source prompt and are removed from all public template surfaces.
-The older Higgsfield-sourced videos remain explicit `adaptation-only` recipes
-and must not be presented as copied Higgsfield system prompts. The audit also corrected the High Flip, Earth
-Zoom, Pigeons, Raven Transition and Motion Tracking adaptations to match the
-published preview behavior and removed an internally contradictory text-label
-instruction.
+The 90 older promptless Higgsfield adaptations were subsequently removed from
+the public catalog and replaced by 90 current Genjutsu community records whose
+exact prompt and generation video are tied to the same immutable source record.
+Their exact text, record/media IDs, input roles and prompt/source/preview hashes
+are locked in
+[`source-audit/higgsfield-90-exact-2026-10-29.json`](source-audit/higgsfield-90-exact-2026-10-29.json).
+The old assets remain non-public audit evidence and must not be presented as
+copied Higgsfield system prompts.
 
 The public feed's `community-survivor-memory-shift` prompt ends mid-sentence at
 `At`; the source record marks it `sourcePromptTruncated: true`. This is retained

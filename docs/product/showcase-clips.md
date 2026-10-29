@@ -38,7 +38,12 @@ homepage previews with their own recipes. The shared
 `PresetCard` also brings the gallery previews to the studio Explore gallery.
 
 All 270 public templates use different footage. The 45 promptless or truncated
-source captures remain non-public audit evidence. Product Hero 360 appears in the
+source captures remain non-public audit evidence. Ninety older promptless
+Higgsfield adaptations were also replaced one-for-one by current community
+records whose exact prompt and video belong to the same record; their immutable
+IDs, URLs and hashes are recorded in
+[`source-audit/higgsfield-90-exact-2026-10-29.json`](source-audit/higgsfield-90-exact-2026-10-29.json).
+Product Hero 360 appears in the
 gallery while Miniature Crew has its own template, prompt, video and poster,
 preserving distinct content as requested by the owner.
 
