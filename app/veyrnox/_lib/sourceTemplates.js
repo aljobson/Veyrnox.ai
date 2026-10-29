@@ -69,7 +69,7 @@ export const SOURCE_TEMPLATES = [
   },
   {
     "id": "epic-train-doorway-scene", "name": "EPIC TRAIN DOORWAY SCENE", "clipKey": "film-portrait",
-    "model": "Seedance 2.0 Fast", "credits": 28, "durationSeconds": 10, "aspect": "9:16",
+    "model": "Seedance 2.0 Fast", "credits": 19, "durationSeconds": 10, "aspect": "9:16",
     "category": "MOVIES", "isNew": true, "previewAspect": "406 / 720",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": "An optional starting image showing your characters together in the intended setting",
     "prompt": "Create a ten-second cinematic video. One continuous shot starts already at the open doorway of a moving train, looking outward. Move the camera forward into open air, then rotate right and backward along the train exterior. Reveal a smiling person on the right in the next carriage doorway, holding both handrails and leaning backward into the wind. Hair and clothing respond naturally. Show a monumental mountain landscape, warm golden-hour rim light, atmospheric haze and the sense of high speed. No cuts. Use the uploaded start image for the characters and composition when supplied. No added captions, watermark or logo.", "promptOrigin": "veyrnox-adaptation",
@@ -96,7 +96,7 @@ export const SOURCE_TEMPLATES = [
   },
   {
     "id": "the-push", "name": "THE PUSH", "clipKey": "portal-burst",
-    "model": "Seedance 2.0 Fast", "credits": 28, "durationSeconds": 10, "aspect": "16:9",
+    "model": "Seedance 2.0 Fast", "credits": 19, "durationSeconds": 10, "aspect": "16:9",
     "category": "MOVIES", "isNew": true, "previewAspect": "720 / 406",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": "An optional starting image showing your characters together in the intended setting",
     "prompt": "Create a ten-second cinematic video. A moody cinematic scene on a black basalt promontory above a stormy North Atlantic ocean. Start wide on enormous waves, then show a windswept couple in a spinning embrace and a close kiss. Their mood turns tense; the man gives the woman one sudden realistic push. Cut overhead as she falls slowly backward beside the cliff, with wind moving her hair and clothes. End while she is still in the air, without impact or injury. Cold teal-gray light, subtle grain and physically coherent motion. Use the uploaded start image for the characters and composition when supplied. No added captions, watermark or logo.", "promptOrigin": "veyrnox-adaptation",
@@ -105,7 +105,7 @@ export const SOURCE_TEMPLATES = [
   },
   {
     "id": "dreamworks-castle", "name": "DREAMWORKS CASTLE", "clipKey": "floating-castle",
-    "model": "Seedance 2.0 Fast", "credits": 28, "durationSeconds": 10, "aspect": "9:16",
+    "model": "Seedance 2.0 Fast", "credits": 19, "durationSeconds": 10, "aspect": "9:16",
     "category": "FANTASY", "isNew": true, "previewAspect": "406 / 720",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": "An optional starting image showing your characters together in the intended setting",
     "prompt": "Create a ten-second cinematic video. One continuous handheld shot in a vivid green meadow at cool blue dusk. The uploaded person looks left, sheep pass close to the camera, and the person begins running left. Jog behind them, then lift the camera once to reveal an enormous original pale-stone fairytale palace across a winding stream. Gold, white and blue-violet fireworks bloom above its towers while exactly three sheep graze nearby. Keep the face and outfit consistent; no cuts, no logos, no warm orange sky and no steps into the water. Use the uploaded start image for the characters and composition when supplied. No added captions, watermark or logo.", "promptOrigin": "veyrnox-adaptation",
@@ -114,7 +114,7 @@ export const SOURCE_TEMPLATES = [
   },
   {
     "id": "a-moment-between-strangers", "name": "A MOMENT BETWEEN STRANGERS", "clipKey": "wall-warm-portrait",
-    "model": "Seedance 2.0 Fast", "credits": 28, "durationSeconds": 10, "aspect": "16:9",
+    "model": "Seedance 2.0 Fast", "credits": 19, "durationSeconds": 10, "aspect": "16:9",
     "category": "MOVIES", "isNew": true, "previewAspect": "720 / 540",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": "An optional starting image showing your characters together in the intended setting",
     "prompt": "Create a ten-second cinematic video. A warm late-1990s romantic film on a busy Manhattan sidewalk in autumn. A suited man bumps into a woman carrying books; the books fall. They kneel together, gather the books and share a small smile. A second woman in a glossy belted black leather coat steps out of a boutique in the background. Keep the three identities distinct. Wet pavement, brick facades, yellow taxis, warm shop lights, soft grain, natural pedestrian traffic and gentle handheld reframing. Use the uploaded start image for the characters and composition when supplied. No added captions, watermark or logo.", "promptOrigin": "veyrnox-adaptation",
@@ -123,7 +123,7 @@ export const SOURCE_TEMPLATES = [
   },
   {
     "id": "the-last-stagecoach", "name": "THE LAST STAGECOACH", "clipKey": "wall-film-portrait",
-    "model": "Seedance 2.0 Fast", "credits": 28, "durationSeconds": 10, "aspect": "16:9",
+    "model": "Seedance 2.0 Fast", "credits": 19, "durationSeconds": 10, "aspect": "16:9",
     "category": "MOVIES", "isNew": true, "previewAspect": "720 / 406",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": "An optional starting image showing your characters together in the intended setting",
     "prompt": "Create a ten-second cinematic video. A cinematic Western at golden hour: track a stagecoach racing across dusty prairie with bandits pursuing on horseback. One rider climbs onto the moving coach, reaches for the brass door handle and opens the door. Reveal the uploaded Stranger character sitting calmly inside, hat low, eyes slowly lifting toward the bandit. End with a close-up of the Stranger’s hand resting on an ivory-grip revolver, then their steady eyes. Warm amber highlights, cool teal shadows, natural horse and body mechanics; no gunfire impact or injury. Use the uploaded start image for the characters and composition when supplied. No added captions, watermark or logo.", "promptOrigin": "veyrnox-adaptation",
