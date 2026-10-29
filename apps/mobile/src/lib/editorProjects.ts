@@ -26,6 +26,11 @@ export async function getDocument(api: ApiClient, id: string): Promise<DocumentH
     if (!Number.isSafeInteger(head?.revision) || head.revision < 0 || !validDocument(head.document, id)) throw new ApiError(503, 'invalid_response');
     return head;
 }
+export async function getDocumentAt(api: ApiClient, id: string, revision: number): Promise<DocumentHead> {
+    const head = await observe(api.request<DocumentHead>(`${path(id)}?revision=${encodeURIComponent(String(revision))}`));
+    if (!Number.isSafeInteger(head?.revision) || head.revision < 0 || !validDocument(head.document, id)) throw new ApiError(503, 'invalid_response');
+    return head;
+}
 export async function putDocument(api: ApiClient, id: string, expectedRevision: number, document: ProjectDocument, key: string) {
     const result = await observe(api.request<{ revision: number }>(path(id), {
         method: 'PUT', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': key },

@@ -2886,6 +2886,42 @@
     "ratio": 1.77
   },
   {
+    "id": "editorSave.loadOlder",
+    "english": "Load older",
+    "translation": "Carregar anteriores",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorSave.retryRestore",
+    "english": "Retry restore",
+    "translation": "Tentar restaurar novamente",
+    "ratio": 2
+  },
+  {
+    "id": "projectDocument.noChanges",
+    "english": "No changes yet",
+    "translation": "Nenhuma alteração ainda",
+    "ratio": 1.64
+  },
+  {
+    "id": "projectDocument.retrySave",
+    "english": "Retry save",
+    "translation": "Tentar salvar novamente",
+    "ratio": 2.3
+  },
+  {
+    "id": "projectDocument.reviewLatest",
+    "english": "Review latest",
+    "translation": "Revisar a mais recente",
+    "ratio": 1.69
+  },
+  {
+    "id": "projectDocument.reloadLatest",
+    "english": "Reload latest",
+    "translation": "Recarregar a mais recente",
+    "ratio": 1.92
+  },
+  {
     "id": "brand.style.add",
     "english": "Add a text style",
     "translation": "Adicionar um estilo de texto",

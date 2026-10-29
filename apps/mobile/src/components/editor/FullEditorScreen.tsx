@@ -4,8 +4,12 @@ import { Text as StatusText } from '../ui/Text';
 import { Command, Action, Choice, Stepper, LabeledInput, PanelHeading, EmptyPanel, WorkflowPanel } from './EditorControls';
 import { PlaybackPreview, PlaybackTimeline, PlaybackTransport } from './EditorPlayback';
 import { canTrim, fitPpf, formatTimecode as timecode, moveItems, trimItem, PPF_MIN, PPF_MAX, SEQUENCE_MAX } from '../../lib/editorTimeline';
-import { libraryMedia } from '../../lib/editorLibraryLength';
-import { getCacheUser } from '../../lib/appCache';
+import { libraryMedia, LIBRARY_STOPPED } from '../../lib/editorLibraryLength';
+import { isAccountChanged } from '../../auth/sessionTask';
+import { useEditorLeaveGuard } from './useEditorLeaveGuard';
+import { EditorSaveSheets } from './EditorSaveSheets';
+import { EditorVersionsSheet } from './EditorVersionsSheet';
+import { Button } from '../ui/Button';
 import { useEffect, useRef, useState } from 'react';
 import { EDITOR_SERVER_EXPORT_ENABLED } from '../../lib/editorFlag';
 import { requireOnline, OFFLINE_PAID_MESSAGE } from '../../lib/network';
@@ -57,7 +61,8 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
     const [viewport, setViewport] = useState(0);
     useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
     const [exportVisible, setExportVisible] = useState(false);
-    const { currentDocument, preparePicked, savedDocument, api, router, name, document, revision, dirty, saving, problem, setProblem, tool, setTool, selection, setSelection, selections, setSelections, multiSelect, setMultiSelect, clipboard, setClipboard, snap, setSnap, ripple, setRipple, zoom, setZoom, privacyNotice, history, frameStore, setFrame, playing, setPlaying, projectAssets, localMediaUris, libraryKind, setLibraryKind, markDocument, save, done, acknowledgePrivacy, travel } = useFullEditorSession({ projectId, jobId });
+    const { beginImport, replacing, leaveEditor, saveStatus, sync, currentDocument, preparePicked, savedDocument, api, router, name, document, dirty, problem, setProblem, tool, setTool, selection, setSelection, selections, setSelections, multiSelect, setMultiSelect, clipboard, setClipboard, snap, setSnap, ripple, setRipple, zoom, setZoom, privacyNotice, history, frameStore, setFrame, playing, setPlaying, projectAssets, localMediaUris, libraryKind, setLibraryKind, markDocument, save, acknowledgePrivacy, travel } = useFullEditorSession({ projectId, jobId, onOwnerChange: () => guard.teardown(() => router.back()), onCopy: id => guard.teardown(() => router.replace({ pathname: '/editor/[projectId]', params: { projectId: id } })) });
+    const guard = useEditorLeaveGuard(leaveEditor, router.back);
     if (!document) return <View style={styles.loading}><Stack.Screen options={{ title: t('editor.title') }} /><ActivityIndicator color={colors.accent} /><Text style={styles.muted}>{problem ?? t('editor.fullLoading')}</Text></View>;
 
     const canvas = canvasOf(document.canvas);
@@ -179,29 +184,33 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
         setSelections([nextSelection]);
     };
     const importLibrary = async (choice: LibraryChoice, kind: SlotKind) => {
-        const owner = getCacheUser();
+        const token = beginImport(); if (!token) return;
         setLibraryKind(null); setLibraryPending(true); setProblem(null);
         try {
-            const media = await libraryMedia(api, choice, kind);
-            if (!mounted.current || getCacheUser() !== owner) return;
+            const media = await libraryMedia(api, choice, kind, () => token.valid());
+            if (media === LIBRARY_STOPPED || !token.valid()) return;
             if (!media) { setProblem(t('editorCore.lengthUnknown')); return; }
             addMediaToTimeline(media, timelineOf(currentDocument()?.timeline));
-        } finally { if (mounted.current) setLibraryPending(false); }
+        } catch (error) { if (isAccountChanged(error)) sync.accountChanged(); else if (token.valid()) setProblem(t('editorCore.lengthUnknown')); }
+        finally { token.end(); if (mounted.current) setLibraryPending(false); }
     };
     const importPicked = async (asset: { uri: string; fileName?: string | null; name?: string; mimeType?: string | null; duration?: number | null; width?: number; height?: number }) => {
-        const mime = String(asset.mimeType || '').toLowerCase();
-        const kind = mime.startsWith('audio/') ? 'audio' : mime.startsWith('image/') ? 'image' : mime.startsWith('video/') ? 'video' : null;
-        if (!kind) { setProblem(t('editor.chooseavideoimageoraudiofile')); return; }
-        const id = `l-${randomUUID()}`;
-        const durationSeconds = await preparePicked(asset, id, kind);
-        if (durationSeconds === null) return;
-        const media: Media = {
-            id,
-            name: String(asset.fileName || asset.name || `Device ${kind}`).slice(0, 120),
-            kind, frames: Math.max(1, Math.floor(durationSeconds * timeline.fps)), hasAudio: kind !== 'image',
-            width: Math.max(0, Math.round(asset.width || 0)), height: Math.max(0, Math.round(asset.height || 0)),
-        };
-        addMediaToTimeline(media, timelineOf(currentDocument()?.timeline));
+        const token = beginImport(); if (!token) return;
+        try {
+            const mime = String(asset.mimeType || '').toLowerCase();
+            const kind = mime.startsWith('audio/') ? 'audio' : mime.startsWith('image/') ? 'image' : mime.startsWith('video/') ? 'video' : null;
+            if (!kind) { setProblem(t('editor.chooseavideoimageoraudiofile')); return; }
+            const id = `l-${randomUUID()}`;
+            const durationSeconds = await preparePicked(asset, id, kind);
+            if (!token.valid() || durationSeconds === null) return;
+            const media: Media = {
+                id,
+                name: String(asset.fileName || asset.name || `Device ${kind}`).slice(0, 120),
+                kind, frames: Math.max(1, Math.floor(durationSeconds * timeline.fps)), hasAudio: kind !== 'image',
+                width: Math.max(0, Math.round(asset.width || 0)), height: Math.max(0, Math.round(asset.height || 0)),
+            };
+            addMediaToTimeline(media, timelineOf(currentDocument()?.timeline));
+        } finally { token.end(); }
     };
     const choosePhotos = async () => {
         setProblem(null);
@@ -227,14 +236,14 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
     // Tool panels are inline workspace sections with no close action; sheets below own their dismissal.
     return <View style={styles.screen}>
         {EDITOR_SERVER_EXPORT_ENABLED ? <ServerExportSheet api={api} router={router} now={Date.now} projectId={projectId} name={name} document={document} dirty={dirty} visible={exportVisible} onOpen={() => setExportVisible(true)} onClose={() => setExportVisible(false)} onFallback={() => void openWorkflow('/publish/compose')} /> : null}
-        <Stack.Screen options={{ title: t('editor.cut'), headerRight: () => <HeaderAction label={t('editor.done')} onPress={done} /> }} />
+        <Stack.Screen options={{ title: t('editor.cut'), headerRight: () => <HeaderAction label={t('editor.done')} onPress={guard.done} /> }} />
         <View style={styles.projectBar}>
             <View style={styles.cutBadge}><Text style={styles.cutMark}>{t('editor.v')}</Text><Text style={styles.cutLabel}>{t('editor.cUT')}</Text></View>
             <View style={styles.titleGroup}>
                 <Text accessibilityRole="header" numberOfLines={1} style={styles.title}>{name}</Text>
-                <StatusText variant="inherit" accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : undefined} style={styles.status}>{saving ? t('editor.saving') : dirty ? t('editor.unsavedchanges') : t('editor.v2', { value1: t('editor.saved'), value2: revision })}</StatusText>
+                <StatusText variant="inherit" accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : undefined} style={styles.status}>{saveStatus}</StatusText>
             </View>
-            <View style={styles.formatBadge}><Text style={styles.formatText}>{canvas.aspect_ratio}</Text><Text style={styles.formatMeta}>{t('editor.fPS', { value1: canvas.frame_rate })}</Text></View>
+            <Button label={t('editorSave.versions')} variant="tertiary" size="sm" containerStyle={{ marginVertical: -2 }} onPress={sync.openVersions} /><View style={styles.formatBadge}><Text style={styles.formatText}>{canvas.aspect_ratio}</Text><Text style={styles.formatMeta}>{t('editor.fPS', { value1: canvas.frame_rate })}</Text></View>
         </View>
         {problem ? <StatusText variant="inherit" accessibilityRole="alert" style={styles.problem}>{problem}</StatusText> : null}
 
@@ -305,7 +314,7 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
             {tool === 'media' ? <>
                 <PanelHeading title={t('editor.projectmedia')} detail={plural('editor.itemsCount', availableMedia.length)} />
                 {availableMedia.length ? availableMedia.map((item) => <ProjectMediaRow key={item.id} item={item} fps={timeline.fps} onAdd={addMediaToTimeline} />) : <EmptyPanel title={t('editor.nomediayet')} body={t('editor.chooseanexistingVeyrnoxcreationaproject')} />}
-                <View style={styles.quickActions}><Action label={t('editor.libraryvideo')} disabled={libraryPending} onPress={() => setLibraryKind('video')} /><Action label={t('editor.libraryimage')} disabled={libraryPending} onPress={() => setLibraryKind('image')} /><Action label={t('editor.libraryaudio')} disabled={libraryPending} onPress={() => setLibraryKind('audio')} /><Action label={t('editor.photosvideos')} onPress={() => void choosePhotos()} /><Action label={t('editor.files')} onPress={() => void chooseFiles()} /></View>
+                <View style={styles.quickActions}><Action label={t('editor.libraryvideo')} disabled={libraryPending || replacing} onPress={() => setLibraryKind('video')} /><Action label={t('editor.libraryimage')} disabled={libraryPending || replacing} onPress={() => setLibraryKind('image')} /><Action label={t('editor.libraryaudio')} disabled={libraryPending || replacing} onPress={() => setLibraryKind('audio')} /><Action label={t('editor.photosvideos')} disabled={replacing} onPress={() => void choosePhotos()} /><Action label={t('editor.files')} disabled={replacing} onPress={() => void chooseFiles()} /></View>
             </> : null}
             {tool === 'audio' ? <>
                 <PanelHeading title={t('editor.audio')} detail={plural('editor.clips2Count', timeline.audio.length)} />
@@ -380,6 +389,7 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
                 {timeline.tracks.map((track) => <View key={track.id} style={styles.trackControl}><View style={styles.rowCopy}><Text style={styles.rowTitle}>{editorTrackLabel(track)}</Text><Text style={styles.muted}>{t(`editor.track.${track.kind}`)}</Text></View><Choice label={t('editor.lock')} selected={track.locked} onPress={() => updateTrack(track, { locked: !track.locked })} compact /><Choice label={t('editor.mute')} selected={track.muted} onPress={() => updateTrack(track, { muted: !track.muted })} compact /><Choice label={t('editor.hide')} selected={track.hidden} onPress={() => updateTrack(track, { hidden: !track.hidden })} compact /></View>)}
             </> : null}
         </ScrollView>
+        <EditorSaveSheets sync={sync} /><EditorVersionsSheet sync={sync} api={api} projectId={projectId} />
         {libraryKind ? <LibraryChooser api={api} kind={libraryKind} onClose={() => setLibraryKind(null)} onPick={(choice) => importLibrary(choice, libraryKind)} /> : null}
         {/* Required privacy acknowledgement: escape must not imply consent. */}
         <Modal visible={privacyNotice} transparent animationType="fade" onRequestClose={acknowledgePrivacy} accessibilityViewIsModal><View style={styles.noticeBackdrop}><View style={styles.noticeCard}><Text accessibilityRole="header" style={styles.noticeTitle}>{t('editor.privacyTitle')}</Text><Text style={styles.body}>{t('editor.privacySummary')}</Text><Pressable accessibilityRole="button" accessibilityLabel={t('editor.privacyConfirm')} style={[styles.primary, touchTarget]} onPress={acknowledgePrivacy}><Text style={styles.primaryText}>{t('editor.privacyConfirm')}</Text></Pressable></View></View></Modal>
