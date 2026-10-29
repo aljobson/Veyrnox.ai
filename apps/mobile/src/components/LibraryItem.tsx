@@ -3,13 +3,15 @@ import { Text, Button, Card, themedStyles, useThemedStyles } from './ui';
 import { StyleSheet, View } from 'react-native';
 
 import { formatLocale, plural, t } from '../lib/i18n';
-import { expiryOf, rowStatus } from '../lib/libraryView';
+import { retentionOf, rowStatus } from '../lib/libraryView';
 import type { Job, Kind } from '../lib/media';
 import { LibraryMedia, type LibraryMediaProps } from './library/LibraryMedia';
 import { ds } from '../theme';
 
 interface Props {
     readonly job: Job;
+    readonly retentionKnown: boolean;
+    readonly now: number;
     readonly media?: Omit<LibraryMediaProps, 'job' | 'kind'>;
     readonly name: string;
     readonly kind: Kind | undefined;
@@ -27,20 +29,26 @@ interface Props {
 
 // One creation in the Library: what it is, its state, its price, when its file goes, and the actions that apply.
 // A failed job says how many credits came back; a file near the end of its life says when.
-export function LibraryItem({ job, name, kind, grid, starred, canSchedule, canReuse, canAsk, onAsk, onOpen, onStar, onSchedule, onReuse, media }: Props) {
+export function LibraryItem({ job, retentionKnown, now, name, kind, grid, starred, canSchedule, canReuse, canAsk, onAsk, onOpen, onStar, onSchedule, onReuse, media }: Props) {
     const styles = useThemedStyles(sheets);
     const status = rowStatus(job);
-    const expiry = expiryOf(job);
+    const retention = retentionKnown ? retentionOf(job, now) : { kind: 'none' } as const;
     const when = new Date(job.created_at).toLocaleDateString(formatLocale());
     const cost = job.credits > 0 ? plural('library.cost', job.credits) : t('library.costFree');
     const statusText =
         status === 'refunded' ? (job.credits > 0 ? plural('library.refunded', job.credits) : t('library.refundedFree')) : t(`library.status.${status}`);
-    const expiryText = expiry.kind === 'on' ? t('library.expires', { date: expiry.date.toLocaleDateString(formatLocale(undefined), { day: 'numeric', month: 'short', year: 'numeric' }) }) : expiry.kind === 'gone' ? t('library.expired') : null;
+    const retentionText = retention.kind === 'unavailable' ? t('library.fileUnavailable')
+        : retention.kind === 'default' ? t('library.keptDefault')
+        : retention.kind === 'expires' || retention.kind === 'ended'
+            ? t(retention.kind === 'ended' ? 'library.retentionEnded' : 'library.expires', {
+                date: retention.date.toLocaleDateString(formatLocale(), { day: 'numeric', month: 'short', year: 'numeric' }),
+            }) : null;
+    const urgent = retention.kind === 'ended' || (retention.kind === 'expires' && retention.urgent);
     const bad = status === 'refunded' || status === 'failed';
 
     return (
         <Card style={[styles.card, grid ? styles.gridCard : styles.listRow]}>
-            <Card accessibilityRole="button" accessibilityLabel={rawText([name, statusText, cost, when, expiryText].filter(Boolean).join(', '))} style={[styles.main, !grid && styles.horizontal]} onPress={onOpen}>
+            <Card accessibilityRole="button" accessibilityLabel={rawText([name, statusText, cost, when, retentionText].filter(Boolean).join(', '))} style={[styles.main, !grid && styles.horizontal]} onPress={onOpen}>
                 <View style={grid ? styles.square : styles.thumbnail}>
                     <LibraryMedia job={job} kind={kind} {...media} />
                     {grid ? <View style={styles.statusChip}><Text variant="caption" tone={bad ? 'danger' : 'accent'}>{statusText}</Text></View> : null}
@@ -49,7 +57,7 @@ export function LibraryItem({ job, name, kind, grid, starred, canSchedule, canRe
                 <Text variant="bodyStrong" tone="primary" style={styles.name} numberOfLines={grid ? 2 : 1}>{name}</Text>
                 {!grid ? <Text variant="body" tone="accent" style={[styles.status, bad && styles.statusBad]}>{statusText}</Text> : null}
                 <Text variant="footnote" tone="tertiary">{t('libraryCreate.costDate', { cost, date: when })}</Text>
-                {expiryText ? <Text variant="footnote" tone="tertiary" style={[styles.muted, expiry.kind === 'gone' && styles.statusBad]}>{expiryText}</Text> : null}
+                {retentionText ? <Text variant="footnote" tone={urgent ? 'danger' : 'tertiary'}>{retentionText}</Text> : null}
                 </View>
             </Card>
             <View style={styles.actions}>

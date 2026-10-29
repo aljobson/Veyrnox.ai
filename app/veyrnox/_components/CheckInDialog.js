@@ -10,14 +10,12 @@ export function CheckInDialog({ status, onClose, onClaim, onDisabled }) {
   const closeRef = useRef(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
-  const [earned, setEarned] = useState(null);
   const day = status.claimed_today ? Math.min(status.streak, 6) : status.next_day;
   async function claim() {
     if (busy) return;
     setBusy(true); setError(null);
     try {
       const result = await gatewayFetch('/checkin', { method: 'POST' });
-      setEarned(result.credits);
       onClaim(result);
       window.dispatchEvent(new Event('veyrnox:balance-changed'));
     } catch (e) {
@@ -39,7 +37,7 @@ export function CheckInDialog({ status, onClose, onClaim, onDisabled }) {
           </div>
         </div>)}
       </div>
-      <p role="status" className="min-h-12 text-sm">{error ? error : earned > 0 ? t(pluralKey(t, locale, 'checkin.earned', earned), { credits: earned }) : status.claimed_today ? t('checkin.claimed') : ''}</p>
+      <p role="status" className="min-h-12 text-sm">{error ? error : status.claimed_today ? t('checkin.claimed') : ''}</p>
       <div className="flex justify-end gap-3">
         <button ref={closeRef} type="button" onClick={onClose} className="min-h-11 rounded-full border border-vx-border px-4">{t('checkin.close')}</button>
         <button type="button" onClick={claim} disabled={busy || status.claimed_today} className="min-h-11 rounded-full bg-vx-accent px-4 font-bold text-vx-accent-ink disabled:opacity-50">

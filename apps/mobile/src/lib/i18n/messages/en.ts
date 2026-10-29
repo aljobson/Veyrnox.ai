@@ -72,6 +72,7 @@ import area_drafts from './en/drafts';
 import area_draw from './en/draw';
 import area_edit from './en/edit';
 import area_editor from './en/editor';
+import area_editorAi from './en/editorAi';
 import area_editorCore from './en/editorCore';
 import area_editorProjects from './en/editorProjects';
 import area_editorSave from './en/editorSave';
@@ -198,6 +199,7 @@ import area_unlock from './en/unlock';
 import area_uploads from './en/uploads';
 import area_vey from './en/vey';
 import area_vibe from './en/vibe';
+import area_vibeInvite from './en/vibeInvite';
 import area_videoAgent from './en/videoAgent';
 import area_videoAgentBalance from './en/videoAgentBalance';
 import area_welcome from './en/welcome';
@@ -274,6 +276,7 @@ const catalog = {
     ...area_draw,
     ...area_edit,
     ...area_editor,
+    ...area_editorAi,
     ...area_editorCore,
     ...area_editorProjects,
     ...area_editorSave,
@@ -400,6 +403,7 @@ const catalog = {
     ...area_uploads,
     ...area_vey,
     ...area_vibe,
+    ...area_vibeInvite,
     ...area_videoAgent,
     ...area_videoAgentBalance,
     ...area_welcome,

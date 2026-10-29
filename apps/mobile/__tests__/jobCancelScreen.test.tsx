@@ -140,7 +140,7 @@ test('poll exhaustion shows still-working copy and stops the elapsed timer', asy
         await act(async () => finish('running'));
         expect(text(t('job.stillWorking'))).toHaveLength(1);
         expect(text(t('job.waiting', { elapsed: '5s' }))).toHaveLength(0);
-        const elapsedTimer = interval.mock.results[0].value;
+        const elapsedTimer = interval.mock.results[interval.mock.calls.findIndex(([, ms]) => ms === 1000)].value;
         expect(clear).toHaveBeenCalledWith(elapsedTimer);
         interval.mockClear();
         await act(async () => jest.advanceTimersByTime(60000));

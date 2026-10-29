@@ -2964,6 +2964,24 @@
     "ratio": 2.25
   },
   {
+    "id": "vibeInvite.title",
+    "english": "Quick vibe check?",
+    "translation": "Um papo rápido sobre seu estilo?",
+    "ratio": 1.88
+  },
+  {
+    "id": "editorAi.addAtPlayhead",
+    "english": "Add at playhead",
+    "translation": "Adicionar na posição atual",
+    "ratio": 1.73
+  },
+  {
+    "id": "editorAi.done",
+    "english": "Done",
+    "translation": "Concluído",
+    "ratio": 2.25
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",

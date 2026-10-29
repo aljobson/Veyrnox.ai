@@ -55,10 +55,28 @@ test('Genjutsu-inspired I2V recipes describe source framing without claiming pro
 });
 
 test('multi-subject community recipes require every identity in one starting image', () => {
-  for (const id of ['costume-dance-duo', 'outdoor-duo-dance', 'studio-rap-duo', 'community-urban-trio-performance', 'community-suit-exchange-dance', 'community-cast-carpool']) {
+  for (const id of [
+    'costume-dance-duo',
+    'outdoor-duo-dance',
+    'studio-rap-duo',
+    'community-urban-trio-performance',
+    'community-suit-exchange-dance',
+    'community-cast-carpool',
+    'community-corporate-duo-jam',
+    'community-monster-street-dance',
+    'community-balcony-club-encounter',
+  ]) {
     const preset = SOURCE_TEMPLATES.find((entry) => entry.id === id);
     assert.equal(preset?.needsKey, 'community.group', id);
     assert.match(preset?.needs || '', /every subject/i, id);
+  }
+});
+
+test('generated ensembles keep single-subject starting-image guidance', () => {
+  for (const id of ['community-ensemble-performance-recast', 'community-street-dance-ensemble', 'community-suit-choir-groove']) {
+    const preset = SOURCE_TEMPLATES.find((entry) => entry.id === id);
+    assert.notEqual(preset?.needsKey, 'community.group', id);
+    assert.doesNotMatch(preset?.needs || '', /every subject/i, id);
   }
 });
 

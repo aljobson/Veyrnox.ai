@@ -4,8 +4,8 @@ import { isAnalyticsEnabled } from '../../lib/analytics/consent';
 import { confirmSignOut } from '../../lib/confirmSignOut';
 import { Button, Card, ListRow, Text, PriceText, themedStyles, useThemedStyles } from '../../components/ui';
 
-import { Link, Stack, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { Link, Stack, useRouter, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Linking, ScrollView, Switch, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { useBilling } from '../../billing/BillingProvider';
@@ -14,15 +14,19 @@ import { signInMethodKey } from '../../lib/accountSecurity';
 import { LEGAL_LINKS, SUPPORT_EMAIL } from '../../lib/account';
 import { usePush } from '../../push/pushContext';
 import { LIST_END_PADDING } from '../../theme';
-import { CREATOR_PROFILE_ENABLED, resetVibe } from '../../lib/creatorProfile';
-import { clearVibe } from '../../lib/creatorProfileStore';
+import { CREATOR_PROFILE_ENABLED, fetchVibeStatus, withVibeDeadline } from '../../lib/creatorProfile';
+import { runVibeIntent } from '../../lib/creatorProfileStore';
+import { getCacheUser, subscribeCacheUser } from '../../lib/appCache';
 import { ACTIVE_LOCALES, t } from '../../lib/i18n';
 import { stayDiscountFor } from '../../lib/billing';
 import { type MenuIcon } from '../../lib/menuIcons';
 
+// The disabled feature needs no navigation subscription.
+const useVibeFocusEffect = CREATOR_PROFILE_ENABLED ? useFocusEffect : useEffect;
+
 export default function Account() {
     const styles = useThemedStyles(sheets);
-    const { api, signOut, getAccessToken, beginSessionTask } = useAuth();
+    const { api, signOut, getAccessToken, beginSessionTask, generation } = useAuth();
     const [profile, setProfile] = useState<Profile | null>(null);
     const push = usePush();
     const [pushNote, setPushNote] = useState<string | null>(null);
@@ -41,20 +45,30 @@ export default function Account() {
         };
     }, [getAccessToken]);
 
+    const owner = useSyncExternalStore(subscribeCacheUser, getCacheUser, getCacheUser);
+    const [vibeStatus, setVibeStatus] = useState<{ owner: string; generation: number; available: boolean } | null>(null);
+    const vibeAvailable = vibeStatus?.owner === owner && vibeStatus?.generation === generation && vibeStatus?.available;
     const [vibeNote, setVibeNote] = useState<string | null>(null);
+    const vibeOp = useRef(0);
+    useEffect(() => { setVibeNote(null); vibeOp.current++; }, [owner, generation]);
+    useVibeFocusEffect(useCallback(() => {
+        if (!CREATOR_PROFILE_ENABLED || !owner) return;
+        const task = beginSessionTask();
+        let live = true;
+        void fetchVibeStatus(withVibeDeadline(api)).then(r => {
+            if (live && task.current() && owner === getCacheUser()) {
+                setVibeStatus({ owner, generation, available: r.kind === 'none' || r.kind === 'chosen' });
+            }
+        });
+        return () => { live = false; };
+    }, [owner, generation, api, beginSessionTask]));
     async function onResetVibe() {
         const task = beginSessionTask();
+        const op = ++vibeOp.current;
         setVibeNote(null);
-        const r = await resetVibe(api);
-        if (!task.current()) return;
-        // Cleared on the phone even if the server flag is off; only a real failure keeps it, so the person can try again.
-        if (r.kind === 'failed') {
-            setVibeNote(t('vibe.error'));
-            return;
-        }
-        await clearVibe();
-        if (!task.current()) return;
-        setVibeNote(t('vibe.account.resetDone'));
+        const r = await runVibeIntent(api, task, { kind: 'reset' });
+        if (!task.current() || op !== vibeOp.current || r.kind !== 'applied') return;
+        setVibeNote(t(r.result === 'failed' ? 'vibe.error' : 'vibe.account.resetDone'));
     }
 
     async function onRestore() {
@@ -155,7 +169,7 @@ export default function Account() {
                 </Section>
             ) : null}
 
-            {CREATOR_PROFILE_ENABLED ? (
+            {CREATOR_PROFILE_ENABLED && vibeAvailable ? (
                 <Section title={t('vibe.account.title')}>
                     <Row label={t('vibe.account.retake')} onPress={() => router.push('/vibe?retake=1')} />
                     <Row label={t('vibe.account.reset')} onPress={() => void onResetVibe()} />

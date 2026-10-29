@@ -2,7 +2,7 @@ import { rawText } from '../../lib/i18n/translate';
 import { captureEvent } from '../../lib/analytics/events';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { VeyCharacter } from '../../components/VeyCharacter';
@@ -11,8 +11,8 @@ import { CHAOS_MAX, CREATOR_ANSWERS, STUDIO_NAME_MAX, isCreatorAnswers, type Cre
 import { displayLabel } from '../../lib/displayLabels';
 import { creatorCard } from '../../lib/creatorArchetype';
 import { creatorCardName } from '../../lib/creatorCardLabels';
-import { saveVibe, skipVibe } from '../../lib/creatorProfile';
-import { loadVibe, storeVibe } from '../../lib/creatorProfileStore';
+import { loadVibe, recordVibeSkip, runVibeIntent } from '../../lib/creatorProfileStore';
+import { getCacheUser, subscribeCacheUser } from '../../lib/appCache';
 import { rankPresets, tastePicks } from '../../lib/creatorTaste';
 import { presetKind } from '../../lib/explore';
 import { getLocale, t } from '../../lib/i18n';
@@ -47,7 +47,10 @@ export default function Vibe() {
     const router = useRouter();
     useEffect(() => { captureEvent('onboarding_step', { step: 'vibe', action: 'view' }); }, []);
     const styles = useThemedStyles(sheets);
-    const { api, canReloadSession } = useAuth();
+    const { api, canReloadSession, beginSessionTask, generation } = useAuth();
+    const owner = useSyncExternalStore(subscribeCacheUser, getCacheUser, getCacheUser);
+    const opRef = useRef(0);
+    const [identity, setIdentity] = useState({ owner, generation });
     const { retake } = useLocalSearchParams<{ retake?: string }>();
     // 0 = intro, 1..7 = questions, 8 = card, -1 = skipped.
     const [step, setStep] = useState(0);
@@ -57,6 +60,13 @@ export default function Vibe() {
     const [failed, setFailed] = useState(false);
     const [synced, setSynced] = useState(true);
     const [saved, setSaved] = useState<CreatorAnswers | null>(null);
+    const [skipBusy, setSkipBusy] = useState(false);
+    // Reset during render so even the first render for the next session has no old draft/card.
+    if (identity.owner !== owner || identity.generation !== generation) {
+        setIdentity({ owner, generation }); opRef.current++;
+        setDraft({ chaos: 2 }); setStudio(''); setSaved(null); setFailed(false);
+        setSaving(false); setSkipBusy(false); setSynced(true); setStep(0);
+    }
     // Ask only when there is no active saved choice; first launch normally handles this before sign-in.
     const [language, setLanguage] = useState<'ask' | 'done'>(retake === '1' || !needsLanguageChoice(readLanguage()) ? 'done' : 'ask');
     const [picked, setPicked] = useState<string>(getLocale());
@@ -88,54 +98,56 @@ export default function Vibe() {
     }
 
     async function skip() {
+        const task = beginSessionTask();
+        const op = ++opRef.current;
         captureEvent('onboarding_step', { step: 'vibe', action: 'skip' });
+        setSkipBusy(true);
         const existing = await loadVibe();
-        // Retaking and backing out leaves the saved answers alone.
-        if (existing) {
-            router.back();
-            return;
-        }
-        await storeVibe({ state: 'skipped', answers: null, synced: false });
-        const r = await skipVibe(api);
-        if (r.kind === 'ok') await storeVibe({ state: 'skipped', answers: null, synced: true });
-        setStep(-1);
+        if (!task.current() || op !== opRef.current) return;
+        if (existing) { setSkipBusy(false); router.back(); return; }
+        const r = await recordVibeSkip(api, task);
+        if (!task.current() || r.kind === 'stale-session') return;
+        if (opRef.current !== op) return;
+        setSkipBusy(false); setSaving(false);
+        if (r.kind !== 'applied') return;
+        if (r.result === 'kept') router.back();
+        else setStep(-1);
     }
 
     async function finish() {
+        const task = beginSessionTask();
+        const op = ++opRef.current;
         captureEvent('onboarding_step', { step: 'vibe', action: 'next' });
         const name = studio.trim();
         const answers = { ...draft, ...(name ? { studio_name: name } : {}) };
         if (!isCreatorAnswers(answers)) return;
-        setSaving(true);
-        setFailed(false);
-        const r = await saveVibe(api, answers);
-        // Only a real failure holds the person here. "Unavailable" (server flag off) keeps the answers on the phone.
-        if (r.kind === 'failed') {
-            setSaving(false);
-            setFailed(true);
-            return;
-        }
-        await storeVibe({ state: 'completed', answers, synced: r.kind === 'ok' });
-        setSynced(r.kind === 'ok');
+        setSaving(true); setFailed(false);
+        const r = await runVibeIntent(api, task, { kind: 'save', answers });
+        if (!task.current() || r.kind === 'stale-session' || opRef.current !== op) return;
+        setSaving(false); setSkipBusy(false);
+        if (r.kind !== 'applied') return;
+        if (r.result === 'failed') { setFailed(true); return; }
+        setSynced(r.result === 'ok');
         noteOnboardingCompleted();
-        setSaved(answers);
-        setSaving(false);
-        setStep(TOTAL + 1);
+        setSaved(answers); setStep(TOTAL + 1);
     }
 
     async function makeFirst() {
+        const task = beginSessionTask();
         try {
             const all = await fetchPresets();
+            if (!task.current()) return;
             // A template with a picture that fits comes first; with none, the best fit that is not audio (a still cannot show it).
             const pick = tastePicks(all, saved, 1)[0] ?? rankPresets(all, saved).find((p) => p.available && presetKind(p) !== 'audio');
             router.replace(pick ? presetHref(pick) : '/');
         } catch {
+            if (!task.current()) return;
             router.replace('/');
         }
     }
 
     const key = step >= 1 && step <= TOTAL ? STEPS[step - 1] : null;
-    const skipLink = <Button variant="tertiary" label={t('vibe.skip')} onPress={() => void skip()} />;
+    const skipLink = <Button variant="tertiary" label={t('vibe.skip')} disabled={skipBusy} onPress={() => void skip()} />;
 
     return (
         <KeyboardAvoidingView style={[styles.screen, { paddingTop: insets.top, paddingBottom: insets.bottom }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>

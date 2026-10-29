@@ -83,7 +83,7 @@ export function useMakePanelState(api: ApiClient, visible: boolean) {
             try { update({ asset: await media.getAsset(id) }); } catch { /* Status alone is useful. */ }
         }).catch(() => {});
     }
-    async function run(request: SubmitRequest, n: number) {
+    async function run(request: SubmitRequest, n: number, onStarted?: (jobId: string) => void) {
         if (active.current) return;
         const owner = getCacheUser();
         const signature = JSON.stringify({ ...request, count: n });
@@ -98,7 +98,7 @@ export function useMakePanelState(api: ApiClient, visible: boolean) {
         try {
             await submit.current.run(api, request, n, started => {
                 if (retained.current === record && getCacheUser() === owner) record.started = Math.max(record.started, started);
-            }, jobId => addJob(jobId, id, owner, signal));
+            }, jobId => { if (getCacheUser() === owner) onStarted?.(jobId); addJob(jobId, id, owner, signal); });
             if (retained.current === record && getCacheUser() === owner) {
                 retained.current = null;
                 if (mounted.current) setRetry(null);

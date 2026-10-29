@@ -1428,12 +1428,6 @@
     "ratio": 2.25
   },
   {
-    "id": "library.expires",
-    "english": "File expires {date}. Save a copy.",
-    "translation": "Срок хранения файла истекает {date}. Сохраните копию.",
-    "ratio": 1.61
-  },
-  {
     "id": "library.favouriteLabel",
     "english": "Favourite {name}",
     "translation": "Добавить {name} в избранное",
@@ -3172,6 +3166,12 @@
     "english": "Add from this workspace",
     "translation": "Добавить из этого рабочего пространства",
     "ratio": 1.7
+  },
+  {
+    "id": "editorAi.addAtPlayhead",
+    "english": "Add at playhead",
+    "translation": "Добавить в позиции курсора",
+    "ratio": 1.73
   },
   {
     "id": "chrome.privacyPolicy",

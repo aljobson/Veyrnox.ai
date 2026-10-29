@@ -20,7 +20,7 @@ import { uploadSource } from '../lib/uploads';
 import { t } from '../lib/i18n';
 import { colors } from '../theme';
 import { FaceFilterResult } from './FaceFilterResult';
-import { Icon, IconBadge } from './ui';
+import { Button, Icon, IconBadge } from './ui';
 import { kindForMime } from '../lib/creativeReuse';
 import { faceIcon } from '../lib/featureIcons';
 
@@ -236,7 +236,7 @@ export function FaceFiltersFlow({ api, owner }: { api: ApiClient; owner: string 
                 {missing > 0 ? <Pressable accessibilityRole="button" accessibilityLabel={t('lowBalance.buy')} style={styles.card} onPress={() => router.push('/credits')}><Text style={styles.text}>{t('form.err.insufficient')} {t('lowBalance.buy')}</Text></Pressable> : null}
                 <Pressable accessibilityRole="checkbox" accessibilityLanguage="en" accessibilityLabel={english('faceFilters.rights')} accessibilityState={{ checked, disabled: busy }} disabled={busy} style={[styles.card, checked && styles.selected]} onPress={() => setChecked(v => !v)}><Text style={styles.text}>{checked ? '☑ ' : '☐ '}{english('faceFilters.rights')}</Text></Pressable>
                 <Pressable accessibilityRole="link" accessibilityLabel={t('faceFilters.policy')} style={styles.card} onPress={() => { router.push('/legal/aup'); }}><Text style={styles.text}>{t('faceFilters.policy')}</Text></Pressable>
-                <Pressable accessibilityRole="button" accessibilityLabel={rawText(`${t('faceFilters.run')}. ${t('faceFilters.price', { credits: String(model.credits) })}`)} accessibilityState={{ disabled: !ready || busy, busy }} disabled={!ready || busy} style={[styles.card, (!ready || busy) && styles.disabled]} onPress={run}><Text style={styles.text}>{t('faceFilters.run')}</Text>{busy ? <ActivityIndicator /> : null}</Pressable>
+                <Button variant="primary" accessibilityLabel={rawText(`${t('faceFilters.run')}. ${t('faceFilters.price', { credits: String(model.credits) })}`)} accessibilityState={{ busy }} disabled={!ready} loading={busy} label={`${t('faceFilters.run')} · ${t('faceFilters.price', { credits: String(model.credits) })}`} onPress={run} />
             </>}
             {error ? <StatusText variant="inherit" style={styles.error} accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : undefined}>{error}</StatusText> : null}
         </ScrollView>

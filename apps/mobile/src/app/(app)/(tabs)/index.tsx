@@ -2,17 +2,20 @@ import { categoryLabel } from '../../../lib/presetCategoryLabel';
 import { CheckInEntry } from '../../../components/credits/CheckInEntry';
 import { Link, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { type ComponentRef, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, ScrollView, TextInput, View } from 'react-native';
+import { type ComponentRef, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { ScrollView, TextInput, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { celebrateFinished } from '../../../lib/celebrate';
 import { ALL_CATEGORIES, ALL_TYPES, filterPresets, firstModelFor, pickUp, promptHref, recentCreations, type TypeFilter } from '../../../lib/explore';
 import { t } from '../../../lib/i18n';
 import { fetchCatalogCached, mediaApi, type CatalogModel, type Job, type Kind } from '../../../lib/media';
 import { LowBalanceNote } from '../../../components/LowBalanceNote';
-import { CREATOR_PROFILE_ENABLED, syncVibe } from '../../../lib/creatorProfile';
-import { loadVibe, storeVibe } from '../../../lib/creatorProfileStore';
-import type { CreatorAnswers } from '../../../lib/creatorAnswers';
+import { CREATOR_PROFILE_ENABLED } from '../../../lib/creatorProfile';
+import { recordVibeSkip, runVibeSync, vibeOffered } from '../../../lib/creatorProfileStore';
+import { useVibeAnswers } from '../../../lib/useVibeAnswers';
+import { subscribeVibeIdle } from '../../../lib/vibeEvents';
+import { getCacheUser, subscribeCacheUser } from '../../../lib/appCache';
+import { VibeInvite } from '../../../components/home/VibeInvite';
 import { rankPresets } from '../../../lib/creatorTaste';
 import { cheapestCredits, isLowBalance } from '../../../lib/lowBalance';
 import { useBalance } from '../../../lib/useBalance';
@@ -25,6 +28,7 @@ import { StartOption } from '../../../components/home/StartOption';
 import { EntryRow } from '../../../components/home/EntryRow';
 import { PresetCard } from '../../../components/home/PresetCard';
 import { OddlingsBanner } from '../../../components/home/OddlingsBanner';
+import { VeyLoader } from '../../../components/VeyLoader';
 
 // How many templates the home shows; the rest are on the Templates screen.
 const SHOWN = 24;
@@ -37,7 +41,7 @@ const RECENT = 6;
 export default function Explore() {
     const styles = useThemedStyles(sheets);
     const { scheme } = useAppearance();
-    const { api } = useAuth();
+    const { api, generation, beginSessionTask } = useAuth();
     const router = useRouter();
     const { focusIdea } = useLocalSearchParams<{ focusIdea?: string }>();
     const ideaField = useRef<ComponentRef<typeof TextInput>>(null);
@@ -84,22 +88,50 @@ export default function Explore() {
         return () => { live = false; };
     }, []);
 
-    // The vibe check answers on this phone steer the order of templates. A choice the server has not seen yet is sent now.
-    const [vibe, setVibe] = useState<CreatorAnswers | null>(null);
-    useEffect(() => {
-        let alive = true;
-        void loadVibe().then(async (stored) => {
-            if (!alive || !stored) return;
-            setVibe(stored.answers);
-            if (CREATOR_PROFILE_ENABLED && !stored.synced) {
-                const next = await syncVibe(api, stored);
-                if (next.synced) await storeVibe(next);
-            }
+    const vibe = useVibeAnswers();
+    const owner = useSyncExternalStore(subscribeCacheUser, getCacheUser, getCacheUser);
+    const [invite, setInvite] = useState({ owner, generation, shown: false, busy: false });
+    const inviteCurrent = invite.owner === owner && invite.generation === generation;
+    const jobsRunning = useRef(false), rerun = useRef(false), mounted = useRef(true), skipOp = useRef(0);
+    const vibeJobs = useRef(async () => {});
+    vibeJobs.current = async () => {
+        if (!CREATOR_PROFILE_ENABLED || !owner) return;
+        const task = beginSessionTask();
+        await runVibeSync(api, task);
+        if (!mounted.current || !task.current()) return;
+        const shown = await vibeOffered(api, task);
+        if (!mounted.current || !task.current()) return;
+        setInvite(previous => ({ owner, generation, shown,
+            busy: previous.owner === owner && previous.generation === generation && previous.busy }));
+    };
+    const triggerVibe = useCallback(() => {
+        if (jobsRunning.current) { rerun.current = true; return; }
+        jobsRunning.current = true;
+        void Promise.resolve().then(async () => {
+            try {
+                do { rerun.current = false; await vibeJobs.current(); } while (rerun.current && mounted.current);
+            } finally { jobsRunning.current = false; }
         });
-        return () => {
-            alive = false;
-        };
-    }, [api]);
+    }, []);
+    useEffect(() => {
+        mounted.current = true;
+        return () => { mounted.current = false; };
+    }, []);
+    useEffect(() => {
+        skipOp.current++;
+        setInvite({ owner, generation, shown: false, busy: false });
+        triggerVibe();
+    }, [owner, generation, triggerVibe]);
+    useFocusEffect(useCallback(() => { triggerVibe(); }, [triggerVibe]));
+    useEffect(() => subscribeVibeIdle(triggerVibe), [triggerVibe]);
+    async function skipInvite() {
+        if (!CREATOR_PROFILE_ENABLED) return;
+        const task = beginSessionTask(), op = ++skipOp.current;
+        setInvite({ owner, generation, shown: false, busy: true });
+        const r = await recordVibeSkip(api, task);
+        if (!task.current() || r.kind === 'stale-session' || skipOp.current !== op) return;
+        setInvite(previous => ({ ...previous, busy: false, ...(r.kind === 'applied' ? { shown: false } : {}) }));
+    }
 
     // On every return, so a creation started elsewhere shows at once.
     useFocusEffect(
@@ -166,6 +198,9 @@ export default function Explore() {
                     <StartOption href="/chat" style={styles.startOption} icon="chat" title={t('menu.chat')} body={t('explore.start.chat.body')} hint={t('explore.chat.hint')} divided />
                     <StartOption href="/film" style={styles.startOption} icon="slate" title={t('menu.film')} body={t('explore.start.film.body')} hint={t('explore.start.film.hint')} divided />
                 </Card>
+
+                {CREATOR_PROFILE_ENABLED && owner && inviteCurrent && invite.shown ?
+                    <VibeInvite busy={invite.busy} onStart={() => router.push('/vibe')} onLater={() => void skipInvite()} /> : null}
 
                 <Card style={styles.composer} onLayout={event => { ideaY.current = event.nativeEvent.layout.y; }}>
                     <Text variant="title3" style={styles.composerTitle}>
@@ -234,7 +269,7 @@ export default function Explore() {
                 {presetsFailed ? (
                     <Button variant="tertiary" label={t('explore.templatesError')} onPress={loadPresets} />
                 ) : presets === null ? (
-                    <ActivityIndicator color={colors.accent} />
+                    <VeyLoader />
                 ) : (
                     <>
                         {searchShown ? (

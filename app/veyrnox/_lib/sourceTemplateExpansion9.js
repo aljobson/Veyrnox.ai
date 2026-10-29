@@ -20,6 +20,16 @@ const categoryMeta = {
   VFX: { needsKey: 'community.vfx', sourceGuidance: 'A clear subject image with open space around the effect area', background: 'linear-gradient(155deg,#17182d,#4e4d85,#d68e92)' },
 };
 const groupMeta = { needsKey: 'community.group', sourceGuidance: 'One starting image containing every subject in their intended positions' };
+const groupIds = new Set([
+  'community-balcony-club-encounter',
+  'community-corporate-duo-jam',
+  'community-monster-street-dance',
+]);
+const generatedEnsembleIds = new Set([
+  'community-ensemble-performance-recast',
+  'community-street-dance-ensemble',
+  'community-suit-choir-groove',
+]);
 
 // Public-facing concepts are concise Veyrnox adaptations, not copied community prompts.
 const recipes = [
@@ -106,7 +116,7 @@ const recipes = [
 ];
 
 export const SOURCE_TEMPLATE_EXPANSION_9 = recipes.map(([id, name, category, sourceAspect, previewAspect, concept]) => {
-  const meta = /\b(?:two|three|four|several|multiple|friends|crew|ensemble|trio|duo|subjects|performers|people|cast|group)\b/i.test(concept) ? groupMeta : categoryMeta[category];
+  const meta = groupIds.has(id) || (!generatedEnsembleIds.has(id) && /\b(?:two|three|four|several|multiple|friends|crew|ensemble|trio|duo|subjects|performers|people|cast|group)\b/i.test(concept)) ? groupMeta : categoryMeta[category];
   return {
     ...base, id, name, category, sourceAspect, previewAspect,
     needsKey: meta.needsKey, needs: meta.sourceGuidance,

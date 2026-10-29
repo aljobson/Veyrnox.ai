@@ -359,6 +359,7 @@ export function useEditorSaveSync(options: Options) {
             openVersions() { if (live() && !sheet) { sheet = 'versions'; clear('auto'); notify(); } },
             closeVersions() { if (sheet === 'versions') { sheet = null; notify(); if (!settle() && !restoreOp && o().dirtyRef.current) changed(); } },
             settle,
+            get draftDecided() { return gate === 'open'; },
             get sheet() { return sheet; }, get replacing() { return !!replacing; }, get imports() { return imports; },
             get canStart() { return canStart(locks()); }, get copyAllowed() { return !!workspaceId && (copy ? canRetry(locks(), copy) : canStart(locks())); },
             get restoreUnknown() { return restoreOp?.state === 'ambiguous'; }, get retryAllowed() { return !!restoreOp && canRetry(locks(), restoreOp); },
