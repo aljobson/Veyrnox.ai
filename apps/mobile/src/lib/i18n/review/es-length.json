@@ -2970,6 +2970,12 @@
     "ratio": 1.69
   },
   {
+    "id": "commerce.percentOff",
+    "english": "Percent off",
+    "translation": "Descuento porcentual",
+    "ratio": 1.82
+  },
+  {
     "id": "brand.style.name",
     "english": "Style name",
     "translation": "Nombre del estilo",

@@ -1770,6 +1770,12 @@
     "ratio": 1.69
   },
   {
+    "id": "commerce.amountOff",
+    "english": "Amount off",
+    "translation": "निश्चित राशि की छूट",
+    "ratio": 1.9
+  },
+  {
     "id": "brand.style.editLabel",
     "english": "Edit {name}",
     "translation": "{name} संपादित करें",

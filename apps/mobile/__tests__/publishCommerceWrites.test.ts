@@ -31,7 +31,7 @@ describe('products: building the request', () => {
         [{ stock: '-2' }, 'commerce.err.stock'],
         [{ productUrl: 'http://a.example.test' }, 'commerce.err.url'],
         [{ imageUrl: 'data:text/html,x' }, 'commerce.err.url'],
-        [{ keep: null }, 'commerce.err.editOnWeb'],
+        [{ keep: null }, 'commerce.err.optionsUnreadable'],
     ] as [Partial<ProductForm>, string][])('rejects %j before any request', (over, key) => {
         expect(buildProductBody(ok(over))).toEqual({ errorKey: key });
     });
