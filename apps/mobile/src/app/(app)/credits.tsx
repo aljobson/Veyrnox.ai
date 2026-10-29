@@ -47,6 +47,7 @@ export default function Credits() {
     const styles = useThemedStyles(sheets);
     const { api } = useAuth();
     const billing = useBilling();
+    useFocusEffect(useCallback(() => { void billing.refreshSales(); }, [billing.refreshSales]));
     const [catalog, setCatalog] = useState<GenerationCatalogPlan[]>([]);
     const [busyId, setBusyId] = useState<string | null>(null);
     const [outcome, setOutcome] = useState<Outcome>(null);
@@ -106,8 +107,8 @@ export default function Credits() {
         }
     }
 
-    const packPackages = useMemo(() => billing.offerings?.all.credits?.availablePackages ?? [], [billing.offerings]);
-    const planPackages = useMemo(() => billing.offerings?.all.generation?.availablePackages ?? [], [billing.offerings]);
+    const packPackages = useMemo(() => (billing.offerings?.all.credits?.availablePackages ?? []).filter(pkg => pkg?.product), [billing.offerings]);
+    const planPackages = useMemo(() => (billing.offerings?.all.generation?.availablePackages ?? []).filter(pkg => pkg?.product), [billing.offerings]);
     const packs = useMemo(() => toDisplayPackages(packPackages).filter(isWebParityPack), [packPackages]);
     const plans = useMemo(
         () => toDisplayPackages(planPackages).filter((plan) => plan.generationPlan !== null && plan.interval !== null),
@@ -173,7 +174,7 @@ export default function Credits() {
     }
 
     async function restore() {
-        if (busyId || !billing.canPurchase) return;
+        if (busyId || !billing.canRestore) return;
         const user = getCacheUser();
         setBusyId('restore');
         setOutcome(null);
@@ -262,7 +263,7 @@ export default function Credits() {
             {outcome?.kind === 'pending' ? <Text variant="body" tone="tertiary" accessibilityLiveRegion="polite" style={styles.muted}>{t('credits.pending')}</Text> : null}
             {outcome?.kind === 'error' ? <Text variant="body" tone="danger" accessibilityLiveRegion="polite" style={styles.error}>{t('credits.error')}</Text> : null}
 
-            <Button variant="tertiary" accessibilityRole="button" disabled={busyId !== null || !billing.canPurchase} onPress={() => void restore()} textStyle={styles.accentInk} label={t('credits.restore')} loading={busyId === 'restore'} />
+            <Button variant="tertiary" accessibilityRole="button" disabled={busyId !== null || !billing.canRestore} onPress={() => void restore()} textStyle={styles.accentInk} label={t('credits.restore')} loading={busyId === 'restore'} />
             {billing.managementURL ? (
                 <Button variant="tertiary" accessibilityRole="link" onPress={() => void WebBrowser.openBrowserAsync(billing.managementURL as string)} textStyle={styles.accentInk} label={t('credits.manage')} />
             ) : null}

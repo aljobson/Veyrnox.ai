@@ -41,3 +41,9 @@ test('daily check-in is on in production and accepts only explicit boolean strin
     // ADR-0257: enabled in production by the owner on 2026-10-24. Removing the line turns it off.
     assert.equal(config.vars.CHECKIN_ENABLED, 'true');
 });
+
+test('store billing production switches are secrets and sandbox crediting is forbidden (ADR-0108)', () => {
+    for (const name of ['STORE_BILLING_ENABLED', 'STORE_SALES_ENABLED', 'REVENUECAT_WEBHOOK_SECRET', 'STORE_BILLING_ALLOW_SANDBOX']) {
+        assert.equal(Object.hasOwn(config.vars, name), false, `${name} must not be a production var (ADR-0108)`);
+    }
+});

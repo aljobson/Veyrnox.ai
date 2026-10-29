@@ -9,7 +9,7 @@
  */
 import { NextResponse } from 'next/server';
 import { rpc, envConfig } from '../../../../../packages/db/supabase-client.js';
-import { storeBillingEnabled } from '../../../../../lib/storeBilling.js';
+import { storeBillingEnabled, storeSalesOpen } from '../../../../../lib/storeBilling.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const NO_STORE = { 'Cache-Control': 'no-store' };
@@ -24,7 +24,7 @@ export async function GET(req) {
 
     try {
         const res = await rpc('get_or_create_store_customer', { p_auth_id: authId }, cfg);
-        if (res && res.ok === true) return NextResponse.json({ rc_customer_id: res.rc_customer_id }, { headers: NO_STORE });
+        if (res && res.ok === true) return NextResponse.json({ rc_customer_id: res.rc_customer_id, sales_open: storeSalesOpen() }, { headers: NO_STORE });
         if (res && res.code === 'USER_NOT_FOUND') return NextResponse.json({ error: 'user_not_provisioned' }, { status: 409, headers: NO_STORE });
     } catch (err) {
         console.error('[store-purchases] customer failed:', err && err.message);

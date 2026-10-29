@@ -56,7 +56,8 @@ export default function Publish() {
     const api = usePublishApi();
     const router = useRouter();
     const selectedBrand = useSyncExternalStore(brandStore.subscribe, brandStore.get, () => null);
-    const { status: billingStatus, offerings, canPurchase, publishActive, purchase, restore } = useBilling();
+    const { status: billingStatus, offerings, canPurchase, canRestore, publishActive, purchase, restore, refreshSales } = useBilling();
+    useFocusEffect(useCallback(() => { void refreshSales(); }, [refreshSales]));
     const [plan, setPlan] = useState<Awaited<ReturnType<typeof fetchPublishPlan>> | null>(null);
     const managementKey = plan?.tier === 'publish' ? planManagementKey(plan.source) : null;
     const [data, setData] = useState<PublishAccountsState | null>(null);
@@ -223,7 +224,7 @@ export default function Publish() {
                             ) : <Text variant="footnote" style={styles.muted}>{t('plan.unavailable')}</Text>}
                             {message ? <Text variant="footnote" style={styles.planMessage} accessibilityLiveRegion="polite">{message}</Text> : null}
                             <View style={styles.planLinks}>
-                                <Button label={t('account.restore')} variant="tertiary" accessibilityRole="button" disabled={busy || !canPurchase} onPress={() => void onRestore()}><Text variant="footnote" style={styles.link}>{t('account.restore')}</Text></Button>
+                                <Button label={t('account.restore')} variant="tertiary" accessibilityRole="button" disabled={busy || !canRestore} onPress={() => void onRestore()}><Text variant="footnote" style={styles.link}>{t('account.restore')}</Text></Button>
                                 <Button label={t('plan.terms')} variant="tertiary" accessibilityRole="link" onPress={() => void router.push('/legal/terms')}><Text variant="footnote" style={styles.link}>{t('plan.terms')}</Text></Button>
                                 <Button label={t('plan.privacy')} variant="tertiary" accessibilityRole="link" onPress={() => void router.push('/legal/privacy')}><Text variant="footnote" style={styles.link}>{t('plan.privacy')}</Text></Button>
                             </View>

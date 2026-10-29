@@ -24,7 +24,7 @@ const mockApi = { request: jest.fn(async () => ({})), getBalance: async () => ({
 const mockRouter = { push: jest.fn(), back: jest.fn(), replace: jest.fn(), setParams: jest.fn() };
 const mockPackages = (product: string) => [{ identifier: product, product: { identifier: product, title: 'Store product', priceString: '9,99 €' } }];
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ status: 'signedOut', api: mockApi, canReloadSession: () => true }) }));
-jest.mock('../src/billing/BillingProvider', () => ({ useBilling: () => ({ status: 'ready', canPurchase: true, generationActive: false, generationChecked: true, publishActive: false, offerings: { all: {
+jest.mock('../src/billing/BillingProvider', () => ({ useBilling: () => ({ status: 'ready', canPurchase: true, canRestore: true, refreshSales: jest.fn(), generationActive: false, generationChecked: true, publishActive: false, offerings: { all: {
     generation: { availablePackages: mockPackages('ai.veyrnox.generation.starter.monthly') },
     publish: { availablePackages: mockPackages('ai.veyrnox.publish.annual') },
 } }, purchase: jest.fn(), restore: jest.fn() }) }));
