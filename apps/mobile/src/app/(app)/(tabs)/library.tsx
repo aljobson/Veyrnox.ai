@@ -27,6 +27,11 @@ export default function Library() {
     const styles = useThemedStyles(sheets);
     const { api } = useAuth();
     const router = useRouter();
+    const [now, setNow] = useState(Date.now);
+    useEffect(() => {
+        const timer = setInterval(() => setNow(Date.now()), 60_000);
+        return () => clearInterval(timer);
+    }, []);
     const [jobs, setJobs] = useState<Job[] | null>(null);
     const [next, setNext] = useState<JobPage['next']>(null);
     const [failed, setFailed] = useState(false);
@@ -48,6 +53,7 @@ export default function Library() {
     const [olderFailed, setOlderFailed] = useState(false);
     const [media, setMedia] = useState<Record<string, { link: AssetLink; poster?: VideoThumbnail | null }>>({});
     const links = useMemo(() => createAssetLinks({ getAsset: mediaApi(api).getAsset }), [api]);
+    const retentionPending = useRef(new Set<string>());
     const unresolved = useRef(new Map<string, number>());
     const [, wakePoll] = useState(0);
     const hasWork = inFlightIds(jobs ?? []).length > 0 || unresolved.current.size > 0;
@@ -63,7 +69,7 @@ export default function Library() {
         return () => sub.remove();
     }, [pause]);
     useEffect(() => {
-        const clear = () => { version.current++; links.clear(); clearPosters(); void Image.clearMemoryCache?.().catch(() => {}); unresolved.current.clear(); setMedia({}); setFavourites([]); setSaved(null); setJobs(null); setNext(null); setFocused(false); pause(); void player.replaceAsync(null).catch(() => {}); };
+        const clear = () => { version.current++; links.clear(); clearPosters(); void Image.clearMemoryCache?.().catch(() => {}); unresolved.current.clear(); retentionPending.current.clear(); setMedia({}); setFavourites([]); setSaved(null); setJobs(null); setNext(null); setFocused(false); pause(); void player.replaceAsync(null).catch(() => {}); };
         const unsubscribe = subscribeCacheUser(clear);
         return () => { unsubscribe(); version.current++; links.clear(); clearPosters(); };
     }, [links, pause]);
@@ -74,6 +80,7 @@ export default function Library() {
         if (result.kind === 'cooldown') { unresolved.current.set(id, result.until); wakePoll(n => n + 1); }
         if (result.kind === 'file' || result.kind === 'held') {
             unresolved.current.delete(id);
+            retentionPending.current.delete(id);
             setMedia(m => ({ ...m, [id]: { link: result } }));
             setJobs(rows => rows?.map(j => j.job_id === id ? { ...j, ...(result.kind === 'held' ? { held: true } : { has_asset: true, asset_expires_at: result.expiresAt }) } : j) ?? null);
             if (result.kind === 'file' && result.mime.startsWith('video/')) {
@@ -103,6 +110,7 @@ export default function Library() {
                         const status = await mediaApi(api).getJob(id);
                         if (!current()) return;
                         outcomes.push(true);
+                        if (status.state === 'succeeded') retentionPending.current.add(id);
                         setJobs(rows => applyStatus(rows ?? [], id, status));
                         if (status.state === 'succeeded') unresolved.current.set(id, 0);
                     } catch { if (current()) outcomes.push(false); }
@@ -152,6 +160,7 @@ export default function Library() {
                 fetcher: () => observe(mediaApi(api).listJobs()),
                 onData: (page) => {
                     if (generation !== version.current) return;
+                    page.jobs.forEach(job => retentionPending.current.delete(job.job_id));
                     setJobs(rows => mergePage(rows ?? [], page.jobs));
                     setNext(page.next);
                 },
@@ -182,6 +191,7 @@ export default function Library() {
         try {
             const page = await observe(mediaApi(api).listJobs(next));
             if (generation !== version.current) return;
+            page.jobs.forEach(job => retentionPending.current.delete(job.job_id));
             setJobs((j) => mergePage(j ?? [], page.jobs));
             setNext(page.next);
         } catch {
@@ -243,6 +253,8 @@ export default function Library() {
                         const kind = kinds.get(item.model_id);
                         return <LibraryItem
                             job={item}
+                            retentionKnown={!retentionPending.current.has(item.job_id)}
+                            now={now}
                             media={{ ...media[item.job_id], audio: { playing: playing === item.job_id, toggle: () => void toggleAudio(item.job_id) } }}
                             name={item.label || names.get(item.model_id) || item.model_id}
                             kind={kind}

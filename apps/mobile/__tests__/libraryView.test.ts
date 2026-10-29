@@ -1,4 +1,4 @@
-import { MAX_FAVOURITES, canReuse, canSchedule, expiryOf, filterJobs, kindMap, parseProvenance, readFavourites, rowStatus, sizeLabel, toggled, writeFavourites } from '../src/lib/libraryView';
+import { retentionOf, RETENTION_URGENT_MS, MAX_FAVOURITES, canReuse, canSchedule, expiryOf, filterJobs, kindMap, parseProvenance, readFavourites, rowStatus, sizeLabel, toggled, writeFavourites } from '../src/lib/libraryView';
 import { createCache, createMemoryStorage } from '../src/lib/cache';
 import type { CatalogModel, Job } from '../src/lib/media';
 
@@ -125,5 +125,29 @@ describe('provenance record', () => {
         expect(sizeLabel(512)).toBe('512 B');
         expect(sizeLabel(2048)).toBe('2 KB');
         expect(sizeLabel(5 * 1024 * 1024)).toBe('5.0 MB');
+    });
+});
+
+
+describe('retentionOf', () => {
+    test.each(['queued', 'running', 'failed'] as const)('%s has no notice, even with held or absent file metadata', state => {
+        expect(retentionOf(job({ state, held: true, has_asset: false }), NOW)).toEqual({ kind: 'none' });
+    });
+    test('held takes precedence over an absent file', () => {
+        expect(retentionOf(job({ held: true, has_asset: false }), NOW)).toEqual({ kind: 'held' });
+    });
+    test('absent file takes precedence over a date', () => {
+        expect(retentionOf(job({ has_asset: false }), NOW)).toEqual({ kind: 'unavailable' });
+    });
+    test.each([undefined, null, '', 'not a date'])('unknown expiry %p uses the default notice', asset_expires_at => {
+        expect(retentionOf(job({ asset_expires_at }), NOW)).toEqual({ kind: 'default' });
+    });
+    test.each([-1, 0])('deadline offset %i has ended', offset => {
+        const date = new Date(NOW + offset);
+        expect(retentionOf(job({ asset_expires_at: date.toISOString() }), NOW)).toEqual({ kind: 'ended', date });
+    });
+    test.each([[1, true], [RETENTION_URGENT_MS, true], [RETENTION_URGENT_MS + 1, false]])('deadline offset %i has urgency %s', (offset, urgent) => {
+        const date = new Date(NOW + Number(offset));
+        expect(retentionOf(job({ asset_expires_at: date.toISOString() }), NOW)).toEqual({ kind: 'expires', date, urgent });
     });
 });

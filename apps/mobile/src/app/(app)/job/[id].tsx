@@ -15,6 +15,7 @@ import { CONFIRM_MESSAGE, CONFIRM_TITLE, deleteCreation, deleteMessage, isAlread
 import { afterCelebration, celebrateOutput, type CelebrationResult } from '../../../lib/celebrate';
 import { REVIEW_ASK_DELAY_MS, claimReviewAsk, shouldAskForReview } from '../../../lib/reviewAsk';
 import { loadReviewAsk } from '../../../lib/storeReview';
+import { retentionOf, type Retention } from '../../../lib/libraryView';
 import { mediaApi, waitForJob, type JobState } from '../../../lib/media';
 import { askAboutHref, editHref, makeAnotherHref, nextStepsFor, publishHref } from '../../../lib/nextSteps';
 import { creativeReuseHref, kindForMime } from '../../../lib/creativeReuse';
@@ -53,6 +54,12 @@ export default function JobScreen() {
     // A stem-splitting job has six tracks instead of one file.
     const [stems, setStems] = useState<string[]>([]);
     const [modelId, setModelId] = useState<string | null>(null);
+    const [lookup, setLookup] = useState<'pending' | 'file' | 'held' | 'missing' | 'failed'>('pending');
+    const [now, setNow] = useState(Date.now);
+    useEffect(() => {
+        const timer = setInterval(() => setNow(Date.now()), 60_000);
+        return () => clearInterval(timer);
+    }, []);
     const [held, setHeld] = useState(false);
     const [expiresAt, setExpiresAt] = useState<string | null>(null);
     const [error, setError] = useState(false);
@@ -85,7 +92,7 @@ export default function JobScreen() {
 
     useEffect(() => {
         setError(false); setPollEnded(false); setSeconds(0);
-        setHeld(false); setAsset(null); setStems([]); setExpiresAt(null);
+        setHeld(false); setAsset(null); setStems([]); setExpiresAt(null); setLookup('pending');
         setResultReady(false);
         setReview(null);
         setCancelStatus(null);
@@ -93,7 +100,7 @@ export default function JobScreen() {
         const ratingController = new AbortController();
         ratingAbort.current = ratingController;
         const unsubscribe = subscribeCacheUser(() => {
-            controller.abort(); ratingController.abort(); setAsset(null); setStems([]); setHeld(false); setExpiresAt(null);
+            controller.abort(); ratingController.abort(); setAsset(null); setStems([]); setHeld(false); setExpiresAt(null); setLookup('pending');
             void Image.clearMemoryCache?.().catch(() => {});
         });
         const media = mediaApi(api);
@@ -124,9 +131,22 @@ export default function JobScreen() {
                     }
                 }
                 if (final !== 'succeeded') return;
-                const a = await media.getAsset(id);
+                let a;
+                try {
+                    a = await media.getAsset(id);
+                } catch (err) {
+                    if (controller.signal.aborted) return;
+                    if (err instanceof ApiError && err.code === 'held') {
+                        setHeld(true); setLookup('held'); return;
+                    }
+                    if (err instanceof ApiError && err.status === 404 && err.code === 'not_found') {
+                        setLookup('missing'); return;
+                    }
+                    throw err;
+                }
                 if (controller.signal.aborted) return;
                 setAsset({ url: a.url, mime: a.mime_type });
+                setLookup('file');
                 setExpiresAt(a.asset_expires_at ?? null);
                 setStems(a.output_stems ?? []);
                 const celebration = celebrateOutput(id, a.mime_type, waited);
@@ -135,7 +155,7 @@ export default function JobScreen() {
                 if (controller.signal.aborted || ratingController.signal.aborted || !shouldAskForReview(asked, { waited, hasOutput: true })) return;
                 setReview(celebration);
             })
-            .catch(err => { if (!controller.signal.aborted) { if (err instanceof ApiError && err.code === 'held') setHeld(true); else setError(true); } });
+            .catch(() => { if (!controller.signal.aborted) { setError(true); setLookup('failed'); } });
         return () => { unsubscribe(); controller.abort(); ratingController.abort(); };
     }, [api, id, attempt]);
 
@@ -221,6 +241,19 @@ export default function JobScreen() {
         ]);
     }
 
+    // Only the asset endpoint can establish whether a completed job still has a file.
+    const retention: Retention = lookup === 'file' || lookup === 'missing' ? retentionOf({
+        job_id: id, state, model_id: modelId ?? '', credits: 0, created_at: '',
+        has_asset: lookup === 'file', asset_expires_at: expiresAt,
+    }, now) : { kind: 'none' };
+    const retentionText = retention.kind === 'unavailable' ? t('library.fileUnavailable')
+        : retention.kind === 'default' ? t('library.keptDefault')
+        : retention.kind === 'expires' || retention.kind === 'ended'
+            ? t(retention.kind === 'ended' ? 'library.retentionEnded' : 'library.expires', {
+                date: retention.date.toLocaleDateString(formatLocale(), { day: 'numeric', month: 'short', year: 'numeric' }),
+            }) : null;
+    const urgent = retention.kind === 'ended' || (retention.kind === 'expires' && retention.urgent);
+
     const canSave = !!asset && (asset.mime.startsWith('image/') || asset.mime.startsWith('video/'));
 
     const next = asset ? nextStepsFor(asset.mime, modelId) : { edit: false, publish: false, makeAnother: false, reuse: false };
@@ -270,7 +303,7 @@ export default function JobScreen() {
                     ) : null}
                 </View>
             )}
-            {asset && expiresAt && Number.isFinite(Date.parse(expiresAt)) ? <Text variant="caption">{Date.parse(expiresAt) <= Date.now() ? t('library.expired') : t('library.expires', { date: new Date(expiresAt).toLocaleDateString(formatLocale(), { day: 'numeric', month: 'short', year: 'numeric' }) })}</Text> : null}
+            {retentionText ? <Text variant="caption" tone={urgent ? 'danger' : 'tertiary'}>{retentionText}</Text> : null}
             {asset && stems.length === 0 ? (
                 <ScrollView style={styles.actions} contentContainerStyle={styles.actionsBody}>
                     {next.edit || next.publish || next.makeAnother || next.reuse ? (
