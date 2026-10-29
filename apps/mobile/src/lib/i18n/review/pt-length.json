@@ -2928,6 +2928,12 @@
     "ratio": 1.67
   },
   {
+    "id": "commerce.percentOff",
+    "english": "Percent off",
+    "translation": "Desconto percentual",
+    "ratio": 1.73
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { mockCommerce } from './mockCommerce.mjs';
 import { mockInbox } from './mockInbox.mjs';
 // Local stand-in for Supabase Auth and the /api/v1 routes the app uses, so every signed-in screen can be
 // previewed in the simulator without an account. Development only: `node dev/mock-server.mjs` (port 8799).
@@ -480,6 +481,7 @@ createServer(async (req, res) => {
         return send(res, 200, { deleted: true });
     }
     if (mockInbox(req, res, path, body, send)) return;
+    if (mockCommerce(req, res, path, body, send, brandHeader, BRAND_VIEW)) return;
     // Workspaces and projects (create, rename, delete and restore keep their state while the mock runs). The real routes answer errors as {error:{code,message}}, an object.
     const PROJECTS = (globalThis.__MOCK_PROJECTS ??= [
         { id: 'c1111111-1111-4111-8111-111111111111', workspace_id: 'a1111111-1111-4111-8111-111111111111', owner_id: 'u1', name: 'Spring launch reel', version: 54, created_at: '2026-10-01T10:00:00Z', updated_at: '2026-10-18T09:00:00Z' },

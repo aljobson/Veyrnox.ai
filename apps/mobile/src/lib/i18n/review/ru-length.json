@@ -3144,6 +3144,18 @@
     "ratio": 1.71
   },
   {
+    "id": "commerce.optionName",
+    "english": "Name",
+    "translation": "Название",
+    "ratio": 2
+  },
+  {
+    "id": "commerce.percentOff",
+    "english": "Percent off",
+    "translation": "Скидка в процентах",
+    "ratio": 1.64
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

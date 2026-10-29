@@ -25,7 +25,7 @@ const page = (brandRole = role, name = 'Current row') => ({ brandRole,
 });
 type ScreenCase = [string, ComponentType, string[]];
 const lists: ScreenCase[] = [['ads', Ads, ['ads.new', 'ads.delete']], ['commerce', Commerce, ['commerce.new', 'commerce.archive']]];
-const edits: ScreenCase[] = [['ads-edit', AdsEdit, ['ads.save']], ['commerce-edit', CommerceEdit, ['commerce.save']], ['contact-edit', ContactEdit, ['contacts.save']]];
+const edits: ScreenCase[] = [['ads-edit', AdsEdit, ['ads.save']], ['commerce-edit', CommerceEdit, ['commerce.save', 'commerce.addOption']], ['contact-edit', ContactEdit, ['contacts.save']]];
 const screens = [...lists, ...edits];
 beforeEach(() => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; brandStore.set(ID); jest.clearAllMocks(); mockRequest.mockReset(); root = createRoot(); role = 'editor';

@@ -3198,6 +3198,18 @@
     "ratio": 1.71
   },
   {
+    "id": "commerce.optionName",
+    "english": "Name",
+    "translation": "Name der Variante",
+    "ratio": 4.25
+  },
+  {
+    "id": "commerce.percentOff",
+    "english": "Percent off",
+    "translation": "Prozentualer Rabatt",
+    "ratio": 1.73
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",
