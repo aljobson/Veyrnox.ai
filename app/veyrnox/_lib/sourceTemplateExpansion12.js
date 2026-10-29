@@ -1030,7 +1030,7 @@ export const HIGGSFIELD_90_WALL_SHOWCASE_KEYS = Object.freeze({
 export const SOURCE_TEMPLATE_EXPANSION_12 = recipes.map(({ id, name, category, previewAspect, sourceAspect, group, clipKey }) => ({
   ...base, id, name, category, previewAspect, sourceAspect, clipKey, steps,
   needsKey: group ? 'community.group' : 'community.cinematic',
-  needs: group ? 'Reference images for every replacement subject in the published prompt order' : 'A clear subject reference matching the published prompt role',
+  needs: group ? 'One starting image containing every subject in their intended positions' : 'A clear full-body portrait with room for cinematic movement',
   bg: 'linear-gradient(155deg,#121722 0%,#394c66 55%,#b77d62 100%)',
   prompt: `Animate the uploaded reference into an original ten-second ${name.toLowerCase()} sequence inspired by the verified source concept. Preserve every supplied subject's recognizable identity, proportions, clothing and role. Keep anatomy, object geometry and physical contact stable with naturally weighted motion, controlled camera movement, consistent lighting and no captions, logos or watermark.`,
 }));
