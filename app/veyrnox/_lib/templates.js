@@ -13,6 +13,7 @@ import { REFERENCE_TEMPLATES } from './referenceTemplates.js';
 import { EFFECT_CONCEPT_TEMPLATES } from './effectConceptTemplates.js';
 import { EFFECT_THEMES, effectThemeId, themedTemplates } from './effectThemes.js';
 import { SHOWCASE_CLIPS } from './showcase.js';
+import { isPublishableSourcePromptTemplate } from './sourcePromptAudit.js';
 
 const CATEGORY_ORDER = ['YOUR PHOTO', 'KIDS BIRTHDAY', 'CINEMATIC', 'ANIME', 'CARTOONS', 'MOVIES', 'FANTASY', 'REALISTIC', 'FASHION', 'PRODUCTS', 'VFX', 'UGC', 'ADS'];
 
@@ -42,13 +43,21 @@ const WALL_CLIP_KEYS = [
   'wall-dolphin-surf-ride',
   'wall-event-character-swap',
 ];
-// Every runnable recipe stays addressable by id (its own page and direct
-// links), but only recipes with a real video preview are listed anywhere:
-// gallery, categories, themes, search, sitemap, homepage and mobile.
-export const ALL_TEMPLATES = [...SOURCE_TEMPLATES, ...EFFECT_CONCEPT_TEMPLATES, ...REFERENCE_TEMPLATES];
+const TEMPLATE_CANDIDATES = [...SOURCE_TEMPLATES, ...EFFECT_CONCEPT_TEMPLATES, ...REFERENCE_TEMPLATES];
+export const REMOVED_PROMPT_GAP_TEMPLATE_IDS = Object.freeze(TEMPLATE_CANDIDATES
+  .filter((template) => !isPublishableSourcePromptTemplate(template.id))
+  .map((template) => template.id));
+const REMOVED_PROMPT_GAP_TEMPLATE_ID_SET = new Set(REMOVED_PROMPT_GAP_TEMPLATE_IDS);
+
+// Source records with an absent or truncated matched prompt remain in the
+// audit corpus, but are removed from every public surface and direct route.
+// Every remaining runnable recipe stays addressable by id; only recipes with
+// a real video preview are listed in the gallery and API.
+export const ALL_TEMPLATES = TEMPLATE_CANDIDATES
+  .filter((template) => !REMOVED_PROMPT_GAP_TEMPLATE_ID_SET.has(template.id));
 export const hasTemplateVideo = (preset) => Boolean(preset?.clipKey && SHOWCASE_CLIPS[preset.clipKey]?.video);
 export const PRESETS = ALL_TEMPLATES.filter(hasTemplateVideo);
-export const WALL_PRESETS = WALL_CLIP_KEYS.map((key) => SOURCE_TEMPLATES.find((p) => p.clipKey === key)).filter(Boolean);
+export const WALL_PRESETS = WALL_CLIP_KEYS.map((key) => ALL_TEMPLATES.find((p) => p.clipKey === key)).filter(Boolean);
 export const PRESET_CATEGORIES = ['ALL', 'NEW', ...CATEGORY_ORDER.filter((category) => PRESETS.some((p) => p.category === category))];
 // The first filter row is deliberately concise; the gallery can disclose the
 // complete category catalog in place without hiding choices in a scroll rail.

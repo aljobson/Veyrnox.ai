@@ -4,9 +4,11 @@ On 10 October 2026 the owner requested usable recipes for the imported previews,
 including prompts and inputs, rather than unrelated footage in preset cards.
 The source template workflows were inspected with Agent Reach and the REA skill.
 
-`sourceTemplates.js` associates each of the 275 public recipes with its own title,
+`sourceTemplates.js` retains 275 audited media-backed source recipes with their title,
 clip key, Veyrnox remix prompt, supported video model, duration, upload guidance
-and neutral inspiration marker. The gallery exposes all 275 recipes and the
+and neutral inspiration marker. The public filter removes 44 records whose
+matched prompt is unavailable and one whose matched prompt is truncated. The
+gallery exposes the remaining 230 recipes and the
 homepage wall features 24 of them. Every public template has a distinct local
 video and poster. A detail page intentionally reuses the preview of the card it describes.
 Source-platform names, record IDs and URLs are not included in public template
@@ -15,9 +17,9 @@ public are the exception: they are exposed read-only as provenance, including
 creator-supplied attribution or reference tokens that occur inside the prompt.
 
 On 24 October 2026, 22 legacy recipes without videos were removed. `PRESETS`,
-the browsable and API-exposed subset, now contains the 275 video-backed recipes
+the browsable and API-exposed subset, now contains the 230 publishable video-backed recipes
 and drives the gallery, categories, search and homepage. `ALL_TEMPLATES` contains
-1,317 addressable recipes: those 275 video-backed recipes plus 1,036 direct-link
+1,272 addressable recipes: those 230 video-backed recipes plus 1,036 direct-link
 effect concepts and 6 reference recipes. It drives route lookup, middleware recognition and template
 start attribution. Homepage template links open the matching recipe page.
 
@@ -25,10 +27,10 @@ start attribution. Homepage template links open the matching recipe page.
 
 SYNTX's shipped TrendsCard and public read-only trends API expose the exact
 prompt, `generation_settings`, image/video reference roles and unlocked reference
-assets. The 29 October audit covers 58 Syntx-linked Veyrnox templates. Fifty-seven
+assets. The 29 October audit covers 58 Syntx-linked source records. Fifty-seven
 public prompts are preserved verbatim with locked SHA-256 fixtures; Keyboard Duo
-Swap remains explicitly unresolved because its public trend record is no longer
-returned. Two source-prompt duplicate groups are documented while all 58 local
+Swap was removed because its public trend record is no longer returned. Two
+source-prompt duplicate groups are documented while all 58 local
 preview videos remain byte-unique. The exact text is read-only provenance and
 the shorter compatible Veyrnox adaptation remains the editable generation prompt.
 See [the Syntx prompt audit](syntx-template-prompt-audit-2026-10-29.md).
@@ -48,26 +50,24 @@ the verified cyan point-cloud flower-field footage instead.
 On 29 October 2026 the prompt provenance audit covered all 100 Genjutsu
 community previews, all 58 Syntx-linked templates and all 91 other
 Higgsfield-sourced previews. The public
-Genjutsu feed published an exact prompt for 57 records; those strings are
-preserved verbatim in the read-only `sourcePrompt` field with locked SHA-256
+Genjutsu feed published an exact prompt for 57 records. One was already
+truncated and was removed; the other 56 strings are preserved verbatim in the
+public read-only `sourcePrompt` field with locked SHA-256
 fixtures. The normalized 100-record feed capture has SHA-256
 `c54a2734c2ae117b02727677abebe213d610e807b95dbbf48cb2dd3269d62103`.
 Verbatim preservation includes creator attribution, reference tokens and empty
 reference slots emitted by the public feed; Veyrnox does not guess missing
-references or silently repair source text. The other 43 Genjutsu records and
-the older Higgsfield-sourced videos expose no exact public source prompt, so the
-public payload normalizes those `sourcePrompt` values to null. They retain
-an editable `veyrnox-adaptation` generation prompt and must not be presented as
-copied Higgsfield system prompts. The audit also corrected the High Flip, Earth
+references or silently repair source text. The other 43 Genjutsu records expose
+no exact public source prompt and are removed from all public template surfaces.
+The older Higgsfield-sourced videos remain explicit `adaptation-only` recipes
+and must not be presented as copied Higgsfield system prompts. The audit also corrected the High Flip, Earth
 Zoom, Pigeons, Raven Transition and Motion Tracking adaptations to match the
 published preview behavior and removed an internally contradictory text-label
 instruction.
 
 The public feed's `community-survivor-memory-shift` prompt ends mid-sentence at
-`At`; the source record marks it `sourcePromptTruncated: true`. This is the text
-received from the feed, not a Veyrnox edit. The UI therefore describes exact
-prompts as copied “exactly as received,” rather than claiming every string is a
-complete creator-authored prompt.
+`At`; the source record marks it `sourcePromptTruncated: true`. This is retained
+only as non-public audit evidence, and the corresponding template is removed.
 
 REA static Evidence IDs:
 
