@@ -1,5 +1,8 @@
 import { modelIdForName } from './tokens.js';
 
+// The longest prompt POST /api/v1/generations accepts (app/api/v1/generations/route.js).
+export const TEMPLATE_PROMPT_MAX = 2000;
+
 const nonEmptyString = (value) => typeof value === 'string' && value.trim().length > 0;
 const supportedDuration = (value) => value === 5 || value === 10;
 

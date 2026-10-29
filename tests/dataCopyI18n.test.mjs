@@ -113,27 +113,28 @@ test('recipe SSR translates steps but forwards exact prompt and preset data to U
   }
 });
 
-test('Genjutsu recipe SSR shows the exact source prompt but hands the compatible prompt to generation', () => {
+test('Genjutsu recipe SSR shows only the exact source prompt and hands that same prompt to generation', () => {
   const template = ALL_TEMPLATES.find(p => GENJUTSU_SOURCE_PROMPT_RECORDS[p.id]?.sourcePromptAvailable);
   const sourcePrompt = GENJUTSU_SOURCE_PROMPT_RECORDS[template?.id]?.prompt;
   const preset = { ...template, sourcePrompt, sourcePromptOrigin: 'community-source-exact' };
   assert.ok(sourcePrompt);
   const f = fixture('en', `/presets/${preset.id}`, { moduleMocks: {
     './UseTemplate': { UseTemplate: ({ preset: actual, prompt }) => {
-      assert.equal(actual, preset);
-      assert.equal(prompt, preset.prompt);
-      assert.ok(prompt.length <= 2000);
+      assert.equal(actual.id, preset.id);
+      assert.equal(actual.prompt, sourcePrompt);
+      assert.equal(prompt, sourcePrompt);
       return React.createElement('div', { 'data-use-template': actual.id });
     } },
   } });
   const html = f.render(React.createElement(f.load('app/veyrnox/_components/TemplateRecipe.js').TemplateRecipe, { preset }));
   assert.ok(html.includes('EXACT COMMUNITY PROMPT'));
-  assert.ok(html.includes('VEYRNOX GENERATION PROMPT'));
+  assert.ok(!html.includes('VEYRNOX GENERATION PROMPT'));
+  assert.ok(!html.includes(template.prompt.slice(0, 80)) || sourcePrompt.includes(template.prompt.slice(0, 80)));
   assert.ok(html.includes(sourcePrompt.slice(0, 80)));
-  assert.match(html, /readonly=""/i);
+  assert.doesNotMatch(html, /readonly=""/i);
 });
 
-test('Syntx recipe SSR shows exact provenance only when the public prompt is available', () => {
+test('Syntx recipe SSR uses the exact prompt when available and the recipe prompt otherwise', () => {
   const exactTemplate = ALL_TEMPLATES.find((preset) => preset.id === 'medieval-runway-look');
   const exactPrompt = SYNTX_SOURCE_PROMPT_RECORDS[exactTemplate.id].prompt;
   const exactPreset = { ...exactTemplate, sourcePrompt: exactPrompt, sourcePromptOrigin: 'community-source-exact' };
@@ -142,8 +143,8 @@ test('Syntx recipe SSR shows exact provenance only when the public prompt is ava
 
   const exactFixture = fixture('en', `/presets/${exactPreset.id}`, { moduleMocks: {
     './UseTemplate': { UseTemplate: ({ preset: actual, prompt }) => {
-      assert.equal(actual, exactPreset);
-      assert.equal(prompt, exactPreset.prompt);
+      assert.equal(actual.prompt, exactPrompt);
+      assert.equal(prompt, exactPrompt);
       return React.createElement('div', { 'data-use-template': actual.id });
     } },
   } });
@@ -157,8 +158,19 @@ test('Syntx recipe SSR shows exact provenance only when the public prompt is ava
   const exactHtml = exactFixture.render(React.createElement(exactFixture.load('app/veyrnox/_components/TemplateRecipe.js').TemplateRecipe, { preset: exactPreset }));
   const unresolvedHtml = unresolvedFixture.render(React.createElement(unresolvedFixture.load('app/veyrnox/_components/TemplateRecipe.js').TemplateRecipe, { preset: unresolvedTemplate }));
   assert.ok(exactHtml.includes(exactPrompt.slice(0, 80)));
-  assert.match(exactHtml, /readonly=""/i);
+  assert.ok(!exactHtml.includes('VEYRNOX GENERATION PROMPT'));
   assert.ok(!unresolvedHtml.includes('EXACT COMMUNITY PROMPT'));
+});
+
+test('an exact prompt longer than the generation limit is shown whole and blocks generation', () => {
+  const template = ALL_TEMPLATES.find((preset) => (SYNTX_SOURCE_PROMPT_RECORDS[preset.id]?.prompt?.length ?? 0) > 2000);
+  const exactPrompt = SYNTX_SOURCE_PROMPT_RECORDS[template.id].prompt;
+  const preset = { ...template, sourcePrompt: exactPrompt, sourcePromptOrigin: 'community-source-exact' };
+  const f = fixture('en', `/presets/${preset.id}`);
+  const html = f.render(React.createElement(f.load('app/veyrnox/_components/TemplateRecipe.js').TemplateRecipe, { preset }));
+  assert.ok(html.includes(exactPrompt.slice(-60).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#x27;')) || html.includes(String(exactPrompt.length)));
+  assert.ok(html.includes(`This prompt is ${exactPrompt.length} characters`));
+  assert.match(html, /<button[^>]*disabled=""[^>]*>[\s\S]*?cr<\/span><\/button>/);
 });
 
 test('app data areas preserve keys, placeholders and numeric facts in all languages', async () => {

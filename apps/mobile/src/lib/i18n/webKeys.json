@@ -23,6 +23,7 @@
   "public.TemplateRecipe.exactCommunityPrompt",
   "public.TemplateRecipe.copyExactCommunityPrompt",
   "public.TemplateRecipe.exactCommunityPromptHelp",
+  "public.TemplateRecipe.promptTooLong",
   "public.TemplateRecipe.sourcePromptUnavailable",
   "public.TemplateRecipe.sourcePromptNotRecorded",
   "public.TemplateRecipe.sourcePromptTruncated",
