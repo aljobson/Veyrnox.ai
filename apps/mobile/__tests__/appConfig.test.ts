@@ -40,9 +40,14 @@ describe('iOS privacy manifest', () => {
 describe('permissions', () => {
     const plugin = (name: string) => (expo.plugins as unknown[]).find((p) => p === name || (Array.isArray(p) && p[0] === name));
 
-    test('Publish camera and photo wording is explicit; microphone and Face ID remain off', () => {
-        expect(plugin('expo-image-picker')).toEqual(['expo-image-picker', { cameraPermission: 'Veyrnox.ai uses the camera when you take a photo to post with Publish.', photosPermission: 'Veyrnox.ai reads the photo or video you choose, to use as a starting point for a creation or to post with Publish.', microphonePermission: false }]);
+    test('Publish camera and photo wording is explicit; microphone is for voiceovers; Face ID remains off', () => {
+        expect(plugin('expo-image-picker')).toEqual(['expo-image-picker', { cameraPermission: 'Veyrnox.ai uses the camera when you take a photo to post with Publish.', photosPermission: 'Veyrnox.ai reads the photo or video you choose, to use as a starting point for a creation or to post with Publish.', microphonePermission: 'Veyrnox.ai uses the microphone only while you record a voiceover in the editor.' }]);
         expect(plugin('expo-secure-store')).toEqual(['expo-secure-store', { faceIDPermission: false }]);
+    });
+
+    test('voiceover microphone is iOS only without background audio', () => {
+        expect(plugin('expo-audio')).toEqual(['expo-audio', { microphonePermission: 'Veyrnox.ai uses the microphone only while you record a voiceover in the editor.', recordAudioAndroid: false, enableBackgroundRecording: false, enableBackgroundPlayback: false }]);
+        expect(expo.android.blockedPermissions).toEqual(['android.permission.RECORD_AUDIO']);
     });
 
     test('no other usage strings are set by hand', () => {

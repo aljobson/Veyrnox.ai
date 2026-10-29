@@ -1,3 +1,4 @@
+jest.mock('../src/lib/voiceoverRecorder', () => ({ VOICEOVER_AVAILABLE: false }));
 import { act } from 'react';
 import { AccessibilityInfo, Platform, Pressable, Text, View } from 'react-native';
 import { createRoot, type Root } from 'test-renderer';

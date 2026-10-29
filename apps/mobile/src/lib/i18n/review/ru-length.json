@@ -3174,6 +3174,30 @@
     "ratio": 1.73
   },
   {
+    "id": "editorVoiceover.stop",
+    "english": "Stop",
+    "translation": "Остановить",
+    "ratio": 2.5
+  },
+  {
+    "id": "editorVoiceover.play",
+    "english": "Play take",
+    "translation": "Прослушать запись",
+    "ratio": 1.89
+  },
+  {
+    "id": "editorVoiceover.add",
+    "english": "Add to timeline",
+    "translation": "Добавить на шкалу времени",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorVoiceover.keep",
+    "english": "Keep",
+    "translation": "Оставить",
+    "ratio": 2
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

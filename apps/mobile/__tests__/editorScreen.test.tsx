@@ -27,6 +27,7 @@ let mockWorkingDoc = doc, mockAutoFlush = true;
 let mockPosts: any[] = [];
 let mockParams: Record<string, string> = { projectId: id };
 let mockUuid = 0;
+jest.mock('../src/lib/voiceoverRecorder', () => ({ VOICEOVER_AVAILABLE: false }));
 jest.mock('expo-crypto', () => ({ randomUUID: () => `test-key-${++mockUuid}` }));
 jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useLocalSearchParams: () => mockParams, useRouter: () => mockRouter, useIsFocused: () => true, usePreventRemove: jest.fn(() => mockDisable) }));
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi }) }));

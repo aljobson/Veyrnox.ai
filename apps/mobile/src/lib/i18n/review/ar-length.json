@@ -1710,6 +1710,12 @@
     "ratio": 1.92
   },
   {
+    "id": "editorVoiceover.pause",
+    "english": "Pause",
+    "translation": "إيقاف مؤقت",
+    "ratio": 2
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "تسجيل الدخول",
