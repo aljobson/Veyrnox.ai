@@ -5377,5 +5377,9 @@ export default {
   "projectDocument.loadingVersion": "バージョンを読み込み中…",
   "projectDocument.versionFailed": "このバージョンを開けませんでした。再試行してください。",
   "projectDocument.close": "閉じる",
-  "projectDocument.restore": "復元"
+  "projectDocument.restore": "復元",
+  "projectHome.premium": "プレミアム",
+  "projectHome.notOpen": "まだ利用できません",
+  "projectHome.premiumClosed": "プレミアムモデル · まだ利用できません",
+  "projectHome.details": "詳細"
 } as const;

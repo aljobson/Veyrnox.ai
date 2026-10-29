@@ -5572,5 +5572,9 @@ export default {
   "projectDocument.loadingVersion": "Загрузка версии…",
   "projectDocument.versionFailed": "Не удалось открыть эту версию. Повторите.",
   "projectDocument.close": "Закрыть",
-  "projectDocument.restore": "Восстановить"
+  "projectDocument.restore": "Восстановить",
+  "projectHome.premium": "ПРЕМИУМ",
+  "projectHome.notOpen": "Пока недоступно",
+  "projectHome.premiumClosed": "ПРЕМИУМ-МОДЕЛЬ · ПОКА НЕДОСТУПНА",
+  "projectHome.details": "Подробнее"
 } as const;

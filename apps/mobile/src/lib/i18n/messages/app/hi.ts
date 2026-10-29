@@ -5442,5 +5442,9 @@ export default {
   "projectDocument.loadingVersion": "संस्करण लोड हो रहा है…",
   "projectDocument.versionFailed": "यह संस्करण खुल नहीं सका। फिर कोशिश करें।",
   "projectDocument.close": "बंद करें",
-  "projectDocument.restore": "बहाल करें"
+  "projectDocument.restore": "बहाल करें",
+  "projectHome.premium": "प्रीमियम",
+  "projectHome.notOpen": "अभी उपलब्ध नहीं",
+  "projectHome.premiumClosed": "प्रीमियम मॉडल · अभी उपलब्ध नहीं",
+  "projectHome.details": "विवरण"
 } as const;

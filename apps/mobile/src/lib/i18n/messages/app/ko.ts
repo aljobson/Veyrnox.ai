@@ -5377,5 +5377,9 @@ export default {
   "projectDocument.loadingVersion": "버전 불러오는 중…",
   "projectDocument.versionFailed": "이 버전을 열 수 없습니다. 다시 시도하세요.",
   "projectDocument.close": "닫기",
-  "projectDocument.restore": "복원"
+  "projectDocument.restore": "복원",
+  "projectHome.premium": "프리미엄",
+  "projectHome.notOpen": "아직 이용할 수 없음",
+  "projectHome.premiumClosed": "프리미엄 모델 · 아직 이용할 수 없음",
+  "projectHome.details": "상세 정보"
 } as const;

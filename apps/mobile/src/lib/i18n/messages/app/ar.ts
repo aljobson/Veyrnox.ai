@@ -5702,5 +5702,9 @@ export default {
   "projectDocument.loadingVersion": "جارٍ تحميل الإصدار…",
   "projectDocument.versionFailed": "تعذّر فتح هذا الإصدار. أعد المحاولة.",
   "projectDocument.close": "إغلاق",
-  "projectDocument.restore": "استعادة"
+  "projectDocument.restore": "استعادة",
+  "projectHome.premium": "مميز",
+  "projectHome.notOpen": "غير متاح بعد",
+  "projectHome.premiumClosed": "نموذج مميز · غير متاح بعد",
+  "projectHome.details": "التفاصيل"
 } as const;

@@ -5377,5 +5377,9 @@ export default {
   "projectDocument.loadingVersion": "正在加载版本…",
   "projectDocument.versionFailed": "无法打开此版本。请重试。",
   "projectDocument.close": "关闭",
-  "projectDocument.restore": "恢复"
+  "projectDocument.restore": "恢复",
+  "projectHome.premium": "高级",
+  "projectHome.notOpen": "暂未开放",
+  "projectHome.premiumClosed": "高级模型 · 暂未开放",
+  "projectHome.details": "详情"
 } as const;

@@ -65,3 +65,17 @@ test('source limits, output labels and price units equal the actual web helpers'
     expect({ status: run.status, stderr: run.stderr }).toEqual({ status: 0, stderr: '' });
     expect(all.map(m => [sourceDurationLimit(m), priceUnit(m), [undefined, 5, 10, 99].map(s => outputDurationLabel(m, s))])).toEqual(JSON.parse(run.stdout));
 });
+
+test('frozen library work order duration cases preserve existing model facts', () => {
+    const durationRow = (m: CatalogModel) => modelFacts(m).find(f => f.label === 'Output duration');
+    expect(modelFacts(model('source-eight', 'video-to-video', { media: { video: { required: true, maxSeconds: 8 } } }, [5, 10])))
+        .toContainEqual({ label: 'Clip lengths', value: 'Follows source duration (up to 8 s)' });
+    expect(durationRow(model('range', 'text-to-audio', { inputs: { duration: { min: 5, max: 60, default: 30 } } })))
+        .toEqual({ label: 'Output duration', value: '5–60 s (30 s default)' });
+    const fixed = model('fixed-ten', 'text-to-audio', { presentation: { fixedDurationLabel: '10s' }, media: { audio: { required: true, maxSeconds: 8 } } });
+    expect(durationRow(fixed)).toEqual({ label: 'Output duration', value: '10 s' });
+    expect(sourceDurationLimit(fixed)).toBeNull();
+    expect(durationRow(model('speech', 'text-to-audio', { kind: 'speech' })))
+        .toEqual({ label: 'Output duration', value: 'Depends on text and voice' });
+    expect(durationRow(model('plain', 'text-to-audio', {}))).toBeUndefined();
+});

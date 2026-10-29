@@ -5442,5 +5442,9 @@ export default {
   "projectDocument.loadingVersion": "Version wird geladen…",
   "projectDocument.versionFailed": "Diese Version konnte nicht geöffnet werden. Versuche es erneut.",
   "projectDocument.close": "Schließen",
-  "projectDocument.restore": "Wiederherstellen"
+  "projectDocument.restore": "Wiederherstellen",
+  "projectHome.premium": "EXKLUSIV",
+  "projectHome.notOpen": "Noch nicht verfügbar",
+  "projectHome.premiumClosed": "EXKLUSIVES MODELL · NOCH NICHT VERFÜGBAR",
+  "projectHome.details": "Einzelheiten"
 } as const;

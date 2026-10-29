@@ -3186,6 +3186,18 @@
     "ratio": 2.29
   },
   {
+    "id": "projectHome.notOpen",
+    "english": "Not open yet",
+    "translation": "Noch nicht verfügbar",
+    "ratio": 1.67
+  },
+  {
+    "id": "projectHome.details",
+    "english": "Details",
+    "translation": "Einzelheiten",
+    "ratio": 1.71
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

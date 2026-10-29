@@ -5507,5 +5507,9 @@ export default {
   "projectDocument.loadingVersion": "Chargement de la version…",
   "projectDocument.versionFailed": "Impossible d’ouvrir cette version. Réessayez.",
   "projectDocument.close": "Fermer",
-  "projectDocument.restore": "Restaurer"
+  "projectDocument.restore": "Restaurer",
+  "projectHome.premium": "HAUT DE GAMME",
+  "projectHome.notOpen": "Pas encore disponible",
+  "projectHome.premiumClosed": "MODÈLE HAUT DE GAMME · PAS ENCORE DISPONIBLE",
+  "projectHome.details": "Détails"
 } as const;

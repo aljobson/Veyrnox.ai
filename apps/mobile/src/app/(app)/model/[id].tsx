@@ -2,8 +2,9 @@ import { rawText } from '../../../lib/i18n/translate';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, View } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { Button, Card, Text, themedStyles, useThemedStyles } from '../../../components/ui';
+import { Button, Card, Icon, Text, themedStyles, useThemedStyles } from '../../../components/ui';
 import { fetchCatalog, type CatalogModel } from '../../../lib/media';
+import { fetchPremiumModels } from '../../../lib/premiumModels';
 import { modelFacts, priceUnit } from '../../../lib/modelFacts';
 import { t } from '../../../lib/i18n';
 import { MIN_TARGET } from '../../../lib/a11y';
@@ -20,8 +21,8 @@ export default function ModelDetail() {
         let live = true;
         setFailed(false);
         setModels(null);
-        fetchCatalog().then(
-            next => { if (live) setModels(next); },
+        Promise.all([fetchCatalog(), fetchPremiumModels().catch(() => [])]).then(
+            ([open, premium]) => { if (live) setModels([...open, ...premium]); },
             () => { if (live) setFailed(true); },
         );
         return () => { live = false; };
@@ -40,11 +41,16 @@ export default function ModelDetail() {
             </> : <>
                 {all}
                 <Text variant="title1" accessibilityRole="header">{model.name}</Text>
+                {model.gated ? <View style={styles.premium}>
+                    <Icon name="sparkleFill" size={20} />
+                    <Text variant="bodyStrong">{t('projectHome.premium')}</Text>
+                </View> : null}
                 <Text variant="title2">{t('modelPage.price', { credits: model.credits })}</Text>
                 <Text tone="secondary">{priceUnit(model)}</Text>
-                <Button label={`${t('modelPage.generate', { title: model.name })} · ${t('modelPage.price', { credits: model.credits })}`}
+                {model.gated ? <Button label={t('projectHome.premiumClosed')} disabled accessibilityState={{ disabled: true }} style={styles.target} />
+                    : <Button label={`${t('modelPage.generate', { title: model.name })} · ${t('modelPage.price', { credits: model.credits })}`}
                     accessibilityLabel={rawText(t('modelPage.generateLabel', { title: model.name, credits: model.credits }))}
-                    onPress={() => router.push({ pathname: '/create/[modelId]', params: { modelId: model.id } })} style={styles.target} />
+                    onPress={() => router.push({ pathname: '/create/[modelId]', params: { modelId: model.id } })} style={styles.target} />}
                 <Button variant="secondary" label={t('modelPage.packs')} onPress={() => router.push('/pricing')} style={styles.target} />
                 <Text variant="footnote" tone="secondary">{t('modelPage.note')}</Text>
                 <Card style={styles.facts}>
@@ -62,6 +68,7 @@ const sheets = themedStyles(p => ({
     screen: { flex: 1, backgroundColor: p.bg },
     content: { padding: 16, paddingBottom: 16 + LIST_END_PADDING, gap: 16 },
     target: { minHeight: MIN_TARGET },
+    premium: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     facts: { gap: 16 },
     fact: { gap: 4 },
 }));
