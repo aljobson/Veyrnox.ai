@@ -38,10 +38,11 @@ import { CharacterPanel } from '../../_components/CharacterPanel';
 import { buildCharacterPrompt, sanitizeOddlingPicks } from '../../_lib/character';
 import { DrawOnImage } from '../../_components/DrawOnImage';
 import { SourcePickers } from '../../_components/SourcePickers';
-import { attachAccept, planAttachments } from '../../../../lib/createAttach.mjs';
+import { attachCapacity, planAttachments } from '../../../../lib/createAttach.mjs';
 import { prepareUploads, needsConversion } from '../../_lib/uploadConvert.mjs';
 import SourceRightsConfirmation from '../../_components/SourceRightsConfirmation';
 import { LibraryPicker } from '../../_components/LibraryPicker';
+import { AddFilesDialog } from '../../_components/AddFilesDialog';
 import { GenerationSettings } from '../../_components/GenerationSettings';
 import { VoiceDescription } from '../../_components/VoiceDescription';
 import { ControlRow } from '../../_components/ControlRow';
@@ -353,23 +354,35 @@ export default function CreateStudio() {
   // A newer attach supersedes one still converting, and the plan is made
   // against the page as it is when conversion ends, not when it started.
   const attachSeq = useRef(0);
+  const [addFilesOpen, setAddFilesOpen] = useState(false);
   const [attachConverting, setAttachConverting] = useState(false);
   const [sourcesConverting, setSourcesConverting] = useState(false);
   const latestAttach = useRef(null);
   useEffect(() => { latestAttach.current = { models, model, sources }; });
-  async function attachFromDevice(fileList) {
+  // Files from the Add files dialog, in the order picked: device files ({file}) and
+  // generated ones ({asset}). A generated file stands in by its type until a slot takes it.
+  // The current model is kept when it takes any files (a template's model stays); with
+  // no slots the files choose the model.
+  async function attachFiles(entries) {
+    setAddFilesOpen(false);
     const seq = ++attachSeq.current;
     const epoch = sourceEpoch.current;
-    const picked = Array.from(fileList || []);
+    const picked = entries.filter(entry => entry.file).map(entry => entry.file);
     if (picked.some(needsConversion)) { setAttachNotice(t('app.create.convert.working')); setAttachConverting(true); }
-    let prepared;
-    try { prepared = await prepareUploads(picked); } finally { if (attachSeq.current === seq) setAttachConverting(false); }
+    const items = [], failed = [];
+    try {
+      for (const entry of entries) {
+        if (entry.asset) { items.push({ type: entry.asset.mimeType, asset: entry.asset }); continue; }
+        const ready = await prepareUploads([entry.file]);
+        items.push(...ready.files); failed.push(...ready.failed);
+      }
+    } finally { if (attachSeq.current === seq) setAttachConverting(false); }
     if (attachSeq.current !== seq) return;
     if (sourceEpoch.current !== epoch) { setAttachNotice(''); return; }
-    const { files, failed } = prepared;
     const { models: currentModels, model: currentModel, sources: currentSources } = latestAttach.current;
     const failure = failed.length ? t(`app.create.convert.${failed[0].code}`) : '';
-    const plan = planAttachments(currentModels, currentModel, files);
+    const pool = currentModel && Object.keys(currentModel.media || {}).length ? [currentModel] : currentModels;
+    const plan = planAttachments(pool, currentModel, items);
     if (!plan) { setAttachNotice(failure || t('app.create.attach.unsupported')); return; }
     const switched = plan.model.id !== currentModel?.id;
     setAttachNotice([failure, switched && t('app.create.attach.switched', { name: plan.model.name }), plan.unused.length && t('app.create.attach.unused', { count: plan.unused.length })].filter(Boolean).join(' '));
@@ -377,7 +390,7 @@ export default function CreateStudio() {
     for (const source of Object.values(currentSources).flatMap(sourceList)) if (source.file) URL.revokeObjectURL(source.previewUrl);
     setSources({});
     const positions = {};
-    for (const { slot, file } of plan.assignments) pickSource(slot, file, null, (positions[slot] = (positions[slot] || 0) + 1) - 1);
+    for (const { slot, file } of plan.assignments) pickSource(slot, file.asset ? null : file, file.asset || null, (positions[slot] = (positions[slot] || 0) + 1) - 1);
   }
 
   function applyDrawing(file) {
@@ -659,18 +672,16 @@ export default function CreateStudio() {
           {activeTemplate && <TemplateHandoffCard
             preset={activeTemplate}
             canChooseSource={Boolean(activeTemplate.needs && Object.keys(media).length)}
-            onChooseSource={() => document.querySelector('[data-assistant-target="create.upload"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+            onChooseSource={() => setAddFilesOpen(true)}
           />}
           {model?.takesVoice && <VoiceDescription value={voice} onChange={setVoice} />}
 
           {animationPortrait && <div role="status" className="mt-4 rounded-xl border border-vx-accent/30 bg-vx-panel p-4 text-sm text-vx-fg-body">{portraitStatus}{animationMismatch && <p className="mt-2 text-vx-danger">{t("app.create.animationModel")}</p>}</div>}
           {(
             <div className="mt-3 flex flex-wrap items-center gap-3">
-              <label className="font-vx-mono text-[11px] font-bold rounded-full px-3.5 py-1.5 border border-vx-border text-vx-fg-muted hover:text-vx-fg cursor-pointer has-disabled:opacity-50 has-focus-visible:outline-solid has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-vx-accent">
-                {t('app.create.attach.button')}
-                <input data-testid="create-attach" type="file" multiple accept={attachAccept()} disabled={attachConverting || sourcesConverting} className="sr-only"
-                  onChange={(e) => { attachFromDevice(e.target.files); e.target.value = ''; }} />
-              </label>
+              <button type="button" data-testid="create-add-files" disabled={attachConverting || sourcesConverting} onClick={() => setAddFilesOpen(true)}
+                className="font-vx-mono text-[11px] font-bold rounded-full px-3.5 py-1.5 border border-vx-border text-vx-fg-muted hover:text-vx-fg disabled:opacity-50">
+                {t('app.create.addFiles.button')}</button>
               <span className="text-xs text-vx-fg-muted">{t('app.create.attach.hint')}</span>
               <button type="button" data-testid="create-open-templates" disabled={attachConverting || sourcesConverting} onClick={() => setTemplatesOpen(true)}
                 className="ms-auto shrink-0 rounded-full border border-vx-accent/50 px-3.5 py-1.5 font-vx-mono text-[11px] font-bold text-vx-accent hover:bg-vx-accent/10 disabled:opacity-50">
@@ -678,6 +689,7 @@ export default function CreateStudio() {
             </div>
           )}
           {attachNotice && <p role="status" className="mt-2 text-xs text-vx-fg-muted">{attachNotice}</p>}
+          {addFilesOpen && <AddFilesDialog capacity={attachCapacity(model)} onAdd={attachFiles} onClose={() => setAddFilesOpen(false)} />}
           {templatesOpen && <TemplatePicker models={models} goal={goal} onPick={applyTemplate} onClose={() => setTemplatesOpen(false)} />}
           <div className="scroll-mt-24" data-assistant-target={Object.keys(media).length ? 'create.upload' : undefined}>
             <SourcePickers media={media} sources={sources} onPick={pickSource} onConvertingChange={setSourcesConverting} resetKey={`${modelId}|${accountEpoch}`} epochRef={sourceEpoch} locked={attachConverting} onReorder={(slot, from, to) => { setConsent(false); setSources(prev => moveSlotSource(prev, slot, from, to)); }}

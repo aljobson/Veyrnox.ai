@@ -51,3 +51,18 @@ test('a model whose required slot the files cannot fill is skipped; none fit giv
   assert.equal(planAttachments([lipsync], lipsync, [png(1)]), null);
   assert.equal(planAttachments([text], text, [mp3]), null);
 });
+
+test('Add files capacity follows the model slots, three a kind at most', async () => {
+  const { attachCapacity } = await import('../lib/createAttach.mjs');
+  assert.deepEqual(attachCapacity(text), { image: 3, video: 3, audio: 3 });
+  assert.deepEqual(attachCapacity(null), { image: 3, video: 3, audio: 3 });
+  assert.deepEqual(attachCapacity(frames), { image: 2, video: 0, audio: 0 });
+  assert.deepEqual(attachCapacity(lipsync), { image: 1, video: 0, audio: 1 });
+  assert.deepEqual(attachCapacity({ media: { image: { maxFiles: 3 }, endImage: {} } }), { image: 3, video: 0, audio: 0 });
+});
+
+test('a generated file stands in for a file by its type', () => {
+  const asset = { type: 'image/png', asset: { id: 'j1' } };
+  const plan = planAttachments([i2v], i2v, [asset]);
+  assert.equal(plan.assignments[0].file, asset);
+});
