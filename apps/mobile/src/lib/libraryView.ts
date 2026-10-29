@@ -36,6 +36,22 @@ export function filterJobs(jobs: readonly Job[], f: Filters, kinds: ReadonlyMap<
     );
 }
 
+export const RETENTION_URGENT_MS = 7 * 86_400_000;
+export type Retention =
+    | { kind: 'none' } | { kind: 'held' } | { kind: 'unavailable' } | { kind: 'default' }
+    | { kind: 'ended'; date: Date } | { kind: 'expires'; date: Date; urgent: boolean };
+
+// File notices follow the web; unknown expiry never invents a deadline.
+export function retentionOf(job: Job, now: number = Date.now()): Retention {
+    if (job.state !== 'succeeded') return { kind: 'none' };
+    if (job.held) return { kind: 'held' };
+    if (job.has_asset === false) return { kind: 'unavailable' };
+    const at = Date.parse(job.asset_expires_at ?? '');
+    if (!Number.isFinite(at)) return { kind: 'default' };
+    const date = new Date(at);
+    return at <= now ? { kind: 'ended', date } : { kind: 'expires', date, urgent: at - now <= RETENTION_URGENT_MS };
+}
+
 export type Expiry = { readonly kind: 'none' } | { readonly kind: 'on'; readonly date: Date } | { readonly kind: 'gone' };
 
 // Only a stored, unheld file has an expiry worth saying. Past the date the file is gone.

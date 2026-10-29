@@ -1428,12 +1428,6 @@
     "ratio": 2.25
   },
   {
-    "id": "library.expires",
-    "english": "File expires {date}. Save a copy.",
-    "translation": "Срок хранения файла истекает {date}. Сохраните копию.",
-    "ratio": 1.61
-  },
-  {
     "id": "library.favouriteLabel",
     "english": "Favourite {name}",
     "translation": "Добавить {name} в избранное",

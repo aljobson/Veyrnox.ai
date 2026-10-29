@@ -1,3 +1,4 @@
+import { tokensForScheme } from '../src/theme';
 import { act } from 'react';
 import * as RN from 'react-native';
 import { createRoot, type Root } from 'test-renderer';
@@ -72,4 +73,59 @@ test('twenty failing ticks stop requests; Retry resumes; account change stops an
 test('failed Show older is visible with Retry', async () => {
     await render([], { before: 'date', before_id: 'a' }); mockMedia.listJobs.mockRejectedValueOnce(new Error('offline'));
     await act(async () => mockList.onEndReached()); expect(text(t('libraryCreate.olderFailed'))).toHaveLength(1);
+});
+test('a listed succeeded row with no file says unavailable immediately', async () => {
+    await render([{ ...row('a', 'succeeded'), has_asset: false }]);
+    expect(text(t('library.fileUnavailable'))).toHaveLength(1); expect(mockMedia.getAsset).not.toHaveBeenCalled();
+});
+const noRetention = () => {
+    expect(text(t('library.fileUnavailable'))).toHaveLength(0);
+    expect(text(t('library.keptDefault'))).toHaveLength(0);
+    expect(root.container.queryAll(n => n.children.some(c => typeof c === 'string' && /File expires|Retention ended/.test(c)))).toHaveLength(0);
+};
+test.each([undefined, '2099-01-01'])('a promoted row hides retention until its pending lookup returns a file (%s)', async asset_expires_at => {
+    let resolve!: (value: { url: string; mime_type: string; asset_expires_at?: string }) => void;
+    mockMedia.getAsset.mockImplementationOnce(() => new Promise(r => { resolve = r; }));
+    await render(); await tick();
+    expect(mockList.data[0].state).toBe('succeeded'); noRetention();
+    await act(async () => resolve({ ...file, asset_expires_at }));
+    if (!asset_expires_at) expect(text(t('library.keptDefault'))).toHaveLength(1);
+    else expect(root.container.queryAll(n => n.children.some(c => typeof c === 'string' && c.startsWith('File expires')))).toHaveLength(1);
+    expect(text(t('library.fileUnavailable'))).toHaveLength(0);
+});
+test('a promoted row has no retention line during cooldown or after a failed lookup, then shows the file notice', async () => {
+    mockMedia.getAsset.mockRejectedValueOnce(new ApiError(429, 'rate_limited', { retryAfterSeconds: 60 }))
+        .mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce({ url: file.url, mime_type: file.mime_type });
+    await render(); await tick(); noRetention();
+    await tick(57_000); noRetention(); expect(mockMedia.getAsset).toHaveBeenCalledTimes(1);
+    await tick(); noRetention(); expect(mockMedia.getAsset).toHaveBeenCalledTimes(2);
+    await tick(); expect(text(t('library.keptDefault'))).toHaveLength(1);
+});
+test.each(['refresh', 'older'] as const)('a replacement list row establishes retention after %s', async source => {
+    mockMedia.getAsset.mockRejectedValue(new Error('offline'));
+    await render([row('a')], { before: 'date', before_id: 'a' }); await tick(); noRetention();
+    mockMedia.listJobs.mockResolvedValueOnce({ jobs: [{ ...row('a', 'succeeded'), has_asset: false }], next: null });
+    await act(async () => source === 'refresh' ? mockList.onRefresh() : mockList.onEndReached());
+    expect(text(t('library.fileUnavailable'))).toHaveLength(1);
+});
+test('account change clears retention uncertainty for the same id', async () => {
+    mockMedia.getAsset.mockRejectedValue(new Error('offline')); await render(); await tick(); noRetention();
+    const refresh = mockList.onRefresh; await act(async () => mockAccountChanged());
+    mockMedia.listJobs.mockResolvedValueOnce({ jobs: [{ ...row('a', 'succeeded'), has_asset: false }], next: null });
+    await act(async () => refresh()); expect(text(t('library.fileUnavailable'))).toHaveLength(1);
+});
+test('one Library timer updates the mounted notice to urgent and is cleared on unmount', async () => {
+    const intervals = jest.spyOn(globalThis, 'setInterval');
+    const clear = jest.spyOn(globalThis, 'clearInterval');
+    const date = new Date(Date.now() + 7 * 86_400_000 + 30_000);
+    await render([{ ...row('a', 'succeeded'), asset_expires_at: date.toISOString() }]);
+    const notice = () => root.container.queryAll(n => n.children.some(c => typeof c === 'string' && c.startsWith('File expires')))[0];
+    const before = RN.StyleSheet.flatten(notice().props.style).color;
+    await tick(60_000); expect(before).toBe(tokensForScheme('light').textTertiary);
+    expect(RN.StyleSheet.flatten(notice().props.style).color).toBe(tokensForScheme('light').danger);
+    const timerIndex = intervals.mock.calls.findIndex(([, ms]) => ms === 60_000);
+    expect(timerIndex).toBeGreaterThanOrEqual(0);
+    const timer = intervals.mock.results[timerIndex].value;
+    await act(async () => root.unmount()); expect(clear).toHaveBeenCalledWith(timer);
+    intervals.mockRestore(); clear.mockRestore();
 });

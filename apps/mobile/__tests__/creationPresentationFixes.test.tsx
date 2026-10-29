@@ -87,7 +87,7 @@ test.each<ThemePreference>(['light', 'dark', 'oled'])('library dividers and fixe
         for (const starred of [false, true]) {
             await act(async () => root.render(<AppearanceContext.Provider value={settings}>
                 <LibraryItem job={{ job_id: 'job', model_id: 'model', state: 'succeeded', credits: 1, created_at: '2026-10-01', has_asset: true }}
-                    name="Creation" kind="image" grid={grid} starred={starred} canSchedule={false} canReuse={false}
+                    retentionKnown now={Date.now()} name="Creation" kind="image" grid={grid} starred={starred} canSchedule={false} canReuse={false}
                     onOpen={jest.fn()} onStar={onStar} onSchedule={jest.fn()} onReuse={jest.fn()} />
                 <VeyCardPeek />
             </AppearanceContext.Provider>));
