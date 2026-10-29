@@ -1830,6 +1830,18 @@
     "ratio": 1.89
   },
   {
+    "id": "vey.touch.hint",
+    "english": "Tap to say hello",
+    "translation": "नमस्ते कहने के लिए टैप करें",
+    "ratio": 1.69
+  },
+  {
+    "id": "vey.touch.wave",
+    "english": "Wave",
+    "translation": "हाथ हिलाएँ",
+    "ratio": 2.5
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

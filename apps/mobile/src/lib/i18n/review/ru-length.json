@@ -3198,6 +3198,18 @@
     "ratio": 2
   },
   {
+    "id": "vey.touch.hint",
+    "english": "Tap to say hello",
+    "translation": "Нажмите, чтобы поздороваться",
+    "ratio": 1.75
+  },
+  {
+    "id": "vey.touch.wave",
+    "english": "Wave",
+    "translation": "Помахать",
+    "ratio": 2
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

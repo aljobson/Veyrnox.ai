@@ -5653,5 +5653,8 @@ export default {
   "editorVoiceover.name": "Voix off {time}",
   "editorVoiceover.discardTitle": "Supprimer cette prise ?",
   "editorVoiceover.keep": "Conserver",
-  "editorVoiceover.discard": "Supprimer"
+  "editorVoiceover.discard": "Supprimer",
+  "vey.touch.label": "Vey",
+  "vey.touch.hint": "Touchez pour dire bonjour",
+  "vey.touch.wave": "Faire signe de la main"
 } as const;

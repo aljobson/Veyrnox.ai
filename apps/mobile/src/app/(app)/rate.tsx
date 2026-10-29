@@ -26,8 +26,8 @@ export default function Rate() {
         <View style={styles.screen}>
             <Stack.Screen options={{ title: t('rate.title'), headerShown: false, presentation: 'modal' }} />
             <View style={styles.card}>
-                <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-                    <VeyCharacter width={140} />
+                <View>
+                    <VeyCharacter width={140} interactive />
                 </View>
                 <Text style={styles.title} accessibilityRole="header">{t('rate.title')}</Text>
                 <Text style={styles.text}>{t('rate.body')}</Text>

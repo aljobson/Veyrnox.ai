@@ -3024,6 +3024,12 @@
     "ratio": 2.25
   },
   {
+    "id": "vey.touch.wave",
+    "english": "Wave",
+    "translation": "Saludar con la mano",
+    "ratio": 4.75
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

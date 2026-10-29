@@ -5523,5 +5523,8 @@ export default {
   "editorVoiceover.name": "旁白 {time}",
   "editorVoiceover.discardTitle": "要丢弃此录音吗？",
   "editorVoiceover.keep": "保留",
-  "editorVoiceover.discard": "丢弃"
+  "editorVoiceover.discard": "丢弃",
+  "vey.touch.label": "Vey",
+  "vey.touch.hint": "轻点打个招呼",
+  "vey.touch.wave": "挥手"
 } as const;

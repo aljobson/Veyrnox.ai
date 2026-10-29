@@ -5588,5 +5588,8 @@ export default {
   "editorVoiceover.name": "Voiceover um {time}",
   "editorVoiceover.discardTitle": "Diese Aufnahme verwerfen?",
   "editorVoiceover.keep": "Behalten",
-  "editorVoiceover.discard": "Verwerfen"
+  "editorVoiceover.discard": "Verwerfen",
+  "vey.touch.label": "Vey",
+  "vey.touch.hint": "Tippe, um Hallo zu sagen",
+  "vey.touch.wave": "Winken"
 } as const;

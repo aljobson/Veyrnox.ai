@@ -5848,5 +5848,8 @@ export default {
   "editorVoiceover.name": "تعليق صوتي {time}",
   "editorVoiceover.discardTitle": "هل تريد حذف هذا التسجيل؟",
   "editorVoiceover.keep": "احتفاظ",
-  "editorVoiceover.discard": "حذف"
+  "editorVoiceover.discard": "حذف",
+  "vey.touch.label": "Vey",
+  "vey.touch.hint": "انقر لإلقاء التحية",
+  "vey.touch.wave": "لوّح"
 } as const;

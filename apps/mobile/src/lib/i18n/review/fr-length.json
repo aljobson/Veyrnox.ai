@@ -4806,6 +4806,12 @@
     "ratio": 2.25
   },
   {
+    "id": "vey.touch.wave",
+    "english": "Wave",
+    "translation": "Faire signe de la main",
+    "ratio": 5.5
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",
