@@ -1,4 +1,6 @@
-// SHA-256 values computed from the 29 downloaded Syntx source variants on 29 October 2026.
+import { SYNTX_40_SOURCE_ASSET_SHA256 } from './syntx40SourceAssetHashes.mjs';
+
+// SHA-256 values computed from the downloaded Syntx source variants on 29 October 2026.
 export const SYNTX_EXPANSION_SOURCE_ASSET_SHA256 = Object.freeze({
   "enchanted-forest-selfie": "9e71fb650a0e2ba0072fc6034f1cc036fe67da7e725eb97e9bc7e8d8fc466849",
   "pumpkin-lings": "9f6be48bc9fc3dfddd6f9134de5798af03e633e74ab86f8e470aad8a5bf9c9c4",
@@ -28,7 +30,8 @@ export const SYNTX_EXPANSION_SOURCE_ASSET_SHA256 = Object.freeze({
   "mystery-unboxing": "7a8f6892ba770cdfc8725d329e01c1a3bbdadb9e7422567d587718ba2bc05bf1",
   "whiskey-gun-trick": "eef5579292841fceec25f0ee6386f215ee8d60e870d7b95e2426eb2af51046d9", // gitleaks:allow -- public source SHA-256 fixture
   "cyber-mask-transformation": "7705cd4274de8769267e2327a8f24be44eeaf3694fa0e0e3407021e9070fc685",
-  "pizzeria-hide-and-seek": "c7da7a39bcda7b87cff5d8487e1850c852c4b8790f2075d05c1189dfacfb8360"
+  "pizzeria-hide-and-seek": "c7da7a39bcda7b87cff5d8487e1850c852c4b8790f2075d05c1189dfacfb8360",
+  ...SYNTX_40_SOURCE_ASSET_SHA256
 });
 // SSIM over the first five seconds after scaling both videos to 320 px wide.
 // These values independently link the nine historical local previews to the

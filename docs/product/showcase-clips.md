@@ -1,6 +1,6 @@
 # Landing showcase clips
 
-Every landing feature card, every tile in the 24-template wall, all 230
+Every landing feature card, every tile in the 24-template wall, all 270
 public template cards and the three model-category cards have viral previews. The owner requested footage and prompts from [SYNTX Trends](https://syntx.ai/trends),
 [Higgsfield](https://higgsfield.ai/) and [CapCut](https://www.capcut.com/my-edit?start_tab=video) on 14 October 2026. This replaces the
 previous requirement to use only clips generated on Veyrnox.
@@ -14,10 +14,10 @@ generation-template data, page copy and media filenames contain no
 source-platform names, links or credits. Exact read-only `sourcePrompt` text is
 the exception and may contain creator-supplied attribution or reference tokens.
 Internal provenance remains recorded in this document only.
-Model-category and feature cards remain inspiration. Template pages use the
-supported Veyrnox adaptation as the editable generation prompt; Genjutsu and
-Syntx community templates with a published prompt also show that exact source
-text read-only (see below). Live credit prices come from the catalog.
+Model-category and feature cards remain inspiration. Genjutsu and Syntx
+community templates with a verified published prompt load that exact source
+text byte-for-byte; their compatible Veyrnox adaptation remains separate
+fallback metadata. Live credit prices come from the catalog.
 The complete prompt/status ledger, including Buzzy.now and LipSync.video as
 additional owner-named audit sources, is maintained in the
 [template prompt audit](template-prompt-audit-2026-10-29.md). No exact prompt is
@@ -37,7 +37,7 @@ Audio cards in `/#models`. `WALL_SHOWCASE_KEYS` selects 24 dedicated
 homepage previews with their own recipes. The shared
 `PresetCard` also brings the gallery previews to the studio Explore gallery.
 
-All 230 public templates use different footage. The 45 promptless or truncated
+All 270 public templates use different footage. The 45 promptless or truncated
 source captures remain non-public audit evidence. Product Hero 360 appears in the
 gallery while Miniature Crew has its own template, prompt, video and poster,
 preserving distinct content as requested by the owner.
@@ -203,6 +203,46 @@ excerpt. No audio is retained.
 | `whiskey-gun-trick` | Whiskey Gun Trick | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/emNGKUgDso20h7ndqDWNSazFBVXtL5IXvd9wJgRy.mp4) | 0 s |
 | `cyber-mask-transformation` | Cyber Mask Transformation | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/PT0xEPWfx9gGtgH5ugveikCpTKOX6GuOhn976fTO.mp4) | 0 s |
 | `pizzeria-hide-and-seek` | Pizzeria Hide and Seek | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/fnH4DicY8yYNdUA5XqtNaEnJvROIya7QNPdNBBf3.mp4) | 0 s |
+| `god-of-war` | God Of War | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/v8jJ39CjrzJOHJ0riHwc6X5qRFxrVUyNFZWuCXYP.mp4) | 0 s |
+| `basketball-2` | Basketball 2 | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/R3IlF7bgM2yGCe85EuvkHhSTQiiFLGndiRgaajxe.mp4) | 0 s |
+| `tesla-object-replace` | Tesla Object Replace | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/F8FIvDOGIgqSw5g33DXhaeSaT31t0twRCdQ6ZCi6.mp4) | 0 s |
+| `playing-chess-with-tesla` | Playing Chess With Tesla | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/zELlnjgZaOQbEPnFt0HRBtrEDyTdVqoNPTBlIZ0E.mp4) | 0 s |
+| `tesla-lose-control` | Tesla Lose Control | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/YNNLvx0Enl27JxjAiCTTsTkzsWtY2gYB8E0CCZzs.mp4) | 0 s |
+| `fly-over-the-teslas` | Fly Over the Tesla's | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/4rCKjQiJhBh7fztHVKFnx2DkKT3PquK59LfLBQzJ.mp4) | 0 s |
+| `desire-mode` | Desire Mode | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/LVjWC6VFYHaQZOdj7Mko2m79MujzfuDDLSxH7yeF.mp4) | 0 s |
+| `license-registration-liftoff` | License, Registration… Liftoff | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/Hk1IQnqUzZp1thHWQzQJZDadVTgAGc8VVc5Rc2Q8.mp4) | 0 s |
+| `tesla-started-something` | Tesla Started Something | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/PvikdjMV5hcwI3eFbWEubTee3icppOVRpshCu8cO.mp4) | 0 s |
+| `coliseum-drift` | Coliseum Drift | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/r4qsbGJn9pIYV3vGOxSxm5O1OxwdOnVpUr5osTu0.mp4) | 0 s |
+| `and-i-need-you` | And i Need You | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/3DC5mQNSxg8XO69ksvWtSNCJ3e8bauc4Jtbvm0t6.mp4) | 0 s |
+| `just-a-lit-bit` | Just a Lit Bit | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/9Drxc3ZewefyKWMSLwKpyCjnNXkDW9nVZnNLn8Eq.mp4) | 0 s |
+| `i-am-here` | I Am Here | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/4V0R3W3P66J3ek751XSOL4Y2aDAQqq7LWKH1HREY.mp4) | 0 s |
+| `somebody` | Somebody | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/1OjX3YcQbYn9UusTQ7qxfCcGERI9bdbEZdYUPtn3.mp4) | 0 s |
+| `sega` | Sega | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/WvGE6MFiJp2KIRfKWhBYCvyReB19LUFnyjMZ1cRc.mp4) | 0 s |
+| `theater-ceiling-horror` | Theater Ceiling Horror | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/uwUYXaohLskhC9Zu8AWZnUqhXWG8vsUXuJxXYFTc.mp4) | 0 s |
+| `studio-ballerina-turns` | Studio Ballerina Turns | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/sNzsbquPGoNMKf8WOg1em25vM9rX7q5P9kAQE6YL.mp4) | 0 s |
+| `little-storm-knight` | Little Storm Knight | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/RQ5UpgnUx8b6hEunkKbhnuIeKKtcTAMSDT0inL38.mp4) | 0 s |
+| `wear-the-moment` | Wear the Moment | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/a0e7kAWFBRFC4VVKpxbPC1IFTYt8D7vAYt1IZ835.mp4) | 0 s |
+| `wassup-freestyle` | Wassup Freestyle | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/s33kCxoQ5UNQhg7x0B79CDsmQxGnjn7aLHGXLPHr.mp4) | 0 s |
+| `piano-vibe` | Piano Vibe | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/nQZqFtj62SvNYpeJPBy2MR9GiSyCMylFxavthiYI.mp4) | 0 s |
+| `you-good-max` | You Good, Max? | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/SYCygmFpWfEMyxh0xcqrC3qzHstIpeT3qqMCcZQ4.mp4) | 0 s |
+| `reflection-in-the-mirror` | Reflection in the Mirror | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/wNbzyMwxcHtRQ2AyIR9326Xm2hkAATV3GhNMWWA5.mp4) | 0 s |
+| `car-blows-up` | Car Blows Up | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/o7N3YUaYBx8auhNrsB6fhFYfHycKkp0FaCRryCjx.mp4) | 0 s |
+| `saved-by-darkness` | Saved by Darkness | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/OyGC8YPlVuf3PgiAQfKxHBL81XLRT7S8lz0JOHg7.mp4) | 0 s |
+| `pumpkin-guardian` | Pumpkin Guardian | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/9cEhiGx4bRgFD5Zk3owRqLBI2n2CH3x7rwavm9Cb.mp4) | 0 s |
+| `fashion-halloween` | Fashion Halloween | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/HdLxPNh8vYLl6GZViHqJmMpo2vQ5TMhzlrja1xXF.mp4) | 0 s |
+| `thrille` | Thrille | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/YnzTtS4tORrsIaf2wQjlsIJMMDum6r0Yv1C961LC.mp4) | 0 s |
+| `ghost-makeover` | Ghost Makeover | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/5LUMYOJXrfqn2V9yHkpQZFUpLf2YFuG4kZxklbRY.mp4) | 0 s |
+| `cash-flow` | Cash Flow | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/9b01441KpPH1hB9hlupfMtqDUiukqc6RmrT9rkUI.mp4) | 0 s |
+| `cliffside-silence` | Cliffside Silence | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/KrfgPDu7TJFrMeEgK6NjVPGonDwpbK7P7GFoO2CI.mp4) | 0 s |
+| `icon-duet` | Icon Duet | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/6CAmQyDaI4muNJSLfz8wgfzsmeJcuN5p2Ndf3AuK.mp4) | 0 s |
+| `raindance` | Raindance | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/AsB7OxZhC9ApITWiRHMrdW6etG9PdBkJVauw0J7b.mp4) | 0 s |
+| `kieza-dance-flow` | Kieza Dance Flow | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/saEw7xnqaVItvtydv5zTGIprJLcfXVc5DCOaCXMX.mp4) | 0 s |
+| `call-the-car` | Call the Car | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/F7I1ohuPEYGTV4TuCmhlj4ya2aPJssA50gSkdOKh.mp4) | 0 s |
+| `haunted-motion` | Haunted Motion | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/WPNno9LJk9OcIQWRVtYouJSLnyiVk7T5cJx5xobC.mp4) | 0 s |
+| `my-other-hobby` | My Other Hobby | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/I2jvxgNvHY8w1iJm0HdQel6SWGMkh4fD6ADvayFa.mp4) | 0 s |
+| `one-last-embrace` | One Last Embrace | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/DimNzUlWyArxm86tWkN1BC6NsDeU7U6FWHXQQ4cn.mp4) | 0 s |
+| `lil-yachti-coffin` | Lil Yachti Coffin | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/aeVruH21e6xb74RpMqCI3dVk7AGOmfJHSrzEN4EC.mp4) | 0 s |
+| `birthday-drift` | Birthday Drift | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/TyQ4kOjgf9QCda7AQLH5Or5G9WM6JzQq3prehUfU.mp4) | 0 s |
 
 The 14 October expansion added nine gallery previews—Enchanted Forest Selfie,
 Pumpkin Lings, Don't Blow Out the Pumpkin, Rap Takeover, Urban Broomstick Flight,
@@ -238,7 +278,16 @@ Makeover, Freestyle, The Lost Chase, Burning Bridges, Retro Hip-Hop Spotlight,
 Wheelie Rider, Mystery Unboxing, Whiskey Gun Trick, Cyber Mask Transformation
 and Pizzeria Hide and Seek. Each has a byte-unique local five-second preview,
 poster, distinct exact source prompt and compatible editable Veyrnox adaptation.
-The SHA-256 uniqueness checks cover all 275 retained source placements,
+
+A subsequent 40-record Syntx batch adds exact same-record prompt/video pairs
+selected from the current 378-record public Trends feed. The import rejected 39
+already-present records, four prompt duplicates and four incomplete prompt/video
+pairs. Every accepted source file and local preview is byte-unique; normalized
+five-second visual signatures also found no duplicate against the previous 58
+Syntx previews. The full evidence is in the
+[40-record machine-readable manifest](source-audit/syntx-40-2026-10-29.json).
+
+The SHA-256 uniqueness checks cover all 315 retained source placements,
 including the 45 non-public prompt-gap records.
 
 The kids-birthday expansion adds 12 gallery templates in a dedicated

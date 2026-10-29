@@ -11,6 +11,8 @@ import { sourcePromptAuditRecord } from '../app/veyrnox/_lib/sourcePromptAudit.j
 import { GENJUTSU_PROMPT_SHA256 } from './fixtures/genjutsuPromptHashes.mjs';
 import { SYNTX_PROMPT_SHA256 } from './fixtures/syntxPromptHashes.mjs';
 import { SYNTX_EXPANSION_SOURCE_ASSET_SHA256, SYNTX_RECOVERED_PREVIEW_SSIM } from './fixtures/syntxSourceAssetHashes.mjs';
+import { SYNTX_40_VIDEO_SIGNATURES } from './fixtures/syntx40SourceAssetHashes.mjs';
+import { SYNTX_40_TEMPLATE_IDS } from '../app/veyrnox/_lib/sourceTemplateExpansion11.js';
 import { ALL_TEMPLATES, PRESETS, REMOVED_PROMPT_GAP_TEMPLATE_IDS, WALL_PRESETS, templateById } from '../app/veyrnox/_lib/templates.js';
 import { MODELS, modelIdForName, presetCredits, presetHref } from '../app/veyrnox/_lib/tokens.js';
 import { AUDIT_SHOWCASE_CLIPS } from '../app/veyrnox/_lib/showcase.js';
@@ -33,6 +35,7 @@ const NEW_SYNTX_TEMPLATE_IDS = new Set([
   'natural-viral-makeover', 'freestyle', 'the-lost-chase', 'burning-bridges',
   'retro-hip-hop-spotlight', 'wheelie-rider', 'mystery-unboxing', 'whiskey-gun-trick',
   'cyber-mask-transformation', 'pizzeria-hide-and-seek',
+  ...SYNTX_40_TEMPLATE_IDS,
 ]);
 
 const UNATTRIBUTED_14_OCTOBER_WALL_IDS = [
@@ -50,8 +53,8 @@ function mp4DurationSeconds(data) {
 }
 
 test('every imported clip has its own matching recipe and a supported video model', () => {
-  assert.equal(SOURCE_TEMPLATES.length, 275);
-  assert.equal(new Set(SOURCE_TEMPLATES.map((p) => p.clipKey)).size, 275);
+  assert.equal(SOURCE_TEMPLATES.length, 315);
+  assert.equal(new Set(SOURCE_TEMPLATES.map((p) => p.clipKey)).size, 315);
   for (const preset of SOURCE_TEMPLATES) {
     const clip = AUDIT_SHOWCASE_CLIPS[preset.clipKey];
     assert.ok(clip, preset.id);
@@ -121,15 +124,15 @@ test('verbatim Genjutsu provenance preserves public attribution and feed-empty r
 test('public templates are exact or adaptation-only and all source-gap records are removed', () => {
   const audit = PRESETS.map((preset) => [preset.id, sourcePromptAuditRecord(preset.id)]);
   const groups = Object.groupBy(audit, ([, record]) => record.status);
-  assert.equal(groups.exact.length, 113);
+  assert.equal(groups.exact.length, 153);
   assert.equal(groups['adaptation-only'].length, 117);
   assert.equal(groups['exact-truncated'], undefined);
   assert.equal(groups.unavailable, undefined);
-  assert.equal(audit.length, 230);
+  assert.equal(audit.length, 270);
   assert.ok(audit.every(([, record]) => record.runnable === false));
-  assert.equal(audit.filter(([, record]) => record.issues.includes('prompt-over-2000')).length, 66);
-  assert.equal(audit.filter(([, record]) => record.issues.includes('more-than-two-reference-images')).length, 11);
-  assert.equal(audit.filter(([, record]) => record.issues.includes('audio-preservation-not-supported')).length, 59);
+  assert.equal(audit.filter(([, record]) => record.issues.includes('prompt-over-2000')).length, 102);
+  assert.equal(audit.filter(([, record]) => record.issues.includes('more-than-two-reference-images')).length, 17);
+  assert.equal(audit.filter(([, record]) => record.issues.includes('audio-preservation-not-supported')).length, 88);
   assert.equal(sourcePromptAuditRecord('community-survivor-memory-shift').status, 'exact-truncated');
   assert.equal(sourcePromptAuditRecord('keyboard-duo-swap').status, 'unavailable');
   assert.equal(REMOVED_PROMPT_GAP_TEMPLATE_IDS.length, 45);
@@ -154,13 +157,15 @@ test('Syntx templates preserve every currently published source prompt exactly',
   const exact = records.filter(([, source]) => source.sourcePromptAvailable);
   const unresolved = records.filter(([, source]) => !source.sourcePromptAvailable);
 
-  assert.equal(records.length, 58);
-  assert.equal(exact.length, 57);
+  assert.equal(records.length, 98);
+  assert.equal(exact.length, 97);
   assert.deepEqual(unresolved.map(([id]) => id), ['keyboard-duo-swap']);
-  assert.equal(Object.keys(SYNTX_PROMPT_SHA256).length, 57);
-  assert.equal(Object.keys(SYNTX_EXPANSION_SOURCE_ASSET_SHA256).length, 29);
+  assert.equal(Object.keys(SYNTX_PROMPT_SHA256).length, 97);
+  assert.equal(Object.keys(SYNTX_EXPANSION_SOURCE_ASSET_SHA256).length, 69);
+  assert.equal(Object.keys(SYNTX_40_VIDEO_SIGNATURES).length, 40);
+  assert.equal(new Set(Object.values(SYNTX_40_VIDEO_SIGNATURES)).size, 40, 'normalized new-video signatures must be unique');
   assert.ok(records.every(([id]) => SOURCE_TEMPLATES.some((preset) => preset.id === id)));
-  assert.equal(new Set(records.map(([, source]) => source.sourceMediaId)).size, 58, 'each Syntx record identifies a different licensed media variant');
+  assert.equal(new Set(records.map(([, source]) => source.sourceMediaId)).size, 98, 'each Syntx record identifies a different licensed media variant');
   assert.deepEqual(
     Object.keys(SYNTX_SOURCE_PROMPT_RECORDS).filter((id) => Object.hasOwn(GENJUTSU_SOURCE_PROMPT_RECORDS, id)),
     [],
@@ -174,8 +179,8 @@ test('Syntx templates preserve every currently published source prompt exactly',
       assert.equal(source.sourceAssetSha256, SYNTX_EXPANSION_SOURCE_ASSET_SHA256[id], id);
       return source.sourceAssetSha256;
     });
-  assert.equal(capturedAssetHashes.length, 29);
-  assert.equal(new Set(capturedAssetHashes).size, 29, 'the recovered and new source downloads must be byte-unique');
+  assert.equal(capturedAssetHashes.length, 69);
+  assert.equal(new Set(capturedAssetHashes).size, 69, 'the recovered and new source downloads must be byte-unique');
   assert.equal(Object.keys(SYNTX_RECOVERED_PREVIEW_SSIM).length, 9);
   assert.ok(Object.values(SYNTX_RECOVERED_PREVIEW_SSIM).every((score) => score > 0.95), 'every historical preview must perceptually match its recovered Syntx variant');
 
@@ -244,7 +249,7 @@ test('Syntx templates preserve every currently published source prompt exactly',
     }
     return createHash('sha256').update(data).digest('hex');
   });
-  assert.equal(new Set(previewHashes).size, 58, 'every licensed Syntx preview remains byte-unique');
+  assert.equal(new Set(previewHashes).size, 98, 'every licensed Syntx preview remains byte-unique');
 });
 
 test('multi-subject community recipes require every identity in one starting image', () => {
@@ -293,10 +298,10 @@ test('source-aspect orientation agrees with every community preview', () => {
 });
 
 test('gallery and homepage templates have reachable recipe URLs', () => {
-  assert.equal(PRESETS.length, 230);
+  assert.equal(PRESETS.length, 270);
   assert.equal(WALL_PRESETS.length, 24);
   const visible = [...PRESETS, ...WALL_PRESETS];
-  assert.equal(new Set(visible.map((p) => p.clipKey).filter(Boolean)).size, 230);
+  assert.equal(new Set(visible.map((p) => p.clipKey).filter(Boolean)).size, 270);
   for (const preset of visible) {
     assert.equal(templateById(preset.id), preset);
     assert.equal(isUnknownStaticPage(`/presets/${preset.id}`), false);
@@ -358,7 +363,7 @@ test('retained source-template audit data and media paths are source-platform ne
 
 test('every retained source video and poster is a unique local asset', () => {
   const clips = Object.values(AUDIT_SHOWCASE_CLIPS);
-  assert.equal(clips.length, 275);
+  assert.equal(clips.length, 315);
   for (const field of ['video', 'poster']) {
     const paths = clips.map((clip) => clip[field]);
     assert.equal(new Set(paths).size, paths.length, `${field} paths must be unique`);
