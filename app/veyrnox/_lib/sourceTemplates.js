@@ -1,6 +1,7 @@
 import { SOURCE_TEMPLATE_EXPANSION_7 } from './sourceTemplateExpansion7.js';
 import { SOURCE_TEMPLATE_EXPANSION_8 } from './sourceTemplateExpansion8.js';
 import { SOURCE_TEMPLATE_EXPANSION_9 } from './sourceTemplateExpansion9.js';
+import { SOURCE_TEMPLATE_EXPANSION_10 } from './sourceTemplateExpansion10.js';
 
 import { SOURCE_TEMPLATE_EXPANSION_6 } from './sourceTemplateExpansion6.js';
 import { SOURCE_TEMPLATE_EXPANSION } from './sourceTemplateExpansion.js';
@@ -372,6 +373,7 @@ export const SOURCE_TEMPLATES = [
   ...SOURCE_TEMPLATE_EXPANSION_7,
   ...SOURCE_TEMPLATE_EXPANSION_8,
   ...SOURCE_TEMPLATE_EXPANSION_9,
+  ...SOURCE_TEMPLATE_EXPANSION_10,
 
   ...SOURCE_TEMPLATE_EXPANSION_6,
 ];

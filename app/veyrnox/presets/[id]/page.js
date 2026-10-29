@@ -12,7 +12,7 @@ import { FilmPlayer } from '../../_components/FilmPlayer';
 import { ClipBadge } from '../../_components/ClipBadge';
 import { SHOWCASE_CLIPS } from '../../_lib/showcase';
 import { ALL_TEMPLATES, templateById, presetTitle, modelIdForName } from '../../_lib/tokens';
-import { GENJUTSU_SOURCE_PROMPT_RECORDS } from '../../_lib/genjutsuSourcePromptRecords.js';
+import { exactSourcePromptRecord } from '../../_lib/sourcePromptRecords.js';
 import { OPEN_GRAPH_BASE } from '../../../seo';
 
 // Templates are static data, so each page is built once; the price is read
@@ -42,8 +42,7 @@ export default async function TemplatePage({ params }) {
   const { id } = await params;
   const template = templateById(id);
   if (!template) notFound();
-  const source = GENJUTSU_SOURCE_PROMPT_RECORDS[template.id];
-  const sourcePrompt = source?.sourcePromptAvailable && typeof source.prompt === 'string' ? source.prompt : null;
+  const sourcePrompt = exactSourcePromptRecord(template.id)?.prompt ?? null;
   const recipe = sourcePrompt ? { ...template, sourcePrompt, sourcePromptOrigin: 'community-source-exact' } : template;
   const modelId = modelIdForName(template.model);
   const clip = SHOWCASE_CLIPS[template.clipKey];

@@ -35,7 +35,7 @@ const OVERRIDES = {
   ],
   'SOCCER FEVER': [
     'fat-parkour', 'wild-ride', 'incline', 'motorcycle-double', 'race-track',
-    'high-flip', 'ink-sprint', 'mighty-fighter',
+    'high-flip', 'ink-sprint', 'mighty-fighter', 'football',
   ],
   'SHOT LANGUAGE': [
     'lidar', 'bullet-time', 'frozen-in-motion', 'earth-zoom', 'orbit-360',

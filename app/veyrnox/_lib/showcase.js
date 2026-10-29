@@ -1,6 +1,7 @@
 import { SHOWCASE_CLIP_EXPANSION_7 } from './sourceTemplateExpansion7.js';
 import { SHOWCASE_CLIP_EXPANSION_8 } from './sourceTemplateExpansion8.js';
 import { SHOWCASE_CLIP_EXPANSION_9 } from './sourceTemplateExpansion9.js';
+import { SHOWCASE_CLIP_EXPANSION_10 } from './sourceTemplateExpansion10.js';
 
 import { SHOWCASE_CLIP_EXPANSION_6 } from './sourceTemplateExpansion6.js';
 // Public clip records intentionally use neutral asset paths and contain no
@@ -446,6 +447,7 @@ export const SHOWCASE_CLIPS = {
   ...SHOWCASE_CLIP_EXPANSION_7,
   ...SHOWCASE_CLIP_EXPANSION_8,
   ...SHOWCASE_CLIP_EXPANSION_9,
+  ...SHOWCASE_CLIP_EXPANSION_10,
 
   ...SHOWCASE_CLIP_EXPANSION_6,
 };

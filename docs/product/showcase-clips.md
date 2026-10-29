@@ -1,6 +1,6 @@
 # Landing showcase clips
 
-Every landing feature card, every tile in the 24-template wall, all 255
+Every landing feature card, every tile in the 24-template wall, all 275
 public template cards and the three model-category cards have viral previews. The owner requested footage and prompts from [SYNTX Trends](https://syntx.ai/trends),
 [Higgsfield](https://higgsfield.ai/) and [CapCut](https://www.capcut.com/my-edit?start_tab=video) on 14 October 2026. This replaces the
 previous requirement to use only clips generated on Veyrnox.
@@ -15,9 +15,9 @@ source-platform names, links or credits. Exact read-only `sourcePrompt` text is
 the exception and may contain creator-supplied attribution or reference tokens.
 Internal provenance remains recorded in this document only.
 Model-category and feature cards remain inspiration. Template pages use the
-supported Veyrnox adaptation as the editable generation prompt; Genjutsu
-community templates with a published prompt also show that exact source text
-read-only (see below). Live credit prices come from the catalog.
+supported Veyrnox adaptation as the editable generation prompt; Genjutsu and
+Syntx community templates with a published prompt also show that exact source
+text read-only (see below). Live credit prices come from the catalog.
 
 On 24 October 2026, the 1,036 additional effect ideas without preview videos
 were removed from public browsing, search and API output. They remain available
@@ -33,7 +33,7 @@ Audio cards in `/#models`. `WALL_SHOWCASE_KEYS` selects 24 dedicated
 homepage previews with their own recipes. The shared
 `PresetCard` also brings the gallery previews to the studio Explore gallery.
 
-All 255 public templates use different footage. Product Hero 360 appears in the
+All 275 public templates use different footage. Product Hero 360 appears in the
 gallery while Miniature Crew has its own template, prompt, video and poster,
 preserving distinct content as requested by the owner.
 
@@ -169,14 +169,51 @@ excerpt. No audio is retained.
 | `pumpkin-night` | Pumpkin Night | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/HLT1ZxijsxEcuDy5SFOqR4eGixgfZlphZ0wofy3A.webm) | 0 s |
 | `fashion-catch` | Fashion Catch | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/9xWMcI5PT1Clb27KF6FVdNl9iP0RPGfu6cHWBfTt.webm) | 0 s |
 | `desert-train-heist` | Desert Train Heist | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/LwC1bYg2nRihXesJYJi9Uv584QBVkkYoPSWR8pci.webm) | 0 s |
+| `enchanted-forest-selfie` | Enchanted Forest Selfie | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/CsuAzWhBaCehzu0FWel0ximC8UNVF7qPHgYderwY.mp4) | 0 s |
+| `pumpkin-lings` | Pumpkin Lings | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/srXEpo3w1MPqK3idWOOTEV4Nj25HmN8Yx82R7vB3.mp4) | 0 s |
+| `dont-blow-out-the-pumpkin` | Dont Blow Out the Pumpkin | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/6fnFeD0MAoZwRNDdYbG8t7gJy0g8YYqn4hoTj182.mp4) | 0 s |
+| `rap-takeover` | Viral Rap Takeover | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/d8XOPNIyVQhqaAqi1ZTp02NgLd4f9iXudPC9V80T.mp4) | 0 s |
+| `urban-broomstick-flight` | Urban Broomstick Flight | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/P6czZt58dOY1BRGmlTUhxgw2cTPGpp1pMN3XIPOV.mp4) | 0 s |
+| `hotel-window-watch` | Hotel Window Watch | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/KYYmCkc1tNLb5nM28OZZPwY7B0cr56ZAGw8dboFD.mp4) | 0 s |
+| `broomstick-flight` | Broomstick Flight | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/sSW0kE7uR7qQnPFL5YNY7Nw7VuzNglXzMb7KjMjN.mp4) | 0 s |
+| `money-flex` | Money Flex | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/lhxne3YkajHKOCeVKBtqnsQX8asHMzLXsKA6zask.mp4) | 0 s |
+| `epic-slap-knockout` | Epic Slap Knockout | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/xoHtXupdxlfkOHmi3hlgo9vcUEypw3KjTqa9qXcS.mp4) | 0 s |
+| `beyond-gravity` | Beyond Gravity | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/3nmo1ecs09ey8QsXd5om7MKMnXfk1PbYfrB6KW4Y.mp4) | 0 s |
+| `chasing-you` | Chasing You | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/936paa1yZ88zTI4HauSs7rmTNUagBbUIsoWI5GT5.mp4) | 0 s |
+| `cinematic-showcase-2` | Cinematic Showcase 2 | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/jz7ek3hBuY3WbDoPGhGbIVih5E36zIvoSuqifTtG.mp4) | 0 s |
+| `cinematic-showcase` | Cinematic Showcase | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/nGCqOgGauF7er0SyXVcDsuxGXwZAo1SDHzXEyR2c.mp4) | 0 s |
+| `basketball-3` | Basketball 3 | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/s1Y6FSUm3drtg2uXIP3460rIzEuJ3thPu7LpJUMF.mp4) | 0 s |
+| `reality-shift` | Reality Shift | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/6ovJbjdqgFRLZFVZnq8lBA2HToMEwc87ItQBcXjX.mp4) | 0 s |
+| `live-stage-performance` | Live Stage Performance | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/v0kxaDTu5UzA0bnoUZb0yoRNcx4jiJ5NNDKoh8CT.mp4) | 0 s |
+| `football` | Football | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/XUnsbiH8rr1mKhrbAjgZYYtZc1P4zkhotPZYQILw.mp4) | 0 s |
+| `brixton` | Brixton | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/bku3IwUZE6XqsjTHJklWgKBO3jNMxybJiWTiSikK.mp4) | 0 s |
+| `unforgettable` | Unforgettable | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/dDPr66nb5eeJU5VPczzhAuAg6V4GQecQsop69FHo.mp4) | 0 s |
+| `natural-viral-makeover` | Natural Viral Makeover | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/k2Hh5tnywqGnPy176teBcX4zWCoUkvHUYOcXIJDk.mp4) | 0 s |
+| `freestyle` | Freestyle | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/iIX3F1vmApu4HOwWpi2Ggqs1ced76b7YlGkBZtPM.mp4) | 0 s |
+| `the-lost-chase` | The Lost Chase | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/xdmxorkIS2zgOefj0f6gvKM6VUWae9qo49tOeBJ2.mp4) | 0 s |
+| `burning-bridges` | Burning Bridges | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/sJ8Hr6y6OxDGCXZbRp75Gwgb6HMrVtpLaLHeIllq.mp4) | 0 s |
+| `retro-hip-hop-spotlight` | Retro Hip-Hop Spotlight | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/Mds81zGQ9jQykQqWnBdXCHzehVwU37JoPY0ZIHhh.mp4) | 0 s |
+| `wheelie-rider` | Wheelie Rider | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/D3tDuWYCrWpWmjF4JNdzsunJU1ZFBOnZWpx5rNsd.mp4) | 0 s |
+| `mystery-unboxing` | Mystery Unboxing | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/J0KYcvFxJcZLPJYAdNCZpVwijtuo8jPkhd5pvCo6.mp4) | 0 s |
+| `whiskey-gun-trick` | Whiskey Gun Trick | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/emNGKUgDso20h7ndqDWNSazFBVXtL5IXvd9wJgRy.mp4) | 0 s |
+| `cyber-mask-transformation` | Cyber Mask Transformation | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/PT0xEPWfx9gGtgH5ugveikCpTKOX6GuOhn976fTO.mp4) | 0 s |
+| `pizzeria-hide-and-seek` | Pizzeria Hide and Seek | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/fnH4DicY8yYNdUA5XqtNaEnJvROIya7QNPdNBBf3.mp4) | 0 s |
 
-The 14 October expansion adds nine gallery previews—Enchanted Forest Selfie,
+The 14 October expansion added nine gallery previews—Enchanted Forest Selfie,
 Pumpkin Lings, Don't Blow Out the Pumpkin, Rap Takeover, Urban Broomstick Flight,
 Hotel Window Watch, Broomstick Flight, Money Flex and Epic Slap Knockout—and
 eight landing-wall previews—Agamemnon, Blue Depth, Cyclope, Fairytale Castle,
 Infinite Clones, Moonwalk, Skatedog and Windows. The original files were checked
 against all existing previews before encoding; every resulting video and poster
-has a different SHA-256. Public assets use only neutral `viral-*` filenames.
+has a different SHA-256. The 29 October audit recovered exact public Syntx
+prompt records for all nine. Those nine provenance rows were reconstructed from
+the public Trends API on 29 October and their downloaded source files are locked
+by SHA-256 fixtures. Public assets use only neutral `viral-*` filenames.
+
+PR #969 did not record a source platform for those eight wall previews, and the
+29 October audit found no exact title or slug match for them in the 206 current
+Syntx video trends. They are not labelled Syntx and receive no guessed exact
+prompt. See the Syntx audit’s historical-batch exclusions.
 
 The later expansion adds eight gallery previews—City Trailer, City Vlog,
 Floral Pool Portrait, Paper Fragments, Ink Sprint, Motorcycle Double,
@@ -187,7 +224,16 @@ Every public placement remains backed by a different source clip.
 The 50-template expansion adds 40 transformation and visual-style recipes plus
 10 cinematic and trend-driven recipes to the gallery. Each one has its own
 neutral public name, adapted ten-second prompt, source-native preview crop and
-local poster. The same SHA-256 uniqueness checks now cover all 255 placements.
+local poster.
+
+The 29 October Syntx expansion adds 20 further gallery videos: Beyond Gravity,
+Chasing You, Cinematic Showcase 2, Cinematic Showcase, Basketball 3, Reality
+Shift, Live Stage Performance, Football, Brixton, Unforgettable, Natural Viral
+Makeover, Freestyle, The Lost Chase, Burning Bridges, Retro Hip-Hop Spotlight,
+Wheelie Rider, Mystery Unboxing, Whiskey Gun Trick, Cyber Mask Transformation
+and Pizzeria Hide and Seek. Each has a byte-unique local five-second preview,
+poster, distinct exact source prompt and compatible editable Veyrnox adaptation.
+The SHA-256 uniqueness checks now cover all 275 placements.
 
 The kids-birthday expansion adds 12 gallery templates in a dedicated
 `KIDS BIRTHDAY` category. The prompts are original Veyrnox adaptations of the
