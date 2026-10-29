@@ -1,5 +1,5 @@
 import en from '../src/lib/i18n/messages/en';
-import { CREATIVE_FEATURES, CREATIVE_FEATURE_GROUPS, creativeFeature, featurePrompt } from '../src/lib/creativeFeatures';
+import { CREATIVE_FEATURES, CREATIVE_FEATURE_GROUPS, creativeFeature, examplePlaysOn, featurePrompt } from '../src/lib/creativeFeatures';
 import { compatibleCreativeFeatures, creativeReuseHref, creativeReuseTargetHref, kindForMime, readCreativeReuse } from '../src/lib/creativeReuse';
 declare const require: (id: string) => any;
 declare const __dirname: string;
@@ -87,5 +87,21 @@ describe('reuse a finished creation in a compatible guided tool', () => {
         expect(detail).toContain('uploaded: {}, fromLibrary: {}, references');
         expect(detail).toContain('initialReady={reuse?.kind === slot.slot}');
         expect(picker).toContain('initialReadyLabel');
+    });
+});
+
+describe('example clips the phone can play', () => {
+    const video = (url: string) => ({ kind: 'video' as const, url, posterUrl: 'https://cdn.lipsync.video/a.webp', sourceUrl: 'https://example.test' });
+    test('iOS cannot play WebM, so those examples show their still; MP4 plays', () => {
+        expect(examplePlaysOn(video('https://cdn.lipsync.video/x/clip.webm'), 'ios')).toBe(false);
+        expect(examplePlaysOn(video('https://cdn.lipsync.video/x/clip.WEBM?v=2'), 'ios')).toBe(false);
+        expect(examplePlaysOn(video('https://cdn.lipsync.video/x/clip.mp4'), 'ios')).toBe(true);
+        expect(examplePlaysOn(video('https://cdn.lipsync.video/x/clip.webm'), 'android')).toBe(true);
+        expect(examplePlaysOn({ ...video('https://cdn.lipsync.video/x/still.webp'), kind: 'image' }, 'ios')).toBe(false);
+    });
+    test('every video example that iOS cannot play has a still to show instead', () => {
+        const unplayable = CREATIVE_FEATURES.filter((f) => f.example.kind === 'video' && !examplePlaysOn(f.example, 'ios'));
+        expect(unplayable.length).toBeGreaterThan(0);
+        expect(unplayable.filter((f) => !f.example.posterUrl).map((f) => f.slug)).toEqual([]);
     });
 });

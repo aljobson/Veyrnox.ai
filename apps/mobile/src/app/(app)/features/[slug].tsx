@@ -7,11 +7,11 @@ import { File } from 'expo-file-system';
 import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { useAuth } from '../../../auth/AuthProvider';
 import { SourcePicker } from '../../../components/SourcePicker';
-import { creativeFeature, featurePrompt, type CreativeFeature } from '../../../lib/creativeFeatures';
+import { creativeFeature, examplePlaysOn, featurePrompt, type CreativeFeature } from '../../../lib/creativeFeatures';
 import { readCreativeReuse, type CreativeReuse } from '../../../lib/creativeReuse';
 import { stageCreativeSourceHandoff } from '../../../lib/creativeSourceHandoff';
 import { fetchCatalog, type CatalogModel } from '../../../lib/media';
@@ -90,10 +90,21 @@ function FeatureStudio({ feature, reuse }: { feature: CreativeFeature; reuse: Cr
 }
 
 function Example({ feature }: { feature: CreativeFeature }) {
-    return <View style={styles.example}><View style={styles.exampleHead}><View><Text style={styles.kicker}>{t('features.wORKINGEXAMPLE')}</Text><Text style={styles.cardTitle}>{t('features.seetheintendedresult')}</Text></View><AddressText label={t('features.source')} address={feature.example.sourceUrl} /></View>{feature.example.kind === 'video' ? <ExampleVideo url={feature.example.url} title={feature.title} /> : <Image source={{ uri: feature.example.url }} style={styles.exampleMedia} contentFit="contain" accessibilityLabel={rawText(t('features.example', { value1: feature.title }))} accessibilityIgnoresInvertColors />}</View>;
+    return <View style={styles.example}><View style={styles.exampleHead}><View><Text style={styles.kicker}>{t('features.wORKINGEXAMPLE')}</Text><Text style={styles.cardTitle}>{t('features.seetheintendedresult')}</Text></View><AddressText label={t('features.source')} address={feature.example.sourceUrl} /></View>{examplePlaysOn(feature.example, Platform.OS) ? <ExampleVideo url={feature.example.url} poster={feature.example.posterUrl} title={feature.title} /> : <ExampleStill uri={feature.example.kind === 'video' ? feature.example.posterUrl ?? feature.example.url : feature.example.url} title={feature.title} />}</View>;
 }
-function ExampleVideo({ url, title }: { url: string; title: string }) {
-    const player = useVideoPlayer(url, (instance) => { instance.loop = true; });
+function ExampleStill({ uri, title }: { uri: string; title: string }) {
+    return <Image source={{ uri }} style={styles.exampleMedia} contentFit="contain" accessibilityLabel={rawText(t('features.example', { value1: title }))} accessibilityIgnoresInvertColors />;
+}
+// The example starts on its own, muted and looping like the web preview, so it is visibly a moving result; the native
+// controls still unmute or pause it. A clip that cannot load falls back to its first-frame still.
+function ExampleVideo({ url, poster, title }: { url: string; poster?: string; title: string }) {
+    const [failed, setFailed] = useState(false);
+    const player = useVideoPlayer(url, (instance) => { instance.loop = true; instance.muted = true; instance.play(); });
+    useEffect(() => {
+        const subscription = player.addListener('statusChange', (event) => { if (event.status === 'error') setFailed(true); });
+        return () => subscription.remove();
+    }, [player]);
+    if (failed && poster) return <ExampleStill uri={poster} title={title} />;
     return <VideoView player={player} style={styles.exampleMedia} nativeControls contentFit="contain" accessibilityLabel={rawText(t('features.examplevideo', { value1: title }))} />;
 }
 
