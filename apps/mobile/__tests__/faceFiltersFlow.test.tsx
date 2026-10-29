@@ -96,6 +96,7 @@ test('rights starts unticked, Run stays disabled until ticked, and an attempted 
     expect(uploadSource).not.toHaveBeenCalled();
     await press('checkbox', rights);
     expect(control('button', runLabel).props.accessibilityState.disabled).toBe(false);
+    expect(root.container.queryAll(node => node.children.includes('Run filter · 17 credits per run')).length).toBeGreaterThan(0);
     send.mockRejectedValueOnce(new ApiError(503, 'upload_admission_unavailable'));
     await press('button', runLabel);
     expect(control('checkbox', rights).props.accessibilityState.checked).toBe(false);
