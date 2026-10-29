@@ -23,7 +23,9 @@
         "EXPO_PUBLIC_FULL_EDITOR_ENABLED": "true",
         "EXPO_PUBLIC_STORE_BILLING_ENABLED": "true",
         "VEYRNOX_NATIVE_PURCHASES": "1",
-        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true",
+        "EXPO_PUBLIC_CINEMA_DEVICE_UPLOAD_ENABLED": "true",
+        "EXPO_PUBLIC_PASSKEYS_IOS_ENABLED": "true"
       }
     },
     "production": {
@@ -34,7 +36,9 @@
         "EXPO_PUBLIC_EDITOR_ENABLED": "true",
         "EXPO_PUBLIC_FULL_EDITOR_ENABLED": "true",
         "EXPO_PUBLIC_STORE_BILLING_ENABLED": "true",
-        "VEYRNOX_NATIVE_PURCHASES": "1"
+        "VEYRNOX_NATIVE_PURCHASES": "1",
+        "EXPO_PUBLIC_CINEMA_DEVICE_UPLOAD_ENABLED": "true",
+        "EXPO_PUBLIC_PASSKEYS_IOS_ENABLED": "true"
       }
     },
     "production-simulator": {
