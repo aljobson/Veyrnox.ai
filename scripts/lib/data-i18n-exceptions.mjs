@@ -2,6 +2,8 @@ import { helperExceptions } from './helper-i18n-exceptions.mjs';
 
 // Named data fields only. New prose in these modules is still inventoried.
 export function dataException({ file, owner, field, text, templateFile }) {
+  if (file === 'app/veyrnox/_lib/referenceTemplates.js' && ((owner === 'REFERENCE_TEMPLATES' && field === 'prompt') || (owner === 'COMMON' && field === 'model' && text === 'Kling O1 · Reference'))) return 'Canonical provider prompt or fixed model identity; reference recipe display guidance remains audited (ADR-0301).';
+  if (file.endsWith('/genjutsuSourcePromptRecords.js') && owner === 'GENJUTSU_SOURCE_PROMPT_RECORDS' && field === 'prompt') return 'Exact published community source prompt shown read-only for provenance; never translated (ADR-0107).';
   if (file.endsWith('/effectConceptCatalog.js') && owner === 'EFFECT_CONCEPTS' && field === 'name') return 'Canonical searchable effect title retained as source catalog data (ADR-0107).';
   if (file.endsWith('/effectConceptTemplates.js') && owner === 'THEME_RECIPES' && field === 'direction') return 'Canonical model instruction interpolated into the editable generated prompt (ADR-0107).';
   if (file.endsWith('/sourceTemplateExpansion.js') && owner === 'SOURCE_TEMPLATE_EXPANSION' && field === 'description') return 'Unused provenance description: effectTemplate destructures neither description nor a spread; no returned template or renderer receives it.';

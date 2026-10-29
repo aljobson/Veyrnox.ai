@@ -87,8 +87,8 @@ export const SOURCE_TEMPLATE_EXPANSION = [
     slug: 'earth-zoom', name: 'EARTH ZOOM', category: 'CINEMATIC', aspect: '406 / 720',
     needs: 'A clear outdoor portrait with visible surroundings',
     bg: 'linear-gradient(170deg,#091925 0%,#496476 55%,#bdc8ce 100%)',
-    description: 'A rapid continuous pull-back carries the view from a grounded scene into an aerial city view and toward the scale of Earth.',
-    prompt: 'Begin on the uploaded outdoor subject and execute one seamless accelerating pull-back. Preserve the starting person and location as the camera rises above the street, then the district, city and coastline until the landscape reads at planetary scale. Maintain geographic continuity, realistic atmosphere and smooth scale changes with no abrupt cuts. Keep the opening identity accurate and add no labels, captions, logos or watermark.',
+    description: 'After a brief street-level anchor, the view races out to orbit and plunges continuously through the clouds and city grid back to the grounded subject.',
+    prompt: 'Begin on the uploaded outdoor subject for a brief street-level anchor, then race smoothly outward through the city, clouds and atmosphere until Earth is visible from orbit. Without cutting, reverse at the orbital apex and execute one seamless accelerating plunge through the same atmosphere, coastline, city grid and street until the camera lands back on the subject. Preserve geographic continuity and keep the opening and final person and location accurate to the uploaded image. Use realistic atmosphere and smooth scale changes with no abrupt cuts, labels, captions, logos or watermark.',
   }),
   effectTemplate({
     slug: 'comic', name: 'COMIC', category: 'CARTOONS', aspect: '720 / 398',
@@ -113,8 +113,8 @@ export const SOURCE_TEMPLATE_EXPANSION = [
     slug: 'pigeons', clipKey: 'wall-pigeons', name: 'PIGEONS', category: 'UGC', aspect: '720 / 720',
     needs: 'A full-body street photo with room around the subject',
     bg: 'linear-gradient(150deg,#2b3133 0%,#89836e 55%,#dbbc77 100%)',
-    description: 'A fisheye street action effect where the subject launches upward amid fast, chaotic city motion and birds.',
-    prompt: 'Animate the uploaded street subject into a playful fisheye action shot. Preserve their face and outfit as they spring upward and a flock of pigeons bursts from the pavement around them. Let the birds cross foreground and background at different depths while the wide lens exaggerates the jump and city perspective. Keep the landing physics, shadows and camera motion believable, with no duplicate subject, captions, logos or watermark.',
+    description: 'A fisheye street action effect where the subject glides through the city on pigeons like roller skates.',
+    prompt: 'Animate the uploaded full-body street subject into a playful fisheye action shot. Preserve their face and outfit as one pigeon forms beneath each foot and carries them forward like living roller skates, hovering just above the road. Track beside the rider while additional pigeons cross the foreground and background at different depths. Keep both feet planted naturally on the two birds, with believable balance, contact shadows and city perspective, and no duplicate subject, captions, logos or watermark.',
   }),
   effectTemplate({
     slug: 'mighty-fighter', clipKey: 'wall-mighty-fighter', name: 'MIGHTY FIGHTER', category: 'FANTASY', aspect: '406 / 720',

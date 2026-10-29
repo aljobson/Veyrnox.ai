@@ -23,6 +23,10 @@ const ar = {
     'model.media.audio': 'صوت',
     'slip.generate': 'توليد',
     'mobile.prompt': 'الوصف',
+    'public.TemplateRecipe.exactCommunityPrompt': 'موجّه المجتمع بالنص الأصلي',
+    'public.TemplateRecipe.copyExactCommunityPrompt': 'نسخ موجّه المجتمع بالنص الأصلي',
+    'public.TemplateRecipe.exactCommunityPromptHelp': 'نُسخ تمامًا كما ورد من موجز المجتمع العام. قد يتضمن خانات مراجع غير مكتملة أو نصًا مصدره مقطوع. يستخدم Veyrnox عند الإنشاء الموجّه المتوافق مع النموذج أدناه.',
+    'public.TemplateRecipe.generationPrompt': 'موجّه إنشاء VEYRNOX',
     'recovery.retry': 'حاول مجددًا',
     'cinema.creatorWorkspace.cancel': 'إلغاء',
     'social.saving': 'جارٍ الحفظ…',
@@ -184,6 +188,17 @@ const ar = {
     'presets.cat.ADS': 'إعلانات',
     'presets.cat.KIDS BIRTHDAY': 'عيد ميلاد الأطفال',
     'presets.detail.sourceAspect': 'اقتصص صورة البداية إلى {aspect}؛ يحتفظ هذا النموذج بتأطير الصورة المرفوعة.',
+    'app.create.sources.video.mp4Hint': 'MP4 فقط، حتى 100 MB',
+    'app.create.sources.secondsRange': '{min}–{max} ثانية',
+    'app.create.sources.minSeconds': '{min} ثانية على الأقل',
+    'app.create.sources.sideRange': '{min}–{max} بكسل لكل بُعد',
+    'app.create.sources.minSide': '{min} بكسل على الأقل لكل بُعد',
+    'app.create.sources.maxSide': 'حتى {max} بكسل لكل بُعد',
+    'app.create.error.source_too_short': 'هذا الفيديو قصير جداً. استخدم مقطعاً لا تقل مدته عن 3 ثوانٍ.',
+    'app.create.error.source_resolution_out_of_range': 'أبعاد هذا الفيديو غير مدعومة. استخدم مقطعاً يتراوح كل بُعد فيه بين 720 و2160 بكسل.',
+    'label.Reference pictures': 'صور مرجعية',
+    'label.Start frame': 'إطار البداية',
+    'label.End frame': 'إطار النهاية',
 } as const;
 
 export default ar;

@@ -1,4 +1,4 @@
-// These community examples inspire image-to-video recipes; the preview is not a motion reference.
+// These community examples inspire image-to-video recipes, but the preview is not a motion reference.
 const base = {
   model: 'Kling 3.0 · I2V', credits: 32, durationSeconds: 10,
   isNew: true, inspired: true, promptOrigin: 'veyrnox-adaptation',
@@ -127,13 +127,17 @@ const recipes = [
   },
 ];
 
-export const SOURCE_TEMPLATE_EXPANSION_8 = recipes.map(({ action, aspect, ...recipe }) => ({
-  ...base, ...recipe,
-  needsKey: (groupIds.has(recipe.id) ? groupGuidance : guidance[recipe.category]).needsKey,
-  needs: (groupIds.has(recipe.id) ? groupGuidance : guidance[recipe.category]).sourceGuidance,
-  sourceAspect: aspect, clipKey: recipe.id, steps,
-  prompt: `Animate the uploaded image into a polished ten-second ${recipe.name.toLowerCase()} sequence. The example is inspiration; generate an original shot from the uploaded image rather than copying its exact motion. ${action} Use stable anatomy, natural lighting, smooth motion and no added captions, logos or watermark.`,
-}));
+export const SOURCE_TEMPLATE_EXPANSION_8 = recipes.map(({ action, aspect, ...recipe }) => {
+  const adaptedPrompt = `Animate the uploaded image into a polished ten-second ${recipe.name.toLowerCase()} sequence. The example is inspiration; generate an original shot from the uploaded image rather than copying its exact motion. ${action} Use stable anatomy, natural lighting, smooth motion and no added captions, logos or watermark.`;
+  return {
+    ...base, ...recipe,
+    needsKey: (groupIds.has(recipe.id) ? groupGuidance : guidance[recipe.category]).needsKey,
+    needs: (groupIds.has(recipe.id) ? groupGuidance : guidance[recipe.category]).sourceGuidance,
+    sourceAspect: aspect, clipKey: recipe.id, steps,
+    promptOrigin: 'veyrnox-adaptation',
+    prompt: adaptedPrompt,
+  };
+});
 
 export const SHOWCASE_CLIP_EXPANSION_8 = Object.fromEntries(SOURCE_TEMPLATE_EXPANSION_8.map((entry) => [entry.clipKey, {
   video: `/showcase/creator-${entry.id}.mp4`, poster: `/showcase/creator-${entry.id}.webp`, aspectRatio: entry.previewAspect,

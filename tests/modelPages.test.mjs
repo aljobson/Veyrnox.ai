@@ -128,7 +128,7 @@ test('two shelf models never share a title', () => {
 
 test('model pages have a complete bundled fallback when the live catalog is unavailable', () => {
     const fallback = fallbackModels();
-    assert.equal(fallback.length, MODELS.length);
+    assert.equal(fallback.length, MODELS.filter((model) => !model.staged).length);
     assert.ok(fallback.every((model) => model.id && model.title && model.modality && model.capabilities));
 });
 

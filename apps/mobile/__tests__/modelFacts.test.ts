@@ -1,5 +1,5 @@
 import { modelFacts, outputDurationLabel, priceUnit, sourceDurationLimit } from '../src/lib/modelFacts';
-import { kindOf, type CatalogModel } from '../src/lib/media';
+import { estimateCredits, kindOf, type CatalogModel } from '../src/lib/media';
 import { chooseLocale } from '../src/lib/i18n';
 declare const require: (id: string) => any;
 declare const __dirname: string;
@@ -12,7 +12,7 @@ const fixtures = [
     model('video', 'text-to-video', { inputs: { prompt: {} } }, [5, 10]),
     model('mapped', 'image-to-video', { presentation: { durationByOption: { '5': '6', '10': '12s' } }, media: { image: { required: true } } }, [5, 10]),
     model('fixed', 'text-to-video', { presentation: { fixedDurationLabel: '8s' } }, [5]),
-    model('latentsync', 'video-to-video', { media: { video: { required: true, maxSeconds: 60 }, audio: { required: true, maxSeconds: 30 } } }, [5, 10]),
+    model('latentsync', 'video-to-video', { media: { video: { required: true, maxSeconds: 60 }, audio: { required: true, maxSeconds: 30 } } }, [5]),
     model('speech', 'text-to-speech', { kind: 'speech', inputs: { prompt: { max: 300 } } }),
     model('track', 'text-to-audio', { inputs: { duration: { min: 10, max: 120, default: 30 }, prompt: {} } }),
     model('stems', 'audio-to-audio', { outputStems: ['Vocals', 'Drums'], media: { audio: { required: true, maxSeconds: 90 } } }),
@@ -68,7 +68,7 @@ test('source limits, output labels and price units equal the actual web helpers'
 
 test('frozen library work order duration cases preserve existing model facts', () => {
     const durationRow = (m: CatalogModel) => modelFacts(m).find(f => f.label === 'Output duration');
-    expect(modelFacts(model('source-eight', 'video-to-video', { media: { video: { required: true, maxSeconds: 8 } } }, [5, 10])))
+    expect(modelFacts(model('source-eight', 'video-to-video', { media: { video: { required: true, maxSeconds: 8 } } }, [5])))
         .toContainEqual({ label: 'Clip lengths', value: 'Follows source duration (up to 8 s)' });
     expect(durationRow(model('range', 'text-to-audio', { inputs: { duration: { min: 5, max: 60, default: 30 } } })))
         .toEqual({ label: 'Output duration', value: '5–60 s (30 s default)' });
@@ -78,4 +78,39 @@ test('frozen library work order duration cases preserve existing model facts', (
     expect(durationRow(model('speech', 'text-to-audio', { kind: 'speech' })))
         .toEqual({ label: 'Output duration', value: 'Depends on text and voice' });
     expect(durationRow(model('plain', 'text-to-audio', {}))).toBeUndefined();
+});
+
+test('actual reference and source-driven catalog models retain web/mobile price and duration parity', () => {
+    // Built from the capability registry the way lib/publicCatalog.js toPublicModels does. That module and
+    // modelPages.js import website-only packages that the mobile CI job does not install.
+    const script = `import { capabilityFor, lengthsFor, publicCapabilities } from './lib/modelCapabilities.js';
+        import { sourceDurationLimit, modelPriceUnit } from './app/veyrnox/_lib/modelPricing.js';
+        const endpoints = ['fal-ai/kling-video/o1/video-to-video/reference', 'fal-ai/latentsync', 'fal-ai/mmaudio-v2', 'fal-ai/topaz/upscale/video', 'fal-ai/kling-video/ai-avatar/v2/standard'];
+        const models = endpoints.map((endpoint, i) => { const record = capabilityFor(endpoint); return { id: String(i), name: endpoint, modality: 'video-to-video', credits: i === 0 ? 47 : 7, gated: false, durations: lengthsFor(record), capabilities: publicCapabilities(record) }; });
+        const withoutPresentation = m => ({ ...m, capabilities: { ...m.capabilities, presentation: undefined } });
+        models.push(withoutPresentation(models[0]), withoutPresentation(models[2]));
+        console.log(JSON.stringify(models.map(model => ({ model, limit: sourceDurationLimit(model), unit: modelPriceUnit(model) }))));`;
+    const run = spawnSync(process.execPath, ['--input-type=module', '-e', script], { cwd: resolve(__dirname, '../../..'), encoding: 'utf8', env: { ...process.env, NODE_NO_WARNINGS: '1' } });
+    expect({ status: run.status, stderr: run.stderr }).toEqual({ status: 0, stderr: '' });
+    const rows: { model: CatalogModel; limit: number | null; unit: string }[] = JSON.parse(run.stdout);
+    expect(rows.map(row => row.limit)).toEqual([null, 40, null, 10, 10, null, 8]);
+    expect(rows.map(row => row.unit)).toEqual([
+        'per 5 s clip; 10 s costs double.', 'per generation (source up to 40 s).', 'per 8 s clip.',
+        'per generation (source up to 10 s).', 'per generation (source up to 10 s).',
+        'per 5 s clip; 10 s costs double.', 'per generation (source up to 8 s).',
+    ]);
+    // Web modelFacts values for the same rows; tests/sourceDurationLabels.test.mjs covers the web side.
+    const clipLengths = [
+        '5 s, 10 s', 'Follows source duration (up to 40 s)', '8 s', 'Follows source duration (up to 10 s)',
+        'Follows source duration (up to 10 s)', '5 s, 10 s', 'Follows source duration (up to 8 s)',
+    ];
+    rows.forEach((row, i) => {
+        expect(sourceDurationLimit(row.model)).toBe(row.limit);
+        expect(priceUnit(row.model)).toBe(row.unit);
+        expect(modelFacts(row.model)).toContainEqual({ label: 'Clip lengths', value: clipLengths[i] });
+    });
+    for (const row of [rows[0], rows[5]]) {
+        expect(estimateCredits(row.model, 5)).toBe(47);
+        expect(estimateCredits(row.model, 10)).toBe(94);
+    }
 });

@@ -25,7 +25,7 @@ export interface CatalogModel {
             readonly audioIncluded?: boolean;
         };
         readonly inputs?: Record<string, unknown>;
-        readonly media?: Record<string, { readonly required?: boolean; readonly label?: string; readonly maxFiles?: number; readonly maxSeconds?: number }>;
+        readonly media?: Record<string, { readonly required?: boolean; readonly label?: string; readonly maxFiles?: number; readonly maxSeconds?: number; readonly minSeconds?: number; readonly minSide?: number; readonly maxSide?: number; readonly maxPixels?: number }>;
         // Present on stem-splitting models (six labelled files from one audio file). The server marks the model
         // gated in the catalog while its flag is off, so the gated check already hides it.
         readonly outputStems?: string[];

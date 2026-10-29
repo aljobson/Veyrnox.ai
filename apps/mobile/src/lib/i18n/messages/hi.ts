@@ -23,6 +23,10 @@ const hi = {
     'model.media.audio': 'ऑडियो',
     'slip.generate': 'जनरेट करें',
     'mobile.prompt': 'प्रॉम्प्ट',
+    'public.TemplateRecipe.exactCommunityPrompt': 'समुदाय का सटीक प्रॉम्प्ट',
+    'public.TemplateRecipe.copyExactCommunityPrompt': 'समुदाय का सटीक प्रॉम्प्ट कॉपी करें',
+    'public.TemplateRecipe.exactCommunityPromptHelp': 'सार्वजनिक कम्युनिटी फ़ीड से जैसा मिला, उसे ठीक वैसा ही कॉपी किया गया है। इसमें अधूरे रेफ़रेंस स्लॉट या कटा हुआ स्रोत टेक्स्ट हो सकता है। जनरेट करते समय Veyrnox नीचे दिए मॉडल-संगत प्रॉम्प्ट का उपयोग करता है।',
+    'public.TemplateRecipe.generationPrompt': 'VEYRNOX जनरेशन प्रॉम्प्ट',
     'recovery.retry': 'फिर कोशिश करें',
     'cinema.creatorWorkspace.cancel': 'रद्द करें',
     'social.saving': 'सेव हो रहा है…',
@@ -184,6 +188,17 @@ const hi = {
     'presets.cat.ADS': 'विज्ञापन',
     'presets.cat.KIDS BIRTHDAY': 'बच्चों का जन्मदिन',
     'presets.detail.sourceAspect': 'शुरुआती छवि को {aspect} में क्रॉप करें; यह मॉडल अपलोड की गई छवि की फ़्रेमिंग बनाए रखता है।',
+    'app.create.sources.video.mp4Hint': 'केवल MP4, अधिकतम 100 MB',
+    'app.create.sources.secondsRange': '{min}–{max} सेकंड',
+    'app.create.sources.minSeconds': 'कम से कम {min} सेकंड',
+    'app.create.sources.sideRange': 'हर तरफ {min}–{max} पिक्सेल',
+    'app.create.sources.minSide': 'हर तरफ कम से कम {min} पिक्सेल',
+    'app.create.sources.maxSide': 'हर तरफ अधिकतम {max} पिक्सेल',
+    'app.create.error.source_too_short': 'यह वीडियो बहुत छोटा है। कम से कम 3 सेकंड की क्लिप इस्तेमाल करें।',
+    'app.create.error.source_resolution_out_of_range': 'इस वीडियो का आकार समर्थित नहीं है। हर तरफ 720 से 2160 पिक्सेल वाली क्लिप इस्तेमाल करें।',
+    'label.Reference pictures': 'संदर्भ तस्वीरें',
+    'label.Start frame': 'शुरुआती फ़्रेम',
+    'label.End frame': 'अंतिम फ़्रेम',
 } as const;
 
 export default hi;

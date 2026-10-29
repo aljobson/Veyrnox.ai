@@ -1,6 +1,8 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "sourceLimits.tooShort": "该视频对于此模型来说太短。请选择时长在所示范围内的片段。",
+  "sourceLimits.resolution": "该文件的分辨率不在此模型允许的范围内。请选择尺寸在所示范围内的文件。",
   "faceFilterSwitch.current": "滤镜：{name}",
   "faceFilterSwitch.change": "更换",
   "faceFilterSwitch.changeLabel": "更换滤镜，当前：{name}",

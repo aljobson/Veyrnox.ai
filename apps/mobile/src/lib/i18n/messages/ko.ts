@@ -23,6 +23,10 @@ const ko = {
     'model.media.audio': '오디오',
     'slip.generate': '생성',
     'mobile.prompt': '프롬프트',
+    'public.TemplateRecipe.exactCommunityPrompt': '커뮤니티 원문 프롬프트',
+    'public.TemplateRecipe.copyExactCommunityPrompt': '커뮤니티 원문 프롬프트 복사',
+    'public.TemplateRecipe.exactCommunityPromptHelp': '공개 커뮤니티 피드에서 받은 내용을 그대로 복사했습니다. 불완전한 참조 칸이나 잘린 원문이 포함될 수 있습니다. 생성할 때는 Veyrnox가 아래의 모델 호환 프롬프트를 사용합니다.',
+    'public.TemplateRecipe.generationPrompt': 'VEYRNOX 생성 프롬프트',
     'recovery.retry': '다시 시도',
     'cinema.creatorWorkspace.cancel': '취소',
     'social.saving': '저장 중…',
@@ -184,6 +188,17 @@ const ko = {
     'presets.cat.ADS': '광고',
     'presets.cat.KIDS BIRTHDAY': '어린이 생일',
     'presets.detail.sourceAspect': '시작 이미지를 {aspect}로 자르세요. 이 모델은 업로드한 이미지의 구도를 유지합니다.',
+    'app.create.sources.video.mp4Hint': 'MP4만 지원, 최대 100 MB',
+    'app.create.sources.secondsRange': '{min}–{max}초',
+    'app.create.sources.minSeconds': '최소 {min}초',
+    'app.create.sources.sideRange': '가로와 세로 각각 {min}–{max}픽셀',
+    'app.create.sources.minSide': '가로와 세로 각각 최소 {min}픽셀',
+    'app.create.sources.maxSide': '가로와 세로 각각 최대 {max}픽셀',
+    'app.create.error.source_too_short': '동영상이 너무 짧습니다. 최소 3초 길이의 클립을 사용하세요.',
+    'app.create.error.source_resolution_out_of_range': '지원하지 않는 동영상 크기입니다. 가로와 세로가 각각 720~2160픽셀인 클립을 사용하세요.',
+    'label.Reference pictures': '참조 이미지',
+    'label.Start frame': '시작 프레임',
+    'label.End frame': '끝 프레임',
 } as const;
 
 export default ko;

@@ -42,10 +42,11 @@ describe('the native Create dashboard mirrors the website Studio', () => {
         expect(tabs).toContain('const palette = paletteForScheme(scheme, settings)');
     });
 
-    test('orders sources, goal and models before navigation, leaving the price to Generate', () => {
+    test('starts from a goal and shortcuts, with no model list and no prices', () => {
         expect(create).toContain("t('create.startFrom')");
         expect(create).toContain("t('create.what')");
-        expect(create).toContain("t('create.model')");
+        expect(create).toContain('starterModel(');
+        expect(create).not.toContain("t('create.model')");
         expect(create).not.toContain("t('create.livePrices')");
         expect(create).not.toContain("plural('create.from'");
         expect(create).toContain("pathname: '/create/[modelId]'");

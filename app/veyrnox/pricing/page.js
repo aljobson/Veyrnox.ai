@@ -13,7 +13,7 @@ import { rich } from '../../../lib/i18n/rich';
 import { useI18n } from '../../../components/I18nProvider';
 import { localeInfo } from '../../../lib/i18n/locales.mjs';
 
-const FALLBACK_MODELS = MODELS_FALLBACK.map((model) => ({
+const FALLBACK_MODELS = MODELS_FALLBACK.filter((model) => !model.staged).map((model) => ({
   ...model,
   isSpeech: !!model.speech,
   id: model.id,

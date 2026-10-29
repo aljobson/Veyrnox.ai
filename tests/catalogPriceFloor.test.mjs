@@ -8,6 +8,21 @@ import { creditsForFloor, marginAt, MARGIN_FLOOR } from '../scripts/lib/fal-pric
 // at the $129/3000 pack leaves $0.03946, and half of its gross ($0.0215) stays.
 const migration = readFileSync(new URL('../packages/db/schema/supabase/0366_whole_credit_price_floor.sql', import.meta.url), 'utf8');
 
+test('Kling O1 reference stages the minimum whole-credit price with activation off', () => {
+  const sql = readFileSync(new URL('../packages/db/schema/supabase/0405_kling_o1_reference.sql', import.meta.url), 'utf8');
+  assert.match(sql, /'kling-o1-reference','Kling O1 · Reference','fal','fal-ai\/kling-video\/o1\/video-to-video\/reference'/);
+  const row = sql.match(/'video-to-video',(\d+),([\d.]+),'per_second',5,false,false/);
+  assert.ok(row, 'inactive five-second catalog unit');
+  const credits = Number(row[1]), cost = Number(row[2]);
+  assert.equal(credits, 47);
+  assert.equal(cost, 0.84);
+  assert.equal(creditsForFloor(cost), credits);
+  assert.ok(marginAt(cost, credits) >= MARGIN_FLOOR);
+  assert.ok(marginAt(cost, credits - 1) < MARGIN_FLOOR);
+  assert.equal(credits * 2, 94);
+  assert.doesNotMatch(sql, /UPDATE\s+public\.model_catalog/i);
+});
+
 const CUTS = [
   { id: 'elevenlabs-tts-turbo', cost: 0.05, was: 4, now: 3 },
   { id: 'elevenlabs-dialogue', cost: 0.1, was: 7, now: 6 },

@@ -17,6 +17,8 @@ import { useI18n } from '../../../components/I18nProvider';
 // this is a client-side index, not a search service. Models come from the
 // live catalog on first open and fall back to tokens.js.
 
+const FALLBACK_MODELS = MODELS_FALLBACK.filter((model) => !model.staged);
+
 function staticIndex(models, oddlingsPublic, t) {
   return [
     ...SITE_PAGES.map((p) => ({
@@ -43,7 +45,7 @@ function staticIndex(models, oddlingsPublic, t) {
 function modelsToIndex(models, t) {
   // Search offers what Create sells: the Clip Editor lives in the Library, and
   // Auto Short stays out until its flag comes off (isShelfModel).
-  return models.filter((m) => isShelfModel(m.capabilities)).map((m) => ({
+  return models.filter((m) => isShelfModel(m.capabilities)).filter((m) => !m.staged).map((m) => ({
     group: 'Models',
     title: m.name,
     detail: t('search.modelDetail', { type: tOr(t, `model.mode.${m.modality || m.kind}`, tOr(t, `home.models.${m.modality || m.kind}`, m.modality || m.kind || t('home.models.image'))), credits: m.credits, premium: m.gated ? t('search.premiumDetail', { premium: t('home.models.premium') }) : '' }),
@@ -114,7 +116,7 @@ function SearchOverlay({ onClose }) {
   }, []);
 
   const index = useMemo(
-    () => [...staticIndex(models || MODELS_FALLBACK, oddlingsPublic, t), ...modelsToIndex(models || MODELS_FALLBACK, t)],
+    () => [...staticIndex(models || FALLBACK_MODELS, oddlingsPublic, t), ...modelsToIndex(models || FALLBACK_MODELS, t)],
     [models, oddlingsPublic, t],
   );
   const results = useMemo(() => searchIndex(index, query), [index, query]);

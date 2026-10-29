@@ -38,6 +38,23 @@ test('source hints are MIME facts, not assumptions about speech or faces', () =>
   assert.doesNotMatch(html, /SPEECH|visible face/);
 });
 
+test('reference video hints show duration and per-side bounds while existing slots keep their copy', () => {
+  const html = render({ video: { required: true, minSeconds: 3, maxSeconds: 10, minSide: 720, maxSide: 2160 } });
+  assert.match(html, /MP4 only, up to 100 MB, 3–10 s, 720–2160 pixels on each side/);
+  assert.doesNotMatch(html, /up to 10s|MOV|WebM/);
+  assert.match(html, /accept="video\/mp4"/);
+  assert.match(render({ video: { maxSeconds: 40 } }), /MP4, MOV or WebM, up to 100 MB, up to 40s/);
+  assert.match(render({ image: { maxPixels: 6000000 } }), /up to 6 MP/);
+  assert.match(render({ video: { minSeconds: 3, minSide: 720 } }), /at least 3 s, at least 720 pixels on each side/);
+  assert.match(render({ video: { maxSide: 2160 } }), /up to 2160 pixels on each side/);
+  for (const picked of [{ file: { name: 'clip.mp4' } }, { label: 'clip.mp4', needsUpload: true }]) {
+    const selected = render({ video: { minSeconds: 3, maxSeconds: 10, minSide: 720, maxSide: 2160 } }, { video: picked });
+    assert.match(selected, /MP4 only, up to 100 MB, 3–10 s, 720–2160 pixels on each side/);
+    assert.doesNotMatch(selected, /MOV|WebM/);
+    for (const match of selected.matchAll(/accept="([^"]+)"/g)) assert.equal(match[1], 'video/mp4');
+  }
+});
+
 test('Studio and Chat route every Library slot through the shared kind and MIME facts', () => {
   for (const path of ['app/veyrnox/app/create/page.js', 'app/veyrnox/_components/chat/MediaComposer.js']) {
     const source = read(path);

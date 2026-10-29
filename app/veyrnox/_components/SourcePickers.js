@@ -21,7 +21,7 @@ const pill = 'font-vx-mono text-[11px] font-bold rounded-full px-3.5 py-1.5 bord
 
 /**
  * @param {object} props
- * @param {Record<string,{required:boolean,maxSeconds?:number,maxPixels?:number}>} props.media
+ * @param {Record<string,{required:boolean,minSeconds?:number,maxSeconds?:number,minSide?:number,maxSide?:number,maxPixels?:number}>} props.media
  * @param {Record<string,{file:File, previewUrl:string}>} props.sources
  * @param {(slot:string, file:File|null) => void} props.onPick
  * @param {(() => void)|null} props.onDraw  shown for the image slot when set
@@ -85,7 +85,16 @@ export function SourcePickers({ media, sources, onPick, onDraw, onLibrary, onReo
   const number = value => locale === 'en' ? String(value) : new Intl.NumberFormat(localeTag(locale)).format(value);
   return Object.entries(media).filter(([slot]) => SLOTS[slot]).map(([slot, spec]) => {
     const ui = SLOTS[slot], kind = generationSlotKind(slot), files = sourceList(sources[slot]), max = publicSlotMax(spec);
-    const limits = [spec.maxSeconds && t('app.create.sources.seconds', {count: number(spec.maxSeconds)}), spec.maxPixels && t('app.create.sources.pixels', {count: number(spec.maxPixels / 1e6)})].filter(Boolean);
+    const mp4Only = kind === 'video' && spec.minSeconds != null;
+    const hint = t(mp4Only ? 'app.create.sources.video.mp4Hint' : ui.hint);
+    const accept = mp4Only ? 'video/mp4' : pickerAccept(kind);
+    const limits = [
+      spec.minSeconds ? (spec.maxSeconds ? t('app.create.sources.secondsRange', { min: number(spec.minSeconds), max: number(spec.maxSeconds) }) : t('app.create.sources.minSeconds', { min: number(spec.minSeconds) }))
+        : spec.maxSeconds && t('app.create.sources.seconds', { count: number(spec.maxSeconds) }),
+      spec.minSide && spec.maxSide ? t('app.create.sources.sideRange', { min: number(spec.minSide), max: number(spec.maxSide) })
+        : spec.minSide ? t('app.create.sources.minSide', { min: number(spec.minSide) }) : spec.maxSide && t('app.create.sources.maxSide', { max: number(spec.maxSide) }),
+      spec.maxPixels && t('app.create.sources.pixels', { count: number(spec.maxPixels / 1e6) }),
+    ].filter(Boolean);
     if (max === 1 && files.length <= 1 && !files[0]?.needsUpload) {
       const picked = files[0];
     return (
@@ -102,8 +111,9 @@ export function SourcePickers({ media, sources, onPick, onDraw, onLibrary, onReo
             {(spec.label ? tOr(t, `label.${spec.label}`, spec.label) : t(ui.labelKey))}{spec.required ? t("app.create.sources.required") : t("app.create.sources.optional")}
           </div>
           <div className="text-xs text-vx-fg-body truncate mt-1">
-            {picked ? (picked.file ? picked.file.name : picked.sourceKey ? picked.label : t('app.create.sources.libraryName', {name: tOr(t, `app.helpers.message.${picked.labelCode}`, picked.label)})) : [t(ui.hint), ...limits].join(', ')}
+            {picked ? (picked.file ? picked.file.name : picked.sourceKey ? picked.label : t('app.create.sources.libraryName', {name: tOr(t, `app.helpers.message.${picked.labelCode}`, picked.label)})) : [hint, ...limits].join(', ')}
           </div>
+          {picked && (spec.minSeconds || spec.minSide || spec.maxSide) ? <p className="text-xs text-vx-fg-muted mt-1">{(mp4Only ? [hint, ...limits] : limits).join(', ')}</p> : null}
         </div>
         {/* A Library image is a presigned R2 URL: the canvas cannot read it back. */}
         {picked?.file && slot === 'image' && onDraw && (
@@ -114,7 +124,7 @@ export function SourcePickers({ media, sources, onPick, onDraw, onLibrary, onReo
         )}
         <label className={`${pill} cursor-pointer has-focus-visible:outline-solid has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-vx-accent`}>
           {picked ? t("app.oddlings.replace") : t(ui.add)}
-          <input data-testid={`source-upload-${slot}`} type="file" accept={pickerAccept(kind)} disabled={hold} className="sr-only"
+          <input data-testid={`source-upload-${slot}`} type="file" accept={accept} disabled={hold} className="sr-only"
             onChange={(e) => { const f = e.target.files && e.target.files[0]; e.target.value = ''; if (f) pickFile(slot, f); }} />
         </label>
         {picked && (
@@ -127,12 +137,13 @@ export function SourcePickers({ media, sources, onPick, onDraw, onLibrary, onReo
     }
     return <div key={slot} className="mt-3 space-y-3 rounded-lg border border-vx-border bg-vx-panel p-3">
       <div className="font-vx-mono text-[10px] text-vx-fg-muted">{spec.label ? tOr(t, `label.${spec.label}`, spec.label) : t(ui.labelKey)}{spec.required ? t('app.create.sources.required') : t('app.create.sources.optional')}</div>
-      {max > 1 && <p className="text-xs text-vx-fg-muted">{t(pluralKey(t, locale, 'app.create.sources.maxFiles', max), { count: number(max) })} · {[t(ui.hint), ...limits].join(', ')}</p>}
+      {max > 1 && <p className="text-xs text-vx-fg-muted">{t(pluralKey(t, locale, 'app.create.sources.maxFiles', max), { count: number(max) })} · {[hint, ...limits].join(', ')}</p>}
+      {max === 1 && (spec.minSeconds || spec.minSide || spec.maxSide) ? <p className="text-xs text-vx-fg-muted">{(mp4Only ? [hint, ...limits] : limits).join(', ')}</p> : null}
       {files.length > max && <p role="alert">{t(pluralKey(t, locale, 'app.create.sources.overLimit', max), { count: number(max) })}</p>}
       {files.map((picked, index) => <div key={index} className="flex items-center gap-3">
         {kind === 'image' && picked.previewUrl && <img src={picked.previewUrl} alt={t(slot === 'endImage' ? 'app.create.sources.endAlt' : 'app.create.sources.startAlt')} className="w-16 h-16 rounded-sm object-cover" />}
         <span className="min-w-0 flex-1 truncate text-xs">{picked.file?.name || picked.label || t('app.create.sources.image.label')}</span>
-        {picked.needsUpload && <label className={pill}>{t('app.create.reattach')}<input type="file" className="sr-only" accept={pickerAccept(kind)} disabled={hold} onChange={e => { const file = e.target.files?.[0]; e.target.value = ''; if (file) pickFile(slot, file, index); }} /></label>}
+        {picked.needsUpload && <label className={pill}>{t('app.create.reattach')}<input type="file" className="sr-only" accept={accept} disabled={hold} onChange={e => { const file = e.target.files?.[0]; e.target.value = ''; if (file) pickFile(slot, file, index); }} /></label>}
         {picked.file && slot === 'image' && index === 0 && onDraw && <button type="button" onClick={onDraw} disabled={hold} className={pill}>{t('app.create.sources.draw')}</button>}
         {onReorder && index > 0 && <button type="button" className={pill} disabled={hold} onClick={() => onReorder(slot, index, index - 1)} aria-label={t('app.create.sources.moveEarlier')}>↑</button>}
         {onReorder && index < files.length - 1 && <button type="button" className={pill} disabled={hold} onClick={() => onReorder(slot, index, index + 1)} aria-label={t('app.create.sources.moveLater')}>↓</button>}
@@ -142,7 +153,7 @@ export function SourcePickers({ media, sources, onPick, onDraw, onLibrary, onReo
         {onLibrary && <button data-assistant-control="create.upload" type="button" onClick={() => onLibrary(slot)} disabled={hold} className={pill}>{t('app.create.sources.library')}</button>}
         <label className={`${pill} cursor-pointer`}>
           {files.length && max === 1 ? t('app.oddlings.replace') : t(ui.add)}
-          <input data-testid={`source-upload-${slot}`} type="file" accept={pickerAccept(kind)} disabled={hold} className="sr-only"
+          <input data-testid={`source-upload-${slot}`} type="file" accept={accept} disabled={hold} className="sr-only"
             onChange={e => { const file = e.target.files?.[0]; e.target.value = ''; if (file) pickFile(slot, file); }} />
         </label>
       </div>}

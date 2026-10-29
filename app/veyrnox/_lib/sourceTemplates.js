@@ -135,8 +135,8 @@ export const SOURCE_TEMPLATES = [
     "model": "Kling 3.0 · I2V", "credits": 32, "durationSeconds": 10,
     "category": "VFX", "isNew": true, "previewAspect": "406 / 720",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": "A clear starting photo showing the subject and setting you want to animate",
-    "prompt": "Animate the uploaded starting image into a ten-second video. Rise above the subject, execute one fluid overhead camera flip, and reveal a transformed setting on the other side. Keep the motion continuous and the subject clearly framed. Keep the main subject’s identity and outfit consistent, with smooth camera motion, clear contact shadows and no added captions or watermarks.", "promptOrigin": "veyrnox-adaptation",
-    "negativePrompt": "identity drift, unintended extra limbs, malformed hands, ghost duplicates, flicker, captions, watermark", "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
+    "prompt": "Animate the uploaded starting image into a ten-second video. Rise above the subject and execute one fluid overhead camera flip. As the camera crosses the apex, transform both the person and location into a clearly different character and setting, then complete the flip on the new scene. Keep the transition continuous, the two character designs deliberate and the subject clearly framed, with smooth camera motion, clear contact shadows and no added captions or watermarks.", "promptOrigin": "veyrnox-adaptation",
+    "negativePrompt": "unintended extra limbs, malformed hands, ghost duplicates, flicker, captions, watermark", "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
     "inspired": true,
   },
   {

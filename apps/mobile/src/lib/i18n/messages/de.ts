@@ -23,6 +23,10 @@ const de = {
     'model.media.audio': 'Audio',
     'slip.generate': 'Generieren',
     'mobile.prompt': 'Prompt',
+    'public.TemplateRecipe.exactCommunityPrompt': 'EXAKTER COMMUNITY-PROMPT',
+    'public.TemplateRecipe.copyExactCommunityPrompt': 'Exakten Community-Prompt kopieren',
+    'public.TemplateRecipe.exactCommunityPromptHelp': 'Exakt so übernommen, wie vom öffentlichen Community-Feed empfangen. Der Text kann unvollständige Referenzfelder oder abgeschnittenen Quelltext enthalten. Veyrnox verwendet beim Generieren den modellkompatiblen Prompt unten.',
+    'public.TemplateRecipe.generationPrompt': 'VEYRNOX-GENERIERUNGSPROMPT',
     'recovery.retry': 'Erneut versuchen',
     'cinema.creatorWorkspace.cancel': 'Abbrechen',
     'social.saving': 'Wird gespeichert…',
@@ -184,6 +188,17 @@ const de = {
     'presets.cat.ADS': 'Werbung',
     'presets.cat.KIDS BIRTHDAY': 'Kindergeburtstag',
     'presets.detail.sourceAspect': 'Schneide das Ausgangsbild auf {aspect} zu; dieses Modell übernimmt den Bildausschnitt des Uploads.',
+    'app.create.sources.video.mp4Hint': 'Nur MP4, bis zu 100 MB',
+    'app.create.sources.secondsRange': '{min}–{max} Sekunden',
+    'app.create.sources.minSeconds': 'mindestens {min} s',
+    'app.create.sources.sideRange': '{min}–{max} Pixel auf jeder Seite',
+    'app.create.sources.minSide': 'mindestens {min} Pixel auf jeder Seite',
+    'app.create.sources.maxSide': 'bis zu {max} Pixel auf jeder Seite',
+    'app.create.error.source_too_short': 'Dieses Video ist zu kurz. Verwende einen Clip mit mindestens 3 Sekunden.',
+    'app.create.error.source_resolution_out_of_range': 'Die Abmessungen dieses Videos werden nicht unterstützt. Verwende einen Clip mit 720 bis 2160 Pixeln auf jeder Seite.',
+    'label.Reference pictures': 'Referenzbilder',
+    'label.Start frame': 'Startbild',
+    'label.End frame': 'Endbild',
 } as const;
 
 export default de;

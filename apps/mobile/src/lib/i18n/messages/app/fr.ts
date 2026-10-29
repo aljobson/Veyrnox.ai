@@ -1,6 +1,8 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "sourceLimits.tooShort": "Cette vidéo est trop courte pour ce modèle. Choisissez un clip dans la plage de durée affichée.",
+  "sourceLimits.resolution": "La résolution de ce fichier dépasse les limites du modèle. Choisissez un fichier dans la plage de dimensions affichée.",
   "faceFilterSwitch.current": "Filtre : {name}",
   "faceFilterSwitch.change": "Changer",
   "faceFilterSwitch.changeLabel": "Changer de filtre, actuel : {name}",

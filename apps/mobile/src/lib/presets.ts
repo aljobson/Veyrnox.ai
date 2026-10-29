@@ -16,6 +16,11 @@ export interface Preset {
     // What the model makes, from the catalog: an image, video or audio family (empty when the server did not say).
     readonly modality: string;
     readonly prompt: string;
+    readonly promptOrigin?: 'veyrnox-adaptation' | null;
+    // Exact text published with the source community record. It is shown for reference only;
+    // prompt remains the compatible text sent to this preset's Veyrnox model.
+    readonly sourcePrompt?: string | null;
+    readonly sourcePromptOrigin?: 'community-source-exact' | null;
     readonly needs: string | null;
     // Desired crop of the starting image for source-framed I2V models. This is guidance, not a provider aspect option.
     readonly sourceAspect?: string | null;
@@ -41,6 +46,7 @@ function parseOne(raw: unknown): Preset | null {
     const title = str(r.title);
     const modelId = str(r.modelId);
     const prompt = str(r.prompt);
+    const sourcePrompt = r.sourcePromptOrigin === 'community-source-exact' ? str(r.sourcePrompt) : null;
     if (!id || !title || !modelId || !prompt) return null;
     if (typeof r.credits !== 'number' || !Number.isInteger(r.credits) || r.credits <= 0) return null;
     return {
@@ -52,6 +58,9 @@ function parseOne(raw: unknown): Preset | null {
         modelName: str(r.modelName) ?? modelId,
         modality: str(r.modality) ?? '',
         prompt,
+        promptOrigin: r.promptOrigin === 'veyrnox-adaptation' ? 'veyrnox-adaptation' : null,
+        sourcePrompt,
+        sourcePromptOrigin: sourcePrompt && r.sourcePromptOrigin === 'community-source-exact' ? 'community-source-exact' : null,
         needs: str(r.needs),
         sourceAspect: str(r.sourceAspect),
         durationSeconds: typeof r.durationSeconds === 'number' && r.durationSeconds > 0 ? r.durationSeconds : null,

@@ -129,6 +129,8 @@ test('all main route knowledge survives localization except the retired unknown-
                 if (route === '/app/film-studio' && retiredFilmStudioKnowledge[field]?.has(expected)) continue;
                 if (route === '/app/oddlings' && retiredOddlingsKnowledge[field]?.has(expected)) continue;
                 if (route === '/app/publish' && retiredPublishKnowledge[field]?.has(expected)) continue;
+                if (route === '/presets/[id]' && field === 'headings' && expected === 'PROMPT') continue;
+                if (route === '/presets/[id]' && field === 'controls' && expected === 'Template prompt') continue;
                 assert.ok(actual.has(normal(expected)), `${route} ${field}: ${expected}`);
             }
         }

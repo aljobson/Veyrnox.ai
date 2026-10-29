@@ -23,6 +23,10 @@ const ru = {
     'model.media.audio': 'аудио',
     'slip.generate': 'Создать',
     'mobile.prompt': 'Запрос',
+    'public.TemplateRecipe.exactCommunityPrompt': 'ТОЧНЫЙ ЗАПРОС СООБЩЕСТВА',
+    'public.TemplateRecipe.copyExactCommunityPrompt': 'Скопировать точный запрос сообщества',
+    'public.TemplateRecipe.exactCommunityPromptHelp': 'Скопировано точно в том виде, в котором получено из общедоступной ленты сообщества. Текст может содержать незаполненные ссылки или быть обрезанным. При генерации Veyrnox использует совместимый с моделью запрос ниже.',
+    'public.TemplateRecipe.generationPrompt': 'ЗАПРОС ДЛЯ ГЕНЕРАЦИИ VEYRNOX',
     'recovery.retry': 'Повторить',
     'cinema.creatorWorkspace.cancel': 'Отмена',
     'social.saving': 'Сохранение…',
@@ -184,6 +188,17 @@ const ru = {
     'presets.cat.ADS': 'Реклама',
     'presets.cat.KIDS BIRTHDAY': 'Детский день рождения',
     'presets.detail.sourceAspect': 'Обрежьте исходное изображение до {aspect}; эта модель сохраняет кадрирование загруженного изображения.',
+    'app.create.sources.video.mp4Hint': 'Только MP4, до 100 МБ',
+    'app.create.sources.secondsRange': '{min}–{max} с',
+    'app.create.sources.minSeconds': 'не менее {min} с',
+    'app.create.sources.sideRange': '{min}–{max} пикселей с каждой стороны',
+    'app.create.sources.minSide': 'не менее {min} пикселей с каждой стороны',
+    'app.create.sources.maxSide': 'до {max} пикселей с каждой стороны',
+    'app.create.error.source_too_short': 'Это видео слишком короткое. Используйте ролик длительностью не менее 3 секунд.',
+    'app.create.error.source_resolution_out_of_range': 'Размер этого видео не поддерживается. Используйте ролик с каждой стороной от 720 до 2160 пикселей.',
+    'label.Reference pictures': 'Референсные изображения',
+    'label.Start frame': 'Начальный кадр',
+    'label.End frame': 'Конечный кадр',
 } as const;
 
 export default ru;

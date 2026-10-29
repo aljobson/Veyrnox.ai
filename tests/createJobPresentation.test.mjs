@@ -9,6 +9,9 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import ts from 'typescript';
+import { sourceDurationLimit } from '../app/veyrnox/_lib/modelPricing.js';
+import { MODELS } from '../app/veyrnox/_lib/tokens.js';
+import { fallbackCapabilitiesFor } from '../lib/fallbackModelCapabilities.js';
 
 const require = createRequire(import.meta.url);
 const image = { id: 'nano-banana', name: 'Nano Banana', kind: 'image', credits: 2, aspects: ['16:9', '9:16'] };
@@ -17,6 +20,8 @@ const slow = { id: 'slow-video', name: 'Slow Video', kind: 'video', credits: 9 }
 
 function harness(initialJobs, selected = audio) {
   let jobs = initialJobs, cleared = 0, submitted = 0, cursor = 0;
+  const models = [image, audio, slow];
+  if (!models.some(model => model.id === selected.id)) models.push(selected);
   const states = [];
   const react = {
     useState(initial) {
@@ -33,7 +38,7 @@ function harness(initialJobs, selected = audio) {
     '../../../../components/I18nProvider': { useI18n: () => ({ t, locale: 'en' }) },
     '../../../../lib/i18n/locales.mjs': { localeTag },
     '../../../../lib/i18n/translate.mjs': { tOr, pluralKey },
-    '../../_lib/useCatalog': { useCatalog: () => ({ models: [image, audio, slow], live: true, loading: false }) },
+    '../../_lib/useCatalog': { useCatalog: () => ({ models, live: true, loading: false }) },
     '../../_lib/useCreateDraftRecovery': { __esModule: true, default: () => ({ restoring: false, blocked: false, failed: false, saved: false, status: '', retry() {}, sourceEdited() {} }) },
     '../../_lib/useFreeAllowance': { useFreeAllowance: () => ({}) },
     '../../_lib/useStudioJobs': { useStudioJobs: () => ({ jobs, generating: jobs.some(job => ['queued', 'running'].includes(job.state)), clearJobs: () => { cleared++; jobs = []; } }) },
@@ -44,7 +49,7 @@ function harness(initialJobs, selected = audio) {
     '../../_lib/freeAllowance': { freeLeftFor: () => 0 },
     '../../_lib/generationSettings': { audioDurationConfig: () => null, audioDurationIsInvalid: () => false, voiceIsMissing: () => false },
     '../../_lib/promptBox': { promptText: () => 'QA prompt', promptIsMissing: () => false, promptPlaceholderDiagnostic: () => null },
-    '../../_lib/modelPricing': { sourceDurationLimit: () => null, generationCostLabel: cost => `${cost} credits`, creditLabel: cost => `${cost} credits` },
+    '../../_lib/modelPricing': { sourceDurationLimit, generationCostLabel: cost => `${cost} credits`, creditLabel: cost => `${cost} credits` },
     '../../_lib/studioStates': { jobStateUi: job => ({ label: job?.state?.toUpperCase() }), SLOW_MODEL_WAIT: { 'slow-video': 'This submitted video takes longer.' } },
     '../../_lib/gateway': { gatewayFetch: async () => { submitted++; return {}; }, GatewayError: class extends Error {} },
     '../../_lib/createErrors': { ERROR_COPY: {}, failedJobCopy: () => 'Failed' },
@@ -76,6 +81,18 @@ function text(node) {
 }
 const result = tree => find(tree, node => node.props?.['data-assistant-target'] === 'create.result');
 const button = tree => find(tree, node => node.props?.['data-assistant-target'] === 'create.generate');
+
+test('Kling O1 keeps the real Create duration ControlRow for both 5s and 10s', () => {
+  const bundled = MODELS.find(model => model.id === 'kling-o1-reference');
+  const capabilities = fallbackCapabilitiesFor(bundled.id);
+  for (const selected of [bundled, { ...bundled, media: capabilities.media, presentation: capabilities.presentation }]) {
+    const row = find(harness([], selected).render(), node => node.props?.assistantTarget === 'create.duration');
+    assert.ok(row, 'Create must render the duration ControlRow');
+    assert.deepEqual(row.props.options, ['5s', '10s']);
+    assert.equal(row.props.value, '5s');
+    assert.equal(typeof row.props.onChange, 'function');
+  }
+});
 
 test('changing the draft goal cannot relabel the running submitted image as audio', () => {
   const page = harness([{ job_id: 'qa-image', model_id: image.id, state: 'running' }]);
