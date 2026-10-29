@@ -1185,6 +1185,7 @@ export default {
   "commerce.was": "이전 가격 {price}",
   "common.back": "뒤로",
   "common.close": "닫기",
+  "common.loading": "불러오는 중",
   "common.comingToApp": "앱에서 이 기능을 준비 중입니다.",
   "common.error": "문제가 발생했습니다. 다시 시도해 주세요.",
   "compose.donePosted": "지금 게시 중입니다. 아래에 상태가 표시됩니다.",

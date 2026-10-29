@@ -1295,6 +1295,7 @@ export default {
   "commerce.was": "كان {price}",
   "common.back": "رجوع",
   "common.close": "إغلاق",
+  "common.loading": "تحميل",
   "common.comingToApp": "ستتوفر هذه الميزة في التطبيق قريبًا.",
   "common.error": "حدث خطأ. حاول مجددًا.",
   "compose.donePosted": "جارٍ النشر الآن. تظهر حالته أدناه.",

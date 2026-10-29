@@ -1207,6 +1207,7 @@ export default {
   "commerce.was": "पहले {price}",
   "common.back": "वापस",
   "common.close": "बंद करें",
+  "common.loading": "लोडिंग",
   "common.comingToApp": "यह सुविधा ऐप में जल्द आएगी।",
   "common.error": "कुछ गलत हो गया। फिर कोशिश करें।",
   "compose.donePosted": "अभी पोस्ट हो रहा है। इसकी स्थिति नीचे दिखती है।",
