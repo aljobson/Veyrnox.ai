@@ -1,6 +1,6 @@
 import { sanitizeCinema, type Cinema } from './cinemaCamera';
 import { sanitizePicks, type Picks } from './oddlingsBuilder';
-import { kindOf, type CatalogModel, type Kind } from './media';
+import { kindOf, textInput, type CatalogModel, type Kind } from './media';
 
 // ADR-0153: the web Create page's option set, as pure helpers. The catalog (`capabilities.inputs`) says which
 // options a model takes; the server checks each value again against the same record, so this is a form, not a guard.
@@ -20,6 +20,22 @@ export const GOALS: readonly { readonly goal: Goal; readonly label: string }[] =
 
 export function modelsForGoal(models: readonly CatalogModel[], goal: Goal): CatalogModel[] {
     return models.filter((m) => goal === 'all' || kindOf(m.modality) === goal);
+}
+
+const needsUpload = (m: CatalogModel): boolean => Object.values(m.capabilities?.media ?? {}).some((slot) => slot?.required);
+const cheapestFirst = (a: CatalogModel, b: CatalogModel): number => a.credits - b.credits || a.name.localeCompare(b.name) || a.id.localeCompare(b.id);
+
+// The model a goal opens with: the cheapest open model that starts from a prompt alone. Mirrors starterModel in
+// app/veyrnox/_lib/starterModels.js; "Change model" on the form picks another one.
+export function starterModel(models: readonly CatalogModel[], kind: Kind): CatalogModel | null {
+    const candidates = models.filter((m) => !m.gated && kindOf(m.modality) === kind && textInput(m)?.key === 'prompt' && !needsUpload(m) && Number.isFinite(m.credits) && m.credits >= 0);
+    return [...candidates].sort(cheapestFirst)[0] ?? null;
+}
+
+// What "Change model" offers: open models of the same kind that start the same way (from a prompt, or from a file).
+export function pickerModels(models: readonly CatalogModel[], current: CatalogModel): CatalogModel[] {
+    const kind = kindOf(current.modality);
+    return models.filter((m) => !m.gated && kindOf(m.modality) === kind && needsUpload(m) === needsUpload(current)).sort(cheapestFirst);
 }
 
 export type Tier = 'low' | 'medium' | 'high';

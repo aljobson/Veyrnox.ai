@@ -1,13 +1,13 @@
 import { rawText } from '../../lib/i18n/translate';
 import type { ReactNode } from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { Text, Icon, themedStyles, useThemedStyles } from '../ui';
 import { SectionLabel } from './SectionLabel';
 import { ds } from '../../theme';
 import { MIN_TARGET } from '../../lib/a11y';
 import { t } from '../../lib/i18n';
 
-export function FormHeader({ modelLabel, modality, stageLine, stage }: { modelLabel: string; modality: string; stageLine: string; stage?: ReactNode }) {
+export function FormHeader({ modelLabel, modality, stageLine, stage, onChangeModel }: { modelLabel: string; modality: string; stageLine: string; stage?: ReactNode; onChangeModel?: () => void }) {
     const styles = useThemedStyles(sheets);
     return <>
                 <View style={styles.hero}>
@@ -20,11 +20,19 @@ export function FormHeader({ modelLabel, modality, stageLine, stage }: { modelLa
                             <SectionLabel style={styles.savedText}>{t('create.workspace.saved')}</SectionLabel>
                         </View>
                     </View>
-                    <View style={styles.modelPill} accessibilityLabel={rawText(t('create.workspace.modelLabel', { name: modelLabel }))}>
-                        <SectionLabel style={styles.modelLive}>{t('create.livePrices')}</SectionLabel>
-                        <Text variant="footnote" tone="primary" style={styles.modelName}>{modelLabel}</Text>
-                        <SectionLabel style={styles.modelKind}>{modality}</SectionLabel>
-                    </View>
+                    {onChangeModel ? (
+                        <Pressable accessibilityRole="button" accessibilityLabel={rawText(`${t('create.workspace.modelLabel', { name: modelLabel })}. ${t('chat.model.change')}`)} onPress={onChangeModel}
+                            style={({ pressed }) => [styles.modelPill, pressed && styles.pressed]}>
+                            <SectionLabel style={styles.modelKind}>{modality}</SectionLabel>
+                            <Text variant="footnote" tone="primary" style={styles.modelName}>{modelLabel}</Text>
+                            <Text variant="footnote" tone="accent">{t('chat.model.change')}</Text>
+                        </Pressable>
+                    ) : (
+                        <View style={styles.modelPill} accessibilityLabel={rawText(t('create.workspace.modelLabel', { name: modelLabel }))}>
+                            <SectionLabel style={styles.modelKind}>{modality}</SectionLabel>
+                            <Text variant="footnote" tone="primary" style={styles.modelName}>{modelLabel}</Text>
+                        </View>
+                    )}
                 </View>
 
                 {stage ?? <View style={styles.stage} accessibilityLabel={rawText(stageLine)}>
@@ -43,7 +51,7 @@ const sheets = themedStyles((p) => ({
     heroCopy: { flex: 1, gap: ds.space.xs },
     heroTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: ds.space.md },
     modelKind: { },
-    modelLive: { },
+    pressed: { opacity: 0.7 },
     modelName: { color: p.textPrimary, flex: 1 },
     modelPill: { minHeight: MIN_TARGET, flexDirection: 'row', alignItems: 'center', gap: ds.space.sm, paddingHorizontal: ds.space.md, borderRadius: ds.radius.md, borderWidth: 1, borderColor: p.borderSubtle, backgroundColor: p.bgElevated1 },
     savedDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: p.accent },

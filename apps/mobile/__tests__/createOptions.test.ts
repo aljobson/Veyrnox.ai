@@ -1,4 +1,4 @@
-import { hasAnyOption, resolveAudio, resolveResolution, audioLengthInvalid, voiceIsMissing, SAVED_DRAFT_VERSION, batchCost, draftIsEmpty, filterByTier, freeLeftFor, imageCount, inputsForIndex, modelsForGoal, optionsFor, parseDraft, seedIsInvalid, settingsInputs, takesImageCount, tierById } from '../src/lib/createOptions';
+import { hasAnyOption, resolveAudio, resolveResolution, audioLengthInvalid, voiceIsMissing, SAVED_DRAFT_VERSION, batchCost, draftIsEmpty, filterByTier, freeLeftFor, imageCount, inputsForIndex, modelsForGoal, optionsFor, pickerModels, starterModel, parseDraft, seedIsInvalid, settingsInputs, takesImageCount, tierById } from '../src/lib/createOptions';
 import { DEFAULT_CINEMA } from '../src/lib/cinemaCamera';
 import { loadDraft, saveDraft, clearDraft } from '../src/lib/createDraftStore';
 import { createCache, createMemoryStorage } from '../src/lib/cache';
@@ -210,5 +210,24 @@ describe('output resolution and audio (flat catalog price)', () => {
     test('the price does not depend on the choice', () => {
         expect(estimateCredits(seedance, 5)).toBe(12);
         expect(estimateCredits(seedance, 10)).toBe(24);
+    });
+});
+
+describe('starter and picker models', () => {
+    const prompt = (id: string, credits: number, modality = 'text-to-image', over: Partial<CatalogModel> = {}) => model({ id, name: id, credits, modality, capabilities: { inputs: { prompt: {} } }, ...over });
+    const upload = (id: string, credits: number) => model({ id, name: id, credits, modality: 'image-to-image', capabilities: { inputs: { prompt: {} }, media: { image: { required: true } } } });
+    test('a goal starts with the cheapest open model that needs only a prompt', () => {
+        const list = [prompt('dear', 9), prompt('cheap', 2), prompt('locked', 1, 'text-to-image', { gated: true }), upload('edit', 1), prompt('clip', 1, 'text-to-video')];
+        expect(starterModel(list, 'image')?.id).toBe('cheap');
+        expect(starterModel(list, 'video')?.id).toBe('clip');
+        expect(starterModel(list, 'audio')).toBeNull();
+    });
+    test('equal prices fall back to the name, so the starter never flips between loads', () => {
+        expect(starterModel([prompt('b', 2), prompt('a', 2)], 'image')?.id).toBe('a');
+    });
+    test('the picker offers open models of the same kind that start the same way, cheapest first', () => {
+        const list = [prompt('dear', 9), prompt('cheap', 2), upload('edit', 1), upload('edit-2', 4), prompt('clip', 1, 'text-to-video'), prompt('locked', 1, 'text-to-image', { gated: true })];
+        expect(pickerModels(list, list[0]).map(m => m.id)).toEqual(['cheap', 'dear']);
+        expect(pickerModels(list, list[2]).map(m => m.id)).toEqual(['edit', 'edit-2']);
     });
 });
