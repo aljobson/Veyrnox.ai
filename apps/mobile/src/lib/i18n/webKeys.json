@@ -180,5 +180,16 @@
   "presets.cat.UGC",
   "presets.cat.ADS",
   "presets.cat.KIDS BIRTHDAY",
-  "presets.detail.sourceAspect"
+  "presets.detail.sourceAspect",
+  "app.create.sources.video.mp4Hint",
+  "app.create.sources.secondsRange",
+  "app.create.sources.minSeconds",
+  "app.create.sources.sideRange",
+  "app.create.sources.minSide",
+  "app.create.sources.maxSide",
+  "app.create.error.source_too_short",
+  "app.create.error.source_resolution_out_of_range",
+  "label.Reference pictures",
+  "label.Start frame",
+  "label.End frame"
 ]

@@ -58,7 +58,7 @@ export async function choose(kind: Slot['kind']): Promise<PickedFile | null> {
     });
     const a = res.canceled ? null : res.assets[0];
     if (!a) return null;
-    return { uri: a.uri, mimeType: a.mimeType, size: a.fileSize, durationSeconds: typeof a.duration === 'number' ? a.duration / 1000 : undefined };
+    return { uri: a.uri, mimeType: a.mimeType, size: a.fileSize, width: a.width, height: a.height, durationSeconds: typeof a.duration === 'number' ? a.duration / 1000 : undefined };
 }
 
 // Each row retains its own upload controller, progress and cancellation.
@@ -161,7 +161,7 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
 
     async function accept(file: PickedFile) {
         setError(null);
-        const checked = checkPicked(slot.kind, file, slot.maxSeconds);
+        const checked = checkPicked(slot.kind, file, slot);
         if (!checked.ok) {
             if (isDrawFile(file.uri)) deleteDrawFile(file.uri);
             setError(pickedProblem(checked.error, slot.kind));
@@ -272,7 +272,14 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
                 void accept(file);
             }} /> : null}
             {choosing ? <LibraryChooser api={api} kind={slot.kind} onPick={chooseFromLibrary} onClose={() => setChoosing(false)} /> : null}
-            {slot.maxSeconds ? <Text variant="caption" tone="tertiary" style={styles.hint}>{t('sourcePicker.uptoseconds', { value1: slot.maxSeconds })}</Text> : null}
+            {slot.kind === 'video' && slot.minSeconds != null ? <Text variant="caption" tone="tertiary" style={styles.hint}>{t('app.create.sources.video.mp4Hint')}</Text> : null}
+            {slot.minSeconds ? <Text variant="caption" tone="tertiary" style={styles.hint}>{slot.maxSeconds
+                ? t('app.create.sources.secondsRange', { min: slot.minSeconds, max: slot.maxSeconds })
+                : t('app.create.sources.minSeconds', { min: slot.minSeconds })}</Text>
+                : slot.maxSeconds ? <Text variant="caption" tone="tertiary" style={styles.hint}>{t('sourcePicker.uptoseconds', { value1: slot.maxSeconds })}</Text> : null}
+            {slot.minSide || slot.maxSide ? <Text variant="caption" tone="tertiary" style={styles.hint}>{slot.minSide && slot.maxSide
+                ? t('app.create.sources.sideRange', { min: slot.minSide, max: slot.maxSide })
+                : slot.minSide ? t('app.create.sources.minSide', { min: slot.minSide }) : t('app.create.sources.maxSide', { max: slot.maxSide! })}</Text> : null}
             {error ? <Text variant="body" tone="danger" style={styles.error}>{error}</Text> : null}
         </View>
     );

@@ -1,4 +1,12 @@
 export default {
+    "app.create.sources.video.mp4Hint": "MP4 only, up to 100 MB",
+    "app.create.sources.secondsRange": "{min}–{max} s",
+    "app.create.sources.minSeconds": "at least {min} s",
+    "app.create.sources.sideRange": "{min}–{max} pixels on each side",
+    "app.create.sources.minSide": "at least {min} pixels on each side",
+    "app.create.sources.maxSide": "up to {max} pixels on each side",
+    "app.create.error.source_too_short": "That video is too short. Use a clip of at least 3 seconds.",
+    "app.create.error.source_resolution_out_of_range": "That video's size isn't supported. Use a clip between 720 and 2160 pixels on each side.",
     "app.create.error.source_count_exceeded": "This model accepts fewer reference files. Remove extra files or choose another model. Nothing was charged.",
     "app.create.error.sources_too_large": "The reference files are too large together. Remove files or use smaller ones. Nothing was charged.",
     "app.create.error.source_size_unknown": "We could not verify a source file’s size. Reattach it or choose another file. Nothing was charged.",

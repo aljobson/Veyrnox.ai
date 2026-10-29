@@ -35,6 +35,9 @@ export interface Slot {
     readonly label: string;
     readonly maxFiles?: number;
     readonly maxSeconds?: number;
+    readonly minSeconds?: number;
+    readonly minSide?: number;
+    readonly maxSide?: number;
     readonly maxPixels?: number;
 }
 
@@ -43,24 +46,34 @@ export interface PickedFile {
     readonly mimeType?: string;
     readonly size?: number;
     readonly durationSeconds?: number;
+    readonly width?: number;
+    readonly height?: number;
 }
 
-export type PickedCheck = { readonly ok: true; readonly contentType: string } | { readonly ok: false; readonly error: 'type' | 'too_large' | 'size_unknown' | 'too_long' };
+export type PickedCheck = { readonly ok: true; readonly contentType: string } | { readonly ok: false; readonly error: 'type' | 'too_large' | 'size_unknown' | 'too_long' | 'too_short' | 'resolution' };
 
 const DEFAULT_LABEL: Record<SlotName, string> = { image: t('sources.image'), endImage: t('sources.lastframe'), video: t('sources.video'), audio: t('sources.audio') };
 
 // The file slots a model declares, in a fixed order, ignoring names the server does not know.
 export function slotsFor(model: CatalogModel): Slot[] {
-    const media = (model.capabilities?.media ?? {}) as Record<string, { required?: boolean; label?: string; maxFiles?: number; maxSeconds?: number; maxPixels?: number }>;
+    const media = model.capabilities?.media ?? {};
     return SLOT_ORDER.filter((name) => Object.hasOwn(media, name)).map((name) => ({
         slot: name,
         kind: KIND[name],
         maxFiles: Math.max(1, Math.min(3, media[name].maxFiles ?? 1)),
         required: media[name].required === true,
-        label: media[name].label ?? DEFAULT_LABEL[name],
+        label: media[name].label ? slotLabel(media[name].label) : DEFAULT_LABEL[name],
         ...(typeof media[name].maxPixels === 'number' ? { maxPixels: media[name].maxPixels } : {}),
         ...(typeof media[name].maxSeconds === 'number' ? { maxSeconds: media[name].maxSeconds } : {}),
+        ...(typeof media[name].minSeconds === 'number' ? { minSeconds: media[name].minSeconds } : {}),
+        ...(typeof media[name].minSide === 'number' ? { minSide: media[name].minSide } : {}),
+        ...(typeof media[name].maxSide === 'number' ? { maxSide: media[name].maxSide } : {}),
     }));
+}
+
+function slotLabel(label: string): string {
+    const key = `label.${label}`, translated = t(key);
+    return translated === key ? label : translated;
 }
 
 // Guided recipes name the exact primary slots they need. Do not accidentally
@@ -79,7 +92,8 @@ export function kindOfMime(mimeType: string | undefined): SlotKind | null {
     return Object.hasOwn(ALLOWED, type) ? ALLOWED[type].kind : null;
 }
 
-export function checkPicked(kind: SlotKind, file: PickedFile, maxSeconds?: number): PickedCheck {
+export function checkPicked(kind: SlotKind, file: PickedFile, limits: number | Pick<Slot, 'maxSeconds' | 'minSeconds' | 'minSide' | 'maxSide'> = {}): PickedCheck {
+    const { maxSeconds, minSeconds, minSide, maxSide } = typeof limits === 'number' ? { maxSeconds: limits } : limits;
     const raw = (file.mimeType ?? '').trim().toLowerCase();
     const type = ALIASES[raw] ?? raw;
     const rule = Object.hasOwn(ALLOWED, type) ? ALLOWED[type] : undefined;
@@ -87,6 +101,12 @@ export function checkPicked(kind: SlotKind, file: PickedFile, maxSeconds?: numbe
     if (!Number.isInteger(file.size) || (file.size as number) <= 0) return { ok: false, error: 'size_unknown' };
     if ((file.size as number) > rule.maxBytes) return { ok: false, error: 'too_large' };
     if (maxSeconds !== undefined && file.durationSeconds !== undefined && file.durationSeconds > maxSeconds) return { ok: false, error: 'too_long' };
+    if (minSeconds !== undefined && Number.isFinite(file.durationSeconds) && (file.durationSeconds as number) > 0 && (file.durationSeconds as number) < minSeconds) return { ok: false, error: 'too_short' };
+    // Expo reports zero dimensions when unavailable. Unknown metadata waits for server inspection.
+    if (Number.isFinite(file.width) && Number.isFinite(file.height) && (file.width as number) > 0 && (file.height as number) > 0) {
+        if ((minSide !== undefined && Math.min(file.width as number, file.height as number) < minSide)
+            || (maxSide !== undefined && Math.max(file.width as number, file.height as number) > maxSide)) return { ok: false, error: 'resolution' };
+    }
     return { ok: true, contentType: type };
 }
 
@@ -106,6 +126,10 @@ export function pickedProblem(error: Extract<PickedCheck, { ok: false }>['error'
             return kind === 'video' ? t('sources.thatvideoisover100MB') : t('sources.thatfileisover20MB');
         case 'too_long':
             return t('sources.thatfileislongerthanthismodel');
+        case 'too_short':
+            return t('sourceLimits.tooShort');
+        case 'resolution':
+            return t('sourceLimits.resolution');
         default:
             return t('sources.couldnotreadthatfileTryanother');
     }

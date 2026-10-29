@@ -9,6 +9,7 @@
 // (tests/presetLinking.test.mjs). Prices shown come from the live catalog.
 
 import { SOURCE_TEMPLATES } from './sourceTemplates.js';
+import { REFERENCE_TEMPLATES } from './referenceTemplates.js';
 import { EFFECT_CONCEPT_TEMPLATES } from './effectConceptTemplates.js';
 import { EFFECT_THEMES, effectThemeId, themedTemplates } from './effectThemes.js';
 import { SHOWCASE_CLIPS } from './showcase.js';
@@ -44,7 +45,7 @@ const WALL_CLIP_KEYS = [
 // Every runnable recipe stays addressable by id (its own page and direct
 // links), but only recipes with a real video preview are listed anywhere:
 // gallery, categories, themes, search, sitemap, homepage and mobile.
-export const ALL_TEMPLATES = [...SOURCE_TEMPLATES, ...EFFECT_CONCEPT_TEMPLATES];
+export const ALL_TEMPLATES = [...SOURCE_TEMPLATES, ...EFFECT_CONCEPT_TEMPLATES, ...REFERENCE_TEMPLATES];
 export const hasTemplateVideo = (preset) => Boolean(preset?.clipKey && SHOWCASE_CLIPS[preset.clipKey]?.video);
 export const PRESETS = ALL_TEMPLATES.filter(hasTemplateVideo);
 export const WALL_PRESETS = WALL_CLIP_KEYS.map((key) => SOURCE_TEMPLATES.find((p) => p.clipKey === key)).filter(Boolean);

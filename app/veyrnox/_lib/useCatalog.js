@@ -8,7 +8,7 @@ import { fallbackCapabilitiesFor } from '../../../lib/fallbackModelCapabilities.
 const FALLBACK_DURATIONS = [5];
 
 export function fromFallback() {
-  return MODELS.map((m) => {
+  return MODELS.filter((m) => !m.staged).map((m) => {
     const capabilities = fallbackCapabilitiesFor(m.id);
     const inputs = capabilities?.inputs || {};
     return ({

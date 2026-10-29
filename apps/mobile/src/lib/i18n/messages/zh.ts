@@ -184,6 +184,17 @@ const zh = {
     'presets.cat.ADS': '广告',
     'presets.cat.KIDS BIRTHDAY': '儿童生日',
     'presets.detail.sourceAspect': '将起始图片裁剪为 {aspect}；此模型会保留上传图片的构图。',
+    'app.create.sources.video.mp4Hint': '仅限 MP4，最大 100 MB',
+    'app.create.sources.secondsRange': '{min}–{max} 秒',
+    'app.create.sources.minSeconds': '至少 {min} 秒',
+    'app.create.sources.sideRange': '每边 {min}–{max} 像素',
+    'app.create.sources.minSide': '每边至少 {min} 像素',
+    'app.create.sources.maxSide': '每边最多 {max} 像素',
+    'app.create.error.source_too_short': '该视频太短。请使用至少 3 秒的片段。',
+    'app.create.error.source_resolution_out_of_range': '不支持该视频的尺寸。请使用宽和高均在 720 至 2160 像素之间的片段。',
+    'label.Reference pictures': '参考图片',
+    'label.Start frame': '起始帧',
+    'label.End frame': '结束帧',
 } as const;
 
 export default zh;

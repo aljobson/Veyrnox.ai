@@ -184,6 +184,17 @@ const ja = {
     'presets.cat.ADS': '広告',
     'presets.cat.KIDS BIRTHDAY': '子どもの誕生日',
     'presets.detail.sourceAspect': '開始画像を {aspect} にトリミングしてください。このモデルはアップロード画像の構図を維持します。',
+    'app.create.sources.video.mp4Hint': 'MP4 のみ、最大 100 MB',
+    'app.create.sources.secondsRange': '{min}–{max} 秒',
+    'app.create.sources.minSeconds': '{min} 秒以上',
+    'app.create.sources.sideRange': '縦横それぞれ {min}–{max} ピクセル',
+    'app.create.sources.minSide': '縦横それぞれ {min} ピクセル以上',
+    'app.create.sources.maxSide': '縦横それぞれ最大 {max} ピクセル',
+    'app.create.error.source_too_short': 'この動画は短すぎます。3 秒以上のクリップを使用してください。',
+    'app.create.error.source_resolution_out_of_range': 'この動画のサイズには対応していません。縦横それぞれが 720 ～ 2160 ピクセルのクリップを使用してください。',
+    'label.Reference pictures': '参照画像',
+    'label.Start frame': '開始フレーム',
+    'label.End frame': '終了フレーム',
 } as const;
 
 export default ja;

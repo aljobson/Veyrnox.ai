@@ -56,7 +56,7 @@ export const FEATURED_MODEL_IDS = [
 ];
 
 export function featuredModels(models = MODELS) {
-  const byId = new Map(models.map((model) => [model.id, model]));
+  const byId = new Map(models.filter((model) => !model.staged).map((model) => [model.id, model]));
   return FEATURED_MODEL_IDS.map((id) => byId.get(id)).filter(Boolean);
 }
 

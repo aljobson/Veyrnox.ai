@@ -8,6 +8,8 @@ export const creditLabel = (credits) => `${credits} ${credits === 1 ? 'credit' :
 export const generationCostLabel = (credits) => credits === 0 ? 'Free' : `−${credits} cr`;
 
 export function sourceDurationLimit(model) {
+  // Selectable output lengths take precedence over the input clip limit.
+  if ((model?.durations?.length || 0) > 1) return null;
   const presentation = model?.presentation || model?.capabilities?.presentation || {};
   if (presentation.fixedDurationLabel || Object.keys(presentation.durationByOption || {}).length) return null;
   const media = model?.media || model?.capabilities?.media || {};

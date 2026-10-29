@@ -184,6 +184,17 @@ const pt = {
     'presets.cat.ADS': 'Anúncios',
     'presets.cat.KIDS BIRTHDAY': 'Aniversário infantil',
     'presets.detail.sourceAspect': 'Recorte a imagem inicial para {aspect}; este modelo mantém o enquadramento da imagem enviada.',
+    'app.create.sources.video.mp4Hint': 'Apenas MP4, até 100 MB',
+    'app.create.sources.secondsRange': '{min}–{max} segundos',
+    'app.create.sources.minSeconds': 'pelo menos {min} s',
+    'app.create.sources.sideRange': '{min}–{max} píxeis de cada lado',
+    'app.create.sources.minSide': 'pelo menos {min} píxeis de cada lado',
+    'app.create.sources.maxSide': 'até {max} píxeis de cada lado',
+    'app.create.error.source_too_short': 'Este vídeo é demasiado curto. Use um clipe com pelo menos 3 segundos.',
+    'app.create.error.source_resolution_out_of_range': 'As dimensões deste vídeo não são suportadas. Use um clipe com entre 720 e 2160 píxeis de cada lado.',
+    'label.Reference pictures': 'Imagens de referência',
+    'label.Start frame': 'Quadro inicial',
+    'label.End frame': 'Quadro final',
 } as const;
 
 export default pt;

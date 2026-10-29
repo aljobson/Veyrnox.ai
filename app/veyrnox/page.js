@@ -91,7 +91,7 @@ async function loadCatalog() {
       tag: m.gated ? 'PREMIUM' : undefined,
     }));
   } catch {
-    return MODELS_FALLBACK;
+    return MODELS_FALLBACK.filter((model) => !model.staged);
   }
 }
 

@@ -17,12 +17,14 @@ import { translator } from '../lib/i18n/translate.mjs';
 
 const require = createRequire(import.meta.url);
 const binding = fixture('en', '/app/chat').load('components/BindingText.jsx');
-function component(path, name) {
+function component(path, name, stateValues) {
   const output = { exports: {} };
   const code = ts.transpileModule(readFileSync(new URL(`../${path}`, import.meta.url), 'utf8'), {
     compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS },
   }).outputText;
+  let stateIndex = 0;
   const imports = {
+    ...(stateValues ? { react: { ...require('react'), useState: initial => require('react').useState(stateIndex < stateValues.length ? stateValues[stateIndex++] : initial) } } : {}),
     '../../../../components/BindingText': binding,
     '../../../../lib/generationSourceSlots.mjs': sourceSlots,
     '../../../../lib/createAttach.mjs': { attachAccept: () => 'image/png,video/mp4,audio/mpeg' },
@@ -48,6 +50,25 @@ const renderComposer = (model, { prompt = 'Test prompt', ...overrides } = {}) =>
   model, availableModels: [model], duration: 5, sources: {}, jobs: [], cost: 10, freeLeft: 0, balance: 100, catalogLive: true,
   ...overrides,
 } }));
+
+test('Kling O1 price slips and Chat preserve selected 5s/10s clip labels and catalog-based prices', () => {
+  const live = { ...modelFor('fal-ai/kling-video/o1/video-to-video/reference'), credits: 47 };
+  const bundled = tokens.MODELS.find(model => model.id === 'kling-o1-reference');
+  for (const model of [live, bundled]) {
+    for (const [seconds, cost] of [[5, 47], [10, 94]]) {
+      const SelectedSlip = component('app/veyrnox/_components/PriceSlip.js', 'PriceSlip', [model.id, seconds, '']);
+      const slip = renderToStaticMarkup(createElement(SelectedSlip, { models: [model] }));
+      assert.ok(slip.includes(`${seconds}s clip`));
+      assert.ok(slip.includes(`${cost} cr`));
+      assert.doesNotMatch(slip, /source up to/i);
+      const composer = renderComposer(model, { duration: seconds, cost });
+      assert.match(composer, /data-testid="chat-media-duration"/);
+      assert.match(composer, />5s</);
+      assert.match(composer, />10s</);
+      assert.doesNotMatch(composer, /Source up to/);
+    }
+  }
+});
 
 test('prompt-less Chat transforms enable with valid sources while all other submit guards remain active', () => {
   const model = modelFor('fal-ai/latentsync');

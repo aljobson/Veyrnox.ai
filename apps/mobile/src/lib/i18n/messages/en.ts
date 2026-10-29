@@ -180,6 +180,7 @@ import area_slip from './en/slip';
 import area_smartlink from './en/smartlink';
 import area_social from './en/social';
 import area_sourceDuration from './en/sourceDuration';
+import area_sourceLimits from './en/sourceLimits';
 import area_sourcePicker from './en/sourcePicker';
 import area_sources from './en/sources';
 import area_srch from './en/srch';
@@ -384,6 +385,7 @@ const catalog = {
     ...area_smartlink,
     ...area_social,
     ...area_sourceDuration,
+    ...area_sourceLimits,
     ...area_sourcePicker,
     ...area_sources,
     ...area_srch,
