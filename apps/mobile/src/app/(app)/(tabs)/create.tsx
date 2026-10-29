@@ -2,7 +2,7 @@ import { rawText } from '../../../lib/i18n/translate';
 import { useFaceFiltersAvailable } from '../../../lib/useFaceFiltersAvailable';
 import { createTileColumns } from '../../../lib/createLayout';
 import { SectionLabel } from '../../../components/create/SectionLabel';
-import { Text, Card, Chip, Icon, ListRow, SegmentedControl, themedStyles, useThemedStyles, useAppearance } from '../../../components/ui';
+import { Text, Card, Icon, ListRow, SegmentedControl, themedStyles, useThemedStyles, useAppearance } from '../../../components/ui';
 
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -12,9 +12,8 @@ import { FreeAllowanceCard } from '../../../components/FreeAllowanceCard';
 import { VeyLoader } from '../../../components/VeyLoader';
 import { fetchCatalogCached, kindOf, type CatalogModel } from '../../../lib/media';
 import { fetchPremiumModels } from '../../../lib/premiumModels';
-import { GOALS, TIERS, filterByTier, freeLeftFor, modelsForGoal, type Goal, type Tier } from '../../../lib/createOptions';
+import { GOALS, freeLeftFor, modelsForGoal, type Goal } from '../../../lib/createOptions';
 import { useFreeLeft } from '../../../lib/useFreeLeft';
-import { selectedState } from '../../../lib/a11y';
 import { fetchAgentListing } from '../../../lib/montage';
 import { type MenuIcon } from '../../../lib/menuIcons';
 import { ds, TEXT_SCALE, LIST_END_PADDING } from '../../../theme';
@@ -44,7 +43,6 @@ export default function Create() {
     const [premium, setPremium] = useState<CatalogModel[]>([]);
     const [failed, setFailed] = useState(false);
     const [goal, setGoal] = useState<Goal>(params.goal === 'video' || params.goal === 'audio' ? params.goal : 'image');
-    const [tier, setTier] = useState<Tier | null>(null);
     const freeLeft = useFreeLeft();
     const [agent, setAgent] = useState<{ readonly credits: number } | null>(null);
 
@@ -58,8 +56,8 @@ export default function Create() {
     }, []);
 
     const goalModels = useMemo(() => modelsForGoal(models ?? [], goal), [models, goal]);
-    // Tiers are thirds of the goal's own prices, as on the web. Cheapest first, so Low reads as the top of the list.
-    const shown = useMemo(() => [...filterByTier(goalModels, tier)].sort((a, b) => a.credits - b.credits || a.name.localeCompare(b.name)), [goalModels, tier]);
+    // Cheapest first. Prices are left to the model screen, where Generate shows the exact cost.
+    const shown = useMemo(() => [...goalModels].sort((a, b) => a.credits - b.credits || a.name.localeCompare(b.name)), [goalModels]);
     const kindWord = t(`create.goal.${goal}`);
 
     return (
@@ -83,7 +81,6 @@ export default function Create() {
 
                             <View style={styles.sectionTop}>
                                 <SectionLabel style={styles.sectionLabel}>{t('create.startFrom')}</SectionLabel>
-                                <SectionLabel style={styles.sectionMeta}>{t('create.pickPreset')}</SectionLabel>
                             </View>
                             <View style={styles.entries}>
                                 <EntryTile icon="squares" label={t('label.Templates')} onPress={() => router.push('/create/presets')} />
@@ -95,30 +92,19 @@ export default function Create() {
 
                             <View style={styles.sectionTop}>
                                 <SectionLabel style={styles.sectionLabel}>{t('create.what')}</SectionLabel>
-                                <SectionLabel style={styles.sectionMeta}>{t('create.freeChoice')}</SectionLabel>
                             </View>
-                            <SegmentedControl style={largeText ? styles.stacked : undefined} accessibilityLabel={t('create.goalLabel')} options={GOALS.map(g => ({ value: g.goal, label: t(SHORT_GOAL[g.goal]), accessibilityLabel: t(g.label), icon: GOAL_ICON[g.goal] }))} value={goal} onChange={next => { setGoal(next); setTier(null); }} />
-                            <Text variant="caption" tone="tertiary" style={styles.explainer}>{t('create.goalExplainer')}</Text>
+                            <SegmentedControl style={largeText ? styles.stacked : undefined} accessibilityLabel={t('create.goalLabel')} options={GOALS.map(g => ({ value: g.goal, label: t(SHORT_GOAL[g.goal]), accessibilityLabel: t(g.label), icon: GOAL_ICON[g.goal] }))} value={goal} onChange={setGoal} />
 
                             <View style={styles.sectionTop}>
                                 <SectionLabel style={styles.sectionLabel}>{t('create.model')}</SectionLabel>
-                                <View style={styles.live}><View style={styles.liveDot} /><SectionLabel style={styles.liveText}>{t('create.livePrices')}</SectionLabel></View>
                             </View>
-                            <View style={[styles.tiers, largeText && styles.stacked]} accessibilityLabel={t('create.tierLabel')}>
-                                {[null, ...TIERS].map((x) => (
-                                    <Chip style={styles.tier} fullWidth selected={tier === x} key={x ?? 'all'} accessibilityRole="button" accessibilityState={selectedState(tier === x)} onPress={() => setTier(x)} label={t(`create.tier.${x ?? 'all'}`)} />
-                                ))}
-                            </View>
-                            <Text variant="caption" tone="tertiary" style={styles.explainer}>{t('create.priceExplainer')}</Text>
                             <FreeAllowanceCard models={models} left={freeLeft} />
                             {(goal === 'video' || goal === 'all') && agent ? (
-                                <Card accessibilityRole="button" style={[styles.row, styles.agentRow, largeText && styles.modelStack]} onPress={() => router.push('/create/agent')}>
+                                <Card accessibilityRole="button" style={[styles.row, styles.agentRow]} onPress={() => router.push('/create/agent')}>
                                     <View style={styles.agentText}>
-                                        <SectionLabel style={styles.modality}>{t('create.videoAgent')}</SectionLabel>
                                         <Text variant="bodyStrong" tone="primary" style={styles.name}>{t('create.agentTitle')}</Text>
-                                        <Text variant="body" tone="tertiary" style={styles.muted}>{t('create.agentHint')}</Text>
+                                        <Text variant="footnote" tone="secondary" style={styles.muted}>{t('create.agentHint')}</Text>
                                     </View>
-                                    <Text variant="footnote" tone="warning" style={styles.price}>{plural('create.agentFrom', agent.credits)}</Text>
                                     <Icon name="caretRight" size={20} />
                                 </Card>
                             ) : null}
@@ -127,30 +113,31 @@ export default function Create() {
                     ListFooterComponent={premium.length ? <View style={styles.header}>
                         <Text variant="title3" accessibilityRole="header">{t('projectHome.premium')}</Text>
                         {premium.map(model => <Card key={model.id} accessibilityLabel={rawText(`${model.name}, ${t(`library.type.${kindOf(model.modality)}`)}, ${t('projectHome.premium')}, ${t('projectHome.notOpen')}`)}
-                            onPress={() => router.push({ pathname: '/model/[id]', params: { id: model.id } })}>
-                            <Text variant="bodyStrong">{model.name}</Text>
-                            <Text tone="secondary">{t(`library.type.${kindOf(model.modality)}`)}</Text>
-                            <View style={styles.premiumTag}><Icon name="sparkleFill" size={20} /><Text>{t('projectHome.premium')}</Text></View>
-                            <Text tone="secondary">{t('projectHome.notOpen')}</Text>
+                            style={styles.row} onPress={() => router.push({ pathname: '/model/[id]', params: { id: model.id } })}>
+                            <View style={styles.modelText}>
+                                <Text variant="bodyStrong" tone="primary" style={styles.name}>{model.name}</Text>
+                                <Text variant="footnote" tone="secondary" style={styles.muted}>{t('projectHome.notOpen')}</Text>
+                            </View>
+                            <Icon name="sparkleFill" size={16} />
+                            <Icon name="caretRight" size={20} />
                         </Card>)}
                     </View> : undefined}
                     keyExtractor={(m) => m.id}
                     ListEmptyComponent={<Text variant="body" tone="tertiary" style={styles.muted}>{t('create.noModels', { kind: kindWord })}</Text>}
                     renderItem={({ item }) => {
                         const kind = kindOf(item.modality);
+                        const free = freeLeftFor(freeLeft, item.id);
                         return (
-                        <Card accessibilityRole="button" style={[styles.row, largeText && styles.modelStack]} onPress={() => router.push({ pathname: '/create/[modelId]', params: { modelId: item.id } })}>
+                        <Card accessibilityRole="button" style={styles.row} onPress={() => router.push({ pathname: '/create/[modelId]', params: { modelId: item.id } })}>
                             <View style={styles.modelText}>
-                                <SectionLabel style={styles.modality}>{kind ? t(SHORT_GOAL[kind]) : item.modality}</SectionLabel>
                                 <Text variant="bodyStrong" tone="primary" style={styles.name}>{item.name}</Text>
+                                {goal === 'all' ? <Text variant="footnote" tone="secondary" style={styles.muted}>{kind ? t(SHORT_GOAL[kind]) : item.modality}</Text> : null}
                             </View>
-                            {freeLeftFor(freeLeft, item.id) > 0 ? (
-                                <Text variant="body" tone="accent" style={styles.free} accessibilityLabel={rawText(t('create.freeLeftLabel', { name: item.name, count: String(freeLeftFor(freeLeft, item.id)) }))}>
-                                    {plural('create.freeLeft', freeLeftFor(freeLeft, item.id))}
+                            {free > 0 ? (
+                                <Text variant="footnote" tone="accent" style={styles.free} accessibilityLabel={rawText(t('create.freeLeftLabel', { name: item.name, count: String(free) }))}>
+                                    {plural('create.freeLeft', free)}
                                 </Text>
-                            ) : (
-                                <Text variant="footnote" tone="warning" style={styles.price}>{plural('create.from', item.credits)}</Text>
-                            )}
+                            ) : null}
                             <Icon name="caretRight" size={20} />
                         </Card>
                     );}}
@@ -166,32 +153,21 @@ const sheets = themedStyles((p) => ({
     list: { padding: ds.space.lg, paddingTop: ds.space.xl, paddingBottom: LIST_END_PADDING, gap: ds.space.sm },
     body: { padding: ds.space.lg },
     screen: { flex: 1, backgroundColor: p.bg },
-    premiumTag: { flexDirection: 'row', alignItems: 'center', gap: ds.space.sm },
     header: { gap: ds.space.md, marginBottom: ds.space.xs },
     intro: { gap: ds.space.sm, marginBottom: ds.space.sm },
     heading: { color: p.textPrimary, },
     introText: { color: p.textSecondary, maxWidth: 520 },
     sectionTop: { flexDirection: 'row', flexWrap: 'wrap', gap: ds.space.sm, alignItems: 'center', justifyContent: 'space-between', marginTop: ds.space.sm },
     sectionLabel: { },
-    sectionMeta: { },
     entries: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: ds.space.sm },
     entry: { minHeight: 58, flexDirection: 'row', alignItems: 'center', gap: ds.space.sm, padding: ds.space.sm, borderRadius: ds.radius.md, backgroundColor: p.bgElevated1, borderColor: p.borderSubtle, borderWidth: 1 },
     stacked: { flexDirection: 'column' },
-    modelStack: { flexDirection: 'column', alignItems: 'flex-start' },
-    tier: { flex: 1 },
-    tiers: { flexDirection: 'row', gap: ds.space.sm },
-    live: { flexDirection: 'row', alignItems: 'center', gap: ds.space.sm },
-    liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: p.accent },
-    liveText: { },
-    explainer: { color: p.textTertiary, },
-    free: { color: p.accent, fontVariant: ['tabular-nums'], },
-    row: { minHeight: 76, alignItems: 'center', padding: ds.space.md, borderRadius: ds.radius.md, backgroundColor: p.bgElevated1, borderColor: p.borderSubtle, borderWidth: 1, flexDirection: 'row', justifyContent: 'space-between', gap: ds.space.md, marginTop: ds.space.xxs },
+    free: { color: p.accent, fontVariant: ['tabular-nums'] },
+    row: { minHeight: 60, alignItems: 'center', paddingVertical: ds.space.sm, paddingHorizontal: ds.space.md, borderRadius: ds.radius.md, backgroundColor: p.bgElevated1, borderColor: p.borderSubtle, borderWidth: 1, flexDirection: 'row', justifyContent: 'space-between', gap: ds.space.md, marginTop: ds.space.xxs },
     agentRow: { borderColor: p.accent },
-    modelText: { flex: 1, gap: ds.space.xs },
-    modality: { },
+    modelText: { flex: 1, gap: ds.space.xxs },
     name: { color: p.textPrimary, flexShrink: 1 },
-    price: { backgroundColor: p.bgElevated1, borderColor: p.borderSubtle, borderWidth: 1, borderRadius: ds.radius.pill, paddingHorizontal: ds.space.sm, paddingVertical: ds.space.xs, overflow: 'hidden', color: p.warning, fontVariant: ['tabular-nums'], },
-    muted: { color: p.textTertiary },
-    agentText: { flexShrink: 1, gap: ds.space.xxs },
+    muted: { color: p.textSecondary },
+    agentText: { flex: 1, gap: ds.space.xxs },
     error: { color: p.danger },
 }));
