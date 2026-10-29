@@ -30,6 +30,8 @@ test('production public variables retain Cloudflare text-binding headroom', () =
     // and fails deploy-production's secret preservation check, so it must never appear here.
     assert.ok(Object.keys(config.vars).length <= 63, 'production vars must stay at or below 63');
     assert.ok(!Object.hasOwn(config.vars, 'ACCOUNT_DELETION_ENABLED'), 'ACCOUNT_DELETION_ENABLED is a production secret, not a var');
+    // ADR-0251 amendment (2026-10-29): CREATOR_PROFILE_ENABLED is also a production secret binding.
+    assert.ok(!Object.hasOwn(config.vars, 'CREATOR_PROFILE_ENABLED'), 'CREATOR_PROFILE_ENABLED is a production secret, not a var');
 });
 
 test('daily check-in is on in production and accepts only explicit boolean strings elsewhere', () => {
