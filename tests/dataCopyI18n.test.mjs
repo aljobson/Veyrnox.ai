@@ -129,7 +129,7 @@ test('Genjutsu recipe SSR shows the exact source prompt but hands the compatible
   assert.ok(html.includes('EXACT COMMUNITY PROMPT'));
   assert.ok(html.includes('VEYRNOX GENERATION PROMPT'));
   assert.ok(html.includes(sourcePrompt.slice(0, 80)));
-  assert.match(html, /readonly=""/);
+  assert.match(html, /readonly=""/i);
 });
 
 test('app data areas preserve keys, placeholders and numeric facts in all languages', async () => {
