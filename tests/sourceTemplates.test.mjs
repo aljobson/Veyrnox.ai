@@ -7,6 +7,7 @@ import { SOURCE_TEMPLATES } from '../app/veyrnox/_lib/sourceTemplates.js';
 import { GENJUTSU_SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/genjutsuSourcePromptRecords.js';
 import { SYNTX_SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/syntxSourcePromptRecords.js';
 import { exactSourcePromptRecord } from '../app/veyrnox/_lib/sourcePromptRecords.js';
+import { sourcePromptAuditRecord } from '../app/veyrnox/_lib/sourcePromptAudit.js';
 import { GENJUTSU_PROMPT_SHA256 } from './fixtures/genjutsuPromptHashes.mjs';
 import { SYNTX_PROMPT_SHA256 } from './fixtures/syntxPromptHashes.mjs';
 import { SYNTX_EXPANSION_SOURCE_ASSET_SHA256, SYNTX_RECOVERED_PREVIEW_SSIM } from './fixtures/syntxSourceAssetHashes.mjs';
@@ -115,6 +116,28 @@ test('verbatim Genjutsu provenance preserves public attribution and feed-empty r
   assert.match(GENJUTSU_SOURCE_PROMPT_RECORDS['community-kitchen-snack-heist'].prompt, /performer with \. for hair/);
   assert.equal(GENJUTSU_SOURCE_PROMPT_RECORDS['community-survivor-memory-shift'].sourcePromptTruncated, true);
   assert.match(GENJUTSU_SOURCE_PROMPT_RECORDS['community-survivor-memory-shift'].prompt, /\nAt$/);
+});
+
+test('every public template discloses an exact prompt, a source gap, or adaptation-only provenance', () => {
+  const audit = PRESETS.map((preset) => [preset.id, sourcePromptAuditRecord(preset.id)]);
+  const groups = Object.groupBy(audit, ([, record]) => record.status);
+  assert.equal(groups.exact.length, 113);
+  assert.equal(groups['exact-truncated'].length, 1);
+  assert.equal(groups.unavailable.length, 44);
+  assert.equal(groups['adaptation-only'].length, 117);
+  assert.equal(audit.length, 275);
+  assert.ok(audit.every(([, record]) => record.runnable === false));
+  assert.equal(audit.filter(([, record]) => record.issues.includes('prompt-over-2000')).length, 67);
+  assert.equal(audit.filter(([, record]) => record.issues.includes('more-than-two-reference-images')).length, 12);
+  assert.equal(audit.filter(([, record]) => record.issues.includes('audio-preservation-not-supported')).length, 60);
+  assert.equal(sourcePromptAuditRecord('community-survivor-memory-shift').status, 'exact-truncated');
+  assert.equal(sourcePromptAuditRecord('keyboard-duo-swap').status, 'unavailable');
+  assert.equal(sourcePromptAuditRecord('product-hero-360').status, 'adaptation-only');
+  assert.equal(sourcePromptAuditRecord('curtain-reveal').duplicateOf, 'who-was-that-business');
+  const report = readFileSync(new URL('../docs/product/template-prompt-audit-2026-10-29.md', import.meta.url), 'utf8');
+  for (const source of ['Higgsfield', 'Syntx', 'CapCut', 'Buzzy.now', 'LipSync.video']) assert.match(report, new RegExp(source));
+  const webRecipe = readFileSync(new URL('../app/veyrnox/_components/TemplateRecipe.js', import.meta.url), 'utf8');
+  for (const key of ['sourcePromptUnavailable', 'sourcePromptNotRecorded', 'sourcePromptTruncated', 'sourcePromptDuplicate']) assert.match(webRecipe, new RegExp(key));
 });
 
 test('Syntx templates preserve every currently published source prompt exactly', () => {

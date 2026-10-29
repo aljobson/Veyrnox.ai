@@ -29,15 +29,26 @@ export function TemplateRecipe({ preset, generatedPreview = false }) {
   const [prompt, setPrompt] = useState(preset.prompt);
   const hasExactSourcePrompt = preset.sourcePromptOrigin === 'community-source-exact' && typeof preset.sourcePrompt === 'string';
   const hasAdaptedGenerationPrompt = preset.promptOrigin === 'veyrnox-adaptation';
+  const sourcePromptUnavailable = preset.sourcePromptStatus === 'unavailable';
+  const sourcePromptNotRecorded = preset.sourcePromptStatus === 'adaptation-only';
+  const sourcePromptTruncated = preset.sourcePromptStatus === 'exact-truncated';
+  const sourcePromptDuplicate = typeof preset.sourcePromptDuplicateOf === 'string' && preset.sourcePromptDuplicateOf.length > 0;
   const promptLabel = hasExactSourcePrompt || hasAdaptedGenerationPrompt ? t("public.TemplateRecipe.generationPrompt") : t("public.TemplateRecipe.prompt");
   return (
     <>
+      {(sourcePromptUnavailable || sourcePromptNotRecorded) && (
+        <div role="note" data-source-prompt-status={preset.sourcePromptStatus} className="mt-8 rounded-xl border border-amber-400/40 bg-amber-400/[0.08] px-4 py-3 text-[13px] text-vx-fg-body">
+          {t(sourcePromptUnavailable ? "public.TemplateRecipe.sourcePromptUnavailable" : "public.TemplateRecipe.sourcePromptNotRecorded")}
+        </div>
+      )}
       {hasExactSourcePrompt && <>
         <h2 className="mt-8 font-vx-mono text-[11px] tracking-[0.12em] text-vx-fg-muted">{t("public.TemplateRecipe.exactCommunityPrompt")}</h2>
         <textarea aria-label={t("public.TemplateRecipe.exactCommunityPrompt")} value={preset.sourcePrompt} readOnly rows={10} dir="auto"
           className="mt-2 w-full rounded-xl border border-vx-border bg-vx-panel px-4 py-3 text-[15px] leading-[1.55] text-vx-fg-body focus:outline-hidden focus:border-vx-accent" />
         <CopyPrompt text={preset.sourcePrompt} label={t("public.TemplateRecipe.copyExactCommunityPrompt")} />
         <p className="mt-3 text-[13px] text-vx-fg-muted">{t("public.TemplateRecipe.exactCommunityPromptHelp")}</p>
+        {sourcePromptTruncated && <p role="note" data-source-prompt-status="exact-truncated" className="mt-3 rounded-xl border border-amber-400/40 bg-amber-400/[0.08] px-4 py-3 text-[13px] text-vx-fg-body">{t("public.TemplateRecipe.sourcePromptTruncated")}</p>}
+        {sourcePromptDuplicate && <p role="note" data-source-prompt-duplicate-of={preset.sourcePromptDuplicateOf} className="mt-3 rounded-xl border border-vx-border px-4 py-3 text-[13px] text-vx-fg-body">{t("public.TemplateRecipe.sourcePromptDuplicate")}</p>}
       </>}
       <h2 className="mt-8 font-vx-mono text-[11px] tracking-[0.12em] text-vx-fg-muted">{promptLabel}</h2>
       <textarea aria-label={promptLabel} value={prompt} onChange={(event) => setPrompt(event.target.value)} maxLength={2000} rows={8}

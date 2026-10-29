@@ -13,6 +13,7 @@ import { ClipBadge } from '../../_components/ClipBadge';
 import { SHOWCASE_CLIPS } from '../../_lib/showcase';
 import { ALL_TEMPLATES, templateById, presetTitle, modelIdForName } from '../../_lib/tokens';
 import { exactSourcePromptRecord } from '../../_lib/sourcePromptRecords.js';
+import { sourcePromptAuditRecord } from '../../_lib/sourcePromptAudit.js';
 import { OPEN_GRAPH_BASE } from '../../../seo';
 
 // Templates are static data, so each page is built once; the price is read
@@ -43,7 +44,16 @@ export default async function TemplatePage({ params }) {
   const template = templateById(id);
   if (!template) notFound();
   const sourcePrompt = exactSourcePromptRecord(template.id)?.prompt ?? null;
-  const recipe = sourcePrompt ? { ...template, sourcePrompt, sourcePromptOrigin: 'community-source-exact' } : template;
+  const sourceAudit = sourcePromptAuditRecord(template.id);
+  const recipe = {
+    ...template,
+    sourcePrompt,
+    sourcePromptOrigin: sourcePrompt ? 'community-source-exact' : null,
+    sourcePromptStatus: sourceAudit.status,
+    sourcePromptRunnable: sourceAudit.runnable,
+    sourcePromptIssues: [...sourceAudit.issues],
+    sourcePromptDuplicateOf: sourceAudit.duplicateOf,
+  };
   const modelId = modelIdForName(template.model);
   const clip = SHOWCASE_CLIPS[template.clipKey];
   return (

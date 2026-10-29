@@ -18,6 +18,10 @@ Model-category and feature cards remain inspiration. Template pages use the
 supported Veyrnox adaptation as the editable generation prompt; Genjutsu and
 Syntx community templates with a published prompt also show that exact source
 text read-only (see below). Live credit prices come from the catalog.
+The complete prompt/status ledger, including Buzzy.now and LipSync.video as
+additional owner-named audit sources, is maintained in the
+[template prompt audit](template-prompt-audit-2026-10-29.md). No exact prompt is
+inferred from a title or preview.
 
 On 24 October 2026, the 1,036 additional effect ideas without preview videos
 were removed from public browsing, search and API output. They remain available
