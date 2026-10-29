@@ -183,6 +183,7 @@ const de = {
     'presets.cat.UGC': 'UGC',
     'presets.cat.ADS': 'Werbung',
     'presets.cat.KIDS BIRTHDAY': 'Kindergeburtstag',
+    'presets.detail.sourceAspect': 'Schneide das Ausgangsbild auf {aspect} zu; dieses Modell übernimmt den Bildausschnitt des Uploads.',
 } as const;
 
 export default de;

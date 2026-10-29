@@ -183,6 +183,7 @@ const zh = {
     'presets.cat.UGC': 'UGC',
     'presets.cat.ADS': '广告',
     'presets.cat.KIDS BIRTHDAY': '儿童生日',
+    'presets.detail.sourceAspect': '将起始图片裁剪为 {aspect}；此模型会保留上传图片的构图。',
 } as const;
 
 export default zh;

@@ -59,9 +59,9 @@ function hostOf(url: string): string {
 
 export default function CreateWithModel() {
     const styles = useThemedStyles(sheets);
-    const { modelId, prompt: presetPrompt, duration: presetDuration, aspect: presetAspect, startOddling, tpl, tid, tneeds, tratio, tposter, recipe, sourceHandoff } = useLocalSearchParams<{ modelId: string; prompt?: string; duration?: string; aspect?: string; startOddling?: string; tpl?: string; tid?: string; tneeds?: string; tratio?: string; tposter?: string; recipe?: string; sourceHandoff?: string }>();
+    const { modelId, prompt: presetPrompt, duration: presetDuration, aspect: presetAspect, startOddling, tpl, tid, tneeds, tsource, tratio, tposter, recipe, sourceHandoff } = useLocalSearchParams<{ modelId: string; prompt?: string; duration?: string; aspect?: string; startOddling?: string; tpl?: string; tid?: string; tneeds?: string; tsource?: string; tratio?: string; tposter?: string; recipe?: string; sourceHandoff?: string }>();
     // A template also brings its name, picture, shape and what it needs; each is checked before it is used.
-    const template = useMemo(() => readTemplate({ tpl, tid, tneeds, tratio, tposter }, ['veyrnox.ai', hostOf(API_BASE)]), [tpl, tid, tneeds, tratio, tposter]);
+    const template = useMemo(() => readTemplate({ tpl, tid, tneeds, tsource, tratio, tposter }, ['veyrnox.ai', hostOf(API_BASE)]), [tpl, tid, tneeds, tsource, tratio, tposter]);
     const handedSources = useMemo(() => readCreativeSourceHandoff(typeof sourceHandoff === 'string' ? sourceHandoff : undefined, typeof recipe === 'string' ? recipe : undefined, modelId), [modelId, recipe, sourceHandoff]);
     const { api } = useAuth();
     const router = useRouter();

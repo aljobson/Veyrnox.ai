@@ -10,6 +10,7 @@ export default {
     "presets.nEW": "  NEW",
     "presets.notavailablerightnow": "Not available right now",
     "presets.needs": "Needs: {value1}",
+    "presets.detail.sourceAspect": "Crop the starting image to {aspect}; this model keeps the uploaded image’s framing.",
     "presets.pet": "Pet",
     "presets.style": "Style",
     "presets.quirkLab": "Quirk Lab",

@@ -65,11 +65,16 @@ export default async function TemplatePage({ params }) {
             <p className="mt-4 text-vx-fg-body">
               {rich(t('presets.detail.runsOn'), { model: modelId ? <Link href={localizedHref(locale, `/models/${encodeURIComponent(modelId)}`)} className="font-bold underline underline-offset-4">{template.model}</Link> : <span className="font-bold">{template.model}</span> })}
             </p>
-            {template.needs && (
+            {template.needs && (template.sourceAspect ? (
+              <div className="mt-4 rounded-xl border border-vx-border px-4 py-3 text-[14px] text-vx-fg-body">
+                <p>{t('presets.detail.inputs', { inputs: tOr(t, `presets.needs.${template.needsKey || template.id}`, template.needs) })}</p>
+                <p className="mt-2 font-bold">{t('presets.detail.sourceAspect', { aspect: template.sourceAspect })}</p>
+              </div>
+            ) : (
               <p className="mt-4 rounded-xl border border-vx-border px-4 py-3 text-[14px] text-vx-fg-body">
                 {t('presets.detail.inputs', { inputs: tOr(t, `presets.needs.${template.needsKey || template.id}`, template.needs) })}
               </p>
-            )}
+            ))}
           </div>
           <div className="lg:col-start-1 lg:row-start-1 lg:row-span-2">
             {clip ? (

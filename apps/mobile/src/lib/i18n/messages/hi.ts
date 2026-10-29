@@ -183,6 +183,7 @@ const hi = {
     'presets.cat.UGC': 'UGC',
     'presets.cat.ADS': 'विज्ञापन',
     'presets.cat.KIDS BIRTHDAY': 'बच्चों का जन्मदिन',
+    'presets.detail.sourceAspect': 'शुरुआती छवि को {aspect} में क्रॉप करें; यह मॉडल अपलोड की गई छवि की फ़्रेमिंग बनाए रखता है।',
 } as const;
 
 export default hi;

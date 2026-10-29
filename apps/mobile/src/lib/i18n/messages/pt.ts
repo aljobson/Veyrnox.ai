@@ -183,6 +183,7 @@ const pt = {
     'presets.cat.UGC': 'UGC',
     'presets.cat.ADS': 'Anúncios',
     'presets.cat.KIDS BIRTHDAY': 'Aniversário infantil',
+    'presets.detail.sourceAspect': 'Recorte a imagem inicial para {aspect}; este modelo mantém o enquadramento da imagem enviada.',
 } as const;
 
 export default pt;

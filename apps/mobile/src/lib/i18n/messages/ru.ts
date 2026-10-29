@@ -183,6 +183,7 @@ const ru = {
     'presets.cat.UGC': 'UGC',
     'presets.cat.ADS': 'Реклама',
     'presets.cat.KIDS BIRTHDAY': 'Детский день рождения',
+    'presets.detail.sourceAspect': 'Обрежьте исходное изображение до {aspect}; эта модель сохраняет кадрирование загруженного изображения.',
 } as const;
 
 export default ru;

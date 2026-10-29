@@ -21,8 +21,8 @@ const REMOVED_ORIGINAL_IDS = [
 ];
 
 test('every imported clip has its own matching recipe and a supported video model', () => {
-  assert.equal(SOURCE_TEMPLATES.length, 155);
-  assert.equal(new Set(SOURCE_TEMPLATES.map((p) => p.clipKey)).size, 155);
+  assert.equal(SOURCE_TEMPLATES.length, 255);
+  assert.equal(new Set(SOURCE_TEMPLATES.map((p) => p.clipKey)).size, 255);
   for (const preset of SOURCE_TEMPLATES) {
     const clip = SHOWCASE_CLIPS[preset.clipKey];
     assert.ok(clip, preset.id);
@@ -40,11 +40,61 @@ test('every imported clip has its own matching recipe and a supported video mode
   }
 });
 
+test('Genjutsu-inspired I2V recipes describe source framing without claiming provider aspect support', () => {
+  const community = SOURCE_TEMPLATES.filter((preset) => SHOWCASE_CLIPS[preset.clipKey].video.startsWith('/showcase/creator-'));
+  assert.equal(community.length, 100);
+  for (const preset of community) {
+    assert.equal(Object.hasOwn(preset, 'aspect'), false, preset.id);
+    assert.match(preset.sourceAspect, /^(?:1:1|9:16|16:9)$/);
+    assert.match(preset.needsKey, /^community\.(?:cartoons|cinematic|fashion|movies|products|ugc|vfx|group)$/);
+  }
+  const detail = readFileSync(new URL('../app/veyrnox/presets/[id]/page.js', import.meta.url), 'utf8');
+  const handoff = readFileSync(new URL('../app/veyrnox/_components/TemplateHandoffCard.js', import.meta.url), 'utf8');
+  assert.match(detail, /presets\.detail\.sourceAspect/);
+  assert.match(handoff, /presets\.detail\.sourceAspect/);
+});
+
+test('multi-subject community recipes require every identity in one starting image', () => {
+  for (const id of [
+    'costume-dance-duo',
+    'outdoor-duo-dance',
+    'studio-rap-duo',
+    'community-urban-trio-performance',
+    'community-suit-exchange-dance',
+    'community-cast-carpool',
+    'community-corporate-duo-jam',
+    'community-monster-street-dance',
+    'community-balcony-club-encounter',
+  ]) {
+    const preset = SOURCE_TEMPLATES.find((entry) => entry.id === id);
+    assert.equal(preset?.needsKey, 'community.group', id);
+    assert.match(preset?.needs || '', /every subject/i, id);
+  }
+});
+
+test('generated ensembles keep single-subject starting-image guidance', () => {
+  for (const id of ['community-ensemble-performance-recast', 'community-street-dance-ensemble', 'community-suit-choir-groove']) {
+    const preset = SOURCE_TEMPLATES.find((entry) => entry.id === id);
+    assert.notEqual(preset?.needsKey, 'community.group', id);
+    assert.doesNotMatch(preset?.needs || '', /every subject/i, id);
+  }
+});
+
+test('source-aspect orientation agrees with every community preview', () => {
+  for (const preset of SOURCE_TEMPLATES.filter((entry) => SHOWCASE_CLIPS[entry.clipKey].video.startsWith('/showcase/creator-'))) {
+    const [w, h] = SHOWCASE_CLIPS[preset.clipKey].aspectRatio.split('/').map(Number);
+    const ratio = w / h;
+    if (preset.sourceAspect === '1:1') assert.ok(Math.abs(Math.log(ratio)) < 0.16, `${preset.id} should be approximately square`);
+    else if (preset.sourceAspect === '16:9') assert.ok(ratio > 1, `${preset.id} should be landscape`);
+    else assert.ok(ratio < 1, `${preset.id} should be portrait`);
+  }
+});
+
 test('gallery and homepage templates have reachable recipe URLs', () => {
-  assert.equal(PRESETS.length, 155);
+  assert.equal(PRESETS.length, 255);
   assert.equal(WALL_PRESETS.length, 24);
   const visible = [...PRESETS, ...WALL_PRESETS];
-  assert.equal(new Set(visible.map((p) => p.clipKey).filter(Boolean)).size, 155);
+  assert.equal(new Set(visible.map((p) => p.clipKey).filter(Boolean)).size, 255);
   for (const preset of visible) {
     assert.equal(templateById(preset.id), preset);
     assert.equal(isUnknownStaticPage(`/presets/${preset.id}`), false);
@@ -89,7 +139,7 @@ test('public template data and media paths are source-platform neutral', () => {
 
 test('every public video and poster is a unique local asset', () => {
   const clips = Object.values(SHOWCASE_CLIPS);
-  assert.equal(clips.length, 155);
+  assert.equal(clips.length, 255);
   for (const field of ['video', 'poster']) {
     const paths = clips.map((clip) => clip[field]);
     assert.equal(new Set(paths).size, paths.length, `${field} paths must be unique`);
@@ -97,6 +147,19 @@ test('every public video and poster is a unique local asset', () => {
       readFileSync(fileURLToPath(new URL(`../public${path}`, import.meta.url))),
     ).digest('hex'));
     assert.equal(new Set(hashes).size, hashes.length, `${field} contents must be unique`);
+  }
+});
+
+test('community inspiration previews contain no audio track', () => {
+  const videos = Object.values(SHOWCASE_CLIPS).map((clip) => clip.video).filter((path) => path.startsWith('/showcase/creator-'));
+  assert.equal(videos.length, 100);
+  for (const path of videos) {
+    const data = readFileSync(fileURLToPath(new URL(`../public${path}`, import.meta.url)));
+    let offset = 0;
+    while ((offset = data.indexOf('hdlr', offset, 'ascii')) !== -1) {
+      assert.notEqual(data.toString('ascii', offset + 12, offset + 16), 'soun', `${path} must not retain community audio`);
+      offset += 4;
+    }
   }
 });
 

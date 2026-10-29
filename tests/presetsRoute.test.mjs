@@ -52,9 +52,12 @@ test('preview and poster addresses are absolute https on our own host', () => {
     assert.ok(toPublicPresets(catalog).some((p) => p.posterUrl));
 });
 
-test('the payload carries no per-user or internal field', () => {
-    const allowed = new Set(['id', 'title', 'category', 'theme', 'modelId', 'modelName', 'modality', 'prompt', 'needs', 'durationSeconds', 'credits', 'gated', 'available', 'isNew', 'previewUrl', 'posterUrl', 'previewAspect']);
+test('the payload carries source framing but no per-user or internal field', () => {
+    const allowed = new Set(['id', 'title', 'category', 'theme', 'modelId', 'modelName', 'modality', 'prompt', 'needs', 'sourceAspect', 'durationSeconds', 'credits', 'gated', 'available', 'isNew', 'previewUrl', 'posterUrl', 'previewAspect']);
     for (const p of toPublicPresets(catalog)) for (const k of Object.keys(p)) assert.ok(allowed.has(k), `unexpected field ${k}`);
+    const framed = toPublicPresets(catalog).filter((p) => p.sourceAspect);
+    assert.equal(framed.length, 100);
+    assert.ok(framed.every((p) => /^(?:1:1|9:16|16:9)$/.test(p.sourceAspect)));
 });
 
 function stubCatalog(rows) {

@@ -17,6 +17,8 @@ export interface Preset {
     readonly modality: string;
     readonly prompt: string;
     readonly needs: string | null;
+    // Desired crop of the starting image for source-framed I2V models. This is guidance, not a provider aspect option.
+    readonly sourceAspect?: string | null;
     readonly durationSeconds: number | null;
     readonly credits: number;
     // False when the template's model has no active catalog row (an older server omits the field; everything it lists is active). The card stays visible, but it must not open Create.
@@ -51,6 +53,7 @@ function parseOne(raw: unknown): Preset | null {
         modality: str(r.modality) ?? '',
         prompt,
         needs: str(r.needs),
+        sourceAspect: str(r.sourceAspect),
         durationSeconds: typeof r.durationSeconds === 'number' && r.durationSeconds > 0 ? r.durationSeconds : null,
         credits: r.credits,
         available: r.available !== false,

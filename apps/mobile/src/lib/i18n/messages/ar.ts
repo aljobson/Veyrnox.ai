@@ -183,6 +183,7 @@ const ar = {
     'presets.cat.UGC': 'UGC',
     'presets.cat.ADS': 'إعلانات',
     'presets.cat.KIDS BIRTHDAY': 'عيد ميلاد الأطفال',
+    'presets.detail.sourceAspect': 'اقتصص صورة البداية إلى {aspect}؛ يحتفظ هذا النموذج بتأطير الصورة المرفوعة.',
 } as const;
 
 export default ar;
