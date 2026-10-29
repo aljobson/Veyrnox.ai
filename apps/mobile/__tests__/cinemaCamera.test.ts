@@ -29,7 +29,7 @@ describe('the Cinema camera matches the web', () => {
         expect(web).toContain("lens: 'Premium Modern Prime'");
         expect(web).toContain('focal: 35');
         expect(web).toContain("aperture: 'f/1.4'");
-        expect(web).toContain(`PROMPT_MAX = ${PROMPT_MAX}`);
+        expect(web).toContain('export const PROMPT_MAX = GENERATION_PROMPT_MAX;');
     });
 });
 
@@ -39,9 +39,10 @@ describe('camera prompt', () => {
     });
     test('an empty prompt stays empty', () => expect(buildCinemaPrompt('  ', DEFAULT_CINEMA)).toBe(''));
     test('the words are cut, never the camera, so it fits the limit', () => {
-        const out = buildCinemaPrompt('x'.repeat(5000), DEFAULT_CINEMA);
+        const out = buildCinemaPrompt('x'.repeat(40000), DEFAULT_CINEMA);
         expect(out.length).toBeLessThanOrEqual(PROMPT_MAX);
         expect(out.endsWith(cinemaSuffix(DEFAULT_CINEMA))).toBe(true);
+        expect(buildCinemaPrompt('x'.repeat(40000), DEFAULT_CINEMA, 1000)).toHaveLength(1000);
     });
     test('unknown values are dropped', () => {
         expect(cinemaSuffix({ camera: 'x', lens: 'y', focal: 1, aperture: 'z' })).toBe('cinematic lighting, natural color science, high dynamic range');

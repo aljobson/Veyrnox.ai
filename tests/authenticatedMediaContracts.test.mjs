@@ -13,6 +13,7 @@ import * as contracts from '../app/veyrnox/_lib/authenticatedMedia.js';
 import * as mobileLayout from '../lib/veyMobileLayout.js';
 import * as pointer from '../lib/veyPointer.js';
 import * as narration from '../lib/montageNarration.js';
+import * as promptLimits from '../lib/promptLimits.js';
 
 const require = createRequire(import.meta.url);
 const read = path => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
@@ -64,6 +65,7 @@ test('aspect compatibility reuses declared model facts without inventing constra
 test('Film handoff explains unsupported aspects and retains prompt, duration, catalog and model guards', () => {
   const { FilmPromptOutput } = load('app/veyrnox/_components/film/FilmPromptOutput.js', {
     'next/navigation': { useRouter: () => ({ push() {} }) }, '../../_lib/landingDraft': { writeStudioDraft() { throw new Error('No writes allowed'); } },
+    '../../../../lib/promptLimits.js': promptLimits,
   });
   const props = { title: 'Shot', prompt: 'A lighthouse', access: 'Studio', modelId: model.id, models: [model], live: true, aspect: '9:16', duration: 10 };
   const render = patch => renderToStaticMarkup(React.createElement(FilmPromptOutput, { ...props, ...patch }));

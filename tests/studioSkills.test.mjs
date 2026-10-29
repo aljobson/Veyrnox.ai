@@ -230,7 +230,7 @@ test('drafts: an aspect is kept only when Create offers it; a long prompt is cut
   assert.equal(parseStudioDrafts(fence({ model: 'flux-2-pro', prompt: 'x', aspect: '9:16' }), CATALOG)[0].aspect, null, 'not an aspect this model takes');
   assert.equal(parseStudioDrafts(fence({ model: 'kling-3.0-i2v', prompt: 'x', aspect: '9:16' }), CATALOG)[0].aspect, null, 'a live model with no aspect input cannot promise one');
   assert.equal(parseStudioDrafts(fence({ model: 'flux-2-pro', prompt: 'x', aspect: 16 }), CATALOG)[0].aspect, null);
-  const long = parseStudioDrafts(fence({ model: 'flux-2-pro', prompt: 'y'.repeat(5000) }), CATALOG)[0];
+  const long = parseStudioDrafts(fence({ model: 'flux-2-pro', prompt: 'y'.repeat(40000) }), CATALOG)[0];
   assert.equal(long.prompt.length, MAX_DRAFT_PROMPT);
   const extra = parseStudioDrafts(fence({ model: 'flux-2-pro', prompt: 'x', url: 'https://evil.example', credits: 0, js: 'alert(1)' }), CATALOG)[0];
   assert.deepEqual(Object.keys(extra).sort(), ['aspect', 'credits', 'kind', 'model', 'name', 'needs', 'prompt']);

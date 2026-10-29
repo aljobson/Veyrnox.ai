@@ -28,7 +28,7 @@ import { SourcePicker } from '../../../components/SourcePicker';
 import { TemplateBanner } from '../../../components/TemplateBanner';
 import { DEFAULT_CINEMA, buildCinemaPrompt, sanitizeCinema, type Cinema } from '../../../lib/cinemaCamera';
 import { clearDraft, loadDraft, saveDraft } from '../../../lib/createDraftStore';
-import { SAVED_DRAFT_VERSION, pickerModels, type CreateDraft, audioLengthInvalid, batchCost, freeLeftFor, hasAnyOption, imageCount, optionsFor, resolveAudio, resolveResolution, seedIsInvalid, settingsInputs, takesImageCount, voiceIsMissing } from '../../../lib/createOptions';
+import { SAVED_DRAFT_VERSION, pickerModels, type CreateDraft, audioLengthInvalid, batchCost, freeLeftFor, hasAnyOption, imageCount, limitPrompt, optionsFor, resolveAudio, resolveResolution, seedIsInvalid, settingsInputs, takesImageCount, voiceIsMissing } from '../../../lib/createOptions';
 import { loadVibe } from '../../../lib/creatorProfileStore';
 import { defaultAspect } from '../../../lib/creatorTaste';
 import { nearestAspect, readTemplate } from '../../../lib/templateHandoff';
@@ -68,7 +68,7 @@ export default function CreateWithModel() {
     const router = useRouter();
     const [model, setModel] = useState<CatalogModel | null>(null);
     // A template (ADR-0120) opens this form with its prompt and length filled in; both stay editable.
-    const [prompt, setPrompt] = useState(typeof presetPrompt === 'string' ? presetPrompt.slice(0, 4000) : '');
+    const [prompt, setPrompt] = useState(typeof presetPrompt === 'string' ? limitPrompt(presetPrompt).prompt : '');
     const [duration, setDuration] = useState<number | null>(null);
     const [busy, setBusy] = useState(false);
     // Storage keys of the files already uploaded, by slot, and the slots still uploading.
@@ -131,6 +131,7 @@ export default function CreateWithModel() {
                 }
                 if (!found) setError(t('form.modelGone'));
                 if (!found) return;
+                const applyPlatformPromptLimit = (value: string) => setPrompt(limitPrompt(value).prompt);
                 const o = optionsFor(found);
                 // Where the person said the result will land (the vibe check) picks the opening ratio; no answer keeps 16:9.
                 const vibe = await loadVibe();
@@ -141,12 +142,13 @@ export default function CreateWithModel() {
                 const base: OptionValues = { aspect, count: 1, seed: '', negative: '', voice: '', audioSeconds: '' };
                 // A template brings its own words; only a form opened bare gets the unsent draft back.
                 if (typeof presetPrompt === 'string' || handedSources?.picks) {
+                    if (typeof presetPrompt === 'string') applyPlatformPromptLimit(presetPrompt);
                     if (handedSources?.picks) {
                         const picks = sanitizePicks(handedSources.picks);
                         if (kindOf(found.modality) === 'image' && textInput(found)?.key === 'prompt') {
                             setCharacter(picks);
                             setCharacterOn(true);
-                        } else setPrompt(buildCharacterPrompt(typeof presetPrompt === 'string' ? presetPrompt : '', picks));
+                        } else applyPlatformPromptLimit(buildCharacterPrompt(typeof presetPrompt === 'string' ? presetPrompt : '', picks, textInput(found)?.max));
                     }
                     setOpts(base);
                     draftReady.current = true;
@@ -154,7 +156,7 @@ export default function CreateWithModel() {
                 }
                 loadDraft(found.id).then((d) => {
                     if (d) {
-                        setPrompt(d.prompt);
+                        applyPlatformPromptLimit(d.prompt);
                         if (d.duration !== null && found.durations.includes(d.duration)) setDuration(d.duration);
                         setOpts({ aspect: handedAspect ?? (d.aspect && o.aspects.includes(d.aspect) ? d.aspect : base.aspect), count: imageCount(found, d.count), seed: d.seed, negative: d.negative, voice: d.voice ?? '', audioSeconds: d.audioSeconds ?? '' });
                         setCameraOn(d.cinemaOn === true);
@@ -232,16 +234,18 @@ export default function CreateWithModel() {
     const audio = resolveAudio(model, options, opts.audio);
     const freeLeft = freeLoading ? 0 : freeLeftFor(freeMap, model.id);
     // The camera words go into the prompt for image and video models; the price and the model do not change.
-    const takesCharacter = kindOf(model.modality) === 'image' && textInput(model)?.key === 'prompt';
-    const takesCamera = (kindOf(model.modality) === 'image' || isVideo) && textInput(model)?.key === 'prompt';
+    const text_ = textInput(model);
+    const takesCharacter = kindOf(model.modality) === 'image' && text_?.key === 'prompt';
+    const takesCamera = (kindOf(model.modality) === 'image' || isVideo) && text_?.key === 'prompt';
     // Character first, then the camera, as on the web. Both only rewrite the prompt.
-    const withCharacter = takesCharacter && characterOn ? buildCharacterPrompt(prompt, character) : prompt.trim();
-    const text = takesCamera && cameraOn ? buildCinemaPrompt(withCharacter, cinema) : withCharacter;
+    const withCharacter = takesCharacter && characterOn ? buildCharacterPrompt(prompt, character, text_?.max) : prompt.trim();
+    const text = takesCamera && cameraOn ? buildCinemaPrompt(withCharacter, cinema, text_?.max) : withCharacter;
+    const submittedPromptLength = prompt.trim().length;
+    const promptTooLong = !!text_ && submittedPromptLength > text_.max;
     const slots = slotsFor(model);
     const waiting = Object.values(sending).some(Boolean);
     const hasReference = references.length > 0 || !!startFile;
-    const ready = !waiting && (!hasReference || sourceRights) && slots.every(slot => (!slot.required || references.some(ref => ref.slot === slot.slot)) && references.filter(ref => ref.slot === slot.slot).length <= (slot.maxFiles ?? 1)) && (!promptRequired(model) || !!text) && !seedIsInvalid(opts.seed) && !voiceIsMissing(options, opts.voice) && !audioLengthInvalid(options, opts.audioSeconds);
-    const text_ = textInput(model);
+    const ready = !promptTooLong && !waiting && (!hasReference || sourceRights) && slots.every(slot => (!slot.required || references.some(ref => ref.slot === slot.slot)) && references.filter(ref => ref.slot === slot.slot).length <= (slot.maxFiles ?? 1)) && (!promptRequired(model) || !!text) && !seedIsInvalid(opts.seed) && !voiceIsMissing(options, opts.voice) && !audioLengthInvalid(options, opts.audioSeconds);
     const request: SubmitRequest = { analyticsKind: kindOf(model.modality), modelId: model.id, prompt: text, durationSeconds: isVideo ? duration : null, confirmedCredits: unit, references, sourceRights: hasReference ? sourceRights : undefined, textKey: text_?.key, extraInputs: settingsInputs(options, { seed: opts.seed, negative: opts.negative, aspect: opts.aspect, voice: opts.voice, audioSeconds: opts.audioSeconds, resolution, audio }), preset: template?.id ?? undefined };
     const signature = JSON.stringify({ ...request, count: n });
     const matchingRetry = retry.current?.signature === signature ? retry.current : null;
@@ -348,6 +352,7 @@ export default function CreateWithModel() {
                             multiline
                             maxLength={text_.max}
                         />
+                        {promptTooLong ? <Text variant="caption" tone="warning" accessibilityLiveRegion="polite">{t('public.TemplateRecipe.promptTooLong', { count: String(submittedPromptLength), max: String(text_.max) })}</Text> : null}
                         <View style={styles.skillsRow}>
                             <Text variant="caption" tone="tertiary" style={styles.skillsIntro}>{t('create.workspace.skills')}</Text>
                             <Button variant="tertiary" accessibilityRole="link" onPress={() => router.push({ pathname: '/chat/skills', params: { skill: 'prompt-writer' } })} label={t('create.workspace.promptWriter')} />

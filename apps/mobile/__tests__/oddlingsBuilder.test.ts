@@ -72,7 +72,8 @@ describe('the builder', () => {
             expect(p.startsWith('Portrait of an original adult character, not a real person')).toBe(true);
             expect(p.length).toBeLessThanOrEqual(PROMPT_MAX);
         }
-        expect(buildCharacterPrompt('y'.repeat(5000), {})).toHaveLength(PROMPT_MAX);
+        expect(buildCharacterPrompt('y'.repeat(40000), {})).toHaveLength(PROMPT_MAX);
+        expect(buildCharacterPrompt('y'.repeat(40000), {}, 1000)).toHaveLength(1000);
     });
 
     test('the character is never cut to fit the creator text', () => {

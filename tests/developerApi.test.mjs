@@ -56,6 +56,17 @@ test('developer generation writes require an explicit non-negative credit confir
     }
 });
 
+test('developer generations parse a worst-case escaped 30,000-character prompt before credit validation', async () => {
+    const body = JSON.stringify({
+        model_id: 'flux-2-pro', idempotency_key: '12345678',
+        inputs: { prompt: String.fromCharCode(1).repeat(30000) },
+    });
+    assert.ok(new TextEncoder().encode(body).byteLength > 64 * 1024);
+    const response = await developerApi(request('/generations', { method: 'POST', body }), ['generations']);
+    assert.equal(response.status, 400);
+    assert.deepEqual(await response.json(), { error: 'confirmed_credits_required' });
+});
+
 test('developer API answers unauthenticated CORS preflight without cookies', async () => {
     const response = await developerApi(new Request('https://veyrnox.test/api/v1/developer/generations', { method: 'OPTIONS' }), ['generations']);
     assert.equal(response.status, 204);

@@ -3,6 +3,7 @@
 // picks and compares the prompts, so the two cannot drift. Pure: no storage, no network, no price.
 import builder from './oddlings/builder.json';
 import cast from './oddlings/cast.json';
+import { GENERATION_PROMPT_MAX } from './promptLimits';
 
 export type Picks = Record<string, string>;
 export type Random = () => number;
@@ -23,7 +24,7 @@ const SWATCHES = builder.swatches as Record<string, Record<string, { swatch: str
 
 // The colour a hair, skin or eye option stands for, so a picker can show it.
 export const swatchOf = (groupId: string, value: string): string | null => SWATCHES[groupId]?.[value]?.swatch ?? null;
-export const PROMPT_MAX = 2000;
+export const PROMPT_MAX = GENERATION_PROMPT_MAX;
 const TEXT_LIMITS: Record<string, number> = { oddling_name: 40, oddling_obsession: 140, oddling_rule: 160 };
 
 export const groupById = (id: string): Group | null => GROUPS.find((g) => g.id === id) ?? null;
@@ -174,11 +175,12 @@ export function oddlingIdentity(picks: Picks): string[] {
 }
 
 // The base portrait (always an original adult, not a real person), the traits, the premise, then the user's own text,
-// which is what is cut to fit the 2000-character limit, never the character.
-export function buildCharacterPrompt(userText: string, picks: Picks): string {
+// which is what is cut to fit the generation limit, never the character.
+export function buildCharacterPrompt(userText: string, picks: Picks, promptMax = PROMPT_MAX): string {
+    const max = Number.isInteger(promptMax) && promptMax > 0 ? Math.min(promptMax, PROMPT_MAX) : PROMPT_MAX;
     const head = [builder.base, ...characterTraits(picks), ...oddlingIdentity(picks)].join(', ');
     const extra = String(userText || '').trim();
-    return (extra ? `${head}, ${extra}` : head).slice(0, PROMPT_MAX);
+    return (extra ? `${head}, ${extra}` : head).slice(0, max);
 }
 
 // Only values the builder offers survive; the creator's own words are trimmed to one line.

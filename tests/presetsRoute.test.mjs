@@ -74,7 +74,7 @@ test('the payload carries source framing and exact public source prompts but no 
     assert.equal(statuses.unavailable, undefined);
     assert.ok(exact.every((p) => p.sourcePromptRunnable === false));
     assert.ok(exact.every((p) => p.sourcePromptIssues.includes('source-input-contract-not-wired')));
-    assert.equal(exact.filter((p) => p.sourcePromptIssues.includes('prompt-over-2000')).length, 125);
+    assert.equal(exact.filter((p) => p.sourcePromptIssues.includes('prompt-over-limit')).length, 0);
     assert.equal(exact.filter((p) => p.sourcePromptIssues.includes('more-than-two-reference-images')).length, 28);
     assert.equal(exact.filter((p) => p.sourcePromptIssues.includes('audio-preservation-not-supported')).length, 100);
     assert.equal(exact.filter((p) => p.sourcePromptDuplicateOf).length, 2);

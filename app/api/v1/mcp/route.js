@@ -1,5 +1,6 @@
 import { createMcpHandler } from '@modelcontextprotocol/server';
 import { createVeyrnoxMcpServer } from '../../../../lib/veyrnoxMcp.js';
+import { GENERATION_BODY_LIMIT } from '../../../../lib/requestBodyLimit.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,7 +11,7 @@ const handler = createMcpHandler(
     ({ requestInfo }) => createVeyrnoxMcpServer(requestInfo),
     {
         legacy: 'stateless',
-        maxRequestBodySize: 64 * 1024,
+        maxRequestBodySize: GENERATION_BODY_LIMIT,
         onerror(error) {
             console.error('[mcp] protocol error:', error?.message || error);
         },

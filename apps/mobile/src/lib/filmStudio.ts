@@ -5,10 +5,11 @@ import { optionsFor } from './createOptions';
 // The checks below are copies of app/veyrnox/_lib/filmStudio.js and filmStudioStorage.js; __tests__/filmStudio.test.ts
 // runs both on the same studio so a change on the web that this file misses fails a test.
 import { estimateCredits, kindOf, textInput, type CatalogModel } from './media';
+import { GENERATION_PROMPT_MAX } from './promptLimits';
 
 export const MAX_FILM_BYTES = 1_000_000;
 export const FILM_STUDIO_WEB_PATH = '/app/film-studio';
-const FIELD_MAX = 24_000;
+const FIELD_MAX = GENERATION_PROMPT_MAX;
 
 export const FILM_STAGES: readonly (readonly [string, string])[] = [
     ['setup', t('filmStudio.setupyourtools')],

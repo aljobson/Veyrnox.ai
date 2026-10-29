@@ -13,9 +13,9 @@ describe('Character in Create', () => {
         expect(out.endsWith('in a garden')).toBe(true);
     });
     test('character first, then the camera: the result still fits and ends with the camera', () => {
-        const base = buildCharacterPrompt('x'.repeat(5000), changePick({}, 'character_type', 'Human'));
+        const base = buildCharacterPrompt('x'.repeat(35000), changePick({}, 'character_type', 'Human'));
         const out = buildCinemaPrompt(base, DEFAULT_CINEMA);
-        expect(out.length).toBeLessThanOrEqual(2000);
+        expect(out.length).toBeLessThanOrEqual(30000);
         expect(out.endsWith(cinemaSuffix(DEFAULT_CINEMA))).toBe(true);
     });
     test('the draft keeps the choice and drops anything that is not a known option', () => {

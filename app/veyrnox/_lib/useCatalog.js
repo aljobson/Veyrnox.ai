@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { MODELS, kindOf } from './tokens.js';
 import { fallbackCapabilitiesFor } from '../../../lib/fallbackModelCapabilities.js';
+import { GENERATION_PROMPT_MAX } from '../../../lib/promptLimits.js';
 
 // Normalised shape shared by every consumer:
 // { id, name, kind ('video'|'image'|'audio'), credits, gated, durations, media? }
@@ -28,7 +29,7 @@ export function fromFallback() {
     takesNegative: !!inputs.negative_prompt,
     takesVoice: !!inputs.voice_description,
     takesPrompt: !!inputs.prompt,
-    promptMax: inputs.prompt?.max || 2000,
+    promptMax: inputs.prompt?.max || GENERATION_PROMPT_MAX,
     isSpeech: capabilities?.kind === 'speech',
   });
   });
@@ -62,7 +63,7 @@ function fromApi(models) {
     // Speech in a voice the user describes in words; the description is required.
     takesVoice: !!m.capabilities?.inputs?.voice_description,
     takesPrompt: !!m.capabilities?.inputs?.prompt,
-    promptMax: m.capabilities?.inputs?.prompt?.max || 2000,
+    promptMax: m.capabilities?.inputs?.prompt?.max || GENERATION_PROMPT_MAX,
     // Speech reads the prompt aloud, so the studio never offers it the starter prompt.
     isSpeech: m.capabilities?.kind === 'speech',
   }));

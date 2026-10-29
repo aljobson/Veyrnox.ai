@@ -9,9 +9,10 @@ import { fetchPresets, presetHref, themeTitle, type Preset } from '../../../lib/
 import { previewRatio, templatePrice } from '../../../lib/templateFilters';
 import { copyText } from '../../../lib/clipboard';
 import { t } from '../../../lib/i18n';
+import { GENERATION_PROMPT_MAX } from '../../../lib/promptLimits';
 
 // The longest prompt the generations route accepts.
-const TEMPLATE_PROMPT_MAX = 2000;
+const TEMPLATE_PROMPT_MAX = GENERATION_PROMPT_MAX;
 
 export default function TemplatePage() {
     const styles = useThemedStyles(sheets);

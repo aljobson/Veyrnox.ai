@@ -5,11 +5,12 @@
 
 import { FILM_ASSISTANTS } from './filmStudioAssistants.js';
 import { modelAspectRatios } from './tokens.js';
+import { GENERATION_PROMPT_MAX } from '../../../lib/promptLimits.js';
 
 export const MAX_INSTRUCTIONS = 4000; // the chat's own Instructions limit (ADR-0067)
 export const MAX_INSTRUCTION_TOKENS = 1000; // same conservative server limit: ASCII / 4, every other code point / 1
 export const MAX_DRAFTS = 6;          // cards for one reply (a storyboard is the most that needs several)
-export const MAX_DRAFT_PROMPT = 2000;
+export const MAX_DRAFT_PROMPT = GENERATION_PROMPT_MAX;
 export const MAX_SKILL_IDEA = 500;     // short enough for a shareable GET launch URL
 export const MAX_SELECTED_SKILLS = 4;  // keeps every chosen specialist complete inside the 4,000-character system prompt
 

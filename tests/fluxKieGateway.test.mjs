@@ -102,6 +102,32 @@ test('Flux bills two credits, pins 1K, stores output and ignores duplicate callb
     } finally { net.restore(); }
 });
 
+test('Flux accepts a 30,000-character prompt and rejects the next character before debit', async () => {
+    const accepted = network();
+    try {
+        const prompt = 'x'.repeat(30000);
+        assert.equal((await post({ inputs: { prompt, duration_seconds: 5 } })).status, 200);
+        assert.equal(accepted.calls.find(c => c.url.endsWith('/createTask')).body.input.prompt.length, 30000);
+    } finally { accepted.restore(); }
+
+    const refused = network();
+    try {
+        const response = await post({ inputs: { prompt: 'x'.repeat(30001), duration_seconds: 5 } });
+        assert.equal(response.status, 400);
+        assert.deepEqual(await response.json(), { error: 'inputs_invalid:prompt' });
+        assert.equal(rpcCalls(refused, 'ledger_debit').length, 0);
+    } finally { refused.restore(); }
+});
+
+test('Flux accepts 30,000 characters even when JSON escaping expands the request', async () => {
+    const net = network();
+    try {
+        const prompt = '\\'.repeat(30000);
+        assert.equal((await post({ inputs: { prompt, duration_seconds: 5 } })).status, 200);
+        assert.equal(net.calls.find(c => c.url.endsWith('/createTask')).body.input.prompt.length, 30000);
+    } finally { net.restore(); }
+});
+
 test('Flux rejected submission refunds its two-credit debit', async () => {
     const net = network({ submitFails: true });
     try {

@@ -66,6 +66,12 @@ test.each(['insufficient_balance', 'insufficient_credits'])('Make refusal %s off
     expect(control(t('lowBalance.buy'))).toBeUndefined();
     expect(mockCreate.mock.calls[1][0].prompt).toBe('A quiet lake');
 });
+test('Make explains when a handed-off prompt exceeds the selected model limit', async () => {
+    const longPrompt = 'x'.repeat(2001);
+    await act(async () => root.render(<MakePanel visible initialPrompt={longPrompt} onClose={mockClose} />));
+    expect(hasText(t('public.TemplateRecipe.promptTooLong', { count: '2001', max: '2000' }))).toBe(true);
+    expect(disabled(paid())).toBe(true);
+});
 test('Create controls submit three distinct keys and the catalog unit price', async () => {
     expect(control('1:1')).toBeDefined(); await press('16:9'); await press('3'); await press(paid(6));
     expect(mockCreate).toHaveBeenCalledTimes(3);

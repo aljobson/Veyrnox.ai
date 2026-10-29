@@ -129,6 +129,18 @@ async function callTool(name, args, fetchImpl, t) {
 }
 const IMAGE_ROW = { id: 'flux-2-pro-1k-kie', provider: 'kie', provider_endpoint: 'market:flux-2/pro-text-to-image', modality: 'text-to-image', credits_5s: 2, active: true, gated_flag: false };
 
+test('the MCP handler admits a worst-case escaped 30,000-character generation prompt', async (t) => {
+  const result = await callTool('generate_image', {
+    model_id: IMAGE_ROW.id, prompt: String.fromCharCode(1).repeat(30000), confirmed_credits: 1, idempotency_key: 'mcp-prompt-boundary-0001',
+  }, async (url) => {
+    const path = new URL(String(url)).pathname;
+    if (path === '/rest/v1/model_catalog') return Response.json([IMAGE_ROW]);
+    assert.fail(`the connector reached ${path} after a wrong confirmation`);
+  }, t);
+  assert.equal(result.isError, true);
+  assert.equal(result.structuredContent.error, 'credit_confirmation_mismatch');
+});
+
 test('through the real MCP handler, a wrong price confirmation is refused before any job is read or any debit is made', async (t) => {
   const paths = [];
   const result = await callTool('generate_image', {

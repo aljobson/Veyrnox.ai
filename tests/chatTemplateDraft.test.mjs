@@ -20,8 +20,8 @@ test('an edited template prompt is carried into chat once without a URL payload'
 
 test('template chat handoffs are bounded and stale or malformed values are rejected', () => {
   const s = storage();
-  assert.equal(writeTemplateChatDraft(s, { id: 'template' }, 'x'.repeat(2500), 1000), true);
-  assert.equal(takeTemplateChatDraft(s, 1001).prompt.length, 2000);
+  assert.equal(writeTemplateChatDraft(s, { id: 'template' }, 'x'.repeat(30050), 1000), true);
+  assert.equal(takeTemplateChatDraft(s, 1001).prompt.length, 30000);
 
   assert.equal(writeTemplateChatDraft(s, { id: 'template' }, 'old', 1000), true);
   assert.equal(takeTemplateChatDraft(s, 1000 + (10 * 60 * 1000) + 1), null);

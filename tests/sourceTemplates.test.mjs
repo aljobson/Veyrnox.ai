@@ -192,7 +192,7 @@ test('public templates are exact or adaptation-only and all source-gap records a
   assert.equal(groups.unavailable, undefined);
   assert.equal(audit.length, 270);
   assert.ok(audit.every(([, record]) => record.runnable === false));
-  assert.equal(audit.filter(([, record]) => record.issues.includes('prompt-over-2000')).length, 125);
+  assert.equal(audit.filter(([, record]) => record.issues.includes('prompt-over-limit')).length, 0);
   assert.equal(audit.filter(([, record]) => record.issues.includes('more-than-two-reference-images')).length, 28);
   assert.equal(audit.filter(([, record]) => record.issues.includes('audio-preservation-not-supported')).length, 100);
   assert.equal(sourcePromptAuditRecord('community-survivor-memory-shift').status, 'exact-truncated');

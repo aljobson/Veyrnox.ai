@@ -7,10 +7,11 @@ import { buildDirection } from './oddlingsBuilder';
 import { promptHref } from './explore';
 import { estimateCredits, isSupported, kindOf, textInput, type CatalogModel } from './media';
 import { MOTIONS, buildStudioPrompt, characterTraits, oddlingIdentity, type Picks } from './oddlingsBuilder';
+import { GENERATION_PROMPT_MAX } from './promptLimits';
 
 // The model the web hands a portrait to.
 export const PORTRAIT_MODEL_ID = 'flux-2-pro';
-const SHORT_FALLBACK_MAX = 2000;
+const SHORT_FALLBACK_MAX = GENERATION_PROMPT_MAX;
 const LOOK_TRAITS = 6;
 
 const open = (models: readonly CatalogModel[]) => models.filter((m) => !m.gated && isSupported(m));

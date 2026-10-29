@@ -104,8 +104,10 @@ describe('the prompt box', () => {
 
     test('opens Create on the model with the trimmed, capped prompt', () => {
         expect(promptHref('nano-banana', '  a red fox  ')).toEqual({ pathname: '/create/[modelId]', params: { modelId: 'nano-banana', prompt: 'a red fox' } });
-        const long = promptHref('m', 'x'.repeat(5000));
-        expect((long.params.prompt as string).length).toBe(4000);
+        const exact = promptHref('m', 'x'.repeat(30000));
+        expect((exact.params.prompt as string).length).toBe(30000);
+        const over = promptHref('m', 'x'.repeat(30001));
+        expect((over.params.prompt as string).length).toBe(30000);
     });
 });
 

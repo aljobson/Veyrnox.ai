@@ -6,6 +6,7 @@ import { appCache } from './appCache';
 import { POLICIES, type CacheMeta } from './cache';
 import { ensureOnline, observe, markOnline, markOffline } from './network';
 import { ApiError, API_BASE, type ApiClient } from './api';
+import { GENERATION_PROMPT_MAX } from './promptLimits';
 
 export interface CatalogModel {
     readonly id: string;
@@ -78,7 +79,7 @@ const KNOWN_SLOTS = ['image', 'endImage', 'video', 'audio'];
 // The one free-text input a model takes. Most take `prompt`; Auto Short takes `topic`. The video agent's
 // `brief` is left out on purpose: it needs the plan step first and has its own screen.
 const TEXT_KEYS = ['prompt', 'topic'] as const;
-const DEFAULT_TEXT_MAX = 2000;
+const DEFAULT_TEXT_MAX = GENERATION_PROMPT_MAX;
 
 export function textInput(model: CatalogModel): { readonly key: string; readonly max: number } | null {
     const inputs = (model.capabilities?.inputs ?? {}) as Record<string, { max?: number } | undefined>;

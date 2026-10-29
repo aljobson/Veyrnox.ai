@@ -3,6 +3,7 @@ import { accessibleStage, failedAttempts, buildShotPrompt, emptyFilm, FILM_STAGE
 import { loadStudio, saveStudio } from '../src/lib/filmStudioStore';
 import { createCache, createMemoryStorage } from '../src/lib/cache';
 import type { CatalogModel } from '../src/lib/media';
+import { GENERATION_PROMPT_MAX } from '../src/lib/promptLimits';
 
 // The app has no Node type definitions, so the two Node pieces this file needs are declared here.
 declare const require: (id: string) => any;
@@ -59,7 +60,7 @@ function withPrompt(film: any): any {
     const content = web.buildShotPrompt(film, film.shots[0], details);
     return { ...film, prompts: [web.nextPromptVersion(film, film.shots[0], content)] };
 }
-const catalogModel = (over: Partial<CatalogModel> = {}): CatalogModel => ({ id: 'test-video', name: 'Test Video', modality: 'text-to-video', credits: 12, gated: false, durations: [5, 10, 15], capabilities: { inputs: { prompt: { max: 4000 } } }, ...over });
+const catalogModel = (over: Partial<CatalogModel> = {}): CatalogModel => ({ id: 'test-video', name: 'Test Video', modality: 'text-to-video', credits: 12, gated: false, durations: [5, 10, 15], capabilities: { inputs: { prompt: { max: GENERATION_PROMPT_MAX } } }, ...over });
 
 describe('the phone copy of the web rules', () => {
     test('a new native workspace starts with the exact web schema', () => {
@@ -148,6 +149,12 @@ describe('handoff to Create', () => {
         const offer = handoffFor(film, film.shots[0], [catalogModel()]);
         expect(offer).toMatchObject({ ok: true, credits: 24, seconds: 10 });
         expect(offer.ok && offer.prompt).toBe(film.prompts[0].content);
+    });
+    test('accepts the 3,722-character Film Studio prompt that previously hit the 2,000-character fallback', () => {
+        const longPrompt = { ...film, prompts: [{ ...film.prompts[0], content: 'x'.repeat(3722) }] };
+        const offer = handoffFor(longPrompt, longPrompt.shots[0], [catalogModel()]);
+        expect(offer).toMatchObject({ ok: true });
+        expect(offer.ok && offer.prompt.length).toBe(3722);
     });
     test('matches the studio’s video model by name or id, ignoring case and punctuation', () => {
         const base = lockedFilm();

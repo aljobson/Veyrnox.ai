@@ -6,6 +6,7 @@ import { t } from '../../lib/i18n';
 import type { CatalogModel } from '../../lib/media';
 import { touchTarget } from '../../lib/a11y';
 import { colors } from '../../theme';
+import { GENERATION_PROMPT_MAX } from '../../lib/promptLimits';
 import { Button } from '../ui';
 import { Field } from './FilmFields';
 import { FilmSelect } from './FilmSelect';
@@ -38,7 +39,7 @@ export function FilmBreakdownStage({ film, change }: { film: Film; change: (film
         change({ ...film, shots: [...film.shots, newShot(film)] });
     };
     return <View style={{ gap: 14 }}>
-        <Field label={t('film.scripttreatmentoridea')} value={film.script} onChange={script => change({ ...film, script })} multiline maxLength={24_000} placeholder={t('film.pastethesourcematerialyouarebreaking')} />
+        <Field label={t('film.scripttreatmentoridea')} value={film.script} onChange={script => change({ ...film, script })} multiline maxLength={GENERATION_PROMPT_MAX} placeholder={t('film.pastethesourcematerialyouarebreaking')} />
         <Text style={{ color: colors.body }}>{t('filmWorkspace.runtime', { value1: film.shots.reduce((sum, s) => sum + (Number(s.seconds) || 0), 0), value2: film.targetSeconds })}</Text>
         {shot ? <FilmSelect label={t('filmWorkspace.shotCards')} value={String(index)} options={film.shots.map((s, i) => ({ value: String(i), label: s.id }))} onChange={v => { setSelected(Number(v)); resetDraft(); }} /> : null}
         <Button label={t('film.addshot')} disabled={film.shots.length >= 200} onPress={add} />

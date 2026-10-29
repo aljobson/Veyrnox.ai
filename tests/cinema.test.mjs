@@ -10,8 +10,9 @@ test('the camera text follows the prompt and names every choice', () => {
 });
 
 test('the result never exceeds the gateway prompt limit; the user text is what gets cut', () => {
-    const out = buildCinemaPrompt('x'.repeat(5000), DEFAULT_CINEMA);
+    const out = buildCinemaPrompt('x'.repeat(40000), DEFAULT_CINEMA);
     assert.equal(out.length, PROMPT_MAX);
+    assert.equal(buildCinemaPrompt('x'.repeat(40000), DEFAULT_CINEMA, 1000).length, 1000);
     assert.ok(out.endsWith(cinemaSuffix(DEFAULT_CINEMA)));
 });
 

@@ -1,8 +1,8 @@
 import { GENJUTSU_SOURCE_PROMPT_RECORDS } from './genjutsuSourcePromptRecords.js';
 import { HIGGSFIELD_90_SOURCE_PROMPT_RECORDS } from './higgsfieldCommunityExpansion90Records.js';
 import { SYNTX_SOURCE_PROMPT_RECORDS } from './syntxSourcePromptRecords.js';
+import { GENERATION_PROMPT_MAX } from '../../../lib/promptLimits.js';
 
-const EXACT_PROMPT_MAX = 2000;
 const EXACT_SOURCE_RECORDS = Object.freeze({
   ...GENJUTSU_SOURCE_PROMPT_RECORDS,
   ...HIGGSFIELD_90_SOURCE_PROMPT_RECORDS,
@@ -55,7 +55,7 @@ export function sourcePromptAuditRecord(templateId) {
   const issues = ['source-input-contract-not-wired'];
   const imageCount = referenceCount(source.prompt, 'image');
   const videoCount = referenceCount(source.prompt, 'video');
-  if (source.prompt.length > EXACT_PROMPT_MAX) issues.push('prompt-over-2000');
+  if (source.prompt.length > GENERATION_PROMPT_MAX) issues.push('prompt-over-limit');
   if (imageCount > 2) issues.push('more-than-two-reference-images');
   if (mentionsPreservedAudio(source.prompt)) issues.push('audio-preservation-not-supported');
   if (source.sourcePromptTruncated) issues.push('source-prompt-truncated');

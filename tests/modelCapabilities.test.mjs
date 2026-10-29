@@ -11,6 +11,7 @@ import { FALLBACK_MODEL_ENDPOINTS, fallbackCapabilitiesFor } from '../lib/fallba
 const SNAPSHOT = JSON.parse(readFileSync(new URL('./fixtures/capability-payloads.json', import.meta.url), 'utf8'));
 import * as kie from '../packages/adapters/kie.js';
 import * as openrouter from '../packages/adapters/openrouter.js';
+import { GENERATION_PROMPT_MAX } from '../lib/promptLimits.js';
 
 // Every provider_endpoint in production's model_catalog on 2026-09-22, plus the
 // kie twins staged inactive by migration 0105 (a row with no record can never
@@ -164,6 +165,11 @@ test('undeclared keys are dropped by the gateway, and refused if they reach the 
     // adapter would ignore it.
     const nanoKie = capabilityFor('market:google/nano-banana');
     assert.deepEqual(checkInputs(nanoKie, { prompt: 'p', duration_seconds: 10 }), { ok: false, error: 'duration_not_supported' });
+    assert.equal(checkInputs(nanoKie, { prompt: 'x'.repeat(10000) }).ok, true);
+    assert.equal(checkInputs(nanoKie, { prompt: 'x'.repeat(10001) }).ok, false);
+    const nanoProKie = capabilityFor('market:nano-banana-pro');
+    assert.equal(checkInputs(nanoProKie, { prompt: 'x'.repeat(10000) }).ok, true);
+    assert.equal(checkInputs(nanoProKie, { prompt: 'x'.repeat(10001) }).ok, false);
 });
 
 test('declared inputs never write attacker-controlled property names', () => {
@@ -188,7 +194,7 @@ test('the public view carries no provider field names or editable pins', () => {
     }
     assert.deepEqual(publicCapabilities(capabilityFor('fal-ai/veo3.1/fast')), {
         kind: 'video', lengths: [5],
-        inputs: { prompt: { type: 'string', max: 2000 }, negative_prompt: { type: 'string', max: 2000 }, seed: { type: 'int', min: 0, max: 2147483647 },
+        inputs: { prompt: { type: 'string', max: GENERATION_PROMPT_MAX }, negative_prompt: { type: 'string', max: 2000 }, seed: { type: 'int', min: 0, max: 2147483647 },
             aspect_ratio: { type: 'enum', values: ['16:9', '9:16'] } },
         media: {},
         presentation: { resolutionLabel: '720p', audioIncluded: true, fixedDurationLabel: '4s' },
@@ -222,6 +228,20 @@ test('the tokens.js fallback offers the lengths the live catalog does', () => {
         assert.ok(Array.isArray(m.durations) && m.durations.includes(5), `${m.id} must offer the 5s unit`);
         const ep = endpointById[m.id];
         if (ep) assert.deepEqual(m.durations, lengthsFor(capabilityFor(ep)), `${m.id} fallback durations`);
+    }
+});
+
+test('the fallback catalog preserves documented smaller prompt limits', () => {
+    const expected = {
+        'wan-2.5-kie': 800,
+        'kling-2.6-pro-kie': 1000,
+        'hailuo-02-kie': 1500,
+        'nano-banana-kie': 10000,
+        'nano-banana-pro-grsai': 10000,
+        'nano-banana-pro-edit': 10000,
+    };
+    for (const [id, promptMax] of Object.entries(expected)) {
+        assert.equal(MODELS.find((model) => model.id === id)?.promptMax, promptMax, id);
     }
 });
 
@@ -369,7 +389,8 @@ test('staged Kling i2v advertises only supported controls and checks before debi
         assert.equal(checkInputs(record, { ...inputs, ...extra }).ok, false);
     }
     assert.equal(checkInputs(record, { prompt: 'p' }).error, 'inputs_invalid:image_url');
-    assert.equal(checkInputs(record, { ...inputs, prompt: 'x'.repeat(2001) }).ok, false);
+    assert.equal(checkInputs(record, { ...inputs, prompt: 'x'.repeat(GENERATION_PROMPT_MAX) }).ok, true);
+    assert.equal(checkInputs(record, { ...inputs, prompt: 'x'.repeat(GENERATION_PROMPT_MAX + 1) }).ok, false);
 });
 
 test('the public speech text bound matches pre-debit validation rather than offering an unpriced extra character',() => {
@@ -377,5 +398,35 @@ test('the public speech text bound matches pre-debit validation rather than offe
         const record = capabilityFor(endpoint), limit = publicCapabilities(record).inputs.prompt.max;
         assert.equal(limit,endpoint === 'fal-ai/inworld-tts' ? 2000 : 1000);
         assert.equal(checkInputs(record,{ prompt: 'x'.repeat(limit + 1) }).ok,false,endpoint);
+    }
+});
+
+test('provider-family twins retain their documented prompt ceilings', () => {
+    const families = [
+        [800, ['fal-ai/wan-25-preview/text-to-video', 'market:wan/2-5-text-to-video']],
+        [1000, ['fal-ai/kling-video/v2.6/pro/text-to-video', 'market:kling-2.6/text-to-video']],
+        [1500, ['fal-ai/minimax/hailuo-02/standard/text-to-video', 'market:hailuo/02-text-to-video-standard']],
+        [10000, ['fal-ai/nano-banana', 'fal-ai/nano-banana-pro', 'fal-ai/nano-banana-pro/edit',
+            'market:google/nano-banana', 'market:nano-banana-pro', 'crun:google/nano-banana',
+            'grsai:nano-banana-pro', 'grsai:nano-banana-pro-edit', 'grsai:nano-banana-2-lite']],
+    ];
+    for (const [limit, endpoints] of families) for (const endpoint of endpoints) {
+        const record = capabilityFor(endpoint);
+        assert.equal(publicCapabilities(record).inputs.prompt.max, limit, endpoint);
+        assert.equal(checkInputs(record, { prompt: 'x'.repeat(limit + 1) }).ok, false, endpoint);
+    }
+});
+
+test('generic generation records use the owner-approved 30,000-character service contract', () => {
+    const endpoints = [
+        'fal-ai/flux-2-pro', 'market:flux-2/pro-text-to-image',
+        'fal-ai/bytedance/seedream/v4/text-to-image', 'market:seedream/4.5-text-to-image',
+        'fal-ai/kling-video/v3/pro/image-to-video', 'market:kling-3.0/video',
+        'veo:veo3_lite', 'crun:google/veo3-1-lite-t2v',
+        'bytedance/seedance-2.0-fast', 'byteplus:seedance-2.0-fast',
+        'fal-ai/elevenlabs/sound-effects/v2', 'fal-ai/mmaudio-v2/text-to-audio',
+    ];
+    for (const endpoint of endpoints) {
+        assert.equal(publicCapabilities(capabilityFor(endpoint)).inputs.prompt.max, GENERATION_PROMPT_MAX, endpoint);
     }
 });

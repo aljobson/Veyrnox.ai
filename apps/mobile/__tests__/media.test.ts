@@ -43,7 +43,7 @@ describe('catalog helpers', () => {
         expect(promptRequired(model({ capabilities: { inputs: {}, media: { image: { required: true } } } }))).toBe(false);
     });
     test('finds the one text input a model takes: prompt, or topic for Auto Short', () => {
-        expect(textInput(model())).toEqual({ key: 'prompt', max: 2000 });
+        expect(textInput(model())).toEqual({ key: 'prompt', max: 30000 });
         expect(textInput(model({ capabilities: { inputs: { topic: { max: 200 } }, media: {} } }))).toEqual({ key: 'topic', max: 200 });
         expect(textInput(model({ capabilities: { inputs: { prompt: { max: 500 } }, media: {} } }))).toEqual({ key: 'prompt', max: 500 });
         expect(textInput(model({ capabilities: { inputs: {}, media: { image: { required: true } } } }))).toBeNull();

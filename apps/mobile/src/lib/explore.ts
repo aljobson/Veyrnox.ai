@@ -1,4 +1,5 @@
 import { isSupported, kindOf, promptRequired, textInput, type CatalogModel, type Job, type Kind } from './media';
+import { GENERATION_PROMPT_MAX } from './promptLimits';
 import type { Preset } from './presets';
 
 // The Explore tab (N4): what to show and where each tap goes. The prices and models come from the server;
@@ -38,10 +39,8 @@ export function firstModelFor(catalog: readonly CatalogModel[], kind: Kind): Cat
     return catalog.find((m) => kindOf(m.modality) === kind && isSupported(m) && promptRequired(m) && textInput(m)?.key === 'prompt') ?? null;
 }
 
-const MAX_PROMPT = 4000;
-
 export const promptHref = (modelId: string, prompt: string) =>
-    ({ pathname: '/create/[modelId]', params: { modelId, prompt: prompt.trim().slice(0, MAX_PROMPT) } }) as const;
+    ({ pathname: '/create/[modelId]', params: { modelId, prompt: prompt.trim().slice(0, GENERATION_PROMPT_MAX) } }) as const;
 
 // The collage: filter by what is being made, then by category, then by words.
 export const ALL_TYPES = 'all';

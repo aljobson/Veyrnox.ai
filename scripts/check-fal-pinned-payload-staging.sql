@@ -1,4 +1,4 @@
--- Operator-only post-0243 probe for staging yrqzwqywxfesmbvhzjgj.
+-- Operator-only post-0406 probe for staging yrqzwqywxfesmbvhzjgj.
 -- Run as one request. All fixtures/policy changes roll back; no provider calls.
 BEGIN;
 SET LOCAL lock_timeout = '2s';
@@ -11,9 +11,9 @@ DECLARE
     max_prompt int; changed_rows int; free_case boolean; multibyte boolean;
     payload jsonb; request_key text; accepted_job uuid;
 BEGIN
-    IF position('IF octet_length(p_payload::text) > 16384' IN
+    IF position('IF octet_length(p_payload::text) > 262144' IN
         pg_get_functiondef('public.admit_fal_dispatch(uuid,text,text,jsonb,jsonb,text,boolean)'::regprocedure)) = 0 THEN
-        RAISE EXCEPTION '0243 final payload guard required';
+        RAISE EXCEPTION '0406 final payload guard required';
     END IF;
     PERFORM 1 FROM public.credit_balances WHERE user_id=fixture_user AND balance>=2 FOR UPDATE;
     IF NOT FOUND THEN RAISE EXCEPTION 'fixture balance unavailable'; END IF;
@@ -39,7 +39,7 @@ BEGIN
         'dispatch',(SELECT count(*) FROM public.fal_dispatch),
         'reservations',(SELECT count(*) FROM public.fal_capacity_reservations))
     INTO before_effects FROM public.credit_balances WHERE user_id=fixture_user;
-    max_prompt := 16384-octet_length((jsonb_build_object('prompt','')||'{"image_size":{"width":1024,"height":768}}'::jsonb)::text);
+    max_prompt := 262144-octet_length((jsonb_build_object('prompt','')||'{"image_size":{"width":1024,"height":768}}'::jsonb)::text);
     UPDATE public.model_catalog SET active=true,provider_endpoint='fal-ai/flux-2-pro',modality='text-to-image',
         provider_cost_per_unit=0.03,credits_5s=2,free_allowance_per_day=2,free_allowance_daily_budget=2 WHERE id=fixture_model;
     GET DIAGNOSTICS changed_rows=ROW_COUNT;
@@ -51,7 +51,7 @@ BEGIN
         request_key := 'pinned-boundary-20261010-'||free_case::text;
         FOREACH multibyte IN ARRAY ARRAY[false,true] LOOP
             payload := jsonb_build_object('prompt',CASE WHEN multibyte THEN repeat('é',max_prompt/2+1) ELSE repeat('x',max_prompt+1) END);
-            IF octet_length(payload::text)>16384 OR octet_length((payload||'{"image_size":{"width":1024,"height":768}}'::jsonb)::text)<=16384 THEN
+            IF octet_length(payload::text)>262144 OR octet_length((payload||'{"image_size":{"width":1024,"height":768}}'::jsonb)::text)<=262144 THEN
                 RAISE EXCEPTION 'invalid boundary fixture';
             END IF;
             result := public.admit_fal_dispatch(fixture_user,request_key,fixture_model,
@@ -69,7 +69,7 @@ BEGIN
                 RAISE EXCEPTION 'exact-limit admission failed: %',result;
             END IF;
             accepted_job := (result->>'job_id')::uuid;
-            IF (SELECT octet_length(d.payload::text) FROM public.fal_dispatch d WHERE job_id=accepted_job) IS DISTINCT FROM 16384 THEN
+            IF (SELECT octet_length(d.payload::text) FROM public.fal_dispatch d WHERE job_id=accepted_job) IS DISTINCT FROM 262144 THEN
                 RAISE EXCEPTION 'stored byte limit mismatch';
             END IF;
             replay := public.admit_fal_dispatch(fixture_user,request_key,fixture_model,

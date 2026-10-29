@@ -83,6 +83,7 @@ async function loadCatalog() {
       modality: m.modality,
       presentation: m.capabilities?.presentation || {},
       media: m.capabilities?.media || {},
+      promptMax: m.capabilities?.inputs?.prompt?.max,
       takesPrompt: !!m.capabilities?.inputs?.prompt,
       takesPlan: !!m.capabilities?.inputs?.plan_id,
       takesTopic: !!m.capabilities?.inputs?.topic,

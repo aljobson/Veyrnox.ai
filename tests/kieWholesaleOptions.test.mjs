@@ -35,6 +35,7 @@ test('Flux is bounded to one 1K image with moderation on and valid documented as
     const req = buildRequest(parseEndpoint(flux), { prompt: 'A ceramic teapot' });
     assert.deepEqual(req.body.input, { prompt: 'A ceramic teapot', aspect_ratio: '4:3', resolution: '1K', nsfw_checker: true });
     assert.equal(buildRequest(parseEndpoint(flux), { prompt: 'hi' }).ok, false);
-    assert.equal(buildRequest(parseEndpoint(flux), { prompt: 'x'.repeat(2001) }).ok, false);
+    assert.equal(buildRequest(parseEndpoint(flux), { prompt: 'x'.repeat(30000) }).ok, true);
+    assert.equal(buildRequest(parseEndpoint(flux), { prompt: 'x'.repeat(30001) }).ok, false);
     assert.equal(buildRequest(parseEndpoint(flux), { prompt: 'a cat', aspect_ratio: '21:9' }).ok, false);
 });

@@ -246,7 +246,10 @@ export default function CreateStudio() {
   const hasJobs = jobs.length > 0;
   const catalogStatus = catalogLoading ? 'loading' : catalogLive ? 'live' : 'unavailable';
   const activeTemplate = templateStartId(presetParam, modelId) ? templateById(presetParam) : null;
+  const promptLimit = model?.takesTopic ? 200 : model?.promptMax;
   const prompt = promptText(typed, model); // a starter shot until then, on picture and clip models only (see promptBox)
+  const submittedPromptLength = prompt.trim().length;
+  const promptTooLong = Number.isInteger(promptLimit) && promptLimit > 0 && submittedPromptLength > promptLimit;
   // The picked model stays listed even when the tier filter would hide it.
   const goalModels = modelsForGoal(models, goal);
   const listed = filterByTier(goalModels, tier);
@@ -452,11 +455,11 @@ export default function CreateStudio() {
   }, [loadBalance]);
 
   // Character traits go first, the camera description last; each keeps the
-  // result under the gateway's 2000-character limit by cutting the user text.
+  // result under this model's advertised prompt limit by cutting the user text.
   function finalPrompt() {
     let text = prompt.trim();
-    if (model.kind === 'image' && characterOn) text = buildCharacterPrompt(text, character);
-    if (takesCamera && cinemaOn) text = buildCinemaPrompt(text, cinema);
+    if (model.kind === 'image' && characterOn) text = buildCharacterPrompt(text, character, promptLimit);
+    if (takesCamera && cinemaOn) text = buildCinemaPrompt(text, cinema, promptLimit);
     return text;
   }
 
@@ -468,6 +471,7 @@ export default function CreateStudio() {
     if (draftRecovery.restoring || draftRecovery.blocked || attachConverting || sourcesConverting) return;
     if (inFlight.current || sending || generating || !model || balance == null || cost > balance) return;
     if (catalogStatus !== 'live') return;
+    if (promptTooLong) return;
     inFlight.current = true;
     if (model.gated) { inFlight.current = false; setError(LOCAL_ERRORS.model_gated); return; }
     if (animationMismatch) { inFlight.current = false; setError(LOCAL_ERRORS.source_required); return; }
@@ -647,11 +651,16 @@ export default function CreateStudio() {
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             aria-label={isShort ? t("app.create.topic") : t("mobile.prompt")}
-            maxLength={isShort ? 200 : undefined}
+            maxLength={promptLimit}
             rows={3}
             className="scroll-mt-24 mt-3 w-full bg-vx-panel border border-vx-field rounded-lg p-3.5 text-sm text-vx-fg placeholder:text-vx-fg-faint resize-none focus:outline-hidden focus:border-vx-accent"
             placeholder={helperCopy(t, locale, promptPlaceholder(model))}
           />
+          {promptTooLong && (
+            <p role="status" className="mt-2 text-xs text-vx-danger">
+              {t('public.TemplateRecipe.promptTooLong', { count: number(submittedPromptLength), max: number(promptLimit) })}
+            </p>
+          )}
           {(draftRecovery.restoring || draftRecovery.status) && <div role="status" data-testid="create-draft-recovery" data-restoring={draftRecovery.restoring} className="mt-2 rounded-lg border border-vx-border bg-vx-panel px-3 py-2 text-xs text-vx-fg-muted">
             {draftRecovery.restoring ? t("app.create.restoring") : draftRecovery.status}
             {draftRecovery.failed && <button type="button" onClick={draftRecovery.retry} className="ms-2 min-h-8 underline text-vx-accent">{t("app.create.retryDraft")}</button>}
@@ -732,7 +741,7 @@ export default function CreateStudio() {
             data-assistant-target="create.generate"
             onClick={hasJobs ? cancel : onSubmit}
             className="scroll-mt-24 mt-4 w-full flex items-center justify-between bg-vx-accent text-vx-accent-ink rounded-full px-6 py-3.5 font-extrabold hover:bg-vx-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
-            disabled={draftRecovery.restoring || draftRecovery.blocked || sending || attachConverting || sourcesConverting || (!hasJobs && (catalogStatus !== 'live' || !model || model.gated || animationMismatch || missingPrompt || missingVoice || invalidAudioDuration || balance == null || cost > balance || missingSource || missingConsent))}
+            disabled={draftRecovery.restoring || draftRecovery.blocked || sending || attachConverting || sourcesConverting || (!hasJobs && (catalogStatus !== 'live' || !model || model.gated || animationMismatch || promptTooLong || missingPrompt || missingVoice || invalidAudioDuration || balance == null || cost > balance || missingSource || missingConsent))}
             aria-label={sending ? undefined : hasJobs ? t("app.create.newNoCharge") : model?.gated ? undefined : n > 1 ? t(pluralKey(t,locale,cost===0?'app.create.generateImagesFree':'app.create.generateImagesPaid',n),{count:number(n),credits:creditLabel(cost)}) : t(cost===0?'app.create.generateFree':'app.create.generatePaid',{credits:creditLabel(cost)})}
           >
             <span>{sending ? t("app.publish.inbox.sending") : hasJobs ? t("app.create.newGeneration") : model?.gated ? t("app.create.premiumGated") : n > 1 ? t('app.create.generateCount',{count:number(n)}) : t("label.Generate")}</span>

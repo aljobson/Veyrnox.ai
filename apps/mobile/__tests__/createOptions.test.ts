@@ -1,4 +1,5 @@
-import { hasAnyOption, resolveAudio, resolveResolution, audioLengthInvalid, voiceIsMissing, SAVED_DRAFT_VERSION, batchCost, draftIsEmpty, filterByTier, freeLeftFor, imageCount, inputsForIndex, modelsForGoal, optionsFor, pickerModels, starterModel, parseDraft, seedIsInvalid, settingsInputs, takesImageCount, tierById } from '../src/lib/createOptions';
+import { hasAnyOption, resolveAudio, resolveResolution, audioLengthInvalid, voiceIsMissing, SAVED_DRAFT_VERSION, batchCost, draftIsEmpty, filterByTier, freeLeftFor, imageCount, inputsForIndex, limitPrompt, modelsForGoal, optionsFor, pickerModels, starterModel, parseDraft, seedIsInvalid, settingsInputs, takesImageCount, tierById } from '../src/lib/createOptions';
+import { GENERATION_PROMPT_MAX } from '../src/lib/promptLimits';
 import { DEFAULT_CINEMA } from '../src/lib/cinemaCamera';
 import { loadDraft, saveDraft, clearDraft } from '../src/lib/createDraftStore';
 import { createCache, createMemoryStorage } from '../src/lib/cache';
@@ -104,6 +105,12 @@ describe('draft', () => {
         expect(parseDraft({ ...draft, v: 9 }, 'm')).toBeNull();
         expect(parseDraft({ ...draft, prompt: 4 }, 'm')).toBeNull();
         expect(parseDraft(null, 'm')).toBeNull();
+    });
+    test('keeps a 30,000-character Create handoff or draft intact', () => {
+        const exact = 'x'.repeat(GENERATION_PROMPT_MAX);
+        expect(limitPrompt(exact)).toEqual({ prompt: exact, truncated: false });
+        expect(limitPrompt(`x${exact}`)).toEqual({ prompt: `x${exact}`.slice(0, GENERATION_PROMPT_MAX), truncated: true });
+        expect(parseDraft({ ...draft, prompt: exact }, 'm')?.prompt).toHaveLength(GENERATION_PROMPT_MAX);
     });
     test('an empty form is not a draft', () => {
         expect(draftIsEmpty({ prompt: ' ', seed: '', negative: '' })).toBe(true);

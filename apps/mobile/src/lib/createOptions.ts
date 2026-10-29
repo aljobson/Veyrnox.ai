@@ -1,6 +1,7 @@
 import { sanitizeCinema, type Cinema } from './cinemaCamera';
 import { sanitizePicks, type Picks } from './oddlingsBuilder';
 import { kindOf, textInput, type CatalogModel, type Kind } from './media';
+import { GENERATION_PROMPT_MAX } from './promptLimits';
 
 // ADR-0153: the web Create page's option set, as pure helpers. The catalog (`capabilities.inputs`) says which
 // options a model takes; the server checks each value again against the same record, so this is a form, not a guard.
@@ -9,6 +10,11 @@ import { kindOf, textInput, type CatalogModel, type Kind } from './media';
 export const SEED_MAX = 2147483647;
 export const NEGATIVE_MAX = 2000;
 export const IMAGE_COUNTS = [1, 2, 3, 4] as const;
+
+export function limitPrompt(value: string, max = GENERATION_PROMPT_MAX): { readonly prompt: string; readonly truncated: boolean } {
+    const limit = Number.isInteger(max) && max > 0 ? Math.min(max, GENERATION_PROMPT_MAX) : GENERATION_PROMPT_MAX;
+    return { prompt: value.slice(0, limit), truncated: value.length > limit };
+}
 
 export type Goal = Kind | 'all';
 export const GOALS: readonly { readonly goal: Goal; readonly label: string }[] = [
@@ -227,7 +233,7 @@ export function parseDraft(raw: unknown, modelId: string): CreateDraft | null {
     return {
         v: SAVED_DRAFT_VERSION,
         modelId,
-        prompt: d.prompt.slice(0, 4000),
+        prompt: limitPrompt(d.prompt).prompt,
         duration: typeof d.duration === 'number' ? d.duration : null,
         aspect: typeof d.aspect === 'string' ? d.aspect : null,
         count: d.count,
