@@ -65,6 +65,7 @@ function CheckInForUser({ user }) {
       remember(user);
       const next = { ...status, claimed_today: true, streak: r.streak };
       reader.update(next); setStatus(next); announce(user, next);
+      setOpen(false);
     }} />;
 }
 
