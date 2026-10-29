@@ -132,5 +132,6 @@
   "publishOps.inbox.rowLabel": "Formatting template; words are localized separately.",
   "publishOps.accountLabel": "Formatting template; words are localized separately.",
   "publishOps.priority.normal": "Shared term in this language.",
-  "cinema.position": "Reviewed: shared media terminology or language-neutral playback position notation."
+  "cinema.position": "Reviewed: shared media terminology or language-neutral playback position notation.",
+  "projectDocument.counter": "Numeric counter pattern; only the localized numbers change."
 }

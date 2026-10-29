@@ -12,11 +12,13 @@ const mockBack = jest.fn();
 const mockRemove = jest.fn().mockResolvedValue(undefined);
 jest.mock('../src/lib/editorDeviceMedia', () => ({ removeProjectMedia: (...args: unknown[]) => mockRemove(...args) }));
 let mockHeader: any;
-jest.mock('expo-router', () => ({ Stack: { Screen: ({ options }: any) => { mockHeader = options; return options.headerRight?.() ?? null; } }, useLocalSearchParams: () => ({ id: 'project' }), useRouter: () => ({ push: mockPush, back: mockBack }) }));
+jest.mock('expo-router', () => ({ Stack: { Screen: ({ options }: any) => { mockHeader = options; return options.headerRight?.() ?? null; } }, useLocalSearchParams: () => ({ id: 'project' }), useRouter: () => ({ push: mockPush, back: mockBack }), usePreventRemove: () => () => {}, useIsFocused: () => true, useFocusEffect: (callback: () => void) => require('react').useEffect(() => { callback(); }, []) }));
 jest.mock('../src/lib/editorFlag', () => ({ __esModule: true, EDITOR_ENABLED: false }));
-jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi }) }));
+jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, beginSessionTask: mockBeginSessionTask }) }));
+const mockBeginSessionTask = () => ({ current: () => true });
 const mockApi = { request: async (path: string) => {
     if (path.includes('/history')) return { versions: [] };
+    if (path.includes('/document')) return { revision: 0, document: { schema_version: 1, project_id: 'project', brief: '', canvas: { aspect_ratio: '16:9', frame_rate: 30 } } };
     if (path === '/api/v1/workspaces') return { workspaces: [{ id: 'workspace' }] };
     if (path.includes('?workspace_id=')) return { projects: [] };
     return { project: { id: 'project', name: 'Project' } };
