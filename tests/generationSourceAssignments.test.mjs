@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { register } from 'node:module';
 import { lipSyncMp4 } from './fixtures/lipSyncMp4.mjs';
+import { GENERATION_BODY_LIMIT } from '../lib/requestBodyLimit.js';
 register('data:text/javascript,' + encodeURIComponent(`export async function resolve(s,c,next) { return next(s === 'next/server' ? 'next/server.js' : s,c); }`));
 Object.assign(process.env, {
     SUPABASE_URL: 'https://db.test', SUPABASE_SERVICE_ROLE_KEY: 'test-service', FAL_KEY: 'test-fal',
@@ -247,7 +248,7 @@ test('three mixed-origin references reach the fake provider and stored job in ex
 });
 test('a request above the total JSON bound never reaches catalog or admission',async()=>{
     const net=network();
-    try { const res=await post({references:'x'.repeat(128 * 1024)});assert.equal(res.status,413);assert.equal(net.calls.length,0); }
+    try { const res=await post({references:'x'.repeat(GENERATION_BODY_LIMIT)});assert.equal(res.status,413);assert.equal(net.calls.length,0); }
     finally {net.restore();}
 });
 

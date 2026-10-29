@@ -6,10 +6,11 @@ import { parseOddlingInstructions, SKILLS as ODDLING_SKILLS } from './oddlingsCh
 // The wording is the web's (app/veyrnox/_lib/studioSkills.js); the Film group is in filmSkills.ts.
 import { FILM_SKILLS } from './filmSkills';
 import { kindOf, type CatalogModel } from './media';
+import { GENERATION_PROMPT_MAX } from './promptLimits';
 
 export const MAX_INSTRUCTIONS = 4000;
 export const MAX_DRAFTS = 6;
-export const MAX_DRAFT_PROMPT = 2000;
+export const MAX_DRAFT_PROMPT = GENERATION_PROMPT_MAX;
 
 export type SkillGroup = 'Make' | 'Edit' | 'Plan' | 'Film';
 export const SKILL_GROUPS: readonly SkillGroup[] = ['Make', 'Edit', 'Plan', 'Film'];

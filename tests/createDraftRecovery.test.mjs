@@ -14,6 +14,13 @@ test('reload retains the selected model, prompt, duration and exact Library iden
   const raw = s.getItem(`${CREATE_DRAFT_STORAGE}:alice`);
   for (const excluded of ['old-signed-url', 'consent', 'cost', 'balance', 'access_token']) assert.ok(!raw.includes(excluded));
 });
+test('draft recovery preserves a complete 30,000-character generation prompt and bounds older oversized data', () => {
+  const s = storage();
+  assert.equal(writeCreateDraft(s, 'alice', { ...draft, prompt: 'x'.repeat(30000) }, now), true);
+  assert.equal(readCreateDraft(s, 'alice', now + 1).prompt.length, 30000);
+  assert.equal(writeCreateDraft(s, 'alice', { ...draft, prompt: 'x'.repeat(30001) }, now), true);
+  assert.equal(readCreateDraft(s, 'alice', now + 1).prompt.length, 30000);
+});
 test('drafts are account-scoped, tab-storage compatible, expire after 24 hours, and tolerate blocked storage', () => {
   const s = storage(); writeCreateDraft(s, 'alice', draft, now);
   assert.equal(readCreateDraft(s, 'bob', now), null);

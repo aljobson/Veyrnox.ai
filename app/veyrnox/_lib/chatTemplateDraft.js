@@ -1,5 +1,7 @@
+import { GENERATION_PROMPT_MAX } from '../../../lib/promptLimits.js';
+
 const KEY = 'veyrnox_chat_template_draft_v1';
-const MAX_PROMPT = 2000;
+const MAX_PROMPT = GENERATION_PROMPT_MAX;
 const MAX_AGE_MS = 10 * 60 * 1000;
 
 function clean(value, max) {

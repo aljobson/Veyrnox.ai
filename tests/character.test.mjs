@@ -31,7 +31,8 @@ test('origin options use neutral heritage wording, not stereotyped phenotype phr
 test('unknown picks add nothing, and the result fits the gateway limit', () => {
     assert.deepEqual(characterTraits({ gender: '<script>', nope: 'x' }), []);
     assert.equal(buildCharacterPrompt('', {}), CHARACTER_BASE);
-    assert.equal(buildCharacterPrompt('x'.repeat(5000), { gender: 'Male' }).length, 2000);
+    assert.equal(buildCharacterPrompt('x'.repeat(40000), { gender: 'Male' }).length, 30000);
+    assert.equal(buildCharacterPrompt('x'.repeat(40000), { gender: 'Male' }, 1000).length, 1000);
 });
 
 test('Oddlings add a bounded creator identity and recurring show to the visual prompt', () => {

@@ -2,6 +2,7 @@ import { sourceList, publicSlotMax } from '../../../lib/generationSourceSlots.mj
 import { helperEnglish, helperDiagnostic } from '../../../lib/helperMessages.mjs';
 import { generationFileProblem } from './editorGenerationUploads.mjs';
 import { generationSlotKind, generationMimeTypes } from '../../../lib/generationSourceSlots.mjs';
+import { GENERATION_PROMPT_MAX } from '../../../lib/promptLimits.js';
 export function generationQuote(model, duration) {
     if (!model || !Number.isInteger(model.credits) || model.credits < 0) return null;
     if (generationAvatarSupported(model)) return model.credits;
@@ -76,7 +77,7 @@ export function generationSourceLabel(model,slot) {
     return `${generationSlotKind(slot)} source`;
 }
 export function generationPromptHelp(model) {
-    const limit = model?.promptMax || 2000;
+    const limit = model?.promptMax || GENERATION_PROMPT_MAX;
     if (['elevenlabs-dialogue','elevenlabs-dialogue-kie'].includes(model?.id)) return helperEnglish('use_one_name_line_per_speaker_up_to', { value1: limit });
     if (model?.isSpeech) return helperEnglish('up_to_spoken_characters_existing_model_voices_and', { value1: limit });
     return null;

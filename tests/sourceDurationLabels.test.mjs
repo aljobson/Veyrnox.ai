@@ -14,6 +14,7 @@ import * as tokens from '../app/veyrnox/_lib/tokens.js';
 import * as starters from '../app/veyrnox/_lib/starterModels.js';
 import * as sourceSlots from '../lib/generationSourceSlots.mjs';
 import { translator } from '../lib/i18n/translate.mjs';
+import * as promptLimits from '../lib/promptLimits.js';
 
 const require = createRequire(import.meta.url);
 const binding = fixture('en', '/app/chat').load('components/BindingText.jsx');
@@ -34,6 +35,9 @@ function component(path, name, stateValues) {
     '../LibraryPicker': { LibraryPicker: ({ kind, mimeTypes }) => createElement('span', { 'data-library-kind': kind, 'data-library-mimes': mimeTypes.join(',') }) }, 'next/navigation': { useRouter: () => ({ push() {} }) },
     '../../../components/I18nProvider': { useI18n: () => ({ locale: 'en', t: translator('en'), href: (p) => p }) },
     '../_lib/landingDraft': { writeStudioDraft() {} }, '../_lib/tokens': tokens, '../_lib/starterModels': starters,
+    '../../../lib/promptLimits.js': promptLimits,
+    '../../../../lib/promptLimits': promptLimits,
+    '../../../../lib/promptLimits.js': promptLimits,
   };
   new Function('require', 'module', 'exports', code)((id) => imports[id] || englishAppImports[id] || require(id), output, output.exports);
   return output.exports[name];
@@ -80,6 +84,16 @@ test('prompt-less Chat transforms enable with valid sources while all other subm
   assert.match(generateButton(renderComposer(modelFor('fal-ai/wan-25-preview/text-to-video'), { prompt: '' })), /\sdisabled=/);
 });
 
+test('web Chat preserves an over-limit handoff and blocks generation before submit', () => {
+  const model = modelFor('fal-ai/wan-25-preview/text-to-video');
+  const prompt = 'x'.repeat(801);
+  const html = renderComposer(model, { prompt });
+  const button = html.match(/<button\b[^>]*data-testid="chat-media-generate"[^>]*>[^<]*<\/button>/)[0];
+  assert.match(button, /\sdisabled=/);
+  assert.match(html, new RegExp(`<textarea[^>]*>${prompt}</textarea>`));
+  assert.match(html, /This prompt is 801 characters\. The model takes up to 800\./);
+});
+
 test('all eight prompt-driven audio families keep their Chat text guard; source-only Demucs does not', () => {
   const button = html => html.match(/<button\b[^>]*data-testid="chat-media-generate"[^>]*>[^<]*<\/button>/)[0];
   for (const endpoint of ['fal-ai/ace-step', 'fal-ai/ace-step-1.5', 'fal-ai/elevenlabs/sound-effects/v2', 'fal-ai/mmaudio-v2/text-to-audio', 'fal-ai/inworld-tts', 'fal-ai/elevenlabs/tts/turbo-v2.5', 'fal-ai/minimax/speech-2.6-hd', 'fal-ai/elevenlabs/text-to-dialogue/eleven-v3']) {
@@ -113,6 +127,22 @@ test('landing price slips describe source limits rather than internal 5s units',
     assert.ok(html.includes(`source up to ${max}s`), endpoint);
     assert.doesNotMatch(html, /5s clip/);
   }
+});
+
+test('landing price slip preserves an over-limit handoff and blocks generation', () => {
+  const model = modelFor('fal-ai/wan-25-preview/text-to-video');
+  const prompt = 'x'.repeat(801);
+  const OverLimitSlip = component('app/veyrnox/_components/PriceSlip.js', 'PriceSlip', [model.id, 5, prompt]);
+  const html = renderToStaticMarkup(createElement(OverLimitSlip, { models: [model] }));
+  assert.match(html, new RegExp(`<textarea[^>]*>${prompt}</textarea>`));
+  assert.match(html, /<button[^>]*type="submit"[^>]*disabled=""/);
+  assert.match(html, /This prompt is 801 characters\. The model takes up to 800\./);
+});
+
+test('landing price slips advertise a live catalog model\'s smaller prompt ceiling', () => {
+  const model = { ...modelFor('market:wan/2-5-text-to-video'), promptMax: 800 };
+  const html = renderToStaticMarkup(createElement(Slip, { models: [model] }));
+  assert.match(html, /maxLength="800"/);
 });
 
 test('Chat retains generated video durations for fixed and selectable output models', () => {

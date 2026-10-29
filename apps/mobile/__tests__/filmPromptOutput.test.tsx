@@ -48,11 +48,11 @@ test.each([true, false])('Copy announces success=%p', async ok => {
 });
 
 
-test('a catalog without an explicit prompt maximum uses the existing 2000-character default', async () => {
+test('a catalog without an explicit prompt maximum uses the 30000-character generation default', async () => {
     const catalog = [{ ...model, capabilities: { inputs: { prompt: {}, aspect_ratio: { values: ['16:9'] } } } }];
-    await render({ catalog, prompt: 'x'.repeat(2000) });
+    await render({ catalog, prompt: 'x'.repeat(30000) });
     expect(button(t('film.openinCreate'))).toBeDefined();
-    await render({ catalog, prompt: 'x'.repeat(2001) });
+    await render({ catalog, prompt: 'x'.repeat(30001) });
     expect(button(t('film.openinCreate'))).toBeUndefined();
-    expect(textOf(root.container)).toContain(t('filmOutput.reason.limit', { value1: 2000 }));
+    expect(textOf(root.container)).toContain(t('filmOutput.reason.limit', { value1: 30000 }));
 });

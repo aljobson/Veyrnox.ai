@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { limitRequestBody, JSON_BODY_LIMIT, WEBHOOK_BODY_LIMIT } from '../lib/requestBodyLimit.js';
+import { limitRequestBody, GENERATION_BODY_LIMIT, JSON_BODY_LIMIT, WEBHOOK_BODY_LIMIT } from '../lib/requestBodyLimit.js';
 const request = (body, path = '/api/v1/generations', headers = {}) => new Request(`https://veyrnox.test${path}`, { method: 'POST', body, headers, duplex: 'half' });
 
 // Workers exposes an empty stream for GET/HEAD with Content-Length: 0,
@@ -38,9 +38,37 @@ test('GET streams still enforce the body ceiling', async () => {
 });
 
 test('oversized bodies are rejected without trusting content-length', async () => {
-    const { response } = await limitRequestBody(request('x'.repeat(JSON_BODY_LIMIT + 1), undefined, { 'content-length': '1' }));
+    const { response } = await limitRequestBody(request('x'.repeat(JSON_BODY_LIMIT + 1), '/api/v1/other', { 'content-length': '1' }));
     assert.equal(response.status, 413);
     assert.equal(response.headers.get('cache-control'), 'no-store');
+});
+
+test('generation requests admit a worst-case escaped 30,000-character prompt', async () => {
+    const prompt = String.fromCharCode(1).repeat(30000);
+    const body = JSON.stringify({ model_id: 'flux-2-pro', idempotency_key: 'generation-body-limit', inputs: { prompt } });
+    assert.ok(new TextEncoder().encode(body).length > JSON_BODY_LIMIT);
+    const result = await limitRequestBody(request(body));
+    assert.equal(result.response, undefined);
+    assert.equal((await result.request.json()).inputs.prompt.length, 30000);
+    assert.equal((await limitRequestBody(request('x'.repeat(GENERATION_BODY_LIMIT + 1)))).response.status, 413);
+});
+
+test('developer generation requests use the generation body envelope', async () => {
+    const prompt = String.fromCharCode(1).repeat(30000);
+    const body = JSON.stringify({ model_id: 'flux-2-pro', idempotency_key: 'developer-body-limit', inputs: { prompt } });
+    assert.ok(new TextEncoder().encode(body).length > JSON_BODY_LIMIT);
+    const result = await limitRequestBody(request(body, '/api/v1/developer/generations'));
+    assert.equal(result.response, undefined);
+    assert.equal((await result.request.json()).inputs.prompt.length, 30000);
+});
+
+test('MCP requests admit the same worst-case escaped 30,000-character prompt envelope', async () => {
+    const prompt = String.fromCharCode(1).repeat(30000);
+    const body = JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'generate_image', arguments: { prompt } } });
+    assert.ok(new TextEncoder().encode(body).length > JSON_BODY_LIMIT);
+    const result = await limitRequestBody(request(body, '/api/v1/mcp'));
+    assert.equal(result.response, undefined);
+    assert.equal((await result.request.json()).params.arguments.prompt.length, 30000);
 });
 
 test('webhook bytes survive unchanged including whitespace and non-ASCII content', async () => {

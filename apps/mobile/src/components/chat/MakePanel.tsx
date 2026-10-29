@@ -81,7 +81,10 @@ export function MakePanel({ visible, initialPrompt = '', initialKind = 'image', 
     const n = model ? imageCount(model, opts.count) : 1;
     const resolution = model && options ? resolveResolution(model, options, opts.resolution) : null;
     const audio = model && options ? resolveAudio(model, options, opts.audio) : null;
-    const text = prompt.trim().slice(0, model ? textInput(model)?.max ?? MAX_MEDIA_PROMPT : MAX_MEDIA_PROMPT);
+    const promptLimit = model ? textInput(model)?.max ?? MAX_MEDIA_PROMPT : MAX_MEDIA_PROMPT;
+    const unboundedPrompt = prompt.trim();
+    const promptTooLong = unboundedPrompt.length > promptLimit;
+    const text = unboundedPrompt;
     const request = model && options ? {
         modelId: model.id, prompt: text, durationSeconds: kindOf(model.modality) === 'video' ? length : null,
         confirmedCredits: unit, references, sourceRights: references.length ? rights : undefined, textKey: 'prompt',
@@ -91,7 +94,7 @@ export function MakePanel({ visible, initialPrompt = '', initialKind = 'image', 
     const price = model ? batchCost(unit, n - (retry?.started ?? 0), freeLeftFor(state.freeMap, model.id)) : null;
     const missing = retry?.blocked ? 0 : shortfall(balance, price ?? 0);
     const waiting = Object.values(sending).some(Boolean);
-    const ready = !!model && makeReady(model, text, references, rights, waiting, opts) && !state.submitting && missing === 0;
+    const ready = !!model && !promptTooLong && makeReady(model, text, references, rights, waiting, opts) && !state.submitting && missing === 0;
     const close = () => { epoch.current++; state.close(); onClose(); };
     const buy = () => { close(); router.push('/credits'); };
     const label = price === null ? t('chat.make.button') : price === 0 ? t('opt.costFree') : plural('chat.make.buttonLabel', price);
@@ -131,7 +134,10 @@ export function MakePanel({ visible, initialPrompt = '', initialKind = 'image', 
                         if (sourceEpoch !== epoch.current) return;
                         setRights(false); setReferences(all => replaceSlotReferences(all, slot, files));
                     }} onBusy={(slot, busy) => { if (sourceEpoch === epoch.current) setSending(all => ({ ...all, [slot]: busy })); }} /> : null}
-                <TextField style={styles.input} value={prompt} onChangeText={setPrompt} multiline maxLength={model ? textInput(model)?.max ?? MAX_MEDIA_PROMPT : MAX_MEDIA_PROMPT} placeholder={t('chat.make.placeholder')} accessibilityLabel={t('chat.make.promptLabel')} />
+                <TextField style={styles.input} value={prompt} onChangeText={setPrompt} multiline maxLength={promptLimit} placeholder={t('chat.make.placeholder')} accessibilityLabel={t('chat.make.promptLabel')} />
+                {promptTooLong ? <Text variant="caption" tone="warning" accessibilityLiveRegion="polite">
+                    {t('public.TemplateRecipe.promptTooLong', { count: String(unboundedPrompt.length), max: String(promptLimit) })}
+                </Text> : null}
                 {balance !== null ? <Text variant="caption" tone="secondary">{t('create.workspace.balance', { credits: String(balance) })}</Text> : null}
                 {missing > 0 ? <Text accessibilityLiveRegion="polite">{plural('create.short', missing, { have: String(balance ?? 0), need: String(price) })}</Text> : null}
                 {state.error || loadError ? <Text tone="danger" accessibilityRole="alert">{state.error ?? loadError}</Text> : null}

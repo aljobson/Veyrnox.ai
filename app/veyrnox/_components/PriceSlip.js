@@ -8,6 +8,7 @@ import { affordableStarterModel } from '../_lib/starterModels';
 import { outputDurationLabel } from '../_lib/chatMedia';
 import { creditLabel, sourceDurationLimit } from '../_lib/modelPricing';
 import { useI18n } from '../../../components/I18nProvider';
+import { GENERATION_PROMPT_MAX } from '../../../lib/promptLimits.js';
 
 // The landing hero's working form: pick a model and a length, and the slip
 // prints what the button will charge. Pressing Generate opens the studio on
@@ -22,9 +23,6 @@ import { useI18n } from '../../../components/I18nProvider';
 // one select away.
 const FEATURED = ['wan-2.5-kie', 'kling-2.6-pro-kie', 'seedance-2.0-fast', 'flux-2-pro'];
 const SIGNUP_CREDITS = 10;
-
-// The gateway refuses longer prompts (app/api/v1/generations/route.js).
-const PROMPT_MAX = 2000;
 
 const KIND_KEY = { video: 'home.models.video', image: 'home.models.image', audio: 'home.models.audio' };
 
@@ -51,6 +49,9 @@ export function PriceSlip({ models }) {
   const [prompt, setPrompt] = useState('');
 
   const model = models.find((m) => m.id === modelId) || null;
+  const promptLimit = model?.promptMax || model?.capabilities?.inputs?.prompt?.max || GENERATION_PROMPT_MAX;
+  const submittedPromptLength = prompt.trim().length;
+  const promptTooLong = submittedPromptLength > promptLimit;
   const lengths = model && model.kind === 'video' && model.durations?.length ? model.durations : [5];
   // A 10 s pick must not outlive a switch to a model that only sells 5 s.
   const seconds = lengths.includes(wanted) ? wanted : lengths[0];
@@ -66,6 +67,7 @@ export function PriceSlip({ models }) {
 
   function onSubmit(e) {
     e.preventDefault();
+    if (promptTooLong) return;
     try {
       writeStudioDraft(window.sessionStorage, { prompt: prompt.trim(), model: model.id });
     } catch {
@@ -89,12 +91,17 @@ export function PriceSlip({ models }) {
         <textarea
           id="slip-prompt"
           rows={3}
-          maxLength={PROMPT_MAX}
+          maxLength={promptLimit}
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           placeholder={t('slip.placeholder')}
           className="mt-2 w-full resize-none rounded-lg border border-vx-field bg-vx-base px-3 py-2.5 text-[15px] leading-snug text-vx-fg placeholder:text-vx-fg-faint focus:border-vx-accent focus:outline-hidden"
         />
+        {promptTooLong && (
+          <p role="status" className="mt-2 text-xs text-vx-danger">
+            {t('public.TemplateRecipe.promptTooLong', { count: submittedPromptLength, max: promptLimit })}
+          </p>
+        )}
 
         <fieldset className="mt-4 min-w-0">
           <legend className="text-[13px] font-bold text-vx-fg">{t('slip.model')}</legend>
@@ -167,7 +174,8 @@ export function PriceSlip({ models }) {
 
         <button
           type="submit"
-          className="vx-press group mt-6 flex w-full items-center justify-between gap-4 rounded-xl bg-vx-accent px-5 py-4 text-left text-vx-accent-ink hover:bg-vx-accent-hover"
+          disabled={promptTooLong}
+          className="vx-press group mt-6 flex w-full items-center justify-between gap-4 rounded-xl bg-vx-accent px-5 py-4 text-left text-vx-accent-ink hover:bg-vx-accent-hover disabled:cursor-not-allowed disabled:opacity-40"
         >
           <span className="text-[17px] font-extrabold">{t('slip.generate')}</span>
           <span key={cost} className="vx-tick font-vx-mono text-[17px] font-bold vx-num">{cost} cr</span>

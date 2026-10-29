@@ -14,14 +14,15 @@ await client.connect();
 const q = (sql, args = []) => client.query(sql, args);
 const one = async (sql, args = []) => (await q(sql, args)).rows[0];
 const model = `payload-${randomUUID().slice(0,8)}`, auth = randomUUID();
-const migration = await readFile(new URL('../packages/db/schema/supabase/0243_fal_pinned_payload_validation.sql', import.meta.url), 'utf8');
+const migration = await readFile(new URL('../packages/db/schema/supabase/0406_expand_fal_prompt_boundary.sql', import.meta.url), 'utf8');
 let user, checks = 0;
 const tally = () => one(`SELECT balance,free_balance,subscription_balance,
  (SELECT count(*)::int FROM public.jobs WHERE user_id=$1) jobs,
  (SELECT count(*)::int FROM public.ledger_entries WHERE user_id=$1) ledger,
  (SELECT count(*)::int FROM public.model_free_allowance_claims WHERE user_id=$1) claims,
  (SELECT count(*)::int FROM public.fal_dispatch d JOIN public.jobs j ON j.id=d.job_id WHERE j.user_id=$1) intents,
- (SELECT count(*)::int FROM public.fal_capacity_reservations r JOIN public.jobs j ON j.id=r.job_id WHERE j.user_id=$1) reservations
+ (SELECT count(*)::int FROM public.fal_capacity_reservations r JOIN public.jobs j ON j.id=r.job_id WHERE j.user_id=$1) reservations,
+ (SELECT count(*)::int FROM public.provider_spend_reservations r WHERE r.user_id=$1) provider_reservations
  FROM public.credit_balances WHERE user_id=$1`, [user]);
 const admit = (payload, free = false, key = randomUUID()) => one('SELECT public.admit_fal_dispatch($1,$2,$3,$4,$5,$6,$7) r',
     [user,key,model,{prompt:'fixture'},payload,'fal-ai/flux-2-pro',free]).then(x => x.r);
@@ -45,7 +46,29 @@ try {
         VALUES($1,'Payload fixture','fal','fal-ai/flux-2-pro','text-to-image',2,0.03,'per_generation',true,3,10)`,[model]);
     await q("UPDATE public.fal_capacity_policy SET enabled=true,provider_account='local-payload-fixture',model_id=$1",[model]);
     await q('UPDATE public.fal_admission_control SET paused=false');
-    const { max_prompt: max } = await one(`SELECT 16384-octet_length((jsonb_build_object('prompt','')||'{"image_size":{"width":1024,"height":768}}'::jsonb)::text) max_prompt`);
+    const { max_prompt: max } = await one(`SELECT 262144-octet_length((jsonb_build_object('prompt','')||'{"image_size":{"width":1024,"height":768}}'::jsonb)::text) max_prompt`);
+    const { max_prompt: supplierMax } = await one(`SELECT 262144-octet_length(jsonb_build_object('prompt','')::text) max_prompt`);
+    await check('30,000 escaped control characters pass durable FAL admission', async () => {
+        const result = await admit({prompt:'\u0001'.repeat(30000)});
+        assert.equal(result.ok, true);
+    });
+    await check('30,000 escaped control characters pass supplier spend admission', async () => {
+        const result = (await one('SELECT public.provider_spend_admit_model($1,$2,$3,$4,$5) r',
+            [user,randomUUID(),model,{prompt:'\u0001'.repeat(30000)},2])).r;
+        assert.equal(result.ok, true);
+    });
+    await check('supplier spend accepts an input at exactly 262144 bytes', async () => {
+        const result = (await one('SELECT public.provider_spend_admit_model($1,$2,$3,$4,$5) r',
+            [user,randomUUID(),model,{prompt:'x'.repeat(supplierMax)},2])).r;
+        assert.equal(result.ok, true);
+    });
+    await check('supplier spend refuses an input over 262144 bytes without reserving spend', async () => {
+        const before = await tally();
+        const result = (await one('SELECT public.provider_spend_admit_model($1,$2,$3,$4,$5) r',
+            [user,randomUUID(),model,{prompt:'x'.repeat(supplierMax+1)},2])).r;
+        assert.deepEqual(result,{ok:false,code:'PROVIDER_SPEND_INVALID'});
+        assert.deepEqual(await tally(),before);
+    });
     for (const free of [false,true]) {
         await check(`over-limit ASCII payload rejects without ${free?'free claim':'paid debit'}`,async()=>{
             const before=await tally();
@@ -75,7 +98,7 @@ try {
             const after=await tally();assert.equal(after.balance,before.balance-(free?0:2));
             assert.equal(after.ledger,before.ledger+(free?0:1));assert.equal(after.claims,before.claims+(free?1:0));
             assert.equal(after.jobs,before.jobs+1);assert.equal(after.intents,before.intents+1);assert.equal(after.reservations,before.reservations+1);
-            assert.equal((await one('SELECT octet_length(payload::text) bytes FROM public.fal_dispatch WHERE job_id=$1',[result.job_id])).bytes,16384);
+            assert.equal((await one('SELECT octet_length(payload::text) bytes FROM public.fal_dispatch WHERE job_id=$1',[result.job_id])).bytes,262144);
             const replay=await admit(payload,free,key);assert.equal(replay.idempotent,true);assert.equal(replay.job_id,result.job_id);
             assert.deepEqual(await tally(),after);
             assert.equal((await admit({prompt:'changed'},free,key)).code,'IDEMPOTENCY_CONFLICT');

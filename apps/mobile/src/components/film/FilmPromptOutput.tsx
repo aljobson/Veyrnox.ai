@@ -7,6 +7,7 @@ import { promptOpenState } from '../../lib/filmStudioOptions';
 import { textInput, type CatalogModel } from '../../lib/media';
 import type { Film } from '../../lib/filmStudio';
 import { t } from '../../lib/i18n';
+import { GENERATION_PROMPT_MAX } from '../../lib/promptLimits';
 import { colors } from '../../theme';
 import { Text as StatusText } from '../ui/Text';
 
@@ -21,7 +22,7 @@ export function FilmInput({ label, value, onChange, disabled = false, multiline 
 }) {
     return <View style={{ gap: 6 }}><Text style={{ color: colors.body }}>{label}</Text><TextInput accessibilityLabel={rawText(label)}
         accessibilityState={{ disabled }} editable={!disabled} value={value} onChangeText={v => { if (!disabled) onChange(v); }}
-        multiline={multiline} maxLength={24000} style={{ minHeight: multiline ? 110 : 44, color: colors.text, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12 }} /></View>;
+        multiline={multiline} maxLength={GENERATION_PROMPT_MAX} style={{ minHeight: multiline ? 110 : 44, color: colors.text, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12 }} /></View>;
 }
 export function FilmPromptOutput({ title, prompt, modelId, access, catalog, live, aspect, duration }: {
     title: string; prompt: string; modelId: string; access: string; catalog: readonly CatalogModel[]; live: boolean; aspect?: string; duration?: number;

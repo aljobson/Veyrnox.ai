@@ -5,6 +5,7 @@ import Templates from '../src/app/(app)/create/presets';
 import TemplatePage from '../src/app/(app)/templates/[id]';
 import { parsePresets } from '../src/lib/presets';
 import { t } from '../src/lib/i18n';
+import { GENERATION_PROMPT_MAX } from '../src/lib/promptLimits';
 const mockRouter = { push: jest.fn() };
 const mockFetch = jest.fn(); const mockPopular = jest.fn(); const mockCopy = jest.fn();
 const mockPlayers: { play: jest.Mock; pause: jest.Mock; muted: boolean; loop: boolean }[] = [];
@@ -52,8 +53,15 @@ test('only a deliberately selected preview plays, muted; selecting another pause
 });
 test('template page copies the edited prompt and uses it with the validated template id', async () => {
     await act(async () => root.render(<TemplatePage />));
-    expect(mockTextField.maxLength).toBe(2000); await act(async () => mockTextField.onChangeText('edited words'));
+    expect(mockTextField.maxLength).toBe(GENERATION_PROMPT_MAX); await act(async () => mockTextField.onChangeText('edited words'));
     await click(t('editor.copy')); expect(mockCopy).toHaveBeenCalledWith('edited words');
     expect(root.container.queryAll(n => n.children.includes(t('libraryCreate.copied')))).toHaveLength(1);
     await click(t('libraryCreate.useTemplate')); expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/create/[modelId]', params: expect.objectContaining({ tid: 'p-0', prompt: 'edited words' }) });
+});
+test('template page preserves prompts longer than the old 2,000-character ceiling', async () => {
+    const prompt = 'x'.repeat(3722);
+    mockFetch.mockResolvedValue(parsePresets({ presets: [{ id: 'p-0', title: 'Long template', category: 'STYLE', modelId: 'model', modelName: 'Model', modality: 'text-to-image', prompt, credits: 3 }] }));
+    await act(async () => root.render(<TemplatePage />));
+    expect(mockTextField.value).toBe(prompt);
+    expect(mockTextField.maxLength).toBe(GENERATION_PROMPT_MAX);
 });

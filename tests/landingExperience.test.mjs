@@ -31,6 +31,7 @@ test('the working hero price slip starts on the shared affordable model', () => 
   const page = read('app/veyrnox/page.js');
   const slip = read('app/veyrnox/_components/PriceSlip.js');
   assert.match(page, /media: m\.capabilities\?\.media \|\| \{\}/);
+  assert.match(page, /promptMax: m\.capabilities\?\.inputs\?\.prompt\?\.max/);
   assert.match(page, /takesPrompt: !!m\.capabilities\?\.inputs\?\.prompt/);
   assert.match(page, /takesPlan: !!m\.capabilities\?\.inputs\?\.plan_id/);
   assert.match(slip, /affordableStarterModel\(open, AFFORDABLE_START_MODEL_ID, SIGNUP_CREDITS\)/);

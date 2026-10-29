@@ -1,3 +1,5 @@
+import { GENERATION_PROMPT_MAX } from '../../../lib/promptLimits.js';
+
 const KEY = 'veyrnox_film_template_draft_v1';
 const TARGETS = new Set([30, 60, 90, 120]);
 
@@ -10,7 +12,7 @@ export function filmStarterForTemplate(preset, prompt, targetSeconds = 60) {
   return {
     templateId: clean(preset?.id || preset?.templateId, 100),
     title: clean(preset?.name || preset?.title, 100),
-    prompt: clean(prompt, 2000),
+    prompt: clean(prompt, GENERATION_PROMPT_MAX),
     model: clean(preset?.model, 120),
     aspect: ['16:9', '9:16', '1:1'].includes(preset?.aspect) ? preset.aspect : '16:9',
     targetSeconds: TARGETS.has(target) ? target : 60,
