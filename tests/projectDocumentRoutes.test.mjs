@@ -81,3 +81,15 @@ test('v3 saves require the advanced server flag; valid saves forward and damaged
   assert.equal((await PUT(req({ expected_revision: 0, document: damaged }), params)).status, 400);
  } finally { if (oldFlag === undefined) delete process.env.EDITOR_MULTITRACK_ENABLED; else process.env.EDITOR_MULTITRACK_ENABLED = oldFlag; }
 });
+test('save caps project as LIMIT_REACHED, minute limit stays RATE_LIMITED',async()=>{
+ const doc=emptyProjectDocument(id);
+ for(const body of [{expected_revision:1000,document:doc},{expected_revision:1000,restore_revision:1}]){
+  for(const [upstream,code] of [[JSON.stringify({code:'PT429',message:'LIMIT_REACHED',details:'project_revisions'}),'LIMIT_REACHED'],[JSON.stringify({code:'PT429',message:'LIMIT_REACHED',details:'daily_document_saves'}),'LIMIT_REACHED'],[JSON.stringify({code:'PT429',message:'RATE_LIMITED',details:'project_revisions'}),'RATE_LIMITED'],['{not json','RATE_LIMITED']]){
+   let auth;globalThis.fetch=async(url,init)=>{auth=init.headers.authorization;return new Response(upstream,{status:429,headers:{'content-type':'application/json'}});};
+   const r=await PUT(req(body),params);
+   assert.equal(r.status,429);assert.equal(r.headers.get('retry-after'),'60');assert.equal(auth,'Bearer test-user');
+   const text=await r.text();assert.equal(JSON.parse(text).error.code,code);
+   assert.ok(!text.includes('project_revisions'));assert.ok(!text.includes('daily_document_saves'));
+  }
+ }
+});

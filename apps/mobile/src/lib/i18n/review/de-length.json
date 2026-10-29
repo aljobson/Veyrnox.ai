@@ -3066,6 +3066,126 @@
     "ratio": 1.8
   },
   {
+    "id": "editorSave.retryRestore",
+    "english": "Retry restore",
+    "translation": "Wiederherstellung erneut versuchen",
+    "ratio": 2.62
+  },
+  {
+    "id": "editorSave.recovered",
+    "english": "Recovered changes, not saved yet",
+    "translation": "Änderungen wiederhergestellt, noch nicht gespeichert",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorSave.close",
+    "english": "Close",
+    "translation": "Schließen",
+    "ratio": 1.8
+  },
+  {
+    "id": "projectDocument.saving",
+    "english": "Saving…",
+    "translation": "Wird gespeichert…",
+    "ratio": 2.43
+  },
+  {
+    "id": "projectDocument.restoring",
+    "english": "Restoring…",
+    "translation": "Wird wiederhergestellt…",
+    "ratio": 2.3
+  },
+  {
+    "id": "projectDocument.notSaved",
+    "english": "Not saved",
+    "translation": "Nicht gespeichert",
+    "ratio": 1.89
+  },
+  {
+    "id": "projectDocument.unsaved",
+    "english": "Unsaved changes",
+    "translation": "Ungespeicherte Änderungen",
+    "ratio": 1.67
+  },
+  {
+    "id": "projectDocument.held",
+    "english": "Saving paused. Tap Save now to try again.",
+    "translation": "Speichern pausiert. Tippe auf „Jetzt speichern“, um es erneut zu versuchen.",
+    "ratio": 1.83
+  },
+  {
+    "id": "projectDocument.saveNow",
+    "english": "Save now",
+    "translation": "Jetzt speichern",
+    "ratio": 1.88
+  },
+  {
+    "id": "projectDocument.retrySave",
+    "english": "Retry save",
+    "translation": "Speichern wiederholen",
+    "ratio": 2.1
+  },
+  {
+    "id": "projectDocument.reviewLatest",
+    "english": "Review latest",
+    "translation": "Neueste Version prüfen",
+    "ratio": 1.69
+  },
+  {
+    "id": "projectDocument.noBrief",
+    "english": "No brief yet",
+    "translation": "Noch keine Beschreibung",
+    "ratio": 1.92
+  },
+  {
+    "id": "projectDocument.useSaved",
+    "english": "Use saved version",
+    "translation": "Gespeicherte Version verwenden",
+    "ratio": 1.76
+  },
+  {
+    "id": "projectDocument.saveDraftInstead",
+    "english": "Save my draft instead",
+    "translation": "Stattdessen meinen Entwurf speichern",
+    "ratio": 1.71
+  },
+  {
+    "id": "projectDocument.loadFailed",
+    "english": "Couldn't load this project's text. Try again.",
+    "translation": "Der Text dieses Projekts konnte nicht geladen werden. Versuche es erneut.",
+    "ratio": 1.62
+  },
+  {
+    "id": "projectDocument.retry",
+    "english": "Try again",
+    "translation": "Erneut versuchen",
+    "ratio": 1.78
+  },
+  {
+    "id": "projectDocument.reloadLatest",
+    "english": "Reload latest",
+    "translation": "Neueste Version laden",
+    "ratio": 1.62
+  },
+  {
+    "id": "projectDocument.versionFailed",
+    "english": "Could not open this version. Try again.",
+    "translation": "Diese Version konnte nicht geöffnet werden. Versuche es erneut.",
+    "ratio": 1.62
+  },
+  {
+    "id": "projectDocument.close",
+    "english": "Close",
+    "translation": "Schließen",
+    "ratio": 1.8
+  },
+  {
+    "id": "projectDocument.restore",
+    "english": "Restore",
+    "translation": "Wiederherstellen",
+    "ratio": 2.29
+  },
+  {
     "id": "commerce.optionName",
     "english": "Name",
     "translation": "Name der Variante",

@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView, initialWindowMetrics } from 'react-native-safe-area-context';
 import { usePathname, useRouter, type ErrorBoundaryProps } from 'expo-router';
 import { Text, Button, themedStyles, useThemedStyles } from './ui';
-import { captureIssue } from '../lib/crash';
+import { captureRenderError } from '../lib/crash';
 import { t } from '../lib/i18n';
 import { useAnnouncement } from '../lib/useAnnouncement';
 import { ds } from '../theme';
@@ -15,8 +15,8 @@ export function ErrorFallback({ error, retry, onHome }: ErrorBoundaryProps & { o
     useEffect(() => {
         if (reported.current === error) return;
         reported.current = error;
-        // The error's class name groups crashes; its message can hold user text and is never sent.
-        captureIssue('render_error', { boundary: onHome ? 'signed_in' : 'root', error: /^[A-Za-z_$][\w$]{0,63}$/.test(error.name) ? error.name : 'Error' });
+        // Its class name and stack frames are sent; its message can hold user text and is never sent.
+        captureRenderError(error, onHome ? 'signed_in' : 'root');
     }, [error, onHome]);
     useAnnouncement(t('recovery.title'), { onMount: true });
     return <SafeAreaProvider initialMetrics={initialWindowMetrics}>

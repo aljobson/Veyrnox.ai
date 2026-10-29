@@ -74,6 +74,7 @@ import area_edit from './en/edit';
 import area_editor from './en/editor';
 import area_editorCore from './en/editorCore';
 import area_editorProjects from './en/editorProjects';
+import area_editorSave from './en/editorSave';
 import area_editorServerExport from './en/editorServerExport';
 import area_editorSpike from './en/editorSpike';
 import area_email from './en/email';
@@ -139,6 +140,7 @@ import area_presets from './en/presets';
 import area_preview from './en/preview';
 import area_pricing from './en/pricing';
 import area_privacyExport from './en/privacyExport';
+import area_projectDocument from './en/projectDocument';
 import area_projects from './en/projects';
 import area_prov from './en/prov';
 import area_public from './en/public';
@@ -273,6 +275,7 @@ const catalog = {
     ...area_editor,
     ...area_editorCore,
     ...area_editorProjects,
+    ...area_editorSave,
     ...area_editorServerExport,
     ...area_editorSpike,
     ...area_email,
@@ -338,6 +341,7 @@ const catalog = {
     ...area_preview,
     ...area_pricing,
     ...area_privacyExport,
+    ...area_projectDocument,
     ...area_projects,
     ...area_prov,
     ...area_public,

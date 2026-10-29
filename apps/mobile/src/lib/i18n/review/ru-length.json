@@ -3090,6 +3090,60 @@
     "ratio": 1.8
   },
   {
+    "id": "editorSave.loadOlder",
+    "english": "Load older",
+    "translation": "Загрузить предыдущие",
+    "ratio": 2
+  },
+  {
+    "id": "editorSave.retryRestore",
+    "english": "Retry restore",
+    "translation": "Повторить восстановление",
+    "ratio": 1.85
+  },
+  {
+    "id": "projectDocument.held",
+    "english": "Saving paused. Tap Save now to try again.",
+    "translation": "Сохранение приостановлено. Нажмите «Сохранить сейчас», чтобы повторить.",
+    "ratio": 1.73
+  },
+  {
+    "id": "projectDocument.tooBig",
+    "english": "Too long to save",
+    "translation": "Слишком длинно для сохранения",
+    "ratio": 1.81
+  },
+  {
+    "id": "projectDocument.saveNow",
+    "english": "Save now",
+    "translation": "Сохранить сейчас",
+    "ratio": 2
+  },
+  {
+    "id": "projectDocument.retrySave",
+    "english": "Retry save",
+    "translation": "Повторить сохранение",
+    "ratio": 2
+  },
+  {
+    "id": "projectDocument.useSaved",
+    "english": "Use saved version",
+    "translation": "Использовать сохранённую версию",
+    "ratio": 1.82
+  },
+  {
+    "id": "projectDocument.keepEditing",
+    "english": "Keep editing",
+    "translation": "Продолжить редактирование",
+    "ratio": 2.08
+  },
+  {
+    "id": "projectDocument.restore",
+    "english": "Restore",
+    "translation": "Восстановить",
+    "ratio": 1.71
+  },
+  {
     "id": "commerce.optionName",
     "english": "Name",
     "translation": "Название",

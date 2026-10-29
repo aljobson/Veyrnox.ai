@@ -1,8 +1,8 @@
 import { createFrameStore } from './editorFrameStore';
 import { PPF_DEFAULT, SEQUENCE_MAX } from '../../lib/editorTimeline';
-import { libraryMedia } from '../../lib/editorLibraryLength';
-import { useAnnouncement } from '../../lib/useAnnouncement';
-import { randomUUID } from 'expo-crypto';
+import { libraryMedia, LIBRARY_STOPPED } from '../../lib/editorLibraryLength';
+import { isAccountChanged } from '../../auth/sessionTask';
+import { useEditorSaveSync, type EditorSaveSync } from './useEditorSaveSync';
 import * as SecureStore from 'expo-secure-store';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -10,11 +10,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 
 import { editorDeviceMedia } from '../../lib/editorDeviceMedia';
-import { getCacheUser } from '../../lib/appCache';
 import { probeDuration } from '../../lib/editorMediaDuration';
-import { ApiError } from '../../lib/api';
 import { documentIdentity, type ProjectDocument } from '../../lib/editorBridge';
-import { getDocument, putDocument } from '../../lib/editorProjects';
+import { getDocument, type DocumentHead } from '../../lib/editorProjects';
 import { listEditorProjectAssets } from '../../lib/editorProjectAssets';
 import { t } from '../../lib/i18n';
 
@@ -25,24 +23,20 @@ import type { SlotKind } from '../../lib/sources';
 type Tool = 'media' | 'audio' | 'generate' | 'text' | 'captions' | 'transcript' | 'effects' | 'transitions' | 'filters' | 'animation' | 'markers' | 'brand' | 'adjust';
 type Ripple = 'none' | 'lane' | 'all';
 
-export function useFullEditorSession({ projectId, jobId }: { projectId: string; jobId?: string }) {
-    const { api } = useAuth();
+export function useFullEditorSession({ projectId, jobId, onOwnerChange = () => {}, onCopy = () => {} }: { projectId: string; jobId?: string; onOwnerChange?: () => void; onCopy?: (id: string) => void }) {
+    const { api, beginSessionTask } = useAuth();
     const router = useRouter();
     const mounted = useRef(true);
     const documentRef = useRef<ProjectDocument | null>(null);
     const revisionRef = useRef(0);
     const dirtyRef = useRef(false);
-    const savingRef = useRef(false);
-    const queuedRef = useRef(false);
+    const syncRef = useRef<EditorSaveSync | null>(null);
     const pastRef = useRef<ProjectDocument[]>([]);
     const futureRef = useRef<ProjectDocument[]>([]);
     const [name, setName] = useState(t('editor.title'));
+    const projectName = useRef(name);
     const [document, setDocument] = useState<ProjectDocument | null>(null);
-    const [revision, setRevision] = useState(0);
-    const [dirty, setDirty] = useState(false);
-    const [saving, setSaving] = useState(false);
     const [problem, setProblem] = useState<string | null>(null);
-    useAnnouncement(document ? (saving ? t('editor.saving') : dirty ? t('editor.unsavedchanges2') : t('editor.saved')) : null);
     const [tool, setTool] = useState<Tool>('media');
     const [selection, setSelection] = useState<Selection | null>(null);
     const [selections, setSelections] = useState<Selection[]>([]);
@@ -71,6 +65,7 @@ export function useFullEditorSession({ projectId, jobId }: { projectId: string; 
     const playbackTotal = framesIn(playbackTimeline);
 
     const markDocument = useCallback((next: ProjectDocument, record = true) => {
+        if (!syncRef.current?.live()) return;
         if (record && documentRef.current) {
             pastRef.current.push(documentRef.current);
             if (pastRef.current.length > 30) pastRef.current.shift();
@@ -81,96 +76,67 @@ export function useFullEditorSession({ projectId, jobId }: { projectId: string; 
         documentRef.current = next;
         dirtyRef.current = true;
         setDocument(next);
-        setDirty(true);
+        syncRef.current?.changed();
         setProblem(null);
     }, [mergeBackups]);
 
     const applyBackup = useCallback((mediaId: string, source: NonNullable<Media['assetSource']>) => {
+        if (!syncRef.current?.live()) return;
         backups.current[mediaId] = source;
         pastRef.current = pastRef.current.map(mergeBackups);
         futureRef.current = futureRef.current.map(mergeBackups);
-        if (documentRef.current && (documentRef.current.timeline as Timeline)?.media[mediaId]) markDocument(mergeBackups(documentRef.current), false);
-    }, [markDocument, mergeBackups]);
+        syncRef.current.settle();
+    }, [mergeBackups]);
 
-    const save = useCallback(async (): Promise<boolean> => {
-        if (!dirtyRef.current || !documentRef.current) return true;
-        if (savingRef.current) { queuedRef.current = true; return false; }
-        savingRef.current = true;
-        if (mounted.current) setSaving(true);
+    const baseline = useCallback((head: DocumentHead) => {
+        documentRef.current = head.document; revisionRef.current = head.revision; dirtyRef.current = false;
+        pastRef.current = []; futureRef.current = [];
+        setSelection(null); setSelections([]); setClipboard(null);
+        setHistory({ canUndo: false, canRedo: false }); setDocument(head.document);
+        void editorDeviceMedia.hydrate(projectId, head.document).then(uris => {
+            if (syncRef.current?.live() && documentIdentity(documentRef.current) === documentIdentity(head.document)) setLocalMediaUris(uris);
+        }).catch(() => {});
+    }, [projectId]);
+    const entryImport = useCallback(async () => {
+        if (!jobId || initialImport.current) return;
+        const token = syncRef.current?.beginImport(); if (!token) return;
+        initialImport.current = true;
         try {
-            do {
-                queuedRef.current = false;
-                const snapshot = documentRef.current;
-                if (!snapshot) break;
-                const result = await putDocument(api, projectId, revisionRef.current, snapshot, randomUUID());
-                revisionRef.current = result.revision;
-                if (mounted.current) setRevision(result.revision);
-                if (documentIdentity(documentRef.current) === documentIdentity(snapshot)) {
-                    dirtyRef.current = false;
-                    if (mounted.current) setDirty(false);
-                }
-            } while (queuedRef.current || dirtyRef.current);
-            return true;
-        } catch (error) {
-            if (mounted.current) {
-                const status = (error as ApiError).status;
-                setProblem(status === 409 ? t('editor.conflict') : status === 0 ? t('editor.offline') : t('editor.retry'));
-            }
-            return false;
-        } finally {
-            savingRef.current = false;
-            if (mounted.current) setSaving(false);
-        }
-    }, [api, projectId]);
+            if (timelineOf(documentRef.current?.timeline).media[`j-${jobId}`]) return;
+            const media = await libraryMedia(api, { jobId, name: projectName.current || t('editor.libraryvideo2') }, 'video', () => token.valid());
+            if (media === LIBRARY_STOPPED || !token.valid()) return;
+            if (!media) { setProblem(t('editorCore.lengthUnknown')); return; }
+            const current = documentRef.current; if (!current) return;
+            const base = timelineOf(current.timeline);
+            const trackId = base.tracks.find(track => track.kind === 'video' && !track.locked)?.id;
+            if (!trackId) { setProblem(t('editor.unlockoraddatrackfirst', { value1: 'video' })); return; }
+            const seq = base.seq + 1;
+            markDocument({ ...current, schema_version: 3, timeline: { ...base, seq, media: { ...base.media, [media.id]: media }, video: [...base.video, { id: `v${seq}`, mediaId: media.id, start: 0, in: 0, len: Math.min(media.frames!, SEQUENCE_MAX), trackId, volume: 1, transition: 0, rate: 1 }] } });
+        } catch (error) { if (isAccountChanged(error)) syncRef.current?.accountChanged(); else if (token.valid()) setProblem(t('editorCore.lengthUnknown')); }
+        finally { token.end(); }
+    }, [api, jobId, markDocument]);
+    const sync = useEditorSaveSync({ api, projectId, name, documentRef, revisionRef, dirtyRef, baseline, markDocument, mergeBackups, problem, setProblem, onOwnerChange, onCopy, entryImport,
+        clearDocument: () => { documentRef.current = null; setDocument(null); setPlaying(false); },
+    });
+    syncRef.current = sync;
+    const { save, leaveEditor, beginImport, replacing, saveStatus, dirty, revision, saving } = sync;
 
     useEffect(() => {
         mounted.current = true;
         let cancelled = false;
-        const owner = getCacheUser();
         void Promise.all([fetchProject(api, projectId), getDocument(api, projectId), listEditorProjectAssets(api, projectId)])
             .then(async ([project, head, assets]) => {
-                if (cancelled || !mounted.current || owner !== getCacheUser()) return;
-                if (project) setName(project.name);
-                const loaded = head.document;
-                documentRef.current = loaded;
-                revisionRef.current = head.revision;
-                pastRef.current = [];
-                futureRef.current = [];
-                setSelection(null);
-                setSelections([]);
-                setClipboard(null);
-                setHistory({ canUndo: false, canRedo: false });
-                setProjectAssets(assets);
-                setDocument(loaded);
-                void editorDeviceMedia.hydrate(projectId, loaded).then(uris => { if (mounted.current) setLocalMediaUris(uris); }).catch(() => {});
-                setRevision(head.revision);
-                if (jobId && !initialImport.current) {
-                    initialImport.current = true;
-                    if (timelineOf(loaded.timeline).media[`j-${jobId}`]) return;
-                    const media = await libraryMedia(api, { jobId, name: project?.name || t('editor.libraryvideo2') }, 'video');
-                    if (cancelled || !mounted.current || owner !== getCacheUser()) return;
-                    if (!media) { setProblem(t('editorCore.lengthUnknown')); return; }
-                    const current = documentRef.current;
-                    if (!current) return;
-                    const base = timelineOf(current.timeline);
-                    const trackId = base.tracks.find(track => track.kind === 'video' && !track.locked)?.id;
-                    if (!trackId) { setProblem(t('editor.unlockoraddatrackfirst', { value1: 'video' })); return; }
-                    const seq = base.seq + 1;
-                    markDocument({ ...current, schema_version: 3, timeline: { ...base, seq, media: { ...base.media, [media.id]: media }, video: [...base.video, { id: `v${seq}`, mediaId: media.id, start: 0, in: 0, len: Math.min(media.frames!, SEQUENCE_MAX), trackId, volume: 1, transition: 0, rate: 1 }] } });
-                }
+                if (cancelled || !sync.live()) return;
+                if (project) { projectName.current = project.name; setName(project.name); }
+                baseline(head); setProjectAssets(assets);
+                await sync.loaded(head, project?.workspaceId ?? null);
             })
-            .catch(() => { if (mounted.current) setProblem(t('editor.fullFailed')); });
+            .catch(error => { if (isAccountChanged(error)) sync.accountChanged(); else if (sync.live()) setProblem(t('editor.fullFailed')); });
         SecureStore.getItemAsync('veyrnox.editorPrivacyNotice.v1')
             .then((value) => { if (mounted.current && value !== 'seen') setPrivacyNotice(true); })
             .catch(() => { if (mounted.current) setPrivacyNotice(true); });
         return () => { cancelled = true; mounted.current = false; };
-    }, [api, jobId, markDocument, projectId]);
-
-    useEffect(() => {
-        if (!dirty) return;
-        const timer = setTimeout(() => { void save(); }, 900);
-        return () => clearTimeout(timer);
-    }, [dirty, document, save]);
+    }, [api, baseline, projectId, sync]);
 
     useEffect(() => {
         if (!playing || playbackTotal <= 0) return;
@@ -185,10 +151,6 @@ export function useFullEditorSession({ projectId, jobId }: { projectId: string; 
         return () => clearInterval(timer);
     }, [playing, playbackTimeline.fps, playbackTotal, frameStore]);
 
-    const done = useCallback(async () => {
-        const saved = await save();
-        if (saved && !dirtyRef.current) router.back();
-    }, [router, save]);
     const acknowledgePrivacy = useCallback(() => {
         setPrivacyNotice(false);
         SecureStore.setItemAsync('veyrnox.editorPrivacyNotice.v1', 'seen').catch(() => {});
@@ -206,19 +168,23 @@ export function useFullEditorSession({ projectId, jobId }: { projectId: string; 
     }, [markDocument, mergeBackups]);
 
     const preparePicked = async (asset: { uri: string; mimeType?: string | null; duration?: number | null }, mediaId: string, kind: string) => {
-        const owner = getCacheUser();
-        const seconds = typeof asset.duration === 'number' && Number.isFinite(asset.duration) && asset.duration > 0 ? asset.duration / 1000 : kind === 'image' ? null : await probeDuration(asset.uri);
-        if (!mounted.current || owner !== getCacheUser()) return null;
-        const file = await editorDeviceMedia.copy(projectId, mediaId, asset.uri, asset.mimeType || '', seconds);
-        if (!mounted.current || owner !== getCacheUser()) return null;
-        setLocalMediaUris(current => ({ ...current, [mediaId]: file?.file || asset.uri }));
-        if (file) void editorDeviceMedia.backup(api, projectId, mediaId, file).then(source => { if (source && mounted.current && owner === getCacheUser()) applyBackup(mediaId, source); });
-        return seconds ?? (kind === 'image' ? 3 : 10);
+        const token = sync.beginImport(); if (!token) return null;
+        const task = beginSessionTask();
+        try {
+            const seconds = typeof asset.duration === 'number' && Number.isFinite(asset.duration) && asset.duration > 0 ? asset.duration / 1000 : kind === 'image' ? null : await probeDuration(asset.uri);
+            if (!token.valid()) return null;
+            const file = await editorDeviceMedia.copy(projectId, mediaId, asset.uri, asset.mimeType || '', seconds);
+            if (!token.valid()) return null;
+            setLocalMediaUris(current => ({ ...current, [mediaId]: file?.file || asset.uri }));
+            if (file) void editorDeviceMedia.backup(api, projectId, mediaId, file).then(source => { if (source && sync.live() && task.current()) applyBackup(mediaId, source); });
+            return seconds ?? (kind === 'image' ? 3 : 10);
+        } finally { token.end(); }
     };
     const savedDocument = async () => {
-        if (!await save() || dirtyRef.current) { if (dirtyRef.current) setProblem(current => current || t('editor.unsavedchanges2')); return null; }
+        const saved = await save(); if (!sync.live()) return null;
+        if (!saved || dirtyRef.current) { if (dirtyRef.current) setProblem(current => current || t('editor.unsavedchanges2')); return null; }
         return documentRef.current;
     };
 
-    return { currentDocument: () => documentRef.current, preparePicked, savedDocument, applyBackup, api, router, name, document, revision, dirty, saving, problem, setProblem, tool, setTool, selection, setSelection, selections, setSelections, multiSelect, setMultiSelect, clipboard, setClipboard, snap, setSnap, ripple, setRipple, zoom, setZoom, privacyNotice, history, frameStore, setFrame, playing, setPlaying, projectAssets, localMediaUris, setLocalMediaUris, libraryKind, setLibraryKind, markDocument, save, done, acknowledgePrivacy, travel };
+    return { beginImport, replacing, leaveEditor, saveStatus, sync, currentDocument: () => documentRef.current, preparePicked, savedDocument, applyBackup, api, router, name, document, revision, dirty, saving, problem, setProblem, tool, setTool, selection, setSelection, selections, setSelections, multiSelect, setMultiSelect, clipboard, setClipboard, snap, setSnap, ripple, setRipple, zoom, setZoom, privacyNotice, history, frameStore, setFrame, playing, setPlaying, projectAssets, localMediaUris, setLocalMediaUris, libraryKind, setLibraryKind, markDocument, save, acknowledgePrivacy, travel };
 }
