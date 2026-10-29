@@ -4,6 +4,8 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { SOURCE_TEMPLATES } from '../app/veyrnox/_lib/sourceTemplates.js';
+import { GENJUTSU_SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/genjutsuSourcePromptRecords.js';
+import { GENJUTSU_PROMPT_SHA256 } from './fixtures/genjutsuPromptHashes.mjs';
 import { ALL_TEMPLATES, PRESETS, WALL_PRESETS, templateById } from '../app/veyrnox/_lib/templates.js';
 import { MODELS, modelIdForName, presetCredits, presetHref } from '../app/veyrnox/_lib/tokens.js';
 import { SHOWCASE_CLIPS } from '../app/veyrnox/_lib/showcase.js';
@@ -30,7 +32,7 @@ test('every imported clip has its own matching recipe and a supported video mode
     assert.ok(clip.video.endsWith(`-${preset.id}.mp4`), preset.id);
     assert.equal(MODELS.find((m) => m.id === modelIdForName(preset.model))?.kind, 'video');
     assert.ok(preset.prompt.length > 100 && preset.prompt.length <= 2000);
-    assert.doesNotMatch(preset.prompt, /@(image|video)\d/, 'unsupported source reference slots must not leak into runnable prompt');
+    assert.doesNotMatch(preset.prompt, /@(image|video)\d/, 'unsupported source reference slots must not leak into runnable prompts');
     assert.equal(preset.promptOrigin, 'veyrnox-adaptation');
     assert.ok(preset.needs);
     assert.equal(preset.durationSeconds, 10);
@@ -52,6 +54,41 @@ test('Genjutsu-inspired I2V recipes describe source framing without claiming pro
   const handoff = readFileSync(new URL('../app/veyrnox/_components/TemplateHandoffCard.js', import.meta.url), 'utf8');
   assert.match(detail, /presets\.detail\.sourceAspect/);
   assert.match(handoff, /presets\.detail\.sourceAspect/);
+});
+
+test('Genjutsu templates preserve every published source prompt exactly', () => {
+  const community = SOURCE_TEMPLATES.filter((preset) => SHOWCASE_CLIPS[preset.clipKey].video.startsWith('/showcase/creator-'));
+  const otherTemplates = SOURCE_TEMPLATES.filter((preset) => !community.includes(preset));
+  const exact = community.filter((preset) => GENJUTSU_SOURCE_PROMPT_RECORDS[preset.id]?.sourcePromptAvailable);
+  const derived = community.filter((preset) => !GENJUTSU_SOURCE_PROMPT_RECORDS[preset.id]?.sourcePromptAvailable);
+  assert.equal(Object.keys(GENJUTSU_SOURCE_PROMPT_RECORDS).length, 100);
+  assert.equal(exact.length, 57);
+  assert.equal(derived.length, 43);
+  assert.equal(Object.keys(GENJUTSU_PROMPT_SHA256).length, 57);
+  assert.equal(new Set(exact.map((preset) => GENJUTSU_SOURCE_PROMPT_RECORDS[preset.id].prompt)).size, 57);
+  assert.ok(SOURCE_TEMPLATES.every((preset) => !Object.hasOwn(preset, 'sourcePrompt')));
+  assert.ok(SOURCE_TEMPLATES.every((preset) => !Object.hasOwn(preset, 'sourcePromptOrigin')));
+  assert.ok(otherTemplates.every((preset) => GENJUTSU_SOURCE_PROMPT_RECORDS[preset.id] == null));
+
+  for (const preset of community) {
+    const source = GENJUTSU_SOURCE_PROMPT_RECORDS[preset.id];
+    assert.ok(source, preset.id);
+    if (source.sourcePromptAvailable) {
+      assert.equal(createHash('sha256').update(source.prompt).digest('hex'), GENJUTSU_PROMPT_SHA256[preset.id], preset.id);
+    } else {
+      assert.equal(preset.promptOrigin, 'veyrnox-adaptation', preset.id);
+      assert.equal(source.prompt, null, preset.id);
+      assert.equal(GENJUTSU_PROMPT_SHA256[preset.id], undefined, preset.id);
+    }
+  }
+});
+
+test('verbatim Genjutsu provenance preserves public attribution and feed-empty reference slots', () => {
+  assert.match(GENJUTSU_SOURCE_PROMPT_RECORDS['community-noir-leading-role'].prompt, /^@Melisbekov:/);
+  assert.match(GENJUTSU_SOURCE_PROMPT_RECORDS['identity-locked-performance'].prompt, /my face from \. The attached collage/);
+  assert.match(GENJUTSU_SOURCE_PROMPT_RECORDS['community-kitchen-snack-heist'].prompt, /performer with \. for hair/);
+  assert.equal(GENJUTSU_SOURCE_PROMPT_RECORDS['community-survivor-memory-shift'].sourcePromptTruncated, true);
+  assert.match(GENJUTSU_SOURCE_PROMPT_RECORDS['community-survivor-memory-shift'].prompt, /\nAt$/);
 });
 
 test('multi-subject community recipes require every identity in one starting image', () => {
@@ -122,6 +159,23 @@ test('removed legacy recipes stay unavailable while effect recipes are addressab
     assert.ok(templateById(id), id);
     assert.equal(isUnknownStaticPage(`/presets/${id}`), false, id);
   }
+});
+
+test('source-backed generation prompts match the published preview behaviour', () => {
+  const byId = Object.fromEntries(SOURCE_TEMPLATES.map((preset) => [preset.id, preset]));
+  const prompts = Object.fromEntries(Object.entries(byId).map(([id, preset]) => [id, preset.prompt]));
+  assert.match(prompts['high-flip'], /transform both the person and location/i);
+  assert.doesNotMatch(byId['high-flip'].negativePrompt, /identity|character blending/i);
+  assert.match(prompts['earth-zoom'], /Begin on the uploaded outdoor subject.+Earth is visible from orbit.+plunge.+lands back on the subject/s);
+  assert.match(prompts.pigeons, /one pigeon forms beneath each foot.+roller skates/s);
+  assert.match(prompts['raven-transition'], /three distinct coordinated looks.+ravens/s);
+  assert.match(prompts['motion-tracking'], /free of text and brand marks/i);
+  assert.doesNotMatch(prompts['motion-tracking'], /labels/i);
+});
+
+test('all source-backed generation prompts remain distinct', () => {
+  const prompts = SOURCE_TEMPLATES.map((preset) => preset.prompt.trim().replace(/\s+/g, ' '));
+  assert.equal(new Set(prompts).size, prompts.length);
 });
 
 test('public template data and media paths are source-platform neutral', () => {

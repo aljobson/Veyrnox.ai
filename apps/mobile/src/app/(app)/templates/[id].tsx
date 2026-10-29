@@ -20,8 +20,11 @@ export default function TemplatePage() {
     const [attempt, setAttempt] = useState(0);
     const [prompt, setPrompt] = useState('');
     const [copied, setCopied] = useState<string | null>(null);
+    const [sourceCopied, setSourceCopied] = useState<string | null>(null);
+    const hasExactSourcePrompt = preset?.sourcePromptOrigin === 'community-source-exact' && typeof preset.sourcePrompt === 'string';
+    const promptLabel = t(hasExactSourcePrompt || preset?.promptOrigin === 'veyrnox-adaptation' ? 'public.TemplateRecipe.generationPrompt' : 'mobile.prompt');
     useEffect(() => {
-        let live = true; setLoading(true); setFailed(false); setCopied(null);
+        let live = true; setLoading(true); setFailed(false); setCopied(null); setSourceCopied(null);
         fetchPresets().then(all => { if (live) { const found = all.find(p => p.id === id) ?? null; setPreset(found); setPrompt(found?.prompt.slice(0, 2000) ?? ''); } }).catch(() => { if (live) setFailed(true); }).finally(() => { if (live) setLoading(false); });
         return () => { live = false; };
     }, [id, attempt]);
@@ -33,7 +36,14 @@ export default function TemplatePage() {
             <Text>{t('libraryCreate.runsOn', { model: preset.modelName })}</Text>
             {preset.needs ? <Card><Text>{t('presets.needs', { value1: preset.needs })}</Text>{preset.sourceAspect ? <Text>{t('presets.detail.sourceAspect', { aspect: preset.sourceAspect })}</Text> : null}</Card> : null}
             {preset.previewUrl ? <InlineMedia url={preset.previewUrl} label={t('job.playVideo')} /> : preset.posterUrl ? <Image source={{ uri: preset.posterUrl }} cachePolicy="memory" contentFit="contain" style={{ width: '100%', aspectRatio: previewRatio(preset) }} accessibilityLabel={rawText(preset.title)} /> : null}
-            <TextField accessibilityLabel={t('mobile.prompt')} value={prompt} onChangeText={value => { setPrompt(value); setCopied(null); }} multiline maxLength={2000} />
+            {hasExactSourcePrompt ? <>
+                <Text variant="caption">{t('public.TemplateRecipe.exactCommunityPrompt')}</Text>
+                <TextField accessibilityLabel={t('public.TemplateRecipe.exactCommunityPrompt')} value={preset.sourcePrompt ?? ''} editable={false} multiline style={{ writingDirection: 'auto', textAlign: 'auto' }} />
+                <Button label={t('public.TemplateRecipe.copyExactCommunityPrompt')} onPress={async () => setSourceCopied(t(await copyText(preset.sourcePrompt ?? '') ? 'libraryCreate.copied' : 'libraryCreate.copyFailed'))} />
+                {sourceCopied ? <Text accessibilityLiveRegion="polite">{sourceCopied}</Text> : null}
+                <Text>{t('public.TemplateRecipe.exactCommunityPromptHelp')}</Text>
+            </> : null}
+            <TextField label={promptLabel} accessibilityLabel={promptLabel} value={prompt} onChangeText={value => { setPrompt(value); setCopied(null); }} multiline maxLength={2000} />
             <Button label={t('editor.copy')} onPress={async () => setCopied(t(await copyText(prompt) ? 'libraryCreate.copied' : 'libraryCreate.copyFailed'))} />
             {copied ? <Text accessibilityLiveRegion="polite">{copied}</Text> : null}
             <Text tone="warning">{templatePrice(preset)}</Text>

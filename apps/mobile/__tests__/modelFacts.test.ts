@@ -81,30 +81,35 @@ test('frozen library work order duration cases preserve existing model facts', (
 });
 
 test('actual reference and source-driven catalog models retain web/mobile price and duration parity', () => {
-    const script = `import { toPublicModels } from './lib/publicCatalog.js';
+    // Built from the capability registry the way lib/publicCatalog.js toPublicModels does. That module and
+    // modelPages.js import website-only packages that the mobile CI job does not install.
+    const script = `import { capabilityFor, lengthsFor, publicCapabilities } from './lib/modelCapabilities.js';
         import { sourceDurationLimit, modelPriceUnit } from './app/veyrnox/_lib/modelPricing.js';
-        import { modelFacts } from './app/veyrnox/_lib/modelPages.js';
         const endpoints = ['fal-ai/kling-video/o1/video-to-video/reference', 'fal-ai/latentsync', 'fal-ai/mmaudio-v2', 'fal-ai/topaz/upscale/video', 'fal-ai/kling-video/ai-avatar/v2/standard'];
-        const models = toPublicModels(endpoints.map((endpoint, i) => ({ id: String(i), name: endpoint, provider_endpoint: endpoint, modality: 'video-to-video', credits_5s: i === 0 ? 47 : 7 })));
+        const models = endpoints.map((endpoint, i) => { const record = capabilityFor(endpoint); return { id: String(i), name: endpoint, modality: 'video-to-video', credits: i === 0 ? 47 : 7, gated: false, durations: lengthsFor(record), capabilities: publicCapabilities(record) }; });
         const withoutPresentation = m => ({ ...m, capabilities: { ...m.capabilities, presentation: undefined } });
         models.push(withoutPresentation(models[0]), withoutPresentation(models[2]));
-        console.log(JSON.stringify(models.map(model => ({ model, limit: sourceDurationLimit(model), unit: modelPriceUnit(model), clipLength: modelFacts({ ...model, kind: 'video' }).find(f => f.label === 'Clip lengths').value }))));`;
+        console.log(JSON.stringify(models.map(model => ({ model, limit: sourceDurationLimit(model), unit: modelPriceUnit(model) }))));`;
     const run = spawnSync(process.execPath, ['--input-type=module', '-e', script], { cwd: resolve(__dirname, '../../..'), encoding: 'utf8', env: { ...process.env, NODE_NO_WARNINGS: '1' } });
     expect({ status: run.status, stderr: run.stderr }).toEqual({ status: 0, stderr: '' });
-    const rows: { model: CatalogModel; limit: number | null; unit: string; clipLength: string }[] = JSON.parse(run.stdout);
+    const rows: { model: CatalogModel; limit: number | null; unit: string }[] = JSON.parse(run.stdout);
     expect(rows.map(row => row.limit)).toEqual([null, 40, null, 10, 10, null, 8]);
     expect(rows.map(row => row.unit)).toEqual([
         'per 5 s clip; 10 s costs double.', 'per generation (source up to 40 s).', 'per 8 s clip.',
         'per generation (source up to 10 s).', 'per generation (source up to 10 s).',
         'per 5 s clip; 10 s costs double.', 'per generation (source up to 8 s).',
     ]);
-    for (const row of rows) {
+    // Web modelFacts values for the same rows; tests/sourceDurationLabels.test.mjs covers the web side.
+    const clipLengths = [
+        '5 s, 10 s', 'Follows source duration (up to 40 s)', '8 s', 'Follows source duration (up to 10 s)',
+        'Follows source duration (up to 10 s)', '5 s, 10 s', 'Follows source duration (up to 8 s)',
+    ];
+    rows.forEach((row, i) => {
         expect(sourceDurationLimit(row.model)).toBe(row.limit);
         expect(priceUnit(row.model)).toBe(row.unit);
-        expect(modelFacts(row.model)).toContainEqual({ label: 'Clip lengths', value: row.clipLength });
-    }
+        expect(modelFacts(row.model)).toContainEqual({ label: 'Clip lengths', value: clipLengths[i] });
+    });
     for (const row of [rows[0], rows[5]]) {
-        expect(row.clipLength).toBe('5 s, 10 s');
         expect(estimateCredits(row.model, 5)).toBe(47);
         expect(estimateCredits(row.model, 10)).toBe(94);
     }

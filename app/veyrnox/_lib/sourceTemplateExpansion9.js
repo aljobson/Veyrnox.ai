@@ -31,7 +31,7 @@ const generatedEnsembleIds = new Set([
   'community-suit-choir-groove',
 ]);
 
-// Public-facing concepts are concise Veyrnox adaptations, not copied community prompts.
+// Concepts drive compatible I2V generation prompts; exact source prompts are separate read-only provenance.
 const recipes = [
   ['community-urban-trio-performance', 'URBAN TRIO PERFORMANCE', 'UGC', '16:9', '600 / 338', 'three friends trade close-ups, group choreography and playful gestures across a night plaza'],
   ['community-overhead-performance', 'OVERHEAD PERFORMANCE', 'UGC', '16:9', '600 / 338', 'a top-down camera follows expressive head turns and broad arm movements'],
@@ -117,11 +117,13 @@ const recipes = [
 
 export const SOURCE_TEMPLATE_EXPANSION_9 = recipes.map(([id, name, category, sourceAspect, previewAspect, concept]) => {
   const meta = groupIds.has(id) || (!generatedEnsembleIds.has(id) && /\b(?:two|three|four|several|multiple|friends|crew|ensemble|trio|duo|subjects|performers|people|cast|group)\b/i.test(concept)) ? groupMeta : categoryMeta[category];
+  const adaptedPrompt = `Animate the uploaded image into a polished ten-second ${name.toLowerCase()} sequence. The example is inspiration; generate an original shot from the uploaded image rather than copying its exact motion. Create an original scene in which ${concept}. Preserve every subject's identity, clothing and proportions with readable hands, stable anatomy, coherent contact and natural light. Use smooth motion and add no captions, logos or watermark.`;
   return {
     ...base, id, name, category, sourceAspect, previewAspect,
     needsKey: meta.needsKey, needs: meta.sourceGuidance,
     bg: categoryMeta[category].background, clipKey: id, steps,
-    prompt: `Animate the uploaded image into a polished ten-second ${name.toLowerCase()} sequence. The example is inspiration; generate an original shot from the uploaded image rather than copying its exact motion. Create an original scene in which ${concept}. Preserve every subject's identity, clothing and proportions with readable hands, stable anatomy, coherent contact and natural light. Use smooth motion and add no captions, logos or watermark.`,
+    promptOrigin: 'veyrnox-adaptation',
+    prompt: adaptedPrompt,
   };
 });
 
