@@ -2,7 +2,11 @@ import { startPurchase, getPurchaseSnapshot, abortPreparing, purchaseBusy, syncP
 import { bindCacheUser, getCacheUser, wipeCache } from '../src/lib/appCache';
 import { subscribeBalance } from '../src/lib/balanceEvents';
 import { waitForBalanceChange } from '../src/lib/billing';
-function deferred<T>() { let resolve!: (value: T) => void; const promise = new Promise<T>(r => { resolve = r; }); return { promise, resolve }; }
+function deferred<T>() {
+    let resolve!: (value: T) => void, reject!: (error: Error) => void;
+    const promise = new Promise<T>((res, rej) => { resolve = res; reject = rej; });
+    return { promise, resolve, reject };
+}
 const pkg = { identifier: 'pack', product: { identifier: 'ai.veyrnox.credits.100' } } as any;
 let generation = 0;
 const beginSessionTask = () => {
@@ -63,25 +67,32 @@ test('owner change during confirmation publishes nothing', async () => {
     read.resolve({ balance: 100 }); await flush();
     expect(published).not.toHaveBeenCalled(); expect(getPurchaseSnapshot().phase).toBe('idle'); unsubscribe();
 });
-test.each(['same-account re-login', 'sign-out'])('%s during confirming resets identity and ignores a late balance', async change => {
+test.each([
+    ['same-account re-login', 'balance'], ['same-account re-login', 'failure'],
+    ['sign-out', 'balance'], ['sign-out', 'failure'],
+])('%s during confirming resets identity and ignores a late %s', async (change, completion) => {
     const read = deferred<{ balance: number }>(), published = jest.fn(), unsubscribe = subscribeBalance(published);
     api.getBalance.mockResolvedValueOnce({ balance: 0 }).mockReturnValue(read.promise);
     const op = start(); await flush(); expect(getPurchaseSnapshot().phase).toBe('confirming');
     if (change === 'sign-out') await wipeCache();
     else { generation++; syncPurchaseSession(beginSessionTask()); }
     const reset = getPurchaseSnapshot();
-    expect(reset).toMatchObject({ phase: 'idle', outcome: null }); expect(reset.opId).not.toBe(op.opId);
+    expect(reset).toMatchObject({ phase: 'idle', kind: null, productId: null, outcome: null }); expect(reset.opId).not.toBe(op.opId);
     expect(reset.owner).toBe(change === 'sign-out' ? undefined : 'buyer'); expect(purchaseBusy()).toBe(false);
     // Completes before the old read and without advancing the 40-second deadline.
     await op.completion;
-    read.resolve({ balance: 100 }); await flush();
+    if (completion === 'balance') read.resolve({ balance: 100 }); else read.reject(new Error('offline'));
+    await flush();
     expect(getPurchaseSnapshot()).toBe(reset); expect(published).not.toHaveBeenCalled();
     expect(api.getBalance).toHaveBeenCalledTimes(2); unsubscribe();
 });
-test('invalidation interrupts the confirmation retry interval immediately', async () => {
+test.each(['owner', 'generation', 'sign-out'])('%s invalidation interrupts the confirmation retry interval immediately', async change => {
     const op = start(); await flush(); expect(getPurchaseSnapshot().phase).toBe('confirming');
     expect(api.getBalance).toHaveBeenCalledTimes(2);
-    generation++; syncPurchaseSession(beginSessionTask()); await op.completion;
+    if (change === 'owner') await bindCacheUser('other');
+    else if (change === 'sign-out') await wipeCache();
+    else { generation++; syncPurchaseSession(beginSessionTask()); }
+    await op.completion;
     await jest.advanceTimersByTimeAsync(40000);
     expect(api.getBalance).toHaveBeenCalledTimes(2);
 });

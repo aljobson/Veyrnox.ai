@@ -137,6 +137,25 @@ test('dismissing a slow preparation never calls native purchase', async () => {
     await act(async () => root.render(<Credits />));
     expect(text()).not.toContain(t('credits.cancelled'));
 });
+test('slow preflight keeps Not now disabled and busy until the request fails', async () => {
+    const preflight = deferred<void>();
+    mockBilling.purchase.mockImplementation(async () => {
+        await preflight.promise;
+        throw new Error('request_timeout');
+    });
+    await mount(); await click(buy());
+    expect(getPurchaseSnapshot().phase).toBe('store');
+    await tick(5000);
+    expect(button(t('credits.paywall.later')).props.accessibilityState).toMatchObject({ disabled: true, busy: true });
+    await press(t('credits.paywall.later'));
+    expect(nodes('radio')).toHaveLength(3);
+    await act(async () => preflight.resolve());
+    expect(getPurchaseSnapshot()).toMatchObject({ phase: 'done', outcome: { kind: 'error' } });
+    expect(button(t('credits.paywall.later')).props.accessibilityState).toMatchObject({ disabled: false, busy: false });
+    expect(text()).toContain(t('credits.error'));
+    await press(t('credits.paywall.later'));
+    expect(nodes('radio')).toHaveLength(0);
+});
 test.each([['new', 0], ['new', 1], ['old', 0], ['old', 1]] as const)('%s account legal link %s closes, pushes exact route, suppresses return but allows next zero cycle', async (age, index) => {
     if (age === 'old') mockCreated = '2020-01-01T00:00:00Z'; await mount();
     await click(nodes('link').find(n => n.props.accessibilityLabel === t(LEGAL_LINKS[index].labelKey))!);
