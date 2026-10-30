@@ -29,7 +29,7 @@ export function TemplateRecipe({ preset, generatedPreview = false }) {
   const { t } = useI18n();
   const hasExactSourcePrompt = preset.sourcePromptOrigin === 'community-source-exact' && typeof preset.sourcePrompt === 'string';
   const sourcePromptBlocked = hasExactSourcePrompt && preset.sourcePromptRunnable === false;
-  const hasRunnableAdaptation = sourcePromptBlocked
+  const hasRunnableAdaptation = (sourcePromptBlocked || preset.preferAdaptedPrompt === true)
     && preset.promptOrigin === 'veyrnox-adaptation'
     && typeof preset.prompt === 'string'
     && preset.prompt !== preset.sourcePrompt;

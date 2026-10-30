@@ -86,7 +86,8 @@ test('the payload carries source framing and exact public source prompts but no 
     assert.equal(seedance.filter((p) => p.sourcePlatform === 'Higgsfield').length, 79);
     assert.equal(seedance.filter((p) => p.sourcePromptRunnable === true).length, 79);
     assert.equal(seedance.filter((p) => p.sourcePromptRunnable === false).length, 121);
-    assert.ok(seedance.every((p) => p.modelId === 'seedance-2.0-fast' && p.modelName === 'Seedance 2.0 Fast'));
+    assert.equal(seedance.filter(p => p.modelId === 'kling-3.0-i2v' && p.modelName === 'Kling 3.0 · I2V' && p.durationSeconds === 10).length, 73);
+    assert.equal(seedance.filter(p => p.modelId === 'seedance-2.0-fast' && p.modelName === 'Seedance 2.0 Fast' && p.durationSeconds === 5).length, 127);
     assert.ok(seedance.every((p) => p.sourceUrl?.startsWith('https://')));
     const formerlyClipped = exact.find((p) => p.id === 'football-showstopper');
     assert.equal(formerlyClipped.sourcePromptCharacterCount, 2077);

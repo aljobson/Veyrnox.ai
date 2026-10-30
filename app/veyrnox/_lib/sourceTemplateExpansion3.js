@@ -13,13 +13,16 @@ const steps = [
   'Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film.',
 ];
 
-function template({ id, clipKey = id, name, category, aspect, generationAspect, needs, prompt, bg, model = 'Kling 3.0 · I2V' }) {
-  return { ...base, id, clipKey, name, category, previewAspect: aspect, aspect: generationAspect, needs, prompt, bg, model, credits: model === 'Seedance 2.0 Fast' ? 19 : 32, steps };
+function template({ id, clipKey = id, name, category, aspect, generationAspect, needs, prompt, bg, model = 'Kling 3.0 · I2V', preferAdaptedPrompt = false }) {
+  if (preferAdaptedPrompt && !/\b(?:uploaded|supplied)\b/i.test(prompt)) {
+    prompt = `Animate the supplied starting image into a ten-second video. Use its subjects and composition as the starting frame. ${prompt}`;
+  }
+  return { ...base, id, clipKey, name, category, previewAspect: aspect, aspect: generationAspect, needs, prompt, bg, model, ...(preferAdaptedPrompt ? { preferAdaptedPrompt: true } : {}), credits: model === 'Seedance 2.0 Fast' ? 19 : 32, steps };
 }
 
 export const SOURCE_TEMPLATE_EXPANSION_3 = [
   template({
-    id: 'city-trailer', name: 'CITY TRAILER', category: 'CINEMATIC', aspect: '720 / 1280', generationAspect: '9:16', model: 'Seedance 2.0 Fast',
+    id: 'city-trailer', name: 'CITY TRAILER', category: 'CINEMATIC', aspect: '720 / 1280', generationAspect: '9:16', model: 'Kling 3.0 · I2V', preferAdaptedPrompt: true,
     needs: 'A city starting frame with a clear subject or landmark',
     bg: 'linear-gradient(165deg,#08111f 0%,#425c72 55%,#df9c57 100%)',
     prompt: 'Turn the uploaded city frame into a fast ten-second vertical trailer. Move through tactile street details, traffic lights, wet pavement, transit and a bright downtown reveal using rhythmic match cuts that preserve direction and geography. Keep the main subject or landmark recognizable, use crisp natural motion blur and a polished cinematic grade, and finish on a clean hero frame with no titles, logos or watermark.',
@@ -55,13 +58,13 @@ export const SOURCE_TEMPLATE_EXPANSION_3 = [
     prompt: 'Animate the uploaded person beside their motorcycle as a matching double emerges from a reflection and steps into the real scene. Preserve the same exact identity, outfit and proportions on both figures while keeping their positions distinct and their eye lines intentional. Use a slow handheld push, realistic metal reflections, grounded feet and coherent shadows across ten seconds. Add no captions, logos or watermark.',
   }),
   template({
-    id: 'laundromat-monster', name: 'LAUNDROMAT MONSTER', category: 'MOVIES', aspect: '1280 / 720', generationAspect: '16:9', model: 'Seedance 2.0 Fast',
+    id: 'laundromat-monster', name: 'LAUNDROMAT MONSTER', category: 'MOVIES', aspect: '1280 / 720', generationAspect: '16:9', model: 'Kling 3.0 · I2V', preferAdaptedPrompt: true,
     needs: 'A character portrait suitable for a cinematic interior',
     bg: 'linear-gradient(150deg,#101b1d 0%,#4b6760 55%,#d9b76e 100%)',
     prompt: 'Create a ten-second cinematic laundromat scene starring the uploaded character. Preserve their identity and wardrobe as a washing machine begins to shake, a playful practical-creature silhouette pushes through the open door and the character reacts before taking one confident step forward. Use moody fluorescent light, restrained camera movement, believable machine vibration and clear spatial continuity. Keep it adventurous rather than graphic, with no captions, logos or watermark.',
   }),
   template({
-    id: 'curtain-reveal', name: 'CURTAIN REVEAL', category: 'MOVIES', aspect: '4 / 3', generationAspect: '16:9', model: 'Seedance 2.0 Fast',
+    id: 'curtain-reveal', name: 'CURTAIN REVEAL', category: 'MOVIES', aspect: '4 / 3', generationAspect: '16:9', model: 'Kling 3.0 · I2V', preferAdaptedPrompt: true,
     needs: 'A clear character portrait framed near curtains or a doorway',
     bg: 'linear-gradient(150deg,#170608 0%,#741b24 55%,#d8a35e 100%)',
     prompt: 'Animate the uploaded character pulling apart rich red theatre curtains in one ten-second cinematic reveal. Preserve their exact face, hair and clothing as warm stage light spills forward and an impossible moonlit landscape appears beyond the opening. Let fabric weight, hands and shadows remain physically coherent while the camera glides through the curtains and ends on the revealed world. Add no titles, logos or watermark.',
