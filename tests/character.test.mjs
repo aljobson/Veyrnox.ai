@@ -2,6 +2,7 @@ import { resolveI18nSource } from '../scripts/lib/vey-knowledge-i18n.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { GENERATION_PROMPT_MAX } from '../lib/generationPromptLimits.js';
 import {
     buildCharacterPrompt,
     characterTraits,
@@ -28,10 +29,10 @@ test('origin options use neutral heritage wording, not stereotyped phenotype phr
     for (const [, phrase] of origin.options) assert.doesNotMatch(phrase, /supermodel|idol|phenotype/i, phrase);
 });
 
-test('unknown picks add nothing, and the result fits the gateway limit', () => {
+test('unknown picks add nothing, and over-limit user text is preserved for Create to reject visibly', () => {
     assert.deepEqual(characterTraits({ gender: '<script>', nope: 'x' }), []);
     assert.equal(buildCharacterPrompt('', {}), CHARACTER_BASE);
-    assert.equal(buildCharacterPrompt('x'.repeat(5000), { gender: 'Male' }).length, 2000);
+    assert.ok(buildCharacterPrompt('x'.repeat(GENERATION_PROMPT_MAX + 5_000), { gender: 'Male' }).length > GENERATION_PROMPT_MAX + 5_000);
 });
 
 test('Oddlings add a bounded creator identity and recurring show to the visual prompt', () => {

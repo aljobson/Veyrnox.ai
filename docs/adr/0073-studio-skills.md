@@ -22,7 +22,7 @@ a model-triggered spend is the dangerous part. Everything else an assistant does
    the existing sessionStorage hand-off (`writeStudioDraft`), and only the person's own press of Generate there starts a job, at the catalog
    price, with the usual refund. The assistant has no tool, no key and no path to `/api/v1/generations`.
 3. **A draft is checked, not trusted.** `parseStudioDrafts` accepts a block only if its model is in the live Studio catalog, open (not gated)
-   and not a Library-only editor or Auto Short; the prompt is non-empty and cut at 2,000 characters; an aspect is kept only if that model takes it;
+   and not a Library-only editor or Auto Short; the prompt is non-empty and at most 30,000 characters (an over-limit draft is rejected, never cut); an aspect is kept only if that model takes it;
    at most six drafts per reply; every other field is dropped. The price on the card is the catalog's, never the text's. A hostile or confused
    reply can therefore offer nothing the Studio would not already sell.
 4. **The model list is live.** The instructions end with `id|kind|Credits per generation` for each open Studio model, built from the catalog when

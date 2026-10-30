@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { CREATE_DRAFT_STORAGE, readCreateDraft, writeCreateDraft, reopenDraftSources, readVeyWorkspace, writeVeyWorkspace } from '../lib/createDraftRecovery.js';
+import { CREATE_DRAFT_STORAGE, cleanCreateDraft, readCreateDraft, writeCreateDraft, reopenDraftSources, readVeyWorkspace, writeVeyWorkspace } from '../lib/createDraftRecovery.js';
 const now = 1700000000000;
 const storage = () => { const values = new Map(); return { getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) }; };
 const draft = { modelId: 'kling-3.0-i2v', goal: 'video', duration: '5s', aspect: '16:9', prompt: 'Animate Max Rep with a small wave.', sources: { image: { assetId: 'saved-max-rep', label: 'Max Rep', previewUrl: 'https://private.invalid/old-signed-url' } }, consent: true, cost: 34, balance: 76, access_token: 'not-stored' };
@@ -40,6 +40,11 @@ test('local upload bytes are not serialized and the restored draft marks them fo
   const s = storage(); writeCreateDraft(s, 'alice', { ...draft, sources: { image: { file: { name: 'private.png' }, previewUrl: 'blob:private-data' } } }, now);
   const saved = readCreateDraft(s, 'alice', now); assert.equal(saved.needsUpload, true); assert.deepEqual(saved.sources, { image: { needsUpload: true, label: '' } });
   assert.ok(!s.getItem(`${CREATE_DRAFT_STORAGE}:alice`).includes('private'));
+});
+test('oversize direct and nested prompts are rejected instead of shortened during recovery', () => {
+  assert.equal(cleanCreateDraft({ ...draft, prompt: 'x'.repeat(30001) }), null);
+  assert.equal(cleanCreateDraft({ ...draft, cinema: { prompt: 'x'.repeat(30001) } }), null);
+  assert.equal(cleanCreateDraft({ ...draft, character: { prompt: 'x'.repeat(30001) } }), null);
 });
 test('helper visibility and the simultaneous question/walkthrough mode survive reload without persisting messages', () => {
   const s = storage(); writeVeyWorkspace(s, 'alice', { open: true, chatting: true, messages: ['private text'] }, now);

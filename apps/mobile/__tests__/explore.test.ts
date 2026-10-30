@@ -102,10 +102,10 @@ describe('the prompt box', () => {
         expect(firstModelFor([], 'image')).toBeNull();
     });
 
-    test('opens Create on the model with the trimmed, capped prompt', () => {
+    test('opens Create on the model with the trimmed prompt without silently shortening it', () => {
         expect(promptHref('nano-banana', '  a red fox  ')).toEqual({ pathname: '/create/[modelId]', params: { modelId: 'nano-banana', prompt: 'a red fox' } });
         const long = promptHref('m', 'x'.repeat(5000));
-        expect((long.params.prompt as string).length).toBe(4000);
+        expect((long.params.prompt as string).length).toBe(5000);
     });
 });
 

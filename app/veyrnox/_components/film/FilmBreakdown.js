@@ -4,7 +4,7 @@ import { localeTag } from '../../../../lib/i18n/locales.mjs';
 import { useI18n } from '../../../../components/I18nProvider';
 import { useState } from 'react';
 import { SHOT_LANES } from '../../_lib/filmStudio';
-import { FilmField } from './FilmFields';
+import { FILM_SCRIPT_MAX, FilmField } from './FilmFields';
 
 export function FilmBreakdown({ film, update }) {
   const { t, locale } = useI18n();
@@ -19,7 +19,7 @@ export function FilmBreakdown({ film, update }) {
     setIndex(film.shots.length); update({...film,shots:[...film.shots,next]});
   };
   const plannedSeconds=film.shots.reduce((total,item)=>total+(Number(item.seconds)||0),0);
-  return <div className="space-y-5"><FilmField label={t("app.film.breakdown.script")} multiline value={film.script} onChange={script=>update({...film,script})} hint={t("app.film.breakdown.scriptHint")}/>
+  return <div className="space-y-5"><FilmField label={t("app.film.breakdown.script")} multiline maxLength={FILM_SCRIPT_MAX} value={film.script} onChange={script=>update({...film,script})} hint={t("app.film.breakdown.scriptHint")}/>
     <p className="rounded-xl border border-vx-border p-3 text-sm"><span className="font-bold">{t("app.film.breakdown.runtime")}</span> {t("app.film.breakdown.target",{planned:number(plannedSeconds),target:number(film.targetSeconds)})}</p>
     <div className="flex flex-wrap gap-2" aria-label={t("app.film.breakdown.cards")}>{film.shots.map((s,i)=><button key={s.id} type="button" aria-pressed={s===shot} onClick={()=>setIndex(i)} className="rounded-lg border border-vx-border px-3 py-2 text-sm">{s.id}</button>)}
       <button type="button" onClick={add} disabled={film.shots.length>=200} className="rounded-lg border border-vx-accent px-3 py-2 text-sm text-vx-accent">{t("app.film.breakdown.add")}</button></div>

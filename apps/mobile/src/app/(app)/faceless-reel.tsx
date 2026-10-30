@@ -6,7 +6,7 @@ import { KeyboardFormScrollView } from '../../components/KeyboardFormScrollView'
 import { Text, TextField, Button, Card, Chip, Checkbox, ChoiceCard, themedStyles, useThemedStyles } from '../../components/ui';
 import { fetchCatalogCached, textInput, type CatalogModel } from '../../lib/media';
 import { stageCreativeSourceHandoff } from '../../lib/creativeSourceHandoff';
-import { FACELESS_REEL_MODEL, FACELESS_REEL_FORMATS, FACELESS_REEL_PACING, FACELESS_REEL_PLATFORMS, briefLength, briefRoom, buildFacelessReelPrompt, facelessReelLaunch, facelessReelValidation, type FacelessReelValues } from '../../lib/facelessReel';
+import { FACELESS_REEL_MODEL, FACELESS_REEL_PROMPT_MAX, FACELESS_REEL_FORMATS, FACELESS_REEL_PACING, FACELESS_REEL_PLATFORMS, briefLength, briefRoom, buildFacelessReelPrompt, facelessReelLaunch, facelessReelValidation, type FacelessReelValues } from '../../lib/facelessReel';
 import { t } from '../../lib/i18n';
 import { ds } from '../../theme';
 
@@ -29,7 +29,7 @@ export default function FacelessReel() {
         return () => { active = false; };
     }, []);
     const input = model ? textInput(model) : null;
-    const promptMax = input?.max ?? 800;
+    const promptMax = input?.max ?? FACELESS_REEL_PROMPT_MAX;
     const room = briefRoom(values, promptMax);
     const used = briefLength(values);
     const prompt = buildFacelessReelPrompt(values);

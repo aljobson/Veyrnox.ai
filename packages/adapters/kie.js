@@ -29,6 +29,7 @@ import { capabilityFor } from '../../lib/modelCapabilities.js';
 import { hardMaxFiles } from '../../lib/multiReference.mjs';
 import { buildKieDialogue } from '../../lib/kieDialogue.js';
 import { readBoundedBody } from '../../lib/boundedBody.js';
+import { GENERATION_PROMPT_MAX } from '../../lib/generationPromptLimits.js';
 
 export const KIE_API_BASE = 'https://api.kie.ai';
 const SIGNATURE_WINDOW_SECONDS = 300;
@@ -84,6 +85,9 @@ function clipSeconds(inputs) {
 export function buildRequest(target, inputs) {
     const prompt = inputs && inputs.prompt;
     if (typeof prompt !== 'string' || !prompt.trim()) return { ok: false, error: 'inputs_invalid:prompt' };
+    const endpoint = target?.kind === 'market' ? `market:${target.model}` : target?.kind === 'veo' ? `veo:${target.model}` : '';
+    const promptLimit = capabilityFor(endpoint)?.inputs?.prompt?.max;
+    if (Number.isFinite(promptLimit) && prompt.length > promptLimit) return { ok: false, error: 'inputs_invalid:prompt' };
     const aspect = inputs.aspect_ratio;
 
     if (target.kind === 'veo') {
@@ -112,7 +116,7 @@ export function buildRequest(target, inputs) {
         for (const key of Object.keys(inputs)) {
             if (!allowed.has(key)) return { ok: false, error: `inputs_key_not_allowed:${key.slice(0, 32)}` };
         }
-        if (prompt.length > 2000) return { ok: false, error: 'inputs_invalid:prompt' };
+        if (prompt.length > GENERATION_PROMPT_MAX) return { ok: false, error: 'inputs_invalid:prompt' };
         if (!inputs.image_url) return { ok: false, error: 'inputs_invalid:image_url' };
         const seconds = clipSeconds(inputs);
         if (seconds === null) return { ok: false, error: 'duration_not_supported' };
@@ -208,7 +212,7 @@ export function buildRequest(target, inputs) {
             if (!mapped.ok) return { ok: false, error: 'dialogue_invalid' };
             return { ok: true, body: { model: target.model, input: { dialogue: mapped.dialogue, stability: 0.5 } } };
         }
-        if (prompt.trim().length < 3 || prompt.length > 2000) return { ok: false, error: 'inputs_invalid:prompt' };
+        if (prompt.trim().length < 3 || prompt.length > GENERATION_PROMPT_MAX) return { ok: false, error: 'inputs_invalid:prompt' };
         if (aspect && !new Set(['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3']).has(aspect)) {
             return { ok: false, error: 'inputs_invalid:aspect_ratio' };
         }

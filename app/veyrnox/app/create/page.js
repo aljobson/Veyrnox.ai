@@ -60,6 +60,7 @@ import useCreateDraftRecovery from '../../_lib/useCreateDraftRecovery';
 import { getJourney, trackJourneyJob } from '../../_lib/veyJourneyStore';
 import { outputDurationLabel, mediaGenerationSources } from '../../_lib/chatMedia';
 import { generationSlotKind, generationMimeTypes } from '../../../../lib/generationSourceSlots.mjs';
+import { GENERATION_PROMPT_MAX } from '../../../../lib/generationPromptLimits.js';
 // Auto Short stays hidden until launch unless this browser opts in
 // (CLAUDE.md "Delivery": new user paths behind localStorage.veyrnox_*).
 const AUTO_SHORT_FLAG = 'veyrnox_auto_short';
@@ -269,8 +270,12 @@ export default function CreateStudio() {
   const missingPrompt = promptIsMissing(model, prompt);
   // Camera text suits pictures and clips; audio and speech would read it aloud.
   const isShort = !!model?.takesTopic;
+  const promptLimit = isShort ? 200 : model?.promptMax || GENERATION_PROMPT_MAX;
+  const promptLimitKey = isShort ? 'public.TemplateRecipe.topicTooLong' : promptLimit < GENERATION_PROMPT_MAX ? 'public.TemplateRecipe.promptTooLong' : 'public.TemplateRecipe.productPromptTooLong';
   const resultAspect = jobs[0]?.aspect_ratio || (hasJobs ? '16:9' : isShort ? '9:16' : aspect);
   const takesCamera = !isShort && (model?.kind === 'image' || model?.kind === 'video');
+  const preparedPromptLength = isShort ? prompt.trim().length : finalPrompt().length;
+  const promptTooLong = preparedPromptLength > promptLimit;
   // Only offer aspect ratios explicitly declared by this model's provider contract.
   const aspectOptions = isShort ? [] : modelAspectRatios(model);
   const unitCost = model ? model.credits * (duration === '10s' && model.kind === 'video' ? 2 : 1) : 0;
@@ -452,10 +457,10 @@ export default function CreateStudio() {
   }, [loadBalance]);
 
   // Character traits go first, the camera description last; each keeps the
-  // result under the gateway's 2000-character limit by cutting the user text.
+  // result within the selected model's generation-prompt contract.
   function finalPrompt() {
     let text = prompt.trim();
-    if (model.kind === 'image' && characterOn) text = buildCharacterPrompt(text, character);
+    if (model?.kind === 'image' && characterOn) text = buildCharacterPrompt(text, character);
     if (takesCamera && cinemaOn) text = buildCinemaPrompt(text, cinema);
     return text;
   }
@@ -476,6 +481,7 @@ export default function CreateStudio() {
     if (missingSource) { inFlight.current = false; setError(LOCAL_ERRORS.source_required); return; }
     if (missingConsent) { inFlight.current = false; setError(LOCAL_ERRORS.consent_required); return; }
     if (missingPrompt) { inFlight.current = false; setError(LOCAL_ERRORS.inputs_invalid_prompt); return; }
+    if (promptTooLong) { inFlight.current = false; setError(LOCAL_ERRORS.inputs_invalid_prompt); return; }
     if (missingVoice) { inFlight.current = false; setError(LOCAL_ERRORS.inputs_invalid_voice_description); return; }
     if (invalidAudioDuration) { inFlight.current = false; setError(LOCAL_ERRORS.inputs_invalid_duration); return; }
     setError(null);
@@ -647,11 +653,11 @@ export default function CreateStudio() {
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             aria-label={isShort ? t("app.create.topic") : t("mobile.prompt")}
-            maxLength={isShort ? 200 : undefined}
             rows={3}
             className="scroll-mt-24 mt-3 w-full bg-vx-panel border border-vx-field rounded-lg p-3.5 text-sm text-vx-fg placeholder:text-vx-fg-faint resize-none focus:outline-hidden focus:border-vx-accent"
             placeholder={helperCopy(t, locale, promptPlaceholder(model))}
           />
+          {promptTooLong && <p role="alert" className="mt-2 text-xs font-bold text-vx-danger">{t(promptLimitKey, { count: preparedPromptLength, max: promptLimit })}</p>}
           {(draftRecovery.restoring || draftRecovery.status) && <div role="status" data-testid="create-draft-recovery" data-restoring={draftRecovery.restoring} className="mt-2 rounded-lg border border-vx-border bg-vx-panel px-3 py-2 text-xs text-vx-fg-muted">
             {draftRecovery.restoring ? t("app.create.restoring") : draftRecovery.status}
             {draftRecovery.failed && <button type="button" onClick={draftRecovery.retry} className="ms-2 min-h-8 underline text-vx-accent">{t("app.create.retryDraft")}</button>}
@@ -732,7 +738,7 @@ export default function CreateStudio() {
             data-assistant-target="create.generate"
             onClick={hasJobs ? cancel : onSubmit}
             className="scroll-mt-24 mt-4 w-full flex items-center justify-between bg-vx-accent text-vx-accent-ink rounded-full px-6 py-3.5 font-extrabold hover:bg-vx-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
-            disabled={draftRecovery.restoring || draftRecovery.blocked || sending || attachConverting || sourcesConverting || (!hasJobs && (catalogStatus !== 'live' || !model || model.gated || animationMismatch || missingPrompt || missingVoice || invalidAudioDuration || balance == null || cost > balance || missingSource || missingConsent))}
+            disabled={draftRecovery.restoring || draftRecovery.blocked || sending || attachConverting || sourcesConverting || (!hasJobs && (catalogStatus !== 'live' || !model || model.gated || animationMismatch || missingPrompt || promptTooLong || missingVoice || invalidAudioDuration || balance == null || cost > balance || missingSource || missingConsent))}
             aria-label={sending ? undefined : hasJobs ? t("app.create.newNoCharge") : model?.gated ? undefined : n > 1 ? t(pluralKey(t,locale,cost===0?'app.create.generateImagesFree':'app.create.generateImagesPaid',n),{count:number(n),credits:creditLabel(cost)}) : t(cost===0?'app.create.generateFree':'app.create.generatePaid',{credits:creditLabel(cost)})}
           >
             <span>{sending ? t("app.publish.inbox.sending") : hasJobs ? t("app.create.newGeneration") : model?.gated ? t("app.create.premiumGated") : n > 1 ? t('app.create.generateCount',{count:number(n)}) : t("label.Generate")}</span>

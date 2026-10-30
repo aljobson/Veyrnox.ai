@@ -226,12 +226,13 @@ test('drafts: an unknown, gated or editor-only model, a bad block or an empty pr
   assert.deepEqual(parseStudioDrafts(undefined, CATALOG), []);
 });
 
-test('drafts: an aspect is kept only when Create offers it; a long prompt is cut; extra fields are ignored', () => {
+test('drafts: an aspect is kept only when Create offers it; over-limit prompts are rejected; extra fields are ignored', () => {
   assert.equal(parseStudioDrafts(fence({ model: 'flux-2-pro', prompt: 'x', aspect: '9:16' }), CATALOG)[0].aspect, null, 'not an aspect this model takes');
   assert.equal(parseStudioDrafts(fence({ model: 'kling-3.0-i2v', prompt: 'x', aspect: '9:16' }), CATALOG)[0].aspect, null, 'a live model with no aspect input cannot promise one');
   assert.equal(parseStudioDrafts(fence({ model: 'flux-2-pro', prompt: 'x', aspect: 16 }), CATALOG)[0].aspect, null);
-  const long = parseStudioDrafts(fence({ model: 'flux-2-pro', prompt: 'y'.repeat(5000) }), CATALOG)[0];
-  assert.equal(long.prompt.length, MAX_DRAFT_PROMPT);
+  const exact = parseStudioDrafts(fence({ model: 'flux-2-pro', prompt: 'y'.repeat(MAX_DRAFT_PROMPT) }), CATALOG)[0];
+  assert.equal(exact.prompt.length, MAX_DRAFT_PROMPT);
+  assert.deepEqual(parseStudioDrafts(fence({ model: 'flux-2-pro', prompt: 'y'.repeat(MAX_DRAFT_PROMPT + 1) }), CATALOG), []);
   const extra = parseStudioDrafts(fence({ model: 'flux-2-pro', prompt: 'x', url: 'https://evil.example', credits: 0, js: 'alert(1)' }), CATALOG)[0];
   assert.deepEqual(Object.keys(extra).sort(), ['aspect', 'credits', 'kind', 'model', 'name', 'needs', 'prompt']);
 });

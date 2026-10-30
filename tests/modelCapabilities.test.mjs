@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import { REGISTRY, capabilityFor, lengthsFor, declaredInputs, checkInputs, checkSource, expandCanvas, shapePayload, publicCapabilities } from '../lib/modelCapabilities.js';
 import { MODELS } from '../app/veyrnox/_lib/tokens.js';
 import { FALLBACK_MODEL_ENDPOINTS, fallbackCapabilitiesFor } from '../lib/fallbackModelCapabilities.js';
+import { GENERATION_PROMPT_MAX } from '../lib/generationPromptLimits.js';
 
 // Payloads the pre-registry builder (lib/providerDuration.js, removed in
 // step 2) produced for every fal row, captured just before it was deleted.
@@ -133,6 +134,18 @@ test('kie and OpenRouter records accept exactly what their adapters build', () =
     }
 });
 
+test('Kie video provider prompt caps reject before debit', () => {
+    for (const [endpoint, max] of [
+        ['market:wan/2-5-text-to-video', 800],
+        ['market:kling-2.6/text-to-video', 1000],
+        ['market:hailuo/02-text-to-video-standard', 1500],
+    ]) {
+        const record = capabilityFor(endpoint);
+        assert.deepEqual(checkInputs(record, { prompt: 'x'.repeat(max) }), { ok: true }, endpoint);
+        assert.deepEqual(checkInputs(record, { prompt: 'x'.repeat(max + 1) }), { ok: false, error: 'inputs_invalid:prompt' }, endpoint);
+    }
+});
+
 test('Kling 3.0 i2v record carries the corrected fal contract', () => {
     const record = capabilityFor('fal-ai/kling-video/v3/pro/image-to-video');
     assert.deepEqual(checkInputs(record, { prompt: 'p' }), { ok: false, error: 'inputs_invalid:image_url' });
@@ -188,7 +201,7 @@ test('the public view carries no provider field names or editable pins', () => {
     }
     assert.deepEqual(publicCapabilities(capabilityFor('fal-ai/veo3.1/fast')), {
         kind: 'video', lengths: [5],
-        inputs: { prompt: { type: 'string', max: 2000 }, negative_prompt: { type: 'string', max: 2000 }, seed: { type: 'int', min: 0, max: 2147483647 },
+        inputs: { prompt: { type: 'string', max: GENERATION_PROMPT_MAX }, negative_prompt: { type: 'string', max: 2000 }, seed: { type: 'int', min: 0, max: 2147483647 },
             aspect_ratio: { type: 'enum', values: ['16:9', '9:16'] } },
         media: {},
         presentation: { resolutionLabel: '720p', audioIncluded: true, fixedDurationLabel: '4s' },
@@ -369,7 +382,10 @@ test('staged Kling i2v advertises only supported controls and checks before debi
         assert.equal(checkInputs(record, { ...inputs, ...extra }).ok, false);
     }
     assert.equal(checkInputs(record, { prompt: 'p' }).error, 'inputs_invalid:image_url');
-    assert.equal(checkInputs(record, { ...inputs, prompt: 'x'.repeat(2001) }).ok, false);
+    const promptMax = record.inputs.prompt.max;
+    assert.equal(promptMax, GENERATION_PROMPT_MAX);
+    assert.equal(checkInputs(record, { ...inputs, prompt: 'x'.repeat(promptMax) }).ok, true);
+    assert.equal(checkInputs(record, { ...inputs, prompt: 'x'.repeat(promptMax + 1) }).ok, false);
 });
 
 test('the public speech text bound matches pre-debit validation rather than offering an unpriced extra character',() => {

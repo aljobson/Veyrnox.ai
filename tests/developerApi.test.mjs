@@ -56,6 +56,19 @@ test('developer generation writes require an explicit non-negative credit confir
     }
 });
 
+test('developer generations parse complete 30,000-character Unicode and escaped prompts', async () => {
+    const prompt = '界'.repeat(30_000);
+    const bodies = [
+        JSON.stringify({ model_id: 'model', idempotency_key: '12345678', inputs: { prompt } }),
+        `{"model_id":"model","idempotency_key":"12345678","inputs":{"prompt":"${'\\u754c'.repeat(30_000)}"}}`,
+    ];
+    for (const body of bodies) {
+        const response = await developerApi(request('/generations', { method: 'POST', body }), ['generations']);
+        assert.equal(response.status, 400);
+        assert.deepEqual(await response.json(), { error: 'confirmed_credits_required' });
+    }
+});
+
 test('developer API answers unauthenticated CORS preflight without cookies', async () => {
     const response = await developerApi(new Request('https://veyrnox.test/api/v1/developer/generations', { method: 'OPTIONS' }), ['generations']);
     assert.equal(response.status, 204);

@@ -1,9 +1,10 @@
 import { audioLengthInvalid, optionsFor, seedIsInvalid, voiceIsMissing } from './createOptions';
 import { slotsFor, type GenerationReference } from './sources';
 import { estimateCredits, kindOf, promptRequired, textInput, type CatalogModel, type Kind } from './media';
+import { GENERATION_PROMPT_MAX } from './promptLimits';
 
 export const MEDIA_KINDS: readonly Kind[] = ['image', 'video', 'audio'];
-export const MAX_MEDIA_PROMPT = 2000;
+export const MAX_MEDIA_PROMPT = GENERATION_PROMPT_MAX;
 
 // File-driven models share Create's source controls; topic/plan-only models stay in Create.
 export function chatMediaModels(models: readonly CatalogModel[], kind: Kind): CatalogModel[] {
@@ -37,4 +38,7 @@ export function supportedDuration(model: CatalogModel, wanted: number | null): n
 // refuses a different number (credit_confirmation_mismatch), so this can never overcharge.
 export const makePrice = (model: CatalogModel, duration: number | null): number => estimateCredits(model, supportedDuration(model, duration));
 
-export const cleanMediaPrompt = (raw: string): string => raw.trim().slice(0, MAX_MEDIA_PROMPT);
+export const cleanMediaPrompt = (raw: string): string => {
+    const prompt = raw.trim();
+    return prompt.length <= MAX_MEDIA_PROMPT ? prompt : '';
+};

@@ -1,12 +1,15 @@
 import { GENJUTSU_SOURCE_PROMPT_RECORDS } from './genjutsuSourcePromptRecords.js';
 import { HIGGSFIELD_90_SOURCE_PROMPT_RECORDS } from './higgsfieldCommunityExpansion90Records.js';
 import { SYNTX_SOURCE_PROMPT_RECORDS } from './syntxSourcePromptRecords.js';
+import { SEEDANCE_SOURCE_PROMPT_RECORDS } from './seedanceSourcePromptRecords.js';
+import { GENERATION_PROMPT_MAX } from '../../../lib/generationPromptLimits.js';
 
-const EXACT_PROMPT_MAX = 2000;
+const EXACT_PROMPT_MAX = GENERATION_PROMPT_MAX;
 const EXACT_SOURCE_RECORDS = Object.freeze({
   ...GENJUTSU_SOURCE_PROMPT_RECORDS,
   ...HIGGSFIELD_90_SOURCE_PROMPT_RECORDS,
   ...SYNTX_SOURCE_PROMPT_RECORDS,
+  ...SEEDANCE_SOURCE_PROMPT_RECORDS,
 });
 
 const referenceCount = (prompt, kind) => {
@@ -52,23 +55,45 @@ export function sourcePromptAuditRecord(templateId) {
     });
   }
 
-  const issues = ['source-input-contract-not-wired'];
+  const issues = [];
   const imageCount = referenceCount(source.prompt, 'image');
   const videoCount = referenceCount(source.prompt, 'video');
-  if (source.prompt.length > EXACT_PROMPT_MAX) issues.push('prompt-over-2000');
+  if (source.prompt.length > EXACT_PROMPT_MAX) issues.push('prompt-over-30000');
+  if (imageCount > 0) issues.push('reference-image-input-required');
+  if (imageCount > 1) issues.push('more-than-one-reference-image');
   if (imageCount > 2) issues.push('more-than-two-reference-images');
-  if (mentionsPreservedAudio(source.prompt)) issues.push('audio-preservation-not-supported');
+  if (videoCount > 0) issues.push('reference-video-not-supported');
+  const requiresPreservedAudio = mentionsPreservedAudio(source.prompt);
+  if (requiresPreservedAudio) issues.push('audio-preservation-not-supported');
   if (source.sourcePromptTruncated) issues.push('source-prompt-truncated');
+  const runnable = !source.sourcePromptTruncated
+    && source.prompt.length <= EXACT_PROMPT_MAX
+    && imageCount === 0
+    && videoCount === 0
+    && !requiresPreservedAudio;
+  if (!runnable) issues.push('source-input-contract-not-wired');
 
   return Object.freeze({
     status: source.sourcePromptTruncated ? 'exact-truncated' : 'exact',
-    runnable: false,
+    runnable,
     issues: Object.freeze(issues),
     characterCount: source.prompt.length,
     referenceImageCount: imageCount,
     referenceVideoCount: videoCount,
     duplicateOf: source.sourcePromptDuplicateOf ?? null,
   });
+}
+
+// Add the assigned generation model's verified text bound to the source-only
+// audit. Full prompt text remains available even when that model must not be
+// charged for it.
+export function sourcePromptAuditForModel(templateId, promptMax = EXACT_PROMPT_MAX) {
+  const sourceAudit = sourcePromptAuditRecord(templateId);
+  if (sourceAudit.status !== 'exact' || sourceAudit.characterCount <= promptMax) return sourceAudit;
+  const issues = [...sourceAudit.issues];
+  if (!issues.includes('model-prompt-limit-exceeded')) issues.push('model-prompt-limit-exceeded');
+  if (!issues.includes('source-input-contract-not-wired')) issues.push('source-input-contract-not-wired');
+  return Object.freeze({ ...sourceAudit, runnable: false, issues: Object.freeze(issues), modelPromptMax: promptMax });
 }
 
 // Public templates must either carry a complete exact source prompt or be an

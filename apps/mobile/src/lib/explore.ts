@@ -38,10 +38,8 @@ export function firstModelFor(catalog: readonly CatalogModel[], kind: Kind): Cat
     return catalog.find((m) => kindOf(m.modality) === kind && isSupported(m) && promptRequired(m) && textInput(m)?.key === 'prompt') ?? null;
 }
 
-const MAX_PROMPT = 4000;
-
 export const promptHref = (modelId: string, prompt: string) =>
-    ({ pathname: '/create/[modelId]', params: { modelId, prompt: prompt.trim().slice(0, MAX_PROMPT) } }) as const;
+    ({ pathname: '/create/[modelId]', params: { modelId, prompt: prompt.trim() } }) as const;
 
 // The collage: filter by what is being made, then by category, then by words.
 export const ALL_TYPES = 'all';

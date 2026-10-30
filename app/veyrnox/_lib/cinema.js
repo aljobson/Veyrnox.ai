@@ -2,6 +2,8 @@
 // turned into prompt text.
 // Client-side only: it changes the prompt, never the model or the price.
 
+import { GENERATION_PROMPT_MAX } from '../../../lib/generationPromptLimits.js';
+
 export const CAMERAS = {
   'Modular 8K Digital': 'modular 8K digital cinema camera',
   'Full-Frame Cine Digital': 'full-frame digital cinema camera',
@@ -47,8 +49,7 @@ export const DEFAULT_CINEMA = {
   aperture: 'f/1.4',
 };
 
-// The gateway refuses a prompt over 2000 characters (lib/modelCapabilities.js).
-export const PROMPT_MAX = 2000;
+export const PROMPT_MAX = GENERATION_PROMPT_MAX;
 
 /** The camera description appended to a prompt. Unknown values are dropped. */
 export function cinemaSuffix({ camera, lens, focal, aperture }) {
@@ -65,12 +66,9 @@ export function cinemaSuffix({ camera, lens, focal, aperture }) {
   return parts.join(', ');
 }
 
-/**
- * The prompt with the camera description appended. The user's text is cut,
- * never the camera text, so the result always fits the gateway limit.
- */
+/** The complete prompt with the camera description appended. */
 export function buildCinemaPrompt(base, settings) {
   const suffix = `, ${cinemaSuffix(settings)}`;
-  const text = String(base || '').trim().slice(0, PROMPT_MAX - suffix.length);
+  const text = String(base || '').trim();
   return text ? `${text}${suffix}` : '';
 }

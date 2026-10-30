@@ -9,6 +9,7 @@ import {
   REPLACED_HIGGSFIELD_TEMPLATE_IDS,
   SHOWCASE_CLIP_EXPANSION_12,
 } from './sourceTemplateExpansion12.js';
+import { SEEDANCE_SOURCE_SHOWCASE_CLIPS } from './sourceTemplateExpansion13.js';
 
 import { SHOWCASE_CLIP_EXPANSION_6 } from './sourceTemplateExpansion6.js';
 // Public clip records intentionally use neutral asset paths and contain no
@@ -458,6 +459,7 @@ export const AUDIT_SHOWCASE_CLIPS = {
   ...SHOWCASE_CLIP_EXPANSION_10,
   ...SHOWCASE_CLIP_EXPANSION_11,
   ...SHOWCASE_CLIP_EXPANSION_12,
+  ...SEEDANCE_SOURCE_SHOWCASE_CLIPS,
 
   ...SHOWCASE_CLIP_EXPANSION_6,
 };

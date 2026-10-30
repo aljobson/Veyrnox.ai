@@ -48,7 +48,7 @@ test('a first frame becomes an https image_url content item and nothing else rea
         declaredInputs(record, { ...job.inputs, resolution: '4k', service_tier: 'flex', generate_audio: false, callback_url: 'https://evil.test', seed: 3 }),
         job.inputs,
     );
-    for (const bad of [{ prompt: '' }, { prompt: 'x'.repeat(2001) }, { prompt: 'p', duration_seconds: 10 },
+    for (const bad of [{ prompt: '' }, { prompt: 'x'.repeat(30001) }, { prompt: 'p', duration_seconds: 10 },
         { prompt: 'p', aspect_ratio: '21:9' }, { prompt: 'p', resolution: '1080p' }]) {
         assert.equal(buildRequest(EP, bad).ok, false, JSON.stringify(bad));
     }

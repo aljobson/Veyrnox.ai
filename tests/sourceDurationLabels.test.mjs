@@ -27,6 +27,8 @@ function component(path, name, stateValues) {
     ...(stateValues ? { react: { ...require('react'), useState: initial => require('react').useState(stateIndex < stateValues.length ? stateValues[stateIndex++] : initial) } } : {}),
     '../../../../components/BindingText': binding,
     '../../../../lib/generationSourceSlots.mjs': sourceSlots,
+    '../../../../lib/generationPromptLimits.js': { GENERATION_PROMPT_MAX: 30_000, NEGATIVE_PROMPT_MAX: 2_000 },
+    '../../../lib/generationPromptLimits.js': { GENERATION_PROMPT_MAX: 30_000, NEGATIVE_PROMPT_MAX: 2_000 },
     '../../../../lib/createAttach.mjs': { attachAccept: () => 'image/png,video/mp4,audio/mpeg' },
     '../../_lib/chatMedia': chatMedia, '../_lib/chatMedia': chatMedia,
     '../../_lib/modelPricing': pricing, '../_lib/modelPricing': pricing,

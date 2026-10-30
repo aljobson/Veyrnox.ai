@@ -7,9 +7,13 @@ import { templateHandoffVisual, templateNeedsSource } from '../app/veyrnox/_lib/
 import { modelIdForName, presetHref } from '../app/veyrnox/_lib/tokens.js';
 
 test('every template remains visibly linked from its recipe page into Create', () => {
-  assert.equal(ALL_TEMPLATES.length, 1312, 'audit every public template');
+  assert.equal(ALL_TEMPLATES.length, 1434, 'audit every public template');
   for (const preset of ALL_TEMPLATES) {
-    assert.match(presetHref(preset), new RegExp(`[?&]preset=${preset.id}(?:&|$)`), preset.id);
+    if (preset.promptOrigin === 'community-source-exact' && preset.sourcePromptRunnable === false) {
+      assert.equal(presetHref(preset), `/presets/${preset.id}`, preset.id);
+    } else {
+      assert.match(presetHref(preset), new RegExp(`[?&]preset=${preset.id}(?:&|$)`), preset.id);
+    }
     assert.ok(modelIdForName(preset.model), `${preset.id} opens a known model`);
     const visual = templateHandoffVisual(preset);
     assert.ok(visual, `${preset.id} has a Create handoff visual`);

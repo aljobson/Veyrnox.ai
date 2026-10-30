@@ -1,6 +1,6 @@
 import { tOr } from '../../../lib/i18n/translate.mjs';
-
 export const FACELESS_REEL_MODEL = 'wan-2.5-kie';
+// Wan 2.5 on Kie has a narrower provider contract than the general media cap.
 export const FACELESS_REEL_PROMPT_MAX = 800;
 
 const fallbackTranslator = Object.assign((key) => key, { messages: {} });

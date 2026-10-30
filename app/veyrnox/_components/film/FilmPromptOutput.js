@@ -6,13 +6,14 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { writeStudioDraft } from '../../_lib/landingDraft';
 import { filmAspectCompatible } from '../../_lib/authenticatedMedia';
+import { GENERATION_PROMPT_MAX } from '../../../../lib/generationPromptLimits.js';
 
 export function FilmPromptOutput({ title, prompt, modelId, access, models, live, aspect, duration }) {
   const { t, locale } = useI18n();
   const number = value => locale === 'en' ? String(value) : new Intl.NumberFormat(localeTag(locale), {useGrouping:false, maximumFractionDigits:20}).format(value);
   const router=useRouter(); const [notice,setNotice]=useState('');
   const model=models.find(m=>m.id===modelId&&m.takesPrompt!==false&&!m.gated&&!m.isEdit&&!m.takesTopic&&!m.takesPlan);
-  const max=model?.promptMax||2000;
+  const max=model?.promptMax||GENERATION_PROMPT_MAX;
   const aspectCompatible=filmAspectCompatible(model,aspect);
   const canOpen=access==='Studio'&&live&&model&&prompt.length<=max&&(!duration||model.durations?.includes(duration))&&aspectCompatible;
   const open=()=>{

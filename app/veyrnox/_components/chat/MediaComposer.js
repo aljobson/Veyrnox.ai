@@ -12,6 +12,7 @@ import { sourceDurationLimit } from '../../_lib/modelPricing';
 import { attachAccept } from '../../../../lib/createAttach.mjs';
 import { SourcePickers } from '../SourcePickers';
 import { LibraryPicker } from '../LibraryPicker';
+import { GENERATION_PROMPT_MAX } from '../../../../lib/generationPromptLimits.js';
 
 const control = 'relative inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-vx-border bg-vx-base px-3 text-xs font-semibold text-vx-fg-muted transition-colors hover:border-vx-accent hover:text-vx-fg focus-within:border-vx-accent focus-within:outline-solid focus-within:outline-2 focus-within:outline-vx-accent disabled:opacity-50';
 function credits(t, locale, number) { return t(pluralKey(t, locale, 'app.chat.settings.credits', number), { count: locale === 'en' ? String(number) : number.toLocaleString(localeTag(locale)) }); }
@@ -53,8 +54,11 @@ export function MediaComposer({ kind, media, prompt, onPrompt }) {
   const aspects = model?.aspects || [];
   const { hasSource } = generationSourceState(model?.media, sources);
   const missingPrompt = mediaPromptIsMissing(model, prompt);
+  const promptLimit = model?.promptMax || GENERATION_PROMPT_MAX;
+  const promptLimitKey = promptLimit < GENERATION_PROMPT_MAX ? 'public.TemplateRecipe.promptTooLong' : 'public.TemplateRecipe.productPromptTooLong';
+  const promptTooLong = prompt.trim().length > promptLimit;
   const canGenerate = catalogLive && model && !model.gated && !busy && !converting && !missingPrompt && !missingSource && !missingConsent
-    && !missingVoice && !invalidAudioDuration && balance != null && cost <= balance;
+    && !promptTooLong && !missingVoice && !invalidAudioDuration && balance != null && cost <= balance;
   const resultReady = jobs.some((job) => job.state === 'succeeded');
   const errorCopy = error ? error.code === 'source_reattach_required' ? t('app.create.reattach') : tOr(t, `app.create.error.${error.code}`, ERROR_COPY[error.code] || t('app.chat.media.failed')) : '';
   const sourceDurationMax = sourceDurationLimit(model);
@@ -166,7 +170,7 @@ export function MediaComposer({ kind, media, prompt, onPrompt }) {
 
         <div className="flex items-end gap-2 px-2 pb-2">
           <label className="sr-only" htmlFor="chat-media-prompt">{t("app.editor.generation.prompt")}</label>
-          <textarea id="chat-media-prompt" rows={1} value={prompt} maxLength={model?.promptMax || 2000} placeholder={placeholder}
+          <textarea id="chat-media-prompt" rows={1} value={prompt} placeholder={placeholder}
             onChange={(event) => onPrompt(event.target.value)}
             onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); if (canGenerate) generate(prompt); } }}
             className="max-h-48 min-h-14 min-w-0 flex-1 resize-none bg-transparent px-2 py-3 text-[15px] text-vx-fg outline-hidden placeholder:text-vx-fg-faint" />
@@ -175,6 +179,7 @@ export function MediaComposer({ kind, media, prompt, onPrompt }) {
             {sending ? t("app.editor.sheet.starting") : generating ? t("app.chat.media.generating") : freeLeft > 0 && cost === 0 ? t("app.chat.media.free") : t('app.chat.media.generate', { cost: number(cost) })}
           </button>
         </div>
+        {promptTooLong && <p role="alert" className="px-4 pb-2 text-xs text-vx-danger">{t(promptLimitKey, { count: number(prompt.trim().length), max: number(promptLimit) })}</p>}
       </fieldset>
 
       <div className="border-t border-vx-border px-3 py-2 text-xs text-vx-fg-muted">

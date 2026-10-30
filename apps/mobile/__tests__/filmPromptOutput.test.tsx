@@ -1,7 +1,7 @@
 import { act } from 'react';
 import * as RN from 'react-native';
 import { createRoot, type Root } from 'test-renderer';
-import { FilmPromptOutput } from '../src/components/film/FilmPromptOutput';
+import { FilmInput, FilmPromptOutput } from '../src/components/film/FilmPromptOutput';
 import { copyText } from '../src/lib/clipboard';
 import type { CatalogModel } from '../src/lib/media';
 import { t } from '../src/lib/i18n';
@@ -48,11 +48,19 @@ test.each([true, false])('Copy announces success=%p', async ok => {
 });
 
 
-test('a catalog without an explicit prompt maximum uses the existing 2000-character default', async () => {
+test('a catalog without an explicit prompt maximum uses the 30,000-character default', async () => {
     const catalog = [{ ...model, capabilities: { inputs: { prompt: {}, aspect_ratio: { values: ['16:9'] } } } }];
-    await render({ catalog, prompt: 'x'.repeat(2000) });
+    await render({ catalog, prompt: 'x'.repeat(30000) });
     expect(button(t('film.openinCreate'))).toBeDefined();
-    await render({ catalog, prompt: 'x'.repeat(2001) });
+    await render({ catalog, prompt: 'x'.repeat(30001) });
     expect(button(t('film.openinCreate'))).toBeUndefined();
-    expect(textOf(root.container)).toContain(t('filmOutput.reason.limit', { value1: 2000 }));
+    expect(textOf(root.container)).toContain(t('filmOutput.reason.limit', { value1: 30000 }));
+});
+
+test('Film Studio fields stay at 24,000 unless a prompt field explicitly opts into 30,000', async () => {
+    const onChange = jest.fn();
+    await act(async () => root.render(<FilmInput label="Descriptor" value="" onChange={onChange} multiline />));
+    expect(root.container.queryAll(n => typeof n.props.onChangeText === 'function')[0].props.maxLength).toBe(24_000);
+    await act(async () => root.render(<FilmInput label="Prompt" value="" onChange={onChange} multiline maxLength={30_000} />));
+    expect(root.container.queryAll(n => typeof n.props.onChangeText === 'function')[0].props.maxLength).toBe(30_000);
 });

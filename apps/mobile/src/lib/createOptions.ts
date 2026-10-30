@@ -1,4 +1,5 @@
 import { sanitizeCinema, type Cinema } from './cinemaCamera';
+import { GENERATION_PROMPT_MAX } from './promptLimits';
 import { sanitizePicks, type Picks } from './oddlingsBuilder';
 import { kindOf, textInput, type CatalogModel, type Kind } from './media';
 
@@ -224,10 +225,11 @@ export function parseDraft(raw: unknown, modelId: string): CreateDraft | null {
     const d = raw as Partial<CreateDraft>;
     if (d.v !== SAVED_DRAFT_VERSION || d.modelId !== modelId) return null;
     if (typeof d.prompt !== 'string' || typeof d.seed !== 'string' || typeof d.negative !== 'string' || typeof d.count !== 'number') return null;
+    if (d.prompt.length > GENERATION_PROMPT_MAX) return null;
     return {
         v: SAVED_DRAFT_VERSION,
         modelId,
-        prompt: d.prompt.slice(0, 4000),
+        prompt: d.prompt,
         duration: typeof d.duration === 'number' ? d.duration : null,
         aspect: typeof d.aspect === 'string' ? d.aspect : null,
         count: d.count,

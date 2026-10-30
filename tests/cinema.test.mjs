@@ -9,9 +9,9 @@ test('the camera text follows the prompt and names every choice', () => {
     assert.match(out, /aperture f\/11, deep focus clarity/);
 });
 
-test('the result never exceeds the gateway prompt limit; the user text is what gets cut', () => {
-    const out = buildCinemaPrompt('x'.repeat(5000), DEFAULT_CINEMA);
-    assert.equal(out.length, PROMPT_MAX);
+test('camera composition keeps every user character so Create can report an over-limit result', () => {
+    const out = buildCinemaPrompt('x'.repeat(PROMPT_MAX + 500), DEFAULT_CINEMA);
+    assert.ok(out.length > PROMPT_MAX + 500);
     assert.ok(out.endsWith(cinemaSuffix(DEFAULT_CINEMA)));
 });
 

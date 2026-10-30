@@ -1,6 +1,8 @@
 // ADR-0175: the web's Cinema camera, as prompt text. A copy of app/veyrnox/_lib/cinema.js; __tests__/cinemaCamera.test.ts
 // reads that file and fails if the two drift. Client-side only: it changes the prompt, never the model or the price.
 
+import { GENERATION_PROMPT_MAX } from './promptLimits';
+
 export const CAMERAS: Readonly<Record<string, string>> = {
     'Modular 8K Digital': 'modular 8K digital cinema camera',
     'Full-Frame Cine Digital': 'full-frame digital cinema camera',
@@ -48,8 +50,7 @@ export interface Cinema {
 
 export const DEFAULT_CINEMA: Cinema = { camera: 'Studio Digital S35', lens: 'Premium Modern Prime', focal: 35, aperture: 'f/1.4' };
 
-// The gateway refuses a prompt over 2000 characters.
-export const PROMPT_MAX = 2000;
+export const PROMPT_MAX = GENERATION_PROMPT_MAX;
 
 // The camera description appended to a prompt. Unknown values are dropped.
 export function cinemaSuffix({ camera, lens, focal, aperture }: Cinema): string {
@@ -64,11 +65,11 @@ export function cinemaSuffix({ camera, lens, focal, aperture }: Cinema): string 
     return parts.join(', ');
 }
 
-// The prompt with the camera description appended. The person's text is cut, never the camera text, so the result
-// always fits the gateway limit.
+// The complete prompt with the camera description appended. Create validates
+// the composed length and shows an error instead of silently shortening it.
 export function buildCinemaPrompt(base: string, settings: Cinema): string {
     const suffix = `, ${cinemaSuffix(settings)}`;
-    const text = String(base || '').trim().slice(0, PROMPT_MAX - suffix.length);
+    const text = String(base || '').trim();
     return text ? `${text}${suffix}` : '';
 }
 

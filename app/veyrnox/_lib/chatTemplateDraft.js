@@ -1,5 +1,7 @@
+import { CHAT_USER_TEXT_MAX } from '../../../lib/chatLimits.js';
+
 const KEY = 'veyrnox_chat_template_draft_v1';
-const MAX_PROMPT = 2000;
+const MAX_PROMPT = CHAT_USER_TEXT_MAX;
 const MAX_AGE_MS = 10 * 60 * 1000;
 
 function clean(value, max) {
@@ -9,9 +11,11 @@ function clean(value, max) {
 /** Carry an edited public-template prompt into LLM Chat without exposing it in the URL. */
 export function writeTemplateChatDraft(storage, preset, prompt, now = Date.now()) {
   if (!storage) return false;
+  const exactPrompt = typeof prompt === 'string' ? prompt.trim() : '';
+  if (!exactPrompt || exactPrompt.length > MAX_PROMPT) return false;
   const draft = {
     templateId: clean(preset?.id, 100),
-    prompt: clean(prompt, MAX_PROMPT),
+    prompt: exactPrompt,
     at: now,
   };
   if (!draft.templateId || !draft.prompt) return false;
@@ -37,7 +41,8 @@ export function takeTemplateChatDraft(storage, now = Date.now()) {
   try {
     const draft = JSON.parse(raw);
     const templateId = clean(draft?.templateId, 100);
-    const prompt = clean(draft?.prompt, MAX_PROMPT);
+    const prompt = typeof draft?.prompt === 'string' ? draft.prompt.trim() : '';
+    if (prompt.length > MAX_PROMPT) return null;
     if (!templateId || !prompt || !Number.isFinite(draft?.at) || now - draft.at > MAX_AGE_MS || draft.at > now) return null;
     return { templateId, prompt };
   } catch {
