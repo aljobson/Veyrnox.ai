@@ -175,6 +175,15 @@ export function presetPrice(p: Preset): string {
     return p.durationSeconds ? `${p.credits} credits · ${p.durationSeconds} s` : `${p.credits} credits`;
 }
 
+// A template whose exact community prompt needs inputs the model cannot receive, and that has no separate runnable
+// adaptation, can only be copied. Owner, 2026-10-30: the app hides these until their inputs are wired.
+export function isCopyOnlyPreset(p: Preset): boolean {
+    const exact = p.sourcePromptOrigin === 'community-source-exact' && typeof p.sourcePrompt === 'string';
+    const blocked = exact && p.sourcePromptRunnable === false;
+    const runnableAdaptation = p.promptOrigin === 'veyrnox-adaptation' && p.prompt !== p.sourcePrompt;
+    return blocked && !runnableAdaptation;
+}
+
 export async function fetchPresets(): Promise<Preset[]> {
     let res: Response;
     try {
@@ -183,5 +192,5 @@ export async function fetchPresets(): Promise<Preset[]> {
         throw new ApiError(0, 'network');
     }
     if (!res.ok) throw new ApiError(res.status, 'presets_unavailable');
-    return parsePresets(await res.json());
+    return parsePresets(await res.json()).filter((p) => !isCopyOnlyPreset(p));
 }

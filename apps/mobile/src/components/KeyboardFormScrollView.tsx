@@ -3,7 +3,8 @@ import { Keyboard, ScrollView, TextInput, type ScrollViewProps } from 'react-nat
 import { KeyboardFocusContext } from './KeyboardFocusContext';
 
 // The shared KeyboardScreen resizes for the real header. Scroll the actual focused
-// native input as well: resizing alone does not reveal a field far down a form.
+// native input as well: resizing alone does not reveal a field far down a form. A drag closes the keyboard: a multiline
+// prompt's Return key adds a line, so otherwise nothing closes it on a form like Create.
 export function KeyboardFormScrollView(props: ScrollViewProps) {
     const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
     const frame = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -20,6 +21,6 @@ export function KeyboardFormScrollView(props: ScrollViewProps) {
         return () => { shown.remove(); changed.remove(); if (frame.current) clearTimeout(frame.current); };
     }, [reveal]);
     return <KeyboardFocusContext value={reveal}>
-        <ScrollView {...props} ref={scroll} keyboardShouldPersistTaps="handled" onLayout={event => { props.onLayout?.(event); reveal(); }} />
+        <ScrollView keyboardDismissMode="on-drag" {...props} ref={scroll} keyboardShouldPersistTaps="handled" onLayout={event => { props.onLayout?.(event); reveal(); }} />
     </KeyboardFocusContext>;
 }

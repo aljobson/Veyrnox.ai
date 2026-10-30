@@ -35,7 +35,20 @@ test('creates an image, renders the result, and records it in Library', { tags: 
   });
   if (await consent.isVisible()) await consent.tap();
 
-  await expect(screen.getByRole('image', 'Your creation')).toBeVisible({ timeout: 30_000 });
+  // A first win on a fresh install asks for a rating once the celebration ends; answer it, then check the result.
+  const result = screen.getByRole('image', 'Your creation');
+  const rating = screen.getByText('Enjoying your first creation?');
+  await result.or(rating).waitFor({ state: 'visible', timeout: 45_000 });
+  if (!(await result.isVisible())) await rating.waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {});
+  if (await rating.isVisible()) {
+    await app.screenshot('generation-rating-ask');
+    await screen.getByRole('button', 'Not now').tap();
+    // A development reload can restore the ask once; answer it again rather than fail on dev tooling.
+    await rating.waitFor({ state: 'hidden', timeout: 5_000 }).catch(async () => {
+      if (await rating.isVisible()) await screen.getByRole('button', 'Not now').tap();
+    });
+  }
+  await expect(result).toBeVisible({ timeout: 30_000 });
   await app.screenshot('generation-rendered-output');
 
   await device.openLink('ai.veyrnox.app://library');
