@@ -81,7 +81,7 @@ test('confetti explodes from the centre in every direction, then falls below the
         expect(xs).toHaveLength(CONFETTI_COUNT);
         expect(ys).toHaveLength(CONFETTI_COUNT);
         // The burst reaches out left and right, up and down, within the first BURST_END of the clock.
-        const bursts = xs.map((c, i) => [c.outputRange[2], ys[i].outputRange[2]]);
+        const bursts = xs.map((c, i) => [Number(c.outputRange[2]), Number(ys[i].outputRange[2])]);
         expect(bursts.some(([x]) => x < -width / 4) && bursts.some(([x]) => x > width / 4)).toBe(true);
         expect(bursts.some(([, y]) => y < -height / 8) && bursts.some(([, y]) => y > height / 8)).toBe(true);
         expect(xs.every((c) => Math.abs(c.inputRange[2] - c.inputRange[0] - BURST_END) < 1e-9 && c.extrapolate === 'clamp')).toBe(true);
