@@ -48,6 +48,10 @@ test('creates an image, renders the result, and records it in Library', { tags: 
       if (await rating.isVisible()) await screen.getByRole('button', 'Not now').tap();
     });
   }
+  // The page is still scrolled down at Generate; the result sits at the top of Create.
+  for (let page = 0; page < 7 && !(await result.isVisible()); page += 1) {
+    await screen.swipe({ from: { x: 200, y: 180 }, to: { x: 200, y: 740 }, duration: 450 });
+  }
   await expect(result).toBeVisible({ timeout: 30_000 });
   await app.screenshot('generation-rendered-output');
 
