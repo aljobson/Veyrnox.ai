@@ -1,8 +1,10 @@
 import { emptyFilm, SHOT_LANES, ACCEPTANCE_CHECKS } from './filmStudio.js';
+import { GENERATION_PROMPT_MAX } from '../../../lib/generationPromptLimits.js';
 const PREFIX = 'veyrnox_film_studio_v1:';
 export const MAX_FILM_BYTES = 1_000_000;
 const object = v => v && typeof v === 'object' && !Array.isArray(v);
-const strings = (v, keys) => object(v) && keys.every(k => typeof v[k] === 'string' && v[k].length <= (k==='context'?MAX_FILM_BYTES:24000) && !v[k].includes('\0'));
+const stringLimit = key => key === 'context' ? MAX_FILM_BYTES : ['script', 'content'].includes(key) ? GENERATION_PROMPT_MAX : 24000;
+const strings = (v, keys) => object(v) && keys.every(k => typeof v[k] === 'string' && v[k].length <= stringLimit(k) && !v[k].includes('\0'));
 const list = (v, limit, valid) => Array.isArray(v) && v.length <= limit && v.every(valid);
 export const isUuid = value => typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 export const validCloudLink = (link, userId) => !!key(userId) && link?.userId === userId && isUuid(link.id) && Number.isSafeInteger(link.revision) && link.revision > 0;

@@ -48,7 +48,8 @@ test('Kling O1 requires video and pictures and refuses unpriced durations', () =
     assert.deepEqual(checkInputs(record, missing), { ok: false, error: `inputs_invalid:${key}` });
   }
   assert.deepEqual(checkInputs(record, { ...onePicture, duration_seconds: 6 }), { ok: false, error: 'duration_not_supported' });
-  assert.equal(checkInputs(record, { ...onePicture, prompt: 'x'.repeat(2001) }).ok, false);
+  assert.equal(checkInputs(record, { ...onePicture, prompt: 'x'.repeat(30_000) }).ok, true);
+  assert.equal(checkInputs(record, { ...onePicture, prompt: 'x'.repeat(30_001) }).ok, false);
 });
 
 test('Kling O1 bounds proven visual duration and both dimensions before debit', () => {

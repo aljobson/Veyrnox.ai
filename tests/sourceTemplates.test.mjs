@@ -7,6 +7,7 @@ import { SOURCE_TEMPLATES } from '../app/veyrnox/_lib/sourceTemplates.js';
 import { GENJUTSU_SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/genjutsuSourcePromptRecords.js';
 import { HIGGSFIELD_90_SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/higgsfieldCommunityExpansion90Records.js';
 import { SYNTX_SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/syntxSourcePromptRecords.js';
+import { SEEDANCE_SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/seedanceSourcePromptRecords.js';
 import { exactSourcePromptRecord } from '../app/veyrnox/_lib/sourcePromptRecords.js';
 import { sourcePromptAuditRecord } from '../app/veyrnox/_lib/sourcePromptAudit.js';
 import { GENJUTSU_PROMPT_SHA256 } from './fixtures/genjutsuPromptHashes.mjs';
@@ -64,17 +65,22 @@ function mp4DurationSeconds(data) {
 }
 
 test('every imported clip has its own matching recipe and a supported video model', () => {
-  assert.equal(SOURCE_TEMPLATES.length, 315);
-  assert.equal(new Set(SOURCE_TEMPLATES.map((p) => p.clipKey)).size, 315);
+  assert.equal(SOURCE_TEMPLATES.length, 437);
+  assert.equal(new Set(SOURCE_TEMPLATES.map((p) => p.clipKey)).size, 437);
   for (const preset of SOURCE_TEMPLATES) {
     const clip = AUDIT_SHOWCASE_CLIPS[preset.clipKey];
     assert.ok(clip, preset.id);
     assert.equal(clip.title.toUpperCase(), preset.name, preset.id);
     assert.ok(clip.video.endsWith(`-${preset.id}.mp4`), preset.id);
     assert.equal(MODELS.find((m) => m.id === modelIdForName(preset.model))?.kind, 'video');
-    assert.ok(preset.prompt.length > 100 && preset.prompt.length <= 2000);
-    assert.doesNotMatch(preset.prompt, /@(image|video)\d/, 'unsupported source reference slots must not leak into runnable prompts');
-    assert.equal(preset.promptOrigin, 'veyrnox-adaptation');
+    assert.ok(preset.prompt.length > 100 && preset.prompt.length <= 30000);
+    if (preset.promptOrigin === 'veyrnox-adaptation') {
+      assert.ok(preset.prompt.length <= 2000, preset.id);
+      assert.doesNotMatch(preset.prompt, /@(image|video)\d/, 'unsupported source reference slots must not leak into adaptation prompts');
+    } else {
+      assert.equal(preset.promptOrigin, 'community-source-exact', preset.id);
+      assert.equal(preset.prompt, SEEDANCE_SOURCE_PROMPT_RECORDS[preset.id]?.prompt, preset.id);
+    }
     assert.ok(preset.needs);
     assert.equal(preset.durationSeconds, 10);
     const model = MODELS.find((m) => m.id === modelIdForName(preset.model));
@@ -89,7 +95,7 @@ test('Genjutsu-inspired I2V recipes describe source framing without claiming pro
   for (const preset of community) {
     assert.equal(Object.hasOwn(preset, 'aspect'), false, preset.id);
     assert.match(preset.sourceAspect, /^(?:1:1|9:16|16:9)$/);
-    assert.match(preset.needsKey, /^community\.(?:cartoons|cinematic|fashion|movies|products|ugc|vfx|group)$/);
+    assert.match(preset.needsKey, /^community\.(?:cartoons|cinematic|fashion|movies|products|ugc|vfx|group|copyOnly)$/);
   }
   const detail = readFileSync(new URL('../app/veyrnox/presets/[id]/page.js', import.meta.url), 'utf8');
   const handoff = readFileSync(new URL('../app/veyrnox/_components/TemplateHandoffCard.js', import.meta.url), 'utf8');
@@ -183,18 +189,68 @@ test('the 90 replacement Higgsfield templates preserve exact same-record prompts
   }
 });
 
+test('the 200 Seedance templates preserve full prompts and paired unique videos', () => {
+  const audit = JSON.parse(readFileSync(new URL('../docs/product/source-audit/seedance-200-exact-2026-10-29.json', import.meta.url)));
+  assert.equal(audit.requested, 200);
+  assert.equal(audit.accepted, 200);
+  assert.deepEqual(audit.sourceCounts, { Higgsfield: 79, Syntx: 121 });
+  assert.deepEqual(audit.changeCounts, { correctedExisting: 78, added: 122 });
+  assert.deepEqual(audit.duplicateChecks, {
+    uniqueTemplateIds: 200,
+    uniquePromptHashes: 200,
+    uniqueSourceMediaUrls: 200,
+    uniqueNormalizedVideoSignatures: 200,
+  });
+
+  const promptHashes = new Set();
+  const videoSignatures = new Set();
+  const promptAudits = [];
+  for (const record of audit.records) {
+    const template = SOURCE_TEMPLATES.find((candidate) => candidate.id === record.id);
+    const exact = exactSourcePromptRecord(record.id);
+    assert.ok(template, record.id);
+    assert.ok(exact, record.id);
+    assert.equal(exact.prompt, record.prompt, `${record.id}: full prompt changed`);
+    assert.equal(createHash('sha256').update(exact.prompt).digest('hex'), record.sourcePromptSha256, record.id);
+    assert.equal(template.sourcePlatform, record.sourcePlatform, record.id);
+    assert.equal(template.sourceModel, record.sourceModel, record.id);
+    assert.equal(template.sourceUrl, record.sourceUrl, record.id);
+    assert.equal(template.model, 'Seedance 2.0 Fast', record.id);
+    assert.equal(template.credits, 19, record.id);
+    if (!record.existing) assert.equal(template.prompt, record.prompt, `${record.id}: full exact prompt must remain copied`);
+    const promptAudit = sourcePromptAuditRecord(record.id);
+    promptAudits.push(promptAudit);
+    if (record.referenceImageCount > 0 || record.referenceVideoCount > 0 || promptAudit.issues.includes('audio-preservation-not-supported')) {
+      assert.equal(promptAudit.runnable, false, `${record.id}: unsupported source slots must block generation`);
+      assert.ok(promptAudit.issues.includes('source-input-contract-not-wired'), record.id);
+    }
+
+    const preview = readFileSync(fileURLToPath(new URL(`../public${record.previewPath}`, import.meta.url)));
+    const poster = readFileSync(fileURLToPath(new URL(`../public${record.posterPath}`, import.meta.url)));
+    assert.equal(createHash('sha256').update(preview).digest('hex'), record.localPreviewSha256, record.id);
+    assert.equal(createHash('sha256').update(poster).digest('hex'), record.localPosterSha256, record.id);
+    promptHashes.add(record.sourcePromptSha256);
+    videoSignatures.add(record.sourceVideoSignature);
+  }
+  assert.equal(promptHashes.size, 200);
+  assert.equal(videoSignatures.size, 200);
+  assert.equal(promptAudits.filter((record) => record.runnable).length, 79);
+  assert.equal(promptAudits.filter((record) => !record.runnable).length, 121);
+});
+
 test('public templates are exact or adaptation-only and all source-gap records are removed', () => {
   const audit = PRESETS.map((preset) => [preset.id, sourcePromptAuditRecord(preset.id)]);
   const groups = Object.groupBy(audit, ([, record]) => record.status);
-  assert.equal(groups.exact.length, 243);
+  assert.equal(groups.exact.length, 365);
   assert.equal(groups['adaptation-only'].length, 27);
   assert.equal(groups['exact-truncated'], undefined);
   assert.equal(groups.unavailable, undefined);
-  assert.equal(audit.length, 270);
-  assert.ok(audit.every(([, record]) => record.runnable === false));
-  assert.equal(audit.filter(([, record]) => record.issues.includes('prompt-over-2000')).length, 125);
-  assert.equal(audit.filter(([, record]) => record.issues.includes('more-than-two-reference-images')).length, 28);
-  assert.equal(audit.filter(([, record]) => record.issues.includes('audio-preservation-not-supported')).length, 100);
+  assert.equal(audit.length, 392);
+  assert.ok(audit.some(([, record]) => record.runnable === true));
+  assert.ok(audit.some(([, record]) => record.runnable === false));
+  assert.equal(audit.filter(([, record]) => record.issues.includes('prompt-over-30000')).length, 0);
+  assert.equal(audit.filter(([, record]) => record.issues.includes('more-than-two-reference-images')).length, 34);
+  assert.equal(audit.filter(([, record]) => record.issues.includes('audio-preservation-not-supported')).length, 137);
   assert.equal(sourcePromptAuditRecord('community-survivor-memory-shift').status, 'exact-truncated');
   assert.equal(sourcePromptAuditRecord('keyboard-duo-swap').status, 'unavailable');
   assert.equal(REMOVED_PROMPT_GAP_TEMPLATE_IDS.length, 45);
@@ -212,6 +268,11 @@ test('public templates are exact or adaptation-only and all source-gap records a
   for (const source of ['Higgsfield', 'Syntx', 'CapCut', 'Buzzy.now', 'LipSync.video']) assert.match(report, new RegExp(source));
   const webRecipe = readFileSync(new URL('../app/veyrnox/_components/TemplateRecipe.js', import.meta.url), 'utf8');
   for (const key of ['sourcePromptUnavailable', 'sourcePromptNotRecorded', 'sourcePromptTruncated', 'sourcePromptDuplicate']) assert.match(webRecipe, new RegExp(key));
+  assert.match(webRecipe, /generationBlocked=\{sourcePromptBlocked && !hasRunnableAdaptation\}/);
+  assert.match(webRecipe, /data-runnable-adaptation="true"/);
+  const mobileRecipe = readFileSync(new URL('../apps/mobile/src/app/(app)/templates/[id].tsx', import.meta.url), 'utf8');
+  assert.match(mobileRecipe, /disabled=\{\(sourcePromptBlocked && !hasRunnableAdaptation\) \|\| tooLong \|\| !prompt\.trim\(\)\}/);
+  assert.match(mobileRecipe, /public\.TemplateRecipe\.generationPrompt/);
 });
 
 test('Syntx templates preserve every currently published source prompt exactly', () => {
@@ -336,8 +397,13 @@ test('multi-subject community recipes require every identity in one starting ima
     'cyber-mask-transformation',
   ]) {
     const preset = SOURCE_TEMPLATES.find((entry) => entry.id === id);
-    assert.equal(preset?.needsKey, 'community.group', id);
-    assert.match(preset?.needs || '', /every subject/i, id);
+    if (preset?.promptOrigin === 'community-source-exact' && preset.sourcePromptRunnable === false) {
+      assert.match(preset?.needs || '', /copy the exact prompt/i, id);
+      assert.equal(preset?.needsKey, 'community.copyOnly', id);
+    } else {
+      assert.equal(preset?.needsKey, 'community.group', id);
+      assert.match(preset?.needs || '', /every subject/i, id);
+    }
   }
 });
 
@@ -360,10 +426,10 @@ test('source-aspect orientation agrees with every community preview', () => {
 });
 
 test('gallery and homepage templates have reachable recipe URLs', () => {
-  assert.equal(PRESETS.length, 270);
+  assert.equal(PRESETS.length, 392);
   assert.equal(WALL_PRESETS.length, 24);
   const visible = [...PRESETS, ...WALL_PRESETS];
-  assert.equal(new Set(visible.map((p) => p.clipKey).filter(Boolean)).size, 270);
+  assert.equal(new Set(visible.map((p) => p.clipKey).filter(Boolean)).size, 392);
   for (const preset of visible) {
     assert.equal(templateById(preset.id), preset);
     assert.equal(isUnknownStaticPage(`/presets/${preset.id}`), false);
@@ -407,22 +473,28 @@ test('all source-backed generation prompts remain distinct', () => {
   assert.equal(new Set(prompts).size, prompts.length);
 });
 
-test('retained source-template audit data and media paths are source-platform neutral', () => {
+test('retained source templates expose provenance only for the verified Seedance collection', () => {
   for (const preset of SOURCE_TEMPLATES) {
-    assert.equal(preset.inspired, true, preset.id);
+    if (preset.sourceModel?.startsWith('Seedance')) {
+      assert.ok(['Syntx', 'Higgsfield'].includes(preset.sourcePlatform), preset.id);
+      assert.match(preset.sourceUrl, /^https:\/\//, preset.id);
+    } else {
+      assert.equal(preset.inspired, true, preset.id);
+      assert.equal(preset.sourcePlatform, undefined, preset.id);
+    }
     assert.ok(!Object.hasOwn(preset, 'sourceRecipe'), preset.id);
   }
-  const publicData = JSON.stringify({ SOURCE_TEMPLATES, AUDIT_SHOWCASE_CLIPS });
-  assert.doesNotMatch(publicData, /buzzy|higgsfield|syntx|capcut|film\.fun|cliptrend|trendai|vynoa|viralance/i);
   for (const clip of Object.values(AUDIT_SHOWCASE_CLIPS)) {
-    assert.doesNotMatch(clip.video, /buzzy|higgsfield|syntx|capcut|film\.fun|cliptrend|trendai|vynoa|viralance/i);
-    assert.doesNotMatch(clip.poster, /buzzy|higgsfield|syntx|capcut|film\.fun|cliptrend|trendai|vynoa|viralance/i);
+    assert.doesNotMatch(clip.video, /buzzy|capcut|film\.fun|cliptrend|trendai|vynoa|viralance/i);
+    assert.doesNotMatch(clip.poster, /buzzy|capcut|film\.fun|cliptrend|trendai|vynoa|viralance/i);
+    if (/higgsfield|syntx/i.test(clip.video)) assert.match(clip.video, /^\/showcase\/viral-seedance-(?:higgs|syntx)-/);
+    if (/higgsfield|syntx/i.test(clip.poster)) assert.match(clip.poster, /^\/showcase\/viral-seedance-(?:higgs|syntx)-/);
   }
 });
 
 test('every retained source video and poster is a unique local asset', () => {
   const clips = Object.values(AUDIT_SHOWCASE_CLIPS);
-  assert.equal(clips.length, 405);
+  assert.equal(clips.length, 527);
   for (const field of ['video', 'poster']) {
     const paths = clips.map((clip) => clip[field]);
     assert.equal(new Set(paths).size, paths.length, `${field} paths must be unique`);
@@ -451,7 +523,11 @@ test('ten-second recipes quote and hand off the same doubled cost', () => {
   for (const preset of SOURCE_TEMPLATES.filter((p) => p.durationSeconds === 10)) {
     assert.equal(presetCredits(preset, []), preset.credits * 2);
     assert.equal(presetCredits(preset, [{ id: modelIdForName(preset.model), credits: 41 }]), 82);
-    assert.match(presetHref(preset), /&duration=10s$/);
+    if (preset.promptOrigin === 'community-source-exact' && preset.sourcePromptRunnable === false) {
+      assert.equal(presetHref(preset), `/presets/${preset.id}`);
+    } else {
+      assert.match(presetHref(preset), /&duration=10s$/);
+    }
   }
 });
 

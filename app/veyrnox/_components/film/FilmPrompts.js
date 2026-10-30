@@ -4,7 +4,7 @@ import { localeTag } from '../../../../lib/i18n/locales.mjs';
 import { tOr } from '../../../../lib/i18n/translate.mjs';
 import { useState } from 'react';
 import { ACCEPTANCE_CHECKS, PROMPT_DETAILS, buildShotPrompt, logFilmAttempt, nextPromptVersion, promptContext } from '../../_lib/filmStudio';
-import { FilmField, FilmSelect } from './FilmFields';
+import { FilmField, FILM_SCRIPT_MAX, FilmSelect } from './FilmFields';
 import { FilmPromptOutput } from './FilmPromptOutput';
 
 export function FilmPrompts({film,update,models,live}){
@@ -42,7 +42,7 @@ export function FilmPrompts({film,update,models,live}){
         {verdict==='accepted'&&<fieldset className="space-y-2"><legend className="mb-3 text-sm font-semibold">{t("app.film.prompts.checks")}</legend>{ACCEPTANCE_CHECKS.map((c,index)=><label key={c} className="flex gap-3 text-sm"><input type="checkbox" checked={checks.includes(c)} onChange={e=>setChecks(e.target.checked?[...checks,c]:checks.filter(v=>v!==c))}/>{tOr(t, `app.data.film.check.${index}`, c)}</label>)}</fieldset>}
         <button type="button" onClick={log} disabled={!result.trim()||!changed.trim()} className="rounded-full bg-vx-accent px-4 py-2 text-sm font-semibold text-vx-accent-ink disabled:opacity-40">{t("app.film.prompts.record")}</button>
       </section>}
-      {logged&&failed<15&&<section className="space-y-4"><h3 className="font-bold">{t("app.film.prompts.revise")}</h3><FilmField label={t("app.film.prompts.next")} multiline rows={14} value={revision??last.content} onChange={setRevision}/>
+      {logged&&failed<15&&<section className="space-y-4"><h3 className="font-bold">{t("app.film.prompts.revise")}</h3><FilmField label={t("app.film.prompts.next")} multiline rows={14} maxLength={FILM_SCRIPT_MAX} value={revision??last.content} onChange={setRevision}/>
         <button type="button" disabled={revision===null} onClick={revise} className="rounded-lg border border-vx-accent px-4 py-2 text-sm text-vx-accent disabled:opacity-40">{t("app.film.prompts.save")}</button></section>}
       {failed>=15&&<p role="alert" className="text-sm">{t("app.film.prompts.missed")}</p>}
     </>}

@@ -1,7 +1,7 @@
 import { act } from 'react';
 import * as RN from 'react-native';
 import { createRoot, type Root } from 'test-renderer';
-import { CelebrationHost, Confetti, CELEBRATION_MS } from '../src/components/CelebrationHost';
+import { CelebrationHost, Confetti, CELEBRATION_MS, CLAP_MS, CONFETTI_COUNT, BURST_END } from '../src/components/CelebrationHost';
 import { emitCelebration } from '../src/lib/veyMotion';
 const mockSuccess = jest.fn();
 let mockReduced = true;
@@ -48,42 +48,48 @@ test('reduced motion renders no confetti, acknowledges display and resolves dism
     });
     expect(event.onDone).toHaveBeenCalledTimes(1);
 });
-test('full motion renders 80 pieces, changes to clap and finishes at 2.6 seconds', async () => {
+test('full motion renders the confetti burst, changes to clap and finishes at 5 seconds', async () => {
     mockReduced = false;
     const event = await show();
-    expect(root.container.queryAll((n) => n.props.testID === 'confetti-piece')).toHaveLength(80);
-    await act(async () => jest.advanceTimersByTime(500));
+    expect(root.container.queryAll((n) => n.props.testID === 'confetti-piece')).toHaveLength(CONFETTI_COUNT);
+    await act(async () => jest.advanceTimersByTime(CLAP_MS));
     expect(root.container.queryAll((n) => n.props.testID === 'vey')[0].props.mood).toBe('clap');
-    await act(async () => jest.advanceTimersByTime(CELEBRATION_MS - 501));
+    await act(async () => jest.advanceTimersByTime(CELEBRATION_MS - CLAP_MS - 1));
     expect(event.onDone).not.toHaveBeenCalled();
     expect(root.container.queryAll((n) => n.props.testID === 'vey')).toHaveLength(1);
-    expect(root.container.queryAll((n) => n.props.testID === 'confetti-piece')).toHaveLength(80);
+    expect(root.container.queryAll((n) => n.props.testID === 'confetti-piece')).toHaveLength(CONFETTI_COUNT);
     await act(async () => jest.advanceTimersByTime(1));
     expect(event.onDone).toHaveBeenCalledTimes(1);
     expect(root.container.queryAll((n) => n.props.testID === 'confetti-piece')).toHaveLength(0);
 });
-test('confetti spans the width, falls below the screen, staggers over 400ms and fades only in the final 600ms', async () => {
+test('confetti explodes from the centre in every direction, then falls below the screen and fades only in the final 600ms', async () => {
     const timing = jest.spyOn(RN.Animated, 'timing');
     const interpolate = jest.spyOn(RN.Animated.Value.prototype, 'interpolate');
     try {
         await act(async () => root.render(<Confetti />));
         expect(timing).toHaveBeenCalledTimes(1);
-        expect(timing.mock.calls[0][1]).toMatchObject({ duration: 2600, useNativeDriver: true });
+        expect(timing.mock.calls[0][1]).toMatchObject({ duration: CELEBRATION_MS, useNativeDriver: true });
         const { width, height } = RN.Dimensions.get('window');
         const pieces = root.container.queryAll((n) => n.props.testID === 'confetti-piece').map((n) => RN.StyleSheet.flatten(n.props.style));
-        expect(pieces).toHaveLength(80);
-        expect(Math.min(...pieces.map((s) => s.left))).toBeLessThan(width * 0.05);
-        expect(Math.max(...pieces.map((s) => s.left))).toBeGreaterThan(width * 0.95);
-        expect(pieces.every((s) => s.top + s.height < 0)).toBe(true);
+        expect(pieces).toHaveLength(CONFETTI_COUNT);
+        // Every piece starts at the blast point, near the mascot.
+        expect(pieces.every((s) => Math.abs(s.left + s.width / 2 - width / 2) < 1 && s.top === height * 0.42)).toBe(true);
+        expect(new Set(pieces.map((s) => `${s.width}x${s.height}`)).size).toBeGreaterThan(5);
         const configs = interpolate.mock.calls.map(([config]) => config);
-        const falls = configs.filter((c) => c.outputRange[2] === height + 48);
-        expect(falls).toHaveLength(80);
-        expect(falls.every((c) => c.outputRange[0] === 0 && c.inputRange[2] === 1 && c.extrapolate === 'clamp')).toBe(true);
-        expect(Math.min(...falls.map((c) => c.inputRange[0])) * CELEBRATION_MS).toBe(0);
-        expect(Math.max(...falls.map((c) => c.inputRange[0])) * CELEBRATION_MS).toBeCloseTo(400);
+        const xs = configs.filter((c) => c.inputRange.length === 4 && c.outputRange.length === 4);
+        const ys = configs.filter((c) => c.inputRange.length === 5);
+        expect(xs).toHaveLength(CONFETTI_COUNT);
+        expect(ys).toHaveLength(CONFETTI_COUNT);
+        // The burst reaches out left and right, up and down, within the first BURST_END of the clock.
+        const bursts = xs.map((c, i) => [Number(c.outputRange[2]), Number(ys[i].outputRange[2])]);
+        expect(bursts.some(([x]) => x < -width / 4) && bursts.some(([x]) => x > width / 4)).toBe(true);
+        expect(bursts.some(([, y]) => y < -height / 8) && bursts.some(([, y]) => y > height / 8)).toBe(true);
+        expect(xs.every((c) => Math.abs(c.inputRange[2] - c.inputRange[0] - BURST_END) < 1e-9 && c.extrapolate === 'clamp')).toBe(true);
+        // Then everything falls past the bottom edge.
+        expect(ys.every((c) => c.outputRange[4] === height * 1.2 && c.inputRange[4] === 1)).toBe(true);
         const fades = configs.filter((c) => c.outputRange.join(',') === '1,1,0');
-        expect(fades).toHaveLength(80);
-        expect(fades.every((c) => c.inputRange[1] * CELEBRATION_MS === 2000)).toBe(true);
+        expect(fades).toHaveLength(CONFETTI_COUNT);
+        expect(fades.every((c) => Math.abs(c.inputRange[1] * CELEBRATION_MS - (CELEBRATION_MS - 600)) < 1e-6)).toBe(true);
         const animation = timing.mock.results[0].value;
         const stop = jest.spyOn(animation, 'stop');
         await act(async () => root.render(<></>));

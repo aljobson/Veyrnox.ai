@@ -1,4 +1,4 @@
-import { DEFAULT_CINEMA, buildCinemaPrompt, cinemaSuffix } from '../src/lib/cinemaCamera';
+import { DEFAULT_CINEMA, PROMPT_MAX, buildCinemaPrompt, cinemaSuffix } from '../src/lib/cinemaCamera';
 import { SAVED_DRAFT_VERSION, parseDraft } from '../src/lib/createOptions';
 import { buildCharacterPrompt, changePick, characterTraits } from '../src/lib/oddlingsBuilder';
 
@@ -15,7 +15,7 @@ describe('Character in Create', () => {
     test('character first, then the camera: the result still fits and ends with the camera', () => {
         const base = buildCharacterPrompt('x'.repeat(5000), changePick({}, 'character_type', 'Human'));
         const out = buildCinemaPrompt(base, DEFAULT_CINEMA);
-        expect(out.length).toBeLessThanOrEqual(2000);
+        expect(out.length).toBeLessThanOrEqual(PROMPT_MAX);
         expect(out.endsWith(cinemaSuffix(DEFAULT_CINEMA))).toBe(true);
     });
     test('the draft keeps the choice and drops anything that is not a known option', () => {

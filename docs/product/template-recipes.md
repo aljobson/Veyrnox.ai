@@ -4,23 +4,32 @@ On 10 October 2026 the owner requested usable recipes for the imported previews,
 including prompts and inputs, rather than unrelated footage in preset cards.
 The source template workflows were inspected with Agent Reach and the REA skill.
 
-`sourceTemplates.js` exposes 315 media-backed source recipes with their title,
+`sourceTemplates.js` exposes 437 media-backed source recipes with their title,
 clip key, Veyrnox remix prompt, supported video model, duration, upload guidance
 and neutral inspiration marker. The public filter removes 44 records whose
 matched prompt is unavailable and one whose matched prompt is truncated. It
 also replaces 90 older promptless Higgsfield adaptations one-for-one with 90
-current same-record exact prompt/video pairs. The gallery exposes 270 recipes and the
+current same-record exact prompt/video pairs. A further Seedance audit adds 122
+new exact prompt/video pairs and corrects the source-model metadata on 78
+existing Syntx rows, producing 200 verified Seedance templates in total. The
+gallery exposes 392 recipes and the
 homepage wall features 24 of them. Every public template has a distinct local
 video and poster. A detail page intentionally reuses the preview of the card it describes.
-Source-platform names, record IDs and URLs are not included in public template
-objects, browser payloads or media filenames. Exact prompts that creators made
-public are the exception: they are exposed read-only as provenance, including
-creator-supplied attribution or reference tokens that occur inside the prompt.
+Source-platform and source-model labels are exposed for the 200 verified
+Seedance records so they are not misrepresented as Kling templates. Internal
+record IDs remain audit-only. Exact prompts that creators made public are
+exposed in full, including creator-supplied attribution or reference tokens.
+The current contract and assigned models can run 144 exact prompts; 221 remain
+read-only because
+they require a source video, any explicit ordered image reference or preserved audio that
+their active route cannot receive or their assigned model's verified prompt
+limit cannot accept. The 200 Seedance templates split into 79
+runnable and 121 read-only exact prompts.
 
 On 24 October 2026, 22 legacy recipes without videos were removed. `PRESETS`,
-the browsable and API-exposed subset, now contains the 270 publishable video-backed recipes
+the browsable and API-exposed subset, now contains the 392 publishable video-backed recipes
 and drives the gallery, categories, search and homepage. `ALL_TEMPLATES` contains
-1,312 addressable recipes: those 270 video-backed recipes plus 1,036 direct-link
+1,434 addressable recipes: those 392 video-backed recipes plus 1,036 direct-link
 effect concepts and 6 reference recipes. It drives route lookup, middleware recognition and template
 start attribution. Homepage template links open the matching recipe page.
 

@@ -29,7 +29,9 @@ describe('the Cinema camera matches the web', () => {
         expect(web).toContain("lens: 'Premium Modern Prime'");
         expect(web).toContain('focal: 35');
         expect(web).toContain("aperture: 'f/1.4'");
-        expect(web).toContain(`PROMPT_MAX = ${PROMPT_MAX}`);
+        expect(web).toContain("import { GENERATION_PROMPT_MAX } from '../../../lib/generationPromptLimits.js'");
+        expect(web).toContain('PROMPT_MAX = GENERATION_PROMPT_MAX');
+        expect(PROMPT_MAX).toBe(30_000);
     });
 });
 
@@ -38,9 +40,9 @@ describe('camera prompt', () => {
         expect(buildCinemaPrompt('a fox', DEFAULT_CINEMA)).toBe('a fox, shot on a Super 35 studio digital camera, using a premium modern prime lens at 35mm (natural cinematic perspective), aperture f/1.4, shallow depth of field, creamy bokeh, cinematic lighting, natural color science, high dynamic range');
     });
     test('an empty prompt stays empty', () => expect(buildCinemaPrompt('  ', DEFAULT_CINEMA)).toBe(''));
-    test('the words are cut, never the camera, so it fits the limit', () => {
-        const out = buildCinemaPrompt('x'.repeat(5000), DEFAULT_CINEMA);
-        expect(out.length).toBeLessThanOrEqual(PROMPT_MAX);
+    test('the words stay complete so Create can report an over-limit result', () => {
+        const out = buildCinemaPrompt('x'.repeat(PROMPT_MAX + 500), DEFAULT_CINEMA);
+        expect(out.length).toBeGreaterThan(PROMPT_MAX + 500);
         expect(out.endsWith(cinemaSuffix(DEFAULT_CINEMA))).toBe(true);
     });
     test('unknown values are dropped', () => {

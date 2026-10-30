@@ -127,6 +127,12 @@ describe('presetHref', () => {
         expect(presetHref(available).pathname).toBe('/create/[modelId]');
         expect(presetHref(unavailable)).toEqual({ pathname: '/create/presets', params: { unavailable: 'a' } });
     });
+
+    test('opens a runnable adaptation while blocking the unsupported exact source text', () => {
+        const [adapted] = parsePresets({ presets: [{ ...base, sourcePrompt: 'Exact @image1 source text', sourcePromptOrigin: 'community-source-exact', sourcePromptRunnable: false }] });
+        expect(presetHref(adapted)).toMatchObject({ pathname: '/create/[modelId]', params: { prompt: 'Animate the product.' } });
+        expect(presetHref({ ...adapted, prompt: adapted.sourcePrompt! })).toEqual({ pathname: '/templates/[id]', params: { id: 'a' } });
+    });
 });
 
 describe('fetchPresets', () => {
@@ -141,6 +147,18 @@ describe('fetchPresets', () => {
         const list = await fetchPresets();
         expect(list).toHaveLength(1);
         expect(String((fn.mock.calls[0] as unknown[])[0])).toMatch(/\/api\/presets$/);
+    });
+
+    test('hides copy-only templates but keeps exact prompts that run or have a runnable adaptation', async () => {
+        const exact = { sourcePromptOrigin: 'community-source-exact', sourcePrompt: 'Exact @image1 community text' };
+        const presets = [
+            { ...base, id: 'plain' },
+            { ...base, id: 'runs', ...exact, prompt: 'Exact @image1 community text', promptOrigin: 'community-source-exact', sourcePromptRunnable: true },
+            { ...base, id: 'adapted', ...exact, sourcePromptRunnable: false },
+            { ...base, id: 'copy-only', ...exact, prompt: 'Exact @image1 community text', promptOrigin: 'community-source-exact', sourcePromptRunnable: false },
+        ];
+        globalThis.fetch = (async () => ({ ok: true, status: 200, json: async () => ({ presets }) })) as unknown as typeof fetch;
+        expect((await fetchPresets()).map((p) => p.id)).toEqual(['plain', 'runs', 'adapted']);
     });
 
     test('throws an ApiError carrying the status when the server fails', async () => {

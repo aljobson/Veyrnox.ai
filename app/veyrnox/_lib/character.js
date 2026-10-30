@@ -6,6 +6,7 @@
 
 import { CHARACTER_SIZE_GROUPS, conflictTopicPicks, extendCharacterGroups, resolveExclusivePicks } from './characterOptions.js';
 import { ODDLING_FEATURE_CHARACTERS } from './oddlingFeatureCharacters.js';
+import { GENERATION_PROMPT_MAX } from '../../../lib/generationPromptLimits.js';
 
 export const CHARACTER_TABS = ['Face', 'Body', 'Style'];
 
@@ -636,8 +637,7 @@ export const CHARACTER_GROUPS = extendCharacterGroups(CORE_CHARACTER_GROUPS);
 
 export const CHARACTER_BASE = 'Portrait of an original adult character, not a real person, cinematic lighting, sharp detail';
 
-// The gateway refuses a prompt over 2000 characters (lib/modelCapabilities.js).
-const PROMPT_MAX = 2000;
+const PROMPT_MAX = GENERATION_PROMPT_MAX;
 
 /**
  * The phrases for the chosen options ({ groupId: optionLabel }); unknown picks add
@@ -739,15 +739,11 @@ export function oddlingIdentity(picks) {
   return parts;
 }
 
-/**
- * Base portrait, the chosen traits, then the user's own text. The user's text
- * is what gets cut to fit the gateway limit, never the character.
- */
+/** Base portrait, the chosen traits, then the user's complete text. */
 export function buildCharacterPrompt(userText, picks) {
   const head = [CHARACTER_BASE, ...characterTraits(picks), ...oddlingIdentity(picks)].join(', ');
   const extra = String(userText || '').trim();
-  if (!extra) return head.slice(0, PROMPT_MAX);
-  return `${head}, ${extra}`.slice(0, PROMPT_MAX);
+  return extra ? `${head}, ${extra}` : head;
 }
 
 export const ODDLING_DRAFT_KEY = 'veyrnox_oddling_passport_v1';

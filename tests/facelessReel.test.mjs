@@ -86,17 +86,17 @@ test('READY matches the fixed phone prompt exactly', () => {
   assert.match(buildFacelessReelPrompt({ ...READY, pacing: 'unknown' }), /Pacing: Measured\. Calm motion; hold the readable final frame\./);
 });
 
-test('prompt overflow is translated and never truncates the topic or hook', () => {
+test('the 800-character Wan ceiling blocks the complete composed prompt before launch', () => {
   const values = { ...READY, topic: 'x'.repeat(790), hook: 'h'.repeat(160) };
-  assert.equal(facelessReelValidation(values, translator('en', messages)), 'Shorten the brief or hook: this model accepts 800 characters in all.');
+  assert.match(facelessReelValidation(values, translator('en', messages)), /accepts 800 characters/);
   assert.ok(buildFacelessReelPrompt(values).includes(values.topic));
   assert.ok(buildFacelessReelPrompt(values).includes(values.hook));
   assert.equal(facelessBriefLength({ topic: '  A brief.!?  ' }), 7);
   assert.equal(facelessBriefRoom(READY, 900), 900 - buildFacelessReelPrompt({ ...READY, topic: '' }).length);
   const room = facelessBriefRoom(READY);
+  assert.ok(room > 0 && room < 800);
   assert.equal(facelessReelValidation({ ...READY, topic: 'x'.repeat(room) }), null);
-  assert.match(facelessReelValidation({ ...READY, topic: 'x'.repeat(room + 1) }), /800/);
-  assert.match(facelessReelValidation({ ...READY, topic: 'x'.repeat(801) }), /visual brief/);
+  assert.match(facelessReelValidation({ ...READY, topic: 'x'.repeat(room + 1) }), /accepts 800 characters/);
   assert.match(facelessReelValidation({ ...READY, hook: 'h'.repeat(161) }), /optional hook/);
 });
 

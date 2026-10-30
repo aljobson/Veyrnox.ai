@@ -51,10 +51,10 @@ function network(t, { answer, submitted = { ok: true }, annotation = { ok: true 
     });
     return calls;
 }
-function post() {
+function post(prompt = 'A teapot', key = 'fal-outcome-test') {
     return generations.POST(new Request('https://veyrnox.test/api/v1/generations', {
         method: 'POST', headers: { 'x-veyrnox-auth-id': AUTH, 'content-type': 'application/json' },
-        body: JSON.stringify({ model_id: model.id, idempotency_key: 'fal-outcome-test', inputs: { prompt: 'A teapot' } }),
+        body: JSON.stringify({ model_id: model.id, idempotency_key: key, inputs: { prompt } }),
     }));
 }
 const rpc = (calls, name) => calls.filter(c => c.url.includes(`/rpc/${name}`));
@@ -211,6 +211,21 @@ test('durable fal admission queues atomically and replay never submits from the 
     const admission=rpc(calls,'admit_fal_dispatch')[0].body;
     assert.equal(admission.p_payload.prompt,'A teapot');
     assert.equal(admission.p_endpoint,'fal-ai/flux-2-pro');
+});
+test('durable fal accepts 30,000 characters and rejects 30,001 before admission', async (t) => {
+    durableFlags(t);
+    const calls = network(t, { durable: { ok: true } });
+    const acceptedPrompt = 'x'.repeat(30_000);
+    const accepted = await post(acceptedPrompt, 'fal-prompt-max-ok');
+    assert.equal(accepted.status, 202);
+    assert.equal(rpc(calls, 'admit_fal_dispatch')[0].body.p_inputs.prompt, acceptedPrompt);
+    assert.equal(rpc(calls, 'admit_fal_dispatch')[0].body.p_payload.prompt, acceptedPrompt);
+
+    const rejected = await post('x'.repeat(30_001), 'fal-prompt-max-over');
+    assert.equal(rejected.status, 400);
+    assert.deepEqual(await rejected.json(), { error: 'inputs_invalid:prompt' });
+    assert.equal(rpc(calls, 'admit_fal_dispatch').length, 1);
+    assert.equal(rpc(calls, 'ledger_debit').length, 0);
 });
 test('lost durable admission acknowledgement never falls back to another charge or submit', async (t) => {
     durableFlags(t);

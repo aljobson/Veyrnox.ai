@@ -36,6 +36,7 @@ void [RN.View, RN.Text, RN.Pressable, RN.ScrollView, RN.Modal, RN.TextInput, RN.
 const model: CatalogModel = { id: 'image', name: 'Image', modality: 'text-to-image', credits: 2, gated: false, durations: [], capabilities: { inputs: { prompt: { max: 2000 }, aspect_ratio: { values: ['1:1', '16:9'] }, num_images: {} }, media: {} } };
 let root: Root;
 const control = (label: string) => root.container.queryAll(n => n.props.accessibilityLabel === label)[0];
+const promptField = () => root.container.queryAll(n => n.props.accessibilityLabel === t('chat.make.promptLabel') && typeof n.props.onChangeText === 'function')[0];
 const press = async (label: string) => { await act(async () => control(label).props.onClick({ nativeEvent: {} })); };
 const hasText = (text: string) => root.container.queryAll(n => n.children.includes(text)).length > 0;
 const disabled = (label: string) => control(label).props.accessibilityState.disabled;
@@ -55,6 +56,17 @@ beforeEach(async () => {
     root = createRoot(); await render();
 });
 afterEach(async () => { await act(async () => root.unmount()); jest.useRealTimers(); });
+
+test('an over-limit prompt remains visible, explains the model limit, and cannot submit', async () => {
+    const field = promptField();
+    expect(field.props.maxLength).toBeUndefined();
+    const full = 'x'.repeat(2001);
+    await act(async () => field.props.onChangeText(full));
+    expect(promptField().props.value).toBe(full);
+    expect(hasText(t('public.TemplateRecipe.promptTooLong', { count: '2001', max: '2000' }))).toBe(true);
+    expect(disabled(paid())).toBe(true);
+    expect(mockCreate).not.toHaveBeenCalled();
+});
 
 test.each(['insufficient_balance', 'insufficient_credits'])('Make refusal %s offers native top-up and preserves the prompt', async code => {
     expect(control(t('lowBalance.buy'))).toBeUndefined();

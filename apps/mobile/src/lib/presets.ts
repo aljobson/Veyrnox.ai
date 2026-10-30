@@ -13,17 +13,21 @@ export interface Preset {
     readonly theme?: string;
     readonly modelId: string;
     readonly modelName: string;
+    readonly sourceModel?: string | null;
+    readonly sourcePlatform?: string | null;
+    readonly sourceUrl?: string | null;
     // What the model makes, from the catalog: an image, video or audio family (empty when the server did not say).
     readonly modality: string;
     readonly prompt: string;
     readonly promptOrigin?: 'veyrnox-adaptation' | null;
-    // Exact text published with the source community record. It is shown for reference only;
-    // prompt remains the compatible text sent to this preset's Veyrnox model.
+    // Exact text published with the source community record. Template detail always exposes
+    // the full value; generation is enabled only when sourcePromptRunnable is true.
     readonly sourcePrompt?: string | null;
     readonly sourcePromptOrigin?: 'community-source-exact' | null;
     readonly sourcePromptStatus?: 'exact' | 'exact-truncated' | 'unavailable' | 'adaptation-only';
     readonly sourcePromptRunnable?: boolean;
     readonly sourcePromptIssues?: readonly string[];
+    readonly sourcePromptModelPromptMax?: number | null;
     readonly sourcePromptDuplicateOf?: string | null;
     readonly needs: string | null;
     // Desired crop of the starting image for source-framed I2V models. This is guidance, not a provider aspect option.
@@ -65,6 +69,9 @@ function parseOne(raw: unknown): Preset | null {
         theme: str(r.theme) ?? str(r.category) ?? 'OTHER',
         modelId,
         modelName: str(r.modelName) ?? modelId,
+        sourceModel: str(r.sourceModel),
+        sourcePlatform: str(r.sourcePlatform),
+        sourceUrl: https(r.sourceUrl),
         modality: str(r.modality) ?? '',
         prompt,
         promptOrigin: r.promptOrigin === 'veyrnox-adaptation' ? 'veyrnox-adaptation' : null,
@@ -73,6 +80,7 @@ function parseOne(raw: unknown): Preset | null {
         sourcePromptStatus,
         sourcePromptRunnable: r.sourcePromptRunnable === true,
         sourcePromptIssues: Array.isArray(r.sourcePromptIssues) ? r.sourcePromptIssues.map(str).filter((v): v is string => v !== null) : [],
+        sourcePromptModelPromptMax: typeof r.sourcePromptModelPromptMax === 'number' && Number.isInteger(r.sourcePromptModelPromptMax) ? r.sourcePromptModelPromptMax : null,
         sourcePromptDuplicateOf: str(r.sourcePromptDuplicateOf),
         needs: str(r.needs),
         sourceAspect: str(r.sourceAspect),
@@ -153,12 +161,27 @@ export function searchPresets(items: readonly Preset[], query: string): Preset[]
 // Opens Create on the template's model with its prompt, length, shape, name and picture carried over; an inactive model
 // returns to Templates with an explicit unavailable state.
 export function presetHref(p: Preset) {
-    if (!p.available) return { pathname: '/create/presets', params: { unavailable: p.id } } as const;
+    const handsOffBlockedExactPrompt = p.sourcePromptOrigin === 'community-source-exact'
+        && p.sourcePromptRunnable === false
+        && p.prompt === p.sourcePrompt;
+    if (!p.available) {
+        return { pathname: '/create/presets', params: { unavailable: p.id } } as const;
+    }
+    if (handsOffBlockedExactPrompt) return { pathname: '/templates/[id]', params: { id: p.id } } as const;
     return { pathname: '/create/[modelId]', params: { modelId: p.modelId, prompt: p.prompt, ...(p.durationSeconds ? { duration: String(p.durationSeconds) } : {}), ...templateParams(p), ...(/^[a-z0-9-]{1,40}$/.test(p.id) ? { tid: p.id } : {}) } } as const;
 }
 
 export function presetPrice(p: Preset): string {
     return p.durationSeconds ? `${p.credits} credits · ${p.durationSeconds} s` : `${p.credits} credits`;
+}
+
+// A template whose exact community prompt needs inputs the model cannot receive, and that has no separate runnable
+// adaptation, can only be copied. Owner, 2026-10-30: the app hides these until their inputs are wired.
+export function isCopyOnlyPreset(p: Preset): boolean {
+    const exact = p.sourcePromptOrigin === 'community-source-exact' && typeof p.sourcePrompt === 'string';
+    const blocked = exact && p.sourcePromptRunnable === false;
+    const runnableAdaptation = p.promptOrigin === 'veyrnox-adaptation' && p.prompt !== p.sourcePrompt;
+    return blocked && !runnableAdaptation;
 }
 
 export async function fetchPresets(): Promise<Preset[]> {
@@ -169,5 +192,5 @@ export async function fetchPresets(): Promise<Preset[]> {
         throw new ApiError(0, 'network');
     }
     if (!res.ok) throw new ApiError(res.status, 'presets_unavailable');
-    return parsePresets(await res.json());
+    return parsePresets(await res.json()).filter((p) => !isCopyOnlyPreset(p));
 }

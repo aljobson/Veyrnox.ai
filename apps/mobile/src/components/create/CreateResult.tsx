@@ -1,13 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Text, Button, Card, themedStyles, useThemedStyles } from '../ui';
 import { InlineMedia } from '../InlineMedia';
 import { GeneratedChip } from '../library/GeneratedChip';
 import { useJobResult, soundPassFor } from '../../lib/createResult';
 import { stageCreativeSourceHandoff } from '../../lib/creativeSourceHandoff';
-import { celebrateOutput } from '../../lib/celebrate';
+import { afterCelebration, celebrateOutput } from '../../lib/celebrate';
+import { REVIEW_ASK_DELAY_MS, claimReviewAsk, shouldAskForReview } from '../../lib/reviewAsk';
+import { loadReviewAsk } from '../../lib/storeReview';
 import { parseRatio } from '../../lib/templateHandoff';
 import type { ApiClient } from '../../lib/api';
 import type { CatalogModel, Kind } from '../../lib/media';
@@ -16,10 +18,29 @@ import { plural, t } from '../../lib/i18n';
 export interface ResultBatch {
     ids: string[]; modelId: string; kind: Kind | null; aspect: string | null; duration: number | null; count: number;
 }
+// Embedded renderers without navigation focus support still clean up on unmount.
+const useRatingFocusEffect = useFocusEffect ?? ((effect: () => void | (() => void)) => useEffect(effect, [effect]));
+
 export function CreateResult({ api, batch, catalog, onTerminal }: { api: ApiClient; batch: ResultBatch; catalog: CatalogModel[]; onTerminal: () => void }) {
     const styles = useThemedStyles(sheets);
+    const router = useRouter();
     const celebrated = useRef(false);
-    const celebrate = (id: string, mime: string) => { if (!celebrated.current) { celebrated.current = true; celebrateOutput(id, mime, true); } };
+    const ratingAbort = useRef(new AbortController());
+    // Leaving Create cancels the rating ask, as on the job screen (owner, 2026-10-30: ask after the first win here too).
+    useRatingFocusEffect(useCallback(() => {
+        ratingAbort.current = new AbortController();
+        return () => ratingAbort.current.abort();
+    }, []));
+    const celebrate = (id: string, mime: string) => {
+        if (celebrated.current) return;
+        celebrated.current = true;
+        const celebration = celebrateOutput(id, mime, true);
+        const signal = ratingAbort.current.signal;
+        void loadReviewAsk().then((asked) => {
+            if (signal.aborted || !shouldAskForReview(asked, { waited: true, hasOutput: true })) return;
+            afterCelebration(celebration, REVIEW_ASK_DELAY_MS, signal, () => { if (claimReviewAsk()) router.push('/rate'); });
+        });
+    };
     return <View style={batch.count > 1 ? styles.grid : styles.single}>{batch.ids.map(id => <ResultTile key={id} api={api} id={id} batch={batch} catalog={catalog} onTerminal={onTerminal} onSuccess={celebrate} />)}</View>;
 }
 function ResultTile({ api, id, batch, catalog, onTerminal, onSuccess }: { api: ApiClient; id: string; batch: ResultBatch; catalog: CatalogModel[]; onTerminal: () => void; onSuccess: (id: string, mime: string) => void }) {

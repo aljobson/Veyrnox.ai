@@ -21,7 +21,7 @@ const tree = (file, source) => ts.createSourceFile(file, source, ts.ScriptTarget
 
 test('all template needs and 15 distinct steps have exact English and ten translated display entries', () => {
   const original = JSON.stringify(ALL_TEMPLATES);
-  assert.equal(ALL_TEMPLATES.length, 1312);
+  assert.equal(ALL_TEMPLATES.length, 1434);
   assert.ok(ALL_TEMPLATES.every(p => p.needs), 'Every public recipe retains translated input guidance');
   assert.equal(Object.keys(PRESET_STEP_KEYS).length, 15);
   for (const code of codes) {
@@ -134,7 +134,7 @@ test('Genjutsu recipe SSR shows only the exact source prompt and hands that same
   assert.doesNotMatch(html, /readonly=""/i);
 });
 
-test('Syntx recipe SSR uses the exact prompt and the unavailable source stays removed', () => {
+test('Syntx recipe SSR preserves the exact prompt while handing off its runnable adaptation', () => {
   const exactTemplate = ALL_TEMPLATES.find((preset) => preset.id === 'medieval-runway-look');
   const exactPrompt = SYNTX_SOURCE_PROMPT_RECORDS[exactTemplate.id].prompt;
   const exactPreset = { ...exactTemplate, sourcePrompt: exactPrompt, sourcePromptOrigin: 'community-source-exact' };
@@ -142,27 +142,40 @@ test('Syntx recipe SSR uses the exact prompt and the unavailable source stays re
   assert.equal(SYNTX_SOURCE_PROMPT_RECORDS['keyboard-duo-swap'].prompt, null);
 
   const exactFixture = fixture('en', `/presets/${exactPreset.id}`, { moduleMocks: {
-    './UseTemplate': { UseTemplate: ({ preset: actual, prompt }) => {
-      assert.equal(actual.prompt, exactPrompt);
-      assert.equal(prompt, exactPrompt);
+    './UseTemplate': { UseTemplate: ({ preset: actual, prompt, generationBlocked }) => {
+      assert.equal(actual.prompt, exactTemplate.prompt);
+      assert.equal(prompt, exactTemplate.prompt);
+      assert.equal(generationBlocked, false);
       return React.createElement('div', { 'data-use-template': actual.id });
     } },
   } });
   const exactHtml = exactFixture.render(React.createElement(exactFixture.load('app/veyrnox/_components/TemplateRecipe.js').TemplateRecipe, { preset: exactPreset }));
   assert.ok(exactHtml.includes(exactPrompt.slice(0, 80)));
-  assert.ok(!exactHtml.includes('VEYRNOX GENERATION PROMPT'));
-  assert.doesNotMatch(exactHtml, /readonly=""/i);
+  assert.ok(exactHtml.includes(exactTemplate.prompt.slice(0, 80)));
+  assert.ok(exactHtml.includes('VEYRNOX GENERATION PROMPT'));
+  assert.match(exactHtml, /readonly=""/i);
 });
 
-test('an exact prompt longer than the generation limit is shown whole and blocks generation', () => {
+test('an exact source prompt over the former limit is shown whole and stays copyable when its source contract is unsupported', () => {
   const template = ALL_TEMPLATES.find((preset) => (SYNTX_SOURCE_PROMPT_RECORDS[preset.id]?.prompt?.length ?? 0) > 2000);
   const exactPrompt = SYNTX_SOURCE_PROMPT_RECORDS[template.id].prompt;
   const preset = { ...template, sourcePrompt: exactPrompt, sourcePromptOrigin: 'community-source-exact' };
-  const f = fixture('en', `/presets/${preset.id}`);
+  let handoff;
+  const f = fixture('en', `/presets/${preset.id}`, { moduleMocks: {
+    './UseTemplate': { UseTemplate: (props) => {
+      handoff = props;
+      return React.createElement('div', { 'data-generation-blocked': String(props.generationBlocked) });
+    } },
+  } });
   const html = f.render(React.createElement(f.load('app/veyrnox/_components/TemplateRecipe.js').TemplateRecipe, { preset }));
   assert.ok(html.includes(exactPrompt.slice(-60).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#x27;')) || html.includes(String(exactPrompt.length)));
-  assert.ok(html.includes(`This prompt is ${exactPrompt.length} characters`));
-  assert.match(html, /<button[^>]*disabled=""[^>]*>[\s\S]*?cr<\/span><\/button>/);
+  assert.ok(!html.includes(`This prompt is ${exactPrompt.length} characters`));
+  assert.match(html, /data-source-prompt-runnable="false"/);
+  assert.match(html, /data-runnable-adaptation="true"/);
+  assert.match(html, /readonly=""/i);
+  assert.equal(handoff.prompt, template.prompt);
+  assert.equal(handoff.preset, preset);
+  assert.equal(handoff.generationBlocked, false);
 });
 
 test('app data areas preserve keys, placeholders and numeric facts in all languages', async () => {

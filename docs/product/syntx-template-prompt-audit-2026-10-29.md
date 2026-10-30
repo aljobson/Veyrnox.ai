@@ -16,6 +16,18 @@ Veyrnox now contains 98 video templates linked to licensed Syntx community trend
 
 The complete source record, exact prompt, source-media URL, source-file hash, normalized visual signature, local preview hash and rejection ledger for the additional 40 are in the [machine-readable 40-record manifest](source-audit/syntx-40-2026-10-29.json). Candidate selection rejected 39 records already present, four normalized prompt duplicates and four records without a complete same-record prompt/video pair.
 
+## Seedance model correction and expansion
+
+A second pass identified 121 of the accepted Seedance collection as Syntx
+records: 78 already-public rows and 43 new rows. Those templates now expose the
+source model recorded by Syntx (`Seedance 2.0`, `Seedance 2.5`, or `Seedance`
+when the source omitted a version), while their currently available Veyrnox
+generation route is labeled separately as `Seedance 2.0 Fast`. Together with
+79 Higgsfield Seedance 2.0 records, this forms the 200-template Seedance set.
+Every prompt is retained in full, byte-for-byte, and each is tied to its paired
+video. The cross-source uniqueness and hash ledger is
+[`source-audit/seedance-200-exact-2026-10-29.json`](source-audit/seedance-200-exact-2026-10-29.json).
+
 ## Historical batch exclusions
 
 The 14 October PR also added eight wall previews: `agamemnon`, `blue-depth`, `cyclope`, `fairytale-castle`, `infinite-clones`, `moonwalk`, `skatedog` and `windows`. PR [#969](https://github.com/aljobson/Veyrnox.ai/pull/969) did not identify their source platform, and none has an exact title or slug match in the 206 video records returned by the current Syntx Trends API. They are therefore not represented as Syntx records and retain null exact-source prompts rather than being assigned text by title similarity. In particular, Fairytale Castle is not the current Dreamworks Castle media: a five-second comparison between their local previews produced SSIM `0.756953`, far below the `>0.95` recovered-media match threshold.
@@ -115,6 +127,6 @@ The regression suite checks:
 5. all 98 local preview-video SHA-256 values are different, and the additional 40 normalized visual signatures are distinct;
 6. the 69 recovered/new downloaded source variants match their locked source-asset SHA-256 evidence;
 7. all 97 exact prompts reach the public API, while the unresolved Keyboard Duo record stays outside every public template surface; and
-8. runnable generation prompts remain within the supported 2,000-character boundary.
+8. exact and runnable generation prompts remain within the supported 30,000-character boundary.
 
 This audit used Syntx’s public read-only Trends API on 29 October 2026. It did not run a paid generation or infer private prompts.

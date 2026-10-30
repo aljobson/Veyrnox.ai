@@ -112,6 +112,16 @@ describe('parseFilm', () => {
         const parsed = parseFilm(JSON.stringify(withPrompt(lockedFilm())));
         expect(parsed.ok && parsed.film.shots[0].id).toBe('S1');
     });
+    test('keeps complete 30,000-character scripts and generated prompts', () => {
+        const script = '界'.repeat(30_000);
+        const content = 'x'.repeat(30_000);
+        const film = { ...baseFilm(), script, prompts: [{ shot: 'S1', version: 1, content, context: '', at: '' }] };
+        const parsed = parseFilm(JSON.stringify(film));
+        expect(parsed.ok && parsed.film.script).toBe(script);
+        expect(parsed.ok && parsed.film.prompts[0].content).toBe(content);
+        expect(parseFilm(JSON.stringify({ ...film, script: `${script}x` })).ok).toBe(false);
+        expect(parseFilm(JSON.stringify({ ...film, prompts: [{ ...film.prompts[0], content: `${content}x` }] })).ok).toBe(false);
+    });
     test('refuses non-JSON, the wrong schema, a bad aspect and duplicate shots', () => {
         expect(parseFilm('nope')).toEqual({ ok: false, error: 'That is not a valid Film Studio project.' });
         expect(parseFilm(JSON.stringify({ ...baseFilm(), schema: 2 })).ok).toBe(false);

@@ -13,13 +13,14 @@ import * as contracts from '../app/veyrnox/_lib/authenticatedMedia.js';
 import * as mobileLayout from '../lib/veyMobileLayout.js';
 import * as pointer from '../lib/veyPointer.js';
 import * as narration from '../lib/montageNarration.js';
+import * as promptLimits from '../lib/generationPromptLimits.js';
 
 const require = createRequire(import.meta.url);
 const read = path => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 function load(path, stubs = {}) {
   const output = { exports: {} };
   const code = ts.transpileModule(read(path), { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS } }).outputText;
-  new Function('require', 'module', 'exports', code)(id => id === '../../_lib/authenticatedMedia' ? contracts : stubs[id] || englishAppImports[id] || require(id), output, output.exports);
+  new Function('require', 'module', 'exports', code)(id => id === '../../_lib/authenticatedMedia' ? contracts : id === '../../../../lib/generationPromptLimits.js' ? promptLimits : stubs[id] || englishAppImports[id] || require(id), output, output.exports);
   return output.exports;
 }
 const record = capabilityFor('bytedance/seedance-2.0-fast');

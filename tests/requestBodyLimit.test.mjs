@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { limitRequestBody, JSON_BODY_LIMIT, WEBHOOK_BODY_LIMIT } from '../lib/requestBodyLimit.js';
+import { limitRequestBody, GENERATION_BODY_LIMIT, JSON_BODY_LIMIT, WEBHOOK_BODY_LIMIT } from '../lib/requestBodyLimit.js';
 const request = (body, path = '/api/v1/generations', headers = {}) => new Request(`https://veyrnox.test${path}`, { method: 'POST', body, headers, duplex: 'half' });
 
 // Workers exposes an empty stream for GET/HEAD with Content-Length: 0,
@@ -38,9 +38,25 @@ test('GET streams still enforce the body ceiling', async () => {
 });
 
 test('oversized bodies are rejected without trusting content-length', async () => {
-    const { response } = await limitRequestBody(request('x'.repeat(JSON_BODY_LIMIT + 1), undefined, { 'content-length': '1' }));
+    const { response } = await limitRequestBody(request('x'.repeat(JSON_BODY_LIMIT + 1), '/api/v1/social-cinema/profile', { 'content-length': '1' }));
     assert.equal(response.status, 413);
     assert.equal(response.headers.get('cache-control'), 'no-store');
+});
+
+test('generation entry points preserve 30,000-character Unicode and escaped prompts', async () => {
+    const prompt = '界'.repeat(30_000);
+    const bodies = [
+        JSON.stringify({ inputs: { prompt } }),
+        `{"inputs":{"prompt":"${'\\u754c'.repeat(30_000)}"}}`,
+    ];
+    for (const path of ['/api/v1/generations', '/api/v1/mcp', '/api/v1/developer/generations']) {
+        for (const body of bodies) {
+            const result = await limitRequestBody(request(body, path));
+            assert.equal(result.response, undefined, `${path} should admit ${body.length} characters`);
+            assert.equal(await result.request.text(), body);
+        }
+        assert.equal((await limitRequestBody(request('x'.repeat(GENERATION_BODY_LIMIT + 1), path))).response.status, 413);
+    }
 });
 
 test('webhook bytes survive unchanged including whitespace and non-ASCII content', async () => {

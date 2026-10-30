@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { ACCEPTANCE_CHECKS, PROMPT_DETAILS, buildShotPrompt, failedAttempts, latestPrompt, logFilmAttempt, nextPromptVersion, promptContext } from '../../lib/filmStudio';
 import { displayLabel } from '../../lib/displayLabels';
 import { t } from '../../lib/i18n';
+import { GENERATION_PROMPT_MAX } from '../../lib/promptLimits';
 import { colors } from '../../theme';
 import { FilmSelect } from './FilmSelect';
 import { FilmAction, FilmInput, FilmPromptOutput, type StageProps } from './FilmPromptOutput';
@@ -49,7 +50,7 @@ export function FilmPromptsStage({ film, change, catalog, live }: StageProps) {
                     catch (e) { setError((e as Error).message); }
                 }} />
             </View> : failed < 15 ? <>
-                <FilmInput label={t('filmOutput.revise')} value={revision ?? last.content} multiline onChange={setRevision} />
+                <FilmInput label={t('filmOutput.revise')} value={revision ?? last.content} multiline maxLength={GENERATION_PROMPT_MAX} onChange={setRevision} />
                 <FilmAction label={t('filmOutput.saveRevision')} disabled={revision === null} onPress={() => build(true)} />
             </> : null}
         </> : null}

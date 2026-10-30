@@ -180,7 +180,7 @@ test('Kling 3.0 i2v pins pro/no-audio and requires a first frame', () => {
     assert.deepEqual(longer.body.input.image_urls, [inputs.image_url]);
     assert.equal(longer.body.input.duration, '10');
     assert.equal(buildRequest(target, { prompt: 'p' }).error, 'inputs_invalid:image_url');
-    assert.equal(buildRequest(target, { ...inputs, prompt: 'x'.repeat(2001) }).error, 'inputs_invalid:prompt');
+    assert.equal(buildRequest(target, { ...inputs, prompt: 'x'.repeat(30001) }).error, 'inputs_invalid:prompt');
     for (const duration_seconds of [0, 3, 6, 15, '5', null]) {
         assert.equal(buildRequest(target, { ...inputs, duration_seconds }).error, 'duration_not_supported');
     }

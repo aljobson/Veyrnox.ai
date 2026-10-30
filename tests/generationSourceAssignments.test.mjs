@@ -247,7 +247,7 @@ test('three mixed-origin references reach the fake provider and stored job in ex
 });
 test('a request above the total JSON bound never reaches catalog or admission',async()=>{
     const net=network();
-    try { const res=await post({references:'x'.repeat(128 * 1024)});assert.equal(res.status,413);assert.equal(net.calls.length,0); }
+    try { const res=await post({references:'x'.repeat(600 * 1024)});assert.equal(res.status,413);assert.equal(net.calls.length,0); }
     finally {net.restore();}
 });
 

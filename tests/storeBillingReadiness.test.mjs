@@ -85,7 +85,7 @@ test('API reader follows pagination, reads attachment endpoints and strips sensi
         return { ok: true, json: async () => ({ items, next_page: path === 'products' && !u.searchParams.has('starting_after') ? '/v2/projects/fixture/products?starting_after=first' : null }) };
     };
     const result = await revenueCatSnapshot({ key: 'fixture-only', project: 'fixture', fetchImpl });
-    assert.equal(check(result).ok, true); assert.equal(result.products.length, 28);
+    assert.equal(check(result).ok, true); assert.equal(result.products.length, 27);
     assert.ok(!JSON.stringify(result).includes('REDACTED'));
     paths.length = 0; await revenueCatSnapshot({ key: 'fixture-only', project: 'fixture', stage: 'catalog', fetchImpl });
     assert.ok(!paths.includes('integrations/webhooks'));

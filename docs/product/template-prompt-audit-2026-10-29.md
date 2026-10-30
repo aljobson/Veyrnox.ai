@@ -8,7 +8,7 @@ inferred from the preview is not exact.
 
 ## Public Veyrnox template result
 
-The live gallery contains 270 unique media-backed templates. Verified exact
+The live gallery contains 392 unique media-backed templates. Verified exact
 source prompts are preserved separately from the Veyrnox adaptations and load
 byte-for-byte on their template pages. Their runnable status remains explicit.
 
@@ -17,15 +17,16 @@ byte-for-byte on their template pages. Their runnable status remains explicit.
 | Higgsfield Genjutsu | 146 | 146 | 56 retained exact pairs plus 90 new same-record exact pairs |
 | Older Higgsfield previews | 0 | 0 | 90 promptless adaptations replaced; old media retained only as audit evidence |
 | Syntx Trends | 97 | 97 | `keyboard-duo-swap` removed because its prompt is unavailable |
+| Seedance expansion | 122 | 122 | 79 Higgsfield Seedance 2.0 rows plus 43 new Syntx Seedance rows; 78 further Syntx rows were already present and are now labeled correctly |
 | CapCut | 6 | 0 | source pages/previews recorded; no exact prompt capture |
 | Mixkit/Pexels birthday footage | 12 | 0 | stock footage, not a prompt-bearing source recipe |
 | Veyrnox-generated preview | 1 | 0 source prompt | the Veyrnox generation prompt remains the runnable prompt |
 | Historical source not proven | 8 | 0 | must not be attributed by title similarity |
-| **Total** | **270** | **243** | **27 independent adaptations** |
+| **Total** | **392** | **365** | **27 independent adaptations** |
 
 The API exposes one of two statuses for every public row:
 
-- `exact`: 243 complete captured prompts;
+- `exact`: 365 complete captured prompts;
 - `adaptation-only`: 27 previews without a matched exact prompt record.
 
 On 29 October 2026, 45 media-backed templates were removed from the gallery,
@@ -33,9 +34,24 @@ API, search, sitemap and direct template routes: the one `exact-truncated` row
 and all 44 `unavailable` rows. Their immutable source records and local media
 remain retained as non-public audit evidence; they are not generation options.
 
-Every exact prompt also has `sourcePromptRunnable: false`. This is deliberate:
-the public templates use an image-to-video model and do not supply the source
-video and ordered reference assets assumed by the source prompt.
+Of the 365 public exact prompts, 144 are runnable with both the current template
+contract and the assigned model's verified prompt limit; 221 remain read-only.
+A paid generation is disabled when the
+exact text requires a source video, any explicit ordered image reference (the
+template handoff does not wire named `@imageN` slots), or preserved source audio
+the route cannot retain. The full prompt is still displayed and copied byte-for-byte; it
+is never silently rewritten to make it runnable.
+
+Prompt-cap recheck (29 October 2026): all 366 complete exact prompt records
+(365 public plus one retained audit record) fit the application's 30,000-character
+positive-generation envelope. Providers with narrower verified limits retain
+those limits. The longest record is `retro-hip-hop-spotlight` at
+23,010 characters. None is shortened in template, chat, Create, Film Studio,
+recovery, API, MCP or mobile handoffs. The two 3,722-character records that
+reproduced the owner-reported failure are preserved in full and pass the new
+length boundary. Their exact source versions remain copy-only because they
+also require source video and preserved audio that the current route cannot
+receive; the separate Veyrnox adaptations remain generatable.
 
 ## Exact-text and duplicate checks
 
@@ -55,30 +71,47 @@ video and ordered reference assets assumed by the source prompt.
   signatures. It rejected 54 prompt/title collisions before selection and
   found no accepted byte-level or visual duplicate. The 90 exact pairs replace
   the 90 older promptless Higgsfield adaptations one-for-one, keeping the
-  public gallery at 270. Full record IDs, source URLs, exact text, reference
+  public gallery at 270 before the Seedance expansion. Full record IDs, source URLs, exact text, reference
   roles and hashes are in
   [`source-audit/higgsfield-90-exact-2026-10-29.json`](source-audit/higgsfield-90-exact-2026-10-29.json).
-- The 1,312 addressable Veyrnox generation recipes contain no exact or
+- The Seedance audit adds 122 new rows and corrects the model provenance on 78
+  existing Syntx rows, producing exactly 200 Seedance templates: 121 from Syntx
+  and 79 from Higgsfield. All 200 full prompt strings, paired videos and source
+  model labels are locked in
+  [`source-audit/seedance-200-exact-2026-10-29.json`](source-audit/seedance-200-exact-2026-10-29.json).
+  The capture excluded one visually duplicated Higgsfield publication and used
+  the next unique Syntx record instead. The accepted set has 200 unique prompt
+  hashes, media URLs and normalized visual signatures.
+- The 1,434 addressable Veyrnox generation recipes contain no exact or
   whitespace-normalized duplicate runnable prompts.
-- All 270 public preview videos and posters remain byte-unique. The additional
+- All 392 public preview videos and posters remain byte-unique. The additional
   40 Syntx videos and 90 Higgsfield videos also have distinct normalized visual
   signatures against the earlier public previews and within their own batches.
 
 ## Capability result
 
 The staged Kling O1 reference contract accepts one 3–10 second MP4 and one or
-two ordered reference pictures when `MULTI_REFERENCE_ENABLED=true`. It limits
-the prompt to 2,000 characters, produces 5 or 10 seconds, and does not retain
-audio. The catalog row is inactive and absent from production.
+two ordered reference pictures when `MULTI_REFERENCE_ENABLED=true`. Its Veyrnox
+prompt envelope is 30,000 characters; it produces 5 or 10 seconds and does not
+retain audio. The catalog row is inactive and absent from production.
 
 The exact prompt corpus currently contains these incompatibilities:
 
 | Constraint | Exact prompts affected |
 |---|---:|
-| More than 2,000 characters | 125 |
-| More than two explicit image references | 28 |
-| Audio, music, voice, dialogue or lip-sync requirement | 100 |
-| Source input contract not wired into the public template | 243 |
+| More than 30,000 characters | 0 |
+| Any explicit image reference | 200 |
+| More than one explicit image reference | 116 |
+| More than two explicit image references | 34 |
+| Explicit source-video reference | 104 |
+| Audio, music, voice, dialogue or lip-sync requirement | 137 |
+| Source input contract or assigned-model prompt limit not wired into the public template | 221 |
+
+Within the 200-template Seedance set, 79 exact prompts are runnable through
+the active Seedance 2.0 Fast route and 121 are read-only: 115 name at least one
+explicit ordered image, 60 name more than one, 15 name more than two, 51 name a
+source video, and 95 require preserved audio. These groups overlap. This is why preserving
+the prompt and checking its input contract are separate acceptance criteria.
 
 Syntx additionally has 48 matched source videos longer than ten seconds. In the
 48 currently relocated Genjutsu records, 44 source videos exceed ten seconds
@@ -102,7 +135,7 @@ not disclose exact prompts. No attribution or prompt is added by name alone.
 LipSync.video is also explicit audit scope. Veyrnox has 21 separately tracked
 creative-feature examples in `creativeFeatures.js`, each linked to its public
 LipSync.video page and exact example media. They are feature references, not
-members of the 270-template gallery, and do not contain captured source
+members of the 392-template gallery, and do not contain captured source
 prompts. They must not be counted as fixed template prompts until a prompt-bearing
 source record exists.
 
@@ -123,10 +156,10 @@ unattributed rather than being guessed as Buzzy or LipSync.video.
    source record tied to the same media. Record source URL, media ID, capture
    time and SHA-256.
 5. Activate Kling O1 only after the ADR-0301 staging, billing and refund proof.
-   Route only contracts that fit two pictures, 2,000 characters, ten seconds
+   Route only contracts that fit two pictures, 30,000 characters, ten seconds
    and no retained audio.
 6. For longer or richer contracts, add a qualified provider route or keep the
    exact prompt read-only. Never truncate it into a different runnable prompt.
-7. A future audit passes only when all 270 API rows are `exact` or
+7. A future audit passes only when all 392 API rows are `exact` or
    `adaptation-only`, exact text hashes remain stable, source-media hashes
    remain unique, and removed source-gap records stay outside public routes.

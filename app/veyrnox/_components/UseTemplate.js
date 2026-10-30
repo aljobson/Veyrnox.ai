@@ -10,6 +10,7 @@ import { writeFilmStarter } from '../_lib/filmTemplateDraft';
 import { writeStudioDraft } from '../_lib/landingDraft';
 import { TEMPLATE_PROMPT_MAX } from '../_lib/templateDraft';
 import { modelAspectRatios, modelIdForName, presetCredits, presetHref } from '../_lib/tokens';
+import { CHAT_USER_TEXT_MAX } from '../../../lib/chatLimits.js';
 
 // The aspect the studio will actually use: the template's, when its model
 // takes it (same rule as app/create), otherwise none is shown or sent.
@@ -19,7 +20,7 @@ function usableAspect(preset, model) {
   return options.includes(preset.aspect) ? preset.aspect : null;
 }
 
-export function UseTemplate({ preset, prompt = preset.prompt }) {
+export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked = false }) {
   const { t } = useI18n();
   const router = useRouter();
   const { models } = useCatalog();
@@ -31,8 +32,9 @@ export function UseTemplate({ preset, prompt = preset.prompt }) {
   const [targetSeconds, setTargetSeconds] = useState(60);
   const credits = presetCredits(preset, models, durationSeconds);
   const [handoffError, setHandoffError] = useState('');
-  // The studio, film planner and chat all cap a prompt at this length; an exact community prompt can be longer.
-  const blocked = !prompt.trim() || prompt.length > TEMPLATE_PROMPT_MAX;
+  const promptBlocked = !prompt.trim() || prompt.length > TEMPLATE_PROMPT_MAX;
+  const generationDisabled = generationBlocked || promptBlocked;
+  const chatBlocked = !prompt.trim() || prompt.length > CHAT_USER_TEXT_MAX;
 
   function use() {
     // The URL restores the recipe if storage is blocked; preserve edited text.
@@ -54,7 +56,11 @@ export function UseTemplate({ preset, prompt = preset.prompt }) {
   }
 
   function handToChat(event) {
-    if (blocked) { event.preventDefault(); return; }
+    if (chatBlocked) {
+      event.preventDefault();
+      if (prompt.length > CHAT_USER_TEXT_MAX) setHandoffError('chatLimit');
+      return;
+    }
     let saved = false;
     try { saved = writeTemplateChatDraft(window.sessionStorage, preset, prompt); } catch { /* Browser storage can be unavailable. */ }
     if (saved) return;
@@ -72,7 +78,7 @@ export function UseTemplate({ preset, prompt = preset.prompt }) {
       <button
         type="button"
         onClick={use}
-        disabled={blocked}
+        disabled={generationDisabled}
         className="vx-press mt-6 inline-flex items-center gap-4 rounded-full bg-vx-accent px-6 py-3.5 font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover disabled:opacity-50"
       >
         <span>{preset.inspired ? t("presets.use.similar") : t("presets.use.template")}</span>
@@ -85,19 +91,20 @@ export function UseTemplate({ preset, prompt = preset.prompt }) {
           <select aria-label={t("presets.use.target")} value={targetSeconds} onChange={(event) => setTargetSeconds(Number(event.target.value))} className="rounded-lg border border-vx-border bg-vx-base px-3 py-2 text-sm font-bold">
             {[30, 60, 90, 120].map((seconds) => <option key={seconds} value={seconds}>{t('presets.use.seconds', { count: seconds })}</option>)}
           </select>
-          <button type="button" onClick={buildFilm} disabled={blocked} className="vx-press rounded-full border border-vx-accent px-5 py-2 text-sm font-extrabold text-vx-accent disabled:opacity-50">{t("presets.use.build")}</button>
+          <button type="button" onClick={buildFilm} disabled={generationDisabled} className="vx-press rounded-full border border-vx-accent px-5 py-2 text-sm font-extrabold text-vx-accent disabled:opacity-50">{t("presets.use.build")}</button>
         </div>
       </div>
       <div className="mt-3 rounded-xl border border-vx-border bg-vx-panel/40 p-4">
         <p className="font-bold">{t("presets.use.chatTitle")}</p>
         <p className="mt-1 text-[13px] text-vx-fg-muted">{t("presets.use.chatPlan")}</p>
-        <Link href="/app/chat?skill=prompt-writer" onClick={handToChat} aria-disabled={blocked} className="vx-press mt-3 inline-flex aria-disabled:opacity-50 rounded-full border border-vx-accent px-5 py-2 text-sm font-extrabold text-vx-accent">
+        <Link href="/app/chat?skill=prompt-writer" onClick={handToChat} aria-disabled={chatBlocked} className="vx-press mt-3 inline-flex aria-disabled:opacity-50 rounded-full border border-vx-accent px-5 py-2 text-sm font-extrabold text-vx-accent">
           {t("presets.use.openChat")}
         </Link>
       </div>
       <p className="mt-3 text-[13px] text-vx-fg-muted">{t("presets.use.refunds")}</p>
       {handoffError === 'studio' && <p role="alert" className="mt-3 text-[13px] text-vx-danger">{rich(t('presets.use.handoff'), { studio: <a href={presetHref(preset, durationSeconds)} className="underline">{t('presets.use.openStudio')}</a> })}</p>}
       {handoffError === 'chat' && <p role="alert" className="mt-3 text-[13px] text-vx-danger">{rich(t('presets.use.chatHandoff'), { chat: <a href="/app/chat?skill=prompt-writer" className="underline">{t('label.LLM Chat')}</a> })}</p>}
+      {handoffError === 'chatLimit' && <p role="alert" className="mt-3 text-[13px] text-vx-danger">{t('public.TemplateRecipe.chatMessageTooLong', { count: prompt.length, max: CHAT_USER_TEXT_MAX })}</p>}
     </div>
   );
 }

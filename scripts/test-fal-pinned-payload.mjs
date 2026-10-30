@@ -15,6 +15,7 @@ const q = (sql, args = []) => client.query(sql, args);
 const one = async (sql, args = []) => (await q(sql, args)).rows[0];
 const model = `payload-${randomUUID().slice(0,8)}`, auth = randomUUID();
 const migration = await readFile(new URL('../packages/db/schema/supabase/0243_fal_pinned_payload_validation.sql', import.meta.url), 'utf8');
+const promptBoundsMigration = await readFile(new URL('../packages/db/schema/supabase/0406_generation_prompt_payload_bounds.sql', import.meta.url), 'utf8');
 let user, checks = 0;
 const tally = () => one(`SELECT balance,free_balance,subscription_balance,
  (SELECT count(*)::int FROM public.jobs WHERE user_id=$1) jobs,
@@ -32,7 +33,7 @@ async function check(name, fn) {
 }
 try {
     const before = await one('SELECT to_jsonb(p) policy FROM public.fal_capacity_policy p');
-    await q(migration); await q(migration);
+    await q(migration); await q(migration); await q(promptBoundsMigration); await q(promptBoundsMigration);
     assert.deepEqual(await one('SELECT to_jsonb(p) policy FROM public.fal_capacity_policy p'), before);
     for (const [role, allowed] of [['service_role',true],['anon',false],['authenticated',false]]) {
         const row = await one("SELECT has_function_privilege($1,'public.admit_fal_dispatch(uuid,text,text,jsonb,jsonb,text,boolean)','EXECUTE') allowed",[role]);
@@ -45,7 +46,7 @@ try {
         VALUES($1,'Payload fixture','fal','fal-ai/flux-2-pro','text-to-image',2,0.03,'per_generation',true,3,10)`,[model]);
     await q("UPDATE public.fal_capacity_policy SET enabled=true,provider_account='local-payload-fixture',model_id=$1",[model]);
     await q('UPDATE public.fal_admission_control SET paused=false');
-    const { max_prompt: max } = await one(`SELECT 16384-octet_length((jsonb_build_object('prompt','')||'{"image_size":{"width":1024,"height":768}}'::jsonb)::text) max_prompt`);
+    const { max_prompt: max } = await one(`SELECT 262144-octet_length((jsonb_build_object('prompt','')||'{"image_size":{"width":1024,"height":768}}'::jsonb)::text) max_prompt`);
     for (const free of [false,true]) {
         await check(`over-limit ASCII payload rejects without ${free?'free claim':'paid debit'}`,async()=>{
             const before=await tally();
@@ -75,7 +76,7 @@ try {
             const after=await tally();assert.equal(after.balance,before.balance-(free?0:2));
             assert.equal(after.ledger,before.ledger+(free?0:1));assert.equal(after.claims,before.claims+(free?1:0));
             assert.equal(after.jobs,before.jobs+1);assert.equal(after.intents,before.intents+1);assert.equal(after.reservations,before.reservations+1);
-            assert.equal((await one('SELECT octet_length(payload::text) bytes FROM public.fal_dispatch WHERE job_id=$1',[result.job_id])).bytes,16384);
+            assert.equal((await one('SELECT octet_length(payload::text) bytes FROM public.fal_dispatch WHERE job_id=$1',[result.job_id])).bytes,262144);
             const replay=await admit(payload,free,key);assert.equal(replay.idempotent,true);assert.equal(replay.job_id,result.job_id);
             assert.deepEqual(await tally(),after);
             assert.equal((await admit({prompt:'changed'},free,key)).code,'IDEMPOTENCY_CONFLICT');

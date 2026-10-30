@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { takeTemplateChatDraft, writeTemplateChatDraft } from '../app/veyrnox/_lib/chatTemplateDraft.js';
+import { CHAT_USER_TEXT_MAX } from '../lib/chatLimits.js';
 
 function storage() {
   const values = new Map();
@@ -20,8 +21,9 @@ test('an edited template prompt is carried into chat once without a URL payload'
 
 test('template chat handoffs are bounded and stale or malformed values are rejected', () => {
   const s = storage();
-  assert.equal(writeTemplateChatDraft(s, { id: 'template' }, 'x'.repeat(2500), 1000), true);
-  assert.equal(takeTemplateChatDraft(s, 1001).prompt.length, 2000);
+  assert.equal(writeTemplateChatDraft(s, { id: 'template' }, 'x'.repeat(CHAT_USER_TEXT_MAX), 1000), true);
+  assert.equal(takeTemplateChatDraft(s, 1001).prompt.length, CHAT_USER_TEXT_MAX);
+  assert.equal(writeTemplateChatDraft(s, { id: 'template' }, 'x'.repeat(CHAT_USER_TEXT_MAX + 1), 1000), false);
 
   assert.equal(writeTemplateChatDraft(s, { id: 'template' }, 'old', 1000), true);
   assert.equal(takeTemplateChatDraft(s, 1000 + (10 * 60 * 1000) + 1), null);

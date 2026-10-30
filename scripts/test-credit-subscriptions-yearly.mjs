@@ -60,10 +60,10 @@ async function yearly(plan = 'starter-yearly') {
 try {
     await c.query('BEGIN');
 
-    // ── The four yearly plans exist and are active (0385). ──
+    // ── The four yearly plans exist and are active (0385), on App Store price points (0407). ──
     const plans = await q(`SELECT id, price_usd_cents, credits, active FROM public.credit_subscription_plans WHERE billing_interval = 'year' ORDER BY price_usd_cents`);
     assert.deepEqual(plans.map((p) => [p.id, p.price_usd_cents, p.credits, p.active]),
-        [['lite-yearly', 10800, 209, true], ['starter-yearly', 20520, 398, true], ['plus-yearly', 60180, 1171, true], ['ultra-yearly', 123840, 2411, true]]);
+        [['lite-yearly', 10899, 209, true], ['starter-yearly', 20900, 398, true], ['plus-yearly', 60900, 1171, true], ['ultra-yearly', 123840, 2411, true]]);
 
     // ── Month 1 comes with the invoice and ends in a month, not a year. ──
     const a = await yearly();

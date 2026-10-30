@@ -96,6 +96,8 @@ export function searchTemplates(templates, query) {
       template.name,
       template.id.replaceAll('-', ' '),
       template.model,
+      template.sourceModel,
+      template.sourcePlatform,
       template.category,
       template.prompt,
       template.needs,

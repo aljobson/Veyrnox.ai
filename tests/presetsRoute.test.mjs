@@ -55,29 +55,44 @@ test('preview and poster addresses are absolute https on our own host', () => {
 });
 
 test('the payload carries source framing and exact public source prompts but no per-user or internal field', () => {
-    const allowed = new Set(['id', 'title', 'category', 'theme', 'modelId', 'modelName', 'modality', 'prompt', 'promptOrigin', 'sourcePrompt', 'sourcePromptOrigin', 'sourcePromptStatus', 'sourcePromptRunnable', 'sourcePromptIssues', 'sourcePromptCharacterCount', 'sourcePromptReferenceImageCount', 'sourcePromptReferenceVideoCount', 'sourcePromptDuplicateOf', 'needs', 'sourceAspect', 'durationSeconds', 'credits', 'gated', 'available', 'isNew', 'previewUrl', 'posterUrl', 'previewAspect']);
+    const allowed = new Set(['id', 'title', 'category', 'theme', 'modelId', 'modelName', 'sourceModel', 'sourcePlatform', 'sourceUrl', 'modality', 'prompt', 'promptOrigin', 'sourcePrompt', 'sourcePromptOrigin', 'sourcePromptStatus', 'sourcePromptRunnable', 'sourcePromptIssues', 'sourcePromptModelPromptMax', 'sourcePromptCharacterCount', 'sourcePromptReferenceImageCount', 'sourcePromptReferenceVideoCount', 'sourcePromptDuplicateOf', 'needs', 'sourceAspect', 'durationSeconds', 'credits', 'gated', 'available', 'isNew', 'previewUrl', 'posterUrl', 'previewAspect']);
     for (const p of toPublicPresets(catalog)) for (const k of Object.keys(p)) assert.ok(allowed.has(k), `unexpected field ${k}`);
     const framed = toPublicPresets(catalog).filter((p) => p.sourceAspect);
-    assert.equal(framed.length, 146);
-    assert.ok(framed.every((p) => /^(?:1:1|9:16|16:9)$/.test(p.sourceAspect)));
+    assert.equal(framed.length, 268);
+    assert.ok(framed.every((p) => /^(?:1:1|4:3|9:16|16:9)$/.test(p.sourceAspect)));
     const exact = toPublicPresets(catalog).filter((p) => p.sourcePromptOrigin === 'community-source-exact');
-    assert.equal(exact.length, 243);
+    assert.equal(exact.length, 365);
     assert.ok(exact.every((p) => typeof p.sourcePrompt === 'string' && p.sourcePrompt.length > 0));
-    assert.ok(exact.every((p) => p.prompt.length <= 2000));
+    assert.ok(exact.every((p) => p.prompt.length <= 30000));
     assert.ok(exact.every((p) => p.sourcePrompt === SOURCE_PROMPT_RECORDS[p.id]?.prompt));
     assert.equal(exact.filter((p) => GENJUTSU_SOURCE_PROMPT_RECORDS[p.id]).length, 56);
-    assert.equal(exact.filter((p) => SOURCE_PROMPT_RECORDS[p.id] && !GENJUTSU_SOURCE_PROMPT_RECORDS[p.id]).length, 187);
+    assert.equal(exact.filter((p) => SOURCE_PROMPT_RECORDS[p.id] && !GENJUTSU_SOURCE_PROMPT_RECORDS[p.id]).length, 309);
     const statuses = Object.groupBy(toPublicPresets(catalog), (p) => p.sourcePromptStatus);
-    assert.equal(statuses.exact.length, 243);
+    assert.equal(statuses.exact.length, 365);
     assert.equal(statuses['adaptation-only'].length, 27);
     assert.equal(statuses['exact-truncated'], undefined);
     assert.equal(statuses.unavailable, undefined);
-    assert.ok(exact.every((p) => p.sourcePromptRunnable === false));
-    assert.ok(exact.every((p) => p.sourcePromptIssues.includes('source-input-contract-not-wired')));
-    assert.equal(exact.filter((p) => p.sourcePromptIssues.includes('prompt-over-2000')).length, 125);
-    assert.equal(exact.filter((p) => p.sourcePromptIssues.includes('more-than-two-reference-images')).length, 28);
-    assert.equal(exact.filter((p) => p.sourcePromptIssues.includes('audio-preservation-not-supported')).length, 100);
+    assert.equal(exact.filter((p) => p.sourcePromptRunnable === true).length, 144);
+    assert.equal(exact.filter((p) => p.sourcePromptRunnable === false).length, 221);
+    assert.ok(exact.filter((p) => p.sourcePromptRunnable === false).every((p) => p.sourcePromptIssues.includes('source-input-contract-not-wired')));
+    assert.ok(exact.filter((p) => p.sourcePromptRunnable === true).every((p) => !p.sourcePromptIssues.includes('source-input-contract-not-wired')));
+    assert.equal(exact.filter((p) => p.sourcePromptIssues.includes('prompt-over-30000')).length, 0);
+    assert.equal(exact.filter((p) => p.sourcePromptIssues.includes('more-than-two-reference-images')).length, 34);
+    assert.equal(exact.filter((p) => p.sourcePromptIssues.includes('audio-preservation-not-supported')).length, 137);
     assert.equal(exact.filter((p) => p.sourcePromptDuplicateOf).length, 2);
+    const seedance = toPublicPresets(catalog).filter((p) => p.sourceModel?.startsWith('Seedance'));
+    assert.equal(seedance.length, 200);
+    assert.equal(seedance.filter((p) => p.sourcePlatform === 'Syntx').length, 121);
+    assert.equal(seedance.filter((p) => p.sourcePlatform === 'Higgsfield').length, 79);
+    assert.equal(seedance.filter((p) => p.sourcePromptRunnable === true).length, 79);
+    assert.equal(seedance.filter((p) => p.sourcePromptRunnable === false).length, 121);
+    assert.ok(seedance.every((p) => p.modelId === 'seedance-2.0-fast' && p.modelName === 'Seedance 2.0 Fast'));
+    assert.ok(seedance.every((p) => p.sourceUrl?.startsWith('https://')));
+    const formerlyClipped = exact.find((p) => p.id === 'football-showstopper');
+    assert.equal(formerlyClipped.sourcePromptCharacterCount, 2077);
+    assert.equal(formerlyClipped.sourcePromptRunnable, true);
+    assert.deepEqual(formerlyClipped.sourcePromptIssues, []);
+    assert.equal(formerlyClipped.sourcePromptModelPromptMax, null);
 });
 
 function stubCatalog(rows) {

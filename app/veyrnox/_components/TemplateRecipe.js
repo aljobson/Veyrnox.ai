@@ -28,14 +28,25 @@ function CopyPrompt({ text, label }) {
 export function TemplateRecipe({ preset, generatedPreview = false }) {
   const { t } = useI18n();
   const hasExactSourcePrompt = preset.sourcePromptOrigin === 'community-source-exact' && typeof preset.sourcePrompt === 'string';
-  // With an exact community prompt it is the only prompt: shown, copied and sent to generation as received.
+  const sourcePromptBlocked = hasExactSourcePrompt && preset.sourcePromptRunnable === false;
+  const hasRunnableAdaptation = sourcePromptBlocked
+    && preset.promptOrigin === 'veyrnox-adaptation'
+    && typeof preset.prompt === 'string'
+    && preset.prompt !== preset.sourcePrompt;
+  // Exact source text is always shown and copied unchanged. When its source
+  // contract is not wired, a separate Veyrnox adaptation remains editable and
+  // generatable instead of pretending the exact prompt can run as-is.
   const [prompt, setPrompt] = useState(hasExactSourcePrompt ? preset.sourcePrompt : preset.prompt);
-  const handoffPreset = hasExactSourcePrompt ? { ...preset, prompt: preset.sourcePrompt } : preset;
-  const tooLong = prompt.length > TEMPLATE_PROMPT_MAX;
+  const [adaptationPrompt, setAdaptationPrompt] = useState(preset.prompt);
+  const handoffPrompt = hasRunnableAdaptation ? adaptationPrompt : prompt;
+  const handoffPreset = hasRunnableAdaptation ? preset : hasExactSourcePrompt ? { ...preset, prompt: preset.sourcePrompt } : preset;
+  const tooLong = handoffPrompt.length > TEMPLATE_PROMPT_MAX;
   const sourcePromptUnavailable = preset.sourcePromptStatus === 'unavailable';
   const sourcePromptNotRecorded = preset.sourcePromptStatus === 'adaptation-only';
   const sourcePromptTruncated = preset.sourcePromptStatus === 'exact-truncated';
   const sourcePromptDuplicate = typeof preset.sourcePromptDuplicateOf === 'string' && preset.sourcePromptDuplicateOf.length > 0;
+  const sourcePromptModelLimitOnly = preset.sourcePromptIssues?.includes('model-prompt-limit-exceeded')
+    && preset.sourcePromptIssues.every(issue => ['model-prompt-limit-exceeded', 'source-input-contract-not-wired'].includes(issue));
   const promptLabel = hasExactSourcePrompt ? t("public.TemplateRecipe.exactCommunityPrompt") : preset.promptOrigin === 'veyrnox-adaptation' ? t("public.TemplateRecipe.generationPrompt") : t("public.TemplateRecipe.prompt");
   return (
     <>
@@ -45,19 +56,28 @@ export function TemplateRecipe({ preset, generatedPreview = false }) {
         </div>
       )}
       <h2 className="mt-8 font-vx-mono text-[11px] tracking-[0.12em] text-vx-fg-muted">{promptLabel}</h2>
-      <textarea aria-label={promptLabel} value={prompt} onChange={(event) => setPrompt(event.target.value)} maxLength={hasExactSourcePrompt ? undefined : TEMPLATE_PROMPT_MAX} rows={hasExactSourcePrompt ? 12 : 8} dir={hasExactSourcePrompt ? "auto" : undefined}
+      <textarea aria-label={promptLabel} value={prompt} onChange={(event) => setPrompt(event.target.value)} readOnly={sourcePromptBlocked} rows={hasExactSourcePrompt ? 12 : 8} dir={hasExactSourcePrompt ? "auto" : undefined}
         className="mt-2 w-full rounded-xl border border-vx-border bg-vx-panel px-4 py-3 text-[15px] leading-[1.55] text-vx-fg-body focus:outline-hidden focus:border-vx-accent" />
       <CopyPrompt text={prompt} label={hasExactSourcePrompt ? t("public.TemplateRecipe.copyExactCommunityPrompt") : t("public.TemplateRecipe.copyPrompt")} />
-      {tooLong && <p role="alert" className="mt-3 text-[13px] font-bold text-vx-danger">{t("public.TemplateRecipe.promptTooLong", { count: prompt.length, max: TEMPLATE_PROMPT_MAX })}</p>}
-      <p className="mt-3 text-[13px] text-vx-fg-muted">{hasExactSourcePrompt ? t("public.TemplateRecipe.exactCommunityPromptHelp") : generatedPreview ? t("public.TemplateRecipe.thePreviewWasGeneratedUsingThis") : preset.inspired ? t("public.TemplateRecipe.adaptedForTheModelBelowTo") : t("public.TemplateRecipe.editItHereOrInThe")}</p>
+      {!hasRunnableAdaptation && tooLong && <p role="alert" className="mt-3 text-[13px] font-bold text-vx-danger">{t("public.TemplateRecipe.productPromptTooLong", { count: prompt.length, max: TEMPLATE_PROMPT_MAX })}</p>}
+      {!sourcePromptBlocked && <p className="mt-3 text-[13px] text-vx-fg-muted">{hasExactSourcePrompt ? t("public.TemplateRecipe.exactCommunityPromptHelp") : generatedPreview ? t("public.TemplateRecipe.thePreviewWasGeneratedUsingThis") : preset.inspired ? t("public.TemplateRecipe.adaptedForTheModelBelowTo") : t("public.TemplateRecipe.editItHereOrInThe")}</p>}
       {hasExactSourcePrompt && sourcePromptTruncated && <p role="note" data-source-prompt-status="exact-truncated" className="mt-3 rounded-xl border border-amber-400/40 bg-amber-400/[0.08] px-4 py-3 text-[13px] text-vx-fg-body">{t("public.TemplateRecipe.sourcePromptTruncated")}</p>}
       {hasExactSourcePrompt && sourcePromptDuplicate && <p role="note" data-source-prompt-duplicate-of={preset.sourcePromptDuplicateOf} className="mt-3 rounded-xl border border-vx-border px-4 py-3 text-[13px] text-vx-fg-body">{t("public.TemplateRecipe.sourcePromptDuplicate")}</p>}
+      {sourcePromptBlocked && <p role="alert" data-source-prompt-runnable="false" className="mt-3 rounded-xl border border-amber-400/40 bg-amber-400/[0.08] px-4 py-3 text-[13px] text-vx-fg-body">{sourcePromptModelLimitOnly && preset.sourcePromptModelPromptMax ? t("public.TemplateRecipe.sourcePromptModelLimitCopyOnly", { max: preset.sourcePromptModelPromptMax }) : t("public.TemplateRecipe.sourcePromptCopyOnly")}</p>}
+      {hasRunnableAdaptation && <div data-runnable-adaptation="true">
+        <h2 className="mt-8 font-vx-mono text-[11px] tracking-[0.12em] text-vx-fg-muted">{t("public.TemplateRecipe.generationPrompt")}</h2>
+        <textarea aria-label={t("public.TemplateRecipe.generationPrompt")} value={adaptationPrompt} onChange={(event) => setAdaptationPrompt(event.target.value)} rows={8}
+          className="mt-2 w-full rounded-xl border border-vx-border bg-vx-panel px-4 py-3 text-[15px] leading-[1.55] text-vx-fg-body focus:outline-hidden focus:border-vx-accent" />
+        <CopyPrompt text={adaptationPrompt} label={t("public.TemplateRecipe.copyPrompt")} />
+        {tooLong && <p role="alert" className="mt-3 text-[13px] font-bold text-vx-danger">{t("public.TemplateRecipe.productPromptTooLong", { count: adaptationPrompt.length, max: TEMPLATE_PROMPT_MAX })}</p>}
+        <p className="mt-3 text-[13px] text-vx-fg-muted">{t("public.TemplateRecipe.adaptedForTheModelBelowTo")}</p>
+      </div>}
       {preset.steps && (
         <ol className="mt-5 list-decimal space-y-2 ps-5 text-sm text-vx-fg-body">
           {preset.steps.map((step) => <li key={step}>{presetStep(t, step)}</li>)}
         </ol>
       )}
-      <UseTemplate preset={handoffPreset} prompt={prompt} />
+      <UseTemplate preset={handoffPreset} prompt={handoffPrompt} generationBlocked={sourcePromptBlocked && !hasRunnableAdaptation} />
     </>
   );
 }

@@ -10,7 +10,7 @@ const handler = createMcpHandler(
     ({ requestInfo }) => createVeyrnoxMcpServer(requestInfo),
     {
         legacy: 'stateless',
-        maxRequestBodySize: 64 * 1024,
+        maxRequestBodySize: 512 * 1024,
         onerror(error) {
             console.error('[mcp] protocol error:', error?.message || error);
         },

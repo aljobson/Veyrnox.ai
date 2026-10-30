@@ -23,6 +23,7 @@ import { resolveEdit, defaultDeps as editDeps } from '../../../../lib/clipEditSo
 import { checkPlan, checkCapacity } from '../../../../lib/montageGate.js';
 import { normaliseNarration } from '../../../../lib/montageNarration.js';
 import { providerSpendBody, providerSpendError, providerSpendLimit } from '../../../../lib/providerSpend.js';
+import { GENERATION_PROMPT_MAX, NEGATIVE_PROMPT_MAX } from '../../../../lib/generationPromptLimits.js';
 
 // The AUP statement version a consent tick attests to. Bump when the wording
 // at /legal/aup or on the create page changes; users re-attest under the new
@@ -40,20 +41,20 @@ const MODEL_ID_RE = /^[a-z0-9][a-z0-9.-]{0,63}$/;
 // else is rejected. Quantity knobs (num_images, num_frames, duration
 // beyond the priced unit, ...) are deliberately absent: the catalog price
 // is per 5-second unit / single output and the payload must not buy more.
-const MAX_INPUTS_BYTES = 8 * 1024;
-// Existing inputs (including ten Clip Editor clips, dialogue and narration)
-// share the 8 Ki UTF-16-unit JSON limit below. Even fully escaped JSON needs
-// at most 6 bytes/unit (48 KiB); 128 KiB leaves room for reference descriptors,
-// model/idempotency IDs and envelope whitespace without narrowing that contract.
-const MAX_REQUEST_BYTES = 128 * 1024;
+const MAX_INPUTS_BYTES = 256 * 1024;
+const MAX_NON_PROMPT_INPUTS_BYTES = 8 * 1024;
+// A 30,000-character prompt can occupy 180,000 JSON code units when every
+// character needs a \uXXXX escape. Leave room for references and the envelope
+// without weakening the per-field limits below.
+const MAX_REQUEST_BYTES = 512 * 1024;
 const UNIT_SECONDS = 5;
 const RATE_LIMIT_PER_WINDOW = 10;
 const RATE_WINDOW_SECONDS = 60;
 // Output choices are bounded again by the model contract before the debit.
 // Only tiers at or below the catalog's priced ceiling are declared there.
 const ALLOWED_INPUTS = {
-    prompt: { kind: 'string', max: 2000 },
-    negative_prompt: { kind: 'string', max: 2000 },
+    prompt: { kind: 'string', max: GENERATION_PROMPT_MAX },
+    negative_prompt: { kind: 'string', max: NEGATIVE_PROMPT_MAX },
     voice_description: { kind: 'string', max: 500 }, // a voice in words, for speech models that take one; never a recording
     // Auto Short (ADR-0029); TOPIC_RE is checked again by its provider entry.
     topic: { kind: 'string', max: 200 },
@@ -97,6 +98,8 @@ const ALLOWED_INPUTS = {
 /** @returns {{ok:true}|{ok:false,error:string}} */
 function validateInputs(inputs) {
     if (JSON.stringify(inputs).length > MAX_INPUTS_BYTES) return { ok: false, error: 'inputs_too_large' };
+    const nonPromptInputs = typeof inputs?.prompt === 'string' ? { ...inputs, prompt: '' } : inputs;
+    if (JSON.stringify(nonPromptInputs).length > MAX_NON_PROMPT_INPUTS_BYTES) return { ok: false, error: 'inputs_too_large' };
     for (const [key, value] of Object.entries(inputs)) {
         const rule = ALLOWED_INPUTS[key];
         if (!rule) return { ok: false, error: `inputs_key_not_allowed:${key.slice(0, 32)}` };

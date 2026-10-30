@@ -72,10 +72,10 @@ try {
             ['lite-monthly', 1000, 209],
             ['starter-monthly', 1900, S],
             ['plus-monthly', 5900, P],
-            ['lite-yearly', 10800, 209],
+            ['lite-yearly', 10899, 209],
             ['ultra-monthly', 12900, 2411],
-            ['starter-yearly', 20520, S],
-            ['plus-yearly', 60180, P],
+            ['starter-yearly', 20900, S],
+            ['plus-yearly', 60900, P],
             ['ultra-yearly', 123840, 2411],
         ]);
 

@@ -25,7 +25,7 @@ const mockSound: CatalogModel = { ...mockModel, id: 'mmaudio-v2-video', capabili
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi }) }));
 jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useLocalSearchParams: () => ({ modelId: 'm', prompt: 'words' }), useRouter: () => mockRouter, useFocusEffect: (cb: any) => require('react').useEffect(cb, [cb]) }));
 jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => mockOwner, subscribeCacheUser: (cb: () => void) => { mockSubscribers.add(cb); return () => mockSubscribers.delete(cb); } }));
-jest.mock('../src/lib/celebrate', () => ({ celebrateOutput: jest.fn(), noteLocalSubmission: jest.fn() }));
+jest.mock('../src/lib/celebrate', () => ({ celebrateOutput: jest.fn(), afterCelebration: jest.fn(() => () => {}), noteLocalSubmission: jest.fn() }));
 jest.mock('../src/lib/analytics/generations', () => ({ noteGenerationSubmitted: jest.fn(), noteGenerationFinished: jest.fn() }));
 jest.mock('../src/lib/aiConsentStore', () => ({ aiConsent: { ensure: async () => {}, hasAgreed: async () => true } }));
 jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalog: async () => [mockModel, mockSound] }));

@@ -5,6 +5,7 @@ import { localeTag } from '../../../../lib/i18n/locales.mjs';
 
 import { useId } from 'react';
 import englishFields from '../../../../lib/i18n/messages/app/en/film-setup.mjs';
+import { GENERATION_PROMPT_MAX } from '../../../../lib/generationPromptLimits.js';
 export const fieldClass = 'mt-2 w-full rounded-xl border border-vx-field bg-vx-panel px-3 py-2 text-sm text-vx-fg focus:border-vx-accent focus:outline-none';
 export function FilmField({ label, labelKey, value, onChange, multiline = false, hint, ...props }) {
   const { t } = useI18n();
@@ -13,9 +14,10 @@ export function FilmField({ label, labelKey, value, onChange, multiline = false,
   const hintId=useId();
   return <label className="block text-sm font-semibold">{displayLabel}
     {hint && <span id={hintId} className="mt-1 block text-xs font-normal text-vx-fg-muted">{hint}</span>}
-    <Tag aria-label={displayLabel} aria-describedby={hint?hintId:undefined} className={fieldClass} value={value} onChange={e => onChange(e.target.value)} rows={multiline ? 4 : undefined} maxLength={multiline ? 24000 : 2000} {...props} />
+    <Tag aria-label={displayLabel} aria-describedby={hint?hintId:undefined} className={fieldClass} value={value} onChange={e => onChange(e.target.value)} rows={multiline ? 4 : undefined} maxLength={props.maxLength ?? (multiline ? 24000 : 2000)} {...props} />
   </label>;
 }
+export const FILM_SCRIPT_MAX = GENERATION_PROMPT_MAX;
 export function FilmSelect({ label, value, onChange, options, ...props }) {
   return <label className="block text-sm font-semibold">{label}<select aria-label={label} className={fieldClass} value={value} onChange={e => onChange(e.target.value)} {...props}>
     {options.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
