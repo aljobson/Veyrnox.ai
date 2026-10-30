@@ -128,10 +128,9 @@ describe('presetHref', () => {
         expect(presetHref(unavailable)).toEqual({ pathname: '/create/presets', params: { unavailable: 'a' } });
     });
 
-    test('opens a runnable adaptation while blocking the unsupported exact source text', () => {
+    test('opens the selected template with the Community prompt and its validated id', () => {
         const [adapted] = parsePresets({ presets: [{ ...base, sourcePrompt: 'Exact @image1 source text', sourcePromptOrigin: 'community-source-exact', sourcePromptRunnable: false }] });
-        expect(presetHref(adapted)).toMatchObject({ pathname: '/create/[modelId]', params: { prompt: 'Animate the product.' } });
-        expect(presetHref({ ...adapted, prompt: adapted.sourcePrompt! })).toEqual({ pathname: '/templates/[id]', params: { id: 'a' } });
+        expect(presetHref({ ...adapted, prompt: adapted.sourcePrompt! })).toMatchObject({ pathname: '/create/[modelId]', params: { tid: 'a', prompt: 'Exact @image1 source text' } });
     });
 });
 

@@ -232,7 +232,15 @@ export default function CreateWithModel() {
     }, []);
 
     if (!model) {
-        return <View style={styles.screen}>{error ? <Text variant="body" tone="danger" style={styles.error} accessibilityLiveRegion="polite">{error}</Text> : <ActivityIndicator color={styles.accentInk.color} />}</View>;
+        const loadingLabel = template ? t('create.loading.template', { name: template.title }) : t('create.loading.title');
+        return <View style={[styles.screen, styles.loadingScreen]}>
+            <Stack.Screen options={{ title: t('label.Create') }} />
+            {error ? <Text variant="body" tone="danger" style={styles.error} accessibilityLiveRegion="polite">{error}</Text> : <View style={styles.loadingCard} accessibilityRole="progressbar" accessibilityLabel={loadingLabel} accessibilityLiveRegion="polite">
+                <View style={styles.loadingOrb}><ActivityIndicator size="large" color={styles.accentInk.color} /></View>
+                <Text variant="title3" style={styles.loadingTitle}>{loadingLabel}</Text>
+                <Text variant="footnote" tone="secondary" style={styles.loadingBody}>{t('create.loading.body')}</Text>
+            </View>}
+        </View>;
     }
 
     const isVideo = kindOf(model.modality) === 'video';
@@ -435,6 +443,11 @@ const sheets = themedStyles((p) => ({
     mutedInk: { color: p.textTertiary },
 
     screen: { flex: 1, backgroundColor: p.bg },
+    loadingScreen: { alignItems: 'center', justifyContent: 'center', padding: ds.space.xxl },
+    loadingCard: { width: '100%', maxWidth: 360, alignItems: 'center', gap: ds.space.md, borderWidth: 1, borderColor: p.borderSubtle, borderRadius: ds.radius.xl, backgroundColor: p.bgElevated1, paddingHorizontal: ds.space.xxl, paddingVertical: ds.space.xxxl },
+    loadingOrb: { width: 72, height: 72, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: p.borderStrong, borderRadius: ds.radius.pill, backgroundColor: p.bg },
+    loadingTitle: { textAlign: 'center' },
+    loadingBody: { maxWidth: 260, textAlign: 'center' },
     body: { padding: ds.space.lg, paddingBottom: 48, gap: ds.space.md },
     section: { gap: ds.space.sm },
     settingsSection: { gap: ds.space.md, marginTop: ds.space.xxs },

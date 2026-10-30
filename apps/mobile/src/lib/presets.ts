@@ -21,7 +21,7 @@ export interface Preset {
     readonly prompt: string;
     readonly promptOrigin?: 'veyrnox-adaptation' | null;
     // Exact text published with the source community record. Template detail always exposes
-    // the full value; generation is enabled only when sourcePromptRunnable is true.
+    // and hands off this full value; sourcePromptRunnable retains the server's capability audit.
     readonly sourcePrompt?: string | null;
     readonly sourcePromptOrigin?: 'community-source-exact' | null;
     readonly sourcePromptStatus?: 'exact' | 'exact-truncated' | 'unavailable' | 'adaptation-only';
@@ -161,13 +161,9 @@ export function searchPresets(items: readonly Preset[], query: string): Preset[]
 // Opens Create on the template's model with its prompt, length, shape, name and picture carried over; an inactive model
 // returns to Templates with an explicit unavailable state.
 export function presetHref(p: Preset) {
-    const handsOffBlockedExactPrompt = p.sourcePromptOrigin === 'community-source-exact'
-        && p.sourcePromptRunnable === false
-        && p.prompt === p.sourcePrompt;
     if (!p.available) {
         return { pathname: '/create/presets', params: { unavailable: p.id } } as const;
     }
-    if (handsOffBlockedExactPrompt) return { pathname: '/templates/[id]', params: { id: p.id } } as const;
     return { pathname: '/create/[modelId]', params: { modelId: p.modelId, prompt: p.prompt, ...(p.durationSeconds ? { duration: String(p.durationSeconds) } : {}), ...templateParams(p), ...(/^[a-z0-9-]{1,40}$/.test(p.id) ? { tid: p.id } : {}) } } as const;
 }
 
