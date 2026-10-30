@@ -170,6 +170,16 @@ export default function CreateWithModel() {
             .catch(() => setError(t('form.modelLoad')));
     }, [modelId, presetDuration, presetAspect, handedSources, presetPrompt, template]);
 
+    // Carried into the form that Attach from device reopens: the words typed so far and the template that started it.
+    const attachCarry = useMemo(() => {
+        const out: Record<string, string> = {};
+        const add = (key: string, value: unknown) => { if (typeof value === 'string' && value !== '') out[key] = value; };
+        add('prompt', prompt);
+        if (duration !== null) add('duration', String(duration));
+        add('aspect', opts.aspect ?? undefined);
+        add('tpl', tpl); add('tid', tid); add('tneeds', tneeds); add('tsource', tsource); add('tratio', tratio); add('tposter', tposter);
+        return out;
+    }, [prompt, duration, opts.aspect, tpl, tid, tneeds, tsource, tratio, tposter]);
     const takesStartImage = !!model && slotsFor(model).some((s) => s.slot === 'image' && s.kind === 'image');
     useEffect(() => {
         if (!startId || !takesStartImage) return;
@@ -333,7 +343,7 @@ export default function CreateWithModel() {
                         ))}
                     </View>
                 ) : null}
-                <View style={styles.section}><AttachFromDevice api={api} current={model} /></View>
+                <View style={styles.section}><AttachFromDevice api={api} current={model} carry={attachCarry} /></View>
                 {text_ ? (
                     <View style={styles.section}>
                         <View style={styles.sectionTop}>

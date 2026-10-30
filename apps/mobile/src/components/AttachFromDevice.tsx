@@ -42,11 +42,14 @@ async function chooseMany(source: Source): Promise<PickedFile[]> {
 interface Props {
     readonly api: ApiClient;
     readonly current: CatalogModel | null;
+    // What the open form already holds (prompt, length, shape, template). It rides along to the reopened form, so
+    // attaching files never throws away a template's prompt or the words already typed.
+    readonly carry?: Readonly<Record<string, string>>;
 }
 
 // Always shown: pick several pictures, videos and audio files, and the app moves to the model that
 // takes the most of them (staying on this one when it can), with every file already uploaded.
-export function AttachFromDevice({ api, current }: Props) {
+export function AttachFromDevice({ api, current, carry }: Props) {
     const styles = useThemedStyles(sheets);
     const router = useRouter();
     const [busy, setBusy] = useState<Source | null>(null);
@@ -85,7 +88,7 @@ export function AttachFromDevice({ api, current }: Props) {
             }
             const skipped = plan.unused.length + problems.length;
             const handoff = stageCreativeSourceHandoff({ recipe: 'attach', modelId: plan.model.id, uploaded, fromLibrary: {} });
-            router.replace({ pathname: '/create/[modelId]', params: { modelId: plan.model.id, recipe: 'attach', sourceHandoff: handoff } });
+            router.replace({ pathname: '/create/[modelId]', params: { ...(carry ?? {}), modelId: plan.model.id, recipe: 'attach', sourceHandoff: handoff } });
             if (skipped) setError(plural('attachFromDevice.skippedFiles', skipped));
         } catch (err) {
             setError(uploadMessage(err));
