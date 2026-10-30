@@ -15,17 +15,19 @@ test('active saleable products are exactly the post-0394 catalog in each store',
         const expected = [100, 300, 1000].map(n => `ai.veyrnox.credits.${n}`);
         const product = id => store === 'android' ? `${id}:${id.split('.').at(-1)}` : id;
         expected.push(...['weekly', 'monthly', 'annual'].map(c => product(`ai.veyrnox.publish.${c}`)));
-        expected.push(...['lite', 'starter', 'plus', 'ultra'].flatMap(f => ['monthly', 'annual'].map(c => product(`ai.veyrnox.generation.${f}.${c}`))));
+        expected.push(...['lite', 'starter', 'plus', 'ultra'].flatMap(f => ['monthly', 'annual'].map(c => product(`ai.veyrnox.generation.${f}.${c}`)))
+            // 0407: Ultra yearly is above the App Store maximum, so iOS does not sell it.
+            .filter(id => store === 'android' || id !== 'ai.veyrnox.generation.ultra.annual'));
         assert.deepEqual(catalog.filter(p => p.store === store).map(p => p.productId).sort(), expected.sort());
     }
 });
-test('migration prices and latest credit amendments survive catalog extraction', () => {
+test('migration prices, 0407 price points and latest credit amendments survive catalog extraction', () => {
     const ios = catalog.filter(p => p.store === 'ios');
     assert.deepEqual(ios.filter(p => p.offering === 'credits').map(p => [p.credits, p.priceUsdCents]).sort((a,b) => a[0]-b[0]), [[100,999],[300,2499],[1000,7499]]);
     assert.deepEqual(ios.filter(p => p.offering === 'publish').map(p => p.priceUsdCents).sort((a,b)=>a-b), [499,1500,12600]);
     assert.deepEqual(ios.filter(p => p.offering === 'generation').map(p => [p.plan,p.priceUsdCents,p.credits]).sort(), [
-        ['lite-monthly',1000,209],['lite-yearly',10800,209],['plus-monthly',5900,1171],['plus-yearly',60180,1171],
-        ['starter-monthly',1900,398],['starter-yearly',20520,398],['ultra-monthly',12900,2411],['ultra-yearly',123840,2411],
+        ['lite-monthly',1000,209],['lite-yearly',10899,209],['plus-monthly',5900,1171],['plus-yearly',60900,1171],
+        ['starter-monthly',1900,398],['starter-yearly',20900,398],['ultra-monthly',12900,2411],
     ].sort());
     assert.match(catalogMarkdown(), /\$24\.99/);
 });

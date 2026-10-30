@@ -29,7 +29,7 @@ function insertedPlans(name, table) {
     });
 }
 
-// A deliberately bounded SQL reader for the catalog at migration 0394, not a SQL interpreter.
+// A deliberately bounded SQL reader for the catalog at migration 0407, not a SQL interpreter.
 // Values come from INSERTs and the subsequent guarded UPDATEs, never duplicated price constants.
 export function storeBillingCatalog() {
     const generation = new Map();
@@ -48,6 +48,15 @@ export function storeBillingCatalog() {
         if (!plan || plan.price_usd_cents !== price || plan.credits !== credits) throw new Error('Yearly activation no longer matches');
         plan.active = true;
     }
+    // 0407: yearly prices moved to App Store price points; iOS no longer sells Ultra yearly.
+    const pricePoints = sql('0407_store_yearly_price_points');
+    for (const match of pricePoints.matchAll(/UPDATE public\.credit_subscription_plans SET price_usd_cents = (\d+), updated_at = now\(\)\s*WHERE id = '([^']+)' AND billing_interval = 'year' AND credits = (\d+)/g)) {
+        const plan = generation.get(match[2]);
+        if (!plan || plan.credits !== Number(match[3])) throw new Error('Catalog price UPDATE no longer matches');
+        plan.price_usd_cents = Number(match[1]);
+    }
+    const removedIos = new Set([...pricePoints.matchAll(/DELETE FROM public\.credit_subscription_store_products\s*WHERE channel = 'ios' AND store_product_id = '([^']+)'/g)].map(m => m[1]));
+    if (removedIos.size !== 1) throw new Error('Catalog iOS removal SQL changed');
     const publish = new Map(['0293_social_publish_plans', '0340_weekly_social_publish_plan', '0341_annual_social_publish_plan']
         .flatMap(name => insertedPlans(name, 'social_publish_plans')).map(plan => [plan.id, plan]));
     const parity = sql('0394_mobile_credit_pack_parity');
@@ -69,14 +78,15 @@ export function storeBillingCatalog() {
     }
     const mapping = sql('0393_store_generation_subscriptions');
     for (const [family, storeInterval, planInterval] of rows(section(mapping, /FROM \(VALUES([\s\S]*?)\)\s*AS plans\(family, store_interval, plan_interval\)/, 'Generation mapping'))) {
-        addPlan('ios', `ai.veyrnox.generation.${family}.${storeInterval}`, `${family}-${planInterval}`, 'generation');
+        const productId = `ai.veyrnox.generation.${family}.${storeInterval}`;
+        if (!removedIos.has(productId)) addPlan('ios', productId, `${family}-${planInterval}`, 'generation');
     }
     // 0394's qualified Play identifiers are the saleable products. Unqualified historical
     // mappings remain valid for settlement, but are not additional products to create.
     for (const match of parity.matchAll(/FROM \(VALUES([^;]*?)\) AS mapping\(product_id, plan_id\)/g)) {
         for (const [product, plan] of rows(match[1])) addPlan('android', product, plan, product.includes('.generation.') ? 'generation' : 'publish');
     }
-    if (catalog.length !== 28 || new Set(catalog.map(p => `${p.store}:${p.productId}`)).size !== 28) {
+    if (catalog.length !== 27 || new Set(catalog.map(p => `${p.store}:${p.productId}`)).size !== 27) {
         throw new Error('Catalog mapping shape changed; review the SQL reader');
     }
     return catalog.sort((a, b) => a.store.localeCompare(b.store) || a.productId.localeCompare(b.productId));
