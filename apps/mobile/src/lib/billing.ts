@@ -151,6 +151,10 @@ export interface BalanceWait {
     readonly intervalMs?: number;
     readonly timeoutMs?: number;
     readonly minimumIncrease?: number;
+    /** Absolute wall-clock deadline, including slow or stalled network reads. */
+    readonly deadlineMs?: number;
+    /** End confirmation promptly when its operation or session is invalidated. */
+    readonly signal?: AbortSignal;
 }
 
 // A purchase is credited by the server when the store's webhook arrives, a few seconds after the sheet closes.
@@ -158,9 +162,34 @@ export interface BalanceWait {
 export async function waitForBalanceChange(
     read: () => Promise<number>,
     before: number,
-    { sleep = (ms) => new Promise((r) => setTimeout(r, ms)), intervalMs = 2000, timeoutMs = 40_000, minimumIncrease = 1 }: BalanceWait = {},
+    { sleep = (ms) => new Promise((r) => setTimeout(r, ms)), intervalMs = 2000, timeoutMs = 40_000, minimumIncrease = 1, deadlineMs, signal }: BalanceWait = {},
 ): Promise<{ changed: boolean; balance: number }> {
     let balance = before;
+    if (signal?.aborted) return { changed: false, balance };
+    if (deadlineMs !== undefined || signal) {
+        const deadlineAt = deadlineMs ?? Date.now() + timeoutMs;
+        const expired = Symbol('deadline');
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        const deadline = new Promise<typeof expired>(resolve => {
+            timer = setTimeout(() => resolve(expired), Math.max(0, deadlineAt - Date.now()));
+        });
+        let stop!: () => void;
+        const cancelled = new Promise<typeof expired>(resolve => { stop = () => resolve(expired); });
+        signal?.addEventListener('abort', stop, { once: true });
+        try {
+            while (!signal?.aborted && Date.now() < deadlineAt) {
+                try {
+                    const next = await Promise.race([read(), deadline, cancelled]);
+                    if (signal?.aborted || next === expired || Date.now() >= deadlineAt) break;
+                    balance = next;
+                    if (balance >= before + Math.max(1, minimumIncrease)) return { changed: true, balance };
+                } catch { /* Retry only within the elapsed deadline and current session. */ }
+                if (signal?.aborted) break;
+                if (await Promise.race([sleep(Math.min(intervalMs, Math.max(0, deadlineAt - Date.now()))), deadline, cancelled]) === expired) break;
+            }
+            return { changed: false, balance };
+        } finally { clearTimeout(timer); signal?.removeEventListener('abort', stop); }
+    }
     for (let waited = 0; waited <= timeoutMs; waited += intervalMs) {
         try {
             balance = await read();

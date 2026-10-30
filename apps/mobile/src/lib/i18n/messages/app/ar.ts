@@ -1600,10 +1600,10 @@ export default {
   "credits.packs.title": "حزم رصيد لمرة واحدة",
   "credits.paywall.emptyBody": "لم يتم خصم أي شيء. اختر باقة أخرى لمرة واحدة لمتابعة الإنشاء.",
   "credits.paywall.emptyTitle": "نفدت أرصدتك",
-  "credits.paywall.firstBody": "يُعرض سعر كل توليد بالأرصدة مسبقًا. اختر حزمة للتعبئة. الأرصدة لا تنتهي صلاحيتها.",
+  "credits.paywall.firstBody": "يُعرض سعر كل توليد بالأرصدة مسبقًا. اختر حزمة للتعبئة.",
   "credits.paywall.firstTitle": "احصل على أرصدة لتبدأ الإنشاء",
   "credits.paywall.later": "ليس الآن",
-  "credits.paywall.lowBody": "عبّئ الآن كي لا يتوقف التوليد التالي في منتصفه. الأرصدة لا تنتهي صلاحيتها.",
+  "credits.paywall.lowBody": "عبّئ الآن كي لا يتوقف التوليد التالي في منتصفه.",
   "credits.paywall.lowTitle": "أرصدتك توشك على النفاد",
   "credits.paywall.packs": "اشترِ كريدت",
   "credits.paywall.repeat": "يمكنك شراء باقة أخرى كلما احتجت إلى مزيد من الأرصدة. تُضاف كل عملية شراء مكتملة إلى رصيدك.",
@@ -5851,5 +5851,13 @@ export default {
   "editorVoiceover.discard": "حذف",
   "vey.touch.label": "Vey",
   "vey.touch.hint": "انقر لإلقاء التحية",
-  "vey.touch.wave": "لوّح"
+  "vey.touch.wave": "لوّح",
+  "credits.paywall.packsNeverExpire": "أرصدة الحزم لا تنتهي صلاحيتها.",
+  "credits.paywall.packTab": "الحزم",
+  "credits.paywall.planTab": "الخطط الشهرية",
+  "credits.paywall.buyPack": "شراء {credits} رصيد — {price}",
+  "credits.paywall.buyPlan": "ابدأ {plan} — {price}/{period}",
+  "credits.paywall.allOptions": "عرض كل الخيارات",
+  "credits.paywall.month": "شهر",
+  "credits.paywall.year": "سنة"
 } as const;

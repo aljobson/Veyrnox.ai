@@ -1,37 +1,35 @@
 import { useFirstRunPending } from '../lib/firstRunPending';
 import * as SecureStore from 'expo-secure-store';
 import { usePathname, useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../auth/AuthProvider';
-import { useBilling } from '../billing/BillingProvider';
+import { abortPreparing, getPurchaseSnapshot } from '../billing/storePurchaseStore';
 import { getCacheUser, subscribeCacheUser } from '../lib/appCache';
-import { t } from '../lib/i18n';
+import { LEGAL_LINKS } from '../lib/account';
 import { paywallReason, type PaywallReason } from '../lib/paywallPrompt';
 import { useBalance } from '../lib/useBalance';
-import { colors, fonts } from '../theme';
+import { PaywallSheet } from './paywall/PaywallSheet';
 
 const seenKey = (owner: string) => `veyrnox.paywall.seen.${owner}`;
 const depletedKey = (owner: string) => `veyrnox.paywall.depleted.${owner}`;
+// Survives prompt remounts, but never a sign-out, owner switch or new session generation.
+let promptSession: { owner: string; generation: number; closed: boolean } | null = null;
+subscribeCacheUser(() => { promptSession = null; });
 
-const copyFor = (reason: PaywallReason) => ({
-    first: { title: t('credits.paywall.firstTitle'), body: t('credits.paywall.firstBody') },
-    low: { title: t('credits.paywall.lowTitle'), body: t('credits.paywall.lowBody') },
-    depleted: { title: t('credits.paywall.emptyTitle'), body: t('credits.paywall.emptyBody') },
-})[reason];
-
-// Matches the website's soft prompt: it suggests store billing at useful moments but never
-// prevents a signed-in person from using free credits or the rest of the app.
 export function PaywallPrompt() {
     const firstRunPending = useFirstRunPending();
+    const { generation } = useAuth();
     const [owner, setOwner] = useState(getCacheUser());
     useEffect(() => subscribeCacheUser(() => setOwner(getCacheUser())), []);
-    return !firstRunPending && owner ? <AccountPaywall key={owner} owner={owner} /> : null;
+    if (!owner || firstRunPending) return null;
+    if (!promptSession || promptSession.owner !== owner || promptSession.generation !== generation) {
+        promptSession = { owner, generation, closed: false };
+    }
+    return <AccountPaywall key={`${owner}:${generation}`} owner={owner} session={promptSession} />;
 }
 
-function AccountPaywall({ owner }: { owner: string }) {
+function AccountPaywall({ owner, session }: { owner: string; session: NonNullable<typeof promptSession> }) {
     const { api } = useAuth();
-    const billing = useBilling();
     const balance = useBalance();
     const pathname = usePathname();
     const router = useRouter();
@@ -40,7 +38,22 @@ function AccountPaywall({ owner }: { owner: string }) {
     const [seenFirst, setSeenFirst] = useState(false);
     const [seenDepleted, setSeenDepleted] = useState(false);
     const [openReason, setOpenReason] = useState<PaywallReason | null>(null);
+    const [suspendedForLegal, setSuspendedForLegal] = useState(false);
+    const enteredLegal = useRef(false);
     const shownThisSession = useRef(false);
+    const close = useCallback(() => {
+        const operation = getPurchaseSnapshot();
+        if (operation.phase === 'store') return false;
+        abortPreparing(operation.opId);
+        session.closed = true;
+        setOpenReason(null);
+        return true;
+    }, [session]);
+
+    useEffect(() => {
+        if (!openReason) return;
+        return () => { session.closed = true; };
+    }, [openReason, session]);
 
     useEffect(() => {
         let live = true;
@@ -50,31 +63,31 @@ function AccountPaywall({ owner }: { owner: string }) {
             api.request<{ created_at?: unknown }>('/api/v1/account').catch(() => null),
         ]).then(([seen, depleted, account]) => {
             if (!live || owner !== getCacheUser()) return;
-            setSeenFirst(seen === '1');
-            setSeenDepleted(depleted === '1');
+            setSeenFirst(seen === '1'); setSeenDepleted(depleted === '1');
             setCreatedAt(typeof account?.created_at === 'string' ? account.created_at : null);
             setAccountReady(true);
         });
         return () => { live = false; };
     }, [api, owner]);
 
-    const promptRoute = pathname === '/welcome' || pathname?.startsWith('/credits');
+    const promptRoute = pathname === '/welcome' || pathname?.startsWith('/credits') || pathname?.startsWith('/legal/');
     useEffect(() => {
-        if (!accountReady || promptRoute || !Number.isFinite(balance) || openReason) return;
-        if ((balance as number) > 0 && seenDepleted) {
-            let live = true;
-            void SecureStore.deleteItemAsync(depletedKey(owner))
-                .catch(() => undefined)
-                .then(() => { if (live) setSeenDepleted(false); });
-            return () => { live = false; };
-        }
-        const reason = paywallReason({
-            credits: balance,
-            createdAt,
-            seenFirst,
-            shownThisSession: shownThisSession.current,
-            shownDepletedBalance: seenDepleted,
-        });
+        if (pathname?.startsWith('/legal/')) enteredLegal.current = true;
+        else if (enteredLegal.current) { enteredLegal.current = false; setSuspendedForLegal(false); }
+        if (promptRoute && openReason) close();
+    }, [pathname, promptRoute, openReason, close]);
+    // A positive balance starts a new depleted cycle even while success is still visible.
+    useEffect(() => {
+        if (!accountReady || !Number.isFinite(balance) || (balance as number) <= 0 || !seenDepleted) return;
+        let live = true;
+        void SecureStore.deleteItemAsync(depletedKey(owner)).catch(() => undefined)
+            .then(() => { if (live && owner === getCacheUser()) setSeenDepleted(false); });
+        return () => { live = false; };
+    }, [accountReady, balance, seenDepleted, owner]);
+    useEffect(() => {
+        if (!accountReady || promptRoute || suspendedForLegal || !Number.isFinite(balance) || openReason) return;
+        const reason = paywallReason({ credits: balance, createdAt, seenFirst,
+            shownThisSession: shownThisSession.current || session.closed, shownDepletedBalance: seenDepleted });
         if (!reason) return;
         if (reason === 'depleted') {
             setSeenDepleted(true);
@@ -85,56 +98,14 @@ function AccountPaywall({ owner }: { owner: string }) {
             void SecureStore.setItemAsync(seenKey(owner), '1').catch(() => undefined);
         }
         setOpenReason(reason);
-    }, [accountReady, balance, createdAt, openReason, owner, promptRoute, seenDepleted, seenFirst]);
+    }, [accountReady, balance, createdAt, openReason, owner, promptRoute, suspendedForLegal, seenDepleted, seenFirst, session]);
 
-    if (!openReason || promptRoute) return null;
-    const copy = copyFor(openReason);
-    const subscriptionsOpen = billing.status === 'ready'
-        && (billing.offerings?.all.generation?.availablePackages.length ?? 0) > 0;
-    const goToCredits = () => {
-        setOpenReason(null);
-        router.push('/credits');
-    };
-
-    return (
-        <Modal transparent animationType="fade" visible onRequestClose={() => setOpenReason(null)}>
-            <View style={styles.backdrop} onAccessibilityEscape={() => setOpenReason(null)}>
-                <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-                    <View style={styles.card}>
-                        <Text style={styles.eyebrow}>{t('paywallPrompt.vEYRNOX')}</Text>
-                        <Text accessibilityRole="header" style={styles.title}>{copy.title}</Text>
-                        <Text style={styles.body}>{copy.body}</Text>
-                        <Text style={styles.repeat}>{t('credits.paywall.repeat')}</Text>
-                        {subscriptionsOpen && !billing.paidAccess ? (
-                            <Pressable accessibilityRole="button" style={styles.secondary} onPress={goToCredits}>
-                                <Text style={styles.secondaryText}>{t('credits.paywall.subscriptions')}</Text>
-                            </Pressable>
-                        ) : null}
-                        <Pressable accessibilityRole="button" style={styles.primary} onPress={goToCredits}>
-                            <Text style={styles.primaryText}>{t('credits.paywall.packs')}</Text>
-                        </Pressable>
-                        <Pressable accessibilityRole="button" style={styles.later} onPress={() => setOpenReason(null)}>
-                            <Text style={styles.laterText}>{t('credits.paywall.later')}</Text>
-                        </Pressable>
-                    </View>
-                </ScrollView>
-            </View>
-        </Modal>
-    );
+    if (!openReason) return null;
+    return <PaywallSheet reason={openReason} onClose={close}
+        onOptions={() => { if (close()) router.push('/credits'); }}
+        onLegal={index => {
+            if (!close()) return;
+            setSuspendedForLegal(true);
+            router.push(LEGAL_LINKS[index].route);
+        }} />;
 }
-
-const styles = StyleSheet.create({
-    backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.72)' },
-    scroll: { flexGrow: 1, justifyContent: 'center', padding: 20 },
-    card: { borderRadius: 20, borderWidth: 1, borderColor: colors.borderStrong, backgroundColor: colors.surface, padding: 22, gap: 12 },
-    eyebrow: { color: colors.accent, fontSize: 12, fontWeight: '800', letterSpacing: 3 },
-    title: { color: colors.text, fontFamily: fonts.display, fontSize: 29, lineHeight: 34 },
-    body: { color: colors.body, fontSize: 16, lineHeight: 23 },
-    repeat: { color: colors.muted, fontSize: 13, lineHeight: 19, marginBottom: 4 },
-    primary: { minHeight: 52, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: colors.accent, paddingHorizontal: 16 },
-    primaryText: { color: colors.accentInk, fontSize: 16, fontWeight: '800' },
-    secondary: { minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 14, borderWidth: 1, borderColor: colors.accent, paddingHorizontal: 16 },
-    secondaryText: { color: colors.accent, fontSize: 15, fontWeight: '700' },
-    later: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
-    laterText: { color: colors.body, fontSize: 15 },
-});

@@ -1516,10 +1516,10 @@ export default {
   "credits.packs.title": "Pacotes de créditos avulsos",
   "credits.paywall.emptyBody": "Nada foi cobrado. Escolha outro pacote avulso para continuar criando.",
   "credits.paywall.emptyTitle": "Seus créditos acabaram",
-  "credits.paywall.firstBody": "Cada geração tem seu preço em créditos mostrado antes. Escolha um pacote para recarregar. Os créditos nunca expiram.",
+  "credits.paywall.firstBody": "Cada geração tem seu preço em créditos mostrado antes. Escolha um pacote para recarregar.",
   "credits.paywall.firstTitle": "Adquira créditos para começar a criar",
   "credits.paywall.later": "Agora não",
-  "credits.paywall.lowBody": "Recarregue agora para sua próxima geração não parar no meio. Os créditos nunca expiram.",
+  "credits.paywall.lowBody": "Recarregue agora para sua próxima geração não parar no meio.",
   "credits.paywall.lowTitle": "Seus créditos estão acabando",
   "credits.paywall.packs": "Comprar créditos",
   "credits.paywall.repeat": "Você pode comprar outro pacote sempre que precisar de mais créditos. Cada compra concluída aumenta seu saldo.",
@@ -5656,5 +5656,13 @@ export default {
   "editorVoiceover.discard": "Descartar",
   "vey.touch.label": "Vey",
   "vey.touch.hint": "Toque para dizer olá",
-  "vey.touch.wave": "Acenar"
+  "vey.touch.wave": "Acenar",
+  "credits.paywall.packsNeverExpire": "Os créditos dos pacotes nunca expiram.",
+  "credits.paywall.packTab": "Pacotes",
+  "credits.paywall.planTab": "Planos mensais",
+  "credits.paywall.buyPack": "Comprar {credits} créditos — {price}",
+  "credits.paywall.buyPlan": "Iniciar {plan} — {price}/{period}",
+  "credits.paywall.allOptions": "Ver todas as opções",
+  "credits.paywall.month": "mês",
+  "credits.paywall.year": "ano"
 } as const;

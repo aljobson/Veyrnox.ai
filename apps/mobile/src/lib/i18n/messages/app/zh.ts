@@ -1460,10 +1460,10 @@ export default {
   "credits.packs.title": "一次性积分包",
   "credits.paywall.emptyBody": "未扣费。请选择其他一次性积分包，继续创作。",
   "credits.paywall.emptyTitle": "你的积分已用完",
-  "credits.paywall.firstBody": "每次生成都会预先显示积分价格。请选择积分包充值。积分永不过期。",
+  "credits.paywall.firstBody": "每次生成都会预先显示积分价格。请选择积分包充值。",
   "credits.paywall.firstTitle": "获取积分，开始创作",
   "credits.paywall.later": "暂不",
-  "credits.paywall.lowBody": "现在充值，让下一次生成不必中途停下。积分永不过期。",
+  "credits.paywall.lowBody": "现在充值，让下一次生成不必中途停下。",
   "credits.paywall.lowTitle": "你的积分即将用完",
   "credits.paywall.packs": "购买积分",
   "credits.paywall.repeat": "需要更多积分时，你可以随时购买其他积分包。每笔完成的购买都会增加你的余额。",
@@ -5526,5 +5526,13 @@ export default {
   "editorVoiceover.discard": "丢弃",
   "vey.touch.label": "Vey",
   "vey.touch.hint": "轻点打个招呼",
-  "vey.touch.wave": "挥手"
+  "vey.touch.wave": "挥手",
+  "credits.paywall.packsNeverExpire": "积分包中的积分永不过期。",
+  "credits.paywall.packTab": "积分包",
+  "credits.paywall.planTab": "月度套餐",
+  "credits.paywall.buyPack": "购买 {credits} 积分 — {price}",
+  "credits.paywall.buyPlan": "开通{plan} — {price}/{period}",
+  "credits.paywall.allOptions": "查看所有选项",
+  "credits.paywall.month": "月",
+  "credits.paywall.year": "年"
 } as const;

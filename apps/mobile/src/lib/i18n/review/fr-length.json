@@ -4812,6 +4812,12 @@
     "ratio": 5.5
   },
   {
+    "id": "credits.paywall.packTab",
+    "english": "Packs",
+    "translation": "Packs de crédits",
+    "ratio": 3.2
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

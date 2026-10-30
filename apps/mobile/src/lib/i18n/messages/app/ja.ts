@@ -1460,10 +1460,10 @@ export default {
   "credits.packs.title": "単発クレジットパック",
   "credits.paywall.emptyBody": "料金は発生していません。制作を続けるには、別の買い切りパックを選んでください。",
   "credits.paywall.emptyTitle": "クレジットを使い切りました",
-  "credits.paywall.firstBody": "生成ごとのクレジット料金は事前に表示されます。パックを選んで追加してください。クレジットに有効期限はありません。",
+  "credits.paywall.firstBody": "生成ごとのクレジット料金は事前に表示されます。パックを選んで追加してください。",
   "credits.paywall.firstTitle": "クレジットを入手して作成を開始",
   "credits.paywall.later": "あとで",
-  "credits.paywall.lowBody": "次の生成が途中で止まらないよう、今すぐ追加してください。クレジットに有効期限はありません。",
+  "credits.paywall.lowBody": "次の生成が途中で止まらないよう、今すぐ追加してください。",
   "credits.paywall.lowTitle": "クレジットが少なくなっています",
   "credits.paywall.packs": "クレジットを購入",
   "credits.paywall.repeat": "クレジットが必要になったら、いつでも別のパックを購入できます。完了した購入は毎回残高に追加されます。",
@@ -5526,5 +5526,13 @@ export default {
   "editorVoiceover.discard": "破棄",
   "vey.touch.label": "Vey",
   "vey.touch.hint": "タップしてあいさつ",
-  "vey.touch.wave": "手を振る"
+  "vey.touch.wave": "手を振る",
+  "credits.paywall.packsNeverExpire": "パックのクレジットに有効期限はありません。",
+  "credits.paywall.packTab": "パック",
+  "credits.paywall.planTab": "月額プラン",
+  "credits.paywall.buyPack": "{credits}クレジットを購入 — {price}",
+  "credits.paywall.buyPlan": "{plan}を開始 — {price}/{period}",
+  "credits.paywall.allOptions": "すべての選択肢を見る",
+  "credits.paywall.month": "月",
+  "credits.paywall.year": "年"
 } as const;

@@ -1,0 +1,21 @@
+# Mobile paywall purchases in place
+
+Status: Proposed — frozen work order v4, 2026-10-29; independent review pending.
+
+The phone's soft credit prompt now sells the existing store products directly. It offers web-parity credit packs, or AI Generation plans when available and the account has no paid access. Store-localised strings supply every purchase price. There is no web checkout, fallback price, server change, flag change or dependency change. See all options still opens Credits. Publish subscriptions remain on Credits.
+
+A module-level purchase store and thin `useStorePurchase` hook share one operation between Credits and the prompt. Preparation locks synchronously, including the pack baseline read. Dismissing during preparation invalidates the operation and returns to idle with no outcome before calling the provider. Store-sheet cancellation still produces the existing cancelled outcome. The store phase includes BillingProvider's private sales/entitlement preflight and the native purchase sheet, and cannot be dismissed; Not now exposes both disabled and busy accessibility state throughout that phase. Confirmation survives dismissal and uses a 40-second elapsed deadline, including stalled balance reads. Session or operation invalidation stops waiting for confirmation reads and retry intervals immediately; late results are ignored. A pack must increase the balance by its full expected credits before publication. Outcomes remain available on Credits.
+
+Every continuation checks operation identity, captured session generation and cache owner before writing or publishing. Owner notifications reset the store; the hook synchronises auth generation, and starting an operation also checks session currency synchronously. Old operations never release replacement locks. Subscription cancellation and access retries retain their existing local busy UI and acquire an auxiliary exclusion token against purchases on either surface.
+
+Each opened prompt observes only operations it starts. Older retained outcomes cannot animate or close a fresh depleted prompt. Vey waves for a first prompt, looks worried when depleted, hops on selection, works during purchasing and confirmation, claps then cheers on success, and looks worried on error. Selection, success and error retain haptics. Outcomes use `useAnnouncement`, with no live region. Reduce Motion retains still poses and closes successful prompts immediately after requesting the announcement; otherwise success remains visible for 1.5 seconds.
+
+The existing web-parity eligibility thresholds, reason ordering, first-seen key and depleted-cycle marker remain authoritative. Closing suppresses future first/low openings in this in-memory owner/session, without hiding an already open success. Positive balances clear the depleted marker independently, permitting a later zero-balance cycle. Legal navigation closes first and suspends opening throughout `/legal/*`. System back, accessibility escape and Not now dismiss except during the store phase.
+
+Pack-only expiry copy replaces the unconditional promise next to subscriptions. All ten non-English catalogs include the new strings. Plans retain renewal and cycle-expiry terms; the depleted pack-specific body is omitted on the plans tab while its title remains. The modal uses theme tokens, scrollable offers and a fixed footer with its purchase action.
+
+## Work-order interpretations and verification
+
+G1 explicitly requires both `storePurchaseStore.ts` and `useStorePurchase.ts`; both are included despite the whitelist's shorthand “the new hook file”. `ensureSalesOpen` is private to the prerequisite provider, so that preflight stays in the documented store phase. Credits, translated-screen and analytics-modal test fixtures now supply `beginSessionTask`; the analytics billing fixture also supplies `refreshSales`. These fixture-only changes extend the test whitelist; existing assertions are unchanged. This ADR uses the frozen work order's explicit `0000` filename rather than allocating a number.
+
+Tests cover shared locking, stale completions after account and session changes, dismissal, elapsed deadlines, selection semantics, legal routes, success timing, retained outcomes, translations, and the existing Credits behaviour. The final implementation report records proof results and environment limitations.

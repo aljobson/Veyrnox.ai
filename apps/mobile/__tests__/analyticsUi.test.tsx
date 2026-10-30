@@ -15,8 +15,11 @@ const mockRouter = { push: jest.fn(), replace: jest.fn() };
 const mockRequest = jest.fn(async (path: string) => path.includes('checkin') ? { ok: true, claimed_today: false, streak: 0, next_day: 1, next_credits: 1, rewards: [1,2,3,4,5,6] } : { created_at: new Date().toISOString() });
 const mockApi = { request: mockRequest };
 jest.mock('expo-router', () => ({ useRouter: () => mockRouter, usePathname: () => '/', useRootNavigationState: () => ({ key: 'ready' }) }));
-jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ status: 'signedIn', api: mockApi }) }));
-jest.mock('../src/billing/BillingProvider', () => ({ useBilling: () => ({ status: 'ready', paidAccess: false }) }));
+jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ status: 'signedIn', api: mockApi, generation: 0, beginSessionTask: () => {
+    const owner = require('../src/lib/appCache').getCacheUser();
+    return { gen: 0, user: owner, current: () => owner === require('../src/lib/appCache').getCacheUser() };
+} }) }));
+jest.mock('../src/billing/BillingProvider', () => ({ useBilling: () => ({ status: 'ready', paidAccess: false, refreshSales: async () => false }) }));
 jest.mock('../src/lib/useBalance', () => ({ useBalance: () => 10 }));
 jest.mock('expo-secure-store', () => ({ getItemAsync: jest.fn(async () => null), setItemAsync: jest.fn(async () => {}), deleteItemAsync: jest.fn(async () => {}) }));
 const mockFactory = jest.fn(() => ({ ready: async () => {}, getDistinctId: () => 'anonymous', capture: jest.fn(), identify: jest.fn(), reset: jest.fn(), optOut: async () => {}, flush: async () => {} }));
