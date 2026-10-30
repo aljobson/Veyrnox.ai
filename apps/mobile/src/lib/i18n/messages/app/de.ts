@@ -1488,10 +1488,10 @@ export default {
   "credits.packs.title": "Einmalige Credit-Pakete",
   "credits.paywall.emptyBody": "Es wurde nichts abgebucht. Wähle ein weiteres einmaliges Paket, um weiterzumachen.",
   "credits.paywall.emptyTitle": "Deine Credits sind aufgebraucht",
-  "credits.paywall.firstBody": "Der Credit-Preis jeder Generierung wird vorher angezeigt. Wähle ein Paket zum Aufladen. Credits verfallen nie.",
+  "credits.paywall.firstBody": "Der Credit-Preis jeder Generierung wird vorher angezeigt. Wähle ein Paket zum Aufladen.",
   "credits.paywall.firstTitle": "Hol dir Credits und beginne zu erstellen",
   "credits.paywall.later": "Jetzt nicht",
-  "credits.paywall.lowBody": "Lade jetzt auf, damit deine nächste Generierung nicht mittendrin stoppt. Credits verfallen nie.",
+  "credits.paywall.lowBody": "Lade jetzt auf, damit deine nächste Generierung nicht mittendrin stoppt.",
   "credits.paywall.lowTitle": "Deine Credits werden knapp",
   "credits.paywall.packs": "Credits kaufen",
   "credits.paywall.repeat": "Du kannst jederzeit ein weiteres Paket kaufen, wenn du mehr Credits brauchst. Jeder abgeschlossene Kauf wird deinem Guthaben hinzugefügt.",
@@ -5591,5 +5591,13 @@ export default {
   "editorVoiceover.discard": "Verwerfen",
   "vey.touch.label": "Vey",
   "vey.touch.hint": "Tippe, um Hallo zu sagen",
-  "vey.touch.wave": "Winken"
+  "vey.touch.wave": "Winken",
+  "credits.paywall.packsNeverExpire": "Paket-Credits verfallen nie.",
+  "credits.paywall.packTab": "Pakete",
+  "credits.paywall.planTab": "Monatspläne",
+  "credits.paywall.buyPack": "{credits} Credits kaufen — {price}",
+  "credits.paywall.buyPlan": "{plan} starten — {price}/{period}",
+  "credits.paywall.allOptions": "Alle Optionen ansehen",
+  "credits.paywall.month": "Monat",
+  "credits.paywall.year": "Jahr"
 } as const;

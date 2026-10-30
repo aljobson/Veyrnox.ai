@@ -1516,10 +1516,10 @@ export default {
   "credits.packs.title": "Packs de crédits ponctuels",
   "credits.paywall.emptyBody": "Aucun débit n’a été effectué. Choisissez un autre pack à achat unique pour continuer à créer.",
   "credits.paywall.emptyTitle": "Vous n’avez plus de crédits",
-  "credits.paywall.firstBody": "Le prix en crédits de chaque génération est affiché à l’avance. Choisissez un pack pour recharger. Les crédits n’expirent jamais.",
+  "credits.paywall.firstBody": "Le prix en crédits de chaque génération est affiché à l’avance. Choisissez un pack pour recharger.",
   "credits.paywall.firstTitle": "Obtenez des crédits pour commencer à créer",
   "credits.paywall.later": "Pas maintenant",
-  "credits.paywall.lowBody": "Rechargez maintenant pour que votre prochaine génération ne s’arrête pas en cours de route. Les crédits n’expirent jamais.",
+  "credits.paywall.lowBody": "Rechargez maintenant pour que votre prochaine génération ne s’arrête pas en cours de route.",
   "credits.paywall.lowTitle": "Vos crédits s’épuisent",
   "credits.paywall.packs": "Acheter des crédits",
   "credits.paywall.repeat": "Vous pouvez acheter un autre pack chaque fois que vous avez besoin de crédits. Chaque achat finalisé est ajouté à votre solde.",
@@ -5656,5 +5656,13 @@ export default {
   "editorVoiceover.discard": "Supprimer",
   "vey.touch.label": "Vey",
   "vey.touch.hint": "Touchez pour dire bonjour",
-  "vey.touch.wave": "Faire signe de la main"
+  "vey.touch.wave": "Faire signe de la main",
+  "credits.paywall.packsNeverExpire": "Les crédits des packs n’expirent jamais.",
+  "credits.paywall.packTab": "Packs de crédits",
+  "credits.paywall.planTab": "Abonnements mensuels",
+  "credits.paywall.buyPack": "Acheter {credits} crédits — {price}",
+  "credits.paywall.buyPlan": "Commencer {plan} — {price}/{period}",
+  "credits.paywall.allOptions": "Voir toutes les options",
+  "credits.paywall.month": "mois",
+  "credits.paywall.year": "an"
 } as const;

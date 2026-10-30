@@ -13,13 +13,15 @@ describe('paywall UI wiring', () => {
         expect(layout).toContain('<PaywallPrompt />');
         expect(layout).not.toContain('HardPaywallGate');
         expect(eas).not.toContain('EXPO_PUBLIC_HARD_PAYWALL_ENABLED');
-        expect(prompt).toContain('onRequestClose={() => setOpenReason(null)}');
+        expect(source('src/components/paywall/PaywallSheet.tsx')).toContain('onRequestClose={onClose}');
+        expect(prompt).toContain("if (operation.phase === 'store') return false");
         expect(prompt).toContain("router.push('/credits')");
         expect(prompt).toContain("pathname === '/welcome'");
         expect(prompt).toContain("pathname?.startsWith('/credits')");
         expect(prompt).toContain('depletedKey(owner)');
         expect(prompt).toContain('SecureStore.deleteItemAsync(depletedKey(owner))');
-        expect(prompt).toContain('subscriptionsOpen && !billing.paidAccess');
+        expect(source('src/components/paywall/PaywallSheet.tsx')).toContain('subscriptionsOpen && !billing.paidAccess');
+        expect(prompt).toContain("pathname?.startsWith('/legal/')");
     });
 
     test('credits screen includes subscriptions, current packs, restore and policy links', () => {
@@ -28,10 +30,11 @@ describe('paywall UI wiring', () => {
         expect(credits).toContain('offerings?.all.credits');
         expect(credits).toContain('filter(isWebParityPack)');
         expect(credits).toContain('renewalTerms(');
-        expect(credits).toContain('billing.restore()');
+        expect(credits).toContain("runPurchase({ kind: 'restore' })");
+        expect(source('src/billing/storePurchaseStore.ts')).toContain('deps.billing.restore()');
         expect(credits).toContain('!billing.generationPurchaseReady');
         expect(credits).toContain('billing.refreshGenerationAccess()');
-        expect(credits).toContain('{ minimumIncrease: expectedCredits }');
+        expect(source('src/billing/storePurchaseStore.ts')).toContain('minimumIncrease: expectedCredits, deadlineMs: Date.now() + 40_000');
         expect(credits).toContain('LEGAL_LINKS.slice(0, 2)');
     });
 

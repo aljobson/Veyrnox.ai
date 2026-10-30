@@ -1460,10 +1460,10 @@ export default {
   "credits.packs.title": "일회성 크레딧 팩",
   "credits.paywall.emptyBody": "요금은 청구되지 않았습니다. 계속 만들려면 다른 일회성 팩을 선택하세요.",
   "credits.paywall.emptyTitle": "크레딧을 모두 사용했습니다",
-  "credits.paywall.firstBody": "생성마다 크레딧 가격이 미리 표시됩니다. 팩을 선택해 충전하세요. 크레딧은 만료되지 않습니다.",
+  "credits.paywall.firstBody": "생성마다 크레딧 가격이 미리 표시됩니다. 팩을 선택해 충전하세요.",
   "credits.paywall.firstTitle": "크레딧으로 창작을 시작하세요",
   "credits.paywall.later": "나중에",
-  "credits.paywall.lowBody": "다음 생성이 중간에 멈추지 않도록 지금 충전하세요. 크레딧은 만료되지 않습니다.",
+  "credits.paywall.lowBody": "다음 생성이 중간에 멈추지 않도록 지금 충전하세요.",
   "credits.paywall.lowTitle": "크레딧이 얼마 남지 않았습니다",
   "credits.paywall.packs": "크레딧 구매",
   "credits.paywall.repeat": "크레딧이 더 필요할 때마다 다른 팩을 구매할 수 있습니다. 완료된 구매는 매번 잔액에 추가됩니다.",
@@ -5526,5 +5526,13 @@ export default {
   "editorVoiceover.discard": "삭제",
   "vey.touch.label": "Vey",
   "vey.touch.hint": "탭하여 인사하기",
-  "vey.touch.wave": "손 흔들기"
+  "vey.touch.wave": "손 흔들기",
+  "credits.paywall.packsNeverExpire": "팩 크레딧은 만료되지 않습니다.",
+  "credits.paywall.packTab": "팩",
+  "credits.paywall.planTab": "월간 플랜",
+  "credits.paywall.buyPack": "{credits} 크레딧 구매 — {price}",
+  "credits.paywall.buyPlan": "{plan} 시작 — {price}/{period}",
+  "credits.paywall.allOptions": "모든 옵션 보기",
+  "credits.paywall.month": "월",
+  "credits.paywall.year": "년"
 } as const;

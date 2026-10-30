@@ -6,13 +6,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, ScrollView, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { useBilling } from '../../billing/BillingProvider';
+import { useStorePurchase } from '../../billing/useStorePurchase';
+import { getPurchaseSnapshot, type PurchaseOutcome } from '../../billing/storePurchaseStore';
 import { LEGAL_LINKS } from '../../lib/account';
 import {
     isWebParityPack,
     parseGenerationCatalog,
     renewalTerms,
     toDisplayPackages,
-    waitForBalanceChange,
     type GenerationCatalogPlan,
 } from '../../lib/billing';
 import { t } from '../../lib/i18n';
@@ -31,16 +32,6 @@ import { fetchCatalog } from '../../lib/media';
 import { ApiError } from '../../lib/api';
 import { cancelSubscription, creditsRemoved, readSubscription, subscriptionErrorKey, visibleSubscription, type CancelMode, type CreditSubscription } from '../../lib/creditSubscription';
 
-type Outcome =
-    | { kind: 'credited'; balance: number }
-    | { kind: 'subscribed' }
-    | { kind: 'restored' }
-    | { kind: 'nothingToRestore' }
-    | { kind: 'cancelled' }
-    | { kind: 'pending' }
-    | { kind: 'error' }
-    | null;
-
 const store = Platform.OS === 'ios' ? 'ios' : 'android';
 
 export default function Credits() {
@@ -49,8 +40,18 @@ export default function Credits() {
     const billing = useBilling();
     useFocusEffect(useCallback(() => { void billing.refreshSales(); }, [billing.refreshSales]));
     const [catalog, setCatalog] = useState<GenerationCatalogPlan[]>([]);
-    const [busyId, setBusyId] = useState<string | null>(null);
-    const [outcome, setOutcome] = useState<Outcome>(null);
+    const purchase = useStorePurchase();
+    const [localBusyId, setBusyId] = useState<string | null>(null);
+    const [localOutcome, setOutcome] = useState<PurchaseOutcome | null>(null);
+    const activePackage = Object.values(billing.offerings?.all ?? {}).flatMap(offering => offering.availablePackages)
+        .find(pkg => pkg?.product?.identifier === purchase.operation.productId);
+    const busyId = localBusyId ?? (purchase.busy ? activePackage?.identifier ?? purchase.operation.kind : null);
+    const outcome = localOutcome ?? purchase.operation.outcome;
+    useEffect(() => { setOutcome(null); }, [purchase.operation.opId]);
+    const startedOp = useRef<number | null>(null);
+    useFocusEffect(useCallback(() => () => {
+        if (startedOp.current !== null) purchase.abortPreparing(startedOp.current);
+    }, [purchase.abortPreparing]));
     const [chosenId, setChosenId] = useState<string | null>(null);
     const [chosenPlanId, setChosenPlanId] = useState<string | null>(null);
     const [cadenceChoice, setCadence] = useState<Cadence | null>(null);
@@ -86,6 +87,8 @@ export default function Credits() {
     }
     async function cancel(mode: CancelMode) {
         if (!subscription || busyId) return;
+        const release = purchase.acquireAuxiliary();
+        if (!release) return;
         const user = getCacheUser(), id = subscription.id;
         setBusyId('cancel-subscription'); setCancelMessage(null); setRetryCancellation(false);
         try {
@@ -103,6 +106,7 @@ export default function Credits() {
             if (user === getCacheUser()) await Promise.allSettled([
                 refreshSubscription(), billing.refreshGenerationAccess(), refreshBalance(user),
             ]);
+            release();
             setBusyId(null);
         }
     }
@@ -128,70 +132,34 @@ export default function Credits() {
         return () => { live = false; };
     }, [api]);
 
+    async function runPurchase(request: Parameters<typeof purchase.start>[0]) {
+        if (busyId) return;
+        setOutcome(null);
+        const started = purchase.start(request);
+        if (typeof started === 'string') return;
+        startedOp.current = started.opId;
+        await started.completion;
+        if (getPurchaseSnapshot().opId === started.opId && getPurchaseSnapshot().phase === 'done') {
+            await Promise.allSettled([refreshSubscription(), balance.refresh()]);
+        }
+    }
     async function buyPack(id: string) {
-        const pkg = packPackages.find((item) => item.identifier === id);
-        const expectedCredits = packs.find((item) => item.id === id)?.credits;
+        const pkg = packPackages.find(item => item.identifier === id);
+        const expectedCredits = packs.find(item => item.id === id)?.credits;
         if (!pkg || !expectedCredits || busyId) return;
-        const user = getCacheUser();
-        setBusyId(id);
-        setOutcome(null);
         setChosenId(id);
-        let purchased = false;
-        try {
-            const before = (await api.getBalance()).balance;
-            const purchase = await billing.purchase(pkg);
-            if (purchase === 'cancelled') {
-                setOutcome({ kind: 'cancelled' });
-                return;
-            }
-            purchased = true;
-            if (purchase === 'pending') { setOutcome({ kind: 'pending' }); return; }
-            const result = await waitForBalanceChange(async () => (await api.getBalance()).balance, before, { minimumIncrease: expectedCredits });
-            setOutcome(result.changed ? { kind: 'credited', balance: result.balance } : { kind: 'pending' });
-            if (result.changed && user && user === getCacheUser()) { publishBalance(user, result.balance); await balance.refresh().catch(() => {}); }
-        } catch {
-            setOutcome({ kind: purchased ? 'pending' : 'error' });
-        } finally {
-            void refreshSubscription().catch(() => {});
-            setBusyId(null);
-        }
+        await runPurchase({ kind: 'pack', pkg, expectedCredits });
     }
-
     async function buyPlan() {
-        const pkg = planPackages.find((item) => item.identifier === chosenPlan?.id);
-        if (!pkg || busyId) return;
-        setBusyId(pkg.identifier);
-        setOutcome(null);
-        try {
-            const purchase = await billing.purchase(pkg);
-            setOutcome({ kind: purchase === 'cancelled' ? 'cancelled' : purchase === 'pending' ? 'pending' : 'subscribed' });
-        } catch {
-            setOutcome({ kind: 'error' });
-        } finally {
-            void refreshSubscription().catch(() => {});
-            setBusyId(null);
-        }
+        const pkg = planPackages.find(item => item.identifier === chosenPlan?.id);
+        if (pkg) await runPurchase({ kind: 'plan', pkg });
     }
-
-    async function restore() {
-        if (busyId || !billing.canRestore) return;
-        const user = getCacheUser();
-        setBusyId('restore');
-        setOutcome(null);
-        try {
-            const restored = await billing.restore();
-            setOutcome({ kind: restored ? 'restored' : 'nothingToRestore' });
-            await refreshBalance(user).catch(() => {});
-        } catch {
-            setOutcome({ kind: 'error' });
-        } finally {
-            void refreshSubscription().catch(() => {});
-            setBusyId(null);
-        }
-    }
+    async function restore() { await runPurchase({ kind: 'restore' }); }
 
     async function retryGenerationAccess() {
         if (busyId) return;
+        const release = purchase.acquireAuxiliary();
+        if (!release) return;
         setBusyId('generation-access');
         setOutcome(null);
         try {
@@ -200,6 +168,7 @@ export default function Credits() {
             setOutcome({ kind: 'error' });
         } finally {
             void refreshSubscription().catch(() => {});
+            release();
             setBusyId(null);
         }
     }
@@ -261,6 +230,7 @@ export default function Credits() {
             {outcome?.kind === 'nothingToRestore' ? <Text variant="body" tone="secondary" accessibilityLiveRegion="polite">{t('credits.nothingToRestore')}</Text> : null}
             {outcome?.kind === 'cancelled' ? <Text variant="body" tone="tertiary" accessibilityLiveRegion="polite" style={styles.muted}>{t('credits.cancelled')}</Text> : null}
             {outcome?.kind === 'pending' ? <Text variant="body" tone="tertiary" accessibilityLiveRegion="polite" style={styles.muted}>{t('credits.pending')}</Text> : null}
+            {outcome?.kind === 'sales_closed' ? <Text variant="body" tone="secondary">{t('credits.notOpen')}</Text> : null}
             {outcome?.kind === 'error' ? <Text variant="body" tone="danger" accessibilityLiveRegion="polite" style={styles.error}>{t('credits.error')}</Text> : null}
 
             <Button variant="tertiary" accessibilityRole="button" disabled={busyId !== null || !billing.canRestore} onPress={() => void restore()} textStyle={styles.accentInk} label={t('credits.restore')} loading={busyId === 'restore'} />

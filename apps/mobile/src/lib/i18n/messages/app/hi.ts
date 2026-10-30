@@ -1488,10 +1488,10 @@ export default {
   "credits.packs.title": "एक बार के क्रेडिट पैक",
   "credits.paywall.emptyBody": "कोई शुल्क नहीं लिया गया। बनाना जारी रखने के लिए एक और एकमुश्त पैक चुनें।",
   "credits.paywall.emptyTitle": "आपके क्रेडिट समाप्त हो गए हैं",
-  "credits.paywall.firstBody": "हर जनरेशन की क्रेडिट कीमत पहले दिखाई जाती है। टॉप-अप के लिए पैक चुनें। क्रेडिट कभी समाप्त नहीं होते।",
+  "credits.paywall.firstBody": "हर जनरेशन की क्रेडिट कीमत पहले दिखाई जाती है। टॉप-अप के लिए पैक चुनें।",
   "credits.paywall.firstTitle": "रचना शुरू करने के लिए क्रेडिट लें",
   "credits.paywall.later": "अभी नहीं",
-  "credits.paywall.lowBody": "अभी टॉप-अप करें ताकि अगला जनरेशन बीच में न रुके। क्रेडिट कभी समाप्त नहीं होते।",
+  "credits.paywall.lowBody": "अभी टॉप-अप करें ताकि अगला जनरेशन बीच में न रुके।",
   "credits.paywall.lowTitle": "आपके क्रेडिट कम हो रहे हैं",
   "credits.paywall.packs": "क्रेडिट खरीदें",
   "credits.paywall.repeat": "जब भी आपको अधिक क्रेडिट चाहिए, आप एक और पैक खरीद सकते हैं। हर पूरी हुई खरीद आपके बैलेंस में जुड़ती है।",
@@ -5591,5 +5591,13 @@ export default {
   "editorVoiceover.discard": "हटाएँ",
   "vey.touch.label": "Vey",
   "vey.touch.hint": "नमस्ते कहने के लिए टैप करें",
-  "vey.touch.wave": "हाथ हिलाएँ"
+  "vey.touch.wave": "हाथ हिलाएँ",
+  "credits.paywall.packsNeverExpire": "पैक क्रेडिट कभी समाप्त नहीं होते।",
+  "credits.paywall.packTab": "पैक",
+  "credits.paywall.planTab": "मासिक प्लान",
+  "credits.paywall.buyPack": "{credits} क्रेडिट खरीदें — {price}",
+  "credits.paywall.buyPlan": "{plan} शुरू करें — {price}/{period}",
+  "credits.paywall.allOptions": "सभी विकल्प देखें",
+  "credits.paywall.month": "माह",
+  "credits.paywall.year": "वर्ष"
 } as const;

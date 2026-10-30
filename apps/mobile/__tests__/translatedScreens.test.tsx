@@ -23,7 +23,10 @@ declare const require: (id: string) => any;
 const mockApi = { request: jest.fn(async () => ({})), getBalance: async () => ({ balance: 100 }) };
 const mockRouter = { push: jest.fn(), back: jest.fn(), replace: jest.fn(), setParams: jest.fn() };
 const mockPackages = (product: string) => [{ identifier: product, product: { identifier: product, title: 'Store product', priceString: '9,99 €' } }];
-jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ status: 'signedOut', api: mockApi, canReloadSession: () => true }) }));
+jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ status: 'signedOut', api: mockApi, generation: 0, beginSessionTask: () => {
+    const owner = jest.requireActual('../src/lib/appCache').getCacheUser();
+    return { gen: 0, user: owner, current: () => owner === jest.requireActual('../src/lib/appCache').getCacheUser() };
+}, canReloadSession: () => true }) }));
 jest.mock('../src/billing/BillingProvider', () => ({ useBilling: () => ({ status: 'ready', canPurchase: true, canRestore: true, refreshSales: jest.fn(), generationActive: false, generationChecked: true, publishActive: false, offerings: { all: {
     generation: { availablePackages: mockPackages('ai.veyrnox.generation.starter.monthly') },
     publish: { availablePackages: mockPackages('ai.veyrnox.publish.annual') },

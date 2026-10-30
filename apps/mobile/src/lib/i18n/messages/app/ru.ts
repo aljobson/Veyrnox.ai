@@ -1544,10 +1544,10 @@ export default {
   "credits.packs.title": "Разовые пакеты кредитов",
   "credits.paywall.emptyBody": "Списание не произошло. Выберите ещё один разовый пакет, чтобы продолжить создание.",
   "credits.paywall.emptyTitle": "Кредиты закончились",
-  "credits.paywall.firstBody": "Цена каждой генерации в кредитах известна заранее. Выберите пакет для пополнения. Кредиты не сгорают.",
+  "credits.paywall.firstBody": "Цена каждой генерации в кредитах известна заранее. Выберите пакет для пополнения.",
   "credits.paywall.firstTitle": "Получите кредиты и начните создавать",
   "credits.paywall.later": "Не сейчас",
-  "credits.paywall.lowBody": "Пополните баланс, чтобы следующая генерация не остановилась на полпути. Кредиты не сгорают.",
+  "credits.paywall.lowBody": "Пополните баланс, чтобы следующая генерация не остановилась на полпути.",
   "credits.paywall.lowTitle": "У вас заканчиваются кредиты",
   "credits.paywall.packs": "Купить кредиты",
   "credits.paywall.repeat": "Вы можете купить ещё один пакет в любой момент, когда понадобятся кредиты. Каждая завершённая покупка добавляется к балансу.",
@@ -5721,5 +5721,13 @@ export default {
   "editorVoiceover.discard": "Удалить",
   "vey.touch.label": "Vey",
   "vey.touch.hint": "Нажмите, чтобы поздороваться",
-  "vey.touch.wave": "Помахать"
+  "vey.touch.wave": "Помахать",
+  "credits.paywall.packsNeverExpire": "Кредиты из пакетов не сгорают.",
+  "credits.paywall.packTab": "Пакеты",
+  "credits.paywall.planTab": "Месячные планы",
+  "credits.paywall.buyPack": "Купить {credits} кредитов — {price}",
+  "credits.paywall.buyPlan": "Оформить {plan} — {price}/{period}",
+  "credits.paywall.allOptions": "Все варианты",
+  "credits.paywall.month": "месяц",
+  "credits.paywall.year": "год"
 } as const;

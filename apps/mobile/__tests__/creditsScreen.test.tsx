@@ -22,7 +22,10 @@ const mockBilling = { status: 'ready', canPurchase: true, canRestore: true, refr
     activeProductIds: [] as string[], managementURL: null, offerings: { all: { generation: { availablePackages: [monthly, annual] }, credits: { availablePackages: [pkg('pack', 'ai.veyrnox.credits.100', 10), pkg('large', 'ai.veyrnox.credits.1000', 70)] } } },
     purchase: jest.fn(), restore: jest.fn(), refreshGenerationAccess: jest.fn(),
 };
-jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi }) }));
+jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, generation: 0, beginSessionTask: () => {
+    const owner = require('../src/lib/appCache').getCacheUser();
+    return { gen: 0, user: owner, current: () => owner === require('../src/lib/appCache').getCacheUser() };
+} }) }));
 jest.mock('../src/billing/BillingProvider', () => ({ useBilling: () => mockBilling }));
 jest.mock('expo-router', () => ({ Link: ({ children }: any) => children, Stack: { Screen: () => null }, router: { push: jest.fn() }, useFocusEffect: (fn: any) => require('react').useEffect(fn, [fn]) }));
 jest.mock('../src/components/VeyCardPeek', () => ({ VeyCardPeek: () => null, peekRoom: () => 0 }));

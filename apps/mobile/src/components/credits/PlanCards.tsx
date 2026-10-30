@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { generationCatalogId, type DisplayPackage } from '../../lib/billing';
 import { planName, subscriptionSavingPercent, yearlySaving } from '../../lib/creditOffers';
 import { formatLocale, t } from '../../lib/i18n';
@@ -7,21 +7,26 @@ import { ds } from '../../theme';
 import { Card, SegmentedControl, Text, themedStyles, useThemedStyles } from '../ui';
 export type Cadence = 'month' | 'year';
 export const initialCadence = (plans: readonly DisplayPackage[]): Cadence => plans.some(p => p.interval === 'month') ? 'month' : 'year';
-export function PlanCards({ plans, packs, credits, cadence, onCadence, chosenId, onChoose, readOnly = false }: {
+export function PlanCards({ plans, packs, credits, cadence, onCadence, chosenId, onChoose, readOnly = false, disabled = false }: {
     plans: readonly DisplayPackage[]; packs: readonly DisplayPackage[]; credits: ReadonlyMap<string, number>;
-    cadence?: Cadence; onCadence?: (cadence: Cadence) => void; chosenId?: string | null; onChoose?: (id: string) => void; readOnly?: boolean;
+    cadence?: Cadence; onCadence?: (cadence: Cadence) => void; chosenId?: string | null; onChoose?: (id: string) => void; readOnly?: boolean; disabled?: boolean;
 }) {
     const s = useThemedStyles(sheets);
     const [localCadence, setLocalCadence] = useState<Cadence | null>(null);
     const active = cadence ?? localCadence ?? initialCadence(plans);
     const both = plans.some(p => p.interval === 'month') && plans.some(p => p.interval === 'year');
     return <View style={s.list}>
-        {both ? <SegmentedControl options={[{ value: 'month', label: t('creditsPage.monthly') }, { value: 'year', label: t('creditsPage.yearly') }]} value={active} onChange={next => { if (next === active) return; setLocalCadence(next); onCadence?.(next); }} /> : null}
+        {both && !disabled ? <SegmentedControl options={[{ value: 'month', label: t('creditsPage.monthly') }, { value: 'year', label: t('creditsPage.yearly') }]} value={active} onChange={next => { if (next === active) return; setLocalCadence(next); onCadence?.(next); }} /> : both ? <View accessibilityRole="tablist" style={s.cadence}>
+            {(['month', 'year'] as const).map(value => <Pressable key={value} accessibilityRole="tab" disabled
+                accessibilityState={{ selected: active === value, disabled: true }} style={s.cadenceItem}>
+                <Text>{t(value === 'month' ? 'creditsPage.monthly' : 'creditsPage.yearly')}</Text>
+            </Pressable>)}
+        </View> : null}
         {plans.filter(p => p.interval === active).map(plan => {
             const count = credits.get(generationCatalogId(plan.productId) ?? '');
             const saving = subscriptionSavingPercent(plan, count, packs), yearly = yearlySaving(plan, plans);
             return <Card key={plan.id} style={s.card} accessibilityRole={readOnly ? undefined : 'radio'} selected={!readOnly && chosenId === plan.id}
-                accessibilityState={readOnly ? undefined : { selected: chosenId === plan.id }} onPress={readOnly ? undefined : () => onChoose?.(plan.id)}>
+                disabled={disabled} accessibilityState={{ disabled, ...(!readOnly ? { selected: chosenId === plan.id } : {}) }} onPress={readOnly ? undefined : () => { if (!disabled) onChoose?.(plan.id); }}>
                 {saving != null && saving >= 1 ? <Text variant="micro" tone="accent">{t('creditsPage.vsPack', { pct: saving })}</Text> : null}
                 <Text variant="title3">{planName(plan.generationPlan ?? '')}</Text>
                 <Text variant="title2" tone="warning">{t(plan.interval === 'year' ? 'creditsPage.perYear' : 'creditsPage.perMonth', { price: plan.priceString })}</Text>
@@ -33,4 +38,4 @@ export function PlanCards({ plans, packs, credits, cadence, onCadence, chosenId,
         })}
     </View>;
 }
-const sheets = themedStyles(() => ({ list: { gap: ds.space.md }, card: { gap: ds.space.sm } }));
+const sheets = themedStyles(() => ({ cadence: { flexDirection: 'row' }, cadenceItem: { flex: 1, minHeight: 44, justifyContent: 'center', alignItems: 'center' }, list: { gap: ds.space.md }, card: { gap: ds.space.sm } }));
