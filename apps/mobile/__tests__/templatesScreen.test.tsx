@@ -57,15 +57,19 @@ test('template page copies the edited prompt and uses it with the validated temp
     expect(root.container.queryAll(n => n.children.includes(t('libraryCreate.copied')))).toHaveLength(1);
     await click(t('libraryCreate.useTemplate')); expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/create/[modelId]', params: expect.objectContaining({ tid: 'p-0', prompt: 'edited words' }) });
 });
-test('copy-only exact text stays visible while its runnable adaptation opens Create', async () => {
+test('the Community prompt is the only prompt and is handed to Create with a polished pending state', async () => {
     const adapted = { ...feed[0], prompt: 'Runnable Veyrnox adaptation', promptOrigin: 'veyrnox-adaptation' as const, sourcePrompt: 'Exact @image1 community text', sourcePromptOrigin: 'community-source-exact' as const, sourcePromptRunnable: false, sourcePromptIssues: ['reference-image-input-required', 'source-input-contract-not-wired'] };
     mockFetch.mockResolvedValue([adapted]);
     await act(async () => root.render(<TemplatePage />));
-    expect(mockTextField.accessibilityLabel).toBe(t('public.TemplateRecipe.generationPrompt'));
-    expect(mockTextField.value).toBe('Runnable Veyrnox adaptation');
+    expect(mockTextField.accessibilityLabel).toBe(t('public.TemplateRecipe.exactCommunityPrompt'));
+    expect(mockTextField.value).toBe('Exact @image1 community text');
+    expect(root.container.queryAll(n => n.children.includes(t('public.TemplateRecipe.generationPrompt')))).toHaveLength(0);
+    await act(async () => mockTextField.onChangeText('Edited Community prompt'));
     await click(t('public.TemplateRecipe.copyExactCommunityPrompt'));
-    expect(mockCopy).toHaveBeenCalledWith('Exact @image1 community text');
-    await act(async () => mockTextField.onChangeText('Edited runnable adaptation'));
+    expect(mockCopy).toHaveBeenCalledWith('Edited Community prompt');
     await click(t('libraryCreate.useTemplate'));
-    expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/create/[modelId]', params: expect.objectContaining({ prompt: 'Edited runnable adaptation' }) });
+    const use = controls(t('libraryCreate.useTemplate'))[0];
+    expect(use.props.accessibilityState.busy).toBe(true);
+    expect(use.props.accessibilityState.disabled).toBe(true);
+    expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/create/[modelId]', params: expect.objectContaining({ tid: 'p-0', prompt: 'Edited Community prompt' }) });
 });

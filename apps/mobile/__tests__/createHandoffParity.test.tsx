@@ -13,9 +13,10 @@ import { loadDraft } from '../src/lib/createDraftStore';
 import { english } from '../src/lib/i18n/binding';
 const mockReplace = jest.fn();
 const mockRun = jest.fn();
+const mockStackScreen = jest.fn((_props: unknown) => null);
 const mockApi = {};
 let mockParams: Record<string,string>;
-jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () => ({ replace: mockReplace, push: jest.fn() }), useLocalSearchParams: () => mockParams }));
+jest.mock('expo-router', () => ({ Stack: { Screen: (props: unknown) => mockStackScreen(props) }, useRouter: () => ({ replace: mockReplace, push: jest.fn() }), useLocalSearchParams: () => mockParams }));
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi }) }));
 jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalog: jest.fn() }));
 jest.mock('../src/lib/useBalance', () => ({ useBalance: () => 1000 }));
@@ -33,12 +34,23 @@ const event = { nativeEvent: {}, currentTarget: 1, target: 1 };
 const video: CatalogModel = { id: 'wan-2.5-kie', name: 'Wan', modality: 'text-to-video', credits: 2, gated: false, durations: [5,10], capabilities: { inputs: { prompt: { max: 800 }, aspect: { values: ['9:16','16:9'] } } } };
 const input = () => root.container.queryAll(n => n.props.accessibilityLabel === t('mobile.prompt'))[0];
 beforeEach(() => {
-    (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = createRoot(); mockReplace.mockClear(); mockRun.mockReset().mockImplementation(async (_api: unknown, _request: unknown, _count: number, onStarted?: (n: number) => void, onJob?: (id: string, index: number) => void) => { onStarted?.(1); onJob?.('job', 0); return 'job'; }); jest.mocked(CharacterPanel).mockClear();
+    (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = createRoot(); mockReplace.mockClear(); mockStackScreen.mockClear(); mockRun.mockReset().mockImplementation(async (_api: unknown, _request: unknown, _count: number, onStarted?: (n: number) => void, onJob?: (id: string, index: number) => void) => { onStarted?.(1); onJob?.('job', 0); return 'job'; }); jest.mocked(CharacterPanel).mockClear();
     mockParams = { modelId: video.id, prompt: 'A quiet original scene', duration: '5' };
     jest.mocked(fetchCatalog).mockResolvedValue([video]);
 });
 afterEach(async () => { await act(async () => root.unmount()); });
 const render = async () => act(async () => root.render(<Create />));
+
+test('loading Create immediately mounts its real title and a polished template spinner', async () => {
+    let resolveCatalog!: (models: CatalogModel[]) => void;
+    mockParams.tpl = 'Community template';
+    jest.mocked(fetchCatalog).mockReturnValueOnce(new Promise(resolve => { resolveCatalog = resolve; }));
+    await render();
+    expect(mockStackScreen).toHaveBeenCalledWith({ options: { title: t('label.Create') } });
+    expect(root.container.queryAll(n => n.props.accessibilityRole === 'progressbar' && n.props.accessibilityLabel === t('create.loading.template', { name: 'Community template' }))).toHaveLength(1);
+    expect(root.container.queryAll(n => n.children.includes(t('create.loading.template', { name: 'Community template' })))).toHaveLength(1);
+    await act(async () => resolveCatalog([video]));
+});
 
 test('a reference template handoff renders video and two-picture slots with its needs on the image slot', async () => {
     const needs = 'One video (3–10 s, at least 720p) and two reference pictures';
