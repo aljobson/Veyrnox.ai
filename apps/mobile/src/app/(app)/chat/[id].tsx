@@ -42,7 +42,7 @@ const ERROR_TEXT: Record<string, string> = {
 };
 export default function Conversation() {
     const styles = useThemedStyles(sheets);
-    const { id, starter, asset } = useLocalSearchParams<{ id: string; starter?: string; asset?: string }>();
+    const { id, starter, asset, prompt } = useLocalSearchParams<{ id: string; starter?: string; asset?: string; prompt?: string }>();
     const { api } = useAuth();
     const router = useRouter();
     const insets = useSafeAreaInsets();
@@ -51,7 +51,7 @@ export default function Conversation() {
     const [renaming, setRenaming] = useState<string | null>(null);
     const [messages, setMessages] = useState<ChatMessage[] | null>(null);
     const deltas = useChatDeltas(setMessages);
-    const { draft, setDraft, stars, star, starredOnly, setStarredOnly, mounted } = useChatLocal(id);
+    const { draft, setDraft, stars, star, starredOnly, setStarredOnly, mounted } = useChatLocal(id, typeof prompt === 'string' ? prompt : undefined);
     const [round, setRound] = useState(0);
     const { left, loadedFor } = useChatFreeLeft(api, round);
     const [sending, setSending] = useState(false);

@@ -1,3 +1,10 @@
+import { captureHandoffOwner } from '../../../lib/accountHandoffStore';
+import { createFormSheets as sheets } from '../../../components/create/createFormStyles';
+import { rememberFilmJob } from '../../../lib/filmGenerationReturns';
+import { rememberSubmitted } from '../../../lib/submittedRequests';
+import { createHandoff, acceptedSettings, nearestDuration, skillPromptHref } from '../../../lib/createHandoff';
+import { useHandoffScope } from '../../../lib/useHandoffScope';
+import { useAnnouncement } from '../../../lib/useAnnouncement';
 import { rawText } from '../../../lib/i18n/translate';
 import { Image } from 'expo-image';
 import { CreateResult, type ResultBatch } from '../../../components/create/CreateResult';
@@ -29,10 +36,10 @@ import { SourcePicker } from '../../../components/SourcePicker';
 import { TemplateBanner } from '../../../components/TemplateBanner';
 import { DEFAULT_CINEMA, buildCinemaPrompt, sanitizeCinema, type Cinema } from '../../../lib/cinemaCamera';
 import { clearDraft, loadDraft, saveDraft } from '../../../lib/createDraftStore';
-import { SAVED_DRAFT_VERSION, pickerModels, type CreateDraft, audioLengthInvalid, batchCost, freeLeftFor, hasAnyOption, imageCount, optionsFor, resolveAudio, resolveResolution, seedIsInvalid, settingsInputs, takesImageCount, voiceIsMissing } from '../../../lib/createOptions';
+import { SAVED_DRAFT_VERSION, pickerModels, type CreateDraft, audioLengthInvalid, batchCost, freeLeftFor, hasAnyOption, imageCount, inputsForIndex, optionsFor, resolveAudio, resolveResolution, seedIsInvalid, settingsInputs, takesImageCount, voiceIsMissing } from '../../../lib/createOptions';
 import { loadVibe } from '../../../lib/creatorProfileStore';
 import { defaultAspect } from '../../../lib/creatorTaste';
-import { nearestAspect, readTemplate } from '../../../lib/templateHandoff';
+import { nearestAspect, parseRatio, readTemplate } from '../../../lib/templateHandoff';
 import { buildCharacterPrompt, sanitizePicks, type Picks } from '../../../lib/oddlingsBuilder';
 import { useBalance } from '../../../lib/useBalance';
 import { shortfall } from '../../../lib/lowBalance';
@@ -61,12 +68,13 @@ function hostOf(url: string): string {
 
 export default function CreateWithModel() {
     const styles = useThemedStyles(sheets);
-    const { modelId, prompt: presetPrompt, duration: presetDuration, aspect: presetAspect, startOddling, tpl, tid, tneeds, tsource, tratio, tposter, recipe, sourceHandoff } = useLocalSearchParams<{ modelId: string; prompt?: string; duration?: string; aspect?: string; startOddling?: string; tpl?: string; tid?: string; tneeds?: string; tsource?: string; tratio?: string; tposter?: string; recipe?: string; sourceHandoff?: string }>();
+    const { modelId, prompt: presetPrompt, duration: presetDuration, aspect: presetAspect, startOddling, tpl, tid, tneeds, tsource, tratio, tposter, recipe, sourceHandoff, followup, kind, sourceJob, filmId, shotId, promptVersion, promptContext } = useLocalSearchParams<{ modelId: string; prompt?: string; duration?: string; aspect?: string; startOddling?: string; tpl?: string; tid?: string; tneeds?: string; tsource?: string; tratio?: string; tposter?: string; recipe?: string; sourceHandoff?: string; followup?: string; kind?: string; sourceJob?: string; filmId?: string; shotId?: string; promptVersion?: string; promptContext?: string }>();
     // A template also brings its name, picture, shape and what it needs; each is checked before it is used.
     const template = useMemo(() => readTemplate({ tpl, tid, tneeds, tsource, tratio, tposter }, ['veyrnox.ai', hostOf(API_BASE)]), [tpl, tid, tneeds, tsource, tratio, tposter]);
     const handedSources = useMemo(() => readCreativeSourceHandoff(typeof sourceHandoff === 'string' ? sourceHandoff : undefined, typeof recipe === 'string' ? recipe : undefined, modelId), [modelId, recipe, sourceHandoff]);
     const { api } = useAuth();
     const router = useRouter();
+    const beginHandoff = useHandoffScope();
     const [model, setModel] = useState<CatalogModel | null>(null);
     // A template (ADR-0120) opens this form with its prompt and length filled in; both stay editable.
     const [prompt, setPrompt] = useState(typeof presetPrompt === 'string' ? presetPrompt : '');
@@ -85,6 +93,7 @@ export default function CreateWithModel() {
     const [character, setCharacter] = useState<Picks>({});
     const [restored, setRestored] = useState(false);
     const [note, setNote] = useState<string | null>(null);
+    useAnnouncement(note);
     // "Animate this portrait" (Oddlings): the cast portrait goes into the image slot like any picked file.
     const startId = startOddlingId(startOddling);
     const [startFile, setStartFile] = useState<PickedFile | null>(null);
@@ -101,12 +110,12 @@ export default function CreateWithModel() {
     const retry = useRef<{ signature: string; request: SubmitRequest; count: number; unit: number } | null>(null);
     const balance = useBalance();
     // The newest unsaved draft, so leaving the screen (to buy credits, say) never loses the last words typed.
-    const unsaved = useRef<CreateDraft | null>(null);
+    const unsaved = useRef<{ draft: CreateDraft; owner: string | undefined; current: () => boolean } | null>(null);
     // The same request keeps its keys (one per image), so a retry after a dropped connection is charged once.
     const pending = useRef(createGenerationSubmit());
     const draftReady = useRef(false);
     useEffect(() => {
-        const clear = () => { void Image.clearMemoryCache?.().catch(() => {}); batch.current++; balanceSeq.current++; pending.current.reset(); retry.current = null; setResults(null); setConfirmed(0); setComplete(false); setBusy(false); };
+        const clear = () => { void Image.clearMemoryCache?.().catch(() => {}); batch.current++; balanceSeq.current++; pending.current.reset(); retry.current = null; setResults(null); setConfirmed(0); setComplete(false); setBusy(false); setPrompt(''); setReferences([]); setSourceRights(false); unsaved.current = null; draftReady.current = false; };
         const unsubscribe = subscribeCacheUser(clear);
         return () => { unsubscribe(); batch.current++; balanceSeq.current++; };
     }, []);
@@ -121,27 +130,45 @@ export default function CreateWithModel() {
     }, [modelId, recipe, sourceHandoff]);
 
     useEffect(() => {
+        let live = true;
+        const current = captureHandoffOwner();
+        const valid = () => live && current();
+        draftReady.current = false;
         fetchCatalog()
             .then(async (all) => {
+                if (!valid()) return;
                 setCatalog(all);
                 const found = all.find((m) => m.id === modelId) ?? null;
                 setModel(found);
                 if (found && kindOf(found.modality) === 'video') {
                     const wanted = Number(presetDuration);
-                    setDuration(found.durations.includes(wanted) ? wanted : (found.durations[0] ?? 5));
+                    setDuration(nearestDuration(found, wanted));
                 }
                 if (!found) setError(t('form.modelGone'));
                 if (!found) return;
                 const o = optionsFor(found);
                 // Where the person said the result will land (the vibe check) picks the opening ratio; no answer keeps 16:9.
                 const vibe = await loadVibe();
+                if (!valid()) return;
                 // A template that has a shape of its own opens in the model's nearest one; otherwise the usual default.
                 const guidedAspect = handedSources?.aspect;
-                const handedAspect = presetAspect && o.aspects.includes(presetAspect) ? presetAspect : null;
+                const handedAspect = nearestAspect(parseRatio(presetAspect), o.aspects);
                 const aspect = handedAspect ?? (guidedAspect && o.aspects.includes(guidedAspect) ? guidedAspect : null) ?? nearestAspect(template?.ratio ?? null, o.aspects) ?? defaultAspect(o.aspects, vibe?.answers ?? null);
                 const base: OptionValues = { aspect, count: 1, seed: '', negative: '', voice: '', audioSeconds: '' };
+                setReferences(handedSources?.references ?? legacyReferences(handedSources?.uploaded ?? {}, handedSources?.fromLibrary ?? {}));
+                setSourceRights(handedSources?.rightsConfirmed === true);
+                setNote(kind === 'prompt-unavailable' ? t('handoff.promptUnavailable') : handedSources?.adjusted ? t('handoff.referencesAdjusted', { count: handedSources.adjusted }) : null);
+                if (handedSources?.settings) {
+                    const saved = acceptedSettings(found, handedSources.settings);
+                    setPrompt(typeof presetPrompt === 'string' ? presetPrompt : '');
+                    setOpts({ ...saved.opts, aspect: handedAspect ?? saved.opts.aspect ?? aspect });
+                    setCameraOn(saved.cameraOn); setCinema(saved.cinema); setCharacterOn(saved.characterOn); setCharacter(saved.character);
+                    draftReady.current = true;
+                    return;
+                }
                 // A template brings its own words; only a form opened bare gets the unsent draft back.
                 if (typeof presetPrompt === 'string' || handedSources?.picks) {
+                    setPrompt(typeof presetPrompt === 'string' ? presetPrompt : '');
                     if (handedSources?.picks) {
                         const picks = sanitizePicks(handedSources.picks);
                         if (kindOf(found.modality) === 'image' && textInput(found)?.key === 'prompt') {
@@ -154,6 +181,7 @@ export default function CreateWithModel() {
                     return;
                 }
                 loadDraft(found.id).then((d) => {
+                    if (!valid()) return;
                     if (d) {
                         setPrompt(d.prompt);
                         if (d.duration !== null && found.durations.includes(d.duration)) setDuration(d.duration);
@@ -167,19 +195,22 @@ export default function CreateWithModel() {
                     draftReady.current = true;
                 });
             })
-            .catch(() => setError(t('form.modelLoad')));
+            .catch(() => { if (valid()) setError(t('form.modelLoad')); });
+        return () => { live = false; };
     }, [modelId, presetDuration, presetAspect, handedSources, presetPrompt, template]);
 
     // Carried into the form that Attach from device reopens: the words typed so far and the template that started it.
     const attachCarry = useMemo(() => {
         const out: Record<string, string> = {};
         const add = (key: string, value: unknown) => { if (typeof value === 'string' && value !== '') out[key] = value; };
-        add('prompt', prompt);
+        out.prompt = prompt;
         if (duration !== null) add('duration', String(duration));
         add('aspect', opts.aspect ?? undefined);
+        add('recipe', recipe); add('followup', followup ?? handedSources?.followup); if (kind !== 'prompt-unavailable') add('kind', kind); add('sourceJob', sourceJob); add('startOddling', startOddling);
+        add('filmId', filmId); add('shotId', shotId); add('promptVersion', promptVersion); add('promptContext', promptContext);
         add('tpl', tpl); add('tid', tid); add('tneeds', tneeds); add('tsource', tsource); add('tratio', tratio); add('tposter', tposter);
         return out;
-    }, [prompt, duration, opts.aspect, tpl, tid, tneeds, tsource, tratio, tposter]);
+    }, [prompt, duration, opts.aspect, tpl, tid, tneeds, tsource, tratio, tposter, recipe, followup, handedSources, kind, sourceJob, startOddling, filmId, shotId, promptVersion, promptContext]);
     const takesStartImage = !!model && slotsFor(model).some((s) => s.slot === 'image' && s.kind === 'image');
     useEffect(() => {
         if (!startId || !takesStartImage) return;
@@ -196,10 +227,11 @@ export default function CreateWithModel() {
     useEffect(() => {
         if (!model || !draftReady.current) return;
         const draft: CreateDraft = { v: SAVED_DRAFT_VERSION, modelId: model.id, prompt, duration, aspect: opts.aspect, count: opts.count, seed: opts.seed, negative: opts.negative, voice: opts.voice, audioSeconds: opts.audioSeconds, cinemaOn: cameraOn, cinema, characterOn, character };
-        unsaved.current = draft;
+        const owner = getCacheUser(), current = captureHandoffOwner();
+        unsaved.current = { draft, owner, current };
         const id = setTimeout(() => {
             unsaved.current = null;
-            saveDraft(draft).catch(() => undefined);
+            if (current()) saveDraft(draft, undefined, owner).catch(() => undefined);
         }, 600);
         return () => clearTimeout(id);
     }, [model, prompt, duration, opts, cameraOn, cinema, characterOn, character]);
@@ -207,7 +239,7 @@ export default function CreateWithModel() {
     const flushDraft = useCallback(async () => {
         const draft = unsaved.current;
         unsaved.current = null;
-        if (draft) await saveDraft(draft).catch(() => undefined);
+        if (draft?.current()) await saveDraft(draft.draft, undefined, draft.owner).catch(() => undefined);
     }, []);
 
     // Closing the screen saves what was typed in the last moments too.
@@ -217,8 +249,11 @@ export default function CreateWithModel() {
     async function changeModel(id: string) {
         setPicking(false);
         if (busy || !model || id === model.id) return;
+        const valid = beginHandoff();
         await flushDraft();
-        router.replace({ pathname: '/create/[modelId]', params: prompt.trim() ? { modelId: id, prompt } : { modelId: id } });
+        if (!valid()) return;
+        const target = catalog.find(m => m.id === id);
+        if (target) router.replace(createHandoff(target, attachCarry, { opts, cameraOn, cinema, characterOn, character }, references, { ...handedSources, rightsConfirmed: sourceRights }));
     }
 
     const discardDraft = useCallback(() => {
@@ -278,15 +313,18 @@ export default function CreateWithModel() {
         let started = 0;
         let firstId: string | null = null;
         try {
-            await pending.current.run(api, run.request, run.count, count => { started = count; if (current()) setConfirmed(previous => Math.max(previous, count)); }, id => {
+            await pending.current.run(api, run.request, run.count, count => { started = count; if (current()) setConfirmed(previous => Math.max(previous, count)); }, (id, index) => {
                 firstId = firstId ?? id;
                 if (!current()) return;
+                void rememberFilmJob(id, attachCarry, prompt);
+                const extraInputs = inputsForIndex(run.request.extraInputs ?? {}, index, run.count);
+                void rememberSubmitted(id, { ...run.request, extraInputs }, attachCarry, { opts: { ...opts, count: 1, seed: extraInputs.seed === undefined ? opts.seed : String(extraInputs.seed) }, cameraOn, cinema, characterOn, character });
                 setResults(previous => previous ? { ...previous, ids: previous.ids.includes(id) ? previous.ids : [...previous.ids, id] } : { ids: [id], modelId: model.id, kind: kindOf(model.modality), aspect: opts.aspect, duration, count: run.count });
             });
             if (!current()) return;
             clearDraft().catch(() => undefined);
             // A single Faceless Reel clip still opens its job page, where the sound step is offered (ADR-0279).
-            const facelessSound = handedSources?.recipe === 'faceless-reel' && handedSources.followup === 'generated-sound' && model.id === 'wan-2.5-kie' && duration !== null && duration <= 8;
+            const facelessSound = recipe === 'faceless-reel' && (followup ?? handedSources?.followup) === 'generated-sound' && model.id === 'wan-2.5-kie' && duration !== null && duration <= 8;
             if (run.count === 1 && firstId && facelessSound) router.replace({ pathname: '/job/[id]', params: { id: firstId, followup: 'faceless-sound' } });
             else setComplete(true);
         } catch (err) {
@@ -343,7 +381,7 @@ export default function CreateWithModel() {
                         ))}
                     </View>
                 ) : null}
-                <View style={styles.section}><AttachFromDevice api={api} current={model} carry={attachCarry} /></View>
+                <View style={styles.section}><AttachFromDevice api={api} current={model} carry={attachCarry} settings={{ opts, cameraOn, cinema, characterOn, character }} references={references} previous={handedSources ?? undefined} /></View>
                 {text_ ? (
                     <View style={styles.section}>
                         <View style={styles.sectionTop}>
@@ -362,8 +400,8 @@ export default function CreateWithModel() {
                         {promptTooLong ? <Text tone="danger" accessibilityLiveRegion="polite">{t(text_.key === 'topic' ? 'public.TemplateRecipe.topicTooLong' : text_.max < GENERATION_PROMPT_MAX ? 'public.TemplateRecipe.promptTooLong' : 'public.TemplateRecipe.productPromptTooLong', { count: text.length, max: text_.max })}</Text> : null}
                         <View style={styles.skillsRow}>
                             <Text variant="caption" tone="tertiary" style={styles.skillsIntro}>{t('create.workspace.skills')}</Text>
-                            <Button variant="tertiary" accessibilityRole="link" onPress={() => router.push({ pathname: '/chat/skills', params: { skill: 'prompt-writer' } })} label={t('create.workspace.promptWriter')} />
-                            <Button variant="tertiary" accessibilityRole="link" onPress={() => router.push({ pathname: '/chat/skills', params: { skill: 'fix-my-prompt' } })} label={t('create.workspace.fixPrompt')} />
+                            <Button variant="tertiary" accessibilityRole="link" onPress={() => router.push(skillPromptHref('prompt-writer', prompt, model.id))} label={t('create.workspace.promptWriter')} />
+                            <Button variant="tertiary" accessibilityRole="link" onPress={() => router.push(skillPromptHref('fix-my-prompt', prompt, model.id))} label={t('create.workspace.fixPrompt')} />
                         </View>
                     </View>
                 ) : null}
@@ -429,36 +467,3 @@ function costLine(price: number, n: number, freeLeft: number, unit: number): str
     if (n > 1) return plural('opt.costsBatch', price, { images: String(n) });
     return plural('form.costs', unit);
 }
-
-const sheets = themedStyles((p) => ({
-    accentInk: { color: p.accent },
-    mutedInk: { color: p.textTertiary },
-
-    screen: { flex: 1, backgroundColor: p.bg },
-    body: { padding: ds.space.lg, paddingBottom: 48, gap: ds.space.md },
-    section: { gap: ds.space.sm },
-    settingsSection: { gap: ds.space.md, marginTop: ds.space.xxs },
-    sectionTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: ds.space.md },
-    sectionLabel: { },
-    sectionMeta: { },
-    topic: { minHeight: 90 },
-    prompt: { minHeight: 126, textAlignVertical: 'top' },
-    skillsRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: ds.space.xs },
-    skillsIntro: { color: p.textTertiary, },
-    chips: { flexDirection: 'row', gap: ds.space.sm },
-    short: { backgroundColor: p.bgElevated1, borderColor: p.warning, borderWidth: 1, borderRadius: ds.radius.md, padding: ds.space.md, gap: ds.space.xs },
-    shortText: { color: p.warning, fontVariant: ['tabular-nums'], },
-    restored: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: ds.space.md, backgroundColor: p.bgElevated1, borderColor: p.borderSubtle, borderWidth: 1, borderRadius: ds.radius.md, paddingStart: ds.space.md },
-    restoredText: { color: p.textSecondary, flexShrink: 1 },
-    consent: { color: p.textTertiary, },
-    rightsBox: { gap: ds.space.sm },
-    rightsControl: { minHeight: MIN_TARGET, justifyContent: 'center', borderWidth: 1, borderColor: p.borderStrong, borderRadius: ds.radius.md, padding: ds.space.md, backgroundColor: p.bgElevated1 },
-    rightsText: { color: p.textSecondary, },
-    costCard: { gap: ds.space.md, padding: ds.space.lg, borderRadius: ds.radius.lg, borderWidth: 1, borderColor: p.borderSubtle, backgroundColor: p.bgElevated1 },
-    costTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: ds.space.md },
-    cost: { marginTop: ds.space.xs, color: p.warning, fontVariant: ['tabular-nums'], },
-    balance: { color: p.textSecondary, fontVariant: ['tabular-nums'], },
-    refund: { textAlign: 'center' },
-    terms: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' },
-    error: { color: p.danger },
-}));

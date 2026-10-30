@@ -34,7 +34,7 @@ jest.mock('../src/components/ui/Button', () => ({ Button: 'Button' }));
 jest.mock('../src/components/ui/Text', () => ({ Text: 'Text' }));
 jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => 'owner', subscribeCacheUser: () => () => undefined }));
 jest.mock('../src/lib/cinemaUploadStore', () => ({ cinemaUploadStore: {
-    subscribe: () => () => undefined, running: () => mockRunning(), live: () => mockLive, read: (...a: any[]) => mockRead(...a),
+    subscribe: () => () => undefined, running: () => mockRunning(), runningHref: () => ({ pathname: '/cinema/creator/[id]', params: { id: mockRunning() } }), live: () => mockLive, read: (...a: any[]) => mockRead(...a),
     reconcileStaged: async () => undefined, verify: async () => true, clear: async () => undefined,
 } }));
 jest.mock('../src/lib/cinemaUpload', () => ({ ...jest.requireActual('../src/lib/cinemaUpload'), CINEMA_DEVICE_UPLOAD_ENABLED: true }));

@@ -137,18 +137,24 @@ export function prioritizedCatalogLines(models: readonly CatalogModel[]): string
     return [...first, ...lines.filter(line => !first.includes(line))];
 }
 const instructionHead = (skills: readonly Skill[]) => `${PREAMBLE}\n\n${skills.length === 1 ? skills[0].body : `Active skills — use them together for one result:\n\n${skills.map((s, i) => `${i + 1}. ${s.body}`).join('\n\n')}`}\n\nModels (id|kind|Credits per generation):\n`;
-export function fittingSkills(skills: readonly Skill[], models: readonly CatalogModel[] = []): Skill[] {
+const MODELS_HEADER = 'Models (id|kind|Credits per generation):\n';
+// Optional context (e.g. the current generation model) sits above the model list, never inside it.
+const withExtra = (head: string, extra: string) => extra ? head.replace(MODELS_HEADER, `${extra}\n\n${MODELS_HEADER}`) : head;
+export function fittingSkills(skills: readonly Skill[], models: readonly CatalogModel[] = [], extra = ''): Skill[] {
     const kept: Skill[] = [];
     const reserve = prioritizedCatalogLines(models).slice(0, 3).join('\n');
     for (const skill of [...new Map(skills.map(s => [s.id, s])).values()].slice(0, MAX_SELECTED_SKILLS)) {
-        if (withinLimits(`${instructionHead([...kept, skill])}${reserve}${reserve ? '\n' : ''}`)) kept.push(skill);
+        if (withinLimits(`${withExtra(instructionHead([...kept, skill]), extra)}${reserve}${reserve ? '\n' : ''}`)) kept.push(skill);
     }
     return kept;
 }
-export function skillsInstructions(skills: readonly Skill[], models: readonly CatalogModel[] = []): string {
-    const selected = fittingSkills(skills, models);
+export function skillsInstructions(skills: readonly Skill[], models: readonly CatalogModel[] = [], extra = ''): string {
+    const withContext = fittingSkills(skills, models, extra);
+    // Keep every requested skill: drop the optional context line rather than a skill.
+    const useExtra = Boolean(extra) && withContext.length === fittingSkills(skills, models).length;
+    const selected = useExtra ? withContext : fittingSkills(skills, models);
     if (!selected.length) return '';
-    let out = instructionHead(selected);
+    let out = withExtra(instructionHead(selected), useExtra ? extra : '');
     // Preserve the phone's existing single-skill format, including catalog order.
     for (const line of selected.length === 1 ? catalogLines(models) : prioritizedCatalogLines(models)) {
         if (!withinLimits(`${out}${line}\n`)) break;

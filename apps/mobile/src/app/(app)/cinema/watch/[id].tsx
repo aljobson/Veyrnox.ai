@@ -1,3 +1,6 @@
+import { rememberEpisodeRoot, savedWatchPosition } from '../../../../lib/cinemaHandoff';
+import { getCinemaProgress } from '../../../../lib/cinemaProgress';
+import { useHandoffScope } from '../../../../lib/useHandoffScope';
 import { Stack, useFocusEffect, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
@@ -20,23 +23,39 @@ export default function Watch() {
     const { id, title, position, series } = useLocalSearchParams<{ id: string; title?: string; position?: string; series?: string }>();
     const router = useRouter();
     const navigation = useNavigation();
-    const { api } = useAuth();
+    const { api, getAccessToken } = useAuth();
+    const beginHandoff = useHandoffScope();
+    const resumedId = useRef<string | null>(null);
+    const [resume, setResume] = useState<{ id: string; position: number } | null>(null);
+    useFocusEffect(useCallback(() => {
+        if (resumedId.current === id) return;
+        let live = true;
+        const current = beginHandoff();
+        setResume(null);
+        if (position !== undefined) { resumedId.current = id; setResume({ id, position: Number(position) }); }
+        else void savedWatchPosition(getCinemaProgress(api, getAccessToken), id, () => live && current()).then(value => { if (live && current()) { resumedId.current = id; setResume({ id, position: value }); } });
+        return () => { live = false; };
+    }, [api, getAccessToken, id, series, position, beginHandoff]));
     const { height } = useWindowDimensions();
+    const loadedDetail = useRef('');
     const [data, setData] = useState<{ detail: TitleDetail; candidate: Episode | null } | null>(null);
     const [confirmed, setConfirmed] = useState<Episode | null>(null);
     const [checking, setChecking] = useState(false);
     const generation = useRef(0);
     const suspended = useRef(false);
     const pressing = useRef(false);
-    useEffect(() => {
+    useFocusEffect(useCallback(() => {
+        const key = `${id}:${series}`;
+        if (loadedDetail.current === key) return;
         let live = true;
+        const current = beginHandoff();
         setData(null);
         if (series && isTitleId(series)) void api.request(`/api/v1/cinema/titles/${encodeURIComponent(series)}`).then(body => {
             const detail = parseTitleDetail(body);
-            if (live && detail?.episodes.some(e => e.id === id)) setData({ detail, candidate: nextCandidate(detail, id, parseEpisodeLocks(body)) });
+            if (live && current() && detail?.episodes.some(e => e.id === id)) { void rememberEpisodeRoot(id, series); loadedDetail.current = key; setData({ detail, candidate: nextCandidate(detail, id, parseEpisodeLocks(body)) }); }
         }).catch(() => undefined);
         return () => { live = false; };
-    }, [api, series, id]);
+    }, [api, series, id, beginHandoff]));
     useFocusEffect(useCallback(() => {
         suspended.current = false;
         return () => { ++generation.current; };
@@ -86,7 +105,7 @@ export default function Watch() {
     return (
         <View style={styles.screen}>
             <Stack.Screen options={{ title: title ?? t('cinema.nowplaying'), ...(allEpisodes ? { headerRight: () => <HeaderAction label={t('cinemaSeries.allEpisodes')} onPress={allEpisodes} /> } : {}) }} />
-            <CinemaPlayer contentId={id} resumePosition={Number(position ?? 0)} onBlocked={onBlocked} />
+            {resume?.id === id ? <CinemaPlayer key={id} contentId={id} resumePosition={resume.position} onBlocked={onBlocked} /> : null}
             <ScrollView style={{ flexGrow: 0, maxHeight: height * 0.45, backgroundColor: colors.background }}>
                 {data && episode ? <View style={{ padding: 16, gap: 8 }}>
                     <Text>{data.detail.title.title}</Text>

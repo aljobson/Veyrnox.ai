@@ -27,7 +27,7 @@ const control = (label: string) => root.container.queryAll(n => n.props.accessib
 
 test.each([
     ['components/CreateOptions.tsx', ['input', 'seed', 'negative']],
-    ['app/(app)/create/[modelId].tsx', ['prompt']],
+    ['components/create/createFormStyles.ts', ['prompt']],
 ] as const)('%s leaves field borders and spacing to TextField', (file, styles) => {
     const source = fs.readFileSync(path.join(__dirname, '../src', file), 'utf8');
     const parsed = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);

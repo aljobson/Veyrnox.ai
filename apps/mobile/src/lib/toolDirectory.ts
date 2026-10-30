@@ -1,5 +1,6 @@
 import { t } from './i18n';
-import type { CatalogModel } from './media';
+import { type CatalogModel } from './media';
+import { slotsFor } from './sources';
 
 // ADR-0221: the web's /tools page (app/veyrnox/_lib/tools.js) on the phone: models that work on a file you already
 // have, grouped by the job they do. Which models exist, what they cost and what they need come from the live catalog;
@@ -57,10 +58,15 @@ export interface ToolGroup {
 
 // Non-empty groups in TOOL_TASKS order. A tool the table does not name still shows, under "More tools", so a model
 // added to the catalog is never hidden.
-export function toolGroups(models: readonly CatalogModel[]): ToolGroup[] {
-    const tools = models.filter(isTool);
+export function toolGroups(models: readonly CatalogModel[], includeOptional = false): ToolGroup[] {
+    const tools = includeOptional ? models.filter(m => !m.gated) : models.filter(isTool);
     const named = new Set(TOOL_TASKS.flatMap((t) => t.ids));
     const groups: ToolGroup[] = TOOL_TASKS.map((t) => ({ key: t.key, label: t.label, blurb: t.blurb, tools: tools.filter((m) => t.ids.includes(m.id)) }));
     groups.push({ ...OTHER, tools: tools.filter((m) => !named.has(m.id)) });
     return groups.filter((g) => g.tools.length > 0);
+}
+
+export function inputTools(models: readonly CatalogModel[], source: 'image' | 'video' | null, mode?: string): CatalogModel[] {
+    if (mode === 'reference') return models.filter(m => !m.gated && slotsFor(m).some(s => s.kind === source));
+    return source ? models.filter(m => requiresSource(m, source)) : [...models];
 }

@@ -5534,5 +5534,18 @@ export default {
   "credits.paywall.buyPlan": "{plan}を開始 — {price}/{period}",
   "credits.paywall.allOptions": "すべての選択肢を見る",
   "credits.paywall.month": "月",
-  "credits.paywall.year": "年"
+  "credits.paywall.year": "年",
+    "handoff.editedVideo": "編集済み動画",
+    "handoff.openFilmJob": "生成結果を開く",
+    "handoff.openFilmJobVersion": "プロンプトのバージョン{version}の生成結果を開く",
+    "handoff.useFilmResult": "この結果を使用",
+    "handoff.useFilmResultVersion": "プロンプトのバージョン{version}の結果を使用",
+  "handoff.exportUnavailable": "書き出しはまだ利用できません。",
+  "handoff.publishMissing": "この作品は利用できないか、ファイルの保存期限が切れています。",
+  "handoff.publishPending": "この作品はまだ正常に完成していません。",
+  "handoff.publishUnsupported": "利用可能な画像と動画のみ公開できます。",
+  "handoff.promptUnavailable": "この端末では元のプロンプトを利用できません。",
+  "handoff.referencesAdjusted": "移動または削除された参照素材：{count}。",
+  "handoff.filmAttached": "このプロンプトの生成結果",
+  "handoff.filmUnattached": "以前の結果（現在のプロンプトには未関連付け）"
 } as const;

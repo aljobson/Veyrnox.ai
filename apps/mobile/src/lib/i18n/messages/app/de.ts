@@ -5599,5 +5599,18 @@ export default {
   "credits.paywall.buyPlan": "{plan} starten — {price}/{period}",
   "credits.paywall.allOptions": "Alle Optionen ansehen",
   "credits.paywall.month": "Monat",
-  "credits.paywall.year": "Jahr"
+  "credits.paywall.year": "Jahr",
+    "handoff.editedVideo": "Bearbeitetes Video",
+    "handoff.openFilmJob": "Generierung öffnen",
+    "handoff.openFilmJobVersion": "Generierung für Prompt-Version {version} öffnen",
+    "handoff.useFilmResult": "Dieses Ergebnis verwenden",
+    "handoff.useFilmResultVersion": "Ergebnis für Prompt-Version {version} verwenden",
+  "handoff.exportUnavailable": "Der Export ist noch nicht verfügbar.",
+  "handoff.publishMissing": "Diese Kreation ist nicht verfügbar oder ihre Datei ist abgelaufen.",
+  "handoff.publishPending": "Diese Kreation wurde noch nicht erfolgreich abgeschlossen.",
+  "handoff.publishUnsupported": "Nur verfügbare Bilder und Videos können veröffentlicht werden.",
+  "handoff.promptUnavailable": "Der ursprüngliche Prompt ist auf diesem Telefon nicht verfügbar.",
+  "handoff.referencesAdjusted": "Verschobene oder entfernte Referenzen: {count}.",
+  "handoff.filmAttached": "Ergebnis für diesen Prompt",
+  "handoff.filmUnattached": "Früheres Ergebnis; nicht dem aktuellen Prompt zugeordnet"
 } as const;
