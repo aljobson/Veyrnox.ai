@@ -5685,5 +5685,16 @@ export default {
   "billing.paywall.notReady": "As compras ainda não estão prontas. Tente novamente em instantes.",
   "billing.paywall.busy": "Outra compra está em andamento. Aguarde a conclusão.",
   "billing.paywall.salesClosed": "As compras ainda não estão abertas.",
-  "billing.paywall.alreadyActive": "Você já tem um plano de Geração com IA."
+  "billing.paywall.alreadyActive": "Você já tem um plano de Geração com IA.",
+  "billing.paywall.vey.hello.generation": "Escolha um plano e eu trago créditos novos todo mês.",
+  "billing.paywall.vey.hello.credits": "Acabando? Escolha um pacote. Esses créditos nunca expiram.",
+  "billing.paywall.vey.hello.publish": "Pronto para publicar em todo lugar? Escolha como quer pagar.",
+  "billing.paywall.vey.pick": "Boa escolha.",
+  "billing.paywall.vey.checking": "Um momento, estou verificando se está tudo pronto.",
+  "billing.paywall.vey.store": "Confirme o pagamento e eu espero aqui.",
+  "billing.paywall.vey.cancelled": "Sem problemas. Nada foi cobrado.",
+  "billing.paywall.vey.failed": "Não deu certo. Tente novamente em instantes.",
+  "billing.paywall.vey.done.generation": "Pronto! Seus créditos mensais estão a caminho.",
+  "billing.paywall.vey.done.credits": "Feito! Seus créditos chegam em alguns segundos.",
+  "billing.paywall.vey.done.publish": "Pronto! O Publish foi liberado.",
 } as const;

@@ -5750,5 +5750,16 @@ export default {
   "billing.paywall.notReady": "Покупки пока недоступны. Попробуйте чуть позже.",
   "billing.paywall.busy": "Идёт другая покупка. Дождитесь её завершения.",
   "billing.paywall.salesClosed": "Покупки пока не открыты.",
-  "billing.paywall.alreadyActive": "У вас уже есть тариф ИИ-генерации."
+  "billing.paywall.alreadyActive": "У вас уже есть тариф ИИ-генерации.",
+  "billing.paywall.vey.hello.generation": "Выберите тариф, и я буду приносить свежие кредиты каждый месяц.",
+  "billing.paywall.vey.hello.credits": "Кредиты заканчиваются? Выберите пакет. Эти кредиты не сгорают.",
+  "billing.paywall.vey.hello.publish": "Готовы публиковать везде? Выберите, как платить.",
+  "billing.paywall.vey.pick": "Хороший выбор.",
+  "billing.paywall.vey.checking": "Секунду, проверяю, всё ли готово.",
+  "billing.paywall.vey.store": "Подтвердите оплату, я подожду здесь.",
+  "billing.paywall.vey.cancelled": "Ничего страшного. Деньги не списаны.",
+  "billing.paywall.vey.failed": "Не получилось. Попробуйте чуть позже.",
+  "billing.paywall.vey.done.generation": "Готово! Ежемесячные кредиты уже в пути.",
+  "billing.paywall.vey.done.credits": "Готово! Кредиты поступят через несколько секунд.",
+  "billing.paywall.vey.done.publish": "Готово! Publish открыт.",
 } as const;

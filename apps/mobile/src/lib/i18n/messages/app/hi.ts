@@ -5620,5 +5620,16 @@ export default {
   "billing.paywall.notReady": "खरीदारी अभी तैयार नहीं है। थोड़ी देर बाद फिर कोशिश करें।",
   "billing.paywall.busy": "एक और खरीदारी चल रही है। उसके पूरा होने तक रुकें।",
   "billing.paywall.salesClosed": "खरीदारी अभी खुली नहीं है।",
-  "billing.paywall.alreadyActive": "आपके पास पहले से एक AI जनरेशन प्लान है।"
+  "billing.paywall.alreadyActive": "आपके पास पहले से एक AI जनरेशन प्लान है।",
+  "billing.paywall.vey.hello.generation": "एक प्लान चुनें, मैं हर महीने नए क्रेडिट लाऊँगा।",
+  "billing.paywall.vey.hello.credits": "क्रेडिट कम हैं? एक पैक चुनें। ये क्रेडिट कभी खत्म नहीं होते।",
+  "billing.paywall.vey.hello.publish": "हर जगह पोस्ट करने के लिए तैयार? भुगतान का तरीका चुनें।",
+  "billing.paywall.vey.pick": "बढ़िया चुनाव।",
+  "billing.paywall.vey.checking": "एक पल, मैं देख रहा हूँ कि सब तैयार है।",
+  "billing.paywall.vey.store": "भुगतान की पुष्टि करें, मैं यहीं इंतज़ार करूँगा।",
+  "billing.paywall.vey.cancelled": "कोई बात नहीं। कोई शुल्क नहीं लगा।",
+  "billing.paywall.vey.failed": "यह पूरा नहीं हुआ। थोड़ी देर बाद फिर कोशिश करें।",
+  "billing.paywall.vey.done.generation": "हो गया! आपके मासिक क्रेडिट रास्ते में हैं।",
+  "billing.paywall.vey.done.credits": "हो गया! आपके क्रेडिट कुछ सेकंड में आ जाएँगे।",
+  "billing.paywall.vey.done.publish": "हो गया! Publish अनलॉक हो गया।",
 } as const;

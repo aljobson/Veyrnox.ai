@@ -5685,5 +5685,16 @@ export default {
   "billing.paywall.notReady": "Les achats ne sont pas encore prêts. Réessaie dans un instant.",
   "billing.paywall.busy": "Un autre achat est en cours. Attends qu’il se termine.",
   "billing.paywall.salesClosed": "Les achats ne sont pas encore ouverts.",
-  "billing.paywall.alreadyActive": "Tu as déjà un forfait Génération IA."
+  "billing.paywall.alreadyActive": "Tu as déjà un forfait Génération IA.",
+  "billing.paywall.vey.hello.generation": "Choisis un forfait et je t’apporte des crédits neufs chaque mois.",
+  "billing.paywall.vey.hello.credits": "Presque à sec ? Choisis un pack. Ces crédits n’expirent jamais.",
+  "billing.paywall.vey.hello.publish": "Prêt à publier partout ? Choisis comment payer.",
+  "billing.paywall.vey.pick": "Bon choix.",
+  "billing.paywall.vey.checking": "Un instant, je vérifie que tout est prêt.",
+  "billing.paywall.vey.store": "Confirme le paiement, je t’attends ici.",
+  "billing.paywall.vey.cancelled": "Pas de souci. Rien n’a été facturé.",
+  "billing.paywall.vey.failed": "Ça n’a pas abouti. Réessaie dans un instant.",
+  "billing.paywall.vey.done.generation": "C’est fait ! Tes crédits mensuels arrivent.",
+  "billing.paywall.vey.done.credits": "Terminé ! Tes crédits arrivent dans quelques secondes.",
+  "billing.paywall.vey.done.publish": "C’est fait ! Publish est débloqué.",
 } as const;

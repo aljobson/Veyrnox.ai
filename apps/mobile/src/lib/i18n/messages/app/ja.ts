@@ -5555,5 +5555,16 @@ export default {
   "billing.paywall.notReady": "購入の準備ができていません。少し後でもう一度お試しください。",
   "billing.paywall.busy": "別の購入を処理中です。完了するまでお待ちください。",
   "billing.paywall.salesClosed": "購入はまだ受け付けていません。",
-  "billing.paywall.alreadyActive": "AI 生成プランはすでに有効です。"
+  "billing.paywall.alreadyActive": "AI 生成プランはすでに有効です。",
+  "billing.paywall.vey.hello.generation": "プランを選んでね。毎月新しいクレジットを届けるよ。",
+  "billing.paywall.vey.hello.credits": "残りわずか？パックを選んでね。このクレジットは期限なしだよ。",
+  "billing.paywall.vey.hello.publish": "どこにでも投稿する準備はできた？支払い方法を選んでね。",
+  "billing.paywall.vey.pick": "いい選択だね。",
+  "billing.paywall.vey.checking": "ちょっと待ってね、準備ができているか確認中。",
+  "billing.paywall.vey.store": "支払いを確認してね。ここで待ってるよ。",
+  "billing.paywall.vey.cancelled": "大丈夫、請求はされていないよ。",
+  "billing.paywall.vey.failed": "うまくいかなかったみたい。少ししてからもう一度試してね。",
+  "billing.paywall.vey.done.generation": "完了！毎月のクレジットがもうすぐ届くよ。",
+  "billing.paywall.vey.done.credits": "完了！クレジットは数秒で届くよ。",
+  "billing.paywall.vey.done.publish": "完了！Publish が使えるようになったよ。",
 } as const;

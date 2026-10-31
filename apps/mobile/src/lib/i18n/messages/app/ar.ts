@@ -5880,5 +5880,16 @@ export default {
   "billing.paywall.notReady": "عمليات الشراء غير جاهزة بعد. حاول مرة أخرى بعد قليل.",
   "billing.paywall.busy": "هناك عملية شراء أخرى قيد التنفيذ. انتظر حتى تنتهي.",
   "billing.paywall.salesClosed": "عمليات الشراء غير متاحة بعد.",
-  "billing.paywall.alreadyActive": "لديك بالفعل خطة توليد بالذكاء الاصطناعي."
+  "billing.paywall.alreadyActive": "لديك بالفعل خطة توليد بالذكاء الاصطناعي.",
+  "billing.paywall.vey.hello.generation": "اختر خطة وسأحضر لك رصيدًا جديدًا كل شهر.",
+  "billing.paywall.vey.hello.credits": "رصيدك قليل؟ اختر باقة. هذا الرصيد لا تنتهي صلاحيته.",
+  "billing.paywall.vey.hello.publish": "مستعد للنشر في كل مكان؟ اختر طريقة الدفع.",
+  "billing.paywall.vey.pick": "اختيار موفق.",
+  "billing.paywall.vey.checking": "لحظة، أتحقق من أن كل شيء جاهز.",
+  "billing.paywall.vey.store": "أكّد الدفع وسأنتظرك هنا.",
+  "billing.paywall.vey.cancelled": "لا مشكلة. لم يتم خصم أي مبلغ.",
+  "billing.paywall.vey.failed": "لم تكتمل العملية. حاول مرة أخرى بعد قليل.",
+  "billing.paywall.vey.done.generation": "تم! رصيدك الشهري في الطريق.",
+  "billing.paywall.vey.done.credits": "تم! سيصل رصيدك خلال ثوانٍ.",
+  "billing.paywall.vey.done.publish": "تم! تم فتح Publish.",
 } as const;
