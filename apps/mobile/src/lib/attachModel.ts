@@ -1,5 +1,5 @@
 import { isSupported, kindOf, type CatalogModel } from './media';
-import { SLOT_ORDER, slotsFor, type SlotKind, type SlotName } from './sources';
+import { SLOT_ORDER, kindCap, slotsFor, type SlotKind, type SlotName } from './sources';
 
 export interface AttachItem {
     readonly kind: SlotKind;
@@ -19,7 +19,7 @@ function assign<T extends AttachItem>(model: CatalogModel, items: readonly T[]):
     for (const slot of slotsFor(model).sort((a, b) => SLOT_ORDER.indexOf(a.slot) - SLOT_ORDER.indexOf(b.slot))) {
         const remainingSlots = slotsFor(model).filter(s => SLOT_ORDER.indexOf(s.slot) > SLOT_ORDER.indexOf(slot.slot) && s.kind === slot.kind && s.required).length;
         const available = left.filter(item => item.kind === slot.kind).length - remainingSlots;
-        const count = Math.min(slot.maxFiles ?? 1, Math.max(0, available), 3 - out.filter(a => items.find(i => i === a.item)?.kind === slot.kind).length);
+        const count = Math.min(slot.maxFiles ?? 1, Math.max(0, available), kindCap(slotsFor(model), slot.kind) - out.filter(a => items.find(i => i === a.item)?.kind === slot.kind).length);
         if (!count && slot.required) return null;
         for (let i = 0; i < count; i++) {
             const at = left.findIndex(item => item.kind === slot.kind);
