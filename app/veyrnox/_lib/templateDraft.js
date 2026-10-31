@@ -1,23 +1,11 @@
 import { modelIdForName } from './tokens.js';
 import { GENERATION_PROMPT_MAX } from '../../../lib/generationPromptLimits.js';
-import { sourcePromptAuditRecord, sourcePromptAuditForModel } from './sourcePromptAudit.js';
-import { exactSourcePromptRecord } from './sourcePromptRecords.js';
-import { fallbackCapabilitiesFor } from '../../../lib/fallbackModelCapabilities.js';
 
 // The longest prompt POST /api/v1/generations accepts (app/api/v1/generations/route.js).
 export const TEMPLATE_PROMPT_MAX = GENERATION_PROMPT_MAX;
 
 const nonEmptyString = (value) => typeof value === 'string' && value.trim().length > 0;
 const supportedDuration = (value) => value === 5 || value === 10;
-
-// The template page shows and hands off the exact community prompt whenever it
-// can run on the template's model; the URL-only path must start from the same text.
-function communityPrompt(templateId, modelId) {
-  const exact = exactSourcePromptRecord(templateId)?.prompt;
-  if (!exact) return null;
-  const promptMax = fallbackCapabilitiesFor(modelId)?.inputs?.prompt?.max;
-  return sourcePromptAuditForModel(templateId, promptMax).runnable ? exact : null;
-}
 
 // Resolve the template from the URL even when session storage is unavailable.
 // A recipe belongs only to the model it names; changing the model must not
@@ -27,9 +15,9 @@ export function draftForTemplate(preset, modelId) {
     || modelIdForName(preset.model) !== modelId
     || !nonEmptyString(preset.prompt) || !nonEmptyString(preset.id)) return null;
   if ((preset.promptOrigin === 'community-source-exact' || preset.sourcePromptOrigin === 'community-source-exact')
-    && (preset.sourcePromptRunnable === false || !sourcePromptAuditRecord(preset.id).runnable)) return null;
+    && preset.sourcePromptRunnable !== true) return null; // the server decides from the source audit (lib/clientTemplates.js)
   return {
-    prompt: communityPrompt(preset.id, modelId) ?? preset.prompt,
+    prompt: preset.prompt,
     aspect: nonEmptyString(preset.aspect) ? preset.aspect : null,
     durationSeconds: supportedDuration(preset.durationSeconds) ? preset.durationSeconds : 5,
     negativePrompt: nonEmptyString(preset.negativePrompt) ? preset.negativePrompt : '',

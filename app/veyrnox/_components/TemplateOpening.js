@@ -1,32 +1,36 @@
 'use client';
 import { useEffect, useLayoutEffect, useState } from 'react';
 import { useI18n } from '../../../components/I18nProvider.jsx';
-import { templateById } from '../_lib/templates';
 import { presetTitle } from '../_lib/tokens';
 import { Spinner } from './Spinner';
 
 const SETTLE_MS = 250;
 const MAX_COVER_MS = 6000;
+const TEMPLATE_ID_RE = /^[a-z0-9-]{1,40}$/;
 
 /**
- * The template name while a ?preset= link is being applied, else null.
- * Read before paint so the empty studio never flashes; cleared once the
- * catalog is in, or after MAX_COVER_MS so a slow catalog cannot hold it.
+ * { name } while a ?preset= link is being applied, else null. Shown before
+ * paint so the empty studio never flashes. The catalog is not in the bundle,
+ * so the name arrives with the template the studio fetches (`template`:
+ * undefined until then, null when there is no such template) and the cover
+ * clears SETTLE_MS after that and the catalog are in, or after MAX_COVER_MS
+ * so a slow read cannot hold it.
  * @param {boolean} catalogLoading
- * @returns {string | null}
+ * @param {object | null | undefined} template
+ * @returns {{ name: string | null } | null}
  */
-export function useTemplateOpening(catalogLoading) {
-  const [name, setName] = useState(null);
+export function useTemplateOpening(catalogLoading, template) {
+  const [open, setOpen] = useState(false);
   useLayoutEffect(() => {
-    const preset = templateById(new URLSearchParams(window.location.search).get('preset'));
-    if (preset) setName(presetTitle(preset.name));
+    if (TEMPLATE_ID_RE.test(new URLSearchParams(window.location.search).get('preset') || '')) setOpen(true);
   }, []);
+  const settled = template !== undefined && !catalogLoading;
   useEffect(() => {
-    if (!name) return undefined;
-    const timer = setTimeout(() => setName(null), catalogLoading ? MAX_COVER_MS : SETTLE_MS);
+    if (!open) return undefined;
+    const timer = setTimeout(() => setOpen(false), settled ? SETTLE_MS : MAX_COVER_MS);
     return () => clearTimeout(timer);
-  }, [name, catalogLoading]);
-  return name;
+  }, [open, settled]);
+  return open ? { name: template?.name ? presetTitle(template.name) : null } : null;
 }
 
 // Covers the studio while a template from /presets is being applied.

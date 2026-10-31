@@ -5,7 +5,7 @@
 // Default output is .gstack/i18n-review (gitignored); pass a directory to move it.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { CATALOGS } from '../lib/i18n/translate.mjs';
+import { CATALOGS } from '../lib/i18n/catalogs.mjs';
 import { LOCALES } from '../lib/i18n/locales.mjs';
 const en = CATALOGS.en;
 

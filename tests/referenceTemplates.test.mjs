@@ -7,7 +7,9 @@ import { REFERENCE_TEMPLATES } from '../app/veyrnox/_lib/referenceTemplates.js';
 import { ALL_TEMPLATES, PRESETS, templateById, hasTemplateVideo } from '../app/veyrnox/_lib/templates.js';
 import { modelIdForName, presetHref } from '../app/veyrnox/_lib/tokens.js';
 import { PRESET_STEP_KEYS } from '../lib/i18n/presetSteps.mjs';
-import { CATALOGS, translator } from '../lib/i18n/translate.mjs';
+import { translator } from '../lib/i18n/translate.mjs';
+import { messagesFor } from '../lib/i18n/catalogs.mjs';
+import { CATALOGS } from '../lib/i18n/catalogs.mjs';
 import { templateStartId } from '../lib/templateStart.js';
 
 test('the reference audit exempts only canonical prompts and the fixed model, retaining display checks', () => {
@@ -67,7 +69,7 @@ test('reference templates resolve direct Create links but stay out of preview-on
 test('reference picture slot labels are translated in all eleven root catalogs', () => {
   assert.equal(Object.keys(CATALOGS).length, 11);
   for (const locale of Object.keys(CATALOGS)) {
-    const label = translator(locale)('label.Reference pictures');
+    const label = translator(locale, messagesFor(locale))('label.Reference pictures');
     assert.ok(label && label !== 'label.Reference pictures');
     assert.equal(label === 'Reference pictures', locale === 'en');
   }

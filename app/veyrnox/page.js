@@ -108,7 +108,7 @@ export default async function VeyrnoxLanding() {
       <FeaturedHeroCards catalog={catalog} />
       <PresetWall catalog={catalog} />
       <ModelShelf catalog={catalog} />
-      <LedgerExample catalog={catalog} locale={locale} />
+      <LedgerExample catalog={catalog} locale={locale} t={t} />
       {/* Same gap above as every other section, and the rule sits on the
           content column: it used to touch the statement section's last line
           and overhang the text by the page gutter on both sides. */}
@@ -129,10 +129,10 @@ export default async function VeyrnoxLanding() {
         </p>
         </div>
       </section>
-      <FAQBlock locale={locale} />
-      <ClosingCTA locale={locale} />
+      <FAQBlock locale={locale} t={t} />
+      <ClosingCTA locale={locale} t={t} />
       </Main>
-      <FooterForest locale={locale} />
+      <FooterForest locale={locale} t={t} />
       {localesEnabled() && <LanguageSwitcher locale={locale} path="/" />}
       <JsonLd data={faqLd(t, locale)} />
       <SectionJump />

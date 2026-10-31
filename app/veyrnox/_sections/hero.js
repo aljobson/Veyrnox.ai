@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { MediaTile } from '../_components/MediaTile';
 import { SHOWCASE_CLIPS } from '../_lib/showcase';
-import { FEATURE_CARDS, PRESETS, shelfName } from '../_lib/tokens';
+import { FEATURE_CARDS, shelfName } from '../_lib/tokens';
+import { PRESETS } from '../_lib/templates';
 import { FilmPlayer } from '../_components/FilmPlayer';
 import { BRAND_FILM } from '../_lib/film';
 import { PriceSlip } from '../_components/PriceSlip';

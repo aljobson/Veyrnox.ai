@@ -1,6 +1,7 @@
 import test from 'node:test';
 import { appMessagesFor } from '../lib/i18n/appMessages.mjs';
-import { translator, pluralKey, messagesFor } from '../lib/i18n/translate.mjs';
+import { translator, pluralKey } from '../lib/i18n/translate.mjs';
+import { messagesFor } from '../lib/i18n/catalogs.mjs';
 import { localeTag } from '../lib/i18n/locales.mjs';
 const t = translator('en', { ...messagesFor('en'), ...await appMessagesFor('en') });
 import assert from 'node:assert/strict';

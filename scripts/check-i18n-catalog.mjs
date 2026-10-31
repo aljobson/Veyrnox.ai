@@ -1,7 +1,7 @@
 // node scripts/check-i18n-catalog.mjs es [fr ...]
 // Prints drift between lib/i18n/messages/en.mjs and the named catalogs.
 import { checkCatalog } from '../lib/i18n/check.mjs';
-import { CATALOGS } from '../lib/i18n/translate.mjs';
+import { CATALOGS } from '../lib/i18n/catalogs.mjs';
 const en = CATALOGS.en;
 
 const codes = process.argv.slice(2);

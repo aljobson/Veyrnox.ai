@@ -5,7 +5,7 @@
 // a bad row stops the whole import so a catalog is never left half-changed.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { checkCatalog } from '../lib/i18n/check.mjs';
-import { CATALOGS } from '../lib/i18n/translate.mjs';
+import { CATALOGS } from '../lib/i18n/catalogs.mjs';
 const en = CATALOGS.en;
 import { LOCALES } from '../lib/i18n/locales.mjs';
 
