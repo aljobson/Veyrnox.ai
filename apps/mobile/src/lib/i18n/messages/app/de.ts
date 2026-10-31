@@ -5599,5 +5599,13 @@ export default {
   "credits.paywall.buyPlan": "{plan} starten — {price}/{period}",
   "credits.paywall.allOptions": "Alle Optionen ansehen",
   "credits.paywall.month": "Monat",
-  "credits.paywall.year": "Jahr"
+  "credits.paywall.year": "Jahr",
+  "job.holdToDelete": "Gedrückt halten zum Löschen",
+  "job.holdToDeleteHint": "Gedrückt halten, um diese Kreation endgültig zu löschen. Früheres Loslassen bricht ab.",
+  "job.holdToDeleteTap": "Halte die Taste weiter gedrückt, um diese Kreation zu löschen.",
+  "credits.receipt.title": "Beleg",
+  "credits.receipt.credits": "Credits",
+  "credits.receipt.paid": "Bezahlt",
+  "credits.receipt.balance": "Neues Guthaben",
+  "credits.receipt.thanks": "Danke für deinen Kauf.",
 } as const;

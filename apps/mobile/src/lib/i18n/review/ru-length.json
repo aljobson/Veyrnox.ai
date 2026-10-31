@@ -3210,6 +3210,18 @@
     "ratio": 2
   },
   {
+    "id": "job.holdToDelete",
+    "english": "Hold to delete",
+    "translation": "Удерживайте для удаления",
+    "ratio": 1.71
+  },
+  {
+    "id": "credits.receipt.paid",
+    "english": "Paid",
+    "translation": "Оплачено",
+    "ratio": 2
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

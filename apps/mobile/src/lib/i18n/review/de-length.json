@@ -3294,6 +3294,18 @@
     "ratio": 2
   },
   {
+    "id": "job.holdToDelete",
+    "english": "Hold to delete",
+    "translation": "Gedrückt halten zum Löschen",
+    "ratio": 1.93
+  },
+  {
+    "id": "credits.receipt.paid",
+    "english": "Paid",
+    "translation": "Bezahlt",
+    "ratio": 1.75
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

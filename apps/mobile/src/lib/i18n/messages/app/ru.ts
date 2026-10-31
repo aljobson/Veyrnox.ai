@@ -5729,5 +5729,13 @@ export default {
   "credits.paywall.buyPlan": "Оформить {plan} — {price}/{period}",
   "credits.paywall.allOptions": "Все варианты",
   "credits.paywall.month": "месяц",
-  "credits.paywall.year": "год"
+  "credits.paywall.year": "год",
+  "job.holdToDelete": "Удерживайте для удаления",
+  "job.holdToDeleteHint": "Нажмите и удерживайте, чтобы удалить это творение навсегда. Если отпустить раньше, удаление отменится.",
+  "job.holdToDeleteTap": "Продолжайте удерживать кнопку, чтобы удалить это творение.",
+  "credits.receipt.title": "Чек",
+  "credits.receipt.credits": "Кредиты",
+  "credits.receipt.paid": "Оплачено",
+  "credits.receipt.balance": "Новый баланс",
+  "credits.receipt.thanks": "Спасибо за покупку.",
 } as const;

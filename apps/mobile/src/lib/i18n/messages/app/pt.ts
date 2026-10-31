@@ -5664,5 +5664,13 @@ export default {
   "credits.paywall.buyPlan": "Iniciar {plan} — {price}/{period}",
   "credits.paywall.allOptions": "Ver todas as opções",
   "credits.paywall.month": "mês",
-  "credits.paywall.year": "ano"
+  "credits.paywall.year": "ano",
+  "job.holdToDelete": "Segure para excluir",
+  "job.holdToDeleteHint": "Segure para excluir esta criação de vez. Soltar antes cancela.",
+  "job.holdToDeleteTap": "Continue segurando o botão para excluir esta criação.",
+  "credits.receipt.title": "Recibo",
+  "credits.receipt.credits": "Créditos",
+  "credits.receipt.paid": "Pago",
+  "credits.receipt.balance": "Novo saldo",
+  "credits.receipt.thanks": "Obrigado pela sua compra.",
 } as const;

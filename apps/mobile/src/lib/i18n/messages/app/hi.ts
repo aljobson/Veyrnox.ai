@@ -5599,5 +5599,13 @@ export default {
   "credits.paywall.buyPlan": "{plan} शुरू करें — {price}/{period}",
   "credits.paywall.allOptions": "सभी विकल्प देखें",
   "credits.paywall.month": "माह",
-  "credits.paywall.year": "वर्ष"
+  "credits.paywall.year": "वर्ष",
+  "job.holdToDelete": "हटाने के लिए दबाकर रखें",
+  "job.holdToDeleteHint": "इस रचना को हमेशा के लिए हटाने के लिए दबाकर रखें। पहले छोड़ने पर रद्द हो जाता है।",
+  "job.holdToDeleteTap": "इस रचना को हटाने के लिए बटन दबाए रखें।",
+  "credits.receipt.title": "रसीद",
+  "credits.receipt.credits": "क्रेडिट",
+  "credits.receipt.paid": "भुगतान",
+  "credits.receipt.balance": "नया बैलेंस",
+  "credits.receipt.thanks": "ख़रीदारी के लिए धन्यवाद।",
 } as const;

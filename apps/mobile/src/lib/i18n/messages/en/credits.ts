@@ -54,4 +54,9 @@ export default {
     "credits.paywall.allOptions": "See all options",
     "credits.paywall.month": "month",
     "credits.paywall.year": "year",
+    'credits.receipt.title': "Receipt",
+    'credits.receipt.credits': "Credits",
+    'credits.receipt.paid': "Paid",
+    'credits.receipt.balance': "New balance",
+    'credits.receipt.thanks': "Thank you for your purchase.",
 } as const;

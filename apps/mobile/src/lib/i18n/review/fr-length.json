@@ -4818,6 +4818,12 @@
     "ratio": 3.2
   },
   {
+    "id": "job.holdToDelete",
+    "english": "Hold to delete",
+    "translation": "Maintenir pour supprimer",
+    "ratio": 1.71
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

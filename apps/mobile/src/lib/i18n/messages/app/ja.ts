@@ -5534,5 +5534,13 @@ export default {
   "credits.paywall.buyPlan": "{plan}を開始 — {price}/{period}",
   "credits.paywall.allOptions": "すべての選択肢を見る",
   "credits.paywall.month": "月",
-  "credits.paywall.year": "年"
+  "credits.paywall.year": "年",
+  "job.holdToDelete": "長押しで削除",
+  "job.holdToDeleteHint": "長押しするとこの作品を完全に削除します。途中で離すとキャンセルされます。",
+  "job.holdToDeleteTap": "この作品を削除するには、ボタンを押し続けてください。",
+  "credits.receipt.title": "レシート",
+  "credits.receipt.credits": "クレジット",
+  "credits.receipt.paid": "支払い",
+  "credits.receipt.balance": "新しい残高",
+  "credits.receipt.thanks": "ご購入ありがとうございます。",
 } as const;

@@ -5534,5 +5534,13 @@ export default {
   "credits.paywall.buyPlan": "{plan} 시작 — {price}/{period}",
   "credits.paywall.allOptions": "모든 옵션 보기",
   "credits.paywall.month": "월",
-  "credits.paywall.year": "년"
+  "credits.paywall.year": "년",
+  "job.holdToDelete": "길게 눌러 삭제",
+  "job.holdToDeleteHint": "길게 누르면 이 작품이 영구히 삭제됩니다. 중간에 손을 떼면 취소됩니다.",
+  "job.holdToDeleteTap": "이 작품을 삭제하려면 버튼을 계속 누르고 있으세요.",
+  "credits.receipt.title": "영수증",
+  "credits.receipt.credits": "크레딧",
+  "credits.receipt.paid": "결제 금액",
+  "credits.receipt.balance": "새 잔액",
+  "credits.receipt.thanks": "구매해 주셔서 감사합니다.",
 } as const;

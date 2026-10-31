@@ -5859,5 +5859,13 @@ export default {
   "credits.paywall.buyPlan": "ابدأ {plan} — {price}/{period}",
   "credits.paywall.allOptions": "عرض كل الخيارات",
   "credits.paywall.month": "شهر",
-  "credits.paywall.year": "سنة"
+  "credits.paywall.year": "سنة",
+  "job.holdToDelete": "اضغط مطولًا للحذف",
+  "job.holdToDeleteHint": "اضغط مطولًا لحذف هذا العمل نهائيًا. الإفلات مبكرًا يلغي الحذف.",
+  "job.holdToDeleteTap": "واصل الضغط على الزر لحذف هذا العمل.",
+  "credits.receipt.title": "الإيصال",
+  "credits.receipt.credits": "الأرصدة",
+  "credits.receipt.paid": "المدفوع",
+  "credits.receipt.balance": "الرصيد الجديد",
+  "credits.receipt.thanks": "شكرًا لشرائك.",
 } as const;

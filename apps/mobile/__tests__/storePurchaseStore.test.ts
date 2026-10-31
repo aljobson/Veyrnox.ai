@@ -7,7 +7,7 @@ function deferred<T>() {
     const promise = new Promise<T>((res, rej) => { resolve = res; reject = rej; });
     return { promise, resolve, reject };
 }
-const pkg = { identifier: 'pack', product: { identifier: 'ai.veyrnox.credits.100' } } as any;
+const pkg = { identifier: 'pack', product: { identifier: 'ai.veyrnox.credits.100', priceString: '£4.99' } } as any;
 let generation = 0;
 const beginSessionTask = () => {
     const gen = generation, user = getCacheUser();
@@ -42,7 +42,7 @@ test('confirmation survives dismissal, keeps the shared lock and publishes only 
     expect(getPurchaseSnapshot().phase).toBe('confirming'); abortPreparing(op.opId);
     expect(startPurchase(pack, deps)).toBe('busy'); expect(published).not.toHaveBeenCalled();
     await jest.advanceTimersByTimeAsync(2000); await op.completion;
-    expect(getPurchaseSnapshot().outcome).toEqual({ kind: 'credited', balance: 105 });
+    expect(getPurchaseSnapshot().outcome).toEqual({ kind: 'credited', balance: 105, credits: 100, price: '£4.99' });
     expect(published).toHaveBeenCalledWith('buyer', 105); expect(purchaseBusy()).toBe(false); unsubscribe();
 });
 test.each(['owner', 'generation'])('late native completion after %s change cannot touch a replacement', async change => {

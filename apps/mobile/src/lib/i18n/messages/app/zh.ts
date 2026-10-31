@@ -5534,5 +5534,13 @@ export default {
   "credits.paywall.buyPlan": "开通{plan} — {price}/{period}",
   "credits.paywall.allOptions": "查看所有选项",
   "credits.paywall.month": "月",
-  "credits.paywall.year": "年"
+  "credits.paywall.year": "年",
+  "job.holdToDelete": "长按删除",
+  "job.holdToDeleteHint": "长按可永久删除此作品。提前松开即取消。",
+  "job.holdToDeleteTap": "继续按住按钮以删除此作品。",
+  "credits.receipt.title": "收据",
+  "credits.receipt.credits": "积分",
+  "credits.receipt.paid": "已支付",
+  "credits.receipt.balance": "新余额",
+  "credits.receipt.thanks": "感谢您的购买。",
 } as const;
