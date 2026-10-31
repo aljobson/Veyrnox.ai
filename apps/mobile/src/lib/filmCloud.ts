@@ -1,3 +1,4 @@
+import { FilmError } from './filmError';
 import { markFilmSwitch } from './filmGenerationReturns';
 import { localFilmId, inheritFilmIdentity, restoreFilmIdentity, persistFilmIdentity } from './filmHandoffIdentity';
 import { t } from './i18n';
@@ -85,7 +86,7 @@ export function clearOpenedFilm(): void {
 
 export async function replaceActiveStudio(film: Film, cache: Cache = appCache): Promise<void> {
     const owner = getCacheUser();
-    if (!owner) throw new Error(t('filmCloud.signintokeepastudioon'));
+    if (!owner) throw new FilmError(t('filmCloud.signintokeepastudioon'));
     const raw = JSON.stringify(film);
     void persistFilmIdentity(film);
     editSeq++;
@@ -122,7 +123,7 @@ export async function saveActiveStudioToCloud(api: Reader, film: Film, idempoten
     // UTF-8 bytes, without relying on a native TextEncoder implementation.
     if (unescape(encodeURIComponent(raw)).length > MAX_FILM_BYTES) throw Object.assign(new Error('tooLarge'), { code: 'tooLarge' });
     const parsed = parseFilm(raw);
-    if (!parsed.ok) throw new Error(parsed.error);
+    if (!parsed.ok) throw new FilmError(parsed.error);
     const current = () => owner === getCacheUser() && captured === generation;
     if (!options.replay) {
         inheritFilmIdentity(film, parsed.film);
