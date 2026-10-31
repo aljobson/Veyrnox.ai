@@ -6,6 +6,7 @@ import { cn } from '../../../lib/utils';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FAQ, MODELS as MODELS_FALLBACK, SITE_PAGES, isShelfModel, navHref, presetCredits, presetTitle, templateHref } from '../_lib/tokens';
+import { loadTemplateCards } from '../_lib/useTemplates';
 import { searchIndex, MIN_QUERY } from '../_lib/searchIndex';
 import { Icon } from './Icon';
 import { Modal } from './Modal';
@@ -102,14 +103,10 @@ function SearchOverlay({ onClose }) {
   const [presets, setPresets] = useState([]);
   const inputRef = useRef(null);
 
-  // The template catalog is large; fetch it only once search is opened.
+  // Template cards come from the API, and only once search is opened. Search still works for pages, models and FAQ without them.
   useEffect(() => {
     let cancelled = false;
-    import('../_lib/templates')
-      .then((mod) => { if (!cancelled) setPresets(mod.PRESETS); })
-      .catch(() => {
-        // Search still works for pages, models and FAQ without templates.
-      });
+    loadTemplateCards().then((result) => { if (!cancelled && result) setPresets(result.templates); });
     return () => { cancelled = true; };
   }, []);
 

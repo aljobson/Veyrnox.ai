@@ -220,9 +220,11 @@ developer surface is `/api/v1/developer/*` and requires a verified OAuth
     mobile app. It reads no identity header, lives outside `/api/v1` so it answers when sign-in cannot be
     verified, and never probes more than once per 15 s per isolate.
   - `/api/catalog`, `/api/credit-packs`, `/api/cinema/titles[/:id]`, `/api/cinema/posters/:id`,
-    `/api/popular-templates`, `/api/presets` — anonymous, read-only, cached public data
+    `/api/popular-templates`, `/api/presets`, `/api/templates[/:id]` — anonymous, read-only, cached public data
     (prices, packs, published titles, ranked template ids, the template gallery priced
-    from the catalog for the mobile app). Nothing per-user.
+    from the catalog for the mobile app, the slim gallery list, one template and template
+    search for the web so no page bundles the catalog). Nothing per-user. `/api/templates`
+    carries no price and reads no database.
   - `/api/cinema/voting`, `/api/cinema/discovery`, `/api/cinema/winners`, `/api/cinema/comments`, `/api/cinema/story-polls`, `/api/credit-subscription-plans`, `/api/cinema-pass-plans` — anonymous read-only, explicitly gated, no-store projections. Factories use `authed: false`, ignore inbound identity headers, and never return another account’s votes, pending comments, reports or billing records.
   - `/api/webhook/*` — the provider's signature (see Provider webhooks).
   - `/api/admin/*` — Cloudflare Access plus a shared token; cron callers only.

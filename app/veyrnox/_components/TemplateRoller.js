@@ -7,7 +7,7 @@ import styles from './TemplateRoller.module.css';
 
 // A compact two-row collage for scanning real previews quickly. The full card
 // layout remains immediately below it; this is an additional browsing path.
-export function TemplateRoller({ presets, clips = null, catalog, className = '' }) {
+export function TemplateRoller({ presets, catalog, className = '' }) {
   const { t } = useI18n();
   const trackRef = useRef(null);
   if (!presets?.length) return null;
@@ -42,7 +42,6 @@ export function TemplateRoller({ presets, clips = null, catalog, className = '' 
             <PresetCard
               key={preset.id}
               preset={preset}
-              clip={clips?.[preset.clipKey] ?? null}
               catalog={catalog}
               size="sm"
               variant="roller"

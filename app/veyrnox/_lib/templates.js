@@ -68,9 +68,7 @@ export const hasTemplateVideo = (preset) => Boolean(preset?.clipKey && SHOWCASE_
 export const PRESETS = ALL_TEMPLATES.filter(hasTemplateVideo);
 export const WALL_PRESETS = WALL_CLIP_KEYS.map((key) => ALL_TEMPLATES.find((p) => p.clipKey === key)).filter(Boolean);
 export const PRESET_CATEGORIES = ['ALL', 'NEW', ...CATEGORY_ORDER.filter((category) => PRESETS.some((p) => p.category === category))];
-// The first filter row is deliberately concise; the gallery can disclose the
-// complete category catalog in place without hiding choices in a scroll rail.
-export const QUICK_PRESET_CATEGORIES = ['ALL', 'NEW', 'POPULAR', 'YOUR PHOTO', 'PRODUCTS', 'STORIES'];
+export { QUICK_PRESET_CATEGORIES } from './tokens.js';
 export { EFFECT_THEMES, effectThemeId };
 
 // "New" is a flag, not a home category: a new template also sits in its own.

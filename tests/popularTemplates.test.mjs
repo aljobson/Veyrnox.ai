@@ -104,10 +104,10 @@ test('the gallery labels every category, shows Popular only when something ranke
     // The chip words live in the English catalog (ADR-0107): every category has one.
     const english = readFileSync(new URL('../lib/i18n/messages/en.mjs', import.meta.url), 'utf8');
     for (const c of ['ALL', 'NEW', 'POPULAR', 'YOUR PHOTO', 'CINEMATIC', 'ANIME', 'CARTOONS', 'MOVIES', 'FANTASY', 'REALISTIC', 'FASHION', 'PRODUCTS', 'VFX', 'UGC', 'ADS']) assert.match(english, new RegExp(`'presets\\.cat\\.${c}': '`), `${c} has a label`);
-    assert.match(gallery, /const categories = popular\.length \? \['ALL', 'NEW', 'POPULAR', \.\.\.PRESET_CATEGORIES\.slice\(2\)\] : PRESET_CATEGORIES;/);
+    assert.match(gallery, /const categories = popular\.length \? \['ALL', 'NEW', 'POPULAR', \.\.\.allCategories\.slice\(2\)\] : allCategories;/);
     assert.match(gallery, /QUICK_PRESET_CATEGORIES\.includes\(category\)/,
         'quick choices come from the internal template catalog rather than visible component copy');
-    assert.match(gallery, /const list = \(cat === 'POPULAR' \? popular : templatesIn\(cat\)\)\.filter\(hasTemplateVideo\);/);
+    assert.match(gallery, /const list = cat === 'POPULAR' \? popular : cardsIn\(cards, cat\);/);
     assert.match(gallery, /aria-controls="template-category-filters"/);
     assert.match(gallery, /shownCategories\.map/);
     assert.match(gallery, /className="flex flex-wrap gap-2"/, 'category choices wrap instead of hiding in a mobile scroller');
@@ -115,6 +115,6 @@ test('the gallery labels every category, shows Popular only when something ranke
 });
 
 test('the studio sends the template only while its own model is selected', () => {
-    assert.match(create, /preset: templateStartId\(presetParam, modelId\) \|\| undefined,/);
+    assert.match(create, /preset: templateStartIdFor\(presetParam, templateData, modelId\) \|\| undefined,/);
     assert.match(create, /setPresetParam\(params\.get\('preset'\)\)/);
 });

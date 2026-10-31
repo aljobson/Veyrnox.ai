@@ -72,6 +72,10 @@ export function kindOf(modality) {
 // Import PRESETS, templateById and the rest from './templates.js' where needed.
 
 /** The template's own page, where its prompt and inputs are shown before use. */
+// The first filter row is deliberately concise; the gallery can disclose the
+// complete category catalog in place without hiding choices in a scroll rail.
+export const QUICK_PRESET_CATEGORIES = ['ALL', 'NEW', 'POPULAR', 'YOUR PHOTO', 'PRODUCTS', 'STORIES'];
+
 export function templateHref(preset) {
   return `/presets/${encodeURIComponent(preset.id)}`;
 }

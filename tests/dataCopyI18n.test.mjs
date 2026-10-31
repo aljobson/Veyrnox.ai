@@ -86,8 +86,9 @@ test('data inventory catches objects, local constant arrays, factory arguments a
   assert.ok(rows.find(r => r.field === 'prompt').reason);
 });
 
-test('actual source recipes fail the data audit without the new catalogs; both import graphs reach them', () => {
-  for (const files of [publicFiles(), appFiles()]) {
+test('actual source recipes fail the data audit without the new catalogs; the public import graph reaches them', () => {
+  // The studio no longer imports the catalog: it reads templates from /api/templates (lib/clientTemplates.js), so only the public graph does.
+  for (const files of [publicFiles()]) {
     for (const name of ['sourceTemplates.js','sourceTemplateExpansion4.js','sourceTemplateExpansion5.js']) {
       const file = `app/veyrnox/_lib/${name}`;
       assert.ok(files.includes(file));

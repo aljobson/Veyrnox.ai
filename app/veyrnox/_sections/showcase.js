@@ -22,8 +22,8 @@ import { localizedHref } from '../../../lib/i18n/locales.mjs';
 export async function PresetWall({ catalog }) {
   const { locale, t } = await getT();
   const presets = WALL_PRESETS.slice(0, LANDING_TEMPLATE_LIMIT);
-  // Only the visible cards' previews cross to the client roller.
-  const rollerClips = Object.fromEntries(presets.filter((p) => SHOWCASE_CLIPS[p.clipKey]).map((p) => [p.clipKey, SHOWCASE_CLIPS[p.clipKey]]));
+  // The client roller gets each card's preview with it; it does not import the showcase data.
+  const rollerPresets = presets.map((p) => ({ ...p, clip: SHOWCASE_CLIPS[p.clipKey] ?? null }));
   return (
     <section data-vey-perch className="px-4 sm:px-6 pt-28 sm:pt-36 max-w-[1300px] mx-auto">
       <div className="flex items-end justify-between mb-8 flex-wrap gap-4">
@@ -32,7 +32,7 @@ export async function PresetWall({ catalog }) {
           {t('home.templates.all')}
         </Link>
       </div>
-      <TemplateRoller presets={presets} clips={rollerClips} catalog={catalog} className="mb-8" />
+      <TemplateRoller presets={rollerPresets} catalog={catalog} className="mb-8" />
       <div className="columns-1 sm:columns-2 lg:columns-4 gap-3 [&>a]:mb-6 [&>a]:break-inside-avoid">
         {presets.map((preset) => {
           const clip = SHOWCASE_CLIPS[preset.clipKey];

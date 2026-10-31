@@ -1,12 +1,10 @@
-import { SHOWCASE_CLIPS } from './showcase.js';
-
 const cssAspect = (value) => typeof value === 'string' && /^\d+(?:\.\d+)?\s*:\s*\d+(?:\.\d+)?$/.test(value)
   ? value.replace(':', ' / ') : value;
 
 /** A template stays visibly identifiable in Create without treating its preview as generation input. */
 export function templateHandoffVisual(preset) {
   if (!preset || typeof preset.id !== 'string' || !preset.id) return null;
-  const clip = typeof preset.clipKey === 'string' ? SHOWCASE_CLIPS[preset.clipKey] : null;
+  const clip = preset.clip ?? null;
   if (clip?.video && clip?.poster) {
     return {
       kind: 'video',

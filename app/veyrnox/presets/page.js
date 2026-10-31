@@ -2,6 +2,7 @@ import { MarketingNav } from '../_components/NavBar';
 import { Main } from '../_components/Main';
 import { PresetGallery } from '../_components/PresetGallery';
 import { getT } from '../../../lib/i18n/server';
+import { templateCards, templateCategories } from '../../../lib/clientTemplates.js';
 
 // Public preset gallery. No card, no cost until you generate.
 export default async function Gallery() {
@@ -16,7 +17,7 @@ export default async function Gallery() {
         <p className="mt-6 mb-10 text-lg sm:text-xl text-vx-fg-body max-w-[46ch] leading-[1.5] text-pretty">
           {t('presets.lead')}
         </p>
-        <PresetGallery />
+        <PresetGallery initial={{ templates: templateCards(), categories: templateCategories() }} />
       </Main>
     </div>
   );

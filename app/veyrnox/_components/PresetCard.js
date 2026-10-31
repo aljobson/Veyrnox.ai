@@ -11,10 +11,10 @@ import { templateHref, presetCredits, presetTitle } from '../_lib/tokens.js';
 // inert, while the landing page sent people here with "Browse presets free".
 // An onClick is still honoured for callers that want to intercept.
 //
-// `clip` is the preset's preview from SHOWCASE_CLIPS, passed in by the caller:
-// importing showcase.js here would put the whole template catalog into every
-// page that shows a card, including the landing page.
-export function PresetCard({ preset, clip = null, size = 'md', onClick, catalog, variant = 'standard', className = '' }) {
+// The preview comes with the preset (`preset.clip`, from /api/templates or the
+// server page that renders the card). Importing showcase.js here would put the
+// whole template catalog into every page that shows a card.
+export function PresetCard({ preset, clip = preset.clip ?? null, size = 'md', onClick, catalog, variant = 'standard', className = '' }) {
   const { t } = useI18n();
   const sizes = {
     sm: { title: 'text-sm' },
@@ -42,7 +42,7 @@ export function PresetCard({ preset, clip = null, size = 'md', onClick, catalog,
           <div className="min-w-0">
             <div className={`font-extrabold tracking-tight truncate ${s.title}`}>{title}</div>
             <div className="mt-0.5 text-vx-fg-muted text-xs truncate">{preset.model}{preset.durationSeconds ? t('mobile.templateDuration', { n: preset.durationSeconds }) : ''}</div>
-            <div className="mt-1 line-clamp-1 text-[11px] text-vx-fg-muted">{preset.prompt}</div>
+            <div className="mt-1 line-clamp-1 text-[11px] text-vx-fg-muted">{preset.promptPreview ?? preset.prompt}</div>
           </div>
           <span aria-hidden className="vx-leader flex-1 self-start mt-3 text-vx-fg-muted" />
           <div className="shrink-0 self-start font-vx-mono text-[14px] font-bold text-vx-money vx-num pt-0.5">{presetCredits(preset, catalog)} cr</div>
