@@ -5679,4 +5679,6 @@ export default {
   "credits.receipt.paid": "Bezahlt",
   "credits.receipt.balance": "Neues Guthaben",
   "credits.receipt.thanks": "Danke für deinen Kauf.",
+  "projects.noWorkspacesTitle": "Noch kein Arbeitsbereich",
+  "projects.openEditor": "Editor öffnen",
 } as const;

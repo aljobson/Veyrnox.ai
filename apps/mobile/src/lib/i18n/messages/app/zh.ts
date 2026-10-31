@@ -5613,4 +5613,6 @@ export default {
   "credits.receipt.paid": "已支付",
   "credits.receipt.balance": "新余额",
   "credits.receipt.thanks": "感谢您的购买。",
+  "projects.noWorkspacesTitle": "还没有工作区",
+  "projects.openEditor": "打开编辑器",
 } as const;

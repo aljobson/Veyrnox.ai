@@ -5943,4 +5943,6 @@ export default {
   "credits.receipt.paid": "المدفوع",
   "credits.receipt.balance": "الرصيد الجديد",
   "credits.receipt.thanks": "شكرًا لشرائك.",
+  "projects.noWorkspacesTitle": "لا توجد مساحة عمل بعد",
+  "projects.openEditor": "افتح المحرر",
 } as const;

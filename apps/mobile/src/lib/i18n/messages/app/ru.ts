@@ -5811,4 +5811,6 @@ export default {
   "credits.receipt.paid": "Оплачено",
   "credits.receipt.balance": "Новый баланс",
   "credits.receipt.thanks": "Спасибо за покупку.",
+  "projects.noWorkspacesTitle": "Нет рабочего места",
+  "projects.openEditor": "Открыть редактор",
 } as const;

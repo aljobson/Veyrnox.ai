@@ -5613,4 +5613,6 @@ export default {
   "credits.receipt.paid": "支払い",
   "credits.receipt.balance": "新しい残高",
   "credits.receipt.thanks": "ご購入ありがとうございます。",
+  "projects.noWorkspacesTitle": "ワークスペースはまだありません",
+  "projects.openEditor": "エディターを開く",
 } as const;
