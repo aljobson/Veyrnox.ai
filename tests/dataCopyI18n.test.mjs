@@ -26,7 +26,7 @@ test('all template needs and 16 distinct steps have exact English and ten transl
   const audit = JSON.parse(readFileSync(new URL('../docs/product/source-audit/seedance-200-exact-2026-10-29.json', import.meta.url)));
   const textOnlyIds = audit.records.filter(r => !r.existing && r.referenceImageCount === 0 && sourcePromptAuditRecord(r.id).runnable).map(r => r.id);
   assert.equal(textOnlyIds.length, 78);
-  assert.deepEqual(ALL_TEMPLATES.filter(p => !p.needs).map(p => p.id).sort(), [...textOnlyIds, 'a-moment-between-strangers', 'dreamworks-castle', 'epic-train-doorway-scene', 'the-last-stagecoach', 'the-push'].sort());
+  assert.deepEqual(ALL_TEMPLATES.filter(p => !p.needs).map(p => p.id).sort(), [...textOnlyIds, 'a-moment-between-strangers', 'blood-moon-dance', 'dreamworks-castle', 'epic-train-doorway-scene', 'meal-together', 'red-thread-story', 'tentacle-breakout', 'the-last-stagecoach', 'the-push'].sort());
   assert.equal(Object.keys(PRESET_STEP_KEYS).length, 16);
   for (const code of codes) {
     const t = translator(code);

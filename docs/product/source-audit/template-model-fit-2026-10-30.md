@@ -4,14 +4,14 @@ The 202 formerly Seedance 2.0 Fast public recipes are classified by their actual
 
 | Rule | Count | Generation route |
 | --- | ---: | --- |
-| R1, required picture | 75 | Kling 3.0 I2V, 10 seconds, 32-credit base / 64-credit quote |
+| R1, required picture | 71 | Kling 3.0 I2V, 10 seconds, 32-credit base / 64-credit quote |
 | R2, optional picture | 5 | Seedance 2.0 Fast, 5 seconds, 19 credits; no upload dependencies |
 | R3, copy-only | 44 | Seedance 2.0 Fast, 5 seconds; exact text and copy-only behavior retained |
-| R4, text-only source | 78 | Seedance 2.0 Fast, 5 seconds, 19 credits; no picture requested |
+| R4, text-only source | 82 | Seedance 2.0 Fast, 5 seconds, 19 credits; no picture requested |
 
-The full API list remains 392 recipes: 265 Kling / 127 Seedance. Generated sources with no image references receive no picture guidance and use text-only five-second adaptations. Copy-only records retain their unsupported-source warning. Exact community prompt records, provenance and preview assets are unchanged. The metadata overlay quotes the assigned model's existing base price; `presetCredits` remains responsible for duration pricing.
+The full API list remains 392 recipes: 261 Kling / 131 Seedance. Generated sources with no image references receive no picture guidance and use text-only five-second adaptations. Copy-only records retain their unsupported-source warning. Exact community prompt records, provenance and preview assets are unchanged. The metadata overlay quotes the assigned model's existing base price; `presetCredits` remains responsible for duration pricing.
 
-The five R2 recipes are epic-train-doorway-scene, the-push, dreamworks-castle, a-moment-between-strangers and the-last-stagecoach. R2 and R4 adapted prompts and steps have no supplied-media dependency. Red-thread-story and meal-together request one starting image containing both characters; fashion-catch requests one image showing the model wearing the garment or accessory. The changed guidance is translated in all 11 locale catalogs. Existing uploaded/supplied-image intros are retained without a duplicate introduction.
+On 2026-10-31 the owner moved four hand-written Syntx recipes whose sources used no reference image (tentacle-breakout, blood-moon-dance, red-thread-story, meal-together) to text-only R4 as well. The five R2 recipes are epic-train-doorway-scene, the-push, dreamworks-castle, a-moment-between-strangers and the-last-stagecoach. R2 and R4 adapted prompts and steps have no supplied-media dependency. Fashion-catch requests one image showing the model wearing the garment or accessory. The changed guidance is translated in all 11 locale catalogs. Existing uploaded/supplied-image intros are retained without a duplicate introduction.
 
 `TemplateRecipe` honours `preferAdaptedPrompt`, including when the exact source prompt could run independently. Exact text stays available for viewing and copying; generation uses the designated adaptation. The phone parser and handoff already use that adaptation. Phone code is unchanged. A narrowly scoped `runnableModel` exception in `scripts/lib/data-i18n-exceptions.mjs` identifies the fixed Kling provider name without exempting other prose.
 
