@@ -12,6 +12,9 @@ data safe under real load. Break any of them only with an ADR that explains why.
 - `NEXT_PUBLIC_*` and Supabase anon key ARE safe to commit — they're public.
 - Never add `Co-Authored-By` to a git commit unless `.claude/settings.json`'s
   `attribution.commit` is set. The Bash tool suggests one by default — ignore it.
+- UI work ends with "The goal is met when…" lines from
+  `docs/design-goal-criteria.md` (layout, colour and type, accessibility, the
+  nine states). Report each line as checked, not applicable, or not checked.
 
 ## Bundler traps — the three libraries that break Cloudflare Workers Builds
 
