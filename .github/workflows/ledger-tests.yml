@@ -52,6 +52,7 @@ on:
       - "scripts/test-default-privileges.mjs"
       - "scripts/test-disposable-email-block.mjs"
       - "scripts/test-account-deletion.mjs"
+      - "scripts/test-mfa-recovery.mjs"
       - "scripts/test-privacy-export.mjs"
       - "scripts/test-job-deletion.mjs"
       - "scripts/test-job-cancel.mjs"
@@ -263,6 +264,7 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-default-privileges.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-disposable-email-block.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-account-deletion.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-mfa-recovery.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" PRIVACY_EXPORT_SERVER_URL="$DATABASE_URL" node scripts/test-privacy-export.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-job-deletion.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-job-cancel.mjs
