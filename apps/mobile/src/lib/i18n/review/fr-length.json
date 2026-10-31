@@ -4824,6 +4824,30 @@
     "ratio": 1.69
   },
   {
+    "id": "wins.all",
+    "english": "All time",
+    "translation": "Depuis le début",
+    "ratio": 1.88
+  },
+  {
+    "id": "wins.what",
+    "english": "What you got",
+    "translation": "Ce que vous avez obtenu",
+    "ratio": 1.92
+  },
+  {
+    "id": "wins.best",
+    "english": "Best",
+    "translation": "Meilleure",
+    "ratio": 2.25
+  },
+  {
+    "id": "wins.checked",
+    "english": "Checked in",
+    "translation": "Présence confirmée",
+    "ratio": 1.8
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

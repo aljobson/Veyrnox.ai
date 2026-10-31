@@ -207,6 +207,7 @@ import area_videoAgent from './en/videoAgent';
 import area_videoAgentBalance from './en/videoAgentBalance';
 import area_welcome from './en/welcome';
 import area_whenPicker from './en/whenPicker';
+import area_wins from './en/wins';
 
 const catalog = {
     ...area_abt,
@@ -414,6 +415,7 @@ const catalog = {
     ...area_videoAgentBalance,
     ...area_welcome,
     ...area_whenPicker,
+    ...area_wins,
 } as const;
 
 const historical = new Set<string>(order);

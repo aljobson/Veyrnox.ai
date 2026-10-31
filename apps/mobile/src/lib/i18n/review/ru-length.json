@@ -3216,6 +3216,36 @@
     "ratio": 1.92
   },
   {
+    "id": "wins.title",
+    "english": "Your wins",
+    "translation": "Ваши достижения",
+    "ratio": 1.67
+  },
+  {
+    "id": "wins.views",
+    "english": "Views",
+    "translation": "Просмотры",
+    "ratio": 1.8
+  },
+  {
+    "id": "wins.see",
+    "english": "See your wins",
+    "translation": "Посмотреть достижения",
+    "ratio": 1.62
+  },
+  {
+    "id": "wins.image",
+    "english": "Images",
+    "translation": "Изображения",
+    "ratio": 1.83
+  },
+  {
+    "id": "wins.first_image",
+    "english": "First image",
+    "translation": "Первое изображение",
+    "ratio": 1.64
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

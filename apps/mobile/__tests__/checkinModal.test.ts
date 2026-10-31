@@ -92,3 +92,23 @@ test('malformed claim does not mark today claimed or show an earned amount', asy
     expect(has('You earned 1 credit.')).toBe(false);
     expect(root.container.queryAll(n => n.props.accessibilityLabel === 'Check in')).toHaveLength(1);
 });
+
+test('wins waits for the open check-in modal and acknowledges its milestone only after display', async () => {
+    const { createWinsCoordinator } = require('../src/lib/yourWinsCelebrations');
+    const { checkinDialogOpen, onCheckinVisibilityChange } = require('../src/lib/checkinVisibility');
+    const events: import('../src/lib/veyMotion').CelebrationEvent[] = [];
+    let seen: string[] = [];
+    const coordinator = createWinsCoordinator({ owner: getCacheUser, busy: () => events.length > 0,
+        read: async () => seen, write: async (_: string, value: string[]) => { seen = value; },
+        emit: (event: import('../src/lib/veyMotion').CelebrationEvent) => { events.push(event); return true; },
+    });
+    const off = onCheckinVisibilityChange(() => { if (!checkinDialogOpen()) void coordinator.recheck(); });
+    try {
+        await mount(); expect(checkinDialogOpen()).toBe(true);
+        await coordinator.update(getCacheUser(), { milestones: [{ key: 'creations_10', reached_at: '2026-10-20', progress: 10, target: 10 }] });
+        expect(events).toHaveLength(0); expect(seen).toEqual([]);
+        await press('Close'); await coordinator.recheck();
+        expect(checkinDialogOpen()).toBe(false); expect(events).toHaveLength(1); expect(seen).toEqual([]);
+        events[0].onShown(); expect(seen).toEqual(['creations_10']); events[0].onDone();
+    } finally { off(); coordinator.clear(); }
+});

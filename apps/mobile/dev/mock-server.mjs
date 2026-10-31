@@ -6,6 +6,7 @@ import { mockInbox } from './mockInbox.mjs';
 import { mockSocialUploads, uploadsEnabled, validateUploadMedia } from './mockSocialUploads.mjs';
 import { mockQaJobs, qaAsset } from './mockQaJobs.mjs';
 import { mockSecurity } from './mockSecurityFixtures.mjs';
+import { mockWins } from './mockWins.mjs';
 import { mockCheckin } from './mockCheckin.mjs';
 import { createServer } from 'node:http';
 import { deflateSync } from 'node:zlib';
@@ -608,6 +609,10 @@ createServer(async (req, res) => {
             content_type: body.content_type,
             expires_in: 900,
         });
+    }
+    if (path === '/api/v1/wins') {
+        const result = mockWins(req.method, process.env.YOUR_WINS_ENABLED === 'true');
+        return send(res, result.status, result.body);
     }
     if (path === '/api/v1/checkin') {
         const result = mockCheckin(req.method, req.headers.authorization || 'dev', state, process.env.CHECKIN_ENABLED === 'true');

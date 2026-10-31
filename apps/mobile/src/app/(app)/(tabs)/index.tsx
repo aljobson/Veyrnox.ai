@@ -1,3 +1,4 @@
+import { YourWinsCard } from '../../../components/wins/YourWinsCard';
 import { categoryLabel } from '../../../lib/presetCategoryLabel';
 import { CheckInEntry } from '../../../components/credits/CheckInEntry';
 import { Link, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
@@ -197,6 +198,7 @@ export default function Explore() {
                     </Text>
                 </View>
 
+                <YourWinsCard />
                 <Card style={styles.startGroup} accessibilityLabel={t('explore.start.title')}>
                     <StartOption href="/create" style={styles.startOption} icon="sparkle" title={t('menu.create')} body={t('explore.start.create.body')} hint={t('explore.start.create.hint')} />
                     <StartOption href="/chat" style={styles.startOption} icon="chat" title={t('menu.chat')} body={t('explore.start.chat.body')} hint={t('explore.chat.hint')} divided />

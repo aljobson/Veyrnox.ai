@@ -308,6 +308,7 @@
       }],
       "triggers": { "crons": ["*/5 * * * *", "* * * * *"] },
       "vars": {
+        "YOUR_WINS_ENABLED": "false",
         // Exercise the scanner in staging; queued images drain oldest first.
         "CONTENT_SCAN_ENABLED": "true",
         // Switch on only after migration 0289 is applied.

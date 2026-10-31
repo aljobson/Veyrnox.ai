@@ -3000,6 +3000,24 @@
     "ratio": 1.73
   },
   {
+    "id": "wins.title",
+    "english": "Your wins",
+    "translation": "Suas conquistas",
+    "ratio": 1.67
+  },
+  {
+    "id": "wins.all",
+    "english": "All time",
+    "translation": "Todo o período",
+    "ratio": 1.75
+  },
+  {
+    "id": "wins.views",
+    "english": "Views",
+    "translation": "Visualizações",
+    "ratio": 2.6
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",

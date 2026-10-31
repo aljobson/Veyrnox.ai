@@ -9,6 +9,7 @@ import { ThemePicker } from '../../_components/ThemeToggle';
 import { MfaPanel } from '../../_components/MfaPanel';
 import { PasskeyPanel } from '../../_components/PasskeyPanel';
 import { ReferralPanel } from '../../_components/ReferralPanel';
+import { YourWinsCard } from '../../_components/YourWinsCard';
 import { VibeAccountPanel } from '../../_components/VibeAccountPanel';
 import { OAuthGrantsPanel } from '../../_components/OAuthGrantsPanel';
 import { ConfirmDialog } from '../../_components/ConfirmDialog';
@@ -61,6 +62,7 @@ function AccountControls() {
     <OAuthGrantsPanel />
     <ReferralPanel />
     <VibeAccountPanel />
+    <YourWinsCard linkOnly />
     <section className="rounded-2xl border border-vx-border p-5">
       <h2 data-testid="account-password-heading" className="font-bold mb-2">{t("app.account.setPassword")}</h2>
       <p className="text-sm text-vx-fg-muted mb-4">{t("app.account.passwordHelp")}</p>
