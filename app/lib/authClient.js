@@ -301,6 +301,9 @@ async function authed(path, { method = "POST", body } = {}) {
         const e = new Error(data?.error_description || data?.msg || `HTTP ${res.status}`);
         e.status = res.status;
         e.code = data?.error || data?.code;
+        // GoTrue returns the machine code in error_code on some endpoints (with a numeric
+        // `code`), and in `error` on others; carry both so callers can map either (MFA step-up).
+        e.errorCode = data?.error_code;
         throw e;
     }
     return persistTokenResponse(data, epoch);
@@ -319,6 +322,9 @@ async function post(path, body) {
         const e = new Error(data?.error_description || data?.msg || `HTTP ${res.status}`);
         e.status = res.status;
         e.code = data?.error || data?.code;
+        // GoTrue returns the machine code in error_code on some endpoints (with a numeric
+        // `code`), and in `error` on others; carry both so callers can map either (MFA step-up).
+        e.errorCode = data?.error_code;
         throw e;
     }
     return persistTokenResponse(data, epoch);

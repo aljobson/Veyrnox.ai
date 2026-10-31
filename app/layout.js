@@ -6,6 +6,7 @@ import './globals.css';
 import localFont from "next/font/local";
 import ToasterMount from '../components/ToasterMount';
 import AuthGate from '../components/AuthGate.jsx';
+import MfaSignInStepUp from '../components/MfaSignInStepUp.jsx';
 import SessionHydration from '../components/SessionHydration.jsx';
 import AnalyticsProvider, { analyticsEnabled } from '../components/AnalyticsProvider.jsx';
 import SiteChrome from './veyrnox/_components/SiteChrome';
@@ -91,6 +92,7 @@ export default async function RootLayout({ children }) {
           <SiteChrome analyticsEnabled={analyticsEnabled} />
           <ToasterMount />
           <AuthGate />
+          <MfaSignInStepUp />
           <SessionHydration />
           <JsonLd data={ORG_LD} />
         </AnalyticsProvider>
