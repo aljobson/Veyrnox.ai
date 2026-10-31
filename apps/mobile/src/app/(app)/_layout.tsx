@@ -56,6 +56,7 @@ export default function AppLayout() {
                     <Stack.Screen name="start" options={{ headerShown: false }} />
                     <Stack.Screen name="vibe" options={{ headerShown: false }} />
                     <Stack.Screen name="rate" options={{ title: t('rate.title'), headerShown: false, presentation: 'modal' }} />
+                    <Stack.Screen name="paywall" options={{ title: t('billing.paywall.title'), headerShown: false, presentation: 'modal' }} />
                 </Stack>
             </MfaGate>
         </>
