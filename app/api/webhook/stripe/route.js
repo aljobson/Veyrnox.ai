@@ -68,9 +68,11 @@ const REFUND_REFUSED = new Set(['ORDER_NOT_FOUND', 'INVALID_ORDER_ID', 'INVALID_
 const DISPUTE_REFUSED = new Set(['TOP_UP_NOT_FOUND', 'INVALID_ORDER_ID']);
 // Stripe does not order deliveries: a dispute can arrive before the
 // checkout.session.completed that credits the charge, and a dispute the Top-up
-// is not credited for yet freezes nobody. Retry TOP_UP_NOT_FOUND while the
-// event is young enough for the credit to still be on its way; after that the
-// charge was never credited and no redelivery will change that.
+// is not credited for yet freezes nobody. A pre-credit Top-up dispute is now
+// persisted by PaymentIntent (note_top_up_dispute) so credit_top_up Freezes
+// when the credit lands (F-06); it is no longer dropped by event age. This
+// window is still the "young" threshold the Pass and Publish-plan paths retry
+// within while a binding is in flight.
 const DISPUTE_RETRY_SECONDS = 3600;
 
 async function handler(req) {
@@ -279,10 +281,19 @@ async function handleDispute(cfg, { object, eventId, type, apiKey, expectLiveMod
         // Stripe retries.
         const invoiceId = await disputeInvoice(object, apiKey);
         if (invoiceId) return await handlePassCharge(cfg, { invoiceId, object, eventId, type, apiKey, expectLiveMode, eventCreated });
-    }
-    if (res.ok === false && res.code === 'TOP_UP_NOT_FOUND' && isYoung(eventCreated)) {
-        console.error(LOG, 'dispute ahead of its credit, retrying:', 'order', orderId, 'dispute', reference);
-        return NextResponse.json({ error: 'not_credited_yet' }, { status: 503 });
+        // Not a Pass charge: a Top-up dispute that arrived before its credit.
+        // Persist it by PaymentIntent so the credit, whenever it lands, Freezes
+        // the account (F-06). The durable note, not event age, carries the
+        // dispute to the credit, so a delayed-settlement payment can no longer
+        // credit a disputed charge unflagged.
+        const noted = await rpc('note_top_up_dispute', { p_order_id: orderId, p_reference: reference }, cfg);
+        if (!noted || noted.ok !== true) {
+            console.error(LOG, 'could not persist a pre-credit dispute, retrying:', orderId, noted && noted.code);
+            return NextResponse.json({ error: 'dispute_persist_failed' }, { status: 503 });
+        }
+        console.error(LOG, 'dispute ahead of its credit, persisted for the credit to apply:', 'order', orderId, 'dispute', reference);
+        await markProcessed(cfg, SOURCE, eventId);
+        return NextResponse.json({ ok: true, pending: true });
     }
     if (res.ok === false) {
         console.error(LOG, `${type} not applied:`, res.code, 'order', orderId);

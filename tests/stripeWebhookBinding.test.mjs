@@ -79,6 +79,7 @@ const routes = ({
     session = paidSession(checkoutMetadata),
     credit = { ok: true, top_up_id: TOP_UP_ID },
     dispute = { ok: true, user_id: 'u1' },
+    note = { ok: true },
 } = {}) => [
     ['/rest/v1/webhook_events?on_conflict', () => (duplicate ? Response.json([]) : new Response('[{"id":"e1"}]', { status: 201 }))],
     ['/rest/v1/webhook_events', (u, init) => (init.method === 'PATCH' ? new Response(null, { status: 204 }) : Response.json([{ processed_at: '2026-09-23T00:00:00Z' }]))],
@@ -86,6 +87,7 @@ const routes = ({
     ['/rpc/credit_top_up', credit],
     ['/rpc/apply_top_up_refund', { ok: true, taken: 300, shortfall: 0, frozen: false }],
     ['/rpc/apply_dispute_event', dispute],
+    ['/rpc/note_top_up_dispute', note],
 ];
 
 test('a signed checkout.session.completed from our own checkout credits its Top-up', async () => {
@@ -231,19 +233,34 @@ test('charge.dispute.created Freezes the order owner', async () => {
     assert.ok(calls.some((c) => c.method === 'PATCH' && c.url.includes('webhook_events')), 'marked processed');
 });
 
-test('a dispute that arrives before its credit is retried, not dropped', async () => {
+// F-06 (ADR-0307): a pre-credit dispute is now persisted by PaymentIntent and
+// applied when the credit lands, instead of being retried by event age and then
+// dropped. The dispute is recorded via note_top_up_dispute and marked processed.
+test('a dispute that arrives before its credit is persisted, not dropped', async () => {
     const calls = stubFetch(routes({ dispute: { ok: false, code: 'TOP_UP_NOT_FOUND' } }));
     const res = await stripeWebhook.POST(signed(disputeEvent('evt_dispute_early', Math.floor(Date.now() / 1000))));
-    assert.equal(res.status, 503);
-    assert.deepEqual(await res.json(), { error: 'not_credited_yet' });
-    assert.ok(!calls.some((c) => c.method === 'PATCH'), 'left unprocessed so the redelivery runs it again');
+    assert.equal(res.status, 200);
+    assert.deepEqual(await res.json(), { ok: true, pending: true });
+    const noted = calls.find((c) => c.url.includes('/rpc/note_top_up_dispute'));
+    assert.ok(noted, 'the dispute was persisted by PaymentIntent');
+    assert.deepEqual(noted.body, { p_order_id: PAYMENT_INTENT, p_reference: 'du_1' });
+    assert.ok(calls.some((c) => c.method === 'PATCH' && c.url.includes('webhook_events')), 'marked processed');
 });
 
-test('a dispute for a charge that was never credited stops being retried', async () => {
+test('a pre-credit dispute is persisted regardless of the event age', async () => {
     const calls = stubFetch(routes({ dispute: { ok: false, code: 'TOP_UP_NOT_FOUND' } }));
     const old = Math.floor(Date.now() / 1000) - 7200;
     const res = await stripeWebhook.POST(signed(disputeEvent('evt_dispute_old', old)));
     assert.equal(res.status, 200);
-    assert.deepEqual(await res.json(), { ok: true });
+    assert.deepEqual(await res.json(), { ok: true, pending: true });
+    assert.ok(calls.some((c) => c.url.includes('/rpc/note_top_up_dispute')), 'an old pre-credit dispute is still persisted');
     assert.ok(calls.some((c) => c.method === 'PATCH' && c.url.includes('webhook_events')), 'marked processed');
+});
+
+test('a failed persist of a pre-credit dispute is retried, not dropped', async () => {
+    const calls = stubFetch(routes({ dispute: { ok: false, code: 'TOP_UP_NOT_FOUND' }, note: { ok: false, code: 'INVALID_ORDER_ID' } }));
+    const res = await stripeWebhook.POST(signed(disputeEvent('evt_dispute_persist_fail', Math.floor(Date.now() / 1000))));
+    assert.equal(res.status, 503);
+    assert.deepEqual(await res.json(), { error: 'dispute_persist_failed' });
+    assert.ok(!calls.some((c) => c.method === 'PATCH'), 'left unprocessed so the redelivery runs it again');
 });

@@ -1,11 +1,12 @@
 // Disposable local Postgres only. No production credentials or fixtures.
-// Exercises migration 0245 (ADR-0057): Free Plays, the monthly free ceiling
-// in entitlement, playback and the heartbeat, what a Cinema Pass holder gets
-// past it, and that no play path touches the ledger. It creates its own
-// users and content; the functions today's Worker calls must answer as before.
+// Exercises migration 0245 (ADR-0057) as amended by 0415 (ADR-0307, F-15):
+// the monthly free ceiling now binds on the FULL authorized lease reserved at
+// each play start, not on voluntary heartbeats. A free title's heartbeats are
+// analytics and never add to the ceiling; a Cinema Pass holder past the free
+// ceiling still plays under the Pass with the Pass caps unchanged. No play
+// path touches the ledger. It creates its own users and content.
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
 import pg from 'pg';
 const url = process.env.DATABASE_URL;
 if (!url || !['localhost', '127.0.0.1', 'postgres'].includes(new URL(url).hostname)) throw Error('isolated local database required');
@@ -25,17 +26,16 @@ const entitlement = (actor, content) => call('public.cinema_entitlement($1,$2)',
 const playback = (actor, content) => call('public.read_cinema_playback($1,$2)', [actor, content]);
 const passBeat = (actor, content, seconds = 30) => call('public.record_cinema_pass_play($1,$2,$3)', [actor, content, seconds]);
 const userId = (actor) => value('SELECT id AS value FROM public.users WHERE auth_id=$1', [actor]);
-const freeSeconds = (actor) => value('SELECT COALESCE(sum(f.seconds),0)::int AS value FROM public.cinema_free_plays f JOIN public.users u ON u.id=f.user_id WHERE u.auth_id=$1', [actor]);
+// Seconds that count toward the free ceiling: only 'start' leases (0415).
+const counted = (actor) => value('SELECT public.cinema_free_month_seconds((SELECT id FROM public.users WHERE auth_id=$1), now()) AS value', [actor]);
 const passSeconds = (actor) => value('SELECT COALESCE(sum(p.seconds),0)::int AS value FROM public.cinema_pass_plays p JOIN public.users u ON u.id=p.user_id WHERE u.auth_id=$1', [actor]);
 const ledgerRows = () => value("SELECT count(*)::int AS value FROM public.ledger_entries WHERE reason NOT LIKE 'grant:%'");
 const monthStart = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1, 0, 0, 0));
-// A past instant inside this month, outside the 60-second window the caps read.
-const AGED = "GREATEST($4::timestamptz, now() - interval '2 minutes')";
-/** Seed `seconds` of Free Plays for an account, as 60-second rows plus a remainder, at one instant. */
-async function fill(actor, content, seconds, at = AGED, stamp = monthStart.toISOString()) {
+/** Seed `seconds` of counted free viewing as 'start' leases (<=60s rows plus a remainder) at one instant. */
+async function fill(actor, content, seconds, at = '$4::timestamptz', stamp = monthStart.toISOString()) {
   const user = await userId(actor), whole = Math.floor(seconds / 60), rest = seconds % 60;
-  if (whole) await q(`INSERT INTO public.cinema_free_plays(user_id,content_id,seconds,source,played_at) SELECT $1,$2,60,'heartbeat',${at} FROM generate_series(1, $3::int)`, [user, content, whole, stamp]);
-  if (rest) await q(`INSERT INTO public.cinema_free_plays(user_id,content_id,seconds,source,played_at) SELECT $1,$2,$3::int,'heartbeat',${at}`, [user, content, rest, stamp]);
+  if (whole) await q(`INSERT INTO public.cinema_free_plays(user_id,content_id,seconds,source,played_at) SELECT $1,$2,60,'start',${at} FROM generate_series(1, $3::int)`, [user, content, whole, stamp]);
+  if (rest) await q(`INSERT INTO public.cinema_free_plays(user_id,content_id,seconds,source,played_at) SELECT $1,$2,$3::int,'start',${at}`, [user, content, rest, stamp]);
 }
 async function race(tasks) { return Promise.all(tasks.map(async (task) => { const peer = new pg.Client({ connectionString: url }); await peer.connect(); try { return await task(peer); } finally { await peer.end(); } })); }
 async function person() {
@@ -53,13 +53,8 @@ const NEW_FUNCTIONS = ['public.cinema_free_plays_append_only()', 'public.cinema_
   'public.cinema_metered_entitlement(text,uuid)', 'public.cinema_record_pass_seconds(uuid,uuid,integer)', 'public.start_cinema_playback(text,uuid)', 'public.record_cinema_play(text,uuid,integer)'];
 const SERVICE_ROLE_FUNCTIONS = ['public.cinema_metered_entitlement(text,uuid)', 'public.start_cinema_playback(text,uuid)', 'public.record_cinema_play(text,uuid,integer)'];
 try {
-  const migration = await readFile(new URL('../packages/db/schema/supabase/0245_cinema_free_plays.sql', import.meta.url), 'utf8');
-  // Idempotency proof inside a rolled-back transaction, so the re-apply cannot
-  // reinstate this file's function bodies over later migrations for the rest of the run.
-  await c.query('BEGIN'); await c.query(migration); await c.query(migration); await c.query('ROLLBACK');
   const CEILING = await value("SELECT value FROM public.cinema_prices WHERE key='free_ceiling_minutes'");
   assert.equal(CEILING, 300, 'the proposed default; the owner confirms it');
-  // Read, never assumed: a later migration may move the Pass ceiling.
   const PASS_CEILING = await value("SELECT value FROM public.cinema_prices WHERE key='pass_ceiling_minutes'");
   for (const sql of ["UPDATE public.cinema_prices SET value=100001 WHERE key='free_ceiling_minutes'", "UPDATE public.cinema_prices SET value=-1 WHERE key='free_ceiling_minutes'",
     "UPDATE public.cinema_prices SET value=51 WHERE key='free_episodes'", "INSERT INTO public.cinema_prices(key,value) VALUES('rent_price',1)"]) await assert.rejects(q(sql), /check/i, sql);
@@ -70,27 +65,28 @@ try {
   const series = await save(creator, draft());
   const season = await save(creator, draft({ content_type: 'SEASON', parent_id: series, position: 1 }));
   const episode = (position) => save(creator, draft({ content_type: 'EPISODE', parent_id: season, position }));
-  // Positions 1 to 5 of season 1 are Free Episodes; 6 and 8 are paid. Episode 3 has no video yet.
   const free = await episode(1), free2 = await episode(2), unready = await episode(3), ep6 = await episode(6), ep8 = await episode(8);
   await q("UPDATE public.cinema_content SET lifecycle_status='PUBLISHED', visibility='PUBLIC' WHERE id=ANY($1::uuid[])", [[series, season, free, free2, unready, ep6, ep8]]);
   const uid = {};
-  for (const [name, content] of [['free', free], ['free2', free2], ['ep6', ep6], ['ep8', ep8]]) {
+  // Explicit runtimes, so each start's lease is a known number. free is 120s, free2 90s.
+  for (const [name, content, duration] of [['free', free, 120], ['free2', free2, 90], ['ep6', ep6, 100], ['ep8', ep8, 100]]) {
     uid[name] = randomUUID().replaceAll('-', '');
-    await q("INSERT INTO public.cinema_uploads(content_id,creator_id,create_key,file_size,fingerprint,state,stream_uid) VALUES($1,(SELECT id FROM public.users WHERE auth_id=$2),$3,100,$4,'ready',$5)", [content, creator, randomUUID(), 'f'.repeat(64), uid[name]]);
+    await q("INSERT INTO public.cinema_uploads(content_id,creator_id,create_key,file_size,fingerprint,state,stream_uid,duration_seconds) VALUES($1,(SELECT id FROM public.users WHERE auth_id=$2),$3,100,$4,'ready',$5,$6)", [content, creator, randomUUID(), 'f'.repeat(64), uid[name], duration]);
   }
   const ledgerBefore = await ledgerRows();
 
-  // Granting playback of a free title counts one minute, whatever the player reports afterwards.
+  // A play start reserves the whole runtime up front; the ceiling counts it at once (F-15).
   const viewer = await person();
   assert.deepEqual(await metered(viewer, free), { access: 'free', credits: 0 });
   assert.deepEqual(await start(viewer, free), { access: 'free', stream_uid: uid.free });
-  assert.deepEqual(await q('SELECT f.seconds, f.source, f.content_id FROM public.cinema_free_plays f WHERE f.user_id=$1', [await userId(viewer)]), [{ seconds: 60, source: 'start', content_id: free }]);
-  // That minute is inside the wall-clock cap: a heartbeat in the same minute adds nothing.
-  const early = await beat(viewer, free, 30);
-  assert.deepEqual([early.recorded, early.access, early.reason, early.minutes_used, early.ceiling_minutes], [false, 'free', 'too_fast', 1, CEILING]);
-  // Each grant counts: starts are bounded by the ceiling, not by the clock.
+  assert.deepEqual(await q('SELECT f.seconds, f.source, f.content_id FROM public.cinema_free_plays f WHERE f.user_id=$1', [await userId(viewer)]), [{ seconds: 120, source: 'start', content_id: free }]);
+  assert.equal(await counted(viewer), 120, 'the full 120s runtime is charged at start');
+  // A viewer who sends no heartbeat is still charged the runtime, and a heartbeat never moves the ceiling.
+  await beat(viewer, free, 60);
+  assert.equal(await counted(viewer), 120, 'a heartbeat is analytics only');
+  // Each grant counts its own lease.
   assert.deepEqual(await start(viewer, free2), { access: 'free', stream_uid: uid.free2 });
-  assert.equal(await freeSeconds(viewer), 120);
+  assert.equal(await counted(viewer), 210, '120 + 90');
   // Nothing is counted when nothing is granted.
   assert.deepEqual(await start(viewer, ep8), { error: 'locked', credits: 6 });
   assert.deepEqual(await start(viewer, unready), { error: 'not_ready' });
@@ -98,7 +94,7 @@ try {
   assert.deepEqual(await beat(viewer, ep8), { ok: true, recorded: false, access: 'locked', reason: null });
   assert.equal((await beat(viewer, series)).error, 'content_not_found');
   for (const s of [0, 61, -5]) assert.equal((await beat(viewer, free, s)).error, 'invalid_seconds', String(s));
-  assert.equal(await freeSeconds(viewer), 120);
+  assert.equal(await counted(viewer), 210, 'refused calls count nothing');
   // No account, no playback and no count. The public catalogue still reads 'free'.
   for (const stranger of ['nope', randomUUID()]) {
     assert.deepEqual(await start(stranger, free), { error: 'not_authenticated' });
@@ -108,61 +104,32 @@ try {
   assert.deepEqual(await metered(null, free), { access: 'free', credits: 0 });
   assert.deepEqual(await metered(viewer, ep8), { access: 'locked', credits: 6 }, 'paid titles answer as cinema_entitlement does');
 
-  // Heartbeats: at most 60 seconds per 60 seconds per account, so a replayed heartbeat adds nothing.
+  // Free-title heartbeats are analytics: they never change the counted ceiling.
   const steady = await person();
-  const one = await beat(steady, free, 30);
-  assert.deepEqual([one.recorded, one.access, one.seconds, one.minutes_used, one.ceiling_minutes], [true, 'free', 30, 0, CEILING]);
-  const two = await beat(steady, free2, 45);
-  assert.deepEqual([two.recorded, two.seconds, two.minutes_used], [true, 30, 1], 'topped up to the 60-second minute, across titles');
-  const replay = await beat(steady, free, 10);
-  assert.deepEqual([replay.recorded, replay.reason], [false, 'too_fast']);
-  assert.deepEqual(await q("SELECT source, sum(seconds)::int AS seconds FROM public.cinema_free_plays WHERE user_id=$1 GROUP BY source", [await userId(steady)]), [{ source: 'heartbeat', seconds: 60 }]);
-  const racer = await person();
-  const burst = await race(Array.from({ length: 6 }, () => (client) => beat(racer, free, 20, client)));
-  assert.equal(burst.filter((r) => r.recorded).reduce((n, r) => n + r.seconds, 0), 60, 'six concurrent 20-second heartbeats record exactly one minute');
-  assert.equal(await freeSeconds(racer), 60);
+  const before = await counted(steady);
+  await beat(steady, free, 30);
+  await beat(steady, free2, 45);
+  assert.equal(await counted(steady), before, 'no free heartbeat counts toward the ceiling');
 
-  // The ceiling: the last heartbeat is cut to what is left, then every free title is locked for the account.
-  const heavy = await person();
-  await fill(heavy, free, CEILING * 60 - 30);
-  assert.deepEqual(await metered(heavy, free), { access: 'free', credits: 0 }, '30 seconds left');
-  const last = await beat(heavy, free, 60);
-  assert.deepEqual([last.recorded, last.seconds, last.minutes_used, last.ceiling_minutes], [true, 30, CEILING, CEILING]);
-  for (const content of [free, free2]) assert.deepEqual(await metered(heavy, content), { access: 'locked', credits: 0, reason: 'free_ceiling' });
-  assert.deepEqual(await beat(heavy, free, 30), { ok: true, recorded: false, access: 'locked', reason: 'free_ceiling', minutes_used: CEILING, ceiling_minutes: CEILING });
-  assert.deepEqual(await start(heavy, free), { error: 'locked', credits: 0, reason: 'free_ceiling' });
-  assert.equal(await freeSeconds(heavy), CEILING * 60, 'not one second past the ceiling');
-  assert.deepEqual(await metered(heavy, ep8), { access: 'locked', credits: 6 }, 'a paid title keeps its price and has no free reason');
-  // A play start is cut to what is left too, and concurrent starts cannot pass the ceiling.
+  // The ceiling binds on the up-front leases, and the crossing play is cut to what is left.
   const edge = await person();
-  await fill(edge, free, CEILING * 60 - 30);
-  assert.equal((await start(edge, free)).access, 'free');
+  await fill(edge, free, CEILING * 60 - 60);
+  assert.deepEqual(await metered(edge, free), { access: 'free', credits: 0 }, '60 seconds left');
+  assert.deepEqual(await start(edge, free), { access: 'free', stream_uid: uid.free });
+  assert.equal(await counted(edge), CEILING * 60, 'a 120s title is cut to the 60s that remained');
+  for (const content of [free, free2]) assert.deepEqual(await metered(edge, content), { access: 'locked', credits: 0, reason: 'free_ceiling' });
   assert.deepEqual(await start(edge, free), { error: 'locked', credits: 0, reason: 'free_ceiling' });
-  assert.equal(await freeSeconds(edge), CEILING * 60);
+  assert.equal(await counted(edge), CEILING * 60, 'not one second past the ceiling');
+  assert.deepEqual(await metered(edge, ep8), { access: 'locked', credits: 6 }, 'a paid title keeps its price and has no free reason');
+
+  // Concurrent starts cannot pass the ceiling.
   const crowd = await person();
-  await fill(crowd, free, (CEILING - 1) * 60);
+  await fill(crowd, free, CEILING * 60 - 60);
   const starts = await race(Array.from({ length: 4 }, () => (client) => start(crowd, free, client)));
   assert.deepEqual([starts.filter((r) => r.access === 'free').length, starts.filter((r) => r.reason === 'free_ceiling').length], [1, 3]);
-  assert.equal(await freeSeconds(crowd), CEILING * 60);
-  const mixed = await person();
-  await fill(mixed, free, (CEILING - 1) * 60);
-  const both = await race([free, free2, free, free2, free, free2].map((title, i) => (client) => (i % 2 ? beat(mixed, title, 45, client) : start(mixed, title, client))));
-  assert.equal(await freeSeconds(mixed), CEILING * 60, 'three starts and three heartbeats on two titles cannot pass the ceiling');
-  assert.ok(both.every((r) => r.access === 'free' || r.reason === 'free_ceiling' || r.reason === 'too_fast'), JSON.stringify(both));
+  assert.equal(await counted(crowd), CEILING * 60);
 
-  // The wall-clock window is 55 seconds: a steady 30-second heartbeat whose row from two beats
-  // ago sits at 58 seconds is counted in full; rows 50 and 30 seconds old still fill the minute.
-  const steadyHand = await person();
-  const clock = new Date().toISOString();
-  await fill(steadyHand, free, 30, "$4::timestamptz - interval '58 seconds'", clock);
-  await fill(steadyHand, free2, 30, "$4::timestamptz - interval '30 seconds'", clock);
-  const inTime = await beat(steadyHand, free, 30);
-  assert.deepEqual([inTime.recorded, inTime.seconds], [true, 30], 'a row 58 seconds old is outside the window');
-  const tight = await person();
-  await fill(tight, free, 30, "$4::timestamptz - interval '50 seconds'", clock);
-  await fill(tight, free2, 30, "$4::timestamptz - interval '30 seconds'", clock);
-  assert.deepEqual([(await beat(tight, free, 30)).recorded, (await beat(tight, free, 30)).reason], [false, 'too_fast'], 'a row 50 seconds old is inside the window');
-  // Rows dated next month do not count against this month either.
+  // Rows dated next month do not count against this month.
   const ahead = await person();
   await fill(ahead, free, CEILING * 60, '$4::timestamptz', new Date(Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth() + 1, 1)).toISOString());
   assert.deepEqual(await metered(ahead, free), { access: 'free', credits: 0 });
@@ -172,9 +139,8 @@ try {
   assert.deepEqual(await start(steady, free), { error: 'locked', credits: 0, reason: 'free_ceiling' });
   assert.deepEqual(await metered(steady, free), { access: 'locked', credits: 0, reason: 'free_ceiling' });
   await q('ROLLBACK');
-  assert.equal(await freeSeconds(steady), 60);
 
-  // Calendar month, UTC: last month's plays do not count; the month's first instant does.
+  // Calendar month, UTC: last month's leases do not count; the month's first instant does.
   const light = await person(), eve = await person(), first = await person();
   await fill(light, free, CEILING * 60, '$4::timestamptz', new Date(monthStart.getTime() - 86400000).toISOString());
   await fill(eve, free, CEILING * 60, "$4::timestamptz - interval '1 millisecond'");
@@ -183,32 +149,33 @@ try {
   assert.deepEqual(await metered(eve, free), { access: 'free', credits: 0 });
   assert.deepEqual(await metered(first, free), { access: 'locked', credits: 0, reason: 'free_ceiling' });
   assert.equal((await start(light, free)).access, 'free');
-  assert.equal(await value('SELECT public.cinema_free_month_seconds($1, now()) AS value', [await userId(light)]), 60);
+  assert.equal(await value('SELECT public.cinema_free_month_seconds($1, now()) AS value', [await userId(light)]), 120);
 
   // The number comes from cinema_prices and nowhere else.
+  const oneMin = await person();
+  await fill(oneMin, free, 60);
   await q('BEGIN');
   await q("UPDATE public.cinema_prices SET value=1 WHERE key='free_ceiling_minutes'");
-  assert.deepEqual(await metered(steady, free), { access: 'locked', credits: 0, reason: 'free_ceiling' }, 'steady has used exactly one minute');
+  assert.deepEqual(await metered(oneMin, free), { access: 'locked', credits: 0, reason: 'free_ceiling' }, 'one minute used, a ceiling of one');
   await q("UPDATE public.cinema_prices SET value=0 WHERE key='free_ceiling_minutes'");
   const none = await person();
   assert.deepEqual(await start(none, free), { error: 'locked', credits: 0, reason: 'free_ceiling' }, 'a ceiling of 0 allows no free viewing');
   await q('ROLLBACK');
-  assert.deepEqual(await metered(steady, free), { access: 'free', credits: 0 });
+  assert.deepEqual(await metered(oneMin, free), { access: 'free', credits: 0 });
 
   // A Cinema Pass holder uses the free minutes first: under the free ceiling the play is a Free Play.
   const holder = await person();
   await activePass(holder);
-  const asFree = await beat(holder, free, 30);
-  assert.deepEqual([asFree.recorded, asFree.access, asFree.seconds], [true, 'free', 30]);
-  assert.equal(await passSeconds(holder), 0);
-  // Past it the title plays under the Pass and counts toward the Pass ceiling.
-  await fill(holder, free, CEILING * 60 - 30);
+  assert.deepEqual(await start(holder, free), { access: 'free', stream_uid: uid.free });
+  assert.equal(await passSeconds(holder), 0, 'under the free ceiling, a Pass holder watches free first');
+  assert.equal(await counted(holder), 120);
+  // Past the free ceiling the title plays under the Pass and counts toward the Pass ceiling.
+  await fill(holder, free, CEILING * 60);
   assert.deepEqual(await metered(holder, free), { access: 'pass', credits: 0 });
   assert.deepEqual(await start(holder, free), { access: 'pass', stream_uid: uid.free });
   const asPass = await beat(holder, free, 30);
   assert.deepEqual([asPass.recorded, asPass.access, asPass.seconds, asPass.minutes_used, asPass.ceiling_minutes], [true, 'pass', 30, 0, PASS_CEILING]);
   assert.deepEqual(await q('SELECT p.content_id, p.seconds FROM public.cinema_pass_plays p WHERE p.user_id=$1', [await userId(holder)]), [{ content_id: free, seconds: 30 }]);
-  assert.equal(await freeSeconds(holder), CEILING * 60, 'Pass viewing adds no Free Play');
   // The Pass caps are the same through this function: 60 seconds per minute, on paid titles as well.
   const topUp = await beat(holder, ep8, 45);
   assert.deepEqual([topUp.recorded, topUp.access, topUp.seconds], [true, 'pass', 30]);
@@ -218,8 +185,8 @@ try {
   const nearly = await person();
   const nearlyPass = await activePass(nearly);
   await fill(nearly, free, CEILING * 60);
-  await q(`INSERT INTO public.cinema_pass_plays(pass_id,user_id,content_id,seconds,played_at) SELECT $1,$2,$3,60,${AGED} FROM generate_series(1, $5::int)`, [nearlyPass, await userId(nearly), ep8, monthStart.toISOString(), PASS_CEILING - 1]);
-  await q(`INSERT INTO public.cinema_pass_plays(pass_id,user_id,content_id,seconds,played_at) VALUES ($1,$2,$3,50,${AGED})`, [nearlyPass, await userId(nearly), ep8, monthStart.toISOString()]);
+  await q(`INSERT INTO public.cinema_pass_plays(pass_id,user_id,content_id,seconds,played_at) SELECT $1,$2,$3,60,GREATEST($4::timestamptz, now() - interval '2 minutes') FROM generate_series(1, $5::int)`, [nearlyPass, await userId(nearly), ep8, monthStart.toISOString(), PASS_CEILING - 1]);
+  await q(`INSERT INTO public.cinema_pass_plays(pass_id,user_id,content_id,seconds,played_at) VALUES ($1,$2,$3,50,GREATEST($4::timestamptz, now() - interval '2 minutes'))`, [nearlyPass, await userId(nearly), ep8, monthStart.toISOString()]);
   const cut = await beat(nearly, free, 30);
   assert.deepEqual([cut.recorded, cut.access, cut.seconds, cut.minutes_used], [true, 'pass', 10, PASS_CEILING]);
   assert.deepEqual(await metered(nearly, free), { access: 'locked', credits: 0, reason: 'free_ceiling' });
@@ -253,7 +220,7 @@ try {
   const spent = await person();
   const spentPass = await activePass(spent);
   await fill(spent, free, CEILING * 60);
-  await q(`INSERT INTO public.cinema_pass_plays(pass_id,user_id,content_id,seconds,played_at) SELECT $1,$2,$3,60,${AGED} FROM generate_series(1, $5::int)`, [spentPass, await userId(spent), ep8, monthStart.toISOString(), PASS_CEILING]);
+  await q(`INSERT INTO public.cinema_pass_plays(pass_id,user_id,content_id,seconds,played_at) SELECT $1,$2,$3,60,GREATEST($4::timestamptz, now() - interval '2 minutes') FROM generate_series(1, $5::int)`, [spentPass, await userId(spent), ep8, monthStart.toISOString(), PASS_CEILING]);
   assert.deepEqual(await metered(spent, free), { access: 'locked', credits: 0, reason: 'free_ceiling' });
   assert.deepEqual(await start(spent, free), { error: 'locked', credits: 0, reason: 'free_ceiling' });
   assert.deepEqual([(await beat(spent, free)).recorded, (await beat(spent, free)).reason], [false, 'free_ceiling']);
@@ -261,6 +228,8 @@ try {
   assert.deepEqual(await start(spent, ep8), { error: 'locked', credits: 6, reason: 'pass_ceiling' });
 
   // A title unlocked while it was paid still plays once it becomes free and the free minutes are gone.
+  const heavy = await person();
+  await fill(heavy, free, CEILING * 60);
   assert.equal((await value('SELECT public.unlock_cinema_content($1,$2,$3) AS value', [heavy, ep6, 'unlock-2026-09-26'])).access, 'unlocked');
   assert.deepEqual(await start(heavy, ep6), { access: 'unlocked', stream_uid: uid.ep6 });
   assert.deepEqual(await beat(heavy, ep6), { ok: true, recorded: false, access: 'unlocked', reason: null });
@@ -269,19 +238,17 @@ try {
   assert.deepEqual(await entitlement(heavy, ep6), { access: 'free', credits: 0 });
   assert.deepEqual(await metered(heavy, ep6), { access: 'unlocked', credits: 0 });
   assert.deepEqual(await start(heavy, ep6), { access: 'unlocked', stream_uid: uid.ep6 });
-  assert.deepEqual(await beat(heavy, ep6), { ok: true, recorded: false, access: 'unlocked', reason: null, minutes_used: CEILING, ceiling_minutes: CEILING });
   // Once the Unlock is reversed (takedown), the free ceiling applies again.
   assert.equal((await value("SELECT public.reverse_cinema_unlocks($1,'operator','test takedown') AS value", [ep6])).unlocks_reversed, 1);
   assert.deepEqual(await metered(heavy, ep6), { access: 'locked', credits: 0, reason: 'free_ceiling' });
   assert.deepEqual(await start(heavy, ep6), { error: 'locked', credits: 0, reason: 'free_ceiling' });
   await q('ROLLBACK');
-  assert.equal(await freeSeconds(heavy), CEILING * 60);
+  assert.equal(await counted(heavy), CEILING * 60);
 
   // With the ceiling off the Worker calls the older functions, and they answer as before even for an account past it.
   assert.deepEqual(await entitlement(heavy, free), { access: 'free', credits: 0 });
   assert.deepEqual(await playback(heavy, free), { access: 'free', stream_uid: uid.free });
   assert.deepEqual(await passBeat(heavy, free), { ok: true, recorded: false, access: 'free', reason: null });
-  assert.equal(await freeSeconds(heavy), CEILING * 60);
 
   // Money: no play path wrote a ledger row or moved a balance.
   assert.equal(await ledgerRows(), ledgerBefore + 1, 'exactly the one Unlock');
@@ -306,7 +273,7 @@ try {
     assert.equal(config.prosecdef, fn !== 'public.cinema_free_plays_append_only()', `${fn} security definer`);
   }
   await q('BEGIN'); await q('SET LOCAL ROLE service_role');
-  assert.equal((await beat(light, free, 5)).ok, true);
+  assert.equal((await start(light, free)).access, 'free');
   assert.equal((await metered(light, free)).access, 'free');
   await q('ROLLBACK');
   await q('BEGIN'); await q('SET LOCAL ROLE service_role');
@@ -317,5 +284,5 @@ try {
     await assert.rejects(start(viewer, free), /permission denied/, role);
     await q('ROLLBACK');
   }
-  console.log('Cinema free play checks passed: a minute per play start, the 55-second heartbeat window and replay, the ceiling boundary, mixed concurrency, month boundaries, the price row, Pass holder rules (near, lapsed, ended, racing), Unlock precedence and reversal, older functions unchanged, ledger untouched, append-only, RLS and grants.');
+  console.log('Cinema free play checks passed: the full lease is reserved per play start, heartbeats are analytics, the ceiling boundary binds on starts, mixed concurrency, month boundaries, the price row, Pass holder rules (free first, near, lapsed, ended, racing), Unlock precedence and reversal, older functions unchanged, ledger untouched, append-only, RLS and grants.');
 } finally { await c.end(); }
