@@ -8,7 +8,8 @@ import { saveAccountLanguage } from '../../lib/accountLanguageClient.js';
 import { LOCALES } from '../../../lib/i18n/locales.mjs';
 import { rememberLocale } from '../../../lib/i18n/localeCookie.mjs';
 import { CREATOR_ANSWERS, fetchVibe, saveVibe, skipVibe } from '../_lib/creatorProfile';
-import { PRESETS, templateHref } from '../_lib/tokens';
+import { templateHref } from '../_lib/tokens';
+import { loadTemplateCards } from '../_lib/useTemplates';
 import { archetypeParts } from '../../../lib/creatorArchetype.js';
 import { rankByTaste } from '../../../lib/creatorWords.js';
 import { CHAOS_MAX, STUDIO_NAME_MAX, cleanCreatorAnswers } from '../../../lib/creatorProfile.js';
@@ -113,8 +114,10 @@ export function VibeCheck({ retake = false }) {
     window.location.reload();
   }
 
-  function makeFirst() {
-    const ranked = rankByTaste(PRESETS, saved, (p) => `${p.name} ${p.category} ${p.prompt}`);
+  async function makeFirst() {
+    // Loaded on demand: only this click needs the templates.
+    const loaded = await loadTemplateCards();
+    const ranked = rankByTaste(loaded?.templates ?? [], saved, (p) => p.taste ?? '');
     router.push(ranked[0] ? templateHref(ranked[0]) : '/app');
   }
 

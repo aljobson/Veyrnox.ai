@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { useI18n } from '../../../components/I18nProvider.jsx';
 import { tOr } from '../../../lib/i18n/translate.mjs';
-import { PRESETS, searchTemplates } from '../_lib/templates.js';
+import { useTemplateCards, useTemplateSearch } from '../_lib/useTemplates';
 import { presetTitle } from '../_lib/tokens.js';
 import { runnableTemplates } from '../_lib/runnableTemplates.js';
 import { templateHandoffVisual } from '../_lib/templateHandoff.js';
@@ -15,11 +15,13 @@ export function TemplatePicker({ models, goal, onPick, onClose }) {
   const { t } = useI18n();
   const [query, setQuery] = useState('');
   const search = useRef(null);
-  const rows = useMemo(() => runnableTemplates(PRESETS, models, goal), [models, goal]);
+  const { templates } = useTemplateCards();
+  const rows = useMemo(() => runnableTemplates(templates, models, goal), [templates, models, goal]);
+  const found = useTemplateSearch(useMemo(() => rows.map((row) => row.preset), [rows]), query);
   const shown = useMemo(() => {
-    const matches = new Set(searchTemplates(rows.map((row) => row.preset), query));
+    const matches = new Set(found);
     return rows.filter((row) => matches.has(row.preset));
-  }, [rows, query]);
+  }, [rows, found]);
 
   // The shared Modal keeps focus inside, makes the page behind inert, closes on
   // Escape or a click on the backdrop, and puts focus back on the opener.

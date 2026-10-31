@@ -1,5 +1,6 @@
 import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
+import { LoadError } from '../../../components/publish/LoadError';
 import { Text as ThemedText, themedStyles, useThemedStyles } from '../../../components/ui';
 import { NetworkLogo } from '../../../components/publish/NetworkLogo';
 import { networkName } from '../../../lib/networkLogos';
@@ -63,7 +64,7 @@ export default function Posts() {
             <Stack.Screen options={{ title: t('publish.posts'), headerRight: () => <HeaderAction label={t('publish.newpost')} onPress={() => router.push('/publish/compose')} /> }} />
             {doneKey ? <StatusText variant="inherit" style={styles.done} accessibilityRole="alert" accessibilityLiveRegion="polite">{tr(doneKey)}</StatusText> : null}
             {error && !posts ? (
-                <Text style={styles.error}>{error}</Text>
+                <LoadError message={error} onRetry={() => { void load(); }} />
             ) : !posts ? (
                 <ActivityIndicator color={colors.accent} />
             ) : (

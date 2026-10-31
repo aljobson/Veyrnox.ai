@@ -10,10 +10,11 @@ import * as templates from '../app/veyrnox/_lib/templates.js';
 import * as tokens from '../app/veyrnox/_lib/tokens.js';
 import * as runnable from '../app/veyrnox/_lib/runnableTemplates.js';
 import * as handoff from '../app/veyrnox/_lib/templateHandoff.js';
+import { templateCards } from '../lib/clientTemplates.js';
 
 const require = createRequire(import.meta.url);
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
-const local = { '../_lib/templates.js': templates, '../_lib/tokens.js': tokens, '../_lib/runnableTemplates.js': runnable, '../_lib/templateHandoff.js': handoff, './TemplateArtwork': { TemplateArtwork: () => null }, './Modal': { Modal: ({ children, onCancel, initialFocusRef, ...labels }) => createElement('dialog', { open: true, ...labels }, children) } };
+const local = { '../_lib/tokens.js': tokens, '../_lib/runnableTemplates.js': runnable, '../_lib/templateHandoff.js': handoff, '../_lib/useTemplates': { useTemplateCards: () => ({ templates: templateCards(), categories: [], ready: true }), useTemplateSearch: (cards) => cards }, './TemplateArtwork': { TemplateArtwork: () => null }, './Modal': { Modal: ({ children, onCancel, initialFocusRef, ...labels }) => createElement('dialog', { open: true, ...labels }, children) } };
 const module = { exports: {} };
 const compiled = ts.transpileModule(read('app/veyrnox/_components/TemplatePicker.js'), {
   compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS },

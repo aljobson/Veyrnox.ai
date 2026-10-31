@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { MODELS, PRESETS, PRESET_CATEGORIES, modelIdForName, presetHref, templateHref, templatesIn } from '../app/veyrnox/_lib/tokens.js';
+import { MODELS, modelIdForName, presetHref, templateHref } from '../app/veyrnox/_lib/tokens.js';
+import { PRESETS, PRESET_CATEGORIES, templatesIn } from '../app/veyrnox/_lib/templates.js';
 
 test('every preset names a model that still exists in the catalog list', () => {
     // A drifted name makes the card link without a model — not broken, but it

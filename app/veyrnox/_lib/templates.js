@@ -77,9 +77,7 @@ export const hasTemplateVideo = (preset) => Boolean(preset?.clipKey && SHOWCASE_
 export const PRESETS = ALL_TEMPLATES.filter(hasTemplateVideo);
 export const WALL_PRESETS = WALL_CLIP_KEYS.map((key) => ALL_TEMPLATES.find((p) => p.clipKey === key)).filter(Boolean);
 export const PRESET_CATEGORIES = ['ALL', 'NEW', ...CATEGORY_ORDER.filter((category) => PRESETS.some((p) => p.category === category))];
-// The first filter row is deliberately concise; the gallery can disclose the
-// complete category catalog in place without hiding choices in a scroll rail.
-export const QUICK_PRESET_CATEGORIES = ['ALL', 'NEW', 'POPULAR', 'YOUR PHOTO', 'PRODUCTS', 'STORIES'];
+export { QUICK_PRESET_CATEGORIES } from './tokens.js';
 export { EFFECT_THEMES, effectThemeId };
 
 // "New" is a flag, not a home category: a new template also sits in its own.
@@ -119,7 +117,6 @@ export function templateById(id) {
   return ALL_TEMPLATES.find((p) => p.id === wanted) || null;
 }
 
-/** The template's own page, where its prompt and inputs are shown before use. */
-export function templateHref(preset) {
-  return `/presets/${encodeURIComponent(preset.id)}`;
-}
+// Defined in tokens.js so components that only need the link do not pull in
+// the whole catalog; re-exported here for callers that import from templates.
+export { templateHref } from './tokens.js';

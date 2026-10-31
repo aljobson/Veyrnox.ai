@@ -5811,4 +5811,7 @@ export default {
   "credits.receipt.paid": "Оплачено",
   "credits.receipt.balance": "Новый баланс",
   "credits.receipt.thanks": "Спасибо за покупку.",
+  "projects.noWorkspacesTitle": "Нет рабочего места",
+  "projects.openEditor": "Открыть редактор",
+  "publishHome.postsFailed": "Не удалось загрузить ваши публикации, поэтому числа ниже могут быть устаревшими.",
 } as const;

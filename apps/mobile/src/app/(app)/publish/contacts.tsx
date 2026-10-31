@@ -3,7 +3,7 @@ import { Button } from '../../../components/ui';
 import { NetworkLogo } from '../../../components/publish/NetworkLogo';
 import { networkName } from '../../../lib/networkLogos';
 import { usePublishRole } from '../../../lib/usePublishRole';
-import { Text as StatusText } from '../../../components/ui/Text';
+import { LoadError } from '../../../components/publish/LoadError';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -49,7 +49,7 @@ export default function Contacts() {
                 ))}
             </View>
             {error && !contacts ? (
-                <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{error}</StatusText>
+                <LoadError message={error} onRetry={() => { void load(); }} />
             ) : !contacts ? (
                 <ActivityIndicator color={colors.accent} />
             ) : (

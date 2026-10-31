@@ -1,10 +1,10 @@
 import { createElement, Fragment } from 'react';
-import { getLocale } from '../../../lib/i18n/server';
+import { getPublicT } from '../../../lib/i18n/server';
 import { legalDocument } from '../../../lib/i18n/legal/catalogs.mjs';
 import { pageAlternates } from '../../../lib/i18n/metadata.mjs';
 import { localizedHref, localeTag, isLocalizedPath } from '../../../lib/i18n/locales.mjs';
 import { rich } from '../../../lib/i18n/rich';
-import { fill, translator } from '../../../lib/i18n/translate.mjs';
+import { ENGLISH, fill, translator } from '../../../lib/i18n/translate.mjs';
 import { LegalPage, ENTITY } from './Legal';
 import englishBindings from '../../../lib/i18n/messages/legal/en/binding.mjs';
 
@@ -15,8 +15,8 @@ export function legalText(text, locale) {
     /^\d/.test(part) ? <bdi dir="ltr" key={index}>{part}</bdi> : part);
 }
 
-export function LegalBlocks({ blocks, messages, locale }) {
-  const jurisdiction = translator(locale)('legal.jurisdiction');
+// `jurisdiction` is the public catalog's legal.jurisdiction in the page's language.
+export function LegalBlocks({ blocks, messages, locale, jurisdiction = ENGLISH['legal.jurisdiction'] }) {
   function render(block, key) {
     const attrs = Object.fromEntries(Object.entries(block.attrs || {}).map(([name, value]) => [name,
       name === 'href' ? localizedHref(locale, fill(value, ENTITY)) : value]));
@@ -38,18 +38,18 @@ export function LegalBlocks({ blocks, messages, locale }) {
 }
 
 export async function legalMetadata(document) {
-  const locale = await getLocale();
+  const { locale } = await getPublicT();
   const { messages } = await legalDocument(locale, document);
   return { title: messages.title, description: messages.description, alternates: isLocalizedPath(`/legal/${document}`) ? pageAlternates(locale, `/legal/${document}`) : { canonical: `/legal/${document}` } };
 }
 
 export default async function LegalDocument({ document }) {
-  const locale = await getLocale();
+  const { locale, t } = await getPublicT();
   const data = await legalDocument(locale, document);
   const updated = locale === 'en' ? data.updated : new Intl.DateTimeFormat(localeTag(locale), {
     day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC', numberingSystem: 'latn',
   }).format(new Date(`${data.updated} 00:00:00 GMT`));
   return <LegalPage title={data.messages.title} updated={updated} locale={locale} document={document} c={translator(locale, data.chrome)}>
-    <LegalBlocks blocks={data.blocks} messages={data.messages} locale={locale} />
+    <LegalBlocks blocks={data.blocks} messages={data.messages} locale={locale} jurisdiction={t('legal.jurisdiction')} />
   </LegalPage>;
 }

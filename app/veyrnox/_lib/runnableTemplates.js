@@ -8,7 +8,7 @@ import { modelIdForName } from './tokens.js';
 export function runnableTemplates(templates, models, goal) {
   const byId = new Map((models || []).map((model) => [model.id, model]));
   const rows = (templates || []).map((preset) => ({ preset, model: byId.get(modelIdForName(preset.model)) }))
-    .filter((row) => row.model && typeof row.preset.prompt === 'string' && row.preset.prompt.trim());
+    .filter((row) => row.model && (row.preset.promptPreview ?? row.preset.prompt)?.trim());
   if (goal !== 'image' && goal !== 'video') return rows;
   return [...rows.filter((row) => row.model.kind === goal), ...rows.filter((row) => row.model.kind !== goal)];
 }

@@ -48,7 +48,7 @@ test('each source is uploaded once, before any request, and reused by all', asyn
         ts.forEachChild(node, visit);
     }
     visit(ast); assert.ok(requestObject, 'generation request body found');
-    const serialize = new Function('context', `const {modelId,keys,inputs,inputsForIndex,presetParam,templateStartId,references,anySource,i,n}=context; return JSON.stringify(${requestObject});`);
+    const serialize = new Function('context', `const {modelId,keys,inputs,inputsForIndex,presetParam,templateStartIdFor,templateData,references,anySource,i,n}=context; return JSON.stringify(${requestObject});`);
     for (const count of [1, 3]) {
         const events = [], files = Array.from({length:count}, (_,i) => ({name:`reference-${i}.png`}));
         const sources = {image:files.map(file=>({file}))};
@@ -58,7 +58,7 @@ test('each source is uploaded once, before any request, and reused by all', asyn
         const bodies = [], keys = ['batch-key-1','batch-key-2','batch-key-3'];
         const result = await sendInOrder(3, async i => {
             events.push(`request:${i}`);
-            bodies.push(JSON.parse(serialize({modelId:'edit',keys,inputs:{prompt:'p'},inputsForIndex,presetParam:null,templateStartId:()=>null,references,anySource:true,i,n:3})));
+            bodies.push(JSON.parse(serialize({modelId:'edit',keys,inputs:{prompt:'p'},inputsForIndex,presetParam:null,templateData:null,templateStartIdFor:()=>null,references,anySource:true,i,n:3})));
         });
         assert.equal(result.started, 3); assert.equal(result.error, null);
         assert.deepEqual(events.slice(0,count),files.map(file=>`upload:${file.name}`));

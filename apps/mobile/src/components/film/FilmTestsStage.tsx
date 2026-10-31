@@ -4,6 +4,7 @@ import { Pressable, Text, View } from 'react-native';
 import { assetKey, isLocked, lockAsset, testMatrix, testPrompt } from '../../lib/filmStudio';
 import { displayLabel } from '../../lib/displayLabels';
 import { t } from '../../lib/i18n';
+import { filmErrorText } from '../../lib/filmError';
 import { colors } from '../../theme';
 import { FilmSelect } from './FilmSelect';
 import { FilmAction, FilmInput, FilmPromptOutput, type StageProps } from './FilmPromptOutput';
@@ -36,6 +37,6 @@ export function FilmTestsStage({ film, change, catalog, live }: StageProps) {
             </View>;
         })}
         {error ? <StatusText variant="inherit" accessibilityRole="alert" style={{ color: colors.danger }}>{error}</StatusText> : null}
-        <FilmAction label={t('film.lockaftereverytestpasses')} disabled={locked || score !== rows.length} onPress={() => { try { change(lockAsset(film, assetKey(asset))); setError(''); } catch (e) { setError((e as Error).message); } }} />
+        <FilmAction label={t('film.lockaftereverytestpasses')} disabled={locked || score !== rows.length} onPress={() => { try { change(lockAsset(film, assetKey(asset))); setError(''); } catch (e) { setError(filmErrorText(e)); } }} />
     </View>;
 }

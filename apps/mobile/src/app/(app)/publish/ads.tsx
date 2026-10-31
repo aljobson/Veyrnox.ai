@@ -1,6 +1,7 @@
 import { rawText } from '../../../lib/i18n/translate';
 import { usePublishScope } from '../../../lib/usePublishScope';
 import { Text as StatusText } from '../../../components/ui/Text';
+import { LoadError } from '../../../components/publish/LoadError';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
@@ -77,7 +78,7 @@ export default function Ads() {
             {locked ? (
                 <UnlockCard feature="ads" onUnlocked={() => setReload((n) => n + 1)} />
             ) : error && !campaigns ? (
-                <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{error}</StatusText>
+                <LoadError message={error} onRetry={() => { void load(); }} />
             ) : !campaigns ? (
                 <ActivityIndicator color={colors.accent} />
             ) : (
