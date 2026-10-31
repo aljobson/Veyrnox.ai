@@ -1276,6 +1276,7 @@ export default {
   "create.pickPreset": "参考素材、ファイル、アイデア",
   "create.priceExplainer": "モデルを選んで、プロンプト・参考素材・設定を追加してください。正確な費用は生成前に常に表示されます。",
   "create.s": "{value1}秒",
+  "create.lengthCost": "{value1}秒 \u00b7 {credits} cr",
   "create.short.other": "残高は{have}クレジット、費用は{need}クレジットです。あと{count}クレジット必要です。",
   "create.startFrom": "出発点を選ぶ",
   "create.template.format": "テンプレートと同じ{aspect}で開きます。",

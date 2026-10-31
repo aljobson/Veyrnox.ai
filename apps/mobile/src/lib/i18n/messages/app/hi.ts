@@ -1301,6 +1301,7 @@ export default {
   "create.pickPreset": "रेफ़रेंस, फ़ाइल या विचार",
   "create.priceExplainer": "अपना प्रॉम्प्ट, रेफ़रेंस और सेटिंग जोड़ने के लिए मॉडल चुनें। Generate से पहले सटीक लागत दिखती रहती है।",
   "create.s": "{value1}से",
+  "create.lengthCost": "{value1}से \u00b7 {credits} cr",
   "create.short.one": "आपके पास {have} क्रेडिट हैं और इसकी लागत {need} है। आपको {count} और चाहिए।",
   "create.short.other": "आपके पास {have} क्रेडिट हैं और इसकी लागत {need} है। आपको {count} और चाहिए।",
   "create.startFrom": "यहाँ से शुरू करें",

@@ -1326,6 +1326,7 @@ export default {
   "create.pickPreset": "Référence, fichier ou idée",
   "create.priceExplainer": "Choisissez un modèle pour ajouter votre prompt, vos références et vos réglages. Le coût exact reste visible avant de générer.",
   "create.s": "{value1}s",
+  "create.lengthCost": "{value1}s \u00b7 {credits} cr",
   "create.short.many": "Vous avez {have} crédits et cette création coûte {need}. Il vous manque {count} crédits.",
   "create.short.one": "Vous avez {have} crédits et cette création coûte {need}. Il vous manque {count} crédit.",
   "create.short.other": "Vous avez {have} crédits et cette création coûte {need}. Il vous manque {count} crédits.",

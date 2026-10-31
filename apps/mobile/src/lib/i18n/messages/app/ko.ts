@@ -1276,6 +1276,7 @@ export default {
   "create.pickPreset": "참고 자료, 파일 또는 아이디어",
   "create.priceExplainer": "모델을 선택하여 프롬프트, 참고 자료, 설정을 추가하세요. 생성 전까지 정확한 비용이 표시됩니다.",
   "create.s": "{value1}초",
+  "create.lengthCost": "{value1}초 \u00b7 {credits} cr",
   "create.short.other": "보유 크레딧은 {have}이고 필요한 비용은 {need}입니다. {count}크레딧이 더 필요합니다.",
   "create.startFrom": "시작점",
   "create.template.format": "템플릿과 같은 {aspect} 비율로 열립니다.",

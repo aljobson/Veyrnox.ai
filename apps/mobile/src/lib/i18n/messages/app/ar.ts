@@ -1401,6 +1401,7 @@ export default {
   "create.pickPreset": "مرجع أو ملف أو فكرة",
   "create.priceExplainer": "اختر نموذجًا لإضافة وصفك ومراجعك وإعداداتك. تبقى التكلفة الدقيقة ظاهرة قبل التوليد.",
   "create.s": "{value1}ث",
+  "create.lengthCost": "{value1}ث \u00b7 {credits} cr",
   "create.short.few": "لديك {have} كريدت والتكلفة {need}. تحتاج إلى {count} إضافية.",
   "create.short.many": "لديك {have} كريدت والتكلفة {need}. تحتاج إلى {count} إضافية.",
   "create.short.one": "لديك {have} كريدت والتكلفة {need}. تحتاج إلى {count} إضافية.",
