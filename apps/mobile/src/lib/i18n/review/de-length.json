@@ -3294,6 +3294,24 @@
     "ratio": 2
   },
   {
+    "id": "wins.all",
+    "english": "All time",
+    "translation": "Gesamter Zeitraum",
+    "ratio": 2.13
+  },
+  {
+    "id": "wins.see",
+    "english": "See your wins",
+    "translation": "Deine Erfolge ansehen",
+    "ratio": 1.62
+  },
+  {
+    "id": "wins.close",
+    "english": "Close",
+    "translation": "Schließen",
+    "ratio": 1.8
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

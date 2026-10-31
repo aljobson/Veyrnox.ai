@@ -6,6 +6,7 @@ import { AppNav } from '../_components/NavBar';
 import { Main } from '../_components/Main';
 import { PresetGallery } from '../_components/PresetGallery';
 import { VibeOffer } from '../_components/VibeOffer';
+import { YourWinsCard } from '../_components/YourWinsCard';
 import { useVibe } from '../_lib/creatorProfile';
 
 function StarterIcon({ name }) {
@@ -57,6 +58,7 @@ export default function Explore() {
           <StarterCard href="/app/film-studio" label={t('label.Film Studio')} description={t('app.explore.filmStart')} icon="film" />
         </section>
 
+        <YourWinsCard />
         <VibeOffer status={vibe.status} onSkipped={vibe.reload} />
         <Link href="/app/oddlings" className="group mb-12 grid overflow-hidden rounded-[20px] border border-vx-border bg-vx-panel transition-[border-color,scale] duration-150 ease-(--vx-ease-out) hover:border-vx-accent active:scale-[0.96] lg:grid-cols-[.9fr_1.1fr]">
           <div className="relative min-h-52 overflow-hidden bg-vx-base lg:min-h-64">
