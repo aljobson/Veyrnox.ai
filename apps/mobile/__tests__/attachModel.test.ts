@@ -40,3 +40,21 @@ it('chooses the verified three-file model and preserves assignment order', () =>
     expect(plan?.assignments.map(a=>a.item.name)).toEqual(['a','b','c']);
     expect(plan?.unused).toEqual([files[3]]);
 });
+
+describe('reference models verified for more than three pictures', () => {
+    const reference = (): CatalogModel => ({
+        id: 'ref', name: 'ref', modality: 'image-to-video', credits: 85, gated: false, durations: [5],
+        capabilities: { inputs: { prompt: { max: 500 } }, media: { image: { required: true, maxFiles: 9 } } },
+    } as unknown as CatalogModel);
+    it('takes nine pictures in one image slot and reports the tenth unused', () => {
+        const items = Array.from({ length: 10 }, (_, i) => item('image', `p${i}`));
+        const plan = planAttachments([reference()], reference(), items);
+        expect(plan?.assignments).toHaveLength(9);
+        expect(plan?.assignments.every((a) => a.slot === 'image')).toBe(true);
+        expect(plan?.unused).toHaveLength(1);
+    });
+    it('frame models keep three pictures a kind at most', () => {
+        const plan = planAttachments([frames], frames, Array.from({ length: 5 }, (_, i) => item('image', `p${i}`)));
+        expect(plan?.assignments).toHaveLength(2);
+    });
+});

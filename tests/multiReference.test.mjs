@@ -24,7 +24,7 @@ test('every raised limit has a verified array contract and pricing evidence', ()
   for (const [endpoint, r] of Object.entries(REGISTRY)) {
     assert.equal(capabilityFor(endpoint), r);
     for (const [slot, spec] of Object.entries(r.media)) {
-    assert.ok(Number.isInteger(spec.max ?? 1) && (spec.max ?? 1) >= 1 && (spec.max ?? 1) <= 3);
+    assert.ok(Number.isInteger(spec.max ?? 1) && (spec.max ?? 1) >= 1 && (spec.max ?? 1) <= 9);
     if ((spec.max ?? 1) > 1) { assert.equal(spec.list,true); assert.match(spec.verification,/^https:\/\//); assert.match(spec.priceVerification,/^https:\/\//); assert.match(spec.verifiedAt,/^\d{4}-\d{2}-\d{2}$/); assert.ok(verifiedReferenceLimit(spec), `${endpoint}:${slot} needs dated count and price verification`); }
     }
   }
@@ -58,7 +58,7 @@ test('flag-off counts and unknown slots stop before inspecting any source', asyn
   const result = await resolveGenerationSources({references,record},{upload:async()=>{calls++;return source('a');}});
   assert.equal(result.error,'source_count_exceeded'); assert.equal(calls,0);
   assert.equal(readGenerationSources({references,source_keys:[]}).error,'references_ambiguous');
-  assert.equal(readGenerationSources({references:[...references,...references,...references,...references]}).error,'references_invalid');
+  assert.equal(readGenerationSources({references:[...references,...references,...references,...references,...references]}).error,'references_invalid');
 }));
 test('every reference receives pixel, duration, type and aggregate size checks', async () => flag('true', async () => {
   const bounded = {...record,media:{image:{...record.media.image,maxPixels:100,maxSeconds:5}}};

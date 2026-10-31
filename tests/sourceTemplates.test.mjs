@@ -30,6 +30,8 @@ import { MODELS, modelIdForName, presetCredits, presetHref } from '../app/veyrno
 import { AUDIT_SHOWCASE_CLIPS, SHOWCASE_CLIPS } from '../app/veyrnox/_lib/showcase.js';
 import { isUnknownStaticPage } from '../lib/unknownStaticPage.js';
 import { templateStartId } from '../lib/templateStart.js';
+import { SEEDANCE_200_TEMPLATE_METADATA } from '../app/veyrnox/_lib/seedanceTemplateMetadata.js';
+import { SEEDANCE_REFERENCE_MODEL, takesReferenceModel } from '../app/veyrnox/_lib/seedanceReference.js';
 
 // Audit records keep the original media paths; the files are published without the source-platform name.
 const publishedMediaPath = (path) => path.replace(/-(?:higgs|syntx)-/, '-');
@@ -222,8 +224,9 @@ test('the 200 Seedance templates preserve full prompts and paired unique videos'
     assert.equal(template.sourceModel, record.sourceModel, record.id);
     assert.equal(template.sourceUrl, record.sourceUrl, record.id);
     const textOnly = template.needs == null || /^Copy the exact prompt;/.test(template.needs);
-    assert.equal(template.model, textOnly ? 'Seedance 2.0 Fast' : 'Kling 3.0 · I2V', record.id);
-    assert.equal(template.credits, textOnly ? 19 : 32, record.id);
+    const reference = !textOnly && takesReferenceModel(SEEDANCE_200_TEMPLATE_METADATA[record.id]);
+    assert.equal(template.model, textOnly ? 'Seedance 2.0 Fast' : reference ? SEEDANCE_REFERENCE_MODEL : 'Kling 3.0 · I2V', record.id);
+    assert.equal(template.credits, textOnly ? 19 : reference ? 85 : 32, record.id);
     assert.equal(template.durationSeconds, textOnly ? 5 : 10, record.id);
     if (template.promptOrigin === 'community-source-exact') {
       assert.equal(template.prompt, record.prompt, `${record.id}: full exact prompt must remain copied`);

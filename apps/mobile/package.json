@@ -33,6 +33,7 @@
     "expo-sharing": "~58.0.19",
     "expo-status-bar": "~58.0.3",
     "expo-store-review": "~58.0.2",
+    "expo-updates": "~58.0.20",
     "expo-video": "~58.0.11",
     "expo-web-browser": "~58.0.6",
     "posthog-react-native": "4.81.0",
@@ -63,6 +64,8 @@
     "test": "jest",
     "test:e2e": "e2e run",
     "typecheck": "tsc --noEmit",
+    "update:preview": "eas update --channel preview",
+    "update:production": "eas update --channel production",
     "lint": "expo lint"
   },
   "private": true,

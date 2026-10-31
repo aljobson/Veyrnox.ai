@@ -6,16 +6,43 @@
     {
       "id": "seedance-2.0-fast",
       "modality": "text-to-video",
-      "durations": [5],
+      "durations": [
+        5
+      ],
       "media": {},
       "credits": 19
     },
     {
       "id": "kling-3.0-i2v",
       "modality": "image-to-video",
-      "durations": [5, 10],
-      "media": {"image": {"required": true}, "endImage": {"required": false}},
+      "durations": [
+        5,
+        10
+      ],
+      "media": {
+        "image": {
+          "required": true
+        },
+        "endImage": {
+          "required": false
+        }
+      },
       "credits": 32
+    },
+    {
+      "id": "seedance-2.0-reference",
+      "modality": "image-to-video",
+      "durations": [
+        5,
+        10
+      ],
+      "media": {
+        "image": {
+          "required": true,
+          "maxFiles": 9
+        }
+      },
+      "credits": 85
     }
   ]
 }
