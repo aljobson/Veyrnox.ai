@@ -97,6 +97,7 @@ import area_filmWorkspace from './en/filmWorkspace';
 import area_form from './en/form';
 import area_freeAllowance from './en/freeAllowance';
 import area_freeAllowanceCard from './en/freeAllowanceCard';
+import area_handoff from './en/handoff';
 import area_help from './en/help';
 import area_helpGuides from './en/helpGuides';
 import area_history from './en/history';
@@ -304,6 +305,7 @@ const catalog = {
     ...area_form,
     ...area_freeAllowance,
     ...area_freeAllowanceCard,
+    ...area_handoff,
     ...area_help,
     ...area_helpGuides,
     ...area_history,

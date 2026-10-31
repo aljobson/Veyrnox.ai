@@ -1,3 +1,5 @@
+import { filmReturnParams } from '../../../../lib/filmGenerationReturns';
+import { FilmGenerationHistory } from '../../../../components/film/FilmGenerationHistory';
 import { copyText } from '../../../../lib/clipboard';
 import { t } from '../../../../lib/i18n';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -83,7 +85,7 @@ export default function FilmShot() {
                 <>
                     <Text style={styles.money}>{t('film.creditsseconds', { value1: offer.credits, value2: offer.model.name, value3: offer.seconds })}</Text>
                     <Text style={styles.muted}>{t('film.thisopensCreatewiththepromptfilled')}</Text>
-                    <Pressable accessibilityRole="button" style={styles.primary} onPress={() => { if (current()) router.push({ pathname: '/create/[modelId]', params: { modelId: offer.model.id, prompt: offer.prompt, duration: String(offer.seconds), aspect: offer.aspect } }); }}>
+                    <Pressable accessibilityRole="button" style={styles.primary} onPress={() => { if (current()) router.push({ pathname: '/create/[modelId]', params: { ...filmReturnParams(film, shot.id), modelId: offer.model.id, prompt: offer.prompt, duration: String(offer.seconds), aspect: offer.aspect } }); }}>
                         <Text style={styles.primaryText}>{t('film.openinCreate')}</Text>
                     </Pressable>
                 </>
@@ -101,6 +103,7 @@ export default function FilmShot() {
                 </Pressable>
             ) : null}
 
+            <FilmGenerationHistory film={film} shotId={shot.id} />
             {attempts.length ? <Text style={styles.heading} accessibilityRole="header">{t('film.attempts')}</Text> : null}
             {attempts.map((a) => (
                 <View key={a.version} style={styles.attempt}>

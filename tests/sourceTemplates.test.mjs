@@ -81,10 +81,13 @@ test('every imported clip has its own matching recipe and a supported video mode
       assert.equal(preset.promptOrigin, 'community-source-exact', preset.id);
       assert.equal(preset.prompt, SEEDANCE_SOURCE_PROMPT_RECORDS[preset.id]?.prompt, preset.id);
     }
-    assert.ok(preset.needs);
-    assert.equal(preset.durationSeconds, 10);
+    if (preset.needs == null) {
+      assert.equal(preset.model, 'Seedance 2.0 Fast', preset.id);
+      assert.equal(preset.durationSeconds, 5, preset.id);
+      assert.doesNotMatch(preset.prompt, /uploaded|starting image/i, preset.id);
+    }
     const model = MODELS.find((m) => m.id === modelIdForName(preset.model));
-    assert.ok(model?.durations?.includes(10));
+    assert.ok(model?.durations?.includes(preset.durationSeconds));
     if (preset.aspect && model?.aspects) assert.ok(model.aspects.includes(preset.aspect), `${preset.id} uses unsupported ${preset.aspect}`);
   }
 });
@@ -215,9 +218,16 @@ test('the 200 Seedance templates preserve full prompts and paired unique videos'
     assert.equal(template.sourcePlatform, record.sourcePlatform, record.id);
     assert.equal(template.sourceModel, record.sourceModel, record.id);
     assert.equal(template.sourceUrl, record.sourceUrl, record.id);
-    assert.equal(template.model, 'Seedance 2.0 Fast', record.id);
-    assert.equal(template.credits, 19, record.id);
-    if (!record.existing) assert.equal(template.prompt, record.prompt, `${record.id}: full exact prompt must remain copied`);
+    const textOnly = template.needs == null || /^Copy the exact prompt;/.test(template.needs);
+    assert.equal(template.model, textOnly ? 'Seedance 2.0 Fast' : 'Kling 3.0 · I2V', record.id);
+    assert.equal(template.credits, textOnly ? 19 : 32, record.id);
+    assert.equal(template.durationSeconds, textOnly ? 5 : 10, record.id);
+    if (template.promptOrigin === 'community-source-exact') {
+      assert.equal(template.prompt, record.prompt, `${record.id}: full exact prompt must remain copied`);
+    } else {
+      assert.equal(template.promptOrigin, 'veyrnox-adaptation', record.id);
+      assert.equal(template.preferAdaptedPrompt, true, record.id);
+    }
     const promptAudit = sourcePromptAuditRecord(record.id);
     promptAudits.push(promptAudit);
     if (record.referenceImageCount > 0 || record.referenceVideoCount > 0 || promptAudit.issues.includes('audio-preservation-not-supported')) {

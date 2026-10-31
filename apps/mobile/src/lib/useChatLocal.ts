@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type SetStateAction } from 'r
 import { subscribeCacheUser } from './appCache';
 import { captureChat, currentCapture, readDraft, readStars, toggleStar, writeDraft, type ChatCapture } from './chatLocal';
 
-export function useChatLocal(threadId: string) {
+export function useChatLocal(threadId: string, prompt?: string) {
     const [draft, setText] = useState('');
     const [stars, setStars] = useState<string[]>([]);
     const [starredOnly, setStarredOnly] = useState(false);
@@ -26,12 +26,12 @@ export function useChatLocal(threadId: string) {
     }, [threadId, flush]);
     useEffect(() => {
         mounted.current = true;
-        value.current = ''; setText(''); setStars([]); setStarredOnly(false);
+        value.current = prompt ?? ''; setText(prompt ?? ''); setStars([]); setStarredOnly(false);
         const capture = captureChat(threadId);
         const started = revision.current, starStarted = starsRevision.current;
         let active = true;
         void readDraft(threadId).then(text => {
-            if (active && currentCapture(capture) && started === revision.current && !value.current) { value.current = text; setText(text); }
+            if (active && currentCapture(capture) && started === revision.current && prompt === undefined && !value.current) { value.current = text; setText(text); }
         });
         void readStars(threadId).then(ids => { if (active && currentCapture(capture) && starStarted === starsRevision.current) setStars(ids); });
         const unsubscribe = subscribeCacheUser(() => {
@@ -39,7 +39,7 @@ export function useChatLocal(threadId: string) {
             setText(''); setStars([]); setStarredOnly(false);
         });
         return () => { active = false; mounted.current = false; unsubscribe(); flush(); };
-    }, [threadId, flush]);
+    }, [threadId, flush, prompt]);
     const star = useCallback(async (messageId: string) => {
         starsRevision.current++;
         const capture = captureChat(threadId);

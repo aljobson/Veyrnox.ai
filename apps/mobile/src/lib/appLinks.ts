@@ -44,11 +44,18 @@ const PUBLISH_SECTIONS: Record<string, string> = {
     developer: '/publish/developer',
 };
 
-function opened(segments: string[]): string {
+function opened(segments: string[], query: URLSearchParams): string {
     const [section, id, extra] = segments;
     const root = section ? SECTIONS[section] : undefined;
     if (!root) return '/';
-    if (id === undefined) return root;
+    if (id === undefined) {
+        if (section === 'create') {
+            const preset = query.get('preset'), model = query.get('model'), recipe = query.get('recipe');
+            if (preset !== null) return /^[a-z0-9-]{1,40}$/.test(preset) ? `/templates/${preset}` : '/create';
+            if (model !== null) return MODEL_ID_RE.test(model) ? `/create/${model}${recipe && MODEL_ID_RE.test(recipe) ? `?recipe=${encodeURIComponent(recipe)}` : ''}` : '/create';
+        }
+        return root;
+    }
     // A library item opens as a creation, a chat as that thread, a model as its create form.
     if (section === 'library' && UUID_RE.test(id)) return `/job/${id}`;
     if (section === 'chat' && UUID_RE.test(id)) return `/chat/${id}`;
@@ -88,5 +95,5 @@ export function mapAppLink(path: string): string {
         return SHARE_TOKEN_RE.test(segments[2]) ? `/review?token=${encodeURIComponent(segments[2])}` : '/';
     }
     if (segments[0] !== 'app') return '/';
-    return opened(segments.slice(1));
+    return opened(segments.slice(1), url.searchParams);
 }

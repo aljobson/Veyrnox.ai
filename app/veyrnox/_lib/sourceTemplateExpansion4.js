@@ -60,12 +60,12 @@ const films = [
   ['character-takeover', 'CHARACTER TAKEOVER', 'YOUR PHOTO', '9 / 16', '9:16', 'a full-body character reference with a clear face and outfit', 'Transfer the movement of a staged performer into the uploaded character, preserving the new identity from head to toe through energetic choreography and camera motion.'],
   ['escalator-loop', 'ESCALATOR LOOP', 'FASHION', '9 / 16', '9:16', 'a full-body fashion portrait', 'Create a seamless top-down fashion loop on a descending escalator as repeated versions of the same subject enter, pose and disappear with precise spacing.'],
   ['blood-moon-dance', 'BLOOD MOON DANCE', 'ANIME', '16 / 9', '16:9', 'a character design or portrait for the lead performer', 'Stage a gothic formation dance on a ruined cathedral rooftop beneath a huge red moon, with distinct choreography, wind-driven costumes and dramatic anime lighting.'],
-  ['red-thread-story', 'RED THREAD STORY', 'CARTOONS', '16 / 9', '16:9', 'one or two character references with clearly visible faces', 'Tell an emotional urban story through connected scenes as a glowing red thread travels between the characters, matching compositions and movement across every cut.'],
-  ['meal-together', 'MEAL TOGETHER', 'CARTOONS', '16 / 9', '16:9', 'two character references for a warm shared scene', 'Follow two characters preparing and sharing a meal through a compact sequence of coordinated kitchen actions, expressive close-ups and a warm final table reveal.'],
+  ['red-thread-story', 'RED THREAD STORY', 'CARTOONS', '16 / 9', '16:9', 'One starting image showing both characters together with clearly visible faces', 'Tell an emotional urban story through connected scenes as a glowing red thread travels between the characters, matching compositions and movement across every cut.'],
+  ['meal-together', 'MEAL TOGETHER', 'CARTOONS', '16 / 9', '16:9', 'One starting image showing both characters together in the shared scene', 'Follow two characters preparing and sharing a meal through a compact sequence of coordinated kitchen actions, expressive close-ups and a warm final table reveal.'],
   ['tentacle-breakout', 'TENTACLE BREAKOUT', 'MOVIES', '9 / 16', '9:16', 'a portrait suitable for a staged cinema audience scene', 'Film a playful handheld cinema moment where a harmless fantasy tentacle appears to emerge from the screen, startles the audience and curls past the uploaded character.'],
   ['sheep-kingdom', 'SHEEP KINGDOM', 'FANTASY', '16 / 9', '16:9', 'a full-body fantasy character portrait', 'Follow the uploaded character across a green highland among sheep, then reveal a vast pale-stone kingdom through one rising cinematic camera move.'],
   ['pumpkin-night', 'PUMPKIN NIGHT', 'FANTASY', '9 / 16', '9:16', 'a full-body portrait suitable for a night-time scene', 'Transfer a lively dance performance into a glowing pumpkin patch, preserving the subject while lantern creatures and autumn leaves respond to the choreography.'],
-  ['fashion-catch', 'FASHION CATCH', 'ADS', '16 / 9', '16:9', 'a model portrait and a separate clean garment or accessory image', 'Create a five-shot fashion commercial where the uploaded garment moves through the air, reaches the model and becomes the centrepiece of a polished final look.'],
+  ['fashion-catch', 'FASHION CATCH', 'ADS', '16 / 9', '16:9', 'One starting image showing the model wearing the garment or accessory', 'Create a five-shot fashion commercial where the garment or accessory worn by the model in the starting image becomes the centrepiece of a polished final look.'],
   ['desert-train-heist', 'DESERT TRAIN HEIST', 'MOVIES', '16 / 9', '16:9', 'a clear lead-character portrait for a cinematic action scene', 'Stage a fast but bloodless desert train adventure with the uploaded lead moving between carriage roofs, dust, horses and a tense doorway reveal.'],
 ];
 
@@ -83,7 +83,7 @@ function template([id, name, category, previewAspect, aspect, needs, action], mo
 
 export const SOURCE_TEMPLATE_EXPANSION_4 = [
   ...looks.map((entry) => template(entry)),
-  ...films.map((entry) => template(entry, 'Seedance 2.0 Fast')),
+  ...films.map((entry) => template(entry, 'Kling 3.0 · I2V')),
 ];
 
 export const SHOWCASE_CLIP_EXPANSION_4 = Object.fromEntries(SOURCE_TEMPLATE_EXPANSION_4.map((entry) => [entry.clipKey, {

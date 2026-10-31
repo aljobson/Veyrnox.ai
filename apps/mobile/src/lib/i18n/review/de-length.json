@@ -3294,6 +3294,12 @@
     "ratio": 2
   },
   {
+    "id": "handoff.useFilmResult",
+    "english": "Use this result",
+    "translation": "Dieses Ergebnis verwenden",
+    "ratio": 1.67
+  },
+  {
     "id": "wins.all",
     "english": "All time",
     "translation": "Gesamter Zeitraum",

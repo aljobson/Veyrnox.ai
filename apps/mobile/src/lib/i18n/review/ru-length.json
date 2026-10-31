@@ -3210,6 +3210,12 @@
     "ratio": 2
   },
   {
+    "id": "handoff.editedVideo",
+    "english": "Edited video",
+    "translation": "Отредактированное видео",
+    "ratio": 1.92
+  },
+  {
     "id": "wins.title",
     "english": "Your wins",
     "translation": "Ваши достижения",

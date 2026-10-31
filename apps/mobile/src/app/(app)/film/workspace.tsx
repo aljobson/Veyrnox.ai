@@ -1,3 +1,6 @@
+import { markFilmSwitch } from '../../../lib/filmGenerationReturns';
+import { localFilmId, freshFilmIdentity } from '../../../lib/filmHandoffIdentity';
+import { inheritFilmIdentity } from '../../../lib/filmHandoffIdentity';
 import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { plural, t } from '../../../lib/i18n';
@@ -44,6 +47,7 @@ export default function FilmWorkspace() {
     const valid = () => !installing.current && cloudGeneration.current === getFilmGeneration() && binding !== null && binding.owner === getCacheUser() && binding.generation === generation.current;
 
     const installFilm = useCallback((next: Film, owner: string | undefined) => {
+        void markFilmSwitch(localFilmId(next));
         cancel(); cloudGeneration.current = getFilmGeneration(); const session = ++generation.current; installing.current = false;
         setBinding({ owner, generation: session }); latestFilm.current = next; setFilm(next);
         setCloudLink(getActiveCloudLink());
@@ -98,6 +102,7 @@ export default function FilmWorkspace() {
 
     const change = (next: Film) => {
         if (!valid()) return;
+        if (latestFilm.current) inheritFilmIdentity(latestFilm.current, next);
         latestFilm.current = next; setFilm(next); schedule(next, valid);
     };
     function newFilm() {
@@ -113,6 +118,7 @@ export default function FilmWorkspace() {
                 await clearStudio(appCache, owner);
                 if (owner !== getCacheUser() || nextGeneration !== generation.current) return;
                 const next = emptyFilm();
+                freshFilmIdentity(next);
                 installFilm(next, owner); setStage(0);
                 const installed = generation.current;
                 schedule(next, () => owner === getCacheUser() && installed === generation.current);
