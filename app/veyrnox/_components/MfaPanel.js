@@ -29,10 +29,9 @@ const CODE_RE = /^[0-9]{6}$/;
 
 export function MfaPanel({ requireFresh = false, onVerified } = {}) {
   const { t, locale } = useI18n();
-  const [recoveryCodes, setRecoveryCodes] = useState(null);
-  const account = useRef(getStoredUserId());
-  const [accountId, setAccountId] = useState(getStoredUserId);
-  const refreshId = useRef(0);
+  // Original nine states stay first, in order, so the positional i18n render
+  // harness (tests/helpers/appI18nRound5.mjs injects useState by call index)
+  // keeps aligning; the recovery state added below takes trailing slots.
   const [factors, setFactors] = useState(null);
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState(null); // { factorId, secret, uri }
@@ -42,6 +41,10 @@ export function MfaPanel({ requireFresh = false, onVerified } = {}) {
   const [aal, setAal] = useState(null);
   const [freshUntil, setFreshUntil] = useState(null);
   const [wasVerified, setWasVerified] = useState(false);
+  const [recoveryCodes, setRecoveryCodes] = useState(null);
+  const [accountId, setAccountId] = useState(getStoredUserId);
+  const account = useRef(getStoredUserId());
+  const refreshId = useRef(0);
 
   const refresh = useCallback(async () => {
     const request = ++refreshId.current;

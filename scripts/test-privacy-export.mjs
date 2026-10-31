@@ -291,6 +291,7 @@ try {
         'cinema_passes', 'cinema_ranking_decisions', 'cinema_ranking_snapshots', 'cinema_retention_requests', 'cinema_share_actions',
         'cinema_story_polls', 'cinema_submissions', 'cinema_unlock_rate_limits', 'cinema_unlocks', 'cinema_watch_sessions',
         'editor_library_renders', 'editor_requests', 'film_library_masters', 'film_studio_projects', 'film_studio_save_windows', 'generation_attempt_rate_limits', 'job_read_rate_limits',
+        'mfa_recovery_attempts', 'mfa_recovery_codes',
         'model_free_allowance_claims', 'organisation_members', 'privacy_export_requests', 'project_members', 'provider_spend_reservations',
         'push_outbox', 'push_token_writes', 'referral_rewards', 'social_account_actions', 'social_ad_campaigns',
         'social_api_keys', 'social_approval_events', 'social_approval_requests', 'social_brand_invitations', 'social_brand_members',
