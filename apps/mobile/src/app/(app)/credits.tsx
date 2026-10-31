@@ -7,6 +7,7 @@ import { ActivityIndicator, Platform, ScrollView, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { useBilling } from '../../billing/BillingProvider';
 import { useStorePurchase } from '../../billing/useStorePurchase';
+import { paywallsEnabled } from '../../billing/paywallGate';
 import { getPurchaseSnapshot, type PurchaseOutcome } from '../../billing/storePurchaseStore';
 import { LEGAL_LINKS } from '../../lib/account';
 import {
@@ -209,6 +210,7 @@ export default function Credits() {
                 )}
                 {!billing.generationActive && chosenPlan?.interval ? <Text accessibilityLanguage="en" variant="caption" tone="tertiary" style={styles.terms}>{renewalTerms(chosenPlan.interval, chosenPlan.priceString, store)}</Text> : null}
                 {!billing.generationActive ? <Button variant="primary" accessibilityRole="button" disabled={!billing.generationPurchaseReady || !chosenPlan || busyId !== null} onPress={() => void buyPlan()} label={t('credits.subscriptions.continue')} loading={busyId === chosenPlan?.id} /> : null}
+                {paywallsEnabled() && billing.generationPurchaseReady ? <Button variant="secondary" accessibilityRole="button" disabled={busyId !== null} onPress={() => router.push({ pathname: '/paywall', params: { offering: 'generation' } })} label={t('billing.paywall.seePlans')} /> : null}
             </View>
 
             <View style={styles.section}>
@@ -222,6 +224,7 @@ export default function Credits() {
                         {chosenId === item.id ? <VeyCardPeek /> : null}
                     </PackCard>
                 ))}</View>}
+                {paywallsEnabled() && billing.canPurchase && packs.length > 0 ? <Button variant="secondary" accessibilityRole="button" disabled={busyId !== null} onPress={() => router.push({ pathname: '/paywall', params: { offering: 'credits' } })} label={t('billing.paywall.seePacks')} /> : null}
                 <PackTaxNote />
             </View>
 

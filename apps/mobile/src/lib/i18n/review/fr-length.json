@@ -4818,6 +4818,12 @@
     "ratio": 3.2
   },
   {
+    "id": "billing.paywall.seePlans",
+    "english": "See all plans",
+    "translation": "Voir tous les forfaits",
+    "ratio": 1.69
+  },
+  {
     "id": "job.holdToDelete",
     "english": "Hold to delete",
     "translation": "Maintenir pour supprimer",
