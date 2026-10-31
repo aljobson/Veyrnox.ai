@@ -11,6 +11,7 @@ import { writeStudioDraft } from '../_lib/landingDraft';
 import { TEMPLATE_PROMPT_MAX } from '../_lib/templateDraft';
 import { modelAspectRatios, modelIdForName, presetCredits, presetHref } from '../_lib/tokens';
 import { CHAT_USER_TEXT_MAX } from '../../../lib/chatLimits.js';
+import { Spinner } from './Spinner';
 
 // The aspect the studio will actually use: the template's, when its model
 // takes it (same rule as app/create), otherwise none is shown or sent.
@@ -32,6 +33,7 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked 
   const [targetSeconds, setTargetSeconds] = useState(60);
   const credits = presetCredits(preset, models, durationSeconds);
   const [handoffError, setHandoffError] = useState('');
+  const [opening, setOpening] = useState(false);
   const promptBlocked = !prompt.trim() || prompt.length > TEMPLATE_PROMPT_MAX;
   const generationDisabled = generationBlocked || promptBlocked;
   const chatBlocked = !prompt.trim() || prompt.length > CHAT_USER_TEXT_MAX;
@@ -43,6 +45,7 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked 
       try { saved = writeStudioDraft(window.sessionStorage, { prompt, model: modelId, aspect, durationSeconds, negativePrompt: preset.negativePrompt, templateId: preset.id }); } catch { /* The unedited URL recipe still works. */ }
       if (!saved && (prompt !== preset.prompt || preset.sourcePromptOrigin === 'community-source-exact')) { setHandoffError('studio'); return; }
     }
+    setOpening(true);
     router.push(presetHref(preset, durationSeconds));
   }
 
@@ -78,11 +81,14 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked 
       <button
         type="button"
         onClick={use}
-        disabled={generationDisabled}
-        className="vx-press mt-6 inline-flex items-center gap-4 rounded-full bg-vx-accent px-6 py-3.5 font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover disabled:opacity-50"
+        disabled={generationDisabled || opening}
+        aria-busy={opening || undefined}
+        className={`vx-press mt-6 inline-flex items-center gap-4 rounded-full bg-vx-accent px-6 py-3.5 font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover ${opening ? 'cursor-wait' : 'disabled:opacity-50'}`}
       >
         <span>{preset.inspired ? t("presets.use.similar") : t("presets.use.template")}</span>
-        <span className="font-vx-mono vx-num text-[15px] font-bold">{credits} cr</span>
+        {opening
+          ? <span className="grid w-[3.5ch] place-items-center"><Spinner size={18} /></span>
+          : <span className="font-vx-mono vx-num text-[15px] font-bold">{credits} cr</span>}
       </button>
       <div className="mt-6 rounded-xl border border-vx-border bg-vx-panel/40 p-4">
         <p className="font-bold">{t("presets.use.longer")}</p>

@@ -20,7 +20,7 @@ describe('guided creative feature registry', () => {
             expect(feature.steps).toHaveLength(3);
             expect(feature.example.url).toMatch(/^https:\/\/cdn\.lipsync\.video\//);
             if (feature.example.kind === 'video') expect(feature.example.posterUrl).toMatch(/^https:\/\/cdn\.lipsync\.video\//);
-            expect(feature.example.sourceUrl).toMatch(/^https:\/\/lipsync\.video\//);
+            expect(feature.example).not.toHaveProperty('sourceUrl');
             expect(creativeFeature(feature.slug)).toBe(feature);
         }
         expect(featurePrompt(creativeFeature('ai-hairstyle-changer')!, 'Long curls')).toMatch(/Requested hairstyle: Long curls$/);
@@ -91,7 +91,7 @@ describe('reuse a finished creation in a compatible guided tool', () => {
 });
 
 describe('example clips the phone can play', () => {
-    const video = (url: string) => ({ kind: 'video' as const, url, posterUrl: 'https://cdn.lipsync.video/a.webp', sourceUrl: 'https://example.test' });
+    const video = (url: string) => ({ kind: 'video' as const, url, posterUrl: 'https://cdn.lipsync.video/a.webp' });
     test('iOS cannot play WebM, so those examples show their still; MP4 plays', () => {
         expect(examplePlaysOn(video('https://cdn.lipsync.video/x/clip.webm'), 'ios')).toBe(false);
         expect(examplePlaysOn(video('https://cdn.lipsync.video/x/clip.WEBM?v=2'), 'ios')).toBe(false);

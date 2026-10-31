@@ -13,6 +13,7 @@ import { AppNav } from '../../_components/NavBar';
 import { Main } from '../../_components/Main';
 import { Chip } from '../../_components/Chip';
 import { modelAspectRatios, modelIdForName } from '../../_lib/tokens';
+import { TemplateOpening, useTemplateOpening } from '../../_components/TemplateOpening';
 import { gatewayFetch, makeIdempotencyKey, notifyBalanceChanged, GatewayError } from '../../_lib/gateway';
 import { failedCreationCopy } from '../../../../lib/i18n/createCopy.mjs';
 import { ERROR_COPY, failedJobCopy } from '../../_lib/createErrors';
@@ -89,6 +90,7 @@ export default function CreateStudio() {
   const creditLabel = value => t(pluralKey(t, locale, 'app.create.credits', value), { count: number(value) });
   const generationCostLabel = value => value === 0 ? t('publish.plan.colFree') : t('app.create.cost',{count:number(value)});
   const { models: catalogModels, live: catalogLive, loading: catalogLoading } = useCatalog();
+  const openingTemplate = useTemplateOpening(catalogLoading);
   const freeMap = useFreeAllowance(); // ADR-0069: free jobs left today per model; empty while the feature is off
   const autoShortOn = useSyncExternalStore(never, autoShortFlag, off);
   const models = catalogModels.filter((m) => !m.isEdit && !m.takesPlan && (autoShortOn || !m.takesTopic));
@@ -582,6 +584,7 @@ export default function CreateStudio() {
 
   return (
     <div className="min-h-dvh">
+      {openingTemplate && <TemplateOpening name={openingTemplate} />}
       <AppNav balance={balance} active="create" />
 
       <Main inert={draftRecovery.restoring} aria-busy={draftRecovery.restoring} className="max-w-[1500px] mx-auto px-4 sm:px-8 pt-6 pb-16 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] lg:grid-rows-[auto_auto_1fr] gap-6">

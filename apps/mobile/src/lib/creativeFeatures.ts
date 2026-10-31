@@ -13,13 +13,12 @@ export interface CreativeFeature {
     readonly placeholder: string;
     readonly prompt: string;
     readonly steps: readonly [string, string, string];
-    readonly example: { readonly kind: 'image' | 'video'; readonly url: string; readonly posterUrl?: string; readonly sourceUrl: string };
+    readonly example: { readonly kind: 'image' | 'video'; readonly url: string; readonly posterUrl?: string };
     readonly scriptUpload?: boolean;
 }
 
-const source = (slug: string) => `https://lipsync.video/${slug === 'lip-sync' ? '' : slug}`;
-const feature = (value: Omit<CreativeFeature, 'example'> & { example: Omit<CreativeFeature['example'], 'sourceUrl'> }): CreativeFeature =>
-    Object.freeze({ ...value, example: Object.freeze({ ...value.example, sourceUrl: source(value.slug) }) });
+const feature = (value: CreativeFeature): CreativeFeature =>
+    Object.freeze({ ...value, example: Object.freeze({ ...value.example }) });
 
 // Native presentation of the same 22 guided workflows as app/veyrnox/_lib/creativeFeatures.js.
 // Keep model ids, required media, prompts and examples aligned; the drift test guards the shared contract.

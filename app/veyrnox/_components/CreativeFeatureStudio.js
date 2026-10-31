@@ -170,7 +170,6 @@ export default function CreativeFeatureStudio({ feature }) {
         {example && <section className={`${card} overflow-hidden`}>
           <div className="flex items-center justify-between gap-4 px-5 py-4 sm:px-6">
             <div><p className="font-vx-mono text-[10px] font-bold uppercase tracking-[0.14em] text-vx-accent">{t('app.features.example')}</p><h2 className="mt-1 text-xl font-black">{t('app.features.exampleTitle')}</h2></div>
-            <a href={example.sourceUrl} target="_blank" rel="noreferrer" className="text-xs font-bold text-vx-accent underline underline-offset-4">{t('app.features.exampleSource')}</a>
           </div>
           {example.kind === 'video'
             ? <video controls playsInline preload="metadata" referrerPolicy="no-referrer" src={exampleAsset} className="aspect-video w-full bg-black object-contain" aria-label={t('app.features.exampleAria', { title: copy.title })} />
