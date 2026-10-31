@@ -15,5 +15,5 @@ export default {
     'public.TemplateRecipe.sourcePromptNotRecorded': 'No exact source prompt is recorded for this preview. The generation prompt below is a Veyrnox adaptation, not copied source text.',
     'public.TemplateRecipe.sourcePromptTruncated': 'The source feed returned this prompt already cut off. It is preserved exactly and must not be treated as complete.',
     'public.TemplateRecipe.sourcePromptDuplicate': 'The source published this same exact prompt for another video. It is retained unchanged and identified as a source duplicate.',
-    'public.TemplateRecipe.generationPrompt': 'VEYRNOX GENERATION PROMPT',
+    'public.TemplateRecipe.generationPrompt': 'GENERATION PROMPT',
 } as const;

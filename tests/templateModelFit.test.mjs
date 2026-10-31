@@ -174,7 +174,7 @@ test('web recipe runs the exact community prompt whenever it is runnable, not a 
   } });
   const html = f.render(React.createElement(f.load('app/veyrnox/_components/TemplateRecipe.js').TemplateRecipe, { preset }));
   assert.ok(html.includes(row.sourcePrompt), 'exact source remains visible byte-for-byte');
-  assert.ok(!html.includes('VEYRNOX GENERATION PROMPT'), 'one prompt only: the community one');
+  assert.ok(!html.includes('GENERATION PROMPT'), 'one prompt only: the community one');
   assert.equal(handoff.prompt, row.sourcePrompt);
   assert.equal(handoff.preset.prompt, row.sourcePrompt);
   assert.equal(handoff.generationBlocked, false);
