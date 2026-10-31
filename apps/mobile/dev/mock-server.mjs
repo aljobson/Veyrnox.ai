@@ -642,6 +642,7 @@ createServer(async (req, res) => {
         state.referral.attached = true;
         return send(res, 200, { attached: true });
     }
+    if (path === '/api/v1/subscriptions' && req.method === 'GET') return send(res, 200, { subscription: null });
     if (path === '/api/v1/store-purchases/customer') return send(res, 200, { rc_customer_id: '3f2b8a52-6c0e-4d7a-9b1f-0a1b2c3d4e5f', sales_open: process.env.MOCK_SALES_OPEN === 'true' });
     if (path === '/api/v1/social/plan') return send(res, 200, { plans: [], entitlement: { tier: 'publish', account_limit: 5, analytics_days: 366, best_time_enabled: true, subscription: { source: 'stripe', status: 'active', current_period_end: '2026-11-20T12:00:00Z', cancel_at_period_end: false } } });
 
