@@ -79,9 +79,10 @@ test('a missing file, a poster image and other paths pass through untouched', as
     assert.equal(await serveShowcase(get('/showcases/a.mp4'), { ASSETS: assets() }), null);
 });
 
-test('wrangler sends /showcase/* to the Worker first and worker.js serves it', () => {
+test('wrangler sends only showcase MP4s to the Worker first and worker.js serves them', () => {
     const wrangler = readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8');
-    assert.match(wrangler, /"run_worker_first":\s*\[\s*"\/showcase\/\*"\s*\]/);
+    // Posters stay edge-served: a burst of them through the Worker answered 503.
+    assert.match(wrangler, /"run_worker_first":\s*\[\s*"\/showcase\/\*\.mp4"\s*\]/);
     const worker = readFileSync(new URL('../worker.js', import.meta.url), 'utf8');
     assert.match(worker, /serveShowcase\(request, env\)/);
 });

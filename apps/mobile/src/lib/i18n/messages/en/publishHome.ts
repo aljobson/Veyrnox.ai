@@ -11,6 +11,7 @@ export default {
     'publishHome.library': 'Library',
     'publishHome.loading': 'Opening your Publish workspace…',
     'publishHome.retry': 'Try again',
+    'publishHome.postsFailed': 'Could not load your posts, so the counts below may be out of date.',
     'publishHome.connected': 'Connected',
     'publishHome.scheduled': 'Scheduled',
     'publishHome.attention': 'Attention',

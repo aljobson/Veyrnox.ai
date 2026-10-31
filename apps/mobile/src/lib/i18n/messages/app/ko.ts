@@ -5613,4 +5613,7 @@ export default {
   "credits.receipt.paid": "결제 금액",
   "credits.receipt.balance": "새 잔액",
   "credits.receipt.thanks": "구매해 주셔서 감사합니다.",
+  "projects.noWorkspacesTitle": "아직 워크스페이스가 없습니다",
+  "projects.openEditor": "에디터 열기",
+  "publishHome.postsFailed": "게시물을 불러오지 못해 아래 수치가 최신이 아닐 수 있습니다.",
 } as const;

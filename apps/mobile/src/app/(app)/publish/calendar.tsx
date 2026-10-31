@@ -3,7 +3,7 @@ import { canMove, overlay } from '../../../lib/publishCalendarMove';
 import { useCalendarDrag, measureDropTargets } from '../../../components/publish/useCalendarDrag';
 import { CalendarWeekStrip } from '../../../components/publish/CalendarWeekStrip';
 import { CalendarMoveSheet, useCalendarMoves } from '../../../components/publish/CalendarMoveSheet';
-import { Text as StatusText } from '../../../components/ui/Text';
+import { LoadError } from '../../../components/publish/LoadError';
 import { NetworkLogo } from '../../../components/publish/NetworkLogo';
 import { networkName } from '../../../lib/networkLogos';
 import { PHONE_CATALOGUE } from '../../../lib/publishConnect';
@@ -147,7 +147,7 @@ export default function Calendar() {
             {locked ? (
                 <UnlockCard feature="calendar" onUnlocked={() => setReloadKey((n) => n + 1)} />
             ) : error ? (
-                <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{error}</StatusText>
+                <LoadError message={error} onRetry={() => { void load(); }} />
             ) : !posts ? (
                 <ActivityIndicator color={colors.accent} />
             ) : (

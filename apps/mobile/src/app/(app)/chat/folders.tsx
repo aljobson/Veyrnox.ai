@@ -76,7 +76,7 @@ export default function Folders() {
                 <FlatList keyboardShouldPersistTaps="handled"
                     data={folders ?? []}
                     keyExtractor={(f) => f.id}
-                    ListEmptyComponent={<Text style={styles.muted}>{t('chat.nofoldersyet')}</Text>}
+                    ListEmptyComponent={folders ? <Text style={styles.muted}>{t('chat.nofoldersyet')}</Text> : undefined}
                     renderItem={({ item }) => (
                         <Card style={styles.row}>
                             <View style={styles.text}>

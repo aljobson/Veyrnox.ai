@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { replaceActiveStudio } from '../../lib/filmCloud';
 import type { Film } from '../../lib/filmStudio';
-import { t } from '../../lib/i18n';
+import { FilmError, filmErrorText } from '../../lib/filmError';
 
 type Edit = { film: Film; valid: () => boolean; epoch: number };
 export function useFilmAutosave() {
@@ -31,9 +31,9 @@ export function useFilmAutosave() {
                 if (edit.epoch === epoch.current && edit.valid() && mounted.current && !pending.current) { setStatus('saved'); setReason(''); }
             } catch (error) {
                 if (edit.epoch !== epoch.current || !edit.valid()) return;
-                const message = error instanceof Error ? error.message : t('filmWorkspace.saveFailed');
+                const message = filmErrorText(error, 'filmWorkspace.saveFailed');
                 if (mounted.current) { setStatus('failed'); setReason(message); }
-                throw new Error(message);
+                throw new FilmError(message);
             } finally { if (running.current === write) running.current = null; }
         }
     }, [clearTimer]);

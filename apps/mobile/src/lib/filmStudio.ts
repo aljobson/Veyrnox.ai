@@ -1,3 +1,4 @@
+import { FilmError } from './filmError';
 import { t } from './i18n';
 import { optionsFor } from './createOptions';
 // Film Studio on the phone: validate the same studio document used by native editing and account cloud saves, show its
@@ -179,13 +180,13 @@ export function isLocked(film: Film, asset: Asset | undefined): boolean {
 export function lockAsset(film: Film, key: string): Film {
     for (let stage = 0; stage < 5; stage += 1) {
         const issue = stageIssues(film, stage)[0];
-        if (issue) throw new Error(issue);
+        if (issue) throw new FilmError(issue);
     }
     const asset = film.assets.find((item) => assetKey(item) === key);
-    if (!asset) throw new Error(t('filmStudio.theassetpassportismissing'));
+    if (!asset) throw new FilmError(t('filmStudio.theassetpassportismissing'));
     const rows = testMatrix(film, asset);
-    if (!rows.every((row) => asset.tests?.[row.id]?.verdict === 'pass' && present(asset.tests[row.id].result))) throw new Error(t('filmStudio.everytestneedsanoutputreferenceand'));
-    if (new Set(rows.map((row) => asset.tests[row.id].result.trim())).size !== rows.length) throw new Error(t('filmStudio.everytestneedsitsowndistinctoutput'));
+    if (!rows.every((row) => asset.tests?.[row.id]?.verdict === 'pass' && present(asset.tests[row.id].result))) throw new FilmError(t('filmStudio.everytestneedsanoutputreferenceand'));
+    if (new Set(rows.map((row) => asset.tests[row.id].result.trim())).size !== rows.length) throw new FilmError(t('filmStudio.everytestneedsitsowndistinctoutput'));
     return { ...film, assets: film.assets.map((item) => item === asset ? { ...item, lock: { context: lockContext(film, item), at: new Date().toISOString() } } : item) };
 }
 
@@ -208,9 +209,9 @@ export function promptContext(film: Film, shot: Shot): string {
 export function buildShotPrompt(film: Film, shot: Shot, details: Record<string, string>): string {
     for (let stage = 0; stage < 6; stage += 1) {
         const issue = stageIssues(film, stage)[0];
-        if (issue) throw new Error(issue);
+        if (issue) throw new FilmError(issue);
     }
-    if (PROMPT_DETAILS.some(([key]) => !present(details[key]))) throw new Error(t('filmStudio.completeeverypromptdetail'));
+    if (PROMPT_DETAILS.some(([key]) => !present(details[key]))) throw new FilmError(t('filmStudio.completeeverypromptdetail'));
     const assets = shotAssets(shot).map((key) => film.assets.find((item) => assetKey(item) === key) as Asset);
     const characters = assetTags(shot.characters).length;
     const values = [
@@ -233,28 +234,28 @@ export function failedAttempts(film: Film, shot: Shot): number {
 
 export function nextPromptVersion(film: Film, shot: Shot, content: string): Prompt {
     const headings = content.split('\n').filter((line) => /^\d+\. /.test(line));
-    if (headings.length !== 15 || PROMPT_BLOCKS.some((title, index) => headings[index] !== `${index + 1}. ${title}`)) throw new Error(t('filmStudio.preserveallfifteenpromptblocksintheir'));
+    if (headings.length !== 15 || PROMPT_BLOCKS.some((title, index) => headings[index] !== `${index + 1}. ${title}`)) throw new FilmError(t('filmStudio.preserveallfifteenpromptblocksintheir'));
     const previous = film.prompts.filter((prompt) => prompt.shot === shot.id).sort((a, b) => a.version - b.version);
     const last = previous.at(-1);
-    if (last && last.context === promptContext(film, shot) && !film.attempts.some((attempt) => attempt.shot === shot.id && attempt.version === last.version)) throw new Error(t('filmStudio.logthepreviousgenerationresultandverdict'));
+    if (last && last.context === promptContext(film, shot) && !film.attempts.some((attempt) => attempt.shot === shot.id && attempt.version === last.version)) throw new FilmError(t('filmStudio.logthepreviousgenerationresultandverdict'));
     if (last && last.context === promptContext(film, shot)) {
         const before = last.content.split('\n');
         const after = content.split('\n');
-        if (before.length !== after.length || before.filter((line, index) => line !== after[index]).length !== 1) throw new Error(t('filmStudio.changeexactlyonelineKeepallother'));
+        if (before.length !== after.length || before.filter((line, index) => line !== after[index]).length !== 1) throw new FilmError(t('filmStudio.changeexactlyonelineKeepallother'));
         const descriptors = shotAssets(shot).map((key) => film.assets.find((asset) => assetKey(asset) === key)?.descriptor ?? '');
-        if (descriptors.some((descriptor) => !content.includes(descriptor))) throw new Error(t('filmStudio.canonicaldescriptorsmuststayverbatim'));
-        if (shot.dialogue !== 'none' && !content.includes(String(shot.dialogue))) throw new Error(t('filmStudio.keepthesupplieddialogueverbatim'));
+        if (descriptors.some((descriptor) => !content.includes(descriptor))) throw new FilmError(t('filmStudio.canonicaldescriptorsmuststayverbatim'));
+        if (shot.dialogue !== 'none' && !content.includes(String(shot.dialogue))) throw new FilmError(t('filmStudio.keepthesupplieddialogueverbatim'));
     }
-    if (failedAttempts(film, shot) >= 15 && last?.context === promptContext(film, shot)) throw new Error(t('filmWorkspace.fifteenMisses'));
+    if (failedAttempts(film, shot) >= 15 && last?.context === promptContext(film, shot)) throw new FilmError(t('filmWorkspace.fifteenMisses'));
     return { shot: shot.id, version: (last?.version ?? 0) + 1, content, context: promptContext(film, shot), at: new Date().toISOString() };
 }
 
 export function logFilmAttempt(film: Film, prompt: Prompt, entry: { result: string; changed: string; verdict: 'accepted' | 'rejected'; checks?: string[] }): Film {
-    if (!film.prompts.includes(prompt) || !present(entry.result) || !present(entry.changed)) throw new Error(t('filmStudio.recordtheresultandwhatchanged'));
-    if (film.attempts.some((attempt) => attempt.shot === prompt.shot && attempt.version === prompt.version)) throw new Error(t('filmStudio.thispromptversionalreadyhasaresult'));
+    if (!film.prompts.includes(prompt) || !present(entry.result) || !present(entry.changed)) throw new FilmError(t('filmStudio.recordtheresultandwhatchanged'));
+    if (film.attempts.some((attempt) => attempt.shot === prompt.shot && attempt.version === prompt.version)) throw new FilmError(t('filmStudio.thispromptversionalreadyhasaresult'));
     const shot = film.shots.find((item) => item.id === prompt.shot);
-    if (!shot || prompt.context !== promptContext(film, shot) || Array.from({ length: 6 }, (_, index) => index).some((stage) => stageIssues(film, stage).length)) throw new Error(t('filmStudio.rebuildthepromptfromthecurrentlocked'));
-    if (entry.verdict === 'accepted' && !ACCEPTANCE_CHECKS.every((check) => entry.checks?.includes(check))) throw new Error(t('filmStudio.anacceptedtakeneedsallsixquality'));
+    if (!shot || prompt.context !== promptContext(film, shot) || Array.from({ length: 6 }, (_, index) => index).some((stage) => stageIssues(film, stage).length)) throw new FilmError(t('filmStudio.rebuildthepromptfromthecurrentlocked'));
+    if (entry.verdict === 'accepted' && !ACCEPTANCE_CHECKS.every((check) => entry.checks?.includes(check))) throw new FilmError(t('filmStudio.anacceptedtakeneedsallsixquality'));
     return { ...film, attempts: [...film.attempts, { shot: prompt.shot, version: prompt.version, result: entry.result, changed: entry.changed, verdict: entry.verdict, checks: entry.checks ?? [], at: new Date().toISOString() }] };
 }
 

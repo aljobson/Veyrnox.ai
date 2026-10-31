@@ -64,7 +64,7 @@ export function LibraryChooser({ api, kind, onPick, onClose }: Props) {
                         data={choices}
                         keyExtractor={(c) => c.jobId}
                         onEndReached={() => next && load(next)}
-                        ListEmptyComponent={<Text style={styles.muted}>{t(next ? 'libsrc.emptyMore' : 'libsrc.empty', { kind: t(`libsrc.kind.${kind}`) })}</Text>}
+                        ListEmptyComponent={failed ? <Text style={styles.error}>{t('library.loadError')}</Text> : <Text style={styles.muted}>{t(next ? 'libsrc.emptyMore' : 'libsrc.empty', { kind: t(`libsrc.kind.${kind}`) })}</Text>}
                         ListFooterComponent={next ? <Pressable accessibilityRole="button" style={styles.more} onPress={() => load(next)}><Text style={styles.moreText}>{t('libsrc.older')}</Text></Pressable> : undefined}
                         renderItem={({ item }) => (
                             <Pressable accessibilityRole="button" accessibilityLabel={rawText(`${item.name}, ${new Date(item.createdAt).toLocaleDateString(formatLocale())}`)} style={styles.row} onPress={() => { onPick(item); onClose(); }}>

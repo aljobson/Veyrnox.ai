@@ -216,7 +216,7 @@ export default function Compose() {
             <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
                 {scopeNote ? <StatusText variant="inherit" style={styles.muted} accessibilityLiveRegion="polite">{t('publishDepth.presets.scopeCleared')}</StatusText> : null}
                 <Text style={styles.heading} accessibilityRole="header">{t('publish.1Creation')}</Text>
-                {picks.length === 0 ? <Text style={styles.muted}>{t('publish.nofinishedimagesorvideosyetMake')}</Text> : null}
+                {picks.length === 0 ? <><Text style={styles.muted}>{t('publish.nofinishedimagesorvideosyetMake')}</Text><Button variant="secondary" label={t('empty.library.action')} onPress={() => router.push('/create')} /></> : null}
                 <MediaLibraryGrid api={api} picks={picks} choices={choices} max={maxMedia} disabled={preparing || busy} onToggle={p => { if (preparingRef.current) return; setChoices(old => toggleChoice(old, p, maxMedia)); if (maxMedia === 1) setAccountIds([]); }} />
                 <ChosenMediaPreview api={api} choice={chosen} />
                 <PublishMediaSelection items={choices} max={maxMedia} onChange={setChoices} disabled={preparing || busy} />
@@ -235,7 +235,7 @@ export default function Compose() {
                 {chosen ? (
                     <>
                         <Text style={styles.heading} accessibilityRole="header">{t('publish.2Accounts')}</Text>
-                        {eligible.length === 0 ? <Text style={styles.muted}>{t('publish.noconnectedaccountcanpostayet', { value1: chosen.mediaType })}</Text> : null}
+                        {eligible.length === 0 ? <><Text style={styles.muted}>{t('publish.noconnectedaccountcanpostayet', { value1: chosen.mediaType })}</Text><Button variant="secondary" label={t('connect.title')} onPress={() => router.push('/publish/connect')} /></> : null}
                         {queue ? <Text style={styles.muted}>{queueUsable ? t('compose.queueAccounts', { names: queueAccounts.map((a) => a.displayName).join(', ') }) : t('compose.queueNoMatch')}</Text> : null}
                         <View style={styles.chips}>
                             {(queue ? [] : eligible).map((a) => (

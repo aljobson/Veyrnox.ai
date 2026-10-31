@@ -10,6 +10,7 @@
  */
 import { NextResponse } from 'next/server';
 import { rpc, envConfig } from '../../../packages/db/supabase-client.js';
+import { publicTemplateId } from '../../veyrnox/_lib/templateIds.js';
 
 const TEMPLATE_ID_RE = /^[a-z0-9-]{1,40}$/;
 const CACHE = 'public, max-age=60, s-maxage=600, stale-while-revalidate=300';
@@ -19,7 +20,9 @@ export async function GET() {
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey) return NextResponse.json({ error: 'not_configured' }, { status: 503 });
     try {
         const list = await rpc('popular_templates', {}, cfg);
-        const templates = (Array.isArray(list) ? list : []).filter((id) => typeof id === 'string' && TEMPLATE_ID_RE.test(id)).slice(0, 20);
+        // Jobs from before a template lost its source name carry the old id; count them under the current one.
+        const ids = (Array.isArray(list) ? list : []).filter((id) => typeof id === 'string' && TEMPLATE_ID_RE.test(id)).map(publicTemplateId);
+        const templates = [...new Set(ids)].slice(0, 20);
         return NextResponse.json({ templates }, { headers: { 'Cache-Control': CACHE } });
     } catch {
         console.error('[api/popular-templates] read failed');
