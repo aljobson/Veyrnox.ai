@@ -10,6 +10,7 @@ import { exactSourcePromptRecord } from '../app/veyrnox/_lib/sourcePromptRecords
 import { sourcePromptAuditRecord } from '../app/veyrnox/_lib/sourcePromptAudit.js';
 import { SEEDANCE_200_TEMPLATE_METADATA } from '../app/veyrnox/_lib/seedanceTemplateMetadata.js';
 import { publicTemplateId } from '../app/veyrnox/_lib/templateIds.js';
+import { SEEDANCE_REFERENCE_MODEL, takesReferenceModel } from '../app/veyrnox/_lib/seedanceReference.js';
 import { fitSeedanceTemplate, templateModelFitRule } from '../scripts/import-seedance-source-templates.mjs';
 import * as React from 'react';
 import { fixture as renderFixture } from './helpers/publicSiteRender.mjs';
@@ -87,7 +88,7 @@ test('all 202 affected templates follow R1–R4 and preserve exact source record
     const preset = templateById(id);
     const rule = optionalIds.includes(id) ? 'R2' : templateModelFitRule(preset);
     counts[rule]++;
-    assert.equal(preset.model, rule === 'R1' ? 'Kling 3.0 · I2V' : 'Seedance 2.0 Fast', id);
+    assert.equal(preset.model, rule === 'R1' ? (takesReferenceModel(SEEDANCE_200_TEMPLATE_METADATA[id]) ? SEEDANCE_REFERENCE_MODEL : 'Kling 3.0 · I2V') : 'Seedance 2.0 Fast', id);
     assert.equal(preset.durationSeconds, rule === 'R1' ? 10 : 5, id);
     if (rule !== 'R3') {
       assert.equal(preset.promptOrigin, 'veyrnox-adaptation', id);
@@ -109,7 +110,7 @@ test('all 202 affected templates follow R1–R4 and preserve exact source record
       assert.equal(preset.sourceUrl, undefined, id);
       assert.equal(preset.id, publicTemplateId(id), id);
       assert.doesNotMatch(preset.id, /higgs|syntx/i, id);
-      assert.equal(SEEDANCE_200_TEMPLATE_METADATA[id].runnableModel, preset.model, id);
+      assert.equal(takesReferenceModel(SEEDANCE_200_TEMPLATE_METADATA[id]) ? SEEDANCE_REFERENCE_MODEL : SEEDANCE_200_TEMPLATE_METADATA[id].runnableModel, preset.model, id);
     }
   }
   assert.deepEqual(counts, { R1: 71, R2: 5, R3: 44, R4: 82 });
@@ -156,7 +157,7 @@ test('hand-written recipes whose source used no reference image are text-only fi
 test('the fashion recipe requests one combined starting image', () => {
   for (const id of ['fashion-catch']) {
     const preset = templateById(id);
-    assert.equal(preset.model, 'Kling 3.0 · I2V', id);
+    assert.equal(preset.model, takesReferenceModel(SEEDANCE_200_TEMPLATE_METADATA[id]) ? SEEDANCE_REFERENCE_MODEL : 'Kling 3.0 · I2V', id);
     assert.match(preset.needs, /^One starting image showing /, id);
     assert.doesNotMatch([preset.needs, preset.prompt, ...preset.steps].join(' '), /separate.*image|two.*references|uploaded garment/i, id);
   }
