@@ -138,7 +138,7 @@ test('Genjutsu recipe SSR shows only the exact source prompt and hands that same
   } });
   const html = f.render(React.createElement(f.load('app/veyrnox/_components/TemplateRecipe.js').TemplateRecipe, { preset }));
   assert.ok(html.includes('EXACT COMMUNITY PROMPT'));
-  assert.ok(!html.includes('VEYRNOX GENERATION PROMPT'));
+  assert.ok(!html.includes('GENERATION PROMPT'));
   assert.ok(!html.includes(template.prompt.slice(0, 80)) || sourcePrompt.includes(template.prompt.slice(0, 80)));
   assert.ok(html.includes(sourcePrompt.slice(0, 80)));
   assert.doesNotMatch(html, /readonly=""/i);
@@ -163,7 +163,7 @@ test('Syntx recipe SSR preserves the exact prompt while handing off its runnable
   const exactHtml = exactFixture.render(React.createElement(exactFixture.load('app/veyrnox/_components/TemplateRecipe.js').TemplateRecipe, { preset: exactPreset }));
   assert.ok(exactHtml.includes(exactPrompt.slice(0, 80)));
   assert.ok(exactHtml.includes(exactTemplate.prompt.slice(0, 80)));
-  assert.ok(exactHtml.includes('VEYRNOX GENERATION PROMPT'));
+  assert.ok(exactHtml.includes('GENERATION PROMPT'));
   assert.match(exactHtml, /readonly=""/i);
 });
 
@@ -179,7 +179,7 @@ test('a runnable community prompt is the only prompt shown and handed off, even 
   } });
   const html = f.render(React.createElement(f.load('app/veyrnox/_components/TemplateRecipe.js').TemplateRecipe, { preset }));
   assert.ok(html.includes('EXACT COMMUNITY PROMPT'));
-  assert.ok(!html.includes('VEYRNOX GENERATION PROMPT'));
+  assert.ok(!html.includes('GENERATION PROMPT'));
   assert.doesNotMatch(html, /data-runnable-adaptation/);
   assert.equal(handoff.prompt, exactPrompt);
   assert.equal(handoff.preset.prompt, exactPrompt);

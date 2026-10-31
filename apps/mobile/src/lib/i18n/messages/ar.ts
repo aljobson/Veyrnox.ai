@@ -36,7 +36,7 @@ const ar = {
     'public.TemplateRecipe.sourcePromptNotRecorded': 'لا يوجد موجّه مصدر دقيق مسجّل لهذه المعاينة. موجّه الإنشاء أدناه تعديل من Veyrnox وليس نصًا منسوخًا من المصدر.',
     'public.TemplateRecipe.sourcePromptTruncated': 'أعاد موجز المصدر هذا الموجّه مقطوعًا أصلًا. حُفظ كما هو ولا يجب اعتباره كاملًا.',
     'public.TemplateRecipe.sourcePromptDuplicate': 'نشر المصدر الموجّه الدقيق نفسه لفيديو آخر. تم الاحتفاظ به دون تغيير ووُسم كتكرار من المصدر.',
-    'public.TemplateRecipe.generationPrompt': 'موجّه إنشاء VEYRNOX',
+    'public.TemplateRecipe.generationPrompt': 'موجّه إنشاء',
     'recovery.retry': 'حاول مجددًا',
     'cinema.creatorWorkspace.cancel': 'إلغاء',
     'social.saving': 'جارٍ الحفظ…',
