@@ -5615,4 +5615,5 @@ export default {
   "credits.receipt.thanks": "感谢您的购买。",
   "projects.noWorkspacesTitle": "还没有工作区",
   "projects.openEditor": "打开编辑器",
+  "publishHome.postsFailed": "无法加载你的帖子，因此下方的数字可能不是最新的。",
 } as const;

@@ -5747,4 +5747,5 @@ export default {
   "credits.receipt.thanks": "Gracias por tu compra.",
   "projects.noWorkspacesTitle": "Sin espacio de trabajo",
   "projects.openEditor": "Abrir el editor",
+  "publishHome.postsFailed": "No se pudieron cargar tus publicaciones, así que los recuentos de abajo pueden estar desactualizados.",
 } as const;

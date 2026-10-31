@@ -63,6 +63,7 @@ export default function Publish() {
     const managementKey = plan?.tier === 'publish' ? planManagementKey(plan.source) : null;
     const [data, setData] = useState<PublishAccountsState | null>(null);
     const [posts, setPosts] = useState<PublishPost[]>([]);
+    const [postsFailed, setPostsFailed] = useState(false);
     const [brands, setBrands] = useState<Brand[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [refreshing, setRefreshing] = useState(false);
@@ -81,6 +82,7 @@ export default function Publish() {
             ]);
             setData(nextData);
             setPlan(nextPlan);
+            setPostsFailed(!nextPosts);
             if (nextPosts) setPosts(nextPosts);
             if (nextBrands) {
                 reconcileBrand(nextBrands);
@@ -180,6 +182,8 @@ export default function Publish() {
                     <Button label={t('publishHome.retry')} variant="tertiary" accessibilityRole="button" onPress={() => void load()}><Text variant="bodyStrong" style={styles.retryText}>{t('publishHome.retry')}</Text></Button>
                 </View>
             ) : null}
+
+            {postsFailed && !error ? <Text variant="footnote" style={styles.error} accessibilityRole="alert">{t('publishHome.postsFailed')}</Text> : null}
 
             {data && summary ? (
                 <>

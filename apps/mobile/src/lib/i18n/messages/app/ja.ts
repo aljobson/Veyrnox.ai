@@ -5615,4 +5615,5 @@ export default {
   "credits.receipt.thanks": "ご購入ありがとうございます。",
   "projects.noWorkspacesTitle": "ワークスペースはまだありません",
   "projects.openEditor": "エディターを開く",
+  "publishHome.postsFailed": "投稿を読み込めませんでした。下の件数は最新でない可能性があります。",
 } as const;

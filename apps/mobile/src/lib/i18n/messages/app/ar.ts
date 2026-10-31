@@ -5945,4 +5945,5 @@ export default {
   "credits.receipt.thanks": "شكرًا لشرائك.",
   "projects.noWorkspacesTitle": "لا توجد مساحة عمل بعد",
   "projects.openEditor": "افتح المحرر",
+  "publishHome.postsFailed": "تعذّر تحميل منشوراتك، لذا قد تكون الأعداد أدناه قديمة.",
 } as const;
