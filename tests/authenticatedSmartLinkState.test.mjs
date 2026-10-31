@@ -6,7 +6,8 @@ import React from 'react';
 import ts from 'typescript';
 import * as translate from '../lib/i18n/translate.mjs';
 import * as locales from '../lib/i18n/locales.mjs';
-import { translator, messagesFor } from '../lib/i18n/translate.mjs';
+import { translator } from '../lib/i18n/translate.mjs';
+import { messagesFor } from '../lib/i18n/catalogs.mjs';
 import { appMessagesFor } from '../lib/i18n/appMessages.mjs';
 const t = translator('en', { ...messagesFor('en'), ...await appMessagesFor('en') });
 

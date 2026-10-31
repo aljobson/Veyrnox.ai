@@ -6,7 +6,9 @@ import ts from 'typescript';
 import { ALL_TEMPLATES, templateById } from '../app/veyrnox/_lib/templates.js';
 import { GENJUTSU_SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/genjutsuSourcePromptRecords.js';
 import { SYNTX_SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/syntxSourcePromptRecords.js';
-import { CATALOGS, translator, tOr } from '../lib/i18n/translate.mjs';
+import { translator, tOr } from '../lib/i18n/translate.mjs';
+import { messagesFor } from '../lib/i18n/catalogs.mjs';
+import { CATALOGS } from '../lib/i18n/catalogs.mjs';
 import { appMessagesFor } from '../lib/i18n/appMessages.mjs';
 import { PRESET_STEP_KEYS, presetStep } from '../lib/i18n/presetSteps.mjs';
 import { failedCreationCopy } from '../lib/i18n/createCopy.mjs';
@@ -29,7 +31,7 @@ test('all template needs and 16 distinct steps have exact English and ten transl
   assert.deepEqual(ALL_TEMPLATES.filter(p => !p.needs).map(p => p.id).sort(), [...textOnlyIds, 'a-moment-between-strangers', 'dreamworks-castle', 'epic-train-doorway-scene', 'the-last-stagecoach', 'the-push'].sort());
   assert.equal(Object.keys(PRESET_STEP_KEYS).length, 16);
   for (const code of codes) {
-    const t = translator(code);
+    const t = translator(code, messagesFor(code));
     for (const preset of ALL_TEMPLATES) {
       if (preset.needs) {
         const needsKey = preset.needsKey || preset.id;
@@ -110,11 +112,11 @@ test('recipe SSR translates steps but forwards exact prompt and preset data to U
       } },
     } });
     const html = f.render(React.createElement(f.load('app/veyrnox/_components/TemplateRecipe.js').TemplateRecipe, { preset }));
-    const step = presetStep(translator(code), preset.steps[0]);
+    const step = presetStep(translator(code, messagesFor(code)), preset.steps[0]);
     assert.ok(html.includes(step));
     assert.equal(html.includes(preset.steps[0]), code === 'en');
     assert.ok(html.includes('data-use-template="product-hero-360"'));
-    assert.ok(html.includes(translator(code)('public.TemplateRecipe.generationPrompt')));
+    assert.ok(html.includes(translator(code, messagesFor(code))('public.TemplateRecipe.generationPrompt')));
   }
 });
 
@@ -222,7 +224,7 @@ test('legal headings translate in Terms and Refunds without changing section num
     assert.notEqual(terms.b018, '3A. Credit Subscriptions'); assert.notEqual(refund.b012, 'Credit Subscriptions');
     // The defined product name stays identical to the body text and the app (reviewer finding: heading and body must agree).
     assert.equal(terms.b045, '7B. Cinema Pass'); assert.equal(refund.b021, 'Cinema Pass');
-    assert.notEqual(translator(code)('legal.jurisdiction'), 'England & Wales');
+    assert.notEqual(translator(code, messagesFor(code))('legal.jurisdiction'), 'England & Wales');
   }
 });
 
@@ -240,7 +242,7 @@ test('smart-link SSR preserves creator data and translates only chrome and defau
   try {
     for (const code of codes) {
       const f = fixture(code, '/s/test-slug', { moduleMocks });
-      const page = f.load('app/s/[slug]/page.js'), t = translator(code);
+      const page = f.load('app/s/[slug]/page.js'), t = translator(code, messagesFor(code));
       const html = f.render(await page.default({ params: Promise.resolve({ slug: 'test-slug' }) }));
       assert.ok(html.includes(creator.title)); assert.ok(html.includes('Creator’s own label'));
       assert.ok(html.includes('/s/test-slug/go/item-id')); assert.ok(html.includes(t('smartlink.madeWith')));

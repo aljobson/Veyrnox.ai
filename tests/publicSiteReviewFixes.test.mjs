@@ -5,7 +5,9 @@ import { readFileSync } from 'node:fs';
 import ts from 'typescript';
 import * as React from 'react';
 import { fixture } from './helpers/publicSiteRender.mjs';
-import { CATALOGS, translator, pluralKey } from '../lib/i18n/translate.mjs';
+import { translator, pluralKey } from '../lib/i18n/translate.mjs';
+import { messagesFor } from '../lib/i18n/catalogs.mjs';
+import { CATALOGS } from '../lib/i18n/catalogs.mjs';
 import { localeTag } from '../lib/i18n/locales.mjs';
 
 // Parse SSR markup structurally; these hook queries never use translated text.
@@ -119,9 +121,9 @@ test('offline SSR: English, Arabic and Russian poll plurals keep the test hook o
     const match = html.match(/<span data-testid="story-choice-count-answer">([^<]*)<\/span>/);
     assert.equal(match?.[1], String(count), `${locale}/${count}`);
     const plain = visibleText(html);
-    assert.ok(plain.includes(translator(locale)(`cinema.polls.answers.${category}`, { count })), `${locale}/${count}`);
+    assert.ok(plain.includes(translator(locale, messagesFor(locale))(`cinema.polls.answers.${category}`, { count })), `${locale}/${count}`);
     if (locale === 'en') assert.ok(plain.includes(`${count} counted ${count === 1 ? 'answer' : 'answers'}`));
-    for (const family of pluralFamilies) assert.equal(pluralKey(translator(locale), locale, family, count), `${family}.${category}`);
+    for (const family of pluralFamilies) assert.equal(pluralKey(translator(locale, messagesFor(locale)), locale, family, count), `${family}.${category}`);
   }
 });
 

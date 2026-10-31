@@ -9,7 +9,7 @@ import { appMetadataFile, isMetadataExport, inventoryMetadata } from './lib/app-
 import { bindingInventory } from './lib/legal-i18n.mjs';
 import { dataInventory } from './lib/data-i18n.mjs';
 import { checkSources } from './legal-source-hashes.mjs';
-import { CATALOGS } from '../lib/i18n/translate.mjs';
+import { CATALOGS } from '../lib/i18n/catalogs.mjs';
 import appEnglish from '../lib/i18n/messages/app/en.mjs';
 const publicEnglish = CATALOGS.en;
 const english = { ...publicEnglish, ...appEnglish };

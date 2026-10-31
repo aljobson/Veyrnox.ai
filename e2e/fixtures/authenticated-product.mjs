@@ -1,5 +1,6 @@
 import { test as base, expect } from '@playwright/test';
 import { capabilityFor, publicCapabilities, lengthsFor } from '../../lib/modelCapabilities.js';
+import { searchTemplateIds, templateCards, templateCategories, templateDetail } from '../../lib/clientTemplates.js';
 import { readdirSync } from 'node:fs';
 import { PAGE_TEMPLATES, templateMatches } from '../page-manifest.mjs';
 
@@ -125,6 +126,17 @@ export async function installProductFixtures(page, options = {}) {
       }
       if (method === 'GET') {
         if (url.pathname === '/api/catalog') return json({ models: options.models || SYNTHETIC_MODELS });
+        // The template gallery and one template in full: static data the browser no longer bundles (the same functions the
+        // routes serve, so the cards and counts are the real ones); nothing per-user, no price.
+        if (url.pathname === '/api/templates') {
+          const q = url.searchParams.get('q');
+          return json(q === null ? { templates: templateCards(), categories: templateCategories() } : { ids: searchTemplateIds(q) });
+        }
+        const templateId = /^\/api\/templates\/([^/]+)$/.exec(url.pathname);
+        if (templateId) {
+          const template = templateDetail(decodeURIComponent(templateId[1]));
+          return template ? json({ template }) : json({ error: 'template_not_found' }, 404);
+        }
         if (url.pathname === '/api/status') return json({ status: 'ok', checkedAt: Date.now() });
         if (url.pathname === '/api/v1/account') return state.user ? json({ email: state.user.email, credits: state.balance, balance: state.balance, assets: 0 }) : json({ error: 'not_authenticated' }, 401);
         if (url.pathname === '/api/v1/account/language') return state.user ? json({ locale: null }) : json({ error: 'not_authenticated' }, 401);
@@ -132,6 +144,8 @@ export async function installProductFixtures(page, options = {}) {
         if (url.pathname === '/api/v1/checkin') return state.user
           ? json({ ok: true, claimed_today: true, streak: 3, next_day: 4, next_credits: 4, rewards: [1, 2, 3, 4, 5, 5] })
           : json({ error: 'not_authenticated' }, 401);
+        // Your wins ships off (YOUR_WINS_ENABLED unset): the route answers 404 and the card stays hidden.
+        if (url.pathname === '/api/v1/wins') return state.user ? json({ error: 'not_found' }, 404) : json({ error: 'not_authenticated' }, 401);
         if (url.pathname === '/api/v1/free-allowance') return json({ enabled: false, left: {} });
         if (url.pathname === '/api/v1/jobs') return json({ jobs: [], next: null });
         if (url.pathname === '/api/v1/library/masters') return json({ masters: [], next: null });
