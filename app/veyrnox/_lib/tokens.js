@@ -15,7 +15,7 @@ export const MODELS = [
   { id: 'kling-2.6-pro-kie',  name: 'Kling 2.6 Pro',       credits: 16,                                         kind: 'video', durations: [5, 10], aspects: ['16:9', '9:16', '1:1'] },
   { id: 'kling-3.0-i2v',      name: 'Kling 3.0 · I2V',     credits: 32,                                         kind: 'video', durations: [5, 10], media: { image: { required: true }, endImage: { required: false } } },
   { id: 'kling-o1-reference', staged: true, name: 'Kling O1 · Reference', credits: 47, kind: 'video', durations: [5, 10], media: { video: { required: true, maxSeconds: 10 }, image: { required: true } } },
-  { id: 'seedance-2.0-fast',  name: 'Seedance 2.0 Fast',   credits: 19,                                         kind: 'video', durations: [5, 10], aspects: ['16:9', '9:16'], media: { image: { required: false } } },
+  { id: 'seedance-2.0-fast',  name: 'Seedance 2.0 Fast',   credits: 19,                                         kind: 'video', durations: [5], aspects: ['16:9', '9:16'] },
   { id: 'kling-avatar-v2',    name: 'Kling AI Avatar',     credits: 32,  tag: 'NEW',                            kind: 'video', durations: [5], media: { image: { required: true }, audio: { required: true, maxSeconds: 10 } } },
   { id: 'latentsync',         name: 'LatentSync',          credits: 12,  tag: 'NEW',                            kind: 'video', durations: [5], media: { video: { required: true, maxSeconds: 40 }, audio: { required: true, maxSeconds: 40 } } },
   { id: 'hailuo-02-kie',      name: 'MiniMax Hailuo 02',   credits: 9,                                         kind: 'video', durations: [5], presentation: { durationByOption: { 5: '6' } } },

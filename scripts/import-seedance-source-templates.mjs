@@ -21,6 +21,7 @@ import path from 'node:path';
 import { SYNTX_SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/syntxSourcePromptRecords.js';
 import { SOURCE_TEMPLATES } from '../app/veyrnox/_lib/sourceTemplates.js';
 import { SHOWCASE_CLIPS } from '../app/veyrnox/_lib/showcase.js';
+import { sourcePromptAuditRecord } from '../app/veyrnox/_lib/sourcePromptAudit.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SYN_DIR = process.env.SEEDANCE_SYNTX_CAPTURE_DIR || '/private/tmp';
@@ -33,6 +34,50 @@ const HIGGS_TARGET = 79;
 const TOTAL_TARGET = SINTX_TARGET + HIGGS_TARGET;
 const RUNNABLE_MODEL = 'Seedance 2.0 Fast';
 const RUNNABLE_CREDITS = 19;
+
+// Classify input guidance, not source-model provenance. A starting frame and
+// character reference are pictures too, even without the word "image".
+export function templateModelFitRule(template) {
+  const needs = template.needs || '';
+  if (/^Copy the exact prompt;/i.test(needs)) return 'R3';
+  if (/optional/i.test(needs)) return 'R2';
+  if (/picture|photo|portrait|image|starting frame|character references?/i.test(needs)) return 'R1';
+  return 'R4';
+}
+
+export function fitSeedanceTemplate(template) {
+  const rule = templateModelFitRule(template);
+  const durationSeconds = rule === 'R1' ? 10 : 5;
+  let prompt = template.prompt;
+  if (rule !== 'R3') {
+    if (rule === 'R1' && !/\b(?:uploaded|supplied)\b/i.test(prompt)) {
+      prompt = `Animate the supplied starting image into a ten-second video. Use its subjects and composition as the starting frame. ${prompt}`;
+    }
+    if (rule === 'R2') {
+      prompt = prompt.replace(/Use the uploaded start image for the characters and composition when supplied\.\s*/g, '')
+        .replace(/The uploaded person/g, 'The person')
+        .replace(/the uploaded Stranger character/g, 'a mysterious Stranger character');
+    }
+    if (durationSeconds === 5) {
+      prompt = prompt.replace(/\b(?:ten|10)([-\s]+)(second(?:s)?|s)\b/gi,
+        (_, separator, unit) => `${unit === 's' ? '5' : 'five'}${separator}${unit}`);
+    }
+    if (rule === 'R4' && template.promptOrigin === 'community-source-exact') {
+      prompt = `Create a five-second video. ${prompt}`;
+    }
+  }
+  return {
+    ...template,
+    model: rule === 'R1' ? 'Kling 3.0 · I2V' : RUNNABLE_MODEL,
+    credits: rule === 'R1' ? 32 : RUNNABLE_CREDITS,
+    durationSeconds,
+    ...(['R2', 'R4'].includes(rule) ? { needs: null, needsKey: null, steps: [
+      'Use this template to load its prompt and settings in the studio.',
+      'Describe your characters and setting, then review the price before generating.',
+    ] } : {}),
+    ...(rule !== 'R3' ? { prompt, promptOrigin: 'veyrnox-adaptation', preferAdaptedPrompt: true, sourcePromptRunnable: false } : {}),
+  };
+}
 
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
 const normalizedPrompt = (value) => String(value).replace(/\r\n/g, '\n').trim();
@@ -250,25 +295,36 @@ function moduleFile(exportName, value, heading) {
   return `${heading}\nexport const ${exportName} = Object.freeze(${JSON.stringify(value, null, 2)});\n`;
 }
 
+function generatedInputGuidance(record) {
+  if (!sourcePromptAuditRecord(record.id).runnable) return {
+    needs: 'Copy the exact prompt; its required reference media or preserved audio is not wired into generation',
+    needsKey: 'community.copyOnly',
+  };
+  if (record.referenceImageCount === 0) return { needs: null, needsKey: null };
+  return record.referenceImageCount > 1 ? {
+    needs: 'One starting image containing every subject in their intended positions',
+    needsKey: 'community.group',
+  } : {
+    needs: 'A clear full-body portrait with room for cinematic movement',
+    needsKey: 'community.cinematic',
+  };
+}
+
 function templateExpansionFile(records) {
-  const templates = records.map((record) => ({
+  const templates = records.map((record) => fitSeedanceTemplate({
     id: record.id,
     name: record.title.toUpperCase(),
     clipKey: record.id,
     model: RUNNABLE_MODEL,
     credits: RUNNABLE_CREDITS,
-    // The preview keeps its complete source duration. The active Seedance 2.0
-    // Fast route offers 5s/10s generations, so template handoff uses 10s.
+    // The preview keeps its source duration; model-fit rules set generation length.
     durationSeconds: 10,
     category: record.category,
     isNew: true,
     previewAspect: record.previewAspect,
     sourceAspect: record.sourceAspect,
     bg: 'linear-gradient(155deg,#0d1525 0%,#334c73 55%,#9a6f86 100%)',
-    needs: record.referenceImageCount > 1
-      ? 'One starting image containing every subject in their intended positions'
-      : 'A clear full-body portrait with room for cinematic movement',
-    needsKey: record.referenceImageCount > 1 ? 'community.group' : 'community.cinematic',
+    ...generatedInputGuidance(record),
     prompt: record.prompt,
     promptOrigin: 'community-source-exact',
     sourceModel: record.sourceModel,
@@ -287,10 +343,47 @@ function templateExpansionFile(records) {
     aspectRatio: record.previewAspect,
     title: record.title,
   }]));
-  return `// Generated by scripts/import-seedance-source-templates.mjs.\n// Exact prompts remain byte-for-byte identical to their paired public records.\nexport const SEEDANCE_SOURCE_TEMPLATE_EXPANSION = Object.freeze(${JSON.stringify(templates, null, 2)});\n\nexport const SEEDANCE_SOURCE_SHOWCASE_CLIPS = Object.freeze(${JSON.stringify(clips, null, 2)});\n`;
+  return `// Generated by scripts/import-seedance-source-templates.mjs.\n// Exact prompts stay in seedanceSourcePromptRecords.js; recipes use adaptations or copy-only text.\nexport const SEEDANCE_SOURCE_TEMPLATE_EXPANSION = Object.freeze(${JSON.stringify(templates, null, 2)});\n\nexport const SEEDANCE_SOURCE_SHOWCASE_CLIPS = Object.freeze(${JSON.stringify(clips, null, 2)});\n`;
+}
+
+function templateMetadataFile(records) {
+  const byId = new Map(SOURCE_TEMPLATES.map(template => [template.id, template]));
+  const metadata = Object.fromEntries(records.map(record => {
+    // New entries are derived independently from the immutable capture below;
+    // existing authored recipes retain their guidance (including optional input).
+    const template = record.existing ? byId.get(record.id) : generatedInputGuidance(record);
+    if (!template) throw new Error(`Missing authored recipe: ${record.id}`);
+    return [record.id, {
+      sourcePlatform: record.sourcePlatform,
+      sourceModel: record.sourceModel,
+      sourceUrl: record.sourceUrl,
+      runnableModel: templateModelFitRule(template) === 'R1' ? 'Kling 3.0 · I2V' : RUNNABLE_MODEL,
+    }];
+  }));
+  return moduleFile('SEEDANCE_200_TEMPLATE_METADATA', metadata,
+    '// Generated by scripts/import-seedance-source-templates.mjs.\n// Source provenance is separate from the active Veyrnox generation route.');
+}
+
+async function regenerateData(checkOnly) {
+  // Rebuild only recipe data from the committed immutable audit, offline. Never
+  // rewrite exact source records, provenance captures or paired preview assets.
+  const manifest = JSON.parse(await readFile(path.join(ROOT, 'docs/product/source-audit/seedance-200-exact-2026-10-29.json'), 'utf8'));
+  const outputs = {
+    'app/veyrnox/_lib/seedanceTemplateMetadata.js': templateMetadataFile(manifest.records),
+    'app/veyrnox/_lib/sourceTemplateExpansion13.js': templateExpansionFile(manifest.records.filter(record => !record.existing)),
+  };
+  for (const [file, output] of Object.entries(outputs)) {
+    if (checkOnly) {
+      if (await readFile(path.join(ROOT, file), 'utf8') !== output) throw new Error(`Generated data is stale: ${file}`);
+    } else await writeFile(path.join(ROOT, file), output);
+  }
+  console.log(checkOnly ? 'Seedance generated data is current (metadata and 122 recipes).' : 'Regenerated Seedance metadata and 122 recipes from the committed audit.');
 }
 
 async function main() {
+  if (process.argv.includes('--check') || process.argv.includes('--data-only')) {
+    return regenerateData(process.argv.includes('--check'));
+  }
   const syntxPages = await Promise.all([1, 2, 3, 4].map(async (page) => JSON.parse(await readFile(
     path.join(SYN_DIR, `syntx-trends-p${page}-100.json`), 'utf8',
   ))));
@@ -432,12 +525,6 @@ async function main() {
     sourceAuditStatus: 'verified-2026-10-29',
     prompt: record.prompt,
   }]));
-  const metadata = Object.fromEntries(complete.map((record) => [record.id, {
-    sourcePlatform: record.sourcePlatform,
-    sourceModel: record.sourceModel,
-    sourceUrl: record.sourceUrl,
-    runnableModel: RUNNABLE_MODEL,
-  }]));
   const manifest = {
     sources: ['https://higgsfield.ai/seedance-2-community', 'https://syntx.ai/trends'],
     apis: ['Higgsfield JSON-LD', 'https://api.syntx.ai/api/v1/trends'],
@@ -459,10 +546,7 @@ async function main() {
     'SEEDANCE_SOURCE_PROMPT_RECORDS', sourcePromptRecords,
     '// Generated by scripts/import-seedance-source-templates.mjs.\n// Exact public prompts; do not edit, normalize, or truncate.',
   );
-  const metadataModule = moduleFile(
-    'SEEDANCE_200_TEMPLATE_METADATA', metadata,
-    '// Generated by scripts/import-seedance-source-templates.mjs.\n// Source provenance is separate from the active Veyrnox generation route.',
-  );
+  const metadataModule = templateMetadataFile(complete);
   await Promise.all([
     writeFile(path.join(ROOT, 'app/veyrnox/_lib/seedanceSourcePromptRecords.js'), promptModule),
     writeFile(path.join(ROOT, 'app/veyrnox/_lib/seedanceTemplateMetadata.js'), metadataModule),
@@ -473,7 +557,7 @@ async function main() {
   console.log(JSON.stringify({ total: complete.length, existing: existingWithAssets.length, added: newRecords.length, bytes: newRecords.reduce((sum, record) => sum + record.localPreviewBytes + record.localPosterBytes, 0) }, null, 2));
 }
 
-main().catch((error) => {
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main().catch((error) => {
   console.error(error.stack || error.message);
   process.exitCode = 1;
 });

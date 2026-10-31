@@ -5,7 +5,7 @@ export const SEEDANCE_200_TEMPLATE_METADATA = Object.freeze({
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/sm-brand-new-day",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "the-last-stagecoach": {
     "sourcePlatform": "Syntx",
@@ -23,205 +23,205 @@ export const SEEDANCE_200_TEMPLATE_METADATA = Object.freeze({
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/storm-starring",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "chasing-you": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/chasing-you",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "cinematic-showcase-2": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/cinematic-showcase-2",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "cinematic-showcase": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/cinematic-showcase",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "reality-shift": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/reality-shift",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "live-stage-performance": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/live-stage-performance",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "tesla-object-replace": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/tesla-object-replace",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "playing-chess-with-tesla": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/playing-chess-with-tesla",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "unforgettable": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/unforgettable",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "desire-mode": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/desire-mode",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "tesla-started-something": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/tesla-started-something",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "coliseum-drift": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/coliseum-drift",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "natural-viral-makeover": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/natural-viral-makeover",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "just-a-lit-bit": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/just-a-lit-bit",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "wheelie-rider": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/wheelie-rider",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "character-takeover": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/rich-in-30-days",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "trick-or-skin": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/trick-or-skin",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "the-wrong-one": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/the-wrong-one",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "enchanted-forest-selfie": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/enchanted-forest-selfie",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "pumpkin-lings": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/pumpkin-lings",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "dont-blow-out-the-pumpkin": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/dont-blow-out-the-pumpkin",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "rap-takeover": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/viral-rap-takeover",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "urban-broomstick-flight": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/urban-broomstick-flight",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "hotel-window-watch": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/hotel-window-watch",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "broomstick-flight": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/broomstick-flight",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "money-flex": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/money-flex",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "epic-slap-knockout": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/epic-slap-knockout",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "mystery-unboxing": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/mystery-unboxing",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "whiskey-gun-trick": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/whiskey-gun-trick",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "cyber-mask-transformation": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/cyber-mask-transformation",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "shadow-warriors": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/shadow-warriors",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "crazy-frog-race": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/crazy-frog-race",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "fat-parkour": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/fat-parkour",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "medieval-runway-look": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/medieval-runway-look",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "epic-train-doorway-scene": {
     "sourcePlatform": "Syntx",
@@ -233,199 +233,199 @@ export const SEEDANCE_200_TEMPLATE_METADATA = Object.freeze({
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/pizzeria-hide-and-seek",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "theater-ceiling-horror": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/theater-ceiling-horror",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "studio-ballerina-turns": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/studio-ballerina-turns",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "escalator-loop": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/escalator-vibe",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "little-storm-knight": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/little-storm-knight",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "wear-the-moment": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/wear-the-moment",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "wassup-freestyle": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/wassup-freestyle",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "piano-vibe": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/piano-vibe",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "you-good-max": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/you-good-max",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "reflection-in-the-mirror": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/reflection-in-the-mirror",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "car-blows-up": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/car-blows-up",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "saved-by-darkness": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/saved-by-darkness",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "pumpkin-guardian": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/pumpkin-guardian",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "fashion-halloween": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/fashion-halloween",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "thrille": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/thrille",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "ghost-makeover": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/ghost-makeover",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "cash-flow": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/cash-flow",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "cliffside-silence": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/cliffside-silence",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "icon-duet": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/icon-duet",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "raindance": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/raindance",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "kieza-dance-flow": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/kieza-dance-flow",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "call-the-car": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/call-the-car",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "haunted-motion": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/haunted-motion",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "my-other-hobby": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/my-other-hobby",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "one-last-embrace": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/one-last-embrace",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "lil-yachti-coffin": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/lil-yachti-coffin",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "birthday-drift": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/birthday-drift",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "pumpkin-night": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/pumpkin-night",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "fashion-catch": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/catch-the-look",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "tentacle-breakout": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/tentacle-breakout",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "sheep-kingdom": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/among-sheep",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "desert-train-heist": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/desert-train-heist",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "who-was-that-business": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/who-was-that-business",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "the-push": {
     "sourcePlatform": "Syntx",
@@ -437,31 +437,31 @@ export const SEEDANCE_200_TEMPLATE_METADATA = Object.freeze({
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/vampire-blood-moon",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "red-thread-story": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.0",
     "sourceUrl": "https://syntx.ai/trends/the-red-thread",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "meal-together": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance",
     "sourceUrl": "https://syntx.ai/trends/a-meal-made-together",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "jellyfish-airlines": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/jellyfish-airlines",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "dandelion-ball": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/dandelion-ball",
-    "runnableModel": "Seedance 2.0 Fast"
+    "runnableModel": "Kling 3.0 · I2V"
   },
   "dreamworks-castle": {
     "sourcePlatform": "Syntx",
