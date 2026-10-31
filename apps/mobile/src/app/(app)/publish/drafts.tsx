@@ -1,5 +1,6 @@
 import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
+import { LoadError } from '../../../components/publish/LoadError';
 import { Button, Text as ThemedText, themedStyles, useThemedStyles } from '../../../components/ui';
 import { NetworkLogo } from '../../../components/publish/NetworkLogo';
 import { networkName } from '../../../lib/networkLogos';
@@ -80,7 +81,7 @@ export default function Drafts() {
         <ScrollView style={styles.screen} contentContainerStyle={styles.body} refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.accent} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}>
             <Stack.Screen options={{ title: t('drafts.title') }} />
             {error ? (
-                <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{error}</StatusText>
+                <LoadError message={error} onRetry={() => { void load(); }} />
             ) : !drafts ? (
                 <ActivityIndicator color={colors.accent} />
             ) : (

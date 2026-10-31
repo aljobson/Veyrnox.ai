@@ -1,6 +1,7 @@
 import { rawText } from '../../../lib/i18n/translate';
 import { usePublishScope } from '../../../lib/usePublishScope';
 import { Text as StatusText } from '../../../components/ui/Text';
+import { LoadError } from '../../../components/publish/LoadError';
 import { Image } from 'expo-image';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
@@ -78,7 +79,7 @@ export default function Commerce() {
             {locked ? (
                 <UnlockCard feature="commerce" onUnlocked={() => setReload((n) => n + 1)} />
             ) : error && !products ? (
-                <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{error}</StatusText>
+                <LoadError message={error} onRetry={() => { void load(); }} />
             ) : !products ? (
                 <ActivityIndicator color={colors.accent} />
             ) : (
