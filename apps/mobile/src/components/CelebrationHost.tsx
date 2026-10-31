@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, Modal, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
-import { usePathname } from 'expo-router';
-import { onCelebrate, type CelebrationEvent } from '../lib/veyMotion';
+import { usePathname, router } from 'expo-router';
+import { onCelebrate, onCancelWinsCelebrations, type CelebrationEvent } from '../lib/veyMotion';
 import { subscribeCacheUser } from '../lib/appCache';
 import { playSuccess } from '../lib/haptics';
 import { t } from '../lib/i18n';
@@ -69,10 +69,22 @@ export function CelebrationHost() {
                 setClapping(false);
             }
         });
+        const offWins = onCancelWinsCelebrations(() => {
+            const removed = queue.current.filter(item => item.kind === 'winsMilestone');
+            queue.current = queue.current.filter(item => item.kind !== 'winsMilestone');
+            if (active.current?.kind === 'winsMilestone') {
+                removed.push(active.current);
+                active.current = queue.current.shift() ?? null;
+                setEvent(active.current);
+                setClapping(false);
+            }
+            removed.forEach(item => item.onDone());
+        });
         const offUser = subscribeCacheUser(clear);
         return () => {
             off();
             offUser();
+            offWins();
             clear();
         };
     }, [clear]);
@@ -81,11 +93,11 @@ export function CelebrationHost() {
         if (!event || active.current !== event || acknowledged.current === event) return;
         acknowledged.current = event;
         event.onShown();
-        AccessibilityInfo.announceForAccessibility(t(`appearance.${event.kind}`));
+        AccessibilityInfo.announceForAccessibility(t(event.kind === 'winsMilestone' ? `wins.${event.milestone}` : `appearance.${event.kind}`));
         void playSuccess();
     }, [event]);
     useEffect(() => {
-        if (!event) return;
+        if (!event || event.kind === 'winsMilestone') return;
         const clap = setTimeout(() => setClapping(true), CLAP_MS);
         const finish = setTimeout(dismiss, CELEBRATION_MS);
         return () => {
@@ -94,6 +106,23 @@ export function CelebrationHost() {
         };
     }, [event, dismiss]);
     if (!event) return null;
+    if (event.kind === 'winsMilestone') return (
+        <Modal transparent visible animationType="none" onRequestClose={dismiss} onShow={acknowledge}>
+            <View style={styles.overlay} accessibilityViewIsModal onAccessibilityEscape={dismiss}>
+                {!reduced ? <Confetti key={event.milestone} /> : null}
+                <View style={styles.message}>
+                    <VeyCharacter width={180} mood="cheer" />
+                    <Text variant="title2" accessibilityRole="header" style={styles.title}>{t(`wins.${event.milestone}`)}</Text>
+                    <Pressable accessibilityRole="button" accessibilityLabel={t('wins.see')} style={styles.winsButton} onPress={() => { dismiss(); router.push('/wins' as never); }}>
+                        <Text>{t('wins.see')}</Text>
+                    </Pressable>
+                    <Pressable accessibilityRole="button" accessibilityLabel={t('wins.close')} style={styles.winsButton} onPress={dismiss}>
+                        <Text>{t('wins.close')}</Text>
+                    </Pressable>
+                </View>
+            </View>
+        </Modal>
+    );
     return (
         <Modal transparent visible animationType="none" onRequestClose={dismiss} onShow={acknowledge}>
             <View style={{ flex: 1 }} onAccessibilityEscape={dismiss}><Pressable style={styles.overlay} accessibilityRole="button" accessibilityLabel={t('appearance.dismissCelebration')} onPress={dismiss}>
@@ -173,5 +202,6 @@ const confetti = StyleSheet.create({ piece: { position: 'absolute' } });
 const sheets = themedStyles((p) => ({
     overlay: { flex: 1, backgroundColor: p.scrim, alignItems: 'center', justifyContent: 'center' },
     message: { alignItems: 'center', gap: ds.space.lg, padding: ds.space.xxl, borderRadius: ds.radius.xl, backgroundColor: p.bgElevated1, margin: ds.space.gutter },
+    winsButton: { minHeight: 44, minWidth: 160, justifyContent: 'center', alignItems: 'center', padding: ds.space.md, borderRadius: ds.radius.md, borderWidth: 1, borderColor: p.borderSubtle },
     title: { textAlign: 'center' },
 }));

@@ -4,7 +4,7 @@ const fs = require('fs') as { readFileSync: (p: string, e: 'utf8') => string };
 const path = require('path') as { join: (...p: string[]) => string };
 const screen = (rel: string) => fs.readFileSync(path.join(__dirname, '..', 'src', 'app', '(app)', rel), 'utf8');
 
-import { editHref, makeAnotherHref, nextStepsFor, preloadJob, publishHref } from '../src/lib/nextSteps';
+import { editHref, makeAnotherHref, nextStepsFor, publishHref } from '../src/lib/nextSteps';
 
 describe('next steps after a result (N5)', () => {
     test('a video can be edited, published or made again', () => {
@@ -30,29 +30,9 @@ describe('next steps after a result (N5)', () => {
     });
 
     test('the links carry the file or the model', () => {
-        expect(editHref('job-1')).toEqual({ pathname: '/edit', params: { jobId: 'job-1' } });
+        expect(editHref('job-1')).toEqual({ pathname: '/editor/new', params: { jobId: 'job-1' } });
         expect(publishHref('job-1')).toEqual({ pathname: '/publish/compose', params: { jobId: 'job-1' } });
         expect(makeAnotherHref('kling-3')).toEqual({ pathname: '/create/[modelId]', params: { modelId: 'kling-3' } });
-    });
-});
-
-describe('preloading a job into Quick edit', () => {
-    const job = (id: string) => ({ job_id: id, state: 'succeeded', credits: 3, model_id: 'kling-3', created_at: '2026-10-19T10:00:00Z', has_asset: true }) as const;
-
-    test('uses the listed job when the Library page has it', () => {
-        const listed = job('a');
-        expect(preloadJob([job('b'), listed], 'a')).toBe(listed);
-    });
-
-    test('builds a minimal finished video job when the id is older than the first page', () => {
-        const made = preloadJob([job('b')], 'older');
-        expect(made).toMatchObject({ job_id: 'older', state: 'succeeded', has_asset: true });
-    });
-
-    test('ignores a missing or malformed id', () => {
-        expect(preloadJob([job('b')], undefined)).toBeNull();
-        expect(preloadJob([job('b')], '')).toBeNull();
-        expect(preloadJob([job('b')], 'not a uuid / ../x')).toBeNull();
     });
 });
 
@@ -61,13 +41,16 @@ describe('the screens use them', () => {
         const job = screen('job/[id].tsx');
         expect(job).toContain('router.push(editHref(id))');
         expect(job).toContain('router.push(publishHref(id))');
-        expect(job).toContain('router.push(makeAnotherHref(modelId))');
+        expect(job).toContain('submittedHref(api, id, modelId, current)');
+        expect(job).toContain('onPress={() => void reopen(false)}');
+        expect(job).toContain('onPress={() => void reopen(true)}');
         expect(job).toContain('router.push(creativeReuseHref(id, reusableKind))');
         expect(job).toContain("accessibilityRole=\"header\">{t('job.next.title')}");
     });
 
-    test('Quick edit and the composer read the job id they are given', () => {
-        expect(screen('edit/index.tsx')).toContain('preloadJob(videos, startWith)');
+    test('the Editor and the composer read the job id they are given', () => {
+        expect(screen('editor/new.tsx')).toContain('useLocalSearchParams<{ jobId?: string; blank?: string }>()');
+        expect(screen('edit/index.tsx')).toContain("pathname: '/editor/new', params: { jobId }");
         expect(screen('publish/compose.tsx')).toContain("jobId: presetJob");
     });
 });

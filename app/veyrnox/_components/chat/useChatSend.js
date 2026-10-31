@@ -3,7 +3,8 @@ import { useRef, useState } from 'react';
 import { GatewayError } from '../../_lib/gateway';
 import { askStoppedSend, chatApi, chatErrorCopy, chatUnchargedCopy, lostNotice, makeIdempotencyKey, sendTurn, uploadChatImage } from '../../_lib/chatApi';
 import { prepareImage } from '../../_lib/chatImages';
-import { NEW_CHAT } from '../../_lib/chatLocal';
+import { NEW_CHAT, draftWriteAllowed } from '../../_lib/chatLocal';
+import { getStoredUserId } from '../../../lib/authClient';
 import { loadFailure } from '../../_lib/chatScreen';
 import { ask, forget, land, onScreen, sendHome } from '../../_lib/chatSendHome';
 
@@ -19,7 +20,7 @@ import { ask, forget, land, onScreen, sendHome } from '../../_lib/chatSendHome';
  * and the warning this one takes the place of.
  * @returns {{send: () => Promise<void>, stop: () => void, busy: boolean, stopping: boolean, checking: boolean, progress: object|null}}
  */
-export function useChatSend({ text, setText, model, imagesBlocked, sendBlocked = false, chosen, price, active, setActive, messages, setMessages, setThreads, setError, att, limits, draftModel, folders, folder, instr, requiredInstructions = false, lockedInstructions = '', expectedSystemPrompt = '', onInstructionsReady = () => true, onThreadValidated = () => true, open, refreshThreads, fail, chatView, saveDraft, addDraft, keepNotice, dropNotice, heldWarning, errorCopy = chatErrorCopy, unchargedCopy = chatUnchargedCopy }) {
+export function useChatSend({ text, setText, model, imagesBlocked, sendBlocked = false, chosen, price, active, setActive, messages, setMessages, setThreads, setError, att, limits, draftModel, folders, folder, instr, requiredInstructions = false, lockedInstructions = '', expectedSystemPrompt = '', onInstructionsReady = () => true, onThreadValidated = () => true, open, refreshThreads, fail, chatView, saveDraft: saveDraftFor, addDraft: addDraftFor, keepNotice: keepNoticeFor, dropNotice: dropNoticeFor, heldWarning, errorCopy = chatErrorCopy, unchargedCopy = chatUnchargedCopy }) {
   const [busy, setBusy] = useState(false);
   const [stopping, setStopping] = useState(false); // Stop was pressed and the stopped turn is being looked for
   const [checking, setChecking] = useState(false); // the connection dropped mid-reply and the turn is being looked for
@@ -32,6 +33,20 @@ export function useChatSend({ text, setText, model, imagesBlocked, sendBlocked =
     if (!content || busy || sendingRef.current || !model || imagesBlocked || sendBlocked) return;
     sendingRef.current = true; setBusy(true); setError(null); setText('');
     let thread = active; let created = false; let requiredReady = false; const pending = `pending-${Date.now()}`;
+    // The account signed in when this send began (F-05). On a shared browser the person can sign out or switch
+    // accounts before a slow send ends; every persistent writer below is fenced so a late give-back or notice can
+    // never land under the new account's draft namespace. A change of owner aborts the write; it never restores the
+    // draft or persists it elsewhere. Same-account give-back is unaffected, since the owner is then unchanged.
+    const sendOwner = getStoredUserId();
+    const ownsStore = () => draftWriteAllowed(sendOwner, getStoredUserId());
+    // Aborts the send (through the catch, which never started and never charged) once the account has changed: the
+    // authenticated/persistence path — image upload, thread create, the turn itself, the Oddling canon write — must
+    // not run under the account signed in now, since it would persist A's image, instructions and message under B.
+    const assertOwner = () => { if (!ownsStore()) throw new GatewayError('account changed', { status: 409, code: 'account_changed' }); };
+    const saveDraft = (chatId, value) => { if (ownsStore()) saveDraftFor(chatId, value); };
+    const addDraft = (chatId, value) => { if (ownsStore()) addDraftFor(chatId, value); };
+    const keepNotice = (chatId, code, extra) => { if (ownsStore()) keepNoticeFor(chatId, code, extra); };
+    const dropNotice = (chatId) => { if (ownsStore()) dropNoticeFor(chatId); };
     const knownIds = new Set(messages.map((x) => x.id)); let jobId = null; // to tell this turn from the ones already on screen
     let key = null; // this send's idempotency key, made below before any request: with no job id (Stop before `start`), the server is asked about the send by it
     // The notice kept for the chat this message is sent from is about the message before it, and goes at the press. Unless it warns
@@ -94,7 +109,13 @@ export function useChatSend({ text, setText, model, imagesBlocked, sendBlocked =
       // Images go to storage first, before anything is charged: a failed upload costs nothing.
       // A Library image is already in storage; the server checks it is the caller's own, so it is sent by id.
       const refs = [];
-      for (const it of att.items) refs.push(it.asset ? { source_asset: it.asset } : await uploadChatImage(await prepareImage(it.file, limits.maxEdge)));
+      for (const it of att.items) {
+        if (it.asset) { refs.push({ source_asset: it.asset }); continue; }
+        const prepared = await prepareImage(it.file, limits.maxEdge);
+        assertOwner(); // F-05: the account must not have changed while the image decoded, before it uploads under the new one
+        refs.push(await uploadChatImage(prepared));
+      }
+      assertOwner(); // and not while the last image uploaded or the thread was validated, before a thread is created or the turn sent
       if (!thread) {
         thread = (await chatApi.create(draftModel || model.id)).thread; created = true;
         // A chat started while a folder is open goes into it. If filing fails, the chat still starts, unfiled.
@@ -109,7 +130,8 @@ export function useChatSend({ text, setText, model, imagesBlocked, sendBlocked =
           catch (e) { if (requiredInstructions) throw new GatewayError('instructions_unavailable', { status: e?.status || 502, code: 'instructions_unavailable' }); }
         }
         if (requiredInstructions) {
-          if (!instructionText || !await onInstructionsReady(thread.id)) throw new GatewayError('instructions_unavailable', { status: 502, code: 'instructions_unavailable' });
+          assertOwner(); // F-05: do not bind this launch's canon onto the thread for an account that is no longer the sender
+          if (!instructionText || !await onInstructionsReady(thread.id, sendOwner)) throw new GatewayError('instructions_unavailable', { status: 502, code: 'instructions_unavailable' });
           requiredReady = true;
         }
         // Still on the chat that had not started: it becomes this one. If another chat was opened meanwhile, this one only joins the list.

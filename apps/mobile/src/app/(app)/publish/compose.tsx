@@ -1,3 +1,5 @@
+import { publishPick, resolvePublishPick } from '../../../lib/publishHandoff';
+import { useAnnouncement } from '../../../lib/useAnnouncement';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { Button, Text as ThemedText } from '../../../components/ui';
 import { NetworkLogo } from '../../../components/publish/NetworkLogo';
@@ -65,6 +67,7 @@ export default function Compose() {
     const preparingRef = useRef(false);
     const [busy, setBusy] = useState(false);
     const [problem, setProblem] = useState<string | null>(null);
+    useAnnouncement(problem);
 
     useEffect(() => {
         const reset = () => {
@@ -88,19 +91,19 @@ export default function Compose() {
                 const nextGates = composeGates(acc);
                 setGates(nextGates); setFreePlan(acc.plansEnabled && acc.planTier === 'free');
                 if (!nextGates.schedule) setMode('now');
-                const byId = new Map<string, CatalogModel>(catalog.map((m) => [m.id, m]));
-                const list: CreationPick[] = [];
-                for (const job of page.jobs) {
-                    const model = byId.get(job.model_id);
-                    const mediaType = model ? mediaTypeOf(model.modality) : null;
-                    if (job.state === 'succeeded' && job.has_asset && model && mediaType) list.push({ kind: 'job', job, mediaType, name: job.label || model.name });
-                }
+                const list = page.jobs.map(job => publishPick(job, catalog)).filter((pick): pick is CreationPick => pick !== null);
                 setPicks(list.slice(0, 24));
                 setAccounts(acc.accounts);
                 setUploadsEnabled(acc.uploadsEnabled);
 
                 setCarouselEnabled(acc.carouselEnabled === true);
-                if (presetJob && prefillAllowed.current) { setChoices(list.filter(p => p.job.job_id === presetJob)); prefillAllowed.current = false; }
+                if (presetJob && prefillAllowed.current) {
+                    const result = await resolvePublishPick(api, presetJob, page.jobs, catalog, valid);
+                    if (!valid()) return;
+                    prefillAllowed.current = false;
+                    if (result?.pick) setChoices([result.pick]);
+                    else if (result?.error) setProblem(t(result.error));
+                }
                 if (nextGates.queues) { const queueList = await fetchQueues(api).catch(() => [] as PublishQueue[]); if (valid()) setQueues(queueList.filter(q => q.enabled)); }
             })
             .catch((err) => valid() && setError(publishErrorMessage(err)));
@@ -213,7 +216,7 @@ export default function Compose() {
             <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
                 {scopeNote ? <StatusText variant="inherit" style={styles.muted} accessibilityLiveRegion="polite">{t('publishDepth.presets.scopeCleared')}</StatusText> : null}
                 <Text style={styles.heading} accessibilityRole="header">{t('publish.1Creation')}</Text>
-                {picks.length === 0 ? <Text style={styles.muted}>{t('publish.nofinishedimagesorvideosyetMake')}</Text> : null}
+                {picks.length === 0 ? <><Text style={styles.muted}>{t('publish.nofinishedimagesorvideosyetMake')}</Text><Button variant="secondary" label={t('empty.library.action')} onPress={() => router.push('/create')} /></> : null}
                 <MediaLibraryGrid api={api} picks={picks} choices={choices} max={maxMedia} disabled={preparing || busy} onToggle={p => { if (preparingRef.current) return; setChoices(old => toggleChoice(old, p, maxMedia)); if (maxMedia === 1) setAccountIds([]); }} />
                 <ChosenMediaPreview api={api} choice={chosen} />
                 <PublishMediaSelection items={choices} max={maxMedia} onChange={setChoices} disabled={preparing || busy} />
@@ -232,7 +235,7 @@ export default function Compose() {
                 {chosen ? (
                     <>
                         <Text style={styles.heading} accessibilityRole="header">{t('publish.2Accounts')}</Text>
-                        {eligible.length === 0 ? <Text style={styles.muted}>{t('publish.noconnectedaccountcanpostayet', { value1: chosen.mediaType })}</Text> : null}
+                        {eligible.length === 0 ? <><Text style={styles.muted}>{t('publish.noconnectedaccountcanpostayet', { value1: chosen.mediaType })}</Text><Button variant="secondary" label={t('connect.title')} onPress={() => router.push('/publish/connect')} /></> : null}
                         {queue ? <Text style={styles.muted}>{queueUsable ? t('compose.queueAccounts', { names: queueAccounts.map((a) => a.displayName).join(', ') }) : t('compose.queueNoMatch')}</Text> : null}
                         <View style={styles.chips}>
                             {(queue ? [] : eligible).map((a) => (

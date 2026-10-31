@@ -1716,6 +1716,24 @@
     "ratio": 2
   },
   {
+    "id": "wins.views",
+    "english": "Views",
+    "translation": "المشاهدات",
+    "ratio": 1.8
+  },
+  {
+    "id": "wins.videoType",
+    "english": "Videos",
+    "translation": "الفيديوهات",
+    "ratio": 1.67
+  },
+  {
+    "id": "credits.receipt.paid",
+    "english": "Paid",
+    "translation": "المدفوع",
+    "ratio": 1.75
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "تسجيل الدخول",

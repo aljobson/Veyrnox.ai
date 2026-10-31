@@ -10,6 +10,7 @@ export default {
     'editor.home.recent': 'Recent edits',
     'editor.home.allProjects': 'All projects',
     'editor.home.retry': 'Tap to try again',
+    'editor.home.loading': 'Loading your edits…',
     'editor.home.empty': 'No edits yet',
     'editor.home.emptyBody': 'Start a new edit and your recent projects will appear here.',
     'editor.home.noWorkspace': 'No workspace is available',

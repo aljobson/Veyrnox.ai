@@ -3294,6 +3294,42 @@
     "ratio": 2
   },
   {
+    "id": "handoff.useFilmResult",
+    "english": "Use this result",
+    "translation": "Dieses Ergebnis verwenden",
+    "ratio": 1.67
+  },
+  {
+    "id": "wins.all",
+    "english": "All time",
+    "translation": "Gesamter Zeitraum",
+    "ratio": 2.13
+  },
+  {
+    "id": "wins.see",
+    "english": "See your wins",
+    "translation": "Deine Erfolge ansehen",
+    "ratio": 1.62
+  },
+  {
+    "id": "wins.close",
+    "english": "Close",
+    "translation": "Schließen",
+    "ratio": 1.8
+  },
+  {
+    "id": "job.holdToDelete",
+    "english": "Hold to delete",
+    "translation": "Gedrückt halten zum Löschen",
+    "ratio": 1.93
+  },
+  {
+    "id": "credits.receipt.paid",
+    "english": "Paid",
+    "translation": "Bezahlt",
+    "ratio": 1.75
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

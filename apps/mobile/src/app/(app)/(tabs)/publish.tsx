@@ -9,6 +9,7 @@ import { useCallback, useMemo, useState, useSyncExternalStore } from 'react';
 import { ActivityIndicator, Platform, RefreshControl, ScrollView, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { useBilling } from '../../../billing/BillingProvider';
+import { paywallsEnabled } from '../../../billing/paywallGate';
 import { renewalTerms, toDisplayPackages, type Interval } from '../../../lib/billing';
 import { formatLocale, t } from '../../../lib/i18n';
 import { MENU_ICONS, type MenuIcon } from '../../../lib/menuIcons';
@@ -62,6 +63,7 @@ export default function Publish() {
     const managementKey = plan?.tier === 'publish' ? planManagementKey(plan.source) : null;
     const [data, setData] = useState<PublishAccountsState | null>(null);
     const [posts, setPosts] = useState<PublishPost[]>([]);
+    const [postsFailed, setPostsFailed] = useState(false);
     const [brands, setBrands] = useState<Brand[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [refreshing, setRefreshing] = useState(false);
@@ -80,6 +82,7 @@ export default function Publish() {
             ]);
             setData(nextData);
             setPlan(nextPlan);
+            setPostsFailed(!nextPosts);
             if (nextPosts) setPosts(nextPosts);
             if (nextBrands) {
                 reconcileBrand(nextBrands);
@@ -180,6 +183,8 @@ export default function Publish() {
                 </View>
             ) : null}
 
+            {postsFailed && !error ? <Text variant="footnote" style={styles.error} accessibilityRole="alert">{t('publishHome.postsFailed')}</Text> : null}
+
             {data && summary ? (
                 <>
                     <View style={styles.stats}>
@@ -220,6 +225,7 @@ export default function Publish() {
                                     <Button label={t('unlock.subscribe')} variant="secondary" accessibilityRole="button" disabled={!canPurchase || busy || !chosenPlan}  onPress={() => void subscribe()}>
                                         {busy ? <ActivityIndicator color={styles.textInk.color} /> : <Text variant="bodyStrong">{t('unlock.subscribe')}</Text>}
                                     </Button>
+                                    {paywallsEnabled() && canPurchase ? <Button label={t('billing.paywall.seePublish')} variant="tertiary" accessibilityRole="button" disabled={busy} onPress={() => router.push({ pathname: '/paywall', params: { offering: 'publish' } })}><Text variant="footnote" style={styles.link}>{t('billing.paywall.seePublish')}</Text></Button> : null}
                                 </>
                             ) : <Text variant="footnote" style={styles.muted}>{t('plan.unavailable')}</Text>}
                             {message ? <Text variant="footnote" style={styles.planMessage} accessibilityLiveRegion="polite">{message}</Text> : null}

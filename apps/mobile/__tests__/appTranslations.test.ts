@@ -24,7 +24,7 @@ test('all eleven languages are enabled in LANGUAGES order with complete app cata
 });
 test('Japanese omits all unused one forms but retains ordinary one labels', () => {
     const unused = Object.keys(APP_CATALOGS.de).filter(key => key.endsWith('.one') && pluralBase(key));
-    expect(unused).toHaveLength(65);
+    expect(unused).toHaveLength(66);
     expect(Object.keys(APP_CATALOGS.ja).sort()).toEqual(Object.keys(APP_CATALOGS.de).filter(key => !unused.includes(key)).sort());
     expect(APP_CATALOGS.ja['share.review.one']).toBeDefined();
     expect(new Intl.PluralRules('ja').resolvedOptions().pluralCategories).toEqual(['other']);

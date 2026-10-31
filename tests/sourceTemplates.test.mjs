@@ -27,9 +27,14 @@ import {
 } from './fixtures/higgsfield90SourceAssetHashes.mjs';
 import { ALL_TEMPLATES, PRESETS, REMOVED_PROMPT_GAP_TEMPLATE_IDS, WALL_PRESETS, templateById } from '../app/veyrnox/_lib/templates.js';
 import { MODELS, modelIdForName, presetCredits, presetHref } from '../app/veyrnox/_lib/tokens.js';
-import { AUDIT_SHOWCASE_CLIPS } from '../app/veyrnox/_lib/showcase.js';
+import { AUDIT_SHOWCASE_CLIPS, SHOWCASE_CLIPS } from '../app/veyrnox/_lib/showcase.js';
 import { isUnknownStaticPage } from '../lib/unknownStaticPage.js';
 import { templateStartId } from '../lib/templateStart.js';
+import { SEEDANCE_200_TEMPLATE_METADATA } from '../app/veyrnox/_lib/seedanceTemplateMetadata.js';
+import { SEEDANCE_REFERENCE_MODEL, takesReferenceModel } from '../app/veyrnox/_lib/seedanceReference.js';
+
+// Audit records keep the original media paths; the files are published without the source-platform name.
+const publishedMediaPath = (path) => path.replace(/-(?:higgs|syntx)-/, '-');
 
 const REMOVED_ORIGINAL_IDS = [
   'elevator-one-take', 'desert-radio', 'last-train-signal', 'wrong-doorbell', 'empty-place-setting',
@@ -81,10 +86,13 @@ test('every imported clip has its own matching recipe and a supported video mode
       assert.equal(preset.promptOrigin, 'community-source-exact', preset.id);
       assert.equal(preset.prompt, SEEDANCE_SOURCE_PROMPT_RECORDS[preset.id]?.prompt, preset.id);
     }
-    assert.ok(preset.needs);
-    assert.equal(preset.durationSeconds, 10);
+    if (preset.needs == null) {
+      assert.equal(preset.model, 'Seedance 2.0 Fast', preset.id);
+      assert.equal(preset.durationSeconds, 5, preset.id);
+      assert.doesNotMatch(preset.prompt, /uploaded|starting image/i, preset.id);
+    }
     const model = MODELS.find((m) => m.id === modelIdForName(preset.model));
-    assert.ok(model?.durations?.includes(10));
+    assert.ok(model?.durations?.includes(preset.durationSeconds));
     if (preset.aspect && model?.aspects) assert.ok(model.aspects.includes(preset.aspect), `${preset.id} uses unsupported ${preset.aspect}`);
   }
 });
@@ -215,9 +223,17 @@ test('the 200 Seedance templates preserve full prompts and paired unique videos'
     assert.equal(template.sourcePlatform, record.sourcePlatform, record.id);
     assert.equal(template.sourceModel, record.sourceModel, record.id);
     assert.equal(template.sourceUrl, record.sourceUrl, record.id);
-    assert.equal(template.model, 'Seedance 2.0 Fast', record.id);
-    assert.equal(template.credits, 19, record.id);
-    if (!record.existing) assert.equal(template.prompt, record.prompt, `${record.id}: full exact prompt must remain copied`);
+    const textOnly = template.needs == null || /^Copy the exact prompt;/.test(template.needs);
+    const reference = !textOnly && takesReferenceModel(SEEDANCE_200_TEMPLATE_METADATA[record.id]);
+    assert.equal(template.model, textOnly ? 'Seedance 2.0 Fast' : reference ? SEEDANCE_REFERENCE_MODEL : 'Kling 3.0 · I2V', record.id);
+    assert.equal(template.credits, textOnly ? 19 : reference ? 85 : 32, record.id);
+    assert.equal(template.durationSeconds, textOnly ? 5 : 10, record.id);
+    if (template.promptOrigin === 'community-source-exact') {
+      assert.equal(template.prompt, record.prompt, `${record.id}: full exact prompt must remain copied`);
+    } else {
+      assert.equal(template.promptOrigin, 'veyrnox-adaptation', record.id);
+      assert.equal(template.preferAdaptedPrompt, true, record.id);
+    }
     const promptAudit = sourcePromptAuditRecord(record.id);
     promptAudits.push(promptAudit);
     if (record.referenceImageCount > 0 || record.referenceVideoCount > 0 || promptAudit.issues.includes('audio-preservation-not-supported')) {
@@ -225,8 +241,8 @@ test('the 200 Seedance templates preserve full prompts and paired unique videos'
       assert.ok(promptAudit.issues.includes('source-input-contract-not-wired'), record.id);
     }
 
-    const preview = readFileSync(fileURLToPath(new URL(`../public${record.previewPath}`, import.meta.url)));
-    const poster = readFileSync(fileURLToPath(new URL(`../public${record.posterPath}`, import.meta.url)));
+    const preview = readFileSync(fileURLToPath(new URL(`../public${publishedMediaPath(record.previewPath)}`, import.meta.url)));
+    const poster = readFileSync(fileURLToPath(new URL(`../public${publishedMediaPath(record.posterPath)}`, import.meta.url)));
     assert.equal(createHash('sha256').update(preview).digest('hex'), record.localPreviewSha256, record.id);
     assert.equal(createHash('sha256').update(poster).digest('hex'), record.localPosterSha256, record.id);
     promptHashes.add(record.sourcePromptSha256);
@@ -490,13 +506,16 @@ test('retained source templates expose provenance only for the verified Seedance
     if (/higgsfield|syntx/i.test(clip.video)) assert.match(clip.video, /^\/showcase\/viral-seedance-(?:higgs|syntx)-/);
     if (/higgsfield|syntx/i.test(clip.poster)) assert.match(clip.poster, /^\/showcase\/viral-seedance-(?:higgs|syntx)-/);
   }
+  for (const clip of Object.values(SHOWCASE_CLIPS)) {
+    assert.doesNotMatch(`${clip.video} ${clip.poster}`, /higgs|syntx/i, 'published media paths name no source platform');
+  }
 });
 
 test('every retained source video and poster is a unique local asset', () => {
   const clips = Object.values(AUDIT_SHOWCASE_CLIPS);
   assert.equal(clips.length, 527);
   for (const field of ['video', 'poster']) {
-    const paths = clips.map((clip) => clip[field]);
+    const paths = clips.map((clip) => publishedMediaPath(clip[field]));
     assert.equal(new Set(paths).size, paths.length, `${field} paths must be unique`);
     const hashes = paths.map((path) => createHash('sha256').update(
       readFileSync(fileURLToPath(new URL(`../public${path}`, import.meta.url))),

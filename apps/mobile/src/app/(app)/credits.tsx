@@ -7,6 +7,7 @@ import { ActivityIndicator, Platform, ScrollView, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { useBilling } from '../../billing/BillingProvider';
 import { useStorePurchase } from '../../billing/useStorePurchase';
+import { paywallsEnabled } from '../../billing/paywallGate';
 import { getPurchaseSnapshot, type PurchaseOutcome } from '../../billing/storePurchaseStore';
 import { LEGAL_LINKS } from '../../lib/account';
 import {
@@ -19,6 +20,7 @@ import {
 import { t } from '../../lib/i18n';
 import { ds } from '../../theme';
 import { VeyCardPeek } from '../../components/VeyCardPeek';
+import { ReceiptSlip } from '../../components/ReceiptSlip';
 import { BalanceCard } from '../../components/credits/BalanceCard';
 import { CheckInEntry } from '../../components/credits/CheckInEntry';
 import { PackCard, PackTaxNote } from '../../components/credits/PackCard';
@@ -208,6 +210,7 @@ export default function Credits() {
                 )}
                 {!billing.generationActive && chosenPlan?.interval ? <Text accessibilityLanguage="en" variant="caption" tone="tertiary" style={styles.terms}>{renewalTerms(chosenPlan.interval, chosenPlan.priceString, store)}</Text> : null}
                 {!billing.generationActive ? <Button variant="primary" accessibilityRole="button" disabled={!billing.generationPurchaseReady || !chosenPlan || busyId !== null} onPress={() => void buyPlan()} label={t('credits.subscriptions.continue')} loading={busyId === chosenPlan?.id} /> : null}
+                {paywallsEnabled() && billing.generationPurchaseReady ? <Button variant="secondary" accessibilityRole="button" disabled={busyId !== null} onPress={() => router.push({ pathname: '/paywall', params: { offering: 'generation' } })} label={t('billing.paywall.seePlans')} /> : null}
             </View>
 
             <View style={styles.section}>
@@ -221,10 +224,20 @@ export default function Credits() {
                         {chosenId === item.id ? <VeyCardPeek /> : null}
                     </PackCard>
                 ))}</View>}
+                {paywallsEnabled() && billing.canPurchase && packs.length > 0 ? <Button variant="secondary" accessibilityRole="button" disabled={busyId !== null} onPress={() => router.push({ pathname: '/paywall', params: { offering: 'credits' } })} label={t('billing.paywall.seePacks')} /> : null}
                 <PackTaxNote />
             </View>
 
-            {outcome?.kind === 'credited' ? <Text variant="body" tone="secondary" style={styles.balance} accessibilityLiveRegion="polite">{t('credits.added', { balance: outcome.balance })}</Text> : null}
+            {outcome?.kind === 'credited' ? (
+                <>
+                    <ReceiptSlip title={t('credits.receipt.title')} footer={t('credits.receipt.thanks')} rows={[
+                        { label: t('credits.receipt.credits'), value: `+${outcome.credits}` },
+                        { label: t('credits.receipt.paid'), value: outcome.price },
+                        { label: t('credits.receipt.balance'), value: String(outcome.balance) },
+                    ]} />
+                    <Text variant="body" tone="secondary" style={styles.balance} accessibilityLiveRegion="polite">{t('credits.added', { balance: outcome.balance })}</Text>
+                </>
+            ) : null}
             {outcome?.kind === 'subscribed' ? <Text variant="body" tone="accent" accessibilityLiveRegion="polite" style={styles.ok}>{t('credits.subscriptions.started')}</Text> : null}
             {outcome?.kind === 'restored' ? <Text variant="body" tone="accent" accessibilityLiveRegion="polite" style={styles.ok}>{t('credits.restored')}</Text> : null}
             {outcome?.kind === 'nothingToRestore' ? <Text variant="body" tone="secondary" accessibilityLiveRegion="polite">{t('credits.nothingToRestore')}</Text> : null}

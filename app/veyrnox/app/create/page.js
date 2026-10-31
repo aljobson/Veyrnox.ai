@@ -12,7 +12,8 @@ import { useRouter } from 'next/navigation';
 import { AppNav } from '../../_components/NavBar';
 import { Main } from '../../_components/Main';
 import { Chip } from '../../_components/Chip';
-import { modelAspectRatios, modelIdForName } from '../../_lib/tokens';
+import { clipCredits, modelAspectRatios, modelIdForName } from '../../_lib/tokens';
+import { TemplateOpening, useTemplateOpening } from '../../_components/TemplateOpening';
 import { gatewayFetch, makeIdempotencyKey, notifyBalanceChanged, GatewayError } from '../../_lib/gateway';
 import { failedCreationCopy } from '../../../../lib/i18n/createCopy.mjs';
 import { ERROR_COPY, failedJobCopy } from '../../_lib/createErrors';
@@ -29,9 +30,9 @@ import { SourceDurationCard } from '../../_components/SourceDurationCard';
 import { takeStudioDraft } from '../../_lib/landingDraft';
 import { takeVideoSoundContinuation, writeVideoSoundContinuation } from '../../_lib/resultContinuation';
 import { oddlingPortrait, buildOddlingAnimationPrompt } from '../../_lib/oddlingStudio';
-import { templateById } from '../../_lib/templates';
+import { fetchTemplate } from '../../_lib/useTemplates';
 import { resolveTemplateDraft, draftForTemplate } from '../../_lib/templateDraft';
-import { templateStartId } from '../../../../lib/templateStart';
+import { templateStartIdFor } from '../../../../lib/templateStartCheck';
 import { DEFAULT_CINEMA, buildCinemaPrompt } from '../../_lib/cinema';
 import { CameraPanel } from '../../_components/CameraPanel';
 import { CharacterPanel } from '../../_components/CharacterPanel';
@@ -95,6 +96,8 @@ export default function CreateStudio() {
   const [modelId, setModelId] = useState(() => starterModel(catalogModels, 'image')?.id || '');
   const [goal, setGoal] = useState('image');
   const [presetParam, setPresetParam] = useState(null);
+  const [templateData, setTemplateData] = useState(); // the whole template behind presetParam, from /api/templates/<id>; undefined until read, null when none
+  const openingTemplate = useTemplateOpening(catalogLoading, templateData);
   const [accountEpoch, setAccountEpoch] = useState(0); // bumped when the account changes; drops conversions in flight
   // Bumped at the moment the model or account changes, so a conversion started before cannot land after.
   const sourceEpoch = useRef(0);
@@ -147,60 +150,67 @@ export default function CreateStudio() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
-    const preset = templateById(params.get('preset'));
-    const wanted = params.get('model') || (preset && modelIdForName(preset.model));
-    if (wanted) {
-      setModelId(wanted);
-      setGoal('all');
-    }
-    setPresetParam(params.get('preset')); // a template's id, from its studio link; sent only while its own model is selected
-    if (params.get('duration') === '10s') setDuration('10s');
-    const videoSoundDraft = params.get('continue') === 'faceless-sound' && wanted === 'mmaudio-v2-video'
-      ? takeVideoSoundContinuation(window.sessionStorage)
-      : null;
-    let storedDraft = null;
-    try { storedDraft = takeStudioDraft(window.sessionStorage, wanted); } catch { /* The URL recipe still works. */ }
-    const portrait = oddlingPortrait(params.get('oddlingPhoto'));
-    const draft = resolveTemplateDraft(preset, wanted, storedDraft)
-      || (portrait ? { prompt: buildOddlingAnimationPrompt(portrait.id, params.get('motion')), durationSeconds: 5 } : null);
-    incomingDraft.current = Boolean(draft || videoSoundDraft);
-    if (videoSoundDraft) {
-      setPrompt(videoSoundDraft.prompt);
-      setSources({ video: { assetId: videoSoundDraft.jobId, previewUrl: videoSoundDraft.assetUrl, label: videoSoundDraft.label } });
-      setConsent(false);
-    } else if (draft) setPrompt(draft.prompt);
-    if (!videoSoundDraft && draft && storedDraft?.sources) {
-      setSources(storedDraft.sources);
-      setConsent(storedDraft.consent === true);
-    }
-    if (storedDraft?.followup) setPlannedFollowup(storedDraft.followup);
-    if (draft?.aspect) incomingAspect.current = draft.aspect;
-    if (draft?.durationSeconds) setDuration(`${draft.durationSeconds}s`);
-    if (draft?.negativePrompt) setNegative(draft.negativePrompt);
-    if (params.get('passport') === '1' && storedDraft?.oddlingPicks) {
-      const imported = sanitizeOddlingPicks(storedDraft.oddlingPicks);
-      if (Object.keys(imported).length) {
-        setCharacter(imported);
-        setCharacterOn(true);
-        setOddlingTransfer(imported);
-      }
-    }
+    const presetId = params.get('preset');
     const controller = new AbortController();
-    if (portrait) {
-      setAnimationPortrait(portrait);
-      setPortraitStatus(translation.current('app.create.photoLoading',{name:portrait.name}));
-      fetch(portrait.image, { signal: controller.signal }).then(async (response) => {
-        if (!response.ok) throw new Error('portrait_load_failed');
-        const blob = await response.blob();
-        if (blob.type !== 'image/webp' || !blob.size || blob.size > 5 * 1024 * 1024) throw new Error('portrait_invalid');
-        if (controller.signal.aborted) return;
-        const file = new File([blob], `${portrait.id}.webp`, { type: 'image/webp' });
-        setSources((current) => ({ ...current, image: { file, previewUrl: portrait.image, label: portrait.name } }));
-        setPortraitStatus(translation.current('app.create.photoReady',{name:portrait.name}));
-      }).catch(() => {
-        if (!controller.signal.aborted) setPortraitStatus(translation.current("app.create.photoFailed"));
-      });
-    }
+    // A template link means the template supplies the draft, so an older saved draft is not restored over it.
+    if (presetId) incomingDraft.current = true;
+    const start = (preset) => {
+      const wanted = params.get('model') || (preset && modelIdForName(preset.model));
+      if (wanted) {
+        setModelId(wanted);
+        setGoal('all');
+      }
+      setTemplateData(preset ?? null);
+      setPresetParam(preset?.id ?? params.get('preset')); // the template's id, from its studio link (an older id resolves to it); sent only while its own model is selected
+      if (/^\d{1,2}s$/.test(params.get('duration') || '')) setDuration(params.get('duration'));
+      const videoSoundDraft = params.get('continue') === 'faceless-sound' && wanted === 'mmaudio-v2-video'
+        ? takeVideoSoundContinuation(window.sessionStorage)
+        : null;
+      let storedDraft = null;
+      try { storedDraft = takeStudioDraft(window.sessionStorage, wanted); } catch { /* The URL recipe still works. */ }
+      const portrait = oddlingPortrait(params.get('oddlingPhoto'));
+      const draft = resolveTemplateDraft(preset, wanted, storedDraft)
+        || (portrait ? { prompt: buildOddlingAnimationPrompt(portrait.id, params.get('motion')), durationSeconds: 5 } : null);
+      incomingDraft.current = Boolean(draft || videoSoundDraft);
+      if (videoSoundDraft) {
+        setPrompt(videoSoundDraft.prompt);
+        setSources({ video: { assetId: videoSoundDraft.jobId, previewUrl: videoSoundDraft.assetUrl, label: videoSoundDraft.label } });
+        setConsent(false);
+      } else if (draft) setPrompt(draft.prompt);
+      if (!videoSoundDraft && draft && storedDraft?.sources) {
+        setSources(storedDraft.sources);
+        setConsent(storedDraft.consent === true);
+      }
+      if (storedDraft?.followup) setPlannedFollowup(storedDraft.followup);
+      if (draft?.aspect) incomingAspect.current = draft.aspect;
+      if (draft?.durationSeconds) setDuration(`${draft.durationSeconds}s`);
+      if (draft?.negativePrompt) setNegative(draft.negativePrompt);
+      if (params.get('passport') === '1' && storedDraft?.oddlingPicks) {
+        const imported = sanitizeOddlingPicks(storedDraft.oddlingPicks);
+        if (Object.keys(imported).length) {
+          setCharacter(imported);
+          setCharacterOn(true);
+          setOddlingTransfer(imported);
+        }
+      }
+      if (portrait) {
+        setAnimationPortrait(portrait);
+        setPortraitStatus(translation.current('app.create.photoLoading',{name:portrait.name}));
+        fetch(portrait.image, { signal: controller.signal }).then(async (response) => {
+          if (!response.ok) throw new Error('portrait_load_failed');
+          const blob = await response.blob();
+          if (blob.type !== 'image/webp' || !blob.size || blob.size > 5 * 1024 * 1024) throw new Error('portrait_invalid');
+          if (controller.signal.aborted) return;
+          const file = new File([blob], `${portrait.id}.webp`, { type: 'image/webp' });
+          setSources((current) => ({ ...current, image: { file, previewUrl: portrait.image, label: portrait.name } }));
+          setPortraitStatus(translation.current('app.create.photoReady',{name:portrait.name}));
+        }).catch(() => {
+          if (!controller.signal.aborted) setPortraitStatus(translation.current("app.create.photoFailed"));
+        });
+      }
+    };
+    if (presetId) fetchTemplate(presetId).then((preset) => { if (!controller.signal.aborted) start(preset); });
+    else start(null);
     return () => controller.abort();
   }, []);
 
@@ -246,7 +256,7 @@ export default function CreateStudio() {
   // Completion must not turn an imminent reset click into a charged submission.
   const hasJobs = jobs.length > 0;
   const catalogStatus = catalogLoading ? 'loading' : catalogLive ? 'live' : 'unavailable';
-  const activeTemplate = templateStartId(presetParam, modelId) ? templateById(presetParam) : null;
+  const activeTemplate = templateStartIdFor(presetParam, templateData, modelId) ? templateData : null;
   const prompt = promptText(typed, model); // a starter shot until then, on picture and clip models only (see promptBox)
   // The picked model stays listed even when the tier filter would hide it.
   const goalModels = modelsForGoal(models, goal);
@@ -278,7 +288,7 @@ export default function CreateStudio() {
   const promptTooLong = preparedPromptLength > promptLimit;
   // Only offer aspect ratios explicitly declared by this model's provider contract.
   const aspectOptions = isShort ? [] : modelAspectRatios(model);
-  const unitCost = model ? model.credits * (duration === '10s' && model.kind === 'video' ? 2 : 1) : 0;
+  const unitCost = model ? (model.kind === 'video' ? clipCredits(model.credits, Number(duration.replace('s', ''))) : model.credits) : 0;
   // Other models always send one; the count control is image-only.
   const n = imageCount(model, count);
   // The server decides what is free; the first `freeLeft` jobs of a batch are, the rest cost the catalog price.
@@ -327,8 +337,10 @@ export default function CreateStudio() {
   // Picking a template here does what arriving on ?preset=<id> does: its model,
   // prompt and settings load, and the user's own files stay where the new model
   // has a slot for them. The template is a reference only; nothing is charged.
-  function applyTemplate(preset) {
+  async function applyTemplate(card) {
     setTemplatesOpen(false);
+    const preset = await fetchTemplate(card.id); // the picker lists cards; the prompt comes with the whole template
+    if (!preset) return;
     attachSeq.current += 1; // a paperclip conversion still running must not undo this choice
     setAttachConverting(false);
     setAttachNotice('');
@@ -336,6 +348,7 @@ export default function CreateStudio() {
     const nextModel = models.find((m) => m.id === nextId);
     const draft = draftForTemplate(preset, nextId);
     if (!nextModel || !draft) return;
+    setTemplateData(preset);
     setPresetParam(preset.id);
     setGoal('all');
     setTier(null);
@@ -513,7 +526,7 @@ export default function CreateStudio() {
           method: 'POST',
           body: JSON.stringify({
             model_id: modelId, idempotency_key: keys[i], inputs: inputsForIndex(inputs, i, n),
-            preset: templateStartId(presetParam, modelId) || undefined,
+            preset: templateStartIdFor(presetParam, templateData, modelId) || undefined,
             references,
             consent: anySource ? true : undefined,
           }),
@@ -582,6 +595,7 @@ export default function CreateStudio() {
 
   return (
     <div className="min-h-dvh">
+      {openingTemplate && <TemplateOpening name={openingTemplate.name} />}
       <AppNav balance={balance} active="create" />
 
       <Main inert={draftRecovery.restoring} aria-busy={draftRecovery.restoring} className="max-w-[1500px] mx-auto px-4 sm:px-8 pt-6 pb-16 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] lg:grid-rows-[auto_auto_1fr] gap-6">
@@ -879,7 +893,7 @@ export default function CreateStudio() {
 
           {model?.kind === 'video' && !fixedDurationLabel && !sourceDurationMax && (
             <ControlRow assistantTarget="create.duration" label={t("app.create.durationHeading")} options={durations} value={duration} onChange={setDuration}
-              formatOption={(option) => outputDurationLabel(model, Number(option.replace('s', '')))} />
+              formatOption={(option) => t('presets.use.lengthCost', { length: outputDurationLabel(model, Number(option.replace('s', ''))), credits: clipCredits(model.credits, Number(option.replace('s', ''))) })} />
           )}
           {(model?.kind === 'video' || model?.kind === 'audio') && sourceDurationMax && <SourceDurationCard model={model} />}
           {(model?.kind === 'video' || model?.kind === 'audio') && fixedDurationLabel && (

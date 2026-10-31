@@ -13,9 +13,6 @@ export interface Preset {
     readonly theme?: string;
     readonly modelId: string;
     readonly modelName: string;
-    readonly sourceModel?: string | null;
-    readonly sourcePlatform?: string | null;
-    readonly sourceUrl?: string | null;
     // What the model makes, from the catalog: an image, video or audio family (empty when the server did not say).
     readonly modality: string;
     readonly prompt: string;
@@ -69,9 +66,6 @@ function parseOne(raw: unknown): Preset | null {
         theme: str(r.theme) ?? str(r.category) ?? 'OTHER',
         modelId,
         modelName: str(r.modelName) ?? modelId,
-        sourceModel: str(r.sourceModel),
-        sourcePlatform: str(r.sourcePlatform),
-        sourceUrl: https(r.sourceUrl),
         modality: str(r.modality) ?? '',
         prompt,
         promptOrigin: r.promptOrigin === 'veyrnox-adaptation' ? 'veyrnox-adaptation' : null,

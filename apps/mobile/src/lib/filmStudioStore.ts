@@ -1,3 +1,4 @@
+import { restorePhoneFilmIdentity, persistPhoneFilmIdentity, inheritFilmIdentity } from './filmHandoffIdentity';
 import { t } from './i18n';
 import { appCache, getCacheUser } from './appCache';
 import { POLICIES, type Cache } from './cache';
@@ -10,17 +11,20 @@ export async function loadStudio(cache: Cache = appCache, userId: string | undef
     const saved = await cache.read<unknown>(POLICIES.filmStudio, userId).catch(() => null);
     if (!saved || typeof saved.value !== 'string') return null;
     const parsed = parseFilm(saved.value);
+    if (parsed.ok) await restorePhoneFilmIdentity(parsed.film);
     return parsed.ok ? { film: parsed.film, savedAt: saved.meta.savedAt } : null;
 }
 
 // Saves only text that parses; returns the studio, or the reason it was refused.
-export async function saveStudio(raw: string, cache: Cache = appCache, userId: string | undefined = getCacheUser()): Promise<{ ok: true; film: Film } | { ok: false; error: string }> {
+export async function saveStudio(raw: string, cache: Cache = appCache, userId: string | undefined = getCacheUser(), sourceFilm?: Film): Promise<{ ok: true; film: Film } | { ok: false; error: string }> {
     const parsed = parseFilm(raw);
     if (!parsed.ok) return parsed;
     if (!userId) return { ok: false, error: t('filmStudioStore.signintokeepastudioon') };
     await cache.write(POLICIES.filmStudio, raw, userId).catch(() => undefined);
     const saved = await cache.read<unknown>(POLICIES.filmStudio, userId).catch(() => null);
     if (saved?.value !== raw) return { ok: false, error: t('filmWorkspace.saveFailed') };
+    if (sourceFilm) inheritFilmIdentity(sourceFilm, parsed.film);
+    await persistPhoneFilmIdentity(parsed.film);
     return { ok: true, film: parsed.film };
 }
 

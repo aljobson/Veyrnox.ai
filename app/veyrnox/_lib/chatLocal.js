@@ -81,6 +81,19 @@ export function addToDraft(storage, userId, chatId, text) {
   writeDraft(storage, userId, chatId, was.trim() && was !== text ? `${text}\n\n${was}` : text);
 }
 
+/**
+ * Whether a late storage write from an in-flight chat send is still for the account that began it (F-05). On a shared
+ * browser the signed-in user can sign out or switch accounts before a slow send ends; its give-back and notice writes
+ * resolve the owner at write time, so without this check account A's unsent text would land under account B's keys.
+ * A write is allowed only when the account is unchanged; a null owner (never signed in, or signed out) never matches.
+ * @param {string|null} sendOwner  the stored user id captured when the send started
+ * @param {string|null} current    the stored user id now, at the moment of the write
+ * @returns {boolean}
+ */
+export function draftWriteAllowed(sendOwner, current) {
+  return !!sendOwner && sendOwner === current;
+}
+
 const wholeCredits = (n) => Number.isInteger(n) && n >= 0 && n <= MAX_NOTICE_CREDITS;
 
 /**

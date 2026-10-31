@@ -1,3 +1,6 @@
+import { FilmError } from './filmError';
+import { markFilmSwitch } from './filmGenerationReturns';
+import { localFilmId, inheritFilmIdentity, restoreFilmIdentity, persistFilmIdentity } from './filmHandoffIdentity';
 import { t } from './i18n';
 import type { ApiClient } from './api';
 import { appCache, getCacheUser, subscribeCacheUser } from './appCache';
@@ -76,14 +79,16 @@ export const getFilmGeneration = () => generation;
 export const getOpenedFilm = () => opened?.owner === getCacheUser() ? opened : null;
 export const getActiveCloudLink = (): ActiveCloudLink | null => getOpenedFilm()?.cloud ?? null;
 export function clearOpenedFilm(): void {
+    void markFilmSwitch('no-active-film');
     generation++;
     opened = null; unconfirmed = null; removedIds.clear(); editSeq++; latest = null; inFlight = null; lastSaved = null; retryKeys.clear();
 }
 
 export async function replaceActiveStudio(film: Film, cache: Cache = appCache): Promise<void> {
     const owner = getCacheUser();
-    if (!owner) throw new Error(t('filmCloud.signintokeepastudioon'));
+    if (!owner) throw new FilmError(t('filmCloud.signintokeepastudioon'));
     const raw = JSON.stringify(film);
+    void persistFilmIdentity(film);
     editSeq++;
     latest = { owner, generation, raw, film };
     const active = getOpenedFilm();
@@ -91,7 +96,7 @@ export async function replaceActiveStudio(film: Film, cache: Cache = appCache): 
         opened = { ...active, raw, film, openedAt: Date.now() };
         return;
     }
-    const saved = await saveStudio(raw, cache, owner);
+    const saved = await saveStudio(raw, cache, owner, film);
     if (!saved.ok) throw new Error(saved.error);
 }
 
@@ -118,9 +123,10 @@ export async function saveActiveStudioToCloud(api: Reader, film: Film, idempoten
     // UTF-8 bytes, without relying on a native TextEncoder implementation.
     if (unescape(encodeURIComponent(raw)).length > MAX_FILM_BYTES) throw Object.assign(new Error('tooLarge'), { code: 'tooLarge' });
     const parsed = parseFilm(raw);
-    if (!parsed.ok) throw new Error(parsed.error);
+    if (!parsed.ok) throw new FilmError(parsed.error);
     const current = () => owner === getCacheUser() && captured === generation;
     if (!options.replay) {
+        inheritFilmIdentity(film, parsed.film);
         latest = { owner, generation: captured, raw, film: parsed.film }; editSeq++;
         const active = getOpenedFilm();
         if (active) opened = { ...active, raw, film: parsed.film };
@@ -158,6 +164,7 @@ export async function saveActiveStudioToCloud(api: Reader, film: Film, idempoten
             const edit = latest?.owner === owner && latest.generation === captured ? latest : { raw, film: parsed.film };
             opened = { owner, raw: now?.raw ?? edit.raw, film: now?.film ?? edit.film,
                 openedAt: now?.openedAt ?? Date.now(), cloud: { id: project.id, revision: project.revision } };
+            void persistFilmIdentity(opened.film, project.id);
             editSeq++; lastSaved = { raw, project }; retryKeys.delete(fingerprint);
             if (unconfirmed?.id === sent.id) unconfirmed = null;
         }
@@ -177,7 +184,7 @@ async function keepCurrent(owner: string, captured: number, cache: Cache): Promi
     for (let attempt = 0; attempt < 3; attempt++) {
         const active = getOpenedFilm(), seq = editSeq;
         if (!active || owner !== getCacheUser() || captured !== generation) return null;
-        const saved = await saveStudio(active.raw, cache, owner);
+        const saved = await saveStudio(active.raw, cache, owner, active.film);
         if (owner !== getCacheUser() || captured !== generation) return null;
         if (!saved.ok) return null;
         if (seq === editSeq) return seq;
@@ -281,7 +288,10 @@ export async function openCloudFilm(api: Reader, id: string, _cache: Cache = app
         if (!parsed.ok) return { ok: false, reason: 'invalid' };
         // Ownership check and assignment are synchronous: no disk write can outlive a session.
         if (switched()) return { ok: false, reason: 'switched' };
+        await restoreFilmIdentity(parsed.film, id);
+        if (switched()) return { ok: false, reason: 'switched' };
         opened = { owner, raw: result.raw, film: parsed.film, openedAt: Date.now(), cloud: { id: result.film.id, revision: result.film.revision } };
+        void markFilmSwitch(localFilmId(parsed.film));
         editSeq++; lastSaved = { raw: JSON.stringify(parsed.film), project: result.film };
         return { ok: true, film: parsed.film };
     } catch (err) {

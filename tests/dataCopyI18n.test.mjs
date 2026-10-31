@@ -6,7 +6,9 @@ import ts from 'typescript';
 import { ALL_TEMPLATES, templateById } from '../app/veyrnox/_lib/templates.js';
 import { GENJUTSU_SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/genjutsuSourcePromptRecords.js';
 import { SYNTX_SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/syntxSourcePromptRecords.js';
-import { CATALOGS, translator, tOr } from '../lib/i18n/translate.mjs';
+import { translator, tOr } from '../lib/i18n/translate.mjs';
+import { messagesFor } from '../lib/i18n/catalogs.mjs';
+import { CATALOGS } from '../lib/i18n/catalogs.mjs';
 import { appMessagesFor } from '../lib/i18n/appMessages.mjs';
 import { PRESET_STEP_KEYS, presetStep } from '../lib/i18n/presetSteps.mjs';
 import { failedCreationCopy } from '../lib/i18n/createCopy.mjs';
@@ -14,18 +16,25 @@ import { dataInventory } from '../scripts/lib/data-i18n.mjs';
 import { publicFiles, appFiles, candidates } from '../scripts/audit-public-i18n.mjs';
 import { legalDocument } from '../lib/i18n/legal/catalogs.mjs';
 import { fixture } from './helpers/publicSiteRender.mjs';
+import { sourcePromptAuditRecord } from '../app/veyrnox/_lib/sourcePromptAudit.js';
+import { exactSourcePromptRecord } from '../app/veyrnox/_lib/sourcePromptRecords.js';
+import { publicTemplateId } from '../app/veyrnox/_lib/templateIds.js';
 
 const codes = Object.keys(CATALOGS);
 const digits = value => (value.match(/\d+(?:[.:–]\d+)*/g) || []).sort();
 const tree = (file, source) => ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JSX);
 
-test('all template needs and 15 distinct steps have exact English and ten translated display entries', () => {
+test('all template needs and 16 distinct steps have exact English and ten translated display entries', () => {
   const original = JSON.stringify(ALL_TEMPLATES);
   assert.equal(ALL_TEMPLATES.length, 1434);
-  assert.ok(ALL_TEMPLATES.every(p => p.needs), 'Every public recipe retains translated input guidance');
-  assert.equal(Object.keys(PRESET_STEP_KEYS).length, 15);
+  const audit = JSON.parse(readFileSync(new URL('../docs/product/source-audit/seedance-200-exact-2026-10-29.json', import.meta.url)));
+  const textOnlyIds = audit.records.filter(r => !r.existing && r.referenceImageCount === 0 && sourcePromptAuditRecord(r.id).runnable).map(r => publicTemplateId(r.id));
+  assert.equal(textOnlyIds.length, 78);
+  assert.ok(textOnlyIds.every(id => !/higgs|syntx/.test(id)), 'template ids name no source platform');
+  assert.deepEqual(ALL_TEMPLATES.filter(p => !p.needs).map(p => p.id).sort(), [...textOnlyIds, 'a-moment-between-strangers', 'blood-moon-dance', 'dreamworks-castle', 'epic-train-doorway-scene', 'meal-together', 'red-thread-story', 'tentacle-breakout', 'the-last-stagecoach', 'the-push'].sort());
+  assert.equal(Object.keys(PRESET_STEP_KEYS).length, 16);
   for (const code of codes) {
-    const t = translator(code);
+    const t = translator(code, messagesFor(code));
     for (const preset of ALL_TEMPLATES) {
       if (preset.needs) {
         const needsKey = preset.needsKey || preset.id;
@@ -82,8 +91,9 @@ test('data inventory catches objects, local constant arrays, factory arguments a
   assert.ok(rows.find(r => r.field === 'prompt').reason);
 });
 
-test('actual source recipes fail the data audit without the new catalogs; both import graphs reach them', () => {
-  for (const files of [publicFiles(), appFiles()]) {
+test('actual source recipes fail the data audit without the new catalogs; the public import graph reaches them', () => {
+  // The studio no longer imports the catalog: it reads templates from /api/templates (lib/clientTemplates.js), so only the public graph does.
+  for (const files of [publicFiles()]) {
     for (const name of ['sourceTemplates.js','sourceTemplateExpansion4.js','sourceTemplateExpansion5.js']) {
       const file = `app/veyrnox/_lib/${name}`;
       assert.ok(files.includes(file));
@@ -105,11 +115,11 @@ test('recipe SSR translates steps but forwards exact prompt and preset data to U
       } },
     } });
     const html = f.render(React.createElement(f.load('app/veyrnox/_components/TemplateRecipe.js').TemplateRecipe, { preset }));
-    const step = presetStep(translator(code), preset.steps[0]);
+    const step = presetStep(translator(code, messagesFor(code)), preset.steps[0]);
     assert.ok(html.includes(step));
     assert.equal(html.includes(preset.steps[0]), code === 'en');
     assert.ok(html.includes('data-use-template="product-hero-360"'));
-    assert.ok(html.includes(translator(code)('public.TemplateRecipe.generationPrompt')));
+    assert.ok(html.includes(translator(code, messagesFor(code))('public.TemplateRecipe.generationPrompt')));
   }
 });
 
@@ -128,7 +138,7 @@ test('Genjutsu recipe SSR shows only the exact source prompt and hands that same
   } });
   const html = f.render(React.createElement(f.load('app/veyrnox/_components/TemplateRecipe.js').TemplateRecipe, { preset }));
   assert.ok(html.includes('EXACT COMMUNITY PROMPT'));
-  assert.ok(!html.includes('VEYRNOX GENERATION PROMPT'));
+  assert.ok(!html.includes('GENERATION PROMPT'));
   assert.ok(!html.includes(template.prompt.slice(0, 80)) || sourcePrompt.includes(template.prompt.slice(0, 80)));
   assert.ok(html.includes(sourcePrompt.slice(0, 80)));
   assert.doesNotMatch(html, /readonly=""/i);
@@ -137,7 +147,8 @@ test('Genjutsu recipe SSR shows only the exact source prompt and hands that same
 test('Syntx recipe SSR preserves the exact prompt while handing off its runnable adaptation', () => {
   const exactTemplate = ALL_TEMPLATES.find((preset) => preset.id === 'medieval-runway-look');
   const exactPrompt = SYNTX_SOURCE_PROMPT_RECORDS[exactTemplate.id].prompt;
-  const exactPreset = { ...exactTemplate, sourcePrompt: exactPrompt, sourcePromptOrigin: 'community-source-exact' };
+  // Its exact prompt needs a reference video the model cannot take.
+  const exactPreset = { ...exactTemplate, sourcePrompt: exactPrompt, sourcePromptOrigin: 'community-source-exact', sourcePromptRunnable: false };
   assert.equal(templateById('keyboard-duo-swap'), null);
   assert.equal(SYNTX_SOURCE_PROMPT_RECORDS['keyboard-duo-swap'].prompt, null);
 
@@ -152,8 +163,27 @@ test('Syntx recipe SSR preserves the exact prompt while handing off its runnable
   const exactHtml = exactFixture.render(React.createElement(exactFixture.load('app/veyrnox/_components/TemplateRecipe.js').TemplateRecipe, { preset: exactPreset }));
   assert.ok(exactHtml.includes(exactPrompt.slice(0, 80)));
   assert.ok(exactHtml.includes(exactTemplate.prompt.slice(0, 80)));
-  assert.ok(exactHtml.includes('VEYRNOX GENERATION PROMPT'));
+  assert.ok(exactHtml.includes('GENERATION PROMPT'));
   assert.match(exactHtml, /readonly=""/i);
+});
+
+test('a runnable community prompt is the only prompt shown and handed off, even when the template had a preferred adaptation', () => {
+  const template = ALL_TEMPLATES.find((preset) => preset.preferAdaptedPrompt === true && preset.promptOrigin === 'veyrnox-adaptation'
+    && exactSourcePromptRecord(preset.id) && sourcePromptAuditRecord(preset.id).runnable && preset.prompt !== exactSourcePromptRecord(preset.id).prompt);
+  assert.ok(template, 'a preferred-adaptation template with a runnable community prompt exists');
+  const exactPrompt = exactSourcePromptRecord(template.id).prompt;
+  const preset = { ...template, sourcePrompt: exactPrompt, sourcePromptOrigin: 'community-source-exact', sourcePromptRunnable: true };
+  let handoff;
+  const f = fixture('en', `/presets/${preset.id}`, { moduleMocks: {
+    './UseTemplate': { UseTemplate: (props) => { handoff = props; return React.createElement('div'); } },
+  } });
+  const html = f.render(React.createElement(f.load('app/veyrnox/_components/TemplateRecipe.js').TemplateRecipe, { preset }));
+  assert.ok(html.includes('EXACT COMMUNITY PROMPT'));
+  assert.ok(!html.includes('GENERATION PROMPT'));
+  assert.doesNotMatch(html, /data-runnable-adaptation/);
+  assert.equal(handoff.prompt, exactPrompt);
+  assert.equal(handoff.preset.prompt, exactPrompt);
+  assert.equal(handoff.generationBlocked, false);
 });
 
 test('an exact source prompt over the former limit is shown whole and stays copyable when its source contract is unsupported', () => {
@@ -217,7 +247,7 @@ test('legal headings translate in Terms and Refunds without changing section num
     assert.notEqual(terms.b018, '3A. Credit Subscriptions'); assert.notEqual(refund.b012, 'Credit Subscriptions');
     // The defined product name stays identical to the body text and the app (reviewer finding: heading and body must agree).
     assert.equal(terms.b045, '7B. Cinema Pass'); assert.equal(refund.b021, 'Cinema Pass');
-    assert.notEqual(translator(code)('legal.jurisdiction'), 'England & Wales');
+    assert.notEqual(translator(code, messagesFor(code))('legal.jurisdiction'), 'England & Wales');
   }
 });
 
@@ -235,7 +265,7 @@ test('smart-link SSR preserves creator data and translates only chrome and defau
   try {
     for (const code of codes) {
       const f = fixture(code, '/s/test-slug', { moduleMocks });
-      const page = f.load('app/s/[slug]/page.js'), t = translator(code);
+      const page = f.load('app/s/[slug]/page.js'), t = translator(code, messagesFor(code));
       const html = f.render(await page.default({ params: Promise.resolve({ slug: 'test-slug' }) }));
       assert.ok(html.includes(creator.title)); assert.ok(html.includes('Creator’s own label'));
       assert.ok(html.includes('/s/test-slug/go/item-id')); assert.ok(html.includes(t('smartlink.madeWith')));

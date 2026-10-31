@@ -18,7 +18,7 @@ function fixture({ model = {}, replies = {}, web = true, env = {}, stream } = {}
     const rpc = async (name, args) => {
         calls.push({ name, args });
         const values = { check_generation_rate_limit: { ok: true }, chat_turn_context: { ok: true, user_id: 'user-test', model_id: row.id, history: [] },
-            chat_stops_before_text: 0, read_user_credits: { balance: 10 }, provider_spend_admit_model: { ok: true },
+            chat_stops_before_text: 0, read_user_credits: { balance: 10 }, account_spend_eligible: { ok: true }, provider_spend_admit_model: { ok: true },
             ledger_debit: { ok: true, job_id: JOB, balance_after: 7 }, job_submitted: { ok: true }, chat_complete_turn: { ok: true } };
         return name in replies ? replies[name] : values[name];
     };

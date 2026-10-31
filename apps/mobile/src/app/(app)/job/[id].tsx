@@ -1,3 +1,7 @@
+import { settleFilmJob } from '../../../lib/filmGenerationReturns';
+import { useAnnouncement } from '../../../lib/useAnnouncement';
+import { submittedHref } from '../../../lib/submittedRequests';
+import { useHandoffScope } from '../../../lib/useHandoffScope';
 import { subscribeCacheUser } from '../../../lib/appCache';
 import { GeneratedChip } from '../../../components/library/GeneratedChip';
 import { ApiError } from '../../../lib/api';
@@ -13,6 +17,7 @@ import { VeyCharacter } from '../../../components/VeyCharacter';
 import { JobProvenance } from '../../../components/JobProvenance';
 import { StemList } from '../../../components/StemList';
 import { CONFIRM_MESSAGE, CONFIRM_TITLE, deleteCreation, deleteMessage, isAlreadyGone } from '../../../lib/deleteCreation';
+import { HoldToConfirmButton } from '../../../components/HoldToConfirmButton';
 import { afterCelebration, celebrateOutput, type CelebrationResult } from '../../../lib/celebrate';
 import { REVIEW_ASK_DELAY_MS, claimReviewAsk, shouldAskForReview } from '../../../lib/reviewAsk';
 import { loadReviewAsk } from '../../../lib/storeReview';
@@ -46,6 +51,7 @@ export default function JobScreen() {
     const styles = useThemedStyles(sheets);
     const { id, followup } = useLocalSearchParams<{ id: string; followup?: string }>();
     const { api } = useAuth();
+    const beginHandoff = useHandoffScope();
     const router = useRouter();
     // Read by the delayed rating ask; kept out of the effect's dependencies so a new router object cannot restart the poll.
     const routerRef = useRef(router);
@@ -68,6 +74,7 @@ export default function JobScreen() {
     const [attempt, setAttempt] = useState(0);
     const [seconds, setSeconds] = useState(0);
     const [note, setNote] = useState<string | null>(null);
+    useAnnouncement(note);
     const [acting, setActing] = useState<'save' | 'share' | null>(null);
     const [deleting, setDeleting] = useState(false);
 
@@ -121,6 +128,7 @@ export default function JobScreen() {
             .then(async (final) => {
                 if (controller.signal.aborted) return;
                 if (final === 'queued' || final === 'running') { setPollEnded(true); return; }
+                void settleFilmJob(id, final, undefined, () => !controller.signal.aborted);
                 // The model lets a failed job offer "Try again" on the same model.
                 const job = await media.getJob(id).catch(() => null);
                 if (controller.signal.aborted) return;
@@ -257,6 +265,14 @@ export default function JobScreen() {
 
     const canSave = !!asset && (asset.mime.startsWith('image/') || asset.mime.startsWith('video/'));
 
+    async function reopen(replace: boolean) {
+        if (!modelId) return;
+        const current = beginHandoff();
+        try {
+            const href = await submittedHref(api, id, modelId, current);
+            if (href && current()) { if (replace) router.replace(href); else router.push(href); }
+        } catch { if (current()) setNote(t('common.error')); }
+    }
     const next = asset ? nextStepsFor(asset.mime, modelId) : { edit: false, publish: false, makeAnother: false, reuse: false };
     const reusableKind = asset ? kindForMime(asset.mime) : null;
 
@@ -302,7 +318,7 @@ export default function JobScreen() {
                         </>
                     ) : null}
                     {state === 'failed' && modelId ? (
-                        <Button variant="secondary" accessibilityRole="button" onPress={() => router.replace({ pathname: '/create/[modelId]', params: { modelId } })} label={t('recovery.retry')} />
+                        <Button variant="secondary" accessibilityRole="button" onPress={() => void reopen(true)} label={t('recovery.retry')} />
                     ) : null}
                 </View>
             )}
@@ -321,7 +337,7 @@ export default function JobScreen() {
                                     <Button variant="secondary" accessibilityRole="button" onPress={() => router.push(publishHref(id))} label={t('job.next.publish')} />
                                 ) : null}
                                 {next.makeAnother && modelId ? (
-                                    <Button variant="secondary" accessibilityRole="button" onPress={() => router.push(makeAnotherHref(modelId))} label={t('job.next.makeAnother')} />
+                                    <Button variant="secondary" accessibilityRole="button" onPress={() => void reopen(false)} label={t('job.next.makeAnother')} />
                                 ) : null}
                                 {next.reuse && reusableKind ? (
                                     <Button variant="secondary" accessibilityRole="button" onPress={() => router.push(creativeReuseHref(id, reusableKind))} label={t('job.next.reuse')} />
@@ -341,7 +357,8 @@ export default function JobScreen() {
                     <Link href={{ pathname: '/report', params: { kind: 'job', id } }} asChild>
                         <Button variant="tertiary" accessibilityRole="button" label={t('job.report')} />
                     </Link>
-                    <Button variant="tertiary" accessibilityRole="button" disabled={deleting} onPress={confirmDelete} label={deleting ? t('job.deleting') : t('job.deleteThis')} textStyle={styles.deleteText} />
+                    <HoldToConfirmButton disabled={deleting} label={deleting ? t('job.deleting') : t('job.holdToDelete')} hint={t('job.holdToDeleteHint')}
+                        onConfirm={() => void doDelete()} onTap={() => setNote(t('job.holdToDeleteTap'))} onAccessibilityActivate={confirmDelete} />
                 </ScrollView>
             ) : null}
         </View>
@@ -366,5 +383,4 @@ const sheets = themedStyles((p) => ({
     grow: { flex: 1 },
     row: { flexDirection: 'row', flexWrap: 'wrap', gap: ds.space.sm },
     note: { color: p.textSecondary, textAlign: 'center' },
-    deleteText: { color: p.danger },
 }));

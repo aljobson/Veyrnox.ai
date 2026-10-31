@@ -12,7 +12,7 @@ test('gallery video eligibility excludes recipes with missing previews', () => {
   assert.equal(hasTemplateVideo({ clipKey: 'missing-preview' }), false);
   assert.equal(hasTemplateVideo(PRESETS.find((preset) => preset.clipKey)), true);
   for (const path of ['app/veyrnox/_components/PresetGallery.js', 'app/veyrnox/m/explore/page.js']) {
-    assert.match(read(path), /\.filter\(hasTemplateVideo\)/, path);
+    assert.match(read(path), /cardsIn\(cards, cat\)/, path); // the API lists only video-backed templates (lib/clientTemplates.js)
   }
 });
 

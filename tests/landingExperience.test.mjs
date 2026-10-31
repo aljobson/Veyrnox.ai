@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { FEATURE_CARDS, MODELS, WALL_PRESETS } from '../app/veyrnox/_lib/tokens.js';
+import { FEATURE_CARDS, MODELS } from '../app/veyrnox/_lib/tokens.js';
+import { WALL_PRESETS } from '../app/veyrnox/_lib/templates.js';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
@@ -50,6 +51,13 @@ test('responsive tiles retain decorative alt text and declare image sizes', () =
   assert.match(tile, /imageSizes = /);
   assert.match(tile, /<Image[^>]*alt=""[^>]*sizes=\{imageSizes\}/s);
   assert.doesNotMatch(tile, /<Image[^>]*\bunoptimized\b/s, 'local posters should receive a responsive srcset');
+});
+
+test('images are served as files, not through the Worker resizer', () => {
+  // /_next/image answered 503 under the landing page's parallel requests and
+  // left most template tiles as a bare gradient.
+  const config = read('next.config.mjs');
+  assert.match(config, /images:\s*\{[^}]*\bunoptimized:\s*true/s);
 });
 
 test('primary mobile controls expose a 44px target', () => {

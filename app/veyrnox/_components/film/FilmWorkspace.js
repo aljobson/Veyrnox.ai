@@ -19,8 +19,8 @@ import { FilmTests } from './FilmTests';
 import { FilmPrompts } from './FilmPrompts';
 import { filmStudioStore } from '../../_lib/filmStudioStore';
 import { takeFilmStarter } from '../../_lib/filmTemplateDraft';
-import { modelIdForName, presetTitle, templateById, templateHref } from '../../_lib/tokens';
-import { SHOWCASE_CLIPS } from '../../_lib/showcase';
+import { modelIdForName, presetTitle, templateHref } from '../../_lib/tokens';
+import { fetchTemplate } from '../../_lib/useTemplates';
 
 const storage = () => { try { return window.localStorage; } catch { return null; } };
 const serverState={film:emptyFilm(),stage:0,ready:false,userId:null,error:null,saved:false,cloud:null,generation:0,pending:null};
@@ -29,9 +29,15 @@ const seededFilm = starter => filmFromTemplate(starter, modelIdForName(starter.m
 function SelectedTemplate({ templateId, targetSeconds, pending = false }) {
   const { t, locale } = useI18n();
   const number = n => locale === 'en' ? String(n) : Number(n).toLocaleString(localeTag(locale));
-  const template = templateById(templateId);
+  const [template, setTemplate] = useState(null);
+  useEffect(() => {
+    let live = true;
+    setTemplate(null);
+    fetchTemplate(templateId).then((found) => { if (live) setTemplate(found); });
+    return () => { live = false; };
+  }, [templateId]);
   if (!template) return null;
-  const clip = SHOWCASE_CLIPS[template.clipKey];
+  const clip = template.clip;
   return <div className={`grid overflow-hidden rounded-xl border ${pending ? 'mt-3 border-vx-border bg-vx-base/60' : 'mb-7 border-vx-accent bg-vx-panel/50'} sm:grid-cols-[9rem_minmax(0,1fr)]`}>
     {clip?.poster ? <img src={clip.poster} alt={t('app.film.workspace.preview', { name: presetTitle(template.name) })} className="h-36 w-full object-cover sm:h-full" style={{objectPosition:clip.objectPosition || '50% 50%'}}/> : <div className="h-28 bg-vx-panel"/>}
     <div className="p-4">

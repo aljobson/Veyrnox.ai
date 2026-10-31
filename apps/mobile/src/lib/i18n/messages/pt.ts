@@ -36,7 +36,7 @@ const pt = {
     'public.TemplateRecipe.sourcePromptNotRecorded': 'Não existe um prompt de origem exato registado para esta pré-visualização. O prompt de geração abaixo é uma adaptação do Veyrnox, não texto copiado da origem.',
     'public.TemplateRecipe.sourcePromptTruncated': 'O feed de origem devolveu este prompt já cortado. Ele é preservado exatamente e não deve ser tratado como completo.',
     'public.TemplateRecipe.sourcePromptDuplicate': 'A origem publicou este mesmo prompt exato para outro vídeo. Ele é mantido sem alterações e identificado como duplicado da origem.',
-    'public.TemplateRecipe.generationPrompt': 'PROMPT DE GERAÇÃO VEYRNOX',
+    'public.TemplateRecipe.generationPrompt': 'PROMPT DE GERAÇÃO',
     'recovery.retry': 'Tentar novamente',
     'cinema.creatorWorkspace.cancel': 'Cancelar',
     'social.saving': 'Salvando…',

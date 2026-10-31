@@ -5,7 +5,8 @@ import { getCacheUser, subscribeCacheUser } from '../lib/appCache';
 import { publishBalance } from '../lib/balanceEvents';
 import { waitForBalanceChange } from '../lib/billing';
 
-export type PurchaseOutcome = { kind: 'credited'; balance: number }
+// `credits` and `price` describe the pack bought, for the receipt; `price` is the store's own localized string.
+export type PurchaseOutcome = { kind: 'credited'; balance: number; credits: number; price: string }
     | { kind: 'subscribed' | 'restored' | 'nothingToRestore' | 'cancelled' | 'pending' | 'error' | 'sales_closed' };
 export type PurchasePhase = 'idle' | 'preparing' | 'store' | 'confirming' | 'done';
 export interface PurchaseOperation {
@@ -101,7 +102,9 @@ export function startPurchase(request: PurchaseRequest, deps: Dependencies): { o
             }, before, { minimumIncrease: expectedCredits, deadlineMs: Date.now() + 40_000, signal: controller.signal });
             if (!live()) return;
             if (resultBalance.changed) publishBalance(owner, resultBalance.balance);
-            finish(resultBalance.changed ? { kind: 'credited', balance: resultBalance.balance } : { kind: 'pending' });
+            finish(resultBalance.changed
+                ? { kind: 'credited', balance: resultBalance.balance, credits: expectedCredits, price: request.pkg.product.priceString }
+                : { kind: 'pending' });
         } catch (error) {
             finish({ kind: purchased ? 'pending'
                 : error instanceof Error && error.message === 'sales_closed' ? 'sales_closed' : 'error' });

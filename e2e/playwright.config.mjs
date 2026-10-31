@@ -12,8 +12,11 @@ export default defineConfig({
     reporter: process.env.CI ? [['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]] : 'list',
     use: {
         baseURL: BASE_URL,
-        trace: 'retain-on-failure',
-        screenshot: 'only-on-failure',
+        // generate.spec.mjs and buy.spec.mjs sign in with a real staging session
+        // (__Host-veyrnox_refresh cookie + access token), so traces and screenshots
+        // must never be retained — e2e.yml uploads test-results/ on a public repo.
+        trace: 'off',
+        screenshot: 'off',
     },
     projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
 });

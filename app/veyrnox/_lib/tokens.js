@@ -1,8 +1,6 @@
 // Veyrnox.ai data constants — source of truth: platform_model.xlsx / handoff README
 // Do not drift these numbers. Credit costs & plan prices are contractual.
 
-import { templateById } from './templates.js';
-
 // Active gateway catalog — kept in lockstep with fal rows exposed by
 // /api/v1/generations and (once shipped) GET /api/v1/catalog.
 // `durations` mirrors what GET /api/catalog derives from each model's
@@ -15,7 +13,8 @@ export const MODELS = [
   { id: 'kling-2.6-pro-kie',  name: 'Kling 2.6 Pro',       credits: 16,                                         kind: 'video', durations: [5, 10], aspects: ['16:9', '9:16', '1:1'] },
   { id: 'kling-3.0-i2v',      name: 'Kling 3.0 · I2V',     credits: 32,                                         kind: 'video', durations: [5, 10], media: { image: { required: true }, endImage: { required: false } } },
   { id: 'kling-o1-reference', staged: true, name: 'Kling O1 · Reference', credits: 47, kind: 'video', durations: [5, 10], media: { video: { required: true, maxSeconds: 10 }, image: { required: true } } },
-  { id: 'seedance-2.0-fast',  name: 'Seedance 2.0 Fast',   credits: 19,                                         kind: 'video', durations: [5, 10], aspects: ['16:9', '9:16'], media: { image: { required: false } } },
+  { id: 'seedance-2.0-reference', staged: true, name: 'Seedance 2.0 · Reference', credits: 85, kind: 'video', durations: [5, 10], media: { image: { required: true, maxFiles: 9 } } },
+  { id: 'seedance-2.0-fast',  name: 'Seedance 2.0 Fast',   credits: 19,                                         kind: 'video', durations: [5], aspects: ['16:9', '9:16'] },
   { id: 'kling-avatar-v2',    name: 'Kling AI Avatar',     credits: 32,  tag: 'NEW',                            kind: 'video', durations: [5], media: { image: { required: true }, audio: { required: true, maxSeconds: 10 } } },
   { id: 'latentsync',         name: 'LatentSync',          credits: 12,  tag: 'NEW',                            kind: 'video', durations: [5], media: { video: { required: true, maxSeconds: 40 }, audio: { required: true, maxSeconds: 40 } } },
   { id: 'hailuo-02-kie',      name: 'MiniMax Hailuo 02',   credits: 9,                                         kind: 'video', durations: [5], presentation: { durationByOption: { 5: '6' } } },
@@ -45,6 +44,13 @@ export const MODELS = [
 // 10s video = exactly 2x credits. Non-negotiable.
 export const COST_MULTIPLIER_10S = 2;
 
+// Same rule the server debits by (app/api/v1/generations): one catalog
+// unit per started 5 seconds, so 5s = 1x, 10s = 2x, 15s = 3x.
+export const VIDEO_UNIT_SECONDS = 5;
+export function clipCredits(unitCredits, seconds) {
+  return unitCredits * Math.ceil((Number(seconds) || VIDEO_UNIT_SECONDS) / VIDEO_UNIT_SECONDS);
+}
+
 /**
  * Collapse a `model_catalog.modality` to the coarse bucket the UI branches
  * on. The catalog is fine-grained ('text-to-video', 'image-to-video',
@@ -68,18 +74,19 @@ export function kindOf(modality) {
 // Prices are Veyrnox's own — the shape is what's borrowed.
 
 
-// Templates live in templates.js; re-exported so existing imports keep working.
-export {
-  PRESETS,
-  PRESET_CATEGORIES,
-  QUICK_PRESET_CATEGORIES,
-  WALL_PRESETS,
-  ALL_TEMPLATES,
-  templatesIn,
-  searchTemplates,
-  templateHref,
-} from './templates.js';
-export { templateById };
+// The template catalog lives in templates.js and is NOT re-exported here: this
+// file is imported by the nav, search, pricing and credits, and re-exporting
+// the catalog shipped about 1.5 MB of template data to every page.
+// Import PRESETS, templateById and the rest from './templates.js' where needed.
+
+/** The template's own page, where its prompt and inputs are shown before use. */
+// The first filter row is deliberately concise; the gallery can disclose the
+// complete category catalog in place without hiding choices in a scroll rail.
+export const QUICK_PRESET_CATEGORIES = ['ALL', 'NEW', 'POPULAR', 'YOUR PHOTO', 'PRODUCTS', 'STORIES'];
+
+export function templateHref(preset) {
+  return `/presets/${encodeURIComponent(preset.id)}`;
+}
 
 // Preset names are stored upper-case for the studio's chips. Shown as a title
 // they read better in title case, except for the acronyms they contain.
@@ -107,15 +114,6 @@ export function modelIdForName(name) {
   return hit ? hit.id : null;
 }
 
-export function presetDraftForModel(presetId, modelId) {
-  const preset = templateById(presetId);
-  if (!preset || !modelId || modelIdForName(preset.model) !== modelId) return null;
-  return {
-    prompt: preset.prompt,
-    aspect: typeof preset.aspect === 'string' ? preset.aspect : null,
-  };
-}
-
 /**
  * Studio link for a preset: the model it is wired to (when that model is still
  * in the catalog) plus the preset id, so Create records which card sent the
@@ -127,7 +125,7 @@ export function presetHref(preset, durationSeconds = preset.durationSeconds) {
   }
   const modelId = modelIdForName(preset.model);
   return modelId
-    ? `/app/create?model=${encodeURIComponent(modelId)}&preset=${encodeURIComponent(preset.id)}${durationSeconds === 10 ? '&duration=10s' : ''}`
+    ? `/app/create?model=${encodeURIComponent(modelId)}&preset=${encodeURIComponent(preset.id)}${durationSeconds && durationSeconds !== VIDEO_UNIT_SECONDS ? `&duration=${durationSeconds}s` : ''}`
     : `/app/create?preset=${encodeURIComponent(preset.id)}`;
 }
 
@@ -142,7 +140,7 @@ export function presetCredits(preset, catalog, durationSeconds = preset.duration
   const id = modelIdForName(preset.model);
   const row = id && Array.isArray(catalog) ? catalog.find((m) => m.id === id) : null;
   const unit = row && typeof row.credits === 'number' ? row.credits : preset.credits;
-  return unit * (durationSeconds === 10 ? COST_MULTIPLIER_10S : 1);
+  return durationSeconds ? clipCredits(unit, durationSeconds) : unit;
 }
 
 export const ASPECT_RATIOS = ['16:9', '9:16', '1:1', '4:5', '21:9'];

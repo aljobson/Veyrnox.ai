@@ -1,3 +1,4 @@
+import { settleFilmJob } from './filmGenerationReturns';
 import { useEffect, useState } from 'react';
 import { ApiError, type ApiClient } from './api';
 import { getCacheUser, subscribeCacheUser } from './appCache';
@@ -39,6 +40,7 @@ export function useJobResult(api: ApiClient, id: string): JobResult {
                 if (!current()) return;
                 let job = await media.getJob(id);
                 if (!current()) return;
+                if (state === 'succeeded' || state === 'failed') void settleFilmJob(id, state, undefined, current);
                 setResult({ state, job });
                 if (state === 'succeeded') {
                     const asset = await media.getAsset(id);

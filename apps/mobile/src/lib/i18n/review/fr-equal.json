@@ -190,5 +190,7 @@
   "projectDocument.counter": "Numeric counter pattern; only the localized numbers change.",
   "projectDocument.portrait": "Portrait is the established French term for vertical orientation, as on the website.",
   "projectDocument.versionTitle": "Version is the standard word in this language for a saved revision.",
-  "vey.touch.label": "Vey is the mascot’s proper name and stays unchanged across languages."
+  "vey.touch.label": "Vey is the mascot’s proper name and stays unchanged across languages.",
+  "wins.image": "Established fr term or conventional duration notation, identical to English.",
+  "create.lengthCost": "Seconds and the credit abbreviation are written the same as English, matching create.s."
 }

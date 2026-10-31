@@ -1842,6 +1842,30 @@
     "ratio": 2.5
   },
   {
+    "id": "wins.title",
+    "english": "Your wins",
+    "translation": "आपकी उपलब्धियाँ",
+    "ratio": 1.67
+  },
+  {
+    "id": "wins.best",
+    "english": "Best",
+    "translation": "सर्वश्रेष्ठ",
+    "ratio": 2.75
+  },
+  {
+    "id": "wins.see",
+    "english": "See your wins",
+    "translation": "अपनी उपलब्धियाँ देखें",
+    "ratio": 1.62
+  },
+  {
+    "id": "job.holdToDelete",
+    "english": "Hold to delete",
+    "translation": "हटाने के लिए दबाकर रखें",
+    "ratio": 1.64
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

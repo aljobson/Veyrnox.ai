@@ -3,9 +3,11 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 import * as React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { fixture } from './helpers/publicSiteRender.mjs';
 import { appMessagesFor } from '../lib/i18n/appMessages.mjs';
-import { translator, messagesFor, tOr } from '../lib/i18n/translate.mjs';
+import { translator, tOr } from '../lib/i18n/translate.mjs';
+import { messagesFor } from '../lib/i18n/catalogs.mjs';
 import { LOCALES } from '../lib/i18n/locales.mjs';
 import { emptyTimeline, removeClip } from '../app/veyrnox/_lib/editorTimeline.mjs';
 import { trimEdge } from '../app/veyrnox/_lib/editorCommands.mjs';
@@ -117,7 +119,7 @@ test('M8: German public pricing subscription cards keep the public US-dollar for
   assert.match(html, /\$10/); assert.doesNotMatch(html, /10\s*(?:\$|US\$)/);
 });
 
-test('M10: app transport excludes public keys; provider merges public translations on render', async () => {
+test('M10: app transport excludes public keys; the server adds the request language before the provider renders', async () => {
   const messages = await appMessagesFor('de');
   assert.equal(messages['ui.language'], undefined);
   const before = JSON.stringify({ ...messagesFor('de'), ...messages }), after = JSON.stringify(messages);
@@ -125,6 +127,27 @@ test('M10: app transport excludes public keys; provider merges public translatio
   const f = fixture('de', '/app', { messages });
   const Probe = () => React.createElement('p', null, f.load('components/I18nProvider.jsx').useI18n().t('ui.language'));
   assert.match(f.render(React.createElement(Probe)), /Sprache/);
+  // The provider itself holds English only: a German reader's words arrive as props.
+  const bare = renderToStaticMarkup(React.createElement(f.load('components/I18nProvider.jsx').I18nProvider, { locale: 'de', enabled: true }, React.createElement(Probe)));
+  assert.match(bare, /Language/);
+  const server = f.load('lib/i18n/server.js'), previous = process.env.LOCALES_ENABLED;
+  process.env.LOCALES_ENABLED = 'true';
+  try {
+    // Each catalog crosses the server/client boundary once: the root layout carries the
+    // language's public strings, the app template the app catalog only.
+    const { t, messages: transport } = await server.getT();
+    assert.deepEqual(transport, messages, 'the app template resends no public key');
+    assert.equal(t('ui.language'), 'Sprache');
+    assert.equal(t('app.library.title'), messages['app.library.title']);
+    const root = (await server.getPublicT()).messages;
+    assert.equal(root['ui.language'], 'Sprache');
+    assert.equal(root['app.library.title'], undefined, 'the root layout carries no app catalog');
+    const { I18nProvider } = f.load('components/I18nProvider.jsx');
+    const nested = (rootLocale, appLocale) => renderToStaticMarkup(React.createElement(I18nProvider, { locale: rootLocale, enabled: true, messages: root },
+      React.createElement(I18nProvider, { locale: appLocale, enabled: true, messages }, React.createElement(() => React.createElement('p', null, `${f.load('components/I18nProvider.jsx').useI18n().t('ui.language')}|${f.load('components/I18nProvider.jsx').useI18n().t('app.library.title')}`)))));
+    assert.equal(nested('de', 'de'), `<p>Sprache|${messages['app.library.title']}</p>`, 'the nested provider inherits the public strings it did not carry');
+    assert.equal(nested('de', 'en'), `<p>Language|${messages['app.library.title']}</p>`, 'a persisted root in another language is not inherited');
+  } finally { if (previous === undefined) delete process.env.LOCALES_ENABLED; else process.env.LOCALES_ENABLED = previous; }
 });
 
 test('M3: helper inventory and dynamic missing families are no longer silently skipped', () => {
@@ -142,7 +165,8 @@ test('M9: app/public boundary navigation rebuilds the document in both direction
   try {
     globalThis.document = { addEventListener(name, callback, capture) { assert.equal(name, 'click'); assert.equal(capture, true); listener = callback; }, removeEventListener: noop };
     globalThis.window = { location: { href: 'https://veyrnox.test/app', pathname: '/app', origin: 'https://veyrnox.test', assign: href => navigations.push(href) } };
-    const f = fixture('ar', '/app', { moduleMocks: { react: { ...hooks, useEffect: effect => effect(), useMemo: fn => fn() } } });
+    // Called outside a render: the parent context is the module default (no provider above).
+    const f = fixture('ar', '/app', { moduleMocks: { react: { ...hooks, useEffect: effect => effect(), useMemo: fn => fn(), useContext: context => context._currentValue } } });
     f.load('components/I18nProvider.jsx').I18nProvider({ locale: 'ar', enabled: true });
     const click = (href, modifiers = {}) => {
       let prevented = false;

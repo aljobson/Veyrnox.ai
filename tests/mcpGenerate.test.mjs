@@ -26,18 +26,18 @@ test('a confirmed image generation within the limits is sent once to the generat
   assert.deepEqual(calls.create[0], {
     model_id: IMAGE.id, idempotency_key: 'mcp-trial-0001', confirmed_credits: 2,
     inputs: { prompt: 'A plain grey mannequin head', negative_prompt: 'text', aspect_ratio: '16:9', seed: 7 },
-    source_assets: [], consent: false,
+    references: [], consent: false,
   });
 });
 
 test('undefined optional inputs are dropped and unknown keys never reach the route', async () => {
   const { calls } = await run({ ...ARGS, seed: undefined, source_asset_ids: ['x'], consent: true, duration_seconds: 10, model_id_override: 'video' });
   assert.deepEqual(calls.create[0].inputs, { prompt: 'A plain grey mannequin head' });
-  assert.deepEqual(calls.create[0].source_assets, []);
+  assert.deepEqual(calls.create[0].references, []);
   assert.equal(calls.create[0].consent, false);
 });
 
-test('only text-to-image models may be started from the connector, and nothing else is read or sent', async () => {
+test('only text-to-image models may be started without a source, and nothing else is read or sent', async () => {
   for (const modality of ['text-to-video', 'image-to-video', 'text-to-audio', 'image-to-image', 'audio-to-audio', 'text', undefined]) {
     const { result, calls } = await run(ARGS, { model: { ...IMAGE, modality } });
     assert.equal(result.ok, false, String(modality));
@@ -87,3 +87,38 @@ test('a refusal from the generation route is passed through untouched, so its ow
   }
 });
 
+
+const UPLOAD_KEY = `uploads/${'11111111-1111-4111-8111-111111111111'}/${'22222222-2222-4222-8222-222222222222'}.png`;
+const EDIT = { ...IMAGE, id: 'topaz-upscale', modality: 'image-to-image', credits: 5, capabilities: { media: { image: { required: true, maxFiles: 1 } } } };
+
+test('an uploaded file reaches an image-to-image model as an ordered upload reference, with consent (ADR-0100 amendment 6)', async () => {
+  const { result, calls } = await run({ ...ARGS, model_id: EDIT.id, confirmed_credits: 5, consent: true, source_uploads: [{ key: UPLOAD_KEY, slot: 'image', url: 'https://evil.example/x.png' }] }, { model: EDIT });
+  assert.equal(result.ok, true);
+  assert.deepEqual([calls.create[0].references, calls.create[0].consent], [[{ key: UPLOAD_KEY, slot: 'image', origin: 'upload' }], true]);
+});
+
+test('an upload needs consent, a key of the right shape and kind, and a model with an image slot; nothing is sent otherwise', async () => {
+  const cases = [
+    [{ ...ARGS, model_id: EDIT.id, confirmed_credits: 5, source_uploads: [{ key: UPLOAD_KEY, slot: 'image' }] }, EDIT, 'consent_required'],
+    [{ ...ARGS, model_id: EDIT.id, confirmed_credits: 5, consent: true, source_uploads: [{ key: 'uploads/../../etc/passwd', slot: 'image' }] }, EDIT, 'source_upload_invalid'],
+    [{ ...ARGS, model_id: EDIT.id, confirmed_credits: 5, consent: true, source_uploads: [{ key: UPLOAD_KEY.replace(/png$/, 'mp4'), slot: 'image' }] }, EDIT, 'source_upload_kind_mismatch'],
+    [{ ...ARGS, consent: true, source_uploads: [{ key: UPLOAD_KEY, slot: 'image' }] }, IMAGE, 'source_slot_invalid'],
+    [{ ...ARGS, model_id: EDIT.id, confirmed_credits: 5, consent: true, source_uploads: [{ key: UPLOAD_KEY, slot: 'image' }, { key: UPLOAD_KEY, slot: 'image' }] }, EDIT, 'source_count_exceeded'],
+  ];
+  for (const [args, model, error] of cases) {
+    const { result, calls } = await run(args, { model });
+    assert.deepEqual([result.ok, result.status, result.body.error, calls.create.length], [false, 400, error, 0], error);
+  }
+});
+
+test('a text-to-image model with an image slot may take an uploaded reference too', async () => {
+  const model = { ...IMAGE, capabilities: { media: { image: { maxFiles: 1 } } } };
+  const { result, calls } = await run({ ...ARGS, consent: true, source_uploads: [{ key: UPLOAD_KEY, slot: 'image' }] }, { model });
+  assert.equal(result.ok, true);
+  assert.equal(calls.create[0].references.length, 1);
+});
+
+test('an image-to-image model stays unreachable without an upload: the route would have nothing to edit', async () => {
+  const { result, calls } = await run({ ...ARGS, model_id: EDIT.id, confirmed_credits: 5, consent: true, source_uploads: [] }, { model: EDIT });
+  assert.deepEqual([result.status, result.body.error, calls.create.length], [400, 'mcp_image_only', 0]);
+});

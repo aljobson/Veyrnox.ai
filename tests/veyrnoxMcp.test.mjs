@@ -22,9 +22,15 @@ test('MCP estimates image/audio once and video in five-second units', () => {
 test('the public MCP surface is deliberately small, and its spending tools are the capped image, video and edit tools', () => {
   const source = readFileSync(new URL('../lib/veyrnoxMcp.js', import.meta.url), 'utf8');
   const names = [...source.matchAll(/registerTool\('([^']+)'/g)].map((match) => match[1]);
-  assert.deepEqual(names, ['list_models', 'estimate_generation', 'generate_image', 'generate_video', 'edit_video', 'get_generation', 'list_generations', 'get_balance']);
+  assert.deepEqual(names, ['list_models', 'estimate_generation', 'reserve_source_upload', 'generate_image', 'generate_video', 'edit_video', 'get_generation', 'list_generations', 'get_balance']);
   assert.doesNotMatch(source, /generate_media|generate_audio|source_asset_ids/, 'no audio or unbounded-source tools on the connector');
   assert.equal([...source.matchAll(/routeJson\(createGeneration/g)].length, 3, 'three call sites reach the generation route, each only through startMcpGeneration, startMcpVideo or startMcpEdit');
+  assert.equal([...source.matchAll(/routeJson\(reserveUpload/g)].length, 1, 'one call site reaches the uploads route, only through reserveMcpUpload');
+  assert.doesNotMatch(source, /presignPutUrl|r2\.js|supabase-client/, 'the connector reserves uploads through the route, never R2 or the database directly');
+  const upload = source.slice(source.indexOf("registerTool('reserve_source_upload'"), source.indexOf("registerTool('generate_image'"));
+  assert.match(upload, /reserveMcpUpload/);
+  assert.match(upload, /Nothing is charged/);
+  assert.doesNotMatch(upload, /confirmed_credits|user_approved/, 'a reservation spends nothing, so it needs no price confirmation');
   for (const [tool, helper, next] of [['generate_video', 'startMcpVideo', 'edit_video'], ['edit_video', 'startMcpEdit', 'get_generation']]) {
     const body = source.slice(source.indexOf(`registerTool('${tool}'`), source.indexOf(`registerTool('${next}'`));
     assert.match(body, new RegExp(helper));

@@ -4,7 +4,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { WALL_PRESETS as PRESETS, presetHref, presetCredits, modelIdForName } from '../app/veyrnox/_lib/tokens.js';
+import { presetHref, presetCredits, modelIdForName } from '../app/veyrnox/_lib/tokens.js';
+import { WALL_PRESETS as PRESETS } from '../app/veyrnox/_lib/templates.js';
 import { wallShapes, tileClasses, LG_COLUMNS, SM_COLUMNS } from '../app/veyrnox/_lib/presetWall.js';
 
 const cells = (shapes, colsKey, rowsKey) =>

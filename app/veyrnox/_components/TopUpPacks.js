@@ -10,6 +10,7 @@ import { gatewayFetch, GatewayError, makeIdempotencyKey, notifyBalanceChanged, A
 import { retryTopUpReturn } from '../_lib/topUpReturnRetry';
 import { useCatalog } from '../_lib/useCatalog';
 import { VeyCardPeek } from './VeyCardPeek';
+import { ReceiptPrinter } from './ReceiptPrinter';
 
 // Supply Consent (CONTEXT.md), approved as v1 in #99: keep the text verbatim.
 // Changing it needs a new sign-off and a new version, here and in
@@ -30,6 +31,7 @@ export function TopUpReturn() {
   const [topUpId, setTopUpId] = useState(null);
   const [phase, setPhase] = useState('processing');
   const [credits, setCredits] = useState(null);
+  const [receipt, setReceipt] = useState(null);
   const returnSession = useRef(null);
 
   useEffect(() => {
@@ -72,6 +74,7 @@ export function TopUpReturn() {
         if (stopped) return;
         if (topUp.status === 'credited') {
           setCredits(topUp.credits);
+          setReceipt({ priceCents: topUp.price_usd_cents, creditedAt: topUp.credited_at });
           setPhase('credited');
           notifyBalanceChanged();
           window.history.replaceState(null, '', window.location.pathname);
@@ -95,11 +98,23 @@ export function TopUpReturn() {
     slow: t("app.credits.packs.slow"),
     not_found: t("app.credits.packs.notFound"),
   }[phase];
+  const money = new Intl.NumberFormat(localeTag(locale, 'en-US'), { style: 'currency', currency: 'USD' });
+  const printed = phase === 'credited' && credits != null && Number.isInteger(receipt?.priceCents) ? (
+    <ReceiptPrinter title={t('app.credits.packs.receipt.title')} footer={t('app.credits.packs.receipt.thanks')} rows={[
+      { label: t('app.credits.packs.receipt.credits'), value: `+${number.format(credits)}` },
+      { label: t('app.credits.packs.receipt.price'), value: money.format(receipt.priceCents / 100) },
+      ...(receipt.creditedAt ? [{ label: t('app.credits.packs.receipt.date'), value: new Date(receipt.creditedAt).toLocaleDateString(localeTag(locale, 'en-US')) }] : []),
+      { label: t('app.credits.packs.receipt.ref'), value: topUpId.slice(0, 8).toUpperCase() },
+    ]} />
+  ) : null;
   return (
+    <>
+    {printed}
     <div role="status" aria-live="polite" className={`mt-4 rounded-lg border px-4 py-3 text-sm ${phase === 'credited' ? 'border-vx-money/40 bg-vx-money/[0.07] text-vx-money' : 'border-vx-border bg-vx-base/60 text-vx-fg-body'}`}>
       {phase === 'processing' && <span className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted me-2">{t("app.credits.packs.processingLabel")}</span>}
       {copy}
     </div>
+    </>
   );
 }
 

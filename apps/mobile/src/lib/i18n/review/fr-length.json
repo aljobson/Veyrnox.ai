@@ -4818,6 +4818,42 @@
     "ratio": 3.2
   },
   {
+    "id": "billing.paywall.seePlans",
+    "english": "See all plans",
+    "translation": "Voir tous les forfaits",
+    "ratio": 1.69
+  },
+  {
+    "id": "wins.all",
+    "english": "All time",
+    "translation": "Depuis le début",
+    "ratio": 1.88
+  },
+  {
+    "id": "wins.what",
+    "english": "What you got",
+    "translation": "Ce que vous avez obtenu",
+    "ratio": 1.92
+  },
+  {
+    "id": "wins.best",
+    "english": "Best",
+    "translation": "Meilleure",
+    "ratio": 2.25
+  },
+  {
+    "id": "wins.checked",
+    "english": "Checked in",
+    "translation": "Présence confirmée",
+    "ratio": 1.8
+  },
+  {
+    "id": "job.holdToDelete",
+    "english": "Hold to delete",
+    "translation": "Maintenir pour supprimer",
+    "ratio": 1.71
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

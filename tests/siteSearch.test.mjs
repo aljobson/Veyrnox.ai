@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { searchIndex, MAX_PER_GROUP, MIN_QUERY } from '../app/veyrnox/_lib/searchIndex.js';
-import { SITE_PAGES, PRESETS, FAQ } from '../app/veyrnox/_lib/tokens.js';
+import { SITE_PAGES, FAQ } from '../app/veyrnox/_lib/tokens.js';
+import { PRESETS } from '../app/veyrnox/_lib/templates.js';
 
 const items = [
   { group: 'Pages', title: 'Pricing', detail: 'Every model, every credit price.', href: '/pricing' },

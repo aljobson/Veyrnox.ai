@@ -20,6 +20,7 @@ function fakes({ replies = {}, model = MODEL, stream } = {}) {
     const calls = [];
     const base = {
         check_generation_rate_limit: { ok: true },
+        account_spend_eligible: { ok: true },
         provider_spend_admit_model: { ok: true, idempotent: false, estimated_cost_microusd: 25000 },
         chat_turn_context: { ok: true, user_id: 'user-1', model_id: 'chat-fast', system_prompt: 'Be brief.', history: [{ role: 'user', content: 'earlier' }, { role: 'assistant', content: 'earlier reply' }] },
         ledger_debit: { ok: true, job_id: JOB, balance_after: 8 },
@@ -230,6 +231,17 @@ test('the user presses Stop after text: kept and charged; before any text: refun
     evs = await events(await run(f, { signal: ac2.signal }));
     assert.deepEqual([evs.at(-1).data.status, evs.at(-1).data.credits_charged], ['canceled', 0]);
     assert.equal(called(f, 'job_failed')[0][1].p_error_code, 'user_canceled');
+    assert.equal(called(f, 'ledger_refund').length, 1); assert.equal(called(f, 'chat_complete_turn').length, 0);
+});
+
+// F-12: an empty provider completion (stream ends with no text, no stop, no failure) is refunded like a
+// stop, but it is NOT the user's doing, so it is recorded as 'empty_completion' and must not count toward
+// the per-day stop-before-text cap (which keys on 'user_canceled').
+test('an empty provider completion is refunded but recorded as empty_completion, not a user stop', async () => {
+    const f = fakes({ stream: async function* () { /* ends at once, nothing produced, no abort, no throw */ } });
+    const evs = await events(await run(f, {}));
+    assert.deepEqual([evs.at(-1).data.status, evs.at(-1).data.credits_charged], ['canceled', 0]);
+    assert.equal(called(f, 'job_failed')[0][1].p_error_code, 'empty_completion');
     assert.equal(called(f, 'ledger_refund').length, 1); assert.equal(called(f, 'chat_complete_turn').length, 0);
 });
 
@@ -685,7 +697,7 @@ test('capped web search: supplier spend refusal stops before the search and debi
     f.deps.rpc = async (name, args) => {
         f.calls.push([name, args]);
         if (name === 'provider_spend_admit_model') return { ok: false, code: 'PROVIDER_SPEND_LIMIT', scope: 'user_hour', retry_after_seconds: 91 };
-        const base = { check_generation_rate_limit: { ok: true }, chat_turn_context: { ok: true, user_id: 'user-1', model_id: 'chat-fast', system_prompt: '', history: [] }, chat_stops_before_text: 0, read_user_credits: { balance: 10 } };
+        const base = { check_generation_rate_limit: { ok: true }, account_spend_eligible: { ok: true }, chat_turn_context: { ok: true, user_id: 'user-1', model_id: 'chat-fast', system_prompt: '', history: [] }, chat_stops_before_text: 0, read_user_credits: { balance: 10 } };
         return base[name];
     };
     const res = await run(f, { body: webBody(), env: EXA_ENV });
@@ -795,6 +807,53 @@ test('before the engine column exists in the database, a turn still runs, as a p
     assert.equal(res.status, 200);
     await res.text();
     assert.equal(f.streamCalls[0].webSearch, true, 'the plugin, as before the column existed');
+});
+
+// ── F-02 (ADR-0307): a Frozen/held account never reaches the paid search, and a replay never re-bills it ──
+/** cappedFakes plus a search spy, with per-RPC replies honoured (so the eligibility/admission can be scripted). */
+function cappedRepliesFakes({ replies = {}, model = CAPPED, search = async () => FOUND } = {}) {
+    const f = fakes({ model, replies });
+    f.searches = [];
+    f.deps.search = async (a) => { f.calls.push(['search', a]); f.searches.push(a); return search(a); };
+    return f;
+}
+
+test('capped web search: a Frozen account is refused before the paid search', async () => {
+    const f = cappedRepliesFakes({ replies: { account_spend_eligible: { ok: false, code: 'ACCOUNT_FROZEN' } } });
+    const res = await run(f, { body: webBody(), env: EXA_ENV });
+    assert.equal(res.status, 403);
+    assert.deepEqual(await res.json(), { error: 'account_frozen' });
+    assert.equal(f.searches.length, 0, 'the paid provider was never called');
+    assert.equal(called(f, 'provider_spend_admit_model').length, 0);
+    assert.equal(called(f, 'ledger_debit').length, 0);
+});
+
+test('capped web search: a held account is refused before the paid search, with the hold time', async () => {
+    const holdUntil = '2026-12-01T00:00:00.000Z';
+    const f = cappedRepliesFakes({ replies: { account_spend_eligible: { ok: false, code: 'ACCOUNT_ON_HOLD', hold_until: holdUntil } } });
+    const res = await run(f, { body: webBody(), env: EXA_ENV });
+    assert.equal(res.status, 403);
+    assert.deepEqual(await res.json(), { error: 'account_on_hold', hold_until: holdUntil });
+    assert.equal(f.searches.length, 0);
+});
+
+test('capped web search: a free-allowance Frozen account is still refused before the search', async () => {
+    const f = cappedRepliesFakes({ model: { ...CAPPED, free_allowance_per_day: 3 }, replies: { account_spend_eligible: { ok: false, code: 'ACCOUNT_FROZEN' } } });
+    const res = await run(f, { body: webBody(), env: { ...EXA_ENV, FREE_ALLOWANCE_ENABLED: 'true' } });
+    assert.equal(res.status, 403);
+    assert.equal(f.searches.length, 0, 'the free path reaches the gate too');
+});
+
+test('capped web search: a replayed idempotency key does not call the paid provider again', async () => {
+    const f = cappedRepliesFakes({ replies: {
+        provider_spend_admit_model: { ok: true, idempotent: true, estimated_cost_microusd: 25000 },
+        ledger_debit: { ok: true, job_id: JOB, idempotent: true, balance_after: 8 },
+    } });
+    const res = await run(f, { body: webBody(), env: EXA_ENV });
+    assert.equal(res.status, 200);
+    assert.deepEqual(await res.json(), { replay: true, job_id: JOB, balance_after: 8 });
+    assert.equal(f.searches.length, 0, 'the reservation already existed: no second search, no second bill');
+    assert.equal(f.streamCalls.length, 0, 'a replay never streams a fresh turn');
 });
 
 // ── ADR-0069: a plain reply can use a free allowance ──────────────────────────────────────────────────────────

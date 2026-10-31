@@ -27,4 +27,7 @@ export default {
     'job.report': 'Report this creation',
     'job.deleteThis': 'Delete this creation',
     'job.deleting': 'Deleting…',
+    'job.holdToDelete': "Hold to delete",
+    'job.holdToDeleteHint': "Press and hold to delete this creation for good. Letting go early cancels.",
+    'job.holdToDeleteTap': "Keep holding the button to delete this creation.",
 } as const;

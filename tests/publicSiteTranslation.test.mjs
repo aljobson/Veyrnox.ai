@@ -8,9 +8,12 @@ import { candidates, publicFiles } from '../scripts/audit-public-i18n.mjs';
 import { HELP_TARGETS, HELP_ACTIONS, helpStartersForPath } from '../lib/productHelp.js';
 import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { CATALOGS, translator } from '../lib/i18n/translate.mjs';
+import { translator } from '../lib/i18n/translate.mjs';
+import { messagesFor } from '../lib/i18n/catalogs.mjs';
+import { CATALOGS } from '../lib/i18n/catalogs.mjs';
 import { LOCALES, isLocalizedPath, localizedHref, languageAlternates, splitLocalePath } from '../lib/i18n/locales.mjs';
-import { SITE_PAGES, PRESETS } from '../app/veyrnox/_lib/tokens.js';
+import { SITE_PAGES } from '../app/veyrnox/_lib/tokens.js';
+import { PRESETS } from '../app/veyrnox/_lib/templates.js';
 import { isUnknownStaticPage } from '../lib/unknownStaticPage.js';
 import { editorialSeries } from '../app/veyrnox/social-cinema/editorialSeries.js';
 import { MAGIC_VERIFIER_TTL_MS } from '../app/lib/pkceVerifier.js';
@@ -33,7 +36,7 @@ test('phase A and C1 translated routes retain language, query and alternates', (
 
 test('new key families, TTL and sample units survive every translation', () => {
   for (const language of LOCALES) {
-    const m = CATALOGS[language.code], t = translator(language.code);
+    const m = CATALOGS[language.code], t = translator(language.code, messagesFor(language.code));
     for (const family of ['cinema.series.', 'mobile.', 'oauth.', 'social.', 'callback.', 'privacy.', 'recovery.', 'search.page.']) {
       assert.ok(Object.keys(m).some(key => key.startsWith(family)), `${language.code}: ${family}`);
     }
@@ -56,7 +59,7 @@ test('new key families, TTL and sample units survive every translation', () => {
 
 test('OAuth permissions retain media, accepted prices and at most two completed sources with confirmed rights', () => {
   const facts = {
-    en: [/image and video generations and edits/, /spends your credits, only after it has shown you the exact price and you have accepted it/, /up to two of your finished generations as source material, only after you have confirmed you have the rights to them/],
+    en: [/image and video generations and edits/, /spends your credits, only after it has shown you the exact price and you have accepted it/, /your finished generations, or an image, video or audio file it uploads for you to your account, as source material, only after you have confirmed you have the rights to them/],
     es: [/generaciones y ediciones de imágenes y vídeos/, /gasta tus créditos, solo después de haberte mostrado el precio exacto y de que lo hayas aceptado/, /hasta dos de tus generaciones terminadas como material de origen, solo después de que hayas confirmado que tienes los derechos sobre ellas/],
     zh: [/图像和视频生成及编辑/, /消耗您.*积分.*仅在向您展示确切价格且您已接受该价格后进行/, /已完成的生成结果中的最多两个作为源素材，但仅在您已确认拥有这些素材的相关权利后才能使用/],
     hi: [/इमेज और वीडियो जनरेशन और एडिट/, /आपके क्रेडिट खर्च करे, केवल तब जब असिस्टेंट आपको सटीक कीमत दिखा चुका हो और आपने उसे स्वीकार कर लिया हो/, /पूरे हो चुके अधिकतम दो जनरेशन को स्रोत सामग्री के रूप में उपयोग कर सकता है, केवल तब जब आपने पुष्टि कर दी हो कि आपके पास उनके अधिकार हैं/],
@@ -75,9 +78,11 @@ test('OAuth permissions retain media, accepted prices and at most two completed 
     assert.match(m['oauth.video'], sources, code);
     for (const key of ['oauth.summary', 'oauth.summaryPublish', 'oauth.limit']) assert.doesNotMatch(m[key], /[2٢２]/u, `${code} ${key}: no two-credit ceiling`);
   }
-  assert.match(CATALOGS.en['oauth.limit'], /^Start one text-to-image generation at a time/);
+  assert.match(CATALOGS.en['oauth.limit'], /^Start one image generation at a time/);
   assert.match(CATALOGS.en['oauth.video'], /^Start one video generation, or one edit of videos you already made, at a time/);
-  for (const key of ['oauth.restrictions', 'oauth.restrictionsPublish']) assert.match(CATALOGS.en[key], /cannot start .*audio/);
+  assert.match(CATALOGS.en['oauth.video'], /or an image, video or audio file it uploads for you/, 'ADR-0100 amendment 6: uploaded sources are named on the consent screen');
+  for (const key of ['oauth.restrictions', 'oauth.restrictionsPublish']) assert.match(CATALOGS.en[key], /cannot generate audio/);
+  assert.doesNotMatch(CATALOGS.en['oauth.restrictions'], /uploads|cannot start video/, 'the connector can start video and use uploads since amendments 4 and 6');
   assert.match(CATALOGS.en['oauth.publishAccess'], /It cannot publish immediately\./);
   assert.equal(CATALOGS.en['oauth.revoke'], 'You can revoke it from Account & security.');
 });
@@ -230,7 +235,7 @@ test('offline SSR: opening new project, season and episode drafts renders German
     return React.Children.toArray(node.props.children).map(child => findButton(child, label)).find(Boolean);
   }
   for (const locale of ['de', 'ar']) {
-    const t = translator(locale);
+    const t = translator(locale, messagesFor(locale));
     for (const parent of [null, { id: 'series', content_type: 'SERIES' }, { id: 'season', content_type: 'SEASON' }]) {
       const types = parent ? [parent.content_type === 'SERIES' ? 'SEASON' : 'EPISODE'] : ['SERIES', 'FILM', 'SHORT', 'TRAILER'];
       const typeLabel = type => t(type === 'SERIES' ? 'cinema.socialCinema.series' : `cinema.creatorWorkspace.${type.toLowerCase()}`);
@@ -267,7 +272,7 @@ test('offline SSR: opening new project, season and episode drafts renders German
 
 test('offline SSR: unknown social roles and statuses retain server values; known values translate', () => {
   for (const locale of ['de', 'ar']) {
-    const t = translator(locale);
+    const t = translator(locale, messagesFor(locale));
     const inviteFile = 'app/social/team/invite/[token]/page.js';
     for (const [role, status, accepted] of [['custom-role', 'custom-status', false], ['custom-role', 'accepted', true], ['reviewer', 'expired', false]]) {
       const invite = { brand_name: 'Test brand', email: 'test@example.com', expires_at: '2026-10-18T12:00:00Z', role, status };
@@ -377,16 +382,21 @@ test('offline SSR: persisted app journeys have translated guidance on public pag
 });
 
 
-test('global error recovers Arabic without the failed root provider and rejects unknown prefixes', () => {
+test('global error recovers Arabic without the failed root provider and rejects unknown prefixes', async () => {
   const file = 'app/global-error.js', previous = globalThis.window;
+  const { publicCatalogFor } = await import('../lib/i18n/publicMessages.mjs');
   try {
     for (const [route, locale] of [['/ar/social-cinema', 'ar'], ['/xx/social-cinema', 'en'], ['/ar/app', 'en']]) {
       globalThis.window = { location: { pathname: route } };
-      const f = fixture(locale, route, { states: { [file]: [] } });
+      // The bundle holds English only; the page fetches the URL's language after mount (first useState).
+      const f = fixture(locale, route, { states: { [file]: [await publicCatalogFor(locale)] } });
       const html = renderToStaticMarkup(React.createElement(f.load(file).default, { retry() {} }));
       assert.ok(html.includes(CATALOGS[locale]['recovery.pageUnavailable']), `${route}: ${html}`);
       assert.ok(html.includes(`dir="${locale === 'ar' ? 'rtl' : 'ltr'}"`));
       assert.ok(html.includes(CATALOGS[locale]['recovery.body']));
+      const first = renderToStaticMarkup(React.createElement(fixture(locale, route, { states: { [file]: [null] } }).load(file).default, { retry() {} }));
+      assert.ok(first.includes(CATALOGS.en['recovery.body']), 'before the language arrives the page reads in English');
+      assert.ok(first.includes(`dir="${locale === 'ar' ? 'rtl' : 'ltr'}"`), 'in the right direction from the first paint');
     }
   } finally { globalThis.window = previous; }
 });
@@ -412,8 +422,8 @@ test('offline SSR: version-bound legal declarations remain exact English inside 
       assert.deepEqual(statements, legal, `${locale} ${component}`);
       assert.ok(html.includes(CATALOGS[locale][component === 'Pass' ? 'cinema.passPanel.chooseAPass' : component === 'TitlePage' ? 'label.Cinema Pass' : 'cinema.comments.submitForReview']));
       if (component === 'TitlePage') {
-        assert.ok(html.includes(translator(locale)('cinema.duration', { n: 2 })));
-        assert.ok(html.includes(translator(locale)('cinema.title.aiDisclosures', { disclosures: CATALOGS[locale]['cinema.disclosure.generated_video'] })));
+        assert.ok(html.includes(translator(locale, messagesFor(locale))('cinema.duration', { n: 2 })));
+        assert.ok(html.includes(translator(locale, messagesFor(locale))('cinema.title.aiDisclosures', { disclosures: CATALOGS[locale]['cinema.disclosure.generated_video'] })));
       }
     }
   }
@@ -423,7 +433,7 @@ test('offline SSR: version-bound legal declarations remain exact English inside 
 
 test('offline SSR: library caller labels and saved-choice dates follow the page locale', () => {
   for (const locale of ['de', 'ar']) {
-    const f = fixture(locale, '/social-cinema/creator'), t = translator(locale);
+    const f = fixture(locale, '/social-cinema/creator'), t = translator(locale, messagesFor(locale));
     const picker = f.load('app/veyrnox/_components/LibraryPicker.js').LibraryPicker;
     const html = f.render(React.createElement(picker, { sourceLabel: 'Start frame' }));
     assert.ok(html.includes(t('public.library.choose', { type: t.label('Start frame') })));
@@ -472,7 +482,7 @@ test('offline SSR: Vey logical corners and move-panel labels follow en/ar direct
 test('search model kinds keep known translations and unknown server values in en/ar', () => {
   const file = 'app/veyrnox/_components/SiteSearch.js';
   for (const locale of ['en', 'ar']) {
-    const f = fixture(locale, '/', { expose: { [file]: ['modelsToIndex'] } }), t = translator(locale);
+    const f = fixture(locale, '/', { expose: { [file]: ['modelsToIndex'] } }), t = translator(locale, messagesFor(locale));
     const index = f.load(file).modelsToIndex(['image', 'future-kind'].map(kind => ({ id: kind, name: kind, kind, credits: 1 })), t);
     assert.ok(index[0].detail.includes(t('home.models.image')));
     assert.ok(index[1].detail.includes('future-kind'));

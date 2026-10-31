@@ -42,7 +42,7 @@ test('the generations route asks the gate after the user is known and before the
     const src = readFileSync(new URL('../app/api/v1/generations/route.js', import.meta.url), 'utf8');
     const user = src.indexOf("return NextResponse.json({ error: 'user_not_provisioned' }");
     const gate = src.indexOf('await compositeRefundGate({ rpc, cfg, userId, modelId })');
-    const debit = src.indexOf("rpc('ledger_debit'");
+    const debit = src.indexOf("p_reason: 'debit:generation'");
     assert.ok(user > 0 && gate > user && debit > gate, 'user lookup, then the gate, then the debit');
     assert.match(src, /headers: \{ 'retry-after': String\(refundsGate\.retryAfter\) \}/);
 });

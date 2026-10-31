@@ -6,6 +6,7 @@ import { mockInbox } from './mockInbox.mjs';
 import { mockSocialUploads, uploadsEnabled, validateUploadMedia } from './mockSocialUploads.mjs';
 import { mockQaJobs, qaAsset } from './mockQaJobs.mjs';
 import { mockSecurity } from './mockSecurityFixtures.mjs';
+import { mockWins } from './mockWins.mjs';
 import { mockCheckin } from './mockCheckin.mjs';
 import { createServer } from 'node:http';
 import { deflateSync } from 'node:zlib';
@@ -609,6 +610,10 @@ createServer(async (req, res) => {
             expires_in: 900,
         });
     }
+    if (path === '/api/v1/wins') {
+        const result = mockWins(req.method, process.env.YOUR_WINS_ENABLED === 'true');
+        return send(res, result.status, result.body);
+    }
     if (path === '/api/v1/checkin') {
         const result = mockCheckin(req.method, req.headers.authorization || 'dev', state, process.env.CHECKIN_ENABLED === 'true');
         return send(res, result.status, result.body);
@@ -642,7 +647,8 @@ createServer(async (req, res) => {
         state.referral.attached = true;
         return send(res, 200, { attached: true });
     }
-    if (path === '/api/v1/store-purchases/customer') return send(res, 200, { rc_customer_id: '3f2b8a52-6c0e-4d7a-9b1f-0a1b2c3d4e5f' });
+    if (path === '/api/v1/subscriptions' && req.method === 'GET') return send(res, 200, { subscription: null });
+    if (path === '/api/v1/store-purchases/customer') return send(res, 200, { rc_customer_id: '3f2b8a52-6c0e-4d7a-9b1f-0a1b2c3d4e5f', sales_open: process.env.MOCK_SALES_OPEN === 'true' });
     if (path === '/api/v1/social/plan') return send(res, 200, { plans: [], entitlement: { tier: 'publish', account_limit: 5, analytics_days: 366, best_time_enabled: true, subscription: { source: 'stripe', status: 'active', current_period_end: '2026-11-20T12:00:00Z', cancel_at_period_end: false } } });
 
     // Cinema comments (ADR-0142, server ADR-0081): read hides blocked authors (as the real read does), a submit waits for

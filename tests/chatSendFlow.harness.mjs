@@ -5,7 +5,7 @@
 // tests/chatSendHome.test.mjs pins that. Not a test file itself: its name keeps it out of `npm test`'s pattern.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { NEW_CHAT, addToDraft, clearNotice, readCreditsWarning, readDraft, readNotice, writeDraft, writeNotice } from '../app/veyrnox/_lib/chatLocal.js';
+import { NEW_CHAT, addToDraft, clearNotice, draftWriteAllowed, readCreditsWarning, readDraft, readNotice, writeDraft, writeNotice } from '../app/veyrnox/_lib/chatLocal.js';
 import { loadFailure } from '../app/veyrnox/_lib/chatScreen.js';
 import { askStoppedSend, lostNotice } from '../app/veyrnox/_lib/chatStop.js';
 import { ask, forget, land, leave, newChatView, onScreen, sendHome } from '../app/veyrnox/_lib/chatSendHome.js';
@@ -46,15 +46,19 @@ export const afterReload = (storage, chat) => ({ box: readDraft(storage, ME, cha
 // `closeSend` is also handed the log so far. `settle` may be a function, for a look that throws; it is handed the
 // `person` and the log so far, to see the screen while the turn is looked for. `openDown`: the chat cannot be read again.
 // `log.lookedIn` is what each look was handed: the chat, the text, and the ids of the messages on screen before the send (`shown`). `log.checking` is what the hook's `checking` state was set to, in order.
-export async function run({ active = null, turn, settle = 'pending', listDown = false, listFails = false, images = [], whileMaking = () => {}, kept = {}, text = TEXT, storage = null, making = null, upload = async () => 'k', prepare = async (f) => f, key = 'key', closeSend = notOpen, askLimitMs = null, openDown = false, shown = [], instr = '', requiredInstructions = false, lockedInstructions = '', expectedSystemPrompt = '', sendBlocked = false, patchThread = async () => ({ thread: {} }), onInstructionsReady = async () => true, onThreadValidated = async () => true }) {
+export async function run({ active = null, turn, settle = 'pending', listDown = false, listFails = false, images = [], whileMaking = () => {}, kept = {}, text = TEXT, storage = null, making = null, upload = async () => 'k', prepare = async (f) => f, duringPrepare = () => {}, key = 'key', closeSend = notOpen, askLimitMs = null, openDown = false, shown = [], instr = '', requiredInstructions = false, lockedInstructions = '', expectedSystemPrompt = '', sendBlocked = false, patchThread = async () => ({ thread: {} }), onInstructionsReady = async () => true, onThreadValidated = async () => true }) {
     const view = newChatView();
     if (active) { ask(view, active.id); land(view, active.id); }
-    const log = { notices: [], box: [], saved: {}, added: {}, opened: [], shownOnOpen: [], deleted: [], activeSet: [], imagesCleared: 0, refreshed: 0, quietReads: 0, failures: [], kept: { ...kept }, keptWith: {}, dropped: [], closes: [], looks: [], lookedIn: [], checking: [], patched: [], instructionsReady: [] };
+    const log = { notices: [], box: [], saved: {}, added: {}, opened: [], shownOnOpen: [], deleted: [], activeSet: [], imagesCleared: 0, refreshed: 0, quietReads: 0, failures: [], kept: { ...kept }, keptWith: {}, dropped: [], closes: [], looks: [], lookedIn: [], checking: [], patched: [], instructionsReady: [], uploads: 0, creates: 0 };
     let onScreenMessages = []; let states = 0;
+    // Who is signed in right now (ChatWorkspace.js reads getStoredUserId() at every storage write). It starts as ME
+    // and a send can see it change mid-flight when the person switches accounts on a shared browser (F-05).
+    let currentUser = ME;
     const person = {
         press: (id) => ask(view, id),
         opens: (id) => { ask(view, id); land(view, id); onScreenMessages = []; },
         leavesThePage: () => leave(view),
+        switchesAccount: (id) => { currentUser = id; },
         deletes: (id) => forget(view, id),
         kept: () => ({ ...log.kept }), // what is kept right now, for a server script that looks mid-send
         bubbles: () => onScreenMessages.map((m) => `${m.role}:${m.status}`), // what the chat shows right now
@@ -62,13 +66,16 @@ export async function run({ active = null, turn, settle = 'pending', listDown = 
     const deps = {
         // The third state is `checking` (pinned in tests/chatSendUnanswered.test.mjs): what it is set to is recorded, in order.
         useState: (initial) => { states += 1; const nth = states; return [initial, (value) => { if (nth === 3) log.checking.push(value); }]; }, useRef: (initial) => ({ current: initial }),
-        GatewayError, NEW_CHAT, loadFailure, lostNotice, ask, forget, land, onScreen, sendHome,
+        GatewayError, NEW_CHAT, draftWriteAllowed, loadFailure, lostNotice, ask, forget, land, onScreen, sendHome,
+        getStoredUserId: () => currentUser,
         askStoppedSend: (args) => askStoppedSend({ ...args, ...(askLimitMs && { limitMs: askLimitMs }) }),
         chatErrorCopy: (code) => code, chatUnchargedCopy: (code, _extra, warning) => `${code}, and before that ${warning.code}`,
-        makeIdempotencyKey: () => (typeof key === 'function' ? key() : key), uploadChatImage: upload, prepareImage: prepare,
+        makeIdempotencyKey: () => (typeof key === 'function' ? key() : key),
+        uploadChatImage: (x) => { log.uploads += 1; return upload(x); },
+        prepareImage: async (file, edge) => { duringPrepare(person); return prepare(file, edge); },
         sendTurn: (args) => turn(args, person),
         chatApi: {
-            create: making || (async () => { whileMaking(person); return { thread: { id: 'made', model_id: 'm' } }; }), move: async () => ({}), patch: async (id, body) => { log.patched.push({ id, body }); return patchThread(id, body); },
+            create: (m) => { log.creates += 1; return (making || (async () => { whileMaking(person); return { thread: { id: 'made', model_id: 'm' } }; }))(m); }, move: async () => ({}), patch: async (id, body) => { log.patched.push({ id, body }); return patchThread(id, body); },
             remove: (id) => { log.deleted.push(id); return Promise.resolve(); },
             threads: async () => { log.quietReads += 1; if (listDown) throw new Error('offline'); return { threads: [] }; },
             settleStop: async ({ threadId, jobId, text: sent, knownIds }) => { log.looks.push(jobId ?? null); log.lookedIn.push({ chat: threadId, text: sent, known: [...knownIds] }); if (typeof settle === 'function') return settle(person, log); return settle; },
@@ -85,7 +92,7 @@ export async function run({ active = null, turn, settle = 'pending', listDown = 
         setMessages: (f) => { onScreenMessages = typeof f === 'function' ? f(onScreenMessages) : f; },
         setThreads: () => {}, setError: (n) => log.notices.push(n),
         att: { items: images, clear: () => { log.imagesCleared += 1; } }, limits: { maxEdge: 2048 }, draftModel: 'm', folders: null, folder: 'all', instr, requiredInstructions, lockedInstructions, expectedSystemPrompt,
-        onInstructionsReady: async (id) => { log.instructionsReady.push(id); return onInstructionsReady(id); },
+        onInstructionsReady: async (id, owner) => { log.instructionsReady.push(id); return onInstructionsReady(id, owner); },
         onThreadValidated,
         // The screen's open(): here it only records the call, and the notice the real one would show with the chat, and says the chat was read.
         // `openDown`: the chat could not be read (still offline), which the real open() says by returning false.
@@ -98,9 +105,11 @@ export async function run({ active = null, turn, settle = 'pending', listDown = 
         heldWarning: (id) => (WARNINGS.includes(log.kept[id]) ? { code: log.kept[id] } : null),
         // With `storage`, the five go to the real store instead, written and read the way the screen does it (ChatWorkspace.js).
         ...(storage && {
-            saveDraft: (id, t) => writeDraft(storage, ME, id, t), addDraft: (id, t) => addToDraft(storage, ME, id, t),
-            keepNotice: (id, code, extra) => writeNotice(storage, ME, id, code, extra), dropNotice: (id) => clearNotice(storage, ME, id),
-            heldWarning: (id) => readCreditsWarning(storage, ME, id),
+            // Written and read under whoever is signed in at the moment of the call, as ChatWorkspace.js does through
+            // getStoredUserId(); with no account switch this stays ME, so every existing storage test is unchanged.
+            saveDraft: (id, t) => writeDraft(storage, currentUser, id, t), addDraft: (id, t) => addToDraft(storage, currentUser, id, t),
+            keepNotice: (id, code, extra) => writeNotice(storage, currentUser, id, code, extra), dropNotice: (id) => clearNotice(storage, currentUser, id),
+            heldWarning: (id) => readCreditsWarning(storage, currentUser, id),
         }),
     });
     await send();

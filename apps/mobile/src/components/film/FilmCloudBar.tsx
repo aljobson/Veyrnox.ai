@@ -6,6 +6,7 @@ import { getCacheUser, subscribeCacheUser } from '../../lib/appCache';
 import { cloudSaveError, commitUnlink, getActiveCloudLink, getCloudSaveStatus, getOpenedFilm, openCloudFilm, prepareKeepOnPhone, restorePhoneSlot, saveActiveStudioToCloud, type PrepareResult, type CloudSaveError } from '../../lib/filmCloud';
 import type { Film } from '../../lib/filmStudio';
 import { formatLocale, t } from '../../lib/i18n';
+import { filmErrorText } from '../../lib/filmError';
 import { colors } from '../../theme';
 import { FilmAction } from './FilmPromptOutput';
 import { Text as StatusText } from '../ui/Text';
@@ -75,7 +76,7 @@ export function FilmCloudBar({ api, film, flush, snapshot, valid, beginInstall, 
                 const saved = getCloudSaveStatus(snapshot());
                 AccessibilityInfo.announceForAccessibility(saved.kind === 'dirty' ? t('filmOutput.dirty') : t('filmOutput.saved', { value1: saved.kind === 'saved' && saved.date ? new Date(saved.date).toLocaleString(formatLocale()) : '' }));
             }
-        } catch (e) { if (current()) setNotice((e as Error).message); }
+        } catch (e) { if (current()) setNotice(filmErrorText(e)); }
         finally { if (current()) { running.current = false; setBusy(false); } }
     }
     async function openAccount() {

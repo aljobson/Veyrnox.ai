@@ -53,8 +53,10 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS",
     // Template preview MP4s need byte ranges for Apple's video player; worker.js
-    // answers them (lib/showcaseVideo.js). Everything else stays edge-served.
-    "run_worker_first": ["/showcase/*"]
+    // answers them (lib/showcaseVideo.js). Everything else stays edge-served:
+    // routing the JPG posters through the Worker too made a landing page's
+    // burst of poster requests fail with 503, leaving template tiles blank.
+    "run_worker_first": ["/showcase/*.mp4"]
   },
   // Public config — safe to commit. SUPABASE_URL used by middleware.js;
   // NEXT_PUBLIC_* by client bundle.
@@ -74,6 +76,8 @@
     // ADR-0256 phase 5: Crun, the second supplier. Switches on the Crun adapter key and the five-minute sweep that completes its jobs.
     // A Crun route still serves nothing until one is `active` (a migration) and, to be first, reordered by the owner. Remove the line to turn it off.
     "CRUN_ENABLED": "true",
+    // ADR-0309: more than one file per slot where a model carries a dated verified limit (Seedance reference: 9). Remove the line to turn it off.
+    "MULTI_REFERENCE_ENABLED": "true",
     "TENANT_PROJECTS_ENABLED": "true",
     // Cloud documents do not enable device-media uploads (ADR-0056 / roadmap D1).
     "PROJECT_MEDIA_UPLOADS_ENABLED": "false",
@@ -308,6 +312,7 @@
       }],
       "triggers": { "crons": ["*/5 * * * *", "* * * * *"] },
       "vars": {
+        "YOUR_WINS_ENABLED": "false",
         // Exercise the scanner in staging; queued images drain oldest first.
         "CONTENT_SCAN_ENABLED": "true",
         // Switch on only after migration 0289 is applied.

@@ -36,7 +36,7 @@ const ko = {
     'public.TemplateRecipe.sourcePromptNotRecorded': '이 미리보기에는 정확한 소스 프롬프트가 기록되어 있지 않습니다. 아래 생성 프롬프트는 Veyrnox 각색본이며 복사된 소스 문구가 아닙니다.',
     'public.TemplateRecipe.sourcePromptTruncated': '소스 피드에서 이미 잘린 상태로 반환된 프롬프트입니다. 받은 그대로 보존했으며 완전한 문구로 취급할 수 없습니다.',
     'public.TemplateRecipe.sourcePromptDuplicate': '소스에서 다른 영상에도 같은 정확한 프롬프트를 게시했습니다. 내용을 바꾸지 않고 소스 중복으로 표시했습니다.',
-    'public.TemplateRecipe.generationPrompt': 'VEYRNOX 생성 프롬프트',
+    'public.TemplateRecipe.generationPrompt': '생성 프롬프트',
     'recovery.retry': '다시 시도',
     'cinema.creatorWorkspace.cancel': '취소',
     'social.saving': '저장 중…',

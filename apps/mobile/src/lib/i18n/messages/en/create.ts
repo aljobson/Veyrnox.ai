@@ -67,4 +67,5 @@ export default {
     'create.workspace.terms': 'Commercial use depends on the selected model and provider terms.',
     'create.workspace.termsLink': 'Check the Terms before publishing.',
     "create.s": "{value1}s",
+    "create.lengthCost": "{value1}s \u00b7 {credits} cr",
 } as const;

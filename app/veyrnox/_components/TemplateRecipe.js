@@ -29,6 +29,8 @@ export function TemplateRecipe({ preset, generatedPreview = false }) {
   const { t } = useI18n();
   const hasExactSourcePrompt = preset.sourcePromptOrigin === 'community-source-exact' && typeof preset.sourcePrompt === 'string';
   const sourcePromptBlocked = hasExactSourcePrompt && preset.sourcePromptRunnable === false;
+  // One prompt: the community one. A Veyrnox adaptation appears only when the
+  // community prompt cannot run on this model (reference media it cannot take).
   const hasRunnableAdaptation = sourcePromptBlocked
     && preset.promptOrigin === 'veyrnox-adaptation'
     && typeof preset.prompt === 'string'

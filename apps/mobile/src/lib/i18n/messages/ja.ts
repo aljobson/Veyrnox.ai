@@ -36,7 +36,7 @@ const ja = {
     'public.TemplateRecipe.sourcePromptNotRecorded': 'このプレビューには正確なソースプロンプトが記録されていません。下の生成プロンプトは Veyrnox の適応版であり、ソースからコピーした文章ではありません。',
     'public.TemplateRecipe.sourcePromptTruncated': 'ソースフィードが返した時点でこのプロンプトは途中で切れていました。受信内容をそのまま保存しており、完全な文章として扱うことはできません。',
     'public.TemplateRecipe.sourcePromptDuplicate': 'ソースでは別の動画にも同じプロンプトが公開されています。内容は変更せず、ソース側の重複として記録しています。',
-    'public.TemplateRecipe.generationPrompt': 'VEYRNOX 生成プロンプト',
+    'public.TemplateRecipe.generationPrompt': '生成プロンプト',
     'recovery.retry': '再試行',
     'cinema.creatorWorkspace.cancel': 'キャンセル',
     'social.saving': '保存中…',

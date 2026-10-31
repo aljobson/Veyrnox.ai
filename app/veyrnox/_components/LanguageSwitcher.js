@@ -1,7 +1,6 @@
 'use client';
 import { saveAccountLanguage } from '../../lib/accountLanguageClient.js';
 import { LOCALES, isLocalizedPath, languageAlternates, localizedPathKey } from '../../../lib/i18n/locales.mjs';
-import { translator } from '../../../lib/i18n/translate.mjs';
 import { useI18n } from '../../../components/I18nProvider';
 import { rememberLocale } from '../../../lib/i18n/localeCookie.mjs';
 
@@ -9,10 +8,9 @@ import { rememberLocale } from '../../../lib/i18n/localeCookie.mjs';
 // script and a crawler can follow it. `path` is the page's unprefixed path;
 // a page with no translation shows no switcher.
 export function LanguageSwitcher({ locale, path = '/' }) {
-  const { languagesEnabled } = useI18n();
+  const { languagesEnabled, t } = useI18n();
   const key = localizedPathKey(path);
   if (!languagesEnabled || !isLocalizedPath(key)) return null;
-  const t = translator(locale);
   const alternates = languageAlternates(key);
   return (
     <nav aria-label={t('ui.language')} data-print="hide" className="max-w-[1300px] mx-auto px-4 sm:px-6 pb-8">

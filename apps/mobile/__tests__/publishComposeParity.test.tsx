@@ -11,15 +11,17 @@ import type { ApiClient } from '../src/lib/api';
 import type { CreationPick } from '../src/lib/publishMediaChoice';
 import { buttons, input, press, textOf, deferred, OTHER } from './publishDepthTestHelpers';
 
+let mockParams: Record<string, string> = {};
+const mockGetJob = jest.fn();
 const mockRequest = jest.fn(), mockAsset = jest.fn(), mockPush = jest.fn();
 const mockApi = { request: mockRequest } as unknown as ApiClient;
 const mockJobs = [{ job_id: 'image-job', model_id: 'image', label: 'Creation image', state: 'succeeded', has_asset: true, created_at: '2026-10-21' }, { job_id: 'video-job', model_id: 'video', label: 'Creation video', state: 'succeeded', has_asset: true, created_at: '2026-10-21' }];
 let mockState: Record<string, unknown>;
 jest.mock('../src/lib/usePublishApi', () => ({ usePublishApi: () => mockApi }));
-jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useLocalSearchParams: () => ({}), useRouter: () => ({ replace: jest.fn(), push: mockPush }) }));
+jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useLocalSearchParams: () => mockParams, useRouter: () => ({ replace: jest.fn(), push: mockPush }) }));
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'test-key' }));
 jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => 'owner', subscribeCacheUser: () => () => {}, appStorage: { get: async () => null, set: async () => {}, remove: async () => {} } }));
-jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalog: async () => [{ id: 'image', name: 'Image', modality: 'text-to-image' }, { id: 'video', name: 'Video', modality: 'text-to-video' }], mediaApi: () => ({ listJobs: async () => ({ jobs: mockJobs }), getAsset: (...args: unknown[]) => mockAsset(...args) }) }));
+jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalog: async () => [{ id: 'image', name: 'Image', modality: 'text-to-image' }, { id: 'video', name: 'Video', modality: 'text-to-video' }], mediaApi: () => ({ getJob: (...args: unknown[]) => mockGetJob(...args), listJobs: async () => ({ jobs: mockJobs }), getAsset: (...args: unknown[]) => mockAsset(...args) }) }));
 jest.mock('../src/components/PublishUploadPanel', () => ({ PublishUploadPanel: () => null }));
 jest.mock('expo-video', () => ({ useVideoPlayer: () => ({ status: 'readyToPlay', addListener: () => ({ remove: jest.fn() }) }), VideoView: (props: object) => { const { View } = require('react-native'); return <View {...props} />; } }));
 jest.mock('../src/components/InlineMedia', () => ({ InlineMedia: ({ label }: { label: string }) => { const { View } = require('react-native'); return <View accessibilityLabel={label} />; } }));
@@ -28,6 +30,7 @@ const account = (id: string, network = 'instagram') => ({ id, network, display_n
 let root: Root, alert: jest.SpyInstance;
 beforeEach(() => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; brandStore.set(null); jest.clearAllMocks(); root = createRoot();
+    mockParams = {}; mockGetJob.mockReset();
     mockState = { brandRole: 'owner', plansEnabled: true, planTier: 'publish', variantsEnabled: true, queuesEnabled: true, contentPresetsEnabled: true, accounts: [account('a'), account('b', 'twitter')] };
     mockAsset.mockResolvedValue({ url: 'https://example.test/asset.png' });
     mockRequest.mockImplementation(async (path: string) => path.endsWith('/accounts') ? mockState : path.endsWith('/queues') ? { queues: [{ id: 'q', name: 'Queue A', enabled: true, account_ids: ['a'], slots: [] }] } : {});
@@ -114,4 +117,15 @@ test('late media URL cannot reappear after a scope change; uploads show a placeh
     expect(root.container.queryAll(n => JSON.stringify(n.props.source ?? '').includes('https://example.test/old.png'))).toHaveLength(0);
     await act(async () => root.render(<ChosenMediaPreview api={mockApi} choice={{ kind: 'upload', uploadId: 'u', mediaType: 'image' }} />));
     expect(textOf(root.container)).toContain(t('publishParity.media.upload'));
+});
+
+test('P6 Compose preselects a job beyond the first page and submits its id without selecting a tile', async () => {
+    mockParams = { jobId: 'older-job' }; mockState.planTier = 'free';
+    mockGetJob.mockResolvedValue({ state: 'succeeded', model_id: 'video', credits: 2 });
+    await start();
+    expect(mockGetJob).toHaveBeenCalledWith('older-job');
+    expect(mockAsset).toHaveBeenCalledWith('older-job');
+    await starts('Studio a'); await input(root, t('publish.caption'), 'Older creation');
+    const body = await sendNow();
+    expect(body.media).toEqual([{ jobId: 'older-job', mediaType: 'video' }]);
 });

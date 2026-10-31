@@ -6,9 +6,8 @@ import { useState } from 'react';
 import { MobileTabs } from '../_MobileNav';
 import { PresetCard } from '../../_components/PresetCard';
 import { TemplateRoller } from '../../_components/TemplateRoller';
-import { PRESET_CATEGORIES, templatesIn } from '../../_lib/tokens';
+import { cardsIn, useTemplateCards } from '../../_lib/useTemplates';
 import { useCatalog } from '../../_lib/useCatalog';
-import { hasTemplateVideo } from '../../_lib/templates.js';
 
 const TEMPLATE_BATCH_SIZE = 50;
 
@@ -17,7 +16,8 @@ export default function MobileExplore() {
   const [cat, setCat] = useState('ALL');
   const [visibleCount, setVisibleCount] = useState(TEMPLATE_BATCH_SIZE);
   const { models } = useCatalog();
-  const list = templatesIn(cat).filter(hasTemplateVideo);
+  const { templates: cards, categories } = useTemplateCards();
+  const list = cardsIn(cards, cat);
   const rollerPresets = list.filter((preset) => preset.clipKey).slice(0, 48);
 
   return (
@@ -29,7 +29,7 @@ export default function MobileExplore() {
         </div>
 
         <div className="flex gap-1.5 overflow-x-auto pb-2 -mx-1 px-1 mb-3">
-          {PRESET_CATEGORIES.map((c) => (
+          {categories.map((c) => (
             <button
               key={c}
               onClick={() => { setCat(c); setVisibleCount(TEMPLATE_BATCH_SIZE); }}

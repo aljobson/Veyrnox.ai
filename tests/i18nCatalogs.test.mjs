@@ -7,7 +7,8 @@ import { GUIDES } from '../app/veyrnox/_lib/guides.js';
 import { modelFacts } from '../app/veyrnox/_lib/modelPages.js';
 import { ODDLING_ARCHETYPES, ODDLING_SHOWS, ODDLING_TONES } from '../app/veyrnox/_lib/character.js';
 import { listPublicOddlings, localizeOddling } from '../app/veyrnox/_lib/oddlingsPublic.js';
-import { CATALOGS, messagesFor, translator, richParts } from '../lib/i18n/translate.mjs';
+import { translator, richParts } from '../lib/i18n/translate.mjs';
+import { CATALOGS, messagesFor } from '../lib/i18n/catalogs.mjs';
 import {
   LOCALES, LOCALIZED_PATHS, localesEnabled, splitLocalePath, isLocalizedPath, localizedHref, languageAlternates, localeInfo, switchLanguageHref,
 } from '../lib/i18n/locales.mjs';
@@ -18,6 +19,23 @@ test('every language has a catalog that matches English key for key', () => {
   for (const l of LOCALES) {
     assert.ok(CATALOGS[l.code], `${l.code} has a catalog`);
     assert.deepEqual(checkCatalog(en, CATALOGS[l.code], l.code), []);
+  }
+});
+
+test('the client bundle carries English only; every other language loads per request', async () => {
+  const translate = readFileSync(new URL('../lib/i18n/translate.mjs', import.meta.url), 'utf8');
+  assert.deepEqual([...translate.matchAll(/from '\.\/messages\/([^']+)'/g)].map((m) => m[1]), ['en.mjs', 'presets/en/needs.mjs', 'presets/en/steps.mjs']);
+  const { execFileSync } = await import('node:child_process');
+  const importers = execFileSync('grep', ['-rlE', "(from|import\\() *'[^']*(i18n/catalogs\\.mjs|i18n/messages/(es|zh|hi|ar|fr|pt|ru|ja|de|ko)\\.mjs|messages/presets/(es|zh|hi|ar|fr|pt|ru|ja|de|ko)/)", 'app', 'components', 'lib', '--include=*.js', '--include=*.jsx', '--include=*.mjs'], { encoding: 'utf8' }).trim().split('\n').sort();
+  assert.deepEqual(importers, ['lib/i18n/catalogs.mjs', 'lib/i18n/publicMessages.mjs'], 'only the tooling catalog and the per-request loader name another language');
+  const { publicCatalogFor, publicMessagesFor } = await import('../lib/i18n/publicMessages.mjs');
+  assert.equal(await publicCatalogFor('en'), null, 'an English reader gets no messages prop');
+  assert.equal(await publicCatalogFor('xx'), null);
+  for (const l of LOCALES.filter((x) => x.code !== 'en')) {
+    const own = await publicCatalogFor(l.code);
+    assert.deepEqual(own, CATALOGS[l.code], l.code);
+    assert.deepEqual(await publicMessagesFor(l.code), messagesFor(l.code), l.code);
+    assert.ok(own['presets.needs.reference.video-two-pictures'], `${l.code} carries its preset copy`);
   }
 });
 
@@ -68,7 +86,7 @@ test('alternates name every language and x-default', () => {
 });
 
 test('translator falls back to English, then to the key', () => {
-  const t = translator('es');
+  const t = translator('es', messagesFor('es'));
   assert.equal(t('nope.key'), 'nope.key');
   assert.equal(t.label('Not a listed label'), 'Not a listed label');
   assert.equal(translator('en')('home.cards.looks', { n: 3 }), '3 looks');
@@ -157,7 +175,7 @@ test('model detail pages take a prefix and their fact labels follow the language
     capabilities: { inputs: { prompt: { type: 'string' }, aspect_ratio: { type: 'enum', values: ['16:9', '9:16'] } }, media: { image: { required: true } } },
   };
   const english = modelFacts(model);
-  const german = modelFacts(model, translator('de'));
+  const german = modelFacts(model, translator('de', messagesFor('de')));
   assert.equal(english[0].label, 'Mode');
   assert.equal(german.length, english.length);
   assert.notEqual(german[0].label, english[0].label, 'Mode label is translated');
@@ -183,7 +201,7 @@ test('every Oddling has catalog words equal to the cast data, and localizing kee
   const english = localizeOddling(first);
   assert.equal(english.hook, first.hook, 'English output is unchanged');
   assert.equal(english.portrait.alt, first.portrait.alt);
-  const japanese = localizeOddling(first, translator('ja'));
+  const japanese = localizeOddling(first, translator('ja', messagesFor('ja')));
   assert.equal(japanese.name, first.name, 'names stay as they are');
   assert.equal(japanese.id, first.id);
   assert.notEqual(japanese.hook, first.hook, 'the hook is translated');

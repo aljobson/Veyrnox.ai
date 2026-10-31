@@ -411,7 +411,11 @@ export async function POST(req) {
         if (debit && debit.free) credits = 0;
     }
     try {
-        if (!debit) debit = await rpc('ledger_debit', {
+        // The video agent debits through a guarded RPC that holds the
+        // "one run in the making per account" rule atomically with the insert
+        // (F-04): checkCapacity above is only responsive feedback now. Every
+        // other model keeps the plain debit.
+        if (!debit) debit = await rpc(record.agent ? 'ledger_debit_video_agent' : 'ledger_debit', {
             p_user_id: userId,
             p_idempotency_key: idempotencyKey,
             p_credits: credits,
@@ -449,7 +453,8 @@ export async function POST(req) {
         status: spendLimit.status, headers: { 'retry-after': String(spendLimit.retryAfter) },
     });
     if (!debit || debit.ok === false) {
-        const status = debit?.code === 'IDEMPOTENCY_CONFLICT' ? 409 : debit && debit.code === 'INSUFFICIENT_BALANCE' ? 402
+        const status = debit?.code === 'IDEMPOTENCY_CONFLICT' || debit?.code === 'VIDEO_AGENT_IN_PROGRESS' ? 409
+            : debit && debit.code === 'INSUFFICIENT_BALANCE' ? 402
             : debit && (debit.code === 'ACCOUNT_FROZEN' || debit.code === 'ACCOUNT_ON_HOLD') ? 403 : 400;
         // Don't leak DB/RPC messages to the client — log server-side only.
         if (debit && debit.message) console.error('[generations] debit rejected:', debit.code, debit.message);

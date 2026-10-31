@@ -44,7 +44,7 @@ export function createUploadStore(storage: CacheStorage = appStorage, now = Date
     let epoch: Ticket = { owner: null, n: 0 };
     let initialized = false;
     let pending: Promise<unknown> = Promise.resolve();
-    let runner: { ticket: Ticket; contentId: string } | null = null;
+    let runner: { ticket: Ticket; contentId: string; parent?: string } | null = null;
     const preparing = new Set<string>();
     const listeners = new Set<() => void>();
     const ticket = () => ({ ...epoch });
@@ -114,9 +114,9 @@ export function createUploadStore(storage: CacheStorage = appStorage, now = Date
             await reconcileStaged(t);
         });
     }
-    function acquire(t: Ticket, contentId: string): (() => void) | null {
+    function acquire(t: Ticket, contentId: string, parent?: string): (() => void) | null {
         if (!live(t) || runner) return null;
-        const lease = { ticket: t, contentId }; runner = lease; listeners.forEach(fn => fn());
+        const lease = { ticket: t, contentId, ...(parent && UUID.test(parent) ? { parent } : {}) }; runner = lease; listeners.forEach(fn => fn());
         return () => { if (runner === lease) { runner = null; listeners.forEach(fn => fn()); } };
     }
     async function pick(t: Ticket, contentId: string, previous?: UploadRecord | null): Promise<UploadRecord | null> {
@@ -185,6 +185,7 @@ export function createUploadStore(storage: CacheStorage = appStorage, now = Date
     return { ticket, live, setOwner, save, clear, read: raw, reconcileStaged, pick, verify, acquire,
         preparing, file: (t: Ticket, record: UploadRecord) => { check(t); return new File(directory(t, record.contentId), record.staged); },
         running: () => runner?.contentId ?? null,
+        runningHref: () => runner ? { pathname: '/cinema/creator/[id]' as const, params: { id: runner.contentId, ...(runner.parent ? { parent: runner.parent } : {}) } } : null,
         subscribe: (fn: () => void) => { listeners.add(fn); return () => { listeners.delete(fn); }; },
     };
 }

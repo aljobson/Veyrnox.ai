@@ -33,6 +33,10 @@ Seven `publish_*` tools register only while `PUBLISH_AUTOMATION_ENABLED` is on; 
 
 `generate_video.source_assets` preserves order and accepts repeated `{slot, asset_id}` entries up to the selected model's `capabilities.media[slot].maxFiles`. The schema's overall bound is nine, with at most three per media kind; the runtime enforces the smaller effective model limit. `MULTI_REFERENCE_ENABLED=false` limits each slot to one. The tool sends unified ordered Library reference descriptors to the generation route. Reordered or replaced references under an existing idempotency key return `idempotency_conflict`; exact retries replay. Existing consent and price approval requirements still apply. See [ADR-0263](../adr/0263-generation-reference-limits.md).
 
+## Uploaded sources (ADR-0100 amendment 6)
+
+`reserve_source_upload` returns a presigned PUT from `POST /api/v1/uploads` for the signed-in account; nothing is charged. Acceptance, with a disposable client: ask for a PNG reservation, PUT the file bytes to `upload_url` with exactly the returned headers (a wrong `Content-Type` or a longer body is refused by R2), then call `generate_video` with an image-to-video model, `source_uploads: [{ key, slot: "image" }]`, `consent: true` and the confirmed price; the job must reach `succeeded` and the result must come from that still. The same key with `generate_image` and `topaz-upscale` must be accepted; `generate_image` with that model and no `source_uploads` must answer `mcp_image_only`. A key for another account's path must answer `source_not_found` from the route, never a file. An unused reservation disappears within 24 hours (`sweepUploadReservations`).
+
 ## Monitoring
 
 - Watch 401, 409, 429 and 5xx rates on `/api/v1/mcp` separately from tool-level errors.

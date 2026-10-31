@@ -32,7 +32,6 @@ export function PresetCard({ preset, price, onOpen }: { preset: Preset; price: s
                     <Text variant="caption" style={styles.presetModel} numberOfLines={1}>
                         {preset.modelName}
                     </Text>
-                    {preset.sourceModel ? <Text variant="micro" style={styles.presetSource} numberOfLines={1}>{preset.sourcePlatform} · {preset.sourceModel}</Text> : null}
                     <Text variant="caption" style={styles.presetPrice}>
                         {price}
                     </Text>
@@ -65,6 +64,5 @@ const sheets = themedStyles((p) => ({
     presetCopy: { minHeight: 96, padding: 11, gap: 3 },
     presetTitle: { color: p.textPrimary },
     presetModel: { color: p.textTertiary },
-    presetSource: { color: p.textTertiary },
     presetPrice: { color: p.warning, marginTop: 'auto' },
 }));
