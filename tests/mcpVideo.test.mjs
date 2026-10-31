@@ -112,3 +112,26 @@ test('route refusals for an edit (not owned, not a video, too long) pass through
     assert.deepEqual([result.status, result.body.error], [status, error]);
   }
 });
+
+const UPLOAD = `uploads/${'11111111-1111-4111-8111-111111111111'}/${'22222222-2222-4222-8222-222222222222'}.png`;
+
+test('an uploaded still goes to the generation route as an upload reference, before any Library asset, with consent (ADR-0100 amendment 6)', async () => {
+  const model = { ...VIDEO, capabilities: { media: { image: { maxFiles: 1 }, endImage: { maxFiles: 1 } } } };
+  const { result, calls } = await video({ ...ARGS, consent: true, source_assets: [{ asset_id: ASSET, slot: 'endImage' }], source_uploads: [{ key: UPLOAD, slot: 'image', url: 'https://evil.example/x.png' }] }, { model });
+  assert.equal(result.ok, true);
+  assert.deepEqual(calls.create[0].references, [{ key: UPLOAD, slot: 'image', origin: 'upload' }, { asset_id: ASSET, slot: 'endImage', origin: 'asset' }]);
+  assert.equal(calls.create[0].consent, true);
+});
+
+test('an upload needs consent, a key this connector could have reserved and a slot of the file\'s kind, and counts against the slot cap', async () => {
+  const cases = [
+    [{ source_uploads: [{ key: UPLOAD, slot: 'image' }] }, 'consent_required'],
+    [{ consent: true, source_uploads: [{ key: 'uploads/11111111-1111-4111-8111-111111111111/not-a-uuid.png', slot: 'image' }] }, 'source_upload_invalid'],
+    [{ consent: true, source_uploads: [{ key: UPLOAD, slot: 'video' }] }, 'source_upload_kind_mismatch'],
+    [{ consent: true, source_uploads: [{ key: UPLOAD, slot: 'image' }], source_assets: [{ asset_id: ASSET, slot: 'image' }] }, 'source_count_exceeded'],
+  ];
+  for (const [extra, error] of cases) {
+    const { result, calls } = await video({ ...ARGS, ...extra });
+    assert.deepEqual([result.status, result.body.error, calls.create.length], [400, error, 0], error);
+  }
+});
