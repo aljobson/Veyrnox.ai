@@ -30,7 +30,7 @@ export const CREATIVE_FEATURE_EXAMPLES = Object.freeze({
 
 export function creativeFeatureExample(slug) {
   const example = CREATIVE_FEATURE_EXAMPLES[slug];
-  return example ? { ...example, sourceUrl: `https://lipsync.video/${slug === 'lip-sync' ? '' : slug}` } : null;
+  return example ? { ...example } : null;
 }
 
 export function creativeFeatureExampleAssetPath(slug) {
