@@ -1,0 +1,127 @@
+name: detection-watch
+
+# The security-detection engine's own alarm (ADR-0310).
+#
+# run_security_detection() (0336/0342) upserts alerts on a 5-minute in-DB
+# pg_cron schedule and records a heartbeat each time it completes (0416).
+# Nothing in the Worker watches that schedule: if pg_cron stops or the job
+# errors, detection goes silent and the silence is invisible — the same
+# failure reconcile-watch.yml cures for the ledger. And a high/critical alert
+# only lands in a table an admin must remember to open.
+#
+# Every quarter-hour this reads security_detection_status() and (a) opens an
+# issue if no detection run is recorded in ~15 minutes, and (b) opens an issue
+# if any high/critical alert is open and unacknowledged. One issue per episode,
+# the same shape as reconcile-watch / supabase-status-alert.
+#
+# Unlike reconcile-watch, the status read is NOT anon-callable — the detection
+# tables never expose to anon/authenticated (CLAUDE.md, ADR-0104) — so this
+# authenticates with the project SERVICE-ROLE key. Point the SUPABASE_URL and
+# SUPABASE_SERVICE_ROLE_KEY secrets at the production project to watch prod.
+
+on:
+  schedule:
+    # Off-peak minutes so a loaded hour is unlikely to drop every sample. Do
+    # not add a cancel-in-progress concurrency group: every sample matters.
+    - cron: '4,19,34,49 * * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/check-detection.mjs"
+      - ".github/workflows/detection-watch.yml"
+
+# Nothing by default. Each job asks for exactly what it uses.
+permissions: {}
+
+jobs:
+  detection:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      exit: ${{ steps.check.outputs.exit }}
+      report: ${{ steps.check.outputs.report }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+
+      # Node builtins and global fetch only, so no npm install.
+      # Exit 0 = healthy, 1 = needs attention, 2 = could not read.
+      - name: Read the detection status
+        id: check
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set +e
+          printf 'detection_observed_at=%s\n' "$(date -u +'%Y-%m-%dT%H:%M:%S.%NZ')" > report.txt
+          node scripts/check-detection.mjs >> report.txt 2>&1
+          code=$?
+          cat report.txt
+          echo "exit=$code" >> "$GITHUB_OUTPUT"
+          {
+            echo 'report<<DETECTION_REPORT_EOF'
+            cat report.txt
+            echo 'DETECTION_REPORT_EOF'
+          } >> "$GITHUB_OUTPUT"
+          {
+            echo '### Security detection liveness'
+            case "$code" in
+              0) echo 'The detection engine is alive and no high-severity alert is open.' ;;
+              1) echo '**Needs attention:** the engine is silent and/or a high/critical alert is open.' ;;
+              *) echo '**Could not check:** security_detection_status was unreadable. This is not a pass.' ;;
+            esac
+            echo '```'
+            cat report.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$code"
+
+      # Keep the timestamped status report independently of the rendered log.
+      # At four tiny reports per hour, 90 days remains only a few MB.
+      - name: Retain detection status evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: detection-status-${{ github.run_id }}-${{ github.run_attempt }}
+          path: report.txt
+          if-no-files-found: error
+          retention-days: 90
+
+  # Only a real "needs attention" (exit 1) files an issue. An outage (exit 2)
+  # already fails the run above and must not file a false silent-engine report.
+  # Scoped to its own job so issues: write exists only here, only on main.
+  report-attention:
+    needs: detection
+    if: always() && needs.detection.outputs.exit == '1' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Open one issue per episode
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          REPORT: ${{ needs.detection.outputs.report }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          # One open issue is enough; the quarter-hourly job summary shows current state.
+          existing=$(gh issue list --label security-detection --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            echo "Already tracked in #$existing"
+            exit 0
+          fi
+          gh label create security-detection --color B60205 \
+            --description 'detection engine silent or a high-severity alert is open' 2>/dev/null || true
+          printf '%s\n\n%s\n\n```\n%s\n```\n\n%s\n' \
+            'The security-detection engine needs attention. Either run_security_detection() has not recorded a heartbeat recently (pg_cron may be stopped on the Supabase project) or a high/critical alert is open and unacknowledged.' \
+            'Open /app/admin/security to triage alerts. If the engine is silent, check the veyrnox-security-detection pg_cron job and that migration 0416 is applied. This issue stays open until someone closes it; the quarter-hourly workflow summary shows the current state.' \
+            "$REPORT" \
+            "Run: $RUN_URL" > body.md
+          gh issue create --title "Security detection needs attention — $(date -u +%Y-%m-%dT%H:%MZ)" \
+            --label security-detection --body-file body.md
