@@ -1,4 +1,4 @@
--- ADR-0304: read-only, Library-aligned achievements. No balances or ledger writes.
+-- ADR-0305: read-only, Library-aligned achievements. No balances or ledger writes.
 CREATE OR REPLACE FUNCTION public.read_your_wins(p_auth_id text)
 RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = '' AS $$
 DECLARE
