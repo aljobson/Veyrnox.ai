@@ -9,6 +9,7 @@ import {
 } from './sourceTemplateExpansion12.js';
 import { SEEDANCE_SOURCE_TEMPLATE_EXPANSION } from './sourceTemplateExpansion13.js';
 import { SEEDANCE_200_TEMPLATE_METADATA } from './seedanceTemplateMetadata.js';
+import { SEEDANCE_REFERENCE_CREDITS, SEEDANCE_REFERENCE_MODEL, takesReferenceModel } from './seedanceReference.js';
 import { sourcePromptAuditForModel } from './sourcePromptAudit.js';
 import { fallbackCapabilitiesFor } from '../../../lib/fallbackModelCapabilities.js';
 
@@ -389,7 +390,7 @@ const AUDIT_SOURCE_TEMPLATES = [
 ];
 
 const REPLACED_HIGGSFIELD_TEMPLATE_ID_SET = new Set(REPLACED_HIGGSFIELD_TEMPLATE_IDS);
-const RUNNABLE_MODEL_IDS = Object.freeze({ 'Seedance 2.0 Fast': 'seedance-2.0-fast', 'Kling 3.0 · I2V': 'kling-3.0-i2v' });
+const RUNNABLE_MODEL_IDS = Object.freeze({ 'Seedance 2.0 Fast': 'seedance-2.0-fast', 'Kling 3.0 · I2V': 'kling-3.0-i2v', [SEEDANCE_REFERENCE_MODEL]: 'seedance-2.0-reference' });
 
 // Keep the old promptless Higgsfield recipes in the audit expansion files, but
 // replace their public catalog positions one-for-one with same-record pairs
@@ -410,10 +411,11 @@ export const SOURCE_TEMPLATES = [
       ? 'Copy the exact prompt; it exceeds the assigned model’s verified prompt limit'
       : 'Copy the exact prompt; its required reference media or preserved audio is not wired into generation'
     : null;
+  const reference = takesReferenceModel(source);
   return {
     ...template,
-    model: source.runnableModel,
-    credits: source.runnableModel === 'Kling 3.0 · I2V' ? 32 : 19,
+    model: reference ? SEEDANCE_REFERENCE_MODEL : source.runnableModel,
+    credits: reference ? SEEDANCE_REFERENCE_CREDITS : source.runnableModel === 'Kling 3.0 · I2V' ? 32 : 19,
     durationSeconds: source.runnableModel === 'Kling 3.0 · I2V' ? 10 : 5,
     ...(source.runnableModel === 'Kling 3.0 · I2V'
       && !/\b(?:uploaded|supplied)\b/i.test(template.prompt)
@@ -427,6 +429,7 @@ export const SOURCE_TEMPLATES = [
     sourcePromptRunnable: template.promptOrigin === 'veyrnox-adaptation' ? false : audit.runnable,
     sourcePromptIssues: [...audit.issues],
     sourcePromptModelPromptMax: audit.modelPromptMax ?? null,
+    ...(reference ? { needs: 'Reference pictures of the people, outfits and places (up to 9)', needsKey: 'community.referencePictures' } : {}),
     ...(blockedNeeds ? { needs: blockedNeeds, needsKey: modelLimitOnly ? 'community.modelLimitCopyOnly' : 'community.copyOnly' } : {}),
   };
 });
