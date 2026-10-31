@@ -3030,6 +3030,24 @@
     "ratio": 4.75
   },
   {
+    "id": "wins.all",
+    "english": "All time",
+    "translation": "Todo el tiempo",
+    "ratio": 1.75
+  },
+  {
+    "id": "wins.views",
+    "english": "Views",
+    "translation": "Visualizaciones",
+    "ratio": 3
+  },
+  {
+    "id": "wins.checked",
+    "english": "Checked in",
+    "translation": "Registro realizado",
+    "ratio": 1.8
+  },
+  {
     "id": "job.holdToDelete",
     "english": "Hold to delete",
     "translation": "Mantén pulsado para eliminar",

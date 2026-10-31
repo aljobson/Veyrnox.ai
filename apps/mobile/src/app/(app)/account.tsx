@@ -1,3 +1,4 @@
+import { YourWinsCard } from '../../components/wins/YourWinsCard';
 import { rawText } from '../../lib/i18n/translate';
 import { isAccountChanged } from '../../auth/sessionTask';
 import { isAnalyticsEnabled } from '../../lib/analytics/consent';
@@ -179,6 +180,7 @@ export default function Account() {
             ) : null}
 
             <Section title={t('account.creditsSection')}>
+                <YourWinsCard linkOnly />
                 <Link href="/history" asChild>
                     <Row icon="bookmark" label={t('account.history')} />
                 </Link>

@@ -179,5 +179,6 @@
   "projectDocument.counter": "Numeric counter pattern; only the localized numbers change.",
   "projectDocument.versionTitle": "Version is the standard word in this language for a saved revision.",
   "vey.touch.label": "Vey is the mascot’s proper name and stays unchanged across languages.",
+  "wins.videoType": "Established de term or conventional duration notation, identical to English.",
   "credits.receipt.credits": "Established German term or label: Credits."
 }

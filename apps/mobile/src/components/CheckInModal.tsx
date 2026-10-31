@@ -2,7 +2,7 @@ import { rawText } from '../lib/i18n/translate';
 import { isCheckinStatus } from '../lib/responseShapes';
 import { Text as StatusText } from './ui/Text';
 import { useFirstRunPending } from '../lib/firstRunPending';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { AppState, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../auth/AuthProvider';
 import { appStorage, getCacheUser, subscribeCacheUser } from '../lib/appCache';
@@ -12,6 +12,7 @@ import { checkinStatusReader } from '../lib/checkinStatus';
 import { ApiError, type ApiClient } from '../lib/api';
 import { touchTarget } from '../lib/a11y';
 import { plural, t } from '../lib/i18n';
+import { holdCheckinDialog } from '../lib/checkinVisibility';
 import { colors } from '../theme';
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -79,6 +80,9 @@ function CheckInForUser({ owner, api }: { owner: string; api: ApiClient }) {
         }
         finally { setBusy(false); }
     }
+    useLayoutEffect(() => {
+        if (open && isCheckinStatus(status)) return holdCheckinDialog();
+    }, [open, status]);
     if (!isCheckinStatus(status)) return null;
     const day = status.claimed_today ? Math.min(status.streak, 6) : status.next_day;
     return <Modal visible={open} transparent animationType="fade" onRequestClose={close} accessibilityViewIsModal>
