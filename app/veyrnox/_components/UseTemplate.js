@@ -11,6 +11,7 @@ import { writeStudioDraft } from '../_lib/landingDraft';
 import { TEMPLATE_PROMPT_MAX } from '../_lib/templateDraft';
 import { modelAspectRatios, modelIdForName, presetCredits, presetHref } from '../_lib/tokens';
 import { CHAT_USER_TEXT_MAX } from '../../../lib/chatLimits.js';
+import { Spinner } from './Spinner';
 
 // The aspect the studio will actually use: the template's, when its model
 // takes it (same rule as app/create), otherwise none is shown or sent.
@@ -27,11 +28,14 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked 
   const modelId = modelIdForName(preset.model);
   const model = models.find((m) => m.id === modelId) || null;
   const aspect = usableAspect(preset, model);
-  const durationOptions = model?.durations?.filter((seconds) => [5, 10].includes(seconds)) || [5, 10];
-  const [durationSeconds, setDurationSeconds] = useState(preset.durationSeconds || 10);
+  const isVideo = model ? model.kind === 'video' : Boolean(preset.durationSeconds);
+  const durationOptions = model?.durations?.length ? model.durations : [5, 10];
+  const [pickedSeconds, setDurationSeconds] = useState(preset.durationSeconds || 5);
+  const durationSeconds = isVideo ? (durationOptions.includes(pickedSeconds) ? pickedSeconds : durationOptions[0]) : undefined;
   const [targetSeconds, setTargetSeconds] = useState(60);
   const credits = presetCredits(preset, models, durationSeconds);
   const [handoffError, setHandoffError] = useState('');
+  const [opening, setOpening] = useState(false);
   const promptBlocked = !prompt.trim() || prompt.length > TEMPLATE_PROMPT_MAX;
   const generationDisabled = generationBlocked || promptBlocked;
   const chatBlocked = !prompt.trim() || prompt.length > CHAT_USER_TEXT_MAX;
@@ -43,6 +47,7 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked 
       try { saved = writeStudioDraft(window.sessionStorage, { prompt, model: modelId, aspect, durationSeconds, negativePrompt: preset.negativePrompt, templateId: preset.id }); } catch { /* The unedited URL recipe still works. */ }
       if (!saved && (prompt !== preset.prompt || preset.sourcePromptOrigin === 'community-source-exact')) { setHandoffError('studio'); return; }
     }
+    setOpening(true);
     router.push(presetHref(preset, durationSeconds));
   }
 
@@ -73,16 +78,19 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked 
       <dl className="grid grid-cols-2 gap-3 text-[14px]">
         <div><dt className="text-vx-fg-muted">{t("presets.use.cost")}</dt><dd className="font-vx-mono vx-num text-[22px] font-bold text-vx-money">{credits} cr</dd></div>
         {aspect && <div><dt className="text-vx-fg-muted">{t("presets.use.aspect")}</dt><dd className="font-vx-mono text-[22px] font-bold">{aspect}</dd></div>}
-        {preset.durationSeconds && <div><dt className="text-vx-fg-muted">{t("presets.use.clip")}</dt><dd><select aria-label={t("presets.use.clipLength")} value={durationSeconds} onChange={(event) => setDurationSeconds(Number(event.target.value))} className="mt-1 rounded-lg border border-vx-border bg-vx-panel px-3 py-2 font-vx-mono text-[16px] font-bold">{durationOptions.map((seconds) => <option key={seconds} value={seconds}>{t('presets.use.seconds', { count: seconds })}</option>)}</select></dd></div>}
+        {isVideo && <div><dt className="text-vx-fg-muted">{t("presets.use.clip")}</dt><dd><select aria-label={t("presets.use.clipLength")} value={durationSeconds} onChange={(event) => setDurationSeconds(Number(event.target.value))} className="mt-1 rounded-lg border border-vx-border bg-vx-panel px-3 py-2 font-vx-mono text-[16px] font-bold">{durationOptions.map((seconds) => <option key={seconds} value={seconds}>{t('presets.use.lengthCost', { length: t('presets.use.seconds', { count: seconds }), credits: presetCredits(preset, models, seconds) })}</option>)}</select></dd></div>}
       </dl>
       <button
         type="button"
         onClick={use}
-        disabled={generationDisabled}
-        className="vx-press mt-6 inline-flex items-center gap-4 rounded-full bg-vx-accent px-6 py-3.5 font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover disabled:opacity-50"
+        disabled={generationDisabled || opening}
+        aria-busy={opening || undefined}
+        className={`vx-press mt-6 inline-flex items-center gap-4 rounded-full bg-vx-accent px-6 py-3.5 font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover ${opening ? 'cursor-wait' : 'disabled:opacity-50'}`}
       >
         <span>{preset.inspired ? t("presets.use.similar") : t("presets.use.template")}</span>
-        <span className="font-vx-mono vx-num text-[15px] font-bold">{credits} cr</span>
+        {opening
+          ? <span className="grid w-[3.5ch] place-items-center"><Spinner size={18} /></span>
+          : <span className="font-vx-mono vx-num text-[15px] font-bold">{credits} cr</span>}
       </button>
       <div className="mt-6 rounded-xl border border-vx-border bg-vx-panel/40 p-4">
         <p className="font-bold">{t("presets.use.longer")}</p>

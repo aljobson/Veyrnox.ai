@@ -134,7 +134,7 @@ export default function EditorHome() {
                                 <Text style={styles.error}>{problem}</Text>
                                 <Text variant="bodyStrong" style={styles.retry}>{t('editor.home.retry')}</Text>
                             </Button>
-                        ) : projects === null ? <View style={styles.loading}><VeyLoader /></View> : null}
+                        ) : projects === null ? <View style={styles.loading}><VeyLoader label={t('editor.home.loading')} showLabel /></View> : null}
                     </View>
                 }
                 ListEmptyComponent={projects !== null && !problem ? (

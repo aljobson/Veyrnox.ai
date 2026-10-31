@@ -39,10 +39,9 @@ describe('grouped menu', () => {
         expect(new Set(hrefs).size).toBe(hrefs.length);
     });
 
-    test('Quick edit is directly available from Tools', () => {
-        expect(MENU_SECTIONS.find((section) => section.id === 'tools')?.items).toContainEqual(
-            expect.objectContaining({ key: 'quickEdit', href: '/edit' }),
-        );
+    test('Quick edit is retired from Tools', () => {
+        const tools = MENU_SECTIONS.find((s) => s.id === 'tools')!.items;
+        expect(tools.some((i) => i.href === '/edit')).toBe(false);
     });
 
     test('the full Editor is directly available from the left Tools navigation', () => {

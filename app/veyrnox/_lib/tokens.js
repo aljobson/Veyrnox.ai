@@ -43,6 +43,13 @@ export const MODELS = [
 // 10s video = exactly 2x credits. Non-negotiable.
 export const COST_MULTIPLIER_10S = 2;
 
+// Same rule the server debits by (app/api/v1/generations): one catalog
+// unit per started 5 seconds, so 5s = 1x, 10s = 2x, 15s = 3x.
+export const VIDEO_UNIT_SECONDS = 5;
+export function clipCredits(unitCredits, seconds) {
+  return unitCredits * Math.ceil((Number(seconds) || VIDEO_UNIT_SECONDS) / VIDEO_UNIT_SECONDS);
+}
+
 /**
  * Collapse a `model_catalog.modality` to the coarse bucket the UI branches
  * on. The catalog is fine-grained ('text-to-video', 'image-to-video',
@@ -117,7 +124,7 @@ export function presetHref(preset, durationSeconds = preset.durationSeconds) {
   }
   const modelId = modelIdForName(preset.model);
   return modelId
-    ? `/app/create?model=${encodeURIComponent(modelId)}&preset=${encodeURIComponent(preset.id)}${durationSeconds === 10 ? '&duration=10s' : ''}`
+    ? `/app/create?model=${encodeURIComponent(modelId)}&preset=${encodeURIComponent(preset.id)}${durationSeconds && durationSeconds !== VIDEO_UNIT_SECONDS ? `&duration=${durationSeconds}s` : ''}`
     : `/app/create?preset=${encodeURIComponent(preset.id)}`;
 }
 
@@ -132,7 +139,7 @@ export function presetCredits(preset, catalog, durationSeconds = preset.duration
   const id = modelIdForName(preset.model);
   const row = id && Array.isArray(catalog) ? catalog.find((m) => m.id === id) : null;
   const unit = row && typeof row.credits === 'number' ? row.credits : preset.credits;
-  return unit * (durationSeconds === 10 ? COST_MULTIPLIER_10S : 1);
+  return durationSeconds ? clipCredits(unit, durationSeconds) : unit;
 }
 
 export const ASPECT_RATIOS = ['16:9', '9:16', '1:1', '4:5', '21:9'];

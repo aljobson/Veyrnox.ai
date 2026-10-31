@@ -421,7 +421,7 @@ export default function CreateWithModel() {
                         {isVideo && model.durations.length > 1 ? (
                             <View style={styles.chips}>
                                 {model.durations.map((d) => (
-                                    <Chip key={d} label={t('create.s', { value1: d })} accessibilityRole="button" accessibilityLabel={rawText(plural('form.seconds', d))} accessibilityState={selectedState(duration === d)} selected={duration === d} onPress={() => setDuration(d)} />
+                                    <Chip key={d} label={t('create.lengthCost', { value1: d, credits: String(estimateCredits(model, d)) })} accessibilityRole="button" accessibilityLabel={`${rawText(plural('form.seconds', d))}, ${t('create.workspace.cost', { credits: String(estimateCredits(model, d)) })}`} accessibilityState={selectedState(duration === d)} selected={duration === d} onPress={() => setDuration(d)} />
                                 ))}
                             </View>
                         ) : null}

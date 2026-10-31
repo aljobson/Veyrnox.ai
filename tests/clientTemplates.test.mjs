@@ -50,3 +50,12 @@ test('the routes are anonymous and cacheable and answer typed errors', async () 
     assert.equal(bad.status, 404);
     assert.match((await bad.json()).error, /^[a-z_]+$/);
 });
+
+test('the studio and its template cover never import the catalog: the browser reads /api/templates', async () => {
+    const { readFileSync } = await import('node:fs');
+    for (const file of ['app/veyrnox/app/create/page.js', 'app/veyrnox/_components/TemplateOpening.js', 'app/veyrnox/_lib/useTemplates.js', 'app/veyrnox/_lib/templateDraft.js', 'lib/templateStartCheck.js']) {
+        const source = readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
+        assert.doesNotMatch(source, /from '[^']*_lib\/templates(?:\.js)?'/, `${file} imports the template catalog`);
+        assert.doesNotMatch(source, /from '[^']*sourcePrompt(?:Audit|Records)(?:\.js)?'/, `${file} imports the source prompt data`);
+    }
+});

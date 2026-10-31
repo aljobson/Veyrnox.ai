@@ -45,7 +45,9 @@ export async function fetchTemplate(id) {
     const response = await fetch(`/api/templates/${encodeURIComponent(id)}`);
     if (!response.ok) return null;
     const body = await response.json();
-    return body && body.template && body.template.id === id ? body.template : null;
+    // The route resolves an id a template was published under before (app/veyrnox/_lib/templates.js templateById), so the
+    // answer's id can differ from the one asked for; it is still a template id.
+    return body && body.template && TEMPLATE_ID_RE.test(body.template.id) ? body.template : null;
   } catch {
     return null;
   }

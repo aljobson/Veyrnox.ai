@@ -140,10 +140,10 @@ The user's ask was to copy every Metricool feature. In practice:
   §1.5 and the technical spec, sourced from Metricool's own live API rules — not paraphrased from
   memory.
 - **Do not copy Metricool's brand, wordmark, or exact pixel-for-pixel screens.** The design system
-  is syntx.ai's, per the user's explicit request (see [03-design-style-guide.md](03-design-style-guide.md)).
+  is Veyrnox.ai's own (see [03-design-style-guide.md](03-design-style-guide.md)).
   Reproducing Metricool's own visual identity (their "metricool" wordmark, their candy-colored
   brand palette) would be copying a competitor's trade dress, not "the feature" — the spec below
-  treats Metricool strictly as a functional reference and syntx.ai as the aesthetic reference.
+  treats Metricool strictly as a functional reference.
 - **Do not copy Metricool's exact pricing numbers.** The pricing page requires login to see current
   tiers in full and was not reachable; inventing numbers here would misrepresent a competitor's
   actual pricing. §1.8 proposes an entitlement *shape* (gate by connected-profile count, matching

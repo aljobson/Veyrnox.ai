@@ -9,6 +9,7 @@ import { toPublicPresets } from '../lib/publicPresets.js';
 import { exactSourcePromptRecord } from '../app/veyrnox/_lib/sourcePromptRecords.js';
 import { sourcePromptAuditRecord } from '../app/veyrnox/_lib/sourcePromptAudit.js';
 import { SEEDANCE_200_TEMPLATE_METADATA } from '../app/veyrnox/_lib/seedanceTemplateMetadata.js';
+import { publicTemplateId } from '../app/veyrnox/_lib/templateIds.js';
 import { fitSeedanceTemplate, templateModelFitRule } from '../scripts/import-seedance-source-templates.mjs';
 import * as React from 'react';
 import { fixture as renderFixture } from './helpers/publicSiteRender.mjs';
@@ -101,11 +102,17 @@ test('all 202 affected templates follow R1–R4 and preserve exact source record
     const source = audit.records.find(record => record.id === id);
     if (source) {
       assert.equal(exactSourcePromptRecord(id).prompt, source.prompt, `${id}: immutable exact prompt`);
-      for (const field of ['sourcePlatform', 'sourceModel', 'sourceUrl']) assert.equal(preset[field], source[field], id);
+      // Provenance stays in the source metadata; the published template names no source platform.
+      for (const field of ['sourcePlatform', 'sourceModel', 'sourceUrl']) assert.equal(SEEDANCE_200_TEMPLATE_METADATA[id][field], source[field], id);
+      assert.equal(preset.sourceModel, source.sourceModel, id);
+      assert.equal(preset.sourcePlatform, undefined, id);
+      assert.equal(preset.sourceUrl, undefined, id);
+      assert.equal(preset.id, publicTemplateId(id), id);
+      assert.doesNotMatch(preset.id, /higgs|syntx/i, id);
       assert.equal(SEEDANCE_200_TEMPLATE_METADATA[id].runnableModel, preset.model, id);
     }
   }
-  assert.deepEqual(counts, { R1: 75, R2: 5, R3: 44, R4: 78 });
+  assert.deepEqual(counts, { R1: 71, R2: 5, R3: 44, R4: 82 });
 });
 
 test('optional-picture recipes have no upload dependency in prompts, needs or steps', () => {
@@ -134,8 +141,20 @@ test('generated text-only sources remain text-only five-second adaptations', () 
   }
 });
 
-test('multi-subject and fashion recipes request one combined starting image', () => {
-  for (const id of ['red-thread-story', 'meal-together', 'fashion-catch']) {
+test('hand-written recipes whose source used no reference image are text-only five-second adaptations', () => {
+  for (const id of ['tentacle-breakout', 'blood-moon-dance', 'red-thread-story', 'meal-together']) {
+    const preset = templateById(id);
+    assert.equal(preset.model, 'Seedance 2.0 Fast', id);
+    assert.equal(preset.durationSeconds, 5, id);
+    assert.equal(preset.needs, null, id);
+    assert.equal(preset.needsKey, null, id);
+    assert.match(preset.prompt, /^Create a five-second /, id);
+    assert.doesNotMatch([preset.prompt, ...preset.steps].join(' '), /upload|supplied|starting image|reference (?:image|photo)|ten-second|10\s*s\b/i, id);
+  }
+});
+
+test('the fashion recipe requests one combined starting image', () => {
+  for (const id of ['fashion-catch']) {
     const preset = templateById(id);
     assert.equal(preset.model, 'Kling 3.0 · I2V', id);
     assert.match(preset.needs, /^One starting image showing /, id);
@@ -144,7 +163,7 @@ test('multi-subject and fashion recipes request one combined starting image', ()
   assert.match(templateById('fashion-catch').needs, /model wearing the garment or accessory/);
 });
 
-test('web recipe runs its designated adaptation even when the exact prompt is runnable', () => {
+test('web recipe runs the exact community prompt whenever it is runnable, not a designated adaptation', () => {
   const template = templateById('seedance-higgs-868ea6d0');
   const row = toPublicPresets(catalog, [template])[0];
   assert.equal(row.sourcePromptRunnable, true, 'regression requires an independently runnable exact prompt');
@@ -155,8 +174,9 @@ test('web recipe runs its designated adaptation even when the exact prompt is ru
   } });
   const html = f.render(React.createElement(f.load('app/veyrnox/_components/TemplateRecipe.js').TemplateRecipe, { preset }));
   assert.ok(html.includes(row.sourcePrompt), 'exact source remains visible byte-for-byte');
-  assert.equal(handoff.prompt, template.prompt);
-  assert.equal(handoff.preset.prompt, template.prompt);
+  assert.ok(!html.includes('VEYRNOX GENERATION PROMPT'), 'one prompt only: the community one');
+  assert.equal(handoff.prompt, row.sourcePrompt);
+  assert.equal(handoff.preset.prompt, row.sourcePrompt);
   assert.equal(handoff.generationBlocked, false);
   assert.match(presetHref(handoff.preset), /model=seedance-2.0-fast/);
   assert.doesNotMatch(presetHref(handoff.preset), /duration=10s/);
@@ -172,7 +192,7 @@ test('phone parsing and handoff retain adaptations and hide copy-only recipes', 
   const rows = mobile.parsePresets({ presets: toPublicPresets(catalog) });
   assert.equal(rows.length, PRESETS.length);
   for (const id of changedIds) {
-    const row = rows.find(preset => preset.id === id);
+    const row = rows.find(preset => preset.id === publicTemplateId(id));
     const template = templateById(id);
     if (template.promptOrigin === 'community-source-exact') {
       assert.equal(mobile.isCopyOnlyPreset(row), true, id);

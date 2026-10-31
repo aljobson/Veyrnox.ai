@@ -116,5 +116,6 @@ test('the gallery labels every category, shows Popular only when something ranke
 
 test('the studio sends the template only while its own model is selected', () => {
     assert.match(create, /preset: templateStartIdFor\(presetParam, templateData, modelId\) \|\| undefined,/);
-    assert.match(create, /setPresetParam\(params\.get\('preset'\)\)/);
+    // The id sent is the template's own: an older published id resolves to it on the server.
+    assert.match(create, /setPresetParam\(preset\?\.id \?\? params\.get\('preset'\)\)/);
 });

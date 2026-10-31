@@ -15,9 +15,9 @@ test('the complete effect inventory is deduplicated into the public Veyrnox gall
 test('every effect concept is a runnable original Veyrnox recipe', () => {
   const themes = new Set(EFFECT_THEMES.map((theme) => theme.id));
   for (const preset of EFFECT_CONCEPT_TEMPLATES) {
-    assert.equal(templateById(preset.id), preset, preset.id);
+    assert.deepEqual(templateById(preset.id), preset, preset.id);
     assert.ok(themes.has(preset.theme), `${preset.id}: ${preset.theme}`);
-    assert.ok(!PRESETS.includes(preset), `${preset.id} has no preview and must not be listed`);
+    assert.ok(!PRESETS.some((listed) => listed.id === preset.id), `${preset.id} has no preview and must not be listed`);
     assert.equal(preset.model, 'Kling 3.0 · I2V');
     assert.equal(preset.durationSeconds, 10);
     assert.equal(preset.promptOrigin, 'veyrnox-adaptation');

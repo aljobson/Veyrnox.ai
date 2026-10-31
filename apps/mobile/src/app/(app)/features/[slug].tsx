@@ -1,7 +1,6 @@
 import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { english } from '../../../lib/i18n/binding';
-import { AddressText } from '../../../components/AddressText';
 import * as DocumentPicker from 'expo-document-picker';
 import { File } from 'expo-file-system';
 import { Image } from 'expo-image';
@@ -90,7 +89,7 @@ function FeatureStudio({ feature, reuse }: { feature: CreativeFeature; reuse: Cr
 }
 
 function Example({ feature }: { feature: CreativeFeature }) {
-    return <View style={styles.example}><View style={styles.exampleHead}><View><Text style={styles.kicker}>{t('features.wORKINGEXAMPLE')}</Text><Text style={styles.cardTitle}>{t('features.seetheintendedresult')}</Text></View><AddressText label={t('features.source')} address={feature.example.sourceUrl} /></View>{examplePlaysOn(feature.example, Platform.OS) ? <ExampleVideo url={feature.example.url} poster={feature.example.posterUrl} title={feature.title} /> : <ExampleStill uri={feature.example.kind === 'video' ? feature.example.posterUrl ?? feature.example.url : feature.example.url} title={feature.title} />}</View>;
+    return <View style={styles.example}><View style={styles.exampleHead}><View><Text style={styles.kicker}>{t('features.wORKINGEXAMPLE')}</Text><Text style={styles.cardTitle}>{t('features.seetheintendedresult')}</Text></View></View>{examplePlaysOn(feature.example, Platform.OS) ? <ExampleVideo url={feature.example.url} poster={feature.example.posterUrl} title={feature.title} /> : <ExampleStill uri={feature.example.kind === 'video' ? feature.example.posterUrl ?? feature.example.url : feature.example.url} title={feature.title} />}</View>;
 }
 function ExampleStill({ uri, title }: { uri: string; title: string }) {
     return <Image source={{ uri }} style={styles.exampleMedia} contentFit="contain" accessibilityLabel={rawText(t('features.example', { value1: title }))} accessibilityIgnoresInvertColors />;
