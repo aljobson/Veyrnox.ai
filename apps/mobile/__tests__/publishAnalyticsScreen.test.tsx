@@ -12,7 +12,7 @@ import { portfolioCsvName } from '../src/lib/publishAnalyticsDepth';
 const mockRequest = jest.fn();
 let mockApi = { request: mockRequest };
 let mockParams: Record<string, string> = {};
-jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useLocalSearchParams: () => mockParams }));
+jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useLocalSearchParams: () => mockParams, useRouter: () => ({ push: jest.fn() }) }));
 jest.mock('expo-sharing', () => ({ shareAsync: jest.fn().mockResolvedValue(undefined) }));
 jest.mock('../src/lib/usePublishApi', () => ({ usePublishApi: () => mockApi }));
 jest.mock('../src/components/UnlockCard', () => ({ UnlockCard: ({ feature }: { feature: string }) => { const { Text } = require('react-native'); return <Text testID="unlock">{feature}</Text>; } }));

@@ -1,9 +1,9 @@
 import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
-import { Text as ThemedText, themedStyles, useThemedStyles } from '../../../components/ui';
+import { Button, Text as ThemedText, themedStyles, useThemedStyles } from '../../../components/ui';
 import { NetworkLogo } from '../../../components/publish/NetworkLogo';
 import { networkName } from '../../../lib/networkLogos';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { touchTarget } from '../../../lib/a11y';
@@ -16,6 +16,7 @@ const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString(formatL
 
 export default function Drafts() {
     const api = usePublishApi();
+    const router = useRouter();
     const networkStyles = useThemedStyles(networkSheets);
     const [drafts, setDrafts] = useState<Draft[] | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -86,7 +87,7 @@ export default function Drafts() {
                 <>
                     <Text style={styles.intro}>{t('drafts.intro')}</Text>
                     {notice ? <StatusText variant="inherit" style={styles.notice} accessibilityLiveRegion="polite">{notice}</StatusText> : null}
-                    {groups.length === 0 ? <Text style={styles.muted}>{t('drafts.none')}</Text> : null}
+                    {groups.length === 0 ? <><Text style={styles.muted}>{t('drafts.none')}</Text><Button variant="secondary" label={t('publish.newpost')} onPress={() => router.push('/publish/compose')} /></> : null}
                     {groups.map((g, gi) => (
                         <View key={g.batchId ?? `none-${gi}`} style={styles.group}>
                             <Text style={styles.groupTitle} accessibilityRole="header">{plural(g.batchId ? 'drafts.inBatch' : 'drafts.noBatch', g.drafts.length)}</Text>

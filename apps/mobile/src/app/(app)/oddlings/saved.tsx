@@ -3,6 +3,7 @@ import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Button } from '../../../components/ui';
 import { MIN_TARGET } from '../../../lib/a11y';
 import { formatLocale, t } from '../../../lib/i18n';
 import type { Passport } from '../../../lib/oddlingsLibrary';
@@ -67,7 +68,10 @@ export default function SavedPassports() {
                     {notice ? <StatusText variant="inherit" accessibilityLiveRegion="polite" style={styles.empty}>{notice}</StatusText> : null}
                     {state !== 'unavailable' ? <ProjectChooser key={owner} api={api} engine={engine} record={record} onResult={setState} /> : null}
                 </View>}
-                ListEmptyComponent={<StatusText variant="inherit" accessibilityLiveRegion="polite" style={styles.empty}>{t('oddlings.saved.empty')}</StatusText>}
+                ListEmptyComponent={record ? <View>
+                    <StatusText variant="inherit" accessibilityLiveRegion="polite" style={styles.empty}>{t('oddlings.saved.empty')}</StatusText>
+                    <Button variant="secondary" label={t('oddlings.build.entry')} onPress={() => router.push('/oddlings/build')} />
+                </View> : undefined}
                 renderItem={({ item }) => {
                     const phoneOnly = !record?.projectId || record.ops.some(o => o.kind === 'upsert' && o.id === item.id);
                     return (

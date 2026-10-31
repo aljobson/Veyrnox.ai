@@ -1,6 +1,7 @@
 import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Button } from '../../../components/ui';
 import { File } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -33,6 +34,7 @@ function Stat({ label, value, change }: { label: string; value: string; change: 
 export default function AnalyticsScreen() {
     const api = usePublishApi();
     const params = useLocalSearchParams();
+    const router = useRouter();
     const options = reportOptions(params);
     const [entries, setEntries] = useState<AnalyticsEntry[]>([]);
     const [previous, setPrevious] = useState<AnalyticsEntry[]>([]);
@@ -160,7 +162,7 @@ export default function AnalyticsScreen() {
                     </Pressable>
                 </View>
             ) : null}
-            {accounts && accounts.length === 0 ? <Text style={styles.muted}>{t('analytics.connect')}</Text> : null}
+            {accounts && accounts.length === 0 ? <><Text style={styles.muted}>{t('analytics.connect')}</Text><Button variant="secondary" label={t('connect.title')} onPress={() => router.push('/publish/connect')} /></> : null}
             {error ? <View><StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{error}</StatusText><Pressable accessibilityRole="button" style={touchTarget} onPress={() => accounts ? setReload(n => n + 1) : setAccountsReload(n => n + 1)}><Text style={styles.text}>{t('publishReporting.retry')}</Text></Pressable></View> : !locked && (!accounts || loading) ? <ActivityIndicator color={colors.accent} /> : null}
             {!locked && entries.length ? <>
                 <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('publishReporting.csvFor', { name: accountId ? entries[0].account.displayName : t('publishReporting.all') }))}
