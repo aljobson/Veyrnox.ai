@@ -5742,5 +5742,13 @@ export default {
   "handoff.promptUnavailable": "Исходный запрос недоступен на этом телефоне.",
   "handoff.referencesAdjusted": "Перемещено или удалено референсов: {count}.",
   "handoff.filmAttached": "Результат для этого запроса",
-  "handoff.filmUnattached": "Предыдущий результат; не связан с текущим запросом"
+  "handoff.filmUnattached": "Предыдущий результат; не связан с текущим запросом",
+  "billing.paywall.title": "Тарифы",
+  "billing.paywall.seePlans": "Все тарифы",
+  "billing.paywall.seePacks": "Пакеты кредитов",
+  "billing.paywall.seePublish": "Тарифы Publish",
+  "billing.paywall.notReady": "Покупки пока недоступны. Попробуйте чуть позже.",
+  "billing.paywall.busy": "Идёт другая покупка. Дождитесь её завершения.",
+  "billing.paywall.salesClosed": "Покупки пока не открыты.",
+  "billing.paywall.alreadyActive": "У вас уже есть тариф ИИ-генерации."
 } as const;

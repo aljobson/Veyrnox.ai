@@ -5612,5 +5612,13 @@ export default {
   "handoff.promptUnavailable": "इस फ़ोन पर मूल प्रॉम्प्ट उपलब्ध नहीं है।",
   "handoff.referencesAdjusted": "स्थानांतरित या हटाए गए संदर्भ: {count}।",
   "handoff.filmAttached": "इस प्रॉम्प्ट का परिणाम",
-  "handoff.filmUnattached": "पुराना परिणाम; मौजूदा प्रॉम्प्ट से जुड़ा नहीं है"
+  "handoff.filmUnattached": "पुराना परिणाम; मौजूदा प्रॉम्प्ट से जुड़ा नहीं है",
+  "billing.paywall.title": "प्लान",
+  "billing.paywall.seePlans": "सभी प्लान देखें",
+  "billing.paywall.seePacks": "क्रेडिट पैक देखें",
+  "billing.paywall.seePublish": "Publish प्लान देखें",
+  "billing.paywall.notReady": "खरीदारी अभी तैयार नहीं है। थोड़ी देर बाद फिर कोशिश करें।",
+  "billing.paywall.busy": "एक और खरीदारी चल रही है। उसके पूरा होने तक रुकें।",
+  "billing.paywall.salesClosed": "खरीदारी अभी खुली नहीं है।",
+  "billing.paywall.alreadyActive": "आपके पास पहले से एक AI जनरेशन प्लान है।"
 } as const;

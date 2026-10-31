@@ -5547,5 +5547,13 @@ export default {
   "handoff.promptUnavailable": "이 휴대전화에서는 원래 프롬프트를 사용할 수 없습니다.",
   "handoff.referencesAdjusted": "이동 또는 삭제된 참조 자료: {count}.",
   "handoff.filmAttached": "이 프롬프트의 결과",
-  "handoff.filmUnattached": "이전 결과이며 현재 프롬프트와 연결되지 않음"
+  "handoff.filmUnattached": "이전 결과이며 현재 프롬프트와 연결되지 않음",
+  "billing.paywall.title": "플랜",
+  "billing.paywall.seePlans": "모든 플랜 보기",
+  "billing.paywall.seePacks": "크레딧 팩 보기",
+  "billing.paywall.seePublish": "Publish 플랜 보기",
+  "billing.paywall.notReady": "아직 구매할 수 없습니다. 잠시 후 다시 시도하세요.",
+  "billing.paywall.busy": "다른 구매가 진행 중입니다. 완료될 때까지 기다리세요.",
+  "billing.paywall.salesClosed": "구매가 아직 열리지 않았습니다.",
+  "billing.paywall.alreadyActive": "이미 AI 생성 플랜을 이용 중입니다."
 } as const;

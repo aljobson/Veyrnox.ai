@@ -5677,5 +5677,13 @@ export default {
   "handoff.promptUnavailable": "O texto original não está disponível neste telefone.",
   "handoff.referencesAdjusted": "Referências movidas ou removidas: {count}.",
   "handoff.filmAttached": "Resultado deste texto",
-  "handoff.filmUnattached": "Resultado anterior; não associado ao texto atual"
+  "handoff.filmUnattached": "Resultado anterior; não associado ao texto atual",
+  "billing.paywall.title": "Planos",
+  "billing.paywall.seePlans": "Ver todos os planos",
+  "billing.paywall.seePacks": "Ver pacotes de créditos",
+  "billing.paywall.seePublish": "Ver planos do Publish",
+  "billing.paywall.notReady": "As compras ainda não estão prontas. Tente novamente em instantes.",
+  "billing.paywall.busy": "Outra compra está em andamento. Aguarde a conclusão.",
+  "billing.paywall.salesClosed": "As compras ainda não estão abertas.",
+  "billing.paywall.alreadyActive": "Você já tem um plano de Geração com IA."
 } as const;

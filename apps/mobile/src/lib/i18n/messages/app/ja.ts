@@ -5547,5 +5547,13 @@ export default {
   "handoff.promptUnavailable": "この端末では元のプロンプトを利用できません。",
   "handoff.referencesAdjusted": "移動または削除された参照素材：{count}。",
   "handoff.filmAttached": "このプロンプトの生成結果",
-  "handoff.filmUnattached": "以前の結果（現在のプロンプトには未関連付け）"
+  "handoff.filmUnattached": "以前の結果（現在のプロンプトには未関連付け）",
+  "billing.paywall.title": "プラン",
+  "billing.paywall.seePlans": "すべてのプランを見る",
+  "billing.paywall.seePacks": "クレジットパックを見る",
+  "billing.paywall.seePublish": "Publish プランを見る",
+  "billing.paywall.notReady": "購入の準備ができていません。少し後でもう一度お試しください。",
+  "billing.paywall.busy": "別の購入を処理中です。完了するまでお待ちください。",
+  "billing.paywall.salesClosed": "購入はまだ受け付けていません。",
+  "billing.paywall.alreadyActive": "AI 生成プランはすでに有効です。"
 } as const;

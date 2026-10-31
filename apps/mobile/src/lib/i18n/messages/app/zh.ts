@@ -5547,5 +5547,13 @@ export default {
   "handoff.promptUnavailable": "此手机上没有原始提示词。",
   "handoff.referencesAdjusted": "已移动或移除的参考素材：{count}。",
   "handoff.filmAttached": "此提示词的生成结果",
-  "handoff.filmUnattached": "先前的结果；未关联到当前提示词"
+  "handoff.filmUnattached": "先前的结果；未关联到当前提示词",
+  "billing.paywall.title": "方案",
+  "billing.paywall.seePlans": "查看所有方案",
+  "billing.paywall.seePacks": "查看积分包",
+  "billing.paywall.seePublish": "查看 Publish 方案",
+  "billing.paywall.notReady": "购买尚未就绪，请稍后再试。",
+  "billing.paywall.busy": "另一笔购买正在进行，请等待其完成。",
+  "billing.paywall.salesClosed": "购买尚未开放。",
+  "billing.paywall.alreadyActive": "你已拥有 AI 生成方案。"
 } as const;

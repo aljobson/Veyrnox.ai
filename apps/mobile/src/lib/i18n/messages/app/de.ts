@@ -5612,5 +5612,13 @@ export default {
   "handoff.promptUnavailable": "Der ursprüngliche Prompt ist auf diesem Telefon nicht verfügbar.",
   "handoff.referencesAdjusted": "Verschobene oder entfernte Referenzen: {count}.",
   "handoff.filmAttached": "Ergebnis für diesen Prompt",
-  "handoff.filmUnattached": "Früheres Ergebnis; nicht dem aktuellen Prompt zugeordnet"
+  "handoff.filmUnattached": "Früheres Ergebnis; nicht dem aktuellen Prompt zugeordnet",
+  "billing.paywall.title": "Tarife",
+  "billing.paywall.seePlans": "Alle Tarife ansehen",
+  "billing.paywall.seePacks": "Credit-Pakete ansehen",
+  "billing.paywall.seePublish": "Publish-Tarife ansehen",
+  "billing.paywall.notReady": "Käufe sind noch nicht bereit. Versuche es gleich noch einmal.",
+  "billing.paywall.busy": "Ein anderer Kauf läuft gerade. Warte, bis er abgeschlossen ist.",
+  "billing.paywall.salesClosed": "Käufe sind noch nicht geöffnet.",
+  "billing.paywall.alreadyActive": "Du hast bereits einen KI-Generierungstarif."
 } as const;

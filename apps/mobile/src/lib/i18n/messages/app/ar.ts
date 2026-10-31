@@ -5872,5 +5872,13 @@ export default {
   "handoff.promptUnavailable": "النص الأصلي غير متاح على هذا الهاتف.",
   "handoff.referencesAdjusted": "المراجع المنقولة أو المحذوفة: {count}.",
   "handoff.filmAttached": "نتيجة هذا النص",
-  "handoff.filmUnattached": "نتيجة سابقة؛ غير مرتبطة بالنص الحالي"
+  "handoff.filmUnattached": "نتيجة سابقة؛ غير مرتبطة بالنص الحالي",
+  "billing.paywall.title": "الخطط",
+  "billing.paywall.seePlans": "عرض كل الخطط",
+  "billing.paywall.seePacks": "عرض باقات الرصيد",
+  "billing.paywall.seePublish": "عرض خطط Publish",
+  "billing.paywall.notReady": "عمليات الشراء غير جاهزة بعد. حاول مرة أخرى بعد قليل.",
+  "billing.paywall.busy": "هناك عملية شراء أخرى قيد التنفيذ. انتظر حتى تنتهي.",
+  "billing.paywall.salesClosed": "عمليات الشراء غير متاحة بعد.",
+  "billing.paywall.alreadyActive": "لديك بالفعل خطة توليد بالذكاء الاصطناعي."
 } as const;

@@ -9,6 +9,7 @@ import { useCallback, useMemo, useState, useSyncExternalStore } from 'react';
 import { ActivityIndicator, Platform, RefreshControl, ScrollView, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { useBilling } from '../../../billing/BillingProvider';
+import { paywallsEnabled } from '../../../billing/paywallGate';
 import { renewalTerms, toDisplayPackages, type Interval } from '../../../lib/billing';
 import { formatLocale, t } from '../../../lib/i18n';
 import { MENU_ICONS, type MenuIcon } from '../../../lib/menuIcons';
@@ -220,6 +221,7 @@ export default function Publish() {
                                     <Button label={t('unlock.subscribe')} variant="secondary" accessibilityRole="button" disabled={!canPurchase || busy || !chosenPlan}  onPress={() => void subscribe()}>
                                         {busy ? <ActivityIndicator color={styles.textInk.color} /> : <Text variant="bodyStrong">{t('unlock.subscribe')}</Text>}
                                     </Button>
+                                    {paywallsEnabled() && canPurchase ? <Button label={t('billing.paywall.seePublish')} variant="tertiary" accessibilityRole="button" disabled={busy} onPress={() => router.push({ pathname: '/paywall', params: { offering: 'publish' } })}><Text variant="footnote" style={styles.link}>{t('billing.paywall.seePublish')}</Text></Button> : null}
                                 </>
                             ) : <Text variant="footnote" style={styles.muted}>{t('plan.unavailable')}</Text>}
                             {message ? <Text variant="footnote" style={styles.planMessage} accessibilityLiveRegion="polite">{message}</Text> : null}

@@ -5677,5 +5677,13 @@ export default {
   "handoff.promptUnavailable": "Le texte original n’est pas disponible sur ce téléphone.",
   "handoff.referencesAdjusted": "Références déplacées ou supprimées : {count}.",
   "handoff.filmAttached": "Résultat de ce texte",
-  "handoff.filmUnattached": "Résultat antérieur, non associé au texte actuel"
+  "handoff.filmUnattached": "Résultat antérieur, non associé au texte actuel",
+  "billing.paywall.title": "Forfaits",
+  "billing.paywall.seePlans": "Voir tous les forfaits",
+  "billing.paywall.seePacks": "Voir les packs de crédits",
+  "billing.paywall.seePublish": "Voir les forfaits Publish",
+  "billing.paywall.notReady": "Les achats ne sont pas encore prêts. Réessaie dans un instant.",
+  "billing.paywall.busy": "Un autre achat est en cours. Attends qu’il se termine.",
+  "billing.paywall.salesClosed": "Les achats ne sont pas encore ouverts.",
+  "billing.paywall.alreadyActive": "Tu as déjà un forfait Génération IA."
 } as const;
