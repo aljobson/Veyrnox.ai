@@ -1276,6 +1276,7 @@ export default {
   "create.pickPreset": "参考、文件或创意",
   "create.priceExplainer": "选择模型，添加提示词、参考素材和设置。点击“生成”前始终显示确切费用。",
   "create.s": "{value1}秒",
+  "create.lengthCost": "{value1}秒 \u00b7 {credits} cr",
   "create.short.other": "你有 {have} 积分，此次需要 {need} 积分。还差 {count} 积分。",
   "create.startFrom": "起点",
   "create.template.format": "以与模板相同的 {aspect} 比例打开。",

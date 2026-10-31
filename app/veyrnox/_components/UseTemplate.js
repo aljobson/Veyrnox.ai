@@ -27,8 +27,10 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked 
   const modelId = modelIdForName(preset.model);
   const model = models.find((m) => m.id === modelId) || null;
   const aspect = usableAspect(preset, model);
-  const durationOptions = model?.durations?.filter((seconds) => [5, 10].includes(seconds)) || [5, 10];
-  const [durationSeconds, setDurationSeconds] = useState(preset.durationSeconds || 10);
+  const isVideo = model ? model.kind === 'video' : Boolean(preset.durationSeconds);
+  const durationOptions = model?.durations?.length ? model.durations : [5, 10];
+  const [pickedSeconds, setDurationSeconds] = useState(preset.durationSeconds || 5);
+  const durationSeconds = isVideo ? (durationOptions.includes(pickedSeconds) ? pickedSeconds : durationOptions[0]) : undefined;
   const [targetSeconds, setTargetSeconds] = useState(60);
   const credits = presetCredits(preset, models, durationSeconds);
   const [handoffError, setHandoffError] = useState('');
@@ -73,7 +75,7 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked 
       <dl className="grid grid-cols-2 gap-3 text-[14px]">
         <div><dt className="text-vx-fg-muted">{t("presets.use.cost")}</dt><dd className="font-vx-mono vx-num text-[22px] font-bold text-vx-money">{credits} cr</dd></div>
         {aspect && <div><dt className="text-vx-fg-muted">{t("presets.use.aspect")}</dt><dd className="font-vx-mono text-[22px] font-bold">{aspect}</dd></div>}
-        {preset.durationSeconds && <div><dt className="text-vx-fg-muted">{t("presets.use.clip")}</dt><dd><select aria-label={t("presets.use.clipLength")} value={durationSeconds} onChange={(event) => setDurationSeconds(Number(event.target.value))} className="mt-1 rounded-lg border border-vx-border bg-vx-panel px-3 py-2 font-vx-mono text-[16px] font-bold">{durationOptions.map((seconds) => <option key={seconds} value={seconds}>{t('presets.use.seconds', { count: seconds })}</option>)}</select></dd></div>}
+        {isVideo && <div><dt className="text-vx-fg-muted">{t("presets.use.clip")}</dt><dd><select aria-label={t("presets.use.clipLength")} value={durationSeconds} onChange={(event) => setDurationSeconds(Number(event.target.value))} className="mt-1 rounded-lg border border-vx-border bg-vx-panel px-3 py-2 font-vx-mono text-[16px] font-bold">{durationOptions.map((seconds) => <option key={seconds} value={seconds}>{t('presets.use.lengthCost', { length: t('presets.use.seconds', { count: seconds }), credits: presetCredits(preset, models, seconds) })}</option>)}</select></dd></div>}
       </dl>
       <button
         type="button"

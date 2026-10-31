@@ -1351,6 +1351,7 @@ export default {
   "create.pickPreset": "Референс, файл или идея",
   "create.priceExplainer": "Выберите модель, чтобы добавить промпт, референсы и настройки. Точная стоимость видна до нажатия «Сгенерировать».",
   "create.s": "{value1}с",
+  "create.lengthCost": "{value1}с \u00b7 {credits} cr",
   "create.short.few": "У вас {have} кредитов, а стоимость — {need}. Нужно ещё {count}.",
   "create.short.many": "У вас {have} кредитов, а стоимость — {need}. Нужно ещё {count}.",
   "create.short.one": "У вас {have} кредитов, а стоимость — {need}. Нужно ещё {count}.",

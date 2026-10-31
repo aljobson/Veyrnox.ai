@@ -1301,6 +1301,7 @@ export default {
   "create.pickPreset": "Referenz, Datei oder Idee",
   "create.priceExplainer": "Wähle ein Modell, um Prompt, Referenzen und Einstellungen hinzuzufügen. Die genauen Kosten bleiben vor Generieren sichtbar.",
   "create.s": "{value1} s",
+  "create.lengthCost": "{value1} s \u00b7 {credits} cr",
   "create.short.one": "Du hast {have} Credits und dies kostet {need}. Dir fehlen noch {count}.",
   "create.short.other": "Du hast {have} Credits und dies kostet {need}. Dir fehlen noch {count}.",
   "create.startFrom": "Starten mit",
