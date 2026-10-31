@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { mapAppLink } from '../apps/mobile/src/lib/appLinks.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -30,7 +32,11 @@ test('apple file shape and paths', () => {
     const d = body.applinks.details[0];
     assert.deepEqual(d.appIDs, ['ABCDE12345.ai.veyrnox.app']);
     assert.deepEqual(d.components.map((c) => c['/']), APP_LINK_PATHS);
-    assert.ok(APP_LINK_PATHS.every((p) => p.startsWith('/app/') || p === '/social/team/invite/*'));
+    assert.deepEqual(APP_LINK_PATHS, [
+        '/app/library', '/app/library/*', '/app/chat', '/app/chat/*', '/app/create', '/app/create/*',
+        '/app/credits', '/app/account', '/app/publish', '/app/publish/*', '/app/video-agent',
+        '/social-cinema/*', '/oauth/consent', '/social/review/*', '/social/team/invite/*',
+    ]);
     assert.ok(d.components.some((c) => c['/'] === '/social/team/invite/*'));
     assert.deepEqual(body.webcredentials, { apps: ['ABCDE12345.ai.veyrnox.app'] });
 });
@@ -49,4 +55,22 @@ test('configured response is json, cacheable, not a redirect', async () => {
     assert.equal(res.headers.get('cache-control'), 'public, max-age=300');
     assert.equal(res.headers.get('location'), null);
     assert.ok((await res.json()).applinks);
+});
+
+test('B4: every handled web route is covered by AASA and Android intent filters', () => {
+    const config = JSON.parse(readFileSync(new URL('../apps/mobile/app.json', import.meta.url), 'utf8'));
+    const source = readFileSync(new URL('../apps/mobile/src/lib/appLinks.ts', import.meta.url), 'utf8');
+    const keys = name => [...source.match(new RegExp(String.raw`const ${name}[^=]*= \{([\s\S]*?)\n\};`))[1].matchAll(/^    ['"]?([a-z-]+)['"]?:/gm)].map(m => m[1]);
+    const id = '11111111-1111-4111-8111-111111111111';
+    const paths = [...keys('SECTIONS').map(s => `/app/${s}`), ...keys('PUBLISH_SECTIONS').map(s => `/app/publish/${s}`),
+        `/app/library/${id}`, `/app/chat/${id}`, '/app/create/flux-1', `/social-cinema/title/${id}`,
+        `/social-cinema/watch/${id}`, '/social-cinema/series/series-slug', '/social-cinema/pass',
+        '/oauth/consent?authorization_id=abcdefgh', '/social/team/invite/abc.def', '/social/review/abc.def'];
+    for (const path of paths) {
+        assert.notEqual(mapAppLink(`https://veyrnox.ai${path}`), '/', path);
+        const pathname = path.split('?')[0];
+        assert.ok(APP_LINK_PATHS.some(p => p.endsWith('*') ? pathname.startsWith(p.slice(0, -1)) : pathname === p), `AASA: ${path}`);
+        assert.ok(config.expo.android.intentFilters.some(filter => filter.autoVerify && filter.data.some(d =>
+            d.scheme === 'https' && d.host === 'veyrnox.ai' && pathname.startsWith(d.pathPrefix))), `Android: ${path}`);
+    }
 });

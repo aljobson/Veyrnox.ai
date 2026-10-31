@@ -13,6 +13,7 @@ import Analytics from '../src/app/(app)/cinema/analytics';
 import { fetchDiscovery } from '../src/lib/cinemaBrowse';
 import { parseTitle } from '../src/lib/cinema';
 import { ApiError } from '../src/lib/api';
+import { rememberEpisodeRoot } from '../src/lib/cinemaHandoff';
 import { t } from '../src/lib/i18n';
 
 declare const require: (id: string) => any;
@@ -51,6 +52,7 @@ jest.mock('expo-crypto', () => ({ randomUUID: () => `00000000-0000-4000-8000-${S
 jest.mock('expo-video', () => ({ useVideoPlayer: () => mockPlayer, VideoView: 'VideoView' }));
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => mockAuth }));
 jest.mock('../src/components/cinema/SaveFollow', () => ({ SaveFollow: () => null }));
+jest.mock('../src/lib/cinemaHandoff', () => ({ ...jest.requireActual('../src/lib/cinemaHandoff'), rememberEpisodeRoot: jest.fn() }));
 jest.mock('../src/lib/cinemaBrowse', () => ({ ...jest.requireActual('../src/lib/cinemaBrowse'), fetchDiscovery: jest.fn() }));
 jest.mock('../src/lib/cinemaProgress', () => ({ getCinemaProgress: () => ({ recorder: () => mockSave }) }));
 jest.mock('react-native', () => {
@@ -343,4 +345,17 @@ test('open voting with no competitions explains the empty read', async () => {
     mockRequest.mockImplementation(path => path.includes('/voting?') ? Promise.resolve({ competitions: [] }) : defaultRequest(path));
     await render(<VotePolls contentId={one} />);
     expect(text()).toContain(t('cinema.voting.noOpenCompetitionForThisTitle'));
+});
+
+test('Watch records an episode root only after verifying membership in the series', async () => {
+    let finish!: (value: unknown) => void;
+    mockRequest.mockImplementation((path: string) => path.includes('/titles/') ? new Promise(resolve => { finish = resolve; }) : defaultRequest(path));
+    mockParams = { id: one, series }; await render(<Watch />);
+    expect(rememberEpisodeRoot).not.toHaveBeenCalled();
+    await act(async () => finish(detail));
+    expect(rememberEpisodeRoot).toHaveBeenCalledWith(one, series);
+});
+test('Watch does not poison the root map with an unrelated series', async () => {
+    mockParams = { id: three, series }; await render(<Watch />);
+    expect(rememberEpisodeRoot).not.toHaveBeenCalled();
 });

@@ -1,3 +1,5 @@
+import { filmReturnParams } from '../../lib/filmGenerationReturns';
+import { FilmGenerationHistory } from './FilmGenerationHistory';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -38,7 +40,7 @@ export function FilmPromptsStage({ film, change, catalog, live }: StageProps) {
             <FilmAction label={t('film.build15blockprompt')} onPress={() => build(false)} />
         </> : last ? <>
             <StatusText variant="inherit" accessibilityLiveRegion="polite" style={{ color: colors.body }}>{t('filmOutput.version', { value1: shot.id, value2: last.version, value3: t(logged ? 'filmOutput.logged' : 'filmOutput.ready') })}</StatusText>
-            <FilmPromptOutput title={t('filmOutput.output')} prompt={last.content} modelId={film.stack.video} access={logged ? 'External' : film.stack.videoAccess} catalog={catalog} live={live} aspect={film.stack.aspect} duration={Number(shot.seconds)} />
+            <FilmPromptOutput returnParams={() => filmReturnParams(film, shot.id)} title={t('filmOutput.output')} prompt={last.content} modelId={film.stack.video} access={logged ? 'External' : film.stack.videoAccess} catalog={catalog} live={live} aspect={film.stack.aspect} duration={Number(shot.seconds)} />
             {!logged ? <View style={{ gap: 12 }}>
                 <Text accessibilityRole="header" style={{ color: colors.text }}>{t('film.lOGTHEGENERATEDTAKE')}</Text>
                 <FilmInput label={t('film.whatchangedforthisversion')} value={changed} onChange={setChanged} />
@@ -54,6 +56,7 @@ export function FilmPromptsStage({ film, change, catalog, live }: StageProps) {
                 <FilmAction label={t('filmOutput.saveRevision')} disabled={revision === null} onPress={() => build(true)} />
             </> : null}
         </> : null}
+        <FilmGenerationHistory film={film} shotId={shot.id} onResult={id => setResult(id)} />
         <FilmAction label={t('filmOutput.openShot')} onPress={() => router.push({ pathname: '/film/shot/[id]', params: { id: shot.id } })} />
         {failed >= 15 ? <StatusText variant="inherit" accessibilityRole="alert" style={{ color: colors.body }}>{t('filmWorkspace.fifteenMisses')}</StatusText> : null}
         {error ? <StatusText variant="inherit" accessibilityRole="alert" style={{ color: colors.danger }}>{error}</StatusText> : null}

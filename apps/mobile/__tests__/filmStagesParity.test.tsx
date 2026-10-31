@@ -1,3 +1,4 @@
+jest.mock('../src/auth/AuthProvider', () => { const api = { request: jest.fn() }; return { useAuth: () => ({ api }) }; });
 import { act } from 'react';
 import * as RN from 'react-native';
 import { createRoot, type Root } from 'test-renderer';

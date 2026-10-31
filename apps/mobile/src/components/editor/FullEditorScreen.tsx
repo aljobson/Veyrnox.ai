@@ -91,6 +91,7 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
         if (select) { setSelection(result.selection); setSelections([result.selection]); } return 'placed';
     }
     const openGenerate = (kind: Kind) => setGenerate({ visible: true, kind, frame: clampFrame(frameStore.get()), owner: getCacheUser() });
+    useAnnouncement(problem);
     if (!document) return <View style={styles.loading}><Stack.Screen options={{ title: t('editor.title') }} /><ActivityIndicator color={colors.accent} /><Text style={styles.muted}>{problem ?? t('editor.fullLoading')}</Text></View>;
 
     const canvas = canvasOf(document.canvas);
@@ -254,11 +255,11 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
         if (saved) router.push(path as never);
     };
 
-    const openExport = async () => { if (!EDITOR_SERVER_EXPORT_ENABLED) { await openWorkflow('/publish/compose'); return; } try { requireOnline(); } catch { setProblem(OFFLINE_PAID_MESSAGE); return; } if (exportUnavailable()) { await openWorkflow('/publish/compose'); return; } if (await savedDocument()) setExportVisible(true); };
+    const openExport = async () => { if (!EDITOR_SERVER_EXPORT_ENABLED) { setProblem(t('handoff.exportUnavailable')); return; } try { requireOnline(); } catch { setProblem(OFFLINE_PAID_MESSAGE); return; } if (exportUnavailable()) { setProblem(t('handoff.exportUnavailable')); return; } if (await savedDocument()) setExportVisible(true); };
 
     // Tool panels are inline workspace sections with no close action; sheets below own their dismissal.
     return <View style={styles.screen}>
-        {EDITOR_SERVER_EXPORT_ENABLED ? <ServerExportSheet api={api} router={router} now={Date.now} projectId={projectId} name={name} document={document} dirty={dirty} visible={exportVisible} onOpen={() => setExportVisible(true)} onClose={() => setExportVisible(false)} onFallback={() => void openWorkflow('/publish/compose')} /> : null}
+        {EDITOR_SERVER_EXPORT_ENABLED ? <ServerExportSheet api={api} router={router} now={Date.now} projectId={projectId} name={name} document={document} dirty={dirty} visible={exportVisible} onOpen={() => setExportVisible(true)} onClose={() => setExportVisible(false)} onFallback={() => { setExportVisible(false); setProblem(t('handoff.exportUnavailable')); }} /> : null}
         <Stack.Screen options={{ title: t('editor.cut'), headerRight: () => <HeaderAction label={t('editor.done')} onPress={guard.done} /> }} />
         <View style={styles.projectBar}>
             <View style={styles.cutBadge}><Text style={styles.cutMark}>{t('editor.v')}</Text><Text style={styles.cutLabel}>{t('editor.cUT')}</Text></View>
