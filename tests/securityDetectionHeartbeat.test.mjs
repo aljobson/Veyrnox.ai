@@ -1,4 +1,4 @@
-// 0416 (ADR-0310): the detection engine leaves a heartbeat each run, and a
+// 0418 (ADR-0310): the detection engine leaves a heartbeat each run, and a
 // service-role-only reader reports its liveness and open high/critical alerts.
 // The behaviour was run on Postgres; this pins the properties in the SQL so a
 // later rewrite keeps them.
@@ -6,7 +6,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const sql = readFileSync(new URL('../packages/db/schema/supabase/0416_security_detection_heartbeat.sql', import.meta.url), 'utf8');
+const sql = readFileSync(new URL('../packages/db/schema/supabase/0418_security_detection_heartbeat.sql', import.meta.url), 'utf8');
 
 test('the engine records a heartbeat as its last step and prunes old rows', () => {
     // The INSERT comes after the rule loop and before RETURN, so an error in a

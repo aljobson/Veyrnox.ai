@@ -3,7 +3,7 @@ name: detection-watch
 # The security-detection engine's own alarm (ADR-0310).
 #
 # run_security_detection() (0336/0342) upserts alerts on a 5-minute in-DB
-# pg_cron schedule and records a heartbeat each time it completes (0416).
+# pg_cron schedule and records a heartbeat each time it completes (0418).
 # Nothing in the Worker watches that schedule: if pg_cron stops or the job
 # errors, detection goes silent and the silence is invisible — the same
 # failure reconcile-watch.yml cures for the ledger. And a high/critical alert
@@ -120,7 +120,7 @@ jobs:
             --description 'detection engine silent or a high-severity alert is open' 2>/dev/null || true
           printf '%s\n\n%s\n\n```\n%s\n```\n\n%s\n' \
             'The security-detection engine needs attention. Either run_security_detection() has not recorded a heartbeat recently (pg_cron may be stopped on the Supabase project) or a high/critical alert is open and unacknowledged.' \
-            'Open /app/admin/security to triage alerts. If the engine is silent, check the veyrnox-security-detection pg_cron job and that migration 0416 is applied. This issue stays open until someone closes it; the quarter-hourly workflow summary shows the current state.' \
+            'Open /app/admin/security to triage alerts. If the engine is silent, check the veyrnox-security-detection pg_cron job and that migration 0418 is applied. This issue stays open until someone closes it; the quarter-hourly workflow summary shows the current state.' \
             "$REPORT" \
             "Run: $RUN_URL" > body.md
           gh issue create --title "Security detection needs attention — $(date -u +%Y-%m-%dT%H:%MZ)" \

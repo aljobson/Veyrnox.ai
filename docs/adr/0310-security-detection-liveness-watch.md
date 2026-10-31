@@ -5,7 +5,7 @@ Relates: ADR-0104 (security alerts / detection engine, migrations 0336/0342),
 ADR-0083 (webhook delivery log), ADR-0160 (supabase-status-alert), ADR-0307
 (money-spine assessment fixes). Finding F-10 (D1, D2) of the 2026-10-31 security
 assessment (`.gstack/security-reports/2026-10-31/agents/12-detection-logging.md`).
-Migration 0416.
+Migration 0418.
 
 ## Context
 
@@ -31,9 +31,9 @@ in that layer:
 
 ## Decisions
 
-### D1 — a heartbeat the engine leaves, and a poller that watches it (0416, detection-watch.yml)
+### D1 — a heartbeat the engine leaves, and a poller that watches it (0418, detection-watch.yml)
 
-- **0416** adds `security_detection_runs`, an append-only heartbeat table, and
+- **0418** adds `security_detection_runs`, an append-only heartbeat table, and
   redefines `run_security_detection()` (body otherwise identical to 0342) to
   `INSERT` one row at the end of every completed run. The insert is the last
   statement, so a run that errors on any rule rolls back the heartbeat with it: a
@@ -87,7 +87,7 @@ remains the two owner steps below.
   through GitHub's own channels. Before this, both were invisible until an admin
   opened the dashboard.
 - Nothing new is exposed to `anon`/`authenticated`; the redefined engine keeps its
-  `service_role`-only grant and `SET search_path = ''`. Migration 0416 is idempotent
+  `service_role`-only grant and `SET search_path = ''`. Migration 0418 is idempotent
   and contains no catalog UPDATE. Only ever adds a heartbeat row and two reads —
   it withholds nothing and keeps the previous release working under the Worker-only
   rollback contract.
@@ -96,7 +96,7 @@ remains the two owner steps below.
 
 ### Owner steps (not done here)
 
-1. **Apply migration 0416** via the `apply-migrations` workflow after approval (not
+1. **Apply migration 0418** via the `apply-migrations` workflow after approval (not
    applied to any real project by this PR).
 2. **Set the Actions secrets** `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` to the
    **production** Supabase project so `detection-watch.yml` watches production. (The
@@ -109,7 +109,7 @@ remains the two owner steps below.
 
 ## Verification
 
-- `tests/securityDetectionHeartbeat.test.mjs` pins the 0416 SQL: the engine writes a
+- `tests/securityDetectionHeartbeat.test.mjs` pins the 0418 SQL: the engine writes a
   heartbeat and prunes, the status reader is service-role only with `search_path`
   cleared, and the engine keeps its privileges.
 - `tests/checkDetection.test.mjs` drives `fetchDetectionStatus`/`evaluate` with a

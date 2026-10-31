@@ -3,7 +3,7 @@
  * Is the security-detection engine still alive, and is anything on fire?
  *
  * run_security_detection() (0336/0342) upserts alerts on a 5-minute in-DB
- * pg_cron schedule and records a heartbeat row each time it completes (0416).
+ * pg_cron schedule and records a heartbeat row each time it completes (0418).
  * Nothing in the Worker watches that schedule, and a 3am freeze or admin-403
  * storm pages no one. This reads the service-role-only security_detection_status()
  * so .github/workflows/detection-watch.yml can open an issue the hour the
@@ -55,7 +55,7 @@ export async function fetchDetectionStatus({ url, key }) {
         signal: AbortSignal.timeout(READ_TIMEOUT_MS),
     });
     if (!res.ok) {
-        throw new Error(`security_detection_status answered ${res.status} — check the service-role key and that migration 0416 is applied`);
+        throw new Error(`security_detection_status answered ${res.status} — check the service-role key and that migration 0418 is applied`);
     }
     const body = await res.json();
     const row = Array.isArray(body) ? body[0] : body;
