@@ -24,7 +24,7 @@ function network({ supported = true, existing = false, planSupported = supported
     if (url.pathname === '/rest/v1/jobs') return Response.json(existing && url.searchParams.get('idempotency_key') ? [{ id: JOB }] : []);
     if (url.pathname.startsWith('/rest/v1/rpc/')) {
       const name = url.pathname.split('/').pop();
-      if (name === 'ledger_debit') return Response.json({ ok: true, job_id: JOB, balance_after: 835, idempotent: existing });
+      if (name === 'ledger_debit' || name === 'ledger_debit_video_agent') return Response.json({ ok: true, job_id: JOB, balance_after: 835, idempotent: existing });
       if (name === 'job_step_claim') return Response.json({ ok: true, claimed: true });
       return Response.json({ ok: true });
     }
@@ -33,7 +33,7 @@ function network({ supported = true, existing = false, planSupported = supported
   return { calls, restore() { globalThis.fetch = previous; } };
 }
 const request = (path, body) => new Request(`https://app.test${path}`, { method: 'POST', headers: { 'x-veyrnox-auth-id': AUTH, 'content-type': 'application/json' }, body: JSON.stringify(body) });
-const debits = net => net.calls.filter(call => call.path.endsWith('/ledger_debit'));
+const debits = net => net.calls.filter(call => call.path.endsWith('/ledger_debit') || call.path.endsWith('/ledger_debit_video_agent'));
 async function approval(narrationText = SCRIPT) {
   const minted = await mintPlanToken({ secret: process.env.MONTAGE_PLAN_SECRET, authId: AUTH, brief: BRIEF, aspect: '9:16', credits: 165, narrationText });
   return { model_id: 'video-agent', idempotency_key: planIdempotencyKey(minted.nonce), inputs: { brief: BRIEF, aspect_ratio: '9:16', plan_id: minted.token, ...(narrationText ? { narration_text: narrationText } : {}) } };
