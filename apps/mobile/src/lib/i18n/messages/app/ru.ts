@@ -5729,5 +5729,18 @@ export default {
   "credits.paywall.buyPlan": "Оформить {plan} — {price}/{period}",
   "credits.paywall.allOptions": "Все варианты",
   "credits.paywall.month": "месяц",
-  "credits.paywall.year": "год"
+  "credits.paywall.year": "год",
+    "handoff.editedVideo": "Отредактированное видео",
+    "handoff.openFilmJob": "Открыть генерацию",
+    "handoff.openFilmJobVersion": "Открыть генерацию для версии промпта {version}",
+    "handoff.useFilmResult": "Использовать результат",
+    "handoff.useFilmResultVersion": "Использовать результат для версии промпта {version}",
+  "handoff.exportUnavailable": "Экспорт пока недоступен.",
+  "handoff.publishMissing": "Эта работа недоступна или срок хранения файла истёк.",
+  "handoff.publishPending": "Эта работа ещё не завершена успешно.",
+  "handoff.publishUnsupported": "Публиковать можно только доступные изображения и видео.",
+  "handoff.promptUnavailable": "Исходный запрос недоступен на этом телефоне.",
+  "handoff.referencesAdjusted": "Перемещено или удалено референсов: {count}.",
+  "handoff.filmAttached": "Результат для этого запроса",
+  "handoff.filmUnattached": "Предыдущий результат; не связан с текущим запросом"
 } as const;

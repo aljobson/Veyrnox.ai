@@ -45,6 +45,8 @@ export interface Job {
     readonly created_at: string;
     readonly label?: string;
     readonly has_asset: boolean;
+    readonly output_type?: 'editor-render';
+    readonly render_id?: string | null;
     // On a moderation hold: the file is not served. Absent on older servers.
     readonly held?: boolean;
     // When the stored file is removed (about 90 days after it was made). Absent or null: unknown.
@@ -180,7 +182,7 @@ export const mediaApi = (api: ApiClient) => ({
         }).then(result => { noteLocalSubmission(result.job_id); void noteGenerationSubmitted(result.job_id, r.modelId, r.analyticsKind); return result; });
     },
     getJob: (id: string) =>
-        api.request<{ state: JobState; credits: number; model_id: string; error_code?: string; refunded?: boolean }>(`/api/v1/jobs/${encodeURIComponent(id)}`),
+        api.request<{ state: JobState; credits: number; model_id: string; error_code?: string; refunded?: boolean; output_type?: 'editor-render'; render_id?: string | null }>(`/api/v1/jobs/${encodeURIComponent(id)}`),
     listJobs: (cursor?: JobPage['next']) => {
         const q = new URLSearchParams({ limit: '24' });
         if (cursor) {

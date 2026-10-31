@@ -5664,5 +5664,18 @@ export default {
   "credits.paywall.buyPlan": "Iniciar {plan} — {price}/{period}",
   "credits.paywall.allOptions": "Ver todas as opções",
   "credits.paywall.month": "mês",
-  "credits.paywall.year": "ano"
+  "credits.paywall.year": "ano",
+    "handoff.editedVideo": "Vídeo editado",
+    "handoff.openFilmJob": "Abrir geração",
+    "handoff.openFilmJobVersion": "Abrir geração da versão {version} do prompt",
+    "handoff.useFilmResult": "Usar este resultado",
+    "handoff.useFilmResultVersion": "Usar resultado da versão {version} do prompt",
+  "handoff.exportUnavailable": "A exportação ainda não está disponível.",
+  "handoff.publishMissing": "Esta criação está indisponível ou o arquivo expirou.",
+  "handoff.publishPending": "Esta criação ainda não foi concluída com sucesso.",
+  "handoff.publishUnsupported": "Somente imagens e vídeos disponíveis podem ser publicados.",
+  "handoff.promptUnavailable": "O texto original não está disponível neste telefone.",
+  "handoff.referencesAdjusted": "Referências movidas ou removidas: {count}.",
+  "handoff.filmAttached": "Resultado deste texto",
+  "handoff.filmUnattached": "Resultado anterior; não associado ao texto atual"
 } as const;

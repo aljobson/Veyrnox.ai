@@ -5534,5 +5534,18 @@ export default {
   "credits.paywall.buyPlan": "{plan} 시작 — {price}/{period}",
   "credits.paywall.allOptions": "모든 옵션 보기",
   "credits.paywall.month": "월",
-  "credits.paywall.year": "년"
+  "credits.paywall.year": "년",
+    "handoff.editedVideo": "편집된 동영상",
+    "handoff.openFilmJob": "생성 결과 열기",
+    "handoff.openFilmJobVersion": "프롬프트 버전 {version}의 생성 결과 열기",
+    "handoff.useFilmResult": "이 결과 사용",
+    "handoff.useFilmResultVersion": "프롬프트 버전 {version}의 결과 사용",
+  "handoff.exportUnavailable": "내보내기는 아직 사용할 수 없습니다.",
+  "handoff.publishMissing": "이 작품을 사용할 수 없거나 파일 보관 기간이 만료되었습니다.",
+  "handoff.publishPending": "이 작품은 아직 성공적으로 완료되지 않았습니다.",
+  "handoff.publishUnsupported": "사용 가능한 이미지와 동영상만 게시할 수 있습니다.",
+  "handoff.promptUnavailable": "이 휴대전화에서는 원래 프롬프트를 사용할 수 없습니다.",
+  "handoff.referencesAdjusted": "이동 또는 삭제된 참조 자료: {count}.",
+  "handoff.filmAttached": "이 프롬프트의 결과",
+  "handoff.filmUnattached": "이전 결과이며 현재 프롬프트와 연결되지 않음"
 } as const;

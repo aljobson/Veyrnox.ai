@@ -8,7 +8,10 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import type { ApiClient } from '../lib/api';
 import { planAttachments } from '../lib/attachModel';
-import { stageCreativeSourceHandoff } from '../lib/creativeSourceHandoff';
+import type { CreativeSourceHandoff } from '../lib/creativeSourceHandoff';
+import { createHandoff, referenceKind, uniqueReferences, type FormSnapshot } from '../lib/createHandoff';
+import { useHandoffScope } from '../lib/useHandoffScope';
+import type { GenerationReference } from '../lib/sources';
 import { fetchCatalog, type CatalogModel } from '../lib/media';
 import { checkPicked, kindOfMime, pickedProblem, type PickedFile, type SlotKind, type SlotName } from '../lib/sources';
 import { uploadMessage, uploadSource } from '../lib/uploads';
@@ -44,19 +47,24 @@ interface Props {
     readonly current: CatalogModel | null;
     // What the open form already holds (prompt, length, shape, template). It rides along to the reopened form, so
     // attaching files never throws away a template's prompt or the words already typed.
+    readonly settings?: FormSnapshot;
+    readonly references?: readonly GenerationReference[];
+    readonly previous?: Partial<CreativeSourceHandoff>;
     readonly carry?: Readonly<Record<string, string>>;
 }
 
 // Always shown: pick several pictures, videos and audio files, and the app moves to the model that
 // takes the most of them (staying on this one when it can), with every file already uploaded.
-export function AttachFromDevice({ api, current, carry }: Props) {
+export function AttachFromDevice({ api, current, carry, settings, references = [], previous }: Props) {
     const styles = useThemedStyles(sheets);
     const router = useRouter();
+    const begin = useHandoffScope();
     const [busy, setBusy] = useState<Source | null>(null);
     const [progress, setProgress] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     async function attach(source: Source) {
+        const valid = begin();
         setError(null);
         setBusy(source);
         try {
@@ -64,10 +72,10 @@ export function AttachFromDevice({ api, current, carry }: Props) {
             try {
                 files = await chooseMany(source);
             } catch {
-                setError(t('attachFromDevice.couldnotopenyourfilesCheckthe'));
+                if (valid()) setError(t('attachFromDevice.couldnotopenyourfilesCheckthe'));
                 return;
             }
-            if (!files.length) return;
+            if (!valid() || !files.length) return;
             const picked: Picked[] = [];
             const problems: string[] = [];
             for (const file of files) {
@@ -76,25 +84,33 @@ export function AttachFromDevice({ api, current, carry }: Props) {
                 if (kind && checked?.ok) picked.push({ kind, file, contentType: checked.contentType });
                 else problems.push(kind && checked && !checked.ok ? pickedProblem(checked.error, kind) : t('attachFromDevice.useJPEGPNGorWebPpicturesMP4'));
             }
-            const plan = planAttachments(await fetchCatalog(), current, picked);
+            const items: ({ kind: SlotKind; ref: GenerationReference } | Picked)[] = [
+                ...uniqueReferences(references).map(ref => ({ kind: referenceKind(ref), ref })), ...picked,
+            ];
+            const catalog = await fetchCatalog();
+            if (!valid()) return;
+            const plan = planAttachments(catalog, current, items);
             if (!plan) { setError(problems[0] ?? t('attachFromDevice.nomodeltakesthosefilesrightnow')); return; }
-            const uploaded: Partial<Record<SlotName, string[]>> = {};
+            const merged: GenerationReference[] = [];
             const abort = new AbortController();
             let done = 0;
             for (const { slot, item } of plan.assignments) {
-                setProgress(t('attachFromDevice.uploadingof', { value1: done + 1, value2: plan.assignments.length }));
-                (uploaded[slot] ??= []).push(await uploadSource(api, item.file, item.contentType, () => {}, abort.signal));
-                done++;
+                if (!valid()) { abort.abort(); return; }
+                if ('ref' in item) merged.push({ ...item.ref, slot });
+                else {
+                    setProgress(t('attachFromDevice.uploadingof', { value1: ++done, value2: picked.length }));
+                    const key = await uploadSource(api, item.file, item.contentType, () => {}, abort.signal);
+                    if (!valid()) return;
+                    merged.push({ origin: 'upload', slot, key });
+                }
             }
-            const skipped = plan.unused.length + problems.length;
-            const handoff = stageCreativeSourceHandoff({ recipe: 'attach', modelId: plan.model.id, uploaded, fromLibrary: {} });
-            router.replace({ pathname: '/create/[modelId]', params: { ...(carry ?? {}), modelId: plan.model.id, recipe: 'attach', sourceHandoff: handoff } });
-            if (skipped) setError(plural('attachFromDevice.skippedFiles', skipped));
+            if (!valid()) return;
+            const moved = plan.assignments.filter(a => 'ref' in a.item && a.slot !== a.item.ref.slot).length;
+            router.replace(createHandoff(plan.model, carry ?? {}, settings, merged, { ...previous, rightsConfirmed: false }, plan.unused.length + problems.length + moved));
         } catch (err) {
-            setError(uploadMessage(err));
+            if (valid()) setError(uploadMessage(err));
         } finally {
-            setBusy(null);
-            setProgress(null);
+            if (valid()) { setBusy(null); setProgress(null); }
         }
     }
 

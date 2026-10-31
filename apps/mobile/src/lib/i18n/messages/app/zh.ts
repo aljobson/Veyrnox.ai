@@ -5534,5 +5534,18 @@ export default {
   "credits.paywall.buyPlan": "开通{plan} — {price}/{period}",
   "credits.paywall.allOptions": "查看所有选项",
   "credits.paywall.month": "月",
-  "credits.paywall.year": "年"
+  "credits.paywall.year": "年",
+    "handoff.editedVideo": "已编辑的视频",
+    "handoff.openFilmJob": "打开生成结果",
+    "handoff.openFilmJobVersion": "打开提示词版本 {version} 的生成结果",
+    "handoff.useFilmResult": "使用此结果",
+    "handoff.useFilmResultVersion": "使用提示词版本 {version} 的结果",
+  "handoff.exportUnavailable": "导出功能尚未开放。",
+  "handoff.publishMissing": "此作品不可用或文件已过期。",
+  "handoff.publishPending": "此作品尚未成功完成。",
+  "handoff.publishUnsupported": "只能发布可用的图片和视频。",
+  "handoff.promptUnavailable": "此手机上没有原始提示词。",
+  "handoff.referencesAdjusted": "已移动或移除的参考素材：{count}。",
+  "handoff.filmAttached": "此提示词的生成结果",
+  "handoff.filmUnattached": "先前的结果；未关联到当前提示词"
 } as const;

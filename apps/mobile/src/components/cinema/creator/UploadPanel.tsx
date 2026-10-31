@@ -26,7 +26,7 @@ export async function stagedValid(ticket: ReturnType<typeof store.ticket>, recor
     return valid;
 }
 
-export function UploadPanel({ contentId, editable, onChange }: { contentId: string; editable: boolean; onChange(): void }) {
+export function UploadPanel({ contentId, parent, editable, onChange }: { contentId: string; parent?: string; editable: boolean; onChange(): void }) {
     const { api } = useAuth(), scope = useCreatorScope();
     const [reply, setReply] = useState<UploadReply | null>(null), [record, setRecord] = useState<UploadRecord | null>(null);
     const [busy, setBusy] = useState(false), [preparing, setPreparing] = useState(false), [checking, setChecking] = useState(true);
@@ -73,7 +73,7 @@ export function UploadPanel({ contentId, editable, onChange }: { contentId: stri
     const begin = async () => {
         const saved = current.current;
         if (!scope.live() || !saved || running.current || !editable || !active.current) return;
-        const release = store.acquire(scope.ticket, contentId); if (!release) { setNote('cinemaUpload.another'); return; }
+        const release = store.acquire(scope.ticket, contentId, parent); if (!release) { setNote('cinemaUpload.another'); return; }
         running.current = true; stop.current = false; paused.current = false; cancel.current = false;
         resumeOnActive.current = false; setBusy(true); setNote('');
         try {
@@ -201,7 +201,7 @@ export function UploadPanel({ contentId, editable, onChange }: { contentId: stri
         <Text style={ui.text}>{t('cinemaUpload.keepOpen')}</Text>
         {note ? <Text style={ui.text}>{t(note)}</Text> : null}
         {reply && !reply.proxy_uploads_enabled && !closed && <Text style={ui.text}>{t('cinemaUpload.paused')}</Text>}
-        {other && <><Text style={ui.text}>{t('cinemaUpload.another')}</Text><Link style={ui.button} href={{ pathname: '/cinema/creator/[id]', params: { id: runningTitle } }}><Text style={ui.link}>{t('cinemaUpload.openRunning')}</Text></Link></>}
+        {other && <><Text style={ui.text}>{t('cinemaUpload.another')}</Text><Link style={ui.button} href={store.runningHref()!}><Text style={ui.link}>{t('cinemaUpload.openRunning')}</Text></Link></>}
         {record && <View accessibilityRole="progressbar" accessibilityLabel={t('cinemaUpload.progressLabel')} accessibilityValue={{ min: 0, max: 100, now: Math.floor(record.offset / record.size * 100) }}>
             <Text style={ui.text}>{t('cinemaUpload.progress', { percent: Math.floor(record.offset / record.size * 100), sent: formatNumber(record.offset / 1000000, 1), total: formatNumber(record.size / 1000000, 1) })}</Text>
         </View>}

@@ -166,6 +166,31 @@
               "scheme": "https",
               "host": "veyrnox.ai",
               "pathPrefix": "/social/team/invite/"
+            },
+            {
+              "scheme": "https",
+              "host": "veyrnox.ai",
+              "pathPrefix": "/social-cinema/"
+            },
+            {
+              "scheme": "https",
+              "host": "veyrnox.ai",
+              "pathPrefix": "/oauth/consent"
+            },
+            {
+              "scheme": "https",
+              "host": "veyrnox.ai",
+              "pathPrefix": "/social/review/"
+            },
+            {
+              "scheme": "https",
+              "host": "veyrnox.ai",
+              "pathPrefix": "/app/video-agent"
+            },
+            {
+              "scheme": "https",
+              "host": "veyrnox.ai",
+              "pathPrefix": "/app/publish/"
             }
           ],
           "category": [

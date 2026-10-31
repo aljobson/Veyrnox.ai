@@ -7,7 +7,7 @@ import { Icon, IconBadge, Text, themedStyles, useThemedStyles } from '../../../c
 import { toolIcon } from '../../../lib/featureIcons';
 import { plural, t } from '../../../lib/i18n';
 import { fetchCatalogCached, type CatalogModel } from '../../../lib/media';
-import { TOOL_TASKS, requiresSource, toolGroups, toolNeeds, type ToolGroup } from '../../../lib/toolDirectory';
+import { TOOL_TASKS, inputTools, toolGroups, toolNeeds, type ToolGroup } from '../../../lib/toolDirectory';
 import { ds, LIST_END_PADDING } from '../../../theme';
 
 const FACE = 'face-filters';
@@ -29,16 +29,16 @@ export default function CreateTools() {
     }, []);
 
     const source = params.source === 'image' || params.source === 'video' ? params.source : null;
-    const showFace = faceAvailable && source !== 'video';
+    const showFace = faceAvailable && source !== 'video' && params.mode !== 'reference';
     const groups = useMemo(() => {
-        const found = toolGroups(source ? (models ?? []).filter((model) => requiresSource(model, source)) : (models ?? [])).filter((g) => g.key !== FACE);
+        const found = toolGroups(inputTools(models ?? [], source, params.mode), params.mode === 'reference').filter((g) => g.key !== FACE);
         if (!showFace || !FACE_TASK) return found;
         // Face filters keeps its place in the web's order even when the saved catalog has no face models.
         const order = (key: string) => { const i = TOOL_TASKS.findIndex((task) => task.key === key); return i < 0 ? TOOL_TASKS.length : i; };
         const face: ToolGroup = { key: FACE, label: FACE_TASK.label, blurb: t('faceFilters.lead'), tools: [] };
         const at = found.findIndex((g) => order(g.key) > order(FACE));
         return at < 0 ? [...found, face] : [...found.slice(0, at), face, ...found.slice(at)];
-    }, [models, source, showFace]);
+    }, [models, source, showFace, params.mode]);
     const lead = params.mode === 'reference'
         ? t('tools.choosewhatyourreferenceshouldguideYou')
         : source === 'image'

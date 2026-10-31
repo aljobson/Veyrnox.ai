@@ -169,3 +169,37 @@ test('largest app and system text sizes use a single column in both themes', asy
         for (const skill of SKILLS) expect(RN.StyleSheet.flatten(control(body(skill.id)).parent!.parent!.props.style).width).toBe('100%');
     }
 });
+
+test('generation model context fits inside a full catalog instruction budget and the thread opens', async () => {
+    mockParams = { modelId: 'x'.repeat(80), prompt: 'My existing scene' };
+    mockCatalog.mockResolvedValue(Array.from({ length: 400 }, (_, i) => ({ ...catalog[0], id: `model-${String(i).padStart(3, '0')}` })));
+    mockChat.updateThread.mockImplementation(async (_id, body) => {
+        if (body.system_prompt.length > 4000) throw new Error('system_prompt_too_long');
+        return {};
+    });
+    await render(); await select('prompt-writer'); await press(t('chatDepth.startSkills'));
+    expect(prompt().length).toBeGreaterThan(3900); expect(prompt().length).toBeLessThanOrEqual(4000);
+    expect(prompt()).toContain(`Current generation model: ${mockParams.modelId}`);
+    expect(mockChat.deleteThread).not.toHaveBeenCalled();
+    expect(mockRouter.replace).toHaveBeenCalledWith({ pathname: '/chat/[id]', params: expect.objectContaining({ id: 'thread', prompt: 'My existing scene' }) });
+});
+
+test('a start that is abandoned mid-flight deletes the created thread', async () => {
+    let finish!: (value: { id: string }) => void;
+    mockChat.createThread.mockReturnValue(new Promise(resolve => { finish = resolve; }));
+    await render();
+    await press(body('prompt-writer')); await press(t('skillsUi.use'));
+    await act(async () => root.unmount());
+    root = createRoot();
+    await act(async () => { finish({ id: 'thread' }); await Promise.resolve(); });
+    expect(mockChat.updateThread).not.toHaveBeenCalled();
+    expect(mockChat.deleteThread).toHaveBeenCalledWith('thread');
+});
+
+test('the current-model line sits above the model list, not inside it', async () => {
+    const { skillsInstructions, skillById: byId } = jest.requireActual('../src/lib/studioSkills');
+    const out: string = skillsInstructions([byId('prompt-writer')], catalog, 'Current generation model: kling-3.0-i2v');
+    expect(out.indexOf('Current generation model:')).toBeGreaterThan(-1);
+    expect(out.indexOf('Current generation model:')).toBeLessThan(out.indexOf('Models (id|kind|Credits per generation):'));
+    expect(out.length).toBeLessThanOrEqual(4000);
+});

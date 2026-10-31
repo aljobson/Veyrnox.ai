@@ -5859,5 +5859,18 @@ export default {
   "credits.paywall.buyPlan": "ابدأ {plan} — {price}/{period}",
   "credits.paywall.allOptions": "عرض كل الخيارات",
   "credits.paywall.month": "شهر",
-  "credits.paywall.year": "سنة"
+  "credits.paywall.year": "سنة",
+    "handoff.editedVideo": "فيديو معدّل",
+    "handoff.openFilmJob": "فتح التوليد",
+    "handoff.openFilmJobVersion": "فتح التوليد للإصدار {version} من الوصف",
+    "handoff.useFilmResult": "استخدام هذه النتيجة",
+    "handoff.useFilmResultVersion": "استخدام نتيجة الإصدار {version} من الوصف",
+  "handoff.exportUnavailable": "التصدير غير متاح بعد.",
+  "handoff.publishMissing": "هذا العمل غير متاح أو انتهت صلاحية ملفه.",
+  "handoff.publishPending": "لم يكتمل هذا العمل بنجاح بعد.",
+  "handoff.publishUnsupported": "يمكن نشر الصور والفيديوهات المتاحة فقط.",
+  "handoff.promptUnavailable": "النص الأصلي غير متاح على هذا الهاتف.",
+  "handoff.referencesAdjusted": "المراجع المنقولة أو المحذوفة: {count}.",
+  "handoff.filmAttached": "نتيجة هذا النص",
+  "handoff.filmUnattached": "نتيجة سابقة؛ غير مرتبطة بالنص الحالي"
 } as const;
