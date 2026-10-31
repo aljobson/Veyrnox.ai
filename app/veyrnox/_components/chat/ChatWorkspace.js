@@ -336,8 +336,11 @@ export function ChatWorkspace() {
     setOpts({ thinking: p.thinking, web: p.web, research: false });
   };
   const oddlingGeneration = oddlingGenerationRef.current;
-  const bindOddlingToThread = (threadId) => {
+  const bindOddlingToThread = (threadId, sendOwner) => {
     if (!oddlingContext) return false;
+    // F-05: a send that began under one account must not write its canon under whoever is signed in now. The owner is
+    // captured when the send starts (useChatSend.js) and passed in; a mid-send account switch refuses the bind.
+    if (sendOwner != null && sendOwner !== getStoredUserId()) return false;
     const launchId = oddlingLaunchId;
     // The launch was owner/age/id checked on mount. Bind from that verified in-memory
     // passport so a tab left open for 30 minutes cannot become an unrecoverable retry loop.

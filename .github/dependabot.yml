@@ -39,6 +39,10 @@ updates:
           - "wrangler"
           - "@types/react"
           - "@types/react-dom"
+    # Let freshly-published versions settle so advisories can surface before a
+    # bump is opened (and possibly auto-merged).
+    cooldown:
+      default-days: 5
     # Majors that cannot land by themselves (triaged 2026-10-03). Remove an
     # entry in the PR that does the upgrade it is waiting for.
     ignore:

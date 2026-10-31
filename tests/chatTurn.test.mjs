@@ -233,6 +233,17 @@ test('the user presses Stop after text: kept and charged; before any text: refun
     assert.equal(called(f, 'ledger_refund').length, 1); assert.equal(called(f, 'chat_complete_turn').length, 0);
 });
 
+// F-12: an empty provider completion (stream ends with no text, no stop, no failure) is refunded like a
+// stop, but it is NOT the user's doing, so it is recorded as 'empty_completion' and must not count toward
+// the per-day stop-before-text cap (which keys on 'user_canceled').
+test('an empty provider completion is refunded but recorded as empty_completion, not a user stop', async () => {
+    const f = fakes({ stream: async function* () { /* ends at once, nothing produced, no abort, no throw */ } });
+    const evs = await events(await run(f, {}));
+    assert.deepEqual([evs.at(-1).data.status, evs.at(-1).data.credits_charged], ['canceled', 0]);
+    assert.equal(called(f, 'job_failed')[0][1].p_error_code, 'empty_completion');
+    assert.equal(called(f, 'ledger_refund').length, 1); assert.equal(called(f, 'chat_complete_turn').length, 0);
+});
+
 // Audit 2026-10-09 M-04: our own ceiling is not a provider failure once text is on screen.
 test('the ceiling fires after text: kept and charged as a stopped reply, and the user is told why', async () => {
     const f = fakes({ stream: async function* ({ signal }) {
