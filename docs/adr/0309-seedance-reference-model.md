@@ -1,6 +1,6 @@
 # ADR-0309: Seedance reference model for Seedance-origin templates
 
-Status: proposed (2026-10-31)
+Status: accepted (2026-10-31); switched on by the owner the same day (0417, `SEEDANCE_REFERENCE_ACTIVE`, `MULTI_REFERENCE_ENABLED` in production vars) without a billed price proof
 Relates: ADR-0256 (supplier routes), ADR-0301 (Kling O1 reference), multi-reference contract (`lib/multiReference.mjs`).
 
 ## Context

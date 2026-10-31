@@ -429,7 +429,6 @@ export const SOURCE_TEMPLATES = [
     sourcePromptRunnable: template.promptOrigin === 'veyrnox-adaptation' ? false : audit.runnable,
     sourcePromptIssues: [...audit.issues],
     sourcePromptModelPromptMax: audit.modelPromptMax ?? null,
-    ...(reference ? { needs: 'Reference pictures of the people, outfits and places (up to 9)', needsKey: 'community.referencePictures' } : {}),
     ...(blockedNeeds ? { needs: blockedNeeds, needsKey: modelLimitOnly ? 'community.modelLimitCopyOnly' : 'community.copyOnly' } : {}),
   };
 });
