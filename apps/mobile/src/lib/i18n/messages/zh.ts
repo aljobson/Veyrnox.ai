@@ -36,7 +36,7 @@ const zh = {
     'public.TemplateRecipe.sourcePromptNotRecorded': '此预览没有记录准确的源提示词。下方生成提示词是 Veyrnox 改编版本，并非从源内容复制。',
     'public.TemplateRecipe.sourcePromptTruncated': '源信息流返回此提示词时内容已经被截断。系统按原样保留，不应将其视为完整提示词。',
     'public.TemplateRecipe.sourcePromptDuplicate': '源平台为另一个视频发布了完全相同的提示词。系统保持原文不变，并将其标记为源重复项。',
-    'public.TemplateRecipe.generationPrompt': 'VEYRNOX 生成提示词',
+    'public.TemplateRecipe.generationPrompt': '生成提示词',
     'recovery.retry': '重试',
     'cinema.creatorWorkspace.cancel': '取消',
     'social.saving': '正在保存…',

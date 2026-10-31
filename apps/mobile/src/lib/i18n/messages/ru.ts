@@ -36,7 +36,7 @@ const ru = {
     'public.TemplateRecipe.sourcePromptNotRecorded': 'Для этого превью нет записанного точного исходного запроса. Запрос для генерации ниже — адаптация Veyrnox, а не скопированный исходный текст.',
     'public.TemplateRecipe.sourcePromptTruncated': 'Исходная лента вернула этот запрос уже обрезанным. Он сохранён без изменений и не должен считаться полным.',
     'public.TemplateRecipe.sourcePromptDuplicate': 'Источник опубликовал тот же точный запрос для другого видео. Он сохранён без изменений и отмечен как дубликат источника.',
-    'public.TemplateRecipe.generationPrompt': 'ЗАПРОС ДЛЯ ГЕНЕРАЦИИ VEYRNOX',
+    'public.TemplateRecipe.generationPrompt': 'ЗАПРОС ДЛЯ ГЕНЕРАЦИИ',
     'recovery.retry': 'Повторить',
     'cinema.creatorWorkspace.cancel': 'Отмена',
     'social.saving': 'Сохранение…',

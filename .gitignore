@@ -60,6 +60,9 @@ public/video-enhance/
 public/editor-speech/
 public/editor-vision/
 
+# App catalogs generated for the Worker static asset binding
+public/_i18n/
+
 # Playwright (e2e/)
 test-results/
 playwright-report/
