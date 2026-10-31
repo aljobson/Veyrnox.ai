@@ -1,6 +1,6 @@
 // Resolve static public copy for the build-time inventory, never execute UI code.
 import ts from 'typescript';
-import { CATALOGS } from '../../lib/i18n/translate.mjs';
+import { CATALOGS } from '../../lib/i18n/catalogs.mjs';
 import appEnglish from '../../lib/i18n/messages/app/en.mjs';
 const publicEnglish = CATALOGS.en;
 const english = { ...publicEnglish, ...appEnglish };

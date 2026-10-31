@@ -5,6 +5,7 @@ import ts from 'typescript';
 import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { localizedHref } from '../../lib/i18n/locales.mjs';
+import { CATALOGS } from '../../lib/i18n/catalogs.mjs';
 
 // Offline SSR: actual page modules, React and locale provider; Next request and
 // navigation APIs are injected. This does not claim a browser/middleware render.
@@ -52,8 +53,11 @@ export function fixture(locale, route, { consentReady = false, states = {}, sign
     return module.exports;
   }
   const { I18nProvider } = load('components/I18nProvider.jsx');
+  // What lib/i18n/server.js hands the provider: the page language's own
+  // public strings (none for English) under any app catalog the test passes.
+  const supplied = locale === 'en' ? messages : { ...CATALOGS[locale], ...messages };
   return {
     load,
-    render: node => renderToStaticMarkup(React.createElement(I18nProvider, { locale, enabled: true, messages }, node)),
+    render: node => renderToStaticMarkup(React.createElement(I18nProvider, { locale, enabled: true, messages: supplied }, node)),
   };
 }

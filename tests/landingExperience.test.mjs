@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { FEATURE_CARDS, MODELS, WALL_PRESETS } from '../app/veyrnox/_lib/tokens.js';
+import { FEATURE_CARDS, MODELS } from '../app/veyrnox/_lib/tokens.js';
+import { WALL_PRESETS } from '../app/veyrnox/_lib/templates.js';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 

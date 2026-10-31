@@ -15,7 +15,7 @@ test('every template remains visibly linked from its recipe page into Create', (
       assert.match(presetHref(preset), new RegExp(`[?&]preset=${preset.id}(?:&|$)`), preset.id);
     }
     assert.ok(modelIdForName(preset.model), `${preset.id} opens a known model`);
-    const visual = templateHandoffVisual(preset);
+    const visual = templateHandoffVisual({ ...preset, clip: SHOWCASE_CLIPS[preset.clipKey] }); // the API sends the clip with the template
     assert.ok(visual, `${preset.id} has a Create handoff visual`);
     if (preset.clipKey) {
       assert.equal(visual.kind, 'video', `${preset.id} keeps its exact preview`);

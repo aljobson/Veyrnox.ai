@@ -1,7 +1,6 @@
 'use client';
 import { useI18n } from '../../../components/I18nProvider';
 import { MediaTile } from './MediaTile';
-import { SHOWCASE_CLIPS } from '../_lib/showcase';
 import { templateHref, presetCredits, presetTitle } from '../_lib/tokens.js';
 
 // Preset card: credited viral preview, monochrome chrome around it.
@@ -11,7 +10,11 @@ import { templateHref, presetCredits, presetTitle } from '../_lib/tokens.js';
 // Explore tab was focusable, cursor-pointer, hover-scaling — and completely
 // inert, while the landing page sent people here with "Browse presets free".
 // An onClick is still honoured for callers that want to intercept.
-export function PresetCard({ preset, size = 'md', onClick, catalog, variant = 'standard', className = '' }) {
+//
+// The preview comes with the preset (`preset.clip`, from /api/templates or the
+// server page that renders the card). Importing showcase.js here would put the
+// whole template catalog into every page that shows a card.
+export function PresetCard({ preset, clip = preset.clip ?? null, size = 'md', onClick, catalog, variant = 'standard', className = '' }) {
   const { t } = useI18n();
   const sizes = {
     sm: { title: 'text-sm' },
@@ -22,7 +25,6 @@ export function PresetCard({ preset, size = 'md', onClick, catalog, variant = 's
   // The template's own page shows its prompt and inputs before anyone is
   // sent to the studio with them.
   const href = templateHref(preset);
-  const clip = preset.clipKey ? SHOWCASE_CLIPS[preset.clipKey] : null;
   const roller = variant === 'roller';
   const title = presetTitle(preset.name);
   return (
@@ -40,7 +42,7 @@ export function PresetCard({ preset, size = 'md', onClick, catalog, variant = 's
           <div className="min-w-0">
             <div className={`font-extrabold tracking-tight truncate ${s.title}`}>{title}</div>
             <div className="mt-0.5 text-vx-fg-muted text-xs truncate">{preset.model}{preset.durationSeconds ? t('mobile.templateDuration', { n: preset.durationSeconds }) : ''}</div>
-            <div className="mt-1 line-clamp-1 text-[11px] text-vx-fg-muted">{preset.prompt}</div>
+            <div className="mt-1 line-clamp-1 text-[11px] text-vx-fg-muted">{preset.promptPreview ?? preset.prompt}</div>
           </div>
           <span aria-hidden className="vx-leader flex-1 self-start mt-3 text-vx-fg-muted" />
           <div className="shrink-0 self-start font-vx-mono text-[14px] font-bold text-vx-money vx-num pt-0.5">{presetCredits(preset, catalog)} cr</div>

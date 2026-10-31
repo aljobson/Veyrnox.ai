@@ -12,10 +12,9 @@ import SiteChrome from './veyrnox/_components/SiteChrome';
 import ServiceStatusBanner from './veyrnox/_components/ServiceStatusBanner';
 import { I18nProvider } from '../components/I18nProvider';
 import { cookies } from 'next/headers';
-import { getLocale } from '../lib/i18n/server';
+import { getPublicT } from '../lib/i18n/server';
 import { THEME_COOKIE, parseTheme } from '../lib/themePreference.mjs';
 import { localeInfo, localesEnabled } from '../lib/i18n/locales.mjs';
-import { translator } from '../lib/i18n/translate.mjs';
 import { OG_IMAGE, OPEN_GRAPH_BASE, ORG_LD, JsonLd } from './seo';
 
 // Self-hosted (OFL, app/fonts): next/font/google fetched these from Google at
@@ -27,8 +26,7 @@ const inter = localFont({
 });
 
 export async function generateMetadata() {
-  const locale = await getLocale();
-  const t = translator(locale);
+  const { t } = await getPublicT();
   const TITLE = t('meta.title');
   const DESCRIPTION = t('meta.description');
   return {
@@ -74,14 +72,13 @@ export async function generateViewport() {
 }
 
 export default async function RootLayout({ children }) {
-  const locale = await getLocale();
+  const { locale, t, messages } = await getPublicT();
   const info = localeInfo(locale);
-  const t = translator(locale);
   const theme = await storedTheme();
   return (
     <html lang={info.hreflang} dir={info.dir} data-theme={theme || undefined} data-scroll-behavior="smooth" className={inter.variable}>
       <body>
-        <I18nProvider locale={locale} enabled={localesEnabled()}>
+        <I18nProvider locale={locale} enabled={localesEnabled()} messages={messages}>
         <AnalyticsProvider>
           {process.env.NODE_ENV === 'development' ? <ReticleDev /> : null}
           <a href="#main" className="vx-skip rounded-full bg-vx-accent px-4 py-2 text-sm font-extrabold text-vx-accent-ink">

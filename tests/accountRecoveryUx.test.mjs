@@ -1,7 +1,8 @@
 import test from 'node:test';
 import * as locales from '../lib/i18n/locales.mjs';
 import appEnglish from '../lib/i18n/messages/app/en.mjs';
-import { messagesFor, translator, tOr } from '../lib/i18n/translate.mjs';
+import { translator, tOr } from '../lib/i18n/translate.mjs';
+import { messagesFor } from '../lib/i18n/catalogs.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';

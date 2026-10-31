@@ -1,8 +1,6 @@
 // Veyrnox.ai data constants — source of truth: platform_model.xlsx / handoff README
 // Do not drift these numbers. Credit costs & plan prices are contractual.
 
-import { templateById } from './templates.js';
-
 // Active gateway catalog — kept in lockstep with fal rows exposed by
 // /api/v1/generations and (once shipped) GET /api/v1/catalog.
 // `durations` mirrors what GET /api/catalog derives from each model's
@@ -75,18 +73,19 @@ export function kindOf(modality) {
 // Prices are Veyrnox's own — the shape is what's borrowed.
 
 
-// Templates live in templates.js; re-exported so existing imports keep working.
-export {
-  PRESETS,
-  PRESET_CATEGORIES,
-  QUICK_PRESET_CATEGORIES,
-  WALL_PRESETS,
-  ALL_TEMPLATES,
-  templatesIn,
-  searchTemplates,
-  templateHref,
-} from './templates.js';
-export { templateById };
+// The template catalog lives in templates.js and is NOT re-exported here: this
+// file is imported by the nav, search, pricing and credits, and re-exporting
+// the catalog shipped about 1.5 MB of template data to every page.
+// Import PRESETS, templateById and the rest from './templates.js' where needed.
+
+/** The template's own page, where its prompt and inputs are shown before use. */
+// The first filter row is deliberately concise; the gallery can disclose the
+// complete category catalog in place without hiding choices in a scroll rail.
+export const QUICK_PRESET_CATEGORIES = ['ALL', 'NEW', 'POPULAR', 'YOUR PHOTO', 'PRODUCTS', 'STORIES'];
+
+export function templateHref(preset) {
+  return `/presets/${encodeURIComponent(preset.id)}`;
+}
 
 // Preset names are stored upper-case for the studio's chips. Shown as a title
 // they read better in title case, except for the acronyms they contain.
@@ -112,15 +111,6 @@ export function modelIdForName(name) {
   const want = String(name).trim().toLowerCase();
   const hit = MODELS.find((m) => m.name.toLowerCase() === want);
   return hit ? hit.id : null;
-}
-
-export function presetDraftForModel(presetId, modelId) {
-  const preset = templateById(presetId);
-  if (!preset || !modelId || modelIdForName(preset.model) !== modelId) return null;
-  return {
-    prompt: preset.prompt,
-    aspect: typeof preset.aspect === 'string' ? preset.aspect : null,
-  };
 }
 
 /**

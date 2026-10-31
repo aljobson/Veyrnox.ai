@@ -6,12 +6,14 @@ import * as React from 'react';
 import * as jsx from 'react/jsx-runtime';
 import { renderToStaticMarkup } from 'react-dom/server';
 import ts from 'typescript';
-import { CATALOGS, translator, pluralKey } from '../lib/i18n/translate.mjs';
+import { translator, pluralKey } from '../lib/i18n/translate.mjs';
+import { messagesFor } from '../lib/i18n/catalogs.mjs';
+import { CATALOGS } from '../lib/i18n/catalogs.mjs';
 
 const counts = [1, 2, 3, 4, 5, 11, 21, 22];
 const russian = ['кредит', 'кредита', 'кредита', 'кредита', 'кредитов', 'кредитов', 'кредит', 'кредита'];
 test('web Russian credit tiles and earned messages follow singular, few and many forms', () => {
-    const t = translator('ru');
+    const t = translator('ru', messagesFor('ru'));
     counts.forEach((credits, i) => {
         assert.equal(t(pluralKey(t, 'ru', 'checkin.credits', credits), { credits }), `${credits} ${russian[i]}`);
         assert.equal(t(pluralKey(t, 'ru', 'checkin.earned', credits), { credits }), `Вы получили ${credits} ${russian[i]}.`);
@@ -19,16 +21,16 @@ test('web Russian credit tiles and earned messages follow singular, few and many
 });
 test('all web locales supply the selected reward plural forms without fallback', () => {
     for (const [locale, messages] of Object.entries(CATALOGS)) {
-        const t = translator(locale);
+        const t = translator(locale, messagesFor(locale));
         for (const credits of [1, 2, 3]) for (const base of ['checkin.credits', 'checkin.earned']) {
             const key = pluralKey(t, locale, base, credits);
             assert.equal(typeof messages[key], 'string', `${locale}: ${key}`);
             assert.doesNotMatch(t(key, { credits }), /checkin\.|\{credits\}/);
         }
     }
-    const ar = translator('ar');
+    const ar = translator('ar', messagesFor('ar'));
     assert.equal(ar(pluralKey(ar, 'ar', 'checkin.credits', 2), { credits: 2 }), '2 من الرصيد');
-    const hi = translator('hi');
+    const hi = translator('hi', messagesFor('hi'));
     assert.equal(hi(pluralKey(hi, 'hi', 'checkin.earned', 2), { credits: 2 }), 'आपने 2 क्रेडिट कमाए।');
 });
 test('the real web dialog renders a hidden claimed label and an aria-hidden tick', () => {

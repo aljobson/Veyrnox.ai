@@ -2,36 +2,40 @@
 import { useState } from 'react';
 import { PresetCard } from './PresetCard';
 import { TemplateRoller } from './TemplateRoller';
-import { PRESETS, PRESET_CATEGORIES, QUICK_PRESET_CATEGORIES, searchTemplates, templatesIn } from '../_lib/tokens';
+import { QUICK_PRESET_CATEGORIES } from '../_lib/tokens.js';
+import { cardsIn, useTemplateCards, useTemplateSearch } from '../_lib/useTemplates';
 import { useCatalog } from '../_lib/useCatalog';
 import { usePopularTemplates } from '../_lib/usePopularTemplates';
 import { useI18n } from '../../../components/I18nProvider';
 import { rankByTaste } from '../../../lib/creatorWords.js';
-import { hasTemplateVideo } from '../_lib/templates.js';
 
 const TEMPLATE_BATCH_SIZE = 50;
 
 // The preset filter and grid, shared by the public /presets page and the
 // studio's Explore tab so the two never drift apart.
 // `taste` is the person's vibe check answers (ADR-0251), or null: templates that fit come first and nothing else changes.
-export function PresetGallery({ size = 'lg', columns = 'lg:columns-3', taste = null }) {
+// The cards come from /api/templates, not the bundle; `initial` ({ templates, categories }) is what the server page already
+// rendered, so the public page has its templates in the first HTML and the list does not blink in.
+export function PresetGallery({ size = 'lg', columns = 'lg:columns-3', taste = null, initial = null }) {
   const { t } = useI18n();
   const [cat, setCat] = useState('ALL');
   const [query, setQuery] = useState('');
   const [allCategoriesOpen, setAllCategoriesOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(TEMPLATE_BATCH_SIZE);
   const { models } = useCatalog();
+  const loaded = useTemplateCards();
+  const { templates: cards, categories: allCategories } = loaded.ready || !initial ? loaded : initial;
   const popularIds = usePopularTemplates();
   // Popular (ADR-0072) is a ranking, not a home category: it appears only once some template has enough use to rank, in rank order.
-  const popular = popularIds.map((id) => PRESETS.find((preset) => preset.id === id)).filter(Boolean);
-  const categories = popular.length ? ['ALL', 'NEW', 'POPULAR', ...PRESET_CATEGORIES.slice(2)] : PRESET_CATEGORIES;
+  const popular = popularIds.map((id) => cards.find((preset) => preset.id === id)).filter(Boolean);
+  const categories = popular.length ? ['ALL', 'NEW', 'POPULAR', ...allCategories.slice(2)] : allCategories;
   const quickCategories = categories.filter((category) => QUICK_PRESET_CATEGORIES.includes(category));
   const shownCategories = allCategoriesOpen
     ? categories
     : [...quickCategories, ...(quickCategories.includes(cat) ? [] : [cat])];
-  const list = (cat === 'POPULAR' ? popular : templatesIn(cat)).filter(hasTemplateVideo);
-  const matches = searchTemplates(list, query);
-  const ordered = rankByTaste(matches, taste, (p) => `${p.name} ${p.category} ${p.prompt}`);
+  const list = cat === 'POPULAR' ? popular : cardsIn(cards, cat);
+  const matches = useTemplateSearch(list, query);
+  const ordered = rankByTaste(matches, taste, (p) => p.taste ?? '');
   // The roller offers a quick sample of the video-backed gallery below.
   const rollerPresets = ordered.filter((preset) => preset.clipKey).slice(0, 48);
   const modelCount = new Set(matches.map((preset) => preset.model)).size;
