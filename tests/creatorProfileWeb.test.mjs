@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readVibe } from '../app/veyrnox/_lib/creatorProfile.js';
-import { PRESETS } from '../app/veyrnox/_lib/tokens.js';
+import { PRESETS } from '../app/veyrnox/_lib/templates.js';
 import { rankByTaste } from '../lib/creatorWords.js';
 
 const good = { look: 'neon_rain', goal: 'sell', pace: 'fox', chaos: 3, destination: 'tiktok', audience: 'customers', voice: 'calm' };

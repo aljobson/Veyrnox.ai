@@ -110,7 +110,6 @@ export function templateById(id) {
   return ALL_TEMPLATES.find((p) => p.id === id) || null;
 }
 
-/** The template's own page, where its prompt and inputs are shown before use. */
-export function templateHref(preset) {
-  return `/presets/${encodeURIComponent(preset.id)}`;
-}
+// Defined in tokens.js so components that only need the link do not pull in
+// the whole catalog; re-exported here for callers that import from templates.
+export { templateHref } from './tokens.js';

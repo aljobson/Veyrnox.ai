@@ -5,7 +5,7 @@ import { cn } from '../../../lib/utils';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FAQ, PRESETS, MODELS as MODELS_FALLBACK, SITE_PAGES, isShelfModel, navHref, presetCredits, presetTitle, templateHref } from '../_lib/tokens';
+import { FAQ, MODELS as MODELS_FALLBACK, SITE_PAGES, isShelfModel, navHref, presetCredits, presetTitle, templateHref } from '../_lib/tokens';
 import { searchIndex, MIN_QUERY } from '../_lib/searchIndex';
 import { Icon } from './Icon';
 import { Modal } from './Modal';
@@ -19,7 +19,9 @@ import { useI18n } from '../../../components/I18nProvider';
 
 const FALLBACK_MODELS = MODELS_FALLBACK.filter((model) => !model.staged);
 
-function staticIndex(models, oddlingsPublic, t) {
+// `presets` is the template catalog, loaded on first open (see SearchOverlay) so
+// the nav on every page does not ship it.
+function staticIndex(models, oddlingsPublic, t, presets = []) {
   return [
     ...SITE_PAGES.map((p) => ({
       group: 'Pages',
@@ -27,7 +29,7 @@ function staticIndex(models, oddlingsPublic, t) {
       detail: tOr(t, `search.page.${p.href === '/' ? 'home' : p.href.slice(1).replaceAll('/', '-')}`, p.description),
       href: navHref(p, oddlingsPublic),
     })),
-    ...PRESETS.map((p) => ({
+    ...presets.map((p) => ({
       group: 'Templates',
       title: presetTitle(p.name),
       detail: t('search.templateDetail', { category: tOr(t, `presets.cat.${p.category}`, p.category), model: p.model, credits: presetCredits(p, models) }),
@@ -97,7 +99,19 @@ function SearchOverlay({ onClose }) {
   const [query, setQuery] = useState('');
   const [cursor, setCursor] = useState(0);
   const [models, setModels] = useState(null);
+  const [presets, setPresets] = useState([]);
   const inputRef = useRef(null);
+
+  // The template catalog is large; fetch it only once search is opened.
+  useEffect(() => {
+    let cancelled = false;
+    import('../_lib/templates')
+      .then((mod) => { if (!cancelled) setPresets(mod.PRESETS); })
+      .catch(() => {
+        // Search still works for pages, models and FAQ without templates.
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   // Live catalog, with the bundled list as the floor so search works offline.
   useEffect(() => {
@@ -116,8 +130,8 @@ function SearchOverlay({ onClose }) {
   }, []);
 
   const index = useMemo(
-    () => [...staticIndex(models || FALLBACK_MODELS, oddlingsPublic, t), ...modelsToIndex(models || FALLBACK_MODELS, t)],
-    [models, oddlingsPublic, t],
+    () => [...staticIndex(models || FALLBACK_MODELS, oddlingsPublic, t, presets), ...modelsToIndex(models || FALLBACK_MODELS, t)],
+    [models, oddlingsPublic, t, presets],
   );
   const results = useMemo(() => searchIndex(index, query), [index, query]);
 

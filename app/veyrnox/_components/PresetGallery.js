@@ -2,7 +2,8 @@
 import { useState } from 'react';
 import { PresetCard } from './PresetCard';
 import { TemplateRoller } from './TemplateRoller';
-import { PRESETS, PRESET_CATEGORIES, QUICK_PRESET_CATEGORIES, searchTemplates, templatesIn } from '../_lib/tokens';
+import { PRESETS, PRESET_CATEGORIES, QUICK_PRESET_CATEGORIES, searchTemplates, templatesIn } from '../_lib/templates';
+import { SHOWCASE_CLIPS } from '../_lib/showcase';
 import { useCatalog } from '../_lib/useCatalog';
 import { usePopularTemplates } from '../_lib/usePopularTemplates';
 import { useI18n } from '../../../components/I18nProvider';
@@ -78,10 +79,10 @@ export function PresetGallery({ size = 'lg', columns = 'lg:columns-3', taste = n
           models: t(modelCount === 1 ? 'presets.models.one' : 'presets.models.other', { n: modelCount }),
         })}
       </p>
-      <TemplateRoller presets={rollerPresets} catalog={models} className="mb-10" />
+      <TemplateRoller presets={rollerPresets} clips={SHOWCASE_CLIPS} catalog={models} className="mb-10" />
       <div id="preset-gallery-results" className={`columns-1 sm:columns-2 ${columns} gap-6 [&>a]:mb-10 [&>a]:break-inside-avoid`}>
         {ordered.slice(0, visibleCount).map((p) => (
-          <PresetCard key={p.id} preset={p} catalog={models} size={size} />
+          <PresetCard key={p.id} preset={p} clip={SHOWCASE_CLIPS[p.clipKey]} catalog={models} size={size} />
         ))}
       </div>
       {visibleCount < matches.length && <div className="mt-4 text-center">

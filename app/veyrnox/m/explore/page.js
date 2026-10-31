@@ -6,9 +6,10 @@ import { useState } from 'react';
 import { MobileTabs } from '../_MobileNav';
 import { PresetCard } from '../../_components/PresetCard';
 import { TemplateRoller } from '../../_components/TemplateRoller';
-import { PRESET_CATEGORIES, templatesIn } from '../../_lib/tokens';
+import { PRESET_CATEGORIES, templatesIn } from '../../_lib/templates';
 import { useCatalog } from '../../_lib/useCatalog';
 import { hasTemplateVideo } from '../../_lib/templates.js';
+import { SHOWCASE_CLIPS } from '../../_lib/showcase';
 
 const TEMPLATE_BATCH_SIZE = 50;
 
@@ -45,10 +46,10 @@ export default function MobileExplore() {
           ))}
         </div>
 
-        <TemplateRoller presets={rollerPresets} catalog={models} className="mb-5" />
+        <TemplateRoller presets={rollerPresets} clips={SHOWCASE_CLIPS} catalog={models} className="mb-5" />
 
         <div className="grid grid-cols-2 gap-2.5">
-          {list.slice(0, visibleCount).map((p) => <PresetCard key={p.id} preset={p} catalog={models} size="sm" />)}
+          {list.slice(0, visibleCount).map((p) => <PresetCard key={p.id} preset={p} clip={SHOWCASE_CLIPS[p.clipKey]} catalog={models} size="sm" />)}
         </div>
         {visibleCount < list.length && <div className="mt-5 text-center">
           <p className="mb-3 text-sm text-vx-fg-muted" aria-live="polite">{t('presets.showing', { shown: Math.min(visibleCount, list.length), total: list.length })}</p>

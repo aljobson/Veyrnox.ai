@@ -12,7 +12,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { AUDIT_SHOWCASE_CLIPS, SHOWCASE_CLIPS, MODEL_SHOWCASE_KEYS, WALL_SHOWCASE_KEYS, MAX_CLIP_BYTES } from '../app/veyrnox/_lib/showcase.js';
 import { REMOVED_PROMPT_GAP_TEMPLATE_IDS } from '../app/veyrnox/_lib/templates.js';
-import { FEATURE_CARDS, PRESETS, WALL_PRESETS } from '../app/veyrnox/_lib/tokens.js';
+import { FEATURE_CARDS } from '../app/veyrnox/_lib/tokens.js';
+import { PRESETS, WALL_PRESETS } from '../app/veyrnox/_lib/templates.js';
 
 const PUBLIC = new URL('../public', import.meta.url).pathname;
 const LANDING_KEYS = [

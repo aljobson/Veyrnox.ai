@@ -19,7 +19,8 @@ import { FilmTests } from './FilmTests';
 import { FilmPrompts } from './FilmPrompts';
 import { filmStudioStore } from '../../_lib/filmStudioStore';
 import { takeFilmStarter } from '../../_lib/filmTemplateDraft';
-import { modelIdForName, presetTitle, templateById, templateHref } from '../../_lib/tokens';
+import { modelIdForName, presetTitle, templateHref } from '../../_lib/tokens';
+import { templateById } from '../../_lib/templates';
 import { SHOWCASE_CLIPS } from '../../_lib/showcase';
 
 const storage = () => { try { return window.localStorage; } catch { return null; } };
