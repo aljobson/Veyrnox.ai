@@ -2,7 +2,6 @@ import LegalLink from '../../../components/LegalLink';
 import Link from 'next/link';
 import { Logo } from '../_components/Logo';
 import { ENTITY } from '../../legal/_lib/entity';
-import { translator } from '../../../lib/i18n/translate.mjs';
 import { rich } from '../../../lib/i18n/rich';
 import { localizedHref, localeInfo } from '../../../lib/i18n/locales.mjs';
 import {
@@ -45,8 +44,7 @@ function exampleLines(catalog, t) {
 
 const fmt = (n) => (n > 0 ? `+${n}` : `\u2212${Math.abs(n)}`);
 
-export function LedgerExample({ catalog, locale = 'en' }) {
-  const t = translator(locale);
+export function LedgerExample({ catalog, locale = 'en', t }) {
   const lines = exampleLines(catalog, t);
   const balance = lines.reduce((n, l) => n + l.delta, 0);
   return (
@@ -101,8 +99,7 @@ export function LedgerExample({ catalog, locale = 'en' }) {
 
 /* ─── FAQ ─── */
 
-export function FAQBlock({ locale = 'en' }) {
-  const t = translator(locale);
+export function FAQBlock({ locale = 'en', t }) {
   return (
     <section data-vey-perch id="faq" className="px-4 sm:px-6 pt-28 sm:pt-36 max-w-[1300px] mx-auto">
       <div className="grid grid-cols-1 lg:grid-cols-[0.8fr_1fr] gap-8 lg:gap-20">
@@ -140,8 +137,7 @@ export function FAQBlock({ locale = 'en' }) {
 
 /* ─── Closing CTA ─── */
 
-export function ClosingCTA({ locale = 'en' }) {
-  const t = translator(locale);
+export function ClosingCTA({ locale = 'en', t }) {
   return (
     <section data-vey-perch className="px-4 sm:px-6 pt-28 sm:pt-36 max-w-[1300px] mx-auto">
       {/* A panel, not loose type: the last screen of the page reads as the
@@ -172,8 +168,7 @@ export function ClosingCTA({ locale = 'en' }) {
 
 /* ─── Footer forest ─── */
 
-export function FooterForest({ locale = 'en' }) {
-  const t = translator(locale);
+export function FooterForest({ locale = 'en', t }) {
   const info = localeInfo(locale);
   return (
     <footer className="mt-28 sm:mt-36 border-t border-vx-border">

@@ -5,7 +5,9 @@ import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import ts from 'typescript';
 import { compile } from 'tailwindcss';
-import { CATALOGS, translator, tOr } from '../lib/i18n/translate.mjs';
+import { translator, tOr } from '../lib/i18n/translate.mjs';
+import { messagesFor } from '../lib/i18n/catalogs.mjs';
+import { CATALOGS } from '../lib/i18n/catalogs.mjs';
 import { CONTENT_TYPES, AI_DISCLOSURES, CINEMA_CATEGORIES } from '../lib/cinema/domain.js';
 import { CINEMA_RATINGS, CINEMA_WARNING_CODES } from '../lib/cinema/safetyPolicy.js';
 import { NETWORKS } from '../app/lib/socialConnectClient.js';
@@ -28,7 +30,7 @@ const keyPattern = /^[a-z]+(\.[A-Za-z0-9_-]+)+$/;
 for (const [family, known] of Object.entries(families)) {
   test(`${family}: unknown values render fallback, known values translate in en and ar`, () => {
     for (const locale of ['en', 'ar']) {
-      const t = translator(locale), key = `${family}.${known}`;
+      const t = translator(locale, messagesFor(locale)), key = `${family}.${known}`;
       assert.ok(t.messages[key], key);
       assert.equal(tOr(t, key, 'Server display label'), t(key));
       for (const fallback of ['Server display label', 'future-value']) {
@@ -42,7 +44,7 @@ for (const [family, known] of Object.entries(families)) {
 }
 
 test('fallbacks preserve slots and unlisted caller labels without confusing equal key/value translations', () => {
-  const t = translator('ar');
+  const t = translator('ar', messagesFor('ar'));
   assert.equal(tOr(t, 'unknown.key', 'Server limit {n}', { n: 2 }), 'Server limit 2');
   assert.equal(t.label('Custom caller label'), 'Custom caller label');
   assert.equal(t.label('Generate'), t('label.Generate'));

@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import ts from 'typescript';
 import { translator } from '../lib/i18n/translate.mjs';
+import { messagesFor } from '../lib/i18n/catalogs.mjs';
 import * as localeCookie from '../lib/i18n/localeCookie.mjs';
 import * as locales from '../lib/i18n/locales.mjs';
 
@@ -17,7 +18,7 @@ function control(name, pathname, enabled = true, saveAccountLanguage = () => {})
     '../../lib/accountLanguageClient.js': { saveAccountLanguage },
     react: { useState: () => [true, () => {}], useRef: () => ({ current: null }), useEffect() {} },
     'next/navigation': { usePathname: () => pathname },
-    '../../../components/I18nProvider': { useI18n: () => ({ locale: 'de', languagesEnabled: enabled, t: translator('de') }) },
+    '../../../components/I18nProvider': { useI18n: () => ({ locale: 'de', languagesEnabled: enabled, t: translator('de', messagesFor('de')) }) },
     '../../../lib/i18n/locales.mjs': locales,
     '../../../lib/i18n/localeCookie.mjs': localeCookie,
     '../../../lib/i18n/translate.mjs': { translator },
