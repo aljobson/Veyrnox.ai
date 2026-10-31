@@ -14,16 +14,20 @@ import { dataInventory } from '../scripts/lib/data-i18n.mjs';
 import { publicFiles, appFiles, candidates } from '../scripts/audit-public-i18n.mjs';
 import { legalDocument } from '../lib/i18n/legal/catalogs.mjs';
 import { fixture } from './helpers/publicSiteRender.mjs';
+import { sourcePromptAuditRecord } from '../app/veyrnox/_lib/sourcePromptAudit.js';
 
 const codes = Object.keys(CATALOGS);
 const digits = value => (value.match(/\d+(?:[.:–]\d+)*/g) || []).sort();
 const tree = (file, source) => ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JSX);
 
-test('all template needs and 15 distinct steps have exact English and ten translated display entries', () => {
+test('all template needs and 16 distinct steps have exact English and ten translated display entries', () => {
   const original = JSON.stringify(ALL_TEMPLATES);
   assert.equal(ALL_TEMPLATES.length, 1434);
-  assert.ok(ALL_TEMPLATES.every(p => p.needs), 'Every public recipe retains translated input guidance');
-  assert.equal(Object.keys(PRESET_STEP_KEYS).length, 15);
+  const audit = JSON.parse(readFileSync(new URL('../docs/product/source-audit/seedance-200-exact-2026-10-29.json', import.meta.url)));
+  const textOnlyIds = audit.records.filter(r => !r.existing && r.referenceImageCount === 0 && sourcePromptAuditRecord(r.id).runnable).map(r => r.id);
+  assert.equal(textOnlyIds.length, 78);
+  assert.deepEqual(ALL_TEMPLATES.filter(p => !p.needs).map(p => p.id).sort(), [...textOnlyIds, 'a-moment-between-strangers', 'dreamworks-castle', 'epic-train-doorway-scene', 'the-last-stagecoach', 'the-push'].sort());
+  assert.equal(Object.keys(PRESET_STEP_KEYS).length, 16);
   for (const code of codes) {
     const t = translator(code);
     for (const preset of ALL_TEMPLATES) {
