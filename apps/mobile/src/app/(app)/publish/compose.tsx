@@ -1,3 +1,5 @@
+import { publishPick, resolvePublishPick } from '../../../lib/publishHandoff';
+import { useAnnouncement } from '../../../lib/useAnnouncement';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { Button, Text as ThemedText } from '../../../components/ui';
 import { NetworkLogo } from '../../../components/publish/NetworkLogo';
@@ -65,6 +67,7 @@ export default function Compose() {
     const preparingRef = useRef(false);
     const [busy, setBusy] = useState(false);
     const [problem, setProblem] = useState<string | null>(null);
+    useAnnouncement(problem);
 
     useEffect(() => {
         const reset = () => {
@@ -88,19 +91,19 @@ export default function Compose() {
                 const nextGates = composeGates(acc);
                 setGates(nextGates); setFreePlan(acc.plansEnabled && acc.planTier === 'free');
                 if (!nextGates.schedule) setMode('now');
-                const byId = new Map<string, CatalogModel>(catalog.map((m) => [m.id, m]));
-                const list: CreationPick[] = [];
-                for (const job of page.jobs) {
-                    const model = byId.get(job.model_id);
-                    const mediaType = model ? mediaTypeOf(model.modality) : null;
-                    if (job.state === 'succeeded' && job.has_asset && model && mediaType) list.push({ kind: 'job', job, mediaType, name: job.label || model.name });
-                }
+                const list = page.jobs.map(job => publishPick(job, catalog)).filter((pick): pick is CreationPick => pick !== null);
                 setPicks(list.slice(0, 24));
                 setAccounts(acc.accounts);
                 setUploadsEnabled(acc.uploadsEnabled);
 
                 setCarouselEnabled(acc.carouselEnabled === true);
-                if (presetJob && prefillAllowed.current) { setChoices(list.filter(p => p.job.job_id === presetJob)); prefillAllowed.current = false; }
+                if (presetJob && prefillAllowed.current) {
+                    const result = await resolvePublishPick(api, presetJob, page.jobs, catalog, valid);
+                    if (!valid()) return;
+                    prefillAllowed.current = false;
+                    if (result?.pick) setChoices([result.pick]);
+                    else if (result?.error) setProblem(t(result.error));
+                }
                 if (nextGates.queues) { const queueList = await fetchQueues(api).catch(() => [] as PublishQueue[]); if (valid()) setQueues(queueList.filter(q => q.enabled)); }
             })
             .catch((err) => valid() && setError(publishErrorMessage(err)));

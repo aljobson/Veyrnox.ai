@@ -23,8 +23,8 @@ export function FilmInput({ label, value, onChange, disabled = false, multiline 
         accessibilityState={{ disabled }} editable={!disabled} value={value} onChangeText={v => { if (!disabled) onChange(v); }}
         multiline={multiline} maxLength={maxLength} style={{ minHeight: multiline ? 110 : 44, color: colors.text, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12 }} /></View>;
 }
-export function FilmPromptOutput({ title, prompt, modelId, access, catalog, live, aspect, duration }: {
-    title: string; prompt: string; modelId: string; access: string; catalog: readonly CatalogModel[]; live: boolean; aspect?: string; duration?: number;
+export function FilmPromptOutput({ title, prompt, modelId, access, catalog, live, aspect, duration, returnParams }: {
+    returnParams?: () => Record<string, string>; title: string; prompt: string; modelId: string; access: string; catalog: readonly CatalogModel[]; live: boolean; aspect?: string; duration?: number;
 }) {
     const router = useRouter(), [notice, setNotice] = useState('');
     const model = catalog.find(m => m.id === modelId);
@@ -40,7 +40,7 @@ export function FilmPromptOutput({ title, prompt, modelId, access, catalog, live
         <FilmAction label={t('film.sharethefullprompt')} onPress={() => void Share.share({ message: prompt })} />
         {notice ? <StatusText variant="inherit" accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : undefined} style={{ color: colors.body }}>{notice}</StatusText> : null}
         {state.ok ? <><FilmAction label={t('film.openinCreate')} onPress={() => router.push({ pathname: '/create/[modelId]',
-            params: { modelId, prompt, ...(duration === undefined ? {} : { duration: String(duration) }), ...(aspect ? { aspect } : {}) } })} />
+            params: { ...returnParams?.(), modelId, prompt, ...(duration === undefined ? {} : { duration: String(duration) }), ...(aspect ? { aspect } : {}) } })} />
             <Text style={{ color: colors.muted }}>{t('filmOutput.createNote')}</Text></> : access === 'Studio' ?
             <Text style={{ color: colors.muted }}>{t(state.reason === 'limit' ? 'filmOutput.reason.limit' : state.reason === 'duration' ? 'filmOutput.reason.duration' : state.reason === 'aspect' ? 'filmOutput.reason.aspect' : 'filmOutput.reason.catalog', { value1: model ? textInput(model)?.max ?? 0 : 0 })}</Text> : null}
     </View>;

@@ -1,3 +1,4 @@
+import { useHandoffScope } from '../../../lib/useHandoffScope';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState, useRef } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, View, useWindowDimensions, type LayoutChangeEvent } from 'react-native';
@@ -20,7 +21,8 @@ export default function StudioSkills() {
     const styles = useThemedStyles(sheets);
     const { api } = useAuth();
     const router = useRouter();
-    const params = useLocalSearchParams<{ skill?: string; workflow?: string }>();
+    const beginHandoff = useHandoffScope();
+    const params = useLocalSearchParams<{ skill?: string; workflow?: string; prompt?: string; modelId?: string }>();
     const { width, fontScale } = useWindowDimensions();
     const { settings } = useAppearance();
     const single = createTileColumns(width, fontScale, TEXT_SCALE[settings.textSize]) === 1;
@@ -54,6 +56,7 @@ export default function StudioSkills() {
 
     async function startSkills(skills: readonly Skill[]) {
         if (busy.current || !skills.length) return;
+        const current = beginHandoff();
         busy.current = true;
         setCreating(true);
         setError(null);
@@ -61,16 +64,20 @@ export default function StudioSkills() {
         try {
             if (!model) throw new Error('no_model');
             const catalog = await fetchCatalog();
+            if (!current()) return;
             if (fittingSkills(skills, catalog).length !== skills.length) { setError(t('chatDepth.skillsTooLong')); return; }
             const thread = await chatApi(api).createThread(model.id);
-            try { await chatApi(api).updateThread(thread.id, { system_prompt: skillsInstructions(skills, catalog) }); }
-            catch (err) { await chatApi(api).deleteThread(thread.id).catch(() => undefined); throw err; }
+            const discard = () => { void chatApi(api).deleteThread(thread.id).catch(() => undefined); };
+            if (!current()) { discard(); return; }
+            try { await chatApi(api).updateThread(thread.id, { system_prompt: skillsInstructions(skills, catalog, (params.modelId && /^[A-Za-z0-9._-]{1,80}$/.test(params.modelId) ? `Current generation model: ${params.modelId}` : '')) }); }
+            catch (err) { discard(); if (!current()) return; throw err; }
+            if (!current()) { discard(); return; }
             setSkill(null); setWorkflow(null);
-            router.replace({ pathname: '/chat/[id]', params: { id: thread.id, starter: skills[0].starter } });
+            router.replace({ pathname: '/chat/[id]', params: { id: thread.id, starter: skills[0].starter, ...(typeof params.prompt === 'string' ? { prompt: params.prompt } : {}), ...(params.modelId ? { modelId: params.modelId } : {}) } });
             started = true;
         } catch {
-            setError(t('chat.skills.failed'));
-        } finally { if (!started) { setCreating(false); busy.current = false; } }
+            if (current()) setError(t('chat.skills.failed'));
+        } finally { if (!started) { busy.current = false; setCreating(false); } }
     }
     function toggle(value: Skill) {
         if (busy.current || !models) return;

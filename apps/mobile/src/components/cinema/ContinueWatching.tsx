@@ -1,3 +1,5 @@
+import { continueWatchingHref } from '../../lib/cinemaHandoff';
+import { useHandoffScope } from '../../lib/useHandoffScope';
 import { rawText } from '../../lib/i18n/translate';
 import { Image } from 'expo-image';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -14,6 +16,7 @@ import { colors } from '../../theme';
 export function ContinueWatching() {
     const { api, status, getAccessToken } = useAuth();
     const router = useRouter();
+    const beginHandoff = useHandoffScope();
     const client = getCinemaProgress(api, getAccessToken);
     const [view, setView] = useState(emptyProgressView);
     const [removing, setRemoving] = useState<string | null>(null);
@@ -64,7 +67,7 @@ export function ContinueWatching() {
                 renderItem={({ item }) => (
                     <View style={styles.card}>
                         <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('cinema.progress.resume', { title: item.title }))}
-                            onPress={() => router.push({ pathname: '/cinema/watch/[id]', params: { id: item.contentId, title: item.title, position: String(item.position) } })}>
+                            onPress={async () => { const current = beginHandoff(); const href = await continueWatchingHref(item); if (current()) router.push(href); }}>
                             <Image source={{ uri: posterUrl(item.contentId) }} style={styles.poster} contentFit="cover" accessible={false} accessibilityIgnoresInvertColors />
                             <Text style={styles.cardTitle} numberOfLines={1}>{item.title}</Text>
                             <Text style={styles.creator} numberOfLines={1}>{item.creator}</Text>

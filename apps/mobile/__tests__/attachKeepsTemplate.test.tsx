@@ -41,3 +41,21 @@ test('without anything to carry the reopened form gets only the model and files,
     expect(mockReplace.mock.calls[0][0].params).toEqual({ modelId: 'model-a', recipe: 'attach', sourceHandoff: 'handoff-1' });
     expect(t('attachFromDevice.attachfromdevice')).toBeTruthy();
 });
+
+test.each([false, true])('P2: device attachment merges prior references and carries settings when model changes=%s', async changed => {
+    const { planAttachments } = require('../src/lib/attachModel');
+    const { stageCreativeSourceHandoff } = require('../src/lib/creativeSourceHandoff');
+    const { DEFAULT_CINEMA } = require('../src/lib/cinemaCamera');
+    const current = { id: 'model-a', modality: 'text-to-image', capabilities: { inputs: { prompt: { max: 2000 }, seed: {}, negative_prompt: { max: 100 }, aspect_ratio: { values: ['9:16'] } }, media: { image: { maxFiles: 3 } } } };
+    const target = { ...current, id: changed ? 'model-b' : current.id };
+    planAttachments.mockImplementationOnce((_all: unknown, _model: unknown, items: unknown[]) => ({ model: target, assignments: items.map(item => ({ slot: 'image', item })), unused: [] }));
+    const carry = { prompt: 'Current scene', recipe: 'faceless-reel', followup: 'generated-sound', startOddling: 'fox', duration: '5', aspect: '9:16', tid: 'paper' };
+    const settings = { opts: { aspect: '9:16', count: 3, seed: '41', negative: 'rain', voice: '', audioSeconds: '' }, cameraOn: true, cinema: DEFAULT_CINEMA, characterOn: true, character: { character_type: 'Human' } };
+    await act(async () => root.render(<AttachFromDevice api={{} as any} current={current as any} carry={carry} settings={settings}
+        references={[{ slot: 'image', origin: 'asset', asset_id: 'old' }, { slot: 'image', origin: 'asset', asset_id: 'old' }]} />));
+    await press();
+    expect(mockReplace.mock.calls[0][0].params).toMatchObject({ ...carry, modelId: target.id });
+    expect(stageCreativeSourceHandoff.mock.calls.at(-1)[0]).toMatchObject({ recipe: 'faceless-reel', followup: 'generated-sound',
+        settings: { cameraOn: true, characterOn: true, opts: { count: 3, seed: '41', negative: 'rain' } },
+        references: [{ slot: 'image', origin: 'asset', asset_id: 'old' }, { slot: 'image', origin: 'upload', key: 'upload-1' }] });
+});

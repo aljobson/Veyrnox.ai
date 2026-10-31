@@ -61,7 +61,9 @@ describe('the screens use them', () => {
         const job = screen('job/[id].tsx');
         expect(job).toContain('router.push(editHref(id))');
         expect(job).toContain('router.push(publishHref(id))');
-        expect(job).toContain('router.push(makeAnotherHref(modelId))');
+        expect(job).toContain('submittedHref(api, id, modelId, current)');
+        expect(job).toContain('onPress={() => void reopen(false)}');
+        expect(job).toContain('onPress={() => void reopen(true)}');
         expect(job).toContain('router.push(creativeReuseHref(id, reusableKind))');
         expect(job).toContain("accessibilityRole=\"header\">{t('job.next.title')}");
     });

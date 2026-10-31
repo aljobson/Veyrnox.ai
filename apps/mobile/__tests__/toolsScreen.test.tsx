@@ -5,18 +5,19 @@ import Tools from '../src/app/(app)/create/tools';
 import { type CatalogModel } from '../src/lib/media';
 import { t } from '../src/lib/i18n';
 const mockPush = jest.fn();
+let mockParams: Record<string, string> = {};
 const face = (id: string): CatalogModel => ({ id, name: `Face ${id}`, modality: 'image-to-image', credits: 3, durations: [], gated: false, capabilities: { media: { image: { required: true } } } });
 const mockModels: CatalogModel[] = [face('face-retouch'), face('face-age'), face('face-makeup'),
     { id: 'topaz-upscale', name: 'Topaz Upscale', modality: 'image-to-image', credits: 5, durations: [], gated: false, capabilities: { media: { image: { required: true } } } },
     { id: 'kling-3.0-i2v', name: 'Kling i2v', modality: 'image-to-video', credits: 32, durations: [5], gated: false, capabilities: { media: { image: { required: true } } } }];
-jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }), useLocalSearchParams: () => ({}), Stack: { Screen: () => null } }));
+jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }), useLocalSearchParams: () => mockParams, Stack: { Screen: () => null } }));
 jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalogCached: async (cb: any) => { cb(mockModels); return mockModels; } }));
 jest.mock('../src/lib/useFaceFiltersAvailable', () => ({ useFaceFiltersAvailable: () => true }));
 void [RN.View, RN.Text, RN.Pressable, RN.ScrollView, RN.ActivityIndicator];
 let root: Root;
 const controls = () => root.container.queryAll(n => n.props.accessibilityRole === 'button');
 const event = { nativeEvent: {}, currentTarget: 1, target: 1 };
-beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = createRoot(); mockPush.mockReset(); });
+beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = createRoot(); mockPush.mockReset(); mockParams = {}; });
 afterEach(async () => { await act(async () => root.unmount()); });
 
 test('Face filters is one card in the web order, never one row per face model', async () => {
@@ -38,4 +39,10 @@ test('every job keeps its models listed under it, each opening the Create form',
     const row = controls().find(n => String(n.props.accessibilityLabel).startsWith('Kling i2v.'))!;
     await act(async () => row.props.onClick(event));
     expect(mockPush).toHaveBeenLastCalledWith({ pathname: '/create/[modelId]', params: { modelId: 'kling-3.0-i2v' } });
+});
+
+test.each([['photo', 1], ['reference', 0]] as const)('Start %s mode keeps Face filters only where a photo is transformed', async (mode, count) => {
+    mockParams = { mode };
+    await act(async () => root.render(<Tools />));
+    expect(controls().filter(n => String(n.props.accessibilityLabel).startsWith(`${t('toolDirectory.facefilters')}.`))).toHaveLength(count);
 });

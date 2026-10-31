@@ -89,7 +89,7 @@ function Detail({ id, parent }: { id: string; parent?: string }) {
                 </View>)}
                 {draft && <Action label={t('cinema.creator.newType', { type: typeLabel(child) })} onPress={() => router.push({ pathname: '/cinema/creator/draft', params: { parent: id, parentType: title.content_type } })} />}
             </>}
-            {video && <UploadPanel contentId={id} editable={!!editable} onChange={() => void load()} />}
+            {video && <UploadPanel contentId={id} parent={parent} editable={!!editable} onChange={() => void load()} />}
             {video && title.video_ready && poster && Image && <View style={ui.card}>
                 <Image source={{ uri: poster }} cachePolicy="none" accessibilityLabel={rawText(t('cinema.upload.poster', { title: title.title }))} style={{ width: '100%', aspectRatio: 16 / 9 }} />
                 <Text style={ui.text}>{t('cinema.videoUpload.automaticPosterFrame')}</Text>

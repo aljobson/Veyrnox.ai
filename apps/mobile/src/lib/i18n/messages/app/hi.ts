@@ -5599,5 +5599,18 @@ export default {
   "credits.paywall.buyPlan": "{plan} शुरू करें — {price}/{period}",
   "credits.paywall.allOptions": "सभी विकल्प देखें",
   "credits.paywall.month": "माह",
-  "credits.paywall.year": "वर्ष"
+  "credits.paywall.year": "वर्ष",
+    "handoff.editedVideo": "संपादित वीडियो",
+    "handoff.openFilmJob": "जनरेशन खोलें",
+    "handoff.openFilmJobVersion": "प्रॉम्प्ट संस्करण {version} का जनरेशन खोलें",
+    "handoff.useFilmResult": "इस परिणाम का उपयोग करें",
+    "handoff.useFilmResultVersion": "प्रॉम्प्ट संस्करण {version} के परिणाम का उपयोग करें",
+  "handoff.exportUnavailable": "एक्सपोर्ट अभी उपलब्ध नहीं है।",
+  "handoff.publishMissing": "यह रचना उपलब्ध नहीं है या इसकी फ़ाइल की समय सीमा समाप्त हो गई है।",
+  "handoff.publishPending": "यह रचना अभी सफलतापूर्वक पूरी नहीं हुई है।",
+  "handoff.publishUnsupported": "केवल उपलब्ध तस्वीरें और वीडियो प्रकाशित किए जा सकते हैं।",
+  "handoff.promptUnavailable": "इस फ़ोन पर मूल प्रॉम्प्ट उपलब्ध नहीं है।",
+  "handoff.referencesAdjusted": "स्थानांतरित या हटाए गए संदर्भ: {count}।",
+  "handoff.filmAttached": "इस प्रॉम्प्ट का परिणाम",
+  "handoff.filmUnattached": "पुराना परिणाम; मौजूदा प्रॉम्प्ट से जुड़ा नहीं है"
 } as const;
