@@ -407,7 +407,7 @@ export const SEEDANCE_200_TEMPLATE_METADATA = Object.freeze({
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/tentacle-breakout",
-    "runnableModel": "Kling 3.0 · I2V"
+    "runnableModel": "Seedance 2.0 Fast"
   },
   "sheep-kingdom": {
     "sourcePlatform": "Syntx",
@@ -437,19 +437,19 @@ export const SEEDANCE_200_TEMPLATE_METADATA = Object.freeze({
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.5",
     "sourceUrl": "https://syntx.ai/trends/vampire-blood-moon",
-    "runnableModel": "Kling 3.0 · I2V"
+    "runnableModel": "Seedance 2.0 Fast"
   },
   "red-thread-story": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance 2.0",
     "sourceUrl": "https://syntx.ai/trends/the-red-thread",
-    "runnableModel": "Kling 3.0 · I2V"
+    "runnableModel": "Seedance 2.0 Fast"
   },
   "meal-together": {
     "sourcePlatform": "Syntx",
     "sourceModel": "Seedance",
     "sourceUrl": "https://syntx.ai/trends/a-meal-made-together",
-    "runnableModel": "Kling 3.0 · I2V"
+    "runnableModel": "Seedance 2.0 Fast"
   },
   "jellyfish-airlines": {
     "sourcePlatform": "Syntx",

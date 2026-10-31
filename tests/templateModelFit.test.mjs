@@ -112,7 +112,7 @@ test('all 202 affected templates follow R1–R4 and preserve exact source record
       assert.equal(SEEDANCE_200_TEMPLATE_METADATA[id].runnableModel, preset.model, id);
     }
   }
-  assert.deepEqual(counts, { R1: 75, R2: 5, R3: 44, R4: 78 });
+  assert.deepEqual(counts, { R1: 71, R2: 5, R3: 44, R4: 82 });
 });
 
 test('optional-picture recipes have no upload dependency in prompts, needs or steps', () => {
@@ -141,8 +141,20 @@ test('generated text-only sources remain text-only five-second adaptations', () 
   }
 });
 
-test('multi-subject and fashion recipes request one combined starting image', () => {
-  for (const id of ['red-thread-story', 'meal-together', 'fashion-catch']) {
+test('hand-written recipes whose source used no reference image are text-only five-second adaptations', () => {
+  for (const id of ['tentacle-breakout', 'blood-moon-dance', 'red-thread-story', 'meal-together']) {
+    const preset = templateById(id);
+    assert.equal(preset.model, 'Seedance 2.0 Fast', id);
+    assert.equal(preset.durationSeconds, 5, id);
+    assert.equal(preset.needs, null, id);
+    assert.equal(preset.needsKey, null, id);
+    assert.match(preset.prompt, /^Create a five-second /, id);
+    assert.doesNotMatch([preset.prompt, ...preset.steps].join(' '), /upload|supplied|starting image|reference (?:image|photo)|ten-second|10\s*s\b/i, id);
+  }
+});
+
+test('the fashion recipe requests one combined starting image', () => {
+  for (const id of ['fashion-catch']) {
     const preset = templateById(id);
     assert.equal(preset.model, 'Kling 3.0 · I2V', id);
     assert.match(preset.needs, /^One starting image showing /, id);
