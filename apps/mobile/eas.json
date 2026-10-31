@@ -42,7 +42,7 @@
         "EXPO_PUBLIC_CINEMA_DEVICE_UPLOAD_ENABLED": "true",
         "EXPO_PUBLIC_PASSKEYS_IOS_ENABLED": "true",
         "EXPO_PUBLIC_CREATOR_PROFILE_ENABLED": "true",
-        "EXPO_PUBLIC_YOUR_WINS_ENABLED": "false"
+        "EXPO_PUBLIC_YOUR_WINS_ENABLED": "true"
       }
     },
     "production-simulator": {

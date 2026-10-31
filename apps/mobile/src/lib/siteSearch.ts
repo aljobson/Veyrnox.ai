@@ -35,7 +35,7 @@ export const SCREENS: readonly ScreenDef[] = [
     { id: 'cinema', titleKey: 'srch.s.cinema', href: '/cinema', keywords: 'watch films vote' },
     { id: 'publish', titleKey: 'srch.s.publish', href: '/publish', keywords: 'post schedule social calendar' },
     { id: 'projects', titleKey: 'srch.s.projects', href: '/projects', keywords: 'edit saved' },
-    { id: 'edit', titleKey: 'srch.s.edit', href: '/edit', keywords: 'trim join captions clip' },
+    { id: 'editor', titleKey: 'tabs.editor', href: '/editor', keywords: 'edit trim join captions clip timeline cut' },
     { id: 'credits', titleKey: 'srch.s.credits', href: '/credits', keywords: 'balance buy top up packs' },
     { id: 'history', titleKey: 'srch.s.history', href: '/history', keywords: 'ledger charges refunds' },
     { id: 'referrals', titleKey: 'srch.s.referrals', href: '/referrals', keywords: 'invite friends code' },

@@ -12,7 +12,7 @@ import { useRouter } from 'next/navigation';
 import { AppNav } from '../../_components/NavBar';
 import { Main } from '../../_components/Main';
 import { Chip } from '../../_components/Chip';
-import { modelAspectRatios, modelIdForName } from '../../_lib/tokens';
+import { clipCredits, modelAspectRatios, modelIdForName } from '../../_lib/tokens';
 import { TemplateOpening, useTemplateOpening } from '../../_components/TemplateOpening';
 import { gatewayFetch, makeIdempotencyKey, notifyBalanceChanged, GatewayError } from '../../_lib/gateway';
 import { failedCreationCopy } from '../../../../lib/i18n/createCopy.mjs';
@@ -156,7 +156,7 @@ export default function CreateStudio() {
       setGoal('all');
     }
     setPresetParam(params.get('preset')); // a template's id, from its studio link; sent only while its own model is selected
-    if (params.get('duration') === '10s') setDuration('10s');
+    if (/^\d{1,2}s$/.test(params.get('duration') || '')) setDuration(params.get('duration'));
     const videoSoundDraft = params.get('continue') === 'faceless-sound' && wanted === 'mmaudio-v2-video'
       ? takeVideoSoundContinuation(window.sessionStorage)
       : null;
@@ -280,7 +280,7 @@ export default function CreateStudio() {
   const promptTooLong = preparedPromptLength > promptLimit;
   // Only offer aspect ratios explicitly declared by this model's provider contract.
   const aspectOptions = isShort ? [] : modelAspectRatios(model);
-  const unitCost = model ? model.credits * (duration === '10s' && model.kind === 'video' ? 2 : 1) : 0;
+  const unitCost = model ? (model.kind === 'video' ? clipCredits(model.credits, Number(duration.replace('s', ''))) : model.credits) : 0;
   // Other models always send one; the count control is image-only.
   const n = imageCount(model, count);
   // The server decides what is free; the first `freeLeft` jobs of a batch are, the rest cost the catalog price.
@@ -882,7 +882,7 @@ export default function CreateStudio() {
 
           {model?.kind === 'video' && !fixedDurationLabel && !sourceDurationMax && (
             <ControlRow assistantTarget="create.duration" label={t("app.create.durationHeading")} options={durations} value={duration} onChange={setDuration}
-              formatOption={(option) => outputDurationLabel(model, Number(option.replace('s', '')))} />
+              formatOption={(option) => t('presets.use.lengthCost', { length: outputDurationLabel(model, Number(option.replace('s', ''))), credits: clipCredits(model.credits, Number(option.replace('s', ''))) })} />
           )}
           {(model?.kind === 'video' || model?.kind === 'audio') && sourceDurationMax && <SourceDurationCard model={model} />}
           {(model?.kind === 'video' || model?.kind === 'audio') && fixedDurationLabel && (
