@@ -5679,4 +5679,7 @@ export default {
   "credits.receipt.paid": "Bezahlt",
   "credits.receipt.balance": "Neues Guthaben",
   "credits.receipt.thanks": "Danke für deinen Kauf.",
+  "projects.noWorkspacesTitle": "Noch kein Arbeitsbereich",
+  "projects.openEditor": "Editor öffnen",
+  "publishHome.postsFailed": "Deine Beiträge konnten nicht geladen werden, daher sind die Zahlen unten möglicherweise nicht aktuell.",
 } as const;

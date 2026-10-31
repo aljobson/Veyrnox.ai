@@ -19,6 +19,8 @@ export default {
     "projects.restoreversion2": "Restore version {value1}",
     "projects.projects": "Projects",
     "projects.youhavenoworkspacesyetOpenthe": "You have no workspaces yet. Open the editor on veyrnox.ai to start one.",
+    "projects.noWorkspacesTitle": "No workspace yet",
+    "projects.openEditor": "Open the editor",
     "projects.create": "Create",
     "projects.newproject": "+ New project",
     "projects.noprojectsinthisworkspaceyet": "No projects in this workspace yet.",

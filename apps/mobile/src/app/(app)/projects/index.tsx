@@ -4,6 +4,7 @@ import { Stack, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import * as Crypto from 'expo-crypto';
+import { EmptyState } from '../../../components/EmptyState';
 import { HeaderAction } from '../../../components/HeaderAction';
 import { useAuth } from '../../../auth/AuthProvider';
 import { touchTarget } from '../../../lib/a11y';
@@ -60,6 +61,14 @@ export default function Projects() {
         void loadWorkspaces();
     }, [loadWorkspaces]);
 
+    // Bumped by Retry so a failed project fetch runs again; loadWorkspaces alone never changes workspaceId.
+    const [projectsAttempt, setProjectsAttempt] = useState(0);
+    const retry = useCallback(() => {
+        setProblem(null);
+        if (workspaceId) setProjectsAttempt((n) => n + 1);
+        else void loadWorkspaces();
+    }, [workspaceId, loadWorkspaces]);
+
     useEffect(() => {
         if (!workspaceId) return;
         let cancelled = false;
@@ -71,19 +80,19 @@ export default function Projects() {
         return () => {
             cancelled = true;
         };
-    }, [api, workspaceId]);
+    }, [api, workspaceId, projectsAttempt]);
 
     return (
         <View style={styles.screen}>
             <Stack.Screen options={{ title: t('projects.projects'), ...(EDITOR_ENABLED ? { headerRight: () => <HeaderAction label={t('editor.new')} onPress={() => router.push('/editor/new')} /> } : {}) }} />
             {problem ? (
-                <Pressable accessibilityRole="button" style={touchTarget} onPress={loadWorkspaces}>
+                <Pressable accessibilityRole="button" style={touchTarget} onPress={retry}>
                     <Text style={styles.error}>{t('projects.taptoretry', { value1: problem })}</Text>
                 </Pressable>
             ) : !workspaces ? (
                 <ActivityIndicator color={colors.accent} />
             ) : workspaces.length === 0 ? (
-                <Text style={styles.muted}>{t('projects.youhavenoworkspacesyetOpenthe')}</Text>
+                <EmptyState title={t('projects.noWorkspacesTitle')} body={t('projects.youhavenoworkspacesyetOpenthe')} {...(EDITOR_ENABLED ? { actionLabel: t('projects.openEditor'), href: '/editor/new' as const } : {})} />
             ) : (
                 <>
                     {workspaces.length > 1 ? (

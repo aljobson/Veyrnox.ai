@@ -4,6 +4,7 @@ import { brandStore } from '../../../lib/publishBrand';
 import { publishScope, usePublishRole } from '../../../lib/usePublishRole';
 import { canPublish } from '../../../lib/publishDashboard';
 import { Text as StatusText } from '../../../components/ui/Text';
+import { LoadError } from '../../../components/publish/LoadError';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
@@ -81,7 +82,7 @@ export default function Autolists() {
             <Stack.Screen options={{ title: t('autolists.title') }} />
             {!canWrite ? <Text style={styles.muted}>{t('publishOps.readOnly')}</Text> : null}
             {error && !lists ? (
-                <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{error}</StatusText>
+                <LoadError message={error} onRetry={() => { void load(); }} />
             ) : !lists ? (
                 <ActivityIndicator color={colors.accent} />
             ) : (

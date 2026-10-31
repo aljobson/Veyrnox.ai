@@ -5679,4 +5679,7 @@ export default {
   "credits.receipt.paid": "भुगतान",
   "credits.receipt.balance": "नया बैलेंस",
   "credits.receipt.thanks": "ख़रीदारी के लिए धन्यवाद।",
+  "projects.noWorkspacesTitle": "अभी कोई वर्कस्पेस नहीं है",
+  "projects.openEditor": "एडिटर खोलें",
+  "publishHome.postsFailed": "आपकी पोस्ट लोड नहीं हो सकीं, इसलिए नीचे की गिनती पुरानी हो सकती है।",
 } as const;

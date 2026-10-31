@@ -1,5 +1,5 @@
 import { rawText } from '../../../lib/i18n/translate';
-import { Text as StatusText } from '../../../components/ui/Text';
+import { LoadError } from '../../../components/publish/LoadError';
 import { Stack, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
@@ -37,7 +37,7 @@ export default function Approvals() {
         <View style={styles.screen}>
             <Stack.Screen options={{ title: t('approvals.title') }} />
             {error ? (
-                <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{error}</StatusText>
+                <LoadError message={error} onRetry={() => { void load(); }} />
             ) : !requests ? (
                 <ActivityIndicator color={colors.accent} />
             ) : (

@@ -5745,4 +5745,7 @@ export default {
   "credits.receipt.paid": "Payé",
   "credits.receipt.balance": "Nouveau solde",
   "credits.receipt.thanks": "Merci pour votre achat.",
+  "projects.noWorkspacesTitle": "Aucun espace de travail",
+  "projects.openEditor": "Ouvrir l’éditeur",
+  "publishHome.postsFailed": "Impossible de charger vos publications ; les totaux ci-dessous peuvent être obsolètes.",
 } as const;
