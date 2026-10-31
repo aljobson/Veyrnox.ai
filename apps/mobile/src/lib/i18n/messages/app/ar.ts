@@ -1998,6 +1998,7 @@ export default {
   "editor.home.openProject": "افتح {name}",
   "editor.home.recent": "التعديلات الأخيرة",
   "editor.home.retry": "اضغط للمحاولة مجددًا",
+  "editor.home.loading": "جارٍ تحميل تعديلاتك…",
   "editor.home.summary": "افتح تعديلًا حديثًا أو ابدأ مشروعًا جديدًا. يتم كل شيء في محرّر الهاتف الأصلي.",
   "editor.home.version": "الإصدار {version}",
   "editor.horizontalposition": "الموضع الأفقي",

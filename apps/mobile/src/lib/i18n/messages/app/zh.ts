@@ -1813,6 +1813,7 @@ export default {
   "editor.home.openProject": "打开{name}",
   "editor.home.recent": "近期编辑",
   "editor.home.retry": "点击重试",
+  "editor.home.loading": "正在加载你的编辑…",
   "editor.home.summary": "打开近期编辑或开始新项目。所有操作均在原生移动编辑器中完成。",
   "editor.home.version": "版本 {version}",
   "editor.horizontalposition": "水平位置",
