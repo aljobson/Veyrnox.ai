@@ -250,6 +250,14 @@
       ]
     ],
     "scheme": "ai.veyrnox.app",
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/92f5cecd-0926-48d7-a292-a8510b43e1d8",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
     "experiments": {
       "typedRoutes": true
     },
