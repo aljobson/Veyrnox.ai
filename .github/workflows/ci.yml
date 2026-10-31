@@ -136,5 +136,8 @@ jobs:
       - name: Build Worker
         run: npm run build:worker
 
+      - name: Check Worker size and wrapper imports
+        run: node scripts/check-worker-size.mjs && node scripts/check-worker-size.mjs --wrapper
+
       - name: Run built Worker and request pages
         run: node scripts/smoke-built-worker.mjs

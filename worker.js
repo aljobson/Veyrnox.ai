@@ -59,7 +59,7 @@ import { runSocialCustomerWebhookSweep } from './lib/social/customerWebhook.js';
 import { runSocialReportScheduleSweep } from './lib/social/reportSchedule.js';
 import { runSocialAutolistSweep } from './lib/social/autolistSweep.js';
 import { publishEnabled, postingInsightsEnabled, socialCustomerWebhooksEnabled, socialRssAutolistsEnabled, socialScheduledReportsEnabled } from './lib/social/publishFeature.js';
-import { listModels } from './app/veyrnox/_lib/modelPages.js';
+import { listModels } from './app/veyrnox/_lib/modelList.js';
 import { canonicalHttpsRedirect, stripTechnologyHeaders } from './lib/edgeTransportSecurity.js';
 
 export default {

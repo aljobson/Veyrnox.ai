@@ -1,0 +1,34 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
+import { buildAppMessages } from '../scripts/build-app-messages.mjs';
+
+test('build app assets without merging; CLI check detects missing and stale files without writing', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'app-catalog-test-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const source = join(root, 'lib/i18n/messages/app');
+  const output = join(root, 'public/_i18n/app');
+  await mkdir(source, { recursive: true });
+  await writeFile(join(source, 'en.mjs'), 'export default { fallback: "English", shared: "Hello" };');
+  await writeFile(join(source, 'ru.mjs'), 'export default { shared: "Привет" };');
+  await writeFile(join(source, 'README.md'), 'Not a catalog');
+  const cli = fileURLToPath(new URL('../scripts/build-app-messages.mjs', import.meta.url));
+  const check = () => spawnSync(process.execPath, [cli, '--check'], { cwd: root, encoding: 'utf8' });
+  assert.equal(check().status, 1);
+  assert.equal(await buildAppMessages({ root }), 2);
+  assert.deepEqual((await readdir(output)).sort(), ['en.json', 'ru.json']);
+  assert.deepEqual(JSON.parse(await readFile(join(output, 'ru.json'), 'utf8')), { shared: 'Привет' });
+  assert.equal(check().status, 0);
+  await writeFile(join(output, 'ru.json'), '{}');
+  const stale = check();
+  assert.equal(stale.status, 1);
+  assert.match(stale.stderr, /Missing or stale app catalogs/);
+  assert.equal(await readFile(join(output, 'ru.json'), 'utf8'), '{}');
+  await buildAppMessages({ root });
+  await writeFile(join(source, 'ru.mjs'), 'export default { shared: "Изменено" };');
+  assert.equal(check().status, 1, 'changed source also makes generated JSON stale');
+});
