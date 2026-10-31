@@ -374,7 +374,6 @@ export default function Explore() {
                 <Text variant="title3" style={styles.subheading} accessibilityRole="header">
                     {t('explore.more')}
                 </Text>
-                <EntryRow href="/edit" title={t('edit.title')} />
                 <EntryRow href="/projects" title={t('label.Projects')} />
             </ScrollView>
         </>

@@ -1924,6 +1924,7 @@ export default {
   "editor.home.openProject": "Открыть: {name}",
   "editor.home.recent": "Последние монтажи",
   "editor.home.retry": "Нажмите для повтора",
+  "editor.home.loading": "Загружаем ваши правки…",
   "editor.home.summary": "Откройте недавний монтаж или начните новый проект. Всё происходит в мобильном редакторе приложения.",
   "editor.home.version": "Версия {version}",
   "editor.horizontalposition": "Позиция по горизонтали",

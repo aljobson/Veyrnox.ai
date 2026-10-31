@@ -1813,6 +1813,7 @@ export default {
   "editor.home.openProject": "{name} 열기",
   "editor.home.recent": "최근 편집",
   "editor.home.retry": "탭하여 다시 시도",
+  "editor.home.loading": "편집 내용을 불러오는 중…",
   "editor.home.summary": "최근 편집을 열거나 새 프로젝트를 시작하세요. 모든 작업은 네이티브 모바일 편집기에서 진행됩니다.",
   "editor.home.version": "버전 {version}",
   "editor.horizontalposition": "가로 위치",

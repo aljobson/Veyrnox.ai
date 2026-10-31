@@ -1850,6 +1850,7 @@ export default {
   "editor.home.openProject": "{name} खोलें",
   "editor.home.recent": "हाल के एडिट",
   "editor.home.retry": "फिर कोशिश करने के लिए टैप करें",
+  "editor.home.loading": "आपके संपादन लोड हो रहे हैं…",
   "editor.home.summary": "हाल का एडिट खोलें या नया प्रोजेक्ट शुरू करें। सब कुछ नेटिव मोबाइल एडिटर में होता है।",
   "editor.home.version": "संस्करण {version}",
   "editor.horizontalposition": "क्षैतिज स्थिति",

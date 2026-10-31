@@ -1813,6 +1813,7 @@ export default {
   "editor.home.openProject": "{name}を開く",
   "editor.home.recent": "最近の編集",
   "editor.home.retry": "タップして再試行",
+  "editor.home.loading": "編集を読み込み中…",
   "editor.home.summary": "最近の編集を開くか、新しいプロジェクトを始めましょう。すべてアプリ内のモバイルエディターで行えます。",
   "editor.home.version": "バージョン {version}",
   "editor.horizontalposition": "水平位置",

@@ -1887,6 +1887,7 @@ export default {
   "editor.home.openProject": "Ouvrir {name}",
   "editor.home.recent": "Montages récents",
   "editor.home.retry": "Appuyez pour réessayer",
+  "editor.home.loading": "Chargement de tes montages…",
   "editor.home.summary": "Ouvrez un montage récent ou commencez un nouveau projet. Tout se passe dans l’éditeur mobile natif.",
   "editor.home.version": "Version {version}",
   "editor.horizontalposition": "Position horizontale",

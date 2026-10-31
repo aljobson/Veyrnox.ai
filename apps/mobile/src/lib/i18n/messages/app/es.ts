@@ -1887,6 +1887,7 @@ export default {
   "editor.home.openProject": "Abrir {name}",
   "editor.home.recent": "Ediciones recientes",
   "editor.home.retry": "Toca para reintentar",
+  "editor.home.loading": "Cargando tus ediciones…",
   "editor.home.summary": "Abre una edición reciente o empieza un proyecto nuevo. Todo se hace en el editor nativo para móviles.",
   "editor.home.version": "Versión {version}",
   "editor.horizontalposition": "Posición horizontal",
