@@ -52,6 +52,13 @@ test('responsive tiles retain decorative alt text and declare image sizes', () =
   assert.doesNotMatch(tile, /<Image[^>]*\bunoptimized\b/s, 'local posters should receive a responsive srcset');
 });
 
+test('images are served as files, not through the Worker resizer', () => {
+  // /_next/image answered 503 under the landing page's parallel requests and
+  // left most template tiles as a bare gradient.
+  const config = read('next.config.mjs');
+  assert.match(config, /images:\s*\{[^}]*\bunoptimized:\s*true/s);
+});
+
 test('primary mobile controls expose a 44px target', () => {
   for (const file of ['MobileMenu.js', 'ThemeToggle.js', 'SiteSearch.js', 'NavAuthButtons.js']) {
     const src = read(`app/veyrnox/_components/${file}`);

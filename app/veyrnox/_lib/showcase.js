@@ -475,11 +475,15 @@ const PRESERVED_REPLACED_LANDING_CLIP_KEYS = new Set([
   'model-video', 'model-image', 'model-audio',
 ]);
 
+// Published file names carry no source-platform name (public/showcase was
+// renamed to match); the clip records keep their original paths.
+const publicMediaPath = (path) => (typeof path === 'string' ? path.replace(/-(?:higgs|syntx)-/, '-') : path);
 export const SHOWCASE_CLIPS = Object.freeze(Object.fromEntries(
   Object.entries(AUDIT_SHOWCASE_CLIPS)
     .filter(([clipKey]) => !REMOVED_TEMPLATE_ONLY_CLIP_KEYS.has(clipKey))
     .filter(([clipKey]) => !REPLACED_HIGGSFIELD_CLIP_KEY_SET.has(clipKey)
-      || PRESERVED_REPLACED_LANDING_CLIP_KEYS.has(clipKey)),
+      || PRESERVED_REPLACED_LANDING_CLIP_KEYS.has(clipKey))
+    .map(([clipKey, clip]) => [clipKey, { ...clip, video: publicMediaPath(clip.video), poster: publicMediaPath(clip.poster) }]),
 ));
 
 // Give each public placement its own clip, including templates also on /presets.

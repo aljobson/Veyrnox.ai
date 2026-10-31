@@ -27,9 +27,12 @@ import {
 } from './fixtures/higgsfield90SourceAssetHashes.mjs';
 import { ALL_TEMPLATES, PRESETS, REMOVED_PROMPT_GAP_TEMPLATE_IDS, WALL_PRESETS, templateById } from '../app/veyrnox/_lib/templates.js';
 import { MODELS, modelIdForName, presetCredits, presetHref } from '../app/veyrnox/_lib/tokens.js';
-import { AUDIT_SHOWCASE_CLIPS } from '../app/veyrnox/_lib/showcase.js';
+import { AUDIT_SHOWCASE_CLIPS, SHOWCASE_CLIPS } from '../app/veyrnox/_lib/showcase.js';
 import { isUnknownStaticPage } from '../lib/unknownStaticPage.js';
 import { templateStartId } from '../lib/templateStart.js';
+
+// Audit records keep the original media paths; the files are published without the source-platform name.
+const publishedMediaPath = (path) => path.replace(/-(?:higgs|syntx)-/, '-');
 
 const REMOVED_ORIGINAL_IDS = [
   'elevator-one-take', 'desert-radio', 'last-train-signal', 'wrong-doorbell', 'empty-place-setting',
@@ -235,8 +238,8 @@ test('the 200 Seedance templates preserve full prompts and paired unique videos'
       assert.ok(promptAudit.issues.includes('source-input-contract-not-wired'), record.id);
     }
 
-    const preview = readFileSync(fileURLToPath(new URL(`../public${record.previewPath}`, import.meta.url)));
-    const poster = readFileSync(fileURLToPath(new URL(`../public${record.posterPath}`, import.meta.url)));
+    const preview = readFileSync(fileURLToPath(new URL(`../public${publishedMediaPath(record.previewPath)}`, import.meta.url)));
+    const poster = readFileSync(fileURLToPath(new URL(`../public${publishedMediaPath(record.posterPath)}`, import.meta.url)));
     assert.equal(createHash('sha256').update(preview).digest('hex'), record.localPreviewSha256, record.id);
     assert.equal(createHash('sha256').update(poster).digest('hex'), record.localPosterSha256, record.id);
     promptHashes.add(record.sourcePromptSha256);
@@ -500,13 +503,16 @@ test('retained source templates expose provenance only for the verified Seedance
     if (/higgsfield|syntx/i.test(clip.video)) assert.match(clip.video, /^\/showcase\/viral-seedance-(?:higgs|syntx)-/);
     if (/higgsfield|syntx/i.test(clip.poster)) assert.match(clip.poster, /^\/showcase\/viral-seedance-(?:higgs|syntx)-/);
   }
+  for (const clip of Object.values(SHOWCASE_CLIPS)) {
+    assert.doesNotMatch(`${clip.video} ${clip.poster}`, /higgs|syntx/i, 'published media paths name no source platform');
+  }
 });
 
 test('every retained source video and poster is a unique local asset', () => {
   const clips = Object.values(AUDIT_SHOWCASE_CLIPS);
   assert.equal(clips.length, 527);
   for (const field of ['video', 'poster']) {
-    const paths = clips.map((clip) => clip[field]);
+    const paths = clips.map((clip) => publishedMediaPath(clip[field]));
     assert.equal(new Set(paths).size, paths.length, `${field} paths must be unique`);
     const hashes = paths.map((path) => createHash('sha256').update(
       readFileSync(fileURLToPath(new URL(`../public${path}`, import.meta.url))),

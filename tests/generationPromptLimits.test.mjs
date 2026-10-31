@@ -166,7 +166,7 @@ test('handoffs reject an over-limit prompt instead of silently shortening it', (
 });
 
 test('direct Create handoff refuses an exact prompt whose reference contract is unsupported', () => {
-  const seedance = ALL_TEMPLATES.find((item) => item.id === 'seedance-syntx-birthday-morning');
+  const seedance = ALL_TEMPLATES.find((item) => item.id === 'seedance-birthday-morning');
   assert.equal(seedance.promptOrigin, 'community-source-exact');
   assert.equal(draftForTemplate(seedance, modelIdForName(seedance.model)), null);
   const adapted = ALL_TEMPLATES.find((item) => item.id === 'event-character-swap');

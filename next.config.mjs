@@ -31,6 +31,11 @@ const nextConfig = {
   deploymentId,
   poweredByHeader: false,
   images: {
+    // Served as-is. The Worker's /_next/image resizer answered 503 after ~9 s
+    // when a page asked for many images at once, so most template tiles on the
+    // landing page showed an empty gradient. Every public image is already a
+    // small, pre-sized file, and CSP img-src names each remote host directly.
+    unoptimized: true,
     remotePatterns: [{ protocol: 'https', hostname: 'i.ytimg.com', pathname: '/vi/**' }],
   },
   env: {
@@ -85,6 +90,9 @@ const nextConfig = {
   // internal implementation detail, not a public URL.
   async redirects() {
     return [
+      // Template ids no longer name a source platform (app/veyrnox/_lib/templateIds.js).
+      { source: '/presets/seedance-:platform(higgs|syntx)-:rest([a-z0-9-]+)', destination: '/presets/seedance-:rest', permanent: true },
+      { source: '/:locale([a-z][a-z])/presets/seedance-:platform(higgs|syntx)-:rest([a-z0-9-]+)', destination: '/:locale/presets/seedance-:rest', permanent: true },
       { source: '/veyrnox', destination: '/', permanent: true },
       { source: '/cinema', destination: '/social-cinema', permanent: false },
       { source: '/veyrnox/social-cinema', destination: '/social-cinema', permanent: true },
