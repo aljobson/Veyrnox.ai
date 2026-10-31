@@ -19,7 +19,7 @@ if (!body) {
   const rpc = async (name, args) => {
     state.calls.push({ name, args });
     switch (name) {
-      case 'check_generation_rate_limit': case 'provider_spend_admit_model': case 'job_submitted': return { ok: true };
+      case 'check_generation_rate_limit': case 'account_spend_eligible': case 'provider_spend_admit_model': case 'job_submitted': return { ok: true };
       case 'chat_turn_context': return { ok: true, user_id: authId, model_id: model.id, system_prompt: '', history: [] };
       case 'chat_stops_before_text': return 0;
       case 'read_user_credits': return { balance: state.balance };
