@@ -218,3 +218,11 @@ b922536c6aa55c15e8b574e35e8fd3593f28f851:apps/mobile/__tests__/montage.test.ts:g
 84e724a131099ea90d6ee28888ccc992c036ee0c:tests/yourWinsRoute.test.mjs:generic-api-key:73
 # The comment line above quotes the fixture text and trips the same rule (#1797).
 3e9c01850e0525f0ebfd86b16e381096dea5bdc5:.gitleaksignore:generic-api-key:212
+# Same Your wins fixtures (ADR-0305), under the squash commit that merged #1797 (names of milestone keys, not secrets).
+91a4d1fbd37dc2de5c662119c3c677b15f9ee873:.gitleaksignore:generic-api-key:212
+91a4d1fbd37dc2de5c662119c3c677b15f9ee873:apps/mobile/__tests__/checkinModal.test.ts:generic-api-key:108
+91a4d1fbd37dc2de5c662119c3c677b15f9ee873:apps/mobile/__tests__/yourWinsScreens.test.tsx:generic-api-key:14
+91a4d1fbd37dc2de5c662119c3c677b15f9ee873:apps/mobile/dev/mockWins.mjs:generic-api-key:17
+91a4d1fbd37dc2de5c662119c3c677b15f9ee873:tests/yourWinsRoute.test.mjs:generic-api-key:101
+91a4d1fbd37dc2de5c662119c3c677b15f9ee873:tests/yourWinsRoute.test.mjs:generic-api-key:104
+91a4d1fbd37dc2de5c662119c3c677b15f9ee873:tests/yourWinsRoute.test.mjs:generic-api-key:73
