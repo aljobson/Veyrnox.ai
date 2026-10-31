@@ -53,13 +53,13 @@ test('six original reference recipes preserve the ordered two-picture prompt con
 
 test('reference templates resolve direct Create links but stay out of preview-only discovery', () => {
   for (const preset of REFERENCE_TEMPLATES) {
-    assert.equal(templateById(preset.id), preset);
+    assert.deepEqual(templateById(preset.id), preset);
     assert.equal(templateStartId(preset.id, 'kling-o1-reference'), preset.id);
     assert.equal(templateStartId(preset.id, 'kling-3.0-i2v'), null);
     assert.equal(modelIdForName(preset.model), 'kling-o1-reference');
     assert.match(presetHref(preset), new RegExp(`[?&]preset=${preset.id}(?:&|$)`));
     assert.equal(hasTemplateVideo(preset), false);
-    assert.equal(PRESETS.includes(preset), false);
+    assert.equal(PRESETS.some((listed) => listed.id === preset.id), false);
     assert.equal(preset.clipKey, undefined);
   }
 });

@@ -15,6 +15,8 @@ import { publicFiles, appFiles, candidates } from '../scripts/audit-public-i18n.
 import { legalDocument } from '../lib/i18n/legal/catalogs.mjs';
 import { fixture } from './helpers/publicSiteRender.mjs';
 import { sourcePromptAuditRecord } from '../app/veyrnox/_lib/sourcePromptAudit.js';
+import { exactSourcePromptRecord } from '../app/veyrnox/_lib/sourcePromptRecords.js';
+import { publicTemplateId } from '../app/veyrnox/_lib/templateIds.js';
 
 const codes = Object.keys(CATALOGS);
 const digits = value => (value.match(/\d+(?:[.:–]\d+)*/g) || []).sort();
@@ -24,8 +26,9 @@ test('all template needs and 16 distinct steps have exact English and ten transl
   const original = JSON.stringify(ALL_TEMPLATES);
   assert.equal(ALL_TEMPLATES.length, 1434);
   const audit = JSON.parse(readFileSync(new URL('../docs/product/source-audit/seedance-200-exact-2026-10-29.json', import.meta.url)));
-  const textOnlyIds = audit.records.filter(r => !r.existing && r.referenceImageCount === 0 && sourcePromptAuditRecord(r.id).runnable).map(r => r.id);
+  const textOnlyIds = audit.records.filter(r => !r.existing && r.referenceImageCount === 0 && sourcePromptAuditRecord(r.id).runnable).map(r => publicTemplateId(r.id));
   assert.equal(textOnlyIds.length, 78);
+  assert.ok(textOnlyIds.every(id => !/higgs|syntx/.test(id)), 'template ids name no source platform');
   assert.deepEqual(ALL_TEMPLATES.filter(p => !p.needs).map(p => p.id).sort(), [...textOnlyIds, 'a-moment-between-strangers', 'blood-moon-dance', 'dreamworks-castle', 'epic-train-doorway-scene', 'meal-together', 'red-thread-story', 'tentacle-breakout', 'the-last-stagecoach', 'the-push'].sort());
   assert.equal(Object.keys(PRESET_STEP_KEYS).length, 16);
   for (const code of codes) {
@@ -141,7 +144,8 @@ test('Genjutsu recipe SSR shows only the exact source prompt and hands that same
 test('Syntx recipe SSR preserves the exact prompt while handing off its runnable adaptation', () => {
   const exactTemplate = ALL_TEMPLATES.find((preset) => preset.id === 'medieval-runway-look');
   const exactPrompt = SYNTX_SOURCE_PROMPT_RECORDS[exactTemplate.id].prompt;
-  const exactPreset = { ...exactTemplate, sourcePrompt: exactPrompt, sourcePromptOrigin: 'community-source-exact' };
+  // Its exact prompt needs a reference video the model cannot take.
+  const exactPreset = { ...exactTemplate, sourcePrompt: exactPrompt, sourcePromptOrigin: 'community-source-exact', sourcePromptRunnable: false };
   assert.equal(templateById('keyboard-duo-swap'), null);
   assert.equal(SYNTX_SOURCE_PROMPT_RECORDS['keyboard-duo-swap'].prompt, null);
 
@@ -158,6 +162,25 @@ test('Syntx recipe SSR preserves the exact prompt while handing off its runnable
   assert.ok(exactHtml.includes(exactTemplate.prompt.slice(0, 80)));
   assert.ok(exactHtml.includes('VEYRNOX GENERATION PROMPT'));
   assert.match(exactHtml, /readonly=""/i);
+});
+
+test('a runnable community prompt is the only prompt shown and handed off, even when the template had a preferred adaptation', () => {
+  const template = ALL_TEMPLATES.find((preset) => preset.preferAdaptedPrompt === true && preset.promptOrigin === 'veyrnox-adaptation'
+    && exactSourcePromptRecord(preset.id) && sourcePromptAuditRecord(preset.id).runnable && preset.prompt !== exactSourcePromptRecord(preset.id).prompt);
+  assert.ok(template, 'a preferred-adaptation template with a runnable community prompt exists');
+  const exactPrompt = exactSourcePromptRecord(template.id).prompt;
+  const preset = { ...template, sourcePrompt: exactPrompt, sourcePromptOrigin: 'community-source-exact', sourcePromptRunnable: true };
+  let handoff;
+  const f = fixture('en', `/presets/${preset.id}`, { moduleMocks: {
+    './UseTemplate': { UseTemplate: (props) => { handoff = props; return React.createElement('div'); } },
+  } });
+  const html = f.render(React.createElement(f.load('app/veyrnox/_components/TemplateRecipe.js').TemplateRecipe, { preset }));
+  assert.ok(html.includes('EXACT COMMUNITY PROMPT'));
+  assert.ok(!html.includes('VEYRNOX GENERATION PROMPT'));
+  assert.doesNotMatch(html, /data-runnable-adaptation/);
+  assert.equal(handoff.prompt, exactPrompt);
+  assert.equal(handoff.preset.prompt, exactPrompt);
+  assert.equal(handoff.generationBlocked, false);
 });
 
 test('an exact source prompt over the former limit is shown whole and stays copyable when its source contract is unsupported', () => {

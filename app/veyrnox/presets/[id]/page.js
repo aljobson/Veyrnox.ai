@@ -4,7 +4,7 @@ import { pageAlternates, openGraphLocale } from '../../../../lib/i18n/metadata.m
 import { rich } from '../../../../lib/i18n/rich';
 import { localizedHref } from '../../../../lib/i18n/locales.mjs';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { MarketingNav } from '../../_components/NavBar';
 import { Main } from '../../_components/Main';
 import { TemplateRecipe } from '../../_components/TemplateRecipe';
@@ -44,6 +44,7 @@ export default async function TemplatePage({ params }) {
   const { id } = await params;
   const template = templateById(id);
   if (!template) notFound();
+  if (template.id !== id) permanentRedirect(localizedHref(locale, `/presets/${encodeURIComponent(template.id)}`));
   const modelId = modelIdForName(template.model);
   const sourcePrompt = exactSourcePromptRecord(template.id)?.prompt ?? null;
   const sourceAudit = sourcePromptAuditForModel(template.id, fallbackCapabilitiesFor(modelId)?.inputs?.prompt?.max);
@@ -80,9 +81,6 @@ export default async function TemplatePage({ params }) {
             <p className="mt-4 text-vx-fg-body">
               {rich(t('presets.detail.runsOn'), { model: modelId ? <Link href={localizedHref(locale, `/models/${encodeURIComponent(modelId)}`)} className="font-bold underline underline-offset-4">{template.model}</Link> : <span className="font-bold">{template.model}</span> })}
             </p>
-            {template.sourceModel && <p className="mt-2 font-vx-mono text-[11px] tracking-[0.08em] text-vx-fg-muted" data-source-model={template.sourceModel}>
-              {template.sourcePlatform} · {template.sourceModel}
-            </p>}
             {template.needs && (template.sourceAspect ? (
               <div className="mt-4 rounded-xl border border-vx-border px-4 py-3 text-[14px] text-vx-fg-body">
                 <p>{t('presets.detail.inputs', { inputs: tOr(t, `presets.needs.${template.needsKey || template.id}`, template.needs) })}</p>
