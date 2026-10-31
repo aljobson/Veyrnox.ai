@@ -11,7 +11,7 @@ import { existsSync, rmSync, writeFileSync } from 'node:fs';
 
 const PORT = Number(process.env.SMOKE_PORT || 8797);
 const BASE = `http://127.0.0.1:${PORT}`;
-const PATHS = ['/', '/pricing', '/robots.txt', '/sitemap.xml'];
+const PATHS = ['/', '/pricing', '/publish', '/robots.txt', '/sitemap.xml'];
 const POISON = /loadManifest|Unexpected loadManifest|preview-props/i;
 const STARTUP_MS = 120_000;
 

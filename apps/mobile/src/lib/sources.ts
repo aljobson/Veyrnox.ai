@@ -9,6 +9,8 @@ export type SlotName = 'image' | 'endImage' | 'video' | 'audio';
 export type SlotKind = 'image' | 'video' | 'audio';
 
 const KIND: Record<SlotName, SlotKind> = { image: 'image', endImage: 'image', video: 'video', audio: 'audio' };
+// Per-slot ceiling; the model's verified limit decides, 3 stays the default (mirrors lib/multiReference.mjs).
+export const MAX_SLOT_FILES = 9;
 export const SLOT_ORDER: SlotName[] = ['image', 'endImage', 'video', 'audio'];
 
 const ALLOWED: Record<string, { kind: SlotKind; maxBytes: number }> = {
@@ -55,12 +57,16 @@ export type PickedCheck = { readonly ok: true; readonly contentType: string } | 
 const DEFAULT_LABEL: Record<SlotName, string> = { image: t('sources.image'), endImage: t('sources.lastframe'), video: t('sources.video'), audio: t('sources.audio') };
 
 // The file slots a model declares, in a fixed order, ignoring names the server does not know.
+/** At most 3 files a kind, unless one slot of the model is verified for more (Seedance reference: 9). */
+export const kindCap = (slots: readonly Slot[], kind: SlotKind): number =>
+    Math.max(3, ...slots.filter((s) => s.kind === kind).map((s) => s.maxFiles ?? 1));
+
 export function slotsFor(model: CatalogModel): Slot[] {
     const media = model.capabilities?.media ?? {};
     return SLOT_ORDER.filter((name) => Object.hasOwn(media, name)).map((name) => ({
         slot: name,
         kind: KIND[name],
-        maxFiles: Math.max(1, Math.min(3, media[name].maxFiles ?? 1)),
+        maxFiles: Math.max(1, Math.min(MAX_SLOT_FILES, media[name].maxFiles ?? 1)),
         required: media[name].required === true,
         label: media[name].label ? slotLabel(media[name].label) : DEFAULT_LABEL[name],
         ...(typeof media[name].maxPixels === 'number' ? { maxPixels: media[name].maxPixels } : {}),

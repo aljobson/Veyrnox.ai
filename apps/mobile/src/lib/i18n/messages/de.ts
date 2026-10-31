@@ -36,7 +36,7 @@ const de = {
     'public.TemplateRecipe.sourcePromptNotRecorded': 'Für diese Vorschau ist kein exakter Quell-Prompt erfasst. Der Generierungs-Prompt unten ist eine Veyrnox-Anpassung und kein kopierter Quelltext.',
     'public.TemplateRecipe.sourcePromptTruncated': 'Der Quell-Feed lieferte diesen Prompt bereits abgeschnitten. Er wird exakt bewahrt und darf nicht als vollständig gelten.',
     'public.TemplateRecipe.sourcePromptDuplicate': 'Die Quelle veröffentlichte denselben exakten Prompt für ein weiteres Video. Er bleibt unverändert und ist als Quellduplikat gekennzeichnet.',
-    'public.TemplateRecipe.generationPrompt': 'VEYRNOX-GENERIERUNGSPROMPT',
+    'public.TemplateRecipe.generationPrompt': 'GENERIERUNGSPROMPT',
     'recovery.retry': 'Erneut versuchen',
     'cinema.creatorWorkspace.cancel': 'Abbrechen',
     'social.saving': 'Wird gespeichert…',

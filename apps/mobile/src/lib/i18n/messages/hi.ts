@@ -36,7 +36,7 @@ const hi = {
     'public.TemplateRecipe.sourcePromptNotRecorded': 'इस प्रीव्यू के लिए कोई सटीक स्रोत प्रॉम्प्ट दर्ज नहीं है। नीचे दिया जनरेशन प्रॉम्प्ट Veyrnox का अनुकूलन है, स्रोत से कॉपी किया गया टेक्स्ट नहीं।',
     'public.TemplateRecipe.sourcePromptTruncated': 'स्रोत फ़ीड ने यह प्रॉम्प्ट पहले से कटा हुआ लौटाया। इसे ठीक वैसे ही सुरक्षित रखा गया है और पूर्ण नहीं माना जाना चाहिए।',
     'public.TemplateRecipe.sourcePromptDuplicate': 'स्रोत ने यही सटीक प्रॉम्प्ट किसी दूसरे वीडियो के लिए भी प्रकाशित किया है। इसे बिना बदले रखा गया है और स्रोत डुप्लिकेट के रूप में चिह्नित किया गया है।',
-    'public.TemplateRecipe.generationPrompt': 'VEYRNOX जनरेशन प्रॉम्प्ट',
+    'public.TemplateRecipe.generationPrompt': 'जनरेशन प्रॉम्प्ट',
     'recovery.retry': 'फिर कोशिश करें',
     'cinema.creatorWorkspace.cancel': 'रद्द करें',
     'social.saving': 'सेव हो रहा है…',

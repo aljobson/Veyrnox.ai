@@ -3,7 +3,7 @@ import { sanitizeCinema, type Cinema } from './cinemaCamera';
 import { sanitizePicks, type Picks } from './oddlingsBuilder';
 import { imageCount, optionsFor, resolveAudio, resolveResolution, seedIsInvalid } from './createOptions';
 import { kindOf, textInput, type CatalogModel } from './media';
-import { slotsFor, type GenerationReference } from './sources';
+import { kindCap, slotsFor, type GenerationReference } from './sources';
 import { nearestAspect, parseRatio } from './templateHandoff';
 import { stageCreativeSourceHandoff, type CreativeSourceHandoff } from './creativeSourceHandoff';
 
@@ -42,7 +42,7 @@ export function acceptedReferences(model: CatalogModel, refs: readonly Generatio
     for (const ref of uniqueReferences(refs)) {
         const accepts = (slot: typeof slots[number]) => slot.kind === referenceKind(ref) && result.filter(r => r.slot === slot.slot).length < (slot.maxFiles ?? 1);
         const slot = slots.find(s => s.slot === ref.slot && accepts(s)) ?? slots.find(accepts);
-        if (!slot || result.filter(r => referenceKind(r) === referenceKind(ref)).length >= 3) continue;
+        if (!slot || result.filter(r => referenceKind(r) === referenceKind(ref)).length >= kindCap(slots, referenceKind(ref))) continue;
         if (slot.slot !== ref.slot) moved++;
         result.push({ ...ref, slot: slot.slot });
     }
