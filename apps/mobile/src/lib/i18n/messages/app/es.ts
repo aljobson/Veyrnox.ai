@@ -5734,5 +5734,13 @@ export default {
   "wins.days.other": "{count} días",
   "wins.checked": "Registro realizado",
   "wins.empty": "Sin registro",
-  "wins.days.many": "{count} días"
+  "wins.days.many": "{count} días",
+  "job.holdToDelete": "Mantén pulsado para eliminar",
+  "job.holdToDeleteHint": "Mantén pulsado para eliminar esta creación para siempre. Si sueltas antes, se cancela.",
+  "job.holdToDeleteTap": "Sigue manteniendo pulsado el botón para eliminar esta creación.",
+  "credits.receipt.title": "Recibo",
+  "credits.receipt.credits": "Créditos",
+  "credits.receipt.paid": "Pagado",
+  "credits.receipt.balance": "Nuevo saldo",
+  "credits.receipt.thanks": "Gracias por tu compra.",
 } as const;

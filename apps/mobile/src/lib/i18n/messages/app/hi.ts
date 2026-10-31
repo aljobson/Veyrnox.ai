@@ -5668,5 +5668,13 @@ export default {
   "wins.days.one": "{count} दिन",
   "wins.days.other": "{count} दिन",
   "wins.checked": "चेक-इन किया",
-  "wins.empty": "चेक-इन नहीं"
+  "wins.empty": "चेक-इन नहीं",
+  "job.holdToDelete": "हटाने के लिए दबाकर रखें",
+  "job.holdToDeleteHint": "इस रचना को हमेशा के लिए हटाने के लिए दबाकर रखें। पहले छोड़ने पर रद्द हो जाता है।",
+  "job.holdToDeleteTap": "इस रचना को हटाने के लिए बटन दबाए रखें।",
+  "credits.receipt.title": "रसीद",
+  "credits.receipt.credits": "क्रेडिट",
+  "credits.receipt.paid": "भुगतान",
+  "credits.receipt.balance": "नया बैलेंस",
+  "credits.receipt.thanks": "ख़रीदारी के लिए धन्यवाद।",
 } as const;

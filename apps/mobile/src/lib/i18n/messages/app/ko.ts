@@ -5602,5 +5602,13 @@ export default {
   "wins.duration": "{minutes}분 {seconds}초",
   "wins.days.other": "{count}일",
   "wins.checked": "출석 완료",
-  "wins.empty": "출석 없음"
+  "wins.empty": "출석 없음",
+  "job.holdToDelete": "길게 눌러 삭제",
+  "job.holdToDeleteHint": "길게 누르면 이 작품이 영구히 삭제됩니다. 중간에 손을 떼면 취소됩니다.",
+  "job.holdToDeleteTap": "이 작품을 삭제하려면 버튼을 계속 누르고 있으세요.",
+  "credits.receipt.title": "영수증",
+  "credits.receipt.credits": "크레딧",
+  "credits.receipt.paid": "결제 금액",
+  "credits.receipt.balance": "새 잔액",
+  "credits.receipt.thanks": "구매해 주셔서 감사합니다.",
 } as const;

@@ -5602,5 +5602,13 @@ export default {
   "wins.duration": "{minutes} 分 {seconds} 秒",
   "wins.days.other": "{count} 天",
   "wins.checked": "已签到",
-  "wins.empty": "未签到"
+  "wins.empty": "未签到",
+  "job.holdToDelete": "长按删除",
+  "job.holdToDeleteHint": "长按可永久删除此作品。提前松开即取消。",
+  "job.holdToDeleteTap": "继续按住按钮以删除此作品。",
+  "credits.receipt.title": "收据",
+  "credits.receipt.credits": "积分",
+  "credits.receipt.paid": "已支付",
+  "credits.receipt.balance": "新余额",
+  "credits.receipt.thanks": "感谢您的购买。",
 } as const;

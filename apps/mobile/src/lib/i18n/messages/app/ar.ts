@@ -5932,5 +5932,13 @@ export default {
   "wins.days.zero": "{count} يوم",
   "wins.days.two": "{count} يومان",
   "wins.days.few": "{count} أيام",
-  "wins.days.many": "{count} يومًا"
+  "wins.days.many": "{count} يومًا",
+  "job.holdToDelete": "اضغط مطولًا للحذف",
+  "job.holdToDeleteHint": "اضغط مطولًا لحذف هذا العمل نهائيًا. الإفلات مبكرًا يلغي الحذف.",
+  "job.holdToDeleteTap": "واصل الضغط على الزر لحذف هذا العمل.",
+  "credits.receipt.title": "الإيصال",
+  "credits.receipt.credits": "الأرصدة",
+  "credits.receipt.paid": "المدفوع",
+  "credits.receipt.balance": "الرصيد الجديد",
+  "credits.receipt.thanks": "شكرًا لشرائك.",
 } as const;

@@ -20,6 +20,7 @@ import {
 import { t } from '../../lib/i18n';
 import { ds } from '../../theme';
 import { VeyCardPeek } from '../../components/VeyCardPeek';
+import { ReceiptSlip } from '../../components/ReceiptSlip';
 import { BalanceCard } from '../../components/credits/BalanceCard';
 import { CheckInEntry } from '../../components/credits/CheckInEntry';
 import { PackCard, PackTaxNote } from '../../components/credits/PackCard';
@@ -227,7 +228,16 @@ export default function Credits() {
                 <PackTaxNote />
             </View>
 
-            {outcome?.kind === 'credited' ? <Text variant="body" tone="secondary" style={styles.balance} accessibilityLiveRegion="polite">{t('credits.added', { balance: outcome.balance })}</Text> : null}
+            {outcome?.kind === 'credited' ? (
+                <>
+                    <ReceiptSlip title={t('credits.receipt.title')} footer={t('credits.receipt.thanks')} rows={[
+                        { label: t('credits.receipt.credits'), value: `+${outcome.credits}` },
+                        { label: t('credits.receipt.paid'), value: outcome.price },
+                        { label: t('credits.receipt.balance'), value: String(outcome.balance) },
+                    ]} />
+                    <Text variant="body" tone="secondary" style={styles.balance} accessibilityLiveRegion="polite">{t('credits.added', { balance: outcome.balance })}</Text>
+                </>
+            ) : null}
             {outcome?.kind === 'subscribed' ? <Text variant="body" tone="accent" accessibilityLiveRegion="polite" style={styles.ok}>{t('credits.subscriptions.started')}</Text> : null}
             {outcome?.kind === 'restored' ? <Text variant="body" tone="accent" accessibilityLiveRegion="polite" style={styles.ok}>{t('credits.restored')}</Text> : null}
             {outcome?.kind === 'nothingToRestore' ? <Text variant="body" tone="secondary" accessibilityLiveRegion="polite">{t('credits.nothingToRestore')}</Text> : null}

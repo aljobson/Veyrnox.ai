@@ -5734,5 +5734,13 @@ export default {
   "wins.days.other": "{count} dias",
   "wins.checked": "Check-in feito",
   "wins.empty": "Sem check-in",
-  "wins.days.many": "{count} dias"
+  "wins.days.many": "{count} dias",
+  "job.holdToDelete": "Segure para excluir",
+  "job.holdToDeleteHint": "Segure para excluir esta criação de vez. Soltar antes cancela.",
+  "job.holdToDeleteTap": "Continue segurando o botão para excluir esta criação.",
+  "credits.receipt.title": "Recibo",
+  "credits.receipt.credits": "Créditos",
+  "credits.receipt.paid": "Pago",
+  "credits.receipt.balance": "Novo saldo",
+  "credits.receipt.thanks": "Obrigado pela sua compra.",
 } as const;

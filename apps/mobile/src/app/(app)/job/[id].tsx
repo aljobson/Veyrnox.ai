@@ -17,6 +17,7 @@ import { VeyCharacter } from '../../../components/VeyCharacter';
 import { JobProvenance } from '../../../components/JobProvenance';
 import { StemList } from '../../../components/StemList';
 import { CONFIRM_MESSAGE, CONFIRM_TITLE, deleteCreation, deleteMessage, isAlreadyGone } from '../../../lib/deleteCreation';
+import { HoldToConfirmButton } from '../../../components/HoldToConfirmButton';
 import { afterCelebration, celebrateOutput, type CelebrationResult } from '../../../lib/celebrate';
 import { REVIEW_ASK_DELAY_MS, claimReviewAsk, shouldAskForReview } from '../../../lib/reviewAsk';
 import { loadReviewAsk } from '../../../lib/storeReview';
@@ -356,7 +357,8 @@ export default function JobScreen() {
                     <Link href={{ pathname: '/report', params: { kind: 'job', id } }} asChild>
                         <Button variant="tertiary" accessibilityRole="button" label={t('job.report')} />
                     </Link>
-                    <Button variant="tertiary" accessibilityRole="button" disabled={deleting} onPress={confirmDelete} label={deleting ? t('job.deleting') : t('job.deleteThis')} textStyle={styles.deleteText} />
+                    <HoldToConfirmButton disabled={deleting} label={deleting ? t('job.deleting') : t('job.holdToDelete')} hint={t('job.holdToDeleteHint')}
+                        onConfirm={() => void doDelete()} onTap={() => setNote(t('job.holdToDeleteTap'))} onAccessibilityActivate={confirmDelete} />
                 </ScrollView>
             ) : null}
         </View>
@@ -381,5 +383,4 @@ const sheets = themedStyles((p) => ({
     grow: { flex: 1 },
     row: { flexDirection: 'row', flexWrap: 'wrap', gap: ds.space.sm },
     note: { color: p.textSecondary, textAlign: 'center' },
-    deleteText: { color: p.danger },
 }));

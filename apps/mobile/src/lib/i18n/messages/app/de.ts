@@ -5668,5 +5668,13 @@ export default {
   "wins.days.one": "{count} Tag",
   "wins.days.other": "{count} Tage",
   "wins.checked": "Eingecheckt",
-  "wins.empty": "Kein Check-in"
+  "wins.empty": "Kein Check-in",
+  "job.holdToDelete": "Gedrückt halten zum Löschen",
+  "job.holdToDeleteHint": "Gedrückt halten, um diese Kreation endgültig zu löschen. Früheres Loslassen bricht ab.",
+  "job.holdToDeleteTap": "Halte die Taste weiter gedrückt, um diese Kreation zu löschen.",
+  "credits.receipt.title": "Beleg",
+  "credits.receipt.credits": "Credits",
+  "credits.receipt.paid": "Bezahlt",
+  "credits.receipt.balance": "Neues Guthaben",
+  "credits.receipt.thanks": "Danke für deinen Kauf.",
 } as const;

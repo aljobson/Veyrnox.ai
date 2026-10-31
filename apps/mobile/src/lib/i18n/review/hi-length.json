@@ -1860,6 +1860,12 @@
     "ratio": 1.62
   },
   {
+    "id": "job.holdToDelete",
+    "english": "Hold to delete",
+    "translation": "हटाने के लिए दबाकर रखें",
+    "ratio": 1.64
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

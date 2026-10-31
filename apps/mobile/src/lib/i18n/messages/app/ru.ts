@@ -5800,5 +5800,13 @@ export default {
   "wins.checked": "Отметка есть",
   "wins.empty": "Нет отметки",
   "wins.days.few": "{count} дня",
-  "wins.days.many": "{count} дней"
+  "wins.days.many": "{count} дней",
+  "job.holdToDelete": "Удерживайте для удаления",
+  "job.holdToDeleteHint": "Нажмите и удерживайте, чтобы удалить это творение навсегда. Если отпустить раньше, удаление отменится.",
+  "job.holdToDeleteTap": "Продолжайте удерживать кнопку, чтобы удалить это творение.",
+  "credits.receipt.title": "Чек",
+  "credits.receipt.credits": "Кредиты",
+  "credits.receipt.paid": "Оплачено",
+  "credits.receipt.balance": "Новый баланс",
+  "credits.receipt.thanks": "Спасибо за покупку.",
 } as const;

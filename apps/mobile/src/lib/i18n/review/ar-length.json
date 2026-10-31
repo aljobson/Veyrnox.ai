@@ -1728,6 +1728,12 @@
     "ratio": 1.67
   },
   {
+    "id": "credits.receipt.paid",
+    "english": "Paid",
+    "translation": "المدفوع",
+    "ratio": 1.75
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "تسجيل الدخول",
