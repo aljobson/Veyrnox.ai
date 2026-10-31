@@ -85,7 +85,8 @@ export default function Paywall() {
                 onPurchaseCancelled={() => { finish(); react({ type: 'cancelled' }); }}
                 onPurchaseError={() => { finish(); react({ type: 'failed' }); }}
                 onRestoreCompleted={close}
-                onDismiss={close}
+                // The paywall may dismiss itself after a purchase; the celebration timer closes instead.
+                onDismiss={() => { if (!closing.current) close(); }}
             />
         </View>
     );
