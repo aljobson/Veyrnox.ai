@@ -5,6 +5,7 @@
 // typed GatewayError otherwise so callers can branch on .code.
 
 import { getFreshAccessToken, getSession, clearSession } from '../../lib/authClient.js';
+import { waitForStepUp } from '../../lib/mfaStepUpWait.js';
 import { getSelectedSocialBrand, setSelectedSocialBrand, assertSocialBrandSnapshot } from '../../lib/socialBrandSelection.js';
 import { captureOperationalError } from '../../lib/analyticsClient.js';
 import { normaliseGatewayPath } from '../../lib/analyticsPrivacy.js';
@@ -42,7 +43,7 @@ export class GatewayError extends Error {
  * @param {string} path       leading slash, e.g. '/balance', '/jobs/123'
  * @param {RequestInit & {preserveUploadErrors?: boolean}} [init]
  */
-export async function gatewayFetch(path, init = {}, brandRetried = false, brandSnapshot) {
+export async function gatewayFetch(path, init = {}, brandRetried = false, brandSnapshot, mfaRetried = false) {
   const { preserveUploadErrors, ...requestInit } = init;
   const assertCurrentBrand = () => { if (brandSnapshot !== undefined) assertSocialBrandSnapshot(brandSnapshot); };
   assertCurrentBrand();
@@ -135,12 +136,31 @@ export async function gatewayFetch(path, init = {}, brandRetried = false, brandS
     throw new GatewayError('service_unavailable', { status: 503, code: 'service_unavailable', retryAfter, body });
   }
   if (!res.ok) {
+    // Enrolled-2FA enforcement (ADR-0308, MFA-02): a read fired at aal1 behind the sign-in
+    // step-up modal is refused with 403 mfa_required. Hold the request until the person
+    // satisfies TOTP (session reaches aal2), then retry it ONCE. GET only — a read is safe to
+    // replay, a mutation is not (it throws mfa_required as today and the caller retries after
+    // step-up). The mfaRetried guard bounds this to a single wait+retry: a second mfa_required
+    // falls through to the typed throw below, so there is no loop. Abandon/sign-out/timeout
+    // rejects waitForStepUp, and we throw mfa_required exactly as before.
+    if (res.status === 403 && body?.error === 'mfa_required' && !mfaRetried
+        && String(init.method || 'GET').toUpperCase() === 'GET') {
+      try {
+        await waitForStepUp();
+      } catch {
+        const failure = apiErrorDetails(body, 403);
+        throw new GatewayError(failure.message, { status: 403, code: failure.code, body });
+      }
+      assertCurrentAccount();
+      assertCurrentBrand();
+      return gatewayFetch(path, init, brandRetried, brandSnapshot, true);
+    }
     // A removed team membership must not strand read pages on a stale brand.
     // Retry only reads, once, under the current/default authorized brand.
     if (brandSnapshot === undefined && !brandRetried && path.startsWith('/social/') && selectedBrand && res.status === 404 && body?.error === 'brand_not_found'
         && String(init.method || 'GET').toUpperCase() === 'GET') {
       if (getSelectedSocialBrand() === selectedBrand) setSelectedSocialBrand('');
-      const recovered = await gatewayFetch(path, init, true);
+      const recovered = await gatewayFetch(path, init, true, undefined, mfaRetried);
       assertCurrentAccount();
       return recovered;
     }

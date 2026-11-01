@@ -96,3 +96,38 @@ and regenerating source hashes preserves their format and order rather than
 restructuring them. All newly authored files stay under 500 lines. The design
 criteria document now has eleven state rows despite the
 work order referring to nine; report all eleven during review.
+
+## Amendment 1 — read-recovery after step-up (MFA-02 built)
+
+Follow-up #3 above (the read-recovery prerequisite for enabling
+`REQUIRE_AAL2_WHEN_ENROLLED`) is now built at the gateway, client-side only; the
+flag is still NOT flipped (that is PR #1830, held for the owner).
+
+- `app/lib/mfaStepUpWait.js` `waitForStepUp()` resolves when the session reaches
+  `aal2`, and rejects on a real sign-out or account swap (keyed on the STORED
+  user id, which survives the transient token-absence window of a cross-tab
+  metadata write, so a same-account hydration does not look like abandonment) or
+  after a bounded timeout (120 s).
+- `app/veyrnox/_lib/gateway.js`: a GET refused `403 mfa_required` awaits
+  `waitForStepUp()` and retries once. GET-only — a mutation is never blind-replayed
+  (it throws `mfa_required` as today; the caller retries after step-up), so there
+  is no double-spend. A fifth `mfaRetried` argument bounds it to a single
+  wait+retry (threaded through the existing `brand_not_found` fallback too, so a
+  combined MFA + brand recovery still waits at most once). Abandon/sign-out/timeout
+  rejects the wait and the request throws `mfa_required` exactly as before.
+- Because both named consumers (Library, editor `useEditorResource`) read through
+  `gatewayFetch` and the step-up modal blocks the page while they are in flight,
+  the held request recovers them with NO consumer edits, NO reload (unsaved editor
+  drafts/File objects are preserved — MFA-05) and NO broadcast.
+
+Scope/boundaries (honest, not overclaimed): a read is held and retried once the
+session reaches `aal2`, which is the normal TOTP path and covers every in-flight
+read while the blocking modal is up. A user who leaves the prompt unresolved past
+the 120 s wait sees the pre-existing degraded state for that read and recovers on
+navigation/reload — this change does not add a late-verify refetch. The
+recovery-code path (ADR-0308 is extended by the lost-authenticator flow in a
+separate change) completes at `aal1` with the factor removed, so recovery relies
+on the server enrolment cache clearing (~60 s) and the user following its
+"go to Account" prompt, not on this `aal2` wait. With this merged, enabling
+`REQUIRE_AAL2_WHEN_ENROLLED` (#1830) no longer strands an enrolled user's reads
+through a TOTP sign-in.
