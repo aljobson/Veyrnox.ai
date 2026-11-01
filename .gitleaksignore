@@ -243,7 +243,7 @@ d4199d0af673e57ceb947305a7ea7284b7d8ae4e:tests/socialApprovalsRoute.test.mjs:gen
 e590411b56e2741725ef99311f1846783e9863fe:tests/socialApprovalsRoute.test.mjs:generic-api-key:29
 e590411b56e2741725ef99311f1846783e9863fe:tests/socialApprovalsRoute.test.mjs:generic-api-key:33
 e590411b56e2741725ef99311f1846783e9863fe:tests/socialApprovalsRoute.test.mjs:generic-api-key:37
-# Same synthetic idempotency fixture ('approval_12345678') in PR 1835's squash commit on main; not a credential.
+# Same fixture after #1835 squash-merged it to main (the d4199d0 entries above name the pre-squash commit); not a credential.
 e24ba1e497d1caebcbedfde789bf0878033c946b:tests/socialApprovalsRoute.test.mjs:generic-api-key:31
 e24ba1e497d1caebcbedfde789bf0878033c946b:tests/socialApprovalsRoute.test.mjs:generic-api-key:35
 e24ba1e497d1caebcbedfde789bf0878033c946b:tests/socialApprovalsRoute.test.mjs:generic-api-key:39
