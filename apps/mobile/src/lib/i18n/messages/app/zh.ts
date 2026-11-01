@@ -5624,7 +5624,7 @@ export default {
   "credits.hardPaywall.retry": "重试",
   "credits.hardPaywall.deleteAccount": "删除账户",
   "credits.hardPaywall.step": "第 {current} 步，共 {total} 步",
-  "credits.hardPaywall.step1.title": "免费试用 Veyrnox {days} 天",
+  "credits.hardPaywall.step1.title": "免费试用 Veyrnox.ai {days} 天",
   "credits.hardPaywall.step1.body": "开始免费试用，{count} 个积分立即可用。现在无需付款。",
   "credits.hardPaywall.step1.p1": "免费 {days} 天，完整功能",
   "credits.hardPaywall.step1.p2": "从第一天起即可使用的 {count} 个积分",

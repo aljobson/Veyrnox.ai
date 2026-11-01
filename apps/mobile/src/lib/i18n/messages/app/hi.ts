@@ -5690,7 +5690,7 @@ export default {
   "credits.hardPaywall.retry": "फिर कोशिश करें",
   "credits.hardPaywall.deleteAccount": "खाता हटाएँ",
   "credits.hardPaywall.step": "चरण {current} / {total}",
-  "credits.hardPaywall.step1.title": "Veyrnox को {days} दिन मुफ़्त आज़माएँ",
+  "credits.hardPaywall.step1.title": "Veyrnox.ai को {days} दिन मुफ़्त आज़माएँ",
   "credits.hardPaywall.step1.body": "अपना मुफ़्त ट्रायल शुरू करें और आपके {count} क्रेडिट तुरंत तैयार हैं। अभी कोई भुगतान नहीं देना है।",
   "credits.hardPaywall.step1.p1": "{days} दिन मुफ़्त, पूरी पहुँच",
   "credits.hardPaywall.step1.p2": "पहले दिन से इस्तेमाल के लिए {count} क्रेडिट",

@@ -5954,7 +5954,7 @@ export default {
   "credits.hardPaywall.retry": "إعادة المحاولة",
   "credits.hardPaywall.deleteAccount": "حذف الحساب",
   "credits.hardPaywall.step": "الخطوة {current} من {total}",
-  "credits.hardPaywall.step1.title": "جرّب Veyrnox مجانًا لمدة {days} أيام",
+  "credits.hardPaywall.step1.title": "جرّب Veyrnox.ai مجانًا لمدة {days} أيام",
   "credits.hardPaywall.step1.body": "ابدأ تجربتك المجانية وستكون رصيدك البالغ {count} جاهزًا فورًا. لا دفعات مستحقة الآن.",
   "credits.hardPaywall.step1.p1": "{days} أيام مجانًا مع وصول كامل",
   "credits.hardPaywall.step1.p2": "{count} رصيدًا للإبداع منذ اليوم الأول",

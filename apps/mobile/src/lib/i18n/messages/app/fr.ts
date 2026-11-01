@@ -5756,7 +5756,7 @@ export default {
   "credits.hardPaywall.retry": "Réessayer",
   "credits.hardPaywall.deleteAccount": "Supprimer le compte",
   "credits.hardPaywall.step": "Étape {current} sur {total}",
-  "credits.hardPaywall.step1.title": "Essayez Veyrnox gratuitement pendant {days} jours",
+  "credits.hardPaywall.step1.title": "Essayez Veyrnox.ai gratuitement pendant {days} jours",
   "credits.hardPaywall.step1.body": "Lancez votre essai gratuit et vos {count} crédits sont disponibles tout de suite. Aucun paiement dû maintenant.",
   "credits.hardPaywall.step1.p1": "{days} jours gratuits, accès complet",
   "credits.hardPaywall.step1.p2": "{count} crédits pour créer dès le premier jour",

@@ -5624,7 +5624,7 @@ export default {
   "credits.hardPaywall.retry": "再試行",
   "credits.hardPaywall.deleteAccount": "アカウントを削除",
   "credits.hardPaywall.step": "ステップ {current}/{total}",
-  "credits.hardPaywall.step1.title": "Veyrnox を {days} 日間無料でお試し",
+  "credits.hardPaywall.step1.title": "Veyrnox.ai を {days} 日間無料でお試し",
   "credits.hardPaywall.step1.body": "無料トライアルを始めると、{count} クレジットがすぐに使えます。今回のお支払いはありません。",
   "credits.hardPaywall.step1.p1": "{days} 日間無料、すべての機能を利用可能",
   "credits.hardPaywall.step1.p2": "初日から使える {count} クレジット",

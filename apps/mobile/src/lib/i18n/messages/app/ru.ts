@@ -5822,7 +5822,7 @@ export default {
   "credits.hardPaywall.retry": "Повторить",
   "credits.hardPaywall.deleteAccount": "Удалить аккаунт",
   "credits.hardPaywall.step": "Шаг {current} из {total}",
-  "credits.hardPaywall.step1.title": "Попробуйте Veyrnox бесплатно {days} дней",
+  "credits.hardPaywall.step1.title": "Попробуйте Veyrnox.ai бесплатно {days} дней",
   "credits.hardPaywall.step1.body": "Начните бесплатный период, и ваши {count} кредитов будут доступны сразу. Сейчас платить не нужно.",
   "credits.hardPaywall.step1.p1": "{days} дней бесплатно, полный доступ",
   "credits.hardPaywall.step1.p2": "{count} кредитов для работы с первого дня",
