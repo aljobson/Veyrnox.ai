@@ -253,6 +253,18 @@ test('parses subscription events into one action each', () => {
     assert.deepEqual([playGeneration.kind, playGeneration.family, playGeneration.productId, playGeneration.channel], ['subscription', 'generation', 'ai.veyrnox.generation.starter.monthly:monthly', 'android']);
 });
 
+test('a generation free trial is typed apart from a paid purchase (0422)', () => {
+    const gen = 'ai.veyrnox.generation.starter.monthly';
+    const trial = parseStoreEvent(sub('INITIAL_PURCHASE', { product_id: gen, period_type: 'TRIAL' }));
+    assert.deepEqual([trial.action, trial.type], ['activate', 'initial_purchase_trial']);
+    assert.equal(parseStoreEvent(sub('INITIAL_PURCHASE', { product_id: gen, period_type: 'NORMAL' })).type, 'initial_purchase');
+    assert.equal(parseStoreEvent(sub('INITIAL_PURCHASE', { product_id: gen, period_type: 'INTRO' })).type, 'initial_purchase');
+    assert.equal(parseStoreEvent(sub('INITIAL_PURCHASE', { product_id: gen })).type, 'initial_purchase');
+    // The renewal that ends the trial is the paid grant, and a Publish trial is not a generation trial.
+    assert.equal(parseStoreEvent(sub('RENEWAL', { product_id: gen, period_type: 'NORMAL' })).type, 'renewal');
+    assert.equal(parseStoreEvent(sub('INITIAL_PURCHASE', { product_id: 'ai.veyrnox.publish.weekly', period_type: 'TRIAL' })).type, 'initial_purchase');
+});
+
 test('routes AI Generation subscriptions to the credit subscription ledger', async () => {
     handlers.apply_store_generation_event = json({ ok: true, status: 'active', granted: 398 });
     const event = sub('INITIAL_PURCHASE', { product_id: 'ai.veyrnox.generation.starter.monthly', id: 'evt-generation-start-1' });

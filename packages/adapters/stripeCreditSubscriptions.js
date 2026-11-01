@@ -105,6 +105,22 @@ export function creditInvoice(invoice, binding, expectLiveMode, nowSeconds = Mat
     periodEnd: new Date(period.end * 1000).toISOString() };
 }
 
+/**
+ * The $0 invoice Stripe issues when a free trial starts: paid, no discount, one line for this subscription's
+ * own plan at no charge. It grants no plan credits; it is acknowledged, and the trial starter credits follow.
+ * A first invoice reduced to $0 by a coupon carries a discount and is not this.
+ */
+export function isTrialStartInvoice(invoice, binding, expectLiveMode) {
+  const line = invoice?.lines?.data?.[0];
+  const subId = invoiceSubscriptionId(invoice);
+  return Boolean(binding && invoice?.object === 'invoice' && invoice.livemode === expectLiveMode && invoice.status === 'paid'
+    && invoice.currency === 'usd' && subId === binding.stripe_subscription_id && objectId(invoice.customer) === binding.stripe_customer_id
+    && invoice.billing_reason === 'subscription_create' && invoice.amount_paid === 0 && invoice.total === 0 && invoice.amount_due === 0
+    && !invoice.discounts?.length && invoice.lines?.has_more === false && invoice.lines.data.length === 1
+    && line.amount === 0 && line.currency === 'usd' && line.proration !== true && !line.discount_amounts?.some((d) => d.amount > 0)
+    && (objectId(line.subscription) || objectId(line.parent?.subscription_item_details?.subscription)) === subId);
+}
+
 export async function fetchCreditInvoice(id, cfg) {
   if (!/^in_[A-Za-z0-9_]{1,97}$/.test(id || '')) return null;
   const invoice = await creditStripeRequest(`invoices/${id}?expand[]=payments`, cfg);
