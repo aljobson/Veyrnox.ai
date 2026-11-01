@@ -148,6 +148,8 @@
     // and owner authorization on 2026-10-24. Existing-customer reads,
     // cancellation and paid-checkout recovery remain available while enabled.
     "SUBSCRIPTIONS_ENABLED": "true",
+    // ADR-0316: 7-day free trial on the generation plans, on in production (owner, 2026-11-01). Remove the var to turn it off.
+    "SUBSCRIPTION_TRIAL_ENABLED": "true",
     // Cinema first activation. Paid access and monetisation remain closed.
     // Merge only after the documented production cutover gates pass.
     // ADR-0145: the nine Cinema and creator switches that cinemaFeatures() reads live in this one JSON binding

@@ -29,12 +29,13 @@ test('a trial is offered only while SUBSCRIPTION_TRIAL_ENABLED is exactly "true"
   for (const value of [undefined, '', 'false', 'TRUE', '1']) assert.equal(subscriptionTrialDays({ SUBSCRIPTION_TRIAL_ENABLED: value }), 0);
 });
 
-test('the trial flag is "false" on staging and absent from production vars', () => {
+test('the trial flag is "true" in production (owner, 2026-11-01) and "false" on staging', () => {
   const text = readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8');
   const hits = text.match(/^\s*"SUBSCRIPTION_TRIAL_ENABLED":\s*"([^"]*)"/gm) || [];
-  assert.equal(hits.length, 1);
-  assert.match(hits[0], /"false"$/);
-  assert.ok(text.indexOf('"SUBSCRIPTION_TRIAL_ENABLED"') > text.indexOf('"env"'));
+  assert.equal(hits.length, 2);
+  assert.match(hits[0], /"true"$/);
+  assert.match(hits[1], /"false"$/);
+  assert.ok(text.indexOf('"SUBSCRIPTION_TRIAL_ENABLED"') < text.indexOf('"env"'));
 });
 
 test('checkout sends trial_period_days only when a trial is asked for, and refuses nonsense', async () => {
