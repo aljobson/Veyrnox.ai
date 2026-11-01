@@ -56,6 +56,13 @@ test('after step-up, a retry that finds a different account is refused, not deli
   await assert.rejects(g.gatewayFetch('/jobs'), e => e.status === 409 && e.code === 'account_changed');
 });
 
+test('an /admin GET refused mfa_required throws at once and never waits — the admin inline step-up drives it', async () => {
+  const g = load({ responses: [mfa403()], waitForStepUp: async () => assert.fail('must not wait on an admin route') });
+  await assert.rejects(g.gatewayFetch('/admin/security'), e => e.status === 403 && e.code === 'mfa_required');
+  assert.equal(g.requests.length, 1);
+  assert.equal(g.waited(), 0);
+});
+
 test('a non-mfa 403 throws as before and never waits', async () => {
   const g = load({ responses: [Response.json({ error: 'forbidden' }, { status: 403 })], waitForStepUp: async () => assert.fail('must not wait') });
   await assert.rejects(g.gatewayFetch('/jobs'), e => e.status === 403);

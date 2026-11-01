@@ -143,8 +143,16 @@ export async function gatewayFetch(path, init = {}, brandRetried = false, brandS
     // step-up). The mfaRetried guard bounds this to a single wait+retry: a second mfa_required
     // falls through to the typed throw below, so there is no loop. Abandon/sign-out/timeout
     // rejects waitForStepUp, and we throw mfa_required exactly as before.
+    //
+    // NOT on /admin/* routes. The admin dashboard has its own inline step-up (the MfaPanel on
+    // the page plus an "Unlock this session … above" alert), driven by receiving mfa_required
+    // directly; it is not necessarily enrolled for the global sign-in modal, so swallowing the
+    // 403 here would hide the alert and park the read until the 120s timeout. The root-cause of
+    // the isolated-feature-qa regression. Admin reads keep throwing mfa_required so their inline
+    // flow renders at once and recovers on the page's own Refresh.
     if (res.status === 403 && body?.error === 'mfa_required' && !mfaRetried
-        && String(init.method || 'GET').toUpperCase() === 'GET') {
+        && String(init.method || 'GET').toUpperCase() === 'GET'
+        && !path.startsWith('/admin/')) {
       try {
         // Pass the caller's AbortSignal so an aborted read (e.g. editor cleanup) stops waiting
         // and releases the step-up listener/timer at once instead of parking until aal2/timeout.
