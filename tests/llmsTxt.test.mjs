@@ -37,3 +37,13 @@ test('howToLd carries every step in order', () => {
     assert.equal(ld.url, 'https://veyrnox.ai/guides/x');
     assert.deepEqual(ld.step.map((s) => s.position), [1, 2]);
 });
+
+test('modelServiceLd prices from the pack range in dollars and omits the offer without one', async () => {
+    const { modelServiceLd } = await import('../lib/jsonLd.js');
+    const base = { name: 'M', description: 'D', href: '/models/m' };
+    const priced = modelServiceLd({ ...base, range: { minCents: 8, maxCents: 15 } });
+    assert.equal(priced.offers.priceCurrency, 'USD');
+    assert.equal(priced.offers.lowPrice, '0.08');
+    assert.equal(priced.offers.highPrice, '0.15');
+    assert.equal('offers' in modelServiceLd({ ...base, range: null }), false);
+});
