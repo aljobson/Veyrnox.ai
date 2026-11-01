@@ -25,6 +25,7 @@ const NO_ARTICLE = Object.freeze({
     autoScanOnly: [
         '/',
         '/about',
+        '/compare/[pair]',
         '/guides',
         '/guides/[id]',
         '/oddlings',

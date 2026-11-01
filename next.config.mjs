@@ -144,6 +144,7 @@ const nextConfig = {
         { source: '/guides/:id', destination: '/veyrnox/guides/:id' },
         { source: '/models', destination: '/veyrnox/models' },
         { source: '/models/:id', destination: '/veyrnox/models/:id' },
+        { source: '/compare/:pair', destination: '/veyrnox/compare/:pair' },
         { source: '/oddlings', destination: '/veyrnox/oddlings' },
         // An id never contains a dot, so the sheet images in public/oddlings
         // (oddling-cast.webp and the rest) are not captured here, and the
