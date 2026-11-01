@@ -1,0 +1,22 @@
+[
+  { "id": "price-before-generate", "kind": "unbranded", "q": "Which AI video generator shows the price before you generate?" },
+  { "id": "refund-failed", "kind": "unbranded", "q": "Is there an AI video or image generator that refunds credits automatically when a generation fails?" },
+  { "id": "no-subscription", "kind": "unbranded", "q": "What is the best way to try several AI video models without a monthly subscription?" },
+  { "id": "one-balance", "kind": "unbranded", "q": "Is there one credit balance that works across AI image, video and audio models?" },
+  { "id": "cost-5s-video", "kind": "unbranded", "q": "How much does it cost to generate a 5 second AI video?" },
+  { "id": "kling-wan-one-place", "kind": "unbranded", "q": "Where can I use Kling and Wan video models in one place?" },
+  { "id": "credit-based", "kind": "unbranded", "q": "Best credit-based AI video generation platform" },
+  { "id": "cheap-image", "kind": "unbranded", "q": "Cheapest way to generate AI images pay as you go" },
+  { "id": "compare-models", "kind": "unbranded", "q": "Where can I compare prices of AI video models side by side?" },
+  { "id": "upscale-own-video", "kind": "unbranded", "q": "AI tool to upscale or edit my own video and pay per use" },
+  { "id": "api-video-gen", "kind": "unbranded", "q": "AI video generation API with pay per generation pricing" },
+  { "id": "mcp-generate", "kind": "unbranded", "q": "Is there an MCP server that lets an AI assistant generate images and video?" },
+  { "id": "brand-what", "kind": "branded", "q": "What is Veyrnox.ai?" },
+  { "id": "brand-review", "kind": "branded", "q": "Veyrnox.ai review" },
+  { "id": "brand-legit", "kind": "branded", "q": "Is Veyrnox.ai legit?" },
+  { "id": "brand-pricing", "kind": "branded", "q": "How much does Veyrnox.ai cost?" },
+  { "id": "brand-credits", "kind": "branded", "q": "How do credits and refunds work on Veyrnox.ai?" },
+  { "id": "brand-models", "kind": "branded", "q": "Which AI models are available on Veyrnox.ai?" },
+  { "id": "brand-free", "kind": "branded", "q": "Does Veyrnox.ai give free credits?" },
+  { "id": "brand-alternatives", "kind": "branded", "q": "Veyrnox.ai alternatives" }
+]
