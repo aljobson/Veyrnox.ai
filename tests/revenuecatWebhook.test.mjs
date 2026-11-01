@@ -140,6 +140,11 @@ test('credits a sandbox purchase in production only for the App Review account',
     assert.equal((await send(sandbox)).status, 200);
     assert.equal(rpcCalls('credit_store_purchase').length, 1);
 
+    // An event that also names another registered account is not excepted: the grant could reach it.
+    handlers.store_customers = json([{ user_id: '99999999-2222-4333-8444-555555555555' }, { user_id: REVIEW }]);
+    assert.equal((await (await send(purchase({ environment: 'SANDBOX', original_app_user_id: '22222222-2222-4333-8444-555555555555' }))).json()).ignored, true);
+    assert.equal(rpcCalls('credit_store_purchase').length, 1);
+
     // A malformed value names nobody, and nothing is looked up.
     process.env.STORE_REVIEW_USER_ID = 'reviewer@example.com';
     const before = calls.filter((c) => c.name === 'store_customers').length;

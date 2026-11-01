@@ -82,13 +82,15 @@ async function handler(req) {
 }
 
 // customerIds are validated UUIDs (parseStoreEvent), so the filter is safe to build.
+// Every registered customer on the event must be the review account: the grant RPCs
+// try the ids in order, so one other account among them could receive the grant.
 async function isReviewAccount(cfg, customerIds) {
     const reviewUserId = storeReviewUserId();
     if (!reviewUserId || customerIds.length === 0) return false;
     const rows = await select('store_customers', {
         columns: 'user_id', filter: `rc_customer_id=in.(${customerIds.join(',')})`, limit: customerIds.length,
     }, cfg);
-    return Array.isArray(rows) && rows.some((r) => r && r.user_id === reviewUserId);
+    return Array.isArray(rows) && rows.length > 0 && rows.every((r) => r && r.user_id === reviewUserId);
 }
 
 async function creditPurchase(cfg, p) {

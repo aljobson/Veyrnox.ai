@@ -135,7 +135,11 @@ npx wrangler versions secret put STORE_REVIEW_USER_ID
 gh workflow run deploy-production.yml --ref main
 ```
 
-Only that account's sandbox purchases credit. Delete the secret once review is over: the account can hold Credits and plans nobody paid for.
+The production webhook from step 5 receives production events only, so the reviewer's sandbox purchases would never reach it. While review is pending, set that webhook's environment to **both** (RevenueCat dashboard, or `environment: null` in the v2 API). It keeps its signing secret; production still ignores every other account's sandbox event. Keep the staging webhook on sandbox.
+
+Before submitting, sign in as the review account on the review build, buy the smallest pack in the sandbox and confirm with step 7's query (sandbox transaction) that one signed delivery reached production and granted exactly once.
+
+Only that account's sandbox purchases credit. After review, set the production webhook back to **production** and delete the secret: the account can hold Credits and plans nobody paid for.
 
 ## 6. Open production sales — owner and release engineer
 
