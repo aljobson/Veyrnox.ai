@@ -14,7 +14,7 @@ import { playbackMode } from '../_lib/playbackPolicy';
 
 const VIEW_THRESHOLD = 0.5;
 
-export function FilmPlayer({ film, label, aspectRatio = '16 / 9', frameless = false, mobileFullscreen = false, children }) {
+export function FilmPlayer({ film, label, aspectRatio = '16 / 9', frameless = false, mobileFullscreen = false, fill = false, children }) {
   const { t } = useI18n();
   label ??= t('public.FilmPlayer.theFilm');
   const videoRef = useRef(null);
@@ -75,9 +75,9 @@ export function FilmPlayer({ film, label, aspectRatio = '16 / 9', frameless = fa
   }
 
   return (
-    <div className="relative">
+    <div className={fill ? 'absolute inset-0' : 'relative'}>
       {/* Reserve the film's full frame before the poster arrives. */}
-      <div style={mobileFullscreen ? undefined : { aspectRatio: phoneLayout && film.mobile ? `${activeFilm.width} / ${activeFilm.height}` : aspectRatio }} className={`overflow-hidden bg-[#0a0a0b] ${mobileFullscreen ? 'aspect-auto h-[calc(100dvh-4rem)] sm:aspect-video sm:h-auto' : 'aspect-video'}${frameless ? '' : ' rounded-2xl border border-vx-border'}`}>
+      <div style={mobileFullscreen || fill ? undefined : { aspectRatio: phoneLayout && film.mobile ? `${activeFilm.width} / ${activeFilm.height}` : aspectRatio }} className={`overflow-hidden bg-[#0a0a0b] ${fill ? 'h-full' : mobileFullscreen ? 'aspect-auto h-[calc(100dvh-4rem)] sm:aspect-video sm:h-auto' : 'aspect-video'}${frameless ? '' : ' rounded-2xl border border-vx-border'}`}>
         <video
           ref={videoRef}
           src={activeFilm.video}
@@ -98,7 +98,7 @@ export function FilmPlayer({ film, label, aspectRatio = '16 / 9', frameless = fa
           onPlay={() => setPlaying(true)}
           onPause={() => setPlaying(false)}
           onError={() => setFailed(true)}
-          className={`block h-full w-full${mobileFullscreen ? ' object-contain object-center' : ''}`}
+          className={`block h-full w-full${fill ? ' object-cover object-center' : mobileFullscreen ? ' object-contain object-center' : ''}`}
         />
       </div>
       {children}
@@ -109,7 +109,7 @@ export function FilmPlayer({ film, label, aspectRatio = '16 / 9', frameless = fa
         type="button"
         onClick={toggle}
         aria-label={t(playing ? 'public.film.pause' : 'public.film.play', { title: label })}
-        className={`vx-press mt-3 inline-flex min-h-11 items-center gap-2 rounded-full border border-vx-border px-4 text-[13px] font-bold text-vx-fg-body hover:text-vx-fg sm:absolute sm:bottom-3 sm:start-3 sm:mt-0 sm:border-transparent sm:bg-black/70 sm:text-white sm:backdrop-blur-sm sm:hover:bg-black/85 sm:hover:text-white${mobileFullscreen ? ' absolute top-4 end-4 z-10 !mt-0 !border-transparent !bg-black/70 !text-white backdrop-blur-sm sm:top-auto sm:end-auto' : frameless ? ' ms-4 sm:ms-0' : ''}`}
+        className={`vx-press mt-3 inline-flex min-h-11 items-center gap-2 rounded-full border border-vx-border px-4 text-[13px] font-bold text-vx-fg-body hover:text-vx-fg sm:absolute sm:bottom-3 sm:start-3 sm:mt-0 sm:border-transparent sm:bg-black/70 sm:text-white sm:backdrop-blur-sm sm:hover:bg-black/85 sm:hover:text-white${fill ? ' absolute top-4 end-4 z-10 !mt-0 !border-transparent !bg-black/70 !text-white backdrop-blur-sm sm:!bottom-auto sm:!start-auto' : mobileFullscreen ? ' absolute top-4 end-4 z-10 !mt-0 !border-transparent !bg-black/70 !text-white backdrop-blur-sm sm:top-auto sm:end-auto' : frameless ? ' ms-4 sm:ms-0' : ''}`}
       >
         <svg aria-hidden="true" viewBox="0 0 12 12" className="h-3 w-3 fill-current">
           {playing ? <path d="M2 1h3v10H2zM7 1h3v10H7z" /> : <path d="M2.5 1 11 6l-8.5 5z" />}
