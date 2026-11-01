@@ -43,7 +43,7 @@ export function MediaArtwork({ media, blobs, loaded, sourceRevision, compact = f
     const thumbnails = clip && media.kind === 'video' ? (filmstrip?.frameKey === frameKey && filmstrip.media === media && filmstrip.blob === blob ? filmstrip.value.thumbnails : []) : art?.thumbnails || [];
     const peaks = clip ? timelineWaveform(art?.peaks, media, clip, pixels) : mediaWaveform(art?.peaks, media);
     return <div className="pointer-events-none" aria-label={t(media.hasAudio ? 'app.editor.media.artAudio' : 'app.editor.media.art', { name: media.name })} data-source-frames={clip ? frameKey : undefined}>
-        {thumbnails.length > 0 && <div className="flex overflow-hidden">{thumbnails.map((url, i) => <img key={i} src={url} alt="" className={compact ? 'h-8 min-w-0 flex-1 object-cover opacity-50' : 'min-w-0 flex-1 rounded-sm object-cover'} />)}</div>}
+        {thumbnails.length > 0 && <div className="flex overflow-hidden">{thumbnails.map((url, i) => <img loading="lazy" decoding="async" key={i} src={url} alt="" className={compact ? 'h-8 min-w-0 flex-1 object-cover opacity-50' : 'min-w-0 flex-1 rounded-sm object-cover'} />)}</div>}
         {peaks.length > 0 && <svg viewBox={`0 0 ${peaks.length} 30`} role="img" aria-label={t('app.editor.media.waveform', { name: media.name })} className={compact ? 'h-6 w-full opacity-60' : 'h-8 w-full text-vx-accent'}>{peaks.map((v, i) => <path key={i} d={`M${i} ${15 - Math.max(0.5, v * 14)}V${15 + Math.max(0.5, v * 14)}`} stroke="currentColor" strokeWidth="0.7" />)}</svg>}{error && !compact && <p className="text-xs">{t("app.editor.media.previewUnavailable")}</p>}
     </div>;
 }

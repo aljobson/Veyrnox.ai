@@ -429,7 +429,7 @@ function JobCard({ row, models, selectable, selected, onToggle, starred, onStar 
           </div>
         )}
         {row.asset_url && row.mime_type?.startsWith('image/') && (
-          <img src={asset.url} onError={asset.onError} onLoad={asset.onLoad} alt={row.name || t("app.library.generation")} className="absolute inset-0 w-full h-full object-cover" />
+          <img loading="lazy" decoding="async" src={asset.url} onError={asset.onError} onLoad={asset.onLoad} alt={row.name || t("app.library.generation")} className="absolute inset-0 w-full h-full object-cover" />
         )}
         <AssetLoadStatus asset={asset} />
         <div className="absolute top-3 start-3">
