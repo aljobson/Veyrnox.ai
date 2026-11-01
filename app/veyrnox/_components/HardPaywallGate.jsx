@@ -4,15 +4,17 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from '
 import { usePathname } from 'next/navigation';
 import { useI18n } from '../../../components/I18nProvider';
 import LegalLink from '../../../components/LegalLink';
-import { getSession, onSessionChange, signOut } from '../../lib/authClient';
+import { getStoredUserId, onSessionChange, signOut } from '../../lib/authClient';
 import { gatewayFetch } from '../_lib/gateway';
+import { useLockWhileMounted } from '../_lib/hardPaywallLock';
 import { HARD_PAYWALL_STARTER_CREDITS, hardPaywallState, isHardPaywallExempt } from '../_lib/hardPaywall.mjs';
 import { Main } from './Main';
 import { CreditSubscriptions } from './CreditSubscriptions';
 import { DeleteAccountPanel } from './DeleteAccountPanel';
 import { HardPaywallFlagProvider } from './HardPaywallFlag';
 
-const account = () => getSession()?.user?.id || '';
+// The stored identity outlives an expired access token and a cookie restore; gatewayFetch refreshes behind the check.
+const account = () => getStoredUserId() || '';
 const noAccount = () => '';
 const subscribeReady = () => () => {};
 const ready = () => true;
@@ -40,13 +42,16 @@ function Gate({ children }) {
 function Plans({ account: id, children }) {
   const [reads, setReads] = useState({ generation: undefined, publish: undefined, failed: false });
   const live = useRef(true);
+  const latest = useRef(0);
   const check = useCallback(async () => {
+    const seq = ++latest.current;
     const [generation, publish] = await Promise.allSettled([gatewayFetch('/subscriptions'), gatewayFetch('/social/plan')]);
-    if (!live.current) return;
+    // Overlapping checks (focus, checkout, retry): only the newest answer counts.
+    if (!live.current || seq !== latest.current) return;
     setReads({
       generation: generation.status === 'fulfilled' ? generation.value.subscription ?? null : undefined,
       // Publish plans may be closed (503) or unreadable: that only means no Publish plan.
-      publish: publish.status === 'fulfilled' ? publish.value.subscription ?? null : null,
+      publish: publish.status === 'fulfilled' ? publish.value.entitlement?.subscription ?? null : null,
       failed: generation.status === 'rejected',
     });
   }, []);
@@ -70,6 +75,7 @@ function Plans({ account: id, children }) {
 
 function Checking() {
   const { t } = useI18n();
+  useLockWhileMounted();
   return <Main className="grid min-h-dvh place-items-center px-4">
     <p role="status" aria-live="polite" className="text-vx-fg-muted">{t('app.hardPaywall.checking')}</p>
   </Main>;
@@ -77,6 +83,7 @@ function Checking() {
 
 function Locked({ unknown, onRetry }) {
   const { t } = useI18n();
+  useLockWhileMounted();
   const [leaving, setLeaving] = useState(false);
   async function leave() {
     setLeaving(true);

@@ -61,3 +61,15 @@ test('the app template wraps the page and the check-in in the gate', () => {
   const template = readFileSync(new URL('../app/veyrnox/app/template.js', import.meta.url), 'utf8');
   assert.match(template, /<HardPaywallGate enabled=\{hardPaywallEnabled\(\)\}>\{children\}<CheckInHost \/><\/HardPaywallGate>/);
 });
+
+test('the gate reads the Publish plan from entitlement, uses the stored identity and keeps only the newest check', () => {
+  const gate = readFileSync(new URL('../app/veyrnox/_components/HardPaywallGate.jsx', import.meta.url), 'utf8');
+  assert.match(gate, /publish\.value\.entitlement\?\.subscription/);
+  assert.match(gate, /getStoredUserId\(\)/);
+  assert.match(gate, /seq !== latest\.current/);
+});
+
+test('the shared Vey assistant steps aside while the paywall is up', () => {
+  const layout = readFileSync(new URL('../app/veyrnox/layout.js', import.meta.url), 'utf8');
+  assert.match(layout, /<HideWhileHardPaywall><MascotAssistant \/><\/HideWhileHardPaywall>/);
+});
