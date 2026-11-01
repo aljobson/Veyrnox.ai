@@ -85,7 +85,9 @@ export default async function ModelPage({ params }) {
           <Link href={localizedHref(locale, '/pricing')} className="font-bold text-vx-fg-body underline underline-offset-4 hover:text-vx-fg">{t('model.packs')}</Link>
         </div>
         <p className="mt-4 text-[14px] text-vx-fg-muted">{t('model.note')}</p>
-        <dl className="mt-10 border-t border-vx-border">
+        <p className="mt-8 text-lg text-vx-fg-body">{t('model.desc', { title: model.title, credits: creditsIn(t, model.credits, locale), unit: modelPriceUnit(model, t) })}</p>
+        <h2 className="mt-10 text-xl font-black">{t('model.facts.heading')}</h2>
+        <dl className="mt-4 border-t border-vx-border">
           {facts.map((f) => (
             <div key={f.label} className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-6 py-3 border-b border-vx-border">
               <dt className="sm:w-48 shrink-0 text-[14px] text-vx-fg-muted">{f.label}</dt>

@@ -6,6 +6,7 @@
 export const GUIDES = [
   {
     id: 'first-generation',
+    updated: '2026-11-01',
     title: 'Make your first image or video',
     summary: 'Pick a model, see the price, generate.',
     // English-only lead that answers the question in two sentences (not in the
@@ -22,6 +23,7 @@ export const GUIDES = [
   },
   {
     id: 'templates',
+    updated: '2026-11-01',
     title: 'Start from a template',
     summary: 'A ready-made prompt, model and aspect ratio in one click.',
     // English-only lead that answers the question in two sentences (not in the
@@ -37,6 +39,7 @@ export const GUIDES = [
   },
   {
     id: 'your-own-files',
+    updated: '2026-11-01',
     title: 'Work on your own image or video',
     summary: 'Upscale, cut out, expand, edit, animate or lip-sync a file you already have.',
     // English-only lead that answers the question in two sentences (not in the
@@ -53,6 +56,7 @@ export const GUIDES = [
   },
   {
     id: 'library',
+    updated: '2026-11-01',
     title: 'Find and keep what you made',
     summary: 'Filter, star and download from your Library.',
     // English-only lead that answers the question in two sentences (not in the
@@ -68,6 +72,7 @@ export const GUIDES = [
   },
   {
     id: 'credits',
+    updated: '2026-11-01',
     // Explains rules rather than steps to follow, so it is not marked up as a HowTo.
     explainer: true,
     title: 'How credits and refunds work',
