@@ -59,8 +59,9 @@ export function storeBillingCatalog() {
     if (removedIos.size !== 1) throw new Error('Catalog iOS removal SQL changed');
     const publish = new Map(['0293_social_publish_plans', '0340_weekly_social_publish_plan', '0341_annual_social_publish_plan']
         .flatMap(name => insertedPlans(name, 'social_publish_plans')).map(plan => [plan.id, plan]));
+    // 0421 (ADR-0312 amendment 1): the store packs carry the web credit sizes. 0394's 100/300/1000 are retired.
     const parity = sql('0394_mobile_credit_pack_parity');
-    const packs = rows(section(parity, /FOR pack IN SELECT \* FROM \(VALUES([\s\S]*?)\) AS expected/, 'packs'));
+    const packs = rows(section(sql('0421_store_packs_match_web'), /INSERT INTO public\.credit_packs \(id, sales_channel, credits, price_usd_cents, store_product_id, active\)\s*VALUES([\s\S]*?)ON CONFLICT/, 'packs'));
     const catalog = packs.map(([, store, credits, price, productId]) => ({ store, productId,
         kind: 'consumable', credits, plan: null, period: null, priceUsdCents: price,
         offering: 'credits', package: String(credits) }));
