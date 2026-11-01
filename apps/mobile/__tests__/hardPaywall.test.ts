@@ -1,3 +1,4 @@
+import { guardPaidAction, isPaidAction, setHardPaywallLocked } from '../src/lib/hardPaywall';
 import { HARD_PAYWALL_STEP_COUNT, afterWelcomeHref, hardPaywallEnabled, hardPaywallState, hasIntroSteps, introTrialDays, isHardPaywallExempt } from '../src/lib/hardPaywall';
 import { freeTrialDays, gateTrialByEligibility } from '../src/lib/billing';
 
@@ -79,5 +80,22 @@ describe('three-step paywall (ADR-0316)', () => {
         expect(gateTrialByEligibility(plans, 'ios', new Set(['a'])).map(p => p.trialDays)).toEqual([7, null]);
         expect(gateTrialByEligibility(plans, 'ios', null).map(p => p.trialDays)).toEqual([null, null]);
         expect(gateTrialByEligibility(plans, 'android', null).map(p => p.trialDays)).toEqual([7, 7]);
+    });
+
+    it('names the paid actions: create, chat message, editor export, montage; nothing that only reads', () => {
+        expect(isPaidAction('/api/v1/generations', 'POST')).toBe(true);
+        expect(isPaidAction('/api/v1/chat/threads/abc/messages', 'POST')).toBe(true);
+        expect(isPaidAction('/api/v1/editor/server-render', 'POST')).toBe(true);
+        expect(isPaidAction('/api/v1/montage/x', 'POST')).toBe(true);
+        for (const [p, m] of [['/api/v1/generations', 'GET'], ['/api/v1/balance', 'GET'], ['/api/v1/chat/threads', 'POST'], ['/api/v1/account', 'DELETE'], ['/api/v1/jobs/1', 'POST']] as const) expect(isPaidAction(p, m)).toBe(false);
+    });
+
+    it('blocks a paid action only while locked, with a typed error', () => {
+        setHardPaywallLocked(false);
+        expect(() => guardPaidAction('/api/v1/generations', 'POST')).not.toThrow();
+        setHardPaywallLocked(true);
+        expect(() => guardPaidAction('/api/v1/generations', 'POST')).toThrow(expect.objectContaining({ status: 402, code: 'subscription_required' }));
+        expect(() => guardPaidAction('/api/v1/balance', 'GET')).not.toThrow();
+        setHardPaywallLocked(false);
     });
 });

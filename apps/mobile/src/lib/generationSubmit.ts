@@ -47,6 +47,8 @@ export function generationMessage(err: unknown): string {
     if (err instanceof OfflineError) return OFFLINE_PAID_MESSAGE;
     if (!(err instanceof ApiError)) return t('common.error');
     switch (err.code) {
+        case 'subscription_required':
+            return t('credits.hardPaywall.title');
         case 'source_too_short':
             return t('app.create.error.source_too_short');
         case 'source_resolution_out_of_range':

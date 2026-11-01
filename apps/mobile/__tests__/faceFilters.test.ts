@@ -152,7 +152,7 @@ test('the owner-bound client shares AuthProvider session-loss and stream options
     expect(auth).toContain('if (!transientFailure.current) void drop()');
     for (const source of [screen, auth]) {
         expect(source).toContain('streamFetch: expoFetch as unknown as typeof fetch');
-        expect(source).toContain('beforeSend: aiConsent.ensure');
+        expect(source).toContain('beforeSend: guardedBeforeSend');
     }
 });
 

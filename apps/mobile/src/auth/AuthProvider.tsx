@@ -1,3 +1,4 @@
+import { guardedBeforeSend } from '../lib/guardedBeforeSend';
 import { clearAllVibes } from '../lib/creatorProfileStore';
 import { tokenUser, isAccountChanged } from '../lib/auth/tokenUser';
 import type { TokenSource } from '../lib/auth/accountCalls';
@@ -259,7 +260,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 getAccessToken: apiTokenSource(getAccessToken, () => transientFailure.current),
                 onSessionLost,
                 streamFetch: expoFetch as unknown as typeof fetch,
-                beforeSend: aiConsent.ensure,
+                beforeSend: guardedBeforeSend,
             }),
         [getAccessToken, onSessionLost, beginSessionTask],
     );

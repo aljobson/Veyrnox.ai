@@ -3,7 +3,7 @@ import { useMemo, useSyncExternalStore } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { FaceFiltersFlow } from '../../components/FaceFiltersFlow';
 import { ApiError, API_BASE, createApiClient } from '../../lib/api';
-import { aiConsent } from '../../lib/aiConsentStore';
+import { guardedBeforeSend } from '../../lib/guardedBeforeSend';
 import { getCacheUser, subscribeCacheUser, userIdFromToken } from '../../lib/appCache';
 
 export default function FaceFiltersScreen() {
@@ -20,7 +20,7 @@ export default function FaceFiltersScreen() {
             if (!owner || getCacheUser() !== owner || !token || userIdFromToken(token) !== owner) throw new ApiError(401, 'not_authenticated');
             return token;
         },
-        beforeSend: aiConsent.ensure,
+        beforeSend: guardedBeforeSend,
         onSessionLost,
         streamFetch: expoFetch as unknown as typeof fetch,
     }), [owner, getAccessToken, onSessionLost, beginSessionTask]);
