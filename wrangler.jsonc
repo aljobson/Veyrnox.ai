@@ -216,14 +216,16 @@
     // before an admin holds a factor locks every admin out of their own
     // dashboard, so that order is not optional.
     "ADMIN_REQUIRE_AAL2": "true",
-    // REQUIRE_AAL2_WHEN_ENROLLED is deliberately absent (= off; only "true" turns
-    // it on, and the var budget in tests/workerBindingBudget.test.mjs is full).
-    // "true" makes middleware.js refuse (403 mfa_required) an aal1 token on
-    // /api/v1 for any account with a verified TOTP factor (lib/mfaEnforcement.js,
-    // migration 0404, audit 2026-10-27 H2). Keep it off until the web app asks
-    // for the code at sign-in: today only its Account page can step a session
-    // up, so turning it on first stops enrolled web users everywhere else.
-    // Turn it on in staging first.
+    // REQUIRE_AAL2_WHEN_ENROLLED enforces the second factor on the product
+    // surface: "true" makes middleware.js refuse (403 mfa_required) an aal1 token
+    // on /api/v1 for any account with a verified TOTP factor
+    // (lib/mfaEnforcement.js, migration 0404, audit 2026-10-27 H2). Turned on
+    // 2026-11-01 (owner): the two prerequisites this flag waited on have shipped
+    // and deployed — the web sign-in code prompt (ADR-0308, #1822), so an enrolled
+    // user reaches aal2 at sign-in, and a lost-authenticator recovery path
+    // (ADR-0311, #1827, migration 0419), so losing the factor no longer locks the
+    // account out. Revert this one line to turn enforcement off.
+    "REQUIRE_AAL2_WHEN_ENROLLED": "true",
     // ADR-0066: Jev sorts untyped provider submit refusals into
     // provider_moderation / provider_input_rejected. off | shadow | enforce.
     // Needs the TYPESAFE_API_KEY secret; shadow only logs the label.
