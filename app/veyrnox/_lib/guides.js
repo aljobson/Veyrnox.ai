@@ -56,6 +56,8 @@ export const GUIDES = [
   },
   {
     id: 'credits',
+    // Explains rules rather than steps to follow, so it is not marked up as a HowTo.
+    explainer: true,
     title: 'How credits and refunds work',
     summary: 'One balance, prices up front, automatic refunds.',
     steps: [

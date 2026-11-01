@@ -47,3 +47,10 @@ test('modelServiceLd prices from the pack range in dollars and omits the offer w
     assert.equal(priced.offers.highPrice, '0.15');
     assert.equal('offers' in modelServiceLd({ ...base, range: null }), false);
 });
+
+test('the credits guide is an Article, not a HowTo', async () => {
+    const guides = readFileSync(new URL('../app/veyrnox/_lib/guides.js', import.meta.url), 'utf8');
+    assert.match(guides, /id: 'credits',\n(?:.*\n)*?\s+explainer: true,/);
+    const { articleLd } = await import('../lib/jsonLd.js');
+    assert.equal(articleLd({ name: 'N', description: 'D', href: '/guides/credits' })['@type'], 'Article');
+});
