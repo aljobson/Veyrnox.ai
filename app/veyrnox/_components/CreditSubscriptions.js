@@ -15,6 +15,7 @@ import {
 } from 'react';
 import { getSession, onSessionChange } from '../../lib/authClient';
 import { gatewayFetch, notifyBalanceChanged } from '../_lib/gateway';
+import { TRIAL_REMINDER_DAYS } from '../_lib/hardPaywall.mjs';
 import {
   subscriptionCheckoutUrl, canCheckCoolingOffRefund,
   subscriptionReturnFrom,
@@ -377,7 +378,7 @@ function Billing({ account, recovery, setRecovery }) {
     const base = {
       plan_id: plan.id,
       consent: true,
-      consent_version: plan.billing_interval === 'year' ? catalog.consent_version_yearly : catalog.consent_version,
+      consent_version: catalog.trial_days > 0 ? catalog.consent_version_trial : plan.billing_interval === 'year' ? catalog.consent_version_yearly : catalog.consent_version,
     };
     const signature = JSON.stringify(base);
     if (attempt.current?.signature !== signature)
@@ -605,6 +606,8 @@ function Billing({ account, recovery, setRecovery }) {
           ) : (
             plan && (
               <div className="mt-5">
+                {catalog.trial_days > 0 && <p className="mb-3 font-semibold">
+                  {t('app.credits.subscription.trialTerms', { days: catalog.trial_days, price: usd.format(plan.price_usd_cents / 100), interval: tOr(t, `app.credits.subscription.trialInterval.${intervalName(plan.billing_interval)}`, intervalName(plan.billing_interval)), reminder: TRIAL_REMINDER_DAYS })}</p>}
                 {plan.billing_interval === 'year' ? (
                   <BindingText id="subscriptionYearly" values={{ plan: names[plan.id] || plan.id, price: usd.format(plan.price_usd_cents / 100), interval: intervalName(plan.billing_interval), credits: plan.credits }} ><label lang="en" dir="ltr" className="flex items-start gap-3">
                     <input
@@ -641,12 +644,21 @@ function Billing({ account, recovery, setRecovery }) {
                   <LegalLink element="Link" href="/legal/privacy" className="underline">
                     {t("cinema.report.privacy")}</LegalLink>
                 </p>
-                <button
-                  className="mt-4 rounded-full bg-vx-accent px-5 py-3 font-bold text-vx-accent-ink disabled:opacity-50"
-                  disabled={busy || !agreed}
-                  onClick={checkout}
-                >
-                  {t("app.credits.subscription.checkout")}</button>
+                {catalog.trial_days > 0 ? (
+                  <button
+                    className="mt-4 rounded-full bg-vx-accent px-5 py-3 font-bold text-vx-accent-ink disabled:opacity-50"
+                    disabled={busy || !agreed}
+                    onClick={checkout}
+                  >
+                    {t('app.credits.subscription.checkoutTrial', { days: catalog.trial_days })}</button>
+                ) : (
+                  <button
+                    className="mt-4 rounded-full bg-vx-accent px-5 py-3 font-bold text-vx-accent-ink disabled:opacity-50"
+                    disabled={busy || !agreed}
+                    onClick={checkout}
+                  >
+                    {t("app.credits.subscription.checkout")}</button>
+                )}
               </div>
             )
           )}

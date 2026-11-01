@@ -32,7 +32,9 @@ It stops the signed-in web app rendering. It does not stop a person calling `/ap
 - Crawlers and signed-out visitors reach `/app` pages only through the brief "Checking your plan…" screen while the flag is on.
 - Open: Publish checkout is not offered in the gate (AI Generation plans only); a Publish subscriber passes it.
 
-## Free trial (owner, 2026-11-01): decided, not built
+## Free trial (owner, 2026-11-01): built behind its own flag, see [ADR-0316](0316-three-step-trial-paywall.md)
+
+The items below were the plan; ADR-0316 builds items 1 to 3 (behind `SUBSCRIPTION_TRIAL_ENABLED`, off) with a three-step paywall. Item 4 is still the owner's.
 
 The subscription comes with a 7-day free trial, and the trial and the first 10 credits go together: a person who starts the trial gets the 10 credits, and the paywall says so.
 

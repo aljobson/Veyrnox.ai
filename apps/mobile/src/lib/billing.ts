@@ -12,7 +12,25 @@ export interface RcPackage {
         readonly currencyCode?: string;
         readonly pricePerMonthString?: string | null;
         readonly discounts?: readonly RcDiscount[] | null;
+        readonly introPrice?: RcIntroPrice | null;
     };
+}
+
+// The store's introductory offer on a product (RevenueCat introPrice). A price of 0 is a free trial.
+export interface RcIntroPrice {
+    readonly price: number;
+    readonly periodUnit: string;
+    readonly periodNumberOfUnits: number;
+}
+
+const UNIT_DAYS: Readonly<Record<string, number>> = { DAY: 1, WEEK: 7, MONTH: 30, YEAR: 365 };
+
+/** Whole days of free trial the store gives on this product, or null when it has none (a paid intro offer is not a trial). */
+export function freeTrialDays(product: RcPackage['product']): number | null {
+    const intro = product.introPrice;
+    const unit = intro ? UNIT_DAYS[intro.periodUnit] : undefined;
+    if (!intro || intro.price !== 0 || !unit || !Number.isSafeInteger(intro.periodNumberOfUnits) || intro.periodNumberOfUnits <= 0) return null;
+    return unit * intro.periodNumberOfUnits;
 }
 
 export interface RcDiscount {
@@ -35,6 +53,8 @@ export interface DisplayPackage {
     readonly credits: number | null;
     readonly interval: Interval | null;
     readonly generationPlan: GenerationPlan | null;
+    /** Days of free trial the store gives on this plan; null or absent when none. */
+    readonly trialDays?: number | null;
 }
 
 export type GenerationPlan = 'lite' | 'starter' | 'plus' | 'ultra';
@@ -127,6 +147,7 @@ export function toDisplayPackages(packages: readonly RcPackage[]): DisplayPackag
             credits: creditsFor(p.product.identifier),
             interval: intervalFor(p.product.identifier),
             generationPlan: generationPlanFor(p.product.identifier),
+            trialDays: freeTrialDays(p.product),
         }))
         .filter((p) => p.credits !== null || p.interval !== null)
         .sort((a, b) => {

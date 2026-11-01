@@ -35,7 +35,8 @@ export async function createCreditSubscriptionCheckout(input, cfg) {
   if (!UUID.test(input.subscriptionId || '') || !/^[a-z0-9-]{1,32}$/.test(input.planId || '')
       || !['week', 'month', 'year'].includes(input.interval) || !Number.isSafeInteger(input.priceUsdCents) || input.priceUsdCents < 100
       || input.priceUsdCents > 9999999 || !Number.isSafeInteger(input.credits) || input.credits <= 0
-      || input.credits > 100000 || !cfg.signingSecret) return { ok: false, error: 'invalid_checkout' };
+      || input.credits > 100000 || !cfg.signingSecret
+      || !(input.trialDays === undefined || (Number.isSafeInteger(input.trialDays) && input.trialDays >= 0 && input.trialDays <= 30))) return { ok: false, error: 'invalid_checkout' };
   let host;
   try { host = new URL(cfg.publicHost); } catch { return { ok: false, error: 'invalid_host' }; }
   if (host.protocol !== 'https:' || host.username || host.password) return { ok: false, error: 'invalid_host' };
@@ -57,6 +58,8 @@ export async function createCreditSubscriptionCheckout(input, cfg) {
     success_url: `${new URL('/app/credits', host)}?subscription=${input.subscriptionId}&checkout=done&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${new URL('/app/credits', host)}?subscription=${input.subscriptionId}&checkout=cancelled`,
   };
+  // A free trial: Stripe collects the card, charges nothing, and bills the first cycle when the trial ends.
+  if (input.trialDays > 0) fields['subscription_data[trial_period_days]'] = input.trialDays;
   for (const [k, v] of Object.entries(metadata)) {
     fields[`metadata[${k}]`] = v;
     fields[`subscription_data[metadata][${k}]`] = v;

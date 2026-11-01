@@ -369,6 +369,8 @@
         // ADR-0069 (vars are not inherited). Flip to "true" on staging only after 0205 and 0206 are applied there.
         // ADR-0080: browser editing is open; project saving keeps its separate gate.
         "HARD_PAYWALL_ENABLED": "false",
+        // ADR-0316: the 7-day free trial on the generation plans. Omitted in production (vars are at the binding cap; absent means off).
+        "SUBSCRIPTION_TRIAL_ENABLED": "false",
         "EDITOR_TIMELINE_ENABLED": "true",
         "EDITOR_MULTITRACK_ENABLED": "true",
         "EDITOR_SHARED_TOOLS_ENABLED": "true",

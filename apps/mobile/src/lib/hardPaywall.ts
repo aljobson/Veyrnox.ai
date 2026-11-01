@@ -34,3 +34,16 @@ export function afterWelcomeHref(hard: boolean, vibeAvailable: boolean): '/start
 // The first credits arrive when the person subscribes (owner, 2026-11-01), so the paywall quotes this fixed amount and
 // never the account balance. Keep it equal to the sign-up grant (ADR-0013).
 export const HARD_PAYWALL_STARTER_CREDITS = 10;
+
+// ADR-0316: with a free trial on the chosen store plan the paywall is three screens (trial, control, plans). The trial
+// length is whatever the store product says, so no screen promises a trial the store will not give.
+export const HARD_PAYWALL_STEP_COUNT = 3;
+
+/** Days of trial to introduce: the plan in view, else the first plan in the cadence that has one, else 0. */
+export function introTrialDays(plans: readonly { readonly trialDays?: number | null }[], chosen: { readonly trialDays?: number | null } | null): number {
+    const days = chosen?.trialDays ?? plans.find(plan => (plan.trialDays ?? 0) > 0)?.trialDays ?? 0;
+    return Number.isSafeInteger(days) && days > 0 ? days : 0;
+}
+
+/** The two introduction screens show only while there is a trial and the person has not reached the plans. */
+export const hasIntroSteps = (trialDays: number, step: number): boolean => trialDays > 0 && step < HARD_PAYWALL_STEP_COUNT;

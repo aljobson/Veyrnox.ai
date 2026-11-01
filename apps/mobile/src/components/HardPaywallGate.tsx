@@ -7,7 +7,7 @@ import { useStorePurchase } from '../billing/useStorePurchase';
 import { LEGAL_LINKS } from '../lib/account';
 import { confirmSignOut } from '../lib/confirmSignOut';
 import { parseGenerationCatalog, renewalTerms, toDisplayPackages, type GenerationCatalogPlan } from '../lib/billing';
-import { HARD_PAYWALL_STARTER_CREDITS, hardPaywallEnabled, hardPaywallState, isHardPaywallExempt } from '../lib/hardPaywall';
+import { HARD_PAYWALL_STARTER_CREDITS, HARD_PAYWALL_STEP_COUNT, hardPaywallEnabled, hardPaywallState, hasIntroSteps, introTrialDays, isHardPaywallExempt } from '../lib/hardPaywall';
 import { t } from '../lib/i18n';
 import { Button, Text, themedStyles, useThemedStyles } from './ui';
 import { PlanCards, initialCadence, type Cadence } from './credits/PlanCards';
@@ -33,6 +33,7 @@ function LockedScreen({ checking }: { checking: boolean }) {
     const [cadenceChoice, setCadence] = useState<Cadence | null>(null);
     const [chosenId, setChosenId] = useState<string | null>(null);
     const [catalog, setCatalog] = useState<GenerationCatalogPlan[]>([]);
+    const [step, setStep] = useState(1);
     useEffect(() => { void billing.refreshSales(); }, [billing.refreshSales]);
     useEffect(() => {
         let live = true;
@@ -46,6 +47,10 @@ function LockedScreen({ checking }: { checking: boolean }) {
         ?? plans.find(plan => plan.generationPlan === 'starter' && plan.interval === cadence)
         ?? plans.find(plan => plan.interval === cadence) ?? null;
     const noPlans = !checking && plans.length === 0;
+    const trialDays = introTrialDays(plans, chosen);
+    const intro = hasIntroSteps(trialDays, step);
+    const store = Platform.OS === 'ios' ? 'App Store' : 'Google Play';
+    const stepValues = { days: trialDays, count: HARD_PAYWALL_STARTER_CREDITS, store };
     const canBuy = billing.canPurchase && billing.generationPurchaseReady && !!chosen && !purchase.busy;
     const message = purchase.operation.outcome?.kind === 'error' ? t('credits.error')
         : purchase.operation.outcome?.kind === 'cancelled' ? t('credits.cancelled')
@@ -54,22 +59,35 @@ function LockedScreen({ checking }: { checking: boolean }) {
         const pkg = packages.find(item => item.identifier === chosen?.id);
         if (canBuy && pkg) purchase.start({ kind: 'plan', pkg });
     }
+    const inTrial = trialDays > 0;
     return <ScrollView style={s.screen} contentContainerStyle={s.content} testID="hard-paywall">
         <View style={s.vey}><VeyCharacter width={120} interactive mood="wave" /></View>
-        <Text variant="title1" accessibilityRole="header">{t('credits.hardPaywall.title')}</Text>
-        <Text tone="secondary">{t('credits.hardPaywall.bodyFree', { count: HARD_PAYWALL_STARTER_CREDITS })}</Text>
+        {inTrial ? <>
+            <Text variant="footnote" tone="secondary" accessibilityLiveRegion="polite">{t('credits.hardPaywall.step', { current: step, total: HARD_PAYWALL_STEP_COUNT })}</Text>
+            <Text variant="title1" accessibilityRole="header">{t(`credits.hardPaywall.step${step}.title`, stepValues)}</Text>
+            <Text tone="secondary">{t(`credits.hardPaywall.step${step}.body`, stepValues)}</Text>
+            {intro ? (step === 1 ? ['p1', 'p2', 'p3'] : ['p1', 'p2']).map(point => <Text key={point}>{'✓  '}{t(`credits.hardPaywall.step${step}.${point}`, stepValues)}</Text>) : null}
+            {intro ? <>
+                <Button label={t('credits.hardPaywall.continue')} onPress={() => setStep(n => n + 1)} />
+                {step > 1 ? <Button variant="tertiary" label={t('credits.hardPaywall.back')} onPress={() => setStep(n => n - 1)} /> : null}
+            </> : <Button variant="tertiary" label={t('credits.hardPaywall.back')} onPress={() => setStep(n => n - 1)} />}
+        </> : <>
+            <Text variant="title1" accessibilityRole="header">{t('credits.hardPaywall.title')}</Text>
+            <Text tone="secondary">{t('credits.hardPaywall.bodyFree', { count: HARD_PAYWALL_STARTER_CREDITS })}</Text>
+        </>}
         {checking ? <View style={s.row}><ActivityIndicator /><Text tone="secondary">{t('credits.hardPaywall.checking')}</Text></View> : null}
         {noPlans ? <>
             <Text tone="secondary">{t('credits.hardPaywall.unavailable')}</Text>
             <Button variant="secondary" label={t('credits.hardPaywall.retry')} onPress={() => { void billing.refreshSales(); void billing.refreshGenerationAccess(); }} />
         </> : null}
-        {plans.length > 0 ? <>
+        {plans.length > 0 && !intro ? <>
             <PlanCards plans={plans} packs={[]} credits={new Map(catalog.map(plan => [plan.id, plan.credits]))}
                 cadence={cadence} chosenId={chosen?.id} disabled={purchase.busy}
                 onCadence={next => { setCadence(next); setChosenId(null); }} onChoose={setChosenId} />
+            {chosen?.interval && (chosen.trialDays ?? 0) > 0 ? <Text variant="footnote">{t('credits.hardPaywall.trialTerms', { days: chosen.trialDays ?? 0, price: chosen.priceString, interval: t(chosen.interval === 'year' ? 'credits.paywall.year' : 'credits.paywall.month') })}</Text> : null}
             {chosen?.interval ? <Text variant="caption" tone="tertiary" accessibilityLanguage="en">{renewalTerms(chosen.interval, chosen.priceString, Platform.OS === 'ios' ? 'ios' : 'android')}</Text> : null}
             {!billing.canPurchase ? <Text variant="footnote" tone="secondary">{t('credits.notOpen')}</Text> : null}
-            <Button label={chosen ? t('credits.paywall.buyPlan', { plan: chosen.generationPlan ?? '', price: chosen.priceString, period: t(chosen.interval === 'year' ? 'credits.paywall.year' : 'credits.paywall.month') }) : ''}
+            <Button label={chosen ? ((chosen.trialDays ?? 0) > 0 ? t('credits.hardPaywall.buyTrial', { days: chosen.trialDays ?? 0 }) : t('credits.paywall.buyPlan', { plan: chosen.generationPlan ?? '', price: chosen.priceString, period: t(chosen.interval === 'year' ? 'credits.paywall.year' : 'credits.paywall.month') })) : ''}
                 disabled={!canBuy} onPress={buy} />
         </> : null}
         {message ? <Text tone="secondary">{message}</Text> : null}

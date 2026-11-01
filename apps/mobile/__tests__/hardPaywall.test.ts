@@ -1,4 +1,5 @@
-import { afterWelcomeHref, hardPaywallEnabled, hardPaywallState, isHardPaywallExempt } from '../src/lib/hardPaywall';
+import { HARD_PAYWALL_STEP_COUNT, afterWelcomeHref, hardPaywallEnabled, hardPaywallState, hasIntroSteps, introTrialDays, isHardPaywallExempt } from '../src/lib/hardPaywall';
+import { freeTrialDays } from '../src/lib/billing';
 
 describe('hard paywall (ADR-0108 amendment 2)', () => {
     const base = { enabled: true, paidAccess: false, accessResolved: true, billingStatus: 'ready' as const };
@@ -35,5 +36,39 @@ describe('hard paywall (ADR-0108 amendment 2)', () => {
         expect(afterWelcomeHref(false, false)).toBe('/start');
         expect(afterWelcomeHref(true, true)).toBe('/vibe?from=welcome');
         expect(afterWelcomeHref(true, false)).toBe('/');
+    });
+});
+
+describe('three-step paywall (ADR-0316)', () => {
+    const product = (introPrice: { price: number; periodUnit: string; periodNumberOfUnits: number } | null) =>
+        ({ identifier: 'starter_monthly', title: 'Starter', priceString: '$19.00', introPrice });
+
+    it('reads a free trial from the store product, in days', () => {
+        expect(freeTrialDays(product({ price: 0, periodUnit: 'DAY', periodNumberOfUnits: 7 }))).toBe(7);
+        expect(freeTrialDays(product({ price: 0, periodUnit: 'WEEK', periodNumberOfUnits: 1 }))).toBe(7);
+        expect(freeTrialDays(product({ price: 0, periodUnit: 'MONTH', periodNumberOfUnits: 1 }))).toBe(30);
+    });
+
+    it('does not call a paid intro offer, a missing offer or a malformed one a trial', () => {
+        expect(freeTrialDays(product({ price: 0.99, periodUnit: 'MONTH', periodNumberOfUnits: 1 }))).toBeNull();
+        expect(freeTrialDays(product(null))).toBeNull();
+        expect(freeTrialDays({ identifier: 'x', title: 'x', priceString: '$1' })).toBeNull();
+        expect(freeTrialDays(product({ price: 0, periodUnit: 'FORTNIGHT', periodNumberOfUnits: 1 }))).toBeNull();
+        expect(freeTrialDays(product({ price: 0, periodUnit: 'DAY', periodNumberOfUnits: 0 }))).toBeNull();
+    });
+
+    it('shows the introduction only for a plan the store gives a trial on', () => {
+        expect(introTrialDays([{ trialDays: 7 }], { trialDays: 7 })).toBe(7);
+        expect(introTrialDays([{ trialDays: null }, { trialDays: 7 }], null)).toBe(7);
+        expect(introTrialDays([{ trialDays: null }], { trialDays: null })).toBe(0);
+        expect(introTrialDays([], null)).toBe(0);
+    });
+
+    it('has two introduction screens and then the plans', () => {
+        expect(HARD_PAYWALL_STEP_COUNT).toBe(3);
+        expect(hasIntroSteps(7, 1)).toBe(true);
+        expect(hasIntroSteps(7, 2)).toBe(true);
+        expect(hasIntroSteps(7, 3)).toBe(false);
+        expect(hasIntroSteps(0, 1)).toBe(false);
     });
 });
