@@ -131,3 +131,16 @@ on the server enrolment cache clearing (~60 s) and the user following its
 "go to Account" prompt, not on this `aal2` wait. With this merged, enabling
 `REQUIRE_AAL2_WHEN_ENROLLED` (#1830) no longer strands an enrolled user's reads
 through a TOTP sign-in.
+
+## Amendment 2 — read-recovery excludes /admin routes
+
+The gateway read-recovery (amendment 1) wrongly applied to `/admin/*` reads and regressed the
+admin dashboard: those pages have their own inline step-up (the `MfaPanel` on the page plus an
+"Unlock this session … above" alert) and render it on receiving `403 mfa_required` directly. An
+admin reaching an admin route at aal1 is not necessarily enrolled for the global sign-in modal,
+so swallowing the 403 hid the alert and parked the read until the 120 s timeout
+(isolated-feature-qa: 8 Playwright failures on the admin `mfa_required` cases). The fix excludes
+`/admin/*` from the wait, so admin reads throw `mfa_required` at once as before — the inline
+alert renders immediately and the page's own Refresh recovers after the admin unlocks inline.
+Product reads (Library, editor) keep the wait+retry. `recent_mfa_required` (step-up freshness)
+was never matched and is unaffected.
