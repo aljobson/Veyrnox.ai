@@ -12,6 +12,8 @@ import { aiConsent } from '../src/lib/aiConsentStore';
 import { fetch as streamFetch } from 'expo/fetch';
 import { t } from '../src/lib/i18n';
 
+// The hard paywall gate imports the billing provider, whose flags are read at load: before this file sets its env.
+jest.mock('../src/components/HardPaywallGate', () => ({ HardPaywallGate: ({ children }: { children: unknown }) => children }));
 jest.mock('expo-apple-authentication', () => ({ isAvailableAsync: jest.fn(async () => false) }));
 jest.mock('expo-web-browser', () => ({ maybeCompleteAuthSession: jest.fn() }));
 jest.mock('expo/fetch', () => ({ fetch: jest.fn() }));
