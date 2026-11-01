@@ -32,15 +32,11 @@ It stops the signed-in web app rendering. It does not stop a person calling `/ap
 - Crawlers and signed-out visitors reach `/app` pages only through the brief "Checking your plan…" screen while the flag is on.
 - Open: Publish checkout is not offered in the gate (AI Generation plans only); a Publish subscriber passes it.
 
-## Free trial (owner, 2026-11-01): built behind its own flag, see [ADR-0316](0316-three-step-trial-paywall.md)
+## Free trial (owner, 2026-11-01): built elsewhere, behind its own flag
 
-The items below were the plan; ADR-0316 builds items 1 to 3 (behind `SUBSCRIPTION_TRIAL_ENABLED`, off) with a three-step paywall. Item 4 is still the owner's.
+The subscription comes with a 7-day free trial that carries the 10 credits; the first charge is made after the 7 days, and the person can cancel any time before day 7 to avoid it. This ADR does not own it:
 
-The subscription comes with a 7-day free trial, and the trial and the first 10 credits go together: a person who starts the trial gets the 10 credits, and the paywall says so.
+- Server: [ADR-0313](0313-starter-credits-on-first-subscription.md) (the 10 credits arrive at trial start, migration 0422) and `SUBSCRIPTION_TRIAL_ENABLED` (Stripe `trial_period_days`, the trial consent version).
+- Web paywall copy and the three-step flow: [ADR-0316](0316-three-step-trial-paywall.md), in `HardPaywallGate` via `HardPaywallSteps`.
 
-The subscription takes effect, and the first charge is made, after the 7 trial days (owner, 2026-11-01). The paywall and the consent say it plainly: free for 7 days with the 10 credits, then the plan price, and cancel any time before day 7 to avoid the charge. Nothing of this is in the gate yet, because the paywall must not offer a trial the server does not give. What it needs, in order:
-
-1. **Server (grant-timing session, behind the same flag, ships off).** Stripe Checkout for the generation plans sends `subscription_data[trial_period_days]=7` (`packages/adapters/stripeCreditSubscriptions.js`). A trial's first invoice is $0, and today `creditInvoice` and `subscription_grant` credit only a paid invoice, so the trial-start must be a new, idempotent grant of the 10 credits keyed by the subscription (through `ledger_grant`/`signup_grant` rules, ADR-0013), and the end of a trial without a first payment must expire them. The cooling-off refund (ADR-0064) and the "ended or replaced cycle" rules need a stated answer for a trial.
-2. **Consent.** New consent version strings (`SUBSCRIPTION_CONSENT_VERSION*` in `lib/subscriptions/api.js`) that state the trial, the price charged when it ends, automatic renewal and cancel-anytime, shown before payment. Legal copy is the owner's.
-3. **Web copy, last.** The CTA and terms read "Start 7-day free trial, then {price}/month" with the renewal terms beside it, in 11 languages; flag-gated with the server change so a trial is never shown that Stripe will not give.
-4. **Owner.** Approve the trial-farming exposure (each trial is up to 10 credits, about $0.15 of provider spend, per account; the sign-up gate and Turnstile apply), and confirm Stripe Managed Payments accepts trials on these plans.
+The owner turns the pieces on together: `SUBSCRIPTION_TRIAL_ENABLED`, the database switch in ADR-0313, `HARD_PAYWALL_ENABLED` (add it to production `vars` and raise the binding cap in `tests/workerBindingBudget.test.mjs`), and the 7-day introductory offer on the store products for mobile.
