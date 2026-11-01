@@ -7,7 +7,7 @@ const mockAll = jest.fn(async () => [{ id: 'premium', name: 'Premium fixture', m
 const mockSupported = jest.fn(async () => []);
 const mockBilling = { status: 'ready', offerings: { all: {
     generation: { availablePackages: [{ identifier: 'monthly', product: { identifier: 'ai.veyrnox.generation.starter.monthly', title: 'Starter', priceString: '£10.00' } }] },
-    credits: { availablePackages: [{ identifier: 'pack', product: { identifier: 'ai.veyrnox.credits.100', title: 'Pack', priceString: '£10.00' } }] },
+    credits: { availablePackages: [{ identifier: 'pack', product: { identifier: 'ai.veyrnox.credits.209', title: 'Pack', priceString: '£10.00' } }] },
 } } };
 const mockApi = { request: async () => ({ plans: [] }) };
 jest.mock('../src/billing/BillingProvider', () => ({ useBilling: () => mockBilling }));

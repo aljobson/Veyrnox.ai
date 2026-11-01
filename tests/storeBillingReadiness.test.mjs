@@ -13,7 +13,7 @@ test('all configured; Android is excluded, never ready, by default', () => {
     assert.equal(check(fixture(), { store: 'android' }).ok, true);
 });
 test('missing iOS product fails even though Android is excluded', () => {
-    const data = fixture(); data.products = data.products.filter(p => !(p.app_id === 'app_ios' && p.store_identifier.endsWith('.100')));
+    const data = fixture(); data.products = data.products.filter(p => !(p.app_id === 'app_ios' && p.store_identifier.endsWith('.209')));
     assert.equal(check(data).ok, false);
 });
 test('missing or incorrect entitlement and pack attachments fail', () => {
