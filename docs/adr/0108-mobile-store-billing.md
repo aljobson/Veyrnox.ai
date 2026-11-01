@@ -70,7 +70,6 @@ The entry buttons on Credits and Publish appear only when the build sets `EXPO_P
 
 The mascot Vey sits in a native header above the paywall and reacts to it (`src/billing/paywallVey.ts`): a wave and a line for the offering on open, a hop when a plan or the monthly/yearly switch is tapped, busy while the checks and the store sheet run, worried with the reason when a check refuses, calm on a cancel ("Nothing was charged"), and a clap with a success haptic after a purchase, held for 1.8 s before the paywall closes. The paywalls themselves carry no mascot image.
 
-<<<<<<< HEAD
 ## Amendment 2 (2026-11-01): hard paywall behind `EXPO_PUBLIC_HARD_PAYWALL_ENABLED`
 
 The owner wants the app closed to anyone without a paid plan, while still giving every new account its 10 sign-up Credits. This reverses amendment 1's "no hard gate" for builds that set the flag; amendment 1 stays the behaviour while the flag is off or absent. The flag ships off (it is not in `eas.json`).
@@ -83,8 +82,7 @@ With the flag exactly `"true"`:
 - Existing signed-in people meet the gate on next launch.
 
 **Limits, stated plainly:** the gate is in the app. The API still accepts a signed-in caller's request with free Credits, so this does not stop someone calling it directly or using the web app. Server-side enforcement (a refusal in the generation RPC for an account with no plan) would be a migration and is not part of this change. Check that App Store review accepts a gate with no free path before turning the flag on in a store build; the owner turns the flag on, by building with it set.
-=======
+
 ## Amendment 5 (2026-11-01): App Review's sandbox purchases credit one named account
 
 Apple's reviewer buys in the store sandbox, and production ignores sandbox events so TestFlight testers cannot mint free Credits. Left alone, the reviewer pays, receives nothing and rejects the in-app purchases. Production now credits a sandbox event only when its RevenueCat customer belongs to the account named by the `STORE_REVIEW_USER_ID` Worker secret: the dedicated login written into the App Review notes. Any other account's sandbox purchase is still ignored, an unset or malformed value names nobody, and `STORE_BILLING_ALLOW_SANDBOX` stays forbidden in production. The webhook resolves the customer through `store_customers` (service role); a failed lookup answers 500 so RevenueCat retries. The exception covers packs and subscriptions alike, so the review account can hold Credits and plans that nobody paid for; use it only for review, never share its login, and delete the secret when no review is pending. An event that also names another registered account is not excepted, since the grant could reach that account. Sandbox events reach production only while the production webhook's environment is set to both; it returns to production after review.
->>>>>>> 95f10e8c30d21913886e1afdedf5ef6a75edd301
