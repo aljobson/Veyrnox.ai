@@ -105,6 +105,7 @@
     "FREE_ALLOWANCE_ENABLED": "true",
     // ADR-0080: free browser editing and MP4 export, visible in Studio (owner, 2026-10-10).
     // Cloud saving and Projects navigation share the separate TENANT_PROJECTS_ENABLED gate.
+    // ADR-0313: HARD_PAYWALL_ENABLED is omitted here on purpose (production vars are at their binding cap; absent means off).
     "EDITOR_TIMELINE_ENABLED": "true",
     // Owner requested release before the observation window (2026-10-11); ADR-0080 amendment.
     "EDITOR_MULTITRACK_ENABLED": "true",
@@ -367,6 +368,7 @@
         "CHAT_SEND_CLOSE_ENABLED": "true",
         // ADR-0069 (vars are not inherited). Flip to "true" on staging only after 0205 and 0206 are applied there.
         // ADR-0080: browser editing is open; project saving keeps its separate gate.
+        "HARD_PAYWALL_ENABLED": "false",
         "EDITOR_TIMELINE_ENABLED": "true",
         "EDITOR_MULTITRACK_ENABLED": "true",
         "EDITOR_SHARED_TOOLS_ENABLED": "true",
