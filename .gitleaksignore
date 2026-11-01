@@ -235,3 +235,8 @@ b922536c6aa55c15e8b574e35e8fd3593f28f851:apps/mobile/__tests__/montage.test.ts:g
 91a4d1fbd37dc2de5c662119c3c677b15f9ee873:tests/yourWinsRoute.test.mjs:generic-api-key:101
 91a4d1fbd37dc2de5c662119c3c677b15f9ee873:tests/yourWinsRoute.test.mjs:generic-api-key:104
 91a4d1fbd37dc2de5c662119c3c677b15f9ee873:tests/yourWinsRoute.test.mjs:generic-api-key:73
+
+# Synthetic idempotency key in the approvals route test fixture, not a credential.
+e590411b56e2741725ef99311f1846783e9863fe:tests/socialApprovalsRoute.test.mjs:generic-api-key:29
+e590411b56e2741725ef99311f1846783e9863fe:tests/socialApprovalsRoute.test.mjs:generic-api-key:33
+e590411b56e2741725ef99311f1846783e9863fe:tests/socialApprovalsRoute.test.mjs:generic-api-key:37
