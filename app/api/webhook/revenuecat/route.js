@@ -7,7 +7,8 @@
  *   3. NON_RENEWING_PURCHASE and CANCELLATION (a credit pack refund) credit and claw back packs; Publish Plan
  *      subscription events (ADR-0109) move the account's subscription row; every other type -> 200 ignored. Sandbox purchases are ignored unless
  *      STORE_BILLING_ALLOW_SANDBOX is "true" (staging), so production can never
- *      credit a free test purchase.
+ *      credit a free test purchase. One exception: the App Review account named by
+ *      STORE_REVIEW_USER_ID (ADR-0108 amendment 5).
  *   4. Dedupe in webhook_events(source 'billing:revenuecat') on the event id.
  *   5. A purchase goes to credit_store_purchase, which resolves the secret
  *      RevenueCat customer id to its account (store_customers) and grants once on
@@ -20,11 +21,11 @@
 
 import { NextResponse } from 'next/server';
 import { verifyWebhookSignature, parseStoreEvent } from '../../../../packages/adapters/revenuecat.js';
-import { rpc, envConfig } from '../../../../packages/db/supabase-client.js';
+import { rpc, select, envConfig } from '../../../../packages/db/supabase-client.js';
 import { dedup, markProcessed } from '../../../../lib/providerCompletion.js';
 import { withDeliveryLog } from '../../../../lib/webhookDelivery.js';
 import { limitRequestBody } from '../../../../lib/requestBodyLimit.js';
-import { storeBillingEnabled, storeSandboxAllowed } from '../../../../lib/storeBilling.js';
+import { storeBillingEnabled, storeSandboxAllowed, storeReviewUserId } from '../../../../lib/storeBilling.js';
 
 const SOURCE = 'billing:revenuecat';
 const LOG = '[revenuecat-webhook]';
@@ -65,12 +66,11 @@ async function handler(req) {
     }
     const parsed = parseStoreEvent(body);
     if (parsed.kind === 'ignore') return NextResponse.json({ ok: true, ignored: true });
-    if (parsed.sandbox && !storeSandboxAllowed()) {
-        console.error(LOG, 'sandbox event ignored:', parsed.eventId);
-        return NextResponse.json({ ok: true, ignored: true });
-    }
-
     try {
+        if (parsed.sandbox && !storeSandboxAllowed() && !(await isReviewAccount(cfg, parsed.customerIds))) {
+            console.error(LOG, 'sandbox event ignored:', parsed.eventId);
+            return NextResponse.json({ ok: true, ignored: true });
+        }
         const seen = await dedup(cfg, SOURCE, parsed.eventId, { type: parsed.kind });
         if (seen === 'duplicate') return NextResponse.json({ ok: true, duplicate: true });
         if (parsed.kind === 'subscription') return await applySubscription(cfg, parsed);
@@ -79,6 +79,16 @@ async function handler(req) {
         console.error(LOG, 'processing failed:', err && (err.status ?? err.message));
         return NextResponse.json({ error: 'internal' }, { status: 500 });
     }
+}
+
+// customerIds are validated UUIDs (parseStoreEvent), so the filter is safe to build.
+async function isReviewAccount(cfg, customerIds) {
+    const reviewUserId = storeReviewUserId();
+    if (!reviewUserId || customerIds.length === 0) return false;
+    const rows = await select('store_customers', {
+        columns: 'user_id', filter: `rc_customer_id=in.(${customerIds.join(',')})`, limit: customerIds.length,
+    }, cfg);
+    return Array.isArray(rows) && rows.some((r) => r && r.user_id === reviewUserId);
 }
 
 async function creditPurchase(cfg, p) {

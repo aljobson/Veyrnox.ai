@@ -124,6 +124,36 @@ test('never credits a sandbox purchase in production, and does on staging', asyn
     assert.equal(rpcCalls('credit_store_purchase').length, 1);
 });
 
+test('credits a sandbox purchase in production only for the App Review account', async () => {
+    const REVIEW = '11111111-2222-4333-8444-555555555555';
+    handlers.credit_store_purchase = json({ ok: true, idempotent: false });
+    const sandbox = purchase({ environment: 'SANDBOX' });
+
+    // Another account's sandbox purchase stays ignored even with a review account named.
+    process.env.STORE_REVIEW_USER_ID = REVIEW;
+    handlers.store_customers = json([{ user_id: '99999999-2222-4333-8444-555555555555' }]);
+    assert.equal((await (await send(sandbox)).json()).ignored, true);
+    assert.equal(rpcCalls('credit_store_purchase').length, 0);
+
+    // The review account's sandbox purchase is credited.
+    handlers.store_customers = json([{ user_id: REVIEW }]);
+    assert.equal((await send(sandbox)).status, 200);
+    assert.equal(rpcCalls('credit_store_purchase').length, 1);
+
+    // A malformed value names nobody, and nothing is looked up.
+    process.env.STORE_REVIEW_USER_ID = 'reviewer@example.com';
+    const before = calls.filter((c) => c.name === 'store_customers').length;
+    assert.equal((await (await send(sandbox)).json()).ignored, true);
+    assert.equal(calls.filter((c) => c.name === 'store_customers').length, before);
+});
+
+test('a failed review-account lookup asks RevenueCat to retry', async () => {
+    process.env.STORE_REVIEW_USER_ID = '11111111-2222-4333-8444-555555555555';
+    handlers.store_customers = () => new Response('boom', { status: 500 });
+    assert.equal((await send(purchase({ environment: 'SANDBOX' }))).status, 500);
+    assert.equal(rpcCalls('credit_store_purchase').length, 0);
+});
+
 test('answers a replayed event as a duplicate with no second grant', async () => {
     handlers.webhook_events = (init) => init.method === 'POST'
         ? new Response('[]', { status: 200 })
