@@ -2,7 +2,7 @@
 
 import { useEffect, useSyncExternalStore } from 'react';
 
-// True while the hard paywall (ADR-0313) covers the app, so shared widgets outside the gate can step aside.
+// True while the hard paywall (ADR-0314) covers the app, so shared widgets outside the gate can step aside.
 let locked = false;
 const listeners = new Set();
 const subscribe = (listener) => { listeners.add(listener); return () => listeners.delete(listener); };

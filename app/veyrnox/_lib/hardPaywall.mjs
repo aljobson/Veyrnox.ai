@@ -1,4 +1,4 @@
-// Hard paywall decisions (ADR-0313). Pure so every state is testable; HardPaywallGate.jsx holds the fetching and UI.
+// Hard paywall decisions (ADR-0314). Pure so every state is testable; HardPaywallGate.jsx holds the fetching and UI.
 
 // Keep equal to the sign-up grant (ADR-0013). The paywall quotes this fixed amount, never the balance.
 export const HARD_PAYWALL_STARTER_CREDITS = 10;

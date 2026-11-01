@@ -40,7 +40,7 @@ export function PaywallPrompt({ credits, createdAt }) {
   const [subscriptionsOpen, setSubscriptionsOpen] = useState(false);
   const accountId = ready ? getStoredUserId() : null;
   const reason = (() => {
-    // ADR-0313: the hard paywall replaces this dismissible prompt.
+    // ADR-0314: the hard paywall replaces this dismissible prompt.
     if (hardPaywall || !ready || !accountId || pathname?.startsWith('/app/credits')) return null;
     return paywallReason({
       credits,

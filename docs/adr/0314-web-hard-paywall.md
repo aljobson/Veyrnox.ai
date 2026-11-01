@@ -1,4 +1,4 @@
-# ADR-0313: Web hard paywall
+# ADR-0314: Web hard paywall
 
 Status: proposed, built behind `HARD_PAYWALL_ENABLED` (staging `"false"`, omitted in production where it means off: production vars are at the 65 binding cap, `tests/workerBindingBudget.test.mjs`); not turned on. Web counterpart of the mobile gate in [ADR-0108](0108-mobile-store-billing.md) amendment 2. Owner, 2026-11-01: "we giving the first 10 credit but they need to subscribe", on both web and mobile.
 

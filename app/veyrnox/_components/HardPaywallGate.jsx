@@ -21,7 +21,7 @@ const ready = () => true;
 const notReady = () => false;
 const link = 'underline';
 
-// ADR-0313: with the flag on, a signed-in account with no paid plan sees the paywall and nothing else in the app.
+// ADR-0314: with the flag on, a signed-in account with no paid plan sees the paywall and nothing else in the app.
 // UI-level only; the server enforces nothing on this flag.
 export function HardPaywallGate({ enabled, children }) {
   return <HardPaywallFlagProvider enabled={enabled}>
