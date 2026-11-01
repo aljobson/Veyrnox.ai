@@ -64,14 +64,18 @@ test('every guide leads with a short answer of two sentences or fewer', async ()
     }
 });
 
-test('comparison slugs: one canonical address per pair, same kind only', async () => {
+test('comparison slugs: one canonical address per pair, same modality, prompt-only generators', async () => {
     const { parsePair, pairSlug, comparisonSlugs } = await import('../lib/comparePairs.js');
     assert.equal(pairSlug('wan-2.5-kie', 'kling-2.6'), 'kling-2.6-vs-wan-2.5-kie');
     assert.deepEqual(parsePair('kling-2.6-vs-wan-2.5-kie'), ['kling-2.6', 'wan-2.5-kie']);
     for (const bad of ['', 'a', 'a-vs-', '-vs-b', 'a-vs-a', 'A-vs-b', 'a/b-vs-c', undefined]) assert.equal(parsePair(bad), null, String(bad));
+    const gen = (id, modality, media = {}) => ({ id, modality, capabilities: { inputs: { prompt: {} }, media } });
     const models = [
-        { id: 'i1', kind: 'image' }, { id: 'i2', kind: 'image' }, { id: 'v1', kind: 'video' }, { id: 'v2', kind: 'video' }, { id: 'a1', kind: 'audio' },
+        gen('i1', 'text-to-image'), gen('i2', 'text-to-image'), gen('v1', 'text-to-video'), gen('v2', 'text-to-video'),
+        gen('a1', 'text-to-audio'),
+        gen('edit', 'text-to-image', { image: { required: true } }),
+        { id: 'tool', modality: 'text-to-image', capabilities: { inputs: {}, media: {} } },
     ];
     assert.deepEqual(comparisonSlugs(models), ['i1-vs-i2', 'v1-vs-v2']);
-    assert.equal(comparisonSlugs(Array.from({ length: 9 }, (_, n) => ({ id: `m${n}`, kind: 'video' }))).length, 6);
+    assert.equal(comparisonSlugs(Array.from({ length: 9 }, (_, n) => gen(`m${n}`, 'text-to-video'))).length, 6);
 });
