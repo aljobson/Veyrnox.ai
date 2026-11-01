@@ -30,3 +30,7 @@ export function afterWelcomeHref(hard: boolean, vibeAvailable: boolean): '/start
     if (!hard) return '/start';
     return vibeAvailable ? '/vibe?from=welcome' : '/';
 }
+
+// The first credits arrive when the person subscribes (owner, 2026-11-01), so the paywall quotes this fixed amount and
+// never the account balance. Keep it equal to the sign-up grant (ADR-0013).
+export const HARD_PAYWALL_STARTER_CREDITS = 10;

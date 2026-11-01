@@ -7,9 +7,8 @@ import { useStorePurchase } from '../billing/useStorePurchase';
 import { LEGAL_LINKS } from '../lib/account';
 import { confirmSignOut } from '../lib/confirmSignOut';
 import { parseGenerationCatalog, renewalTerms, toDisplayPackages, type GenerationCatalogPlan } from '../lib/billing';
-import { hardPaywallEnabled, hardPaywallState, isHardPaywallExempt } from '../lib/hardPaywall';
+import { HARD_PAYWALL_STARTER_CREDITS, hardPaywallEnabled, hardPaywallState, isHardPaywallExempt } from '../lib/hardPaywall';
 import { t } from '../lib/i18n';
-import { useBalance } from '../lib/useBalance';
 import { Button, Text, themedStyles, useThemedStyles } from './ui';
 import { PlanCards, initialCadence, type Cadence } from './credits/PlanCards';
 import { VeyCharacter } from './VeyCharacter';
@@ -31,7 +30,6 @@ function LockedScreen({ checking }: { checking: boolean }) {
     const router = useRouter();
     const billing = useBilling();
     const purchase = useStorePurchase();
-    const balance = useBalance();
     const [cadenceChoice, setCadence] = useState<Cadence | null>(null);
     const [chosenId, setChosenId] = useState<string | null>(null);
     const [catalog, setCatalog] = useState<GenerationCatalogPlan[]>([]);
@@ -49,7 +47,6 @@ function LockedScreen({ checking }: { checking: boolean }) {
         ?? plans.find(plan => plan.interval === cadence) ?? null;
     const noPlans = !checking && plans.length === 0;
     const canBuy = billing.canPurchase && billing.generationPurchaseReady && !!chosen && !purchase.busy;
-    const free = typeof balance === 'number' && balance > 0 ? Math.floor(balance) : null;
     const message = purchase.operation.outcome?.kind === 'error' ? t('credits.error')
         : purchase.operation.outcome?.kind === 'cancelled' ? t('credits.cancelled')
         : purchase.operation.outcome?.kind === 'pending' ? t('credits.pending') : null;
@@ -60,7 +57,7 @@ function LockedScreen({ checking }: { checking: boolean }) {
     return <ScrollView style={s.screen} contentContainerStyle={s.content} testID="hard-paywall">
         <View style={s.vey}><VeyCharacter width={120} interactive mood="wave" /></View>
         <Text variant="title1" accessibilityRole="header">{t('credits.hardPaywall.title')}</Text>
-        <Text tone="secondary">{free ? t('credits.hardPaywall.bodyFree', { count: free }) : t('credits.hardPaywall.body')}</Text>
+        <Text tone="secondary">{t('credits.hardPaywall.bodyFree', { count: HARD_PAYWALL_STARTER_CREDITS })}</Text>
         {checking ? <View style={s.row}><ActivityIndicator /><Text tone="secondary">{t('credits.hardPaywall.checking')}</Text></View> : null}
         {noPlans ? <>
             <Text tone="secondary">{t('credits.hardPaywall.unavailable')}</Text>
