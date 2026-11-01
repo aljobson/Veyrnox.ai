@@ -216,3 +216,23 @@ test('a trialing subscription asks for the starter credits; a plain active one d
   assert.equal((await POST(event('customer.subscription.updated', trial))).status, 503);
   assert.ok(!processed(failing));
 });
+
+test('the $0 invoice that opens a trial grants starter credits, not plan credits, and raises no alert (ADR-0313)', async () => {
+  const trialInvoice = () => ({ ...inv(), amount_paid: 0, total: 0, amount_due: 0,
+    lines: { has_more: false, data: [{ ...inv().lines.data[0], amount: 0 }] } });
+  const calls = stub({ invoice: trialInvoice() });
+  assert.equal((await POST(event('invoice.paid', trialInvoice()))).status, 200);
+  assert.equal(calls.filter(c => c.url.includes('grant_trial_starter_credits')).length, 1);
+  assert.ok(!calls.some(c => c.url.includes('grant_credit_subscription_invoice')));
+  assert.ok(!calls.some(c => c.url.includes('api.resend.com')));
+  assert.ok(processed(calls));
+  // A first invoice cut to $0 by a coupon is not a trial.
+  const coupon = () => ({ ...trialInvoice(), discounts: ['di_1'] });
+  const refused = stub({ invoice: coupon() });
+  await POST(event('invoice.paid', coupon()));
+  assert.ok(!refused.some(c => c.url.includes('grant_trial_starter_credits')));
+  // A failed starter grant is retried.
+  const failing = stub({ invoice: trialInvoice(), starter: { ok: false, code: 'X' } });
+  assert.equal((await POST(event('invoice.paid', trialInvoice()))).status, 503);
+  assert.ok(!processed(failing));
+});

@@ -76,6 +76,40 @@ $$;
 REVOKE ALL ON FUNCTION public.starter_credits_on_subscription_enabled() FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.starter_credits_on_subscription_enabled() TO service_role;
 
+-- ── provision_user: take no user-row lock for an account that already exists ──
+-- The 0071 body upserts public.users on every call, which locks that row. A subscription grant already
+-- holds the balance row when it reaches signup_grant, and account erasure (0347) and store purchases
+-- (0358) lock user then balance, so the upsert would invert the order and could deadlock. An existing
+-- user with the same email is now only read; the balance row is ensured exactly as before (DO NOTHING on
+-- an existing row takes no lock). A new user, or a changed email, takes the 0071 upsert unchanged.
+CREATE OR REPLACE FUNCTION public.provision_user(p_auth_id TEXT, p_email TEXT)
+RETURNS UUID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+    v_user_id UUID;
+    v_email TEXT;
+BEGIN
+    SELECT u.id, u.email INTO v_user_id, v_email FROM public.users u WHERE u.auth_id = p_auth_id;
+    IF NOT FOUND OR v_email IS DISTINCT FROM p_email THEN
+        INSERT INTO public.users (auth_id, email)
+        VALUES (p_auth_id, p_email)
+        ON CONFLICT (auth_id) DO UPDATE SET email = EXCLUDED.email
+        RETURNING id INTO v_user_id;
+    END IF;
+
+    INSERT INTO public.credit_balances (user_id, balance)
+    VALUES (v_user_id, 0)
+    ON CONFLICT (user_id) DO NOTHING;
+
+    RETURN v_user_id;
+END $$;
+
+REVOKE ALL ON FUNCTION public.provision_user(TEXT, TEXT) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.provision_user(TEXT, TEXT) TO service_role;
+
 -- ── grant_starter_credits: the one-time grant, by user id ──────────────────
 -- Replay-safe by construction: signup_grant probes for the user's grant:signup
 -- row under the balance lock. 'granted' is the credits this call minted.
@@ -102,6 +136,11 @@ BEGIN
     IF v_user.frozen_at IS NOT NULL OR v_user.deleted_at IS NOT NULL THEN
         RETURN jsonb_build_object('ok', true, 'granted', 0, 'skipped', 'ACCOUNT_NOT_ELIGIBLE');
     END IF;
+
+    -- Balance row first, as every money function does: two direct calls then run one after the other, so the
+    -- before/after probes below describe this call alone. signup_grant re-takes the same lock.
+    INSERT INTO public.credit_balances (user_id, balance) VALUES (p_user_id, 0) ON CONFLICT (user_id) DO NOTHING;
+    PERFORM 1 FROM public.credit_balances b WHERE b.user_id = p_user_id FOR UPDATE;
 
     SELECT COALESCE(SUM(l.free_delta), 0) INTO v_before FROM public.ledger_entries l
     WHERE l.user_id = p_user_id AND l.reason = 'grant:signup';
@@ -298,7 +337,9 @@ BEGIN
     IF p_stripe_subscription_id IS NULL OR p_stripe_subscription_id !~ '^sub_[A-Za-z0-9_]{1,250}$' THEN
         RETURN jsonb_build_object('ok', false, 'code', 'INVALID_SUBSCRIPTION');
     END IF;
-    SELECT * INTO v_sub FROM public.credit_subscriptions x WHERE x.stripe_subscription_id = p_stripe_subscription_id;
+    -- Subscription row first, then the balance (apply_credit_subscription_event's order), so a concurrent
+    -- cancellation or refund has committed or is waiting; the status below is read under the lock.
+    SELECT * INTO v_sub FROM public.credit_subscriptions x WHERE x.stripe_subscription_id = p_stripe_subscription_id FOR UPDATE;
     IF NOT FOUND THEN
         RETURN jsonb_build_object('ok', false, 'code', 'SUBSCRIPTION_NOT_FOUND');
     END IF;

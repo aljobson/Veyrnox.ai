@@ -38,6 +38,9 @@ Owner: the 10 credits come with the trial. So the grant fires when the trial **s
 - **Frozen, deleted, erased:** nothing is granted; the first cycle after an unfreeze grants.
 - **Not done here:** the trial itself. Stripe Checkout needs `subscription_data.trial_period_days: 7` and the store products need a 7-day free-trial offer; until they exist no trial event ever arrives and the first paid invoice grants instead. Neither is created by this change.
 
+- **Lock order (review of PR 1842).** A grant arrives holding the balance row, and erasure (0347) and store purchases (0358) lock user then balance. `provision_user` therefore no longer upserts `public.users` for an account that exists with the same email (it only reads it), so the starter grant takes no user-row lock. `grant_starter_credits` takes the balance row before its probes, so two direct calls report one grant. `grant_trial_starter_credits` locks the subscription row first and reads its status under that lock.
+- **The $0 trial invoice.** Stripe's trial-start `invoice.paid` (no discount, no charge) is acknowledged without an operator alert and asks for the starter credits, in the webhook and in checkout-return recovery; a $0 invoice that carries a coupon discount is not a trial and is still reviewed.
+
 Options considered for point 4 and 6:
 
 | | For | Against |
