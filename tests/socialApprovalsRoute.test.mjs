@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { register } from 'node:module';
+// The route refuses a time in the past, so the request time is always a day ahead.
+const FUTURE = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 register('data:text/javascript,' + encodeURIComponent(`export async function resolve(s,c,next){return next(s==='next/server'?'next/server.js':s,c)}`));
 
 const ownerRoute = await import('../app/api/v1/social/approvals/route.js');
@@ -26,15 +28,15 @@ function stub(overrides={}){calls=[];globalThis.fetch=async(url,init)=>{const na
 })[name]);};}
 
 test('owner creates a validated approval request and receives signed links',async()=>{stub();const res=await ownerRoute.POST(request('https://veyrnox.ai/api/v1/social/approvals','POST',{
-  scheduledAt:'2026-11-01T10:00:00Z',globalText:'Review me',idempotencyKey:'approval_12345678',accountIds:[account],media:[{mediaType:'image',jobId:job}],policy:'all',reviewers:['Reviewer@Example.com']
+  scheduledAt:FUTURE,globalText:'Review me',idempotencyKey:'approval_12345678',accountIds:[account],media:[{mediaType:'image',jobId:job}],policy:'all',reviewers:['Reviewer@Example.com']
 }));assert.equal(res.status,201);const body=await res.json();assert.equal(body.review_links[0].email,'reviewer@example.com');assert.match(body.review_links[0].url,/^https:\/\/veyrnox\.ai\/social\/review\//);assert.equal(calls.at(-1).name,'create_social_post_approval');assert.deepEqual(calls.at(-1).args.p_reviewer_emails,['reviewer@example.com']);});
 
 test('approval requests persist paid platform-specific copy atomically',async()=>{const previousVariants=process.env.PUBLISH_CONTENT_VARIANTS_ENABLED,previousPlans=process.env.PUBLISH_PLANS_ENABLED;process.env.PUBLISH_CONTENT_VARIANTS_ENABLED='true';process.env.PUBLISH_PLANS_ENABLED='true';try{stub();const res=await ownerRoute.POST(request('https://veyrnox.ai/api/v1/social/approvals','POST',{
-  scheduledAt:'2026-11-01T10:00:00Z',globalText:'Fallback',networkText:{instagram:'Instagram review copy'},idempotencyKey:'approval_12345678',accountIds:[account],media:[{mediaType:'image',jobId:job}],policy:'all',reviewers:['reviewer@example.com']
+  scheduledAt:FUTURE,globalText:'Fallback',networkText:{instagram:'Instagram review copy'},idempotencyKey:'approval_12345678',accountIds:[account],media:[{mediaType:'image',jobId:job}],policy:'all',reviewers:['reviewer@example.com']
 }));assert.equal(res.status,201);const create=calls.find((call)=>call.name==='create_social_post_approval_with_variants');assert.deepEqual(create.args.p_network_text,{instagram:'Instagram review copy'});}finally{if(previousVariants===undefined)delete process.env.PUBLISH_CONTENT_VARIANTS_ENABLED;else process.env.PUBLISH_CONTENT_VARIANTS_ENABLED=previousVariants;if(previousPlans===undefined)delete process.env.PUBLISH_PLANS_ENABLED;else process.env.PUBLISH_PLANS_ENABLED=previousPlans;}});
 
 test('owner route rejects invalid reviewers before database access',async()=>{stub();const res=await ownerRoute.POST(request('https://veyrnox.ai/api/v1/social/approvals','POST',{
-  scheduledAt:'2026-11-01T10:00:00Z',globalText:'Review me',idempotencyKey:'approval_12345678',accountIds:[account],media:[{mediaType:'image',jobId:job}],policy:'all',reviewers:['bad']
+  scheduledAt:FUTURE,globalText:'Review me',idempotencyKey:'approval_12345678',accountIds:[account],media:[{mediaType:'image',jobId:job}],policy:'all',reviewers:['bad']
 }));assert.equal(res.status,400);assert.equal(calls.length,0);});
 
 test('read-only brand members cannot receive signed external-review links',async()=>{stub({get_social_brand_access:{ok:true,brand_id:brand,label:'Shared',role:'viewer',owner_auth_id:auth,paid:true}});const res=await ownerRoute.GET(request('https://veyrnox.ai/api/v1/social/approvals','GET',undefined,{'x-publish-brand-id':brand}));assert.equal(res.status,403);assert.deepEqual(await res.json(),{error:'brand_role_forbidden',role:'viewer'});assert.equal(calls.some((call)=>call.name==='list_social_approvals'),false);});
