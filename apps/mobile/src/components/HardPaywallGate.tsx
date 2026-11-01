@@ -64,9 +64,17 @@ function LockedScreen({ checking }: { checking: boolean }) {
         <View style={s.vey}><VeyCharacter width={120} interactive mood="wave" /></View>
         {inTrial ? <>
             <Text variant="footnote" tone="secondary" accessibilityLiveRegion="polite">{t('credits.hardPaywall.step', { current: step, total: HARD_PAYWALL_STEP_COUNT })}</Text>
-            <Text variant="title1" accessibilityRole="header">{t(`credits.hardPaywall.step${step}.title`, stepValues)}</Text>
-            <Text tone="secondary">{t(`credits.hardPaywall.step${step}.body`, stepValues)}</Text>
-            {intro ? (step === 1 ? ['p1', 'p2', 'p3'] : ['p1', 'p2']).map(point => <Text key={point}>{'✓  '}{t(`credits.hardPaywall.step${step}.${point}`, stepValues)}</Text>) : null}
+            <Text variant="title1" accessibilityRole="header">{step === 1 ? t('credits.hardPaywall.step1.title', stepValues) : step === 2 ? t('credits.hardPaywall.step2.title', stepValues) : t('credits.hardPaywall.step3.title', stepValues)}</Text>
+            <Text tone="secondary">{step === 1 ? t('credits.hardPaywall.step1.body', stepValues) : step === 2 ? t('credits.hardPaywall.step2.body', stepValues) : t('credits.hardPaywall.step3.body', stepValues)}</Text>
+            {step === 1 ? <>
+                <Text>{'✓  '}{t('credits.hardPaywall.step1.p1', stepValues)}</Text>
+                <Text>{'✓  '}{t('credits.hardPaywall.step1.p2', stepValues)}</Text>
+                <Text>{'✓  '}{t('credits.hardPaywall.step1.p3', stepValues)}</Text>
+            </> : null}
+            {step === 2 ? <>
+                <Text>{'✓  '}{t('credits.hardPaywall.step2.p1', stepValues)}</Text>
+                <Text>{'✓  '}{t('credits.hardPaywall.step2.p2', stepValues)}</Text>
+            </> : null}
             {intro ? <>
                 <Button label={t('credits.hardPaywall.continue')} onPress={() => setStep(n => n + 1)} />
                 {step > 1 ? <Button variant="tertiary" label={t('credits.hardPaywall.back')} onPress={() => setStep(n => n - 1)} /> : null}
