@@ -7,6 +7,8 @@ import { PremiumTag } from '../../_components/PremiumTag';
 import { findModel, modelFacts } from '../../_lib/modelPages';
 import { modelPriceUnit } from '../../_lib/modelPricing';
 import { OPEN_GRAPH_BASE } from '../../../seo';
+import { JsonLd } from '../../../seo';
+import { breadcrumbLd } from '../../../../lib/jsonLd';
 import { getT } from '../../../../lib/i18n/server';
 import { pageAlternates, openGraphLocale } from '../../../../lib/i18n/metadata.mjs';
 import { localizedHref } from '../../../../lib/i18n/locales.mjs';
@@ -43,6 +45,11 @@ export default async function ModelPage({ params }) {
 
   return (
     <div className="min-h-dvh">
+      <JsonLd data={breadcrumbLd([
+        { name: 'Veyrnox.ai', href: localizedHref(locale, '/') },
+        { name: t('models.title'), href: localizedHref(locale, '/models') },
+        { name: model.title, href: localizedHref(locale, `/models/${model.id}`) },
+      ])} />
       <MarketingNav />
       {/* The shell every public page shares, so this page starts on the
           logo's edge. The reading measure is the inner block. */}

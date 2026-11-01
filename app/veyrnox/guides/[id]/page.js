@@ -4,6 +4,8 @@ import { MarketingNav } from '../../_components/NavBar';
 import { Main } from '../../_components/Main';
 import { GUIDES, guideById } from '../../_lib/guides';
 import { OPEN_GRAPH_BASE } from '../../../seo';
+import { JsonLd } from '../../../seo';
+import { breadcrumbLd, howToLd } from '../../../../lib/jsonLd';
 import { getT } from '../../../../lib/i18n/server';
 import { pageAlternates, openGraphLocale } from '../../../../lib/i18n/metadata.mjs';
 import { localizedHref } from '../../../../lib/i18n/locales.mjs';
@@ -36,8 +38,21 @@ export default async function GuidePage({ params }) {
   const { locale, t } = await getT();
   // A guide step added without a translation keeps its English words.
   const say = (key, fallback) => t.messages[key] ?? fallback;
+  const path = localizedHref(locale, `/guides/${g.id}`);
+  const guideTitle = say(`guide.${g.id}.title`, g.title);
   return (
     <div className="min-h-dvh">
+      <JsonLd data={howToLd({
+        name: guideTitle,
+        description: say(`guide.${g.id}.summary`, g.summary),
+        href: path,
+        steps: g.steps.map((s, i) => ({ name: say(`guide.${g.id}.s${i + 1}.title`, s.title), text: say(`guide.${g.id}.s${i + 1}.body`, s.body) })),
+      })} />
+      <JsonLd data={breadcrumbLd([
+        { name: 'Veyrnox.ai', href: localizedHref(locale, '/') },
+        { name: t('guides.title'), href: localizedHref(locale, '/guides') },
+        { name: guideTitle, href: path },
+      ])} />
       <MarketingNav />
       <Main>
       <article className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-28">
