@@ -275,6 +275,9 @@ export default function CreateStudio() {
   const media = model?.media || {};
   const animationMismatch = !!animationPortrait && (model?.kind !== 'video' || !media.image?.required);
   const { missingSource, needsReattach, overLimit, hasSource: hasUpload } = generationSourceState(media, sources);
+  // Only pictures this model actually takes count: a video-only attachment, or a picture kept from another model, never reaches the provider.
+  const templateImageCount = activeTemplate ? Object.entries(media).filter(([, spec]) => spec?.kind === 'image').reduce((sum, [slot]) => sum + sourceList(sources[slot]).length, 0) : 0;
+  const templateImageRequired = Object.values(media).some(spec => spec?.kind === 'image' && spec.required);
   const missingConsent = hasUpload && !consent;
   const missingVoice = voiceIsMissing(model, voice);
   const missingPrompt = promptIsMissing(model, prompt);
@@ -694,9 +697,9 @@ export default function CreateStudio() {
             canChooseSource={Boolean(activeTemplate.needs && Object.keys(media).length)}
             onChooseSource={() => setAddFilesOpen(true)}
           />}
-          {activeTemplate && Object.values(sources).flatMap(sourceList).length > 0 && (
+          {templateImageCount > 0 && (
             <p role="status" data-testid="template-reference-overrides" className="mt-3 rounded-xl border border-vx-accent/30 bg-vx-panel p-3 text-xs text-vx-fg-body">
-              {t('app.create.templateReferenceOverrides')}</p>
+              {t(templateImageRequired ? 'app.create.templateReferenceRequired' : 'app.create.templateReferenceOverrides')}</p>
           )}
           {model?.takesVoice && <VoiceDescription value={voice} onChange={setVoice} />}
 

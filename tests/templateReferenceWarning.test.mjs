@@ -4,13 +4,15 @@ import { readFileSync } from 'node:fs';
 import { appMessagesFor } from '../lib/i18n/appMessages.mjs';
 
 const LOCALES = ['en', 'ar', 'de', 'es', 'fr', 'hi', 'ja', 'ko', 'pt', 'ru', 'zh'];
-const KEY = 'app.create.templateReferenceOverrides';
+const KEYS = ['app.create.templateReferenceOverrides', 'app.create.templateReferenceRequired'];
 const page = readFileSync('app/veyrnox/app/create/page.js', 'utf8');
 
 test('a template run with a picture attached warns that the picture sets the scene', () => {
-  assert.match(page, /activeTemplate && Object\.values\(sources\)\.flatMap\(sourceList\)\.length > 0/);
+  // Only the selected model's own image slots count, so a video-only or leftover picture never triggers it.
+  assert.match(page, /const templateImageCount = activeTemplate \? Object\.entries\(media\)\.filter\(\(\[, spec\]\) => spec\?\.kind === 'image'\)/);
+  assert.match(page, /templateImageCount > 0 && \(/);
+  assert.match(page, /templateImageRequired \? 'app\.create\.templateReferenceRequired' : 'app\.create\.templateReferenceOverrides'/);
   assert.match(page, /data-testid="template-reference-overrides"/);
-  assert.match(page, /t\('app\.create\.templateReferenceOverrides'\)/);
 });
 
 test('a template on a model that takes no files offers no Add files slot', () => {
@@ -21,7 +23,9 @@ test('a template on a model that takes no files offers no Add files slot', () =>
 test('the warning is written in every app language', async () => {
   for (const locale of LOCALES) {
     const messages = await appMessagesFor(locale);
-    assert.equal(typeof messages[KEY], 'string', locale);
-    assert.ok(messages[KEY].length > 40, locale);
+    for (const key of KEYS) {
+      assert.equal(typeof messages[key], 'string', `${locale} ${key}`);
+      assert.ok(messages[key].length > 40, `${locale} ${key}`);
+    }
   }
 });
