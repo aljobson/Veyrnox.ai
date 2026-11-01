@@ -7,7 +7,7 @@ import { ds } from '../../theme';
 import { MIN_TARGET } from '../../lib/a11y';
 import { t } from '../../lib/i18n';
 
-export function FormHeader({ modelLabel, modality, stageLine, stage, onChangeModel }: { modelLabel: string; modality: string; stageLine: string; stage?: ReactNode; onChangeModel?: () => void }) {
+export function FormHeader({ modelLabel, modality, stageLine, stage, onChangeModel, onTemplates }: { modelLabel: string; modality: string; stageLine: string; stage?: ReactNode; onChangeModel?: () => void; onTemplates?: () => void }) {
     const styles = useThemedStyles(sheets);
     return <>
                 <View style={styles.hero}>
@@ -33,6 +33,14 @@ export function FormHeader({ modelLabel, modality, stageLine, stage, onChangeMod
                             <Text variant="footnote" tone="primary" style={styles.modelName}>{modelLabel}</Text>
                         </View>
                     )}
+                    {onTemplates ? (
+                        <Pressable accessibilityRole="button" accessibilityLabel={t('label.Templates')} onPress={onTemplates}
+                            style={({ pressed }) => [styles.modelPill, pressed && styles.pressed]}>
+                            <Icon name="squares" size={20} tint={styles.accentInk.color} />
+                            <Text variant="footnote" tone="primary" style={styles.modelName}>{t('label.Templates')}</Text>
+                            <Icon name="caretRight" size={20} />
+                        </Pressable>
+                    ) : null}
                 </View>
 
                 {stage ?? <View style={styles.stage} accessibilityLabel={rawText(stageLine)}>

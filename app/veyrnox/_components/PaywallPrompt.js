@@ -9,6 +9,7 @@ import { Button } from './Button';
 import { TopUpPacks } from './TopUpPacks';
 import { getStoredUserId, onSessionChange } from '../../lib/authClient';
 import { paywallReason } from '../_lib/paywallPrompt.mjs';
+import { useHardPaywallEnabled } from './HardPaywallFlag';
 
 const seenKey = (id) => `veyrnox_paywall_seen_${id}`;
 const sessionKey = (id) => `veyrnox_paywall_session_${id}`;
@@ -33,12 +34,14 @@ function write(store, key, on) {
 // (TopUpPacks starts Stripe checkout).
 export function PaywallPrompt({ credits, createdAt }) {
   const pathname = usePathname();
+  const hardPaywall = useHardPaywallEnabled();
   const ready = useSyncExternalStore(subscribeClientReady, clientReady, serverNotReady);
   const [, setStorageRevision] = useState(0);
   const [subscriptionsOpen, setSubscriptionsOpen] = useState(false);
   const accountId = ready ? getStoredUserId() : null;
   const reason = (() => {
-    if (!ready || !accountId || pathname?.startsWith('/app/credits')) return null;
+    // ADR-0314: the hard paywall replaces this dismissible prompt.
+    if (hardPaywall || !ready || !accountId || pathname?.startsWith('/app/credits')) return null;
     return paywallReason({
       credits,
       createdAt,
@@ -56,7 +59,7 @@ export function PaywallPrompt({ credits, createdAt }) {
   }), []);
 
   useEffect(() => {
-    if (!accountId || pathname?.startsWith('/app/credits') || !Number.isFinite(credits)) return;
+    if (hardPaywall || !accountId || pathname?.startsWith('/app/credits') || !Number.isFinite(credits)) return;
     // A positive balance starts a new depletion cycle. Do this before the
     // once-per-session rule so the next genuine run-out can prompt again.
     if (credits > 0) write('sessionStorage', depletedKey(accountId), false);
@@ -64,7 +67,7 @@ export function PaywallPrompt({ credits, createdAt }) {
     if (reason === 'depleted') write('sessionStorage', depletedKey(accountId), true);
     else write('sessionStorage', sessionKey(accountId), true);
     if (reason === 'first') write('localStorage', seenKey(accountId), true);
-  }, [accountId, credits, pathname, reason]);
+  }, [accountId, credits, hardPaywall, pathname, reason]);
 
   // The public projection carries no account or provider identifiers. Only
   // advertise recurring checkout when the server says the catalog is open;

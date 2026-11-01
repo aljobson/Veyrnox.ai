@@ -6,6 +6,8 @@ import { LIST_GROUPS, GROUP_KEYS } from '../_sections/showcase';
 import { listModels } from '../_lib/modelPages';
 import { modelPriceUnit } from '../_lib/modelPricing';
 import { OPEN_GRAPH_BASE } from '../../seo';
+import { JsonLd } from '../../seo';
+import { itemListLd } from '../../../lib/jsonLd';
 import { getT } from '../../../lib/i18n/server';
 import { pageAlternates, openGraphLocale } from '../../../lib/i18n/metadata.mjs';
 import { localizedHref } from '../../../lib/i18n/locales.mjs';
@@ -36,6 +38,7 @@ export default async function ModelsIndex() {
 
   return (
     <div className="min-h-dvh">
+      <JsonLd data={itemListLd(groups.flatMap((g) => g.rows).map((m) => ({ name: m.title, href: localizedHref(locale, `/models/${encodeURIComponent(m.id)}`) })))} />
       <MarketingNav />
       <Main className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-14 sm:pt-20 pb-28">
         <h1 className="vx-display vx-title-index max-w-[12ch]">{t('models.title')}</h1>

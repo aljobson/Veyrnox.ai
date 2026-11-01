@@ -16,6 +16,7 @@ on:
       - "scripts/test-social-youtube-visibility.mjs"
       - "scripts/test-social-carousel.mjs"
       - "scripts/test-social-free-multi-account.mjs"
+      - "scripts/test-publish-comp-grant.mjs"
       - "scripts/test-cinema-creators.mjs"
       - "scripts/test-tenant-foundation.mjs"
       - "scripts/test-project-documents.mjs"
@@ -70,6 +71,7 @@ on:
       - "scripts/test-subscription-credits.mjs"
       - "scripts/test-credit-subscriptions.mjs"
       - "scripts/test-credit-subscriptions-yearly.mjs"
+      - "scripts/test-starter-credits.mjs"
       - "scripts/test-subscription-renewal.mjs"
       - "scripts/test-chat-turns.mjs"
       - "scripts/test-chat-close-send.mjs"
@@ -214,6 +216,7 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-audio-stems.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-reconciliation-snapshot.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-social-free-multi-account.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-publish-comp-grant.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-recovery-health.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-video-agent-sweep-health.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-video-agent-inflight.mjs
@@ -281,6 +284,7 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-subscription-credits.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-credit-subscriptions.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-credit-subscriptions-yearly.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-starter-credits.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-subscription-renewal.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-subscription-webhook-ordering.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-chat-turns.mjs

@@ -23,7 +23,7 @@ function event(type, object, created = NOW, id = 'evt_credit_test') {
     headers: { 'stripe-signature': `t=${NOW},v1=${createHmac('sha256', SECRET).update(`${NOW}.${body}`).digest('hex')}` } });
 }
 function stub({ bound = binding, subscription = sub(), invoice = inv(), grant = { ok: true, granted: 270 },
-  apply = { ok: true, status: 'active', subscription_id: ID }, reverse = { ok: true, taken: 270 }, cancelFails = false, alertFails = false, duplicate = false, missingBinding = false, refunded = 0, modernCharge = false } = {}) {
+  apply = { ok: true, status: 'active', subscription_id: ID }, reverse = { ok: true, taken: 270 }, starter = { ok: true, granted: 10 }, cancelFails = false, alertFails = false, duplicate = false, missingBinding = false, refunded = 0, modernCharge = false } = {}) {
   Object.assign(process.env, { SUBSCRIPTIONS_ENABLED: 'true', SUPABASE_URL: 'https://db.test', SUPABASE_SERVICE_ROLE_KEY: 'test',
     STRIPE_SECRET_KEY: 'sk_test_x', STRIPE_WEBHOOK_SECRET: SECRET, RESEND_API_KEY: 'resend_test',
     SUBSCRIPTION_ALERT_EMAIL: 'ops@example.invalid', VIOLATION_EMAIL_FROM: 'alerts@example.invalid' });
@@ -38,6 +38,7 @@ function stub({ bound = binding, subscription = sub(), invoice = inv(), grant = 
     if (u.includes('apply_credit_subscription_event')) return Response.json(apply);
     if (u.includes('grant_credit_subscription_invoice')) return Response.json(grant);
     if (u.includes('reverse_credit_subscription_invoice')) return Response.json(reverse);
+    if (u.includes('grant_trial_starter_credits')) return Response.json(starter);
     if (u.includes('apply_top_up_refund')) return Response.json({ ok: false, code: 'ORDER_NOT_FOUND' });
     if (u.includes('invoice_payments?')) return Response.json({ object: 'list', has_more: false, data: [{ object: 'invoice_payment', invoice: 'in_1', livemode: false, payment: { type: 'payment_intent', payment_intent: 'pi_1' } }] });
     if (u.includes('apply_dispute_event')) return Response.json({ ok: false, code: 'TOP_UP_NOT_FOUND' });
@@ -197,4 +198,41 @@ test('signed duplicate checkout cancels its unbound subscription before acknowle
   const bound = stub({ apply: { ok: false, code: 'SUBSCRIPTION_MISMATCH' } });
   await POST(event('customer.subscription.updated', sub()));
   assert.ok(!bound.some(c => c.method === 'DELETE'));
+});
+
+test('a trialing subscription asks for the starter credits; a plain active one does not (ADR-0313)', async () => {
+  const trial = { ...sub(), status: 'trialing' };
+  const calls = stub({ subscription: trial });
+  assert.equal((await POST(event('customer.subscription.updated', trial))).status, 200);
+  const asks = calls.filter(c => c.url.includes('grant_trial_starter_credits'));
+  assert.equal(asks.length, 1);
+  assert.deepEqual(asks[0].body, { p_stripe_subscription_id: 'sub_1' });
+  assert.ok(processed(calls));
+  const plain = stub();
+  assert.equal((await POST(event('customer.subscription.updated', sub()))).status, 200);
+  assert.ok(!plain.some(c => c.url.includes('grant_trial_starter_credits')));
+  // A failed grant is retried, not acknowledged.
+  const failing = stub({ subscription: trial, starter: { ok: false, code: 'X' } });
+  assert.equal((await POST(event('customer.subscription.updated', trial))).status, 503);
+  assert.ok(!processed(failing));
+});
+
+test('the $0 invoice that opens a trial grants starter credits, not plan credits, and raises no alert (ADR-0313)', async () => {
+  const trialInvoice = () => ({ ...inv(), amount_paid: 0, total: 0, amount_due: 0,
+    lines: { has_more: false, data: [{ ...inv().lines.data[0], amount: 0 }] } });
+  const calls = stub({ invoice: trialInvoice() });
+  assert.equal((await POST(event('invoice.paid', trialInvoice()))).status, 200);
+  assert.equal(calls.filter(c => c.url.includes('grant_trial_starter_credits')).length, 1);
+  assert.ok(!calls.some(c => c.url.includes('grant_credit_subscription_invoice')));
+  assert.ok(!calls.some(c => new URL(c.url).hostname === 'api.resend.com'));
+  assert.ok(processed(calls));
+  // A first invoice cut to $0 by a coupon is not a trial.
+  const coupon = () => ({ ...trialInvoice(), discounts: ['di_1'] });
+  const refused = stub({ invoice: coupon() });
+  await POST(event('invoice.paid', coupon()));
+  assert.ok(!refused.some(c => c.url.includes('grant_trial_starter_credits')));
+  // A failed starter grant is retried.
+  const failing = stub({ invoice: trialInvoice(), starter: { ok: false, code: 'X' } });
+  assert.equal((await POST(event('invoice.paid', trialInvoice()))).status, 503);
+  assert.ok(!processed(failing));
 });

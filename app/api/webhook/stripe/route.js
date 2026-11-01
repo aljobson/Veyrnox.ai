@@ -47,7 +47,7 @@ const EVENT_ID_RE = /^evt_[A-Za-z0-9_]{1,250}$/;
 const PAYMENT_INTENT_RE = /^pi_[A-Za-z0-9_]{1,250}$/;
 // Cinema Pass (ADR-0057 Phase 2): subscription lifecycle, plus charges on a
 // subscription invoice, which belong to a Pass and never to a Top-up.
-const PASS_TYPES = new Set(['customer.subscription.created', 'customer.subscription.updated', 'customer.subscription.deleted', 'invoice.paid', 'invoice.payment_failed']);
+const PASS_TYPES = new Set(['customer.subscription.created', 'customer.subscription.updated', 'customer.subscription.deleted', 'customer.subscription.trial_will_end', 'invoice.paid', 'invoice.payment_failed']);
 const PASS_REFUSED = new Set(['PASS_NOT_FOUND', 'PASS_MISMATCH', 'INVALID_EVENT', 'INVALID_SUBSCRIPTION']);
 const SUBSCRIPTION_RE = /^sub_[A-Za-z0-9_]{1,250}$/;
 const INVOICE_RE = /^in_[A-Za-z0-9_]{1,250}$/;
@@ -340,6 +340,11 @@ async function handlePassEvent(cfg, { object, eventId, type, secret, apiKey, exp
     const s = interp.subscription;
     const credit = await handleCreditSubscriptionEvent(cfg, { s, object, eventId, type, secret, apiKey, expectLiveMode, eventCreated });
     if (credit) return credit;
+    // The trial-ending reminder belongs to the generation plans (ADR-0316); for any other product it is not an event to apply.
+    if (type === 'customer.subscription.trial_will_end') {
+        await markProcessed(cfg, SOURCE, eventId);
+        return NextResponse.json({ ok: true, ignored: true });
+    }
     const publish = publishPlansEnabled() ? await handlePublishPlanEvent({
         rpcCall: rpc, cancelSubscriptionNow, cfg,
         stripeConfig: { fetch: fetch.bind(globalThis), apiKey }, subscription: s,

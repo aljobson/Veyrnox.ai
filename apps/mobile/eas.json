@@ -35,6 +35,7 @@
     "production": {
       "channel": "production",
       "autoIncrement": true,
+      "android": { "resourceClass": "large" },
       "environment": "production",
       "env": {
         "EXPO_PUBLIC_APP_ENV": "production",

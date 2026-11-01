@@ -42,7 +42,7 @@ function Preview({ media }) {
     if (!url) return <div className={box} aria-busy="true" />;
     return media.media_type === 'video'
         ? <video src={url} className={`${box} object-cover`} muted playsInline controls preload="metadata" />
-        : <img src={url} alt="" className={`${box} object-cover`} />;
+        : <img loading="lazy" decoding="async" src={url} alt="" className={`${box} object-cover`} />;
 }
 
 export function DraftReview({ onApproved }) {

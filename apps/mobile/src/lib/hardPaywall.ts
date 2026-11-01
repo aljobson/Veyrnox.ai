@@ -36,18 +36,22 @@ export function afterWelcomeHref(hard: boolean, vibeAvailable: boolean): '/start
 // never the account balance. Keep it equal to the sign-up grant (ADR-0013).
 export const HARD_PAYWALL_STARTER_CREDITS = 10;
 
-// Days of free trial a store product offers as an introductory price of zero, or null. Read from the store's own data, so
-// the paywall promises a trial only when the product in App Store Connect / Play really has one.
-export function freeTrialDays(product: { introPrice?: { price?: number | null; periodUnit?: string | null; periodNumberOfUnits?: number | null; cycles?: number | null } | null } | null | undefined): number | null {
-    const intro = product?.introPrice;
-    if (!intro || intro.price !== 0 || !intro.periodNumberOfUnits || (intro.cycles ?? 1) !== 1) return null;
-    const unit = { DAY: 1, WEEK: 7, MONTH: 30, YEAR: 365 }[String(intro.periodUnit)];
-    return unit ? unit * intro.periodNumberOfUnits : null;
+// ADR-0316: with a free trial on the chosen store plan the paywall is three screens (trial, control, plans). The trial
+// length is whatever the store product says, so no screen promises a trial the store will not give.
+export const HARD_PAYWALL_STEP_COUNT = 3;
+
+/** Days of trial to introduce: the plan in view decides (no trial there means 0); with no plan in view, the first plan that has one. */
+export function introTrialDays(plans: readonly { readonly trialDays?: number | null }[], chosen: { readonly trialDays?: number | null } | null): number {
+    const days = chosen ? chosen.trialDays ?? 0 : plans.find(plan => (plan.trialDays ?? 0) > 0)?.trialDays ?? 0;
+    return Number.isSafeInteger(days) && days > 0 ? days : 0;
 }
 
-// ---- Paid actions (owner, 2026-11-01): people can look around the app and the paywall can be dismissed, but nothing that
+/** The two introduction screens show only while there is a trial and the person has not reached the plans. */
+export const hasIntroSteps = (trialDays: number, step: number): boolean => trialDays > 0 && step < HARD_PAYWALL_STEP_COUNT;
+
+// ---- Paid actions (owner, 2026-11-01): people can look around the app and the paywall can be closed, but nothing that
 // costs credits runs until they subscribe. The check sits in the API client's beforeSend, so every create, chat, editor
-// export and montage path goes through it. It is an app-side guard (see ADR-0108 amendment 2, "Limits").
+// export and montage path goes through it. It is an app-side guard (ADR-0108 amendment 2, "Limits").
 const PAID_ACTIONS: readonly RegExp[] = [
     /^\/api\/v1\/generations\/?$/,
     /^\/api\/v1\/chat\/threads\/[^/]+\/messages\/?$/,

@@ -3,6 +3,8 @@ import { MarketingNav } from '../_components/NavBar';
 import { Main } from '../_components/Main';
 import { GUIDES } from '../_lib/guides';
 import { OPEN_GRAPH_BASE } from '../../seo';
+import { JsonLd } from '../../seo';
+import { itemListLd } from '../../../lib/jsonLd';
 import { getT } from '../../../lib/i18n/server';
 import { pageAlternates, openGraphLocale } from '../../../lib/i18n/metadata.mjs';
 import { localizedHref } from '../../../lib/i18n/locales.mjs';
@@ -25,6 +27,7 @@ export default async function Guides() {
   const say = (key, fallback) => t.messages[key] ?? fallback;
   return (
     <div className="min-h-dvh">
+      <JsonLd data={itemListLd(GUIDES.map((g) => ({ name: say(`guide.${g.id}.title`, g.title), href: localizedHref(locale, `/guides/${g.id}`) })))} />
       <MarketingNav />
       <Main className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-14 sm:pt-20 pb-28">
         <div className="max-w-[852px]">

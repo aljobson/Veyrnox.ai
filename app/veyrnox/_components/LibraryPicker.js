@@ -93,7 +93,7 @@ export function LibraryPicker({ onPick, onClose, kind = 'image', sourceLabel, mi
                 className="aspect-square overflow-hidden rounded-lg border border-vx-border hover:border-vx-accent focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vx-accent">
                 {kind === 'video'
                   ? <video src={it.url} muted playsInline preload="metadata" aria-label={it.label} className="h-full w-full object-cover" />
-                  : kind === 'audio' ? <span className="p-2 text-xs">♫ {it.label}</span> : <img src={it.url} alt={it.label} className="h-full w-full object-cover" />}
+                  : kind === 'audio' ? <span className="p-2 text-xs">♫ {it.label}</span> : <img loading="lazy" decoding="async" src={it.url} alt={it.label} className="h-full w-full object-cover" />}
               </button>
             ))}
           </div>

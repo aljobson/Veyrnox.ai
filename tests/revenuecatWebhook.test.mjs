@@ -124,6 +124,41 @@ test('never credits a sandbox purchase in production, and does on staging', asyn
     assert.equal(rpcCalls('credit_store_purchase').length, 1);
 });
 
+test('credits a sandbox purchase in production only for the App Review account', async () => {
+    const REVIEW = '11111111-2222-4333-8444-555555555555';
+    handlers.credit_store_purchase = json({ ok: true, idempotent: false });
+    const sandbox = purchase({ environment: 'SANDBOX' });
+
+    // Another account's sandbox purchase stays ignored even with a review account named.
+    process.env.STORE_REVIEW_USER_ID = REVIEW;
+    handlers.store_customers = json([{ user_id: '99999999-2222-4333-8444-555555555555' }]);
+    assert.equal((await (await send(sandbox)).json()).ignored, true);
+    assert.equal(rpcCalls('credit_store_purchase').length, 0);
+
+    // The review account's sandbox purchase is credited.
+    handlers.store_customers = json([{ user_id: REVIEW }]);
+    assert.equal((await send(sandbox)).status, 200);
+    assert.equal(rpcCalls('credit_store_purchase').length, 1);
+
+    // An event that also names another registered account is not excepted: the grant could reach it.
+    handlers.store_customers = json([{ user_id: '99999999-2222-4333-8444-555555555555' }, { user_id: REVIEW }]);
+    assert.equal((await (await send(purchase({ environment: 'SANDBOX', original_app_user_id: '22222222-2222-4333-8444-555555555555' }))).json()).ignored, true);
+    assert.equal(rpcCalls('credit_store_purchase').length, 1);
+
+    // A malformed value names nobody, and nothing is looked up.
+    process.env.STORE_REVIEW_USER_ID = 'reviewer@example.com';
+    const before = calls.filter((c) => c.name === 'store_customers').length;
+    assert.equal((await (await send(sandbox)).json()).ignored, true);
+    assert.equal(calls.filter((c) => c.name === 'store_customers').length, before);
+});
+
+test('a failed review-account lookup asks RevenueCat to retry', async () => {
+    process.env.STORE_REVIEW_USER_ID = '11111111-2222-4333-8444-555555555555';
+    handlers.store_customers = () => new Response('boom', { status: 500 });
+    assert.equal((await send(purchase({ environment: 'SANDBOX' }))).status, 500);
+    assert.equal(rpcCalls('credit_store_purchase').length, 0);
+});
+
 test('answers a replayed event as a duplicate with no second grant', async () => {
     handlers.webhook_events = (init) => init.method === 'POST'
         ? new Response('[]', { status: 200 })
@@ -216,6 +251,18 @@ test('parses subscription events into one action each', () => {
     assert.deepEqual([playPublish.kind, playPublish.family, playPublish.productId, playPublish.channel], ['subscription', 'publish', 'ai.veyrnox.publish.annual:annual', 'android']);
     const playGeneration = parseStoreEvent(sub('RENEWAL', { product_id: 'ai.veyrnox.generation.starter.monthly:monthly', store: 'PLAY_STORE' }));
     assert.deepEqual([playGeneration.kind, playGeneration.family, playGeneration.productId, playGeneration.channel], ['subscription', 'generation', 'ai.veyrnox.generation.starter.monthly:monthly', 'android']);
+});
+
+test('a generation free trial is typed apart from a paid purchase (0422)', () => {
+    const gen = 'ai.veyrnox.generation.starter.monthly';
+    const trial = parseStoreEvent(sub('INITIAL_PURCHASE', { product_id: gen, period_type: 'TRIAL' }));
+    assert.deepEqual([trial.action, trial.type], ['activate', 'initial_purchase_trial']);
+    assert.equal(parseStoreEvent(sub('INITIAL_PURCHASE', { product_id: gen, period_type: 'NORMAL' })).type, 'initial_purchase');
+    assert.equal(parseStoreEvent(sub('INITIAL_PURCHASE', { product_id: gen, period_type: 'INTRO' })).type, 'initial_purchase');
+    assert.equal(parseStoreEvent(sub('INITIAL_PURCHASE', { product_id: gen })).type, 'initial_purchase');
+    // The renewal that ends the trial is the paid grant, and a Publish trial is not a generation trial.
+    assert.equal(parseStoreEvent(sub('RENEWAL', { product_id: gen, period_type: 'NORMAL' })).type, 'renewal');
+    assert.equal(parseStoreEvent(sub('INITIAL_PURCHASE', { product_id: 'ai.veyrnox.publish.weekly', period_type: 'TRIAL' })).type, 'initial_purchase');
 });
 
 test('routes AI Generation subscriptions to the credit subscription ledger', async () => {

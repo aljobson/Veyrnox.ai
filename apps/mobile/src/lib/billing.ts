@@ -12,7 +12,26 @@ export interface RcPackage {
         readonly currencyCode?: string;
         readonly pricePerMonthString?: string | null;
         readonly discounts?: readonly RcDiscount[] | null;
+        readonly introPrice?: RcIntroPrice | null;
     };
+}
+
+// The store's introductory offer on a product (RevenueCat introPrice). A price of 0 is a free trial.
+export interface RcIntroPrice {
+    readonly price: number;
+    readonly periodUnit: string;
+    readonly periodNumberOfUnits: number;
+}
+
+// Only fixed-length periods: a store MONTH or YEAR is a calendar period, so it is never turned into a number of days.
+const UNIT_DAYS: Readonly<Record<string, number>> = { DAY: 1, WEEK: 7 };
+
+/** Whole days of free trial the store gives on this product, or null when it has none (a paid intro offer or a calendar-month/year trial is not advertised as days). */
+export function freeTrialDays(product: RcPackage['product']): number | null {
+    const intro = product.introPrice;
+    const unit = intro ? UNIT_DAYS[intro.periodUnit] : undefined;
+    if (!intro || intro.price !== 0 || !unit || !Number.isSafeInteger(intro.periodNumberOfUnits) || intro.periodNumberOfUnits <= 0) return null;
+    return unit * intro.periodNumberOfUnits;
 }
 
 export interface RcDiscount {
@@ -35,6 +54,8 @@ export interface DisplayPackage {
     readonly credits: number | null;
     readonly interval: Interval | null;
     readonly generationPlan: GenerationPlan | null;
+    /** Days of free trial the store gives on this plan; null or absent when none. */
+    readonly trialDays?: number | null;
 }
 
 export type GenerationPlan = 'lite' | 'starter' | 'plus' | 'ultra';
@@ -127,6 +148,7 @@ export function toDisplayPackages(packages: readonly RcPackage[]): DisplayPackag
             credits: creditsFor(p.product.identifier),
             interval: intervalFor(p.product.identifier),
             generationPlan: generationPlanFor(p.product.identifier),
+            trialDays: freeTrialDays(p.product),
         }))
         .filter((p) => p.credits !== null || p.interval !== null)
         .sort((a, b) => {
@@ -205,4 +227,15 @@ export async function waitForBalanceChange(
 // The public test-store key must never replace a release production platform key.
 export function revenueCatKey(dev: boolean, environment: string, testKey?: string, platformKey?: string): string {
     return ((dev || environment === 'staging') && testKey) || platformKey || '';
+}
+
+/**
+ * An App Store introductory offer is configured per product but granted per Apple ID, so on iOS a trial is shown only
+ * when the store confirmed this account is eligible; unknown or ineligible means the paid flow. Google Play only returns
+ * the offers the account can take, so its trial is trusted as is.
+ */
+export function gateTrialByEligibility<T extends { readonly productId: string; readonly trialDays?: number | null }>(
+    plans: readonly T[], store: 'ios' | 'android', eligibleProductIds: ReadonlySet<string> | null,
+): T[] {
+    return plans.map(plan => (store === 'ios' && !eligibleProductIds?.has(plan.productId) ? { ...plan, trialDays: null } : plan));
 }

@@ -427,6 +427,8 @@ export function interpretSubscription(sub, opts) {
             id: sub.id,
             customerId: CUSTOMER_RE.test(String(customerId)) ? customerId : null,
             status,
+            // Stripe's own word for a free trial: folded into 'active' above, kept here for the starter credits (0422).
+            trialing: raw === 'trialing',
             periodStart: unix(sub.current_period_start ?? (item && item.current_period_start)),
             periodEnd: unix(sub.current_period_end ?? (item && item.current_period_end)),
             cancelAtPeriodEnd: sub.cancel_at_period_end === true,

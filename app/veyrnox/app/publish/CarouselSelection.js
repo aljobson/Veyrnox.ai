@@ -10,7 +10,7 @@ export default function CarouselSelection({ items, onChange, max, disabled }) {
             <p className="text-sm">{t('app.publish.carousel.item', { count: index + 1 })}</p>
             {item.thumbUrl && (item.mediaType === 'video'
                 ? <video src={item.thumbUrl} controls playsInline preload="metadata" className="h-24 w-32 object-contain" />
-                : <img src={item.thumbUrl} alt="" className="h-24 w-32 object-contain" />)}
+                : <img loading="lazy" decoding="async" src={item.thumbUrl} alt="" className="h-24 w-32 object-contain" />)}
             <div className="flex gap-2 text-sm">
                 <button type="button" disabled={disabled || index === 0} onClick={() => onChange(moveMedia(items, index, -1))}>{t('app.publish.carousel.earlier')}</button>
                 <button type="button" disabled={disabled || index === items.length - 1} onClick={() => onChange(moveMedia(items, index, 1))}>{t('app.publish.carousel.later')}</button>

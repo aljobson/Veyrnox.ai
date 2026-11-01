@@ -14,11 +14,12 @@ import { bindCacheUser, resetCacheUser } from '../src/lib/appCache';
 import { createCache, createMemoryStorage } from '../src/lib/cache';
 import { english } from '../src/lib/i18n/binding';
 const mockReplace = jest.fn();
+const mockPush = jest.fn();
 const mockRun = jest.fn();
 const mockApi = {};
 let mockFocused = true;
 let mockParams: Record<string,string>;
-jest.mock('expo-router', () => ({ useFocusEffect: (effect: () => void | (() => void)) => { const React = jest.requireActual('react'); React.useEffect(() => mockFocused ? effect() : undefined, [effect, mockFocused]); }, Stack: { Screen: () => null }, useRouter: () => ({ replace: mockReplace, push: jest.fn() }), useLocalSearchParams: () => mockParams }));
+jest.mock('expo-router', () => ({ useFocusEffect: (effect: () => void | (() => void)) => { const React = jest.requireActual('react'); React.useEffect(() => mockFocused ? effect() : undefined, [effect, mockFocused]); }, Stack: { Screen: () => null }, useRouter: () => ({ replace: mockReplace, push: mockPush }), useLocalSearchParams: () => mockParams }));
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi }) }));
 jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalog: jest.fn() }));
 jest.mock('../src/lib/useBalance', () => ({ useBalance: () => 1000 }));
@@ -37,7 +38,7 @@ const video: CatalogModel = { id: 'wan-2.5-kie', name: 'Wan', modality: 'text-to
 const input = () => root.container.queryAll(n => n.props.accessibilityLabel === t('mobile.prompt'))[0];
 beforeEach(async () => {
     resetCacheUser(); const storage = createMemoryStorage(); await bindCacheUser('create-owner', createCache(storage), storage, createMemoryStorage()); mockFocused = true;
-    (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = createRoot(); mockReplace.mockClear(); mockRun.mockReset().mockImplementation(async (_api: unknown, _request: unknown, _count: number, onStarted?: (n: number) => void, onJob?: (id: string, index: number) => void) => { onStarted?.(1); onJob?.('job', 0); return 'job'; }); jest.mocked(CharacterPanel).mockClear();
+    (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = createRoot(); mockReplace.mockClear(); mockPush.mockClear(); mockRun.mockReset().mockImplementation(async (_api: unknown, _request: unknown, _count: number, onStarted?: (n: number) => void, onJob?: (id: string, index: number) => void) => { onStarted?.(1); onJob?.('job', 0); return 'job'; }); jest.mocked(CharacterPanel).mockClear();
     mockParams = { modelId: video.id, prompt: 'A quiet original scene', duration: '5' };
     jest.mocked(fetchCatalog).mockResolvedValue([video]);
 });
@@ -148,4 +149,24 @@ test.each([false, true])('P1 rendered model change carries duration, aspect, tem
     expect(input().props.value).toBe('A quiet original scene');
     expect(unavailable()).toHaveLength(0);
     expect(jest.mocked(SourcePicker).mock.calls.at(-1)?.[0].references).toEqual(refs);
+});
+
+const templatesEntry = () => root.container.queryAll(n => n.props.accessibilityLabel === t('label.Templates'));
+test('a bare form offers Templates and opens the gallery', async () => {
+    await render();
+    expect(templatesEntry()).toHaveLength(1);
+    await act(async () => templatesEntry()[0].props.onClick(event));
+    expect(mockPush).toHaveBeenCalledWith('/create/presets');
+});
+test('a form opened from a template does not offer Templates', async () => {
+    mockParams = { ...mockParams, ...templateParams({ title: 'Paper Landscape', needs: null, posterUrl: null }) };
+    await render();
+    expect(templatesEntry()).toHaveLength(0);
+});
+test('Templates goes away once a result arrives', async () => {
+    await render();
+    const generate = root.container.queryAll(n => typeof n.props.accessibilityLabel === 'string' && n.props.accessibilityLabel.startsWith(t('slip.generate')+'.'))[0];
+    await act(async () => generate.props.onClick(event));
+    expect(mockRun).toHaveBeenCalled();
+    expect(templatesEntry()).toHaveLength(0);
 });
