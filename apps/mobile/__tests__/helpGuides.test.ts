@@ -15,13 +15,16 @@ describe('generated guide content stays identical to the web source', () => {
         const source = read('../../app/veyrnox/_lib/guides.js')
             .replace('export const GUIDES', 'const GUIDES')
             .replace('export function guideById', 'function guideById');
-        const web = new Function(`${source}\nreturn GUIDES;`)();
+        // The web adds SEO-only fields (answer, explainer) the phone does not show; compare what both share.
+        const web = new Function(`${source}\nreturn GUIDES;`)().map((g: any) => ({
+            id: g.id, title: g.title, summary: g.summary, steps: g.steps, links: g.links,
+        }));
         expect(web).toHaveLength(5);
         expect(HELP_GUIDES.map(g => ({
             id: g.id, title: say(g.title), summary: say(g.summary),
             steps: g.steps.map(s => ({ title: say(s.title), body: say(s.body) })),
             links: g.links.map(l => ({ label: say(l.label), href: l.href })),
-        }))).toEqual(web);
+        }))).toEqual(web.map(({ id, title, summary, steps, links }: Record<string, unknown>) => ({ id, title, summary, steps, links }))); // web-only fields (FAQ `answer`, `explainer`) are not carried to the phone
     });
 
     test('the generator is reproducible, including the English area', () => {
