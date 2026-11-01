@@ -95,7 +95,7 @@ describe('where the welcome shows', () => {
     test('welcome opens the Mobbin-inspired, input-first creation screen instead of the preference quiz', () => {
         const welcome = read('app', '(app)', 'welcome.tsx');
         const start = read('app', '(app)', 'start.tsx');
-        expect(welcome).toContain("router.replace('/start')");
+        expect(welcome).toContain('router.replace(afterWelcomeHref(hardPaywallEnabled(), CREATOR_PROFILE_ENABLED))');
         for (const [key, label] of [['start.myphoto', 'My photo'], ['start.myvideo', 'My video'], ['start.areference', 'A reference'], ['start.justanidea', 'Just an idea']]) {
             expect(start).toContain(`label: t('${key}')`);
             expect((en as Record<string, string>)[key]).toBe(label);

@@ -7,6 +7,7 @@ import { EditorFlagProvider } from './_components/EditorFlag';
 import { ProjectsFlagProvider } from './_components/ProjectsFlag';
 import { OddlingsPublicFlagProvider } from './_components/OddlingsPublicFlag';
 import MascotAssistant from './_components/MascotAssistant';
+import { HideWhileHardPaywall } from './_components/HideWhileHardPaywall';
 import { publishEnabled, publishShellAvailable } from '../../lib/social/publishFeature.js';
 import { oddlingsPublicEnabled } from './_lib/oddlingsPublicFlag';
 
@@ -39,7 +40,7 @@ export default function VeyrnoxLayout({ children }) {
               <AccountBoundary>
                 {children}
                 <JobWatcher />
-                <MascotAssistant />
+                <HideWhileHardPaywall><MascotAssistant /></HideWhileHardPaywall>
               </AccountBoundary>
             </OddlingsPublicFlagProvider>
           </ProjectsFlagProvider>

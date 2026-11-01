@@ -5682,4 +5682,11 @@ export default {
   "projects.noWorkspacesTitle": "अभी कोई वर्कस्पेस नहीं है",
   "projects.openEditor": "एडिटर खोलें",
   "publishHome.postsFailed": "आपकी पोस्ट लोड नहीं हो सकीं, इसलिए नीचे की गिनती पुरानी हो सकती है।",
+  "credits.hardPaywall.title": "बनाना शुरू करने के लिए सब्सक्राइब करें",
+  "credits.hardPaywall.bodyFree": "आपके {count} मुफ़्त क्रेडिट इंतज़ार कर रहे हैं। उन्हें अनलॉक करने और बनाना शुरू करने के लिए एक प्लान चुनें।",
+  "credits.hardPaywall.body": "अपने मुफ़्त क्रेडिट अनलॉक करने और बनाना शुरू करने के लिए एक प्लान चुनें।",
+  "credits.hardPaywall.checking": "आपका प्लान जाँचा जा रहा है…",
+  "credits.hardPaywall.unavailable": "प्लान अभी उपलब्ध नहीं हैं। अपना कनेक्शन जाँचकर फिर कोशिश करें, या पिछली खरीदारी बहाल करें।",
+  "credits.hardPaywall.retry": "फिर कोशिश करें",
+  "credits.hardPaywall.deleteAccount": "खाता हटाएँ",
 } as const;

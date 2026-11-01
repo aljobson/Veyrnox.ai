@@ -4854,6 +4854,12 @@
     "ratio": 1.71
   },
   {
+    "id": "credits.hardPaywall.checking",
+    "english": "Checking your plan…",
+    "translation": "Vérification de votre abonnement…",
+    "ratio": 1.74
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

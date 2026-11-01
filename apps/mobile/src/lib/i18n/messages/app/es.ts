@@ -5748,4 +5748,11 @@ export default {
   "projects.noWorkspacesTitle": "Sin espacio de trabajo",
   "projects.openEditor": "Abrir el editor",
   "publishHome.postsFailed": "No se pudieron cargar tus publicaciones, así que los recuentos de abajo pueden estar desactualizados.",
+  "credits.hardPaywall.title": "Suscríbete para empezar a crear",
+  "credits.hardPaywall.bodyFree": "Tus {count} créditos gratis te esperan. Elige un plan para desbloquearlos y empezar a crear.",
+  "credits.hardPaywall.body": "Elige un plan para desbloquear tus créditos gratis y empezar a crear.",
+  "credits.hardPaywall.checking": "Comprobando tu plan…",
+  "credits.hardPaywall.unavailable": "Los planes no están disponibles ahora. Revisa tu conexión e inténtalo de nuevo, o restaura una compra anterior.",
+  "credits.hardPaywall.retry": "Reintentar",
+  "credits.hardPaywall.deleteAccount": "Eliminar cuenta",
 } as const;

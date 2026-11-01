@@ -5814,4 +5814,11 @@ export default {
   "projects.noWorkspacesTitle": "Нет рабочего места",
   "projects.openEditor": "Открыть редактор",
   "publishHome.postsFailed": "Не удалось загрузить ваши публикации, поэтому числа ниже могут быть устаревшими.",
+  "credits.hardPaywall.title": "Оформите подписку, чтобы начать",
+  "credits.hardPaywall.bodyFree": "Ваши бесплатные кредиты ({count}) ждут вас. Выберите план, чтобы разблокировать их и начать создавать.",
+  "credits.hardPaywall.body": "Выберите план, чтобы разблокировать бесплатные кредиты и начать создавать.",
+  "credits.hardPaywall.checking": "Проверяем ваш план…",
+  "credits.hardPaywall.unavailable": "Планы сейчас недоступны. Проверьте подключение и повторите попытку или восстановите прошлую покупку.",
+  "credits.hardPaywall.retry": "Повторить",
+  "credits.hardPaywall.deleteAccount": "Удалить аккаунт",
 } as const;

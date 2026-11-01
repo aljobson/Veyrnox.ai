@@ -5682,4 +5682,11 @@ export default {
   "projects.noWorkspacesTitle": "Noch kein Arbeitsbereich",
   "projects.openEditor": "Editor öffnen",
   "publishHome.postsFailed": "Deine Beiträge konnten nicht geladen werden, daher sind die Zahlen unten möglicherweise nicht aktuell.",
+  "credits.hardPaywall.title": "Abonniere, um loszulegen",
+  "credits.hardPaywall.bodyFree": "Deine {count} Gratis-Credits warten auf dich. Wähle ein Abo, um sie freizuschalten und loszulegen.",
+  "credits.hardPaywall.body": "Wähle ein Abo, um deine Gratis-Credits freizuschalten und loszulegen.",
+  "credits.hardPaywall.checking": "Dein Abo wird geprüft…",
+  "credits.hardPaywall.unavailable": "Abos sind gerade nicht verfügbar. Prüfe deine Verbindung und versuche es erneut oder stelle einen früheren Kauf wieder her.",
+  "credits.hardPaywall.retry": "Erneut versuchen",
+  "credits.hardPaywall.deleteAccount": "Konto löschen",
 } as const;

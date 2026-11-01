@@ -1,3 +1,4 @@
+import { hardPaywallEnabled } from '../lib/hardPaywall';
 import { useFirstRunPending } from '../lib/firstRunPending';
 import * as SecureStore from 'expo-secure-store';
 import { usePathname, useRouter } from 'expo-router';
@@ -21,7 +22,8 @@ export function PaywallPrompt() {
     const { generation } = useAuth();
     const [owner, setOwner] = useState(getCacheUser());
     useEffect(() => subscribeCacheUser(() => setOwner(getCacheUser())), []);
-    if (!owner || firstRunPending) return null;
+    // The hard paywall replaces the dismissible prompt (ADR-0108 amendment 2).
+    if (!owner || firstRunPending || hardPaywallEnabled()) return null;
     if (!promptSession || promptSession.owner !== owner || promptSession.generation !== generation) {
         promptSession = { owner, generation, closed: false };
     }

@@ -5616,4 +5616,11 @@ export default {
   "projects.noWorkspacesTitle": "ワークスペースはまだありません",
   "projects.openEditor": "エディターを開く",
   "publishHome.postsFailed": "投稿を読み込めませんでした。下の件数は最新でない可能性があります。",
+  "credits.hardPaywall.title": "登録して作成を始めましょう",
+  "credits.hardPaywall.bodyFree": "無料クレジット {count} 件をご用意しています。プランを選んで解除し、作成を始めましょう。",
+  "credits.hardPaywall.body": "プランを選んで無料クレジットを解除し、作成を始めましょう。",
+  "credits.hardPaywall.checking": "プランを確認しています…",
+  "credits.hardPaywall.unavailable": "現在プランをご利用いただけません。接続を確認して再試行するか、以前の購入を復元してください。",
+  "credits.hardPaywall.retry": "再試行",
+  "credits.hardPaywall.deleteAccount": "アカウントを削除",
 } as const;

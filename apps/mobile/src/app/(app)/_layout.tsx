@@ -15,6 +15,7 @@ import { MfaGate } from '../../components/account/MfaGate';
 import { HomeBackButton } from '../../components/HomeBackButton';
 import { ServiceBanner } from '../../components/ServiceBanner';
 import { PaywallPrompt } from '../../components/PaywallPrompt';
+import { HardPaywallGate } from '../../components/HardPaywallGate';
 import { getThemePreference, paletteForScheme, resolveScheme } from '../../theme';
 
 export default function AppLayout() {
@@ -31,6 +32,7 @@ export default function AppLayout() {
                 <FirstRunGate />
                 <CheckInModal />
                 <PaywallPrompt />
+                <HardPaywallGate>
                 <Stack
                     screenLayout={({ children, route }) => (
                         <>
@@ -58,6 +60,7 @@ export default function AppLayout() {
                     <Stack.Screen name="rate" options={{ title: t('rate.title'), headerShown: false, presentation: 'modal' }} />
                     <Stack.Screen name="paywall" options={{ title: t('billing.paywall.title'), headerShown: false, presentation: 'modal' }} />
                 </Stack>
+                </HardPaywallGate>
             </MfaGate>
         </>
     );

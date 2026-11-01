@@ -5616,4 +5616,11 @@ export default {
   "projects.noWorkspacesTitle": "还没有工作区",
   "projects.openEditor": "打开编辑器",
   "publishHome.postsFailed": "无法加载你的帖子，因此下方的数字可能不是最新的。",
+  "credits.hardPaywall.title": "订阅后即可开始创作",
+  "credits.hardPaywall.bodyFree": "你的 {count} 个免费积分已备好。选择一个方案即可解锁并开始创作。",
+  "credits.hardPaywall.body": "选择一个方案，解锁免费积分并开始创作。",
+  "credits.hardPaywall.checking": "正在检查你的方案…",
+  "credits.hardPaywall.unavailable": "目前无法使用订阅方案。请检查网络后重试，或恢复之前的购买。",
+  "credits.hardPaywall.retry": "重试",
+  "credits.hardPaywall.deleteAccount": "删除账户",
 } as const;

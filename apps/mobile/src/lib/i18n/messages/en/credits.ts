@@ -59,4 +59,11 @@ export default {
     'credits.receipt.paid': "Paid",
     'credits.receipt.balance': "New balance",
     'credits.receipt.thanks': "Thank you for your purchase.",
+    'credits.hardPaywall.title': 'Subscribe to start creating',
+    'credits.hardPaywall.bodyFree': 'Your {count} free credits are waiting. Pick a plan to unlock them and start creating.',
+    'credits.hardPaywall.body': 'Pick a plan to unlock your free credits and start creating.',
+    'credits.hardPaywall.checking': 'Checking your plan…',
+    'credits.hardPaywall.unavailable': 'Plans are not available right now. Check your connection and try again, or restore a previous purchase.',
+    'credits.hardPaywall.retry': 'Try again',
+    'credits.hardPaywall.deleteAccount': 'Delete account',
 } as const;

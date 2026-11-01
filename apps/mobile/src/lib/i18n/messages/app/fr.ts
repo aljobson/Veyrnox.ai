@@ -5748,4 +5748,11 @@ export default {
   "projects.noWorkspacesTitle": "Aucun espace de travail",
   "projects.openEditor": "Ouvrir l’éditeur",
   "publishHome.postsFailed": "Impossible de charger vos publications ; les totaux ci-dessous peuvent être obsolètes.",
+  "credits.hardPaywall.title": "Abonnez-vous pour commencer à créer",
+  "credits.hardPaywall.bodyFree": "Vos {count} crédits gratuits vous attendent. Choisissez un abonnement pour les débloquer et commencer à créer.",
+  "credits.hardPaywall.body": "Choisissez un abonnement pour débloquer vos crédits gratuits et commencer à créer.",
+  "credits.hardPaywall.checking": "Vérification de votre abonnement…",
+  "credits.hardPaywall.unavailable": "Les abonnements ne sont pas disponibles pour le moment. Vérifiez votre connexion et réessayez, ou restaurez un achat précédent.",
+  "credits.hardPaywall.retry": "Réessayer",
+  "credits.hardPaywall.deleteAccount": "Supprimer le compte",
 } as const;
