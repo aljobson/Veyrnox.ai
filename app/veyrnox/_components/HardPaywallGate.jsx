@@ -75,8 +75,13 @@ function Plans({ account: id, children }) {
 }
 
 function Checking() {
-  const { t } = useI18n();
   useLockWhileMounted();
+  return <CheckingText />;
+}
+
+// The loading content alone: Locked already owns the lock, and a second owner would release it on unmount.
+function CheckingText() {
+  const { t } = useI18n();
   return <Main className="grid min-h-dvh place-items-center px-4">
     <p role="status" aria-live="polite" className="text-vx-fg-muted">{t('app.hardPaywall.checking')}</p>
   </Main>;
@@ -93,7 +98,7 @@ function Locked({ unknown, onRetry }) {
     try { await signOut(); } finally { window.location.assign('/'); }
   }
   // The server says whether a trial exists; until it answers, nothing about plans or a trial is shown.
-  if (!unknown && trialDays === undefined) return <Checking />;
+  if (!unknown && trialDays === undefined) return <CheckingText />;
   const trial = !unknown && trialDays > 0;
   return <Main className="min-h-dvh py-10">
     {trial
@@ -106,7 +111,8 @@ function Locked({ unknown, onRetry }) {
           <button type="button" className={link} onClick={onRetry}>{t('app.hardPaywall.retry')}</button>
         </p>}
       </div>}
-    {!unknown && !hasIntroSteps(trialDays, step) && <CreditSubscriptions />}
+    {/* Kept mounted behind the introduction so checkout recovery and its retry survive Back and Continue. */}
+    {!unknown && <div hidden={hasIntroSteps(trialDays, step)}><CreditSubscriptions /></div>}
     <div className="mx-auto max-w-[1200px] px-4 sm:px-8">
       <nav aria-label={t('app.hardPaywall.links')} className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
         <LegalLink element="a" href="/legal/terms" className={link}>{t('label.Terms of Service')}</LegalLink>

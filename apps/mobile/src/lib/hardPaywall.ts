@@ -39,9 +39,9 @@ export const HARD_PAYWALL_STARTER_CREDITS = 10;
 // length is whatever the store product says, so no screen promises a trial the store will not give.
 export const HARD_PAYWALL_STEP_COUNT = 3;
 
-/** Days of trial to introduce: the plan in view, else the first plan in the cadence that has one, else 0. */
+/** Days of trial to introduce: the plan in view decides (no trial there means 0); with no plan in view, the first plan that has one. */
 export function introTrialDays(plans: readonly { readonly trialDays?: number | null }[], chosen: { readonly trialDays?: number | null } | null): number {
-    const days = chosen?.trialDays ?? plans.find(plan => (plan.trialDays ?? 0) > 0)?.trialDays ?? 0;
+    const days = chosen ? chosen.trialDays ?? 0 : plans.find(plan => (plan.trialDays ?? 0) > 0)?.trialDays ?? 0;
     return Number.isSafeInteger(days) && days > 0 ? days : 0;
 }
 

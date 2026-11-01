@@ -23,9 +23,10 @@ export interface RcIntroPrice {
     readonly periodNumberOfUnits: number;
 }
 
-const UNIT_DAYS: Readonly<Record<string, number>> = { DAY: 1, WEEK: 7, MONTH: 30, YEAR: 365 };
+// Only fixed-length periods: a store MONTH or YEAR is a calendar period, so it is never turned into a number of days.
+const UNIT_DAYS: Readonly<Record<string, number>> = { DAY: 1, WEEK: 7 };
 
-/** Whole days of free trial the store gives on this product, or null when it has none (a paid intro offer is not a trial). */
+/** Whole days of free trial the store gives on this product, or null when it has none (a paid intro offer or a calendar-month/year trial is not advertised as days). */
 export function freeTrialDays(product: RcPackage['product']): number | null {
     const intro = product.introPrice;
     const unit = intro ? UNIT_DAYS[intro.periodUnit] : undefined;
@@ -226,4 +227,15 @@ export async function waitForBalanceChange(
 // The public test-store key must never replace a release production platform key.
 export function revenueCatKey(dev: boolean, environment: string, testKey?: string, platformKey?: string): string {
     return ((dev || environment === 'staging') && testKey) || platformKey || '';
+}
+
+/**
+ * An App Store introductory offer is configured per product but granted per Apple ID, so on iOS a trial is shown only
+ * when the store confirmed this account is eligible; unknown or ineligible means the paid flow. Google Play only returns
+ * the offers the account can take, so its trial is trusted as is.
+ */
+export function gateTrialByEligibility<T extends { readonly productId: string; readonly trialDays?: number | null }>(
+    plans: readonly T[], store: 'ios' | 'android', eligibleProductIds: ReadonlySet<string> | null,
+): T[] {
+    return plans.map(plan => (store === 'ios' && !eligibleProductIds?.has(plan.productId) ? { ...plan, trialDays: null } : plan));
 }

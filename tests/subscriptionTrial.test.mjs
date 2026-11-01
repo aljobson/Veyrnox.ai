@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { subscriptionTrialDays, SUBSCRIPTION_CONSENT_VERSION_TRIAL, TRIAL_REMINDER_DAYS } from '../lib/subscriptions/trial.js';
 import { createCreditSubscriptionCheckout } from '../packages/adapters/stripeCreditSubscriptions.js';
 import { subscriptionHandler, SUBSCRIPTION_CONSENT_VERSION } from '../lib/subscriptions/api.js';
-import { sendTrialEndingReminder } from '../lib/subscriptions/webhook.js';
+import { sendTrialEndingReminder, shouldRemindTrialEnd } from '../lib/subscriptions/webhook.js';
 import { renderTrialEnding } from '../lib/i18n/email.mjs';
 import { hasIntroSteps, STEP_COUNT } from '../app/veyrnox/_lib/hardPaywall.mjs';
 
@@ -101,6 +101,10 @@ test('the reminder is sent once per subscription and a failed send is retried, n
   assert.equal(sent[0].to, 'a@example.com');
   assert.equal(sent[0].idempotencyKey, 'trial-end-sub_1');
   assert.equal(await sendTrialEndingReminder({}, { binding, s }, env, { select, sendEmail: async () => ({ ok: false, error: 'http_500' }) }), 'failed');
+  assert.equal(shouldRemindTrialEnd(binding, s), true);
+  assert.equal(shouldRemindTrialEnd(binding, { ...s, cancelAtPeriodEnd: true }), false, 'a trial set to cancel is never charged');
+  assert.equal(shouldRemindTrialEnd(binding, { ...s, trialing: false }), false);
+  assert.equal(shouldRemindTrialEnd(null, s), false);
   assert.equal(await sendTrialEndingReminder({}, { binding, s }, {}, { select, sendEmail: async () => assert.fail('sender not configured') }), 'skipped');
   assert.equal(await sendTrialEndingReminder({}, { binding, s }, env, { select: async () => [], sendEmail: async () => assert.fail('no address') }), 'skipped');
 });

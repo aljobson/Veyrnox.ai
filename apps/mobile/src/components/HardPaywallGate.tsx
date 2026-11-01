@@ -1,12 +1,13 @@
 import { usePathname, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import Purchases from 'react-native-purchases';
 import { ActivityIndicator, Platform, ScrollView, View } from 'react-native';
 import { useAuth } from '../auth/AuthProvider';
 import { useBilling } from '../billing/BillingProvider';
 import { useStorePurchase } from '../billing/useStorePurchase';
 import { LEGAL_LINKS } from '../lib/account';
 import { confirmSignOut } from '../lib/confirmSignOut';
-import { parseGenerationCatalog, renewalTerms, toDisplayPackages, type GenerationCatalogPlan } from '../lib/billing';
+import { gateTrialByEligibility, parseGenerationCatalog, renewalTerms, toDisplayPackages, type GenerationCatalogPlan } from '../lib/billing';
 import { HARD_PAYWALL_STARTER_CREDITS, HARD_PAYWALL_STEP_COUNT, hardPaywallEnabled, hardPaywallState, hasIntroSteps, introTrialDays, isHardPaywallExempt } from '../lib/hardPaywall';
 import { t } from '../lib/i18n';
 import { Button, Text, themedStyles, useThemedStyles } from './ui';
@@ -14,6 +15,8 @@ import { PlanCards, initialCadence, type Cadence } from './credits/PlanCards';
 import { VeyCharacter } from './VeyCharacter';
 
 const ENABLED = hardPaywallEnabled();
+// RevenueCat INTRO_ELIGIBILITY_STATUS_ELIGIBLE; the enum is not imported so a mocked SDK cannot break the screen.
+const INTRO_ELIGIBLE = 2;
 
 // ADR-0108 amendment 2: with the flag on, a signed-in person with no paid plan sees this and nothing else.
 export function HardPaywallGate({ children }: { children: ReactNode }) {
@@ -41,7 +44,20 @@ function LockedScreen({ checking }: { checking: boolean }) {
         return () => { live = false; };
     }, [api]);
     const packages = useMemo(() => (billing.offerings?.all.generation?.availablePackages ?? []).filter(pkg => pkg?.product), [billing.offerings]);
-    const plans = useMemo(() => toDisplayPackages(packages).filter(plan => plan.generationPlan !== null && plan.interval !== null), [packages]);
+    const rawPlans = useMemo(() => toDisplayPackages(packages).filter(plan => plan.generationPlan !== null && plan.interval !== null), [packages]);
+    const store = Platform.OS === 'ios' ? 'ios' : 'android';
+    // iOS: the store says per Apple ID whether the introductory offer can still be used; until it says eligible, no trial is shown.
+    const [eligible, setEligible] = useState<ReadonlySet<string> | null>(null);
+    useEffect(() => {
+        const ids = rawPlans.filter(plan => (plan.trialDays ?? 0) > 0).map(plan => plan.productId);
+        if (store !== 'ios' || ids.length === 0 || typeof Purchases?.checkTrialOrIntroductoryPriceEligibility !== 'function') return;
+        let live = true;
+        Purchases.checkTrialOrIntroductoryPriceEligibility(ids).then(result => {
+            if (live) setEligible(new Set(ids.filter(id => result[id]?.status === INTRO_ELIGIBLE)));
+        }).catch(() => { if (live) setEligible(new Set()); });
+        return () => { live = false; };
+    }, [rawPlans, store]);
+    const plans = useMemo(() => gateTrialByEligibility(rawPlans, store, eligible), [rawPlans, store, eligible]);
     const cadence = cadenceChoice ?? initialCadence(plans);
     const chosen = plans.find(plan => plan.id === chosenId && plan.interval === cadence)
         ?? plans.find(plan => plan.generationPlan === 'starter' && plan.interval === cadence)
@@ -49,8 +65,7 @@ function LockedScreen({ checking }: { checking: boolean }) {
     const noPlans = !checking && plans.length === 0;
     const trialDays = introTrialDays(plans, chosen);
     const intro = hasIntroSteps(trialDays, step);
-    const store = Platform.OS === 'ios' ? 'App Store' : 'Google Play';
-    const stepValues = { days: trialDays, count: HARD_PAYWALL_STARTER_CREDITS, store };
+    const stepValues = { days: trialDays, count: HARD_PAYWALL_STARTER_CREDITS, store: store === 'ios' ? 'App Store' : 'Google Play' };
     const canBuy = billing.canPurchase && billing.generationPurchaseReady && !!chosen && !purchase.busy;
     const message = purchase.operation.outcome?.kind === 'error' ? t('credits.error')
         : purchase.operation.outcome?.kind === 'cancelled' ? t('credits.cancelled')
