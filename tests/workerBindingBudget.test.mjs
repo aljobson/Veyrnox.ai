@@ -29,9 +29,10 @@ test('production public variables retain Cloudflare text-binding headroom', () =
     // ADR-0309 adds MULTI_REFERENCE_ENABLED: 64 vars, 114 bindings at the 50-secret footprint (14 free). Cap 64.
     // ADR-0308/0311 turn on REQUIRE_AAL2_WHEN_ENROLLED (enrolled-2FA enforcement) now that the sign-in step-up and
     // recovery path have shipped: 65 vars, 115 bindings at the 50-secret footprint (13 free). Cap 65.
+    // ADR-0316: SUBSCRIPTION_TRIAL_ENABLED turned on in production (owner, 2026-11-01): 66 vars, 116 bindings at the 50-secret footprint (12 free). Cap 66.
     // ACCOUNT_DELETION_ENABLED is a production *secret* binding (ADR-0111 amendment 2); a var of the same name replaces it
     // and fails deploy-production's secret preservation check, so it must never appear here.
-    assert.ok(Object.keys(config.vars).length <= 65, 'production vars must stay at or below 65');
+    assert.ok(Object.keys(config.vars).length <= 66, 'production vars must stay at or below 66');
     assert.ok(!Object.hasOwn(config.vars, 'ACCOUNT_DELETION_ENABLED'), 'ACCOUNT_DELETION_ENABLED is a production secret, not a var');
     // ADR-0251 amendment (2026-10-29): CREATOR_PROFILE_ENABLED is also a production secret binding.
     assert.ok(!Object.hasOwn(config.vars, 'CREATOR_PROFILE_ENABLED'), 'CREATOR_PROFILE_ENABLED is a production secret, not a var');
