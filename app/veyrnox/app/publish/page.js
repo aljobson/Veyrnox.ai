@@ -196,7 +196,7 @@ function PublishControls({ initialJobId, initialUploadId }) {
           <li key={a.id} className="flex items-center justify-between gap-3 rounded-xl border border-vx-border p-3">
             <div className="flex items-center gap-3 min-w-0">
               {a.avatar_url
-                ? <img src={a.avatar_url} alt="" className="h-9 w-9 rounded-full shrink-0" />
+                ? <img loading="lazy" decoding="async" src={a.avatar_url} alt="" className="h-9 w-9 rounded-full shrink-0" />
                 : <span aria-hidden="true" className="flex h-9 w-9 items-center justify-center rounded-full bg-vx-panel text-vx-fg-muted text-xs font-bold shrink-0">
                     <NetworkLogo network={a.network} />
                   </span>}

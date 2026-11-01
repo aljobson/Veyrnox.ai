@@ -165,7 +165,7 @@ function MediaPicker({ selected, onSelect, disabled }) {
                         {thumbs[j.job_id]
                             ? thumbs[j.job_id]?.mediaType === 'video'
                                 ? <video src={thumbs[j.job_id]?.url} muted playsInline preload="metadata" className="h-full w-full object-cover" />
-                                : <img src={thumbs[j.job_id]?.url} alt="" className="h-full w-full object-cover" />
+                                : <img loading="lazy" decoding="async" src={thumbs[j.job_id]?.url} alt="" className="h-full w-full object-cover" />
                             : <span className="flex h-full w-full items-center justify-center bg-vx-panel text-xs text-vx-fg-muted">…</span>}
                         {isSelected && <span aria-hidden="true" className="absolute inset-0 bg-vx-accent/20" />}
                     </button>
