@@ -146,14 +146,22 @@ export async function gatewayFetch(path, init = {}, brandRetried = false, brandS
     if (res.status === 403 && body?.error === 'mfa_required' && !mfaRetried
         && String(init.method || 'GET').toUpperCase() === 'GET') {
       try {
-        await waitForStepUp();
+        // Pass the caller's AbortSignal so an aborted read (e.g. editor cleanup) stops waiting
+        // and releases the step-up listener/timer at once instead of parking until aal2/timeout.
+        await waitForStepUp({ signal: init.signal });
       } catch {
         const failure = apiErrorDetails(body, 403);
         throw new GatewayError(failure.message, { status: 403, code: failure.code, body });
       }
       assertCurrentAccount();
       assertCurrentBrand();
-      return gatewayFetch(path, init, brandRetried, brandSnapshot, true);
+      // Await and re-check: the retry's getFreshAccessToken() could hydrate a different account,
+      // whose own guards would pass — re-assert the original account/brand before returning its
+      // body to this caller (the brand-recovery branch below does the same).
+      const recovered = await gatewayFetch(path, init, brandRetried, brandSnapshot, true);
+      assertCurrentAccount();
+      assertCurrentBrand();
+      return recovered;
     }
     // A removed team membership must not strand read pages on a stale brand.
     // Retry only reads, once, under the current/default authorized brand.

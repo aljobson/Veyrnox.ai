@@ -33,16 +33,22 @@ export class StepUpWaitError extends Error {
  * id survives that window, so we only reject on a real sign-out (no stored id) or an account
  * swap (a different stored id) — never on transient token absence while still aal1.
  *
- * @param {{ getAal?: () => string|null, getStoredUserId?: () => string|null, onSessionChange?: (cb: Function) => () => void, timeoutMs?: number }} [deps]
+ * `signal` (the caller's AbortSignal) rejects the wait as soon as the request is aborted — e.g.
+ * an editor read torn down on unmount — so the step-up listener and timer are released at once
+ * and the dead read is never retried, instead of parking until aal2 or the timeout.
+ *
+ * @param {{ getAal?: () => string|null, getStoredUserId?: () => string|null, onSessionChange?: (cb: Function) => () => void, signal?: AbortSignal, timeoutMs?: number }} [deps]
  * @returns {Promise<void>}
  */
 export function waitForStepUp({
   getAal = defaultGetAal,
   getStoredUserId = defaultGetStoredUserId,
   onSessionChange = defaultOnSessionChange,
+  signal,
   timeoutMs = DEFAULT_TIMEOUT_MS,
 } = {}) {
   return new Promise((resolve, reject) => {
+    if (signal?.aborted) { reject(new StepUpWaitError('mfa_aborted')); return; }
     if (getAal() === 'aal2') { resolve(); return; }
     const account = getStoredUserId();
     // Already signed out: there is no step-up to wait for.
@@ -51,11 +57,13 @@ export function waitForStepUp({
     let settled = false;
     let unsubscribe = () => {};
     let timer = null;
+    let onAbort = null;
     const cleanup = () => {
       if (settled) return;
       settled = true;
       try { unsubscribe(); } catch { /* listener already gone */ }
       if (timer !== null) clearTimeout(timer);
+      if (onAbort && signal) signal.removeEventListener('abort', onAbort);
     };
     const onChange = () => {
       if (settled) return;
@@ -67,6 +75,7 @@ export function waitForStepUp({
     };
 
     unsubscribe = onSessionChange(onChange);
+    if (signal) { onAbort = () => { cleanup(); reject(new StepUpWaitError('mfa_aborted')); }; signal.addEventListener('abort', onAbort); }
 
     // Re-check after subscribing: aal2 may have arrived between the first read and here.
     if (getAal() === 'aal2') { cleanup(); resolve(); return; }

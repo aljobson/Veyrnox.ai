@@ -74,3 +74,20 @@ test('rejects as timeout when aal2 never arrives, then unsubscribes', async () =
   await assert.rejects(waitForStepUp({ ...h.deps, timeoutMs: 5 }), rejectsWith('mfa_timeout'));
   assert.equal(h.open(), 0);
 });
+
+test('rejects immediately when the caller already aborted, without subscribing', async () => {
+  const h = harness();
+  const c = new AbortController(); c.abort();
+  await assert.rejects(waitForStepUp({ ...h.deps, signal: c.signal, timeoutMs: 10_000 }), rejectsWith('mfa_aborted'));
+  assert.equal(h.open(), 0);
+});
+
+test('an abort mid-wait rejects and releases the listener and timer at once', async () => {
+  const h = harness();
+  const c = new AbortController();
+  const p = waitForStepUp({ ...h.deps, signal: c.signal, timeoutMs: 10_000 });
+  assert.equal(h.open(), 1);
+  c.abort();
+  await assert.rejects(p, rejectsWith('mfa_aborted'));
+  assert.equal(h.open(), 0);
+});

@@ -48,6 +48,14 @@ test('mfa_required on the retry does not loop — exactly one wait and one retry
   assert.equal(g.waited(), 1);
 });
 
+test('after step-up, a retry that finds a different account is refused, not delivered to the original caller', async () => {
+  const session = { access_token: 'aal1-token', user: { id: 'alice' } };
+  // The wait "completes" but the session has meanwhile hydrated a different account.
+  const g = load({ responses: [mfa403(), ok({ jobs: ['mallory-data'] })], session,
+    waitForStepUp: async () => { session.user = { id: 'mallory' }; } });
+  await assert.rejects(g.gatewayFetch('/jobs'), e => e.status === 409 && e.code === 'account_changed');
+});
+
 test('a non-mfa 403 throws as before and never waits', async () => {
   const g = load({ responses: [Response.json({ error: 'forbidden' }, { status: 403 })], waitForStepUp: async () => assert.fail('must not wait') });
   await assert.rejects(g.gatewayFetch('/jobs'), e => e.status === 403);
