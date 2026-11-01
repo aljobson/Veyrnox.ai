@@ -1,4 +1,4 @@
-// Run only against a disposable local database replayed through 0423.
+// Run only against a disposable local database replayed through 0424.
 // The migration is re-applied inside a transaction that is rolled back.
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -15,6 +15,10 @@ try {
     const migration = (await readFile(new URL('../packages/db/schema/supabase/0423_publish_plan_comp_grant.sql', import.meta.url), 'utf8'))
         .replace(/^BEGIN;\n/m, '').replace(/^COMMIT;\n?$/m, '');
     await c.query(migration); await c.query(migration);
+    // 0423 re-applied its own function bodies; 0424 puts the lapse handling back on top of them.
+    const lapse = (await readFile(new URL('../packages/db/schema/supabase/0424_end_lapsed_publish_comps.sql', import.meta.url), 'utf8'))
+        .replace(/^BEGIN;\n/m, '').replace(/^COMMIT;\n?$/m, '');
+    await c.query(lapse); await c.query(lapse);
     const auth = randomUUID(), other = randomUUID();
     for (const id of [auth, other]) await c.query('INSERT INTO auth.users(id,email) VALUES($1,$2)', [id, `${id}@example.invalid`]);
     const grant = (id, plan, key, days, reason) => scalar('SELECT public.grant_social_publish_comp($1,$2,$3,$4,$5) AS r', [id, plan, key, days, reason]);
@@ -58,6 +62,24 @@ try {
     await c.query("UPDATE public.social_publish_subscriptions SET status='ended', ended_at=now(), end_reason='cancelled' WHERE id=$1", [second.subscription_id]);
     assert.equal((await grant(other, 'publish-weekly', 'qa.comp.key.1', 7, REASON)).ok, true);
     await c.query("UPDATE public.social_publish_subscriptions SET status='ended', ended_at=now(), end_reason='cancelled' WHERE user_id=(SELECT id FROM public.users WHERE auth_id=$1)", [other]);
+
+    // 0424: a lapsed comp no longer blocks a paid start or flags the paid event.
+    const lapsedUser = randomUUID();
+    await c.query('INSERT INTO auth.users(id,email) VALUES($1,$2)', [lapsedUser, `${lapsedUser}@example.invalid`]);
+    const lapsedComp = await grant(lapsedUser, 'publish-weekly', 'qa-comp-key-4', 7, REASON);
+    assert.equal(lapsedComp.ok, true);
+    const startPaid = key => scalar('SELECT public.start_social_publish_subscription($1,$2,$3,$4,$5,$6) AS r', [lapsedUser, 'publish-weekly', key, 'consent-v1', 10, 3600]);
+    assert.equal((await startPaid('qa-start-key-1')).code, 'SUBSCRIPTION_ALREADY_ACTIVE', 'a live comp still blocks a paid start');
+    await c.query("UPDATE public.social_publish_subscriptions SET current_period_end = now() - interval '1 minute' WHERE id = $1", [lapsedComp.subscription_id]);
+    const started = await startPaid('qa-start-key-1');
+    assert.equal(started.ok, true, 'a lapsed comp no longer blocks a paid start');
+    assert.equal(await scalar('SELECT status AS r FROM public.social_publish_subscriptions WHERE id=$1', [lapsedComp.subscription_id]), 'ended');
+    const activated = await scalar("SELECT public.apply_social_publish_subscription_event($1,$2,$3,$4,$5,$6,$7,$8,$9) AS r",
+        ['evt_qa_1', 'customer.subscription.updated', started.subscription_id, 'sub_qaone', 'cus_qaone', 'active', new Date(Date.now() + 7 * 864e5), false, new Date()]);
+    assert.equal(activated.status, 'active');
+    assert.equal(activated.flagged, false, 'the paid row is not flagged by a lapsed comp');
+    assert.equal((await entitlement(lapsedUser)).tier, 'publish');
+    assert.equal((await entitlement(lapsedUser)).subscription.complimentary, false, 'a paid plan is not complimentary');
 
     const otherUser = await scalar('SELECT id AS r FROM public.users WHERE auth_id=$1', [other]);
     await c.query('SELECT public.freeze_account($1,$2,NULL)', [otherUser, 'comp grant fixture']);

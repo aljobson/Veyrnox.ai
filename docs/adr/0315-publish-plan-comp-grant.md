@@ -21,3 +21,7 @@ A Publish Plan becomes active only from a Stripe payment event (`start_social_pu
 - A comp row stays `active` after it lapses, which blocks that account from starting a paid Publish Plan (`SUBSCRIPTION_ALREADY_ACTIVE`). End it by hand first; this is acceptable for a test account.
 - Revenue or subscriber counts that read `status = 'active'` or `price_usd_cents` will count a comp. Anything that reports on Publish subscriptions should exclude rows where `comp_reason IS NOT NULL`.
 - The RPC applies to production only through the owner-approved `apply-migrations` run; the single call is then made with the owner's approval in chat.
+
+## Amendment 1 (2026-11-01): a lapsed comp no longer blocks or flags a real subscription
+
+QA review found that the lapsed comp row stayed `active`, so a later Stripe start returned `SUBSCRIPTION_ALREADY_ACTIVE` and a later Stripe or store event stored the paid row as `flagged` (the store path after the store had charged). Migration 0424 adds `end_lapsed_social_publish_comps(user_id)`, which ends comp rows whose `current_period_end` has passed, and calls it first in `start_social_publish_subscription`, `apply_social_publish_subscription_event`, `apply_store_publish_event` and `grant_social_publish_comp`, inside the same transaction and under the same lock. A live (unexpired) comp still blocks. Not applied anywhere; no comp has been granted in production.
