@@ -79,3 +79,13 @@ test('comparison slugs: one canonical address per pair, same modality, prompt-on
     assert.deepEqual(comparisonSlugs(models), ['i1-vs-i2', 'v1-vs-v2']);
     assert.equal(comparisonSlugs(Array.from({ length: 9 }, (_, n) => gen(`m${n}`, 'text-to-video'))).length, 6);
 });
+
+test('every guide carries a valid update date and the schema helpers pass it on', async () => {
+    const { GUIDES } = await import('../app/veyrnox/_lib/guides.js');
+    for (const g of GUIDES) assert.match(g.updated, /^\d{4}-\d{2}-\d{2}$/, g.id);
+    const { howToLd, articleLd, itemListLd } = await import('../lib/jsonLd.js');
+    assert.equal(howToLd({ name: 'N', description: 'D', href: '/guides/x', steps: [], dateModified: '2026-11-01' }).dateModified, '2026-11-01');
+    assert.equal('dateModified' in articleLd({ name: 'N', description: 'D', href: '/guides/x' }), false);
+    const list = itemListLd([{ name: 'A', href: '/a' }, { name: 'B', href: '/b' }]);
+    assert.deepEqual([list.numberOfItems, list.itemListElement[1].position, list.itemListElement[1].url], [2, 2, 'https://veyrnox.ai/b']);
+});
