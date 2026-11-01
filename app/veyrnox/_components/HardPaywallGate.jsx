@@ -7,7 +7,8 @@ import LegalLink from '../../../components/LegalLink';
 import { getStoredUserId, onSessionChange, signOut } from '../../lib/authClient';
 import { gatewayFetch } from '../_lib/gateway';
 import { useLockWhileMounted } from '../_lib/hardPaywallLock';
-import { HARD_PAYWALL_STARTER_CREDITS, hardPaywallState, isHardPaywallExempt } from '../_lib/hardPaywall.mjs';
+import { HARD_PAYWALL_STARTER_CREDITS, hardPaywallState, hasIntroSteps, isHardPaywallExempt } from '../_lib/hardPaywall.mjs';
+import { PaywallStepHeader, initialStep, useTrialDays } from './HardPaywallSteps';
 import { Main } from './Main';
 import { CreditSubscriptions } from './CreditSubscriptions';
 import { DeleteAccountPanel } from './DeleteAccountPanel';
@@ -74,8 +75,13 @@ function Plans({ account: id, children }) {
 }
 
 function Checking() {
-  const { t } = useI18n();
   useLockWhileMounted();
+  return <CheckingText />;
+}
+
+// The loading content alone: Locked already owns the lock, and a second owner would release it on unmount.
+function CheckingText() {
+  const { t } = useI18n();
   return <Main className="grid min-h-dvh place-items-center px-4">
     <p role="status" aria-live="polite" className="text-vx-fg-muted">{t('app.hardPaywall.checking')}</p>
   </Main>;
@@ -85,20 +91,28 @@ function Locked({ unknown, onRetry }) {
   const { t } = useI18n();
   useLockWhileMounted();
   const [leaving, setLeaving] = useState(false);
+  const trialDays = useTrialDays();
+  const [step, setStep] = useState(initialStep);
   async function leave() {
     setLeaving(true);
     try { await signOut(); } finally { window.location.assign('/'); }
   }
+  // The server says whether a trial exists; until it answers, nothing about plans or a trial is shown.
+  if (!unknown && trialDays === undefined) return <CheckingText />;
+  const trial = !unknown && trialDays > 0;
   return <Main className="min-h-dvh py-10">
-    <div className="mx-auto max-w-[1200px] px-4 sm:px-8">
-      <h1 className="vx-display text-[32px] sm:text-[44px]">{t('app.hardPaywall.title')}</h1>
-      <p className="mt-3 max-w-2xl text-vx-fg-body">{t('app.hardPaywall.body', { count: HARD_PAYWALL_STARTER_CREDITS })}</p>
-      {unknown && <p role="alert" className="mt-4">
-        {t('app.hardPaywall.unavailable')}{' '}
-        <button type="button" className={link} onClick={onRetry}>{t('app.hardPaywall.retry')}</button>
-      </p>}
-    </div>
-    {!unknown && <CreditSubscriptions />}
+    {trial
+      ? <PaywallStepHeader step={step} days={trialDays} onNext={() => setStep((n) => n + 1)} onBack={() => setStep((n) => Math.max(1, n - 1))} />
+      : <div className="mx-auto max-w-[1200px] px-4 sm:px-8">
+        <h1 className="vx-display text-[32px] sm:text-[44px]">{t('app.hardPaywall.title')}</h1>
+        <p className="mt-3 max-w-2xl text-vx-fg-body">{t('app.hardPaywall.body', { count: HARD_PAYWALL_STARTER_CREDITS })}</p>
+        {unknown && <p role="alert" className="mt-4">
+          {t('app.hardPaywall.unavailable')}{' '}
+          <button type="button" className={link} onClick={onRetry}>{t('app.hardPaywall.retry')}</button>
+        </p>}
+      </div>}
+    {/* Kept mounted behind the introduction so checkout recovery and its retry survive Back and Continue. */}
+    {!unknown && <div hidden={hasIntroSteps(trialDays, step)}><CreditSubscriptions /></div>}
     <div className="mx-auto max-w-[1200px] px-4 sm:px-8">
       <nav aria-label={t('app.hardPaywall.links')} className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
         <LegalLink element="a" href="/legal/terms" className={link}>{t('label.Terms of Service')}</LegalLink>

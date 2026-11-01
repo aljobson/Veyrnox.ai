@@ -3,6 +3,10 @@
 // Keep equal to the sign-up grant (ADR-0013). The paywall quotes this fixed amount, never the balance.
 export const HARD_PAYWALL_STARTER_CREDITS = 10;
 
+// The three-step flow (ADR-0316): trial, reminder, plans.
+export { TRIAL_REMINDER_DAYS } from '../../../lib/subscriptions/trial.js';
+export const STEP_COUNT = 3;
+
 const LIVE_STATUSES = ['active', 'past_due'];
 
 /** A plan counts when its subscription is live. Pending, ended and flagged rows do not. */
@@ -26,3 +30,6 @@ export function hardPaywallState({ enabled, signedIn, generation, publish, faile
 const EXEMPT_PREFIXES = ['/app/admin'];
 export const isHardPaywallExempt = (pathname) =>
   typeof pathname === 'string' && EXEMPT_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+
+/** The introduction screens are shown only while the server offers a trial; with none the single plans screen stands. */
+export const hasIntroSteps = (trialDays, step) => Number.isSafeInteger(trialDays) && trialDays > 0 && step < STEP_COUNT;
