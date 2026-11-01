@@ -19,7 +19,14 @@ export function hardPaywallState({ enabled, paidAccess, accessResolved, billingS
     return 'locked';
 }
 
-// Store rules: the person can always read the terms and delete their account. First-run screens come before the paywall.
-const EXEMPT = ['/delete-account', '/welcome', '/start', '/analytics-consent'];
+// Store rules: the person can always read the terms and delete their account. First-run screens (welcome, then the Vibe check) come before the paywall.
+const EXEMPT = ['/delete-account', '/welcome', '/vibe', '/analytics-consent'];
 export const isHardPaywallExempt = (pathname: string | null | undefined): boolean =>
     !!pathname && (EXEMPT.includes(pathname) || pathname.startsWith('/legal/'));
+
+// Where the Welcome cards lead. Flag off: the Start screen, as before. Flag on: Welcome -> Vibe check -> paywall, so the
+// next stop is the Vibe check (or, if that is not switched on in this build, straight to the gated app).
+export function afterWelcomeHref(hard: boolean, vibeAvailable: boolean): '/start' | '/vibe?from=welcome' | '/' {
+    if (!hard) return '/start';
+    return vibeAvailable ? '/vibe?from=welcome' : '/';
+}

@@ -1,6 +1,8 @@
 import { rawText } from '../../lib/i18n/translate';
 import { captureEvent } from '../../lib/analytics/events';
 import { markWelcomeSeen } from '../../lib/markWelcomeSeen';
+import { afterWelcomeHref, hardPaywallEnabled } from '../../lib/hardPaywall';
+import { CREATOR_PROFILE_ENABLED } from '../../lib/creatorProfile';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -40,8 +42,8 @@ export default function Welcome() {
     async function done(action: 'next' | 'skip' = 'next') {
         captureEvent('onboarding_step', { step: 'welcome', action });
         await markWelcomeSeen();
-        // Start with the person's actual material. The optional preference quiz remains available from Account.
-        router.replace('/start');
+        // Start with the person's actual material; with the hard paywall on, Vibe check comes next, then the paywall.
+        router.replace(afterWelcomeHref(hardPaywallEnabled(), CREATOR_PROFILE_ENABLED));
     }
 
     return (

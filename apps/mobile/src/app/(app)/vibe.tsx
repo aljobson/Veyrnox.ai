@@ -51,7 +51,9 @@ export default function Vibe() {
     const owner = useSyncExternalStore(subscribeCacheUser, getCacheUser, getCacheUser);
     const opRef = useRef(0);
     const [identity, setIdentity] = useState({ owner, generation });
-    const { retake } = useLocalSearchParams<{ retake?: string }>();
+    const { retake, from } = useLocalSearchParams<{ retake?: string; from?: string }>();
+    // Arrived by replace from the first-run Welcome: there is nothing to go back to, so leave for the app (and the paywall).
+    const leave = () => { if (from === 'welcome') router.replace('/'); else router.back(); };
     // 0 = intro, 1..7 = questions, 8 = card, -1 = skipped.
     const [step, setStep] = useState(0);
     const [draft, setDraft] = useState<Draft>({ chaos: 2 });
@@ -104,13 +106,13 @@ export default function Vibe() {
         setSkipBusy(true);
         const existing = await loadVibe();
         if (!task.current() || op !== opRef.current) return;
-        if (existing) { setSkipBusy(false); router.back(); return; }
+        if (existing) { setSkipBusy(false); leave(); return; }
         const r = await recordVibeSkip(api, task);
         if (!task.current() || r.kind === 'stale-session') return;
         if (opRef.current !== op) return;
         setSkipBusy(false); setSaving(false);
         if (r.kind !== 'applied') return;
-        if (r.result === 'kept') router.back();
+        if (r.result === 'kept') leave();
         else setStep(-1);
     }
 
