@@ -20,6 +20,10 @@ test('Enter is left alone in a textarea, on a button, a checkbox or a select, an
   assert.equal(blocksImplicitSubmit(key('SELECT', 'select-one')), false);
   assert.equal(blocksImplicitSubmit({ ...key('INPUT', 'text'), key: 'a' }), false);
   assert.equal(blocksImplicitSubmit({ ...key('INPUT', 'text'), isComposing: true }), false);
+  // A React keyboard event carries the composition flag on nativeEvent, and some browsers report keyCode 229.
+  assert.equal(blocksImplicitSubmit({ ...key('INPUT', 'text'), nativeEvent: { isComposing: true } }), false);
+  assert.equal(blocksImplicitSubmit({ ...key('INPUT', 'text'), keyCode: 229 }), false);
+  assert.equal(blocksImplicitSubmit({ ...key('INPUT', 'text'), nativeEvent: { isComposing: false } }), true);
   assert.equal(blocksImplicitSubmit(null), false);
 });
 
