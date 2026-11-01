@@ -1,4 +1,4 @@
-import { afterWelcomeHref, freeTrialDays, hardPaywallEnabled, hardPaywallState, isHardPaywallExempt } from '../src/lib/hardPaywall';
+import { guardPaidAction, isPaidAction, setHardPaywallLocked, afterWelcomeHref, freeTrialDays, hardPaywallEnabled, hardPaywallState, isHardPaywallExempt } from '../src/lib/hardPaywall';
 
 describe('hard paywall (ADR-0108 amendment 2)', () => {
     const base = { enabled: true, paidAccess: false, accessResolved: true, billingStatus: 'ready' as const };
@@ -42,5 +42,20 @@ describe('hard paywall (ADR-0108 amendment 2)', () => {
         expect(freeTrialDays({ introPrice: { price: 1.99, periodUnit: 'DAY', periodNumberOfUnits: 7, cycles: 1 } })).toBeNull();
         expect(freeTrialDays({ introPrice: null })).toBeNull();
         expect(freeTrialDays(undefined)).toBeNull();
+    });
+    it('names the paid actions: create, chat message, editor export, montage; nothing that only reads', () => {
+        expect(isPaidAction('/api/v1/generations', 'POST')).toBe(true);
+        expect(isPaidAction('/api/v1/chat/threads/abc/messages', 'POST')).toBe(true);
+        expect(isPaidAction('/api/v1/editor/server-render', 'POST')).toBe(true);
+        expect(isPaidAction('/api/v1/montage/x', 'POST')).toBe(true);
+        for (const [p, m] of [['/api/v1/generations', 'GET'], ['/api/v1/balance', 'GET'], ['/api/v1/chat/threads', 'POST'], ['/api/v1/account', 'DELETE'], ['/api/v1/jobs/1', 'POST']] as const) expect(isPaidAction(p, m)).toBe(false);
+    });
+    it('blocks a paid action only while locked, with a typed error', () => {
+        setHardPaywallLocked(false);
+        expect(() => guardPaidAction('/api/v1/generations', 'POST')).not.toThrow();
+        setHardPaywallLocked(true);
+        expect(() => guardPaidAction('/api/v1/generations', 'POST')).toThrow(expect.objectContaining({ status: 402, code: 'subscription_required' }));
+        expect(() => guardPaidAction('/api/v1/balance', 'GET')).not.toThrow();
+        setHardPaywallLocked(false);
     });
 });

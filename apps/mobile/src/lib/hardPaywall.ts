@@ -1,3 +1,4 @@
+import { ApiError } from './api';
 import type { BillingStatus } from '../billing/BillingProvider';
 
 // Hard paywall (ADR-0108 amendment 2): signed in without a paid plan means the paywall and nothing else.
@@ -42,4 +43,32 @@ export function freeTrialDays(product: { introPrice?: { price?: number | null; p
     if (!intro || intro.price !== 0 || !intro.periodNumberOfUnits || (intro.cycles ?? 1) !== 1) return null;
     const unit = { DAY: 1, WEEK: 7, MONTH: 30, YEAR: 365 }[String(intro.periodUnit)];
     return unit ? unit * intro.periodNumberOfUnits : null;
+}
+
+// ---- Paid actions (owner, 2026-11-01): people can look around the app and the paywall can be dismissed, but nothing that
+// costs credits runs until they subscribe. The check sits in the API client's beforeSend, so every create, chat, editor
+// export and montage path goes through it. It is an app-side guard (see ADR-0108 amendment 2, "Limits").
+const PAID_ACTIONS: readonly RegExp[] = [
+    /^\/api\/v1\/generations\/?$/,
+    /^\/api\/v1\/chat\/threads\/[^/]+\/messages\/?$/,
+    /^\/api\/v1\/editor\/server-render\/?$/,
+    /^\/api\/v1\/montage(\/|$)/,
+];
+export const isPaidAction = (path: string, method: string): boolean => {
+    if (method.toUpperCase() !== 'POST') return false;
+    const clean = path.split('?')[0];
+    return PAID_ACTIONS.some(pattern => pattern.test(clean));
+};
+
+let locked = false;
+const attempts = new Set<() => void>();
+export const setHardPaywallLocked = (value: boolean): void => { locked = value; };
+export const isHardPaywallLocked = (): boolean => locked;
+export const onLockedAttempt = (fn: () => void): (() => void) => { attempts.add(fn); return () => { attempts.delete(fn); }; };
+
+// Throws the typed error the screens turn into a message; the gate listens and opens the paywall again.
+export function guardPaidAction(path: string, method: string): void {
+    if (!locked || !isPaidAction(path, method)) return;
+    attempts.forEach(fn => fn());
+    throw new ApiError(402, 'subscription_required');
 }

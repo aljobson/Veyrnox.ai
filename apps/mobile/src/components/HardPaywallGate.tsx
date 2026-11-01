@@ -1,13 +1,13 @@
 import { usePathname, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { ActivityIndicator, Platform, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Modal, Platform, ScrollView, View } from 'react-native';
 import { useAuth } from '../auth/AuthProvider';
 import { useBilling } from '../billing/BillingProvider';
 import { useStorePurchase } from '../billing/useStorePurchase';
 import { LEGAL_LINKS } from '../lib/account';
 import { confirmSignOut } from '../lib/confirmSignOut';
 import { parseGenerationCatalog, renewalTerms, toDisplayPackages, type GenerationCatalogPlan } from '../lib/billing';
-import { HARD_PAYWALL_STARTER_CREDITS, freeTrialDays, hardPaywallEnabled, hardPaywallState, isHardPaywallExempt } from '../lib/hardPaywall';
+import { HARD_PAYWALL_STARTER_CREDITS, freeTrialDays, hardPaywallEnabled, hardPaywallState, isHardPaywallExempt, onLockedAttempt, setHardPaywallLocked } from '../lib/hardPaywall';
 import { t } from '../lib/i18n';
 import { Button, Text, themedStyles, useThemedStyles } from './ui';
 import { PlanCards, initialCadence, type Cadence } from './credits/PlanCards';
@@ -15,16 +15,24 @@ import { VeyCharacter } from './VeyCharacter';
 
 const ENABLED = hardPaywallEnabled();
 
-// ADR-0108 amendment 2: with the flag on, a signed-in person with no paid plan sees this and nothing else.
+// ADR-0108 amendment 2: with the flag on, a signed-in person with no paid plan lands in the app and is shown this paywall,
+// which they can close. Nothing that costs credits runs until they subscribe (guardPaidAction in the API client); trying
+// one brings the paywall back.
 export function HardPaywallGate({ children }: { children: ReactNode }) {
     const billing = useBilling();
     const pathname = usePathname();
+    const [dismissed, setDismissed] = useState(false);
     const state = hardPaywallState({ enabled: ENABLED, paidAccess: billing.paidAccess, accessResolved: billing.accessResolved, billingStatus: billing.status });
-    if (state === 'open' || isHardPaywallExempt(pathname)) return <>{children}</>;
-    return <LockedScreen checking={state === 'checking'} />;
+    useEffect(() => { setHardPaywallLocked(state !== 'open'); return () => setHardPaywallLocked(false); }, [state]);
+    useEffect(() => onLockedAttempt(() => setDismissed(false)), []);
+    const show = state === 'locked' && !dismissed && !isHardPaywallExempt(pathname);
+    return <>
+        {children}
+        {show ? <Modal animationType="slide" onRequestClose={() => setDismissed(true)}><LockedScreen checking={false} onClose={() => setDismissed(true)} /></Modal> : null}
+    </>;
 }
 
-function LockedScreen({ checking }: { checking: boolean }) {
+function LockedScreen({ checking, onClose }: { checking: boolean; onClose: () => void }) {
     const s = useThemedStyles(styles);
     const { api, signOut } = useAuth();
     const router = useRouter();
@@ -57,6 +65,7 @@ function LockedScreen({ checking }: { checking: boolean }) {
         if (canBuy && pkg) purchase.start({ kind: 'plan', pkg });
     }
     return <ScrollView style={s.screen} contentContainerStyle={s.content} testID="hard-paywall">
+        <Button variant="tertiary" label={t('credits.paywall.later')} onPress={onClose} />
         <View style={s.vey}><VeyCharacter width={120} interactive mood="wave" /></View>
         <Text variant="title1" accessibilityRole="header">{t('credits.hardPaywall.title')}</Text>
         <Text tone="secondary">{t('credits.hardPaywall.bodyFree', { count: HARD_PAYWALL_STARTER_CREDITS })}</Text>

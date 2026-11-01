@@ -1,3 +1,4 @@
+import { guardPaidAction } from '../lib/hardPaywall';
 import { clearAllVibes } from '../lib/creatorProfileStore';
 import { tokenUser, isAccountChanged } from '../lib/auth/tokenUser';
 import type { TokenSource } from '../lib/auth/accountCalls';
@@ -259,7 +260,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 getAccessToken: apiTokenSource(getAccessToken, () => transientFailure.current),
                 onSessionLost,
                 streamFetch: expoFetch as unknown as typeof fetch,
-                beforeSend: aiConsent.ensure,
+                beforeSend: async (path, method) => { guardPaidAction(path, method); await aiConsent.ensure(path, method); },
             }),
         [getAccessToken, onSessionLost, beginSessionTask],
     );
