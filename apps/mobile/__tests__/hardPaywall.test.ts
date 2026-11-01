@@ -1,4 +1,4 @@
-import { afterWelcomeHref, hardPaywallEnabled, hardPaywallState, isHardPaywallExempt } from '../src/lib/hardPaywall';
+import { afterWelcomeHref, freeTrialDays, hardPaywallEnabled, hardPaywallState, isHardPaywallExempt } from '../src/lib/hardPaywall';
 
 describe('hard paywall (ADR-0108 amendment 2)', () => {
     const base = { enabled: true, paidAccess: false, accessResolved: true, billingStatus: 'ready' as const };
@@ -35,5 +35,12 @@ describe('hard paywall (ADR-0108 amendment 2)', () => {
         expect(afterWelcomeHref(false, false)).toBe('/start');
         expect(afterWelcomeHref(true, true)).toBe('/vibe?from=welcome');
         expect(afterWelcomeHref(true, false)).toBe('/');
+    });
+    it('reads a free trial from the store product only', () => {
+        expect(freeTrialDays({ introPrice: { price: 0, periodUnit: 'DAY', periodNumberOfUnits: 7, cycles: 1 } })).toBe(7);
+        expect(freeTrialDays({ introPrice: { price: 0, periodUnit: 'WEEK', periodNumberOfUnits: 1, cycles: 1 } })).toBe(7);
+        expect(freeTrialDays({ introPrice: { price: 1.99, periodUnit: 'DAY', periodNumberOfUnits: 7, cycles: 1 } })).toBeNull();
+        expect(freeTrialDays({ introPrice: null })).toBeNull();
+        expect(freeTrialDays(undefined)).toBeNull();
     });
 });

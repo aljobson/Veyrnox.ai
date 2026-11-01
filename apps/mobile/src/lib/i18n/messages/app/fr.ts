@@ -5755,4 +5755,6 @@ export default {
   "credits.hardPaywall.unavailable": "Les abonnements ne sont pas disponibles pour le moment. Vérifiez votre connexion et réessayez, ou restaurez un achat précédent.",
   "credits.hardPaywall.retry": "Réessayer",
   "credits.hardPaywall.deleteAccount": "Supprimer le compte",
+  "credits.hardPaywall.trialCta": "Commencer l'essai gratuit",
+  "credits.hardPaywall.trialTerms": "Gratuit pendant {days} jours, puis {price} par {period}. Annulez avant la fin de l'essai pour ne pas être facturé.",
 } as const;

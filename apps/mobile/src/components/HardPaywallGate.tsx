@@ -7,7 +7,7 @@ import { useStorePurchase } from '../billing/useStorePurchase';
 import { LEGAL_LINKS } from '../lib/account';
 import { confirmSignOut } from '../lib/confirmSignOut';
 import { parseGenerationCatalog, renewalTerms, toDisplayPackages, type GenerationCatalogPlan } from '../lib/billing';
-import { HARD_PAYWALL_STARTER_CREDITS, hardPaywallEnabled, hardPaywallState, isHardPaywallExempt } from '../lib/hardPaywall';
+import { HARD_PAYWALL_STARTER_CREDITS, freeTrialDays, hardPaywallEnabled, hardPaywallState, isHardPaywallExempt } from '../lib/hardPaywall';
 import { t } from '../lib/i18n';
 import { Button, Text, themedStyles, useThemedStyles } from './ui';
 import { PlanCards, initialCadence, type Cadence } from './credits/PlanCards';
@@ -45,6 +45,8 @@ function LockedScreen({ checking }: { checking: boolean }) {
     const chosen = plans.find(plan => plan.id === chosenId && plan.interval === cadence)
         ?? plans.find(plan => plan.generationPlan === 'starter' && plan.interval === cadence)
         ?? plans.find(plan => plan.interval === cadence) ?? null;
+    const chosenPackage = packages.find(item => item.identifier === chosen?.id);
+    const trialDays = freeTrialDays(chosenPackage?.product as Parameters<typeof freeTrialDays>[0]);
     const noPlans = !checking && plans.length === 0;
     const canBuy = billing.canPurchase && billing.generationPurchaseReady && !!chosen && !purchase.busy;
     const message = purchase.operation.outcome?.kind === 'error' ? t('credits.error')
@@ -69,7 +71,8 @@ function LockedScreen({ checking }: { checking: boolean }) {
                 onCadence={next => { setCadence(next); setChosenId(null); }} onChoose={setChosenId} />
             {chosen?.interval ? <Text variant="caption" tone="tertiary" accessibilityLanguage="en">{renewalTerms(chosen.interval, chosen.priceString, Platform.OS === 'ios' ? 'ios' : 'android')}</Text> : null}
             {!billing.canPurchase ? <Text variant="footnote" tone="secondary">{t('credits.notOpen')}</Text> : null}
-            <Button label={chosen ? t('credits.paywall.buyPlan', { plan: chosen.generationPlan ?? '', price: chosen.priceString, period: t(chosen.interval === 'year' ? 'credits.paywall.year' : 'credits.paywall.month') }) : ''}
+            {chosen?.interval && trialDays ? <Text variant="caption" tone="tertiary">{t('credits.hardPaywall.trialTerms', { days: trialDays, price: chosen.priceString, period: t(chosen.interval === 'year' ? 'credits.paywall.year' : 'credits.paywall.month') })}</Text> : null}
+            <Button label={chosen && trialDays ? t('credits.hardPaywall.trialCta') : chosen ? t('credits.paywall.buyPlan', { plan: chosen.generationPlan ?? '', price: chosen.priceString, period: t(chosen.interval === 'year' ? 'credits.paywall.year' : 'credits.paywall.month') }) : ''}
                 disabled={!canBuy} onPress={buy} />
         </> : null}
         {message ? <Text tone="secondary">{message}</Text> : null}

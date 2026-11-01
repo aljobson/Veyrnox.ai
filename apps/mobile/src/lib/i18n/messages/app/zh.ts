@@ -5623,4 +5623,6 @@ export default {
   "credits.hardPaywall.unavailable": "目前无法使用订阅方案。请检查网络后重试，或恢复之前的购买。",
   "credits.hardPaywall.retry": "重试",
   "credits.hardPaywall.deleteAccount": "删除账户",
+  "credits.hardPaywall.trialCta": "开始免费试用",
+  "credits.hardPaywall.trialTerms": "免费 {days} 天，之后每{period} {price}。试用结束前取消即不会扣费。",
 } as const;

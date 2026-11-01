@@ -3258,6 +3258,12 @@
     "ratio": 2
   },
   {
+    "id": "credits.hardPaywall.trialCta",
+    "english": "Start free trial",
+    "translation": "Начать бесплатный пробный период",
+    "ratio": 2
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

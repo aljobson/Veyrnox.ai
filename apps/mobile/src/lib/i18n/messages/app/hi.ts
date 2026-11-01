@@ -5689,4 +5689,6 @@ export default {
   "credits.hardPaywall.unavailable": "प्लान अभी उपलब्ध नहीं हैं। अपना कनेक्शन जाँचकर फिर कोशिश करें, या पिछली खरीदारी बहाल करें।",
   "credits.hardPaywall.retry": "फिर कोशिश करें",
   "credits.hardPaywall.deleteAccount": "खाता हटाएँ",
+  "credits.hardPaywall.trialCta": "मुफ़्त ट्रायल शुरू करें",
+  "credits.hardPaywall.trialTerms": "{days} दिन मुफ़्त, फिर हर {period} {price}। शुल्क से बचने के लिए ट्रायल खत्म होने से पहले रद्द करें।",
 } as const;

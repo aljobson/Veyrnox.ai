@@ -5689,4 +5689,6 @@ export default {
   "credits.hardPaywall.unavailable": "Abos sind gerade nicht verfügbar. Prüfe deine Verbindung und versuche es erneut oder stelle einen früheren Kauf wieder her.",
   "credits.hardPaywall.retry": "Erneut versuchen",
   "credits.hardPaywall.deleteAccount": "Konto löschen",
+  "credits.hardPaywall.trialCta": "Gratis-Test starten",
+  "credits.hardPaywall.trialTerms": "{days} Tage gratis, danach {price} pro {period}. Kündige vor Ende der Testphase, um nicht belastet zu werden.",
 } as const;

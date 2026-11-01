@@ -34,3 +34,12 @@ export function afterWelcomeHref(hard: boolean, vibeAvailable: boolean): '/start
 // The first credits arrive when the person subscribes (owner, 2026-11-01), so the paywall quotes this fixed amount and
 // never the account balance. Keep it equal to the sign-up grant (ADR-0013).
 export const HARD_PAYWALL_STARTER_CREDITS = 10;
+
+// Days of free trial a store product offers as an introductory price of zero, or null. Read from the store's own data, so
+// the paywall promises a trial only when the product in App Store Connect / Play really has one.
+export function freeTrialDays(product: { introPrice?: { price?: number | null; periodUnit?: string | null; periodNumberOfUnits?: number | null; cycles?: number | null } | null } | null | undefined): number | null {
+    const intro = product?.introPrice;
+    if (!intro || intro.price !== 0 || !intro.periodNumberOfUnits || (intro.cycles ?? 1) !== 1) return null;
+    const unit = { DAY: 1, WEEK: 7, MONTH: 30, YEAR: 365 }[String(intro.periodUnit)];
+    return unit ? unit * intro.periodNumberOfUnits : null;
+}

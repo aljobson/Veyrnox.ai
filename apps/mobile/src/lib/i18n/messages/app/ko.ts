@@ -5623,4 +5623,6 @@ export default {
   "credits.hardPaywall.unavailable": "지금은 플랜을 사용할 수 없어요. 연결을 확인하고 다시 시도하거나 이전 구매를 복원하세요.",
   "credits.hardPaywall.retry": "다시 시도",
   "credits.hardPaywall.deleteAccount": "계정 삭제",
+  "credits.hardPaywall.trialCta": "무료 체험 시작",
+  "credits.hardPaywall.trialTerms": "{days}일 무료, 이후 {period}당 {price}. 체험이 끝나기 전에 취소하면 요금이 청구되지 않아요.",
 } as const;

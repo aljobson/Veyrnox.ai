@@ -5953,4 +5953,6 @@ export default {
   "credits.hardPaywall.unavailable": "الخطط غير متاحة حاليًا. تحقق من اتصالك وأعد المحاولة، أو استعد عملية شراء سابقة.",
   "credits.hardPaywall.retry": "إعادة المحاولة",
   "credits.hardPaywall.deleteAccount": "حذف الحساب",
+  "credits.hardPaywall.trialCta": "ابدأ التجربة المجانية",
+  "credits.hardPaywall.trialTerms": "مجانًا لمدة {days} يومًا، ثم {price} لكل {period}. ألغِ قبل انتهاء التجربة لتجنّب الخصم.",
 } as const;

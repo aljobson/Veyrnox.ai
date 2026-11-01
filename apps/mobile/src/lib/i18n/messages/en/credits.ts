@@ -64,6 +64,8 @@ export default {
     'credits.hardPaywall.body': 'Pick a plan to unlock your free credits and start creating.',
     'credits.hardPaywall.checking': 'Checking your plan…',
     'credits.hardPaywall.unavailable': 'Plans are not available right now. Check your connection and try again, or restore a previous purchase.',
+    'credits.hardPaywall.trialCta': 'Start free trial',
+    'credits.hardPaywall.trialTerms': 'Free for {days} days, then {price} per {period}. Cancel before the trial ends to avoid being charged.',
     'credits.hardPaywall.retry': 'Try again',
     'credits.hardPaywall.deleteAccount': 'Delete account',
 } as const;

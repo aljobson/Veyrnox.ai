@@ -5755,4 +5755,6 @@ export default {
   "credits.hardPaywall.unavailable": "Los planes no están disponibles ahora. Revisa tu conexión e inténtalo de nuevo, o restaura una compra anterior.",
   "credits.hardPaywall.retry": "Reintentar",
   "credits.hardPaywall.deleteAccount": "Eliminar cuenta",
+  "credits.hardPaywall.trialCta": "Empezar prueba gratis",
+  "credits.hardPaywall.trialTerms": "Gratis durante {days} días, luego {price} por {period}. Cancela antes de que termine la prueba para evitar el cobro.",
 } as const;

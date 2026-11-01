@@ -5821,4 +5821,6 @@ export default {
   "credits.hardPaywall.unavailable": "Планы сейчас недоступны. Проверьте подключение и повторите попытку или восстановите прошлую покупку.",
   "credits.hardPaywall.retry": "Повторить",
   "credits.hardPaywall.deleteAccount": "Удалить аккаунт",
+  "credits.hardPaywall.trialCta": "Начать бесплатный пробный период",
+  "credits.hardPaywall.trialTerms": "Бесплатно {days} дн., затем {price} за {period}. Отмените до конца пробного периода, чтобы с вас не списали оплату.",
 } as const;
