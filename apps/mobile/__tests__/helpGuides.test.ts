@@ -21,7 +21,7 @@ describe('generated guide content stays identical to the web source', () => {
             id: g.id, title: say(g.title), summary: say(g.summary),
             steps: g.steps.map(s => ({ title: say(s.title), body: say(s.body) })),
             links: g.links.map(l => ({ label: say(l.label), href: l.href })),
-        }))).toEqual(web);
+        }))).toEqual(web.map(({ answer: _answer, ...guide }: { answer?: string }) => guide)); // `answer` is the web-only FAQ text for search engines
     });
 
     test('the generator is reproducible, including the English area', () => {
