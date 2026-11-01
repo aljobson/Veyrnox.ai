@@ -275,6 +275,9 @@ export default function CreateStudio() {
   const media = model?.media || {};
   const animationMismatch = !!animationPortrait && (model?.kind !== 'video' || !media.image?.required);
   const { missingSource, needsReattach, overLimit, hasSource: hasUpload } = generationSourceState(media, sources);
+  // Only pictures this model actually takes count: a video-only attachment, or a picture kept from another model, never reaches the provider.
+  const templateImageCount = activeTemplate ? Object.entries(media).filter(([, spec]) => spec?.kind === 'image').reduce((sum, [slot]) => sum + sourceList(sources[slot]).length, 0) : 0;
+  const templateImageRequired = Object.values(media).some(spec => spec?.kind === 'image' && spec.required);
   const missingConsent = hasUpload && !consent;
   const missingVoice = voiceIsMissing(model, voice);
   const missingPrompt = promptIsMissing(model, prompt);
@@ -694,15 +697,22 @@ export default function CreateStudio() {
             canChooseSource={Boolean(activeTemplate.needs && Object.keys(media).length)}
             onChooseSource={() => setAddFilesOpen(true)}
           />}
+          {templateImageCount > 0 && (
+            <p role="status" data-testid="template-reference-overrides" className="mt-3 rounded-xl border border-vx-accent/30 bg-vx-panel p-3 text-xs text-vx-fg-body">
+              {t(templateImageRequired ? 'app.create.templateReferenceRequired' : 'app.create.templateReferenceOverrides')}</p>
+          )}
           {model?.takesVoice && <VoiceDescription value={voice} onChange={setVoice} />}
 
           {animationPortrait && <div role="status" className="mt-4 rounded-xl border border-vx-accent/30 bg-vx-panel p-4 text-sm text-vx-fg-body">{portraitStatus}{animationMismatch && <p className="mt-2 text-vx-danger">{t("app.create.animationModel")}</p>}</div>}
           {(
             <div className="mt-3 flex flex-wrap items-center gap-3">
-              <button type="button" data-testid="create-add-files" disabled={attachConverting || sourcesConverting} onClick={() => setAddFilesOpen(true)}
-                className="font-vx-mono text-[11px] font-bold rounded-full px-3.5 py-1.5 border border-vx-border text-vx-fg-muted hover:text-vx-fg disabled:opacity-50">
-                {t('app.create.addFiles.button')}</button>
-              <span className="text-xs text-vx-fg-muted">{t('app.create.attach.hint')}</span>
+              {/* A template on a text-only model cannot use a picture (it would not reach the provider), so offer no slot for one. */}
+              {!(activeTemplate && Object.keys(media).length === 0) && <>
+                <button type="button" data-testid="create-add-files" disabled={attachConverting || sourcesConverting} onClick={() => setAddFilesOpen(true)}
+                  className="font-vx-mono text-[11px] font-bold rounded-full px-3.5 py-1.5 border border-vx-border text-vx-fg-muted hover:text-vx-fg disabled:opacity-50">
+                  {t('app.create.addFiles.button')}</button>
+                <span className="text-xs text-vx-fg-muted">{t('app.create.attach.hint')}</span>
+              </>}
               <button type="button" data-testid="create-open-templates" disabled={attachConverting || sourcesConverting} onClick={() => setTemplatesOpen(true)}
                 className="ms-auto shrink-0 rounded-full border border-vx-accent/50 px-3.5 py-1.5 font-vx-mono text-[11px] font-bold text-vx-accent hover:bg-vx-accent/10 disabled:opacity-50">
                 {t('app.create.templates.open')}</button>
