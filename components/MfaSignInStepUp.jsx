@@ -7,6 +7,9 @@ import { tOr } from '../lib/i18n/translate.mjs';
 import { clearSession, getAal, getStoredUserId, listFactors, onSessionChange, signOut, verifyFactor } from '../app/lib/authClient.js';
 import { needsStepUp, pickFactorId, isLockedOut } from '../app/lib/mfaStepUp.js';
 
+import { consumeRecoveryCode } from '../app/lib/mfaRecoveryClient.js';
+import { RECOVERY_CODE_RE } from '../lib/mfaRecovery.js';
+
 const CODE_RE = /^[0-9]{6}$/;
 const FOCUS_RING = 'focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent';
 
@@ -16,6 +19,10 @@ export default function MfaSignInStepUp() {
   const isCallback = pathname?.replace(/\/$/, '') === '/auth/callback';
   const [challengeActive, setChallengeActive] = useState(false);
   const [factorId, setFactorId] = useState(null);
+  const [recovery, setRecovery] = useState(false);
+  const [recoveredUser, setRecoveredUser] = useState(null);
+  const [completedRefresh, setCompletedRefresh] = useState(false);
+  const completedUser = useRef(null);
   const [code, setCode] = useState('');
   const [attempts, setAttempts] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -47,6 +54,13 @@ export default function MfaSignInStepUp() {
     async function evaluate() {
       const aal = getAal();
       const uid = getStoredUserId();
+      // Completed recovery belongs to this sign-in, including token refreshes.
+      if (aal !== null && completedUser.current === uid && uid) return;
+      if (completedUser.current !== null) {
+        completedUser.current = null;
+        setRecoveredUser(null);
+        setCompletedRefresh(false);
+      }
       if (aal === null) cancelling.current = false;
       // Same active aal1 challenge for the same account: leave it alone. onSessionChange
       // also fires for token refresh (authClient setSession at broadcast:false) and cross-tab
@@ -64,6 +78,7 @@ export default function MfaSignInStepUp() {
         ++challengeId.current;
         challengedUser.current = getStoredUserId();
         setFactorId(pickFactorId(factors));
+        setRecovery(false);
         setCode('');
         setAttempts(0);
         setError(null);
@@ -130,10 +145,36 @@ export default function MfaSignInStepUp() {
     else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
   }
 
+  // Explicit recovery completion bypasses evaluate's same-account aal1 short circuit.
+  async function completeRecovery(cid, uid) {
+    const ownsPrompt = () => cid === challengeId.current && activeRef.current &&
+      !cancelling.current && challengedUser.current === uid && getStoredUserId() === uid;
+    if (!ownsPrompt()) return false;
+    let factors, refreshNeeded = false;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try { factors = await listFactors(); break; }
+      catch {
+        if (!ownsPrompt()) return false;
+        if (attempt === 1) refreshNeeded = true;
+      }
+    }
+    if (!ownsPrompt()) return false;
+    if (!refreshNeeded && needsStepUp('aal1', factors)) throw { code: 'recovery_stale' };
+    // The server already consumed the code and removed its factors. A failed read
+    // must not offer another redemption of that code. Server enforcement still holds.
+    completedUser.current = uid;
+    setCompletedRefresh(refreshNeeded);
+    ++gen.current; ++challengeId.current;
+    activeRef.current = false; inFlight.current = false;
+    setChallengeActive(false); setCode(''); setBusy(false); setRecoveredUser(uid);
+    return true;
+  }
+
   async function submit(event) {
     event.preventDefault();
-    if (!challengeActive || inFlight.current || locked || !CODE_RE.test(code)) return;
+    if (!challengeActive || inFlight.current || locked || !(recovery ? RECOVERY_CODE_RE : CODE_RE).test(code)) return;
     const cid = challengeId.current;
+    const uid = challengedUser.current;
     inFlight.current = true;
     setBusy(true);
     setError(null);
@@ -141,21 +182,31 @@ export default function MfaSignInStepUp() {
     try {
       // Adoption synchronously notifies the observer before this resolves.
       // Never apply the lookup's gen/aal1 guard to a successful verification.
-      if (await verifyFactor(factorId, code) === 'aal2') return;
+      if (recovery) {
+        const result = await consumeRecoveryCode(code);
+        if (result.stale) throw { code: 'recovery_stale' };
+        if (result.recovered) { await completeRecovery(cid, uid); return; }
+      } else if (await verifyFactor(factorId, code) === 'aal2') return;
     } catch (err) {
       // GoTrue puts the machine code in error_code on some endpoints and in error on
       // others; authClient carries both. Prefer error_code, fall back to a generic message.
       failureCode = err?.errorCode ?? err?.code;
     }
-    if (cid !== challengeId.current) return;
-    setError(tOr(t, 'authGate.mfa.error.' + failureCode, t('authGate.mfa.failed')));
+    if (cid !== challengeId.current || uid !== getStoredUserId()) return;
+    setError(tOr(t, (recovery ? 'authGate.mfa.recovery.error.' : 'authGate.mfa.error.') + failureCode, t(recovery ? 'authGate.mfa.recovery.failed' : 'authGate.mfa.failed')));
     setCode('');
-    setAttempts(n => n + 1);
+    setAttempts(n => failureCode === 'recovery_rate_limited' ? 5 : n + 1);
     inFlight.current = false;
     setBusy(false);
   }
 
-  if (!challengeActive || isCallback) return null;
+  if (isCallback) return null;
+  if (!challengeActive) return recoveredUser && recoveredUser === getStoredUserId() ? (
+    <div role="status" className="fixed bottom-4 inset-x-4 z-50 rounded-2xl border border-vx-border bg-vx-panel p-4 text-sm text-vx-fg">
+      <a href="/app/account" className={`inline-flex min-h-11 items-center text-vx-accent underline ${FOCUS_RING}`}>{t(completedRefresh ? 'authGate.mfa.recovery.completedRefresh' : 'authGate.mfa.recovery.success')}</a>
+      <button type="button" className={`min-h-11 px-3 ${FOCUS_RING}`} onClick={() => setRecoveredUser(null)}>{t('authGate.close')}</button>
+    </div>
+  ) : null;
   return (
     <div role="dialog" aria-modal="true" aria-label={t('authGate.mfa.title')}
       ref={panelRef} onKeyDown={onKeyDown} dir={locale === 'ar' ? 'rtl' : 'ltr'}
@@ -168,16 +219,16 @@ export default function MfaSignInStepUp() {
             <svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2"><path d="m5 5 10 10M15 5 5 15" /></svg>
           </button>
         </div>
-        <p className="mt-2 text-sm text-vx-fg-muted">{t('authGate.mfa.body')}</p>
+        <p className="mt-2 text-sm text-vx-fg-muted">{t(recovery ? 'authGate.mfa.recovery.body' : 'authGate.mfa.body')}</p>
         <form onSubmit={submit} className="mt-4 space-y-4">
-          <input ref={inputRef} inputMode="numeric" autoComplete="one-time-code" maxLength={6}
-            aria-label={t('authGate.mfa.codeLabel')} value={code} disabled={locked} dir="ltr"
+          <input ref={inputRef} inputMode={recovery ? "text" : "numeric"} autoComplete="one-time-code" maxLength={recovery ? 11 : 6}
+            aria-label={t(recovery ? 'authGate.mfa.recovery.codeLabel' : 'authGate.mfa.codeLabel')} value={code} disabled={locked} dir="ltr"
             onChange={event => setCode(event.target.value.trim())}
             className={`min-h-11 w-full rounded-xl border border-vx-border bg-vx-panel px-3 py-2 text-base text-vx-fg disabled:opacity-60 ${FOCUS_RING}`} />
           {locked ? <p role="alert" className="text-sm text-vx-danger">{t('authGate.mfa.tooMany')}</p>
             : error && <p role="alert" className="text-sm text-vx-danger">{error}</p>}
           <div role="status" aria-live="polite" className="sr-only">{busy ? t('authGate.working') : null}</div>
-          <button type="submit" disabled={busy || locked || !CODE_RE.test(code)}
+          <button type="submit" disabled={busy || locked || !(recovery ? RECOVERY_CODE_RE : CODE_RE).test(code)}
             className={`min-h-13 w-full rounded-xl bg-vx-accent px-4 py-3 text-sm font-semibold text-vx-accent-ink hover:bg-vx-accent-hover disabled:opacity-60 ${FOCUS_RING}`}>
             {busy ? t('authGate.working') : t('authGate.mfa.verify')}
           </button>
@@ -185,6 +236,10 @@ export default function MfaSignInStepUp() {
         <button type="button" ref={cancelRef} onClick={cancel}
           className={`mt-2 min-h-11 w-full rounded-xl px-3 py-2 text-sm text-vx-fg-muted underline hover:text-vx-fg ${FOCUS_RING}`}>
           {t('authGate.mfa.cancel')}
+        </button>
+        <button type="button" disabled={busy || locked} onClick={() => { setRecovery(value => !value); setCode(''); setError(null); inputRef.current?.focus(); }}
+          className={`mt-4 min-h-11 w-full rounded-xl px-3 py-2 text-sm text-vx-accent underline disabled:opacity-60 ${FOCUS_RING}`}>
+          {t(recovery ? 'authGate.mfa.recovery.useAuthenticator' : 'authGate.mfa.recovery.useCode')}
         </button>
         <p className="mt-4 break-words text-sm text-vx-fg-muted">{t('authGate.mfa.lostAccess')}</p>
       </div>

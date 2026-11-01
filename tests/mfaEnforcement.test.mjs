@@ -123,3 +123,12 @@ test('the answer is cached briefly per account, and a malformed answer is not tr
     _resetMfaEnrolmentCache();
     await assert.rejects(accountMfaEnrolled(SUB, cfg, { call: async () => ({ ok: true }) }));
 });
+
+test('only recovery consumption is an aal1 exception, never generation or status', async () => {
+    assert.equal(passed(await call('/api/v1/mfa/recovery', { method: 'POST' })), true);
+    for (const [method, path] of [['GET', '/api/v1/mfa/recovery'], ['DELETE', '/api/v1/mfa/recovery'],
+        ['POST', '/api/v1/mfa/recovery/codes'], ['GET', '/api/v1/mfa/recovery/codes']]) {
+        assert.equal(allowedAtAal1(method, path), false);
+        await refused(await call(path, { method }), 403, 'mfa_required');
+    }
+});

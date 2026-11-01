@@ -16,16 +16,22 @@ import { useI18n } from '../../../components/I18nProvider';
  * and raw secret as text fallbacks.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import {
-  getAal, getMfaFreshUntil, onSessionChange, listFactors, enrollTotp, verifyFactor, unenrollFactor,
+  getAal, getStoredUserId, getMfaFreshUntil, onSessionChange, listFactors, enrollTotp, verifyFactor, unenrollFactor,
 } from '../../lib/authClient.js';
+
+import RecoveryCodesPanel from './RecoveryCodesPanel.js';
+import { generateRecoveryCodes } from '../../lib/mfaRecoveryClient.js';
 
 const CODE_RE = /^[0-9]{6}$/;
 
 export function MfaPanel({ requireFresh = false, onVerified } = {}) {
   const { t, locale } = useI18n();
+  // Original nine states stay first, in order, so the positional i18n render
+  // harness (tests/helpers/appI18nRound5.mjs injects useState by call index)
+  // keeps aligning; the recovery state added below takes trailing slots.
   const [factors, setFactors] = useState(null);
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState(null); // { factorId, secret, uri }
@@ -35,24 +41,40 @@ export function MfaPanel({ requireFresh = false, onVerified } = {}) {
   const [aal, setAal] = useState(null);
   const [freshUntil, setFreshUntil] = useState(null);
   const [wasVerified, setWasVerified] = useState(false);
+  const [recoveryCodes, setRecoveryCodes] = useState(null);
+  const [accountId, setAccountId] = useState(getStoredUserId);
+  const account = useRef(getStoredUserId());
+  const refreshId = useRef(0);
 
   const refresh = useCallback(async () => {
+    const request = ++refreshId.current;
+    const user = getStoredUserId();
+    const current = () => request === refreshId.current && user === getStoredUserId();
     setLoading(true);
     try {
-      setFactors(await listFactors());
+      const next = await listFactors();
+      if (!current()) return;
+      setFactors(next);
       setError(null);
       setAal(getAal());
     } catch {
+      if (!current()) return;
       setFactors(null);
       setError(t("app.account.mfa.loadFailed"));
     } finally {
-      setLoading(false);
+      if (current()) setLoading(false);
     }
   }, [t]);
 
   useEffect(() => { refresh(); }, [refresh]);
   useEffect(() => {
     const update = () => {
+      if (account.current !== getStoredUserId()) {
+        account.current = getStoredUserId();
+        setAccountId(account.current);
+        setRecoveryCodes(null); setPending(null); setCode(''); setFactors(null);
+        void refresh();
+      }
       const until = getMfaFreshUntil();
       setFreshUntil(until);
       setAal(getAal());
@@ -62,7 +84,7 @@ export function MfaPanel({ requireFresh = false, onVerified } = {}) {
     const unsubscribe = onSessionChange(update);
     const timer = setInterval(update, 1000);
     return () => { unsubscribe(); clearInterval(timer); };
-  }, []);
+  }, [refresh]);
 
   async function run(fn) {
     setBusy(true); setError(null);
@@ -143,10 +165,15 @@ export function MfaPanel({ requireFresh = false, onVerified } = {}) {
             <button
               type="button" disabled={busy || !CODE_RE.test(code)}
               onClick={() => run(async () => {
-                setAal(await verifyFactor(pending.factorId, code));
+                const user = getStoredUserId();
+                const nextAal = await verifyFactor(pending.factorId, code);
+                if (user !== getStoredUserId()) return;
+                setAal(nextAal);
                 setPending(null); setCode('');
-                onVerified?.();
                 await refresh();
+                if (user !== getStoredUserId()) return;
+                const result = await generateRecoveryCodes();
+                if (user === getStoredUserId()) setRecoveryCodes(result.codes);
               })}
               className="rounded-full bg-vx-accent text-vx-accent-ink font-bold px-4 py-2 text-[13px] disabled:opacity-60"
             >
@@ -169,7 +196,7 @@ export function MfaPanel({ requireFresh = false, onVerified } = {}) {
             onClick={() => run(async () => {
               setAal(await verifyFactor(verified[0].id, code));
               setCode('');
-              onVerified?.();
+              if (!recoveryCodes) onVerified?.();
             })}
             className="rounded-full bg-vx-accent text-vx-accent-ink font-bold px-4 py-2 text-[13px] disabled:opacity-60"
           >
@@ -178,7 +205,12 @@ export function MfaPanel({ requireFresh = false, onVerified } = {}) {
         </div>
       )}
 
-      {verified.length > 0 && !requireFresh && aal === 'aal2' && (
+      {verified.length > 0 && (
+        <RecoveryCodesPanel key={accountId} aal={aal} factors={verified} codes={recoveryCodes}
+          onCodes={setRecoveryCodes} onSaved={() => { setRecoveryCodes(null); onVerified?.(); }} />
+      )}
+
+      {verified.length > 0 && !recoveryCodes && !requireFresh && aal === 'aal2' && (
         <button
           type="button" disabled={busy}
           onClick={() => run(async () => { await unenrollFactor(verified[0].id); await refresh(); })}
