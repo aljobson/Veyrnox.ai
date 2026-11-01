@@ -54,3 +54,12 @@ test('the credits guide is an Article, not a HowTo', async () => {
     const { articleLd } = await import('../lib/jsonLd.js');
     assert.equal(articleLd({ name: 'N', description: 'D', href: '/guides/credits' })['@type'], 'Article');
 });
+
+test('every guide leads with a short answer of two sentences or fewer', async () => {
+    const { GUIDES } = await import('../app/veyrnox/_lib/guides.js');
+    for (const g of GUIDES) {
+        assert.ok(typeof g.answer === 'string' && g.answer.length > 40, `${g.id} has no answer`);
+        const sentences = g.answer.split(/(?<=[.!?])\s+/).length;
+        assert.ok(sentences <= 2, `${g.id} answer runs to ${sentences} sentences`);
+    }
+});

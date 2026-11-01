@@ -62,6 +62,7 @@ export default async function GuidePage({ params }) {
         <Link href={localizedHref(locale, '/guides')} className="text-[14px] text-vx-fg-muted hover:text-vx-fg underline-offset-4 hover:underline">{t('guides.all')}</Link>
         <h1 className="mt-4 vx-display vx-title-detail">{say(`guide.${g.id}.title`, g.title)}</h1>
         <p className="mt-4 text-lg text-vx-fg-body">{say(`guide.${g.id}.summary`, g.summary)}</p>
+        {locale === 'en' && g.answer && <p className="mt-6 text-[17px] font-semibold leading-[1.5] text-vx-fg">{g.answer}</p>}
         <ol className="mt-10 space-y-6">
           {g.steps.map((s, i) => (
             <li key={s.title} className="flex gap-4">
