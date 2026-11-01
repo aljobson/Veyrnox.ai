@@ -134,6 +134,9 @@ test('subscription.source says where a live plan is managed, from existing colum
   // A store row has no Stripe ids (0346 writes store_channel instead).
   assert.equal(read({ ...base, status: 'active', stripe_subscription_id: null, stripe_customer_id: null }).subscription.source, 'store');
   assert.equal(read({ ...base, status: 'past_due' }).subscription.source, 'store');
+  // A complimentary grant (0423) has no Stripe or store identity and no billing to manage.
+  assert.equal(read({ ...base, status: 'active', complimentary: true }).subscription.source, 'complimentary');
+  assert.equal(read({ ...base, status: 'ended', complimentary: true }).subscription.source, null);
   // Nothing live to manage: pending checkout, ended, flagged duplicate.
   for (const status of ['pending', 'ended', 'flagged']) assert.equal(read({ ...base, status }).subscription.source, null);
   // Free with no subscription row at all.

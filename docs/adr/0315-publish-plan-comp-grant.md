@@ -11,9 +11,10 @@ A Publish Plan becomes active only from a Stripe payment event (`start_social_pu
 1. **One service-role RPC, `grant_social_publish_comp`** (0423). It is not called by any route, worker or cron; a person with database access runs it once per grant.
 2. **It needs a reason.** `p_reason` (20 to 500 characters) is stored in the new `social_publish_subscriptions.comp_reason` and must name the human who decided. For the QA account: "Owner (Al Jobson) approved a 14-day Publish Plan for the QA test account Testuser1, 2026-11-01."
 3. **It is short and lapses on its own.** At most 14 days. The row is `active` with `cancel_at_period_end = true`; `read_social_publish_entitlement` counts a subscription as paid only while `current_period_end` is in the future, so the plan stops working at the end date with no job.
-4. **It cannot stack.** It refuses an account that already has a live subscription, a Frozen account, an unknown plan and a reused key with different arguments. A replay with the same key returns the same row.
-5. **It writes an audit event** in the append-only `social_publish_subscription_events` (`publish.admin_comp`, id `evt_comp_<key>`), so a comp is always distinguishable from a paid subscription. No Stripe ids are set.
-6. **No credits or ledger writes.** The RPC touches only the two Publish subscription tables.
+4. **It cannot stack.** It refuses an account that already has a live subscription, a Frozen account, an unknown plan and a reused key whose plan, days or reason differ (checked null-safely). A replay with the same arguments returns the original row and its original end date.
+5. **It writes an audit event** in the append-only `social_publish_subscription_events` (`publish.admin_comp`, id `evt_comp_<subscription uuid>`, so two accounts can share a key and similar keys never collide), so a comp is always distinguishable from a paid subscription. No Stripe ids are set.
+6. **The app can tell it is a comp.** `read_social_publish_entitlement` adds `complimentary` (never the reason); `planSource` reports `complimentary` and the Publish plan panel hides Manage billing and Cancel for it, since there is no Stripe subscription behind it.
+7. **No credits or ledger writes.** The RPC touches only the two Publish subscription tables.
 
 ## Consequences
 
