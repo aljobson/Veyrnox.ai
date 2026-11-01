@@ -91,7 +91,7 @@ test('the trial-ending email names the date, the price and how to avoid the char
 });
 
 test('the reminder is sent once per subscription and a failed send is retried, not dropped', async () => {
-  const env = { RESEND_API_KEY: 're_test_key_1', VIOLATION_EMAIL_FROM: 'Veyrnox <support@veyrnox.ai>' };
+  const env = { RESEND_API_KEY: 'resend-fixture', VIOLATION_EMAIL_FROM: 'Veyrnox <support@veyrnox.ai>' };
   const binding = { price_usd_cents: 1900, billing_interval: 'month' };
   const s = { id: 'sub_1', periodEnd: '2026-11-08T10:00:00.000Z', trialing: true };
   const select = async (table) => table === 'credit_subscriptions' ? [{ user_id: CALLER_ID }] : [{ email: 'a@example.com', preferred_locale: null }];

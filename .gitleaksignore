@@ -247,3 +247,5 @@ e590411b56e2741725ef99311f1846783e9863fe:tests/socialApprovalsRoute.test.mjs:gen
 e24ba1e497d1caebcbedfde789bf0878033c946b:tests/socialApprovalsRoute.test.mjs:generic-api-key:31
 e24ba1e497d1caebcbedfde789bf0878033c946b:tests/socialApprovalsRoute.test.mjs:generic-api-key:35
 e24ba1e497d1caebcbedfde789bf0878033c946b:tests/socialApprovalsRoute.test.mjs:generic-api-key:39
+# Synthetic Resend fixture value in the trial reminder test, not a credential (removed from the file since).
+3336813f76cdc00a9ab4cf071c1a709fe9930a8c:tests/subscriptionTrial.test.mjs:generic-api-key:102
