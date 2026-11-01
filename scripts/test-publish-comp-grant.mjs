@@ -81,6 +81,47 @@ try {
     assert.equal((await entitlement(lapsedUser)).tier, 'publish');
     assert.equal((await entitlement(lapsedUser)).subscription.complimentary, false, 'a paid plan is not complimentary');
 
+    // 0424, independent of the start path: a paid subscription is already pending when the comp is granted and lapses;
+    // the Stripe activation event itself must end the comp and activate the paid row without flagging it.
+    const stripeFirst = randomUUID();
+    await c.query('INSERT INTO auth.users(id,email) VALUES($1,$2)', [stripeFirst, `${stripeFirst}@example.invalid`]);
+    const pending = await scalar('SELECT public.start_social_publish_subscription($1,$2,$3,$4,$5,$6) AS r', [stripeFirst, 'publish-weekly', 'qa-start-key-2', 'consent-v1', 10, 3600]);
+    assert.equal(pending.ok, true);
+    const lapsingComp = await grant(stripeFirst, 'publish-weekly', 'qa-comp-key-5', 7, REASON);
+    assert.equal(lapsingComp.ok, true, 'a pending paid row does not block a comp');
+    await c.query("UPDATE public.social_publish_subscriptions SET current_period_end = now() - interval '1 minute' WHERE id = $1", [lapsingComp.subscription_id]);
+    const stripeActivated = await scalar('SELECT public.apply_social_publish_subscription_event($1,$2,$3,$4,$5,$6,$7,$8,$9) AS r',
+        ['evt_qa_2', 'customer.subscription.updated', pending.subscription_id, 'sub_qatwo', 'cus_qatwo', 'active', new Date(Date.now() + 7 * 864e5), false, new Date()]);
+    assert.equal(stripeActivated.status, 'active');
+    assert.equal(stripeActivated.flagged, false, 'the Stripe event itself ends the lapsed comp');
+    assert.equal(await scalar('SELECT status AS r FROM public.social_publish_subscriptions WHERE id=$1', [lapsingComp.subscription_id]), 'ended');
+
+    // 0424, store path: a purchase made after the comp lapsed is active and unflagged; with a live comp it is still flagged.
+    const storeActivate = (customer, txn) => scalar("SELECT public.apply_store_publish_event($1,'ios','ai.veyrnox.publish.monthly',$2,$3,'activate','renewal',$4,$5) AS r",
+        [customer, txn, `evt-${randomUUID()}`, new Date(Date.now() + 30 * 864e5), new Date()]);
+    const storeUser = async () => {
+        const auth = randomUUID();
+        await c.query('INSERT INTO auth.users(id,email) VALUES($1,$2)', [auth, `${auth}@example.invalid`]);
+        const customer = (await scalar('SELECT public.get_or_create_store_customer($1) AS r', [auth])).rc_customer_id;
+        return { auth, customer };
+    };
+    const lapsed = await storeUser();
+    const storeComp = await grant(lapsed.auth, 'publish-weekly', 'qa-comp-key-6', 7, REASON);
+    assert.equal(storeComp.ok, true);
+    await c.query("UPDATE public.social_publish_subscriptions SET current_period_end = now() - interval '1 minute' WHERE id = $1", [storeComp.subscription_id]);
+    const bought = await storeActivate(lapsed.customer, `qa-txn-${randomUUID()}`);
+    assert.equal(bought.ok, true);
+    assert.equal(bought.status, 'active', 'a store purchase after the comp lapsed is active');
+    assert.equal(bought.flagged, false);
+    assert.equal(await scalar('SELECT status AS r FROM public.social_publish_subscriptions WHERE id=$1', [storeComp.subscription_id]), 'ended');
+    const storeEntitlement = await entitlement(lapsed.auth);
+    assert.equal(storeEntitlement.tier, 'publish');
+    assert.equal(storeEntitlement.subscription.complimentary, false);
+    const live = await storeUser();
+    assert.equal((await grant(live.auth, 'publish-weekly', 'qa-comp-key-7', 7, REASON)).ok, true);
+    const blocked = await storeActivate(live.customer, `qa-txn-${randomUUID()}`);
+    assert.equal(blocked.flagged, true, 'a live comp still flags a store purchase (control)');
+
     const otherUser = await scalar('SELECT id AS r FROM public.users WHERE auth_id=$1', [other]);
     await c.query('SELECT public.freeze_account($1,$2,NULL)', [otherUser, 'comp grant fixture']);
     assert.equal((await grant(other, 'publish-weekly', 'qa-comp-key-3', 7, REASON)).code, 'ACCOUNT_FROZEN');
