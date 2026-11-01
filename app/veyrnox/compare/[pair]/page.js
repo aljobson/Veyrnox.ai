@@ -8,7 +8,7 @@ import { creditValueRange, formatUsdRange } from '../../_lib/creditValue';
 import { OPEN_GRAPH_BASE } from '../../../seo';
 import { JsonLd } from '../../../seo';
 import { breadcrumbLd } from '../../../../lib/jsonLd';
-import { parsePair, pairSlug } from '../../../../lib/comparePairs';
+import { isPromptGenerator, parsePair, pairSlug } from '../../../../lib/comparePairs';
 import { readPublicCreditPacks } from '../../../../lib/publicCreditPacks';
 import { pluralKey } from '../../../../lib/i18n/translate.mjs';
 import { getT } from '../../../../lib/i18n/server';
@@ -20,13 +20,13 @@ export const dynamic = 'force-dynamic';
 
 const creditsIn = (t, credits, locale) => t(pluralKey(t, locale, 'model.credits', credits), { n: credits });
 
-// Two models of the same kind, in the one canonical order; anything else is
-// not a comparison we publish.
+// Two prompt-only generators of the same modality, in the one canonical order;
+// anything else is not a comparison we publish.
 async function load(slug) {
   const ids = parsePair(slug);
   if (!ids) return null;
   const [a, b] = await Promise.all(ids.map((id) => findModel(id)));
-  if (!a || !b || a.kind !== b.kind) return null;
+  if (!a || !b || a.modality !== b.modality || !isPromptGenerator(a) || !isPromptGenerator(b)) return null;
   return { a, b, canonical: pairSlug(a.id, b.id) };
 }
 
