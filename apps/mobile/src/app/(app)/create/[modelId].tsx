@@ -352,7 +352,8 @@ export default function CreateWithModel() {
             <Stack.Screen options={{ title: t('label.Create') }} />
             <KeyboardFormScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
                 <FormHeader modelLabel={modelLabel} modality={kindOf(model.modality) ?? model.modality} stageLine={stageLine} stage={results ? <CreateResult api={api} batch={results} catalog={catalog} onTerminal={resultSettled} /> : undefined}
-                    onChangeModel={alternatives.length > 1 && !busy ? () => setPicking(true) : undefined} />
+                    onChangeModel={alternatives.length > 1 && !busy ? () => setPicking(true) : undefined}
+                    onTemplates={!template && !results ? () => router.push('/create/presets') : undefined} />
                 <ModelPickerSheet visible={picking} models={alternatives} currentId={model.id} freeLeft={freeMap} onPick={(id) => void changeModel(id)} onClose={() => setPicking(false)} />
 
                 {template ? <TemplateBanner template={template} aspect={options.aspects.length ? opts.aspect : null} /> : null}

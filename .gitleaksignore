@@ -235,3 +235,15 @@ b922536c6aa55c15e8b574e35e8fd3593f28f851:apps/mobile/__tests__/montage.test.ts:g
 91a4d1fbd37dc2de5c662119c3c677b15f9ee873:tests/yourWinsRoute.test.mjs:generic-api-key:101
 91a4d1fbd37dc2de5c662119c3c677b15f9ee873:tests/yourWinsRoute.test.mjs:generic-api-key:104
 91a4d1fbd37dc2de5c662119c3c677b15f9ee873:tests/yourWinsRoute.test.mjs:generic-api-key:73
+# Synthetic idempotencyKey fixture (approval_12345678) in the approvals route test, re-added when the request time was made relative; not a credential.
+d4199d0af673e57ceb947305a7ea7284b7d8ae4e:tests/socialApprovalsRoute.test.mjs:generic-api-key:31
+d4199d0af673e57ceb947305a7ea7284b7d8ae4e:tests/socialApprovalsRoute.test.mjs:generic-api-key:35
+d4199d0af673e57ceb947305a7ea7284b7d8ae4e:tests/socialApprovalsRoute.test.mjs:generic-api-key:39
+# Same synthetic idempotency fixture in the sibling branch claude/create-templates-visibility-12f197 (PR 1836), seen by the all-refs history scan; not a credential.
+e590411b56e2741725ef99311f1846783e9863fe:tests/socialApprovalsRoute.test.mjs:generic-api-key:29
+e590411b56e2741725ef99311f1846783e9863fe:tests/socialApprovalsRoute.test.mjs:generic-api-key:33
+e590411b56e2741725ef99311f1846783e9863fe:tests/socialApprovalsRoute.test.mjs:generic-api-key:37
+# Same fixture after #1835 squash-merged it to main (the d4199d0 entries above name the pre-squash commit); not a credential.
+e24ba1e497d1caebcbedfde789bf0878033c946b:tests/socialApprovalsRoute.test.mjs:generic-api-key:31
+e24ba1e497d1caebcbedfde789bf0878033c946b:tests/socialApprovalsRoute.test.mjs:generic-api-key:35
+e24ba1e497d1caebcbedfde789bf0878033c946b:tests/socialApprovalsRoute.test.mjs:generic-api-key:39

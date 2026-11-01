@@ -1,6 +1,8 @@
 // Metadata for the Pricing route — the page itself is a client component,
 // so it cannot export it. Language comes from the request (ADR-0107).
 import { OG_IMAGE, OPEN_GRAPH_BASE } from '../../seo';
+import { JsonLd } from '../../seo';
+import { breadcrumbLd } from '../../../lib/jsonLd';
 import { getT } from '../../../lib/i18n/server';
 import { LOCALES, languageAlternates, localeInfo, localesEnabled } from '../../../lib/i18n/locales.mjs';
 
@@ -21,6 +23,13 @@ export async function generateMetadata() {
   };
 }
 
-export default function Layout({ children }) {
-  return children;
+export default async function Layout({ children }) {
+  const { locale, t } = await getT();
+  const path = locale === 'en' ? '/pricing' : `/${locale}/pricing`;
+  return (
+    <>
+      <JsonLd data={breadcrumbLd([{ name: 'Veyrnox.ai', href: locale === 'en' ? '/' : `/${locale}` }, { name: t('pricing.meta.title'), href: path }])} />
+      {children}
+    </>
+  );
 }

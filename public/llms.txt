@@ -1,0 +1,40 @@
+# Veyrnox.ai
+
+> Veyrnox.ai is a credit-metered AI generation service for video, image and audio. One credit balance works across every model. Each generation shows its price before you press Generate, and a failed generation is refunded automatically. Operated by Veyrnox Ltd, London, UK.
+
+Prices are not listed in this file because they change. The live price of every model is on the Models and Pricing pages below.
+
+## Start here
+
+- [Models](https://veyrnox.ai/models): every model with its exact price in credits, and a page for each one.
+- [Pricing](https://veyrnox.ai/pricing): credit packs, subscription plans and the full model price table.
+- [Tools](https://veyrnox.ai/tools): models that start from your own image, video or audio file (upscale, cut out, expand, edit, animate, lip-sync).
+- [Templates](https://veyrnox.ai/presets): ready-made prompt, model and aspect ratio in one click.
+- [About](https://veyrnox.ai/about): who runs the service.
+
+## Guides
+
+- [Make your first image or video](https://veyrnox.ai/guides/first-generation)
+- [Start from a template](https://veyrnox.ai/guides/templates)
+- [Work on your own image or video](https://veyrnox.ai/guides/your-own-files)
+- [Find and keep what you made](https://veyrnox.ai/guides/library)
+- [How credits and refunds work](https://veyrnox.ai/guides/credits)
+
+## For developers and agents
+
+- [Developers](https://veyrnox.ai/developers): API access and documentation.
+- [OpenAPI contract](https://veyrnox.ai/api/developer/openapi): read-only machine-readable description of the developer API.
+- [MCP server](https://veyrnox.ai/mcp): connect an AI assistant to generate through Veyrnox.ai.
+
+## Policies
+
+- [Terms of Service](https://veyrnox.ai/legal/terms)
+- [Privacy Policy](https://veyrnox.ai/legal/privacy)
+- [Refund Policy](https://veyrnox.ai/legal/refund)
+- [Acceptable Use](https://veyrnox.ai/legal/aup)
+- [Data Rights](https://veyrnox.ai/legal/gdpr)
+
+## Optional
+
+- [Social Cinema](https://veyrnox.ai/social-cinema): published AI films and series.
+- [Sitemap](https://veyrnox.ai/sitemap.xml)

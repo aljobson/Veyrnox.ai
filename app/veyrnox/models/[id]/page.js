@@ -7,6 +7,10 @@ import { PremiumTag } from '../../_components/PremiumTag';
 import { findModel, modelFacts } from '../../_lib/modelPages';
 import { modelPriceUnit } from '../../_lib/modelPricing';
 import { OPEN_GRAPH_BASE } from '../../../seo';
+import { JsonLd } from '../../../seo';
+import { breadcrumbLd, modelServiceLd } from '../../../../lib/jsonLd';
+import { readPublicCreditPacks } from '../../../../lib/publicCreditPacks';
+import { creditValueRange } from '../../_lib/creditValue';
 import { getT } from '../../../../lib/i18n/server';
 import { pageAlternates, openGraphLocale } from '../../../../lib/i18n/metadata.mjs';
 import { localizedHref } from '../../../../lib/i18n/locales.mjs';
@@ -40,9 +44,22 @@ export default async function ModelPage({ params }) {
   if (!model) notFound();
   const { locale, t } = await getT();
   const facts = modelFacts(model, t);
+  const range = creditValueRange(model.credits, await readPublicCreditPacks());
+  const modelPath = localizedHref(locale, `/models/${model.id}`);
 
   return (
     <div className="min-h-dvh">
+      <JsonLd data={modelServiceLd({
+        name: model.title,
+        description: t('model.desc', { title: model.title, credits: creditsIn(t, model.credits, locale), unit: modelPriceUnit(model, t) }),
+        href: modelPath,
+        range,
+      })} />
+      <JsonLd data={breadcrumbLd([
+        { name: 'Veyrnox.ai', href: localizedHref(locale, '/') },
+        { name: t('models.title'), href: localizedHref(locale, '/models') },
+        { name: model.title, href: modelPath },
+      ])} />
       <MarketingNav />
       {/* The shell every public page shares, so this page starts on the
           logo's edge. The reading measure is the inner block. */}
@@ -68,7 +85,8 @@ export default async function ModelPage({ params }) {
           <Link href={localizedHref(locale, '/pricing')} className="font-bold text-vx-fg-body underline underline-offset-4 hover:text-vx-fg">{t('model.packs')}</Link>
         </div>
         <p className="mt-4 text-[14px] text-vx-fg-muted">{t('model.note')}</p>
-        <dl className="mt-10 border-t border-vx-border">
+        <h2 className="mt-10 text-xl font-black">{t('model.facts.heading')}</h2>
+        <dl className="mt-4 border-t border-vx-border">
           {facts.map((f) => (
             <div key={f.label} className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-6 py-3 border-b border-vx-border">
               <dt className="sm:w-48 shrink-0 text-[14px] text-vx-fg-muted">{f.label}</dt>

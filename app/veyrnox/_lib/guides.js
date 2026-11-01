@@ -6,8 +6,12 @@
 export const GUIDES = [
   {
     id: 'first-generation',
+    updated: '2026-11-01',
     title: 'Make your first image or video',
     summary: 'Pick a model, see the price, generate.',
+    // English-only lead that answers the question in two sentences (not in the
+    // translation catalogs, so it is shown on the English page only).
+    answer: 'Open Create, pick a model, write a prompt and press Generate. The price is shown above the button before you press it, and the credits come back automatically if the generation fails.',
     steps: [
       { title: 'Open the studio', body: 'Go to Create. Sign in or create an account first; new accounts get 10 free credits once the email is confirmed.' },
       { title: 'Pick a model', body: 'The list on the right shows every model with its price in credits. Image, video and audio models all spend from the same balance.' },
@@ -19,8 +23,12 @@ export const GUIDES = [
   },
   {
     id: 'templates',
+    updated: '2026-11-01',
     title: 'Start from a template',
     summary: 'A ready-made prompt, model and aspect ratio in one click.',
+    // English-only lead that answers the question in two sentences (not in the
+    // translation catalogs, so it is shown on the English page only).
+    answer: 'Open a template and press Use this template: the studio opens with the prompt, model and aspect ratio already filled in. Nothing is charged until you press Generate.',
     steps: [
       { title: 'Browse the templates', body: 'Filter by category. Each card shows the model it runs on and its price.' },
       { title: 'Open one', body: 'The template page shows the full prompt, the cost and, if the model needs one, what you have to upload.' },
@@ -31,8 +39,12 @@ export const GUIDES = [
   },
   {
     id: 'your-own-files',
+    updated: '2026-11-01',
     title: 'Work on your own image or video',
     summary: 'Upscale, cut out, expand, edit, animate or lip-sync a file you already have.',
+    // English-only lead that answers the question in two sentences (not in the
+    // translation catalogs, so it is shown on the English page only).
+    answer: 'Pick a tool on the Tools page, add your PNG, JPEG, WebP, MP4, MP3 or WAV file within the size limit, confirm you have the right to use it, and generate. Prices and refunds work as for any other generation.',
     steps: [
       { title: 'Pick a tool', body: 'The Tools page lists every model that starts from your own file, what it needs and what it costs.' },
       { title: 'Add your file', body: 'Images can be PNG, JPEG or WebP up to 20 MB. Video is MP4 up to 100 MB. Speech is MP3 or WAV up to 20 MB.' },
@@ -44,8 +56,12 @@ export const GUIDES = [
   },
   {
     id: 'library',
+    updated: '2026-11-01',
     title: 'Find and keep what you made',
     summary: 'Filter, star and download from your Library.',
+    // English-only lead that answers the question in two sentences (not in the
+    // translation catalogs, so it is shown on the English page only).
+    answer: 'Every generation, failed ones included, is listed in your Library. Filter, star and download from there; files are not kept forever, so download what you need before the date shown on its card.',
     steps: [
       { title: 'Open the Library', body: 'Every generation is listed, including failed ones, so you can see what was refunded.' },
       { title: 'Filter', body: 'Filter by status and by type (images, video, audio), and switch between a grid and a list.' },
@@ -56,8 +72,14 @@ export const GUIDES = [
   },
   {
     id: 'credits',
+    updated: '2026-11-01',
+    // Explains rules rather than steps to follow, so it is not marked up as a HowTo.
+    explainer: true,
     title: 'How credits and refunds work',
     summary: 'One balance, prices up front, automatic refunds.',
+    // English-only lead that answers the question in two sentences (not in the
+    // translation catalogs, so it is shown on the English page only).
+    answer: 'Every model spends the same credit balance and shows its price before you generate. A failed generation is refunded automatically; purchased credits never expire, and the free sign-up credits expire 90 days after they are granted.',
     steps: [
       { title: 'One balance for everything', body: 'Images, video, audio and speech all spend the same credits. Every model shows its price before you generate.' },
       { title: 'Free credits', body: 'The 10 sign-up credits are spent first and expire 90 days after they are granted if unused.' },

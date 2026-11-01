@@ -111,9 +111,9 @@ export function checkReadiness(snapshot, { store = 'ios', stage = 'selling', wor
     }
     if (stage !== 'catalog') {
         for (const app of snapshot.apps.filter(a => selected(storeFor(a)) && storeFor(a))) {
-            check(snapshot.webhooks.some(w => w.url === WEBHOOK && w.environment === 'production'
+            check(snapshot.webhooks.some(w => w.url === WEBHOOK && (w.environment === 'production' || w.environment == null)
                 && (!w.app_id || w.app_id === app.id) && EVENT_TYPES.every(t => w.event_types?.includes(t))),
-            `production webhook covers ${safe(app.id)} and all eight event types`);
+            `production webhook (production or both environments, ADR-0108 amendment 5) covers ${safe(app.id)} and all eight event types`);
         }
         for (const w of snapshot.webhooks) note('info', `webhook ${safe(w.id)} environment=${safe(w.environment)} production URL=${w.url === WEBHOOK}`);
         if (workerVersions) {
