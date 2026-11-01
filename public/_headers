@@ -15,3 +15,7 @@
 
 /video-enhance/mediapipe-1.0.1-face-landmarker-1/face_landmarker.task
   Content-Type: application/octet-stream
+
+/llms.txt
+  Content-Type: text/plain; charset=utf-8
+  Cache-Control: public, max-age=3600

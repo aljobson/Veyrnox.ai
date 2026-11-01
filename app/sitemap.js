@@ -1,6 +1,8 @@
 import { SITE_URL } from './seo';
 import { LOCALES, isLocalizedPath, languageAlternates, localesEnabled } from '../lib/i18n/locales.mjs';
-import { listModelsForDetails } from './veyrnox/_lib/modelPages';
+import { listModelsForDetails, shelfModels } from './veyrnox/_lib/modelPages';
+import { readPublicCatalog } from '../lib/publicCatalog.js';
+import { comparisonSlugs } from '../lib/comparePairs';
 import { PRESETS } from './veyrnox/_lib/templates';
 import { GUIDES } from './veyrnox/_lib/guides';
 import { oddlingSitemapPaths, oddlingsPublicEnabled } from './veyrnox/_lib/oddlingsPublic';
@@ -51,6 +53,7 @@ export default async function sitemap() {
     page('/legal/aup', 'yearly', 0.3),
     page('/legal/cinema-content', 'yearly', 0.3),
     ...(await modelPages(page)),
+    ...(await comparePages(page)),
   ];
 }
 
@@ -69,6 +72,18 @@ async function modelPages(page) {
     return (await listModelsForDetails()).map((m) => page(`/models/${encodeURIComponent(m.id)}`, 'weekly', 0.6, m.updatedAt));
   } catch (err) {
     console.error('[sitemap] catalog unavailable; model pages omitted:', err && err.message);
+    return [];
+  }
+}
+
+// Same-kind pairs among the first models of each kind. Left out when the
+// catalog is unreachable: the bundled fallback list is not a source of truth
+// for pages that compare live prices.
+async function comparePages(page) {
+  try {
+    return comparisonSlugs(shelfModels(await readPublicCatalog())).map((slug) => page(`/compare/${slug}`, 'weekly', 0.5));
+  } catch (err) {
+    console.error('[sitemap] catalog unavailable; comparisons omitted:', err && err.message);
     return [];
   }
 }

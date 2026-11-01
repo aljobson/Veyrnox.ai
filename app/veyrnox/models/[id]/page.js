@@ -7,6 +7,10 @@ import { PremiumTag } from '../../_components/PremiumTag';
 import { findModel, modelFacts } from '../../_lib/modelPages';
 import { modelPriceUnit } from '../../_lib/modelPricing';
 import { OPEN_GRAPH_BASE } from '../../../seo';
+import { JsonLd } from '../../../seo';
+import { breadcrumbLd, modelServiceLd } from '../../../../lib/jsonLd';
+import { readPublicCreditPacks } from '../../../../lib/publicCreditPacks';
+import { creditValueRange } from '../../_lib/creditValue';
 import { getT } from '../../../../lib/i18n/server';
 import { pageAlternates, openGraphLocale } from '../../../../lib/i18n/metadata.mjs';
 import { localizedHref } from '../../../../lib/i18n/locales.mjs';
@@ -40,9 +44,22 @@ export default async function ModelPage({ params }) {
   if (!model) notFound();
   const { locale, t } = await getT();
   const facts = modelFacts(model, t);
+  const range = creditValueRange(model.credits, await readPublicCreditPacks());
+  const modelPath = localizedHref(locale, `/models/${model.id}`);
 
   return (
     <div className="min-h-dvh">
+      <JsonLd data={modelServiceLd({
+        name: model.title,
+        description: t('model.desc', { title: model.title, credits: creditsIn(t, model.credits, locale), unit: modelPriceUnit(model, t) }),
+        href: modelPath,
+        range,
+      })} />
+      <JsonLd data={breadcrumbLd([
+        { name: 'Veyrnox.ai', href: localizedHref(locale, '/') },
+        { name: t('models.title'), href: localizedHref(locale, '/models') },
+        { name: model.title, href: modelPath },
+      ])} />
       <MarketingNav />
       {/* The shell every public page shares, so this page starts on the
           logo's edge. The reading measure is the inner block. */}
