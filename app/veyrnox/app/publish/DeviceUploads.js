@@ -87,7 +87,7 @@ export default function DeviceUploads({ selected = [], max = 1, onSelect, onBusy
                 <button type="button" aria-pressed={selected.some(item => item.uploadId === file.id)} disabled={busy || removing !== null}
                     className="w-full text-start focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vx-accent"
                     onClick={() => onSelect(toggleMedia(selected, { uploadId: file.id, thumbUrl: file.url, mediaType: file.mime_type.split('/')[0], filename: file.filename }, max))}>
-                    {file.mime_type.startsWith('video/') ? <video src={file.url} preload="metadata" muted playsInline className="h-24 w-full object-contain" /> : <img src={file.url} alt="" className="h-24 w-full object-contain" />}
+                    {file.mime_type.startsWith('video/') ? <video src={file.url} preload="metadata" muted playsInline className="h-24 w-full object-contain" /> : <img loading="lazy" decoding="async" src={file.url} alt="" className="h-24 w-full object-contain" />}
                     <span className="block truncate text-sm">{file.filename}</span>
                     <span className="text-xs text-vx-fg-muted">{selected.some(item => item.uploadId === file.id) ? t("app.publish.uploads.selected") : ''}{locale === 'en' ? (file.size_bytes / 1024 / 1024).toFixed(1) : new Intl.NumberFormat(localeTag(locale), { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(file.size_bytes / 1024 / 1024)} {t("app.publish.uploads.megabytes")}</span>
                 </button>
