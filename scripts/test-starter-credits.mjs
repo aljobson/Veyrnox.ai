@@ -196,6 +196,122 @@ try {
     assert.deepEqual(await buckets(st), [S + 10, 10, S]);
     await reconciles(st);
 
+    // ── Free trials: the starter credits come when the trial starts, not when it is first charged. ──
+    // Store: RevenueCat INITIAL_PURCHASE with period_type TRIAL is typed 'initial_purchase_trial'.
+    let tick = 0;
+    const storeEvent = (customer, otx, type, action = 'activate', product = 'ai.veyrnox.generation.starter.monthly', id = `evt_${hex()}`) =>
+        rpc('public.apply_store_generation_event($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+            [customer, 'ios', product, otx, id, action, type, inDays(7), new Date(Date.now() - 60000 + 1000 * ++tick).toISOString()]);
+    const storeUser = async () => {
+        const u = await user();
+        u.customer = (await rpc('public.get_or_create_store_customer($1)', [u.auth])).rc_customer_id;
+        return u;
+    };
+    {
+        const t = await storeUser();
+        const otx = `otx_${hex()}`.slice(0, 40);
+        const evtId = `evt_${hex()}`;
+        const start = await storeEvent(t.customer, otx, 'initial_purchase_trial', 'activate', undefined, evtId);
+        assert.deepEqual([start.ok, start.status, start.granted, start.starter_granted], [true, 'active', 0, 10], JSON.stringify(start));
+        assert.deepEqual(await buckets(t), [10, 10, 0], 'a trial carries the 10 and mints no plan credits');
+        assert.equal((await storeEvent(t.customer, otx, 'initial_purchase_trial', 'activate', undefined, evtId)).idempotent, true);
+        assert.equal((await storeEvent(t.customer, otx, 'initial_purchase_trial')).starter_granted, 0, 'a repeated trial event adds nothing');
+        assert.deepEqual(await buckets(t), [10, 10, 0]);
+        // The renewal that ends the trial is the first paid cycle: plan credits, no second starter grant.
+        const paidCycle = await storeEvent(t.customer, otx, 'renewal');
+        assert.deepEqual([paidCycle.ok, paidCycle.granted], [true, S], JSON.stringify(paidCycle));
+        assert.deepEqual(await buckets(t), [S + 10, 10, S]);
+        assert.equal(await signupRows(t), 1);
+        await reconciles(t);
+        // The same store subscription cannot start a trial for a second Veyrnox account.
+        const other = await storeUser();
+        const reuse = await storeEvent(other.customer, otx, 'initial_purchase_trial');
+        assert.deepEqual([reuse.ok, reuse.code], [false, 'SUBSCRIPTION_OWNED_BY_OTHER']);
+        assert.deepEqual(await buckets(other), [0, 0, 0]);
+    }
+    {
+        // Cancelled before the first charge: the credits stay; they expire on the Free Credit clock.
+        const t = await storeUser();
+        const otx = `otx_${hex()}`.slice(0, 40);
+        assert.equal((await storeEvent(t.customer, otx, 'initial_purchase_trial')).starter_granted, 10);
+        assert.equal((await storeEvent(t.customer, otx, 'cancellation', 'cancel_at_period_end')).ok, true);
+        assert.equal((await storeEvent(t.customer, otx, 'expiration', 'expire')).status, 'ended');
+        assert.deepEqual(await buckets(t), [10, 10, 0]);
+        const sweep = await rpc(`public.expire_free_credits($1)`, [inDays(91)]);
+        assert.equal(sweep.ok, true);
+        assert.deepEqual(await buckets(t), [0, 0, 0], 'the unspent 10 expire 90 days after the grant');
+        await reconciles(t);
+        // A later trial of another product, or after re-subscribing, does not grant again: one per user.
+        const again = await storeEvent(t.customer, `otx_${hex()}`.slice(0, 40), 'initial_purchase_trial', 'activate', 'ai.veyrnox.generation.plus.monthly');
+        assert.equal(again.starter_granted, 0);
+        assert.deepEqual(await buckets(t), [0, 0, 0]);
+    }
+    {
+        // A refund during the trial has no plan grant to take back and leaves the starter credits.
+        const t = await storeUser();
+        const otx = `otx_${hex()}`.slice(0, 40);
+        await storeEvent(t.customer, otx, 'initial_purchase_trial');
+        const refund = await storeEvent(t.customer, otx, 'cancellation', 'refund');
+        assert.equal(refund.ok, true, JSON.stringify(refund));
+        assert.deepEqual(await buckets(t), [10, 10, 0]);
+        await reconciles(t);
+    }
+    {
+        // A Frozen account's trial grants nothing.
+        const t = await storeUser();
+        await rpc('public.freeze_account($1, $2, NULL)', [t.id, 'test']);
+        const r = await storeEvent(t.customer, `otx_${hex()}`.slice(0, 40), 'initial_purchase_trial');
+        assert.deepEqual([r.ok, r.starter_granted], [true, 0]);
+        assert.deepEqual(await buckets(t), [0, 0, 0]);
+    }
+    {
+        // Stripe: a subscription in 'trialing' is entitled (the adapter folds it to active); the webhook then calls this.
+        const t = await user();
+        const s = await subscribe(t);
+        const g = await rpc('public.grant_trial_starter_credits($1)', [s.sub]);
+        assert.deepEqual([g.ok, g.granted, g.user_id], [true, 10, t.id], JSON.stringify(g));
+        assert.deepEqual(await buckets(t), [10, 10, 0]);
+        assert.equal((await rpc('public.grant_trial_starter_credits($1)', [s.sub])).granted, 0, 'a redelivered trial event adds nothing');
+        // The first invoice after the trial grants the plan and no second starter grant; a dispute keeps the 10.
+        const inv = `in_${hex()}`;
+        assert.equal((await paid(s.sub, inv)).ok, true);
+        assert.deepEqual(await buckets(t), [S + 10, 10, S]);
+        const dispute = await reverse(s.sub, inv, 'disputed');
+        assert.equal(dispute.ok, true, JSON.stringify(dispute));
+        assert.deepEqual(await buckets(t), [10, 10, 0], 'the plan credits go, the 10 Free Credits stay');
+        assert.notEqual((await one('SELECT frozen_at FROM public.users WHERE id = $1', [t.id])).frozen_at, null, 'a dispute freezes the account');
+        await reconciles(t);
+
+        // Trial cancelled before the first charge: the subscription ends, the credits stay.
+        const c2 = await user();
+        const s2 = await subscribe(c2);
+        assert.equal((await rpc('public.grant_trial_starter_credits($1)', [s2.sub])).granted, 10);
+        assert.equal((await apply(s2.id, s2.sub, 'ended')).status, 'ended');
+        assert.deepEqual(await buckets(c2), [10, 10, 0]);
+        assert.equal((await rpc('public.grant_trial_starter_credits($1)', [s2.sub])).skipped, 'SUBSCRIPTION_NOT_LIVE');
+
+        // Not live, unknown or malformed subscriptions get nothing.
+        const p = await user();
+        const pending = await start(p);
+        assert.equal(pending.ok, true);
+        assert.equal((await rpc('public.grant_trial_starter_credits($1)', [`sub_${hex()}`])).code, 'SUBSCRIPTION_NOT_FOUND');
+        assert.equal((await rpc('public.grant_trial_starter_credits($1)', ['nope'])).code, 'INVALID_SUBSCRIPTION');
+        assert.equal((await rpc('public.grant_trial_starter_credits($1)', [null])).code, 'INVALID_SUBSCRIPTION');
+        assert.equal(await signupRows(p), 0);
+        assert.equal((await one(`SELECT has_function_privilege('authenticated', 'public.grant_trial_starter_credits(text)', 'EXECUTE') AS x`)).x, false);
+        assert.equal((await one(`SELECT has_function_privilege('service_role', 'public.grant_trial_starter_credits(text)', 'EXECUTE') AS x`)).x, true);
+    }
+    {
+        // Switch off: a trial grants nothing at all, as before 0422.
+        await setSwitch(false);
+        const t = await storeUser();
+        // With the switch off the sign-up already granted the 10; the trial adds nothing and mints no plan credits.
+        const r = await storeEvent(t.customer, `otx_${hex()}`.slice(0, 40), 'initial_purchase_trial');
+        assert.deepEqual([r.ok, r.starter_granted, r.granted], [true, 0, 0]);
+        assert.deepEqual(await buckets(t), [10, 10, 0]);
+        await setSwitch(true);
+    }
+
     // ── Switch OFF again: a fresh sign-up is granted as before, and subscribing adds nothing. ──
     await setSwitch(false);
     const z = await user();

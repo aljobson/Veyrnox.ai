@@ -115,7 +115,11 @@ export function parseStoreEvent(body) {
     const occurred = finiteMs(event.event_timestamp_ms);
     if (action === 'activate' && expires === null) return { kind: 'ignore', reason: 'period_end' };
     return {
-        kind: 'subscription', family, eventId, type: type.toLowerCase(), action, channel, productId, originalTransactionId: original,
+        // A generation free trial is told apart from a paid purchase: it entitles the account and carries the
+        // starter credits, and mints no plan credits (0422). The RENEWAL that ends the trial is the paid grant.
+        kind: 'subscription', family, eventId, action,
+        type: type === 'INITIAL_PURCHASE' && family === 'generation' && String(event.period_type || '').toUpperCase() === 'TRIAL'
+            ? 'initial_purchase_trial' : type.toLowerCase(), channel, productId, originalTransactionId: original,
         periodEnd: expires === null ? null : new Date(expires).toISOString(),
         occurredAt: new Date(occurred ?? Date.now()).toISOString(), customerIds, sandbox,
     };
