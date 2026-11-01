@@ -45,7 +45,7 @@ Retention economics: if fulfilment costs 50% of the normal subscription price, a
 | S-1 | `STORE_BILLING_ENABLED` on in production needs a text-binding slot: production vars are at the 77 cap (`tests/workerBindingBudget.test.mjs`). Free a slot or move a var first | owner + server |
 | S-2 | `ACCOUNT_DELETION_ENABLED` on in the environment the build targets, after migration 0347 is applied there; not in `wrangler.jsonc` (binding cap, CLAUDE.md) | owner |
 | S-3 | `REVENUECAT_WEBHOOK_SECRET` set on production; webhook added in RevenueCat for the production project; `reconcile_top_ups()` returns zero rows before the flag goes on (ADR-0108) | owner |
-| S-4 | Before store billing is enabled, migrations 0344, 0346, 0393 and 0394 must be applied by the `apply-migrations` workflow with the owner's approval; 0394 contains the launch pack catalog and exact Google Play `productId:basePlanId` mappings. Migrations 0347 (deletion) and 0348 (push) are also required for those release features. | owner |
+| S-4 | Before store billing is enabled, migrations 0344, 0346, 0393, 0394, 0420 and 0421 must be applied by the `apply-migrations` workflow with the owner's approval. 0394 contains the exact Google Play `productId:basePlanId` mappings; 0421 contains the launch store pack catalog (`ai.veyrnox.credits.209`, `.523`, `.1571`) and 0420 aligns the web packs (ADR-0312). Migrations 0347 (deletion) and 0348 (push) are also required for those release features. **Closed-sales cutover:** keep sales closed (`STORE_SALES_ENABLED` off) while the app filter and store offering change; apply 0420 and 0421 and confirm the six active store pack rows; only then open or reopen sales. A purchase of a pack with no `credit_packs` row returns `PACK_NOT_FOUND`, which the webhook acknowledges as final, so applying 0421 afterwards does not credit it on retry. | owner |
 | S-5 | After PRs 1216 and 1219 merge: Apple Team ID and Android fingerprints in `lib/mobileAppLinks.js`; `PUSH_NOTIFICATIONS_ENABLED` per environment | owner |
 
 ## 5. What the mobile session prepares
@@ -94,7 +94,7 @@ Retention economics: if fulfilment costs 50% of the normal subscription price, a
 4. First **preview** build (`eas build --profile preview --platform ios`) to a real device through TestFlight internal testing. Prove: Apple and Google sign-in, a **sandbox purchase and its refund** (closes the M6 gap), restore purchases, the paywall terms (section 6), report, deletion, crash report reaches Sentry.
 5. After PRs 1216 and 1219: M-2, M-3, M-4 and a second internal build; prove links and push on the device.
 6. Owner: S-1, S-3, S-4 for production, then the **production** build and TestFlight **external** review. Record the result (the M7 done-condition).
-7. Android after iOS: O11, then a signed Play internal-testing build. Prove all three pack purchases, one Generation subscription, one Publish subscription, restore, renewal/cancellation copy, and a refund. Confirm the RevenueCat webhook records the exact `productId:basePlanId` and resolves it through migration 0394 before calling the Android pass complete.
+7. Android after iOS: O11, then a signed Play internal-testing build. Prove all three pack purchases, one Generation subscription, one Publish subscription, restore, renewal/cancellation copy, and a refund. Confirm the RevenueCat webhook records the exact `productId:basePlanId` and resolves it through migration 0394 (subscriptions) or 0421 (packs) before calling the Android pass complete.
 
 ## 8. Review risks to decide before submitting
 
