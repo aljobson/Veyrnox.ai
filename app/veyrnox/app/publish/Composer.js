@@ -16,6 +16,7 @@ import { createSocialApproval, createSocialPost, listSocialPosts, newIdempotency
 import { deleteSocialPreset, listSocialPresets, saveSocialPreset } from '../../../lib/socialPresetsClient.js';
 import { confirmSocialQueueSlot, listSocialQueues, reserveSocialQueueSlot } from '../../../lib/socialQueuesClient.js';
 import { futureLocalSchedule, localInput, minimumFutureLocalInput } from '../../../../lib/social/calendar.js';
+import { blocksImplicitSubmit } from '../../../../lib/publishFormKeys.js';
 
 const button = 'rounded-full border border-vx-border px-4 py-2 text-sm font-bold disabled:opacity-50';
 const primaryButton = 'rounded-full bg-vx-accent text-black px-4 py-2 text-sm font-bold disabled:opacity-50';
@@ -369,7 +370,7 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
     }
 
     return (
-        <form onSubmit={onSubmit} className="space-y-4">
+        <form onSubmit={onSubmit} onKeyDown={(e) => { if (blocksImplicitSubmit(e)) e.preventDefault(); }} className="space-y-4">
             <div>
                 <div className="text-sm font-bold mb-2">{t("app.publish.composer.postTo")}</div>
                 {!activeAccounts.length && <p className="text-sm text-vx-fg-muted">{t("app.publish.composer.connectFirst")}</p>}
