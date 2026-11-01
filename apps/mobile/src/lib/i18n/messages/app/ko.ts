@@ -5616,4 +5616,11 @@ export default {
   "projects.noWorkspacesTitle": "아직 워크스페이스가 없습니다",
   "projects.openEditor": "에디터 열기",
   "publishHome.postsFailed": "게시물을 불러오지 못해 아래 수치가 최신이 아닐 수 있습니다.",
+  "credits.hardPaywall.title": "구독하고 만들기를 시작하세요",
+  "credits.hardPaywall.bodyFree": "무료 크레딧 {count}개가 기다리고 있어요. 플랜을 선택해 잠금을 해제하고 만들기를 시작하세요.",
+  "credits.hardPaywall.body": "플랜을 선택해 무료 크레딧을 잠금 해제하고 만들기를 시작하세요.",
+  "credits.hardPaywall.checking": "플랜을 확인하는 중…",
+  "credits.hardPaywall.unavailable": "지금은 플랜을 사용할 수 없어요. 연결을 확인하고 다시 시도하거나 이전 구매를 복원하세요.",
+  "credits.hardPaywall.retry": "다시 시도",
+  "credits.hardPaywall.deleteAccount": "계정 삭제",
 } as const;

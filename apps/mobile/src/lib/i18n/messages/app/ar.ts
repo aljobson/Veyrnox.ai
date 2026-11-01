@@ -5946,4 +5946,11 @@ export default {
   "projects.noWorkspacesTitle": "لا توجد مساحة عمل بعد",
   "projects.openEditor": "افتح المحرر",
   "publishHome.postsFailed": "تعذّر تحميل منشوراتك، لذا قد تكون الأعداد أدناه قديمة.",
+  "credits.hardPaywall.title": "اشترك لتبدأ الإبداع",
+  "credits.hardPaywall.bodyFree": "رصيدك المجاني ({count} نقطة) في انتظارك. اختر خطة لفتحه وابدأ الإبداع.",
+  "credits.hardPaywall.body": "اختر خطة لفتح رصيدك المجاني وابدأ الإبداع.",
+  "credits.hardPaywall.checking": "جارٍ التحقق من خطتك…",
+  "credits.hardPaywall.unavailable": "الخطط غير متاحة حاليًا. تحقق من اتصالك وأعد المحاولة، أو استعد عملية شراء سابقة.",
+  "credits.hardPaywall.retry": "إعادة المحاولة",
+  "credits.hardPaywall.deleteAccount": "حذف الحساب",
 } as const;

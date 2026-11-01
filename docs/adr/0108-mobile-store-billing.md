@@ -69,3 +69,16 @@ The paywall makes the purchase itself, so the app's rules run first: `onPurchase
 The entry buttons on Credits and Publish appear only when the build sets `EXPO_PUBLIC_RC_PAYWALLS_ENABLED` to exactly `"true"`. No EAS profile sets it, so shipped builds are unchanged. The app's own Credits and Publish screens stay the fallback. Before turning it on: publish the three paywalls, add the Instrument Serif and Space Grotesk fonts if the paywalls should match the app, and check the yearly view on iOS (no Ultra yearly there).
 
 The mascot Vey sits in a native header above the paywall and reacts to it (`src/billing/paywallVey.ts`): a wave and a line for the offering on open, a hop when a plan or the monthly/yearly switch is tapped, busy while the checks and the store sheet run, worried with the reason when a check refuses, calm on a cancel ("Nothing was charged"), and a clap with a success haptic after a purchase, held for 1.8 s before the paywall closes. The paywalls themselves carry no mascot image.
+
+## Amendment 2 (2026-11-01): hard paywall behind `EXPO_PUBLIC_HARD_PAYWALL_ENABLED`
+
+The owner wants the app closed to anyone without a paid plan, while still giving every new account its 10 sign-up Credits. This reverses amendment 1's "no hard gate" for builds that set the flag; amendment 1 stays the behaviour while the flag is off or absent. The flag ships off (it is not in `eas.json`).
+
+With the flag exactly `"true"`:
+- A signed-in person with no active store or web Generation or Publish entitlement (`billing.paidAccess` false) sees one full-screen paywall instead of the app (`HardPaywallGate`, wrapped around the signed-in stack). While the store or the server is still answering they see "Checking your plan"; a store that is off or unavailable shows the locked screen with retry, Restore and Sign out, never a blank spinner.
+- The sign-up grant (`grant:signup`, ADR-0013) is unchanged: the Credits are granted and shown on the paywall ("Your N free credits are waiting") and become usable once a plan is active. No trial is offered unless an App Store introductory offer is configured on the product.
+- The paywall sells the AI Generation plans from the existing `generation` offering with localized price, renewal and cancellation terms, Restore, Terms and Privacy, Sign out and Delete account. Account deletion and the legal pages stay reachable; the first-run screens (`/welcome`, `/start`, `/analytics-consent`) run before it.
+- The dismissible `PaywallPrompt` is not shown while the gate is on.
+- Existing signed-in people meet the gate on next launch.
+
+**Limits, stated plainly:** the gate is in the app. The API still accepts a signed-in caller's request with free Credits, so this does not stop someone calling it directly or using the web app. Server-side enforcement (a refusal in the generation RPC for an account with no plan) would be a migration and is not part of this change. Check that App Store review accepts a gate with no free path before turning the flag on in a store build; the owner turns the flag on, by building with it set.

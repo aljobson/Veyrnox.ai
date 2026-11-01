@@ -3330,6 +3330,12 @@
     "ratio": 1.75
   },
   {
+    "id": "credits.hardPaywall.retry",
+    "english": "Try again",
+    "translation": "Erneut versuchen",
+    "ratio": 1.78
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

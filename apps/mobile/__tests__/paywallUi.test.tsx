@@ -6,13 +6,14 @@ const source = (path: string) => readFileSync(join(__dirname, '..', path), 'utf8
 const repoSource = (path: string) => readFileSync(join(__dirname, '..', '..', '..', path), 'utf8');
 
 describe('paywall UI wiring', () => {
-    test('uses a dismissible prompt instead of the production hard gate', () => {
+    test('uses a dismissible prompt; the hard gate is wired but ships off (ADR-0108 amendment 2)', () => {
         const layout = source('src/app/(app)/_layout.tsx');
         const eas = source('eas.json');
         const prompt = source('src/components/PaywallPrompt.tsx');
         expect(layout).toContain('<PaywallPrompt />');
-        expect(layout).not.toContain('HardPaywallGate');
-        expect(eas).not.toContain('EXPO_PUBLIC_HARD_PAYWALL_ENABLED');
+        expect(layout).toContain('<HardPaywallGate>');
+        expect(eas).not.toMatch(/EXPO_PUBLIC_HARD_PAYWALL_ENABLED"\s*:\s*"true"/);
+        expect(prompt).toContain('hardPaywallEnabled()');
         expect(source('src/components/paywall/PaywallSheet.tsx')).toContain('onRequestClose={onClose}');
         expect(prompt).toContain("if (operation.phase === 'store') return false");
         expect(prompt).toContain("router.push('/credits')");
