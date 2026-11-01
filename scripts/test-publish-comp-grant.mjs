@@ -39,12 +39,25 @@ try {
     const replay = await grant(auth, 'publish-weekly', 'qa-comp-key-1', 7, REASON);
     assert.equal(replay.idempotent, true);
     assert.equal(replay.subscription_id, first.subscription_id);
+    // Every changed argument on a replay is refused, including a null plan.
     assert.equal((await grant(auth, 'publish-monthly', 'qa-comp-key-1', 7, REASON)).code, 'IDEMPOTENCY_KEY_REUSED');
+    assert.equal((await grant(auth, null, 'qa-comp-key-1', 7, REASON)).code, 'IDEMPOTENCY_KEY_REUSED');
+    assert.equal((await grant(auth, 'publish-weekly', 'qa-comp-key-1', 14, REASON)).code, 'IDEMPOTENCY_KEY_REUSED');
+    assert.equal((await grant(auth, 'publish-weekly', 'qa-comp-key-1', 7, REASON + ' (changed)')).code, 'IDEMPOTENCY_KEY_REUSED');
+    assert.equal(paid.subscription.complimentary, true, 'the entitlement says it is a comp and never carries the reason');
+    assert.equal(JSON.stringify(paid).includes('Owner approved'), false);
     assert.equal((await grant(auth, 'publish-weekly', 'qa-comp-key-2', 7, REASON)).code, 'SUBSCRIPTION_ALREADY_ACTIVE');
     assert.equal(await scalar("SELECT count(*)::int AS r FROM public.social_publish_subscription_events WHERE type='publish.admin_comp'"), 1);
 
     await c.query("UPDATE public.social_publish_subscriptions SET current_period_end = now() - interval '1 minute' WHERE id = $1", [first.subscription_id]);
     assert.equal((await entitlement(auth)).tier, 'free', 'the grant lapses by itself');
+
+    // The same key for a second account, and a look-alike key, both grant: the audit id comes from the row.
+    const second = await grant(other, 'publish-weekly', 'qa-comp-key-1', 7, REASON);
+    assert.equal(second.ok, true);
+    await c.query("UPDATE public.social_publish_subscriptions SET status='ended', ended_at=now(), end_reason='cancelled' WHERE id=$1", [second.subscription_id]);
+    assert.equal((await grant(other, 'publish-weekly', 'qa.comp.key.1', 7, REASON)).ok, true);
+    await c.query("UPDATE public.social_publish_subscriptions SET status='ended', ended_at=now(), end_reason='cancelled' WHERE user_id=(SELECT id FROM public.users WHERE auth_id=$1)", [other]);
 
     const otherUser = await scalar('SELECT id AS r FROM public.users WHERE auth_id=$1', [other]);
     await c.query('SELECT public.freeze_account($1,$2,NULL)', [otherUser, 'comp grant fixture']);

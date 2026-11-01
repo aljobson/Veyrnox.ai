@@ -130,10 +130,10 @@ function Plan() {
         <p className="text-sm text-vx-fg-body">{subscription.cancel_at_period_end
           ? t('app.publish.plan.ends', { date: date(subscription.current_period_end, locale) })
           : t('app.publish.plan.renews', { date: date(subscription.current_period_end, locale), price: money.format(subscription.price_usd_cents / 100), interval: interval(currentInterval) })}</p>
-        <div className="mt-4 flex flex-wrap gap-3">
+        {subscription.source !== 'complimentary' && <div className="mt-4 flex flex-wrap gap-3">
           <button type="button" disabled={busy} className={button} onClick={portal}>{t("cinema.passPanel.manageBilling")}</button>
           {!subscription.cancel_at_period_end && <button type="button" disabled={busy} className={button} onClick={cancel}>{t("app.publish.plan.cancel")}</button>}
-        </div>
+        </div>}
       </div>}
     </section>
 
