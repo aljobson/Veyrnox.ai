@@ -276,6 +276,10 @@ developer surface is `/api/v1/developer/*` and requires a verified OAuth
 - The `auth.users -> public.users + credit_balances` triggers (migrations
   `0010`, `0071`) are the only path that provisions a user. Do not create
   `public.users` rows any other way.
+- **Starter credits can follow the first paid subscription instead** (ADR-0313, `0422`): a DB
+  switch (`starter_credit_config`, ships off; `set_starter_credits_on_subscription`) makes the auth
+  triggers provision only, and the first fresh `subscription_grant` calls `signup_grant` once.
+  Switch off = the paragraph below.
 - **The signup grant follows confirmation, not creation** (`0071`) — *once
   0071 is actually applied*. An unconfirmed sign-up gets a shadow row and a
   zero balance; `grant:signup` lands when `auth.users.email_confirmed_at` is
