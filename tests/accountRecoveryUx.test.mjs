@@ -34,10 +34,17 @@ function mfaHarness(listFactors) {
     },
     useEffect(fn) { effects.push(fn); },
     useCallback(fn) { return fn; },
+    useRef(initial) {
+      const index = cursor++;
+      if (!(index in values)) values[index] = { current: initial };
+      return values[index];
+    },
   };
   const { MfaPanel } = component('app/veyrnox/_components/MfaPanel.js', {
     react: hooks,
-    '../../lib/authClient.js': { listFactors, getAal: () => 'aal1' },
+    '../../lib/authClient.js': { listFactors, getAal: () => 'aal1', getStoredUserId: () => 'u1' },
+    '../../lib/mfaRecoveryClient.js': { generateRecoveryCodes: async () => [] },
+    './RecoveryCodesPanel.js': { default: () => null, __esModule: true },
   });
   return {
     render() { cursor = 0; return renderToStaticMarkup(MfaPanel()); },

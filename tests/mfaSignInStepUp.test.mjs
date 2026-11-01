@@ -7,6 +7,7 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { translator, tOr } from '../lib/i18n/translate.mjs';
 import * as logic from '../app/lib/mfaStepUp.js';
+import * as recoveryLogic from '../lib/mfaRecovery.js';
 
 const require = createRequire(import.meta.url);
 const read = path => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
@@ -83,6 +84,8 @@ function harness(ctx, options = {}) {
     './I18nProvider.jsx': { useI18n: () => ({ t: translator('en'), locale: 'en' }) },
     '../lib/i18n/translate.mjs': { tOr },
     '../app/lib/mfaStepUp.js': logic,
+    '../lib/mfaRecovery.js': recoveryLogic,
+    '../app/lib/mfaRecoveryClient.js': { consumeRecoveryCode: code => options.consumeRecoveryCode?.(code) ?? Promise.resolve({ recovered: true }) },
     '../app/lib/authClient.js': {
       getAal: () => aal,
       getStoredUserId: () => user,
@@ -144,7 +147,8 @@ test('aal1 with verified TOTP opens an accessible translated prompt', async ctx 
   await h.flush();
   assert.match(h.html(), /role="dialog" aria-modal="true" aria-label="Two-factor authentication"/);
   assert.match(h.html(), /Verify and continue/);
-  assert.match(h.html(), /support@veyrnox.com/);
+  assert.match(h.html(), /Use a recovery code instead/);
+  assert.match(h.html(), /support@veyrnox\.com/);
   assert.equal(h.input().props.inputMode, 'numeric');
   assert.equal(h.input().props.autoComplete, 'one-time-code');
   assert.equal(h.input().props.maxLength, 6);
@@ -377,7 +381,7 @@ test('root mounts immediately after AuthGate; visible source copy uses public lo
     if (ts.isJsxText(node)) assert.equal(node.text.trim(), '', 'no visible JSX literals');
     if (ts.isJsxAttribute(node) && ['aria-label', 'title', 'placeholder'].includes(node.name.text)) {
       assert.ok(ts.isJsxExpression(node.initializer));
-      assert.match(node.initializer.expression.getText(ast), /^t\('authGate\./);
+      assert.match(node.initializer.expression.getText(ast), /^t\((?:'authGate\.|recovery \? 'authGate\.)/);
     }
     if (ts.isJsxExpression(node) && node.expression) {
       assert.ok(!ts.isStringLiteral(node.expression), 'no raw string expressions');
@@ -385,4 +389,100 @@ test('root mounts immediately after AuthGate; visible source copy uses public lo
     ts.forEachChild(node, check);
   }
   check(ast);
+});
+
+function recoveryMode(h) {
+  h.find(n => n.type === 'button' && n.props.children === 'Use a recovery code instead').props.onClick();
+  h.render(); h.enter('01234-56789');
+}
+test('REC-01: recovery switches input and closes after a fresh factor read without aal2 or reload', async ctx => {
+  let factors = verified;
+  const h = harness(ctx, { listFactors: async () => factors, consumeRecoveryCode: async () => { factors = []; return { recovered: true }; } });
+  await h.flush(); recoveryMode(h);
+  assert.equal(h.input().props.maxLength, 11); assert.equal(h.input().props.inputMode, 'text');
+  await h.submit(); h.render();
+  assert.equal(h.dialog(), undefined); assert.equal(h.counts().lookups, 2); assert.equal(h.counts().reloads, 0);
+  assert.match(h.html(), /Account recovered/); assert.match(h.html(), /href="\/app\/account"/);
+});
+test('REC-04: stale code or remaining verified factor keeps the prompt open', async ctx => {
+  let stale = true;
+  const h = harness(ctx, { consumeRecoveryCode: async () => stale ? { stale: true, recovered: false } : { recovered: true } });
+  await h.flush(); recoveryMode(h); await h.submit();
+  assert.ok(h.dialog()); assert.match(h.html(), /previous authenticator/);
+  stale = false; h.enter('01234-56789'); await h.submit();
+  assert.ok(h.dialog()); assert.match(h.html(), /previous authenticator/);
+});
+test('invalid recovery attempts share the TOTP lockout and toggling cannot reset it', async ctx => {
+  const h = harness(ctx, { consumeRecoveryCode: async () => { throw failure('invalid_recovery_code'); } });
+  await h.flush(); recoveryMode(h);
+  for (let i = 0; i < 5; i++) { h.enter('01234-56789'); await h.submit(); }
+  assert.equal(h.input().props.disabled, true); assert.match(h.html(), /Too many attempts/);
+  assert.equal(h.find(n => n.type === 'button' && n.props.children === 'Use my authenticator instead').props.disabled, true);
+});
+for (const action of ['cancel', 'account switch', 'close', 'Escape']) {
+  test(`REC-01: delayed recovery success after ${action} cannot close or alter a new challenge`, async ctx => {
+    const request = deferred();
+    const h = harness(ctx, { consumeRecoveryCode: () => request.promise });
+    await h.flush(); recoveryMode(h); const pending = h.submit();
+    if (action === 'Escape') h.dialog().props.onKeyDown({ key: 'Escape', preventDefault() {} });
+    else if (action !== 'account switch') h.cancel(action === 'close');
+    h.emit('aal1', 'B'); await h.flush(); const before = h.html();
+    request.resolve({ recovered: true }); await pending;
+    assert.equal(h.html(), before); assert.ok(h.dialog());
+    assert.equal(h.counts().signOuts, action === 'account switch' ? 0 : 1);
+  });
+}
+test('REC-01: delayed completion lookup cannot close the next account prompt', async ctx => {
+  const lookup = deferred(); let lookups = 0;
+  const h = harness(ctx, { listFactors: () => ++lookups === 2 ? lookup.promise : Promise.resolve(verified) });
+  await h.flush(); recoveryMode(h); const pending = h.submit(); await tick();
+  h.emit('aal1', 'B'); await h.flush(); const before = h.html();
+  lookup.resolve([]); await pending; assert.equal(h.html(), before); assert.ok(h.dialog());
+});
+test('server lockout immediately locks recovery UI', async ctx => {
+  const h = harness(ctx, { consumeRecoveryCode: async () => { throw failure('recovery_rate_limited'); } });
+  await h.flush(); recoveryMode(h); await h.submit(); assert.equal(h.input().props.disabled, true);
+});
+
+for (const failures of [1, 2]) test(`REV-01: ${failures} post-recovery read failure(s) never offer a burned-code retry`, async ctx => {
+  let reads = 0;
+  const h = harness(ctx, { listFactors: async () => {
+    if (++reads === 1) return verified;
+    if (reads <= failures + 1) throw failure('offline');
+    return [];
+  } });
+  await h.flush(); recoveryMode(h); await h.submit();
+  assert.equal(h.dialog(), undefined); assert.equal(h.input(), undefined); assert.equal(reads, 3);
+  assert.match(h.html(), failures === 2 ? /Recovery completed. Refresh the page/ : /Account recovered/);
+  assert.doesNotMatch(h.html(), /Recovery failed/); assert.equal(h.counts().reloads, 0);
+  const before = h.html(); h.emit('aal1', 'A'); await h.flush();
+  assert.equal(h.html(), before, 'same-account token refresh preserves completion'); assert.equal(reads, 3);
+  h.emit(null); await h.flush(); assert.equal(h.render(), null, 'sign-out clears completion');
+});
+test('REV-01: account switch clears the recovery success notice', async ctx => {
+  let reads = 0;
+  const h = harness(ctx, { listFactors: async () => ++reads === 2 ? [] : verified });
+  await h.flush(); recoveryMode(h); await h.submit(); assert.match(h.html(), /Account recovered/);
+  h.emit('aal1', 'B'); await h.flush(); assert.ok(h.dialog()); assert.doesNotMatch(h.html(), /Account recovered/);
+});
+test('REV-01: retry failure after account switch cannot complete the next challenge', async ctx => {
+  const retry = deferred(); let reads = 0;
+  const h = harness(ctx, { listFactors: async () => {
+    reads++; if (reads === 2) throw failure('offline');
+    return reads === 3 ? retry.promise : verified;
+  } });
+  await h.flush(); recoveryMode(h); const request = h.submit(); await tick();
+  h.emit('aal1', 'B'); await h.flush(); const before = h.html();
+  retry.reject(failure('offline')); await request; assert.equal(h.html(), before); assert.ok(h.dialog());
+});
+
+test('REV-A: the recovery prompt retains the translated support fallback in all eleven locales', async ctx => {
+  const h = harness(ctx); await h.flush();
+  assert.match(h.html(), /Use a recovery code instead/); assert.match(h.html(), /support@veyrnox\.com/);
+  recoveryMode(h); assert.match(h.html(), /support@veyrnox\.com/);
+  assert.ok(h.find(n => n.type === 'p' && n.props.children === translator('en')('authGate.mfa.lostAccess')));
+  for (const locale of ['en', 'ar', 'de', 'es', 'fr', 'hi', 'ja', 'ko', 'pt', 'ru', 'zh']) {
+    const catalog = (await import(`../lib/i18n/messages/${locale}.mjs`)).default;
+    assert.match(catalog['authGate.mfa.lostAccess'], /support@veyrnox\.com/, locale);
+  }
 });

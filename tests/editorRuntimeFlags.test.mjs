@@ -76,7 +76,7 @@ test('server render is owner-preview in production (fail-closed allowlist), reco
         assert.equal(Object.hasOwn(vars, 'EDITOR_SERVER_RENDER_ENABLED'), false);
     }
     assert.equal(config.vars.CLIP_EDIT_SLOW_ENABLED, 'false');
-    assert.equal(config.vars.WEBHOOK_DELIVERY_LOG_ENABLED, 'false');
+    assert.equal(config.vars.WEBHOOK_DELIVERY_LOG_ENABLED, 'true');
     assert.equal(config.env.staging.vars.CLIP_EDIT_SLOW_ENABLED, 'true');
     assert.equal(config.env.staging.vars.WEBHOOK_DELIVERY_LOG_ENABLED, 'true');
     assert.equal(editorFeatureEnabled('EDITOR_SERVER_RENDER_ENABLED', env({ serverRender: 'true' })), true);

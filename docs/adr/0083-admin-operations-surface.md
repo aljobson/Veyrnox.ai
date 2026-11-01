@@ -1,6 +1,6 @@
 # ADR-0083 — The admin operations surface: ledger, appeals, strikes, escalation, webhooks
 
-- Status: Proposed 2026-10-10; built in the same change behind migrations 0271 to 0276 (not yet applied). The webhook delivery log is behind `WEBHOOK_DELIVERY_LOG_ENABLED` ("false" in production, "true" on staging); everything else takes effect when the migrations are applied and the Worker is deployed. Owner sign-off is not yet recorded.
+- Status: Proposed 2026-10-10; built in the same change behind migrations 0271 to 0276 (not yet applied). The webhook delivery log is behind `WEBHOOK_DELIVERY_LOG_ENABLED` ("true" in production since 2026-10-31, migration 0276 applied; "true" on staging); everything else takes effect when the migrations are applied and the Worker is deployed. Owner sign-off is not yet recorded.
 - Date: 2026-10-10
 - Related: [ADR-0019](0019-dispute-webhooks-freeze.md) (Freeze), [ADR-0022](0022-manual-test-credit-grant.md) (manual grants need a reason naming the human), [ADR-0058](0058-byteplus-modelark-provider.md) decision 7 (warnings and takedowns), [ADR-0078](0078-admin-checks-in-code.md) (admin gates in code). Follows the 2026-10-10 research run on what an admin page for this product should see and do; the report is kept out of this repository.
 

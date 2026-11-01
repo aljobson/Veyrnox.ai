@@ -102,7 +102,7 @@
   {
     "area": "mfa",
     "name": "MfaPanel",
-    "text": "Two-factor authenticationYour authenticator is enabled.Verified — recent access is valid until 12:34:56 PM."
+    "text": "Two-factor authenticationYour authenticator is enabled.Verified — recent access is valid until 12:34:56 PM.Recovery codesLoading recovery code status…Generate recovery codes"
   },
   {
     "area": "mfa",
