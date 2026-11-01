@@ -46,11 +46,12 @@ describe('paywall UI wiring', () => {
     });
 
     test('store catalog and owner checklist use the deployed web pack sizes', () => {
+        const packMigration = repoSource('packages/db/schema/supabase/0421_store_packs_match_web.sql');
         const migration = repoSource('packages/db/schema/supabase/0394_mobile_credit_pack_parity.sql');
         const checklist = repoSource('docs/mobile/M7-STORE-SUBMISSION-CHECKLIST.md');
-        for (const size of [100, 300, 1000]) {
-            expect(migration).toContain(`ai.veyrnox.credits.${size}`);
-            expect(checklist).toContain(size === 100 ? '`ai.veyrnox.credits.100`' : `\`.${size}\``);
+        for (const size of [209, 523, 1571]) {
+            expect(packMigration).toContain(`ai.veyrnox.credits.${size}`);
+            expect(checklist).toContain(size === 209 ? '`ai.veyrnox.credits.209`' : `\`.${size}\``);
         }
         expect(checklist).not.toContain('`ai.veyrnox.credits.100`, `.270`, `.1200`, `.3000`');
         expect(migration).toContain('ai.veyrnox.generation.lite.monthly:monthly');

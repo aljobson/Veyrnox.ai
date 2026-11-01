@@ -14,6 +14,10 @@
   contradicted this ADR's accepted value exchange. Migration 0382 restores the
   100/$10, 300/$25 and 1,000/$75 flexible Pack tiers, so each recurring plan
   is again strictly cheaper per Credit than the best one-off Pack.
+- **Amendment, 2026-11-01**: [ADR-0312](0312-packs-at-subscription-rate.md) supersedes the
+  correction above for web packs. Packs are sold at the monthly plan rate (209, 523 and
+  1,571 credits for $10, $25 and $75), so a monthly plan is no longer strictly cheaper
+  than the best pack. Yearly plans are.
 - **Deciders**: Product owner (sole) — accepted; Finance/Legal for tax/consent
   wording, per ADR-0018's own precedent
 - **Related**: [ADR-0018 — Credit Pack Top-ups before Subscriptions](0018-credit-pack-top-ups.md)

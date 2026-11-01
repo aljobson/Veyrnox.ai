@@ -33,10 +33,10 @@ describe('billing helpers', () => {
 
     test('lists known packs in order and drops anything else', () => {
         const list = toDisplayPackages([
-            pkg('c4', 'ai.veyrnox.credits.1000'), pkg('c3', 'ai.veyrnox.credits.3000'), pkg('c1', 'ai.veyrnox.credits.100'), pkg('x', 'ai.wallet.sub'), pkg('c2', 'ai.veyrnox.credits.300'),
+            pkg('c4', 'ai.veyrnox.credits.1571'), pkg('c3', 'ai.veyrnox.credits.3000'), pkg('c1', 'ai.veyrnox.credits.209'), pkg('x', 'ai.wallet.sub'), pkg('c2', 'ai.veyrnox.credits.523'), pkg('old', 'ai.veyrnox.credits.100'),
         ]);
-        expect(list.map((p) => p.credits)).toEqual([100, 300, 1000, 3000]);
-        expect(list.filter(isWebParityPack).map((p) => p.credits)).toEqual([100, 300, 1000]);
+        expect(list.map((p) => p.credits)).toEqual([100, 209, 523, 1571, 3000]);
+        expect(list.filter(isWebParityPack).map((p) => p.credits)).toEqual([209, 523, 1571]);
         const subs = toDisplayPackages([pkg('a', 'ai.veyrnox.publish.annual'), pkg('w', 'ai.veyrnox.publish.weekly'), pkg('m', 'ai.veyrnox.publish.monthly')]);
         expect(subs.map((p) => p.interval)).toEqual(['week', 'month', 'year']);
     });

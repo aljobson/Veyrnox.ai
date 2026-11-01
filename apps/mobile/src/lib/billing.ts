@@ -39,7 +39,7 @@ export interface DisplayPackage {
 
 export type GenerationPlan = 'lite' | 'starter' | 'plus' | 'ultra';
 
-export const WEB_PARITY_PACK_CREDITS = [100, 300, 1000] as const;
+export const WEB_PARITY_PACK_CREDITS = [209, 523, 1571] as const;
 
 export interface GenerationCatalogPlan {
     readonly id: string;

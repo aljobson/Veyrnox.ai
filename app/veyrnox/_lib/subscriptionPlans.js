@@ -20,7 +20,8 @@ export function subscriptionSavingPercent(plan, packs) {
   const planPrice = creditUnitPrice(plan);
   const packPrice = bestPackUnitPrice(packs);
   if (planPrice == null || packPrice == null || planPrice >= packPrice) return null;
-  return Math.max(1, Math.round((1 - planPrice / packPrice) * 100));
+  const saving = Math.round((1 - planPrice / packPrice) * 100);
+  return saving >= 1 ? saving : null;
 }
 
 const monthlyTwin = (id) => id.replace(/-yearly$/, '-monthly');
