@@ -4,51 +4,51 @@ import { SHOWCASE_CLIPS } from '../_lib/showcase';
 import { FEATURE_CARDS, shelfName } from '../_lib/tokens';
 import { PRESETS } from '../_lib/templates';
 import { FilmPlayer } from '../_components/FilmPlayer';
-import { BRAND_FILM } from '../_lib/film';
+import { BREAKTHROUGH_FILM } from '../_lib/film';
 import { PriceSlip } from '../_components/PriceSlip';
 import { getT } from '../../../lib/i18n/server';
 import { localizedHref } from '../../../lib/i18n/locales.mjs';
 
-/* ─── Hero: the promise on the left, the working price slip on the right ─── */
+/* ─── Hero: the promise beside the promo film, the working price slip below ─── */
 
 export async function Hero({ models }) {
   const { locale, t } = await getT();
   return (
-    <section className="relative isolate">
+    <section className="relative">
       <h2 className="sr-only">Veyrnox.ai</h2>
-      <p className="sr-only">{t('home.hero.film')}</p>
-      {/* The film is the backdrop: the promise and the price slip sit on it,
-          so the first screen carries the headline, the button and the price,
-          not only the picture. Below lg the backdrop covers the headline
-          block and the slip follows on the page background. The scrim is
-          always dark, so the light text holds in both themes. */}
-      <div className="absolute inset-x-0 top-0 -z-10 h-[max(34rem,calc(100dvh-8rem))] lg:h-full">
-        <FilmPlayer film={BRAND_FILM} label={t('public.film.intro')} frameless fill />
-        <div aria-hidden className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/90 via-black/60 to-black/25 lg:bg-gradient-to-r lg:from-black/95 lg:via-black/75 lg:to-black/35" />
-        <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-vx-base to-transparent" />
-      </div>
-      <div className="px-4 sm:px-6 max-w-[1300px] mx-auto grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-x-16 gap-y-12 lg:items-end pt-12 sm:pt-16 pb-16 lg:pb-24">
-        <div className="flex min-h-[max(26rem,calc(100dvh-14rem))] flex-col justify-end text-white lg:min-h-[34rem]">
+      <p className="sr-only">{t('home.breakthrough.film')}</p>
+      {/* The film sits in its own column, never under text, buttons or a
+          scrim: the picture is whole and the Play control is beneath it. On a
+          phone the headline comes first and the film follows it. */}
+      <div className="px-4 sm:px-6 max-w-[1300px] mx-auto grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-x-16 gap-y-10 lg:items-center pt-10 sm:pt-14">
+        <div className="flex flex-col justify-center">
           <h1 className="vx-display vx-title-index vx-title-glow">
             {t('home.hero.title')}
           </h1>
-          <p className="mt-6 text-lg sm:text-xl text-white/85 max-w-[40ch] leading-[1.5] text-pretty">
+          <p className="mt-6 text-lg sm:text-xl text-vx-fg-body max-w-[40ch] leading-[1.5] text-pretty">
             {t('home.hero.lead')}
           </p>
           <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-4">
             <Link
               href="/app/create?model=nano-banana-kie"
-              className="vx-press inline-flex min-h-11 items-center rounded-full bg-white text-black px-7 py-3.5 text-[15px] font-extrabold hover:bg-white/85"
+              className="vx-press inline-flex min-h-11 items-center rounded-full bg-vx-fg px-7 py-3.5 text-[15px] font-extrabold text-vx-base hover:bg-vx-fg/85"
             >
               {t('home.hero.start')}
             </Link>
-            <Link href={localizedHref(locale, '/pricing')} className="text-[15px] font-bold text-white/85 underline decoration-white/40 decoration-2 underline-offset-[6px] hover:text-white hover:decoration-vx-accent">
+            <Link href={localizedHref(locale, '/pricing')} className="text-[15px] font-bold text-vx-fg-body underline decoration-vx-fg-faint decoration-2 underline-offset-[6px] hover:text-vx-fg hover:decoration-vx-accent">
               {t('home.hero.prices')}
             </Link>
           </div>
-          <p className="mt-5 text-[14px] text-white/70">{t('home.cta.note')}</p>
+          <p className="mt-5 text-[14px] text-vx-fg-body">{t('home.cta.note')}</p>
         </div>
-        <PriceSlip models={models} />
+        <div className="mx-auto w-full max-w-[420px] lg:max-w-[460px]">
+          <FilmPlayer film={BREAKTHROUGH_FILM} label={t('public.film.robot')} aspectRatio="9 / 16" controlsBelow />
+        </div>
+      </div>
+      <div className="px-4 sm:px-6 max-w-[1300px] mx-auto pt-12 pb-16 lg:pb-24">
+        <div className="mx-auto max-w-[620px]">
+          <PriceSlip models={models} />
+        </div>
       </div>
     </section>
   );

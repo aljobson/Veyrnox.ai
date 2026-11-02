@@ -6,7 +6,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import vm from 'node:vm';
-import { BRAND_FILM, BREAKTHROUGH_FILM, LANDING_FILM, MAX_FILM_BYTES } from '../app/veyrnox/_lib/film.js';
+import { BREAKTHROUGH_FILM, LANDING_FILM, MAX_FILM_BYTES } from '../app/veyrnox/_lib/film.js';
 import { MODELS } from '../app/veyrnox/_lib/tokens.js';
 import { filmSourceHash } from '../scripts/landing-film/source-hash.mjs';
 
@@ -22,7 +22,7 @@ function filmPrices() {
 }
 
 test('the films and their posters are in public/, same-origin, with the right extensions', () => {
-    for (const film of [LANDING_FILM, BRAND_FILM, BRAND_FILM.mobile, BREAKTHROUGH_FILM]) {
+    for (const film of [LANDING_FILM, BREAKTHROUGH_FILM]) {
         assert.match(film.video, /^\/film\/[a-z0-9-]+\.mp4$/);
         assert.match(film.poster, /^\/film\/[a-z0-9-]+\.jpg$/);
         assert.ok(existsSync(`${PUBLIC}${film.video}`), `${film.video} is not in public/`);
@@ -31,7 +31,7 @@ test('the films and their posters are in public/, same-origin, with the right ex
 });
 
 test('the films stay under the size cap', () => {
-    for (const film of [LANDING_FILM, BRAND_FILM, BRAND_FILM.mobile, BREAKTHROUGH_FILM]) {
+    for (const film of [LANDING_FILM, BREAKTHROUGH_FILM]) {
         const { size } = statSync(`${PUBLIC}${film.video}`);
         assert.ok(size <= MAX_FILM_BYTES, `${film.video} is ${size} bytes, over the ${MAX_FILM_BYTES} cap: encode it again`);
         assert.ok(statSync(`${PUBLIC}${film.poster}`).size <= 150 * 1024, `${film.poster} is over 150 KB`);
@@ -69,12 +69,14 @@ test('the landing page mounts the film and gives it a text summary', () => {
     assert.doesNotMatch(read('../lib/i18n/messages/en.mjs').match(/'home\.film\.summary': '[^\n]*'/)[0], /\d+ (credits|cr)\b/);
 });
 
-test('the value proposition is first and the mobile film CTA clears privacy choices', () => {
-    const page = read('../app/veyrnox/page.js');
-    assert.ok(page.indexOf('<Hero models={catalog} />') < page.indexOf('<BreakthroughVideo />'));
-    const section = read('../app/veyrnox/_sections/film.js');
-    assert.doesNotMatch(section, /<h1\b/, 'the film must not steal the page heading');
-    assert.match(section, /bottom-0 flex justify-end/, 'the CTA sits opposite the bottom-left privacy control');
+test('the promo film sits in the hero with nothing laid over it', () => {
+    const hero = read('../app/veyrnox/_sections/hero.js');
+    assert.match(hero, /<FilmPlayer film=\{BREAKTHROUGH_FILM\}[^>]*controlsBelow \/>/);
+    // No child, scrim or gradient is drawn on top of the picture.
+    assert.doesNotMatch(hero, /<FilmPlayer[^>]*>\s*<(div|Link)/);
+    assert.doesNotMatch(hero, /bg-gradient|from-black|absolute inset/);
+    assert.doesNotMatch(read('../app/veyrnox/page.js'), /BreakthroughVideo/);
+    assert.doesNotMatch(read('../app/veyrnox/_sections/film.js'), /<h1\b/, 'the film must not steal the page heading');
 });
 
 test('the player has a pause control and never preloads the file', () => {
