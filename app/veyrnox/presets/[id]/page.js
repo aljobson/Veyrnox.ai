@@ -1,4 +1,5 @@
 import { tOr } from '../../../../lib/i18n/translate.mjs';
+import { templateSourceAspect } from '../../../../lib/templateFraming.js';
 import { getT } from '../../../../lib/i18n/server';
 import { pageAlternates, openGraphLocale } from '../../../../lib/i18n/metadata.mjs';
 import { rich } from '../../../../lib/i18n/rich';
@@ -60,6 +61,7 @@ export default async function TemplatePage({ params }) {
     sourcePromptDuplicateOf: sourceAudit.duplicateOf,
   };
   const clip = SHOWCASE_CLIPS[template.clipKey];
+  const sourceAspect = templateSourceAspect(template, clip?.aspectRatio ?? template.previewAspect);
   return (
     <div className="min-h-dvh">
       <MarketingNav />
@@ -82,10 +84,10 @@ export default async function TemplatePage({ params }) {
             <p className="mt-4 text-vx-fg-body">
               {rich(t('presets.detail.runsOn'), { model: modelId ? <Link href={localizedHref(locale, `/models/${encodeURIComponent(modelId)}`)} className="font-bold underline underline-offset-4">{template.model}</Link> : <span className="font-bold">{template.model}</span> })}
             </p>
-            {template.needs && (template.sourceAspect ? (
+            {template.needs && (sourceAspect ? (
               <div className="mt-4 rounded-xl border border-vx-border px-4 py-3 text-[14px] text-vx-fg-body">
                 <p>{t('presets.detail.inputs', { inputs: tOr(t, `presets.needs.${template.needsKey || template.id}`, template.needs) })}</p>
-                <p className="mt-2 font-bold">{t('presets.detail.sourceAspect', { aspect: template.sourceAspect })}</p>
+                <p className="mt-2 font-bold">{t('presets.detail.sourceAspect', { aspect: sourceAspect })}</p>
               </div>
             ) : (
               <p className="mt-4 rounded-xl border border-vx-border px-4 py-3 text-[14px] text-vx-fg-body">
