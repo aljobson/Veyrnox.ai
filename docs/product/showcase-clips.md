@@ -398,27 +398,18 @@ through a three-second final hold. It floats above the finger without
 covering the face or hands. The official Veyrnox.ai mark and wordmark remain
 at the top left throughout. The exports are silent, eight-second H.264 files.
 
-`BREAKTHROUGH_FILM` serves `/film/robot-creative-v5.mp4` with its matching
-JPG poster. The player spans the full viewport width immediately below the
-navigation, with no outer padding, border or rounded frame. Desktop displays
-the complete 1,280 × 720 landscape frame without cropping. Below 640px, it
-selects `/film/robot-creative-portrait-v3.mp4` and its matching JPG poster.
-The portrait animation is scaled to 720 × 1,280 with 80px of matching dark
-background above and below, producing a 720 × 1,440 export. The complete
-portrait frame is contained in the full-screen stage below the phone's
-navigation, preserving both hands on other phone shapes too.
-
-The mobile question is baked into the video, with no duplicate bottom
-caption or large gradient obscuring the robot. “Start creating” remains a
-separate accessible link at the bottom of the phone stage. The opening
-announcement is hidden on phones so this hero fills the first screen.
-Desktop keeps its creation link beneath the wide video; both links open
-`/app/create`. The fifteen-second product film follows it.
+`BREAKTHROUGH_FILM` now serves the owner's promo `veyrnox_promo_one_app_v2`
+(49 s, silent, "one app, not five subscriptions") as `/film/veyrnox-promo.mp4`
+with a matching JPG poster, on phones and the web alike. It replaces the
+robot film. It is a portrait 1,080 × 1,920 export re-encoded to 720 × 1,280
+H.264 without audio, kept whole and never cropped: full-screen below the phone
+navigation, centred in the wide frame on desktop. The robot clips described
+above are no longer served.
 
 The existing `FilmPlayer` supplies visible Play/Pause, pauses off screen,
 leaves the poster still for reduced motion/data saver, and fetches the file
-only when playback begins. Both videos remain under the 2 MB film budget;
-posters remain under 150 KB. Posters use the final branded hologram pose.
+only when playback begins. The video remains under the 2 MB film budget;
+the poster remains under 150 KB.
 
 
 ### Full-HD motion-inspired previews
