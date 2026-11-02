@@ -23,7 +23,26 @@ import { accountReadLimit } from '../../../../lib/accountReadLimit.js';
 import { rpc, select, count, envConfig, SupabaseError } from '../../../../packages/db/supabase-client.js';
 import { accountDeletionEnabled, deleteAuthUser } from '../../../../lib/accountDeletion.js';
 
+import { ageConfirmationEnabled } from '../../../../lib/minimumAge.js';
+
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Rolling deploy: the disabled feature must not break account reads before 0425.
+async function accountProfile(authId, cfg) {
+    const columns = 'id,email,created_at,rights_attested_at,rights_attestation_version';
+    const query = { filter: `auth_id=eq.${authId}`, limit: 1 };
+    try {
+        return await select('users', { ...query, columns: `${columns},age_confirmed_at` }, cfg);
+    } catch (err) {
+        let detail;
+        try { detail = JSON.parse(err.body); } catch { /* Not a schema error. */ }
+        if (!ageConfirmationEnabled() && err instanceof SupabaseError && err.status === 400 &&
+            ['42703', 'PGRST204'].includes(detail?.code) && detail?.message?.includes('age_confirmed_at')) {
+            return select('users', { ...query, columns }, cfg);
+        }
+        throw err;
+    }
+}
 
 export async function GET(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
@@ -39,7 +58,7 @@ export async function GET(req) {
     }
 
     const limited = await accountReadLimit(authId, cfg, {
-        email: authEmail || null, credits: 0, assets: null, created_at: null, rights_attested_at: null, rights_attestation_version: null,
+        email: authEmail || null, credits: 0, assets: null, created_at: null, rights_attested_at: null, rights_attestation_version: null, age_confirmed: false,
     });
     if (limited) return limited;
 
@@ -48,7 +67,7 @@ export async function GET(req) {
     try {
         [credits, rows] = await Promise.all([
             rpc('read_user_credits', { p_auth_id: authId }, cfg),
-            select('users', { columns: 'id,email,created_at,rights_attested_at,rights_attestation_version', filter: `auth_id=eq.${authId}`, limit: 1 }, cfg),
+            accountProfile(authId, cfg),
         ]);
     } catch (err) {
         const status = err instanceof SupabaseError ? err.status : 0;
@@ -82,6 +101,9 @@ export async function GET(req) {
 
     // Per-user figures: never let a browser or intermediary keep a copy.
     return NextResponse.json({
+        age_confirmed: Boolean(user?.age_confirmed_at),
+        // Missing/unprovisioned accounts are unavailable, not an age verdict.
+        ...(user ? { age_confirmation_required: ageConfirmationEnabled() && !user.age_confirmed_at } : {}),
         email: authEmail || (user && user.email) || null,
         credits: Number(credits && credits.balance) || 0,
         assets,

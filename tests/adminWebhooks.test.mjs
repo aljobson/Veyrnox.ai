@@ -49,6 +49,7 @@ test('unauthenticated, aal1 and unconfigured callers are refused before any RPC'
 
 test('the window and limit are validated, then passed to admin_webhook_deliveries; the answer is never cached', async () => {
     const calls = stubRpc((u) => {
+        if (/\/rest\/v1\/jobs\?/.test(u)) return Response.json([]);
         assert.match(u, /\/rest\/v1\/rpc\/admin_webhook_deliveries$/);
         return Response.json({ ok: true, since: '2026-10-09T00:00:00Z', hours: 24, by_source: [{ source: 'fal', total: 3 }], failures: [], stuck_events: [{ source: 'fal', external_id: 'r1' }] });
     });
@@ -59,10 +60,13 @@ test('the window and limit are validated, then passed to admin_webhook_deliverie
         const res = await GET(request(ADMIN, '?hours=168&limit=20'));
         assert.equal(res.status, 200);
         assert.equal(res.headers.get('cache-control'), 'no-store');
-        assert.deepEqual(await res.json(), { since: '2026-10-09T00:00:00Z', hours: 24, by_source: [{ source: 'fal', total: 3 }], failures: [], stuck_events: [{ source: 'fal', external_id: 'r1' }] });
+        const body = await res.json();
+        assert.equal(body.polled.providers.length, 3);
+        delete body.polled;
+        assert.deepEqual(body, { since: '2026-10-09T00:00:00Z', hours: 24, by_source: [{ source: 'fal', total: 3 }], failures: [], stuck_events: [{ source: 'fal', external_id: 'r1' }] });
         await GET(request(ADMIN));
     });
-    assert.deepEqual(calls.map((c) => c.body), [{ p_auth_id: 'auth-admin', p_hours: 168, p_limit: 20 }, { p_auth_id: 'auth-admin', p_hours: 24, p_limit: 50 }]);
+    assert.deepEqual(calls.filter((c) => /rpc/.test(c.url)).map((c) => c.body), [{ p_auth_id: 'auth-admin', p_hours: 168, p_limit: 20 }, { p_auth_id: 'auth-admin', p_hours: 24, p_limit: 50 }]);
 });
 
 test('not_admin is 403 and an outage is 502', async () => {

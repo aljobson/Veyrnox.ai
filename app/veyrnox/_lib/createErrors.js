@@ -39,6 +39,7 @@ export const ERROR_COPY = {
   upload_type_not_allowed:'That file type is not accepted here. Nothing was charged.',
   upload_type_mismatch:  'That file is not the type it claims to be. Nothing was charged.',
   upload_too_large:      'That file is over the size limit (20 MB, or 100 MB for video). Nothing was charged.',
+  upload_dimensions_too_large: 'That image is too large in pixels (16,384 px a side, 100 megapixels). Nothing was charged.',
   upload_unreadable:     'We could not read that file. Nothing was charged.',
   source_not_found:      'An upload expired. Add it again. Nothing was charged.',
   source_too_large:      'That image has too many pixels for this model. Use a smaller one. Nothing was charged.',

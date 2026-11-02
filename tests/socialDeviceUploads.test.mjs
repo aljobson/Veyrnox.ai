@@ -15,7 +15,13 @@ const req = (body, method = 'POST', owner = auth) => new Request('https://veyrno
     method, headers: { 'x-veyrnox-auth-id': owner }, ...(method !== 'GET' ? { body: JSON.stringify(body) } : {}),
 });
 const upload = { id, r2_key: key, filename: 'test.png', mime_type: 'image/png', size_bytes: 1024, status: 'pending' };
-function stub({ rows = [upload], reserve = { ok: true, id, r2_key: key }, range = 'bytes 0-15/1024', bytes, removed = { ok: true } } = {}) {
+// The route now reads the dimension window of an image, so the stub serves a whole 1 KiB file with a real IHDR.
+function pngHeader(w, h) {
+    const png = new Uint8Array(1024); png.set([137,80,78,71,13,10,26,10,0,0,0,13,73,72,68,82]);
+    new DataView(png.buffer).setUint32(16, w); new DataView(png.buffer).setUint32(20, h);
+    return png;
+}
+function stub({ rows = [upload], reserve = { ok: true, id, r2_key: key }, range = 'bytes 0-1023/1024', bytes, removed = { ok: true } } = {}) {
     const calls = [];
     globalThis.fetch = async (url, init) => {
         const path = new URL(url).pathname;
@@ -25,7 +31,7 @@ function stub({ rows = [upload], reserve = { ok: true, id, r2_key: key }, range 
         if (path.endsWith('/read_social_upload')) return Response.json({ ok: true, uploads: rows });
         if (path.endsWith('/complete_social_upload')) return Response.json({ ok: true });
         if (path.endsWith('/remove_social_upload')) return Response.json(removed);
-        const png = new Uint8Array(16); png.set([137,80,78,71,13,10,26,10]);
+        const png = pngHeader(64, 64);
         return new Response(bytes || png, { status: 206, headers: { 'Content-Range': range, 'Content-Type': 'image/png' } });
     };
     return calls;
@@ -56,6 +62,18 @@ test('completion rejects missing ownership, size mismatch and disguised files', 
         assert.ok([400,404].includes(res.status));
         assert.equal(calls.some((c) => c.path.endsWith('/complete_social_upload')),false);
     }
+});
+test('completion refuses an image whose canvas is over the ceiling or unprovable', async () => {
+    for (const bytes of [pngHeader(20000, 10), pngHeader(10001, 10000)]) {
+        const calls = stub({ bytes });
+        const res = await POST(req({ action:'complete',id }));
+        assert.equal(res.status,400); assert.equal((await res.json()).error,'upload_dimensions_too_large');
+        assert.equal(calls.some((c) => c.path.endsWith('/complete_social_upload')),false);
+    }
+    const noDims = pngHeader(1, 1); noDims.fill(0, 12, 16);          // IHDR chunk name destroyed: dimensions unprovable
+    const calls = stub({ bytes: noDims });
+    const res = await POST(req({ action:'complete',id }));
+    assert.equal(res.status,400); assert.equal(calls.some((c) => c.path.endsWith('/complete_social_upload')),false);
 });
 test('verified completion and list expose signed previews, never storage keys', async () => {
     stub();

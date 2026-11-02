@@ -150,6 +150,21 @@ test('the same send again is a replay: no provider call, no second charge', asyn
     assert.equal(f.streamCalls.length, 0); assert.equal(called(f, 'job_submitted').length, 0);
 });
 
+test('a paused chat admits an owned replay and refuses a new key before debit', async () => {
+    const f = fakes({ replies: { ledger_debit: { ok: true, job_id: JOB, idempotent: true, balance_after: 8 } } });
+    const modelRead=f.deps.select;
+    f.deps.isFeatureKilled=()=>true;
+    let existing=true;
+    f.deps.select=async(table,q)=>table==='users'?[{id:'user-1'}]:table==='jobs'?(existing?[{id:JOB}]:[]):modelRead(table,q);
+    const res=await run(f);
+    assert.equal(res.status,200);
+    assert.deepEqual(await res.json(),{replay:true,job_id:JOB,balance_after:8});
+    assert.equal(f.streamCalls.length,0);
+    existing=false;f.calls.length=0;
+    assert.equal((await run(f)).status,503);
+    assert.equal(f.calls.length,0,'new turn refused before debit or provider calls');
+});
+
 test('job_submitted fails: the debit is refunded and the provider is never called', async () => {
     const f = fakes({ replies: { job_submitted: { ok: false, code: 'BAD_STATE_FOR_SUBMIT' } } });
     const res = await run(f);

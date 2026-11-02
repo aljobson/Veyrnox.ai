@@ -1,3 +1,6 @@
+import { hasRuntimeReplay } from '../../../../lib/runtimeReplay.js';
+import { isFeatureKilled } from '../../../../lib/runtimeSwitchCache.js';
+import { featurePaused } from '../../../../lib/runtimeAdmission.js';
 import { readBoundedBody } from '../../../../lib/boundedBody.js';
 import { editorFeatureEnabled } from '../../../../lib/editorRuntimeFlags.mjs';
 import { falDispatchEnabled, admitFalDispatch } from '../../../../lib/falDispatch.js';
@@ -178,6 +181,8 @@ export async function POST(req) {
         if (!narration.ok) return NextResponse.json({ error: narration.error }, { status: 400 });
         inputs = { ...inputs, narration_text: narration.text };
     }
+
+    if (isFeatureKilled('generation') && !await hasRuntimeReplay(authId, idempotencyKey, cfg)) return featurePaused();
 
     // 0. Shared per-user entry check. After migration 0113 this atomically
     // counts attempts (20 per fixed 60-second window), including requests

@@ -61,6 +61,9 @@ import { runSocialAutolistSweep } from './lib/social/autolistSweep.js';
 import { publishEnabled, postingInsightsEnabled, socialCustomerWebhooksEnabled, socialRssAutolistsEnabled, socialScheduledReportsEnabled } from './lib/social/publishFeature.js';
 import { listModels } from './app/veyrnox/_lib/modelList.js';
 import { canonicalHttpsRedirect, stripTechnologyHeaders } from './lib/edgeTransportSecurity.js';
+import { cinemaRuntimeGate, prepareRuntimeAdmission } from './lib/runtimeAdmission.js';
+import { beginTelemetry, finishTelemetry, refreshTelemetryControl } from './lib/telemetry.js';
+import { refreshRuntimeSwitches } from './lib/runtimeSwitchCache.js';
 
 export default {
     async fetch(request, env, ctx) {
@@ -73,10 +76,17 @@ export default {
         const limited = await adminEdgeRateLimit(request, env) || await turnstileReportRateLimit(request, env)
             || await apiEdgeRateLimit(request, env);
         if (limited) return limited;
+        const telemetryStarted = beginTelemetry();
         const bounded = await limitRequestBody(request);
-        const response = bounded.response || await withOutageShape(
+        const switchRefresh = !bounded.response && prepareRuntimeAdmission(bounded.request, env, ctx);
+        if (switchRefresh) await switchRefresh;
+        const response = bounded.response || await cinemaRuntimeGate(request, env) || await withOutageShape(
             bounded.request, (req) => handler.fetch(dropInternalHeaders(req), env, ctx),
         );
+        try {
+            finishTelemetry(request, response, telemetryStarted, ctx, env);
+            refreshTelemetryControl(env, ctx);
+        } catch { console.error('[telemetry] response instrumentation failed'); }
         return stripTechnologyHeaders(response);
     },
 
@@ -122,14 +132,16 @@ export default {
             ...(editorFeatureEnabled('EDITOR_SERVER_RENDER_RECOVERY_ENABLED', env)
                 ? [observeRecovery('editor_server_render', () => runEditorServerRenderSweep(env), env)] : []),
             observeRecovery('asset_reap', () => runAssetReap(env), env),
-            observeRecovery('publish_sweep', () => runPublishSweep({
+            observeRecovery('publish_sweep', () => Promise.resolve(refreshRuntimeSwitches({
+                supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY,
+            })).catch(() => {}).then(() => runPublishSweep({
                 env,
                 cfg: { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY },
                 cryptoCfg: tokenCryptoConfig(env),
                 r2cfg: r2EnvFrom(env),
                 publicHost: env.PUBLIC_HOST,
                 mediaProxySecret: env.SOCIAL_MEDIA_PROXY_SECRET,
-            }).then((out) => { if (out.claimed) console.error('[publish-sweep]', JSON.stringify(out)); return out; }), env),
+            })).then((out) => { if (out.claimed) console.error('[publish-sweep]', JSON.stringify(out)); return out; }), env),
             // Off until 0188 is applied; unlike the publish sweep there is
             // nothing queued to finish, so the switch gates it outright. Not a
             // recovery task: worker_task_health (0157) has no name for it.

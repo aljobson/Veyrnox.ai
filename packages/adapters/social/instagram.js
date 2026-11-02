@@ -187,6 +187,46 @@ export async function publishPost(accessToken, { externalAccountId, caption, med
     };
 }
 
+/** Create an image container on one sweep, then wait for Meta to finish it
+ * before authorizing the one public publish. An ambiguous publish is never
+ * retried: the durable submission marker requires reconciliation instead. */
+export async function publishImageStep(accessToken, { externalAccountId, caption, mediaType, mediaUrl, state = {}, now = Date.now() }, fetcher = fetch, beforePublish = async () => {}) {
+    if (mediaType !== 'image') throw new Error('unsupported_media_type');
+    if (state.submission_started) throw new Error('provider_result_unknown_reconcile_before_retry');
+    const progress = (next) => ({ inProgress: true, providerState: next, nextCheckAt: new Date(now + 60000).toISOString() });
+    if (!state.container_id) {
+        const url = new URL(`${GRAPH_BASE}/${externalAccountId}/media`);
+        url.searchParams.set('image_url', mediaUrl);
+        if (caption) url.searchParams.set('caption', caption);
+        url.searchParams.set('access_token', accessToken);
+        const container = await postJson(url, fetcher);
+        if (!container || typeof container.id !== 'string' || !/^\d{3,32}$/.test(container.id)) throw new Error('media_container_failed');
+        return progress({ container_id: container.id, started_at: new Date(now).toISOString() });
+    }
+    if (!/^\d{3,32}$/.test(state.container_id)) throw new Error('invalid_provider_id');
+    const started = Date.parse(state.started_at || '');
+    if (!Number.isFinite(started) || started > now + 60000 || now - started > 2 * 3600000) throw new Error('poll_timeout');
+    const statusUrl = new URL(`${GRAPH_BASE}/${state.container_id}`);
+    statusUrl.searchParams.set('fields', 'status_code');
+    statusUrl.searchParams.set('access_token', accessToken);
+    const status = (await getJson(statusUrl, fetcher)).status_code;
+    if (status === 'IN_PROGRESS') return progress(state);
+    if (status === 'PUBLISHED') throw new Error('published_container_requires_reconciliation');
+    if (['ERROR', 'EXPIRED'].includes(status)) throw new Error('instagram_container_failed');
+    if (status !== 'FINISHED') throw new Error('invalid_container_status');
+    const url = new URL(`${GRAPH_BASE}/${externalAccountId}/media_publish`);
+    url.searchParams.set('creation_id', state.container_id);
+    url.searchParams.set('access_token', accessToken);
+    await beforePublish();
+    const published = await postJson(url, fetcher);
+    if (!published || typeof published.id !== 'string') throw new Error('media_publish_failed');
+    const permalinkUrl = new URL(`${GRAPH_BASE}/${published.id}`);
+    permalinkUrl.searchParams.set('fields', 'permalink');
+    permalinkUrl.searchParams.set('access_token', accessToken);
+    const permalink = await getJson(permalinkUrl, fetcher).catch(() => null);
+    return { ok: true, platformPostId: published.id, platformPostUrl: permalink?.permalink || null };
+}
+
 const ANALYTICS_MEDIA_LIMIT = 50;
 // One insights call per post, so only the newest few are refreshed each
 // round; older posts keep the numbers stored while they were recent (0188

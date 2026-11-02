@@ -74,7 +74,40 @@ function Webhooks() {
       {data && <BySource rows={data.by_source} />}
       {data && <Failures rows={data.failures} />}
       {data && <Stuck rows={data.stuck_events} />}
+      {data?.polled && <Polled data={data.polled} />}
     </div>
+  );
+}
+
+function Polled({ data }) {
+  const cols = 'grid-cols-[140px_100px_100px_120px_100px_1fr]';
+  return (
+    <section className="mt-10">
+      <h2 className="text-lg font-black tracking-[-0.02em] mb-1">Polled providers</h2>
+      <p className="mb-3 text-xs text-vx-fg-body max-w-[640px]">
+        These providers send no signed callback, so they cannot appear above. A sweep reads their jobs every minute.
+        Overdue means a job is still submitted well past the age its sweep would have failed and refunded it. That is delayed settlement:
+        check that the sweep is running and the Worker log for provider read errors, because a failed read leaves a job waiting.
+      </p>
+      <div className="rounded-[10px] border border-vx-border bg-vx-panel overflow-x-auto">
+        <div className="min-w-[640px]" role="table" aria-label="Polled providers">
+          <div role="row" className={`grid ${cols} px-5 py-3 border-b border-vx-border font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted`}>
+            <div role="columnheader">PROVIDER</div><div role="columnheader" className="text-right">IN FLIGHT</div><div role="columnheader" className="text-right">OLDEST</div><div role="columnheader" className="text-right">OVERDUE</div><div role="columnheader" className="text-right">FAILS AT</div><div role="columnheader" className="pl-4">SWEEP</div>
+          </div>
+          {data.providers.map((p) => (
+            <div key={p.provider} role="row" className={`grid ${cols} items-center px-5 py-3 border-b border-vx-border/60 last:border-b-0 text-sm`}>
+              <div role="rowheader" className="font-bold">{p.provider}</div>
+              <div role="cell" className="text-right font-vx-mono vx-num">{nf.format(p.in_flight)}</div>
+              <div role="cell" className="text-right font-vx-mono vx-num text-vx-fg-muted">{p.oldest_minutes === null ? '—' : `${nf.format(p.oldest_minutes)} min`}</div>
+              <div role="cell" className={`text-right font-vx-mono vx-num ${p.overdue ? 'text-vx-danger' : ''}`}>{nf.format(p.overdue)}</div>
+              <div role="cell" className="text-right font-vx-mono vx-num text-vx-fg-muted">{p.timeout_minutes} min</div>
+              <div role="cell" className={`pl-4 text-xs ${p.sweep_enabled ? 'text-vx-fg-muted' : 'text-vx-warn'}`}>{p.sweep_enabled ? 'On' : 'Off (CRUN_ENABLED is not true)'}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      {data.capped && <p className="mt-2 text-xs text-vx-fg-muted">Showing the oldest 500 jobs across these providers; counts are lower bounds.</p>}
+    </section>
   );
 }
 

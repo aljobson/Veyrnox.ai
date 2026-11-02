@@ -1,0 +1,62 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { register } from 'node:module';
+import { ADMIN_PERMISSIONS, adminCan } from '../lib/adminPermissions.js';
+import { visibleAdminTabs } from '../lib/adminTabs.js';
+register('data:text/javascript,'+encodeURIComponent("export async function resolve(s,c,next){return next(s==='next/server'?'next/server.js':s,c)}"));
+const { freshAdminMfa } = await import('../lib/adminPanelApi.js');
+const { POST } = await import('../app/api/v1/admin/roles/route.js');
+test('the one SQL permission matrix agrees exactly with the JS mirror', async () => {
+  const sql=await readFile(new URL('../packages/db/schema/supabase/0428_admin_roles.sql',import.meta.url),'utf8');
+  const matrix=JSON.parse(sql.match(/'(\{"owner":.+?\})'::jsonb/)[1]);
+  assert.deepEqual(matrix,ADMIN_PERMISSIONS);
+  assert.equal(adminCan('owner','roles.write',false),false);
+  assert.equal(adminCan('finance','plans.read',true),true);
+  assert.equal(adminCan('finance','plans.write',true),false);
+  assert.equal(adminCan('viewer','support.write',true),false);
+  assert.equal(adminCan('support','support.write',true),true);
+  const finance=visibleAdminTabs({isAdmin:true,permissions:matrix.finance}).map(t=>t.id);
+  assert.deepEqual(finance,['payments','affiliates','plans']);
+  assert.deepEqual(visibleAdminTabs({isAdmin:true,permissions:['*']}),[]);
+  assert.deepEqual(visibleAdminTabs({isAdmin:true,permissions:matrix.moderator}).map(t=>t.id),['violations','appeals','reports','cinema']);
+});
+test('MFA accepts only trusted aal2 and a timestamp within the exact window', () => {
+  const now=1800000000000;
+  for(const age of [-6,301,NaN]) assert.equal(freshAdminMfa(new Request('https://test',{headers:{'x-veyrnox-auth-aal':'aal2','x-veyrnox-auth-mfa-at':String(now/1000-age)}}),now),null);
+  for(const age of [-5,0,300]) assert.ok(freshAdminMfa(new Request('https://test',{headers:{'x-veyrnox-auth-aal':'aal2','x-veyrnox-auth-mfa-at':String(now/1000-age)}}),now));
+  assert.equal(freshAdminMfa(new Request('https://test',{headers:{'x-veyrnox-auth-aal':'aal1','x-veyrnox-auth-mfa-at':String(now/1000)}}),now),null);
+});
+test('role writes reject spoofed MFA/body fields, require keys, and forward only verified freshness', async t => {
+  const env={SUPABASE_URL:'https://db.test',SUPABASE_SERVICE_ROLE_KEY:'test',ADMIN_REQUIRE_AAL2:'true',ACCESS_TEAM_DOMAIN:'',ACCESS_AUD:''};
+  const previous=Object.fromEntries(Object.keys(env).map(k=>[k,process.env[k]]));Object.assign(process.env,env);
+  t.after(()=>{for(const[k,v]of Object.entries(previous)){if(v===undefined)delete process.env[k];else process.env[k]=v;}});
+  const now=Math.floor(Date.now()/1000), auth='11111111-1111-4111-8111-111111111111', target='22222222-2222-4222-8222-222222222222';
+  const headers={'x-veyrnox-auth-id':auth,'x-veyrnox-auth-aal':'aal2','x-veyrnox-auth-mfa-at':String(now),'idempotency-key':'role-test-0001','content-type':'application/json'};
+  const body={target_user:target,role:'finance',action:'set',reason:'Owner assignment'};
+  const request=(value=body,h=headers)=>new Request('https://test/api/v1/admin/roles',{method:'POST',headers:h,body:JSON.stringify(value)});
+  const calls=[];let permissions=['roles.write'],result={ok:true,change_id:'saved'};
+  t.mock.method(globalThis,'fetch',async(url,init)=>{calls.push({url:String(url),body:JSON.parse(init.body)});return String(url).endsWith('/admin_permissions')?Response.json({ok:true,permissions}):Response.json(result,{status:result.code==='P0001'?400:200});});
+  t.mock.method(console,'error',()=>{});
+  for(const [b,h,status] of [[body,{'content-type':'application/json'},401],[body,{...headers,'x-veyrnox-auth-mfa-at':'invalid'},403],[body,{...headers,'idempotency-key':''},400],[{...body,p_aal:'aal2'},headers,400],[{...body,reason:''},headers,400],[{...body,role:'root'},headers,400]]) {
+    const res=await POST(request(b,h));assert.equal(res.status,status);assert.equal(res.headers.get('cache-control'),'no-store');
+  }
+  assert.equal(calls.length,0);
+  permissions=['plans.read'];
+  assert.equal((await POST(request())).status,403);
+  assert.equal(calls.length,1,'denied before mutation RPC');
+  permissions=['roles.write'];
+  assert.equal((await POST(request())).status,200);
+  assert.deepEqual(calls.at(-1).body,{p_auth_id:auth,p_target_user:target,p_role:'finance',p_aal:'aal2',p_mfa_at:new Date(now*1000).toISOString(),p_idem_key:'role-test-0001',p_reason:'Owner assignment'});
+  assert.match(calls.at(-1).url,/admin_role_set$/);
+  assert.equal((await POST(request({target_user:target,action:'revoke',reason:'Remove role'}))).status,200);
+  assert.match(calls.at(-1).url,/admin_role_revoke$/);assert.ok(!Object.hasOwn(calls.at(-1).body,'p_role'));
+  const expired={...headers,'x-veyrnox-auth-mfa-at':String(now-301)};
+  assert.equal((await POST(request(body,expired))).status,200,'expired verified proof reaches the stored replay');
+  assert.equal(calls.at(-1).body.p_mfa_at,new Date((now-301)*1000).toISOString());
+  result={code:'P0001',message:'mfa_required'};
+  assert.equal((await POST(request(body,{...expired,'idempotency-key':'new-role-key-001'}))).status,403,'SQL still refuses expired proof for new writes');
+  result={ok:false,code:'no_role'};
+  const noop=await POST(request({target_user:target,action:'revoke',reason:'Remove role'}));
+  assert.equal(noop.status,409);assert.deepEqual(await noop.json(),{error:'no_role'});
+});
