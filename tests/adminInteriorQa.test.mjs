@@ -1,3 +1,5 @@
+import { ADMIN_PERMISSIONS } from '../lib/adminPermissions.js';
+import { RUNTIME_SWITCHES } from '../lib/runtimeSwitches.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
@@ -38,6 +40,8 @@ test('Cinema administrators can discover the publication queue without a bookmar
 
 function accessFixtureModule() {
   return compile('e2e/fixtures/access-product.mjs', id => {
+    if (id === '../../lib/adminPermissions.js') return {ADMIN_PERMISSIONS};
+    if (id === '../../lib/runtimeSwitches.js') return {RUNTIME_SWITCHES};
     assert.equal(id, './authenticated-product.mjs');
     return { SYNTHETIC_USER: { id: 'synthetic', email: 'synthetic@example.invalid' }, installProductFixtures: async (_page, options) => options };
   });

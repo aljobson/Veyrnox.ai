@@ -18,6 +18,7 @@ import { Chip } from '../../_components/Chip';
 import { gatewayFetch, GatewayError } from '../../_lib/gateway';
 import { MfaPanel } from '../../_components/MfaPanel';
 import { adminMetricsState, ADMIN_METRICS_COPY } from '../../_lib/adminMetricsState';
+import { AdminExpansionLinks } from './_components/AdminExpansionLinks';
 
 const nf = new Intl.NumberFormat('en-US');
 
@@ -86,6 +87,8 @@ export default function Admin() {
             <Link href="/app/admin/security" className="text-sm underline">Security alerts</Link>
           </div>
         )}
+
+        {state === 'ready' && <AdminExpansionLinks />}
 
         {state === 'ready' && metrics && (
           <>

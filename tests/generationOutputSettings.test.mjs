@@ -69,6 +69,31 @@ test('ambiguous OpenRouter video submit keeps the debit and a replay never resub
     assert.equal(calls.filter((call) => call.path === '/api/v1/videos').length, 1);
 });
 
+test('a paused generation permits recovery of an owned job but creates no new job', async t => {
+    t.mock.method(globalThis[Symbol.for('veyrnox.runtimeSwitchCache.v1')],'cachedKilled',()=>true);
+    const calls=[];
+    let existing=true;
+    t.mock.method(globalThis,'fetch',async(url,init={})=>{
+        const path=new URL(String(url)).pathname;calls.push(path);
+        if(path.endsWith('/users'))return Response.json([{id:AUTH}]);
+        if(path.endsWith('/jobs'))return Response.json(existing?[{id:JOB}]:[]);
+        if(path.endsWith('/model_catalog'))return Response.json([model]);
+        if(path.endsWith('/rpc/ledger_debit')){
+            assert.equal(JSON.parse(init.body).p_idempotency_key,'output-settings-test');
+            return Response.json({ok:true,job_id:JOB,idempotent:true,balance_after:100});
+        }
+        if(path.endsWith('/rpc/check_generation_rate_limit'))return Response.json({ok:true});
+        assert.fail('Unexpected provider or mutation call: '+path);
+    });
+    const replay=await POST(request({duration_seconds:5}));
+    assert.equal(replay.status,200);assert.equal((await replay.json()).job_id,JOB);
+    assert.equal(calls.filter(p=>p.endsWith('/rpc/ledger_debit')).length,1,'normal idempotent recovery RPC');
+    existing=false;calls.length=0;
+    const fresh=await POST(request({duration_seconds:5}));
+    assert.equal(fresh.status,503);assert.equal((await fresh.json()).error,'feature_paused');
+    assert.deepEqual(calls,['/rest/v1/users','/rest/v1/jobs']);
+});
+
 test('1080p and malformed audio are refused before any lookup or charge', async (t) => {
     const calls = network(t);
     for (const inputs of [{ output_resolution: '1080p' }, { audio_enabled: 'false' }]) {

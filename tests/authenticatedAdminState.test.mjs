@@ -21,8 +21,8 @@ function harness(gatewayFetch) {
     useCallback: callback => callback,
     useEffect(callback) { if (initial) effects.push(callback); },
   };
-  const stubs = { react: hooks, 'next/link': 'a', '../../_components/NavBar': { AppNav: 'nav' }, '../../_components/Main': { Main: 'main' }, '../../_components/Chip': { Chip: 'span' }, '../../_components/MfaPanel': { MfaPanel: 'mfa-panel' }, '../../_lib/gateway': { gatewayFetch, GatewayError } };
-  const module = { exports: {} };
+  const stubs = { './_components/AdminExpansionLinks': { AdminExpansionLinks: 'admin-expansion-links' }, react: hooks, 'next/link': 'a', '../../_components/NavBar': { AppNav: 'nav' }, '../../_components/Main': { Main: 'main' }, '../../_components/Chip': { Chip: 'span' }, '../../_components/MfaPanel': { MfaPanel: 'mfa-panel' }, '../../_lib/gateway': { gatewayFetch, GatewayError } };
+  const loaded = { exports: {} };
   const code = ts.transpileModule(source, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS } }).outputText;
   new Function('require', 'module', 'exports', code)(id => {
     if (stubs[id]) return stubs[id];
@@ -33,8 +33,8 @@ function harness(gatewayFetch) {
       return output.exports;
     }
     return require(id);
-  }, module, module.exports);
-  const render = () => { cursor = 0; const tree = module.exports.default(); initial = false; return tree; };
+  }, loaded, loaded.exports);
+  const render = () => { cursor = 0; const tree = loaded.exports.default(); initial = false; return tree; };
   render();
   const cleanup = effects.map(callback => callback());
   return { render, cleanup: () => cleanup.forEach(callback => callback?.()) };

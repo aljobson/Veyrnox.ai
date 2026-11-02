@@ -1,6 +1,7 @@
 // The admin dashboard routes verify the Cloudflare Access assertion in code
 // (ADR-0078), the same way the Cinema administrator routes do. The edge rule
 // is still there; this is the check that does not depend on it.
+import { ADMIN_PERMISSIONS } from '../lib/adminPermissions.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { register } from 'node:module';
@@ -40,7 +41,7 @@ async function mint({ pair, jwk }, over = {}, base = PERSON) {
 }
 
 /** Answer the Access key set, and count anything that reaches Supabase. */
-function stubNetwork(jwks, rpc = () => Response.json({ ok: true, user: {}, jobs: [], r2_key: 'held/test.png', mime_type: 'image/png', action_id: 'a', tier: 'warning' })) {
+function stubNetwork(jwks, rpc = () => Response.json({ ok: true, permissions: ADMIN_PERMISSIONS.owner, user: {}, jobs: [], r2_key: 'held/test.png', mime_type: 'image/png', action_id: 'a', tier: 'warning' })) {
     const reached = [];
     globalThis.fetch = async (url, init) => {
         const u = String(url);
@@ -62,6 +63,20 @@ async function withEnv(env, run) {
 }
 
 const ROUTES = [
+    ['plans GET', '../app/api/v1/admin/plans/route.js', 'GET', '/api/v1/admin/plans', undefined],
+    ['plans POST', '../app/api/v1/admin/plans/route.js', 'POST', '/api/v1/admin/plans', {kind:'pack',id:'web-209',active:false,reason:'Test'}],
+    ['traffic GET', '../app/api/v1/admin/traffic/route.js', 'GET', '/api/v1/admin/traffic', undefined],
+    ['support GET', '../app/api/v1/admin/support/route.js', 'GET', '/api/v1/admin/support', undefined],
+    ['support POST', '../app/api/v1/admin/support/route.js', 'POST', '/api/v1/admin/support', {action:'reply',ticket:USER,body:'Test reply',reason:'support-reply'}],
+    ['affiliates GET', '../app/api/v1/admin/affiliates/route.js', 'GET', '/api/v1/admin/affiliates', undefined],
+    ['revenue GET', '../app/api/v1/admin/revenue/route.js', 'GET', '/api/v1/admin/revenue', undefined],
+    ['endpoints GET', '../app/api/v1/admin/endpoints/route.js', 'GET', '/api/v1/admin/endpoints', undefined],
+    ['permissions GET', '../app/api/v1/admin/permissions/route.js', 'GET', '/api/v1/admin/permissions', undefined],
+    ['roles GET', '../app/api/v1/admin/roles/route.js', 'GET', '/api/v1/admin/roles', undefined],
+    ['switches GET', '../app/api/v1/admin/switches/route.js', 'GET', '/api/v1/admin/switches', undefined],
+    ['roles POST', '../app/api/v1/admin/roles/route.js', 'POST', '/api/v1/admin/roles', {target_user:USER, role:'finance', action:'set', reason:'Test'}],
+    ['switches POST', '../app/api/v1/admin/switches/route.js', 'POST', '/api/v1/admin/switches', {key:'generation', state:'off', reason:'Test'}],
+    ['changes GET', '../app/api/v1/admin/changes/route.js', 'GET', '/api/v1/admin/changes', undefined],
     ['held asset GET', '../app/api/v1/admin/reports/asset/route.js', 'GET', `/api/v1/admin/reports/asset?job_id=${USER}`, undefined],
     ['metrics GET', '../app/api/v1/admin/metrics/route.js', 'GET', '/api/v1/admin/metrics', undefined],
     ['violations GET', '../app/api/v1/admin/violations/route.js', 'GET', '/api/v1/admin/violations', undefined],
