@@ -1,3 +1,5 @@
+import { ADMIN_PERMISSIONS } from '../../lib/adminPermissions.js';
+import { RUNTIME_SWITCHES } from '../../lib/runtimeSwitches.js';
 import { installProductFixtures, SYNTHETIC_USER } from './authenticated-product.mjs';
 
 export const TITLE_ID = '00000000-0000-4000-8000-000000000071';
@@ -5,6 +7,15 @@ export const ACTION_ID = '00000000-0000-4000-8000-000000000072';
 export const ADMIN_PAGES = [
   ['', 'Last 24 hours', '/admin/metrics', 'By model'],
   ['/users', 'Account ledger', null, 'Find a user'],
+  ['/affiliates', 'Affiliates', '/admin/affiliates', 'Top referrers'],
+  ['/payments', 'Payments and analytics', '/admin/revenue', 'Current MRR by billing channel'],
+  ['/endpoints', 'Endpoints', '/admin/endpoints', 'Route inventory'],
+  ['/roles', 'Roles', '/admin/roles', 'Administrator roles'],
+  ['/switches', 'On/off switches', '/admin/switches', 'Runtime overrides'],
+  ['/plans', 'Plans and features', '/admin/plans', 'Subscription plans — read-only'],
+  ['/traffic', 'Traffic', '/admin/traffic', 'Views by day'],
+  ['/support', 'Support', '/admin/support', 'Inbox'],
+  ['/changes', 'Changes', '/admin/changes', 'No changes recorded yet'],
   ['/violations', 'Content violations', '/admin/violations', 'Nothing recorded.'],
   ['/appeals', 'Content appeals', '/admin/appeals', 'No open appeals.'],
   ['/reports', 'Content reports', '/admin/reports', 'No open reports.'],
@@ -19,7 +30,17 @@ export const ADMIN_PAGES = [
 ];
 
 const ADMIN_READS = {
+  '/admin/plans': {ok:true,permissions:ADMIN_PERMISSIONS.owner,plans:[],packs:[],history:[]},
+  '/admin/traffic': {ok:true,permissions:ADMIN_PERMISSIONS.owner,telemetry:false,days:[],paths:[],countries:[],devices:[],referrers:[]},
+  '/admin/support': {ok:true,permissions:ADMIN_PERMISSIONS.owner,tickets:[],runs:[],next:null,intake:false},
   '/admin/metrics': { generated_at: '2026-10-16T12:00:00Z', jobs_total: 0, models: [] },
+  '/admin/changes': { entries: [], next_cursor: null, permissions: ADMIN_PERMISSIONS.owner },
+  '/admin/permissions': { ok:true, permissions:ADMIN_PERMISSIONS.owner },
+  '/admin/affiliates': { ok:true, permissions:ADMIN_PERMISSIONS.owner, totals:{codes:0,signups:0,rewarded:0,clawed_back:0,credits_granted:0,credits_reversed:0},top_referrers:[],recent_rewards:[] },
+  '/admin/revenue': { ok:true, permissions:ADMIN_PERMISSIONS.owner,mrr_by_channel:[],subscriptions_by_status:[],pack_purchase_cohorts:[] },
+  '/admin/endpoints': { ok:true, permissions:ADMIN_PERMISSIONS.owner,inventory:[],webhooks:[],telemetry:false },
+  '/admin/roles': { ok:true, permissions:ADMIN_PERMISSIONS.owner,roles:[] },
+  '/admin/switches': { ok:true, permissions:ADMIN_PERMISSIONS.owner,switches:Object.entries(RUNTIME_SWITCHES).map(([key,r])=>({key,kind:r.kind,state:null})) },
   '/admin/violations': { violations: [] },
   '/admin/appeals': { appeals: [] },
   '/admin/reports': { reports: [], unavailable_scans_24h: 0, asset_gone_scans_24h: 0 },

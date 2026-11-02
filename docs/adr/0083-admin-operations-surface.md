@@ -16,6 +16,37 @@ The admin page showed last-day metrics, a violations queue, a user lookup and th
 
 ## Decision
 
+Expansion (2026-11-02, migrations 0426–0429): the shared shell links Changes,
+Affiliates, Payments, Endpoints, Roles and On/off switches beside existing Users
+and moderation pages. Unbuilt tabs stay hidden. New sections use
+[ADR-0318](0318-admin-panel-roles.md)'s permissions and
+[ADR-0319](0319-runtime-switches.md)'s overrides. Changes unions the new append-only
+log with account actions. Affiliates reports credit referrals only, with no
+applications or cash payouts. Endpoints uses a generated route/method inventory
+with a stale-file test, existing webhook counts, and “telemetry off” until S5.
+Gate classes describe routing rather than certify security.
+
+Payments uses active subscriptions with current_period_end in the future and
+successful paid invoice/grant evidence. Each subscription's own snapshotted
+price_usd_cents is summed; yearly amounts are divided by twelve and rounded half
+up per row. Billing interval exists only on the plan, so only that value is
+joined: current plan price and active never determine MRR. Historical weekly
+intervals are excluded with a count because the work order defines only month
+and year. Stripe, iOS and Android are separate; store snapshot MRR is not store
+cash revenue. Trial state is not persisted, so evidence groups say “paid invoice
+recorded” or “no paid invoice recorded yet (trial or awaiting first invoice)”;
+neither trial counts nor trial-exclusive MRR are promised. Store initial-purchase
+and renewal grants are paid evidence; trial starter grants are excluded. Web pack
+cohorts use recorded purchase amounts minus cumulative refunds to date, grouped
+by checkout purchase date in UTC. No refund-day series is inferred. Store cash
+amounts and per-top-up dispute states are not recorded, so these are explicitly
+not included. No price, credit balance or ledger is changed by the reports.
+
+Tests: adminReporting.test.mjs covers routes/inventory; the host-run local
+rollback script test-admin-panel-reporting.mjs covers bounds, non-admin denial,
+empty/single/many subscriptions, per-row rounding, inactive plans, payment
+evidence, separate channels, referrals and cumulative refunds.
+
 Everything below is admin-only in the database (`users.is_admin`, raised as 42501 `not_admin`), behind the four gates of ADR-0078 in the route (`lib/adminGate.js`), and written to the append-only `account_actions` log with the admin's email as actor and a reason. Nothing is edited or deleted; corrections are new rows.
 
 1. **Ledger drilldown and reasoned grant (0271).** `admin_user_ledger` returns one account's balance buckets, every ledger row with its reason and the action log. `admin_credit_grant` appends a Pack grant through `ledger_grant` with reason `grant:admin <email>` and the form's Idempotency-Key, and records `credit_grant` on `account_actions` with the operator's note, the ledger row and the amount. There is no negative path: Free and Subscription Credits have their own lifecycle and a Pack clawback is a separate decision. The note is for administrators; the user's statement files the row as an adjustment.
@@ -26,6 +57,22 @@ Everything below is admin-only in the database (`users.is_admin`, raised as 4250
 6. **Webhook delivery log (0276).** `withDeliveryLog` wraps every inbound webhook route. After the handler answered, one row goes to `webhook_deliveries`: source, outcome class, HTTP status, typed error code. No payload, no headers. The answer the provider sees is never changed by the log, and a logging failure is swallowed. `/app/admin/webhooks` shows per-source counts by outcome, the refusals with the fix for each class, and `webhook_events` rows accepted but never processed. Rows older than thirty days are pruned opportunistically.
 
 ## Consequences
+
+The admin expansion starts with `/app/admin/changes` and a shared ten-tab registry
+(`AdminTabs`, migration 0426). Only implemented tabs are linked; the remaining
+Payments, Affiliates, Endpoints, Roles, Switches, Plans, Traffic and Support slices
+are not enabled by this migration. The read-only Changes feed unions account
+actions with an RPC-only, append-only administrator log, retaining operator
+identity for accountability as account actions already do. Account subject email
+is read from the current user row, so account erasure exposes the tombstone.
+The feed uses `(created_at, id)` cursors preserving PostgreSQL microseconds.
+Optional actor and inclusive-from/exclusive-to UTC filters extend the frozen RPC
+signature so filtering happens before pagination. Until the roles slice lands,
+this surface has the existing four gates and database `users.is_admin` check;
+the shell accepts explicit permissions for that later integration. No change-log
+writer is exposed in this slice, and no existing audit, credit or ledger row is
+modified. Service-role table access is revoked; the definer read RPC is the only
+service-role entry point. UPDATE, DELETE and TRUNCATE are refused by triggers.
 
 - Six migrations, all idempotent, none touching the money invariants: `reconcile_balances`, `reconcile_free_credits` and `reconcile_subscription_credits` return zero rows after a grant, a hold, an appeal and an escalation in the local smoke tests.
 - `account_actions.action` gains `credit_grant`, `appeal_upheld`, `appeal_rejected`, `csam_escalation`, `evidence_released`; the table gains `ledger_entry_id`, `credits_delta`, `hold_until`. `users` gains `hold_until`.
@@ -80,3 +127,5 @@ Migration 0350 and the reports page close them.
 - **Resolve is hidden on a held scanner report.** Release is the way out, so a report cannot be closed while its image stays held.
 - **A held Threads container is reset.** When the check finds the image held after the container finished and nothing was published (no post id, no submission marker), the target goes back to pending with an empty state and a new container is made after release. Other networks keep their state.
 - **A deleted account takes no clawback.** `admin_credit_clawback_guarded` answers `ACCOUNT_DELETED`, per ADR-0111. The grant function has the same gap and is unchanged here.
+
+S4–S6 add read-only subscription catalogs and guarded web pack availability (ADR-0320), default-off hourly server telemetry (ADR-0321), and stored support tickets with real account erasure (ADR-0322). These tabs use the new role matrix; older admin routes retain their existing authorization. Support sends no email and invokes no agent.
