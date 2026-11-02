@@ -75,6 +75,8 @@ test('the promo film sits in the hero with nothing laid over it', () => {
     // No child, scrim or gradient is drawn on top of the picture.
     assert.doesNotMatch(hero, /<FilmPlayer[^>]*>\s*<(div|Link)/);
     assert.doesNotMatch(hero, /bg-gradient|from-black|absolute inset/);
+    // The fixed utility rail stays clear of the picture on phones and at lg.
+    assert.match(hero, /max-sm:pe-14[^"]*lg:max-\[1360px\]:pe-14/);
     assert.doesNotMatch(read('../app/veyrnox/page.js'), /BreakthroughVideo/);
     assert.doesNotMatch(read('../app/veyrnox/_sections/film.js'), /<h1\b/, 'the film must not steal the page heading');
 });

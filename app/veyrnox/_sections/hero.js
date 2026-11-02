@@ -41,7 +41,11 @@ export async function Hero({ models }) {
           </div>
           <p className="mt-5 text-[14px] text-vx-fg-body">{t('home.cta.note')}</p>
         </div>
-        <div className="mx-auto w-full max-w-[420px] lg:max-w-[460px]">
+        {/* The fixed Contact / back-to-top rail (SiteChrome) is 44px wide, 8px from
+            the right edge and scrolls over the page. Where the film could reach
+            it (phones, and the two-column layout until the container stops
+            at 1300px) the column keeps 3.5rem clear on that side. */}
+        <div className="mx-auto w-full max-w-[420px] max-sm:pe-14 lg:max-w-[460px] lg:max-[1360px]:pe-14">
           <FilmPlayer film={BREAKTHROUGH_FILM} label={t('public.film.robot')} aspectRatio="9 / 16" controlsBelow />
         </div>
       </div>
