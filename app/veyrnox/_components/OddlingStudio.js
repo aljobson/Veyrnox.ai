@@ -463,7 +463,7 @@ export default function OddlingStudio() {
           </div>
         </section>
       </div>
-            <div className="sticky bottom-0 z-20 border-t border-vx-border bg-vx-panel/95 px-4 py-2 backdrop-blur-sm sm:px-7 xl:px-10"><div className="mx-auto flex max-w-[1500px] flex-wrap items-center gap-x-4 gap-y-2">
+            <div className="sticky bottom-0 z-20 border-t border-vx-border bg-vx-panel/95 px-4 py-2 backdrop-blur-sm sm:px-7 xl:w-[430px] xl:border-e xl:py-3"><div className="mx-auto flex max-w-[1500px] flex-wrap items-center gap-x-4 gap-y-2 xl:mx-0">
               {lowCredits && (
                 <div role="status" className="flex min-w-0 flex-1 basis-full items-center justify-between gap-3 rounded-lg border border-vx-money/40 bg-vx-money/[0.08] px-3 py-1.5 sm:basis-0">
                   <p className="text-xs leading-snug text-vx-fg-body">
@@ -474,14 +474,14 @@ export default function OddlingStudio() {
                 </div>
               )}
               {!lowCredits && <p className="hidden min-w-0 flex-1 font-vx-mono text-[10px] text-vx-fg-faint sm:block">{generationModel ? t('app.oddlings.selectedPipeline',{model:generationModel.name}) : t("app.oddlings.opensCreate")}{generationCost != null && <> · <span className="font-bold text-vx-money">{t('app.oddlings.livePrice',{count:number(generationCost)})}</span></>}</p>}
-              <div className="ms-auto grid w-full gap-2 sm:flex sm:w-auto sm:items-center sm:justify-end">
+              <div className="ms-auto grid w-full gap-2 sm:flex sm:w-auto sm:items-center sm:justify-end xl:grid xl:w-full xl:grid-cols-[auto_minmax(0,1fr)] xl:justify-stretch">
                 {mode === 'portrait' && (
-                  <button type="button" onClick={surprise} className="w-full rounded-full border border-vx-border bg-vx-base px-4 py-2 text-xs font-extrabold text-vx-fg transition-colors hover:border-vx-accent sm:w-auto">{t("app.oddlings.surprise")}</button>
+                  <button type="button" onClick={surprise} className="w-full rounded-full border border-vx-border bg-vx-base px-4 py-2 text-xs font-extrabold text-vx-fg transition-colors hover:border-vx-accent sm:w-auto xl:order-1 xl:w-auto">{t("app.oddlings.surprise")}</button>
                 )}
-                <button type="button" disabled={!!handingOff} data-assistant-target="oddlings.chat" onClick={continueToChat} className="w-full whitespace-normal rounded-full border border-vx-accent px-4 py-2 text-xs font-extrabold text-vx-accent transition-colors hover:bg-vx-accent/10 disabled:opacity-50 sm:w-auto">
+                <button type="button" disabled={!!handingOff} data-assistant-target="oddlings.chat" onClick={continueToChat} className="w-full whitespace-normal rounded-full border border-vx-accent px-4 py-2 text-xs font-extrabold text-vx-accent transition-colors hover:bg-vx-accent/10 disabled:opacity-50 sm:w-auto xl:order-3 xl:col-span-2">
                   {handingOff === 'chat' ? t('app.oddlings.openingChat') : t('app.oddlings.refineChat')}
                 </button>
-                <Button type="button" size="md" cost={generationCost} disabled={generationCost == null || !!handingOff} aria-busy={!!handingOff} data-assistant-target="oddlings.continue" onClick={continueToCreate} className="w-full min-w-0 justify-between sm:w-auto">
+                <Button type="button" size="md" cost={generationCost} disabled={generationCost == null || !!handingOff} aria-busy={!!handingOff} data-assistant-target="oddlings.continue" onClick={continueToCreate} className="w-full min-w-0 justify-between sm:w-auto xl:order-2 xl:w-full">
                   {handingOff === 'create' ? t("app.oddlings.opening") : generationCost == null ? t("app.oddlings.checkingPrice") : mode === 'motion' ? t("app.oddlings.animate") : t("app.oddlings.generatePortrait")}
                 </Button>
               </div>
