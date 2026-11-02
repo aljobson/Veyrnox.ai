@@ -76,7 +76,8 @@ test('production prepares Instagram credentials while keeping its release closed
     const [prod, staging] = wrangler.split('"env": {');
     assert.match(prod, /"PUBLISH_ENABLED": "true"/);
     assert.match(prod, /"PUBLISH_RELEASED_NETWORKS": "youtube,linkedin,twitter,tiktok"/);
-    assert.match(prod, /"INSTAGRAM_CLIENT_ID": "2428989684301953"/);
+    assert.match(prod, /"FACEBOOK_CLIENT_ID": "2428989684301953"/);
+    assert.match(prod, /"INSTAGRAM_CLIENT_ID": "1116196098057142"/);
     assert.match(prod, /"PUBLISH_ANALYTICS_ENABLED": "true"/);
     assert.match(prod, /"PUBLISH_POSTING_INSIGHTS_ENABLED": "true"/);
     for (const flag of ['PUBLISH_UPLOADS_ENABLED', 'PUBLISH_EXTENDED_NETWORKS_ENABLED']) {
