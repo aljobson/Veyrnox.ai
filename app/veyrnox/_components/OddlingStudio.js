@@ -14,6 +14,7 @@ import { REVEAL_SAVED_ODDLING } from '../../../lib/savedOddlingHelp.js';
 import { beginJourney, journeyHandoff, publishJourneyView } from '../_lib/veyJourneyStore';
 import { Button } from './Button';
 import { OddlingCatalog } from './OddlingCatalog';
+import { TileGroup } from './OddlingCatalogControls';
 import { OddlingExplore, useOddlingExplore } from './OddlingExplore';
 import { OddlingMotionPanel } from './OddlingMotionPanel';
 import { OddlingReferencePreview } from './OddlingReferencePreview';
@@ -47,7 +48,11 @@ import {
   saveOddlingToLibrary,
 } from '../_lib/oddlingStudio';
 
-const PORTRAIT_INVALIDATING_KEYS = new Set([...CHARACTER_GROUPS.map((group) => group.id), 'oddling_rule']);
+// The character-type tiles lead the builder panel, as the first thing chosen; the catalog above leaves them out so they are not shown twice.
+const LEAD_GROUP_IDS = ['character_type'];
+const LEAD_GROUPS = CHARACTER_GROUPS.filter((group) => LEAD_GROUP_IDS.includes(group.id));
+
+const PORTRAIT_INVALIDATING_KEYS =new Set([...CHARACTER_GROUPS.map((group) => group.id), 'oddling_rule']);
 
 export default function OddlingStudio() {
   const { t, locale } = useI18n();
@@ -329,7 +334,7 @@ export default function OddlingStudio() {
           </div>
         </div>
       </header>
-      {mode === 'portrait' && <OddlingCatalog picks={picks} onPick={setPick} onClear={clearLook} />}
+      {mode === 'portrait' && <OddlingCatalog picks={picks} onPick={setPick} onClear={clearLook} hiddenGroupIds={LEAD_GROUP_IDS} />}
       <div className="grid xl:grid-cols-[430px_minmax(0,1fr)]">
         <aside data-assistant-target="oddlings.builder" data-assistant-loaded-passport={loadedPassportId || undefined} className="min-w-0 border-b border-vx-border bg-vx-panel xl:border-b-0 xl:border-e">
           <div className="sticky top-16 max-h-[calc(100dvh-4rem)] overflow-y-auto scroll-pb-60 p-5 pb-60 sm:p-7 sm:pb-60">
@@ -355,6 +360,12 @@ export default function OddlingStudio() {
               </div>)}
               <input value={referenceNote} onChange={(event) => setReferenceNote(event.target.value)} maxLength={180} className={`${field} mt-3`} placeholder={t("app.oddlings.referencePlaceholder")} />
             </div>
+
+            {mode === 'portrait' && LEAD_GROUPS.length > 0 && (
+              <div data-assistant-target="oddlings.character-type" className="mt-5 space-y-4">
+                {LEAD_GROUPS.map((group) => <TileGroup key={group.id} group={group} picks={picks} value={picks[group.id]} onChange={setPick} categoryId="who" />)}
+              </div>
+            )}
 
             <div className="mt-5 grid grid-cols-2 gap-2">
               <label>

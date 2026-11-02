@@ -13,12 +13,12 @@ import { SliderGroup, SwatchGroup, TileGroup } from './OddlingCatalogControls';
 
 // Sims-style creator: a figure that updates as you pick, a rail of categories, and for each group a swatch, slider or tile control.
 // A full-width workbench: the figure stays beside the choices on a wide screen and stacks above them on a phone. It edits the same `picks` the trait chips used to, so prompts, saved passports and the Create handoff are unchanged.
-export function OddlingCatalog({ picks, onPick, onClear }) {
+export function OddlingCatalog({ picks, onPick, onClear, hiddenGroupIds = [] }) {
   const { t, locale } = useI18n();
   const number = value => locale === 'en' ? String(value) : new Intl.NumberFormat(localeTag(locale)).format(value);
   const [categoryId, setCategoryId] = useState(CATALOG_CATEGORIES[0].id);
   const category = categoryById(categoryId);
-  const groups = categoryGroups(category);
+  const groups = categoryGroups(category).filter((group) => !hiddenGroupIds.includes(group.id));
   const total = CHARACTER_GROUPS.filter((group) => picks?.[group.id]).length;
   const summaryFields = {Hair:'hair',Outfit:'wardrobe_style',Body:'body_type'};
   const summary = Object.entries(summaryFields).map(([name, field]) => [name, picks?.[field], field]);
