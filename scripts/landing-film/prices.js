@@ -7,7 +7,7 @@
   const row = (id, name, credits) => ({ id, name, credits });
   window.FilmPrices = [
     ['Video', [
-      row('wan-2.5-kie', 'Wan 2.5', 17), row('kling-2.6-pro-kie', 'Kling 2.6 Pro', 16),
+      row('wan-2.5-kie', 'Wan 2.5', 17), row('kling-2.6-pro-kie', 'Kling 2.6 Pro', 18),
       row('seedance-2.0-fast', 'Seedance 2.0', 19), row('veo-3.1-fast-kie', 'Veo 3.1 Fast', 9),
       row('veo-3.1-lite-kie', 'Veo 3.1 Lite', 5), row('hailuo-02-kie', 'MiniMax Hailuo 02', 9),
     ]],

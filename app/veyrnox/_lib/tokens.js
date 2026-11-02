@@ -10,7 +10,7 @@
 // catalog does (tests/modelCapabilities.test.mjs checks it).
 export const MODELS = [
   { id: 'wan-2.5-kie',        name: 'Wan 2.5',             credits: 17,  tag: 'RECOMMENDED', preselected: true, kind: 'video', durations: [5, 10], aspects: ['16:9', '9:16', '1:1'] },
-  { id: 'kling-2.6-pro-kie',  name: 'Kling 2.6 Pro',       credits: 16,                                         kind: 'video', durations: [5, 10], aspects: ['16:9', '9:16', '1:1'] },
+  { id: 'kling-2.6-pro-kie',  name: 'Kling 2.6 Pro',       credits: 18,                                        kind: 'video', durations: [5, 10], aspects: ['16:9', '9:16', '1:1'] },
   { id: 'kling-3.0-i2v',      name: 'Kling 3.0 · I2V',     credits: 32,                                         kind: 'video', durations: [5, 10], media: { image: { required: true }, endImage: { required: false } } },
   { id: 'kling-o1-reference', staged: true, name: 'Kling O1 · Reference', credits: 47, kind: 'video', durations: [5, 10], media: { video: { required: true, maxSeconds: 10 }, image: { required: true } } },
   { id: 'seedance-2.0-reference', staged: true, name: 'Seedance 2.0 · Reference', credits: 85, kind: 'video', durations: [5, 10], media: { image: { required: true, maxFiles: 9 } } },
