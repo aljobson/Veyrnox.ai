@@ -1,0 +1,62 @@
+# ADR-0317 — Processor register and recorded minimum-age confirmation
+
+Status: Implemented behind a disabled flag; legal copy and translations require owner and counsel review.
+Date: 2 November 2026
+
+## Decision
+
+`docs/compliance/sub-processors.md` is the source of truth for the evidenced vendor inventory, purpose/basis mapping and proposed retention decisions. Every DPA is UNKNOWN — owner to confirm. Code or a public policy sentence is not proof of a signed agreement. The register distinguishes processors, independent controllers, user-selected recipients and planned integrations; owners must verify legal entities, actual regions, downstream model suppliers and transfer arrangements. No retention job changes and no promise of compliance accompany this work.
+
+The existing policy remains 18, or the age of majority where the person lives. `lib/minimumAge.js` exports MINIMUM_AGE = 18 and the statement version `age-18-v1`; a test compares it with mobile MIN_AGE. Changing the threshold requires an owner decision and coordinated terms/privacy/mobile/ADR-0110 changes. This change does not change eligibility wording or introduce parental consent.
+
+Migration 0425 adds nullable age_confirmed_at and age_confirmation_version to public.users. The service-role-only confirm_minimum_age(uuid,text) RPC locks the user, records only the first positive declaration, and returns that same timestamp and version on every valid replay, even for a different version. Malformed versions and erased users are refused. There are no credit or ledger writes. Browser roles and PUBLIC have no execute permission; the definer search path is empty.
+
+A BEFORE UPDATE trigger extends the existing ADR-0111 tombstone transition to clear the two age fields. No new user-linked table needs classification. The ADR-0250 profile allowlist gains exactly those two fields in the private.read_privacy_export_page_without_voice base from migration 0368, preserving creator_profile, checkin_streak and every other section and its identity/isolation checks. The public wrapper from 0390 is unchanged and continues to add voice_profiles. The export script's allowlist is updated. A disposable local replay test covers repeated RPC calls, migration replay, unchanged balances/ledger, grants, profile export and erasure.
+
+POST /api/v1/account/age-confirmation requires middleware-verified identity and `{confirm:true,version}` with a bounded version regex. The browser cannot choose the internal user id. The endpoint is off unless AGE_CONFIRMATION_ENABLED is exactly `true`. GET /api/v1/account returns age_confirmed and age_confirmation_required (flag on and not confirmed); a missing-user/rate-limiter fallback omits age_confirmation_required because no confirmation state was read. A throttled read remains 429. Unknown status (missing metadata, NOT_FOUND, throttling or a read failure) fails open: only an explicit age_confirmation_required === true blocks. The gate silently retries reads after 1, 2 and 4 seconds, then stops; unmount cancels the pending retry. An account_not_found confirmation result also fails open and retries reads only, never automatically resubmitting a declaration. Errors are typed, no-store, and contain no backend details.
+
+The app template wraps the existing paywall/content with the age gate. Identity comes from the shared auth session, covering email, Google, Apple and existing users; it is not tied to a signup callback. A keyed component prevents account switches inheriting another person's confirmation. It allows app content during hydration, checking and unknown status. This deliberate fail-open choice is appropriate to a self-declaration control, not an access-control boundary; an unavailable read can therefore allow an unconfirmed person to proceed. Confirmed accounts continue without the question. The shared native Modal supplies the top layer, inert background and focus trap; Escape/backdrop cannot dismiss the required declaration. No checkbox is preselected. Continue and “I'm under 18” have equal styling.
+
+Declining changes component memory only: there is no negative declaration request, analytics event or persisted minor record. The authenticated session remains available in the dialog. Sign out remains available. Only when the server's ACCOUNT_DELETION_ENABLED flag is true does “Delete my account” mount the existing DeleteAccountPanel. It retains explicit DELETE confirmation, blockers and retry with the same token. The shared panel now requires a positive `deleted:true` response before signing out. Blocked, unavailable and failed deletion leave the person in the dialog, with the privacy email route and Sign out. It never says an account was closed merely because someone declined.
+
+## Limits and activation prerequisites
+
+This is an honest-signal self-declaration, not age verification. API access is not blocked server-side when unconfirmed or after declining. A person can sign in again and be asked again. Public pages outside the app template remain accessible. No date of birth, identity document or guardian data is collected. A verified-guardian flow is an owner-level alternative, not part of this decision.
+
+Native mobile age-gate/recording is a follow-up and MUST ship before this flag is enabled in production. The existing native ConsentRow remains 18; native source is unchanged. Generated mobile legal catalogs are refreshed from the website and must pass sync-web-legal --check. The legal/public/app catalogs retain all 11 locales with translated new text; parity tests check keys, placeholders and numerical facts, not professional translation quality. Counsel and owner must review every legal-copy change and translation before publication.
+
+AGE_CONFIRMATION_ENABLED ships as `false` in staging and is absent in production. No rollout is authorized here. The account projection reads the new column even while the question is off, so it accurately reports stored confirmation after rollback. Before migration 0425, it retries the old projection only for an explicit missing-age-column schema error with the flag off; all other errors and enabled-flag projection failures remain errors at the API; the UI treats unavailable status as unknown and fails open as described above. Apply migration 0425 through the approved migration workflow before enabling the feature, then maintain clean reconciliation for the repository-required rollout window; enable staging only with owner approval and test all identity/deletion flows before production. Turning the flag off disables writes and the dialog, not the recorded field read.
+
+## Frozen work-order differences and verification limits
+
+The plan's Crun exclusion was stale: packages/provider-sdk/registry.js imports and registers Crun even though its adapter header says unregistered. The production configuration has CRUN_ENABLED=true and migrations 0387/0389 activate first-choice Crun routes with recorded paid-probe evidence. The register and public list therefore include this live configured integration; this is repository evidence, not a new query of the deployed backend. Adapter behavior is unchanged. Other adapter helpers are either mapped to their actual vendors or explicitly marked non-vendor.
+
+Local origin/main is 4bb5bd785, with latest migration 0424 and ADR 0316. The sandbox denied git fetch writing shared FETCH_HEAD; gh pr list could not reach GitHub. The coordinator must recheck migration/ADR collisions before integration. Numbering here remains the frozen plan's 0425/0317.
+
+The installed with-build-slot wrapper could not open the shared lock for writing in this sandbox. Verification uses a temporary copy that opens that SAME existing lock read-only, retains its exclusive flock, and leaves its permissions untouched. It neither creates a competing lock nor weakens serialization.
+
+Local PostgreSQL initialization was denied shared-memory creation. The coordinator reports that real PG17 replay passed test-privacy-export, test-account-deletion and test-default-privileges. Their age-confirmation replay exposed the missing auth.mfa_factors fixture; the test now creates it inside its rolled-back transaction, matching test-privacy-export. The coordinator will rerun database proofs; no local replay success is claimed here. The automated UI tests exercise component handlers; browser visual, focus, contrast, viewport and assistive-technology checks are not substitutes for those tests and remain separate. See the final advisory report for command outputs and denied actions.
+
+
+## Accepted inspection fixes (F1–F3)
+
+The migration definition chain was checked across all local SQL migrations: 0362 base, 0364 creator_profile, 0368 checkin_streak, then 0390 moves the base to private.read_privacy_export_page_without_voice and adds voice_profiles through the public wrapper. No later local migration beyond 0390 redefines that chain before this 0425 change, and 0425 is the latest local number. 0425 now changes only the private base (0368 body plus the two age fields); its ACL remains revoked from PUBLIC, anon, authenticated and service_role. The public wrapper and its service-role grant are untouched. Database proofs exercise existing populated voice/creator/check-in data alongside the age fields and repeat 0425.
+
+A missing account is not evidence that age confirmation is required. Both missing-user projections omit that property. Inspection 2 supersedes the earlier unavailable/retry/sign-out modal: account_not_found now resets the checkbox, allows content and starts bounded read retries. No automatic confirmation is added.
+
+
+## Translation review status (inspection F2)
+
+All new non-English legal strings are machine-produced drafts and still require native-speaker AND counsel review before publication. The register was checked against surrounding catalog wording: German uses Sie/Ihr, Spanish usted/su, Korean the existing formal imperative; Portuguese follows the surrounding formal address and European phrasing. Japanese, French, Russian, Arabic, Hindi and Chinese new strings retain the surrounding polite/formal or impersonal register. This source comparison is not native or legal approval.
+
+The required `translationsReviewedAgainstEnglishDated` field in `lib/i18n/messages/legal/source-hashes.json` is a mechanical English-source date enforced by `scripts/legal-source-hashes.mjs`; it must not be read as certification of human review. No additional review claims or dates are recorded. The source hashes are regenerated for the conditional recording notice, restored retention commitments and purpose-labelled provider entries; the required English-source date remains 2 November 2026, with no additional review-date bump.
+
+## Inspection 2 legal amendments and historical baseline
+
+The public notice describes recording only where age confirmation is requested; it does not assert collection while the flag is off or on native mobile. The existing ledger lifetime-plus-tax-period and short security-window request-log commitments are restored verbatim in all locales. Only store customer records, referral rewards, security events and push records are described as having retention periods being finalised. Provider entries now state a purpose, include planned BytePlus, and separate user-directed social recipients from service providers. Stripe's existing Merchant of Record controller role is retained.
+
+No sanctioned regeneration script or README instruction was found for tests/fixtures/legal-english-main.json; its only reader is tests/legalTranslation.test.mjs. The fixture and its commit reference are restored unchanged. The test uses the existing render harness's module-mock mechanism to exclude only the explicitly enumerated ADR-0317 added blocks and restore the prior two notice dates for historical comparison. It separately checks that every allowed addition renders in the real page. Existing text, links and structure, including b052/b053, still have to match the historical HTML. This is a narrow amendment allowance, not a moved baseline.
+
+## Rollout order and fail-open (inspection 3)
+
+Apply migration 0425 on a database before `AGE_CONFIRMATION_ENABLED` is turned on against it: with the flag on and the `age_confirmed_at` column missing, `GET /api/v1/account` answers 502. The gate itself is deliberately fail-open: if the account read keeps failing or is rate limited, it retries a few times and then lets the person through, because this is a self-declaration control and not age verification.

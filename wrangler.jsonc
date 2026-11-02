@@ -319,6 +319,7 @@
       }],
       "triggers": { "crons": ["*/5 * * * *", "* * * * *"] },
       "vars": {
+        "AGE_CONFIRMATION_ENABLED": "false",
         "YOUR_WINS_ENABLED": "false",
         // Exercise the scanner in staging; queued images drain oldest first.
         "CONTENT_SCAN_ENABLED": "true",
