@@ -50,3 +50,10 @@ test('every Kling 3.0 I2V template with a readable preview now has a hint that a
         if (p.sourceAspect === '9:16') assert.ok(w < h, p.id);
     }
 });
+
+test('the public template page and the Create card both read the derived hint, not the raw field', async () => {
+    const { readFileSync } = await import('node:fs');
+    const page = readFileSync(new URL('../app/veyrnox/presets/[id]/page.js', import.meta.url), 'utf8');
+    assert.match(page, /templateSourceAspect\(template/);
+    assert.doesNotMatch(page, /template\.sourceAspect/);
+});
