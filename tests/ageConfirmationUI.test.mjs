@@ -52,6 +52,7 @@ function age(fetcher, signOut=async()=>{}) {
   '../_lib/gateway':{gatewayFetch:fetcher}, '../../lib/authClient':{signOut},
  });
 }
+const open = tree => { const [wrap, modal] = React.Children.toArray(tree.props.children); return { content: wrap.props.children, inert: wrap.props.inert, modal: !!modal }; };
 const button = (tree,label) => nodes(tree).find(n=>n.type==='button'&&text(n)===label);
 test('unconfirmed users start unchecked; Continue records only affirmative version; confirmed content opens',async()=>{
  const calls=[];
@@ -66,12 +67,12 @@ test('unconfirmed users start unchecked; Continue records only affirmative versi
  tree=h.render('Confirmation',{children:'application'});
  await button(tree,'Continue').props.onClick();
  assert.deepEqual(JSON.parse(calls[1][1].body),{confirm:true,version:AGE_CONFIRMATION_VERSION});
- assert.equal(h.render('Confirmation',{children:'application'}),'application');
+ assert.deepEqual(open(h.render('Confirmation',{children:'application'})),{content:'application',inert:false,modal:false});
 });
 test('already confirmed users see content and make no confirmation write',async()=>{
  const calls=[];const h=age(async path=>{calls.push(path);return {age_confirmed:true};});
  h.render('Confirmation');await h.mount();
- assert.equal(h.render('Confirmation',{children:'application'}),'application');assert.deepEqual(calls,['/account']);
+ assert.deepEqual(open(h.render('Confirmation',{children:'application'})),{content:'application',inert:false,modal:false});assert.deepEqual(calls,['/account']);
 });
 test('declining stays authenticated; deletion disabled offers email and sign-out only',async()=>{
  let signedOut=0;const calls=[];const h=age(async path=>{calls.push(path);return {age_confirmation_required:true};},async()=>{signedOut++;});
@@ -127,9 +128,9 @@ test('failed confirmation keeps the gate closed and allows retry',async()=>{
  await button(h.render('Confirmation'),'Continue').props.onClick();
  const failed=h.render('Confirmation',{children:'private app'});
  assert.ok(nodes(failed).some(n=>n.props?.role==='alert'));
- assert.doesNotMatch(text(failed),/private app/);
+ assert.deepEqual(open(failed),{content:'private app',inert:true,modal:true},'app stays mounted but inert behind the dialog');
  await button(h.render('Confirmation'),'Continue').props.onClick();
- assert.equal(h.render('Confirmation',{children:'private app'}),'private app');
+ assert.deepEqual(open(h.render('Confirmation',{children:'private app'})),{content:'private app',inert:false,modal:false});
 });
 test('a successful HTTP response without deletion success never signs the person out',async()=>{
  const h=deletion(async()=>({state:'ready',token:'token',credits:0}),async()=>({deleted:false}),async()=>assert.fail('signed out without deletion'));
@@ -145,13 +146,13 @@ test('unknown status, NOT_FOUND and rate-limited reads fail open with bounded ba
   ]) {
     let reads = 0;
     const h = age(async () => { reads++; return read(); });
-    assert.equal(h.render('Confirmation', { children: 'application' }), 'application');
+    assert.deepEqual(open(h.render('Confirmation', { children: 'application' })), { content: 'application', inert: false, modal: false });
     await h.mount();
     for (const delay of [1000, 2000, 4000]) {
-      assert.equal(h.render('Confirmation', { children: 'application' }), 'application');
+      assert.deepEqual(open(h.render('Confirmation', { children: 'application' })), { content: 'application', inert: false, modal: false });
       assert.equal(await h.retry(), delay);
     }
-    assert.equal(h.render('Confirmation', { children: 'application' }), 'application');
+    assert.deepEqual(open(h.render('Confirmation', { children: 'application' })), { content: 'application', inert: false, modal: false });
     assert.equal(reads, 4);
     assert.equal(h.timers.size, 0);
   }
@@ -160,7 +161,7 @@ test('a silent retry blocks only after an explicit requirement; unmount cancels 
   let reads = 0;
   const h = age(async () => ++reads === 1 ? {} : { age_confirmation_required: true });
   h.render('Confirmation'); await h.mount();
-  assert.equal(h.render('Confirmation', { children: 'application' }), 'application');
+  assert.deepEqual(open(h.render('Confirmation', { children: 'application' })), { content: 'application', inert: false, modal: false });
   await h.retry();
   assert.equal(nodes(h.render('Confirmation')).find(n => n.type === 'input').props.checked, false);
   assert.equal(h.timers.size, 0);
@@ -180,10 +181,22 @@ test('account_not_found on confirmation fails open and retries reads without a s
   nodes(h.render('Confirmation')).find(n => n.type === 'input').props.onChange({ target: { checked: true } });
   await button(h.render('Confirmation'), 'Continue').props.onClick();
   for (const delay of [1000, 2000, 4000]) {
-    assert.equal(h.render('Confirmation', { children: 'application' }), 'application');
+    assert.deepEqual(open(h.render('Confirmation', { children: 'application' })), { content: 'application', inert: false, modal: false });
     assert.equal(await h.retry(), delay);
   }
   assert.equal(writes, 1);
   assert.equal(reads, 4);
   assert.equal(h.timers.size, 0);
+});
+
+test('the app stays mounted behind an inert, uncaptured dialog while the question is open',async()=>{
+ const h=age(async()=>({age_confirmation_required:true}));h.render('Confirmation');await h.mount();
+ const tree=h.render('Confirmation',{children:'application'});
+ assert.deepEqual(open(tree),{content:'application',inert:true,modal:true});
+ assert.ok(nodes(tree).some(n=>/\bph-no-capture\b/.test(n.props?.className||'')),'dialog excluded from analytics capture');
+});
+test('an inactive gate (before hydration or signed out) renders only the app and makes no read',async()=>{
+ const calls=[];const h=age(async path=>{calls.push(path);return {};});
+ h.render('Confirmation',{active:false});await h.mount();
+ assert.deepEqual(open(h.render('Confirmation',{active:false,children:'application'})),{content:'application',inert:false,modal:false});assert.deepEqual(calls,[]);
 });

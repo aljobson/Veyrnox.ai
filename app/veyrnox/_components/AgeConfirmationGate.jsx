@@ -22,11 +22,12 @@ export function AgeConfirmationGate({ enabled, deletionEnabled, children }) {
 function Gate({ deletionEnabled, children }) {
   const hydrated = useSyncExternalStore(subscribeReady, ready, notReady);
   const id = useSyncExternalStore(onSessionChange, account, noAccount);
-  if (!hydrated || !id) return children;
-  return <Confirmation key={id} deletionEnabled={deletionEnabled}>{children}</Confirmation>;
+  // Same element type at the same position before and after hydration, so the
+  // app below is only remounted when the account changes (review: no lost work).
+  return <Confirmation key={id} active={hydrated && !!id} deletionEnabled={deletionEnabled}>{children}</Confirmation>;
 }
 
-function Confirmation({ deletionEnabled, children }) {
+function Confirmation({ active = true, deletionEnabled, children }) {
   const { t } = useI18n();
   const [state, setState] = useState('unknown');
   const [checked, setChecked] = useState(false);
@@ -52,9 +53,9 @@ function Confirmation({ deletionEnabled, children }) {
   }
   useEffect(() => {
     live.current = true;
-    check();
+    if (active) check();
     return () => { live.current = false; clearTimeout(retryTimer.current); };
-  }, []);
+  }, [active]);
   async function confirm() {
     if (!checked || busy) return;
     setBusy(true); setError('');
@@ -77,9 +78,13 @@ function Confirmation({ deletionEnabled, children }) {
     try { await signOut(); }
     catch { if (live.current) { setError(t('app.age.failed')); setBusy(false); } }
   }
-  if (state !== 'ask' && state !== 'declined') return children;
-  return <Modal instant onCancel={() => {}} initialFocusRef={initialFocus} aria-labelledby="age-title" className="items-center justify-center p-4">
-    <div className="max-h-full w-full max-w-lg overflow-y-auto rounded-2xl border border-vx-border bg-vx-panel p-6">
+  const blocked = active && (state === 'ask' || state === 'declined');
+  // The app stays mounted (and keeps any unsent work) behind the dialog; it is
+  // inert while the question is open, and the modal sits above everything else.
+  return <>
+    <div className="contents" inert={blocked}>{children}</div>
+    {blocked && <Modal instant onCancel={() => {}} initialFocusRef={initialFocus} aria-labelledby="age-title" className="items-center justify-center p-4">
+    <div className="ph-no-capture max-h-full w-full max-w-lg overflow-y-auto rounded-2xl border border-vx-border bg-vx-panel p-6">
       <h1 id="age-title" ref={initialFocus} tabIndex={-1} className="text-xl font-bold">{t('app.age.title')}</h1>
       {state === 'ask' && <>
         <label className="mt-4 flex min-h-12 items-center gap-3 text-vx-fg-body">
@@ -100,5 +105,6 @@ function Confirmation({ deletionEnabled, children }) {
       {busy && <p role="status" className="mt-4">{t('app.age.saving')}</p>}
       {error && <p role="alert" className="mt-4 text-vx-danger">{error}</p>}
     </div>
-  </Modal>;
+  </Modal>}
+  </>;
 }
