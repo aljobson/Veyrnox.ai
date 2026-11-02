@@ -46,6 +46,11 @@ test('Facebook reuses a shared Instagram Meta app when dedicated bindings are ab
     }), { clientId: '123456789', clientSecret: 'facebook-secret' });
 });
 
+test('Facebook uses its own ID when Instagram Login has a separate app', () => {
+    const env = { FACEBOOK_CLIENT_ID: '2428989684301953', INSTAGRAM_CLIENT_ID: '1116196098057142', META_APP_SECRET: 'shared-meta-secret', INSTAGRAM_CLIENT_SECRET: 'instagram-secret' };
+    assert.deepEqual(adapters.facebook.config(env), { clientId: env.FACEBOOK_CLIENT_ID, clientSecret: env.META_APP_SECRET });
+});
+
 test('each new OAuth URL binds state and uses its own registered HTTPS callback', () => {
     for (const network of ['facebook', 'threads', 'pinterest', 'twitch', 'gmb']) {
         const redirectUri = `https://staging.test/social/connect/callback/${network}`;

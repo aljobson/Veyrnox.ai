@@ -232,7 +232,7 @@
     // ADR-0066: Jev sorts untyped provider submit refusals into
     // provider_moderation / provider_input_rejected. off | shadow | enforce.
     // Needs the TYPESAFE_API_KEY secret; shadow only logs the label.
-    "JEV_SUBMIT_ERRORS_MODE": "off",
+    // Omitted to conserve bindings; an absent value defaults to off.
     // YouTube, LinkedIn and X public release; Google data-access review remains pending.
     // Previously queued targets continue even when public Publish is disabled.
     "PUBLISH_ENABLED": "true",
@@ -251,9 +251,9 @@
     "PUBLISH_YOUTUBE_VISIBILITY_ENABLED": "true",
 
     "PUBLISH_RELEASED_NETWORKS": "youtube,linkedin,twitter,tiktok",
-    // Public Meta app identifier. Keeping this out of Worker secrets leaves
-    // the final production binding slot available for INSTAGRAM_CLIENT_SECRET.
-    "INSTAGRAM_CLIENT_ID": "2428989684301953",
+    // Facebook and Instagram Login use distinct public app identifiers.
+    "FACEBOOK_CLIENT_ID": "2428989684301953",
+    "INSTAGRAM_CLIENT_ID": "1116196098057142",
     // Production 0188 is applied; Instagram, YouTube, TikTok and X collectors
     // activate only for accounts whose provider grants permit the read.
     "PUBLISH_ANALYTICS_ENABLED": "true",
