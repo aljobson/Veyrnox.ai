@@ -69,6 +69,7 @@ BEGIN
      AND NEW.summary='[erased]' AND to_jsonb(NEW)-'summary'=to_jsonb(OLD)-'summary';
   END IF;
  END IF;
+ IF TG_OP='TRUNCATE' THEN RAISE EXCEPTION '% is append-only (attempted TRUNCATE)', TG_TABLE_NAME USING ERRCODE='42501'; END IF;
  IF NOT coalesce(v_allowed,false) THEN RAISE EXCEPTION 'append_only' USING ERRCODE='42501'; END IF;
  RETURN NEW;
 END $$;

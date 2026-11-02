@@ -25,6 +25,9 @@ REVOKE ALL ON TABLE public.admin_change_log FROM PUBLIC, anon, authenticated, se
 CREATE OR REPLACE FUNCTION public.admin_change_log_append_only()
 RETURNS TRIGGER LANGUAGE plpgsql SET search_path = '' AS $$
 BEGIN
+    IF TG_OP = 'TRUNCATE' THEN
+        RAISE EXCEPTION '% is append-only (attempted TRUNCATE)', TG_TABLE_NAME USING ERRCODE = '42501';
+    END IF;
     RAISE EXCEPTION 'admin_change_log is append-only' USING ERRCODE = '42501';
 END $$;
 REVOKE ALL ON FUNCTION public.admin_change_log_append_only() FROM PUBLIC, anon, authenticated, service_role;
