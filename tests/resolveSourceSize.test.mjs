@@ -9,7 +9,10 @@ import { ALLOWED_UPLOAD_TYPES, uploadKeyFor } from '../lib/uploadSource.js';
 
 const AUTH = '11111111-2222-3333-4444-555555555555';
 const UUID = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
-const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0x0d, 0, 0, 0, 0]);
+// A valid IHDR (64 x 64): admission now requires an image's canvas to be proven, not just its signature.
+const PNG = new Uint8Array(24);
+PNG.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0x0d, 0x49, 0x48, 0x44, 0x52]);
+new DataView(PNG.buffer).setUint32(16, 64); new DataView(PNG.buffer).setUint32(20, 64);
 const CFG = { accountId: 'a', accessKeyId: 'k', secretAccessKey: 's', bucket: 'b', jurisdiction: 'eu' };
 const KEY = uploadKeyFor(AUTH, 'image/png', UUID).key;
 const CAP = ALLOWED_UPLOAD_TYPES['image/png'].maxBytes;
