@@ -1,10 +1,12 @@
 import { modelIdForName } from './tokens.js';
+import { ratioOf } from '../../../lib/aspectShapes.mjs';
 import { GENERATION_PROMPT_MAX } from '../../../lib/generationPromptLimits.js';
 
 // The longest prompt POST /api/v1/generations accepts (app/api/v1/generations/route.js).
 export const TEMPLATE_PROMPT_MAX = GENERATION_PROMPT_MAX;
 
 const nonEmptyString = (value) => typeof value === 'string' && value.trim().length > 0;
+const previewRatio = (preset) => { const text = preset.clip?.aspectRatio ?? preset.previewAspect; return ratioOf(text) === null ? null : text.trim(); };
 const supportedDuration = (value) => value === 5 || value === 10;
 
 // Resolve the template from the URL even when session storage is unavailable.
@@ -18,7 +20,8 @@ export function draftForTemplate(preset, modelId) {
     && preset.sourcePromptRunnable !== true) return null; // the server decides from the source audit (lib/clientTemplates.js)
   return {
     prompt: preset.prompt,
-    aspect: nonEmptyString(preset.aspect) ? preset.aspect : null,
+    // A template that records no aspect keeps its preview's own ratio, unsnapped; the Create page matches it once against the options its model offers.
+    aspect: nonEmptyString(preset.aspect) ? preset.aspect : previewRatio(preset),
     durationSeconds: supportedDuration(preset.durationSeconds) ? preset.durationSeconds : 5,
     negativePrompt: nonEmptyString(preset.negativePrompt) ? preset.negativePrompt : '',
     templateId: preset.id,

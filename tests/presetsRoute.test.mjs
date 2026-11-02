@@ -68,7 +68,7 @@ test('the payload carries source framing and exact public source prompts but no 
         for (const u of [p.previewUrl, p.posterUrl, p.sourcePromptDuplicateOf]) assert.doesNotMatch(u ?? '', /higgs|syntx/i, p.id);
     }
     const framed = toPublicPresets(catalog).filter((p) => p.sourceAspect);
-    assert.equal(framed.length, 268);
+    assert.equal(framed.length, 314);
     assert.ok(framed.every((p) => /^(?:1:1|4:3|9:16|16:9)$/.test(p.sourceAspect)));
     const exact = toPublicPresets(catalog).filter((p) => p.sourcePromptOrigin === 'community-source-exact');
     assert.equal(exact.length, 365);
