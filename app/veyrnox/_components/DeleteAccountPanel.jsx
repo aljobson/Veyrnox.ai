@@ -12,7 +12,7 @@ const button = 'rounded-full border border-vx-border px-4 py-2 text-sm font-bold
 const UNKNOWN_BLOCKER = 'unknown';
 const RETRYABLE = new Set(['deletion_incomplete', 'deletion_unavailable', 'network_error', 'gateway_error']);
 
-export function DeleteAccountPanel() {
+export function DeleteAccountPanel({ compact = false, actionClassName, startLabel } = {}) {
   const { t, locale } = useI18n();
   const [busy, setBusy] = useState(false);
   const [plan, setPlan] = useState(null);
@@ -30,7 +30,8 @@ export function DeleteAccountPanel() {
   async function erase() {
     setBusy(true); setError('');
     try {
-      await confirmDeletion(plan.token);
+      const result = await confirmDeletion(plan.token);
+      if (result?.deleted !== true) throw new Error('deletion_not_confirmed');
       await signOut();
       window.location.assign('/');
     } catch (err) {
@@ -42,10 +43,12 @@ export function DeleteAccountPanel() {
   }
 
   const ready = plan?.state === 'ready';
-  return <section className="rounded-2xl border border-vx-danger/50 p-5">
-    <h2 className="font-bold mb-2">{t("app.account.delete.title")}</h2>
+  return <section className={compact ? '' : "rounded-2xl border border-vx-danger/50 p-5"}>
+    {!compact && <h2 className="font-bold mb-2">{t("app.account.delete.title")}</h2>}
     <p className="text-sm text-vx-fg-muted mb-4">{t("app.account.delete.policy")}</p>
-    <button type="button" disabled={busy} className={button} onClick={start}>{t("app.account.delete.start")}</button>
+    {startLabel
+      ? <button type="button" disabled={busy} className={actionClassName ? `${actionClassName} w-full` : button} onClick={start}>{startLabel}</button>
+      : <button type="button" disabled={busy} className={button} onClick={start}>{t("app.account.delete.start")}</button>}
     {plan?.state === 'unavailable' && <p role="status" className="mt-4 text-sm text-vx-fg-body">{t("app.account.delete.emailBefore")}<a className="underline" href="mailto:privacy@veyrnox.com?subject=Veyrnox.ai%20account%20deletion%20request">{t("app.account.delete.email")}</a>{t("app.account.delete.emailAfter")}</p>}
     {plan?.state === 'blocked' && <div role="status" className="mt-4 text-sm text-vx-fg-body">
       <p className="mb-2">{t("app.account.delete.blocked")}</p>

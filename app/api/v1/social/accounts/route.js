@@ -20,6 +20,7 @@ import { readPublishEntitlement } from '../../../../../lib/social/publishPlanApi
 import { socialUploadsEnabled } from '../../../../../lib/social/uploadPolicy.js';
 import { networkDetails, networkEnabled, networkMedia } from '../../../../../lib/social/networks.js';
 import { networkReadiness } from '../../../../../lib/social/networkReadiness.js';
+import { metaReviewAllowed } from '../../../../../lib/social/metaReview.js';
 import { tiktokReviewAllowed } from '../../../../../lib/social/tiktokReview.js';
 import { resolveBrand } from '../../../../../lib/social/resolveBrand.js';
 import { NextResponse } from 'next/server';
@@ -75,7 +76,8 @@ export async function GET(req) {
         accountLimit: entitlement?.account_limit || 1,
         ...(entitlement ? { planTier: entitlement.tier } : {}),
         accounts: (accounts.accounts || []).map((account) => ({ ...account, publishingEnabled: networkEnabled(account.network)
-            || (account.network === 'tiktok' && tiktokReviewAllowed(authId)), supportedMedia: networkMedia(account.network), carousel: carouselEnabled() ? networkDetails(account.network)?.carousel || null : null })),
+            || (account.network === 'tiktok' && tiktokReviewAllowed(authId))
+            || metaReviewAllowed(account.network, authId), supportedMedia: networkMedia(account.network), carousel: carouselEnabled() ? networkDetails(account.network)?.carousel || null : null })),
         carouselEnabled: carouselEnabled(),
         uploadsEnabled: socialUploadsEnabled(process.env, authId),
         youtubeVisibilityEnabled: youtubeVisibilityEnabled(),

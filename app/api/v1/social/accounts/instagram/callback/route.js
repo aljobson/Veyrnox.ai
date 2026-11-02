@@ -26,7 +26,7 @@
 import { NextResponse } from 'next/server';
 import { connectCallbackPath, requestedClient } from '../../../../../../../lib/social/connectReturn.js';
 import { socialConnectionWriter } from '../../../../../../../lib/social/accountAllowance.js';
-import { networkReleased } from '../../../../../../../lib/social/networks.js';
+import { metaAvailable } from '../../../../../../../lib/social/metaReview.js';
 import { rpc, envConfig, SupabaseError } from '../../../../../../../packages/db/supabase-client.js';
 import { instagramConfig, exchangeCodeForToken, fetchConnectedAccount, instagramScopes } from '../../../../../../../packages/adapters/social/instagram.js';
 import { consumeOAuthState } from '../../../../../../../lib/social/oauthStateStore.js';
@@ -42,7 +42,7 @@ export async function POST(req) {
         return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
     }
 
-    if (!networkReleased('instagram')) return NextResponse.json({ error: 'network_unavailable' }, { status: 404 });
+    if (!metaAvailable('instagram', authId)) return NextResponse.json({ error: 'network_unavailable' }, { status: 404 });
 
     const cfg = envConfig();
     const igCfg = instagramConfig();

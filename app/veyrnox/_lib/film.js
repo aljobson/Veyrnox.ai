@@ -16,20 +16,15 @@ export const LANDING_FILM = {
   renderedFrom: '7f476632c8ca2503',
 };
 
-// Owner-approved two-hit robot video with the Veyrnox.ai logo and creative
-// question composited into the frames. Provenance: docs/product/showcase-clips.md.
+// Owner-supplied promo (veyrnox_promo_one_app_v2): one 49 s portrait film used
+// on phones and the web alike. It is shown whole, never cropped; on a wide
+// screen it sits centred in the frame. Silent 720 x 1280 H.264 re-encode of the
+// owner's 1080 x 1920 export, under MAX_FILM_BYTES.
 export const BREAKTHROUGH_FILM = {
-  video: '/film/robot-creative-v5.mp4',
-  poster: '/film/robot-creative-v5.jpg',
-  width: 1280,
-  height: 720,
-  // A separate portrait composition preserves both hands on narrow screens.
-  mobile: {
-    video: '/film/robot-creative-portrait-v3.mp4',
-    poster: '/film/robot-creative-portrait-v3.jpg',
-    width: 720,
-    height: 1440,
-  },
+  video: '/film/veyrnox-promo.mp4',
+  poster: '/film/veyrnox-promo.jpg',
+  width: 720,
+  height: 1280,
 };
 
 // The brand intro: the Veyrnox.ai logo over Earth, shown above the hero

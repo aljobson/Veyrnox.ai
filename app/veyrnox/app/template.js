@@ -1,3 +1,6 @@
+import { AgeConfirmationGate } from '../_components/AgeConfirmationGate';
+import { ageConfirmationEnabled } from '../../../lib/minimumAge';
+import { accountDeletionEnabled } from '../../../lib/accountDeletion';
 import { CheckInHost } from '../_components/CheckInHost';
 import { HardPaywallGate } from '../_components/HardPaywallGate';
 import { hardPaywallEnabled } from '../../../lib/hardPaywall.js';
@@ -13,7 +16,7 @@ export default async function AppTemplate({ children }) {
   const info = localeInfo(locale);
   return (
     <I18nProvider locale={locale} enabled={localesEnabled()} messages={messages}>
-      <div lang={info.hreflang} dir={info.dir} data-app-locale={locale}><HardPaywallGate enabled={hardPaywallEnabled()}>{children}<CheckInHost /></HardPaywallGate></div>
+      <div lang={info.hreflang} dir={info.dir} data-app-locale={locale}><AgeConfirmationGate enabled={ageConfirmationEnabled()} deletionEnabled={accountDeletionEnabled()}><HardPaywallGate enabled={hardPaywallEnabled()}>{children}<CheckInHost /></HardPaywallGate></AgeConfirmationGate></div>
     </I18nProvider>
   );
 }
