@@ -65,6 +65,13 @@ describe('per-user in-flight job cap (0434)', { skip: !process.env.DATABASE_URL 
         await assert.rejects(debit(a), /user_inflight/);
     });
 
+    it('keeps a slot held by an old unresolved job (no age window)', async () => {
+        const u = await user();
+        for (let i = 0; i < 3; i++) await debit(u);
+        await pool.query(`UPDATE public.jobs SET created_at=now()-interval '2 days' WHERE user_id=$1`, [u]);
+        await assert.rejects(debit(u), /user_inflight/);
+    });
+
     it('is off when the switch is off', async () => {
         await setCap(1, false);
         const u = await user();
@@ -80,6 +87,21 @@ describe('per-user in-flight job cap (0434)', { skip: !process.env.DATABASE_URL 
         const left = await pool.query(`SELECT effect_key FROM public.provider_spend_reservations WHERE user_id=$1`, [u]);
         assert.deepEqual(left.rows.map((r) => r.effect_key), ['prune.new.0001']);
         assert.equal((await one(`SELECT public.prune_provider_spend_reservations(1) r`)).r.ok, false);
+    });
+
+    it('keeps reservations that belong to an unresolved job, including failover attempts', async () => {
+        const u = await user();
+        const key = `inflight.${randomUUID()}`;
+        await debit(u, key);
+        await pool.query(`UPDATE public.provider_spend_reservations SET admitted_at=now()-interval '10 days' WHERE user_id=$1`, [u]);
+        await pool.query(`INSERT INTO public.provider_spend_reservations(user_id,effect_key,provider,purpose,estimated_cost_microusd,admitted_at)
+            VALUES ($1,$2,'fal','job',1000,now()-interval '10 days'),($1,'unrelated.old.0001','fal','job',1000,now()-interval '10 days')`, [u, `${key}:a2`]);
+        await one(`SELECT public.prune_provider_spend_reservations(7) r`);
+        const left = (await pool.query(`SELECT effect_key FROM public.provider_spend_reservations WHERE user_id=$1 ORDER BY effect_key`, [u])).rows.map((r) => r.effect_key);
+        assert.deepEqual(left, [key, `${key}:a2`].sort());
+        await pool.query(`UPDATE public.jobs SET state='REFUNDED' WHERE user_id=$1`, [u]);
+        await one(`SELECT public.prune_provider_spend_reservations(7) r`);
+        assert.equal((await one(`SELECT count(*)::int n FROM public.provider_spend_reservations WHERE user_id=$1`, [u])).n, 0);
     });
 
     it('reports utilisation without naming users', async () => {

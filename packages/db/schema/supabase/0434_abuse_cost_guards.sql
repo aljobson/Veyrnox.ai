@@ -12,14 +12,16 @@
 --    jobs_provider_spend_guard (trigger names fire alphabetically), so a refusal
 --    never takes the global spend lock. A replay returns the existing job before
 --    any INSERT, so replays are unaffected. Only DEBITED inserts are counted.
---    The switch is the table's `enabled` column; a missing row means no cap, and
+--    A job holds its slot until it leaves DEBITED/SUBMITTED (no age cut-off). The
+--    switch is the table's `enabled` column; a missing row means no cap, and
 --    the spend caps in 0327/0329 still apply.
 -- 2. provider_spend_provider_policy rows for byteplus and crun (0329 seeded
 --    only grsai, fal, kie and openrouter*), so they no longer ride on the
 --    global cap alone.
 -- 3. prune_provider_spend_reservations: the spend check sums this table inside
 --    the global lock, and nothing ever deleted from it. Seven days is kept,
---    far longer than the UTC-day window the limits read. Scheduled daily.
+--    far longer than the UTC-day window the limits read. Reservations of jobs still
+--    DEBITED or SUBMITTED are kept (0414 reconciliation needs them). Scheduled daily.
 -- 4. SEC-008: one account creating many jobs in an hour (run_security_detection
 --    is 0418's body plus one branch).
 -- 5. provider_spend_utilization(): hour/day use against each cap, for an
@@ -42,6 +44,9 @@ ALTER TABLE public.user_inflight_policy ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_inflight_policy FORCE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE public.user_inflight_policy FROM PUBLIC, anon, authenticated, service_role;
 
+CREATE INDEX IF NOT EXISTS jobs_user_inflight_idx ON public.jobs (user_id)
+    WHERE state IN ('DEBITED'::public.job_state, 'SUBMITTED'::public.job_state);
+
 CREATE OR REPLACE FUNCTION private.enforce_user_inflight_on_job()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
 DECLARE v_policy public.user_inflight_policy%ROWTYPE; v_live INTEGER;
@@ -50,12 +55,13 @@ BEGIN
     SELECT * INTO v_policy FROM public.user_inflight_policy WHERE singleton;
     IF NOT FOUND OR NOT v_policy.enabled THEN RETURN NEW; END IF;
     PERFORM pg_advisory_xact_lock(hashtextextended('inflight:' || NEW.user_id::text, 0));
-    -- Jobs older than three hours are past every sweep deadline; the window also
-    -- lets the (user_id, created_at) index serve the count.
+    -- No age cut-off: a job holds its slot until its state changes. 0414 deliberately keeps
+    -- DEBITED jobs marked provider_outcome_unknown until service reconciliation, and an age
+    -- window would free their slots while the supplier may still be working. The partial
+    -- index below keeps this count to the account's live rows.
     SELECT count(*) INTO v_live FROM public.jobs
      WHERE user_id = NEW.user_id
-       AND state::text IN ('DEBITED', 'SUBMITTED')
-       AND created_at > now() - interval '3 hours';
+       AND state IN ('DEBITED'::public.job_state, 'SUBMITTED'::public.job_state);
     IF v_live >= v_policy.max_inflight THEN
         RAISE EXCEPTION 'PROVIDER_SPEND_LIMIT:user_inflight:30' USING ERRCODE = 'P0001';
     END IF;
@@ -79,10 +85,20 @@ BEGIN
     IF p_keep_days IS NULL OR p_keep_days < 3 THEN
         RETURN jsonb_build_object('ok', false, 'code', 'KEEP_DAYS_INVALID');
     END IF;
+    -- A reservation is also the evidence 0414 uses to hold and reconcile an ambiguous
+    -- supplier submission, so keep every reservation that belongs to a job still DEBITED or
+    -- SUBMITTED: its own key and its failover attempts (key || ':a' || n, 0373).
     DELETE FROM public.provider_spend_reservations
-     WHERE id IN (SELECT id FROM public.provider_spend_reservations
-                   WHERE admitted_at < now() - make_interval(days => p_keep_days)
-                   ORDER BY admitted_at LIMIT 50000);
+     WHERE id IN (SELECT r.id FROM public.provider_spend_reservations r
+                   WHERE r.admitted_at < now() - make_interval(days => p_keep_days)
+                     AND NOT EXISTS (
+                         SELECT 1 FROM public.jobs j
+                          WHERE j.user_id = r.user_id
+                            AND j.state IN ('DEBITED'::public.job_state, 'SUBMITTED'::public.job_state)
+                            AND j.idempotency_key IS NOT NULL
+                            AND (r.effect_key = j.idempotency_key
+                                 OR left(r.effect_key, length(j.idempotency_key) + 2) = j.idempotency_key || ':a'))
+                   ORDER BY r.admitted_at LIMIT 50000);
     GET DIAGNOSTICS v_deleted = ROW_COUNT;
     RETURN jsonb_build_object('ok', true, 'deleted', v_deleted);
 END $$;

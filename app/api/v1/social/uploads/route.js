@@ -5,7 +5,7 @@ import { presignGetUrl, presignPutUrl, envConfig as r2EnvConfig, isConfigured } 
 import { socialPostWriteLimit } from '../../../../../lib/socialPostWriteLimit.js';
 import { accountReadLimit } from '../../../../../lib/accountReadLimit.js';
 import { checkSocialUpload, socialUploadsEnabled } from '../../../../../lib/social/uploadPolicy.js';
-import { checkSniffed } from '../../../../../lib/uploadSource.js';
+import { checkSniffed, requireImageDimensions, DIMENSION_BYTES } from '../../../../../lib/uploadSource.js';
 import { admissionAvailable } from '../../../../../lib/uploadAdmission.js';
 import { fetchWithTimeout } from '../../../../../lib/fetchWithTimeout.js';
 
@@ -66,14 +66,18 @@ export async function POST(req) {
         const result = await rpc('read_social_upload', { p_auth_id: authId, p_id: body.id }, cfg);
         const upload = result?.uploads?.[0];
         if (!upload) return reply({ error: 'upload_not_found' }, 404);
-        // Read exactly a small header; never buffer a video in the Worker.
+        // Read a bounded header (16 bytes, or the dimension window for an image); never buffer a video in the Worker.
         const signed = await presignGetUrl(upload.r2_key, 60, r2cfg);
-        const end = Math.min(15, upload.size_bytes - 1);
-        const res = await fetchWithTimeout(signed.url, { headers: { Range: `bytes=0-${end}` } }, 8000, 16);
+        const window = String(upload.mime_type).startsWith('image/') ? DIMENSION_BYTES : 16;
+        const end = Math.min(window - 1, upload.size_bytes - 1);
+        const res = await fetchWithTimeout(signed.url, { headers: { Range: `bytes=0-${end}` } }, 8000, window);
         if (res.status !== 206 || res.headers.get('content-range') !== `bytes 0-${end}/${upload.size_bytes}`
             || res.headers.get('content-type')?.split(';')[0] !== upload.mime_type) return reply({ error: 'upload_integrity_failed' }, 400);
-        const checked = checkSniffed(upload.mime_type, await res.arrayBuffer());
+        const head = new Uint8Array(await res.arrayBuffer());
+        const checked = checkSniffed(upload.mime_type, head);
         if (!checked.ok) return reply({ error: checked.error }, 400);
+        const canvas = requireImageDimensions(upload.mime_type, head);
+        if (!canvas.ok) return reply({ error: canvas.error }, 400);
         const completed = await rpc('complete_social_upload', { p_auth_id: authId, p_id: body.id }, cfg);
         if (!completed?.ok) return reply({ error: 'upload_not_found' }, 404);
         return reply({ upload: await preview(upload, r2cfg) });

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-    ALLOWED_UPLOAD_TYPES, checkDeclared, uploadKeyFor, ownsUploadKey, sniffType, checkSniffed,
+    ALLOWED_UPLOAD_TYPES, checkDeclared, uploadKeyFor, ownsUploadKey, sniffType, checkSniffed, requireImageDimensions,
 } from '../lib/uploadSource.js';
 
 const AUTH = '11111111-2222-3333-4444-555555555555';
@@ -134,4 +134,19 @@ test('a small file declaring a huge canvas is refused by gate 2', () => {
     assert.equal(checkSniffed('image/png', png(10000, 10000)).ok, true, 'exactly 100 MP is allowed');
     assert.equal(checkSniffed('image/png', png(10001, 10000)).error, 'upload_dimensions_too_large');
     assert.equal(checkSniffed('image/png', png(20000, 10)).error, 'upload_dimensions_too_large', 'one side over 16384');
+});
+
+test('admission requires proven dimensions for images and ignores other media', () => {
+    const png = (w, h) => {
+        const x = new Uint8Array(33);
+        x.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52]);
+        new DataView(x.buffer).setUint32(16, w); new DataView(x.buffer).setUint32(20, h);
+        return x;
+    };
+    assert.deepEqual(requireImageDimensions('image/png', png(640, 480)), { ok: true, dimensions: { width: 640, height: 480 } });
+    assert.equal(requireImageDimensions('image/png', png(20000, 10)).error, 'upload_dimensions_too_large');
+    // A JPEG whose frame header is not inside the window (or an unreadable header) is not waved through.
+    assert.equal(requireImageDimensions('image/jpeg', new Uint8Array([0xff, 0xd8, 0xff, 0xe1, 0xff, 0xff, 0, 0, 0, 0, 0, 0])).error, 'upload_unreadable');
+    assert.equal(requireImageDimensions('image/png', new Uint8Array(16)).error, 'upload_unreadable');
+    assert.deepEqual(requireImageDimensions('video/mp4', new Uint8Array(16)), { ok: true, dimensions: null });
 });

@@ -10,14 +10,14 @@ gaps closed in PR #1867 and the ones left open.
 
 ## Decisions
 
-1. **Image canvas ceiling.** An upload is refused above 16,384 px on a side or
+1. **Image canvas ceiling.** Admission requires the canvas to be *proven*: an image whose header does not show its size inside the 128 KiB window is refused (`upload_unreadable`) rather than waved through, on the generation path (`resolveSource`), the Publish upload completion route and the server-render upload check. An upload is refused above 16,384 px on a side or
    100 megapixels (`upload_dimensions_too_large`), whatever model it is later used
    with; a model's own `maxPixels` can only be lower. Dimensions come from the file
    header (`lib/uploadSource.js`, checked in `resolveSource`), never from the client.
    An unreadable header passes this check and the model's own limits decide. Copy is
    in all 11 app locales.
 2. **In-flight job cap (0434).** One account may hold at most 30 jobs in `DEBITED`
-   or `SUBMITTED` created in the last three hours. The generation limiter allows 10
+   or `SUBMITTED`, with no age cut-off: a job holds its slot until its state changes, because 0414 deliberately keeps `provider_outcome_unknown` debits until service reconciliation and an age window would free a slot while the supplier may still be working. A partial index on live rows keeps the count cheap. The generation limiter allows 10
    a minute and video jobs live up to two hours, so without a cap one account could
    queue hundreds of supplier jobs, bounded only by balance and the $15/hour spend
    cap. A `BEFORE INSERT` trigger on `jobs` takes a per-user advisory lock, counts,
@@ -31,7 +31,7 @@ gaps closed in PR #1867 and the ones left open.
    ($10 / $25, as kie) so they no longer rely on the global cap alone.
 4. **Reservation pruning.** `provider_spend_reservations` is read by sums inside the
    global lock and was never pruned. `prune_provider_spend_reservations(7)` runs
-   daily (pg_cron, 03:17 UTC) and deletes in batches of 50,000. The limits read at
+   daily (pg_cron, 03:17 UTC) and deletes in batches of 50,000. Reservations of jobs still `DEBITED` or `SUBMITTED` (their own key and failover attempts `key:aN`) are kept, since 0414 reconciliation uses them as evidence. The limits read at
    most the current UTC day, so seven days is ample; fewer than three is refused.
 5. **Detection and reading.** SEC-008 raises a medium alert when one account creates
    120 or more jobs in an hour. `provider_spend_utilization()` returns hour/day use
