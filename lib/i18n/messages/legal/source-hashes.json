@@ -69,7 +69,7 @@
       }
     },
     "privacy": {
-      "translationsReviewedAgainstEnglishDated": "28 October 2026",
+      "translationsReviewedAgainstEnglishDated": "2 November 2026",
       "hashes": {
         "title": "506ff394621596dd88138642eddfc1e41833b3ae92d95e5c77c94327098abd9a",
         "description": "9a947e06da6b04c331677eb2f632b0a2a73371115df7dd1b1f5adac91972f186",
@@ -146,7 +146,15 @@
         "b068": "3583a358a585b13b6d6228f12d2baf3ef937fcf50bed4a521b70f95a520bc933",
         "b069": "9636617949a20943ed284faad34b0a318e45a79272c0496890906bd3dfebff9e",
         "b070": "bbd4b6a86bc65b6ac8e79e97afc61499158edb40f7bb404c70637b46d80a7ad2",
-        "b071": "d06516c3dee8fe0d5594c2e7c4af473711073ca7feb2db4e957fc0eaffaaa514"
+        "b071": "d06516c3dee8fe0d5594c2e7c4af473711073ca7feb2db4e957fc0eaffaaa514",
+        "b075": "1f2a406ada3dec547ce8171b6a651c06012e3397ad1757beba92e10d8bc84a6f",
+        "b077": "64c8eb96da45f399a70b69c885e281a4379d86bc79b8ff26daf6f7b5a7b8df41",
+        "b078": "2c26c3053de402a0055e1c40d73b7fcef4ee15614a3efe0dac1b28b6a61e31eb",
+        "b080": "4d44685ab0f1d3a977b3822ba1293b3f2109a5707528f5683b61c47ca98e00d3",
+        "b076": "8e6cdc910461ec84ef1b7747d1b7061f4dfbd3b2949c29eed3bd35d44d44a740",
+        "b079": "09fef1f4e30c9291bcad9e004dc45ceede0b6017e8cc6a2c74e52b196df1a11d",
+        "b081": "d7a1f20fe0f189c8649866eea4cfd512116620fd39a372f8ca5d533f058f168c",
+        "b082": "3c1a61d9d93f5dfb6889ab2fc63e5d1187fa5c6904316759c37765a099a260fc"
       }
     },
     "refund": {
@@ -270,7 +278,7 @@
       }
     },
     "gdpr": {
-      "translationsReviewedAgainstEnglishDated": "18 October 2026",
+      "translationsReviewedAgainstEnglishDated": "2 November 2026",
       "hashes": {
         "title": "375aed7cf0b2f65aee45c38d954335d1e02d10c5419ffe3fd52bbe937a966c04",
         "description": "494cfa92758eeb73dcadde02d752c15d7ca751a8ec47e723f75d25aefaab5563",
@@ -301,7 +309,9 @@
         "b025": "3f1c40e9f5fddf19aef71212edc6b9c0aae9069b0c549c82e24846af8723f151",
         "b026": "614249227967562b0ea33d97720555ad0058d3db56fb55cb853646b80084c9fc",
         "b027": "698491699b80232c7ed5e90f91ca07e2343b6dba5de5d08ad9b6ee2c7efde2fa",
-        "b028": "37a032aa6d57b3e115ec509d8cf7130ac07447d5ff2f2b9443660aca9a4a2a77"
+        "b028": "37a032aa6d57b3e115ec509d8cf7130ac07447d5ff2f2b9443660aca9a4a2a77",
+        "b029": "9b13b48abdee701a9f18ea72ab70b3a6acba3bcadb7c04de54fbf8e1deece80c",
+        "b030": "506ff394621596dd88138642eddfc1e41833b3ae92d95e5c77c94327098abd9a"
       }
     }
   },
