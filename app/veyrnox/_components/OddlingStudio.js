@@ -52,7 +52,7 @@ import {
 const LEAD_GROUP_IDS = ['character_type'];
 const LEAD_GROUPS = CHARACTER_GROUPS.filter((group) => LEAD_GROUP_IDS.includes(group.id));
 
-const PORTRAIT_INVALIDATING_KEYS =new Set([...CHARACTER_GROUPS.map((group) => group.id), 'oddling_rule']);
+const PORTRAIT_INVALIDATING_KEYS = new Set([...CHARACTER_GROUPS.map((group) => group.id), 'oddling_rule']);
 
 export default function OddlingStudio() {
   const { t, locale } = useI18n();
