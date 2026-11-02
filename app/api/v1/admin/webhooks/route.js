@@ -10,6 +10,7 @@
 import { NextResponse } from 'next/server';
 import { rpc } from '../../../../../packages/db/supabase-client.js';
 import { adminGate, rpcFailure, rpcRefusal, NO_STORE } from '../../../../../lib/adminGate.js';
+import { readPolledProviders } from '../../../../../lib/adminPolledProviders.js';
 
 const WHERE = 'api/v1/admin/webhooks';
 
@@ -30,7 +31,16 @@ export async function GET(req) {
         return rpcFailure(err, WHERE);
     }
     if (!result || result.ok !== true) return rpcRefusal(result, 'webhooks_unavailable');
+    // Providers with no signed callback never appear in webhook_events. Their panel is best-effort:
+    // a failed read leaves `polled` null and never hides the webhook figures above.
+    let polled = null;
+    try {
+        polled = await readPolledProviders(g.cfg);
+    } catch (err) {
+        console.error('[admin/webhooks] polled providers read failed', err instanceof Error ? err.message : 'unknown');
+    }
     return NextResponse.json({
+        polled,
         since: result.since, hours: result.hours,
         by_source: Array.isArray(result.by_source) ? result.by_source : [],
         failures: Array.isArray(result.failures) ? result.failures : [],
