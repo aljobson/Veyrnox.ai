@@ -69,9 +69,12 @@ test('an unimplemented network fails its target with a named reason, never hangs
 test('publishes an Instagram image target and reports the platform ids back', async () => {
     const accessTokenEnc = await encryptToken('ig-access-token', cryptoCfg);
     let publishCalls = 0;
+    let state = {};
+    let status = 'IN_PROGRESS';
     await withFetch({
-        claim_due_social_post_targets_v2: async () => [target({ access_token_enc: accessTokenEnc })],
+        claim_due_social_post_targets_v2: async () => [target({ access_token_enc: accessTokenEnc, provider_state: state })],
         mark_social_provider_submission: async () => ({ ok: true }),
+        report_social_post_progress: async body => { state = body.p_provider_state; return { ok: true }; },
         complete_social_post_target: async (body) => {
             assert.equal(body.p_ok, true);
             assert.equal(body.p_platform_post_id, 'media-1');
@@ -84,15 +87,22 @@ test('publishes an Instagram image target and reports the platform ids back', as
             const u = new URL(url);
             if (u.hostname === 'graph.instagram.com') {
                 publishCalls += 1;
-                if (u.pathname.endsWith('/media')) return Response.json({ id: 'container-1' });
+                if (u.pathname.endsWith('/media')) return Response.json({ id: '12345' });
                 if (u.pathname.endsWith('/media_publish')) return Response.json({ id: 'media-1' });
+                if (u.searchParams.get('fields') === 'status_code') return Response.json({ status_code: status });
                 return Response.json({ id: 'media-1', permalink: 'https://www.instagram.com/p/abc/' });
             }
             return real(url, init);
         };
+        const first = await runPublishSweep({ cfg, cryptoCfg, r2cfg });
+        assert.equal(first.published, 0);
+        assert.equal(state.container_id, '12345');
+        const pending = await runPublishSweep({ cfg, cryptoCfg, r2cfg });
+        assert.equal(pending.published, 0);
+        status = 'FINISHED';
         const out = await runPublishSweep({ cfg, cryptoCfg, r2cfg });
         assert.deepEqual(out, { ok: true, claimed: 1, published: 1, failed: 0, errors: 0 });
-        assert.equal(publishCalls, 3);
+        assert.equal(publishCalls, 5);
     });
 });
 
