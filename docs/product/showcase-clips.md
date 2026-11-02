@@ -398,18 +398,19 @@ through a three-second final hold. It floats above the finger without
 covering the face or hands. The official Veyrnox.ai mark and wordmark remain
 at the top left throughout. The exports are silent, eight-second H.264 files.
 
-`BREAKTHROUGH_FILM` now serves the owner's promo `veyrnox_promo_one_app_v2`
+`BREAKTHROUGH_FILM` serves the owner's promo `veyrnox_promo_one_app_v2`
 (49 s, silent, "one app, not five subscriptions") as `/film/veyrnox-promo.mp4`
-with a matching JPG poster, on phones and the web alike. It replaces the
-robot film. It is a portrait 1,080 × 1,920 export re-encoded to 720 × 1,280
-H.264 without audio, kept whole and never cropped: full-screen below the phone
-navigation, centred in the wide frame on desktop. The robot clips described
-above are no longer served.
+with a matching JPG poster. It is the landing hero's film on every screen,
+replacing the robot film and the Earth brand intro. It is a portrait
+1,080 × 1,920 export re-encoded to 720 × 1,280 H.264 without audio. The hero
+puts it in its own column beside the headline (below it on phones), shown
+whole at 9:16 with nothing laid over it: no text, button, gradient or scrim.
+The `FilmPlayer` Play/Pause button sits beneath the picture (`controlsBelow`).
+The robot clips and the brand intro are no longer served.
 
-The existing `FilmPlayer` supplies visible Play/Pause, pauses off screen,
-leaves the poster still for reduced motion/data saver, and fetches the file
-only when playback begins. The video remains under the 2 MB film budget;
-the poster remains under 150 KB.
+The existing `FilmPlayer` pauses off screen, leaves the poster still for
+reduced motion/data saver, and fetches the file only when playback begins.
+The video remains under the 2 MB film budget; the poster under 150 KB.
 
 
 ### Full-HD motion-inspired previews
