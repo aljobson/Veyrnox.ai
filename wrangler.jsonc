@@ -325,6 +325,8 @@
         "CONTENT_SCAN_ENABLED": "true",
         // Switch on only after migration 0289 is applied.
         "SOCIAL_HOLD_CHECKS_ENABLED": "true",
+        // ADR-0301 staging proof: Kling O1 Reference takes two pictures, which needs the multi-file slot (as in production, ADR-0309).
+        "MULTI_REFERENCE_ENABLED": "true",
         "APP_ENV": "staging",
         "ACCESS_TEAM_DOMAIN": "fancy-lake-7c60.cloudflareaccess.com",
         "ACCESS_AUD": "90e88032af5e17f3e560fd12f33a182a9ff353ddf813514fcfe072f169efe1fd",
