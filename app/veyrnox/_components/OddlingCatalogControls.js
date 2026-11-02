@@ -54,7 +54,7 @@ export function SliderGroup({ group, picks, onChange }) {
 }
 
 /** Everything else: a grid of tiles. Hair shows a picture of the style when it has one; hair without a picture, outfit, body and headwear draw the option on the figure; the rest show a plain icon tile. */
-export function TileGroup({ group, picks, value, onChange, categoryId }) {
+export function TileGroup({ group, picks, value, onChange, categoryId, compact = false }) {
   const { t } = useI18n();
   const groupLabel = tOr(t, `app.data.character.${group.id}`, group.label);
   const drawn = tileKind(group.id) === 'mannequin';
@@ -63,7 +63,7 @@ export function TileGroup({ group, picks, value, onChange, categoryId }) {
   return (
     <fieldset className="space-y-2">
       <legend className={legend}>{groupLabel}<span className="ms-2 normal-case tracking-normal text-vx-fg">{value ? characterOptionLabel(group.id, value) : t("app.create.character.any")}</span></legend>
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(104px,1fr))] gap-2 lg:grid-cols-[repeat(auto-fill,minmax(132px,1fr))] lg:gap-3">
+      <div className={compact ? 'grid grid-cols-3 gap-2' : 'grid grid-cols-[repeat(auto-fill,minmax(104px,1fr))] gap-2 lg:grid-cols-[repeat(auto-fill,minmax(132px,1fr))] lg:gap-3'}>
         <button type="button" onClick={() => onChange(group.id, '')} aria-pressed={!value} className={`${tileBase} ${tileTone(!value)} justify-center px-1 py-3`}>
           <span className="grid h-10 w-10 place-items-center rounded-full border border-dashed border-vx-border font-vx-mono text-[9px] text-vx-fg-muted" aria-hidden="true">{t("app.create.character.any")}</span>
           <span className="mt-1 text-[10px] font-bold text-vx-fg-muted">{t("app.oddlings.catalog.none")}</span>

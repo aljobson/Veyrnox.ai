@@ -69,3 +69,11 @@ test('the catalog cannot widen a phone-sized page: the builder column and the ca
   assert.match(catalog, /lg:grid-cols-\[minmax\(260px,340px\)_minmax\(0,1fr\)\]/, 'wide screens put the figure beside the choices, and the choices column may shrink');
   assert.match(catalog, /role="tablist" aria-label="Catalog category" className="flex min-w-0 max-w-full[^"]*overflow-x-auto/);
 });
+
+test('character-type tiles lead the builder panel and are not repeated in the catalog', () => {
+  assert.match(source, /const LEAD_GROUP_IDS = \['character_type'\]/);
+  assert.match(source, /hiddenGroupIds=\{LEAD_GROUP_IDS\}/);
+  assert.match(source, /<TileGroup key=\{group\.id\} group=\{group\} picks=\{picks\} value=\{picks\[group\.id\]\} onChange=\{setPick\}/);
+  assert.ok(source.indexOf('oddlings.character-type') < source.indexOf("picks.oddling_name || ''"), 'the tiles come before the name field');
+  assert.match(catalog, /categoryGroups\(category\)\.filter\(\(group\) => !hiddenGroupIds\.includes\(group\.id\)\)/);
+});
