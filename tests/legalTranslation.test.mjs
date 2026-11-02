@@ -47,10 +47,37 @@ test('numeric parity normalizes grouping and Arabic-Indic/Devanagari digits with
   assert.notDeepEqual(numbers('2,000'), numbers('2'));
 });
 
+// No baseline-regeneration script is defined for legal-english-main.json. Keep its
+// historical HTML/provenance intact. ADR-0317 permits only these added blocks and
+// the two notice dates; existing text (including retention commitments) still pins.
+const amendments0317 = {
+  privacy: { keys: ['b075', 'b076', 'b077', 'b078', 'b079', 'b080', 'b081', 'b082'], previousDate: '28 October 2026' },
+  gdpr: { keys: ['b029'], previousDate: '18 October 2026' },
+};
 for (const document of LEGAL_DOCUMENTS) {
-  test(`${document}: English render equals origin/main ${baseline.commit}`, async () => {
-    const f = fixture('en', `/legal/${document}`, { moduleMocks });
+  test(`${document}: preserves historical English render ${baseline.commit} outside ADR-0317 additions`, async () => {
+    const amendment = amendments0317[document];
+    const data = await legalDocument('en', document);
+    const omitAdditions = blocks => blocks.filter(block => !amendment.keys.includes(block.key))
+      .map(block => block.children ? { ...block, children: omitAdditions(block.children) } : block);
+    const f = fixture('en', `/legal/${document}`, { moduleMocks: {
+      ...moduleMocks,
+      '../../../lib/i18n/legal/catalogs.mjs': { legalDocument: async () => amendment
+        ? { ...data, blocks: omitAdditions(data.blocks), updated: amendment.previousDate } : data },
+    } });
     assert.equal(f.render(await f.load(`app/legal/${document}/page.js`).default()), baseline.documents[document]);
+    if (amendment) {
+      assert.equal(data.updated, '2 November 2026');
+      const actual = fixture('en', `/legal/${document}`, { moduleMocks });
+      const html = actual.render(await actual.load(`app/legal/${document}/page.js`).default());
+      const { LegalBlocks } = actual.load('app/legal/_lib/LegalDocument.js');
+      const allBlocks = blocks => blocks.flatMap(block => [block, ...allBlocks(block.children || [])]);
+      for (const key of amendment.keys) {
+        const blocks = allBlocks(data.blocks).filter(block => block.key === key);
+        assert.equal(blocks.length, 1, `${document}/${key}: one intentional addition`);
+        assert.ok(html.includes(actual.render(React.createElement(LegalBlocks, { blocks, messages: data.messages, locale: 'en' }))), key);
+      }
+    }
   });
   test(`${document}: every language has identical keys, slots and English numeric/link facts`, async () => {
     const english = await legalDocument('en', document);
