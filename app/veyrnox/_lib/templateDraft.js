@@ -1,4 +1,5 @@
 import { modelIdForName } from './tokens.js';
+import { nearestShape } from '../../../lib/aspectShapes.mjs';
 import { GENERATION_PROMPT_MAX } from '../../../lib/generationPromptLimits.js';
 
 // The longest prompt POST /api/v1/generations accepts (app/api/v1/generations/route.js).
@@ -18,7 +19,8 @@ export function draftForTemplate(preset, modelId) {
     && preset.sourcePromptRunnable !== true) return null; // the server decides from the source audit (lib/clientTemplates.js)
   return {
     prompt: preset.prompt,
-    aspect: nonEmptyString(preset.aspect) ? preset.aspect : null,
+    // A template that records no aspect takes its preview's shape; the Create page then picks the nearest option its model offers.
+    aspect: nonEmptyString(preset.aspect) ? preset.aspect : nearestShape(preset.clip?.aspectRatio ?? preset.previewAspect),
     durationSeconds: supportedDuration(preset.durationSeconds) ? preset.durationSeconds : 5,
     negativePrompt: nonEmptyString(preset.negativePrompt) ? preset.negativePrompt : '',
     templateId: preset.id,

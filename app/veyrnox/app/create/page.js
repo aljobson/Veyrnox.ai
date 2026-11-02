@@ -33,6 +33,7 @@ import { oddlingPortrait, buildOddlingAnimationPrompt } from '../../_lib/oddling
 import { fetchTemplate } from '../../_lib/useTemplates';
 import { resolveTemplateDraft, draftForTemplate } from '../../_lib/templateDraft';
 import { templateStartIdFor } from '../../../../lib/templateStartCheck';
+import { nearestOption } from '../../../../lib/aspectShapes.mjs';
 import { DEFAULT_CINEMA, buildCinemaPrompt } from '../../_lib/cinema';
 import { CameraPanel } from '../../_components/CameraPanel';
 import { CharacterPanel } from '../../_components/CharacterPanel';
@@ -360,7 +361,7 @@ export default function CreateStudio() {
     setDuration(`${draft.durationSeconds}s`);
     setNegative(draft.negativePrompt);
     if (draft.aspect) {
-      if (nextId === modelId && aspectOptions.includes(draft.aspect)) setAspect(draft.aspect);
+      if (nextId === modelId) { const nearest = nearestOption(draft.aspect, aspectOptions); if (nearest) setAspect(nearest); }
       else incomingAspect.current = draft.aspect;
     }
     setSources((previous) => {
@@ -442,7 +443,7 @@ export default function CreateStudio() {
     if (requested) {
       incomingAspect.current = '';
       if (aspectOptions.includes(requested)) setAspect(requested);
-      else if (aspectOptions.length) setAspect(aspectOptions[0]);
+      else if (aspectOptions.length) setAspect(nearestOption(requested, aspectOptions) ?? aspectOptions[0]);
       return;
     }
     if (aspectOptions.length && !aspectOptions.includes(aspect)) setAspect(aspectOptions[0]);
