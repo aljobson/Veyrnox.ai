@@ -33,6 +33,9 @@ CREATE TABLE IF NOT EXISTS public.support_agent_runs (
  outcome TEXT NOT NULL CHECK(outcome IN ('completed','refused','failed')), created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
  idem_key TEXT NOT NULL UNIQUE CHECK(idem_key ~ '^[A-Za-z0-9._-]{8,128}$')
 );
+CREATE INDEX IF NOT EXISTS support_tickets_assignee_idx ON public.support_tickets(assignee);
+CREATE INDEX IF NOT EXISTS support_messages_author_idx ON public.support_messages(author_user_id);
+CREATE INDEX IF NOT EXISTS support_agent_runs_ticket_idx ON public.support_agent_runs(ticket_id);
 ALTER TABLE public.support_tickets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.support_tickets FORCE ROW LEVEL SECURITY;
 ALTER TABLE public.support_messages ENABLE ROW LEVEL SECURITY;

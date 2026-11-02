@@ -15,6 +15,7 @@ CREATE INDEX IF NOT EXISTS admin_change_log_feed_idx
     ON public.admin_change_log (created_at DESC, id DESC);
 CREATE INDEX IF NOT EXISTS account_actions_feed_idx
     ON public.account_actions (created_at DESC, id DESC);
+CREATE INDEX IF NOT EXISTS admin_change_log_actor_idx ON public.admin_change_log(actor_user_id);
 ALTER TABLE public.admin_change_log ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.admin_change_log FORCE ROW LEVEL SECURITY;
 -- Even service_role has no direct access. Later definer mutation RPCs append

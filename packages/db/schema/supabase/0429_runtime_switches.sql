@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS public.runtime_switches (
     updated_by UUID NOT NULL REFERENCES public.users(id) ON DELETE RESTRICT,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+CREATE INDEX IF NOT EXISTS runtime_switches_updated_by_idx ON public.runtime_switches(updated_by);
 ALTER TABLE public.runtime_switches ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.runtime_switches FORCE ROW LEVEL SECURITY;
 REVOKE ALL ON public.runtime_switches FROM PUBLIC, anon, authenticated, service_role;

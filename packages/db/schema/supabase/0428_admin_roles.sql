@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS public.admin_mutation_receipts (
     PRIMARY KEY (actor_user_id,idem_key),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+CREATE INDEX IF NOT EXISTS admin_roles_granted_by_idx ON public.admin_roles(granted_by);
 ALTER TABLE public.admin_roles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.admin_roles FORCE ROW LEVEL SECURITY;
 ALTER TABLE public.admin_roles_init ENABLE ROW LEVEL SECURITY;
