@@ -121,3 +121,17 @@ test('every allowlisted type can actually be recognised by gate 2', () => {
         assert.equal(checkSniffed(type, samples[type]).ok, true, `${type} must round-trip`);
     }
 });
+
+test('a small file declaring a huge canvas is refused by gate 2', () => {
+    const png = (w, h) => {
+        const x = new Uint8Array(33);
+        x.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52]);
+        new DataView(x.buffer).setUint32(16, w);
+        new DataView(x.buffer).setUint32(20, h);
+        return x;
+    };
+    assert.equal(checkSniffed('image/png', png(4096, 4096)).ok, true);
+    assert.equal(checkSniffed('image/png', png(10000, 10000)).ok, true, 'exactly 100 MP is allowed');
+    assert.equal(checkSniffed('image/png', png(10001, 10000)).error, 'upload_dimensions_too_large');
+    assert.equal(checkSniffed('image/png', png(20000, 10)).error, 'upload_dimensions_too_large', 'one side over 16384');
+});

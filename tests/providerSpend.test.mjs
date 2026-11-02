@@ -28,3 +28,11 @@ test('does not reclassify unrelated database errors', () => {
     assert.equal(providerSpendLimit({ code: 'INSUFFICIENT_BALANCE' }), null);
 });
 
+
+test('the in-flight job cap (0434) reaches the customer as a retryable 429', () => {
+    const error = new SupabaseError('rpc failed', {
+        status: 400,
+        body: { code: 'P0001', message: 'PROVIDER_SPEND_LIMIT:user_inflight:30' },
+    });
+    assert.deepEqual(providerSpendError(error), { scope: 'user_inflight', retryAfter: 30, status: 429 });
+});
