@@ -1,6 +1,7 @@
 # ADR-0319 — Database overrides for new feature admissions
 
-Date: 2026-11-02. Status: implemented for owner review; not deployed.
+Status: implemented for owner review; not deployed.
+Date: 2026-11-02.
 
 Migration 0429 adds owner-controlled overrides without Worker bindings.
 Generation, chat, publish and cinema are kill keys: off pauses admission; on or

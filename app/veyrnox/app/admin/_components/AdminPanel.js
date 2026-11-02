@@ -17,7 +17,7 @@ const COPY = {
   access: 'Complete your Cloudflare Access sign-in, then retry.',
   forbidden: 'This account is not an administrator.',
   permission: 'Your administrator role cannot open this section. Return to operations or ask an owner.',
-  unauthenticated: 'Sign in again to continue. Your unsent input is kept here.',
+  unauthenticated: 'Sign in again to continue. Unsent input in this section is not kept.',
   unverified: 'Administrator access could not be verified. Check your sign-in and retry.',
   unavailable: 'This section is not configured or the service is unavailable. Retry after it is restored.',
   error: 'The section could not be loaded. Please retry.',
@@ -43,6 +43,8 @@ function Panel({ title, endpoint, children, description }) {
     } catch (failure) {
       if (sequence.current === version) {
         setError(failure);
+        // A denied reader must not keep, or later redisplay, content and controls it was never authorised to use.
+        if ([401, 403].includes(failure?.status) || failure?.code === "permission_denied") setData(null);
       }
     } finally { clearTimeout(timer); if (sequence.current === version) setLoading(false); }
   }, [endpoint]);
@@ -60,7 +62,7 @@ function Panel({ title, endpoint, children, description }) {
     <h1 className="mt-3 font-vx text-3xl font-bold">{title}</h1>
     <p className="mt-3 text-vx-fg-body">{description}</p>
     <AdminTabs isAdmin={!!data && ![401,403].includes(error?.status)} permissions={data?.permissions || []} />
-    <MfaPanel onVerified={load} />
+    <MfaPanel requireFresh onVerified={load} />
     {offline && <p role="status" className="mt-4">You are offline. Loaded data remains readable; reconnect to refresh or save.</p>}
     <div aria-live="polite" className="mt-4">
       {loading && <p role="status">{slow ? 'Still fetching this section from the database…' : 'Loading section…'}</p>}

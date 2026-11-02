@@ -1,6 +1,7 @@
 # ADR-0318 — Roles on the expanded admin panel
 
-Date: 2026-11-02. Status: implemented for owner review; not deployed.
+Status: implemented for owner review; not deployed.
+Date: 2026-11-02.
 
 Migration 0428 adds owner, finance, support, moderator and viewer roles to the
 new admin sections. `users.is_admin` remains the outer gate: a role alone grants

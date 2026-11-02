@@ -45,7 +45,7 @@ function Thread({data,refresh,offline}) {
       </form>
       <div className="mt-6 grid gap-3"><label className="grid gap-2">Status<select value={status} onChange={e=>setStatus(e.target.value)} className={adminControl}>{['open','pending','solved'].map(s=><option key={s}>{s}</option>)}</select></label><button className={adminControl} disabled={offline||mutation.pending} onClick={()=>save('status',{status})}>Save status</button>
         <label className="grid gap-2">Assignee user ID (owner or support; blank unassigns)<input value={assignee} onChange={e=>setAssignee(e.target.value)} className={adminControl} maxLength={36} aria-invalid={!!badAssignee}/>{badAssignee&&<span className="text-vx-danger">Enter a valid user UUID or leave blank.</span>}</label>
-        {data.actor_user_id&&<button type="button" className={adminControl} disabled={offline||mutation.pending} onClick={()=>save('assign',{assignee:data.actor_user_id})}>Assign to me</button>}
+        {data.actor_user_id&&<button type="button" className={adminControl} disabled={offline||mutation.pending} onClick={()=>{setAssignee(data.actor_user_id);save('assign',{assignee:data.actor_user_id});}}>Assign to me</button>}
         <button className={adminControl} disabled={offline||mutation.pending||!!badAssignee} onClick={()=>save('assign',{assignee:assignee||null})}>Save assignment</button>
       </div>
     </>:<p className="mt-4">This thread is read-only{!data.ticket.user_id?' because the account was erased':''}.</p>}

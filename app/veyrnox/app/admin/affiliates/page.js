@@ -6,7 +6,7 @@ import { AdminPanel, AdminTable, adminControl, adminWhen } from '../_components/
 export default function Page() {
   const [days,setDays] = useState(30);
   return <><AppNav /><Main><AdminPanel title="Affiliates" endpoint={'/admin/affiliates?days=' + days + '&limit=50'}
-    description="Referrals reward credits only: there are no cash payouts and no applications queue in this product.">
+    description="Referrals reward credits only, and this product has no applications queue.">
     {data => <>
       <label className="flex flex-wrap items-center gap-3">Reporting window
         <select className={adminControl} value={days} onChange={e => setDays(Number(e.target.value))}>{[7,30,90,365].map(d => <option key={d} value={d}>{d} days</option>)}</select>
