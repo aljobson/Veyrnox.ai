@@ -363,7 +363,7 @@ export default function OddlingStudio() {
 
             {mode === 'portrait' && LEAD_GROUPS.length > 0 && (
               <div data-assistant-target="oddlings.character-type" className="mt-5 space-y-4">
-                {LEAD_GROUPS.map((group) => <TileGroup key={group.id} group={group} picks={picks} value={picks[group.id]} onChange={setPick} categoryId="who" />)}
+                {LEAD_GROUPS.map((group) => <TileGroup key={group.id} group={group} picks={picks} value={picks[group.id]} onChange={setPick} categoryId="who" compact />)}
               </div>
             )}
 
