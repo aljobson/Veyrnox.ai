@@ -3,7 +3,8 @@
  * One paid probe of Crun (ADR-0256 phase 5), through the same adapter the
  * Worker would use. PROD KEY, REAL MONEY: each run spends the price shown.
  *
- *   read -s "CRUN_API_KEY?Crun key: "; export CRUN_API_KEY
+ *   (run it in a real terminal and type the key when it asks; typing is hidden and the key is never stored)
+ *   or: read -s "CRUN_API_KEY?Crun key: "; export CRUN_API_KEY
  *   node scripts/probe-crun.mjs veo-lite          # about $0.067
  *   node scripts/probe-crun.mjs veo-fast          # about $0.134
  *   node scripts/probe-crun.mjs seedance-fast     # about $0.29
@@ -120,11 +121,42 @@ async function keepClip(outputUrl, dir) {
     console.log('saved:', file, 'and frame-1.jpg to frame-3.jpg in', dir);
 }
 
+/** Reads one line from the terminal without echoing it. Ctrl-C aborts. Returns '' when stdin is not a terminal. */
+export function promptHidden(question) {
+    if (!process.stdin.isTTY) return Promise.resolve('');
+    return new Promise((resolve) => {
+        process.stdout.write(question);
+        const stdin = process.stdin;
+        let value = '';
+        stdin.setRawMode(true);
+        stdin.resume();
+        stdin.setEncoding('utf8');
+        const done = (result) => {
+            stdin.removeListener('data', onData);
+            stdin.setRawMode(false);
+            stdin.pause();
+            process.stdout.write('\n');
+            resolve(result);
+        };
+        const onData = (chunk) => {
+            for (const ch of chunk) {
+                if (ch === '\u0003') { process.stdout.write('\n'); process.exit(130); }
+                if (ch === '\r' || ch === '\n') return done(value.trim());
+                if (ch === '\u007f' || ch === '\b') value = value.slice(0, -1);
+                else value += ch;
+            }
+        };
+        stdin.on('data', onData);
+    });
+}
+
 async function main() {
     const chosen = chooseProbe(process.argv.slice(2));
     if (!chosen.ok) { console.error(chosen.error); process.exit(2); }
-    const apiKey = process.env.CRUN_API_KEY;
-    if (!apiKey || /^<.*>$/.test(apiKey)) { console.error('CRUN_API_KEY is not set (use the silent prompt in the header, not a placeholder)'); process.exit(2); }
+    let apiKey = process.env.CRUN_API_KEY;
+    // No key in the environment: in a real terminal, ask for it with the typing hidden. It is held in memory only.
+    if (!apiKey && process.stdin.isTTY) apiKey = await promptHidden('Crun key (typing is hidden): ');
+    if (!apiKey || /^<.*>$/.test(apiKey)) { console.error('CRUN_API_KEY is not set (run this in a terminal and type the key when asked, or use the silent prompt in the header; not a placeholder)'); process.exit(2); }
     const { name, probe } = chosen;
     if (!parseEndpoint(probe.endpoint)) { console.error('endpoint no longer parses'); process.exit(2); }
 
