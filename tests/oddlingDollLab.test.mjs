@@ -77,3 +77,12 @@ test('character-type tiles lead the builder panel and are not repeated in the ca
   assert.ok(source.indexOf('oddlings.character-type') < source.indexOf("picks.oddling_name || ''"), 'the tiles come before the name field');
   assert.match(catalog, /categoryGroups\(category\)\.filter\(\(group\) => !hiddenGroupIds\.includes\(group\.id\)\)/);
 });
+
+test('at xl the action bar sits under the builder column with Generate beside Surprise', () => {
+  assert.match(source, /sticky bottom-0 z-20[^"]*xl:w-\[430px\]/, 'bar is as wide as the 430px builder column');
+  assert.match(source, /xl:grid xl:w-full xl:grid-cols-\[auto_minmax\(0,1fr\)\]/);
+  assert.match(source, /xl:order-1 xl:w-auto">Surprise me/, 'Surprise first');
+  assert.match(source, /xl:order-3 xl:col-span-2/, 'the chat action takes its own row');
+  assert.match(source, /xl:order-2 xl:w-full/, 'Generate fills the rest of the first row');
+  assert.match(source, /ms-auto grid w-full gap-2 sm:flex sm:w-auto/, 'below xl the bar is unchanged');
+});
