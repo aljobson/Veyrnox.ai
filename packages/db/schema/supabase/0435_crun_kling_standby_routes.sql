@@ -28,13 +28,19 @@ SELECT v.model_id, 'crun', v.endpoint, v.cost, 'per_second', 5, 2, 'standby', 'l
         ('kling-2.6-pro-kie', 'crun:kling/v2-6', 0.2670::numeric)
        ) AS v(model_id, endpoint, cost)
   JOIN public.model_catalog c ON c.id = v.model_id
+ -- Skip an offer that already has this route or a priority-2 route. model_routes_max_three (0374) is a BEFORE
+ -- INSERT trigger and raises before ON CONFLICT can act once an offer has three routes, so a replay must not
+ -- attempt the insert. A priority-2 slot taken by another supplier is left alone and the assertion below rejects it.
+ WHERE NOT EXISTS (SELECT 1 FROM public.model_routes r
+                    WHERE r.model_id = v.model_id
+                      AND (r.priority = 2 OR (r.supplier = 'crun' AND r.endpoint = v.endpoint)))
 ON CONFLICT (model_id, priority) DO NOTHING;
 
 DO $$
 DECLARE n BIGINT;
 BEGIN
     SELECT count(*) INTO n FROM public.model_routes
-     WHERE supplier = 'crun' AND state = 'standby' AND priority = 2 AND cost_unit = 'per_second' AND billing_seconds = 5
+     WHERE supplier = 'crun' AND cost_unit = 'per_second' AND billing_seconds = 5
        AND endpoint IN ('crun:kling/v3', 'crun:kling/v2-6');
     IF n <> 2 THEN
         RAISE EXCEPTION 'Expected two Crun Kling standby routes, found %', n;
