@@ -20,7 +20,9 @@ import {
   helpStartersForPath,
   normaliseHelpPlan,
 } from '../../../lib/productHelp.js';
-import VeyCharacter from './VeyCharacter';
+import VeyAvatar from './VeyAvatar';
+import VeyCharacterPicker from './VeyCharacterPicker';
+import useVeyCharacter from '../_lib/useVeyCharacter';
 import VeyTaskGuide from './VeyTaskGuide';
 import VeyPanelSideButton from './VeyPanelSideButton';
 import { getJourney } from '../_lib/veyJourneyStore';
@@ -82,6 +84,7 @@ export default function MascotAssistant() {
   const [feedback, setFeedback] = useState(null);
   const [position, setPosition] = useState(HOME);
   const { manualPosition, panelSide, setManualPosition, movePanels, resetPosition } = useVeyPlacement();
+  const { character, setCharacter } = useVeyCharacter();
   const [facing, setFacing] = useState(1);
   const [pendingTarget, setPendingTarget] = useState(null);
   const [pendingSavedId, setPendingSavedId] = useState(null);
@@ -428,7 +431,7 @@ export default function MascotAssistant() {
           <span id="vey-position-help" className="sr-only">{t("public.vey.drag")}</span>
           <span className="absolute inset-x-4 bottom-2 h-5 rounded-full bg-black/35 blur-md" aria-hidden="true" />
           <span className="relative block h-full w-full transition-[filter] group-hover:brightness-110">
-            <VeyCharacter pose={mood} reducedMotion={reduceMotion} hand={mobileLayout.hand} />
+            <VeyAvatar character={character} pose={mood} reducedMotion={reduceMotion} hand={mobileLayout.hand} />
           </span>
         </motion.button>
       </motion.div> : <button
@@ -461,6 +464,7 @@ export default function MascotAssistant() {
                 <h2 id="vx-helper-title" className="text-xs font-bold">{t("public.vey.ask")}</h2>
               </div>
               <div className="flex items-center gap-2">
+                <VeyCharacterPicker character={character} onPick={setCharacter} />
                 <VeyPanelSideButton side={panelSide} onMove={movePanels} />
                 {manualPosition && <button type="button" onClick={resetPosition} aria-label={t("public.vey.dockTitle")} title={t("public.vey.dockTitle")}
                   className="min-h-8 rounded-full px-1 text-[10px] text-vx-fg-muted">{t("public.vey.dock")}</button>}

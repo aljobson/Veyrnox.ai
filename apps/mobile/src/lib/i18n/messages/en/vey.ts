@@ -2,6 +2,7 @@
 export default {
     'vey.open': 'Chat with Vey',
     'vey.hint': 'Opens the chat. Press and hold to move Vey to the other side.',
+    'vey.character': "Vey's character",
     'vey.move': 'Move Vey to the other side',
     'vey.touch.label': 'Vey',
     'vey.touch.hint': 'Tap to say hello',
