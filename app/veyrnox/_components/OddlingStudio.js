@@ -317,12 +317,12 @@ export default function OddlingStudio() {
   return (
     <>
       <div data-oddling-studio className="min-h-[calc(100dvh-4rem)]">
-      <header className="border-b border-vx-border bg-vx-panel px-5 py-5 sm:px-7 xl:px-10">
+      <header className="border-b border-vx-border bg-vx-panel px-5 py-5 sm:px-7 xl:px-10 xl:py-3">
         <div className="mx-auto flex max-w-[1500px] flex-wrap items-end justify-between gap-x-8 gap-y-4">
           <div className="min-w-0">
             <span className="font-vx-mono text-[10px] font-bold tracking-[0.16em] text-vx-accent">{t("app.oddlings.eyebrow")}</span>
-            <h1 data-testid="oddling-title" className="vx-display mt-2 text-3xl sm:text-4xl">{t("app.oddlings.title")}</h1>
-            <p className="mt-2 max-w-xl text-sm leading-relaxed text-vx-fg-body">{t("app.oddlings.intro")}</p>
+            <h1 data-testid="oddling-title" className="vx-display mt-2 text-3xl sm:text-4xl xl:mt-1 xl:text-3xl">{t("app.oddlings.title")}</h1>
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-vx-fg-body xl:hidden">{t("app.oddlings.intro")}</p>
           </div>
           <div className="flex w-full flex-wrap items-center justify-end gap-3 sm:w-auto">
             <button type="button" onClick={startFresh} className={chip(false)}>{t('app.oddlings.startFresh')}</button>
@@ -334,9 +334,9 @@ export default function OddlingStudio() {
           </div>
         </div>
       </header>
-      {mode === 'portrait' && <OddlingCatalog picks={picks} onPick={setPick} onClear={clearLook} hiddenGroupIds={LEAD_GROUP_IDS} />}
       <div className="grid xl:grid-cols-[430px_minmax(0,1fr)]">
-        <aside data-assistant-target="oddlings.builder" data-assistant-loaded-passport={loadedPassportId || undefined} className="min-w-0 border-b border-vx-border bg-vx-panel xl:border-b-0 xl:border-e">
+        {mode === 'portrait' && <div className="order-1 min-w-0 xl:order-none xl:col-start-2 xl:row-start-1"><OddlingCatalog picks={picks} onPick={setPick} onClear={clearLook} hiddenGroupIds={LEAD_GROUP_IDS} /></div>}
+        <aside data-assistant-target="oddlings.builder" data-assistant-loaded-passport={loadedPassportId || undefined} className="order-2 min-w-0 border-b border-vx-border bg-vx-panel xl:order-none xl:col-start-1 xl:row-span-2 xl:row-start-1 xl:border-b-0 xl:border-e">
           <div className="sticky top-16 max-h-[calc(100dvh-4rem)] overflow-y-auto scroll-pb-60 p-5 pb-60 sm:p-7 sm:pb-60">
 
             <div data-assistant-target="oddlings.reference" className="mt-5 rounded-2xl border border-vx-border bg-vx-base p-4">
@@ -421,7 +421,7 @@ export default function OddlingStudio() {
           </div>
         </aside>
 
-        <section aria-label={t("app.oddlings.library")} className="min-w-0 bg-vx-base p-5 sm:p-8 lg:p-10">
+        <section aria-label={t("app.oddlings.library")} className={`order-3 min-w-0 bg-vx-base p-5 sm:p-8 lg:p-10 xl:order-none xl:col-start-2 ${mode === 'portrait' ? 'xl:row-start-2' : 'xl:row-start-1'}`}>
           <div className="mx-auto max-w-6xl">
             <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
               <div>
