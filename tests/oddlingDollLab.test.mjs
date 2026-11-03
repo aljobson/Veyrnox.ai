@@ -63,7 +63,7 @@ test('balance lookup is gated by a stored session and warns before Create', () =
 });
 
 test('the catalog cannot widen a phone-sized page: the builder column and the catalog allow themselves to shrink', () => {
-  assert.match(source, /<aside data-assistant-target="oddlings\.builder"[^>]*className="min-w-0 /);
+  assert.match(source, /<aside data-assistant-target="oddlings\.builder"[^>]*className="order-2 min-w-0 /);
   assert.match(catalog, /grid-cols-\[148px_minmax\(0,1fr\)\]/);
   assert.match(catalog, /aria-label="Oddling catalog" className="min-w-0 max-w-full overflow-hidden/);
   assert.match(catalog, /lg:grid-cols-\[minmax\(260px,340px\)_minmax\(0,1fr\)\]/, 'wide screens put the figure beside the choices, and the choices column may shrink');
@@ -85,4 +85,11 @@ test('at xl the action bar sits under the builder column with Generate beside Su
   assert.match(source, /xl:order-3 xl:col-span-2/, 'the chat action takes its own row');
   assert.match(source, /xl:order-2 xl:w-full/, 'Generate fills the rest of the first row');
   assert.match(source, /ms-auto grid w-full gap-2 sm:flex sm:w-auto/, 'below xl the bar is unchanged');
+});
+
+test('at xl the builder is a left pane and the doll lab and library stack in the right pane', () => {
+  assert.match(source, /<div className="grid xl:grid-cols-\[430px_minmax\(0,1fr\)\]">\s*\{mode === 'portrait' && <div className="order-1 [^"]*xl:col-start-2 xl:row-start-1"><OddlingCatalog/, 'catalog is the first right-pane row');
+  assert.match(source, /<aside [^>]*order-2[^>]*xl:order-none xl:col-start-1 xl:row-span-2 xl:row-start-1/, 'builder spans both rows on the left');
+  assert.match(source, /xl:col-start-2 \$\{mode === 'portrait' \? 'xl:row-start-2' : 'xl:row-start-1'\}/, 'library follows the catalog, or moves up when the catalog is absent');
+  assert.match(source, /order-1 /, 'below xl the order stays catalog, builder, library');
 });
