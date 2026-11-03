@@ -44,7 +44,7 @@ function OddlingHeroStrip({ onSheet }) {
           <li key={oddling.id} className={`${index > 2 ? 'hidden sm:block ' : ''}${HERO_FAN[index] || ''}`}>
             <button type="button" onClick={() => onSheet(oddling)} aria-label={t('app.oddlings.explore.hero', { name: oddling.name })} className="group block w-full overflow-hidden rounded-xl border border-vx-border bg-vx-panel text-start motion-safe:transition-[border-color,translate] motion-safe:duration-200 hover:border-vx-accent motion-safe:hover:-translate-y-0.5 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent">
               <span className="block aspect-[2/3] bg-vx-base"><CharacterPortrait oddling={oddling} sizes="(max-width: 640px) 30vw, 140px" /></span>
-              <span className="block truncate px-2 py-1.5 font-vx-mono text-[9px] font-bold text-vx-fg-muted group-hover:text-vx-fg">{oddling.name}</span>
+              <span className="block truncate px-2 py-1.5 sm:px-6 sm:text-center font-vx-mono text-[9px] font-bold text-vx-fg-muted group-hover:text-vx-fg">{oddling.name}</span>
             </button>
           </li>
         ))}
