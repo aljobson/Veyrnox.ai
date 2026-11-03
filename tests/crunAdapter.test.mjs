@@ -138,3 +138,34 @@ test('Nano Banana 2.1 sends a 1K picture, the row Crun prices at 3 credits, and 
   assert.equal(endpointKind('crun:google/nano-banana-2-1'), 'image');
   assert.equal(buildRequest({ model: 'google/nano-banana-2-1' }, { prompt: 'x', img_urls: ['https://a/b.png'] }).error, 'input_media_unsupported');
 });
+
+test('Kling 3.0 is image-to-video in pro mode with audio off and one required start frame', () => {
+  const t = { model: 'kling/v3' };
+  assert.deepEqual(parseEndpoint('crun:kling/v3'), t);
+  assert.equal(endpointKind('crun:kling/v3'), 'video');
+  const r = buildRequest(t, { prompt: 'x', image_url: 'https://a/b.png' });
+  assert.deepEqual(r.body, { model: 'kling/v3', input: { mode: 'pro', prompt: 'x', duration: 5, audio: false, img_urls: ['https://a/b.png'], multi_shots: false } });
+  assert.equal(buildRequest(t, { prompt: 'x', image_url: 'https://a/b.png', duration_seconds: 10 }).body.input.duration, 10);
+  assert.equal(buildRequest(t, { prompt: 'x' }).error, 'inputs_invalid:image_url');
+  assert.equal(buildRequest(t, { prompt: 'x', image_url: 'http://a/b.png' }).error, 'inputs_invalid:image_url');
+  assert.equal(buildRequest(t, { prompt: 'x', image_url: 'https://a/b.png', duration_seconds: 7 }).error, 'duration_not_supported');
+  assert.equal(buildRequest(t, { prompt: 'x', image_url: 'https://a/b.png', aspect_ratio: '16:9' }).error, 'inputs_key_not_allowed:aspect_ratio');
+  assert.equal(buildRequest(t, { prompt: 'see @hero:v2 run', image_url: 'https://a/b.png' }).body.input.prompt, 'see hero:v2 run');
+});
+
+test('Kling 2.6 Pro is text-to-video, audio off, and refuses a source image', () => {
+  const t = { model: 'kling/v2-6' };
+  const r = buildRequest(t, { prompt: 'x' });
+  assert.deepEqual(r.body, { model: 'kling/v2-6', input: { mode: 'pro', prompt: 'x', duration: 5, audio: false, aspect_ratio: '16:9' } });
+  assert.equal(buildRequest(t, { prompt: 'x', aspect_ratio: '1:1', duration_seconds: 10 }).body.input.duration, 10);
+  assert.equal(buildRequest(t, { prompt: 'x', aspect_ratio: '4:3' }).error, 'inputs_invalid:aspect_ratio');
+  assert.equal(buildRequest(t, { prompt: 'x', image_url: 'https://a/b.png' }).error, 'inputs_key_not_allowed:image_url');
+  assert.equal(buildRequest(t, { prompt: '  ' }).error, 'prompt_required');
+  assert.equal('callback_url' in r.body, false);
+});
+
+test('a Kling prompt over Crun\'s documented 2,500 characters is refused before the debit', () => {
+  assert.equal(buildRequest({ model: 'kling/v2-6' }, { prompt: 'x'.repeat(2500) }).ok, true);
+  assert.equal(buildRequest({ model: 'kling/v2-6' }, { prompt: 'x'.repeat(2501) }).error, 'inputs_invalid:prompt');
+  assert.equal(buildRequest({ model: 'kling/v3' }, { prompt: 'x'.repeat(2501), image_url: 'https://a/b.png' }).error, 'inputs_invalid:prompt');
+});
