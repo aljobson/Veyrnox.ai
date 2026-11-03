@@ -8,7 +8,7 @@ import { useState } from 'react';
 import { OddlingGalleryPreview, useGalleryMotionAllowed } from './OddlingGalleryPreview';
 import { OddlingExploreFilters } from './OddlingExploreFilters';
 import { CharacterPortrait } from './OddlingPortrait';
-import { chip } from './oddlingStyles';
+import { chip, HERO_FAN } from './oddlingStyles';
 import {
   ODDLING_EXPLORE_DEFAULT_SOURCE,
   exploreCharacters,
@@ -38,10 +38,10 @@ function OddlingHeroStrip({ onSheet }) {
   const { t } = useI18n();
   return (
     <section aria-label={t("app.oddlings.explore.featured")} className="mt-8">
-      <p className="font-vx-mono text-[9px] font-bold tracking-[0.14em] text-vx-fg-faint">{t("app.oddlings.explore.cast")}</p>
-      <ul className="mt-3 grid max-w-3xl grid-cols-3 gap-2 sm:grid-cols-5">
+      <p className="font-vx-mono text-[9px] font-bold tracking-[0.14em] text-vx-fg-faint sm:text-center">{t("app.oddlings.explore.cast")}</p>
+      <ul className="mt-3 grid grid-cols-3 gap-2 sm:flex sm:items-end sm:justify-center sm:gap-0 sm:pb-4">
         {heroCharacters().map((oddling, index) => (
-          <li key={oddling.id} className={index > 2 ? 'hidden sm:block' : undefined}>
+          <li key={oddling.id} className={`${index > 2 ? 'hidden sm:block ' : ''}${HERO_FAN[index] || ''}`}>
             <button type="button" onClick={() => onSheet(oddling)} aria-label={t('app.oddlings.explore.hero', { name: oddling.name })} className="group block w-full overflow-hidden rounded-xl border border-vx-border bg-vx-panel text-start motion-safe:transition-[border-color,translate] motion-safe:duration-200 hover:border-vx-accent motion-safe:hover:-translate-y-0.5 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent">
               <span className="block aspect-[2/3] bg-vx-base"><CharacterPortrait oddling={oddling} sizes="(max-width: 640px) 30vw, 140px" /></span>
               <span className="block truncate px-2 py-1.5 font-vx-mono text-[9px] font-bold text-vx-fg-muted group-hover:text-vx-fg">{oddling.name}</span>
