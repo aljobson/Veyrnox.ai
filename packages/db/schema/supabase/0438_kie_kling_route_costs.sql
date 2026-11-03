@@ -5,6 +5,10 @@
 -- still carry the old costs (read on production 2026-11-03). Failover cost checks and attempt cost snapshots read the
 -- route, so a hop onto kie would record $0.2750 where $0.3150 is billed.
 --
+-- TIMING: KIE bills the new rates from 2026-11-04 10:00 UTC (the same cutoff as 0433). Approve the apply-migrations
+-- run at or just after that time. Applied earlier, the route records the higher cost while KIE still bills the old
+-- rate; that overstates cost (the safe side) but only on a failover hop onto kie, so nothing breaks if it lands early.
+--
 -- Updates only cost_per_unit on those two kie routes. No state, priority, provenance, catalog, price or credit change.
 -- Margin floor at the unchanged credits: 0.3150 <= 18 x 0.01796 = $0.3233 and 0.5050 <= 29 x 0.01796 = $0.5208.
 -- Each UPDATE names the row's exact identity, accepts the old or new value (replay-safe) and asserts one row.
