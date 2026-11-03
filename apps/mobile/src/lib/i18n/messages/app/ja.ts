@@ -4334,6 +4334,7 @@ export default {
   "uploads.uploadcancelled": "アップロードをキャンセルしました。",
   "uploads.youneedcreditstouploadafile": "ファイルのアップロードにはクレジットが必要です。先に購入してください。",
   "vey.hint": "チャットを開きます。長押しするとVeyを反対側に移動できます。",
+  "vey.character": "Veyのキャラクター",
   "vey.move": "Veyを反対側に移動",
   "vey.open": "Veyとチャット",
   "vibe.account.reset": "バイブをリセット",

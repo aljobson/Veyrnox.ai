@@ -54,7 +54,7 @@ export function subscribeVeyCharacter(listener: () => void): () => void {
     if (!loaded) {
         loaded = true;
         const startedAt = revision;
-        SecureStore.getItemAsync(VEY_CHARACTER_STORAGE)
+        Promise.resolve().then(() => SecureStore.getItemAsync(VEY_CHARACTER_STORAGE))
             .then((raw) => {
                 const saved = parseVeyCharacter(raw);
                 if (revision === startedAt && saved !== current) { current = saved; listeners.forEach((l) => l()); }

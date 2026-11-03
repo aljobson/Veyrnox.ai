@@ -4334,6 +4334,7 @@ export default {
   "uploads.uploadcancelled": "上传已取消。",
   "uploads.youneedcreditstouploadafile": "上传文件需要积分。请先购买积分。",
   "vey.hint": "打开聊天。长按可将 Vey 移到另一侧。",
+  "vey.character": "Vey 的角色",
   "vey.move": "将 Vey 移到另一侧",
   "vey.open": "与 Vey 聊天",
   "vibe.account.reset": "重置我的创作风格",

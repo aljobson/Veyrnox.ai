@@ -4460,6 +4460,7 @@ export default {
   "uploads.uploadcancelled": "Téléversement annulé.",
   "uploads.youneedcreditstouploadafile": "Vous avez besoin de crédits pour téléverser un fichier. Achetez-en d’abord.",
   "vey.hint": "Ouvre la discussion. Appuyez longuement pour déplacer Vey de l’autre côté.",
+  "vey.character": "Personnage de Vey",
   "vey.move": "Déplacer Vey de l’autre côté",
   "vey.open": "Discuter avec Vey",
   "vibe.account.reset": "Réinitialiser ma vibe",

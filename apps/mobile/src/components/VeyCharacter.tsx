@@ -4,7 +4,6 @@ import { CANVAS, heightFor, pivotStyle } from '../lib/veyCharacter';
 import { t as translate } from '../lib/i18n';
 import { playSelection } from '../lib/haptics';
 import type { VeyMood } from '../lib/veyMotion';
-import { WobnimoView } from './WobnimoView';
 import { getVeyCharacter, isWobnimoCharacter, subscribeVeyCharacter, wobnimoStateForMood } from '../lib/veyCharacterChoice';
 
 const art = {
@@ -48,6 +47,9 @@ export function VeyCharacter(props: VeyCharacterProps) {
         return () => { alive = false; sub.remove(); };
     }, []);
     if (!isWobnimoCharacter(character) || failedFor === character) return <VeyRobot {...props} />;
+    // Loaded only when a mascot is shown, so the WebView module is not pulled in for the robot.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { WobnimoView } = require('./WobnimoView') as typeof import('./WobnimoView');
     return <WobnimoView character={character} width={props.width ?? 72} state={still ? 'idle' : wobnimoStateForMood(props.mood)}
         onFailure={() => setFailedFor(character)} />;
 }

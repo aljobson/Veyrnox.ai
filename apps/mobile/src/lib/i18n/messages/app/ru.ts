@@ -4523,6 +4523,7 @@ export default {
   "uploads.uploadcancelled": "Загрузка отменена.",
   "uploads.youneedcreditstouploadafile": "Для загрузки файла нужны кредиты. Сначала купите их.",
   "vey.hint": "Открывает чат. Нажмите и удерживайте, чтобы переместить Vey на другую сторону.",
+  "vey.character": "Персонаж Vey",
   "vey.move": "Переместить Vey на другую сторону",
   "vey.open": "Чат с Vey",
   "vibe.account.reset": "Сбросить мой вайб",

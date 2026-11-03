@@ -4397,6 +4397,7 @@ export default {
   "uploads.uploadcancelled": "अपलोड रद्द हुआ।",
   "uploads.youneedcreditstouploadafile": "फ़ाइल अपलोड करने के लिए क्रेडिट चाहिए। पहले कुछ खरीदें।",
   "vey.hint": "चैट खोलता है। Vey को दूसरी ओर ले जाने के लिए दबाकर रखें।",
+  "vey.character": "Vey का किरदार",
   "vey.move": "Vey को दूसरी ओर ले जाएँ",
   "vey.open": "Vey से चैट करें",
   "vibe.account.reset": "मेरा वाइब रीसेट करें",

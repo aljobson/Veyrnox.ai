@@ -4397,6 +4397,7 @@ export default {
   "uploads.uploadcancelled": "Upload abgebrochen.",
   "uploads.youneedcreditstouploadafile": "Du brauchst Credits, um eine Datei hochzuladen. Kaufe zuerst welche.",
   "vey.hint": "Öffnet den Chat. Halte gedrückt, um Vey auf die andere Seite zu bewegen.",
+  "vey.character": "Veys Figur",
   "vey.move": "Vey auf die andere Seite bewegen",
   "vey.open": "Mit Vey chatten",
   "vibe.account.reset": "Meinen Vibe zurücksetzen",
