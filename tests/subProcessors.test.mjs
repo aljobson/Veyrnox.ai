@@ -11,6 +11,7 @@ test('every executable adapter has an evidenced vendor entry or explicit exclusi
     assert.ok(inventory.includes('`' + path + '`') || exclusions.includes('`' + path + '`'), path);
   }
   assert.match(inventory, /Crun.*packages\/adapters\/crun\.js/);
+  assert.match(inventory, /Higgsfield.*Console opt-out.*packages\/adapters\/higgsfield\.js/);
   assert.match(exclusions, /common\.js.*NON-VENDOR/);
 });
 test('each register row has existing evidence, with no claim of an executed DPA', () => {
@@ -53,4 +54,5 @@ test('age recording is conditional and only undecided retention categories are b
   assert.equal(en.b079, 'Retention periods for store customer records, referral rewards, security events and push records are being finalised.');
   assert.match(en.b076, /BytePlus — planned video generation/);
   assert.match(en.b076, /Crun — generation/);
+  assert.match(en.b076, /Higgsfield — planned generation.*account-level Console opt-out/);
 });

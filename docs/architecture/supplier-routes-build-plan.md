@@ -173,6 +173,12 @@ exclude waiting for owner decisions and paid probes.
 
 ### Phase 5: new suppliers, one per PR (3 to 5 days each, plus review)
 
+Status 2026-11-03: Higgsfield Kling 3.0 and 2.6 Pro third routes implemented dark (provisional 0437; host confirms at merge),
+standby/unverified, spend admission closed and `HIGGSFIELD_ENABLED` absent (absent means off).
+Set the Worker var to `"true"` only when the owner turns it on, keeping within the 66-var budget; written permission, training opt-out,
+paid parity probes and exact output-host evidence remain prerequisites. Kling 3.0 failover
+still needs the separate media-aware change recorded in ADR-0256.
+
 For each: adapter (`key`, `check`, `submit`), poll or signed callback, capability
 pins, output host on the R2 allowlist after one live output, secret, privacy
 processor entry, written answers on resale and platform use, provenance setting,

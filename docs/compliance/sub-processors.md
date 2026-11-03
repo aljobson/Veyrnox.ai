@@ -36,6 +36,7 @@ The inventory includes subprocessors, independent controllers and user-selected 
 | Twitch | Connected profile and channel statistics (no publishing adapter) | OAuth credentials, profiles and supported statistics | UNKNOWN — owner to confirm | UNKNOWN — owner to confirm | Integrated; runtime availability depends on configuration | `packages/adapters/social/twitch.js` |
 
 | Crun | Generation | Prompts, reference media and generation settings | UNKNOWN — owner to confirm | UNKNOWN — owner to confirm | Live configured integration: registered, production flag true, first-choice routes activated with paid-probe evidence; adapter header is stale. Deployed backend not queried here | `packages/adapters/crun.js` `packages/provider-sdk/registry.js` `wrangler.jsonc` `packages/db/schema/supabase/0387_crun_seedance_fast_first.sql` `packages/db/schema/supabase/0389_crun_images_first.sql` |
+| Higgsfield | Generation | Prompts, reference images and generation settings | UNKNOWN — owner to confirm | UNKNOWN — owner to confirm | Planned integration, ships dark. Higgsfield trains on outputs unless the account-level Console opt-out is on; the owner must switch it on before enabling. Written ToS s11.5 permission outstanding | `packages/adapters/higgsfield.js` `packages/provider-sdk/registry.js` `wrangler.jsonc` `packages/db/schema/supabase/0437_higgsfield_standby_routes.sql` |
 
 ## Explicit adapter exclusions
 

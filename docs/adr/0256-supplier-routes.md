@@ -193,3 +193,59 @@ failover hop onto it is refused unless a margin waiver is recorded (decision 3);
 outright refunds. The fallback price list in `tokens.js` and the landing film keep the old price until
 the next film render. The cost moves with the top-up tier: at the $500 tier (212 per $1) a clip costs
 $0.0708 and 4 credits would hold.
+
+
+## Amendment 2026-11-03: Higgsfield as a third route
+
+Higgsfield is staged behind kie (priority 1) and Crun (priority 2) for `kling-3.0-i2v-kie`
+and `kling-2.6-pro-kie`. Provisional migration 0437 (host confirms at merge) adds priority-3 `standby`, `unverified` routes and a
+closed provider spend policy. No catalog, offer price, credits, activation or order changes.
+The adapter pins Pro, sound off and (3.0) single shot. Polling runs every minute in groups
+of five, copies one MP4 at a time through `completeJob`, and times out pending jobs at 45 minutes.
+Only a strict request id is persisted; polling always uses the constant API host's canonical
+`/requests/{request_id}/status`, never the returned status or cancel URL. There is no webhook.
+
+ToS s11.5 forbids a pass-through without added value. Written confirmation from Higgsfield
+support is outstanding, so this ships dark: `HIGGSFIELD_ENABLED` is absent (absent means off), no
+`HIGGSFIELD_API_KEY` (the eventual secret is the account key id and key secret joined by a colon),
+and `admission_open=false`. Set the Worker var to `"true"` only when the owner turns it on,
+keeping production within the 66-var budget; `wrangler.jsonc` is unchanged. Higgsfield trains on outputs unless its account-level Console
+opt-out is on; the owner must switch that opt-out on before enabling. Entity and processing
+locations remain UNKNOWN in the sub-processor register. Non-English privacy additions are
+explicitly English source pending human translation review; regenerated source hashes are
+mechanical change tracking, not human approval of translations.
+
+Costs record the price paid today per 5-second unit, with `cost_unit='per_second'` and
+`billing_seconds=5`: 3.0 sound off is 5 × $0.056 = $0.2800; 2.6 is 5 × $0.035 = $0.1750.
+The promotion ends 2026-11-10. List prices are $0.5600 and $0.3500 per unit, both above their
+offer's margin floor. Resilience must be budgeted at list: a failover hop at list requires
+an explicit recorded margin waiver, daily spend cap and owner sign-off (decision 3).
+
+Before activation the owner must obtain the written platform-use answer, enable the training
+opt-out, confirm entity/location and provenance, run the separate paid parity probes, record
+actual charges and list-rate budgets/waivers, and approve activation and spend admission in a
+later migration. The output host is UNKNOWN until a paid probe: **no Higgsfield host is added
+to `r2Copy.js`**. Every Higgsfield copy is refused by the existing allowlist until a later,
+migration-free PR adds the exact observed host. Outputs expire seven days after completion,
+so the enabled sweep must copy them immediately. Only then should the owner provision the
+secret and enable the flag. The builder does not run a paid probe.
+
+Known limitation (HF-002): the gateway retains
+`canHop: !rawKeys.length && !rawAssets.length && !record.edit`. Every Kling 3.0 image-to-video
+request resolves its source from a reference and therefore has `canHop=false`: a kie refusal
+refunds without trying Crun or Higgsfield. Until a separate media-aware failover change resolves
+and validates the source image for each target supplier before opening its attempt, both third
+and second 3.0 routes serve nothing on failover. Kling 2.6 text-only requests can hop.
+
+Activation checklist (inspection notes HF-R2 and HF-R3, 2026-11-03). Do not enable the Higgsfield flag or
+open spend admission until each line is true:
+
+1. The exact Higgsfield output host, seen on a paid probe, is in `packages/adapters/r2Copy.js`. Enabling
+   before that makes `completeJob` refuse the copy as non-retryable and refund the customer while
+   Higgsfield has already billed the generation.
+2. The `cost_per_unit` on both routes (0.2800 and 0.1750, the promotion rates to 2026-11-10) is
+   re-checked against the then-current price. After the promotion it doubles, and a margin-floor check
+   on a hop or activation would otherwise be understated.
+3. The Worker var is set to the string `"true"` by the owner, who also checks the 66-variable budget
+   (`tests/workerBindingBudget.test.mjs`); `wrangler.jsonc` deliberately carries no entry, so absent
+   means off.

@@ -104,7 +104,7 @@ test('the cron runs the sweep only when CRUN_ENABLED is "true", and R2 copies on
 
 test('an ambiguous Crun submit is held, never refunded: crun is in the guarded list', () => {
   const route = readFileSync(new URL('../app/api/v1/generations/route.js', import.meta.url), 'utf8');
-  assert.match(route, /\['fal', 'kie', 'grsai', 'openrouter', 'crun'\]\.includes\(servedBy\)/);
+  assert.match(route, /\['fal', 'kie', 'grsai', 'openrouter', 'crun', 'higgsfield'\]\.includes\(servedBy\)/);
 });
 
 test('the R2 copy accepts only Crun\'s two exact output hosts and refuses lookalikes, before any fetch', async () => {

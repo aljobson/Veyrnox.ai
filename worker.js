@@ -45,6 +45,7 @@ import { montageDeps, runtimeConfig as montageConfig } from './lib/montageRuntim
 import { sweepGrsai } from './lib/grsaiSweep.js';
 import { sweepByteplus } from './lib/byteplusSweep.js';
 import { sweepCrun } from './lib/crunSweep.js';
+import { sweepHiggsfield } from './lib/higgsfieldSweep.js';
 import { reapAssets } from './lib/assetReap.js';
 import { runtimeDeps, runtimeKeys } from './lib/autoShortRuntime.js';
 import { recoverCinemaUploads } from './lib/cinema/uploadRecovery.js';
@@ -117,6 +118,11 @@ export default {
                 cfg: { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY },
                 r2cfg: r2EnvFrom(env), apiKey: env.CRUN_API_KEY,
             }).then((out) => { if (out.checked) console.error('[crun-sweep]', JSON.stringify(out)); return out; })] : []),
+            // ADR-0256 phase 5: off unless HIGGSFIELD_ENABLED is "true". Not a recovery task: worker_task_health (0157) has no name for it.
+            ...(env.HIGGSFIELD_ENABLED === 'true' ? [sweepHiggsfield({
+                cfg: { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY },
+                r2cfg: r2EnvFrom(env), apiKey: env.HIGGSFIELD_API_KEY,
+            }).then((out) => { if (out.checked) console.error('[higgsfield-sweep]', JSON.stringify(out)); return out; })] : []),
             ] : []),
             ...(event.cron === '*/5 * * * *' ? [
             ...(env.FAL_DISPATCH_SCHEMA_ENABLED === 'true'
