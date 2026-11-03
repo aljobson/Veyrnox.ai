@@ -4,6 +4,7 @@ import * as grsai from '../adapters/grsai.js';
 import * as byteplus from '../adapters/byteplus.js';
 import * as kie from '../adapters/kie.js';
 import * as crun from '../adapters/crun.js';
+import * as higgsfield from '../adapters/higgsfield.js';
 import * as openrouter from '../adapters/openrouter.js';
 import { checkInputs, shapePayload } from '../../lib/modelCapabilities.js';
 import { envConfig } from '../db/supabase-client.js';
@@ -59,6 +60,18 @@ const PROVIDERS = {
             return target ? crun.buildRequest(target, inputs) : { ok: false, error: 'provider_unsupported' };
         },
         submit: (job, _record, apiKey) => crun.submitTask(job, { apiKey }),
+    },
+    // Higgsfield (ADR-0256 phase 5): polling only (no callback registered), so a job is accepted only when R2 is
+    // configured for the sweep to copy the seven-day output into. Off unless HIGGSFIELD_ENABLED is exactly "true"
+    // (absent is off): with the flag off key() is null, so a hop never builds a Higgsfield request and a
+    // primary Higgsfield route answers gateway_not_configured.
+    higgsfield: {
+        key: () => (process.env.HIGGSFIELD_ENABLED === 'true' && r2IsConfigured(r2EnvConfig()) ? process.env.HIGGSFIELD_API_KEY : null),
+        check: (_record, modelRow, inputs) => {
+            const target = higgsfield.parseEndpoint(modelRow.provider_endpoint);
+            return target ? higgsfield.buildRequest(target, inputs) : { ok: false, error: 'provider_unsupported' };
+        },
+        submit: (job, _record, apiKey) => higgsfield.submitTask(job, { apiKey }),
     },
     openrouter: {
         key: () => process.env.OPENROUTER_API_KEY,

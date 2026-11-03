@@ -27,7 +27,7 @@ test.after(() => { console.error = realError; });
 
 const RPC_OK = { ok: true, since: '2026-11-02T00:00:00Z', hours: 24, by_source: [], failures: [], stuck_events: [] };
 
-test('the webhooks answer carries a polled panel read from submitted jobs of the three providers only', async () => {
+test('the webhooks answer carries a polled panel read from submitted jobs of the four providers only', async () => {
     const urls = [];
     globalThis.fetch = async (url) => {
         const u = new URL(String(url));
@@ -39,12 +39,12 @@ test('the webhooks answer carries a polled panel read from submitted jobs of the
         assert.equal(res.status, 200);
         assert.equal(res.headers.get('cache-control'), 'no-store');
         const body = await res.json();
-        assert.deepEqual(body.polled.providers.map((p) => p.provider), ['grsai', 'byteplus', 'crun']);
+        assert.deepEqual(body.polled.providers.map((p) => p.provider), ['grsai', 'byteplus', 'crun', 'higgsfield']);
         assert.equal(body.polled.capped, false);
     });
     const jobs = urls.filter((u) => u.pathname === '/rest/v1/jobs');
     assert.equal(jobs.length, 1);
-    assert.equal(jobs[0].searchParams.get('provider'), 'in.(grsai,byteplus,crun)');
+    assert.equal(jobs[0].searchParams.get('provider'), 'in.(grsai,byteplus,crun,higgsfield)');
     assert.equal(jobs[0].searchParams.get('state'), 'eq.SUBMITTED');
 });
 
@@ -84,4 +84,18 @@ test('the polled timeouts match the sweeps they describe', async () => {
     assert.equal(lib.POLLED_PROVIDERS.grsai.timeoutMinutes, grsai.TIMEOUT_MINUTES);
     assert.equal(lib.POLLED_PROVIDERS.byteplus.timeoutMinutes, byteplus.TIMEOUT_MINUTES);
     assert.equal(lib.POLLED_PROVIDERS.crun.timeoutMinutes, crun.TIMEOUT_MINUTES);
+});
+
+test('Higgsfield has its own flag, timeout and off-message without changing Crun', async () => {
+    const { TIMEOUT_MINUTES } = await import('../lib/higgsfieldSweep.js');
+    assert.equal(lib.POLLED_PROVIDERS.higgsfield.timeoutMinutes, TIMEOUT_MINUTES);
+    globalThis.fetch = async () => Response.json([]);
+    for (const enabled of [false, true]) {
+        const out = await lib.readPolledProviders({ supabaseUrl: 'https://db.test', serviceRoleKey: 'k' }, { crunEnabled: !enabled, higgsfieldEnabled: enabled });
+        assert.equal(out.providers.find(p => p.provider === 'higgsfield').sweep_enabled, enabled);
+        assert.equal(out.providers.find(p => p.provider === 'crun').sweep_enabled, !enabled);
+    }
+    const { readFileSync } = await import('node:fs');
+    const page = readFileSync('app/veyrnox/app/admin/webhooks/page.js', 'utf8');
+    assert.match(page, /p\.provider === 'higgsfield' \? 'HIGGSFIELD_ENABLED' : 'CRUN_ENABLED'/);
 });

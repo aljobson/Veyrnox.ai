@@ -50,9 +50,11 @@ test('numeric parity normalizes grouping and Arabic-Indic/Devanagari digits with
 // No baseline-regeneration script is defined for legal-english-main.json. Keep its
 // historical HTML/provenance intact. ADR-0317 permits only these added blocks and
 // the two notice dates; existing text (including retention commitments) still pins.
+// Higgsfield updates the privacy provider block and its notice date on 3 November;
+// GDPR retains its ADR-0317 date. Copy changes bump dates, as in commits 20e0672c8 and 797884f91.
 const amendments0317 = {
-  privacy: { keys: ['b075', 'b076', 'b077', 'b078', 'b079', 'b080', 'b081', 'b082'], previousDate: '28 October 2026' },
-  gdpr: { keys: ['b029'], previousDate: '18 October 2026' },
+  privacy: { keys: ['b075', 'b076', 'b077', 'b078', 'b079', 'b080', 'b081', 'b082'], previousDate: '28 October 2026', currentDate: '3 November 2026' },
+  gdpr: { keys: ['b029'], previousDate: '18 October 2026', currentDate: '2 November 2026' },
 };
 for (const document of LEGAL_DOCUMENTS) {
   test(`${document}: preserves historical English render ${baseline.commit} outside ADR-0317 additions`, async () => {
@@ -67,7 +69,7 @@ for (const document of LEGAL_DOCUMENTS) {
     } });
     assert.equal(f.render(await f.load(`app/legal/${document}/page.js`).default()), baseline.documents[document]);
     if (amendment) {
-      assert.equal(data.updated, '2 November 2026');
+      assert.equal(data.updated, amendment.currentDate);
       const actual = fixture('en', `/legal/${document}`, { moduleMocks });
       const html = actual.render(await actual.load(`app/legal/${document}/page.js`).default());
       const { LegalBlocks } = actual.load('app/legal/_lib/LegalDocument.js');

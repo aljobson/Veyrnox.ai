@@ -101,7 +101,7 @@ function Polled({ data }) {
               <div role="cell" className="text-right font-vx-mono vx-num text-vx-fg-muted">{p.oldest_minutes === null ? '—' : `${nf.format(p.oldest_minutes)} min`}</div>
               <div role="cell" className={`text-right font-vx-mono vx-num ${p.overdue ? 'text-vx-danger' : ''}`}>{nf.format(p.overdue)}</div>
               <div role="cell" className="text-right font-vx-mono vx-num text-vx-fg-muted">{p.timeout_minutes} min</div>
-              <div role="cell" className={`pl-4 text-xs ${p.sweep_enabled ? 'text-vx-fg-muted' : 'text-vx-warn'}`}>{p.sweep_enabled ? 'On' : 'Off (CRUN_ENABLED is not true)'}</div>
+              <div role="cell" className={`pl-4 text-xs ${p.sweep_enabled ? 'text-vx-fg-muted' : 'text-vx-warn'}`}>{p.sweep_enabled ? 'On' : `Off (${p.provider === 'higgsfield' ? 'HIGGSFIELD_ENABLED' : 'CRUN_ENABLED'} is not true)`}</div>
             </div>
           ))}
         </div>

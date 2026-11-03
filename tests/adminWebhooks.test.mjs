@@ -61,7 +61,7 @@ test('the window and limit are validated, then passed to admin_webhook_deliverie
         assert.equal(res.status, 200);
         assert.equal(res.headers.get('cache-control'), 'no-store');
         const body = await res.json();
-        assert.equal(body.polled.providers.length, 3);
+        assert.deepEqual(body.polled.providers.map(p => p.provider), ['grsai', 'byteplus', 'crun', 'higgsfield']);
         delete body.polled;
         assert.deepEqual(body, { since: '2026-10-09T00:00:00Z', hours: 24, by_source: [{ source: 'fal', total: 3 }], failures: [], stuck_events: [{ source: 'fal', external_id: 'r1' }] });
         await GET(request(ADMIN));
