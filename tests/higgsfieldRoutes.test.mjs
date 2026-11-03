@@ -14,6 +14,8 @@ test('migration stages exactly two unverified third routes at current promo cost
     assert.match(sql, /DROP CONSTRAINT IF EXISTS model_routes_supplier_check/);
     assert.match(sql, /CHECK \(supplier IN \('fal', 'kie', 'grsai', 'byteplus', 'openrouter', 'crun', 'higgsfield'\)\)/);
     assert.match(sql, /ON CONFLICT \(model_id, priority\) DO NOTHING/);
+    assert.match(sql, /WHERE NOT EXISTS \(SELECT 1 FROM public\.model_routes r/, 'a replay must not insert once an offer has three routes (0374 trigger fires before ON CONFLICT)');
+    assert.match(sql, /r\.priority = 3 OR \(r\.supplier = 'higgsfield' AND r\.endpoint = v\.endpoint\)/);
     assert.match(sql, /ON CONFLICT \(provider\) DO NOTHING/);
     assert.match(sql, /BEGIN;[\s\S]*SET LOCAL search_path = '';[\s\S]*COMMIT;/);
 });

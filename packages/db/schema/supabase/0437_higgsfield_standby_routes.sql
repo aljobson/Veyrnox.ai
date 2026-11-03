@@ -29,6 +29,12 @@ SELECT v.model_id, 'higgsfield', v.endpoint, v.cost, 'per_second', 5, 3, 'standb
         ('kling-2.6-pro-kie', 'higgsfield:kling-video/v2.6/pro/text-to-video', 0.1750::numeric)
        ) AS v(model_id, endpoint, cost)
   JOIN public.model_catalog c ON c.id = v.model_id
+ -- Skip an offer that already has this route or a priority-3 route. model_routes_max_three (0374) is a BEFORE
+ -- INSERT trigger and raises before ON CONFLICT can act once an offer has three routes, so a replay must not
+ -- attempt the insert. A priority-3 slot taken by another supplier is left alone and the assertion below rejects it.
+ WHERE NOT EXISTS (SELECT 1 FROM public.model_routes r
+                    WHERE r.model_id = v.model_id
+                      AND (r.priority = 3 OR (r.supplier = 'higgsfield' AND r.endpoint = v.endpoint)))
 ON CONFLICT (model_id, priority) DO NOTHING;
 
 -- Same column set and ON CONFLICT guard as 0434, deliberately closed.
