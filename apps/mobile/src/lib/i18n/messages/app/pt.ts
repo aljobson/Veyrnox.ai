@@ -4460,6 +4460,7 @@ export default {
   "uploads.uploadcancelled": "Envio cancelado.",
   "uploads.youneedcreditstouploadafile": "Você precisa de créditos para enviar um arquivo. Compre alguns primeiro.",
   "vey.hint": "Abre o chat. Mantenha pressionado para mover Vey para o outro lado.",
+  "vey.character": "Personagem da Vey",
   "vey.move": "Mover Vey para o outro lado",
   "vey.open": "Converse com Vey",
   "vibe.account.reset": "Redefinir minha vibe",

@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type RefObject } from 'react';
 import { AccessibilityInfo, Animated, Easing, PanResponder, Pressable, StyleSheet, View } from 'react-native';
 import { CANVAS, heightFor, pivotStyle } from '../lib/veyCharacter';
 import { t as translate } from '../lib/i18n';
 import { playSelection } from '../lib/haptics';
 import type { VeyMood } from '../lib/veyMotion';
+import { getVeyCharacter, isWobnimoCharacter, subscribeVeyCharacter, wobnimoStateForMood } from '../lib/veyCharacterChoice';
 
 const art = {
     base: require('../../assets/vey/base.png'),
@@ -28,9 +29,32 @@ function swing(value: Animated.Value, duration: number) {
 }
 
 // The art stays decorative; an optional, separate button carries touch semantics.
-export function VeyCharacter({ width = 72, mood = 'idle', interactive = false, onReact }: {
+type VeyCharacterProps = {
     width?: number; mood?: VeyMood; interactive?: boolean; onReact?: (kind: 'tap' | 'hold') => void;
-}) {
+};
+
+// The chosen character: Vey's robot by default, or a wobnimo mascot (picked under Appearance). The robot keeps its
+// touch reactions; a mascot is a picture, and the button around it carries the semantics.
+export function VeyCharacter(props: VeyCharacterProps) {
+    const character = useSyncExternalStore(subscribeVeyCharacter, getVeyCharacter, getVeyCharacter);
+    const [still, setStill] = useState(true);
+    // If the mascot's engine cannot start (no WebGL), the robot stands in until the choice changes.
+    const [failedFor, setFailedFor] = useState<string | null>(null);
+    useEffect(() => {
+        let alive = true;
+        AccessibilityInfo.isReduceMotionEnabled().then((on) => alive && setStill(on)).catch(() => {});
+        const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setStill);
+        return () => { alive = false; sub.remove(); };
+    }, []);
+    if (!isWobnimoCharacter(character) || failedFor === character) return <VeyRobot {...props} />;
+    // Loaded only when a mascot is shown, so the WebView module is not pulled in for the robot.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { WobnimoView } = require('./WobnimoView') as typeof import('./WobnimoView');
+    return <WobnimoView character={character} width={props.width ?? 72} state={still ? 'idle' : wobnimoStateForMood(props.mood)}
+        onFailure={() => setFailedFor(character)} />;
+}
+
+function VeyRobot({ width = 72, mood = 'idle', interactive = false, onReact }: VeyCharacterProps) {
     const k = width / CANVAS.width;
     const sway = useRef(new Animated.Value(0.5)).current;
     const wave = useRef(new Animated.Value(0.5)).current;

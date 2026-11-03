@@ -4649,6 +4649,7 @@ export default {
   "uploads.uploadcancelled": "أُلغي الرفع.",
   "uploads.youneedcreditstouploadafile": "تحتاج إلى رصيد لرفع ملف. اشترِ بعضه أولًا.",
   "vey.hint": "يفتح الدردشة. اضغط مطوّلًا لنقل Vey إلى الجانب الآخر.",
+  "vey.character": "شخصية Vey",
   "vey.move": "نقل Vey إلى الجانب الآخر",
   "vey.open": "الدردشة مع Vey",
   "vibe.account.reset": "امسح أجوائي",

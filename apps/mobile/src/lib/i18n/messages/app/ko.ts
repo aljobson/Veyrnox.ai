@@ -4334,6 +4334,7 @@ export default {
   "uploads.uploadcancelled": "업로드가 취소되었습니다.",
   "uploads.youneedcreditstouploadafile": "파일을 업로드하려면 크레딧이 필요합니다. 먼저 구매하세요.",
   "vey.hint": "채팅을 엽니다. 길게 누르면 Vey를 반대편으로 옮깁니다.",
+  "vey.character": "Vey 캐릭터",
   "vey.move": "Vey를 반대편으로 이동",
   "vey.open": "Vey와 채팅",
   "vibe.account.reset": "내 바이브 초기화",

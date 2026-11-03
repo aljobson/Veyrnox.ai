@@ -141,7 +141,9 @@ jobs:
     needs: changes
     if: needs.changes.outputs.relevant == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # Was 5. "Rebuild from scratch" replays every migration and had grown past it: main's own runs were
+    # cancelled at the limit on 2026-11-03 with no test failing.
+    timeout-minutes: 10
 
     services:
       postgres:

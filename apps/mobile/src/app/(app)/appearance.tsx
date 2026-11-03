@@ -8,6 +8,7 @@ import { ACCENTS, TYPEFACES, TEXT_SIZES, THEME_PREFERENCES, applyAppearance, get
 import { AppearanceContext, Button, Card, Chip, Icon, SegmentedControl, Swatch, Text, themedStyles, useThemedStyles, useAppearance } from '../../components/ui';
 import { previewFonts } from '../../components/ui/FontCatalog';
 import { t } from '../../lib/i18n';
+import { VeyCharacterOptions } from '../../components/VeyCharacterOptions';
 
 // Screen-local draft: only the preview and controls whose selection changed subscribe.
 // Applying reads the latest snapshot, without subscribing the footer or page chrome.
@@ -59,6 +60,8 @@ export default function AppearanceScreen() {
                     <Text variant="title3">{t('appearance.textSize')}</Text>
                     <TextSizeOptions draft={draft} />
                     <Text tone="secondary">{t('appearance.previewBody')}</Text>
+                    <Text variant="title3">{t('vey.character')}</Text>
+                    <VeyCharacterOptions />
                 </ScrollView>
                 <View style={styles.footer}><ApplyButton draft={draft} /></View>
             </View>
