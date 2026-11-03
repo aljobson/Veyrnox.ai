@@ -7,6 +7,8 @@
  *   node scripts/probe-crun.mjs veo-lite          # about $0.067
  *   node scripts/probe-crun.mjs veo-fast          # about $0.134
  *   node scripts/probe-crun.mjs seedance-fast     # about $0.29
+ *   node scripts/probe-crun.mjs kling-2-6         # about $0.27
+ *   node scripts/probe-crun.mjs kling-3 --image <https url>   # about $0.44, 1080p image to video
  *   node scripts/probe-crun.mjs veo --yes         # about $1.00, needs --yes
  *   unset CRUN_API_KEY
  *
@@ -38,17 +40,22 @@ const PROBES = {
     'nano-banana-2-1': { endpoint: 'crun:google/nano-banana-2-1', usd: 0.015, image: true, inputs: {} },
     seedream: { endpoint: 'crun:bytedance/seedream-4', usd: 0.015, image: true, inputs: {} },
     veo: { endpoint: 'crun:google/veo3-1-t2v', usd: 1.0, inputs: { duration_seconds: 8 }, needsYes: true },
+    'kling-2-6': { endpoint: 'crun:kling/v2-6', usd: 0.27, inputs: { duration_seconds: 5 } },
+    'kling-3': { endpoint: 'crun:kling/v3', usd: 0.44, inputs: { duration_seconds: 5 }, needsImage: true },
 };
 const POLL_MS = 5000;
 const TIMEOUT_MS = 10 * 60 * 1000;
 
 export function chooseProbe(argv) {
     const keepAt = argv.indexOf('--keep');
-    const name = argv.find((a, i) => !a.startsWith('--') && !(keepAt >= 0 && i === keepAt + 1));
+    const imageAt = argv.indexOf('--image');
+    const name = argv.find((a, i) => !a.startsWith('--') && !(keepAt >= 0 && i === keepAt + 1) && !(imageAt >= 0 && i === imageAt + 1));
     const probe = PROBES[name];
     if (!probe) return { ok: false, error: `choose one of: ${Object.keys(PROBES).join(', ')}` };
+    const imageUrl = imageAt >= 0 ? argv[imageAt + 1] : undefined;
+    if (probe.needsImage && !/^https:\/\/\S+$/.test(imageUrl || '')) return { ok: false, error: `${name} needs a start frame: add --image <https url of a PNG or JPEG>` };
     if (probe.needsYes && !argv.includes('--yes')) return { ok: false, error: `${name} costs about $${probe.usd.toFixed(2)}; add --yes to run it` };
-    return { ok: true, name, probe };
+    return { ok: true, name, probe: imageUrl ? { ...probe, inputs: { ...probe.inputs, image_url: imageUrl } } : probe };
 }
 
 /** What a parity record needs from ffprobe's JSON: duration, video size and codec, whether there is an audio stream. */

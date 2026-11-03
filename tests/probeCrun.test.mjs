@@ -43,3 +43,14 @@ test('image probes are kept only when the bytes are a PNG, JPEG or WebP', () => 
   assert.equal(imageKind(Buffer.from('<html>not an image at all</html>')), null);
   assert.equal(imageKind(Buffer.alloc(4)), null);
 });
+
+test('the Kling probes: 2.6 is text only, 3.0 refuses to run without an https start frame', () => {
+  assert.equal(chooseProbe(['kling-2-6']).ok, true);
+  assert.equal(chooseProbe(['kling-2-6']).probe.endpoint, 'crun:kling/v2-6');
+  assert.equal(chooseProbe(['kling-3']).ok, false);
+  assert.equal(chooseProbe(['kling-3', '--image', 'http://a/b.png']).ok, false);
+  const ok = chooseProbe(['kling-3', '--image', 'https://a/b.png', '--keep', '/tmp/x']);
+  assert.equal(ok.ok, true);
+  assert.equal(ok.name, 'kling-3');
+  assert.equal(ok.probe.inputs.image_url, 'https://a/b.png');
+});

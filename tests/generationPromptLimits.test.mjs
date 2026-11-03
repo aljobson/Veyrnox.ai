@@ -38,6 +38,8 @@ test('positive generation capabilities use 30,000 or an explicit verified provid
     ['market:kling-2.6/text-to-video', 1000],
     ['market:hailuo/02-text-to-video-standard', 1500],
     ['market:nano-banana-pro', 10000],
+    ['crun:kling/v3', 2500],
+    ['crun:kling/v2-6', 2500],
   ]);
   for (const [endpoint, record] of Object.entries(REGISTRY)) {
     const prompt = record.inputs?.prompt;

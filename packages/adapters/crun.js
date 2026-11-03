@@ -35,6 +35,18 @@ const MODELS = {
     // asks for synchronized audio by default, so the request always sends it. Veo makes its own audio.
     'bytedance/seedance2-0-fast-t2v': { seconds: new Set([5]), resolutions: new Set(['720p']), aspects: new Set(['16:9', '9:16', '1:1']), audio: true },
 };
+// Kling (docs.crun.ai/models/kling/v3-0.json and v2-6.json, read 2026-11-03). Each mirrors the kie row it would back:
+// `kling/v3` is the 3.0 image-to-video offer (pro = 1080p, single shot, audio off, one start frame required) and
+// `kling/v2-6` is the 2.6 Pro text-to-video offer (pro, audio off, no source image). Both are sold as a 5 s unit and
+// a 10 s clip bills twice that, so the length is the caller's choice between the two the catalog prices.
+// Crun documents a 2,500-character prompt for both Kling models.
+const KLING_PROMPT_MAX = 2500;
+const KLING_SECONDS = new Set([5, 10]);
+const KLING_ASPECTS = new Set(['16:9', '9:16', '1:1']);
+const KLING_MODELS = {
+    'kling/v3': { image: 'required' },
+    'kling/v2-6': { image: 'refused' },
+};
 // Text-to-image (docs.crun.ai/models/google/nano-banana.json and /seedream/seedream-4.0.json, read 2026-10-25).
 // One image per request, no reference images: the offers they back take a prompt and an aspect ratio only.
 // `fixed` is sent as-is. Seedream's resolution is pinned to 2K (the fal row it would back renders 2048 x 2048)
@@ -51,7 +63,7 @@ const TASK_ID_RE = /^[A-Za-z0-9._-]{1,128}$/;
 /** @returns {{model:string}|null} */
 export function parseEndpoint(endpoint) {
     const m = ENDPOINT_RE.exec(String(endpoint || ''));
-    return m && !m[1].includes('..') && (MODELS[m[1]] || IMAGE_MODELS[m[1]]) ? { model: m[1] } : null;
+    return m && !m[1].includes('..') && (MODELS[m[1]] || IMAGE_MODELS[m[1]] || KLING_MODELS[m[1]]) ? { model: m[1] } : null;
 }
 
 /** 'video' or 'image' for a Crun endpoint this adapter owns, else null. The sweep picks the file type from it. */
@@ -68,6 +80,8 @@ export function endpointKind(endpoint) {
 export function buildRequest(target, inputs) {
     const image = IMAGE_MODELS[target.model];
     if (image) return buildImageRequest(target, image, inputs);
+    const kling = KLING_MODELS[target.model];
+    if (kling) return buildKlingRequest(target, kling, inputs);
     const spec = MODELS[target.model];
     if (!spec) return { ok: false, error: 'provider_unsupported' };
     const prompt = typeof inputs.prompt === 'string' ? inputs.prompt.trim() : '';
@@ -82,6 +96,34 @@ export function buildRequest(target, inputs) {
         ok: true,
         body: { model: target.model, input: { prompt, duration: seconds, resolution: [...spec.resolutions][0], aspect_ratio: aspect, ...(spec.audio ? { audio: true } : {}) } },
     };
+}
+
+function buildKlingRequest(target, spec, inputs) {
+    const allowed = new Set(['prompt', 'duration_seconds', ...(spec.image === 'required' ? ['image_url'] : ['aspect_ratio'])]);
+    for (const key of Object.keys(inputs)) {
+        if (!allowed.has(key)) return { ok: false, error: `inputs_key_not_allowed:${key.slice(0, 32)}` };
+    }
+    const prompt = typeof inputs.prompt === 'string' ? inputs.prompt.trim() : '';
+    if (!prompt) return { ok: false, error: 'prompt_required' };
+    if (prompt.length > KLING_PROMPT_MAX) return { ok: false, error: 'inputs_invalid:prompt' };
+    const seconds = inputs.duration_seconds === undefined ? 5 : inputs.duration_seconds;
+    if (!KLING_SECONDS.has(seconds)) return { ok: false, error: 'duration_not_supported' };
+    // Audio is pinned off: the catalog rows are costed without it, and Crun bills sound extra (1.5x on 3.0, 2x on 2.6).
+    const input = { mode: 'pro', prompt, duration: seconds, audio: false };
+    if (spec.image === 'required') {
+        const url = inputs.image_url;
+        if (typeof url !== 'string' || !/^https:\/\//.test(url)) return { ok: false, error: 'inputs_invalid:image_url' };
+        // The film studio's versioned passport handles are labels, not Kling @element references (which need an
+        // element_list payload): send them as plain text, exactly as the kie builder does.
+        input.prompt = prompt.replace(/@([a-zA-Z][a-zA-Z0-9_]{0,39}:v[1-9]\d{0,3})\b/g, '$1');
+        input.img_urls = [url];
+        input.multi_shots = false;
+    } else {
+        const aspect = inputs.aspect_ratio === undefined ? '16:9' : inputs.aspect_ratio;
+        if (!KLING_ASPECTS.has(aspect)) return { ok: false, error: 'inputs_invalid:aspect_ratio' };
+        input.aspect_ratio = aspect;
+    }
+    return { ok: true, body: { model: target.model, input } };
 }
 
 function buildImageRequest(target, spec, inputs) {
