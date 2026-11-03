@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, type ComponentRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import { WOBNIMO_SCRIPT } from '../lib/wobnimoBundle.generated';
@@ -29,7 +29,7 @@ const setState = (state: WobnimoState) =>
 export function WobnimoView({ character, state, width, onFailure }: {
     character: WobnimoId; state: WobnimoState; width: number; onFailure?: () => void;
 }) {
-    const ref = useRef<WebView>(null);
+    const ref = useRef<ComponentRef<typeof WebView>>(null);
     const latest = useRef(state);
     // Only the page's own first load may happen; once it reports in, every further navigation is refused.
     const loading = useRef(true);
