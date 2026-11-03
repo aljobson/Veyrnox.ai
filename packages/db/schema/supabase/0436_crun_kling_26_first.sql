@@ -5,9 +5,9 @@
 -- static.mediaoss.bar (already on the R2 allowlist) and measured with ffprobe: 5.04 s, 1920x1080, h264, no audio stream
 -- (as asked), 7,493,312 bytes. Two frames read by Claude Code: a red paper boat on calm water at dusk, sharp and
 -- coherent, no watermark or overlay.
--- NOT established when this was written: the charge in crun.ai/logs (55 Crun credits expected; the owner reads it
--- before approving the apply run) and which model made the clip (a clip cannot prove that; it rests on Crun's model id
--- and its written answers).
+-- Charge: 55 Crun credits, read and confirmed by the owner in crun.ai/logs on 2026-11-03, as expected.
+-- NOT established: which model made the clip (a clip cannot prove that; it rests on Crun's model id and its written
+-- answers).
 --
 -- Cost: 55 Crun credits at the owner's top-up rate of 206 per $1 = $0.2670 per 5 s unit (0435). kie is $0.3150.
 -- The offer stays at 18 credits (0433), so kie, now second, is 0.3150 <= 18 x 0.01796 = $0.3233: a failover hop onto
@@ -29,7 +29,7 @@ DO $$
 DECLARE affected BIGINT;
 BEGIN
     UPDATE public.model_routes
-       SET parity_record = 'probe 2026-11-03 (owner): kling/v2-6 pro audio off, task 3d31954f-b9de-4181-b33a-c32a8ec17a36 success after 87 s; clip fetched and viewed by Claude (5.04 s 1920x1080 h264, no audio stream, no watermark or overlay; two frames: red paper boat on calm water at dusk, sharp and coherent); output host static.mediaoss.bar; charge 55 credits expected, to be confirmed in Crun log by the owner before apply; model identity rests on Crun id and its written answers (a clip cannot prove it)',
+       SET parity_record = 'probe 2026-11-03 (owner): kling/v2-6 pro audio off, task 3d31954f-b9de-4181-b33a-c32a8ec17a36 success after 87 s; clip fetched and viewed by Claude (5.04 s 1920x1080 h264, no audio stream, no watermark or overlay; two frames: red paper boat on calm water at dusk, sharp and coherent); output host static.mediaoss.bar; charge 55 credits confirmed by the owner in the Crun log; model identity rests on Crun id and its written answers (a clip cannot prove it)',
            cost_per_unit = 0.2670, state = 'active', updated_at = now()
      WHERE supplier = 'crun' AND endpoint = 'crun:kling/v2-6' AND model_id = 'kling-2.6-pro-kie'
        AND provenance = 'licensed_reseller' AND cost_unit = 'per_second' AND billing_seconds = 5

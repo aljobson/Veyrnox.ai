@@ -16,7 +16,8 @@ test('the migration names the Crun 2.6 route and the probe, and states what was 
   assert.match(sql, /crun:kling\/v2-6/);
   assert.match(sql, /3d31954f-b9de-4181-b33a-c32a8ec17a36/);
   assert.match(sql, /static\.mediaoss\.bar/);
-  assert.match(sql, /charge 55 credits expected, to be confirmed in Crun log/);
+  assert.match(sql, /charge 55 credits confirmed by the owner in the Crun log/);
+  assert.doesNotMatch(sql, /to be confirmed/);
   assert.match(sql, /model identity rests on Crun id/);
   assert.match(sql, /cost_per_unit = 0\.2670/);
 });

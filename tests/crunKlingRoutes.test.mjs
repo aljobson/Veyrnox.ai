@@ -11,6 +11,7 @@ test('both Kling routes are standby priority-2 Crun rows costed per 5 s unit at 
   assert.equal((90 / 206).toFixed(4), '0.4369'); // 18 credits a second x 5 s
   assert.equal((55 / 206).toFixed(4), '0.2670');
   assert.match(sql, /<> 2 THEN/, 'it asserts exactly two rows');
+  assert.match(sql, /WHERE NOT EXISTS \(SELECT 1 FROM public\.model_routes r/, 'a replay must not insert once an offer has three routes (0374 trigger fires before ON CONFLICT)');
 });
 
 test('the migration activates nothing and changes no price: a probe and the owner come first', () => {
