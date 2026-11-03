@@ -2,7 +2,7 @@ import * as SecureStore from 'expo-secure-store';
 
 // Which character the Vey helper wears: 'vey' is the built-in robot, the rest are wobnimo mascots
 // (MIT, https://github.com/Pouryaak/wobnimo). Mirrors the web's lib/veyCharacterChoice.js. A picture preference only.
-export const VEY_CHARACTER_KEY = 'veyrnox.vey.character.v1';
+export const VEY_CHARACTER_STORAGE = 'veyrnox.vey.character.v1';
 export const DEFAULT_VEY_CHARACTER = 'vey';
 
 export const WOBNIMO_CHARACTERS = [
@@ -54,7 +54,7 @@ export function subscribeVeyCharacter(listener: () => void): () => void {
     if (!loaded) {
         loaded = true;
         const startedAt = revision;
-        SecureStore.getItemAsync(VEY_CHARACTER_KEY)
+        SecureStore.getItemAsync(VEY_CHARACTER_STORAGE)
             .then((raw) => {
                 const saved = parseVeyCharacter(raw);
                 if (revision === startedAt && saved !== current) { current = saved; listeners.forEach((l) => l()); }
@@ -70,6 +70,6 @@ export async function setVeyCharacter(id: VeyCharacterId): Promise<void> {
     listeners.forEach((l) => l());
     const value = JSON.stringify({ version: 1, id: current });
     // Writes run in the order chosen. A failed write still leaves the choice in place for this session.
-    writes = writes.then(() => SecureStore.setItemAsync(VEY_CHARACTER_KEY, value)).catch(() => {});
+    writes = writes.then(() => SecureStore.setItemAsync(VEY_CHARACTER_STORAGE, value)).catch(() => {});
     await writes;
 }
