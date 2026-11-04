@@ -1,3 +1,4 @@
+import { fetchFreeAllowance } from '../../../lib/freeAllowance';
 import { captureHandoffOwner } from '../../../lib/accountHandoffStore';
 import { createFormSheets as sheets } from '../../../components/create/createFormStyles';
 import { rememberFilmJob } from '../../../lib/filmGenerationReturns';
@@ -27,7 +28,7 @@ import { ActivityIndicator, Platform, ScrollView, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { API_BASE, ApiError } from '../../../lib/api';
 import { canDraw } from '../../../lib/drawOnImage';
-import { createGenerationSubmit, generationMessage } from '../../../lib/generationSubmit';
+import { createGenerationSubmit, generationSignature, unknownGenerationOutcome, type ChargeSnapshot, generationMessage } from '../../../lib/generationSubmit';
 import { CameraPanel } from '../../../components/CameraPanel';
 import { CharacterPanel } from '../../../components/CharacterPanel';
 import { CreateOptions, type OptionValues } from '../../../components/CreateOptions';
@@ -36,7 +37,7 @@ import { SourcePicker } from '../../../components/SourcePicker';
 import { TemplateBanner } from '../../../components/TemplateBanner';
 import { DEFAULT_CINEMA, buildCinemaPrompt, sanitizeCinema, type Cinema } from '../../../lib/cinemaCamera';
 import { clearDraft, loadDraft, saveDraft } from '../../../lib/createDraftStore';
-import { SAVED_DRAFT_VERSION, pickerModels, type CreateDraft, audioLengthInvalid, batchCost, freeLeftFor, hasAnyOption, imageCount, inputsForIndex, optionsFor, resolveAudio, resolveResolution, seedIsInvalid, settingsInputs, takesImageCount, voiceIsMissing } from '../../../lib/createOptions';
+import { SAVED_DRAFT_VERSION, pickerModels, type CreateDraft, audioLengthInvalid, freeLeftFor, hasAnyOption, imageCount, inputsForIndex, optionsFor, resolveAudio, resolveResolution, seedIsInvalid, settingsInputs, takesImageCount, voiceIsMissing } from '../../../lib/createOptions';
 import { loadVibe } from '../../../lib/creatorProfileStore';
 import { defaultAspect } from '../../../lib/creatorTaste';
 import { nearestAspect, parseRatio, readTemplate } from '../../../lib/templateHandoff';
@@ -107,7 +108,7 @@ export default function CreateWithModel() {
     const [confirmed, setConfirmed] = useState(0);
     const batch = useRef(0);
     const balanceSeq = useRef(0);
-    const retry = useRef<{ signature: string; request: SubmitRequest; count: number; unit: number } | null>(null);
+    const retry = useRef<{ signature: string; request: SubmitRequest; count: number; unit: number; quote?: ChargeSnapshot } | null>(null);
     const balance = useBalance();
     // The newest unsaved draft, so leaving the screen (to buy credits, say) never loses the last words typed.
     const unsaved = useRef<{ draft: CreateDraft; owner: string | undefined; current: () => boolean } | null>(null);
@@ -124,6 +125,14 @@ export default function CreateWithModel() {
         batch.current++; balanceSeq.current++; pending.current.reset(); retry.current = null;
         setResults(null); setConfirmed(0); setComplete(false); setError(null); setNote(null);
     }
+
+    useEffect(() => {
+        // Changing any identity input drops the quote and continuation, even if later changed back.
+        if (!retry.current) return;
+        batch.current++; balanceSeq.current++; pending.current.reset(); retry.current = null;
+        setResults(null); setConfirmed(0); setComplete(false); setError(null); setNote(null);
+        // busy stays set: the submit lock holds until the outstanding request settles (its finally clears it).
+    }, [modelId, prompt, duration, opts, references, sourceRights, cameraOn, cinema, characterOn, character, template?.id]);
 
     useEffect(() => {
         consumeCreativeSourceHandoff(typeof sourceHandoff === 'string' ? sourceHandoff : undefined, typeof recipe === 'string' ? recipe : undefined, modelId);
@@ -289,11 +298,12 @@ export default function CreateWithModel() {
     const waiting = Object.values(sending).some(Boolean);
     const hasReference = references.length > 0 || !!startFile;
     const ready = !waiting && !promptTooLong && (!hasReference || sourceRights) && slots.every(slot => (!slot.required || references.some(ref => ref.slot === slot.slot)) && references.filter(ref => ref.slot === slot.slot).length <= (slot.maxFiles ?? 1)) && (!promptRequired(model) || !!text) && !seedIsInvalid(opts.seed) && !voiceIsMissing(options, opts.voice) && !audioLengthInvalid(options, opts.audioSeconds);
-    const request: SubmitRequest = { analyticsKind: kindOf(model.modality), modelId: model.id, prompt: text, durationSeconds: isVideo ? duration : null, confirmedCredits: unit, references, sourceRights: hasReference ? sourceRights : undefined, textKey: text_?.key, extraInputs: settingsInputs(options, { seed: opts.seed, negative: opts.negative, aspect: opts.aspect, voice: opts.voice, audioSeconds: opts.audioSeconds, resolution, audio }), preset: template?.id ?? undefined };
-    const signature = JSON.stringify({ ...request, count: n });
+    const request: SubmitRequest = { analyticsKind: kindOf(model.modality), modelId: model.id, prompt: text, confirmedCredits: unit, durationSeconds: isVideo ? duration : null, references, sourceRights: hasReference ? sourceRights : undefined, textKey: text_?.key, extraInputs: settingsInputs(options, { seed: opts.seed, negative: opts.negative, aspect: opts.aspect, voice: opts.voice, audioSeconds: opts.audioSeconds, resolution, audio }), preset: template?.id ?? undefined };
+    const signature = generationSignature(request, n);
     const matchingRetry = retry.current?.signature === signature ? retry.current : null;
     // Only an unchanged request retains its confirmed items and retry price.
-    const price = batchCost(unit, Math.max(0, n - (!complete && matchingRetry ? confirmed : 0)), freeLeft);
+    const quote = matchingRetry?.quote ?? pending.current.snapshot(request, n, matchingRetry?.unit ?? unit, freeLeft);
+    const price = quote.total;
     const stageLine = template
         ? t('create.workspace.stageTemplate', { name: template.title })
         : hasReference
@@ -304,13 +314,13 @@ export default function CreateWithModel() {
     async function generate() {
         if (!model || (!ready && !matchingRetry) || busy || freeLoading) return;
         if (retry.current && !matchingRetry) newGeneration();
-        const run = matchingRetry ?? { signature, request, count: n, unit };
+        const run: NonNullable<typeof retry.current> = matchingRetry ?? { signature, request, count: n, unit };
         retry.current = run;
         const generation = batch.current;
         const owner = getCacheUser();
         const current = () => generation === batch.current && owner === getCacheUser();
         setBusy(true); setError(null); setNote(null);
-        let started = 0;
+        let started = matchingRetry ? confirmed : 0;
         let firstId: string | null = null;
         try {
             await pending.current.run(api, run.request, run.count, count => { started = count; if (current()) setConfirmed(previous => Math.max(previous, count)); }, (id, index) => {
@@ -320,7 +330,7 @@ export default function CreateWithModel() {
                 const extraInputs = inputsForIndex(run.request.extraInputs ?? {}, index, run.count);
                 void rememberSubmitted(id, { ...run.request, extraInputs }, attachCarry, { opts: { ...opts, count: 1, seed: extraInputs.seed === undefined ? opts.seed : String(extraInputs.seed) }, cameraOn, cinema, characterOn, character });
                 setResults(previous => previous ? { ...previous, ids: previous.ids.includes(id) ? previous.ids : [...previous.ids, id] } : { ids: [id], modelId: model.id, kind: kindOf(model.modality), aspect: opts.aspect, duration, count: run.count });
-            });
+            }, quote);
             if (!current()) return;
             clearDraft().catch(() => undefined);
             // A single Faceless Reel clip still opens its job page, where the sound step is offered (ADR-0279).
@@ -329,11 +339,20 @@ export default function CreateWithModel() {
             else setComplete(true);
         } catch (err) {
             if (!current()) return;
+            if (err instanceof ApiError && err.code === 'price_changed' && Number.isInteger(err.body.expected_credits) && Number(err.body.expected_credits) >= 0) {
+                let fresh = {};
+                try { fresh = await fetchFreeAllowance(api); } catch { /* paid estimate */ }
+                if (!current()) return;
+                const quotedUnit = Number(err.body.expected_credits);
+                retry.current = { ...run, unit: quotedUnit, quote: pending.current.snapshot(run.request, run.count, quotedUnit, freeLeftFor(fresh, model.id)) };
+            } else retry.current = { ...run, quote: undefined };
             setError(generationMessage(err));
-            if (run.count > 1) setNote(t(err instanceof ApiError && err.code !== 'network' ? 'opt.started' : 'opt.startedUnknown', { started: String(started), count: String(run.count), next: String(started + 1) }));
+            if (run.count > 1) setNote(t(unknownGenerationOutcome(err) ? 'opt.startedUnknown' : 'opt.started', { started: String(started), count: String(run.count), next: String(started + 1) }));
         } finally {
+            // Always release the lock here: a reset mid-request keeps busy set until the request settles.
+            setBusy(false);
             if (current()) {
-                setBusy(false); setRefreshKey(key => key + 1);
+                setRefreshKey(key => key + 1);
                 void refreshBalance(api, owner, current, balanceSeq);
             }
         }
@@ -342,10 +361,11 @@ export default function CreateWithModel() {
     const owner = getCacheUser();
     const resultSettled = () => { if (generation === batch.current) void refreshBalance(api, owner, () => generation === batch.current, balanceSeq); };
 
-    const missing = complete ? 0 : shortfall(balance, price);
+    const payable = quote.payable ?? price;
+    const missing = complete ? 0 : shortfall(balance, payable);
     const alternatives = pickerModels(catalog, model);
     const disabled = busy || (!complete && (freeLoading || (!ready && !matchingRetry) || missing > 0));
-    const generateLabel = `${n > 1 ? t('opt.generateCount', { count: String(n) }) : t('slip.generate')}. ${costLine(price, n, freeLeft, unit)}`;
+    const generateLabel = matchingRetry?.quote ? t('app.create.confirmPrice', { credits: String(price) }) : `${n > 1 ? t('opt.generateCount', { count: String(n) }) : t('slip.generate')}. ${costLine(price, n, freeLeft, unit)}`;
 
     return (
         <KeyboardScreen style={styles.screen}>
@@ -434,7 +454,7 @@ export default function CreateWithModel() {
                 <SourceDurationCard model={model} />
                 {missing > 0 ? (
                     <View style={styles.short}>
-                        <Text variant="callout" tone="secondary" accessibilityLiveRegion="polite" style={styles.shortText}>{plural('create.short', missing, { have: String(balance ?? 0), need: String(price) })}</Text>
+                        <Text variant="callout" tone="secondary" accessibilityLiveRegion="polite" style={styles.shortText}>{plural('create.short', missing, { have: String(balance ?? 0), need: String(payable) })}</Text>
                         <Button variant="tertiary" accessibilityRole="button" accessibilityLabel={t('lowBalance.buy')} onPress={async () => { await flushDraft(); router.push('/credits'); }} label={t('lowBalance.buy')} />
                     </View>
                 ) : null}
@@ -449,7 +469,7 @@ export default function CreateWithModel() {
                         </View>
                         <Text variant="caption" tone="secondary" style={styles.balance}>{t('create.workspace.balance', { credits: balance === null ? '—' : String(balance) })}</Text>
                     </View>
-                    <Button variant="primary" accessibilityRole="button" accessibilityLabel={rawText(complete ? t('libraryCreate.newNoCharge') : generateLabel)} accessibilityState={{ busy, disabled }} disabled={disabled} onPress={complete ? newGeneration : generate} label={complete ? t('libraryCreate.newGeneration') : price === 0 ? t('create.workspace.generateFree') : t('create.workspace.generate', { credits: String(price) })} loading={busy} />
+                    <Button variant="primary" accessibilityRole="button" accessibilityLabel={rawText(complete ? t('libraryCreate.newNoCharge') : generateLabel)} accessibilityState={{ busy, disabled }} disabled={disabled} onPress={complete ? newGeneration : generate} label={complete ? t('libraryCreate.newGeneration') : matchingRetry?.quote ? generateLabel : price === 0 ? t('create.workspace.generateFree') : t('create.workspace.generate', { credits: String(price) })} loading={busy} />
                     <SectionLabel style={styles.refund}>{t('create.workspace.refund')}</SectionLabel>
                     <View style={styles.terms}>
                         <Text variant="caption" tone="tertiary">{t('create.workspace.terms')}{' '}</Text>

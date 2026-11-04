@@ -9,35 +9,68 @@ import { t } from './i18n';
 
 export type SubmitRequest = Omit<GenerationRequest, 'idempotencyKey'>;
 
-// One lifecycle per mounted form. An ambiguous response retains every key, including
-// earlier successful batch items. A successful run or an explicit reset starts afresh.
+// Price/allowance metadata never changes request identity or retry keys.
+export function generationSignature(request: SubmitRequest, count: number) {
+    const { modelId, prompt, textKey, durationSeconds, extraInputs, references, sources, assets, sourceRights, preset } = request;
+    return JSON.stringify({ modelId, prompt, textKey, durationSeconds, extraInputs, references, sources, assets, sourceRights, preset, count });
+}
+export const unknownGenerationOutcome = (err: unknown) => !(err instanceof ApiError)
+    || ['network', 'internal', 'gateway_error', 'debit_failed', 'account_changed', 'dispatch_acceptance_unknown', 'admission_unknown', 'outcome_unknown', 'bad_response'].includes(err.code)
+    // An untyped server error is not proof that nothing was charged.
+    || (err.code === 'unknown' && err.status >= 500);
+export type ChargeSnapshot = { ceilings: (number | null)[]; total: number; payable: number };
 export function createGenerationSubmit() {
-    let pending: { signature: string; keys: string[] } | null = null;
+    let pending: { signature: string; keys: string[]; accepted: (string | null)[]; unknown: Set<number> } | null = null;
     let running = false;
     let epoch = 0;
     return {
         reset() { pending = null; epoch++; },
-        async run(api: ApiClient, request: SubmitRequest, count = 1, onStarted?: (count: number) => void, onJob?: (jobId: string, index: number) => void) {
+        snapshot(request: SubmitRequest, count: number, unit: number, freeNow: number): ChargeSnapshot {
+            const same = pending?.signature === generationSignature(request, count) ? pending : null;
+            let free = Math.max(0, Math.floor(freeNow));
+            const ceilings = Array.from({ length: count }, (_, i) => {
+                if (same?.accepted[i]) return null;
+                // Reconcile with the existing key and paid ceiling, without reserving another free slot.
+                if (same?.unknown.has(i)) return unit;
+                if (free > 0) { free--; return 0; }
+                return unit;
+            });
+            // total is the most this click may charge (shown to the person). payable leaves out unknown items:
+            // their retained key replays, which debits nothing if the lost reply hid an accepted job, so they
+            // never block the affordability check. Their ceiling still caps a fresh admission.
+            return { ceilings, total: ceilings.reduce<number>((sum, value) => sum + (value ?? 0), 0),
+                payable: ceilings.reduce<number>((sum, value, i) => sum + (same?.unknown.has(i) ? 0 : (value ?? 0)), 0) };
+        },
+        async run(api: ApiClient, request: SubmitRequest, count = 1, onStarted?: (count: number) => void, onJob?: (jobId: string, index: number) => void, quote?: ChargeSnapshot) {
             if (running) throw new ApiError(409, 'submission_in_progress');
-            // The signature now covers the whole request, including price and explicit rights, plus batch count.
-            const signature = JSON.stringify({ ...request, count });
-            const keys = pending?.signature === signature ? pending.keys : Array.from({ length: count }, () => Crypto.randomUUID());
-            pending = { signature, keys };
+            const signature = generationSignature(request, count);
+            if (pending?.signature !== signature) pending = { signature, keys: Array.from({ length: count }, () => Crypto.randomUUID()), accepted: Array(count).fill(null), unknown: new Set() };
+            const run = pending;
             running = true;
             const generation = epoch;
             const owner = getCacheUser();
-            let first: string | null = null;
             try {
                 for (let i = 0; i < count; i++) {
                     if (generation !== epoch || owner !== getCacheUser()) throw new ApiError(409, 'submission_reset');
-                    const result = await mediaApi(api).createGeneration({ ...request, idempotencyKey: keys[i], extraInputs: inputsForIndex(request.extraInputs ?? {}, i, count) });
+                    if (run.accepted[i]) continue;
+                    let result;
+                    try {
+                        result = await mediaApi(api).createGeneration({ ...request,
+                            ...(quote ? { maxCharge: quote.ceilings[i] ?? 0 } : {}),
+                            idempotencyKey: run.keys[i], extraInputs: inputsForIndex(request.extraInputs ?? {}, i, count) });
+                    } catch (err) {
+                        if (unknownGenerationOutcome(err)) run.unknown.add(i);
+                        else run.unknown.delete(i);
+                        throw err;
+                    }
                     if (generation !== epoch || owner !== getCacheUser()) throw new ApiError(409, 'submission_reset');
-                    first ??= result.job_id;
-                    onStarted?.(i + 1);
+                    run.accepted[i] = result.job_id;
+                    run.unknown.delete(i);
+                    onStarted?.(run.accepted.filter(Boolean).length);
                     onJob?.(result.job_id, i);
                 }
                 pending = null;
-                return first;
+                return run.accepted[0];
             } finally { running = false; }
         },
     };
@@ -47,6 +80,10 @@ export function generationMessage(err: unknown): string {
     if (err instanceof OfflineError) return OFFLINE_PAID_MESSAGE;
     if (!(err instanceof ApiError)) return t('common.error');
     switch (err.code) {
+        case 'price_changed':
+        case 'admission_unknown':
+        case 'admission_unavailable':
+            return t(`app.create.error.${err.code}`);
         case 'subscription_required':
             return t('credits.hardPaywall.title');
         case 'source_too_short':

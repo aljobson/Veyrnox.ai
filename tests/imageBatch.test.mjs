@@ -70,7 +70,7 @@ test('the note never claims what was charged; an unknown outcome points to Libra
 test('a submit whose reply was lost is reported as an unknown outcome', () => {
     // Dropped connection / client throw, non-JSON 5xx, ledger_debit RPC error,
     // session swap after the reply: the gateway may have debited request k.
-    for (const code of ['internal', 'gateway_error', 'debit_failed', 'account_changed']) {
+    for (const code of ['internal', 'network_error', 'gateway_error', 'debit_failed', 'account_changed']) {
         assert.equal(submitErrorCode(code), 'outcome_unknown', code);
     }
     // Refusals the gateway answered before (or refunded after) the debit keep their own copy.
@@ -114,4 +114,61 @@ test('sendInOrder stops at the first failure and never retries', async () => {
 test('lost durable admission is an uncertain batch outcome', () => {
     assert.equal(submitErrorCode('dispatch_acceptance_unknown'), 'outcome_unknown');
     assert.match(batchNote(1, 3, submitErrorCode('dispatch_acceptance_unknown')), /may have too/);
+});
+
+test('admission_unknown is never described as a rejected request', () => {
+    assert.equal(submitErrorCode('admission_unknown'), 'outcome_unknown');
+    assert.match(batchNote(1, 3, 'admission_unknown'), /may have too/);
+    assert.equal(submitErrorCode('admission_unavailable'), 'admission_unavailable');
+});
+
+test('continuation skips accepted items, retains keys and seeds, and allocates by unresolved position', async () => {
+    const { createBatch, allocationSnapshot } = await import('../app/veyrnox/_lib/imageBatch.js');
+    let id = 0;
+    const batch = createBatch(3, () => `key-${++id}`);
+    const calls = [];
+    const send = async i => { calls.push([i, batch.keys[i], inputsForIndex({ seed: 7 }, i, 3).seed]); if (i === 1) throw { code: 'price_changed' }; return { job_id: 'accepted' }; };
+    const first = await sendInOrder(3, send, batch);
+    assert.equal(first.started, 1);
+    const quote = allocationSnapshot(batch, 9, 1);
+    assert.deepEqual(quote, { ceilings: [null, 0, 9], total: 9, payable: 9 });
+    await sendInOrder(3, async i => { calls.push([i, batch.keys[i], inputsForIndex({ seed: 7 }, i, 3).seed]); return { job_id: `job-${i}` }; }, batch);
+    assert.deepEqual(calls, [[0, 'key-1', 7], [1, 'key-2', 8], [1, 'key-2', 8], [2, 'key-3', 9]]);
+    assert.deepEqual(createBatch(3, () => `key-${++id}`).keys, ['key-4', 'key-5', 'key-6']);
+});
+
+test('unknown requests retain their paid ceiling without reserving another allowance', async () => {
+    const { createBatch, allocationSnapshot } = await import('../app/veyrnox/_lib/imageBatch.js');
+    const batch = createBatch(2, () => 'same-key');
+    await sendInOrder(2, async () => { throw { code: 'admission_unknown' }; }, batch);
+    // The unknown item keeps its ceiling but adds nothing to the affordability total (its key replays).
+    assert.deepEqual(allocationSnapshot(batch, 7, 1), { ceilings: [7, 0], total: 7, payable: 0 });
+    await sendInOrder(2, async () => { throw { code: 'price_changed' }; }, batch);
+    // A definitive refusal establishes there is no accepted job for that item.
+    assert.deepEqual(allocationSnapshot(batch, 9, 0), { ceilings: [9, 9], total: 18, payable: 18 });
+});
+
+test('a partial batch replaces only a definitive refusal key, preserving uncertain and price-confirmation keys', async () => {
+    const { createBatch } = await import('../app/veyrnox/_lib/imageBatch.js');
+    for (const code of ['provider_submit_failed', 'price_changed', 'network_error', 'admission_unknown']) {
+        let key = 0;
+        const makeKey = () => `key-${++key}`;
+        const batch = createBatch(3, makeKey);
+        await sendInOrder(3, async i => {
+            if (i === 1) throw { code };
+            return { job_id: 'accepted' };
+        }, batch, makeKey);
+        assert.deepEqual(batch.keys, ['key-1', code === 'provider_submit_failed' ? 'key-4' : 'key-2', 'key-3']);
+        assert.deepEqual(batch.accepted, [{ job_id: 'accepted' }, null, null]);
+        assert.deepEqual([...batch.unknown], ['network_error', 'admission_unknown'].includes(code) ? [1] : []);
+    }
+});
+
+test('a lost-reply item replays at zero balance: only unsubmitted items count toward the total', async () => {
+    const { createBatch, allocationSnapshot, submitErrorCode } = await import('../app/veyrnox/_lib/imageBatch.js');
+    const batch = createBatch(2, () => 'k');
+    batch.unknown.add(0);
+    assert.deepEqual(allocationSnapshot(batch, 5, 0), { ceilings: [5, 5], total: 10, payable: 5 });
+    assert.deepEqual(allocationSnapshot({ accepted: [null], unknown: new Set([0]) }, 5, 0), { ceilings: [5], total: 5, payable: 0 });
+    assert.equal(submitErrorCode('outcome_unknown'), 'outcome_unknown');
 });

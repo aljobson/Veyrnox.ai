@@ -112,7 +112,7 @@ test('both front doors use shared submission; result uses existing poll and outp
     expect(read('../src/app/(app)/create/[modelId].tsx')).not.toContain('faceFilterMessage');
 });
 
-test('partial batches replay the same keys and per-image seeds through the shared client', async () => {
+test('partial batches retain unresolved keys and seeds and skip accepted items through the shared client', async () => {
     const lifecycle = createGenerationSubmit();
     const send = jest.fn().mockResolvedValueOnce({ job_id: 'first' }).mockRejectedValueOnce(new ApiError(0, 'network')).mockResolvedValue({ job_id: 'first' });
     const api = { request: send } as unknown as ApiClient;
@@ -122,9 +122,10 @@ test('partial batches replay the same keys and per-image seeds through the share
     expect(progress).toHaveBeenCalledWith(1);
     await lifecycle.run(api, batch, 2);
     const bodies = send.mock.calls.map(([, init]) => JSON.parse(init.body));
-    expect(bodies.map(b => b.inputs.seed)).toEqual([4, 5, 4, 5]);
-    expect(bodies[0].idempotency_key).toBe(bodies[2].idempotency_key);
-    expect(bodies[1].idempotency_key).toBe(bodies[3].idempotency_key);
+    expect(bodies.map(b => b.inputs.seed)).toEqual([4, 5, 5]);
+    expect(bodies).toHaveLength(3);
+    expect(bodies[0].idempotency_key).not.toBe(bodies[2].idempotency_key);
+    expect(bodies[1].idempotency_key).toBe(bodies[2].idempotency_key);
 });
 
 test('overlapping taps cannot start a second generation', async () => {

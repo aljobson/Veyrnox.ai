@@ -260,6 +260,11 @@ const zh = {
     'app.create.addFiles.cancel': '取消',
     'app.create.addFiles.add': '添加',
     'app.create.addFiles.select': '选择 {name}',
+    'app.create.error.price_changed': '价格已变更。此项目未扣费。请确认剩余项目的新总价后继续。',
+    'app.create.error.admission_unknown': '无法确认此请求是否已开始或扣费。请重试同一请求以确认结果。',
+    'app.create.error.admission_unavailable': '此请求未被接受，未扣费。请稍后重试。',
+    'app.create.confirmPrice': '确认 {credits} 积分',
+    'app.create.startNewBatch': '开始新批次',
 } as const;
 
 export default zh;

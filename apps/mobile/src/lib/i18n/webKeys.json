@@ -256,5 +256,10 @@
   "app.create.addFiles.error",
   "app.create.addFiles.cancel",
   "app.create.addFiles.add",
-  "app.create.addFiles.select"
+  "app.create.addFiles.select",
+  "app.create.error.price_changed",
+  "app.create.error.admission_unknown",
+  "app.create.error.admission_unavailable",
+  "app.create.confirmPrice",
+  "app.create.startNewBatch"
 ]

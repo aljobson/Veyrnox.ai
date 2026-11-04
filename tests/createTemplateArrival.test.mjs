@@ -55,6 +55,7 @@ function harness(params, { saved, blocked = false, models = [original, other], l
     useRef(initial) { const index = cursor++; return slots[index] ??= { current: initial }; },
     useEffect(fn, deps) { const index = cursor++; if (changed(slots[index]?.deps, deps)) { effects.push(() => { slots[index]?.cleanup?.(); slots[index] = { deps, cleanup: fn() }; }); } },
     useCallback(fn, deps) { const index = cursor++; if (changed(slots[index]?.deps, deps)) slots[index] = { deps, fn }; return slots[index].fn; },
+    useMemo(fn, deps) { const index = cursor++; if (changed(slots[index]?.deps, deps)) slots[index] = { deps, value: fn() }; return slots[index].value; },
     useSyncExternalStore: () => false,
   };
   const stubs = {

@@ -3,7 +3,7 @@ import { ApiError, type ApiClient } from './api';
 import { getCacheUser, subscribeCacheUser } from './appCache';
 import { publishBalance } from './balanceEvents';
 import { fetchFreeAllowance, type FreeLeft } from './freeAllowance';
-import { createGenerationSubmit, generationMessage, type SubmitRequest } from './generationSubmit';
+import { createGenerationSubmit, generationMessage, generationSignature, unknownGenerationOutcome, type ChargeSnapshot, type SubmitRequest } from './generationSubmit';
 import { t } from './i18n';
 import { mediaApi, waitForJob, type JobState } from './media';
 
@@ -12,7 +12,7 @@ export interface MakeJob {
     state: JobState;
     asset?: { url: string; mime_type: string };
 }
-type Retained = { signature: string; started: number; blocked: boolean };
+type Retained = { signature: string; started: number; blocked: boolean; unit?: number; quote?: ChargeSnapshot };
 
 // Keys belong to the mounted panel, while results and reads belong to a visible batch.
 export function useMakePanelState(api: ApiClient, visible: boolean) {
@@ -83,14 +83,14 @@ export function useMakePanelState(api: ApiClient, visible: boolean) {
             try { update({ asset: await media.getAsset(id) }); } catch { /* Status alone is useful. */ }
         }).catch(() => {});
     }
-    async function run(request: SubmitRequest, n: number, onStarted?: (jobId: string) => void) {
+    async function run(request: SubmitRequest, n: number, onStarted?: (jobId: string) => void, quote?: ChargeSnapshot) {
         if (active.current) return;
         const owner = getCacheUser();
-        const signature = JSON.stringify({ ...request, count: n });
+        const signature = generationSignature(request, n);
         const same = retained.current?.signature === signature;
         if (!same) clear();
         const id = batch.current, signal = controller.current.signal;
-        const record = same ? retained.current! : { signature, started: 0, blocked: false };
+        const record: Retained = same ? { ...retained.current! } : { signature, started: 0, blocked: false };
         retained.current = record;
         active.current = true; setSubmitting(true); setCount(n);
         allowanceRead.current++; setFreeMap({});
@@ -98,7 +98,7 @@ export function useMakePanelState(api: ApiClient, visible: boolean) {
         try {
             await submit.current.run(api, request, n, started => {
                 if (retained.current === record && getCacheUser() === owner) record.started = Math.max(record.started, started);
-            }, jobId => { if (getCacheUser() === owner) onStarted?.(jobId); addJob(jobId, id, owner, signal); });
+            }, jobId => { if (getCacheUser() === owner) onStarted?.(jobId); addJob(jobId, id, owner, signal); }, quote);
             if (retained.current === record && getCacheUser() === owner) {
                 retained.current = null;
                 if (mounted.current) setRetry(null);
@@ -107,14 +107,21 @@ export function useMakePanelState(api: ApiClient, visible: boolean) {
             // Closing drops presentation callbacks, but the retained purchase must still
             // describe its real outcome when the same mounted panel opens again.
             if (retained.current === record && getCacheUser() === owner) {
-                record.blocked = record.started > 0 || !(err instanceof ApiError) || err.code === 'network';
+                record.blocked = unknownGenerationOutcome(err);
+                if (err instanceof ApiError && err.code === 'price_changed' && Number.isInteger(err.body.expected_credits) && Number(err.body.expected_credits) >= 0) {
+                    let fresh: FreeLeft = {};
+                    try { fresh = await fetchFreeAllowance(api); } catch { /* paid estimate */ }
+                    if (getCacheUser() !== owner || retained.current !== record) return;
+                    record.unit = Number(err.body.expected_credits);
+                    record.quote = submit.current.snapshot(request, n, record.unit, fresh[request.modelId] ?? 0);
+                } else record.quote = undefined;
                 if (mounted.current) setRetry({ ...record });
             }
             if (current(id, owner)) {
                 const credits = err instanceof ApiError && ['insufficient_balance', 'insufficient_credits'].includes(err.code);
                 setLowBalance(credits);
                 setError(credits ? t('chat.make.err.credits') : err instanceof ApiError && err.code === 'rate_limited' ? t('chat.make.err.rate') : generationMessage(err));
-                if (n > 1) setNote(t(err instanceof ApiError && err.code !== 'network' ? 'opt.started' : 'opt.startedUnknown', { started: String(record.started), count: String(n), next: String(record.started + 1) }));
+                if (n > 1) setNote(t(unknownGenerationOutcome(err) ? 'opt.startedUnknown' : 'opt.started', { started: String(record.started), count: String(n), next: String(record.started + 1) }));
             }
         } finally {
             active.current = false;
@@ -124,10 +131,13 @@ export function useMakePanelState(api: ApiClient, visible: boolean) {
             void refreshAllowance(id, owner);
         }
     }
+    function resetInputs() {
+        clear(); submit.current.reset(); retained.current = null; setRetry(null);
+    }
     function makeAnother() {
         if (active.current || retained.current?.blocked) return false;
         clear(); submit.current.reset(); retained.current = null; setRetry(null);
         return true;
     }
-    return { jobs, count, submitting, freeMap, error, note, lowBalance, retry, run, close: clear, makeAnother };
+    return { resetInputs, snapshot: submit.current.snapshot, jobs, count, submitting, freeMap, error, note, lowBalance, retry, run, close: clear, makeAnother };
 }

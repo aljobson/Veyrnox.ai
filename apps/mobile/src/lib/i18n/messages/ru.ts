@@ -260,6 +260,11 @@ const ru = {
     'app.create.addFiles.cancel': 'Отмена',
     'app.create.addFiles.add': 'Добавить',
     'app.create.addFiles.select': 'Выбрать {name}',
+    'app.create.error.price_changed': 'Цена изменилась. За этот элемент списания не было. Подтвердите новую оставшуюся сумму, чтобы продолжить.',
+    'app.create.error.admission_unknown': 'Не удалось подтвердить, начался ли этот запрос и были ли списаны кредиты. Повторите тот же запрос для проверки.',
+    'app.create.error.admission_unavailable': 'Этот запрос не был принят. Кредиты не списаны. Попробуйте позже.',
+    'app.create.confirmPrice': 'Подтвердить {credits} кредитов',
+    'app.create.startNewBatch': 'Начать новую серию',
 } as const;
 
 export default ru;

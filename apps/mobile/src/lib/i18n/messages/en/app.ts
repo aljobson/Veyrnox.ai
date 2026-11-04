@@ -1,4 +1,10 @@
 export default {
+    "app.create.error.price_changed": "The price changed. This item was not charged. Confirm the revised remaining total to continue.",
+    "app.create.error.admission_unknown": "We could not confirm whether this request started or was charged. Retry this same request to check its outcome.",
+    "app.create.error.admission_unavailable": "This request could not be admitted. Nothing was charged. Try again later.",
+    "app.create.confirmPrice": "Confirm {credits} credits",
+    "app.create.startNewBatch": "Start a new batch",
+
     "app.create.sources.video.mp4Hint": "MP4 only, up to 100 MB",
     "app.create.sources.secondsRange": "{min}–{max} s",
     "app.create.sources.minSeconds": "at least {min} s",

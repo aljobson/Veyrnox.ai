@@ -32,7 +32,9 @@ test('production public variables retain Cloudflare text-binding headroom', () =
     // ADR-0316: SUBSCRIPTION_TRIAL_ENABLED turned on in production (owner, 2026-11-01): 66 vars, 116 bindings at the 50-secret footprint (12 free). Cap 66.
     // ACCOUNT_DELETION_ENABLED is a production *secret* binding (ADR-0111 amendment 2); a var of the same name replaces it
     // and fails deploy-production's secret preservation check, so it must never appear here.
-    assert.ok(Object.keys(config.vars).length <= 66, 'production vars must stay at or below 66');
+    // ADR-0069: the requested standalone MAX_CHARGE_ENABLED rollout switch adds one var (67).
+    // At the recorded 50-secret footprint that is 117 text bindings, leaving 11 of 128 slots.
+    assert.ok(Object.keys(config.vars).length <= 67, 'production vars must stay at or below 67');
     assert.ok(!Object.hasOwn(config.vars, 'ACCOUNT_DELETION_ENABLED'), 'ACCOUNT_DELETION_ENABLED is a production secret, not a var');
     // ADR-0251 amendment (2026-10-29): CREATOR_PROFILE_ENABLED is also a production secret binding.
     assert.ok(!Object.hasOwn(config.vars, 'CREATOR_PROFILE_ENABLED'), 'CREATOR_PROFILE_ENABLED is a production secret, not a var');
@@ -50,4 +52,9 @@ test('store billing production switches are secrets and sandbox crediting is for
     for (const name of ['STORE_BILLING_ENABLED', 'STORE_SALES_ENABLED', 'REVENUECAT_WEBHOOK_SECRET', 'STORE_BILLING_ALLOW_SANDBOX']) {
         assert.equal(Object.hasOwn(config.vars, name), false, `${name} must not be a production var (ADR-0108)`);
     }
+});
+
+test('maximum-charge enforcement ships disabled pending capped durable admission', () => {
+    assert.equal(config.vars.MAX_CHARGE_ENABLED, 'false');
+    assert.equal(config.env.staging.vars.MAX_CHARGE_ENABLED, undefined);
 });

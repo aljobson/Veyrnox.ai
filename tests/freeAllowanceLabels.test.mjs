@@ -10,7 +10,7 @@ const migration = read('../packages/db/schema/supabase/0207_reconcile_includes_f
 const prior = read('../packages/db/schema/supabase/0184_subscription_credit_cycle.sql');
 
 test('a job the server marked free is recorded at 0 credits, in the studio and in the history', () => {
-    assert.match(create, /const jobCredits = submitted\.free_allowance === true \? 0 : unitCost;/);
+    assert.match(create, /const jobCredits = submitted\.free_allowance === true \? 0 : run.unit;/);
     assert.match(create, /credits: jobCredits, model_id: modelId/);
     assert.equal((create.match(/credits: jobCredits,/g) || []).length, 2, 'history and studio job both use it');
 });

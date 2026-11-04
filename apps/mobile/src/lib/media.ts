@@ -69,8 +69,8 @@ export function kindOf(modality: string): Kind | null {
 
 const UNIT_SECONDS = 5;
 
-// Display estimate only. The server prices from the catalog and rejects a mismatch
-// (credit_confirmation_mismatch), so this can never cause an overcharge.
+// Display estimate only. Create sends its net per-item ceiling separately;
+// the server prices from the catalog and rejects any excess.
 export function estimateCredits(model: CatalogModel, durationSeconds: number | null): number {
     const seconds = kindOf(model.modality) === 'video' ? durationSeconds ?? model.durations[0] ?? UNIT_SECONDS : UNIT_SECONDS;
     return model.credits * Math.ceil(seconds / UNIT_SECONDS);
@@ -145,8 +145,9 @@ export interface GenerationRequest {
     readonly prompt: string;
     readonly textKey?: string;
     readonly durationSeconds: number | null;
-    // The most the person was shown; the server refuses if the price differs.
-    readonly confirmedCredits: number;
+    // Legacy exact gross-price confirmation, retained for existing callers.
+    readonly confirmedCredits?: number;
+    readonly maxCharge?: number;
     // Reuse the same key to retry the same request: it is charged once.
     readonly idempotencyKey: string;
     // Files already uploaded, by the slot the model declares for them.
@@ -173,6 +174,7 @@ export const mediaApi = (api: ApiClient) => ({
                 ...(r.preset && /^[a-z0-9-]{1,40}$/.test(r.preset) ? { preset: r.preset } : {}),
                 idempotency_key: r.idempotencyKey,
                 confirmed_credits: r.confirmedCredits,
+                max_charge_credits: r.maxCharge,
                 inputs: { ...r.extraInputs, ...(r.prompt ? { [r.textKey ?? 'prompt']: r.prompt } : {}), ...(r.durationSeconds ? { duration_seconds: r.durationSeconds } : {}) },
                 // The server refuses uploaded sources without consent to send them to the provider.
                 ...(r.references ? { references: r.references } : r.sources?.length ? { source_keys: r.sources } : {}),
