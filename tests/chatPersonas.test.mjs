@@ -126,6 +126,11 @@ test('the screen: personas fill the draft of a new chat and never touch one that
     // With no personas the card collapses to one line: no dead dropdown, still a way into Personas.
     assert.match(panel, /\{personasOn && personas\.length === 0 && \(/);
     assert.match(panel, /data-testid="chat-persona-empty"/);
+    // The first persona or the last delete swaps the button that opened the manager, so closing it refocuses whichever one exists.
+    assert.match(panel, /data-persona-manage/);
+    assert.match(src('../app/veyrnox/_components/chat/PersonaPicker.js'), /data-persona-manage/);
+    assert.match(ws, /onClose=\{closePersonaManager\}/);
+    assert.match(ws, /querySelector\('\[data-persona-manage\]'\)\?\.focus\(\)/);
     assert.match(ws, /if \(r && r\.enabled\) \{ setPersonasOn\(true\)/);
     assert.match(ws, /setPersonaId\(''\); setActive\(r\.thread\)/);
 });
