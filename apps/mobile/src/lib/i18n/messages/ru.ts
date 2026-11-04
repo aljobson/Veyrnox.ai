@@ -247,6 +247,19 @@ const ru = {
     'app.age.signOut': 'Выйти',
     'app.age.saving': 'Обрабатываем запрос…',
     'app.age.failed': 'Не удалось выполнить запрос. Проверьте подключение и попробуйте снова.',
+    'app.create.addFiles.title': 'Добавить файлы',
+    'app.create.addFiles.all': 'Все',
+    'app.create.addFiles.images': 'Изображения',
+    'app.create.addFiles.videos': 'Видео',
+    'app.create.addFiles.audios': 'Аудио',
+    'app.create.addFiles.count': '{selected}/{max}',
+    'app.create.addFiles.emptyGenerated': 'Пока нет созданных файлов',
+    'app.create.addFiles.loading': 'Загружаем ваши файлы…',
+    'app.create.addFiles.older': 'Загрузить более ранние',
+    'app.create.addFiles.error': 'Не удалось загрузить ваши файлы.',
+    'app.create.addFiles.cancel': 'Отмена',
+    'app.create.addFiles.add': 'Добавить',
+    'app.create.addFiles.select': 'Выбрать {name}',
 } as const;
 
 export default ru;

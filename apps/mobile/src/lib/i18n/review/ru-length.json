@@ -3340,5 +3340,23 @@
     "english": "Copied",
     "translation": "Скопировано",
     "ratio": 1.83
+  },
+  {
+    "id": "app.create.addFiles.images",
+    "english": "Images",
+    "translation": "Изображения",
+    "ratio": 1.83
+  },
+  {
+    "id": "app.create.addFiles.older",
+    "english": "Load older",
+    "translation": "Загрузить более ранние",
+    "ratio": 2.2
+  },
+  {
+    "id": "app.create.addFiles.add",
+    "english": "Add",
+    "translation": "Добавить",
+    "ratio": 2.67
   }
 ]

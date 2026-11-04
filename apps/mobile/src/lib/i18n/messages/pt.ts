@@ -247,6 +247,19 @@ const pt = {
     'app.age.signOut': 'Sair',
     'app.age.saving': 'Processando sua solicitação…',
     'app.age.failed': 'Não foi possível concluir a solicitação. Verifique sua conexão e tente novamente.',
+    'app.create.addFiles.title': 'Adicionar arquivos',
+    'app.create.addFiles.all': 'Tudo',
+    'app.create.addFiles.images': 'Imagens',
+    'app.create.addFiles.videos': 'Vídeos',
+    'app.create.addFiles.audios': 'Áudios',
+    'app.create.addFiles.count': '{selected}/{max}',
+    'app.create.addFiles.emptyGenerated': 'Nenhuma geração ainda',
+    'app.create.addFiles.loading': 'Carregando seus arquivos…',
+    'app.create.addFiles.older': 'Carregar mais antigos',
+    'app.create.addFiles.error': 'Não foi possível carregar seus arquivos.',
+    'app.create.addFiles.cancel': 'Cancelar',
+    'app.create.addFiles.add': 'Adicionar',
+    'app.create.addFiles.select': 'Selecionar {name}',
 } as const;
 
 export default pt;

@@ -3460,5 +3460,17 @@
     "english": "I confirm I am at least {age} (or the age of majority where I live)",
     "translation": "Ich bestätige, dass ich mindestens {age} Jahre alt bin (oder das Volljährigkeitsalter an meinem Wohnort erreicht habe)",
     "ratio": 1.76
+  },
+  {
+    "id": "app.create.addFiles.title",
+    "english": "Add files",
+    "translation": "Dateien hinzufügen",
+    "ratio": 2
+  },
+  {
+    "id": "app.create.addFiles.add",
+    "english": "Add",
+    "translation": "Hinzufügen",
+    "ratio": 3.33
   }
 ]

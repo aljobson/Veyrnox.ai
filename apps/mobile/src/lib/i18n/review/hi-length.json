@@ -1948,5 +1948,11 @@
     "english": "Sign out",
     "translation": "साइन आउट करें",
     "ratio": 1.63
+  },
+  {
+    "id": "app.create.addFiles.add",
+    "english": "Add",
+    "translation": "जोड़ें",
+    "ratio": 2
   }
 ]

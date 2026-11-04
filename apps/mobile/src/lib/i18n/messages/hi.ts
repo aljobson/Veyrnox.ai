@@ -247,6 +247,19 @@ const hi = {
     'app.age.signOut': 'साइन आउट करें',
     'app.age.saving': 'आपका अनुरोध संसाधित किया जा रहा है…',
     'app.age.failed': 'अनुरोध पूरा नहीं हो सका। अपना कनेक्शन जाँचें और फिर कोशिश करें।',
+    'app.create.addFiles.title': 'फ़ाइलें जोड़ें',
+    'app.create.addFiles.all': 'सभी',
+    'app.create.addFiles.images': 'इमेज',
+    'app.create.addFiles.videos': 'वीडियो',
+    'app.create.addFiles.audios': 'ऑडियो',
+    'app.create.addFiles.count': '{selected}/{max}',
+    'app.create.addFiles.emptyGenerated': 'अभी तक कुछ नहीं बनाया गया',
+    'app.create.addFiles.loading': 'आपकी फ़ाइलें लोड हो रही हैं…',
+    'app.create.addFiles.older': 'पुरानी लोड करें',
+    'app.create.addFiles.error': 'आपकी फ़ाइलें लोड नहीं हो सकीं।',
+    'app.create.addFiles.cancel': 'रद्द करें',
+    'app.create.addFiles.add': 'जोड़ें',
+    'app.create.addFiles.select': '{name} चुनें',
 } as const;
 
 export default hi;

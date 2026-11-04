@@ -4990,5 +4990,29 @@
     "english": "Sign out",
     "translation": "Se déconnecter",
     "ratio": 1.75
+  },
+  {
+    "id": "app.create.addFiles.title",
+    "english": "Add files",
+    "translation": "Ajouter des fichiers",
+    "ratio": 2.22
+  },
+  {
+    "id": "app.create.addFiles.emptyGenerated",
+    "english": "No generations yet",
+    "translation": "Aucune génération pour l’instant",
+    "ratio": 1.78
+  },
+  {
+    "id": "app.create.addFiles.older",
+    "english": "Load older",
+    "translation": "Charger plus ancien",
+    "ratio": 1.9
+  },
+  {
+    "id": "app.create.addFiles.add",
+    "english": "Add",
+    "translation": "Ajouter",
+    "ratio": 2.33
   }
 ]

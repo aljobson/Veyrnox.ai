@@ -47,3 +47,14 @@ export function planAttachments<T extends AttachItem>(models: readonly CatalogMo
     const used = new Set<T>(best.assignments.map((a) => a.item));
     return { model: best.model, assignments: best.assignments, unused: items.filter((item) => !used.has(item)) };
 }
+
+// How many files of each kind the Add files picker lets someone choose for a model: the sum of its slots' limits, at
+// most `kindCap` a kind (web lib/createAttach.mjs attachCapacity). A model with no file slots lets the files choose the
+// model, so each kind gets 3.
+export function attachCapacity(model: CatalogModel | null): Record<SlotKind, number> {
+    const slots = model ? slotsFor(model) : [];
+    if (!slots.length) return { image: 3, video: 3, audio: 3 };
+    const capacity: Record<SlotKind, number> = { image: 0, video: 0, audio: 0 };
+    for (const slot of slots) capacity[slot.kind] = Math.min(kindCap(slots, slot.kind), capacity[slot.kind] + (slot.maxFiles ?? 1));
+    return capacity;
+}

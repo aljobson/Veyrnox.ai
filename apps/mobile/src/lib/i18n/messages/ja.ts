@@ -247,6 +247,19 @@ const ja = {
     'app.age.signOut': 'サインアウト',
     'app.age.saving': 'リクエストを処理中…',
     'app.age.failed': 'リクエストを完了できませんでした。接続を確認して再試行してください。',
+    'app.create.addFiles.title': 'ファイルを追加',
+    'app.create.addFiles.all': 'すべて',
+    'app.create.addFiles.images': '画像',
+    'app.create.addFiles.videos': '動画',
+    'app.create.addFiles.audios': '音声',
+    'app.create.addFiles.count': '{selected}/{max}',
+    'app.create.addFiles.emptyGenerated': 'まだ生成はありません',
+    'app.create.addFiles.loading': 'ファイルを読み込み中…',
+    'app.create.addFiles.older': 'さらに古いものを読み込む',
+    'app.create.addFiles.error': 'ファイルを読み込めませんでした。',
+    'app.create.addFiles.cancel': 'キャンセル',
+    'app.create.addFiles.add': '追加',
+    'app.create.addFiles.select': '{name} を選択',
 } as const;
 
 export default ja;

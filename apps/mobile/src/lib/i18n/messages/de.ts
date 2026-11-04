@@ -247,6 +247,19 @@ const de = {
     'app.age.signOut': 'Abmelden',
     'app.age.saving': 'Deine Anfrage wird bearbeitet…',
     'app.age.failed': 'Die Anfrage konnte nicht abgeschlossen werden. Prüfe deine Verbindung und versuche es erneut.',
+    'app.create.addFiles.title': 'Dateien hinzufügen',
+    'app.create.addFiles.all': 'Alle',
+    'app.create.addFiles.images': 'Bilder',
+    'app.create.addFiles.videos': 'Videos',
+    'app.create.addFiles.audios': 'Audios',
+    'app.create.addFiles.count': '{selected}/{max}',
+    'app.create.addFiles.emptyGenerated': 'Noch keine Generierungen',
+    'app.create.addFiles.loading': 'Deine Dateien werden geladen…',
+    'app.create.addFiles.older': 'Ältere laden',
+    'app.create.addFiles.error': 'Deine Dateien konnten nicht geladen werden.',
+    'app.create.addFiles.cancel': 'Abbrechen',
+    'app.create.addFiles.add': 'Hinzufügen',
+    'app.create.addFiles.select': '{name} auswählen',
 } as const;
 
 export default de;

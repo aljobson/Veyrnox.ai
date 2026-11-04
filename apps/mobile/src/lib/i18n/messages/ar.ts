@@ -247,6 +247,19 @@ const ar = {
     'app.age.signOut': 'تسجيل الخروج',
     'app.age.saving': 'جارٍ معالجة طلبك…',
     'app.age.failed': 'تعذّر إكمال الطلب. تحقق من اتصالك وحاول مجددًا.',
+    'app.create.addFiles.title': 'إضافة ملفات',
+    'app.create.addFiles.all': 'الكل',
+    'app.create.addFiles.images': 'الصور',
+    'app.create.addFiles.videos': 'الفيديوهات',
+    'app.create.addFiles.audios': 'الصوتيات',
+    'app.create.addFiles.count': '{selected}/{max}',
+    'app.create.addFiles.emptyGenerated': 'لا توجد إنشاءات بعد',
+    'app.create.addFiles.loading': 'جارٍ تحميل ملفاتك…',
+    'app.create.addFiles.older': 'تحميل الأقدم',
+    'app.create.addFiles.error': 'تعذّر تحميل ملفاتك.',
+    'app.create.addFiles.cancel': 'إلغاء',
+    'app.create.addFiles.add': 'إضافة',
+    'app.create.addFiles.select': 'اختيار {name}',
 } as const;
 
 export default ar;

@@ -3142,5 +3142,23 @@
     "english": "Sign out",
     "translation": "Cerrar sesión",
     "ratio": 1.63
+  },
+  {
+    "id": "app.create.addFiles.title",
+    "english": "Add files",
+    "translation": "Añadir archivos",
+    "ratio": 1.67
+  },
+  {
+    "id": "app.create.addFiles.older",
+    "english": "Load older",
+    "translation": "Cargar anteriores",
+    "ratio": 1.7
+  },
+  {
+    "id": "app.create.addFiles.add",
+    "english": "Add",
+    "translation": "Añadir",
+    "ratio": 2
   }
 ]

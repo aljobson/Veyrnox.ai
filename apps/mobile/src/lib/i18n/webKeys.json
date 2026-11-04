@@ -243,5 +243,18 @@
   "app.age.contact",
   "app.age.signOut",
   "app.age.saving",
-  "app.age.failed"
+  "app.age.failed",
+  "app.create.addFiles.title",
+  "app.create.addFiles.all",
+  "app.create.addFiles.images",
+  "app.create.addFiles.videos",
+  "app.create.addFiles.audios",
+  "app.create.addFiles.count",
+  "app.create.addFiles.emptyGenerated",
+  "app.create.addFiles.loading",
+  "app.create.addFiles.older",
+  "app.create.addFiles.error",
+  "app.create.addFiles.cancel",
+  "app.create.addFiles.add",
+  "app.create.addFiles.select"
 ]

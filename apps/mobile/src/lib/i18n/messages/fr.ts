@@ -247,6 +247,19 @@ const fr = {
     'app.age.signOut': 'Se déconnecter',
     'app.age.saving': 'Traitement de votre demande…',
     'app.age.failed': 'Nous n’avons pas pu terminer la demande. Vérifiez votre connexion et réessayez.',
+    'app.create.addFiles.title': 'Ajouter des fichiers',
+    'app.create.addFiles.all': 'Tout',
+    'app.create.addFiles.images': 'Images',
+    'app.create.addFiles.videos': 'Vidéos',
+    'app.create.addFiles.audios': 'Audios',
+    'app.create.addFiles.count': '{selected}/{max}',
+    'app.create.addFiles.emptyGenerated': 'Aucune génération pour l’instant',
+    'app.create.addFiles.loading': 'Chargement de vos fichiers…',
+    'app.create.addFiles.older': 'Charger plus ancien',
+    'app.create.addFiles.error': 'Impossible de charger vos fichiers.',
+    'app.create.addFiles.cancel': 'Annuler',
+    'app.create.addFiles.add': 'Ajouter',
+    'app.create.addFiles.select': 'Sélectionner {name}',
 } as const;
 
 export default fr;

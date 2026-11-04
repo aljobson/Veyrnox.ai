@@ -247,6 +247,19 @@ const zh = {
     'app.age.signOut': '退出登录',
     'app.age.saving': '正在处理您的请求…',
     'app.age.failed': '无法完成请求。请检查网络连接后重试。',
+    'app.create.addFiles.title': '添加文件',
+    'app.create.addFiles.all': '全部',
+    'app.create.addFiles.images': '图片',
+    'app.create.addFiles.videos': '视频',
+    'app.create.addFiles.audios': '音频',
+    'app.create.addFiles.count': '{selected}/{max}',
+    'app.create.addFiles.emptyGenerated': '还没有生成内容',
+    'app.create.addFiles.loading': '正在加载你的文件…',
+    'app.create.addFiles.older': '加载更早的',
+    'app.create.addFiles.error': '无法加载你的文件。',
+    'app.create.addFiles.cancel': '取消',
+    'app.create.addFiles.add': '添加',
+    'app.create.addFiles.select': '选择 {name}',
 } as const;
 
 export default zh;

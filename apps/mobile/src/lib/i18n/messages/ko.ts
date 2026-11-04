@@ -247,6 +247,19 @@ const ko = {
     'app.age.signOut': '로그아웃',
     'app.age.saving': '요청 처리 중…',
     'app.age.failed': '요청을 완료하지 못했습니다. 연결을 확인하고 다시 시도해 주세요.',
+    'app.create.addFiles.title': '파일 추가',
+    'app.create.addFiles.all': '전체',
+    'app.create.addFiles.images': '이미지',
+    'app.create.addFiles.videos': '동영상',
+    'app.create.addFiles.audios': '오디오',
+    'app.create.addFiles.count': '{selected}/{max}',
+    'app.create.addFiles.emptyGenerated': '아직 생성한 항목이 없습니다',
+    'app.create.addFiles.loading': '파일을 불러오는 중…',
+    'app.create.addFiles.older': '이전 항목 더 보기',
+    'app.create.addFiles.error': '파일을 불러오지 못했습니다.',
+    'app.create.addFiles.cancel': '취소',
+    'app.create.addFiles.add': '추가',
+    'app.create.addFiles.select': '{name} 선택',
 } as const;
 
 export default ko;

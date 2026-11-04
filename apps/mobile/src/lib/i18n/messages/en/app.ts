@@ -68,5 +68,18 @@ export default {
     "app.age.contact": "For help with account deletion, email",
     "app.age.signOut": "Sign out",
     "app.age.saving": "Processing your request…",
-    "app.age.failed": "We could not complete the request. Check your connection and try again."
+    "app.age.failed": "We could not complete the request. Check your connection and try again.",
+    "app.create.addFiles.title": "Add files",
+    "app.create.addFiles.all": "All",
+    "app.create.addFiles.images": "Images",
+    "app.create.addFiles.videos": "Videos",
+    "app.create.addFiles.audios": "Audios",
+    "app.create.addFiles.count": "{selected}/{max}",
+    "app.create.addFiles.emptyGenerated": "No generations yet",
+    "app.create.addFiles.loading": "Loading your files…",
+    "app.create.addFiles.older": "Load older",
+    "app.create.addFiles.error": "Your files could not be loaded.",
+    "app.create.addFiles.cancel": "Cancel",
+    "app.create.addFiles.add": "Add",
+    "app.create.addFiles.select": "Select {name}"
 } as const;
