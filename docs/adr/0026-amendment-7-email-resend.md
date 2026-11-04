@@ -47,9 +47,20 @@ The existing single shared slot remains a limitation: a new signup/magic-link
 attempt in another tab replaces the slot. Resends cannot overwrite a newer
 record or restore a consumed one. Tests compare the complete stored bytes,
 including timestamps, through failures, lost responses and reversed responses.
-Original and resent callbacks are tested independently with the same challenge.
-They cannot both consume one stored verifier sequentially. These mocked tests
-do not assert that GoTrue keeps an older email valid after issuing a new one.
+Only the newest emailed link works. GoTrue v2.197.0 replaces the confirmation or
+magic-link token whenever it sends another email (`models.CreateOneTimeToken`
+deletes the previous token of that type), so after any accepted resend, including
+one whose response was lost, the earlier email stops working. Reusing the verifier
+keeps the newest link completable; it cannot keep the superseded one valid. The
+tests model this: the superseded code is rejected by the server and the newest
+completes with the stored verifier.
+
+Known limitations, deferred: (1) `completeOAuthFromCode` deletes the verifier
+before the exchange, so opening a superseded link in the same browser burns the
+verifier and the newest link then needs a fresh start; deleting only after a
+successful exchange would remove this and is a separate change to the callback.
+(2) The "email sent" notice does not yet tell people to use the newest email
+after an uncertain network result; adding that copy needs all 22 catalogs.
 
 Pending state binds the address and flow. Correction returns web magic-link
 users to magic mode without a password, web signup users to signup, and mobile

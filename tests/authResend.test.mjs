@@ -146,8 +146,12 @@ test('network errors leave retry enabled; five sends cap the attempt until reset
     await h.resend().props.onClick(); assert.equal(h.calls.length, 6);
 });
 
+// GoTrue v2.197.0 replaces the confirmation / magic-link token whenever it sends another email
+// (models.CreateOneTimeToken deletes the previous token of that type), so after an accepted resend, even
+// one whose response was lost, only the NEWEST emailed link can complete. The reused verifier keeps that
+// newest link completable; it cannot keep the superseded one valid.
 for (const flow of ['signup', 'magic']) for (const link of ['original', 'resent']) {
-    test(`${flow}: accepted-but-lost response still allows ${link} callback independently`, async () => {
+    test(`${flow}: after an accepted-but-lost resend only the newest link completes (${link} link)`, async () => {
         setup(); globalThis.fetch = async () => Response.json({}); clearSession();
         await new Promise(resolve => setImmediate(resolve));
         let challenge;
@@ -160,16 +164,25 @@ for (const flow of ['signup', 'magic']) for (const link of ['original', 'resent'
             throw new TypeError('Response lost after acceptance');
         };
         await assert.rejects((flow === 'signup' ? resendSignupEmail : resendMagicLink)('person@test.invalid', 'second'));
-        assert.equal(localStorage.getItem(KEY), record);
+        assert.equal(localStorage.getItem(KEY), record, 'a lost resend leaves the stored verifier byte-for-byte unchanged');
         window.location.href = `https://veyrnox.test/auth/callback?code=${link}`;
         let exchanges = 0;
         globalThis.fetch = async (url, init) => {
             if (String(url) === '/api/auth/session') return Response.json({ access_token: 'token', expires_in: 3600 });
             const body = JSON.parse(init.body); exchanges++;
-            assert.equal(body.auth_code, link); assert.equal(await sha(body.code_verifier), challenge);
+            // The server modelled here has superseded the original token.
+            if (body.auth_code !== 'resent') return Response.json({ error: 'invalid_grant' }, { status: 400 });
+            assert.equal(await sha(body.code_verifier), challenge);
             return Response.json({ access_token: 'token', refresh_token: 'refresh', expires_in: 3600 });
         };
-        assert.ok(await completeOAuthFromCode()); assert.equal(exchanges, 1); assert.equal(localStorage.getItem(KEY), null);
+        if (link === 'resent') assert.ok(await completeOAuthFromCode());
+        else {
+            await assert.rejects(completeOAuthFromCode());
+            // Documented limitation (ADR-0026 amendment 7): the callback deletes the verifier before the exchange,
+            // so opening a superseded link in this browser burns it and the newest link then needs a fresh start.
+            assert.equal(localStorage.getItem(KEY), null);
+        }
+        assert.equal(exchanges, 1);
         globalThis.fetch = async () => Response.json({}); clearSession();
         await new Promise(resolve => setImmediate(resolve));
     });
