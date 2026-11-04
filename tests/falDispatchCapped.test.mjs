@@ -132,3 +132,13 @@ test('lost acknowledgement after commit replays the original job and key', async
     assert.deepEqual(calls.map(c => c.name), ['admit_fal_dispatch_capped', 'admit_fal_dispatch_capped']);
     assert.equal(calls[0].input.p_idempotency_key, calls[1].input.p_idempotency_key);
 });
+
+test('an incomplete 2xx that only carries a spend-limit code is an unknown outcome, not a refusal', async () => {
+    for (const reply of [{ code: 'PROVIDER_SPEND_LIMIT', scope: 'user_inflight', retry_after_seconds: 30 }, { ok: true, code: 'PROVIDER_SPEND_LIMIT' }, { code: 'PROVIDER_SPEND_UNAVAILABLE' }]) {
+        const wakes = [];
+        const response = await admitFalDispatch({ ...args, maxCharge: 5, rpc: async () => reply, onCommitted: id => wakes.push(id) });
+        await unknown(response);
+        assert.deepEqual(wakes, []);
+    }
+});
+
