@@ -102,4 +102,20 @@ test('a single definitive refusal also rotates its key', async () => {
     await submit.run(api, request, 1);
     expect(mockCreate.mock.calls[1][0].idempotencyKey).not.toBe(mockCreate.mock.calls[0][0].idempotencyKey);
 });
+test('a lost reply followed by a rate-limit refusal keeps the same key until a provider refusal proves it dead', async () => {
+    const submit = createGenerationSubmit();
+    mockCreate.mockRejectedValueOnce(new ApiError(0, 'network'));
+    await expect(submit.run(api, request, 1)).rejects.toMatchObject({ code: 'network' });
+    const key = mockCreate.mock.calls[0][0].idempotencyKey;
+    for (const code of ['rate_limited', 'rate_check_unavailable', 'something_else']) {
+        mockCreate.mockRejectedValueOnce(new ApiError(429, code));
+        await expect(submit.run(api, request, 1)).rejects.toMatchObject({ code });
+        expect(mockCreate.mock.calls.at(-1)![0].idempotencyKey).toBe(key);
+    }
+    mockCreate.mockRejectedValueOnce(new ApiError(502, 'provider_submit_failed'));
+    await expect(submit.run(api, request, 1)).rejects.toMatchObject({ code: 'provider_submit_failed' });
+    mockCreate.mockResolvedValueOnce({ job_id: 'ok' });
+    await submit.run(api, request, 1);
+    expect(mockCreate.mock.calls.at(-1)![0].idempotencyKey).not.toBe(key);
+});
 

@@ -18,6 +18,7 @@ export const unknownGenerationOutcome = (err: unknown) => !(err instanceof ApiEr
     || ['network', 'internal', 'gateway_error', 'debit_failed', 'account_changed', 'dispatch_acceptance_unknown', 'admission_unknown', 'outcome_unknown', 'bad_response'].includes(err.code)
     // An untyped server error is not proof that nothing was charged.
     || (err.code === 'unknown' && err.status >= 500);
+const REFUNDED_REFUSALS = new Set(['provider_moderation', 'provider_input_rejected', 'provider_submit_failed']);
 const NO_JOB_REFUSALS = new Set(['price_changed', 'insufficient_balance', 'insufficient_credits']);
 export type ChargeSnapshot = { ceilings: (number | null)[]; total: number; payable: number };
 export function createGenerationSubmit() {
@@ -60,11 +61,18 @@ export function createGenerationSubmit() {
                             ...(quote ? { maxCharge: quote.ceilings[i] ?? 0 } : {}),
                             idempotencyKey: run.keys[i], extraInputs: inputsForIndex(request.extraInputs ?? {}, i, count) });
                     } catch (err) {
+                        const wasUnknown = run.unknown.has(i);
                         if (unknownGenerationOutcome(err)) run.unknown.add(i);
-                        else {
+                        else if (err instanceof ApiError && REFUNDED_REFUSALS.has(err.code)) {
+                            // The provider refused after a job existed and was refunded: that key is dead, so retry with a fresh one.
                             run.unknown.delete(i);
-                            // A definitive refusal may have created and refunded a job under this key (a provider refusal),
-                            // and a retry with it would replay that dead job. These refusals create nothing, so the key continues.
+                            run.keys[i] = Crypto.randomUUID();
+                        } else if (err instanceof ApiError && err.code === 'price_changed') {
+                            // A replay of an accepted key never returns price_changed, so this proves no job exists; the key is kept.
+                            run.unknown.delete(i);
+                        } else if (!wasUnknown) {
+                            // Other refusals prove nothing about an earlier lost reply, so an unknown item keeps its key and state.
+                            // Otherwise rotate unless the refusal creates no job (price_changed, insufficient balance).
                             if (!(err instanceof ApiError && NO_JOB_REFUSALS.has(err.code))) run.keys[i] = Crypto.randomUUID();
                         }
                         throw err;
