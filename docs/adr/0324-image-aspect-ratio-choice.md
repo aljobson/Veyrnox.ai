@@ -30,3 +30,40 @@ the catalog's declared inputs.
 ## Rollback
 
 Revert the Sana record change; requests without `aspect_ratio` behave as before.
+
+## Preparation for Seedream 4 and FLUX 2 Pro (2026-11-04, nothing applied)
+
+### Order matters: the database first, the catalog second
+`admit_fal_dispatch` only admits `prompt` and `seed` and overwrites the size with 1024 x 768. If the FLUX record started
+sending `image_size` before the function allows it, every FLUX request, even the default one, would be refused
+(`MODEL_UNAVAILABLE`). So there are two changes in two pull requests:
+
+1. **Migration 0439 (backward compatible; admits what the record does not send yet).** Patch the live definition of
+   `admit_fal_dispatch` the way 0406 did (read `pg_get_functiondef`, `replace`, raise if the text is not found, then
+   REVOKE ALL / GRANT service_role by full signature). The patch: (a) the allowed extra keys become `prompt`, `seed`,
+   `image_size`; (b) when `image_size` is present it must be one of five sizes, otherwise `MODEL_UNAVAILABLE`; when it is
+   absent the 1024 x 768 default is added, as today; (c) the idempotent-replay comparison uses the same rule. The five
+   sizes stay under 1,000,000 pixels, so the first-megapixel price of $0.03 and the fixed 30,000 microdollar
+   reservation hold: 960x960 (1:1), 1024x768 (4:3), 768x1024 (3:4), 1024x576 (16:9), 576x1024 (9:16).
+   Extend `scripts/test-fal-pinned-payload.mjs` (replays 0243 and 0406; add 0439) with: each size admitted and stored;
+   a sixth size, a string size and an extra key refused with no job, debit or reservation; replay conflict on a different
+   size; privileges unchanged; the capacity policy row unchanged. The owner applies it with the apply-migrations workflow.
+2. **Catalog change, only after 0439 is applied on production.** FLUX record: `aspect_ratio` input of the same five
+   ratios, consumed (`rename: { aspect_ratio: null }`), `derive` to the same size table, `assumes` no longer lists the
+   default size. Same tests as Sana plus a check that the derived size is in the migration's list.
+
+### Seedream 4 (`seedream-4`): two routes, Crun first then fal
+- fal `fal-ai/bytedance/seedream/v4/text-to-image`: `image_size` accepts named shapes or width x height; total pixels
+  between 960 x 960 and 4096 x 4096. Sizes at about 2048 on the long side stay in range and the price is flat per image:
+  2048x2048, 2048x1536, 1536x2048, 2048x1152, 1152x2048.
+- Crun `bytedance/seedream-4`: the adapter allows only 1:1 today (`packages/adapters/crun.js`, `aspects`), and the
+  record fixes `aspect_ratio: '1:1'`. Crun's accepted ratios are **not confirmed from its docs**. Needs the owner's probe
+  (PROD CRUN key, `scripts/probe-crun.mjs seedream`, one image each at 16:9 and 9:16, about 3 Crun credits each) that
+  proves the output shape and size. Until then the picker must not be offered, because a failover from Crun to fal must
+  give the same shape the person chose.
+- Change set once proven: Crun record `aspect_ratio` input and adapter `aspects` set; fal record `aspect_ratio` input,
+  consumed, derived size table above; both records declare the same ratio list (1:1, 4:3, 3:4, 16:9, 9:16); tests for each
+  route and for failover keeping the ratio. No migration: the routes already exist (0388, 0389).
+
+### Not done here
+No migration written or applied, no record changed, no provider called.
