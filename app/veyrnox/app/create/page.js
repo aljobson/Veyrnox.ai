@@ -170,7 +170,8 @@ export default function CreateStudio() {
       const wanted = arrival ? arrival.modelId : requested;
       if (wanted) {
         setModelId(wanted);
-        setGoal('all');
+        // Show only the arriving model's kind (video template = video models), not every kind.
+        setGoal(catalogModels.find((m) => m.id === wanted)?.kind || 'all');
       }
       setTemplateData(preset ?? null);
       setPresetParam(preset?.id ?? params.get('preset')); // the template's id, from its studio link (an older id resolves to it); sent only while its own model is selected
@@ -370,7 +371,7 @@ export default function CreateStudio() {
     if (!nextModel || !draft) return;
     setTemplateData(preset);
     setPresetParam(preset.id);
-    setGoal('all');
+    setGoal(nextModel.kind || 'all');
     setTier(null);
     chooseModel(nextId);
     setPrompt(draft.prompt);
