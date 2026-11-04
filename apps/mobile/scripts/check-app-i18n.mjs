@@ -18,7 +18,7 @@ for (const file of readdirSync(join(root, 'messages', 'app')).filter(f => f.ends
     const locale = file.slice(0, -3);
     // App catalogs are data-only JSON objects with a TypeScript assertion.
     const source = readFileSync(join(root, 'messages', 'app', file), 'utf8');
-    const app = JSON.parse(source.split('export default ')[1].replace(/ as const;\s*$/, ''));
+    const app = JSON.parse(source.split('export default ')[1].replace(/ as const;\s*$/, '').replace(/,(\s*})\s*$/, '$1'));
     const webSource = readFileSync(join(root, 'messages', `${locale}.ts`), 'utf8');
     const web = new Function(webSource.replace(/ as const;/, ';').replace(/export default (\w+);/, 'return $1;'))();
     const catalog = { ...app, ...web };

@@ -18,6 +18,7 @@ import { PasskeysCard } from '../src/components/account/PasskeysCard';
 import { DevicesCard } from '../src/components/account/DevicesCard';
 import { GrantsCard } from '../src/components/account/GrantsCard';
 
+jest.mock('expo-clipboard', () => ({ setStringAsync: jest.fn() }), { virtual: true });
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: jest.fn() }));
 jest.mock('../src/lib/auth/accountCalls', () => ({ fetchProfile: jest.fn(), enrollTotp: jest.fn(), verifyFactor: jest.fn(), unenrollFactor: jest.fn(), requestPasswordCode: jest.fn(), changePassword: jest.fn(), revokeSessions: jest.fn(), fetchGrantsRaw: jest.fn(), revokeGrant: jest.fn() }));
 jest.mock('../src/lib/passkeys', () => ({ ...jest.requireActual('../src/lib/passkeys'), fetchPasskeys: jest.fn(), addPasskey: jest.fn(), removePasskey: jest.fn(), passkeyGate: jest.fn(() => true) }));

@@ -4972,5 +4972,11 @@
     "english": "Ads",
     "translation": "Publicités",
     "ratio": 3.33
+  },
+  {
+    "id": "app.account.mfa.recovery.saved",
+    "english": "I saved these",
+    "translation": "Je les ai enregistrés",
+    "ratio": 1.62
   }
 ]

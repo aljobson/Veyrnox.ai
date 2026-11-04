@@ -3100,5 +3100,11 @@
     "english": "Ads",
     "translation": "Anúncios",
     "ratio": 2.67
+  },
+  {
+    "id": "authGate.mfa.recovery.codeLabel",
+    "english": "Recovery code",
+    "translation": "Código de recuperação",
+    "ratio": 1.62
   }
 ]

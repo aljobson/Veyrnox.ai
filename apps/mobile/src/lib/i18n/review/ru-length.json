@@ -3328,5 +3328,17 @@
     "english": "Kids birthday",
     "translation": "Детский день рождения",
     "ratio": 1.62
+  },
+  {
+    "id": "app.account.mfa.recovery.copy",
+    "english": "Copy",
+    "translation": "Копировать",
+    "ratio": 2.5
+  },
+  {
+    "id": "app.account.mfa.recovery.copied",
+    "english": "Copied",
+    "translation": "Скопировано",
+    "ratio": 1.83
   }
 ]

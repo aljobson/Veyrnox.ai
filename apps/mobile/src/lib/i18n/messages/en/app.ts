@@ -42,5 +42,21 @@ export default {
     "app.publish.carousel.blocked": "{network} does not support this combination or number of files.",
     "app.publish.carousel.closed": "Posts with several files are not available yet.",
     "app.publish.carousel.unavailable": "This attachment is held or unavailable.",
-    "app.publish.common.remove": "Remove"
+    "app.publish.common.remove": "Remove",
+    "app.account.mfa.recovery.title": "Recovery codes",
+    "app.account.mfa.recovery.saveHelp": "Save these codes somewhere safe. Each works once and removes your authenticator. They will not be shown again. Previous codes no longer work.",
+    "app.account.mfa.recovery.copy": "Copy",
+    "app.account.mfa.recovery.copied": "Copied",
+    "app.account.mfa.recovery.saved": "I saved these",
+    "app.account.mfa.recovery.verifyHelp": "Enter a fresh authenticator code to generate recovery codes. This replaces any previous codes.",
+    "app.account.mfa.recovery.needed": "Your current authenticator needs recovery codes. Generate and save them now.",
+    "app.account.mfa.recovery.remaining": "{count} usable recovery codes remaining.",
+    "app.account.mfa.recovery.loading": "Loading recovery code status…",
+    "app.account.mfa.recovery.generate": "Generate recovery codes",
+    "app.account.mfa.recovery.regenerate": "Regenerate recovery codes",
+    "app.account.mfa.recovery.failed": "Could not load or generate recovery codes. Check your connection and retry.",
+    "app.account.mfa.recovery.error.reauth_required": "Verify your authenticator again to generate codes.",
+    "app.account.mfa.recovery.error.recovery_not_configured": "Recovery codes are not available yet. Contact support@veyrnox.com.",
+    "app.account.mfa.recovery.error.copy_failed": "Could not copy. Select and copy the codes, or download the file.",
+    "app.account.mfa.recovery.error.unauthorized": "Your session expired. Sign in again."
 } as const;

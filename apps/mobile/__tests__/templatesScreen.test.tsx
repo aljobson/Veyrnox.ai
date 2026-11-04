@@ -57,15 +57,15 @@ test('template page copies the edited prompt and uses it with the validated temp
     expect(root.container.queryAll(n => n.children.includes(t('libraryCreate.copied')))).toHaveLength(1);
     await click(t('libraryCreate.useTemplate')); expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/create/[modelId]', params: expect.objectContaining({ tid: 'p-0', prompt: 'edited words' }) });
 });
-test('copy-only exact text stays visible while its runnable adaptation opens Create', async () => {
-    const adapted = { ...feed[0], prompt: 'Runnable Veyrnox adaptation', promptOrigin: 'veyrnox-adaptation' as const, sourcePrompt: 'Exact @image1 community text', sourcePromptOrigin: 'community-source-exact' as const, sourcePromptRunnable: false, sourcePromptIssues: ['reference-image-input-required', 'source-input-contract-not-wired'] };
+test('copy-only exact text stays visible and copyable, with no second prompt and Use template off', async () => {
+    const adapted = { ...feed[0], prompt: 'Veyrnox adaptation', promptOrigin: 'veyrnox-adaptation' as const, sourcePrompt: 'Exact @image1 community text', sourcePromptOrigin: 'community-source-exact' as const, sourcePromptRunnable: false, sourcePromptIssues: ['reference-image-input-required'] };
     mockFetch.mockResolvedValue([adapted]);
     await act(async () => root.render(<TemplatePage />));
-    expect(mockTextField.accessibilityLabel).toBe(t('public.TemplateRecipe.generationPrompt'));
-    expect(mockTextField.value).toBe('Runnable Veyrnox adaptation');
+    expect(mockTextField.accessibilityLabel).toBe(t('public.TemplateRecipe.exactCommunityPrompt'));
+    expect(mockTextField.value).toBe('Exact @image1 community text');
+    expect(root.container.queryAll(n => n.props.accessibilityLabel === t('public.TemplateRecipe.generationPrompt'))).toHaveLength(0);
     await click(t('public.TemplateRecipe.copyExactCommunityPrompt'));
     expect(mockCopy).toHaveBeenCalledWith('Exact @image1 community text');
-    await act(async () => mockTextField.onChangeText('Edited runnable adaptation'));
-    await click(t('libraryCreate.useTemplate'));
-    expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/create/[modelId]', params: expect.objectContaining({ prompt: 'Edited runnable adaptation' }) });
+    const use = root.container.queryAll(n => n.props.accessibilityLabel === t('libraryCreate.useTemplate'))[0];
+    expect(use?.props.disabled ?? use?.props.accessibilityState?.disabled).toBeTruthy();
 });

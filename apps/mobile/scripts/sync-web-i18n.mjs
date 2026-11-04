@@ -70,7 +70,8 @@ export function syncWebI18n(check = false) {
             ...readCatalog(join(WEB, 'app', code, 'publish-composer.mjs')),
             ...readCatalog(join(WEB, 'app', code, 'create-sources.mjs')),
             ...readCatalog(join(WEB, 'app', code, 'data-errors.mjs')),
-            ...readCatalog(join(WEB, 'app', code, 'publish.mjs')) };
+            ...readCatalog(join(WEB, 'app', code, 'publish.mjs')),
+            ...readCatalog(join(WEB, 'app', code, 'account-mfa.mjs')) };
         const lines = [];
         const missing = [];
         for (const key of webKeys) {

@@ -3118,5 +3118,17 @@
     "english": "End frame",
     "translation": "Fotograma final",
     "ratio": 1.67
+  },
+  {
+    "id": "authGate.mfa.recovery.codeLabel",
+    "english": "Recovery code",
+    "translation": "Código de recuperación",
+    "ratio": 1.69
+  },
+  {
+    "id": "app.account.mfa.recovery.title",
+    "english": "Recovery codes",
+    "translation": "Códigos de recuperación",
+    "ratio": 1.64
   }
 ]

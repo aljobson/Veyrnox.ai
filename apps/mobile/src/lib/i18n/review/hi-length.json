@@ -1912,5 +1912,23 @@
     "english": "Ads",
     "translation": "विज्ञापन",
     "ratio": 2.67
+  },
+  {
+    "id": "app.account.mfa.recovery.copy",
+    "english": "Copy",
+    "translation": "कॉपी करें",
+    "ratio": 2.25
+  },
+  {
+    "id": "app.account.mfa.recovery.copied",
+    "english": "Copied",
+    "translation": "कॉपी हो गया",
+    "ratio": 1.83
+  },
+  {
+    "id": "app.account.mfa.recovery.saved",
+    "english": "I saved these",
+    "translation": "मैंने इन्हें सेव कर लिया",
+    "ratio": 1.85
   }
 ]
