@@ -33,9 +33,10 @@ export function inputsForIndex(inputs, i, count) {
 }
 
 // Codes where the gateway may have debited (and submitted) the request before
-// the reply was lost: a dropped connection or client-side throw ('internal'),
+// the reply was lost: a dropped connection or client-side throw ('internal',
+// 'network_error': fetch threw, but the request may already have reached us),
 // a non-JSON 5xx, a ledger_debit RPC error, or a session swap after the reply.
-const OUTCOME_UNKNOWN = new Set(['internal', 'gateway_error', 'debit_failed', 'account_changed', 'dispatch_acceptance_unknown']);
+const OUTCOME_UNKNOWN = new Set(['internal', 'network_error', 'gateway_error', 'debit_failed', 'account_changed', 'dispatch_acceptance_unknown']);
 
 /** The banner code for a failed submit: an unread reply may hide a charge. */
 export function submitErrorCode(code) {

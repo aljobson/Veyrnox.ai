@@ -208,8 +208,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 if (isAccountChanged(err)) return null;
                 if (!live()) return superseded();
                 transientFailure.current = isTransientRefreshFailure(err);
-                // A rejected token is final; a network error keeps it for the next launch.
-                if (err instanceof Error && 'status' in err && (err as { status: number }).status !== 0) await drop();
+                // A rejected token is final; a network error, throttling or an auth-service
+                // outage keeps the token and the saved drafts for the next attempt.
+                if (!transientFailure.current && err instanceof Error && 'status' in err) await drop();
                 return null;
             }
         })().finally(() => {

@@ -70,7 +70,7 @@ test('the note never claims what was charged; an unknown outcome points to Libra
 test('a submit whose reply was lost is reported as an unknown outcome', () => {
     // Dropped connection / client throw, non-JSON 5xx, ledger_debit RPC error,
     // session swap after the reply: the gateway may have debited request k.
-    for (const code of ['internal', 'gateway_error', 'debit_failed', 'account_changed']) {
+    for (const code of ['internal', 'network_error', 'gateway_error', 'debit_failed', 'account_changed']) {
         assert.equal(submitErrorCode(code), 'outcome_unknown', code);
     }
     // Refusals the gateway answered before (or refunded after) the debit keep their own copy.

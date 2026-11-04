@@ -1,7 +1,13 @@
 import { ApiError } from '../api';
 
+// A refresh that failed for a reason that says nothing about the token: no
+// network (0), a timeout, throttling, or the auth service being down. Only a
+// definitive 4xx rejection (400/401/403) may end the session and wipe drafts.
 export function isTransientRefreshFailure(err: unknown): boolean {
-    return err instanceof Error && 'status' in err && err.status === 0;
+    if (!(err instanceof Error) || !('status' in err)) return false;
+    const status = (err as { status: unknown }).status;
+    if (typeof status !== 'number') return false;
+    return status === 0 || status === 408 || status === 425 || status === 429 || status >= 500;
 }
 
 // Only ApiClient uses this adapter; direct auth callers retain their null contract.

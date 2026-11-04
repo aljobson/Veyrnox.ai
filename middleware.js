@@ -142,7 +142,12 @@ export async function middleware(req, event) {
             const split = splitLocalePath(pathname);
             if (split.locale) {
                 if (!isLocalizedPath(split.rest)) {
-                    const target = new URL(split.rest + requestUrl.search, req.url);
+                    // Build the target from our own origin and set the path on it. Parsing
+                    // `split.rest` as a URL reference would treat `//evil.com` (from
+                    // /es//evil.com) as another host: an open redirect.
+                    const target = new URL(requestUrl.origin);
+                    target.pathname = split.rest;
+                    target.search = requestUrl.search;
                     return NextResponse.redirect(target, { status: 307, headers: { 'cache-control': 'private, no-store, max-age=0' } });
                 }
                 pagePath = split.rest;
