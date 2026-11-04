@@ -1,5 +1,6 @@
 import { AI_ENVIRONMENTS } from './environments.js';
 import { WALLET_PROJECT_REFS } from './environmentIsolation.js';
+import { isLoopbackUrl } from './environmentLabel.js';
 
 export const PRODUCTION_FLAG = '--i-mean-production';
 
@@ -52,14 +53,21 @@ function isApprovedMigrationJob(env) {
         && env.GITHUB_JOB === 'apply';
 }
 
-/** @param {unknown} url @returns {Target} */
+/**
+ * A Supabase HTTPS URL is classified only when the WHOLE origin is exactly https://<ref>.supabase.co
+ * (no other host, scheme, port, userinfo, path trickery); a loopback URL is local; the rest is unknown.
+ * Checking only the first label would let https://<staging ref>.example.test pass as staging and
+ * receive a service-role key.
+ * @param {unknown} url
+ * @returns {Target}
+ */
 function targetOfSupabaseUrl(url) {
-    const ref = refOf(url);
-    return targetOfRef(ref);
+    if (isLoopbackUrl(url)) return 'local';
+    return targetOfRef(refOf(url));
 }
 
-// Query parameters node-postgres lets override the host, user or database. Any of them makes the
-// destination ambiguous, so they are refused rather than interpreted.
+// Query parameters node-postgres lets override the host, user or database. Any other than these
+// makes the destination ambiguous, so it is refused rather than interpreted.
 const HARMLESS_PARAMS = new Set(['sslmode', 'application_name', 'connect_timeout']);
 
 /** @param {string} connection @returns {Target} */
@@ -97,11 +105,13 @@ function targetOfRef(ref) {
     return 'unknown';
 }
 
-/** @param {unknown} url @returns {string} */
+/** @param {unknown} url @returns {string} the project ref, or '' unless the origin is exactly https://<ref>.supabase.co */
 function refOf(url) {
     try {
-        const ref = new URL(String(url)).hostname.toLowerCase().split('.')[0];
-        return REF.test(ref) ? ref : '';
+        const parsed = new URL(String(url));
+        if (parsed.protocol !== 'https:' || parsed.port !== '' || parsed.username !== '' || parsed.password !== '') return '';
+        const match = /^([a-z0-9]{20})\.supabase\.co$/.exec(parsed.hostname.toLowerCase());
+        return match ? match[1] : '';
     } catch {
         return '';
     }

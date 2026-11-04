@@ -1,7 +1,9 @@
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { environmentLabel } from '../packages/security/environmentLabel.js';
 
-// Operator-only strip (admin pages). It reads the Worker's APP_ENV at request
+// Operator-only strip (admin pages). It sits in normal flow above the page: the app's own
+// header is sticky (z-40) and a sticky banner here would cover it.
+// It reads the Worker's APP_ENV at request
 // time, so a staging build can never show "PRODUCTION" and the reverse.
 // Production and unknown use the danger colour; staging uses the warning
 // colour; local is neutral. The word is always shown, so colour is not the
@@ -29,7 +31,7 @@ export default function EnvironmentBanner() {
         <div
             role="status"
             data-environment={kind}
-            className={`sticky top-0 z-50 flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b-2 bg-vx-base px-4 py-2 text-sm sm:px-8 ${TONE[kind]}`}
+            className={`flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b-2 bg-vx-base px-4 py-2 text-sm sm:px-8 ${TONE[kind]}`}
         >
             <strong className="font-mono text-xs font-bold tracking-widest">{label}</strong>
             <span>{detail}</span>

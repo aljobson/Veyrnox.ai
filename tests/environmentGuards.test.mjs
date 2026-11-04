@@ -117,6 +117,23 @@ test('a Postgres connection string is classified: production and unknown remotes
     assert.equal(both.ok, false);
 });
 
+test('a lookalike host, plain HTTP, another port or userinfo is never classified as staging or production', () => {
+    const stagingRef = new URL(STAGING_URL).hostname.split('.')[0];
+    const prodRef = new URL(PROD_URL).hostname.split('.')[0];
+    for (const url of [
+        `https://${stagingRef}.example.test`, `https://${stagingRef}.supabase.co.evil.test`, `http://${stagingRef}.supabase.co`,
+        `https://${stagingRef}.supabase.co:8443`, `https://user:pw@${stagingRef}.supabase.co`, `https://evil.test@${stagingRef}.supabase.co.evil.test`,
+        `https://${prodRef}.supabase.in`, `https://${prodRef}.example.test`,
+    ]) {
+        const out = checkProductionAck({ supabaseUrl: url, argv: [], env: APPROVED_JOB, action: 'x' });
+        assert.equal(out.ok, false, url);
+        assert.equal(out.target, 'unknown', url);
+    }
+    // Exact origins still classify, with or without a trailing slash or path.
+    assert.equal(checkProductionAck({ supabaseUrl: `${STAGING_URL}/`, argv: [], env: {}, action: 'x' }).target, 'staging');
+    assert.equal(checkProductionAck({ supabaseUrl: 'http://127.0.0.1:54321', argv: [], env: {}, action: 'x' }).target, 'local');
+});
+
 test('an unknown or wallet Supabase URL is refused even inside the approved job; only the flag overrides', () => {
     for (const url of ['', 'https://jwstkrtslotnjyerzzsi.supabase.co', 'https://nszlbcmcysftwyudthjz.supabase.co', 'https://example.test']) {
         const noFlag = checkProductionAck({ supabaseUrl: url, argv: [], env: APPROVED_JOB, action: 'x' });
