@@ -237,6 +237,16 @@ const ru = {
     'app.account.mfa.recovery.error.recovery_not_configured': 'Коды восстановления пока недоступны. Обратитесь по адресу support@veyrnox.com.',
     'app.account.mfa.recovery.error.copy_failed': 'Не удалось скопировать. Выделите и скопируйте коды или скачайте файл.',
     'app.account.mfa.recovery.error.unauthorized': 'Сессия истекла. Войдите снова.',
+    'app.age.title': 'Подтвердите возраст',
+    'app.age.confirm': 'Подтверждаю, что мне не менее {age} лет (или я достиг возраста совершеннолетия по месту жительства)',
+    'app.age.continue': 'Продолжить',
+    'app.age.decline': 'Мне меньше {age} лет',
+    'app.age.declined': 'Вы не можете продолжать пользоваться приложением. Можно выйти или запросить удаление аккаунта.',
+    'app.age.delete': 'Удалить мой аккаунт',
+    'app.age.contact': 'Для помощи с удалением аккаунта напишите на',
+    'app.age.signOut': 'Выйти',
+    'app.age.saving': 'Обрабатываем запрос…',
+    'app.age.failed': 'Не удалось выполнить запрос. Проверьте подключение и попробуйте снова.',
 } as const;
 
 export default ru;

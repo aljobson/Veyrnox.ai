@@ -237,6 +237,16 @@ const fr = {
     'app.account.mfa.recovery.error.recovery_not_configured': 'Les codes ne sont pas encore disponibles. Contactez support@veyrnox.com.',
     'app.account.mfa.recovery.error.copy_failed': 'Copie impossible. Sélectionnez et copiez les codes ou téléchargez le fichier.',
     'app.account.mfa.recovery.error.unauthorized': 'Votre session a expiré. Reconnectez-vous.',
+    'app.age.title': 'Confirmez votre âge',
+    'app.age.confirm': 'Je confirme avoir au moins {age} ans (ou l’âge de la majorité là où je vis)',
+    'app.age.continue': 'Continuer',
+    'app.age.decline': 'J’ai moins de {age} ans',
+    'app.age.declined': 'Vous ne pouvez pas continuer à utiliser l’application. Vous pouvez vous déconnecter ou demander la suppression de votre compte.',
+    'app.age.delete': 'Supprimer mon compte',
+    'app.age.contact': 'Pour obtenir de l’aide pour supprimer votre compte, écrivez à',
+    'app.age.signOut': 'Se déconnecter',
+    'app.age.saving': 'Traitement de votre demande…',
+    'app.age.failed': 'Nous n’avons pas pu terminer la demande. Vérifiez votre connexion et réessayez.',
 } as const;
 
 export default fr;

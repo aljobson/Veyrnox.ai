@@ -237,6 +237,16 @@ const ar = {
     'app.account.mfa.recovery.error.recovery_not_configured': 'رموز الاسترداد غير متاحة بعد. تواصل مع support@veyrnox.com.',
     'app.account.mfa.recovery.error.copy_failed': 'تعذر النسخ. حدد الرموز وانسخها أو نزّل الملف.',
     'app.account.mfa.recovery.error.unauthorized': 'انتهت جلستك. سجّل الدخول مجدداً.',
+    'app.age.title': 'أكّد عمرك',
+    'app.age.confirm': 'أؤكد أن عمري لا يقل عن {age} عامًا (أو أنني بلغت سن الرشد حيث أعيش)',
+    'app.age.continue': 'متابعة',
+    'app.age.decline': 'عمري أقل من {age}',
+    'app.age.declined': 'لا يمكنك متابعة استخدام التطبيق. يمكنك تسجيل الخروج أو طلب حذف حسابك.',
+    'app.age.delete': 'حذف حسابي',
+    'app.age.contact': 'للمساعدة في حذف الحساب، راسل',
+    'app.age.signOut': 'تسجيل الخروج',
+    'app.age.saving': 'جارٍ معالجة طلبك…',
+    'app.age.failed': 'تعذّر إكمال الطلب. تحقق من اتصالك وحاول مجددًا.',
 } as const;
 
 export default ar;

@@ -237,6 +237,16 @@ const zh = {
     'app.account.mfa.recovery.error.recovery_not_configured': '恢复码暂不可用。请联系 support@veyrnox.com。',
     'app.account.mfa.recovery.error.copy_failed': '无法复制。请选择并复制恢复码，或下载文件。',
     'app.account.mfa.recovery.error.unauthorized': '会话已过期。请重新登录。',
+    'app.age.title': '确认您的年龄',
+    'app.age.confirm': '我确认我已年满 {age} 岁（或已达到居住地的成年年龄）',
+    'app.age.continue': '继续',
+    'app.age.decline': '我未满 {age} 岁',
+    'app.age.declined': '您无法继续使用此应用。您可以退出登录或申请删除账户。',
+    'app.age.delete': '删除我的账户',
+    'app.age.contact': '如需账户删除方面的帮助，请发送邮件至',
+    'app.age.signOut': '退出登录',
+    'app.age.saving': '正在处理您的请求…',
+    'app.age.failed': '无法完成请求。请检查网络连接后重试。',
 } as const;
 
 export default zh;

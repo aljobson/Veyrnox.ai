@@ -237,6 +237,16 @@ const ko = {
     'app.account.mfa.recovery.error.recovery_not_configured': '복구 코드를 아직 사용할 수 없습니다. support@veyrnox.com 으로 문의하세요.',
     'app.account.mfa.recovery.error.copy_failed': '복사하지 못했습니다. 코드를 선택해 복사하거나 파일을 다운로드하세요.',
     'app.account.mfa.recovery.error.unauthorized': '세션이 만료되었습니다. 다시 로그인하세요.',
+    'app.age.title': '나이 확인',
+    'app.age.confirm': '본인은 만 {age}세 이상(또는 거주 지역의 성년 연령에 도달)임을 확인합니다',
+    'app.age.continue': '계속',
+    'app.age.decline': '저는 만 {age}세 미만입니다',
+    'app.age.declined': '앱을 계속 사용할 수 없습니다. 로그아웃하거나 계정 삭제를 요청할 수 있습니다.',
+    'app.age.delete': '내 계정 삭제',
+    'app.age.contact': '계정 삭제에 도움이 필요하면 다음 주소로 이메일을 보내세요:',
+    'app.age.signOut': '로그아웃',
+    'app.age.saving': '요청 처리 중…',
+    'app.age.failed': '요청을 완료하지 못했습니다. 연결을 확인하고 다시 시도해 주세요.',
 } as const;
 
 export default ko;

@@ -237,6 +237,16 @@ const de = {
     'app.account.mfa.recovery.error.recovery_not_configured': 'Wiederherstellungscodes sind noch nicht verfügbar. Kontaktiere support@veyrnox.com.',
     'app.account.mfa.recovery.error.copy_failed': 'Kopieren fehlgeschlagen. Markiere und kopiere die Codes oder lade die Datei herunter.',
     'app.account.mfa.recovery.error.unauthorized': 'Deine Sitzung ist abgelaufen. Melde dich erneut an.',
+    'app.age.title': 'Alter bestätigen',
+    'app.age.confirm': 'Ich bestätige, dass ich mindestens {age} Jahre alt bin (oder das Volljährigkeitsalter an meinem Wohnort erreicht habe)',
+    'app.age.continue': 'Weiter',
+    'app.age.decline': 'Ich bin unter {age}',
+    'app.age.declined': 'Du kannst die App nicht weiter nutzen. Du kannst dich abmelden oder die Kontolöschung anfordern.',
+    'app.age.delete': 'Mein Konto löschen',
+    'app.age.contact': 'Für Hilfe bei der Kontolöschung schreibe an',
+    'app.age.signOut': 'Abmelden',
+    'app.age.saving': 'Deine Anfrage wird bearbeitet…',
+    'app.age.failed': 'Die Anfrage konnte nicht abgeschlossen werden. Prüfe deine Verbindung und versuche es erneut.',
 } as const;
 
 export default de;

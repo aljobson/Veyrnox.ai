@@ -237,6 +237,16 @@ const hi = {
     'app.account.mfa.recovery.error.recovery_not_configured': 'रिकवरी कोड अभी उपलब्ध नहीं हैं। support@veyrnox.com से संपर्क करें।',
     'app.account.mfa.recovery.error.copy_failed': 'कॉपी नहीं हो सका। कोड चुनकर कॉपी करें या फ़ाइल डाउनलोड करें।',
     'app.account.mfa.recovery.error.unauthorized': 'आपका सेशन समाप्त हो गया। फिर से साइन इन करें।',
+    'app.age.title': 'अपनी आयु की पुष्टि करें',
+    'app.age.confirm': 'मैं पुष्टि करता/करती हूँ कि मेरी आयु कम से कम {age} वर्ष है (या जहाँ मैं रहता/रहती हूँ वहाँ की वयस्कता की आयु पूरी हो चुकी है)',
+    'app.age.continue': 'जारी रखें',
+    'app.age.decline': 'मेरी आयु {age} वर्ष से कम है',
+    'app.age.declined': 'आप ऐप का उपयोग जारी नहीं रख सकते। आप साइन आउट कर सकते हैं या खाता मिटाने का अनुरोध कर सकते हैं।',
+    'app.age.delete': 'मेरा खाता मिटाएँ',
+    'app.age.contact': 'खाता मिटाने में सहायता के लिए ईमेल करें',
+    'app.age.signOut': 'साइन आउट करें',
+    'app.age.saving': 'आपका अनुरोध संसाधित किया जा रहा है…',
+    'app.age.failed': 'अनुरोध पूरा नहीं हो सका। अपना कनेक्शन जाँचें और फिर कोशिश करें।',
 } as const;
 
 export default hi;

@@ -58,5 +58,15 @@ export default {
     "app.account.mfa.recovery.error.reauth_required": "Verify your authenticator again to generate codes.",
     "app.account.mfa.recovery.error.recovery_not_configured": "Recovery codes are not available yet. Contact support@veyrnox.com.",
     "app.account.mfa.recovery.error.copy_failed": "Could not copy. Select and copy the codes, or download the file.",
-    "app.account.mfa.recovery.error.unauthorized": "Your session expired. Sign in again."
+    "app.account.mfa.recovery.error.unauthorized": "Your session expired. Sign in again.",
+    "app.age.title": "Confirm your age",
+    "app.age.confirm": "I confirm I am at least {age} (or the age of majority where I live)",
+    "app.age.continue": "Continue",
+    "app.age.decline": "I’m under {age}",
+    "app.age.declined": "You cannot continue using the app. You can sign out or request account deletion.",
+    "app.age.delete": "Delete my account",
+    "app.age.contact": "For help with account deletion, email",
+    "app.age.signOut": "Sign out",
+    "app.age.saving": "Processing your request…",
+    "app.age.failed": "We could not complete the request. Check your connection and try again."
 } as const;

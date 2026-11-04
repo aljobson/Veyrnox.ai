@@ -233,5 +233,15 @@
   "app.account.mfa.recovery.error.reauth_required",
   "app.account.mfa.recovery.error.recovery_not_configured",
   "app.account.mfa.recovery.error.copy_failed",
-  "app.account.mfa.recovery.error.unauthorized"
+  "app.account.mfa.recovery.error.unauthorized",
+  "app.age.title",
+  "app.age.confirm",
+  "app.age.continue",
+  "app.age.decline",
+  "app.age.declined",
+  "app.age.delete",
+  "app.age.contact",
+  "app.age.signOut",
+  "app.age.saving",
+  "app.age.failed"
 ]

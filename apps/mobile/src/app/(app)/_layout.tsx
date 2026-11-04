@@ -12,6 +12,7 @@ import { AiConsentHost } from '../../components/AiConsentHost';
 import { FirstRunGate } from '../../components/FirstRunGate';
 import { OfflineBanner } from '../../components/OfflineBanner';
 import { MfaGate } from '../../components/account/MfaGate';
+import { AgeConfirmationGate } from '../../components/account/AgeConfirmationGate';
 import { HomeBackButton } from '../../components/HomeBackButton';
 import { ServiceBanner } from '../../components/ServiceBanner';
 import { PaywallPrompt } from '../../components/PaywallPrompt';
@@ -29,6 +30,7 @@ export default function AppLayout() {
             <AiConsentHost />
             <CelebrationHost />
             <MfaGate key={generation}>
+                <AgeConfirmationGate>
                 <FirstRunGate />
                 <CheckInModal />
                 <PaywallPrompt />
@@ -61,6 +63,7 @@ export default function AppLayout() {
                     <Stack.Screen name="paywall" options={{ title: t('billing.paywall.title'), headerShown: false, presentation: 'modal' }} />
                 </Stack>
                 </HardPaywallGate>
+                </AgeConfirmationGate>
             </MfaGate>
         </>
     );

@@ -3130,5 +3130,17 @@
     "english": "Recovery codes",
     "translation": "Códigos de recuperación",
     "ratio": 1.64
+  },
+  {
+    "id": "app.age.contact",
+    "english": "For help with account deletion, email",
+    "translation": "Para obtener ayuda con la eliminación de la cuenta, escribe a",
+    "ratio": 1.65
+  },
+  {
+    "id": "app.age.signOut",
+    "english": "Sign out",
+    "translation": "Cerrar sesión",
+    "ratio": 1.63
   }
 ]

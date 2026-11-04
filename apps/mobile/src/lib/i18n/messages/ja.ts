@@ -237,6 +237,16 @@ const ja = {
     'app.account.mfa.recovery.error.recovery_not_configured': 'リカバリーコードはまだ利用できません。support@veyrnox.com にお問い合わせください。',
     'app.account.mfa.recovery.error.copy_failed': 'コピーできませんでした。コードを選択してコピーするか、ファイルをダウンロードしてください。',
     'app.account.mfa.recovery.error.unauthorized': 'セッションが切れました。もう一度サインインしてください。',
+    'app.age.title': '年齢を確認',
+    'app.age.confirm': '私は {age} 歳以上（または居住地の成年年齢に達している）ことを確認します',
+    'app.age.continue': '続ける',
+    'app.age.decline': '私は {age} 歳未満です',
+    'app.age.declined': 'アプリの利用を続けることはできません。サインアウトするか、アカウントの削除を申請できます。',
+    'app.age.delete': 'アカウントを削除',
+    'app.age.contact': 'アカウント削除についてのご相談は、こちらへメールしてください：',
+    'app.age.signOut': 'サインアウト',
+    'app.age.saving': 'リクエストを処理中…',
+    'app.age.failed': 'リクエストを完了できませんでした。接続を確認して再試行してください。',
 } as const;
 
 export default ja;

@@ -3454,5 +3454,11 @@
     "english": "Loading recovery code status…",
     "translation": "Status der Wiederherstellungscodes wird geladen…",
     "ratio": 1.66
+  },
+  {
+    "id": "app.age.confirm",
+    "english": "I confirm I am at least {age} (or the age of majority where I live)",
+    "translation": "Ich bestätige, dass ich mindestens {age} Jahre alt bin (oder das Volljährigkeitsalter an meinem Wohnort erreicht habe)",
+    "ratio": 1.76
   }
 ]
