@@ -26,7 +26,7 @@ const tree = (file, source) => ts.createSourceFile(file, source, ts.ScriptTarget
 
 test('all template needs and 16 distinct steps have exact English and ten translated display entries', () => {
   const original = JSON.stringify(ALL_TEMPLATES);
-  assert.equal(ALL_TEMPLATES.length, 1435);
+  assert.equal(ALL_TEMPLATES.length, 1436);
   const audit = JSON.parse(readFileSync(new URL('../docs/product/source-audit/seedance-200-exact-2026-10-29.json', import.meta.url)));
   const textOnlyIds = audit.records.filter(r => !r.existing && r.referenceImageCount === 0 && sourcePromptAuditRecord(r.id).runnable).map(r => publicTemplateId(r.id));
   assert.equal(textOnlyIds.length, 78);
