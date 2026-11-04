@@ -3,12 +3,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-// AuthGate maps GoTrue's developer-facing messages to plain English, first
+// humanAuthError (moved out of AuthGate.jsx unchanged) maps GoTrue's developer-facing messages to plain English, first
 // match wins, and anything unmatched becomes "That didn't work. Try again."
 // The component is JSX, so read its source and rebuild the same table rather
 // than importing it — the pattern tests/authCaptcha.test.mjs already uses.
-const src = readFileSync(new URL('../components/AuthGate.jsx', import.meta.url), 'utf8');
-const table = src.slice(src.indexOf('const AUTH_ERROR_COPY ='), src.indexOf('function humanAuthError'));
+const src = readFileSync(new URL('../components/humanAuthError.js', import.meta.url), 'utf8');
+const table = src.slice(src.indexOf('const AUTH_ERROR_COPY ='), src.indexOf('export function humanAuthError'));
 const entries = [...table.matchAll(/\[\/(.+?)\/([a-z]*),\s*t\("([^"]+)"\)\]/g)].map(([, body, flags, copy]) => [new RegExp(body, flags), english[copy]]);
 
 function human(message) {

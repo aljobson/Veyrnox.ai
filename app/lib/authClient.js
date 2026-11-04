@@ -29,7 +29,7 @@
 import { clearJobHistory } from "../veyrnox/_lib/jobHistory.js";
 import { clearChatLocal } from "../veyrnox/_lib/chatLocal.js";
 import { clearFilmLocal } from "../veyrnox/_lib/filmStudioStorage.js";
-import { keepOAuthVerifier, keepMagicVerifier, takeVerifier } from "./pkceVerifier.js";
+import { keepOAuthVerifier, keepMagicVerifier, takeVerifier, readMagicVerifier } from "./pkceVerifier.js";
 import { browserSessionRequest } from './browserSessionClient.js';
 
 const STORAGE_KEY = "veyrnox_supabase_session";
@@ -385,6 +385,24 @@ export async function sendMagicLink(email, captchaToken, redirectTo) {
     await post(`/auth/v1/otp?redirect_to=${encodeURIComponent(redirect)}`, withCaptcha({
         email, create_user: true, code_challenge: await s256(verifier), code_challenge_method: 's256',
     }, captchaToken));
+}
+
+// Resends never replace or refresh the browser-wide verifier, even on failure.
+async function resendEmail(path, email, captchaToken, redirectTo, extra) {
+    const verifier = readMagicVerifier();
+    if (!verifier) throw Object.assign(new Error('Start again'), { code: 'resend_restart' });
+    const redirect = redirectTo || `${window.location.origin}/auth/callback`;
+    await post(`/auth/v1/${path}?redirect_to=${encodeURIComponent(redirect)}`, withCaptcha({
+        ...extra, email, code_challenge: await s256(verifier), code_challenge_method: 's256',
+    }, captchaToken));
+}
+
+export function resendSignupEmail(email, captchaToken) {
+    return resendEmail('resend', email, captchaToken, null, { type: 'signup' });
+}
+
+export function resendMagicLink(email, captchaToken, redirectTo) {
+    return resendEmail('otp', email, captchaToken, redirectTo, { create_user: true });
 }
 
 // GoTrue reads the CAPTCHA token from here when Attack Protection is on and

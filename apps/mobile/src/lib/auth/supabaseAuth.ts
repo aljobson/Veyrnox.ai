@@ -76,6 +76,10 @@ export async function signUpWithPassword(
     return body.access_token ? toSession(body, now) : null;
 }
 
+export async function resendSignupEmail(email: string, captchaToken: string): Promise<void> {
+    await authPost('/auth/v1/resend', withCaptcha({ type: 'signup', email }, captchaToken));
+}
+
 // Sign-in starts on our own site so iOS names veyrnox.ai in its sign-in prompt, not the
 // Supabase project host. The site forwards to Supabase with a fixed return address (ADR-0106).
 export function authorizeUrl(provider: OAuthProvider, challenge: string): string {

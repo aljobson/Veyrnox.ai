@@ -65,7 +65,7 @@ describe('where the welcome shows', () => {
         const copy = read('lib', 'i18n', 'messages', 'en', 'email.ts');
         expect(email).toMatch(/<SegmentedControl\s+value=\{mode\}/);
         expect(email).toContain("value: 'signUp'");
-        expect(email).toMatch(/<TextField\s+label=\{t\('authGate.email'\)\}/);
+        expect(email).toMatch(/<TextField\s+ref=\{emailRef\}[\s\S]{0,160}?label=\{t\('authGate.email'\)\}/);
         expect(email).toMatch(/<TextField\s+ref=\{passwordRef\}/);
         expect(email).toContain("t('email.securityReady')");
         expect(email).toContain('retrySecurityCheck');

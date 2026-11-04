@@ -1,6 +1,13 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "email.resendEmail": "이메일 다시 보내기",
+  "email.resendIn": "{seconds}초 후 다시 보내기",
+  "email.emailResent": "이 주소로 이메일을 보낼 수 있다면 곧 도착합니다. 받은편지함을 확인하세요.",
+  "email.resendLimit": "다른 주소를 사용하거나 나중에 다시 시도하세요.",
+  "email.changeAddress": "주소가 잘못되었나요? 변경하기",
+  "email.resendReady": "이제 이메일을 다시 보낼 수 있습니다.",
+  "email.resendEmailTo": "{email}로 이메일 다시 보내기",
   "sourceLimits.tooShort": "이 모델에 사용하기에는 동영상이 너무 짧습니다. 표시된 길이 범위에 맞는 클립을 선택하세요.",
   "sourceLimits.resolution": "파일 해상도가 이 모델의 허용 범위를 벗어났습니다. 표시된 크기 범위에 맞는 파일을 선택하세요.",
   "faceFilterSwitch.current": "필터: {name}",

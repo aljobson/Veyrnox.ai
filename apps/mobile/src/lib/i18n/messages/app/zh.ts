@@ -1,6 +1,13 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "email.resendEmail": "重新发送邮件",
+  "email.resendIn": "{seconds} 秒后重新发送",
+  "email.emailResent": "如果可以向此地址发送邮件，邮件将很快送达。请检查收件箱。",
+  "email.resendLimit": "请使用其他地址或稍后重试。",
+  "email.changeAddress": "地址有误？更改地址",
+  "email.resendReady": "现在可以重新发送邮件。",
+  "email.resendEmailTo": "向 {email} 重新发送邮件",
   "sourceLimits.tooShort": "该视频对于此模型来说太短。请选择时长在所示范围内的片段。",
   "sourceLimits.resolution": "该文件的分辨率不在此模型允许的范围内。请选择尺寸在所示范围内的文件。",
   "faceFilterSwitch.current": "滤镜：{name}",

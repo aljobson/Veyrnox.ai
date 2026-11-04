@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type ComponentRef } from 'react';
 import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, TextInput, View } from 'react-native';
 import { TurnstileView } from '../auth/TurnstileView';
 import { useAuth } from '../auth/AuthProvider';
-import { AuthError } from '../lib/auth/supabaseAuth';
+import { AuthError, resendSignupEmail } from '../lib/auth/supabaseAuth';
 import { emailAuthMessage, validateEmailForm } from '../lib/auth/emailForm';
 import type { TurnstileMessage } from '../lib/auth/turnstile';
 import { Button, Text, TextField, AuthProviderButton, SegmentedControl, Icon, themedStyles, useThemedStyles } from '../components/ui';
@@ -29,6 +29,52 @@ export default function EmailAuth() {
     const [message, setMessage] = useState<string | null>(null);
     const [messageTone, setMessageTone] = useState<'error' | 'success'>('error');
     const running = useRef(false);
+    const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+    const [resends, setResends] = useState(0);
+    const resendCount = useRef(0);
+    // Bumped whenever the pending sign-up is cleared, so a late reply cannot touch a newer attempt.
+    const attemptId = useRef(0);
+    const [deadline, setDeadline] = useState(0);
+    const [seconds, setSeconds] = useState(0);
+    const emailRef = useRef<ComponentRef<typeof TextInput>>(null);
+    const focusEmail = useRef(false);
+    useEffect(() => {
+        if (!deadline) return;
+        const timer = setInterval(() => setSeconds(Math.max(0, Math.ceil((deadline - Date.now()) / 1000))), 1000);
+        return () => clearInterval(timer);
+    }, [deadline]);
+    useEffect(() => {
+        if (focusEmail.current && !pendingEmail) { focusEmail.current = false; emailRef.current?.focus(); }
+    }, [pendingEmail]);
+    function startCooldown() { setDeadline(Date.now() + 60000); setSeconds(60); }
+    function clearPending() {
+        attemptId.current += 1;
+        setPendingEmail(null); setResends(0); resendCount.current = 0; setDeadline(0); setSeconds(0);
+    }
+    function changeAddress() {
+        if (running.current || busy || providerBusy) return;
+        focusEmail.current = true; clearPending(); setMode('signUp'); setPassword(''); setPasswordVisible(false);
+        setMessage(null); setCaptcha(null); setResetKey(k => k + 1);
+    }
+    async function resend() {
+        if (!pendingEmail || running.current || busy || providerBusy || Date.now() < deadline || resendCount.current >= 5) return;
+        if (!captcha) { setMessageTone('error'); setMessage(t('email.securityFirst')); return; }
+        running.current = true; setBusy(true);
+        const attempt = attemptId.current;
+        resendCount.current += 1; setResends(resendCount.current);
+        try {
+            await resendSignupEmail(pendingEmail, captcha);
+            if (attempt !== attemptId.current) return;
+            startCooldown(); setMessageTone('success'); setMessage(t('email.emailResent'));
+        } catch (err) {
+            if (attempt !== attemptId.current) return;
+            const rate = err instanceof AuthError && (err.status === 429 || ['over_email_send_rate_limit', 'over_request_rate_limit'].includes(err.code));
+            if (rate) startCooldown();
+            setMessageTone('error'); setMessage(emailAuthMessage(rate ? 'over_request_rate_limit' : err instanceof AuthError ? err.code : 'unknown'));
+        } finally {
+            setCaptcha(null); setResetKey(k => k + 1); running.current = false; setBusy(false);
+        }
+    }
     const styles = useThemedStyles(sheets);
     const [passwordVisible, setPasswordVisible] = useState(false);
     const captchaReadyRef = useRef(false);
@@ -63,6 +109,7 @@ export default function EmailAuth() {
     }
 
     async function submit() {
+        if (pendingEmail) return;
         if (busy || providerBusy || running.current) return;
         const problem = validateEmailForm(email, password, mode === 'signUp');
         if (problem) {
@@ -89,6 +136,8 @@ export default function EmailAuth() {
                 setMessageTone('success');
                 setMessage(t('email.checkInbox'));
                 setMode('signIn');
+                setPassword(''); setPasswordVisible(false);
+                setPendingEmail(email.trim()); resendCount.current = 0; setResends(0); startCooldown();
                 void playSuccess();
             }
         } catch (err) {
@@ -104,7 +153,7 @@ export default function EmailAuth() {
         }
     }
 
-    async function useProvider(provider: 'apple' | 'google') {
+    async function startProvider(provider: 'apple' | 'google') {
         if (busy || providerBusy || running.current) return;
         running.current = true;
         void playSelection();
@@ -128,7 +177,8 @@ export default function EmailAuth() {
     }
 
     function chooseMode(next: Mode) {
-        if (next === mode) return;
+        if (running.current || busy || providerBusy || (next === mode && !pendingEmail)) return;
+        clearPending(); setCaptcha(null); setResetKey(k => k + 1);
         void playSelection();
         setMode(next);
         setMessage(null);
@@ -163,8 +213,8 @@ export default function EmailAuth() {
                         { value: 'signUp', label: t('authGate.createAccount') },
                     ]}
                 />
-                <AuthProviderButton provider="apple" consent busy={authBusy} nativeAvailable={appleNativeAvailable} onPress={() => void useProvider('apple')} />
-                <AuthProviderButton provider="google" consent busy={authBusy} onPress={() => void useProvider('google')} />
+                <AuthProviderButton provider="apple" consent busy={authBusy} nativeAvailable={appleNativeAvailable} onPress={() => void startProvider('apple')} />
+                <AuthProviderButton provider="google" consent busy={authBusy} onPress={() => void startProvider('google')} />
                 <View style={styles.divider}>
                     <View style={styles.line} />
                     <Text variant="footnote" tone="tertiary">
@@ -173,6 +223,8 @@ export default function EmailAuth() {
                     <View style={styles.line} />
                 </View>
                 <TextField
+                    ref={emailRef}
+                    editable={!pendingEmail && !authBusy}
                     label={t('authGate.email')}
                     value={email}
                     onChangeText={setEmail}
@@ -185,7 +237,7 @@ export default function EmailAuth() {
                     blurOnSubmit={false}
                     onSubmitEditing={() => passwordRef.current?.focus()}
                 />
-                <TextField
+                {!pendingEmail && <TextField
                     ref={passwordRef}
                     label={t('email.passwordTitle')}
                     value={password}
@@ -213,7 +265,7 @@ export default function EmailAuth() {
                             }}
                         />
                     }
-                />
+                />}
                 <View style={styles.security}>
                     <Icon name="shieldCheck" size={20} />
                     <View style={styles.securityCopy}>
@@ -239,7 +291,7 @@ export default function EmailAuth() {
                 </View>
                 <TurnstileView resetKey={resetKey} onMessage={onCaptcha} />
                 {captchaError ? <Button variant="tertiary" label={t('email.securityRetry')} onPress={retrySecurityCheck} /> : null}
-                <Button label={t(mode === 'signIn' ? 'email.signInCta' : 'email.signUpCta')} loading={busy} disabled={!ready} onPress={submit} />
+                {!pendingEmail && <Button label={t(mode === 'signIn' ? 'email.signInCta' : 'email.signUpCta')} loading={busy} disabled={!ready} onPress={submit} />}
                 {message ? (
                     <Text
                         tone={messageTone === 'error' ? 'danger' : 'secondary'}
@@ -249,6 +301,15 @@ export default function EmailAuth() {
                         {message}
                     </Text>
                 ) : null}
+                <Text variant="footnote" tone="secondary" accessibilityLiveRegion="polite" style={pendingEmail && resends >= 5 ? undefined : styles.announcement}>
+                    {pendingEmail ? resends >= 5 ? t('email.resendLimit') : seconds > 0 ? t('email.resendIn', { seconds: 60 }) : t('email.resendReady') : ''}
+                </Text>
+                {pendingEmail && <>
+                    <Button label={seconds > 0 ? t('email.resendIn', { seconds }) : t('email.resendEmail')}
+                        accessibilityLabel={t('email.resendEmailTo', { email: pendingEmail })}
+                        loading={busy} disabled={authBusy || seconds > 0 || resends >= 5} onPress={resend} />
+                    <Button variant="tertiary" label={t('email.changeAddress')} disabled={authBusy} onPress={changeAddress} />
+                </>}
                 <Button
                     variant="tertiary"
                     label={t(mode === 'signIn' ? 'email.newHere' : 'authGate.haveAnAccountSignIn')}
@@ -265,4 +326,5 @@ const sheets = themedStyles((p) => ({
     line: { flex: 1, height: 1, backgroundColor: p.borderSubtle },
     security: { flexDirection: 'row', alignItems: 'center', gap: ds.space.sm },
     securityCopy: { flex: 1 },
+    announcement: { position: 'absolute', width: 1, height: 1, overflow: 'hidden' },
 }));
