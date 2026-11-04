@@ -24,3 +24,11 @@ The web app shows a person's referral link and how many friends joined. The serv
 
 - No new dependency, so no new native build beyond the one already pending for ADR-0114.
 - The store review sees a referral that pays Credits only, in line with ADR-0071.
+
+## Amendment 1 (2026-11-04): reading `?ref=` from a link that opens the app
+
+The "Not decided here" item is now decided, phone-only and with no server or website change.
+
+- `+native-intent.tsx` reads `?ref=` from any `https://veyrnox.ai` or `www.veyrnox.ai` link the system hands the app, validates the code's shape, and keeps `{code, at}` in SecureStore for three days (the web's window; the server attributes only accounts under 48 hours old). Newer replaces older; an expired or malformed record is removed.
+- `ReferralAttach`, mounted in the signed-in layout, sends the code to `POST /api/v1/referrals/attach` once the person is signed in, past the two-factor and age checks. An answer from the server about the code or account (404, 400, 409 other than `user_not_provisioned`) is final and clears it; a sign-in, rate-limit, server or network failure is retried on the next launch.
+- **Reach is limited, on purpose.** Only links in `APP_LINK_PATHS` open the app, and the shared link `https://veyrnox.ai/?ref=CODE` is not one, so it still opens the website, which keeps the code (ADR-0071). Making that link open the app would mean a new website page and a change to the association list, and was not chosen. Manual code entry stays.
