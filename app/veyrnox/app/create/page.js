@@ -28,6 +28,7 @@ import { freeLeftFor } from '../../_lib/freeAllowance';
 import { sourceDurationLimit } from '../../_lib/modelPricing';
 import { SourceDurationCard } from '../../_components/SourceDurationCard';
 import { takeStudioDraft } from '../../_lib/landingDraft';
+import { takeTemplateMediaHandoff } from '../../_lib/templateMediaHandoff';
 import { takeVideoSoundContinuation, writeVideoSoundContinuation } from '../../_lib/resultContinuation';
 import { oddlingPortrait, buildOddlingAnimationPrompt } from '../../_lib/oddlingStudio';
 import { fetchTemplate } from '../../_lib/useTemplates';
@@ -169,6 +170,7 @@ export default function CreateStudio() {
       try { storedDraft = takeStudioDraft(window.sessionStorage, requested, Date.now(), preset?.id); } catch { /* The URL recipe still works. */ }
       const arrival = preset ? templateArrival(preset, arrivalModels || [], params, storedDraft) : null;
       const wanted = arrival ? arrival.modelId : requested;
+      const handedMedia = preset && wanted ? takeTemplateMediaHandoff(window, preset.id, wanted) : null;
       if (wanted) {
         setModelId(wanted);
         // Show only the arriving model's kind (video template = video models), not every kind.
@@ -189,9 +191,10 @@ export default function CreateStudio() {
         setSources({ video: { assetId: videoSoundDraft.jobId, previewUrl: videoSoundDraft.assetUrl, label: videoSoundDraft.label } });
         setConsent(false);
       } else if (draft) setPrompt(draft.prompt);
-      if (!videoSoundDraft && draft && storedDraft?.sources) {
-        setSources(storedDraft.sources);
-        setConsent(storedDraft.consent === true);
+      if (!videoSoundDraft && draft && (storedDraft?.sources || handedMedia)) {
+        const handedSources = handedMedia ? Object.fromEntries(Object.entries(handedMedia).map(([slot, file]) => [slot, { file, previewUrl: URL.createObjectURL(file) }])) : {};
+        setSources({ ...(storedDraft?.sources || {}), ...handedSources });
+        setConsent(Boolean(!handedMedia && storedDraft?.consent === true));
       }
       if (storedDraft?.followup) setPlannedFollowup(storedDraft.followup);
       if (draft?.aspect) incomingAspect.current = draft.aspect;

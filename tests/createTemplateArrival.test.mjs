@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import ts from 'typescript';
 import * as templateDraft from '../app/veyrnox/_lib/templateDraft.js';
+import * as templateMediaHandoff from '../app/veyrnox/_lib/templateMediaHandoff.js';
 import * as landingDraft from '../app/veyrnox/_lib/landingDraft.js';
 import * as tokens from '../app/veyrnox/_lib/tokens.js';
 import * as generationSettings from '../app/veyrnox/_lib/generationSettings.js';
@@ -21,8 +22,11 @@ const original = { id: 'kling-2.6-pro-kie', name: 'Kling 2.6 Pro', kind: 'video'
 const other = { ...original, id: 'wan-2.5-kie', name: 'Wan 2.5', credits: 31, aspects: ['1:1', '4:5'] };
 const preset = { id: 'exact-template', name: 'Exact template', model: original.name, prompt: 'Exact community prompt with reference images.', sourcePromptOrigin: 'community-source-exact', sourcePromptRunnable: false, aspect: '9:16', durationSeconds: 10, negativePrompt: 'No distortion' };
 const source = readFileSync(new URL('../app/veyrnox/app/create/page.js', import.meta.url), 'utf8');
+assert.match(source, /takeTemplateMediaHandoff\(window, preset\.id, wanted\)/);
+assert.match(source, /previewUrl: URL\.createObjectURL\(file\)/);
 const code = ts.transpileModule(source, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS } }).outputText;
 const HandoffCard = () => null;
+const SourcePickers = () => null;
 function find(tree, predicate) {
   if (Array.isArray(tree)) return tree.map(node => find(node, predicate)).find(Boolean);
   if (!tree || typeof tree !== 'object') return undefined;
@@ -34,10 +38,11 @@ const prompt = tree => find(tree, node => node.type === 'textarea');
 // The explanation region is always mounted (a polite live region); empty text means there is nothing to fix.
 const why = tree => String(find(tree, node => node.props?.id === 'vx-generate-why')?.props.children ?? '');
 const card = tree => find(tree, node => node.type === HandoffCard);
+const sourcePickers = tree => find(tree, node => node.type === SourcePickers);
 
 // Execute the real page's hooks/effects and event handlers offline. Only I/O
 // and unrelated child components are stubbed; recipe and submit logic is real.
-function harness(params, { saved, blocked = false, models = [original, other], loading = false } = {}) {
+function harness(params, { saved, handoff, blocked = false, models = [original, other], loading = false } = {}) {
   const values = new Map();
   const storage = { getItem: key => values.get(key), setItem: (key, value) => values.set(key, value), removeItem: key => values.delete(key) };
   if (saved) landingDraft.writeStudioDraft(storage, saved);
@@ -46,6 +51,7 @@ function harness(params, { saved, blocked = false, models = [original, other], l
     get sessionStorage() { if (blocked) throw Error('storage blocked'); return storage; },
     addEventListener() {}, removeEventListener() {},
   };
+  if (handoff) templateMediaHandoff.writeTemplateMediaHandoff(globalThis.window, { templateId: preset.id, modelId: params.model || original.id, image: handoff });
   const slots = [], effects = [], requests = [];
   let cursor = 0, dirty = true, tree, catalog = { models, loading, live: !loading };
   const changed = (before, after) => !before || !after || before.length !== after.length || before.some((value, index) => !Object.is(value, after[index]));
@@ -71,6 +77,7 @@ function harness(params, { saved, blocked = false, models = [original, other], l
     '../../../../lib/aspectShapes.mjs': aspectShapes,
     '../../../../lib/templateStartCheck': templateStart,
     '../../_lib/templateDraft': templateDraft,
+    '../../_lib/templateMediaHandoff': templateMediaHandoff,
     '../../_lib/landingDraft': landingDraft,
     '../../_lib/tokens': tokens,
     '../../_lib/generationSettings': generationSettings,
@@ -92,6 +99,7 @@ function harness(params, { saved, blocked = false, models = [original, other], l
     '../../_lib/chatMedia': { mediaGenerationSources: async () => ({ references: [], source_keys: [], source_assets: [] }) },
     '../../_lib/veyJourneyStore': { getJourney: () => ({}), trackJourneyJob() {} },
     '../../_components/TemplateHandoffCard': { TemplateHandoffCard: HandoffCard },
+    '../../_components/SourcePickers': { SourcePickers },
   };
   const output = { exports: {} };
   new Function('require', 'module', 'exports', code)(id => stubs[id] || (id === 'react/jsx-runtime' ? require(id) : new Proxy({}, { get: () => () => null })), output, output.exports);
@@ -217,5 +225,18 @@ test('Create still refuses missing required sources, missing consent and prompts
     assert.equal(why(tree), '', 'an over-long prompt already has its own message beside the box');
     await generate(tree).props.onClick();
     assert.equal(h.requests.length, 0);
+  } finally { h.close(); }
+});
+
+test('Create consumes the one-time template photo into the required source slot', async () => {
+  const photo = Object.assign(new Blob(['photo'], { type: 'image/jpeg' }), { name: 'portrait.jpg' });
+  const withMedia = { ...original, media: { image: { kind: 'image', required: true } } };
+  const h = harness({ model: original.id }, { models: [withMedia], handoff: photo });
+  try {
+    const tree = await h.settle();
+    assert.equal(sourcePickers(tree).props.sources.image.file, photo);
+    assert.match(sourcePickers(tree).props.sources.image.previewUrl, /^blob:/);
+    assert.equal(generate(tree).props.disabled, true, 'the existing rights confirmation still applies');
+    assert.equal(templateMediaHandoff.takeTemplateMediaHandoff(globalThis.window, preset.id, original.id), null);
   } finally { h.close(); }
 });

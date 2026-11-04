@@ -4,6 +4,7 @@ import * as React from 'react';
 import { fixture } from './helpers/publicSiteRender.mjs';
 import { LANDING_DRAFT_KEY } from '../app/veyrnox/_lib/landingDraft.js';
 import { templateArrival } from '../app/veyrnox/_lib/templateDraft.js';
+import { takeTemplateMediaHandoff } from '../app/veyrnox/_lib/templateMediaHandoff.js';
 
 const original = { id: 'kling-2.6-pro-kie', name: 'Kling 2.6 Pro', modality: 'image-to-video', kind: 'video', credits: 17, aspects: ['16:9', '9:16'], durations: [5, 10] };
 const other = { id: 'wan-2.5-kie', name: 'Wan 2.5', modality: 'image-to-video', kind: 'video', credits: 31, aspects: ['1:1', '4:5'], durations: [5] };
@@ -15,6 +16,7 @@ function nodes(tree) {
 const select = (tree, label) => nodes(tree).find(node => node.type === 'select' && node.props['aria-label'] === label);
 const button = tree => nodes(tree).find(node => node.type === 'button');
 const options = node => nodes(node.props.children).filter(child => child.type === 'option').map(child => child.props.value);
+const launchButton = tree => nodes(tree).find(node => node.type === 'button' && String(node.props.className).includes('bg-vx-accent'));
 function harness({ models = [other, original], live = true, template = preset, prompt = template.prompt } = {}) {
   const states = [];
   let index = 0;
@@ -97,6 +99,22 @@ test('handoff writes chosen model, aspect, seconds and exact prompt and also car
     assert.deepEqual(Object.fromEntries(params), { model: other.id, preset: preset.id, duration: '5s', aspect: '1:1' });
     assert.equal(button(h.render()).props.disabled, true, 'opening prevents another click');
     assert.equal(templateArrival(preset, [original, other], params, null).draft.prompt, preset.prompt);
+  } finally { globalThis.window = savedWindow; }
+});
+
+test('a required template photo is carried into Studio once without persistence', () => {
+  const savedWindow = globalThis.window;
+  try {
+    const storage = new Map();
+    globalThis.window = { sessionStorage: { setItem: (key, value) => storage.set(key, value) } };
+    const model = { ...original, media: { image: { required: true } } };
+    const h = harness({ models: [model] });
+    const photo = Object.assign(new Blob(['photo'], { type: 'image/jpeg' }), { name: 'portrait.jpg' });
+    const picker = nodes(h.render()).find(node => node.type === 'input' && node.props.type === 'file');
+    picker.props.onChange({ target: { files: [photo], value: 'portrait.jpg' } });
+    launchButton(h.render()).props.onClick();
+    assert.deepEqual(takeTemplateMediaHandoff(globalThis.window, preset.id, model.id), { image: photo });
+    assert.equal(takeTemplateMediaHandoff(globalThis.window, preset.id, model.id), null);
   } finally { globalThis.window = savedWindow; }
 });
 
