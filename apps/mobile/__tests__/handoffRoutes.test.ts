@@ -14,7 +14,7 @@ import { skillPromptHref } from '../src/lib/createHandoff';
 jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalog: jest.fn() }));
 jest.mock('../src/lib/presets', () => ({ ...jest.requireActual('../src/lib/presets'), fetchPresets: jest.fn() }));
 const id = '11111111-1111-4111-8111-111111111111', parent = '22222222-2222-4222-8222-222222222222';
-const model: CatalogModel = { id: 'video', name: 'Video', modality: 'text-to-video', durations: [5], credits: 1, gated: false, capabilities: null };
+const model: CatalogModel = { id: 'video', name: 'Video', modality: 'text-to-video', durations: [5], credits: 1, gated: false, capabilities: { inputs: { prompt: {} } } };
 const job = { job_id: id, state: 'succeeded' as const, model_id: 'editor-server-render', credits: 0, created_at: '', has_asset: true };
 const storage = createMemoryStorage(), cache = createCache(storage);
 beforeEach(async () => { resetCacheUser(); await bindCacheUser(id, cache, storage, createMemoryStorage()); jest.mocked(fetchCatalog).mockResolvedValue([model]); });
@@ -127,4 +127,40 @@ test('a fetched editor render has a translated label rather than its raw job id'
     const result = await resolvePublishPick({ request } as any, id, [], [], () => true);
     expect(result?.pick?.name).toBe(t('handoff.editedVideo'));
     expect(result?.pick?.name).not.toBe(id);
+});
+
+const choiceModel: CatalogModel = { ...model, id: 'choice', name: 'Choice', credits: 8, durations: [5, 10], capabilities: { inputs: { prompt: {}, aspect_ratio: { values: ['1:1', '16:9'] } } } };
+const choicePreset: Preset = { id: 'paper', modelId: model.id, modelName: model.name, modality: model.modality, prompt: 'Adaptation', sourcePrompt: '  Exact @image1\nwords  ', sourcePromptOrigin: 'community-source-exact', sourcePromptRunnable: false, title: 'Paper bird', category: 'STYLE', durationSeconds: 5, credits: 1, available: true, needs: null, previewAspect: '9/16', previewUrl: null, posterUrl: null, isNew: false };
+async function templateLink(query: string) {
+    jest.mocked(fetchPresets).mockResolvedValue([choicePreset]);
+    return new URL(await resolveAppLink(`https://veyrnox.ai/app/create?preset=paper&${query}`), 'https://app');
+}
+test('preset links validate chosen model, aspect and web 10s duration, keeping exact prompt and origin', async () => {
+    jest.mocked(fetchCatalog).mockResolvedValue([model, choiceModel]);
+    const url = await templateLink('model=choice&aspect=16%3A9&duration=10s');
+    expect(url.pathname).toBe('/create/choice');
+    expect(Object.fromEntries(url.searchParams)).toMatchObject({ aspect: '16:9', duration: '10', prompt: choicePreset.sourcePrompt, tid: 'paper', tpl: 'Paper bird', tmodel: model.id });
+});
+test.each([
+    ['unknown', {}], ['topic', { inputs: { topic: {} } }],
+    ['edit', { inputs: { prompt: {}, clips: {} } }], ['plan', { inputs: { prompt: {}, plan_id: {} } }],
+])('preset link rejects %s model and falls back to original choices', async (id, capabilities) => {
+    jest.mocked(fetchCatalog).mockResolvedValue([model, { ...choiceModel, id, capabilities }]);
+    const url = await templateLink(`model=${id}&aspect=1%3A1&duration=10s`);
+    expect(url.pathname).toBe('/create/video');
+    expect(url.searchParams.get('duration')).toBe('5');
+    expect(url.searchParams.has('aspect')).toBe(false);
+});
+test.each(['9:16', 'garbage'])('aspect %s invalid for chosen model falls back to its own nearest option', async aspect => {
+    jest.mocked(fetchCatalog).mockResolvedValue([model, choiceModel]);
+    const url = await templateLink(`model=choice&aspect=${encodeURIComponent(aspect)}&duration=8s`);
+    expect(url.pathname).toBe('/create/choice');
+    expect(url.searchParams.get('aspect')).toBe('1:1');
+    expect(url.searchParams.get('duration')).toBe('5');
+});
+test('failed catalog ignores link overrides and uses only the template original', async () => {
+    jest.mocked(fetchCatalog).mockRejectedValue(new Error('offline'));
+    const url = await templateLink('model=choice&aspect=16%3A9&duration=10s');
+    expect(url.pathname).toBe('/create/video');
+    expect(url.searchParams.get('duration')).toBe('5');
 });

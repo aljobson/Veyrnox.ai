@@ -183,9 +183,11 @@ test('web recipe runs the exact community prompt whenever it is runnable, not a 
   assert.doesNotMatch(presetHref(handoff.preset), /duration=10s/);
 });
 
-test('phone parsing and handoff keep runnable recipes and hide or copy-only the rest', () => {
+test('phone parsing and handoff keep every exact community prompt available', () => {
   const moduleMocks = {
     './i18n': { t: key => key }, './api': { API_BASE: 'https://veyrnox.test', ApiError: Error },
+    // This test exercises feed-only starts; catalog choices have native Jest coverage.
+    './templateChoices': {},
   };
   const f = renderFixture('en', '/presets', { moduleMocks });
   moduleMocks['./templateHandoff'] = f.load('apps/mobile/src/lib/templateHandoff.ts');
@@ -195,21 +197,12 @@ test('phone parsing and handoff keep runnable recipes and hide or copy-only the 
   for (const id of changedIds) {
     const row = rows.find(preset => preset.id === publicTemplateId(id));
     const template = templateById(id);
-    if (template.promptOrigin === 'community-source-exact') {
-      assert.equal(mobile.isCopyOnlyPreset(row), true, id);
-      continue;
-    }
-    assert.equal(mobile.isCopyOnlyPreset(row), false, id);
     const handoff = mobile.presetHref(row);
-    // Phone behaviour is unchanged by the web handoff: no adapted prompt.
-    if (row.sourcePromptOrigin === 'community-source-exact' && row.sourcePromptRunnable === false) {
-      assert.equal(handoff.pathname, '/templates/[id]', id);
-      continue;
-    }
     assert.equal(handoff.pathname, '/create/[modelId]', id);
-    assert.equal(handoff.params.prompt, template.prompt, id);
+    assert.equal(handoff.params.prompt, row.sourcePrompt || template.prompt, id);
     assert.equal(handoff.params.modelId, modelIdForName(template.model), id);
-    assert.equal(handoff.params.duration, String(template.durationSeconds), id);
+    assert.equal(handoff.params.duration, row.modality.includes('video') ? String(template.durationSeconds) : undefined, id);
+    assert.equal(handoff.params.tmodel, row.modelId, id);
   }
 });
 

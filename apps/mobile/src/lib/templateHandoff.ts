@@ -46,11 +46,12 @@ export function nearestAspect(ratio: number | null, aspects: readonly string[]):
 }
 
 export function templateParams(p: Pick<Preset, 'title' | 'needs' | 'posterUrl'> & { readonly sourceAspect?: string | null; readonly previewAspect?: string | null }): Record<string, string> {
+    const aspect = p.previewAspect || p.sourceAspect;
     return {
         tpl: p.title.slice(0, TITLE_MAX),
         ...(p.needs ? { tneeds: p.needs.slice(0, NEEDS_MAX) } : {}),
         ...(p.sourceAspect && /^(?:1:1|9:16|16:9)$/.test(p.sourceAspect) ? { tsource: p.sourceAspect } : {}),
-        ...(p.previewAspect ? { tratio: p.previewAspect } : {}),
+        ...(aspect ? { tratio: aspect } : {}),
         ...(p.posterUrl && p.posterUrl.length <= POSTER_MAX ? { tposter: p.posterUrl } : {}),
     };
 }
@@ -83,4 +84,14 @@ export function readTemplate(params: Params, posterHosts: readonly string[]): Te
         ratio: parseRatio(params.tratio),
         poster: poster && isPosterUrl(poster, posterHosts) ? poster : null,
     };
+}
+
+// Origin is retained even when attribution is inactive, so switching back restores it.
+export function normalizeTemplateCarry(carry: Readonly<Record<string, string>>, modelId: string): Record<string, string> {
+    return { ...carry, ...((carry.tpl || carry.tid) ? { tmodel: carry.tmodel || modelId } : {}) };
+}
+
+export function activeTemplate(params: Params, modelId: string, posterHosts: readonly string[]): TemplateInfo | null {
+    const origin = one(params.tmodel) ?? modelId;
+    return origin === modelId ? readTemplate(params, posterHosts) : null;
 }

@@ -23,7 +23,11 @@ export function resolveAppLink(path: string): string | Promise<string> {
                 const found = (await fetchPresets()).find(p => p.id === preset);
                 if (!current()) return latestMapped;
                 if (!found) return '/create';
-                const href = presetHref(found);
+                const catalog = await fetchCatalog().catch(() => undefined);
+                if (!current()) return latestMapped;
+                const rawDuration = url.searchParams.get('duration') ?? '';
+                const duration = /^\d{1,2}s?$/.test(rawDuration) ? Number(rawDuration.replace('s', '')) : null;
+                const href = presetHref(found, { modelId: model ?? undefined, aspect: url.searchParams.get('aspect'), duration }, catalog);
                 const params: Record<string, string> = Object.fromEntries(Object.entries(href.params).filter((pair): pair is [string, string] => typeof pair[1] === 'string'));
                 const recipe = url.searchParams.get('recipe');
                 if (recipe && /^[A-Za-z0-9._-]{1,80}$/.test(recipe)) params.recipe = recipe;

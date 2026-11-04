@@ -32,7 +32,7 @@ describe('parsePresets', () => {
     test('keeps an exact source prompt separate from the compatible generation prompt', () => {
         const [p] = parsePresets({ presets: [{ ...base, sourcePrompt: 'Exact community text', sourcePromptOrigin: 'community-source-exact', sourcePromptStatus: 'exact', sourcePromptRunnable: false, sourcePromptIssues: ['source-input-contract-not-wired'], sourcePromptDuplicateOf: 'earlier-template' }] });
         expect(p).toMatchObject({ prompt: 'Animate the product.', sourcePrompt: 'Exact community text', sourcePromptOrigin: 'community-source-exact', sourcePromptStatus: 'exact', sourcePromptRunnable: false, sourcePromptIssues: ['source-input-contract-not-wired'], sourcePromptDuplicateOf: 'earlier-template' });
-        expect(presetHref(p)).toEqual({ pathname: '/templates/[id]', params: { id: 'a' } });
+        expect(presetHref(p)).toMatchObject({ pathname: '/create/[modelId]', params: { prompt: 'Exact community text', tmodel: base.modelId } });
         const [invalidOrigin] = parsePresets({ presets: [{ ...base, sourcePrompt: '', sourcePromptOrigin: 'community-source-exact' }] });
         expect(invalidOrigin).toMatchObject({ sourcePrompt: null, sourcePromptOrigin: null });
         const [missingOrigin] = parsePresets({ presets: [{ ...base, sourcePrompt: 'Unverified source text' }] });
@@ -128,10 +128,10 @@ describe('presetHref', () => {
         expect(presetHref(unavailable)).toEqual({ pathname: '/create/presets', params: { unavailable: 'a' } });
     });
 
-    test('an unsupported exact source prompt is copy-only: Create never opens with it or an adaptation of it', () => {
+    test('a non-runnable exact source prompt opens Create with exact text, never its adaptation', () => {
         const [adapted] = parsePresets({ presets: [{ ...base, sourcePrompt: 'Exact @image1 source text', sourcePromptOrigin: 'community-source-exact', sourcePromptRunnable: false }] });
-        expect(presetHref(adapted)).toEqual({ pathname: '/templates/[id]', params: { id: 'a' } });
-        expect(presetHref({ ...adapted, prompt: adapted.sourcePrompt! })).toEqual({ pathname: '/templates/[id]', params: { id: 'a' } });
+        expect(presetHref(adapted)).toMatchObject({ pathname: '/create/[modelId]', params: { prompt: adapted.sourcePrompt, tid: 'a', tmodel: base.modelId } });
+        expect(presetHref(adapted, { prompt: 'My edit' })).toMatchObject({ pathname: '/create/[modelId]', params: { prompt: 'My edit' } });
     });
 });
 
@@ -149,7 +149,7 @@ describe('fetchPresets', () => {
         expect(String((fn.mock.calls[0] as unknown[])[0])).toMatch(/\/api\/presets$/);
     });
 
-    test('hides copy-only templates but keeps exact prompts that run or have a runnable adaptation', async () => {
+    test('keeps exact prompts whether or not an adaptation exists', async () => {
         const exact = { sourcePromptOrigin: 'community-source-exact', sourcePrompt: 'Exact @image1 community text' };
         const presets = [
             { ...base, id: 'plain' },
@@ -158,7 +158,7 @@ describe('fetchPresets', () => {
             { ...base, id: 'copy-only', ...exact, prompt: 'Exact @image1 community text', promptOrigin: 'community-source-exact', sourcePromptRunnable: false },
         ];
         globalThis.fetch = (async () => ({ ok: true, status: 200, json: async () => ({ presets }) })) as unknown as typeof fetch;
-        expect((await fetchPresets()).map((p) => p.id)).toEqual(['plain', 'runs', 'adapted']);
+        expect((await fetchPresets()).map((p) => p.id)).toEqual(['plain', 'runs', 'adapted', 'copy-only']);
     });
 
     test('throws an ApiError carrying the status when the server fails', async () => {

@@ -39,7 +39,7 @@ import { clearDraft, loadDraft, saveDraft } from '../../../lib/createDraftStore'
 import { SAVED_DRAFT_VERSION, pickerModels, type CreateDraft, audioLengthInvalid, batchCost, freeLeftFor, hasAnyOption, imageCount, inputsForIndex, optionsFor, resolveAudio, resolveResolution, seedIsInvalid, settingsInputs, takesImageCount, voiceIsMissing } from '../../../lib/createOptions';
 import { loadVibe } from '../../../lib/creatorProfileStore';
 import { defaultAspect } from '../../../lib/creatorTaste';
-import { nearestAspect, parseRatio, readTemplate } from '../../../lib/templateHandoff';
+import { nearestAspect, parseRatio, activeTemplate, normalizeTemplateCarry } from '../../../lib/templateHandoff';
 import { buildCharacterPrompt, sanitizePicks, type Picks } from '../../../lib/oddlingsBuilder';
 import { useBalance } from '../../../lib/useBalance';
 import { shortfall } from '../../../lib/lowBalance';
@@ -68,9 +68,9 @@ function hostOf(url: string): string {
 
 export default function CreateWithModel() {
     const styles = useThemedStyles(sheets);
-    const { modelId, prompt: presetPrompt, duration: presetDuration, aspect: presetAspect, startOddling, tpl, tid, tneeds, tsource, tratio, tposter, recipe, sourceHandoff, followup, kind, sourceJob, filmId, shotId, promptVersion, promptContext } = useLocalSearchParams<{ modelId: string; prompt?: string; duration?: string; aspect?: string; startOddling?: string; tpl?: string; tid?: string; tneeds?: string; tsource?: string; tratio?: string; tposter?: string; recipe?: string; sourceHandoff?: string; followup?: string; kind?: string; sourceJob?: string; filmId?: string; shotId?: string; promptVersion?: string; promptContext?: string }>();
+    const { modelId, prompt: presetPrompt, duration: presetDuration, aspect: presetAspect, startOddling, tpl, tid, tmodel, tneeds, tsource, tratio, tposter, recipe, sourceHandoff, followup, kind, sourceJob, filmId, shotId, promptVersion, promptContext } = useLocalSearchParams<{ modelId: string; prompt?: string; duration?: string; aspect?: string; startOddling?: string; tpl?: string; tid?: string; tmodel?: string; tneeds?: string; tsource?: string; tratio?: string; tposter?: string; recipe?: string; sourceHandoff?: string; followup?: string; kind?: string; sourceJob?: string; filmId?: string; shotId?: string; promptVersion?: string; promptContext?: string }>();
     // A template also brings its name, picture, shape and what it needs; each is checked before it is used.
-    const template = useMemo(() => readTemplate({ tpl, tid, tneeds, tsource, tratio, tposter }, ['veyrnox.ai', hostOf(API_BASE)]), [tpl, tid, tneeds, tsource, tratio, tposter]);
+    const template = useMemo(() => activeTemplate({ tpl, tid, tmodel, tneeds, tsource, tratio, tposter }, modelId, ['veyrnox.ai', hostOf(API_BASE)]), [tpl, tid, tmodel, tneeds, tsource, tratio, tposter, modelId]);
     const handedSources = useMemo(() => readCreativeSourceHandoff(typeof sourceHandoff === 'string' ? sourceHandoff : undefined, typeof recipe === 'string' ? recipe : undefined, modelId), [modelId, recipe, sourceHandoff]);
     const { api } = useAuth();
     const router = useRouter();
@@ -208,9 +208,9 @@ export default function CreateWithModel() {
         add('aspect', opts.aspect ?? undefined);
         add('recipe', recipe); add('followup', followup ?? handedSources?.followup); if (kind !== 'prompt-unavailable') add('kind', kind); add('sourceJob', sourceJob); add('startOddling', startOddling);
         add('filmId', filmId); add('shotId', shotId); add('promptVersion', promptVersion); add('promptContext', promptContext);
-        add('tpl', tpl); add('tid', tid); add('tneeds', tneeds); add('tsource', tsource); add('tratio', tratio); add('tposter', tposter);
-        return out;
-    }, [prompt, duration, opts.aspect, tpl, tid, tneeds, tsource, tratio, tposter, recipe, followup, handedSources, kind, sourceJob, startOddling, filmId, shotId, promptVersion, promptContext]);
+        add('tpl', tpl); add('tid', tid); add('tmodel', tmodel); add('tneeds', tneeds); add('tsource', tsource); add('tratio', tratio); add('tposter', tposter);
+        return normalizeTemplateCarry(out, modelId);
+    }, [modelId, prompt, duration, opts.aspect, tpl, tid, tmodel, tneeds, tsource, tratio, tposter, recipe, followup, handedSources, kind, sourceJob, startOddling, filmId, shotId, promptVersion, promptContext]);
     const takesStartImage = !!model && slotsFor(model).some((s) => s.slot === 'image' && s.kind === 'image');
     useEffect(() => {
         if (!startId || !takesStartImage) return;
