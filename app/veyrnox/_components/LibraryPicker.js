@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { gatewayFetch } from '../_lib/gateway';
 import { getStoredUserId, onSessionChange } from '../../lib/authClient';
 import { jobsPagePath } from '../../../lib/jobListCursor';
+import { Modal } from './Modal';
 
 // "From library": a recent finished image (or, with kind="video", video) of the
 // caller's own, used without downloading and re-uploading it. The studio and
@@ -27,6 +28,7 @@ export function LibraryPicker({ onPick, onClose, kind = 'image', sourceLabel, mi
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const loadRef = useRef(null);
+  const closeRef = useRef(null);
   const actor = useSyncExternalStore(onSessionChange, getStoredUserId, () => null);
   const { prefix, noun: nounKey, plural: pluralKey } = KINDS[kind] || KINDS.image;
   const noun = tOr(t, `public.library.${nounKey}`, nounKey);
@@ -75,13 +77,14 @@ export function LibraryPicker({ onPick, onClose, kind = 'image', sourceLabel, mi
   }, [prefix, noun, allowed, actor, t]);
 
   return (
-    <div role="dialog" aria-modal="true" aria-label={t('public.library.choose', { type: sourceLabel ? t.label(sourceLabel) : noun })}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+    <Modal onCancel={onClose} initialFocusRef={closeRef} aria-label={t('public.library.choose', { type: sourceLabel ? t.label(sourceLabel) : noun })}
+      className="items-center justify-center p-4">
       <div className="w-full max-w-[720px] max-h-[80dvh] overflow-y-auto rounded-2xl border border-vx-border bg-vx-panel p-5"
         onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h2 className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-fg-muted">{sourceLabel ? t('public.library.from', { type: t.label(sourceLabel) }) : t("public.LibraryPicker.fromYourLibrary")}</h2>
-          <button type="button" onClick={onClose} aria-label={t("authGate.close")} className="text-vx-fg-muted hover:text-vx-fg">✕</button>
+          <button type="button" ref={closeRef} onClick={onClose} aria-label={t("authGate.close")}
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-vx-fg-muted hover:text-vx-fg focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vx-accent"><span aria-hidden="true">✕</span></button>
         </div>
         {error && <p role="alert" className="mt-4 text-sm text-vx-danger">{t("public.LibraryPicker.yourLibraryCouldNotBeLoaded")}</p>}
         {!error && items == null && <p className="mt-4 text-sm text-vx-fg-muted">{t('public.library.loading', { type: plural })}</p>}
@@ -89,11 +92,11 @@ export function LibraryPicker({ onPick, onClose, kind = 'image', sourceLabel, mi
         {items && items.length > 0 && (
           <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 gap-2">
             {items.map((it) => (
-              <button key={it.id} type="button" onClick={() => onPick(it)} title={it.label}
+              <button key={it.id} type="button" onClick={() => onPick(it)} title={it.label} aria-label={it.label}
                 className="aspect-square overflow-hidden rounded-lg border border-vx-border hover:border-vx-accent focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vx-accent">
                 {kind === 'video'
-                  ? <video src={it.url} muted playsInline preload="metadata" aria-label={it.label} className="h-full w-full object-cover" />
-                  : kind === 'audio' ? <span className="p-2 text-xs">♫ {it.label}</span> : <img loading="lazy" decoding="async" src={it.url} alt={it.label} className="h-full w-full object-cover" />}
+                  ? <video src={it.url} muted playsInline preload="metadata" aria-hidden="true" tabIndex={-1} className="h-full w-full object-cover" />
+                  : kind === 'audio' ? <span className="p-2 text-xs"><span aria-hidden="true">♫</span> {it.label}</span> : <img loading="lazy" decoding="async" src={it.url} alt="" className="h-full w-full object-cover" />}
               </button>
             ))}
           </div>
@@ -103,6 +106,6 @@ export function LibraryPicker({ onPick, onClose, kind = 'image', sourceLabel, mi
           {loading ? t("public.LibraryPicker.loadingOlder") : error ? t("public.LibraryPicker.retryLibrary") : t('public.library.older', { type: plural })}
         </button>}
       </div>
-    </div>
+    </Modal>
   );
 }

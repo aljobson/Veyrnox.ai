@@ -294,7 +294,7 @@ test('AuthGate shows the failure when it happens and clears it on a token', () =
     const widget = between(authGate, '<Turnstile', '/>');
     assert.match(widget, /onFailure=\{\(code\) => \{ setCaptchaFailure\(code\); setNotice\(\(n\) => noticeAfterCaptchaFailure\(n, code, t\)\); \}\}/);
     assert.match(widget, /onToken=\{\(token\) => \{ setCaptcha\(token\); if \(token\) \{ setCaptchaFailure\(null\); setNotice\(noticeAfterCaptchaToken\); \} \}\}/);
-    assert.match(authGate, /<div role="status" aria-live="polite"/);
+    assert.match(authGate, /<div id="vx-auth-notice" role="status" aria-live="polite"/);
 });
 
 test('AuthGate remembers the wait and rewords what it is already saying', () => {
