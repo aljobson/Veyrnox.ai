@@ -140,7 +140,7 @@ test('web, API, MCP and mobile boundaries all reference the shared 30,000 contra
   assert.doesNotMatch(mobileTemplate, /maxLength=/);
   assert.doesNotMatch(webTemplate, /sourcePromptModelLimitCopyOnly/);
   assert.match(webTemplate, /TEMPLATE_PROMPT_MAX/);
-  assert.match(mobileTemplate, /sourcePromptModelLimitCopyOnly/);
+  assert.doesNotMatch(mobileTemplate, /sourcePromptModelLimitCopyOnly|sourcePromptCopyOnly/);
   assert.doesNotMatch(mobileMake, /prompt\.trim\(\)\.slice|<TextField[^>]*maxLength=/);
   assert.match(mobileMake, /const promptTooLong/);
   assert.match(mobileMake, /public\.TemplateRecipe\.promptTooLong/);

@@ -1,9 +1,11 @@
 import { t } from './i18n';
 import { ApiError, API_BASE } from './api';
 import { templateParams } from './templateHandoff';
+import type { CatalogModel } from './media';
+import { templateModelEligible, templateOptions, type TemplateChoices } from './templateChoices';
 
 // ADR-0120: the template gallery, read from the anonymous GET /api/presets. The price is the server's
-// number for the template's own length; the app never computes one.
+// number for the template's own length; selected lengths are estimated from the live catalog.
 export interface Preset {
     readonly id: string;
     readonly title: string;
@@ -18,7 +20,7 @@ export interface Preset {
     readonly prompt: string;
     readonly promptOrigin?: 'veyrnox-adaptation' | null;
     // Exact text published with the source community record. Template detail always exposes
-    // the full value; generation is enabled only when sourcePromptRunnable is true.
+    // the full value and carries it into Create regardless of sourcePromptRunnable.
     readonly sourcePrompt?: string | null;
     readonly sourcePromptOrigin?: 'community-source-exact' | null;
     readonly sourcePromptStatus?: 'exact' | 'exact-truncated' | 'unavailable' | 'adaptation-only';
@@ -154,30 +156,33 @@ export function searchPresets(items: readonly Preset[], query: string): Preset[]
 
 // Opens Create on the template's model with its prompt, length, shape, name and picture carried over; an inactive model
 // returns to Templates with an explicit unavailable state.
-export function presetHref(p: Preset) {
-    // An exact prompt the model cannot receive is copy-only: Create never opens with it or with an adaptation of it.
-    const handsOffBlockedExactPrompt = p.sourcePromptOrigin === 'community-source-exact'
-        && p.sourcePromptRunnable === false;
-    if (!p.available) {
+export function presetHref(p: Preset, overrides: TemplateChoices = {}, catalog?: readonly CatalogModel[]) {
+    const original = catalog?.find(model => model.id === p.modelId);
+    const candidate = catalog?.find(model => model.id === overrides.modelId);
+    const template = original ?? p;
+    const model = candidate && templateModelEligible(template, candidate) ? candidate : original;
+    if (!p.available || (catalog && (!model || !templateModelEligible(template, model)))) {
         return { pathname: '/create/presets', params: { unavailable: p.id } } as const;
     }
-    if (handsOffBlockedExactPrompt) return { pathname: '/templates/[id]', params: { id: p.id } } as const;
-    return { pathname: '/create/[modelId]', params: { modelId: p.modelId, prompt: p.prompt, ...(p.durationSeconds ? { duration: String(p.durationSeconds) } : {}), ...templateParams(p), ...(/^[a-z0-9-]{1,40}$/.test(p.id) ? { tid: p.id } : {}) } } as const;
+    // Without a catalog, only the feed's original model and settings are trusted.
+    const choices = model ? templateOptions(p, model, overrides) : {
+        aspect: null, duration: p.modality.includes('video') ? p.durationSeconds : null,
+    };
+    const prompt = overrides.prompt ?? (p.sourcePromptOrigin === 'community-source-exact' && p.sourcePrompt ? p.sourcePrompt : p.prompt);
+    return { pathname: '/create/[modelId]', params: {
+        modelId: model?.id ?? p.modelId, prompt,
+        ...(choices.duration !== null ? { duration: String(choices.duration) } : {}),
+        ...(choices.aspect ? { aspect: choices.aspect } : {}),
+        ...templateParams(p), tmodel: p.modelId,
+        ...(/^[a-z0-9-]{1,40}$/.test(p.id) ? { tid: p.id } : {}),
+    } } as const;
 }
 
 export function presetPrice(p: Preset): string {
     return p.durationSeconds ? `${p.credits} credits · ${p.durationSeconds} s` : `${p.credits} credits`;
 }
 
-// A template whose exact community prompt needs inputs the model cannot receive, and that has no separate runnable
-// adaptation, can only be copied. Owner, 2026-10-30: the app hides these until their inputs are wired.
-export function isCopyOnlyPreset(p: Preset): boolean {
-    const exact = p.sourcePromptOrigin === 'community-source-exact' && typeof p.sourcePrompt === 'string';
-    const blocked = exact && p.sourcePromptRunnable === false;
-    const runnableAdaptation = p.promptOrigin === 'veyrnox-adaptation' && p.prompt !== p.sourcePrompt;
-    return blocked && !runnableAdaptation;
-}
-
+// Exact community prompts remain discoverable, including those without an adaptation.
 export async function fetchPresets(): Promise<Preset[]> {
     let res: Response;
     try {
@@ -186,5 +191,5 @@ export async function fetchPresets(): Promise<Preset[]> {
         throw new ApiError(0, 'network');
     }
     if (!res.ok) throw new ApiError(res.status, 'presets_unavailable');
-    return parsePresets(await res.json()).filter((p) => !isCopyOnlyPreset(p));
+    return parsePresets(await res.json());
 }

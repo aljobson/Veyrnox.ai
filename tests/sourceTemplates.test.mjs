@@ -287,8 +287,8 @@ test('public templates are exact or adaptation-only and all source-gap records a
   assert.doesNotMatch(webRecipe, /generationBlocked=\{sourcePromptBlocked\}|sourcePromptCopyOnly|sourcePromptModelLimitCopyOnly/);
   assert.doesNotMatch(webRecipe, /data-runnable-adaptation|hasRunnableAdaptation/);
   const mobileRecipe = readFileSync(new URL('../apps/mobile/src/app/(app)/templates/[id].tsx', import.meta.url), 'utf8');
-  assert.match(mobileRecipe, /disabled=\{sourcePromptBlocked \|\| tooLong \|\| !prompt\.trim\(\)\}/);
-  assert.doesNotMatch(mobileRecipe, /TemplateRecipe\.generationPrompt|hasRunnableAdaptation/);
+  assert.match(mobileRecipe, /disabled=\{tooLong \|\| !prompt\.trim\(\)\}/);
+  assert.doesNotMatch(mobileRecipe, /TemplateRecipe\.generationPrompt|hasRunnableAdaptation|sourcePromptCopyOnly|sourcePromptModelLimitCopyOnly/);
 });
 
 test('Syntx templates preserve every currently published source prompt exactly', () => {
