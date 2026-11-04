@@ -91,8 +91,9 @@ export function RecoveryCodesPanel({ factorId, codes, onCodes }: { factorId: str
                     <Button variant="primary" label={generateLabel} disabled={busy || !validCode(code)} onPress={() => void regenerate()} />
                 </>
             ) : (
-                <Button variant="secondary" label={generateLabel} disabled={busy || !status} onPress={() => setConfirming(true)} />
+                <Button variant="secondary" label={generateLabel} disabled={busy} onPress={() => setConfirming(true)} />
             )}
+            {!status && note ? <Button variant="tertiary" label={t('acct.mfa.retry')} disabled={busy} onPress={() => { setNote(null); void load(); }} /> : null}
             <Status text={note} error />
         </View>
     );

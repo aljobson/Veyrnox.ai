@@ -85,6 +85,8 @@ export function MfaCard() {
             setNote({ text: done, error: false });
             // Right after setting up, the second factor is fresh enough to make the first set of codes.
             if (withCodes) {
+                // Never leave a batch for an earlier authenticator on screen if this request fails.
+                setRecoveryCodes(null);
                 const next = await generateRecoveryCodes(api).catch(() => null);
                 if (task.current() && next) setRecoveryCodes(next);
             }

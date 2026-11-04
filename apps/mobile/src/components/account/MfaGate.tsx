@@ -112,8 +112,14 @@ export function MfaGate({ children }: { children: ReactNode }) {
             if (!task.current()) return;
             const aal = aalFromToken(await task.tokens(false, task.gen));
             if (!task.current()) return;
-            if (profile && needsChallenge(profile, aal)) throw new ApiError(502, 'recovery_incomplete');
-            void rememberMfaEnrolment(task.user, false);
+            if (profile && needsChallenge(profile, aal)) {
+                // Another authenticator remains: the code form must challenge that one, not the factor just removed.
+                setFactorId(verifiedFactors(profile.factors)[0].id);
+                void rememberMfaEnrolment(task.user, true);
+                throw new ApiError(502, 'recovery_incomplete');
+            }
+            // Remember "no authenticator" only when the account said so; an unread profile leaves the saved answer alone.
+            if (profile) void rememberMfaEnrolment(task.user, false);
             markMfaCleared(task.user);
             setCode('');
             setRecovery(false);
