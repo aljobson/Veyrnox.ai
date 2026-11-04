@@ -178,7 +178,7 @@ test('web recipe runs the exact community prompt whenever it is runnable, not a 
   assert.ok(!html.includes('GENERATION PROMPT'), 'one prompt only: the community one');
   assert.equal(handoff.prompt, row.sourcePrompt);
   assert.equal(handoff.preset.prompt, row.sourcePrompt);
-  assert.equal(handoff.generationBlocked, false);
+  assert.equal(handoff.generationBlocked, undefined);
   assert.match(presetHref(handoff.preset), /model=seedance-2.0-fast/);
   assert.doesNotMatch(presetHref(handoff.preset), /duration=10s/);
 });
@@ -201,7 +201,7 @@ test('phone parsing and handoff keep runnable recipes and hide or copy-only the 
     }
     assert.equal(mobile.isCopyOnlyPreset(row), false, id);
     const handoff = mobile.presetHref(row);
-    // An exact prompt the model cannot receive is copy-only everywhere: no Create handoff with an adaptation.
+    // Phone behaviour is unchanged by the web handoff: no adapted prompt.
     if (row.sourcePromptOrigin === 'community-source-exact' && row.sourcePromptRunnable === false) {
       assert.equal(handoff.pathname, '/templates/[id]', id);
       continue;

@@ -117,16 +117,12 @@ export function modelIdForName(name) {
 /**
  * Studio link for a preset: the model it is wired to (when that model is still
  * in the catalog) plus the preset id, so Create records which card sent the
- * user. Shared by the /presets gallery cards and the landing wall.
+ * user. Cards link to templateHref; an unresolved model stays on that detail page.
  */
-export function presetHref(preset, durationSeconds = preset.durationSeconds) {
-  if (preset.promptOrigin === 'community-source-exact' && preset.sourcePromptRunnable === false) {
-    return `/presets/${encodeURIComponent(preset.id)}`;
-  }
-  const modelId = modelIdForName(preset.model);
-  return modelId
-    ? `/app/create?model=${encodeURIComponent(modelId)}&preset=${encodeURIComponent(preset.id)}${durationSeconds && durationSeconds !== VIDEO_UNIT_SECONDS ? `&duration=${durationSeconds}s` : ''}`
-    : `/app/create?preset=${encodeURIComponent(preset.id)}`;
+export function presetHref(preset, durationSeconds = preset.durationSeconds, extras = {}) {
+  const modelId = extras.model || modelIdForName(preset.model);
+  if (!modelId) return templateHref(preset);
+  return `/app/create?model=${encodeURIComponent(modelId)}&preset=${encodeURIComponent(preset.id)}${durationSeconds ? `&duration=${encodeURIComponent(durationSeconds)}s` : ''}${extras.aspect ? `&aspect=${encodeURIComponent(extras.aspect)}` : ''}`;
 }
 
 /**

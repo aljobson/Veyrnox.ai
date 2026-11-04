@@ -16,6 +16,7 @@ import { readdir, readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import pg from "pg";
+import { checkProductionAck } from '../packages/security/productionGuard.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SCHEMA_DIR = path.resolve(__dirname, "..", "packages", "db", "schema");
@@ -25,6 +26,12 @@ async function main() {
     if (!dbUrl) {
         console.error("DATABASE_URL is required");
         process.exit(1);
+    }
+    const ack = checkProductionAck({ databaseUrl: dbUrl, argv: process.argv, env: process.env, action: 'migrate' });
+    console.log(ack.message.split('\n')[0]);
+    if (!ack.ok) {
+        console.error(ack.message);
+        process.exit(2);
     }
     const client = new pg.Client({ connectionString: dbUrl });
     await client.connect();

@@ -58,12 +58,12 @@ test('the pre-debit model contract accepts 30,000 characters and rejects 30,001'
   assert.deepEqual(checkInputs(record, { prompt: 'x'.repeat(GENERATION_PROMPT_MAX + 1) }), { ok: false, error: 'inputs_invalid:prompt' });
 });
 
-test('the reported 3,722-character prompt is preserved, while its unsupported exact-source contract stays copy-only', () => {
+test('the reported 3,722-character exact prompt reaches Create unchanged despite unsupported references', () => {
   const template = ALL_TEMPLATES.find((item) => item.id === 'event-character-swap');
   const prompt = sourceRecords[template.id].prompt;
   assert.equal(prompt.length, 3_722);
   const exactTemplate = { ...template, prompt, sourcePrompt: prompt, sourcePromptOrigin: 'community-source-exact', sourcePromptRunnable: false };
-  assert.equal(draftForTemplate(exactTemplate, modelIdForName(template.model)), null);
+  assert.equal(draftForTemplate(exactTemplate, modelIdForName(template.model)).prompt, prompt);
   assert.equal(checkInputs(capabilityFor('fal-ai/veo3.1'), { prompt }).ok, true);
   assert.equal(filmStarterForTemplate({ ...template, prompt }, prompt).prompt, prompt);
   assert.equal(cleanCreateDraft({ modelId: modelIdForName(template.model), prompt }).prompt, prompt);
@@ -138,7 +138,8 @@ test('web, API, MCP and mobile boundaries all reference the shared 30,000 contra
   assert.match(priceSlip, /public\.TemplateRecipe\.promptTooLong/);
   assert.doesNotMatch(webTemplate, /maxLength=/);
   assert.doesNotMatch(mobileTemplate, /maxLength=/);
-  assert.match(webTemplate, /sourcePromptModelLimitCopyOnly/);
+  assert.doesNotMatch(webTemplate, /sourcePromptModelLimitCopyOnly/);
+  assert.match(webTemplate, /TEMPLATE_PROMPT_MAX/);
   assert.match(mobileTemplate, /sourcePromptModelLimitCopyOnly/);
   assert.doesNotMatch(mobileMake, /prompt\.trim\(\)\.slice|<TextField[^>]*maxLength=/);
   assert.match(mobileMake, /const promptTooLong/);
@@ -169,11 +170,11 @@ test('handoffs reject an over-limit prompt instead of silently shortening it', (
   assert.equal(writeStudioDraft(memoryStorage(), { model: 'model', prompt: tooLong }), false);
 });
 
-test('direct Create handoff refuses an exact prompt whose reference contract is unsupported', () => {
+test('direct Create handoff accepts exact prompts and leaves reference validation to Create', () => {
   const seedance = ALL_TEMPLATES.find((item) => item.id === 'seedance-birthday-morning');
   assert.equal(seedance.promptOrigin, 'community-source-exact');
-  assert.equal(draftForTemplate(seedance, modelIdForName(seedance.model)), null);
+  assert.equal(draftForTemplate(seedance, modelIdForName(seedance.model)).prompt, seedance.prompt);
   const adapted = ALL_TEMPLATES.find((item) => item.id === 'event-character-swap');
   const exact = { ...adapted, prompt: sourceRecords[adapted.id].prompt, sourcePromptOrigin: 'community-source-exact', sourcePromptRunnable: false };
-  assert.equal(draftForTemplate(exact, modelIdForName(exact.model)), null);
+  assert.equal(draftForTemplate(exact, modelIdForName(exact.model)).prompt, exact.prompt);
 });

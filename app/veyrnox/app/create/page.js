@@ -31,7 +31,7 @@ import { takeStudioDraft } from '../../_lib/landingDraft';
 import { takeVideoSoundContinuation, writeVideoSoundContinuation } from '../../_lib/resultContinuation';
 import { oddlingPortrait, buildOddlingAnimationPrompt } from '../../_lib/oddlingStudio';
 import { fetchTemplate } from '../../_lib/useTemplates';
-import { resolveTemplateDraft, draftForTemplate } from '../../_lib/templateDraft';
+import { resolveTemplateDraft, draftForTemplate, templateArrival, createPromptModelAvailable } from '../../_lib/templateDraft';
 import { templateStartIdFor } from '../../../../lib/templateStartCheck';
 import { nearestOption } from '../../../../lib/aspectShapes.mjs';
 import { DEFAULT_CINEMA, buildCinemaPrompt } from '../../_lib/cinema';
@@ -93,7 +93,7 @@ export default function CreateStudio() {
   const { models: catalogModels, live: catalogLive, loading: catalogLoading } = useCatalog();
   const freeMap = useFreeAllowance(); // ADR-0069: free jobs left today per model; empty while the feature is off
   const autoShortOn = useSyncExternalStore(never, autoShortFlag, off);
-  const models = catalogModels.filter((m) => !m.isEdit && !m.takesPlan && (autoShortOn || !m.takesTopic));
+  const models = catalogModels.filter((m) => createPromptModelAvailable(m, autoShortOn));
   const [modelId, setModelId] = useState(() => starterModel(catalogModels, 'image')?.id || '');
   const [goal, setGoal] = useState('image');
   const [presetParam, setPresetParam] = useState(null);
@@ -143,6 +143,11 @@ export default function CreateStudio() {
   // Keep the requested ratio until the live catalog (or the complete registry-derived
   // fallback after a failed read) resolves the selected model's real capabilities.
   const incomingAspect = useRef('');
+  const arrivalApplied = useRef(false);
+  const [templateEntry] = useState(() => typeof window !== 'undefined' && Boolean(new URLSearchParams(window.location.search).get('preset')));
+  // Ordinary studio entries must not restart (or cancel media loads) when the catalog arrives.
+  const arrivalModels = templateEntry ? catalogModels : null;
+  const arrivalLoading = templateEntry && catalogLoading;
 
   // ?model=<id> from landing tiles / hero cards. Read once on mount —
   // avoids the Suspense boundary useSearchParams demands on client pages.
@@ -152,11 +157,17 @@ export default function CreateStudio() {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
     const presetId = params.get('preset');
-    const controller = new AbortController();
-    // A template link means the template supplies the draft, so an older saved draft is not restored over it.
+    // Reserve the incoming recipe before waiting so recovery cannot replace it.
     if (presetId) incomingDraft.current = true;
+    if ((presetId && arrivalApplied.current) || arrivalLoading) return;
+    const controller = new AbortController();
     const start = (preset) => {
-      const wanted = params.get('model') || (preset && modelIdForName(preset.model));
+      arrivalApplied.current = true;
+      const requested = params.get('model') || (preset && modelIdForName(preset.model));
+      let storedDraft = null;
+      try { storedDraft = takeStudioDraft(window.sessionStorage, requested, Date.now(), preset?.id); } catch { /* The URL recipe still works. */ }
+      const arrival = preset ? templateArrival(preset, arrivalModels || [], params, storedDraft) : null;
+      const wanted = arrival ? arrival.modelId : requested;
       if (wanted) {
         setModelId(wanted);
         setGoal('all');
@@ -167,10 +178,8 @@ export default function CreateStudio() {
       const videoSoundDraft = params.get('continue') === 'faceless-sound' && wanted === 'mmaudio-v2-video'
         ? takeVideoSoundContinuation(window.sessionStorage)
         : null;
-      let storedDraft = null;
-      try { storedDraft = takeStudioDraft(window.sessionStorage, wanted); } catch { /* The URL recipe still works. */ }
       const portrait = oddlingPortrait(params.get('oddlingPhoto'));
-      const draft = resolveTemplateDraft(preset, wanted, storedDraft)
+      const draft = (arrival ? arrival.draft : resolveTemplateDraft(preset, wanted, storedDraft))
         || (portrait ? { prompt: buildOddlingAnimationPrompt(portrait.id, params.get('motion')), durationSeconds: 5 } : null);
       incomingDraft.current = Boolean(draft || videoSoundDraft);
       if (videoSoundDraft) {
@@ -184,7 +193,7 @@ export default function CreateStudio() {
       }
       if (storedDraft?.followup) setPlannedFollowup(storedDraft.followup);
       if (draft?.aspect) incomingAspect.current = draft.aspect;
-      if (draft?.durationSeconds) setDuration(`${draft.durationSeconds}s`);
+      if (draft?.durationSeconds && (preset || !/^\d{1,2}s$/.test(params.get('duration') || ''))) setDuration(`${draft.durationSeconds}s`);
       if (draft?.negativePrompt) setNegative(draft.negativePrompt);
       if (params.get('passport') === '1' && storedDraft?.oddlingPicks) {
         const imported = sanitizeOddlingPicks(storedDraft.oddlingPicks);
@@ -213,7 +222,7 @@ export default function CreateStudio() {
     if (presetId) fetchTemplate(presetId).then((preset) => { if (!controller.signal.aborted) start(preset); });
     else start(null);
     return () => controller.abort();
-  }, []);
+  }, [arrivalLoading, arrivalModels]);
 
   const draftRecovery = useCreateDraftRecovery({
     incoming: incomingDraft,
@@ -453,7 +462,7 @@ export default function CreateStudio() {
     }
     if (aspectOptions.length && !aspectOptions.includes(aspect)) setAspect(aspectOptions[0]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [catalogLoading, model?.id, aspectOptions.join(',')]);
+  }, [catalogLoading, templateData, model?.id, aspectOptions.join(',')]);
 
   // ── balance fetch + focus revalidation ────────────────────────────
   const loadBalance = useCallback(async () => {

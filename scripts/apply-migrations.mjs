@@ -41,6 +41,7 @@ import { createHash } from 'node:crypto';
 import { appendFileSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { checkProductionAck } from '../packages/security/productionGuard.js';
 import { batchRange, descriptiveName, fetchLedger, readSchemaFiles, supabaseConfig, unaccounted } from './check-migration-ledger.mjs';
 
 const MANAGEMENT_API = 'https://api.supabase.com/v1';
@@ -214,6 +215,11 @@ if (isMain) {
     if (mode === 'apply') {
         let client;
         let result;
+        // A hand-run apply against production needs --i-mean-production; the approved
+        // workflow run is exempt (data-protection plan S1, ADR-0023).
+        const ack = checkProductionAck({ supabaseUrl: supabaseConfig(root).url, argv: process.argv, env: process.env, action: 'apply-migrations' });
+        console.log(ack.message.split('\n')[0]);
+        if (!ack.ok) { console.error(ack.message); process.exit(2); }
         try {
             client = managementClient({
                 token: process.env.SUPABASE_ACCESS_TOKEN,

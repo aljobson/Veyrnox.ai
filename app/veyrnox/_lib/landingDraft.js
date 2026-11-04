@@ -39,8 +39,10 @@ function safeDraftSources(value) {
 }
 
 // Prompt, plus the aspect ratio a template was designed for, when present.
-// `aspect` is only a request: the studio drops one its model does not take.
-export function takeStudioDraft(storage, modelId, now = Date.now()) {
+// `aspect` is a request: Create snaps it to the selected model’s options.
+// Initial template arrivals may read by template identity before validating the
+// chosen model. All other studio drafts retain the strict model binding.
+export function takeStudioDraft(storage, modelId, now = Date.now(), templateId = null) {
   try {
     const raw = storage.getItem(LANDING_DRAFT_KEY);
     if (!raw) return null;
@@ -48,10 +50,11 @@ export function takeStudioDraft(storage, modelId, now = Date.now()) {
     const draft = JSON.parse(raw);
     if (!draft || typeof draft.prompt !== 'string' || !draft.prompt || draft.prompt.length > GENERATION_PROMPT_MAX) return null;
     if (!Number.isFinite(draft.at) || now - draft.at > MAX_AGE_MS) return null;
-    if (!modelId || draft.model !== modelId) return null;
+    if (templateId ? draft.templateId !== templateId : (!modelId || draft.model !== modelId)) return null;
     const sources = safeDraftSources(draft.sources);
     return {
       prompt: draft.prompt,
+      ...(templateId ? { model: draft.model } : {}),
       aspect: typeof draft.aspect === 'string' ? draft.aspect : null,
       ...(Number.isInteger(draft.durationSeconds) && draft.durationSeconds >= 1 && draft.durationSeconds <= 60 ? { durationSeconds: draft.durationSeconds } : {}),
       ...(typeof draft.negativePrompt === 'string' && draft.negativePrompt.length <= NEGATIVE_PROMPT_MAX ? { negativePrompt: draft.negativePrompt } : {}),

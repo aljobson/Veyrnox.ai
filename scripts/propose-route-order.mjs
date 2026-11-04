@@ -6,7 +6,7 @@
  *   read -s "SUPABASE_SERVICE_ROLE_KEY?service key: "; export SUPABASE_SERVICE_ROLE_KEY
  *   export SUPABASE_URL=https://<production project>.supabase.co
  *   node scripts/propose-route-order.mjs                                  # dry run
- *   node scripts/propose-route-order.mjs --apply --note "weekly review"   # one reorder per changed offer
+ *   node scripts/propose-route-order.mjs --apply --note "weekly review" --i-mean-production   # one reorder per changed offer (production needs the flag and the owner's word)
  *   unset SUPABASE_SERVICE_ROLE_KEY
  *
  * Before proposing a first route it checks that the Worker can dispatch it: an adapter in the
@@ -15,6 +15,7 @@
  * model_route_reorder (0374), which logs it and applies the margin and free-allowance checks.
  */
 import { select, rpc, envConfig } from '../packages/db/supabase-client.js';
+import { checkProductionAck } from '../packages/security/productionGuard.js';
 import { providerFor } from '../packages/provider-sdk/registry.js';
 import { capabilityFor } from '../lib/modelCapabilities.js';
 import { proposeOrder } from '../lib/supplierRoutesPropose.js';
@@ -32,6 +33,11 @@ async function main() {
     const note = noteAt > 0 ? process.argv[noteAt + 1] : '';
     if (apply && (!note || note.startsWith('--') || note.length < 3)) { console.error('--apply needs --note "why" (3 or more characters)'); process.exit(2); }
     const cfg = envConfig();
+    if (apply) {
+        const ack = checkProductionAck({ supabaseUrl: cfg.supabaseUrl, argv: process.argv, env: process.env, action: 'propose-route-order --apply' });
+        console.log(ack.message.split('\n')[0]);
+        if (!ack.ok) { console.error(ack.message); process.exit(2); }
+    }
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey || /^<.*>$/.test(cfg.serviceRoleKey)) { console.error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required (silent prompt in the header, never a placeholder)'); process.exit(2); }
 
     const routes = await select('model_routes', { columns: 'id,model_id,supplier,endpoint,priority,state,provenance,parity_record,cost_per_unit,cost_unit,breaker_opened_at' }, cfg);
