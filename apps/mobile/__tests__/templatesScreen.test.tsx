@@ -5,11 +5,13 @@ import Templates from '../src/app/(app)/create/presets';
 import TemplatePage from '../src/app/(app)/templates/[id]';
 import { parsePresets } from '../src/lib/presets';
 import { t } from '../src/lib/i18n';
+import { fetchCatalog, type CatalogModel } from '../src/lib/media';
 const mockRouter = { push: jest.fn() };
 const mockFetch = jest.fn(); const mockPopular = jest.fn(); const mockCopy = jest.fn();
 const mockPlayers: { play: jest.Mock; pause: jest.Mock; muted: boolean; loop: boolean }[] = [];
 let mockList: any, mockTextField: any;
 jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () => mockRouter, useLocalSearchParams: () => ({ id: 'p-0' }), useFocusEffect: (cb: any) => require('react').useEffect(cb, [cb]) }));
+jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalog: jest.fn() }));
 jest.mock('../src/lib/presets', () => ({ ...jest.requireActual('../src/lib/presets'), fetchPresets: () => mockFetch() }));
 jest.mock('../src/lib/templateFilters', () => ({ ...jest.requireActual('../src/lib/templateFilters'), fetchPopularIds: () => mockPopular() }));
 jest.mock('../src/lib/creatorProfileStore', () => ({ loadVibe: async () => null }));
@@ -28,10 +30,12 @@ jest.mock('react-native/Libraries/Lists/FlatList', () => ({ __esModule: true, de
 } }));
 void [RN.View, RN.Text, RN.StyleSheet, RN.Pressable, RN.ScrollView, RN.ActivityIndicator];
 const feed = parsePresets({ presets: Array.from({ length: 51 }, (_, i) => ({ id: `p-${i}`, title: `Template ${i}`, category: i % 2 ? 'PET' : 'STYLE', modelId: 'model', modelName: 'Model', modality: 'image-to-video', prompt: 'original', credits: 3, previewUrl: 'https://preview', isNew: i === 0 })) });
+const originalModel: CatalogModel = { id: 'model', name: 'Original model', modality: 'image-to-video', credits: 3, gated: false, durations: [5, 10], capabilities: { inputs: { prompt: {}, aspect_ratio: { values: ['16:9', '9:16'] } } } };
+const otherModel: CatalogModel = { ...originalModel, id: 'other', name: 'Other model', credits: 7, durations: [4, 8], capabilities: { inputs: { prompt: {}, aspect_ratio: { values: ['1:1', '4:3'] } } } };
 let root: Root;
 const controls = (label: string) => root.container.queryAll(n => n.props.accessibilityRole === 'button' && n.props.accessibilityLabel === label);
 async function click(label: string, index = 0) { await act(async () => controls(label)[index].props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 })); }
-beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; jest.clearAllMocks(); mockPlayers.length = 0; mockFetch.mockResolvedValue(feed); mockPopular.mockResolvedValue(['p-2', 'p-0']); mockCopy.mockResolvedValue(true); root = createRoot(); });
+beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; jest.clearAllMocks(); mockPlayers.length = 0; mockFetch.mockResolvedValue(feed); jest.mocked(fetchCatalog).mockResolvedValue([originalModel]); mockPopular.mockResolvedValue(['p-2', 'p-0']); mockCopy.mockResolvedValue(true); root = createRoot(); });
 afterEach(async () => { await act(async () => root.unmount()); });
 test('filters chips, batches fifty, and opens a template page', async () => {
     await act(async () => root.render(<Templates />)); expect(mockList.data).toHaveLength(50);
@@ -57,7 +61,7 @@ test('template page copies the edited prompt and uses it with the validated temp
     expect(root.container.queryAll(n => n.children.includes(t('libraryCreate.copied')))).toHaveLength(1);
     await click(t('libraryCreate.useTemplate')); expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/create/[modelId]', params: expect.objectContaining({ tid: 'p-0', prompt: 'edited words' }) });
 });
-test('copy-only exact text stays visible and copyable, with no second prompt and Use template off', async () => {
+test('non-runnable exact text stays visible and copyable, with no second prompt and Use enabled', async () => {
     const adapted = { ...feed[0], prompt: 'Veyrnox adaptation', promptOrigin: 'veyrnox-adaptation' as const, sourcePrompt: 'Exact @image1 community text', sourcePromptOrigin: 'community-source-exact' as const, sourcePromptRunnable: false, sourcePromptIssues: ['reference-image-input-required'] };
     mockFetch.mockResolvedValue([adapted]);
     await act(async () => root.render(<TemplatePage />));
@@ -67,5 +71,63 @@ test('copy-only exact text stays visible and copyable, with no second prompt and
     await click(t('public.TemplateRecipe.copyExactCommunityPrompt'));
     expect(mockCopy).toHaveBeenCalledWith('Exact @image1 community text');
     const use = root.container.queryAll(n => n.props.accessibilityLabel === t('libraryCreate.useTemplate'))[0];
-    expect(use?.props.disabled ?? use?.props.accessibilityState?.disabled).toBeTruthy();
+    expect(use?.props.disabled ?? use?.props.accessibilityState?.disabled).toBeFalsy();
+    await click(t('libraryCreate.useTemplate'));
+    expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/create/[modelId]', params: expect.objectContaining({ prompt: adapted.sourcePrompt, tid: adapted.id, tmodel: originalModel.id }) });
+    for (const key of ['public.TemplateRecipe.sourcePromptCopyOnly', 'public.TemplateRecipe.sourcePromptModelLimitCopyOnly'] as const) {
+        expect(root.container.queryAll(n => n.children.includes(t(key)))).toHaveLength(0);
+    }
+});
+
+test('picker defaults to the original model and snaps preview shape; changes update choices and live cost', async () => {
+    mockFetch.mockResolvedValue([{ ...feed[0], previewAspect: '9 / 16', durationSeconds: 10 }]);
+    jest.mocked(fetchCatalog).mockResolvedValue([otherModel, originalModel]);
+    await act(async () => root.render(<TemplatePage />));
+    await click(t('libraryCreate.useTemplate'));
+    expect(mockRouter.push.mock.calls.at(-1)[0].params).toMatchObject({ modelId: 'model', aspect: '9:16', duration: '10' });
+    await click(otherModel.name);
+    expect(controls('9:16')).toHaveLength(0);
+    expect(controls(t('create.lengthCost', { value1: 4, credits: '7' }))).toHaveLength(1);
+    await click('4:3'); await click(t('create.lengthCost', { value1: 8, credits: '14' }));
+    await act(async () => mockTextField.onChangeText('My edit'));
+    await click(t('libraryCreate.useTemplate'));
+    expect(mockRouter.push.mock.calls.at(-1)[0].params).toMatchObject({ modelId: 'other', aspect: '4:3', duration: '8', prompt: 'My edit', tid: 'p-0', tpl: feed[0].title, tmodel: 'model' });
+    await click(originalModel.name); await click(t('libraryCreate.useTemplate'));
+    expect(mockRouter.push.mock.calls.at(-1)[0].params).toMatchObject({ modelId: 'model', aspect: '9:16', duration: '10' });
+});
+test.each(['single', 'failed', 'loading'])('model picker is hidden with %s catalog', async state => {
+    if (state === 'failed') jest.mocked(fetchCatalog).mockRejectedValue(new Error('offline'));
+    if (state === 'loading') jest.mocked(fetchCatalog).mockReturnValue(new Promise(() => {}));
+    await act(async () => root.render(<TemplatePage />));
+    expect(controls(originalModel.name)).toHaveLength(0);
+    expect(controls(otherModel.name)).toHaveLength(0);
+    await click(t('libraryCreate.useTemplate'));
+    expect(mockRouter.push.mock.calls.at(-1)[0].params.modelId).toBe('model');
+});
+test('picker rejects topic, edit, plan, gated and different-modality catalog rows', async () => {
+    const excluded = [
+        { ...otherModel, id: 'topic', capabilities: { inputs: { topic: {} } } },
+        { ...otherModel, id: 'edit', capabilities: { inputs: { prompt: {}, clips: {} } } },
+        { ...otherModel, id: 'plan', capabilities: { inputs: { prompt: {}, plan_id: {} } } },
+        { ...otherModel, id: 'gated', gated: true },
+        { ...otherModel, id: 'modality', modality: 'text-to-video' },
+    ];
+    jest.mocked(fetchCatalog).mockResolvedValue([originalModel, ...excluded]);
+    await act(async () => root.render(<TemplatePage />));
+    expect(controls(otherModel.name)).toHaveLength(0);
+    expect(controls(originalModel.name)).toHaveLength(0);
+});
+test.each(['text-to-image', 'text-to-audio'])('%s hides seconds and models without ratios hide aspect', async modality => {
+    mockFetch.mockResolvedValue([{ ...feed[0], modality }]);
+    jest.mocked(fetchCatalog).mockResolvedValue([{ ...originalModel, modality, capabilities: { inputs: { prompt: {} } } }]);
+    await act(async () => root.render(<TemplatePage />));
+    expect(controls('16:9')).toHaveLength(0);
+    expect(controls(t('create.lengthCost', { value1: 5, credits: '3' }))).toHaveLength(0);
+    await click(t('libraryCreate.useTemplate'));
+    expect(mockRouter.push.mock.calls.at(-1)[0].params.duration).toBeUndefined();
+});
+test.each(['', 'x'.repeat(30001)])('empty or over-limit prompt disables Use', async prompt => {
+    await act(async () => root.render(<TemplatePage />));
+    await act(async () => mockTextField.onChangeText(prompt));
+    expect(controls(t('libraryCreate.useTemplate'))[0].props.accessibilityState.disabled).toBe(true);
 });

@@ -172,3 +172,22 @@ test('a lost-reply item replays at zero balance: only unsubmitted items count to
     assert.deepEqual(allocationSnapshot({ accepted: [null], unknown: new Set([0]) }, 5, 0), { ceilings: [5], total: 5, payable: 0 });
     assert.equal(submitErrorCode('outcome_unknown'), 'outcome_unknown');
 });
+
+test('a lost reply followed by a rate-limit refusal keeps the key and the unknown state', async () => {
+    const { createBatch } = await import('../app/veyrnox/_lib/imageBatch.js');
+    let n = 0;
+    const makeKey = () => `key-${++n}`;
+    const batch = createBatch(2, makeKey);
+    await sendInOrder(2, async i => { if (i === 0) return { job_id: 'a' }; throw { code: 'network_error' }; }, batch, makeKey);
+    const key = batch.keys[1];
+    assert.ok(batch.unknown.has(1));
+    for (const code of ['rate_limited', 'rate_check_unavailable', 'unlisted_refusal']) {
+        await sendInOrder(2, async () => { throw { code }; }, batch, makeKey);
+        assert.equal(batch.keys[1], key, code);
+        assert.ok(batch.unknown.has(1), code);
+    }
+    await sendInOrder(2, async () => { throw { code: 'provider_submit_failed' }; }, batch, makeKey);
+    assert.notEqual(batch.keys[1], key);
+    assert.equal(batch.unknown.has(1), false);
+});
+

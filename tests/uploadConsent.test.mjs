@@ -31,7 +31,7 @@ test('the statement is recorded on the job through the RPC, not a direct write',
 
 test('the create page blocks Generate until the box is ticked, and sends it', () => {
     assert.match(page, /const missingConsent = hasUpload && !consent;/);
-    assert.match(page, /missingSource \|\| missingConsent\)\) \|\| !!activeBatch\?\.confirm\}/);
+    assert.match(page, /missingSource \|\| missingConsent\)\) \|\| \(!!activeBatch && \(balance == null \|\| payable > balance\)\) \|\| !!activeBatch\?\.confirm\}/);
     // Sent whenever any source is attached: an upload or a Library image.
     assert.match(page, /const anySource = source_keys\.length \+ source_assets\.length > 0;/);
     assert.match(page, /consent: anySource \? true : undefined,/);

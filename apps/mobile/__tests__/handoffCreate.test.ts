@@ -2,21 +2,23 @@ jest.mock('expo-crypto', () => ({ randomUUID: () => `film-${Math.random()}` }));
 import { acceptedSettings, createHandoff, nearestDuration, type FormSnapshot } from '../src/lib/createHandoff';
 import { readCreativeSourceHandoff } from '../src/lib/creativeSourceHandoff';
 import { DEFAULT_CINEMA } from '../src/lib/cinemaCamera';
-import { fetchCatalog, type CatalogModel } from '../src/lib/media';
+import { fetchCatalog, mediaApi, type CatalogModel } from '../src/lib/media';
 import { bindCacheUser, resetCacheUser, wipeCache } from '../src/lib/appCache';
 import { createMemoryStorage, createCache } from '../src/lib/cache';
 import { rememberSubmitted, submittedHref } from '../src/lib/submittedRequests';
+import { activeTemplate, normalizeTemplateCarry } from '../src/lib/templateHandoff';
 import { accountHandoffStore } from '../src/lib/accountHandoffStore';
 import { filmReturnParams, rememberFilmJob, settleFilmJob, returnMatches, filmReturns, markFilmSwitch } from '../src/lib/filmGenerationReturns';
 import { localFilmId, inheritFilmIdentity } from '../src/lib/filmHandoffIdentity';
 import { emptyFilm, promptContext, type Film, type Shot } from '../src/lib/filmStudio';
 
+jest.mock('../src/lib/aiConsentStore', () => ({ aiConsent: { ensure: async () => undefined, hasAgreed: async () => true } }));
 jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalog: jest.fn() }));
 const model: CatalogModel = { id: 'video', name: 'Video', modality: 'text-to-video', durations: [5, 10], credits: 3, gated: false,
     capabilities: { inputs: { prompt: { max: 2000 }, seed: {}, negative_prompt: { max: 100 }, aspect_ratio: { values: ['9:16', '16:9'] } }, media: { image: { maxFiles: 2 } } } };
 const snapshot: FormSnapshot = { opts: { aspect: '9:16', count: 4, seed: '42', negative: 'rain', voice: 'soft', audioSeconds: '', resolution: undefined, audio: undefined },
     cameraOn: true, cinema: DEFAULT_CINEMA, characterOn: true, character: { character_type: 'Human' } };
-const carry = { prompt: 'A bird', duration: '8', aspect: '9:16', tpl: 'Paper', tid: 'paper', tneeds: 'picture', tsource: '9:16', tratio: '9/16', tposter: 'https://veyrnox.ai/p.jpg', recipe: 'faceless-reel', followup: 'generated-sound', startOddling: 'fox', kind: 'video', sourceJob: 'original' };
+const carry = { prompt: 'A bird', duration: '8', aspect: '9:16', tpl: 'Paper', tid: 'paper', tmodel: 'video', tneeds: 'picture', tsource: '9:16', tratio: '9/16', tposter: 'https://veyrnox.ai/p.jpg', recipe: 'faceless-reel', followup: 'generated-sound', startOddling: 'fox', kind: 'video', sourceJob: 'original' };
 const refs = [{ slot: 'image', origin: 'asset', asset_id: 'asset-1' }, { slot: 'endImage', origin: 'upload', key: 'upload-1' }, { slot: 'audio', origin: 'upload', key: 'sound' }] as const;
 const storage = createMemoryStorage(), cache = createCache(storage);
 beforeEach(async () => { resetCacheUser(); await bindCacheUser('person', cache, storage, createMemoryStorage()); jest.mocked(fetchCatalog).mockResolvedValue([model]); });
@@ -35,7 +37,8 @@ test('P1: changing models carries template, workflow metadata, closest settings 
 test.each([false, true])('P2: attaching with model change=%s preserves a settings snapshot and Faceless sound continuation', changed => {
     const target = changed ? { ...model, id: 'different', modality: 'text-to-image' } : model;
     const href = createHandoff(target, carry, snapshot, [...refs, refs[0], { slot: 'image', origin: 'upload', key: 'new-file' }], { followup: 'generated-sound' });
-    expect(href.params).toMatchObject({ recipe: 'faceless-reel', followup: 'generated-sound', startOddling: 'fox', tid: 'paper' });
+    expect(href.params).toMatchObject({ recipe: 'faceless-reel', followup: 'generated-sound', startOddling: 'fox', tid: 'paper', tmodel: 'video' });
+    expect(activeTemplate(href.params, target.id, ['veyrnox.ai'])?.id).toBe(changed ? undefined : 'paper');
     expect(read(href)).toMatchObject({ recipe: 'faceless-reel', followup: 'generated-sound', settings: { cameraOn: true, characterOn: changed, opts: { seed: '42', negative: 'rain', count: changed ? 4 : 1 } } });
     expect(read(href).references?.filter(r => r.origin === 'asset')).toEqual([refs[0]]);
 });
@@ -103,4 +106,42 @@ test('P9: a film switch racing completion cannot be lost by a later history writ
     expect(item.state).toBe('succeeded'); expect(item.switched).toBe(true); expect(returnMatches(first, item)).toBe(false);
     await rememberFilmJob('racing-job', filmReturnParams(first, 'S1'), 'A bird');
     expect((await filmReturns.list()).find(i => i.id === 'racing-job')?.state).toBe('succeeded');
+});
+
+test('A → B → A retains template origin and serializes preset only for its original model', async () => {
+    const request = jest.fn().mockResolvedValue({ job_id: 'round-trip' });
+    const other = { ...model, id: 'other' };
+    const away = createHandoff(other, carry, snapshot, []);
+    const back = createHandoff(model, away.params, snapshot, []);
+    for (const params of [{ ...carry, modelId: model.id }, away.params, back.params] as Array<Record<string, string>>) {
+        expect(params).toMatchObject(carry);
+        const template = activeTemplate(params, params.modelId, ['veyrnox.ai']);
+        const original = params.modelId === model.id;
+        expect(template?.title).toBe(original ? 'Paper' : undefined);
+        await mediaApi({ request } as any).createGeneration({ modelId: params.modelId, prompt: params.prompt, durationSeconds: Number(params.duration), confirmedCredits: 3, idempotencyKey: 'round-trip', preset: template?.id ?? undefined });
+        const serialized = JSON.parse(request.mock.calls.at(-1)[1].body);
+        expect(serialized.preset).toBe(original ? 'paper' : undefined);
+        expect(Object.hasOwn(serialized, 'preset')).toBe(original);
+        expect(serialized.inputs.prompt).toBe(carry.prompt);
+        expect(serialized).not.toHaveProperty('template_id');
+    }
+});
+test('legacy no-tmodel arrival is normalized before moving to another model', () => {
+    const { tmodel, ...legacy } = carry;
+    const arrival = normalizeTemplateCarry(legacy, model.id);
+    expect(arrival.tmodel).toBe(model.id);
+    const away = createHandoff({ ...model, id: 'other' }, arrival, snapshot, []);
+    expect(away.params).toMatchObject({ tid: 'paper', tpl: 'Paper', tmodel: model.id });
+    expect(activeTemplate(away.params, 'other', ['veyrnox.ai'])).toBeNull();
+    expect(activeTemplate(legacy, model.id, ['veyrnox.ai'])?.id).toBe('paper');
+});
+test('replay uses the stored origin even when submitted on another model', async () => {
+    const other = { ...model, id: 'other' };
+    jest.mocked(fetchCatalog).mockResolvedValue([model, other]);
+    await rememberSubmitted('other-job', { modelId: other.id, prompt: carry.prompt, durationSeconds: 8, confirmedCredits: 3 }, carry, snapshot);
+    const href = await submittedHref(api, 'other-job', 'irrelevant-current-model', () => true);
+    expect(href?.params).toMatchObject({ ...carry, modelId: other.id });
+    expect(activeTemplate(href!.params, other.id, ['veyrnox.ai'])).toBeNull();
+    const back = createHandoff(model, href!.params as Record<string, string>, snapshot, []);
+    expect(activeTemplate(back.params, model.id, ['veyrnox.ai'])?.id).toBe('paper');
 });
