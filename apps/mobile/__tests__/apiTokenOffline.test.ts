@@ -42,7 +42,7 @@ test('401 after successful forced refresh still drops the session', async () => 
 });
 
 
-test.each([[new AuthError(0, 'network'), true], [new AuthError(400, 'invalid'), false], [new Error('unknown'), false]])('classifies refresh failures by status zero only', (error, expected) => {
+test.each([[new AuthError(0, 'network'), true], [new AuthError(429, 'rate_limited'), true], [new AuthError(503, 'unavailable'), true], [new AuthError(400, 'invalid'), false], [new AuthError(401, 'invalid'), false], [new AuthError(403, 'invalid'), false], [new Error('unknown'), false]])('classifies refresh failures: transient only for no-network, throttling and server errors', (error, expected) => {
     expect(isTransientRefreshFailure(error)).toBe(expected);
 });
 
@@ -62,18 +62,19 @@ describe('AuthProvider refresh through the real ApiClient', () => {
         root = createRoot();
     });
     afterEach(async () => { await act(async () => root.unmount()); jest.restoreAllMocks(); });
-    test.each([0, 400])('refresh AuthError(%s) preserves or drops the adopted session', async status => {
+    test.each([0, 429, 503, 400])('refresh AuthError(%s) preserves or drops the adopted session', async status => {
+        const transient = status !== 400;
         await mount();
         jest.mocked(refreshSession).mockRejectedValue(new AuthError(status, 'refresh_failed'));
         await act(async () => {
-            await expect(auth.api.request('/api/v1/projects')).rejects.toMatchObject({ status: status === 0 ? 0 : 401 });
+            await expect(auth.api.request('/api/v1/projects')).rejects.toMatchObject({ status: transient ? 0 : 401 });
         });
         expect(refreshSession).toHaveBeenLastCalledWith('rotated-refresh');
-        expect(auth.status).toBe(status === 0 ? 'signedIn' : 'signedOut');
-        expect(wipeCache).toHaveBeenCalledTimes(status === 0 ? 0 : 1);
-        expect(clearRefreshToken).toHaveBeenCalledTimes(status === 0 ? 0 : 1);
-        expect(statuses.filter(value => value === 'signedOut')).toHaveLength(status === 0 ? 0 : 1);
-        if (status === 0) {
+        expect(auth.status).toBe(transient ? 'signedIn' : 'signedOut');
+        expect(wipeCache).toHaveBeenCalledTimes(transient ? 0 : 1);
+        expect(clearRefreshToken).toHaveBeenCalledTimes(transient ? 0 : 1);
+        expect(statuses.filter(value => value === 'signedOut')).toHaveLength(transient ? 0 : 1);
+        if (transient) {
             // Direct callers retain null; successful recovery clears the transient marker.
             await act(async () => { await expect(auth.getAccessToken()).resolves.toBeNull(); });
             jest.mocked(refreshSession).mockResolvedValue({ accessToken: 'recovered', refreshToken: 'new-refresh', expiresAt: 0 });

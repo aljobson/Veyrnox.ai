@@ -82,7 +82,7 @@ test('Create controls submit three distinct keys and the catalog unit price', as
     expect(control('1:1')).toBeDefined(); await press('16:9'); await press('3'); await press(paid(6));
     expect(mockCreate).toHaveBeenCalledTimes(3);
     expect(new Set(mockCreate.mock.calls.map(([r]) => r.idempotencyKey)).size).toBe(3);
-    for (const [r] of mockCreate.mock.calls) expect(r).toMatchObject({ confirmedCredits: 2, extraInputs: { aspect_ratio: '16:9' } });
+    for (const [r] of mockCreate.mock.calls) expect(r).toMatchObject({ confirmedCredits: 2, maxCharge: 2, extraInputs: { aspect_ratio: '16:9' } });
     expect(mockRouter.push).not.toHaveBeenCalled();
 });
 test('low balance disables a new purchase and offers credits', async () => {
@@ -98,7 +98,7 @@ test('free allowance is invalidated at submit until the owned refresh returns', 
     expect(hasText(t('create.workspace.generateFree'))).toBe(false); expect(control(paid())).toBeDefined();
     expect(mockApi.getBalance).toHaveBeenCalledTimes(1); expect(publishBalance).toHaveBeenCalledWith('owner', 100);
     await act(async () => refresh.resolve({})); await press(paid());
-    expect(mockCreate.mock.calls[1][0].confirmedCredits).toBe(2);
+    expect(mockCreate.mock.calls[1][0].maxCharge).toBe(2);
     expect(mockApi.getBalance).toHaveBeenCalledTimes(2); expect(publishBalance).toHaveBeenCalledTimes(2);
 });
 test('a failed allowance refresh keeps the paid estimate', async () => {
@@ -127,8 +127,9 @@ test('partial batches retry below the original total with the original keys', as
     await press('3'); await press(paid(6));
     const firstKeys = mockCreate.mock.calls.map(([r]) => r.idempotencyKey);
     expect(disabled(paid(4))).toBe(false); expect(hasText(plural('chat.make.buttonPrice', 4))).toBe(true);
-    expect(disabled(t('job.next.makeAnother'))).toBe(true);
-    await press(paid(4)); expect(mockCreate.mock.calls.slice(2, 4).map(([r]) => r.idempotencyKey)).toEqual(firstKeys);
+    expect(disabled(t('job.next.makeAnother'))).toBe(false);
+    await press(paid(4)); expect(mockCreate.mock.calls[2][0].idempotencyKey).toEqual(firstKeys[1]);
+    expect(mockCreate.mock.calls.slice(2).some(([r]) => r.idempotencyKey === firstKeys[0])).toBe(false);
     expect(mockUUID).toBe(3);
 });
 test('a lost response retries its existing key even at zero balance', async () => {
@@ -140,7 +141,7 @@ test('a deferred partial batch cannot be reset before or after an ambiguous fail
     const second = deferred<{ job_id: string }>();
     mockCreate.mockResolvedValueOnce({ job_id: 'first' }).mockReturnValueOnce(second.promise);
     await press('3'); await press(paid(6));
-    expect(disabled(t('job.next.makeAnother'))).toBe(true); expect(disabled(paid(6))).toBe(true);
+    expect(disabled(t('job.next.makeAnother'))).toBe(true); expect(disabled(paid(4))).toBe(true);
     expect(control(t('chat.make.kind.video')).props.accessibilityState.disabled).toBe(true);
     await act(async () => second.reject(new ApiError(0, 'network')));
     expect(disabled(t('job.next.makeAnother'))).toBe(true);
@@ -213,10 +214,11 @@ test('closing a pending partial run retains retry pricing and keys on reopening'
     await press('3'); await press(paid(6)); await press(t('chat.make.close')); await reopen();
     mockBalance = 0;
     await act(async () => second.reject(new ApiError(0, 'network')));
-    await press('3'); expect(disabled(paid(4))).toBe(false); await press(paid(4));
-    expect(mockUUID).toBe(3);
-    expect(mockCreate.mock.calls[2][0].idempotencyKey).toBe(mockCreate.mock.calls[0][0].idempotencyKey);
-    expect(mockCreate.mock.calls[3][0].idempotencyKey).toBe(mockCreate.mock.calls[1][0].idempotencyKey);
+    await press('3'); expect(disabled(paid(6))).toBe(true);
+    // Changing count explicitly starts a new form; the original batch is not a retry.
+    mockBalance = 10; await render(); await press(paid(6));
+    expect(mockUUID).toBe(6);
+    expect(mockCreate.mock.calls[2][0].idempotencyKey).not.toBe(mockCreate.mock.calls[0][0].idempotencyKey);
 });
 test('a retry succeeding while closed clears retained retry pricing before a new purchase', async () => {
     mockCreate.mockResolvedValueOnce({ job_id: 'first' }).mockRejectedValueOnce(new ApiError(0, 'network'));
@@ -239,7 +241,7 @@ test('video output choices and duration use catalog defaults and the shared sett
     expect(control('720p').props.accessibilityState.selected).toBe(true);
     expect(control(t('opt.audioOn')).props.accessibilityState.selected).toBe(true);
     await press('1080p'); await press(t('opt.audioOff')); await press(t('chat.make.seconds', { n: '10' })); await press(paid(4));
-    expect(mockCreate.mock.calls[0][0]).toMatchObject({ confirmedCredits: 4, durationSeconds: 10, extraInputs: { output_resolution: '1080p', audio_enabled: false } });
+    expect(mockCreate.mock.calls[0][0]).toMatchObject({ maxCharge: 4, durationSeconds: 10, extraInputs: { output_resolution: '1080p', audio_enabled: false } });
 });
 test('the latest allowance refresh wins across retries', async () => {
     const older = deferred<Record<string, number>>(), newer = deferred<Record<string, number>>();
@@ -247,7 +249,8 @@ test('the latest allowance refresh wins across retries', async () => {
     jest.mocked(fetchFreeAllowance).mockReturnValueOnce(older.promise).mockReturnValueOnce(newer.promise);
     await press(paid()); await press(paid());
     await act(async () => newer.resolve({})); await act(async () => older.resolve({ image: 1 }));
-    expect(control(paid())).toBeDefined(); expect(hasText(t('create.workspace.generateFree'))).toBe(false);
+    expect(control(paid())).toBeDefined();
+    expect(mockCreate.mock.calls[1][0].maxCharge).toBe(2);
 });
 
 test('onJobStarted keeps the pressed model and every id after close, fences accounts, and leaves chat Library intact', async () => {
@@ -268,4 +271,42 @@ test('onJobStarted keeps the pressed model and every id after close, fences acco
     expect(started).toHaveBeenCalledTimes(3);
     mockOwner = 'owner'; await reopen(); await press(paid());
     expect(control(t('faceFilters.openLibrary'))).toBeDefined();
+});
+
+test('stale free allowance refreshes before price confirmation and the paid quote overrides the unchanged catalog', async () => {
+    jest.mocked(fetchFreeAllowance).mockResolvedValueOnce({ image: 1 }); await reopen();
+    mockCreate.mockRejectedValueOnce(new ApiError(409, 'price_changed', { expected_credits: 9 }));
+    jest.mocked(fetchFreeAllowance).mockResolvedValueOnce({}).mockResolvedValueOnce({ image: 10 });
+    await press(t('opt.costFree'));
+    expect(mockCreate).toHaveBeenCalledTimes(1);
+    expect(mockCreate.mock.calls[0][0].maxCharge).toBe(0);
+    const confirm = t('app.create.confirmPrice', { credits: '9' });
+    expect(control(confirm)).toBeDefined();
+    // A later stale banner read cannot replace the explicit confirmation snapshot.
+    await press(confirm);
+    expect(mockCreate).toHaveBeenCalledTimes(2);
+    expect(mockCreate.mock.calls[1][0]).toMatchObject({ maxCharge: 9, idempotencyKey: mockCreate.mock.calls[0][0].idempotencyKey });
+    expect(mockCreate.mock.calls[1][0].confirmedCredits).toBe(2);
+});
+
+test('partial price rejection allocates a refreshed free slot to the outstanding item and never resubmits the prefix', async () => {
+    mockCreate.mockResolvedValueOnce({ job_id: 'accepted' }).mockRejectedValueOnce(new ApiError(409, 'price_changed', { expected_credits: 9 }));
+    jest.mocked(fetchFreeAllowance).mockResolvedValueOnce({ image: 1 });
+    await press('2'); await press(paid(4));
+    const keys = mockCreate.mock.calls.map(([r]) => r.idempotencyKey);
+    const confirm = t('app.create.confirmPrice', { credits: '0' });
+    expect(control(confirm)).toBeDefined();
+    await press(confirm);
+    expect(mockCreate).toHaveBeenCalledTimes(3);
+    expect(mockCreate.mock.calls[2][0]).toMatchObject({ maxCharge: 0, idempotencyKey: keys[1] });
+});
+
+test('admission_unknown retains the key and never describes the failing item as unaccepted', async () => {
+    mockCreate.mockRejectedValueOnce(new ApiError(503, 'admission_unknown'));
+    await press('2'); await press(paid(4));
+    expect(hasText(t('app.create.error.admission_unknown'))).toBe(true);
+    expect(hasText(t('opt.startedUnknown', { started: '0', count: '2', next: '1' }))).toBe(true);
+    expect(hasText(t('opt.started', { started: '0', count: '2', next: '1' }))).toBe(false);
+    await press(paid(4));
+    expect(mockCreate.mock.calls[1][0].idempotencyKey).toBe(mockCreate.mock.calls[0][0].idempotencyKey);
 });

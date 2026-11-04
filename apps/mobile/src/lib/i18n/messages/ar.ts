@@ -260,6 +260,11 @@ const ar = {
     'app.create.addFiles.cancel': 'إلغاء',
     'app.create.addFiles.add': 'إضافة',
     'app.create.addFiles.select': 'اختيار {name}',
+    'app.create.error.price_changed': 'تغيّر السعر. لم تُخصم رسوم هذا العنصر. أكّد الإجمالي المتبقي الجديد للمتابعة.',
+    'app.create.error.admission_unknown': 'لم نتمكن من تأكيد بدء هذا الطلب أو خصم رسومه. أعد محاولة الطلب نفسه للتحقق من النتيجة.',
+    'app.create.error.admission_unavailable': 'تعذّر قبول هذا الطلب. لم تُخصم أي رسوم. حاول لاحقًا.',
+    'app.create.confirmPrice': 'تأكيد {credits} رصيد',
+    'app.create.startNewBatch': 'بدء دفعة جديدة',
 } as const;
 
 export default ar;

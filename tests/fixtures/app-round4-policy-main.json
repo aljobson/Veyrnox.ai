@@ -13,7 +13,7 @@
   "app.chat.workspace.researchHelp": "Plans a few searches, reads what the web returns, then writes a cited answer. It can take up to about a minute and works on text only. If it fails before the answer starts, the Credits come back.",
   "app.chat.settings.filterHelp": "Show only models at these prices per reply. Pick none to see them all.",
   "app.chat.settings.thinkingHelp": "Let the model reason step by step before it answers. Slower, and better on hard questions.",
-  "app.chat.settings.imagesHelp": "Attach pictures with the paperclip (or a few frames from a video), or pick one you already made with From library. The extra applies only to replies that include images.",
+  "app.chat.settings.imagesHelp": "Attach pictures with the paperclip, or pick one from your library. The extra applies only to replies with images.",
   "app.chat.settings.webHelp": "Search the web and answer with sources.",
   "app.chat.settings.researchHelp": "Plans a few searches, reads what the web returns, then writes a cited answer. Text only, and it can take up to about a minute.",
   "app.chat.settings.priceHelp": "The price is fixed per reply. It shows before you send, and a failed reply returns the Credits.",

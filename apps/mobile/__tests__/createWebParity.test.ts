@@ -21,6 +21,8 @@ describe('the native Create workspace mirrors the website contract', () => {
         expect(screen).toContain("t('create.workspace.balance'");
         expect(screen).toContain("t('create.workspace.generate'");
         expect(screen).toContain("t('create.workspace.refund')");
+        expect(screen).toContain('const price = quote.total');
+        expect(screen).toContain('pending.current.snapshot(');
         expect(screen).toContain('confirmedCredits: unit');
     });
 

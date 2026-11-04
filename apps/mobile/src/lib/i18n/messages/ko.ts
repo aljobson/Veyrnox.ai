@@ -260,6 +260,11 @@ const ko = {
     'app.create.addFiles.cancel': '취소',
     'app.create.addFiles.add': '추가',
     'app.create.addFiles.select': '{name} 선택',
+    'app.create.error.price_changed': '가격이 변경되었습니다. 이 항목은 청구되지 않았습니다. 남은 항목의 새 총액을 확인하고 계속하세요.',
+    'app.create.error.admission_unknown': '이 요청이 시작되었거나 청구되었는지 확인할 수 없습니다. 같은 요청을 다시 시도하여 결과를 확인하세요.',
+    'app.create.error.admission_unavailable': '이 요청을 접수하지 못했습니다. 청구되지 않았습니다. 나중에 다시 시도하세요.',
+    'app.create.confirmPrice': '{credits} 크레딧 확인',
+    'app.create.startNewBatch': '새 일괄 작업 시작',
 } as const;
 
 export default ko;

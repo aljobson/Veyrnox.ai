@@ -260,6 +260,11 @@ const hi = {
     'app.create.addFiles.cancel': 'रद्द करें',
     'app.create.addFiles.add': 'जोड़ें',
     'app.create.addFiles.select': '{name} चुनें',
+    'app.create.error.price_changed': 'कीमत बदल गई है। इस आइटम का शुल्क नहीं लिया गया। जारी रखने के लिए शेष नई कुल कीमत की पुष्टि करें।',
+    'app.create.error.admission_unknown': 'हम पुष्टि नहीं कर सके कि यह अनुरोध शुरू हुआ या शुल्क लगा। परिणाम जानने के लिए इसी अनुरोध को फिर आज़माएँ।',
+    'app.create.error.admission_unavailable': 'यह अनुरोध स्वीकार नहीं हुआ। कोई शुल्क नहीं लगा। बाद में फिर कोशिश करें।',
+    'app.create.confirmPrice': '{credits} क्रेडिट की पुष्टि करें',
+    'app.create.startNewBatch': 'नया बैच शुरू करें',
 } as const;
 
 export default hi;

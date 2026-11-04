@@ -1,3 +1,4 @@
+import * as imageBatch from '../app/veyrnox/_lib/imageBatch.js';
 import * as generationSlots from '../lib/generationSourceSlots.mjs';
 import * as helperDisplay from '../lib/i18n/helperCopy.mjs';
 import { appMessagesFor } from '../lib/i18n/appMessages.mjs';
@@ -30,7 +31,7 @@ function harness(initialJobs, selected = audio) {
       if (!(index in states)) states[index] = index === 0 ? selected.id : typeof initial === 'function' ? initial() : initial;
       return [states[index], next => { states[index] = typeof next === 'function' ? next(states[index]) : next; }];
     },
-    useRef: initial => ({ current: initial }), useEffect() {}, useCallback: fn => fn, useSyncExternalStore: () => false,
+    useRef: initial => ({ current: initial }), useEffect() {}, useCallback: fn => fn, useMemo: fn => fn(), useSyncExternalStore: () => false,
   };
   const stubs = {
     '../../_lib/templateDraft': templateDraft,
@@ -47,7 +48,7 @@ function harness(initialJobs, selected = audio) {
     '../../_lib/tokens': { ASPECT_RATIOS: ['16:9', '9:16'], modelAspectRatios: model => model?.aspects || [], clipCredits: (unit, seconds) => unit * Math.ceil((Number(seconds) || 5) / 5) },
     '../../_lib/starterModels': { starterModel: () => image, modelsForGoal: models => models },
     '../../_lib/modelTiers': { TIERS: [], filterByTier: models => models },
-    '../../_lib/imageBatch': { imageCount: () => 1, totalCost: cost => cost, takesImageCount: () => false, IMAGE_COUNTS: [] },
+    '../../_lib/imageBatch': { ...imageBatch, imageCount: () => 1, totalCost: cost => cost, takesImageCount: () => false, IMAGE_COUNTS: [] },
     '../../_lib/freeAllowance': { freeLeftFor: () => 0 },
     '../../_lib/generationSettings': { audioDurationConfig: () => null, audioDurationIsInvalid: () => false, voiceIsMissing: () => false },
     '../../_lib/promptBox': { promptText: () => 'QA prompt', promptIsMissing: () => false, promptPlaceholderDiagnostic: () => null },

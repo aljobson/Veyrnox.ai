@@ -6,7 +6,7 @@ import { tOr, pluralKey } from '../../../../lib/i18n/translate.mjs';
 import { rich } from '../../../../lib/i18n/rich';
 import { localeTag } from '../../../../lib/i18n/locales.mjs';
 import { useI18n } from '../../../../components/I18nProvider';
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AppNav } from '../../_components/NavBar';
@@ -21,10 +21,10 @@ import { pushJobHistory } from '../../_lib/jobHistory';
 import { JobAssetPreview } from '../../_components/JobAssetPreview';
 import { StudioJobGrid } from '../../_components/StudioJobGrid';
 import { useStudioJobs } from '../../_lib/useStudioJobs';
-import { IMAGE_COUNTS, takesImageCount, imageCount, totalCost, inputsForIndex, batchNote, sendInOrder, submitErrorCode } from '../../_lib/imageBatch';
+import { IMAGE_COUNTS, takesImageCount, imageCount, inputsForIndex, batchNote, sendInOrder, submitErrorCode, createBatch, allocationSnapshot } from '../../_lib/imageBatch';
 import { useCatalog } from '../../_lib/useCatalog';
 import { useFreeAllowance } from '../../_lib/useFreeAllowance';
-import { freeCost, freeLeftFor } from '../../_lib/freeAllowance';
+import { freeLeftFor } from '../../_lib/freeAllowance';
 import { sourceDurationLimit } from '../../_lib/modelPricing';
 import { SourceDurationCard } from '../../_components/SourceDurationCard';
 import { takeStudioDraft } from '../../_lib/landingDraft';
@@ -74,7 +74,7 @@ function readFlag(name) {
 const LOCAL_ERRORS = {source_reattach_required: {"code": "source_reattach_required"}, source_count_exceeded: {"code": "source_count_exceeded"},poll_unreachable: {"code": "poll_unreachable"}, model_gated: {"code": "model_gated"}, source_required: {"code": "source_required"}, consent_required: {"code": "consent_required"}, inputs_invalid_prompt: {"code": "inputs_invalid:prompt"}, inputs_invalid_voice_description: {"code": "inputs_invalid:voice_description"}, inputs_invalid_duration: {"code": "inputs_invalid:duration"}};
 
 function errorFor(e) {
-  return e instanceof GatewayError || ['source_reattach_required', 'source_count_exceeded'].includes(e?.code) ? { code: e.code, retryAfter: e.retryAfter } : { code: 'internal' };
+  return e instanceof GatewayError || ['source_reattach_required', 'source_count_exceeded'].includes(e?.code) ? { code: e.code, retryAfter: e.retryAfter, expectedCredits: e.body?.expected_credits } : { code: 'internal' };
 }
 
 // Off on the server and first paint, then whatever this browser has stored.
@@ -170,7 +170,8 @@ export default function CreateStudio() {
       const wanted = arrival ? arrival.modelId : requested;
       if (wanted) {
         setModelId(wanted);
-        setGoal('all');
+        // Show only the arriving model's kind (video template = video models), not every kind.
+        setGoal(catalogModels.find((m) => m.id === wanted)?.kind || 'all');
       }
       setTemplateData(preset ?? null);
       setPresetParam(preset?.id ?? params.get('preset')); // the template's id, from its studio link (an older id resolves to it); sent only while its own model is selected
@@ -306,7 +307,14 @@ export default function CreateStudio() {
   const n = imageCount(model, count);
   // The server decides what is free; the first `freeLeft` jobs of a batch are, the rest cost the catalog price.
   const freeLeft = freeLeftFor(freeMap, modelId);
-  const cost = freeLeft > 0 ? freeCost(unitCost, n, freeLeft) : totalCost(unitCost, n);
+  const formIdentity = useMemo(() => ({}), [modelId, prompt, duration, aspect, n, seed, negative, voice, audioDuration, cinemaOn, cinema, characterOn, character, sources, consent, presetParam, accountEpoch]);
+  const continuation = useRef(null);
+  const [batchView, setBatchView] = useState(null);
+  const activeBatch = batchView?.identity === formIdentity ? batchView : null;
+  const quote = activeBatch?.quote ?? allocationSnapshot(activeBatch ?? { accepted: Array(n).fill(null), unknown: new Set() }, activeBatch?.unit ?? unitCost, freeLeft);
+  const cost = quote.total;
+  // Unknown items replay their retained key, so only the rest must be affordable.
+  const payable = quote.payable ?? cost;
   const durationKey = durations.join(',');
   // `generating` is derived from `jobs`, which is only set AFTER the await in
   // onSubmit. Between the click and that setState the button stayed enabled,
@@ -363,7 +371,7 @@ export default function CreateStudio() {
     if (!nextModel || !draft) return;
     setTemplateData(preset);
     setPresetParam(preset.id);
-    setGoal('all');
+    setGoal(nextModel.kind || 'all');
     setTier(null);
     chooseModel(nextId);
     setPrompt(draft.prompt);
@@ -497,7 +505,7 @@ export default function CreateStudio() {
   // ever retried under a new key.
   async function onSubmit() {
     if (draftRecovery.restoring || draftRecovery.blocked || attachConverting || sourcesConverting) return;
-    if (inFlight.current || sending || generating || !model || balance == null || cost > balance) return;
+    if (inFlight.current || sending || generating || !model || balance == null || payable > balance) return;
     if (catalogStatus !== 'live') return;
     inFlight.current = true;
     if (model.gated) { inFlight.current = false; setError(LOCAL_ERRORS.model_gated); return; }
@@ -518,7 +526,11 @@ export default function CreateStudio() {
       duration_seconds: model.kind === 'video' ? Number(duration.replace('s', '')) : undefined,
       ...(isShort ? { aspect_ratio: '9:16' } : aspectOptions.length ? { aspect_ratio: aspect } : {}),
     };
-    const keys = Array.from({ length: n }, () => makeIdempotencyKey());
+    const run = (continuation.current?.identity === formIdentity ? continuation.current : null) ?? { ...createBatch(n, () => makeIdempotencyKey()), identity: formIdentity, unit: unitCost };
+    continuation.current = run;
+    run.quote = quote;
+    run.confirm = false;
+    const keys = run.keys;
     // An Auto Short takes only its topic; the pipeline picks the format.
     const inputs = isShort ? { topic: prompt.trim() } : {
       prompt: finalPrompt(),
@@ -529,23 +541,27 @@ export default function CreateStudio() {
     // strip undefined so server sees a clean object
     Object.keys(inputs).forEach((k) => inputs[k] === undefined && delete inputs[k]);
 
+    let failureCode = null;
     try {
       // Only the slots this model takes; a leftover upload from another model stays local.
       // Each file is uploaded once and its key reused by every request.
-      const { references, source_keys, source_assets } = await mediaGenerationSources(model, sources, uploadSource);
+      run.sources ??= await mediaGenerationSources(model, sources, uploadSource);
+      run.inputs ??= inputs;
+      const { references, source_keys, source_assets } = run.sources;
       const anySource = source_keys.length + source_assets.length > 0;
       const { started, error: failure } = await sendInOrder(n, async (i) => {
         const submitted = await gatewayFetch('/generations', {
           method: 'POST',
           body: JSON.stringify({
-            model_id: modelId, idempotency_key: keys[i], inputs: inputsForIndex(inputs, i, n),
+            model_id: modelId, idempotency_key: keys[i], inputs: inputsForIndex(run.inputs, i, n),
+            max_charge_credits: quote.ceilings[i],
             preset: templateStartIdFor(presetParam, templateData, modelId) || undefined,
             references,
             consent: anySource ? true : undefined,
           }),
         });
         // A job that took a free allowance (ADR-0069) cost nothing; the server says so.
-        const jobCredits = submitted.free_allowance === true ? 0 : unitCost;
+        const jobCredits = submitted.free_allowance === true ? 0 : run.unit;
         // The first accepted job replaces the previous click's jobs.
         (i === 0 ? startJobs : addJob)({ job_id: submitted.job_id, state: 'queued', credits: jobCredits, model_id: modelId, ...submittedPresentation });
         if (i === 0) trackJourneyJob(submitted.job_id, model.kind, submittedTask);
@@ -557,17 +573,32 @@ export default function CreateStudio() {
           name: prompt.slice(0, 40),
         });
         if (submitted.balance_after != null) setBalance(submitted.balance_after);
-      });
+        return submitted;
+      }, run, makeIdempotencyKey);
       if (started > 0) notifyBalanceChanged();
       if (failure) {
         const err = errorFor(failure);
         const code = submitErrorCode(err.code);
+        failureCode = code;
+        if (code === 'price_changed' && Number.isInteger(err.expectedCredits) && err.expectedCredits >= 0) {
+          // Await a fresh allowance before freezing the confirmation; never reuse the stale banner.
+          let fresh = {};
+          try { const reply = await gatewayFetch('/free-allowance'); fresh = reply?.enabled ? reply.left : {}; } catch { /* paid quote is safe */ }
+          run.unit = err.expectedCredits;
+          run.quote = allocationSnapshot(run, run.unit, freeLeftFor(fresh, modelId));
+          run.confirm = true;
+        } else run.quote = null;
         setError({ ...err, code, note: batchNote(started, n, code) });
-      }
+      } else continuation.current = null;
     } catch (e) {
-      setError(errorFor(e));
+      const err = errorFor(e);
+      failureCode = submitErrorCode(err.code);
+      setError(err);
     } finally {
+      // A definitive failure with no accepted or uncertain items needs a new batch key.
+      if (failureCode && !run.accepted.some(Boolean) && !run.confirm && !run.unknown.size && failureCode !== 'outcome_unknown') continuation.current = null;
       inFlight.current = false;
+      setBatchView(continuation.current ? { ...continuation.current } : null);
       setSending(false);
     }
   }
@@ -575,6 +606,8 @@ export default function CreateStudio() {
   // Leaves the running jobs to finish in the background (JobWatcher announces
   // them); the charge stands, so this never claimed to cancel anything.
   function cancel() {
+    continuation.current = null;
+    setBatchView(null);
     clearJobs();
     setError(null);
   }
@@ -770,13 +803,13 @@ export default function CreateStudio() {
           )}
           <ParticleButton
             data-assistant-target="create.generate"
-            onClick={hasJobs ? cancel : onSubmit}
+            onClick={hasJobs && !activeBatch ? cancel : onSubmit}
             className="scroll-mt-24 mt-4 w-full flex items-center justify-between bg-vx-accent text-vx-accent-ink rounded-full px-6 py-3.5 font-extrabold hover:bg-vx-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
-            disabled={draftRecovery.restoring || draftRecovery.blocked || sending || attachConverting || sourcesConverting || (!hasJobs && (catalogStatus !== 'live' || !model || model.gated || animationMismatch || missingPrompt || promptTooLong || missingVoice || invalidAudioDuration || balance == null || cost > balance || missingSource || missingConsent))}
-            aria-label={sending ? undefined : hasJobs ? t("app.create.newNoCharge") : model?.gated ? undefined : n > 1 ? t(pluralKey(t,locale,cost===0?'app.create.generateImagesFree':'app.create.generateImagesPaid',n),{count:number(n),credits:creditLabel(cost)}) : t(cost===0?'app.create.generateFree':'app.create.generatePaid',{credits:creditLabel(cost)})}
+            disabled={draftRecovery.restoring || draftRecovery.blocked || sending || attachConverting || sourcesConverting || (!hasJobs && (catalogStatus !== 'live' || !model || model.gated || animationMismatch || missingPrompt || promptTooLong || missingVoice || invalidAudioDuration || balance == null || payable > balance || missingSource || missingConsent)) || !!activeBatch?.confirm}
+            aria-label={sending ? undefined : hasJobs && !activeBatch ? t("app.create.newNoCharge") : model?.gated ? undefined : n > 1 ? t(pluralKey(t,locale,cost===0?'app.create.generateImagesFree':'app.create.generateImagesPaid',n),{count:number(n),credits:creditLabel(cost)}) : t(cost===0?'app.create.generateFree':'app.create.generatePaid',{credits:creditLabel(cost)})}
           >
-            <span>{sending ? t("app.publish.inbox.sending") : hasJobs ? t("app.create.newGeneration") : model?.gated ? t("app.create.premiumGated") : n > 1 ? t('app.create.generateCount',{count:number(n)}) : t("label.Generate")}</span>
-            <span className="font-vx-mono text-sm">{hasJobs ? t("app.create.noCharge") : generationCostLabel(cost)}</span>
+            <span>{sending ? t("app.publish.inbox.sending") : hasJobs && !activeBatch ? t("app.create.newGeneration") : model?.gated ? t("app.create.premiumGated") : n > 1 ? t('app.create.generateCount',{count:number(n)}) : t("label.Generate")}</span>
+            <span className="font-vx-mono text-sm">{hasJobs && !activeBatch ? t("app.create.noCharge") : generationCostLabel(cost)}</span>
           </ParticleButton>
           <div className="mt-2 font-vx-mono text-[9.5px] tracking-[0.1em] text-vx-fg-faint text-center">
             {model?.gated ? t("app.create.premiumClosed") : t("mobile.refund")}
@@ -784,7 +817,9 @@ export default function CreateStudio() {
           <p className="mt-3 text-center text-[11px] leading-relaxed text-vx-fg-muted">
             {rich(t('app.create.commercial'),{terms:<LegalLink element="Link" href="/legal/terms" className="text-vx-accent underline underline-offset-2">{t('home.publish.terms')}</LegalLink>})}
           </p>
-          {balance != null && cost > balance && !model?.gated && (
+          {activeBatch?.confirm && <button type="button" disabled={sending || generating || balance == null || payable > balance} onClick={onSubmit} className="mt-3 w-full rounded-lg border border-vx-border p-3">{t('app.create.confirmPrice', { credits: creditLabel(cost) })}</button>}
+          {activeBatch && <button type="button" disabled={sending} onClick={cancel} className="mt-2 w-full p-2">{t('app.create.startNewBatch')}</button>}
+          {balance != null && payable > balance && !model?.gated && (
             <div className="mt-4 rounded-xl border border-vx-money/40 bg-vx-money/[0.06] p-4 text-sm text-vx-fg-body">
               <p className="font-bold text-vx-fg">{t(pluralKey(t,locale,'app.create.moreCredits',cost-balance),{count:number(cost-balance)})}</p>
               <p className="mt-1 text-xs text-vx-fg-muted">{t("app.create.compareCredits")}</p>

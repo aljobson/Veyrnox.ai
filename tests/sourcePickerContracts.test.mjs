@@ -78,7 +78,8 @@ test('Studio preserves mixed upload and Library slot roles with consent and batc
   assert.deepEqual(calls, ['start.png', 'mix.wav']);
   const page = read('app/veyrnox/app/create/page.js');
   const submit = page.slice(page.indexOf('async function onSubmit()'), page.indexOf('function cancel()'));
-  assert.match(submit, /const \{ references, source_keys, source_assets \} = await mediaGenerationSources\(model, sources, uploadSource\);/);
+  assert.match(submit, /run\.sources \?\?= await mediaGenerationSources\(model, sources, uploadSource\);/);
+  assert.match(submit, /const \{ references, source_keys, source_assets \} = run\.sources;/);
   assert.match(submit, /if \(missingConsent\)/);
   assert.match(submit, /consent: anySource \? true : undefined/);
   assert.match(submit, /idempotency_key: keys\[i\]/);

@@ -26,7 +26,7 @@ jest.mock('../src/lib/useBalance', () => ({ useBalance: () => 1000 }));
 jest.mock('../src/lib/useFreeLeft', () => ({ useFreeLeft: () => ({}), useFreeLeftState: () => ({ left: {}, loading: false }) }));
 jest.mock('../src/lib/creatorProfileStore', () => ({ loadVibe: jest.fn().mockResolvedValue(null) }));
 jest.mock('../src/lib/createDraftStore', () => ({ loadDraft: jest.fn().mockResolvedValue(null), saveDraft: jest.fn().mockResolvedValue(undefined), clearDraft: jest.fn().mockResolvedValue(undefined) }));
-jest.mock('../src/lib/generationSubmit', () => ({ ...jest.requireActual('../src/lib/generationSubmit'), createGenerationSubmit: () => ({ run: mockRun, reset: jest.fn() }) }));
+jest.mock('../src/lib/generationSubmit', () => ({ ...jest.requireActual('../src/lib/generationSubmit'), createGenerationSubmit: () => ({ ...jest.requireActual('../src/lib/generationSubmit').createGenerationSubmit(), run: mockRun }) }));
 jest.mock('../src/components/CharacterPanel', () => ({ CharacterPanel: jest.fn(() => null) }));
 jest.mock('../src/components/CameraPanel', () => ({ CameraPanel: () => null }));
 jest.mock('../src/components/SourcePicker', () => ({ SourcePicker: jest.fn(() => null) }));

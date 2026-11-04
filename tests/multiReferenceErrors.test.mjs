@@ -19,3 +19,15 @@ for (const code of codes) test(`${code} has actionable web copy in all eleven ca
     else assert.notEqual(direct[key],ERROR_COPY[code]);
   }
 });
+
+for (const code of ['price_changed', 'admission_unknown', 'admission_unavailable']) test(`${code} has explicit copy in all eleven catalogs`, async () => {
+  for (const locale of ['en','es','zh','hi','ar','fr','pt','ru','ja','de','ko']) {
+    const {default: direct} = await import(`../lib/i18n/messages/app/${locale}/data-errors.mjs`);
+    const key = `app.create.error.${code}`;
+    assert.ok(direct[key]?.length > 10);
+    assert.equal((await appMessagesFor(locale))[key], direct[key]);
+    if (locale === 'en') assert.equal(direct[key], ERROR_COPY[code]);
+    else assert.notEqual(direct[key], ERROR_COPY[code]);
+  }
+  if (code === 'admission_unknown') assert.doesNotMatch(ERROR_COPY[code], /nothing was charged|did not start|not accepted/i);
+});

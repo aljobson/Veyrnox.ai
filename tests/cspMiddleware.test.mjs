@@ -105,3 +105,17 @@ test('the local Reticle bridge is available only in the development CSP', () => 
     assert.match(development, /connect-src[^;]*ws:\/\/localhost:4401[^;]*ws:\/\/127\.0\.0\.1:4401/);
     assert.doesNotMatch(production, /ws:\/\//);
 });
+
+test('a language prefix followed by // never redirects off our own origin', async () => {
+    const previous = process.env.LOCALES_ENABLED;
+    process.env.LOCALES_ENABLED = 'true';
+    try {
+        for (const path of ['/es//evil.example/login', '/es/\\evil.example', '/fr///evil.example/x?next=1']) {
+            const response = await middleware(new NextRequest(`https://example.test${path}`));
+            const location = response.headers.get('location');
+            if (location) assert.equal(new URL(location).origin, 'https://example.test', `${path} -> ${location}`);
+        }
+    } finally {
+        if (previous === undefined) delete process.env.LOCALES_ENABLED; else process.env.LOCALES_ENABLED = previous;
+    }
+});

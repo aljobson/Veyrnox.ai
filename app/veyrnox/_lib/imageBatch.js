@@ -33,9 +33,10 @@ export function inputsForIndex(inputs, i, count) {
 }
 
 // Codes where the gateway may have debited (and submitted) the request before
-// the reply was lost: a dropped connection or client-side throw ('internal'),
+// the reply was lost: a dropped connection or client-side throw ('internal',
+// 'network_error': fetch threw, but the request may already have reached us),
 // a non-JSON 5xx, a ledger_debit RPC error, or a session swap after the reply.
-const OUTCOME_UNKNOWN = new Set(['internal', 'gateway_error', 'debit_failed', 'account_changed', 'dispatch_acceptance_unknown']);
+const OUTCOME_UNKNOWN = new Set(['internal', 'network_error', 'gateway_error', 'debit_failed', 'account_changed', 'dispatch_acceptance_unknown', 'admission_unknown', 'outcome_unknown']);
 
 /** The banner code for a failed submit: an unread reply may hide a charge. */
 export function submitErrorCode(code) {
@@ -50,26 +51,60 @@ export function submitErrorCode(code) {
 export function batchNote(started, count, code) {
   if (count <= 1) return '';
   const next = started + 1;
-  return code === 'outcome_unknown'
+  return submitErrorCode(code) === 'outcome_unknown'
     ? `${started} of ${count} started; image ${next} may have too — check Library.`
     : `${started} of ${count} started; image ${next} did not.`;
 }
 
 /**
  * Run sendOne(0..count-1) one after another. Stops at the first throw and
- * never retries: a retry would need a new idempotency key, which is a new
- * charge the user did not ask for.
+ * never auto-retries. A continuation skips accepted items and retains keys.
  * @returns {Promise<{ started: number, error: unknown }>}
  */
-export async function sendInOrder(count, sendOne) {
+export async function sendInOrder(count, sendOne, batch, makeKey) {
   let started = 0;
   for (let i = 0; i < count; i++) {
+    if (batch?.accepted[i]) { started++; continue; }
     try {
-      await sendOne(i);
+      const result = await sendOne(i);
+      if (batch) { batch.accepted[i] = result ?? true; batch.unknown.delete(i); }
     } catch (error) {
+      if (batch) {
+        if (submitErrorCode(error?.code ?? 'internal') === 'outcome_unknown') batch.unknown.add(i);
+        else {
+          batch.unknown.delete(i);
+          // A definitive provider refusal may have refunded a job under this key.
+          // Preserve the accepted prefix, but give this item a fresh explicit retry.
+          // price_changed creates no job and must retain its confirmation key.
+          if (error?.code !== 'price_changed' && batch.accepted.some(Boolean) && makeKey) batch.keys[i] = makeKey();
+        }
+      }
       return { started, error };
     }
     started += 1;
   }
   return { started, error: null };
+}
+
+/** A batch keeps original indexes, keys and accepted results until inputs change. */
+export function createBatch(count, makeKey) {
+  return { keys: Array.from({ length: count }, makeKey), accepted: Array(count).fill(null), unknown: new Set() };
+}
+
+/** One immutable quote drives both the remaining total and outgoing ceilings.
+ * Unknown items retain a paid ceiling, without consuming a new free allocation.
+ */
+export function allocationSnapshot(batch, unit, freeNow) {
+  let free = Math.max(0, Math.floor(Number(freeNow) || 0));
+  const ceilings = batch.accepted.map((result, i) => {
+    if (result) return null;
+    if (batch.unknown.has(i)) return unit;
+    if (free > 0) { free--; return 0; }
+    return unit;
+  });
+  // total is the most this click may charge (shown to the person). payable leaves out unknown items:
+  // their retained key replays, which debits nothing if the lost reply hid an accepted job, so they
+  // never block the affordability check. Their ceiling still caps a fresh admission.
+  return { ceilings, total: ceilings.reduce((sum, value) => sum + (value ?? 0), 0),
+    payable: ceilings.reduce((sum, value, i) => sum + (batch.unknown.has(i) ? 0 : (value ?? 0)), 0) };
 }

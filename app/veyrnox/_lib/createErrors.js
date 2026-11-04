@@ -2,6 +2,10 @@ import { ACCOUNT_PAUSED_COPY, ACCOUNT_ON_HOLD_COPY } from './gateway';
 
 // What the create page says for each gateway error code.
 export const ERROR_COPY = {
+  price_changed: "The price changed. This item was not charged. Confirm the revised remaining total to continue.",
+  admission_unknown: "We could not confirm whether this request started or was charged. Retry this same request to check its outcome.",
+  admission_unavailable: "This request could not be admitted. Nothing was charged. Try again later.",
+
   source_too_short: "That video is too short. Use a clip of at least 3 seconds.",
   source_resolution_out_of_range: "That video's size isn't supported. Use a clip between 720 and 2160 pixels on each side.",
   body_too_large: "This request is too large. Shorten the text or remove attachments, then try again. Nothing was charged.",

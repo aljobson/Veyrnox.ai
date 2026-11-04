@@ -109,3 +109,137 @@ watcher exits 1 for either, 0 for measured zeroes and 2 for invalid evidence.
 New health-window reviews require all seven measurements; older five-count
 artifacts remain historical evidence and cannot prove the expanded coverage.
 Production application uses the protected main workflow and owner review.
+
+## Amendment: client maximum charge (PR A, 2026-11-04)
+
+`POST /api/v1/generations` accepts optional `max_charge_credits`: a non-negative
+integer limiting the **net debit for this one request**. Zero is valid. Invalid
+values return 400 `max_charge_credits_invalid`. When `MAX_CHARGE_ENABLED` is exactly
+`"true"` and a valid `max_charge_credits` is supplied, the net ceiling takes
+precedence over `confirmed_credits` equality, while its type validation and the
+legacy equality check without an enabled ceiling remain unchanged. Omitting the
+new field preserves the existing admission behavior.
+When `MAX_CHARGE_ENABLED` is on and a request carries `max_charge_credits`, the
+exact `confirmed_credits` check is skipped, so a client sending both loses its
+gross-price guard and the ceiling is its only price protection.
+
+Enforcement requires `MAX_CHARGE_ENABLED` to be exactly `"true"`. It ships
+`"false"` in `wrangler.jsonc`; absent also means off. While off, the field is
+validated but otherwise ignored: no ceiling checks or additional job lookups.
+Mobile continues sending its existing gross `confirmed_credits` alongside the
+net ceiling; web continues sending only the ceiling. The server decides whether
+to enforce it, including for durable models. The rules below apply when enabled.
+
+After attempting the allowance, every non-durable debit (including the video
+agent and reference jobs) checks the ceiling. A taken allowance costs zero. An
+excess returns 409 `price_changed` with `expected_credits` and
+`max_charge_credits`, without creating a job or debiting. A verified existing job
+for the authenticated `(user_id, idempotency_key)` is exempt: the usual debit RPC
+returns its normal replay response without a new debit.
+
+`takeFreeJobDetailed` distinguishes `taken`, `refused`, `none`, and `ambiguous`.
+Every `ok: false` reply is retained for the existing refusal handling, including
+unlisted codes. Only an explicit `{ ok: true, taken: false }` establishes no allowance admission.
+A thrown non-refusal error, malformed result, or unreadable 2xx body is ambiguous.
+On a would-be ceiling breach, an existing owned job permits normal replay;
+absence or a failed lookup returns 503 `admission_unknown`, with no debit and no
+claim that the request was rejected. `takeFreeJob` retains its previous return
+values for chat callers.
+
+The legacy seven-argument `admit_fal_dispatch` reads and debits its own catalog
+price. A Worker comparison cannot constrain that transaction. Until PR B, **every
+new capped durable admission is refused**, at any ceiling, with 503
+`admission_unavailable`, without calling admission SQL. A verified existing job
+uses the legacy admission RPC, retaining its payload-identity validation. Failed
+existence checks return `admission_unknown`. Uncapped requests are unchanged.
+
+Web and mobile retain original indexes, inputs, keys and accepted results for a
+batch. Retries skip accepted items. Price and allowance updates do not change
+request identity. An allowance is allocated by position among unresolved items,
+not the original index. Unknown items reconcile with the same key at the quoted paid ceiling and
+reserve no new allowance. That ceiling is included in the displayed remaining
+maximum; a replay itself never adds a debit. A higher server price still follows
+the confirmation flow. No automatic retry
+is performed. Explicitly starting another batch or editing inputs drops the old
+continuation and quote.
+
+A `price_changed` response first triggers a fresh allowance read (failure means
+zero available), then freezes one snapshot using `expected_credits`. That same
+snapshot drives the displayed remaining total, the confirmation control, and
+each outgoing ceiling. This overrides the cached public catalog and stale free
+allowance. Editing inputs discards the override. `admission_unknown` copy makes
+no non-acceptance claim; `admission_unavailable` explicitly means no charge.
+
+### Release sequencing and verification limits
+
+PR B must provide a distinct capped RPC with the ceiling check inside the locked
+SQL transaction. It is a separate migration work order, not part of PR A. **Do not
+turn `MAX_CHARGE_ENABLED` on while `FAL_DURABLE_DISPATCH_ENABLED` is true in
+production until PR B (capped durable admission) exists.** Clients send the field
+for all models; the default-off server gate preserves legacy admission until
+that sequencing condition is met. The checked-in production
+`wrangler.jsonc` omits the two enabling flags; `falDispatchEnabled` requires both
+`FAL_DISPATCH_SCHEMA_ENABLED` and `FAL_DURABLE_DISPATCH_ENABLED` to be `true`.
+The implementation session could not verify deployed flags: the read-only
+Wrangler check had an expired token and could not reach the authentication server.
+Production rollout is therefore unverified and must not infer live settings
+from the local defaults. This work order does not deploy or change live flags. Adding the requested
+standalone default-off switch increases configured public variables to 67; the
+local budget test now allows 67 (117 bindings at the recorded 50-secret footprint).
+
+The live catalog feeds the same unit price to these clients and `priceFor`.
+Cached prices can nevertheless differ for **any model**. Concrete local drift:
+`kling-2.6-pro-kie` has a bundled fallback of 16 while migration 0433 sets 18;
+`kling-3.0-i2v-kie` changes from 26 to 29 in the same migration. A cached pre-change
+catalog can show either old price. Clip Editor models (`record.edit`) price
+resolved edit units server-side and are excluded from these Create pickers.
+No live price inventory was available in this implementation session.
+
+## Amendment: capped durable fal admission (PR B, 2026-11-04)
+
+Migration `0440_fal_dispatch_max_charge` supersedes PR A's interim refusal for
+new capped, source-free fal text-to-image admissions. The distinct eight-argument
+`admit_fal_dispatch_capped` has no argument defaults; the seven-argument
+`admit_fal_dispatch` remains unchanged for old Workers and uncapped requests.
+Both are service-role only. The wrapper locks the catalog row `FOR SHARE`, then
+calls the existing admission function inside a PL/pgSQL exception subtransaction.
+An inner refusal passes through unchanged; an idempotent replay or taken free
+allowance is exempt from the ceiling. A paid admission above the locked price
+ceiling raises private SQLSTATE `VFC01`, rolling back the inner job, debit,
+allowance, outbox, capacity/spend reservations and any inner rate-limit writes.
+Only that SQLSTATE is caught. The response is 409 `price_changed`, containing the
+locked `expected_credits` and original client `max_charge_credits`.
+The route's earlier request-attempt limiter remains outside this transaction.
+
+The route accepts non-negative safe integers. Because SQL prices and debit
+amounts are INTEGER, the Worker sends `Math.min(maxCharge, 2147483647)` to the
+RPC, retaining the original ceiling for the response. This cannot change an
+admission outcome: a database price cannot exceed the clamped ceiling.
+
+With the capped function present, replay lookup happens only inside SQL. Known
+supplier-spend trigger refusals retain their existing 429/503 bodies and
+Retry-After headers. Well-formed `ok:false` replies are definite refusals.
+A positively identified missing capped function permits the PR A compatibility
+path: a verified owned job may replay through the legacy function; a new job
+gets 503 `admission_unavailable`. An opaque 404 is insufficient evidence.
+All other uncertain outcomes, including transport failure, unreadable/null 2xx,
+incomplete results, failed compatibility lookups and success without a job id,
+return 503 `dispatch_acceptance_unknown`, with no legacy admission fallback and
+no wakeup. A retry keeps the original key. A committed replay can wake dispatch
+again without another debit.
+
+`MAX_CHARGE_ENABLED` remains the master switch and its checked-in values are
+unchanged. Apply 0440 only through the owner-approved `apply-migrations` workflow
+(ADR-0023), then deploy the Worker. Enable the flag only after the migration is
+applied and staging verifies paid/free ceilings, replay after a lost reply,
+price-update serialization, actual PostgREST seven/eight-key resolution and
+service-role privileges. The new Worker fails closed if the function is absent.
+Rollback drops only the new function; old Workers never call it.
+
+Proof: `tests/falDispatchCapped.test.mjs` covers Worker outcome classification;
+`scripts/test-fal-dispatch-capped.mjs` exercises the actual SQL with migration
+reapplication inside BEGIN/ROLLBACK, a named-argument JSON RPC adapter and a
+second connection for price locking. The ledger workflow runs it immediately
+after the complete migration replay, before legacy tests replace function bodies.
+The adapter is not a live PostgREST schema-cache test; that remains a staging
+release check. No deployment, live migration or flag activation is part of PR B.
