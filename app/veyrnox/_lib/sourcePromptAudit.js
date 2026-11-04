@@ -20,6 +20,7 @@ const referenceCount = (prompt, kind) => {
     new RegExp(`@${kind}\\s*[_-]?(\\d+)`, 'gi'),
     new RegExp(`<<<\\s*${kind}[_\\s-]*(\\d+)\\s*>>>`, 'gi'),
     new RegExp(`\\b${kind}\\s+(\\d+)\\b`, 'gi'),
+    new RegExp(`\\b${kind}[_-](\\d+)\\.(?:png|jpe?g|webp|gif|mp4|mov|webm)\\b`, 'gi'),
   ];
   for (const expression of expressions) {
     for (const match of String(prompt || '').matchAll(expression)) indices.push(Number(match[1]));
