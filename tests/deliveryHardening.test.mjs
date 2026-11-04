@@ -11,6 +11,15 @@ test('hashed Next assets receive a one-year immutable browser cache policy', () 
     assert.match(headers, /\/_next\/static\/\*\n\s+Cache-Control: public, ?max-age=31536000, ?immutable/);
 });
 
+test('showcase clips get a short, non-immutable cache because their names are not fingerprinted', () => {
+    const headers = read('public/_headers');
+    const rule = headers.match(/\/showcase\/\*\n\s+Cache-Control: ([^\n]+)/)?.[1] ?? '';
+    assert.match(rule, /public/);
+    assert.match(rule, /max-age=86400\b/);
+    assert.match(rule, /stale-while-revalidate=604800\b/);
+    assert.doesNotMatch(rule, /immutable/);
+});
+
 test('production builds use a validated GitHub commit as the Next deployment id', () => {
     assert.match(config, /const deploymentId = .*GITHUB_SHA/);
     assert.match(config, /deploymentId,/);
