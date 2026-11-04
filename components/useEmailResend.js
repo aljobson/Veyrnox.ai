@@ -8,7 +8,7 @@ export function isEmailRateLimit(error) {
         code === 'over_email_send_rate_limit' || code === 'over_request_rate_limit');
 }
 
-export function useEmailResend({ busy, runningRef, setBusy, captcha, captchaFailure, resetCaptcha,
+export function useEmailResend({ busy, runningRef, setBusy, captcha, captchaRequired, captchaFailure, resetCaptcha,
     setNotice, humanAuthError, t, editAddress, focusNotice, redirectTo }) {
     const [pending, setPending] = useState(null);
     const [count, setCount] = useState(0);
@@ -39,7 +39,8 @@ export function useEmailResend({ busy, runningRef, setBusy, captcha, captchaFail
     async function resend() {
         const current = attempt.current;
         if (!current || busy || runningRef.current || Date.now() < deadline || current.count >= 5) return;
-        if (!captcha) { setNotice(captchaNotice(captchaFailure, t)); return; }
+        // Same rule as submit: without a configured widget there is no token to wait for.
+        if (captchaRequired && !captcha) { setNotice(captchaNotice(captchaFailure, t)); return; }
         runningRef.current = true; setBusy(true);
         current.count += 1; setCount(current.count);
         try {

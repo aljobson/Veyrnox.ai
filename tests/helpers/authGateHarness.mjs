@@ -49,14 +49,15 @@ export function gateHarness(ctx, overrides = {}) {
     const hook = load('../../components/useEmailResend.js', mocks);
     const Controls = load('../../components/EmailResendControls.jsx', {}).default;
     const Gate = load('../../components/AuthGate.jsx', { ...mocks,
-        './useEmailResend.js': hook, './EmailResendControls.jsx': { __esModule: true, default: Controls },
+        './useEmailResend.js': hook, './humanAuthError.js': load('../../components/humanAuthError.js', { './useEmailResend.js': hook }),
+        './EmailResendControls.jsx': { __esModule: true, default: Controls },
         '../app/lib/accountLanguageClient.js': { watchAccountLanguage: () => () => {} },
         './LegalLink': { default: 'a' }, '../lib/i18n/rich': { rich: text => text },
         './I18nProvider.jsx': { useI18n: () => ({ t: translator('en'), locale: 'en' }) },
         '../app/lib/authReturn.js': returns,
         '../app/lib/passkeys.js': { passkeysSupported: () => false },
         '../app/lib/authProviders.js': { configuredProviders: () => ({}), readAuthSettings: async () => null },
-        './Turnstile.jsx': { Turnstile: 'captcha', TURNSTILE_SITE_KEY: 'public-test' },
+        './Turnstile.jsx': { Turnstile: 'captcha', TURNSTILE_SITE_KEY: overrides.siteKey ?? 'public-test' },
         './AuthMarks.jsx': { AppleMark: 'apple', PasskeyMark: 'passkey', GoogleMark: 'google' },
     }).default;
     function nodes(node) {

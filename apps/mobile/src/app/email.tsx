@@ -32,6 +32,8 @@ export default function EmailAuth() {
     const [pendingEmail, setPendingEmail] = useState<string | null>(null);
     const [resends, setResends] = useState(0);
     const resendCount = useRef(0);
+    // Bumped whenever the pending sign-up is cleared, so a late reply cannot touch a newer attempt.
+    const attemptId = useRef(0);
     const [deadline, setDeadline] = useState(0);
     const [seconds, setSeconds] = useState(0);
     const emailRef = useRef<ComponentRef<typeof TextInput>>(null);
@@ -46,6 +48,7 @@ export default function EmailAuth() {
     }, [pendingEmail]);
     function startCooldown() { setDeadline(Date.now() + 60000); setSeconds(60); }
     function clearPending() {
+        attemptId.current += 1;
         setPendingEmail(null); setResends(0); resendCount.current = 0; setDeadline(0); setSeconds(0);
     }
     function changeAddress() {
@@ -57,11 +60,14 @@ export default function EmailAuth() {
         if (!pendingEmail || running.current || busy || providerBusy || Date.now() < deadline || resendCount.current >= 5) return;
         if (!captcha) { setMessageTone('error'); setMessage(t('email.securityFirst')); return; }
         running.current = true; setBusy(true);
+        const attempt = attemptId.current;
         resendCount.current += 1; setResends(resendCount.current);
         try {
             await resendSignupEmail(pendingEmail, captcha);
+            if (attempt !== attemptId.current) return;
             startCooldown(); setMessageTone('success'); setMessage(t('email.emailResent'));
         } catch (err) {
+            if (attempt !== attemptId.current) return;
             const rate = err instanceof AuthError && (err.status === 429 || ['over_email_send_rate_limit', 'over_request_rate_limit'].includes(err.code));
             if (rate) startCooldown();
             setMessageTone('error'); setMessage(emailAuthMessage(rate ? 'over_request_rate_limit' : err instanceof AuthError ? err.code : 'unknown'));

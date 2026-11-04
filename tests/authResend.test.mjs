@@ -208,3 +208,15 @@ for (const flow of ['sign_up', 'magic']) test(`${flow}: closing during the first
     held.resolve({ needsConfirmation: true }); await sending; h.open(flow);
     assert.equal(h.resend(), undefined); assert.equal(h.field('email').props.value, '');
 });
+
+for (const flow of ['sign_up', 'magic']) test(`${flow}: with no Turnstile site key a resend still sends, with no token, exactly as submit does`, async ctx => {
+    ctx.mock.timers.enable({ apis: ['Date', 'setInterval'], now: 1000000 });
+    const h = gateHarness(ctx, { siteKey: '' }); h.open(flow); h.email('person@test.invalid');
+    if (flow === 'sign_up') h.password('chosen-password');
+    await h.submit(); assert.equal(h.calls.length, 1);
+    advance(ctx, h); await h.resend().props.onClick(); h.render();
+    const name = flow === 'magic' ? 'resendMagicLink' : 'resendSignupEmail';
+    assert.equal(h.calls.length, 2); assert.equal(h.calls[1].name, name);
+    assert.equal(h.calls[1].args[1] ?? null, null); assert.doesNotMatch(h.text(), /security check/i);
+});
+

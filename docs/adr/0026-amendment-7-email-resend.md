@@ -13,12 +13,24 @@ nothing and consumes no attempt. Changing address or resetting the form starts
 a new attempt. No server, database, flag, grant or Auth settings change.
 
 Password signup uses `/auth/v1/resend` with `type: signup`, never `/otp`.
-Host Claude supplied production evidence: `/auth/v1/health` reports
-`v2.197.0`; the [matching resend handler](https://github.com/supabase/auth/blob/v2.197.0/internal/api/resend.go)
-accepts `code_challenge` and `code_challenge_method`, generates signup flow
-state for PKCE, calls `sendConfirmation`, and does not change a password.
-This clears the frozen plan's compatibility gate based on host evidence;
-the sandbox could not independently reach the deployed health endpoint.
+Compatibility evidence (captured 2026-11-04T22:02Z, outside the build sandbox).
+The production project's `GET /auth/v1/health` returned
+`{"version":"v2.197.0","name":"GoTrue","description":"GoTrue is a user registration and authentication API"}`.
+In `supabase/auth` at tag `v2.197.0`, `internal/api/resend.go` has, verbatim:
+
+```go
+CodeChallenge       string `json:"code_challenge"`          // line 18
+CodeChallengeMethod string `json:"code_challenge_method"`   // line 19
+validatePKCEParams(p.CodeChallengeMethod, p.CodeChallenge)   // line 27
+flowType := getFlowFromChallenge(params.CodeChallenge)       // line 130
+if isPKCEFlow(flowType) {                                    // line 131
+    generateFlowState(tx, models.EmailSignup.String(), models.EmailSignup,
+        params.CodeChallengeMethod, params.CodeChallenge, &user.ID) // line 132
+```
+
+and the file contains no password field and no password write. Not verified:
+the staging project's Auth version, and the owner's staging checks below.
+
 Mobile uses the same resend endpoint without PKCE, matching its signup.
 
 Web signup and initial magic-link requests retain their existing writes.
@@ -45,12 +57,12 @@ users to signup with an empty password and a fresh CAPTCHA. The pending state
 hides the regular email submit/password controls so they cannot accidentally
 start another send; the email remains visible and becomes editable on reset.
 
-The web state hook and controls are separate to keep AuthGate below 500 lines.
+The web state hook, the controls and the error copy (`humanAuthError.js`, moved unchanged with its comments and diagnostic log) are separate to keep AuthGate below 500 lines.
 Exception: authClient.js was already 651 lines; the frozen plan's public helpers
 add 18 net lines there rather than refactoring unrelated session machinery.
 Additional localized keys cover address labels, readiness and the required
 start-again notice. All eleven locales have matching placeholders; translated
-wording still needs native review. Raw upstream errors are no longer logged.
+wording still needs native review.
 
 Owner staging checks remain unverified: staging Auth version, resent web link
 confirmation/sign-in, original chosen password sign-in afterwards, and mobile

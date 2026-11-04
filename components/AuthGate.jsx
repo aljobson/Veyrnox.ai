@@ -4,6 +4,17 @@ import LegalLink from './LegalLink';
 import { rich } from '../lib/i18n/rich';
 import { useI18n } from './I18nProvider.jsx';
 
+/**
+ * AuthGate — root-mounted modal listening for veyrnox:auth-required
+ * events. Lives under top-level components/ (not packages/studio) so
+ * the transpiled-workspace bundle path stays clean — PR #38 bisect.
+ *
+ * Wire once in app/layout.js. Any studio component that hits a 401 on
+ * /api/v1/* dispatches `window.dispatchEvent(new
+ * CustomEvent('veyrnox:auth-required'))` and this handler pops the
+ * modal.
+ */
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
     getSession,
@@ -20,35 +31,11 @@ import { AppleMark, PasskeyMark, GoogleMark } from "./AuthMarks.jsx";
 import { captchaNotice, noticeAfterCaptchaFailure, noticeAfterCaptchaToken, noticeWhileCaptchaWaits, CAPTCHA_BLOCKED_CODE, CAPTCHA_UNSUPPORTED, CAPTCHA_WAITING } from "../app/lib/turnstileFailure.js";
 import { authCallbackUrl, safeAuthReturnPath } from "../app/lib/authReturn.js";
 
-import { useEmailResend, isEmailRateLimit } from './useEmailResend.js';
+import { useEmailResend } from './useEmailResend.js';
+import { humanAuthError } from './humanAuthError.js';
 import EmailResendControls from './EmailResendControls.jsx';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-const AUTH_ERROR_COPY = (t) => ([
-    [/invalid login credentials/i, t("authGate.thatEmailAndPasswordDonT")],
-    [/email not confirmed/i, t("authGate.confirmYourEmailFirstCheckYour")],
-    [/rate limit/i, t("authGate.tooManyAttemptsWaitAMinute")],
-    [/user already registered/i, t("authGate.thereSAlreadyAnAccountWith")],
-    [/password should be at least/i, t("authGate.passwordsNeedAtLeast8Characters")],
-    [/known to be weak|easy to guess|weak.?password/i, t("authGate.thatPasswordHasAppearedInA")],
-    [/network|fetch|failed to fetch/i, t("authGate.couldnTReachTheServerCheck")],
-    [/storage|quota|securityerror/i, t("authGate.yourBrowserIsBlockingSiteStorage")],
-    [/captcha/i, t("authGate.theSecurityCheckFailedOrExpired")], [/database error saving new user/i, t("authGate.weCouldnTCreateThatAccount")], // trigger refusal (0343)
-    [/webauthn_credential_not_found|no passkey/i, t("authGate.noPasskeyForThisSiteOn")],
-    [/webauthn_challenge_expired/i, t("authGate.thatTookTooLongTryThe")],
-    [/passkey_disabled/i, t("authGate.passkeySignInIsnTAvailable")],
-]);
-
-function humanAuthError(err, t) {
-    if (isEmailRateLimit(err)) return t("authGate.tooManyAttemptsWaitAMinute");
-    const raw = err && err.message ? String(err.message) : "";
-    if (raw) {
-        const hit = AUTH_ERROR_COPY(t).find(([re]) => re.test(raw));
-        if (hit) return hit[1];
-    }
-    return t("authGate.thatDidnTWorkTryAgain");
-}
 
 export default function AuthGate() {
     useEffect(() => watchAccountLanguage(), []);
@@ -65,15 +52,21 @@ export default function AuthGate() {
     const dialogVersion = useRef(0);
     const emailRef = useRef(null);
     const noticeRef = useRef(null);
+    // Turnstile (ADR-0026). Tokens are single-use, so every submit bumps
+    // captchaReset and the widget issues a fresh one.
     const [captcha, setCaptcha] = useState(null);
     const [captchaReset, setCaptchaReset] = useState(0);
+    // The widget's last error code, CAPTCHA_WAITING while it waits for a
+    // click, or CAPTCHA_UNSUPPORTED, so a submit without a token can say why.
     const [captchaFailure, setCaptchaFailure] = useState(null);
+    // Every entry point uses this dialog. Availability controls whether an
+    // action can start, never whether Apple or passkeys disappear from it.
     const oauth = configuredProviders(process.env.NEXT_PUBLIC_AUTH_PROVIDERS);
     const authSettings = useRef(null);
     const [settings, setSettings] = useState(null);
 
     function resetCaptcha() { setCaptcha(null); setCaptchaReset(n => n + 1); }
-    const resendState = useEmailResend({ busy, runningRef: running, setBusy, captcha, captchaFailure, resetCaptcha,
+    const resendState = useEmailResend({ busy, runningRef: running, setBusy, captcha, captchaRequired: !!TURNSTILE_SITE_KEY, captchaFailure, resetCaptcha,
         setNotice, humanAuthError, t,
         editAddress(flow) { setMode(flow); setPassword(""); emailRef.current?.focus(); },
         focusNotice() { noticeRef.current?.focus(); },
@@ -107,6 +100,10 @@ export default function AuthGate() {
         return data;
     }
 
+    // This dialog appears unannounced on a 401, so it has to take focus and
+    // accept Escape — ConfirmDialog already does both. Without it a keyboard
+    // user had to Tab blindly through the whole page to reach the modal that
+    // had just appeared, and could not dismiss it.
     const panelRef = useRef(null);
     const closeRef = useRef(null);
 
@@ -195,6 +192,9 @@ export default function AuthGate() {
         });
     }, [close, forgetCredentials]);
 
+    // signInWithOAuth is async and ends in a redirect. Unawaited, a throw on
+    // the way to that redirect (blocked sessionStorage, missing env) became an
+    // unhandled rejection and the button just did nothing.
     async function startOAuth(provider) {
         setNotice(null);
         setBusy(true);
