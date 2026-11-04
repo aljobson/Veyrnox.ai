@@ -36,7 +36,7 @@ export function inputsForIndex(inputs, i, count) {
 // the reply was lost: a dropped connection or client-side throw ('internal',
 // 'network_error': fetch threw, but the request may already have reached us),
 // a non-JSON 5xx, a ledger_debit RPC error, or a session swap after the reply.
-const OUTCOME_UNKNOWN = new Set(['internal', 'network_error', 'gateway_error', 'debit_failed', 'account_changed', 'dispatch_acceptance_unknown', 'admission_unknown']);
+const OUTCOME_UNKNOWN = new Set(['internal', 'network_error', 'gateway_error', 'debit_failed', 'account_changed', 'dispatch_acceptance_unknown', 'admission_unknown', 'outcome_unknown']);
 
 /** The banner code for a failed submit: an unread reply may hide a charge. */
 export function submitErrorCode(code) {
@@ -102,5 +102,9 @@ export function allocationSnapshot(batch, unit, freeNow) {
     if (free > 0) { free--; return 0; }
     return unit;
   });
-  return { ceilings, total: ceilings.reduce((sum, value) => sum + (value ?? 0), 0) };
+  // total is the most this click may charge (shown to the person). payable leaves out unknown items:
+  // their retained key replays, which debits nothing if the lost reply hid an accepted job, so they
+  // never block the affordability check. Their ceiling still caps a fresh admission.
+  return { ceilings, total: ceilings.reduce((sum, value) => sum + (value ?? 0), 0),
+    payable: ceilings.reduce((sum, value, i) => sum + (batch.unknown.has(i) ? 0 : (value ?? 0)), 0) };
 }

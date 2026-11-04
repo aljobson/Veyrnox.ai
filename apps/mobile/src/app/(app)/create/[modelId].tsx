@@ -130,7 +130,8 @@ export default function CreateWithModel() {
         // Changing any identity input drops the quote and continuation, even if later changed back.
         if (!retry.current) return;
         batch.current++; balanceSeq.current++; pending.current.reset(); retry.current = null;
-        setResults(null); setConfirmed(0); setComplete(false); setError(null); setNote(null); setBusy(false);
+        setResults(null); setConfirmed(0); setComplete(false); setError(null); setNote(null);
+        // busy stays set: the submit lock holds until the outstanding request settles (its finally clears it).
     }, [modelId, prompt, duration, opts, references, sourceRights, cameraOn, cinema, characterOn, character, template?.id]);
 
     useEffect(() => {
@@ -348,8 +349,10 @@ export default function CreateWithModel() {
             setError(generationMessage(err));
             if (run.count > 1) setNote(t(unknownGenerationOutcome(err) ? 'opt.startedUnknown' : 'opt.started', { started: String(started), count: String(run.count), next: String(started + 1) }));
         } finally {
+            // Always release the lock here: a reset mid-request keeps busy set until the request settles.
+            setBusy(false);
             if (current()) {
-                setBusy(false); setRefreshKey(key => key + 1);
+                setRefreshKey(key => key + 1);
                 void refreshBalance(api, owner, current, balanceSeq);
             }
         }
@@ -358,7 +361,8 @@ export default function CreateWithModel() {
     const owner = getCacheUser();
     const resultSettled = () => { if (generation === batch.current) void refreshBalance(api, owner, () => generation === batch.current, balanceSeq); };
 
-    const missing = complete ? 0 : shortfall(balance, price);
+    const payable = quote.payable ?? price;
+    const missing = complete ? 0 : shortfall(balance, payable);
     const alternatives = pickerModels(catalog, model);
     const disabled = busy || (!complete && (freeLoading || (!ready && !matchingRetry) || missing > 0));
     const generateLabel = matchingRetry?.quote ? t('app.create.confirmPrice', { credits: String(price) }) : `${n > 1 ? t('opt.generateCount', { count: String(n) }) : t('slip.generate')}. ${costLine(price, n, freeLeft, unit)}`;
@@ -450,7 +454,7 @@ export default function CreateWithModel() {
                 <SourceDurationCard model={model} />
                 {missing > 0 ? (
                     <View style={styles.short}>
-                        <Text variant="callout" tone="secondary" accessibilityLiveRegion="polite" style={styles.shortText}>{plural('create.short', missing, { have: String(balance ?? 0), need: String(price) })}</Text>
+                        <Text variant="callout" tone="secondary" accessibilityLiveRegion="polite" style={styles.shortText}>{plural('create.short', missing, { have: String(balance ?? 0), need: String(payable) })}</Text>
                         <Button variant="tertiary" accessibilityRole="button" accessibilityLabel={t('lowBalance.buy')} onPress={async () => { await flushDraft(); router.push('/credits'); }} label={t('lowBalance.buy')} />
                     </View>
                 ) : null}

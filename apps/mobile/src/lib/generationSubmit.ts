@@ -15,8 +15,10 @@ export function generationSignature(request: SubmitRequest, count: number) {
     return JSON.stringify({ modelId, prompt, textKey, durationSeconds, extraInputs, references, sources, assets, sourceRights, preset, count });
 }
 export const unknownGenerationOutcome = (err: unknown) => !(err instanceof ApiError)
-    || ['network', 'internal', 'gateway_error', 'debit_failed', 'account_changed', 'dispatch_acceptance_unknown', 'admission_unknown'].includes(err.code);
-export type ChargeSnapshot = { ceilings: (number | null)[]; total: number };
+    || ['network', 'internal', 'gateway_error', 'debit_failed', 'account_changed', 'dispatch_acceptance_unknown', 'admission_unknown', 'outcome_unknown', 'bad_response'].includes(err.code)
+    // An untyped server error is not proof that nothing was charged.
+    || (err.code === 'unknown' && err.status >= 500);
+export type ChargeSnapshot = { ceilings: (number | null)[]; total: number; payable: number };
 export function createGenerationSubmit() {
     let pending: { signature: string; keys: string[]; accepted: (string | null)[]; unknown: Set<number> } | null = null;
     let running = false;
@@ -33,7 +35,11 @@ export function createGenerationSubmit() {
                 if (free > 0) { free--; return 0; }
                 return unit;
             });
-            return { ceilings, total: ceilings.reduce<number>((sum, value) => sum + (value ?? 0), 0) };
+            // total is the most this click may charge (shown to the person). payable leaves out unknown items:
+            // their retained key replays, which debits nothing if the lost reply hid an accepted job, so they
+            // never block the affordability check. Their ceiling still caps a fresh admission.
+            return { ceilings, total: ceilings.reduce<number>((sum, value) => sum + (value ?? 0), 0),
+                payable: ceilings.reduce<number>((sum, value, i) => sum + (same?.unknown.has(i) ? 0 : (value ?? 0)), 0) };
         },
         async run(api: ApiClient, request: SubmitRequest, count = 1, onStarted?: (count: number) => void, onJob?: (jobId: string, index: number) => void, quote?: ChargeSnapshot) {
             if (running) throw new ApiError(409, 'submission_in_progress');

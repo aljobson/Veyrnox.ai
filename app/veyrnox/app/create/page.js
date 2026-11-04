@@ -312,6 +312,8 @@ export default function CreateStudio() {
   const activeBatch = batchView?.identity === formIdentity ? batchView : null;
   const quote = activeBatch?.quote ?? allocationSnapshot(activeBatch ?? { accepted: Array(n).fill(null), unknown: new Set() }, activeBatch?.unit ?? unitCost, freeLeft);
   const cost = quote.total;
+  // Unknown items replay their retained key, so only the rest must be affordable.
+  const payable = quote.payable ?? cost;
   const durationKey = durations.join(',');
   // `generating` is derived from `jobs`, which is only set AFTER the await in
   // onSubmit. Between the click and that setState the button stayed enabled,
@@ -502,7 +504,7 @@ export default function CreateStudio() {
   // ever retried under a new key.
   async function onSubmit() {
     if (draftRecovery.restoring || draftRecovery.blocked || attachConverting || sourcesConverting) return;
-    if (inFlight.current || sending || generating || !model || balance == null || cost > balance) return;
+    if (inFlight.current || sending || generating || !model || balance == null || payable > balance) return;
     if (catalogStatus !== 'live') return;
     inFlight.current = true;
     if (model.gated) { inFlight.current = false; setError(LOCAL_ERRORS.model_gated); return; }
@@ -802,7 +804,7 @@ export default function CreateStudio() {
             data-assistant-target="create.generate"
             onClick={hasJobs && !activeBatch ? cancel : onSubmit}
             className="scroll-mt-24 mt-4 w-full flex items-center justify-between bg-vx-accent text-vx-accent-ink rounded-full px-6 py-3.5 font-extrabold hover:bg-vx-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
-            disabled={draftRecovery.restoring || draftRecovery.blocked || sending || attachConverting || sourcesConverting || (!hasJobs && (catalogStatus !== 'live' || !model || model.gated || animationMismatch || missingPrompt || promptTooLong || missingVoice || invalidAudioDuration || balance == null || cost > balance || missingSource || missingConsent)) || !!activeBatch?.confirm}
+            disabled={draftRecovery.restoring || draftRecovery.blocked || sending || attachConverting || sourcesConverting || (!hasJobs && (catalogStatus !== 'live' || !model || model.gated || animationMismatch || missingPrompt || promptTooLong || missingVoice || invalidAudioDuration || balance == null || payable > balance || missingSource || missingConsent)) || !!activeBatch?.confirm}
             aria-label={sending ? undefined : hasJobs && !activeBatch ? t("app.create.newNoCharge") : model?.gated ? undefined : n > 1 ? t(pluralKey(t,locale,cost===0?'app.create.generateImagesFree':'app.create.generateImagesPaid',n),{count:number(n),credits:creditLabel(cost)}) : t(cost===0?'app.create.generateFree':'app.create.generatePaid',{credits:creditLabel(cost)})}
           >
             <span>{sending ? t("app.publish.inbox.sending") : hasJobs && !activeBatch ? t("app.create.newGeneration") : model?.gated ? t("app.create.premiumGated") : n > 1 ? t('app.create.generateCount',{count:number(n)}) : t("label.Generate")}</span>
@@ -814,9 +816,9 @@ export default function CreateStudio() {
           <p className="mt-3 text-center text-[11px] leading-relaxed text-vx-fg-muted">
             {rich(t('app.create.commercial'),{terms:<LegalLink element="Link" href="/legal/terms" className="text-vx-accent underline underline-offset-2">{t('home.publish.terms')}</LegalLink>})}
           </p>
-          {activeBatch?.confirm && <button type="button" disabled={sending || generating || balance == null || cost > balance} onClick={onSubmit} className="mt-3 w-full rounded-lg border border-vx-border p-3">{t('app.create.confirmPrice', { credits: creditLabel(cost) })}</button>}
+          {activeBatch?.confirm && <button type="button" disabled={sending || generating || balance == null || payable > balance} onClick={onSubmit} className="mt-3 w-full rounded-lg border border-vx-border p-3">{t('app.create.confirmPrice', { credits: creditLabel(cost) })}</button>}
           {activeBatch && <button type="button" disabled={sending} onClick={cancel} className="mt-2 w-full p-2">{t('app.create.startNewBatch')}</button>}
-          {balance != null && cost > balance && !model?.gated && (
+          {balance != null && payable > balance && !model?.gated && (
             <div className="mt-4 rounded-xl border border-vx-money/40 bg-vx-money/[0.06] p-4 text-sm text-vx-fg-body">
               <p className="font-bold text-vx-fg">{t(pluralKey(t,locale,'app.create.moreCredits',cost-balance),{count:number(cost-balance)})}</p>
               <p className="mt-1 text-xs text-vx-fg-muted">{t("app.create.compareCredits")}</p>

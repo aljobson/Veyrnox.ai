@@ -25,8 +25,9 @@ test('the IMAGES control is shown for image models only', () => {
 test('the total drives the price, the balance guard and the button', () => {
     // The batch total still drives the price; ADR-0069 waives the first `freeLeft` jobs of it when the server says so.
     assert.match(page, /const cost = quote.total;/);
-    assert.match(submit, /cost > balance\) return;/);
-    assert.match(page, /balance == null \|\| cost > balance \|\| missingSource/);
+    assert.match(submit, /payable > balance\) return;/);
+    assert.match(page, /const payable = quote.payable \?\? cost;/);
+    assert.match(page, /balance == null \|\| payable > balance \|\| missingSource/);
     assert.match(page, />\{generationCostLabel\(cost\)\}<\/div>/);
     assert.match(page, /cost===0\?'app.create.generateFree':'app.create.generatePaid',\{credits:creditLabel\(cost\)\}/);
 });
@@ -164,7 +165,7 @@ for (const modelId of ['flux-2-pro-1k-kie', 'flux-2-pro']) test(`actual web conf
     const context = {
         draftRecovery: {}, attachConverting: false, sourcesConverting: false, inFlight: { current: false },
         sending: false, generating: false, model: { id: modelId, name: 'Image', kind: 'image' }, modelId,
-        balance: 100, cost: 0, catalogStatus: 'live', animationMismatch: false, needsReattach: false, overLimit: false,
+        balance: 100, cost: 0, payable: 0, catalogStatus: 'live', animationMismatch: false, needsReattach: false, overLimit: false,
         missingSource: false, missingConsent: false, missingPrompt: false, promptTooLong: false, missingVoice: false,
         invalidAudioDuration: false, setError: value => { error = value; }, setSending: () => {},
         getJourney: () => ({}), duration: '5s', isShort: false, aspectOptions: [], aspect: '1:1',
@@ -191,11 +192,11 @@ for (const modelId of ['flux-2-pro-1k-kie', 'flux-2-pro']) test(`actual web conf
     assert.equal(error.code, 'price_changed');
     const run = context.continuation.current;
     assert.equal(run.confirm, true);
-    assert.deepEqual(run.quote, { ceilings: [null, 9], total: 9 });
+    assert.deepEqual(run.quote, { ceilings: [null, 9], total: 9, payable: 9 });
     assert.equal(context.unitCost, 2, 'the cached catalog still quotes the old price');
     assert.deepEqual(events, ['/generations', '/generations', '/free-allowance']);
     assert.equal(requests.length, 2, 'no automatic retry');
-    context.activeBatch = run; context.quote = run.quote; context.cost = run.quote.total;
+    context.activeBatch = run; context.quote = run.quote; context.cost = run.quote.total; context.payable = run.quote.payable;
     context.onSubmit = onSubmit;
     context.hasJobs = true;
     context.t = (key, values) => `${key}: ${values?.credits ?? ''}`;
@@ -260,7 +261,7 @@ async function retryHandlerHarness(count, replies) {
     return { context, requests, jobs, async submit() {
         const run = context.continuation.current;
         context.quote = run?.quote ?? helpers.allocationSnapshot(run ?? { accepted: Array(count).fill(null), unknown: new Set() }, run?.unit ?? 2, 0);
-        context.cost = context.quote.total;
+        context.cost = context.quote.total; context.payable = context.quote.payable;
         await onSubmit();
     } };
 }
@@ -293,7 +294,7 @@ test('actual web handler retains a single price_changed key until explicit confi
     await h.submit();
     const run = h.context.continuation.current;
     assert.equal(run.confirm, true);
-    assert.deepEqual(run.quote, { ceilings: [9], total: 9 });
+    assert.deepEqual(run.quote, { ceilings: [9], total: 9, payable: 9 });
     assert.equal(h.requests.length, 1);
     await h.submit();
     assert.deepEqual(h.requests.map(r => [r.idempotency_key, r.max_charge_credits]), [['retry-key-1', 2], ['retry-key-1', 9]]);
