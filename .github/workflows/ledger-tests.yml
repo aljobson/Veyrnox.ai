@@ -84,6 +84,7 @@ on:
       - "scripts/test-reconciliation-observations.mjs"
       - "scripts/test-audio-stems.mjs"
       - "scripts/test-fal-dispatch.mjs"
+      - "scripts/test-fal-dispatch-capped.mjs"
       - "scripts/test-fal-admission-capacity.mjs"
       - "scripts/test-fal-admission-pause.mjs"
       - "scripts/test-fal-reserved-only.mjs"
@@ -199,6 +200,7 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/supplier_spend_check" node scripts/replay-migrations.mjs
           DATABASE_URL="${DATABASE_URL%/*}/supplier_spend_check" npx tsx --test --test-concurrency=1 packages/db/provider-spend-limits.acceptance.test.ts packages/db/user-inflight-cap.acceptance.test.ts
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/replay-migrations.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-fal-dispatch-capped.mjs
           # These legacy fixtures exercise accounting with deliberately huge
           # synthetic jobs, not supplier dispatch. Keep their disposable DB
           # isolated from the new guard; the strict trigger suite runs below.
