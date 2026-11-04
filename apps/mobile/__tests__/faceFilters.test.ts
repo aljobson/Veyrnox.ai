@@ -52,10 +52,16 @@ test('shared lifecycle retains keys after an ambiguous failure, clears on succes
 test.each([
     ['consent_required', 'Please try again.'],
     ['upload_admission_unavailable', 'That could not start. You were not charged.'],
-    ['provider_moderation', 'That could not start. You were not charged.'],
-    ['provider_input_rejected', 'That could not start. You were not charged.'],
-    ['provider_submit_failed', 'That could not start. You were not charged.'],
-])('Create preserves its exact old message for %s', (code, message) => {
+])('Create keeps its message for %s', (code, message) => {
+    expect(generationMessage(new ApiError(400, code))).toBe(message);
+});
+// ADR-0115 follow-up: a refusal that may not have refunded yet says the credits are on their way back (web wording, not "refunded").
+test.each([
+    ['provider_moderation', 'The provider declined this prompt on safety grounds. Your credits are on their way back.'],
+    ['provider_input_rejected', 'The model would not accept one of these settings or inputs. Your credits are on their way back — change it and try again.'],
+    ['provider_submit_failed', 'The model would not take this job. Your credits are on their way back — try again.'],
+    ['rate_limited', 'Too many generations in a short window. Wait a moment.'],
+])('Create shows the web message for %s', (code, message) => {
     expect(generationMessage(new ApiError(400, code))).toBe(message);
 });
 test.each([
@@ -65,9 +71,13 @@ test.each([
     ['provider_moderation', 'The provider could not accept this photo or request. Your credits were refunded.'],
     ['provider_input_rejected', 'The provider could not accept this photo or request. Your credits were refunded.'],
     ['provider_submit_failed', 'The provider could not accept this photo or request. Your credits were refunded.'],
-    ['rate_limited', 'Too many requests. Wait a moment.'],
+    ['rate_limited', 'Too many generations in a short window. Wait a moment.'],
 ])('Face filters shows the exact message for %s', (code, message) => {
     expect(faceFilterMessage(new ApiError(400, code))).toBe(message);
+});
+test('a face-filter job the server reports as refunded keeps the completed-refund wording', () => {
+    expect(faceFilterMessage(new ApiError(422, 'provider_timeout'), true)).toBe('The model took too long. Credits refunded — try again.');
+    expect(faceFilterMessage(new ApiError(422, 'provider_timeout'))).toBe('The model took too long. Your credits are on their way back — try again.');
 });
 test.each([
     ['upload_too_large', 'the photo is over 20 MB'],

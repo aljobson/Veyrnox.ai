@@ -5,6 +5,7 @@ import JobScreen from '../src/app/(app)/job/[id]';
 import { ApiError } from '../src/lib/api';
 import { mediaApi, waitForJob, type JobState } from '../src/lib/media';
 import { plural, t } from '../src/lib/i18n';
+import { failedJobMessage } from '../src/lib/failedJob';
 
 const mockRequest = jest.fn();
 const mockApi = { request: mockRequest };
@@ -122,6 +123,12 @@ test.each([0, 1])('terminal cancelled job uses the refunded flag and server cred
     expect(text(credits ? plural('jobCancel.cancelled', credits) : t('jobCancel.cancelledFree'))).toHaveLength(1);
     expect(text(t('job.failed'))).toHaveLength(0);
     expect(text(t('recovery.retry'))).toHaveLength(1);
+});
+test.each([true, false, undefined])('failed job shows the specific reason with refund state %s', async refunded => {
+    getJob.mockResolvedValue({ state: 'failed', credits: 17, model_id: 'model', error_code: 'provider_timeout', refunded });
+    await render(); await act(async () => { onState('failed'); finish('failed'); });
+    live(failedJobMessage('provider_timeout', refunded));
+    expect(text(t('job.failed'))).toHaveLength(0);
 });
 test('user_cancelled without a confirmed refund still shows the ordinary failed state', async () => {
     getJob.mockResolvedValue({ state: 'failed', credits: 17, model_id: 'model', error_code: 'user_cancelled', refunded: false });

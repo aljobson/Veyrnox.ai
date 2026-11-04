@@ -25,6 +25,7 @@ function readWebCatalog(code: string): Record<string, string> {
         ...readModule(join(repo, 'lib', 'i18n', 'messages', 'app', code, 'publish-composer.mjs')),
         ...readModule(join(repo, 'lib', 'i18n', 'messages', 'app', code, 'create-sources.mjs')),
         ...readModule(join(repo, 'lib', 'i18n', 'messages', 'app', code, 'data-errors.mjs')),
+        ...readModule(join(repo, 'lib', 'i18n', 'messages', 'app', code, 'create.mjs')),
         ...readModule(join(repo, 'lib', 'i18n', 'messages', 'app', code, 'account-mfa.mjs')),
         ...readModule(join(repo, 'lib', 'i18n', 'messages', 'app', code, 'account.mjs')),
         ...readModule(join(repo, 'lib', 'i18n', 'messages', 'app', code, 'publish.mjs')),

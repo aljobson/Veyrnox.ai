@@ -1954,5 +1954,11 @@
     "english": "Add",
     "translation": "जोड़ें",
     "ratio": 2
+  },
+  {
+    "id": "app.create.retryIn",
+    "english": " Retry in {seconds}s.",
+    "translation": " {seconds} सेकंड बाद फिर कोशिश करें।",
+    "ratio": 1.71
   }
 ]

@@ -6,6 +6,7 @@ import { OFFLINE_PAID_MESSAGE, OfflineError } from './network';
 import { inputsForIndex } from './createOptions';
 import { mediaApi, type GenerationRequest } from './media';
 import { t } from './i18n';
+import { createErrorMessage } from './failedJob';
 
 export type SubmitRequest = Omit<GenerationRequest, 'idempotencyKey'>;
 
@@ -122,7 +123,8 @@ export function generationMessage(err: unknown): string {
         case 'insufficient_credits':
             return t('form.err.insufficient');
         case 'rate_limited':
-            return t('form.err.rate');
+            return (createErrorMessage(err.code) ?? t('form.err.rate'))
+                + (err.retryAfterSeconds === undefined ? '' : t('app.create.retryIn', { seconds: err.retryAfterSeconds }));
         case 'credit_confirmation_mismatch':
             return err.body.expected_credits === undefined ? t('form.err.priceChangedUnknown') : t('form.err.priceChanged', { credits: String(err.body.expected_credits) });
         case 'network':
@@ -134,12 +136,12 @@ export function generationMessage(err: unknown): string {
         case 'source_key_invalid':
             return t('form.err.sourceMismatch');
         case 'topic_refused':
-            return t('form.err.topicRefused');
+            return createErrorMessage(err.code) ?? t('form.err.topicRefused');
         case 'consent_declined':
             return CONSENT_DECLINED_MESSAGE;
         case 'consent_required':
             return t('form.err.tryAgain');
         default:
-            return t('form.err.default');
+            return createErrorMessage(err.code) ?? t('form.err.default');
     }
 }
