@@ -284,11 +284,11 @@ test('public templates are exact or adaptation-only and all source-gap records a
   for (const source of ['Higgsfield', 'Syntx', 'CapCut', 'Buzzy.now', 'LipSync.video']) assert.match(report, new RegExp(source));
   const webRecipe = readFileSync(new URL('../app/veyrnox/_components/TemplateRecipe.js', import.meta.url), 'utf8');
   for (const key of ['sourcePromptUnavailable', 'sourcePromptNotRecorded', 'sourcePromptTruncated', 'sourcePromptDuplicate']) assert.match(webRecipe, new RegExp(key));
-  assert.match(webRecipe, /generationBlocked=\{sourcePromptBlocked && !hasRunnableAdaptation\}/);
-  assert.match(webRecipe, /data-runnable-adaptation="true"/);
+  assert.match(webRecipe, /generationBlocked=\{sourcePromptBlocked\}/);
+  assert.doesNotMatch(webRecipe, /data-runnable-adaptation|hasRunnableAdaptation/);
   const mobileRecipe = readFileSync(new URL('../apps/mobile/src/app/(app)/templates/[id].tsx', import.meta.url), 'utf8');
-  assert.match(mobileRecipe, /disabled=\{\(sourcePromptBlocked && !hasRunnableAdaptation\) \|\| tooLong \|\| !prompt\.trim\(\)\}/);
-  assert.match(mobileRecipe, /public\.TemplateRecipe\.generationPrompt/);
+  assert.match(mobileRecipe, /disabled=\{sourcePromptBlocked \|\| tooLong \|\| !prompt\.trim\(\)\}/);
+  assert.doesNotMatch(mobileRecipe, /TemplateRecipe\.generationPrompt|hasRunnableAdaptation/);
 });
 
 test('Syntx templates preserve every currently published source prompt exactly', () => {
