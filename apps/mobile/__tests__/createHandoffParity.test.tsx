@@ -142,11 +142,12 @@ test.each([false, true])('P1 rendered model change carries duration, aspect, tem
     const choice = root.container.queryAll(n => n.props.accessibilityRole === 'button' && n.props.accessibilityLabel === next.name)[0];
     await act(async () => choice.props.onClick(event));
     const href = mockReplace.mock.calls.at(-1)![0];
-    expect(href.params).toMatchObject({ ...template, modelId: next.id, duration: '10', aspect: '9:16', prompt: mockParams.prompt });
+    expect(href.params).toMatchObject({ ...template, tmodel: first.id, modelId: next.id, duration: '10', aspect: '9:16', prompt: mockParams.prompt });
     expect(href.params).not.toHaveProperty('kind');
     expect(readCreativeSourceHandoff(href.params.sourceHandoff, href.params.recipe, next.id)?.references).toEqual(refs);
     mockParams = href.params; await render();
     expect(input().props.value).toBe('A quiet original scene');
+    expect(root.container.queryAll(n => n.children.includes(t('create.template.label')))).toHaveLength(0);
     expect(unavailable()).toHaveLength(0);
     expect(jest.mocked(SourcePicker).mock.calls.at(-1)?.[0].references).toEqual(refs);
 });
@@ -169,4 +170,33 @@ test('Templates goes away once a result arrives', async () => {
     await act(async () => generate.props.onClick(event));
     expect(mockRun).toHaveBeenCalled();
     expect(templatesEntry()).toHaveLength(0);
+});
+
+test('Create derives banner and submitted preset across a legacy arrival and A → B → A', async () => {
+    const first = { ...video, capabilities: { inputs: { prompt: {}, aspect_ratio: { values: ['9:16', '16:9'] } } } };
+    const other = { ...first, id: 'other-video', name: 'Other video' };
+    jest.mocked(fetchCatalog).mockResolvedValue([first, other]);
+    mockParams = { ...mockParams, tid: 'paper', tpl: 'Paper', aspect: '9:16', duration: '10' };
+    // Avoid result UI so each step exercises the same editable form.
+    mockRun.mockImplementation(async () => undefined);
+    await render();
+    for (const target of [video, other, video]) {
+        if (mockParams.modelId !== target.id) {
+            const change = root.container.queryAll(n => typeof n.props.accessibilityLabel === 'string' && n.props.accessibilityLabel.endsWith(t('chat.model.change')))[0];
+            await act(async () => change.props.onClick(event));
+            const choice = root.container.queryAll(n => n.props.accessibilityRole === 'button' && n.props.accessibilityLabel === target.name)[0];
+            await act(async () => choice.props.onClick(event));
+            mockParams = mockReplace.mock.calls.at(-1)![0].params;
+            expect(mockParams).toMatchObject({ tid: 'paper', tpl: 'Paper', tmodel: video.id, duration: '10', aspect: '9:16' });
+            await render();
+        }
+        const original = target.id === video.id;
+        expect(root.container.queryAll(n => n.children.includes(t('create.template.label'))).length > 0).toBe(original);
+        const generate = root.container.queryAll(n => typeof n.props.accessibilityLabel === 'string' && n.props.accessibilityLabel.startsWith(t('slip.generate')+'.'))[0];
+        await act(async () => generate.props.onClick(event));
+        expect(mockRun.mock.calls.at(-1)?.[1]).toMatchObject({ modelId: target.id, prompt: 'A quiet original scene', durationSeconds: 10 });
+        expect(mockRun.mock.calls.at(-1)?.[1].preset).toBe(original ? 'paper' : undefined);
+        const another = root.container.queryAll(n => n.props.accessibilityLabel === t('libraryCreate.newNoCharge'))[0];
+        await act(async () => another.props.onClick(event));
+    }
 });

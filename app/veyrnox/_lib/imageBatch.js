@@ -56,6 +56,9 @@ export function batchNote(started, count, code) {
     : `${started} of ${count} started; image ${next} did not.`;
 }
 
+// Provider refusals that arrive after a job existed and was refunded; the key is dead for a retry.
+const REFUNDED_REFUSALS = new Set(['provider_moderation', 'provider_input_rejected', 'provider_submit_failed']);
+
 /**
  * Run sendOne(0..count-1) one after another. Stops at the first throw and
  * never auto-retries. A continuation skips accepted items and retains keys.
@@ -70,13 +73,19 @@ export async function sendInOrder(count, sendOne, batch, makeKey) {
       if (batch) { batch.accepted[i] = result ?? true; batch.unknown.delete(i); }
     } catch (error) {
       if (batch) {
+        const wasUnknown = batch.unknown.has(i);
         if (submitErrorCode(error?.code ?? 'internal') === 'outcome_unknown') batch.unknown.add(i);
-        else {
+        else if (REFUNDED_REFUSALS.has(error?.code)) {
+          // The provider refused after a job existed and was refunded: that key is dead. With an accepted prefix the
+          // item gets a fresh explicit retry key; otherwise the page starts a whole new batch.
           batch.unknown.delete(i);
-          // A definitive provider refusal may have refunded a job under this key.
-          // Preserve the accepted prefix, but give this item a fresh explicit retry.
-          // price_changed creates no job and must retain its confirmation key.
-          if (error?.code !== 'price_changed' && batch.accepted.some(Boolean) && makeKey) batch.keys[i] = makeKey();
+          if (batch.accepted.some(Boolean) && makeKey) batch.keys[i] = makeKey();
+        } else if (error?.code === 'price_changed') {
+          // A replay of an accepted key never returns price_changed, so this proves no job exists; the key is kept.
+          batch.unknown.delete(i);
+        } else if (!wasUnknown) {
+          // Other refusals prove nothing about an earlier lost reply, so an unknown item keeps its key and state.
+          if (batch.accepted.some(Boolean) && makeKey) batch.keys[i] = makeKey();
         }
       }
       return { started, error };
