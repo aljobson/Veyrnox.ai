@@ -59,6 +59,7 @@ export default {
   "account.privacypolicy": "プライバシーポリシー",
   "account.purchases": "購入",
   "account.pushDenied": "このアプリの通知はオフになっています。まず端末の設定でオンにしてください。",
+  "account.openSettings": "設定を開く",
   "account.pushUnavailable": "現在、通知をご利用いただけません。後でもう一度お試しください。",
   "account.realpersonshownwithoutconsent": "同意なく描かれた実在の人物",
   "account.refer": "友達が購入するとクレジットを獲得",

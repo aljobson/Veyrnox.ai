@@ -59,6 +59,7 @@ export default {
   "account.privacypolicy": "गोपनीयता नीति",
   "account.purchases": "खरीदारी",
   "account.pushDenied": "इस ऐप की सूचनाएँ बंद हैं। पहले अपने फ़ोन की सेटिंग में उन्हें चालू करें।",
+  "account.openSettings": "सेटिंग्स खोलें",
   "account.pushUnavailable": "अभी सूचनाएँ उपलब्ध नहीं हैं। बाद में फिर कोशिश करें।",
   "account.realpersonshownwithoutconsent": "बिना सहमति के दिखाया गया वास्तविक व्यक्ति",
   "account.refer": "दोस्त के खरीदने पर क्रेडिट कमाएँ",

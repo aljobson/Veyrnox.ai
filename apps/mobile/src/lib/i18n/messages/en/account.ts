@@ -9,6 +9,7 @@ export default {
     'account.restoreDone': 'Done. Subscriptions bought with this store account are active again.',
     'account.restoreFailed': 'Could not reach the store. Try again.',
     'account.pushDenied': 'Notifications are off for this app. Turn them on in your phone settings first.',
+    'account.openSettings': 'Open Settings',
     'account.pushUnavailable': 'Notifications are not available right now. Try again later.',
     'account.title': 'Account',
     'account.purchases': 'Purchases',

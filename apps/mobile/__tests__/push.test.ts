@@ -1,5 +1,5 @@
 import { ApiError } from '../src/lib/api';
-import { isPushToken, jobRouteFromPush, registerDevice, removeDevice, type DeviceInput } from '../src/lib/push';
+import { isPushToken, jobRouteFromPush, registerDevice, removeDevice, watchPushToken, type DeviceInput } from '../src/lib/push';
 
 const JOB = '123e4567-e89b-42d3-a456-426614174000';
 const device = (over: Partial<DeviceInput> = {}): DeviceInput => ({
@@ -63,3 +63,18 @@ describe('jobRouteFromPush', () => {
         }
     });
 });
+
+describe('watchPushToken', () => {
+    it('re-registers when the OS rotates the token and stops listening when told to', () => {
+        let fire: () => void = () => {};
+        const remove = jest.fn();
+        const onChange = jest.fn();
+        const stop = watchPushToken((listener) => { fire = listener; return { remove }; }, onChange);
+        fire(); fire();
+        expect(onChange).toHaveBeenCalledTimes(2);
+        expect(remove).not.toHaveBeenCalled();
+        stop();
+        expect(remove).toHaveBeenCalledTimes(1);
+    });
+});
+

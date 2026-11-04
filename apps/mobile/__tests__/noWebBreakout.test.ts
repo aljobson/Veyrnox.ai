@@ -12,6 +12,7 @@ const allowed: Record<string, { call: string; reason: string }[]> = {
     'app/(app)/account.tsx': [
         { call: 'openURL(managementURL)', reason: 'Apple/Google subscription management belongs to the store.' },
         { call: 'openURL(`mailto:${SUPPORT_EMAIL}`)', reason: 'Contact support in the mail app; the scheme is fixed.' },
+        { call: 'openSettings()', reason: 'Opens this app\'s own page in the phone settings so a denied notification permission can be changed; it is not a web page.' },
     ],
     'app/(app)/credits.tsx': [{ call: 'openBrowserAsync(billing.managementURLasstring)', reason: 'Apple/Google subscription management belongs to the store.' }],
     'app/(app)/help.tsx': [{ call: 'openURL(`mailto:${SUPPORT_EMAIL}`)', reason: 'Contact support in the mail app; the scheme is fixed.' }],

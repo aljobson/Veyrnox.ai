@@ -59,6 +59,7 @@ export default {
   "account.privacypolicy": "隐私政策",
   "account.purchases": "购买记录",
   "account.pushDenied": "此应用的通知已关闭。请先在手机设置中开启。",
+  "account.openSettings": "打开设置",
   "account.pushUnavailable": "通知暂不可用。请稍后重试。",
   "account.realpersonshownwithoutconsent": "未经同意展示真实人物",
   "account.refer": "好友购买即可赚取积分",

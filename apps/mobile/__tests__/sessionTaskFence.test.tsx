@@ -83,7 +83,7 @@ jest.mock('../src/lib/auth/passkeyNative', () => ({ ...jest.requireActual('../sr
 jest.mock('../src/lib/push', () => ({ ...jest.requireActual('../src/lib/push'), PUSH_ENABLED: true }));
 jest.mock('expo-notifications', () => ({ setNotificationHandler: jest.fn(), getPermissionsAsync: jest.fn(async () => ({ granted: true })),
     requestPermissionsAsync: jest.fn(async () => ({ granted: true })), getExpoPushTokenAsync: jest.fn(), getLastNotificationResponseAsync: jest.fn(async () => null),
-    addNotificationResponseReceivedListener: jest.fn(() => ({ remove: jest.fn() })) }));
+    addNotificationResponseReceivedListener: jest.fn(() => ({ remove: jest.fn() })), addPushTokenListener: jest.fn(() => ({ remove: jest.fn() })) }));
 jest.mock('expo-device', () => ({ isDevice: true }));
 jest.mock('expo-constants', () => ({ __esModule: true, default: { expoConfig: { extra: { eas: { projectId: 'project' } } } } }));
 const mockStorage = new Map<string, string>();
@@ -153,6 +153,18 @@ test.each(['unregister', 'disable'] as const)('A pending push %s cannot clear B 
     await act(async () => { alert.mock.calls.at(-1)![2]!.find(b => b.style === 'destructive')!.onPress!(); });
     const removals = send.mock.calls.filter(([url, init]) => url.endsWith('/devices') && init.method === 'DELETE' && init.headers.Authorization === `Bearer ${jwt('B')}`);
     expect(removals).toHaveLength(1); expect(JSON.parse(removals[0][1].body).token).toBe('ExpoPushToken[B]');
+});
+test('a denied notification permission offers Open Settings, and a granted one registers a token listener', async () => {
+    await mount(<PushProviderLive><PushProbe /><Account /></PushProviderLive>); await adopt();
+    const openSettings = jest.spyOn(RN.Linking, 'openSettings').mockResolvedValue();
+    expect(controls(t('account.openSettings'))).toHaveLength(0);
+    jest.mocked(Notifications.requestPermissionsAsync).mockResolvedValueOnce({ granted: false } as any);
+    const row = () => root.container.queryAll(n => n.props.accessibilityLabel === t('account.notifyMe') && typeof n.props.onChange === 'function')[0];
+    await act(async () => { await row().props.onChange({ nativeEvent: { value: true } }); });
+    await press(t('account.openSettings'));
+    expect(openSettings).toHaveBeenCalledTimes(1);
+    await act(async () => { await row().props.onChange({ nativeEvent: { value: false } }); });
+    expect(controls(t('account.openSettings'))).toHaveLength(0);
 });
 test('setEnabled true finishing after switch writes no preference', async () => {
     await mount(<PushProviderLive><PushProbe /></PushProviderLive>); await adopt();
