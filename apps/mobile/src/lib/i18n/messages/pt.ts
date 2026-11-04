@@ -260,6 +260,11 @@ const pt = {
     'app.create.addFiles.cancel': 'Cancelar',
     'app.create.addFiles.add': 'Adicionar',
     'app.create.addFiles.select': 'Selecionar {name}',
+    'app.create.error.price_changed': 'O preço mudou. Este item não foi cobrado. Confirme o novo total restante para continuar.',
+    'app.create.error.admission_unknown': 'Não foi possível confirmar se este pedido começou ou foi cobrado. Tente o mesmo pedido novamente para verificar.',
+    'app.create.error.admission_unavailable': 'Este pedido não pôde ser aceito. Nada foi cobrado. Tente mais tarde.',
+    'app.create.confirmPrice': 'Confirmar {credits} créditos',
+    'app.create.startNewBatch': 'Iniciar novo lote',
 } as const;
 
 export default pt;

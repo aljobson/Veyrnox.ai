@@ -118,11 +118,17 @@ test('generation and chat pause before any debit or provider call', async t => {
   const chat=await runChatTurn({authId:'test',threadId:'11111111-1111-4111-8111-111111111111',body:{text:'Hello',idempotency_key:'runtime-test-0001'},cfg:{supabaseUrl:env.SUPABASE_URL,serviceRoleKey:'test'},env:{OPENROUTER_API_KEY:'test'},deps:{rpc:()=>assert.fail('no debit or admission RPC')}});
   assert.equal(chat.status,503);assert.deepEqual(await chat.json(),{error:'feature_paused'});assert.equal(calls.length,3);
 });
-test('registry agrees with SQL key constraint, and wrangler bindings are unchanged', async () => {
+test('registry agrees with SQL key constraint, and other wrangler bindings are unchanged', async () => {
   const sql=await readFile(new URL('../packages/db/schema/supabase/0429_runtime_switches.sql',import.meta.url),'utf8');
   const keys=sql.match(/CHECK \(key IN \(([^)]+)\)\)/)[1].split(',').map(s=>s.trim().replaceAll("'",''));
   assert.deepEqual(keys,Object.keys(RUNTIME_SWITCHES));
-  assert.equal(await readFile(new URL('../wrangler.jsonc',import.meta.url),'utf8'),execFileSync('git',['show','HEAD:wrangler.jsonc'],{encoding:'utf8'}));
+  const previous=execFileSync('git',['show','HEAD:wrangler.jsonc'],{encoding:'utf8'});
+  // MC-R1 explicitly adds this default-off admission gate. Keep the byte-for-byte
+  // assertion for every other binding, rather than discarding the config guard.
+  const allowance='    "FREE_ALLOWANCE_ENABLED": "true",\n';
+  const rollout='    // ADR-0069: do not enable while FAL_DURABLE_DISPATCH_ENABLED is true in production until PR B capped durable admission exists.\n    "MAX_CHARGE_ENABLED": "false",\n';
+  const expected=previous.includes('"MAX_CHARGE_ENABLED"') ? previous : previous.replace(allowance,allowance+rollout);
+  assert.equal(await readFile(new URL('../wrangler.jsonc',import.meta.url),'utf8'),expected);
 });
 test('switch route requires owner permission, an exact registry key and trusted freshness', async t => {
   const {POST}=await import('../app/api/v1/admin/switches/route.js');

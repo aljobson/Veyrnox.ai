@@ -260,6 +260,11 @@ const ja = {
     'app.create.addFiles.cancel': 'キャンセル',
     'app.create.addFiles.add': '追加',
     'app.create.addFiles.select': '{name} を選択',
+    'app.create.error.price_changed': '価格が変更されました。この項目は課金されていません。残りの新しい合計額を確認して続行してください。',
+    'app.create.error.admission_unknown': 'このリクエストが開始または課金されたか確認できませんでした。同じリクエストを再試行して結果を確認してください。',
+    'app.create.error.admission_unavailable': 'このリクエストは受け付けられませんでした。課金されていません。後でもう一度お試しください。',
+    'app.create.confirmPrice': '{credits} クレジットを確認',
+    'app.create.startNewBatch': '新しいバッチを開始',
 } as const;
 
 export default ja;

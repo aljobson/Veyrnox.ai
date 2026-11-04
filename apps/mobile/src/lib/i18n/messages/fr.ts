@@ -260,6 +260,11 @@ const fr = {
     'app.create.addFiles.cancel': 'Annuler',
     'app.create.addFiles.add': 'Ajouter',
     'app.create.addFiles.select': 'Sélectionner {name}',
+    'app.create.error.price_changed': 'Le prix a changé. Cet élément n’a pas été facturé. Confirmez le nouveau total restant pour continuer.',
+    'app.create.error.admission_unknown': 'Nous ne pouvons pas confirmer si cette demande a démarré ou a été facturée. Réessayez la même demande pour vérifier.',
+    'app.create.error.admission_unavailable': 'Cette demande n’a pas pu être acceptée. Aucun crédit n’a été débité. Réessayez plus tard.',
+    'app.create.confirmPrice': 'Confirmer {credits} crédits',
+    'app.create.startNewBatch': 'Démarrer un nouveau lot',
 } as const;
 
 export default fr;

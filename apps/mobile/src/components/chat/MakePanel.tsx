@@ -1,3 +1,4 @@
+import { generationSignature } from '../../lib/generationSubmit';
 import { rawText } from '../../lib/i18n/translate';
 import { useReducedMotion } from '../ui/useReducedMotion';
 import { useRouter } from 'expo-router';
@@ -7,7 +8,7 @@ import { useAuth } from '../../auth/AuthProvider';
 import { subscribeCacheUser } from '../../lib/appCache';
 import { MIN_TARGET } from '../../lib/a11y';
 import { byPrice, chatMediaModels, makePrice, makeReady, MAX_MEDIA_PROMPT, MEDIA_KINDS, supportedDuration } from '../../lib/chatMedia';
-import { batchCost, freeLeftFor, imageCount, optionsFor, resolveAudio, resolveResolution, settingsInputs, takesImageCount } from '../../lib/createOptions';
+import { freeLeftFor, imageCount, optionsFor, resolveAudio, resolveResolution, settingsInputs, takesImageCount } from '../../lib/createOptions';
 import { plural, t } from '../../lib/i18n';
 import { shortfall } from '../../lib/lowBalance';
 import { estimateCredits, fetchCatalog, kindOf, textInput, type CatalogModel, type Kind } from '../../lib/media';
@@ -58,6 +59,7 @@ export function MakePanel({ visible, initialPrompt = '', initialKind = 'image', 
     }
     function select(next: CatalogModel | null, nextKind = kind) {
         if (state.submitting) return;
+        state.resetInputs();
         setKind(nextKind); setModelId(next?.id ?? null); setDuration(null); setOpts(defaults(next)); clearSources();
     }
     useEffect(() => {
@@ -86,18 +88,19 @@ export function MakePanel({ visible, initialPrompt = '', initialKind = 'image', 
     const text = prompt.trim();
     const promptTooLong = text.length > promptLimit;
     const request = model && options ? {
-        modelId: model.id, prompt: text, durationSeconds: kindOf(model.modality) === 'video' ? length : null,
-        confirmedCredits: unit, references, sourceRights: references.length ? rights : undefined, textKey: 'prompt',
+        modelId: model.id, prompt: text, confirmedCredits: unit, durationSeconds: kindOf(model.modality) === 'video' ? length : null,
+        references, sourceRights: references.length ? rights : undefined, textKey: 'prompt',
         extraInputs: settingsInputs(options, { ...opts, resolution, audio }),
     } : null;
-    const retry = state.retry?.signature === JSON.stringify({ ...request, count: n }) ? state.retry : null;
-    const price = model ? batchCost(unit, n - (retry?.started ?? 0), freeLeftFor(state.freeMap, model.id)) : null;
+    const retry = request && state.retry?.signature === generationSignature(request, n) ? state.retry : null;
+    const quote = model && request ? retry?.quote ?? state.snapshot(request, n, retry?.unit ?? unit, freeLeftFor(state.freeMap, model.id)) : undefined;
+    const price = quote?.total ?? null;
     const missing = retry?.blocked ? 0 : shortfall(balance, price ?? 0);
     const waiting = Object.values(sending).some(Boolean);
     const ready = !!model && !promptTooLong && makeReady(model, text, references, rights, waiting, opts) && !state.submitting && missing === 0;
     const close = () => { epoch.current++; state.close(); onClose(); };
     const buy = () => { close(); router.push('/credits'); };
-    const label = price === null ? t('chat.make.button') : price === 0 ? t('opt.costFree') : plural('chat.make.buttonLabel', price);
+    const label = retry?.quote ? t('app.create.confirmPrice', { credits: String(price) }) : price === null ? t('chat.make.button') : price === 0 ? t('opt.costFree') : plural('chat.make.buttonLabel', price);
 
     return (
         <Modal visible={visible} animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={close}>
@@ -125,16 +128,16 @@ export function MakePanel({ visible, initialPrompt = '', initialKind = 'image', 
                 </ScrollView>
                 {model && kindOf(model.modality) === 'video' && model.durations.length > 1 ? (
                     <View style={styles.row} accessibilityRole="radiogroup" accessibilityLabel={t('chat.make.length')}>
-                        {model.durations.map(d => <Chip key={d} accessibilityRole="radio" accessibilityState={{ selected: length === d }} onPress={() => setDuration(d)} label={t('chat.make.seconds', { n: String(d) })} selected={length === d} />)}
+                        {model.durations.map(d => <Chip key={d} accessibilityRole="radio" accessibilityState={{ selected: length === d }} onPress={() => { state.resetInputs(); setDuration(d); }} label={t('chat.make.seconds', { n: String(d) })} selected={length === d} />)}
                     </View>
                 ) : null}
-                {model && options ? <CreateOptions options={options} values={opts} showCount={takesImageCount(model)} resolution={resolution} audio={audio} outputPrice={plural('opt.outputPriceSame', unit)} onChange={setOpts} /> : null}
+                {model && options ? <CreateOptions options={options} values={opts} showCount={takesImageCount(model)} resolution={resolution} audio={audio} outputPrice={plural('opt.outputPriceSame', unit)} onChange={value => { state.resetInputs(); setOpts(value); }} /> : null}
                 {model ? <MakeSources key={`${model.id}:${sourceEpoch}`} api={api} model={model} references={references} rights={rights} waiting={waiting}
-                    onRights={setRights} onReferences={(slot, files) => {
+                    onRights={value => { state.resetInputs(); setRights(value); }} onReferences={(slot, files) => {
                         if (sourceEpoch !== epoch.current) return;
-                        setRights(false); setReferences(all => replaceSlotReferences(all, slot, files));
+                        state.resetInputs(); setRights(false); setReferences(all => replaceSlotReferences(all, slot, files));
                     }} onBusy={(slot, busy) => { if (sourceEpoch === epoch.current) setSending(all => ({ ...all, [slot]: busy })); }} /> : null}
-                <TextField style={styles.input} value={prompt} onChangeText={setPrompt} multiline placeholder={t('chat.make.placeholder')} accessibilityLabel={t('chat.make.promptLabel')} />
+                <TextField style={styles.input} value={prompt} onChangeText={value => { state.resetInputs(); setPrompt(value); }} multiline placeholder={t('chat.make.placeholder')} accessibilityLabel={t('chat.make.promptLabel')} />
                 {promptTooLong ? <Text tone="danger" accessibilityRole="alert">{t(promptLimitKey, { count: String(text.length), max: String(promptLimit) })}</Text> : null}
                 {balance !== null ? <Text variant="caption" tone="secondary">{t('create.workspace.balance', { credits: String(balance) })}</Text> : null}
                 {missing > 0 ? <Text accessibilityLiveRegion="polite">{plural('create.short', missing, { have: String(balance ?? 0), need: String(price) })}</Text> : null}
@@ -142,8 +145,8 @@ export function MakePanel({ visible, initialPrompt = '', initialKind = 'image', 
                 {state.note ? <Text variant="caption" accessibilityLiveRegion="polite">{state.note}</Text> : null}
                 {missing > 0 || state.lowBalance ? <Button label={t('lowBalance.buy')} variant="secondary" onPress={buy} /> : null}
                 <Button accessibilityRole="button" accessibilityLabel={rawText(label)} disabled={!ready} containerStyle={styles.go}
-                    onPress={() => { if (ready && request && model) void state.run(request, n, onJobStarted ? id => onJobStarted(id, model) : undefined); }} variant="secondary" label={label}>
-                    {state.submitting ? <ActivityIndicator color={styles.ink.color} /> : <Text tone={price !== null ? 'warning' : 'primary'}>{price === null ? t('chat.make.button') : price === 0 ? t('create.workspace.generateFree') : plural('chat.make.buttonPrice', price)}</Text>}
+                    onPress={() => { if (ready && request && model) void state.run(request, n, onJobStarted ? id => onJobStarted(id, model) : undefined, quote); }} variant="secondary" label={label}>
+                    {state.submitting ? <ActivityIndicator color={styles.ink.color} /> : <Text tone={price !== null ? 'warning' : 'primary'}>{retry?.quote ? label : price === null ? t('chat.make.button') : price === 0 ? t('create.workspace.generateFree') : plural('chat.make.buttonPrice', price)}</Text>}
                 </Button>
                 <Button variant="tertiary" onPress={close} label={t('chat.make.close')} />
             </ScrollView>

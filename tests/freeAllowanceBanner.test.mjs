@@ -81,8 +81,8 @@ test('flag on: a failing read answers a typed 502 and leaks nothing', () => with
     } finally { console.error = errors; net.restore(); }
 }));
 
-test('the create page prices the batch through freeCost and shows a free banner and badge', () => {
-    assert.match(page, /freeCost\(unitCost, n, freeLeft\)/);
+test('the create page prices the unresolved batch through one allocation and shows allowance badges', () => {
+    assert.match(page, /allocationSnapshot\(activeBatch.*unitCost, freeLeft\)/);
     assert.match(page, /pluralKey\(t,locale,'app.create.freeLeft',freeLeft\),\{count:number\(freeLeft\)\}/);
     assert.match(page, /pluralKey\(t,locale,'app.create.freeRemaining',freeLeftFor\(freeMap,m.id\)\),\{count:number\(freeLeftFor\(freeMap,m.id\)\)\}/);
 });

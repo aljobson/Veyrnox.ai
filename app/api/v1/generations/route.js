@@ -14,7 +14,7 @@ import { NextResponse } from 'next/server';
 import { rpc, select, envConfig, SupabaseError } from '../../../../packages/db/supabase-client.js';
 import { capabilityFor, declaredInputs, checkSource } from '../../../../lib/modelCapabilities.js';
 import { refundRejectedSubmit, unknownSubmitResponse, recordSubmittedJob } from '../../../../lib/submitRejection.js';
-import { freeAllowanceOn as isFreeAllowanceOn, takeFreeJob } from '../../../../lib/freeJob.js';
+import { freeAllowanceOn as isFreeAllowanceOn, takeFreeJobDetailed } from '../../../../lib/freeJob.js';
 import { templateStartId } from '../../../../lib/templateStart.js';
 import { classifySubmitFailure } from '../../../../lib/submitFailureClass.js';
 import { readGenerationSources, resolveGenerationSources, sourceErrorStatus } from '../../../../lib/generationSources.js';
@@ -147,6 +147,9 @@ function priceFor(modelRow, inputs) {
     return modelRow.credits_5s * Math.ceil(seconds / UNIT_SECONDS);
 }
 
+// Like the other admission switches, absent or anything except exact 'true' is off.
+const maxChargeEnabled = env => !!env && env.MAX_CHARGE_ENABLED === 'true';
+
 export async function POST(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
     if (!authId) return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
@@ -163,10 +166,15 @@ export async function POST(req) {
     const modelId = body && body.model_id;
     const idempotencyKey = body && body.idempotency_key;
     const confirmedCredits = body && body.confirmed_credits;
+    const requestedMaxCharge = body?.max_charge_credits;
+    const maxCharge = maxChargeEnabled(process.env) ? requestedMaxCharge : undefined;
     let inputs = body && body.inputs;
     if (typeof modelId !== 'string' || !MODEL_ID_RE.test(modelId)) return NextResponse.json({ error: 'model_id_required' }, { status: 400 });
     if (typeof idempotencyKey !== 'string' || !IDEMPOTENCY_RE.test(idempotencyKey)) {
         return NextResponse.json({ error: 'idempotency_key_required' }, { status: 400 });
+    }
+    if (requestedMaxCharge !== undefined && (!Number.isInteger(requestedMaxCharge) || requestedMaxCharge < 0)) {
+        return NextResponse.json({ error: 'max_charge_credits_invalid' }, { status: 400 });
     }
     if (confirmedCredits !== undefined && (!Number.isInteger(confirmedCredits) || confirmedCredits < 0)) {
         return NextResponse.json({ error: 'confirmed_credits_invalid' }, { status: 400 });
@@ -347,12 +355,10 @@ export async function POST(req) {
         pricedInputs = { duration_seconds: editUnits(resolved.edit) * UNIT_SECONDS };
     }
 
-    // An API client may pin the maximum charge it showed to a person. Check
-    // against this uncached catalog row after all pricing inputs are resolved,
-    // so a price change can never turn an old confirmation into permission to
-    // spend more. Browser clients omit the field and keep their existing flow.
+    // An enabled net ceiling takes precedence over the legacy gross-price equality check.
+    // Both fields are still type-validated; without an enabled ceiling, preserve the exact check.
     const quotedCredits = priceFor(modelRow, pricedInputs);
-    if (confirmedCredits !== undefined && confirmedCredits !== quotedCredits) {
+    if (maxCharge === undefined && confirmedCredits !== undefined && confirmedCredits !== quotedCredits) {
         return NextResponse.json({
             error: 'credit_confirmation_mismatch',
             confirmed_credits: confirmedCredits,
@@ -397,23 +403,52 @@ export async function POST(req) {
     // and a bad or missing one is simply ignored.
     const presetId = templateStartId(body && body.preset, modelId);
     const jobInputs = presetId ? { ...storedInputs, preset_id: presetId } : storedInputs;
+    // Only authenticated ownership + key proves a replay. Malformed reads are unknown.
+    async function existingJob() {
+        const rows = await select('jobs', {
+            columns: 'id', filter: `user_id=eq.${encodeURIComponent(userId)}&idempotency_key=eq.${encodeURIComponent(idempotencyKey)}`, limit: 1,
+        }, cfg);
+        if (!Array.isArray(rows) || (rows.length && !rows[0]?.id)) throw new Error('invalid job lookup');
+        return rows.length > 0;
+    }
     // Durable dispatch is source-free: readGenerationSources converts unified
     // references into rawKeys/rawAssets, and source validation has already run.
     // Never pass reference jobs to the separate 0243 strict-payload replay contract.
     if (falDispatchEnabled(process.env) && modelRow.provider === 'fal' && modelRow.modality === 'text-to-image'
         && !rawKeys.length && !rawAssets.length) {
+        if (maxCharge !== undefined) {
+            try {
+                if (!await existingJob()) return NextResponse.json({ error: 'admission_unavailable' }, { status: 503 });
+            } catch {
+                return NextResponse.json({ error: 'admission_unknown' }, { status: 503 });
+            }
+        }
         return admitFalDispatch({ userId, key: idempotencyKey, model: modelRow, record,
             inputs: modelInputs, jobInputs, free: freeAllowanceOn, cfg, onCommitted: publishFalDispatchWakeup });
     }
     let debit = null;
+    let allowanceKind = 'none';
     // ADR-0069: allowance and zero-credit job are atomic. No allowance falls through to paid debit;
     // after a lost acknowledgement ledger_debit finds the existing job by key.
     if (freeAllowanceOn && Number(modelRow.free_allowance_per_day) > 0) {
-        debit = await takeFreeJob({
+        const allowance = await takeFreeJobDetailed({
             cfg, authId, userId, key: idempotencyKey, modelId, inputs: jobInputs,
             limit: RATE_LIMIT_PER_WINDOW, windowSeconds: RATE_WINDOW_SECONDS,
         });
+        allowanceKind = allowance.kind;
+        debit = allowance.kind === 'ambiguous' && maxCharge !== undefined ? null : allowance.result;
         if (debit && debit.free) credits = 0;
+    }
+    if (!debit && maxCharge !== undefined && credits > maxCharge) {
+        try {
+            if (!await existingJob()) {
+                if (allowanceKind === 'ambiguous') return NextResponse.json({ error: 'admission_unknown' }, { status: 503 });
+                return NextResponse.json({ error: 'price_changed', expected_credits: credits, max_charge_credits: maxCharge }, { status: 409 });
+            }
+            // The debit's replay branch returns the original job without charging again.
+        } catch {
+            return NextResponse.json({ error: 'admission_unknown' }, { status: 503 });
+        }
     }
     try {
         // The video agent debits through a guarded RPC that holds the

@@ -260,6 +260,11 @@ const de = {
     'app.create.addFiles.cancel': 'Abbrechen',
     'app.create.addFiles.add': 'Hinzufügen',
     'app.create.addFiles.select': '{name} auswählen',
+    'app.create.error.price_changed': 'Der Preis hat sich geändert. Dieser Auftrag wurde nicht berechnet. Bestätige den neuen Restbetrag, um fortzufahren.',
+    'app.create.error.admission_unknown': 'Wir konnten nicht bestätigen, ob dieser Auftrag gestartet oder berechnet wurde. Wiederhole denselben Auftrag, um das Ergebnis zu prüfen.',
+    'app.create.error.admission_unavailable': 'Dieser Auftrag konnte nicht angenommen werden. Es wurde nichts berechnet. Versuche es später erneut.',
+    'app.create.confirmPrice': '{credits} Credits bestätigen',
+    'app.create.startNewBatch': 'Neue Serie starten',
 } as const;
 
 export default de;

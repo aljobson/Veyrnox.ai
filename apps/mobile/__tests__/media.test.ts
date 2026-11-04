@@ -118,3 +118,12 @@ describe('waitForJob', () => {
         expect(api.getJob).not.toHaveBeenCalled();
     });
 });
+
+test.each(['flux-2-pro-1k-kie', 'flux-2-pro'])('model %s sends both gross confirmation and a zero net ceiling; the server chooses enforcement', async modelId => {
+    const api = { request: jest.fn().mockResolvedValue({ job_id: 'job' }) } as unknown as ApiClient;
+    await mediaApi(api).createGeneration({ modelId, prompt: 'a cat', durationSeconds: null, confirmedCredits: 7, maxCharge: 0, idempotencyKey: 'key-abcdefgh' });
+    const body = JSON.parse(jest.mocked(api.request).mock.calls[0][1]!.body as string);
+    expect(body.max_charge_credits).toBe(0);
+    expect(body.confirmed_credits).toBe(7);
+    expect(body.model_id).toBe(modelId);
+});

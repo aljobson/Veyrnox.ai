@@ -80,12 +80,15 @@ test('free allowance is refreshed after a run and Generate is disabled until the
     await act(async () => fresh.resolve({ enabled: true, left: {} })); expect(generate().props.accessibilityState.disabled).toBe(false);
 });
 test('partial 2x10 batch retries at most ten with the same keys and two deduplicated tiles; New uses fresh keys', async () => {
-    mockPost.mockResolvedValueOnce({ job_id: 'one' }).mockRejectedValueOnce(new ApiError(0, 'network')).mockResolvedValueOnce({ job_id: 'one' }).mockResolvedValueOnce({ job_id: 'two' });
+    mockPost.mockResolvedValueOnce({ job_id: 'one' }).mockRejectedValueOnce(new ApiError(0, 'network')).mockResolvedValueOnce({ job_id: 'two' });
     mockApi.getBalance.mockResolvedValue(balance(10)); await render(); await count(2); await click(generate());
     expect(text(t('libraryCreate.retryUpTo', { credits: '10' }))).toHaveLength(1); expect(generate().props.accessibilityState.disabled).toBe(false);
     expect(controls(t('publishReporting.open'))).toHaveLength(1); await click(generate()); expect(controls(t('publishReporting.open'))).toHaveLength(2);
-    expect(mockPost.mock.calls[0][0].idempotency_key).toBe(mockPost.mock.calls[2][0].idempotency_key); expect(mockPost.mock.calls[1][0].idempotency_key).toBe(mockPost.mock.calls[3][0].idempotency_key);
-    await click(controls(t('libraryCreate.newNoCharge'))[0]); await count(1); await click(generate()); expect(mockPost.mock.calls[4][0].idempotency_key).not.toBe(mockPost.mock.calls[0][0].idempotency_key);
+    expect(mockPost).toHaveBeenCalledTimes(3);
+    expect(mockPost.mock.calls[1][0].idempotency_key).toBe(mockPost.mock.calls[2][0].idempotency_key);
+    expect(mockPost.mock.calls.slice(2).some(([request]) => request.idempotency_key === mockPost.mock.calls[0][0].idempotency_key)).toBe(false);
+    expect(mockPost.mock.calls[2][0].max_charge_credits).toBe(10);
+    await click(controls(t('libraryCreate.newNoCharge'))[0]); await count(1); await click(generate()); expect(mockPost.mock.calls[3][0].idempotency_key).not.toBe(mockPost.mock.calls[0][0].idempotency_key);
 });
 test('editing the prompt after zero jobs start submits the new prompt with a fresh key', async () => {
     mockPost.mockRejectedValueOnce(new ApiError(0, 'network'));

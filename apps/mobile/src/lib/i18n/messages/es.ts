@@ -260,6 +260,11 @@ const es = {
     'app.create.addFiles.cancel': 'Cancelar',
     'app.create.addFiles.add': 'Añadir',
     'app.create.addFiles.select': 'Seleccionar {name}',
+    'app.create.error.price_changed': 'El precio cambió. No se cobró este elemento. Confirma el nuevo total pendiente para continuar.',
+    'app.create.error.admission_unknown': 'No pudimos confirmar si esta solicitud comenzó o se cobró. Reintenta la misma solicitud para comprobarlo.',
+    'app.create.error.admission_unavailable': 'No se pudo aceptar esta solicitud. No se cobró nada. Inténtalo más tarde.',
+    'app.create.confirmPrice': 'Confirmar {credits} créditos',
+    'app.create.startNewBatch': 'Iniciar un lote nuevo',
 } as const;
 
 export default es;
