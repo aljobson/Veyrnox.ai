@@ -96,9 +96,9 @@ test('the real manifest is sound', () => {
 test('source-gap clips stay outside the public manifest', () => {
     const removedAuditKeys = REMOVED_PROMPT_GAP_TEMPLATE_IDS
         .filter((id) => Object.hasOwn(AUDIT_SHOWCASE_CLIPS, id));
-    assert.equal(REMOVED_PROMPT_GAP_TEMPLATE_IDS.length, 44);
-    assert.equal(removedAuditKeys.length, 43, 'Keyboard Duo uses the independent ACE Step landing clip');
-    assert.equal(Object.keys(SHOWCASE_CLIPS).length, 400, '393 template clips plus seven dedicated landing clips');
+    assert.equal(REMOVED_PROMPT_GAP_TEMPLATE_IDS.length, 43);
+    assert.equal(removedAuditKeys.length, 42, 'Keyboard Duo uses the independent ACE Step landing clip');
+    assert.equal(Object.keys(SHOWCASE_CLIPS).length, 401, '394 template clips plus seven dedicated landing clips');
     for (const key of removedAuditKeys) assert.equal(Object.hasOwn(SHOWCASE_CLIPS, key), false, key);
     assert.equal(Object.hasOwn(SHOWCASE_CLIPS, 'ace-step'), true);
 });
@@ -165,7 +165,7 @@ test('every media-backed preset has a distinct preview and poster', () => {
 
 test('every preview-backed template has a real local video and poster', () => {
     const previewBacked = PRESETS.filter((preset) => preset.clipKey);
-    assert.equal(previewBacked.length, 393);
+    assert.equal(previewBacked.length, 394);
     for (const preset of previewBacked) {
         const clip = SHOWCASE_CLIPS[preset.clipKey];
         assert.ok(clip?.video, `${preset.id} has no video`);

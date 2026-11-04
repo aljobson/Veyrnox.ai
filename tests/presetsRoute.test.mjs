@@ -68,22 +68,22 @@ test('the payload carries source framing and exact public source prompts but no 
         for (const u of [p.previewUrl, p.posterUrl, p.sourcePromptDuplicateOf]) assert.doesNotMatch(u ?? '', /higgs|syntx/i, p.id);
     }
     const framed = toPublicPresets(catalog).filter((p) => p.sourceAspect);
-    assert.equal(framed.length, 315);
+    assert.equal(framed.length, 316);
     assert.ok(framed.every((p) => /^(?:1:1|4:3|9:16|16:9)$/.test(p.sourceAspect)));
     const exact = toPublicPresets(catalog).filter((p) => p.sourcePromptOrigin === 'community-source-exact');
-    assert.equal(exact.length, 366);
+    assert.equal(exact.length, 367);
     assert.ok(exact.every((p) => typeof p.sourcePrompt === 'string' && p.sourcePrompt.length > 0));
     assert.ok(exact.every((p) => p.prompt.length <= 30000));
     assert.ok(exact.every((p) => sourceRecord(p.id)?.prompt && p.sourcePrompt === exactSourcePromptRecord(p.id)?.prompt));
     assert.ok(exact.every((p) => !/higgsfield|syntx/i.test(p.sourcePrompt)), 'published prompts name no source platform');
-    assert.equal(exact.filter((p) => genjutsuRecord(p.id)).length, 57);
+    assert.equal(exact.filter((p) => genjutsuRecord(p.id)).length, 58);
     assert.equal(exact.filter((p) => sourceRecord(p.id) && !genjutsuRecord(p.id)).length, 309);
     const statuses = Object.groupBy(toPublicPresets(catalog), (p) => p.sourcePromptStatus);
-    assert.equal(statuses.exact.length, 366);
+    assert.equal(statuses.exact.length, 367);
     assert.equal(statuses['adaptation-only'].length, 27);
     assert.equal(statuses['exact-truncated'], undefined);
     assert.equal(statuses.unavailable, undefined);
-    assert.equal(exact.filter((p) => p.sourcePromptRunnable === true).length, 144);
+    assert.equal(exact.filter((p) => p.sourcePromptRunnable === true).length, 145);
     assert.equal(exact.filter((p) => p.sourcePromptRunnable === false).length, 222);
     assert.ok(exact.filter((p) => p.sourcePromptRunnable === false).every((p) => p.sourcePromptIssues.includes('source-input-contract-not-wired')));
     assert.ok(exact.filter((p) => p.sourcePromptRunnable === true).every((p) => !p.sourcePromptIssues.includes('source-input-contract-not-wired')));
