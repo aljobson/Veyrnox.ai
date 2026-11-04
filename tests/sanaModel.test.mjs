@@ -70,3 +70,9 @@ test('Sana 1 credit retains at least 50% at every proposed pack under fee assump
         assert.ok(r.margin >= 0.5);
     }
 });
+
+test('web Create offers every ratio Sana declares, including 4:3 and 3:4', async () => {
+    const { modelAspectRatios } = await import('../app/veyrnox/_lib/tokens.js');
+    const offered = modelAspectRatios({ aspects: publicCapabilities(record).inputs.aspect_ratio.values });
+    assert.deepEqual([...offered].sort(), ['16:9', '1:1', '3:4', '4:3', '9:16']);
+});
