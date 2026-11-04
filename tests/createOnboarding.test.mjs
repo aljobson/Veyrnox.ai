@@ -62,7 +62,7 @@ test('bare Create starts from the cheapest image model while deep links remain a
   assert.match(page, /const arrival = preset \? templateArrival\(preset, arrivalModels \|\| \[\], params, storedDraft\) : null;/);
   assert.match(page, /const wanted = arrival \? arrival\.modelId : requested;/);
   assert.match(page, /const models = catalogModels\.filter\(\(m\) => createPromptModelAvailable\(m, autoShortOn\)\);/);
-  assert.match(page, /if \(wanted\) \{[\s\S]*setModelId\(wanted\);[\s\S]*setGoal\('all'\);[\s\S]*\}/);
+  assert.match(page, /if \(wanted\) \{[\s\S]*setModelId\(wanted\);[\s\S]*setGoal\(catalogModels\.find\(\(m\) => m\.id === wanted\)\?\.kind \|\| 'all'\);[\s\S]*\}/);
   assert.doesNotMatch(page, /DEFAULT_MODEL = 'wan-2\.5-kie'/);
   // Exercise the API capability mapping as well as the shared picker rule.
   for (const input of ['clips', 'plan_id', 'topic']) {
