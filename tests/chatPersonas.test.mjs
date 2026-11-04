@@ -122,7 +122,15 @@ test('the screen: personas fill the draft of a new chat and never touch one that
     assert.doesNotMatch(pick, /chatApi\./, 'choosing a persona never calls the server');
     // The picker is off for an existing chat, and the section appears only when the feature answered "on".
     assert.match(panel, /selectionDisabled=\{busy \|\| hasThread \|\| instructionsLocked\}/);
-    assert.match(panel, /\{personasOn && \(/);
+    assert.match(panel, /\{personasOn && personas\.length > 0 && \(/);
+    // With no personas the card collapses to one line: no dead dropdown, still a way into Personas.
+    assert.match(panel, /\{personasOn && personas\.length === 0 && \(/);
+    assert.match(panel, /data-testid="chat-persona-empty"/);
+    // The first persona or the last delete swaps the button that opened the manager, so closing it refocuses whichever one exists.
+    assert.match(panel, /data-persona-manage/);
+    assert.match(src('../app/veyrnox/_components/chat/PersonaPicker.js'), /data-persona-manage/);
+    assert.match(ws, /onClose=\{closePersonaManager\}/);
+    assert.match(ws, /querySelector\('\[data-persona-manage\]'\)\?\.focus\(\)/);
     assert.match(ws, /if \(r && r\.enabled\) \{ setPersonasOn\(true\)/);
     assert.match(ws, /setPersonaId\(''\); setActive\(r\.thread\)/);
 });

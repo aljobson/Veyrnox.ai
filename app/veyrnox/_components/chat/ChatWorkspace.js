@@ -128,6 +128,15 @@ export function ChatWorkspace() {
   const [personas, setPersonas] = useState([]);
   const [personaId, setPersonaId] = useState('');
   const [managingPersonas, setManagingPersonas] = useState(false);
+  // Creating the first persona or deleting the last swaps the settings button that opened the manager for another one, so the
+  // dialog cannot give focus back to it. Put focus on whichever Personas button now exists, unless focus already landed somewhere real.
+  const closePersonaManager = () => {
+    setManagingPersonas(false);
+    requestAnimationFrame(() => {
+      const active = document.activeElement;
+      if (!active || active === document.body || !active.isConnected) document.querySelector('[data-persona-manage]')?.focus();
+    });
+  };
   const [tiers, setTiers] = useState(() => new Set());
   const [instr, setInstr] = useState('');
   const [saved, setSaved] = useState(false);
@@ -618,7 +627,7 @@ export function ChatWorkspace() {
           </div>
         </div>
       )}
-      {managingPersonas && <PersonaManager personas={personas} models={models} onChange={changePersonas} onClose={() => setManagingPersonas(false)} />}
+      {managingPersonas && <PersonaManager personas={personas} models={models} onChange={changePersonas} onClose={closePersonaManager} />}
     </div>
   );
 }
