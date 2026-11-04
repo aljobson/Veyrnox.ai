@@ -18,6 +18,7 @@ export const unknownGenerationOutcome = (err: unknown) => !(err instanceof ApiEr
     || ['network', 'internal', 'gateway_error', 'debit_failed', 'account_changed', 'dispatch_acceptance_unknown', 'admission_unknown', 'outcome_unknown', 'bad_response'].includes(err.code)
     // An untyped server error is not proof that nothing was charged.
     || (err.code === 'unknown' && err.status >= 500);
+const NO_JOB_REFUSALS = new Set(['price_changed', 'insufficient_balance', 'insufficient_credits']);
 export type ChargeSnapshot = { ceilings: (number | null)[]; total: number; payable: number };
 export function createGenerationSubmit() {
     let pending: { signature: string; keys: string[]; accepted: (string | null)[]; unknown: Set<number> } | null = null;
@@ -60,7 +61,12 @@ export function createGenerationSubmit() {
                             idempotencyKey: run.keys[i], extraInputs: inputsForIndex(request.extraInputs ?? {}, i, count) });
                     } catch (err) {
                         if (unknownGenerationOutcome(err)) run.unknown.add(i);
-                        else run.unknown.delete(i);
+                        else {
+                            run.unknown.delete(i);
+                            // A definitive refusal may have created and refunded a job under this key (a provider refusal),
+                            // and a retry with it would replay that dead job. These refusals create nothing, so the key continues.
+                            if (!(err instanceof ApiError && NO_JOB_REFUSALS.has(err.code))) run.keys[i] = Crypto.randomUUID();
+                        }
                         throw err;
                     }
                     if (generation !== epoch || owner !== getCacheUser()) throw new ApiError(409, 'submission_reset');

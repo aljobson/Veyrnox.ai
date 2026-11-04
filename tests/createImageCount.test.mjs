@@ -27,6 +27,8 @@ test('the total drives the price, the balance guard and the button', () => {
     assert.match(page, /const cost = quote.total;/);
     assert.match(submit, /payable > balance\) return;/);
     assert.match(page, /const payable = quote.payable \?\? cost;/);
+    // A continuation (jobs already started) still pre-checks the balance for the remaining items.
+    assert.match(page, /\(!!activeBatch && \(balance == null \|\| payable > balance\)\)/);
     assert.match(page, /balance == null \|\| payable > balance \|\| missingSource/);
     assert.match(page, />\{generationCostLabel\(cost\)\}<\/div>/);
     assert.match(page, /cost===0\?'app.create.generateFree':'app.create.generatePaid',\{credits:creditLabel\(cost\)\}/);
