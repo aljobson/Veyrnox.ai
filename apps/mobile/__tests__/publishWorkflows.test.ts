@@ -108,4 +108,11 @@ describe('price-free Publish Plan status', () => {
         expect(planPeriodKey({ ...plan, status: 'past_due' })).toBe('publishWorkflows.periodEnd');
         expect(planPeriodKey({ ...plan, cancelAtPeriodEnd: null })).toBe('publishWorkflows.periodEnd');
     });
+
+    test('a complimentary grant is recognised, has no management line, and shows when it ends', () => {
+        const comp = parseWorkflowPlan({ entitlement: { ...entitlement, subscription: { source: 'complimentary', status: 'active', current_period_end: '2026-11-18T12:00:00Z', cancel_at_period_end: true } } })!;
+        expect(comp).toMatchObject({ tier: 'publish', source: 'complimentary', cancelAtPeriodEnd: true });
+        expect(planManagementKey(comp.source)).toBeNull();
+        expect(planPeriodKey(comp)).toBe('publishWorkflows.ends');
+    });
 });

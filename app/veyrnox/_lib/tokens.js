@@ -143,7 +143,8 @@ export function presetCredits(preset, catalog, durationSeconds = preset.duration
   return durationSeconds ? clipCredits(unit, durationSeconds) : unit;
 }
 
-export const ASPECT_RATIOS = ['16:9', '9:16', '1:1', '4:5', '21:9'];
+// Every ratio a model's provider contract can declare, most used first. A model still offers only the ones it declares.
+export const ASPECT_RATIOS = ['16:9', '9:16', '1:1', '4:3', '3:4', '3:2', '2:3', '5:4', '4:5', '21:9'];
 
 /** The same aspect choices Create exposes: only values declared by the provider contract. */
 export function modelAspectRatios(model) {

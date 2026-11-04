@@ -1,4 +1,4 @@
-import { fetchPublishTier, paywallState, tierFrom } from '../src/lib/publishPlan';
+import { fetchPublishTier, paywallState, sourceFrom, tierFrom } from '../src/lib/publishPlan';
 import type { ApiClient } from '../src/lib/api';
 
 const api = (impl: () => Promise<unknown>) => ({ request: jest.fn(impl) }) as unknown as ApiClient;
@@ -22,5 +22,15 @@ describe('publish plan check', () => {
         expect(paywallState(true, 'free')).toBe('subscribe');
         expect(paywallState(true, 'publish')).toBe('active');
         expect(paywallState(true, null)).toBe('unknown');
+    });
+});
+
+describe('plan source', () => {
+    test('stripe, store and a complimentary grant are read; anything else is unknown', () => {
+        const of = (source: unknown) => sourceFrom({ entitlement: { tier: 'publish', subscription: { source } } });
+        expect(of('stripe')).toBe('stripe');
+        expect(of('store')).toBe('store');
+        expect(of('complimentary')).toBe('complimentary');
+        expect(of('gift')).toBeNull();
     });
 });
