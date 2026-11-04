@@ -129,14 +129,18 @@ export function ChatWorkspace() {
   const [personaId, setPersonaId] = useState('');
   const [managingPersonas, setManagingPersonas] = useState(false);
   // Creating the first persona or deleting the last swaps the settings button that opened the manager for another one, so the
-  // dialog cannot give focus back to it. Put focus on whichever Personas button now exists, unless focus already landed somewhere real.
-  const closePersonaManager = () => {
-    setManagingPersonas(false);
-    requestAnimationFrame(() => {
-      const active = document.activeElement;
-      if (!active || active === document.body || !active.isConnected) document.querySelector('[data-persona-manage]')?.focus();
-    });
-  };
+  // dialog cannot give focus back to it. Once the dialog is gone, put focus on whichever Personas button now exists, unless the
+  // dialog already returned it somewhere real. An effect, not a frame callback: it runs after the dialog has unmounted, when focus
+  // has fallen to the page.
+  const restorePersonaFocus = useRef(false);
+  const closePersonaManager = () => { restorePersonaFocus.current = true; setManagingPersonas(false); };
+  useEffect(() => {
+    if (managingPersonas || !restorePersonaFocus.current) return;
+    restorePersonaFocus.current = false;
+    const active = document.activeElement;
+    // The settings panel is mounted twice (the wide sidebar and the phone sheet), and only one of them is showing.
+    if (!active || active === document.body || !active.isConnected) [...document.querySelectorAll('[data-persona-manage]')].find((b) => b.getClientRects().length)?.focus();
+  }, [managingPersonas]);
   const [tiers, setTiers] = useState(() => new Set());
   const [instr, setInstr] = useState('');
   const [saved, setSaved] = useState(false);

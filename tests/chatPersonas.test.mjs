@@ -130,7 +130,10 @@ test('the screen: personas fill the draft of a new chat and never touch one that
     assert.match(panel, /data-persona-manage/);
     assert.match(src('../app/veyrnox/_components/chat/PersonaPicker.js'), /data-persona-manage/);
     assert.match(ws, /onClose=\{closePersonaManager\}/);
-    assert.match(ws, /querySelector\('\[data-persona-manage\]'\)\?\.focus\(\)/);
+    // After the dialog unmounts (an effect, not a frame callback that can run while the dialog still holds focus).
+    assert.match(ws, /useEffect\(\(\) => \{\s*if \(managingPersonas \|\| !restorePersonaFocus\.current\) return;/);
+    // The panel is mounted twice (sidebar and phone sheet), so the button must be the one that is showing, not the first in the page.
+    assert.match(ws, /querySelectorAll\('\[data-persona-manage\]'\)\]\.find\(\(b\) => b\.getClientRects\(\)\.length\)\?\.focus\(\)/);
     assert.match(ws, /if \(r && r\.enabled\) \{ setPersonasOn\(true\)/);
     assert.match(ws, /setPersonaId\(''\); setActive\(r\.thread\)/);
 });
