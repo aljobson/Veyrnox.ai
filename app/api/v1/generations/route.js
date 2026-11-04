@@ -416,15 +416,9 @@ export async function POST(req) {
     // Never pass reference jobs to the separate 0243 strict-payload replay contract.
     if (falDispatchEnabled(process.env) && modelRow.provider === 'fal' && modelRow.modality === 'text-to-image'
         && !rawKeys.length && !rawAssets.length) {
-        if (maxCharge !== undefined) {
-            try {
-                if (!await existingJob()) return NextResponse.json({ error: 'admission_unavailable' }, { status: 503 });
-            } catch {
-                return NextResponse.json({ error: 'admission_unknown' }, { status: 503 });
-            }
-        }
         return admitFalDispatch({ userId, key: idempotencyKey, model: modelRow, record,
-            inputs: modelInputs, jobInputs, free: freeAllowanceOn, cfg, onCommitted: publishFalDispatchWakeup });
+            inputs: modelInputs, jobInputs, free: freeAllowanceOn, maxCharge, existingJob,
+            cfg, onCommitted: publishFalDispatchWakeup });
     }
     let debit = null;
     let allowanceKind = 'none';

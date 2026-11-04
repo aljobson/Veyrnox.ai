@@ -194,3 +194,52 @@ Cached prices can nevertheless differ for **any model**. Concrete local drift:
 catalog can show either old price. Clip Editor models (`record.edit`) price
 resolved edit units server-side and are excluded from these Create pickers.
 No live price inventory was available in this implementation session.
+
+## Amendment: capped durable fal admission (PR B, 2026-11-04)
+
+Migration `0440_fal_dispatch_max_charge` supersedes PR A's interim refusal for
+new capped, source-free fal text-to-image admissions. The distinct eight-argument
+`admit_fal_dispatch_capped` has no argument defaults; the seven-argument
+`admit_fal_dispatch` remains unchanged for old Workers and uncapped requests.
+Both are service-role only. The wrapper locks the catalog row `FOR SHARE`, then
+calls the existing admission function inside a PL/pgSQL exception subtransaction.
+An inner refusal passes through unchanged; an idempotent replay or taken free
+allowance is exempt from the ceiling. A paid admission above the locked price
+ceiling raises private SQLSTATE `VFC01`, rolling back the inner job, debit,
+allowance, outbox, capacity/spend reservations and any inner rate-limit writes.
+Only that SQLSTATE is caught. The response is 409 `price_changed`, containing the
+locked `expected_credits` and original client `max_charge_credits`.
+The route's earlier request-attempt limiter remains outside this transaction.
+
+The route accepts non-negative safe integers. Because SQL prices and debit
+amounts are INTEGER, the Worker sends `Math.min(maxCharge, 2147483647)` to the
+RPC, retaining the original ceiling for the response. This cannot change an
+admission outcome: a database price cannot exceed the clamped ceiling.
+
+With the capped function present, replay lookup happens only inside SQL. Known
+supplier-spend trigger refusals retain their existing 429/503 bodies and
+Retry-After headers. Well-formed `ok:false` replies are definite refusals.
+A positively identified missing capped function permits the PR A compatibility
+path: a verified owned job may replay through the legacy function; a new job
+gets 503 `admission_unavailable`. An opaque 404 is insufficient evidence.
+All other uncertain outcomes, including transport failure, unreadable/null 2xx,
+incomplete results, failed compatibility lookups and success without a job id,
+return 503 `dispatch_acceptance_unknown`, with no legacy admission fallback and
+no wakeup. A retry keeps the original key. A committed replay can wake dispatch
+again without another debit.
+
+`MAX_CHARGE_ENABLED` remains the master switch and its checked-in values are
+unchanged. Apply 0440 only through the owner-approved `apply-migrations` workflow
+(ADR-0023), then deploy the Worker. Enable the flag only after the migration is
+applied and staging verifies paid/free ceilings, replay after a lost reply,
+price-update serialization, actual PostgREST seven/eight-key resolution and
+service-role privileges. The new Worker fails closed if the function is absent.
+Rollback drops only the new function; old Workers never call it.
+
+Proof: `tests/falDispatchCapped.test.mjs` covers Worker outcome classification;
+`scripts/test-fal-dispatch-capped.mjs` exercises the actual SQL with migration
+reapplication inside BEGIN/ROLLBACK, a named-argument JSON RPC adapter and a
+second connection for price locking. The ledger workflow runs it immediately
+after the complete migration replay, before legacy tests replace function bodies.
+The adapter is not a live PostgREST schema-cache test; that remains a staging
+release check. No deployment, live migration or flag activation is part of PR B.

@@ -12,7 +12,7 @@ export function PersonaPicker({ personas, value, selectionDisabled, manageDisabl
         <option value="">{personas.length ? t("app.chat.noPersona") : t("app.chat.noPersonas")}</option>
         {personas.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
       </select>
-      <button type="button" disabled={manageDisabled} onClick={onManage} className="rounded-full border border-vx-border px-3 py-1.5 text-sm disabled:opacity-60">{t("app.chat.personas.title")}</button>
+      <button type="button" data-persona-manage disabled={manageDisabled} onClick={onManage} className="rounded-full border border-vx-border px-3 py-1.5 text-sm disabled:opacity-60">{t("app.chat.personas.title")}</button>
     </div>
   );
 }

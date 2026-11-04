@@ -18,7 +18,7 @@ const fal = { ...model, id: 'flux-2-pro', provider: 'fal', provider_endpoint: 'f
 const video = { ...model, id: 'video-agent', provider: 'veyrnox', provider_endpoint: 'video-agent:v1', modality: 'text-to-video' };
 const referenceModel = { ...fal, id: 'kling-3.0-i2v', provider_endpoint: 'fal-ai/kling-video/v3/pro/image-to-video', modality: 'image-to-video' };
 const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jZQAAAABJRU5ErkJggg==', 'base64');
-function network(t, { row = model, free = false, reply = { ok: true, taken: false }, existing = false, lookupError = false, durable = false, sqlPrice = 7, maxChargeFlag = 'true' } = {}) {
+function network(t, { row = model, free = false, reply = { ok: true, taken: false }, existing = false, lookupError = false, durable = false, sqlPrice = 7, maxChargeFlag = 'true', cappedMissing = false } = {}) {
     if (maxChargeFlag === null) delete process.env.MAX_CHARGE_ENABLED;
     else process.env.MAX_CHARGE_ENABLED = maxChargeFlag;
     process.env.FREE_ALLOWANCE_ENABLED = String(free);
@@ -48,6 +48,13 @@ function network(t, { row = model, free = false, reply = { ok: true, taken: fals
                 if (reply === 'throw') throw new Error('lost acknowledgement');
                 if (reply === 'unreadable') return new Response('not json', { status: 200, headers: { 'content-type': 'application/json' } });
                 return Response.json(reply);
+            }
+            if (name === 'admit_fal_dispatch_capped') {
+                if (cappedMissing) return Response.json({ code: 'PGRST202', message: 'Could not find public.admit_fal_dispatch_capped in the schema cache' }, { status: 404 });
+                if (!existing && !(free && reply?.taken) && sqlPrice > body.p_max_charge) return Response.json({ ok: false, code: 'PRICE_EXCEEDS_CEILING', expected_credits: sqlPrice });
+                const taken = free && reply?.taken === true;
+                if (!existing && !taken) charged += sqlPrice;
+                return Response.json({ ok: true, job_id: JOB, idempotent: existing, free: taken, state: 'DEBITED', balance_after: 42 });
             }
             if (name === 'read_user_credits') return Response.json({ balance: 42 });
             if (name === 'get_user_asset') return Response.json({ ok: true, state: 'STORED', r2_key: `jobs/${JOB}/output.png`, mime_type: 'image/png' });
@@ -113,20 +120,21 @@ test('accepted key replays below the current catalog price', async t => {
     const r = await post(0);
     assert.equal(r.status, 200); assert.equal((await r.json()).job_id, JOB); assert.equal(n.charged, 0);
 });
-for (const max of [0, 7, 100]) test(`new durable ceiling ${max} refuses even if SQL price changes after Worker read`, async t => {
+for (const max of [0, 7, 100]) test(`new durable ceiling ${max} enforces SQL price changes after Worker read`, async t => {
     const n = network(t, { row: fal, durable: true, sqlPrice: 1000 });
     const r = await post(max, { model_id: fal.id });
-    assert.equal(r.status, 503); assert.equal((await r.json()).error, 'admission_unavailable'); assert.equal(n.count('admit_fal_dispatch'), 0); assert.equal(n.charged, 0);
+    assert.equal(r.status, 409); assert.deepEqual(await r.json(), { error: 'price_changed', expected_credits: 1000, max_charge_credits: max });
+    assert.equal(n.count('admit_fal_dispatch_capped'), 1); assert.equal(n.count('jobs'), 0); assert.equal(n.count('admit_fal_dispatch'), 0); assert.equal(n.charged, 0);
 });
-for (const max of [0, 7, 100]) test(`durable replay ceiling ${max} calls legacy admission despite catalog increase`, async t => {
+for (const max of [0, 7, 100]) test(`durable replay ceiling ${max} calls capped admission despite catalog increase`, async t => {
     const n = network(t, { row: { ...fal, credits_5s: 200 }, durable: true, existing: true });
     const r = await post(max, { model_id: fal.id });
-    assert.equal(r.status, 200); assert.equal((await r.json()).job_id, JOB); assert.equal(n.count('admit_fal_dispatch'), 1); assert.equal(n.charged, 0);
+    assert.equal(r.status, 200); assert.equal((await r.json()).job_id, JOB); assert.equal(n.count('admit_fal_dispatch_capped'), 1); assert.equal(n.count('admit_fal_dispatch'), 0); assert.equal(n.count('jobs'), 0); assert.equal(n.charged, 0);
 });
-test('durable lookup failure is unknown and never calls admission', async t => {
-    const n = network(t, { row: fal, durable: true, lookupError: true });
+test('missing capped RPC and failed replay lookup stays unknown', async t => {
+    const n = network(t, { row: fal, durable: true, lookupError: true, cappedMissing: true });
     const r = await post(10, { model_id: fal.id });
-    assert.equal(r.status, 503); assert.equal((await r.json()).error, 'admission_unknown'); assert.equal(n.count('admit_fal_dispatch'), 0);
+    assert.equal(r.status, 503); assert.equal((await r.json()).error, 'dispatch_acceptance_unknown'); assert.equal(n.count('admit_fal_dispatch'), 0);
 });
 test('uncapped durable request uses legacy admission without added lookup', async t => {
     const n = network(t, { row: fal, durable: true });
@@ -182,7 +190,7 @@ test('the unreadable 2xx fixture exercises the real rpc JSON parse failure and r
 for (const maxChargeFlag of ['false', 'true']) test(`durable mobile payload is identical; server flag ${maxChargeFlag} decides admission`, async t => {
     const n = network(t, { row: fal, durable: true, maxChargeFlag });
     const response = await post(0, { model_id: fal.id, confirmed_credits: 7 });
-    assert.equal(response.status, maxChargeFlag === 'true' ? 503 : 202);
+    assert.equal(response.status, maxChargeFlag === 'true' ? 409 : 202);
     assert.equal(n.count('admit_fal_dispatch'), maxChargeFlag === 'true' ? 0 : 1);
     assert.equal(n.charged, maxChargeFlag === 'true' ? 0 : 7);
 });
@@ -235,4 +243,34 @@ for (const maxChargeFlag of ['false', 'true']) for (const confirmed of [null, -1
     assert.equal(response.status, 400);
     assert.deepEqual(await response.json(), { error: 'confirmed_credits_invalid' });
     assert.equal(n.calls.length, 0);
+});
+
+for (const max of [7, 2147483647, 2147483648, Number.MAX_SAFE_INTEGER]) for (const existing of [false, true]) {
+    test(`durable route ceiling ${max}, replay=${existing} uses capped RPC without lookup`, async t => {
+        const n = network(t, { row: fal, durable: true, existing, lookupError: true });
+        const response = await post(max, { model_id: fal.id });
+        assert.equal(response.status, existing ? 200 : 202);
+        assert.equal((await response.json()).job_id, JOB);
+        assert.equal(n.count('admit_fal_dispatch'), 0); assert.equal(n.count('jobs'), 0);
+        assert.equal(n.calls.find(c => c.name === 'admit_fal_dispatch_capped').body.p_max_charge, Math.min(max, 2147483647));
+        assert.equal(n.charged, existing ? 0 : 7);
+    });
+}
+for (const existing of [false, true]) test(`missing capped function route compatibility, existing=${existing}`, async t => {
+    const n = network(t, { row: fal, durable: true, existing, cappedMissing: true });
+    const response = await post(0, { model_id: fal.id });
+    assert.equal(response.status, existing ? 200 : 503);
+    const body = await response.json();
+    if (existing) assert.equal(body.job_id, JOB);
+    else assert.deepEqual(body, { error: 'admission_unavailable' });
+    assert.equal(n.count('admit_fal_dispatch_capped'), 1);
+    assert.equal(n.count('admit_fal_dispatch'), existing ? 1 : 0);
+    assert.equal(n.count('jobs'), 1); assert.equal(n.charged, 0);
+});
+test('durable free allowance admits at zero ceiling through capped RPC', async t => {
+    const n = network(t, { row: fal, durable: true, free: true, reply: { taken: true } });
+    const response = await post(0, { model_id: fal.id });
+    assert.equal(response.status, 202); assert.equal((await response.json()).free_allowance, true);
+    assert.equal(n.charged, 0); assert.equal(n.count('admit_fal_dispatch_capped'), 1);
+    assert.equal(n.count('admit_fal_dispatch'), 0); assert.equal(n.count('submit_free_job'), 0); assert.equal(n.count('jobs'), 0);
 });

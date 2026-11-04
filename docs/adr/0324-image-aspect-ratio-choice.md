@@ -1,6 +1,6 @@
 # ADR-0324 — Aspect-ratio choice on image models (Sana now; Seedream and FLUX gated)
 
-Status: Sana implemented; Seedream 4 and FLUX 2 Pro not changed, waiting on the checks below.
+Status: Sana and FLUX 2 Pro implemented; Seedream 4 not changed, waiting on the checks below.
 Date: 2026-11-04.
 
 The owner asked that people can set an aspect ratio on every generation. The live catalog showed 27 of 41 models with no
@@ -67,3 +67,13 @@ sending `image_size` before the function allows it, every FLUX request, even the
 
 ### Not done here
 No migration written or applied, no record changed, no provider called.
+
+## FLUX 2 Pro implemented (2026-11-04, after migration 0439 was applied to production)
+
+`fal-ai/flux-2-pro` takes `aspect_ratio` of 1:1, 4:3, 3:4, 16:9 or 9:16. The record consumes it and derives fal's
+`image_size`: 960x960, 1024x768, 768x1024, 1024x576, 576x1024. These are exactly the five sizes `admit_fal_dispatch`
+accepts since 0439, all under one megapixel, so the $0.03 price and the 30,000 microusd reservation hold. A request
+without a ratio now sends 1024x768 explicitly, which is what the database stored before. The web and phone Create
+screens show the choice because both read the catalog's declared inputs.
+
+Rollback: revert the FLUX record change. Requests without a ratio then send no size and 0439 stores 1024x768 as before.
