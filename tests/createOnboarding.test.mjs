@@ -1,6 +1,8 @@
 import { resolveI18nSource } from '../scripts/lib/vey-knowledge-i18n.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createPromptModelAvailable } from '../app/veyrnox/_lib/templateDraft.js';
+import { fromApi } from '../app/veyrnox/_lib/useCatalog.js';
 import { readFileSync } from 'node:fs';
 import {
   affordableStarterModel,
@@ -56,9 +58,22 @@ test('the shipped fallback gives a new creator an image within the 10-credit sig
 test('bare Create starts from the cheapest image model while deep links remain authoritative', () => {
   const page = read('app/veyrnox/app/create/page.js');
   assert.match(page, /useState\(\(\) => starterModel\(catalogModels, 'image'\)\?\.id \|\| ''\)/);
-  assert.match(page, /const wanted = params\.get\('model'\) \|\| \(preset && modelIdForName\(preset\.model\)\);/);
+  assert.match(page, /const requested = params\.get\('model'\) \|\| \(preset && modelIdForName\(preset\.model\)\);/);
+  assert.match(page, /const arrival = preset \? templateArrival\(preset, arrivalModels \|\| \[\], params, storedDraft\) : null;/);
+  assert.match(page, /const wanted = arrival \? arrival\.modelId : requested;/);
+  assert.match(page, /const models = catalogModels\.filter\(\(m\) => createPromptModelAvailable\(m, autoShortOn\)\);/);
   assert.match(page, /if \(wanted\) \{[\s\S]*setModelId\(wanted\);[\s\S]*setGoal\('all'\);[\s\S]*\}/);
   assert.doesNotMatch(page, /DEFAULT_MODEL = 'wan-2\.5-kie'/);
+  // Exercise the API capability mapping as well as the shared picker rule.
+  for (const input of ['clips', 'plan_id', 'topic']) {
+      const [model] = fromApi([{ id: input, capabilities: { inputs: { [input]: {} } } }]);
+      assert.equal(createPromptModelAvailable(model), false, `${input} is hidden by default`);
+      assert.equal(createPromptModelAvailable(model, false), false, `${input} is hidden with the flag off`);
+      assert.equal(createPromptModelAvailable(model, true), input === 'topic', 'only topic models can opt in');
+  }
+  const [ordinary] = fromApi([{ id: 'ordinary', capabilities: { inputs: { prompt: {} } } }]);
+  assert.equal(createPromptModelAvailable(ordinary, false), true);
+  assert.equal(createPromptModelAvailable(ordinary, true), true);
 });
 
 test('goal picker is free, filters the shortlist and selects its cheapest starter', () => {

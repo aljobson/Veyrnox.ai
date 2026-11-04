@@ -5,7 +5,7 @@ import { fallbackCapabilitiesFor } from '../../../lib/fallbackModelCapabilities.
 import { GENERATION_PROMPT_MAX } from '../../../lib/generationPromptLimits.js';
 
 // Normalised shape shared by every consumer:
-// { id, name, kind ('video'|'image'|'audio'), credits, gated, durations, media? }
+// { id, name, modality (full API value or null), kind ('video'|'image'|'audio'), credits, gated, durations, media? }
 const FALLBACK_DURATIONS = [5];
 
 export function fromFallback() {
@@ -13,7 +13,7 @@ export function fromFallback() {
     const capabilities = fallbackCapabilitiesFor(m.id);
     const inputs = capabilities?.inputs || {};
     return ({
-    id: m.id, name: m.name, kind: m.kind, credits: m.credits, gated: !!m.gated || !!m.premium,
+    id: m.id, name: m.name, kind: m.kind, modality: m.modality || null, credits: m.credits, gated: !!m.gated || !!m.premium,
     durations: capabilities?.lengths || m.durations || FALLBACK_DURATIONS,
     media: capabilities?.media || {},
     outputStems: capabilities?.outputStems || null,
@@ -35,9 +35,9 @@ export function fromFallback() {
   });
 }
 
-function fromApi(models) {
+export function fromApi(models) {
   return models.map((m) => ({
-    id: m.id, name: m.name, kind: kindOf(m.modality), credits: m.credits, gated: !!m.gated, bestValue: !!m.bestValue,
+    id: m.id, name: m.name, kind: kindOf(m.modality), modality: m.modality || null, credits: m.credits, gated: !!m.gated || !!m.premium, bestValue: !!m.bestValue,
     // An older Worker that predates `durations` omits it; 5s only is the
     // safe read, and it is what the gateway accepts everywhere.
     durations: Array.isArray(m.durations) && m.durations.length ? m.durations : FALLBACK_DURATIONS,

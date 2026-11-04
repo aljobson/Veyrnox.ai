@@ -63,9 +63,9 @@ test('a preset links to the studio with its model and its own id', () => {
     assert.ok(href.includes(`preset=${encodeURIComponent(p.id)}`));
 });
 
-test('a preset whose model has drifted out of the catalog links without a model', () => {
+test('a preset whose model has drifted out of the catalog stays on its detail page', () => {
     const href = presetHref({ id: 'ghost', name: 'GHOST', model: 'No Such Model' });
-    assert.equal(href, '/app/create?preset=ghost');
+    assert.equal(href, '/presets/ghost');
 });
 
 // CSS grid auto-placement without `dense`: the cursor only moves forward, so a

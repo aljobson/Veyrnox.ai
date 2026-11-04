@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createPromptModelAvailable } from '../app/veyrnox/_lib/templateDraft.js';
+import { fromApi } from '../app/veyrnox/_lib/useCatalog.js';
 import { readFileSync } from 'node:fs';
 import { isShelfModel, MODELS, distinctShelfNames } from '../app/veyrnox/_lib/tokens.js';
 import { capabilityFor, publicCapabilities } from '../lib/modelCapabilities.js';
@@ -64,7 +66,17 @@ test('the picker still gates Auto Short, so the shelf must keep hiding it', () =
     // If this gate is ever removed without the `topic` clause in isShelfModel,
     // the two sides disagree again — in the other direction.
     assert.match(create, /AUTO_SHORT_FLAG = 'veyrnox_auto_short'/);
-    assert.match(create, /autoShortOn \|\| !m\.takesTopic/);
+    assert.match(create, /const models = catalogModels\.filter\(\(m\) => createPromptModelAvailable\(m, autoShortOn\)\);/);
+    // Exercise the API capability mapping as well as the shared picker rule.
+    for (const input of ['clips', 'plan_id', 'topic']) {
+        const [model] = fromApi([{ id: input, capabilities: { inputs: { [input]: {} } } }]);
+        assert.equal(createPromptModelAvailable(model), false, `${input} is hidden by default`);
+        assert.equal(createPromptModelAvailable(model, false), false, `${input} is hidden with the flag off`);
+        assert.equal(createPromptModelAvailable(model, true), input === 'topic', 'only topic models can opt in');
+    }
+    const [ordinary] = fromApi([{ id: 'ordinary', capabilities: { inputs: { prompt: {} } } }]);
+    assert.equal(createPromptModelAvailable(ordinary, false), true);
+    assert.equal(createPromptModelAvailable(ordinary, true), true);
 });
 
 test('the video agent stays off every shelf: it is bought from a plan on its own page, not from the picker', () => {
