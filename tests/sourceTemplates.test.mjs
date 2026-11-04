@@ -117,10 +117,10 @@ test('Genjutsu templates preserve every published source prompt exactly', () => 
   const exact = community.filter((preset) => GENJUTSU_SOURCE_PROMPT_RECORDS[preset.id]?.sourcePromptAvailable);
   const derived = community.filter((preset) => !GENJUTSU_SOURCE_PROMPT_RECORDS[preset.id]?.sourcePromptAvailable);
   assert.equal(Object.keys(GENJUTSU_SOURCE_PROMPT_RECORDS).length, 100);
-  assert.equal(exact.length, 57);
-  assert.equal(derived.length, 43);
-  assert.equal(Object.keys(GENJUTSU_PROMPT_SHA256).length, 57);
-  assert.equal(new Set(exact.map((preset) => GENJUTSU_SOURCE_PROMPT_RECORDS[preset.id].prompt)).size, 57);
+  assert.equal(exact.length, 58);
+  assert.equal(derived.length, 42);
+  assert.equal(Object.keys(GENJUTSU_PROMPT_SHA256).length, 58);
+  assert.equal(new Set(exact.map((preset) => GENJUTSU_SOURCE_PROMPT_RECORDS[preset.id].prompt)).size, 58);
   assert.ok(SOURCE_TEMPLATES.every((preset) => !Object.hasOwn(preset, 'sourcePrompt')));
   assert.ok(SOURCE_TEMPLATES.every((preset) => !Object.hasOwn(preset, 'sourcePromptOrigin')));
   assert.ok(otherTemplates.every((preset) => GENJUTSU_SOURCE_PROMPT_RECORDS[preset.id] == null));
@@ -257,22 +257,22 @@ test('the 200 Seedance templates preserve full prompts and paired unique videos'
 test('public templates are exact or adaptation-only and all source-gap records are removed', () => {
   const audit = PRESETS.map((preset) => [preset.id, sourcePromptAuditRecord(preset.id)]);
   const groups = Object.groupBy(audit, ([, record]) => record.status);
-  assert.equal(groups.exact.length, 365);
+  assert.equal(groups.exact.length, 366);
   assert.equal(groups['adaptation-only'].length, 27);
   assert.equal(groups['exact-truncated'], undefined);
   assert.equal(groups.unavailable, undefined);
-  assert.equal(audit.length, 392);
+  assert.equal(audit.length, 393);
   assert.ok(audit.some(([, record]) => record.runnable === true));
   assert.ok(audit.some(([, record]) => record.runnable === false));
   assert.equal(audit.filter(([, record]) => record.issues.includes('prompt-over-30000')).length, 0);
-  assert.equal(audit.filter(([, record]) => record.issues.includes('more-than-two-reference-images')).length, 34);
+  assert.equal(audit.filter(([, record]) => record.issues.includes('more-than-two-reference-images')).length, 35);
   assert.equal(audit.filter(([, record]) => record.issues.includes('audio-preservation-not-supported')).length, 137);
   assert.equal(sourcePromptAuditRecord('community-survivor-memory-shift').status, 'exact-truncated');
   assert.equal(sourcePromptAuditRecord('keyboard-duo-swap').status, 'unavailable');
-  assert.equal(REMOVED_PROMPT_GAP_TEMPLATE_IDS.length, 45);
+  assert.equal(REMOVED_PROMPT_GAP_TEMPLATE_IDS.length, 44);
   const removedGroups = Object.groupBy(REMOVED_PROMPT_GAP_TEMPLATE_IDS, (id) => sourcePromptAuditRecord(id).status);
   assert.equal(removedGroups['exact-truncated'].length, 1);
-  assert.equal(removedGroups.unavailable.length, 44);
+  assert.equal(removedGroups.unavailable.length, 43);
   for (const id of REMOVED_PROMPT_GAP_TEMPLATE_IDS) {
     assert.equal(templateById(id), null, id);
     assert.equal(PRESETS.some((preset) => preset.id === id), false, id);
@@ -442,10 +442,10 @@ test('source-aspect orientation agrees with every community preview', () => {
 });
 
 test('gallery and homepage templates have reachable recipe URLs', () => {
-  assert.equal(PRESETS.length, 392);
+  assert.equal(PRESETS.length, 393);
   assert.equal(WALL_PRESETS.length, 24);
   const visible = [...PRESETS, ...WALL_PRESETS];
-  assert.equal(new Set(visible.map((p) => p.clipKey).filter(Boolean)).size, 392);
+  assert.equal(new Set(visible.map((p) => p.clipKey).filter(Boolean)).size, 393);
   for (const preset of visible) {
     assert.equal(templateById(preset.id), preset);
     assert.equal(isUnknownStaticPage(`/presets/${preset.id}`), false);

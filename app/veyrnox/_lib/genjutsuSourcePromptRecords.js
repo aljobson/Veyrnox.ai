@@ -298,8 +298,9 @@ export const GENJUTSU_SOURCE_PROMPT_RECORDS = Object.freeze({
     "prompt": "Replace the young man climbing into the car with **Mzee Lushoto, the exact character shown in <<<image_1>>>**. Preserve everything else in the original video exactly as it is: the car, environment, background, camera angles, movements, timing, lighting, and other people or objects.\r\n\r\nMake Mzee Lushoto climb into the car naturally, matching the original person's body movements, position, posture, and interaction with the vehicle. Keep his distinctive wide eyes, mischievous facial expression, slim lanky build, knitted striped cap, worn brown jacket, torn off-white shirt, patched trousers, mismatched green and blue sandals, and old shoulder bag consistent with <<<image_1>>>.\r\n\r\n**Style:** Ultra-photorealistic live-action footage, natural human movement, realistic body proportions, authentic skin texture, natural shadows, and seamless integration into the original scene. Match the original video's perspective, lighting, and motion precisely.\r\n\r\n**Important:** Change only the man. Do not redesign the scene, alter the car, add objects, change the action, or introduce cartoon effects. Avoid face distortion, clothing changes, extra fingers, floating objects, unnatural movements, or visual glitches. The final result must look like the original video was filmed with Mzee Lushoto actually there."
   },
   "community-truck-stop-celebration": {
-    "sourcePromptAvailable": false,
-    "prompt": null
+    "sourcePromptAvailable": true,
+    "sourceAuditStatus": "matched-2026-11-04-title-size-length",
+    "prompt": "<<<image_2>>> instead of the person that dance at start, <<<image_1>>> instead of the person that recording the video, <<<image_3>>> instead of the person that exit the car."
   },
   "community-kitchen-duo": {
     "sourcePromptAvailable": true,
