@@ -3,6 +3,8 @@ import { WALLET_PROJECT_REFS } from './environmentIsolation.js';
 
 export const PRODUCTION_FLAG = '--i-mean-production';
 
+/** @typedef {'production' | 'staging' | 'local' | 'unknown'} Target */
+
 const REF = /^[a-z0-9]{20}$/;
 const productionRef = refOf(AI_ENVIRONMENTS.production.supabaseUrl);
 const stagingRef = refOf(AI_ENVIRONMENTS.staging.supabaseUrl);
@@ -22,10 +24,13 @@ const stagingRef = refOf(AI_ENVIRONMENTS.staging.supabaseUrl);
  * @returns {{ ok: boolean, target: 'production' | 'staging' | 'local' | 'unknown', message: string }}
  */
 export function checkProductionAck({ supabaseUrl, databaseUrl, argv, env, action }) {
+    /** @type {Target[]} */
     const targets = [];
     if (supabaseUrl !== undefined) targets.push(targetOfSupabaseUrl(supabaseUrl));
     if (databaseUrl !== undefined) targets.push(targetOfDatabaseUrl(databaseUrl));
-    const target = ['unknown', 'production', 'staging', 'local'].find((t) => targets.includes(t)) || 'unknown';
+    /** @type {Target[]} */
+    const worstFirst = ['unknown', 'production', 'staging', 'local'];
+    const target = worstFirst.find((t) => targets.includes(t)) || 'unknown';
     const where = supabaseUrl || (databaseUrl ? hostOnly(databaseUrl) : 'no database target');
     const line = `${action}: target is ${target.toUpperCase()} (${where})`;
     if (target === 'staging' || target === 'local') return { ok: true, target, message: line };
@@ -39,6 +44,7 @@ export function checkProductionAck({ supabaseUrl, databaseUrl, argv, env, action
     };
 }
 
+/** @param {Record<string, string | undefined>} env @returns {boolean} */
 function isApprovedMigrationJob(env) {
     return env.GITHUB_ACTIONS === 'true'
         && env.GITHUB_WORKFLOW === 'apply-migrations'
@@ -46,6 +52,7 @@ function isApprovedMigrationJob(env) {
         && env.GITHUB_JOB === 'apply';
 }
 
+/** @param {unknown} url @returns {Target} */
 function targetOfSupabaseUrl(url) {
     const ref = refOf(url);
     return targetOfRef(ref);
@@ -55,6 +62,7 @@ function targetOfSupabaseUrl(url) {
 // destination ambiguous, so they are refused rather than interpreted.
 const HARMLESS_PARAMS = new Set(['sslmode', 'application_name', 'connect_timeout']);
 
+/** @param {string} connection @returns {Target} */
 function targetOfDatabaseUrl(connection) {
     let parsed;
     try {
@@ -81,6 +89,7 @@ function targetOfDatabaseUrl(connection) {
     return 'unknown';
 }
 
+/** @param {string | undefined} ref @returns {Target} */
 function targetOfRef(ref) {
     if (!ref || WALLET_PROJECT_REFS.includes(ref)) return 'unknown';
     if (ref === productionRef) return 'production';
@@ -88,6 +97,7 @@ function targetOfRef(ref) {
     return 'unknown';
 }
 
+/** @param {unknown} url @returns {string} */
 function refOf(url) {
     try {
         const ref = new URL(String(url)).hostname.toLowerCase().split('.')[0];
@@ -97,6 +107,7 @@ function refOf(url) {
     }
 }
 
+/** @param {string} connection @returns {string} */
 function hostOnly(connection) {
     try {
         return new URL(connection).hostname || 'local socket';

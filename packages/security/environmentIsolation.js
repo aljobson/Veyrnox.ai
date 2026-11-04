@@ -10,6 +10,7 @@ export const WALLET_PROJECT_REFS = Object.freeze(['jwstkrtslotnjyerzzsi', 'nszlb
 // Hostnames packages/security/config.js treats as production.
 export const PRODUCTION_HOSTNAMES = Object.freeze(['veyrnox.ai', 'www.veyrnox.ai', 'app.veyrnox.ai']);
 
+/** @param {unknown} value @returns {string} */
 function hostnameOf(value) {
     try {
         return new URL(String(value)).hostname.toLowerCase();
@@ -59,7 +60,9 @@ export function findIsolationProblems(config, rawText) {
     }
 
     // The public (browser) URL must name the same project as the server URL and the canonical identity.
-    for (const [name, vars, canonical] of [['production', prod, AI_ENVIRONMENTS.production.supabaseUrl], ['staging', staging, AI_ENVIRONMENTS.staging.supabaseUrl]]) {
+    /** @type {Array<[string, Record<string, string>, string]>} */
+    const identities = [['production', prod, AI_ENVIRONMENTS.production.supabaseUrl], ['staging', staging, AI_ENVIRONMENTS.staging.supabaseUrl]];
+    for (const [name, vars, canonical] of identities) {
         if (normalizeOrigin(vars.NEXT_PUBLIC_SUPABASE_URL) !== normalizeOrigin(canonical)) problems.push(`${name} NEXT_PUBLIC_SUPABASE_URL does not match its canonical project in packages/security/environments.js`);
         if (normalizeOrigin(vars.SUPABASE_URL) !== normalizeOrigin(canonical)) problems.push(`${name} SUPABASE_URL does not match its canonical project in packages/security/environments.js`);
     }

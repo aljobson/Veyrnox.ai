@@ -20,7 +20,7 @@ export function environmentLabel(appEnv, supabaseUrl, runtime = null) {
     if (appEnv === 'development' && isLoopbackUrl(supabaseUrl) && (runtime === null || (runtime.appEnv === 'development' && isLoopbackUrl(runtime.supabaseUrl)))) {
         return { kind: 'local', label: 'LOCAL', detail: 'Local development build.' };
     }
-    for (const name of ['production', 'staging']) {
+    for (const name of /** @type {const} */ (['production', 'staging'])) {
         if (appEnv !== name || !runtime) continue;
         const canonical = normalizeOrigin(AI_ENVIRONMENTS[name].supabaseUrl);
         const agrees = runtime.appEnv === name
@@ -35,6 +35,7 @@ export function environmentLabel(appEnv, supabaseUrl, runtime = null) {
     return { kind: 'unknown', label: 'UNKNOWN ENVIRONMENT', detail: 'APP_ENV and the database do not agree, or could not be verified. Treat this as production.' };
 }
 
+/** @param {unknown} value @returns {boolean} */
 export function isLoopbackUrl(value) {
     try {
         const url = new URL(String(value));
@@ -44,6 +45,7 @@ export function isLoopbackUrl(value) {
     }
 }
 
+/** @param {unknown} value @returns {string} */
 export function normalizeOrigin(value) {
     try {
         return new URL(String(value)).origin.toLowerCase();
