@@ -52,7 +52,13 @@ export function SettingsPanel({ models, model, busy, onSelectModel, tiers, onTie
 
   return (
     <div className="flex h-full flex-col gap-3 overflow-y-auto p-3" data-assistant-target="chat.settings" aria-label={t("label.Chat settings")} role="region">
-      {personasOn && (
+      {personasOn && personas.length === 0 && (
+        <div className="flex items-center justify-between gap-2 rounded-2xl border border-vx-border px-4 py-2 text-sm" data-testid="chat-persona-empty">
+          <span className="text-vx-fg-muted">{t("app.chat.personas.empty")}</span>
+          <button type="button" disabled={busy} onClick={onManagePersonas} className="rounded-full border border-vx-border px-3 py-1.5 text-sm disabled:opacity-60">{t("app.chat.personas.title")}</button>
+        </div>
+      )}
+      {personasOn && personas.length > 0 && (
         <Section id="persona" title={t("app.chat.settings.persona")} open={open.persona} onToggle={toggle}>
           <p className="text-vx-fg-muted">{hasThread ? t("app.chat.settings.personaExisting") : t("app.chat.settings.personaNew")}</p>
           <PersonaPicker personas={personas} value={personaId} selectionDisabled={busy || hasThread || instructionsLocked} manageDisabled={busy} onSelect={onPersona} onManage={onManagePersonas} />
