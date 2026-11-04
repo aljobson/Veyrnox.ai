@@ -7,7 +7,8 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 import type { ApiClient } from '../lib/api';
-import { planAttachments } from '../lib/attachModel';
+import { attachCapacity, planAttachments } from '../lib/attachModel';
+import { LibraryMultiPicker, type LibraryPick } from './LibraryMultiPicker';
 import type { CreativeSourceHandoff } from '../lib/creativeSourceHandoff';
 import { createHandoff, referenceKind, uniqueReferences, type FormSnapshot } from '../lib/createHandoff';
 import { useHandoffScope } from '../lib/useHandoffScope';
@@ -17,7 +18,7 @@ import { checkPicked, kindOfMime, pickedProblem, type PickedFile, type SlotKind,
 import { uploadMessage, uploadSource } from '../lib/uploads';
 import { ds } from '../theme';
 
-type Source = 'photos' | 'files';
+type Source = 'photos' | 'files' | 'library';
 interface Picked {
     readonly kind: SlotKind;
     readonly file: PickedFile;
@@ -62,8 +63,9 @@ export function AttachFromDevice({ api, current, carry, settings, references = [
     const [busy, setBusy] = useState<Source | null>(null);
     const [progress, setProgress] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [choosingLibrary, setChoosingLibrary] = useState(false);
 
-    async function attach(source: Source) {
+    async function attach(source: Exclude<Source, 'library'>) {
         const valid = begin();
         setError(null);
         setBusy(source);
@@ -76,42 +78,63 @@ export function AttachFromDevice({ api, current, carry, settings, references = [
                 return;
             }
             if (!valid() || !files.length) return;
-            const picked: Picked[] = [];
-            const problems: string[] = [];
-            for (const file of files) {
-                const kind = kindOfMime(file.mimeType);
-                const checked = kind ? checkPicked(kind, file) : null;
-                if (kind && checked?.ok) picked.push({ kind, file, contentType: checked.contentType });
-                else problems.push(kind && checked && !checked.ok ? pickedProblem(checked.error, kind) : t('attachFromDevice.useJPEGPNGorWebPpicturesMP4'));
-            }
-            const items: ({ kind: SlotKind; ref: GenerationReference } | Picked)[] = [
-                ...uniqueReferences(references).map(ref => ({ kind: referenceKind(ref), ref })), ...picked,
-            ];
-            const catalog = await fetchCatalog();
-            if (!valid()) return;
-            const plan = planAttachments(catalog, current, items);
-            if (!plan) { setError(problems[0] ?? t('attachFromDevice.nomodeltakesthosefilesrightnow')); return; }
-            const merged: GenerationReference[] = [];
-            const abort = new AbortController();
-            let done = 0;
-            for (const { slot, item } of plan.assignments) {
-                if (!valid()) { abort.abort(); return; }
-                if ('ref' in item) merged.push({ ...item.ref, slot });
-                else {
-                    setProgress(t('attachFromDevice.uploadingof', { value1: ++done, value2: picked.length }));
-                    const key = await uploadSource(api, item.file, item.contentType, () => {}, abort.signal);
-                    if (!valid()) return;
-                    merged.push({ origin: 'upload', slot, key });
-                }
-            }
-            if (!valid()) return;
-            const moved = plan.assignments.filter(a => 'ref' in a.item && a.slot !== a.item.ref.slot).length;
-            router.replace(createHandoff(plan.model, carry ?? {}, settings, merged, { ...previous, rightsConfirmed: false }, plan.unused.length + problems.length + moved));
+            await place(files, [], valid);
         } catch (err) {
             if (valid()) setError(uploadMessage(err));
         } finally {
             if (valid()) { setBusy(null); setProgress(null); }
         }
+    }
+
+    // Library creations picked in the Add files picker join what the form already holds; nothing is uploaded for them.
+    async function attachLibrary(picks: LibraryPick[]) {
+        setChoosingLibrary(false);
+        const valid = begin();
+        setError(null);
+        setBusy('library');
+        try {
+            await place([], picks, valid);
+        } catch (err) {
+            if (valid()) setError(uploadMessage(err));
+        } finally {
+            if (valid()) { setBusy(null); setProgress(null); }
+        }
+    }
+
+    async function place(files: PickedFile[], library: readonly LibraryPick[], valid: () => boolean) {
+        const picked: Picked[] = [];
+        const problems: string[] = [];
+        for (const file of files) {
+            const kind = kindOfMime(file.mimeType);
+            const checked = kind ? checkPicked(kind, file) : null;
+            if (kind && checked?.ok) picked.push({ kind, file, contentType: checked.contentType });
+            else problems.push(kind && checked && !checked.ok ? pickedProblem(checked.error, kind) : t('attachFromDevice.useJPEGPNGorWebPpicturesMP4'));
+        }
+        const items: ({ kind: SlotKind; ref: GenerationReference } | Picked)[] = [
+            ...uniqueReferences(references).map(ref => ({ kind: referenceKind(ref), ref })),
+            ...library.map(pick => ({ kind: pick.kind, ref: { origin: 'asset' as const, slot: pick.kind as SlotName, asset_id: pick.jobId } })),
+            ...picked,
+        ];
+        const catalog = await fetchCatalog();
+        if (!valid()) return;
+        const plan = planAttachments(catalog, current, items);
+        if (!plan) { setError(problems[0] ?? t('attachFromDevice.nomodeltakesthosefilesrightnow')); return; }
+        const merged: GenerationReference[] = [];
+        const abort = new AbortController();
+        let done = 0;
+        for (const { slot, item } of plan.assignments) {
+            if (!valid()) { abort.abort(); return; }
+            if ('ref' in item) merged.push({ ...item.ref, slot });
+            else {
+                setProgress(t('attachFromDevice.uploadingof', { value1: ++done, value2: picked.length }));
+                const key = await uploadSource(api, item.file, item.contentType, () => {}, abort.signal);
+                if (!valid()) return;
+                merged.push({ origin: 'upload', slot, key });
+            }
+        }
+        if (!valid()) return;
+        const moved = plan.assignments.filter(a => 'ref' in a.item && a.slot !== a.item.ref.slot).length;
+        router.replace(createHandoff(plan.model, carry ?? {}, settings, merged, { ...previous, rightsConfirmed: false }, plan.unused.length + problems.length + moved));
     }
 
     return (
@@ -122,7 +145,9 @@ export function AttachFromDevice({ api, current, carry, settings, references = [
                 {(['photos', 'files'] as const).map((source) => (
                     <Button variant="secondary" containerStyle={styles.grow} key={source} accessibilityRole="button" accessibilityLabel={rawText(source === 'photos' ? t('attachFromDevice.attachpicturesandvideosfromPhotos') : t('attachFromDevice.attachfilesfromFiles'))} accessibilityState={{ disabled: busy !== null }} disabled={busy !== null} onPress={() => void attach(source)} label={source === 'photos' ? t('attachFromDevice.photosvideos') : t('attachFromDevice.files')} loading={busy === source} />
                 ))}
+                <Button variant="secondary" containerStyle={styles.grow} accessibilityRole="button" accessibilityLabel={rawText(t('libsrc.choose'))} accessibilityState={{ disabled: busy !== null }} disabled={busy !== null} onPress={() => setChoosingLibrary(true)} label={t('libsrc.title')} loading={busy === 'library'} />
             </View>
+            {choosingLibrary ? <LibraryMultiPicker api={api} capacity={attachCapacity(current)} onConfirm={(picks) => void attachLibrary(picks)} onClose={() => setChoosingLibrary(false)} /> : null}
             {progress ? <Text variant="footnote" tone="tertiary" accessibilityLiveRegion="polite" style={styles.hint}>{progress}</Text> : null}
             {error ? <Text variant="body" tone="danger" accessibilityLiveRegion="polite" style={styles.error}>{error}</Text> : null}
         </View>

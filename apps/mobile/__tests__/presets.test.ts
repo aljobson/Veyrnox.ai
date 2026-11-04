@@ -32,7 +32,7 @@ describe('parsePresets', () => {
     test('keeps an exact source prompt separate from the compatible generation prompt', () => {
         const [p] = parsePresets({ presets: [{ ...base, sourcePrompt: 'Exact community text', sourcePromptOrigin: 'community-source-exact', sourcePromptStatus: 'exact', sourcePromptRunnable: false, sourcePromptIssues: ['source-input-contract-not-wired'], sourcePromptDuplicateOf: 'earlier-template' }] });
         expect(p).toMatchObject({ prompt: 'Animate the product.', sourcePrompt: 'Exact community text', sourcePromptOrigin: 'community-source-exact', sourcePromptStatus: 'exact', sourcePromptRunnable: false, sourcePromptIssues: ['source-input-contract-not-wired'], sourcePromptDuplicateOf: 'earlier-template' });
-        expect((presetHref(p) as { params: { prompt: string } }).params.prompt).toBe('Animate the product.');
+        expect(presetHref(p)).toEqual({ pathname: '/templates/[id]', params: { id: 'a' } });
         const [invalidOrigin] = parsePresets({ presets: [{ ...base, sourcePrompt: '', sourcePromptOrigin: 'community-source-exact' }] });
         expect(invalidOrigin).toMatchObject({ sourcePrompt: null, sourcePromptOrigin: null });
         const [missingOrigin] = parsePresets({ presets: [{ ...base, sourcePrompt: 'Unverified source text' }] });
@@ -128,9 +128,9 @@ describe('presetHref', () => {
         expect(presetHref(unavailable)).toEqual({ pathname: '/create/presets', params: { unavailable: 'a' } });
     });
 
-    test('opens a runnable adaptation while blocking the unsupported exact source text', () => {
+    test('an unsupported exact source prompt is copy-only: Create never opens with it or an adaptation of it', () => {
         const [adapted] = parsePresets({ presets: [{ ...base, sourcePrompt: 'Exact @image1 source text', sourcePromptOrigin: 'community-source-exact', sourcePromptRunnable: false }] });
-        expect(presetHref(adapted)).toMatchObject({ pathname: '/create/[modelId]', params: { prompt: 'Animate the product.' } });
+        expect(presetHref(adapted)).toEqual({ pathname: '/templates/[id]', params: { id: 'a' } });
         expect(presetHref({ ...adapted, prompt: adapted.sourcePrompt! })).toEqual({ pathname: '/templates/[id]', params: { id: 'a' } });
     });
 });

@@ -3418,5 +3418,59 @@
     "english": "Ads",
     "translation": "Werbung",
     "ratio": 2.33
+  },
+  {
+    "id": "authGate.mfa.recovery.useCode",
+    "english": "Use a recovery code instead",
+    "translation": "Stattdessen Wiederherstellungscode verwenden",
+    "ratio": 1.63
+  },
+  {
+    "id": "authGate.mfa.recovery.codeLabel",
+    "english": "Recovery code",
+    "translation": "Wiederherstellungscode",
+    "ratio": 1.69
+  },
+  {
+    "id": "app.account.mfa.recovery.title",
+    "english": "Recovery codes",
+    "translation": "Wiederherstellungscodes",
+    "ratio": 1.64
+  },
+  {
+    "id": "app.account.mfa.recovery.copy",
+    "english": "Copy",
+    "translation": "Kopieren",
+    "ratio": 2
+  },
+  {
+    "id": "app.account.mfa.recovery.saved",
+    "english": "I saved these",
+    "translation": "Ich habe sie gespeichert",
+    "ratio": 1.85
+  },
+  {
+    "id": "app.account.mfa.recovery.loading",
+    "english": "Loading recovery code status…",
+    "translation": "Status der Wiederherstellungscodes wird geladen…",
+    "ratio": 1.66
+  },
+  {
+    "id": "app.age.confirm",
+    "english": "I confirm I am at least {age} (or the age of majority where I live)",
+    "translation": "Ich bestätige, dass ich mindestens {age} Jahre alt bin (oder das Volljährigkeitsalter an meinem Wohnort erreicht habe)",
+    "ratio": 1.76
+  },
+  {
+    "id": "app.create.addFiles.title",
+    "english": "Add files",
+    "translation": "Dateien hinzufügen",
+    "ratio": 2
+  },
+  {
+    "id": "app.create.addFiles.add",
+    "english": "Add",
+    "translation": "Hinzufügen",
+    "ratio": 3.33
   }
 ]

@@ -3118,5 +3118,47 @@
     "english": "End frame",
     "translation": "Fotograma final",
     "ratio": 1.67
+  },
+  {
+    "id": "authGate.mfa.recovery.codeLabel",
+    "english": "Recovery code",
+    "translation": "Código de recuperación",
+    "ratio": 1.69
+  },
+  {
+    "id": "app.account.mfa.recovery.title",
+    "english": "Recovery codes",
+    "translation": "Códigos de recuperación",
+    "ratio": 1.64
+  },
+  {
+    "id": "app.age.contact",
+    "english": "For help with account deletion, email",
+    "translation": "Para obtener ayuda con la eliminación de la cuenta, escribe a",
+    "ratio": 1.65
+  },
+  {
+    "id": "app.age.signOut",
+    "english": "Sign out",
+    "translation": "Cerrar sesión",
+    "ratio": 1.63
+  },
+  {
+    "id": "app.create.addFiles.title",
+    "english": "Add files",
+    "translation": "Añadir archivos",
+    "ratio": 1.67
+  },
+  {
+    "id": "app.create.addFiles.older",
+    "english": "Load older",
+    "translation": "Cargar anteriores",
+    "ratio": 1.7
+  },
+  {
+    "id": "app.create.addFiles.add",
+    "english": "Add",
+    "translation": "Añadir",
+    "ratio": 2
   }
 ]

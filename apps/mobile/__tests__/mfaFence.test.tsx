@@ -6,8 +6,9 @@ import { MfaGate } from '../src/components/account/MfaGate';
 import { MfaCard } from '../src/components/account/MfaCard';
 import { fetchProfile, verifyFactor } from '../src/lib/auth/accountCalls';
 import { AuthError } from '../src/lib/auth/supabaseAuth';
-import { markMfaCleared } from '../src/lib/mfaCheck';
+import { markMfaCleared, rememberMfaEnrolment } from '../src/lib/mfaCheck';
 import { t } from '../src/lib/i18n';
+jest.mock('expo-clipboard', () => ({ setStringAsync: jest.fn() }), { virtual: true });
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: jest.fn() }));
 jest.mock('../src/lib/auth/accountCalls', () => ({ fetchProfile: jest.fn(), verifyFactor: jest.fn() }));
 jest.mock('../src/lib/mfaCheck', () => ({ knownMfaEnrolment: jest.fn(async () => true), rememberMfaEnrolment: jest.fn(), mfaClearedFor: () => false, markMfaCleared: jest.fn() }));
@@ -40,4 +41,51 @@ test('MfaGate rechecks after adoptSession resolves without rejecting a switch', 
     const gate = deferred<void>(); adopt.mockImplementationOnce(async () => { await gate.promise; gen++; }); await start(false);
     await act(async () => gate.resolve()); expect(markMfaCleared).not.toHaveBeenCalled();
     expect(root.container.queryAll(n => n.children.includes('Inside'))).toHaveLength(0);
+});
+describe('sign-in with a recovery code', () => {
+    const press = (label: string) => act(async () => root.container.queryAll(n => n.props.accessibilityRole === 'button' && n.props.accessibilityLabel === label)[0].props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }));
+    const withApi = (request: jest.Mock) => jest.mocked(useAuth).mockReturnValue({ ...jest.mocked(useAuth)(), api: { request } } as any);
+    async function enterRecoveryCode() {
+        await act(async () => root.render(<MfaGate><Text>Inside</Text></MfaGate>));
+        await press(t('authGate.mfa.recovery.useCode'));
+        const field = root.container.queryAll(n => n.props.onChangeText)[0]; await act(async () => field.props.onChangeText('abcdefghjk'));
+        await press(t('acct.mfa.verify'));
+    }
+    test('a used code that leaves no authenticator opens the app at aal1', async () => {
+        const request = jest.fn(async () => ({ recovered: true })); withApi(request);
+        jest.mocked(fetchProfile).mockResolvedValueOnce({ email: 'a', provider: 'email', factors: [{ id: 'f', status: 'verified', friendlyName: 'auth' }] })
+            .mockResolvedValue({ email: 'a', provider: 'email', factors: [] });
+        await enterRecoveryCode();
+        expect(request).toHaveBeenCalledWith('/api/v1/mfa/recovery', expect.objectContaining({ body: JSON.stringify({ code: 'ABCDEFGHJK' }) }));
+        expect(markMfaCleared).toHaveBeenCalled();
+        expect(root.container.queryAll(n => n.children.includes('Inside')).length).toBeGreaterThan(0);
+    });
+    test('a code for an old authenticator keeps the prompt and says why', async () => {
+        withApi(jest.fn(async () => ({ recovered: false, stale: true })));
+        await enterRecoveryCode();
+        expect(markMfaCleared).not.toHaveBeenCalled();
+        expect(root.container.queryAll(n => n.children.includes(t('authGate.mfa.recovery.error.recovery_stale'))).length).toBeGreaterThan(0);
+    });
+    test('another authenticator remains: it is remembered and the form challenges that one', async () => {
+        withApi(jest.fn(async () => ({ recovered: true })));
+        jest.mocked(fetchProfile).mockResolvedValueOnce({ email: 'a', provider: 'email', factors: [{ id: 'old', status: 'verified', friendlyName: 'a' }] })
+            .mockResolvedValue({ email: 'a', provider: 'email', factors: [{ id: 'other', status: 'verified', friendlyName: 'b' }] });
+        await enterRecoveryCode();
+        expect(rememberMfaEnrolment).toHaveBeenCalledWith('A', true);
+        expect(rememberMfaEnrolment).not.toHaveBeenCalledWith('A', false);
+        expect(markMfaCleared).not.toHaveBeenCalled();
+        await press(t('authGate.mfa.recovery.useAuthenticator'));
+        const field = root.container.queryAll(n => n.props.onChangeText)[0]; await act(async () => field.props.onChangeText('123456'));
+        jest.mocked(verifyFactor).mockResolvedValue({ access_token: jwt('aal2'), refresh_token: 'r', expires_in: 3600 } as any);
+        await press(t('acct.mfa.verify'));
+        expect(jest.mocked(verifyFactor).mock.calls.at(-1)?.[1]).toBe('other');
+    });
+    test('profile unreadable after recovery: the saved enrolment answer is left alone', async () => {
+        withApi(jest.fn(async () => ({ recovered: true })));
+        jest.mocked(fetchProfile).mockResolvedValueOnce({ email: 'a', provider: 'email', factors: [{ id: 'old', status: 'verified', friendlyName: 'a' }] })
+            .mockRejectedValue(new Error('offline'));
+        await enterRecoveryCode();
+        expect(rememberMfaEnrolment).not.toHaveBeenCalledWith('A', false);
+        expect(markMfaCleared).toHaveBeenCalled();
+    });
 });

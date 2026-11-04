@@ -10,6 +10,8 @@ import { aalFromToken, enrolmentName, isTotpUri, mfaErrorKey, mfaState, validCod
 import { isAccountChanged, type SessionTask } from '../../auth/sessionTask';
 import { rememberMfaEnrolment } from '../../lib/mfaCheck';
 import { CodeField } from './CodeField';
+import { RecoveryCodesPanel } from './RecoveryCodesPanel';
+import { generateRecoveryCodes } from '../../lib/mfaRecovery';
 import { Card, Status } from './AccountParts';
 import { Button, Text, themedStyles, useThemedStyles } from '../ui';
 
@@ -18,13 +20,15 @@ import { Button, Text, themedStyles, useThemedStyles } from '../ui';
 // without that proof.
 export function MfaCard() {
     const styles = useThemedStyles(sheets);
-    const { getAccessToken, adoptSession, beginSessionTask } = useAuth();
+    const { getAccessToken, adoptSession, beginSessionTask, api } = useAuth();
     const [profile, setProfile] = useState<Profile | null>(null);
     const [aal, setAal] = useState<'aal1' | 'aal2' | null>(null);
     const [failed, setFailed] = useState(false);
     const [pending, setPending] = useState<Enrolment | null>(null);
     const [code, setCode] = useState('');
     const [busy, setBusy] = useState(false);
+    // Fresh recovery codes, kept in memory only until the person says they saved them.
+    const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null);
     const [note, setNote] = useState<{ text: string; error: boolean } | null>(null);
 
     const load = useCallback(async (task: SessionTask = beginSessionTask()) => {
@@ -68,7 +72,7 @@ export function MfaCard() {
     const state = profile ? mfaState(profile, aal) : null;
 
     // Verifying returns a new aal2 token pair; adopt it before reading the state again.
-    async function verify(factorId: string, done: string) {
+    async function verify(factorId: string, done: string, withCodes = false) {
         await run(async task => {
             const session = toSession(await verifyFactor(task.tokens, factorId, code), Date.now());
             if (!task.current()) return;
@@ -79,6 +83,13 @@ export function MfaCard() {
             await load(task);
             if (!task.current()) return;
             setNote({ text: done, error: false });
+            // Right after setting up, the second factor is fresh enough to make the first set of codes.
+            if (withCodes) {
+                // Never leave a batch for an earlier authenticator on screen if this request fails.
+                setRecoveryCodes(null);
+                const next = await generateRecoveryCodes(api).catch(() => null);
+                if (task.current() && next) setRecoveryCodes(next);
+            }
         }, mfaErrorKey);
     }
 
@@ -122,7 +133,7 @@ export function MfaCard() {
                     <Text variant="footnote" tone="secondary">{t('acct.mfa.secret')}</Text>
                     <Text selectable variant="bodyStrong" accessibilityLabel={rawText(t('acct.mfa.secretSpoken', { secret: pending.secret.split('').join(' ') }))}>{pending.secret}</Text>
                     <CodeField value={code} onChange={setCode} />
-                    <Button variant="secondary" label={t('acct.mfa.confirm')} disabled={busy || !validCode(code)} onPress={() => void verify(pending.factorId, t('acct.mfa.on'))} />
+                    <Button variant="secondary" label={t('acct.mfa.confirm')} disabled={busy || !validCode(code)} onPress={() => void verify(pending.factorId, t('acct.mfa.on'), true)} />
                     <Button variant="tertiary" label={t('acct.mfa.cancelSetup')} disabled={busy} onPress={() => { setPending(null); setCode(''); setNote(null); }} />
                 </View>
             ) : null}
@@ -134,6 +145,8 @@ export function MfaCard() {
                     <Button variant="secondary" label={t('acct.mfa.unlock')} disabled={busy || !validCode(code)} onPress={() => void verify(factors[0].id, t('acct.mfa.unlocked'))} />
                 </View>
             ) : null}
+
+            {state === 'unlocked' && factors[0] ? <RecoveryCodesPanel factorId={factors[0].id} codes={recoveryCodes} onCodes={setRecoveryCodes} /> : null}
 
             {state === 'unlocked' && factors[0] ? <Button variant="tertiary" label={t('acct.mfa.remove')} tone="danger" disabled={busy} onPress={() => confirmRemove(factors[0].id)} /> : null}
             <Status text={note?.text ?? null} error={note?.error} />

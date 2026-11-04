@@ -1774,5 +1774,17 @@
     "english": "Ads",
     "translation": "إعلانات",
     "ratio": 2.33
+  },
+  {
+    "id": "app.create.addFiles.videos",
+    "english": "Videos",
+    "translation": "الفيديوهات",
+    "ratio": 1.67
+  },
+  {
+    "id": "app.create.addFiles.add",
+    "english": "Add",
+    "translation": "إضافة",
+    "ratio": 1.67
   }
 ]

@@ -1,4 +1,4 @@
-import { planAttachments } from '../src/lib/attachModel';
+import { attachCapacity, planAttachments } from '../src/lib/attachModel';
 import type { CatalogModel } from '../src/lib/media';
 import type { SlotKind } from '../src/lib/sources';
 
@@ -56,5 +56,20 @@ describe('reference models verified for more than three pictures', () => {
     it('frame models keep three pictures a kind at most', () => {
         const plan = planAttachments([frames], frames, Array.from({ length: 5 }, (_, i) => item('image', `p${i}`)));
         expect(plan?.assignments).toHaveLength(2);
+    });
+});
+
+describe('attachCapacity (Add files picker limits)', () => {
+    it('a model without file slots lets the files choose, three of each kind', () => {
+        expect(attachCapacity(text)).toEqual({ image: 3, video: 3, audio: 3 });
+        expect(attachCapacity(null)).toEqual({ image: 3, video: 3, audio: 3 });
+    });
+    it('sums a model\'s slots per kind and offers none of a kind it cannot take', () => {
+        expect(attachCapacity(frames)).toEqual({ image: 2, video: 0, audio: 0 });
+        expect(attachCapacity(lipsync)).toEqual({ image: 1, video: 0, audio: 1 });
+    });
+    it('a slot verified for nine references raises the picture limit to nine', () => {
+        const seedance = model('seed', 'image-to-video', 50, { image: { required: false, maxFiles: 9 } as never });
+        expect(attachCapacity(seedance).image).toBe(9);
     });
 });

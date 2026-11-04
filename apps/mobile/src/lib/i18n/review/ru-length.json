@@ -3328,5 +3328,35 @@
     "english": "Kids birthday",
     "translation": "Детский день рождения",
     "ratio": 1.62
+  },
+  {
+    "id": "app.account.mfa.recovery.copy",
+    "english": "Copy",
+    "translation": "Копировать",
+    "ratio": 2.5
+  },
+  {
+    "id": "app.account.mfa.recovery.copied",
+    "english": "Copied",
+    "translation": "Скопировано",
+    "ratio": 1.83
+  },
+  {
+    "id": "app.create.addFiles.images",
+    "english": "Images",
+    "translation": "Изображения",
+    "ratio": 1.83
+  },
+  {
+    "id": "app.create.addFiles.older",
+    "english": "Load older",
+    "translation": "Загрузить более ранние",
+    "ratio": 2.2
+  },
+  {
+    "id": "app.create.addFiles.add",
+    "english": "Add",
+    "translation": "Добавить",
+    "ratio": 2.67
   }
 ]

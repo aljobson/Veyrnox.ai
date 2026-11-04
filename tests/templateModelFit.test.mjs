@@ -183,7 +183,7 @@ test('web recipe runs the exact community prompt whenever it is runnable, not a 
   assert.doesNotMatch(presetHref(handoff.preset), /duration=10s/);
 });
 
-test('phone parsing and handoff retain adaptations and hide copy-only recipes', () => {
+test('phone parsing and handoff keep runnable recipes and hide or copy-only the rest', () => {
   const moduleMocks = {
     './i18n': { t: key => key }, './api': { API_BASE: 'https://veyrnox.test', ApiError: Error },
   };
@@ -201,6 +201,11 @@ test('phone parsing and handoff retain adaptations and hide copy-only recipes', 
     }
     assert.equal(mobile.isCopyOnlyPreset(row), false, id);
     const handoff = mobile.presetHref(row);
+    // An exact prompt the model cannot receive is copy-only everywhere: no Create handoff with an adaptation.
+    if (row.sourcePromptOrigin === 'community-source-exact' && row.sourcePromptRunnable === false) {
+      assert.equal(handoff.pathname, '/templates/[id]', id);
+      continue;
+    }
     assert.equal(handoff.pathname, '/create/[modelId]', id);
     assert.equal(handoff.params.prompt, template.prompt, id);
     assert.equal(handoff.params.modelId, modelIdForName(template.model), id);

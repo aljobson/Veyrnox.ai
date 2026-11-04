@@ -1912,5 +1912,47 @@
     "english": "Ads",
     "translation": "विज्ञापन",
     "ratio": 2.67
+  },
+  {
+    "id": "app.account.mfa.recovery.copy",
+    "english": "Copy",
+    "translation": "कॉपी करें",
+    "ratio": 2.25
+  },
+  {
+    "id": "app.account.mfa.recovery.copied",
+    "english": "Copied",
+    "translation": "कॉपी हो गया",
+    "ratio": 1.83
+  },
+  {
+    "id": "app.account.mfa.recovery.saved",
+    "english": "I saved these",
+    "translation": "मैंने इन्हें सेव कर लिया",
+    "ratio": 1.85
+  },
+  {
+    "id": "app.age.confirm",
+    "english": "I confirm I am at least {age} (or the age of majority where I live)",
+    "translation": "मैं पुष्टि करता/करती हूँ कि मेरी आयु कम से कम {age} वर्ष है (या जहाँ मैं रहता/रहती हूँ वहाँ की वयस्कता की आयु पूरी हो चुकी है)",
+    "ratio": 1.88
+  },
+  {
+    "id": "app.age.decline",
+    "english": "I’m under {age}",
+    "translation": "मेरी आयु {age} वर्ष से कम है",
+    "ratio": 1.87
+  },
+  {
+    "id": "app.age.signOut",
+    "english": "Sign out",
+    "translation": "साइन आउट करें",
+    "ratio": 1.63
+  },
+  {
+    "id": "app.create.addFiles.add",
+    "english": "Add",
+    "translation": "जोड़ें",
+    "ratio": 2
   }
 ]

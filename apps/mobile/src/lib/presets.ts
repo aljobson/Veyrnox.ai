@@ -155,9 +155,9 @@ export function searchPresets(items: readonly Preset[], query: string): Preset[]
 // Opens Create on the template's model with its prompt, length, shape, name and picture carried over; an inactive model
 // returns to Templates with an explicit unavailable state.
 export function presetHref(p: Preset) {
+    // An exact prompt the model cannot receive is copy-only: Create never opens with it or with an adaptation of it.
     const handsOffBlockedExactPrompt = p.sourcePromptOrigin === 'community-source-exact'
-        && p.sourcePromptRunnable === false
-        && p.prompt === p.sourcePrompt;
+        && p.sourcePromptRunnable === false;
     if (!p.available) {
         return { pathname: '/create/presets', params: { unavailable: p.id } } as const;
     }

@@ -3100,5 +3100,41 @@
     "english": "Ads",
     "translation": "Anúncios",
     "ratio": 2.67
+  },
+  {
+    "id": "authGate.mfa.recovery.codeLabel",
+    "english": "Recovery code",
+    "translation": "Código de recuperação",
+    "ratio": 1.62
+  },
+  {
+    "id": "app.age.decline",
+    "english": "I’m under {age}",
+    "translation": "Tenho menos de {age} anos",
+    "ratio": 1.67
+  },
+  {
+    "id": "app.age.contact",
+    "english": "For help with account deletion, email",
+    "translation": "Para obter ajuda com a exclusão da conta, envie um e-mail para",
+    "ratio": 1.68
+  },
+  {
+    "id": "app.create.addFiles.title",
+    "english": "Add files",
+    "translation": "Adicionar arquivos",
+    "ratio": 2
+  },
+  {
+    "id": "app.create.addFiles.older",
+    "english": "Load older",
+    "translation": "Carregar mais antigos",
+    "ratio": 2.1
+  },
+  {
+    "id": "app.create.addFiles.add",
+    "english": "Add",
+    "translation": "Adicionar",
+    "ratio": 3
   }
 ]

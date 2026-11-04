@@ -1,3 +1,4 @@
+jest.mock('expo-clipboard', () => ({ setStringAsync: jest.fn() }), { virtual: true });
 jest.mock('../src/lib/crash', () => ({ captureIssue: jest.fn() }));
 import { act, type ReactNode } from 'react';
 import * as RN from 'react-native';
