@@ -6,12 +6,13 @@ interface PlanResponse {
     readonly entitlement?: { readonly tier?: string; readonly subscription?: { readonly source?: unknown } | null };
 }
 
-// Where a live plan is managed (ADR-0109 amendment 1): bought on the web (stripe) or in a store. Null when there is no
-// live plan or the server does not say; the screen then says nothing about where to manage it.
-export type PlanSource = 'stripe' | 'store';
+// Where a live plan is managed (ADR-0109 amendment 1): bought on the web (stripe), in a store, or a short complimentary
+// grant (ADR-0315) that is managed nowhere. Null when there is no live plan or the server does not say; the screen then
+// says nothing about where to manage it.
+export type PlanSource = 'stripe' | 'store' | 'complimentary';
 export function sourceFrom(body: PlanResponse): PlanSource | null {
     const s = body.entitlement?.subscription?.source;
-    return s === 'stripe' || s === 'store' ? s : null;
+    return s === 'stripe' || s === 'store' || s === 'complimentary' ? s : null;
 }
 
 export async function fetchPublishPlan(api: ApiClient): Promise<{ tier: PublishTier | null; source: PlanSource | null }> {

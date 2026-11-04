@@ -103,7 +103,7 @@ export function parseWorkflowPlan(body: unknown): WorkflowPlan | null {
     return {
         tier: e.tier, accountLimit: number(e.account_limit), analyticsDays: number(e.analytics_days),
         bestTimeEnabled: boolean(e.best_time_enabled),
-        source: sub?.source === 'stripe' || sub?.source === 'store' ? sub.source : null,
+        source: sub?.source === 'stripe' || sub?.source === 'store' || sub?.source === 'complimentary' ? sub.source : null,
         periodEnd: date(sub?.current_period_end), cancelAtPeriodEnd: boolean(sub?.cancel_at_period_end),
         status: sub?.status === 'active' || sub?.status === 'past_due' ? sub.status : null,
     };
@@ -112,6 +112,8 @@ export function parseWorkflowPlan(body: unknown): WorkflowPlan | null {
 export const fetchWorkflowPlan = async (api: ApiClient): Promise<WorkflowPlan | null> =>
     parseWorkflowPlan(await api.request('/api/v1/social/plan'));
 
+// A complimentary grant has no billing to manage or cancel anywhere, so it gets no management line (web hides the
+// Manage billing and Cancel buttons for it).
 export const planManagementKey = (source: PlanSource | null): string | null =>
     source === 'stripe' ? 'publishWorkflows.manageWeb' : source === 'store' ? 'publishWorkflows.manageStore' : null;
 
