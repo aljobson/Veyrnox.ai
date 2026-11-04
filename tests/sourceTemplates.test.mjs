@@ -284,7 +284,7 @@ test('public templates are exact or adaptation-only and all source-gap records a
   for (const source of ['Higgsfield', 'Syntx', 'CapCut', 'Buzzy.now', 'LipSync.video']) assert.match(report, new RegExp(source));
   const webRecipe = readFileSync(new URL('../app/veyrnox/_components/TemplateRecipe.js', import.meta.url), 'utf8');
   for (const key of ['sourcePromptUnavailable', 'sourcePromptNotRecorded', 'sourcePromptTruncated', 'sourcePromptDuplicate']) assert.match(webRecipe, new RegExp(key));
-  assert.match(webRecipe, /generationBlocked=\{sourcePromptBlocked\}/);
+  assert.doesNotMatch(webRecipe, /generationBlocked=\{sourcePromptBlocked\}|sourcePromptCopyOnly|sourcePromptModelLimitCopyOnly/);
   assert.doesNotMatch(webRecipe, /data-runnable-adaptation|hasRunnableAdaptation/);
   const mobileRecipe = readFileSync(new URL('../apps/mobile/src/app/(app)/templates/[id].tsx', import.meta.url), 'utf8');
   assert.match(mobileRecipe, /disabled=\{sourcePromptBlocked \|\| tooLong \|\| !prompt\.trim\(\)\}/);
@@ -542,11 +542,7 @@ test('ten-second recipes quote and hand off the same doubled cost', () => {
   for (const preset of SOURCE_TEMPLATES.filter((p) => p.durationSeconds === 10)) {
     assert.equal(presetCredits(preset, []), preset.credits * 2);
     assert.equal(presetCredits(preset, [{ id: modelIdForName(preset.model), credits: 41 }]), 82);
-    if (preset.promptOrigin === 'community-source-exact' && preset.sourcePromptRunnable === false) {
-      assert.equal(presetHref(preset), `/presets/${preset.id}`);
-    } else {
-      assert.match(presetHref(preset), /&duration=10s$/);
-    }
+    assert.match(presetHref(preset), /&duration=10s$/);
   }
 });
 

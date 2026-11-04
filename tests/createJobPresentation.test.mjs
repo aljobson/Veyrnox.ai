@@ -4,6 +4,7 @@ import { appMessagesFor } from '../lib/i18n/appMessages.mjs';
 import { translator, tOr, pluralKey } from '../lib/i18n/translate.mjs';
 import { localeTag } from '../lib/i18n/locales.mjs';
 const t = translator('en', await appMessagesFor('en'));
+import * as templateDraft from '../app/veyrnox/_lib/templateDraft.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -32,6 +33,7 @@ function harness(initialJobs, selected = audio) {
     useRef: initial => ({ current: initial }), useEffect() {}, useCallback: fn => fn, useSyncExternalStore: () => false,
   };
   const stubs = {
+    '../../_lib/templateDraft': templateDraft,
     '../../../../lib/i18n/helperCopy.mjs': helperDisplay,
     '../../../../lib/generationSourceSlots.mjs': { ...generationSlots, generationSourceState: () => ({ needsReattach: false, hasSource: false, missingSource: false }) },
     react,

@@ -9,17 +9,23 @@ const nonEmptyString = (value) => typeof value === 'string' && value.trim().leng
 const previewRatio = (preset) => { const text = preset.clip?.aspectRatio ?? preset.previewAspect; return ratioOf(text) === null ? null : text.trim(); };
 const supportedDuration = (value) => value === 5 || value === 10;
 
+// Shared with Create's model list; topic starts remain behind its local flag.
+export const createPromptModelAvailable = (model, autoShortOn = false) => Boolean(model
+  && !model.isEdit && !model.takesPlan && (autoShortOn || !model.takesTopic));
+
+export const templateModelEligible = (model, templateModel) => Boolean(
+  model?.modality && templateModel?.modality && model.modality === templateModel.modality
+  && !model.gated && !model.premium && createPromptModelAvailable(model));
+
 // Resolve the template from the URL even when session storage is unavailable.
-// A recipe belongs only to the model it names; changing the model must not
-// restore that recipe's settings or count an unrelated template start.
-export function draftForTemplate(preset, modelId) {
+// Only the initial, validated arrival can bind a recipe to a different model.
+export function draftForTemplate(preset, modelId, arrivalTemplateId) {
+  const originalModel = preset && modelIdForName(preset.model);
   if (!preset || typeof modelId !== 'string' || !modelId
-    || modelIdForName(preset.model) !== modelId
+    || !originalModel || (originalModel !== modelId && arrivalTemplateId !== preset.id)
     || !nonEmptyString(preset.prompt) || !nonEmptyString(preset.id)) return null;
-  if ((preset.promptOrigin === 'community-source-exact' || preset.sourcePromptOrigin === 'community-source-exact')
-    && preset.sourcePromptRunnable !== true) return null; // the server decides from the source audit (lib/clientTemplates.js)
   return {
-    prompt: preset.prompt,
+    prompt: preset.sourcePromptOrigin === 'community-source-exact' && nonEmptyString(preset.sourcePrompt) ? preset.sourcePrompt : preset.prompt,
     // A template that records no aspect keeps its preview's own ratio, unsnapped; the Create page matches it once against the options its model offers.
     aspect: nonEmptyString(preset.aspect) ? preset.aspect : previewRatio(preset),
     durationSeconds: supportedDuration(preset.durationSeconds) ? preset.durationSeconds : 5,
@@ -30,12 +36,12 @@ export function draftForTemplate(preset, modelId) {
 
 // A saved edit can override its own recipe, but never another template that
 // happens to use the same model. Older drafts did not carry a template id.
-export function resolveTemplateDraft(preset, modelId, storedDraft) {
+export function resolveTemplateDraft(preset, modelId, storedDraft, arrivalTemplateId) {
   if (!preset) return storedDraft;
-  const draft = draftForTemplate(preset, modelId);
+  const draft = draftForTemplate(preset, modelId, arrivalTemplateId);
   if (!draft) return null;
   if (!storedDraft || typeof storedDraft !== 'object'
-    || (storedDraft.templateId !== undefined && storedDraft.templateId !== preset.id)) return draft;
+    || (storedDraft.templateId !== preset.id && (arrivalTemplateId || storedDraft.templateId !== undefined))) return draft;
   return {
     ...draft,
     ...(nonEmptyString(storedDraft.prompt) ? { prompt: storedDraft.prompt } : {}),
@@ -43,4 +49,25 @@ export function resolveTemplateDraft(preset, modelId, storedDraft) {
     ...(supportedDuration(storedDraft.durationSeconds) ? { durationSeconds: storedDraft.durationSeconds } : {}),
     ...(nonEmptyString(storedDraft.negativePrompt) ? { negativePrompt: storedDraft.negativePrompt } : {}),
   };
+}
+
+// Called once on arrival, after the catalog settles. URL settings win, even
+// with blocked storage; unrelated stored recipes never enter this binding.
+export function templateArrival(preset, models, params, storedDraft) {
+  const original = models.find(model => model.id === modelIdForName(preset.model));
+  const saved = storedDraft?.templateId === preset.id ? storedDraft : null;
+  const requested = params.get('model') || saved?.model;
+  const candidate = models.find(model => model.id === requested);
+  const model = templateModelEligible(candidate, original) ? candidate : original;
+  const modelId = model?.id || modelIdForName(preset.model);
+  const draft = resolveTemplateDraft(preset, modelId, saved, preset.id);
+  if (!draft) return { modelId, draft: null };
+  const seconds = /^\d{1,2}s?$/.test(params.get('duration') || '') ? Number(params.get('duration').replace('s', '')) : null;
+  const durationSeconds = model?.durations?.includes(seconds) ? seconds
+    : model?.durations?.includes(saved?.durationSeconds) ? saved.durationSeconds : draft.durationSeconds;
+  return { modelId, draft: {
+    ...draft,
+    ...(ratioOf(params.get('aspect')) !== null ? { aspect: params.get('aspect') } : {}),
+    durationSeconds,
+  } };
 }

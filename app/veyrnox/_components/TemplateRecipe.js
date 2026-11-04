@@ -28,10 +28,7 @@ function CopyPrompt({ text, label }) {
 export function TemplateRecipe({ preset, generatedPreview = false }) {
   const { t } = useI18n();
   const hasExactSourcePrompt = preset.sourcePromptOrigin === 'community-source-exact' && typeof preset.sourcePrompt === 'string';
-  const sourcePromptBlocked = hasExactSourcePrompt && preset.sourcePromptRunnable === false;
-  // One prompt: the community one, shown and copied unchanged. When it needs
-  // reference media or audio the model cannot receive, it is copy-only and
-  // generation stays off; no second "generation prompt" is offered.
+  // One community prompt, shown and handed to Create unchanged unless edited.
   const [prompt, setPrompt] = useState(hasExactSourcePrompt ? preset.sourcePrompt : preset.prompt);
   const handoffPrompt = prompt;
   const handoffPreset = hasExactSourcePrompt ? { ...preset, prompt: preset.sourcePrompt } : preset;
@@ -40,8 +37,6 @@ export function TemplateRecipe({ preset, generatedPreview = false }) {
   const sourcePromptNotRecorded = preset.sourcePromptStatus === 'adaptation-only';
   const sourcePromptTruncated = preset.sourcePromptStatus === 'exact-truncated';
   const sourcePromptDuplicate = typeof preset.sourcePromptDuplicateOf === 'string' && preset.sourcePromptDuplicateOf.length > 0;
-  const sourcePromptModelLimitOnly = preset.sourcePromptIssues?.includes('model-prompt-limit-exceeded')
-    && preset.sourcePromptIssues.every(issue => ['model-prompt-limit-exceeded', 'source-input-contract-not-wired'].includes(issue));
   const promptLabel = hasExactSourcePrompt ? t("public.TemplateRecipe.exactCommunityPrompt") : t("public.TemplateRecipe.prompt");
   return (
     <>
@@ -51,20 +46,19 @@ export function TemplateRecipe({ preset, generatedPreview = false }) {
         </div>
       )}
       <h2 className="mt-8 font-vx-mono text-[11px] tracking-[0.12em] text-vx-fg-muted">{promptLabel}</h2>
-      <textarea aria-label={promptLabel} value={prompt} onChange={(event) => setPrompt(event.target.value)} readOnly={sourcePromptBlocked} rows={hasExactSourcePrompt ? 12 : 8} dir={hasExactSourcePrompt ? "auto" : undefined}
+      <textarea aria-label={promptLabel} value={prompt} onChange={(event) => setPrompt(event.target.value)} rows={hasExactSourcePrompt ? 12 : 8} dir={hasExactSourcePrompt ? "auto" : undefined}
         className="mt-2 w-full rounded-xl border border-vx-border bg-vx-panel px-4 py-3 text-[15px] leading-[1.55] text-vx-fg-body focus:outline-hidden focus:border-vx-accent" />
       <CopyPrompt text={prompt} label={hasExactSourcePrompt ? t("public.TemplateRecipe.copyExactCommunityPrompt") : t("public.TemplateRecipe.copyPrompt")} />
       {tooLong && <p role="alert" className="mt-3 text-[13px] font-bold text-vx-danger">{t("public.TemplateRecipe.productPromptTooLong", { count: prompt.length, max: TEMPLATE_PROMPT_MAX })}</p>}
-      {!sourcePromptBlocked && <p className="mt-3 text-[13px] text-vx-fg-muted">{hasExactSourcePrompt ? t("public.TemplateRecipe.exactCommunityPromptHelp") : generatedPreview ? t("public.TemplateRecipe.thePreviewWasGeneratedUsingThis") : preset.inspired ? t("public.TemplateRecipe.adaptedForTheModelBelowTo") : t("public.TemplateRecipe.editItHereOrInThe")}</p>}
+      <p className="mt-3 text-[13px] text-vx-fg-muted">{hasExactSourcePrompt ? t("public.TemplateRecipe.exactCommunityPromptHelp") : generatedPreview ? t("public.TemplateRecipe.thePreviewWasGeneratedUsingThis") : preset.inspired ? t("public.TemplateRecipe.adaptedForTheModelBelowTo") : t("public.TemplateRecipe.editItHereOrInThe")}</p>
       {hasExactSourcePrompt && sourcePromptTruncated && <p role="note" data-source-prompt-status="exact-truncated" className="mt-3 rounded-xl border border-amber-400/40 bg-amber-400/[0.08] px-4 py-3 text-[13px] text-vx-fg-body">{t("public.TemplateRecipe.sourcePromptTruncated")}</p>}
       {hasExactSourcePrompt && sourcePromptDuplicate && <p role="note" data-source-prompt-duplicate-of={preset.sourcePromptDuplicateOf} className="mt-3 rounded-xl border border-vx-border px-4 py-3 text-[13px] text-vx-fg-body">{t("public.TemplateRecipe.sourcePromptDuplicate")}</p>}
-      {sourcePromptBlocked && <p role="alert" data-source-prompt-runnable="false" className="mt-3 rounded-xl border border-amber-400/40 bg-amber-400/[0.08] px-4 py-3 text-[13px] text-vx-fg-body">{sourcePromptModelLimitOnly && preset.sourcePromptModelPromptMax ? t("public.TemplateRecipe.sourcePromptModelLimitCopyOnly", { max: preset.sourcePromptModelPromptMax }) : t("public.TemplateRecipe.sourcePromptCopyOnly")}</p>}
       {preset.steps && (
         <ol className="mt-5 list-decimal space-y-2 ps-5 text-sm text-vx-fg-body">
           {preset.steps.map((step) => <li key={step}>{presetStep(t, step)}</li>)}
         </ol>
       )}
-      <UseTemplate preset={handoffPreset} prompt={handoffPrompt} generationBlocked={sourcePromptBlocked} />
+      <UseTemplate preset={handoffPreset} prompt={handoffPrompt} />
     </>
   );
 }

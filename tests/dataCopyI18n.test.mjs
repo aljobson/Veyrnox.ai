@@ -144,7 +144,7 @@ test('Genjutsu recipe SSR shows only the exact source prompt and hands that same
   assert.doesNotMatch(html, /readonly=""/i);
 });
 
-test('Syntx recipe SSR shows only the exact prompt and blocks generation when it cannot run', () => {
+test('Syntx recipe SSR hands its exact prompt to Create even when references cannot run as written', () => {
   const exactTemplate = ALL_TEMPLATES.find((preset) => preset.id === 'medieval-runway-look');
   const exactPrompt = SYNTX_SOURCE_PROMPT_RECORDS[exactTemplate.id].prompt;
   // Its exact prompt needs a reference video the model cannot take.
@@ -156,7 +156,7 @@ test('Syntx recipe SSR shows only the exact prompt and blocks generation when it
     './UseTemplate': { UseTemplate: ({ preset: actual, prompt, generationBlocked }) => {
       assert.equal(actual.prompt, exactPrompt);
       assert.equal(prompt, exactPrompt);
-      assert.equal(generationBlocked, true);
+      assert.equal(generationBlocked, undefined);
       return React.createElement('div', { 'data-use-template': actual.id });
     } },
   } });
@@ -164,7 +164,7 @@ test('Syntx recipe SSR shows only the exact prompt and blocks generation when it
   assert.ok(exactHtml.includes(exactPrompt.slice(0, 80)));
   assert.ok(!exactHtml.includes(exactTemplate.prompt.slice(0, 80)));
   assert.ok(!exactHtml.includes('GENERATION PROMPT'));
-  assert.match(exactHtml, /readonly=""/i);
+  assert.doesNotMatch(exactHtml, /readonly=""|data-source-prompt-runnable/i);
 });
 
 test('a runnable community prompt is the only prompt shown and handed off, even when the template had a preferred adaptation', () => {
@@ -183,7 +183,7 @@ test('a runnable community prompt is the only prompt shown and handed off, even 
   assert.doesNotMatch(html, /data-runnable-adaptation/);
   assert.equal(handoff.prompt, exactPrompt);
   assert.equal(handoff.preset.prompt, exactPrompt);
-  assert.equal(handoff.generationBlocked, false);
+  assert.equal(handoff.generationBlocked, undefined);
 });
 
 test('an exact source prompt over the former limit is shown whole and stays copyable when its source contract is unsupported', () => {
@@ -200,12 +200,12 @@ test('an exact source prompt over the former limit is shown whole and stays copy
   const html = f.render(React.createElement(f.load('app/veyrnox/_components/TemplateRecipe.js').TemplateRecipe, { preset }));
   assert.ok(html.includes(exactPrompt.slice(-60).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#x27;')) || html.includes(String(exactPrompt.length)));
   assert.ok(!html.includes(`This prompt is ${exactPrompt.length} characters`));
-  assert.match(html, /data-source-prompt-runnable="false"/);
+  assert.doesNotMatch(html, /data-source-prompt-runnable="false"/);
   assert.doesNotMatch(html, /data-runnable-adaptation/);
   assert.ok(!html.includes('GENERATION PROMPT'));
-  assert.match(html, /readonly=""/i);
+  assert.doesNotMatch(html, /readonly=""/i);
   assert.equal(handoff.prompt, exactPrompt);
-  assert.equal(handoff.generationBlocked, true);
+  assert.equal(handoff.generationBlocked, undefined);
 });
 
 test('app data areas preserve keys, placeholders and numeric facts in all languages', async () => {
