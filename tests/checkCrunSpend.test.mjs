@@ -28,3 +28,20 @@ test('compare flags a fall above the records unless outside spend is allowed', (
 test('compare flags a fall below completed attempts', () => {
     assert.equal(compare({ all: 1, completed: 1 }, { before: 1000, after: 1000 }).verdict, 'under');
 });
+
+import { attemptCost, parseAmount } from '../scripts/check-crun-spend.mjs';
+
+test('attemptCost scales a per-second route by 5 s blocks and leaves per-generation routes at one unit', () => {
+    const kling = (sec) => ({ cost_snapshot: '0.2670', model_routes: { cost_unit: 'per_second', billing_seconds: '5.00' }, jobs: { duration_seconds: sec } });
+    assert.ok(Math.abs(attemptCost(kling('5')) - 0.267) < 1e-9);
+    assert.ok(Math.abs(attemptCost(kling('10')) - 0.534) < 1e-9);
+    assert.ok(Math.abs(attemptCost(kling(null)) - 0.267) < 1e-9);
+    assert.equal(attemptCost({ cost_snapshot: '0.0730', model_routes: { cost_unit: 'per_generation' }, jobs: { duration_seconds: '8' } }), 0.073);
+});
+
+test('parseAmount rejects separators, blanks, junk, negatives and a zero rate', () => {
+    assert.equal(parseAmount('9186.74'), 9186.74);
+    for (const bad of ['9,186.74', '', ' ', 'abc', '-5', '1e3', 'NaN', undefined]) assert.equal(parseAmount(bad), null);
+    assert.equal(parseAmount('0', { positive: true }), null);
+    assert.equal(parseAmount('212', { positive: true }), 212);
+});

@@ -35,14 +35,35 @@ const PAGE = 1000;
 
 const num = (v) => Number(v);
 
-/** rows: [{ outcome, cost_snapshot, supplier_job_id, model_routes: { model_id } }] */
+/**
+ * What one attempt really cost. cost_snapshot is the route's cost_per_unit (migration 0370). For a per-second route
+ * that is the price of one billing block (5 s), and the gateway bills credits x ceil(seconds / 5), so a 10 s clip
+ * costs two blocks. A per-generation route (images, fixed-length Veo) is always one unit.
+ */
+export function attemptCost(r) {
+    const unit = num(r.cost_snapshot);
+    const route = r.model_routes || {};
+    if (route.cost_unit !== 'per_second') return unit;
+    const block = num(route.billing_seconds) || 5;
+    const seconds = num(r.jobs && r.jobs.duration_seconds) || block;
+    return unit * Math.max(1, Math.ceil(seconds / block));
+}
+
+/** A finite non-negative number written plainly (no thousands separators), or null. */
+export function parseAmount(text, { positive = false } = {}) {
+    if (typeof text !== 'string' || !/^\d+(\.\d+)?$/.test(text.trim())) return null;
+    const v = Number(text);
+    return Number.isFinite(v) && (!positive || v > 0) ? v : null;
+}
+
+/** rows: [{ outcome, cost_snapshot, supplier_job_id, model_routes: { model_id, cost_unit, billing_seconds }, jobs: { duration_seconds } }] */
 export function summarize(rows) {
     const byModel = new Map();
     let all = 0;
     let completed = 0;
     let failed = 0;
     for (const r of rows) {
-        const cost = num(r.cost_snapshot);
+        const cost = attemptCost(r);
         const model = (r.model_routes && r.model_routes.model_id) || 'unknown';
         const m = byModel.get(model) || { jobs: 0, cost: 0 };
         m.jobs += 1;
@@ -74,7 +95,7 @@ async function fetchAttempts({ url, key, since, until }) {
     const rows = [];
     for (let from = 0; ; from += PAGE) {
         const q = new URL('/rest/v1/job_attempts', url);
-        q.searchParams.set('select', 'job_id,attempt_no,supplier_job_id,outcome,cost_snapshot,created_at,model_routes!inner(supplier,model_id)');
+        q.searchParams.set('select', 'job_id,attempt_no,supplier_job_id,outcome,cost_snapshot,created_at,model_routes!inner(supplier,model_id,cost_unit,billing_seconds),jobs(duration_seconds:inputs->>duration_seconds)');
         q.searchParams.set('model_routes.supplier', 'eq.crun');
         q.searchParams.append('created_at', `gte.${since}`);
         q.searchParams.append('created_at', `lt.${until}`);
@@ -96,6 +117,17 @@ async function main() {
     const since = arg('--since');
     if (!since || Number.isNaN(Date.parse(since))) { console.error('--since <ISO time> is required'); process.exit(2); }
     const until = arg('--until') || new Date().toISOString();
+    const before = arg('--balance-before');
+    const after = arg('--balance-after');
+    const b = parseAmount(before || '');
+    const a = parseAmount(after || '');
+    const allow = arg('--allow-credits') === undefined ? 0 : parseAmount(arg('--allow-credits'));
+    const paid = arg('--paid-rate') === undefined ? RECORDED_RATE : parseAmount(arg('--paid-rate'), { positive: true });
+    const compareWanted = before !== undefined || after !== undefined;
+    if (compareWanted && (b === null || a === null || allow === null || paid === null)) {
+        console.error('--balance-before, --balance-after, --allow-credits and --paid-rate must be plain numbers (no commas, no negatives; paid rate above 0)');
+        process.exit(2);
+    }
     const root = join(dirname(fileURLToPath(import.meta.url)), '..');
     let key = process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (!key && process.stdin.isTTY) key = await promptHidden('Service-role key (typing is hidden): ');
@@ -112,14 +144,11 @@ async function main() {
     console.log(`recorded cost: ${usd(s.all)} all attempts, ${usd(s.completed)} completed, ${usd(s.failed)} failed or abandoned`);
     console.log(`expected credits: ${(s.completed * RECORDED_RATE).toFixed(1)} to ${(s.all * RECORDED_RATE).toFixed(1)}`);
     if (process.argv.includes('--list')) {
-        for (const r of rows) console.log(`  ${r.created_at}  ${r.outcome || 'open'}  ${r.supplier_job_id || '-'}  ${r.model_routes.model_id}  ${usd(num(r.cost_snapshot))}`);
+        for (const r of rows) console.log(`  ${r.created_at}  ${r.outcome || 'open'}  ${r.supplier_job_id || '-'}  ${r.model_routes.model_id}  ${usd(attemptCost(r))}`);
     }
 
-    const before = arg('--balance-before');
-    const after = arg('--balance-after');
-    if (before === undefined || after === undefined) { console.log('add --balance-before and --balance-after to compare with the Crun balance'); return; }
-    const c = compare(s, { before: num(before), after: num(after), allowCredits: num(arg('--allow-credits') || 0) });
-    const paid = num(arg('--paid-rate') || RECORDED_RATE);
+    if (!compareWanted) { console.log('add --balance-before and --balance-after to compare with the Crun balance'); return; }
+    const c = compare(s, { before: b, after: a, allowCredits: allow });
     console.log(`balance fell ${c.drop.toFixed(2)} credits (${usd(c.drop / paid)} at ${paid} per $1); records explain ${c.low.toFixed(1)} to ${c.high.toFixed(1)}`);
     if (c.verdict === 'fits') console.log('OK: the balance fits the records.');
     else if (c.verdict === 'over') { console.error('MISMATCH: Crun charged MORE than the records explain. Look for spend outside the app, or a rate or cost error.'); process.exit(1); }
