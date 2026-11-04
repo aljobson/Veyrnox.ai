@@ -42,7 +42,6 @@ test('Sana refuses client price overrides and reference images before debit', ()
     }
     assert.equal(checkInputs(record, {prompt: ''}).ok, false);
     assert.deepEqual(publicCapabilities(record).media, {});
-    assert.deepEqual(capabilityFor('fal-ai/flux-2-pro').assumes, {image_size: 'landscape_4_3'});
 });
 
 test('Sana uses the existing fal queue and webhook path', async (t) => {

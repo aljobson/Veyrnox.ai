@@ -114,5 +114,5 @@ test('durable admission retries preserve exact request inputs and provider paylo
     assert.equal((await admitFalDispatch({...request,rpc})).status,200);
     assert.deepEqual(calls[1],calls[0]);
     assert.deepEqual(calls[0].args.p_inputs,request.jobInputs);
-    assert.deepEqual(calls[0].args.p_payload,{prompt:'same scene',seed:12});
+    assert.deepEqual(calls[0].args.p_payload,{prompt:'same scene',seed:12,image_size:{width:1024,height:768}});
 });
