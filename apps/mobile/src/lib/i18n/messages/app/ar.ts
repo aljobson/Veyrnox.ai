@@ -1,6 +1,13 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "email.resendEmail": "إعادة إرسال البريد",
+  "email.resendIn": "إعادة الإرسال بعد {seconds} ث",
+  "email.emailResent": "إذا أمكن إرسال بريد إلى هذا العنوان، فهو في طريقه إليك. تحقق من صندوق الوارد.",
+  "email.resendLimit": "استخدم عنوانًا آخر أو حاول لاحقًا.",
+  "email.changeAddress": "العنوان غير صحيح؟ غيّره",
+  "email.resendReady": "يمكنك إعادة إرسال البريد الآن.",
+  "email.resendEmailTo": "إعادة إرسال البريد إلى {email}",
   "sourceLimits.tooShort": "هذا الفيديو قصير جداً لهذا النموذج. اختر مقطعاً ضمن نطاق المدة المعروض.",
   "sourceLimits.resolution": "دقة هذا الملف خارج حدود النموذج. اختر ملفاً ضمن نطاق الأبعاد المعروض.",
   "faceFilterSwitch.current": "الفلتر: {name}",

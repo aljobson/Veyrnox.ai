@@ -55,3 +55,15 @@ export function takeVerifier() {
         return null;
     }
 }
+
+/** Read only: a resend needs at least five minutes of the original lifetime. */
+export function readMagicVerifier() {
+    try {
+        const { verifier, at } = JSON.parse(localStorage.getItem(MAGIC_KEY));
+        const age = Date.now() - at;
+        return typeof verifier === 'string' && verifier && typeof at === 'number'
+            && age >= 0 && age <= MAGIC_VERIFIER_TTL_MS - 5 * 60 * 1000 ? verifier : null;
+    } catch {
+        return null;
+    }
+}

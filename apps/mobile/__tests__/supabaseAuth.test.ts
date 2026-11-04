@@ -91,3 +91,23 @@ describe('passkey authentication transport', () => {
         await expect(passkeySignInOptions('bad')).rejects.toEqual(new AuthError(400, 'captcha_failed'));
     });
 });
+
+import { resendSignupEmail } from '../src/lib/auth/supabaseAuth';
+describe('signup email resend', () => {
+    test('sends signup type and current captcha, without a password or PKCE fields', async () => {
+        globalThis.fetch = jest.fn().mockResolvedValue(new Response('{}', { status: 200 }));
+        await expect(resendSignupEmail('person@example.test', 'fresh-token')).resolves.toBeUndefined();
+        const [url, init] = (globalThis.fetch as jest.Mock).mock.calls[0];
+        expect(url).toMatch(/\/auth\/v1\/resend$/);
+        expect(init.method).toBe('POST');
+        expect(JSON.parse(init.body)).toEqual({ type: 'signup', email: 'person@example.test', gotrue_meta_security: { captcha_token: 'fresh-token' } });
+    });
+    test.each([[429, 'over_email_send_rate_limit'], [400, 'captcha_failed']])('preserves status and code (%s)', async (status, code) => {
+        globalThis.fetch = jest.fn().mockResolvedValue(new Response(JSON.stringify({ error_code: code }), { status }));
+        await expect(resendSignupEmail('person@example.test', 'fresh')).rejects.toEqual(new AuthError(status, code));
+    });
+    test('maps an offline resend to the existing network error', async () => {
+        globalThis.fetch = jest.fn().mockRejectedValue(new TypeError('offline'));
+        await expect(resendSignupEmail('person@example.test', 'fresh')).rejects.toEqual(new AuthError(0, 'network'));
+    });
+});

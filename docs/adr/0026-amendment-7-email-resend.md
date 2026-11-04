@@ -1,0 +1,57 @@
+# ADR-0026 amendment 7 — Resend pending authentication email
+
+Status: Implemented locally; staging verification pending (2026-11-04)
+
+Relates: [ADR-0026](0026-turnstile-captcha-on-auth.md), frozen signup-resend
+work order SHA-256 `20057da353d764d48cf717ddc7f754a5055c297ce1f3e4e0afb1104c3eb4d5d0`.
+
+After signup or a magic-link request, offer resend and address correction.
+Each resend requires a fresh Turnstile token. Success or a rate response
+starts a 60-second cooldown. Five dispatched resend attempts exhaust the UI
+budget, including requests whose response is lost; missing CAPTCHA sends
+nothing and consumes no attempt. Changing address or resetting the form starts
+a new attempt. No server, database, flag, grant or Auth settings change.
+
+Password signup uses `/auth/v1/resend` with `type: signup`, never `/otp`.
+Host Claude supplied production evidence: `/auth/v1/health` reports
+`v2.197.0`; the [matching resend handler](https://github.com/supabase/auth/blob/v2.197.0/internal/api/resend.go)
+accepts `code_challenge` and `code_challenge_method`, generates signup flow
+state for PKCE, calls `sendConfirmation`, and does not change a password.
+This clears the frozen plan's compatibility gate based on host evidence;
+the sandbox could not independently reach the deployed health endpoint.
+Mobile uses the same resend endpoint without PKCE, matching its signup.
+
+Web signup and initial magic-link requests retain their existing writes.
+Resends read `veyrnox_pkce_magic_verifier` from localStorage, derive the same
+S256 challenge, and never write, remove or refresh the record. The record is
+`{ verifier, at }`, expires after 15 minutes, and is consumed by `takeVerifier`
+on the callback (after checking the per-tab OAuth sessionStorage slot).
+At least five minutes must remain at the read, including exactly five minutes.
+Missing, malformed, inaccessible or older records send nothing and return to
+the pending flow's editable form with a start-again notice. `keepMagicVerifier`,
+`takeVerifier` and callback behavior are unchanged.
+
+The existing single shared slot remains a limitation: a new signup/magic-link
+attempt in another tab replaces the slot. Resends cannot overwrite a newer
+record or restore a consumed one. Tests compare the complete stored bytes,
+including timestamps, through failures, lost responses and reversed responses.
+Original and resent callbacks are tested independently with the same challenge.
+They cannot both consume one stored verifier sequentially. These mocked tests
+do not assert that GoTrue keeps an older email valid after issuing a new one.
+
+Pending state binds the address and flow. Correction returns web magic-link
+users to magic mode without a password, web signup users to signup, and mobile
+users to signup with an empty password and a fresh CAPTCHA. The pending state
+hides the regular email submit/password controls so they cannot accidentally
+start another send; the email remains visible and becomes editable on reset.
+
+The web state hook and controls are separate to keep AuthGate below 500 lines.
+Exception: authClient.js was already 651 lines; the frozen plan's public helpers
+add 18 net lines there rather than refactoring unrelated session machinery.
+Additional localized keys cover address labels, readiness and the required
+start-again notice. All eleven locales have matching placeholders; translated
+wording still needs native review. Raw upstream errors are no longer logged.
+
+Owner staging checks remain unverified: staging Auth version, resent web link
+confirmation/sign-in, original chosen password sign-in afterwards, and mobile
+confirmation. No live email was sent by these tests.

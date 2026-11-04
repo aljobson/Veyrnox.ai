@@ -4,17 +4,6 @@ import LegalLink from './LegalLink';
 import { rich } from '../lib/i18n/rich';
 import { useI18n } from './I18nProvider.jsx';
 
-/**
- * AuthGate — root-mounted modal listening for veyrnox:auth-required
- * events. Lives under top-level components/ (not packages/studio) so
- * the transpiled-workspace bundle path stays clean — PR #38 bisect.
- *
- * Wire once in app/layout.js. Any studio component that hits a 401 on
- * /api/v1/* dispatches `window.dispatchEvent(new
- * CustomEvent('veyrnox:auth-required'))` and this handler pops the
- * modal.
- */
-
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
     getSession,
@@ -31,41 +20,32 @@ import { AppleMark, PasskeyMark, GoogleMark } from "./AuthMarks.jsx";
 import { captchaNotice, noticeAfterCaptchaFailure, noticeAfterCaptchaToken, noticeWhileCaptchaWaits, CAPTCHA_BLOCKED_CODE, CAPTCHA_UNSUPPORTED, CAPTCHA_WAITING } from "../app/lib/turnstileFailure.js";
 import { authCallbackUrl, safeAuthReturnPath } from "../app/lib/authReturn.js";
 
+import { useEmailResend, isEmailRateLimit } from './useEmailResend.js';
+import EmailResendControls from './EmailResendControls.jsx';
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// GoTrue's strings are developer-facing ("Email rate limit exceeded",
-// "AuthApiError: Invalid login credentials"). Translate the ones users
-// actually hit; anything unrecognised falls back to a plain sentence rather
-// than a raw error object, and the original stays in console.error.
 const AUTH_ERROR_COPY = (t) => ([
     [/invalid login credentials/i, t("authGate.thatEmailAndPasswordDonT")],
     [/email not confirmed/i, t("authGate.confirmYourEmailFirstCheckYour")],
     [/rate limit/i, t("authGate.tooManyAttemptsWaitAMinute")],
     [/user already registered/i, t("authGate.thereSAlreadyAnAccountWith")],
     [/password should be at least/i, t("authGate.passwordsNeedAtLeast8Characters")],
-    // Supabase's leaked-password check (HaveIBeenPwned; CLAUDE.md OWASP #7
-    // keeps it on). Without this line a breached password surfaced as the
-    // generic fallback, which never told the user the password was the problem.
     [/known to be weak|easy to guess|weak.?password/i, t("authGate.thatPasswordHasAppearedInA")],
     [/network|fetch|failed to fetch/i, t("authGate.couldnTReachTheServerCheck")],
-    // signInWithOAuth writes the PKCE verifier to sessionStorage before it
-    // redirects. Safari private browsing and blocked site data throw there,
-    // which used to leave the provider buttons silently dead.
     [/storage|quota|securityerror/i, t("authGate.yourBrowserIsBlockingSiteStorage")],
     [/captcha/i, t("authGate.theSecurityCheckFailedOrExpired")], [/database error saving new user/i, t("authGate.weCouldnTCreateThatAccount")], // trigger refusal (0343)
-    // GoTrue's passkey codes. "not registered" is the one users actually hit:
-    // they tap the passkey button on a device that has never enrolled one.
     [/webauthn_credential_not_found|no passkey/i, t("authGate.noPasskeyForThisSiteOn")],
     [/webauthn_challenge_expired/i, t("authGate.thatTookTooLongTryThe")],
     [/passkey_disabled/i, t("authGate.passkeySignInIsnTAvailable")],
 ]);
 
 function humanAuthError(err, t) {
+    if (isEmailRateLimit(err)) return t("authGate.tooManyAttemptsWaitAMinute");
     const raw = err && err.message ? String(err.message) : "";
     if (raw) {
         const hit = AUTH_ERROR_COPY(t).find(([re]) => re.test(raw));
         if (hit) return hit[1];
-        console.error("[auth] unmapped error:", raw);
     }
     return t("authGate.thatDidnTWorkTryAgain");
 }
@@ -81,18 +61,29 @@ export default function AuthGate() {
     const [notice, setNotice] = useState(null);
     const [showPassword, setShowPassword] = useState(false);
     const returnTo = useRef(null);
-    // Turnstile (ADR-0026). Tokens are single-use, so every submit bumps
-    // captchaReset and the widget issues a fresh one.
+    const running = useRef(false);
+    const dialogVersion = useRef(0);
+    const emailRef = useRef(null);
+    const noticeRef = useRef(null);
     const [captcha, setCaptcha] = useState(null);
     const [captchaReset, setCaptchaReset] = useState(0);
-    // The widget's last error code, CAPTCHA_WAITING while it waits for a
-    // click, or CAPTCHA_UNSUPPORTED, so a submit without a token can say why.
     const [captchaFailure, setCaptchaFailure] = useState(null);
-    // Every entry point uses this dialog. Availability controls whether an
-    // action can start, never whether Apple or passkeys disappear from it.
     const oauth = configuredProviders(process.env.NEXT_PUBLIC_AUTH_PROVIDERS);
     const authSettings = useRef(null);
     const [settings, setSettings] = useState(null);
+
+    function resetCaptcha() { setCaptcha(null); setCaptchaReset(n => n + 1); }
+    const resendState = useEmailResend({ busy, runningRef: running, setBusy, captcha, captchaFailure, resetCaptcha,
+        setNotice, humanAuthError, t,
+        editAddress(flow) { setMode(flow); setPassword(""); emailRef.current?.focus(); },
+        focusNotice() { noticeRef.current?.focus(); },
+        redirectTo: () => authCallbackUrl(returnTo.current, window.location.origin),
+    });
+    const resetResend = resendState.reset;
+    function chooseMode(next) {
+        if (busy || running.current) return;
+        resetResend(); resetCaptcha(); setNotice(null); setMode(next);
+    }
 
     function rememberSettings(data) {
         if (!data) return;
@@ -116,10 +107,6 @@ export default function AuthGate() {
         return data;
     }
 
-    // This dialog appears unannounced on a 401, so it has to take focus and
-    // accept Escape — ConfirmDialog already does both. Without it a keyboard
-    // user had to Tab blindly through the whole page to reach the modal that
-    // had just appeared, and could not dismiss it.
     const panelRef = useRef(null);
     const closeRef = useRef(null);
 
@@ -181,10 +168,11 @@ export default function AuthGate() {
     // alone, the dialog reopened after a session ended with the last email
     // and password filled in, and Show revealed the password.
     const forgetCredentials = useCallback(() => {
+        dialogVersion.current += 1; resetResend();
         setEmail("");
         setPassword("");
         setShowPassword(false);
-    }, []);
+    }, [resetResend]);
     const close = useCallback(() => {
         setOpen(false);
         forgetCredentials();
@@ -207,9 +195,6 @@ export default function AuthGate() {
         });
     }, [close, forgetCredentials]);
 
-    // signInWithOAuth is async and ends in a redirect. Unawaited, a throw on
-    // the way to that redirect (blocked sessionStorage, missing env) became an
-    // unhandled rejection and the button just did nothing.
     async function startOAuth(provider) {
         setNotice(null);
         setBusy(true);
@@ -264,6 +249,7 @@ export default function AuthGate() {
 
     async function handleSubmit(e) {
         e.preventDefault();
+        if (busy || running.current || resendState.pending) return;
         setNotice(null);
         if (!EMAIL_RE.test(email)) {
             setNotice({ kind: "error", text: t("authGate.enterAValidEmailAddress") });
@@ -277,12 +263,16 @@ export default function AuthGate() {
             setNotice(captchaNotice(captchaFailure, t));
             return;
         }
+        const version = dialogVersion.current;
+        running.current = true;
         setBusy(true);
         try {
             if (mode === "sign_up") {
                 const { session, needsConfirmation } = await signUp(email, password, captcha);
+                if (version !== dialogVersion.current) return;
                 if (needsConfirmation) {
                     setPassword("");
+                    resendState.begin("sign_up", email);
                     setNotice({ kind: "success", text: t("authGate.checkYourEmailToConfirmYour") });
                 } else if (session) {
                     close();
@@ -292,14 +282,19 @@ export default function AuthGate() {
                 close();
             } else {
                 await sendMagicLink(email, captcha, authCallbackUrl(returnTo.current, window.location.origin));
+                if (version !== dialogVersion.current) return;
                 setPassword("");
+                resendState.begin("magic", email);
                 setNotice({ kind: "success", text: t("authGate.checkYourEmailForASign") });
             }
         } catch (err) {
+            if (version !== dialogVersion.current) return;
             setNotice({ kind: "error", text: humanAuthError(err, t) || t("authGate.signInFailed") });
         } finally {
+            running.current = false;
             setBusy(false);
-            if (TURNSTILE_SITE_KEY) setCaptchaReset((n) => n + 1);
+            resetCaptcha();
+            if (version === dialogVersion.current) noticeRef.current?.focus();
         }
     }
 
@@ -361,6 +356,8 @@ export default function AuthGate() {
                     <label className="block">
                         <span className="text-xs text-vx-fg-muted">{t("authGate.email")}</span>
                         <input
+                            ref={emailRef}
+                            readOnly={!!resendState.pending || busy}
                             type="email"
                             required
                             autoComplete="email"
@@ -370,7 +367,7 @@ export default function AuthGate() {
                         />
                     </label>
 
-                    {mode !== "magic" && (
+                    {mode !== "magic" && !resendState.pending && (
                         // Not one wrapping <label>: the button and the hint sat inside
                         // it and were read out as part of the field's name.
                         <div>
@@ -425,7 +422,7 @@ export default function AuthGate() {
 
                     {/* Always mounted so a screen reader hears the message
                         appear instead of the whole region being inserted. */}
-                    <div role="status" aria-live="polite" className={notice ? "block" : "sr-only"}>
+                    <div role="status" aria-live="polite" ref={noticeRef} tabIndex={-1} className={notice ? "block rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent" : "sr-only"}>
                         {notice && (
                             <div
                                 className={`flex items-start gap-2 text-xs rounded-md px-3 py-2 border ${
@@ -440,7 +437,8 @@ export default function AuthGate() {
                         )}
                     </div>
 
-                    <button
+                    <EmailResendControls state={resendState} busy={busy} t={t} />
+                    {!resendState.pending && <button
                         type="submit"
                         disabled={busy}
                         className="w-full rounded-full bg-vx-accent text-vx-accent-ink font-extrabold py-2.5 text-sm hover:bg-vx-accent-hover focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent disabled:opacity-60"
@@ -452,20 +450,20 @@ export default function AuthGate() {
                                 : mode === "magic"
                                     ? t("authGate.sendMagicLink")
                                     : t("oauth.signIn")}
-                    </button>
+                    </button>}
                 </form>
 
                 <div className="mt-4 flex flex-wrap gap-3 text-xs text-vx-fg-muted">
                     {mode !== "sign_in" && (
-                        <button type="button" className="-my-2 py-2 underline hover:text-vx-fg" onClick={() => setMode("sign_in")}>
+                        <button type="button" className="-my-2 py-2 underline hover:text-vx-fg" onClick={() => chooseMode("sign_in")}>
                             {t("authGate.haveAnAccountSignIn")}</button>
                     )}
                     {mode !== "sign_up" && (
-                        <button type="button" className="-my-2 py-2 underline hover:text-vx-fg" onClick={() => setMode("sign_up")}>
+                        <button type="button" className="-my-2 py-2 underline hover:text-vx-fg" onClick={() => chooseMode("sign_up")}>
                             {t("authGate.newCreateAnAccount")}</button>
                     )}
                     {mode !== "magic" && (
-                        <button type="button" className="-my-2 py-2 underline hover:text-vx-fg" onClick={() => setMode("magic")}>
+                        <button type="button" className="-my-2 py-2 underline hover:text-vx-fg" onClick={() => chooseMode("magic")}>
                             {t("authGate.emailMeALinkInstead")}</button>
                     )}
                 </div>

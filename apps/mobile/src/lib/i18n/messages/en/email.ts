@@ -1,5 +1,12 @@
 // English strings for email. Add keys here; keep their original wording and placeholders.
 export default {
+  "email.resendEmail": "Resend email",
+  "email.resendIn": "Resend in {seconds} s",
+  "email.emailResent": "If an email can be sent to this address, it is on its way. Check your inbox.",
+  "email.resendLimit": "Use a different address or try again later.",
+  "email.changeAddress": "Wrong address? Change it",
+  "email.resendReady": "You can resend the email now.",
+  "email.resendEmailTo": "Resend email to {email}",
     'email.kicker': 'ONE STEP FROM CREATING',
     'email.signInTitle': 'Welcome back.',
     'email.signUpTitle': 'Make your account.',

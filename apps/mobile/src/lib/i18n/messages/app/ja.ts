@@ -1,6 +1,13 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "email.resendEmail": "メールを再送信",
+  "email.resendIn": "{seconds}秒後に再送信",
+  "email.emailResent": "このアドレスに送信できる場合、メールが届きます。受信トレイをご確認ください。",
+  "email.resendLimit": "別のアドレスを使うか、後でもう一度お試しください。",
+  "email.changeAddress": "アドレスが違いますか？変更する",
+  "email.resendReady": "メールを再送信できます。",
+  "email.resendEmailTo": "{email}にメールを再送信",
   "sourceLimits.tooShort": "この動画はモデルの対応時間より短すぎます。表示された時間範囲内のクリップを選んでください。",
   "sourceLimits.resolution": "このファイルの解像度はモデルの対応範囲外です。表示されたサイズ範囲内のファイルを選んでください。",
   "faceFilterSwitch.current": "フィルター：{name}",

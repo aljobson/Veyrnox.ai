@@ -135,3 +135,93 @@ test('email error announces once when it appears', async () => {
     expect(announce).toHaveBeenCalledWith(t('signIn.failed'));
     announce.mockRestore();
 });
+
+jest.mock('../src/lib/auth/supabaseAuth', () => ({
+    ...jest.requireActual('../src/lib/auth/supabaseAuth'),
+    resendSignupEmail: jest.fn(),
+}));
+const { resendSignupEmail: mockResend, AuthError: MockAuthError } = require('../src/lib/auth/supabaseAuth');
+const { t: translate } = require('../src/lib/i18n');
+const emailControl = (key: string) => root.container.queryAll(n => n.props.testID === translate(key))[0];
+const resendControl = () => root.container.queryAll(n => n.props.accessibilityLabel === translate('email.resendEmailTo', { email: 'person@example.test' }))[0];
+const token = async (value = 'fresh') => act(async () => root.container.queryAll(n => n.props.testID === 'captcha')[0].props.onMessage({ type: 'token', token: value }));
+const waitCooldown = async () => act(async () => { jest.advanceTimersByTime(60000); });
+async function signupPending() {
+    jest.useFakeTimers(); mockEmail.mockResolvedValue(false); mockResend.mockResolvedValue(undefined);
+    await act(async () => root.render(<EmailAuth />));
+    await act(async () => emailControl('email.newHere').props.onPress());
+    await act(async () => {
+        emailControl('authGate.email').props.onChangeText('person@example.test');
+        emailControl('email.passwordTitle').props.onChangeText('password123');
+    });
+    await token('initial');
+    await act(async () => emailControl('email.signUpCta').props.onPress());
+}
+afterEach(() => jest.useRealTimers());
+test('signup shows resend with an address label, starts cooldown, and requires fresh captcha', async () => {
+    await signupPending();
+    expect(resendControl().props.disabled).toBe(true);
+    expect(emailControl('authGate.email').props.value).toBe('person@example.test');
+    expect(emailControl('authGate.email').props.editable).toBe(false);
+    expect(emailControl('email.passwordTitle')).toBeUndefined();
+    await act(async () => resendControl().props.onPress()); expect(mockResend).not.toHaveBeenCalled();
+    await waitCooldown();
+    await act(async () => resendControl().props.onPress()); expect(mockResend).not.toHaveBeenCalled();
+    expect(root.container.queryAll(n => n.props.children === translate('email.securityFirst')).length).toBeGreaterThan(0);
+    await token('resend-token'); await act(async () => resendControl().props.onPress());
+    expect(mockResend).toHaveBeenCalledWith('person@example.test', 'resend-token');
+    expect(resendControl().props.disabled).toBe(true);
+});
+test('resend has one in-flight request even with two immediate taps', async () => {
+    await signupPending(); await waitCooldown(); await token();
+    let finish!: () => void;
+    mockResend.mockReturnValue(new Promise<void>(resolve => { finish = resolve; }));
+    await act(async () => { resendControl().props.onPress(); resendControl().props.onPress(); });
+    expect(mockResend).toHaveBeenCalledTimes(1);
+    expect(resendControl().props.disabled).toBe(true);
+    await act(async () => finish());
+});
+test.each([[429, 'rejected'], [400, 'over_email_send_rate_limit'], [400, 'over_request_rate_limit']])('rate response %s/%s restarts cooldown', async (status, code) => {
+    await signupPending(); await waitCooldown(); await token();
+    mockResend.mockRejectedValueOnce(new MockAuthError(status, code));
+    await act(async () => resendControl().props.onPress());
+    expect(resendControl().props.disabled).toBe(true);
+    expect(root.container.queryAll(n => n.props.children === translate('email.err.rate')).length).toBeGreaterThan(0);
+    await waitCooldown(); expect(resendControl().props.disabled).toBe(false);
+});
+test('network failure permits retry and the fifth resend caps the attempt', async () => {
+    await signupPending(); await waitCooldown();
+    mockResend.mockRejectedValue(new MockAuthError(0, 'network'));
+    for (let i = 0; i < 5; i++) {
+        await token(`cap-${i}`); await act(async () => resendControl().props.onPress());
+        expect(resendControl().props.disabled).toBe(i === 4);
+    }
+    expect(root.container.queryAll(n => n.props.children === translate('email.err.network')).length).toBeGreaterThan(0);
+    expect(root.container.queryAll(n => n.props.children === translate('email.resendLimit')).length).toBeGreaterThan(0);
+    await act(async () => resendControl().props.onPress()); expect(mockResend).toHaveBeenCalledTimes(5);
+});
+test('change address returns to signup with an empty password and creates the corrected account', async () => {
+    await signupPending(); await token('unused');
+    await act(async () => emailControl('email.changeAddress').props.onPress());
+    expect(resendControl()).toBeUndefined();
+    expect(emailControl('authGate.email').props.editable).toBe(true);
+    expect(emailControl('email.passwordTitle').props.value).toBe('');
+    await act(async () => {
+        emailControl('authGate.email').props.onChangeText('correct@example.test');
+        emailControl('email.passwordTitle').props.onChangeText('new-password');
+    });
+    await act(async () => emailControl('email.signUpCta').props.onPress()); expect(mockEmail).toHaveBeenCalledTimes(1);
+    await token('new-signup-token'); await act(async () => emailControl('email.signUpCta').props.onPress());
+    expect(mockEmail).toHaveBeenLastCalledWith('correct@example.test', 'new-password', 'new-signup-token');
+    expect(mockResend).not.toHaveBeenCalled();
+});
+test('cooldown announces its start and zero, not every second', async () => {
+    const announce = jest.spyOn(RN.AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
+    await signupPending();
+    expect(announce).toHaveBeenCalledWith(translate('email.resendIn', { seconds: 60 }));
+    announce.mockClear();
+    await act(async () => { jest.advanceTimersByTime(1000); });
+    expect(announce).not.toHaveBeenCalled();
+    await waitCooldown(); expect(announce).toHaveBeenCalledWith(translate('email.resendReady'));
+    announce.mockRestore();
+});

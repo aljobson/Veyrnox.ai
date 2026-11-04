@@ -130,3 +130,18 @@ describe('the list for the localization process is current', () => {
 test('English values contain rendered punctuation, never HTML entities copied from JSX', () => {
     expect(Object.entries(en).filter(([, value]) => /&(apos|quot|amp|lt|gt|nbsp|#\d+);/.test(value))).toEqual([]);
 });
+
+describe('resend translations exist in English and every active locale', () => {
+    const keys = ['resendEmail', 'resendIn', 'emailResent', 'resendLimit', 'changeAddress', 'resendReady', 'resendEmailTo'];
+    test.each(LOCALE_CODES)('%s', locale => {
+        for (const name of keys) {
+            const key = `email.${name}`;
+            const english = (en as Record<string, string>)[key];
+            expect(typeof english).toBe('string');
+            const value = CATALOGS[locale]![key];
+            expect(typeof value).toBe('string');
+            expect(slots(value!)).toEqual(slots(english!));
+            expect(createTranslator(locale, CATALOGS).t(key, { seconds: 12, email: 'person@example.test' })).not.toBe(key);
+        }
+    });
+});
