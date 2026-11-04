@@ -226,6 +226,7 @@ export const GENJUTSU_SOURCE_PROMPT_RECORDS = Object.freeze({
   },
   "community-elevator-duo-routine": {
     "sourcePromptAvailable": true,
+    "sourceAuditStatus": "verified-2026-11-04",
     "prompt": "갈색 개가 서서 춤을 추고 있고, 검정색 개는 바닥에 엎드려서 노래/랩을 하고 있는 장면으로 만들어줘."
   },
   "community-midnight-wolf-greeting": {
