@@ -1,5 +1,6 @@
 // SHA-256 values captured independently from the recovered public Genjutsu feed.
 export const GENJUTSU_PROMPT_SHA256 = Object.freeze({
+  "community-giant-city-stride": "ebf70167c4aee20bcda827abc5d0b772a19aeb9604119d15043228b64223b469",
   "community-truck-stop-celebration": "5ce371e5ccabc45a40303d89e81e80c0a8448c64de79ed3b0fa60c9f37baa093",
   "football-showstopper": "4fbb79ce03f5382a2380f4b9725c349c39ccf958f9f140598fc906a94f09a6f5",
   "ancient-attire-dance": "67396b3ebe60256a95501cac37cd2606b31d3fe8e0bea1679731178ea19aa182",
