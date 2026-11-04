@@ -208,7 +208,7 @@ export default function MfaSignInStepUp() {
     </div>
   ) : null;
   return (
-    <div role="dialog" aria-modal="true" aria-label={t('authGate.mfa.title')}
+    <div role="dialog" aria-modal="true" data-auth-prompt aria-label={t('authGate.mfa.title')}
       ref={panelRef} onKeyDown={onKeyDown} dir={locale === 'ar' ? 'rtl' : 'ltr'}
       className="fixed inset-0 z-50 flex items-center justify-center bg-vx-base/80 p-4">
       <div className="max-h-full w-full max-w-sm overflow-y-auto overscroll-contain rounded-2xl border border-vx-border bg-vx-panel p-5 sm:p-6">

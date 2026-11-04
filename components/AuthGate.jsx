@@ -305,7 +305,7 @@ export default function AuthGate() {
     return (
         <div
             role="dialog"
-            aria-modal="true"
+            aria-modal="true" data-auth-prompt
             aria-label={t("authGate.title")}
             ref={panelRef}
             onKeyDown={onKeyDown}

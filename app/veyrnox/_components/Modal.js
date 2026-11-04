@@ -1,6 +1,12 @@
 'use client';
 import { useEffect, useRef } from 'react';
 
+// The sign-in and two-factor prompts are ordinary fixed elements marked with this attribute. A modal dialog makes
+// everything outside it inert and sits above all non-top-layer content, so a prompt that opened while a modal was
+// open would be unreachable. The modal steps aside (closes, keeping its React state) while a prompt is on screen
+// and reopens when it goes.
+const AUTH_PROMPT = '[data-auth-prompt]';
+
 /**
  * Native modal supplies keyboard containment and an inert background, and
  * renders in the top layer, so no ancestor can clip or re-anchor it.
@@ -15,8 +21,16 @@ export function Modal({ children, onCancel, initialFocusRef, instant = false, cl
   useEffect(() => {
     const previous = document.activeElement;
     const dialog = ref.current;
-    dialog.showModal();
+    const sync = () => {
+      const blocked = !!document.querySelector(AUTH_PROMPT);
+      if (blocked && dialog.open) dialog.close();
+      else if (!blocked && !dialog.open) dialog.showModal();
+    };
+    sync();
+    const watch = new MutationObserver(sync);
+    watch.observe(document.body, { childList: true, subtree: true });
     return () => {
+      watch.disconnect();
       dialog.close();
       if (previous?.isConnected) previous.focus();
     };
