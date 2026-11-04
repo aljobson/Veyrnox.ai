@@ -113,7 +113,7 @@ test('A → B → A retains template origin and serializes preset only for its o
     const other = { ...model, id: 'other' };
     const away = createHandoff(other, carry, snapshot, []);
     const back = createHandoff(model, away.params, snapshot, []);
-    for (const params of [{ ...carry, modelId: model.id }, away.params, back.params]) {
+    for (const params of [{ ...carry, modelId: model.id }, away.params, back.params] as Array<Record<string, string>>) {
         expect(params).toMatchObject(carry);
         const template = activeTemplate(params, params.modelId, ['veyrnox.ai']);
         const original = params.modelId === model.id;
@@ -142,6 +142,6 @@ test('replay uses the stored origin even when submitted on another model', async
     const href = await submittedHref(api, 'other-job', 'irrelevant-current-model', () => true);
     expect(href?.params).toMatchObject({ ...carry, modelId: other.id });
     expect(activeTemplate(href!.params, other.id, ['veyrnox.ai'])).toBeNull();
-    const back = createHandoff(model, href!.params, snapshot, []);
+    const back = createHandoff(model, href!.params as Record<string, string>, snapshot, []);
     expect(activeTemplate(back.params, model.id, ['veyrnox.ai'])?.id).toBe('paper');
 });
