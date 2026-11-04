@@ -265,7 +265,7 @@ test('public templates are exact or adaptation-only and all source-gap records a
   assert.ok(audit.some(([, record]) => record.runnable === true));
   assert.ok(audit.some(([, record]) => record.runnable === false));
   assert.equal(audit.filter(([, record]) => record.issues.includes('prompt-over-30000')).length, 0);
-  assert.equal(audit.filter(([, record]) => record.issues.includes('more-than-two-reference-images')).length, 35);
+  assert.equal(audit.filter(([, record]) => record.issues.includes('more-than-two-reference-images')).length, 36);
   assert.equal(audit.filter(([, record]) => record.issues.includes('audio-preservation-not-supported')).length, 137);
   assert.equal(sourcePromptAuditRecord('community-survivor-memory-shift').status, 'exact-truncated');
   assert.equal(sourcePromptAuditRecord('keyboard-duo-swap').status, 'unavailable');

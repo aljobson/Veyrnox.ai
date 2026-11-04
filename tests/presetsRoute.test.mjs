@@ -83,12 +83,12 @@ test('the payload carries source framing and exact public source prompts but no 
     assert.equal(statuses['adaptation-only'].length, 27);
     assert.equal(statuses['exact-truncated'], undefined);
     assert.equal(statuses.unavailable, undefined);
-    assert.equal(exact.filter((p) => p.sourcePromptRunnable === true).length, 145);
-    assert.equal(exact.filter((p) => p.sourcePromptRunnable === false).length, 222);
+    assert.equal(exact.filter((p) => p.sourcePromptRunnable === true).length, 144);
+    assert.equal(exact.filter((p) => p.sourcePromptRunnable === false).length, 223);
     assert.ok(exact.filter((p) => p.sourcePromptRunnable === false).every((p) => p.sourcePromptIssues.includes('source-input-contract-not-wired')));
     assert.ok(exact.filter((p) => p.sourcePromptRunnable === true).every((p) => !p.sourcePromptIssues.includes('source-input-contract-not-wired')));
     assert.equal(exact.filter((p) => p.sourcePromptIssues.includes('prompt-over-30000')).length, 0);
-    assert.equal(exact.filter((p) => p.sourcePromptIssues.includes('more-than-two-reference-images')).length, 35);
+    assert.equal(exact.filter((p) => p.sourcePromptIssues.includes('more-than-two-reference-images')).length, 36);
     assert.equal(exact.filter((p) => p.sourcePromptIssues.includes('audio-preservation-not-supported')).length, 137);
     assert.equal(exact.filter((p) => p.sourcePromptDuplicateOf).length, 2);
     // Provenance stays in the source metadata, not in the feed.
