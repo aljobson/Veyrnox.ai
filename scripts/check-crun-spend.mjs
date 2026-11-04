@@ -124,7 +124,7 @@ async function main() {
     const allow = arg('--allow-credits') === undefined ? 0 : parseAmount(arg('--allow-credits'));
     const paid = arg('--paid-rate') === undefined ? RECORDED_RATE : parseAmount(arg('--paid-rate'), { positive: true });
     const compareWanted = before !== undefined || after !== undefined;
-    if (compareWanted && (b === null || a === null || allow === null || paid === null)) {
+    if ((compareWanted && (b === null || a === null)) || allow === null || paid === null) {
         console.error('--balance-before, --balance-after, --allow-credits and --paid-rate must be plain numbers (no commas, no negatives; paid rate above 0)');
         process.exit(2);
     }
