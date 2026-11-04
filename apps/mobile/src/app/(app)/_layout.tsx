@@ -4,6 +4,7 @@ import { useOfflineRecovery } from '../../lib/useOfflineRecovery';
 import { Text } from '../../components/ui';
 import { CelebrationHost } from '../../components/CelebrationHost';
 import { CheckInModal } from '../../components/CheckInModal';
+import { ReferralAttach } from '../../components/ReferralAttach';
 import { Redirect, Stack } from 'expo-router';
 import { useColorScheme } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
@@ -32,6 +33,7 @@ export default function AppLayout() {
             <MfaGate key={generation}>
                 <AgeConfirmationGate>
                 <FirstRunGate />
+                <ReferralAttach />
                 <CheckInModal />
                 <PaywallPrompt />
                 <HardPaywallGate>
