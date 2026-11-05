@@ -2,11 +2,11 @@ import { rawText } from '../../../lib/i18n/translate';
 import { useFaceFiltersAvailable } from '../../../lib/useFaceFiltersAvailable';
 import { createTileColumns } from '../../../lib/createLayout';
 import { SectionLabel } from '../../../components/create/SectionLabel';
-import { Text, Icon, IconBadge, ListRow, themedStyles, useThemedStyles, useAppearance } from '../../../components/ui';
+import { Button, Text, Icon, IconBadge, ListRow, themedStyles, useThemedStyles, useAppearance } from '../../../components/ui';
 
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { VeyLoader } from '../../../components/VeyLoader';
 import { fetchCatalogCached, type CatalogModel, type Kind } from '../../../lib/media';
@@ -44,11 +44,15 @@ export default function Create() {
     const [failed, setFailed] = useState(false);
     const [agent, setAgent] = useState<{ readonly credits: number } | null>(null);
 
-    useEffect(() => {
-        // A saved copy of the catalog is enough to choose the starter model; the form loads the live one.
+    // A saved copy of the catalog is enough to choose the starter model; the form loads the live one.
+    const loadCatalog = useCallback(() => {
+        setFailed(false);
         fetchCatalogCached((list) => setModels(list)).catch(() => setFailed(true));
-        fetchAgentListing().then(setAgent);
     }, []);
+    useEffect(() => {
+        loadCatalog();
+        fetchAgentListing().then(setAgent);
+    }, [loadCatalog]);
 
     const starters = useMemo(() => MAKE.map((goal) => ({ ...goal, model: starterModel(models ?? [], goal.kind) })).filter((goal) => goal.model), [models]);
 
@@ -57,7 +61,10 @@ export default function Create() {
             <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
             <Stack.Screen options={{ title: t('label.Create') }} />
             {failed ? (
-                <View style={styles.body}><Text variant="body" tone="danger" style={styles.error}>{t('create.loadError')}</Text></View>
+                <View style={styles.body}>
+                    <Text variant="body" tone="danger" style={styles.error}>{t('create.loadError')}</Text>
+                    <Button label={t('recovery.retry')} onPress={loadCatalog} />
+                </View>
             ) : models === null ? (
                 <VeyLoader />
             ) : (

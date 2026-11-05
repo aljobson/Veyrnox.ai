@@ -30,6 +30,7 @@ function find(tree, predicate) {
 const control = (tree, name) => find(tree, node => node.props?.assistantTarget === `create.${name}`);
 const generate = tree => find(tree, node => node.props?.['data-assistant-target'] === 'create.generate');
 const prompt = tree => find(tree, node => node.type === 'textarea');
+const why = tree => find(tree, node => node.props?.id === 'vx-generate-why');
 const card = tree => find(tree, node => node.type === HandoffCard);
 
 // Execute the real page's hooks/effects and event handlers offline. Only I/O
@@ -197,6 +198,8 @@ test('Create still refuses missing required sources, missing consent and prompts
     try {
       const tree = await h.settle();
       assert.equal(generate(tree).props.disabled, true);
+      // The person is told what is missing instead of facing a silent grey button.
+      assert.ok(why(tree), 'a disabled Generate says why');
       await generate(tree).props.onClick();
       assert.equal(h.requests.length, 0);
     } finally { h.close(); }
@@ -206,6 +209,7 @@ test('Create still refuses missing required sources, missing consent and prompts
     prompt(await h.settle()).props.onChange({ target: { value: 'x'.repeat(30001) } });
     const tree = await h.settle();
     assert.equal(generate(tree).props.disabled, true);
+    assert.equal(why(tree), undefined, 'an over-long prompt already has its own message beside the box');
     await generate(tree).props.onClick();
     assert.equal(h.requests.length, 0);
   } finally { h.close(); }
