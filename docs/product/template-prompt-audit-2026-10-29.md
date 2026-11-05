@@ -1,165 +1,182 @@
 # Template prompt and source-capability audit — 29 October 2026
 
-This is the completion ledger for every public Veyrnox video template and the
-additional source libraries named by the owner: Higgsfield, Syntx, CapCut,
-Buzzy.now and LipSync.video. Exact means byte-for-byte source text tied to the
-same source media record. A title match, a rewritten description or a prompt
-inferred from the preview is not exact.
+## Exact-only update — 5 November 2026
 
-## Public Veyrnox template result
+This ledger covers the community corpus. Original community text, captured
+against the same source record/media, is the only served template prompt.
+Raw records are SHA-256 locked; the existing `exactSourcePromptRecord`
+platform-word stripping is the only publication transformation. Punctuation
+such as the literal `SYNTX.AI` in Frozen Time is preserved by that existing rule.
 
-The live gallery contains 392 unique media-backed templates. Verified exact
-source prompts are preserved separately from the Veyrnox adaptations and load
-byte-for-byte on their template pages. Their runnable status remains explicit.
+| Code-derived population | Stage-1 snapshot | Exact-only plus category fill |
+| --- | ---: | ---: |
+| Retained community templates | 737 | 827 |
+| Captured source texts, including one truncated record | 668 | 758 |
+| Public community gallery | 694 | 757 |
+| Public complete exact prompts | 667 | 757 |
+| Hidden community rows | 43 | 70 |
+| All addressable recipes including independent catalogs | 1,736 | 1,799 |
+| Homepage wall templates | 24 | 14 |
 
-| Source population | Templates | Exact source text | Gap |
-|---|---:|---:|---:|
-| Higgsfield Genjutsu | 146 | 146 | 56 retained exact pairs plus 90 new same-record exact pairs |
-| Older Higgsfield previews | 0 | 0 | 90 promptless adaptations replaced; old media retained only as audit evidence |
-| Syntx Trends | 97 | 97 | `keyboard-duo-swap` removed because its prompt is unavailable |
-| Seedance expansion | 122 | 122 | 79 Higgsfield Seedance 2.0 rows plus 43 new Syntx Seedance rows; 78 further Syntx rows were already present and are now labeled correctly |
-| CapCut | 6 | 0 | source pages/previews recorded; no exact prompt capture |
-| Mixkit/Pexels birthday footage | 12 | 0 | stock footage, not a prompt-bearing source recipe |
-| Veyrnox-generated preview | 1 | 0 source prompt | the Veyrnox generation prompt remains the runnable prompt |
-| Historical source not proven | 8 | 0 | must not be attributed by title similarity |
-| **Total** | **392** | **365** | **27 independent adaptations** |
+The 27 previously visible `adaptation-only` rows are now hidden everywhere.
+They join 42 unavailable and one truncated record. Hidden templates contain no
+positive or negative prompt, and are absent from routes, API lists/details,
+search, sitemap, random/roller choices and mobile discovery. Their media and
+historical provenance stay in the repository. Source records remain evidence.
+All public community rows have `prompt === sourcePrompt` and both origin fields
+set to `community-source-exact`, including for older installed mobile clients.
+Authored adaptation/negative strings were removed from all community data modules;
+a hash-only fixture prevents them returning in served fields.
 
-The API exposes one of two statuses for every public row:
+## Compatibility is informational
 
-- `exact`: 365 complete captured prompts;
-- `adaptation-only`: 27 previews without a matched exact prompt record.
+The owner explicitly requires the complete exact prompt to be handed to the
+existing generation route even when source slots cannot be filled. No copy-only
+blocking or limit increase is introduced. The Syntx routing correction follows the existing Seedance importer precedent. Existing required-upload,
+price and consent checks remain. Audit-compatible: **276**; incompatible: **481**.
+The previous stage had 244 compatible and 423 incompatible public exact prompts.
 
-On 29 October 2026, 45 media-backed templates were removed from the gallery,
-API, search, sitemap and direct template routes: the one `exact-truncated` row
-and all 44 `unavailable` rows. Their immutable source records and local media
-remain retained as non-public audit evidence; they are not generation options.
+| Constraint | Public exact prompts |
+| --- | ---: |
+| Exceeds assigned verified prompt limit | 0 |
+| Explicit numbered slot tokens (`@imageN`, `@videoN`, `<<<video_1>>>` family) | 411 |
+| Image/video reference requirement under the broader audit parser | 441 |
+| Any image reference | 429 |
+| More than one image reference | 266 |
+| More than two image references | 102 |
+| Video reference | 201 |
+| Audio/music/voice/dialogue/lip-sync mention | 221 |
 
-Of the 365 public exact prompts, 144 are runnable with both the current template
-contract and the assigned model's verified prompt limit; 221 remain read-only.
-A paid generation is disabled when the
-exact text requires a source video, any explicit ordered image reference (the
-template handoff does not wire named `@imageN` slots), or preserved source audio
-the route cannot retain. The full prompt is still displayed and copied byte-for-byte; it
-is never silently rewritten to make it runnable.
+All assigned route limits are 30,000 characters: `kling-3.0-i2v`,
+`seedance-2.0-fast`, `seedance-2.0-reference`. None is shortened. The longest
+record is IMPACT (28,970 characters). Chat retains its
+separate 8,000-character/token caps and refuses oversized handoffs whole.
 
-Prompt-cap recheck (29 October 2026): all 366 complete exact prompt records
-(365 public plus one retained audit record) fit the application's 30,000-character
-positive-generation envelope. Providers with narrower verified limits retain
-those limits. The longest record is `retro-hip-hop-spotlight` at
-23,010 characters. None is shortened in template, chat, Create, Film Studio,
-recovery, API, MCP or mobile handoffs. The two 3,722-character records that
-reproduced the owner-reported failure are preserved in full and pass the new
-length boundary. Their exact source versions remain copy-only because they
-also require source video and preserved audio that the current route cannot
-receive; the separate Veyrnox adaptations remain generatable.
+## Source evidence and duplicates
 
-## Exact-text and duplicate checks
+The stage before the 300-record expansion had 437 retained rows, 368 captured
+texts (one truncated), 394 public templates and 367 public exact prompts.
+The [300-record audit](source-audit/higgsfield-300-exact-2026-11-05.json) adds
+299 immutable same-record prompt/video pairs and 598 prepared assets
+(293,966,731 bytes). Its raw hashes, input roles, media and source metadata
+are unchanged. Its 100 compatible / 199 incompatible flags remain informational.
+Seventeen captured square labels were corrected using source and shipped
+geometry: 16 landscape rows and Courier Pup as portrait. The evidence keeps
+`manifestSourceAspect`; no provider aspect capability is inferred.
 
-- The 97 available Syntx prompts still match the current 378-record public API
-  byte-for-byte. Two duplicate prompt pairs are source-authentic and retained:
-  `who-was-that-business` / `curtain-reveal`, and
-  `event-character-swap` / `rap-takeover`.
-- The 57 available Genjutsu prompts match the locked capture. A later walk of
-  1,500 current community-feed rows relocated 48 of the original media IDs;
-  all 48 retained the same prompt/null status and exact text. The moving feed
-  did not relocate the other 52, so they remain captured evidence rather than
-  newly verified records.
-- A separate current-feed capture accepted 90 further Genjutsu records only
-  when the exact prompt and published generation video belonged to the same
-  immutable community record. The capture has 90 unique prompt hashes, media
-  IDs, source-asset hashes, local-preview hashes and normalized visual
-  signatures. It rejected 54 prompt/title collisions before selection and
-  found no accepted byte-level or visual duplicate. The 90 exact pairs replace
-  the 90 older promptless Higgsfield adaptations one-for-one, keeping the
-  public gallery at 270 before the Seedance expansion. Full record IDs, source URLs, exact text, reference
-  roles and hashes are in
-  [`source-audit/higgsfield-90-exact-2026-10-29.json`](source-audit/higgsfield-90-exact-2026-10-29.json).
-- The Seedance audit adds 122 new rows and corrects the model provenance on 78
-  existing Syntx rows, producing exactly 200 Seedance templates: 121 from Syntx
-  and 79 from Higgsfield. All 200 full prompt strings, paired videos and source
-  model labels are locked in
-  [`source-audit/seedance-200-exact-2026-10-29.json`](source-audit/seedance-200-exact-2026-10-29.json).
-  The capture excluded one visually duplicated Higgsfield publication and used
-  the next unique Syntx record instead. The accepted set has 200 unique prompt
-  hashes, media URLs and normalized visual signatures.
-- The 1,434 addressable Veyrnox generation recipes contain no exact or
-  whitespace-normalized duplicate runnable prompts.
-- All 392 public preview videos and posters remain byte-unique. The additional
-  40 Syntx videos and 90 Higgsfield videos also have distinct normalized visual
-  signatures against the earlier public previews and within their own batches.
+The [new Syntx audit](source-audit/syntx-64-exact-2026-11-05.json) adds 63
+same-record prompts, 126 prepared media files and 80,645,464 shipped bytes.
+The prior [Syntx 40](source-audit/syntx-40-2026-10-29.json),
+[Higgsfield 90](source-audit/higgsfield-90-exact-2026-10-29.json) and
+[Seedance 200](source-audit/seedance-200-exact-2026-10-29.json) ledgers remain
+source evidence. Existing names, model routes, credits, durations, guidance,
+steps and media are locked by regression hashes of all 737 original rows, except the approved descriptive rename of Vehicle Carjacking to Chicken Bucket Swap.
 
-## Capability result
+Only the baseline source-authentic duplicate pairs are allowed:
+`who-was-that-business` / `curtain-reveal` and `event-character-swap` /
+`rap-takeover` for raw and normalized text; `i-am-here` / `somebody` and
+`wassup-freestyle` / `piano-vibe` for normalized text only. New records may
+join none of them. Media hashes are unique across all 917 retained placements.
 
-The staged Kling O1 reference contract accepts one 3–10 second MP4 and one or
-two ordered reference pictures when `MULTI_REFERENCE_ENABLED=true`. Its Veyrnox
-prompt envelope is 30,000 characters; it produces 5 or 10 seconds and does not
-retain audio. The catalog row is inactive and absent from production.
+CapCut's six promptless previews, twelve Mixkit/Pexels birthday previews,
+one generated preview and eight unproven historical wall previews are hidden.
+Buzzy.now has no proven same-media exact-prompt match in this corpus.
+LipSync.video's 21 creative-feature examples are feature references, not fixed
+community templates. No title similarity or preview inference creates provenance.
 
-The exact prompt corpus currently contains these incompatibilities:
+The 1,036 effect concepts and six reference recipes remain out of scope and
+unchanged. They retain direct routes and template-detail API responses, but
+have no video-backed gallery, presets API, search or sitemap rows.
+See [ADR-0325](../adr/0325-exact-only-community-templates.md).
 
-| Constraint | Exact prompts affected |
-|---|---:|
-| More than 30,000 characters | 0 |
-| Any explicit image reference | 200 |
-| More than one explicit image reference | 116 |
-| More than two explicit image references | 34 |
-| Explicit source-video reference | 104 |
-| Audio, music, voice, dialogue or lip-sync requirement | 137 |
-| Source input contract or assigned-model prompt limit not wired into the public template | 221 |
+The exact-only visual check uses the permitted ffprobe path: one 32×32 grayscale
+frame per second, then SHA-256 of the newline-joined frame Adler-32 checksums.
+All 917 retained placements have distinct signatures under that common method.
+The 63 accepted new audit rows declare this method, and the full comparison is locked in
+`tests/fixtures/exactOnlyVisualSignatures.json`. Earlier raw-frame SHA-256
+signatures remain unchanged in the historical captures. No video was encoded.
 
-Within the 200-template Seedance set, 79 exact prompts are runnable through
-the active Seedance 2.0 Fast route and 121 are read-only: 115 name at least one
-explicit ordered image, 60 name more than one, 15 name more than two, 51 name a
-source video, and 95 require preserved audio. These groups overlap. This is why preserving
-the prompt and checking its input contract are separate acceptance criteria.
+<!-- BEGIN CATEGORY MINIMUM COUNTS -->
+## Amendment 1: at least ten exact templates per content category
 
-Syntx additionally has 48 matched source videos longer than ten seconds. In the
-48 currently relocated Genjutsu records, 44 source videos exceed ten seconds
-and 16 use more than two actual reference assets. Exact text alone therefore
-cannot reproduce the preview through the staged two-picture route.
+28 of 30 prepared same-record pairs are published, adding 22,066,713 bytes in 56 unchanged prepared files.
+Archery Face Swap was dropped because its source text ends mid-word; Anime Court Match was dropped because both replacement subjects were stripped from an incomplete fragment. Only identifiers, hashes and reasons are retained for these rejections; no prompt or media is shipped.
+The source categories follow the manifest except Cartoon Hero Swap, corrected from ANIME to CARTOONS after inspection. The existing Kling I2V route, price and ten-second recipe duration apply; source input totals and numbered tokens select existing starting-image guidance without changing reference support.
 
-## CapCut, Buzzy.now and LipSync.video
+| Content category | Public exact templates |
+| --- | ---: |
+| YOUR PHOTO | 13 |
+| CINEMATIC | 140 |
+| ANIME | 13 |
+| CARTOONS | 21 |
+| MOVIES | 32 |
+| FANTASY | 108 |
+| REALISTIC | 90 |
+| FASHION | 120 |
+| PRODUCTS | 51 |
+| VFX | 119 |
+| UGC | 34 |
+| ADS | 16 |
 
-CapCut accounts for six public gallery previews. Two retain immutable
-`inspirationKey` URLs and four retain the source editor URL, but none has an
-exact prompt record. They stay `adaptation-only` until a prompt can be tied to
-the same source media.
+KIDS BIRTHDAY is explicitly excluded pending an owner decision: its twelve promptless rows remain retained and hidden, zero are public, and the category is absent from the gallery filter. It remains in CATEGORY_ORDER.
+The [category-fill audit](source-audit/higgsfield-category-fill-30-2026-11-05.json) and fixed-list regression tests lock this state.
+<!-- END CATEGORY MINIMUM COUNTS -->
 
-Buzzy.now is now an explicit audit source. Its public home page currently shows
-the Seedance 2.5 Viral Pack entries Another World, Movie Rewriting, Camera
-movements, Alpine portal, 50 Assets, VFX Motion Control, Art in Motion, Retake
-the Shot, UGC Ads, One-shotted VLOG and UGC VLOG. No Veyrnox public template is
-currently tied to a Buzzy media identifier, and the public cards inspected did
-not disclose exact prompts. No attribution or prompt is added by name alone.
+<!-- BEGIN PUBLIC PROMPT HYGIENE -->
+Captured public text remains verbatim by owner decision, including third-party handles, plates, addresses, domains, promo codes and upload filenames. These are pattern-detected candidates, not verified identities. No redaction or publication change is applied. The shared offline scanner and regression test cover all 299 + 63 + 28 accepted raw prompts.
 
-LipSync.video is also explicit audit scope. Veyrnox has 21 separately tracked
-creative-feature examples in `creativeFeatures.js`, each linked to its public
-LipSync.video page and exact example media. They are feature references, not
-members of the 392-template gallery, and do not contain captured source
-prompts. They must not be counted as fixed template prompts until a prompt-bearing
-source record exists.
+| Capture | Affected public id | Detected kinds |
+| --- | --- | --- |
+| higgsfield-300-exact | `community-interactive-ar-showroom` | address, handle |
+| higgsfield-300-exact | `community-toy-car-swap` | plate |
+| higgsfield-300-exact | `community-drift-curve-replacement` | plate |
+| higgsfield-300-exact | `community-boxing-identity-swap` | upload filename |
+| higgsfield-300-exact | `community-street-squat-duo` | domain |
+| higgsfield-300-exact | `community-urban-sedan-pursuit` | plate |
+| syntx-64-exact | `frozen-time` | domain |
+| higgsfield-category-fill-30 | `community-macro-product-montage` | domain, promo code |
+<!-- END PUBLIC PROMPT HYGIENE -->
 
-The eight historical unattributed wall previews may belong to one of the newly
-named sources, but no media-ID evidence currently proves that. They remain
-unattributed rather than being guessed as Buzzy or LipSync.video.
+<!-- BEGIN CLIPPED SOURCE REVIEW -->
+The final ending review rejected `community-miniature-desktop-chase`: Incomplete source prompt ends with an unfinished environment/lighting list and a trailing comma. Only audit identifiers, hashes and reasons remain; the rejected records, recipes, clips, media and active fixtures were removed. The 300-record capture now retains 299 pairs. Historical stage-1 counts above describe the earlier snapshot.
 
-## Work order and acceptance
+The detector reports 73 ambiguous unpunctuated endings, plus 1 separately reviewed ambiguity. These rows remain published. A trailing connector without an origin-gap pattern stays ambiguous; a connector alone never auto-rejects or hides a row. Origin-stripped connectors remain under the source-reference-gaps policy. The complete id/reason/tail inventories are generated in the three audit JSONs under `ending-review`.
 
-1. Keep the 43 null Genjutsu records removed unless the same immutable media ID
-   publishes complete text. Never reconstruct them from the video.
-2. **Completed for the public catalog:** replace the 90 older promptless
-   Higgsfield adaptations with 90 current community records containing an
-   immutable same-record exact prompt and video. The older 90 remain audit
-   evidence and are not presented as exact.
-3. Keep `keyboard-duo-swap` removed unless its Syntx media ID returns a prompt.
-4. Capture CapCut, Buzzy and LipSync.video prompts only from a prompt-bearing
-   source record tied to the same media. Record source URL, media ID, capture
-   time and SHA-256.
-5. Activate Kling O1 only after the ADR-0301 staging, billing and refund proof.
-   Route only contracts that fit two pictures, 30,000 characters, ten seconds
-   and no retained audio.
-6. For longer or richer contracts, add a qualified provider route or keep the
-   exact prompt read-only. Never truncate it into a different runnable prompt.
-7. A future audit passes only when all 392 API rows are `exact` or
-   `adaptation-only`, exact text hashes remain stable, source-media hashes
-   remain unique, and removed source-gap records stay outside public routes.
+Connector endings and separately reviewed ambiguities are listed below. Tails contain the last 80 characters (or the whole prompt if shorter); `\r` and `\n` represent captured line endings.
+
+| Public id | Reason | Final 80 characters |
+| --- | --- | --- |
+| `community-skyline-delivery` | Trailing connector accompanies origin-stripped references; retained by origin-gap policy. | ` el de , el conductor es el personaje de y la bolsa lleva la marca como se ve en` |
+| `community-formal-dance-swap` | Trailing connector accompanies origin-stripped references; retained by origin-gap policy. | ` on the train with a tesa. And try to immitate the exact face + eye movements of` |
+| `community-alleyway-dance-crew` | Trailing connector accompanies origin-stripped references; retained by origin-gap policy. | `dog from <<<video_1>>> with the dog on\n and the last cat from <<<video_1>>> with` |
+| `community-dragon-summoner` | Complete final sentence; 15-second sequence stops during the 10.2–11.7-second shot. | `\nChin subtly raised.\nFor a brief beat, the protagonist continues looking upward.` |
+<!-- END CLIPPED SOURCE REVIEW -->
+
+<!-- BEGIN SOURCE REFERENCE GAPS -->
+## source-reference-gaps (informational)
+
+20 retained rows across the three captures are exact as published but incomplete by origin: source feeds delete reference mentions. The owner may hide them. Their captured bytes, publication and `sourcePromptRunnable` flags remain unchanged. Input-asset counts corroborate missing mentions where the capture records them; Syntx does not supply that count in this audit. The detector uses grammatical gaps, not upload counts alone, and does not guarantee detection of every missing mention.
+
+| Capture | Affected public id | Detected gaps | Captured input assets |
+| --- | --- | --- | ---: |
+| higgsfield-300-exact | `community-music-video-recast` | empty reference before punctuation, missing reference between connectors | 7 |
+| higgsfield-300-exact | `community-gas-station-reveal` | empty reference group | 6 |
+| higgsfield-300-exact | `community-skyline-delivery` | missing Spanish reference | 3 |
+| higgsfield-300-exact | `community-dragon-summoner` | empty reference before punctuation, missing reference after use, missing reference between connectors | 1 |
+| higgsfield-300-exact | `community-vaulted-temple-walk` | missing reference between connectors | 2 |
+| higgsfield-300-exact | `community-cabin-rhythm-duo` | missing reference assignment | 2 |
+| higgsfield-300-exact | `community-formal-dance-swap` | empty reference before punctuation, missing reference at end | 2 |
+| higgsfield-300-exact | `community-rainy-street-encounter` | missing reference before line break, missing reference between connectors | 2 |
+| higgsfield-300-exact | `community-kitchen-feline-reveal` | empty reference before punctuation, missing reference after use | 2 |
+| higgsfield-300-exact | `community-noir-espionage-flow` | missing swap subject | 7 |
+| higgsfield-300-exact | `community-nightclub-duo-recast` | empty reference before punctuation, missing reference after use, missing reference between connectors | 4 |
+| higgsfield-300-exact | `community-desk-chair-spin` | missing reference after article | 1 |
+| higgsfield-300-exact | `community-tactical-gear-montage` | missing reference between connectors | 2 |
+| higgsfield-300-exact | `community-model-vehicle-swap` | missing replacement before scope | 1 |
+| higgsfield-300-exact | `community-summit-lounge-style` | missing reference between connectors | 2 |
+| higgsfield-300-exact | `community-industrial-lens-flare` | missing reference between connectors | 1 |
+| higgsfield-300-exact | `community-alleyway-dance-crew` | missing reference at end, missing reference before line break | 5 |
+| syntx-64-exact | `grab-heist` | empty reference before punctuation, missing conditional subject | not recorded |
+| higgsfield-category-fill-30 | `community-supercar-night-drive` | empty reference before punctuation | 1 |
+| higgsfield-category-fill-30 | `community-apocalypse-terrace` | empty reference before punctuation | 1 |
+<!-- END SOURCE REFERENCE GAPS -->

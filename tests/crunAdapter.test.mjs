@@ -2,9 +2,34 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { parseEndpoint, endpointKind, buildRequest, submitTask, interpretTask } from '../packages/adapters/crun.js';
+import { SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/sourcePromptRecords.js';
 
 const job = (over = {}) => ({ job_id: 'job_1', provider_endpoint: 'crun:google/veo3-1-lite-t2v', inputs: { prompt: 'a city at dusk' }, ...over });
 const reply = (status, body) => async () => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
+
+test('Crun serializes captured trailing newlines and CRLF byte for byte', async (t) => {
+  const outbound = [];
+  t.mock.method(globalThis, 'fetch', async (_url, init) => {
+    outbound.push(JSON.parse(init.body));
+    return reply(200, { code: 200, data: { task_id: 'exact_prompt_task' } })();
+  });
+  // Exercise the changed Fast builder even though Warrior Standoff is assigned
+  // Kling: this is a CRLF serialization fixture, not a routing change.
+  for (const id of ['pov-dragon-flight', 'community-warrior-standoff']) {
+    const prompt = SOURCE_PROMPT_RECORDS[id].prompt;
+    if (id === 'pov-dragon-flight') assert.ok(prompt.endsWith('\n\n'));
+    else assert.ok(prompt.includes('\r\n'));
+    const result = await submitTask(job({ provider_endpoint: 'crun:bytedance/seedance2-0-fast-t2v', inputs: { prompt } }), { apiKey: 'test-key' });
+    assert.equal(result.ok, true, id);
+    assert.deepEqual(Buffer.from(outbound.at(-1).input.prompt), Buffer.from(prompt), id);
+    assert.deepEqual(outbound.at(-1), { model: 'bytedance/seedance2-0-fast-t2v', input: { prompt, duration: 5, resolution: '720p', aspect_ratio: '16:9', audio: true } });
+  }
+  for (const prompt of ['', ' \t\r\n', undefined, null, 42]) {
+    const result = await submitTask(job({ provider_endpoint: 'crun:bytedance/seedance2-0-fast-t2v', inputs: { prompt } }), { apiKey: 'test-key' });
+    assert.deepEqual(result, { ok: false, outcome: 'rejected', error: 'prompt_required', clientError: 'prompt_required' });
+  }
+  assert.equal(outbound.length, 2, 'empty inputs never reach the provider');
+});
 
 test('only known Crun models parse, and path tricks are refused', () => {
   assert.deepEqual(parseEndpoint('crun:google/veo3-1-lite-t2v'), { model: 'google/veo3-1-lite-t2v' });
