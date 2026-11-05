@@ -17,7 +17,7 @@ const module = { exports: {} };
 const compiled = ts.transpileModule(read('app/veyrnox/_components/SourcePickers.js'), {
   compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS },
 }).outputText;
-new Function('require', 'module', 'exports', compiled)(id => id.endsWith('/generationSourceSlots.mjs') ? slots : id.endsWith('/uploadInputTypes.mjs') ? inputTypes : id.endsWith('/uploadConvert.mjs') ? convert : englishAppImports[id.replace('../../../', '../../../../')] || require(id), module, module.exports);
+new Function('require', 'module', 'exports', compiled)(id => id === './Icon' ? { Icon: () => null } : id.endsWith('/generationSourceSlots.mjs') ? slots : id.endsWith('/uploadInputTypes.mjs') ? inputTypes : id.endsWith('/uploadConvert.mjs') ? convert : englishAppImports[id.replace('../../../', '../../../../')] || require(id), module, module.exports);
 const render = (media, sources = {}) => renderToStaticMarkup(createElement(module.exports.SourcePickers, {
   media, sources, onPick() {}, onLibrary() {},
 }));

@@ -32,7 +32,7 @@ function component(path, name, stateValues) {
     '../../../../lib/createAttach.mjs': { attachAccept: () => 'image/png,video/mp4,audio/mpeg' },
     '../../_lib/chatMedia': chatMedia, '../_lib/chatMedia': chatMedia,
     '../../_lib/modelPricing': pricing, '../_lib/modelPricing': pricing,
-    '../../_lib/createErrors': { ERROR_COPY: {} }, '../SourcePickers': { SourcePickers: () => null },
+    '../../_lib/createErrors': { ERROR_COPY: {} }, '../SourcePickers': { SourcePickers: () => null }, '../Icon': { Icon: () => null },
     '../LibraryPicker': { LibraryPicker: ({ kind, mimeTypes }) => createElement('span', { 'data-library-kind': kind, 'data-library-mimes': mimeTypes.join(',') }) }, 'next/navigation': { useRouter: () => ({ push() {} }) },
     '../../../components/I18nProvider': { useI18n: () => ({ locale: 'en', t: translator('en'), href: (p) => p }) },
     '../_lib/landingDraft': { writeStudioDraft() {} }, '../_lib/tokens': tokens, '../_lib/starterModels': starters,

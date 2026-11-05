@@ -1,5 +1,6 @@
 'use client';
 import { tOr } from '../../../../lib/i18n/translate.mjs';
+import { Icon } from '../Icon';
 import { localeTag } from '../../../../lib/i18n/locales.mjs';
 
 import { useI18n } from '../../../../components/I18nProvider';
@@ -43,7 +44,7 @@ export function FilmMaster({film,attempt}) {
   }
   return <div className="mt-3 space-y-3 border-t border-vx-border pt-3">
     <p className="text-xs text-vx-fg-muted">{t("app.film.master.help")}</p>
-    <label className="block text-xs">{library?t("app.film.master.optional"):t("app.film.master.file")}<input type="file" accept="video/mp4,video/quicktime,video/webm" disabled={busy} className="mt-1 block max-w-full text-xs" onChange={e=>{setFile(e.target.files?.[0]||null);setResult(null);setError('');}}/></label>
+    <label className="block text-xs"><Icon name="clipboard" size={16} className="me-1.5 inline align-[-2px]" />{library?t("app.film.master.optional"):t("app.film.master.file")}<input type="file" accept="video/mp4,video/quicktime,video/webm" disabled={busy} className="mt-1 block max-w-full text-xs" onChange={e=>{setFile(e.target.files?.[0]||null);setResult(null);setError('');}}/></label>
     {!busy&&<button type="button" disabled={!file&&!library} onClick={prepare} className="rounded-full border border-vx-accent px-4 py-2 text-xs font-semibold text-vx-accent disabled:opacity-40">{t("app.film.master.prepare")}</button>}
     {busy&&<><p role="status" className="text-xs">{t("app.film.master.preparing")}{' '}{number(progress)}%</p><button type="button" className="text-xs underline" onClick={()=>{abort.current?.abort();setBusy(false);}}>{t("app.film.master.cancel")}</button></>}
     {error&&<p role="alert" className="text-xs text-vx-danger">{error}</p>}

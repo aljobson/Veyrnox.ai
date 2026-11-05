@@ -26,6 +26,13 @@ const PATHS = {
   moon: <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" />,
   menu: <path d="M4 7h16M4 12h16M4 17h16" />,
   close: <path d="m6 6 12 12M18 6 6 18" />,
+  // The attach cue: shown on every control that asks for a picture or video.
+  clipboard: (
+    <>
+      <rect x="5" y="4" width="14" height="17" rx="2" />
+      <path d="M9 2.5h6V6H9z" />
+    </>
+  ),
 };
 
 export function Icon({ name, size = 16, className = '' }) {

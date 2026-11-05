@@ -1,5 +1,6 @@
 import { rawText } from '../lib/i18n/translate';
 import { Text as StatusText } from './ui/Text';
+import { Icon } from './ui/Icon';
 import { english } from '../lib/i18n/binding';
 import * as DocumentPicker from 'expo-document-picker';
 import { Image } from 'expo-image';
@@ -168,8 +169,9 @@ export function PublishUploadPanel(props: Props) {
         } catch (err) { if (mounted.current && live() && callbacks.current.enabled) showError(err); }
     }
     if (!enabled || hidden) return null;
-    const button = (key: string, action: () => void, disabled = false, selected?: boolean, label = t(key)) => (
+    const button = (key: string, action: () => void, disabled = false, selected?: boolean, label = t(key), attach = false) => (
         <Pressable accessibilityRole="button" accessibilityLabel={rawText(label)} accessibilityState={{ disabled, ...(selected === undefined ? {} : { selected }) }} disabled={disabled} onPress={action} style={[styles.button, touchTarget]}>
+            {attach ? <Icon name="clipboard" size={20} tint={colors.text} /> : null}
             <Text style={styles.text}>{t(key)}</Text>
         </Pressable>
     );
@@ -181,9 +183,9 @@ export function PublishUploadPanel(props: Props) {
         <Pressable accessibilityRole="checkbox" accessibilityLanguage="en" accessibilityLabel={english('publishUploads.rights')} accessibilityState={{ checked, disabled: busy }} disabled={busy} onPress={() => setChecked(v => !v)} style={touchTarget}>
             <Text style={styles.text}>{checked ? '☑ ' : '☐ '}{english('publishUploads.rights')}</Text>
         </Pressable>
-        {button('publishUploads.library', () => void pick('library'), !checked || busy || remaining === 0)}
-        {button('publishUploads.files', () => void pick('files'), !checked || busy || remaining === 0)}
-        {button('publishUploads.camera', () => void pick('camera'), !checked || busy || remaining === 0)}
+        {button('publishUploads.library', () => void pick('library'), !checked || busy || remaining === 0, undefined, undefined, true)}
+        {button('publishUploads.files', () => void pick('files'), !checked || busy || remaining === 0, undefined, undefined, true)}
+        {button('publishUploads.camera', () => void pick('camera'), !checked || busy || remaining === 0, undefined, undefined, true)}
         {progress !== null ? <Text style={styles.text} accessibilityRole="progressbar" accessibilityLabel={t('publishUploads.progress')} accessibilityValue={{ min: 0, max: 100, now: Math.round(progress * 100) }}>
             {progress >= 1 ? t('publishUploads.checking') : t('publishUploads.uploading', { percent: Math.round(progress * 100) })}
         </Text> : null}
@@ -200,5 +202,5 @@ export function PublishUploadPanel(props: Props) {
 }
 const styles = StyleSheet.create({
     panel: { gap: 8 }, heading: { color: colors.text, fontSize: 16, fontWeight: '700' }, text: { color: colors.text },
-    button: { padding: 10, borderWidth: 1, borderColor: colors.border, borderRadius: 8 }, row: { gap: 4 }, preview: { width: 80, height: 80 },
+    button: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 10, borderWidth: 1, borderColor: colors.border, borderRadius: 8 }, row: { gap: 4 }, preview: { width: 80, height: 80 },
 });
