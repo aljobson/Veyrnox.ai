@@ -18,7 +18,7 @@ function Section({ id, title, open, onToggle, children }) {
   return (
     <section className="rounded-xl border border-vx-border bg-vx-panel">
       <h3>
-        <button type="button" aria-expanded={open} aria-controls={`${uid}-${id}`} onClick={() => onToggle(id)}
+        <button type="button" data-persona-header={id === 'persona' ? '' : undefined} aria-expanded={open} aria-controls={`${uid}-${id}`} onClick={() => onToggle(id)}
           className="flex w-full items-center justify-between px-4 py-3 text-start text-sm font-semibold">
           {title}<span aria-hidden="true" className="text-vx-fg-muted">{open ? '▴' : '▾'}</span>
         </button>

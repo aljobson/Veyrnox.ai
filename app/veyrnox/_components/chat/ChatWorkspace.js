@@ -139,7 +139,7 @@ export function ChatWorkspace() {
     restorePersonaFocus.current = false;
     const active = document.activeElement;
     // The settings panel is mounted twice (the wide sidebar and the phone sheet), and only one of them is showing.
-    if (!active || active === document.body || !active.isConnected) [...document.querySelectorAll('[data-persona-manage]')].find((b) => b.getClientRects().length)?.focus();
+    if (!active || active === document.body || !active.isConnected) [...document.querySelectorAll('[data-persona-manage], [data-persona-header]')].find((b) => b.getClientRects().length)?.focus(); // the header is the fallback while Persona is collapsed
   }, [managingPersonas]);
   const [tiers, setTiers] = useState(() => new Set());
   const [instr, setInstr] = useState('');
