@@ -22,7 +22,8 @@ import { afterCelebration, celebrateOutput, type CelebrationResult } from '../..
 import { REVIEW_ASK_DELAY_MS, claimReviewAsk, shouldAskForReview } from '../../../lib/reviewAsk';
 import { loadReviewAsk } from '../../../lib/storeReview';
 import { retentionOf, type Retention } from '../../../lib/libraryView';
-import { mediaApi, waitForJob, type JobState } from '../../../lib/media';
+import { mediaApi, waitForJob, type Job, type JobState } from '../../../lib/media';
+import { failedJobMessage } from '../../../lib/failedJob';
 import { askAboutHref, editHref, makeAnotherHref, nextStepsFor, publishHref } from '../../../lib/nextSteps';
 import { creativeReuseHref, kindForMime } from '../../../lib/creativeReuse';
 import { saveOutput, shareOutput } from '../../../lib/output';
@@ -57,6 +58,7 @@ export default function JobScreen() {
     const routerRef = useRef(router);
     routerRef.current = router;
     const [state, setState] = useState<JobState>('queued');
+    const [failedJob, setFailedJob] = useState<Pick<Job, 'error_code' | 'refunded'> | null>(null);
     const [asset, setAsset] = useState<{ url: string; mime: string } | null>(null);
     // A stem-splitting job has six tracks instead of one file.
     const [stems, setStems] = useState<string[]>([]);
@@ -100,6 +102,7 @@ export default function JobScreen() {
 
     useEffect(() => {
         setError(false); setPollEnded(false); setSeconds(0);
+        setFailedJob(null);
         setHeld(false); setAsset(null); setStems([]); setExpiresAt(null); setLookup('pending');
         setResultReady(false);
         setReview(null);
@@ -109,6 +112,7 @@ export default function JobScreen() {
         ratingAbort.current = ratingController;
         const unsubscribe = subscribeCacheUser(() => {
             controller.abort(); ratingController.abort(); setAsset(null); setStems([]); setHeld(false); setExpiresAt(null); setLookup('pending');
+            setFailedJob(null);
             void Image.clearMemoryCache?.().catch(() => {});
         });
         const media = mediaApi(api);
@@ -134,6 +138,7 @@ export default function JobScreen() {
                 if (controller.signal.aborted) return;
                 if (job) {
                     setModelId(job.model_id);
+                    if (final === 'failed' && job.error_code !== 'user_cancelled') setFailedJob(job);
                     if (job.error_code === 'user_cancelled' && job.refunded === true) {
                         setCancelledCredits(job.credits);
                         setCancelNote(null);
@@ -301,7 +306,8 @@ export default function JobScreen() {
                     ) : null}
                     <Text accessibilityLiveRegion="polite" variant="body" tone="danger" style={state === 'failed' ? styles.error : styles.status}>{cancelledCredits !== null
                         ? cancelledCredits > 0 ? plural('jobCancel.cancelled', cancelledCredits) : t('jobCancel.cancelledFree')
-                        : pollEnded ? t('job.stillWorking') : t(LABEL[state])}</Text>
+                        : pollEnded ? t('job.stillWorking') : state === 'failed' && failedJob
+                            ? failedJobMessage(failedJob.error_code, failedJob.refunded, t(LABEL[state])) : t(LABEL[state])}</Text>
                     {cancelNote ? <Text variant="body" tone="secondary" style={styles.note} accessibilityLiveRegion="polite">{cancelNote}</Text> : null}
                     {(waiting || (pollEnded && !held)) && state === 'queued' && cancelStatus?.cancellable ? (
                         <Button variant="secondary" accessibilityRole="button" accessibilityLabel={t(cancelling ? 'jobCancel.cancelling' : 'jobCancel.confirm')} accessibilityState={{ busy: cancelling, disabled: cancelling }} disabled={cancelling} onPress={confirmCancel} label={t(cancelling ? 'jobCancel.cancelling' : 'jobCancel.confirm')} />

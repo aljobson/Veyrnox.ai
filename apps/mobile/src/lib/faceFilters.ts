@@ -2,6 +2,7 @@ import { ApiError } from './api';
 import { isSupported, type CatalogModel } from './media';
 import { generationMessage, type SubmitRequest } from './generationSubmit';
 import { t } from './i18n';
+import { createErrorMessage } from './failedJob';
 
 export const FACE_IDS = ['face-retouch', 'face-enhance', 'face-relight', 'face-makeup', 'face-age'] as const;
 // /api/catalog returns active rows only. No staged fallback and no cached catalog here.
@@ -59,7 +60,7 @@ export function comparisonUri(view: 'before' | 'after', original: string, result
 }
 
 // Face filters has additional guidance; Create retains its original error wording.
-export function faceFilterMessage(err: unknown): string {
+export function faceFilterMessage(err: unknown, refunded?: boolean): string {
     if (err instanceof ApiError) {
         switch (err.code) {
             case 'consent_required': return t('faceFilters.consentRequired');
@@ -68,6 +69,11 @@ export function faceFilterMessage(err: unknown): string {
             case 'provider_input_rejected':
             case 'provider_submit_failed': return t('faceFilters.refused');
         }
+    }
+    // A failed job that the server reports as refunded keeps the completed-refund wording.
+    if (refunded === true && err instanceof ApiError) {
+        const message = createErrorMessage(err.code, true);
+        if (message) return message;
     }
     return generationMessage(err);
 }

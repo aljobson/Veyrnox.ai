@@ -47,7 +47,7 @@ export function FaceFilterResult({ api, owner, id, original, onAnother, onApplyR
                     if (current()) setAsset(result);
                 } else if (final === 'failed') {
                     const failed = await media.getJob(id);
-                    if (current()) setError(failed.error_code ? `${faceFilterMessage(new ApiError(422, failed.error_code))} ${t('job.failed')}` : t('job.failed'));
+                    if (current()) setError(failed.error_code ? `${faceFilterMessage(new ApiError(422, failed.error_code), failed.refunded)} ${t('job.failed')}` : t('job.failed'));
                 }
             })
             .catch(() => { if (current()) setError(t('job.checkError')); })

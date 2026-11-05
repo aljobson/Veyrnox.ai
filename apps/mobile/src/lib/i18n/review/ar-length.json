@@ -1786,5 +1786,11 @@
     "english": "Add",
     "translation": "إضافة",
     "ratio": 1.67
+  },
+  {
+    "id": "app.create.retryIn",
+    "english": " Retry in {seconds}s.",
+    "translation": " أعد المحاولة بعد {seconds} ثوانٍ.",
+    "ratio": 1.62
   }
 ]

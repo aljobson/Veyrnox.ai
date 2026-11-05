@@ -10,6 +10,7 @@ import * as balanceEvents from '../src/lib/balanceEvents';
 import { ApiError, type ApiClient, type Balance } from '../src/lib/api';
 import type { CatalogModel } from '../src/lib/media';
 import { plural, t } from '../src/lib/i18n';
+import { failedJobMessage } from '../src/lib/failedJob';
 const mockRouter = { push: jest.fn(), replace: jest.fn() };
 const mockPost = jest.fn(), mockFree = jest.fn(), mockJob = jest.fn(), mockAsset = jest.fn();
 const mockApi = { stream: jest.fn(), getBalance: jest.fn(), request: jest.fn(async (path: string, init: any) => {
@@ -71,6 +72,17 @@ test('Generate stays in place, shows a tile and re-reads balance; New generation
     await render(); await click(generate()); expect(mockRouter.replace).not.toHaveBeenCalled(); expect(controls(t('publishReporting.open'))).toHaveLength(1);
     expect(mockApi.getBalance).toHaveBeenCalled(); expect(publication).toHaveBeenCalledWith('owner', 20); expect(publication).not.toHaveBeenCalledWith('owner', 999);
     await click(controls(t('libraryCreate.newNoCharge'))[0]); expect(mockPost).toHaveBeenCalledTimes(1); expect(controls(t('publishReporting.open'))).toHaveLength(0);
+});
+test.each([true, false, undefined])('failed result shows the specific reason with refund state %s', async refunded => {
+    mockJob.mockResolvedValue({ state: 'failed', model_id: 'm', refunded, credits: 3, error_code: 'provider_timeout' });
+    await act(async () => root.render(<CreateResult api={mockApi as unknown as ApiClient} batch={batch} catalog={[]} onTerminal={() => {}} />));
+    expect(text(failedJobMessage('provider_timeout', refunded))).toHaveLength(1);
+    expect(text(plural('library.refunded', 3))).toHaveLength(0);
+});
+test.each([true, false, undefined])('cancelled Create result retains its existing refund text (%s)', async refunded => {
+    mockJob.mockResolvedValue({ state: 'failed', model_id: 'm', refunded, credits: 3, error_code: 'user_cancelled' });
+    await act(async () => root.render(<CreateResult api={mockApi as unknown as ApiClient} batch={batch} catalog={[]} onTerminal={() => {}} />));
+    expect(text(refunded === true ? plural('library.refunded', 3) : t('library.status.failed'))).toHaveLength(1);
 });
 test('free allowance is refreshed after a run and Generate is disabled until the fresh answer', async () => {
     const fresh = deferred<any>(); mockFree.mockResolvedValueOnce({ enabled: true, left: { m: 1 } }).mockReturnValueOnce(fresh.promise);

@@ -14,6 +14,7 @@ import { parseRatio } from '../../lib/templateHandoff';
 import type { ApiClient } from '../../lib/api';
 import type { CatalogModel, Kind } from '../../lib/media';
 import { plural, t } from '../../lib/i18n';
+import { failedJobMessage } from '../../lib/failedJob';
 
 export interface ResultBatch {
     ids: string[]; modelId: string; kind: Kind | null; aspect: string | null; duration: number | null; count: number;
@@ -73,7 +74,8 @@ function ResultTile({ api, id, batch, catalog, onTerminal, onSuccess }: { api: A
             {result.held ? <><Text accessibilityRole="header">{t('library.status.held')}</Text><Text>{t('libraryCreate.heldBody')}</Text></>
                 : result.error ? <Text tone="danger">{t('job.checkError')}</Text>
                 : file ? <>{file.output_stems?.length ? <Text>{t('libraryCreate.stems')}</Text> : file.mime_type.startsWith('image/') ? <Image source={{ uri: file.url }} cachePolicy="memory" contentFit="contain" style={styles.image} accessibilityLabel={t('job.title')} /> : <InlineMedia url={file.url} audio={!file.mime_type.startsWith('video/')} label={t(file.mime_type.startsWith('video/') ? 'job.playVideo' : 'job.playAudio')} />}<GeneratedChip /></>
-                : result.state === 'failed' ? <Text tone="danger">{failure}</Text>
+                : result.state === 'failed' ? <Text tone="danger">{result.job?.error_code === 'user_cancelled'
+                    ? failure : failedJobMessage(result.job?.error_code, refunded, failure)}</Text>
                 : <><ActivityIndicator /><Text>{t(result.state === 'queued' ? 'job.queued' : 'job.running')}</Text><Text>{t('job.waiting', { elapsed: t('libraryCreate.elapsed', { seconds: String(seconds) }) })}</Text><Text>{t('job.keepsRunning')}</Text></>}
         </View>
         <Button variant="secondary" label={t('publishReporting.open')} onPress={open} />
