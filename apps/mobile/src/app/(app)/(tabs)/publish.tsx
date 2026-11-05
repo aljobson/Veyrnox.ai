@@ -244,7 +244,7 @@ export default function Publish() {
                         if (!items.length) return null;
                         return (
                             <View key={group} style={styles.group}>
-                                <Text variant="footnote" accessibilityRole="header" style={styles.groupTitle}>{t(`publishHome.group.${group}`)}</Text>
+                                <Text variant="title2" accessibilityRole="header" style={styles.groupTitle}>{t(`publishHome.group.${group}`)}</Text>
                                 <Text variant="footnote" style={styles.groupLead}>{t(`publishHome.group.${group}.lead`)}</Text>
                                 <View style={styles.grid}>
                                     {items.map((id) => <ToolCard key={id} destination={DESTINATIONS[id]} onPress={() => router.push(DESTINATIONS[id].path)} />)}
@@ -334,7 +334,7 @@ const sheets = themedStyles((p) => ({
     liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: p.accent },
     activePlanText: { color: p.accent },
     group: { gap: 8 },
-    groupTitle: { color: p.textSecondary, marginTop: 4 },
+    groupTitle: { color: p.accent, marginTop: 10, fontWeight: "800", letterSpacing: 0.3 },
     groupLead: { color: p.textSecondary },
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
     tool: { width: '48.5%', minHeight: 140, borderWidth: 1, borderColor: p.borderSubtle, backgroundColor: p.surface, borderRadius: 16, padding: 14, gap: 7 },
