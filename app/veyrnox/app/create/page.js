@@ -55,6 +55,7 @@ import { TIERS, TIER_LABEL, filterByTier } from '../../_lib/modelTiers';
 import { modelsForGoal, starterModel } from '../../_lib/starterModels';
 import { audioDurationConfig, audioDurationIsInvalid, settingsInputs, voiceIsMissing } from '../../_lib/generationSettings';
 import { promptText, promptIsMissing, promptPlaceholderDiagnostic as promptPlaceholder } from '../../_lib/promptBox';
+import { generateHintKey, HINT_CODES } from '../../_lib/generateHint';
 import { ParticleButton } from '@/components/ParticleButton';
 import { jobStateUi, SLOW_MODEL_WAIT } from '../../_lib/studioStates';
 import { useCreateJourney } from '../../_lib/useCreateJourney';
@@ -300,14 +301,12 @@ export default function CreateStudio() {
   const takesCamera = !isShort && (model?.kind === 'image' || model?.kind === 'video');
   const preparedPromptLength = isShort ? prompt.trim().length : finalPrompt().length;
   const promptTooLong = preparedPromptLength > promptLimit;
-  // Why Generate is greyed out, in the order onSubmit checks, so the person is told instead of left guessing.
-  // The over-long prompt already has its own message beside the box.
-  const blockedCode = hasJobs ? null : needsReattach ? 'source_reattach_required' : overLimit ? 'source_count_exceeded'
-    : (missingSource || animationMismatch) ? 'source_required' : missingConsent ? 'consent_required'
-    : (missingPrompt && !promptTooLong) ? 'inputs_invalid_prompt' : missingVoice ? 'inputs_invalid_voice_description'
-    : invalidAudioDuration ? 'inputs_invalid_duration' : null;
-  const copyFor = (code) => code === 'source_reattach_required' ? t('app.create.reattach')
-    : tOr(t, `app.create.error.${code}`, ERROR_COPY[code] || t('app.create.error.unknown'));
+  // Why Generate is greyed out (see _lib/generateHint): empty when there is nothing the person can fix.
+  const hintKey = generateHintKey({ ready: catalogStatus === 'live' && balance != null, gated: !!model?.gated, sending, hasJobs, promptTooLong,
+    needsReattach, overLimit, missingSource, animationMismatch, missingConsent, missingPrompt, missingVoice, invalidAudioDuration });
+  const hintText = !hintKey ? '' : hintKey === 'reattach' ? t('app.create.reattach')
+    : hintKey === 'duration' ? t('app.create.durationInvalid', { min: number(audioDurationControl?.min), max: number(audioDurationControl?.max) })
+    : tOr(t, `app.create.error.${HINT_CODES[hintKey]}`, ERROR_COPY[HINT_CODES[hintKey]] || t('app.create.error.unknown'));
   // Only offer aspect ratios explicitly declared by this model's provider contract.
   const aspectOptions = isShort ? [] : modelAspectRatios(model);
   const unitCost = model ? (model.kind === 'video' ? clipCredits(model.credits, Number(duration.replace('s', ''))) : model.credits) : 0;
@@ -809,9 +808,10 @@ export default function CreateStudio() {
               {n > freeLeft ? t(pluralKey(t,locale,'app.create.freePartial',freeLeft),{free:number(freeLeft),total:number(n),left:number(freeLeft)}) : t(pluralKey(t,locale,'app.create.freeLeft',freeLeft),{count:number(freeLeft)})}
             </div>
           )}
-          {blockedCode && !model?.gated && !sending && <p id="vx-generate-why" className="mt-3 text-xs text-vx-fg-muted">{copyFor(blockedCode)}</p>}
+          <p id="vx-generate-why" aria-live="polite" className={hintText ? 'mt-3 text-xs text-vx-fg-muted' : 'sr-only'}>{hintText}</p>
           <ParticleButton
             data-assistant-target="create.generate"
+            aria-describedby={hintText ? 'vx-generate-why' : undefined}
             onClick={hasJobs && !activeBatch ? cancel : onSubmit}
             className="scroll-mt-24 mt-4 w-full flex items-center justify-between bg-vx-accent text-vx-accent-ink rounded-full px-6 py-3.5 font-extrabold hover:bg-vx-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
             disabled={draftRecovery.restoring || draftRecovery.blocked || sending || attachConverting || sourcesConverting || (!hasJobs && (catalogStatus !== 'live' || !model || model.gated || animationMismatch || missingPrompt || promptTooLong || missingVoice || invalidAudioDuration || balance == null || payable > balance || missingSource || missingConsent)) || (!!activeBatch && (balance == null || payable > balance)) || !!activeBatch?.confirm}
@@ -851,7 +851,7 @@ export default function CreateStudio() {
             <div role="alert" className="mt-3 rounded-lg border border-vx-danger/40 bg-vx-danger/[0.07] px-4 py-3 text-sm text-vx-danger flex items-start gap-2">
               <span aria-hidden="true">✕</span>
               <span>
-                {copyFor(error.code)}
+                {error.code === 'source_reattach_required' ? t('app.create.reattach') : tOr(t, `app.create.error.${error.code}`, ERROR_COPY[error.code] || t('app.create.error.unknown'))}
                 {error.retryAfter && t('app.create.retryIn', { seconds: locale === 'en' ? error.retryAfter : Number(error.retryAfter).toLocaleString(localeTag(locale)) })}
                 {error.note && ` ${error.note}`}
               </span>
