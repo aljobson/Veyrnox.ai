@@ -55,6 +55,8 @@ test('phase B retains every app route knowledge item from origin/main', async ()
                 // pipeline instead of treating it as a local-only moodboard.
                 if (entry.route === '/app/oddlings' && retiredOddlingsKnowledge[field]?.has(value)) continue;
                 if (entry.route === '/app/publish' && retiredPublishKnowledge[field]?.has(value)) continue;
+                // ADR-0326 replaces the comma-separated palette with native swatches.
+                if (entry.route === '/app/editor' && field === 'descriptions' && value === 'Use up to 12 hex colours separated by commas.') continue;
                 if (entry.route === '/app/chat' && retiredChatKnowledge[field]?.has(value)) continue;
                 assert.ok(actual.has(normal(value)), `${entry.route} ${field}: ${value}`);
             }

@@ -1,6 +1,6 @@
 # ADR-0325 — A Publish brand can use a workspace brand kit
 
-Status: Proposed (migration 0441 drafted, not applied).
+Status: Implemented in source; migration 0441 not applied. Schema v2 and Publish use: ADR-0326.
 Date: 2026-11-05.
 
 ## Problem
@@ -17,7 +17,7 @@ One optional link per Publish brand to one workspace (`social_brand_kit_links`, 
   creator or editor). Unlinking is the same call with `workspaceId: null`.
 - **Who reads.** Every brand member, through `GET /api/v1/social/brand-kit` (selected brand via `x-publish-brand-id`).
   The reply carries the kit's name, palette, fonts, text styles and the credit lines of its assets (name, credit, usage,
-  licence link). It never carries project or asset ids, and the workspace id only goes to the owner. A team member
+  licence link). It never carries project or asset ids, and the workspace name and id only go to the owner. Members see the kit name only. A team member
   therefore needs no workspace membership to see the look.
 - **Where it shows.** A Brand kit card on the Publish page: swatches, fonts, text styles, credits, and for the owner a
   workspace picker with Link and Unlink. States: loading, error with Retry, not linked, linked but kit empty, linked.

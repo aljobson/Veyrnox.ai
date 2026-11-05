@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS public.social_brand_kit_links (
     linked_by    UUID        NOT NULL REFERENCES public.users(id) ON DELETE RESTRICT,
     linked_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+CREATE INDEX IF NOT EXISTS social_brand_kit_links_actor_idx ON public.social_brand_kit_links (linked_by);
 CREATE INDEX IF NOT EXISTS social_brand_kit_links_workspace_idx ON public.social_brand_kit_links (workspace_id);
 ALTER TABLE public.social_brand_kit_links ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.social_brand_kit_links FORCE ROW LEVEL SECURITY;
@@ -35,6 +36,7 @@ RETURNS TEXT LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
     WHERE w.id = p_workspace AND w.deleted_at IS NULL AND m.role <> 'BILLING';
 $$;
 REVOKE ALL ON FUNCTION private.social_kit_workspace_role(UUID,UUID) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION private.social_kit_workspace_role(UUID,UUID) TO service_role;
 
 CREATE OR REPLACE FUNCTION public.set_social_brand_kit_link(p_auth_id TEXT, p_brand_id UUID, p_workspace_id UUID)
 RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
@@ -63,26 +65,32 @@ END $$;
 
 CREATE OR REPLACE FUNCTION public.get_social_brand_kit(p_auth_id TEXT, p_brand_id UUID)
 RETURNS JSONB LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$
-DECLARE v_role TEXT; v_link public.social_brand_kit_links; v_name TEXT; v_saved public.workspace_editor_brand_kits; v_can_link BOOLEAN;
+DECLARE v_role TEXT; v_link public.social_brand_kit_links; v_name TEXT; v_saved public.workspace_editor_brand_kits; v_can_link BOOLEAN; v_link_auth TEXT;
 BEGIN
     v_role := public.social_brand_role(p_auth_id, p_brand_id);
     IF v_role IS NULL THEN RETURN jsonb_build_object('ok',false,'code','BRAND_NOT_FOUND'); END IF;
     v_can_link := v_role = 'owner';
     SELECT * INTO v_link FROM public.social_brand_kit_links WHERE brand_id = p_brand_id;
     IF NOT FOUND THEN RETURN jsonb_build_object('ok',true,'linked',false,'canLink',v_can_link); END IF;
+    SELECT u.auth_id INTO v_link_auth FROM public.users u WHERE u.id = v_link.linked_by AND u.deleted_at IS NULL;
+    IF coalesce(private.social_kit_workspace_role(v_link_auth::uuid, v_link.workspace_id),'') NOT IN ('OWNER','ADMIN','CREATOR','EDITOR') THEN
+        RETURN jsonb_build_object('ok',true,'linked',false,'stale',true,'canLink',v_can_link);
+    END IF;
     SELECT w.name INTO v_name FROM public.workspaces w JOIN public.organisations o ON o.id = w.organisation_id
     WHERE w.id = v_link.workspace_id AND w.deleted_at IS NULL AND o.deleted_at IS NULL;
     IF v_name IS NULL THEN RETURN jsonb_build_object('ok',true,'linked',false,'stale',true,'canLink',v_can_link); END IF;
     SELECT * INTO v_saved FROM public.workspace_editor_brand_kits WHERE workspace_id = v_link.workspace_id;
     IF NOT FOUND THEN
-        RETURN jsonb_build_object('ok',true,'linked',true,'empty',true,'workspaceId',CASE WHEN v_can_link THEN v_link.workspace_id END,'workspaceName',v_name,'canLink',v_can_link);
+        RETURN jsonb_build_object('ok',true,'linked',true,'empty',true,'canLink',v_can_link)
+            || CASE WHEN v_can_link THEN jsonb_build_object('workspaceId',v_link.workspace_id,'workspaceName',v_name) ELSE '{}'::jsonb END;
     END IF;
     RETURN jsonb_build_object('ok',true,'linked',true,'empty',false,
-        'workspaceId',CASE WHEN v_can_link THEN v_link.workspace_id END,'workspaceName',v_name,'canLink',v_can_link,'version',v_saved.version,
+        'canLink',v_can_link,'version',v_saved.version,
         'kit',jsonb_build_object(
             'name',v_saved.kit->'name','palette',v_saved.kit->'palette','fonts',v_saved.kit->'fonts','textStyles',v_saved.kit->'textStyles',
             'credits',COALESCE((SELECT jsonb_agg(jsonb_build_object('name',a->'name','credit',a->'credit','usage',a->'usage','url',a->'url'))
-                FROM jsonb_array_elements(v_saved.kit->'assets') a),'[]'::jsonb)));
+                FROM jsonb_array_elements(v_saved.kit->'assets') a),'[]'::jsonb)))
+        || CASE WHEN v_can_link THEN jsonb_build_object('workspaceId',v_link.workspace_id,'workspaceName',v_name) ELSE '{}'::jsonb END;
 END $$;
 
 REVOKE ALL ON FUNCTION public.set_social_brand_kit_link(TEXT,UUID,UUID) FROM PUBLIC, anon, authenticated;

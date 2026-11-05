@@ -27,7 +27,7 @@ function mapResult(result) {
   const status = code === 'USER_NOT_FOUND' ? 401
     : code === 'FORBIDDEN' ? 403
     : ['BRAND_NOT_FOUND', 'WORKSPACE_NOT_FOUND'].includes(code) ? 404 : 502;
-  return NextResponse.json({ error: code?.toLowerCase() || 'internal' }, { status });
+  return NextResponse.json({ error: ['USER_NOT_FOUND', 'FORBIDDEN', 'BRAND_NOT_FOUND', 'WORKSPACE_NOT_FOUND'].includes(code) ? code.toLowerCase() : 'internal' }, { status });
 }
 
 export async function GET(req) {
@@ -50,7 +50,7 @@ export async function PUT(req) {
   let body; try { body = await req.json(); } catch { return NextResponse.json({ error: 'invalid_body' }, { status: 400 }); }
   const keys = body && typeof body === 'object' && !Array.isArray(body) ? Object.keys(body) : [];
   const workspaceId = body?.workspaceId;
-  if (keys.length !== 1 || keys[0] !== 'workspaceId' || (workspaceId !== null && !UUID.test(workspaceId || ''))) {
+  if (keys.length !== 1 || keys[0] !== 'workspaceId' || (workspaceId !== null && (typeof workspaceId !== 'string' || !UUID.test(workspaceId)))) {
     return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
   }
   const limited = await socialPostWriteLimit(authId, cfg); if (limited) return limited;

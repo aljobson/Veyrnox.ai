@@ -1,43 +1,43 @@
 'use client';
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useI18n } from '../../../../components/I18nProvider';
 import { gatewayFetch } from '../../_lib/gateway.js';
 
+import { usePublishBrandKit, useSocialBrandRevision } from './usePublishBrandKit.js';
+import { assertSocialBrandSnapshot } from '../../../lib/socialBrandSelection.js';
+
 // ADR-0325: the workspace brand kit linked to the selected Publish brand.
-const btn = 'rounded-full border border-vx-border px-4 py-2 text-sm font-bold disabled:opacity-50';
+const btn = 'min-h-11 focus-visible:outline focus-visible:outline-vx-accent rounded-full border border-vx-border px-4 py-2 text-sm font-bold disabled:opacity-50';
 const HEX = /^#[0-9a-f]{6}$/i;
 
 export default function BrandKitCard() {
+  const revision = useSocialBrandRevision();
+  return <BrandKitCardContent key={revision} />;
+}
+
+function BrandKitCardContent() {
   const { t } = useI18n();
-  const [state, setState] = useState({ status: 'loading' });
-  const [workspaces, setWorkspaces] = useState([]);
+  const state = usePublishBrandKit(true);
+  const { workspaces = [], reload: load } = state;
   const [choice, setChoice] = useState('');
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState('');
 
-  const load = useCallback(async () => {
-    setState({ status: 'loading' });
-    try {
-      const data = await gatewayFetch('/social/brand-kit');
-      setState({ status: 'ready', data });
-      if (data.canLink) {
-        const list = await gatewayFetch('/workspaces').catch(() => ({ workspaces: [] }));
-        setWorkspaces(list.workspaces || []);
-      }
-    } catch (error) {
-      // The kit switch being off (404) hides the card instead of showing an error.
-      setState(error?.status === 404 ? { status: 'hidden' } : { status: 'error' });
-    }
-  }, []);
-  useEffect(() => { load(); }, [load]);
-
   async function change(workspaceId) {
+    const snapshot = state.snapshot;
+    if (!snapshot || busy) return;
     setBusy(true); setProblem('');
     try {
-      await gatewayFetch('/social/brand-kit', { method: 'PUT', body: JSON.stringify({ workspaceId }) });
+      await gatewayFetch('/social/brand-kit', { method: 'PUT', body: JSON.stringify({ workspaceId }) }, false, snapshot);
+      assertSocialBrandSnapshot(snapshot);
       setChoice('');
       await load();
-    } catch { setProblem(t('app.publish.brandKit.linkFailed')); } finally { setBusy(false); }
+    } catch {
+      try { assertSocialBrandSnapshot(snapshot); } catch { return; }
+      setProblem(t('app.publish.brandKit.linkFailed'));
+    } finally {
+      try { assertSocialBrandSnapshot(snapshot); setBusy(false); } catch { /* Discard old brand completion. */ }
+    }
   }
 
   if (state.status === 'hidden') return null;
@@ -48,9 +48,12 @@ export default function BrandKitCard() {
     {state.status === 'loading' && <p role="status" className="text-vx-fg-muted">{t('app.publish.brandKit.loading')}</p>}
     {state.status === 'error' && <div role="alert"><p className="mb-2">{t('app.publish.brandKit.failed')}</p><button type="button" className={btn} onClick={load}>{t('app.publish.brandKit.retry')}</button></div>}
     {data && !data.linked && <p className="text-vx-fg-muted">{data.canLink ? t('app.publish.brandKit.notLinked') : t('app.publish.brandKit.notLinkedMember')}</p>}
-    {data?.linked && data.empty && <p className="text-vx-fg-muted">{t('app.publish.brandKit.empty', { workspace: data.workspaceName })}</p>}
+    {data?.linked && data.empty && <p className="text-vx-fg-muted">{data.workspaceName ? t('app.publish.brandKit.empty', { workspace: data.workspaceName }) : t('app.publish.brandKit.emptyMember')}</p>}
     {kit && <div className="space-y-3">
-      <p className="font-bold">{kit.name} <span className="font-normal text-vx-fg-muted">· {t('app.publish.brandKit.from', { workspace: data.workspaceName })}</span></p>
+      <p className="font-bold">{kit.name} {data.workspaceName && <span className="font-normal text-vx-fg-muted">· {t('app.publish.brandKit.from', { workspace: data.workspaceName })}</span>}</p>
+      {kit.voice && <p>{kit.voice}</p>}
+      {kit.hashtags?.length > 0 && <p>{kit.hashtags.map(tag => `#${tag}`).join(' ')}</p>}
+      {kit.hasLogo && <p>{t('app.publish.brandKit.hasLogo')}</p>}
       <div><p className="mb-1 text-xs font-bold text-vx-fg-muted">{t('app.publish.brandKit.palette')}</p>
         <ul className="flex flex-wrap gap-1">{kit.palette.filter((c) => HEX.test(c)).map((c, i) => <li key={`${c}:${i}`} role="img" aria-label={t('app.publish.brandKit.swatch', { colour: c })} title={c} className="size-7 rounded border border-vx-border" style={{ background: c }} />)}</ul></div>
       <p><span className="text-xs font-bold text-vx-fg-muted">{t('app.publish.brandKit.fonts')}: </span>{kit.fonts.join(', ')}</p>

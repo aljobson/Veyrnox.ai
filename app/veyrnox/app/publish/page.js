@@ -45,7 +45,7 @@ export default function Publish() {
       </li>)}
     </ul>
     {account && <BrandKitCard key={account} />}
-    {account ? <PublishControls key={account}initialJobId={initialJobId} initialUploadId={initialUploadId} /> : <div className="text-vx-fg-body">
+    {account ? <PublishControls key={account} initialJobId={initialJobId} initialUploadId={initialUploadId} /> : <div className="text-vx-fg-body">
       <p className="mb-4">{t("app.publish.signIn")}</p>
       <button type="button" className={button} onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>{t("oauth.signIn")}</button>
     </div>}
