@@ -1,0 +1,95 @@
+name: spend-watch
+
+# Is supplier spend close to a cap? (ADR-0328)
+#
+# The database already refuses jobs past the provider and global hour/day caps
+# (migration 0329, docs/operations/provider-spend-guards.md). A refusal is a
+# customer-visible outage, and nothing told the owner a cap was close. This
+# reads the verdict-only spend_watch_status() (0444) with the publishable key
+# from wrangler.jsonc, no secret (PR #61), and opens one issue per episode.
+# The report names the level and the scope, never a figure: the repo is public.
+
+on:
+  schedule:
+    # The hour caps are rolling one-hour windows: poll well inside that window so a spike cannot rise and expire between checks.
+    - cron: '3,18,33,48 * * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: spend-watch
+  cancel-in-progress: false
+
+jobs:
+  check:
+    # Only main: another branch's copy of the script must not run on schedule.
+    if: vars.SPEND_WATCH_ENABLED != 'false' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      exit: ${{ steps.check.outputs.exit }}
+      report: ${{ steps.check.outputs.report }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+
+      # Node builtins and global fetch only. Exit 0 = ok, 1 = near a cap, 2 = could not read.
+      - name: Read the spend verdict
+        id: check
+        run: |
+          set +e
+          node scripts/check-spend-watch.mjs > report.txt 2>&1
+          code=$?
+          set -e
+          cat report.txt
+          echo "exit=$code" >> "$GITHUB_OUTPUT"
+          {
+            echo 'report<<SPEND_REPORT_EOF'
+            cat report.txt
+            echo 'SPEND_REPORT_EOF'
+          } >> "$GITHUB_OUTPUT"
+          {
+            echo '### Supplier spend'
+            case "$code" in
+              0) echo 'Spend is well inside its caps.' ;;
+              1) echo '**Near a cap:** see the report below.' ;;
+              *) echo '**Could not check:** spend_watch_status was unreadable. This is not a pass.' ;;
+            esac
+            echo '```'
+            cat report.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$code"
+
+  # Only a real warning files an issue; an outage already fails the run above.
+  report:
+    needs: check
+    if: always() && needs.check.outputs.exit == '1' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Open one issue per episode
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          REPORT: ${{ needs.check.outputs.report }}
+        run: |
+          existing=$(gh issue list --label spend-watch --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            echo "Already tracked in #$existing"
+            exit 0
+          fi
+          gh label create spend-watch --color D93F0B \
+            --description 'Supplier spend is near an hour or day cap' 2>/dev/null || true
+          printf '%s\n\n```\n%s\n```\n' \
+            'Supplier spend reached a warning level. Look at provider_spend_utilization() with the service role, then decide: a legitimate surge needs a higher cap (owner call), an abuser needs the per-account AI switch (ADR-0327), a supplier fault needs the generation switch. Runbook: docs/operations/provider-spend-guards.md' \
+            "$REPORT" > body.md
+          gh issue create --title "Supplier spend near a cap — $(date -u +%Y-%m-%d)" \
+            --label spend-watch --body-file body.md
