@@ -18,7 +18,7 @@ function Section({ id, title, open, onToggle, children }) {
   return (
     <section className="rounded-xl border border-vx-border bg-vx-panel">
       <h3>
-        <button type="button" aria-expanded={open} aria-controls={`${uid}-${id}`} onClick={() => onToggle(id)}
+        <button type="button" data-persona-header={id === 'persona' ? '' : undefined} aria-expanded={open} aria-controls={`${uid}-${id}`} onClick={() => onToggle(id)}
           className="flex w-full items-center justify-between px-4 py-3 text-start text-sm font-semibold">
           {title}<span aria-hidden="true" className="text-vx-fg-muted">{open ? '▴' : '▾'}</span>
         </button>
@@ -45,7 +45,7 @@ function Toggle({ label, extra, checked, disabled, onChange, hint }) {
 // sent until the person sends a message, and the price of the choices always shows under the message box.
 export function SettingsPanel({ models, model, busy, onSelectModel, tiers, onTiers, offer, opts, onOpts, researchOn = false, canSaveInstr, instr, onInstr, instrSaved, onSaveInstr, saved, maxPrompt, hasThread, instructionsLocked = false, personasOn = false, personas = [], personaId = '', onPersona, onManagePersonas }) {
   const { t, locale } = useI18n();
-  const [open, setOpen] = useState({ persona: true, filter: false, model: true, caps: true, tools: true, prompt: false, about: false });
+  const [open, setOpen] = useState({ persona: false, filter: false, model: true, caps: false, tools: false, prompt: false, about: false });
   const toggle = (id) => setOpen((o) => ({ ...o, [id]: !o[id] }));
   const allOpen = SECTIONS.every((id) => open[id]);
   const tier = tierOf(model.credits_per_reply);
