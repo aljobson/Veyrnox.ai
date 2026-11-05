@@ -225,6 +225,10 @@ export async function POST(req) {
             if (rl.code === 'USER_NOT_FOUND') {
                 return NextResponse.json({ error: 'user_not_provisioned' }, { status: 409 });
             }
+            // ADR-0327: an operator turned AI off for this account.
+            if (rl.code === 'AI_DISABLED') {
+                return NextResponse.json({ error: 'ai_disabled' }, { status: 403 });
+            }
             const rlCode = rl.code ? String(rl.code).toLowerCase() : 'rate_check_failed';
             return NextResponse.json({ error: rlCode }, { status: 400 });
         }
