@@ -47,3 +47,12 @@ test('the web card, worded from the English catalog, reads exactly like the shar
   }
   assert.equal(fill(en['app.vibe.card.name'], { adjective: en['app.vibe.card.adj.1'], noun: en['app.vibe.card.noun.maker'] }), archetypeName({}));
 });
+
+test('the web Vibe check asks no questions: language and intro only', async () => {
+  const { readFileSync } = await import('node:fs');
+  const src = readFileSync('app/veyrnox/_components/VibeCheck.js', 'utf8').split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
+  assert.doesNotMatch(src, /const STEPS/);
+  assert.doesNotMatch(src, /CREATOR_ANSWERS|saveVibe|archetypeParts|rankByTaste/);
+  assert.match(src, /skipVibe\(\)/);
+  assert.match(src, /onClick=\{proceed\}/);
+});
