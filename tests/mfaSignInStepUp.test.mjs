@@ -145,7 +145,7 @@ test('aal1 with verified TOTP opens an accessible translated prompt', async ctx 
   const h = harness(ctx);
   assert.equal(h.render(), null);
   await h.flush();
-  assert.match(h.html(), /role="dialog" aria-modal="true" aria-label="Two-factor authentication"/);
+  assert.match(h.html(), /role="dialog" aria-modal="true" data-auth-prompt="true" aria-label="Two-factor authentication"/);
   assert.match(h.html(), /Verify and continue/);
   assert.match(h.html(), /Use a recovery code instead/);
   assert.match(h.html(), /support@veyrnox\.com/);

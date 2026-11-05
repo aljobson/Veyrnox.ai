@@ -52,6 +52,8 @@ export default function AuthGate() {
     const dialogVersion = useRef(0);
     const emailRef = useRef(null);
     const noticeRef = useRef(null);
+    // While an error shows it describes the fields (the message names no single one).
+    const errorId = notice?.kind === "error" ? "vx-auth-notice" : undefined;
     // Turnstile (ADR-0026). Tokens are single-use, so every submit bumps
     // captchaReset and the widget issues a fresh one.
     const [captcha, setCaptcha] = useState(null);
@@ -303,7 +305,7 @@ export default function AuthGate() {
     return (
         <div
             role="dialog"
-            aria-modal="true"
+            aria-modal="true" data-auth-prompt
             aria-label={t("authGate.title")}
             ref={panelRef}
             onKeyDown={onKeyDown}
@@ -360,7 +362,7 @@ export default function AuthGate() {
                             readOnly={!!resendState.pending || busy}
                             type="email"
                             required
-                            autoComplete="email"
+                            autoComplete="email" aria-describedby={errorId}
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             className="mt-1 w-full rounded-lg bg-vx-base border border-vx-field px-3 py-2 text-sm text-vx-fg outline-hidden focus:border-vx-accent focus-visible:ring-2 focus-visible:ring-vx-accent/40"
@@ -384,7 +386,7 @@ export default function AuthGate() {
                                     // Safari's generator reads this when it suggests a
                                     // password; a generated one is never in a breach list.
                                     passwordrules={mode === "sign_up" ? "minlength: 12; required: lower; required: upper; required: digit;" : undefined}
-                                    aria-describedby="vx-password-hint"
+                                    aria-describedby={errorId ? `vx-password-hint ${errorId}` : "vx-password-hint"}
                                     className="w-full rounded-lg bg-vx-base border border-vx-field ps-3 pe-16 py-2 text-sm text-vx-fg outline-hidden focus:border-vx-accent focus-visible:ring-2 focus-visible:ring-vx-accent/40"
                                 />
                                 {/* A typo in a masked 8-character minimum is the
@@ -422,7 +424,7 @@ export default function AuthGate() {
 
                     {/* Always mounted so a screen reader hears the message
                         appear instead of the whole region being inserted. */}
-                    <div role="status" aria-live="polite" ref={noticeRef} tabIndex={-1} className={notice ? "block rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent" : "sr-only"}>
+                    <div id="vx-auth-notice" role="status" aria-live="polite" ref={noticeRef} tabIndex={-1} className={notice ? "block rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent" : "sr-only"}>
                         {notice && (
                             <div
                                 className={`flex items-start gap-2 text-xs rounded-md px-3 py-2 border ${

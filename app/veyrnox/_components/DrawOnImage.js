@@ -1,6 +1,7 @@
 'use client';
 import { useI18n } from '../../../components/I18nProvider';
 import { useEffect, useRef, useState } from 'react';
+import { Modal } from './Modal';
 
 // Draw-to-edit: sketch over the start image, then hand back one flattened PNG
 // that replaces it. The edit model reads the marks as instructions, so no
@@ -32,10 +33,8 @@ export function DrawOnImage({ file, onDone, onCancel }) {
       setReady(true);
     };
     img.src = url;
-    const onKey = (e) => { if (e.key === 'Escape') onCancel(); };
-    window.addEventListener('keydown', onKey);
-    return () => { URL.revokeObjectURL(url); window.removeEventListener('keydown', onKey); };
-  }, [file, onCancel]);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
 
   useEffect(() => {
     if (!ready) return;
@@ -82,8 +81,9 @@ export function DrawOnImage({ file, onDone, onCancel }) {
 
   const btn = 'font-vx-mono text-[11px] font-bold rounded-full px-3.5 py-1.5 border border-vx-border text-vx-fg-muted hover:text-vx-fg disabled:opacity-40';
   return (
-    <div role="dialog" aria-modal="true" aria-label={t("app.create.draw.dialog")}
-      className="fixed inset-0 z-[80] flex items-center justify-center bg-black/80 p-4 backdrop-blur-xs">
+    // The shared Modal supplies the focus trap, Escape, the inert background and focus return. Drawing itself
+    // is pointer-only; Cancel (also Escape) is the keyboard path out, and it leaves the original image unchanged.
+    <Modal onCancel={onCancel} aria-label={t("app.create.draw.dialog")} className="items-center justify-center p-4">
       <div className="w-full max-w-4xl rounded-2xl border border-vx-border bg-vx-panel p-4 flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted me-2">{t("app.create.draw.title")}</span>
@@ -108,6 +108,6 @@ export function DrawOnImage({ file, onDone, onCancel }) {
             className="rounded-full px-5 py-2 font-extrabold bg-vx-accent text-vx-accent-ink hover:bg-vx-accent-hover disabled:opacity-40">{t("app.create.draw.use")}</button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
