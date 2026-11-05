@@ -100,7 +100,7 @@ export function ComposerControls({ models, model, offer, opts, busy, onSelectMod
       )}
 
       {onSettings && (
-        <button type="button" data-assistant-target="chat.settings" aria-expanded={settingsOpen} onClick={onSettings} className={control}>
+        <button type="button" data-assistant-target="chat.settings" aria-expanded={settingsOpen} onClick={onSettings} className={`${control} before:absolute before:inset-x-0 before:-inset-y-1.5 before:content-['']`}>
           {t("app.chat.settings")}
         </button>
       )}

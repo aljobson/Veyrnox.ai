@@ -50,3 +50,12 @@ test('the option appears only for a model that offers it, and progress is cleare
     assert.match(sender, /finally \{ setBusy\(false\); setProgress\(null\);/);
     assert.match(resolveI18nSource(workspace), /helperCopy\(t, locale, researchProgressLabel\(progress\)\) \|\| "Thinking"/);
 });
+
+test('the setup row reads the effective research state, so a stale choice cannot disable Web on a model without Research', () => {
+    assert.match(workspace, /<ComposerControls [^>]*opts=\{\{ \.\.\.opts, research: researchOn \}\}/);
+});
+
+test('Settings is a real modal (focus contained, Escape closes, focus returns to the chip) with a 44 px hit area', () => {
+    assert.match(workspace, /<Modal onCancel=\{\(\) => setSettingsOpen\(false\)\} initialFocusRef=\{settingsCloseRef\}/);
+    assert.match(controls, /data-assistant-target="chat\.settings"[^>]*before:-inset-y-1\.5/);
+});

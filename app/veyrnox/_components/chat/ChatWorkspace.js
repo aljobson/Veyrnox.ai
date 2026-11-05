@@ -15,6 +15,7 @@ import { useFreeAllowance } from '../../_lib/useFreeAllowance';
 import { freeLeftFor } from '../../_lib/freeAllowance';
 import { researchProgressLabelDiagnostic as researchProgressLabel } from '../../_lib/chatResearchUi';
 import { PersonaManager } from './PersonaManager';
+import { Modal } from '../Modal';
 import { AttachButton, AttachChips, useAttachments } from './AttachBar';
 import { LibraryPicker } from '../LibraryPicker';
 import { SkillsPanel } from './SkillsPanel';
@@ -133,6 +134,7 @@ export function ChatWorkspace() {
   // dialog already returned it somewhere real. An effect, not a frame callback: it runs after the dialog has unmounted, when focus
   // has fallen to the page.
   const restorePersonaFocus = useRef(false);
+  const settingsCloseRef = useRef(null);
   const closePersonaManager = () => { restorePersonaFocus.current = true; setManagingPersonas(false); };
   useEffect(() => {
     if (managingPersonas || !restorePersonaFocus.current) return;
@@ -595,7 +597,7 @@ export function ChatWorkspace() {
                 setComposerKind(next);
                 setSettingsOpen(false);
               }} />
-              {composerKind === COMPOSER_KINDS.CHAT ? <><ComposerControls models={models} model={model} offer={offer} opts={opts} busy={busy} onSelectModel={selectModel} onOpts={setOpts}
+              {composerKind === COMPOSER_KINDS.CHAT ? <><ComposerControls models={models} model={model} offer={offer} opts={{ ...opts, research: researchOn }} busy={busy} onSelectModel={selectModel} onOpts={setOpts}
                 onLibrary={() => setPickingLibrary(true)} libraryDisabled={att.items.length >= limits.maxAttachments} onSettings={() => setSettingsOpen(true)} settingsOpen={settingsOpen} />
               {hasImages && (
                 <div className="border-t border-vx-border px-3 pt-3">
@@ -622,13 +624,12 @@ export function ChatWorkspace() {
       </section>
             {composerKind === COMPOSER_KINDS.CHAT && pickingLibrary && <LibraryPicker onPick={pickFromLibrary} onClose={() => setPickingLibrary(false)} />}
       {settingsOpen && (
-        <div className="fixed inset-0 z-40 flex justify-end" role="dialog" aria-modal="true" aria-label={t("label.Chat settings")}>
-          <button type="button" aria-label={t("app.chat.closeSettings")} className="flex-1 bg-black/50" onClick={() => setSettingsOpen(false)} />
+        <Modal onCancel={() => setSettingsOpen(false)} initialFocusRef={settingsCloseRef} role="dialog" aria-modal="true" aria-label={t("label.Chat settings")} className="justify-end">
           <div className="relative w-[340px] max-w-[90vw] bg-vx-base">
-            <button type="button" aria-label={t("app.chat.closeSettings")} className="absolute end-3 top-3 z-10 rounded-full border border-vx-border px-3 py-1 text-sm" onClick={() => setSettingsOpen(false)}>{t("authGate.close")}</button>
+            <button ref={settingsCloseRef} type="button" aria-label={t("app.chat.closeSettings")} className="absolute end-3 top-3 z-10 rounded-full border border-vx-border px-3 py-1 text-sm" onClick={() => setSettingsOpen(false)}>{t("authGate.close")}</button>
             <div className="h-full pt-10">{settings}</div>
           </div>
-        </div>
+        </Modal>
       )}
       {managingPersonas && <PersonaManager personas={personas} models={models} onChange={changePersonas} onClose={closePersonaManager} />}
     </div>
