@@ -121,7 +121,8 @@ test('Create arrival applies URL recipe and submits original-model attribution o
       assert.equal(prompt(tree).props.value, preset.prompt);
       assert.equal(control(tree, 'duration').props.value, `${durationSeconds}s`);
       assert.equal(control(tree, 'aspect').props.value, model === original ? '9:16' : '4:5');
-      assert.equal(card(tree)?.props.preset ?? null, model === original ? preset : null);
+      assert.equal(card(tree)?.props.preset ?? null, preset); // the template stays on screen on any model
+      assert.equal(Boolean(card(tree)?.props.otherModelName), model !== original);
       assert.equal(generate(tree).props.disabled, false);
       await generate(tree).props.onClick();
       assert.equal(h.requests.length, 1);
@@ -158,9 +159,10 @@ test('changing model inside Create keeps personal edits and never reapplies the 
     tree = await h.settle();
     assert.equal(prompt(tree).props.value, 'Personal edit after arrival');
     assert.equal(control(tree, 'duration').props.value, '5s');
-    assert.equal(card(tree)?.props.preset ?? null, null);
+    assert.equal(card(tree)?.props.preset ?? null, preset); // still shown after the model change, flagged as made for another model
+    assert.ok(card(tree).props.otherModelName);
     await generate(tree).props.onClick();
-    assert.equal(h.requests[0].preset, undefined);
+    assert.equal(h.requests[0].preset, undefined); // but not sent: the gateway takes a template only on its own model
     assert.equal(h.requests[0].inputs.prompt, 'Personal edit after arrival');
   } finally { h.close(); }
 });

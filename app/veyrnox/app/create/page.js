@@ -271,6 +271,9 @@ export default function CreateStudio() {
   const hasJobs = jobs.length > 0;
   const catalogStatus = catalogLoading ? 'loading' : catalogLive ? 'live' : 'unavailable';
   const activeTemplate = templateStartIdFor(presetParam, templateData, modelId) ? templateData : null;
+  // Changing the model keeps the chosen template on screen; it just stops being sent (the gateway takes a template only on its own model).
+  const keptTemplate = !activeTemplate && presetParam && templateData?.id === presetParam ? templateData : null;
+  const keptTemplateModel = keptTemplate ? models.find((m) => m.id === modelIdForName(keptTemplate.model)) : null;
   const prompt = promptText(typed, model); // a starter shot until then, on picture and clip models only (see promptBox)
   // The picked model stays listed even when the tier filter would hide it.
   const goalModels = modelsForGoal(models, goal);
@@ -744,9 +747,10 @@ export default function CreateStudio() {
                 {t("app.create.reviewCharacter")}</button>}
             </section>
           )}
-          {activeTemplate && <TemplateHandoffCard
-            preset={activeTemplate}
-            canChooseSource={Boolean(activeTemplate.needs && Object.keys(media).length)}
+          {(activeTemplate || keptTemplate) && <TemplateHandoffCard
+            preset={activeTemplate || keptTemplate}
+            otherModelName={keptTemplate ? (keptTemplateModel?.name || keptTemplate.model) : ''}
+            canChooseSource={Boolean(activeTemplate?.needs && Object.keys(media).length)}
             onChooseSource={() => setAddFilesOpen(true)}
           />}
           {templateImageCount > 0 && (
