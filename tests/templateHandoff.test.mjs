@@ -78,7 +78,7 @@ test('all non-template Create entry points remain independently wired', () => {
   }
 });
 
-test('real whitespace-bearing templates survive web Create, Film Studio, chat and native submit byte for byte', async () => {
+test('real whitespace-bearing templates survive web Create, Film Studio, chat drafts and native submit byte for byte (chat send trims)', async () => {
   const { exactSourcePromptRecord } = await import('../app/veyrnox/_lib/sourcePromptRecords.js');
   const { templateById } = await import('../app/veyrnox/_lib/templates.js');
   const { draftForTemplate } = await import('../app/veyrnox/_lib/templateDraft.js');
@@ -117,7 +117,8 @@ test('real whitespace-bearing templates survive web Create, Film Studio, chat an
       assert.equal(writeTemplateChatDraft(storage, preset, prompt), true);
       const chat = takeTemplateChatDraft(storage);
       assert.equal(chat.prompt, prompt);
-      assert.equal(validateTurn({ text: chat.prompt, idempotency_key: 'exact-whitespace-proof' }).text, prompt);
+      // Chat SEND trims (the stored turn and the idempotency hash both trim); only the draft handoff is byte exact.
+      assert.equal(validateTurn({ text: chat.prompt, idempotency_key: 'exact-whitespace-proof' }).text, prompt.trim());
     } else {
       assert.equal(writeTemplateChatDraft(storage, preset, prompt), false, 'existing chat cap rejects whole text without truncation');
     }
@@ -131,5 +132,5 @@ test('real whitespace-bearing templates survive web Create, Film Studio, chat an
   assert.match(web, /setRecoveredPrompt\(saved\.prompt\)/);
   assert.match(mobile, /setRecoveredPrompt\(d\.prompt\)/);
   const chatSend = readFileSync(new URL('../app/veyrnox/_components/chat/useChatSend.js', import.meta.url), 'utf8');
-  assert.match(chatSend, /const content = text;/);
+  assert.match(chatSend, /const content = text\.trim\(\);/);
 });

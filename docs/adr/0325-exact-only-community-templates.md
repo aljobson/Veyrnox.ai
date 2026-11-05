@@ -27,11 +27,17 @@ the public exact prompts exceeds it. There are 411 prompts with explicit
 under the broader audit parser. No reference is silently invented or substituted.
 
 Both API prompt fields remain populated for installed mobile versions. Unedited
-template prompts retain whitespace in Create, Film Studio and chat handoffs.
-Web and mobile Create preserve unedited recovered drafts as well: recovery has
-no template provenance. Other typed or edited Create text retains existing trimming. Film/chat draft
-formats and recovered chat messages cannot distinguish edited template text;
-these shared paths preserve all nonempty text. Chat's existing 8,000-character
+template prompts retain whitespace in Create and Film Studio handoffs and in
+chat drafts. Web and mobile Create preserve unedited recovered drafts as well:
+recovery has no template provenance. Other typed or edited Create text retains
+existing trimming. Film draft formats and recovered drafts cannot distinguish
+edited template text; these shared paths preserve all nonempty text. Chat SEND is
+unchanged: `validateTurn` and the send handler still trim, because the stored turn
+(`chat_complete_turn` stores `btrim(p_user_text)`) and the idempotency request hash
+(`lib/chatTurn.js`) both trim; sending raw text would need a forward migration and
+a request-hash change, which are out of scope for this change. A template prompt
+therefore loses only its surrounding whitespace when sent through chat. Chat's
+existing 8,000-character
 and token caps still reject oversized text in full. They never truncate it.
 
 The independent effect (1,036) and reference (6) recipe catalogs are out of scope.
@@ -67,13 +73,13 @@ marks image references incompatible before that branch. No copy-only enforcement
 is added. Human source-model labels use an explicit captured-provider-ID table.
 Categories use word boundaries and a reviewed per-record override table.
 
-The chat turn server contract, `lib/chat.js` `validateTurn`, now preserves leading
-and trailing whitespace for every client, including typed turns. Its 8,000-character
-cap counts raw text, including surrounding whitespace. The server cannot distinguish
-unedited template text from typed text; preserving it guarantees exact template handoffs. Empty checks still
-trim only for validation. Mobile Create model switching passes the possibly
-edited prompt as the next screen's parameter, so nonempty text is preserved
-untrimmed on that path too.
+The chat turn server contract is unchanged. A first version of this change made `lib/chat.js`
+`validateTurn` and the web send handler preserve surrounding whitespace; review found that
+the database stores `btrim(p_user_text)` and the request hash trims, so a saved partial reply
+could not be matched to the raw sent text and a reused idempotency key could replay distinct
+prompts. The change was reverted rather than extended with a migration. Mobile Create model
+switching passes the possibly edited prompt as the next screen's parameter, so nonempty text
+is preserved untrimmed on that path.
 
 The owner approved renaming `community-vehicle-carjacking` to `community-chicken-bucket-swap` / CHICKEN BUCKET SWAP because its prompt describes a chicken-bucket swap.
 The eleven renamed Syntx entries now also use neutral public IDs, clip keys and media filenames to remove source franchise/celebrity names from URLs, discovery and mobile handoffs; original slugs remain provenance only, with no redirects for these unpublished additions.
