@@ -20,11 +20,12 @@ Follows ADR-0323, which listed "no per-user control" and a hard-coded limit as o
    Access assertion and fresh second factor like the other switches. `admin_ai_control_set`
    is idempotent by key and writes `admin_change_log` (area `other`, action `ai_control_set`).
    A global change uses `user_id: null` and cannot set `ai_disabled`.
-4. **No row, no change.** Applying the migration alone changes nothing for anyone.
+4. **Operator UI.** The "AI controls per account" section of the admin On/off switches page
+   (look up by email, switch and limit; a separate global limit form).
+5. **No row, no change.** Applying the migration alone changes nothing for anyone.
 
 ## Not done
 
-- No admin page control yet; use the route. The users page needs a card.
 - Per-IP signup counting and a daily cost watch are separate follow-ups.
 - Auto Short, server render, voice and uploads do not call this check, so the kill switch
   does not stop them (same gap as ADR-0319).
