@@ -125,6 +125,23 @@ test('the debit: price from the catalog, never the client; no message text on th
     assert.equal(d.p_limit_per_window, 10); assert.equal(d.p_window_seconds, 60);
 });
 
+test('an operator override lowers the limit used for admission; the constant stays the ceiling (ADR-0327)', async () => {
+    for (const [granted, expected] of [[2, 2], [1, 1], [10, 10], [50, 10], [0, 10], ['x', 10]]) {
+        const f = fakes({ replies: { check_generation_rate_limit: { ok: true, limit: granted } } });
+        await events(await run(f, { body: body({}) }));
+        const [, d] = called(f, 'ledger_debit')[0];
+        assert.equal(d.p_limit_per_window, expected, `granted ${granted}`);
+    }
+});
+
+test('an account switched off is refused with ai_disabled before anything is read or spent (ADR-0327)', async () => {
+    const f = fakes({ replies: { check_generation_rate_limit: { ok: false, code: 'AI_DISABLED' } } });
+    const res = await run(f, { body: body({}) });
+    assert.equal(res.status, 403);
+    assert.equal((await res.json()).error, 'ai_disabled');
+    assert.equal(called(f, 'ledger_debit').length, 0);
+});
+
 test('debit refusals map to status codes and never reach the provider', async () => {
     for (const [reply, status, error] of [
         [{ ok: false, code: 'INSUFFICIENT_BALANCE', message: 'have 1 need 2' }, 402, 'insufficient_balance'],
