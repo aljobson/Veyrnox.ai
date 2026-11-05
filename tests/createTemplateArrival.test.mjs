@@ -10,6 +10,7 @@ import * as generationSettings from '../app/veyrnox/_lib/generationSettings.js';
 import * as imageBatch from '../app/veyrnox/_lib/imageBatch.js';
 import * as freeAllowance from '../app/veyrnox/_lib/freeAllowance.js';
 import * as promptBox from '../app/veyrnox/_lib/promptBox.js';
+import * as generateHint from '../app/veyrnox/_lib/generateHint.js';
 import * as generationSlots from '../lib/generationSourceSlots.mjs';
 import * as aspectShapes from '../lib/aspectShapes.mjs';
 import * as templateStart from '../lib/templateStartCheck.js';
@@ -30,6 +31,8 @@ function find(tree, predicate) {
 const control = (tree, name) => find(tree, node => node.props?.assistantTarget === `create.${name}`);
 const generate = tree => find(tree, node => node.props?.['data-assistant-target'] === 'create.generate');
 const prompt = tree => find(tree, node => node.type === 'textarea');
+// The explanation region is always mounted (a polite live region); empty text means there is nothing to fix.
+const why = tree => String(find(tree, node => node.props?.id === 'vx-generate-why')?.props.children ?? '');
 const card = tree => find(tree, node => node.type === HandoffCard);
 
 // Execute the real page's hooks/effects and event handlers offline. Only I/O
@@ -74,6 +77,7 @@ function harness(params, { saved, blocked = false, models = [original, other], l
     '../../_lib/imageBatch': imageBatch,
     '../../_lib/freeAllowance': freeAllowance,
     '../../_lib/promptBox': promptBox,
+    '../../_lib/generateHint': generateHint,
     '../../_lib/useCatalog': { useCatalog: () => catalog },
     '../../_lib/useTemplates': { fetchTemplate: async () => preset },
     '../../_lib/useCreateDraftRecovery': { __esModule: true, default: () => ({ restoring: false, blocked: false }) },
@@ -197,6 +201,10 @@ test('Create still refuses missing required sources, missing consent and prompts
     try {
       const tree = await h.settle();
       assert.equal(generate(tree).props.disabled, true);
+      // The person is told what is missing instead of facing a silent grey button.
+      assert.ok(why(tree), 'a disabled Generate says why');
+      // (The harness stubs the error-copy table; generateHint.test.mjs checks each hint maps to real copy.)
+      assert.equal(generate(tree).props['aria-describedby'], 'vx-generate-why');
       await generate(tree).props.onClick();
       assert.equal(h.requests.length, 0);
     } finally { h.close(); }
@@ -206,6 +214,7 @@ test('Create still refuses missing required sources, missing consent and prompts
     prompt(await h.settle()).props.onChange({ target: { value: 'x'.repeat(30001) } });
     const tree = await h.settle();
     assert.equal(generate(tree).props.disabled, true);
+    assert.equal(why(tree), '', 'an over-long prompt already has its own message beside the box');
     await generate(tree).props.onClick();
     assert.equal(h.requests.length, 0);
   } finally { h.close(); }

@@ -55,6 +55,7 @@ import { TIERS, TIER_LABEL, filterByTier } from '../../_lib/modelTiers';
 import { modelsForGoal, starterModel } from '../../_lib/starterModels';
 import { audioDurationConfig, audioDurationIsInvalid, settingsInputs, voiceIsMissing } from '../../_lib/generationSettings';
 import { promptText, promptIsMissing, promptPlaceholderDiagnostic as promptPlaceholder } from '../../_lib/promptBox';
+import { generateHintKey, HINT_CODES } from '../../_lib/generateHint';
 import { ParticleButton } from '@/components/ParticleButton';
 import { jobStateUi, SLOW_MODEL_WAIT } from '../../_lib/studioStates';
 import { useCreateJourney } from '../../_lib/useCreateJourney';
@@ -300,6 +301,12 @@ export default function CreateStudio() {
   const takesCamera = !isShort && (model?.kind === 'image' || model?.kind === 'video');
   const preparedPromptLength = isShort ? prompt.trim().length : finalPrompt().length;
   const promptTooLong = preparedPromptLength > promptLimit;
+  // Why Generate is greyed out (see _lib/generateHint): empty when there is nothing the person can fix.
+  const hintKey = generateHintKey({ ready: catalogStatus === 'live' && balance != null, gated: !!model?.gated, sending, hasJobs, promptTooLong,
+    needsReattach, overLimit, missingSource, animationMismatch, missingConsent, missingPrompt, missingVoice, invalidAudioDuration });
+  const hintText = !hintKey ? '' : hintKey === 'reattach' ? t('app.create.reattach')
+    : hintKey === 'duration' ? t('app.create.durationInvalid', { min: number(audioDurationControl?.min), max: number(audioDurationControl?.max) })
+    : tOr(t, `app.create.error.${HINT_CODES[hintKey]}`, ERROR_COPY[HINT_CODES[hintKey]] || t('app.create.error.unknown'));
   // Only offer aspect ratios explicitly declared by this model's provider contract.
   const aspectOptions = isShort ? [] : modelAspectRatios(model);
   const unitCost = model ? (model.kind === 'video' ? clipCredits(model.credits, Number(duration.replace('s', ''))) : model.credits) : 0;
@@ -801,8 +808,10 @@ export default function CreateStudio() {
               {n > freeLeft ? t(pluralKey(t,locale,'app.create.freePartial',freeLeft),{free:number(freeLeft),total:number(n),left:number(freeLeft)}) : t(pluralKey(t,locale,'app.create.freeLeft',freeLeft),{count:number(freeLeft)})}
             </div>
           )}
+          <p id="vx-generate-why" aria-live="polite" className={hintText ? 'mt-3 text-xs text-vx-fg-muted' : 'sr-only'}>{hintText}</p>
           <ParticleButton
             data-assistant-target="create.generate"
+            aria-describedby={hintText ? 'vx-generate-why' : undefined}
             onClick={hasJobs && !activeBatch ? cancel : onSubmit}
             className="scroll-mt-24 mt-4 w-full flex items-center justify-between bg-vx-accent text-vx-accent-ink rounded-full px-6 py-3.5 font-extrabold hover:bg-vx-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
             disabled={draftRecovery.restoring || draftRecovery.blocked || sending || attachConverting || sourcesConverting || (!hasJobs && (catalogStatus !== 'live' || !model || model.gated || animationMismatch || missingPrompt || promptTooLong || missingVoice || invalidAudioDuration || balance == null || payable > balance || missingSource || missingConsent)) || (!!activeBatch && (balance == null || payable > balance)) || !!activeBatch?.confirm}
