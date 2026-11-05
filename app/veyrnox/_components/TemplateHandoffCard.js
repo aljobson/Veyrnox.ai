@@ -7,7 +7,7 @@ import { TemplateArtwork } from './TemplateArtwork';
 import { presetTitle } from '../_lib/tokens.js';
 import { templateHandoffVisual, templateNeedsSource } from '../_lib/templateHandoff.js';
 
-export function TemplateHandoffCard({ preset, canChooseSource = false, onChooseSource }) {
+export function TemplateHandoffCard({ preset, canChooseSource = false, onChooseSource, otherModelName = '' }) {
   const { t } = useI18n();
   const visual = templateHandoffVisual(preset);
   const needs = templateNeedsSource(preset);
@@ -35,7 +35,9 @@ export function TemplateHandoffCard({ preset, canChooseSource = false, onChooseS
       <div className="min-w-0">
         <div className="font-vx-mono text-[9px] font-bold tracking-[0.14em] text-vx-accent">{t('app.create.templateLinked')}</div>
         <h2 className="mt-1 text-sm font-extrabold text-vx-fg">{title}</h2>
-        <p className="mt-1 text-xs text-vx-fg-muted">{t('app.create.templateSettingsLoaded')}</p>
+        {otherModelName
+          ? <p data-testid="create-template-other-model" className="mt-1 text-xs text-vx-fg-muted">{t('app.create.templateOtherModel', { model: otherModelName })}</p>
+          : <p className="mt-1 text-xs text-vx-fg-muted">{t('app.create.templateSettingsLoaded')}</p>}
         <p className="mt-1 text-xs text-vx-fg-muted">{t('app.create.templateReferenceOnly')}</p>
         {needs && <p className="mt-2 text-sm text-vx-fg-body">{tOr(t, `presets.needs.${preset.needsKey || preset.id}`, needs)}</p>}
         {preset.sourceAspect && <p className="mt-2 text-sm font-bold text-vx-fg-body">{t('presets.detail.sourceAspect', { aspect: preset.sourceAspect })}</p>}
