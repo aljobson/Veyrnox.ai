@@ -208,6 +208,7 @@ try {
         // Administrator accountability, including actor email, like account_actions (ADR-0083).
         'admin_change_log',
         'admin_roles', 'admin_mutation_receipts', 'runtime_switches', // retained administrator authorization/operational audit, no customer content
+        'user_ai_controls', 'ai_limit_policy', // operator AI switch/limit and reason, no customer content; a tombstoned account stays switched off (ADR-0327)
         // money and its audit trail
         'credit_balances', 'ledger_entries', 'top_ups', 'top_up_flagged_orders', 'account_actions', 'referral_rewards', 'referrals',
         'store_customers', 'provider_spend_reservations', 'model_free_allowance_claims', 'account_deletions', 'privacy_export_requests',
