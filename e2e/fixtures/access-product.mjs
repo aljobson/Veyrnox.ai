@@ -41,6 +41,7 @@ const ADMIN_READS = {
   '/admin/endpoints': { ok:true, permissions:ADMIN_PERMISSIONS.owner,inventory:[],webhooks:[],telemetry:false },
   '/admin/roles': { ok:true, permissions:ADMIN_PERMISSIONS.owner,roles:[] },
   '/admin/switches': { ok:true, permissions:ADMIN_PERMISSIONS.owner,switches:Object.entries(RUNTIME_SWITCHES).map(([key,r])=>({key,kind:r.kind,state:null})) },
+  '/admin/users/ai-control': { ok:true, permissions:ADMIN_PERMISSIONS.owner, global:null, user:null },
   '/admin/violations': { violations: [] },
   '/admin/appeals': { appeals: [] },
   '/admin/reports': { reports: [], unavailable_scans_24h: 0, asset_gone_scans_24h: 0 },
