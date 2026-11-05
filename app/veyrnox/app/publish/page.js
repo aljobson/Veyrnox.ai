@@ -17,6 +17,7 @@ import NetworkLogo from './NetworkLogo';
 import BlueskyConnect from './BlueskyConnect';
 import { ApprovalRequests } from './ApprovalRequests';
 import BrandSwitcher from './BrandSwitcher';
+import BrandKitCard from './BrandKitCard';
 
 const currentAccount = () => getSession()?.user?.id || '';
 const noAccount = () => '';
@@ -43,6 +44,7 @@ export default function Publish() {
         <NetworkLogo network={n.key} />{tOr(t, `app.publish.network.${n.key}`, n.label)}
       </li>)}
     </ul>
+    {account && <BrandKitCard key={account} />}
     {account ? <PublishControls key={account} initialJobId={initialJobId} initialUploadId={initialUploadId} /> : <div className="text-vx-fg-body">
       <p className="mb-4">{t("app.publish.signIn")}</p>
       <button type="button" className={button} onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>{t("oauth.signIn")}</button>
