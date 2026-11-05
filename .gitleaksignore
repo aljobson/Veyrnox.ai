@@ -264,3 +264,5 @@ e9e5606a9c168d0284fd356140d98501baaf77b5:apps/mobile/src/lib/veyCharacterChoice.
 01702d0c3366b989276110af53fdd649702f9b6d:tests/fixtures/higgsfield300Baseline.json:generic-api-key:236
 01702d0c3366b989276110af53fdd649702f9b6d:tests/fixtures/higgsfield300Baseline.json:generic-api-key:738
 01702d0c3366b989276110af53fdd649702f9b6d:tests/fixtures/higgsfield300Baseline.json:generic-api-key:1172
+# Same synthetic idempotency key literal in tests/chat.test.mjs, restored to main's version by the chat revert in this PR (#1924); not a credential.
+f2562ab6742bfa99290c8315a6bed71db1a8a220:tests/chat.test.mjs:generic-api-key:50
