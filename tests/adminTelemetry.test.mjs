@@ -79,7 +79,8 @@ test('SQL and code allowlists agree for all inventory patterns; telemetry has no
  const sql=await readFile(new URL('../packages/db/schema/supabase/0431_admin_telemetry.sql',import.meta.url),'utf8');
  const inventory=JSON.parse(await readFile(new URL('../lib/adminRouteInventory.json',import.meta.url),'utf8'));
  const expected=[...new Set([...inventory.map(r=>r.path.replace(/:[A-Za-z0-9_]+/g,':id')).filter(p=>p!=='/api/v1/:id*'),'other'])].sort();
- const actual=sql.match(/SELECT p_path = ANY \(ARRAY\[([^\]]+)\]::text\[\]\)/)[1].split(',').map(p=>p.slice(1,-1)).sort();
+ const replacement=await readFile(new URL('../packages/db/schema/supabase/0442_editor_brand_kit_v2.sql',import.meta.url),'utf8');
+ const actual=replacement.match(/SELECT p_path = ANY \(ARRAY\[([^\]]+)\]::text\[\]\)/)[1].split(',').map(p=>p.slice(1,-1)).sort();
  assert.deepEqual(actual,expected,'update SQL patterns with inventory; the generic 404 catch-all never emits');
  assert.doesNotMatch(sql,/REFERENCES (?:public\.)?users|user_id|user_agent|ip_address/);
 });

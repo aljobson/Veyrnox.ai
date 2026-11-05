@@ -22,7 +22,7 @@ export async function installPublishFixtures(page, options = {}) {
     if (path === '/brands') return json({ brands: [{ id: BRAND, label: 'Synthetic brand', role: 'owner' }] });
     if (path === '/accounts') return json({ accounts: options.accounts || [], brandRole: options.role === undefined ? 'owner' : options.role, accountLimit: 5, planTier: 'publish', plansEnabled: true, inboxEnabled: true, inboxWorkflowsEnabled: true, smartlinksEnabled: true, queuesEnabled: true, teamsEnabled: true, reportsEnabled: true, adsEnabled: true, commerceEnabled: true, rssAutolistsEnabled: true, networks: [], ...options.accountFlags });
     const responses = {
-      '/activity': { events: [], next_cursor: null }, '/ads': { campaigns: [], brandRole: 'owner' },
+      '/brand-kit': { linked: false, canLink: true, workspaces: [] }, '/activity': { events: [], next_cursor: null }, '/ads': { campaigns: [], brandRole: 'owner' },
       '/posts': { posts: [], next_cursor: null }, '/drafts': { batches: [] }, '/approvals': { requests: [] },
       '/presets': { presets: [], brandRole: 'owner' }, '/uploads': { uploads: [] },
       '/autolists': { autolists: [], brandRole: 'owner' }, '/queues': { queues: [{ id: '00000000-0000-4000-8000-000000000061', name: 'Synthetic active queue', timezone: 'UTC', enabled: true, account_ids: ['00000000-0000-4000-8000-000000000052'], slots: [{ weekday: 1, time: '09:00' }] }], brandRole: 'owner' },

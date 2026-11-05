@@ -92,6 +92,16 @@ try {
         .filter((sig) => !BROWSER_CALLABLE.has(sig));
     assert.deepEqual(unexpected, [], 'functions callable by anon/authenticated without an allowlist entry');
     assert.equal(await can('public', 'public.ledger_entries_append_only()'), false);
+    // Publish kits are deliberately outside the tenant-JWT editor surface.
+    for (const fn of ['public.set_social_brand_kit_link(text,uuid,uuid)', 'public.get_social_brand_kit(text,uuid)', 'private.social_kit_workspace_role(uuid,uuid)']) {
+        for (const role of ['anon', 'authenticated']) assert.equal(await can(role, fn), false);
+        assert.equal(await can('service_role', fn), true);
+    }
+    for (const role of ['anon', 'authenticated']) {
+        for (const privilege of ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE']) {
+            assert.equal((await q("SELECT has_table_privilege($1,'public.social_brand_kit_links',$2) AS p", [role, privilege]))[0].p, false);
+        }
+    }
 
     console.log(`Default privileges: new functions in public/private are not callable by PUBLIC/anon/authenticated; ${exposed.length} browser-callable functions, all allowlisted.`);
 } finally { await c.end(); }
