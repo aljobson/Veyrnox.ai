@@ -64,7 +64,7 @@ function SelectControl({ label, ariaLabel, value, disabled, onChange, children, 
   );
 }
 
-export function ComposerControls({ models, model, offer, opts, busy, onSelectModel, onOpts, onLibrary, libraryDisabled }) {
+export function ComposerControls({ models, model, offer, opts, busy, onSelectModel, onOpts, onLibrary, libraryDisabled, onSettings, settingsOpen = false }) {
   const { t, locale } = useI18n();
   const number = value => locale === 'en' ? String(value) : new Intl.NumberFormat(localeTag(locale)).format(value);
   const credits = count => t(pluralKey(t, locale, 'app.chat.settings.credits', count), {count:number(count)});
@@ -97,6 +97,12 @@ export function ComposerControls({ models, model, offer, opts, busy, onSelectMod
         <button type="button" onClick={onLibrary} disabled={busy || libraryDisabled} className={control}
           title={libraryDisabled ? t("app.chat.controls.imageLimit") : t("app.chat.controls.useImage")}>
           <LibraryIcon />{' '}{t("label.Library")}</button>
+      )}
+
+      {onSettings && (
+        <button type="button" data-assistant-target="chat.settings" aria-expanded={settingsOpen} onClick={onSettings} className={`${control} before:absolute before:inset-x-0 before:-inset-y-1.5 before:content-['']`}>
+          {t("app.chat.settings")}
+        </button>
       )}
     </div>
   );

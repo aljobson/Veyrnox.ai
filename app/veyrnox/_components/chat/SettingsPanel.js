@@ -10,8 +10,7 @@ import { PersonaPicker } from './PersonaPicker';
 function credits(t, locale, n) { return t(pluralKey(t, locale, 'app.chat.settings.credits', n), { count: locale === 'en' ? String(n) : n.toLocaleString(localeTag(locale)) }); }
 // About three words for every four tokens, rounded to ten, from the model's own reply cap.
 const words = (tokens) => Math.round(((tokens || 1024) * 0.75) / 10) * 10;
-const SECTIONS = ['persona', 'filter', 'model', 'caps', 'tools', 'prompt', 'about'];
-const NOT_YET = ['code', 'shell', 'files', 'charts', 'research'];
+const SECTIONS = ['persona', 'filter', 'model', 'prompt', 'about'];
 
 function Section({ id, title, open, onToggle, children }) {
   const uid = useId();
@@ -28,22 +27,9 @@ function Section({ id, title, open, onToggle, children }) {
   );
 }
 
-function Toggle({ label, extra, checked, disabled, onChange, hint }) {
-  const { t, locale } = useI18n();
-  return (
-    <label className="flex cursor-pointer items-start gap-3 has-focus-visible:outline-solid has-focus-visible:outline-2 has-focus-visible:outline-vx-accent">
-      <input type="checkbox" className="mt-1 accent-[var(--vx-accent)]" checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} />
-      <span className="flex-1">
-        <span className="font-semibold">{label}</span> <span className="font-vx-mono text-xs text-vx-money vx-num">+{credits(t, locale, extra)}</span>
-        <span className="block text-vx-fg-muted">{hint}</span>
-      </span>
-    </label>
-  );
-}
-
 // Everything that shapes the next reply, in one place: which model, what it may do, and its instructions. Nothing here is
 // sent until the person sends a message, and the price of the choices always shows under the message box.
-export function SettingsPanel({ models, model, busy, onSelectModel, tiers, onTiers, offer, opts, onOpts, researchOn = false, canSaveInstr, instr, onInstr, instrSaved, onSaveInstr, saved, maxPrompt, hasThread, instructionsLocked = false, personasOn = false, personas = [], personaId = '', onPersona, onManagePersonas }) {
+export function SettingsPanel({ models, model, busy, onSelectModel, tiers, onTiers, offer, opts, onOpts, canSaveInstr, instr, onInstr, instrSaved, onSaveInstr, saved, maxPrompt, hasThread, instructionsLocked = false, personasOn = false, personas = [], personaId = '', onPersona, onManagePersonas }) {
   const { t, locale } = useI18n();
   const [open, setOpen] = useState({ persona: false, filter: false, model: true, caps: false, tools: false, prompt: false, about: false });
   const toggle = (id) => setOpen((o) => ({ ...o, [id]: !o[id] }));
@@ -72,32 +58,6 @@ export function SettingsPanel({ models, model, busy, onSelectModel, tiers, onTie
 
       <Section id="model" title={t("pricing.col.model")} open={open.model} onToggle={toggle}>
         <ModelPicker models={models} model={model} tiers={tiers} busy={busy} onSelect={onSelectModel} />
-      </Section>
-
-      <Section id="caps" title={t("app.chat.settings.capabilities")} open={open.caps} onToggle={toggle}>
-        {offer.thinking
-          ? <Toggle label={t("app.chat.settings.thinking")} extra={offer.thinking.extra_credits} checked={opts.thinking && !researchOn} disabled={busy || researchOn} onChange={(v) => onOpts({ ...opts, thinking: v, research: false })}
-              hint={researchOn ? t('app.chat.settings.researchPrice') : t('app.chat.settings.thinkingHelp')} />
-          : <p className="text-vx-fg-muted">{t("app.chat.settings.noThinking")}</p>}
-        {offer.images
-          ? <p><span className="font-semibold">{t("app.library.kind.image")}</span> <span className="font-vx-mono text-xs text-vx-money vx-num">+{credits(t, locale, offer.images.extra_credits)}</span>
-              <span className="block text-vx-fg-muted">{t("app.chat.settings.imagesHelp")}</span></p>
-          : <p className="text-vx-fg-muted">{t("app.chat.settings.noImages")}</p>}
-      </Section>
-
-      <Section id="tools" title={t("tools.meta.title")} open={open.tools} onToggle={toggle}>
-        {offer.web
-          ? <Toggle label={t("app.chat.settings.web")} extra={offer.web.extra_credits} checked={opts.web && !researchOn} disabled={busy || researchOn} onChange={(v) => onOpts({ ...opts, web: v, research: false })}
-              hint={researchOn ? t('app.chat.settings.researchSearch') : t('app.chat.settings.webHelp')} />
-          : <p className="text-vx-fg-muted">{t("app.chat.settings.noWeb")}</p>}
-        {offer.research && (
-          <Toggle label={t("app.chat.settings.research")} extra={offer.research.extra_credits} checked={researchOn} disabled={busy} onChange={(v) => onOpts({ thinking: false, web: false, research: v })}
-            hint={t('app.chat.settings.researchHelp')} />
-        )}
-        <div>
-          <p className="font-semibold">{t("app.chat.settings.notYet")}</p>
-          <ul className="mt-1 list-disc ps-5 text-vx-fg-muted">{NOT_YET.filter((tool) => !(tool === 'research' && offer.research)).map((tool) => <li key={tool}>{t(tool === 'research' ? 'app.chat.settings.research' : `app.chat.settings.tool.${tool}`)}</li>)}</ul>
-        </div>
       </Section>
 
       <Section id="prompt" title={t("app.chat.settings.prompt")} open={open.prompt} onToggle={toggle}>
