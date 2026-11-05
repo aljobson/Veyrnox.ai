@@ -1,3 +1,6 @@
+import { CATEGORY_FILL_SHOWCASE_CLIPS } from './sourceTemplateExpansion16.js';
+import { SYNTX_64_SHOWCASE_CLIPS } from './sourceTemplateExpansion15.js';
+import { SHOWCASE_CLIP_EXPANSION_14 } from './sourceTemplateExpansion14.js';
 import { SHOWCASE_CLIP_EXPANSION_7 } from './sourceTemplateExpansion7.js';
 import { SHOWCASE_CLIP_EXPANSION_8 } from './sourceTemplateExpansion8.js';
 import { SHOWCASE_CLIP_EXPANSION_9 } from './sourceTemplateExpansion9.js';
@@ -6,7 +9,6 @@ import { SHOWCASE_CLIP_EXPANSION_11 } from './sourceTemplateExpansion11.js';
 import {
   HIGGSFIELD_90_WALL_SHOWCASE_KEYS,
   REPLACED_HIGGSFIELD_CLIP_KEYS,
-  REPLACED_HIGGSFIELD_TEMPLATE_IDS,
   SHOWCASE_CLIP_EXPANSION_12,
 } from './sourceTemplateExpansion12.js';
 import { SEEDANCE_SOURCE_SHOWCASE_CLIPS } from './sourceTemplateExpansion13.js';
@@ -19,6 +21,7 @@ import { SHOWCASE_CLIP_EXPANSION_6 } from './sourceTemplateExpansion6.js';
 // Local files keep playback within the existing same-origin media policy.
 import { SHOWCASE_CLIP_EXPANSION_4 } from './sourceTemplateExpansion4.js';
 import { SHOWCASE_CLIP_EXPANSION_5 } from './sourceTemplateExpansion5.js';
+import { SOURCE_TEMPLATES } from './sourceTemplates.js';
 import { isPublishableSourcePromptTemplate } from './sourcePromptAudit.js';
 
 export const AUDIT_SHOWCASE_CLIPS = {
@@ -459,6 +462,9 @@ export const AUDIT_SHOWCASE_CLIPS = {
   ...SHOWCASE_CLIP_EXPANSION_10,
   ...SHOWCASE_CLIP_EXPANSION_11,
   ...SHOWCASE_CLIP_EXPANSION_12,
+  ...SHOWCASE_CLIP_EXPANSION_14,
+  ...SYNTX_64_SHOWCASE_CLIPS,
+  ...CATEGORY_FILL_SHOWCASE_CLIPS,
   ...SEEDANCE_SOURCE_SHOWCASE_CLIPS,
 
   ...SHOWCASE_CLIP_EXPANSION_6,
@@ -467,8 +473,12 @@ export const AUDIT_SHOWCASE_CLIPS = {
 // The ACE Step clip is also a landing feature preview, so it remains public
 // after the unrelated Keyboard Duo template is removed. All other clips owned
 // only by prompt-gap templates stay in the audit manifest above.
-const REMOVED_TEMPLATE_ONLY_CLIP_KEYS = new Set(Object.keys(AUDIT_SHOWCASE_CLIPS)
-  .filter((clipKey) => clipKey !== 'ace-step' && !isPublishableSourcePromptTemplate(clipKey)));
+const INDEPENDENT_LANDING_CLIP_KEYS = new Set(['nano-banana-kie', 'ace-step', 'wan-2.5-kie', 'kling-26', 'presets', 'model-video', 'model-image', 'model-audio']);
+const REMOVED_TEMPLATE_ONLY_CLIP_KEYS = new Set(SOURCE_TEMPLATES
+  .filter(template => !isPublishableSourcePromptTemplate(template.id))
+  .map(template => template.clipKey)
+  .filter(key => !INDEPENDENT_LANDING_CLIP_KEYS.has(key)
+    && !SOURCE_TEMPLATES.some(template => template.clipKey === key && isPublishableSourcePromptTemplate(template.id))));
 const REPLACED_HIGGSFIELD_CLIP_KEY_SET = new Set(REPLACED_HIGGSFIELD_CLIP_KEYS);
 const PRESERVED_REPLACED_LANDING_CLIP_KEYS = new Set([
   'wan-2.5-kie', 'kling-26', 'presets',
@@ -487,36 +497,13 @@ export const SHOWCASE_CLIPS = Object.freeze(Object.fromEntries(
 ));
 
 // Give each public placement its own clip, including templates also on /presets.
-const LEGACY_WALL_SHOWCASE_KEYS = {
-  'miniature-crew-wall': 'wall-product-hero-360',
-  'lidar': 'wall-cctv-night',
-  'boarding-pass': 'wall-sunset-drift',
-  'architecture-wave': 'wall-neon-alley',
+// Only retained published wall owners belong in the public placement map.
+export const WALL_SHOWCASE_KEYS = Object.freeze({
   'a-moment-between-strangers': 'wall-warm-portrait',
   'the-last-stagecoach': 'wall-film-portrait',
-  'clones': 'wall-talking-head',
-  'vanish': 'wall-clean-cutout',
   'trick-or-skin': 'wall-trick-or-skin',
   'the-wrong-one': 'wall-the-wrong-one',
-  'pigeons': 'wall-pigeons',
-  'mighty-fighter': 'wall-mighty-fighter',
-  agamemnon: 'wall-agamemnon',
-  'blue-depth': 'wall-blue-depth',
-  cyclope: 'wall-cyclope',
-  'fairytale-castle': 'wall-fairytale-castle',
-  'infinite-clones': 'wall-infinite-clones',
-  moonwalk: 'wall-moonwalk',
-  skatedog: 'wall-skatedog',
-  windows: 'wall-windows',
-  'behind-the-lens': 'wall-behind-the-lens',
-  'sticker-peel-reveal': 'wall-sticker-peel-reveal',
-  'dolphin-surf-ride': 'wall-dolphin-surf-ride',
   'event-character-swap': 'wall-event-character-swap',
-};
-const REPLACED_HIGGSFIELD_TEMPLATE_ID_SET = new Set(REPLACED_HIGGSFIELD_TEMPLATE_IDS);
-export const WALL_SHOWCASE_KEYS = Object.freeze({
-  ...Object.fromEntries(Object.entries(LEGACY_WALL_SHOWCASE_KEYS)
-    .filter(([templateId]) => !REPLACED_HIGGSFIELD_TEMPLATE_ID_SET.has(templateId))),
   ...HIGGSFIELD_90_WALL_SHOWCASE_KEYS,
 });
 

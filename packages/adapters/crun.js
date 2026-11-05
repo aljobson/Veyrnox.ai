@@ -84,8 +84,8 @@ export function buildRequest(target, inputs) {
     if (kling) return buildKlingRequest(target, kling, inputs);
     const spec = MODELS[target.model];
     if (!spec) return { ok: false, error: 'provider_unsupported' };
-    const prompt = typeof inputs.prompt === 'string' ? inputs.prompt.trim() : '';
-    if (!prompt) return { ok: false, error: 'prompt_required' };
+    const prompt = typeof inputs.prompt === 'string' ? inputs.prompt : '';
+    if (!prompt.trim()) return { ok: false, error: 'prompt_required' };
     // One priced unit per request: the catalog row is costed at this length, so it is pinned and the page's
     // default duration_seconds is ignored, exactly as the kie Veo builder does (the studio sends 5 for every video).
     const seconds = [...spec.seconds][0];

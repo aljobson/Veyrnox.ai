@@ -68,28 +68,28 @@ test('the payload carries source framing and exact public source prompts but no 
         for (const u of [p.previewUrl, p.posterUrl, p.sourcePromptDuplicateOf]) assert.doesNotMatch(u ?? '', /higgs|syntx/i, p.id);
     }
     const framed = toPublicPresets(catalog).filter((p) => p.sourceAspect);
-    assert.equal(framed.length, 316);
+    assert.equal(framed.length, 679);
     assert.ok(framed.every((p) => /^(?:1:1|4:3|9:16|16:9)$/.test(p.sourceAspect)));
     const exact = toPublicPresets(catalog).filter((p) => p.sourcePromptOrigin === 'community-source-exact');
-    assert.equal(exact.length, 367);
+    assert.equal(exact.length, 757);
     assert.ok(exact.every((p) => typeof p.sourcePrompt === 'string' && p.sourcePrompt.length > 0));
     assert.ok(exact.every((p) => p.prompt.length <= 30000));
     assert.ok(exact.every((p) => sourceRecord(p.id)?.prompt && p.sourcePrompt === exactSourcePromptRecord(p.id)?.prompt));
-    assert.ok(exact.every((p) => !/higgsfield|syntx/i.test(p.sourcePrompt)), 'published prompts name no source platform');
+    assert.ok(exact.every(p => p.sourcePrompt === sourceRecord(p.id).prompt.replace(/\b(?:higgsfield|syntx)\s+/gi, '')), 'only the frozen platform-word transformation applies, including punctuation-bearing names');
     assert.equal(exact.filter((p) => genjutsuRecord(p.id)).length, 58);
-    assert.equal(exact.filter((p) => sourceRecord(p.id) && !genjutsuRecord(p.id)).length, 309);
+    assert.equal(exact.filter((p) => sourceRecord(p.id) && !genjutsuRecord(p.id)).length, 699);
     const statuses = Object.groupBy(toPublicPresets(catalog), (p) => p.sourcePromptStatus);
-    assert.equal(statuses.exact.length, 367);
-    assert.equal(statuses['adaptation-only'].length, 27);
+    assert.equal(statuses.exact.length, 757);
+    assert.equal(statuses['adaptation-only'], undefined);
     assert.equal(statuses['exact-truncated'], undefined);
     assert.equal(statuses.unavailable, undefined);
-    assert.equal(exact.filter((p) => p.sourcePromptRunnable === true).length, 144);
-    assert.equal(exact.filter((p) => p.sourcePromptRunnable === false).length, 223);
+    assert.equal(exact.filter((p) => p.sourcePromptRunnable === true).length, 276);
+    assert.equal(exact.filter((p) => p.sourcePromptRunnable === false).length, 481);
     assert.ok(exact.filter((p) => p.sourcePromptRunnable === false).every((p) => p.sourcePromptIssues.includes('source-input-contract-not-wired')));
     assert.ok(exact.filter((p) => p.sourcePromptRunnable === true).every((p) => !p.sourcePromptIssues.includes('source-input-contract-not-wired')));
     assert.equal(exact.filter((p) => p.sourcePromptIssues.includes('prompt-over-30000')).length, 0);
-    assert.equal(exact.filter((p) => p.sourcePromptIssues.includes('more-than-two-reference-images')).length, 36);
-    assert.equal(exact.filter((p) => p.sourcePromptIssues.includes('audio-preservation-not-supported')).length, 137);
+    assert.equal(exact.filter((p) => p.sourcePromptIssues.includes('more-than-two-reference-images')).length, 102);
+    assert.equal(exact.filter((p) => p.sourcePromptIssues.includes('audio-preservation-not-supported')).length, 221);
     assert.equal(exact.filter((p) => p.sourcePromptDuplicateOf).length, 2);
     // Provenance stays in the source metadata, not in the feed.
     const seedance = toPublicPresets(catalog).filter((p) => seedanceMeta(p.id)?.sourceModel?.startsWith('Seedance'));
@@ -144,4 +144,31 @@ test('an unreachable catalog is a typed 502 and not cached', async () => {
 test('the route takes no input and reads no identity header', () => {
     const src = readFileSync(new URL('../app/api/presets/route.js', import.meta.url), 'utf8');
     assert.doesNotMatch(src, /x-veyrnox|req\.|request\.|searchParams/);
+});
+
+test('all 299 retained API rows expose one exact prompt and informational compatibility', async () => {
+    const { HIGGSFIELD_300_TEMPLATE_IDS } = await import('../app/veyrnox/_lib/sourceTemplateExpansion14.js');
+    const { sourcePromptAuditForModel } = await import('../app/veyrnox/_lib/sourcePromptAudit.js');
+    const { fallbackCapabilitiesFor } = await import('../lib/fallbackModelCapabilities.js');
+    const ids = new Set(HIGGSFIELD_300_TEMPLATE_IDS);
+    const rows = toPublicPresets(catalog).filter(row => ids.has(row.id));
+    assert.equal(rows.length, 299);
+    assert.equal(rows.filter(row => row.sourcePromptRunnable).length, 100);
+    assert.equal(rows.filter(row => !row.sourcePromptRunnable).length, 199);
+    for (const row of rows) {
+        const template = PRESETS.find(p => p.id === row.id);
+        const audit = sourcePromptAuditForModel(row.id, fallbackCapabilitiesFor(row.modelId)?.inputs?.prompt?.max);
+        assert.equal(row.prompt, template.prompt, row.id);
+        assert.equal(row.promptOrigin, 'community-source-exact', row.id);
+        assert.equal(row.sourcePrompt, exactSourcePromptRecord(row.id).prompt, row.id);
+        assert.equal(row.sourcePromptOrigin, 'community-source-exact', row.id);
+        assert.equal(row.sourcePromptStatus, audit.status, row.id);
+        assert.equal(row.sourcePromptRunnable, audit.runnable, row.id);
+        assert.deepEqual(row.sourcePromptIssues, [...audit.issues], row.id);
+        assert.equal(row.available, true, 'compatibility metadata does not disable an active catalog row');
+    }
+    const pink = rows.find(row => row.id === 'community-pink-studio-groove');
+    assert.equal(pink.sourcePromptReferenceImageCount, 2);
+    assert.equal(pink.sourcePromptReferenceVideoCount, 1);
+    assert.equal(pink.sourcePromptRunnable, false);
 });

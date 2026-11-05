@@ -443,7 +443,9 @@ test('what waits for a chat that is not on screen is what the person would have 
 });
 
 test('one send at a time, and the lock is let go when the send ends', () => {
-    assert.match(send, /\n {4}if \(!content \|\| busy \|\| sendingRef\.current \|\| !model \|\| imagesBlocked \|\| sendBlocked\) return;\n {4}sendingRef\.current = true;/);
+    // Empty detection trims; the sent message keeps exact template/recovery bytes.
+    assert.match(send, /const content = text;/);
+    assert.match(send, /\n {4}if \(!content\.trim\(\) \|\| busy \|\| sendingRef\.current \|\| !model \|\| imagesBlocked \|\| sendBlocked\) return;\n {4}sendingRef\.current = true;/);
     assert.match(send, /\n {4}\} finally \{ setBusy\(false\); setProgress\(null\); setStopping\(false\); setChecking\(false\); sendingRef\.current = false; abortRef\.current = null; \}\n/);
     // The images were sent with a reply that is still being saved: they are not offered again.
     assert.match(send, /\n {10}att\.clear\(\); tell\('stop_saving'\);\n/);

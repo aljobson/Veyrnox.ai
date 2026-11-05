@@ -29,8 +29,9 @@ export function useChatSend({ text, setText, model, imagesBlocked, sendBlocked =
   const sendingRef = useRef(false); // synchronous: a second Enter must not start a second turn
 
   async function send() {
-    const content = text.trim();
-    if (!content || busy || sendingRef.current || !model || imagesBlocked || sendBlocked) return;
+    // Draft recovery does not retain template provenance. Preserve message bytes.
+    const content = text;
+    if (!content.trim() || busy || sendingRef.current || !model || imagesBlocked || sendBlocked) return;
     sendingRef.current = true; setBusy(true); setError(null); setText('');
     let thread = active; let created = false; let requiredReady = false; const pending = `pending-${Date.now()}`;
     // The account signed in when this send began (F-05). On a shared browser the person can sign out or switch

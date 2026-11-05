@@ -1,0 +1,1450 @@
+{
+  "community-vehicle-carjacking": {
+    "before": {
+      "name": "VEHICLE CARJACKING",
+      "id": "community-vehicle-carjacking",
+      "clipKey": "community-vehicle-carjacking"
+    },
+    "absentBefore": [],
+    "after": {
+      "name": "CHICKEN BUCKET SWAP",
+      "id": "community-chicken-bucket-swap",
+      "clipKey": "community-chicken-bucket-swap"
+    }
+  },
+  "fancy-cafe": {
+    "before": {
+      "category": "FANTASY",
+      "needs": null,
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "category": "REALISTIC",
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "morning-coffee": {
+    "before": {
+      "category": "FANTASY",
+      "needs": null,
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "category": "REALISTIC",
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "jenner": {
+    "before": {
+      "name": "JENNER",
+      "category": "FASHION",
+      "needs": null,
+      "id": "jenner",
+      "clipKey": "jenner",
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "name": "CROWD CHOREOGRAPHY RECAST",
+      "category": "REALISTIC",
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "id": "crowd-choreography-recast",
+      "clipKey": "crowd-choreography-recast",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "drakula-cruise": {
+    "before": {
+      "name": "DRAKULA CRUISE",
+      "category": "FASHION",
+      "needs": null,
+      "id": "drakula-cruise",
+      "clipKey": "drakula-cruise",
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "name": "VAMPIRE VOYAGE",
+      "category": "MOVIES",
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "id": "vampire-voyage",
+      "clipKey": "vampire-voyage",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "tilted-melody": {
+    "before": {
+      "model": "Kling 3.0 · I2V",
+      "credits": 32,
+      "durationSeconds": 10,
+      "category": "FANTASY",
+      "needs": "A clear full-body portrait with room for cinematic movement",
+      "needsKey": "community.cinematic",
+      "sourceModel": "kling_4_omni",
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [],
+    "after": {
+      "model": "Seedance 2.0 Fast",
+      "credits": 19,
+      "durationSeconds": 5,
+      "category": "REALISTIC",
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "sourceModel": "Kling 4 Omni",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "the-giant-caretaker": {
+    "before": {
+      "category": "FASHION",
+      "needs": null,
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "category": "FANTASY",
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "ocean-car-sinking": {
+    "before": {
+      "category": "FANTASY",
+      "needs": null,
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "category": "CINEMATIC",
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "vice-city-freefall": {
+    "before": {
+      "name": "VICE CITY FREEFALL",
+      "category": "FASHION",
+      "needs": null,
+      "id": "vice-city-freefall",
+      "clipKey": "vice-city-freefall",
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "name": "NEON CITY FREEFALL",
+      "category": "MOVIES",
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "id": "neon-city-freefall",
+      "clipKey": "neon-city-freefall",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "edge-of-victory": {
+    "before": {
+      "category": "FASHION",
+      "needs": null,
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "category": "CINEMATIC",
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "what-falls-next": {
+    "before": {
+      "category": "PRODUCTS",
+      "needs": null,
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "category": "CINEMATIC",
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "office-kitchen": {
+    "before": {
+      "category": "FASHION",
+      "needs": null,
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "category": "MOVIES",
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "catch-of-the-day": {
+    "before": {
+      "needs": null,
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "the-beast-awakens": {
+    "before": {
+      "needs": null,
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "grab-heist": {
+    "before": {
+      "category": "PRODUCTS",
+      "needs": null,
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "category": "ADS",
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "office-escape": {
+    "before": {
+      "category": "FASHION",
+      "needs": null,
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "category": "FANTASY",
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "animal-pov-to-the-club": {
+    "before": {
+      "category": "FASHION",
+      "needs": null,
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "category": "FANTASY",
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "sketch-to-real-car": {
+    "before": {
+      "category": "FASHION",
+      "needs": null,
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "category": "PRODUCTS",
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "car-sky-fall": {
+    "before": {
+      "category": "FANTASY",
+      "needs": null,
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "category": "VFX",
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "on-game": {
+    "before": {
+      "category": "FASHION",
+      "needs": null,
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "category": "VFX",
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "frozen-time": {
+    "before": {
+      "category": "FASHION",
+      "needs": null,
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "category": "VFX",
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "with-animal": {
+    "before": {
+      "category": "FASHION",
+      "needs": null,
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "category": "VFX",
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "remote-control": {
+    "before": {
+      "category": "FASHION",
+      "needs": null,
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "category": "VFX",
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "breaking-good": {
+    "before": {
+      "name": "BREAKING GOOD",
+      "category": "FANTASY",
+      "needs": null,
+      "id": "breaking-good",
+      "clipKey": "breaking-good",
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "name": "UNDERGROUND LAB TRANSFORMATION",
+      "category": "MOVIES",
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "id": "underground-lab-transformation",
+      "clipKey": "underground-lab-transformation",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "the-spirit": {
+    "before": {
+      "needs": null,
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "on-the-road": {
+    "before": {
+      "category": "FASHION",
+      "needs": null,
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "category": "CINEMATIC",
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "the-crown": {
+    "before": {
+      "needs": null,
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "dragon-lord": {
+    "before": {
+      "category": "PRODUCTS",
+      "needs": null,
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "category": "FANTASY",
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "noir-film": {
+    "before": {
+      "category": "PRODUCTS",
+      "needs": null,
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "category": "MOVIES",
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "desert-rider": {
+    "before": {
+      "category": "FANTASY",
+      "needs": null,
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "category": "CINEMATIC",
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "behind-the-scenes": {
+    "before": {
+      "category": "CINEMATIC",
+      "needs": null,
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "category": "VFX",
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "split-jump": {
+    "before": {
+      "category": "PRODUCTS",
+      "needs": null,
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "category": "ADS",
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "impact": {
+    "before": {
+      "category": "FASHION",
+      "needs": null,
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "category": "MOVIES",
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "tomb-rider": {
+    "before": {
+      "name": "TOMB RIDER",
+      "category": "FASHION",
+      "needs": null,
+      "id": "tomb-rider",
+      "clipKey": "tomb-rider",
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "name": "RUINS ESCAPE RUN",
+      "category": "MOVIES",
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "id": "ruins-escape-run",
+      "clipKey": "ruins-escape-run",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "alice-in-wonderland": {
+    "before": {
+      "name": "ALICE IN WONDERLAND",
+      "category": "FASHION",
+      "needs": null,
+      "id": "alice-in-wonderland",
+      "clipKey": "alice-in-wonderland",
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "name": "CURIOUS GARDEN JOURNEY",
+      "category": "FANTASY",
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "id": "curious-garden-journey",
+      "clipKey": "curious-garden-journey",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "born-from-sand": {
+    "before": {
+      "category": "PRODUCTS",
+      "needs": null,
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "category": "VFX",
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "levitation": {
+    "before": {
+      "model": "Kling 3.0 · I2V",
+      "credits": 32,
+      "durationSeconds": 10,
+      "needs": "A clear full-body portrait with room for cinematic movement",
+      "needsKey": "community.cinematic",
+      "sourceModel": "kling_image2video"
+    },
+    "absentBefore": [],
+    "after": {
+      "model": "Seedance 2.0 Fast",
+      "credits": 19,
+      "durationSeconds": 5,
+      "needs": null,
+      "needsKey": null,
+      "sourceModel": "Kling Image-to-Video"
+    }
+  },
+  "freefall": {
+    "before": {
+      "category": "FASHION",
+      "needs": null,
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "category": "ADS",
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "gentle-monster-disney": {
+    "before": {
+      "name": "GENTLE MONSTER × DISNEY",
+      "category": "PRODUCTS",
+      "needs": null,
+      "id": "gentle-monster-disney",
+      "clipKey": "gentle-monster-disney",
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "name": "SCULPTURAL SUNGLASSES AD",
+      "category": "ADS",
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "id": "sculptural-sunglasses-ad",
+      "clipKey": "sculptural-sunglasses-ad",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "rotation-360": {
+    "before": {
+      "model": "Kling 3.0 · I2V",
+      "credits": 32,
+      "durationSeconds": 10,
+      "category": "REALISTIC",
+      "needs": "A clear full-body portrait with room for cinematic movement",
+      "needsKey": "community.cinematic",
+      "sourceModel": "kling_image2video"
+    },
+    "absentBefore": [],
+    "after": {
+      "model": "Seedance 2.0 Fast",
+      "credits": 19,
+      "durationSeconds": 5,
+      "category": "VFX",
+      "needs": null,
+      "needsKey": null,
+      "sourceModel": "Kling Image-to-Video"
+    }
+  },
+  "above-the-head": {
+    "before": {
+      "model": "Kling 3.0 · I2V",
+      "credits": 32,
+      "durationSeconds": 10,
+      "needs": "A clear full-body portrait with room for cinematic movement",
+      "needsKey": "community.cinematic",
+      "sourceModel": "grok_15_i2v"
+    },
+    "absentBefore": [],
+    "after": {
+      "model": "Seedance 2.0 Fast",
+      "credits": 19,
+      "durationSeconds": 5,
+      "needs": null,
+      "needsKey": null,
+      "sourceModel": "Grok 1.5 I2V"
+    }
+  },
+  "magical-reality": {
+    "before": {
+      "category": "FASHION",
+      "needs": null,
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "category": "ANIME",
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "the-last-flame": {
+    "before": {},
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "needsKey": null
+    }
+  },
+  "pov-avatar": {
+    "before": {
+      "name": "POV AVATAR",
+      "id": "pov-avatar",
+      "clipKey": "pov-avatar"
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "name": "ALIEN FOREST FLIGHT",
+      "needsKey": null,
+      "id": "alien-forest-flight",
+      "clipKey": "alien-forest-flight"
+    }
+  },
+  "the-dune": {
+    "before": {
+      "name": "THE DUNE",
+      "model": "Kling 3.0 · I2V",
+      "credits": 32,
+      "durationSeconds": 10,
+      "category": "REALISTIC",
+      "needs": "A clear full-body portrait with room for cinematic movement",
+      "needsKey": "community.cinematic",
+      "sourceModel": "flux3_t2v",
+      "id": "the-dune",
+      "clipKey": "the-dune",
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [],
+    "after": {
+      "name": "DESERT WORM FLIGHT",
+      "model": "Seedance 2.0 Fast",
+      "credits": 19,
+      "durationSeconds": 5,
+      "category": "FANTASY",
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "sourceModel": "Flux 3 T2V",
+      "id": "desert-worm-flight",
+      "clipKey": "desert-worm-flight",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "pov-dragon-flight": {
+    "before": {
+      "needs": null,
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "the-machine": {
+    "before": {
+      "model": "Kling 3.0 · I2V",
+      "credits": 32,
+      "durationSeconds": 10,
+      "category": "REALISTIC",
+      "needs": "A clear full-body portrait with room for cinematic movement",
+      "needsKey": "community.cinematic",
+      "sourceModel": "flux3_t2v"
+    },
+    "absentBefore": [],
+    "after": {
+      "model": "Seedance 2.0 Fast",
+      "credits": 19,
+      "durationSeconds": 5,
+      "category": "VFX",
+      "needs": null,
+      "needsKey": null,
+      "sourceModel": "Flux 3 T2V"
+    }
+  },
+  "city-tunnel": {
+    "before": {
+      "model": "Kling 3.0 · I2V",
+      "credits": 32,
+      "durationSeconds": 10,
+      "category": "REALISTIC",
+      "needs": "A clear full-body portrait with room for cinematic movement",
+      "needsKey": "community.cinematic",
+      "sourceModel": "flux3_t2v"
+    },
+    "absentBefore": [],
+    "after": {
+      "model": "Seedance 2.0 Fast",
+      "credits": 19,
+      "durationSeconds": 5,
+      "category": "CINEMATIC",
+      "needs": null,
+      "needsKey": null,
+      "sourceModel": "Flux 3 T2V"
+    }
+  },
+  "industrial": {
+    "before": {
+      "model": "Kling 3.0 · I2V",
+      "credits": 32,
+      "durationSeconds": 10,
+      "needs": "A clear full-body portrait with room for cinematic movement",
+      "needsKey": "community.cinematic",
+      "sourceModel": "flux3_t2v"
+    },
+    "absentBefore": [],
+    "after": {
+      "model": "Seedance 2.0 Fast",
+      "credits": 19,
+      "durationSeconds": 5,
+      "needs": null,
+      "needsKey": null,
+      "sourceModel": "Flux 3 T2V"
+    }
+  },
+  "ice-golem": {
+    "before": {
+      "model": "Kling 3.0 · I2V",
+      "credits": 32,
+      "durationSeconds": 10,
+      "category": "REALISTIC",
+      "needs": "A clear full-body portrait with room for cinematic movement",
+      "needsKey": "community.cinematic",
+      "sourceModel": "flux3_i2v"
+    },
+    "absentBefore": [],
+    "after": {
+      "model": "Seedance 2.0 Fast",
+      "credits": 19,
+      "durationSeconds": 5,
+      "category": "FANTASY",
+      "needs": null,
+      "needsKey": null,
+      "sourceModel": "Flux 3 I2V"
+    }
+  },
+  "dark-horror": {
+    "before": {
+      "category": "FANTASY"
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "category": "MOVIES",
+      "needsKey": null
+    }
+  },
+  "jazz-lounge": {
+    "before": {
+      "model": "Kling 3.0 · I2V",
+      "credits": 32,
+      "durationSeconds": 10,
+      "category": "FASHION",
+      "needs": "A clear full-body portrait with room for cinematic movement",
+      "needsKey": "community.cinematic",
+      "sourceModel": "grok_15_i2v"
+    },
+    "absentBefore": [],
+    "after": {
+      "model": "Seedance 2.0 Fast",
+      "credits": 19,
+      "durationSeconds": 5,
+      "category": "ANIME",
+      "needs": null,
+      "needsKey": null,
+      "sourceModel": "Grok 1.5 I2V"
+    }
+  },
+  "armored-knight": {
+    "before": {
+      "model": "Kling 3.0 · I2V",
+      "credits": 32,
+      "durationSeconds": 10,
+      "category": "CARTOONS",
+      "needs": "A clear full-body portrait with room for cinematic movement",
+      "needsKey": "community.cinematic",
+      "sourceModel": "kling_image2video"
+    },
+    "absentBefore": [],
+    "after": {
+      "model": "Seedance 2.0 Fast",
+      "credits": 19,
+      "durationSeconds": 5,
+      "category": "ANIME",
+      "needs": null,
+      "needsKey": null,
+      "sourceModel": "Kling Image-to-Video"
+    }
+  },
+  "red-koi-fish": {
+    "before": {
+      "model": "Kling 3.0 · I2V",
+      "credits": 32,
+      "durationSeconds": 10,
+      "category": "REALISTIC",
+      "needs": "A clear full-body portrait with room for cinematic movement",
+      "needsKey": "community.cinematic",
+      "sourceModel": "kling_image2video"
+    },
+    "absentBefore": [],
+    "after": {
+      "model": "Seedance 2.0 Fast",
+      "credits": 19,
+      "durationSeconds": 5,
+      "category": "FANTASY",
+      "needs": null,
+      "needsKey": null,
+      "sourceModel": "Kling Image-to-Video"
+    }
+  },
+  "young-samurai": {
+    "before": {
+      "category": "PRODUCTS"
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "category": "ANIME",
+      "needsKey": null
+    }
+  },
+  "wonka-world": {
+    "before": {
+      "name": "WONKA WORLD",
+      "id": "wonka-world",
+      "clipKey": "wonka-world"
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "name": "CHOCOLATE FACTORY FLIGHT",
+      "needsKey": null,
+      "id": "chocolate-factory-flight",
+      "clipKey": "chocolate-factory-flight"
+    }
+  },
+  "dont-touch-the-braids": {
+    "before": {
+      "category": "FASHION",
+      "needs": null,
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "category": "VFX",
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "the-lost-ghost": {
+    "before": {
+      "needs": null,
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "last-supper": {
+    "before": {
+      "category": "FASHION",
+      "needs": null,
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "category": "ANIME",
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "firebird": {
+    "before": {},
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "needsKey": null
+    }
+  },
+  "x-ray-matter": {
+    "before": {
+      "category": "FASHION",
+      "needs": null,
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "category": "VFX",
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "edit-the-sky": {
+    "before": {
+      "category": "FASHION",
+      "needs": null,
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "category": "VFX",
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "sea-snakes": {
+    "before": {
+      "needs": null,
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "the-matrix": {
+    "before": {
+      "name": "THE MATRIX",
+      "category": "FASHION",
+      "needs": null,
+      "id": "the-matrix",
+      "clipKey": "the-matrix",
+      "steps": [
+        "Use this template to load its prompt and settings in the studio.",
+        "Describe your characters and setting, then review the price before generating."
+      ]
+    },
+    "absentBefore": [
+      "needsKey"
+    ],
+    "after": {
+      "name": "ROOFTOP AGENT PURSUIT",
+      "category": "MOVIES",
+      "needs": "Copy the exact prompt; its required reference media or preserved audio is not wired into generation",
+      "needsKey": "community.copyOnly",
+      "id": "rooftop-agent-pursuit",
+      "clipKey": "rooftop-agent-pursuit",
+      "steps": [
+        "Prepare your starting image using the guidance above.",
+        "Use this template to load its prompt and settings in the studio.",
+        "Upload your image, edit the prompt if needed, and review the price before generating."
+      ]
+    }
+  },
+  "community-cartoon-hero-swap": {
+    "before": {
+      "category": "ANIME"
+    },
+    "absentBefore": [],
+    "after": {
+      "category": "CARTOONS"
+    }
+  },
+  "community-hoonigan-custom-swap": {
+    "before": {
+      "name": "HOONIGAN CUSTOM SWAP",
+      "id": "community-hoonigan-custom-swap",
+      "clipKey": "community-hoonigan-custom-swap"
+    },
+    "absentBefore": [],
+    "after": {
+      "name": "CUSTOM DRIFT CAR SWAP",
+      "id": "community-custom-drift-car-swap",
+      "clipKey": "community-custom-drift-car-swap"
+    }
+  }
+}

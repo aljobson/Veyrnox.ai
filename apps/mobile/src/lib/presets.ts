@@ -18,7 +18,8 @@ export interface Preset {
     // What the model makes, from the catalog: an image, video or audio family (empty when the server did not say).
     readonly modality: string;
     readonly prompt: string;
-    readonly promptOrigin?: 'veyrnox-adaptation' | null;
+    // Community feeds use community-source-exact; independent catalogs retain their origin.
+    readonly promptOrigin?: string | null;
     // Exact text published with the source community record. Template detail always exposes
     // the full value and carries it into Create regardless of sourcePromptRunnable.
     readonly sourcePrompt?: string | null;
@@ -70,7 +71,7 @@ function parseOne(raw: unknown): Preset | null {
         modelName: str(r.modelName) ?? modelId,
         modality: str(r.modality) ?? '',
         prompt,
-        promptOrigin: r.promptOrigin === 'veyrnox-adaptation' ? 'veyrnox-adaptation' : null,
+        promptOrigin: str(r.promptOrigin),
         sourcePrompt,
         sourcePromptOrigin: sourcePrompt && r.sourcePromptOrigin === 'community-source-exact' ? 'community-source-exact' : null,
         sourcePromptStatus,

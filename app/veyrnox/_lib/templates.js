@@ -17,44 +17,18 @@ import { isPublishableSourcePromptTemplate } from './sourcePromptAudit.js';
 import { publicTemplateId } from './templateIds.js';
 import {
   HIGGSFIELD_90_WALL_CLIP_KEYS,
-  REPLACED_HIGGSFIELD_CLIP_KEYS,
 } from './sourceTemplateExpansion12.js';
 
 const CATEGORY_ORDER = ['YOUR PHOTO', 'KIDS BIRTHDAY', 'CINEMATIC', 'ANIME', 'CARTOONS', 'MOVIES', 'FANTASY', 'REALISTIC', 'FASHION', 'PRODUCTS', 'VFX', 'UGC', 'ADS'];
 
-const LEGACY_WALL_CLIP_KEYS = [
-  'wall-product-hero-360',
-  'wall-cctv-night',
-  'wall-sunset-drift',
-  'wall-neon-alley',
-  'wall-warm-portrait',
-  'wall-film-portrait',
-  'wall-talking-head',
-  'wall-clean-cutout',
-  'wall-trick-or-skin',
-  'wall-the-wrong-one',
-  'wall-pigeons',
-  'wall-mighty-fighter',
-  'wall-agamemnon',
-  'wall-blue-depth',
-  'wall-cyclope',
-  'wall-fairytale-castle',
-  'wall-infinite-clones',
-  'wall-moonwalk',
-  'wall-skatedog',
-  'wall-windows',
-  'wall-behind-the-lens',
-  'wall-sticker-peel-reveal',
-  'wall-dolphin-surf-ride',
-  'wall-event-character-swap',
-];
-const REPLACED_HIGGSFIELD_CLIP_KEY_SET = new Set(REPLACED_HIGGSFIELD_CLIP_KEYS);
-const WALL_CLIP_KEYS = [
-  ...LEGACY_WALL_CLIP_KEYS.filter((key) => !REPLACED_HIGGSFIELD_CLIP_KEY_SET.has(key)),
+export const WALL_CLIP_KEYS = [
+  'wall-warm-portrait', 'wall-film-portrait', 'wall-trick-or-skin',
+  'wall-the-wrong-one', 'wall-event-character-swap',
   ...HIGGSFIELD_90_WALL_CLIP_KEYS,
 ];
+// Includes the 300 additional exact community pairs registered in sourceTemplates.js.
 const TEMPLATE_CANDIDATES = [...SOURCE_TEMPLATES, ...EFFECT_CONCEPT_TEMPLATES, ...REFERENCE_TEMPLATES];
-export const REMOVED_PROMPT_GAP_TEMPLATE_IDS = Object.freeze(TEMPLATE_CANDIDATES
+export const REMOVED_PROMPT_GAP_TEMPLATE_IDS = Object.freeze(SOURCE_TEMPLATES
   .filter((template) => !isPublishableSourcePromptTemplate(template.id))
   .map((template) => template.id));
 const REMOVED_PROMPT_GAP_TEMPLATE_ID_SET = new Set(REMOVED_PROMPT_GAP_TEMPLATE_IDS);

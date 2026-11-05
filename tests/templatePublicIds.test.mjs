@@ -8,7 +8,8 @@ import { exactSourcePromptRecord } from '../app/veyrnox/_lib/sourcePromptRecords
 import { toPublicPresets } from '../lib/publicPresets.js';
 import { isUnknownStaticPage } from '../lib/unknownStaticPage.js';
 
-// Nothing a visitor or the phone app receives names a source platform.
+// Public metadata names no source platform; exact source text follows its
+// existing publication transformation, which preserves punctuation and lip-sync instructions.
 const PLATFORM = /higgs|syntx|lipsync/i;
 
 test('published template ids, fields and clip files name no source platform', () => {
@@ -20,8 +21,11 @@ test('published template ids, fields and clip files name no source platform', ()
   for (const [key, clip] of Object.entries(SHOWCASE_CLIPS)) {
     for (const path of [clip.video, clip.poster].filter(Boolean)) assert.doesNotMatch(path, PLATFORM, key);
   }
-  const feed = JSON.stringify(toPublicPresets([]));
-  assert.doesNotMatch(feed, PLATFORM);
+  for (const { prompt, sourcePrompt, ...metadata } of toPublicPresets([])) {
+    assert.doesNotMatch(JSON.stringify(metadata), PLATFORM, metadata.id);
+    assert.equal(prompt, exactSourcePromptRecord(metadata.id).prompt, metadata.id);
+    assert.equal(sourcePrompt, prompt, metadata.id);
+  }
 });
 
 test('every old id still resolves to its renamed template and reaches the redirect', () => {

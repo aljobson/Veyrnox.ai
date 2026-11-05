@@ -93,6 +93,7 @@ export default function CreateWithModel() {
     const [characterOn, setCharacterOn] = useState(false);
     const [character, setCharacter] = useState<Picks>({});
     const [restored, setRestored] = useState(false);
+    const [recoveredPrompt, setRecoveredPrompt] = useState<string | null>(null);
     const [note, setNote] = useState<string | null>(null);
     useAnnouncement(note);
     // "Animate this portrait" (Oddlings): the cast portrait goes into the image slot like any picked file.
@@ -193,6 +194,7 @@ export default function CreateWithModel() {
                     if (!valid()) return;
                     if (d) {
                         setPrompt(d.prompt);
+                        setRecoveredPrompt(d.prompt);
                         if (d.duration !== null && found.durations.includes(d.duration)) setDuration(d.duration);
                         setOpts({ aspect: handedAspect ?? (d.aspect && o.aspects.includes(d.aspect) ? d.aspect : base.aspect), count: imageCount(found, d.count), seed: d.seed, negative: d.negative, voice: d.voice ?? '', audioSeconds: d.audioSeconds ?? '' });
                         setCameraOn(d.cinemaOn === true);
@@ -290,14 +292,14 @@ export default function CreateWithModel() {
     const takesCharacter = kindOf(model.modality) === 'image' && textInput(model)?.key === 'prompt';
     const takesCamera = (kindOf(model.modality) === 'image' || isVideo) && textInput(model)?.key === 'prompt';
     // Character first, then the camera, as on the web. Both only rewrite the prompt.
-    const withCharacter = takesCharacter && characterOn ? buildCharacterPrompt(prompt, character) : prompt.trim();
+    const withCharacter = takesCharacter && characterOn ? buildCharacterPrompt(prompt, character) : prompt === presetPrompt || prompt === recoveredPrompt ? prompt : prompt.trim();
     const text = takesCamera && cameraOn ? buildCinemaPrompt(withCharacter, cinema) : withCharacter;
     const text_ = textInput(model);
     const promptTooLong = !!text_ && text.length > text_.max;
     const slots = slotsFor(model);
     const waiting = Object.values(sending).some(Boolean);
     const hasReference = references.length > 0 || !!startFile;
-    const ready = !waiting && !promptTooLong && (!hasReference || sourceRights) && slots.every(slot => (!slot.required || references.some(ref => ref.slot === slot.slot)) && references.filter(ref => ref.slot === slot.slot).length <= (slot.maxFiles ?? 1)) && (!promptRequired(model) || !!text) && !seedIsInvalid(opts.seed) && !voiceIsMissing(options, opts.voice) && !audioLengthInvalid(options, opts.audioSeconds);
+    const ready = !waiting && !promptTooLong && (!hasReference || sourceRights) && slots.every(slot => (!slot.required || references.some(ref => ref.slot === slot.slot)) && references.filter(ref => ref.slot === slot.slot).length <= (slot.maxFiles ?? 1)) && (!promptRequired(model) || !!text.trim()) && !seedIsInvalid(opts.seed) && !voiceIsMissing(options, opts.voice) && !audioLengthInvalid(options, opts.audioSeconds);
     const request: SubmitRequest = { analyticsKind: kindOf(model.modality), modelId: model.id, prompt: text, confirmedCredits: unit, durationSeconds: isVideo ? duration : null, references, sourceRights: hasReference ? sourceRights : undefined, textKey: text_?.key, extraInputs: settingsInputs(options, { seed: opts.seed, negative: opts.negative, aspect: opts.aspect, voice: opts.voice, audioSeconds: opts.audioSeconds, resolution, audio }), preset: template?.id ?? undefined };
     const signature = generationSignature(request, n);
     const matchingRetry = retry.current?.signature === signature ? retry.current : null;

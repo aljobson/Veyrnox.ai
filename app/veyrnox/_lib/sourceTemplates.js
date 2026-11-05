@@ -1,3 +1,6 @@
+import { CATEGORY_FILL_TEMPLATES } from './sourceTemplateExpansion16.js';
+import { SYNTX_64_TEMPLATES } from './sourceTemplateExpansion15.js';
+import { SOURCE_TEMPLATE_EXPANSION_14 } from './sourceTemplateExpansion14.js';
 import { SOURCE_TEMPLATE_EXPANSION_7 } from './sourceTemplateExpansion7.js';
 import { SOURCE_TEMPLATE_EXPANSION_8 } from './sourceTemplateExpansion8.js';
 import { SOURCE_TEMPLATE_EXPANSION_9 } from './sourceTemplateExpansion9.js';
@@ -10,7 +13,8 @@ import {
 import { SEEDANCE_SOURCE_TEMPLATE_EXPANSION } from './sourceTemplateExpansion13.js';
 import { SEEDANCE_200_TEMPLATE_METADATA } from './seedanceTemplateMetadata.js';
 import { SEEDANCE_REFERENCE_CREDITS, SEEDANCE_REFERENCE_MODEL, takesReferenceModel } from './seedanceReference.js';
-import { sourcePromptAuditForModel } from './sourcePromptAudit.js';
+import { exactSourcePromptRecord } from './sourcePromptRecords.js';
+import { sourcePromptAuditForModel, isPublishableSourcePromptTemplate } from './sourcePromptAudit.js';
 import { fallbackCapabilitiesFor } from '../../../lib/fallbackModelCapabilities.js';
 
 import { SOURCE_TEMPLATE_EXPANSION_6 } from './sourceTemplateExpansion6.js';
@@ -20,7 +24,7 @@ import { SOURCE_TEMPLATE_EXPANSION_3 } from './sourceTemplateExpansion3.js';
 import { SOURCE_TEMPLATE_EXPANSION_4 } from './sourceTemplateExpansion4.js';
 import { SOURCE_TEMPLATE_EXPANSION_5 } from './sourceTemplateExpansion5.js';
 
-// Matched recipes inspected on 10 October 2026. Prompts are Veyrnox adaptations;
+// Matched recipes inspected on 10 October 2026. Exact prompts are joined below;
 // public template objects intentionally contain no source-platform names or URLs.
 // Internal provenance is retained in docs/product/showcase-clips.md.
 const AUDIT_SOURCE_TEMPLATES = [
@@ -29,8 +33,7 @@ const AUDIT_SOURCE_TEMPLATES = [
     "model": "Kling 3.0 · I2V", "credits": 32, "durationSeconds": 10,
     "category": "PRODUCTS", "isNew": true, "previewAspect": "482 / 720",
     "bg": "linear-gradient(180deg,#050505 0%,#17120e 58%,#a65b21 100%)", "needs": "A clean product image with the full object visible",
-    "prompt": "Animate the uploaded product image into a ten-second luxury commercial. Preserve the product's exact shape, colour, branding and packaging. Centre it on glossy reflective black acrylic under key, fill and rim lighting. Make one smooth unbroken 360-degree orbit from the front through the side and rear views and back to a front hero composition, with rolling specular highlights, subtle film grain, restrained anamorphic flare, foreground micro-bokeh and a gentle final push-in. Keep the product sharp, photorealistic and perfectly consistent with no cuts, captions or watermark.", "promptOrigin": "veyrnox-adaptation",
-    "negativePrompt": "product drift, altered branding, misspelled label, warped packaging, jump cuts, camera shake, captions, watermark", "steps": ["Upload a clean product image with the complete object visible.", "Use this template to load the ten-second orbit prompt and settings.", "Review the product name and branding in the prompt before generating."],
+    "steps": ["Upload a clean product image with the complete object visible.", "Use this template to load the ten-second orbit prompt and settings.", "Review the product name and branding in the prompt before generating."],
     "inspired": true,
   },
   {
@@ -38,8 +41,7 @@ const AUDIT_SOURCE_TEMPLATES = [
     "model": "Kling 3.0 · I2V", "credits": 32, "durationSeconds": 10,
     "category": "PRODUCTS", "isNew": true, "previewAspect": "540 / 720",
     "bg": "linear-gradient(180deg,#14110d 0%,#4a3420 58%,#d7b779 100%)", "needs": "A clean product image with the full object visible",
-    "prompt": "Animate the uploaded product image into a ten-second photorealistic miniature-crew commercial. Preserve the product's exact shape, colour and branding at giant scale. Tiny realistic workers abseil down its surface, polishing panels with cloths and mops as small highlights appear behind them. End with the workers giving a thumbs-up and zip-lining away to reveal the gleaming product. Use a seamless studio plaza, clean even light and one continuous shot, with no cartoon styling, cuts, captions or watermark.", "promptOrigin": "veyrnox-adaptation",
-    "negativePrompt": "cartoon workers, product drift, altered branding, malformed people, scale changes, jump cuts, captions, watermark", "steps": ["Upload a clean product image with the complete object visible.", "Use this template to load the miniature-crew prompt and settings.", "Review the product name and branding in the prompt before generating."],
+    "steps": ["Upload a clean product image with the complete object visible.", "Use this template to load the miniature-crew prompt and settings.", "Review the product name and branding in the prompt before generating."],
     "inspired": true,
   },
   {
@@ -47,8 +49,7 @@ const AUDIT_SOURCE_TEMPLATES = [
     "model": "Kling 3.0 · I2V", "credits": 32, "durationSeconds": 10,
     "category": "VFX", "isNew": true, "previewAspect": "406 / 720",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": "A clear starting photo showing the subject and setting you want to animate",
-    "prompt": "Animate the uploaded starting image into a ten-second video. In a packed fashion-show venue, the uploaded person walks down the aisle in elaborate medieval-inspired clothing. Track their full body as fabric moves naturally. Preserve their exact face, hair and proportions, with empty hands and no bag. Keep the main subject’s identity and outfit consistent, with smooth camera motion, clear contact shadows and no added captions or watermarks.", "promptOrigin": "veyrnox-adaptation",
-    "negativePrompt": "identity drift, unintended extra limbs, malformed hands, ghost duplicates, flicker, captions, watermark", "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
+    "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
     "inspired": true,
   },
   {
@@ -56,8 +57,7 @@ const AUDIT_SOURCE_TEMPLATES = [
     "model": "Kling 3.0 · I2V", "credits": 32, "durationSeconds": 10,
     "category": "VFX", "isNew": true, "previewAspect": "720 / 540",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": "One starting photo containing both characters in their intended positions",
-    "prompt": "Animate the uploaded starting image into a ten-second video. Use a starting image containing both performers: the first on the left at a MIDI keyboard, the second on the right beside a laptop in a white studio. The first plays and smiles; the second gestures, laughs and leans toward the laptop. Keep their roles fixed with natural hand-to-prop contact and a stationary camera. Keep the main subject’s identity and outfit consistent, with smooth camera motion, clear contact shadows and no added captions or watermarks.", "promptOrigin": "veyrnox-adaptation",
-    "negativePrompt": "identity drift, unintended extra limbs, malformed hands, ghost duplicates, flicker, captions, watermark", "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
+    "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
     "inspired": true,
   },
   {
@@ -65,8 +65,7 @@ const AUDIT_SOURCE_TEMPLATES = [
     "model": "Kling 3.0 · I2V", "credits": 32, "durationSeconds": 10,
     "category": "REALISTIC", "isNew": true, "previewAspect": "720 / 406",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": "One starting photo containing both characters in their intended positions",
-    "prompt": "Animate the uploaded starting image into a ten-second video. Use a starting image containing two distinct characters in their intended left and right positions on a city street. They adjust their clothing; the second places a hand in a trouser pocket. Preserve both complete identities, outfits and positions as the camera smoothly tracks their movement. Keep the main subject’s identity and outfit consistent, with smooth camera motion, clear contact shadows and no added captions or watermarks.", "promptOrigin": "veyrnox-adaptation",
-    "negativePrompt": "identity drift, unintended extra limbs, malformed hands, ghost duplicates, flicker, captions, watermark", "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
+    "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
     "inspired": true,
   },
   {
@@ -74,8 +73,7 @@ const AUDIT_SOURCE_TEMPLATES = [
     "model": "Kling 3.0 · I2V", "credits": 32, "durationSeconds": 10,
     "category": "UGC", "isNew": true, "previewAspect": "720 / 406",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": "One starting photo showing the lead performer and backing group",
-    "prompt": "Animate the uploaded starting image into a ten-second video. The lead performer stands centered before four rows of five identical backing dancers. They perform short synchronized arm and body movements with tightly matched rhythm. Keep the lead distinct from the identical backing group, with a stable front-facing camera and consistent faces, costumes and formation. Keep the main subject’s identity and outfit consistent, with smooth camera motion, clear contact shadows and no added captions or watermarks.", "promptOrigin": "veyrnox-adaptation",
-    "negativePrompt": "identity drift, unintended extra limbs, malformed hands, ghost duplicates, flicker, captions, watermark", "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
+    "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
     "inspired": true,
   },
   {
@@ -83,7 +81,7 @@ const AUDIT_SOURCE_TEMPLATES = [
     "model": "Seedance 2.0 Fast", "credits": 19, "durationSeconds": 5, "aspect": "9:16",
     "category": "MOVIES", "isNew": true, "previewAspect": "406 / 720",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": null,
-    "prompt": "Create a five-second cinematic video. One continuous shot starts already at the open doorway of a moving train, looking outward. Move the camera forward into open air, then rotate right and backward along the train exterior. Reveal a smiling person on the right in the next carriage doorway, holding both handrails and leaning backward into the wind. Hair and clothing respond naturally. Show a monumental mountain landscape, warm golden-hour rim light, atmospheric haze and the sense of high speed. No cuts. No added captions, watermark or logo.", "promptOrigin": "veyrnox-adaptation",
+
     "steps": ["Use this template to load its prompt and settings in the studio.", "Describe your characters and setting, then review the price before generating."],
     "inspired": true,
   },
@@ -92,8 +90,7 @@ const AUDIT_SOURCE_TEMPLATES = [
     "model": "Kling 3.0 · I2V", "credits": 32, "durationSeconds": 10,
     "category": "YOUR PHOTO", "isNew": true, "previewAspect": "406 / 720",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": "A clear starting photo showing the subject and setting you want to animate",
-    "prompt": "Animate the uploaded starting image into a ten-second video. Follow the uploaded person through an industrial service yard with gray asphalt, pale concrete barriers and corrugated warehouses. They run, plant both hands on a barrier, vault over it and land with bent knees before continuing forward. Preserve their identity, hair length and outfit. Show realistic hand placement, weight transfer, foot contact and momentum without floating. Keep the main subject’s identity and outfit consistent, with smooth camera motion, clear contact shadows and no added captions or watermarks.", "promptOrigin": "veyrnox-adaptation",
-    "negativePrompt": "identity drift, unintended extra limbs, malformed hands, ghost duplicates, flicker, captions, watermark", "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
+    "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
     "inspired": true,
   },
   {
@@ -101,8 +98,7 @@ const AUDIT_SOURCE_TEMPLATES = [
     "model": "Kling 3.0 · I2V", "credits": 32, "durationSeconds": 10,
     "category": "CARTOONS", "isNew": true, "previewAspect": "720 / 540",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": "One starting photo containing both characters in their intended positions",
-    "prompt": "Animate the uploaded starting image into a ten-second video. Two distinct whimsical characters race side by side through the same environment. The first matches the left character in the uploaded start image and the second matches the right. Preserve their identities, clothing, positions and natural running rhythm with a dynamic chase camera. No role swapping or extra characters. Keep the main subject’s identity and outfit consistent, with smooth camera motion, clear contact shadows and no added captions or watermarks.", "promptOrigin": "veyrnox-adaptation",
-    "negativePrompt": "identity drift, unintended extra limbs, malformed hands, ghost duplicates, flicker, captions, watermark", "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
+    "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
     "inspired": true,
   },
   {
@@ -110,7 +106,7 @@ const AUDIT_SOURCE_TEMPLATES = [
     "model": "Seedance 2.0 Fast", "credits": 19, "durationSeconds": 5, "aspect": "16:9",
     "category": "MOVIES", "isNew": true, "previewAspect": "720 / 406",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": null,
-    "prompt": "Create a five-second cinematic video. A moody cinematic scene on a black basalt promontory above a stormy North Atlantic ocean. Start wide on enormous waves, then show a windswept couple in a spinning embrace and a close kiss. Their mood turns tense; the man gives the woman one sudden realistic push. Cut overhead as she falls slowly backward beside the cliff, with wind moving her hair and clothes. End while she is still in the air, without impact or injury. Cold teal-gray light, subtle grain and physically coherent motion. No added captions, watermark or logo.", "promptOrigin": "veyrnox-adaptation",
+
     "steps": ["Use this template to load its prompt and settings in the studio.", "Describe your characters and setting, then review the price before generating."],
     "inspired": true,
   },
@@ -119,7 +115,7 @@ const AUDIT_SOURCE_TEMPLATES = [
     "model": "Seedance 2.0 Fast", "credits": 19, "durationSeconds": 5, "aspect": "9:16",
     "category": "FANTASY", "isNew": true, "previewAspect": "406 / 720",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": null,
-    "prompt": "Create a five-second cinematic video. One continuous handheld shot in a vivid green meadow at cool blue dusk. The person looks left, sheep pass close to the camera, and the person begins running left. Jog behind them, then lift the camera once to reveal an enormous original pale-stone fairytale palace across a winding stream. Gold, white and blue-violet fireworks bloom above its towers while exactly three sheep graze nearby. Keep the face and outfit consistent; no cuts, no logos, no warm orange sky and no steps into the water. No added captions, watermark or logo.", "promptOrigin": "veyrnox-adaptation",
+
     "steps": ["Use this template to load its prompt and settings in the studio.", "Describe your characters and setting, then review the price before generating."],
     "inspired": true,
   },
@@ -128,7 +124,7 @@ const AUDIT_SOURCE_TEMPLATES = [
     "model": "Seedance 2.0 Fast", "credits": 19, "durationSeconds": 5, "aspect": "16:9",
     "category": "MOVIES", "isNew": true, "previewAspect": "720 / 540",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": null,
-    "prompt": "Create a five-second cinematic video. A warm late-1990s romantic film on a busy Manhattan sidewalk in autumn. A suited man bumps into a woman carrying books; the books fall. They kneel together, gather the books and share a small smile. A second woman in a glossy belted black leather coat steps out of a boutique in the background. Keep the three identities distinct. Wet pavement, brick facades, yellow taxis, warm shop lights, soft grain, natural pedestrian traffic and gentle handheld reframing. No added captions, watermark or logo.", "promptOrigin": "veyrnox-adaptation",
+
     "steps": ["Use this template to load its prompt and settings in the studio.", "Describe your characters and setting, then review the price before generating."],
     "inspired": true,
   },
@@ -137,7 +133,7 @@ const AUDIT_SOURCE_TEMPLATES = [
     "model": "Seedance 2.0 Fast", "credits": 19, "durationSeconds": 5, "aspect": "16:9",
     "category": "MOVIES", "isNew": true, "previewAspect": "720 / 406",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": null,
-    "prompt": "Create a five-second cinematic video. A cinematic Western at golden hour: track a stagecoach racing across dusty prairie with bandits pursuing on horseback. One rider climbs onto the moving coach, reaches for the brass door handle and opens the door. Reveal a mysterious Stranger character sitting calmly inside, hat low, eyes slowly lifting toward the bandit. End with a close-up of the Stranger’s hand resting on an ivory-grip revolver, then their steady eyes. Warm amber highlights, cool teal shadows, natural horse and body mechanics; no gunfire impact or injury. No added captions, watermark or logo.", "promptOrigin": "veyrnox-adaptation",
+
     "steps": ["Use this template to load its prompt and settings in the studio.", "Describe your characters and setting, then review the price before generating."],
     "inspired": true,
   },
@@ -146,8 +142,7 @@ const AUDIT_SOURCE_TEMPLATES = [
     "model": "Kling 3.0 · I2V", "credits": 32, "durationSeconds": 10,
     "category": "VFX", "isNew": true, "previewAspect": "406 / 720",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": "A clear starting photo showing the subject and setting you want to animate",
-    "prompt": "Animate the uploaded starting image into a ten-second video. Rise above the subject and execute one fluid overhead camera flip. As the camera crosses the apex, transform both the person and location into a clearly different character and setting, then complete the flip on the new scene. Keep the transition continuous, the two character designs deliberate and the subject clearly framed, with smooth camera motion, clear contact shadows and no added captions or watermarks.", "promptOrigin": "veyrnox-adaptation",
-    "negativePrompt": "unintended extra limbs, malformed hands, ghost duplicates, flicker, captions, watermark", "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
+    "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
     "inspired": true,
   },
   {
@@ -155,8 +150,7 @@ const AUDIT_SOURCE_TEMPLATES = [
     "model": "Kling 3.0 · I2V", "credits": 32, "durationSeconds": 10,
     "category": "VFX", "isNew": true, "previewAspect": "406 / 720",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": "A clear starting photo showing the subject and setting you want to animate",
-    "prompt": "Animate the uploaded starting image into a ten-second video. Keep the person stationary at the center as the surrounding city streets and buildings lift upward and fold inward into a huge enclosure. Orbit gently to show the impossible scale. The person keeps normal proportions. Keep the main subject’s identity and outfit consistent, with smooth camera motion, clear contact shadows and no added captions or watermarks.", "promptOrigin": "veyrnox-adaptation",
-    "negativePrompt": "identity drift, unintended extra limbs, malformed hands, ghost duplicates, flicker, captions, watermark", "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
+    "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
     "inspired": true,
   },
   {
@@ -164,8 +158,7 @@ const AUDIT_SOURCE_TEMPLATES = [
     "model": "Kling 3.0 · I2V", "credits": 32, "durationSeconds": 10,
     "category": "VFX", "isNew": true, "previewAspect": "406 / 720",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": "A clear starting photo showing the subject and setting you want to animate",
-    "prompt": "Animate the uploaded starting image into a ten-second video. Reveal the person as a towering giant among detailed city skyscrapers. Track upward from street level, with tiny traffic and pedestrians below. Integrate their feet, shadows and perspective convincingly into the street. Keep the main subject’s identity and outfit consistent, with smooth camera motion, clear contact shadows and no added captions or watermarks.", "promptOrigin": "veyrnox-adaptation",
-    "negativePrompt": "identity drift, unintended extra limbs, malformed hands, ghost duplicates, flicker, captions, watermark", "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
+    "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
     "inspired": true,
   },
   {
@@ -173,8 +166,7 @@ const AUDIT_SOURCE_TEMPLATES = [
     "model": "Kling 3.0 · I2V", "credits": 32, "durationSeconds": 10,
     "category": "CINEMATIC", "isNew": true, "previewAspect": "406 / 720",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": "A clear starting photo showing the subject and setting you want to animate",
-    "prompt": "Animate the uploaded starting image into a ten-second video. Begin low beside a drifting car, follow its spinning movement, then sweep into a high overhead orbit and back to bumper height. Keep the car centered through tire smoke and a believable fast turn. Keep the main subject’s identity and outfit consistent, with smooth camera motion, clear contact shadows and no added captions or watermarks.", "promptOrigin": "veyrnox-adaptation",
-    "negativePrompt": "identity drift, unintended extra limbs, malformed hands, ghost duplicates, flicker, captions, watermark", "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
+    "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
     "inspired": true,
   },
   {
@@ -182,8 +174,7 @@ const AUDIT_SOURCE_TEMPLATES = [
     "model": "Kling 3.0 · I2V", "credits": 32, "durationSeconds": 10,
     "category": "FASHION", "isNew": true, "previewAspect": "600 / 450",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": "A clear starting photo showing the subject and setting you want to animate",
-    "prompt": "Animate the uploaded starting image into a ten-second video. Against a solid studio backdrop, create several copies of the same person at different sizes and depths. The copies slide horizontally past one another in a smooth layered composition. Preserve each copy’s face and outfit. Keep the main subject’s identity and outfit consistent, with smooth camera motion, clear contact shadows and no added captions or watermarks.", "promptOrigin": "veyrnox-adaptation",
-    "negativePrompt": "identity drift, unintended extra limbs, malformed hands, ghost duplicates, flicker, captions, watermark", "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
+    "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
     "inspired": true,
   },
   {
@@ -191,8 +182,7 @@ const AUDIT_SOURCE_TEMPLATES = [
     "model": "Kling 3.0 · I2V", "credits": 32, "durationSeconds": 10,
     "category": "VFX", "isNew": true, "previewAspect": "600 / 450",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": "A clear starting photo showing the subject and setting you want to animate",
-    "prompt": "Animate the uploaded starting image into a ten-second video. Keep the person grounded in the foreground. Separate the surrounding architecture into crisp paper-like cutout layers that float apart, revealing a clean white void, then return the layers to their original aligned positions. Keep the main subject’s identity and outfit consistent, with smooth camera motion, clear contact shadows and no added captions or watermarks.", "promptOrigin": "veyrnox-adaptation",
-    "negativePrompt": "identity drift, unintended extra limbs, malformed hands, ghost duplicates, flicker, captions, watermark", "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
+    "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
     "inspired": true,
   },
   {
@@ -200,8 +190,7 @@ const AUDIT_SOURCE_TEMPLATES = [
     "model": "Kling 3.0 · I2V", "credits": 32, "durationSeconds": 10,
     "category": "PRODUCTS", "isNew": true, "previewAspect": "406 / 720",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": "A clear starting photo showing the subject and setting you want to animate",
-    "prompt": "Animate the uploaded starting image into a ten-second video. The person begins falling backward. Suspend their body and belongings in midair; move the camera through close-ups of the floating objects, then allow the fall to resume naturally. Keep hands, props and shadows coherent. Keep the main subject’s identity and outfit consistent, with smooth camera motion, clear contact shadows and no added captions or watermarks.", "promptOrigin": "veyrnox-adaptation",
-    "negativePrompt": "identity drift, unintended extra limbs, malformed hands, ghost duplicates, flicker, captions, watermark", "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
+    "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
     "inspired": true,
   },
   {
@@ -209,8 +198,7 @@ const AUDIT_SOURCE_TEMPLATES = [
     "model": "Kling 3.0 · I2V", "credits": 32, "durationSeconds": 10,
     "category": "REALISTIC", "isNew": true, "previewAspect": "406 / 720",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": "A clear starting photo showing the subject and setting you want to animate",
-    "prompt": "Animate the uploaded starting image into a ten-second video. Push from a portrait into an extreme close-up of the eye. Travel through its dark pupil in one seamless camera move and emerge into a new cinematic landscape. No abrupt cut or eye deformation. Keep the main subject’s identity and outfit consistent, with smooth camera motion, clear contact shadows and no added captions or watermarks.", "promptOrigin": "veyrnox-adaptation",
-    "negativePrompt": "identity drift, unintended extra limbs, malformed hands, ghost duplicates, flicker, captions, watermark", "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
+    "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
     "inspired": true,
   },
   {
@@ -218,8 +206,7 @@ const AUDIT_SOURCE_TEMPLATES = [
     "model": "Kling 3.0 · I2V", "credits": 32, "durationSeconds": 10,
     "category": "ADS", "isNew": true, "previewAspect": "406 / 720",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": "A clear starting photo showing the subject and setting you want to animate",
-    "prompt": "Animate the uploaded starting image into a ten-second video. Frame a featured object through a parked car window. A character breaks the pane, reaches through and grabs the object, then runs away as the camera follows. Emphasize the object, glass movement and energetic fictional action; no injury. Keep the main subject’s identity and outfit consistent, with smooth camera motion, clear contact shadows and no added captions or watermarks.", "promptOrigin": "veyrnox-adaptation",
-    "negativePrompt": "identity drift, unintended extra limbs, malformed hands, ghost duplicates, flicker, captions, watermark", "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
+    "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
     "inspired": true,
   },
   {
@@ -227,8 +214,7 @@ const AUDIT_SOURCE_TEMPLATES = [
     "model": "Kling 3.0 · I2V", "credits": 32, "durationSeconds": 10,
     "category": "FASHION", "isNew": true, "previewAspect": "540 / 720",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": "A clear starting photo showing the subject and setting you want to animate",
-    "prompt": "Animate the uploaded starting image into a ten-second video. Slowly tilt the whole surrounding street as if gravity has rotated. Loose objects slide and tumble past the person, who remains calm and upright at the center. Keep the horizon shift and object trajectories consistent. Keep the main subject’s identity and outfit consistent, with smooth camera motion, clear contact shadows and no added captions or watermarks.", "promptOrigin": "veyrnox-adaptation",
-    "negativePrompt": "identity drift, unintended extra limbs, malformed hands, ghost duplicates, flicker, captions, watermark", "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
+    "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
     "inspired": true,
   },
   {
@@ -236,8 +222,7 @@ const AUDIT_SOURCE_TEMPLATES = [
     "model": "Kling 3.0 · I2V", "credits": 32, "durationSeconds": 10,
     "category": "VFX", "isNew": true, "previewAspect": "540 / 720",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": "A clear starting photo showing the subject and setting you want to animate",
-    "prompt": "Animate the uploaded starting image into a ten-second video. The person holds a miniature version of themself in their hands. Push continuously toward the miniature figure, which holds another identical miniature, creating a nested recursive zoom. Keep each face and outfit consistent. Keep the main subject’s identity and outfit consistent, with smooth camera motion, clear contact shadows and no added captions or watermarks.", "promptOrigin": "veyrnox-adaptation",
-    "negativePrompt": "identity drift, unintended extra limbs, malformed hands, ghost duplicates, flicker, captions, watermark", "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
+    "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
     "inspired": true,
   },
   {
@@ -245,8 +230,7 @@ const AUDIT_SOURCE_TEMPLATES = [
     "model": "Kling 3.0 · I2V", "credits": 32, "durationSeconds": 10,
     "category": "CINEMATIC", "isNew": true, "previewAspect": "406 / 720",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": "A clear starting photo showing the subject and setting you want to animate",
-    "prompt": "Animate the uploaded starting image into a ten-second video. Freeze the person and nearby loose objects at the peak of an ordinary action while traffic and distant pedestrians continue in real time. Slowly move the camera around the suspended moment, preserving contact shadows and spatial depth. Keep the main subject’s identity and outfit consistent, with smooth camera motion, clear contact shadows and no added captions or watermarks.", "promptOrigin": "veyrnox-adaptation",
-    "negativePrompt": "identity drift, unintended extra limbs, malformed hands, ghost duplicates, flicker, captions, watermark", "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
+    "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
     "inspired": true,
   },
   {
@@ -254,8 +238,7 @@ const AUDIT_SOURCE_TEMPLATES = [
     "model": "Kling 3.0 · I2V", "credits": 32, "durationSeconds": 10,
     "category": "PRODUCTS", "isNew": true, "previewAspect": "600 / 338",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": "A clear starting photo showing the subject and setting you want to animate",
-    "prompt": "Animate the uploaded starting image into a ten-second video. A miniature copy of the person walks past their giant counterpart, then balances on a thin handbag strap between two oversized handbags. Track the tiny figure at its eye level and make the scale relationship unmistakable. Keep the main subject’s identity and outfit consistent, with smooth camera motion, clear contact shadows and no added captions or watermarks.", "promptOrigin": "veyrnox-adaptation",
-    "negativePrompt": "identity drift, unintended extra limbs, malformed hands, ghost duplicates, flicker, captions, watermark", "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
+    "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
     "inspired": true,
   },
   {
@@ -263,8 +246,7 @@ const AUDIT_SOURCE_TEMPLATES = [
     "model": "Kling 3.0 · I2V", "credits": 32, "durationSeconds": 10,
     "category": "FANTASY", "isNew": true, "previewAspect": "540 / 720",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": "A clear starting photo showing the subject and setting you want to animate",
-    "prompt": "Animate the uploaded starting image into a ten-second video. A double made of glowing flames appears in front of the person. The fiery double extends a hand; the person reaches out and they meet in a surreal handshake. Keep the real person unharmed and their identity stable. Keep the main subject’s identity and outfit consistent, with smooth camera motion, clear contact shadows and no added captions or watermarks.", "promptOrigin": "veyrnox-adaptation",
-    "negativePrompt": "identity drift, unintended extra limbs, malformed hands, ghost duplicates, flicker, captions, watermark", "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
+    "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
     "inspired": true,
   },
   {
@@ -272,8 +254,7 @@ const AUDIT_SOURCE_TEMPLATES = [
     "model": "Kling 3.0 · I2V", "credits": 32, "durationSeconds": 10,
     "category": "VFX", "isNew": true, "previewAspect": "600 / 600",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": "A clear starting photo showing the subject and setting you want to animate",
-    "prompt": "Animate the uploaded starting image into a ten-second video. The person gradually melts downward into a glossy liquid puddle. Their clothing and accessories stretch into fluid trails and settle on the ground. Maintain the original colors through the transformation; no gore. Keep the main subject’s identity and outfit consistent, with smooth camera motion, clear contact shadows and no added captions or watermarks.", "promptOrigin": "veyrnox-adaptation",
-    "negativePrompt": "identity drift, unintended extra limbs, malformed hands, ghost duplicates, flicker, captions, watermark", "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
+    "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
     "inspired": true,
   },
   {
@@ -281,8 +262,7 @@ const AUDIT_SOURCE_TEMPLATES = [
     "model": "Kling 3.0 · I2V", "credits": 32, "durationSeconds": 10,
     "category": "YOUR PHOTO", "isNew": true, "previewAspect": "406 / 720",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": "A starting image of a person already suspended mid-leap above a city sidewalk",
-    "prompt": "Animate the uploaded starting image into a ten-second video. The person is suspended motionless halfway through a leap above a city sidewalk. Pedestrians and traffic continue moving normally behind them. Gently orbit the frozen person to show their fixed pose and realistic shadow. Keep the main subject’s identity and outfit consistent, with smooth camera motion, clear contact shadows and no added captions or watermarks.", "promptOrigin": "veyrnox-adaptation",
-    "negativePrompt": "identity drift, unintended extra limbs, malformed hands, ghost duplicates, flicker, captions, watermark", "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
+    "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
     "inspired": true,
   },
   {
@@ -290,8 +270,7 @@ const AUDIT_SOURCE_TEMPLATES = [
     "model": "Kling 3.0 · I2V", "credits": 32, "durationSeconds": 10,
     "category": "MOVIES", "isNew": true, "previewAspect": "360 / 720",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": "A clear starting photo showing the subject and setting you want to animate",
-    "prompt": "Animate the uploaded starting image into a ten-second video. Compose two stacked panels: below, a classical painted fallen angel portrait; above, the uploaded person recreates its pose, intense upward gaze and hand near the face with cinematic lighting. Animate only subtle breathing, hair and gaze. Keep the main subject’s identity and outfit consistent, with smooth camera motion, clear contact shadows and no added captions or watermarks.", "promptOrigin": "veyrnox-adaptation",
-    "negativePrompt": "identity drift, unintended extra limbs, malformed hands, ghost duplicates, flicker, captions, watermark", "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
+    "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
     "inspired": true,
   },
   {
@@ -299,8 +278,7 @@ const AUDIT_SOURCE_TEMPLATES = [
     "model": "Kling 3.0 · I2V", "credits": 32, "durationSeconds": 10,
     "category": "CARTOONS", "isNew": true, "previewAspect": "600 / 450",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": "A clear starting photo showing the subject and setting you want to animate",
-    "prompt": "Animate the uploaded starting image into a ten-second video. A colossal dark fantasy creature drops from the sky directly behind the person. Let the creature land, spread its enormous arms and lean forward while the person remains clearly framed in front. Match both to the same realistic lighting. Keep the main subject’s identity and outfit consistent, with smooth camera motion, clear contact shadows and no added captions or watermarks.", "promptOrigin": "veyrnox-adaptation",
-    "negativePrompt": "identity drift, unintended extra limbs, malformed hands, ghost duplicates, flicker, captions, watermark", "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
+    "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
     "inspired": true,
   },
   {
@@ -308,8 +286,7 @@ const AUDIT_SOURCE_TEMPLATES = [
     "model": "Kling 3.0 · I2V", "credits": 32, "durationSeconds": 10,
     "category": "VFX", "isNew": true, "previewAspect": "406 / 720",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": "A clear starting photo showing the subject and setting you want to animate",
-    "prompt": "Animate the uploaded starting image into a ten-second video. Render a flower meadow and its reclining subject as bright cyan and teal lidar points against black. Fly low through the three-dimensional point cloud, pass above the subject and rise overhead. A scanning boundary reveals the corresponding full-color flowers and subject, with aligned geometry throughout. Preserve the person’s identity and outfit. Smooth continuous camera motion; no captions or watermark.", "promptOrigin": "veyrnox-adaptation",
-    "negativePrompt": "identity drift, unintended extra limbs, malformed hands, ghost duplicates, flicker, captions, watermark", "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
+    "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
     "inspired": true,
   },
   {
@@ -317,8 +294,7 @@ const AUDIT_SOURCE_TEMPLATES = [
     "model": "Kling 3.0 · I2V", "credits": 32, "durationSeconds": 10,
     "category": "FASHION", "isNew": true, "previewAspect": "600 / 450",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": "A clear starting photo showing the subject and setting you want to animate",
-    "prompt": "Animate the uploaded starting image into a ten-second video. Follow the person walking across an oversized boarding pass on the ground. As they step across each ticket edge, the backdrop changes into another travel destination and their outfit changes in a clean matched transition. Keep walking direction, face and proportions stable. Keep the main subject’s identity and outfit consistent, with smooth camera motion, clear contact shadows and no added captions or watermarks.", "promptOrigin": "veyrnox-adaptation",
-    "negativePrompt": "identity drift, unintended extra limbs, malformed hands, ghost duplicates, flicker, captions, watermark", "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
+    "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
     "inspired": true,
   },
   {
@@ -326,8 +302,7 @@ const AUDIT_SOURCE_TEMPLATES = [
     "model": "Kling 3.0 · I2V", "credits": 32, "durationSeconds": 10,
     "category": "VFX", "isNew": true, "previewAspect": "540 / 720",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": "A clear starting photo showing the subject and setting you want to animate",
-    "prompt": "Animate the uploaded starting image into a ten-second video. Track the person moving calmly in the foreground while the large buildings behind them ripple and curl like soft liquid architecture. The huge wave travels continuously through the structures; the person and ground remain stable. Keep the main subject’s identity and outfit consistent, with smooth camera motion, clear contact shadows and no added captions or watermarks.", "promptOrigin": "veyrnox-adaptation",
-    "negativePrompt": "identity drift, unintended extra limbs, malformed hands, ghost duplicates, flicker, captions, watermark", "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
+    "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
     "inspired": true,
   },
   {
@@ -335,8 +310,7 @@ const AUDIT_SOURCE_TEMPLATES = [
     "model": "Kling 3.0 · I2V", "credits": 32, "durationSeconds": 10,
     "category": "FASHION", "isNew": true, "previewAspect": "540 / 720",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": "A clear starting photo showing the subject and setting you want to animate",
-    "prompt": "Animate the uploaded starting image into a ten-second video. Identical copies of the person appear in a staggered formation across the street. They mirror the same small gestures while the original steps toward the camera. Keep each clone’s identity and clothing consistent and their positions distinct. Keep the main subject’s identity and outfit consistent, with smooth camera motion, clear contact shadows and no added captions or watermarks.", "promptOrigin": "veyrnox-adaptation",
-    "negativePrompt": "identity drift, unintended extra limbs, malformed hands, ghost duplicates, flicker, captions, watermark", "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
+    "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
     "inspired": true,
   },
   {
@@ -344,8 +318,7 @@ const AUDIT_SOURCE_TEMPLATES = [
     "model": "Kling 3.0 · I2V", "credits": 32, "durationSeconds": 10,
     "category": "VFX", "isNew": true, "previewAspect": "540 / 720",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": "A clear starting photo showing the subject and setting you want to animate",
-    "prompt": "Animate the uploaded starting image into a ten-second video. Hold the camera still on the person. Their body disappears in one sudden clean instant; the now-empty clothing collapses under gravity and settles where they were standing. Preserve the surrounding environment without ghost limbs or a remaining face. Keep the main subject’s identity and outfit consistent, with smooth camera motion, clear contact shadows and no added captions or watermarks.", "promptOrigin": "veyrnox-adaptation",
-    "negativePrompt": "identity drift, unintended extra limbs, malformed hands, ghost duplicates, flicker, captions, watermark", "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
+    "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
     "inspired": true,
   },
   {
@@ -353,8 +326,7 @@ const AUDIT_SOURCE_TEMPLATES = [
     "model": "Kling 3.0 · I2V", "credits": 32, "durationSeconds": 10,
     "category": "VFX", "isNew": true, "previewAspect": "600 / 450",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": "A clear starting photo showing the subject and setting you want to animate",
-    "prompt": "Animate the uploaded starting image into a ten-second video. In a diner, a waitress trips and plates and coffee fly into the air. Freeze the waitress and all airborne objects while the camera makes a smooth dramatic orbit. Return everything to its original place and end on her knowing smile. Keep the main subject’s identity and outfit consistent, with smooth camera motion, clear contact shadows and no added captions or watermarks.", "promptOrigin": "veyrnox-adaptation",
-    "negativePrompt": "identity drift, unintended extra limbs, malformed hands, ghost duplicates, flicker, captions, watermark", "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
+    "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
     "inspired": true,
   },
   {
@@ -362,8 +334,7 @@ const AUDIT_SOURCE_TEMPLATES = [
     "model": "Kling 3.0 · I2V", "credits": 32, "durationSeconds": 10,
     "category": "VFX", "isNew": true, "previewAspect": "360 / 720",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": "A clear starting photo showing the subject and setting you want to animate",
-    "prompt": "Animate the uploaded starting image into a ten-second video. Use two stacked panels. Keep Vermeer’s Girl with a Pearl Earring painting below; recreate its head turn, blue-and-gold headscarf and pearl earring with the uploaded person above. Animate a small natural gaze and head movement with soft painterly lighting. Keep the main subject’s identity and outfit consistent, with smooth camera motion, clear contact shadows and no added captions or watermarks.", "promptOrigin": "veyrnox-adaptation",
-    "negativePrompt": "identity drift, unintended extra limbs, malformed hands, ghost duplicates, flicker, captions, watermark", "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
+    "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
     "inspired": true,
   },
   {
@@ -371,8 +342,7 @@ const AUDIT_SOURCE_TEMPLATES = [
     "model": "Kling 3.0 · I2V", "credits": 32, "durationSeconds": 10,
     "category": "VFX", "isNew": true, "previewAspect": "600 / 600",
     "bg": "linear-gradient(135deg,#0a1a2c 0%,#25334b 60%,#344f55 100%)", "needs": "A clear starting photo showing the subject and setting you want to animate",
-    "prompt": "Animate the uploaded starting image into a ten-second video. View a stadium concert from within the crowd, with raised phones in the foreground. The uploaded person performs under bright stage lights while their matching close-up fills the jumbotron. Keep the face consistent in both views. Keep the main subject’s identity and outfit consistent, with smooth camera motion, clear contact shadows and no added captions or watermarks.", "promptOrigin": "veyrnox-adaptation",
-    "negativePrompt": "identity drift, unintended extra limbs, malformed hands, ghost duplicates, flicker, captions, watermark", "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
+    "steps": ["Prepare your starting image using the guidance above.", "Use this template to load its prompt and settings in the studio.", "Upload your image, edit the prompt if needed, and review the price before generating."],
     "inspired": true,
   },
   ...SOURCE_TEMPLATE_EXPANSION,
@@ -398,37 +368,33 @@ const RUNNABLE_MODEL_IDS = Object.freeze({ 'Seedance 2.0 Fast': 'seedance-2.0-fa
 export const SOURCE_TEMPLATES = [
   ...AUDIT_SOURCE_TEMPLATES.filter(({ id }) => !REPLACED_HIGGSFIELD_TEMPLATE_ID_SET.has(id)),
   ...SOURCE_TEMPLATE_EXPANSION_12,
+  ...SOURCE_TEMPLATE_EXPANSION_14,
+  ...SYNTX_64_TEMPLATES,
+  ...CATEGORY_FILL_TEMPLATES,
   ...SEEDANCE_SOURCE_TEMPLATE_EXPANSION,
 ].map((template) => {
   const source = SEEDANCE_200_TEMPLATE_METADATA[template.id];
-  if (!source) return template;
-  const promptMax = fallbackCapabilitiesFor(RUNNABLE_MODEL_IDS[source.runnableModel])?.inputs?.prompt?.max;
-  const audit = sourcePromptAuditForModel(template.id, promptMax);
-  const modelLimitOnly = audit.issues.includes('model-prompt-limit-exceeded')
-    && audit.issues.every(issue => ['model-prompt-limit-exceeded', 'source-input-contract-not-wired'].includes(issue));
-  const blockedNeeds = template.promptOrigin === 'community-source-exact' && !audit.runnable
-    ? modelLimitOnly
-      ? 'Copy the exact prompt; it exceeds the assigned model’s verified prompt limit'
-      : 'Copy the exact prompt; its required reference media or preserved audio is not wired into generation'
-    : null;
   const reference = takesReferenceModel(source);
-  return {
+  const metadata = source ? {
     ...template,
     model: reference ? SEEDANCE_REFERENCE_MODEL : source.runnableModel,
     credits: reference ? SEEDANCE_REFERENCE_CREDITS : source.runnableModel === 'Kling 3.0 · I2V' ? 32 : 19,
     durationSeconds: source.runnableModel === 'Kling 3.0 · I2V' ? 10 : 5,
-    ...(source.runnableModel === 'Kling 3.0 · I2V'
-      && !/\b(?:uploaded|supplied)\b/i.test(template.prompt)
-      ? { prompt: `Animate the supplied starting image into a ten-second video. Use its subjects and composition as the starting frame. ${template.prompt}` }
-      : {}),
     sourcePlatform: source.sourcePlatform,
     sourceModel: source.sourceModel,
     sourceUrl: source.sourceUrl,
-    // The exact text remains provenance even when it could run independently.
-    ...(template.promptOrigin === 'veyrnox-adaptation' ? { preferAdaptedPrompt: true } : {}),
-    sourcePromptRunnable: template.promptOrigin === 'veyrnox-adaptation' ? false : audit.runnable,
+  } : template;
+  const promptMax = fallbackCapabilitiesFor(RUNNABLE_MODEL_IDS[metadata.model])?.inputs?.prompt?.max;
+  const audit = sourcePromptAuditForModel(template.id, promptMax);
+  const exact = isPublishableSourcePromptTemplate(template.id) ? exactSourcePromptRecord(template.id) : null;
+  return {
+    ...metadata,
+    prompt: exact?.prompt ?? null,
+    sourcePrompt: exact?.prompt ?? null,
+    promptOrigin: exact ? 'community-source-exact' : null,
+    sourcePromptOrigin: exact ? 'community-source-exact' : null,
+    sourcePromptRunnable: audit.runnable,
     sourcePromptIssues: [...audit.issues],
     sourcePromptModelPromptMax: audit.modelPromptMax ?? null,
-    ...(blockedNeeds ? { needs: blockedNeeds, needsKey: modelLimitOnly ? 'community.modelLimitCopyOnly' : 'community.copyOnly' } : {}),
   };
 });

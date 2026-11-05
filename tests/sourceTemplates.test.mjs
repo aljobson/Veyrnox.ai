@@ -1,3 +1,5 @@
+import './helpers/exactOnlyAssertions.mjs';
+import './helpers/higgsfield300Assertions.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
@@ -70,36 +72,35 @@ function mp4DurationSeconds(data) {
 }
 
 test('every imported clip has its own matching recipe and a supported video model', () => {
-  assert.equal(SOURCE_TEMPLATES.length, 437);
-  assert.equal(new Set(SOURCE_TEMPLATES.map((p) => p.clipKey)).size, 437);
+  assert.equal(SOURCE_TEMPLATES.length, 827);
+  assert.equal(new Set(SOURCE_TEMPLATES.map((p) => p.clipKey)).size, 827);
   for (const preset of SOURCE_TEMPLATES) {
     const clip = AUDIT_SHOWCASE_CLIPS[preset.clipKey];
     assert.ok(clip, preset.id);
     assert.equal(clip.title.toUpperCase(), preset.name, preset.id);
     assert.ok(clip.video.endsWith(`-${preset.id}.mp4`), preset.id);
-    assert.equal(MODELS.find((m) => m.id === modelIdForName(preset.model))?.kind, 'video');
-    assert.ok(preset.prompt.length > 100 && preset.prompt.length <= 30000);
-    if (preset.promptOrigin === 'veyrnox-adaptation') {
-      assert.ok(preset.prompt.length <= 2000, preset.id);
-      assert.doesNotMatch(preset.prompt, /@(image|video)\d/, 'unsupported source reference slots must not leak into adaptation prompts');
-    } else {
-      assert.equal(preset.promptOrigin, 'community-source-exact', preset.id);
-      assert.equal(preset.prompt, SEEDANCE_SOURCE_PROMPT_RECORDS[preset.id]?.prompt, preset.id);
-    }
+    const model = MODELS.find((m) => m.id === modelIdForName(preset.model));
+    assert.equal(model?.kind, 'video');
+    assert.ok(model.durations.includes(preset.durationSeconds), preset.id);
+    if (preset.aspect && model.aspects) assert.ok(model.aspects?.includes(preset.aspect), preset.id);
     if (preset.needs == null) {
       assert.equal(preset.model, 'Seedance 2.0 Fast', preset.id);
       assert.equal(preset.durationSeconds, 5, preset.id);
-      assert.doesNotMatch(preset.prompt, /uploaded|starting image/i, preset.id);
     }
-    const model = MODELS.find((m) => m.id === modelIdForName(preset.model));
-    assert.ok(model?.durations?.includes(preset.durationSeconds));
-    if (preset.aspect && model?.aspects) assert.ok(model.aspects.includes(preset.aspect), `${preset.id} uses unsupported ${preset.aspect}`);
+    if (sourcePromptAuditRecord(preset.id).status === 'exact') {
+      assert.equal(preset.promptOrigin, 'community-source-exact', preset.id);
+      assert.equal(preset.prompt, exactSourcePromptRecord(preset.id).prompt, preset.id);
+      assert.equal(preset.sourcePrompt, preset.prompt, preset.id);
+    } else {
+      assert.equal(preset.prompt, null, preset.id);
+      assert.equal(preset.sourcePrompt, null, preset.id);
+    }
   }
 });
 
 test('Genjutsu-inspired I2V recipes describe source framing without claiming provider aspect support', () => {
-  const community = SOURCE_TEMPLATES.filter((preset) => AUDIT_SHOWCASE_CLIPS[preset.clipKey].video.startsWith('/showcase/creator-'));
-  assert.equal(community.length, 100);
+  const community = SOURCE_TEMPLATES.filter((preset) => AUDIT_SHOWCASE_CLIPS[preset.clipKey].video.startsWith('/showcase/creator-') && !preset.sourceModel);
+  assert.equal(community.length, 427);
   for (const preset of community) {
     assert.equal(Object.hasOwn(preset, 'aspect'), false, preset.id);
     assert.match(preset.sourceAspect, /^(?:1:1|9:16|16:9)$/);
@@ -112,7 +113,7 @@ test('Genjutsu-inspired I2V recipes describe source framing without claiming pro
 });
 
 test('Genjutsu templates preserve every published source prompt exactly', () => {
-  const community = SOURCE_TEMPLATES.filter((preset) => AUDIT_SHOWCASE_CLIPS[preset.clipKey].video.startsWith('/showcase/creator-'));
+  const community = SOURCE_TEMPLATES.filter((preset) => Object.hasOwn(GENJUTSU_SOURCE_PROMPT_RECORDS, preset.id));
   const otherTemplates = SOURCE_TEMPLATES.filter((preset) => !community.includes(preset));
   const exact = community.filter((preset) => GENJUTSU_SOURCE_PROMPT_RECORDS[preset.id]?.sourcePromptAvailable);
   const derived = community.filter((preset) => !GENJUTSU_SOURCE_PROMPT_RECORDS[preset.id]?.sourcePromptAvailable);
@@ -121,8 +122,8 @@ test('Genjutsu templates preserve every published source prompt exactly', () => 
   assert.equal(derived.length, 41);
   assert.equal(Object.keys(GENJUTSU_PROMPT_SHA256).length, 59);
   assert.equal(new Set(exact.map((preset) => GENJUTSU_SOURCE_PROMPT_RECORDS[preset.id].prompt)).size, 59);
-  assert.ok(SOURCE_TEMPLATES.every((preset) => !Object.hasOwn(preset, 'sourcePrompt')));
-  assert.ok(SOURCE_TEMPLATES.every((preset) => !Object.hasOwn(preset, 'sourcePromptOrigin')));
+  assert.ok(SOURCE_TEMPLATES.every(preset => preset.sourcePrompt === preset.prompt));
+  assert.ok(SOURCE_TEMPLATES.every(preset => preset.sourcePromptOrigin === preset.promptOrigin));
   assert.ok(otherTemplates.every((preset) => GENJUTSU_SOURCE_PROMPT_RECORDS[preset.id] == null));
 
   for (const preset of community) {
@@ -131,7 +132,7 @@ test('Genjutsu templates preserve every published source prompt exactly', () => 
     if (source.sourcePromptAvailable) {
       assert.equal(createHash('sha256').update(source.prompt).digest('hex'), GENJUTSU_PROMPT_SHA256[preset.id], preset.id);
     } else {
-      assert.equal(preset.promptOrigin, 'veyrnox-adaptation', preset.id);
+      assert.equal(preset.promptOrigin, null, preset.id);
       assert.equal(source.prompt, null, preset.id);
       assert.equal(GENJUTSU_PROMPT_SHA256[preset.id], undefined, preset.id);
     }
@@ -228,12 +229,11 @@ test('the 200 Seedance templates preserve full prompts and paired unique videos'
     assert.equal(template.model, textOnly ? 'Seedance 2.0 Fast' : reference ? SEEDANCE_REFERENCE_MODEL : 'Kling 3.0 · I2V', record.id);
     assert.equal(template.credits, textOnly ? 19 : reference ? 85 : 32, record.id);
     assert.equal(template.durationSeconds, textOnly ? 5 : 10, record.id);
-    if (template.promptOrigin === 'community-source-exact') {
-      assert.equal(template.prompt, record.prompt, `${record.id}: full exact prompt must remain copied`);
-    } else {
-      assert.equal(template.promptOrigin, 'veyrnox-adaptation', record.id);
-      assert.equal(template.preferAdaptedPrompt, true, record.id);
-    }
+    assert.equal(template.promptOrigin, 'community-source-exact', record.id);
+    assert.equal(template.sourcePromptOrigin, 'community-source-exact', record.id);
+    assert.equal(template.prompt, record.prompt, record.id);
+    assert.equal(template.sourcePrompt, record.prompt, record.id);
+    assert.equal(template.preferAdaptedPrompt, undefined, record.id);
     const promptAudit = sourcePromptAuditRecord(record.id);
     promptAudits.push(promptAudit);
     if (record.referenceImageCount > 0 || record.referenceVideoCount > 0 || promptAudit.issues.includes('audio-preservation-not-supported')) {
@@ -254,25 +254,26 @@ test('the 200 Seedance templates preserve full prompts and paired unique videos'
   assert.equal(promptAudits.filter((record) => !record.runnable).length, 121);
 });
 
-test('public templates are exact or adaptation-only and all source-gap records are removed', () => {
+test('public community templates are exact and all source-gap records are removed', () => {
   const audit = PRESETS.map((preset) => [preset.id, sourcePromptAuditRecord(preset.id)]);
   const groups = Object.groupBy(audit, ([, record]) => record.status);
-  assert.equal(groups.exact.length, 367);
-  assert.equal(groups['adaptation-only'].length, 27);
+  assert.equal(groups.exact.length, 757);
+  assert.equal(groups['adaptation-only'], undefined);
   assert.equal(groups['exact-truncated'], undefined);
   assert.equal(groups.unavailable, undefined);
-  assert.equal(audit.length, 394);
+  assert.equal(audit.length, 757);
   assert.ok(audit.some(([, record]) => record.runnable === true));
   assert.ok(audit.some(([, record]) => record.runnable === false));
   assert.equal(audit.filter(([, record]) => record.issues.includes('prompt-over-30000')).length, 0);
-  assert.equal(audit.filter(([, record]) => record.issues.includes('more-than-two-reference-images')).length, 36);
-  assert.equal(audit.filter(([, record]) => record.issues.includes('audio-preservation-not-supported')).length, 137);
+  assert.equal(audit.filter(([, record]) => record.issues.includes('more-than-two-reference-images')).length, 102);
+  assert.equal(audit.filter(([, record]) => record.issues.includes('audio-preservation-not-supported')).length, 221);
   assert.equal(sourcePromptAuditRecord('community-survivor-memory-shift').status, 'exact-truncated');
   assert.equal(sourcePromptAuditRecord('keyboard-duo-swap').status, 'unavailable');
-  assert.equal(REMOVED_PROMPT_GAP_TEMPLATE_IDS.length, 43);
+  assert.equal(REMOVED_PROMPT_GAP_TEMPLATE_IDS.length, 70);
   const removedGroups = Object.groupBy(REMOVED_PROMPT_GAP_TEMPLATE_IDS, (id) => sourcePromptAuditRecord(id).status);
   assert.equal(removedGroups['exact-truncated'].length, 1);
   assert.equal(removedGroups.unavailable.length, 42);
+  assert.equal(removedGroups['adaptation-only'].length, 27);
   for (const id of REMOVED_PROMPT_GAP_TEMPLATE_IDS) {
     assert.equal(templateById(id), null, id);
     assert.equal(PRESETS.some((preset) => preset.id === id), false, id);
@@ -413,13 +414,8 @@ test('multi-subject community recipes require every identity in one starting ima
     'cyber-mask-transformation',
   ]) {
     const preset = SOURCE_TEMPLATES.find((entry) => entry.id === id);
-    if (preset?.promptOrigin === 'community-source-exact' && preset.sourcePromptRunnable === false) {
-      assert.match(preset?.needs || '', /copy the exact prompt/i, id);
-      assert.equal(preset?.needsKey, 'community.copyOnly', id);
-    } else {
-      assert.equal(preset?.needsKey, 'community.group', id);
-      assert.match(preset?.needs || '', /every subject/i, id);
-    }
+    assert.equal(preset?.needsKey, 'community.group', id);
+    assert.match(preset?.needs || '', /every subject/i, id);
   }
 });
 
@@ -442,10 +438,10 @@ test('source-aspect orientation agrees with every community preview', () => {
 });
 
 test('gallery and homepage templates have reachable recipe URLs', () => {
-  assert.equal(PRESETS.length, 394);
-  assert.equal(WALL_PRESETS.length, 24);
+  assert.equal(PRESETS.length, 757);
+  assert.equal(WALL_PRESETS.length, 14);
   const visible = [...PRESETS, ...WALL_PRESETS];
-  assert.equal(new Set(visible.map((p) => p.clipKey).filter(Boolean)).size, 394);
+  assert.equal(new Set(visible.map((p) => p.clipKey).filter(Boolean)).size, 757);
   for (const preset of visible) {
     assert.equal(templateById(preset.id), preset);
     assert.equal(isUnknownStaticPage(`/presets/${preset.id}`), false);
@@ -475,23 +471,16 @@ test('removed legacy recipes stay unavailable while effect recipes are addressab
   }
 });
 
-test('source-backed generation prompts match the published preview behaviour', () => {
-  const byId = Object.fromEntries(SOURCE_TEMPLATES.map((preset) => [preset.id, preset]));
-  const prompts = Object.fromEntries(Object.entries(byId).map(([id, preset]) => [id, preset.prompt]));
-  assert.match(prompts['community-noir-leading-role'], /black-and-white montage.+training.+intense close portraits/s);
-  assert.match(prompts['identity-locked-performance'], /speech-like mouth motion.+facial proportions/s);
-  assert.match(prompts['community-kitchen-snack-heist'], /opens the refrigerator.+one spoonful of dessert/s);
-  assert.match(prompts['community-parking-lot-recast'], /parking lot recast.+recognizable identity/s);
-});
-
-test('all source-backed generation prompts remain distinct', () => {
-  const prompts = SOURCE_TEMPLATES.map((preset) => preset.prompt.trim().replace(/\s+/g, ' '));
-  assert.equal(new Set(prompts).size, prompts.length);
+test('source-backed generation prompts equal their captured published text', () => {
+  for (const preset of PRESETS) {
+    assert.equal(preset.prompt, exactSourcePromptRecord(preset.id).prompt, preset.id);
+    assert.equal(preset.sourcePrompt, preset.prompt, preset.id);
+  }
 });
 
 test('retained source templates expose provenance only for the verified Seedance collection', () => {
   for (const preset of SOURCE_TEMPLATES) {
-    if (preset.sourceModel?.startsWith('Seedance')) {
+    if (preset.sourceModel) {
       assert.ok(['Syntx', 'Higgsfield'].includes(preset.sourcePlatform), preset.id);
       assert.match(preset.sourceUrl, /^https:\/\//, preset.id);
     } else {
@@ -513,7 +502,7 @@ test('retained source templates expose provenance only for the verified Seedance
 
 test('every retained source video and poster is a unique local asset', () => {
   const clips = Object.values(AUDIT_SHOWCASE_CLIPS);
-  assert.equal(clips.length, 527);
+  assert.equal(clips.length, Object.keys(JSON.parse(readFileSync(new URL('./fixtures/exactOnlyVisualSignatures.json', import.meta.url))).placements).length);
   for (const field of ['video', 'poster']) {
     const paths = clips.map((clip) => publishedMediaPath(clip[field]));
     assert.equal(new Set(paths).size, paths.length, `${field} paths must be unique`);
@@ -527,7 +516,7 @@ test('every retained source video and poster is a unique local asset', () => {
 test('community inspiration previews contain no audio track', () => {
   const videos = Object.values(AUDIT_SHOWCASE_CLIPS).map((clip) => clip.video)
     .filter((path) => path.startsWith('/showcase/creator-') || path.startsWith('/showcase/viral-community-'));
-  assert.equal(videos.length, 190);
+  assert.equal(videos.length, 580);
   for (const path of videos) {
     const data = readFileSync(fileURLToPath(new URL(`../public${path}`, import.meta.url)));
     let offset = 0;
@@ -546,10 +535,12 @@ test('ten-second recipes quote and hand off the same doubled cost', () => {
   }
 });
 
-test('kids birthday is a dedicated collection with twelve long-film-ready ideas', () => {
-  const birthday = PRESETS.filter((preset) => preset.category === 'KIDS BIRTHDAY');
+test('twelve promptless birthday previews remain audit-only', () => {
+  const birthday = SOURCE_TEMPLATES.filter(preset => preset.category === 'KIDS BIRTHDAY');
   assert.equal(birthday.length, 12);
-  assert.equal(new Set(birthday.map((preset) => preset.id)).size, 12);
-  assert.ok(birthday.every((preset) => preset.steps.some((step) => /30–120s/.test(step))));
-  assert.ok(birthday.every((preset) => !Object.hasOwn(preset, 'action')));
+  for (const preset of birthday) {
+    assert.equal(templateById(preset.id), null, preset.id);
+    assert.equal(preset.prompt, null, preset.id);
+    assert.ok(preset.steps.some(step => /30–120s/.test(step)), preset.id);
+  }
 });

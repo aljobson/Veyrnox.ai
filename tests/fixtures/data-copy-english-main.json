@@ -1,5 +1,5 @@
 {
-  "commit": "claude/template-exact-generate",
-  "recipe": "4dc699edb397cb63ec2204c110878c8d3642833ad337f017cd577a34bce79a77",
-  "detail": "2977c183a67825d3c4dc6d7fc9e1a5017e715ae5ddcfcdba8e3ecb6c701e58ae"
+  "contract": "exact-only community prompt; community-parking-lot-recast",
+  "recipe": "004e18e08cc631d04874137909c356d70a7ec6443ddceed6751cc3aa987a4cb7",
+  "detail": "be1b7ee519367a94f9b9b15e5842998e12e5f3b8f2cb6190c9d9cb734bcf04a6"
 }
