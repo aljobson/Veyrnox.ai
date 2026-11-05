@@ -11,7 +11,7 @@ function clean(value, max) {
 /** Carry an edited public-template prompt into LLM Chat without exposing it in the URL. */
 export function writeTemplateChatDraft(storage, preset, prompt, now = Date.now()) {
   if (!storage) return false;
-  const exactPrompt = typeof prompt === 'string' ? prompt.trim() : '';
+  const exactPrompt = typeof prompt === 'string' && prompt.trim() ? prompt : '';
   if (!exactPrompt || exactPrompt.length > MAX_PROMPT) return false;
   const draft = {
     templateId: clean(preset?.id, 100),
@@ -41,7 +41,7 @@ export function takeTemplateChatDraft(storage, now = Date.now()) {
   try {
     const draft = JSON.parse(raw);
     const templateId = clean(draft?.templateId, 100);
-    const prompt = typeof draft?.prompt === 'string' ? draft.prompt.trim() : '';
+    const prompt = typeof draft?.prompt === 'string' && draft.prompt.trim() ? draft.prompt : '';
     if (prompt.length > MAX_PROMPT) return null;
     if (!templateId || !prompt || !Number.isFinite(draft?.at) || now - draft.at > MAX_AGE_MS || draft.at > now) return null;
     return { templateId, prompt };

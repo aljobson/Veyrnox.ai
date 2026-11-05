@@ -108,6 +108,7 @@ export default function CreateStudio() {
   const [duration, setDuration] = useState('5s');
   const [audioDurations, setAudioDurations] = useState({});
   const [aspect, setAspect] = useState('16:9');
+  const [recoveredPrompt, setRecoveredPrompt] = useState(null); // Recovery has no template provenance; preserve its unedited bytes.
   const [typed, setPrompt] = useState(null); // null until the user types or a draft is restored
   // Start image for models whose catalog capabilities declare an image slot.
   // Sources for the model's media slots: { image|video|audio: { file, previewUrl } },
@@ -230,6 +231,7 @@ export default function CreateStudio() {
     incoming: incomingDraft,
     draft: { modelId, goal, prompt: typed, duration, aspect, count, sources, seed, negative, voice, audioDurations, cinemaOn, cinema, characterOn, character },
     apply: (saved, restoredSources) => {
+      setRecoveredPrompt(saved.prompt);
       chooseModel(saved.modelId); setGoal(saved.goal); setPrompt(saved.prompt); setDuration(saved.duration);
       setAspect(saved.aspect); setCount(saved.count); setSeed(saved.seed); setNegative(saved.negative); setVoice(saved.voice);
       setAudioDurations(saved.audioDurations); setCinemaOn(saved.cinemaOn); setCinema({ ...DEFAULT_CINEMA, ...saved.cinema });
@@ -500,7 +502,7 @@ export default function CreateStudio() {
   // Character traits go first, the camera description last; each keeps the
   // result within the selected model's generation-prompt contract.
   function finalPrompt() {
-    let text = prompt.trim();
+    let text = (templateData && prompt === templateData.prompt) || prompt === recoveredPrompt ? prompt : prompt.trim();
     if (model?.kind === 'image' && characterOn) text = buildCharacterPrompt(text, character);
     if (takesCamera && cinemaOn) text = buildCinemaPrompt(text, cinema);
     return text;

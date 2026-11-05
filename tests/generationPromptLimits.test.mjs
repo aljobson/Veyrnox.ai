@@ -5,23 +5,14 @@ import { readFileSync } from 'node:fs';
 import { GENERATION_PROMPT_MAX, NEGATIVE_PROMPT_MAX } from '../lib/generationPromptLimits.js';
 import { REGISTRY, capabilityFor, checkInputs } from '../lib/modelCapabilities.js';
 import { cleanCreateDraft } from '../lib/createDraftRecovery.js';
-import { ALL_TEMPLATES } from '../app/veyrnox/_lib/templates.js';
+import { ALL_TEMPLATES, PRESETS } from '../app/veyrnox/_lib/templates.js';
 import { draftForTemplate } from '../app/veyrnox/_lib/templateDraft.js';
 import { filmStarterForTemplate } from '../app/veyrnox/_lib/filmTemplateDraft.js';
 import { modelIdForName } from '../app/veyrnox/_lib/tokens.js';
 import { writeStudioDraft, takeStudioDraft } from '../app/veyrnox/_lib/landingDraft.js';
-import { GENJUTSU_SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/genjutsuSourcePromptRecords.js';
-import { HIGGSFIELD_90_SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/higgsfieldCommunityExpansion90Records.js';
-import { SYNTX_SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/syntxSourcePromptRecords.js';
-import { SEEDANCE_SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/seedanceSourcePromptRecords.js';
 import { sourcePromptAuditForModel } from '../app/veyrnox/_lib/sourcePromptAudit.js';
 
-const sourceRecords = {
-  ...GENJUTSU_SOURCE_PROMPT_RECORDS,
-  ...HIGGSFIELD_90_SOURCE_PROMPT_RECORDS,
-  ...SYNTX_SOURCE_PROMPT_RECORDS,
-  ...SEEDANCE_SOURCE_PROMPT_RECORDS,
-};
+import { SOURCE_PROMPT_RECORDS as sourceRecords } from '../app/veyrnox/_lib/sourcePromptRecords.js';
 
 const memoryStorage = () => {
   const values = new Map();
@@ -76,7 +67,7 @@ test('all recorded exact community prompts fit the new contract without truncati
   const prompts = Object.values(sourceRecords)
     .filter((record) => record.sourcePromptAvailable && typeof record.prompt === 'string')
     .map((record) => record.prompt);
-  assert.equal(prompts.length, 368);
+  assert.equal(prompts.length, 758);
   assert.ok(Math.max(...prompts.map((prompt) => prompt.length)) <= GENERATION_PROMPT_MAX);
   assert.ok(prompts.some((prompt) => prompt.length > 20_000));
 });
@@ -84,8 +75,12 @@ test('all recorded exact community prompts fit the new contract without truncati
 test('product prompt-audit documents keep the recalculated exact-prompt counts', () => {
   const audit = readFileSync('docs/product/template-prompt-audit-2026-10-29.md', 'utf8').replace(/\s+/g, ' ');
   const recipes = readFileSync('docs/product/template-recipes.md', 'utf8').replace(/\s+/g, ' ');
-  assert.match(audit, /144 are runnable[^;]+; 221 remain read-only/);
-  assert.match(recipes, /144 exact prompts; 221 remain/);
+  const compatible = PRESETS.filter(p => p.sourcePromptRunnable).length;
+  const incompatible = PRESETS.length - compatible;
+  assert.ok(audit.includes(`Audit-compatible: **${compatible}**; incompatible: **${incompatible}**.`));
+  assert.ok(recipes.includes(`${compatible} public exact prompts are compatible and ${incompatible} incompatible`));
+  assert.match(audit, /No copy-only blocking/);
+  assert.match(recipes, /Compatibility flags are informational by owner decision/);
 });
 
 test('the formerly clipped 2,077-character exact prompt now fits the product contract whole', () => {

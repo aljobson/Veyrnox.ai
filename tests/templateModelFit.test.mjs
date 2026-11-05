@@ -18,7 +18,7 @@ import { fixture as renderFixture } from './helpers/publicSiteRender.mjs';
 const fixture = JSON.parse(readFileSync(new URL('./fixtures/catalogTemplateModels.json', import.meta.url)));
 const catalog = fixture.models;
 const optionalIds = ['epic-train-doorway-scene', 'the-push', 'dreamworks-castle', 'a-moment-between-strangers', 'the-last-stagecoach'];
-const changedIds = [...Object.keys(SEEDANCE_200_TEMPLATE_METADATA), 'city-trailer', 'curtain-reveal'];
+const changedIds = [...Object.keys(SEEDANCE_200_TEMPLATE_METADATA), 'curtain-reveal'];
 const numberWords = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, fifteen: 15, twenty: 20, thirty: 30, sixty: 60 };
 
 function violations(preset, contract) {
@@ -81,7 +81,7 @@ test('guard rejects the old Seedance duration and required-picture regressions',
   assert.deepEqual(violations({ needs: 'Copy the exact prompt; its required image is not wired' }, seedance), []);
 });
 
-test('all 202 affected templates follow R1–R4 and preserve exact source records', () => {
+test('all 201 retained affected templates follow R1–R4 and preserve exact source records', () => {
   const counts = { R1: 0, R2: 0, R3: 0, R4: 0 };
   const audit = JSON.parse(readFileSync(new URL('../docs/product/source-audit/seedance-200-exact-2026-10-29.json', import.meta.url)));
   for (const id of changedIds) {
@@ -90,16 +90,10 @@ test('all 202 affected templates follow R1–R4 and preserve exact source record
     counts[rule]++;
     assert.equal(preset.model, rule === 'R1' ? (takesReferenceModel(SEEDANCE_200_TEMPLATE_METADATA[id]) ? SEEDANCE_REFERENCE_MODEL : 'Kling 3.0 · I2V') : 'Seedance 2.0 Fast', id);
     assert.equal(preset.durationSeconds, rule === 'R1' ? 10 : 5, id);
-    if (rule !== 'R3') {
-      assert.equal(preset.promptOrigin, 'veyrnox-adaptation', id);
-      assert.equal(preset.preferAdaptedPrompt, true, id);
-      assert.notEqual(preset.prompt, exactSourcePromptRecord(id)?.prompt, id);
-      assert.match(presetHref(preset), /^\/app\/create\?model=/);
-    }
-    if (rule === 'R1') {
-      assert.match(preset.prompt, /\b(?:uploaded|supplied)\b/i, id);
-      assert.doesNotMatch(preset.prompt, /seedance/i, id);
-    }
+    assert.equal(preset.promptOrigin, 'community-source-exact', id);
+    assert.equal(preset.preferAdaptedPrompt, undefined, id);
+    assert.equal(preset.prompt, exactSourcePromptRecord(id).prompt, id);
+    assert.match(presetHref(preset), /^\/app\/create\?model=/);
     const source = audit.records.find(record => record.id === id);
     if (source) {
       assert.equal(exactSourcePromptRecord(id).prompt, source.prompt, `${id}: immutable exact prompt`);
@@ -113,19 +107,19 @@ test('all 202 affected templates follow R1–R4 and preserve exact source record
       assert.equal(takesReferenceModel(SEEDANCE_200_TEMPLATE_METADATA[id]) ? SEEDANCE_REFERENCE_MODEL : SEEDANCE_200_TEMPLATE_METADATA[id].runnableModel, preset.model, id);
     }
   }
-  assert.deepEqual(counts, { R1: 71, R2: 5, R3: 44, R4: 82 });
+  assert.deepEqual(counts, { R1: 70, R2: 5, R3: 44, R4: 82 });
 });
 
 test('optional-picture recipes have no upload dependency in prompts, needs or steps', () => {
   for (const id of optionalIds) {
     const preset = templateById(id);
     assert.equal(preset.needs, null, id);
-    assert.doesNotMatch([preset.prompt, ...preset.steps].join(' '), /upload|supplied|starting image|reference (?:image|photo)|ten-second|10\s*s\b/i, id);
-    assert.match(preset.prompt, /five-second/);
+    assert.doesNotMatch(preset.steps.join(' '), /upload|supplied|starting image|reference (?:image|photo)|ten-second|10\s*s\b/i, id);
+    assert.equal(preset.prompt, exactSourcePromptRecord(id).prompt);
   }
 });
 
-test('generated text-only sources remain text-only five-second adaptations', () => {
+test('generated text-only sources remain text-only five-second routes with exact prompts', () => {
   const audit = JSON.parse(readFileSync(new URL('../docs/product/source-audit/seedance-200-exact-2026-10-29.json', import.meta.url)));
   const textOnly = audit.records.filter(record => !record.existing && record.referenceImageCount === 0 && sourcePromptAuditRecord(record.id).runnable);
   assert.equal(textOnly.length, 78);
@@ -135,22 +129,22 @@ test('generated text-only sources remain text-only five-second adaptations', () 
     assert.equal(preset.durationSeconds, 5, record.id);
     assert.equal(preset.needs, null, record.id);
     assert.equal(preset.needsKey, null, record.id);
-    assert.equal(preset.promptOrigin, 'veyrnox-adaptation', record.id);
-    assert.match(preset.prompt, /^Create a five-second video\./, record.id);
-    assert.doesNotMatch([preset.prompt, ...preset.steps].join(' '), /upload|supplied|starting image|reference image/i, record.id);
+    assert.equal(preset.promptOrigin, 'community-source-exact', record.id);
+    assert.equal(preset.prompt, record.prompt, record.id);
+    assert.doesNotMatch(preset.steps.join(' '), /upload|supplied|starting image|reference image/i, record.id);
     assert.equal(exactSourcePromptRecord(record.id).prompt, record.prompt, record.id);
   }
 });
 
-test('hand-written recipes whose source used no reference image are text-only five-second adaptations', () => {
+test('hand-written recipes whose source used no reference image are text-only five-second routes with exact prompts', () => {
   for (const id of ['tentacle-breakout', 'blood-moon-dance', 'red-thread-story', 'meal-together']) {
     const preset = templateById(id);
     assert.equal(preset.model, 'Seedance 2.0 Fast', id);
     assert.equal(preset.durationSeconds, 5, id);
     assert.equal(preset.needs, null, id);
     assert.equal(preset.needsKey, null, id);
-    assert.match(preset.prompt, /^Create a five-second /, id);
-    assert.doesNotMatch([preset.prompt, ...preset.steps].join(' '), /upload|supplied|starting image|reference (?:image|photo)|ten-second|10\s*s\b/i, id);
+    assert.equal(preset.prompt, exactSourcePromptRecord(id).prompt, id);
+    assert.doesNotMatch(preset.steps.join(' '), /upload|supplied|starting image|reference (?:image|photo)|ten-second|10\s*s\b/i, id);
   }
 });
 
@@ -159,7 +153,7 @@ test('the fashion recipe requests one combined starting image', () => {
     const preset = templateById(id);
     assert.equal(preset.model, takesReferenceModel(SEEDANCE_200_TEMPLATE_METADATA[id]) ? SEEDANCE_REFERENCE_MODEL : 'Kling 3.0 · I2V', id);
     assert.match(preset.needs, /^One starting image showing /, id);
-    assert.doesNotMatch([preset.needs, preset.prompt, ...preset.steps].join(' '), /separate.*image|two.*references|uploaded garment/i, id);
+    assert.doesNotMatch([preset.needs, ...preset.steps].join(' '), /separate.*image|two.*references|uploaded garment/i, id);
   }
   assert.match(templateById('fashion-catch').needs, /model wearing the garment or accessory/);
 });
@@ -225,11 +219,11 @@ test('import rules cover all branches without changing exact copy-only text', ()
   assert.equal(required.model, 'Kling 3.0 · I2V');
   const optional = fitSeedanceTemplate({ ...base, needs: 'An optional image', prompt: `${base.prompt} The uploaded person looks left. Use the uploaded start image for the characters and composition when supplied.` });
   assert.equal(optional.needs, null);
-  assert.doesNotMatch(optional.prompt, /uploaded|ten-second/);
+  assert.equal(optional.prompt, `${base.prompt} The uploaded person looks left. Use the uploaded start image for the characters and composition when supplied.`);
   const copyOnly = { ...base, needs: 'Copy the exact prompt; its required image is not wired', promptOrigin: 'community-source-exact' };
   assert.deepEqual(fitSeedanceTemplate(copyOnly), { ...copyOnly, durationSeconds: 5, credits: 19 });
   assert.equal(fitSeedanceTemplate(base).durationSeconds, 5);
-  assert.match(fitSeedanceTemplate(base).prompt, /five-second/);
+  assert.equal(fitSeedanceTemplate(base).prompt, base.prompt);
   for (const intro of ['Animate the uploaded reference', 'Animate the uploaded image', 'Animate the supplied portrait']) {
     const prompt = `${intro} into a ten-second scene.`;
     assert.equal(fitSeedanceTemplate({ ...base, needs: 'A portrait', prompt }).prompt, prompt, 'existing image intro is not duplicated');
@@ -238,4 +232,19 @@ test('import rules cover all branches without changing exact copy-only text', ()
 
 test('committed generated metadata and recipes match an offline re-import', () => {
   execFileSync(process.execPath, ['scripts/import-seedance-source-templates.mjs', '--check'], { cwd: new URL('..', import.meta.url), stdio: 'pipe' });
+});
+
+test('the 299 retained additional community exact prompts keep the established Kling I2V contract', async () => {
+  const { HIGGSFIELD_300_TEMPLATE_IDS } = await import('../app/veyrnox/_lib/sourceTemplateExpansion14.js');
+  const kling = catalog.find(model => model.id === 'kling-3.0-i2v');
+  for (const id of HIGGSFIELD_300_TEMPLATE_IDS) {
+    const preset = templateById(id);
+    assert.equal(preset.model, 'Kling 3.0 · I2V', id);
+    assert.equal(preset.durationSeconds, 10, id);
+    assert.equal(preset.credits, kling.credits, id);
+    assert.equal(preset.promptOrigin, 'community-source-exact', id);
+    assert.equal(preset.prompt, exactSourcePromptRecord(id).prompt, id);
+    assert.deepEqual(violations(preset, kling), [], id);
+    assert.equal(preset.aspect, undefined, 'source framing is not a provider aspect promise');
+  }
 });

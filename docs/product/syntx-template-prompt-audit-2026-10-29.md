@@ -1,8 +1,36 @@
 # Syntx video-template prompt audit — 29 October 2026
 
-## Result
+## Exact-only update — 5 November 2026
 
-Veyrnox now contains 98 video templates linked to licensed Syntx community trends. Records were matched using the public read-only Trends API and the source media identifiers retained with each template.
+The current corpus has 204 Syntx-linked retained templates: the 98 audited
+below, 43 added with the Seedance audit, and 63 accepted from 64 prepared Trends
+records. 203 have complete public exact prompts; Keyboard Duo remains hidden.
+Dark Couture is rejected because stripping nine SYNTX AI typography mentions
+would materially rewrite the source. Its audit retains identifiers, hashes and
+the reason, with no prompt or media.
+The [64-record audit](source-audit/syntx-64-exact-2026-11-05.json) locks raw
+prompt hashes, source record/media IDs, raw settings and source/shipped hashes.
+The 126 accepted prepared files are copied unchanged (80,645,464 bytes).
+
+Source model labels use an explicit provider-ID table; raw settings are retained.
+The runnable route follows the Seedance importer's compatibility-first guidance:
+numbered image/video references or audio issues select informational copyOnly
+(R3, Fast, five seconds); compatible zero-reference text uses R4 (Fast, five
+seconds). R1 would select Kling I2V for image guidance, but the existing audit
+marks numbered images incompatible before that branch. All 63 rows therefore
+use Fast, independently of their source model label. This does not block exact
+prompt submission. Categories use word-anchored rules, ANIME before CARTOONS,
+and an explicit scene-reviewed override table for every accepted record.
+
+Both `prompt` and `sourcePrompt` now contain only the published exact text and
+both origin fields say `community-source-exact`. No authored fallback prompt or
+negative prompt is served. Compatibility is informational, including unresolved
+reference slots. The eight unattributed wall templates discussed below are now
+hidden; no provenance was guessed for them.
+
+## Historical October result
+
+The October snapshot contained 98 video templates linked to licensed Syntx community trends. Records were matched using the public read-only Trends API and the source media identifiers retained with each template.
 
 - **97 exact source prompts are complete.** Their verbatim text is stored in the Syntx source-record modules, loaded as the template-page prompt, returned by `/api/presets`, and locked by full SHA-256 fixtures.
 - **1 source prompt remains unresolved:** `keyboard-duo-swap`. Its licensed media file is still reachable, but Syntx no longer returns its source record. Veyrnox keeps a null exact-source prompt rather than inventing text.
@@ -11,8 +39,8 @@ Veyrnox now contains 98 video templates linked to licensed Syntx community trend
 - **Independent source-file evidence is locked for the 9 recovered and 60 new records.** Each downloaded Syntx variant has a full SHA-256 in `syntxSourceAssetHashes.mjs`; all 69 source downloads are byte-unique. The nine recovered provenance rows were reconstructed from the public Trends API on 29 October rather than assumed to be records made at their original import.
 - **2 exact-prompt duplicate groups are documented:** `who-was-that-business` / `curtain-reveal`, and `event-character-swap` / `rap-takeover`. Each pair represents different preview placements associated with the same underlying Syntx trend; the local videos remain different.
 - **All 98 local Syntx preview videos are byte-unique.** The additional 40 also have distinct normalized five-second visual signatures, both within their batch and against the 58 previously recorded Syntx previews.
-- Exact source prompts are displayed and loaded byte-for-byte when a verified template is selected. They remain marked non-runnable where they exceed provider limits or require source-video/reference inputs the current public generation route does not accept; the shorter `veyrnox-adaptation` value remains separate fallback metadata.
-- Verbatim creator text can contain third-party references. For example, `pizzeria-hide-and-seek` names a game franchise in its exact read-only source prompt. The owner requested exact copying; Veyrnox does not edit that provenance text, while the editable Veyrnox adaptation uses an original neutral mechanical mascot.
+- Exact source prompts are displayed and loaded byte-for-byte. Compatibility flags describe source inputs and limits; the owner requires the exact text to remain the sole generation handoff even when incompatible.
+- Verbatim creator text can contain third-party references. `pizzeria-hide-and-seek` names a game franchise. The owner requested exact copying; the former authored adaptation has been removed.
 
 The complete source record, exact prompt, source-media URL, source-file hash, normalized visual signature, local preview hash and rejection ledger for the additional 40 are in the [machine-readable 40-record manifest](source-audit/syntx-40-2026-10-29.json). Candidate selection rejected 39 records already present, four normalized prompt duplicates and four records without a complete same-record prompt/video pair.
 
@@ -36,20 +64,31 @@ This exclusion is a provenance conclusion, not a claim that their private origin
 
 ## Renamed source entries
 
-These neutral Veyrnox template names differ from the current Syntx trend title. The public Veyrnox names remain unchanged; the exact source title and slug stay in provenance.
+Neutral public IDs and names are separate from source slugs and titles. The eleven new IDs have no redirect or legacy mapping.
 
-| Veyrnox template | Current Syntx source title |
+| Public id / name | Source slug / title |
 | --- | --- |
-| `event-character-swap` | Viral Rap Takeover |
-| `rap-takeover` | Viral Rap Takeover |
-| `curtain-reveal` | Who was that? Business |
-| `character-takeover` | Rich in 30 Days |
-| `escalator-loop` | Escalator Vibe |
-| `blood-moon-dance` | Vampire Blood Moon |
-| `red-thread-story` | The Red Thread |
-| `meal-together` | A Meal Made Together |
-| `sheep-kingdom` | Among Sheep |
-| `fashion-catch` | Catch the Look |
+| `event-character-swap` — EVENT CHARACTER SWAP | `viral-rap-takeover` — Viral Rap Takeover |
+| `rap-takeover` — RAP TAKEOVER | `viral-rap-takeover` — Viral Rap Takeover |
+| `curtain-reveal` — CURTAIN REVEAL | `who-was-that-business` — Who was that? Business |
+| `character-takeover` — CHARACTER TAKEOVER | `rich-in-30-days` — Rich in 30 Days |
+| `escalator-loop` — ESCALATOR LOOP | `escalator-vibe` — Escalator Vibe |
+| `blood-moon-dance` — BLOOD MOON DANCE | `vampire-blood-moon` — Vampire Blood Moon |
+| `red-thread-story` — RED THREAD STORY | `the-red-thread` — The Red Thread |
+| `meal-together` — MEAL TOGETHER | `a-meal-made-together` — A Meal Made Together |
+| `sheep-kingdom` — SHEEP KINGDOM | `among-sheep` — Among Sheep |
+| `fashion-catch` — FASHION CATCH | `catch-the-look` — Catch the Look |
+| `crowd-choreography-recast` — CROWD CHOREOGRAPHY RECAST | `jenner` — Jenner |
+| `vampire-voyage` — VAMPIRE VOYAGE | `drakula-cruise` — Drakula Cruise |
+| `neon-city-freefall` — NEON CITY FREEFALL | `vice-city-freefall` — Vice City Freefall |
+| `underground-lab-transformation` — UNDERGROUND LAB TRANSFORMATION | `breaking-good` — Breaking Good |
+| `ruins-escape-run` — RUINS ESCAPE RUN | `tomb-rider` — Tomb Rider |
+| `curious-garden-journey` — CURIOUS GARDEN JOURNEY | `alice-in-wonderland` — Alice in Wonderland |
+| `sculptural-sunglasses-ad` — SCULPTURAL SUNGLASSES AD | `gentle-monster-disney` — Gentle Monster × Disney |
+| `alien-forest-flight` — ALIEN FOREST FLIGHT | `pov-avatar` — POV Avatar |
+| `desert-worm-flight` — DESERT WORM FLIGHT | `the-dune` — The Dune |
+| `chocolate-factory-flight` — CHOCOLATE FACTORY FLIGHT | `wonka-world` — Wonka World |
+| `rooftop-agent-pursuit` — ROOFTOP AGENT PURSUIT | `the-matrix` — The Matrix |
 
 ## Earlier completion matrix
 
@@ -116,7 +155,7 @@ The table below covers the original 58 audited records. The linked machine-reada
 | `cyber-mask-transformation` | New 20 | Cyber Mask Transformation | Complete | `PT0xEPWfx9gGtgH5ugveikCpTKOX6GuOhn976fTO` | `9ad057c46ad72f4fea54c87da6ec33673679c0796da586d0a4f1a6a0752684bc` |
 | `pizzeria-hide-and-seek` | New 20 | Pizzeria Hide and Seek | Complete | `fnH4DicY8yYNdUA5XqtNaEnJvROIya7QNPdNBBf3` | `9b57e9a88d805e89fa8b6c9b43b9ea5de1c9b6208e7cb9b9af076bdcb7af73da` |
 
-## Verification contract
+## Historical October verification contract
 
 The regression suite checks:
 
@@ -130,3 +169,47 @@ The regression suite checks:
 8. exact and runnable generation prompts remain within the supported 30,000-character boundary.
 
 This audit used Syntx’s public read-only Trends API on 29 October 2026. It did not run a paid generation or infer private prompts.
+
+<!-- BEGIN PUBLIC PROMPT HYGIENE -->
+Captured public text remains verbatim by owner decision, including third-party handles, plates, addresses, domains, promo codes and upload filenames. These are pattern-detected candidates, not verified identities. No redaction or publication change is applied. The shared offline scanner and regression test cover all 299 + 63 + 28 accepted raw prompts.
+
+| Capture | Affected public id | Detected kinds |
+| --- | --- | --- |
+| higgsfield-300-exact | `community-interactive-ar-showroom` | address, handle |
+| higgsfield-300-exact | `community-toy-car-swap` | plate |
+| higgsfield-300-exact | `community-drift-curve-replacement` | plate |
+| higgsfield-300-exact | `community-boxing-identity-swap` | upload filename |
+| higgsfield-300-exact | `community-street-squat-duo` | domain |
+| higgsfield-300-exact | `community-urban-sedan-pursuit` | plate |
+| syntx-64-exact | `frozen-time` | domain |
+| higgsfield-category-fill-30 | `community-macro-product-montage` | domain, promo code |
+<!-- END PUBLIC PROMPT HYGIENE -->
+
+<!-- BEGIN SOURCE REFERENCE GAPS -->
+## source-reference-gaps (informational)
+
+20 retained rows across the three captures are exact as published but incomplete by origin: source feeds delete reference mentions. The owner may hide them. Their captured bytes, publication and `sourcePromptRunnable` flags remain unchanged. Input-asset counts corroborate missing mentions where the capture records them; Syntx does not supply that count in this audit. The detector uses grammatical gaps, not upload counts alone, and does not guarantee detection of every missing mention.
+
+| Capture | Affected public id | Detected gaps | Captured input assets |
+| --- | --- | --- | ---: |
+| higgsfield-300-exact | `community-music-video-recast` | empty reference before punctuation, missing reference between connectors | 7 |
+| higgsfield-300-exact | `community-gas-station-reveal` | empty reference group | 6 |
+| higgsfield-300-exact | `community-skyline-delivery` | missing Spanish reference | 3 |
+| higgsfield-300-exact | `community-dragon-summoner` | empty reference before punctuation, missing reference after use, missing reference between connectors | 1 |
+| higgsfield-300-exact | `community-vaulted-temple-walk` | missing reference between connectors | 2 |
+| higgsfield-300-exact | `community-cabin-rhythm-duo` | missing reference assignment | 2 |
+| higgsfield-300-exact | `community-formal-dance-swap` | empty reference before punctuation, missing reference at end | 2 |
+| higgsfield-300-exact | `community-rainy-street-encounter` | missing reference before line break, missing reference between connectors | 2 |
+| higgsfield-300-exact | `community-kitchen-feline-reveal` | empty reference before punctuation, missing reference after use | 2 |
+| higgsfield-300-exact | `community-noir-espionage-flow` | missing swap subject | 7 |
+| higgsfield-300-exact | `community-nightclub-duo-recast` | empty reference before punctuation, missing reference after use, missing reference between connectors | 4 |
+| higgsfield-300-exact | `community-desk-chair-spin` | missing reference after article | 1 |
+| higgsfield-300-exact | `community-tactical-gear-montage` | missing reference between connectors | 2 |
+| higgsfield-300-exact | `community-model-vehicle-swap` | missing replacement before scope | 1 |
+| higgsfield-300-exact | `community-summit-lounge-style` | missing reference between connectors | 2 |
+| higgsfield-300-exact | `community-industrial-lens-flare` | missing reference between connectors | 1 |
+| higgsfield-300-exact | `community-alleyway-dance-crew` | missing reference at end, missing reference before line break | 5 |
+| syntx-64-exact | `grab-heist` | empty reference before punctuation, missing conditional subject | not recorded |
+| higgsfield-category-fill-30 | `community-supercar-night-drive` | empty reference before punctuation | 1 |
+| higgsfield-category-fill-30 | `community-apocalypse-terrace` | empty reference before punctuation | 1 |
+<!-- END SOURCE REFERENCE GAPS -->

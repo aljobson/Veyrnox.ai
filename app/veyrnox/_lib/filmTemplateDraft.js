@@ -9,7 +9,7 @@ function clean(value, max) {
 
 export function filmStarterForTemplate(preset, prompt, targetSeconds = 60) {
   const target = Number(targetSeconds);
-  const exactPrompt = typeof prompt === 'string' ? prompt.trim() : '';
+  const exactPrompt = typeof prompt === 'string' && prompt.trim() ? prompt : '';
   return {
     templateId: clean(preset?.id || preset?.templateId, 100),
     title: clean(preset?.name || preset?.title, 100),

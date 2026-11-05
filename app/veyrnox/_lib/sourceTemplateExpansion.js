@@ -1,126 +1,15 @@
-const base = {
-  model: 'Kling 3.0 · I2V',
-  credits: 32,
-  durationSeconds: 10,
-  isNew: true,
-  inspired: true,
-  promptOrigin: 'veyrnox-adaptation',
-  negativePrompt: 'identity drift, warped anatomy, duplicate subjects, flicker, jump cuts, captions, logos, watermark',
-};
-
-const steps = [
-  'Upload a clear starting image that matches the subject guidance.',
-  'Use this template to load its ten-second prompt and settings.',
-  'Review the framing and identity details before generating.',
-];
-
-function trendTemplate({ slug, clipKey = slug, name, category, aspect, needs, prompt, bg }) {
-  return {
-    ...base,
-    id: slug,
-    name: name || slug.replaceAll('-', ' ').toUpperCase(),
-    clipKey,
-    category,
-    previewAspect: aspect,
-    bg,
-    needs,
-    prompt,
-    steps,
-  };
-}
-
-function effectTemplate({ slug, clipKey = slug, name, category, aspect, needs, prompt, bg }) {
-  return {
-    ...base,
-    id: slug,
-    name,
-    clipKey,
-    category,
-    previewAspect: aspect,
-    bg,
-    needs,
-    prompt,
-    steps,
-  };
-}
-
-export const SOURCE_TEMPLATE_EXPANSION = [
-  trendTemplate({
-    slug: 'jellyfish-airlines', category: 'FANTASY', aspect: '720 / 406',
-    needs: 'A clear full-body character photo with visible clothing',
-    bg: 'linear-gradient(150deg,#102844 0%,#735276 55%,#f0a45e 100%)',
-    prompt: 'Animate the uploaded character riding a vast bioluminescent jellyfish through a realistic sunset sky. Preserve their exact face, hair, clothing and proportions as they lean into a fast banking turn, gripping taut reins pulled by two airborne fish. Make the jellyfish bell pulse for propulsion, stream its tentacles in the wind, and reveal coral towers and distant glowing giants below. Use grounded cinematic light, continuous physical motion, natural wind response and no text or watermark.',
-  }),
-  trendTemplate({
-    slug: 'dandelion-ball', category: 'FANTASY', aspect: '720 / 406',
-    needs: 'A clear full-body character photo',
-    bg: 'linear-gradient(145deg,#1a2818 0%,#64704a 55%,#e4cf93 100%)',
-    prompt: 'Animate the uploaded character entering an elegant twilight ballroom built among enormous dandelions. Preserve their exact identity and outfit while luminous seeds float through the air and guests turn toward them. Track forward at walking pace, then arc gently as the character reaches the dance floor. Keep the scene photorealistic, the fabric and drifting seeds physically natural, and the lighting warm, cinematic and consistent with no captions or watermark.',
-  }),
-  trendTemplate({
-    slug: 'sm-brand-new-day', name: 'SM: BRAND NEW DAY', category: 'CINEMATIC', aspect: '720 / 406',
-    needs: 'A clear portrait or full-body performer photo',
-    bg: 'linear-gradient(145deg,#1f3443 0%,#6e765a 58%,#f0bd6e 100%)',
-    prompt: 'Create a bright cinematic music-video moment starring the uploaded performer at the start of a brand-new day. Preserve their face, hairstyle, body and clothing while they move confidently through sunlit streets, with energetic camera tracking, soft lens flare and believable crowd motion. Use a continuous visual rhythm, natural lip and body movement, crisp daylight colour and stable identity throughout. Do not add titles, logos or watermarks.',
-  }),
-  trendTemplate({
-    slug: 'who-was-that-business', name: 'WHO WAS THAT? BUSINESS', category: 'UGC', aspect: '720 / 540',
-    needs: 'A clear character photo suitable for a polished office scene',
-    bg: 'linear-gradient(150deg,#171b22 0%,#465263 55%,#bdc6d2 100%)',
-    prompt: 'Animate the uploaded character in a polished business-comedy scene. Preserve their exact identity, hairstyle, proportions and wardrobe as they stride through a modern office, exchange a surprised look with a colleague and turn back as if asking who just passed. Use restrained handheld camera movement, natural reactions, accurate eye lines and believable office lighting. Keep faces consistent and exclude captions, logos and watermarks.',
-  }),
-  effectTemplate({
-    slug: 'scrapbook-collage', name: 'SCRAPBOOK COLLAGE', category: 'FASHION', aspect: '406 / 720',
-    needs: 'A clean full-body fashion photo',
-    bg: 'linear-gradient(170deg,#f0e8dc 0%,#87b9b4 55%,#dd6b72 100%)',
-    description: 'A central full-body shot appears alongside smaller inset close-ups in a dynamic scrapbook layout for fashion videos, lookbooks and stylized edits.',
-    prompt: 'Turn the uploaded fashion portrait into a moving scrapbook collage. Keep one full-body cutout centered while torn-paper panels reveal synchronized close-ups of the face, shoes and outfit details. Add hand-drawn marks, paper texture and subtle parallax as the layout assembles, while preserving the subject’s exact identity and clothing. Keep every panel crisp and coordinated, with no extra people, captions, logos or watermark.',
-  }),
-  effectTemplate({
-    slug: 'stop-world', name: 'STOP WORLD', category: 'VFX', aspect: '540 / 720',
-    needs: 'A street portrait with a clearly separated central subject',
-    bg: 'linear-gradient(165deg,#4b555a 0%,#b39883 55%,#e28188 100%)',
-    description: 'The public preview holds the central subject steady while the surrounding street crowd streaks past in accelerated motion.',
-    prompt: 'Animate the uploaded street portrait so the central subject walks calmly toward camera while the world around them accelerates. Keep their face, bright outfit and pace perfectly stable as pedestrians sweep past in directional motion blur on both sides. Use a locked forward composition, realistic contact shadows and continuous crowd flow to make the subject feel isolated in time. Avoid duplicate faces, collisions, captions, logos and watermark.',
-  }),
-  effectTemplate({
-    slug: 'earth-zoom', name: 'EARTH ZOOM', category: 'CINEMATIC', aspect: '406 / 720',
-    needs: 'A clear outdoor portrait with visible surroundings',
-    bg: 'linear-gradient(170deg,#091925 0%,#496476 55%,#bdc8ce 100%)',
-    description: 'After a brief street-level anchor, the view races out to orbit and plunges continuously through the clouds and city grid back to the grounded subject.',
-    prompt: 'Begin on the uploaded outdoor subject for a brief street-level anchor, then race smoothly outward through the city, clouds and atmosphere until Earth is visible from orbit. Without cutting, reverse at the orbital apex and execute one seamless accelerating plunge through the same atmosphere, coastline, city grid and street until the camera lands back on the subject. Preserve geographic continuity and keep the opening and final person and location accurate to the uploaded image. Use realistic atmosphere and smooth scale changes with no abrupt cuts, labels, captions, logos or watermark.',
-  }),
-  effectTemplate({
-    slug: 'comic', name: 'COMIC', category: 'CARTOONS', aspect: '720 / 398',
-    needs: 'A dynamic portrait or action pose',
-    bg: 'linear-gradient(145deg,#07161b 0%,#117378 55%,#f28d42 100%)',
-    description: 'A graphic illustrated comic treatment with bold ink contours, flattened colour and action-panel energy.',
-    prompt: 'Transform the uploaded subject into a graphic animated comic scene while preserving their recognizable face, pose and clothing. Apply bold ink contours, flat teal-and-orange colour blocks, halftone shadows and sharp speed accents as the camera pushes through a dramatic action beat. Keep anatomy and line work coherent from frame to frame, like a living printed panel, with no speech bubbles, captions, logos or watermark.',
-  }),
-  trendTemplate({
-    slug: 'trick-or-skin', clipKey: 'wall-trick-or-skin', category: 'VFX', aspect: '720 / 404',
-    needs: 'A well-lit close portrait with the face unobstructed',
-    bg: 'linear-gradient(150deg,#140c18 0%,#623342 55%,#e68b55 100%)',
-    prompt: 'Animate the uploaded close portrait into a controlled practical-horror transformation. Preserve the person’s exact eyes, hair and facial structure as a thin theatrical skin-like layer peels away to reveal a second stylized look beneath, then settles into the final expression. Use convincing material tension, subtle breathing and stable camera framing. Keep the effect cinematic rather than graphic, with no identity drift, captions, logos or watermark.',
-  }),
-  trendTemplate({
-    slug: 'the-wrong-one', clipKey: 'wall-the-wrong-one', category: 'MOVIES', aspect: '720 / 406',
-    needs: 'A clear cinematic character portrait',
-    bg: 'linear-gradient(150deg,#17171d 0%,#55443f 55%,#b18a6c 100%)',
-    prompt: 'Create a tense cinematic reveal around the uploaded character. Preserve their exact identity and wardrobe as they realize they have approached the wrong person, pause, exchange a loaded glance and slowly step back. Use precise eye lines, restrained performance, shallow depth of field and a smooth camera creep that heightens the misunderstanding. Maintain continuity and realistic lighting with no text, logos or watermark.',
-  }),
-  effectTemplate({
-    slug: 'pigeons', clipKey: 'wall-pigeons', name: 'PIGEONS', category: 'UGC', aspect: '720 / 720',
-    needs: 'A full-body street photo with room around the subject',
-    bg: 'linear-gradient(150deg,#2b3133 0%,#89836e 55%,#dbbc77 100%)',
-    description: 'A fisheye street action effect where the subject glides through the city on pigeons like roller skates.',
-    prompt: 'Animate the uploaded full-body street subject into a playful fisheye action shot. Preserve their face and outfit as one pigeon forms beneath each foot and carries them forward like living roller skates, hovering just above the road. Track beside the rider while additional pigeons cross the foreground and background at different depths. Keep both feet planted naturally on the two birds, with believable balance, contact shadows and city perspective, and no duplicate subject, captions, logos or watermark.',
-  }),
-  effectTemplate({
-    slug: 'mighty-fighter', clipKey: 'wall-mighty-fighter', name: 'MIGHTY FIGHTER', category: 'FANTASY', aspect: '406 / 720',
-    needs: 'A full-body character photo with a strong silhouette',
-    bg: 'linear-gradient(170deg,#0e1519 0%,#45535b 55%,#9b2730 100%)',
-    description: 'A cinematic fantasy-warrior transformation staged in a windswept field with armour, cloak and heroic weapon motion.',
-    prompt: 'Transform the uploaded full-body character into a cinematic fantasy fighter standing in a windswept field. Preserve their face and body proportions while forming detailed armour, a long cloak and a grounded weapon pose around them. Add moving grass, drifting dust and restrained fabric motion as the camera rises into a heroic low angle. Keep hands, weapon contact and armour geometry coherent, with no captions, logos or watermark.',
-  }),
-];
+// Community metadata; prompts are joined from exact records in sourceTemplates.js.
+export const SOURCE_TEMPLATE_EXPANSION = Object.freeze([
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"jellyfish-airlines","name":"JELLYFISH AIRLINES","clipKey":"jellyfish-airlines","category":"FANTASY","previewAspect":"720 / 406","bg":"linear-gradient(150deg,#102844 0%,#735276 55%,#f0a45e 100%)","needs":"A clear full-body character photo with visible clothing","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its ten-second prompt and settings.","Review the framing and identity details before generating."]},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"dandelion-ball","name":"DANDELION BALL","clipKey":"dandelion-ball","category":"FANTASY","previewAspect":"720 / 406","bg":"linear-gradient(145deg,#1a2818 0%,#64704a 55%,#e4cf93 100%)","needs":"A clear full-body character photo","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its ten-second prompt and settings.","Review the framing and identity details before generating."]},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"sm-brand-new-day","name":"SM: BRAND NEW DAY","clipKey":"sm-brand-new-day","category":"CINEMATIC","previewAspect":"720 / 406","bg":"linear-gradient(145deg,#1f3443 0%,#6e765a 58%,#f0bd6e 100%)","needs":"A clear portrait or full-body performer photo","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its ten-second prompt and settings.","Review the framing and identity details before generating."]},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"who-was-that-business","name":"WHO WAS THAT? BUSINESS","clipKey":"who-was-that-business","category":"UGC","previewAspect":"720 / 540","bg":"linear-gradient(150deg,#171b22 0%,#465263 55%,#bdc6d2 100%)","needs":"A clear character photo suitable for a polished office scene","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its ten-second prompt and settings.","Review the framing and identity details before generating."]},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"scrapbook-collage","name":"SCRAPBOOK COLLAGE","clipKey":"scrapbook-collage","category":"FASHION","previewAspect":"406 / 720","bg":"linear-gradient(170deg,#f0e8dc 0%,#87b9b4 55%,#dd6b72 100%)","needs":"A clean full-body fashion photo","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its ten-second prompt and settings.","Review the framing and identity details before generating."]},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"stop-world","name":"STOP WORLD","clipKey":"stop-world","category":"VFX","previewAspect":"540 / 720","bg":"linear-gradient(165deg,#4b555a 0%,#b39883 55%,#e28188 100%)","needs":"A street portrait with a clearly separated central subject","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its ten-second prompt and settings.","Review the framing and identity details before generating."]},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"earth-zoom","name":"EARTH ZOOM","clipKey":"earth-zoom","category":"CINEMATIC","previewAspect":"406 / 720","bg":"linear-gradient(170deg,#091925 0%,#496476 55%,#bdc8ce 100%)","needs":"A clear outdoor portrait with visible surroundings","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its ten-second prompt and settings.","Review the framing and identity details before generating."]},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"comic","name":"COMIC","clipKey":"comic","category":"CARTOONS","previewAspect":"720 / 398","bg":"linear-gradient(145deg,#07161b 0%,#117378 55%,#f28d42 100%)","needs":"A dynamic portrait or action pose","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its ten-second prompt and settings.","Review the framing and identity details before generating."]},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"trick-or-skin","name":"TRICK OR SKIN","clipKey":"wall-trick-or-skin","category":"VFX","previewAspect":"720 / 404","bg":"linear-gradient(150deg,#140c18 0%,#623342 55%,#e68b55 100%)","needs":"A well-lit close portrait with the face unobstructed","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its ten-second prompt and settings.","Review the framing and identity details before generating."]},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"the-wrong-one","name":"THE WRONG ONE","clipKey":"wall-the-wrong-one","category":"MOVIES","previewAspect":"720 / 406","bg":"linear-gradient(150deg,#17171d 0%,#55443f 55%,#b18a6c 100%)","needs":"A clear cinematic character portrait","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its ten-second prompt and settings.","Review the framing and identity details before generating."]},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"pigeons","name":"PIGEONS","clipKey":"wall-pigeons","category":"UGC","previewAspect":"720 / 720","bg":"linear-gradient(150deg,#2b3133 0%,#89836e 55%,#dbbc77 100%)","needs":"A full-body street photo with room around the subject","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its ten-second prompt and settings.","Review the framing and identity details before generating."]},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"mighty-fighter","name":"MIGHTY FIGHTER","clipKey":"wall-mighty-fighter","category":"FANTASY","previewAspect":"406 / 720","bg":"linear-gradient(170deg,#0e1519 0%,#45535b 55%,#9b2730 100%)","needs":"A full-body character photo with a strong silhouette","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its ten-second prompt and settings.","Review the framing and identity details before generating."]}
+]);
