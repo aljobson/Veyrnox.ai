@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
 import ts from 'typescript';
 import * as templateDraft from '../app/veyrnox/_lib/templateDraft.js';
 import * as templateMediaHandoff from '../app/veyrnox/_lib/templateMediaHandoff.js';
@@ -17,7 +16,11 @@ import * as aspectShapes from '../lib/aspectShapes.mjs';
 import * as templateStart from '../lib/templateStartCheck.js';
 import * as promptLimits from '../lib/generationPromptLimits.js';
 
-const require = createRequire(import.meta.url);
+const jsxRuntime = {
+  Fragment: Symbol('Fragment'),
+  jsx: (type, props, key) => ({ type, key, props: props || {} }),
+  jsxs: (type, props, key) => ({ type, key, props: props || {} }),
+};
 const original = { id: 'kling-2.6-pro-kie', name: 'Kling 2.6 Pro', kind: 'video', modality: 'image-to-video', credits: 17, durations: [5, 10], aspects: ['16:9', '9:16'], takesNegative: true };
 const other = { ...original, id: 'wan-2.5-kie', name: 'Wan 2.5', credits: 31, aspects: ['1:1', '4:5'] };
 const preset = { id: 'exact-template', name: 'Exact template', model: original.name, prompt: 'Exact community prompt with reference images.', sourcePromptOrigin: 'community-source-exact', sourcePromptRunnable: false, aspect: '9:16', durationSeconds: 10, negativePrompt: 'No distortion' };
@@ -27,6 +30,7 @@ assert.match(source, /previewUrl: URL\.createObjectURL\(file\)/);
 const code = ts.transpileModule(source, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS } }).outputText;
 const HandoffCard = () => null;
 const SourcePickers = () => null;
+const AddFilesDialog = () => null;
 function find(tree, predicate) {
   if (Array.isArray(tree)) return tree.map(node => find(node, predicate)).find(Boolean);
   if (!tree || typeof tree !== 'object') return undefined;
@@ -39,6 +43,7 @@ const prompt = tree => find(tree, node => node.type === 'textarea');
 const why = tree => String(find(tree, node => node.props?.id === 'vx-generate-why')?.props.children ?? '');
 const card = tree => find(tree, node => node.type === HandoffCard);
 const sourcePickers = tree => find(tree, node => node.type === SourcePickers);
+const addFilesDialog = tree => find(tree, node => node.type === AddFilesDialog);
 
 // Execute the real page's hooks/effects and event handlers offline. Only I/O
 // and unrelated child components are stubbed; recipe and submit logic is real.
@@ -100,9 +105,10 @@ function harness(params, { saved, handoff, blocked = false, models = [original, 
     '../../_lib/veyJourneyStore': { getJourney: () => ({}), trackJourneyJob() {} },
     '../../_components/TemplateHandoffCard': { TemplateHandoffCard: HandoffCard },
     '../../_components/SourcePickers': { SourcePickers },
+    '../../_components/AddFilesDialog': { AddFilesDialog },
   };
   const output = { exports: {} };
-  new Function('require', 'module', 'exports', code)(id => stubs[id] || (id === 'react/jsx-runtime' ? require(id) : new Proxy({}, { get: () => () => null })), output, output.exports);
+  new Function('require', 'module', 'exports', code)(id => stubs[id] || (id === 'react/jsx-runtime' ? jsxRuntime : new Proxy({}, { get: () => () => null })), output, output.exports);
   return {
     requests,
     async settle() {
@@ -130,6 +136,18 @@ test('Create arrival applies URL recipe and submits original-model attribution o
       assert.equal(control(tree, 'duration').props.value, `${durationSeconds}s`);
       assert.equal(control(tree, 'aspect').props.value, model === original ? '9:16' : '4:5');
       assert.equal(card(tree)?.props.preset ?? null, model === original ? preset : null);
+      if (model === original) {
+        assert.deepEqual(card(tree).props.settings, {
+          prompt: preset.prompt,
+          model: original.name,
+          aspect: '9:16',
+          duration: `${durationSeconds}s`,
+          cost: `app.create.cost:${JSON.stringify({ count: tokens.clipCredits(original.credits, durationSeconds) })}`,
+          sourceRequired: false,
+          sourceLabel: '',
+        });
+        assert.equal(typeof card(tree).props.onEdit, 'function');
+      }
       assert.equal(generate(tree).props.disabled, false);
       await generate(tree).props.onClick();
       assert.equal(h.requests.length, 1);
@@ -171,6 +189,56 @@ test('changing model inside Create keeps personal edits and never reapplies the 
     assert.equal(h.requests[0].preset, undefined);
     assert.equal(h.requests[0].inputs.prompt, 'Personal edit after arrival');
   } finally { h.close(); }
+});
+
+test('the linked template summary follows live prompt, duration and aspect edits', async () => {
+  const h = harness({ model: original.id, duration: '10s' });
+  try {
+    let tree = await h.settle();
+    prompt(tree).props.onChange({ target: { value: 'My adjusted template scene' } });
+    control(tree, 'duration').props.onChange('5s');
+    control(tree, 'aspect').props.onChange('16:9');
+    tree = await h.settle();
+    assert.deepEqual(card(tree).props.settings, {
+      prompt: 'My adjusted template scene',
+      model: original.name,
+      aspect: '16:9',
+      duration: '5s',
+      cost: `app.create.cost:${JSON.stringify({ count: tokens.clipCredits(original.credits, 5) })}`,
+      sourceRequired: false,
+      sourceLabel: '',
+    });
+  } finally { h.close(); }
+});
+
+test('template summary navigation focuses the visible selected control and safe read-only cards', async () => {
+  const h = harness({ model: original.id });
+  const previousDocument = globalThis.document;
+  try {
+    let focused = '';
+    const hiddenControl = { getClientRects: () => [], focus: () => { focused = 'hidden'; } };
+    const visibleControl = { getClientRects: () => [{}], focus: () => { focused = 'visible'; } };
+    const modelSection = {
+      scrollIntoView() {}, matches: () => false, hasAttribute: () => false,
+      querySelectorAll: selector => selector.startsWith('[aria-pressed') ? [hiddenControl] : [hiddenControl, visibleControl],
+    };
+    const costSection = {
+      scrollIntoView() {}, matches: () => false, hasAttribute: () => false, querySelectorAll: () => [],
+      focus: () => { focused = 'cost'; },
+    };
+    globalThis.document = {
+      querySelector: selector => selector.includes('create.models') ? modelSection : selector.includes('create.cost') ? costSection : null,
+    };
+    const tree = await h.settle();
+    card(tree).props.onEdit('models');
+    assert.equal(focused, 'visible');
+    card(tree).props.onEdit('cost');
+    assert.equal(focused, 'cost');
+    assert.equal(costSection.tabIndex, -1);
+  } finally {
+    globalThis.document = previousDocument;
+    h.close();
+  }
 });
 
 test('Create applies matching personal edits on another model and falls back to saved model without URL model', async () => {
@@ -228,6 +296,23 @@ test('Create still refuses missing required sources, missing consent and prompts
   } finally { h.close(); }
 });
 
+test('a recovered source needing reattachment stays missing and opens Add files from the template summary', async () => {
+  const withMedia = { ...original, media: { image: { kind: 'image', required: true } } };
+  const h = harness({ model: original.id }, { models: [withMedia], saved: {
+    prompt: preset.prompt,
+    model: original.id,
+    templateId: preset.id,
+    sources: { image: { needsUpload: true, label: 'old-reference.jpg' } },
+  } });
+  try {
+    let tree = await h.settle();
+    assert.equal(card(tree).props.settings.sourceLabel, '');
+    card(tree).props.onEdit('upload');
+    tree = await h.settle();
+    assert.ok(addFilesDialog(tree));
+  } finally { h.close(); }
+});
+
 test('Create consumes the one-time template photo into the required source slot', async () => {
   const photo = Object.assign(new Blob(['photo'], { type: 'image/jpeg' }), { name: 'portrait.jpg' });
   const withMedia = { ...original, media: { image: { kind: 'image', required: true } } };
@@ -236,6 +321,7 @@ test('Create consumes the one-time template photo into the required source slot'
     const tree = await h.settle();
     assert.equal(sourcePickers(tree).props.sources.image.file, photo);
     assert.match(sourcePickers(tree).props.sources.image.previewUrl, /^blob:/);
+    assert.equal(card(tree).props.settings.sourceLabel, 'portrait.jpg');
     assert.equal(generate(tree).props.disabled, true, 'the existing rights confirmation still applies');
     assert.equal(templateMediaHandoff.takeTemplateMediaHandoff(globalThis.window, preset.id, original.id), null);
   } finally { h.close(); }

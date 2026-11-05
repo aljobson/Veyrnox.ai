@@ -68,6 +68,14 @@ import { GENERATION_PROMPT_MAX } from '../../../../lib/generationPromptLimits.js
 // Auto Short stays hidden until launch unless this browser opts in
 // (CLAUDE.md "Delivery": new user paths behind localStorage.veyrnox_*).
 const AUTO_SHORT_FLAG = 'veyrnox_auto_short';
+const CREATE_CONTROL_TARGETS = Object.freeze({
+  prompt: '[data-assistant-target="create.prompt"]',
+  models: '[data-assistant-target="create.models"]',
+  duration: '[data-assistant-target="create.duration"]',
+  aspect: '[data-assistant-target="create.aspect"]',
+  upload: '[data-assistant-target="create.upload"]',
+  cost: '[data-assistant-target="create.cost"]',
+});
 
 function readFlag(name) {
   try { return window.localStorage.getItem(name) === '1'; } catch { return false; }
@@ -287,11 +295,23 @@ export default function CreateStudio() {
   const invalidAudioDuration = audioDurationIsInvalid(model, audioDuration);
   const fixedDurationLabel = model?.presentation?.fixedDurationLabel;
   const sourceDurationMax = sourceDurationLimit(model);
+  const templateDuration = sourceDurationMax
+    ? t('app.create.duration.follows')
+    : model?.kind === 'audio' && audioDurationControl
+      ? `${audioDuration} ${t('app.create.seconds')}`
+      : (model?.kind === 'video' || model?.kind === 'audio') && fixedDurationLabel
+        ? fixedDurationLabel
+        : model?.kind === 'video' ? duration : null;
   const media = model?.media || {};
   const animationMismatch = !!animationPortrait && (model?.kind !== 'video' || !media.image?.required);
   const { missingSource, needsReattach, overLimit, hasSource: hasUpload } = generationSourceState(media, sources);
   // Only pictures this model actually takes count: a video-only attachment, or a picture kept from another model, never reaches the provider.
-  const templateImageCount = activeTemplate ? Object.entries(media).filter(([, spec]) => spec?.kind === 'image').reduce((sum, [slot]) => sum + sourceList(sources[slot]).length, 0) : 0;
+  const templateImageSources = activeTemplate ? Object.entries(media)
+    .filter(([, spec]) => spec?.kind === 'image')
+    .flatMap(([slot]) => sourceList(sources[slot]))
+    .filter(source => !source?.needsUpload && (source?.file || source?.assetId || source?.sourceKey)) : [];
+  const templateImageCount = templateImageSources.length;
+  const templateImageSource = templateImageSources.find(source => source?.file || source?.label) || null;
   const templateImageRequired = Object.values(media).some(spec => spec?.kind === 'image' && spec.required);
   const missingConsent = hasUpload && !consent;
   const missingVoice = voiceIsMissing(model, voice);
@@ -649,6 +669,27 @@ export default function CreateStudio() {
     chooseModel(next?.id || '');
   }
 
+  function focusCreateControl(target) {
+    if (target === 'upload' && templateImageCount === 0) {
+      setAddFilesOpen(true);
+      return;
+    }
+    const selector = CREATE_CONTROL_TARGETS[target];
+    const section = selector ? document.querySelector(selector) : null;
+    if (!section) return;
+    section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const focusable = 'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled])';
+    const candidates = [
+      ...(section.matches(focusable) ? [section] : []),
+      ...section.querySelectorAll('[aria-pressed="true"]:not([disabled])'),
+      ...section.querySelectorAll(focusable),
+    ];
+    const control = candidates.find((candidate, index) => candidates.indexOf(candidate) === index
+      && (typeof candidate.getClientRects !== 'function' || candidate.getClientRects().length > 0)) || section;
+    if (control === section && !section.hasAttribute('tabindex')) section.tabIndex = -1;
+    control.focus({ preventScroll: true });
+  }
+
   return (
     <div className="min-h-dvh">
       {openingTemplate && <TemplateOpening name={openingTemplate.name} />}
@@ -749,6 +790,16 @@ export default function CreateStudio() {
             preset={activeTemplate}
             canChooseSource={Boolean(activeTemplate.needs && Object.keys(media).length)}
             onChooseSource={() => setAddFilesOpen(true)}
+            settings={{
+              prompt,
+              model: model?.name,
+              aspect: aspectOptions.length ? aspect : null,
+              duration: templateDuration,
+              cost: generationCostLabel(cost),
+              sourceRequired: templateImageRequired,
+              sourceLabel: templateImageSource?.file?.name || templateImageSource?.label || '',
+            }}
+            onEdit={focusCreateControl}
           />}
           {templateImageCount > 0 && (
             <p role="status" data-testid="template-reference-overrides" className="mt-3 rounded-xl border border-vx-accent/30 bg-vx-panel p-3 text-xs text-vx-fg-body">
@@ -799,7 +850,7 @@ export default function CreateStudio() {
         {/* Sits straight under the prompt and its inputs on desktop; on a phone it
             drops to the end of the page and stays pinned to the screen. */}
         <div data-create-cost-card className="order-last sticky bottom-3 z-30 rounded-2xl border border-vx-border bg-vx-panel p-5 shadow-2xl lg:order-none lg:col-start-1 lg:row-start-2 lg:self-start lg:static lg:shadow-none">
-          <div data-assistant-target="create.cost" className="scroll-mt-24 flex items-baseline justify-between">
+          <div data-assistant-target="create.cost" tabIndex={-1} className="scroll-mt-24 flex items-baseline justify-between">
             <span className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">{t("app.create.totalCost")}</span>
             <span className="font-vx-mono text-[12px] text-vx-fg-muted vx-num">
               {t('app.create.balanceLabel',{count:balance == null ? '—' : balance.toLocaleString(localeTag(locale, 'en-US'))})}
@@ -964,7 +1015,7 @@ export default function CreateStudio() {
           )}
           {(model?.kind === 'video' || model?.kind === 'audio') && sourceDurationMax && <SourceDurationCard model={model} />}
           {(model?.kind === 'video' || model?.kind === 'audio') && fixedDurationLabel && (
-            <div data-assistant-target="create.duration" className="scroll-mt-24 rounded-2xl border border-vx-border bg-vx-panel p-5">
+            <div data-assistant-target="create.duration" tabIndex={-1} className="scroll-mt-24 rounded-2xl border border-vx-border bg-vx-panel p-5">
               <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">{t("app.create.fixedOutput")}</div>
               <div className="mt-3 font-vx-mono text-lg font-bold text-vx-fg">{fixedDurationLabel}</div>
               <p className="mt-1 text-xs text-vx-fg-muted">{t("app.create.fixedOutputHelp")}</p>
