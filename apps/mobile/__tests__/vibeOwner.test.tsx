@@ -2,7 +2,6 @@ import { act } from 'react';
 import * as RN from 'react-native';
 import { createRoot, type Root } from 'test-renderer';
 import * as SecureStore from 'expo-secure-store';
-import { ApiError } from '../src/lib/api';
 import type { SessionTask } from '../src/auth/sessionTask';
 import type { CreatorAnswers } from '../src/lib/creatorAnswers';
 import { bindCacheUser, getCacheUser, resetCacheUser } from '../src/lib/appCache';
@@ -42,62 +41,37 @@ jest.mock('../src/components/VeyCharacter', () => ({ VeyCharacter: () => null })
 jest.mock('../src/lib/languageStore', () => ({ readLanguage: () => 'en', loadLanguage: async () => 'en' }));
 jest.mock('../src/lib/celebrate', () => ({ noteOnboardingCompleted: jest.fn() }));
 jest.mock('../src/lib/analytics/events', () => ({ captureEvent: jest.fn() }));
-async function fill() {
-    for (const key of ['start', 'goal.story', 'look.neon_rain', 'pace.octopus', 'chaos.2', 'destination.tiktok', 'audience.me', 'voice.calm']) await press(`vibe.${key}`);
-}
-test.each([false, true])('finish for A after switching to B shows no card and preserves B (existing=%s)', async existing => {
-    const gate = deferred(); mockApi.request.mockReturnValueOnce(gate.promise); await act(async () => root.render(<Vibe />)); await fill(); await press('vibe.voice.done');
-    await changeOwner(); if (existing) await storeVibe(completed({ ...answers, chaos: 4 }), 'B');
-    await act(async () => { gate.resolve({ status: 'completed' }); await tick(); });
-    expect(texts('vibe.intro.title')).toHaveLength(1); expect(texts('vibe.card.kicker')).toHaveLength(0); expect(noteOnboardingCompleted).not.toHaveBeenCalled();
-    expect(await loadVibe()).toEqual(existing ? completed({ ...answers, chaos: 4 }) : null);
+test.each(['vibe.start', 'vibe.skip'])('%s records a skip, marks onboarding done and leaves', async key => {
+    mockApi.request.mockResolvedValue({ status: 'skipped' });
+    await act(async () => root.render(<Vibe />)); await press(key);
+    expect(mockApi.request.mock.calls.map(c => c[1]?.method)).toEqual(['POST']);
+    expect(mockRouter.back).toHaveBeenCalledTimes(1); expect(noteOnboardingCompleted).toHaveBeenCalledTimes(1);
+    expect(await loadVibe()).toMatchObject({ state: 'skipped' });
 });
-test('skip POST after account switch neither stores for B nor moves to skipped', async () => {
+test('an existing choice is kept: Start leaves without calling the server', async () => {
+    await storeVibe(completed(), 'A');
+    await act(async () => root.render(<Vibe />)); await press('vibe.start');
+    expect(mockApi.request).not.toHaveBeenCalled(); expect(mockRouter.back).toHaveBeenCalledTimes(1);
+    expect(await loadVibe()).toEqual(completed());
+});
+test('the old questions and creator card are gone', async () => {
+    await act(async () => root.render(<Vibe />));
+    for (const key of ['vibe.goal.title', 'vibe.voice.title', 'vibe.card.kicker']) expect(texts(key)).toHaveLength(0);
+    expect(texts('vibe.intro.title')).toHaveLength(1);
+});
+test('skip POST after account switch neither stores for B nor leaves', async () => {
     const gate = deferred(); mockApi.request.mockReturnValueOnce(gate.promise); await act(async () => root.render(<Vibe />)); await press('vibe.skip'); await changeOwner();
     await act(async () => { gate.resolve({ status: 'skipped' }); await tick(); });
-    expect(await loadVibe()).toBeNull(); expect(texts('vibe.skipped.title')).toHaveLength(0); expect(texts('vibe.intro.title')).toHaveLength(1);
+    expect(await loadVibe()).toBeNull(); expect(mockRouter.back).not.toHaveBeenCalled(); expect(noteOnboardingCompleted).not.toHaveBeenCalled(); expect(texts('vibe.intro.title')).toHaveLength(1);
 });
-test('finish superseded by Skip shows no card or onboarding; kept skip goes back with server answers', async () => {
-    const put = deferred(), post = deferred(); mockApi.request.mockImplementation(async (_path, init) => init?.method === 'PUT' ? put.promise : init?.method === 'POST' ? post.promise : { status: 'completed', answers });
-    await act(async () => root.render(<Vibe />)); await fill(); await press('vibe.voice.done'); await press('vibe.skip');
-    await act(async () => { put.resolve({ status: 'completed' }); await tick(); }); expect(texts('vibe.card.kicker')).toHaveLength(0); expect(noteOnboardingCompleted).not.toHaveBeenCalled();
-    await act(async () => { post.resolve({ status: 'completed' }); await tick(); }); expect(mockRouter.back).toHaveBeenCalledTimes(1); expect(texts('vibe.skipped.title')).toHaveLength(0); expect(await loadVibe()).toEqual(completed());
+test('same-account generation change cancels a late Start', async () => {
+    const gate = deferred(); mockApi.request.mockReturnValueOnce(gate.promise); await act(async () => root.render(<Vibe />)); await press('vibe.start');
+    await act(async () => { mockGeneration++; root.render(<Vibe />); });
+    await act(async () => { gate.resolve({ status: 'skipped' }); await tick(); });
+    expect(mockRouter.back).not.toHaveBeenCalled(); expect(noteOnboardingCompleted).not.toHaveBeenCalled(); expect(texts('vibe.intro.title')).toHaveLength(1);
 });
-test('skip superseded by Reset elsewhere leaves step unchanged and enables Skip', async () => {
-    const gate = deferred(); mockApi.request.mockReturnValueOnce(gate.promise); await act(async () => root.render(<Vibe />)); await press('vibe.skip');
-    const reset = runVibeIntent(mockApi, mockTask(), { kind: 'reset' }); await act(async () => { gate.resolve({ status: 'skipped' }); await reset; await tick(); });
-    expect(texts('vibe.skipped.title')).toHaveLength(0); expect(controls('vibe.skip')[0].props.disabled).toBe(false);
-});
-test('same-account generation change resets the interview and a late finish cannot change it', async () => {
-    const gate = deferred(); mockApi.request.mockReturnValueOnce(gate.promise); await act(async () => root.render(<Vibe />)); await fill(); await press('vibe.voice.done');
-    await act(async () => { mockGeneration++; root.render(<Vibe />); }); expect(texts('vibe.intro.title')).toHaveLength(1);
-    await act(async () => { gate.resolve({ status: 'completed' }); await tick(); }); expect(texts('vibe.intro.title')).toHaveLength(1); expect(noteOnboardingCompleted).not.toHaveBeenCalled();
-});
-test('account_changed rejection after a switch shows no error', async () => {
-    const gate = deferred(); mockApi.request.mockReturnValueOnce(gate.promise); await act(async () => root.render(<Vibe />)); await fill(); await press('vibe.voice.done'); await changeOwner();
-    await act(async () => { gate.reject(new ApiError(401, 'account_changed')); await tick(); }); expect(texts('vibe.error')).toHaveLength(0); expect(await loadVibe()).toBeNull();
-});
-test('a loaded interview draft is cleared on account switch before a later finish', async () => {
-    await act(async () => root.render(<Vibe />)); await fill(); const field = root.container.queryAll(n => n.type === 'field')[0];
-    await act(async () => field.props.onChangeText('A studio')); await changeOwner(); expect(texts('vibe.intro.title')).toHaveLength(1);
-    await fill(); await press('vibe.voice.done'); const put = mockApi.request.mock.calls.find(c => c[1]?.method === 'PUT')!; expect(JSON.parse(put[1].body).studio_name).toBeUndefined();
-});
-
-test('Finish superseding an in-flight Skip re-enables Skip when Finish fails', async () => {
-    jest.useFakeTimers();
-    try {
-        const skip = deferred();
-        mockApi.request.mockImplementation(async (_path, init) => {
-            if (init?.method === 'POST') return skip.promise;
-            if (init?.method === 'PUT') throw new ApiError(0, 'network');
-            return { status: 'skipped' };
-        });
-        await act(async () => root.render(<Vibe />)); await fill(); await press('vibe.skip');
-        expect(controls('vibe.skip')[0].props.disabled).toBe(true);
-        await press('vibe.voice.done');
-        await act(async () => { skip.resolve({ status: 'skipped' }); await tick(); await jest.advanceTimersByTimeAsync(1000); });
-        expect(mockApi.request.mock.calls.map(c => c[1]?.method ?? 'GET')).toEqual(['POST', 'PUT', 'GET']);
-        expect(texts('vibe.error')).toHaveLength(1); expect(texts('vibe.card.kicker')).toHaveLength(0);
-        expect(controls('vibe.skip')[0].props.disabled).toBe(false); expect(noteOnboardingCompleted).not.toHaveBeenCalled();
-    } finally { jest.useRealTimers(); }
+test('Skip is disabled while a Start is in flight', async () => {
+    const gate = deferred(); mockApi.request.mockReturnValueOnce(gate.promise); await act(async () => root.render(<Vibe />)); await press('vibe.start');
+    expect(controls('vibe.skip')[0].props.disabled).toBe(true);
+    await act(async () => { gate.resolve({ status: 'skipped' }); await tick(); });
 });

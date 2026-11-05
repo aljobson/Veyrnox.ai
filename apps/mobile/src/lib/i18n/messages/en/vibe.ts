@@ -5,7 +5,7 @@ export default {
     'vibe.language.continue': 'Continue',
     'vibe.language.later': 'Saved. The app will switch to it as soon as that language is available; for now it stays in English.',
     'vibe.intro.title': 'Quick vibe check?',
-    'vibe.intro.body': 'Seven taps. I tune Veyrnox.ai to how you make things, then we build your first one together.',
+    'vibe.intro.body': 'Let\'s get you started: pick a template, or bring your own photo, video or idea.',
     'vibe.start': 'Start',
     'vibe.skip': 'Skip for now',
     'vibe.back': 'Back',
