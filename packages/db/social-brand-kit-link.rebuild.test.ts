@@ -11,6 +11,8 @@ describe('Publish brand kit link and schema v2 (0441/0442)', { skip: !process.en
   const value = async (sql: string, args: unknown[] = []) => (await db.query(sql, args)).rows[0].value;
   const link = (auth: string, brand: string, workspace: string | null) => value('SELECT public.set_social_brand_kit_link($1,$2,$3) value', [auth, brand, workspace]);
   const read = (auth: string, brand: string) => value('SELECT public.get_social_brand_kit($1,$2) value', [auth, brand]);
+  // The owner's reply also carries the linkable-workspace list; presentation assertions compare the rest.
+  const withoutWorkspaces = ({ workspaces: _workspaces, ...rest }: Record<string, unknown>) => rest;
   const kit = () => ({ schemaVersion: 2, name: 'Brand', palette: ['#123456'], fonts: ['Arial'], textStyles: [], assets: [], voice: 'Warm and clear', hashtags: ['brand'], logo: null });
   before(async () => {
     const target = new URL(process.env.DATABASE_URL!);
@@ -90,7 +92,7 @@ describe('Publish brand kit link and schema v2 (0441/0442)', { skip: !process.en
     for (const role of ['VIEWER', 'REVIEWER']) {
       await db.query('UPDATE public.workspace_members SET role=$1 WHERE workspace_id=$2 AND user_id=$3', [role, workspaceOwner.workspace, owner.auth]);
       const data = await read(owner.auth, owner.brand);
-      assert.deepEqual(data, { ok: true, linked: false, stale: true, canLink: true });
+      assert.deepEqual(withoutWorkspaces(data), { ok: true, linked: false, stale: true, canLink: true });
     }
     await db.query("UPDATE public.workspace_members SET role='EDITOR' WHERE workspace_id=$1 AND user_id=$2", [workspaceOwner.workspace, owner.auth]);
     await db.query('DELETE FROM public.workspace_members WHERE workspace_id=$1 AND user_id=$2', [workspaceOwner.workspace, owner.auth]);
@@ -102,10 +104,12 @@ describe('Publish brand kit link and schema v2 (0441/0442)', { skip: !process.en
   it('deleted workspace or organisation returns no workspace data', async () => {
     const owner = await user(); await link(owner.auth, owner.brand, owner.workspace);
     await db.query('UPDATE public.workspaces SET deleted_at=now() WHERE id=$1', [owner.workspace]);
-    assert.deepEqual(await read(owner.auth, owner.brand), { ok: true, linked: false, stale: true, canLink: true });
+    const gone = await read(owner.auth, owner.brand);
+    assert.deepEqual(withoutWorkspaces(gone), { ok: true, linked: false, stale: true, canLink: true });
+    assert.deepEqual(gone.workspaces, []);
     await db.query('UPDATE public.workspaces SET deleted_at=NULL WHERE id=$1', [owner.workspace]);
     await db.query('UPDATE public.organisations SET deleted_at=now() WHERE id=$1', [owner.org]);
-    assert.deepEqual(await read(owner.auth, owner.brand), { ok: true, linked: false, stale: true, canLink: true });
+    assert.deepEqual(withoutWorkspaces(await read(owner.auth, owner.brand)), { ok: true, linked: false, stale: true, canLink: true });
   });
   it('schema validation matches Unicode tags, bounds and logo membership', async () => {
     const valid = (candidate: object) => value('SELECT private.editor_brand_kit_valid($1) value', [candidate]);
