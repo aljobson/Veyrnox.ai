@@ -11,7 +11,6 @@ export const MENU_ICONS = {
     play: require('../../assets/icons/play-circle.png'),
     folder: require('../../assets/icons/folder.png'),
     paperclip: require('../../assets/icons/paperclip.png'),
-    clipboard: require('../../assets/icons/clipboard.png'),
     palette: require('../../assets/icons/palette.png'),
     coins: require('../../assets/icons/coins.png'),
     squares: require('../../assets/icons/squares-four.png'),

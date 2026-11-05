@@ -171,7 +171,7 @@ export function PublishUploadPanel(props: Props) {
     if (!enabled || hidden) return null;
     const button = (key: string, action: () => void, disabled = false, selected?: boolean, label = t(key), attach = false) => (
         <Pressable accessibilityRole="button" accessibilityLabel={rawText(label)} accessibilityState={{ disabled, ...(selected === undefined ? {} : { selected }) }} disabled={disabled} onPress={action} style={[styles.button, touchTarget]}>
-            {attach ? <Icon name="clipboard" size={20} tint={colors.text} /> : null}
+            {attach ? <Icon name="paperclip" size={20} tint={colors.text} /> : null}
             <Text style={styles.text}>{t(key)}</Text>
         </Pressable>
     );

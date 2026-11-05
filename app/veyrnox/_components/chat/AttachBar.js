@@ -84,7 +84,7 @@ export function AttachButton({ onPick, disabled, full }) {
       <button type="button" disabled={disabled || full} onClick={() => input.current?.click()} aria-label={t("app.chat.attach.label")}
         title={full ? t("app.chat.controls.imageLimit") : t("app.chat.attach.hint")}
         className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-vx-fg-muted hover:text-vx-fg disabled:opacity-40">
-        <Icon name="clipboard" size={20} />
+        <Icon name="paperclip" size={20} />
       </button>
     </>
   );

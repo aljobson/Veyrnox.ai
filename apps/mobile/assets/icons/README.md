@@ -26,5 +26,3 @@ hourglass, pen-nib, bandaids, chat-text, slideshow, folder-simple-plus, list-che
 gauge, aperture.
 
 google-g.png is the multicolour Google "G" mark (Google sign-in branding guidelines). It is never tinted.
-
-Attach cue: clipboard (Phosphor regular, same render steps).
