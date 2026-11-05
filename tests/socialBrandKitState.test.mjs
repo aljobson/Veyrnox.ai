@@ -47,17 +47,16 @@ test('kit state clears synchronously on brand change and drops out-of-order read
     f.switchBrand('a'); assert.equal(f.render().data, undefined);
   } finally { f.dispose(); }
 });
-test('workspace reads use the captured snapshot and old errors cannot replace current state', async () => {
+test('the owner picker uses the workspaces in the brand-kit reply and a brand switch drops old replies', async () => {
   const f = await fixture();
   try {
     f.render(true); await f.effects();
-    f.calls[0].resolve({ linked: false, canLink: true }); await f.settle();
-    assert.equal(f.calls[1].path, '/workspaces');
-    assert.equal(f.calls[1].snapshot, f.calls[0].snapshot);
+    assert.equal(f.calls.length, 1); assert.equal(f.calls[0].path, '/social/brand-kit');
+    f.calls[0].resolve({ linked: false, canLink: true, workspaces: [{ id: 'w1', name: 'Studio' }] }); await f.settle();
+    assert.deepEqual(f.render(true).workspaces, [{ id: 'w1', name: 'Studio' }]);
     f.switchBrand('b'); f.render(true); await f.effects();
-    f.calls[2].resolve({ linked: false, canLink: false }); await f.settle();
-    f.calls[1].reject(Object.assign(Error('old workspace failure'), { status: 502 })); await f.settle();
-    assert.equal(f.render(true).status, 'ready');
+    f.calls[1].resolve({ linked: false, canLink: false }); await f.settle();
+    assert.deepEqual(f.render(true).workspaces, []);
     assert.equal(f.render(true).snapshot.brandId, 'b');
   } finally { f.dispose(); }
 });

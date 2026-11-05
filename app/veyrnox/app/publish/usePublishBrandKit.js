@@ -20,8 +20,8 @@ export function usePublishBrandKit(withWorkspaces = false) {
     Promise.resolve().then(async () => {
       if (!active) return;
       const data = await gatewayFetch('/social/brand-kit', {}, false, snapshot);
-      const workspaces = withWorkspaces && data.canLink
-        ? (await gatewayFetch('/workspaces', {}, false, snapshot).catch(error => { throw Object.assign(new Error('workspace_list_failed'), { status: error.status === 404 ? 502 : error.status }); })).workspaces || [] : [];
+      // The server lists only workspaces the link RPC accepts (editor-level roles).
+      const workspaces = withWorkspaces && data.canLink ? data.workspaces || [] : [];
       assertSocialBrandSnapshot(snapshot);
       if (active) setRecord({ revision, attempt, snapshot, status: 'ready', data, workspaces });
     }).catch(error => {

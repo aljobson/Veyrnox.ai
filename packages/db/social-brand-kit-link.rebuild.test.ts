@@ -112,7 +112,7 @@ describe('Publish brand kit link and schema v2 (0441/0442)', { skip: !process.en
     assert.equal(await valid({ ...kit(), hashtags: ['#日本語', 'café', 'Ⅷ', '𐐀', 'a'.repeat(60)], voice: 'a'.repeat(500) }), true);
     for (const fields of [{ voice: 'x'.repeat(501) }, { voice: 'a\nb' }, { hashtags: ['🙂'] }, { hashtags: ['e\u0301'] }, { hashtags: ['#'] }, { hashtags: ['a'.repeat(61)] }, { hashtags: Array(31).fill('tag') }, { logo: { projectId: randomUUID(), assetId: randomUUID() } }]) assert.equal(await valid({ ...kit(), ...fields }), false);
   });
-  it('existing v1 rows read as v2 defaults without rewriting the stored kit', async () => {
+  it('existing v1 rows read as stored, flagged v2-capable, and are not rewritten', async () => {
     const owner = await user();
     const legacy = { schemaVersion: 1, name: 'Legacy', palette: ['#123456'], fonts: ['Arial'], textStyles: [], assets: [] };
     await db.query('INSERT INTO public.workspace_editor_brand_kits(workspace_id,version,kit,actor_id) VALUES($1,1,$2,$3)', [owner.workspace, legacy, owner.auth]);
@@ -121,7 +121,7 @@ describe('Publish brand kit link and schema v2 (0441/0442)', { skip: !process.en
     assert.equal(published.kit.voice, ''); assert.deepEqual(published.kit.hashtags, []); assert.equal(published.kit.hasLogo, false);
     await asTenant(owner.auth);
     const readKit = await value('SELECT public.read_editor_brand_kit($1) value', [owner.workspace]);
-    assert.deepEqual(readKit.kit, { ...legacy, schemaVersion: 2, logo: null, voice: '', hashtags: [] });
+    assert.deepEqual(readKit.kit, legacy); assert.equal(readKit.v2, true);
     assert.equal(await value("SELECT (kit->>'schemaVersion')::int value FROM public.workspace_editor_brand_kits WHERE workspace_id=$1", [owner.workspace]), 1);
   });
   it('tenant save normalizes tags, upgrades v1 reads, preserves idempotency and rejects stale versions', async () => {

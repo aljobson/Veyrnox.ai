@@ -52,10 +52,9 @@ DECLARE role text:=private.workspace_role(workspace); saved public.workspace_edi
 BEGIN
     IF role IS NULL THEN RAISE EXCEPTION 'NOT_FOUND' USING ERRCODE='PT404';END IF;
     SELECT * INTO saved FROM public.workspace_editor_brand_kits WHERE workspace_id=workspace;
-    IF saved.kit IS NOT NULL THEN
-        saved.kit:=saved.kit || jsonb_build_object('schemaVersion',2,'logo',coalesce(saved.kit->'logo','null'::jsonb),'voice',coalesce(saved.kit->'voice','""'::jsonb),'hashtags',coalesce(saved.kit->'hashtags','[]'::jsonb));
-    END IF;
-    RETURN jsonb_build_object('kit',saved.kit,'version',coalesce(saved.version,0),'canEdit',role IN ('OWNER','ADMIN','CREATOR','EDITOR'));
+    -- Stored kits are returned as stored (a v1 kit stays v1) so an older client can still read and save it.
+    -- 'v2' tells a newer client that this database accepts schema version 2.
+    RETURN jsonb_build_object('kit',saved.kit,'version',coalesce(saved.version,0),'canEdit',role IN ('OWNER','ADMIN','CREATOR','EDITOR'),'v2',true);
 END $$;
 CREATE OR REPLACE FUNCTION private.save_editor_brand_kit(workspace uuid,expected integer,kit jsonb,request_key text) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
@@ -97,7 +96,7 @@ BEGIN
         'hashtags',coalesce((SELECT jsonb_agg(to_jsonb(regexp_replace(tag#>>'{}','^#','')) ORDER BY ord) FROM jsonb_array_elements(coalesce(kit->'hashtags','[]'::jsonb)) WITH ORDINALITY t(tag,ord)),'[]'::jsonb));
     IF octet_length(kit::text)>12288 THEN RAISE EXCEPTION 'INVALID_REQUEST' USING ERRCODE='PT400'; END IF;
     INSERT INTO public.workspace_editor_brand_kits(workspace_id,version,kit,actor_id) VALUES(workspace,head+1,kit,actor) ON CONFLICT(workspace_id) DO UPDATE SET version=EXCLUDED.version,kit=EXCLUDED.kit,actor_id=EXCLUDED.actor_id,updated_at=now();
-    result:=jsonb_build_object('kit',kit,'version',head+1,'canEdit',true,'idempotent',false);
+    result:=jsonb_build_object('kit',kit,'version',head+1,'canEdit',true,'idempotent',false,'v2',true);
     INSERT INTO private.editor_requests(actor_id,operation,key,payload,result) VALUES(actor,'brand.save',request_key,payload,result);RETURN result;
 END $$;
 -- Preserve the existing tenant JWT surface (ADR-0051); these replace existing functions.
@@ -105,23 +104,31 @@ REVOKE ALL ON FUNCTION private.read_editor_brand_kit(uuid),private.save_editor_b
 GRANT EXECUTE ON FUNCTION private.read_editor_brand_kit(uuid),private.save_editor_brand_kit(uuid,integer,jsonb,text),public.read_editor_brand_kit(uuid),public.save_editor_brand_kit(uuid,integer,jsonb,text) TO authenticated;
 CREATE OR REPLACE FUNCTION public.get_social_brand_kit(p_auth_id TEXT, p_brand_id UUID)
 RETURNS JSONB LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$
-DECLARE v_role TEXT; v_link public.social_brand_kit_links; v_name TEXT; v_saved public.workspace_editor_brand_kits; v_can_link BOOLEAN; v_link_auth TEXT;
+DECLARE v_role TEXT; v_link public.social_brand_kit_links; v_name TEXT; v_saved public.workspace_editor_brand_kits; v_can_link BOOLEAN; v_link_auth TEXT; v_extra JSONB;
 BEGIN
     v_role := public.social_brand_role(p_auth_id, p_brand_id);
     IF v_role IS NULL THEN RETURN jsonb_build_object('ok',false,'code','BRAND_NOT_FOUND'); END IF;
     v_can_link := v_role = 'owner';
+    -- The owner's picker lists only workspaces the link RPC will accept (editor-level roles).
+    v_extra := CASE WHEN v_can_link THEN jsonb_build_object('workspaces',COALESCE((
+        SELECT jsonb_agg(jsonb_build_object('id',x.id,'name',x.name) ORDER BY x.name,x.id)
+        FROM (SELECT w.id,w.name FROM public.workspaces w
+              WHERE w.deleted_at IS NULL
+                AND w.organisation_id IN (SELECT m.organisation_id FROM public.organisation_members m WHERE m.user_id = p_auth_id::uuid)
+                AND coalesce(private.social_kit_workspace_role(p_auth_id::uuid,w.id),'') IN ('OWNER','ADMIN','CREATOR','EDITOR')
+              ORDER BY w.name,w.id LIMIT 100) x),'[]'::jsonb)) ELSE '{}'::jsonb END;
     SELECT * INTO v_link FROM public.social_brand_kit_links WHERE brand_id = p_brand_id;
-    IF NOT FOUND THEN RETURN jsonb_build_object('ok',true,'linked',false,'canLink',v_can_link); END IF;
+    IF NOT FOUND THEN RETURN jsonb_build_object('ok',true,'linked',false,'canLink',v_can_link) || v_extra; END IF;
     SELECT u.auth_id INTO v_link_auth FROM public.users u WHERE u.id = v_link.linked_by AND u.deleted_at IS NULL;
     IF coalesce(private.social_kit_workspace_role(v_link_auth::uuid, v_link.workspace_id),'') NOT IN ('OWNER','ADMIN','CREATOR','EDITOR') THEN
-        RETURN jsonb_build_object('ok',true,'linked',false,'stale',true,'canLink',v_can_link);
+        RETURN jsonb_build_object('ok',true,'linked',false,'stale',true,'canLink',v_can_link) || v_extra;
     END IF;
     SELECT w.name INTO v_name FROM public.workspaces w JOIN public.organisations o ON o.id = w.organisation_id
     WHERE w.id = v_link.workspace_id AND w.deleted_at IS NULL AND o.deleted_at IS NULL;
-    IF v_name IS NULL THEN RETURN jsonb_build_object('ok',true,'linked',false,'stale',true,'canLink',v_can_link); END IF;
+    IF v_name IS NULL THEN RETURN jsonb_build_object('ok',true,'linked',false,'stale',true,'canLink',v_can_link) || v_extra; END IF;
     SELECT * INTO v_saved FROM public.workspace_editor_brand_kits WHERE workspace_id = v_link.workspace_id;
     IF NOT FOUND THEN
-        RETURN jsonb_build_object('ok',true,'linked',true,'empty',true,'canLink',v_can_link)
+        RETURN jsonb_build_object('ok',true,'linked',true,'empty',true,'canLink',v_can_link) || v_extra
             || CASE WHEN v_can_link THEN jsonb_build_object('workspaceId',v_link.workspace_id,'workspaceName',v_name) ELSE '{}'::jsonb END;
     END IF;
     RETURN jsonb_build_object('ok',true,'linked',true,'empty',false,
@@ -132,7 +139,7 @@ BEGIN
             'name',v_saved.kit->'name','palette',v_saved.kit->'palette','fonts',v_saved.kit->'fonts','textStyles',v_saved.kit->'textStyles',
             'credits',COALESCE((SELECT jsonb_agg(jsonb_build_object('name',a->'name','credit',a->'credit','usage',a->'usage','url',a->'url'))
                 FROM jsonb_array_elements(v_saved.kit->'assets') a),'[]'::jsonb)))
-        || CASE WHEN v_can_link THEN jsonb_build_object('workspaceId',v_link.workspace_id,'workspaceName',v_name) ELSE '{}'::jsonb END;
+        || CASE WHEN v_can_link THEN jsonb_build_object('workspaceId',v_link.workspace_id,'workspaceName',v_name) ELSE '{}'::jsonb END || v_extra;
 END $$;
 
 REVOKE ALL ON FUNCTION public.get_social_brand_kit(text,uuid) FROM PUBLIC,anon,authenticated;

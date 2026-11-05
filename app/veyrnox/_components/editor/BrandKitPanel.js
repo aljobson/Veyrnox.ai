@@ -17,7 +17,10 @@ export function BrandKitPanel({ project, item, frame, disabled, apply, onSelect,
   const [name, setName] = useState(() => t('app.editor.brand.titleDefault'));
   const [status, setStatus] = useState(null);
   const kit = draft?.source === resource.data ? draft.kit : normalizeBrandKit(resource.data?.kit || emptyBrandKit());
-  const kitToSave = { ...kit, textStyles: kit.textStyles.map(preset => ({ ...preset, size: brandTextStyleSize(preset.size) ?? preset.size })) };
+  // Until migration 0442 is applied the read carries no `v2` flag: save the v1 shape and hide the v2 fields.
+  const v2 = resource.data?.v2 === true;
+  const sized = { ...kit, textStyles: kit.textStyles.map(preset => ({ ...preset, size: brandTextStyleSize(preset.size) ?? preset.size })) };
+  const kitToSave = v2 ? sized : (({ logo: _logo, voice: _voice, hashtags: _hashtags, ...v1 }) => ({ ...v1, schemaVersion: 1 }))(sized);
   const problem = status?.source === resource.data ? status.text : '';
   if (!project?.workspaceId) return <p className="text-xs">{t('app.editor.brand.saveFirst')}</p>;
   if (!resource.data) return <section aria-label={t('app.editor.brand.title')}>
@@ -53,7 +56,7 @@ export function BrandKitPanel({ project, item, frame, disabled, apply, onSelect,
       </label>
       <BrandFieldError kit={kit} name="name" />
       <fieldset aria-label={t('app.editor.brand.paletteLabel')} className="space-y-2"><BrandPaletteFields kit={kit} set={set} /></fieldset>
-      <BrandKitFields kit={kit} set={set} />
+      {v2 && <BrandKitFields kit={kit} set={set} />}
       <input aria-label={t('app.editor.brand.styleName')} className={field} value={name} maxLength={80} onChange={e => setName(e.target.value)} />
       <Button type="button" className="min-h-11" size="sm" disabled={!item?.text || kit.textStyles.length >= 12 || !name.trim()}
         onClick={() => set('textStyles', [...kit.textStyles, { name: name.trim(), size: item.size, style: { ...TEXT_DEFAULTS, ...item.style } }])}>
@@ -65,8 +68,8 @@ export function BrandKitPanel({ project, item, frame, disabled, apply, onSelect,
       style={{ background: c }} onClick={() => apply(timeline => ({ ...timeline, background: c }))}></button>)}</div>
     <BrandTextStyles kit={kit} set={set} locked={locked} useDisabled={useDisabled} onInsert={insertStyle} />
     <BrandAssetPicker key={`${project.workspaceId}:${resource.accountId}`} useDisabled={useDisabled} workspaceId={project.workspaceId}
-      assets={kit.assets} disabled={locked} logo={kit.logo} onLogo={logo => set('logo', logo)} onChange={setAssets} onIngest={onIngest} />
-    <BrandFieldError kit={kit} name="assets" /><BrandFieldError kit={kit} name="logo" />
+      assets={kit.assets} disabled={locked} logo={v2 ? kit.logo : undefined} onLogo={v2 ? logo => set('logo', logo) : undefined} onChange={setAssets} onIngest={onIngest} />
+    <BrandFieldError kit={kit} name="assets" />{v2 && <BrandFieldError kit={kit} name="logo" />}
     {new TextEncoder().encode(JSON.stringify(kitToSave)).byteLength > 8192 && <p role="alert" className="text-xs text-vx-danger">{t('app.editor.brand.tooLarge')}</p>}
     <Button type="button" className="min-h-11" size="sm" disabled={locked || !!brandKitProblem(kitToSave)} onClick={save}>{t('app.editor.brand.save')}</Button>
     <Button type="button" className="min-h-11" size="sm" variant="ghost" disabled={resource.busy} onClick={resource.reload}>{t('app.editor.brand.reload')}</Button>
