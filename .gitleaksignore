@@ -253,3 +253,14 @@ e24ba1e497d1caebcbedfde789bf0878033c946b:tests/socialApprovalsRoute.test.mjs:gen
 6a573d9af908fa96998874f0c71d1f2058612369:tests/subscriptionTrial.test.mjs:generic-api-key:102
 # Public AsyncStorage preference name "veyrnox.vey.character.v1" (which Vey mascot is shown), not an API credential. Reviewed 2026-11-03.
 e9e5606a9c168d0284fd356140d98501baaf77b5:apps/mobile/src/lib/veyCharacterChoice.ts:generic-api-key:5
+
+# Template ids and a synthetic chat fixture re-emitted by the exact-prompts change (#1924), not credentials:
+# the id `whiskey-gun-trick` contains the substring "key" and its regenerated clipKey line / baseline fixtures match generic-api-key;
+# tests/chat.test.mjs line 50 is a synthetic idempotency key literal. Tied to one commit/path/rule/line each.
+01702d0c3366b989276110af53fdd649702f9b6d:app/veyrnox/_lib/sourceTemplateExpansion8.js:generic-api-key:43
+01702d0c3366b989276110af53fdd649702f9b6d:tests/chat.test.mjs:generic-api-key:50
+01702d0c3366b989276110af53fdd649702f9b6d:tests/fixtures/exactOnlyBaseline.json:generic-api-key:185
+01702d0c3366b989276110af53fdd649702f9b6d:tests/fixtures/categoryFillBaseline.json:generic-api-key:186
+01702d0c3366b989276110af53fdd649702f9b6d:tests/fixtures/higgsfield300Baseline.json:generic-api-key:236
+01702d0c3366b989276110af53fdd649702f9b6d:tests/fixtures/higgsfield300Baseline.json:generic-api-key:738
+01702d0c3366b989276110af53fdd649702f9b6d:tests/fixtures/higgsfield300Baseline.json:generic-api-key:1172
