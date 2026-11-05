@@ -75,7 +75,7 @@ import { visibleText } from './visibleText.mjs';
 export { visibleText };
 export function renderScenario(scenario,locale,messages,sourceOverrides={}){
  const file=files[scenario.area];
- const resource={data:{kit:emptyBrandKit(),canEdit:true,canComment:true,canResolve:true,comments:[{id:'comment',body:'User comment unchanged',frame:60,resolved:false,created_at:'2026-10-01T12:00:00Z'}],truncated:true,total:12,nextCursor:'cursor'},accountId:'user',reload:noop,loadMore:noop,mutate:noop};
+ const resource={data:{kit:emptyBrandKit(),v2:true,canEdit:true,canComment:true,canResolve:true,comments:[{id:'comment',body:'User comment unchanged',frame:60,resolved:false,created_at:'2026-10-01T12:00:00Z'}],truncated:true,total:12,nextCursor:'cursor'},accountId:'user',reload:noop,loadMore:noop,mutate:noop};
  const f=fixture(locale,'/app/editor',{messages,signedIn:true,sourceOverrides,states:scenario.states?{[file]:scenario.states}:{},expose:{[files.masters]:['MasterCard']},moduleMocks:{
  './ConfirmDialog':{ConfirmDialog:({open,title,body,confirmLabel})=>open!==false?React.createElement('section',null,title,body,confirmLabel):null},
  './useEditorResource':{useEditorResource:()=>resource},

@@ -204,6 +204,7 @@ try {
     const REFUSED_UNTIL_CLEARED = new Set(['cinema_submissions', 'cinema_competitions', 'cinema_story_polls', 'credit_subscriptions',
         'social_publish_subscriptions', 'social_brand_members', 'social_brand_invitations', 'voice_profiles']);
     const RETAINED = new Set([
+        'social_brand_kit_links', // linking audit only; deleted actors cannot expose kit data (0441)
         // Administrator accountability, including actor email, like account_actions (ADR-0083).
         'admin_change_log',
         'admin_roles', 'admin_mutation_receipts', 'runtime_switches', // retained administrator authorization/operational audit, no customer content
