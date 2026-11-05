@@ -4,6 +4,7 @@ import { Main } from '../../../_components/Main';
 import { useState } from 'react';
 import { AdminPanel, AdminTable, adminControl, adminWhen } from '../_components/AdminPanel';
 import { useAdminMutation } from '../_components/useAdminMutation';
+import { AiControls } from './AiControls';
 import { RUNTIME_SWITCHES, runtimeSwitchState } from '../../../../../lib/runtimeSwitches';
 export default function Page() {
   return <><AppNav /><Main><AdminPanel title="On/off switches" endpoint="/admin/switches" description="Pause new activity without changing deployment settings.">
@@ -41,5 +42,6 @@ function Switches({data,refresh,offline}) {
       {mutation.signIn && <button type="button" className={adminControl} onClick={()=>window.dispatchEvent(new CustomEvent('veyrnox:auth-required',{detail:{mode:'sign_in'}}))}>Sign in again</button>}
       <div className="sm:col-span-2" aria-live="polite">{mutation.error&&<p role="alert" className="text-vx-danger">{mutation.error}</p>}{mutation.message&&<p role="status">{mutation.message}</p>}</div>
     </form>}
+    {data.permissions.includes('switches.write') && <AiControls offline={offline} />}
   </>;
 }

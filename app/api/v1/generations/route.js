@@ -197,6 +197,9 @@ export async function POST(req) {
     // rejected later without a job. The existing 10-job sliding-window check
     // remains, with the authoritative job limit enforced inside ledger_debit.
     // This RPC must precede source signing, R2 reads and media inspection.
+    // ADR-0327: an operator override may lower the limit; the constant stays the ceiling.
+    // The same number goes to admission below, where the count is taken under the row lock.
+    let effectiveLimit = RATE_LIMIT_PER_WINDOW;
     try {
         const rl = await rpc('check_generation_rate_limit', {
             p_auth_id: authId,
@@ -225,9 +228,15 @@ export async function POST(req) {
             if (rl.code === 'USER_NOT_FOUND') {
                 return NextResponse.json({ error: 'user_not_provisioned' }, { status: 409 });
             }
+            // ADR-0327: an operator turned AI off for this account.
+            if (rl.code === 'AI_DISABLED') {
+                return NextResponse.json({ error: 'ai_disabled' }, { status: 403 });
+            }
             const rlCode = rl.code ? String(rl.code).toLowerCase() : 'rate_check_failed';
             return NextResponse.json({ error: rlCode }, { status: 400 });
         }
+        const granted = Number(rl.limit);
+        if (Number.isInteger(granted) && granted >= 1 && granted < RATE_LIMIT_PER_WINDOW) effectiveLimit = granted;
     } catch (err) {
         // Fail closed: the rate limit is the entry-point control. A degraded
         // rate check must not turn into an unlimited submission path.
@@ -427,7 +436,7 @@ export async function POST(req) {
     if (freeAllowanceOn && Number(modelRow.free_allowance_per_day) > 0) {
         const allowance = await takeFreeJobDetailed({
             cfg, authId, userId, key: idempotencyKey, modelId, inputs: jobInputs,
-            limit: RATE_LIMIT_PER_WINDOW, windowSeconds: RATE_WINDOW_SECONDS,
+            limit: effectiveLimit, windowSeconds: RATE_WINDOW_SECONDS,
         });
         allowanceKind = allowance.kind;
         debit = allowance.kind === 'ambiguous' && maxCharge !== undefined ? null : allowance.result;
@@ -458,7 +467,7 @@ export async function POST(req) {
             p_inputs: jobInputs,
             // Authoritative rate limit, counted under the same row lock as
             // the insert (0030). The RPC above is only the cheap early 429.
-            p_limit_per_window: RATE_LIMIT_PER_WINDOW,
+            p_limit_per_window: effectiveLimit,
             p_window_seconds: RATE_WINDOW_SECONDS,
         }, cfg);
     } catch (err) {
