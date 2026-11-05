@@ -9,6 +9,12 @@
 /_next/static/*
   Cache-Control: public, max-age=31536000, immutable
 
+# Template showcase clips and posters (about 650 MB). Their names are not fingerprinted and a file can be
+# replaced in place, so this is not immutable: a day of browser cache, then a stale copy may be served for up
+# to a week while the browser revalidates in the background. Without this they revalidated on every view.
+/showcase/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
 # Pinned model/runtime inventory: bump this path when any shipped byte changes.
 /video-enhance/mediapipe-1.0.1-face-landmarker-1/*
   Cache-Control: public, max-age=31536000, immutable
