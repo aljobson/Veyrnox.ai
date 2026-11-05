@@ -197,7 +197,7 @@ test('AI music validates declared duration before a synthetic refusal and preser
   await prompt.fill('Synthetic instrumental piano, no vocals');
   const duration = page.getByRole('spinbutton', { name: 'Audio duration in seconds', exact: true });
   await expect(duration).toHaveValue('60'); await duration.fill('61');
-  await expect(generate).toBeDisabled(); await expect(page.getByText('Use a whole number from 5 to 60.', { exact: true })).toBeVisible();
+  await expect(generate).toBeDisabled(); await expect(page.getByText('Use a whole number from 5 to 60.', { exact: true }).first()).toBeVisible();
   expect(fixture.requests.filter(row => row.path === '/api/v1/generations')).toEqual([]);
   await duration.fill('12'); await generate.click();
   await expect(page.getByRole('alert').filter({ hasText: 'The prompt is empty or too long' })).toBeVisible();
