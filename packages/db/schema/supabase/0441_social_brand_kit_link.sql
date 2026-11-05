@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS public.social_brand_kit_links (
 );
 CREATE INDEX IF NOT EXISTS social_brand_kit_links_actor_idx ON public.social_brand_kit_links (linked_by);
 CREATE INDEX IF NOT EXISTS social_brand_kit_links_workspace_idx ON public.social_brand_kit_links (workspace_id);
+CREATE INDEX IF NOT EXISTS social_brand_kit_links_linked_by_idx ON public.social_brand_kit_links (linked_by);
 ALTER TABLE public.social_brand_kit_links ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.social_brand_kit_links FORCE ROW LEVEL SECURITY;
 REVOKE ALL ON public.social_brand_kit_links FROM PUBLIC, anon, authenticated, service_role;
