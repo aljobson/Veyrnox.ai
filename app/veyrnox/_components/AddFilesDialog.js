@@ -126,7 +126,7 @@ function AddFiles({ actor, capacity, onAdd, onClose }) {
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-vx-fg-body">{t('app.create.addFiles.dropHint')}</p>
             <label className={`flex min-h-11 w-full cursor-pointer items-center justify-center rounded-xl border border-vx-fg-body px-4 text-base font-bold text-vx-fg hover:bg-vx-fg/10 has-disabled:opacity-50 has-focus-visible:outline-solid has-focus-visible:outline-2 has-focus-visible:outline-vx-accent sm:w-1/2`}>
-              <Icon name="clipboard" size={20} className="me-2" />{t('app.create.addFiles.upload')}
+              <Icon name="paperclip" size={20} className="me-2" />{t('app.create.addFiles.upload')}
               <input data-testid="create-attach" type="file" multiple accept={attachAccept()} disabled={busy} className="sr-only"
                 onChange={event => { const files = event.target.files; addFromDevice(files); event.target.value = ''; }} />
             </label>

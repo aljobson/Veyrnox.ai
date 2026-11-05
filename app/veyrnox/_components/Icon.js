@@ -27,12 +27,7 @@ const PATHS = {
   menu: <path d="M4 7h16M4 12h16M4 17h16" />,
   close: <path d="m6 6 12 12M18 6 6 18" />,
   // The attach cue: shown on every control that asks for a picture or video.
-  clipboard: (
-    <>
-      <rect x="5" y="4" width="14" height="17" rx="2" />
-      <path d="M9 2.5h6V6H9z" />
-    </>
-  ),
+  paperclip: <path d="M21 11.5 12.5 20a5.5 5.5 0 0 1-7.8-7.8l9-9a3.7 3.7 0 0 1 5.2 5.2l-9 9a1.8 1.8 0 0 1-2.6-2.6l8.3-8.3" />,
 };
 
 export function Icon({ name, size = 16, className = '' }) {
