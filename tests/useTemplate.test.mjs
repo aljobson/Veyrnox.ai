@@ -4,7 +4,7 @@ import * as React from 'react';
 import { fixture } from './helpers/publicSiteRender.mjs';
 import { LANDING_DRAFT_KEY } from '../app/veyrnox/_lib/landingDraft.js';
 import { templateArrival } from '../app/veyrnox/_lib/templateDraft.js';
-import { takeTemplateMediaHandoff } from '../app/veyrnox/_lib/templateMediaHandoff.js';
+import { takeTemplateMediaHandoff, writeTemplateMediaHandoff } from '../app/veyrnox/_lib/templateMediaHandoff.js';
 
 const original = { id: 'kling-2.6-pro-kie', name: 'Kling 2.6 Pro', modality: 'image-to-video', kind: 'video', credits: 17, aspects: ['16:9', '9:16'], durations: [5, 10] };
 const other = { id: 'wan-2.5-kie', name: 'Wan 2.5', modality: 'image-to-video', kind: 'video', credits: 31, aspects: ['1:1', '4:5'], durations: [5] };
@@ -17,7 +17,7 @@ const select = (tree, label) => nodes(tree).find(node => node.type === 'select' 
 const button = tree => nodes(tree).find(node => node.type === 'button');
 const options = node => nodes(node.props.children).filter(child => child.type === 'option').map(child => child.props.value);
 const launchButton = tree => nodes(tree).find(node => node.type === 'button' && String(node.props.className).includes('bg-vx-accent'));
-function harness({ models = [other, original], live = true, template = preset, prompt = template.prompt } = {}) {
+function harness({ models = [other, original], live = true, template = preset, prompt = template.prompt, prepare } = {}) {
   const states = [];
   let index = 0;
   const pushed = [];
@@ -26,10 +26,15 @@ function harness({ models = [other, original], live = true, template = preset, p
       const slot = index++;
       if (!(slot in states)) states[slot] = initial;
       return [states[slot], value => { states[slot] = value; }];
+    }, useRef(initial) {
+      const slot = index++;
+      if (!(slot in states)) states[slot] = { current: initial };
+      return states[slot];
     } },
     '../../../components/I18nProvider.jsx': { useI18n: () => ({ t: (key, values) => values ? `${key}:${JSON.stringify(values)}` : key }) },
     '../_lib/useCatalog': { useCatalog: () => ({ models, live, loading: !live }) },
     'next/navigation': { useRouter: () => ({ push: href => pushed.push(href) }) },
+    ...(prepare ? { '../_lib/uploadConvert.mjs': { prepareUpload: prepare } } : {}),
   } });
   const { UseTemplate } = f.load('app/veyrnox/_components/UseTemplate.js');
   return { render: () => { index = 0; return UseTemplate({ preset: template, prompt }); }, pushed };
@@ -102,20 +107,51 @@ test('handoff writes chosen model, aspect, seconds and exact prompt and also car
   } finally { globalThis.window = savedWindow; }
 });
 
-test('a required template photo is carried into Studio once without persistence', () => {
+test('a required template photo is normalized and carried into Studio once without persistence', async () => {
   const savedWindow = globalThis.window;
   try {
     const storage = new Map();
     globalThis.window = { sessionStorage: { setItem: (key, value) => storage.set(key, value) } };
     const model = { ...original, media: { image: { required: true } } };
     const h = harness({ models: [model] });
-    const photo = Object.assign(new Blob(['photo'], { type: 'image/jpeg' }), { name: 'portrait.jpg' });
+    const photo = Object.assign(new Blob(['photo'], { type: 'image/jpg' }), { name: 'portrait.jpg' });
     const picker = nodes(h.render()).find(node => node.type === 'input' && node.props.type === 'file');
-    picker.props.onChange({ target: { files: [photo], value: 'portrait.jpg' } });
+    await picker.props.onChange({ target: { files: [photo], value: 'portrait.jpg' } });
     launchButton(h.render()).props.onClick();
-    assert.deepEqual(takeTemplateMediaHandoff(globalThis.window, preset.id, model.id), { image: photo });
+    const handed = takeTemplateMediaHandoff(globalThis.window, preset.id, model.id);
+    assert.equal(handed.image.name, 'portrait.jpg');
+    assert.equal(handed.image.type, 'image/jpeg');
     assert.equal(takeTemplateMediaHandoff(globalThis.window, preset.id, model.id), null);
   } finally { globalThis.window = savedWindow; }
+});
+
+test('launching a template without a photo clears an earlier handoff', () => {
+  const savedWindow = globalThis.window;
+  try {
+    const storage = new Map();
+    globalThis.window = { sessionStorage: { setItem: (key, value) => storage.set(key, value) } };
+    const model = { ...original, media: { image: { required: true } } };
+    const stale = Object.assign(new Blob(['old'], { type: 'image/jpeg' }), { name: 'old.jpg' });
+    writeTemplateMediaHandoff(globalThis.window, { templateId: preset.id, modelId: model.id, image: stale });
+    launchButton(harness({ models: [model] }).render()).props.onClick();
+    assert.equal(takeTemplateMediaHandoff(globalThis.window, preset.id, model.id), null);
+  } finally { globalThis.window = savedWindow; }
+});
+
+test('Continue stays disabled and announces while a photo is being prepared', async () => {
+  let finish;
+  const pending = new Promise(resolve => { finish = resolve; });
+  const model = { ...original, media: { image: { required: true } } };
+  const photo = Object.assign(new Blob(['photo'], { type: 'image/jpeg' }), { name: 'portrait.jpg' });
+  const h = harness({ models: [model], prepare: () => pending });
+  const picker = nodes(h.render()).find(node => node.type === 'input' && node.props.type === 'file');
+  const choosing = picker.props.onChange({ target: { files: [photo], value: 'portrait.jpg' } });
+  const busy = h.render();
+  assert.equal(launchButton(busy).props.disabled, true);
+  assert.equal(nodes(busy).find(node => node.props?.role === 'status').props.children, 'presets.use.photoPreparing');
+  finish(photo);
+  await choosing;
+  assert.equal(launchButton(h.render()).props.disabled, false);
 });
 
 test('blocked storage still navigates with exact prompt; unsaved personal edits report the existing error', () => {

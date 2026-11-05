@@ -1,17 +1,28 @@
+import { pickerAccept, uploadPlan } from '../../../lib/uploadInputTypes.mjs';
+
 const KEY = '__veyrnoxTemplateMediaV1';
 const MAX_AGE_MS = 10 * 60 * 1000;
 const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
 const TEMPLATE_ID = /^[a-z0-9-]{1,40}$/;
 const MODEL_ID = /^[a-z0-9][a-z0-9._-]{2,127}$/;
-const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'image/avif', 'image/gif']);
 
-export const TEMPLATE_IMAGE_ACCEPT = [...IMAGE_TYPES].join(',');
+export const TEMPLATE_IMAGE_ACCEPT = pickerAccept('image');
 
 export function templateImageFileError(file) {
   if (!(file instanceof Blob) || file.size < 1) return 'unreadable';
-  if (!IMAGE_TYPES.has(file.type)) return 'format';
+  if (uploadPlan(file)?.kind !== 'image') return 'format';
   if (file.size > MAX_IMAGE_BYTES) return 'size';
   return '';
+}
+
+export function clearTemplateMediaHandoff(target) {
+  if (!target) return false;
+  try {
+    delete target[KEY];
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** One immediate same-tab handoff. The file is never serialized or persisted. */
@@ -30,7 +41,7 @@ export function takeTemplateMediaHandoff(target, templateId, modelId, now = Date
   let value;
   try {
     value = target[KEY];
-    delete target[KEY];
+    if (!clearTemplateMediaHandoff(target)) return null;
   } catch {
     return null;
   }

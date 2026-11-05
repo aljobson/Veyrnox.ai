@@ -3,12 +3,13 @@ import { rich } from '../../../lib/i18n/rich';
 import { useI18n } from '../../../components/I18nProvider.jsx';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { writeTemplateChatDraft } from '../_lib/chatTemplateDraft';
 import { useCatalog } from '../_lib/useCatalog';
 import { writeFilmStarter } from '../_lib/filmTemplateDraft';
 import { writeStudioDraft } from '../_lib/landingDraft';
-import { TEMPLATE_IMAGE_ACCEPT, templateImageFileError, writeTemplateMediaHandoff } from '../_lib/templateMediaHandoff';
+import { clearTemplateMediaHandoff, TEMPLATE_IMAGE_ACCEPT, templateImageFileError, writeTemplateMediaHandoff } from '../_lib/templateMediaHandoff';
+import { prepareUpload } from '../_lib/uploadConvert.mjs';
 import { TEMPLATE_PROMPT_MAX, templateModelEligible, createPromptModelAvailable } from '../_lib/templateDraft';
 import { clipCredits, modelAspectRatios, modelIdForName, presetCredits, presetHref } from '../_lib/tokens';
 import { CHAT_USER_TEXT_MAX } from '../../../lib/chatLimits.js';
@@ -45,14 +46,18 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked 
   const [handoffError, setHandoffError] = useState('');
   const [opening, setOpening] = useState(false);
   const [photo, setPhoto] = useState(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const photoSequence = useRef(0);
   const promptBlocked = !prompt.trim() || prompt.length > TEMPLATE_PROMPT_MAX;
-  const generationDisabled = generationBlocked || promptBlocked || !model;
+  const generationDisabled = generationBlocked || promptBlocked || !model || photoBusy;
   const chatBlocked = !prompt.trim() || prompt.length > CHAT_USER_TEXT_MAX;
   const requiredImage = model?.media?.image?.required === true;
 
-  function choosePhoto(file) {
+  async function choosePhoto(file) {
+    const sequence = ++photoSequence.current;
     if (!file) {
       setPhoto(null);
+      setPhotoBusy(false);
       setHandoffError('');
       return;
     }
@@ -62,8 +67,19 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked 
       setHandoffError('mediaFile');
       return;
     }
-    setPhoto(file);
+    setPhoto(null);
+    setPhotoBusy(true);
     setHandoffError('');
+    try {
+      const ready = await prepareUpload(file);
+      if (photoSequence.current !== sequence) return;
+      if (templateImageFileError(ready)) { setHandoffError('mediaFile'); return; }
+      setPhoto(ready);
+    } catch {
+      if (photoSequence.current === sequence) setHandoffError('mediaFile');
+    } finally {
+      if (photoSequence.current === sequence) setPhotoBusy(false);
+    }
   }
 
   function use() {
@@ -73,7 +89,8 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked 
       try { saved = writeStudioDraft(window.sessionStorage, { prompt, model: modelId, aspect, durationSeconds, negativePrompt: preset.negativePrompt, templateId: preset.id }); } catch { /* The unedited URL recipe still works. */ }
       if (!saved && prompt !== preset.prompt) { setHandoffError('studio'); return; }
     }
-    if (requiredImage && photo && !writeTemplateMediaHandoff(window, { templateId: preset.id, modelId, image: photo })) {
+    if (!clearTemplateMediaHandoff(window)
+      || (requiredImage && photo && !writeTemplateMediaHandoff(window, { templateId: preset.id, modelId, image: photo }))) {
       setHandoffError('media');
       return;
     }
@@ -116,11 +133,11 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked 
           <legend className="px-1 text-sm font-bold">{t('presets.use.photoTitle')}</legend>
           <p className="mt-1 text-[13px] leading-5 text-vx-fg-muted">{t('presets.use.photoPrivacy')}</p>
           <div className="mt-3 flex min-h-14 items-center gap-3 rounded-xl border border-dashed border-vx-border bg-vx-base p-2.5">
-            <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-vx-panel font-vx-mono text-sm text-vx-accent">{photo ? '✓' : '+'}</span>
-            <span className="min-w-0 flex-1 truncate text-xs text-vx-fg-muted">{photo?.name || t('presets.use.photoHint')}</span>
+            <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-vx-panel font-vx-mono text-sm text-vx-accent">{photoBusy ? '…' : photo ? '✓' : '+'}</span>
+            <span role={photoBusy ? 'status' : undefined} className="min-w-0 flex-1 truncate text-xs text-vx-fg-muted">{photoBusy ? t('presets.use.photoPreparing') : photo?.name || t('presets.use.photoHint')}</span>
             <label className="vx-press relative inline-flex min-h-11 shrink-0 cursor-pointer items-center rounded-full border border-vx-accent px-4 text-xs font-extrabold text-vx-accent focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-vx-accent">
               {photo ? t('presets.use.photoReplace') : t('presets.use.photoChoose')}
-              <input type="file" accept={TEMPLATE_IMAGE_ACCEPT} aria-label={t('presets.use.photoChoose')} className="absolute inset-0 h-full w-full cursor-pointer opacity-0" onChange={(event) => { const file = event.target.files?.[0] || null; event.target.value = ''; choosePhoto(file); }} />
+              <input type="file" accept={TEMPLATE_IMAGE_ACCEPT} disabled={photoBusy} aria-label={t('presets.use.photoChoose')} className="absolute inset-0 h-full w-full cursor-pointer opacity-0" onChange={(event) => { const file = event.target.files?.[0] || null; event.target.value = ''; return choosePhoto(file); }} />
             </label>
             {photo && <button type="button" onClick={() => choosePhoto(null)} aria-label={t('presets.use.photoRemove')} className="vx-press inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-vx-fg-muted hover:text-vx-fg">×</button>}
           </div>

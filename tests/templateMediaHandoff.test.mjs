@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  clearTemplateMediaHandoff,
   takeTemplateMediaHandoff,
   templateImageFileError,
   writeTemplateMediaHandoff,
@@ -21,10 +22,16 @@ test('template photo handoff is exact, fresh, memory-only and single-use', () =>
 
   writeTemplateMediaHandoff(target, { templateId: 'slow-cinema-turn', modelId: 'kling-3.0-i2v', image }, NOW);
   assert.equal(takeTemplateMediaHandoff(target, 'slow-cinema-turn', 'kling-3.0-i2v', NOW + 11 * 60 * 1000), null);
+
+  writeTemplateMediaHandoff(target, { templateId: 'slow-cinema-turn', modelId: 'kling-3.0-i2v', image }, NOW);
+  assert.equal(clearTemplateMediaHandoff(target), true);
+  assert.equal(takeTemplateMediaHandoff(target, 'slow-cinema-turn', 'kling-3.0-i2v', NOW), null);
 });
 
 test('template photo handoff enforces browser image formats and size limits', () => {
   assert.equal(templateImageFileError(image), '');
+  assert.equal(templateImageFileError(Object.assign(new Blob(['x'], { type: 'image/jpg' }), { name: 'alias.jpg' })), '');
+  assert.equal(templateImageFileError(Object.assign(new Blob(['x']), { name: 'IMG_1.HEIC' })), '');
   assert.equal(templateImageFileError(new Blob(['x'], { type: 'image/svg+xml' })), 'format');
   assert.equal(templateImageFileError(new Blob([new Uint8Array(20 * 1024 * 1024 + 1)], { type: 'image/png' })), 'size');
   assert.equal(writeTemplateMediaHandoff({}, { templateId: '../bad', modelId: 'kling-3.0-i2v', image }, NOW), false);
