@@ -1,5 +1,6 @@
 'use client';
 import { generationSourceState } from '../../../../lib/generationSourceSlots.mjs';
+import { Icon } from '../Icon';
 import BindingText, { BindingPolicyLink } from '../../../../components/BindingText';
 import { helperCopy } from '../../../../lib/i18n/helperCopy.mjs';
 import { useI18n } from '../../../../components/I18nProvider';
@@ -129,7 +130,7 @@ export function MediaComposer({ kind, media, prompt, onPrompt }) {
           <div className="border-b border-vx-border px-3 py-3">
             <div className="flex items-center gap-3">
               <label className="shrink-0 cursor-pointer rounded-full border border-vx-border px-3.5 py-1.5 font-vx-mono text-[11px] font-bold text-vx-fg-muted hover:text-vx-fg has-focus-visible:outline-solid has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-vx-accent">
-                {t('app.create.attach.button')}
+                <Icon name="clipboard" size={16} className="me-1.5 inline align-[-2px]" />{t('app.create.attach.button')}
                 <input data-testid="chat-media-attach" type="file" multiple accept={attachAccept()} disabled={busy || converting} className="sr-only"
                   onChange={(e) => { attachFromDevice(e.target.files); e.target.value = ''; }} />
               </label>

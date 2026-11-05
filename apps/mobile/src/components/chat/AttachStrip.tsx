@@ -31,10 +31,10 @@ export function AttachStrip({ items, extra, max = MAX_ATTACHMENTS, disabled, emb
                     <Text variant="footnote" style={styles.btnText}>{t('chat.attach.library')}</Text>
                 </Button>
                 <Button accessibilityRole="button" accessibilityLabel={t('chat.attach.photosLabel')} disabled={disabled || full} containerStyle={styles.btn} onPress={onPhotos} variant="secondary" size="md" label={t('chat.attach.photosLabel')}>
-                    <Icon name="paperclip" size={20} />
+                    <Icon name="clipboard" size={20} />
                     <Text variant="footnote" style={styles.btnText}>{t('chat.attach.photos')}</Text>
                 </Button>
-                {onVideo ? <Button variant="secondary" label={t('chatDepth.video')} accessibilityLabel={t('chatDepth.videoLabel')} disabled={disabled} containerStyle={styles.btn} onPress={onVideo}><Icon name="video" size={20} /><Text variant="footnote">{t('chatDepth.video')}</Text></Button> : null}
+                {onVideo ? <Button variant="secondary" label={t('chatDepth.video')} accessibilityLabel={t('chatDepth.videoLabel')} disabled={disabled} containerStyle={styles.btn} onPress={onVideo}><Icon name="clipboard" size={20} /><Text variant="footnote">{t('chatDepth.video')}</Text></Button> : null}
                 <Text variant="caption" tone="warning" style={styles.note}>{items.length > 0 ? <>{plural('chat.attach.extra', extra)}<Text variant="caption" tone="tertiary"> · {items.length}/{max}</Text></> : plural('chat.attach.hint', extra)}</Text>
             </View>
             {items.length > 0 ? (

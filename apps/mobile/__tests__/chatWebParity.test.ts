@@ -46,7 +46,7 @@ describe('the native LLM chat mirrors the website workspace', () => {
         expect(deck).toContain('<Chip');
         expect(attachments).toContain('<Icon name="image"');
         expect(attachments).toContain("accessibilityLabel={t('chat.attach.libraryLabel')}");
-        expect(attachments).toContain('<Icon name="paperclip"');
+        expect(attachments).toContain('<Icon name="clipboard"');
         expect(attachments).toContain("accessibilityLabel={t('chat.attach.photosLabel')}");
     });
 

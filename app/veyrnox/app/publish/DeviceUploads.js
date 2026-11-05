@@ -1,5 +1,6 @@
 'use client';
 import { tOr } from '../../../../lib/i18n/translate.mjs';
+import { Icon } from '../../_components/Icon';
 import { localeTag } from '../../../../lib/i18n/locales.mjs';
 import { useI18n } from '../../../../components/I18nProvider';
 import { useEffect, useRef, useState } from 'react';
@@ -76,7 +77,7 @@ export default function DeviceUploads({ selected = [], max = 1, onSelect, onBusy
         </label>
         <input ref={input} type="file" multiple={max > 1} accept="image/jpeg,image/png,image/webp,video/mp4" onChange={chooseFile} className="sr-only" tabIndex={-1} aria-label={t("app.publish.uploads.choose")} />
         <div className="flex flex-wrap items-center gap-2">
-            <button type="button" className={button} disabled={!consent || busy} onClick={() => input.current?.click()}>{t("app.publish.uploads.upload")}</button>
+            <button type="button" className={button} disabled={!consent || busy} onClick={() => input.current?.click()}><Icon name="clipboard" size={16} className="me-1.5 inline align-[-2px]" />{t("app.publish.uploads.upload")}</button>
             {busy && <button type="button" className={button} onClick={() => controller.current?.abort()}>{t("app.publish.uploads.cancel")}</button>}
         </div>
         {busy && <div role="status" className="text-sm"><progress value={progress} max={100} aria-label={t("app.publish.uploads.progress")} className="w-full" />{progress < 100 ? t('app.publish.uploads.uploading', { percent: number(progress) }) : t("app.publish.uploads.checking")}</div>}

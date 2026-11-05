@@ -1,5 +1,6 @@
 'use client';
 import { useI18n } from '../../../../components/I18nProvider.jsx';
+import { Icon } from '../../_components/Icon';
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import { gatewayFetch } from '../../_lib/gateway';
@@ -75,7 +76,7 @@ export function VideoUpload({content,proxyUploadsEnabled=false,onClose}) {
     {upload?.state==='ready'&&<CreatorVideoPoster contentId={content.id} title={content.title} />}
     {!proxyEnabled&&state!=='loading'&&<p role="status">{t("cinema.videoUpload.newDeviceUploadsArePausedUntil")}{' '}{libraryEnabled?t("cinema.videoUpload.youCanStillChooseAFinished"):''}</p>}
     {(proxyEnabled||libraryEnabled)&&state!=='loading'&&state!=='blocked'&&!confirmRemoval&&(!upload||upload.state==='uploading')&&<form onSubmit={send} className="space-y-4">
-      {proxyEnabled&&<><label className="block font-semibold" htmlFor="cinema-video-file">{t("cinema.videoUpload.videoFile")}<input id="cinema-video-file" ref={file} type="file" accept="video/mp4,video/webm,video/quicktime" required disabled={busy} className="mt-2 block w-full min-w-0 rounded-xl border border-vx-border p-3 text-sm" /></label>
+      {proxyEnabled&&<><label className="block font-semibold" htmlFor="cinema-video-file"><Icon name="clipboard" size={16} className="me-1.5 inline align-[-2px]" />{t("cinema.videoUpload.videoFile")}<input id="cinema-video-file" ref={file} type="file" accept="video/mp4,video/webm,video/quicktime" required disabled={busy} className="mt-2 block w-full min-w-0 rounded-xl border border-vx-border p-3 text-sm" /></label>
       <progress aria-label={t("cinema.videoUpload.videoUploadProgress")} value={progress} max={100} className="w-full accent-vx-accent" /><p className="text-sm" aria-live="polite">{t('cinema.upload.progress', { count: progress })}</p></>}
       <div className="flex flex-wrap gap-3">{proxyEnabled&&<Button type="submit" disabled={busy}>{busy?t("cinema.videoUpload.uploading"):upload?t("cinema.videoUpload.resumeUpload"):t("cinema.videoUpload.uploadVideo")}</Button>}{!upload&&libraryEnabled&&<Button type="button" variant="ghost" disabled={busy} onClick={()=>{setError('');setPicking(true);}}>{state==='copying'?t("cinema.videoUpload.checking"):t("cinema.videoUpload.fromLibrary")}</Button>}{state==='uploading'&&<Button type="button" variant="ghost" onClick={()=>{controller.current?.abort();setState('ready');setError(t("cinema.videoUpload.uploadPausedSelectTheSameFile"));}}>{t("cinema.videoUpload.pause")}</Button>}</div>
     </form>}
