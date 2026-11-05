@@ -334,7 +334,7 @@ const sheets = themedStyles((p) => ({
     liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: p.accent },
     activePlanText: { color: p.accent },
     group: { gap: 8 },
-    groupTitle: { color: p.accent, marginTop: 10, fontWeight: "800", letterSpacing: 0.3 },
+    groupTitle: { color: p.accent, marginTop: 10, letterSpacing: 0.3 },
     groupLead: { color: p.textSecondary },
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
     tool: { width: '48.5%', minHeight: 140, borderWidth: 1, borderColor: p.borderSubtle, backgroundColor: p.surface, borderRadius: 16, padding: 14, gap: 7 },
