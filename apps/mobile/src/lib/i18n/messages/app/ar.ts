@@ -59,6 +59,7 @@ export default {
   "account.privacypolicy": "سياسة الخصوصية",
   "account.purchases": "المشتريات",
   "account.pushDenied": "إشعارات هذا التطبيق معطّلة. فعّلها أولًا في إعدادات هاتفك.",
+  "account.openSettings": "فتح الإعدادات",
   "account.pushUnavailable": "الإشعارات غير متاحة حاليًا. حاول لاحقًا.",
   "account.realpersonshownwithoutconsent": "شخص حقيقي ظاهر دون موافقة",
   "account.refer": "اكسب رصيدًا عندما يشتري صديق",

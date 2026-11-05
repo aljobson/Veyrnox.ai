@@ -59,6 +59,7 @@ export default {
   "account.privacypolicy": "Política de privacidad",
   "account.purchases": "Compras",
   "account.pushDenied": "Las notificaciones de esta app están desactivadas. Actívalas primero en los ajustes del teléfono.",
+  "account.openSettings": "Abrir ajustes",
   "account.pushUnavailable": "Las notificaciones no están disponibles ahora. Inténtalo más tarde.",
   "account.realpersonshownwithoutconsent": "Persona real mostrada sin consentimiento",
   "account.refer": "Gana créditos cuando compre un amigo",

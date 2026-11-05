@@ -59,6 +59,7 @@ export default {
   "account.privacypolicy": "Datenschutzerklärung",
   "account.purchases": "Käufe",
   "account.pushDenied": "Mitteilungen sind für diese App deaktiviert. Aktiviere sie zuerst in den Einstellungen deines Telefons.",
+  "account.openSettings": "Einstellungen öffnen",
   "account.pushUnavailable": "Mitteilungen sind gerade nicht verfügbar. Versuche es später erneut.",
   "account.realpersonshownwithoutconsent": "Ohne Zustimmung dargestellte reale Person",
   "account.refer": "Credits verdienen, wenn ein Freund kauft",

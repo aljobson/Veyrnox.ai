@@ -59,6 +59,7 @@ export default {
   "account.privacypolicy": "개인정보 처리방침",
   "account.purchases": "구매",
   "account.pushDenied": "이 앱의 알림이 꺼져 있습니다. 먼저 휴대폰 설정에서 켜 주세요.",
+  "account.openSettings": "설정 열기",
   "account.pushUnavailable": "지금은 알림을 사용할 수 없습니다. 나중에 다시 시도해 주세요.",
   "account.realpersonshownwithoutconsent": "동의 없이 등장한 실제 인물",
   "account.refer": "친구가 구매하면 크레딧 받기",

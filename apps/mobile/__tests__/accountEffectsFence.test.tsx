@@ -82,7 +82,7 @@ jest.mock('react-native-purchases', () => ({ __esModule: true, default: { config
 jest.mock('../src/lib/analytics/events', () => ({ captureEvent: jest.fn() }));
 jest.mock('expo-notifications', () => ({ setNotificationHandler: jest.fn(), getPermissionsAsync: jest.fn(async () => ({ granted: true })),
     requestPermissionsAsync: jest.fn(async () => ({ granted: true })), getExpoPushTokenAsync: jest.fn(), getLastNotificationResponseAsync: jest.fn(async () => null),
-    addNotificationResponseReceivedListener: jest.fn(() => ({ remove: jest.fn() })) }));
+    addNotificationResponseReceivedListener: jest.fn(() => ({ remove: jest.fn() })), addPushTokenListener: jest.fn(() => ({ remove: jest.fn() })) }));
 jest.mock('expo-device', () => ({ isDevice: true }));
 jest.mock('expo-constants', () => ({ __esModule: true, default: { expoConfig: { extra: { eas: { projectId: 'project' } } } } }));
 jest.mock('../src/lib/push', () => ({ ...jest.requireActual('../src/lib/push'), PUSH_ENABLED: true }));

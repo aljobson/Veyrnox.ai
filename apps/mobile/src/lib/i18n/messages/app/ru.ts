@@ -59,6 +59,7 @@ export default {
   "account.privacypolicy": "Политика конфиденциальности",
   "account.purchases": "Покупки",
   "account.pushDenied": "Уведомления для приложения отключены. Сначала включите их в настройках телефона.",
+  "account.openSettings": "Открыть настройки",
   "account.pushUnavailable": "Уведомления сейчас недоступны. Повторите попытку позже.",
   "account.realpersonshownwithoutconsent": "Реальный человек изображён без согласия",
   "account.refer": "Получайте кредиты за покупки друзей",

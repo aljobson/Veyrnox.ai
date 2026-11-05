@@ -80,3 +80,10 @@ export function jobRouteFromPush(data: unknown): string | null {
     if (type !== 'job' || typeof jobId !== 'string' || !UUID_RE.test(jobId)) return null;
     return `/job/${jobId}`;
 }
+
+// The OS can rotate the device push token (reinstall, restore, a vendor refresh). Without a re-register the server keeps a
+// dead token and finished-creation pushes silently stop. Returns the function that stops listening.
+export function watchPushToken(subscribe: (listener: () => void) => { remove(): void }, onChange: () => void): () => void {
+    const subscription = subscribe(() => { onChange(); });
+    return () => subscription.remove();
+}

@@ -31,6 +31,7 @@ export default function Account() {
     const [profile, setProfile] = useState<Profile | null>(null);
     const push = usePush();
     const [pushNote, setPushNote] = useState<string | null>(null);
+    const [pushDenied, setPushDenied] = useState(false);
     const router = useRouter();
     const { status: billing, offerings, canPurchase, canRestore, paidAccess, activeProductIds, managementURL, purchaseStayOffer, restore, refreshSales } = useBilling();
     useFocusEffect(useCallback(() => { void refreshSales(); }, [refreshSales]));
@@ -103,9 +104,9 @@ export default function Account() {
     }
 
     async function onPush(on: boolean) {
-        setPushNote(null);
+        setPushNote(null); setPushDenied(false);
         const out = await push.setEnabled(on);
-        if (out === 'denied') setPushNote(t('account.pushDenied'));
+        if (out === 'denied') { setPushNote(t('account.pushDenied')); setPushDenied(true); }
         else if (out === 'unavailable') setPushNote(t('account.pushUnavailable'));
     }
 
@@ -167,6 +168,7 @@ export default function Account() {
                         />
                     </View>
                     {pushNote ? <Text variant="footnote" style={styles.note}>{pushNote}</Text> : null}
+                    {pushDenied ? <Button variant="tertiary" label={t('account.openSettings')} onPress={() => { void Linking.openSettings(); }} /> : null}
                     <Text variant="footnote" style={styles.note}>{t('account.notifyNote')}</Text>
                 </Section>
             ) : null}

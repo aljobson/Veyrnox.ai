@@ -9,7 +9,7 @@ import * as SecureStore from 'expo-secure-store';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Platform } from 'react-native';
 import { useAuth } from '../auth/AuthProvider';
-import { JOBS_CHANNEL, PUSH_ENABLED, jobRouteFromPush, registerDevice, removeDevice } from '../lib/push';
+import { JOBS_CHANNEL, PUSH_ENABLED, jobRouteFromPush, registerDevice, removeDevice, watchPushToken } from '../lib/push';
 
 // Push for finished creations. Nothing here runs unless the build switch is on, the device
 // is real, and the person has switched notifications on in Account (the OS permission is
@@ -104,16 +104,25 @@ export function PushProviderLive({ children }: { children: ReactNode }) {
         const task = beginSessionTask();
         if (task.gen !== generation || !task.current() || !SUPPORTED || status !== 'signedIn') return;
         let cancelled = false;
+        let stopWatching: (() => void) | null = null;
         void (async () => {
             const wanted = await readPref();
             if (cancelled || !task.current()) return;
             setEnabledState(wanted);
             if (!wanted) return;
             const perm = await Notifications.getPermissionsAsync();
-            if (!cancelled && task.current() && perm.granted) await register(task);
+            if (cancelled || !task.current() || !perm.granted) return;
+            await register(task);
+            // Tell the server when the OS rotates the token; the listener dies with this effect.
+            if (!cancelled && task.current()) {
+                stopWatching = watchPushToken((listener) => Notifications.addPushTokenListener(listener), () => {
+                    if (!cancelled && task.current()) void register(task);
+                });
+            }
         })();
         return () => {
             cancelled = true;
+            stopWatching?.();
         };
     }, [status, register, generation, beginSessionTask]);
 
