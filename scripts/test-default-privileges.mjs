@@ -19,6 +19,7 @@ const BROWSER_CALLABLE = new Set([
     'public.applied_migration_names()',         // 0034, anon: migration-ledger CI check
     'public.catalog_watch()',                   // 0030, anon: fal-catalog-watch; active fal rows only since 0256
     'public.reconcile_status()',                // 0128, anon: reconcile-watch
+    'public.spend_watch_status()',              // 0444, anon: spend-watch; verdict only, no figures (ADR-0328)
     'public.recovery_status()',                 // 0131, anon: recovery-health
     // ADR-0245 film studio cloud
     'public.save_film_studio(uuid,integer,text,text,text)',

@@ -36,6 +36,19 @@ try {
   await q('UPDATE public.provider_spend_policy SET admission_open=false WHERE singleton');
   assert.deepEqual(await status(), { ok: true, level: 'critical', scope: 'global', admission_open: false });
 
+  // A provider that was taking jobs and is now closed is a warning naming the provider, even with
+  // global admission open. A provider closed from the start (Higgsfield) stays quiet: the baseline above.
+  await q('UPDATE public.provider_spend_policy SET admission_open=true WHERE singleton');
+  await q("INSERT INTO public.provider_spend_reservations(user_id,effect_key,provider,purpose,estimated_cost_microusd) VALUES($1,'watch-test-0003','fal','generation',1000)", [user.id]);
+  await q("UPDATE public.provider_spend_provider_policy SET admission_open=false WHERE provider='fal'");
+  assert.deepEqual(await status(), { ok: true, level: 'warn', scope: 'provider', admission_open: true });
+  await q("UPDATE public.provider_spend_provider_policy SET admission_open=true WHERE provider='fal'");
+
+  // Global closure wins the scope even when an account is the busiest at 50%.
+  await q("INSERT INTO public.provider_spend_reservations(user_id,effect_key,provider,purpose,estimated_cost_microusd) VALUES($1,'watch-test-0002','zz-test','generation',$2)", [user.id, Math.ceil(Number(policy.user_hour_microusd) * 0.5)]);
+  await q('UPDATE public.provider_spend_policy SET admission_open=false WHERE singleton');
+  assert.deepEqual(await status(), { ok: true, level: 'critical', scope: 'global', admission_open: false });
+
   // Callable with the public key; the figures function is not.
   assert.equal((await one("SELECT has_function_privilege('anon','public.spend_watch_status()','EXECUTE') AS a")).a, true);
   assert.equal((await one("SELECT has_function_privilege('anon','public.provider_spend_utilization()','EXECUTE') AS a")).a, false);

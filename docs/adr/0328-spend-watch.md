@@ -11,11 +11,11 @@ nothing announced in advance.
 
 1. **Verdict-only wrapper (0444).** `spend_watch_status()` calls the service-role-only
    utilization function and returns `level` (`ok` / `warn` at 80% / `critical` at 100% or
-   admission closed), `scope` (`global`, `provider`, `user`) and `admission_open`. No
+   admission closed), `scope` (`global`, `provider`, `user`) and `admission_open`. A closed global admission switch is critical and named `global`. A provider switch closed while that provider took jobs in the last 24 hours is a `warn` naming `provider`; providers closed from the start (Higgsfield, 0437) are ignored, since nothing closes one automatically and a standing closure is not news. Utilization carries only the global flag, so provider closures are read from the provider policy rows. No
    percentage, user or provider name. Thresholds are fixed in SQL so the answer cannot be
    probed into a number. It is callable with the public key like `reconcile_status()`
    (PR #61), so Actions holds no service-role key.
-2. **Workflow.** `spend-watch.yml` runs every four hours on main, reads the verdict with
+2. **Workflow.** `spend-watch.yml` runs every 15 minutes on main (the hour caps are rolling one-hour windows, so a slower poll could miss a spike that rises and expires between checks), reads the verdict with
    `scripts/check-spend-watch.mjs` and opens one `spend-watch` issue per episode. Exit 2
    (unreadable) fails the run and files nothing: an outage is not a pass. Pause with the
    repository variable `SPEND_WATCH_ENABLED=false`.
