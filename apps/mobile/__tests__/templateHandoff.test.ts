@@ -101,6 +101,7 @@ describe('where it shows on Create', () => {
         expect(screen).toContain('nearestAspect(template?.ratio ?? null, o.aspects)');
         expect(screen).toContain('<TemplateBanner');
         expect(screen).toContain('tsource');
-        expect(screen).toMatch(/hint=\{s\.slot === 'image' && template\?\.needs/);
+        expect(screen).toContain("t('app.create.referenceLikenessNotice')");
+        expect(screen).toMatch(/s\.slot === 'image' && template\?\.needs \? t\('create\.template\.needs'/);
     });
 });
