@@ -2,6 +2,8 @@ import { useRouter } from 'expo-router';
 import { saveAccountLanguage, saveLanguage } from '../lib/languageStore';
 import { useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
+import { Image } from 'expo-image';
+import { Logo } from './Logo';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Chip, Text, themedStyles, useThemedStyles } from './ui';
 import { useAuth } from '../auth/AuthProvider';
@@ -38,6 +40,10 @@ export function LanguageChoice({ returnPath, active = ACTIVE_LOCALES, onComplete
     }
     return <View style={[s.screen, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         <ScrollView contentContainerStyle={s.body} keyboardShouldPersistTaps="handled">
+            <View style={s.brand}>
+                <Image source={require('../../assets/mascot.png')} style={s.mascot} contentFit="contain" accessible={false} />
+                <Logo size={32} />
+            </View>
             <Text variant="title1" accessibilityRole="header">{t('vibe.language.title')}</Text>
             <Text tone="secondary">{t('vibe.language.hint')}</Text>
             {activeLanguages(active).map(l => <Chip key={l.code} label={l.name} accessibilityLanguage={l.tag} selected={picked === l.code} disabled={busy} fullWidth onPress={() => setPicked(l.code)} />)}
@@ -49,5 +55,7 @@ export function LanguageChoice({ returnPath, active = ACTIVE_LOCALES, onComplete
 const sheets = themedStyles(p => ({
     screen: { flex: 1, backgroundColor: p.bg },
     body: { flexGrow: 1, justifyContent: 'center', padding: ds.space.gutter, gap: ds.space.md },
+    brand: { alignItems: 'center', gap: ds.space.md, marginBottom: ds.space.md },
+    mascot: { width: 96, height: 96 },
     footer: { padding: ds.space.gutter },
 }));
