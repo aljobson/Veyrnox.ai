@@ -1,0 +1,13 @@
+^packages/db/schema/
+^packages/adapters/
+^app/api/webhook/
+^app/api/v1/(admin|generations|top-ups|billing|credit)
+^middleware\.js$
+^worker\.js$
+^lib/(contentSecurityPolicy|accessJwt|mfaEnforcement|internalRequestHeaders|cdnCgiGuard)
+^wrangler\.jsonc$
+^\.github/
+^\.claude/
+^CLAUDE\.md$
+^scripts/test-(default-privileges|account-deletion)
+^package(-lock)?\.json$
