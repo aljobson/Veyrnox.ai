@@ -184,9 +184,15 @@ jobs:
           [ "$(wc -l < "$RUNNER_TEMP/files.txt")" -le 15 ] || reject "more than 15 files"
           awk -F'\t' '{a+=$1; d+=$2} END {exit !(a+d <= 800)}' "$RUNNER_TEMP/numstat.txt" || reject "more than 800 changed lines (or a binary file)"
           if grep -E '(^/|(^|/)\.\.(/|$)|(^|/)\.git(/|$)|\{|=>)' "$RUNNER_TEMP/files.txt" > /dev/null; then reject "unsafe path or rename"; fi
-          if grep -E -f .github/agent-protected-paths.regex "$RUNNER_TEMP/files.txt" > "$RUNNER_TEMP/hits.txt"; then
-            reject "it touches protected paths ($(head -n3 "$RUNNER_TEMP/hits.txt" | tr '\n' ' '))"
-          fi
+          # Fail closed: exit 0 = protected path hit, 1 = clean, anything else (missing rules file, bad regex) = reject.
+          [ -s .github/agent-protected-paths.regex ] || reject "protected-path rules missing on main"
+          rc=0
+          grep -E -f .github/agent-protected-paths.regex "$RUNNER_TEMP/files.txt" > "$RUNNER_TEMP/hits.txt" || rc=$?
+          case "$rc" in
+            0) reject "it touches protected paths ($(head -n3 "$RUNNER_TEMP/hits.txt" | tr '\n' ' '))" ;;
+            1) ;;
+            *) reject "protected-path check failed (grep exit $rc)" ;;
+          esac
 
       - name: Push the branch and open the PR
         if: steps.verdict.outputs.publish == 'true'

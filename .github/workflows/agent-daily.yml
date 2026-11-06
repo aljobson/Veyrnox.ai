@@ -159,7 +159,11 @@ jobs:
             if [ "$bad" != "0" ] || [ "$gate" = "0" ]; then echo "#$pr: checks not all green or no pr gate pass"; continue; fi
             git fetch -q origin "pull/${pr}/head"
             git diff --name-only origin/main...FETCH_HEAD > "$RUNNER_TEMP/changed.txt"
-            if grep -E -f .github/agent-protected-paths.regex "$RUNNER_TEMP/changed.txt" > /dev/null; then echo "#$pr: touches protected paths"; continue; fi
+            # Fail closed: exit 0 = protected path hit, 1 = clean, anything else (missing rules file, bad regex) = skip.
+            [ -s .github/agent-protected-paths.regex ] || { echo "#$pr: protected-path rules missing; not merging"; continue; }
+            rc=0
+            grep -E -f .github/agent-protected-paths.regex "$RUNNER_TEMP/changed.txt" > /dev/null || rc=$?
+            if [ "$rc" != "1" ]; then echo "#$pr: touches protected paths or the check failed (grep exit $rc)"; continue; fi
             # Pin the merge to the commit that was checked.
             gh pr merge "$pr" --squash --delete-branch --match-head-commit "$(jq -r .headRefOid <<<"$info")"
             merged=$((merged + 1))
