@@ -36,6 +36,21 @@ const INTERNAL_ERROR = 'internal';
 
 const round = (n) => Math.round(n * 100) / 100;
 
+function EditorIcon({ name }) {
+  const path = name === 'close'
+    ? <path d="m6 6 12 12M18 6 6 18" />
+    : name === 'earlier'
+      ? <path d="m6 10 6-6 6 6M12 4v16" />
+      : name === 'later'
+        ? <path d="m6 14 6 6 6-6M12 20V4" />
+        : <><path d="M5 7h14M9 7V4h6v3M8 7l1 13h6l1-13" /><path d="M11 11v5M13 11v5" /></>;
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      {path}
+    </svg>
+  );
+}
+
 /**
  * @param {{ clips: {job_id:string, asset_url:string, name?:string}[], audios: {job_id:string, name?:string}[],
  *           credits5s: number|null, onClose: () => void, onSubmitted: (job:object) => void }} props
@@ -127,14 +142,17 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
     <Modal aria-labelledby="edit-sheet-title" onCancel={() => !busy && onClose()} className="vx-overlay-sheet items-end sm:items-center justify-center p-0 sm:p-6">
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full sm:max-w-[760px] max-h-[92dvh] overflow-y-auto rounded-t-2xl sm:rounded-2xl border border-vx-border bg-vx-base p-4 sm:p-6"
+        className="flex w-full max-h-[calc(100dvh-env(safe-area-inset-top,0px))] flex-col overflow-hidden rounded-t-2xl border border-vx-border bg-vx-base sm:max-h-[92dvh] sm:max-w-[760px] sm:rounded-2xl"
       >
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-4 flex shrink-0 items-center justify-between px-4 pt-4 sm:px-6 sm:pt-6">
           <h2 id="edit-sheet-title" className="text-xl font-black">{t(pluralKey(t, locale, 'app.editor.sheet.title', items.length), { count: number(items.length) })}</h2>
-          <button onClick={onClose} disabled={busy} aria-label={t("app.editor.workspace.close")} className="text-vx-fg-muted hover:text-vx-fg px-2 py-1">✕</button>
+          <button onClick={onClose} disabled={busy} aria-label={t("app.editor.workspace.close")} className="grid min-h-11 min-w-11 place-items-center rounded-full border border-transparent text-vx-fg-muted hover:border-vx-border hover:text-vx-fg">
+            <EditorIcon name="close" />
+          </button>
         </div>
 
-        {smartCut && (
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 sm:px-6 sm:pb-6">
+          {smartCut && (
           <SmartCutPlanner
             clips={items}
             disabled={busy}
@@ -142,7 +160,7 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
             onUndo={smartCutSnapshot ? undoSmartCut : null}
             startOpen
           />
-        )}
+          )}
 
         <ol className="flex flex-col gap-3">
           {items.map((x, i) => (
@@ -202,13 +220,16 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
           {error && <span className="text-vx-danger">{errorCopy(error)}</span>}
           {error === 'insufficient_balance' && <Link href="/app/credits" className="ms-2 font-bold text-vx-accent underline underline-offset-4" onClick={onClose}>{t("app.create.addCredits")}</Link>}
         </div>
+        </div>
 
-        <div className="mt-3 flex items-center justify-between gap-3">
-          <span className="font-vx-mono text-xs text-vx-fg-muted vx-num">{t('app.editor.sheet.output', { seconds: locale === 'en' ? output.toFixed(1) : output.toLocaleString(localeTag(locale), { minimumFractionDigits: 1, maximumFractionDigits: 1 }) })}</span>
-          <button onClick={submit} disabled={blocked}
-            className="rounded-full px-5 py-2.5 font-bold bg-vx-accent text-vx-accent-ink disabled:opacity-40">
-            {busy ? t("app.editor.sheet.starting") : cost == null ? t("app.editor.sheet.create") : t('app.editor.sheet.createCost', { cost: number(cost) })}
-          </button>
+        <div className="shrink-0 border-t border-vx-border bg-vx-base px-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] pt-3 sm:px-6 sm:pb-6">
+          <div className="flex items-center justify-between gap-3">
+            <span className="font-vx-mono text-xs text-vx-fg-muted vx-num">{t('app.editor.sheet.output', { seconds: locale === 'en' ? output.toFixed(1) : output.toLocaleString(localeTag(locale), { minimumFractionDigits: 1, maximumFractionDigits: 1 }) })}</span>
+            <button onClick={submit} disabled={blocked}
+              className="rounded-full px-5 py-2.5 font-bold bg-vx-accent text-vx-accent-ink disabled:opacity-40">
+              {busy ? t("app.editor.sheet.starting") : cost == null ? t("app.editor.sheet.create") : t('app.editor.sheet.createCost', { cost: number(cost) })}
+            </button>
+          </div>
         </div>
       </div>
     </Modal>
@@ -237,10 +258,10 @@ function ClipRow({ item, index, count, showSlow, onChange, onMove, onRemove }) {
       <div className="flex-1 min-w-0 flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">
           <span className="text-sm font-bold truncate">{number(index + 1)}. {item.name || item.job_id.slice(0, 8)}</span>
-          <span className="flex gap-1 shrink-0">
-            <button onClick={() => onMove(-1)} disabled={index === 0} aria-label={t("app.editor.legacy.earlier")} className="px-2 py-1 rounded-sm border border-vx-border disabled:opacity-30">↑</button>
-            <button onClick={() => onMove(1)} disabled={index === count - 1} aria-label={t("app.editor.legacy.later")} className="px-2 py-1 rounded-sm border border-vx-border disabled:opacity-30">↓</button>
-            <button onClick={onRemove} aria-label={t("app.editor.sheet.remove")} className="px-2 py-1 rounded-sm border border-vx-border">✕</button>
+          <span className="flex shrink-0 gap-1">
+            <button onClick={() => onMove(-1)} disabled={index === 0} aria-label={t("app.editor.legacy.earlier")} className="grid min-h-11 min-w-11 place-items-center rounded-lg border border-vx-border text-vx-fg-muted hover:text-vx-fg disabled:opacity-30"><EditorIcon name="earlier" /></button>
+            <button onClick={() => onMove(1)} disabled={index === count - 1} aria-label={t("app.editor.legacy.later")} className="grid min-h-11 min-w-11 place-items-center rounded-lg border border-vx-border text-vx-fg-muted hover:text-vx-fg disabled:opacity-30"><EditorIcon name="later" /></button>
+            <button onClick={onRemove} aria-label={t("app.editor.sheet.remove")} className="grid min-h-11 min-w-11 place-items-center rounded-lg border border-vx-border text-vx-fg-muted hover:border-vx-danger hover:text-vx-danger"><EditorIcon name="remove" /></button>
           </span>
         </div>
         {POINTS.map((key) => (
