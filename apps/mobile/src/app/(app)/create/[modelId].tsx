@@ -34,6 +34,7 @@ import { CharacterPanel } from '../../../components/CharacterPanel';
 import { CreateOptions, type OptionValues } from '../../../components/CreateOptions';
 import { AttachFromDevice } from '../../../components/AttachFromDevice';
 import { SourcePicker } from '../../../components/SourcePicker';
+import { SEEDANCE_REFERENCE_MODEL_ID } from '../../../lib/submittedRequests';
 import { TemplateBanner } from '../../../components/TemplateBanner';
 import { DEFAULT_CINEMA, buildCinemaPrompt, sanitizeCinema, type Cinema } from '../../../lib/cinemaCamera';
 import { clearDraft, loadDraft, saveDraft } from '../../../lib/createDraftStore';
@@ -390,6 +391,7 @@ export default function CreateWithModel() {
                             <SectionLabel style={styles.sectionLabel}>{t('create.workspace.references')}</SectionLabel>
                             <SectionLabel style={styles.sectionMeta}>{t('create.workspace.referencesMeta')}</SectionLabel>
                         </View>
+                        {model.id === SEEDANCE_REFERENCE_MODEL_ID ? <Text variant="caption" tone="tertiary" accessibilityRole="text">{t('app.create.referenceLikenessNotice')}</Text> : null}
                         {slots.map((s) => (
                             <SourcePicker
                                 key={s.slot}

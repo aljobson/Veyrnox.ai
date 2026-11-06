@@ -1,6 +1,6 @@
 import { settleFilmJob } from '../../../lib/filmGenerationReturns';
 import { useAnnouncement } from '../../../lib/useAnnouncement';
-import { submittedHref } from '../../../lib/submittedRequests';
+import { FRAME_MODEL_ID, SEEDANCE_REFERENCE_MODEL_ID, submittedHref } from '../../../lib/submittedRequests';
 import { useHandoffScope } from '../../../lib/useHandoffScope';
 import { subscribeCacheUser } from '../../../lib/appCache';
 import { GeneratedChip } from '../../../components/library/GeneratedChip';
@@ -271,11 +271,11 @@ export default function JobScreen() {
 
     const canSave = !!asset && (asset.mime.startsWith('image/') || asset.mime.startsWith('video/'));
 
-    async function reopen(replace: boolean) {
+    async function reopen(replace: boolean, targetModelId?: string) {
         if (!modelId) return;
         const current = beginHandoff();
         try {
-            const href = await submittedHref(api, id, modelId, current);
+            const href = await submittedHref(api, id, modelId, current, targetModelId);
             if (href && current()) { if (replace) router.replace(href); else router.push(href); }
         } catch { if (current()) setNote(t('common.error')); }
     }
@@ -323,6 +323,11 @@ export default function JobScreen() {
                             <Button variant="secondary" accessibilityRole="button" onPress={() => router.replace('/library')} label={t('job.stopWaiting')} />
                             <Text variant="body" tone="tertiary" style={styles.hint}>{t('job.keepsRunning')}</Text>
                         </>
+                    ) : null}
+                    {state === 'failed' && modelId ? (
+                        failedJob?.error_code === 'reference_rejected_likeness' && modelId === SEEDANCE_REFERENCE_MODEL_ID ? (
+                            <Button variant="primary" accessibilityRole="button" onPress={() => void reopen(true, FRAME_MODEL_ID)} label={t('app.create.referenceLikenessSwitch')} />
+                        ) : null
                     ) : null}
                     {state === 'failed' && modelId ? (
                         <Button variant="secondary" accessibilityRole="button" onPress={() => void reopen(true)} label={t('recovery.retry')} />

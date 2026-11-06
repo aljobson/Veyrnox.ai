@@ -17,6 +17,7 @@ import { TemplateOpening, useTemplateOpening } from '../../_components/TemplateO
 import { gatewayFetch, makeIdempotencyKey, notifyBalanceChanged, GatewayError } from '../../_lib/gateway';
 import { failedCreationCopy } from '../../../../lib/i18n/createCopy.mjs';
 import { ERROR_COPY, failedJobCopy } from '../../_lib/createErrors';
+import { SEEDANCE_REFERENCE_MODEL_ID, FRAME_MODEL_ID, REFERENCE_LIKENESS_ERROR } from '../../_lib/seedanceReference';
 import { pushJobHistory } from '../../_lib/jobHistory';
 import { JobAssetPreview } from '../../_components/JobAssetPreview';
 import { StudioJobGrid } from '../../_components/StudioJobGrid';
@@ -149,6 +150,8 @@ export default function CreateStudio() {
   const onUnreachable = useCallback(() => setError(LOCAL_ERRORS.poll_unreachable), []);
   const { jobs, generating, startJobs, addJob, clearJobs } = useStudioJobs({ onUnreachable });
   const job = jobs.length === 1 ? jobs[0] : null;
+  const likenessRejected = job?.state === 'failed' && job.error_code === REFERENCE_LIKENESS_ERROR && job.model_id === SEEDANCE_REFERENCE_MODEL_ID;
+  const frameFallback = models.find((m) => m.id === FRAME_MODEL_ID);
   // True while a batch is still being sent, so New generation cannot clear it halfway.
   const [sending, setSending] = useState(false);
   const incomingDraft = useRef(false);
@@ -754,6 +757,11 @@ export default function CreateStudio() {
                       <div className="mt-2 text-sm text-vx-fg-body">
                         {failedCreationCopy(t, locale, job, failedJobCopy(job))}
                       </div>
+                      {likenessRejected && frameFallback && (
+                        <button type="button" data-testid="create-switch-to-frame-model" onClick={() => { setError(null); chooseModel(frameFallback.id); }}
+                          className="mt-3 min-h-11 rounded-full border border-vx-accent/50 px-4 py-2 font-vx-mono text-[11px] font-bold text-vx-accent hover:bg-vx-accent/10">
+                          {t('app.create.referenceLikenessSwitch')}</button>
+                      )}
                     </div>
                   ) : (
                     <div className="text-center">
@@ -845,6 +853,7 @@ export default function CreateStudio() {
           {attachNotice && <p role="status" className="mt-2 text-xs text-vx-fg-muted">{attachNotice}</p>}
           {addFilesOpen && <AddFilesDialog capacity={attachCapacity(model)} onAdd={attachFiles} onClose={() => setAddFilesOpen(false)} />}
           {templatesOpen && <TemplatePicker models={models} goal={goal} onPick={applyTemplate} onClose={() => setTemplatesOpen(false)} />}
+          {modelId === SEEDANCE_REFERENCE_MODEL_ID && <p role="note" data-testid="reference-likeness-notice" className="mt-2 text-xs text-vx-fg-muted">{t('app.create.referenceLikenessNotice')}</p>}
           <div className="scroll-mt-24" data-assistant-target={Object.keys(media).length ? 'create.upload' : undefined}>
             <SourcePickers media={media} sources={sources} onPick={pickSource} onConvertingChange={setSourcesConverting} resetKey={`${modelId}|${accountEpoch}`} epochRef={sourceEpoch} locked={attachConverting} onReorder={(slot, from, to) => { setConsent(false); setSources(prev => moveSlotSource(prev, slot, from, to)); }}
               onDraw={model?.kind === 'image' ? () => setDrawing(true) : null} onLibrary={setLibraryFor} />
