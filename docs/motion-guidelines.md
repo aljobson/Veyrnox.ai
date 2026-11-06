@@ -67,16 +67,21 @@ something on screen.
 
 - Past a drag boundary, the element **rubber-bands**: resistance grows with
   distance, and it returns on release.
-- An object that appears in two places (thumbnail to detail, card to sheet) uses
-  the **same layout ID** in both, so it moves as one object instead of two
-  fading copies.
+- An object that appears in two places (thumbnail to detail, card to sheet) moves
+  as **one object** instead of two fading copies.
+  - Web: use a library with shared layout IDs and give both places the same ID.
+  - Mobile: React Native `Animated` has no shared-layout-ID API, so matching IDs
+    alone does nothing. Measure the source bounds, render an overlay copy at those
+    bounds, animate it to the target bounds, then swap in the real element and
+    remove the overlay.
 
 ## Reduced motion
 
 When the system asks for reduced motion (`prefers-reduced-motion: reduce` on web,
-the reduce-motion setting on mobile), turn off scale, stagger, arcs, stretch,
-pulse and rubber-banding. Keep a plain opacity change of 150 ms or less so state
-changes are still visible.
+the reduce-motion setting on mobile), turn off all nonessential spatial motion:
+translation (slides), resizing, shared-element travel, scale, stagger, arcs,
+stretch, pulse and rubber-banding. Update immediately, or use a plain opacity
+change of 150 ms or less, so state changes are still visible.
 
 ## The goal is met when
 
@@ -89,5 +94,6 @@ changes are still visible.
 - Popovers and menus enter from and exit to their trigger.
 - List rows stagger at 30 ms, capped at about 300 ms in total.
 - Success shows exactly one pulse.
-- With reduced motion on, none of the scale, stagger, arc, stretch, pulse or
-  rubber-band effects play and every state change is still visible.
+- With reduced motion on, nothing slides, resizes or travels (no translation,
+  resize, shared-element travel, scale, stagger, arc, stretch, pulse or
+  rubber-band) and every state change is still visible.
