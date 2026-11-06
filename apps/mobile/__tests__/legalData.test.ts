@@ -33,6 +33,12 @@ test('locale fallback, localized jurisdiction, dates and Arabic number isolation
     expect(isolateNumbers('14 days, 1,234.50 and 20%', 'ar')).toBe('\u206614\u2069 days, \u20661,234.50\u2069 and \u206620%\u2069');
     expect(isolateNumbers('14 days', 'en')).toBe('14 days');
 });
+test('legalUpdated never throws on an unparseable date or locale tag', () => {
+    expect(legalUpdated('2 November 2026', 'de', 'de')).toBe('2. November 2026');
+    expect(legalUpdated('not a date', 'fr', 'fr')).toBe('not a date');
+    expect(legalUpdated('31 Smarch 2026', 'fr', 'fr')).toBe('31 Smarch 2026');
+    expect(legalUpdated('13 October 2026', 'fr', 'not a valid tag!')).toBe('13 October 2026');
+});
 test.each(['/legal/privacy', '/fr/legal/privacy', 'https://veyrnox.ai/legal/privacy'])('%s navigates natively', href => {
     expect(legalLink(href)).toEqual({ kind: 'legal', doc: 'privacy' });
 });
