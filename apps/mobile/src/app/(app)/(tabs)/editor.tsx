@@ -108,6 +108,18 @@ export default function EditorHome() {
                             </View>
                             <Image source={MENU_ICONS.caretRight} style={[styles.caret, directionalStyle()]} tintColor={styles.onAccentInk.color} contentFit="contain" alt="" accessibilityElementsHidden />
                         </Button>
+                        <Button label={t('app.library.openSmartCut')} variant="secondary"
+                            accessibilityRole="button"
+                            accessibilityLabel={t('app.library.openSmartCut')}
+                            accessibilityHint={t('app.explore.smartCutStart')}
+                            onPress={() => router.push('/smart-cut')}
+                        >
+                            <View style={styles.smartCutCopy}>
+                                <Text variant="bodyStrong">{t('app.library.openSmartCut')}</Text>
+                                <Text variant="footnote" tone="secondary">{t('app.explore.smartCutStart')}</Text>
+                            </View>
+                            <Image source={MENU_ICONS.caretRight} style={[styles.caret, directionalStyle()]} tintColor={styles.mutedInk.color} contentFit="contain" alt="" accessibilityElementsHidden />
+                        </Button>
                         {workspaces && workspaces.length > 1 ? (
                             <View style={styles.chips} accessibilityRole="tablist">
                                 {workspaces.map((workspace) => (
@@ -183,6 +195,7 @@ const sheets = themedStyles((p) => ({
     primaryCopy: { flex: 1, gap: 2 },
     primaryTitle: { color: p.onAccent },
     primaryBody: { color: p.onAccent, opacity: 0.82 },
+    smartCutCopy: { flex: 1, gap: 2 },
     chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     chip: { minHeight: 44, maxWidth: '100%', justifyContent: 'center', paddingHorizontal: 14, borderRadius: 999, backgroundColor: p.surface, borderColor: p.borderSubtle, borderWidth: 1 },
     chipOn: { backgroundColor: p.accentSubtle, borderColor: p.accent },

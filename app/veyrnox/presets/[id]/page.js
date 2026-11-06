@@ -9,7 +9,6 @@ import { notFound, permanentRedirect } from 'next/navigation';
 import { MarketingNav } from '../../_components/NavBar';
 import { Main } from '../../_components/Main';
 import { TemplateRecipe } from '../../_components/TemplateRecipe';
-import { TemplateRecreate } from '../../_components/TemplateRecreate';
 import { FilmPlayer } from '../../_components/FilmPlayer';
 import { ClipBadge } from '../../_components/ClipBadge';
 import { SHOWCASE_CLIPS } from '../../_lib/showcase';
@@ -17,6 +16,7 @@ import { presetTitle, modelIdForName } from '../../_lib/tokens';
 import { ALL_TEMPLATES, templateById } from '../../_lib/templates';
 import { exactSourcePromptRecord } from '../../_lib/sourcePromptRecords.js';
 import { sourcePromptAuditForModel } from '../../_lib/sourcePromptAudit.js';
+import { templateRecreateEnabled } from '../../_lib/templateRecreate.js';
 import { fallbackCapabilitiesFor } from '../../../../lib/fallbackModelCapabilities.js';
 import { OPEN_GRAPH_BASE } from '../../../seo';
 
@@ -63,6 +63,9 @@ export default async function TemplatePage({ params }) {
   };
   const clip = SHOWCASE_CLIPS[template.clipKey];
   const sourceAspect = templateSourceAspect(template, clip?.aspectRatio ?? template.previewAspect);
+  const TemplateRecreate = templateRecreateEnabled()
+    ? (await import('../../_components/TemplateRecreate')).TemplateRecreate
+    : null;
   return (
     <div className="min-h-dvh">
       <MarketingNav />
@@ -107,7 +110,7 @@ export default async function TemplatePage({ params }) {
           </div>
           <div className="lg:col-start-2 lg:row-start-2">
             <TemplateRecipe key={template.id} preset={recipe} generatedPreview={clip?.generatedOnVeyrnox} />
-            {clip && <TemplateRecreate preset={{ id: template.id, name: template.name, prompt: template.prompt }} />}
+            {clip && TemplateRecreate && <TemplateRecreate preset={{ id: template.id, name: template.name, prompt: template.prompt }} />}
           </div>
         </div>
         </div>

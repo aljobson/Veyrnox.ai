@@ -1,6 +1,10 @@
 export const TEMPLATE_RECREATE_MODEL_ID = 'kling-o1-reference';
 export const TEMPLATE_RECREATE_PROMPT_MAX = 2000;
 
+export function templateRecreateEnabled(environment = process.env.APP_ENV) {
+  return environment === 'staging';
+}
+
 const PREFIX = 'Recreate the source video using its shot order, camera path, action timing, composition and duration as the motion reference.';
 const REFERENCES = 'Use @Image1 for the person, product or main subject identity. Use @Image2 for the setting, materials, colour palette and lighting.';
 const SUFFIX = 'Keep motion and geometry stable across the shot. Do not copy names, logos, watermarks, captions or other readable text from the source video.';
@@ -40,6 +44,8 @@ export function templateRecreateHref(templateId) {
 export function templateRecreateAvailable(model) {
   return model?.id === TEMPLATE_RECREATE_MODEL_ID
     && model.kind === 'video'
+    && !model.gated
+    && !model.premium
     && model.media?.video?.required === true
     && model.media?.image?.required === true
     && Number(model.media.image.maxFiles || 1) >= 2;

@@ -12,10 +12,15 @@ The three ordinary smoke tests never debit credits, call a provider, or write
 a Top-up, so they need no staging clean-up. Production is refused
 (`e2e/env.mjs`). The workflow also has a separate manual-only Kling O1
 qualification probe. It is disabled by default, requires the exact verified
-staging Worker version and owner approval marker, permits only the fixed
-5-second, 10-second and controlled-failure requests, and refuses a spend
-ceiling other than $5. Its redacted evidence and output videos are retained as
-a private Actions artifact for review.
+staging Worker version to be supplied by the operator for recording in the
+evidence, plus an owner review through the protected
+`fal-dispatch-staging` GitHub Environment, permits only the fixed 5-second,
+10-second and controlled-failure requests, and refuses to begin if its
+worst-case cost would take cumulative Kling O1 probe spend above $5 since the
+approval began. The cap reads the append-only credit ledger, so deleting an
+output from the Library cannot reset it. Its redacted evidence records the
+historical and projected totals, and its output videos are retained as a
+private Actions artifact for review.
 
 ## Running
 

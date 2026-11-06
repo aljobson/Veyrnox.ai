@@ -4,7 +4,8 @@ name: e2e
 # generate, buy (e2e/, docs/product/ISSUES.md I5). Scheduled/default runs
 # spend nothing and write nothing: sign-up stops at the security check, and
 # generation and Top-up POSTs are answered by the test. The separately gated
-# Kling probe is manual-only, owner-approved and capped at $5.
+# Kling probe is manual-only, owner-approved through the protected staging
+# environment and capped at $5 across all approved probe runs.
 #
 # Not a required check: it tests the deployed staging Worker, not the PR.
 # Daily, plus on demand. Generate and buy skip until the E2E_EMAIL and
@@ -16,12 +17,12 @@ on:
   workflow_dispatch:
     inputs:
       kling_o1_probe:
-        description: Run the owner-approved, paid Kling O1 staging probe (maximum provider spend $5)
+        description: Run the owner-approved paid Kling O1 staging probe (cumulative provider spend capped at $5)
         required: true
         default: false
         type: boolean
       expected_worker_version:
-        description: Exact staging Worker version already verified before the probe
+        description: Operator-verified staging Worker version recorded in the probe evidence
         required: false
         default: ""
         type: string
@@ -87,7 +88,8 @@ jobs:
   kling-o1-staging-probe:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.kling_o1_probe }}
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    environment: fal-dispatch-staging
+    timeout-minutes: 75
     permissions:
       contents: read
     steps:
@@ -103,7 +105,6 @@ jobs:
         env:
           E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
           E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
-          KLING_O1_PROBE_APPROVED: owner-approved-2026-11-06
           KLING_O1_PROBE_MAX_USD: "5"
           KLING_O1_EXPECTED_WORKER_VERSION: ${{ inputs.expected_worker_version }}
           KLING_O1_PROBE_PHASE: ${{ inputs.kling_o1_probe_phase }}

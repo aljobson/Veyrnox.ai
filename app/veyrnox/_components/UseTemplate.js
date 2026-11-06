@@ -14,6 +14,8 @@ import { TEMPLATE_PROMPT_MAX, templateModelEligible, createPromptModelAvailable 
 import { clipCredits, modelAspectRatios, modelIdForName, presetCredits, presetHref } from '../_lib/tokens';
 import { CHAT_USER_TEXT_MAX } from '../../../lib/chatLimits.js';
 import { Spinner } from './Spinner';
+import { TemplateGenerate } from './TemplateGenerate';
+import { inlineBlockReason } from '../_lib/templateGenerate';
 import { nearestOption } from '../../../lib/aspectShapes.mjs';
 
 export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked = false }) {
@@ -52,6 +54,8 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked 
   const generationDisabled = generationBlocked || promptBlocked || !model || photoBusy;
   const chatBlocked = !prompt.trim() || prompt.length > CHAT_USER_TEXT_MAX;
   const requiredImage = model?.media?.image?.required === true;
+  // A template that needs no media generates right here; one that does keeps Create (inlineBlockReason).
+  const inline = inlineBlockReason(preset, model) === null;
 
   async function choosePhoto(file) {
     const sequence = ++photoSequence.current;
@@ -143,14 +147,17 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked 
           </div>
         </fieldset>
       )}
+      {inline && !generationDisabled && (
+        <TemplateGenerate preset={preset} model={model} prompt={prompt} aspect={aspect} aspectOptions={aspectOptions} durationSeconds={durationSeconds} unitCost={credits} />
+      )}
       <button
         type="button"
         onClick={use}
         disabled={generationDisabled || opening}
         aria-busy={opening || undefined}
-        className={`vx-press mt-6 inline-flex items-center gap-4 rounded-full bg-vx-accent px-6 py-3.5 font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover ${opening ? 'cursor-wait' : 'disabled:opacity-50'}`}
+        className={`${inline ? 'vx-press mt-6 ms-3 inline-flex items-center gap-4 rounded-full border border-vx-accent px-6 py-3.5 font-extrabold text-vx-accent hover:bg-vx-accent/10' : 'vx-press mt-6 inline-flex items-center gap-4 rounded-full bg-vx-accent px-6 py-3.5 font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover'} ${opening ? 'cursor-wait' : 'disabled:opacity-50'}`}
       >
-        <span>{requiredImage && photo ? t('presets.use.withPhoto') : preset.inspired ? t("presets.use.similar") : t("presets.use.template")}</span>
+        <span>{inline ? t('presets.use.editBeforeGenerating') : requiredImage && photo ? t('presets.use.withPhoto') : preset.inspired ? t("presets.use.similar") : t("presets.use.template")}</span>
         {opening
           ? <span className="grid w-[3.5ch] place-items-center"><Spinner size={18} /></span>
           : <span className="font-vx-mono vx-num text-[15px] font-bold">{credits} cr</span>}

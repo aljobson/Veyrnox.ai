@@ -10,8 +10,9 @@ const STAGING_ORIGIN = 'https://veyrnox-ai-staging.al-jobson.workers.dev';
 const STAGING_SUPABASE = 'https://yrqzwqywxfesmbvhzjgj.supabase.co';
 const STAGING_ANON_KEY = 'sb_publishable_bAxQiodzBhI6bV7lmo9gMQ_Hlg9_Ish';
 const MODEL_ID = 'kling-o1-reference';
-const APPROVAL = 'owner-approved-2026-11-06';
-const EXPECTED_USD = Object.freeze({ 5: 0.84, 10: 1.68, controlledFailure: 0.84 });
+const APPROVAL_STARTED_AT = '2026-11-06T00:00:00.000Z';
+const APPROVED_USD = 5;
+const EXPECTED_USD = Object.freeze({ 5: 0.84, 10: 1.68, short: 0.84, controlledFailure: 0.84 });
 const CREDITS = Object.freeze({ 5: 47, 10: 94 });
 const POLL_MS = 15_000;
 const DEADLINE_MS = 18 * 60_000;
@@ -20,15 +21,44 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const UPLOAD_KEY = /^uploads\/[0-9a-f-]{36}\/[0-9a-f-]{36}\.(?:mp4|png)$/i;
 
 export function probeSpendCeiling() {
-  return EXPECTED_USD[5] + EXPECTED_USD[10] + EXPECTED_USD.controlledFailure;
+  return EXPECTED_USD[5] + EXPECTED_USD[10] + EXPECTED_USD.short + EXPECTED_USD.controlledFailure;
+}
+
+export function historicalProbeSpend(rows) {
+  const startedAt = Date.parse(APPROVAL_STARTED_AT);
+  const total = rows.reduce((sum, row) => {
+    if (row?.kind !== 'generation' || !(Number(row.delta) < 0)) return sum;
+    const createdAt = Date.parse(row.created_at || '');
+    if (!Number.isFinite(createdAt)) throw new Error('Kling probe history contains an invalid timestamp');
+    if (createdAt < startedAt) return sum;
+    const credits = Math.abs(Number(row.delta));
+    if (credits === CREDITS[5]) return sum + EXPECTED_USD[5];
+    if (credits === CREDITS[10]) return sum + EXPECTED_USD[10];
+    return sum;
+  }, 0);
+  return Number(total.toFixed(2));
+}
+
+export function assertCumulativeProbeSpend(rows, nextRunUsd, cap = APPROVED_USD) {
+  const historicalProviderUsd = historicalProbeSpend(rows);
+  const projectedProviderUsd = Number((historicalProviderUsd + nextRunUsd).toFixed(2));
+  if (projectedProviderUsd > cap) {
+    throw new Error(`Kling probe cumulative provider spend would reach $${projectedProviderUsd.toFixed(2)}, above the approved $${cap.toFixed(2)} cap`);
+  }
+  return { approvalStartedAt: APPROVAL_STARTED_AT, historicalProviderUsd, nextRunMaximumProviderUsd: nextRunUsd, projectedProviderUsd };
+}
+
+export function isPreDebitValidationRejection(response, createdJobs) {
+  return createdJobs === 0
+    && [400, 409, 422].includes(response?.status)
+    && /^[a-z0-9_]{1,64}$/.test(response?.body?.error || '');
 }
 
 export function assertProbeEnvironment(env = process.env) {
   if (env.GITHUB_EVENT_NAME !== 'workflow_dispatch') throw new Error('Kling probe requires a manual workflow dispatch');
-  if (env.KLING_O1_PROBE_APPROVED !== APPROVAL) throw new Error('Kling probe approval is absent or stale');
-  if (Number(env.KLING_O1_PROBE_MAX_USD) !== 5) throw new Error('Kling probe requires the fixed $5 cap');
-  if (probeSpendCeiling() > 5) throw new Error('Kling probe scenarios exceed the approved spend cap');
-  if (!UUID.test(env.KLING_O1_EXPECTED_WORKER_VERSION || '')) throw new Error('Kling probe requires the verified staging Worker version');
+  if (Number(env.KLING_O1_PROBE_MAX_USD) !== APPROVED_USD) throw new Error('Kling probe requires the fixed $5 cap');
+  if (probeSpendCeiling() > APPROVED_USD) throw new Error('Kling probe scenarios exceed the approved spend cap');
+  if (!UUID.test(env.KLING_O1_EXPECTED_WORKER_VERSION || '')) throw new Error('Kling probe requires the operator-verified staging Worker version for evidence');
   if (!env.E2E_EMAIL || !env.E2E_PASSWORD) throw new Error('Kling probe requires the confirmed staging E2E account');
   const phase = env.KLING_O1_PROBE_PHASE || 'full';
   if (!['full', 'remaining'].includes(phase)) throw new Error('Kling probe phase is invalid');
@@ -160,10 +190,33 @@ async function ledger(api) {
   return result.body.entries;
 }
 
+async function ledgerHistory(api) {
+  const rows = [];
+  let route = '/ledger';
+  for (let page = 0; page < 40; page += 1) {
+    const result = await api.request(route);
+    if (!result.ok || !Array.isArray(result.body.entries)) throw new Error(`Ledger history failed (${result.status})`);
+    rows.push(...result.body.entries);
+    if (result.body.entries.some(entry => Date.parse(entry.created_at || '') < Date.parse(APPROVAL_STARTED_AT))) return rows;
+    if (!result.body.next) return rows;
+    const query = new URLSearchParams({ before: result.body.next.before, before_id: result.body.next.before_id });
+    route = `/ledger?${query}`;
+  }
+  throw new Error('Kling probe ledger history exceeded the fail-closed pagination limit');
+}
+
 async function jobs(api) {
-  const result = await api.request('/jobs?limit=50');
-  if (!result.ok || !Array.isArray(result.body.jobs)) throw new Error(`Job list failed (${result.status})`);
-  return result.body.jobs;
+  const rows = [];
+  let route = '/jobs?limit=50';
+  for (let page = 0; page < 20; page += 1) {
+    const result = await api.request(route);
+    if (!result.ok || !Array.isArray(result.body.jobs)) throw new Error(`Job list failed (${result.status})`);
+    rows.push(...result.body.jobs);
+    if (!result.body.next) return rows;
+    const query = new URLSearchParams({ limit: '50', before: result.body.next.before, before_id: result.body.next.before_id });
+    route = `/jobs?${query}`;
+  }
+  throw new Error('Kling probe history exceeded the fail-closed pagination limit');
 }
 
 async function waitTerminal(api, jobId) {
@@ -219,7 +272,7 @@ async function shortScenario({ api, keys, evidence }) {
 }
 
 async function controlledFailureScenario({ api, keys, evidence }) {
-  const beforeBalance = await balance(api), beforeJobs = await jobs(api);
+  const beforeBalance = await balance(api), beforeLedger = await ledger(api), beforeJobs = await jobs(api);
   const response = await submit(api, generationBody({ duration: 5, keys, idempotencyKey: idempotency('20fps'), prompt:
     '@Image1 is the red-and-white subject identity. @Image2 is the blue-and-yellow palette. Preserve the 20 fps source motion.' }));
   let jobId = response.body.job_id;
@@ -227,6 +280,15 @@ async function controlledFailureScenario({ api, keys, evidence }) {
     await sleep(2_000);
     const old = new Set(beforeJobs.map(job => job.job_id));
     const created = (await jobs(api)).filter(job => !old.has(job.job_id) && job.model_id === MODEL_ID);
+    if (isPreDebitValidationRejection(response, created.length)) {
+      const afterBalance = await balance(api), afterLedger = await ledger(api);
+      if (afterBalance.balance !== beforeBalance.balance || afterLedger[0]?.id !== beforeLedger[0]?.id) {
+        throw new Error('Controlled validation rejection changed the ledger or balance');
+      }
+      evidence.scenarios.push({ kind: 'controlled-20fps', submit: { status: response.status, error: response.body.error },
+        preDebitRejected: true, debitRecorded: false, before: beforeBalance, after: afterBalance });
+      return;
+    }
     if (created.length !== 1) throw new Error(`Controlled failure created ${created.length} discoverable jobs after ${response.status}:${response.body.error || 'unknown'}`);
     jobId = created[0].job_id;
   }
@@ -252,9 +314,9 @@ async function run() {
   const gate = assertProbeEnvironment();
   await mkdir(OUTPUT_DIR, { recursive: true });
   const evidence = { startedAt: now(), finishedAt: null, status: 'running', environment: 'staging', workerVersion: gate.workerVersion,
-    modelId: MODEL_ID, phase: gate.phase, approvedProviderUsd: 5, maximumProviderUsd: probeSpendCeiling(),
-    thisRunMaximumProviderUsd: gate.phase === 'remaining' ? EXPECTED_USD.controlledFailure : probeSpendCeiling(),
-    authId: null, catalog: null, media: null, priorSuccesses: [], scenarios: [] };
+    modelId: MODEL_ID, phase: gate.phase, approvedProviderUsd: APPROVED_USD, maximumProviderUsd: probeSpendCeiling(),
+    thisRunMaximumProviderUsd: gate.phase === 'remaining' ? EXPECTED_USD.short + EXPECTED_USD.controlledFailure : probeSpendCeiling(),
+    cumulativeSpend: null, authId: null, catalog: null, media: null, priorSuccesses: [], scenarios: [] };
   const scratch = await mkdtemp(path.join(tmpdir(), 'veyrnox-kling-o1-'));
   const save = async () => writeFile(path.join(OUTPUT_DIR, 'evidence.json'), JSON.stringify(evidence, null, 2));
   try {
@@ -268,8 +330,13 @@ async function run() {
     evidence.catalog = { credits: model.credits, durations: model.durations, media: model.capabilities.media };
     const auth = await signIn(process.env); evidence.authId = auth.authId;
     const api = client(auth.token);
+    evidence.cumulativeSpend = assertCumulativeProbeSpend(
+      await ledgerHistory(api),
+      evidence.thisRunMaximumProviderUsd,
+      evidence.approvedProviderUsd,
+    );
     const initial = await balance(api);
-    const required = gate.phase === 'remaining' ? CREDITS[5] : CREDITS[5] + CREDITS[10] + CREDITS[5];
+    const required = gate.phase === 'remaining' ? CREDITS[5] + CREDITS[5] : CREDITS[5] + CREDITS[10] + CREDITS[5] + CREDITS[5];
     if (initial.balance < required) throw new Error(`Staging account has ${initial.balance} credits; ${required} are required`);
     const media = await syntheticMedia(scratch); evidence.media = media.metadata;
     await save();

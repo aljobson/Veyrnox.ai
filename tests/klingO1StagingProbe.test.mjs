@@ -1,10 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { assertProbeEnvironment, generationBody, probeSpendCeiling, syntheticVideoArgs } from '../scripts/kling-o1-staging-probe.mjs';
+import { assertCumulativeProbeSpend, assertProbeEnvironment, generationBody, historicalProbeSpend, isPreDebitValidationRejection, probeSpendCeiling, syntheticVideoArgs } from '../scripts/kling-o1-staging-probe.mjs';
 
 const valid = {
   GITHUB_EVENT_NAME: 'workflow_dispatch',
-  KLING_O1_PROBE_APPROVED: 'owner-approved-2026-11-06',
   KLING_O1_PROBE_MAX_USD: '5',
   KLING_O1_EXPECTED_WORKER_VERSION: 'd3aea259-2be4-477c-b91d-7909c80ef929',
   E2E_EMAIL: 'staging@example.test',
@@ -19,15 +18,40 @@ const continuation = {
 };
 
 test('paid Kling probe is manual, staging-bound and fixed below the approved cap', () => {
-  assert.equal(probeSpendCeiling(), 3.36);
+  assert.equal(probeSpendCeiling(), 4.2);
   assert.equal(assertProbeEnvironment(valid).origin, 'https://veyrnox-ai-staging.al-jobson.workers.dev');
-  for (const key of ['GITHUB_EVENT_NAME', 'KLING_O1_PROBE_APPROVED', 'KLING_O1_EXPECTED_WORKER_VERSION', 'E2E_EMAIL']) {
+  for (const key of ['GITHUB_EVENT_NAME', 'KLING_O1_EXPECTED_WORKER_VERSION', 'E2E_EMAIL']) {
     assert.throws(() => assertProbeEnvironment({ ...valid, [key]: '' }));
   }
   assert.throws(() => assertProbeEnvironment({ ...valid, KLING_O1_PROBE_MAX_USD: '6' }));
   assert.equal(assertProbeEnvironment(continuation).phase, 'remaining');
   assert.throws(() => assertProbeEnvironment({ ...continuation, KLING_O1_PRIOR_SUCCESS_JOB_IDS: '' }));
   assert.throws(() => assertProbeEnvironment({ ...continuation, KLING_O1_REUSE_KEYS: 'bad' }));
+});
+
+test('paid Kling probe enforces the approved cap across prior runs', () => {
+  const rows = [
+    { kind: 'generation', delta: -47, job_id: 'deleted-output-job', created_at: '2026-11-06T12:00:00Z' },
+    { kind: 'generation', delta: -94, job_id: 'retained-output-job', created_at: '2026-11-06T12:10:00Z' },
+    { kind: 'top_up', delta: 999, created_at: '2026-11-06T12:20:00Z' },
+    { kind: 'generation', delta: -47, created_at: '2026-11-05T12:00:00Z' },
+  ];
+  assert.equal(historicalProbeSpend(rows), 2.52);
+  assert.deepEqual(assertCumulativeProbeSpend(rows, 1.68), {
+    approvalStartedAt: '2026-11-06T00:00:00.000Z',
+    historicalProviderUsd: 2.52,
+    nextRunMaximumProviderUsd: 1.68,
+    projectedProviderUsd: 4.2,
+  });
+  assert.throws(() => assertCumulativeProbeSpend(rows, 3.36), /above the approved \$5\.00 cap/);
+  assert.equal(historicalProbeSpend([{ kind: 'generation', delta: -12, created_at: '2026-11-06T12:00:00Z' }]), 0);
+});
+
+test('controlled validation rejection is accepted only when it created no job', () => {
+  const rejected = { status: 422, body: { error: 'source_frame_rate_invalid' } };
+  assert.equal(isPreDebitValidationRejection(rejected, 0), true);
+  assert.equal(isPreDebitValidationRejection(rejected, 1), false);
+  assert.equal(isPreDebitValidationRejection({ status: 401, body: { error: 'not_authenticated' } }, 0), false);
 });
 
 test('probe payload preserves video, Image1 and Image2 ordering and exact credit confirmation', () => {
