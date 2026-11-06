@@ -41,37 +41,34 @@ jest.mock('../src/components/VeyCharacter', () => ({ VeyCharacter: () => null })
 jest.mock('../src/lib/languageStore', () => ({ readLanguage: () => 'en', loadLanguage: async () => 'en' }));
 jest.mock('../src/lib/celebrate', () => ({ noteOnboardingCompleted: jest.fn() }));
 jest.mock('../src/lib/analytics/events', () => ({ captureEvent: jest.fn() }));
-test.each(['vibe.start', 'vibe.skip'])('%s records a skip, marks onboarding done and leaves', async key => {
+test('with the language settled the check completes itself: skip recorded, onboarding done, leaves', async () => {
     mockApi.request.mockResolvedValue({ status: 'skipped' });
-    await act(async () => root.render(<Vibe />)); await press(key);
+    await act(async () => { root.render(<Vibe />); await tick(); });
     expect(mockApi.request.mock.calls.map(c => c[1]?.method)).toEqual(['POST']);
     expect(mockRouter.back).toHaveBeenCalledTimes(1); expect(noteOnboardingCompleted).toHaveBeenCalledTimes(1);
     expect(await loadVibe()).toMatchObject({ state: 'skipped' });
 });
-test('an existing choice is kept: Start leaves without calling the server', async () => {
+test('an existing choice is kept: it leaves without calling the server', async () => {
     await storeVibe(completed(), 'A');
-    await act(async () => root.render(<Vibe />)); await press('vibe.start');
+    await act(async () => { root.render(<Vibe />); await tick(); });
     expect(mockApi.request).not.toHaveBeenCalled(); expect(mockRouter.back).toHaveBeenCalledTimes(1);
     expect(await loadVibe()).toEqual(completed());
 });
-test('the old questions and creator card are gone', async () => {
+test('the intro, the old questions and the creator card are gone', async () => {
+    const gate = deferred(); mockApi.request.mockReturnValueOnce(gate.promise);
     await act(async () => root.render(<Vibe />));
-    for (const key of ['vibe.goal.title', 'vibe.voice.title', 'vibe.card.kicker']) expect(texts(key)).toHaveLength(0);
-    expect(texts('vibe.intro.title')).toHaveLength(1);
+    for (const key of ['vibe.goal.title', 'vibe.voice.title', 'vibe.card.kicker', 'vibe.intro.title']) expect(texts(key)).toHaveLength(0);
+    for (const key of ['vibe.start', 'vibe.skip']) expect(controls(key)).toHaveLength(0);
+    await act(async () => { gate.resolve({ status: 'skipped' }); await tick(); });
 });
 test('skip POST after account switch neither stores for B nor leaves', async () => {
-    const gate = deferred(); mockApi.request.mockReturnValueOnce(gate.promise); await act(async () => root.render(<Vibe />)); await press('vibe.skip'); await changeOwner();
+    const gate = deferred(); mockApi.request.mockReturnValueOnce(gate.promise); await act(async () => root.render(<Vibe />)); await changeOwner();
     await act(async () => { gate.resolve({ status: 'skipped' }); await tick(); });
-    expect(await loadVibe()).toBeNull(); expect(mockRouter.back).not.toHaveBeenCalled(); expect(noteOnboardingCompleted).not.toHaveBeenCalled(); expect(texts('vibe.intro.title')).toHaveLength(1);
+    expect(await loadVibe()).toBeNull(); expect(mockRouter.back).not.toHaveBeenCalled(); expect(noteOnboardingCompleted).not.toHaveBeenCalled();
 });
-test('same-account generation change cancels a late Start', async () => {
-    const gate = deferred(); mockApi.request.mockReturnValueOnce(gate.promise); await act(async () => root.render(<Vibe />)); await press('vibe.start');
+test('same-account generation change cancels a late completion', async () => {
+    const gate = deferred(); mockApi.request.mockReturnValueOnce(gate.promise); await act(async () => root.render(<Vibe />));
     await act(async () => { mockGeneration++; root.render(<Vibe />); });
     await act(async () => { gate.resolve({ status: 'skipped' }); await tick(); });
-    expect(mockRouter.back).not.toHaveBeenCalled(); expect(noteOnboardingCompleted).not.toHaveBeenCalled(); expect(texts('vibe.intro.title')).toHaveLength(1);
-});
-test('Skip is disabled while a Start is in flight', async () => {
-    const gate = deferred(); mockApi.request.mockReturnValueOnce(gate.promise); await act(async () => root.render(<Vibe />)); await press('vibe.start');
-    expect(controls('vibe.skip')[0].props.disabled).toBe(true);
-    await act(async () => { gate.resolve({ status: 'skipped' }); await tick(); });
+    expect(mockRouter.back).not.toHaveBeenCalled(); expect(noteOnboardingCompleted).not.toHaveBeenCalled();
 });

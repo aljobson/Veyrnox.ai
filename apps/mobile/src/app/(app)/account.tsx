@@ -175,7 +175,6 @@ export default function Account() {
 
             {CREATOR_PROFILE_ENABLED && vibeAvailable ? (
                 <Section title={t('vibe.account.title')}>
-                    <Row label={t('vibe.account.retake')} onPress={() => router.push('/vibe?retake=1')} />
                     <Row label={t('vibe.account.reset')} onPress={() => void onResetVibe()} />
                     {vibeNote ? <Text variant="footnote" style={styles.note} accessibilityRole="alert">{vibeNote}</Text> : null}
                 </Section>

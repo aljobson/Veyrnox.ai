@@ -77,6 +77,15 @@ export default function Vibe() {
         leave();
     }
 
+    // The intro is gone: once the language is settled the check completes itself and the person moves on.
+    const started = useRef(false);
+    useEffect(() => {
+        if (language !== 'done' || started.current) return;
+        started.current = true;
+        void proceed('skip');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [language]);
+
     return (
         <KeyboardAvoidingView style={[styles.screen, { paddingTop: insets.top, paddingBottom: insets.bottom }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <Stack.Screen options={{ headerShown: false, gestureEnabled: false }} />
@@ -112,28 +121,12 @@ export default function Vibe() {
                             </Text>
                         ) : null}
                     </View>
-                ) : (
-                    <View style={styles.center}>
-                        <View>
-                            <VeyCharacter width={140} interactive />
-                        </View>
-                        <Text variant="title1" style={styles.title} accessibilityRole="header">
-                            {t('vibe.intro.title')}
-                        </Text>
-                        <Text style={styles.text}>{t('vibe.intro.body')}</Text>
-                    </View>
-                )}
+                ) : null}
             </ScrollView>
 
             <View style={styles.footer}>
                 {language === 'ask' && languageNote ? (
                     <Button label={t('vibe.language.continue')} onPress={() => void continueLanguage()} />
-                ) : null}
-                {language === 'done' ? (
-                    <>
-                        <Button label={t('vibe.start')} disabled={busy} onPress={() => void proceed('next')} />
-                        <Button variant="tertiary" label={t('vibe.skip')} disabled={busy} onPress={() => void proceed('skip')} />
-                    </>
                 ) : null}
             </View>
         </KeyboardAvoidingView>

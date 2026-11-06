@@ -5,7 +5,6 @@ import { VeyCharacter } from '../src/components/VeyCharacter';
 import { VeyLoader } from '../src/components/VeyLoader';
 import { EmptyState } from '../src/components/EmptyState';
 import Welcome from '../src/app/(app)/welcome';
-import Vibe from '../src/app/(app)/vibe';
 import Rate from '../src/app/(app)/rate';
 import { playSelection } from '../src/lib/haptics';
 import { t } from '../src/lib/i18n';
@@ -190,7 +189,7 @@ test('empty state greets with an interactive one-shot wave', async () => {
     await render(<EmptyState title="Nothing yet" />); reachable(button());
     expect(started).toHaveLength(1); expect(flatten(started[0]).filter(a => a.config?.duration === 180)).toHaveLength(7);
 });
-test.each([['welcome', Welcome], ['vibe', Vibe], ['rate', Rate]] as const)('%s exposes Vey and its Wave action without hidden ancestors', async (_, Screen) => {
+test.each([['welcome', Welcome], ['rate', Rate]] as const)('%s exposes Vey and its Wave action without hidden ancestors', async (_, Screen) => {
     await render(<Screen />); expect(button()).toBeDefined(); reachable(button());
     expect(button().props.accessibilityActions).toContainEqual({ name: 'wave', label: t('vey.touch.wave') });
 });
