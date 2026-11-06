@@ -270,3 +270,6 @@ f2562ab6742bfa99290c8315a6bed71db1a8a220:tests/chat.test.mjs:generic-api-key:50
 # Supabase staging sb_publishable_ client key embedded in a browser-facing probe on the sibling template-recreate branch.
 # Reviewed 2026-11-06: it has the publishable prefix and is not a JWT/service-role key. Keep this exception tied to its exact historical fingerprint.
 10ab851dff1d57abe9ce34f9f50e8946130a3560:scripts/kling-o1-staging-probe.mjs:generic-api-key:11
+
+# Same reviewed publishable key as above, now at its squash-merge commit on main (#1951). Public sb_publishable_ prefix, not a JWT or service-role key.
+def5ffcd88e938915cccbfcd1c252b298e8f3a2b:scripts/kling-o1-staging-probe.mjs:generic-api-key:11
