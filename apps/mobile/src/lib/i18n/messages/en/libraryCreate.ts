@@ -22,5 +22,6 @@ export default {
     "libraryCreate.popular": "Popular",
     "libraryCreate.stems": "Open the creation to play its separate audio tracks.",
     "libraryCreate.elapsed": "{seconds} s",
-    "libraryCreate.useTemplate": "Use template"
+    "libraryCreate.useTemplate": "Use template",
+    "libraryCreate.editBeforeGenerating": "Edit before generating"
 } as const;
