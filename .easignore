@@ -1,0 +1,81 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Electron build output
+release/
+.webpack/
+
+# Next.js
+.next/
+out/
+
+# OpenNext / Cloudflare Workers
+.open-next/
+.wrangler/
+
+# Misc
+*.pem
+.env
+.env.*
+!.env.example
+# wrangler local Worker secrets
+.dev.vars*
+# gstack local security reports
+.gstack/
+
+# Session scratch
+.scratch/
+
+# Slice 0 endpoint verification output (contains provider urls, not secrets)
+scripts/.slice0-*.json
+
+# Local provider verification output (paid runs; evidence is copied into migrations)
+scripts/.kie-verify-results.json
+scripts/.auto-short-verify.json
+
+# Reproducible local-only Video Enhance model/runtime assets
+public/video-enhance/
+public/editor-speech/
+public/editor-vision/
+
+# App catalogs generated for the Worker static asset binding
+public/_i18n/
+
+# Playwright (e2e/)
+test-results/
+playwright-report/
+page-coverage-report/
+
+# Generated on demand; mobile CI uploads the localization list as an artifact.
+/docs/mobile/I18N-NEW-KEYS.md
+
+# EAS archive: web-only assets the mobile build never reads
+/public/showcase
+/public/film
+/public/cinema
+/public/oddlings
+/docs
+/.next
+/.open-next
