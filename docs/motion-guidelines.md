@@ -32,9 +32,8 @@ something on screen.
 
 ## Scale and origin
 
-- Buttons scale to **0.97** on press and return on release.
-  Today `ds.motion.pressScale` is 0.98: change the token to 0.97 in a
-  separate, reviewed PR before relying on this line.
+- Buttons scale to **0.97** on press and return on release
+  (`ds.motion.pressScale` on mobile).
 - Popovers, menus and tooltips start at **scale 0.95** and animate to 1.
 - Origin is the trigger, not the centre. Enter from the trigger, exit back to the
   trigger. Web: set `transform-origin` from the trigger's position. Do not fade
