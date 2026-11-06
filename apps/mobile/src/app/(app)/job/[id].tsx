@@ -275,7 +275,7 @@ export default function JobScreen() {
         if (!modelId) return;
         const current = beginHandoff();
         try {
-            const href = await submittedHref(api, id, modelId, current, targetModelId);
+            const href = targetModelId ? await submittedHref(api, id, modelId, current, targetModelId) : await submittedHref(api, id, modelId, current);
             if (href && current()) { if (replace) router.replace(href); else router.push(href); }
         } catch { if (current()) setNote(t('common.error')); }
     }
