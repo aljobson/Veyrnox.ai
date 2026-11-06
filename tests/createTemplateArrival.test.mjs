@@ -288,6 +288,17 @@ test('template source summary keeps an attached photo editable after changing mo
   }
 });
 
+test('template source summary names an unlabeled attached Library asset', async () => {
+  const withMedia = { ...original, media: { image: { required: true, maxFiles: 1 } } };
+  const h = harness({ model: original.id }, { models: [withMedia] });
+  try {
+    let tree = await h.settle();
+    sourcePickers(tree).props.onPick('image', null, { id: 'asset-1', url: 'https://example.test/image.jpg' }, 0);
+    tree = await h.settle();
+    assert.equal(card(tree).props.settings.sourceLabel, 'app.create.sources.image.label');
+  } finally { h.close(); }
+});
+
 test('Create applies matching personal edits on another model and falls back to saved model without URL model', async () => {
   for (const params of [{ model: other.id }, {}]) {
     const h = harness(params, { saved: { prompt: 'Edited community scene', templateId: preset.id, model: other.id, aspect: '1:1', durationSeconds: 5, negativePrompt: 'No blur' } });
@@ -379,10 +390,13 @@ test('Create explains when a one-time template photo no longer matches the arriv
   const withMedia = { ...original, media: { image: { kind: 'image', required: true } } };
   const h = harness({ model: original.id }, { models: [withMedia, other], handoff: photo, handoffModelId: other.id });
   try {
-    const tree = await h.settle();
+    let tree = await h.settle();
     assert.equal(sourcePickers(tree).props.sources.image, undefined);
     assert.ok(find(tree, node => node.type === 'p' && node.props?.children === 'app.create.templatePhotoHandoff'));
     assert.equal(templateMediaHandoff.hasTemplateMediaHandoff(globalThis.window), false);
+    sourcePickers(tree).props.onPick('image', photo, null, 0);
+    tree = await h.settle();
+    assert.equal(find(tree, node => node.type === 'p' && node.props?.children === 'app.create.templatePhotoHandoff'), undefined);
   } finally { h.close(); }
 });
 
