@@ -2,15 +2,14 @@ import { useRouter } from 'expo-router';
 import { saveAccountLanguage, saveLanguage } from '../lib/languageStore';
 import { useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
-import { Image } from 'expo-image';
-import { Logo } from './Logo';
+import { BrandIntro } from './BrandIntro';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Button, Chip, Text, themedStyles, useAppearance, useThemedStyles } from './ui';
+import { Button, Chip, Text, themedStyles, useThemedStyles } from './ui';
 import { useAuth } from '../auth/AuthProvider';
 import { ACTIVE_LOCALES, getLocale, t, type LocaleCode } from '../lib/i18n';
 import { directionReconciler, reconcileLanguageDirection } from '../lib/languageDirection';
 import { activeLanguages, changeLanguage } from '../lib/languageTransition';
-import { ds, paletteForScheme } from '../theme';
+import { ds } from '../theme';
 
 export function LanguageChoice({ returnPath, active = ACTIVE_LOCALES, onComplete }: { returnPath: string; active?: readonly LocaleCode[]; onComplete?(): void }) {
     const router = useRouter();
@@ -21,7 +20,6 @@ export function LanguageChoice({ returnPath, active = ACTIVE_LOCALES, onComplete
     const running = useRef(false);
     const insets = useSafeAreaInsets();
     const s = useThemedStyles(sheets);
-    const { settings, scheme } = useAppearance();
     async function apply() {
         if (running.current) return;
         running.current = true;
@@ -42,8 +40,7 @@ export function LanguageChoice({ returnPath, active = ACTIVE_LOCALES, onComplete
     return <View style={[s.screen, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         <ScrollView contentContainerStyle={s.body} keyboardShouldPersistTaps="handled">
             <View style={s.brand}>
-                <Image source={require('../../assets/mascot.png')} style={s.mascot} contentFit="contain" accessible={false} />
-                <Logo size={32} palette={paletteForScheme(scheme, settings)} />
+                <BrandIntro fontSize={36} />
             </View>
             <Text variant="title1" accessibilityRole="header">{t('vibe.language.title')}</Text>
             <Text tone="secondary">{t('vibe.language.hint')}</Text>
@@ -57,6 +54,5 @@ const sheets = themedStyles(p => ({
     screen: { flex: 1, backgroundColor: p.bg },
     body: { flexGrow: 1, justifyContent: 'center', padding: ds.space.gutter, gap: ds.space.md },
     brand: { alignItems: 'center', gap: ds.space.md, marginBottom: ds.space.md },
-    mascot: { width: 96, height: 96 },
     footer: { padding: ds.space.gutter },
 }));

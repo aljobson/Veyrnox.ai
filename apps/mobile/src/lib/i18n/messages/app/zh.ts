@@ -4047,6 +4047,8 @@ export default {
   "signIn.failed": "登录未完成。请重试。",
   "signIn.idea": "让创意成为场景",
   "signIn.kicker": "你的创作工作室",
+  "signIn.offer.body": "确认邮箱后到账，有效期 90 天。扣费前会先显示价格，创作失败会退还。",
+  "signIn.offer.title.other": "开始即送 {count} 个免费积分",
   "signIn.openPrivacy": "打开隐私政策",
   "signIn.openTerms": "打开条款",
   "signIn.photo": "让照片动起来",

@@ -4047,6 +4047,8 @@ export default {
   "signIn.failed": "로그인이 완료되지 않았습니다. 다시 시도하세요.",
   "signIn.idea": "아이디어를 장면으로",
   "signIn.kicker": "나만의 창작 스튜디오",
+  "signIn.offer.body": "이메일 인증 후 지급되며 90일간 유효합니다. 결제 전에 가격을 확인할 수 있고, 실패한 생성은 환불됩니다.",
+  "signIn.offer.title.other": "시작 무료 크레딧 {count}개",
   "signIn.openPrivacy": "개인정보 처리방침 열기",
   "signIn.openTerms": "약관 열기",
   "signIn.photo": "움직이는 사진",

@@ -20,7 +20,7 @@ const originalTab = spanish['tabs.library'];
 jest.mock('../src/lib/languageStore', () => ({ readLanguage: () => mockStored, loadLanguage: async () => mockStored, saveLanguage: jest.fn(async (code: string) => { mockStored = code; return true; }), saveAccountLanguage: jest.fn(), syncPendingAccountLanguage: jest.fn(async () => {}) }));
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ generation: 0, sessionGeneration: () => 0, beginSessionTask: () => ({ gen: 0, user: 'u', current: () => true, tokens: async () => null }), status: mockStatus, canReloadSession: () => false, api: {} }) }));
 jest.mock('expo', () => ({ reloadAppAsync: jest.fn() }));
-jest.mock('expo-image', () => ({ Image: jest.requireActual('react-native').Image }));
+jest.mock('../src/components/BrandIntro', () => ({ BrandIntro: () => require('react').createElement('mascot-wordmark') }));
 jest.mock('expo-router', () => {
     const React = require('react');
     const Tabs = ({ children }: any) => React.createElement('tabs', null, children);
@@ -96,6 +96,10 @@ test('Account chooser returns on reselecting the current language without storag
     expect(mockBack).toHaveBeenCalledTimes(1);
     expect(saveLanguage).not.toHaveBeenCalled();
     expect(reloadAppAsync).not.toHaveBeenCalled();
+});
+test('the language screen opens with the animated mascot wordmark', async () => {
+    await act(async () => root.render(<LanguageChoice active={['en', 'es']} returnPath="/language" />));
+    expect(root.container.queryAll(n => n.type === 'mascot-wordmark')).toHaveLength(1);
 });
 test('first launch remembers an unchanged device language and advances to sign-in without reload', async () => {
     await act(async () => root.render(<LanguageGate active={['en', 'es']}><RN.Text>Sign-in fixture</RN.Text></LanguageGate>));
