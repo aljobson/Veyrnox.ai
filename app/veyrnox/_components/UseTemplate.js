@@ -3,11 +3,13 @@ import { rich } from '../../../lib/i18n/rich';
 import { useI18n } from '../../../components/I18nProvider.jsx';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { writeTemplateChatDraft } from '../_lib/chatTemplateDraft';
 import { useCatalog } from '../_lib/useCatalog';
 import { writeFilmStarter } from '../_lib/filmTemplateDraft';
 import { writeStudioDraft } from '../_lib/landingDraft';
+import { clearTemplateMediaHandoff, TEMPLATE_IMAGE_ACCEPT, templateImageFileError, writeTemplateMediaHandoff } from '../_lib/templateMediaHandoff';
+import { prepareUpload } from '../_lib/uploadConvert.mjs';
 import { TEMPLATE_PROMPT_MAX, templateModelEligible, createPromptModelAvailable } from '../_lib/templateDraft';
 import { clipCredits, modelAspectRatios, modelIdForName, presetCredits, presetHref } from '../_lib/tokens';
 import { CHAT_USER_TEXT_MAX } from '../../../lib/chatLimits.js';
@@ -43,9 +45,42 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked 
   }
   const [handoffError, setHandoffError] = useState('');
   const [opening, setOpening] = useState(false);
+  const [photo, setPhoto] = useState(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const photoSequence = useRef(0);
   const promptBlocked = !prompt.trim() || prompt.length > TEMPLATE_PROMPT_MAX;
-  const generationDisabled = generationBlocked || promptBlocked || !model;
+  const generationDisabled = generationBlocked || promptBlocked || !model || photoBusy;
   const chatBlocked = !prompt.trim() || prompt.length > CHAT_USER_TEXT_MAX;
+  const requiredImage = model?.media?.image?.required === true;
+
+  async function choosePhoto(file) {
+    const sequence = ++photoSequence.current;
+    if (!file) {
+      setPhoto(null);
+      setPhotoBusy(false);
+      setHandoffError('');
+      return;
+    }
+    const problem = templateImageFileError(file);
+    if (problem) {
+      setPhoto(null);
+      setHandoffError('mediaFile');
+      return;
+    }
+    setPhoto(null);
+    setPhotoBusy(true);
+    setHandoffError('');
+    try {
+      const ready = await prepareUpload(file);
+      if (photoSequence.current !== sequence) return;
+      if (templateImageFileError(ready)) { setHandoffError('mediaFile'); return; }
+      setPhoto(ready);
+    } catch {
+      if (photoSequence.current === sequence) setHandoffError('mediaFile');
+    } finally {
+      if (photoSequence.current === sequence) setPhotoBusy(false);
+    }
+  }
 
   function use() {
     // The URL restores the recipe if storage is blocked; preserve edited text.
@@ -53,6 +88,11 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked 
       let saved = false;
       try { saved = writeStudioDraft(window.sessionStorage, { prompt, model: modelId, aspect, durationSeconds, negativePrompt: preset.negativePrompt, templateId: preset.id }); } catch { /* The unedited URL recipe still works. */ }
       if (!saved && prompt !== preset.prompt) { setHandoffError('studio'); return; }
+    }
+    if (!clearTemplateMediaHandoff(window)
+      || (requiredImage && photo && !writeTemplateMediaHandoff(window, { templateId: preset.id, modelId, image: photo }))) {
+      setHandoffError('media');
+      return;
     }
     setOpening(true);
     router.push(href);
@@ -88,6 +128,21 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked 
         {aspectOptions.length > 0 && <div><dt className="text-vx-fg-muted">{t("presets.use.aspect")}</dt><dd><select aria-label={t("presets.use.aspect")} value={aspect} onChange={(event) => setPickedAspect(event.target.value)} className="mt-1 min-h-11 max-w-full rounded-xl border border-vx-border bg-vx-panel px-3 py-2 font-vx-mono font-bold focus-visible:outline-2 focus-visible:outline-vx-accent">{aspectOptions.map((option) => <option key={option} value={option}>{option}</option>)}</select></dd></div>}
         {isVideo && <div><dt className="text-vx-fg-muted">{t("presets.use.clip")}</dt><dd><select aria-label={t("presets.use.clipLength")} value={durationSeconds} onChange={(event) => setDurationSeconds(Number(event.target.value))} className="mt-1 min-h-11 max-w-full rounded-xl border border-vx-border bg-vx-panel px-3 py-2 font-vx-mono font-bold focus-visible:outline-2 focus-visible:outline-vx-accent">{durationOptions.map((seconds) => <option key={seconds} value={seconds}>{t('presets.use.lengthCost', { length: t('presets.use.seconds', { count: seconds }), credits: costFor(seconds) })}</option>)}</select></dd></div>}
       </dl>
+      {requiredImage && (
+        <fieldset className="mt-5 rounded-xl border border-vx-border bg-vx-panel/40 p-4">
+          <legend className="px-1 text-sm font-bold">{t('presets.use.photoTitle')}</legend>
+          <p className="mt-1 text-[13px] leading-5 text-vx-fg-muted">{t('presets.use.photoPrivacy')}</p>
+          <div className="mt-3 flex min-h-14 items-center gap-3 rounded-xl border border-dashed border-vx-border bg-vx-base p-2.5">
+            <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-vx-panel font-vx-mono text-sm text-vx-accent">{photoBusy ? '…' : photo ? '✓' : '+'}</span>
+            <span role={photoBusy ? 'status' : undefined} className="min-w-0 flex-1 truncate text-xs text-vx-fg-muted">{photoBusy ? t('presets.use.photoPreparing') : photo?.name || t('presets.use.photoHint')}</span>
+            <label className="vx-press relative inline-flex min-h-11 shrink-0 cursor-pointer items-center rounded-full border border-vx-accent px-4 text-xs font-extrabold text-vx-accent focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-vx-accent">
+              {photo ? t('presets.use.photoReplace') : t('presets.use.photoChoose')}
+              <input type="file" accept={TEMPLATE_IMAGE_ACCEPT} disabled={photoBusy} aria-label={t('presets.use.photoChoose')} className="absolute inset-0 h-full w-full cursor-pointer opacity-0" onChange={(event) => { const file = event.target.files?.[0] || null; event.target.value = ''; return choosePhoto(file); }} />
+            </label>
+            {photo && <button type="button" onClick={() => choosePhoto(null)} aria-label={t('presets.use.photoRemove')} className="vx-press inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-vx-fg-muted hover:text-vx-fg">×</button>}
+          </div>
+        </fieldset>
+      )}
       <button
         type="button"
         onClick={use}
@@ -95,7 +150,7 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked 
         aria-busy={opening || undefined}
         className={`vx-press mt-6 inline-flex items-center gap-4 rounded-full bg-vx-accent px-6 py-3.5 font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover ${opening ? 'cursor-wait' : 'disabled:opacity-50'}`}
       >
-        <span>{preset.inspired ? t("presets.use.similar") : t("presets.use.template")}</span>
+        <span>{requiredImage && photo ? t('presets.use.withPhoto') : preset.inspired ? t("presets.use.similar") : t("presets.use.template")}</span>
         {opening
           ? <span className="grid w-[3.5ch] place-items-center"><Spinner size={18} /></span>
           : <span className="font-vx-mono vx-num text-[15px] font-bold">{credits} cr</span>}
@@ -121,6 +176,8 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked 
       {handoffError === 'studio' && <p role="alert" className="mt-3 text-[13px] text-vx-danger">{rich(t('presets.use.handoff'), { studio: <a href={href} className="underline">{t('presets.use.openStudio')}</a> })}</p>}
       {handoffError === 'chat' && <p role="alert" className="mt-3 text-[13px] text-vx-danger">{rich(t('presets.use.chatHandoff'), { chat: <a href="/app/chat?skill=prompt-writer" className="underline">{t('label.LLM Chat')}</a> })}</p>}
       {handoffError === 'chatLimit' && <p role="alert" className="mt-3 text-[13px] text-vx-danger">{t('public.TemplateRecipe.chatMessageTooLong', { count: prompt.length, max: CHAT_USER_TEXT_MAX })}</p>}
+      {handoffError === 'mediaFile' && <p role="alert" className="mt-3 text-[13px] text-vx-danger">{t('presets.use.photoInvalid')}</p>}
+      {handoffError === 'media' && <p role="alert" className="mt-3 text-[13px] text-vx-danger">{t('presets.use.photoHandoff')}</p>}
     </div>
   );
 }

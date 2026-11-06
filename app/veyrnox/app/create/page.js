@@ -28,6 +28,7 @@ import { freeLeftFor } from '../../_lib/freeAllowance';
 import { sourceDurationLimit } from '../../_lib/modelPricing';
 import { SourceDurationCard } from '../../_components/SourceDurationCard';
 import { takeStudioDraft } from '../../_lib/landingDraft';
+import { clearTemplateMediaHandoff, hasTemplateMediaHandoff, takeTemplateMediaHandoff, templateMediaHandoffMatches } from '../../_lib/templateMediaHandoff';
 import { takeVideoSoundContinuation, writeVideoSoundContinuation } from '../../_lib/resultContinuation';
 import { oddlingPortrait, buildOddlingAnimationPrompt } from '../../_lib/oddlingStudio';
 import { fetchTemplate } from '../../_lib/useTemplates';
@@ -67,6 +68,14 @@ import { GENERATION_PROMPT_MAX } from '../../../../lib/generationPromptLimits.js
 // Auto Short stays hidden until launch unless this browser opts in
 // (CLAUDE.md "Delivery": new user paths behind localStorage.veyrnox_*).
 const AUTO_SHORT_FLAG = 'veyrnox_auto_short';
+const CREATE_CONTROL_TARGETS = Object.freeze({
+  prompt: '[data-assistant-target="create.prompt"]',
+  models: '[data-assistant-target="create.models"]',
+  duration: '[data-assistant-target="create.duration"]',
+  aspect: '[data-assistant-target="create.aspect"]',
+  upload: '[data-assistant-target="create.upload"]',
+  cost: '[data-assistant-target="create.cost"]',
+});
 
 function readFlag(name) {
   try { return window.localStorage.getItem(name) === '1'; } catch { return false; }
@@ -133,6 +142,7 @@ export default function CreateStudio() {
   const [recipeId] = useState(() => typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('recipe'));
   const [plannedFollowup, setPlannedFollowup] = useState(null);
   const [continuationError, setContinuationError] = useState('');
+  const [attachNotice, setAttachNotice] = useState('');
 
   const [balance, setBalance] = useState(null);
   const [error, setError] = useState(null);
@@ -170,6 +180,13 @@ export default function CreateStudio() {
       try { storedDraft = takeStudioDraft(window.sessionStorage, requested, Date.now(), preset?.id); } catch { /* The URL recipe still works. */ }
       const arrival = preset ? templateArrival(preset, arrivalModels || [], params, storedDraft) : null;
       const wanted = arrival ? arrival.modelId : requested;
+      const hadTemplateMedia = hasTemplateMediaHandoff(window);
+      const matchedTemplateMedia = Boolean(preset && templateMediaHandoffMatches(window, preset.id));
+      let takenTemplateMedia = null;
+      if (preset) takenTemplateMedia = takeTemplateMediaHandoff(window, preset.id, wanted);
+      else if (hadTemplateMedia) clearTemplateMediaHandoff(window);
+      const arrivalModel = (arrivalModels || catalogModels).find((candidate) => candidate.id === wanted);
+      const handedMedia = takenTemplateMedia && arrivalModel?.media?.image && generationSlotKind('image') === 'image' ? takenTemplateMedia : null;
       if (wanted) {
         setModelId(wanted);
         // Show only the arriving model's kind (video template = video models), not every kind.
@@ -190,10 +207,13 @@ export default function CreateStudio() {
         setSources({ video: { assetId: videoSoundDraft.jobId, previewUrl: videoSoundDraft.assetUrl, label: videoSoundDraft.label } });
         setConsent(false);
       } else if (draft) setPrompt(draft.prompt);
-      if (!videoSoundDraft && draft && storedDraft?.sources) {
-        setSources(storedDraft.sources);
-        setConsent(storedDraft.consent === true);
+      const recoveredSources = draft ? storedDraft?.sources : null;
+      if (!videoSoundDraft && (recoveredSources || handedMedia)) {
+        const handedSources = handedMedia ? Object.fromEntries(Object.entries(handedMedia).map(([slot, file]) => [slot, { file, previewUrl: URL.createObjectURL(file) }])) : {};
+        setSources({ ...(recoveredSources || {}), ...handedSources });
+        setConsent(Boolean(!handedMedia && recoveredSources && storedDraft?.consent === true));
       }
+      if (matchedTemplateMedia) setAttachNotice(handedMedia ? '' : translation.current('app.create.templatePhotoHandoff'));
       if (storedDraft?.followup) setPlannedFollowup(storedDraft.followup);
       if (draft?.aspect) incomingAspect.current = draft.aspect;
       if (draft?.durationSeconds && (preset || !/^\d{1,2}s$/.test(params.get('duration') || ''))) setDuration(`${draft.durationSeconds}s`);
@@ -289,12 +309,24 @@ export default function CreateStudio() {
   const invalidAudioDuration = audioDurationIsInvalid(model, audioDuration);
   const fixedDurationLabel = model?.presentation?.fixedDurationLabel;
   const sourceDurationMax = sourceDurationLimit(model);
+  const templateDuration = sourceDurationMax
+    ? t('app.create.duration.follows')
+    : model?.kind === 'audio' && audioDurationControl
+      ? `${audioDuration} ${t('app.create.seconds')}`
+      : (model?.kind === 'video' || model?.kind === 'audio') && fixedDurationLabel
+        ? fixedDurationLabel
+        : model?.kind === 'video' ? outputDurationLabel(model, Number(duration.replace('s', ''))) : null;
   const media = model?.media || {};
   const animationMismatch = !!animationPortrait && (model?.kind !== 'video' || !media.image?.required);
   const { missingSource, needsReattach, overLimit, hasSource: hasUpload } = generationSourceState(media, sources);
   // Only pictures this model actually takes count: a video-only attachment, or a picture kept from another model, never reaches the provider.
-  const templateImageCount = activeTemplate ? Object.entries(media).filter(([, spec]) => spec?.kind === 'image').reduce((sum, [slot]) => sum + sourceList(sources[slot]).length, 0) : 0;
-  const templateImageRequired = Object.values(media).some(spec => spec?.kind === 'image' && spec.required);
+  const templateImageSources = Object.entries(media)
+    .filter(([slot]) => generationSlotKind(slot) === 'image')
+    .flatMap(([slot]) => sourceList(sources[slot]))
+    .filter(source => !source?.needsUpload && (source?.file || source?.assetId || source?.sourceKey));
+  const templateImageCount = templateImageSources.length;
+  const templateImageSource = templateImageSources.find(source => source?.file || source?.label) || null;
+  const templateImageRequired = Object.entries(media).some(([slot, spec]) => generationSlotKind(slot) === 'image' && spec.required);
   const missingConsent = hasUpload && !consent;
   const missingVoice = voiceIsMissing(model, voice);
   const missingPrompt = promptIsMissing(model, prompt);
@@ -365,7 +397,6 @@ export default function CreateStudio() {
     });
   }
 
-  const [attachNotice, setAttachNotice] = useState('');
   const [templatesOpen, setTemplatesOpen] = useState(false);
   // Picking a template here does what arriving on ?preset=<id> does: its model,
   // prompt and settings load, and the user's own files stay where the new model
@@ -651,6 +682,32 @@ export default function CreateStudio() {
     chooseModel(next?.id || '');
   }
 
+  function focusCreateControl(target) {
+    if (target === 'upload' && templateImageCount === 0) {
+      setAddFilesOpen(true);
+      return;
+    }
+    const selector = CREATE_CONTROL_TARGETS[target];
+    const section = selector ? document.querySelector(selector) : null;
+    if (!section) return;
+    section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const focusable = [
+      'button:not([disabled])',
+      'input:not([disabled])',
+      'select:not([disabled])',
+      'textarea:not([disabled])',
+    ].join(',');
+    const candidates = [
+      ...(section.matches(focusable) ? [section] : []),
+      ...section.querySelectorAll('[aria-pressed="true"]:not([disabled])'),
+      ...section.querySelectorAll(focusable),
+    ];
+    const control = candidates.find((candidate, index) => candidates.indexOf(candidate) === index
+      && (typeof candidate.getClientRects !== 'function' || candidate.getClientRects().length > 0)) || section;
+    if (control === section && !section.hasAttribute('tabindex')) section.tabIndex = -1;
+    control.focus({ preventScroll: true });
+  }
+
   return (
     <div className="min-h-dvh">
       {openingTemplate && <TemplateOpening name={openingTemplate.name} />}
@@ -752,8 +809,18 @@ export default function CreateStudio() {
             otherModelName={keptTemplate ? (keptTemplateModel?.name || keptTemplate.model) : ''}
             canChooseSource={Boolean(activeTemplate?.needs && Object.keys(media).length)}
             onChooseSource={() => setAddFilesOpen(true)}
+            settings={{
+              prompt,
+              model: model?.name,
+              aspect: aspectOptions.length ? aspect : null,
+              duration: templateDuration,
+              cost: generationCostLabel(cost),
+              sourceRequired: templateImageRequired,
+              sourceLabel: templateImageSource?.file?.name || templateImageSource?.label || '',
+            }}
+            onEdit={focusCreateControl}
           />}
-          {templateImageCount > 0 && (
+          {activeTemplate && templateImageCount > 0 && (
             <p role="status" data-testid="template-reference-overrides" className="mt-3 rounded-xl border border-vx-accent/30 bg-vx-panel p-3 text-xs text-vx-fg-body">
               {t(templateImageRequired ? 'app.create.templateReferenceRequired' : 'app.create.templateReferenceOverrides')}</p>
           )}
@@ -802,7 +869,7 @@ export default function CreateStudio() {
         {/* Sits straight under the prompt and its inputs on desktop; on a phone it
             drops to the end of the page and stays pinned to the screen. */}
         <div data-create-cost-card className="order-last sticky bottom-3 z-30 rounded-2xl border border-vx-border bg-vx-panel p-5 shadow-2xl lg:order-none lg:col-start-1 lg:row-start-2 lg:self-start lg:static lg:shadow-none">
-          <div data-assistant-target="create.cost" className="scroll-mt-24 flex items-baseline justify-between">
+          <div data-assistant-target="create.cost" tabIndex={-1} className="scroll-mt-24 flex items-baseline justify-between">
             <span className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">{t("app.create.totalCost")}</span>
             <span className="font-vx-mono text-[12px] text-vx-fg-muted vx-num">
               {t('app.create.balanceLabel',{count:balance == null ? '—' : balance.toLocaleString(localeTag(locale, 'en-US'))})}
@@ -967,7 +1034,7 @@ export default function CreateStudio() {
           )}
           {(model?.kind === 'video' || model?.kind === 'audio') && sourceDurationMax && <SourceDurationCard model={model} />}
           {(model?.kind === 'video' || model?.kind === 'audio') && fixedDurationLabel && (
-            <div data-assistant-target="create.duration" className="scroll-mt-24 rounded-2xl border border-vx-border bg-vx-panel p-5">
+            <div data-assistant-target="create.duration" tabIndex={-1} className="scroll-mt-24 rounded-2xl border border-vx-border bg-vx-panel p-5">
               <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">{t("app.create.fixedOutput")}</div>
               <div className="mt-3 font-vx-mono text-lg font-bold text-vx-fg">{fixedDurationLabel}</div>
               <p className="mt-1 text-xs text-vx-fg-muted">{t("app.create.fixedOutputHelp")}</p>

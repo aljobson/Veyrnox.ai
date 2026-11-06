@@ -50,9 +50,29 @@ test('template preview is reference-only and source requirements stay explicit',
   assert.match(component, /app\.create\.templateReferenceOnly/);
   assert.match(component, /app\.create\.chooseTemplateSource/);
   assert.match(component, /presets\.detail\.sourceAspect/);
+  assert.match(component, /data-testid="template-settings-summary"/);
+  assert.match(component, /data-testid="template-setting-prompt"/);
+  assert.match(component, /role="status"[\s\S]*<p data-testid="create-template-other-model">/);
+  assert.match(component, /onEdit\?\.\('prompt'\)/);
+  for (const setting of ['model', 'aspect', 'duration', 'cost', 'source']) assert.match(component, new RegExp(`id: '${setting}'`));
+  assert.match(component, /id: 'cost', target: 'cost'/);
   assert.match(component, /TemplateArtwork/);
   assert.doesNotMatch(component, /OriginalTemplateArtwork/);
   assert.doesNotMatch(component, /setSources|writeStudioDraft|Generate/);
+});
+
+test('the linked template summary targets the existing Create controls instead of duplicating them', () => {
+  const create = readFileSync(new URL('../app/veyrnox/app/create/page.js', import.meta.url), 'utf8');
+  assert.match(create, /settings=\{\{[\s\S]*prompt,[\s\S]*model: model\?\.name,[\s\S]*aspect:[\s\S]*duration:[\s\S]*cost: generationCostLabel\(cost\)/);
+  assert.match(create, /onEdit=\{focusCreateControl\}/);
+  assert.match(create, /const CREATE_CONTROL_TARGETS = Object\.freeze\(\{/);
+  for (const target of ['prompt', 'models', 'duration', 'aspect', 'upload', 'cost']) {
+    assert.match(create, new RegExp(`${target}: '\\\[data-assistant-target="create\\.${target}"\\\]'`));
+  }
+  assert.doesNotMatch(create, /create\.\$\{target\}/);
+  assert.match(create, /section\.scrollIntoView\(\{ behavior: 'smooth', block: 'center' \}\)/);
+  assert.match(create, /candidate\.getClientRects\(\)\.length > 0/);
+  assert.match(create, /control\.focus\(\{ preventScroll: true \}\)/);
 });
 
 test('a matching Create goal filter keeps the linked template and its exact model', () => {
