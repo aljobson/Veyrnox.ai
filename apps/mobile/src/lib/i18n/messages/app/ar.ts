@@ -5981,4 +5981,5 @@ export default {
   "create.workspace.rightsNeeded": "ضع علامة في المربع أعلاه لتؤكد أنك تملك هذه الملفات أو لديك إذن باستخدامها، ثم اضغط إنشاء.",
   "create.workspace.onlyModel": "لا يوجد نموذج آخر يقبل هذه الملفات حاليًا.",
   "handoff.switchedModel": "تم التبديل إلى {model} لأنك أضفت ملفًا.",
+  "publishReporting.err.recipients": "أدخل حتى 10 عناوين بريد إلكتروني صالحة، مفصولة بفواصل أو مسافات. يحتاج التقرير المجدول إلى عنوان واحد على الأقل.",
 } as const;

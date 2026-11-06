@@ -1,3 +1,4 @@
+import { httpsAddress } from './httpsAddress';
 import { formatCurrency } from './i18n';
 import { ApiError, type ApiClient } from './api';
 
@@ -193,12 +194,13 @@ export function buildCampaignBody(f: CampaignForm): { body: CampaignBody } | { e
     const locations = split(f.locations);
     const interests = split(f.interests);
     if (locations.length > 20 || interests.length > 20 || [...locations, ...interests].some((s) => s.length > 80)) return { errorKey: 'ads.err.audience' };
+    if (!/^\d{1,3}$/.test(f.ageMin.trim()) || !/^\d{1,3}$/.test(f.ageMax.trim())) return { errorKey: 'ads.err.age' };
     const ageMin = Number(f.ageMin);
     const ageMax = Number(f.ageMax);
     if (!Number.isInteger(ageMin) || !Number.isInteger(ageMax) || ageMin < 13 || ageMax > 100 || ageMax < ageMin) return { errorKey: 'ads.err.age' };
     const dest = f.destinationUrl.trim();
     const lead = f.leadFormUrl.trim();
-    if ((dest && !https(dest)) || (lead && !https(lead))) return { errorKey: 'ads.err.url' };
+    if ((dest && !httpsAddress(dest)) || (lead && !httpsAddress(lead))) return { errorKey: 'ads.err.url' };
     if (f.ends && (!f.starts || f.ends <= f.starts)) return { errorKey: 'ads.err.dates' };
     return {
         body: {

@@ -5717,4 +5717,5 @@ export default {
   "create.workspace.rightsNeeded": "Setze oben das Häkchen, um zu bestätigen, dass dir diese Dateien gehören oder du sie nutzen darfst, und tippe dann auf Erstellen.",
   "create.workspace.onlyModel": "Zurzeit akzeptiert kein anderes Modell diese Dateien.",
   "handoff.switchedModel": "Zu {model} gewechselt, weil du eine Datei hinzugefügt hast.",
+  "publishReporting.err.recipients": "Gib bis zu 10 gültige E-Mail-Adressen ein, getrennt durch Kommas oder Leerzeichen. Ein geplanter Bericht braucht mindestens eine.",
 } as const;

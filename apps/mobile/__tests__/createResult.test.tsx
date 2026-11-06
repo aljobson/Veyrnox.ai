@@ -157,3 +157,29 @@ test('sound eligibility uses live catalog and the source limit; action stages an
     await click(controls(t('libraryCreate.soundAction'))[0]); const params = mockRouter.push.mock.calls[0][0].params;
     expect(readCreativeSourceHandoff(params.sourceHandoff, params.recipe, params.modelId)).toMatchObject({ references: [{ slot: 'video', origin: 'asset', asset_id: 'job' }], rightsConfirmed: false });
 });
+const promptField = () => root.container.queryAll(node => node.props.accessibilityLabel === t('mobile.prompt'))[0];
+test('QA-4: a pasted prompt over 30000 characters is refused with a message and Generate stays disabled; no request is sent', async () => {
+    await render();
+    await act(async () => promptField().props.onChangeText('a'.repeat(30_001)));
+    expect(promptField().props.maxLength).toBeUndefined();
+    expect(text('30001/30000')).toHaveLength(1);
+    expect(text(t('public.TemplateRecipe.productPromptTooLong', { count: 30_001, max: 30_000 }))).toHaveLength(1);
+    expect(generate().props.accessibilityState.disabled).toBe(true);
+    await click(generate()); expect(mockPost).not.toHaveBeenCalled();
+});
+test('QA-4: exactly 30000 characters is accepted, and trimming whitespace brings a padded paste back under the limit', async () => {
+    await render();
+    await act(async () => promptField().props.onChangeText('a'.repeat(30_000)));
+    expect(generate().props.accessibilityState.disabled).toBe(false);
+    await act(async () => promptField().props.onChangeText(`  ${'b'.repeat(30_000)}  \n`));
+    expect(generate().props.accessibilityState.disabled).toBe(false);
+    await click(generate()); expect(mockPost).toHaveBeenCalledTimes(1);
+    expect(mockPost.mock.calls[0][0].inputs.prompt).toHaveLength(30_000);
+});
+test('QA-4: shortening an over-long prompt re-enables Generate', async () => {
+    await render();
+    await act(async () => promptField().props.onChangeText('a'.repeat(40_000)));
+    expect(generate().props.accessibilityState.disabled).toBe(true);
+    await act(async () => promptField().props.onChangeText('a'.repeat(100)));
+    expect(generate().props.accessibilityState.disabled).toBe(false);
+});

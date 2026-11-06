@@ -5783,4 +5783,5 @@ export default {
   "create.workspace.rightsNeeded": "Cochez la case ci-dessus pour confirmer que ces fichiers vous appartiennent ou que vous avez le droit de les utiliser, puis appuyez sur Générer.",
   "create.workspace.onlyModel": "Aucun autre modèle n'accepte ces fichiers pour le moment.",
   "handoff.switchedModel": "Passage à {model} parce que vous avez ajouté un fichier.",
+  "publishReporting.err.recipients": "Saisissez jusqu'à 10 adresses e-mail valides, séparées par des virgules ou des espaces. Un rapport planifié en nécessite au moins une.",
 } as const;

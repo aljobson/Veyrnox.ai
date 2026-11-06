@@ -5651,4 +5651,5 @@ export default {
   "create.workspace.rightsNeeded": "위 체크박스를 선택해 이 파일이 본인 소유이거나 사용 권한이 있음을 확인한 다음 생성을 누르세요.",
   "create.workspace.onlyModel": "지금은 이 파일을 지원하는 다른 모델이 없습니다.",
   "handoff.switchedModel": "파일을 추가해서 {model}(으)로 전환했습니다.",
+  "publishReporting.err.recipients": "유효한 이메일 주소를 최대 10개까지 쉼표나 공백으로 구분해 입력하세요. 예약된 보고서에는 하나 이상 필요합니다.",
 } as const;
