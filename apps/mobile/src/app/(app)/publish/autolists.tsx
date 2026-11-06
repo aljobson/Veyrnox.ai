@@ -26,6 +26,12 @@ export default function Autolists() {
         const version = generation.current, scope = publishScope();
         return () => version === generation.current && scope === publishScope() && currentApi.current === api;
     }
+    const router = useRouter();
+    const [lists, setLists] = useState<Autolist[] | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [notice, setNotice] = useState<string | null>(null);
+    const [refreshing, setRefreshing] = useState(false);
+
     useEffect(() => {
         const reset = () => {
             generation.current++; canWriteRef.current = false; running.current = false;
@@ -35,12 +41,6 @@ export default function Autolists() {
         const userOff = subscribeCacheUser(reset), brandOff = brandStore.subscribe(reset);
         return () => { generation.current++; canWriteRef.current = false; userOff(); brandOff(); };
     }, []);
-
-    const router = useRouter();
-    const [lists, setLists] = useState<Autolist[] | null>(null);
-    const [error, setError] = useState<string | null>(null);
-    const [notice, setNotice] = useState<string | null>(null);
-    const [refreshing, setRefreshing] = useState(false);
 
     const load = useCallback(async () => {
         const valid = guard();

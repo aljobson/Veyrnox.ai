@@ -12,7 +12,8 @@ import { PURCHASED_HOLD_MS, isPlanPick, paywallVey } from '../../billing/paywall
 import { VeyCharacter } from '../../components/VeyCharacter';
 import { touchTarget } from '../../lib/a11y';
 import { playSuccess } from '../../lib/haptics';
-import { Text, themedStyles, useThemedStyles } from '../../components/ui';
+import { Button, Text, themedStyles, useThemedStyles } from '../../components/ui';
+import { useAnnouncement } from '../../lib/useAnnouncement';
 import { getCacheUser } from '../../lib/appCache';
 import { publishBalance } from '../../lib/balanceEvents';
 import { t } from '../../lib/i18n';
@@ -61,9 +62,10 @@ export default function Paywall() {
         closing.current = setTimeout(close, PURCHASED_HOLD_MS);
     }, [api, close, finish, offeringId]);
 
-    if (!paywallsEnabled() || !offeringId) return <Unavailable text={t('billing.paywall.notReady')} />;
-    if (billing.status === 'loading') return <View style={styles.center}><ActivityIndicator /></View>;
-    if (!offering || !billing.canPurchase) return <Unavailable text={t(billing.salesOpen ? 'billing.paywall.notReady' : 'billing.paywall.salesClosed')} />;
+    const retry = useCallback(() => { billing.retryOfferings(); void billing.refreshSales(); }, [billing]);
+    if (!paywallsEnabled() || !offeringId) return <Unavailable text={t('billing.paywall.notReady')} onRetry={retry} onClose={close} />;
+    if (billing.status === 'loading') return <View style={styles.center}><ActivityIndicator accessibilityLabel={t('common.loading')} /></View>;
+    if (!offering || !billing.canPurchase) return <Unavailable text={t(billing.salesOpen ? 'billing.paywall.notReady' : 'billing.paywall.salesClosed')} onRetry={retry} onClose={close} />;
     return (
         <View style={[styles.screen, themed.page]}>
             <Stack.Screen options={{ title: t('billing.paywall.title'), headerShown: false, presentation: 'modal' }} />
@@ -92,11 +94,17 @@ export default function Paywall() {
     );
 }
 
-function Unavailable({ text }: { text: string }) {
+// A dead end is never acceptable: the person can always retry the store load or leave.
+function Unavailable({ text, onRetry, onClose }: { text: string; onRetry(): void; onClose(): void }) {
+    useAnnouncement(text, { onMount: true });
     return (
         <View style={styles.center}>
             <Stack.Screen options={{ title: t('billing.paywall.title'), presentation: 'modal' }} />
             <Text variant="body" tone="secondary" accessibilityRole="alert">{text}</Text>
+            <View style={styles.actions}>
+                <Button variant="primary" label={t('recovery.retry')} onPress={onRetry} />
+                <Button variant="secondary" label={t('common.close')} onPress={onClose} />
+            </View>
         </View>
     );
 }
@@ -104,6 +112,7 @@ function Unavailable({ text }: { text: string }) {
 const styles = StyleSheet.create({
     screen: { flex: 1 },
     close: { alignSelf: 'flex-start', alignItems: 'center' },
+    actions: { marginTop: ds.space.xl, gap: ds.space.md, alignSelf: 'stretch' },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: ds.space.xxl },
 });
 const sheets = themedStyles(p => ({

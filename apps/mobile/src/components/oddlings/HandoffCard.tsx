@@ -41,6 +41,8 @@ export function HandoffCard({ picks, scene, motionId, onLeave, references = [], 
     const busy = useRef(false);
     const [opening, setOpening] = useState<Which | null>(null);
     const [owner, setOwner] = useState(getCacheUser());
+    const [models, setModels] = useState<readonly CatalogModel[] | null>(null);
+    const [problem, setProblem] = useState<string | null>(null);
     useEffect(() => {
         mounted.current = true;
         const unsubscribe = subscribeCacheUser(() => {
@@ -48,8 +50,6 @@ export function HandoffCard({ picks, scene, motionId, onLeave, references = [], 
         });
         return () => { mounted.current = false; launch.current++; busy.current = false; unsubscribe(); };
     }, []);
-    const [models, setModels] = useState<readonly CatalogModel[] | null>(null);
-    const [problem, setProblem] = useState<string | null>(null);
 
     useEffect(() => {
         let live = true;

@@ -19,7 +19,7 @@ function Titles() {
     const [titles, setTitles] = useState<CreatorTitle[] | null>(null), [note, setNote] = useState('');
     const [waiting, setWaiting] = useState(false), generation = useRef(0), focused = useRef(false);
     const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-    const load = useCallback(async () => {
+    const load = useCallback(async function run() {
         const n = ++generation.current;
         clearTimeout(timer.current);
         try {
@@ -31,7 +31,7 @@ function Titles() {
             setNote(creatorMessage(e));
             if (e instanceof ApiError && e.status === 429) {
                 setWaiting(true);
-                timer.current = setTimeout(() => { if (focused.current && scope.live()) void load(); }, 60000);
+                timer.current = setTimeout(() => { if (focused.current && scope.live()) void run(); }, 60000);
             } else setWaiting(false);
         }
     }, [api, scope.ticket]);

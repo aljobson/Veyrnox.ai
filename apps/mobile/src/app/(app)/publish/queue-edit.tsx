@@ -30,16 +30,6 @@ export default function QueueEdit() {
         const version = generation.current, scope = publishScope();
         return () => version === generation.current && scope === publishScope() && currentApi.current === api;
     }
-    useEffect(() => {
-        const reset = () => {
-            generation.current++; canWriteRef.current = false; running.current = false;
-            setAccounts(null); setRole(null); setExcluded([]); setName(''); setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'); setAccountIds([]); setSlots([]); setEnabled(true); setDay(1); setTime('09:00'); setReady(false); setBusy(false); setProblem(null);
-            setScopeTick(n => n + 1);
-        };
-        const userOff = subscribeCacheUser(reset), brandOff = brandStore.subscribe(reset);
-        return () => { generation.current++; canWriteRef.current = false; userOff(); brandOff(); };
-    }, []);
-
     const router = useRouter();
     const themed = useThemedStyles(excludedSheets);
     const [excluded, setExcluded] = useState<(PublishAccount | null)[]>([]);
@@ -55,6 +45,16 @@ export default function QueueEdit() {
     const [ready, setReady] = useState(!id);
     const [busy, setBusy] = useState(false);
     const [problem, setProblem] = useState<string | null>(null);
+
+    useEffect(() => {
+        const reset = () => {
+            generation.current++; canWriteRef.current = false; running.current = false;
+            setAccounts(null); setRole(null); setExcluded([]); setName(''); setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'); setAccountIds([]); setSlots([]); setEnabled(true); setDay(1); setTime('09:00'); setReady(false); setBusy(false); setProblem(null);
+            setScopeTick(n => n + 1);
+        };
+        const userOff = subscribeCacheUser(reset), brandOff = brandStore.subscribe(reset);
+        return () => { generation.current++; canWriteRef.current = false; userOff(); brandOff(); };
+    }, []);
 
     useEffect(() => {
         let cancelled = false;

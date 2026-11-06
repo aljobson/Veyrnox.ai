@@ -34,16 +34,6 @@ export default function Workflows() {
         const version = generation.current, scope = publishScope();
         return () => version === generation.current && scope === publishScope() && currentApi.current === api;
     }
-    useEffect(() => {
-        const reset = () => {
-            generation.current++; canWriteRef.current = false; running.current = false;
-            setWorkflows(null); setPlan(null); setExpanded(null); setEditing(null); setBusy(false); setNote(null);
-            setScopeTick(n => n + 1);
-        };
-        const userOff = subscribeCacheUser(reset), brandOff = brandStore.subscribe(reset);
-        return () => { generation.current++; canWriteRef.current = false; userOff(); brandOff(); };
-    }, []);
-
     const [workflows, setWorkflows] = useState<ReadState<Workflow[]> | null>(null);
     const [plan, setPlan] = useState<ReadState<WorkflowPlan> | null>(null);
     const [expanded, setExpanded] = useState<string | null>(null);
@@ -53,6 +43,16 @@ export default function Workflows() {
     const [busy, setBusy] = useState(false);
     const [note, setNote] = useState<string | null>(null);
     const BLANK: WorkflowDraft = { id: null, accountId: null, name: '', kind: null, matchMode: 'contains', keyword: '', replyText: '', enabled: true };
+
+    useEffect(() => {
+        const reset = () => {
+            generation.current++; canWriteRef.current = false; running.current = false;
+            setWorkflows(null); setPlan(null); setExpanded(null); setEditing(null); setBusy(false); setNote(null);
+            setScopeTick(n => n + 1);
+        };
+        const userOff = subscribeCacheUser(reset), brandOff = brandStore.subscribe(reset);
+        return () => { generation.current++; canWriteRef.current = false; userOff(); brandOff(); };
+    }, []);
 
     async function write(run: () => Promise<unknown>) {
         if (running.current || !canWriteRef.current) return;

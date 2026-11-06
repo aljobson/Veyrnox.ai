@@ -256,7 +256,7 @@ function Editor({ projectId, jobId }: { projectId: string; jobId?: string }) {
         if (state.current.status === 'killed') dispatch({ type: 'reopen' });
     }
     function reopen() { accepted.current = false; loadSent.current = false; dispatch({ type: 'reopen' }); }
-    async function useSaved() {
+    async function restoreSaved() {
         try {
             // Refresh on choice, so a failed conflict GET cannot discard work using a stale head.
             const latest = await getDocument(api, projectId);
@@ -271,7 +271,7 @@ function Editor({ projectId, jobId }: { projectId: string; jobId?: string }) {
     function confirmSaved() {
         Alert.alert(t('editor.confirmDiscard'), undefined, [
             { text: t('editor.stay'), style: 'cancel' },
-            { text: t('editor.discard'), style: 'destructive', onPress: () => { void useSaved(); } },
+            { text: t('editor.discard'), style: 'destructive', onPress: () => { void restoreSaved(); } },
         ]);
     }
     async function keepCopy() {
@@ -319,7 +319,7 @@ function Editor({ projectId, jobId }: { projectId: string; jobId?: string }) {
                 {problem && <Text>{t(problem)}</Text>}
                 {choice === 'restore' ? <>
                     <Button label={t('editor.restore')} onPress={() => { choose(null); dispatch({ type: 'retry', now: Date.now() }); }} />
-                    <Button label={t('editor.discard')} onPress={() => { void useSaved(); }} />
+                    <Button label={t('editor.discard')} onPress={() => { void restoreSaved(); }} />
                 </> : <>
                     <Button label={t('editor.useSaved')} disabled={copyBusy} onPress={confirmSaved} />
                     <Button label={paused ? retryLabel : t('editor.keepCopy')} disabled={copyBusy || paused} onPress={() => { void keepCopy(); }} />

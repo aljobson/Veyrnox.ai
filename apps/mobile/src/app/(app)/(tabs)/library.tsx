@@ -23,6 +23,9 @@ import { t } from '../../../lib/i18n';
 import { EmptyState } from '../../../components/EmptyState';
 import { VeyLoader } from '../../../components/VeyLoader';
 
+// Player objects are native handles; configuring one lives outside the component body.
+function unmuteAndPlay(player: ReturnType<typeof useVideoPlayer>) { player.muted = false; player.play(); }
+
 export default function Library() {
     const styles = useThemedStyles(sheets);
     const { api } = useAuth();
@@ -139,7 +142,7 @@ export default function Library() {
         try {
             await player.replaceAsync(link.url);
             if (ticket !== audioVersion.current || generation !== version.current) return;
-            player.muted = false; player.play(); setPlaying(id);
+            unmuteAndPlay(player); setPlaying(id);
         } catch { pause(); }
     }
 

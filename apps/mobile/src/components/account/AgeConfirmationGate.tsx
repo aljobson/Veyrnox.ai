@@ -27,7 +27,7 @@ export function AgeConfirmationGate({ children }: { children: ReactNode }) {
     const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const tries = useRef(0);
 
-    const check = useCallback(async () => {
+    const check = useCallback(async function run() {
         const result = await readAgeCheck(api);
         if (!live.current) return;
         if (result === 'ask' || result === 'confirmed') {
@@ -35,7 +35,7 @@ export function AgeConfirmationGate({ children }: { children: ReactNode }) {
             return;
         }
         const wait = AGE_READ_RETRY_MS[tries.current++];
-        if (wait !== undefined) timer.current = setTimeout(() => void check(), wait);
+        if (wait !== undefined) timer.current = setTimeout(() => void run(), wait);
     }, [api]);
 
     useEffect(() => {
