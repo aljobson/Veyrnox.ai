@@ -24,7 +24,9 @@ const ACCENT_FROM = 7; // ".ai" is aqua, "VEYRNOX" is white (the website lockup)
 // The website lockup (aqua V mark + "VEYRNOX.ai") where the mascot leaps in, runs along the capitals one letter at a time
 // (each letter sinks under its weight), and lands on a dotless i as its dot. The row reads as "Veyrnox.ai" to a screen
 // reader; the mascot is decoration. Reduce Motion skips straight to the end.
-export function MascotWordmark({ fontSize = 36, palette = colors }: { fontSize?: number; palette?: Palette }) {
+export function MascotWordmark({ fontSize = 36, palette = colors, onDone }: { fontSize?: number; palette?: Palette; onDone?: () => void }) {
+    const done = useRef(onDone);
+    done.current = onDone;
     const [boxes, setBoxes] = useState<(Box | null)[]>(() => WORD.map(() => null));
     const [capTop, setCapTop] = useState(fontSize * FALLBACK_CAP_TOP);
     const [stemTop, setStemTop] = useState(fontSize * FALLBACK_STEM_TOP);
@@ -97,6 +99,7 @@ export function MascotWordmark({ fontSize = 36, palette = colors }: { fontSize?:
             release.setValue(0);
             shrink.setValue(1);
             shown.setValue(1);
+            done.current?.();
             return;
         }
         const native = { useNativeDriver: true };
@@ -129,9 +132,10 @@ export function MascotWordmark({ fontSize = 36, palette = colors }: { fontSize?:
         const legs = Animated.loop(Animated.timing(stride, { toValue: 1, duration: STRIDE_MS, easing: Easing.linear, ...native }));
         legs.start();
         // The arms and legs stop once it has landed as the dot.
-        run.start(() => {
+        run.start(({ finished }) => {
             legs.stop();
             stride.setValue(0);
+            if (finished) done.current?.();
         });
         return () => {
             started.current = false;
