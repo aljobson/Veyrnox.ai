@@ -102,7 +102,7 @@ test('delivery off with a legacy recipient-free schedule only allows confirmed c
 test('both flags on lets a legacy schedule be repaired but cannot save until a recipient is valid', async () => {
     mockParams = { id }; templates = [{ ...seed, delivery_recipients: [] }]; await mount(true);
     expect(input('Recipients').props.editable).toBe(true); await press('Save');
-    expect(alert).not.toHaveBeenCalled(); expect(writes()).toHaveLength(0); expect(has('Check the fields')).toBe(true);
+    expect(alert).not.toHaveBeenCalled(); expect(writes()).toHaveLength(0); expect(has('Enter up to 10 valid email addresses')).toBe(true);
     await type('Recipients', ' READER@example.com; reader@example.com '); await press('Save');
     expect(alert.mock.calls.at(-1)?.[1]).toContain('will be emailed'); await confirm(); expect(body().deliveryRecipients).toEqual(['reader@example.com']);
 });
@@ -117,7 +117,8 @@ test('unknown id and viewer cannot save; bad accent blocks creation', async () =
     await act(async () => root.unmount()); mockParams = {}; await mount(true);
     await type('Report name', 'New one'); await type('Accent colour (hex)', 'red'); await press('Save');
     expect(writes()).toHaveLength(0); expect(has('Enter a hex colour')).toBe(true);
-    await type('Accent colour (hex)', '#123456'); await press('Save'); expect(body()).toMatchObject({ id: null, name: 'New one', accentColor: '#123456' });
+    await type('Accent colour (hex)', '  #123ABC  '); expect(has('Enter a hex colour')).toBe(false);
+    await press('Save'); expect(body()).toMatchObject({ id: null, name: 'New one', accentColor: '#123abc' });
 });
 test('viewer opening edit directly sees disabled fields and no save', async () => {
     mockParams = { id }; role = 'viewer'; await mount(true); expect(input('Report name').props.editable).toBe(false); expect(buttons('Save')).toHaveLength(0);

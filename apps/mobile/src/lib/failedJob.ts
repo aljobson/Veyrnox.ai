@@ -15,13 +15,13 @@ export const CREATE_ERROR_CODES: ReadonlySet<string> = new Set([
     'upload_dimensions_too_large', 'upload_unreadable', 'source_too_large',
     'source_too_long', 'source_length_unknown', 'lipsync_video_length_unknown',
     'lipsync_audio_exceeds_video', 'dialogue_invalid', 'dispatch_acceptance_unknown',
-    'outcome_unknown', 'inputs_invalid:topic', 'inputs_invalid:prompt',
+    'outcome_unknown', 'reference_rejected_likeness', 'inputs_invalid:topic', 'inputs_invalid:prompt',
     'inputs_invalid:voice_description', 'rate_limited', 'topic_refused',
 ]);
 
 const REFUND_COPY_CODES = new Set([
     'provider_moderation', 'moderation', 'provider_input_rejected',
-    'provider_submit_failed', 'provider_timeout', 'provider_error', 'internal', 'topic_refused',
+    'provider_submit_failed', 'provider_timeout', 'provider_error', 'internal', 'topic_refused', 'reference_rejected_likeness',
 ]);
 
 // A submit refusal does not prove that the refund landed. Only a job can do that.

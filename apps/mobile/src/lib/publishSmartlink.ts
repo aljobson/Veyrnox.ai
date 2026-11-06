@@ -1,3 +1,4 @@
+import { httpsAddress } from './httpsAddress';
 import { ApiError, type ApiClient } from './api';
 import { API_BASE } from './api';
 
@@ -59,7 +60,7 @@ export const publicUrl = (slug: string): string => `${API_BASE}/s/${slug}`;
 
 export const slugFrom = (text: string): string => text.toLowerCase().replace(/[^a-z0-9-]/g, '');
 
-const https = (v: string) => /^https:\/\/[^\s]+$/.test(v.trim()) && v.trim().length <= 1000;
+const https = (v: string) => httpsAddress(v, 1000) !== null;
 
 // A key into the catalog for what is wrong, or null.
 export function validateSmartlink(l: SmartLink): string | null {

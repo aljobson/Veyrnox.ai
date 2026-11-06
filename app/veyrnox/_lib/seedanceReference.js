@@ -4,6 +4,10 @@ export const SEEDANCE_REFERENCE_ACTIVE = true;
 export const SEEDANCE_REFERENCE_MODEL = 'Seedance 2.0 · Reference';
 export const SEEDANCE_REFERENCE_CREDITS = 85;
 const FRAME_MODEL = 'Kling 3.0 · I2V';
+// Catalogue ids of the two models; the one-tap switch after a rejected real-person picture goes from the first to the second (ADR-0309 amendment 1).
+export const SEEDANCE_REFERENCE_MODEL_ID = 'seedance-2.0-reference';
+export const FRAME_MODEL_ID = 'kling-3.0-i2v';
+export const REFERENCE_LIKENESS_ERROR = 'reference_rejected_likeness';
 
 /** True for a template whose source was made with Seedance but which today runs on the frame model. */
 export const takesReferenceModel = (source, active = SEEDANCE_REFERENCE_ACTIVE) =>

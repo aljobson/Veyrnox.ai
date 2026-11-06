@@ -40,3 +40,35 @@ model takes image references.
 
 Not done here: prompts still say "Animate the uploaded starting image"; at activation they should be
 rewritten to name `@Image1…`. The 85-credit price is 2.7× the Kling frame model: confirm before activating.
+
+## Amendment 1 (2026-11-06): a refused real-person picture is named, not "model error"
+
+**Finding.** A production job on this model from the `rap-takeover` template ended `REFUNDED` with
+`error_code = provider_error`. fal's webhook showed HTTP 422, one detail at `loc: [body, image_urls, 0]`,
+`type: content_policy_violation`, `ctx.extra_info.reason: partner_validation_failed`: ByteDance's partner check
+refuses reference pictures that show a real person. The refund was right; the message ("The model returned an
+error") and the missing warning were not.
+
+**Decision.**
+
+1. `lib/falFailureCode.js` maps that shape (a `content_policy_violation` type or a `partner_validation_failed`
+   reason on an `image_url(s)` location) to the typed code `reference_rejected_likeness`. A policy violation on the
+   prompt keeps its old code. Only our code is stored on the job and sent to clients: the vendor's message, location
+   and context stay out of `jobs`, responses and the client. No migration: `jobs.error_code` has no CHECK or enum
+   (the public shape `^[a-z0-9_]{1,64}$` is enforced by `publicErrorCode`).
+2. The money path is unchanged: `job_failed` (one-shot) then `ledger_refund` with `refund:provider_failed`, idempotent per job,
+   reached from the job row on a redelivery (`tests/falFailureCode.test.mjs`).
+3. User-visible copy (all 11 site catalogues, shared with the app): the failed job says "This model can't use
+   pictures that show a real person. Credits refunded. Try an illustration or a character that isn't a real person,
+   or run the template on a model that accepts people." It keeps the standard "Credits refunded" fragment so the
+   existing rule holds: until `/jobs/:id` reports `refunded: true` the fragment reads "Your credits are on their way back".
+4. A one-tap "Run on Kling 3.0 instead" on that failed job reopens the request on `kling-3.0-i2v` (the frame model the
+   templates used before). Web keeps the prompt and the template on screen; sources reset on a model change, so the
+   start picture is added again. The app reopens the saved request (prompt, settings, Library pictures) on that model.
+5. Create shows one note near the reference pictures while this model is selected: "This model can't use photos of
+   real people." It never blocks the submit; the provider decides.
+
+**Open product question (not decided here).** Should templates that expect a photo of the person map to this model
+at all (`takesReferenceModel`)? Mapping gives up to nine references and a better fit for Seedance-made templates, but
+every self-portrait upload can be refused (credits refunded, a wasted wait). Reverting is the single constant
+`SEEDANCE_REFERENCE_ACTIVE` (with the catalog row left or set inactive); it was not changed.

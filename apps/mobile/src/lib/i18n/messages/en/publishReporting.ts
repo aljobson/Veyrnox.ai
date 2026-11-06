@@ -23,6 +23,7 @@ export default {
     'publishReporting.editFor': 'Edit {name}',
     'publishReporting.editReport': 'Edit report',
     'publishReporting.err.accent': 'Enter a hex colour such as #38bdf8.',
+    'publishReporting.err.recipients': 'Enter up to 10 valid email addresses, separated by commas or spaces. A scheduled report needs at least one.',
     'publishReporting.err.fields': 'Check the fields and try again.',
     'publishReporting.err.limit': 'This brand already has 50 reports.',
     'publishReporting.err.nameTaken': 'A report already uses this name.',

@@ -143,7 +143,7 @@ export function buildReportBody(form: ReportForm) {
     const error = { errorKey: 'publishReporting.err.fields', body: undefined } as const;
     const name = typeof form.name === 'string' ? form.name.trim() : '';
     const reportTitle = typeof form.reportTitle === 'string' ? form.reportTitle.trim() : '';
-    const accentColor = typeof form.accentColor === 'string' ? form.accentColor.toLowerCase() : '';
+    const accentColor = typeof form.accentColor === 'string' ? form.accentColor.trim().toLowerCase() : '';
     const accountId = form.accountId || null;
     const cadence = form.deliveryCadence;
     const rawRecipients = typeof form.deliveryRecipients === 'string' ? form.deliveryRecipients.split(/[\s,;]+/).filter(Boolean) : form.deliveryRecipients;
@@ -157,9 +157,9 @@ export function buildReportBody(form: ReportForm) {
         || (cadence !== 'manual' && boundedInteger(form.deliveryHourUtc, 0, 23) === null)
         || (cadence === 'weekly' && boundedInteger(form.deliveryWeekday, 1, 7) === null)
         || (cadence === 'monthly' && boundedInteger(form.deliveryDay, 1, 28) === null)
-        || deliveryRecipients.length > 10 || deliveryRecipients.some(v => v.length > 254 || !EMAIL.test(v))
-        || (cadence !== 'manual' && !deliveryRecipients.length) || (deliveryReplyTo && (deliveryReplyTo.length > 254 || !EMAIL.test(deliveryReplyTo)))
         || deliveryMessage.length > 1000 || !FORMATS.includes(form.deliveryFormat)) return error;
+    if (deliveryRecipients.length > 10 || deliveryRecipients.some(v => v.length > 254 || !EMAIL.test(v))
+        || (cadence !== 'manual' && !deliveryRecipients.length) || (deliveryReplyTo && (deliveryReplyTo.length > 254 || !EMAIL.test(deliveryReplyTo)))) return { errorKey: 'publishReporting.err.recipients' } as const;
     if (!/^#[0-9a-f]{6}$/i.test(accentColor)) return { errorKey: 'publishReporting.err.accent' } as const;
     return { body: { id: form.id, name, accountId, rangeDays: form.rangeDays, comparePrevious: form.comparePrevious,
         includeContent: form.includeContent, reportTitle, accentColor, deliveryCadence: cadence,

@@ -75,8 +75,8 @@ async function sendQuestion(page, price) {
   await page.getByLabel('Message', { exact: true }).fill(QUESTION);
   await page.getByRole('button', { name: `Send · ${price} Credits`, exact: true }).click();
 }
-async function reopenStoredChat(page) {
-  await page.reload();
+async function reopenStoredChat(fixture, page) {
+  await fixture.reload();
   await expect(page.getByRole('combobox', { name: 'Model for next reply', exact: true })).toHaveValue(MODEL.id);
   const drawer = page.getByRole('button', { name: 'Chats', exact: true });
   if (await drawer.isVisible()) await drawer.click();
@@ -109,7 +109,7 @@ test('synthetic no-key Web search reaches the real MCP dispatcher and persists s
   expect(state.calls.filter(row => row.name === 'chat_complete_turn')).toHaveLength(1);
   expect(state.messages[1].content).toContain(SOURCE);
   expect(state.balance).toBe(997);
-  await reopenStoredChat(page);
+  await reopenStoredChat(fixture, page);
   await expect(page.getByRole('article', { name: 'Assistant', exact: true }).getByRole('link', { name: 'Synthetic release source', exact: true })).toHaveAttribute('href', SOURCE);
   expect(state.reads).toBeGreaterThan(1);
 });

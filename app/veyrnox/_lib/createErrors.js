@@ -25,6 +25,7 @@ export const ERROR_COPY = {
   provider_submit_failed:'The model would not take this job. Credits refunded — try again.',
   provider_timeout:      'The model took too long. Credits refunded — try again.',
   provider_error:        'The model returned an error. Credits refunded.',
+  reference_rejected_likeness: "This model can't use pictures that show a real person. Credits refunded. Try an illustration or a character that isn't a real person, or run the template on a model that accepts people.",
   internal:              'Something on our side broke. Credits refunded.',
   rate_limited:          'Too many generations in a short window. Wait a moment.',
   model_gated:           'This model is not open for generation yet. Nothing was charged.',

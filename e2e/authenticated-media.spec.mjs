@@ -4,9 +4,9 @@ import { emptyFilm, STYLE_BOARDS, assetKey, testMatrix, lockAsset, buildShotProm
 import { filmFixture } from '../tests/fixtures/filmStudio.mjs';
 
 const filmKey = `veyrnox_film_studio_v1:${SYNTHETIC_USER.id}`;
-async function installFilm(page, film) {
+async function installFilm(fixture, page, film) {
   await page.evaluate(({ key, value }) => localStorage.setItem(key, value), { key: filmKey, value: JSON.stringify(film) });
-  await page.reload();
+  await fixture.reload();
 }
 function readyFilm(aspect) {
   let film = { ...emptyFilm(), ...filmFixture(), stack: { image: 'flux-2-pro', imageAccess: 'Studio', video: 'seedance-2.0-fast', videoAccess: 'Studio', seconds: '10', aspect } };
@@ -20,7 +20,7 @@ function readyFilm(aspect) {
 
 test('Film Setup normalizes declared duration/aspect and persists the chosen workflow', async ({ page }) => {
   const fixture = await installProductFixtures(page); await fixture.open('/app/film-studio');
-  await installFilm(page, { ...emptyFilm(), name: 'Synthetic setup', stack: { image: 'flux-2-pro', imageAccess: 'Studio', video: 'External', videoAccess: 'External', seconds: '12', aspect: '1:1' } });
+  await installFilm(fixture, page, { ...emptyFilm(), name: 'Synthetic setup', stack: { image: 'flux-2-pro', imageAccess: 'Studio', video: 'External', videoAccess: 'External', seconds: '12', aspect: '1:1' } });
   await page.getByRole('navigation', { name: 'Film Studio stages' }).getByRole('button').filter({ hasText: 'Set up your tools' }).click();
   await page.getByTestId('film-video-workflow').selectOption('Studio');
   await page.getByTestId('film-video-model').selectOption('seedance-2.0-fast');
@@ -32,7 +32,7 @@ test('Film Setup normalizes declared duration/aspect and persists the chosen wor
 
 test('Film Studio does not expose local project archives or master creation', async ({ page }) => {
   const fixture = await installProductFixtures(page); await fixture.open('/app/film-studio');
-  await installFilm(page, { ...emptyFilm(), name: 'Synthetic project' });
+  await installFilm(fixture, page, { ...emptyFilm(), name: 'Synthetic project' });
   await expect(page.locator('body')).not.toContainText('JSON');
   await expect(page.getByTestId('film-download-project')).toHaveCount(0);
   await expect(page.getByText('Download project', { exact: true })).toHaveCount(0);
@@ -41,10 +41,10 @@ test('Film Studio does not expose local project archives or master creation', as
 
 test('Film handoff honestly blocks incompatible format then transfers a compatible complete prompt without generating', async ({ page }) => {
   const fixture = await installProductFixtures(page); await fixture.open('/app/film-studio');
-  await installFilm(page, readyFilm('1:1'));
+  await installFilm(fixture, page, readyFilm('1:1'));
   await expect(page.getByText(/does not support the shot’s frame format/)).toBeVisible();
   await expect(page.getByTestId('film-open-in-studio')).toHaveCount(0);
-  const compatible = readyFilm('9:16'); await installFilm(page, compatible);
+  const compatible = readyFilm('9:16'); await installFilm(fixture, page, compatible);
   await page.getByTestId('film-open-in-studio').click();
   await expect(page).toHaveURL(/\/app\/create\?model=seedance-2.0-fast/);
   await expect(page.locator('[data-assistant-target="create.prompt"]')).toHaveValue(compatible.prompts[0].content);

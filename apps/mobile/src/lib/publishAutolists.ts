@@ -1,3 +1,4 @@
+import { httpsAddress } from './httpsAddress';
 import { ApiError, type ApiClient } from './api';
 
 // ADR-0163: RSS autolists. A feed's new items become posts in a queue. The server checks the feed address, so the
@@ -82,7 +83,7 @@ export function templateValid(template: string): boolean {
 // A key into the catalog for what is wrong, or null.
 export function validateAutolist(i: AutolistInput): string | null {
     if (!i.name.trim() || i.name.trim().length > NAME_MAX) return 'autolists.err.name';
-    if (!/^https:\/\/[^\s/]+\S*$/i.test(i.feedUrl.trim())) return 'autolists.err.feed';
+    if (!httpsAddress(i.feedUrl)) return 'autolists.err.feed';
     if (!i.queueId) return 'autolists.err.queue';
     if (!templateValid(i.captionTemplate)) return 'autolists.err.template';
     if (!(INTERVALS as readonly number[]).includes(i.refreshIntervalMinutes)) return 'autolists.err.interval';
