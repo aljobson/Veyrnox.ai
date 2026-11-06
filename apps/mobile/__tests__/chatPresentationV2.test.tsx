@@ -116,3 +116,53 @@ test('attachment targets keep limits, remove labels and callbacks', async () => 
     await act(async () => control(t('chat.attach.removeN', { n: '1' })).props.onClick(event));
     expect(remove).toHaveBeenCalledWith('one');
 });
+
+describe('deck while the keyboard is open', () => {
+    const props = { model, options: { thinking: false, web: false }, draft: 'Hello', price: 2, canSend: true,
+        sending: false, stopping: false, images: [], imageExtra: 2, maxImages: 4, placeholder: 'Ask',
+        onDraft: jest.fn(), onModel: jest.fn(), onOptions: jest.fn(), onLibrary: jest.fn(), onPhotos: jest.fn(),
+        onRemoveImage: jest.fn(), onMake: jest.fn(), onSend: jest.fn(), onStop: jest.fn() };
+    const handlers = new Map<string, () => void>();
+    const removers: jest.Mock[] = [];
+    afterEach(() => { jest.restoreAllMocks(); handlers.clear(); removers.length = 0; });
+    function mockKeyboard(visible: boolean) {
+        jest.spyOn(RN.Keyboard, 'isVisible').mockReturnValue(visible);
+        jest.spyOn(RN.Keyboard, 'addListener').mockImplementation(((name: string, fn: () => void) => {
+            handlers.set(name, fn);
+            const remove = jest.fn();
+            removers.push(remove);
+            return { remove };
+        }) as never);
+    }
+    const hasRows = () => !!control(t('chat.composer.setup')) && !!control(t('chat.composer.chat'));
+
+    test('shows only the draft and Send, then restores the rows when it closes', async () => {
+        mockKeyboard(false);
+        await act(async () => root.render(<ChatComposerDeck {...props} />));
+        expect(hasRows()).toBe(true);
+        await act(async () => handlers.get('keyboardDidShow')!());
+        expect(hasRows()).toBe(false);
+        expect(control(t('chat.attach.libraryLabel'))).toBeUndefined();
+        expect(control(t('chat.composer.message')).props.value).toBe('Hello');
+        await act(async () => control(plural('chat.sendPrice', 2)).props.onClick(event));
+        expect(props.onSend).toHaveBeenCalledTimes(1);
+        await act(async () => handlers.get('keyboardDidHide')!());
+        expect(hasRows()).toBe(true);
+    });
+
+    test('mounts collapsed when the keyboard is already open and keeps Stop usable', async () => {
+        mockKeyboard(true);
+        await act(async () => root.render(<ChatComposerDeck {...props} sending />));
+        expect(hasRows()).toBe(false);
+        await act(async () => control(t('chat.stopLabel')).props.onClick(event));
+        expect(props.onStop).toHaveBeenCalledTimes(1);
+    });
+
+    test('removes both keyboard subscriptions on unmount', async () => {
+        mockKeyboard(false);
+        await act(async () => root.render(<ChatComposerDeck {...props} />));
+        expect(removers).toHaveLength(2);
+        await act(async () => root.render(<></>));
+        for (const remove of removers) expect(remove).toHaveBeenCalledTimes(1);
+    });
+});
