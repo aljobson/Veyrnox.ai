@@ -27,6 +27,7 @@ import { DeviceLibrary } from '../../_components/DeviceLibrary';
 import { EditorLibraryRenders } from '../../_components/editor/EditorLibraryRenders';
 import { getSession, getStoredUserId, onSessionChange } from '../../../lib/authClient.js';
 import { useOlderLibraryJobs } from '../../_lib/useOlderLibraryJobs';
+import { useSmartCutIntent } from '../../_lib/useSmartCutIntent';
 
 // Account list is authoritative; local history supplies cached display names.
 const STATE_UI = {
@@ -52,21 +53,8 @@ const POLL_GIVE_UP_AFTER = 20;
 // buffer on mount was up to 100 requests in one burst. Hydrate a page at a
 // time instead; rows outside the window still render from localStorage.
 const PAGE = 12;
-// Clip Editor stays hidden until launch unless this browser opts in
-// (CLAUDE.md "Delivery": new user paths behind localStorage.veyrnox_*).
-const EDITOR_FLAG = 'veyrnox_editor';
-const EDITOR_FLAG_EVENT = 'veyrnox:editor-preview';
 // Browser-only values read once: off / 'grid' on the server and first paint.
 const never = () => () => {};
-const editorFlag = () => { try { return window.localStorage.getItem(EDITOR_FLAG) === '1'; } catch { return false; } };
-const subscribeEditorFlag = (onChange) => {
-  window.addEventListener('storage', onChange);
-  window.addEventListener(EDITOR_FLAG_EVENT, onChange);
-  return () => {
-    window.removeEventListener('storage', onChange);
-    window.removeEventListener(EDITOR_FLAG_EVENT, onChange);
-  };
-};
 const savedView = () => readView(window.localStorage);
 const off = () => false;
 const on = () => true;
@@ -99,30 +87,12 @@ export default function Library() {
   const [unreachable, setUnreachable] = useState(false);
   const [nextCursor, setNextCursor] = useState(null);
   const [listLive, setListLive] = useState(null);
-  const editorOn = useSyncExternalStore(subscribeEditorFlag, editorFlag, off);
   const rowsRef = useRef(rows);
   rowsRef.current = rows;
   const [selected, setSelected] = useState([]);
   const [editing, setEditing] = useState(false);
-  const [smartCutIntent, setSmartCutIntent] = useState(false);
-
-  useEffect(() => {
-    const readIntent = () => {
-      const active = window.location.hash === '#smart-cut';
-      setSmartCutIntent(active);
-      if (active) setKind('video');
-    };
-    readIntent();
-    window.addEventListener('hashchange', readIntent);
-    return () => window.removeEventListener('hashchange', readIntent);
-  }, []);
-
-  function enableEditorPreview() {
-    try {
-      window.localStorage.setItem(EDITOR_FLAG, '1');
-      window.dispatchEvent(new Event(EDITOR_FLAG_EVENT));
-    } catch { /* storage can be unavailable; the existing off state remains honest */ }
-  }
+  const openSmartCut = useCallback(() => setKind('video'), []);
+  const { editorOn, smartCutIntent, enableEditorPreview } = useSmartCutIntent(openSmartCut);
 
   const actor=useSyncExternalStore(onSessionChange,getStoredUserId,()=>null);
   const sessionLoaded = useSyncExternalStore(never, on, off);
@@ -362,9 +332,7 @@ export default function Library() {
       <EditorLibraryRenders visible={['all','succeeded'].includes(tab) && ['all','video'].includes(kind) && !favOnly}/>
       <FilmLibraryMasters visible={['all','succeeded'].includes(tab) && ['all','video'].includes(kind) && !favOnly}/>
 
-      {smartCutIntent && (
-        <SmartCutEntry enabled={editorOn} selectedCount={pickedClips.length} onEnable={enableEditorPreview} />
-      )}
+      {smartCutIntent && <SmartCutEntry enabled={editorOn} selectedCount={pickedClips.length} onEnable={enableEditorPreview} />}
 
       <section id="library-assets" className="max-w-[1400px] mx-auto scroll-mt-24 px-4 sm:px-8 pb-16">
         {!historyLoaded ? null : list.length === 0 ? (
@@ -413,7 +381,7 @@ export default function Library() {
               <button onClick={() => setEditing(true)} disabled={!pickedClips.length}
                 className="rounded-full px-5 py-2 text-sm font-bold bg-vx-accent text-vx-accent-ink disabled:opacity-40">
                 {smartCutIntent
-                  ? `${tOr(t, 'app.library.openSmartCut', 'Open Smart Cut')} (${number(pickedClips.length)})`
+                  ? `${t('app.library.openSmartCut')} (${number(pickedClips.length)})`
                   : t('app.library.edit', { count: number(pickedClips.length) })}
               </button>
             </span>
@@ -421,10 +389,7 @@ export default function Library() {
         </div>
       )}
 
-      {editing && (
-        <EditSheet clips={pickedClips} audios={audios} credits5s={editCredits} smartCut={smartCutIntent}
-          onClose={() => setEditing(false)} onSubmitted={onEditSubmitted} />
-      )}
+      {editing && <EditSheet clips={pickedClips} audios={audios} credits5s={editCredits} smartCut={smartCutIntent} onClose={() => setEditing(false)} onSubmitted={onEditSubmitted} />}
       </Main>
     </div>
   );

@@ -134,13 +134,15 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
           <button onClick={onClose} disabled={busy} aria-label={t("app.editor.workspace.close")} className="text-vx-fg-muted hover:text-vx-fg px-2 py-1">✕</button>
         </div>
 
-        <SmartCutPlanner
-          clips={items}
-          disabled={busy}
-          onApply={applySmartCut}
-          onUndo={smartCutSnapshot ? undoSmartCut : null}
-          startOpen={smartCut}
-        />
+        {smartCut && (
+          <SmartCutPlanner
+            clips={items}
+            disabled={busy}
+            onApply={applySmartCut}
+            onUndo={smartCutSnapshot ? undoSmartCut : null}
+            startOpen
+          />
+        )}
 
         <ol className="flex flex-col gap-3">
           {items.map((x, i) => (
@@ -193,7 +195,7 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
           {mixed && <span className="text-vx-danger">{t('app.editor.sheet.error.mixed_aspect')}</span>}
           {!mixed && output > MAX_OUTPUT_S && <span className="text-vx-danger">{t('app.editor.sheet.error.too_long', { limit: number(MAX_OUTPUT_S) })}</span>}
           {!mixed && badRange && <span className="text-vx-danger">{t('app.editor.sheet.error.clip_range')}</span>}
-          {tooManyClips && <span className="text-vx-danger">{tOr(t, 'app.editor.sheet.error.too_many_clips', `An edit can contain at most ${number(MAX_CLIPS)} clips.`)}</span>}
+          {tooManyClips && <span className="text-vx-danger">{t('app.editor.sheet.error.too_many_clips', { limit: number(MAX_CLIPS) })}</span>}
           {slowTooLong && <span className="text-vx-danger">{t('app.editor.sheet.error.slow_too_long', { limit: number(SLOW_MAX_SOURCE_S) })}</span>}
           {!slowTooLong && slowNoAudio && <span className="text-vx-danger">{t('app.editor.sheet.error.slow_needs_audio')}</span>}
           {noop && <span className="text-vx-fg-muted">{t('app.editor.sheet.error.nothing_to_do')}</span>}

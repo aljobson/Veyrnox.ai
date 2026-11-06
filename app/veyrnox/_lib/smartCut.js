@@ -1,7 +1,7 @@
 const PACING = {
-  snappy: { label: 'Snappy', seconds: 3.2 },
-  balanced: { label: 'Balanced', seconds: 4.8 },
-  relaxed: { label: 'Relaxed', seconds: 6.5 },
+  snappy: { label: 'Snappy', labelKey: 'app.smartCut.pacing.snappy', seconds: 3.2 },
+  balanced: { label: 'Balanced', labelKey: 'app.smartCut.pacing.balanced', seconds: 4.8 },
+  relaxed: { label: 'Relaxed', labelKey: 'app.smartCut.pacing.relaxed', seconds: 6.5 },
 };
 export const SMART_CUT_MAX_SEGMENTS = 10;
 

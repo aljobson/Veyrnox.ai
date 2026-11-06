@@ -8,7 +8,6 @@ import { PresetGallery } from '../_components/PresetGallery';
 import { VibeOffer } from '../_components/VibeOffer';
 import { YourWinsCard } from '../_components/YourWinsCard';
 import { useVibe } from '../_lib/creatorProfile';
-import { tOr } from '../../../lib/i18n/translate.mjs';
 
 function StarterIcon({ name }) {
   return (
@@ -58,7 +57,7 @@ export default function Explore() {
           <StarterCard href="/app/create" label={t('label.Create')} description={t('app.explore.createStart')} icon="create" />
           <StarterCard href="/app/chat" label={t('label.LLM Chat')} description={t('app.explore.chat')} icon="chat" />
           <StarterCard href="/app/film-studio" label={t('label.Film Studio')} description={t('app.explore.filmStart')} icon="film" />
-          <StarterCard href="/app/library#smart-cut" label={tOr(t, 'app.explore.smartCut', 'Smart Cut')} description={tOr(t, 'app.explore.smartCutStart', 'Turn finished clips into a reviewed first cut.')} icon="smart-cut" />
+          <StarterCard href="/app/library#smart-cut" label={t('app.explore.smartCut')} description={t('app.explore.smartCutStart')} icon="smart-cut" />
         </section>
 
         <YourWinsCard />
