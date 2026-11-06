@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
-import { colors } from '../theme';
+import { colors, type Palette } from '../theme';
 import { VeyRunner } from './VeyRunner';
 import {
     DOT_SCALE,
@@ -24,7 +24,7 @@ const ACCENT_FROM = 7; // ".ai" is aqua, "VEYRNOX" is white (the website lockup)
 // The website lockup (aqua V mark + "VEYRNOX.ai") where the mascot leaps in, runs along the capitals one letter at a time
 // (each letter sinks under its weight), and lands on a dotless i as its dot. The row reads as "Veyrnox.ai" to a screen
 // reader; the mascot is decoration. Reduce Motion skips straight to the end.
-export function MascotWordmark({ fontSize = 36 }: { fontSize?: number }) {
+export function MascotWordmark({ fontSize = 36, palette = colors }: { fontSize?: number; palette?: Palette }) {
     const [boxes, setBoxes] = useState<(Box | null)[]>(() => WORD.map(() => null));
     const [capTop, setCapTop] = useState(fontSize * FALLBACK_CAP_TOP);
     const [stemTop, setStemTop] = useState(fontSize * FALLBACK_STEM_TOP);
@@ -181,7 +181,7 @@ export function MascotWordmark({ fontSize = 36 }: { fontSize?: number }) {
                         }}
                     >
                         <Text
-                            style={[word, i >= ACCENT_FROM && styles.ai]}
+                            style={[word, { color: i >= ACCENT_FROM ? palette.accent : palette.text }]}
                             maxFontSizeMultiplier={1}
                             onTextLayout={(e) => {
                                 const line = e.nativeEvent.lines[0];
@@ -210,6 +210,5 @@ const styles = StyleSheet.create({
     row: { flexDirection: 'row', alignItems: 'center', gap: 14 },
     letters: { flexDirection: 'row', alignItems: 'flex-start' },
     word: { color: colors.text, fontWeight: '800', letterSpacing: -0.8 },
-    ai: { color: colors.accent },
     mascot: { position: 'absolute', left: 0, top: 0 },
 });

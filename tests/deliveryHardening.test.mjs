@@ -56,7 +56,11 @@ test('production rolls retained static assets forward across releases', () => {
     assert.match(workflow, /retention-days: 90/);
     assert.match(workflow, /bounded 20-release history, plus every\n\s+# build the live pages still reference/);
     assert.match(workflow, /mapfile -t required_live_shas < <\(jq -r '\.deploymentIds\[\]\?' previous-build-assets\.json\)/);
-    assert.match(workflow, /append_run "\$previous_run" "\$deployed_sha"[\s\S]*required_live_found\["\$deployed_sha"\]=true/);
+    assert.match(workflow,
+        /required_live_lookup\[\$deployed_sha\][\s\S]*append_run "\$previous_run" "\$deployed_sha"[\s\S]*required_live_found\["\$deployed_sha"\]=true[\s\S]*deployed=\$\(gh run view/,
+        'a live-referenced build is retained even when this workflow did not deploy it');
+    assert.match(workflow, /recent_deploy_count" -ge 20.*all_required_found" = true[\s\S]*break/,
+        'history scanning stops once the bounded recent set and live builds are found');
     assert.match(workflow, /Live build \$deployed_sha has no retained static artifact; refusing an unprotected cutover/);
 });
 

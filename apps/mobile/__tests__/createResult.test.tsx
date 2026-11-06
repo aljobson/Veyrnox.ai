@@ -112,6 +112,21 @@ test('editing the prompt after zero jobs start submits the new prompt with a fre
     expect(mockPost.mock.calls.map(([request]) => request.inputs.prompt)).toEqual(['words', 'new prompt']);
     expect(mockPost.mock.calls[1][0].idempotency_key).not.toBe(mockPost.mock.calls[0][0].idempotency_key);
 });
+test('QA-E3: a failed Generate shows Try again beside the error and repeats the same request and key', async () => {
+    mockPost.mockRejectedValueOnce(new ApiError(500, 'internal'));
+    await render(); await click(generate());
+    expect(controls(t('recovery.retry'))).toHaveLength(1);
+    await click(controls(t('recovery.retry'))[0]);
+    expect(mockPost).toHaveBeenCalledTimes(2);
+    expect(mockPost.mock.calls[1][0].inputs.prompt).toBe('words');
+    expect(mockPost.mock.calls[1][0].idempotency_key).toBe(mockPost.mock.calls[0][0].idempotency_key);
+    expect(controls(t('recovery.retry'))).toHaveLength(0);
+    expect(controls(t('publishReporting.open'))).toHaveLength(1);
+});
+test('Try again is not offered while there is no error', async () => {
+    await render();
+    expect(controls(t('recovery.retry'))).toHaveLength(0);
+});
 test('New generation is disabled during a partial retry; account switch drops late accepted jobs', async () => {
     mockPost.mockResolvedValueOnce({ job_id: 'one' }).mockRejectedValueOnce(new ApiError(0, 'network'));
     await render(); await count(2); await click(generate());

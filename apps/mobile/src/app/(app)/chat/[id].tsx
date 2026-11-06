@@ -13,6 +13,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActionSheetIOS, ActivityIndicator, Alert, AppState, FlatList, Platform, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../../auth/AuthProvider';
+import { useChatThreadLoad } from '../../../lib/useChatThreadLoad';
 import { ChatComposerDeck } from '../../../components/chat/ChatComposerDeck';
 import { ChatMessageRow } from '../../../components/chat/ChatMessageRow';
 import { useChatDeltas } from '../../../lib/useChatDeltas';
@@ -43,7 +44,7 @@ const ERROR_TEXT: Record<string, string> = {
 export default function Conversation() {
     const styles = useThemedStyles(sheets);
     const { id, starter, asset, prompt } = useLocalSearchParams<{ id: string; starter?: string; asset?: string; prompt?: string }>();
-    const { api } = useAuth();
+    const { api, generation } = useAuth();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [title, setTitle] = useState(t('chat.chat2'));
@@ -104,24 +105,18 @@ export default function Conversation() {
         finally { skillBusy.current = false; if (action.current()) setSavingSkills(false); action.close(); }
     }
 
-    useEffect(() => {
-        chatApi(api)
-            .getThread(id)
-            .then(async (r) => {
-                setTitle(r.thread.title || t('chat.chat2'));
-                setPinned(r.thread.pinned);
-                setMessages(r.messages);
-                // The price is shown before sending, so the model list is read; if it fails the chat still opens and
-                // sending is held back until the price is known.
-                const listed = await chatApi(api).listModelsWithLimits().catch(() => null);
-                setModel(listed?.models.find((m) => m.id === r.thread.model_id) ?? null);
-                setAllModels(listed?.models ?? []);
-                setThread({ model_id: r.thread.model_id, system_prompt: r.thread.system_prompt ?? null });
-                if (listed?.max_attachments) setMaxImages(Math.min(MAX_ATTACHMENTS, listed.max_attachments));
-            })
-            .catch(() => setError(t('chat.couldnotloadthischat')));
-        return () => abort.current?.abort();
-    }, [api, id]);
+    const threadLoad = useChatThreadLoad(api, id, generation, {
+        started: () => setError((current) => (current === t('chat.couldnotloadthischat') ? null : current)),
+        opened: (r) => { setTitle(r.thread.title || t('chat.chat2')); setPinned(r.thread.pinned); setMessages(r.messages); },
+        listed: (r, listed) => {
+            setModel(listed?.models.find((m) => m.id === r.thread.model_id) ?? null);
+            setAllModels(listed?.models ?? []);
+            setThread({ model_id: r.thread.model_id, system_prompt: r.thread.system_prompt ?? null });
+            if (listed?.max_attachments) setMaxImages(Math.min(MAX_ATTACHMENTS, listed.max_attachments));
+        },
+        failed: () => setError(t('chat.couldnotloadthischat')),
+        stop: () => abort.current?.abort(),
+    });
 
     // Studio draft blocks in a reply become Open in Create cards, priced from the live catalog.
     const hasDrafts = (messages ?? []).some((m) => m.role === 'assistant' && m.content.includes('```studio'));
@@ -439,6 +434,7 @@ export default function Conversation() {
             )}
             {notice ? <Text style={styles.notice} accessibilityRole="alert">{notice}</Text> : null}
             {error ? <Text style={styles.error} accessibilityRole="alert">{error}</Text> : null}
+            {threadLoad.failed ? <Button label={t('chat.tryagain')} accessibilityLabel={t('chat.tryagain')} variant="secondary" onPress={threadLoad.retry} /> : null}
             {error && lowBalance ? <Button label={t('lowBalance.buy')} accessibilityLabel={t('lowBalance.buy')} variant="secondary" onPress={() => router.push('/credits')} /> : null}
             {thread && pickerModelsOpen ? <ModelPicker visible currentId={thread.model_id} models={allModels} onPick={(mid) => void pickModel(mid)} onClose={() => setPickerModelsOpen(false)} /> : null}
             {thread && settingsOpen ? <ChatSettings visible instructionsLocked={oddLocked} thread={thread} models={allModels} onSave={saveSettings} onClose={() => setSettingsOpen(false)} /> : null}

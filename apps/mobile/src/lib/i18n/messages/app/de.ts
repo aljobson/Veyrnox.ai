@@ -4109,6 +4109,9 @@ export default {
   "signIn.failed": "Anmeldung nicht abgeschlossen. Versuche es erneut.",
   "signIn.idea": "Ideen werden zu Szenen",
   "signIn.kicker": "DEIN KREATIVSTUDIO",
+  "signIn.offer.body": "Wird gutgeschrieben, sobald deine E-Mail bestätigt ist, und gilt 90 Tage. Du siehst den Preis, bevor etwas berechnet wird, und eine fehlgeschlagene Kreation wird erstattet.",
+  "signIn.offer.title.one": "{count} kostenloser Credit zum Start",
+  "signIn.offer.title.other": "{count} kostenlose Credits zum Start",
   "signIn.openPrivacy": "Datenschutzerklärung öffnen",
   "signIn.openTerms": "AGB öffnen",
   "signIn.photo": "Fotos, die sich bewegen",
@@ -5718,4 +5721,6 @@ export default {
   "create.workspace.onlyModel": "Zurzeit akzeptiert kein anderes Modell diese Dateien.",
   "handoff.switchedModel": "Zu {model} gewechselt, weil du eine Datei hinzugefügt hast.",
   "publishReporting.err.recipients": "Gib bis zu 10 gültige E-Mail-Adressen ein, getrennt durch Kommas oder Leerzeichen. Ein geplanter Bericht braucht mindestens eine.",
+  "loading.still": "Lädt noch…",
+  "loading.timeout": "Das dauert länger als erwartet. Prüfe deine Verbindung und versuche es erneut.",
 } as const;

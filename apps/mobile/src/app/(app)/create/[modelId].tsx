@@ -465,6 +465,7 @@ export default function CreateWithModel() {
                     </View>
                 ) : null}
                 {error ? <Text variant="body" tone="danger" style={styles.error} accessibilityLiveRegion="polite">{error}</Text> : null}
+                {error && matchingRetry && !disabled ? <Button variant="secondary" accessibilityRole="button" label={t('recovery.retry')} onPress={() => void generate()} /> : null}
                 {note ? <Text variant="caption" tone="tertiary" style={styles.consent} accessibilityLiveRegion="polite">{note}</Text> : null}
                 {!complete && results ? <><Text variant="caption">{t('libraryCreate.retryUpTo', { credits: String(price) })}</Text><Button variant="secondary" label={t('libraryCreate.newGeneration')} accessibilityLabel={t('libraryCreate.newNoCharge')} disabled={busy} onPress={newGeneration} /></> : null}
                 <Card style={styles.costCard}>

@@ -4047,6 +4047,8 @@ export default {
   "signIn.failed": "登录未完成。请重试。",
   "signIn.idea": "让创意成为场景",
   "signIn.kicker": "你的创作工作室",
+  "signIn.offer.body": "确认邮箱后到账，有效期 90 天。扣费前会先显示价格，创作失败会退还。",
+  "signIn.offer.title.other": "开始即送 {count} 个免费积分",
   "signIn.openPrivacy": "打开隐私政策",
   "signIn.openTerms": "打开条款",
   "signIn.photo": "让照片动起来",
@@ -5652,4 +5654,6 @@ export default {
   "create.workspace.onlyModel": "目前没有其他模型支持这些文件。",
   "handoff.switchedModel": "因为你添加了文件，已切换到 {model}。",
   "publishReporting.err.recipients": "最多输入 10 个有效的电子邮件地址，用逗号或空格分隔。定期报告至少需要一个。",
+  "loading.still": "仍在加载…",
+  "loading.timeout": "耗时比预期更长。请检查网络连接后重试。",
 } as const;
