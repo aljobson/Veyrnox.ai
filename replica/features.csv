@@ -1,0 +1,29 @@
+feature,area,priority,original,clone,notes
+Browse video templates,discovery,must,yes,yes,Existing Veyrnox preview catalog
+Filter and search templates,discovery,must,yes,yes,Existing Veyrnox gallery
+Play a template preview,template detail,must,yes,yes,Existing FilmPlayer
+Show the prompt for each video template,template detail,must,yes,yes,Existing editable prompt plus exact-source disclosure
+Copy a template prompt,template detail,must,yes,yes,Existing copy action
+Recreate action on every preview-backed template,template detail,must,yes,yes,Added clean-room reference recipe
+Derive a bounded recreate prompt,prompting,must,yes,yes,Added; foreign numbered references are neutralised
+Assign source video to motion/camera/timing,references,must,yes,yes,Added role guidance; Studio already accepts video
+Assign first picture to subject identity,references,must,yes,yes,Added ordered @Image1 role
+Assign second picture to style/environment,references,must,yes,yes,Added ordered @Image2 role when host flag/model allow it
+Edit recreate prompt before generation,prompting,must,yes,yes,Added editable 2000-character recipe
+Attach one video and two pictures,generation,must,yes,yes,Existing web/mobile multi-reference Studio contract
+Confirm rights before upload,generation,must,yes,yes,Existing Veyrnox consent gate
+Live credit quote before Generate,billing,must,yes,yes,Existing Veyrnox catalog quote
+Disable unavailable reference workflow,safety,should,yes,yes,Added capability-based gate
+Choose 5s or 10s output,generation,should,yes,yes,Existing model duration controls
+Use Library assets as references,references,should,yes,yes,Existing per-slot Library picker
+Preserve reference order,references,should,yes,yes,Existing ordered multi-reference serialization
+Track queued/running/completed jobs,jobs,should,yes,yes,Existing Veyrnox job flow
+Refund provider failure,jobs,should,yes,yes,Existing debit/refund contract; activation proof still required
+Continue from a completed output,results,could,yes,yes,Existing result continuations
+Save/favourite templates,discovery,could,yes,yes,Existing template shelf where enabled
+Keyframe timeline,advanced control,could,yes,no,Separate future slice
+Voice profile references,advanced control,could,yes,no,Separate consent and provider work
+Kling-owned template media,licensed content,skip,yes,skip,Not Veyrnox property
+Kling community/user graph,network,skip,yes,skip,Cannot clone another service's network
+Kling private APIs and ranking,platform,skip,yes,skip,Terms and clean-room boundary
+Kling model weights/output parity,model,skip,yes,skip,Veyrnox discloses and uses its own provider contract

@@ -1,9 +1,11 @@
 name: e2e
 
 # Browser smoke tests of the three journeys against staging: sign up,
-# generate, buy (e2e/, docs/product/ISSUES.md I5). Nothing here spends
-# money or writes to staging: sign-up stops at the security check, and the
-# generation and Top-up POSTs are answered by the test.
+# generate, buy (e2e/, docs/product/ISSUES.md I5). Scheduled/default runs
+# spend nothing and write nothing: sign-up stops at the security check, and
+# generation and Top-up POSTs are answered by the test. The separately gated
+# Kling probe is manual-only, owner-approved through the protected staging
+# environment and capped at $5 across all approved probe runs.
 #
 # Not a required check: it tests the deployed staging Worker, not the PR.
 # Daily, plus on demand. Generate and buy skip until the E2E_EMAIL and
@@ -13,15 +15,47 @@ on:
   schedule:
     - cron: "41 6 * * *"
   workflow_dispatch:
+    inputs:
+      kling_o1_probe:
+        description: Run the owner-approved paid Kling O1 staging probe (cumulative provider spend capped at $5)
+        required: true
+        default: false
+        type: boolean
+      expected_worker_version:
+        description: Operator-verified staging Worker version recorded in the probe evidence
+        required: false
+        default: ""
+        type: string
+      kling_o1_probe_phase:
+        description: Full probe, or remaining checks after validated 5s and 10s successes
+        required: false
+        default: full
+        type: choice
+        options:
+          - full
+          - remaining
+      prior_success_job_ids:
+        description: Comma-separated 5s and 10s job IDs required by the remaining phase
+        required: false
+        default: ""
+        type: string
+      reuse_source_keys:
+        description: Comma-separated short-video, Image1 and Image2 keys required by the remaining phase
+        required: false
+        default: ""
+        type: string
 
 permissions: {}
 
 concurrency:
-  group: e2e
-  cancel-in-progress: true
+  group: ${{ inputs.kling_o1_probe && 'e2e-kling-o1-probe' || 'e2e' }}
+  # Never interrupt a paid request after admission. Ordinary read-only smoke
+  # runs retain their previous replace-in-progress behaviour.
+  cancel-in-progress: ${{ !inputs.kling_o1_probe }}
 
 jobs:
   smoke:
+    if: ${{ github.event_name != 'workflow_dispatch' || !inputs.kling_o1_probe }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -50,3 +84,37 @@ jobs:
             playwright-report/
             test-results/
           retention-days: 7
+
+  kling-o1-staging-probe:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.kling_o1_probe }}
+    runs-on: ubuntu-latest
+    environment: fal-dispatch-staging
+    timeout-minutes: 75
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+      - name: Install probe media tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes ffmpeg
+      - name: Run bounded paid staging probe
+        env:
+          E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
+          E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+          KLING_O1_PROBE_MAX_USD: "5"
+          KLING_O1_EXPECTED_WORKER_VERSION: ${{ inputs.expected_worker_version }}
+          KLING_O1_PROBE_PHASE: ${{ inputs.kling_o1_probe_phase }}
+          KLING_O1_PRIOR_SUCCESS_JOB_IDS: ${{ inputs.prior_success_job_ids }}
+          KLING_O1_REUSE_KEYS: ${{ inputs.reuse_source_keys }}
+        run: node scripts/kling-o1-staging-probe.mjs
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: kling-o1-staging-probe-${{ github.run_id }}
+          path: kling-o1-probe-evidence/
+          if-no-files-found: error
+          retention-days: 14
