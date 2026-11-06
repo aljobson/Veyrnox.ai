@@ -3,6 +3,7 @@ import { capabilityFor, publicCapabilities, lengthsFor } from '../../lib/modelCa
 import { searchTemplateIds, templateCards, templateCategories, templateDetail } from '../../lib/clientTemplates.js';
 import { readdirSync } from 'node:fs';
 import { PAGE_TEMPLATES, templateMatches } from '../page-manifest.mjs';
+import { settleStreamedPage } from './streamed-page.mjs';
 
 export { expect };
 export const SYNTHETIC_USER = Object.freeze({ id: '00000000-0000-4000-8000-000000000001', email: 'synthetic-feature-qa@example.invalid' });
@@ -202,8 +203,18 @@ export async function installProductFixtures(page, options = {}) {
     await drain();
     context.off('page', onPage);
   };
+  fixture.settle = () => settleStreamedPage(page);
   fixture.open = async path => {
     const response = await page.goto(`${target.origin}${path}`, { waitUntil: 'load' });
+    // Next.js can fire load while a hidden streamed server payload still
+    // overlaps the hydrated page. Let that payload be consumed before tests
+    // use strict locators, otherwise every control briefly has a duplicate.
+    await fixture.settle();
+    return response;
+  };
+  fixture.reload = async () => {
+    const response = await page.reload({ waitUntil: 'load' });
+    await fixture.settle();
     return response;
   };
   fixture.switchUser = async user => {
