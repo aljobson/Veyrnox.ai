@@ -7,11 +7,12 @@ register('data:text/javascript,' + encodeURIComponent(
 const { isUnknownStaticPage } = await import('../lib/unknownStaticPage.js');
 const { middleware } = await import('../middleware.js');
 
-test('only an unknown guide or template address is refused', () => {
-    for (const p of ['/guides/nope', '/presets/nope', '/veyrnox/guides/nope', '/guides/credits%2F..', '/guides/%E0%A4%A', '/presets/CCTV-NIGHT', '/presets/cctv-night', '/veyrnox/presets/cctv-night']) {
+test('unknown and unpublished guide or template addresses are refused', () => {
+    for (const p of ['/guides/nope', '/presets/nope', '/veyrnox/guides/nope', '/guides/credits%2F..', '/guides/%E0%A4%A', '/presets/CCTV-NIGHT', '/presets/cctv-night', '/veyrnox/presets/cctv-night',
+        '/presets/product-hero-360', '/veyrnox/presets/product-hero-360']) {
         assert.equal(isUnknownStaticPage(p), true, p);
     }
-    for (const p of ['/guides', '/guides/credits', '/guides/credits/', '/presets/product-hero-360', '/veyrnox/presets/product-hero-360',
+    for (const p of ['/guides', '/guides/credits', '/guides/credits/', '/presets/a-moment-between-strangers', '/veyrnox/presets/a-moment-between-strangers',
         '/models/nope', '/', '/pricing', '/guides/credits/extra', '/app/library', undefined]) {
         assert.equal(isUnknownStaticPage(p), false, String(p));
     }

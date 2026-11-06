@@ -106,22 +106,12 @@ describe('where the welcome shows', () => {
         expect(start).toContain('presetHref(template)');
     });
 
-    test('the Mobbin-inspired creation goal is the first personalization choice', () => {
+    test('the Vibe screen asks no questions: language only, then it completes itself', () => {
         const screen = read('app', '(app)', 'vibe.tsx');
-        const copy = read('lib', 'i18n', 'messages', 'en', 'vibe.ts');
-        expect(screen).toContain("const STEPS = ['goal', 'look', 'pace', 'chaos', 'destination', 'audience', 'voice']");
-        expect(copy).toContain("'vibe.goal.title': 'What do you want to make first?'");
-        expect(copy).toContain("'vibe.goal.sell': 'Promote a product'");
-        expect(copy).toContain("'vibe.goal.meme': 'Make a social ad'");
-        expect(copy).toContain("'vibe.goal.character': 'Animate my photo'");
-        expect(copy).toContain("'vibe.goal.story': 'Tell a story'");
-    });
-
-    test('single-choice goals advance on one tap', () => {
-        const screen = read('app', '(app)', 'vibe.tsx');
-        expect(screen).toContain('const GOAL_PRESENTATION');
-        expect(screen).toContain('selected={draft.goal === goal}');
-        expect(screen).toContain("onPress={() => choose('goal', goal)}");
-        expect(screen).not.toContain('disabled={!draft.goal}');
+        expect(screen).not.toContain('const STEPS');
+        expect(screen).not.toContain('CREATOR_ANSWERS');
+        expect(screen).not.toContain('ChoiceCard');
+        expect(screen).not.toContain('vibe.intro.title');
+        expect(screen).toContain("proceed('skip')");
     });
 });

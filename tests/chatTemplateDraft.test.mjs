@@ -15,7 +15,7 @@ function storage() {
 test('an edited template prompt is carried into chat once without a URL payload', () => {
   const s = storage();
   assert.equal(writeTemplateChatDraft(s, { id: 'birthday-highlight-reel' }, '  Keep the whole edited prompt  ', 1000), true);
-  assert.deepEqual(takeTemplateChatDraft(s, 1001), { templateId: 'birthday-highlight-reel', prompt: 'Keep the whole edited prompt' });
+  assert.deepEqual(takeTemplateChatDraft(s, 1001), { templateId: 'birthday-highlight-reel', prompt: '  Keep the whole edited prompt  ' });
   assert.equal(takeTemplateChatDraft(s, 1002), null);
 });
 

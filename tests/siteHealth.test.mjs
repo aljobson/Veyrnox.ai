@@ -5,6 +5,7 @@ import {
     assessAssetResponse,
     assessResponse,
     checkSite,
+    extractDeploymentIds,
     extractStaticAssetPaths,
 } from '../scripts/check-site-health.mjs';
 
@@ -69,6 +70,17 @@ test('static asset references are decoded, deduplicated and kept exact', () => {
         '/_next/static/css/a.css?dpl=abc&x=1',
         '/_next/static/chunks/a.js',
     ]);
+});
+
+test('deployment ids are extracted from captured static asset references', () => {
+    const first = '745e1106d4916d3c36955a668e32aa53b6d60173';
+    const second = '1772a1a8d5a13492a8c08bc7071fe240d68a7c6a';
+    assert.deepEqual(extractDeploymentIds([
+        `/_next/static/a.css?dpl=${first}`,
+        `/_next/static/b.js?x=1&dpl=${second}`,
+        `/_next/static/c.js?dpl=${first}`,
+        '/_next/static/d.js?dpl=not-a-commit',
+    ]), [first, second]);
 });
 
 test('static assets must be successful, non-HTML and immutably cached', () => {

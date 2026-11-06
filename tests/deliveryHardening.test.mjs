@@ -41,7 +41,7 @@ test('production rolls retained static assets forward across releases', () => {
         'history requires an actual successful Deploy step');
     assert.doesNotMatch(workflow, /select\(\.name == "deploy" and \.conclusion == "success"\)/,
         'a failed later check must not drop a build that reached production from retention');
-    assert.match(workflow, /successful_deploy_runs\+=\("\$previous_run"\)/);
+    assert.match(workflow, /append_run "\$previous_run" "\$deployed_sha"/);
     assert.match(workflow, /retention_bootstrap_predecessor=12448acb867057589159f312cf0e7eabb28a3ff0/);
     assert.match(workflow, /latest successful production deployment has no retained static artifact; refusing an unprotected cutover/,
         'missing or expired baselines fail closed after the one approved bootstrap');
@@ -54,7 +54,14 @@ test('production rolls retained static assets forward across releases', () => {
     assert.match(workflow, /name: production-next-static/);
     assert.match(workflow, /path: \.next\/static/);
     assert.match(workflow, /retention-days: 90/);
-    assert.match(workflow, /at most 21 releases/);
+    assert.match(workflow, /bounded 20-release history, plus every\n\s+# build the live pages still reference/);
+    assert.match(workflow, /mapfile -t required_live_shas < <\(jq -r '\.deploymentIds\[\]\?' previous-build-assets\.json\)/);
+    assert.match(workflow,
+        /required_live_lookup\[\$deployed_sha\][\s\S]*append_run "\$previous_run" "\$deployed_sha"[\s\S]*required_live_found\["\$deployed_sha"\]=true[\s\S]*deployed=\$\(gh run view/,
+        'a live-referenced build is retained even when this workflow did not deploy it');
+    assert.match(workflow, /recent_deploy_count" -ge 20.*all_required_found" = true[\s\S]*break/,
+        'history scanning stops once the bounded recent set and live builds are found');
+    assert.match(workflow, /Live build \$deployed_sha has no retained static artifact; refusing an unprotected cutover/);
 });
 
 test('production bootstraps retention once, then enforces old references on every later deploy', () => {
@@ -63,8 +70,8 @@ test('production bootstraps retention once, then enforces old references on ever
     const verifyAt = workflow.indexOf('node scripts/check-site-health.mjs --asset-manifest previous-build-assets.json');
     assert.ok(captureAt !== -1 && captureAt < deployAt, 'old asset references are captured before deploy');
     assert.match(workflow,
-        /Record currently referenced production assets\n\s+id: capture\n\s+if: .*steps\.retained_static\.outputs\.available == 'true'/,
-        'old references are captured only when their complete build artifact was retained');
+        /Record currently referenced production assets\n\s+id: capture\n\s+if: .*env\.FORCE_RECOVERY != 'true'/,
+        'old references are captured before retained artifacts are selected');
     assert.ok(verifyAt > deployAt, 'old and current references are checked after deploy');
     assert.match(workflow,
         /Smoke test the live site with retained assets[\s\S]*steps\.retained_static\.outputs\.available == 'true'[\s\S]*--asset-manifest previous-build-assets\.json/);

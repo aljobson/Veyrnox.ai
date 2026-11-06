@@ -11,6 +11,7 @@ import * as imageBatch from '../app/veyrnox/_lib/imageBatch.js';
 import * as freeAllowance from '../app/veyrnox/_lib/freeAllowance.js';
 import * as promptBox from '../app/veyrnox/_lib/promptBox.js';
 import * as generateHint from '../app/veyrnox/_lib/generateHint.js';
+import * as chatMedia from '../app/veyrnox/_lib/chatMedia.js';
 import * as generationSlots from '../lib/generationSourceSlots.mjs';
 import * as aspectShapes from '../lib/aspectShapes.mjs';
 import * as templateStart from '../lib/templateStartCheck.js';
@@ -47,7 +48,7 @@ const addFilesDialog = tree => find(tree, node => node.type === AddFilesDialog);
 
 // Execute the real page's hooks/effects and event handlers offline. Only I/O
 // and unrelated child components are stubbed; recipe and submit logic is real.
-function harness(params, { saved, handoff, blocked = false, models = [original, other], loading = false } = {}) {
+function harness(params, { saved, handoff, handoffModelId, handoffTemplateId = preset.id, fetchedPreset = preset, blocked = false, models = [original, other], loading = false } = {}) {
   const values = new Map();
   const storage = { getItem: key => values.get(key), setItem: (key, value) => values.set(key, value), removeItem: key => values.delete(key) };
   if (saved) landingDraft.writeStudioDraft(storage, saved);
@@ -56,7 +57,7 @@ function harness(params, { saved, handoff, blocked = false, models = [original, 
     get sessionStorage() { if (blocked) throw Error('storage blocked'); return storage; },
     addEventListener() {}, removeEventListener() {},
   };
-  if (handoff) templateMediaHandoff.writeTemplateMediaHandoff(globalThis.window, { templateId: preset.id, modelId: params.model || original.id, image: handoff });
+  if (handoff) templateMediaHandoff.writeTemplateMediaHandoff(globalThis.window, { templateId: handoffTemplateId, modelId: handoffModelId || params.model || original.id, image: handoff });
   const slots = [], effects = [], requests = [];
   let cursor = 0, dirty = true, tree, catalog = { models, loading, live: !loading };
   const changed = (before, after) => !before || !after || before.length !== after.length || before.some((value, index) => !Object.is(value, after[index]));
@@ -91,8 +92,8 @@ function harness(params, { saved, handoff, blocked = false, models = [original, 
     '../../_lib/promptBox': promptBox,
     '../../_lib/generateHint': generateHint,
     '../../_lib/useCatalog': { useCatalog: () => catalog },
-    '../../_lib/useTemplates': { fetchTemplate: async () => preset },
-    '../../_lib/useCreateDraftRecovery': { __esModule: true, default: () => ({ restoring: false, blocked: false }) },
+    '../../_lib/useTemplates': { fetchTemplate: async () => fetchedPreset },
+    '../../_lib/useCreateDraftRecovery': { __esModule: true, default: () => ({ restoring: false, blocked: false, sourceEdited() {} }) },
     '../../_lib/useFreeAllowance': { useFreeAllowance: () => ({}) },
     '../../_lib/useStudioJobs': { useStudioJobs: () => ({ jobs: [], generating: false, startJobs() {}, addJob() {} }) },
     '../../_lib/starterModels': { starterModel: () => original, modelsForGoal: models => models },
@@ -101,7 +102,7 @@ function harness(params, { saved, handoff, blocked = false, models = [original, 
       if (path === '/balance') return { balance: 1000 };
       assert.equal(path, '/generations'); requests.push(JSON.parse(options.body)); return { job_id: 'test-job' };
     }, makeIdempotencyKey: () => 'test-key', notifyBalanceChanged() {}, GatewayError: class extends Error {} },
-    '../../_lib/chatMedia': { mediaGenerationSources: async () => ({ references: [], source_keys: [], source_assets: [] }) },
+    '../../_lib/chatMedia': { ...chatMedia, mediaGenerationSources: async () => ({ references: [], source_keys: [], source_assets: [] }) },
     '../../_lib/veyJourneyStore': { getJourney: () => ({}), trackJourneyJob() {} },
     '../../_components/TemplateHandoffCard': { TemplateHandoffCard: HandoffCard },
     '../../_components/SourcePickers': { SourcePickers },
@@ -135,19 +136,18 @@ test('Create arrival applies URL recipe and submits original-model attribution o
       assert.equal(prompt(tree).props.value, preset.prompt);
       assert.equal(control(tree, 'duration').props.value, `${durationSeconds}s`);
       assert.equal(control(tree, 'aspect').props.value, model === original ? '9:16' : '4:5');
-      assert.equal(card(tree)?.props.preset ?? null, model === original ? preset : null);
-      if (model === original) {
-        assert.deepEqual(card(tree).props.settings, {
-          prompt: preset.prompt,
-          model: original.name,
-          aspect: '9:16',
-          duration: `${durationSeconds}s`,
-          cost: `app.create.cost:${JSON.stringify({ count: tokens.clipCredits(original.credits, durationSeconds) })}`,
-          sourceRequired: false,
-          sourceLabel: '',
-        });
-        assert.equal(typeof card(tree).props.onEdit, 'function');
-      }
+      assert.equal(card(tree)?.props.preset ?? null, preset); // the template stays on screen on any model
+      assert.equal(Boolean(card(tree)?.props.otherModelName), model !== original);
+      assert.deepEqual(card(tree).props.settings, {
+        prompt: preset.prompt,
+        model: model.name,
+        aspect: model === original ? '9:16' : '4:5',
+        duration: `${durationSeconds}s`,
+        cost: `app.create.cost:${JSON.stringify({ count: tokens.clipCredits(model.credits, durationSeconds) })}`,
+        sourceRequired: false,
+        sourceLabel: '',
+      });
+      assert.equal(typeof card(tree).props.onEdit, 'function');
       assert.equal(generate(tree).props.disabled, false);
       await generate(tree).props.onClick();
       assert.equal(h.requests.length, 1);
@@ -184,9 +184,10 @@ test('changing model inside Create keeps personal edits and never reapplies the 
     tree = await h.settle();
     assert.equal(prompt(tree).props.value, 'Personal edit after arrival');
     assert.equal(control(tree, 'duration').props.value, '5s');
-    assert.equal(card(tree)?.props.preset ?? null, null);
+    assert.equal(card(tree)?.props.preset ?? null, preset); // still shown after the model change, flagged as made for another model
+    assert.ok(card(tree).props.otherModelName);
     await generate(tree).props.onClick();
-    assert.equal(h.requests[0].preset, undefined);
+    assert.equal(h.requests[0].preset, undefined); // but not sent: the gateway takes a template only on its own model
     assert.equal(h.requests[0].inputs.prompt, 'Personal edit after arrival');
   } finally { h.close(); }
 });
@@ -208,6 +209,16 @@ test('the linked template summary follows live prompt, duration and aspect edits
       sourceRequired: false,
       sourceLabel: '',
     });
+  } finally { h.close(); }
+});
+
+test('the linked template summary shows the same provider-adjusted duration as its control', async () => {
+  const adjusted = { ...original, presentation: { durationByOption: { 5: 6 } } };
+  const h = harness({ model: original.id, duration: '5s' }, { models: [adjusted, other] });
+  try {
+    const tree = await h.settle();
+    assert.equal(card(tree).props.settings.duration, '6s');
+    assert.match(control(tree, 'duration').props.formatOption('5s'), /6s/);
   } finally { h.close(); }
 });
 
@@ -235,6 +246,42 @@ test('template summary navigation focuses the visible selected control and safe 
     card(tree).props.onEdit('cost');
     assert.equal(focused, 'cost');
     assert.equal(costSection.tabIndex, -1);
+  } finally {
+    globalThis.document = previousDocument;
+    h.close();
+  }
+});
+
+test('template source summary keeps an attached photo editable after changing models', async () => {
+  const photo = Object.assign(new Blob(['photo'], { type: 'image/jpeg' }), { name: 'other-reference.jpg' });
+  const otherWithMedia = { ...other, media: { image: { required: true, maxFiles: 1 } } };
+  const h = harness({ model: other.id }, { models: [original, otherWithMedia] });
+  const previousDocument = globalThis.document;
+  try {
+    let tree = await h.settle();
+    sourcePickers(tree).props.onPick('image', photo, null, 0);
+    tree = await h.settle();
+    assert.equal(card(tree).props.settings.sourceLabel, 'other-reference.jpg');
+
+    let focused = false;
+    const input = {
+      focus() { focused = true; },
+      getClientRects: () => [1],
+    };
+    const uploadSection = {
+      scrollIntoView() {},
+      matches: () => false,
+      querySelectorAll: () => [input],
+      hasAttribute: () => true,
+    };
+    globalThis.document = {
+      querySelector: selector => selector.includes('create.upload') ? uploadSection : null,
+    };
+    card(tree).props.onEdit('upload');
+    tree = await h.settle();
+    assert.equal(focused, true);
+    assert.equal(addFilesDialog(tree), undefined);
+    assert.equal(sourcePickers(tree).props.sources.image.file, photo);
   } finally {
     globalThis.document = previousDocument;
     h.close();
@@ -271,7 +318,7 @@ test('ordinary Create drafts still arrive before the catalog and do not replay w
 });
 
 test('Create still refuses missing required sources, missing consent and prompts over 30,000', async () => {
-  const withMedia = { ...original, media: { image: { kind: 'image', required: true } } };
+  const withMedia = { ...original, media: { image: { required: true, maxFiles: 1 } } };
   for (const saved of [undefined, { prompt: preset.prompt, model: original.id, templateId: preset.id, sources: { image: { assetId: 'test-asset' } }, consent: false }]) {
     const h = harness({ model: original.id }, { models: [withMedia], saved });
     try {
@@ -297,7 +344,7 @@ test('Create still refuses missing required sources, missing consent and prompts
 });
 
 test('a recovered source needing reattachment stays missing and opens Add files from the template summary', async () => {
-  const withMedia = { ...original, media: { image: { kind: 'image', required: true } } };
+  const withMedia = { ...original, media: { image: { required: true, maxFiles: 1 } } };
   const h = harness({ model: original.id }, { models: [withMedia], saved: {
     prompt: preset.prompt,
     model: original.id,
@@ -315,7 +362,7 @@ test('a recovered source needing reattachment stays missing and opens Add files 
 
 test('Create consumes the one-time template photo into the required source slot', async () => {
   const photo = Object.assign(new Blob(['photo'], { type: 'image/jpeg' }), { name: 'portrait.jpg' });
-  const withMedia = { ...original, media: { image: { kind: 'image', required: true } } };
+  const withMedia = { ...original, media: { image: { required: true, maxFiles: 1 } } };
   const h = harness({ model: original.id }, { models: [withMedia], handoff: photo });
   try {
     const tree = await h.settle();
@@ -325,4 +372,31 @@ test('Create consumes the one-time template photo into the required source slot'
     assert.equal(generate(tree).props.disabled, true, 'the existing rights confirmation still applies');
     assert.equal(templateMediaHandoff.takeTemplateMediaHandoff(globalThis.window, preset.id, original.id), null);
   } finally { h.close(); }
+});
+
+test('Create explains when a one-time template photo no longer matches the arriving model', async () => {
+  const photo = Object.assign(new Blob(['photo'], { type: 'image/jpeg' }), { name: 'portrait.jpg' });
+  const withMedia = { ...original, media: { image: { kind: 'image', required: true } } };
+  const h = harness({ model: original.id }, { models: [withMedia, other], handoff: photo, handoffModelId: other.id });
+  try {
+    const tree = await h.settle();
+    assert.equal(sourcePickers(tree).props.sources.image, undefined);
+    assert.ok(find(tree, node => node.type === 'p' && node.props?.children === 'app.create.templatePhotoHandoff'));
+    assert.equal(templateMediaHandoff.hasTemplateMediaHandoff(globalThis.window), false);
+  } finally { h.close(); }
+});
+
+test('Create silently clears a one-time photo for another or missing template', async () => {
+  const photo = Object.assign(new Blob(['photo'], { type: 'image/jpeg' }), { name: 'portrait.jpg' });
+  for (const options of [
+    { handoffTemplateId: 'another-template' },
+    { handoffTemplateId: preset.id, fetchedPreset: null },
+  ]) {
+    const h = harness({ model: original.id }, { ...options, handoff: photo });
+    try {
+      const tree = await h.settle();
+      assert.equal(find(tree, node => node.type === 'p' && node.props?.children === 'app.create.templatePhotoHandoff'), undefined);
+      assert.equal(templateMediaHandoff.hasTemplateMediaHandoff(globalThis.window), false);
+    } finally { h.close(); }
+  }
 });

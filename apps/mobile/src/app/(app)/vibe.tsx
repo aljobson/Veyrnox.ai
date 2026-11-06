@@ -3,44 +3,23 @@ import { captureEvent } from '../../lib/analytics/events';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { VeyCharacter } from '../../components/VeyCharacter';
 import { selectedState, touchTarget } from '../../lib/a11y';
-import { CHAOS_MAX, CREATOR_ANSWERS, STUDIO_NAME_MAX, isCreatorAnswers, type CreatorAnswers, type Goal } from '../../lib/creatorAnswers';
-import { displayLabel } from '../../lib/displayLabels';
-import { creatorCard } from '../../lib/creatorArchetype';
-import { creatorCardName } from '../../lib/creatorCardLabels';
-import { loadVibe, recordVibeSkip, runVibeIntent } from '../../lib/creatorProfileStore';
+import { loadVibe, recordVibeSkip } from '../../lib/creatorProfileStore';
 import { getCacheUser, subscribeCacheUser } from '../../lib/appCache';
-import { rankPresets, tastePicks } from '../../lib/creatorTaste';
-import { presetKind } from '../../lib/explore';
 import { getLocale, t } from '../../lib/i18n';
 import { activeLanguages, hasActiveChoice, needsLanguageChoice, changeLanguage } from '../../lib/languageTransition';
 import { loadLanguage, readLanguage, saveAccountLanguage, saveLanguage } from '../../lib/languageStore';
-import { fetchPresets, presetHref } from '../../lib/presets';
-import { colors, ds } from '../../theme';
-import { Button, Card as SurfaceCard, Chip, Text, TextField, ChoiceCard, themedStyles, useThemedStyles } from '../../components/ui';
+import { ds } from '../../theme';
+import { Button, Text, themedStyles, useThemedStyles } from '../../components/ui';
 import { noteOnboardingCompleted } from '../../lib/celebrate';
-import type { MenuIcon } from '../../lib/menuIcons';
+import { useAnnouncement } from '../../lib/useAnnouncement';
 
-// The Vibe Check (server ADR-0251): seven taps, one question each, then a creator card. Skippable on every screen, and a
-// skip never throws away answers already saved. Everything chosen here only reorders templates and sets a default.
-type Draft = Partial<CreatorAnswers>;
-type ChoiceKey = 'look' | 'goal' | 'pace' | 'destination' | 'audience';
-// Lead with intent: the Mobbin-inspired first choice immediately makes the feed useful, then the remaining
-// questions refine the look and working style without introducing a second onboarding system.
-const STEPS = ['goal', 'look', 'pace', 'chaos', 'destination', 'audience', 'voice'] as const;
-const TOTAL = STEPS.length;
-const SUBTITLED: ReadonlySet<string> = new Set(['pace', 'voice']);
-const GOAL_PRESENTATION: Record<Goal, { icon: MenuIcon }> = {
-    sell: { icon: 'bag' },
-    story: { icon: 'film' },
-    music_video: { icon: 'audio' },
-    meme: { icon: 'phone' },
-    character: { icon: 'sparkle' },
-    bedtime: { icon: 'moon' },
-};
+// The Vibe Check once asked seven questions (goal, look, pace, chaos, destination, audience, voice) and showed a creator
+// card. Those are removed: what is left is the language choice and Vey's intro. Continuing records the check as done
+// (a skip, which the server accepts without answers) so it is not offered again.
 
 export default function Vibe() {
     const insets = useSafeAreaInsets();
@@ -54,20 +33,10 @@ export default function Vibe() {
     const { retake, from } = useLocalSearchParams<{ retake?: string; from?: string }>();
     // Arrived by replace from the first-run Welcome: there is nothing to go back to, so leave for the app (and the paywall).
     const leave = () => { if (from === 'welcome') router.replace('/'); else router.back(); };
-    // 0 = intro, 1..7 = questions, 8 = card, -1 = skipped.
-    const [step, setStep] = useState(0);
-    const [draft, setDraft] = useState<Draft>({ chaos: 2 });
-    const [studio, setStudio] = useState('');
-    const [saving, setSaving] = useState(false);
-    const [failed, setFailed] = useState(false);
-    const [synced, setSynced] = useState(true);
-    const [saved, setSaved] = useState<CreatorAnswers | null>(null);
-    const [skipBusy, setSkipBusy] = useState(false);
-    // Reset during render so even the first render for the next session has no old draft/card.
+    const [busy, setBusy] = useState(false);
+    // Reset during render so even the first render for the next session has no old busy state.
     if (identity.owner !== owner || identity.generation !== generation) {
-        setIdentity({ owner, generation }); opRef.current++;
-        setDraft({ chaos: 2 }); setStudio(''); setSaved(null); setFailed(false);
-        setSaving(false); setSkipBusy(false); setSynced(true); setStep(0);
+        setIdentity({ owner, generation }); opRef.current++; setBusy(false);
     }
     // Ask only when there is no active saved choice; first launch normally handles this before sign-in.
     const [language, setLanguage] = useState<'ask' | 'done'>(retake === '1' || !needsLanguageChoice(readLanguage()) ? 'done' : 'ask');
@@ -93,70 +62,38 @@ export default function Vibe() {
         if (next === getLocale()) setLanguage('done');
     }
 
-    function choose(key: ChoiceKey, value: string) {
-        captureEvent('onboarding_step', { step: 'vibe', action: 'next' });
-        setDraft((d) => ({ ...d, [key]: value }));
-        setStep((s) => s + 1);
-    }
-
-    async function skip() {
+    async function proceed(action: 'next' | 'skip') {
         const task = beginSessionTask();
         const op = ++opRef.current;
-        captureEvent('onboarding_step', { step: 'vibe', action: 'skip' });
-        setSkipBusy(true);
+        captureEvent('onboarding_step', { step: 'vibe', action });
+        setBusy(true);
         const existing = await loadVibe();
         if (!task.current() || op !== opRef.current) return;
-        if (existing) { setSkipBusy(false); leave(); return; }
-        const r = await recordVibeSkip(api, task);
-        if (!task.current() || r.kind === 'stale-session') return;
-        if (opRef.current !== op) return;
-        setSkipBusy(false); setSaving(false);
-        if (r.kind !== 'applied') return;
-        if (r.result === 'kept') leave();
-        else setStep(-1);
-    }
-
-    async function finish() {
-        const task = beginSessionTask();
-        const op = ++opRef.current;
-        captureEvent('onboarding_step', { step: 'vibe', action: 'next' });
-        const name = studio.trim();
-        const answers = { ...draft, ...(name ? { studio_name: name } : {}) };
-        if (!isCreatorAnswers(answers)) return;
-        setSaving(true); setFailed(false);
-        const r = await runVibeIntent(api, task, { kind: 'save', answers });
-        if (!task.current() || r.kind === 'stale-session' || opRef.current !== op) return;
-        setSaving(false); setSkipBusy(false);
-        if (r.kind !== 'applied') return;
-        if (r.result === 'failed') { setFailed(true); return; }
-        setSynced(r.result === 'ok');
-        noteOnboardingCompleted();
-        setSaved(answers); setStep(TOTAL + 1);
-    }
-
-    async function makeFirst() {
-        const task = beginSessionTask();
-        try {
-            const all = await fetchPresets();
-            if (!task.current()) return;
-            // A template with a picture that fits comes first; with none, the best fit that is not audio (a still cannot show it).
-            const pick = tastePicks(all, saved, 1)[0] ?? rankPresets(all, saved).find((p) => p.available && presetKind(p) !== 'audio');
-            router.replace(pick ? presetHref(pick) : '/');
-        } catch {
-            if (!task.current()) return;
-            router.replace('/');
+        if (!existing) {
+            const r = await recordVibeSkip(api, task);
+            if (!task.current() || r.kind === 'stale-session' || opRef.current !== op) return;
         }
+        setBusy(false);
+        noteOnboardingCompleted();
+        leave();
     }
 
-    const key = step >= 1 && step <= TOTAL ? STEPS[step - 1] : null;
-    const skipLink = <Button variant="tertiary" label={t('vibe.skip')} disabled={skipBusy} onPress={() => void skip()} />;
+    // The intro is gone: once the language is settled the check completes itself and the person moves on.
+    const started = useRef(false);
+    useEffect(() => {
+        if (language !== 'done' || started.current) return;
+        started.current = true;
+        void proceed('skip');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [language]);
+
+    useAnnouncement(language === 'done' ? t('common.loading') : null, { onMount: true });
 
     return (
         <KeyboardAvoidingView style={[styles.screen, { paddingTop: insets.top, paddingBottom: insets.bottom }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <Stack.Screen options={{ headerShown: false, gestureEnabled: false }} />
-            {/* Questions start at the top so the first choice is where the thumb expects it on every screen; the intro, the skip note and the card sit in the middle. */}
-            <ScrollView contentContainerStyle={key ? styles.bodyTop : styles.body} keyboardShouldPersistTaps="handled">
-                {step === 0 && language === 'ask' ? (
+            <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+                {language === 'ask' ? (
                     <View style={styles.question}>
                         <Text variant="title1" style={styles.title} accessibilityRole="header">
                             {t('vibe.language.title')}
@@ -187,177 +124,19 @@ export default function Vibe() {
                             </Text>
                         ) : null}
                     </View>
-                ) : null}
-
-                {step === 0 && language === 'done' ? (
-                    <View style={styles.center}>
-                        <View>
-                            <VeyCharacter width={140} interactive />
-                        </View>
-                        <Text variant="title1" style={styles.title} accessibilityRole="header">
-                            {t('vibe.intro.title')}
-                        </Text>
-                        <Text style={styles.text}>{t('vibe.intro.body')}</Text>
+                ) : (
+                    <View style={styles.center} accessible accessibilityRole="progressbar" accessibilityLabel={t('common.loading')}>
+                        <ActivityIndicator />
                     </View>
-                ) : null}
-
-                {step === -1 ? (
-                    <View style={styles.center}>
-                        <Text variant="title1" style={styles.title} accessibilityRole="header">
-                            {t('vibe.skipped.title')}
-                        </Text>
-                        <Text style={styles.text}>{t('vibe.skipped.body')}</Text>
-                    </View>
-                ) : null}
-
-                {key ? (
-                    <View style={styles.question}>
-                        <View style={styles.progress} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-                            {STEPS.map((s, i) => (
-                                <View key={s} style={[styles.progressStep, i < step && styles.progressStepOn]} />
-                            ))}
-                        </View>
-                        <Text style={styles.step} accessibilityLabel={rawText(t('vibe.step', { n: step, total: TOTAL }))}>
-                            {t('vibe.step', { n: step, total: TOTAL })}
-                        </Text>
-                        <Text variant="title1" style={styles.title} accessibilityRole="header">
-                            {t(`vibe.${key}.title`)}
-                        </Text>
-                        {key === 'goal' ? (
-                            <View style={styles.goalGrid}>
-                                {CREATOR_ANSWERS.goal.map((goal) => (
-                                    <View key={goal} style={styles.goalChoice}>
-                                        <ChoiceCard
-                                            icon={GOAL_PRESENTATION[goal].icon}
-                                            title={t(`vibe.goal.${goal}`)}
-                                            selected={draft.goal === goal}
-                                            onPress={() => choose('goal', goal)}
-                                        />
-                                    </View>
-                                ))}
-                            </View>
-                        ) : key === 'chaos' ? (
-                            <View style={styles.options}>
-                                <Text style={styles.readout} accessibilityLiveRegion="polite">
-                                    {t(`vibe.chaos.${draft.chaos ?? 2}`)}
-                                </Text>
-                                <View style={styles.dial}>
-                                    {Array.from({ length: CHAOS_MAX + 1 }, (_, i) => (
-                                        <Pressable
-                                            key={i}
-                                            accessibilityRole="button"
-                                            accessibilityLabel={t(`vibe.chaos.${i}`)}
-                                            accessibilityState={selectedState(draft.chaos === i)}
-                                            style={[styles.dialStop, draft.chaos === i && styles.dialStopOn]}
-                                            onPress={() => { setDraft((d) => ({ ...d, chaos: i })); setStep(s => s + 1); }}
-                                        />
-                                    ))}
-                                </View>
-                                <View style={styles.ends}>
-                                    <Text style={styles.endText}>{t('vibe.chaos.less')}</Text>
-                                    <Text style={styles.endText}>{t('vibe.chaos.more')}</Text>
-                                </View>
-                                <Text style={styles.text}>{t('vibe.chaos.hint')}</Text>
-                            </View>
-                        ) : key === 'voice' ? (
-                            <View style={styles.options}>
-                                <TextField
-                                    label={t('vibe.voice.studio')}
-                                    value={studio}
-                                    onChangeText={setStudio}
-                                    maxLength={STUDIO_NAME_MAX}
-                                    placeholder={t('vibe.voice.studio')}
-                                    accessibilityLabel={t('vibe.voice.studio')}
-                                    autoCapitalize="words"
-                                />
-                                {CREATOR_ANSWERS.voice.map((v) => (
-                                    <Choice
-                                        key={v}
-                                        label={t(`vibe.voice.${v}`)}
-                                        sub={t(`vibe.voice.${v}.sub`)}
-                                        on={draft.voice === v}
-                                        onPress={() => setDraft((d) => ({ ...d, voice: v }))}
-                                    />
-                                ))}
-                            </View>
-                        ) : (
-                            <View style={styles.options}>
-                                {CREATOR_ANSWERS[key].map((v) => (
-                                    <Choice
-                                        key={v}
-                                        label={t(`vibe.${key}.${v}`)}
-                                        sub={SUBTITLED.has(key) ? t(`vibe.${key}.${v}.sub`) : null}
-                                        on={draft[key] === v}
-                                        onPress={() => choose(key, v)}
-                                    />
-                                ))}
-                            </View>
-                        )}
-                        {failed ? (
-                            <Text style={styles.error} accessibilityLiveRegion="polite">
-                                {t('vibe.error')}
-                            </Text>
-                        ) : null}
-                    </View>
-                ) : null}
-
-                {step === TOTAL + 1 && saved ? <Card answers={saved} synced={synced} /> : null}
+                )}
             </ScrollView>
 
             <View style={styles.footer}>
-                {step === 0 && language === 'ask' && languageNote ? (
+                {language === 'ask' && languageNote ? (
                     <Button label={t('vibe.language.continue')} onPress={() => void continueLanguage()} />
-                ) : null}
-                {step === 0 && language === 'done' ? (
-                    <>
-                        <Button label={t('vibe.start')} onPress={() => setStep(1)} />
-                    </>
-                ) : null}
-                {step === -1 ? <Button label={t('vibe.skipped.go')} onPress={() => router.replace('/')} /> : null}
-                {key === 'voice' ? <Button label={saving ? t('vibe.saving') : t('vibe.voice.done')} disabled={!draft.voice || saving} onPress={() => void finish()} /> : null}
-                {key ? (
-                    <View style={styles.row}>
-                        {step > 1 ? <Button variant="tertiary" label={t('vibe.back')} onPress={() => setStep(step - 1)} /> : <View />}
-                    </View>
-                ) : null}
-                {step >= 0 && step <= TOTAL ? skipLink : null}
-                {step === TOTAL + 1 ? (
-                    <>
-                        <Button label={t('vibe.card.first')} onPress={() => void makeFirst()} />
-                        <Button variant="tertiary" label={t('vibe.card.home')} onPress={() => router.replace('/')} />
-                    </>
                 ) : null}
             </View>
         </KeyboardAvoidingView>
-    );
-}
-
-function Choice({ label, sub, on, onPress }: { label: string; sub?: string | null; on: boolean; onPress: () => void }) {
-    return <ChoiceCard icon="sliders" title={label} detail={sub ?? undefined} selected={on} onPress={onPress} />;
-}
-
-function Card({ answers, synced }: { answers: CreatorAnswers; synced: boolean }) {
-    const styles = useThemedStyles(sheets);
-    const raw = creatorCard(answers);
-    const card = { ...raw, name: creatorCardName(answers), traits: raw.traits.map(displayLabel) };
-    return (
-        <View style={styles.cardWrap}>
-            <SurfaceCard style={styles.card} accessible accessibilityLabel={rawText(`${card.studio ?? t('vibe.card.kicker')}. ${card.name}. ${card.traits.join(', ')}`)}>
-                <Text variant="footnote" style={styles.cardKicker}>
-                    {card.studio ?? t('vibe.card.kicker')}
-                </Text>
-                <Text variant="display" style={styles.cardName}>
-                    {card.name}
-                </Text>
-                <View style={styles.chips}>
-                    {card.traits.map((trait) => (
-                        <Chip key={trait} label={trait} />
-                    ))}
-                </View>
-            </SurfaceCard>
-            <Text style={styles.text}>{t('vibe.card.leads')}</Text>
-            {synced ? null : <Text style={styles.endText}>{t('vibe.card.local')}</Text>}
-        </View>
     );
 }
 

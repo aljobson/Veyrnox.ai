@@ -1,5 +1,6 @@
 'use client';
 import { useI18n } from '../../../components/I18nProvider';
+import { Icon } from './Icon';
 import { tOr, pluralKey } from '../../../lib/i18n/translate.mjs';
 import { localeTag } from '../../../lib/i18n/locales.mjs';
 import { useEffect, useRef, useState } from 'react';
@@ -123,7 +124,7 @@ export function SourcePickers({ media, sources, onPick, onDraw, onLibrary, onReo
           <button data-assistant-control="create.upload" type="button" onClick={() => onLibrary(slot)} disabled={hold} className={pill}>{t("app.create.sources.library")}</button>
         )}
         <label className={`${pill} cursor-pointer has-focus-visible:outline-solid has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-vx-accent`}>
-          {picked ? t("app.oddlings.replace") : t(ui.add)}
+          <Icon name="paperclip" size={16} className="me-1.5 inline align-[-2px]" />{picked ? t("app.oddlings.replace") : t(ui.add)}
           <input data-testid={`source-upload-${slot}`} type="file" accept={accept} disabled={hold} className="sr-only"
             onChange={(e) => { const f = e.target.files && e.target.files[0]; e.target.value = ''; if (f) pickFile(slot, f); }} />
         </label>
@@ -143,7 +144,7 @@ export function SourcePickers({ media, sources, onPick, onDraw, onLibrary, onReo
       {files.map((picked, index) => <div key={index} className="flex items-center gap-3">
         {kind === 'image' && picked.previewUrl && <img src={picked.previewUrl} alt={t(slot === 'endImage' ? 'app.create.sources.endAlt' : 'app.create.sources.startAlt')} className="w-16 h-16 rounded-sm object-cover" />}
         <span className="min-w-0 flex-1 truncate text-xs">{picked.file?.name || picked.label || t('app.create.sources.image.label')}</span>
-        {picked.needsUpload && <label className={pill}>{t('app.create.reattach')}<input type="file" className="sr-only" accept={accept} disabled={hold} onChange={e => { const file = e.target.files?.[0]; e.target.value = ''; if (file) pickFile(slot, file, index); }} /></label>}
+        {picked.needsUpload && <label className={pill}><Icon name="paperclip" size={16} className="me-1.5 inline align-[-2px]" />{t('app.create.reattach')}<input type="file" className="sr-only" accept={accept} disabled={hold} onChange={e => { const file = e.target.files?.[0]; e.target.value = ''; if (file) pickFile(slot, file, index); }} /></label>}
         {picked.file && slot === 'image' && index === 0 && onDraw && <button type="button" onClick={onDraw} disabled={hold} className={pill}>{t('app.create.sources.draw')}</button>}
         {onReorder && index > 0 && <button type="button" className={pill} disabled={hold} onClick={() => onReorder(slot, index, index - 1)} aria-label={t('app.create.sources.moveEarlier')}>↑</button>}
         {onReorder && index < files.length - 1 && <button type="button" className={pill} disabled={hold} onClick={() => onReorder(slot, index, index + 1)} aria-label={t('app.create.sources.moveLater')}>↓</button>}
@@ -152,7 +153,7 @@ export function SourcePickers({ media, sources, onPick, onDraw, onLibrary, onReo
       {(files.length < max || max === 1) && <div className="flex gap-3">
         {onLibrary && <button data-assistant-control="create.upload" type="button" onClick={() => onLibrary(slot)} disabled={hold} className={pill}>{t('app.create.sources.library')}</button>}
         <label className={`${pill} cursor-pointer`}>
-          {files.length && max === 1 ? t('app.oddlings.replace') : t(ui.add)}
+          <Icon name="paperclip" size={16} className="me-1.5 inline align-[-2px]" />{files.length && max === 1 ? t('app.oddlings.replace') : t(ui.add)}
           <input data-testid={`source-upload-${slot}`} type="file" accept={accept} disabled={hold} className="sr-only"
             onChange={e => { const file = e.target.files?.[0]; e.target.value = ''; if (file) pickFile(slot, file); }} />
         </label>

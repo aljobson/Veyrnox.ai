@@ -129,95 +129,16 @@ jobs:
         if: env.HAS_TOKEN == 'true' && steps.tip.outputs.stale != 'true'
         run: npm ci --legacy-peer-deps --no-audit --no-fund && npm run build:worker
 
-      # OpenNext's preview-URL skew protection would bypass the Access policy
-      # on veyrnox.ai (ADR-0078). Keep a bounded 20-release history in the same
-      # private production deployment instead. Together with the current build,
-      # the deployed set contains at most 21 releases; current files always win.
-      - name: Retain previous Next static assets
-        id: retained_static
-        if: env.HAS_TOKEN == 'true' && steps.tip.outputs.stale != 'true' && env.FORCE_RECOVERY != 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          retained=false
-          retained_bytes=0
-          max_retained_bytes=2147483648
-          retention_bootstrap_predecessor=12448acb867057589159f312cf0e7eabb28a3ff0
-          successful_deploy_runs=()
-          latest_deployed_sha=""
-          # A run counts when its Deploy step succeeded, even if a later check failed or
-          # rolled it back: that build was live, and open pages may still reference its
-          # files. Requiring the whole job to succeed (until 2026-10-28) left a rolled-back
-          # but still-live build's files out, so every later deploy 404'd on them and
-          # rolled back too (deploy-failure #1716).
-          while IFS=$'\t' read -r previous_run deployed_sha; do
-            deployed=$(gh run view "$previous_run" --json jobs \
-              --jq '[.jobs[] | select(.name == "deploy")
-                     | .steps[] | select(.name == "Deploy" and .conclusion == "success")] | length')
-            if [ "$deployed" -eq 0 ]; then
-              continue
-            fi
-            if [ -z "$latest_deployed_sha" ]; then
-              latest_deployed_sha="$deployed_sha"
-            fi
-            successful_deploy_runs+=("$previous_run")
-            if [ "${#successful_deploy_runs[@]}" -eq 20 ]; then
-              break
-            fi
-          # The window must reach past the last real deploy. Most completed runs on
-          # main are cancelled, stale-skipped or failed, so 100 runs is about a day
-          # of merges: on 2026-10-20 the last real deploy (2026-10-19 04:53) sat at
-          # position 106, every run then failed here, and with no new deploy the
-          # window could never recover on its own.
-          done < <(gh run list --workflow deploy-production.yml --branch main --status completed --limit 300 \
-            --json databaseId,headSha --jq '.[] | [.databaseId, .headSha] | @tsv')
-          if [ -z "$latest_deployed_sha" ]; then
-            echo "::error::Could not identify an earlier successful production deployment."
-            exit 1
-          fi
-          latest_run="${successful_deploy_runs[0]}"
-          latest_artifact_size=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$latest_run/artifacts" \
-            --jq '[.artifacts[] | select(.name == "production-next-static" and .expired == false)][0].size_in_bytes // empty')
-          if [ -z "$latest_artifact_size" ]; then
-            if [ "$latest_deployed_sha" = "$retention_bootstrap_predecessor" ]; then
-              echo "::notice::Bootstrapping static retention from the approved pre-retention production release."
-              echo "available=false" >> "$GITHUB_OUTPUT"
-              exit 0
-            fi
-            echo "::error::The latest successful production deployment has no retained static artifact; refusing an unprotected cutover."
-            exit 1
-          fi
-          for previous_run in "${successful_deploy_runs[@]}"; do
-            artifact_size=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$previous_run/artifacts" \
-              --jq '[.artifacts[] | select(.name == "production-next-static" and .expired == false)][0].size_in_bytes // empty')
-            if [ -z "$artifact_size" ]; then
-              echo "::notice::Run $previous_run has no retained static artifact; skipping it."
-              continue
-            fi
-            retained_bytes=$((retained_bytes + artifact_size))
-            if [ "$retained_bytes" -gt "$max_retained_bytes" ]; then
-              echo "::error::Retained static artifacts exceed the 2 GiB download budget."
-              exit 1
-            fi
-            gh run download "$previous_run" --name production-next-static --dir "previous-next-static/$previous_run"
-            node scripts/retain-next-static.mjs "previous-next-static/$previous_run" .open-next/assets/_next/static
-            retained=true
-          done
-          echo "available=$retained" >> "$GITHUB_OUTPUT"
-
-      # Old references are enforceable only after at least one successful run
-      # has archived a complete build. The first retention-enabled deployment
-      # establishes that trusted baseline and still receives strict new-build
-      # smoke testing below.
+      # Capture the live references before selecting retained artifacts. The
+      # dpl query parameter identifies the build that rendered each page, which
+      # must stay available even after repeated failed deploys push it outside
+      # the recent-history window.
       #
       # A live site that is down (every failure a 5xx or unreachable) cannot
-      # say what it references, and must not block the deploy that fixes it
-      # (2026-10-19: the 500 site failed this step, so the fix never shipped).
-      # That case writes a flagged manifest and a warning; any other failure,
-      # such as a 404 or a wrong body, still fails the step.
+      # say what it references, and must not block the deploy that fixes it.
       - name: Record currently referenced production assets
         id: capture
-        if: env.HAS_TOKEN == 'true' && steps.tip.outputs.stale != 'true' && steps.retained_static.outputs.available == 'true'
+        if: env.HAS_TOKEN == 'true' && steps.tip.outputs.stale != 'true' && env.FORCE_RECOVERY != 'true'
         run: |
           node scripts/check-site-health.mjs --capture-assets previous-build-assets.json --tolerate-server-errors
           if jq -e '.degraded == true' previous-build-assets.json > /dev/null; then
@@ -237,6 +158,132 @@ jobs:
             echo "active=true" >> "$GITHUB_OUTPUT"
             echo "::warning::RECOVERY DEPLOY: production was already unhealthy before $GITHUB_SHA. Retained-asset checks and automatic rollback are skipped; the new build must pass the strict smoke test on its own."
           fi
+
+      # OpenNext's preview-URL skew protection would bypass the Access policy
+      # on veyrnox.ai (ADR-0078). Keep a bounded 20-release history, plus every
+      # build the live pages still reference, in the same private production
+      # deployment. Current files always win.
+      - name: Retain previous Next static assets
+        id: retained_static
+        if: env.HAS_TOKEN == 'true' && steps.tip.outputs.stale != 'true' && steps.recovery.outputs.active != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          retained=false
+          retained_bytes=0
+          max_retained_bytes=2147483648
+          retention_bootstrap_predecessor=12448acb867057589159f312cf0e7eabb28a3ff0
+          successful_deploy_runs=()
+          declare -A selected_run_shas=()
+          declare -A required_live_lookup=()
+          declare -A required_live_found=()
+          mapfile -t required_live_shas < <(jq -r '.deploymentIds[]?' previous-build-assets.json)
+          for required_sha in "${required_live_shas[@]}"; do
+            required_live_lookup["$required_sha"]=true
+          done
+          append_run() {
+            local candidate_run="$1"
+            local candidate_sha="$2"
+            for selected_run in "${successful_deploy_runs[@]}"; do
+              if [ "$selected_run" = "$candidate_run" ]; then
+                return
+              fi
+            done
+            successful_deploy_runs+=("$candidate_run")
+            selected_run_shas["$candidate_run"]="$candidate_sha"
+          }
+          latest_deployed_sha=""
+          recent_deploy_count=0
+          # A run counts when its Deploy step succeeded, even if a later check failed or
+          # rolled it back: that build was live, and open pages may still reference its
+          # files. Requiring the whole job to succeed (until 2026-10-28) left a rolled-back
+          # but still-live build's files out, so every later deploy 404'd on them and
+          # rolled back too (deploy-failure #1716).
+          while IFS=$'\t' read -r previous_run deployed_sha; do
+            # The exact build referenced by the live page is authoritative even
+            # when Cloudflare Workers Builds, rather than this workflow's Deploy
+            # step, made it live. Its artifact is checked strictly below.
+            if [[ -n "${required_live_lookup[$deployed_sha]+present}" ]]; then
+              append_run "$previous_run" "$deployed_sha"
+              required_live_found["$deployed_sha"]=true
+            fi
+            deployed=$(gh run view "$previous_run" --json jobs \
+              --jq '[.jobs[] | select(.name == "deploy")
+                     | .steps[] | select(.name == "Deploy" and .conclusion == "success")] | length')
+            if [ "$deployed" -ne 0 ]; then
+              if [ -z "$latest_deployed_sha" ]; then
+                latest_deployed_sha="$deployed_sha"
+              fi
+              if [ "$recent_deploy_count" -lt 20 ]; then
+                append_run "$previous_run" "$deployed_sha"
+                recent_deploy_count=$((recent_deploy_count + 1))
+              fi
+            fi
+            all_required_found=true
+            for required_sha in "${required_live_shas[@]}"; do
+              if [ "$required_sha" != "$retention_bootstrap_predecessor" ] \
+                && [[ -z "${required_live_found[$required_sha]+present}" ]]; then
+                all_required_found=false
+                break
+              fi
+            done
+            if [ "$recent_deploy_count" -ge 20 ] && [ "$all_required_found" = true ]; then
+              break
+            fi
+          # The window must reach past the last real deploy. Most completed runs on
+          # main are cancelled, stale-skipped or failed, so 100 runs is about a day
+          # of merges: on 2026-10-20 the last real deploy (2026-10-19 04:53) sat at
+          # position 106, every run then failed here, and with no new deploy the
+          # window could never recover on its own.
+          done < <(gh run list --workflow deploy-production.yml --branch main --status completed --limit 300 \
+            --json databaseId,headSha --jq '.[] | [.databaseId, .headSha] | @tsv')
+          if [ -z "$latest_deployed_sha" ]; then
+            echo "::error::Could not identify an earlier successful production deployment."
+            exit 1
+          fi
+          for required_sha in "${required_live_shas[@]}"; do
+            if [ "$required_sha" = "$retention_bootstrap_predecessor" ]; then
+              continue
+            fi
+            if [[ -z "${required_live_found[$required_sha]+present}" ]]; then
+              echo "::error::Could not find a completed deployment run for live build $required_sha."
+              exit 1
+            fi
+          done
+          latest_run="${successful_deploy_runs[0]}"
+          latest_artifact_size=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$latest_run/artifacts" \
+            --jq '[.artifacts[] | select(.name == "production-next-static" and .expired == false)][0].size_in_bytes // empty')
+          if [ -z "$latest_artifact_size" ]; then
+            if [ "$latest_deployed_sha" = "$retention_bootstrap_predecessor" ]; then
+              echo "::notice::Bootstrapping static retention from the approved pre-retention production release."
+              echo "available=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "::error::The latest successful production deployment has no retained static artifact; refusing an unprotected cutover."
+            exit 1
+          fi
+          for previous_run in "${successful_deploy_runs[@]}"; do
+            artifact_size=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$previous_run/artifacts" \
+              --jq '[.artifacts[] | select(.name == "production-next-static" and .expired == false)][0].size_in_bytes // empty')
+            if [ -z "$artifact_size" ]; then
+              deployed_sha="${selected_run_shas[$previous_run]}"
+              if [[ -n "${required_live_lookup[$deployed_sha]+present}" ]] && [ "$deployed_sha" != "$retention_bootstrap_predecessor" ]; then
+                echo "::error::Live build $deployed_sha has no retained static artifact; refusing an unprotected cutover."
+                exit 1
+              fi
+              echo "::notice::Run $previous_run has no retained static artifact; skipping it."
+              continue
+            fi
+            retained_bytes=$((retained_bytes + artifact_size))
+            if [ "$retained_bytes" -gt "$max_retained_bytes" ]; then
+              echo "::error::Retained static artifacts exceed the 2 GiB download budget."
+              exit 1
+            fi
+            gh run download "$previous_run" --name production-next-static --dir "previous-next-static/$previous_run"
+            node scripts/retain-next-static.mjs "previous-next-static/$previous_run" .open-next/assets/_next/static
+            retained=true
+          done
+          echo "available=$retained" >> "$GITHUB_OUTPUT"
 
       # Each run stores only its own files. The bounded download loop above
       # selects the history, so old files cannot be copied forward forever.

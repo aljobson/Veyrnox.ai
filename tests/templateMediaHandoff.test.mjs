@@ -2,7 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   clearTemplateMediaHandoff,
+  hasTemplateMediaHandoff,
   takeTemplateMediaHandoff,
+  templateMediaHandoffMatches,
   templateImageFileError,
   writeTemplateMediaHandoff,
 } from '../app/veyrnox/_lib/templateMediaHandoff.js';
@@ -13,7 +15,11 @@ const image = new Blob(['image'], { type: 'image/jpeg' });
 test('template photo handoff is exact, fresh, memory-only and single-use', () => {
   const target = {};
   assert.equal(writeTemplateMediaHandoff(target, { templateId: 'slow-cinema-turn', modelId: 'kling-3.0-i2v', image }, NOW), true);
+  assert.equal(hasTemplateMediaHandoff(target), true);
+  assert.equal(templateMediaHandoffMatches(target, 'slow-cinema-turn'), true);
+  assert.equal(templateMediaHandoffMatches(target, 'other-template'), false);
   assert.equal(takeTemplateMediaHandoff(target, 'other-template', 'kling-3.0-i2v', NOW), null);
+  assert.equal(hasTemplateMediaHandoff(target), false);
   assert.equal(Object.keys(target).length, 0, 'a mismatched read still consumes the one-time handoff');
 
   writeTemplateMediaHandoff(target, { templateId: 'slow-cinema-turn', modelId: 'kling-3.0-i2v', image }, NOW);

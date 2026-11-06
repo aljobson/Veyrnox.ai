@@ -43,12 +43,14 @@ interface BillingValue {
     purchaseStayOffer(pkg: PurchasesPackage): Promise<PurchaseResult>;
     restore(): Promise<boolean>;
     refreshGenerationAccess(): Promise<boolean>;
+    // Re-runs the store offerings load after it failed (the paywall's Retry).
+    retryOfferings(): void;
 }
 
 const BillingContext = createContext<BillingValue>({
     status: 'off', offerings: null, canPurchase: false, canRestore: false, salesOpen: false, refreshSales: async () => false, publishActive: false, generationActive: false, generationAccessResolved: false, generationPurchaseReady: false,
     paidAccess: false, accessResolved: false, activeProductIds: [], managementURL: null, debug: null,
-    purchase: async () => 'cancelled', purchaseStayOffer: async () => 'cancelled', restore: async () => false, refreshGenerationAccess: async () => false,
+    purchase: async () => 'cancelled', purchaseStayOffer: async () => 'cancelled', restore: async () => false, refreshGenerationAccess: async () => false, retryOfferings: () => undefined,
 });
 
 export const useBilling = () => useContext(BillingContext);
@@ -66,6 +68,8 @@ export function BillingProvider({ children }: { children: ReactNode }) {
     const { status: authStatus, api, generation, beginSessionTask } = useAuth();
     const [status, setStatus] = useState<BillingStatus>(ENABLED && API_KEY ? 'loading' : 'off');
     const [offerings, setOfferings] = useState<PurchasesOfferings | null>(null);
+    const [offeringsLoad, setOfferingsLoad] = useState(0);
+    const retryOfferings = useCallback(() => { setStatus(previous => (previous === 'off' ? previous : 'loading')); setOfferingsLoad(count => count + 1); }, []);
     const [store, setStore] = useState(() => emptyStore(-1));
     const [server, setServer] = useState(() => emptyServer(-1));
     const currentStore = store.gen === generation ? store : emptyStore(generation);
@@ -142,14 +146,18 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         }
     }, [api, beginSessionTask]);
 
+    // The customer-info listener is registered once and outlives offerings reloads (Retry), so it follows the
+    // provider's mount, not a single run of the effect below.
+    const mounted = useRef(true);
+    useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
     useEffect(() => {
         if (!ENABLED || !API_KEY) return;
         let cancelled = false;
         const onInfo = () => {
             const task = beginSessionTask();
-            if (cancelled || bound.current?.gen !== task.gen) return;
+            if (!mounted.current || bound.current?.gen !== task.gen) return;
             void Purchases.getCustomerInfo().then(info => {
-                if (!cancelled && task.current() && bound.current?.gen === task.gen) setStore(storeInfo(task.gen, info));
+                if (mounted.current && task.current() && bound.current?.gen === task.gen) setStore(storeInfo(task.gen, info));
             }).catch(() => undefined);
         };
         (async () => {
@@ -180,7 +188,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         return () => {
             cancelled = true;
         };
-    }, [beginSessionTask]);
+    }, [beginSessionTask, offeringsLoad]);
 
     // Serialize SDK identities: a late login must finish before the next login/logout.
     useEffect(() => {
@@ -320,8 +328,8 @@ export function BillingProvider({ children }: { children: ReactNode }) {
     const paidAccessResolved = accessResolved || serverAccessResolved;
 
     const value = useMemo(
-        () => ({ status, offerings, canPurchase, canRestore, salesOpen, refreshSales, publishActive: publishEntitled, generationActive: generationEntitled, generationAccessResolved: serverGenerationResolved, generationPurchaseReady, paidAccess, accessResolved: paidAccessResolved, activeProductIds, managementURL, debug, purchase, purchaseStayOffer, restore, refreshGenerationAccess }),
-        [status, offerings, canPurchase, canRestore, salesOpen, refreshSales, publishEntitled, generationEntitled, serverGenerationResolved, generationPurchaseReady, paidAccess, paidAccessResolved, activeProductIds, managementURL, debug, purchase, purchaseStayOffer, restore, refreshGenerationAccess],
+        () => ({ status, offerings, canPurchase, canRestore, salesOpen, refreshSales, publishActive: publishEntitled, generationActive: generationEntitled, generationAccessResolved: serverGenerationResolved, generationPurchaseReady, paidAccess, accessResolved: paidAccessResolved, activeProductIds, managementURL, debug, purchase, purchaseStayOffer, restore, refreshGenerationAccess, retryOfferings }),
+        [status, offerings, canPurchase, canRestore, salesOpen, refreshSales, publishEntitled, generationEntitled, serverGenerationResolved, generationPurchaseReady, paidAccess, paidAccessResolved, activeProductIds, managementURL, debug, purchase, purchaseStayOffer, restore, refreshGenerationAccess, retryOfferings],
     );
     return <BillingContext.Provider value={value}>{children}</BillingContext.Provider>;
 }

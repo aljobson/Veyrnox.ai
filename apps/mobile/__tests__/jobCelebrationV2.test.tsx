@@ -8,13 +8,14 @@ const mockPush = jest.fn(),
     mockCelebrate = jest.fn();
 const mockApi = { request: jest.fn() };
 let mockWaited = true;
+let mockFromCreate: string | undefined;
 let mockRefocus: (() => void) | undefined;
 let mockBlur: (() => void) | undefined;
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi }) }));
 jest.mock('expo-router', () => ({
     Stack: { Screen: () => null },
     Link: () => null,
-    useLocalSearchParams: () => ({ id: 'job-id' }),
+    useLocalSearchParams: () => ({ id: 'job-id', fromCreate: mockFromCreate }),
     useRouter: () => ({ replace: jest.fn(), push: mockPush }),
     useFocusEffect: (fn: () => () => void) =>
         require('react').useEffect(() => {
@@ -47,6 +48,7 @@ beforeEach(() => {
     jest.clearAllMocks();
     resetReviewAskClaim();
     mockWaited = true;
+    mockFromCreate = undefined;
     mockAsset.mockResolvedValue({ url: 'https://example.test/result.png', mime_type: 'image/png' });
     mockCelebrate.mockReturnValue({ big: false, done: Promise.resolve() });
 });
@@ -71,6 +73,14 @@ test('a historical first poll carries no unfinished evidence and never asks for 
     expect(mockCelebrate).toHaveBeenCalledWith('job-id', 'image/png', false);
     await act(async () => jest.advanceTimersByTime(5000));
     expect(mockPush).not.toHaveBeenCalled();
+});
+test('QA-006: a finished result opened from Create counts as the first win and asks after it is seen', async () => {
+    mockWaited = false;
+    mockFromCreate = '1';
+    await render();
+    expect(mockCelebrate).toHaveBeenCalledWith('job-id', 'image/png', true);
+    await act(async () => jest.advanceTimersByTime(5000));
+    expect(mockPush).toHaveBeenCalledWith('/rate');
 });
 test('rating is pushed only after the celebration promise resolves', async () => {
     let done!: () => void;

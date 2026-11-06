@@ -44,12 +44,12 @@ jest.mock('../src/push/pushContext', () => ({ usePush: () => ({ supported: false
 test.each(['none', 'completed', '404', 'network'])('Account server eligibility: %s', async status => {
     if (status === '404' || status === 'network') mockApi.request.mockRejectedValue(new ApiError(status === '404' ? 404 : 0, 'error'));
     else mockApi.request.mockResolvedValue({ status, answers });
-    await act(async () => root.render(<Account />)); expect(controls('vibe.account.retake')).toHaveLength(status === '404' || status === 'network' ? 0 : 1);
+    await act(async () => root.render(<Account />)); expect(controls('vibe.account.reset')).toHaveLength(status === '404' || status === 'network' ? 0 : 1);
 });
 test('Account hides immediately on B until B’s status arrives', async () => {
-    await act(async () => root.render(<Account />)); expect(controls('vibe.account.retake')).toHaveLength(1);
-    const gate = deferred(); mockApi.request.mockReturnValueOnce(gate.promise); await changeOwner(); expect(controls('vibe.account.retake')).toHaveLength(0);
-    await act(async () => { gate.resolve({ status: 'none' }); await tick(); }); expect(controls('vibe.account.retake')).toHaveLength(1);
+    await act(async () => root.render(<Account />)); expect(controls('vibe.account.reset')).toHaveLength(1);
+    const gate = deferred(); mockApi.request.mockReturnValueOnce(gate.promise); await changeOwner(); expect(controls('vibe.account.reset')).toHaveLength(0);
+    await act(async () => { gate.resolve({ status: 'none' }); await tick(); }); expect(controls('vibe.account.reset')).toHaveLength(1);
 });
 test.each(['B', 'same'])('stale Reset for %s leaves the new record and shows no note', async next => {
     await storeVibe(completed(), 'A'); await act(async () => root.render(<Account />)); const gate = deferred(); mockApi.request.mockReturnValueOnce(gate.promise);
@@ -75,6 +75,6 @@ test.each([true, false])('uncertain Reset reports the reconciled state (landed=%
 });
 test('status read stalled body hides section at deadline; later focus can show it', async () => {
     jest.useFakeTimers(); mockApi.request.mockReturnValueOnce(new Promise(() => {})); await act(async () => root.render(<Account />));
-    await act(async () => { await jest.advanceTimersByTimeAsync(VIBE_REQUEST_DEADLINE_MS); }); expect(controls('vibe.account.retake')).toHaveLength(0);
-    await act(async () => { mockFocus.forEach(fn => fn()); await tick(); }); expect(controls('vibe.account.retake')).toHaveLength(1); jest.useRealTimers();
+    await act(async () => { await jest.advanceTimersByTimeAsync(VIBE_REQUEST_DEADLINE_MS); }); expect(controls('vibe.account.reset')).toHaveLength(0);
+    await act(async () => { mockFocus.forEach(fn => fn()); await tick(); }); expect(controls('vibe.account.reset')).toHaveLength(1); jest.useRealTimers();
 });

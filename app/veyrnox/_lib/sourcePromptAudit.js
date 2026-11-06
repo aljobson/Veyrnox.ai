@@ -1,3 +1,6 @@
+import { HIGGSFIELD_CATEGORY_FILL_RECORDS } from './higgsfieldCategoryFillRecords.js';
+import { SYNTX_64_SOURCE_PROMPT_RECORDS } from './syntxSourcePromptExpansion64Records.js';
+import { HIGGSFIELD_300_SOURCE_PROMPT_RECORDS } from './higgsfieldCommunityExpansion300Records.js';
 import { GENJUTSU_SOURCE_PROMPT_RECORDS } from './genjutsuSourcePromptRecords.js';
 import { HIGGSFIELD_90_SOURCE_PROMPT_RECORDS } from './higgsfieldCommunityExpansion90Records.js';
 import { SYNTX_SOURCE_PROMPT_RECORDS } from './syntxSourcePromptRecords.js';
@@ -9,12 +12,15 @@ const EXACT_PROMPT_MAX = GENERATION_PROMPT_MAX;
 const EXACT_SOURCE_RECORDS = Object.freeze({
   ...GENJUTSU_SOURCE_PROMPT_RECORDS,
   ...HIGGSFIELD_90_SOURCE_PROMPT_RECORDS,
+  ...HIGGSFIELD_300_SOURCE_PROMPT_RECORDS,
   ...SYNTX_SOURCE_PROMPT_RECORDS,
   ...SEEDANCE_SOURCE_PROMPT_RECORDS,
+  ...SYNTX_64_SOURCE_PROMPT_RECORDS,
+  ...HIGGSFIELD_CATEGORY_FILL_RECORDS,
 });
 const exactSourceRecordFor = recordLookup(EXACT_SOURCE_RECORDS);
 
-const referenceCount = (prompt, kind) => {
+export const referenceCount = (prompt, kind) => {
   const indices = [];
   const expressions = [
     new RegExp(`@${kind}\\s*[_-]?(\\d+)`, 'gi'),
@@ -99,12 +105,11 @@ export function sourcePromptAuditForModel(templateId, promptMax = EXACT_PROMPT_M
   return Object.freeze({ ...sourceAudit, runnable: false, issues: Object.freeze(issues), modelPromptMax: promptMax });
 }
 
-// Public templates must either carry a complete exact source prompt or be an
-// explicitly independent Veyrnox adaptation. Matched records whose prompt is
-// absent or truncated remain audit evidence, but are not publishable.
+// Only community-catalog callers use this predicate. Independent recipe catalogs
+// keep their existing publication contract.
 export function isPublishableSourcePromptTemplate(templateId) {
   const status = sourcePromptAuditRecord(templateId).status;
-  return status === 'exact' || status === 'adaptation-only';
+  return status === 'exact';
 }
 
 export const SOURCE_PROMPT_AUDIT_STATUSES = Object.freeze([

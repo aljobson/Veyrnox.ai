@@ -22,6 +22,12 @@ const retiredOddlingsKnowledge = {
         'Local moodboard preview; describe what to borrow below.',
     ]),
 };
+// The chat settings sidebar was folded into the message box: Thinking, Web search, Deep research and image
+// attachment are controls in its setup row, which simply hides an option a model does not offer.
+const retiredChatKnowledge = {
+    controls: new Set(['Capabilities', 'Tools']),
+    descriptions: new Set(['This model does not offer Thinking.', 'This model cannot read images.', 'This model does not offer Web search.']),
+};
 // ADR-0262: each attachment supplies its own type; the global media-type
 // selector and the single-selection instruction were replaced by an ordered strip.
 const retiredPublishKnowledge = {
@@ -49,6 +55,9 @@ test('phase B retains every app route knowledge item from origin/main', async ()
                 // pipeline instead of treating it as a local-only moodboard.
                 if (entry.route === '/app/oddlings' && retiredOddlingsKnowledge[field]?.has(value)) continue;
                 if (entry.route === '/app/publish' && retiredPublishKnowledge[field]?.has(value)) continue;
+                // ADR-0326 replaces the comma-separated palette with native swatches.
+                if (entry.route === '/app/editor' && field === 'descriptions' && value === 'Use up to 12 hex colours separated by commas.') continue;
+                if (entry.route === '/app/chat' && retiredChatKnowledge[field]?.has(value)) continue;
                 assert.ok(actual.has(normal(value)), `${entry.route} ${field}: ${value}`);
             }
         }
@@ -129,6 +138,7 @@ test('all main route knowledge survives localization except the retired unknown-
                 if (route === '/app/film-studio' && retiredFilmStudioKnowledge[field]?.has(expected)) continue;
                 if (route === '/app/oddlings' && retiredOddlingsKnowledge[field]?.has(expected)) continue;
                 if (route === '/app/publish' && retiredPublishKnowledge[field]?.has(expected)) continue;
+                if (route === '/app/chat' && retiredChatKnowledge[field]?.has(expected)) continue;
                 if (route === '/presets/[id]' && field === 'headings' && expected === 'PROMPT') continue;
                 if (route === '/presets/[id]' && field === 'controls' && expected === 'Template prompt') continue;
                 assert.ok(actual.has(normal(expected)), `${route} ${field}: ${expected}`);

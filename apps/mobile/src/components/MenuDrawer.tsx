@@ -3,6 +3,7 @@ import { I18nManager } from 'react-native';
 import { useFaceFiltersAvailable } from '../lib/useFaceFiltersAvailable';
 import { Button, ListRow, Text, Icon, themedStyles, useThemedStyles } from './ui';
 import { useEffect, useRef, useState } from 'react';
+import { setMenuOpen } from '../lib/menuOpen';
 import { AccessibilityInfo, Animated, Modal, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { usePathname, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -25,6 +26,7 @@ export function MenuButton({ palette }: { palette?: Palette }) {
     const [open, setOpen] = useState(false);
     const pathname = usePathname();
     useEffect(() => setOpen(false), [pathname]);
+    useEffect(() => { setMenuOpen(open); return () => setMenuOpen(false); }, [open]);
     return (
         <>
             <Button label={t('menu.open')} variant="tertiary" accessibilityRole="button" accessibilityLabel={t('menu.open')} style={styles.hit} onPress={() => setOpen(true)}>

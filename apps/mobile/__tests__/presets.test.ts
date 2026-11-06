@@ -24,12 +24,24 @@ const base = {
 };
 
 describe('parsePresets', () => {
+    test('new community feeds carry one exact prompt and preserve both origin fields', () => {
+        const prompt = '  Exact community text\n\n';
+        const [p] = parsePresets({ presets: [{ ...base, prompt, sourcePrompt: prompt, promptOrigin: 'community-source-exact', sourcePromptOrigin: 'community-source-exact', sourcePromptStatus: 'exact', sourcePromptRunnable: false }] });
+        expect(p.prompt).toBe(prompt);
+        expect(p.sourcePrompt).toBe(prompt);
+        expect(p.promptOrigin).toBe('community-source-exact');
+        const href = presetHref(p);
+        expect(href.pathname).toBe('/create/[modelId]');
+        if (href.pathname !== '/create/[modelId]') throw new Error('Expected an exact-prompt Create handoff');
+        expect(href.params.prompt).toBe(prompt);
+    });
+
     test('keeps well-formed presets and reads the price from the response', () => {
         const [p] = parsePresets({ presets: [base] });
         expect(p).toMatchObject({ id: 'a', title: 'Product Hero', modelId: 'kling-3.0-i2v', promptOrigin: 'veyrnox-adaptation', credits: 68, durationSeconds: 10, needs: 'A clean product image', sourceAspect: '9:16', available: true });
     });
 
-    test('keeps an exact source prompt separate from the compatible generation prompt', () => {
+    test('keeps the exact source handoff when reading an older server response', () => {
         const [p] = parsePresets({ presets: [{ ...base, sourcePrompt: 'Exact community text', sourcePromptOrigin: 'community-source-exact', sourcePromptStatus: 'exact', sourcePromptRunnable: false, sourcePromptIssues: ['source-input-contract-not-wired'], sourcePromptDuplicateOf: 'earlier-template' }] });
         expect(p).toMatchObject({ prompt: 'Animate the product.', sourcePrompt: 'Exact community text', sourcePromptOrigin: 'community-source-exact', sourcePromptStatus: 'exact', sourcePromptRunnable: false, sourcePromptIssues: ['source-input-contract-not-wired'], sourcePromptDuplicateOf: 'earlier-template' });
         expect(presetHref(p)).toMatchObject({ pathname: '/create/[modelId]', params: { prompt: 'Exact community text', tmodel: base.modelId } });

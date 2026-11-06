@@ -1,0 +1,54 @@
+{
+  "jenner": {
+    "id": "crowd-choreography-recast",
+    "name": "CROWD CHOREOGRAPHY RECAST"
+  },
+  "drakula-cruise": {
+    "id": "vampire-voyage",
+    "name": "VAMPIRE VOYAGE"
+  },
+  "vice-city-freefall": {
+    "id": "neon-city-freefall",
+    "name": "NEON CITY FREEFALL"
+  },
+  "breaking-good": {
+    "id": "underground-lab-transformation",
+    "name": "UNDERGROUND LAB TRANSFORMATION"
+  },
+  "tomb-rider": {
+    "id": "ruins-escape-run",
+    "name": "RUINS ESCAPE RUN"
+  },
+  "alice-in-wonderland": {
+    "id": "curious-garden-journey",
+    "name": "CURIOUS GARDEN JOURNEY"
+  },
+  "gentle-monster-disney": {
+    "id": "sculptural-sunglasses-ad",
+    "name": "SCULPTURAL SUNGLASSES AD"
+  },
+  "pov-avatar": {
+    "id": "alien-forest-flight",
+    "name": "ALIEN FOREST FLIGHT"
+  },
+  "the-dune": {
+    "id": "desert-worm-flight",
+    "name": "DESERT WORM FLIGHT"
+  },
+  "wonka-world": {
+    "id": "chocolate-factory-flight",
+    "name": "CHOCOLATE FACTORY FLIGHT"
+  },
+  "the-matrix": {
+    "id": "rooftop-agent-pursuit",
+    "name": "ROOFTOP AGENT PURSUIT"
+  },
+  "community-hoonigan-custom-swap": {
+    "id": "community-custom-drift-car-swap",
+    "name": "CUSTOM DRIFT CAR SWAP"
+  },
+  "community-vehicle-carjacking": {
+    "id": "community-chicken-bucket-swap",
+    "name": "CHICKEN BUCKET SWAP"
+  }
+}

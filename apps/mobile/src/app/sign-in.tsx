@@ -4,13 +4,19 @@ import { ActivityIndicator, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Link, Redirect, useRouter } from 'expo-router';
 import { useAuth } from '../auth/AuthProvider';
-import { Logo } from '../components/Logo';
-import { Button, Text, AuthProviderButton, themedStyles, useThemedStyles } from '../components/ui';
+import { BrandIntro } from '../components/BrandIntro';
+import { SignupOffer } from '../components/SignupOffer';
+import { Button, Icon, Text, AuthProviderButton, themedStyles, useThemedStyles } from '../components/ui';
 import { ConsentRow } from '../components/ui/ConsentRow';
 import { DEV_MOCK } from '../lib/config';
 import { ds, colors } from '../theme';
 import { t } from '../lib/i18n';
 import { playSelection } from '../lib/haptics';
+const PROMISES = [
+    { icon: 'image', label: 'signIn.photo' },
+    { icon: 'video', label: 'signIn.video' },
+    { icon: 'lightbulb', label: 'signIn.idea' },
+] as const;
 export default function SignIn() {
     const { appleNativeAvailable, signInWithApple, signInWithOAuth, signInWithEmail, status } = useAuth();
     const router = useRouter();
@@ -47,10 +53,20 @@ export default function SignIn() {
             showsVerticalScrollIndicator={false}
         >
             <View style={styles.hero}>
-                <Logo />
+                <BrandIntro fontSize={32} />
+                <Text variant="caption" tone="accent" accessibilityRole="header">{t('signIn.kicker')}</Text>
                 <Text variant="display">{t('signIn.title')}</Text>
                 <Text tone="secondary">{t('signIn.subtitle')}</Text>
+                <View accessible accessibilityLabel={t('signIn.promiseLabel')} style={styles.promises}>
+                    {PROMISES.map((p) => (
+                        <View key={p.label} style={styles.promise}>
+                            <Icon name={p.icon} size={20} />
+                            <Text variant="footnote" tone="secondary">{t(p.label)}</Text>
+                        </View>
+                    ))}
+                </View>
             </View>
+            <SignupOffer />
             <ConsentRow agreed={agreed} onChange={setAgreed} />
             <Text variant="footnote" tone="tertiary">
                 {t(agreed ? 'signIn.ready' : 'signIn.tickFirst')}
@@ -95,5 +111,7 @@ export default function SignIn() {
 const sheets = themedStyles((p) => ({
     scroll: { flex: 1, backgroundColor: p.bg },
     screen: { flexGrow: 1, paddingHorizontal: ds.space.gutter, gap: ds.space.md },
-    hero: { gap: ds.space.lg, marginBottom: ds.space.xxl },
+    hero: { gap: ds.space.lg, marginBottom: ds.space.lg },
+    promises: { gap: ds.space.sm },
+    promise: { flexDirection: 'row', alignItems: 'center', gap: ds.space.md },
 }));

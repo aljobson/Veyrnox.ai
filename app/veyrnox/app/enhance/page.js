@@ -1,5 +1,6 @@
 'use client';
 import { helperCopy } from '../../../../lib/i18n/helperCopy.mjs';
+import { Icon } from '../../_components/Icon';
 import { useI18n } from '../../../../components/I18nProvider';
 import { localeTag } from '../../../../lib/i18n/locales.mjs';
 import { tOr } from '../../../../lib/i18n/translate.mjs';
@@ -114,7 +115,7 @@ function Editor() {
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
             <p className="max-w-2xl text-sm leading-relaxed text-vx-fg-body">{t("app.enhance.intro")}</p>
             <label className={`inline-flex shrink-0 cursor-pointer rounded-full border border-vx-border px-5 py-3 text-sm font-bold focus-within:outline focus-within:outline-2 focus-within:outline-vx-accent ${exporting ? 'opacity-40' : ''}`}>
-                {source ? t("app.enhance.chooseAnother") : t("label.Choose video")}<input data-testid="enhance-upload" aria-label={t("label.Choose video")} className="sr-only" type="file" accept="video/mp4,video/webm,video/quicktime" disabled={exporting} onChange={choose} />
+                <Icon name="paperclip" size={16} className="me-1.5 inline align-[-2px]" />{source ? t("app.enhance.chooseAnother") : t("label.Choose video")}<input data-testid="enhance-upload" aria-label={t("label.Choose video")} className="sr-only" type="file" accept="video/mp4,video/webm,video/quicktime" disabled={exporting} onChange={choose} />
             </label>
         </div>
         {error && <p role="alert" className="mb-5 rounded-xl border border-vx-danger p-4 text-sm">{helperCopy(t, locale, error)}</p>}

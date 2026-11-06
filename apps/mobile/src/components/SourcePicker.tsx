@@ -13,7 +13,7 @@ import { LibraryChooser } from './LibraryChooser';
 import { t, plural } from '../lib/i18n';
 import type { LibraryChoice } from '../lib/librarySource';
 import { checkPicked, pickedProblem, type PickedFile, type Slot, type GenerationReference } from '../lib/sources';
-import { uploadMessage, uploadSource } from '../lib/uploads';
+import { uploadMessage, isConsentDeclined, uploadSource } from '../lib/uploads';
 import { ds } from '../theme';
 
 interface SourcePickerProps {
@@ -97,7 +97,7 @@ function ReferencePicker(props: SourcePickerProps) {
                 {index < rows.length - 1 && <Button variant="secondary" accessibilityRole="button" accessibilityLabel={t('app.create.sources.moveLater')} onPress={() => move(index, index + 1)} label={t('app.create.sources.moveLater')} icon="arrowDown" iconOnly />}
             </View>
         </View>)}
-        {rows.length < max && <Button variant="secondary" accessibilityRole="button" onPress={() => change([...current.current, { id: serial.current++, reference: undefined }])} label={t(props.slot.kind === 'image' ? 'app.create.sources.image.add' : props.slot.kind === 'video' ? 'app.create.sources.video.add' : 'app.create.sources.audio.add')} />}
+        {rows.length < max && <Button variant="secondary" accessibilityRole="button" onPress={() => change([...current.current, { id: serial.current++, reference: undefined }])} label={t(props.slot.kind === 'image' ? 'app.create.sources.image.add' : props.slot.kind === 'video' ? 'app.create.sources.video.add' : 'app.create.sources.audio.add')} icon="paperclip" />}
     </View>;
 }
 
@@ -193,7 +193,7 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
             setStatus({ step: 'empty' });
             setPreview(null);
             releaseOwned();
-            setError(uploadMessage(err));
+            setError(isConsentDeclined(err) ? null : uploadMessage(err));
         }
     }
 
@@ -242,7 +242,7 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
             </Text>
             {hint ? <Text variant="footnote" tone="tertiary" style={styles.slotHint}>{hint}</Text> : null}
             {status.step === 'empty' ? (
-                <Button variant="secondary" accessibilityRole="button" accessibilityLabel={rawText(t('sourcePicker.choosefor', { value1: NOUN[slot.kind], value2: slot.label }))} onPress={pick} label={t('sourcePicker.choose', { value1: NOUN[slot.kind] })} />
+                <Button variant="secondary" accessibilityRole="button" accessibilityLabel={rawText(t('sourcePicker.choosefor', { value1: NOUN[slot.kind], value2: slot.label }))} onPress={pick} icon="paperclip" label={t('sourcePicker.choose', { value1: NOUN[slot.kind] })} />
             ) : (
                 <View style={styles.row}>
                     {preview ? <Image source={{ uri: preview }} style={styles.thumb} contentFit="cover" /> : <View style={[styles.thumb, styles.thumbPlain]} />}

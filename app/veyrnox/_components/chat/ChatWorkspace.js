@@ -15,6 +15,7 @@ import { useFreeAllowance } from '../../_lib/useFreeAllowance';
 import { freeLeftFor } from '../../_lib/freeAllowance';
 import { researchProgressLabelDiagnostic as researchProgressLabel } from '../../_lib/chatResearchUi';
 import { PersonaManager } from './PersonaManager';
+import { Modal } from '../Modal';
 import { AttachButton, AttachChips, useAttachments } from './AttachBar';
 import { LibraryPicker } from '../LibraryPicker';
 import { SkillsPanel } from './SkillsPanel';
@@ -133,6 +134,7 @@ export function ChatWorkspace() {
   // dialog already returned it somewhere real. An effect, not a frame callback: it runs after the dialog has unmounted, when focus
   // has fallen to the page.
   const restorePersonaFocus = useRef(false);
+  const settingsCloseRef = useRef(null);
   const closePersonaManager = () => { restorePersonaFocus.current = true; setManagingPersonas(false); };
   useEffect(() => {
     if (managingPersonas || !restorePersonaFocus.current) return;
@@ -473,7 +475,7 @@ export function ChatWorkspace() {
       onDeleteFolder={deleteFolder} onMove={move} activeId={active?.id} onOpen={open} onNew={blank} onPatch={patch} onDelete={remove} />
   );
   const settings = (
-    <SettingsPanel models={models} model={model} busy={busy} onSelectModel={selectModel} tiers={tiers} onTiers={setTiers} offer={offer} opts={opts} onOpts={setOpts} researchOn={researchOn}
+    <SettingsPanel models={models} model={model} busy={busy} onSelectModel={selectModel} tiers={tiers} onTiers={setTiers} offer={offer} opts={opts} onOpts={setOpts}
       personasOn={personasOn} personas={personas} personaId={personaId} onPersona={pickPersona} onManagePersonas={() => setManagingPersonas(true)}
       instr={oddlingContext ? lockedOddlingInstructions : instr} onInstr={setInstr} instructionsLocked={!!oddlingContext}
       hasThread={!!active} canSaveInstr={!oddlingContext && !!active && instr !== (active.system_prompt || '')} onSaveInstr={saveInstr} saved={saved} maxPrompt={MAX_PROMPT} />
@@ -496,7 +498,7 @@ export function ChatWorkspace() {
               {composerKind === COMPOSER_KINDS.CHAT ? t('app.chat.workspace.perReply', { price: credits(t, locale, model.credits_per_reply) }) : mediaGeneration.model ? t('app.chat.workspace.base', { count: number(mediaGeneration.model.credits) }) : ''}
             </span>
           </p>
-          {composerKind === COMPOSER_KINDS.CHAT && <button type="button" data-assistant-target="chat.settings" aria-expanded={settingsOpen} onClick={() => setSettingsOpen(true)} className="rounded-full border border-vx-border px-3 py-1.5 text-sm xl:hidden">{t("app.chat.settings")}</button>}
+          
           {composerKind === COMPOSER_KINDS.CHAT && <button type="button" disabled={!active || stars.length === 0} aria-pressed={starredOnly} onClick={() => setStarredOnly((v) => !v)}
             className="rounded-full border border-vx-border px-3 py-1.5 text-sm aria-pressed:border-vx-accent disabled:opacity-50">{t("app.chat.workspace.starred")}</button>}
         </div>
@@ -595,8 +597,8 @@ export function ChatWorkspace() {
                 setComposerKind(next);
                 setSettingsOpen(false);
               }} />
-              {composerKind === COMPOSER_KINDS.CHAT ? <><ComposerControls models={models} model={model} offer={offer} opts={opts} busy={busy} onSelectModel={selectModel} onOpts={setOpts}
-                onLibrary={() => setPickingLibrary(true)} libraryDisabled={att.items.length >= limits.maxAttachments} />
+              {composerKind === COMPOSER_KINDS.CHAT ? <><ComposerControls models={models} model={model} offer={offer} opts={{ ...opts, research: researchOn }} busy={busy} onSelectModel={selectModel} onOpts={setOpts}
+                onLibrary={() => setPickingLibrary(true)} libraryDisabled={att.items.length >= limits.maxAttachments} onSettings={() => setSettingsOpen(true)} settingsOpen={settingsOpen} />
               {hasImages && (
                 <div className="border-t border-vx-border px-3 pt-3">
                   <AttachChips items={att.items} onRemove={att.remove} disabled={busy} />
@@ -620,16 +622,14 @@ export function ChatWorkspace() {
           </div>
         </div>
       </section>
-      {composerKind === COMPOSER_KINDS.CHAT && <aside className="hidden w-[320px] shrink-0 border-s border-vx-border bg-vx-base xl:block">{settings}</aside>}
-      {composerKind === COMPOSER_KINDS.CHAT && pickingLibrary && <LibraryPicker onPick={pickFromLibrary} onClose={() => setPickingLibrary(false)} />}
+            {composerKind === COMPOSER_KINDS.CHAT && pickingLibrary && <LibraryPicker onPick={pickFromLibrary} onClose={() => setPickingLibrary(false)} />}
       {settingsOpen && (
-        <div className="fixed inset-0 z-40 flex justify-end xl:hidden" role="dialog" aria-modal="true" aria-label={t("label.Chat settings")}>
-          <button type="button" aria-label={t("app.chat.closeSettings")} className="flex-1 bg-black/50" onClick={() => setSettingsOpen(false)} />
+        <Modal onCancel={() => setSettingsOpen(false)} initialFocusRef={settingsCloseRef} role="dialog" aria-modal="true" aria-label={t("label.Chat settings")} className="justify-end">
           <div className="relative w-[340px] max-w-[90vw] bg-vx-base">
-            <button type="button" aria-label={t("app.chat.closeSettings")} className="absolute end-3 top-3 z-10 rounded-full border border-vx-border px-3 py-1 text-sm" onClick={() => setSettingsOpen(false)}>{t("authGate.close")}</button>
+            <button ref={settingsCloseRef} type="button" aria-label={t("app.chat.closeSettings")} className="absolute end-3 top-3 z-10 rounded-full border border-vx-border px-3 py-1 text-sm" onClick={() => setSettingsOpen(false)}>{t("authGate.close")}</button>
             <div className="h-full pt-10">{settings}</div>
           </div>
-        </div>
+        </Modal>
       )}
       {managingPersonas && <PersonaManager personas={personas} models={models} onChange={changePersonas} onClose={closePersonaManager} />}
     </div>

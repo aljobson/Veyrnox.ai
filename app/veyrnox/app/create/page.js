@@ -28,7 +28,7 @@ import { freeLeftFor } from '../../_lib/freeAllowance';
 import { sourceDurationLimit } from '../../_lib/modelPricing';
 import { SourceDurationCard } from '../../_components/SourceDurationCard';
 import { takeStudioDraft } from '../../_lib/landingDraft';
-import { takeTemplateMediaHandoff } from '../../_lib/templateMediaHandoff';
+import { clearTemplateMediaHandoff, hasTemplateMediaHandoff, takeTemplateMediaHandoff, templateMediaHandoffMatches } from '../../_lib/templateMediaHandoff';
 import { takeVideoSoundContinuation, writeVideoSoundContinuation } from '../../_lib/resultContinuation';
 import { oddlingPortrait, buildOddlingAnimationPrompt } from '../../_lib/oddlingStudio';
 import { fetchTemplate } from '../../_lib/useTemplates';
@@ -117,6 +117,7 @@ export default function CreateStudio() {
   const [duration, setDuration] = useState('5s');
   const [audioDurations, setAudioDurations] = useState({});
   const [aspect, setAspect] = useState('16:9');
+  const [recoveredPrompt, setRecoveredPrompt] = useState(null); // Recovery has no template provenance; preserve its unedited bytes.
   const [typed, setPrompt] = useState(null); // null until the user types or a draft is restored
   // Start image for models whose catalog capabilities declare an image slot.
   // Sources for the model's media slots: { image|video|audio: { file, previewUrl } },
@@ -141,6 +142,7 @@ export default function CreateStudio() {
   const [recipeId] = useState(() => typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('recipe'));
   const [plannedFollowup, setPlannedFollowup] = useState(null);
   const [continuationError, setContinuationError] = useState('');
+  const [attachNotice, setAttachNotice] = useState('');
 
   const [balance, setBalance] = useState(null);
   const [error, setError] = useState(null);
@@ -178,7 +180,13 @@ export default function CreateStudio() {
       try { storedDraft = takeStudioDraft(window.sessionStorage, requested, Date.now(), preset?.id); } catch { /* The URL recipe still works. */ }
       const arrival = preset ? templateArrival(preset, arrivalModels || [], params, storedDraft) : null;
       const wanted = arrival ? arrival.modelId : requested;
-      const handedMedia = preset && wanted ? takeTemplateMediaHandoff(window, preset.id, wanted) : null;
+      const hadTemplateMedia = hasTemplateMediaHandoff(window);
+      const matchedTemplateMedia = Boolean(preset && templateMediaHandoffMatches(window, preset.id));
+      let takenTemplateMedia = null;
+      if (preset) takenTemplateMedia = takeTemplateMediaHandoff(window, preset.id, wanted);
+      else if (hadTemplateMedia) clearTemplateMediaHandoff(window);
+      const arrivalModel = (arrivalModels || catalogModels).find((candidate) => candidate.id === wanted);
+      const handedMedia = takenTemplateMedia && arrivalModel?.media?.image && generationSlotKind('image') === 'image' ? takenTemplateMedia : null;
       if (wanted) {
         setModelId(wanted);
         // Show only the arriving model's kind (video template = video models), not every kind.
@@ -199,11 +207,13 @@ export default function CreateStudio() {
         setSources({ video: { assetId: videoSoundDraft.jobId, previewUrl: videoSoundDraft.assetUrl, label: videoSoundDraft.label } });
         setConsent(false);
       } else if (draft) setPrompt(draft.prompt);
-      if (!videoSoundDraft && draft && (storedDraft?.sources || handedMedia)) {
+      const recoveredSources = draft ? storedDraft?.sources : null;
+      if (!videoSoundDraft && (recoveredSources || handedMedia)) {
         const handedSources = handedMedia ? Object.fromEntries(Object.entries(handedMedia).map(([slot, file]) => [slot, { file, previewUrl: URL.createObjectURL(file) }])) : {};
-        setSources({ ...(storedDraft?.sources || {}), ...handedSources });
-        setConsent(Boolean(!handedMedia && storedDraft?.consent === true));
+        setSources({ ...(recoveredSources || {}), ...handedSources });
+        setConsent(Boolean(!handedMedia && recoveredSources && storedDraft?.consent === true));
       }
+      if (matchedTemplateMedia) setAttachNotice(handedMedia ? '' : translation.current('app.create.templatePhotoHandoff'));
       if (storedDraft?.followup) setPlannedFollowup(storedDraft.followup);
       if (draft?.aspect) incomingAspect.current = draft.aspect;
       if (draft?.durationSeconds && (preset || !/^\d{1,2}s$/.test(params.get('duration') || ''))) setDuration(`${draft.durationSeconds}s`);
@@ -241,6 +251,7 @@ export default function CreateStudio() {
     incoming: incomingDraft,
     draft: { modelId, goal, prompt: typed, duration, aspect, count, sources, seed, negative, voice, audioDurations, cinemaOn, cinema, characterOn, character },
     apply: (saved, restoredSources) => {
+      setRecoveredPrompt(saved.prompt);
       chooseModel(saved.modelId); setGoal(saved.goal); setPrompt(saved.prompt); setDuration(saved.duration);
       setAspect(saved.aspect); setCount(saved.count); setSeed(saved.seed); setNegative(saved.negative); setVoice(saved.voice);
       setAudioDurations(saved.audioDurations); setCinemaOn(saved.cinemaOn); setCinema({ ...DEFAULT_CINEMA, ...saved.cinema });
@@ -280,6 +291,9 @@ export default function CreateStudio() {
   const hasJobs = jobs.length > 0;
   const catalogStatus = catalogLoading ? 'loading' : catalogLive ? 'live' : 'unavailable';
   const activeTemplate = templateStartIdFor(presetParam, templateData, modelId) ? templateData : null;
+  // Changing the model keeps the chosen template on screen; it just stops being sent (the gateway takes a template only on its own model).
+  const keptTemplate = !activeTemplate && presetParam && templateData?.id === presetParam ? templateData : null;
+  const keptTemplateModel = keptTemplate ? models.find((m) => m.id === modelIdForName(keptTemplate.model)) : null;
   const prompt = promptText(typed, model); // a starter shot until then, on picture and clip models only (see promptBox)
   // The picked model stays listed even when the tier filter would hide it.
   const goalModels = modelsForGoal(models, goal);
@@ -301,18 +315,18 @@ export default function CreateStudio() {
       ? `${audioDuration} ${t('app.create.seconds')}`
       : (model?.kind === 'video' || model?.kind === 'audio') && fixedDurationLabel
         ? fixedDurationLabel
-        : model?.kind === 'video' ? duration : null;
+        : model?.kind === 'video' ? outputDurationLabel(model, Number(duration.replace('s', ''))) : null;
   const media = model?.media || {};
   const animationMismatch = !!animationPortrait && (model?.kind !== 'video' || !media.image?.required);
   const { missingSource, needsReattach, overLimit, hasSource: hasUpload } = generationSourceState(media, sources);
   // Only pictures this model actually takes count: a video-only attachment, or a picture kept from another model, never reaches the provider.
-  const templateImageSources = activeTemplate ? Object.entries(media)
-    .filter(([, spec]) => spec?.kind === 'image')
+  const templateImageSources = Object.entries(media)
+    .filter(([slot]) => generationSlotKind(slot) === 'image')
     .flatMap(([slot]) => sourceList(sources[slot]))
-    .filter(source => !source?.needsUpload && (source?.file || source?.assetId || source?.sourceKey)) : [];
+    .filter(source => !source?.needsUpload && (source?.file || source?.assetId || source?.sourceKey));
   const templateImageCount = templateImageSources.length;
   const templateImageSource = templateImageSources.find(source => source?.file || source?.label) || null;
-  const templateImageRequired = Object.values(media).some(spec => spec?.kind === 'image' && spec.required);
+  const templateImageRequired = Object.entries(media).some(([slot, spec]) => generationSlotKind(slot) === 'image' && spec.required);
   const missingConsent = hasUpload && !consent;
   const missingVoice = voiceIsMissing(model, voice);
   const missingPrompt = promptIsMissing(model, prompt);
@@ -383,7 +397,6 @@ export default function CreateStudio() {
     });
   }
 
-  const [attachNotice, setAttachNotice] = useState('');
   const [templatesOpen, setTemplatesOpen] = useState(false);
   // Picking a template here does what arriving on ?preset=<id> does: its model,
   // prompt and settings load, and the user's own files stay where the new model
@@ -523,7 +536,7 @@ export default function CreateStudio() {
   // Character traits go first, the camera description last; each keeps the
   // result within the selected model's generation-prompt contract.
   function finalPrompt() {
-    let text = prompt.trim();
+    let text = (templateData && prompt === templateData.prompt) || prompt === recoveredPrompt ? prompt : prompt.trim();
     if (model?.kind === 'image' && characterOn) text = buildCharacterPrompt(text, character);
     if (takesCamera && cinemaOn) text = buildCinemaPrompt(text, cinema);
     return text;
@@ -678,7 +691,12 @@ export default function CreateStudio() {
     const section = selector ? document.querySelector(selector) : null;
     if (!section) return;
     section.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    const focusable = 'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled])';
+    const focusable = [
+      'button:not([disabled])',
+      'input:not([disabled])',
+      'select:not([disabled])',
+      'textarea:not([disabled])',
+    ].join(',');
     const candidates = [
       ...(section.matches(focusable) ? [section] : []),
       ...section.querySelectorAll('[aria-pressed="true"]:not([disabled])'),
@@ -786,9 +804,10 @@ export default function CreateStudio() {
                 {t("app.create.reviewCharacter")}</button>}
             </section>
           )}
-          {activeTemplate && <TemplateHandoffCard
-            preset={activeTemplate}
-            canChooseSource={Boolean(activeTemplate.needs && Object.keys(media).length)}
+          {(activeTemplate || keptTemplate) && <TemplateHandoffCard
+            preset={activeTemplate || keptTemplate}
+            otherModelName={keptTemplate ? (keptTemplateModel?.name || keptTemplate.model) : ''}
+            canChooseSource={Boolean(activeTemplate?.needs && Object.keys(media).length)}
             onChooseSource={() => setAddFilesOpen(true)}
             settings={{
               prompt,
@@ -801,7 +820,7 @@ export default function CreateStudio() {
             }}
             onEdit={focusCreateControl}
           />}
-          {templateImageCount > 0 && (
+          {activeTemplate && templateImageCount > 0 && (
             <p role="status" data-testid="template-reference-overrides" className="mt-3 rounded-xl border border-vx-accent/30 bg-vx-panel p-3 text-xs text-vx-fg-body">
               {t(templateImageRequired ? 'app.create.templateReferenceRequired' : 'app.create.templateReferenceOverrides')}</p>
           )}

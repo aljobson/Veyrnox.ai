@@ -25,6 +25,24 @@ export function clearTemplateMediaHandoff(target) {
   }
 }
 
+export function hasTemplateMediaHandoff(target) {
+  if (!target) return false;
+  try {
+    return Boolean(target[KEY]);
+  } catch {
+    return false;
+  }
+}
+
+export function templateMediaHandoffMatches(target, templateId) {
+  if (!target) return false;
+  try {
+    return Boolean(target[KEY] && target[KEY].templateId === templateId);
+  } catch {
+    return false;
+  }
+}
+
 /** One immediate same-tab handoff. The file is never serialized or persisted. */
 export function writeTemplateMediaHandoff(target, { templateId, modelId, image }, now = Date.now()) {
   if (!target || !TEMPLATE_ID.test(String(templateId || '')) || !MODEL_ID.test(String(modelId || '')) || templateImageFileError(image)) return false;

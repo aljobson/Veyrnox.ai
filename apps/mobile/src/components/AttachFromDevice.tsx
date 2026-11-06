@@ -15,7 +15,7 @@ import { useHandoffScope } from '../lib/useHandoffScope';
 import type { GenerationReference } from '../lib/sources';
 import { fetchCatalog, type CatalogModel } from '../lib/media';
 import { checkPicked, kindOfMime, pickedProblem, type PickedFile, type SlotKind, type SlotName } from '../lib/sources';
-import { uploadMessage, uploadSource } from '../lib/uploads';
+import { isConsentDeclined, uploadMessage, uploadSource } from '../lib/uploads';
 import { ds } from '../theme';
 
 type Source = 'photos' | 'files' | 'library';
@@ -80,7 +80,7 @@ export function AttachFromDevice({ api, current, carry, settings, references = [
             if (!valid() || !files.length) return;
             await place(files, [], valid);
         } catch (err) {
-            if (valid()) setError(uploadMessage(err));
+            if (valid()) setError(isConsentDeclined(err) ? null : uploadMessage(err));
         } finally {
             if (valid()) { setBusy(null); setProgress(null); }
         }
@@ -95,7 +95,7 @@ export function AttachFromDevice({ api, current, carry, settings, references = [
         try {
             await place([], picks, valid);
         } catch (err) {
-            if (valid()) setError(uploadMessage(err));
+            if (valid()) setError(isConsentDeclined(err) ? null : uploadMessage(err));
         } finally {
             if (valid()) { setBusy(null); setProgress(null); }
         }
@@ -134,7 +134,7 @@ export function AttachFromDevice({ api, current, carry, settings, references = [
         }
         if (!valid()) return;
         const moved = plan.assignments.filter(a => 'ref' in a.item && a.slot !== a.item.ref.slot).length;
-        router.replace(createHandoff(plan.model, carry ?? {}, settings, merged, { ...previous, rightsConfirmed: false }, plan.unused.length + problems.length + moved));
+        router.replace(createHandoff(plan.model, carry ?? {}, settings, merged, { ...previous, rightsConfirmed: false }, plan.unused.length + problems.length + moved, !!current && plan.model.id !== current.id));
     }
 
     return (
@@ -143,7 +143,7 @@ export function AttachFromDevice({ api, current, carry, settings, references = [
             <Text variant="footnote" tone="tertiary" style={styles.hint}>{t('attachFromDevice.pickseveralpicturesvideosoraudiofiles')}</Text>
             <View style={styles.row}>
                 {(['photos', 'files'] as const).map((source) => (
-                    <Button variant="secondary" containerStyle={styles.grow} key={source} accessibilityRole="button" accessibilityLabel={rawText(source === 'photos' ? t('attachFromDevice.attachpicturesandvideosfromPhotos') : t('attachFromDevice.attachfilesfromFiles'))} accessibilityState={{ disabled: busy !== null }} disabled={busy !== null} onPress={() => void attach(source)} label={source === 'photos' ? t('attachFromDevice.photosvideos') : t('attachFromDevice.files')} loading={busy === source} />
+                    <Button variant="secondary" containerStyle={styles.grow} key={source} accessibilityRole="button" accessibilityLabel={rawText(source === 'photos' ? t('attachFromDevice.attachpicturesandvideosfromPhotos') : t('attachFromDevice.attachfilesfromFiles'))} accessibilityState={{ disabled: busy !== null }} disabled={busy !== null} onPress={() => void attach(source)} icon="paperclip" label={source === 'photos' ? t('attachFromDevice.photosvideos') : t('attachFromDevice.files')} loading={busy === source} />
                 ))}
                 <Button variant="secondary" containerStyle={styles.grow} accessibilityRole="button" accessibilityLabel={rawText(t('libsrc.choose'))} accessibilityState={{ disabled: busy !== null }} disabled={busy !== null} onPress={() => setChoosingLibrary(true)} label={t('libsrc.title')} loading={busy === 'library'} />
             </View>

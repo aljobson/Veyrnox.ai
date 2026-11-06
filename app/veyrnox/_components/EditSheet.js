@@ -7,12 +7,15 @@ import Link from 'next/link';
 import { useAssetUrl } from '../_lib/useAssetUrl';
 import { Modal } from './Modal';
 import { AssetLoadStatus } from './AssetLoadStatus';
+import { SmartCutPlanner } from './SmartCutPlanner';
+import { applySmartCutState, undoSmartCutState } from '../_lib/smartCut';
 import { gatewayFetch, GatewayError, makeIdempotencyKey } from '../_lib/gateway';
 
 // Clip Editor sheet (docs/editor/PRD.md §4). The server re-checks every
 // number here against the stored files (lib/clipEditSources.js); this only
 // saves the user a refused request.
 const MAX_OUTPUT_S = 60;
+const MAX_CLIPS = 10;
 const UNIT_S = 5;
 // Captions (docs/editor/CAPTIONS.md): billed as this many units on their own,
 // the same number lib/clipEdit.js CAPTIONS_UNITS charges (a test pins them).
@@ -37,11 +40,15 @@ const round = (n) => Math.round(n * 100) / 100;
  * @param {{ clips: {job_id:string, asset_url:string, name?:string}[], audios: {job_id:string, name?:string}[],
  *           credits5s: number|null, onClose: () => void, onSubmitted: (job:object) => void }} props
  */
-export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted }) {
+export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smartCut = false }) {
   const { t, locale } = useI18n();
   const number = n => locale === 'en' ? String(n) : n.toLocaleString(localeTag(locale));
   const errorCopy = code => code === 'rate_limited' ? t('cinema.creatorApplication.tooManyRequestsWaitAMinute') : tOr(t, `app.editor.sheet.error.${code}`, t('app.editor.sheet.fallback'), { limit: number(code === 'too_long' ? MAX_OUTPUT_S : SLOW_MAX_SOURCE_S) });
-  const [items, setItems] = useState(() => clips.map((c, i) => ({ ...c, uid: `${c.job_id}#${i}`, in_s: 0, out_s: null, duration: null, ratio: null })));
+  const [editState, setEditState] = useState(() => ({
+    items: clips.map((c, i) => ({ ...c, uid: `${c.job_id}#${i}`, in_s: 0, out_s: null, duration: null, ratio: null })),
+    smartCutSnapshot: null,
+  }));
+  const { items, smartCutSnapshot } = editState;
   const [audioId, setAudioId] = useState('');
   const [offset, setOffset] = useState(0);
   const [captions, setCaptions] = useState(false);
@@ -53,15 +60,27 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted }) {
 
 
 
-  const update = (i, patch) => setItems((xs) => xs.map((x, k) => (k === i ? { ...x, ...patch } : x)));
-  const move = (i, d) => setItems((xs) => {
-    const j = i + d;
-    if (j < 0 || j >= xs.length) return xs;
-    const next = [...xs];
-    [next[i], next[j]] = [next[j], next[i]];
-    return next;
-  });
-  const remove = (i) => setItems((xs) => xs.filter((_, k) => k !== i));
+  const update = (i, patch) => {
+    setEditState((state) => ({ ...state, items: state.items.map((x, k) => (k === i ? { ...x, ...patch } : x)) }));
+  };
+  const move = (i, d) => {
+    setEditState((state) => {
+      const j = i + d;
+      if (j < 0 || j >= state.items.length) return state;
+      const next = [...state.items];
+      [next[i], next[j]] = [next[j], next[i]];
+      return { ...state, items: next };
+    });
+  };
+  const remove = (i) => {
+    setEditState((state) => ({ ...state, items: state.items.filter((_, k) => k !== i) }));
+  };
+  const applySmartCut = (nextItems) => {
+    setEditState((state) => applySmartCutState(state, nextItems));
+  };
+  const undoSmartCut = () => {
+    setEditState(undoSmartCutState);
+  };
 
   const loaded = items.every((x) => x.duration != null);
   // A slowed clip runs `slow` times longer in the result (the server counts it the same way).
@@ -72,6 +91,7 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted }) {
   const slowTooLong = slowedSource > SLOW_MAX_SOURCE_S;
   const mixed = new Set(items.filter((x) => x.ratio).map((x) => x.ratio)).size > 1;
   const badRange = items.some((x) => x.duration != null && !(x.in_s >= 0 && x.out_s > x.in_s && x.out_s <= x.duration));
+  const tooManyClips = items.length > MAX_CLIPS;
   const noop = items.length === 1 && !audioId && !captions && slowOf(items[0]) === 1 && loaded && items[0].in_s === 0 && items[0].out_s >= items[0].duration;
   // The same unit count the gateway bills (lib/clipEdit.js editUnits): a
   // many-clip edit costs per step, so steps set the floor under the length.
@@ -80,7 +100,7 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted }) {
     + items.reduce((n, x) => n + (slowOf(x) > 1 ? SLOW_UNITS_PER_SECOND * Math.ceil((x.out_s ?? 0) - x.in_s - 1e-9) : 0), 0);
   const units = Math.max(1, Math.ceil(output / UNIT_S), steps);
   const cost = credits5s != null && output > 0 ? credits5s * units : null;
-  const blocked = !items.length || !loaded || mixed || badRange || noop || output > MAX_OUTPUT_S || slowNoAudio || slowTooLong || cost == null || busy;
+  const blocked = !items.length || !loaded || mixed || badRange || tooManyClips || noop || output > MAX_OUTPUT_S || slowNoAudio || slowTooLong || cost == null || busy;
 
   async function submit() {
     if (blocked) return;
@@ -113,6 +133,16 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted }) {
           <h2 id="edit-sheet-title" className="text-xl font-black">{t(pluralKey(t, locale, 'app.editor.sheet.title', items.length), { count: number(items.length) })}</h2>
           <button onClick={onClose} disabled={busy} aria-label={t("app.editor.workspace.close")} className="text-vx-fg-muted hover:text-vx-fg px-2 py-1">✕</button>
         </div>
+
+        {smartCut && (
+          <SmartCutPlanner
+            clips={items}
+            disabled={busy}
+            onApply={applySmartCut}
+            onUndo={smartCutSnapshot ? undoSmartCut : null}
+            startOpen
+          />
+        )}
 
         <ol className="flex flex-col gap-3">
           {items.map((x, i) => (
@@ -165,6 +195,7 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted }) {
           {mixed && <span className="text-vx-danger">{t('app.editor.sheet.error.mixed_aspect')}</span>}
           {!mixed && output > MAX_OUTPUT_S && <span className="text-vx-danger">{t('app.editor.sheet.error.too_long', { limit: number(MAX_OUTPUT_S) })}</span>}
           {!mixed && badRange && <span className="text-vx-danger">{t('app.editor.sheet.error.clip_range')}</span>}
+          {tooManyClips && <span className="text-vx-danger">{t('app.editor.sheet.error.too_many_clips', { limit: number(MAX_CLIPS) })}</span>}
           {slowTooLong && <span className="text-vx-danger">{t('app.editor.sheet.error.slow_too_long', { limit: number(SLOW_MAX_SOURCE_S) })}</span>}
           {!slowTooLong && slowNoAudio && <span className="text-vx-danger">{t('app.editor.sheet.error.slow_needs_audio')}</span>}
           {noop && <span className="text-vx-fg-muted">{t('app.editor.sheet.error.nothing_to_do')}</span>}

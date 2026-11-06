@@ -1,0 +1,3673 @@
+{
+  "method": "sha256 of newline-joined ffprobe showinfo Adler-32 checksums; fps=1,scale=32:32:flags=area,format=gray",
+  "placements": {
+    "product-hero-360": {
+      "frames": 5,
+      "signature": "edde8e97d1ca1a5c8b71a1f2f3a98f20dade3475d519ea1be2fb47109ea143f9"
+    },
+    "wan-2.5-kie": {
+      "frames": 5,
+      "signature": "b72ce8423cf863ebdaf8a5ceca053f508b016227efff45565a22f25d430ad596"
+    },
+    "nano-banana-kie": {
+      "frames": 5,
+      "signature": "a29b458c132d54192bc7210570e0eb3fa840fee62c1dda99c5634b4eedaaa81d"
+    },
+    "kling-26": {
+      "frames": 5,
+      "signature": "80252bd739f8db6e4b9337e1f301466fe2505c5b7edbf56cfe1a100c30cc5b89"
+    },
+    "presets": {
+      "frames": 5,
+      "signature": "810366787c4cb50d109c929e8eb521761b2ce77d3240b1f806e3db0c0b3d344f"
+    },
+    "ace-step": {
+      "frames": 5,
+      "signature": "7e0d77ef958e775998ea124c3f99635b5ca4196d1ab1cd4d136d2bf8cfcc3c77"
+    },
+    "cctv-night": {
+      "frames": 5,
+      "signature": "11d981c5de4f0911ea8e3d784d1a90aa70fd29d7f4fc61ea5d203a22709bc547"
+    },
+    "sunset-drift": {
+      "frames": 5,
+      "signature": "4de2c3d29ba302098c64fd90986ca1054679bf8e9a96519448f40f7a11f4b63a"
+    },
+    "neon-alley": {
+      "frames": 5,
+      "signature": "50bc6f5ebe558b5daf7f60ba71f0bf5758af5ccf440f565b54740ce0f85022c7"
+    },
+    "warm-portrait": {
+      "frames": 5,
+      "signature": "69d2f1a695b10e9770febcbe4d5ecc9413f0060dfd8709194c1b698874ab6435"
+    },
+    "film-portrait": {
+      "frames": 5,
+      "signature": "35fa1761237f5f895f95cfcaa86db327b82888e9c7c992b92edb4785d8476237"
+    },
+    "talking-head": {
+      "frames": 5,
+      "signature": "0c691df8241c93d66b23c2e20b7e48005f7498b6b588cfcd3feb0161aab778d9"
+    },
+    "clean-cutout": {
+      "frames": 5,
+      "signature": "90f2b923bb5f9bec142699615b19f41c4516a050ea6dfed120d472c57a4b7aa1"
+    },
+    "editorial-flatlay": {
+      "frames": 5,
+      "signature": "2b9b280fadc1d24f77f68be3d7bc82656fc9189c8bbec90fb56df9befb6de1a1"
+    },
+    "street-portrait": {
+      "frames": 5,
+      "signature": "d87bcd06857810827e889f6fee2f18bff76abf7c6fe0763fbd7b47bcab299bd4"
+    },
+    "packshot-studio": {
+      "frames": 5,
+      "signature": "b0c4a3f0677aa2a71e0bc3f96085ef806e0de2cf9fd80880d08001031f8edc2a"
+    },
+    "try-the-look": {
+      "frames": 5,
+      "signature": "6a27fe510f69141106df1ee74f9af025d846956e16544396b3adbb73e33133cf"
+    },
+    "ugc-unboxing": {
+      "frames": 5,
+      "signature": "fc97d0fe25d1c1a67586fe4e0aa4f94ed4fdc50010418bb58f2323819644c779"
+    },
+    "miniature-city": {
+      "frames": 5,
+      "signature": "b00d48437cf8dbe7cddbcd466f89999d57304f22dda0ddf00cdbbc0d0b8af353"
+    },
+    "product-hero": {
+      "frames": 5,
+      "signature": "65a31a672679c53c1ece7141fae6e6e6af9fd5575cf9c1ae1790d22d1d3317f3"
+    },
+    "noir-one-sheet": {
+      "frames": 5,
+      "signature": "a71dbea6861dcba79930144071657628941c22b2bab53155439c86277990abfa"
+    },
+    "saturday-cartoon": {
+      "frames": 5,
+      "signature": "3b0d43d09cadf2b781ee973ed38e9eca219c6e7c8c2103f4fd9d148a27c9972a"
+    },
+    "anime-hero": {
+      "frames": 5,
+      "signature": "e8473760ecb72c9a15c375921d684511c1fd1501e84e12e7708e37802a02c836"
+    },
+    "photo-to-motion": {
+      "frames": 5,
+      "signature": "e21a273672ada6a7ab1f05d91294684f71e68cd9bd1393662b74b93bc0ad2307"
+    },
+    "runway-walk": {
+      "frames": 5,
+      "signature": "a5d22dfb37afedd54b56903988df69bce10dc7b292d23d9d45d9cb90817ffc7d"
+    },
+    "anime-opening": {
+      "frames": 5,
+      "signature": "22161ca87ab462d239867428205003c1c881be3cf457a4a956c9ee1ddc835253"
+    },
+    "portal-burst": {
+      "frames": 5,
+      "signature": "cc8e20a7499c53db7a9725fc24d48ce22b37775627ecec1c74ff4b2ee948ed35"
+    },
+    "floating-castle": {
+      "frames": 5,
+      "signature": "78f91957f644b88cd8ddedc3e923deeba846b33f3d3bf32b42d2765e200f6b56"
+    },
+    "wall-product-hero-360": {
+      "frames": 5,
+      "signature": "7e04b94914a260e4c57be92b4efdb62a83199b40781567c28a39c0336658a9c3"
+    },
+    "wall-cctv-night": {
+      "frames": 5,
+      "signature": "649a5e4e69e404eaeecf32515322b41ea83e16dd547df72591577b9f8ca50a99"
+    },
+    "wall-sunset-drift": {
+      "frames": 5,
+      "signature": "089318d6ff62e8e54cc56a63c6cfed73dddf9530e29a76e7d7fd50d948995076"
+    },
+    "wall-neon-alley": {
+      "frames": 5,
+      "signature": "10634bd3e265a5b9491d75a33297a7662b953b58150535127ca87ce3efffd34a"
+    },
+    "wall-warm-portrait": {
+      "frames": 5,
+      "signature": "dabf250e463429c5838500a7829d100eb793c46e05bb939a731b153cfdccc9cd"
+    },
+    "wall-film-portrait": {
+      "frames": 5,
+      "signature": "55260811d091b548f4f39b2c11f990fcd2dc0c3e2f8a7828254f258e7574b77f"
+    },
+    "wall-talking-head": {
+      "frames": 5,
+      "signature": "7e0d14b4acc3f4b9b140a5bd33a81fdaf62c7e4dbfd2ef9b08717d31fe4d6245"
+    },
+    "wall-clean-cutout": {
+      "frames": 5,
+      "signature": "a4137a01c7cd7b382956c2c84df6f6ebdc6e8678ca38f792a24443f34bb1d073"
+    },
+    "model-video": {
+      "frames": 5,
+      "signature": "348a51e65ca9994515faefbaeaa681f0746ba26879cc0215745156dff00c6fdd"
+    },
+    "model-image": {
+      "frames": 5,
+      "signature": "0f948cbc493c4ef6ae2682523e2d2177776c51bb98c0fa929fadb4222370df18"
+    },
+    "model-audio": {
+      "frames": 5,
+      "signature": "8b48b63904ecf4bcc185014a0cba3ca73cd28ea9ef1f7fd9fa0c271009c9ef91"
+    },
+    "jellyfish-airlines": {
+      "frames": 5,
+      "signature": "ac8c9c81a5591c651f023242ecccc4d213936da33914fc04decad408f80bf3a0"
+    },
+    "dandelion-ball": {
+      "frames": 5,
+      "signature": "e9ae8bfa48ef423678b00996f40d450eaaeab17e2b9eecec6833b0263e4e91f5"
+    },
+    "sm-brand-new-day": {
+      "frames": 5,
+      "signature": "afbeeb56ad0589a373e7d1a43fe14fcdd377dd667a065432f56337a485ad36e3"
+    },
+    "who-was-that-business": {
+      "frames": 5,
+      "signature": "eec58c7d8323d3cc5300e5a06b4128dc43f5905dc847af209890e3f8171b8f6d"
+    },
+    "scrapbook-collage": {
+      "frames": 5,
+      "signature": "39fb60b95ddc2dd033b6ca2b87295ed1b10ce894574c687b04039f248a65410f"
+    },
+    "stop-world": {
+      "frames": 5,
+      "signature": "a7aa91d017209206f5ea9ec6c052b4223b58ff7d766b16918a7d0739a80e7e6a"
+    },
+    "earth-zoom": {
+      "frames": 5,
+      "signature": "d8cd735c113341781e4ae8451f6e833389db5a66624c0d0ba0382f5dc32bba36"
+    },
+    "comic": {
+      "frames": 5,
+      "signature": "5d3ef763a1bfda55391f7e6477e4150383af9db5eb42cda92ff81f3dcb818cca"
+    },
+    "wall-trick-or-skin": {
+      "frames": 5,
+      "signature": "fb926cc8b8f0045dafdd248b4491f9b0cbb80ef2f3fb5b57dfd2b558f243fa40"
+    },
+    "wall-the-wrong-one": {
+      "frames": 5,
+      "signature": "5d5c794e40e05d954630b3b5864606cdc5db07cb6dc8e7af842834ea0a54ecbd"
+    },
+    "wall-pigeons": {
+      "frames": 5,
+      "signature": "85f500c69e17b9800f9046475e0ec815f5838413e7c380b69add3dbd21400a8a"
+    },
+    "wall-mighty-fighter": {
+      "frames": 5,
+      "signature": "e8ef6d8e7458c1a48deee8a9d2b2463f048edb6027eab98b9d1246c51e77c79a"
+    },
+    "enchanted-forest-selfie": {
+      "frames": 5,
+      "signature": "93219173da63efff8c96814da0870cdfe2575a5951ba37931db0b2930d176c77"
+    },
+    "pumpkin-lings": {
+      "frames": 5,
+      "signature": "3f9d92b5717fc793a57007de60177b3dd718d5706ea581d68f9052aadadbffb2"
+    },
+    "dont-blow-out-the-pumpkin": {
+      "frames": 5,
+      "signature": "a72b72ea36272570d5c69b1418b4b0a900c075116866498ba384e0a7bb93a93d"
+    },
+    "rap-takeover": {
+      "frames": 5,
+      "signature": "8b27c05d27581286623eace1c78d146b406c0b9bb956aa764e9abdeb74f544b3"
+    },
+    "urban-broomstick-flight": {
+      "frames": 5,
+      "signature": "aa138fc1fd0cf077f92445f8ba1bba4ca2dd5ad9d930926b69e5166eb09ea66d"
+    },
+    "hotel-window-watch": {
+      "frames": 5,
+      "signature": "7f14bc53c43e2b17b00547e9e0e453801b1ff5dc9b228728269d51008331c5e6"
+    },
+    "broomstick-flight": {
+      "frames": 5,
+      "signature": "7c4c0008e009bef2fa6a5c1de75936ef916d72109ff6d00fe0272f9c5dc93b57"
+    },
+    "money-flex": {
+      "frames": 5,
+      "signature": "18d3f45ae04f25b039a07ffaf1e75f0c79682ea7d8c39db87e6aac7a2344ae8a"
+    },
+    "epic-slap-knockout": {
+      "frames": 5,
+      "signature": "f6792d97d9c8428410753240fd73cb404dfb7d7bbe729f7b6fb208fbf0e54a80"
+    },
+    "wall-agamemnon": {
+      "frames": 5,
+      "signature": "c3736d876765159f5f7e264a5b2ddfdd285cbcb133ccd45df12d6a23372286ef"
+    },
+    "wall-blue-depth": {
+      "frames": 5,
+      "signature": "fb18f220131d3e3bad3f883a68520b790daa68b37adc805797c1610766616a71"
+    },
+    "wall-cyclope": {
+      "frames": 5,
+      "signature": "3892a15bc87ba9b10f305ed6b7ca2821940be0e24e23fa4259b97a65f3f2fe54"
+    },
+    "wall-fairytale-castle": {
+      "frames": 5,
+      "signature": "c598bbaf9f765ba998d7b127218fa57f4181c1a15a605e088188f1b417df63e5"
+    },
+    "wall-infinite-clones": {
+      "frames": 5,
+      "signature": "b676912f833b27ecdcb456e95142efaa6c8559433047b6df547db36e86975d1d"
+    },
+    "wall-moonwalk": {
+      "frames": 5,
+      "signature": "1e1186d635fd3faa9821a4aefd63dff88ddb8896c677c5da099d30fea6fd0cbe"
+    },
+    "wall-skatedog": {
+      "frames": 5,
+      "signature": "253c9866eed3fd19708f58a05b5f91ba4682e3b741b83b2d7234d5419b7cd3cd"
+    },
+    "wall-windows": {
+      "frames": 5,
+      "signature": "2c9485d3a509fe972186f65a80bcb268f9d541e83af9289454bb718077edd0d0"
+    },
+    "city-trailer": {
+      "frames": 5,
+      "signature": "73c514db4adf0cd94040dfd34f125fae00c93ec60d7b7d506c06802e8c9a89af"
+    },
+    "city-vlog": {
+      "frames": 5,
+      "signature": "2343223c344c5e77b77cd0566a111f8c092ff08603340c2ede6b1cc1e3c4423e"
+    },
+    "floral-pool-portrait": {
+      "frames": 5,
+      "signature": "a6c9f44af102f30abd9c918e8c0185f4be7813765d9c80fb63def5f02a2eeb44"
+    },
+    "paper-fragments": {
+      "frames": 5,
+      "signature": "68e8b66d8aad3a18e2b236557c2ef6aad7839a8d8501e6429fe4e573ad8f93ce"
+    },
+    "ink-sprint": {
+      "frames": 5,
+      "signature": "f8ea31920c4dec2811a7522f0907fb7a641c93d5376f0a8b97f94a90a29453c6"
+    },
+    "motorcycle-double": {
+      "frames": 5,
+      "signature": "945250e3e078e2c69c3bb734cdea03f935cab2bbfd6dd850fe6699fc69e475b9"
+    },
+    "laundromat-monster": {
+      "frames": 5,
+      "signature": "c8212da6aa06623f5394a76a7f45da123e5ffe78a7dff335e9199bee1c4ab1bf"
+    },
+    "curtain-reveal": {
+      "frames": 5,
+      "signature": "600df5b4a6fccddaa1580b70c00560d93d66468dd0675f5b625674e707acdbb0"
+    },
+    "wall-behind-the-lens": {
+      "frames": 5,
+      "signature": "1dc951c122247773ab45a0238f602ab1597eb50ef7c75b5b1d1302f1d3a84956"
+    },
+    "wall-sticker-peel-reveal": {
+      "frames": 5,
+      "signature": "b3226143861bbd4720fc5ae78fd8b72890429c1e836bb1c9b489cb698a88eeb9"
+    },
+    "wall-dolphin-surf-ride": {
+      "frames": 5,
+      "signature": "4e878251d2c72c15ad2b6392ba161bb3e84578c79391b9b8d08d44bce1ec26f5"
+    },
+    "wall-event-character-swap": {
+      "frames": 5,
+      "signature": "08e09d73b2b402b8e27ca4d7dd2b6056f3b3efb84605b649bc17f8690f23f30b"
+    },
+    "race-track": {
+      "frames": 5,
+      "signature": "5bbf91cbc9d724c90a16c4757eabc59b0508b3876dabae9d65e2826307b803ee"
+    },
+    "modern-montage": {
+      "frames": 5,
+      "signature": "f85f951930bdb31373486d46fb1e79c3b9a3220a7446dd3319c5695e222259a6"
+    },
+    "vintage-montage": {
+      "frames": 5,
+      "signature": "a32229312caed9b659899a1eaa90d918ff9dd97993e07c2d939ddc7351816a92"
+    },
+    "action-figure": {
+      "frames": 5,
+      "signature": "9ca35008efee4b1fad40fda5e2d2a760e895815acff7b5f9b401e081b6af85e8"
+    },
+    "paper-world": {
+      "frames": 5,
+      "signature": "7f727ae8e8b44e9b0fc9b51ce79df0af673fc9b2c1230295e3df193cad9c46e3"
+    },
+    "broken-mirror": {
+      "frames": 5,
+      "signature": "f6467ba4f1a2d36aeff1d01d89cfe8838767b3d5d3469f41718d627ee2b2a435"
+    },
+    "puffin-flight": {
+      "frames": 5,
+      "signature": "dd11f31837520a18c7bcb924396555a2fa14cdfb3038514ffb00b580ed36dac6"
+    },
+    "three-d-render": {
+      "frames": 5,
+      "signature": "59590a6789506f70eb7cd9e7dccdf0d83d09547c7ffce83e9aed5b30ab48fa5a"
+    },
+    "orbital-presence": {
+      "frames": 5,
+      "signature": "3e94015d079d9e53e53b85fd197a913d3243533994d47e34c61702a5e85c1c9c"
+    },
+    "hand-painted": {
+      "frames": 5,
+      "signature": "f8058caf0d1f7816634fcb970260fb080464835d64a9fc97e0d53868f0caeea1"
+    },
+    "origami-fold": {
+      "frames": 5,
+      "signature": "0194b236719075323a8e8dd07190674d650c2bc8c1c8de8f68b8b5eb85012cff"
+    },
+    "orbit-360": {
+      "frames": 5,
+      "signature": "9391b9569849f36b0a0b9ecb01cf108a9eb836a04218e27792d556cab8c1d644"
+    },
+    "toxic-glitch": {
+      "frames": 5,
+      "signature": "29f82b5ecda8346ffc4f16aca2e75523f5472feeb1a987ddf11b202ed0e6a53b"
+    },
+    "marble-statue": {
+      "frames": 5,
+      "signature": "21763e875264b7da0bfcc9dad434ef8defaf8fbb2a78f08cc2c7735d8f10739b"
+    },
+    "ultraviolet-night": {
+      "frames": 5,
+      "signature": "7a0f6c8517ce6435a7fd7436eaafb36769c2b1299cc938f3584a1f20e927ca66"
+    },
+    "bubble-world": {
+      "frames": 5,
+      "signature": "078109cc495ed1a6c75cdadcaa424f7023bee1e2fb7207e585389c3fba819e4b"
+    },
+    "acid-colour": {
+      "frames": 5,
+      "signature": "31b49d203b1e12c829ba9411258008a596cd67f12335be6fd9795d239359a4f7"
+    },
+    "flash-comic": {
+      "frames": 5,
+      "signature": "794b598fd1e80e4b14bcfa3ef4cb3713382ad764f7008dee5671c47405c6eb43"
+    },
+    "radiant-glow": {
+      "frames": 5,
+      "signature": "72c7353b79547d570375c8ae5851dddd54db8f4def485c0aa514a4c3e1baf518"
+    },
+    "lava-flow": {
+      "frames": 5,
+      "signature": "540e24752a1034e5de7a66cb45efbd7562e90b1c9e7390c2449564df47a4adb4"
+    },
+    "duotone-motion": {
+      "frames": 5,
+      "signature": "6e97e244faf25137474d9a3b35ee579551280589603ff25ecbf028d63317a8ac"
+    },
+    "particle-burst": {
+      "frames": 5,
+      "signature": "03ae21f63625b81b206cfe97de41138f2bc9968c883f4d743e820af86b627161"
+    },
+    "canvas-paint": {
+      "frames": 5,
+      "signature": "ffb14241b374a7e2223114425606361cfb5041667458d07b254cdb3e00378aa1"
+    },
+    "motion-tracking": {
+      "frames": 5,
+      "signature": "b2b7f8a74c183c8e97866c3157629b299c29b78b6d3be414792b127e8d2c9eb6"
+    },
+    "prism-dream": {
+      "frames": 5,
+      "signature": "c09de69a8d642d77f20aee8bb2d3dbf0688df34b756b32d226dbee81fa35eee6"
+    },
+    "colour-palette": {
+      "frames": 5,
+      "signature": "3062ec05e58212865ce5664d7375200db84259a65935b137c9f492084a1eaa0a"
+    },
+    "knights-diary": {
+      "frames": 5,
+      "signature": "d09c0c3fd66a8b5a4c2912f9cef7005a641eee31ac54990d34e0cfc2f8e197d3"
+    },
+    "magazine-cover": {
+      "frames": 5,
+      "signature": "e02cb58dcf0bd39d57db89fd62d4b7392d5e9875c9325d4aeb9ce83cafba6b40"
+    },
+    "overexposed-flash": {
+      "frames": 5,
+      "signature": "4887444ce54f942ab966f866f94b986321db64711ff1d28aae5319b5c3ce8854"
+    },
+    "multiverse-doors": {
+      "frames": 5,
+      "signature": "bfde60707fb4555be163fd7f12fa1f6072aae3e5b138aa771fb54cb9f7fb5822"
+    },
+    "impressionist-muse": {
+      "frames": 5,
+      "signature": "550958840aef4a33de59b2a91d858e638d0fe0381035610cb8299886342858bc"
+    },
+    "many-eyed-portrait": {
+      "frames": 5,
+      "signature": "06697bd65d620fe426fa802ddcfda3a00acbffac76cd15d2a7e7742b10e9e2c0"
+    },
+    "cold-vision": {
+      "frames": 5,
+      "signature": "6e3f520c86593ee5ad0035ffb968f7a16edca0b09b6790b275eb8b3d396ad6ac"
+    },
+    "sketch-world": {
+      "frames": 5,
+      "signature": "5bd1e1f8df65c58d3b7130fd04bd444c12eff8edf9aca555212ae7545f1e8fb0"
+    },
+    "lost-in-a-book": {
+      "frames": 5,
+      "signature": "39f182c73422d28145398efc034715f9088b858f96ba2f0fd39304761811811a"
+    },
+    "retro-paparazzi": {
+      "frames": 5,
+      "signature": "ce5de85964916827b3052dfd6703b319ed2d658d6dc34a2c2441bb9f6fc1f915"
+    },
+    "noir-city": {
+      "frames": 5,
+      "signature": "86808ebe4db4ff75184579aa86b21788a2eabf1709f5aa9ddafc984a00059f0a"
+    },
+    "ocean-room": {
+      "frames": 5,
+      "signature": "305cb67464920b5b4ee3e0bc1ae6b5cd8a8e6a6af8d43c2524a0b076b82dd5f3"
+    },
+    "chromatic-surge": {
+      "frames": 5,
+      "signature": "6e4735cffe3b902d82dbf8d72543fdf8dc1180e59bca484d637c8b00f51ad686"
+    },
+    "penguin-flight": {
+      "frames": 5,
+      "signature": "2ad88a31de3dd8cea7198ccea219f3b4dd7f183bf027fc87cc77834a8378f87f"
+    },
+    "character-takeover": {
+      "frames": 5,
+      "signature": "974f42741084b289f0d62f7471f1e0bf4a45fdb7cce0be0cabab777a6099cee0"
+    },
+    "escalator-loop": {
+      "frames": 5,
+      "signature": "4e29115f51a8f7cc4b6cd2ffa0432746e12e80c83b4f4e01e4d7e05c90d999dc"
+    },
+    "sheep-kingdom": {
+      "frames": 5,
+      "signature": "6eaee4eb1f801f764e5217aa73747634f5016641d8786e603b8acb97b46fa6df"
+    },
+    "pumpkin-night": {
+      "frames": 5,
+      "signature": "5630342474d56f111e980ec7cf263965af2d7046fa7bda65f955fa1e48a2046a"
+    },
+    "fashion-catch": {
+      "frames": 5,
+      "signature": "989c98ffdccd71b56babb8f4c8ad73deb94daa9250df56f0101e9515e0c2d8db"
+    },
+    "desert-train-heist": {
+      "frames": 5,
+      "signature": "249671f5a74d74b2f8e53e83a838318eb2cfe2d98ef8392551353f06d860c21a"
+    },
+    "blood-moon-dance": {
+      "frames": 5,
+      "signature": "d7ffa555b1b8d2a3851d1ef92fddb039f93a4b1d12922906936e3e303b023366"
+    },
+    "red-thread-story": {
+      "frames": 5,
+      "signature": "42f82984c64162ad22204fb905314063ec1097708900db3ba84720d23a1f7526"
+    },
+    "meal-together": {
+      "frames": 5,
+      "signature": "e793aa7f9cac3102440cd94b1df515cb4472ffa77fba9b5d4fd7d04c67daecf6"
+    },
+    "tentacle-breakout": {
+      "frames": 5,
+      "signature": "eda3091c427b02962c13ada111f39bd2efb8aaf4e73e8edf0cb2b4ae94786d24"
+    },
+    "birthday-rocket-launch": {
+      "frames": 5,
+      "signature": "d29b9940af600b696b9be0a586c6d89bfb28f64d6c89b5e7b69a0f364eb4f79c"
+    },
+    "candle-wish-world": {
+      "frames": 5,
+      "signature": "261bf75fb0376a31e01b58dd383db0652dd61936e70081d91a844a81b86315ca"
+    },
+    "giant-age-adventure": {
+      "frames": 5,
+      "signature": "53ad2c8decba3663d8a671ccbc4600f339e389f1d62d7a9d8e9611d041b3273b"
+    },
+    "dinosaur-birthday-parade": {
+      "frames": 5,
+      "signature": "3e068c15fe5898fd030c9e363696deb6e6c947c02962ce80533a268835c84e56"
+    },
+    "underwater-birthday-kingdom": {
+      "frames": 5,
+      "signature": "334ced0be4ad727f4c335686247f543563001b4d46f8f420f4dc5f14ad425aee"
+    },
+    "toybox-comes-alive": {
+      "frames": 5,
+      "signature": "9b9fb98d9578c29dfc8f790d23cc3c83bbe9ce2613e018573b0b574cb87b27d6"
+    },
+    "monster-disco-party": {
+      "frames": 5,
+      "signature": "457c3f483823567536499284e1b66ce872cad8efd45d8e6b7db24f102695f6c3"
+    },
+    "mini-cake-chef": {
+      "frames": 5,
+      "signature": "93ec817618a7b9a5860982c94922797c3b289dd03d464ba36c4cbe0ad06a44bc"
+    },
+    "birthday-news-report": {
+      "frames": 5,
+      "signature": "4e49e6a3e62b54fd7beca0da146320b65092209a71f3470003c779faac89d09c"
+    },
+    "party-invitation-trailer": {
+      "frames": 5,
+      "signature": "c6e11916366512584f96681ed42c5bd351a9e80e130f8816eff5b92c3718d76a"
+    },
+    "growing-up-timeline": {
+      "frames": 5,
+      "signature": "40426d566832ee6c220505fa289c285f829868ad45f81a4b3e0446591681bc9a"
+    },
+    "birthday-highlight-reel": {
+      "frames": 5,
+      "signature": "edce3874dfc3a62c456b811a1afa462958953e90ea08f70f3d047cf09a60ebd6"
+    },
+    "street-meeting-motorbike": {
+      "frames": 14,
+      "signature": "c290cbd2592dd3ea35a4a5305173ab54fe4d5af0054561fa4947774938d5063d"
+    },
+    "pop-portrait-outside": {
+      "frames": 9,
+      "signature": "c5959e50a694611621958b55da3fde392a06c8d1e169d2b7a19c4a994bd91bcc"
+    },
+    "colourful-city-split": {
+      "frames": 13,
+      "signature": "d7ddfb147298f417c12a9a9b525cc6d394cb16b11fe7839f6818c55efbe8d160"
+    },
+    "umbrella-world-switch": {
+      "frames": 10,
+      "signature": "b7f1167a2bb2404a31710b4794f1cad3c03b0c8465cdf8d8cd439146141a883e"
+    },
+    "selfie-city-journey": {
+      "frames": 7,
+      "signature": "0092450bc564e8bb08fc8c643d27fd8969bab600eff85668a998e5898b08adaf"
+    },
+    "animated-city-stride": {
+      "frames": 6,
+      "signature": "a62b3fb3ac78ef3da18c65f431db3e69d7b3f73819c2755d9e3e7c715a0b7d80"
+    },
+    "travel-fashion-transition": {
+      "frames": 9,
+      "signature": "92a24e9ba847c1a2a0887799776a8975e8235007a2a1552d95eb702eeeee9ef1"
+    },
+    "street-style-adventure": {
+      "frames": 20,
+      "signature": "5e9c64b74150d2d769e750c62b2ef8d48d9874aa698cde03c3eb21282dbf4e87"
+    },
+    "cash-fan-performance": {
+      "frames": 15,
+      "signature": "a3d8bcec470c4f59cb887a1ce5a86a47090d0fc1c68a5d677fabd8d6e37b716f"
+    },
+    "miniature-car-window-journey": {
+      "frames": 25,
+      "signature": "03932448d33ffe5b9750e1c419f6444c4775c963570e6c640cfbf94ed373bff3"
+    },
+    "square-character-recast": {
+      "frames": 23,
+      "signature": "710fde6f3f31f610543d2084cf586a925a8b4f2e2166888e5c0ab6d8f1e3ba92"
+    },
+    "football-showstopper": {
+      "frames": 15,
+      "signature": "fc8e09144ecdd750fcc26e29cf5e3781ed5413fef36a9642ca879fca27675ffb"
+    },
+    "ancient-attire-dance": {
+      "frames": 18,
+      "signature": "ea9d076f76684c282b35dc8562b89142a55fdad1da47ab530f2a83e58e2d269d"
+    },
+    "costume-dance-duo": {
+      "frames": 11,
+      "signature": "94f79ee6fcbc2021f828b3bcb67135ae211547cc538546d28b3218e09f264452"
+    },
+    "cinematic-car-cast": {
+      "frames": 15,
+      "signature": "6ff20c57bdadd3eef9d77042fb4528cd62fde7e4c6797acdfd7ec42fe5084b47"
+    },
+    "identity-locked-performance": {
+      "frames": 13,
+      "signature": "1725c58ede54a492d65b99b59e368d08de026da6b28dbc84855fea6400155f59"
+    },
+    "night-party-dancer": {
+      "frames": 6,
+      "signature": "2ff99fb08ed17ddb53b8d1e6d8311cc037f922d8ad07b7275e286632f9383c92"
+    },
+    "red-room-performance": {
+      "frames": 15,
+      "signature": "ad15e83e6c992974c39a538608f01f41c005ae5dc70f0d9343abe8502b1a77df"
+    },
+    "miniature-car-road-trip": {
+      "frames": 14,
+      "signature": "6b879ca5ea4dbe96067bb35c7a67e9b9ea6a09cfb8d2d91c13ba4e789fcd4357"
+    },
+    "desert-truck-jump": {
+      "frames": 11,
+      "signature": "6aa887e758f6553011ad2fb665fe79b4504072facecd5c5cb02257260e598082"
+    },
+    "skyway-chase": {
+      "frames": 18,
+      "signature": "7eb9380f59b8986f7d299d02114cdd5d8b92c9eb2b63f6762ca7742777e80b7f"
+    },
+    "outdoor-duo-dance": {
+      "frames": 21,
+      "signature": "9cd8badd55b4e1faa2e771a3c008f0b488caa1e55d17c3b053055fb14bc7ccd5"
+    },
+    "studio-rap-duo": {
+      "frames": 11,
+      "signature": "5f65de5445ba20a4cbd60f4e43bdff1bb3edeebb419d39c23c02206127b51a3a"
+    },
+    "fireball-walkaway": {
+      "frames": 15,
+      "signature": "81c00dfb569c6f6cca3df62d08135d4caca5bfd79d7e5643ff7dbf60470f2a81"
+    },
+    "football-character-recast": {
+      "frames": 15,
+      "signature": "b0b701eefad6eabe1585e2536f276651d6666082baffe4c88255d6cd7cdd67ec"
+    },
+    "k9-dance-groove": {
+      "frames": 30,
+      "signature": "218b098dd0f8c6354b3bece58ad3b3f6a7591dcb46c19daf80e1d3ee1cc7b23b"
+    },
+    "twilight-field-memory": {
+      "frames": 24,
+      "signature": "b023fd2f39a33351f08a83d72bdae742fe0a95d7979de6070f21cfe6bd6d85f7"
+    },
+    "cash-stack-flex": {
+      "frames": 15,
+      "signature": "6513df4bd82fd0705ad34d19ecc853dc74efa3c9ba6108bf83ead0e2cde2044f"
+    },
+    "community-urban-trio-performance": {
+      "frames": 20,
+      "signature": "c6b4030e73e5542879a069cc8238d61673173b68250c8e63d9d27da6bd1d4cd9"
+    },
+    "community-overhead-performance": {
+      "frames": 19,
+      "signature": "ee9e8b0efe05b0f57321752ac12d60f6e1270f232044853d99768416b1b8f8c9"
+    },
+    "community-roadside-celebration": {
+      "frames": 15,
+      "signature": "0ebe0b531771f0a684ca7e5862c8396839e1c8d62b4ebf992b19e05cd1e352ca"
+    },
+    "community-night-vehicle-portrait": {
+      "frames": 15,
+      "signature": "31d478289d2347c708500ed9697041efe9aaeacf29324b7da0e9a2c8c1090737"
+    },
+    "community-ballroom-entrance": {
+      "frames": 6,
+      "signature": "f63b3aa25f1a7099ddcd5f20c1aae4bd16961ef44b52bebf23096a5291e5ce36"
+    },
+    "community-overhead-expression": {
+      "frames": 19,
+      "signature": "7c05d78edd3e8ab78b2bb9becc049801de60f442db442cfa96c0a4ad66157d75"
+    },
+    "community-street-dance-ensemble": {
+      "frames": 25,
+      "signature": "723fd8b0d69ec8de7871bf3f3af99591454512b869bac8ad3508a2b8508fd194"
+    },
+    "community-highway-drift-showcase": {
+      "frames": 14,
+      "signature": "b9449641b9a959cf6b9db83fbae408cd16a38eae296aa7f0545aa23b8225ac95"
+    },
+    "community-luxe-pajama-dance": {
+      "frames": 10,
+      "signature": "6d7fd412a8d4c14734553cc54ff12951cbf9cbb4e80fc5c67685dad621d7e5dd"
+    },
+    "community-suit-exchange-dance": {
+      "frames": 21,
+      "signature": "0482bf146af0088602589b273087783a3cb53d39168a0aeaab6204153164fb0e"
+    },
+    "community-pitch-footwork": {
+      "frames": 15,
+      "signature": "f87b0f9e1e6552eb8ae0e5e08b3667e353033a2b311f4e789f24dea82b911424"
+    },
+    "community-survivor-memory-shift": {
+      "frames": 24,
+      "signature": "31b1363867595c05bdace7e61f478da474c10b50de3c1c382fcf02ab938858d0"
+    },
+    "community-dancing-dog": {
+      "frames": 30,
+      "signature": "9eaa5eb656a75a26435f7edd07324a3155410f6ccee5107ccd06720eb02eacfe"
+    },
+    "community-cinematic-blast-walk": {
+      "frames": 15,
+      "signature": "dfad7119db078c5be135c629e8661d0a707a645c7dda0c18f45fc2b43c698bfd"
+    },
+    "community-jester-pitch-run": {
+      "frames": 15,
+      "signature": "aff11a3eab16f300f72e1e895a52e74208ce014fbba5eb844b703f878f4a9e12"
+    },
+    "community-cathedral-entrance-walk": {
+      "frames": 17,
+      "signature": "56ee3ff070f624a4e73d16774cd1df74645813a714af295261c8e893c82fc48a"
+    },
+    "community-suit-choir-groove": {
+      "frames": 30,
+      "signature": "b5c0d87dd78be98eca8a9e4cd9232ffff6880d8bc6430fe4ccd0f71f98141628"
+    },
+    "community-driver-portrait": {
+      "frames": 30,
+      "signature": "2916fd3e057ff32c141b9f859f9a75a14e19bf580ac4ba91f92c81e41adccfb3"
+    },
+    "community-club-dj-set": {
+      "frames": 30,
+      "signature": "55da64a753925454747b8e2bd6653e629c3e5a4956918c4adf98251fbb3cb178"
+    },
+    "community-biker-dog-adventure": {
+      "frames": 7,
+      "signature": "8c0436a4a4ebabc31e6b57ccff7716591069dcb3b92022adb78ae91f612252f5"
+    },
+    "community-foggy-street-dance": {
+      "frames": 10,
+      "signature": "3f7e451b83e57d2e46ae8ccd527fa73f5076b6acff9482e7006ff19282b59970"
+    },
+    "community-noir-leading-role": {
+      "frames": 24,
+      "signature": "9ee9010b76e9a3478ddfed851cdbf09638d980229ae319f3cd0d9fe8696f42e5"
+    },
+    "community-kitchen-snack-heist": {
+      "frames": 30,
+      "signature": "ab7b1efd3335f883eb7c0e288e803c12e56c9cbca97a51faa0005a6b0f2ab76b"
+    },
+    "community-candle-wish-drift": {
+      "frames": 8,
+      "signature": "cf40ef1a1a91fc49bc3bb6bb128e75bdcfe5949888d2c919a5cbe521e2bf97a8"
+    },
+    "community-action-hero-strut": {
+      "frames": 13,
+      "signature": "0994237d9f9379aed67d7817456951ca94b26411c76a1edcfa15c275be252371"
+    },
+    "community-supercar-card-reveal": {
+      "frames": 14,
+      "signature": "b95b2a029722bc5baad99e968d753dede98eca8d3319ddd54d43601a4b3bafed"
+    },
+    "community-convertible-joyride": {
+      "frames": 17,
+      "signature": "b6d9801e938d0a60685a1430b57a4b30015d98b4525b6c410bb68ffcc489a688"
+    },
+    "community-corporate-duo-jam": {
+      "frames": 29,
+      "signature": "1a4156bf84c136ada6b933eecee58bbb90e62a3bb6a06f386ca13ca80122b526"
+    },
+    "community-elevator-duo-routine": {
+      "frames": 6,
+      "signature": "804b009f04550d642602107de3657c0d73a43b88562d5092234907651ff18937"
+    },
+    "community-midnight-wolf-greeting": {
+      "frames": 12,
+      "signature": "4113bd9a6f50c235b7b64fb04d247db903c34d4aeb78e9610fcc98b31cf512cb"
+    },
+    "community-luxury-car-exit": {
+      "frames": 15,
+      "signature": "cee8d47b6da1de91f2d7a20f95edd9ea52aa36055d2f1415e394786717da585f"
+    },
+    "community-monster-street-dance": {
+      "frames": 24,
+      "signature": "45aba5b9fcc882a08a774e440ff40b1ccacb2c9dcc911fc7cb8e4d3f4dfb0b26"
+    },
+    "community-feline-runway-duo": {
+      "frames": 19,
+      "signature": "48303f22469612524c722d5f0d95a1ce2de92d9a4bf6a1a888d91eab2100b5c4"
+    },
+    "community-portrait-performance-recast": {
+      "frames": 13,
+      "signature": "7455c5b3ac722d72e3daae5c558c2a038c4a1453e260e349dfe89847a00c3e4a"
+    },
+    "community-rug-outfit-morph": {
+      "frames": 15,
+      "signature": "0bb17c0f32ce84e2e59d39b34fa6a6a6b4091488f9fe32c90f1343374dd7e520"
+    },
+    "community-meadow-duo-dance": {
+      "frames": 24,
+      "signature": "204f68febc6d6f56d52a93e35273c9cd5dad737f9f144bc1d5fc7161fa3a3b1b"
+    },
+    "community-urban-character-portrait": {
+      "frames": 16,
+      "signature": "73ebb73001ad2cee8ff78fe2ef8e50c36e69c641e2324a4ed888d164d2b7b2dd"
+    },
+    "community-night-pop-trio": {
+      "frames": 20,
+      "signature": "01bae495980cd29d1c77e0c492a60cd59b1ae3d74b68c4e3e10fb3e516c2d0f6"
+    },
+    "community-rotating-wardrobe-wipe": {
+      "frames": 15,
+      "signature": "c3f8dcbd274cab47bdb19c2dd83ecbde408f203803a61b911311a0a27ba1bd2d"
+    },
+    "community-ensemble-performance-recast": {
+      "frames": 18,
+      "signature": "517e3069c4404ed8ee0dcf3886b998bee4e532027f9f4cf6ef6e870d23702233"
+    },
+    "community-golden-gown-walk": {
+      "frames": 6,
+      "signature": "2562c1995975494de3016249516d724a4a7f3e89b08505dc12061691c365fc6b"
+    },
+    "community-convertible-style-drive": {
+      "frames": 24,
+      "signature": "f8665076d8a2a69835bf6b4cf47834b9b426678b110cfdd893173fbb59401bbd"
+    },
+    "community-octagon-victory": {
+      "frames": 14,
+      "signature": "2985fb8dbb6e72c2ba4aee8de16392fbae069f428f6b7e2287453f0ba9983630"
+    },
+    "community-supercar-getaway": {
+      "frames": 11,
+      "signature": "835b7dbc11102c474f6e3940a13eb36225e4074026b14ed5136345f4d45659e5"
+    },
+    "community-truck-stop-celebration": {
+      "frames": 18,
+      "signature": "2648a41887b0e800e20dad6bd4d047b80e89f65e842448980ca6522bb43a3897"
+    },
+    "community-kitchen-duo": {
+      "frames": 17,
+      "signature": "59091df6c6678dde3bb959defc92e4ae8454cf0e83d13a88aaab985d817d0f6c"
+    },
+    "community-savannah-encounter": {
+      "frames": 16,
+      "signature": "5a30e2d7a3602714e4be8a3cc0b4b8300dda4aab64bbd4bb478798e7270e6c36"
+    },
+    "community-court-character-run": {
+      "frames": 9,
+      "signature": "eaef158cc0dd2c5d1bf4843cd9bad89fdd3a22568c8035a9429e121b6704a204"
+    },
+    "community-wide-supercar-card-reveal": {
+      "frames": 13,
+      "signature": "e5d6371a5f6281a1833a1edc4e841024769ed242eebab07b897e9f08625b798d"
+    },
+    "community-vintage-style-montage": {
+      "frames": 29,
+      "signature": "b013b64a7392bbdd2e6e7a049633c91febe5a65fffe620567deb156544b2e21b"
+    },
+    "community-canine-recording-session": {
+      "frames": 30,
+      "signature": "7d0b823d0424cebfe0cd61907d97830225eb01fe540f290d5b337cc606825339"
+    },
+    "community-streetwear-intersection": {
+      "frames": 7,
+      "signature": "14f8e1c2f1e08ed6bfb9df97fba2434f6b09352e3f5dd3ab13b71dc589a5f7c3"
+    },
+    "community-stone-arcade-pose": {
+      "frames": 15,
+      "signature": "6cc763dbff2339910ea8e328f48209ee2b39fb0839f6f5d9f40b46f44fbaf55f"
+    },
+    "community-star-power-trio": {
+      "frames": 20,
+      "signature": "13b3dce73d8f5863c72d83b152e3a12700faa74d2c3112fd05c3021697bf0b77"
+    },
+    "community-balcony-club-encounter": {
+      "frames": 15,
+      "signature": "7a113a906425ea09ed956e6905c7578d379f1b6b3933b933e21554e50f6f7f9f"
+    },
+    "community-masked-card-reveal": {
+      "frames": 14,
+      "signature": "ba37b3b60676fedb97fda84299a93cf0fcf482ac888d67bc4b85cd792f83c8d4"
+    },
+    "community-street-dance-trio": {
+      "frames": 15,
+      "signature": "56def94739ed0687195fb3d81f7bfe076583a7c733773df0d60100c66bc91a9e"
+    },
+    "community-stage-dance-routine": {
+      "frames": 21,
+      "signature": "a40afe819cc69df3c78b1ef998678a61b08988df407946e070dd53d2a6613241"
+    },
+    "community-layered-suit-transition": {
+      "frames": 14,
+      "signature": "9729e1fdc10aa03a21aec4216f27c914838ac7a9c34728b932f9c8412f5bc037"
+    },
+    "community-giant-city-stride": {
+      "frames": 10,
+      "signature": "e6b09fe2e952b77ecc45eddefb14241abf868d6067ae95ac55afd45999e66c08"
+    },
+    "community-dramatic-character-performance": {
+      "frames": 21,
+      "signature": "807a93881e7a8a21494f743e243350506ec725972b8056faafa91b053aec9407"
+    },
+    "community-courtside-crossover": {
+      "frames": 20,
+      "signature": "13cad5a204bca4d56d16cda21c3049ef00bcba119a413bedb8961884edaf48d8"
+    },
+    "community-lounge-group-performance": {
+      "frames": 29,
+      "signature": "382b742b6dde5020f9c609747aefe22fe8859807d93f0239109bd36ee0053c24"
+    },
+    "community-car-selfie-performance": {
+      "frames": 12,
+      "signature": "7e159418485754fb85620bfbe3309e94a6440049a755bf87efc0b3163faf44e0"
+    },
+    "community-night-celebration-drive": {
+      "frames": 9,
+      "signature": "d942ab7fb24b4d28a7f780cfd2fcbf0f4701ec8b8522a768ef05766f4d4b3b6f"
+    },
+    "community-feline-dance-duo": {
+      "frames": 25,
+      "signature": "bb833e20707df1538f3f7be8b4419c674d5d3bab8ab12e5f5da3f0c2301648b4"
+    },
+    "community-feline-dance-solo": {
+      "frames": 17,
+      "signature": "f4980456dc5b23915497d22b84c20d9144dc38fd4f18b95693991c7da202bad5"
+    },
+    "community-cast-carpool": {
+      "frames": 20,
+      "signature": "93f945cca95ff1fcc63633ece6de12cdac2187e0b70db75a4ea414f146eec827"
+    },
+    "community-liquid-truck-assembly": {
+      "frames": 16,
+      "signature": "68fe3ba85421d256ceec58569a4d03f1679c9ad0cbc72995979f7b9d68a0603e"
+    },
+    "community-supercar-streetwear-exit": {
+      "frames": 8,
+      "signature": "170d737a72317380a2307540f02f8eb61db6831f2a585eed0012604af9c23478"
+    },
+    "community-dual-character-performance": {
+      "frames": 14,
+      "signature": "8df001279377bf462c2dd738e69dd2563170d082b594ef7ecfeaf2cbd6901322"
+    },
+    "community-stage-performance-sync": {
+      "frames": 20,
+      "signature": "9f4c9ef3f1084641510e23588aaa3a2622801fbae3b3f40ff9a0f8abd47cfb68"
+    },
+    "community-marble-hallway-pose": {
+      "frames": 13,
+      "signature": "25f47957be1f002a4875e11a8274a1eabca62b9abdeddb3fe7c6dbf97aab6087"
+    },
+    "community-athletic-pose-sequence": {
+      "frames": 12,
+      "signature": "ef5223cf783066fa36754a5116d06fe227d09232dd6955f8237ca3fcf1137c1b"
+    },
+    "community-convertible-cast-drive": {
+      "frames": 17,
+      "signature": "0364466c205bf0172da144a59d657a90068d41f28457f2797681af85ecd299b7"
+    },
+    "community-ballroom-dance-switch": {
+      "frames": 14,
+      "signature": "975fc42637f92a69a726defa081b3d244886ad2bcb3921353bbb397d1bf49c32"
+    },
+    "community-nightclub-rhythm": {
+      "frames": 28,
+      "signature": "db9f4a5bf2193992d923fce3c2293ff7f320398bb0713f78e0267308592bffe9"
+    },
+    "community-mansion-trio-performance": {
+      "frames": 30,
+      "signature": "683159e61e6833d81c925bd8887bc73a7ce49636c6095a14a8e859b9543aac08"
+    },
+    "community-riverside-branch-comedy": {
+      "frames": 15,
+      "signature": "2c8ae071754401b845d2463c0c7c727eb51177065755d53c0c71348cdd76d8a9"
+    },
+    "community-urban-street-pose": {
+      "frames": 10,
+      "signature": "3fc45c9b082083a7342b345046730c3e02ba4e7fabf1f97aaa8e796c81c07def"
+    },
+    "beyond-gravity": {
+      "frames": 5,
+      "signature": "d66f56028a802ebbaba8f73e7fb748fbe7648cde4340b4373944a3d1f1ea8c08"
+    },
+    "chasing-you": {
+      "frames": 5,
+      "signature": "7b40a4c0ed1cf5cb02c9ff38f1cfb1930d579fc69437e41b8352874af5bb38ea"
+    },
+    "cinematic-showcase-2": {
+      "frames": 5,
+      "signature": "8d297a5e8454a6c6506a5e5b9f89c51e1353524deed390ceec524269d69414f3"
+    },
+    "cinematic-showcase": {
+      "frames": 5,
+      "signature": "46f536bcd4c5aaca8fe4b747366f6a79bac5e0932cf466446940786d92935286"
+    },
+    "basketball-3": {
+      "frames": 5,
+      "signature": "0ccbe2f279a3d8a8b4fc69b308362db4e6ece97e719c5f6e23551bf0a680ef76"
+    },
+    "reality-shift": {
+      "frames": 5,
+      "signature": "934cd8fc8d582a0ee0f5a0321caa73f0899a434a9bc8186272aaef22efc94e2a"
+    },
+    "live-stage-performance": {
+      "frames": 5,
+      "signature": "dde3f69eb0bcd46ed93ad697b8845a01ea8b68b9d64fb9de0dee4c8df0457b12"
+    },
+    "football": {
+      "frames": 5,
+      "signature": "fdfdcaa145a4233f6e65c6e6562ec6494f81ae9f6fdbdedd49571fb68049f55d"
+    },
+    "brixton": {
+      "frames": 5,
+      "signature": "0fc70cd7240f180fd02be3dd1cca8a4fb728377c0d62b4a710040ff9c98b5d89"
+    },
+    "unforgettable": {
+      "frames": 5,
+      "signature": "f00766482cb0a01b75c1c0155ba9c85d6cadb659baeab1f84e9a997346e5d472"
+    },
+    "natural-viral-makeover": {
+      "frames": 5,
+      "signature": "543eb1a013f00ab6dd5d6dbd175125fc768440fa8681e5b5371d6e8e8223fe12"
+    },
+    "freestyle": {
+      "frames": 5,
+      "signature": "37ef6c553113d8d041eb58e838a1873d9a909e251056a4844666acb4479a6e6e"
+    },
+    "the-lost-chase": {
+      "frames": 5,
+      "signature": "a0419948e8dea7f1c26f4ad967c521f2a753d331851064937e95fcb7ea58f38b"
+    },
+    "burning-bridges": {
+      "frames": 5,
+      "signature": "25dffa38c462b2f4c2f8f74ce972d84fbc757593b72fdb1dd3f23f25a44e7a35"
+    },
+    "retro-hip-hop-spotlight": {
+      "frames": 5,
+      "signature": "98df889534a7faa4a7e3e4d845b78ef8a188b7a098c91858c7ca4b49e9dc99b6"
+    },
+    "wheelie-rider": {
+      "frames": 5,
+      "signature": "ab23695d8c53e3830704ee37dd1fe97d700b2d406b71a803a4b54b6bb023b91d"
+    },
+    "mystery-unboxing": {
+      "frames": 5,
+      "signature": "2edd10fe83d4358644eaf5ff045c7fbfdbb83fd38b71360e8aa384cce3abedca"
+    },
+    "whiskey-gun-trick": {
+      "frames": 5,
+      "signature": "304d80cd6e60fc7421e0b46422bb0e8ba274af7649cd8d9ec28df8df330a691a"
+    },
+    "cyber-mask-transformation": {
+      "frames": 5,
+      "signature": "9d491b8c40a7dff4467ce62f814ed6dcde21a444bb5c9b64ff605d8004fded57"
+    },
+    "pizzeria-hide-and-seek": {
+      "frames": 5,
+      "signature": "acf1745a3c72c323e5efacdf50892ffc8ef8dc6468f0e6a89f2458dcb9d53141"
+    },
+    "god-of-war": {
+      "frames": 5,
+      "signature": "110c2213eba66738f679c34ec626fbcef7b4069c6345fa2da4355453f40a6c4f"
+    },
+    "basketball-2": {
+      "frames": 5,
+      "signature": "b9836dbbf00d5f4f4e25c02c48868180a959c7e9698d2582149af4f23b2b12b9"
+    },
+    "tesla-object-replace": {
+      "frames": 5,
+      "signature": "f4a132a8e42d0a03486cd17410a5da94e40a950677e2974890bdc2aa7de1dd2f"
+    },
+    "playing-chess-with-tesla": {
+      "frames": 5,
+      "signature": "d49c70e6246bfcf7d5edccce5424815f92c797da646bcf30cb5a54fff2311a7f"
+    },
+    "tesla-lose-control": {
+      "frames": 5,
+      "signature": "b9956c6d862fd91673de4c10eebbb729575b1c34b1d7b628dd182011ca94494a"
+    },
+    "fly-over-the-teslas": {
+      "frames": 5,
+      "signature": "2619820e85bb51a5c2a1afeaaef68d376e8ada6b666a844eb546f3be67373866"
+    },
+    "desire-mode": {
+      "frames": 5,
+      "signature": "04dbdfd1a7fc80167bf03b63761fd62fdec686caecbb0d4b99c160ff73af4cbe"
+    },
+    "license-registration-liftoff": {
+      "frames": 5,
+      "signature": "c790f2411845e1c92499dae5bd7887a759655e136efa86eb1201d122344c71c6"
+    },
+    "tesla-started-something": {
+      "frames": 5,
+      "signature": "506f4927fc31b7962a00c0cb7f856d97187de021edb6891f8953b0126b078d52"
+    },
+    "coliseum-drift": {
+      "frames": 5,
+      "signature": "6e23acb4addf98490780fef7c32dfaed0e1ef875537eb57e298a4787f4eedd10"
+    },
+    "and-i-need-you": {
+      "frames": 5,
+      "signature": "8ca30da68c60739ab8aea367c648de904a4789139c90ce3d5ff37516dcf9a9ba"
+    },
+    "just-a-lit-bit": {
+      "frames": 5,
+      "signature": "a21490c1b13c22c56107fe6062490852a86bba031a0c9cbc1c86b2813ca76204"
+    },
+    "i-am-here": {
+      "frames": 5,
+      "signature": "d9d8869d9aba9b35f9b14fe05c7d293d335d66770d40f52d5079fd8c6a5939b5"
+    },
+    "somebody": {
+      "frames": 5,
+      "signature": "ee480946cdee0124a22217d7c0fc9636f8196218da40be7fd9abe3f911d0d0bd"
+    },
+    "sega": {
+      "frames": 5,
+      "signature": "10f8726ec7958d884529e79352400abca232278e6d6640cf60c48f00bb658ed1"
+    },
+    "theater-ceiling-horror": {
+      "frames": 5,
+      "signature": "a6822039c62f00938a8e3444b2003606a63fb36ae6443e32afdc7d54987527f3"
+    },
+    "studio-ballerina-turns": {
+      "frames": 5,
+      "signature": "033955c92933b3685834c418550a7f5d83b662989fdc388db513665f33303f98"
+    },
+    "little-storm-knight": {
+      "frames": 5,
+      "signature": "a839bf5979368218c257625f66d6cc6f1ad56e5a1d8f5714bdb95f829b3e36b0"
+    },
+    "wear-the-moment": {
+      "frames": 5,
+      "signature": "2d1770e737f5a7c25d60b794533f338bf2875391602ec544e50bbb230dac49fa"
+    },
+    "wassup-freestyle": {
+      "frames": 5,
+      "signature": "a4cb5e44dd248d1db8aea57c3be3380c4dcfcad7b147d22f37a023df21edc7a4"
+    },
+    "piano-vibe": {
+      "frames": 5,
+      "signature": "0b00ac02341ba4c8b0834ff9cc8d5ed525f6300daf33bb138909befabd0add59"
+    },
+    "you-good-max": {
+      "frames": 5,
+      "signature": "a99116d10ddc9c7f216bd7335da3f3c81f901fa6ed56bad59d514ff2ae20ebcc"
+    },
+    "reflection-in-the-mirror": {
+      "frames": 5,
+      "signature": "118d46ef6a18401895e0666b596b2e89e7c6799765bf3bdf60cb15992fbb01e7"
+    },
+    "car-blows-up": {
+      "frames": 5,
+      "signature": "ca298ac556a22b305f57f876b65939d85020dc818e5067e04e3e60a79d53018c"
+    },
+    "saved-by-darkness": {
+      "frames": 5,
+      "signature": "5fc814ffe1bd9d69539361082790d6b1c7007e07fcbd2ee6130658ffc801c13a"
+    },
+    "pumpkin-guardian": {
+      "frames": 5,
+      "signature": "d2c21ee76ab64eb6edd6e1849121e859b275fb33882d49bee5730df5dfe72734"
+    },
+    "fashion-halloween": {
+      "frames": 5,
+      "signature": "962b56bd08e48582fc61bce626639e284d1a99aa5f2e6e2daac990f09009e96c"
+    },
+    "thrille": {
+      "frames": 5,
+      "signature": "9c7d90091ad185d09abbc62923636ab86d00af22e915c6538507a96e98bf1584"
+    },
+    "ghost-makeover": {
+      "frames": 5,
+      "signature": "121dadeac48a25b6bea6acc2c233c336c0ffb490ccf5be8bdb6ea1f18c05ff62"
+    },
+    "cash-flow": {
+      "frames": 5,
+      "signature": "bf6e5063c069b89b79264b4a6bceca104e509c305e5498a5e0e9dee9299d948a"
+    },
+    "cliffside-silence": {
+      "frames": 5,
+      "signature": "997b79aa6513e901a1dbf813cc239dd668597fe72cdef1bab5645552e7f58d4f"
+    },
+    "icon-duet": {
+      "frames": 5,
+      "signature": "0347def462ea6a0e5815ad62e99ad2b7d032caf88e40f0a8dcc3e0122c8a2c3b"
+    },
+    "raindance": {
+      "frames": 5,
+      "signature": "6da5f6a2f4653784b5edd29b6eb8e2f4ead8fdddcdb2904c3a4bb294d6e9bba6"
+    },
+    "kieza-dance-flow": {
+      "frames": 5,
+      "signature": "5fa541124011a926775518c7320cc741200c00c93bd12561c2e21f46b2c478bb"
+    },
+    "call-the-car": {
+      "frames": 5,
+      "signature": "9c4b38a171f9f967dabd39f86f1040d9a0ef8634dad89c02b46a1414c104ccc1"
+    },
+    "haunted-motion": {
+      "frames": 5,
+      "signature": "9b8219dd68bfaca4691b5744ddfa18f8693066659361aa45c0bfa05f74f7da27"
+    },
+    "my-other-hobby": {
+      "frames": 5,
+      "signature": "52c23234bf8582f029aab00b6cc43f6857a859ba5edf594b67daaf9aa5676a71"
+    },
+    "one-last-embrace": {
+      "frames": 5,
+      "signature": "539a001e2fe8bf194dca3d7b692785fd4b803d95e477acbd8cc888d1a6db6621"
+    },
+    "lil-yachti-coffin": {
+      "frames": 5,
+      "signature": "ebe99edf137ef2625c40bc69b6161fdf22b7cbb83414843c0ea12d0cf6a6c868"
+    },
+    "birthday-drift": {
+      "frames": 5,
+      "signature": "0057fc89bd61bb8eef4d32c0f636aedf21e8401c35e6aff1ca115b8232655d54"
+    },
+    "wall-community-parking-lot-recast": {
+      "frames": 5,
+      "signature": "485f8bbe54d751fe0f1fb8ebfb074f132a7af61386e6d31e3b5a5c821a0db2fa"
+    },
+    "community-showroom-car-reveal": {
+      "frames": 5,
+      "signature": "be5711ec1c2af6b94e8bbccc0aff2c9d76ac4f827a1cc9fe94a44b5d28faa9ae"
+    },
+    "community-urban-orbit-fashion": {
+      "frames": 5,
+      "signature": "faf38413f83175639b5e757251caf7e959f296654afecb28003709e3c1bec7bd"
+    },
+    "wall-community-black-trench": {
+      "frames": 5,
+      "signature": "71fa56ba8a0d37efc9050df72d039ad3d4bc17a3ef5e52f85ee3074586818ee3"
+    },
+    "wall-community-urban-fashion-stroll": {
+      "frames": 5,
+      "signature": "f9653726a778f9213730ada8af02fa5fa43f38a7ba84a3685acf93edd566adb0"
+    },
+    "wall-community-courtyard-style-shift": {
+      "frames": 5,
+      "signature": "4632e584d21f3240a42305994611e97eaa23a5d21d6688232810f23bd9487006"
+    },
+    "wall-community-rugside-wardrobe-swaps": {
+      "frames": 5,
+      "signature": "b32fc16ff0adb4af3687ddfc06f2b3b6ad74339350d1a03dfba13b9a9d6598bb"
+    },
+    "wall-community-fur-coat-walk": {
+      "frames": 5,
+      "signature": "28ed18b4523d4878bae824e2eb6ff780f15388b38f8eb37b0cd44e8f08e79142"
+    },
+    "wall-community-urban-suit-swap": {
+      "frames": 5,
+      "signature": "22354ea5077c5c3ed944c7f03e8bd993d5ed0589e000d11cce46c66743cacee0"
+    },
+    "wall-community-dancing-feline-duo": {
+      "frames": 5,
+      "signature": "5a3cf411d4bcec60977df335a1b45c38f75c2d9f620082414d5710c42a1d7736"
+    },
+    "community-elevator-dance": {
+      "frames": 5,
+      "signature": "c6793b8fcf2469c71e29e691733ea97dd399cc2c9cd950d7d4f1d5232b899668"
+    },
+    "wall-community-athlete-dance-swap": {
+      "frames": 5,
+      "signature": "74d648bbac436b7d8ee84dc1444ff44b3ceb3543aa4e253376db502a6e06b40e"
+    },
+    "community-truck-jump-reveal": {
+      "frames": 5,
+      "signature": "f406562f6b3fa960d214f0cd3d38f40f64104719c950420d8cbf18d7f218025d"
+    },
+    "community-midnight-sports-car-drive": {
+      "frames": 5,
+      "signature": "5d57d21060a9988ed79d86316bf4f094131126d35772266f6030a1eab2ae635b"
+    },
+    "community-vocalist-outfit-swap": {
+      "frames": 5,
+      "signature": "0f0cce1f88663d4b3365c380d215304d720cbf579daf16856e527af2df9dc71a"
+    },
+    "community-escalator-outfit-swap": {
+      "frames": 5,
+      "signature": "a902f5be9b02ac7de59c672ce406e980435d9556fc9cf7822bf3096c32a05e73"
+    },
+    "community-street-style-swap": {
+      "frames": 5,
+      "signature": "64643a8f116441243b798d7adc3bd973d14040d09160779503374da6d7acc956"
+    },
+    "community-survivor-memory-montage": {
+      "frames": 5,
+      "signature": "1165c2c1890041d3b84658f3c7fe65c7c9d325749b664a614b917a063bb3ebd8"
+    },
+    "community-action-hero-walk": {
+      "frames": 5,
+      "signature": "29f8b7fbcb05c1a5b77b35aba979a4564a28f92a070343aea79b721ac04a6f90"
+    },
+    "community-stoic-crowd-lead": {
+      "frames": 5,
+      "signature": "d2d15fcdb5ddd244e7708190b1445a501333399a023dc0ae530505a2a08b765c"
+    },
+    "community-tunnel-wheelie": {
+      "frames": 5,
+      "signature": "492f8032c117fa35cd6b725b10e73ce41406f946a7e132c2b7b6d394bdfcdc2f"
+    },
+    "community-suit-crowd-shift": {
+      "frames": 5,
+      "signature": "4b3de227e38cfa44ceba8bacb941d31d8cad6c78009ffd29768020a8a58246bc"
+    },
+    "community-supercar-showreel-spin": {
+      "frames": 5,
+      "signature": "d823a4b4396321ee7574391cfd9203adefd4847d11c06d585737304b06d223e6"
+    },
+    "community-party-dancer-swap": {
+      "frames": 5,
+      "signature": "e4f406e8834c21abf7e7ac82f349d802cec05e967781ca1d860cca51c37e01c8"
+    },
+    "community-spinning-wardrobe-swap": {
+      "frames": 5,
+      "signature": "55835e839f4dd8cade8769860507ba8bee36de1919f89725d8534bce789a34cd"
+    },
+    "community-orbital-truck-morph": {
+      "frames": 5,
+      "signature": "96e7de3c7d0ead8fab334bfef802d1eea7bbff4fb2527eb1b901eadccc7362bf"
+    },
+    "community-midnight-fridge-feast": {
+      "frames": 5,
+      "signature": "dfd5b387aacc17e22a9697dd5f880d2763739d5c597c77ec6864cfb43ac108c3"
+    },
+    "community-evening-party-recast": {
+      "frames": 5,
+      "signature": "d44bea508eeeab7563174f0925d5cde479b13d28fbc8571ca0e77a3b82f859c8"
+    },
+    "community-sunset-rider": {
+      "frames": 5,
+      "signature": "6a138de12a35f3f2ae69b55e09dafe6a89e40a7b37d33314514771bf1be5a9b2"
+    },
+    "community-urban-crosswalk-walk": {
+      "frames": 5,
+      "signature": "7948b6294ce793277b997ec84cb67f31e062f4b5436bb171c21d1af6c5c35acc"
+    },
+    "community-riverside-boat-slap": {
+      "frames": 5,
+      "signature": "a5617a1392a2d928bd4042ce8b53263a85db4acd0a1128f2d8e9a63254f5421a"
+    },
+    "community-festival-stage-swap": {
+      "frames": 5,
+      "signature": "a889da6312ccd11e1de6a7166c7a283c73c3d73e43b50b66257720dd257337b7"
+    },
+    "community-tunnel-rider-flow": {
+      "frames": 5,
+      "signature": "ba5130adc003974112e7af29332200676932e0efd3e890817d51a5690bb0676b"
+    },
+    "community-red-jacket-celebration": {
+      "frames": 5,
+      "signature": "9460608135e3b35ae16d0626025bca74df099acf346d7428566e5dac19fb03c0"
+    },
+    "community-pizza-box-slip": {
+      "frames": 5,
+      "signature": "a4515abe54b86538374ec7182d1d822b53a70e00e347ff56ab4b48a24657965d"
+    },
+    "community-trio-urban-groove": {
+      "frames": 5,
+      "signature": "90ad1bad8ad53bcccc293ce0296414afab4ab29aa635c5f9ab0acb68b959f181"
+    },
+    "community-elevator-mirror-selfie": {
+      "frames": 5,
+      "signature": "67be8880f23e9c732fb8ac0f9889d5746c2bceaf8bfaa48b6539110e4cde6f9a"
+    },
+    "community-pink-studio-recast": {
+      "frames": 5,
+      "signature": "885513496d7080389683b6c7b3e520c74c318e632e80bdd742ba2f86979bfe31"
+    },
+    "community-luxury-sedan-arrival": {
+      "frames": 5,
+      "signature": "93c94aa072ae5f7cfd0071ec8922e6661b44c6bdb352e411eb80eb36136cfd0b"
+    },
+    "community-marble-vanity-mirror": {
+      "frames": 5,
+      "signature": "ecfc5cf69af760300d98596ec4659334a43aa6c190f2146189c71518222f6488"
+    },
+    "community-stadium-orbit-rush": {
+      "frames": 5,
+      "signature": "be605df652ff28ab88e1fb93c1cdd40367ff2dc52ebe1b8e16243198a0b8c603"
+    },
+    "community-convertible-outfit-swap": {
+      "frames": 5,
+      "signature": "cfba837ed282552b0ca52451da1e297ef0fff3f7fa3a0a3501ce61639c3d8526"
+    },
+    "community-hotel-arrival-swap": {
+      "frames": 5,
+      "signature": "e46d1742932e6bfbdeafb563a62d7673d975b544d0da94ac9260ac6dae54667a"
+    },
+    "community-cardigan-groove": {
+      "frames": 5,
+      "signature": "b308ec7311942bd6c59fd1ea57842594eb690561ebb8d7f842b9a06ac5b4edc6"
+    },
+    "community-nightclub-balcony-observer": {
+      "frames": 5,
+      "signature": "639c0c3d7a49ad2fb42eb0bb45ac27933fb9278e82ed0112f04af7dd29776305"
+    },
+    "community-cliffside-rescue": {
+      "frames": 5,
+      "signature": "077ba48f0f6bc75d756742c86d22264401aec06c978edaba52f13d93250e492b"
+    },
+    "community-retro-seoul-strut": {
+      "frames": 5,
+      "signature": "631b4a901cac72fa7340c4f5f61e34e535ec9f32c354d317803263ccf40e26e6"
+    },
+    "community-city-sip-stroll": {
+      "frames": 5,
+      "signature": "77a047129f321f9dd0db0aac8740b9874cabcb6b5c18ffb30f2324785ba95fc8"
+    },
+    "community-courtyard-fashion-spin": {
+      "frames": 5,
+      "signature": "40e6f88074ab33767f1d320c9db03fe7e1c2880946abafbb757317642e6a416c"
+    },
+    "community-sidewalk-groove-duo": {
+      "frames": 5,
+      "signature": "b38530f2fbae5e097592176640aa3658a60930d057c40a807332bb67f4764b7d"
+    },
+    "community-kitchen-swipe-reveal": {
+      "frames": 5,
+      "signature": "30e5648d2209da005ce5cb9ddcd9594caf9937e875ebc4244c8197d11124055e"
+    },
+    "community-night-drive": {
+      "frames": 5,
+      "signature": "007859cbc27cfbd90aa4c4df65ae60a6b80208c25689fc8466335aec4292c3c0"
+    },
+    "community-manor-bridge-blast": {
+      "frames": 5,
+      "signature": "1690233ac12d8a8a50feec5ebb0d4c555d5118877b77cae7629a543543a1dfe3"
+    },
+    "community-times-square-shuffle": {
+      "frames": 5,
+      "signature": "8f5c4b62fc792e7fd0e66295e73ded052ab805f80abefac4cc6176dc4221663b"
+    },
+    "community-suit-walk": {
+      "frames": 5,
+      "signature": "c361f6323b800f5efaacf77d021d1846c9c07b8271c963ff488d307e244c2ea7"
+    },
+    "community-vehicle-swap-drift": {
+      "frames": 5,
+      "signature": "a213ce9b9d5655e827e979db8ceecc344270471286320e1a9e13d546e574c546"
+    },
+    "community-locker-room-duet": {
+      "frames": 5,
+      "signature": "f0eee30031968b3d9fd21099ff3b4e6ddf4b9b355a912bd7da8bc064518e811f"
+    },
+    "community-supercar-garage-swap": {
+      "frames": 5,
+      "signature": "79b3d767272b605dc4939726e45748ace6e981683fa46240184f1910b9522cfb"
+    },
+    "community-neon-selfie-swap": {
+      "frames": 5,
+      "signature": "e2a2b933401c15aaa543735bacb6a1a25087f89bbb9cf7d030b57f8899817472"
+    },
+    "community-convertible-singalong-duo": {
+      "frames": 5,
+      "signature": "53bcc9336098f2b39728ac5ef31367c0df38046d7a39b65aac856b3d401f12aa"
+    },
+    "community-grey-coat-swap": {
+      "frames": 5,
+      "signature": "749ef4a27345742a9bed2c939c57f3b942a2e951ea5f2685f672ee97de79f850"
+    },
+    "community-shopping-bag-unpack": {
+      "frames": 5,
+      "signature": "043e64f77e3007540a11f1941a30f518b6c38aff7e50bf840341b8eda7ee924d"
+    },
+    "community-studio-product-showcase": {
+      "frames": 5,
+      "signature": "fc001eed9b13acf90f81bf2dc55781f668dda5fa1fe6a57e3a537ee67afa043b"
+    },
+    "community-smoke-show-spotlight": {
+      "frames": 5,
+      "signature": "c1cad77831acc0bcd3be6997e70be6b08066120cde0bf819eadfb79fd6477451"
+    },
+    "community-currency-fan-shuffle": {
+      "frames": 5,
+      "signature": "77f163b4277b9b06605e4572192b2decbd3b3aede6620b3134ca889179139636"
+    },
+    "community-currency-counter-flip": {
+      "frames": 5,
+      "signature": "7023f428dc2be0c398f28b566f2c6ad7415769271fec0916ef50f3a20fe824cb"
+    },
+    "community-desert-truck-leap": {
+      "frames": 5,
+      "signature": "438df2d9299f115a10950a2276c08368c9c46a1b8090aa4346d680a9d7609696"
+    },
+    "community-broomstick-flight-swap": {
+      "frames": 5,
+      "signature": "2436cfa467c7b163b47f2a5f4581cadfc89d231444c4178634aeeff073a1f4b2"
+    },
+    "community-courtyard-combat": {
+      "frames": 5,
+      "signature": "9f2a1cbcdef492431e3d36ab33cc036377cff0c0b4c246e548850f0df7ad2ed0"
+    },
+    "community-pigeon-head-swap": {
+      "frames": 5,
+      "signature": "e25288b7da03b8df1dac3f842a7e5929d4af9c354f715cb8e096908776093917"
+    },
+    "community-kitchen-duo-swap": {
+      "frames": 5,
+      "signature": "8ae2855c58c076b703bee1063523dad3cfde981f43a97fa55051aa13666cab23"
+    },
+    "community-model-ensemble-swap": {
+      "frames": 5,
+      "signature": "1c7f911ba554cc7871f150e53c783df770cc4709891a92594f90dbbd8be57e15"
+    },
+    "community-night-range-swap": {
+      "frames": 5,
+      "signature": "9cd75ba31734f832d4ca8d32ec16843a9a51f0dbd0c9db5f99caedc08f18a38e"
+    },
+    "community-soccer-dribble": {
+      "frames": 5,
+      "signature": "fea3b07f305b57fe3581609fabb9388a04869b7214f927759880eb53fc5b2ff1"
+    },
+    "community-suit-duo-dance": {
+      "frames": 5,
+      "signature": "d125eac5949160f8831bc10435b024b6af316fee0cdbdb5b317fbefad47eb21a"
+    },
+    "community-elevator-recast": {
+      "frames": 5,
+      "signature": "51484332a94d8c3e406f20e59aef5c8af2090d8b925487d343eca636cb446aba"
+    },
+    "community-ceiling-fan-transition": {
+      "frames": 5,
+      "signature": "f64c3fa7d799fa7d85288a3f3963e00afd569e52f88cd8dfc9c619db4cb594f3"
+    },
+    "community-skyline-supercar-drive": {
+      "frames": 5,
+      "signature": "d184feafbd5eba88e075a01de209a48b7c14351114ece7766299def4b77f5107"
+    },
+    "community-pampered-spa-feline": {
+      "frames": 5,
+      "signature": "6c825db16376efb8e88da60539e6f3af9ffd7f25d0dfec099acd19acb683e339"
+    },
+    "community-cozy-couple-recast": {
+      "frames": 5,
+      "signature": "a5a0a2a28b11f3c51a76105ed8465fc7d8a6dd09c8a4f48731fe687730c9b36a"
+    },
+    "community-street-corner-dance": {
+      "frames": 5,
+      "signature": "cc91b26af453522634f165be8ec6e1a156f5f5f027f94a4b5335f4c3c9c71f2a"
+    },
+    "community-midnight-supercar-refuel": {
+      "frames": 5,
+      "signature": "faa609c7206b046b6074940a7bc34a68dea92ff4179a5837ee84a02d1317c12e"
+    },
+    "community-chandelier-lounge-performance": {
+      "frames": 5,
+      "signature": "4a89e73bafd1c0b73401dde1b7dc0fb0896c8cda2407c0446f6434360ffe7a2b"
+    },
+    "community-pomeranian-barista-swap": {
+      "frames": 5,
+      "signature": "61976a481c35fc2293c91c770f5a0f4789c3d38edc9e9bfbfe454bf188fc2fa7"
+    },
+    "community-ballroom-portrait-shift": {
+      "frames": 5,
+      "signature": "239f6941767acd5ec9f5d61d3bb0606e3cb63ec702b59e590a450d0e8adbea95"
+    },
+    "community-period-character-swap": {
+      "frames": 5,
+      "signature": "f6940746bba1f7e0483be2ca600e206913d0a6146129ad84bf5ec1fe5ca7605d"
+    },
+    "community-kitchen-coffee-swap": {
+      "frames": 5,
+      "signature": "548a785f45b8ab42ffde26e3997df18cfdd73417b7c7243597a5f538a8f52d65"
+    },
+    "community-offroad-flyover": {
+      "frames": 5,
+      "signature": "440aa379d316c88823e64efa4c20ae517b4f825c424493be6030627c8e651490"
+    },
+    "community-canine-content-creator": {
+      "frames": 5,
+      "signature": "434cfb2717640e627c1c0be7a657a5236bcb24654efd687eb49d826a63837f84"
+    },
+    "community-subway-landmark-swap": {
+      "frames": 5,
+      "signature": "e76c19da9c426a90dece0a3ad0522b4e40eaa4bb746645b06dd0b862006c81f4"
+    },
+    "community-interactive-ar-showroom": {
+      "frames": 5,
+      "signature": "da39a75a6e0f924d2d65e0884d62d6109565833ec658b47809e3b377bc0f8092"
+    },
+    "community-kitchen-dance": {
+      "frames": 5,
+      "signature": "3cd824377e97154544ddd7c3f64a63babf9bf67696c34931d92b3eb1d04e9bdb"
+    },
+    "community-midnight-wheelie": {
+      "frames": 5,
+      "signature": "839ca21535a1006c93492053d404bfa8c153385830bd02d1be7451b08957ae55"
+    },
+    "community-burgundy-stride": {
+      "frames": 5,
+      "signature": "fb423f1eee4982912e94db91631c85c012138642640de36ab69e894886b09da3"
+    },
+    "community-warrior-standoff": {
+      "frames": 5,
+      "signature": "86a5812dc622cb0c0063ae850c3d6f0d709b082d8cd7a2d370f705a1b5ef543f"
+    },
+    "community-locker-room-swap": {
+      "frames": 5,
+      "signature": "fbb7249b439658d2498c4b086fd92aec510cbe8b41ce249e57778507bc03a5b1"
+    },
+    "community-character-swap": {
+      "frames": 5,
+      "signature": "db1dd8c5589f3eeaa4e0364a4aadf10e7a57183a1548330d34d54a502a8f337a"
+    },
+    "community-global-zoom-ambassador": {
+      "frames": 5,
+      "signature": "58fac2386fba32893a4eb9444db1876910f18250251ba1cc5ff1db818a13f323"
+    },
+    "community-studio-rap-performance": {
+      "frames": 5,
+      "signature": "fac57b0d6498d95b29d3d4dd346eec9121a8f3842b7f763c4b882fadbc0a2ea2"
+    },
+    "community-street-magic-reveal": {
+      "frames": 5,
+      "signature": "0da45f73b9dec41bc6c1f13db6a7d1762d01f1110ba6df084d8b2a6c9565a794"
+    },
+    "community-wellness-drink-prep": {
+      "frames": 5,
+      "signature": "8716bec5ec94944b936f7e52f6871042da0a3d39c79519e78e64c402bb03c12c"
+    },
+    "community-style-swap-rhythm": {
+      "frames": 5,
+      "signature": "9681b418952c6b31776ff7a5bffaac3796c4331843fa6c20e6a20aaf27785278"
+    },
+    "community-cinematic-memory-swap": {
+      "frames": 5,
+      "signature": "41cb99bc4d21a9f0c04b1c2c42b65c49ab237abb74e2097541ec5e0036e82fab"
+    },
+    "community-surprise-birthday-drift": {
+      "frames": 5,
+      "signature": "b7e9ba83839044964665b5208d32d3a3755537f5881095b774df9c358ff3c6cc"
+    },
+    "community-sunset-group-dance": {
+      "frames": 5,
+      "signature": "b33d161ce49b259c16b6ba91d38607b9abc4922bd0c9332b62e85bc963b0e9ed"
+    },
+    "community-rooftop-dj-swap": {
+      "frames": 5,
+      "signature": "4e8cec694d768e043b8a72f5381a3d1901b6c08205b0cafe84fae81a5ef0222a"
+    },
+    "community-music-video-duo": {
+      "frames": 5,
+      "signature": "535a562ff0b0e19f88575894b8cc2fc1b1a53bf8006f7dab8852d8877ef2ee16"
+    },
+    "community-music-video-recast": {
+      "frames": 5,
+      "signature": "777d793d0b6a2b485220f1f27f49ff47f7d00f9dd81f980fd6b1a81fb25e084f"
+    },
+    "community-athlete-identity-swap": {
+      "frames": 5,
+      "signature": "8f6cb4392b51328149dd08cc26e21442c76367acfbf69c9cf9ec995020e246b3"
+    },
+    "community-showroom-customizer": {
+      "frames": 5,
+      "signature": "bd660ba34b2618a1e33a890ad46ee6f3d6604ab421dff0df907c315aa4f514c2"
+    },
+    "community-highway-ostrich-rider": {
+      "frames": 5,
+      "signature": "9e3d6aa4b5afb4230134cce2efa42bc43a38c9f3a8006c07930818ac5a53c367"
+    },
+    "community-smoothie-walk": {
+      "frames": 5,
+      "signature": "423459c3d6dcd38ff7390228291577b7d439cb9b460cab653a1cfd32865fa57f"
+    },
+    "community-duo-character-swap": {
+      "frames": 5,
+      "signature": "eaff064f6938ec6003241b66f56300f5812ff7fa7579d3f6e6535999f65e2b69"
+    },
+    "community-elevator-dance-swap": {
+      "frames": 5,
+      "signature": "7ab12fd6ba1f02e9e9f9ac5ce0e8eb515a1e5b7e0d66d316fabd4ebabc1f427c"
+    },
+    "community-wardrobe-switch": {
+      "frames": 5,
+      "signature": "83ab76850cb6aae2ce83436a4a34f7e65f3db97a82e3b1d493728972c2d1240b"
+    },
+    "community-keyboard-jam-session": {
+      "frames": 5,
+      "signature": "2e63ddd160c08d377263e7e0fe6f7373c5059ee7e0a82245339dcd5e3fd938f7"
+    },
+    "community-kitchen-dance-swap": {
+      "frames": 5,
+      "signature": "ec99d4532b34617ca5ccc734f44fa42c981c4f620bca78e5c97a793a55084d22"
+    },
+    "community-folding-ancient-city": {
+      "frames": 5,
+      "signature": "2efb2dfb45f58f20dd8d41ccc81a75ea85b4e01add969cab73d6bfa5d9bfde58"
+    },
+    "community-black-dress-walk": {
+      "frames": 5,
+      "signature": "8573e108717b9c22d92ef3974f804fe51bc58962945bd7e81bf36a923b5b9048"
+    },
+    "community-chic-sofa-rotation": {
+      "frames": 5,
+      "signature": "98df82781c0c68376668ebed8b25152854bf9a495abf547ee455e609596f557e"
+    },
+    "community-suitcase-skate-kickflip": {
+      "frames": 5,
+      "signature": "ead952dc3e84db22c78f3f735977b9e5fd334e5a5c32f5198333ac449c22bff8"
+    },
+    "community-beachfront-jog": {
+      "frames": 5,
+      "signature": "6de199d82dc6aa496eee89f9b7885f7b9ccb43f6c190b87a634d9ef5453151a2"
+    },
+    "community-gas-station-reveal": {
+      "frames": 5,
+      "signature": "bc31ec8153dc79141bc53100cb55f34f070c242dd98b18b7b8b0a695ba23ce85"
+    },
+    "community-urban-dance-trio": {
+      "frames": 5,
+      "signature": "f5df02b85bfb201a9850794cc3123183512a7a958d775118da2d2e6f31f8aa74"
+    },
+    "community-identity-swap": {
+      "frames": 5,
+      "signature": "f616cadd8ba893a0cbccfb52d6093b54cffde2d11e5d3a121e94817d458eacc5"
+    },
+    "community-locker-room-swapping": {
+      "frames": 5,
+      "signature": "5f1380812f37c320c04a253ceb92047dfc6a231440f65f67e6b07556cb8e57ed"
+    },
+    "community-dynasty-warrior-duo": {
+      "frames": 5,
+      "signature": "221acbd3e3b6a50aa978c16a5009b263611c59749a109f1cd1901d22fe77919b"
+    },
+    "community-skyline-delivery": {
+      "frames": 5,
+      "signature": "40d7e44b51ca24430cb1bbb74f6dc9ba2c12265d18b9a0a91a8db84e54661a04"
+    },
+    "community-luxury-sedan-swap": {
+      "frames": 5,
+      "signature": "74ed3a10aa67175c4e77929339bf1f3c0ed79500a8e4f606d1a6a9f501865f46"
+    },
+    "community-nightlife-style-swap": {
+      "frames": 5,
+      "signature": "b50b8c6637cd1f2564a348dcfd8e3ce20e9812a6679cd3874381a188c51e0199"
+    },
+    "community-pink-studio-groove": {
+      "frames": 5,
+      "signature": "44b2699ce61e5dea574efb9182165102b756c4ae0a298ac0d1a538ac433a60a6"
+    },
+    "community-cash-burner": {
+      "frames": 5,
+      "signature": "6fba5ae557a823946202fe54db4d8181ec9401c0f0b14417234a4b6aeb889557"
+    },
+    "community-architectural-blueprint-rise": {
+      "frames": 5,
+      "signature": "5a02c1c03a51bddecdd6582fdf85052db7e767fd9a8dcc9f494929fab9ac981d"
+    },
+    "community-living-room-duo": {
+      "frames": 5,
+      "signature": "1a299f0cd32e60244b4acefc1389be8244593c6958e5ad1a7fb91eeb87339156"
+    },
+    "community-garage-duo-dance": {
+      "frames": 5,
+      "signature": "188b058a307bd712155780889e3f70f6c5baa2cb2556dfd4e5e6854204874cba"
+    },
+    "community-skydiving-cat-swap": {
+      "frames": 5,
+      "signature": "9c99ff485aa46135bfaf8912f3277a0571b382c0c0f5513796783b3097572179"
+    },
+    "community-folk-dance-swap": {
+      "frames": 5,
+      "signature": "9d9d1dc5752aa993075f1f372d4ac8608d620c142128903a3c85d5259d37dd3b"
+    },
+    "community-kitchen-creature-swap": {
+      "frames": 5,
+      "signature": "01d0bbaacfd58df34c2f02062b2fe74e1fc1176c0bf24609a585643924e4df51"
+    },
+    "community-sofa-portrait-swap": {
+      "frames": 5,
+      "signature": "f24e3efbabb933e6cb3ebcdbb3f01e1d95faf72f15952c9d25ff42b5e02c1a34"
+    },
+    "community-explosive-exit": {
+      "frames": 5,
+      "signature": "a7c06406c3ea8f4b762f8cd7a6b332519e5b26bce1a56e4d3b5a5acb29a8d64f"
+    },
+    "community-drive-thru-pup": {
+      "frames": 5,
+      "signature": "ddc6750353691ff0dc727804c00ab8d9886351dc66d05f6480da8bd003aa239d"
+    },
+    "community-firelit-combat-duel": {
+      "frames": 5,
+      "signature": "2953a6686aab26e8cf2635e297bb3a661347727ab2b4b0d79fc4768a15a2a044"
+    },
+    "community-musician-swap-performance": {
+      "frames": 5,
+      "signature": "cf0f678c3bb879232c91fa37c1eeaca8f87a408c3ebe22b7cab2dcb5c07d84b4"
+    },
+    "community-highway-truck-rescue": {
+      "frames": 5,
+      "signature": "c915890847d1b888cba7977f59f751c4aebbe03a38787eeda515b0c4137a6b0f"
+    },
+    "community-cart-fall-reaction": {
+      "frames": 5,
+      "signature": "49d3f556e5b37fd6465aa8c3d425b1a6bbf8e47ade26880e5b30389b00fb0a3b"
+    },
+    "community-mint-suite-grooves": {
+      "frames": 5,
+      "signature": "b11427ac0e7f1ca610598ce2cd6493eb0bafdbfa9ae21d1f37b4ac90f3e2ca68"
+    },
+    "community-dragon-summoner": {
+      "frames": 5,
+      "signature": "0e05aad2c2903f7eb9818f41028c8ebc19eb7fdd462d7615dc7ac4b6a37ab8ed"
+    },
+    "community-tactical-range-swap": {
+      "frames": 5,
+      "signature": "29ff887ceb960ed76fb5394d7039a121bc07baf80a9bc296eca0d857f68384aa"
+    },
+    "community-kitchen-coffee-prep": {
+      "frames": 5,
+      "signature": "9ae2409c0e5733578419bbf2b74caed0bbc248e9f2a0b27531d8e85e1bc43b81"
+    },
+    "community-midnight-car-celebration": {
+      "frames": 5,
+      "signature": "1f151d8038f326beafc9a75deee3194062be624d2aa50a3ee43d41f94dc43df8"
+    },
+    "community-boombox-street-groove": {
+      "frames": 5,
+      "signature": "f1cff0e2adfeaea2adc546833162f922b4540c2799cd0f6bfe3db606983686bb"
+    },
+    "community-news-desk-recast": {
+      "frames": 5,
+      "signature": "87956f229f2a4e9b47697165582bf56e2a2e9466456a0c25fac14aab7f631f0f"
+    },
+    "community-pizza-slice": {
+      "frames": 5,
+      "signature": "d8828170f8f0019bd91670a6863c28052d6e8552f7d8976576fe4fe8fe75fdd6"
+    },
+    "community-flying-cake-ride": {
+      "frames": 5,
+      "signature": "f4e55962a4a083b9a867bf3ed5a052b2146cc80628c9a75b1694dc7c0451bd3f"
+    },
+    "community-kitchen-character-swap": {
+      "frames": 5,
+      "signature": "a0200793ab4f5ddb31b67e6edac4bb647c057fec97a073d80bdd4c0dfb3fc232"
+    },
+    "community-lobby-couple-walk": {
+      "frames": 5,
+      "signature": "7879ac778b84d18e2abd30c6951ea38a5101f32de4909f5ed8750522a9ecd421"
+    },
+    "community-urban-dance-group": {
+      "frames": 5,
+      "signature": "7d8c261d999bc3156653deda1237e879120950c2d586175e520371d72a71ae03"
+    },
+    "community-vaulted-temple-walk": {
+      "frames": 5,
+      "signature": "4fba1a5856ffad4ffd144cdd4c8176827564b6ff3727baaed9c0cb8fba6de3e4"
+    },
+    "community-hidden-wardrobe-swaps": {
+      "frames": 5,
+      "signature": "da37fbc8943a59ced82b34c2e6bcae9fb12fefe256d0566fa7bcb3aa68104c26"
+    },
+    "community-street-dance-recast": {
+      "frames": 5,
+      "signature": "9e36ddcfa5b94dd0189ad3155a7d2b06b5efd6c6415e277b63f77eaa596796ea"
+    },
+    "community-kitchen-feline-barista": {
+      "frames": 5,
+      "signature": "423c87af7dbd10ff2c0d56e7f9a078bf2788e815edff7b6b09f429ce10f1251e"
+    },
+    "community-cliffside-recast": {
+      "frames": 5,
+      "signature": "6b52f2bf431d03c36a46b2f88699d1666e7ae2abe170e95a79cb2b23beb6ad14"
+    },
+    "community-duet-exchange": {
+      "frames": 5,
+      "signature": "6f6c5d30799373a77f7b21b783ecf52599000138d0795d500b8e8c33b8ea9f24"
+    },
+    "community-stellar-arrival-sequence": {
+      "frames": 5,
+      "signature": "9439e1778ef577a688fe440e38b352ddacecd94fc79b5215b71b799883cde3f4"
+    },
+    "community-toy-car-swap": {
+      "frames": 5,
+      "signature": "0e2b3eed57618d88ec4ae89a5b86941a9623b544ccac1e065df85c41c32862ab"
+    },
+    "community-automotive-symbiote-forge": {
+      "frames": 5,
+      "signature": "1237f9943368fc8f071bb2beeb83164be09bb8928dc815322a57f1f59a69c2eb"
+    },
+    "community-pastry-tumble-zoom": {
+      "frames": 5,
+      "signature": "27f384870f0ec1a858620076954802fe1a5c3ee4564d883a1c586e18e2719eb8"
+    },
+    "community-tactical-sword-ambush": {
+      "frames": 5,
+      "signature": "644e59093a60a823736be0507ce43618ac9d69dffd71ea1afcc2135cddde32bf"
+    },
+    "community-convertible-night-duet": {
+      "frames": 5,
+      "signature": "069c0fa94ca20df761e9d340d8ed3f47d955bb5497ef12907091529dc1600813"
+    },
+    "community-garden-path-tea": {
+      "frames": 5,
+      "signature": "4588d9ccd195b06da51f74ee86e6cc3e9811f37f1b9052b93165c074bcf24706"
+    },
+    "community-cabin-rhythm-duo": {
+      "frames": 5,
+      "signature": "732a891507af7474632a9fff9574f257f786f00cf6290bdec14108cf58ca1eba"
+    },
+    "community-formal-dance-swap": {
+      "frames": 5,
+      "signature": "4c46a15f44d8fcfe2d99135f3035ff90e3af436e161320758faae015bb71903e"
+    },
+    "community-dapper-animal-duet": {
+      "frames": 5,
+      "signature": "1769bab7310148fa504629c36ef14bd6f055c92672a7badb1338a0095ff7549a"
+    },
+    "community-street-dance-swap": {
+      "frames": 5,
+      "signature": "54743f683f7f26daa58c80bf5b18f4c95812aaba9b747f785ecbd1ea5ba51ae3"
+    },
+    "community-muddy-leap-tumble": {
+      "frames": 5,
+      "signature": "805d021226b6ce203a6b37e6b4296ddc3ecc3e3e52a43ce293d79d8cf9c5524d"
+    },
+    "community-studio-car-showcase": {
+      "frames": 5,
+      "signature": "02a1cb69927526e4abbb672e031855ef5e83c729eb024401d26b1d15b35268fd"
+    },
+    "community-boutique-jewelry-exchange": {
+      "frames": 5,
+      "signature": "0137a0945a638779bcfcc8135ccd7c2f24990f6e636ceb1124323ecb7d7dd64d"
+    },
+    "community-card-reveal-swap": {
+      "frames": 5,
+      "signature": "44329639b0707b7decc131e8611c57866890189a35b71c87b9133318a419c572"
+    },
+    "community-feline-karate-cat": {
+      "frames": 5,
+      "signature": "bb60e435d53b12a72dd028d972257b4e9ce2837b2228fa63674232079cbdb640"
+    },
+    "community-drift-curve-replacement": {
+      "frames": 5,
+      "signature": "1344c93ab6a51460df8028335206a9b50467ef1c05d5d62e46fde5b5227390eb"
+    },
+    "community-elevator-outfit-swap": {
+      "frames": 5,
+      "signature": "402f74a92857de8b2d6d0aaa3270e5f5c674825eab77b9d67321ba460b221bcc"
+    },
+    "community-western-crowds-standstill": {
+      "frames": 5,
+      "signature": "226c7eba17d79ac6a5f9b41e7f924ecbd278e866de158eddd94a0ef122f6c151"
+    },
+    "community-storefront-hero-swap": {
+      "frames": 5,
+      "signature": "51cdc9e068d7af9c44b2efcd9203167a49ea41aad2e36ca05d501fa196c7518d"
+    },
+    "community-athletic-pose-check": {
+      "frames": 5,
+      "signature": "fe28018b61bcd445dd1f16c36ebad2ab7387d6590a60db1b522a55331e8c449a"
+    },
+    "community-fairy-tale-walk": {
+      "frames": 5,
+      "signature": "127627f564038a448db149acb95781bc4263843c72026b3b667202e2390a5907"
+    },
+    "community-stadium-ball-control": {
+      "frames": 5,
+      "signature": "fc3e4747ebf656ed3eba321e605e88f1bd9e76d31399be8db4f99cbd3dffe81c"
+    },
+    "community-sofa-outfit-swap": {
+      "frames": 5,
+      "signature": "2fe832ada4fb7da634d603109a5726698926ce66e33fe14afd71f9946f8e4017"
+    },
+    "community-streetball-cross-over": {
+      "frames": 5,
+      "signature": "966dd06493fae6149793cf1ba148ad94a1dd886822c2fd003295db79d6517e46"
+    },
+    "community-bipedal-cat-sprint": {
+      "frames": 5,
+      "signature": "e174e5f2c1269ba692d774499dd7cf6871aa7c4302a307346255702c7344f0ae"
+    },
+    "community-manor-character-recast": {
+      "frames": 5,
+      "signature": "b93f1f92107ca857d24a5481920da77fe8f34511372b33b991c299909fb568ae"
+    },
+    "community-party-entrance-swap": {
+      "frames": 5,
+      "signature": "5f64317e73e1f473c782eef15b285a0eecb1186ae825672ddd60def3b5c6ce9c"
+    },
+    "community-car-snack-swap": {
+      "frames": 5,
+      "signature": "d3124efe39b66ad3340d75555ec25eedb20abbb657f7f04da9a2c00e4e86af97"
+    },
+    "community-desert-walk": {
+      "frames": 5,
+      "signature": "66759a31588bca77facad117864b790ecdcc2c269c776eab640a00e74c0e7605"
+    },
+    "community-passenger-seat-serenade": {
+      "frames": 5,
+      "signature": "4dfd0274a46c9d94a6cdc3491d927e7945b47a79e3df1aa561c49a8b589ed861"
+    },
+    "community-armored-duo-recast": {
+      "frames": 5,
+      "signature": "2f1d3deab7f6931968b88f43969e1b48199ff669b31fd6c7a0be548540766d82"
+    },
+    "community-pet-dance-swapping": {
+      "frames": 5,
+      "signature": "3b93ff2dc5d175bd735d47bcf363afe2f1990bfd7a37fe6cdf6c6b285d3cb1c7"
+    },
+    "community-urban-dance-squad": {
+      "frames": 5,
+      "signature": "cb15c35f53ff6c5ab27b70655c5c78fa26fc0e10a09c57c0cca527214a2994cb"
+    },
+    "community-showroom-vehicle-reveal": {
+      "frames": 5,
+      "signature": "ae2bacb4795dbef6b92677c83b45b7b9773b63bff2cd1a1eedb65cdd6fcbe969"
+    },
+    "community-mirror-flip-transition": {
+      "frames": 5,
+      "signature": "f642f750135842c054bc8fbd35ca46356bc0fa4c1875f01011826a374cc0bf98"
+    },
+    "community-urban-style-walk": {
+      "frames": 5,
+      "signature": "90628878b2febdc269ef8ac00cd81433f05de4974c48bda1f03b3dec81df4b3b"
+    },
+    "community-tactical-range-drill": {
+      "frames": 5,
+      "signature": "4a3a9fe07ffafae1c59251564cdc96e7298bf00d4d697d3c5e3c42ea49668c5d"
+    },
+    "community-tactical-hallway-brawl": {
+      "frames": 5,
+      "signature": "4e2d3941c4ef89a8ffddc352c8317a3064fbb658c76153166f62e96809bcb5b2"
+    },
+    "community-faux-fur-lift": {
+      "frames": 5,
+      "signature": "2698cb24eebc3e3dec1947701ddec4d75a360f8d5d9dc877ae7e2d26e742300e"
+    },
+    "community-blossom-supercar-showcase": {
+      "frames": 5,
+      "signature": "4ce7e737f3aa2cf68e13f4f4d183a7b654ef410239b2983f9279341c5834080a"
+    },
+    "community-parking-lot-remix": {
+      "frames": 5,
+      "signature": "61df428b24388fba3850143a8bb265044eaa2b2b9012583aa36430b625554e62"
+    },
+    "community-street-coffee-stir": {
+      "frames": 5,
+      "signature": "88f1332cf90ef06616100e8e4d7f5d1e977faa9373c7c0ff03f28049c9458e0b"
+    },
+    "community-chic-leather-pose": {
+      "frames": 5,
+      "signature": "5e15ddf4cc1c1d1afc0b72fa8c700b0e23748a06ac29f53588f1e23c9fba2f58"
+    },
+    "community-crowd-leader-pivot": {
+      "frames": 5,
+      "signature": "f3940676a66d99b42c45bd22f27979172eba2bdfcbeea0ba90a0dda1402cc661"
+    },
+    "community-luxury-sedan-showcase": {
+      "frames": 5,
+      "signature": "58b256539a82ba15d563ef22ce9f679a9e8d33a572b56f4257df5062b68f1b82"
+    },
+    "community-retro-gangster-exchange": {
+      "frames": 5,
+      "signature": "68455deb631b7ab105fc1cab3eb18942cfd9b929f0c3fe08898409ba6141c436"
+    },
+    "community-kitchen-spill-prank": {
+      "frames": 5,
+      "signature": "a4e4e2e175a5565a2144c9807168e08f078b381f25f55d2b01e0ea4801e5e5c3"
+    },
+    "community-periscope-chase": {
+      "frames": 5,
+      "signature": "2297319efd2cf933e5e79aa5e5e170e4b746122030dd8f1beec4fb34026309b7"
+    },
+    "community-character-motion-swap": {
+      "frames": 5,
+      "signature": "68b3d22e8c7e6a79115ee2527b733f6c03bdebc7a2b5d67d5b708d41f0af4577"
+    },
+    "community-mafia-boss-montage": {
+      "frames": 5,
+      "signature": "2b61d9a30653f06288ff53cf175a443a4eaaf1f057f503540de1672e636f7490"
+    },
+    "community-evening-gown-promenade": {
+      "frames": 5,
+      "signature": "3cabcdebbf6d0ee710eb52e6b3222a39f6db4fa43ba5f245475041bfaa20996d"
+    },
+    "community-mascot-stage-performance": {
+      "frames": 5,
+      "signature": "d1825c750491b82489ae6032d891a39fd4b2aa5cbeefe4574befd4bcd35cf427"
+    },
+    "community-rug-outfit-swap": {
+      "frames": 5,
+      "signature": "6043ddc421ece034b7e78ff2d114326871e06ff98b63c9e0944d6af08944fc8e"
+    },
+    "community-chaos-cabin-drift": {
+      "frames": 5,
+      "signature": "1eccc340b99ba0dfa941176ff3b07787b784028c2b032985220a6c490a02d78c"
+    },
+    "community-boxing-identity-swap": {
+      "frames": 5,
+      "signature": "667ac3a3b12bebba84e0734287f63f7222879a66063a9cc81b0980b7e6bda0c9"
+    },
+    "community-costume-reveal-wipe": {
+      "frames": 5,
+      "signature": "12c0c161794f5ccb8adcb20f2cea0ea0151d296fcabadbb3180f71f5a9c8ffd7"
+    },
+    "community-player-substitution": {
+      "frames": 5,
+      "signature": "75cc8e32319d17f48dd60e1024a19abf370b4d8ae4b4bb3282499684d8ddb8ab"
+    },
+    "community-bathroom-duo": {
+      "frames": 5,
+      "signature": "9e6a00ce13d0d006fe5d9f96be5efb444fb3017096a4fd538357332b9379fecf"
+    },
+    "community-orange-case-spin": {
+      "frames": 5,
+      "signature": "b242e4d7bd5cdb84771a3d2abe94cc0952c90c2f82b11ed88da2845783ae92dc"
+    },
+    "community-rainy-street-encounter": {
+      "frames": 5,
+      "signature": "9ce6e48cf2f9a96c735e5bcb639e337bccb9a0469786dcbef0c9594cdf97fe27"
+    },
+    "community-trolley-crash-billboard": {
+      "frames": 5,
+      "signature": "0bddbcc5ed46ef1b09d78204feb2489b2b9f5fcc270e3f7569736da3bb3360e3"
+    },
+    "community-streetwear-dance-swap": {
+      "frames": 5,
+      "signature": "9cf0b5b8a6b5b45ba49ad2e4f06a8d62c74948e4b0ade7e0807d52281adf87e8"
+    },
+    "community-custom-drift-car-swap": {
+      "frames": 5,
+      "signature": "a3395e7b492777d721e0cdc94afcb4d395d1982ef35ebd56cc5ec5164e057832"
+    },
+    "community-convertible-duo-swap": {
+      "frames": 5,
+      "signature": "e651cb05ed901193e2ee3dd1b4e9a5d6b884a6f037686a7892151c9e7d7056fe"
+    },
+    "community-feline-dance-crew": {
+      "frames": 5,
+      "signature": "a78a4f26ef6b12dd7d468b92aba9bce018ba41b970cbb6cd01d093259089120b"
+    },
+    "community-trio-dance-swap": {
+      "frames": 5,
+      "signature": "d03d20af9ce44ce641b9be303218c39bc4031878da7c055ad094fefca5506b42"
+    },
+    "community-showroom-car-swap": {
+      "frames": 5,
+      "signature": "35465ff0167f550c682c35cac8905728e716c01ca0d24c7569535588610b8506"
+    },
+    "community-sunlit-bedroom-dance": {
+      "frames": 5,
+      "signature": "9de90dd39b66a44e384fc098241d29b3060f44c5c0d195147ae27fef017955cc"
+    },
+    "community-cafe-crowd-swap": {
+      "frames": 5,
+      "signature": "841d4d1fa644355bfa5e05a35af63cc7422b00eb4620459aa56a25d9c34383b7"
+    },
+    "community-gentleman-branch-chop": {
+      "frames": 5,
+      "signature": "1d27376651383ed77e0e35160f8a3398371dcdb7aa85185ded20185446b4f783"
+    },
+    "community-street-squat-duo": {
+      "frames": 5,
+      "signature": "b1948bef83afa0f61aeaaa88a81d82a1285f4334de3c2cfb656406f1b9136150"
+    },
+    "community-skincare-routine": {
+      "frames": 5,
+      "signature": "51d7c25af426e9a8c92303225119b3d39ac17bacd545c0805dfbdccb57ddb69f"
+    },
+    "community-festival-stage-presence": {
+      "frames": 5,
+      "signature": "1922f10f861e4b7d8e05c13301a048946c28d910dc1f7e88effe85c62ad0f5ab"
+    },
+    "community-punching-bag-drill": {
+      "frames": 5,
+      "signature": "ebc6ab08079ca116077be53067068443faa5bdee30e17c762bc8520b9124649f"
+    },
+    "community-hypercar-ramp-leap": {
+      "frames": 5,
+      "signature": "36ed87936f8df6552fe925a57ef8866bf0ba4ab319f6254046f3ecd530ca363e"
+    },
+    "community-winter-streetwear-film": {
+      "frames": 5,
+      "signature": "278b0eee9da0083042031dfc97a9001cdcc8b105576d40d55b5bb8887b94c1b8"
+    },
+    "community-graphic-hoodie-swap": {
+      "frames": 5,
+      "signature": "cc25e2a54bfffdb8ad7f3fbe9e0ede368035fe682115c196c9a7481b4a9d2b95"
+    },
+    "community-elevator-style-swap": {
+      "frames": 5,
+      "signature": "38059542a77dc213ec3e96c68eb1557c82351c433a20c5d2a192919c0a18fbaa"
+    },
+    "community-window-snacker-swap": {
+      "frames": 5,
+      "signature": "64516312c92db3f3e4547ff35950e9949d0d53784e006c2738e730cdf8063f8b"
+    },
+    "community-dinner-party-recast": {
+      "frames": 5,
+      "signature": "3297fc6ec863c155fce0f920d6b483bdf3920e0a692314d6a5c02269861cf4fa"
+    },
+    "community-synchronized-group-formation": {
+      "frames": 5,
+      "signature": "1ce5fc9aedc2dbb156e4115980c2c163ba48577e331f04d79caeb80f2946e7be"
+    },
+    "community-streetball-rivalry-swaps": {
+      "frames": 5,
+      "signature": "238092a061a3ed9202ea217a6a740111e6af53928df03e1d3c5d4bbad1c652e2"
+    },
+    "community-kitchen-feline-reveal": {
+      "frames": 5,
+      "signature": "e717eb1d81a0be9fe89d807ccced56ba9c62310676d2b5fd2626677d934e6b92"
+    },
+    "community-executive-business-montage": {
+      "frames": 5,
+      "signature": "b3c14c321293ed4d624beace014738c7ae47418a4f49b88e64fac6868366715d"
+    },
+    "community-alleyway-identity-swap": {
+      "frames": 5,
+      "signature": "921bec916b8fed2b52e2bee150c0d5d7a61b9b6e421134d50a7dd30cdef4b88f"
+    },
+    "community-apocalypse-lounge": {
+      "frames": 5,
+      "signature": "4952d582d1c522fc320e4c7afb4011920a027ddf61b7e2bfbe103a7606437d47"
+    },
+    "community-urban-recast-suit": {
+      "frames": 5,
+      "signature": "787968c4c959b3bdad79573c8094d9b567b174accede2634c1a1da797441bc50"
+    },
+    "community-costume-basketball-swap": {
+      "frames": 5,
+      "signature": "d16365c58f48963132e67fe004ca254d200f5b9b2344411ace367bf17eece687"
+    },
+    "community-supercar-driver-swap": {
+      "frames": 5,
+      "signature": "5c39cdb1395cc3560ef631996a832caf1cc05323911a840893d5a7dfa25ca253"
+    },
+    "community-grooving-driver-dog": {
+      "frames": 5,
+      "signature": "19f713cb0edfa21594afa045fc85b493a41ab79e9815869548992f73dbe23296"
+    },
+    "community-electrician-character-swap": {
+      "frames": 5,
+      "signature": "6c7aff50fc5b1834b85aaeca65bd6d954cedd6a3756f2198aac749f62adde13a"
+    },
+    "community-highway-drive-swap": {
+      "frames": 5,
+      "signature": "223c0b36110442d5d025175e01c77588f953f1fdc2db46e3d6df8782cdb601ef"
+    },
+    "community-canine-night-drive": {
+      "frames": 5,
+      "signature": "039050fc2a81c3c9373575493dd727e009f414d064455a8fd45edb43f80daaca"
+    },
+    "community-hillside-dance-swap": {
+      "frames": 5,
+      "signature": "4b67934779f82ba417b16eb09b01c87113fba7aa861927b3ec8efae6bdd48016"
+    },
+    "community-playful-animal-duel": {
+      "frames": 5,
+      "signature": "124b3552d990571d364b79e2931eabee47c2ad5c3337fb9d1fa0ca67cd89df29"
+    },
+    "community-noir-espionage-flow": {
+      "frames": 5,
+      "signature": "ed56f96b3a6e40f950b8021dde876b0e7c7bb1d83ba110fc7de958c21b5a3684"
+    },
+    "community-skyline-luxury-reveal": {
+      "frames": 5,
+      "signature": "8eda370e0302ea5c984499bff91bdfbde37591233423e3f385d6edbbd450305e"
+    },
+    "community-catrina-portrait-shift": {
+      "frames": 5,
+      "signature": "8e8c446cb838c8ca713d58421d4b0b4c1c599696db5b512a8ccc59d5bad12943"
+    },
+    "community-suited-piano-jam": {
+      "frames": 5,
+      "signature": "df39f2a4daa7410ecdcf38397b7ec7edef754a78d189575563e746aa3c39c87a"
+    },
+    "community-classic-convertible-dialogue": {
+      "frames": 5,
+      "signature": "e183ce562e2f4f224c825b3a81c629a8e777ff11b7dadcc123a6da9f146cb2e5"
+    },
+    "community-skyscraper-ledge-spin": {
+      "frames": 5,
+      "signature": "e8baa8882d0f1a588628b047a5385dfa471521c0d0ef85e26e361f0ca00b95c5"
+    },
+    "community-subway-platform-turn": {
+      "frames": 5,
+      "signature": "4a7ff9f8869120b47bca427727b29cc992fec1c748248d251fa9b9e1e2d90f77"
+    },
+    "community-pitch-pitch-sprint": {
+      "frames": 5,
+      "signature": "e8abb04987e282b863e25cd9ba41a602944b6c2846cdf49692efabb4f74ee2ea"
+    },
+    "community-urban-orbit-runway": {
+      "frames": 5,
+      "signature": "33bfdacb595f5afd1f4282607a7c3b944caf4ce16c67f915941d7dbe68d0de3e"
+    },
+    "community-birthday-car-swap": {
+      "frames": 5,
+      "signature": "33d332070a0195132f1c9e010b6cc30ded96a97344e564d6b3cbeecf50068070"
+    },
+    "community-garden-duo-swap": {
+      "frames": 5,
+      "signature": "8528fceffacd9c555347d60db19c176014222be9843bba036da9a4b77457d2b8"
+    },
+    "community-night-crosswalk": {
+      "frames": 5,
+      "signature": "bc97c44bee7c8ac25fbcce23ed75d160957f7ccc27fc68e11eaf0d0c09852862"
+    },
+    "community-city-night-trio": {
+      "frames": 5,
+      "signature": "6ce0e7e50b6010c6edf02dc5e904120d8e85eabfc83a2ec97467a2eba172fb0b"
+    },
+    "community-mansion-raid-swap": {
+      "frames": 5,
+      "signature": "c5f5214f3806000645e1cb1ca1658009d24e0e4f4e67b46698e2adfc21761839"
+    },
+    "community-sportbike-rider-swap": {
+      "frames": 5,
+      "signature": "85d10510a523bd3e2a944eba279233692f3143fe88bddb015f1f94f8aa01f621"
+    },
+    "community-courier-pup": {
+      "frames": 5,
+      "signature": "27baeacfe20bbd8802fc199e2c17f932f5b2cfd87f4bf2fcb423c8159d789c7f"
+    },
+    "community-street-character-swap": {
+      "frames": 5,
+      "signature": "3ebe449bc6b8eabf2aa416ed108775f38be3e9c4c725a5b752ceac4afb7b30c6"
+    },
+    "community-nightclub-duo-recast": {
+      "frames": 5,
+      "signature": "ecf7b67fecd5c9b92f3d445555790b52dc4a07cef7271764914e431178d300b4"
+    },
+    "community-white-outfit-swirl": {
+      "frames": 5,
+      "signature": "e49c5b7c3fe986e4ad24e1a125bd0584bb04aa7a803bf4239d661521453eecc5"
+    },
+    "community-animated-duo-toast": {
+      "frames": 5,
+      "signature": "f756f2e61030731b057049e9b797723599ca3cea2c39ef11c1ab52e7c685a262"
+    },
+    "community-convertible-driver-swap": {
+      "frames": 5,
+      "signature": "cc10580d43dd73a6fd5f23f54f0c169b7a4593baa939730e1d9a707ce3669382"
+    },
+    "community-symbiote-supercar-shift": {
+      "frames": 5,
+      "signature": "22fe1dff9145184a23bd7b32a433685635525b8dd7d3f3b6e79492fe985ae9bf"
+    },
+    "community-desk-chair-spin": {
+      "frames": 5,
+      "signature": "39e7d13072c3f10ec36f78f8ec8501a7e1acee45587f115dfe71511fcc6baa4c"
+    },
+    "community-street-rap-collective": {
+      "frames": 5,
+      "signature": "29fb3a16f48f41edc385d8d49bb0d5c0e3221e78b70a57c58245f033507a4302"
+    },
+    "community-skyline-rhythm-walk": {
+      "frames": 5,
+      "signature": "57ef2e80ce2464c26b104216ef2172226f3434a9f12b43d38e30266fb42bcf73"
+    },
+    "community-urban-sedan-pursuit": {
+      "frames": 5,
+      "signature": "0e4980d8abb49696f3b3214de6d7254c665ca6f9d760b25a624afe2156a191f4"
+    },
+    "community-vibrant-outfit-swap": {
+      "frames": 5,
+      "signature": "72c3238030eff201a4ce757d201038376bf31904fff914079c89d3a90cb045bf"
+    },
+    "community-business-breakdance": {
+      "frames": 5,
+      "signature": "37bfd7e5fe0d267aa114677f835692fb92bd959654ebd49b38514518d09b9aa4"
+    },
+    "community-kitchen-cartoon-duo": {
+      "frames": 5,
+      "signature": "9ff841beb33c80a835a37992e9d5a6acebb7d00bf6a19ed9741f6cb560b3a949"
+    },
+    "community-object-swap": {
+      "frames": 5,
+      "signature": "928e4f8591a5a1f28bbd7f09d790bf4effd50311a60af13c07babf8e3444315c"
+    },
+    "community-escalator-outfit-flow": {
+      "frames": 5,
+      "signature": "4a40604bbadf77d2a862e89b44a0d4222af5938a4b48895f057066f6beb6f838"
+    },
+    "community-gallop-ride": {
+      "frames": 5,
+      "signature": "f3b072ddd0fd933174e2091aafb53c95bcabd610678a51bd318d8c55bf0fb78c"
+    },
+    "community-chicken-bucket-swap": {
+      "frames": 5,
+      "signature": "dba46cd5b55d3fb77e71695b13a84982ff4b32611b3c7e37aba3c147698bb2d0"
+    },
+    "community-suit-synchronized-dance": {
+      "frames": 5,
+      "signature": "a428f899ba39ca44cd755c47515b89b4e046b9bf9b5c3123e667f2277b62b684"
+    },
+    "community-leather-jacket-duo": {
+      "frames": 5,
+      "signature": "02806a7bed917a614cc7b524a0397375a6a90fc52431dde20f5768fbfafac7d5"
+    },
+    "community-tunnel-drift-transformation": {
+      "frames": 5,
+      "signature": "d00f3f56657131f4114217d8951f5c70ee732c167bac78104f3a6279efff12d8"
+    },
+    "community-cliffside-rescue-hero": {
+      "frames": 5,
+      "signature": "ee0a7f7c05c62030bd3b0e2669e471ecbf35070ace8b47396d28cdc87d333d12"
+    },
+    "community-suit-workout-swap": {
+      "frames": 5,
+      "signature": "8016a064ea8711b9ecaed921653710b62a174f98f959c46c0569980344cd74e4"
+    },
+    "community-neon-dj-performance": {
+      "frames": 5,
+      "signature": "ec26ce7c841993e9596c76aef2f7d62ca9972f75174b7aa866125f2c34325321"
+    },
+    "community-cinematic-face-swap": {
+      "frames": 5,
+      "signature": "cb86123c8ed8e83f8a003a374a2a4b066e07a9f01040063d68c18f39b01bff0e"
+    },
+    "community-reptilian-fridge-raid": {
+      "frames": 5,
+      "signature": "cef18732507c59739f0e966bf53ac1fe3546f147707c2d06f7cff9359d29cd46"
+    },
+    "community-overhead-outfit-switch": {
+      "frames": 5,
+      "signature": "522c536c9bf373be66e2b075539369343d1319a0ffb53e1737113c86918c7bc4"
+    },
+    "community-courtside-slam-dunk": {
+      "frames": 5,
+      "signature": "1b3f0b70ceae3beb349917057dc7905f6ecf87643de82603cd009197f399d9a2"
+    },
+    "community-crosswalk-strut-swap": {
+      "frames": 5,
+      "signature": "f18f7c3e7e3f42fb1d743585af343ce930290c934da1bd807f1000216c1bb15f"
+    },
+    "community-snack-weight-check": {
+      "frames": 5,
+      "signature": "43694a289c279623bc6278a7453e582297e2b29e74e9dbabd6276dc9c7467cbf"
+    },
+    "community-tactical-helmet-put-on": {
+      "frames": 5,
+      "signature": "3cc260bd61876444e62b4dbedbfc0282059010d0254f19d5fc2831c4ef941e95"
+    },
+    "community-tactical-gear-montage": {
+      "frames": 5,
+      "signature": "89ceec707af1c3eef5bf290618c4a628780ec336ba9173832e9525da01db877a"
+    },
+    "community-clubside-observation": {
+      "frames": 5,
+      "signature": "5c83e2220df28f76757b7688757782cc5231add6c8f44a5ca244ca7bd68eaa42"
+    },
+    "community-formal-groove": {
+      "frames": 5,
+      "signature": "2135baef4492528c957780a48a9804338be19d6f39d8cd151fb0db1d936555ed"
+    },
+    "community-shinobi-duel-flow": {
+      "frames": 5,
+      "signature": "771c40cd194357b332f076dab0311f84aeb3a1feb7026a43506f3d30e3fcfe13"
+    },
+    "community-balcony-trio-dance": {
+      "frames": 5,
+      "signature": "546df04e0d1825e754bc05b1be9e7563e824201aa0a9896ecde8a65c6ed6c1f5"
+    },
+    "community-nightclub-sway": {
+      "frames": 5,
+      "signature": "5dbbbe870d1b4810dec2690c2d34dede87d7c3e8fcb9cf58e0924bebb4ee3a5d"
+    },
+    "community-zombie-dance": {
+      "frames": 5,
+      "signature": "7c9ccde6d52f6702f3f45ecbf1a76f305faf9db647ed4b1a328307cab7e5accd"
+    },
+    "community-puppy-city-stroll": {
+      "frames": 5,
+      "signature": "d05dd0bdf91662f2a896423d4ff8243c93ac4d13542bfe750e2ace3d9abdbd6d"
+    },
+    "community-kitchen-trombone-duo": {
+      "frames": 5,
+      "signature": "7c0880983490e825be586b9120f9ae48308a462ee558e3998e44cfa93e4b9f37"
+    },
+    "community-gothic-angel-walk": {
+      "frames": 5,
+      "signature": "446b7bf0fea464579889a6c595671bee138289208674fabe824213b26bdc90a6"
+    },
+    "community-blue-sedan-swap": {
+      "frames": 5,
+      "signature": "01e3a8f216a386928acad85e545fadc76eaf5be9528da50dabd44a239e652137"
+    },
+    "community-tracksuit-groove": {
+      "frames": 5,
+      "signature": "7ecd6011c14763e007e8fe19aebdd0492ab8622f8dabf8eed9e06adcf8d10af1"
+    },
+    "community-championship-knockout-swaps": {
+      "frames": 5,
+      "signature": "398a8955109bb530d09d97e8b6c7cc96a7e5718283cfbaf8818b3f8cca64fb3e"
+    },
+    "community-rap-battle-duo": {
+      "frames": 5,
+      "signature": "02a5d59524ec7b92fc6e2548966df2b4ffe420d4546bc127749ce488b917996a"
+    },
+    "community-basement-band-trio": {
+      "frames": 5,
+      "signature": "e609122cf6ccbcffc2211a3b1bcc7f00aebcf60367bbf213fd5850b20b0818d4"
+    },
+    "community-gothic-duelist-descent": {
+      "frames": 5,
+      "signature": "7db694ed98d8c9c64f2603a4647257121d2de3a5056edf687bae1b494a16139c"
+    },
+    "community-bartender-pup-shift": {
+      "frames": 5,
+      "signature": "832bbb54503571bfb718523e3e73ce54a3644fd9a2562ee058e278f4d8ba14f0"
+    },
+    "community-spinning-fan-transition": {
+      "frames": 5,
+      "signature": "e55e3f28eb8e51ed1bfa1e1dba70da2e2c1a0647a95279b466ae21570b8c7926"
+    },
+    "community-picnic-portrait-pan": {
+      "frames": 5,
+      "signature": "cb24dd0e3882232851437226f3ccc330d81b8d4b1085fc8914068873b136db33"
+    },
+    "community-hotel-room-orbit": {
+      "frames": 5,
+      "signature": "9e36619082396b57b38fb95896ac44ede0d9c1b8aec8f0ea8b5868c6f604dd19"
+    },
+    "community-keyboard-jam": {
+      "frames": 5,
+      "signature": "279d31157ee0382755786984633de50c947b8ebbbb325ebe2f6696e7492c8ead"
+    },
+    "community-dystopian-lobby-firefight": {
+      "frames": 5,
+      "signature": "d37e9bc3e0c993103ed1ba2f876609728c5fae195812d7c67857bc229ea01d9b"
+    },
+    "community-streetwear-apparel-showcase": {
+      "frames": 5,
+      "signature": "80ab9ed1104269b36634ea3506c7085eaffda4e9f608d4a044f562e8c9c664e9"
+    },
+    "community-explosion-runway-walk": {
+      "frames": 5,
+      "signature": "6fa03672b6e8b4025224bbefee906f6f2eb3213089aa44d8c9444f6e603efaf7"
+    },
+    "community-bedroom-dance-groove": {
+      "frames": 5,
+      "signature": "8175eb3a57030b1a28fc76400ccb6b3fa5492d3fb849b6961b386f2bc263eb18"
+    },
+    "community-spooky-dog-groove": {
+      "frames": 5,
+      "signature": "a7d0a6d60475fdeada140730bdfce68200dac5b245e11790371ef60b8053ebc9"
+    },
+    "community-courtyard-character-swap": {
+      "frames": 5,
+      "signature": "a80d0dcb95035cfb7c96207d7abd3befb87183f357b45c83add0f795596b3aff"
+    },
+    "community-double-character-swap": {
+      "frames": 5,
+      "signature": "1b193719d09d9c7af2af541ecba03947f94486530c20817a538d16b1587c2e55"
+    },
+    "community-chihuahua-martial-artist": {
+      "frames": 5,
+      "signature": "d9033f8294314b6de22c79e0bb4574493f9b90fead01ff8c93712977ec207ec3"
+    },
+    "community-mummy-persona-swap": {
+      "frames": 5,
+      "signature": "461ab16fc04b66e866df956ae2b6a3c02a5e650e863422c81b8a9dd5b34b1254"
+    },
+    "community-soccer-star-swap": {
+      "frames": 5,
+      "signature": "30febdff99742c701b10c7484cb8c4e5aedafb7cb1e925c4ed37e91de1bb8349"
+    },
+    "community-minimalist-cafe-swap": {
+      "frames": 5,
+      "signature": "0522ed961faa5ebb80f37efde94cf891ab1767b80294249cad32288b97f7ba06"
+    },
+    "community-cafe-shuffle": {
+      "frames": 5,
+      "signature": "1f766b48df4350e0114325d59a0c08e543f40085cb575f4ff8f3f64f45ed4607"
+    },
+    "community-nightclub-dj-set": {
+      "frames": 5,
+      "signature": "9af0ad55a1e95cbb30d1ce2eb5a8ce6a61dbb93483d088114c90b8ff076d6c7b"
+    },
+    "community-desert-jump-command": {
+      "frames": 5,
+      "signature": "9b08f5bcbd8856f8b0c8edb901945898e7eb6e219153aedac6020db27984a058"
+    },
+    "community-protest-speaker-swap": {
+      "frames": 5,
+      "signature": "9a31b776a8afce15315352d5a772c6fc18d678daea81da5cbfd789175a6669ab"
+    },
+    "community-car-trio-swap": {
+      "frames": 5,
+      "signature": "4ee7427c94e1dd8107da79456250bf6df71d4b74da57333f03bc28985b2953c8"
+    },
+    "community-chic-wardrobe-swap": {
+      "frames": 5,
+      "signature": "8dce56910a26bd6ac3de5a4d543b7e462c0f2b654a509aafb15512738dbdf0b1"
+    },
+    "community-kitchen-percussion-pet": {
+      "frames": 5,
+      "signature": "cfe5d84fce24d349dd017b40866e748cdde7662f1151845afc4e5aaea536e847"
+    },
+    "community-chore-payment-comedy": {
+      "frames": 5,
+      "signature": "30f142ce52e812cff072f56767338344b1dc7c96a38035453bf6ea8b3737b1de"
+    },
+    "community-urban-transit-swap": {
+      "frames": 5,
+      "signature": "b85de72cf194e4f0ca23f1dd554954bb1cd9b9d189d6316af3b2e256c24054e3"
+    },
+    "community-model-vehicle-swap": {
+      "frames": 5,
+      "signature": "bb33d41a2064589a5482937a1a4cc1de764c987c4d0382af6ebbfff32fd3b39f"
+    },
+    "community-boutique-hoodie-reveal": {
+      "frames": 5,
+      "signature": "93da7d8f4a4efe69afed4b85b46e2dbc09a5aa8b11ce61aaffe64053fcf8e6a6"
+    },
+    "community-kitchen-canine-swap": {
+      "frames": 5,
+      "signature": "074183af5def8e645682c6084b1e9d6d4bddef325e563f5c1e3581036f712502"
+    },
+    "community-midnight-drive-party": {
+      "frames": 5,
+      "signature": "43589fd4f78a9200f8a7d63df581c245feb8e572fb4f6ebe952330d45036c849"
+    },
+    "community-summit-lounge-style": {
+      "frames": 5,
+      "signature": "53c0bdc036b30c21e457651ce79d97d70aee24d6cdcb1aa541ecfe7e963d5a11"
+    },
+    "community-ceiling-fan-wipe": {
+      "frames": 5,
+      "signature": "ac26fca5a1e4529f8f5eb4206331e9067f21a8fd52252922547f5e1a5d0a3853"
+    },
+    "community-bathroom-mirror-paw": {
+      "frames": 5,
+      "signature": "d5a06eba6cd3b0d87f2c60b4058773f92446f3376a0f4359c2842affde9fc6c7"
+    },
+    "community-street-vendor-swap": {
+      "frames": 5,
+      "signature": "8e030d418c418076f91fe69665f95cc493ecf2615b299dec40754127d38a6408"
+    },
+    "community-pampered-pet-spa": {
+      "frames": 5,
+      "signature": "8f7c548f0d597fd90b835a99e628f764ed870d132b68fa668bb24cc7c27ad87f"
+    },
+    "community-gala-trophy-walk": {
+      "frames": 5,
+      "signature": "f9f74988f2480ff4a8d5e6d99dd7d14f76779d6f00659fd81fa53228913d8df7"
+    },
+    "community-urban-giant-greeting": {
+      "frames": 5,
+      "signature": "03a82b4ca81ed9d3f8f78833c378ef1bfbd9c6c3d0b4ef5954538c2405b5dec6"
+    },
+    "community-camera-knock-swap": {
+      "frames": 5,
+      "signature": "0a9a00941f511aa6380e18e1eda49a04e4a95e4a5419ac739453783fc64b38d7"
+    },
+    "community-ceiling-fan-switch": {
+      "frames": 5,
+      "signature": "a589ad9e484f3de6803659ac2986dc848b6c769cfbb5c3b393577be68d746d14"
+    },
+    "community-elevator-entrance-interaction": {
+      "frames": 5,
+      "signature": "692244d797654e4e985d6cafcca8a2fbe094f42dc8adcbdce26b97bc5afbfcab"
+    },
+    "community-treadmill-style-swap": {
+      "frames": 5,
+      "signature": "c989cc99e461b8e5bc7b036b85bde44c87868a8198b5d02e3e81f85364b6dffd"
+    },
+    "community-flight-case-macro": {
+      "frames": 5,
+      "signature": "0de602e23295a2ccfd2c3ac2b1499e69c2df8b3586a33076402be604cbf72428"
+    },
+    "community-midnight-wheelie-run": {
+      "frames": 5,
+      "signature": "1ab9727bfedc3a24843ccce2a7f9cea5aac64ad0124558622f5cd3ecfbfe43d4"
+    },
+    "community-stage-performance-recast": {
+      "frames": 5,
+      "signature": "b4fcea1c827a176199a83354f654022c795acc7ae4d331c9adc5c38b0ee002e4"
+    },
+    "community-burgundy-fur-stroll": {
+      "frames": 5,
+      "signature": "8a34ed078f62c2069b3becd8bdd0111de46b3d089d3a1a3c062c621f53373e95"
+    },
+    "community-office-orbit-sequence": {
+      "frames": 5,
+      "signature": "ae824791eab2cf88ffce4746b9aecf16e70443c6e8d588731bd9ac639aa33344"
+    },
+    "community-bottle-topple-kick": {
+      "frames": 5,
+      "signature": "3a2bcecd68a141e51a6a5484ac050cc7a8da9a641602773b81a00f7d8392d361"
+    },
+    "community-grizzly-combat-strike": {
+      "frames": 5,
+      "signature": "31a6f1049f9b294d02bf4cee6254e8f5ae24c5c6305a05e54a9e3a5ba0a747f5"
+    },
+    "community-industrial-lens-flare": {
+      "frames": 5,
+      "signature": "923a0b1b08e6e78f4b1832f724f8471c6ccbbb8fd51f0e403093f08331835a7d"
+    },
+    "community-feline-street-style": {
+      "frames": 5,
+      "signature": "a57b2010a1c247a80976cfa3997a525b0bd5287585da46d6e2ef790365f6018a"
+    },
+    "community-custom-car-swap": {
+      "frames": 5,
+      "signature": "2418d372d435c78eea9ec314d5573b2653754b6acff55f33279e8007877313d7"
+    },
+    "community-alleyway-dance-crew": {
+      "frames": 5,
+      "signature": "8390abf1c16900ae584d90a760c8e22dbe44146863ce588b0befa156bb19e537"
+    },
+    "community-party-crowd-swop": {
+      "frames": 5,
+      "signature": "40cc139afd5547873a577fa99748b711a5b8b8609eb031e5230e4e4a8283b5ba"
+    },
+    "community-brooklyn-bridge-groove": {
+      "frames": 5,
+      "signature": "7e406cd9b97b7a32707965141cc95a0d7800c81a94743180ed65331ca4464fc4"
+    },
+    "community-soccer-character-swap": {
+      "frames": 5,
+      "signature": "333df1b1509ad9318f208a2f0402b47c7dfb29e19e82cb841f5ea8ecf243a9d1"
+    },
+    "community-parkside-dance-reimagined": {
+      "frames": 5,
+      "signature": "983d549836df5b0dbf472b9ed6d6fa0dce1f7b59b8fe32fbeae1cdb78c944967"
+    },
+    "community-dual-character-swap": {
+      "frames": 5,
+      "signature": "cbc8ef628653cbf2d7fb2c1fd002f668822359670a2e87104235df8e5b5728d4"
+    },
+    "community-highway-suv-swap": {
+      "frames": 5,
+      "signature": "6f39f52b5406d55525f8376e04c87562d4393fe261dfdb9d28aefcce7cd4e893"
+    },
+    "community-natural-face-swap": {
+      "frames": 5,
+      "signature": "7b80be0947eab528df8c97038e1b861934e44899e9bb604c47dcd60aa432db00"
+    },
+    "community-kitten-dance-challenge": {
+      "frames": 5,
+      "signature": "1458e7c80894da55994fad1dd9eada98339acd1d8f91c8b87c3348dc899fe124"
+    },
+    "community-kitchen-cleaver-swing": {
+      "frames": 5,
+      "signature": "1fb7e6df8916a0bcc2be13b52236211866dfedd313c5e7dc46847dda10af5d45"
+    },
+    "community-rug-fashion-rotation": {
+      "frames": 5,
+      "signature": "85931063e1e02ef4ab6440ae844013ec9d179b29e7f518888c597434a82d7854"
+    },
+    "community-cosmetic-sky-drop": {
+      "frames": 5,
+      "signature": "75457599f2d80a07ba01c516ce0a2c485d0fb876c50609f62446f38f84dee946"
+    },
+    "community-velvet-couch-lifestyle": {
+      "frames": 5,
+      "signature": "8986572109b5518f5b9ab36b0584abad8886bf0576017afba7e0917593733563"
+    },
+    "community-elevator-style-shift": {
+      "frames": 5,
+      "signature": "705725e1dcd13b15a5e8c353411dbc0919f7b3dcad241501826ecb01c81713d1"
+    },
+    "community-lavish-cash-flow": {
+      "frames": 5,
+      "signature": "25ff138f89356e71ebfe9e33ca97f216e60c71cbc324a2937732932fd451b8c7"
+    },
+    "community-money-mobile-recast": {
+      "frames": 5,
+      "signature": "ce9ed38db3ceeed845c5d81322def9d4b047d2564be5a55c23c23e542d8d3f1a"
+    },
+    "community-action-hero-recast": {
+      "frames": 5,
+      "signature": "bb4dcfe1ebc12029281136d2b10603fe1d554e0155db1ac427255c8d145525f8"
+    },
+    "community-retro-housewife-dance": {
+      "frames": 5,
+      "signature": "ae8a9e5eab99266715a5992e92742fad1b3c300287c1f1b8b5c64182549500f2"
+    },
+    "fancy-cafe": {
+      "frames": 5,
+      "signature": "61641675d255eb3a43e0034d8102b2cf8fe498a3d4f211724104ea379f5b9b13"
+    },
+    "morning-coffee": {
+      "frames": 5,
+      "signature": "1d4e5b098026fc22cce988fd8bde787a3db4d2ba10f604a3f917ed4691d5bc0f"
+    },
+    "crowd-choreography-recast": {
+      "frames": 5,
+      "signature": "bdaad909af1f3ad210a3095cce3b695d98694f477f1af379b6881b072eee06cf"
+    },
+    "vampire-voyage": {
+      "frames": 5,
+      "signature": "02d6b6210af237feb3ccb0445c88dd5812c6e37812032c3636fc4a1dad31741f"
+    },
+    "tilted-melody": {
+      "frames": 5,
+      "signature": "4b01b421405f5e74567c3e328f5045c32cd1250f798ed69fadb04f0c1db0bd69"
+    },
+    "the-giant-caretaker": {
+      "frames": 5,
+      "signature": "0db1d15f0cca6d77ca58a1afe0793819d952ad039748e3552937a8ae41e4b714"
+    },
+    "ocean-car-sinking": {
+      "frames": 5,
+      "signature": "15a088de44a9677b15c987d590d0cadbcb9cb776aa5f57df6ab35698c0d5eb0c"
+    },
+    "neon-city-freefall": {
+      "frames": 5,
+      "signature": "260e4eea2923836bc9d9d45f5c8f09620d7cae233df975efde3e60ff04ff9e1c"
+    },
+    "edge-of-victory": {
+      "frames": 5,
+      "signature": "e55baf33bdcde99190f737deba88f6a0c507d0a99fd7ad34b206848f19640d65"
+    },
+    "what-falls-next": {
+      "frames": 5,
+      "signature": "b8d0682919feb73452c6e5edfd54f1372571f45f18776d468939fc16a1611a7f"
+    },
+    "office-kitchen": {
+      "frames": 5,
+      "signature": "a9802c3a615d71babf02681ce0c87382cb533154c2c38756f0566e2a3975101a"
+    },
+    "catch-of-the-day": {
+      "frames": 5,
+      "signature": "6e37afca0f4f42f2c22f27a094b08c1178c8b2ab6f095e99c67605606567c35a"
+    },
+    "the-beast-awakens": {
+      "frames": 5,
+      "signature": "8153ea1ba21c6abb84f8ab4b3615cebdc82064a90fe8f42c367f7e26a3e3b940"
+    },
+    "grab-heist": {
+      "frames": 5,
+      "signature": "87d5273dcd18755b254ee70539eaa268159c5a27346c40cb4079830a0a7cec07"
+    },
+    "office-escape": {
+      "frames": 5,
+      "signature": "3bd7a2f78cfad163f11514d0e6ec29e40f0b6f8265f0c60fe7ed40e09c876d88"
+    },
+    "animal-pov-to-the-club": {
+      "frames": 5,
+      "signature": "1d84dac2f2bec9e2f64d41650f93a3903551d76f4355f2da896c264a63ba0559"
+    },
+    "sketch-to-real-car": {
+      "frames": 5,
+      "signature": "ccc8aa3edf715b1f1d4c42d865780f30b3ba61fc15afc65c4411ee23f2f31ac6"
+    },
+    "car-sky-fall": {
+      "frames": 5,
+      "signature": "3405aa34e1fcf9729b7d46ea56bec5d3b12a04bdf662fc1a5eb10b881c45a994"
+    },
+    "on-game": {
+      "frames": 5,
+      "signature": "461dc3a97b1f9369db28be56a51aa0acbf275f199a4ddcd2f8b792fadde6c241"
+    },
+    "frozen-time": {
+      "frames": 5,
+      "signature": "fd29cf821741129d8ac8f30a9b05f558c2d566389777b5283c513c55e0cccd51"
+    },
+    "with-animal": {
+      "frames": 5,
+      "signature": "36025bd0291ac304f45f4e393fa472d57ddfb306b98484482ce02d8cf4e10932"
+    },
+    "remote-control": {
+      "frames": 5,
+      "signature": "770807b5367b6da4aa4003498ce960ce1a0d2bf0e95fc82773581aa53d5ec022"
+    },
+    "underground-lab-transformation": {
+      "frames": 5,
+      "signature": "b7d37db97c82186b32748e8b09f46c17941ac01addc99b8045f6cdde50f49f03"
+    },
+    "the-spirit": {
+      "frames": 5,
+      "signature": "7d6f31e85c268caaf29a6af6670e054c36fccaee0faf2c3df77c8c185940b8e6"
+    },
+    "on-the-road": {
+      "frames": 5,
+      "signature": "5a66e08fcb62d063700863fd9daa928db00349a15a60961577229311a2788845"
+    },
+    "the-crown": {
+      "frames": 5,
+      "signature": "6ab7ca29ff0c6252e1e11a4549db5897fdbc7c5e89401f43b2082bf6c52e9cde"
+    },
+    "dragon-lord": {
+      "frames": 5,
+      "signature": "c7c7ba614c37af7b72845c8cc5342ec9d480a36e418715b58041750af85661cc"
+    },
+    "noir-film": {
+      "frames": 5,
+      "signature": "6724b18170b7d474dc32625e4e817896b8073ae39c71c3d200c43f0ef844d047"
+    },
+    "desert-rider": {
+      "frames": 5,
+      "signature": "89b4b414217da957e7e83cdc4f064f4c6253227630d37ab6f1d10bacdfa3ed9d"
+    },
+    "behind-the-scenes": {
+      "frames": 5,
+      "signature": "7613d8348d038b393473327d2948323c1d3c47eb9983b6e5b945f73b05c92b8a"
+    },
+    "split-jump": {
+      "frames": 5,
+      "signature": "e40b8d6e5e3b0c395e51ff030799ef9c4061d31012b16c22c1665353efe0f3c7"
+    },
+    "impact": {
+      "frames": 5,
+      "signature": "a9e2fd29e2d9807ca4028a17f26c681dd690342a69816e6e7c4a8a1a92dced1f"
+    },
+    "ruins-escape-run": {
+      "frames": 5,
+      "signature": "970e9fdf0a921a40fdbc0e4c1028ba0a57dc88862845d080e0063c6d4dd0d8d9"
+    },
+    "curious-garden-journey": {
+      "frames": 5,
+      "signature": "fb859a2ffe86808bb08607581c606067fd863a1092b6f06e98f5947ea286d49c"
+    },
+    "born-from-sand": {
+      "frames": 5,
+      "signature": "3e2d0447d7fc8a8cb9eaad9156f35fce06eec0a59d96d58b63349ab20e26176d"
+    },
+    "levitation": {
+      "frames": 5,
+      "signature": "725f48dd45bb93dd442f7bce3b79b97fc638b60463069f90e010366dbabf7660"
+    },
+    "freefall": {
+      "frames": 5,
+      "signature": "09ac29fec5175ee26aa8d86175c7e0c072e64fd99be60051324ced15f27d6060"
+    },
+    "sculptural-sunglasses-ad": {
+      "frames": 5,
+      "signature": "67e94df0ea6c9c4af16057b3ab94254d7176dd2cfcbd30b3f221a81532551a49"
+    },
+    "rotation-360": {
+      "frames": 5,
+      "signature": "8f325e13d9de86bced510727858b3af377045f6b6843f69c35c854e814d0b78a"
+    },
+    "above-the-head": {
+      "frames": 5,
+      "signature": "0fb30d821db521d1521d285d010491bb53f1f6265778f07a3327a2e140b8c136"
+    },
+    "magical-reality": {
+      "frames": 5,
+      "signature": "ec29f82c8018092610418dcf95336a6751ff8825db171f13e6972c37ad66f141"
+    },
+    "the-last-flame": {
+      "frames": 5,
+      "signature": "78b59ef5e16e361a4c171887cdecc454528b522b1f5801bc4046a9e362393b13"
+    },
+    "alien-forest-flight": {
+      "frames": 5,
+      "signature": "8523025c7a178c5e17eb9f0106297b07a6a17882877f1c06da2f947ab28ad25a"
+    },
+    "desert-worm-flight": {
+      "frames": 5,
+      "signature": "1467a1d818456e576b8c9b59b904b12e7336c78ece2894302bccd17bc09ba0f0"
+    },
+    "pov-dragon-flight": {
+      "frames": 5,
+      "signature": "28586a6c7ba9540d0bfcdb46a217cb966343f15f2162d04a81fd1dbad7166c06"
+    },
+    "the-machine": {
+      "frames": 5,
+      "signature": "393d62bc44121863451f3767c65f324289ffad6057483005a2147dbd4d23de0f"
+    },
+    "city-tunnel": {
+      "frames": 5,
+      "signature": "6ea78f9046f3edfd7e337ac980e368eb3fdb2d1cffc1f5e2e115970800f1186c"
+    },
+    "industrial": {
+      "frames": 5,
+      "signature": "7a3da5342eaf77549f4065bec1cb87c7c6283e5010982bd3e377689568b79c22"
+    },
+    "ice-golem": {
+      "frames": 5,
+      "signature": "d0961ca132490bd4793c6ca33a9cf02ed7b9f74d8710dd402c71243e6c13e8c1"
+    },
+    "dark-horror": {
+      "frames": 5,
+      "signature": "6a066227a14b601cf51601fa7f52d5ad8e7d373b27e5d58cdaae28d8b851d411"
+    },
+    "jazz-lounge": {
+      "frames": 5,
+      "signature": "1ba80cf4c2d7d74b04ca6d2f53feffaa6b7c9e26be756090e6b8f5073e133f20"
+    },
+    "armored-knight": {
+      "frames": 5,
+      "signature": "7cef3fafa40eeaf7fca404712ad16c62db64c22793a9cf9bfa11fb2e18997f8a"
+    },
+    "red-koi-fish": {
+      "frames": 5,
+      "signature": "d9e52d9982f5aeaaf61e8408c66b09786859948157dfc702e211872205b4df49"
+    },
+    "young-samurai": {
+      "frames": 5,
+      "signature": "72356f700c1b1863f48f650096fe104b65f557173a7f939d876c093430969d9f"
+    },
+    "chocolate-factory-flight": {
+      "frames": 5,
+      "signature": "21e7333d598f417f2e6aa6159b851993eeb9454d9170ddeb56c81379d783d6dc"
+    },
+    "dont-touch-the-braids": {
+      "frames": 5,
+      "signature": "f411d114f03114f2ff7f0ab23db43190a2ecaa05020684994a18701955165994"
+    },
+    "the-lost-ghost": {
+      "frames": 5,
+      "signature": "d56129789ab48ac60bf835ab23c2a53246c49e3531cfbbd87f3073dcc5c889bd"
+    },
+    "last-supper": {
+      "frames": 5,
+      "signature": "b111df9f534a981473d64522c03b5eb92ff6998a2ddfe7681928ff14c160982f"
+    },
+    "firebird": {
+      "frames": 5,
+      "signature": "2bd23ed9c6320639796be02ad5ef618587dcfab4bfe1c20fc1c30b37e5ed6b7a"
+    },
+    "x-ray-matter": {
+      "frames": 5,
+      "signature": "99d1318512bf44f6a83a21b0b872bb451963f8c99ad20a970654d0dbd19594b7"
+    },
+    "edit-the-sky": {
+      "frames": 5,
+      "signature": "aa98ffd5f3ef4ffd030f60c1631a77b52c14d79ef2e9055daf93e2f2032e2c0f"
+    },
+    "sea-snakes": {
+      "frames": 5,
+      "signature": "30fdcc734af252f306d2bad83fe18ff53f21c3ede80ce705701e9e4a8837b8d5"
+    },
+    "rooftop-agent-pursuit": {
+      "frames": 5,
+      "signature": "e7b6dcc5dd115c0854f0af08746b9a05953b0409e403ab4e87b1382b75cf6155"
+    },
+    "seedance-syntx-birthday-morning": {
+      "frames": 8,
+      "signature": "fc44f6f6486aa4f9cc87deab2fbea1f3d433f99bf971c848e3048621868939f3"
+    },
+    "seedance-syntx-jean-phil": {
+      "frames": 25,
+      "signature": "ab36ccd420876391902e5505fd09289a7cb5fda29e7cddcf49b9dbe0fa746ab4"
+    },
+    "seedance-syntx-3-meters": {
+      "frames": 15,
+      "signature": "57abaf726af797569bff8532ac1bb8e89eb449801a491c3992b4e02565506ffc"
+    },
+    "seedance-syntx-burning-stage": {
+      "frames": 27,
+      "signature": "76bf034548cc782bbb46a5af483b7abe63d0e77c3da8f3b586d577a3d5de9d4b"
+    },
+    "seedance-syntx-off-duty": {
+      "frames": 17,
+      "signature": "35178e0749d6bc21fac72eaa54be86f5ca52ad3fe351440654425cabd5bc7c28"
+    },
+    "seedance-syntx-motion-authority": {
+      "frames": 18,
+      "signature": "7586044fcc653d322b2c3156d0e2e7abed6fb975d5df6acb67f22fa205ef7645"
+    },
+    "seedance-syntx-hero-drive": {
+      "frames": 11,
+      "signature": "5f45e5048bf1b8acf64fcae67422281f74f8b5763bc2dfa87a544c77aab0a4df"
+    },
+    "seedance-syntx-cinematic-car-drop": {
+      "frames": 11,
+      "signature": "d1d1c951a7ad675fd389249016e20c5b6345d3814dc49ef1a12cb02ae7458de7"
+    },
+    "seedance-syntx-big-stepper": {
+      "frames": 15,
+      "signature": "3d522a1d052e8a3746e696ab88bc0ac6fc900f4d855310126af159d70aebb0c2"
+    },
+    "seedance-syntx-rooftop-shepherd": {
+      "frames": 9,
+      "signature": "3e32fbac6666d8015b678ac2a7028c61615ef9a95f71c378d89c1c3fae2059c1"
+    },
+    "seedance-syntx-riding-the-bear": {
+      "frames": 6,
+      "signature": "c2fd599fa99de7a4baf7c27221722f93ca605a221d052a6aa49bbf18b28765de"
+    },
+    "seedance-syntx-spider-dance": {
+      "frames": 13,
+      "signature": "34c0a98e7695e6a64f9b95bca6eb10bcd8143e31580c9e8c705ace7c0b278447"
+    },
+    "seedance-syntx-matrix-bullet-dodge": {
+      "frames": 11,
+      "signature": "732eaf9e69d1b3abf6403caef966d27704ae300c9e69116e739d309c5b05079b"
+    },
+    "seedance-syntx-xp-daydream": {
+      "frames": 12,
+      "signature": "93ba206edce9a14572caa4bd6272c85d2a422b9ddfc01499dba7007f355f594b"
+    },
+    "seedance-syntx-toy-to-torque": {
+      "frames": 10,
+      "signature": "12d63b1c235a1bec58f1c3d4d81b569606b4882132c51f1a85e9cf10c6ea505c"
+    },
+    "seedance-syntx-groovy-golf-shot": {
+      "frames": 12,
+      "signature": "010275832188b78a993808b243d915f0b72d595798e03b29deddbd2b441cf022"
+    },
+    "seedance-syntx-morning-parking-vibe": {
+      "frames": 20,
+      "signature": "7434e24653207e1bd8237164f6b7d6c70d4c9501cb870114968311538fde1ce4"
+    },
+    "seedance-syntx-frozen-getaway": {
+      "frames": 12,
+      "signature": "0021cc65028c276231d5f478debf6d73aaacb88c77669424e6f6d02d52f82260"
+    },
+    "seedance-syntx-midair-photo": {
+      "frames": 9,
+      "signature": "e1d64f318482e6e5e4c9b5fac283e5e14890c75782cd6a64a9672c956cea1b15"
+    },
+    "seedance-syntx-fan-change": {
+      "frames": 10,
+      "signature": "9cce0d1bf8e8b9b38389f574f6d3714837a6865621a154fc75b54138d9e5d0fe"
+    },
+    "seedance-syntx-hotel-lobby-2": {
+      "frames": 29,
+      "signature": "373fb9991c9565cfb64fd33cb803d372c80ddcb87346bbf2498d946adc687a23"
+    },
+    "seedance-syntx-hotel-lobby": {
+      "frames": 29,
+      "signature": "e1e10010207614ca23f070155e95845d017566fab3f23d5af30cc2e4f87fcc2f"
+    },
+    "seedance-syntx-through-the-cloudline": {
+      "frames": 12,
+      "signature": "7e30d828c7329fd57cc20d3696797ef7542a6c3d07ebb028037c81d413f100bb"
+    },
+    "seedance-syntx-bunny-taxi": {
+      "frames": 15,
+      "signature": "b609960a2cb56decacd5e8a0e4c5e2a0ea02d9245f37d3bc9896972b8b43f09a"
+    },
+    "seedance-syntx-best-friend": {
+      "frames": 13,
+      "signature": "687600f2686b11b7e08047de23936f9248572ecf3d68da6de3ff23d05719e69f"
+    },
+    "seedance-syntx-blocked-light": {
+      "frames": 15,
+      "signature": "1e0563db56d3fd58295931b21f3d61c181955a738ed504571088bebbd233ac73"
+    },
+    "seedance-syntx-anothers-opinion": {
+      "frames": 15,
+      "signature": "17cf6f103f75b3218f48aa400ee8ad49f8056023dc47d3b158fcd9af53ba8367"
+    },
+    "seedance-syntx-jogging-in-the-subway": {
+      "frames": 15,
+      "signature": "d06f54743ff7d40a23ce9bff2f01f5ef121801d3d187b0f2db4134236b79fa19"
+    },
+    "seedance-syntx-butterfly-effect": {
+      "frames": 8,
+      "signature": "156d8a033c3abb6768f96c1636d0bf9c87ff902f3ca07e8fa7a30550108d453c"
+    },
+    "seedance-syntx-rain-rider": {
+      "frames": 11,
+      "signature": "c19919ffdbb6298329624dc0c22273ecad9e225cfa62310da76f0586ecb689e0"
+    },
+    "seedance-syntx-midnight-run": {
+      "frames": 12,
+      "signature": "0a083650ab13b767df4a1a795af247f89570878e6ccc6aa76313cf65fb48b4f9"
+    },
+    "seedance-syntx-birthday-shot": {
+      "frames": 10,
+      "signature": "19fb9cde58e8a00195648d05e09e9f432ccc3abdf2aa2c33ab8b854075da5e87"
+    },
+    "seedance-syntx-popcorn-eruption": {
+      "frames": 15,
+      "signature": "e14b4e6486ca6f0d53cd60c31241717bf5b718f166230fc419bae91de66f418a"
+    },
+    "seedance-syntx-rescue-myself": {
+      "frames": 15,
+      "signature": "3eac200af83307d7fb36e56170236a546c446e1b90a2eb8d6eef4857b461d21b"
+    },
+    "seedance-syntx-quick-change-2": {
+      "frames": 20,
+      "signature": "fd41e0a1d7d2d2da67bb3df8389c46cf13d3f4d26a6b5e9a01c15f99fc0c0396"
+    },
+    "seedance-syntx-quick-change": {
+      "frames": 18,
+      "signature": "e076285c4655cc810f4271eb4f4b421eb9f58c00b455c705c09ceeb010597dde"
+    },
+    "seedance-syntx-roof-jump": {
+      "frames": 12,
+      "signature": "b7a73816010cdc5a15b9fc4c30e96fc55d83c9fa6275fff9491410538ea5580e"
+    },
+    "seedance-syntx-glass-cube": {
+      "frames": 16,
+      "signature": "41a83a30b1c7f3c89747be91dff87549b956e169d07e4b3fa059c65a25919104"
+    },
+    "seedance-syntx-spilled-into-love": {
+      "frames": 27,
+      "signature": "359847fee73bcc681d7bb5d0edd28cf3b4b33217a650b15fbd9be4417659ebea"
+    },
+    "seedance-syntx-still-my-friend": {
+      "frames": 30,
+      "signature": "155f1aab59c780fc223a6d9d1d1544c277947d4b7faad3769b834f2d42841245"
+    },
+    "seedance-syntx-the-train-rushes-by": {
+      "frames": 10,
+      "signature": "ba4ca02b2f05e901f47f33a32289a7f81f7c054050d97a316012a3703368d01c"
+    },
+    "seedance-syntx-subway-fight": {
+      "frames": 20,
+      "signature": "97afef0a148017ca9f6464a3cca9de7f1bc7e807979b786546339609a61081ca"
+    },
+    "seedance-syntx-formula-1-documentary": {
+      "frames": 30,
+      "signature": "66c2c334a1043f678c7227f97962acb988c3f44e449ea542539a2b42f2e0c502"
+    },
+    "seedance-higgs-868ea6d0": {
+      "frames": 14,
+      "signature": "bde74bd4ff54314210d0949447fb126e77b35a4d63300e5e9c1b595d6beb5a33"
+    },
+    "seedance-higgs-8ac5b3a6": {
+      "frames": 15,
+      "signature": "103a0c06b1df457be6493a06edfba26546040825bb08c9272951b43182af55b5"
+    },
+    "seedance-higgs-2daac1ff": {
+      "frames": 14,
+      "signature": "8f628a0069b5bf9d05e2d9f02b3d64f9c72026d89ed1e90ba8bc6f657f1c1747"
+    },
+    "seedance-higgs-b6256f52": {
+      "frames": 15,
+      "signature": "8e24728c36438997fc796c37bfe1add54e3edf7406296c43e64eedfa87cfb6d5"
+    },
+    "seedance-higgs-e0e79b63": {
+      "frames": 11,
+      "signature": "5dddda5b780ec69bd5dd6be5a465812c77ce1be19b1d78b0a114c4f1d413d8cc"
+    },
+    "seedance-higgs-e587743e": {
+      "frames": 15,
+      "signature": "3ccb4793bfc42c98c9a22fa227ed6e0b80a8406d2d3148a30e6dbeeaca7b4cc9"
+    },
+    "seedance-higgs-4109c6fd": {
+      "frames": 11,
+      "signature": "07c7f730175cfa7d68ec91b114d1562dfb5939ff6dcc79142ce1f728641d2407"
+    },
+    "seedance-higgs-5a0af305": {
+      "frames": 11,
+      "signature": "07e5174d9c75029f85f64029e25e26c283c2ed25af1bf198af7ad795e79e2a6a"
+    },
+    "seedance-higgs-69631c52": {
+      "frames": 10,
+      "signature": "75044c971b0f9cba103cc3b237bb351ec52352137d52ca88c6050760b8c8b75c"
+    },
+    "seedance-higgs-0bafdcf2": {
+      "frames": 15,
+      "signature": "2efce388199fe92aa053a8a124fee0353e6aea7a9cbd73e0f23e042bd8144113"
+    },
+    "seedance-higgs-40fae471": {
+      "frames": 14,
+      "signature": "ef28dd962bcc72f09fda53bf88864257b9c64abb667240880bd522c296a19ef5"
+    },
+    "seedance-higgs-2ff0c81a": {
+      "frames": 12,
+      "signature": "0d27007826509db6b6cdae51ba4c04ca21b469f86f8bac5015e7b57c766b8111"
+    },
+    "seedance-higgs-be34a882": {
+      "frames": 12,
+      "signature": "54c46bfa90571702baefea94afc8dae5beef245a512716940b2841974bed10f1"
+    },
+    "seedance-higgs-746f30b5": {
+      "frames": 12,
+      "signature": "7aa322440c450445bd137078425ee806826df049b50ab58cfe33217ba228482c"
+    },
+    "seedance-higgs-73675a62": {
+      "frames": 15,
+      "signature": "7bcdf411373e21ae760509434c010143e6f12209ede8d8e90425dd873b28645a"
+    },
+    "seedance-higgs-717520b6": {
+      "frames": 12,
+      "signature": "4388888b3f5598e0c228aa15b5b688adfcd86e6eeb7157cb541b2e7d174187d0"
+    },
+    "seedance-higgs-835f6eb1": {
+      "frames": 15,
+      "signature": "1828e5d0efef88397725b1b871fe8e37151bd5e1f3e3a750a50383c35f6d1581"
+    },
+    "seedance-higgs-0b0fb6c2": {
+      "frames": 15,
+      "signature": "8d186c6d23b1e66ad7eee731a0ca456c6fc37043f72bd82d39d38391aff3802a"
+    },
+    "seedance-higgs-fdfe2a4c": {
+      "frames": 14,
+      "signature": "e0fa800cb00f2feb39954b8b1d87071d8f1a973a271a74c6eb3c5f747d388e6d"
+    },
+    "seedance-higgs-afcdb828": {
+      "frames": 15,
+      "signature": "90632ad158f207b0725d4e619c57dde9f58f8a7a067cdd96c6ae45a5abe065d5"
+    },
+    "seedance-higgs-00712b08": {
+      "frames": 11,
+      "signature": "c71dfa19b199faab702122241ae2cb4a6d90175f37780f965df5bf094cc27031"
+    },
+    "seedance-higgs-c7f0a0ee": {
+      "frames": 15,
+      "signature": "c02ec2f169b506725577d0eff6c58c13e4a744690c3fe93321ac1343a143ca1d"
+    },
+    "seedance-higgs-9e645505": {
+      "frames": 12,
+      "signature": "7b65677f010aadbb82a191c9e14f18617658daf38ee7dbe08139ca4a9c0cb048"
+    },
+    "seedance-higgs-5b30e6ae": {
+      "frames": 15,
+      "signature": "31b248d1545160d2fe4c5f244201ba3837c0ad60f2aa7666e60c26ac51e6f45c"
+    },
+    "seedance-higgs-48f32c2d": {
+      "frames": 11,
+      "signature": "821a360d8d8935bf3526faec1ff3f5a88c4de3ce6e3cac403bf43a7c03a4f9c1"
+    },
+    "seedance-higgs-3f876e48": {
+      "frames": 10,
+      "signature": "5b452890a2cdd20ff6acc8284203fe6815862cce54fc71a098c2d104c3fc7440"
+    },
+    "seedance-higgs-3f188595": {
+      "frames": 13,
+      "signature": "d3d66911f681ef74304d3b7188f52dcb052c693a0fbc9225a3fb816389a49ec0"
+    },
+    "seedance-higgs-f98203b5": {
+      "frames": 15,
+      "signature": "e692214684fa9524ddd1e675a468897e5dd726d550898440d5bb9b03a06c161d"
+    },
+    "seedance-higgs-be9536bb": {
+      "frames": 11,
+      "signature": "b56ba9b14d0a762bbf0b37bb8d55ab6d04fc252a3744e6fc827ecc0e519bd1dc"
+    },
+    "seedance-higgs-e050f6c6": {
+      "frames": 11,
+      "signature": "aee7bd3111d38d2e18e2de617a4c015bd43b322be6884c16fd767af0e4fb06a9"
+    },
+    "seedance-higgs-ecb96b88": {
+      "frames": 11,
+      "signature": "b6e08c57293a2dbc3493d6e9f344df743123b99834fe5dd0963355216fc6a456"
+    },
+    "seedance-higgs-04a56166": {
+      "frames": 15,
+      "signature": "519d247b256a2cfcf0205f8e2f3e7e1d7b1627d4759c1612ed28f07bdc7b5da5"
+    },
+    "seedance-higgs-4ed91995": {
+      "frames": 15,
+      "signature": "888c2694f974a8c278ac9b86e2026695838d7e79c76bbdc599a56092a666b8fd"
+    },
+    "seedance-higgs-e07ad97d": {
+      "frames": 15,
+      "signature": "92bb5baebbc8993f7c8e296395472d7577982515c08bf240c3bf829316f0e2a2"
+    },
+    "seedance-higgs-2dab879d": {
+      "frames": 15,
+      "signature": "76878b323a4e7d6413013b485323ae445bdc682a706f544ca62cfce4202eaadd"
+    },
+    "seedance-higgs-3c883c94": {
+      "frames": 15,
+      "signature": "06d0804dfa2dac07cbb3f92e296d37751299ea0540abf3f60e054f31274de11c"
+    },
+    "seedance-higgs-c7dee27b": {
+      "frames": 7,
+      "signature": "c1111b2b48f1a7c7e602d2b93b61ea0dfb52031c5f2c1b6902d20c3d324c7923"
+    },
+    "seedance-higgs-560bfc24": {
+      "frames": 13,
+      "signature": "412eb9fd31fbcffd4bf18ea60dd88faf1e4933c43e6e8e6c2ec13a1d3457d092"
+    },
+    "seedance-higgs-7313e59e": {
+      "frames": 11,
+      "signature": "3bcfab524fe76fd99cae9fcd8bd379d88f713b8ac2947967429c3fb3ff95352d"
+    },
+    "seedance-higgs-3bae5db1": {
+      "frames": 11,
+      "signature": "646a975e3ac8eb95e3f0e45d34ae28fe47f1d4a23dacf15336611ec8cb9338f0"
+    },
+    "seedance-higgs-e41cd038": {
+      "frames": 15,
+      "signature": "e3dab1361443cc175f667f97f755514af71514370aba33b9e7c4da88d92f460e"
+    },
+    "seedance-higgs-ae39c425": {
+      "frames": 34,
+      "signature": "546d20fb527446ec64ea546ddefded26d46e0e1a2d51c7733d519906fac1ec96"
+    },
+    "seedance-higgs-fde270f1": {
+      "frames": 12,
+      "signature": "f2a3428036b89d17279ab937f98437afd758e9f994da21322bcf582f721fae8b"
+    },
+    "seedance-higgs-c7588e99": {
+      "frames": 15,
+      "signature": "b375d3d6922e9afe3351ab6b3c953afe32a911865740f1ac791b395cbf3a484f"
+    },
+    "seedance-higgs-206467dd": {
+      "frames": 15,
+      "signature": "d1ba648e0f8042c8e11b1cd0d43e7ca40412fc95f9d7694a1e01294dae475633"
+    },
+    "seedance-higgs-1a5e2c8f": {
+      "frames": 15,
+      "signature": "0829b77a640d064c92e4e6c6825632137fd7e7716a9cb459d651bb0756107b34"
+    },
+    "seedance-higgs-7b7d5c18": {
+      "frames": 15,
+      "signature": "041ee13aed2d438a1a82f6469a585448d8e4fa4ccc46d3e00e96bd9190a8dad7"
+    },
+    "seedance-higgs-7f16e274": {
+      "frames": 9,
+      "signature": "7a77e04042b50d4c071079b1c0466c6722ecf7703176899d56cd7245e8f46433"
+    },
+    "seedance-higgs-fabad14a": {
+      "frames": 15,
+      "signature": "9b5719a8850c208f1d7a1bfc9d2b7896f92558d85f995acdb39d743f609fcacb"
+    },
+    "seedance-higgs-58cd0af6": {
+      "frames": 15,
+      "signature": "336d6724607253438ce73b2438fe9d70caa064f052bcde5485e963af7b3de3ee"
+    },
+    "seedance-higgs-5b80df28": {
+      "frames": 15,
+      "signature": "4114e75e004be33b94d9714739da049b243006ecabcd66f5ac0c771a41bba249"
+    },
+    "seedance-higgs-93f4ba44": {
+      "frames": 15,
+      "signature": "d96d7e5d06d08cae53d9fd50b7138ce6e2381daf77da2e0a56c09c1923cfc2e9"
+    },
+    "seedance-higgs-017df61c": {
+      "frames": 15,
+      "signature": "8bff1280bd47b3fd98f28e3d7e2314246c756a96d49fac0abdf49101045efa54"
+    },
+    "seedance-higgs-fb476261": {
+      "frames": 15,
+      "signature": "af0862b56637c5dc0ab347ed40ee3be3900f53b4c6df5f8bb3edcc52a485008b"
+    },
+    "seedance-higgs-1bd3579a": {
+      "frames": 15,
+      "signature": "5cb9071f4cb01dca0e2cfef96295444b7645c112353446fcef5e9c6153e48dfc"
+    },
+    "seedance-higgs-a22bfd21": {
+      "frames": 15,
+      "signature": "f77af3c305398a9ae3cca1d6145bcfe2a7b6c6915bbe582e4f52ba69e31371cc"
+    },
+    "seedance-higgs-14844096": {
+      "frames": 15,
+      "signature": "220bfc356de2c04e9e5811c274694202d4a5ac766bc21ceb832b7f8c9443f954"
+    },
+    "seedance-higgs-68b24faf": {
+      "frames": 8,
+      "signature": "dee54d756ac718da3a740f6055dcb8aaf6e9a87a2999fed13f697691378d03f8"
+    },
+    "seedance-higgs-536090b1": {
+      "frames": 11,
+      "signature": "a010ca68802a167a81e691183d6a6abc58f8fbd6f1f6039891fabbd40892fa2d"
+    },
+    "seedance-higgs-b117a6d4": {
+      "frames": 15,
+      "signature": "9d101e7e24ec4b7340e66cc9ff6bb9ea778694faf56f69767d86edce9a0d9ccd"
+    },
+    "seedance-higgs-3a369c85": {
+      "frames": 15,
+      "signature": "3b80080cde2ad9831de734e048d85164848734c040e4c9944b7a1a6064ca7923"
+    },
+    "seedance-higgs-8018e4f9": {
+      "frames": 7,
+      "signature": "19c3a138fb3604ec923fe48bfb4046c8661540d9d900e57603374bc231577c29"
+    },
+    "seedance-higgs-0de9ecb1": {
+      "frames": 4,
+      "signature": "95d7e0c0b60aca4023f0d7ae61c10008d7357c471a3b1a631322305a1b60a266"
+    },
+    "seedance-higgs-1e238443": {
+      "frames": 3,
+      "signature": "ef853ef69616cb7dffe95d87be4f44b15b21a682b45cd64b278a6f8d028b02d4"
+    },
+    "seedance-higgs-26f52a56": {
+      "frames": 51,
+      "signature": "83bfff56973289c5e9b5f2fae5c23eb3c485f19d3d6c33d601ad632d0351be13"
+    },
+    "seedance-higgs-686f578e": {
+      "frames": 8,
+      "signature": "909d6b740fd1aa61d882e6032fbb954e541709ff32bdb8e73b962a14a11ffff3"
+    },
+    "seedance-higgs-70502400": {
+      "frames": 13,
+      "signature": "786f4a3ff24bf75c63a3d960fb405b94914d1a3444480f39c333d736165ac3c4"
+    },
+    "seedance-higgs-36f28c5a": {
+      "frames": 5,
+      "signature": "a1acd51014954dd2989559ccaa651327ca8f97738cf677e7229c250a6a6dae4f"
+    },
+    "seedance-higgs-11df98f1": {
+      "frames": 6,
+      "signature": "5db3edd57925684b70fd017a1fd7b376f42f7ed9dd039bbc47cb0096747f9d12"
+    },
+    "seedance-higgs-cf92b793": {
+      "frames": 8,
+      "signature": "d262d11eae6ca19f1e58311cc37d1bf1b2bd1f487475dc6dbd4b9c54c222e90d"
+    },
+    "seedance-higgs-01ea5134": {
+      "frames": 15,
+      "signature": "6883fc0dc8da187fc9a807b899cabaf6de00e8f9426ab0420551cba9f5f858a3"
+    },
+    "seedance-higgs-955845c8": {
+      "frames": 15,
+      "signature": "cc28ef7cc643d641b8ffd5b39429041e3f8024a7ae48b1bcde42a1a712ce9e03"
+    },
+    "seedance-higgs-916b3a83": {
+      "frames": 10,
+      "signature": "2f8d62efe38b03e19e45bfb534bdd4b947551363e93a924398b4c13cf8eb164c"
+    },
+    "seedance-higgs-d99aac86": {
+      "frames": 15,
+      "signature": "1bc58e35022e42706cd6e1394c68f3554cdc51848d99f49ae1619957c1e695f7"
+    },
+    "seedance-higgs-4e2f128c": {
+      "frames": 15,
+      "signature": "296d2e99ac6658a782902c2c0847669048af84702fea827805fd3b9cffeed715"
+    },
+    "seedance-higgs-d68fc369": {
+      "frames": 15,
+      "signature": "222828fb3dfaf6f182cad41acf8e435831bbed980ea8cbdeea75ffb29bf0fccd"
+    },
+    "seedance-higgs-6fd17eb9": {
+      "frames": 15,
+      "signature": "d06bb6b8875283b854c9362bbd2d4b2a3e65b7e7f0cae34f06230e1236aecfb5"
+    },
+    "seedance-higgs-9e107022": {
+      "frames": 15,
+      "signature": "d043960273dd9dfab2d0b79f0166ac7c068ff5cb7726ccc9c468e144206e0209"
+    },
+    "seedance-higgs-eb85b5b4": {
+      "frames": 15,
+      "signature": "c00dfc85886fc999efb4a97b7ce1ba12a2abf04facac9f30bb7e80bd705a25f0"
+    },
+    "raven-transition": {
+      "frames": 10,
+      "signature": "60b10640572c5bc17cc5136ded2b4fad22f87c74999e22c043deb6638d995664"
+    },
+    "firework-reveal": {
+      "frames": 5,
+      "signature": "51fb567885ab0e0a1f13f310f78b3996c22a27a747e272a4987b1fa6b36432d4"
+    },
+    "northern-lights-journey": {
+      "frames": 5,
+      "signature": "b31a41ec978e883446573f50a317d11de57503cfdb5c4fffa060079aff4638be"
+    },
+    "fairy-lights": {
+      "frames": 5,
+      "signature": "901d4ba0d27865b6fd521f5d8909bcbc2b717dfab26eaae7905e20a0cb9c6ec3"
+    },
+    "outfit-switch": {
+      "frames": 5,
+      "signature": "6191d29df572f81ebe96176c02c37e6479c37f9e6eb6abfd554edc889cdc89bc"
+    },
+    "community-cartoon-hero-swap": {
+      "frames": 5,
+      "signature": "94e0c543fae9ccc5fb7b0f09118d011486f01980309261644a4d5d18c8bfce5a"
+    },
+    "community-anime-character-swap": {
+      "frames": 5,
+      "signature": "31ad198d0f86e164d1309f831c85af7382ac868632a9d6c71748700a2679eb52"
+    },
+    "community-horned-guitarist": {
+      "frames": 5,
+      "signature": "e356ee04482b20a686e8fa21ef789f2690e876558f761bf494de6fdc44860682"
+    },
+    "community-anime-hero-swap": {
+      "frames": 5,
+      "signature": "b5cb1d3934ccb0da008de7d325d3ddcb1619ad128c90597f9fff35e7cefd0e89"
+    },
+    "community-anime-passenger-glow": {
+      "frames": 5,
+      "signature": "43ce6ed63b8585fa67a79995af8fb3148af8f31b02a23c5afe536cadf3629154"
+    },
+    "community-crimson-stream-outro": {
+      "frames": 5,
+      "signature": "5fdea7a6fc53c821dc1373954e2adcadb7b0aadec6f8cc384759322068d9e2ae"
+    },
+    "community-chibi-monster-dance": {
+      "frames": 5,
+      "signature": "6958ac9e9ca594e8254a557d010edd44606dfb5015fc454a509a87a5993b9c74"
+    },
+    "community-festival-product-showcase": {
+      "frames": 5,
+      "signature": "243361f491e12946b683c18b14b9f0b5494a3dfd832ec774b82279b3e66ae6ad"
+    },
+    "community-macro-product-montage": {
+      "frames": 5,
+      "signature": "1ddb3d9470d786d9a940ae3f63845627b1360a8fe9e36d05baa9b8600b7ccdb5"
+    },
+    "community-chic-accessory-rotation": {
+      "frames": 5,
+      "signature": "9185ae99b4dd27f3f878a77b463a12628474239c9612f345b4247b22c2d9573b"
+    },
+    "community-glossy-hair-flip": {
+      "frames": 5,
+      "signature": "41ce118cd7eae753cf57c2e03eaa7d06ac9f3e1240a8ec869bdc90c5168ee891"
+    },
+    "community-coastal-car-showcase": {
+      "frames": 5,
+      "signature": "34f2e333e9b51bbef54671311c2c542d807190cf1b797b93ef7c34b69a3d2d25"
+    },
+    "community-luxury-hotel-arrival": {
+      "frames": 5,
+      "signature": "ba272aca9e64fa7749ebb415845cdb25325abdfdfc2acc3fb18d5a9032c483b9"
+    },
+    "community-beverage-brand-swap": {
+      "frames": 5,
+      "signature": "5620452559723589a9083a3d093cbd607f0b780b6c67c6327057972fa115ccbf"
+    },
+    "community-aloe-drink-swap": {
+      "frames": 5,
+      "signature": "90d84527f760fec0ff3e2bfc8fc2c6cfb8a71ced53f55fb1aa94a849788788e8"
+    },
+    "community-brand-billboard-swap": {
+      "frames": 5,
+      "signature": "c4f2e21482681ff6cf90293f04889753861d736f9bb2c263ee38dd664ef8dc77"
+    },
+    "community-billboard-product-swap": {
+      "frames": 5,
+      "signature": "f1b202356c79da872bc32f75498a71e18c5876ae7f0606b3f4f43088c3c9d5ab"
+    },
+    "community-polo-club-splash": {
+      "frames": 5,
+      "signature": "3ebc5b58a9f8f3bf32bcd8ae2254f7d82ec76172e08f0e7b5787257069d17e08"
+    },
+    "community-cafeteria-hero-recast": {
+      "frames": 5,
+      "signature": "ca53f33faff6a3502400e518f44f52127cbb73f17345527498debde49a1f6fff"
+    },
+    "community-convertible-car-talk": {
+      "frames": 5,
+      "signature": "6d69ed953ad2044b1e39db5a717e69a649a4e07c2940d2c212c7c6a774864a7f"
+    },
+    "community-supercar-arrival": {
+      "frames": 5,
+      "signature": "2c9c81db2a496eace50032e1b9991cf4d147c0335c573c9b57e53922ab3c8273"
+    },
+    "community-showroom-handover": {
+      "frames": 5,
+      "signature": "d1627c47a04b582dae99ec5aff800f870bc69f8fca7f384cda5380fd47faf717"
+    },
+    "community-supercar-night-drive": {
+      "frames": 5,
+      "signature": "8aabec021a75ba610ceef801afe1ac6b70ce7813c8e2aed1f02e4b629133afa1"
+    },
+    "community-actor-recast": {
+      "frames": 5,
+      "signature": "5f224151bbed0c3cd6c1cb58a4f29f572f341eaa85eb750f696783de53c3ab96"
+    },
+    "community-apocalypse-terrace": {
+      "frames": 5,
+      "signature": "fb79f215899b77ced909ab6cd80ce05c97a2e30e280c88c99f82e9a34963b55a"
+    },
+    "community-suit-reveal": {
+      "frames": 5,
+      "signature": "11a67c27452b38cb3ed9c99af4c6db9d69e4316d7bead6f6d3d57344bbbd7b05"
+    },
+    "community-canine-expression-swap": {
+      "frames": 5,
+      "signature": "a59d259dfdf9ab815d3506993789f91ad5b9148dc427bd999d37d948e9c90243"
+    },
+    "community-pampered-spa-day": {
+      "frames": 5,
+      "signature": "101cc0914f5db5a0c9e629ec56aceab6ff5e2aa8b17060cef97a7d21a3dd7a10"
+    }
+  }
+}

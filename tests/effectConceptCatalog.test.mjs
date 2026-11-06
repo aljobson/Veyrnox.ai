@@ -2,12 +2,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { EFFECT_CONCEPTS } from '../app/veyrnox/_lib/effectConceptCatalog.js';
 import { EFFECT_CONCEPT_TEMPLATES } from '../app/veyrnox/_lib/effectConceptTemplates.js';
+import { REFERENCE_TEMPLATES } from '../app/veyrnox/_lib/referenceTemplates.js';
+import { SOURCE_TEMPLATES } from '../app/veyrnox/_lib/sourceTemplates.js';
+import { isPublishableSourcePromptTemplate } from '../app/veyrnox/_lib/sourcePromptAudit.js';
 import { ALL_TEMPLATES, EFFECT_THEMES, PRESETS, hasTemplateVideo, searchTemplates, templateById } from '../app/veyrnox/_lib/templates.js';
 
 test('the complete effect inventory is deduplicated into the public Veyrnox gallery', () => {
   assert.equal(EFFECT_CONCEPTS.length, 1036);
   assert.equal(EFFECT_CONCEPT_TEMPLATES.length, 1036);
-  assert.equal(ALL_TEMPLATES.length, 1436);
+  const communityCount = SOURCE_TEMPLATES.filter(p => isPublishableSourcePromptTemplate(p.id)).length;
+  assert.equal(ALL_TEMPLATES.length, EFFECT_CONCEPT_TEMPLATES.length + REFERENCE_TEMPLATES.length + communityCount);
   assert.equal(new Set(ALL_TEMPLATES.map((preset) => preset.id)).size, ALL_TEMPLATES.length);
   assert.equal(new Set(EFFECT_CONCEPTS.map((concept) => concept.name)).size, EFFECT_CONCEPTS.length);
 });

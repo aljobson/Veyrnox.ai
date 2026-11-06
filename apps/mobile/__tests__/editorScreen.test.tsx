@@ -170,6 +170,11 @@ test('same-base draft offers restore even with an old timestamp, no load until c
     await press('Restore unsaved changes'); await hello();
     expect(mockPosts.find(m => m.type === 'load').document.brief).toBe('unsaved');
 });
+test('QA-L1: Discard on the restore choice drops the draft and loads the saved version', async () => {
+    jest.mocked(readDraft).mockResolvedValue({ owner: 'u', projectId: id, baseRevision: 4, document: { ...doc, brief: 'unsaved' }, updatedAt: 1 });
+    await render(); await press('Discard');
+    expect(removeDraft).toHaveBeenCalledWith(id); await hello(); expect(mockPosts.find(m => m.type === 'load').document).toEqual(doc);
+});
 test('conflict use-saved needs a second confirmation before removing the draft', async () => {
     jest.mocked(readDraft).mockResolvedValue({ owner: 'u', projectId: id, baseRevision: 3, document: { ...doc, brief: 'unsaved' }, updatedAt: 1 });
     await render(); await press('Use the saved version'); expect(removeDraft).not.toHaveBeenCalled();

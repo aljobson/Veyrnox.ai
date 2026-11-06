@@ -1,0 +1,14 @@
+^packages/
+^app/api/(auth|webhook|admin|developer|publish|social)/
+^app/api/v1/(admin|account|balance|checkin|devices|free-allowance|generations|jobs|ledger|mcp|mfa|referrals|session|store-purchases|subscriptions|top-ups|uploads|credit-packs)
+^app/lib/(auth|mfa|passkeys|pkce|browserSession|accountSecurity)
+^middleware\.js$
+^worker\.js$
+^next\.config\.mjs$
+^lib/(accessJwt|accountDeletion|admin|apiEdgeRateLimit|autoShortWebhook|browserSession|cdnCgiGuard|checkin|compositeRefunds|contentScan|contentSecurityPolicy|credit|billing|edgeTransportSecurity|internalRequestHeaders|ledger|mfa|provider|refund|stripe|subscriptions|upstream)
+^wrangler\.jsonc$
+^scripts/
+^\.github/
+^\.claude/
+^CLAUDE\.md$
+^package(-lock)?\.json$

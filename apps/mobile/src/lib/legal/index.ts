@@ -14,10 +14,26 @@ export function legalData(doc: LegalDoc, language: string) {
 export function isolateNumbers(text: string, locale: string) {
     return locale === 'ar' ? text.replace(/\d+(?:[.,٬:/+-]\d+)*(?:%|\+)?/g, '\u2066$&\u2069') : text;
 }
+const MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+// Hermes cannot parse "13 October 2026 00:00:00 GMT" (it yields an Invalid Date, and Intl then throws a RangeError), so build the date from its parts.
+function parseLegalDate(updated: string): Date | null {
+    const match = /^(\d{1,2}) ([A-Za-z]+) (\d{4})$/.exec(updated.trim());
+    const month = match ? MONTHS.indexOf(match[2].toLowerCase()) : -1;
+    if (!match || month < 0) return null;
+    const date = new Date(Date.UTC(Number(match[3]), month, Number(match[1])));
+    return Number.isNaN(date.getTime()) ? null : date;
+}
 export function legalUpdated(updated: string, locale: string, tag: string) {
-    return locale === 'en' ? updated : new Intl.DateTimeFormat(tag, {
-        day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC', numberingSystem: 'latn',
-    }).format(new Date(`${updated} 00:00:00 GMT`));
+    if (locale === 'en') return updated;
+    const date = parseLegalDate(updated);
+    if (!date) return updated;
+    try {
+        return new Intl.DateTimeFormat(tag, {
+            day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC', numberingSystem: 'latn',
+        }).format(date);
+    } catch {
+        return updated;
+    }
 }
 export function legalLink(href: string, currentDoc?: LegalDoc): { kind: 'legal'; doc: LegalDoc; anchor?: string } | { kind: 'mail'; href: string } | { kind: 'plain'; href: string } {
     // Only our own exact legal paths navigate; external addresses are never executable.

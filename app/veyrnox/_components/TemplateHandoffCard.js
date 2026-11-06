@@ -7,7 +7,7 @@ import { TemplateArtwork } from './TemplateArtwork';
 import { presetTitle } from '../_lib/tokens.js';
 import { templateHandoffVisual, templateNeedsSource } from '../_lib/templateHandoff.js';
 
-export function TemplateHandoffCard({ preset, canChooseSource = false, onChooseSource, settings, onEdit }) {
+export function TemplateHandoffCard({ preset, canChooseSource = false, onChooseSource, otherModelName = '', settings, onEdit }) {
   const { t } = useI18n();
   const visual = templateHandoffVisual(preset);
   const needs = templateNeedsSource(preset);
@@ -17,14 +17,14 @@ export function TemplateHandoffCard({ preset, canChooseSource = false, onChooseS
     { id: 'model', target: 'models', label: t('app.create.modelHeading'), value: settings?.model },
     { id: 'aspect', target: 'aspect', label: t('app.create.aspectHeading'), value: settings?.aspect },
     { id: 'duration', target: 'duration', label: t('app.create.durationHeading'), value: settings?.duration },
+    settings?.sourceRequired ? {
+      id: 'source',
+      target: 'upload',
+      label: t('app.create.sources.image.label'),
+      value: settings.sourceLabel || t('app.create.chooseTemplateSource'),
+    } : null,
     { id: 'cost', target: 'cost', label: t('app.create.totalCost'), value: settings?.cost },
-  ].filter(item => item.value);
-  if (settings?.sourceRequired) settingItems.splice(settingItems.length - 1, 0, {
-    id: 'source',
-    target: 'upload',
-    label: t('app.create.sources.image.label'),
-    value: settings.sourceLabel || t('app.create.chooseTemplateSource'),
-  });
+  ].filter(item => item?.value);
 
   return (
     <section data-testid="create-template-handoff" className="mt-3 grid gap-4 rounded-xl border border-vx-accent/35 bg-vx-accent/[0.06] p-4 sm:grid-cols-[180px_1fr] sm:items-center">
@@ -47,7 +47,14 @@ export function TemplateHandoffCard({ preset, canChooseSource = false, onChooseS
       <div className="min-w-0">
         <div className="font-vx-mono text-[9px] font-bold tracking-[0.14em] text-vx-accent">{t('app.create.templateLinked')}</div>
         <h2 className="mt-1 text-sm font-extrabold text-vx-fg">{title}</h2>
-        <p role="status" className="mt-1 text-xs text-vx-fg-muted">{t('app.create.templateSettingsLoaded')}</p>
+        <div
+          role="status"
+          className="mt-1 text-xs text-vx-fg-muted"
+        >
+          {otherModelName
+            ? <p data-testid="create-template-other-model">{t('app.create.templateOtherModel', { model: otherModelName })}</p>
+            : <p>{t('app.create.templateSettingsLoaded')}</p>}
+        </div>
         <p className="mt-1 text-xs text-vx-fg-muted">{t('app.create.templateReferenceOnly')}</p>
         {needs && <p className="mt-2 text-sm text-vx-fg-body">{tOr(t, `presets.needs.${preset.needsKey || preset.id}`, needs)}</p>}
         {preset.sourceAspect && <p className="mt-2 text-sm font-bold text-vx-fg-body">{t('presets.detail.sourceAspect', { aspect: preset.sourceAspect })}</p>}

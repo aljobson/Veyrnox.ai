@@ -34,7 +34,7 @@ export function AttachStrip({ items, extra, max = MAX_ATTACHMENTS, disabled, emb
                     <Icon name="paperclip" size={20} />
                     <Text variant="footnote" style={styles.btnText}>{t('chat.attach.photos')}</Text>
                 </Button>
-                {onVideo ? <Button variant="secondary" label={t('chatDepth.video')} accessibilityLabel={t('chatDepth.videoLabel')} disabled={disabled} containerStyle={styles.btn} onPress={onVideo}><Icon name="video" size={20} /><Text variant="footnote">{t('chatDepth.video')}</Text></Button> : null}
+                {onVideo ? <Button variant="secondary" label={t('chatDepth.video')} accessibilityLabel={t('chatDepth.videoLabel')} disabled={disabled} containerStyle={styles.btn} onPress={onVideo}><Icon name="paperclip" size={20} /><Text variant="footnote">{t('chatDepth.video')}</Text></Button> : null}
                 <Text variant="caption" tone="warning" style={styles.note}>{items.length > 0 ? <>{plural('chat.attach.extra', extra)}<Text variant="caption" tone="tertiary"> · {items.length}/{max}</Text></> : plural('chat.attach.hint', extra)}</Text>
             </View>
             {items.length > 0 ? (

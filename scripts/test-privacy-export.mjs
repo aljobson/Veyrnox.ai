@@ -300,11 +300,11 @@ try {
         'mfa_recovery_attempts', 'mfa_recovery_codes',
         'model_free_allowance_claims', 'organisation_members', 'privacy_export_requests', 'project_members', 'provider_spend_reservations',
         'push_outbox', 'push_token_writes', 'referral_rewards', 'social_account_actions', 'social_ad_campaigns',
-        'social_api_keys', 'social_approval_events', 'social_approval_requests', 'social_brand_invitations', 'social_brand_members',
+        'social_api_keys', 'social_approval_events', 'social_approval_requests', 'social_brand_invitations', 'social_brand_kit_links', 'social_brand_members',
         'social_commerce_products', 'social_connection_selections', 'social_inbox_actions', 'social_inbox_contact_profiles', 'social_inbox_notes',
         'social_inbox_suggestions', 'social_inbox_threads', 'social_inbox_workflows', 'social_oauth_states', 'social_post_write_rate_limits',
         'social_publish_autolists', 'social_report_templates', 'social_team_events', 'social_uploads', 'social_webhook_endpoints',
-        'store_customers', 'admin_change_log', 'admin_mutation_receipts', 'admin_roles', 'runtime_switches', 'support_intake_receipts', 'support_messages', 'support_tickets', 'top_up_checkout_rate_limits', 'top_up_flagged_orders', 'top_up_read_rate_limits', 'top_up_return_rate_limits',
+        'store_customers', 'admin_change_log', 'admin_mutation_receipts', 'admin_roles', 'runtime_switches', 'user_ai_controls', 'ai_limit_policy', 'support_intake_receipts', 'support_messages', 'support_tickets', 'top_up_checkout_rate_limits', 'top_up_flagged_orders', 'top_up_read_rate_limits', 'top_up_return_rate_limits',
         'upload_request_rate_limits', 'upload_reservations', 'workspace_members',
     ]);
     const refs = await q(`SELECT DISTINCT c.conrelid::regclass::text AS tbl FROM pg_constraint c

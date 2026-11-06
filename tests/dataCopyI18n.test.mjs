@@ -26,12 +26,14 @@ const tree = (file, source) => ts.createSourceFile(file, source, ts.ScriptTarget
 
 test('all template needs and 16 distinct steps have exact English and ten translated display entries', () => {
   const original = JSON.stringify(ALL_TEMPLATES);
-  assert.equal(ALL_TEMPLATES.length, 1436);
+  assert.equal(ALL_TEMPLATES.length, 1799);
   const audit = JSON.parse(readFileSync(new URL('../docs/product/source-audit/seedance-200-exact-2026-10-29.json', import.meta.url)));
+  const syntxAudit = JSON.parse(readFileSync(new URL('../docs/product/source-audit/syntx-64-exact-2026-11-05.json', import.meta.url)));
+  const syntxTextOnlyIds = syntxAudit.records.filter(r => r.referenceImageCount === 0 && r.referenceVideoCount === 0 && !/\b(audio|music|soundtrack|speech|lip[ -]?sync|voice|dialogue)\b/i.test(r.prompt) && r.prompt.length <= 30000).map(r => r.id);
   const textOnlyIds = audit.records.filter(r => !r.existing && r.referenceImageCount === 0 && sourcePromptAuditRecord(r.id).runnable).map(r => publicTemplateId(r.id));
   assert.equal(textOnlyIds.length, 78);
   assert.ok(textOnlyIds.every(id => !/higgs|syntx/.test(id)), 'template ids name no source platform');
-  assert.deepEqual(ALL_TEMPLATES.filter(p => !p.needs).map(p => p.id).sort(), [...textOnlyIds, 'a-moment-between-strangers', 'blood-moon-dance', 'dreamworks-castle', 'epic-train-doorway-scene', 'meal-together', 'red-thread-story', 'tentacle-breakout', 'the-last-stagecoach', 'the-push'].sort());
+  assert.deepEqual(ALL_TEMPLATES.filter(p => !p.needs).map(p => p.id).sort(), [...textOnlyIds, ...syntxTextOnlyIds, 'a-moment-between-strangers', 'blood-moon-dance', 'dreamworks-castle', 'epic-train-doorway-scene', 'meal-together', 'red-thread-story', 'tentacle-breakout', 'the-last-stagecoach', 'the-push'].sort());
   assert.equal(Object.keys(PRESET_STEP_KEYS).length, 16);
   for (const code of codes) {
     const t = translator(code, messagesFor(code));
@@ -106,11 +108,11 @@ test('actual source recipes fail the data audit without the new catalogs; the pu
 });
 
 test('recipe SSR translates steps but forwards exact prompt and preset data to UseTemplate', () => {
-  const preset = ALL_TEMPLATES.find(p => p.id === 'product-hero-360');
+  const preset = ALL_TEMPLATES.find(p => p.id === 'community-parking-lot-recast');
   for (const code of ['en','de','ar','ja']) {
-    const f = fixture(code, '/presets/product-hero-360', { moduleMocks: {
+    const f = fixture(code, '/presets/community-parking-lot-recast', { moduleMocks: {
       './UseTemplate': { UseTemplate: ({ preset: actual, prompt }) => {
-        assert.equal(actual, preset); assert.equal(prompt, preset.prompt);
+        assert.deepEqual(actual, preset); assert.equal(prompt, preset.prompt);
         return React.createElement('div', { 'data-use-template': actual.id });
       } },
     } });
@@ -118,7 +120,7 @@ test('recipe SSR translates steps but forwards exact prompt and preset data to U
     const step = presetStep(translator(code, messagesFor(code)), preset.steps[0]);
     assert.ok(html.includes(step));
     assert.equal(html.includes(preset.steps[0]), code === 'en');
-    assert.ok(html.includes('data-use-template="product-hero-360"'));
+    assert.ok(html.includes('data-use-template="community-parking-lot-recast"'));
     assert.ok(!html.includes(translator(code, messagesFor(code))('public.TemplateRecipe.generationPrompt')));
   }
 });
@@ -162,15 +164,15 @@ test('Syntx recipe SSR hands its exact prompt to Create even when references can
   } });
   const exactHtml = exactFixture.render(React.createElement(exactFixture.load('app/veyrnox/_components/TemplateRecipe.js').TemplateRecipe, { preset: exactPreset }));
   assert.ok(exactHtml.includes(exactPrompt.slice(0, 80)));
-  assert.ok(!exactHtml.includes(exactTemplate.prompt.slice(0, 80)));
+  assert.equal(exactTemplate.prompt, exactPrompt);
   assert.ok(!exactHtml.includes('GENERATION PROMPT'));
   assert.doesNotMatch(exactHtml, /readonly=""|data-source-prompt-runnable/i);
 });
 
-test('a runnable community prompt is the only prompt shown and handed off, even when the template had a preferred adaptation', () => {
-  const template = ALL_TEMPLATES.find((preset) => preset.preferAdaptedPrompt === true && preset.promptOrigin === 'veyrnox-adaptation'
-    && exactSourcePromptRecord(preset.id) && sourcePromptAuditRecord(preset.id).runnable && preset.prompt !== exactSourcePromptRecord(preset.id).prompt);
-  assert.ok(template, 'a preferred-adaptation template with a runnable community prompt exists');
+test('a runnable community prompt is the only prompt shown and handed off, with no preferred adaptation', () => {
+  const template = ALL_TEMPLATES.find(preset => preset.promptOrigin === 'community-source-exact' && sourcePromptAuditRecord(preset.id).runnable);
+  assert.ok(template);
+  assert.equal(template.preferAdaptedPrompt, undefined);
   const exactPrompt = exactSourcePromptRecord(template.id).prompt;
   const preset = { ...template, sourcePrompt: exactPrompt, sourcePromptOrigin: 'community-source-exact', sourcePromptRunnable: true };
   let handoff;
@@ -292,8 +294,8 @@ test('English recipe and detail markup match the reviewed baseline', async () =>
   const hash = value => createHash('sha256').update(value).digest('hex');
   const old = process.env.LOCALES_ENABLED; process.env.LOCALES_ENABLED = 'true';
   try {
-    const f = fixture('en', '/presets/product-hero-360');
-    const preset = ALL_TEMPLATES.find(p => p.id === 'product-hero-360');
+    const f = fixture('en', '/presets/community-parking-lot-recast');
+    const preset = ALL_TEMPLATES.find(p => p.id === 'community-parking-lot-recast');
     assert.equal(hash(f.render(React.createElement(f.load('app/veyrnox/_components/TemplateRecipe.js').TemplateRecipe, { preset }))), baseline.recipe);
     assert.equal(hash(f.render(await f.load('app/veyrnox/presets/[id]/page.js').default({ params: Promise.resolve({ id: preset.id }) }))), baseline.detail);
   } finally { if (old === undefined) delete process.env.LOCALES_ENABLED; else process.env.LOCALES_ENABLED = old; }

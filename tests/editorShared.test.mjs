@@ -45,3 +45,36 @@ test('brand asset source identity persists and reopening requests its permission
     let t=addSequenceMedia(emptySequence(),{id:`a-${assetId}`,kind:'image',name:'Logo',frames:18000,width:512,height:512,assetSource:{projectId:project,assetId}});t=addSequenceClip(t,'video',`a-${assetId}`);
     const saved=documentForTimeline(emptyProjectDocument(project),t),opened=timelineFromDocument(JSON.parse(JSON.stringify(saved)));assert.equal(opened.problem,null);const need=mediaToRelink(opened.timeline);assert.deepEqual(need.assets,[{id:`a-${assetId}`,projectId:project,assetId,name:'Logo'}]);assert.equal(need.local.length,0);assert.equal(need.library.length,0);
 });
+
+test('v2 brand fields remain optional and legacy kits normalize without losing content', async () => {
+    const { normalizeBrandKit } = await import('../lib/editorShared.js');
+    const legacy = { schemaVersion:1,name:'Legacy',palette:['#ffffff'],fonts:['Arial'],textStyles:[],assets:[] };
+    assert.equal(brandKitProblem(legacy),null);
+    assert.deepEqual(normalizeBrandKit(legacy),{...legacy,schemaVersion:2,logo:null,voice:'',hashtags:[]});
+    assert.equal(brandKitProblem({...legacy,schemaVersion:2}),null);
+    const kit={...emptyBrandKit(),voice:'Warm and clear',hashtags:['#Hello','日本語','café','Ⅷ','𐐀']};
+    assert.equal(brandKitProblem(kit),null);
+    assert.deepEqual(normalizeBrandKit(kit).hashtags,['Hello','日本語','café','Ⅷ','𐐀']);
+    const asset={projectId:project,assetId,name:'Logo',credit:'',usage:'',url:''};
+    assert.equal(brandKitProblem({...kit,assets:[asset],logo:{projectId:project,assetId}}),null);
+    for(const bad of [{schemaVersion:3},{voice:'x'.repeat(501)},{voice:'bad\nvoice'},{voice:'bad\u0085voice'},{voice:null},{hashtags:['#']},{hashtags:['two words']},{hashtags:['🙂']},{hashtags:['e\u0301']},{hashtags:['x'.repeat(61)]},{hashtags:Array(31).fill('tag')},{hashtags:[[]]},{logo:{projectId:project,assetId}},{logo:[]},{assets:[null],logo:{projectId:project,assetId}},{logo:{projectId:project,assetId,extra:true}}])assert.ok(brandKitProblem({...kit,...bad}),JSON.stringify(bad));
+    assert.equal(brandKitProblem({...kit,voice:'x'.repeat(500),hashtags:['x'.repeat(60)]}),null);
+    assert.ok(brandKitProblem({...kit,assets:Array.from({length:24},()=>({...asset,usage:'a'.repeat(240)}))}));
+});
+test('brand hashtags append only missing whole tags and preserve an unchanged caption', async () => {
+    const { appendBrandHashtags } = await import('../lib/social/brandHashtags.js');
+    assert.equal(appendBrandHashtags('Hello #Brand',['brand','new','new']),'Hello #Brand #new');
+    assert.equal(appendBrandHashtags('Hello #Branding',['Brand']),'Hello #Branding #Brand');
+    assert.equal(appendBrandHashtags(' #日本語  ',['日本語']),' #日本語  ');
+    assert.equal(appendBrandHashtags('',['#café','日本語']),'#café #日本語');
+});
+
+test('text style size drafts reject blanks and fractions without coercing them to zero', async () => {
+    const { brandTextStyleSize } = await import('../lib/editorShared.js');
+    for(const raw of ['', ' ', '1', '41', '2.5', '2e1', null, undefined, NaN])assert.equal(brandTextStyleSize(raw),null);
+    for(const [raw,integer] of [['2',2],['012',12],['40',40],[8,8]])assert.equal(brandTextStyleSize(raw),integer);
+    const raw='';
+    const draft={...emptyBrandKit(),textStyles:[{name:'Heading',size:raw,style:TEXT_DEFAULTS}]};
+    assert.ok(brandKitProblem(draft));assert.equal(draft.textStyles[0].size,'');
+    assert.equal(brandKitProblem({...draft,textStyles:[{...draft.textStyles[0],size:brandTextStyleSize('12')}]}),null);
+});

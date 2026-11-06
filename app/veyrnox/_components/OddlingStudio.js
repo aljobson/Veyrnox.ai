@@ -1,5 +1,6 @@
 'use client';
 import { publicSlotMax } from '../../../lib/generationSourceSlots.mjs';
+import { Icon } from './Icon';
 import { pluralKey } from '../../../lib/i18n/translate.mjs';
 import { localeTag } from '../../../lib/i18n/locales.mjs';
 import { useI18n } from '../../../components/I18nProvider';
@@ -346,7 +347,7 @@ export default function OddlingStudio() {
                   <p className="mt-1 text-xs text-vx-fg-faint">{t("app.oddlings.moodboard")}</p>
                 </div>
                 {(references.length < referenceMax || referenceMax === 1) && <label className={chip(!!reference)}>
-                  {reference && referenceMax === 1 ? t("app.oddlings.replace") : t("app.oddlings.uploadPhoto")}
+                  <Icon name="paperclip" size={16} className="me-1.5 inline align-[-2px]" />{reference && referenceMax === 1 ? t("app.oddlings.replace") : t("app.oddlings.uploadPhoto")}
                   <input data-testid="oddling-reference-file" type="file" accept="image/*" onChange={uploadReference} className="sr-only" />
                 </label>}
               </div>

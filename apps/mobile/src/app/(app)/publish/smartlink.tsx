@@ -25,6 +25,12 @@ export default function SmartlinkScreen() {
         const version = generation.current, scope = publishScope();
         return () => version === generation.current && scope === publishScope() && currentApi.current === api;
     }
+    const [link, setLink] = useState<SmartLink | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [problem, setProblem] = useState<string | null>(null);
+    const [notice, setNotice] = useState<string | null>(null);
+    const [busy, setBusy] = useState(false);
+
     useEffect(() => {
         const reset = () => {
             generation.current++; canWriteRef.current = false; running.current = false;
@@ -34,12 +40,6 @@ export default function SmartlinkScreen() {
         const userOff = subscribeCacheUser(reset), brandOff = brandStore.subscribe(reset);
         return () => { generation.current++; canWriteRef.current = false; userOff(); brandOff(); };
     }, []);
-
-    const [link, setLink] = useState<SmartLink | null>(null);
-    const [error, setError] = useState<string | null>(null);
-    const [problem, setProblem] = useState<string | null>(null);
-    const [notice, setNotice] = useState<string | null>(null);
-    const [busy, setBusy] = useState(false);
 
     const load = useCallback(async () => {
         const valid = guard();

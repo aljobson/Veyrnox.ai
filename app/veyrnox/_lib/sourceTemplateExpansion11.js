@@ -1,304 +1,129 @@
-const base = {
-  model: 'Kling 3.0 · I2V', credits: 32, durationSeconds: 10,
-  isNew: true, inspired: true, promptOrigin: 'veyrnox-adaptation',
-  negativePrompt: 'identity drift, warped anatomy, extra limbs, flicker, captions, logos, watermark',
-};
-const steps = [
-  'Upload a clear starting image that matches the subject guidance.',
-  'Use this template to load its editable ten-second prompt and settings.',
-  'Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film.',
-];
-const recipes = [
-  [
-    "god-of-war",
-    "GOD OF WAR",
-    "VFX",
-    "406 / 720",
-    false
-  ],
-  [
-    "basketball-2",
-    "BASKETBALL 2",
-    "VFX",
-    "406 / 720",
-    true
-  ],
-  [
-    "tesla-object-replace",
-    "TESLA OBJECT REPLACE",
-    "PRODUCTS",
-    "540 / 720",
-    false
-  ],
-  [
-    "playing-chess-with-tesla",
-    "PLAYING CHESS WITH TESLA",
-    "REALISTIC",
-    "406 / 720",
-    false
-  ],
-  [
-    "tesla-lose-control",
-    "TESLA LOSE CONTROL",
-    "FANTASY",
-    "960 / 720",
-    true
-  ],
-  [
-    "fly-over-the-teslas",
-    "FLY OVER THE TESLA'S",
-    "REALISTIC",
-    "1280 / 720",
-    false
-  ],
-  [
-    "desire-mode",
-    "DESIRE MODE",
-    "FASHION",
-    "960 / 720",
-    true
-  ],
-  [
-    "license-registration-liftoff",
-    "LICENSE, REGISTRATION… LIFTOFF",
-    "REALISTIC",
-    "406 / 720",
-    true
-  ],
-  [
-    "tesla-started-something",
-    "TESLA STARTED SOMETHING",
-    "REALISTIC",
-    "540 / 720",
-    false
-  ],
-  [
-    "coliseum-drift",
-    "COLISEUM DRIFT",
-    "MOVIES",
-    "960 / 720",
-    true
-  ],
-  [
-    "and-i-need-you",
-    "AND I NEED YOU",
-    "MOVIES",
-    "1280 / 720",
-    true
-  ],
-  [
-    "just-a-lit-bit",
-    "JUST A LIT BIT",
-    "REALISTIC",
-    "406 / 720",
-    true
-  ],
-  [
-    "i-am-here",
-    "I AM HERE",
-    "REALISTIC",
-    "406 / 720",
-    true
-  ],
-  [
-    "somebody",
-    "SOMEBODY",
-    "MOVIES",
-    "854 / 480",
-    true
-  ],
-  [
-    "sega",
-    "SEGA",
-    "FASHION",
-    "406 / 720",
-    true
-  ],
-  [
-    "theater-ceiling-horror",
-    "THEATER CEILING HORROR",
-    "MOVIES",
-    "540 / 720",
-    false
-  ],
-  [
-    "studio-ballerina-turns",
-    "STUDIO BALLERINA TURNS",
-    "FASHION",
-    "540 / 720",
-    false
-  ],
-  [
-    "little-storm-knight",
-    "LITTLE STORM KNIGHT",
-    "FANTASY",
-    "960 / 720",
-    true
-  ],
-  [
-    "wear-the-moment",
-    "WEAR THE MOMENT",
-    "PRODUCTS",
-    "406 / 720",
-    true
-  ],
-  [
-    "wassup-freestyle",
-    "WASSUP FREESTYLE",
-    "VFX",
-    "1280 / 720",
-    false
-  ],
-  [
-    "piano-vibe",
-    "PIANO VIBE",
-    "VFX",
-    "1280 / 720",
-    false
-  ],
-  [
-    "you-good-max",
-    "YOU GOOD, MAX?",
-    "VFX",
-    "406 / 720",
-    false
-  ],
-  [
-    "reflection-in-the-mirror",
-    "REFLECTION IN THE MIRROR",
-    "VFX",
-    "406 / 720",
-    false
-  ],
-  [
-    "car-blows-up",
-    "CAR BLOWS UP",
-    "VFX",
-    "406 / 720",
-    true
-  ],
-  [
-    "saved-by-darkness",
-    "SAVED BY DARKNESS",
-    "MOVIES",
-    "1280 / 720",
-    true
-  ],
-  [
-    "pumpkin-guardian",
-    "PUMPKIN GUARDIAN",
-    "FANTASY",
-    "406 / 720",
-    false
-  ],
-  [
-    "fashion-halloween",
-    "FASHION HALLOWEEN",
-    "FANTASY",
-    "406 / 720",
-    false
-  ],
-  [
-    "thrille",
-    "THRILLE",
-    "FANTASY",
-    "1280 / 720",
-    false
-  ],
-  [
-    "ghost-makeover",
-    "GHOST MAKEOVER",
-    "FANTASY",
-    "406 / 720",
-    false
-  ],
-  [
-    "cash-flow",
-    "CASH FLOW",
-    "VFX",
-    "406 / 720",
-    false
-  ],
-  [
-    "cliffside-silence",
-    "CLIFFSIDE SILENCE",
-    "VFX",
-    "406 / 720",
-    false
-  ],
-  [
-    "icon-duet",
-    "ICON DUET",
-    "VFX",
-    "406 / 720",
-    true
-  ],
-  [
-    "raindance",
-    "RAINDANCE",
-    "VFX",
-    "1050 / 720",
-    true
-  ],
-  [
-    "kieza-dance-flow",
-    "KIEZA DANCE FLOW",
-    "VFX",
-    "406 / 720",
-    true
-  ],
-  [
-    "call-the-car",
-    "CALL THE CAR",
-    "VFX",
-    "406 / 720",
-    true
-  ],
-  [
-    "haunted-motion",
-    "HAUNTED MOTION",
-    "VFX",
-    "406 / 720",
-    false
-  ],
-  [
-    "my-other-hobby",
-    "MY OTHER HOBBY",
-    "REALISTIC",
-    "540 / 720",
-    false
-  ],
-  [
-    "one-last-embrace",
-    "ONE LAST EMBRACE",
-    "MOVIES",
-    "1280 / 720",
-    true
-  ],
-  [
-    "lil-yachti-coffin",
-    "LIL YACHTI COFFIN",
-    "VFX",
-    "1280 / 720",
-    false
-  ],
-  [
-    "birthday-drift",
-    "BIRTHDAY DRIFT",
-    "VFX",
-    "406 / 720",
-    true
-  ]
-];
-export const SYNTX_40_TEMPLATE_IDS = Object.freeze(recipes.map(([id]) => id));
-export const SOURCE_TEMPLATE_EXPANSION_11 = recipes.map(([id, name, category, previewAspect, group]) => ({
-  ...base, id, name, category, previewAspect, clipKey: id, steps,
-  needsKey: group ? 'community.group' : 'community.cinematic',
-  needs: group ? 'One starting image containing every subject in their intended positions' : 'A clear full-body portrait with room for cinematic movement',
-  bg: 'linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)',
-  prompt: `Animate the uploaded reference into an original ten-second ${name.toLowerCase()} sequence based on the verified source concept. Preserve every supplied subject's recognizable identity, design, proportions, materials, colours, clothing and role throughout. Keep anatomy and object geometry stable, physical contact coherent and motion naturally weighted. Use controlled camera movement, consistent lighting and no captions, logos or watermark.`,
-}));
-export const SHOWCASE_CLIP_EXPANSION_11 = Object.fromEntries(SOURCE_TEMPLATE_EXPANSION_11.map((entry) => [entry.clipKey, {
-  video: `/showcase/viral-${entry.id}.mp4`, poster: `/showcase/viral-${entry.id}.jpg`,
-  aspectRatio: entry.previewAspect, title: entry.name.toLowerCase().replace(/(^|\s)\S/g, (letter) => letter.toUpperCase()),
-}]));
+// Community metadata; prompts are joined from exact records in sourceTemplates.js.
+export const SHOWCASE_CLIP_EXPANSION_11 = Object.freeze({
+  "god-of-war": {"video":"/showcase/viral-god-of-war.mp4","poster":"/showcase/viral-god-of-war.jpg","aspectRatio":"406 / 720","title":"God Of War"},
+  "basketball-2": {"video":"/showcase/viral-basketball-2.mp4","poster":"/showcase/viral-basketball-2.jpg","aspectRatio":"406 / 720","title":"Basketball 2"},
+  "tesla-object-replace": {"video":"/showcase/viral-tesla-object-replace.mp4","poster":"/showcase/viral-tesla-object-replace.jpg","aspectRatio":"540 / 720","title":"Tesla Object Replace"},
+  "playing-chess-with-tesla": {"video":"/showcase/viral-playing-chess-with-tesla.mp4","poster":"/showcase/viral-playing-chess-with-tesla.jpg","aspectRatio":"406 / 720","title":"Playing Chess With Tesla"},
+  "tesla-lose-control": {"video":"/showcase/viral-tesla-lose-control.mp4","poster":"/showcase/viral-tesla-lose-control.jpg","aspectRatio":"960 / 720","title":"Tesla Lose Control"},
+  "fly-over-the-teslas": {"video":"/showcase/viral-fly-over-the-teslas.mp4","poster":"/showcase/viral-fly-over-the-teslas.jpg","aspectRatio":"1280 / 720","title":"Fly Over The Tesla's"},
+  "desire-mode": {"video":"/showcase/viral-desire-mode.mp4","poster":"/showcase/viral-desire-mode.jpg","aspectRatio":"960 / 720","title":"Desire Mode"},
+  "license-registration-liftoff": {"video":"/showcase/viral-license-registration-liftoff.mp4","poster":"/showcase/viral-license-registration-liftoff.jpg","aspectRatio":"406 / 720","title":"License, Registration… Liftoff"},
+  "tesla-started-something": {"video":"/showcase/viral-tesla-started-something.mp4","poster":"/showcase/viral-tesla-started-something.jpg","aspectRatio":"540 / 720","title":"Tesla Started Something"},
+  "coliseum-drift": {"video":"/showcase/viral-coliseum-drift.mp4","poster":"/showcase/viral-coliseum-drift.jpg","aspectRatio":"960 / 720","title":"Coliseum Drift"},
+  "and-i-need-you": {"video":"/showcase/viral-and-i-need-you.mp4","poster":"/showcase/viral-and-i-need-you.jpg","aspectRatio":"1280 / 720","title":"And I Need You"},
+  "just-a-lit-bit": {"video":"/showcase/viral-just-a-lit-bit.mp4","poster":"/showcase/viral-just-a-lit-bit.jpg","aspectRatio":"406 / 720","title":"Just A Lit Bit"},
+  "i-am-here": {"video":"/showcase/viral-i-am-here.mp4","poster":"/showcase/viral-i-am-here.jpg","aspectRatio":"406 / 720","title":"I Am Here"},
+  "somebody": {"video":"/showcase/viral-somebody.mp4","poster":"/showcase/viral-somebody.jpg","aspectRatio":"854 / 480","title":"Somebody"},
+  "sega": {"video":"/showcase/viral-sega.mp4","poster":"/showcase/viral-sega.jpg","aspectRatio":"406 / 720","title":"Sega"},
+  "theater-ceiling-horror": {"video":"/showcase/viral-theater-ceiling-horror.mp4","poster":"/showcase/viral-theater-ceiling-horror.jpg","aspectRatio":"540 / 720","title":"Theater Ceiling Horror"},
+  "studio-ballerina-turns": {"video":"/showcase/viral-studio-ballerina-turns.mp4","poster":"/showcase/viral-studio-ballerina-turns.jpg","aspectRatio":"540 / 720","title":"Studio Ballerina Turns"},
+  "little-storm-knight": {"video":"/showcase/viral-little-storm-knight.mp4","poster":"/showcase/viral-little-storm-knight.jpg","aspectRatio":"960 / 720","title":"Little Storm Knight"},
+  "wear-the-moment": {"video":"/showcase/viral-wear-the-moment.mp4","poster":"/showcase/viral-wear-the-moment.jpg","aspectRatio":"406 / 720","title":"Wear The Moment"},
+  "wassup-freestyle": {"video":"/showcase/viral-wassup-freestyle.mp4","poster":"/showcase/viral-wassup-freestyle.jpg","aspectRatio":"1280 / 720","title":"Wassup Freestyle"},
+  "piano-vibe": {"video":"/showcase/viral-piano-vibe.mp4","poster":"/showcase/viral-piano-vibe.jpg","aspectRatio":"1280 / 720","title":"Piano Vibe"},
+  "you-good-max": {"video":"/showcase/viral-you-good-max.mp4","poster":"/showcase/viral-you-good-max.jpg","aspectRatio":"406 / 720","title":"You Good, Max?"},
+  "reflection-in-the-mirror": {"video":"/showcase/viral-reflection-in-the-mirror.mp4","poster":"/showcase/viral-reflection-in-the-mirror.jpg","aspectRatio":"406 / 720","title":"Reflection In The Mirror"},
+  "car-blows-up": {"video":"/showcase/viral-car-blows-up.mp4","poster":"/showcase/viral-car-blows-up.jpg","aspectRatio":"406 / 720","title":"Car Blows Up"},
+  "saved-by-darkness": {"video":"/showcase/viral-saved-by-darkness.mp4","poster":"/showcase/viral-saved-by-darkness.jpg","aspectRatio":"1280 / 720","title":"Saved By Darkness"},
+  "pumpkin-guardian": {"video":"/showcase/viral-pumpkin-guardian.mp4","poster":"/showcase/viral-pumpkin-guardian.jpg","aspectRatio":"406 / 720","title":"Pumpkin Guardian"},
+  "fashion-halloween": {"video":"/showcase/viral-fashion-halloween.mp4","poster":"/showcase/viral-fashion-halloween.jpg","aspectRatio":"406 / 720","title":"Fashion Halloween"},
+  "thrille": {"video":"/showcase/viral-thrille.mp4","poster":"/showcase/viral-thrille.jpg","aspectRatio":"1280 / 720","title":"Thrille"},
+  "ghost-makeover": {"video":"/showcase/viral-ghost-makeover.mp4","poster":"/showcase/viral-ghost-makeover.jpg","aspectRatio":"406 / 720","title":"Ghost Makeover"},
+  "cash-flow": {"video":"/showcase/viral-cash-flow.mp4","poster":"/showcase/viral-cash-flow.jpg","aspectRatio":"406 / 720","title":"Cash Flow"},
+  "cliffside-silence": {"video":"/showcase/viral-cliffside-silence.mp4","poster":"/showcase/viral-cliffside-silence.jpg","aspectRatio":"406 / 720","title":"Cliffside Silence"},
+  "icon-duet": {"video":"/showcase/viral-icon-duet.mp4","poster":"/showcase/viral-icon-duet.jpg","aspectRatio":"406 / 720","title":"Icon Duet"},
+  "raindance": {"video":"/showcase/viral-raindance.mp4","poster":"/showcase/viral-raindance.jpg","aspectRatio":"1050 / 720","title":"Raindance"},
+  "kieza-dance-flow": {"video":"/showcase/viral-kieza-dance-flow.mp4","poster":"/showcase/viral-kieza-dance-flow.jpg","aspectRatio":"406 / 720","title":"Kieza Dance Flow"},
+  "call-the-car": {"video":"/showcase/viral-call-the-car.mp4","poster":"/showcase/viral-call-the-car.jpg","aspectRatio":"406 / 720","title":"Call The Car"},
+  "haunted-motion": {"video":"/showcase/viral-haunted-motion.mp4","poster":"/showcase/viral-haunted-motion.jpg","aspectRatio":"406 / 720","title":"Haunted Motion"},
+  "my-other-hobby": {"video":"/showcase/viral-my-other-hobby.mp4","poster":"/showcase/viral-my-other-hobby.jpg","aspectRatio":"540 / 720","title":"My Other Hobby"},
+  "one-last-embrace": {"video":"/showcase/viral-one-last-embrace.mp4","poster":"/showcase/viral-one-last-embrace.jpg","aspectRatio":"1280 / 720","title":"One Last Embrace"},
+  "lil-yachti-coffin": {"video":"/showcase/viral-lil-yachti-coffin.mp4","poster":"/showcase/viral-lil-yachti-coffin.jpg","aspectRatio":"1280 / 720","title":"Lil Yachti Coffin"},
+  "birthday-drift": {"video":"/showcase/viral-birthday-drift.mp4","poster":"/showcase/viral-birthday-drift.jpg","aspectRatio":"406 / 720","title":"Birthday Drift"}
+});
+
+export const SOURCE_TEMPLATE_EXPANSION_11 = Object.freeze([
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"god-of-war","name":"GOD OF WAR","category":"VFX","previewAspect":"406 / 720","clipKey":"god-of-war","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its editable ten-second prompt and settings.","Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film."],"needsKey":"community.cinematic","needs":"A clear full-body portrait with room for cinematic movement","bg":"linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)"},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"basketball-2","name":"BASKETBALL 2","category":"VFX","previewAspect":"406 / 720","clipKey":"basketball-2","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its editable ten-second prompt and settings.","Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film."],"needsKey":"community.group","needs":"One starting image containing every subject in their intended positions","bg":"linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)"},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"tesla-object-replace","name":"TESLA OBJECT REPLACE","category":"PRODUCTS","previewAspect":"540 / 720","clipKey":"tesla-object-replace","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its editable ten-second prompt and settings.","Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film."],"needsKey":"community.cinematic","needs":"A clear full-body portrait with room for cinematic movement","bg":"linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)"},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"playing-chess-with-tesla","name":"PLAYING CHESS WITH TESLA","category":"REALISTIC","previewAspect":"406 / 720","clipKey":"playing-chess-with-tesla","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its editable ten-second prompt and settings.","Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film."],"needsKey":"community.cinematic","needs":"A clear full-body portrait with room for cinematic movement","bg":"linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)"},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"tesla-lose-control","name":"TESLA LOSE CONTROL","category":"FANTASY","previewAspect":"960 / 720","clipKey":"tesla-lose-control","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its editable ten-second prompt and settings.","Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film."],"needsKey":"community.group","needs":"One starting image containing every subject in their intended positions","bg":"linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)"},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"fly-over-the-teslas","name":"FLY OVER THE TESLA'S","category":"REALISTIC","previewAspect":"1280 / 720","clipKey":"fly-over-the-teslas","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its editable ten-second prompt and settings.","Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film."],"needsKey":"community.cinematic","needs":"A clear full-body portrait with room for cinematic movement","bg":"linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)"},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"desire-mode","name":"DESIRE MODE","category":"FASHION","previewAspect":"960 / 720","clipKey":"desire-mode","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its editable ten-second prompt and settings.","Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film."],"needsKey":"community.group","needs":"One starting image containing every subject in their intended positions","bg":"linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)"},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"license-registration-liftoff","name":"LICENSE, REGISTRATION… LIFTOFF","category":"REALISTIC","previewAspect":"406 / 720","clipKey":"license-registration-liftoff","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its editable ten-second prompt and settings.","Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film."],"needsKey":"community.group","needs":"One starting image containing every subject in their intended positions","bg":"linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)"},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"tesla-started-something","name":"TESLA STARTED SOMETHING","category":"REALISTIC","previewAspect":"540 / 720","clipKey":"tesla-started-something","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its editable ten-second prompt and settings.","Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film."],"needsKey":"community.cinematic","needs":"A clear full-body portrait with room for cinematic movement","bg":"linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)"},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"coliseum-drift","name":"COLISEUM DRIFT","category":"MOVIES","previewAspect":"960 / 720","clipKey":"coliseum-drift","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its editable ten-second prompt and settings.","Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film."],"needsKey":"community.group","needs":"One starting image containing every subject in their intended positions","bg":"linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)"},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"and-i-need-you","name":"AND I NEED YOU","category":"MOVIES","previewAspect":"1280 / 720","clipKey":"and-i-need-you","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its editable ten-second prompt and settings.","Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film."],"needsKey":"community.group","needs":"One starting image containing every subject in their intended positions","bg":"linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)"},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"just-a-lit-bit","name":"JUST A LIT BIT","category":"REALISTIC","previewAspect":"406 / 720","clipKey":"just-a-lit-bit","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its editable ten-second prompt and settings.","Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film."],"needsKey":"community.group","needs":"One starting image containing every subject in their intended positions","bg":"linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)"},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"i-am-here","name":"I AM HERE","category":"REALISTIC","previewAspect":"406 / 720","clipKey":"i-am-here","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its editable ten-second prompt and settings.","Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film."],"needsKey":"community.group","needs":"One starting image containing every subject in their intended positions","bg":"linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)"},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"somebody","name":"SOMEBODY","category":"MOVIES","previewAspect":"854 / 480","clipKey":"somebody","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its editable ten-second prompt and settings.","Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film."],"needsKey":"community.group","needs":"One starting image containing every subject in their intended positions","bg":"linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)"},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"sega","name":"SEGA","category":"FASHION","previewAspect":"406 / 720","clipKey":"sega","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its editable ten-second prompt and settings.","Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film."],"needsKey":"community.group","needs":"One starting image containing every subject in their intended positions","bg":"linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)"},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"theater-ceiling-horror","name":"THEATER CEILING HORROR","category":"MOVIES","previewAspect":"540 / 720","clipKey":"theater-ceiling-horror","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its editable ten-second prompt and settings.","Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film."],"needsKey":"community.cinematic","needs":"A clear full-body portrait with room for cinematic movement","bg":"linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)"},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"studio-ballerina-turns","name":"STUDIO BALLERINA TURNS","category":"FASHION","previewAspect":"540 / 720","clipKey":"studio-ballerina-turns","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its editable ten-second prompt and settings.","Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film."],"needsKey":"community.cinematic","needs":"A clear full-body portrait with room for cinematic movement","bg":"linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)"},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"little-storm-knight","name":"LITTLE STORM KNIGHT","category":"FANTASY","previewAspect":"960 / 720","clipKey":"little-storm-knight","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its editable ten-second prompt and settings.","Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film."],"needsKey":"community.group","needs":"One starting image containing every subject in their intended positions","bg":"linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)"},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"wear-the-moment","name":"WEAR THE MOMENT","category":"PRODUCTS","previewAspect":"406 / 720","clipKey":"wear-the-moment","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its editable ten-second prompt and settings.","Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film."],"needsKey":"community.group","needs":"One starting image containing every subject in their intended positions","bg":"linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)"},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"wassup-freestyle","name":"WASSUP FREESTYLE","category":"VFX","previewAspect":"1280 / 720","clipKey":"wassup-freestyle","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its editable ten-second prompt and settings.","Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film."],"needsKey":"community.cinematic","needs":"A clear full-body portrait with room for cinematic movement","bg":"linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)"},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"piano-vibe","name":"PIANO VIBE","category":"VFX","previewAspect":"1280 / 720","clipKey":"piano-vibe","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its editable ten-second prompt and settings.","Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film."],"needsKey":"community.cinematic","needs":"A clear full-body portrait with room for cinematic movement","bg":"linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)"},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"you-good-max","name":"YOU GOOD, MAX?","category":"VFX","previewAspect":"406 / 720","clipKey":"you-good-max","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its editable ten-second prompt and settings.","Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film."],"needsKey":"community.cinematic","needs":"A clear full-body portrait with room for cinematic movement","bg":"linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)"},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"reflection-in-the-mirror","name":"REFLECTION IN THE MIRROR","category":"VFX","previewAspect":"406 / 720","clipKey":"reflection-in-the-mirror","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its editable ten-second prompt and settings.","Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film."],"needsKey":"community.cinematic","needs":"A clear full-body portrait with room for cinematic movement","bg":"linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)"},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"car-blows-up","name":"CAR BLOWS UP","category":"VFX","previewAspect":"406 / 720","clipKey":"car-blows-up","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its editable ten-second prompt and settings.","Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film."],"needsKey":"community.group","needs":"One starting image containing every subject in their intended positions","bg":"linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)"},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"saved-by-darkness","name":"SAVED BY DARKNESS","category":"MOVIES","previewAspect":"1280 / 720","clipKey":"saved-by-darkness","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its editable ten-second prompt and settings.","Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film."],"needsKey":"community.group","needs":"One starting image containing every subject in their intended positions","bg":"linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)"},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"pumpkin-guardian","name":"PUMPKIN GUARDIAN","category":"FANTASY","previewAspect":"406 / 720","clipKey":"pumpkin-guardian","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its editable ten-second prompt and settings.","Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film."],"needsKey":"community.cinematic","needs":"A clear full-body portrait with room for cinematic movement","bg":"linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)"},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"fashion-halloween","name":"FASHION HALLOWEEN","category":"FANTASY","previewAspect":"406 / 720","clipKey":"fashion-halloween","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its editable ten-second prompt and settings.","Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film."],"needsKey":"community.cinematic","needs":"A clear full-body portrait with room for cinematic movement","bg":"linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)"},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"thrille","name":"THRILLE","category":"FANTASY","previewAspect":"1280 / 720","clipKey":"thrille","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its editable ten-second prompt and settings.","Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film."],"needsKey":"community.cinematic","needs":"A clear full-body portrait with room for cinematic movement","bg":"linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)"},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"ghost-makeover","name":"GHOST MAKEOVER","category":"FANTASY","previewAspect":"406 / 720","clipKey":"ghost-makeover","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its editable ten-second prompt and settings.","Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film."],"needsKey":"community.cinematic","needs":"A clear full-body portrait with room for cinematic movement","bg":"linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)"},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"cash-flow","name":"CASH FLOW","category":"VFX","previewAspect":"406 / 720","clipKey":"cash-flow","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its editable ten-second prompt and settings.","Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film."],"needsKey":"community.cinematic","needs":"A clear full-body portrait with room for cinematic movement","bg":"linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)"},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"cliffside-silence","name":"CLIFFSIDE SILENCE","category":"VFX","previewAspect":"406 / 720","clipKey":"cliffside-silence","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its editable ten-second prompt and settings.","Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film."],"needsKey":"community.cinematic","needs":"A clear full-body portrait with room for cinematic movement","bg":"linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)"},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"icon-duet","name":"ICON DUET","category":"VFX","previewAspect":"406 / 720","clipKey":"icon-duet","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its editable ten-second prompt and settings.","Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film."],"needsKey":"community.group","needs":"One starting image containing every subject in their intended positions","bg":"linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)"},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"raindance","name":"RAINDANCE","category":"VFX","previewAspect":"1050 / 720","clipKey":"raindance","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its editable ten-second prompt and settings.","Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film."],"needsKey":"community.group","needs":"One starting image containing every subject in their intended positions","bg":"linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)"},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"kieza-dance-flow","name":"KIEZA DANCE FLOW","category":"VFX","previewAspect":"406 / 720","clipKey":"kieza-dance-flow","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its editable ten-second prompt and settings.","Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film."],"needsKey":"community.group","needs":"One starting image containing every subject in their intended positions","bg":"linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)"},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"call-the-car","name":"CALL THE CAR","category":"VFX","previewAspect":"406 / 720","clipKey":"call-the-car","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its editable ten-second prompt and settings.","Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film."],"needsKey":"community.group","needs":"One starting image containing every subject in their intended positions","bg":"linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)"},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"haunted-motion","name":"HAUNTED MOTION","category":"VFX","previewAspect":"406 / 720","clipKey":"haunted-motion","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its editable ten-second prompt and settings.","Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film."],"needsKey":"community.cinematic","needs":"A clear full-body portrait with room for cinematic movement","bg":"linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)"},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"my-other-hobby","name":"MY OTHER HOBBY","category":"REALISTIC","previewAspect":"540 / 720","clipKey":"my-other-hobby","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its editable ten-second prompt and settings.","Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film."],"needsKey":"community.cinematic","needs":"A clear full-body portrait with room for cinematic movement","bg":"linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)"},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"one-last-embrace","name":"ONE LAST EMBRACE","category":"MOVIES","previewAspect":"1280 / 720","clipKey":"one-last-embrace","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its editable ten-second prompt and settings.","Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film."],"needsKey":"community.group","needs":"One starting image containing every subject in their intended positions","bg":"linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)"},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"lil-yachti-coffin","name":"LIL YACHTI COFFIN","category":"VFX","previewAspect":"1280 / 720","clipKey":"lil-yachti-coffin","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its editable ten-second prompt and settings.","Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film."],"needsKey":"community.cinematic","needs":"A clear full-body portrait with room for cinematic movement","bg":"linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)"},
+  {"model":"Kling 3.0 · I2V","credits":32,"durationSeconds":10,"isNew":true,"inspired":true,"id":"birthday-drift","name":"BIRTHDAY DRIFT","category":"VFX","previewAspect":"406 / 720","clipKey":"birthday-drift","steps":["Upload a clear starting image that matches the subject guidance.","Use this template to load its editable ten-second prompt and settings.","Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film."],"needsKey":"community.group","needs":"One starting image containing every subject in their intended positions","bg":"linear-gradient(155deg,#111923 0%,#455669 55%,#c99672 100%)"}
+]);
+
+export const SYNTX_40_TEMPLATE_IDS = Object.freeze([
+  "god-of-war",
+  "basketball-2",
+  "tesla-object-replace",
+  "playing-chess-with-tesla",
+  "tesla-lose-control",
+  "fly-over-the-teslas",
+  "desire-mode",
+  "license-registration-liftoff",
+  "tesla-started-something",
+  "coliseum-drift",
+  "and-i-need-you",
+  "just-a-lit-bit",
+  "i-am-here",
+  "somebody",
+  "sega",
+  "theater-ceiling-horror",
+  "studio-ballerina-turns",
+  "little-storm-knight",
+  "wear-the-moment",
+  "wassup-freestyle",
+  "piano-vibe",
+  "you-good-max",
+  "reflection-in-the-mirror",
+  "car-blows-up",
+  "saved-by-darkness",
+  "pumpkin-guardian",
+  "fashion-halloween",
+  "thrille",
+  "ghost-makeover",
+  "cash-flow",
+  "cliffside-silence",
+  "icon-duet",
+  "raindance",
+  "kieza-dance-flow",
+  "call-the-car",
+  "haunted-motion",
+  "my-other-hobby",
+  "one-last-embrace",
+  "lil-yachti-coffin",
+  "birthday-drift"
+]);

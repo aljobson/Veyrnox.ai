@@ -97,6 +97,7 @@ on:
       - "scripts/test-referral-rewards.mjs"
       - "scripts/test-referral-clawback.mjs"
       - "scripts/test-referral-sweep-fairness.mjs"
+      - "packages/db/social-brand-kit-link.rebuild.test.ts"
       - "scripts/test-video-agent-inflight.mjs"
       # A change to a route that alters RPC arguments could not run these.
       - "app/api/v1/**"
@@ -309,6 +310,8 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-referral-rewards.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-referral-clawback.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-referral-sweep-fairness.mjs
+          # Needs the fully replayed tenant schema, so it runs here, not in the legacy acceptance glob below.
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" npx tsx --test packages/db/social-brand-kit-link.rebuild.test.ts
 
       - name: Run catalog margin-floor tests
         run: npx tsx --test packages/catalog/margin-validator.test.ts

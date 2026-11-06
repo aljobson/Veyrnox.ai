@@ -1,0 +1,83 @@
+feature,area,priority,original,clone,notes
+Sign in with Apple,onboarding,must,yes,no,Use Veyrnox auth rather than copying ByeCut identity flows
+Passwordless six-digit email sign-in,onboarding,should,yes,no,Use existing Veyrnox magic-code capability if available
+Explain audio/text AI sharing before first analysis,onboarding,must,yes,no,Consent must describe the actual Veyrnox processor and retention
+Projects home with recent work,projects,must,yes,no,
+Folders and subfolders,projects,should,yes,no,
+Move projects between folders,projects,should,yes,no,
+Editing-time-saved summary,projects,could,yes,no,Compute from raw vs accepted cut duration and explicit assumptions
+Local autosave,projects,must,yes,no,Implementation differs between web and native
+Optional cloud sync,projects,could,yes,no,Use Veyrnox storage rather than iCloud unless native requirements justify it
+Portable project backup,projects,should,yes,no,Use a versioned Veyrnox manifest
+Import one long talking-head recording,import,must,yes,no,
+Import multiple clips from Photos or Files,import,must,yes,no,
+Preserve original media quality,import,must,yes,no,
+Low-storage warning before import,import,should,yes,no,Native-only when device storage can be measured
+iCloud file wait and recovery,import,could,yes,no,Native-only documented Apple integration
+No-speech detection,import,should,yes,no,Allow choose another video or continue manually
+Optional intended script,smart-cut,must,yes,no,
+Optional editing notes,smart-cut,must,yes,no,
+Automatic spoken-language detection,smart-cut,should,yes,no,
+Manual spoken-language override,smart-cut,should,yes,no,
+Snappy-to-Relaxed pacing control,smart-cut,must,yes,no,
+Preflight duration and credit quote,smart-cut,must,yes,no,Pin Veyrnox quote before spend
+Background analysis with progress stages,smart-cut,should,yes,no,
+Lock Screen Live Activity for progress,smart-cut,could,yes,no,Native-only
+Automatic retry after connection interruption,smart-cut,should,yes,no,
+Recoverable failed analysis,smart-cut,must,yes,no,Do not consume credits for a never-started or failed Veyrnox job
+Remove long silences,smart-cut,must,yes,no,Independent algorithm/provider required
+Remove filler words and false starts,smart-cut,must,yes,no,Independent algorithm/provider required
+Group repeated takes by intended line,smart-cut,must,yes,no,Core differentiator
+Choose a best take for each line,smart-cut,must,yes,no,Use explainable independently designed scoring
+Match footage to supplied script,smart-cut,should,yes,no,
+Quality checks for clipped words and awkward joins,smart-cut,must,yes,no,
+RAW versus CUT comparison,review,must,yes,no,
+Show raw and cut duration,review,must,yes,no,
+Review transcript sections,review,must,yes,no,
+Preview alternate takes,review,must,yes,no,
+Swap an alternate take,review,must,yes,no,
+Warnings for incomplete script match,review,should,yes,no,
+Restart analysis,review,should,yes,no,
+Discard analysis result,review,should,yes,no,
+Apply accepted plan non-destructively,review,must,yes,no,All applied operations must remain undoable
+Thumbs rating and optional feedback,review,could,yes,no,Only collect with clear privacy and support purpose
+Multi-track timeline,editor,should,yes,no,Reuse the existing Veyrnox editor
+Trim split and merge,editor,should,yes,no,Reuse existing capability where present
+Timeline snapping and waveforms,editor,should,yes,no,
+Speed reverse and freeze frame,editor,could,yes,no,
+Titles and free text,editor,should,yes,no,
+Photo and video overlays,editor,should,yes,no,
+Music imported audio and voiceover,editor,should,yes,no,Only user-owned or independently licensed media
+Filters and colour controls,editor,could,yes,no,
+Stabilization,editor,could,yes,no,Requires independently licensed implementation
+Background removal masks and chroma key,editor,could,yes,no,Requires independently licensed implementation
+Text or images behind subject,editor,could,yes,no,Requires depth/background segmentation
+Face retouch,editor,could,yes,no,Consent and on-device/privacy review required
+Aspect ratios 9:16 16:9 1:1 and 4:5,editor,should,yes,no,
+Custom portrait and landscape canvases,editor,could,yes,no,
+Safe-area preview for short-form platforms,editor,should,yes,no,
+Plain-language editing assistant,assistant,should,yes,no,Show an inspectable plan before mutation
+Word-by-word automatic captions,captions,must,yes,no,
+Edit caption text,captions,must,yes,no,
+Caption language auto-detection and override,captions,should,yes,no,
+Caption style picker,captions,should,yes,no,Create original Veyrnox styles
+Show or hide captions without deleting,captions,should,yes,no,
+Keep captions aligned after timeline insertion,captions,should,yes,no,
+Resize and align text with guides,captions,could,yes,no,
+Export up to 4K 60 fps,export,should,yes,no,Capability depends on platform and renderer
+H.264 and HEVC export,export,should,yes,no,Capability depends on platform and licences
+Remember export settings,export,should,yes,no,
+Preview footage while export progresses,export,could,yes,no,
+Background export progress,export,should,yes,no,
+Save to Photos,export,should,yes,no,Native-only permissioned action
+Share to social apps,export,could,yes,no,Use operating-system share sheet
+Free first AI edit,monetization,could,yes,no,Use Veyrnox promotional-credit rules if adopted
+Recurring AI allowance,monetization,could,yes,no,Use Veyrnox credits or subscriptions not ByeCut plan names
+Exact ByeCut Creator Pro Extreme plans,monetization,skip,yes,skip,Competitor commercial packaging is not cloned
+ByeCut referral and offer-code network,monetization,skip,yes,skip,Competitor network and Apple offers are not part of the clone
+ByeCut branding icon and product copy,brand,skip,yes,skip,Protected identity and copy
+Exact ByeCut visual design,brand,skip,yes,skip,Build in Veyrnox design language
+ByeCut caption presets fonts and artwork,licensed-content,skip,yes,skip,Create original Veyrnox presets
+ByeCut templates music and stock media,licensed-content,skip,yes,skip,Use owned or independently licensed assets only
+Proprietary best-take model prompts and heuristics,implementation,skip,yes,skip,Rebuild behavior with an independent explainable design
+Private APIs telemetry and account data,implementation,skip,yes,skip,Never inspect or copy

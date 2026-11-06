@@ -1,5 +1,6 @@
 'use client';
 import { useI18n } from '../../../../components/I18nProvider';
+import { Icon } from '../Icon';
 import { localeTag } from '../../../../lib/i18n/locales.mjs';
 import { pluralKey } from '../../../../lib/i18n/translate.mjs';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -83,9 +84,7 @@ export function AttachButton({ onPick, disabled, full }) {
       <button type="button" disabled={disabled || full} onClick={() => input.current?.click()} aria-label={t("app.chat.attach.label")}
         title={full ? t("app.chat.controls.imageLimit") : t("app.chat.attach.hint")}
         className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-vx-fg-muted hover:text-vx-fg disabled:opacity-40">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M21 11.5 12.5 20a5.5 5.5 0 0 1-7.8-7.8l9-9a3.7 3.7 0 0 1 5.2 5.2l-9 9a1.8 1.8 0 0 1-2.6-2.6l8.3-8.3" />
-        </svg>
+        <Icon name="paperclip" size={20} />
       </button>
     </>
   );

@@ -1,5 +1,6 @@
 'use client';
 import { helperCopy } from '../../../../lib/i18n/helperCopy.mjs';
+import { Icon } from '../../_components/Icon';
 import { HelperNotice } from '../../../../components/HelperNotice.jsx';
 import { tOr } from '../../../../lib/i18n/translate.mjs';
 import { localeTag } from '../../../../lib/i18n/locales.mjs';
@@ -192,7 +193,7 @@ function Editor() {
     return <div className="space-y-6 outline-none" role="region" data-testid="editor-legacy" aria-label={t("app.editor.legacy.workspace")} tabIndex={0} onKeyDown={keyboard}>
         <div className="flex flex-wrap items-center gap-3">
             <label className="inline-flex cursor-pointer rounded-full border border-vx-border px-5 py-3 text-sm font-bold focus-within:outline focus-within:outline-2 focus-within:outline-vx-accent">
-                {t("app.editor.legacy.addFiles")}<input aria-label={t("app.editor.legacy.addFiles")} className="sr-only" type="file" multiple accept="video/mp4,video/webm,video/quicktime,audio/mpeg,audio/wav,audio/mp4,audio/x-m4a" disabled={busy || exporting} onChange={chooseFiles} />
+                <Icon name="paperclip" size={16} className="me-1.5 inline align-[-2px]" />{t("app.editor.legacy.addFiles")}<input aria-label={t("app.editor.legacy.addFiles")} className="sr-only" type="file" multiple accept="video/mp4,video/webm,video/quicktime,audio/mpeg,audio/wav,audio/mp4,audio/x-m4a" disabled={busy || exporting} onChange={chooseFiles} />
             </label>
             <Button variant="ghost" size="md" disabled={busy || exporting} onClick={openLibrary}>{t("app.editor.legacy.addLibrary")}</Button>
             <Button variant="ghost" size="md" disabled={exporting} onClick={() => { const next = apply(timeline => addText(timeline, initialText(frame))); if (next) setSelected({ track: 'text', id: `t${next.seq}` }); }}>{t("app.editor.workspace.addText")}</Button>

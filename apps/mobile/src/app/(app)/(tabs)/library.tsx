@@ -19,9 +19,13 @@ import { publishHref, askAboutHref } from '../../../lib/nextSteps';
 import { creativeReuseHref } from '../../../lib/creativeReuse';
 import { ds, LIST_END_PADDING } from '../../../theme';
 import { t } from '../../../lib/i18n';
+import { retryDelayMs } from '../../../lib/retryDelay';
 
 import { EmptyState } from '../../../components/EmptyState';
 import { VeyLoader } from '../../../components/VeyLoader';
+
+// Player objects are native handles; configuring one lives outside the component body.
+function unmuteAndPlay(player: ReturnType<typeof useVideoPlayer>) { player.muted = false; player.play(); }
 
 export default function Library() {
     const styles = useThemedStyles(sheets);
@@ -35,6 +39,13 @@ export default function Library() {
     const [jobs, setJobs] = useState<Job[] | null>(null);
     const [next, setNext] = useState<JobPage['next']>(null);
     const [failed, setFailed] = useState(false);
+    const [retryWait, setRetryWait] = useState(0);
+    const [waiting, setWaiting] = useState(false);
+    useEffect(() => {
+        if (!waiting) return;
+        const timer = setTimeout(() => setWaiting(false), retryWait);
+        return () => clearTimeout(timer);
+    }, [waiting, retryWait]);
     const [saved, setSaved] = useState<CacheMeta | null>(null);
     const loadingMore = useRef(false);
     const [stateFilter, setStateFilter] = useState<StateFilter>('all');
@@ -139,7 +150,7 @@ export default function Library() {
         try {
             await player.replaceAsync(link.url);
             if (ticket !== audioVersion.current || generation !== version.current) return;
-            player.muted = false; player.play(); setPlaying(id);
+            unmuteAndPlay(player); setPlaying(id);
         } catch { pause(); }
     }
 
@@ -151,6 +162,7 @@ export default function Library() {
 
     const load = useCallback(async () => {
         setFailed(false);
+        setWaiting(false);
         const generation = version.current;
         try {
             // First page only is saved (labels are personal data: per user, wiped on sign-out). Older pages load live.
@@ -166,8 +178,13 @@ export default function Library() {
                 },
             });
             if (generation === version.current) setSaved(out.meta);
-        } catch {
-            if (generation === version.current) setFailed(true);
+        } catch (err) {
+            if (generation === version.current) {
+                const wait = retryDelayMs(err);
+                setRetryWait(wait);
+                setWaiting(wait > 0);
+                setFailed(true);
+            }
         }
     }, [api]);
 
@@ -219,8 +236,8 @@ export default function Library() {
             {unreachable ? <View><Text variant="body" tone="danger">{t('libraryCreate.unreachable')}</Text><Button label={t('recovery.retry')} onPress={() => { failures.current = 0; setUnreachable(false); }} /></View> : null}
             {failed ? (
                 <View>
-                    <Text variant="body" tone="danger">{t('library.loadError')}</Text>
-                    <Button variant="tertiary" accessibilityRole="button" accessibilityLabel={t('library.loadError')} onPress={load} label={t('recovery.retry')} />
+                    <Text variant="body" tone="danger" accessibilityRole="alert">{t('library.loadError')}</Text>
+                    <Button variant="tertiary" accessibilityRole="button" disabled={waiting} onPress={() => void load()} label={t('recovery.retry')} />
                 </View>
             ) : jobs === null ? (
                 <VeyLoader />
