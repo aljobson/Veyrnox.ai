@@ -15,8 +15,8 @@ const subscribe = (onChange) => {
   };
 };
 
-export function useSmartCutIntent(onOpen) {
-  const editorOn = useSyncExternalStore(subscribe, editorFlag, off);
+export function useSmartCutIntent(onOpen, { editorKey = EDITOR_FLAG, getEditorFlag = editorFlag } = {}) {
+  const editorOn = useSyncExternalStore(subscribe, getEditorFlag, off);
   const [smartCutIntent, setSmartCutIntent] = useState(false);
   useEffect(() => {
     const readIntent = () => {
@@ -30,7 +30,7 @@ export function useSmartCutIntent(onOpen) {
   }, [onOpen]);
   const enableEditorPreview = () => {
     try {
-      window.localStorage.setItem(EDITOR_FLAG, '1');
+      window.localStorage.setItem(editorKey, '1');
       window.dispatchEvent(new Event(EDITOR_FLAG_EVENT));
     } catch { /* storage can be unavailable; the existing off state remains honest */ }
   };

@@ -169,11 +169,10 @@ test('Smart Cut has a mobile-first path from home to a review-ready editor', () 
   const library = readFileSync(new URL('../app/veyrnox/app/library/page.js', import.meta.url), 'utf8');
   const intent = readFileSync(new URL('../app/veyrnox/_lib/useSmartCutIntent.js', import.meta.url), 'utf8');
   const messages = readFileSync(new URL('../lib/i18n/messages/app/en/smart-cut.mjs', import.meta.url), 'utf8');
-  const exploreMessages = readFileSync(new URL('../lib/i18n/messages/app/en/explore.mjs', import.meta.url), 'utf8');
   assert.match(home, /\/app\/library#smart-cut/);
   assert.match(home, /app\.explore\.smartCutStart/);
   assert.match(entry, /app\.smartCut\.entry\.enable/);
-  assert.match(exploreMessages, /Turn finished clips into a reviewed first cut/);
+  assert.match(messages, /Turn finished clips into a reviewed first cut/);
   assert.match(messages, /Enable Smart Cut preview/);
   assert.match(messages, /Planning is local and free/);
   assert.match(intent, /window\.location\.hash === '#smart-cut'/);

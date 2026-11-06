@@ -53,6 +53,7 @@ const POLL_GIVE_UP_AFTER = 20;
 // buffer on mount was up to 100 requests in one burst. Hydrate a page at a
 // time instead; rows outside the window still render from localStorage.
 const PAGE = 12;
+const EDITOR_FLAG = 'veyrnox_editor'; const editorFlag = () => { try { return window.localStorage.getItem(EDITOR_FLAG) === '1'; } catch { return false; } };
 // Browser-only values read once: off / 'grid' on the server and first paint.
 const never = () => () => {};
 const savedView = () => readView(window.localStorage);
@@ -92,7 +93,7 @@ export default function Library() {
   const [selected, setSelected] = useState([]);
   const [editing, setEditing] = useState(false);
   const openSmartCut = useCallback(() => setKind('video'), []);
-  const { editorOn, smartCutIntent, enableEditorPreview } = useSmartCutIntent(openSmartCut);
+  const { editorOn = false, smartCutIntent = false, enableEditorPreview = () => {} } = useSmartCutIntent(openSmartCut, { editorKey: EDITOR_FLAG, getEditorFlag: editorFlag }) || {};
 
   const actor=useSyncExternalStore(onSessionChange,getStoredUserId,()=>null);
   const sessionLoaded = useSyncExternalStore(never, on, off);
