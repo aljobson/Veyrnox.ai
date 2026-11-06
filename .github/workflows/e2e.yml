@@ -25,6 +25,24 @@ on:
         required: false
         default: ""
         type: string
+      kling_o1_probe_phase:
+        description: Full probe, or remaining checks after validated 5s and 10s successes
+        required: false
+        default: full
+        type: choice
+        options:
+          - full
+          - remaining
+      prior_success_job_ids:
+        description: Comma-separated 5s and 10s job IDs required by the remaining phase
+        required: false
+        default: ""
+        type: string
+      reuse_source_keys:
+        description: Comma-separated short-video, Image1 and Image2 keys required by the remaining phase
+        required: false
+        default: ""
+        type: string
 
 permissions: {}
 
@@ -88,6 +106,9 @@ jobs:
           KLING_O1_PROBE_APPROVED: owner-approved-2026-11-06
           KLING_O1_PROBE_MAX_USD: "5"
           KLING_O1_EXPECTED_WORKER_VERSION: ${{ inputs.expected_worker_version }}
+          KLING_O1_PROBE_PHASE: ${{ inputs.kling_o1_probe_phase }}
+          KLING_O1_PRIOR_SUCCESS_JOB_IDS: ${{ inputs.prior_success_job_ids }}
+          KLING_O1_REUSE_KEYS: ${{ inputs.reuse_source_keys }}
         run: node scripts/kling-o1-staging-probe.mjs
       - if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

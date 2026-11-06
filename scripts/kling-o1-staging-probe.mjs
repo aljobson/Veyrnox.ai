@@ -17,6 +17,7 @@ const POLL_MS = 15_000;
 const DEADLINE_MS = 18 * 60_000;
 const OUTPUT_DIR = path.resolve('kling-o1-probe-evidence');
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UPLOAD_KEY = /^uploads\/[0-9a-f-]{36}\/[0-9a-f-]{36}\.(?:mp4|png)$/i;
 
 export function probeSpendCeiling() {
   return EXPECTED_USD[5] + EXPECTED_USD[10] + EXPECTED_USD.controlledFailure;
@@ -29,7 +30,18 @@ export function assertProbeEnvironment(env = process.env) {
   if (probeSpendCeiling() > 5) throw new Error('Kling probe scenarios exceed the approved spend cap');
   if (!UUID.test(env.KLING_O1_EXPECTED_WORKER_VERSION || '')) throw new Error('Kling probe requires the verified staging Worker version');
   if (!env.E2E_EMAIL || !env.E2E_PASSWORD) throw new Error('Kling probe requires the confirmed staging E2E account');
-  return { origin: STAGING_ORIGIN, supabase: STAGING_SUPABASE, workerVersion: env.KLING_O1_EXPECTED_WORKER_VERSION };
+  const phase = env.KLING_O1_PROBE_PHASE || 'full';
+  if (!['full', 'remaining'].includes(phase)) throw new Error('Kling probe phase is invalid');
+  const priorSuccessJobIds = String(env.KLING_O1_PRIOR_SUCCESS_JOB_IDS || '').split(',').filter(Boolean);
+  const reuseKeys = String(env.KLING_O1_REUSE_KEYS || '').split(',').filter(Boolean);
+  if (phase === 'remaining' && (priorSuccessJobIds.length !== 2 || !priorSuccessJobIds.every(id => UUID.test(id)))) {
+    throw new Error('Remaining Kling probe requires the exact prior 5s and 10s job IDs');
+  }
+  if (phase === 'remaining' && (reuseKeys.length !== 3 || !reuseKeys.every(key => UPLOAD_KEY.test(key)))) {
+    throw new Error('Remaining Kling probe requires short-video, Image1 and Image2 upload keys');
+  }
+  return { origin: STAGING_ORIGIN, supabase: STAGING_SUPABASE, workerVersion: env.KLING_O1_EXPECTED_WORKER_VERSION,
+    phase, priorSuccessJobIds, reuseKeys };
 }
 
 export function generationBody({ duration, keys, idempotencyKey, prompt }) {
@@ -240,7 +252,9 @@ async function run() {
   const gate = assertProbeEnvironment();
   await mkdir(OUTPUT_DIR, { recursive: true });
   const evidence = { startedAt: now(), finishedAt: null, status: 'running', environment: 'staging', workerVersion: gate.workerVersion,
-    modelId: MODEL_ID, approvedProviderUsd: 5, maximumProviderUsd: probeSpendCeiling(), authId: null, catalog: null, media: null, scenarios: [] };
+    modelId: MODEL_ID, phase: gate.phase, approvedProviderUsd: 5, maximumProviderUsd: probeSpendCeiling(),
+    thisRunMaximumProviderUsd: gate.phase === 'remaining' ? EXPECTED_USD.controlledFailure : probeSpendCeiling(),
+    authId: null, catalog: null, media: null, priorSuccesses: [], scenarios: [] };
   const scratch = await mkdtemp(path.join(tmpdir(), 'veyrnox-kling-o1-'));
   const save = async () => writeFile(path.join(OUTPUT_DIR, 'evidence.json'), JSON.stringify(evidence, null, 2));
   try {
@@ -255,12 +269,25 @@ async function run() {
     const auth = await signIn(process.env); evidence.authId = auth.authId;
     const api = client(auth.token);
     const initial = await balance(api);
-    if (initial.balance < CREDITS[5] + CREDITS[10] + CREDITS[5]) throw new Error(`Staging account has ${initial.balance} credits; 188 are required`);
+    const required = gate.phase === 'remaining' ? CREDITS[5] : CREDITS[5] + CREDITS[10] + CREDITS[5];
+    if (initial.balance < required) throw new Error(`Staging account has ${initial.balance} credits; ${required} are required`);
     const media = await syntheticMedia(scratch); evidence.media = media.metadata;
     await save();
-    await successfulScenario({ api, duration: 5, keys: await uploadScenario(api, media.files.qualifying, [media.files.image1, media.files.image2]), evidence }); await save();
-    await successfulScenario({ api, duration: 10, keys: await uploadScenario(api, media.files.qualifying, [media.files.image1, media.files.image2]), evidence }); await save();
-    await shortScenario({ api, keys: await uploadScenario(api, media.files.short, [media.files.image1, media.files.image2]), evidence }); await save();
+    if (gate.phase === 'full') {
+      await successfulScenario({ api, duration: 5, keys: await uploadScenario(api, media.files.qualifying, [media.files.image1, media.files.image2]), evidence }); await save();
+      await successfulScenario({ api, duration: 10, keys: await uploadScenario(api, media.files.qualifying, [media.files.image1, media.files.image2]), evidence }); await save();
+      await shortScenario({ api, keys: await uploadScenario(api, media.files.short, [media.files.image1, media.files.image2]), evidence }); await save();
+    } else {
+      const expectedCredits = [CREDITS[5], CREDITS[10]], existing = await jobs(api);
+      for (let index = 0; index < gate.priorSuccessJobIds.length; index += 1) {
+        const row = existing.find(job => job.job_id === gate.priorSuccessJobIds[index]);
+        if (!row || row.state !== 'succeeded' || row.model_id !== MODEL_ID || row.credits !== expectedCredits[index]) {
+          throw new Error(`Prior ${index === 0 ? '5s' : '10s'} success is not valid for continuation`);
+        }
+        evidence.priorSuccesses.push({ jobId: row.job_id, credits: row.credits, state: row.state });
+      }
+      await shortScenario({ api, keys: gate.reuseKeys, evidence }); await save();
+    }
     await controlledFailureScenario({ api, keys: await uploadScenario(api, media.files.controlled, [media.files.image1, media.files.image2]), evidence });
     evidence.status = 'complete'; evidence.finishedAt = now(); await save();
     console.log(JSON.stringify({ status: evidence.status, workerVersion: evidence.workerVersion, authId: evidence.authId,

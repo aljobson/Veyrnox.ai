@@ -11,6 +11,13 @@ const valid = {
   E2E_PASSWORD: 'not-a-real-secret',
 };
 
+const continuation = {
+  ...valid,
+  KLING_O1_PROBE_PHASE: 'remaining',
+  KLING_O1_PRIOR_SUCCESS_JOB_IDS: '11111111-1111-4111-8111-111111111111,22222222-2222-4222-8222-222222222222',
+  KLING_O1_REUSE_KEYS: 'uploads/33333333-3333-4333-8333-333333333333/44444444-4444-4444-8444-444444444444.mp4,uploads/33333333-3333-4333-8333-333333333333/55555555-5555-4555-8555-555555555555.png,uploads/33333333-3333-4333-8333-333333333333/66666666-6666-4666-8666-666666666666.png',
+};
+
 test('paid Kling probe is manual, staging-bound and fixed below the approved cap', () => {
   assert.equal(probeSpendCeiling(), 3.36);
   assert.equal(assertProbeEnvironment(valid).origin, 'https://veyrnox-ai-staging.al-jobson.workers.dev');
@@ -18,6 +25,9 @@ test('paid Kling probe is manual, staging-bound and fixed below the approved cap
     assert.throws(() => assertProbeEnvironment({ ...valid, [key]: '' }));
   }
   assert.throws(() => assertProbeEnvironment({ ...valid, KLING_O1_PROBE_MAX_USD: '6' }));
+  assert.equal(assertProbeEnvironment(continuation).phase, 'remaining');
+  assert.throws(() => assertProbeEnvironment({ ...continuation, KLING_O1_PRIOR_SUCCESS_JOB_IDS: '' }));
+  assert.throws(() => assertProbeEnvironment({ ...continuation, KLING_O1_REUSE_KEYS: 'bad' }));
 });
 
 test('probe payload preserves video, Image1 and Image2 ordering and exact credit confirmation', () => {
