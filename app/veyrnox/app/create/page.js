@@ -325,8 +325,8 @@ export default function CreateStudio() {
     .flatMap(([slot]) => sourceList(sources[slot]))
     .filter(source => !source?.needsUpload && (source?.file || source?.assetId || source?.sourceKey));
   const templateImageCount = templateImageSources.length;
-  const templateImageSource = templateImageSources.find(source => source?.file || source?.label) || null;
-  const templateImageRequired = Object.entries(media).some(([slot, spec]) => generationSlotKind(slot) === 'image' && spec.required);
+  const templateImageSource = templateImageSources.find(source => source?.file || source?.label) || templateImageSources[0] || null;
+  const templateImageRequired = Object.entries(media).some(([slot, spec]) => generationSlotKind(slot) === 'image' && spec?.required);
   const missingConsent = hasUpload && !consent;
   const missingVoice = voiceIsMissing(model, voice);
   const missingPrompt = promptIsMissing(model, prompt);
@@ -387,6 +387,7 @@ export default function CreateStudio() {
 
   function pickSource(slot, file, asset = null, index) {
     draftRecovery.sourceEdited();
+    if (file || asset) setAttachNotice('');
     setConsent(false);
     setSources(previous => {
       const old = sourceList(previous[slot]);
@@ -816,7 +817,7 @@ export default function CreateStudio() {
               duration: templateDuration,
               cost: generationCostLabel(cost),
               sourceRequired: templateImageRequired,
-              sourceLabel: templateImageSource?.file?.name || templateImageSource?.label || '',
+              sourceLabel: templateImageSource?.file?.name || templateImageSource?.label || (templateImageCount > 0 ? t('app.create.sources.image.label') : ''),
             }}
             onEdit={focusCreateControl}
           />}
