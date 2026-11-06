@@ -5653,6 +5653,7 @@ export default {
   "create.workspace.rightsNeeded": "上のチェックボックスにチェックして、これらのファイルがあなたのものであるか使用許可があることを確認し、生成をタップしてください。",
   "create.workspace.onlyModel": "現在、これらのファイルに対応する他のモデルはありません。",
   "handoff.switchedModel": "ファイルを追加したため、{model} に切り替えました。",
+  "publishReporting.err.recipients": "有効なメールアドレスを最大10件、カンマまたはスペースで区切って入力してください。スケジュール配信のレポートには1件以上必要です。",
   "loading.still": "まだ読み込み中です…",
   "loading.timeout": "想定より時間がかかっています。接続を確認して、もう一度お試しください。",
 } as const;
