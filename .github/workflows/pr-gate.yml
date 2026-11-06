@@ -57,7 +57,11 @@ jobs:
         run: |
           set -euo pipefail
           # Rules come from the base branch, never from the PR under review.
-          git show "origin/${BASE}:.github/agent-protected-paths.regex" > "$RUNNER_TEMP/protected.regex"
+          # Only the PR that first adds the file (bootstrap) may fall back to its own copy.
+          if ! git show "origin/${BASE}:.github/agent-protected-paths.regex" > "$RUNNER_TEMP/protected.regex" 2>/dev/null; then
+            echo "::notice::protected-path rules not on ${BASE} yet; using this PR's copy"
+            git show "HEAD:.github/agent-protected-paths.regex" > "$RUNNER_TEMP/protected.regex"
+          fi
           git diff --name-only "origin/${BASE}...HEAD" > "$RUNNER_TEMP/changed.txt"
           grep -E -f "$RUNNER_TEMP/protected.regex" "$RUNNER_TEMP/changed.txt" > "$RUNNER_TEMP/hits.txt" || true
           echo "count=$(wc -l < "$RUNNER_TEMP/hits.txt" | tr -d ' ')" >> "$GITHUB_OUTPUT"
