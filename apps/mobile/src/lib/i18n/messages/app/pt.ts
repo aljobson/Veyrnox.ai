@@ -5207,6 +5207,7 @@ export default {
   "libraryCreate.stems": "Abra a criação para reproduzir suas faixas de áudio separadas.",
   "libraryCreate.elapsed": "{seconds} seg.",
   "libraryCreate.useTemplate": "Usar modelo",
+  "libraryCreate.editBeforeGenerating": "Editar antes de gerar",
   "filmOutput.asset": "Recurso para a ficha",
   "filmOutput.savePassport": "Salvar rascunho da ficha",
   "filmOutput.newVersion": "Para mudar esta identidade, dê ao recurso revisado uma nova versão nas fichas de planos e painéis.",
