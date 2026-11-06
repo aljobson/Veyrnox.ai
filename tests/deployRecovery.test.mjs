@@ -62,7 +62,7 @@ test('capture against a 500 site: strict by default, tolerated with the flag', {
         assert.notEqual(strict.result.code, 0, 'without the flag a down site still fails capture');
         const tolerant = await capture(base, ['--tolerate-server-errors']);
         assert.equal(tolerant.result.code, 0);
-        assert.deepEqual(tolerant.manifest, { version: 1, degraded: true, assets: [] });
+        assert.deepEqual(tolerant.manifest, { version: 1, degraded: true, assets: [], deploymentIds: [] });
         assert.match(tolerant.result.stdout, /^::warning::.*unhealthy/m);
     });
 });
@@ -72,7 +72,7 @@ test('capture against a healthy site is unchanged, flag or not', { timeout: 60_0
         for (const extra of [[], ['--tolerate-server-errors']]) {
             const { result, manifest } = await capture(base, extra);
             assert.equal(result.code, 0);
-            assert.deepEqual(manifest, { version: 1, assets: ['/_next/static/a.js'] });
+            assert.deepEqual(manifest, { version: 1, assets: ['/_next/static/a.js'], deploymentIds: [] });
         }
     });
 });
@@ -90,7 +90,7 @@ test('a live site that is up but wrong is not tolerated', { timeout: 120_000 }, 
 test('the workflow wires recovery: input, tolerant capture, non-retained smoke, no rollback', () => {
     assert.match(deploy, /workflow_dispatch:\n\s+inputs:[\s\S]*force_recovery:[\s\S]*type: boolean[\s\S]*default: false/);
     assert.match(deploy, /FORCE_RECOVERY: \$\{\{ github\.event_name == 'workflow_dispatch' && inputs\.force_recovery && 'true' \|\| 'false' \}\}/);
-    assert.match(step('Retain previous Next static assets'), /env\.FORCE_RECOVERY != 'true'/);
+    assert.match(step('Retain previous Next static assets'), /steps\.recovery\.outputs\.active != 'true'/);
     const capture = step('Record currently referenced production assets');
     assert.match(capture, /--capture-assets previous-build-assets\.json --tolerate-server-errors/);
     assert.match(capture, /echo "degraded=true" >> "\$GITHUB_OUTPUT"/);
