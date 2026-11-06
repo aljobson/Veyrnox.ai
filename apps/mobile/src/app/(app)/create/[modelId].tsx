@@ -389,7 +389,7 @@ export default function CreateWithModel() {
                         <View style={styles.sectionTop}>
                             <SectionLabel style={styles.sectionLabel}>{t('create.workspace.references')}</SectionLabel>
                             <SectionLabel style={styles.sectionMeta}>{t('create.workspace.referencesMeta')}</SectionLabel>
-                        </View>
+                        </View>{model.id === 'seedance-2.0-reference' ? <Text variant="caption" tone="tertiary" accessibilityRole="text">{t('app.create.referenceLikenessNotice')}</Text> : null}
                         {slots.map((s) => (
                             <SourcePicker
                                 key={s.slot}
@@ -403,7 +403,7 @@ export default function CreateWithModel() {
                                 onBusy={(b) => setSending((x) => ({ ...x, [s.slot]: b }))}
                                 initial={s.slot === 'image' ? startFile : null}
                                 initialReady={references.some(ref => ref.slot === s.slot)}
-                                hint={s.slot === 'image' && model.id === 'seedance-2.0-reference' ? t('app.create.referenceLikenessNotice') : s.slot === 'image' && template?.needs ? t('create.template.needs', { what: template.needs }) : undefined}
+                                hint={s.slot === 'image' && template?.needs ? t('create.template.needs', { what: template.needs }) : undefined}
                             />
                         ))}
                     </View>
