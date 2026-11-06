@@ -4047,6 +4047,8 @@ export default {
   "signIn.failed": "ログインが完了しませんでした。もう一度お試しください。",
   "signIn.idea": "アイデアをシーンに",
   "signIn.kicker": "あなたのクリエイティブスタジオ",
+  "signIn.offer.body": "メール確認後に付与され、90日間有効です。料金は請求前に表示され、失敗した作成は返金されます。",
+  "signIn.offer.title.other": "はじめに{count}クレジットを無料プレゼント",
   "signIn.openPrivacy": "プライバシーポリシーを開く",
   "signIn.openTerms": "利用規約を開く",
   "signIn.photo": "動き出す写真",
@@ -5651,4 +5653,7 @@ export default {
   "create.workspace.rightsNeeded": "上のチェックボックスにチェックして、これらのファイルがあなたのものであるか使用許可があることを確認し、生成をタップしてください。",
   "create.workspace.onlyModel": "現在、これらのファイルに対応する他のモデルはありません。",
   "handoff.switchedModel": "ファイルを追加したため、{model} に切り替えました。",
+  "publishReporting.err.recipients": "有効なメールアドレスを最大10件、カンマまたはスペースで区切って入力してください。スケジュール配信のレポートには1件以上必要です。",
+  "loading.still": "まだ読み込み中です…",
+  "loading.timeout": "想定より時間がかかっています。接続を確認して、もう一度お試しください。",
 } as const;

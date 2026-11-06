@@ -4171,6 +4171,10 @@ export default {
   "signIn.failed": "La connexion n’a pas abouti. Réessayez.",
   "signIn.idea": "Des idées transformées en scènes",
   "signIn.kicker": "VOTRE STUDIO CRÉATIF",
+  "signIn.offer.body": "Ajoutés dès que votre e-mail est confirmé, valables 90 jours. Vous voyez le prix avant tout débit, et une création qui échoue est remboursée.",
+  "signIn.offer.title.many": "{count} crédits offerts pour commencer",
+  "signIn.offer.title.one": "{count} crédit offert pour commencer",
+  "signIn.offer.title.other": "{count} crédits offerts pour commencer",
   "signIn.openPrivacy": "Ouvrir la politique de confidentialité",
   "signIn.openTerms": "Ouvrir les Conditions",
   "signIn.photo": "Des photos qui s’animent",
@@ -5783,4 +5787,7 @@ export default {
   "create.workspace.rightsNeeded": "Cochez la case ci-dessus pour confirmer que ces fichiers vous appartiennent ou que vous avez le droit de les utiliser, puis appuyez sur Générer.",
   "create.workspace.onlyModel": "Aucun autre modèle n'accepte ces fichiers pour le moment.",
   "handoff.switchedModel": "Passage à {model} parce que vous avez ajouté un fichier.",
+  "publishReporting.err.recipients": "Saisissez jusqu'à 10 adresses e-mail valides, séparées par des virgules ou des espaces. Un rapport planifié en nécessite au moins une.",
+  "loading.still": "Chargement en cours…",
+  "loading.timeout": "Cela prend plus de temps que prévu. Vérifiez votre connexion et réessayez.",
 } as const;

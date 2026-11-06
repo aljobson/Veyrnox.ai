@@ -7,6 +7,7 @@ import { useAuth } from '../auth/AuthProvider';
 import { AuthError, resendSignupEmail } from '../lib/auth/supabaseAuth';
 import { emailAuthMessage, validateEmailForm } from '../lib/auth/emailForm';
 import type { TurnstileMessage } from '../lib/auth/turnstile';
+import { SignupOffer } from '../components/SignupOffer';
 import { Button, Text, TextField, AuthProviderButton, SegmentedControl, Icon, themedStyles, useThemedStyles } from '../components/ui';
 import { ds } from '../theme';
 import { t } from '../lib/i18n';
@@ -205,6 +206,7 @@ export default function EmailAuth() {
                 <Button variant="tertiary" icon="arrowLeft" label={t('public.vey.back')} onPress={() => router.back()} />
                 <Text variant="display">{t(mode === 'signIn' ? 'email.signInTitle' : 'email.signUpTitle')}</Text>
                 <Text tone="secondary">{t(mode === 'signIn' ? 'email.signInBody' : 'email.signUpBody')}</Text>
+                {mode === 'signUp' ? <SignupOffer /> : null}
                 <SegmentedControl
                     value={mode}
                     onChange={chooseMode}

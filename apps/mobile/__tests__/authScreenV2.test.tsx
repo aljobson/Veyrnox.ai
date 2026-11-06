@@ -21,6 +21,7 @@ jest.mock('../src/auth/AuthProvider', () => ({
 jest.mock('expo-router', () => ({ Link: ({ children }: any) => children, Redirect: () => null, useRouter: () => ({ replace: mockReplace, push: jest.fn(), back: jest.fn() }) }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0 }) }));
 jest.mock('../src/components/Logo', () => ({ Logo: () => null }));
+jest.mock('../src/components/BrandIntro', () => ({ BrandIntro: () => null }));
 jest.mock('../src/auth/TurnstileView', () => ({
     TurnstileView: (props: object) => require('react').createElement(require('react-native').View, { ...props, testID: 'captcha' }),
 }));
@@ -224,4 +225,23 @@ test('cooldown announces its start and zero, not every second', async () => {
     expect(announce).not.toHaveBeenCalled();
     await waitCooldown(); expect(announce).toHaveBeenCalledWith(translate('email.resendReady'));
     announce.mockRestore();
+});
+
+const offerTitle = () => {
+    const { plural } = require('../src/lib/i18n');
+    const { SIGNUP_FREE_CREDITS } = require('../src/lib/signupOffer');
+    return plural('signIn.offer.title', SIGNUP_FREE_CREDITS);
+};
+const texts = () => root.container.queryAll((n) => n.type === 'Text' || n.type === 'RCTText').map((n) => n.props.children).flat(Infinity);
+test('the sign-in screen opens with the free-credit offer', async () => {
+    await act(async () => root.render(<SignIn />));
+    expect(offerTitle()).toBe('10 free credits to start');
+    expect(texts()).toContain(offerTitle());
+});
+test('the email screen shows the offer for new accounts only', async () => {
+    await act(async () => root.render(<EmailAuth />));
+    expect(texts()).not.toContain(offerTitle());
+    const modes = () => root.container.queryAll((n) => Array.isArray(n.props.options))[0];
+    await act(async () => modes().props.onChange('signUp'));
+    expect(texts()).toContain(offerTitle());
 });

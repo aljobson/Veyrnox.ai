@@ -27,7 +27,11 @@ const writes = fixture => fixture.requests.filter(row => !['GET', 'HEAD', 'OPTIO
 async function open(fixture, page, path, heading) {
   const response = await fixture.open(path);
   expect(response.status(), 'Actual first-party document must render').toBe(200);
-  await expect(path === '/app/enhance' ? page.getByTestId('enhance-title') : path === '/app/library' ? page.getByTestId('library-title') : page.getByRole('heading', { name: heading, exact: true })).toBeVisible();
+  const title = path === '/app/enhance' ? page.getByTestId('enhance-title') : path === '/app/library' ? page.getByTestId('library-title') : page.getByRole('heading', { name: heading, exact: true });
+  // The fixture has consumed streamed segments; prove the final document has
+  // one title before checking that title's visibility.
+  await expect(title).toHaveCount(1);
+  await expect(title).toBeVisible();
 }
 
 test('Dashboard authenticated balance, template pagination and filters remain read-only', async ({ page }) => {
@@ -73,7 +77,7 @@ test('Credits unavailable balance does not invent a number and a reload recovers
   await expect(page.getByRole('alert').filter({ hasText: "We couldn't read your balance" })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Buy credits', exact: true })).toHaveCount(0);
   unavailable = false;
-  await page.reload();
+  await fixture.reload();
   await expect(page.getByRole('button', { name: 'Buy credits', exact: true })).toBeDisabled();
   await expect(page.getByRole('alert').filter({ hasText: "We couldn't read your balance" })).toHaveCount(0);
   expect(writes(fixture)).toEqual([]);
@@ -134,7 +138,7 @@ test('Library empty inventory supports all type/state/favourite filters and reme
   const layouts = page.getByTestId('library-layout');
   await layouts.getByTestId('library-view-list').click();
   await expect(layouts.getByTestId('library-view-list')).toHaveAttribute('aria-pressed', 'true');
-  await page.reload();
+  await fixture.reload();
   await expect(page.getByTestId('library-layout').getByTestId('library-view-list')).toHaveAttribute('aria-pressed', 'true');
   expect(writes(fixture)).toEqual([]);
 });

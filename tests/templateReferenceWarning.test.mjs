@@ -8,9 +8,12 @@ const KEYS = ['app.create.templateReferenceOverrides', 'app.create.templateRefer
 const page = readFileSync('app/veyrnox/app/create/page.js', 'utf8');
 
 test('a template run with a picture attached warns that the picture sets the scene', () => {
-  // Only the selected model's own image slots count, so a video-only or leftover picture never triggers it.
-  assert.match(page, /const templateImageCount = activeTemplate \? Object\.entries\(media\)\.filter\(\(\[, spec\]\) => spec\?\.kind === 'image'\)/);
-  assert.match(page, /templateImageCount > 0 && \(/);
+  // Only the selected model's own image slots count; the linked-template guard keeps
+  // this warning hidden after the user changes models while preserving source editing.
+  assert.match(page, /const templateImageSources = Object\.entries\(media\)/);
+  assert.match(page, /\.filter\(source => !source\?\.needsUpload && \(source\?\.file \|\| source\?\.assetId \|\| source\?\.sourceKey\)\)/);
+  assert.match(page, /const templateImageCount = templateImageSources\.length/);
+  assert.match(page, /activeTemplate && templateImageCount > 0 && \(/);
   assert.match(page, /templateImageRequired \? 'app\.create\.templateReferenceRequired' : 'app\.create\.templateReferenceOverrides'/);
   assert.match(page, /data-testid="template-reference-overrides"/);
 });

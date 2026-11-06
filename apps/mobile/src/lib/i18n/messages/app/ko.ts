@@ -4047,6 +4047,8 @@ export default {
   "signIn.failed": "로그인이 완료되지 않았습니다. 다시 시도하세요.",
   "signIn.idea": "아이디어를 장면으로",
   "signIn.kicker": "나만의 창작 스튜디오",
+  "signIn.offer.body": "이메일 인증 후 지급되며 90일간 유효합니다. 결제 전에 가격을 확인할 수 있고, 실패한 생성은 환불됩니다.",
+  "signIn.offer.title.other": "시작 무료 크레딧 {count}개",
   "signIn.openPrivacy": "개인정보 처리방침 열기",
   "signIn.openTerms": "약관 열기",
   "signIn.photo": "움직이는 사진",
@@ -5651,4 +5653,7 @@ export default {
   "create.workspace.rightsNeeded": "위 체크박스를 선택해 이 파일이 본인 소유이거나 사용 권한이 있음을 확인한 다음 생성을 누르세요.",
   "create.workspace.onlyModel": "지금은 이 파일을 지원하는 다른 모델이 없습니다.",
   "handoff.switchedModel": "파일을 추가해서 {model}(으)로 전환했습니다.",
+  "publishReporting.err.recipients": "유효한 이메일 주소를 최대 10개까지 쉼표나 공백으로 구분해 입력하세요. 예약된 보고서에는 하나 이상 필요합니다.",
+  "loading.still": "아직 불러오는 중…",
+  "loading.timeout": "예상보다 오래 걸리고 있습니다. 연결을 확인하고 다시 시도하세요.",
 } as const;

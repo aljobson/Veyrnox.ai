@@ -19,6 +19,7 @@ import {
     type Usage,
 } from '../../lib/creditHistory';
 import { colors } from '../../theme';
+import { SlowLoader } from '../../components/SlowLoader';
 
 export default function History() {
     const { api } = useAuth();
@@ -29,15 +30,19 @@ export default function History() {
     const [moreFailed, setMoreFailed] = useState(false);
     const [loadingMore, setLoadingMore] = useState(false);
     const busy = useRef(false);
+    const [attempt, setAttempt] = useState(0);
+    const latest = useRef(0);
 
     const load = useCallback(async () => {
+        const mine = ++latest.current;
         setFailed(false);
         try {
             const page = await fetchHistoryPage(api);
+            if (mine !== latest.current) return;
             setEntries([...page.entries]);
             setNext(page.next);
         } catch {
-            setFailed(true);
+            if (mine === latest.current) setFailed(true);
         }
         // The summary is a bonus: a failure there leaves the list alone.
         fetchUsage(api).then(setUsage).catch(() => setUsage(null));
@@ -75,7 +80,7 @@ export default function History() {
                     </Pressable>
                 </View>
             ) : entries === null ? (
-                <ActivityIndicator color={colors.accent} style={styles.pad} />
+                <SlowLoader key={attempt} onRetry={() => { setAttempt((n) => n + 1); void load(); }} />
             ) : (
                 <FlatList
                     data={entries}

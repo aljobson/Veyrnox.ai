@@ -4171,6 +4171,10 @@ export default {
   "signIn.failed": "El inicio de sesión no se completó. Inténtalo de nuevo.",
   "signIn.idea": "Ideas que se convierten en escenas",
   "signIn.kicker": "TU ESTUDIO CREATIVO",
+  "signIn.offer.body": "Se añaden cuando confirmas tu correo y duran 90 días. Ves el precio antes de que se cobre nada, y las creaciones que fallan se reembolsan.",
+  "signIn.offer.title.many": "{count} créditos gratis para empezar",
+  "signIn.offer.title.one": "{count} crédito gratis para empezar",
+  "signIn.offer.title.other": "{count} créditos gratis para empezar",
   "signIn.openPrivacy": "Abrir la Política de privacidad",
   "signIn.openTerms": "Abrir los Términos",
   "signIn.photo": "Fotos que se mueven",
@@ -5783,4 +5787,7 @@ export default {
   "create.workspace.rightsNeeded": "Marca la casilla de arriba para confirmar que estos archivos son tuyos o tienes permiso para usarlos y pulsa Generar.",
   "create.workspace.onlyModel": "Ningún otro modelo acepta estos archivos ahora mismo.",
   "handoff.switchedModel": "Cambiamos a {model} porque añadiste un archivo.",
+  "publishReporting.err.recipients": "Introduce hasta 10 direcciones de correo válidas, separadas por comas o espacios. Un informe programado necesita al menos una.",
+  "loading.still": "Sigue cargando…",
+  "loading.timeout": "Está tardando más de lo esperado. Revisa tu conexión e inténtalo de nuevo.",
 } as const;

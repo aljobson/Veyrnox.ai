@@ -4171,6 +4171,10 @@ export default {
   "signIn.failed": "O login não foi concluído. Tente novamente.",
   "signIn.idea": "Ideias viram cenas",
   "signIn.kicker": "SEU ESTÚDIO CRIATIVO",
+  "signIn.offer.body": "Adicionados quando seu e-mail é confirmado e válidos por 90 dias. Você vê o preço antes de qualquer cobrança, e uma criação que falha é reembolsada.",
+  "signIn.offer.title.many": "{count} créditos grátis para começar",
+  "signIn.offer.title.one": "{count} crédito grátis para começar",
+  "signIn.offer.title.other": "{count} créditos grátis para começar",
   "signIn.openPrivacy": "Abrir a Política de Privacidade",
   "signIn.openTerms": "Abrir os Termos",
   "signIn.photo": "Fotos que se movem",
@@ -5783,4 +5787,7 @@ export default {
   "create.workspace.rightsNeeded": "Marque a caixa acima para confirmar que estes arquivos são seus ou que você tem permissão para usá-los e toque em Gerar.",
   "create.workspace.onlyModel": "Nenhum outro modelo aceita estes arquivos no momento.",
   "handoff.switchedModel": "Mudamos para {model} porque você adicionou um arquivo.",
+  "publishReporting.err.recipients": "Insira até 10 endereços de e-mail válidos, separados por vírgulas ou espaços. Um relatório agendado precisa de pelo menos um.",
+  "loading.still": "Ainda carregando…",
+  "loading.timeout": "Está demorando mais do que o esperado. Verifique sua conexão e tente novamente.",
 } as const;

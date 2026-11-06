@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
 import ts from 'typescript';
 import * as templateDraft from '../app/veyrnox/_lib/templateDraft.js';
+import * as templateMediaHandoff from '../app/veyrnox/_lib/templateMediaHandoff.js';
 import * as landingDraft from '../app/veyrnox/_lib/landingDraft.js';
 import * as tokens from '../app/veyrnox/_lib/tokens.js';
 import * as generationSettings from '../app/veyrnox/_lib/generationSettings.js';
@@ -11,18 +11,27 @@ import * as imageBatch from '../app/veyrnox/_lib/imageBatch.js';
 import * as freeAllowance from '../app/veyrnox/_lib/freeAllowance.js';
 import * as promptBox from '../app/veyrnox/_lib/promptBox.js';
 import * as generateHint from '../app/veyrnox/_lib/generateHint.js';
+import * as chatMedia from '../app/veyrnox/_lib/chatMedia.js';
 import * as generationSlots from '../lib/generationSourceSlots.mjs';
 import * as aspectShapes from '../lib/aspectShapes.mjs';
 import * as templateStart from '../lib/templateStartCheck.js';
 import * as promptLimits from '../lib/generationPromptLimits.js';
 
-const require = createRequire(import.meta.url);
+const jsxRuntime = {
+  Fragment: Symbol('Fragment'),
+  jsx: (type, props, key) => ({ type, key, props: props || {} }),
+  jsxs: (type, props, key) => ({ type, key, props: props || {} }),
+};
 const original = { id: 'kling-2.6-pro-kie', name: 'Kling 2.6 Pro', kind: 'video', modality: 'image-to-video', credits: 17, durations: [5, 10], aspects: ['16:9', '9:16'], takesNegative: true };
 const other = { ...original, id: 'wan-2.5-kie', name: 'Wan 2.5', credits: 31, aspects: ['1:1', '4:5'] };
 const preset = { id: 'exact-template', name: 'Exact template', model: original.name, prompt: 'Exact community prompt with reference images.', sourcePromptOrigin: 'community-source-exact', sourcePromptRunnable: false, aspect: '9:16', durationSeconds: 10, negativePrompt: 'No distortion' };
 const source = readFileSync(new URL('../app/veyrnox/app/create/page.js', import.meta.url), 'utf8');
+assert.match(source, /takeTemplateMediaHandoff\(window, preset\.id, wanted\)/);
+assert.match(source, /previewUrl: URL\.createObjectURL\(file\)/);
 const code = ts.transpileModule(source, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS } }).outputText;
 const HandoffCard = () => null;
+const SourcePickers = () => null;
+const AddFilesDialog = () => null;
 function find(tree, predicate) {
   if (Array.isArray(tree)) return tree.map(node => find(node, predicate)).find(Boolean);
   if (!tree || typeof tree !== 'object') return undefined;
@@ -34,10 +43,12 @@ const prompt = tree => find(tree, node => node.type === 'textarea');
 // The explanation region is always mounted (a polite live region); empty text means there is nothing to fix.
 const why = tree => String(find(tree, node => node.props?.id === 'vx-generate-why')?.props.children ?? '');
 const card = tree => find(tree, node => node.type === HandoffCard);
+const sourcePickers = tree => find(tree, node => node.type === SourcePickers);
+const addFilesDialog = tree => find(tree, node => node.type === AddFilesDialog);
 
 // Execute the real page's hooks/effects and event handlers offline. Only I/O
 // and unrelated child components are stubbed; recipe and submit logic is real.
-function harness(params, { saved, blocked = false, models = [original, other], loading = false } = {}) {
+function harness(params, { saved, handoff, handoffModelId, handoffTemplateId = preset.id, fetchedPreset = preset, blocked = false, models = [original, other], loading = false } = {}) {
   const values = new Map();
   const storage = { getItem: key => values.get(key), setItem: (key, value) => values.set(key, value), removeItem: key => values.delete(key) };
   if (saved) landingDraft.writeStudioDraft(storage, saved);
@@ -46,6 +57,7 @@ function harness(params, { saved, blocked = false, models = [original, other], l
     get sessionStorage() { if (blocked) throw Error('storage blocked'); return storage; },
     addEventListener() {}, removeEventListener() {},
   };
+  if (handoff) templateMediaHandoff.writeTemplateMediaHandoff(globalThis.window, { templateId: handoffTemplateId, modelId: handoffModelId || params.model || original.id, image: handoff });
   const slots = [], effects = [], requests = [];
   let cursor = 0, dirty = true, tree, catalog = { models, loading, live: !loading };
   const changed = (before, after) => !before || !after || before.length !== after.length || before.some((value, index) => !Object.is(value, after[index]));
@@ -71,6 +83,7 @@ function harness(params, { saved, blocked = false, models = [original, other], l
     '../../../../lib/aspectShapes.mjs': aspectShapes,
     '../../../../lib/templateStartCheck': templateStart,
     '../../_lib/templateDraft': templateDraft,
+    '../../_lib/templateMediaHandoff': templateMediaHandoff,
     '../../_lib/landingDraft': landingDraft,
     '../../_lib/tokens': tokens,
     '../../_lib/generationSettings': generationSettings,
@@ -79,8 +92,8 @@ function harness(params, { saved, blocked = false, models = [original, other], l
     '../../_lib/promptBox': promptBox,
     '../../_lib/generateHint': generateHint,
     '../../_lib/useCatalog': { useCatalog: () => catalog },
-    '../../_lib/useTemplates': { fetchTemplate: async () => preset },
-    '../../_lib/useCreateDraftRecovery': { __esModule: true, default: () => ({ restoring: false, blocked: false }) },
+    '../../_lib/useTemplates': { fetchTemplate: async () => fetchedPreset },
+    '../../_lib/useCreateDraftRecovery': { __esModule: true, default: () => ({ restoring: false, blocked: false, sourceEdited() {} }) },
     '../../_lib/useFreeAllowance': { useFreeAllowance: () => ({}) },
     '../../_lib/useStudioJobs': { useStudioJobs: () => ({ jobs: [], generating: false, startJobs() {}, addJob() {} }) },
     '../../_lib/starterModels': { starterModel: () => original, modelsForGoal: models => models },
@@ -89,12 +102,14 @@ function harness(params, { saved, blocked = false, models = [original, other], l
       if (path === '/balance') return { balance: 1000 };
       assert.equal(path, '/generations'); requests.push(JSON.parse(options.body)); return { job_id: 'test-job' };
     }, makeIdempotencyKey: () => 'test-key', notifyBalanceChanged() {}, GatewayError: class extends Error {} },
-    '../../_lib/chatMedia': { mediaGenerationSources: async () => ({ references: [], source_keys: [], source_assets: [] }) },
+    '../../_lib/chatMedia': { ...chatMedia, mediaGenerationSources: async () => ({ references: [], source_keys: [], source_assets: [] }) },
     '../../_lib/veyJourneyStore': { getJourney: () => ({}), trackJourneyJob() {} },
     '../../_components/TemplateHandoffCard': { TemplateHandoffCard: HandoffCard },
+    '../../_components/SourcePickers': { SourcePickers },
+    '../../_components/AddFilesDialog': { AddFilesDialog },
   };
   const output = { exports: {} };
-  new Function('require', 'module', 'exports', code)(id => stubs[id] || (id === 'react/jsx-runtime' ? require(id) : new Proxy({}, { get: () => () => null })), output, output.exports);
+  new Function('require', 'module', 'exports', code)(id => stubs[id] || (id === 'react/jsx-runtime' ? jsxRuntime : new Proxy({}, { get: () => () => null })), output, output.exports);
   return {
     requests,
     async settle() {
@@ -123,6 +138,16 @@ test('Create arrival applies URL recipe and submits original-model attribution o
       assert.equal(control(tree, 'aspect').props.value, model === original ? '9:16' : '4:5');
       assert.equal(card(tree)?.props.preset ?? null, preset); // the template stays on screen on any model
       assert.equal(Boolean(card(tree)?.props.otherModelName), model !== original);
+      assert.deepEqual(card(tree).props.settings, {
+        prompt: preset.prompt,
+        model: model.name,
+        aspect: model === original ? '9:16' : '4:5',
+        duration: `${durationSeconds}s`,
+        cost: `app.create.cost:${JSON.stringify({ count: tokens.clipCredits(model.credits, durationSeconds) })}`,
+        sourceRequired: false,
+        sourceLabel: '',
+      });
+      assert.equal(typeof card(tree).props.onEdit, 'function');
       assert.equal(generate(tree).props.disabled, false);
       await generate(tree).props.onClick();
       assert.equal(h.requests.length, 1);
@@ -167,6 +192,113 @@ test('changing model inside Create keeps personal edits and never reapplies the 
   } finally { h.close(); }
 });
 
+test('the linked template summary follows live prompt, duration and aspect edits', async () => {
+  const h = harness({ model: original.id, duration: '10s' });
+  try {
+    let tree = await h.settle();
+    prompt(tree).props.onChange({ target: { value: 'My adjusted template scene' } });
+    control(tree, 'duration').props.onChange('5s');
+    control(tree, 'aspect').props.onChange('16:9');
+    tree = await h.settle();
+    assert.deepEqual(card(tree).props.settings, {
+      prompt: 'My adjusted template scene',
+      model: original.name,
+      aspect: '16:9',
+      duration: '5s',
+      cost: `app.create.cost:${JSON.stringify({ count: tokens.clipCredits(original.credits, 5) })}`,
+      sourceRequired: false,
+      sourceLabel: '',
+    });
+  } finally { h.close(); }
+});
+
+test('the linked template summary shows the same provider-adjusted duration as its control', async () => {
+  const adjusted = { ...original, presentation: { durationByOption: { 5: 6 } } };
+  const h = harness({ model: original.id, duration: '5s' }, { models: [adjusted, other] });
+  try {
+    const tree = await h.settle();
+    assert.equal(card(tree).props.settings.duration, '6s');
+    assert.match(control(tree, 'duration').props.formatOption('5s'), /6s/);
+  } finally { h.close(); }
+});
+
+test('template summary navigation focuses the visible selected control and safe read-only cards', async () => {
+  const h = harness({ model: original.id });
+  const previousDocument = globalThis.document;
+  try {
+    let focused = '';
+    const hiddenControl = { getClientRects: () => [], focus: () => { focused = 'hidden'; } };
+    const visibleControl = { getClientRects: () => [{}], focus: () => { focused = 'visible'; } };
+    const modelSection = {
+      scrollIntoView() {}, matches: () => false, hasAttribute: () => false,
+      querySelectorAll: selector => selector.startsWith('[aria-pressed') ? [hiddenControl] : [hiddenControl, visibleControl],
+    };
+    const costSection = {
+      scrollIntoView() {}, matches: () => false, hasAttribute: () => false, querySelectorAll: () => [],
+      focus: () => { focused = 'cost'; },
+    };
+    globalThis.document = {
+      querySelector: selector => selector.includes('create.models') ? modelSection : selector.includes('create.cost') ? costSection : null,
+    };
+    const tree = await h.settle();
+    card(tree).props.onEdit('models');
+    assert.equal(focused, 'visible');
+    card(tree).props.onEdit('cost');
+    assert.equal(focused, 'cost');
+    assert.equal(costSection.tabIndex, -1);
+  } finally {
+    globalThis.document = previousDocument;
+    h.close();
+  }
+});
+
+test('template source summary keeps an attached photo editable after changing models', async () => {
+  const photo = Object.assign(new Blob(['photo'], { type: 'image/jpeg' }), { name: 'other-reference.jpg' });
+  const otherWithMedia = { ...other, media: { image: { required: true, maxFiles: 1 } } };
+  const h = harness({ model: other.id }, { models: [original, otherWithMedia] });
+  const previousDocument = globalThis.document;
+  try {
+    let tree = await h.settle();
+    sourcePickers(tree).props.onPick('image', photo, null, 0);
+    tree = await h.settle();
+    assert.equal(card(tree).props.settings.sourceLabel, 'other-reference.jpg');
+
+    let focused = false;
+    const input = {
+      focus() { focused = true; },
+      getClientRects: () => [1],
+    };
+    const uploadSection = {
+      scrollIntoView() {},
+      matches: () => false,
+      querySelectorAll: () => [input],
+      hasAttribute: () => true,
+    };
+    globalThis.document = {
+      querySelector: selector => selector.includes('create.upload') ? uploadSection : null,
+    };
+    card(tree).props.onEdit('upload');
+    tree = await h.settle();
+    assert.equal(focused, true);
+    assert.equal(addFilesDialog(tree), undefined);
+    assert.equal(sourcePickers(tree).props.sources.image.file, photo);
+  } finally {
+    globalThis.document = previousDocument;
+    h.close();
+  }
+});
+
+test('template source summary names an unlabeled attached Library asset', async () => {
+  const withMedia = { ...original, media: { image: { required: true, maxFiles: 1 } } };
+  const h = harness({ model: original.id }, { models: [withMedia] });
+  try {
+    let tree = await h.settle();
+    sourcePickers(tree).props.onPick('image', null, { id: 'asset-1', url: 'https://example.test/image.jpg' }, 0);
+    tree = await h.settle();
+    assert.equal(card(tree).props.settings.sourceLabel, 'app.create.sources.image.label');
+  } finally { h.close(); }
+});
+
 test('Create applies matching personal edits on another model and falls back to saved model without URL model', async () => {
   for (const params of [{ model: other.id }, {}]) {
     const h = harness(params, { saved: { prompt: 'Edited community scene', templateId: preset.id, model: other.id, aspect: '1:1', durationSeconds: 5, negativePrompt: 'No blur' } });
@@ -197,7 +329,7 @@ test('ordinary Create drafts still arrive before the catalog and do not replay w
 });
 
 test('Create still refuses missing required sources, missing consent and prompts over 30,000', async () => {
-  const withMedia = { ...original, media: { image: { kind: 'image', required: true } } };
+  const withMedia = { ...original, media: { image: { required: true, maxFiles: 1 } } };
   for (const saved of [undefined, { prompt: preset.prompt, model: original.id, templateId: preset.id, sources: { image: { assetId: 'test-asset' } }, consent: false }]) {
     const h = harness({ model: original.id }, { models: [withMedia], saved });
     try {
@@ -220,4 +352,65 @@ test('Create still refuses missing required sources, missing consent and prompts
     await generate(tree).props.onClick();
     assert.equal(h.requests.length, 0);
   } finally { h.close(); }
+});
+
+test('a recovered source needing reattachment stays missing and opens Add files from the template summary', async () => {
+  const withMedia = { ...original, media: { image: { required: true, maxFiles: 1 } } };
+  const h = harness({ model: original.id }, { models: [withMedia], saved: {
+    prompt: preset.prompt,
+    model: original.id,
+    templateId: preset.id,
+    sources: { image: { needsUpload: true, label: 'old-reference.jpg' } },
+  } });
+  try {
+    let tree = await h.settle();
+    assert.equal(card(tree).props.settings.sourceLabel, '');
+    card(tree).props.onEdit('upload');
+    tree = await h.settle();
+    assert.ok(addFilesDialog(tree));
+  } finally { h.close(); }
+});
+
+test('Create consumes the one-time template photo into the required source slot', async () => {
+  const photo = Object.assign(new Blob(['photo'], { type: 'image/jpeg' }), { name: 'portrait.jpg' });
+  const withMedia = { ...original, media: { image: { required: true, maxFiles: 1 } } };
+  const h = harness({ model: original.id }, { models: [withMedia], handoff: photo });
+  try {
+    const tree = await h.settle();
+    assert.equal(sourcePickers(tree).props.sources.image.file, photo);
+    assert.match(sourcePickers(tree).props.sources.image.previewUrl, /^blob:/);
+    assert.equal(card(tree).props.settings.sourceLabel, 'portrait.jpg');
+    assert.equal(generate(tree).props.disabled, true, 'the existing rights confirmation still applies');
+    assert.equal(templateMediaHandoff.takeTemplateMediaHandoff(globalThis.window, preset.id, original.id), null);
+  } finally { h.close(); }
+});
+
+test('Create explains when a one-time template photo no longer matches the arriving model', async () => {
+  const photo = Object.assign(new Blob(['photo'], { type: 'image/jpeg' }), { name: 'portrait.jpg' });
+  const withMedia = { ...original, media: { image: { kind: 'image', required: true } } };
+  const h = harness({ model: original.id }, { models: [withMedia, other], handoff: photo, handoffModelId: other.id });
+  try {
+    let tree = await h.settle();
+    assert.equal(sourcePickers(tree).props.sources.image, undefined);
+    assert.ok(find(tree, node => node.type === 'p' && node.props?.children === 'app.create.templatePhotoHandoff'));
+    assert.equal(templateMediaHandoff.hasTemplateMediaHandoff(globalThis.window), false);
+    sourcePickers(tree).props.onPick('image', photo, null, 0);
+    tree = await h.settle();
+    assert.equal(find(tree, node => node.type === 'p' && node.props?.children === 'app.create.templatePhotoHandoff'), undefined);
+  } finally { h.close(); }
+});
+
+test('Create silently clears a one-time photo for another or missing template', async () => {
+  const photo = Object.assign(new Blob(['photo'], { type: 'image/jpeg' }), { name: 'portrait.jpg' });
+  for (const options of [
+    { handoffTemplateId: 'another-template' },
+    { handoffTemplateId: preset.id, fetchedPreset: null },
+  ]) {
+    const h = harness({ model: original.id }, { ...options, handoff: photo });
+    try {
+      const tree = await h.settle();
+      assert.equal(find(tree, node => node.type === 'p' && node.props?.children === 'app.create.templatePhotoHandoff'), undefined);
+      assert.equal(templateMediaHandoff.hasTemplateMediaHandoff(globalThis.window), false);
+    } finally { h.close(); }
+  }
 });

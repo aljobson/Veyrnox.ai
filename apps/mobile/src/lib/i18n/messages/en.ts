@@ -112,6 +112,7 @@ import area_library from './en/library';
 import area_libraryCreate from './en/libraryCreate';
 import area_libraryFiles from './en/libraryFiles';
 import area_libsrc from './en/libsrc';
+import area_loading from './en/loading';
 import area_logo from './en/logo';
 import area_lowBalance from './en/lowBalance';
 import area_mcp from './en/mcp';
@@ -320,6 +321,7 @@ const catalog = {
     ...area_libraryCreate,
     ...area_libraryFiles,
     ...area_libsrc,
+    ...area_loading,
     ...area_logo,
     ...area_lowBalance,
     ...area_mcp,

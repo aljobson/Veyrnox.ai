@@ -25,7 +25,7 @@ function webCatalog(locale: string): Record<string, string> {
     }));
 }
 const refundCodes = ['provider_moderation', 'moderation', 'provider_input_rejected',
-    'provider_submit_failed', 'provider_timeout', 'provider_error', 'internal', 'topic_refused'];
+    'provider_submit_failed', 'provider_timeout', 'provider_error', 'internal', 'topic_refused', 'reference_rejected_likeness'];
 const requiredCodes = [
     'model_gated', 'model_region_unavailable', 'account_frozen', 'account_on_hold',
     'user_not_provisioned', 'debit_rejected', ...refundCodes,

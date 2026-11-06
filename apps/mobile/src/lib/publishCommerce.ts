@@ -1,5 +1,6 @@
 import { buildOptions, emptyOptions, optionsFromKeep, toCents, utf8Bytes, MAX_BODY_BYTES, type OptionsForm, type VariantOut, type DiscountOut } from './publishCommerceOptions';
 import { formatCurrency } from './i18n';
+import { httpsAddress } from './httpsAddress';
 import { ApiError, type ApiClient } from './api';
 
 // ADR-0186/0229: the brand product catalogue. Text is third-party-editable: plain and bounded;
@@ -207,7 +208,7 @@ export function buildProductBody(f: ProductForm): { body: ProductBody } | { erro
     if (stock < 0 || stock > 100000000) return { errorKey: 'commerce.err.stock' };
     const url = f.productUrl.trim();
     const image = f.imageUrl.trim();
-    if ((url && !https(url)) || (image && !https(image))) return { errorKey: 'commerce.err.url' };
+    if ((url && !httpsAddress(url)) || (image && !httpsAddress(image))) return { errorKey: 'commerce.err.url' };
     if (!f.keep) return { errorKey: 'commerce.err.optionsUnreadable' };
     const options = buildOptions(f.options);
     if ('errorKey' in options) return options;

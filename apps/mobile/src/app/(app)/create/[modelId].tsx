@@ -403,7 +403,7 @@ export default function CreateWithModel() {
                                 onBusy={(b) => setSending((x) => ({ ...x, [s.slot]: b }))}
                                 initial={s.slot === 'image' ? startFile : null}
                                 initialReady={references.some(ref => ref.slot === s.slot)}
-                                hint={s.slot === 'image' && template?.needs ? t('create.template.needs', { what: template.needs }) : undefined}
+                                hint={s.slot === 'image' && model.id === 'seedance-2.0-reference' ? t('app.create.referenceLikenessNotice') : s.slot === 'image' && template?.needs ? t('create.template.needs', { what: template.needs }) : undefined}
                             />
                         ))}
                     </View>
@@ -413,7 +413,7 @@ export default function CreateWithModel() {
                     <View style={styles.section}>
                         <View style={styles.sectionTop}>
                             <SectionLabel style={styles.sectionLabel}>{text_.key === 'topic' ? t('form.topic') : t('create.workspace.prompt')}</SectionLabel>
-                            <Text variant="footnote" tone="secondary">{prompt.length}/{text_.max}</Text>
+                            <Text variant="footnote" tone="secondary">{text.length}/{text_.max}</Text>
                         </View>
                         <TextField
                             style={[styles.prompt, text_.key === 'topic' && styles.topic]}
@@ -465,6 +465,7 @@ export default function CreateWithModel() {
                     </View>
                 ) : null}
                 {error ? <Text variant="body" tone="danger" style={styles.error} accessibilityLiveRegion="polite">{error}</Text> : null}
+                {error && matchingRetry && !disabled ? <Button variant="secondary" accessibilityRole="button" label={t('recovery.retry')} onPress={() => void generate()} /> : null}
                 {note ? <Text variant="caption" tone="tertiary" style={styles.consent} accessibilityLiveRegion="polite">{note}</Text> : null}
                 {!complete && results ? <><Text variant="caption">{t('libraryCreate.retryUpTo', { credits: String(price) })}</Text><Button variant="secondary" label={t('libraryCreate.newGeneration')} accessibilityLabel={t('libraryCreate.newNoCharge')} disabled={busy} onPress={newGeneration} /></> : null}
                 <Card style={styles.costCard}>

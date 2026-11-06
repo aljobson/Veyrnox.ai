@@ -56,7 +56,10 @@ export default function ReportEdit() {
     const mode = scheduleMode(template, state ?? { scheduledReportsEnabled: false, reportDeliveryEnabled: false });
     const canEdit = !!state && canEditReports(state.brandRole);
     const disabled = busy || !canEdit || mode.readOnly;
-    const change = <K extends keyof ReportForm>(key: K, value: ReportForm[K]) => setForm(f => ({ ...f, [key]: value }));
+    const change = <K extends keyof ReportForm>(key: K, value: ReportForm[K]) => {
+        setError(null);
+        setForm(f => ({ ...f, [key]: value }));
+    };
     async function submit(body: ReportBody, version: number) {
         if (version !== generation.current) return;
         setBusy(true); setError(null);
@@ -87,6 +90,7 @@ export default function ReportEdit() {
         } else { pending.current = true; void submit(body, version); }
     }
     const title = id ? t('publishReporting.editReport') : t('publishReporting.new');
+    const normalizedAccent = form.accentColor.trim().toLowerCase();
     if (!state || (id && !template)) return <View style={styles.screen}><Stack.Screen options={{ title }} />
         {error ? <Text style={styles.muted}>{error}</Text> : <ActivityIndicator color={colors.accent} />}</View>;
     return <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -103,9 +107,9 @@ export default function ReportEdit() {
             </View>
             <Text style={styles.title} accessibilityRole="header">{t('publishReporting.period')}</Text>
             <View style={styles.row}>{[7, 30, 90, 365].map(days => <Choice key={days} label={t('analytics.range', { days })} selected={form.rangeDays === days} disabled={disabled} onPress={() => change('rangeDays', days)} />)}</View>
-            <Field label={t('publishReporting.accent')} value={form.accentColor} onChangeText={v => change('accentColor', v)} disabled={disabled} maxLength={7} />
-            {!/^#[0-9a-f]{6}$/i.test(form.accentColor) ? <Text style={styles.muted}>{t('publishReporting.err.accent')}</Text> : null}
-            <View style={styles.row}>{Object.entries(swatches).map(([color, key]) => <Choice key={color} color={color} label={t(key)} selected={form.accentColor.toLowerCase() === color} disabled={disabled} onPress={() => change('accentColor', color)} />)}</View>
+            <Field label={t('publishReporting.accent')} value={form.accentColor} onChangeText={v => change('accentColor', v)} disabled={disabled} maxLength={16} />
+            {!/^#[0-9a-f]{6}$/i.test(normalizedAccent) ? <Text style={styles.muted}>{t('publishReporting.err.accent')}</Text> : null}
+            <View style={styles.row}>{Object.entries(swatches).map(([color, key]) => <Choice key={color} color={color} label={t(key)} selected={normalizedAccent === color} disabled={disabled} onPress={() => change('accentColor', color)} />)}</View>
             <View style={styles.toggle}><Text style={styles.text}>{t('analytics.compare')}</Text><Switch accessibilityLabel={t('analytics.compare')} accessibilityState={{ checked: form.comparePrevious, disabled }} value={form.comparePrevious} disabled={disabled} onValueChange={v => change('comparePrevious', v)} /></View>
             <View style={styles.toggle}><Text style={styles.text}>{t('publishReporting.includeContent')}</Text><Switch accessibilityLabel={t('publishReporting.includeContent')} accessibilityState={{ checked: form.includeContent, disabled }} value={form.includeContent} disabled={disabled} onValueChange={v => change('includeContent', v)} /></View>
             <Text style={styles.title} accessibilityRole="header">{t('publishReporting.schedule')}</Text>
