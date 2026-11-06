@@ -112,6 +112,47 @@ test('editing the prompt after zero jobs start submits the new prompt with a fre
     expect(mockPost.mock.calls.map(([request]) => request.inputs.prompt)).toEqual(['words', 'new prompt']);
     expect(mockPost.mock.calls[1][0].idempotency_key).not.toBe(mockPost.mock.calls[0][0].idempotency_key);
 });
+test('QA-E3: a failed Generate shows Try again beside the error and repeats the same request and key', async () => {
+    mockPost.mockRejectedValueOnce(new ApiError(500, 'server_error'));
+    await render(); await click(generate());
+    expect(controls(t('recovery.retry'))).toHaveLength(1);
+    await click(controls(t('recovery.retry'))[0]);
+    expect(mockPost).toHaveBeenCalledTimes(2);
+    expect(mockPost.mock.calls[1][0].inputs.prompt).toBe('words');
+    expect(mockPost.mock.calls[1][0].idempotency_key).toBe(mockPost.mock.calls[0][0].idempotency_key);
+    expect(controls(t('recovery.retry'))).toHaveLength(0);
+    expect(controls(t('publishReporting.open'))).toHaveLength(1);
+});
+test('Try again is not offered while there is no error', async () => {
+    await render();
+    expect(controls(t('recovery.retry'))).toHaveLength(0);
+});
+const promptField = () => root.container.queryAll(node => node.props.accessibilityLabel === t('mobile.prompt'))[0];
+test('QA-4: a pasted prompt over 30000 characters is refused with a message and Generate stays disabled; no request is sent', async () => {
+    await render();
+    await act(async () => promptField().props.onChangeText('a'.repeat(30_001)));
+    expect(promptField().props.maxLength).toBeUndefined();
+    expect(text('30001/30000')).toHaveLength(1);
+    expect(text(t('public.TemplateRecipe.productPromptTooLong', { count: 30_001, max: 30_000 }))).toHaveLength(1);
+    expect(generate().props.accessibilityState.disabled).toBe(true);
+    await click(generate()); expect(mockPost).not.toHaveBeenCalled();
+});
+test('QA-4: exactly 30000 characters is accepted, and trimming whitespace brings a padded paste back under the limit', async () => {
+    await render();
+    await act(async () => promptField().props.onChangeText('a'.repeat(30_000)));
+    expect(generate().props.accessibilityState.disabled).toBe(false);
+    await act(async () => promptField().props.onChangeText(`  ${'b'.repeat(30_000)}  \n`));
+    expect(generate().props.accessibilityState.disabled).toBe(false);
+    await click(generate()); expect(mockPost).toHaveBeenCalledTimes(1);
+    expect(mockPost.mock.calls[0][0].inputs.prompt).toHaveLength(30_000);
+});
+test('QA-4: shortening an over-long prompt re-enables Generate', async () => {
+    await render();
+    await act(async () => promptField().props.onChangeText('a'.repeat(40_000)));
+    expect(generate().props.accessibilityState.disabled).toBe(true);
+    await act(async () => promptField().props.onChangeText('a'.repeat(100)));
+    expect(generate().props.accessibilityState.disabled).toBe(false);
+});
 test('New generation is disabled during a partial retry; account switch drops late accepted jobs', async () => {
     mockPost.mockResolvedValueOnce({ job_id: 'one' }).mockRejectedValueOnce(new ApiError(0, 'network'));
     await render(); await count(2); await click(generate());

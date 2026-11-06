@@ -5651,4 +5651,6 @@ export default {
   "create.workspace.rightsNeeded": "请勾选上方的复选框，确认这些文件归你所有或你有权使用，然后点击生成。",
   "create.workspace.onlyModel": "目前没有其他模型支持这些文件。",
   "handoff.switchedModel": "因为你添加了文件，已切换到 {model}。",
+  "loading.still": "仍在加载…",
+  "loading.timeout": "耗时比预期更长。请检查网络连接后重试。",
 } as const;
