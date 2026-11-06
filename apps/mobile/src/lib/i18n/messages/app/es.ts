@@ -5780,4 +5780,7 @@ export default {
   "credits.hardPaywall.back": "Atrás",
   "credits.hardPaywall.trialTerms": "Gratis durante {days} días; después, {price} por {interval}. Cancela antes de que termine la prueba y no pagas nada.",
   "credits.hardPaywall.buyTrial": "Empezar prueba gratuita de {days} días",
+  "create.workspace.rightsNeeded": "Marca la casilla de arriba para confirmar que estos archivos son tuyos o tienes permiso para usarlos y pulsa Generar.",
+  "create.workspace.onlyModel": "Ningún otro modelo acepta estos archivos ahora mismo.",
+  "handoff.switchedModel": "Cambiamos a {model} porque añadiste un archivo.",
 } as const;

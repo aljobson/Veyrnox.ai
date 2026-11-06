@@ -91,7 +91,13 @@ export function normalizeTemplateCarry(carry: Readonly<Record<string, string>>, 
     return { ...carry, ...((carry.tpl || carry.tid) ? { tmodel: carry.tmodel || modelId } : {}) };
 }
 
+// The template's name, picture and shape stay on screen on every model (QA-001/003). Only its server-side identity
+// (the preset id sent with Generate) belongs to the model it was made for.
 export function activeTemplate(params: Params, modelId: string, posterHosts: readonly string[]): TemplateInfo | null {
-    const origin = one(params.tmodel) ?? modelId;
-    return origin === modelId ? readTemplate(params, posterHosts) : null;
+    return readTemplate(params, posterHosts);
+}
+
+// True while the form is on the model the template was made for.
+export function templateOnOriginalModel(params: Params, modelId: string): boolean {
+    return (one(params.tmodel) ?? modelId) === modelId;
 }

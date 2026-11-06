@@ -147,7 +147,8 @@ test.each([false, true])('P1 rendered model change carries duration, aspect, tem
     expect(readCreativeSourceHandoff(href.params.sourceHandoff, href.params.recipe, next.id)?.references).toEqual(refs);
     mockParams = href.params; await render();
     expect(input().props.value).toBe('A quiet original scene');
-    expect(root.container.queryAll(n => n.children.includes(t('create.template.label')))).toHaveLength(0);
+    // QA-001: the template card stays on screen after a manual model change.
+    expect(root.container.queryAll(n => n.children.includes(t('create.template.label'))).length).toBeGreaterThan(0);
     expect(unavailable()).toHaveLength(0);
     expect(jest.mocked(SourcePicker).mock.calls.at(-1)?.[0].references).toEqual(refs);
 });
@@ -191,7 +192,7 @@ test('Create derives banner and submitted preset across a legacy arrival and A â
             await render();
         }
         const original = target.id === video.id;
-        expect(root.container.queryAll(n => n.children.includes(t('create.template.label'))).length > 0).toBe(original);
+        expect(root.container.queryAll(n => n.children.includes(t('create.template.label'))).length > 0).toBe(true);
         const generate = root.container.queryAll(n => typeof n.props.accessibilityLabel === 'string' && n.props.accessibilityLabel.startsWith(t('slip.generate')+'.'))[0];
         await act(async () => generate.props.onClick(event));
         expect(mockRun.mock.calls.at(-1)?.[1]).toMatchObject({ modelId: target.id, prompt: 'A quiet original scene', durationSeconds: 10 });
@@ -199,4 +200,30 @@ test('Create derives banner and submitted preset across a legacy arrival and A â
         const another = root.container.queryAll(n => n.props.accessibilityLabel === t('libraryCreate.newNoCharge'))[0];
         await act(async () => another.props.onClick(event));
     }
+});
+
+test('QA-003: an automatic model switch keeps the template card and says why', async () => {
+    const other = { ...video, id: 'image-edit', name: 'Image Edit' };
+    jest.mocked(fetchCatalog).mockResolvedValue([video, other]);
+    const template = { tid: 'paper', ...templateParams({ title: 'Paper', needs: null, posterUrl: null }) };
+    mockParams = { ...mockParams, ...template, modelId: other.id, tmodel: video.id, switched: '1' };
+    await render();
+    expect(root.container.queryAll(n => n.children.includes(t('create.template.label'))).length).toBeGreaterThan(0);
+    expect(root.container.queryAll(n => n.children.includes(t('handoff.switchedModel', { model: 'Image Edit' }))).length).toBeGreaterThan(0);
+    const generate = root.container.queryAll(n => typeof n.props.accessibilityLabel === 'string' && n.props.accessibilityLabel.startsWith(t('slip.generate') + '.'))[0];
+    mockRun.mockImplementation(async () => undefined);
+    await act(async () => generate.props.onClick(event));
+    expect(mockRun.mock.calls.at(-1)?.[1].preset).toBeUndefined();
+});
+
+test('QA-005 / QA-007: with a reference and no rights tick, a line says why Generate is off; a lone model says why there is no Change model', async () => {
+    jest.mocked(fetchCatalog).mockResolvedValue([video]);
+    handoff({ references: [{ slot: 'image', origin: 'asset', asset_id: 'ref-1' }], rightsConfirmed: false });
+    await render();
+    const text = (key: string) => root.container.queryAll(n => n.children.includes(t(key))).length;
+    expect(text('create.workspace.rightsNeeded')).toBeGreaterThan(0);
+    expect(text('create.workspace.onlyModel')).toBeGreaterThan(0);
+    const ticks = root.container.queryAll(n => n.props.accessibilityRole === 'checkbox');
+    await act(async () => ticks[0].props.onClick(event));
+    expect(text('create.workspace.rightsNeeded')).toBe(0);
 });

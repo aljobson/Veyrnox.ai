@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
-import { StyleSheet, type ColorValue } from 'react-native';
+import { StyleSheet, View, type ColorValue } from 'react-native';
+import { useMenuOpen } from '../../../lib/menuOpen';
 import { HeaderRight } from '../../../components/HeaderChips';
 import { Logo } from '../../../components/Logo';
 import { MenuButton } from '../../../components/MenuDrawer';
@@ -32,7 +33,10 @@ function tabIcon(name: MenuIcon) {
 export default function TabsLayout() {
     const { settings, scheme } = useAppearance();
     const palette = paletteForScheme(scheme, settings);
+    // While the side menu is open the screens behind it are hidden from screen readers (QA-A1).
+    const menuOpen = useMenuOpen();
     return (
+        <View style={styles.fill} importantForAccessibility={menuOpen ? 'no-hide-descendants' : 'auto'} accessibilityElementsHidden={menuOpen}>
         <Tabs
             screenOptions={({ route }) => {
                 return {
@@ -73,7 +77,10 @@ export default function TabsLayout() {
                 options={{ tabBarIcon: tabIcon('send'), title: t('tabs.publish'), tabBarLabel: tabLabel('tabs.publish'), tabBarAccessibilityLabel: t('tabs.publish') }}
             />
         </Tabs>
+        </View>
     );
 }
+
+const styles = StyleSheet.create({ fill: { flex: 1 } });
 
 export const unstable_settings = { anchor: 'index' };

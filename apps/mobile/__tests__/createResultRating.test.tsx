@@ -1,11 +1,13 @@
 import { act } from 'react';
+import { View } from 'react-native';
 import { createRoot } from 'test-renderer';
 import { CreateResult } from '../src/components/create/CreateResult';
 
+void View;
 const mockRouter = { push: jest.fn() };
 let mockAsked: { asked: true; at: string } | null = null;
 jest.mock('expo-router', () => ({ useRouter: () => mockRouter, useFocusEffect: (cb: any) => require('react').useEffect(cb, [cb]) }));
-jest.mock('expo-image', () => ({ Image: () => null }));
+jest.mock('expo-image', () => ({ Image: (props: object) => require('react').createElement(require('react-native').View, props) }));
 jest.mock('../src/components/InlineMedia', () => ({ InlineMedia: () => null }));
 jest.mock('../src/components/library/GeneratedChip', () => ({ GeneratedChip: () => null }));
 jest.mock('../src/lib/createResult', () => ({
@@ -25,14 +27,26 @@ beforeEach(() => {
     require('../src/lib/reviewAsk').resetReviewAskClaim();
 });
 
-test('the first finished result on Create asks for a rating after the celebration', async () => {
+test('QA-006: a finished result on Create does not ask for a rating; opening it hands the job screen the first-win flag', async () => {
     mockAsked = null;
-    await act(async () => { createRoot().render(<CreateResult api={{} as never} batch={batch} catalog={[]} onTerminal={() => {}} />); });
-    expect(mockRouter.push).toHaveBeenCalledWith('/rate');
+    const root = createRoot();
+    await act(async () => { root.render(<CreateResult api={{} as never} batch={batch} catalog={[]} onTerminal={() => {}} />); });
+    expect(mockRouter.push).not.toHaveBeenCalled();
+    const open = root.container.queryAll(n => n.props.accessibilityRole === 'button' && typeof n.props.onClick === 'function')[0];
+    await act(async () => open.props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }));
+    expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/job/[id]', params: { id: batch.ids[0], fromCreate: '1' } });
 });
 
 test('a phone that was already asked is not asked again', async () => {
     mockAsked = { asked: true, at: '2026-10-30T00:00:00Z' };
     await act(async () => { createRoot().render(<CreateResult api={{} as never} batch={batch} catalog={[]} onTerminal={() => {}} />); });
     expect(mockRouter.push).not.toHaveBeenCalled();
+});
+
+test('QA-A2: the inline generated image is an image named "Your creation"', async () => {
+    mockAsked = null;
+    const root = createRoot();
+    await act(async () => { root.render(<CreateResult api={{} as never} batch={batch} catalog={[]} onTerminal={() => {}} />); });
+    const named = root.container.queryAll(n => n.props.accessibilityRole === 'image' && n.props.accessibilityLabel === 'Your creation');
+    expect(named.length).toBeGreaterThan(0);
 });

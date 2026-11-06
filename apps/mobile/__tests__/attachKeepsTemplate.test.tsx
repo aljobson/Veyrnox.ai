@@ -14,7 +14,7 @@ jest.mock('expo-document-picker', () => ({ getDocumentAsync: jest.fn() }));
 jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalog: jest.fn(async () => []) }));
 jest.mock('../src/lib/attachModel', () => ({ planAttachments: jest.fn((_all: unknown, current: { id: string }, picked: { kind: string }[]) => ({ model: current, assignments: picked.map((item) => ({ slot: 'image', item })), unused: [] })) }));
 jest.mock('../src/lib/sources', () => ({ ...jest.requireActual('../src/lib/sources'), checkPicked: () => ({ ok: true, contentType: 'image/jpeg' }) }));
-jest.mock('../src/lib/uploads', () => ({ uploadSource: jest.fn(async () => 'upload-1'), uploadMessage: () => 'failed' }));
+jest.mock('../src/lib/uploads', () => ({ uploadSource: jest.fn(async () => 'upload-1'), uploadMessage: () => 'failed', isConsentDeclined: (err: { code?: string }) => err?.code === 'consent_declined' }));
 jest.mock('../src/lib/creativeSourceHandoff', () => ({ stageCreativeSourceHandoff: jest.fn(() => 'handoff-1') }));
 
 let root: Root;
@@ -58,4 +58,24 @@ test.each([false, true])('P2: device attachment merges prior references and carr
     expect(stageCreativeSourceHandoff.mock.calls.at(-1)[0]).toMatchObject({ recipe: 'faceless-reel', followup: 'generated-sound',
         settings: { cameraOn: true, characterOn: true, opts: { count: 3, seed: '41', negative: 'rain' } },
         references: [{ slot: 'image', origin: 'asset', asset_id: 'old' }, { slot: 'image', origin: 'upload', key: 'upload-1' }] });
+});
+
+test('QA-002: declining the AI-sharing question shows no upload error and leaves attaching usable', async () => {
+    const { uploadSource } = require('../src/lib/uploads');
+    uploadSource.mockRejectedValueOnce({ code: 'consent_declined' });
+    await act(async () => root.render(<AttachFromDevice api={{} as any} current={{ id: 'model-a' } as any} />));
+    await press();
+    expect(mockReplace).not.toHaveBeenCalled();
+    expect(root.container.queryAll(n => n.children.includes('failed'))).toHaveLength(0);
+    const buttons = root.container.queryAll((n) => n.props.accessibilityRole === 'button' && typeof n.props.onClick === 'function');
+    expect(buttons.length).toBeGreaterThan(0);
+    expect(buttons.every(b => b.props.accessibilityState?.disabled !== true)).toBe(true);
+});
+
+test('a real upload failure still shows the error', async () => {
+    const { uploadSource } = require('../src/lib/uploads');
+    uploadSource.mockRejectedValueOnce({ code: 'upload_failed' });
+    await act(async () => root.render(<AttachFromDevice api={{} as any} current={{ id: 'model-a' } as any} />));
+    await press();
+    expect(root.container.queryAll(n => n.children.includes('failed')).length).toBeGreaterThan(0);
 });

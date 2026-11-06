@@ -17,10 +17,14 @@ test('a runnable template opens Create with its prompt', { tags: ['templates', '
   await app.screenshot('template-opened-in-create');
 });
 
-test('copy-only templates are not offered in the app', { tags: ['templates'] }, async ({ app, device, screen }) => {
+// ADR 0325 / PR #1924: a template whose original community prompt is not a runnable recipe is still offered, with the
+// exact community prompt shown, a Copy button and Use template.
+test('copy-only templates are runnable with the exact community prompt', { tags: ['templates'] }, async ({ app, device, screen }) => {
   await openSignedIn(app, screen);
   await device.openLink('ai.veyrnox.app://templates/mock-copy-only');
-  await expect(screen.getByText('That template is not available right now.')).toBeVisible({ timeout: 30_000 });
-  await expect(screen.getByRole('button', 'Use template')).not.toBeVisible();
-  await app.screenshot('copy-only-template-hidden');
+  await expect(screen.getByText('Copy Only Dance')).toBeVisible({ timeout: 30_000 });
+  await expect(screen.getByText('EXACT COMMUNITY PROMPT')).toBeVisible();
+  await expect(screen.getByRole('button', { name: /^Copy/ })).toBeVisible();
+  await expect(screen.getByRole('button', 'Use template')).toBeVisible();
+  await app.screenshot('copy-only-template-runnable');
 });

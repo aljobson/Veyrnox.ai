@@ -49,12 +49,12 @@ export function acceptedReferences(model: CatalogModel, refs: readonly Generatio
     return { references: result, adjusted: moved + uniqueReferences(refs).length - result.length };
 }
 export function createHandoff(model: CatalogModel, carry: Readonly<Record<string, string>>, settings: FormSnapshot | undefined,
-    refs: readonly GenerationReference[], previous?: Partial<CreativeSourceHandoff>, skipped = 0) {
+    refs: readonly GenerationReference[], previous?: Partial<CreativeSourceHandoff>, skipped = 0, switched = false) {
     const accepted = acceptedReferences(model, refs);
     const recipe = carry.recipe || previous?.recipe || 'attach';
     const sourceHandoff = stageCreativeSourceHandoff({ ...previous, recipe, modelId: model.id, uploaded: {}, fromLibrary: {},
         references: accepted.references, settings: settings ? acceptedSettings(model, settings) : undefined,
         adjusted: accepted.adjusted + skipped, followup: previous?.followup ?? (carry.followup === 'generated-sound' ? carry.followup : undefined) });
-    return { pathname: '/create/[modelId]' as const, params: { ...normalizeTemplateCarry(carry, carry.modelId || previous?.modelId || model.id), modelId: model.id, recipe, sourceHandoff } };
+    return { pathname: '/create/[modelId]' as const, params: { ...normalizeTemplateCarry(carry, carry.modelId || previous?.modelId || model.id), modelId: model.id, recipe, sourceHandoff, ...(switched ? { switched: '1' } : {}) } };
 }
 export const skillPromptHref = (skill: string, prompt: string, modelId: string) => ({ pathname: '/chat/skills' as const, params: { skill, prompt, modelId } });

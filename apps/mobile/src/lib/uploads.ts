@@ -51,6 +51,9 @@ export async function uploadSource(
     return grant.key;
 }
 
+// Saying "Not now" to the AI-sharing question is a choice, not a failure: screens show no error for it.
+export const isConsentDeclined = (err: unknown): boolean => err instanceof ApiError && err.code === 'consent_declined';
+
 export function uploadMessage(err: unknown): string {
     if (!(err instanceof ApiError)) return t('uploads.couldnotuploadthatfileTryagain');
     switch (err.code) {

@@ -13,7 +13,7 @@ import { LibraryChooser } from './LibraryChooser';
 import { t, plural } from '../lib/i18n';
 import type { LibraryChoice } from '../lib/librarySource';
 import { checkPicked, pickedProblem, type PickedFile, type Slot, type GenerationReference } from '../lib/sources';
-import { uploadMessage, uploadSource } from '../lib/uploads';
+import { uploadMessage, isConsentDeclined, uploadSource } from '../lib/uploads';
 import { ds } from '../theme';
 
 interface SourcePickerProps {
@@ -193,7 +193,7 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
             setStatus({ step: 'empty' });
             setPreview(null);
             releaseOwned();
-            setError(uploadMessage(err));
+            setError(isConsentDeclined(err) ? null : uploadMessage(err));
         }
     }
 

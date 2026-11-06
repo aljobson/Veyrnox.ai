@@ -5648,4 +5648,7 @@ export default {
   "credits.hardPaywall.back": "戻る",
   "credits.hardPaywall.trialTerms": "{days} 日間無料、その後は {interval}ごとに {price}。トライアル終了前に解約すればお支払いは不要です。",
   "credits.hardPaywall.buyTrial": "{days} 日間の無料トライアルを開始",
+  "create.workspace.rightsNeeded": "上のチェックボックスにチェックして、これらのファイルがあなたのものであるか使用許可があることを確認し、生成をタップしてください。",
+  "create.workspace.onlyModel": "現在、これらのファイルに対応する他のモデルはありません。",
+  "handoff.switchedModel": "ファイルを追加したため、{model} に切り替えました。",
 } as const;
