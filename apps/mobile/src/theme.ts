@@ -234,7 +234,7 @@ export const ds = {
     space: { xxs: 2, xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24, xxxl: 32, huge: 40, hero: 56, gutter: 20 },
     radius: { xs: 6, sm: 10, md: 14, lg: 20, xl: 28, pill: 999 },
     elevation: { light: { e1: '0 1px 2px rgba(0,0,0,.06)', e2: '0 4px 12px rgba(0,0,0,.08), 0 1px 3px rgba(0,0,0,.06)' }, dark: { e1: 'none', e2: 'none' } },
-    motion: { press: 120, state: 200, enter: 280, sheet: 360, pressScale: 0.98 },
+    motion: { press: 120, state: 200, enter: 280, sheet: 360, pressScale: 0.97 },
 } as const;
 export const TEXT_SCALE = { s: 0.9, m: 1, l: 1.12, xl: 1.25 } as const;
 export const RAMP = {

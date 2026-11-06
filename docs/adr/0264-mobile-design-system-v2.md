@@ -68,7 +68,7 @@ Text size multiplies sizes and line heights by S=0.9, M=1, L=1.12, XL=1.25; OS s
 
 Font-weight clarification: the supplied Editorial font has only weight 400; its display text therefore uses 400. Technical title2 uses the explicitly supplied 500 rather than synthesizing an unavailable 600; Studio loads the existing Archivo 600 asset for title2. These are explicit deviations from the generic title2 semibold description. No v2 component uses weight 800/900; Archivo 800 remains available to the existing wordmark.
 
-`ds.space` is 2/4/8/12/16/20/24/32/40/56, gutter 20; radii are 6/10/14/20/28/999. Elevation is light-only: e1 `0 1px 2px rgba(0,0,0,.06)` and e2 `0 4px 12px rgba(0,0,0,.08), 0 1px 3px rgba(0,0,0,.06)`. Dark and OLED have no shadow. Motion durations are 120/200/280/360ms, with a 0.98 spring press scale. Reduced motion disables press scaling and confetti and keeps Vey in a still cheer pose. Buttons have 52/44/32 point minimum heights; the small visual button adds hit slop to reach 44 points.
+`ds.space` is 2/4/8/12/16/20/24/32/40/56, gutter 20; radii are 6/10/14/20/28/999. Elevation is light-only: e1 `0 1px 2px rgba(0,0,0,.06)` and e2 `0 4px 12px rgba(0,0,0,.08), 0 1px 3px rgba(0,0,0,.06)`. Dark and OLED have no shadow. Motion durations are 120/200/280/360ms, with a 0.97 spring press scale. Reduced motion disables press scaling and confetti and keeps Vey in a still cheer pose. Buttons have 52/44/32 point minimum heights; the small visual button adds hit slop to reach 44 points.
 
 ## Appearance persistence and transitions
 
