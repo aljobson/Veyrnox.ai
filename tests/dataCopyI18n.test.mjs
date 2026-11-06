@@ -158,7 +158,7 @@ test('Syntx recipe SSR hands its exact prompt to Create even when references can
     './UseTemplate': { UseTemplate: ({ preset: actual, prompt, generationBlocked }) => {
       assert.equal(actual.prompt, exactPrompt);
       assert.equal(prompt, exactPrompt);
-      assert.equal(generationBlocked, undefined);
+      assert.equal(generationBlocked, true, 'its exact prompt needs a source video Veyrnox cannot supply: inspiration only');
       return React.createElement('div', { 'data-use-template': actual.id });
     } },
   } });

@@ -35,6 +35,7 @@ import { oddlingPortrait, buildOddlingAnimationPrompt } from '../../_lib/oddling
 import { fetchTemplate } from '../../_lib/useTemplates';
 import { resolveTemplateDraft, draftForTemplate, templateArrival, createPromptModelAvailable } from '../../_lib/templateDraft';
 import { templateStartIdFor } from '../../../../lib/templateStartCheck';
+import { templateSourceUnsupported } from '../../_lib/templateSourceBlock';
 import { nearestOption } from '../../../../lib/aspectShapes.mjs';
 import { DEFAULT_CINEMA, buildCinemaPrompt } from '../../_lib/cinema';
 import { CameraPanel } from '../../_components/CameraPanel';
@@ -298,6 +299,8 @@ export default function CreateStudio() {
   const keptTemplate = !activeTemplate && presetParam && templateData?.id === presetParam ? templateData : null;
   const keptTemplateModel = keptTemplate ? models.find((m) => m.id === modelIdForName(keptTemplate.model)) : null;
   const prompt = promptText(typed, model); // a starter shot until then, on picture and clip models only (see promptBox)
+  // An exact template prompt that points at a source video or audio we cannot supply cannot reproduce its preview (templateSourceBlock).
+  const sourceBlocked = !!activeTemplate && templateSourceUnsupported(activeTemplate) && prompt === activeTemplate.prompt;
   // The picked model stays listed even when the tier filter would hide it.
   const goalModels = modelsForGoal(models, goal);
   const listed = filterByTier(goalModels, tier);
@@ -553,7 +556,7 @@ export default function CreateStudio() {
   async function onSubmit() {
     if (draftRecovery.restoring || draftRecovery.blocked || attachConverting || sourcesConverting) return;
     if (inFlight.current || sending || generating || !model || balance == null || payable > balance) return;
-    if (catalogStatus !== 'live') return;
+    if (catalogStatus !== 'live' || sourceBlocked) return;
     inFlight.current = true;
     if (model.gated) { inFlight.current = false; setError(LOCAL_ERRORS.model_gated); return; }
     if (animationMismatch) { inFlight.current = false; setError(LOCAL_ERRORS.source_required); return; }
@@ -891,13 +894,14 @@ export default function CreateStudio() {
               {n > freeLeft ? t(pluralKey(t,locale,'app.create.freePartial',freeLeft),{free:number(freeLeft),total:number(n),left:number(freeLeft)}) : t(pluralKey(t,locale,'app.create.freeLeft',freeLeft),{count:number(freeLeft)})}
             </div>
           )}
+          {sourceBlocked && <p role="note" data-source-unsupported className="mt-3 rounded-lg border border-amber-400/40 bg-amber-400/[0.08] px-3 py-2 text-xs text-vx-fg-body">{t('public.TemplateRecipe.sourceVideoUnsupported')}</p>}
           <p id="vx-generate-why" aria-live="polite" className={hintText ? 'mt-3 text-xs text-vx-fg-muted' : 'sr-only'}>{hintText}</p>
           <ParticleButton
             data-assistant-target="create.generate"
             aria-describedby={hintText ? 'vx-generate-why' : undefined}
             onClick={hasJobs && !activeBatch ? cancel : onSubmit}
             className="scroll-mt-24 mt-4 w-full flex items-center justify-between bg-vx-accent text-vx-accent-ink rounded-full px-6 py-3.5 font-extrabold hover:bg-vx-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
-            disabled={draftRecovery.restoring || draftRecovery.blocked || sending || attachConverting || sourcesConverting || (!hasJobs && (catalogStatus !== 'live' || !model || model.gated || animationMismatch || missingPrompt || promptTooLong || missingVoice || invalidAudioDuration || balance == null || payable > balance || missingSource || missingConsent)) || (!!activeBatch && (balance == null || payable > balance)) || !!activeBatch?.confirm}
+            disabled={draftRecovery.restoring || draftRecovery.blocked || sending || attachConverting || sourcesConverting || (!hasJobs && (catalogStatus !== 'live' || sourceBlocked || !model || model.gated || animationMismatch || missingPrompt || promptTooLong || missingVoice || invalidAudioDuration || balance == null || payable > balance || missingSource || missingConsent)) || (!!activeBatch && (balance == null || payable > balance)) || !!activeBatch?.confirm}
             aria-label={sending ? undefined : hasJobs && !activeBatch ? t("app.create.newNoCharge") : model?.gated ? undefined : n > 1 ? t(pluralKey(t,locale,cost===0?'app.create.generateImagesFree':'app.create.generateImagesPaid',n),{count:number(n),credits:creditLabel(cost)}) : t(cost===0?'app.create.generateFree':'app.create.generatePaid',{credits:creditLabel(cost)})}
           >
             <span>{sending ? t("app.publish.inbox.sending") : hasJobs && !activeBatch ? t("app.create.newGeneration") : model?.gated ? t("app.create.premiumGated") : n > 1 ? t('app.create.generateCount',{count:number(n)}) : t("label.Generate")}</span>

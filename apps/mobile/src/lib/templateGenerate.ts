@@ -9,6 +9,13 @@ import { slotsFor } from './sources';
 // ceiling, the keys and the refund path are Create's. A template that needs a picture or a described voice still goes
 // through Create.
 
+// An exact prompt that points at a source video we cannot supply cannot reproduce its preview: the
+// model never sees the footage and invents a different clip. Such a template is inspiration only (web: templateSourceBlock).
+const UNSUPPORTED_SOURCE_ISSUES = ['reference-video-not-supported'];
+export function sourceUnsupported(preset: Pick<Preset, 'sourcePromptOrigin' | 'sourcePromptIssues'> | null | undefined): boolean {
+    return preset?.sourcePromptOrigin === 'community-source-exact' && (preset.sourcePromptIssues ?? []).some(issue => UNSUPPORTED_SOURCE_ISSUES.includes(issue));
+}
+
 /** Why a template cannot generate from its own page, or null when it can. */
 export function inlineBlockReason(preset: Preset, model: CatalogModel | undefined): 'media' | 'options' | 'unavailable' | null {
     if (!preset.available || !model) return 'unavailable';

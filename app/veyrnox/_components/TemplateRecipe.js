@@ -5,6 +5,7 @@ import { presetStep } from '../../../lib/i18n/presetSteps.mjs';
 import { useState } from 'react';
 import { UseTemplate } from './UseTemplate';
 import { TEMPLATE_PROMPT_MAX } from '../_lib/templateDraft';
+import { templateSourceUnsupported } from '../_lib/templateSourceBlock';
 
 function CopyPrompt({ text, label }) {
   const { t } = useI18n();
@@ -33,6 +34,7 @@ export function TemplateRecipe({ preset, generatedPreview = false }) {
   const handoffPrompt = prompt;
   const handoffPreset = hasExactSourcePrompt ? { ...preset, prompt: preset.sourcePrompt } : preset;
   const tooLong = handoffPrompt.length > TEMPLATE_PROMPT_MAX;
+  const sourceUnsupported = templateSourceUnsupported(preset);
   const sourcePromptUnavailable = preset.sourcePromptStatus === 'unavailable';
   const sourcePromptNotRecorded = preset.sourcePromptStatus === 'adaptation-only';
   const sourcePromptTruncated = preset.sourcePromptStatus === 'exact-truncated';
@@ -43,6 +45,11 @@ export function TemplateRecipe({ preset, generatedPreview = false }) {
       {(sourcePromptUnavailable || sourcePromptNotRecorded) && (
         <div role="note" data-source-prompt-status={preset.sourcePromptStatus} className="mt-8 rounded-xl border border-amber-400/40 bg-amber-400/[0.08] px-4 py-3 text-[13px] text-vx-fg-body">
           {t(sourcePromptUnavailable ? "public.TemplateRecipe.sourcePromptUnavailable" : "public.TemplateRecipe.sourcePromptNotRecorded")}
+        </div>
+      )}
+      {sourceUnsupported && (
+        <div role="note" data-source-unsupported className="mt-8 rounded-xl border border-amber-400/40 bg-amber-400/[0.08] px-4 py-3 text-[13px] text-vx-fg-body">
+          {t("public.TemplateRecipe.sourceVideoUnsupported")}
         </div>
       )}
       <h2 className="mt-8 font-vx-mono text-[11px] tracking-[0.12em] text-vx-fg-muted">{promptLabel}</h2>
@@ -58,7 +65,7 @@ export function TemplateRecipe({ preset, generatedPreview = false }) {
           {preset.steps.map((step) => <li key={step}>{presetStep(t, step)}</li>)}
         </ol>
       )}
-      <UseTemplate preset={handoffPreset} prompt={handoffPrompt} />
+      <UseTemplate preset={handoffPreset} prompt={handoffPrompt} generationBlocked={sourceUnsupported || undefined} />
     </>
   );
 }

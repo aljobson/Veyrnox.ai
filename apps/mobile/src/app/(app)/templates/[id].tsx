@@ -11,7 +11,7 @@ import { copyText } from '../../../lib/clipboard';
 import { t } from '../../../lib/i18n';
 import { estimateCredits, fetchCatalog, kindOf, type CatalogModel } from '../../../lib/media';
 import { CreateResult } from '../../../components/create/CreateResult';
-import { inlineBlockReason, templateRequest } from '../../../lib/templateGenerate';
+import { inlineBlockReason, sourceUnsupported, templateRequest } from '../../../lib/templateGenerate';
 import { useTemplateGenerate } from '../../../lib/useTemplateGenerate';
 import { templateModelEligible, templateOptions, type TemplateChoices } from '../../../lib/templateChoices';
 import { GENERATION_PROMPT_MAX } from '../../../lib/promptLimits';
@@ -46,7 +46,8 @@ export default function TemplatePage() {
     const promptLabel = t(hasExactSourcePrompt ? 'public.TemplateRecipe.exactCommunityPrompt' : 'mobile.prompt');
     const tooLong = prompt.length > TEMPLATE_PROMPT_MAX;
     // A template that needs no media generates right here; one that does opens Create (inlineBlockReason).
-    const inline = !!preset && !!model && inlineBlockReason(preset, model) === null;
+    const unsupported = sourceUnsupported(preset);
+    const inline = !unsupported && !!preset && !!model && inlineBlockReason(preset, model) === null;
     const request = inline && preset && model && options && !tooLong && prompt.trim() ? templateRequest(preset, model, { prompt, aspect: options.aspect, duration: options.duration }) : null;
     const generation = useTemplateGenerate(request, model && options ? estimateCredits(model, options.duration) : 0);
     useEffect(() => {
@@ -86,7 +87,7 @@ export default function TemplatePage() {
                 {options.durations.map(duration => <Chip key={duration} label={t('create.lengthCost', { value1: duration, credits: String(estimateCredits(model, duration)) })} accessibilityLabel={t('create.lengthCost', { value1: duration, credits: String(estimateCredits(model, duration)) })} selected={options.duration === duration} onPress={() => setChoices(previous => ({ ...previous, duration }))} />)}
             </View></> : null}
             <Text tone="warning">{templatePrice(model && options ? { ...preset, credits: estimateCredits(model, options.duration), durationSeconds: options.duration } : preset)}</Text>
-            {available && inline ? <>
+            {unsupported ? <Card><Text accessibilityLiveRegion="polite">{t('public.TemplateRecipe.sourceVideoUnsupported')}</Text></Card> : available && inline ? <>
                 {generation.run && model ? <CreateResult api={generation.api} batch={{ ids: [...generation.run.ids], modelId: generation.run.modelId, kind: kindOf(model.modality), aspect: options?.aspect ?? null, duration: options?.duration ?? null, count: 1 }} catalog={catalog ?? []} onTerminal={generation.settled} /> : null}
                 {generation.error ? <Text tone="danger" accessibilityLiveRegion="polite">{generation.error}</Text> : null}
                 {generation.run

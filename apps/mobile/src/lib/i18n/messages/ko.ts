@@ -33,6 +33,7 @@ const ko = {
     'public.TemplateRecipe.sourcePromptModelLimitCopyOnly': '이 정확한 프롬프트는 할당된 모델의 확인된 {max}자 제한을 초과합니다. 전체 내용을 복사할 수 있지만 생성은 비활성화됩니다.',
     'public.TemplateRecipe.sourcePromptCopyOnly': '이 원문 프롬프트에는 이 모델이 받을 수 없는 필수 참조 미디어 또는 보존된 오디오가 필요합니다. 복사해서 다른 곳에서 사용하세요.',
     'public.TemplateRecipe.sourcePromptUnavailable': '소스 레코드에 프롬프트가 공개되지 않았습니다. Veyrnox는 이를 추측하거나 재구성하지 않았으며, 아래 생성 프롬프트는 각색본입니다.',
+    'public.TemplateRecipe.sourceVideoUnsupported': '이 템플릿에는 원본 소스 영상이 필요하지만 Veyrnox가 아직 제공할 수 없어 미리보기를 재현할 수 없습니다. 프롬프트는 영감으로 활용하거나 사진만 필요한 템플릿을 선택하세요.',
     'public.TemplateRecipe.sourcePromptNotRecorded': '이 미리보기에는 정확한 소스 프롬프트가 기록되어 있지 않습니다. 아래 생성 프롬프트는 Veyrnox 각색본이며 복사된 소스 문구가 아닙니다.',
     'public.TemplateRecipe.sourcePromptTruncated': '소스 피드에서 이미 잘린 상태로 반환된 프롬프트입니다. 받은 그대로 보존했으며 완전한 문구로 취급할 수 없습니다.',
     'public.TemplateRecipe.sourcePromptDuplicate': '소스에서 다른 영상에도 같은 정확한 프롬프트를 게시했습니다. 내용을 바꾸지 않고 소스 중복으로 표시했습니다.',

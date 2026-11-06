@@ -19,3 +19,7 @@ A person who picked a template had to press "Use template", land on Create, and 
 
 - Fewer steps for the common prompt-only template. Create is unchanged.
 - The inline request is built beside Create's, not inside it: Create's submit is pinned by source-text tests, so the shared pieces are the batch/quote/submit primitives rather than one extracted function. A future refactor can fold the two together.
+
+## Amendment (2026-11-06): inspiration-only templates
+
+Some exact community prompts say to use `@video1` (source footage). Veyrnox has no video reference slot, so the model never sees that input and returns an unrelated clip. A template whose exact prompt carries the audit issue `reference-video-not-supported` is therefore inspiration only: the template page and Create show a note and do not generate (web `templateSourceBlock.js`, mobile `sourceUnsupported`). The prompt stays readable and copyable. A template that needs only the person's photo is unaffected. Supplying the source clip (a video slot) is a separate decision.

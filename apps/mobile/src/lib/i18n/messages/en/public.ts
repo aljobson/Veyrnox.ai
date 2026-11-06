@@ -16,4 +16,5 @@ export default {
     'public.TemplateRecipe.sourcePromptTruncated': 'The source feed returned this prompt already cut off. It is preserved exactly and must not be treated as complete.',
     'public.TemplateRecipe.sourcePromptDuplicate': 'The source published this same exact prompt for another video. It is retained unchanged and identified as a source duplicate.',
     'public.TemplateRecipe.generationPrompt': 'GENERATION PROMPT',
+    'public.TemplateRecipe.sourceVideoUnsupported': "This template needs the original source video, which Veyrnox can't supply yet, so it can't reproduce the preview. Use the prompt as inspiration, or pick a template that only needs your photo.",
 } as const;
