@@ -2,8 +2,8 @@
 // Checked before any request so a typo gets an inline message, not a server round trip. The server still decides.
 
 // Whitespace, control characters, zero-width and bidirectional override/isolate characters.
-const UNSAFE = /[\s\u0000-\u001f\u007f-\u009f​-‏  ‪-‮⁠-⁩﻿]/;
-const ADDRESS = /^https:\/\/([a-z0-9¡-￿-]+(?:\.[a-z0-9¡-￿-]+)+)(?::\d{1,5})?(?:[/?#]\S*)?$/i;
+const UNSAFE = /[\s\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028\u2029\u202a-\u202e\u2060-\u2069\ufeff]/;
+const ADDRESS = /^https:\/\/([a-z0-9\u00a1-\uffff-]+(?:\.[a-z0-9\u00a1-\uffff-]+)+)(?::\d{1,5})?(?:[/?#]\S*)?$/i;
 
 export function httpsAddress(value: unknown, maxLength = 2048): string | null {
     if (typeof value !== 'string') return null;

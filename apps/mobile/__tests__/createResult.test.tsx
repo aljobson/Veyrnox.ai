@@ -162,7 +162,7 @@ test('QA-4: a pasted prompt over 30000 characters is refused with a message and 
     await render();
     await act(async () => promptField().props.onChangeText('a'.repeat(30_001)));
     expect(promptField().props.maxLength).toBeUndefined();
-    expect(text('30001/30000')).toHaveLength(1);
+    expect(root.container.queryAll(n => n.children.join('') === '30001/30000')).toHaveLength(1);
     expect(text(t('public.TemplateRecipe.productPromptTooLong', { count: 30_001, max: 30_000 }))).toHaveLength(1);
     expect(generate().props.accessibilityState.disabled).toBe(true);
     await click(generate()); expect(mockPost).not.toHaveBeenCalled();

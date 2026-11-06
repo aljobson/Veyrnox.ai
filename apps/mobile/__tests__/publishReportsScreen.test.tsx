@@ -102,7 +102,7 @@ test('delivery off with a legacy recipient-free schedule only allows confirmed c
 test('both flags on lets a legacy schedule be repaired but cannot save until a recipient is valid', async () => {
     mockParams = { id }; templates = [{ ...seed, delivery_recipients: [] }]; await mount(true);
     expect(input('Recipients').props.editable).toBe(true); await press('Save');
-    expect(alert).not.toHaveBeenCalled(); expect(writes()).toHaveLength(0); expect(has('Check the fields')).toBe(true);
+    expect(alert).not.toHaveBeenCalled(); expect(writes()).toHaveLength(0); expect(has('Enter up to 10 valid email addresses')).toBe(true);
     await type('Recipients', ' READER@example.com; reader@example.com '); await press('Save');
     expect(alert.mock.calls.at(-1)?.[1]).toContain('will be emailed'); await confirm(); expect(body().deliveryRecipients).toEqual(['reader@example.com']);
 });

@@ -15,7 +15,7 @@ void [RN.View, RN.Text, RN.Pressable, RN.TextInput, RN.FlatList, RN.ScrollView];
 // Strings that would be markup, a link or a reordered line if anything interpreted them.
 const HOSTILE = [
     '<script>alert(1)</script>',
-    `evil‮gnp.exe`,
+    `evil${String.fromCharCode(0x202e)}gnp.exe`,
     '<img src=x onerror=alert(1)>',
     '[click](javascript:alert(1))',
     'https://example.com/?a=1&b=2',

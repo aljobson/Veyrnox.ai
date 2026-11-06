@@ -11,10 +11,10 @@ import { validNonce } from '../src/lib/accountSecurity';
 
 // Hostile and malformed text a person can type or paste. None may reach a network call: each builder or validator
 // answers with a catalogue key (an inline message) instead.
-const BIDI = '‮';
+const BIDI = String.fromCharCode(0x202e);
 const BAD_ADDRESSES = ['http://', 'http://example.com', 'javascript:alert(1)', 'https://', 'https://?', 'https://.', 'https://exa mple.com',
     'https://user:pw@example.com', `https://example.com${BIDI}`, `https://exa${BIDI}mple.com`, 'https://localhost', 'https://-a.com', '🙂', `https://${'a'.repeat(64)}.com`,
-    `https://example.com/${'a'.repeat(3000)}`, 'https://example.com/​hidden', 'ftp://example.com', 'example.com', 'https:example.com'];
+    `https://example.com/${'a'.repeat(3000)}`, 'https://example.com/' + String.fromCharCode(0x200b) + 'hidden', 'ftp://example.com', 'example.com', 'https:example.com'];
 const GOOD_ADDRESSES = ['https://example.com', 'https://example.com/a?b=c#d', 'https://sub.example.co.uk:8443/path', 'https://bücher.de/x'];
 const BAD_MONEY = ['', '   ', '-5', '-0.01', '1e9', '1e2', '0.001', '12.345', 'abc', 'NaN', 'Infinity', '١٢', '🙂', '1'.repeat(40), '1,000.00', '12 50', '0x10', '+5'];
 
