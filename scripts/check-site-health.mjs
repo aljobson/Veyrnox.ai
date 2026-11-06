@@ -30,6 +30,12 @@ export function extractStaticAssetPaths(html) {
     )];
 }
 
+export function extractDeploymentIds(paths) {
+    return [...new Set(validateStaticAssetPaths(paths)
+        .map((path) => new URL(path, DEFAULT_BASE_URL).searchParams.get('dpl'))
+        .filter((value) => /^[a-f0-9]{40}$/i.test(value || '')))];
+}
+
 function validateStaticAssetPaths(paths) {
     if (!Array.isArray(paths)) throw new Error('Static asset manifest must contain an assets array.');
     return [...new Set(paths.map((path) => {
@@ -196,13 +202,17 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
         const result = await checkSite(baseUrl, { requiredAssets, verifyAssets: !capturePath, requireImmutableAssets });
         const degraded = Boolean(capturePath && tolerateServerErrors && siteIsDown(result));
         if (degraded) {
-            await writeFile(capturePath, `${JSON.stringify({ version: 1, degraded: true, assets: [] }, null, 2)}\n`);
+            await writeFile(capturePath, `${JSON.stringify({ version: 1, degraded: true, assets: [], deploymentIds: [] }, null, 2)}\n`);
             console.error(`${baseUrl}: ${result.problems.length} problem(s), all 5xx or unreachable`);
             for (const problem of result.problems) console.error(`- ${problem}`);
             console.log(`::warning::${baseUrl} is unhealthy (5xx or unreachable), so the previous build's static assets could not be recorded. Continuing as a recovery deploy: retained-asset checks are skipped and the new build is smoke-tested on its own.`);
         } else if (result.problems.length === 0) {
             if (capturePath) {
-                await writeFile(capturePath, `${JSON.stringify({ version: 1, assets: result.assets }, null, 2)}\n`);
+                await writeFile(capturePath, `${JSON.stringify({
+                    version: 1,
+                    assets: result.assets,
+                    deploymentIds: extractDeploymentIds(result.assets),
+                }, null, 2)}\n`);
                 console.log(`${baseUrl}: captured ${result.assets.length} referenced static asset(s).`);
             } else {
                 console.log(`${baseUrl}: all ${CHECKS.length} page checks and ${result.assets.length} asset checks passed.`);
