@@ -403,7 +403,7 @@ export default function CreateWithModel() {
                                 onBusy={(b) => setSending((x) => ({ ...x, [s.slot]: b }))}
                                 initial={s.slot === 'image' ? startFile : null}
                                 initialReady={references.some(ref => ref.slot === s.slot)}
-                                hint={s.slot === 'image' && template?.needs ? t('create.template.needs', { what: template.needs }) : undefined}
+                                hint={s.slot === 'image' && model.id === 'seedance-2.0-reference' ? t('app.create.referenceLikenessNotice') : s.slot === 'image' && template?.needs ? t('create.template.needs', { what: template.needs }) : undefined}
                             />
                         ))}
                     </View>
