@@ -12,7 +12,7 @@ import { t } from '../../../lib/i18n';
 import { fetchCatalogCached, mediaApi, type CatalogModel, type Job, type Kind } from '../../../lib/media';
 import { LowBalanceNote } from '../../../components/LowBalanceNote';
 import { CREATOR_PROFILE_ENABLED } from '../../../lib/creatorProfile';
-import { runVibeSync } from '../../../lib/creatorProfileStore';
+import { runVibeSync, vibeOffered } from '../../../lib/creatorProfileStore';
 import { useVibeAnswers } from '../../../lib/useVibeAnswers';
 import { subscribeVibeIdle } from '../../../lib/vibeEvents';
 import { getCacheUser, subscribeCacheUser } from '../../../lib/appCache';
@@ -97,6 +97,9 @@ export default function Explore() {
         if (!CREATOR_PROFILE_ENABLED || !owner) return;
         const task = beginSessionTask();
         await runVibeSync(api, task);
+        if (!mounted.current || !task.current()) return;
+        // Hydrates a saved server profile for ranking when there is no local record; the visibility answer is unused.
+        await vibeOffered(api, task);
     };
     const triggerVibe = useCallback(() => {
         if (jobsRunning.current) { rerun.current = true; return; }

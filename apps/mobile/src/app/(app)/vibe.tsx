@@ -3,7 +3,7 @@ import { captureEvent } from '../../lib/analytics/events';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { VeyCharacter } from '../../components/VeyCharacter';
 import { selectedState, touchTarget } from '../../lib/a11y';
@@ -121,7 +121,11 @@ export default function Vibe() {
                             </Text>
                         ) : null}
                     </View>
-                ) : null}
+                ) : (
+                    <View style={styles.center} accessible accessibilityRole="progressbar" accessibilityLabel={t('common.loading')} accessibilityLiveRegion="polite">
+                        <ActivityIndicator />
+                    </View>
+                )}
             </ScrollView>
 
             <View style={styles.footer}>
