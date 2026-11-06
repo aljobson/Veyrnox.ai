@@ -222,6 +222,7 @@ export default function Library() {
         <View style={styles.screen}>
             <Stack.Screen options={{ title: t('label.Library') }} />
             <Text variant="title2" tone="primary" style={styles.heading} accessibilityRole="header">{t('label.Library')}</Text>
+            <Button variant="primary" accessibilityRole="button" accessibilityLabel={t('app.library.openSmartCut')} accessibilityHint={t('app.explore.smartCutStart')} onPress={() => router.push('/smart-cut')} label={t('app.library.openSmartCut')} />
             <Button variant="secondary" accessibilityRole="button" accessibilityLabel={t('library.videoFilesLabel')} onPress={() => router.push('/library/files')} label={t('library.videoFiles')} />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.barScroll} contentContainerStyle={styles.bar} accessibilityLabel={t('library.filter.type')}>
                 {KIND_FILTERS.map((f) => (

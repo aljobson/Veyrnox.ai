@@ -29,6 +29,9 @@ function readWebCatalog(code: string): Record<string, string> {
         ...readModule(join(repo, 'lib', 'i18n', 'messages', 'app', code, 'account-mfa.mjs')),
         ...readModule(join(repo, 'lib', 'i18n', 'messages', 'app', code, 'account.mjs')),
         ...readModule(join(repo, 'lib', 'i18n', 'messages', 'app', code, 'publish.mjs')),
+        // Smart Cut locale modules currently re-export the English-first catalog.
+        ...readModule(join(repo, 'lib', 'i18n', 'messages', 'app', 'en', 'smart-cut.mjs')),
+        ...readModule(join(repo, 'lib', 'i18n', 'messages', 'app', code, 'editor-sheet.mjs')),
     };
 }
 
