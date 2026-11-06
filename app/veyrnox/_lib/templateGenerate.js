@@ -1,0 +1,86 @@
+// Generate from the template page itself (ADR-0120 amendment 1). Pure pieces, so they are unit-tested without React.
+// Everything sent is what Create sends for the same template with nothing attached: same body, same per-request
+// idempotency key, same max_charge_credits from allocationSnapshot, same refund path. A template that needs media or a
+// described voice still goes through Create (inlineBlockReason).
+import { sendInOrder, submitErrorCode, createBatch, allocationSnapshot } from './imageBatch.js';
+import { audioDurationConfig, settingsInputs } from './generationSettings.js';
+import { createPromptModelAvailable } from './templateDraft.js';
+import { templateStartIdFor } from '../../../lib/templateStartCheck.js';
+
+/** 'unavailable' | 'media' | 'options' | null (null = can generate here). */
+export function inlineBlockReason(preset, model) {
+  if (!preset || !model || model.gated || model.premium || !createPromptModelAvailable(model)) return 'unavailable';
+  if (model.kind !== 'image' && model.kind !== 'video') return 'options';
+  if ((typeof preset.needs === 'string' && preset.needs.trim())
+    || Object.values(model.media || {}).some(spec => spec?.required)) return 'media';
+  if (model.takesVoice || audioDurationConfig(model)) return 'options';
+  return null;
+}
+
+/** The inputs object Create builds for this template: prompt, shape, length, the template's own negative prompt. */
+export function templateInputs(preset, model, { prompt, aspect, durationSeconds, aspectOptions }) {
+  const exact = preset.sourcePromptOrigin === 'community-source-exact' && typeof preset.sourcePrompt === 'string' ? preset.sourcePrompt : preset.prompt;
+  const inputs = {
+    // Like Create: the recipe's own words go unchanged, anything the person edited is trimmed.
+    prompt: prompt === exact ? prompt : prompt.trim(),
+    aspect_ratio: aspectOptions.length ? aspect : undefined,
+    duration_seconds: model.kind === 'video' ? durationSeconds : undefined,
+    ...settingsInputs(model, { seed: '', negative: preset.negativePrompt || '', voice: '', duration: '' }),
+  };
+  Object.keys(inputs).forEach(key => inputs[key] === undefined && delete inputs[key]);
+  return inputs;
+}
+
+// GatewayError is matched by name so this module loads without the browser-only gateway.
+export const errorFor = (e) => e?.name === 'GatewayError'
+  ? { code: e.code, retryAfter: e.retryAfter, expectedCredits: e.body?.expected_credits } : { code: 'internal' };
+
+/** A new continuation, or the same one while the request is unchanged (so a retry keeps its key). */
+export function templateRun(previous, identity, unit, makeKey) {
+  return previous?.identity === identity ? previous : { ...createBatch(1, makeKey), identity, unit };
+}
+
+/**
+ * Send the one request. Returns { error, confirm }: error is the banner object (null on success). Never retried under a
+ * new key; the run keeps its key until the caller decides the batch is dead (templateRunDead).
+ */
+export async function submitTemplate({ run, quote, model, preset, inputs, makeKey, deps }) {
+  const { gatewayFetch, onJob, freeAllowance } = deps;
+  run.quote = quote;
+  run.confirm = false;
+  try {
+    const { error: failure } = await sendInOrder(1, async (i) => {
+      const submitted = await gatewayFetch('/generations', {
+        method: 'POST',
+        body: JSON.stringify({
+          model_id: model.id, idempotency_key: run.keys[i], inputs,
+          max_charge_credits: quote.ceilings[i],
+          preset: templateStartIdFor(preset.id, preset, model.id) || undefined,
+          references: [],
+        }),
+      });
+      // A job that took a free allowance cost nothing; the server says so.
+      onJob(submitted, submitted.free_allowance === true ? 0 : run.unit);
+      return submitted;
+    }, run, makeKey);
+    if (!failure) return { error: null };
+    const err = errorFor(failure);
+    const code = submitErrorCode(err.code);
+    if (code === 'price_changed' && Number.isInteger(err.expectedCredits) && err.expectedCredits >= 0) {
+      let fresh = {};
+      try { fresh = await freeAllowance(); } catch { /* a paid quote is safe */ }
+      run.unit = err.expectedCredits;
+      run.quote = allocationSnapshot(run, run.unit, fresh[model.id] > 0 ? fresh[model.id] : 0);
+      run.confirm = true;
+    } else run.quote = null;
+    return { error: { ...err, code } };
+  } catch (e) {
+    const err = errorFor(e);
+    return { error: { ...err, code: submitErrorCode(err.code) } };
+  }
+}
+
+/** A definitive failure with nothing accepted or uncertain needs a new key next time. */
+export function templateRunDead(run, error) {
+  return Boolean(error) && !run.accepted.some(Boolean) && !run.confirm && !run.unknown.size && error.code !== 'outcome_unknown';
+}

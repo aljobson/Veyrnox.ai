@@ -17,6 +17,10 @@ jest.mock('../src/lib/templateFilters', () => ({ ...jest.requireActual('../src/l
 jest.mock('../src/lib/creatorProfileStore', () => ({ loadVibe: async () => null }));
 jest.mock('../src/lib/clipboard', () => ({ copyText: (text: string) => mockCopy(text) }));
 jest.mock('../src/components/TemplateCollage', () => ({ TemplateCollage: () => null }));
+jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: {} }) }));
+jest.mock('../src/lib/useBalance', () => ({ useBalance: () => 100 }));
+jest.mock('../src/lib/useFreeLeft', () => ({ useFreeLeftState: () => ({ left: {}, loading: false }) }));
+jest.mock('../src/components/create/CreateResult', () => ({ CreateResult: () => null }));
 jest.mock('../src/components/InlineMedia', () => ({ InlineMedia: () => null }));
 jest.mock('../src/components/ui', () => ({ ...jest.requireActual('../src/components/ui'), TextField: (props: any) => { mockTextField = props; return null; } }));
 jest.mock('expo-image', () => ({ Image: jest.requireActual('react-native').Image }));
@@ -59,7 +63,7 @@ test('template page copies the edited prompt and uses it with the validated temp
     expect(mockTextField.maxLength).toBeUndefined(); await act(async () => mockTextField.onChangeText('edited words'));
     await click(t('editor.copy')); expect(mockCopy).toHaveBeenCalledWith('edited words');
     expect(root.container.queryAll(n => n.children.includes(t('libraryCreate.copied')))).toHaveLength(1);
-    await click(t('libraryCreate.useTemplate')); expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/create/[modelId]', params: expect.objectContaining({ tid: 'p-0', prompt: 'edited words' }) });
+    await click(t('libraryCreate.editBeforeGenerating')); expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/create/[modelId]', params: expect.objectContaining({ tid: 'p-0', prompt: 'edited words' }) });
 });
 test('non-runnable exact text stays visible and copyable, with no second prompt and Use enabled', async () => {
     const adapted = { ...feed[0], prompt: 'Veyrnox adaptation', promptOrigin: 'veyrnox-adaptation' as const, sourcePrompt: 'Exact @image1 community text', sourcePromptOrigin: 'community-source-exact' as const, sourcePromptRunnable: false, sourcePromptIssues: ['reference-image-input-required'] };
@@ -70,9 +74,9 @@ test('non-runnable exact text stays visible and copyable, with no second prompt 
     expect(root.container.queryAll(n => n.props.accessibilityLabel === t('public.TemplateRecipe.generationPrompt'))).toHaveLength(0);
     await click(t('public.TemplateRecipe.copyExactCommunityPrompt'));
     expect(mockCopy).toHaveBeenCalledWith('Exact @image1 community text');
-    const use = root.container.queryAll(n => n.props.accessibilityLabel === t('libraryCreate.useTemplate'))[0];
+    const use = root.container.queryAll(n => n.props.accessibilityLabel === t('libraryCreate.editBeforeGenerating'))[0];
     expect(use?.props.disabled ?? use?.props.accessibilityState?.disabled).toBeFalsy();
-    await click(t('libraryCreate.useTemplate'));
+    await click(t('libraryCreate.editBeforeGenerating'));
     expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/create/[modelId]', params: expect.objectContaining({ prompt: adapted.sourcePrompt, tid: adapted.id, tmodel: originalModel.id }) });
     for (const key of ['public.TemplateRecipe.sourcePromptCopyOnly', 'public.TemplateRecipe.sourcePromptModelLimitCopyOnly'] as const) {
         expect(root.container.queryAll(n => n.children.includes(t(key)))).toHaveLength(0);
@@ -83,16 +87,16 @@ test('picker defaults to the original model and snaps preview shape; changes upd
     mockFetch.mockResolvedValue([{ ...feed[0], previewAspect: '9 / 16', durationSeconds: 10 }]);
     jest.mocked(fetchCatalog).mockResolvedValue([otherModel, originalModel]);
     await act(async () => root.render(<TemplatePage />));
-    await click(t('libraryCreate.useTemplate'));
+    await click(t('libraryCreate.editBeforeGenerating'));
     expect(mockRouter.push.mock.calls.at(-1)[0].params).toMatchObject({ modelId: 'model', aspect: '9:16', duration: '10' });
     await click(otherModel.name);
     expect(controls('9:16')).toHaveLength(0);
     expect(controls(t('create.lengthCost', { value1: 4, credits: '7' }))).toHaveLength(1);
     await click('4:3'); await click(t('create.lengthCost', { value1: 8, credits: '14' }));
     await act(async () => mockTextField.onChangeText('My edit'));
-    await click(t('libraryCreate.useTemplate'));
+    await click(t('libraryCreate.editBeforeGenerating'));
     expect(mockRouter.push.mock.calls.at(-1)[0].params).toMatchObject({ modelId: 'other', aspect: '4:3', duration: '8', prompt: 'My edit', tid: 'p-0', tpl: feed[0].title, tmodel: 'model' });
-    await click(originalModel.name); await click(t('libraryCreate.useTemplate'));
+    await click(originalModel.name); await click(t('libraryCreate.editBeforeGenerating'));
     expect(mockRouter.push.mock.calls.at(-1)[0].params).toMatchObject({ modelId: 'model', aspect: '9:16', duration: '10' });
 });
 test.each(['single', 'failed', 'loading'])('model picker is hidden with %s catalog', async state => {
@@ -101,7 +105,7 @@ test.each(['single', 'failed', 'loading'])('model picker is hidden with %s catal
     await act(async () => root.render(<TemplatePage />));
     expect(controls(originalModel.name)).toHaveLength(0);
     expect(controls(otherModel.name)).toHaveLength(0);
-    await click(t('libraryCreate.useTemplate'));
+    await click(t(state === 'single' ? 'libraryCreate.editBeforeGenerating' : 'libraryCreate.useTemplate'));
     expect(mockRouter.push.mock.calls.at(-1)[0].params.modelId).toBe('model');
 });
 test('picker rejects topic, edit, plan, gated and different-modality catalog rows', async () => {
@@ -123,11 +127,24 @@ test.each(['text-to-image', 'text-to-audio'])('%s hides seconds and models witho
     await act(async () => root.render(<TemplatePage />));
     expect(controls('16:9')).toHaveLength(0);
     expect(controls(t('create.lengthCost', { value1: 5, credits: '3' }))).toHaveLength(0);
-    await click(t('libraryCreate.useTemplate'));
+    await click(t(modality === 'text-to-audio' ? 'libraryCreate.useTemplate' : 'libraryCreate.editBeforeGenerating'));
     expect(mockRouter.push.mock.calls.at(-1)[0].params.duration).toBeUndefined();
 });
 test.each(['', 'x'.repeat(30001)])('empty or over-limit prompt disables Use', async prompt => {
     await act(async () => root.render(<TemplatePage />));
     await act(async () => mockTextField.onChangeText(prompt));
-    expect(controls(t('libraryCreate.useTemplate'))[0].props.accessibilityState.disabled).toBe(true);
+    expect(controls(t('libraryCreate.editBeforeGenerating'))[0].props.accessibilityState.disabled).toBe(true);
+});
+
+test('a prompt-only template offers Generate on its own page and keeps Edit before generating; one that needs a photo keeps Use template only', async () => {
+    await act(async () => root.render(<TemplatePage />));
+    expect(controls(t('slip.generate'))).toHaveLength(1);
+    expect(controls(t('libraryCreate.editBeforeGenerating'))).toHaveLength(1);
+    expect(controls(t('libraryCreate.useTemplate'))).toHaveLength(0);
+});
+test('a template that needs a photo keeps Use template only, with no Generate', async () => {
+    mockFetch.mockResolvedValue([{ ...feed[0], needs: 'Your photo' }]);
+    await act(async () => root.render(<TemplatePage />));
+    expect(controls(t('slip.generate'))).toHaveLength(0);
+    expect(controls(t('libraryCreate.useTemplate'))).toHaveLength(1);
 });

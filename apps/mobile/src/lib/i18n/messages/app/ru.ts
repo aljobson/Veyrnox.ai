@@ -5272,6 +5272,7 @@ export default {
   "libraryCreate.stems": "Откройте работу, чтобы прослушать отдельные аудиодорожки.",
   "libraryCreate.elapsed": "{seconds} с",
   "libraryCreate.useTemplate": "Использовать шаблон",
+  "libraryCreate.editBeforeGenerating": "Изменить перед генерацией",
   "filmOutput.asset": "Ресурс для паспорта",
   "filmOutput.savePassport": "Сохранить черновик паспорта",
   "filmOutput.newVersion": "Чтобы изменить идентичность, задайте обновлённому ресурсу новую версию в карточках кадров и на досках.",

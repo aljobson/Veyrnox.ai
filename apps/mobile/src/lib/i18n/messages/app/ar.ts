@@ -5402,6 +5402,7 @@ export default {
   "libraryCreate.stems": "افتح العمل لتشغيل مسارات الصوت المنفصلة.",
   "libraryCreate.elapsed": "{seconds} ث",
   "libraryCreate.useTemplate": "استخدام القالب",
+  "libraryCreate.editBeforeGenerating": "عدّل قبل الإنشاء",
   "filmOutput.asset": "الأصل المراد توثيقه",
   "filmOutput.savePassport": "حفظ مسودة البطاقة",
   "filmOutput.newVersion": "لتغيير هذه الهوية، امنح الأصل المعدّل إصدارًا جديدًا في بطاقات اللقطات واللوحات.",

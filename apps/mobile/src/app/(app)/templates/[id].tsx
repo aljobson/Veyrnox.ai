@@ -9,7 +9,10 @@ import { fetchPresets, presetHref, themeTitle, type Preset } from '../../../lib/
 import { previewRatio, templatePrice } from '../../../lib/templateFilters';
 import { copyText } from '../../../lib/clipboard';
 import { t } from '../../../lib/i18n';
-import { estimateCredits, fetchCatalog, type CatalogModel } from '../../../lib/media';
+import { estimateCredits, fetchCatalog, kindOf, type CatalogModel } from '../../../lib/media';
+import { CreateResult } from '../../../components/create/CreateResult';
+import { inlineBlockReason, templateRequest } from '../../../lib/templateGenerate';
+import { useTemplateGenerate } from '../../../lib/useTemplateGenerate';
 import { templateModelEligible, templateOptions, type TemplateChoices } from '../../../lib/templateChoices';
 import { GENERATION_PROMPT_MAX } from '../../../lib/promptLimits';
 
@@ -42,6 +45,10 @@ export default function TemplatePage() {
     // The exact community prompt is the only prompt; edits travel with the choices.
     const promptLabel = t(hasExactSourcePrompt ? 'public.TemplateRecipe.exactCommunityPrompt' : 'mobile.prompt');
     const tooLong = prompt.length > TEMPLATE_PROMPT_MAX;
+    // A template that needs no media generates right here; one that does opens Create (inlineBlockReason).
+    const inline = !!preset && !!model && inlineBlockReason(preset, model) === null;
+    const request = inline && preset && model && options && !tooLong && prompt.trim() ? templateRequest(preset, model, { prompt, aspect: options.aspect, duration: options.duration }) : null;
+    const generation = useTemplateGenerate(request, model && options ? estimateCredits(model, options.duration) : 0);
     useEffect(() => {
         let live = true; setLoading(true); setFailed(false); setCopied(null); setChoices({});
         fetchPresets().then(all => { if (live) { const found = all.find(p => p.id === id) ?? null; setPreset(found); setPrompt(found ? (found.sourcePromptOrigin === 'community-source-exact' && found.sourcePrompt ? found.sourcePrompt : found.prompt) : ''); } }).catch(() => { if (live) setFailed(true); }).finally(() => { if (live) setLoading(false); });
@@ -79,7 +86,17 @@ export default function TemplatePage() {
                 {options.durations.map(duration => <Chip key={duration} label={t('create.lengthCost', { value1: duration, credits: String(estimateCredits(model, duration)) })} accessibilityLabel={t('create.lengthCost', { value1: duration, credits: String(estimateCredits(model, duration)) })} selected={options.duration === duration} onPress={() => setChoices(previous => ({ ...previous, duration }))} />)}
             </View></> : null}
             <Text tone="warning">{templatePrice(model && options ? { ...preset, credits: estimateCredits(model, options.duration), durationSeconds: options.duration } : preset)}</Text>
-            {available ? <Button label={t('libraryCreate.useTemplate')} disabled={tooLong || !prompt.trim()} onPress={() => router.push(presetHref(preset, { ...choices, modelId: model?.id, prompt }, catalog))} /> : <Text>{t('presets.notavailablerightnow')}</Text>}
+            {available && inline ? <>
+                {generation.run && model ? <CreateResult api={generation.api} batch={{ ids: [...generation.run.ids], modelId: generation.run.modelId, kind: kindOf(model.modality), aspect: options?.aspect ?? null, duration: options?.duration ?? null, count: 1 }} catalog={catalog ?? []} onTerminal={generation.settled} /> : null}
+                {generation.error ? <Text tone="danger" accessibilityLiveRegion="polite">{generation.error}</Text> : null}
+                {generation.run
+                    ? <Button label={t('libraryCreate.newGeneration')} disabled={generation.busy} onPress={generation.reset} />
+                    : <Button label={generation.confirming ? t('app.create.confirmPrice', { credits: String(generation.price) }) : t('slip.generate')} disabled={!generation.ready} onPress={() => void generation.generate()} />}
+                {generation.missing > 0 && !generation.run ? <Text accessibilityLiveRegion="polite">{t('form.err.insufficient')}</Text> : null}
+                <Button variant="secondary" label={t('libraryCreate.editBeforeGenerating')} disabled={generation.busy || tooLong || !prompt.trim()} onPress={() => router.push(presetHref(preset, { ...choices, modelId: model?.id, prompt }, catalog))} />
+            </> : available ? <>
+                <Button label={t('libraryCreate.useTemplate')} disabled={tooLong || !prompt.trim()} onPress={() => router.push(presetHref(preset, { ...choices, modelId: model?.id, prompt }, catalog))} />
+            </> : <Text>{t('presets.notavailablerightnow')}</Text>}
         </>}
     </ScrollView>;
 }

@@ -5142,6 +5142,7 @@ export default {
   "libraryCreate.stems": "Öffne die Kreation, um ihre einzelnen Audiospuren abzuspielen.",
   "libraryCreate.elapsed": "{seconds} Sek.",
   "libraryCreate.useTemplate": "Vorlage verwenden",
+  "libraryCreate.editBeforeGenerating": "Vor dem Generieren bearbeiten",
   "filmOutput.asset": "Asset für den Steckbrief",
   "filmOutput.savePassport": "Steckbriefentwurf speichern",
   "filmOutput.newVersion": "Um diese Identität zu ändern, gib dem überarbeiteten Asset in seinen Shot-Karten und Boards eine neue Version.",
