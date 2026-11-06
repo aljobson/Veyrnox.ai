@@ -91,6 +91,11 @@ async function probeMedia(file) {
   return JSON.parse(stdout);
 }
 
+export function syntheticVideoArgs({ duration, rate }) {
+  return ['-f', 'lavfi', '-i', `testsrc2=size=1280x720:rate=${rate}`, '-t', String(duration),
+    '-c:v', 'libx264', '-bf', '0', '-pix_fmt', 'yuv420p', '-movflags', '+faststart'];
+}
+
 async function syntheticMedia(root) {
   const files = {
     qualifying: path.join(root, 'qualifying-24fps-5s.mp4'),
@@ -99,9 +104,9 @@ async function syntheticMedia(root) {
     image1: path.join(root, 'image1-red-circle.png'),
     image2: path.join(root, 'image2-blue-yellow.png'),
   };
-  await ffmpeg(['-f', 'lavfi', '-i', 'testsrc2=size=1280x720:rate=24', '-t', '5', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', files.qualifying]);
-  await ffmpeg(['-f', 'lavfi', '-i', 'testsrc2=size=1280x720:rate=24', '-t', '2', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', files.short]);
-  await ffmpeg(['-f', 'lavfi', '-i', 'testsrc2=size=1280x720:rate=20', '-t', '5', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', files.controlled]);
+  await ffmpeg([...syntheticVideoArgs({ duration: 5, rate: 24 }), files.qualifying]);
+  await ffmpeg([...syntheticVideoArgs({ duration: 2, rate: 24 }), files.short]);
+  await ffmpeg([...syntheticVideoArgs({ duration: 5, rate: 20 }), files.controlled]);
   await ffmpeg(['-f', 'lavfi', '-i', 'color=c=#d92f3f:s=1280x720', '-vf', 'drawbox=x=440:y=160:w=400:h=400:color=white:t=fill', '-frames:v', '1', files.image1]);
   await ffmpeg(['-f', 'lavfi', '-i', 'color=c=#173b8f:s=1280x720', '-vf', 'drawbox=x=0:y=80:w=1280:h=80:color=#ffd21f:t=fill,drawbox=x=0:y=560:w=1280:h=80:color=#ffd21f:t=fill', '-frames:v', '1', files.image2]);
   return { files, metadata: {

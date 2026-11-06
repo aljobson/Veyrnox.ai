@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { assertProbeEnvironment, generationBody, probeSpendCeiling } from '../scripts/kling-o1-staging-probe.mjs';
+import { assertProbeEnvironment, generationBody, probeSpendCeiling, syntheticVideoArgs } from '../scripts/kling-o1-staging-probe.mjs';
 
 const valid = {
   GITHUB_EVENT_NAME: 'workflow_dispatch',
@@ -31,4 +31,12 @@ test('probe payload preserves video, Image1 and Image2 ordering and exact credit
   ]);
   assert.deepEqual(body.inputs, { prompt: 'exact prompt', duration_seconds: 10 });
   assert.equal(body.consent, true);
+});
+
+test('synthetic video fixtures use a timeline the staging parser can prove', () => {
+  const args = syntheticVideoArgs({ duration: 5, rate: 24 });
+  assert.deepEqual(args.slice(args.indexOf('-bf'), args.indexOf('-bf') + 2), ['-bf', '0']);
+  assert.deepEqual(args.slice(args.indexOf('-t'), args.indexOf('-t') + 2), ['-t', '5']);
+  assert.match(args[args.indexOf('-i') + 1], /size=1280x720:rate=24$/);
+  assert.ok(args.includes('+faststart'));
 });
