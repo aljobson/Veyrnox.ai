@@ -12,9 +12,13 @@ import { validNonce } from '../src/lib/accountSecurity';
 // Hostile and malformed text a person can type or paste. None may reach a network call: each builder or validator
 // answers with a catalogue key (an inline message) instead.
 const BIDI = String.fromCharCode(0x202e);
+const INVISIBLE_ADDRESS_CHARS = [0x00ad, 0x034f, 0x115f, 0x1160, 0x180e, 0x2800, 0x3164, 0xfe0f, 0xffa0].map(code => String.fromCharCode(code));
+const DOT_LOOKALIKES = [0x2024, 0x3002, 0xfe52, 0xff0e, 0xff61].map(code => String.fromCharCode(code));
 const BAD_ADDRESSES = ['http://', 'http://example.com', 'javascript:alert(1)', 'https://', 'https://?', 'https://.', 'https://exa mple.com',
     'https://user:pw@example.com', `https://example.com${BIDI}`, `https://exa${BIDI}mple.com`, 'https://localhost', 'https://-a.com', '🙂', `https://${'a'.repeat(64)}.com`,
-    `https://example.com/${'a'.repeat(3000)}`, 'https://example.com/' + String.fromCharCode(0x200b) + 'hidden', 'ftp://example.com', 'example.com', 'https:example.com'];
+    `https://example.com/${'a'.repeat(3000)}`, 'https://example.com/' + String.fromCharCode(0x200b) + 'hidden', 'ftp://example.com', 'example.com', 'https:example.com',
+    'HTTPS://example.com', 'Https://example.com', 'https://🙂.com', 'https://example.com:0', 'https://example.com:65536', 'https://example.com:99999',
+    ...INVISIBLE_ADDRESS_CHARS.map(char => `https://exa${char}mple.com`), ...DOT_LOOKALIKES.map(char => `https://example${char}com`)];
 const GOOD_ADDRESSES = ['https://example.com', 'https://example.com/a?b=c#d', 'https://sub.example.co.uk:8443/path', 'https://bücher.de/x'];
 const BAD_MONEY = ['', '   ', '-5', '-0.01', '1e9', '1e2', '0.001', '12.345', 'abc', 'NaN', 'Infinity', '١٢', '🙂', '1'.repeat(40), '1,000.00', '12 50', '0x10', '+5'];
 

@@ -413,7 +413,7 @@ export default function CreateWithModel() {
                     <View style={styles.section}>
                         <View style={styles.sectionTop}>
                             <SectionLabel style={styles.sectionLabel}>{text_.key === 'topic' ? t('form.topic') : t('create.workspace.prompt')}</SectionLabel>
-                            <Text variant="footnote" tone="secondary">{prompt.length}/{text_.max}</Text>
+                            <Text variant="footnote" tone="secondary">{text.length}/{text_.max}</Text>
                         </View>
                         <TextField
                             style={[styles.prompt, text_.key === 'topic' && styles.topic]}

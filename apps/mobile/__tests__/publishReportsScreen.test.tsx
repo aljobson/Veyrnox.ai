@@ -117,7 +117,8 @@ test('unknown id and viewer cannot save; bad accent blocks creation', async () =
     await act(async () => root.unmount()); mockParams = {}; await mount(true);
     await type('Report name', 'New one'); await type('Accent colour (hex)', 'red'); await press('Save');
     expect(writes()).toHaveLength(0); expect(has('Enter a hex colour')).toBe(true);
-    await type('Accent colour (hex)', '#123456'); await press('Save'); expect(body()).toMatchObject({ id: null, name: 'New one', accentColor: '#123456' });
+    await type('Accent colour (hex)', '  #123ABC  '); expect(has('Enter a hex colour')).toBe(false);
+    await press('Save'); expect(body()).toMatchObject({ id: null, name: 'New one', accentColor: '#123abc' });
 });
 test('viewer opening edit directly sees disabled fields and no save', async () => {
     mockParams = { id }; role = 'viewer'; await mount(true); expect(input('Report name').props.editable).toBe(false); expect(buttons('Save')).toHaveLength(0);

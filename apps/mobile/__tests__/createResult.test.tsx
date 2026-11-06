@@ -187,6 +187,7 @@ test('QA-4: exactly 30000 characters is accepted, and trimming whitespace brings
     await act(async () => promptField().props.onChangeText('a'.repeat(30_000)));
     expect(generate().props.accessibilityState.disabled).toBe(false);
     await act(async () => promptField().props.onChangeText(`  ${'b'.repeat(30_000)}  \n`));
+    expect(root.container.queryAll(n => n.children.join('') === '30000/30000')).toHaveLength(1);
     expect(generate().props.accessibilityState.disabled).toBe(false);
     await click(generate()); expect(mockPost).toHaveBeenCalledTimes(1);
     expect(mockPost.mock.calls[0][0].inputs.prompt).toHaveLength(30_000);
