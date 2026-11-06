@@ -7,6 +7,7 @@ import { needsLanguageChoice } from '../lib/languageTransition';
 import { readLanguage, syncPendingAccountLanguage } from '../lib/languageStore';
 import { captureIssue } from '../lib/crash';
 import { LanguageChoice } from './LanguageChoice';
+import { BrandSplash } from './BrandSplash';
 
 export function LanguageGate({ children, active = ACTIVE_LOCALES }: { children: ReactNode; active?: readonly LocaleCode[] }) {
     const { status, api, canReloadSession, generation, beginSessionTask } = useAuth();
@@ -14,6 +15,7 @@ export function LanguageGate({ children, active = ACTIVE_LOCALES }: { children: 
     const router = useRouter();
     const returnPath = languageReturnPath(pathname, useGlobalSearchParams(), useSegments());
     const [, refreshChoice] = useState(0);
+    const [splashDone, setSplashDone] = useState(false);
     const stored = readLanguage();
     useEffect(() => {
         const task = beginSessionTask();
@@ -30,6 +32,7 @@ export function LanguageGate({ children, active = ACTIVE_LOCALES }: { children: 
         }).catch(() => { if (task.current()) captureIssue('language_direction_failed', {}); });
         return () => { live = false; };
     }, [status, api, generation, beginSessionTask, stored, active, canReloadSession, returnPath, router]);
+    if (status === 'signedOut' && needsLanguageChoice(stored, active) && !splashDone) return <BrandSplash onContinue={() => setSplashDone(true)} />;
     if (status === 'signedOut' && needsLanguageChoice(stored, active)) return <LanguageChoice active={active} returnPath="/sign-in" onComplete={() => refreshChoice(value => value + 1)} />;
     return children;
 }
