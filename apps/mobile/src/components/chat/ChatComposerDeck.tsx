@@ -1,5 +1,6 @@
 import { rawText } from '../../lib/i18n/translate';
-import { ScrollView, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Keyboard, ScrollView, View } from 'react-native';
 import { cleanOptions, thinkingExtra, webExtra, type ChatModel, type ReplyOptions } from '../../lib/chat';
 import type { ChatImage } from '../../lib/chatAttach';
 import { plural, t } from '../../lib/i18n';
@@ -40,21 +41,34 @@ const TYPES = [
     { id: 'audio', key: 'chat.make.kind.audio' },
 ] as const;
 
+// With the keyboard open the whole deck (modes, model, attach strip, text box) is taller than
+// the space above the keyboard, so the text box ends up under it. While typing, show only the input row.
+function useKeyboardOpen(): boolean {
+    const [open, setOpen] = useState(Keyboard.isVisible());
+    useEffect(() => {
+        const show = Keyboard.addListener('keyboardDidShow', () => setOpen(true));
+        const hide = Keyboard.addListener('keyboardDidHide', () => setOpen(false));
+        return () => { show.remove(); hide.remove(); };
+    }, []);
+    return open;
+}
+
 export function ChatComposerDeck(props: Props) {
     const styles = useThemedStyles(sheets);
+    const typing = useKeyboardOpen();
     const thinking = thinkingExtra(props.model);
     const web = webExtra(props.model);
     const chosen = cleanOptions(props.model, props.options);
     return (
         <View>
             <View style={styles.deck} accessibilityLabel={t('chat.composer.label')}>
-                <ScrollView keyboardShouldPersistTaps="handled" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.typeRow} accessibilityRole="tablist">
+                {typing ? null : <ScrollView keyboardShouldPersistTaps="handled" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.typeRow} accessibilityRole="tablist">
                     {TYPES.map((item) => (
                         <Chip key={item.id} accessibilityRole="tab" selected={item.id === 'chat'}
                             icon={item.id} label={t(item.key)} onPress={() => item.id !== 'chat' && props.onMake(item.id)} />
                     ))}
-                </ScrollView>
-                <ScrollView keyboardShouldPersistTaps="handled" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.setupRow} accessibilityLabel={t('chat.composer.setup')}>
+                </ScrollView>}
+                {typing ? null : <ScrollView keyboardShouldPersistTaps="handled" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.setupRow} accessibilityLabel={t('chat.composer.setup')}>
                     <Chip icon="cpu" trailingIcon="caretDown" label={props.model.name}
                         accessibilityRole="button" accessibilityLabel={rawText(`${t('chat.model.change')}: ${props.model.name}, ${plural('chat.perReply', props.model.credits_per_reply)}`)}
                         disabled={props.sending} onPress={props.onModel} />
@@ -65,8 +79,8 @@ export function ChatComposerDeck(props: Props) {
                         </>
                     ) : null}
                     {web !== null ? <ReplyOptionChip label={t('chat.opt.web')} extra={web} selected={chosen.web} toggle disabled={props.sending} onPress={() => props.onOptions({ ...chosen, web: !chosen.web })} /> : null}
-                </ScrollView>
-                {props.imageExtra !== null ? (
+                </ScrollView>}
+                {props.imageExtra !== null && !typing ? (
                     <AttachStrip items={props.images} extra={props.imageExtra} max={props.maxImages} disabled={props.sending} embedded onLibrary={props.onLibrary} onPhotos={props.onPhotos} onVideo={props.onVideo} onRemove={props.onRemoveImage} />
                 ) : null}
                 <View style={styles.inputRow}>
@@ -86,9 +100,9 @@ export function ChatComposerDeck(props: Props) {
                 </View>
             </View>
             {props.images.some(image => image.video) ? <Text variant="caption" tone="tertiary">{t('chatDepth.videoFrames')}</Text> : null}
-            <Text variant="caption" tone="tertiary" style={styles.policy}>
+            {typing ? null : <Text variant="caption" tone="tertiary" style={styles.policy}>
                 <Text variant="caption" tone="warning">{props.free ? t('chatDepth.free') : plural('chat.perReply', props.price)}</Text> {t('chat.composer.policy')}
-            </Text>
+            </Text>}
         </View>
     );
 }
