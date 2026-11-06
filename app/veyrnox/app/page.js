@@ -8,6 +8,7 @@ import { PresetGallery } from '../_components/PresetGallery';
 import { VibeOffer } from '../_components/VibeOffer';
 import { YourWinsCard } from '../_components/YourWinsCard';
 import { useVibe } from '../_lib/creatorProfile';
+import { tOr } from '../../../lib/i18n/translate.mjs';
 
 function StarterIcon({ name }) {
   return (
@@ -15,6 +16,7 @@ function StarterIcon({ name }) {
       {name === 'create' && <><rect x="3" y="4" width="18" height="16" rx="3" /><circle cx="9" cy="10" r="1.5" /><path d="m4 18 5-5 4 4 3-3 4 4" /></>}
       {name === 'chat' && <><path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-8l-5 4v-4H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" /><path d="M8 9h8M8 13h5" /></>}
       {name === 'film' && <><rect x="4" y="4" width="16" height="16" rx="2" /><path d="M8 4v16M16 4v16M4 9h4m8 0h4M4 15h4m8 0h4" /></>}
+      {name === 'smart-cut' && <><path d="m4 4 7 7M4 20l7-7" /><circle cx="4" cy="4" r="2" /><circle cx="4" cy="20" r="2" /><path d="m13 12 7-4M13 12l7 4" /></>}
     </svg>
   );
 }
@@ -52,10 +54,11 @@ export default function Explore() {
           <p className="mt-3 max-w-[62ch] text-pretty leading-[1.6] text-vx-fg-body">{t('app.explore.startIntro')}</p>
         </header>
 
-        <section aria-label={t('app.explore.start')} className="my-8 grid gap-3 md:grid-cols-3">
+        <section aria-label={t('app.explore.start')} className="my-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <StarterCard href="/app/create" label={t('label.Create')} description={t('app.explore.createStart')} icon="create" />
           <StarterCard href="/app/chat" label={t('label.LLM Chat')} description={t('app.explore.chat')} icon="chat" />
           <StarterCard href="/app/film-studio" label={t('label.Film Studio')} description={t('app.explore.filmStart')} icon="film" />
+          <StarterCard href="/app/library#smart-cut" label={tOr(t, 'app.explore.smartCut', 'Smart Cut')} description={tOr(t, 'app.explore.smartCutStart', 'Turn finished clips into a reviewed first cut.')} icon="smart-cut" />
         </section>
 
         <YourWinsCard />
