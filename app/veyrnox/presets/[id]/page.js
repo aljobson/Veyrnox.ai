@@ -9,6 +9,7 @@ import { notFound, permanentRedirect } from 'next/navigation';
 import { MarketingNav } from '../../_components/NavBar';
 import { Main } from '../../_components/Main';
 import { TemplateRecipe } from '../../_components/TemplateRecipe';
+import { TemplateRecreate } from '../../_components/TemplateRecreate';
 import { FilmPlayer } from '../../_components/FilmPlayer';
 import { ClipBadge } from '../../_components/ClipBadge';
 import { SHOWCASE_CLIPS } from '../../_lib/showcase';
@@ -106,6 +107,7 @@ export default async function TemplatePage({ params }) {
           </div>
           <div className="lg:col-start-2 lg:row-start-2">
             <TemplateRecipe key={template.id} preset={recipe} generatedPreview={clip?.generatedOnVeyrnox} />
+            {clip && <TemplateRecreate preset={{ id: template.id, name: template.name, prompt: template.prompt }} />}
           </div>
         </div>
         </div>
