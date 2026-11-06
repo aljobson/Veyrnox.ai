@@ -200,22 +200,35 @@ jobs:
           # but still-live build's files out, so every later deploy 404'd on them and
           # rolled back too (deploy-failure #1716).
           while IFS=$'\t' read -r previous_run deployed_sha; do
-            deployed=$(gh run view "$previous_run" --json jobs \
-              --jq '[.jobs[] | select(.name == "deploy")
-                     | .steps[] | select(.name == "Deploy" and .conclusion == "success")] | length')
-            if [ "$deployed" -eq 0 ]; then
-              continue
-            fi
-            if [ -z "$latest_deployed_sha" ]; then
-              latest_deployed_sha="$deployed_sha"
-            fi
-            if [ "$recent_deploy_count" -lt 20 ]; then
-              append_run "$previous_run" "$deployed_sha"
-              recent_deploy_count=$((recent_deploy_count + 1))
-            fi
+            # The exact build referenced by the live page is authoritative even
+            # when Cloudflare Workers Builds, rather than this workflow's Deploy
+            # step, made it live. Its artifact is checked strictly below.
             if [[ -n "${required_live_lookup[$deployed_sha]+present}" ]]; then
               append_run "$previous_run" "$deployed_sha"
               required_live_found["$deployed_sha"]=true
+            fi
+            deployed=$(gh run view "$previous_run" --json jobs \
+              --jq '[.jobs[] | select(.name == "deploy")
+                     | .steps[] | select(.name == "Deploy" and .conclusion == "success")] | length')
+            if [ "$deployed" -ne 0 ]; then
+              if [ -z "$latest_deployed_sha" ]; then
+                latest_deployed_sha="$deployed_sha"
+              fi
+              if [ "$recent_deploy_count" -lt 20 ]; then
+                append_run "$previous_run" "$deployed_sha"
+                recent_deploy_count=$((recent_deploy_count + 1))
+              fi
+            fi
+            all_required_found=true
+            for required_sha in "${required_live_shas[@]}"; do
+              if [ "$required_sha" != "$retention_bootstrap_predecessor" ] \
+                && [[ -z "${required_live_found[$required_sha]+present}" ]]; then
+                all_required_found=false
+                break
+              fi
+            done
+            if [ "$recent_deploy_count" -ge 20 ] && [ "$all_required_found" = true ]; then
+              break
             fi
           # The window must reach past the last real deploy. Most completed runs on
           # main are cancelled, stale-skipped or failed, so 100 runs is about a day
