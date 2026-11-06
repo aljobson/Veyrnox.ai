@@ -10,12 +10,16 @@ import { Button, Text } from '../ui';
 import { t } from '../../lib/i18n';
 import { useAnnouncement } from '../../lib/useAnnouncement';
 
+// Test doubles of expo-router may omit useFocusEffect; pick once at module level so the hook order never changes.
+function useEffectOnMount(effect: () => void | (() => void)) { useEffect(effect, [effect]); }
+const useFocus = useFocusEffect ?? useEffectOnMount;
+
 export function FilmGenerationHistory({ film, shotId, onResult }: { film: Film; shotId: string; onResult?: (id: string) => void }) {
     const { api } = useAuth(), router = useRouter(), begin = useHandoffScope();
     const [items, setItems] = useState<FilmReturn[]>([]);
     const filmId = localFilmId(film), latestFilm = useRef(film);
     latestFilm.current = film;
-    (useFocusEffect ?? ((effect: () => void | (() => void)) => useEffect(effect, [effect])))(useCallback(() => {
+    useFocus(useCallback(() => {
         let live = true, delay = 5000, timer: ReturnType<typeof setTimeout> | undefined;
         const current = begin();
         setItems([]);

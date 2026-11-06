@@ -25,6 +25,12 @@ describe('paywall UI wiring', () => {
         expect(prompt).toContain("pathname?.startsWith('/legal/')");
     });
 
+    test('QA-008: a failed offerings load can be retried from the provider', () => {
+        const provider = source('src/billing/BillingProvider.tsx');
+        expect(provider).toContain('retryOfferings');
+        expect(provider).toContain('[beginSessionTask, offeringsLoad]');
+    });
+
     test('credits screen includes subscriptions, current packs, restore and policy links', () => {
         const credits = source('src/app/(app)/credits.tsx');
         expect(credits).toContain('offerings?.all.generation');

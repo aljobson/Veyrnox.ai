@@ -27,16 +27,6 @@ export default function AutolistEdit() {
         const version = generation.current, scope = publishScope();
         return () => version === generation.current && scope === publishScope() && currentApi.current === api;
     }
-    useEffect(() => {
-        const reset = () => {
-            generation.current++; canWriteRef.current = false; running.current = false;
-            setQueues(null); setName(''); setFeedUrl('https://'); setQueueId(''); setTemplate(DEFAULT_TEMPLATE); setInterval(360); setEnabled(true); setAutoSchedule(false); setReady(false); setBusy(false); setProblem(null);
-            setScopeTick(n => n + 1);
-        };
-        const userOff = subscribeCacheUser(reset), brandOff = brandStore.subscribe(reset);
-        return () => { generation.current++; canWriteRef.current = false; userOff(); brandOff(); };
-    }, []);
-
     const router = useRouter();
     const { id } = useLocalSearchParams<{ id?: string }>();
     const [queues, setQueues] = useState<Queue[] | null>(null);
@@ -50,6 +40,16 @@ export default function AutolistEdit() {
     const [ready, setReady] = useState(false);
     const [busy, setBusy] = useState(false);
     const [problem, setProblem] = useState<string | null>(null);
+
+    useEffect(() => {
+        const reset = () => {
+            generation.current++; canWriteRef.current = false; running.current = false;
+            setQueues(null); setName(''); setFeedUrl('https://'); setQueueId(''); setTemplate(DEFAULT_TEMPLATE); setInterval(360); setEnabled(true); setAutoSchedule(false); setReady(false); setBusy(false); setProblem(null);
+            setScopeTick(n => n + 1);
+        };
+        const userOff = subscribeCacheUser(reset), brandOff = brandStore.subscribe(reset);
+        return () => { generation.current++; canWriteRef.current = false; userOff(); brandOff(); };
+    }, []);
 
     useEffect(() => {
         let cancelled = false;

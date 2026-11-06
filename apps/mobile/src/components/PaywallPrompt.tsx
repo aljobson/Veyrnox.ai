@@ -14,8 +14,16 @@ import { PaywallSheet } from './paywall/PaywallSheet';
 const seenKey = (owner: string) => `veyrnox.paywall.seen.${owner}`;
 const depletedKey = (owner: string) => `veyrnox.paywall.depleted.${owner}`;
 // Survives prompt remounts, but never a sign-out, owner switch or new session generation.
-let promptSession: { owner: string; generation: number; closed: boolean } | null = null;
+interface PromptSession { readonly owner: string; readonly generation: number; closed: boolean; close(): void }
+let promptSession: PromptSession | null = null;
 subscribeCacheUser(() => { promptSession = null; });
+function sessionFor(owner: string, generation: number): PromptSession {
+    if (!promptSession || promptSession.owner !== owner || promptSession.generation !== generation) {
+        const created: PromptSession = { owner, generation, closed: false, close() { created.closed = true; } };
+        promptSession = created;
+    }
+    return promptSession;
+}
 
 export function PaywallPrompt() {
     const firstRunPending = useFirstRunPending();
@@ -24,13 +32,10 @@ export function PaywallPrompt() {
     useEffect(() => subscribeCacheUser(() => setOwner(getCacheUser())), []);
     // The hard paywall replaces the dismissible prompt (ADR-0108 amendment 2).
     if (!owner || firstRunPending || hardPaywallEnabled()) return null;
-    if (!promptSession || promptSession.owner !== owner || promptSession.generation !== generation) {
-        promptSession = { owner, generation, closed: false };
-    }
-    return <AccountPaywall key={`${owner}:${generation}`} owner={owner} session={promptSession} />;
+    return <AccountPaywall key={`${owner}:${generation}`} owner={owner} session={sessionFor(owner, generation)} />;
 }
 
-function AccountPaywall({ owner, session }: { owner: string; session: NonNullable<typeof promptSession> }) {
+function AccountPaywall({ owner, session }: { owner: string; session: PromptSession }) {
     const { api } = useAuth();
     const balance = useBalance();
     const pathname = usePathname();
@@ -47,14 +52,14 @@ function AccountPaywall({ owner, session }: { owner: string; session: NonNullabl
         const operation = getPurchaseSnapshot();
         if (operation.phase === 'store') return false;
         abortPreparing(operation.opId);
-        session.closed = true;
+        session.close();
         setOpenReason(null);
         return true;
     }, [session]);
 
     useEffect(() => {
         if (!openReason) return;
-        return () => { session.closed = true; };
+        return () => { session.close(); };
     }, [openReason, session]);
 
     useEffect(() => {
