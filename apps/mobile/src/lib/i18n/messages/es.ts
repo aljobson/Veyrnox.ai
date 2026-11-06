@@ -33,6 +33,7 @@ const es = {
     'public.TemplateRecipe.sourcePromptModelLimitCopyOnly': 'Este prompt exacto supera el límite verificado de {max} caracteres del modelo asignado. Sigue completo y se puede copiar, pero la generación está desactivada.',
     'public.TemplateRecipe.sourcePromptCopyOnly': 'Este prompt exacto necesita los medios de referencia requeridos o audio conservado que este modelo no puede recibir. Cópialo para usarlo en otro lugar.',
     'public.TemplateRecipe.sourcePromptUnavailable': 'El registro de origen no publicó ningún prompt. Veyrnox no lo ha adivinado ni reconstruido; el prompt de generación de abajo es una adaptación.',
+    'public.TemplateRecipe.sourceVideoUnsupported': 'Esta plantilla necesita el vídeo original de origen, que Veyrnox aún no puede aportar, así que no puede reproducir la vista previa. Usa el prompt como inspiración o elige una plantilla que solo necesite tu foto.',
     'public.TemplateRecipe.sourcePromptNotRecorded': 'No hay un prompt de origen exacto registrado para esta vista previa. El prompt de generación de abajo es una adaptación de Veyrnox, no texto copiado del origen.',
     'public.TemplateRecipe.sourcePromptTruncated': 'El feed de origen devolvió este prompt ya cortado. Se conserva exactamente y no debe considerarse completo.',
     'public.TemplateRecipe.sourcePromptDuplicate': 'El origen publicó este mismo prompt exacto para otro vídeo. Se conserva sin cambios y se identifica como duplicado del origen.',

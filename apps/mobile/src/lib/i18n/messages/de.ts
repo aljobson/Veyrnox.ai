@@ -33,6 +33,7 @@ const de = {
     'public.TemplateRecipe.sourcePromptModelLimitCopyOnly': 'Dieser exakte Prompt überschreitet das bestätigte Limit des zugewiesenen Modells von {max} Zeichen. Er bleibt vollständig kopierbar, aber die Generierung ist deaktiviert.',
     'public.TemplateRecipe.sourcePromptCopyOnly': 'Dieser exakte Prompt benötigt erforderliche Referenzmedien oder beibehaltenes Audio, das dieses Modell nicht empfangen kann. Kopiere ihn zur Verwendung an anderer Stelle.',
     'public.TemplateRecipe.sourcePromptUnavailable': 'Der Quelldatensatz veröffentlichte keinen Prompt. Veyrnox hat keinen erraten oder rekonstruiert; der Generierungs-Prompt unten ist eine Anpassung.',
+    'public.TemplateRecipe.sourceVideoUnsupported': 'Diese Vorlage braucht das Original-Quellvideo, das Veyrnox noch nicht bereitstellen kann, und kann die Vorschau daher nicht nachbilden. Nutze den Prompt als Inspiration oder wähle eine Vorlage, die nur dein Foto braucht.',
     'public.TemplateRecipe.sourcePromptNotRecorded': 'Für diese Vorschau ist kein exakter Quell-Prompt erfasst. Der Generierungs-Prompt unten ist eine Veyrnox-Anpassung und kein kopierter Quelltext.',
     'public.TemplateRecipe.sourcePromptTruncated': 'Der Quell-Feed lieferte diesen Prompt bereits abgeschnitten. Er wird exakt bewahrt und darf nicht als vollständig gelten.',
     'public.TemplateRecipe.sourcePromptDuplicate': 'Die Quelle veröffentlichte denselben exakten Prompt für ein weiteres Video. Er bleibt unverändert und ist als Quellduplikat gekennzeichnet.',

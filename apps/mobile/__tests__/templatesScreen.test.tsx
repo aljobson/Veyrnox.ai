@@ -148,3 +148,9 @@ test('a template that needs a photo keeps Use template only, with no Generate', 
     expect(controls(t('slip.generate'))).toHaveLength(0);
     expect(controls(t('libraryCreate.useTemplate'))).toHaveLength(1);
 });
+test('an exact prompt that needs a source video we cannot supply is inspiration only: a note, no Generate, no Use template', async () => {
+    mockFetch.mockResolvedValue([{ ...feed[0], promptOrigin: 'community-source-exact' as const, sourcePrompt: 'Replace the performer in @video1 with @image1', sourcePromptOrigin: 'community-source-exact' as const, sourcePromptIssues: ['reference-image-input-required', 'reference-video-not-supported'] }]);
+    await act(async () => root.render(<TemplatePage />));
+    expect(root.container.queryAll(n => n.children.includes(t('public.TemplateRecipe.sourceVideoUnsupported'))).length).toBeGreaterThan(0);
+    for (const key of ['slip.generate', 'libraryCreate.editBeforeGenerating', 'libraryCreate.useTemplate']) expect(controls(t(key))).toHaveLength(0);
+});

@@ -30,6 +30,7 @@
   "public.TemplateRecipe.sourcePromptModelLimitCopyOnly",
   "public.TemplateRecipe.sourcePromptCopyOnly",
   "public.TemplateRecipe.sourcePromptUnavailable",
+  "public.TemplateRecipe.sourceVideoUnsupported",
   "public.TemplateRecipe.sourcePromptNotRecorded",
   "public.TemplateRecipe.sourcePromptTruncated",
   "public.TemplateRecipe.sourcePromptDuplicate",
