@@ -15,6 +15,7 @@ import { loadLanguage, readLanguage, saveAccountLanguage, saveLanguage } from '.
 import { ds } from '../../theme';
 import { Button, Text, themedStyles, useThemedStyles } from '../../components/ui';
 import { noteOnboardingCompleted } from '../../lib/celebrate';
+import { useAnnouncement } from '../../lib/useAnnouncement';
 
 // The Vibe Check once asked seven questions (goal, look, pace, chaos, destination, audience, voice) and showed a creator
 // card. Those are removed: what is left is the language choice and Vey's intro. Continuing records the check as done
@@ -86,6 +87,8 @@ export default function Vibe() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [language]);
 
+    useAnnouncement(language === 'done' ? t('common.loading') : null, { onMount: true });
+
     return (
         <KeyboardAvoidingView style={[styles.screen, { paddingTop: insets.top, paddingBottom: insets.bottom }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <Stack.Screen options={{ headerShown: false, gestureEnabled: false }} />
@@ -122,7 +125,7 @@ export default function Vibe() {
                         ) : null}
                     </View>
                 ) : (
-                    <View style={styles.center} accessible accessibilityRole="progressbar" accessibilityLabel={t('common.loading')} accessibilityLiveRegion="polite">
+                    <View style={styles.center} accessible accessibilityRole="progressbar" accessibilityLabel={t('common.loading')}>
                         <ActivityIndicator />
                     </View>
                 )}
