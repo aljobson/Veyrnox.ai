@@ -3,6 +3,7 @@ import { readdirSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { PAGE_TEMPLATES, templateMatches } from './page-manifest.mjs';
 import { installInteractiveAnalyticsNavigator } from './fixtures/interactive-analytics.mjs';
+import { settleStreamedPage } from './fixtures/streamed-page.mjs';
 
 // Independent from authenticated-product: its automatic Decline handler would
 // conceal the exact consent/dismissal regression being exercised here.
@@ -95,6 +96,16 @@ async function installPrivacyFixtures(page, origin) {
     fixture.pending.add(pending);
     return pending.finally(() => fixture.pending.delete(pending));
   });
+  fixture.open = async path => {
+    const response = await page.goto(path, { waitUntil: 'load' });
+    await settleStreamedPage(page);
+    return response;
+  };
+  fixture.reload = async () => {
+    const response = await page.reload({ waitUntil: 'load' });
+    await settleStreamedPage(page);
+    return response;
+  };
   fixture.finish = async () => {
     await Promise.all(context.pages().map(current => current.close({ runBeforeUnload: false })));
     while (fixture.pending.size) await Promise.all([...fixture.pending]);
@@ -116,7 +127,7 @@ for (const [label, selected] of [
   test(`${label}: the privacy prompt stays dismissed across client navigation and reload`, async ({ page, baseURL }) => {
     const fixture = await installPrivacyFixtures(page, baseURL);
     try {
-      const response = await page.goto('/legal/privacy');
+      const response = await fixture.open('/legal/privacy');
       expect(response.status()).toBe(200);
       await expect(banner(page)).toBeVisible();
       await banner(page).getByRole('button', { name: label, exact: true }).click();
@@ -130,7 +141,7 @@ for (const [label, selected] of [
       expect(await page.evaluate(() => window.__syntheticPrivacyClientNavigation)).toBe(true);
       await expect(banner(page)).toHaveCount(0);
       await expect(choices(page)).toHaveCount(0);
-      await page.reload();
+      await fixture.reload();
       await expect(banner(page)).toHaveCount(0);
       await expect(choices(page)).toHaveCount(0);
       expect(await preference(page)).toEqual(selected);
@@ -142,7 +153,7 @@ test('browser telemetry redacts the synthetic capability bearer on the review ro
   const fixture = await installPrivacyFixtures(page, baseURL);
   const marker = 'synthetic-capability-never-a-real-token';
   try {
-    await page.goto(`/social/review/${marker}?synthetic_query=never-capture#synthetic-fragment`);
+    await fixture.open(`/social/review/${marker}?synthetic_query=never-capture#synthetic-fragment`);
     await banner(page).getByRole('button', { name: 'Allow analytics', exact: true }).click();
     await expect.poll(() => fixture.events.filter(event => event.event === '$pageview').length, { timeout: 15_000 }).toBeGreaterThan(0);
     const views = fixture.events.filter(event => event.event === '$pageview');
