@@ -113,7 +113,7 @@ test('editing the prompt after zero jobs start submits the new prompt with a fre
     expect(mockPost.mock.calls[1][0].idempotency_key).not.toBe(mockPost.mock.calls[0][0].idempotency_key);
 });
 test('QA-E3: a failed Generate shows Try again beside the error and repeats the same request and key', async () => {
-    mockPost.mockRejectedValueOnce(new ApiError(500, 'server_error'));
+    mockPost.mockRejectedValueOnce(new ApiError(500, 'internal'));
     await render(); await click(generate());
     expect(controls(t('recovery.retry'))).toHaveLength(1);
     await click(controls(t('recovery.retry'))[0]);

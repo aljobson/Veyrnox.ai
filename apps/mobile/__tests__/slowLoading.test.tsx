@@ -12,7 +12,8 @@ import { ApiError } from '../src/lib/api';
 import { t } from '../src/lib/i18n';
 
 jest.mock('expo-router', () => ({ Link: ({ children }: any) => children, Stack: { Screen: () => null } }));
-jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: {} }) }));
+const mockApi = {};
+jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi }) }));
 jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalog: jest.fn(), fetchAllCatalog: jest.fn() }));
 jest.mock('../src/lib/creditHistory', () => ({ ...jest.requireActual('../src/lib/creditHistory'), fetchHistoryPage: jest.fn(), fetchUsage: jest.fn() }));
 void [RN.View, RN.Text, RN.Pressable, RN.ScrollView, RN.FlatList, RN.ActivityIndicator];
