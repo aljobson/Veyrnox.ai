@@ -16,6 +16,7 @@ import { ScheduleGeneration } from '../../_components/ScheduleGeneration';
 import { AssetFooter } from '../../_components/AssetFooter';
 import { AssetLoadStatus } from '../../_components/AssetLoadStatus';
 import { EditSheet } from '../../_components/EditSheet';
+import { SmartCutEntry } from '../../_components/SmartCutEntry';
 import { useCatalog } from '../../_lib/useCatalog';
 import { mergeHydrated, shouldPoll } from '../../_lib/jobWindow';
 import { STATE_TABS, KIND_TABS, VIEWS, VIEW_KEY, filterRows, readView } from '../../_lib/libraryFilter';
@@ -26,6 +27,7 @@ import { DeviceLibrary } from '../../_components/DeviceLibrary';
 import { EditorLibraryRenders } from '../../_components/editor/EditorLibraryRenders';
 import { getSession, getStoredUserId, onSessionChange } from '../../../lib/authClient.js';
 import { useOlderLibraryJobs } from '../../_lib/useOlderLibraryJobs';
+import { useSmartCutIntent } from '../../_lib/useSmartCutIntent';
 
 // Account list is authoritative; local history supplies cached display names.
 const STATE_UI = {
@@ -51,12 +53,9 @@ const POLL_GIVE_UP_AFTER = 20;
 // buffer on mount was up to 100 requests in one burst. Hydrate a page at a
 // time instead; rows outside the window still render from localStorage.
 const PAGE = 12;
-// Clip Editor stays hidden until launch unless this browser opts in
-// (CLAUDE.md "Delivery": new user paths behind localStorage.veyrnox_*).
-const EDITOR_FLAG = 'veyrnox_editor';
+const EDITOR_FLAG = 'veyrnox_editor'; const editorFlag = () => { try { return window.localStorage.getItem(EDITOR_FLAG) === '1'; } catch { return false; } };
 // Browser-only values read once: off / 'grid' on the server and first paint.
 const never = () => () => {};
-const editorFlag = () => { try { return window.localStorage.getItem(EDITOR_FLAG) === '1'; } catch { return false; } };
 const savedView = () => readView(window.localStorage);
 const off = () => false;
 const on = () => true;
@@ -89,11 +88,12 @@ export default function Library() {
   const [unreachable, setUnreachable] = useState(false);
   const [nextCursor, setNextCursor] = useState(null);
   const [listLive, setListLive] = useState(null);
-  const editorOn = useSyncExternalStore(never, editorFlag, off);
   const rowsRef = useRef(rows);
   rowsRef.current = rows;
   const [selected, setSelected] = useState([]);
   const [editing, setEditing] = useState(false);
+  const openSmartCut = useCallback(() => setKind('video'), []);
+  const { editorOn = false, smartCutIntent = false, enableEditorPreview = () => {} } = useSmartCutIntent(openSmartCut, { editorKey: EDITOR_FLAG, getEditorFlag: editorFlag }) || {};
 
   const actor=useSyncExternalStore(onSessionChange,getStoredUserId,()=>null);
   const sessionLoaded = useSyncExternalStore(never, on, off);
@@ -333,7 +333,9 @@ export default function Library() {
       <EditorLibraryRenders visible={['all','succeeded'].includes(tab) && ['all','video'].includes(kind) && !favOnly}/>
       <FilmLibraryMasters visible={['all','succeeded'].includes(tab) && ['all','video'].includes(kind) && !favOnly}/>
 
-      <section className="max-w-[1400px] mx-auto px-4 sm:px-8 pb-16">
+      {smartCutIntent && <SmartCutEntry enabled={editorOn} selectedCount={pickedClips.length} onEnable={enableEditorPreview} />}
+
+      <section id="library-assets" className="max-w-[1400px] mx-auto scroll-mt-24 px-4 sm:px-8 pb-16">
         {!historyLoaded ? null : list.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-vx-border p-12 text-center">
             <div data-testid="library-empty" className="text-lg font-black">{t("app.library.empty")}</div>
@@ -367,7 +369,7 @@ export default function Library() {
       </section>
 
       {editorOn && selected.length > 0 && (
-        <div className="fixed bottom-0 inset-x-0 z-40 border-t border-vx-border bg-vx-panel">
+        <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] z-40 border-t border-vx-border bg-vx-panel sm:bottom-0">
           <div className="max-w-[1400px] mx-auto px-4 sm:px-8 py-3 flex items-center justify-between gap-3">
             <span className="text-sm text-vx-fg-body">
               {t(pluralKey(t, locale, 'app.library.selected', pickedClips.length), {
@@ -379,17 +381,16 @@ export default function Library() {
               <button onClick={() => setSelected([])} className="rounded-full px-4 py-2 text-sm border border-vx-border text-vx-fg-muted hover:text-vx-fg">{t("app.library.clear")}</button>
               <button onClick={() => setEditing(true)} disabled={!pickedClips.length}
                 className="rounded-full px-5 py-2 text-sm font-bold bg-vx-accent text-vx-accent-ink disabled:opacity-40">
-                {t('app.library.edit', { count: number(pickedClips.length) })}
+                {smartCutIntent
+                  ? `${t('app.library.openSmartCut')} (${number(pickedClips.length)})`
+                  : t('app.library.edit', { count: number(pickedClips.length) })}
               </button>
             </span>
           </div>
         </div>
       )}
 
-      {editing && (
-        <EditSheet clips={pickedClips} audios={audios} credits5s={editCredits}
-          onClose={() => setEditing(false)} onSubmitted={onEditSubmitted} />
-      )}
+      {editing && <EditSheet clips={pickedClips} audios={audios} credits5s={editCredits} smartCut={smartCutIntent} onClose={() => setEditing(false)} onSubmitted={onEditSubmitted} />}
       </Main>
     </div>
   );
