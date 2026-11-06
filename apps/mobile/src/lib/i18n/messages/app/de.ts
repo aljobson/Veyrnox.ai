@@ -5720,4 +5720,6 @@ export default {
   "create.workspace.rightsNeeded": "Setze oben das Häkchen, um zu bestätigen, dass dir diese Dateien gehören oder du sie nutzen darfst, und tippe dann auf Erstellen.",
   "create.workspace.onlyModel": "Zurzeit akzeptiert kein anderes Modell diese Dateien.",
   "handoff.switchedModel": "Zu {model} gewechselt, weil du eine Datei hinzugefügt hast.",
+  "loading.still": "Lädt noch…",
+  "loading.timeout": "Das dauert länger als erwartet. Prüfe deine Verbindung und versuche es erneut.",
 } as const;

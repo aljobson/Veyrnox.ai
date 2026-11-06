@@ -5653,4 +5653,6 @@ export default {
   "create.workspace.rightsNeeded": "위 체크박스를 선택해 이 파일이 본인 소유이거나 사용 권한이 있음을 확인한 다음 생성을 누르세요.",
   "create.workspace.onlyModel": "지금은 이 파일을 지원하는 다른 모델이 없습니다.",
   "handoff.switchedModel": "파일을 추가해서 {model}(으)로 전환했습니다.",
+  "loading.still": "아직 불러오는 중…",
+  "loading.timeout": "예상보다 오래 걸리고 있습니다. 연결을 확인하고 다시 시도하세요.",
 } as const;

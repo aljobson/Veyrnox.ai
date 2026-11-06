@@ -129,3 +129,22 @@ test('one Library timer updates the mounted notice to urgent and is cleared on u
     await act(async () => root.unmount()); expect(clear).toHaveBeenCalledWith(timer);
     intervals.mockRestore(); clear.mockRestore();
 });
+
+test('QA-E2: a 429 on the first page keeps Try again visible, disabled for Retry-After, then loads again', async () => {
+    mockMedia.listJobs.mockRejectedValueOnce(new ApiError(429, 'rate_limited', { retryAfterSeconds: 5 }));
+    await act(async () => root.render(<Library />));
+    const retry = () => root.container.queryAll(n => n.props.accessibilityRole === 'button' && n.props.accessibilityLabel === t('recovery.retry'))[0];
+    expect(text(t('library.loadError')).length).toBeGreaterThan(0);
+    expect(retry().props.accessibilityState.disabled).toBe(true);
+    await tick(4000); expect(retry().props.accessibilityState.disabled).toBe(true);
+    await tick(1500); expect(retry().props.accessibilityState.disabled).toBe(false);
+    mockMedia.listJobs.mockResolvedValueOnce({ jobs: [row('a')], next: null });
+    await act(async () => retry().props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }));
+    expect(mockMedia.listJobs).toHaveBeenCalledTimes(2); expect(text(t('library.loadError'))).toHaveLength(0);
+});
+test('a plain server error leaves Try again enabled at once', async () => {
+    mockMedia.listJobs.mockRejectedValueOnce(new ApiError(500, 'server_error'));
+    await act(async () => root.render(<Library />));
+    const retry = root.container.queryAll(n => n.props.accessibilityRole === 'button' && n.props.accessibilityLabel === t('recovery.retry'))[0];
+    expect(retry.props.accessibilityState.disabled).toBe(false);
+});

@@ -5988,4 +5988,6 @@ export default {
   "create.workspace.rightsNeeded": "ضع علامة في المربع أعلاه لتؤكد أنك تملك هذه الملفات أو لديك إذن باستخدامها، ثم اضغط إنشاء.",
   "create.workspace.onlyModel": "لا يوجد نموذج آخر يقبل هذه الملفات حاليًا.",
   "handoff.switchedModel": "تم التبديل إلى {model} لأنك أضفت ملفًا.",
+  "loading.still": "ما زال التحميل جارياً…",
+  "loading.timeout": "يستغرق الأمر وقتاً أطول من المتوقع. تحقق من اتصالك وحاول مرة أخرى.",
 } as const;

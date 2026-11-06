@@ -1,11 +1,12 @@
 import { Text as StatusText } from './ui/Text';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { groupModels, type Group } from '../lib/catalogPages';
 import { t } from '../lib/i18n';
 import { fetchCatalog, fetchAllCatalog } from '../lib/media';
 import { colors } from '../theme';
 import { Action } from './account/shared';
+import { SlowLoader } from './SlowLoader';
 
 // Loads the public catalogue and hands each group of models to the screen to draw.
 export function CatalogList({ render, includeGated = false }: { includeGated?: boolean; render: (g: Group) => React.ReactNode }) {
@@ -33,7 +34,7 @@ export function CatalogList({ render, includeGated = false }: { includeGated?: b
             </View>
         );
     }
-    if (!groups) return <ActivityIndicator color={colors.accent} accessibilityLabel={t('catalog.loading')} />;
+    if (!groups) return <SlowLoader key={attempt} label={t('catalog.loading')} onRetry={() => setAttempt((n) => n + 1)} />;
     if (groups.length === 0) return <Text style={styles.note}>{t('catalog.empty')}</Text>;
     return <>{groups.map((g) => <View key={g.kind} style={{ gap: 8 }}>{render(g)}</View>)}</>;
 }

@@ -5787,4 +5787,6 @@ export default {
   "create.workspace.rightsNeeded": "Marca la casilla de arriba para confirmar que estos archivos son tuyos o tienes permiso para usarlos y pulsa Generar.",
   "create.workspace.onlyModel": "Ningún otro modelo acepta estos archivos ahora mismo.",
   "handoff.switchedModel": "Cambiamos a {model} porque añadiste un archivo.",
+  "loading.still": "Sigue cargando…",
+  "loading.timeout": "Está tardando más de lo esperado. Revisa tu conexión e inténtalo de nuevo.",
 } as const;
