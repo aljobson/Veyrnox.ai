@@ -27,7 +27,7 @@ jest.mock('expo-web-browser', () => ({ maybeCompleteAuthSession: jest.fn(), open
 jest.mock('expo-apple-authentication', () => ({ isAvailableAsync: jest.fn(async () => false) }));
 jest.mock('expo/fetch', () => ({ fetch: jest.fn() }));
 jest.mock('../src/lib/auth/pkce', () => ({}));
-jest.mock('../src/components/MascotWordmark', () => ({ MascotWordmark: () => null }));
+jest.mock('../src/components/BrandIntro', () => ({ BrandIntro: () => null }));
 jest.mock('../src/auth/TurnstileView', () => ({ TurnstileView: jest.fn(() => null) }));
 jest.mock('../src/lib/api', () => ({ createApiClient: () => ({}) }));
 jest.mock('../src/lib/appCache', () => ({

@@ -4047,6 +4047,8 @@ export default {
   "signIn.failed": "ログインが完了しませんでした。もう一度お試しください。",
   "signIn.idea": "アイデアをシーンに",
   "signIn.kicker": "あなたのクリエイティブスタジオ",
+  "signIn.offer.body": "メール確認後に付与され、90日間有効です。料金は請求前に表示され、失敗した作成は返金されます。",
+  "signIn.offer.title.other": "はじめに{count}クレジットを無料プレゼント",
   "signIn.openPrivacy": "プライバシーポリシーを開く",
   "signIn.openTerms": "利用規約を開く",
   "signIn.photo": "動き出す写真",
