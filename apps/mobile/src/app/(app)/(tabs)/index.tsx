@@ -12,11 +12,10 @@ import { t } from '../../../lib/i18n';
 import { fetchCatalogCached, mediaApi, type CatalogModel, type Job, type Kind } from '../../../lib/media';
 import { LowBalanceNote } from '../../../components/LowBalanceNote';
 import { CREATOR_PROFILE_ENABLED } from '../../../lib/creatorProfile';
-import { recordVibeSkip, runVibeSync, vibeOffered } from '../../../lib/creatorProfileStore';
+import { runVibeSync, vibeOffered } from '../../../lib/creatorProfileStore';
 import { useVibeAnswers } from '../../../lib/useVibeAnswers';
 import { subscribeVibeIdle } from '../../../lib/vibeEvents';
 import { getCacheUser, subscribeCacheUser } from '../../../lib/appCache';
-import { VibeInvite } from '../../../components/home/VibeInvite';
 import { rankPresets } from '../../../lib/creatorTaste';
 import { cheapestCredits, isLowBalance } from '../../../lib/lowBalance';
 import { useBalance } from '../../../lib/useBalance';
@@ -92,19 +91,15 @@ export default function Explore() {
 
     const vibe = useVibeAnswers();
     const owner = useSyncExternalStore(subscribeCacheUser, getCacheUser, getCacheUser);
-    const [invite, setInvite] = useState({ owner, generation, shown: false, busy: false });
-    const inviteCurrent = invite.owner === owner && invite.generation === generation;
-    const jobsRunning = useRef(false), rerun = useRef(false), mounted = useRef(true), skipOp = useRef(0);
+    const jobsRunning = useRef(false), rerun = useRef(false), mounted = useRef(true);
     const vibeJobs = useRef(async () => {});
     vibeJobs.current = async () => {
         if (!CREATOR_PROFILE_ENABLED || !owner) return;
         const task = beginSessionTask();
         await runVibeSync(api, task);
         if (!mounted.current || !task.current()) return;
-        const shown = await vibeOffered(api, task);
-        if (!mounted.current || !task.current()) return;
-        setInvite(previous => ({ owner, generation, shown,
-            busy: previous.owner === owner && previous.generation === generation && previous.busy }));
+        // Hydrates a saved server profile for ranking when there is no local record; the visibility answer is unused.
+        await vibeOffered(api, task);
     };
     const triggerVibe = useCallback(() => {
         if (jobsRunning.current) { rerun.current = true; return; }
@@ -120,21 +115,10 @@ export default function Explore() {
         return () => { mounted.current = false; };
     }, []);
     useEffect(() => {
-        skipOp.current++;
-        setInvite({ owner, generation, shown: false, busy: false });
         triggerVibe();
     }, [owner, generation, triggerVibe]);
     useFocusEffect(useCallback(() => { triggerVibe(); }, [triggerVibe]));
     useEffect(() => subscribeVibeIdle(triggerVibe), [triggerVibe]);
-    async function skipInvite() {
-        if (!CREATOR_PROFILE_ENABLED) return;
-        const task = beginSessionTask(), op = ++skipOp.current;
-        setInvite({ owner, generation, shown: false, busy: true });
-        const r = await recordVibeSkip(api, task);
-        if (!task.current() || r.kind === 'stale-session' || skipOp.current !== op) return;
-        setInvite(previous => ({ ...previous, busy: false, ...(r.kind === 'applied' ? { shown: false } : {}) }));
-    }
-
     // On every return, so a creation started elsewhere shows at once.
     useFocusEffect(
         useCallback(() => {
@@ -205,8 +189,6 @@ export default function Explore() {
                     <StartOption href="/film" style={styles.startOption} icon="slate" title={t('menu.film')} body={t('explore.start.film.body')} hint={t('explore.start.film.hint')} divided />
                 </Card>
 
-                {CREATOR_PROFILE_ENABLED && owner && inviteCurrent && invite.shown ?
-                    <VibeInvite busy={invite.busy} onStart={() => router.push('/vibe')} onLater={() => void skipInvite()} /> : null}
 
                 <Card style={styles.composer} onLayout={event => { ideaY.current = event.nativeEvent.layout.y; }}>
                     <Text variant="title3" style={styles.composerTitle}>

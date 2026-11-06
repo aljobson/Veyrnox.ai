@@ -106,12 +106,12 @@ describe('where the welcome shows', () => {
         expect(start).toContain('presetHref(template)');
     });
 
-    test('the Vibe screen asks no questions: language and intro only', () => {
+    test('the Vibe screen asks no questions: language only, then it completes itself', () => {
         const screen = read('app', '(app)', 'vibe.tsx');
         expect(screen).not.toContain('const STEPS');
         expect(screen).not.toContain('CREATOR_ANSWERS');
         expect(screen).not.toContain('ChoiceCard');
-        expect(screen).toContain("proceed('next')");
+        expect(screen).not.toContain('vibe.intro.title');
         expect(screen).toContain("proceed('skip')");
     });
 });
