@@ -69,7 +69,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
     const [status, setStatus] = useState<BillingStatus>(ENABLED && API_KEY ? 'loading' : 'off');
     const [offerings, setOfferings] = useState<PurchasesOfferings | null>(null);
     const [offeringsLoad, setOfferingsLoad] = useState(0);
-    const retryOfferings = useCallback(() => { setStatus(previous => (previous === 'unavailable' ? 'loading' : previous)); setOfferingsLoad(count => count + 1); }, []);
+    const retryOfferings = useCallback(() => { setStatus(previous => (previous === 'off' ? previous : 'loading')); setOfferingsLoad(count => count + 1); }, []);
     const [store, setStore] = useState(() => emptyStore(-1));
     const [server, setServer] = useState(() => emptyServer(-1));
     const currentStore = store.gen === generation ? store : emptyStore(generation);
@@ -146,14 +146,18 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         }
     }, [api, beginSessionTask]);
 
+    // The customer-info listener is registered once and outlives offerings reloads (Retry), so it follows the
+    // provider's mount, not a single run of the effect below.
+    const mounted = useRef(true);
+    useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
     useEffect(() => {
         if (!ENABLED || !API_KEY) return;
         let cancelled = false;
         const onInfo = () => {
             const task = beginSessionTask();
-            if (cancelled || bound.current?.gen !== task.gen) return;
+            if (!mounted.current || bound.current?.gen !== task.gen) return;
             void Purchases.getCustomerInfo().then(info => {
-                if (!cancelled && task.current() && bound.current?.gen === task.gen) setStore(storeInfo(task.gen, info));
+                if (mounted.current && task.current() && bound.current?.gen === task.gen) setStore(storeInfo(task.gen, info));
             }).catch(() => undefined);
         };
         (async () => {

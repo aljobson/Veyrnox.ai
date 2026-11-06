@@ -5,10 +5,12 @@ import Paywall from '../src/app/(app)/paywall';
 
 void [ActivityIndicator, Pressable, Text, View];
 const mockBack = jest.fn();
+const mockReplace = jest.fn();
+let mockCanGoBack = true;
 const mockRetryOfferings = jest.fn();
 const mockRefreshSales = jest.fn(async () => true);
 let mockBilling: Record<string, unknown>;
-jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () => ({ back: mockBack, canGoBack: () => true }), useLocalSearchParams: () => ({ offering: 'generation' }) }));
+jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () => ({ back: mockBack, replace: mockReplace, canGoBack: () => mockCanGoBack }), useLocalSearchParams: () => ({ offering: 'generation' }) }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
 jest.mock('react-native-purchases-ui', () => ({ __esModule: true, default: { Paywall: () => null } }));
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: {} }) }));
@@ -22,6 +24,7 @@ const button = (label: string) => root.container.queryAll(n => n.props.accessibi
 beforeEach(() => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
     jest.clearAllMocks();
+    mockCanGoBack = true;
     mockBilling = { status: 'unavailable', offerings: null, canPurchase: false, salesOpen: true, retryOfferings: mockRetryOfferings, refreshSales: mockRefreshSales };
     root = createRoot();
 });
@@ -46,4 +49,18 @@ test('sales closed also shows the escape hatch', async () => {
     await act(async () => root.render(<Paywall />));
     expect(button('Close').length).toBeGreaterThan(0);
     expect(button('Try again').length).toBeGreaterThan(0);
+});
+
+test('Close stays visible while a retry is loading', async () => {
+    mockBilling = { ...mockBilling, status: 'loading' };
+    await act(async () => root.render(<Paywall />));
+    expect(button('Close').length).toBeGreaterThan(0);
+});
+
+test('Close falls back to the credits screen when there is no history (cold deep link)', async () => {
+    mockCanGoBack = false;
+    await act(async () => root.render(<Paywall />));
+    await act(async () => button('Close')[0].props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }));
+    expect(mockBack).not.toHaveBeenCalled();
+    expect(mockReplace).toHaveBeenCalledWith('/credits');
 });

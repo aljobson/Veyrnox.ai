@@ -33,7 +33,8 @@ export default function Paywall() {
     const [vey, react] = useReducer(paywallVey, null, () => paywallVey(null, { type: 'open', offering: offeringId ?? 'generation' }));
     const release = useRef<() => void>(() => undefined);
     const closing = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-    const close = useCallback(() => { if (router.canGoBack()) router.back(); }, [router]);
+    // A cold deep link has no history: fall back to the credits screen so there is always a way out.
+    const close = useCallback(() => { if (router.canGoBack()) router.back(); else router.replace('/credits'); }, [router]);
     useEffect(() => () => { clearTimeout(closing.current); release.current(); }, []);
 
     const onInitiated = useCallback(({ packageBeingPurchased, resume }: { packageBeingPurchased: PurchasesPackage; resume: (go: boolean) => void }) => {
@@ -64,7 +65,7 @@ export default function Paywall() {
 
     const retry = useCallback(() => { billing.retryOfferings(); void billing.refreshSales(); }, [billing]);
     if (!paywallsEnabled() || !offeringId) return <Unavailable text={t('billing.paywall.notReady')} onRetry={retry} onClose={close} />;
-    if (billing.status === 'loading') return <View style={styles.center}><ActivityIndicator accessibilityLabel={t('common.loading')} /></View>;
+    if (billing.status === 'loading') return <Unavailable text={t('common.loading')} onClose={close} />;
     if (!offering || !billing.canPurchase) return <Unavailable text={t(billing.salesOpen ? 'billing.paywall.notReady' : 'billing.paywall.salesClosed')} onRetry={retry} onClose={close} />;
     return (
         <View style={[styles.screen, themed.page]}>
@@ -95,14 +96,15 @@ export default function Paywall() {
 }
 
 // A dead end is never acceptable: the person can always retry the store load or leave.
-function Unavailable({ text, onRetry, onClose }: { text: string; onRetry(): void; onClose(): void }) {
+function Unavailable({ text, onRetry, onClose }: { text: string; onRetry?: () => void; onClose(): void }) {
     useAnnouncement(text, { onMount: true });
     return (
         <View style={styles.center}>
             <Stack.Screen options={{ title: t('billing.paywall.title'), presentation: 'modal' }} />
+            {onRetry ? null : <ActivityIndicator />}
             <Text variant="body" tone="secondary" accessibilityRole="alert">{text}</Text>
             <View style={styles.actions}>
-                <Button variant="primary" label={t('recovery.retry')} onPress={onRetry} />
+                {onRetry ? <Button variant="primary" label={t('recovery.retry')} onPress={onRetry} /> : null}
                 <Button variant="secondary" label={t('common.close')} onPress={onClose} />
             </View>
         </View>
