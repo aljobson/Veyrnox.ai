@@ -72,6 +72,9 @@ export function syncWebI18n(check = false) {
             ...readCatalog(join(WEB, 'app', code, 'data-errors.mjs')),
             ...readCatalog(join(WEB, 'app', code, 'create.mjs')),
             ...readCatalog(join(WEB, 'app', code, 'publish.mjs')),
+            // Smart Cut is currently English-first on the site; locale modules re-export this catalog.
+            ...readCatalog(join(WEB, 'app', 'en', 'smart-cut.mjs')),
+            ...readCatalog(join(WEB, 'app', code, 'editor-sheet.mjs')),
             ...readCatalog(join(WEB, 'app', code, 'account-mfa.mjs')),
             ...readCatalog(join(WEB, 'app', code, 'account.mjs')) };
         const lines = [];

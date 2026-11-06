@@ -92,6 +92,7 @@ const domains: Record<string, readonly string[]> = {
     "reports.cadence.{}": ["weekly", "monthly"],
     "reports.format.{}": ["pdf", "pptx"],
     "smartlink.theme.{}": ["midnight", "light", "sunset"],
+    "app.smartCut.pacing.{}": ["snappy", "balanced", "relaxed"],
     "stem.{}": ["vocals", "drums", "bass", "other", "guitar", "piano"],
     "unlock.plan.{}": ["week", "month", "year"],
     "unlock.{}.body": ["calendar", "analytics", "inbox", "ads", "commerce"],
