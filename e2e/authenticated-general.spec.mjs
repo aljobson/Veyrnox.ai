@@ -27,7 +27,12 @@ const writes = fixture => fixture.requests.filter(row => !['GET', 'HEAD', 'OPTIO
 async function open(fixture, page, path, heading) {
   const response = await fixture.open(path);
   expect(response.status(), 'Actual first-party document must render').toBe(200);
-  await expect(path === '/app/enhance' ? page.getByTestId('enhance-title') : path === '/app/library' ? page.getByTestId('library-title') : page.getByRole('heading', { name: heading, exact: true })).toBeVisible();
+  const title = path === '/app/enhance' ? page.getByTestId('enhance-title') : path === '/app/library' ? page.getByTestId('library-title') : page.getByRole('heading', { name: heading, exact: true });
+  // A streamed route can briefly retain its hidden server payload while the
+  // hydrated page is already visible. Wait for that overlap to settle so the
+  // strict locator still proves that the final document has one title.
+  await expect(title).toHaveCount(1);
+  await expect(title).toBeVisible();
 }
 
 test('Dashboard authenticated balance, template pagination and filters remain read-only', async ({ page }) => {
