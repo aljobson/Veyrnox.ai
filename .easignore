@@ -79,3 +79,24 @@ page-coverage-report/
 /docs
 /.next
 /.open-next
+
+# apps/mobile/.gitignore rules, re-rooted (a root .easignore replaces every .gitignore)
+/apps/mobile/node_modules/
+/apps/mobile/.expo/
+/apps/mobile/dist/
+/apps/mobile/web-build/
+/apps/mobile/expo-env.d.ts
+/apps/mobile/ios
+/apps/mobile/android
+/apps/mobile/.e2e/
+/apps/mobile/.metro-health-check*
+/apps/mobile/*.tsbuildinfo
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.pem
+.env*.local
