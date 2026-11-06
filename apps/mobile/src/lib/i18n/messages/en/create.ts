@@ -60,6 +60,8 @@ export default {
     'create.workspace.balance': 'balance {credits} cr',
     'create.workspace.generate': 'Generate · {credits} cr',
     'create.workspace.generateFree': 'Generate · free',
+    'create.workspace.rightsNeeded': 'Tick the box above to confirm you own these files or have permission to use them, then Generate.',
+    'create.workspace.onlyModel': 'No other model takes these files right now.',
     'create.workspace.refund': 'Refund on failure · always',
     'create.workspace.terms': 'Commercial use depends on the selected model and provider terms.',
     'create.workspace.termsLink': 'Check the Terms before publishing.',

@@ -6,7 +6,7 @@ import { fetchCatalog, mediaApi, type CatalogModel } from '../src/lib/media';
 import { bindCacheUser, resetCacheUser, wipeCache } from '../src/lib/appCache';
 import { createMemoryStorage, createCache } from '../src/lib/cache';
 import { rememberSubmitted, submittedHref } from '../src/lib/submittedRequests';
-import { activeTemplate, normalizeTemplateCarry } from '../src/lib/templateHandoff';
+import { activeTemplate, normalizeTemplateCarry, templateOnOriginalModel } from '../src/lib/templateHandoff';
 import { accountHandoffStore } from '../src/lib/accountHandoffStore';
 import { filmReturnParams, rememberFilmJob, settleFilmJob, returnMatches, filmReturns, markFilmSwitch } from '../src/lib/filmGenerationReturns';
 import { localFilmId, inheritFilmIdentity } from '../src/lib/filmHandoffIdentity';
@@ -38,7 +38,8 @@ test.each([false, true])('P2: attaching with model change=%s preserves a setting
     const target = changed ? { ...model, id: 'different', modality: 'text-to-image' } : model;
     const href = createHandoff(target, carry, snapshot, [...refs, refs[0], { slot: 'image', origin: 'upload', key: 'new-file' }], { followup: 'generated-sound' });
     expect(href.params).toMatchObject({ recipe: 'faceless-reel', followup: 'generated-sound', startOddling: 'fox', tid: 'paper', tmodel: 'video' });
-    expect(activeTemplate(href.params, target.id, ['veyrnox.ai'])?.id).toBe(changed ? undefined : 'paper');
+    expect(activeTemplate(href.params, target.id, ['veyrnox.ai'])?.id).toBe('paper');
+    expect(templateOnOriginalModel(href.params, target.id)).toBe(!changed);
     expect(read(href)).toMatchObject({ recipe: 'faceless-reel', followup: 'generated-sound', settings: { cameraOn: true, characterOn: changed, opts: { seed: '42', negative: 'rain', count: changed ? 4 : 1 } } });
     expect(read(href).references?.filter(r => r.origin === 'asset')).toEqual([refs[0]]);
 });
@@ -117,8 +118,10 @@ test('A → B → A retains template origin and serializes preset only for its o
         expect(params).toMatchObject(carry);
         const template = activeTemplate(params, params.modelId, ['veyrnox.ai']);
         const original = params.modelId === model.id;
-        expect(template?.title).toBe(original ? 'Paper' : undefined);
-        await mediaApi({ request } as any).createGeneration({ modelId: params.modelId, prompt: params.prompt, durationSeconds: Number(params.duration), confirmedCredits: 3, idempotencyKey: 'round-trip', preset: template?.id ?? undefined });
+        // The card stays on every model; only the preset id belongs to the original one.
+        expect(template?.title).toBe('Paper');
+        expect(templateOnOriginalModel(params, params.modelId)).toBe(original);
+        await mediaApi({ request } as any).createGeneration({ modelId: params.modelId, prompt: params.prompt, durationSeconds: Number(params.duration), confirmedCredits: 3, idempotencyKey: 'round-trip', preset: templateOnOriginalModel(params, params.modelId) ? template?.id ?? undefined : undefined });
         const serialized = JSON.parse(request.mock.calls.at(-1)[1].body);
         expect(serialized.preset).toBe(original ? 'paper' : undefined);
         expect(Object.hasOwn(serialized, 'preset')).toBe(original);
@@ -132,7 +135,8 @@ test('legacy no-tmodel arrival is normalized before moving to another model', ()
     expect(arrival.tmodel).toBe(model.id);
     const away = createHandoff({ ...model, id: 'other' }, arrival, snapshot, []);
     expect(away.params).toMatchObject({ tid: 'paper', tpl: 'Paper', tmodel: model.id });
-    expect(activeTemplate(away.params, 'other', ['veyrnox.ai'])).toBeNull();
+    expect(activeTemplate(away.params, 'other', ['veyrnox.ai'])?.title).toBe('Paper');
+    expect(templateOnOriginalModel(away.params, 'other')).toBe(false);
     expect(activeTemplate(legacy, model.id, ['veyrnox.ai'])?.id).toBe('paper');
 });
 test('replay uses the stored origin even when submitted on another model', async () => {
@@ -141,7 +145,8 @@ test('replay uses the stored origin even when submitted on another model', async
     await rememberSubmitted('other-job', { modelId: other.id, prompt: carry.prompt, durationSeconds: 8, confirmedCredits: 3 }, carry, snapshot);
     const href = await submittedHref(api, 'other-job', 'irrelevant-current-model', () => true);
     expect(href?.params).toMatchObject({ ...carry, modelId: other.id });
-    expect(activeTemplate(href!.params, other.id, ['veyrnox.ai'])).toBeNull();
+    expect(activeTemplate(href!.params, other.id, ['veyrnox.ai'])?.title).toBe('Paper');
+    expect(templateOnOriginalModel(href!.params, other.id)).toBe(false);
     const back = createHandoff(model, href!.params as Record<string, string>, snapshot, []);
     expect(activeTemplate(back.params, model.id, ['veyrnox.ai'])?.id).toBe('paper');
 });

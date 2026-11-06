@@ -5846,4 +5846,7 @@ export default {
   "credits.hardPaywall.back": "Назад",
   "credits.hardPaywall.trialTerms": "Бесплатно {days} дней, затем {price} за {interval}. Отмените до конца пробного периода, и вы ничего не заплатите.",
   "credits.hardPaywall.buyTrial": "Начать бесплатный период на {days} дней",
+  "create.workspace.rightsNeeded": "Отметьте флажок выше, подтвердив, что эти файлы ваши или вы вправе их использовать, и нажмите «Создать».",
+  "create.workspace.onlyModel": "Сейчас ни одна другая модель не принимает эти файлы.",
+  "handoff.switchedModel": "Переключились на {model}, потому что вы добавили файл.",
 } as const;

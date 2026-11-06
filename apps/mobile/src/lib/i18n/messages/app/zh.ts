@@ -5648,4 +5648,7 @@ export default {
   "credits.hardPaywall.back": "返回",
   "credits.hardPaywall.trialTerms": "免费 {days} 天，之后每{interval} {price}。在试用结束前取消，你无需付款。",
   "credits.hardPaywall.buyTrial": "开始 {days} 天免费试用",
+  "create.workspace.rightsNeeded": "请勾选上方的复选框，确认这些文件归你所有或你有权使用，然后点击生成。",
+  "create.workspace.onlyModel": "目前没有其他模型支持这些文件。",
+  "handoff.switchedModel": "因为你添加了文件，已切换到 {model}。",
 } as const;

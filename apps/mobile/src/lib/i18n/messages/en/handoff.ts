@@ -10,6 +10,7 @@ export default {
     "handoff.publishUnsupported": "Only available images and videos can be published.",
     "handoff.promptUnavailable": "The original prompt isn't available on this phone.",
     "handoff.referencesAdjusted": "References moved or removed: {count}.",
+    "handoff.switchedModel": "Switched to {model} because you added a file.",
     "handoff.filmAttached": "Result for this prompt",
     "handoff.filmUnattached": "Earlier result; not attached to the current prompt"
 } as const;

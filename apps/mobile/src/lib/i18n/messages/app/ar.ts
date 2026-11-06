@@ -5978,4 +5978,7 @@ export default {
   "credits.hardPaywall.back": "رجوع",
   "credits.hardPaywall.trialTerms": "مجانًا لمدة {days} أيام، ثم {price} لكل {interval}. ألغِ قبل انتهاء التجربة ولن تدفع شيئًا.",
   "credits.hardPaywall.buyTrial": "ابدأ تجربة مجانية لمدة {days} أيام",
+  "create.workspace.rightsNeeded": "ضع علامة في المربع أعلاه لتؤكد أنك تملك هذه الملفات أو لديك إذن باستخدامها، ثم اضغط إنشاء.",
+  "create.workspace.onlyModel": "لا يوجد نموذج آخر يقبل هذه الملفات حاليًا.",
+  "handoff.switchedModel": "تم التبديل إلى {model} لأنك أضفت ملفًا.",
 } as const;

@@ -40,7 +40,7 @@ import { clearDraft, loadDraft, saveDraft } from '../../../lib/createDraftStore'
 import { SAVED_DRAFT_VERSION, pickerModels, type CreateDraft, audioLengthInvalid, freeLeftFor, hasAnyOption, imageCount, inputsForIndex, optionsFor, resolveAudio, resolveResolution, seedIsInvalid, settingsInputs, takesImageCount, voiceIsMissing } from '../../../lib/createOptions';
 import { loadVibe } from '../../../lib/creatorProfileStore';
 import { defaultAspect } from '../../../lib/creatorTaste';
-import { nearestAspect, parseRatio, activeTemplate, normalizeTemplateCarry } from '../../../lib/templateHandoff';
+import { nearestAspect, parseRatio, activeTemplate, normalizeTemplateCarry, templateOnOriginalModel } from '../../../lib/templateHandoff';
 import { buildCharacterPrompt, sanitizePicks, type Picks } from '../../../lib/oddlingsBuilder';
 import { useBalance } from '../../../lib/useBalance';
 import { shortfall } from '../../../lib/lowBalance';
@@ -69,9 +69,10 @@ function hostOf(url: string): string {
 
 export default function CreateWithModel() {
     const styles = useThemedStyles(sheets);
-    const { modelId, prompt: presetPrompt, duration: presetDuration, aspect: presetAspect, startOddling, tpl, tid, tmodel, tneeds, tsource, tratio, tposter, recipe, sourceHandoff, followup, kind, sourceJob, filmId, shotId, promptVersion, promptContext } = useLocalSearchParams<{ modelId: string; prompt?: string; duration?: string; aspect?: string; startOddling?: string; tpl?: string; tid?: string; tmodel?: string; tneeds?: string; tsource?: string; tratio?: string; tposter?: string; recipe?: string; sourceHandoff?: string; followup?: string; kind?: string; sourceJob?: string; filmId?: string; shotId?: string; promptVersion?: string; promptContext?: string }>();
+    const { modelId, prompt: presetPrompt, duration: presetDuration, aspect: presetAspect, startOddling, tpl, tid, tmodel, tneeds, tsource, tratio, tposter, recipe, sourceHandoff, switched, followup, kind, sourceJob, filmId, shotId, promptVersion, promptContext } = useLocalSearchParams<{ modelId: string; prompt?: string; duration?: string; aspect?: string; startOddling?: string; tpl?: string; tid?: string; tmodel?: string; tneeds?: string; tsource?: string; tratio?: string; tposter?: string; recipe?: string; sourceHandoff?: string; switched?: string; followup?: string; kind?: string; sourceJob?: string; filmId?: string; shotId?: string; promptVersion?: string; promptContext?: string }>();
     // A template also brings its name, picture, shape and what it needs; each is checked before it is used.
     const template = useMemo(() => activeTemplate({ tpl, tid, tmodel, tneeds, tsource, tratio, tposter }, modelId, ['veyrnox.ai', hostOf(API_BASE)]), [tpl, tid, tmodel, tneeds, tsource, tratio, tposter, modelId]);
+    const templatePreset = templateOnOriginalModel({ tmodel }, modelId);
     const handedSources = useMemo(() => readCreativeSourceHandoff(typeof sourceHandoff === 'string' ? sourceHandoff : undefined, typeof recipe === 'string' ? recipe : undefined, modelId), [modelId, recipe, sourceHandoff]);
     const { api } = useAuth();
     const router = useRouter();
@@ -96,6 +97,8 @@ export default function CreateWithModel() {
     const [recoveredPrompt, setRecoveredPrompt] = useState<string | null>(null);
     const [note, setNote] = useState<string | null>(null);
     useAnnouncement(note);
+    const rightsPending = references.length > 0 && !sourceRights;
+    useAnnouncement(rightsPending ? t('create.workspace.rightsNeeded') : null);
     // "Animate this portrait" (Oddlings): the cast portrait goes into the image slot like any picked file.
     const startId = startOddlingId(startOddling);
     const [startFile, setStartFile] = useState<PickedFile | null>(null);
@@ -167,7 +170,7 @@ export default function CreateWithModel() {
                 const base: OptionValues = { aspect, count: 1, seed: '', negative: '', voice: '', audioSeconds: '' };
                 setReferences(handedSources?.references ?? legacyReferences(handedSources?.uploaded ?? {}, handedSources?.fromLibrary ?? {}));
                 setSourceRights(handedSources?.rightsConfirmed === true);
-                setNote(kind === 'prompt-unavailable' ? t('handoff.promptUnavailable') : handedSources?.adjusted ? t('handoff.referencesAdjusted', { count: handedSources.adjusted }) : null);
+                setNote(kind === 'prompt-unavailable' ? t('handoff.promptUnavailable') : [switched === '1' ? t('handoff.switchedModel', { model: found.name }) : null, handedSources?.adjusted ? t('handoff.referencesAdjusted', { count: handedSources.adjusted }) : null].filter(Boolean).join(' ') || null);
                 if (handedSources?.settings) {
                     const saved = acceptedSettings(found, handedSources.settings);
                     setPrompt(typeof presetPrompt === 'string' ? presetPrompt : '');
@@ -208,7 +211,7 @@ export default function CreateWithModel() {
             })
             .catch(() => { if (valid()) setError(t('form.modelLoad')); });
         return () => { live = false; };
-    }, [modelId, presetDuration, presetAspect, handedSources, presetPrompt, template]);
+    }, [modelId, presetDuration, presetAspect, handedSources, presetPrompt, template, switched]);
 
     // Carried into the form that Attach from device reopens: the words typed so far and the template that started it.
     const attachCarry = useMemo(() => {
@@ -300,7 +303,7 @@ export default function CreateWithModel() {
     const waiting = Object.values(sending).some(Boolean);
     const hasReference = references.length > 0 || !!startFile;
     const ready = !waiting && !promptTooLong && (!hasReference || sourceRights) && slots.every(slot => (!slot.required || references.some(ref => ref.slot === slot.slot)) && references.filter(ref => ref.slot === slot.slot).length <= (slot.maxFiles ?? 1)) && (!promptRequired(model) || !!text.trim()) && !seedIsInvalid(opts.seed) && !voiceIsMissing(options, opts.voice) && !audioLengthInvalid(options, opts.audioSeconds);
-    const request: SubmitRequest = { analyticsKind: kindOf(model.modality), modelId: model.id, prompt: text, confirmedCredits: unit, durationSeconds: isVideo ? duration : null, references, sourceRights: hasReference ? sourceRights : undefined, textKey: text_?.key, extraInputs: settingsInputs(options, { seed: opts.seed, negative: opts.negative, aspect: opts.aspect, voice: opts.voice, audioSeconds: opts.audioSeconds, resolution, audio }), preset: template?.id ?? undefined };
+    const request: SubmitRequest = { analyticsKind: kindOf(model.modality), modelId: model.id, prompt: text, confirmedCredits: unit, durationSeconds: isVideo ? duration : null, references, sourceRights: hasReference ? sourceRights : undefined, textKey: text_?.key, extraInputs: settingsInputs(options, { seed: opts.seed, negative: opts.negative, aspect: opts.aspect, voice: opts.voice, audioSeconds: opts.audioSeconds, resolution, audio }), preset: templatePreset ? template?.id ?? undefined : undefined };
     const signature = generationSignature(request, n);
     const matchingRetry = retry.current?.signature === signature ? retry.current : null;
     // Only an unchanged request retains its confirmed items and retry price.
@@ -375,6 +378,7 @@ export default function CreateWithModel() {
             <KeyboardFormScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
                 <FormHeader modelLabel={modelLabel} modality={kindOf(model.modality) ?? model.modality} stageLine={stageLine} stage={results ? <CreateResult api={api} batch={results} catalog={catalog} onTerminal={resultSettled} /> : undefined}
                     onChangeModel={alternatives.length > 1 && !busy ? () => setPicking(true) : undefined}
+                    modelNote={alternatives.length <= 1 && hasReference ? t('create.workspace.onlyModel') : undefined}
                     onTemplates={!template && !results ? () => router.push('/create/presets') : undefined} />
                 <ModelPickerSheet visible={picking} models={alternatives} currentId={model.id} freeLeft={freeMap} onPick={(id) => void changeModel(id)} onClose={() => setPicking(false)} />
 
@@ -471,6 +475,7 @@ export default function CreateWithModel() {
                         </View>
                         <Text variant="caption" tone="secondary" style={styles.balance}>{t('create.workspace.balance', { credits: balance === null ? '—' : String(balance) })}</Text>
                     </View>
+                    {rightsPending && !complete ? <Text variant="caption" tone="warning" accessibilityLiveRegion="polite">{t('create.workspace.rightsNeeded')}</Text> : null}
                     <Button variant="primary" accessibilityRole="button" accessibilityLabel={rawText(complete ? t('libraryCreate.newNoCharge') : generateLabel)} accessibilityState={{ busy, disabled }} disabled={disabled} onPress={complete ? newGeneration : generate} label={complete ? t('libraryCreate.newGeneration') : matchingRetry?.quote ? generateLabel : price === 0 ? t('create.workspace.generateFree') : t('create.workspace.generate', { credits: String(price) })} loading={busy} />
                     <SectionLabel style={styles.refund}>{t('create.workspace.refund')}</SectionLabel>
                     <View style={styles.terms}>

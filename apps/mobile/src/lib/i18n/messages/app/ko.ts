@@ -5648,4 +5648,7 @@ export default {
   "credits.hardPaywall.back": "뒤로",
   "credits.hardPaywall.trialTerms": "{days}일 무료, 이후 {interval}마다 {price}. 체험이 끝나기 전에 해지하면 요금이 청구되지 않습니다.",
   "credits.hardPaywall.buyTrial": "{days}일 무료 체험 시작",
+  "create.workspace.rightsNeeded": "위 체크박스를 선택해 이 파일이 본인 소유이거나 사용 권한이 있음을 확인한 다음 생성을 누르세요.",
+  "create.workspace.onlyModel": "지금은 이 파일을 지원하는 다른 모델이 없습니다.",
+  "handoff.switchedModel": "파일을 추가해서 {model}(으)로 전환했습니다.",
 } as const;

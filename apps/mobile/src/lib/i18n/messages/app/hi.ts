@@ -5714,4 +5714,7 @@ export default {
   "credits.hardPaywall.back": "वापस",
   "credits.hardPaywall.trialTerms": "{days} दिन मुफ़्त, फिर हर {interval} {price}। ट्रायल ख़त्म होने से पहले रद्द करें तो कुछ नहीं देना होगा।",
   "credits.hardPaywall.buyTrial": "{days} दिन का मुफ़्त ट्रायल शुरू करें",
+  "create.workspace.rightsNeeded": "ऊपर दिए बॉक्स पर टिक करके पुष्टि करें कि ये फ़ाइलें आपकी हैं या आपके पास इनके उपयोग की अनुमति है, फिर जनरेट करें दबाएँ।",
+  "create.workspace.onlyModel": "अभी कोई और मॉडल इन फ़ाइलों को स्वीकार नहीं करता।",
+  "handoff.switchedModel": "आपने फ़ाइल जोड़ी, इसलिए {model} पर स्विच किया गया।",
 } as const;

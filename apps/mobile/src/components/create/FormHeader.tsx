@@ -7,7 +7,7 @@ import { ds } from '../../theme';
 import { MIN_TARGET } from '../../lib/a11y';
 import { t } from '../../lib/i18n';
 
-export function FormHeader({ modelLabel, modality, stageLine, stage, onChangeModel, onTemplates }: { modelLabel: string; modality: string; stageLine: string; stage?: ReactNode; onChangeModel?: () => void; onTemplates?: () => void }) {
+export function FormHeader({ modelLabel, modality, stageLine, stage, onChangeModel, onTemplates, modelNote }: { modelNote?: string; modelLabel: string; modality: string; stageLine: string; stage?: ReactNode; onChangeModel?: () => void; onTemplates?: () => void }) {
     const styles = useThemedStyles(sheets);
     return <>
                 <View style={styles.hero}>
@@ -33,6 +33,7 @@ export function FormHeader({ modelLabel, modality, stageLine, stage, onChangeMod
                             <Text variant="footnote" tone="primary" style={styles.modelName}>{modelLabel}</Text>
                         </View>
                     )}
+                    {!onChangeModel && modelNote ? <Text variant="footnote" tone="tertiary" accessibilityLiveRegion="polite">{modelNote}</Text> : null}
                     {onTemplates ? (
                         <Pressable accessibilityRole="button" accessibilityLabel={t('label.Templates')} onPress={onTemplates}
                             style={({ pressed }) => [styles.modelPill, pressed && styles.pressed]}>

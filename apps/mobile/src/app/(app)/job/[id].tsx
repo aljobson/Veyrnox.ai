@@ -50,7 +50,7 @@ function elapsed(seconds: number): string {
 
 export default function JobScreen() {
     const styles = useThemedStyles(sheets);
-    const { id, followup } = useLocalSearchParams<{ id: string; followup?: string }>();
+    const { id, followup, fromCreate } = useLocalSearchParams<{ id: string; followup?: string; fromCreate?: string }>();
     const { api } = useAuth();
     const beginHandoff = useHandoffScope();
     const router = useRouter();
@@ -117,7 +117,8 @@ export default function JobScreen() {
         });
         const media = mediaApi(api);
         // Only a creation you waited for gets the buzz; opening a finished one from the library does not.
-        let waited = false;
+        // A result opened from Create's own result card is the first win the person just waited for (QA-006).
+        let waited = fromCreate === '1';
         waitForJob(media, id, (nextState) => {
             if (controller.signal.aborted) return;
             if (nextState === 'queued' || nextState === 'running') waited = true;

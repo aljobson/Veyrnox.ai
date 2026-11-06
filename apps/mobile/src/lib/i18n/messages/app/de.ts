@@ -5714,4 +5714,7 @@ export default {
   "credits.hardPaywall.back": "Zurück",
   "credits.hardPaywall.trialTerms": "{days} Tage kostenlos, danach {price} je {interval}. Kündige vor Ende der Testphase und du zahlst nichts.",
   "credits.hardPaywall.buyTrial": "{days}-tägige Testphase starten",
+  "create.workspace.rightsNeeded": "Setze oben das Häkchen, um zu bestätigen, dass dir diese Dateien gehören oder du sie nutzen darfst, und tippe dann auf Erstellen.",
+  "create.workspace.onlyModel": "Zurzeit akzeptiert kein anderes Modell diese Dateien.",
+  "handoff.switchedModel": "Zu {model} gewechselt, weil du eine Datei hinzugefügt hast.",
 } as const;
