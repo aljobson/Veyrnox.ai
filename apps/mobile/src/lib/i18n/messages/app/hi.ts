@@ -2864,6 +2864,8 @@ export default {
   "menu.toolDirectory": "टूल",
   "menu.tools": "टूल",
   "menu.videoAgent": "वीडियो एजेंट",
+  "menu.videoAgentHint": "वीडियो का वर्णन करें, हम उसे बनाएँगे",
+  "menu.filmHint": "कई शॉट वाली फ़िल्म की योजना बनाएँ और निर्देशित करें",
   "montage.describethevideoin3to500": "वीडियो का विवरण 3 से 500 अक्षरों में दें।",
   "montage.everyslotistakenrightnowTry": "अभी सभी स्लॉट भरे हैं। लगभग {value1} मिनट बाद फिर कोशिश करें।",
   "montage.everyslotistakenrightnowTry2": "अभी सभी स्लॉट भरे हैं। कुछ मिनट बाद फिर कोशिश करें।",

@@ -2809,6 +2809,8 @@ export default {
   "menu.toolDirectory": "工具",
   "menu.tools": "工具",
   "menu.videoAgent": "视频智能体",
+  "menu.videoAgentHint": "描述视频，我们来制作",
+  "menu.filmHint": "规划并执导多镜头影片",
   "montage.describethevideoin3to500": "请用 3 至 500 个字符描述视频。",
   "montage.everyslotistakenrightnowTry": "当前所有名额已满。请约 {value1} 分钟后重试。",
   "montage.everyslotistakenrightnowTry2": "当前所有名额已满。请几分钟后重试。",
