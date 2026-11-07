@@ -34,7 +34,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { Stack } from 'expo-router';
 
-import { Platform, ActivityIndicator, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Platform, ActivityIndicator, Modal, Pressable, ScrollView, Text, TextInput, View, useWindowDimensions } from 'react-native';
 
 import { touchTarget } from '../../lib/a11y';
 
@@ -92,6 +92,10 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
     }
     const openGenerate = (kind: Kind) => setGenerate({ visible: true, kind, frame: clampFrame(frameStore.get()), owner: getCacheUser() });
     useAnnouncement(problem);
+    // Short phones: shrink the preview so the toolbars and tool rail are never pushed off screen.
+    const { height: windowHeight } = useWindowDimensions();
+    const previewHeight = Math.max(96, Math.min(178, Math.round(windowHeight * 0.14)));
+
     if (!document) return <View style={styles.loading}><Stack.Screen options={{ title: t('editor.title') }} /><ActivityIndicator color={colors.accent} /><Text style={styles.muted}>{problem ?? t('editor.fullLoading')}</Text></View>;
 
     const canvas = canvasOf(document.canvas);
@@ -294,7 +298,7 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
             <Command icon="◈" label={t('editor.credits')} onPress={() => void openWorkflow('/credits')} />
         </ScrollView>
 
-        <View style={styles.optionStrip}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.optionStrip} contentContainerStyle={styles.optionContent}>
             <Choice label={t('editor.snap')} selected={snap} onPress={() => setSnap((value) => !value)} compact />
             <Text style={styles.optionLabel}>{t('editor.ripple')}</Text>
             {(['none', 'lane', 'all'] as const).map((value) => <Choice key={value} label={value === 'none' ? t('editor.off') : value === 'lane' ? t('editor.selectedtrack') : t('editor.alltracks')} selected={ripple === value} onPress={() => setRipple(value)} compact />)}
@@ -304,14 +308,14 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
             <Text style={styles.zoomValue}>{t('editorCore.zoomValue', { value1: formatNumber(zoom, 2) })}</Text>
             <Action label={t('editorCore.zoomIn')} disabled={zoom >= PPF_MAX} onPress={() => setZoom(value => Math.min(PPF_MAX, value * 2))} compact />
             <Action label={t('editorCore.fit')} onPress={() => setZoom(fitPpf(viewport, total))} compact />
-        </View>
+        </ScrollView>
 
         <View style={styles.previewArea}>
             <View style={styles.previewHeading}>
                 <Text style={styles.eyebrow}>{t('editor.pREVIEW')}</Text>
                 <Text style={styles.previewMeta}>{clipCount ? t('editor.layers', { value1: clipCount }) : t('editor.emptysequence')}</Text>
             </View>
-            <View style={styles.previewFrame}>
+            <View style={[styles.previewFrame, { height: previewHeight }]}>
                 <View style={[styles.canvas, { aspectRatio: canvas.aspect_ratio === '9:16' ? 9 / 16 : canvas.aspect_ratio === '1:1' ? 1 : 16 / 9 }]}>
                     <PlaybackPreview frameStore={frameStore} timeline={timeline} api={api} playing={playing} localMediaUris={localMediaUris} />
                 </View>
