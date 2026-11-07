@@ -1831,6 +1831,8 @@ export default {
   "editor.horizontalposition": "水平位置",
   "editor.hue": "色相",
   "editor.imageFallback": "图片",
+  "editor.diagnostics": "版本 {version}（{build}）· 编辑器开关 {editor} · 完整编辑器 {full} · 工作区 {workspaces}",
+  "editor.diagnosticsHttp": "服务器响应：{status}",
   "editor.imagePreviewAlt": "图像预览",
   "editor.increase": "增加 {value1}",
   "editor.items": "{value1} 项",

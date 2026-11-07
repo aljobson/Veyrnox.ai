@@ -1942,6 +1942,8 @@ export default {
   "editor.horizontalposition": "Позиция по горизонтали",
   "editor.hue": "Цветовой тон",
   "editor.imageFallback": "изображение",
+  "editor.diagnostics": "Сборка {version} ({build}) · переключатель редактора {editor} · полный редактор {full} · рабочие пространства {workspaces}",
+  "editor.diagnosticsHttp": "Ответ сервера: {status}",
   "editor.imagePreviewAlt": "Предпросмотр изображения",
   "editor.increase": "Увеличить {value1}",
   "editor.items": "Элементов: {value1}",

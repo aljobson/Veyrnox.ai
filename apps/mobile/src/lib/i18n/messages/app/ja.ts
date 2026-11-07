@@ -1831,6 +1831,8 @@ export default {
   "editor.horizontalposition": "水平位置",
   "editor.hue": "色相",
   "editor.imageFallback": "画像",
+  "editor.diagnostics": "ビルド {version} ({build}) · エディタースイッチ {editor} · フルエディター {full} · ワークスペース {workspaces}",
+  "editor.diagnosticsHttp": "サーバーの応答: {status}",
   "editor.imagePreviewAlt": "画像プレビュー",
   "editor.increase": "{value1}を増やす",
   "editor.items": "{value1}件",

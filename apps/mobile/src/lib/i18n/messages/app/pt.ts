@@ -1905,6 +1905,8 @@ export default {
   "editor.horizontalposition": "Posição horizontal",
   "editor.hue": "Matiz",
   "editor.imageFallback": "imagem",
+  "editor.diagnostics": "Build {version} ({build}) · chave do editor {editor} · editor completo {full} · espaços de trabalho {workspaces}",
+  "editor.diagnosticsHttp": "Resposta do servidor: {status}",
   "editor.imagePreviewAlt": "Prévia da imagem",
   "editor.increase": "Aumentar {value1}",
   "editor.items": "{value1} itens",

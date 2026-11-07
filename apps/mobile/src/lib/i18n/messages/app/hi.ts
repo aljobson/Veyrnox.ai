@@ -1868,6 +1868,8 @@ export default {
   "editor.horizontalposition": "क्षैतिज स्थिति",
   "editor.hue": "रंगत",
   "editor.imageFallback": "चित्र",
+  "editor.diagnostics": "बिल्ड {version} ({build}) · एडिटर स्विच {editor} · पूरा एडिटर {full} · वर्कस्पेस {workspaces}",
+  "editor.diagnosticsHttp": "सर्वर का उत्तर: {status}",
   "editor.imagePreviewAlt": "इमेज प्रीव्यू",
   "editor.increase": "{value1} बढ़ाएँ",
   "editor.items": "{value1} आइटम",
