@@ -284,3 +284,4 @@ aba3757e9ebb8d43d510b54e6ffe384d0f7f0b3f:tests/fixtures/replacementTemplatesBase
 aba3757e9ebb8d43d510b54e6ffe384d0f7f0b3f:tests/fixtures/replacementTemplatesBaseline.json:generic-api-key:3
 # PR #1993: a test idempotency key in editorAiEditClient.test.ts, not a secret (a squash merge will need the same entry under main's hash).
 22b6103a12742aad94db5cb6f5ba4256c6cc9486:apps/mobile/__tests__/editorAiEditClient.test.ts:generic-api-key:11
+48f8eabdf1b79bc5cb6ca5f0eb6165e6e70d44bd:.gitleaksignore:generic-api-key:285
