@@ -137,5 +137,6 @@
   "vey.touch.label": "Vey is the mascot’s proper name and stays unchanged across languages.",
   "create.lengthCost": "Seconds and the credit abbreviation are written the same as English, matching create.s.",
   "faceFilters.look.original": "Same word in Portuguese, kept as the common term.",
-  "faceFilters.look.mono": "Same word in Portuguese, kept as the common term."
+  "faceFilters.look.mono": "Same word in Portuguese, kept as the common term.",
+  "editorSimple.smartCut": "Product feature name, kept in English in every language."
 }

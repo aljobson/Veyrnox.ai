@@ -56,5 +56,6 @@
   "cinema.position": "Reviewed: shared media terminology or language-neutral playback position notation.",
   "projectDocument.counter": "Numeric counter pattern; only the localized numbers change.",
   "vey.touch.label": "Vey is the mascot’s proper name and stays unchanged across languages.",
-  "faceFilters.aiBadge": "Same word in Japanese, kept as the common term."
+  "faceFilters.aiBadge": "Same word in Japanese, kept as the common term.",
+  "editorSimple.smartCut": "Product feature name, kept in English in every language."
 }

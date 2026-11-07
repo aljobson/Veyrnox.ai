@@ -28,6 +28,7 @@ import { requireOnline, OFFLINE_PAID_MESSAGE } from '../../lib/network';
 import { exportUnavailable } from '../../lib/editorServerExport';
 import { ServerExportSheet } from './ServerExportSheet';
 import { styles } from './fullEditorStyles';
+import { SimpleEditorBar, SimpleEditorSheet, type SheetRow, type SimpleSheetName } from './SimpleEditorChrome';
 
 import { randomUUID } from 'expo-crypto';
 import * as DocumentPicker from 'expo-document-picker';
@@ -67,7 +68,7 @@ const tools: readonly { id: Tool; icon: string; label: string }[] = [
 const seconds = (frames = 0, fps = 30) => `${formatNumber(Math.max(0, frames / fps), 1)}s`;
 
 import { useFullEditorSession } from './useFullEditorSession';
-export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobId?: string }) {
+export function FullEditorScreen({ projectId, jobId, startAdvanced = false }: { projectId: string; jobId?: string; startAdvanced?: boolean }) {
     const mounted = useRef(true);
     const [libraryPending, setLibraryPending] = useState(false);
     const [viewport, setViewport] = useState(0);
@@ -75,6 +76,10 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
     const [voiceoverAt, setVoiceoverAt] = useState<number | null>(null);
     const [voiceoverMessage, setVoiceoverMessage] = useState<string | null>(null); useAnnouncement(voiceoverMessage); const onVoiceoverAdded = () => { setVoiceoverMessage(t('editorVoiceover.added')); setVoiceoverAt(null); };
     const [exportVisible, setExportVisible] = useState(false);
+    // Simple view is the default: preview, short timeline and Add / AI Edit / More. "All editing tools" opens the full set.
+    const [advanced, setAdvanced] = useState(startAdvanced);
+    const [sheet, setSheet] = useState<SimpleSheetName | null>(null);
+    const [panelOpen, setPanelOpen] = useState(false);
     const { beginImport, replacing, leaveEditor, saveStatus, sync, currentDocument, preparePicked, savedDocument, api, router, name, document, dirty, problem, setProblem, tool, setTool, selection, setSelection, selections, setSelections, multiSelect, setMultiSelect, clipboard, setClipboard, snap, setSnap, ripple, setRipple, zoom, setZoom, privacyNotice, history, frameStore, setFrame, playing, setPlaying, projectAssets, localMediaUris, libraryKind, setLibraryKind, markDocument, save, acknowledgePrivacy, travel } = useFullEditorSession({ projectId, jobId, onOwnerChange: () => guard.teardown(() => router.back()), onCopy: id => guard.teardown(() => router.replace({ pathname: '/editor/[projectId]', params: { projectId: id } })) });
     const guard = useEditorLeaveGuard(leaveEditor, router.back);
     const [generate, setGenerate] = useState<{ visible: boolean; kind: Kind; frame: number; owner?: string } | null>(null);
@@ -261,21 +266,55 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
 
     const openExport = async () => { if (!EDITOR_SERVER_EXPORT_ENABLED) { setProblem(t('handoff.exportUnavailable')); return; } try { requireOnline(); } catch { setProblem(OFFLINE_PAID_MESSAGE); return; } if (exportUnavailable()) { setProblem(t('handoff.exportUnavailable')); return; } if (await savedDocument()) setExportVisible(true); };
 
+    // Simple view: three entries open sheets that reuse the same handlers as the full tool set.
+    const showPanel = (next: Tool) => { setTool(next); setPanelOpen(true); };
+    const addRows: SheetRow[] = [
+        { id: 'library-video', icon: '▣', label: t('editor.libraryvideo'), disabled: libraryPending || replacing, onPress: () => setLibraryKind('video') },
+        { id: 'library-image', icon: '▧', label: t('editor.libraryimage'), disabled: libraryPending || replacing, onPress: () => setLibraryKind('image') },
+        { id: 'library-audio', icon: '♫', label: t('editor.libraryaudio'), disabled: libraryPending || replacing, onPress: () => setLibraryKind('audio') },
+        { id: 'photos', icon: '▤', label: t('editor.photosvideos'), disabled: replacing, onPress: () => void choosePhotos() },
+        { id: 'files', icon: '▥', label: t('editor.files'), disabled: replacing, onPress: () => void chooseFiles() },
+        ...(VOICEOVER_AVAILABLE ? [{ id: 'voiceover', icon: '●', label: t('editorVoiceover.open'), hint: t('editorSimple.voiceoverHint'), disabled: replacing, onPress: () => { setPlaying(false); setVoiceoverAt(clampFrame(frameStore.get())); setVoiceoverMessage(null); } }] : []),
+    ];
+    const aiRows: SheetRow[] = [
+        { id: 'smart-cut', icon: '✦', label: t('editorSimple.smartCut'), hint: t('editorSimple.smartCutHint'), onPress: () => void openWorkflow('/smart-cut') },
+        { id: 'make-clip', icon: '▶', label: t('editorSimple.makeClip'), hint: t('editorSimple.makeClipHint'), onPress: () => { showPanel('generate'); openGenerate('video'); } },
+        { id: 'make-audio', icon: '♫', label: t('editorSimple.makeAudio'), hint: t('editorSimple.makeAudioHint'), onPress: () => { showPanel('generate'); openGenerate('audio'); } },
+        { id: 'captions', icon: 'CC', label: t('editor.captions'), hint: t('editorSimple.captionsHint'), onPress: () => showPanel('captions') },
+    ];
+    const moreRows: SheetRow[] = [
+        { id: 'text', icon: 'T', label: t('editor.addText'), hint: t('editorSimple.textHint'), onPress: () => { addText(); setPanelOpen(true); } },
+        { id: 'export', icon: '⇩', label: t('editor.export'), hint: t('editorSimple.exportHint'), onPress: () => void openExport() },
+        { id: 'versions', icon: '↺', label: t('editorSave.versions'), hint: t('editorSimple.versionsHint'), onPress: sync.openVersions },
+        { id: 'all-tools', icon: '☷', label: t('editorSimple.allTools'), hint: t('editorSimple.allToolsHint'), onPress: () => setAdvanced(true) },
+    ];
+
     // Tool panels are inline workspace sections with no close action; sheets below own their dismissal.
     return <View style={styles.screen}>
         {EDITOR_SERVER_EXPORT_ENABLED ? <ServerExportSheet api={api} router={router} now={Date.now} projectId={projectId} name={name} document={document} dirty={dirty} visible={exportVisible} onOpen={() => setExportVisible(true)} onClose={() => setExportVisible(false)} onFallback={() => { setExportVisible(false); setProblem(t('handoff.exportUnavailable')); }} /> : null}
         <Stack.Screen options={{ title: t('editor.cut'), headerRight: () => <HeaderAction label={t('editor.done')} onPress={guard.done} /> }} />
         <View style={styles.projectBar}>
-            <View style={styles.cutBadge}><Text style={styles.cutMark}>{t('editor.v')}</Text><Text style={styles.cutLabel}>{t('editor.cUT')}</Text></View>
+            {advanced ? <View style={styles.cutBadge}><Text style={styles.cutMark}>{t('editor.v')}</Text><Text style={styles.cutLabel}>{t('editor.cUT')}</Text></View> : null}
             <View style={styles.titleGroup}>
                 <Text accessibilityRole="header" numberOfLines={1} style={styles.title}>{name}</Text>
                 <StatusText variant="inherit" accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : undefined} style={styles.status}>{saveStatus}</StatusText>
             </View>
-            <Button label={t('editorSave.versions')} variant="tertiary" size="sm" containerStyle={{ marginVertical: -2 }} onPress={sync.openVersions} /><View style={styles.formatBadge}><Text style={styles.formatText}>{canvas.aspect_ratio}</Text><Text style={styles.formatMeta}>{t('editor.fPS', { value1: canvas.frame_rate })}</Text></View>
+            {advanced ? <><Button label={t('editorSave.versions')} variant="tertiary" size="sm" containerStyle={{ marginVertical: -2 }} onPress={sync.openVersions} /><View style={styles.formatBadge}><Text style={styles.formatText}>{canvas.aspect_ratio}</Text><Text style={styles.formatMeta}>{t('editor.fPS', { value1: canvas.frame_rate })}</Text></View></> : null}
         </View>
         {problem ? <StatusText variant="inherit" accessibilityRole="alert" style={styles.problem}>{problem}</StatusText> : null}
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.commandStrip} contentContainerStyle={styles.commandContent}>
+        {advanced ? null : <View style={styles.simpleActions}>
+            <Command icon="↶" label={t('editor.undo')} disabled={!history.canUndo} onPress={() => travel('undo')} />
+            <Command icon="↷" label={t('editor.redo')} disabled={!history.canRedo} onPress={() => travel('redo')} />
+            {selection ? <>
+                <Command icon="✂" label={t('editor.split')} onPress={splitSelection} />
+                <Command icon="⧉" label={t('editor.duplicate')} onPress={duplicateSelection} />
+                <Command icon="⌫" label={t('editor.delete')} danger onPress={removeSelection} />
+            </> : null}
+            <View style={styles.simpleSpacer} />
+            <Command icon="⇩" label={t('editor.export')} onPress={() => void openExport()} />
+        </View>}
+        {advanced ? <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.commandStrip} contentContainerStyle={styles.commandContent}>
             <Command icon="↶" label={t('editor.undo')} disabled={!history.canUndo} onPress={() => travel('undo')} />
             <Command icon="↷" label={t('editor.redo')} disabled={!history.canRedo} onPress={() => travel('redo')} />
             <View style={styles.commandDivider} />
@@ -296,9 +335,11 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
             <View style={styles.commandDivider} />
             <Command icon="⇩" label={t('editor.export')} onPress={() => void openExport()} />
             <Command icon="◈" label={t('editor.credits')} onPress={() => void openWorkflow('/credits')} />
-        </ScrollView>
+            <View style={styles.commandDivider} />
+            <Command icon="◧" label={t('editorSimple.simpleView')} onPress={() => setAdvanced(false)} />
+        </ScrollView> : null}
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.optionStrip} contentContainerStyle={styles.optionContent}>
+        {advanced ? <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.optionStrip} contentContainerStyle={styles.optionContent}>
             <Choice label={t('editor.snap')} selected={snap} onPress={() => setSnap((value) => !value)} compact />
             <Text style={styles.optionLabel}>{t('editor.ripple')}</Text>
             {(['none', 'lane', 'all'] as const).map((value) => <Choice key={value} label={value === 'none' ? t('editor.off') : value === 'lane' ? t('editor.selectedtrack') : t('editor.alltracks')} selected={ripple === value} onPress={() => setRipple(value)} compact />)}
@@ -308,14 +349,14 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
             <Text style={styles.zoomValue}>{t('editorCore.zoomValue', { value1: formatNumber(zoom, 2) })}</Text>
             <Action label={t('editorCore.zoomIn')} disabled={zoom >= PPF_MAX} onPress={() => setZoom(value => Math.min(PPF_MAX, value * 2))} compact />
             <Action label={t('editorCore.fit')} onPress={() => setZoom(fitPpf(viewport, total))} compact />
-        </ScrollView>
+        </ScrollView> : null}
 
-        <View style={styles.previewArea}>
+        <View style={[styles.previewArea, !advanced && !panelOpen && styles.simpleFill]}>
             <View style={styles.previewHeading}>
                 <Text style={styles.eyebrow}>{t('editor.pREVIEW')}</Text>
                 <Text style={styles.previewMeta}>{clipCount ? t('editor.layers', { value1: clipCount }) : t('editor.emptysequence')}</Text>
             </View>
-            <View style={[styles.previewFrame, { height: previewHeight }]}>
+            <View style={[styles.previewFrame, advanced || panelOpen ? { height: previewHeight } : styles.simpleFill]}>
                 <View style={[styles.canvas, { aspectRatio: canvas.aspect_ratio === '9:16' ? 9 / 16 : canvas.aspect_ratio === '1:1' ? 1 : 16 / 9 }]}>
                     <PlaybackPreview frameStore={frameStore} timeline={timeline} api={api} playing={playing} localMediaUris={localMediaUris} />
                 </View>
@@ -331,14 +372,15 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
             <PlaybackTimeline onGestureActive={returns.gestureActive} timeline={timeline} selections={selections} ppf={zoom} total={total} frameStore={frameStore} playing={playing} snap={snap} onViewport={setViewport} onSeek={value => { setPlaying(false); setFrame(value); }} onSelect={selectClip} onApply={applyTimeline} />
         </View>
 
-        <ScrollView testID="editor-tool-rail" horizontal showsHorizontalScrollIndicator={false} style={styles.toolRail} contentContainerStyle={styles.toolContent}>
+        {advanced ? <ScrollView testID="editor-tool-rail" horizontal showsHorizontalScrollIndicator={false} style={styles.toolRail} contentContainerStyle={styles.toolContent}>
             {tools.map((item) => <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={rawText(item.label)} accessibilityState={{ selected: tool === item.id }} onPress={() => setTool(item.id)} style={({ pressed }) => [styles.tool, tool === item.id && styles.toolActive, pressed && styles.pressed]}>
                 {item.id === 'markers' ? <View style={{ width: 12, height: 12, backgroundColor: colors.accent, transform: [{ rotate: '45deg' }] }} /> : <Text style={[styles.toolIcon, tool === item.id && styles.toolIconActive]}>{item.icon}</Text>}
                 <Text style={[styles.toolLabel, tool === item.id && styles.toolLabelActive]}>{item.label}</Text>
             </Pressable>)}
-        </ScrollView>
+        </ScrollView> : null}
 
-        <ScrollView style={styles.inspector} contentContainerStyle={styles.inspectorContent} keyboardShouldPersistTaps="handled">
+        {!advanced && panelOpen ? <View style={styles.simpleActions}><Action label={t('editorSimple.closePanel')} onPress={() => setPanelOpen(false)} /></View> : null}
+        {advanced || panelOpen ? <ScrollView style={styles.inspector} contentContainerStyle={styles.inspectorContent} keyboardShouldPersistTaps="handled">
             {tool === 'media' ? <>
                 <PanelHeading title={t('editor.projectmedia')} detail={plural('editor.itemsCount', availableMedia.length)} />
                 {availableMedia.length ? availableMedia.map((item) => <ProjectMediaRow key={item.id} item={item} fps={timeline.fps} onAdd={addMediaToTimeline} />) : <EmptyPanel title={t('editor.nomediayet')} body={t('editor.chooseanexistingVeyrnoxcreationaproject')} />}
@@ -416,7 +458,11 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
                 <PanelHeading title={t('editor.tracks')} detail={t('editor.total', { value1: timeline.tracks.length })} />
                 {timeline.tracks.map((track) => <View key={track.id} style={styles.trackControl}><View style={styles.rowCopy}><Text style={styles.rowTitle}>{editorTrackLabel(track)}</Text><Text style={styles.muted}>{t(`editor.track.${track.kind}`)}</Text></View><Choice label={t('editor.lock')} selected={track.locked} onPress={() => updateTrack(track, { locked: !track.locked })} compact /><Choice label={t('editor.mute')} selected={track.muted} onPress={() => updateTrack(track, { muted: !track.muted })} compact /><Choice label={t('editor.hide')} selected={track.hidden} onPress={() => updateTrack(track, { hidden: !track.hidden })} compact /></View>)}
             </> : null}
-        </ScrollView>
+        </ScrollView> : null}
+        {advanced ? null : <SimpleEditorBar onOpen={setSheet} />}
+        {sheet === 'add' ? <SimpleEditorSheet title={t('editorSimple.addTitle')} rows={addRows} onClose={() => setSheet(null)} /> : null}
+        {sheet === 'ai' ? <SimpleEditorSheet title={t('editorSimple.aiTitle')} rows={aiRows} onClose={() => setSheet(null)} /> : null}
+        {sheet === 'more' ? <SimpleEditorSheet title={t('editorSimple.moreTitle')} rows={moreRows} onClose={() => setSheet(null)} /> : null}
         {generate ? <MakePanel visible={generate.visible && ready} initialKind={generate.kind} onClose={() => setGenerate(value => value && { ...value, visible: false })} resultNote={t('editorAi.note', { time: timecode(generate.frame, timeline.fps) })} onJobStarted={(id, model) => {
             const kind = kindOf(model.modality); if (!kind || generate.owner !== getCacheUser()) return;
             void addPending(projectId, { jobId: id, kind, frame: generate.frame, name: model.name, createdAt: Date.now() }).then(() => { if (mounted.current && liveProject.current === projectId && generate.owner === getCacheUser() && currentDocument()?.project_id === projectId) void returns.refresh(); });

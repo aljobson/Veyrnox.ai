@@ -58,9 +58,41 @@ afterEach(async () => {
 });
 
 async function render(jobId?: string) {
-    await act(async () => root.render(<FullEditorScreen projectId={projectId} jobId={jobId} />));
+    await act(async () => root.render(<FullEditorScreen projectId={projectId} jobId={jobId} startAdvanced />));
     await act(async () => Promise.resolve());
 }
+async function renderSimple() {
+    await act(async () => root.render(<FullEditorScreen projectId={projectId} />));
+    await act(async () => Promise.resolve());
+}
+const labelled = (label: string) => root.container.queryAll((node) => node.props.accessibilityLabel === label);
+
+test('opens in the simple view: Add, AI Edit and More, with the full toolbars hidden', async () => {
+    await renderSimple();
+    expect(visible('Native cut')).toBe(true);
+    expect(visible('PREVIEW')).toBe(true);
+    expect(visible('TIMELINE')).toBe(true);
+    for (const label of ['Add', 'AI Edit', 'More', 'Undo', 'Redo', 'Export']) expect(labelled(label).length).toBeGreaterThan(0);
+    for (const label of ['Media', 'Audio', 'Captions', 'Transitions', 'Filters', 'Markers', 'Adjust', 'Snap', 'Zoom out', 'Add video track']) expect(labelled(label)).toHaveLength(0);
+    expect(root.container.queryAll((node) => node.props.testID === 'editor-tool-rail')).toHaveLength(0);
+});
+
+test('the simple view opens a sheet from each entry and All editing tools reveals the full set', async () => {
+    await renderSimple();
+    await press('AI Edit');
+    for (const label of ['Smart Cut', 'Make a clip with AI', 'Voice or music with AI', 'Captions']) expect(labelled(label).length).toBeGreaterThan(0);
+    await press('Close');
+    await press('Add');
+    for (const label of ['Library video', 'Library image', 'Library audio', 'Photos & videos', 'Files']) expect(labelled(label).length).toBeGreaterThan(0);
+    await press('Close');
+    await press('More');
+    expect(labelled('All editing tools').length).toBeGreaterThan(0);
+    await press('All editing tools');
+    expect(root.container.queryAll((node) => node.props.testID === 'editor-tool-rail').length).toBeGreaterThan(0);
+    expect(labelled('Simple view').length).toBeGreaterThan(0);
+    await press('Simple view');
+    expect(root.container.queryAll((node) => node.props.testID === 'editor-tool-rail')).toHaveLength(0);
+});
 
 test('opens a native project workspace without loading a website', async () => {
     await render();

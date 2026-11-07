@@ -3072,6 +3072,24 @@
     "ratio": 1.62
   },
   {
+    "id": "editorSimple.add",
+    "english": "Add",
+    "translation": "Añadir",
+    "ratio": 2
+  },
+  {
+    "id": "editorSimple.aiEdit",
+    "english": "AI Edit",
+    "translation": "Edición con IA",
+    "ratio": 2
+  },
+  {
+    "id": "editorSimple.aiTitle",
+    "english": "AI Edit",
+    "translation": "Edición con IA",
+    "ratio": 2
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",
