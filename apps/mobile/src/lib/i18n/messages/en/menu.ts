@@ -11,6 +11,8 @@ export default {
     'menu.inspire': 'Inspire',
     'menu.chat': 'LLM Chat',
     'menu.videoAgent': 'Video agent',
+    'menu.videoAgentHint': 'Describe a video, we make it',
+    'menu.filmHint': 'Plan and direct a multi-shot film',
     'menu.create': 'Create',
     'menu.features': 'Creative tools',
     'menu.toolDirectory': 'Tools',
