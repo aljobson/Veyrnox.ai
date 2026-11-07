@@ -1,3 +1,5 @@
+import { useTemplateContract } from '../../../lib/useTemplateContract';
+import { templatePhotoHints, templatePhotosUnavailable, templateRouteContract, templateBoundPrompt, fidelityBlocked, fidelityTemplateId } from '../../../lib/templateFidelity';
 import { fetchSwapScene, swapSceneModel, type SwapScene } from '../../../lib/swapScenes';
 import { fetchFreeAllowance } from '../../../lib/freeAllowance';
 import { captureHandoffOwner } from '../../../lib/accountHandoffStore';
@@ -30,6 +32,7 @@ import { CameraPanel } from '../../../components/CameraPanel';
 import { CharacterPanel } from '../../../components/CharacterPanel';
 import { CreateOptions, type OptionValues } from '../../../components/CreateOptions';
 import { AttachMore, UploadLimitNote } from '../../../components/create/AttachMore';
+import { TemplatePhotoSlots } from '../../../components/TemplatePhotoSlots';
 import { SourcePicker } from '../../../components/SourcePicker';
 import { TemplateBanner } from '../../../components/TemplateBanner';
 import { DEFAULT_CINEMA, buildCinemaPrompt, sanitizeCinema, type Cinema } from '../../../lib/cinemaCamera';
@@ -61,9 +64,9 @@ function hostOf(url: string): string {
 }
 export default function CreateWithModel() {
     const styles = useThemedStyles(sheets);
-    const { modelId, swap, prompt: presetPrompt, duration: presetDuration, aspect: presetAspect, startOddling, tpl, tid, tmodel, tneeds, tsource, tratio, tposter, recipe, sourceHandoff, switched, followup, kind, sourceJob, filmId, shotId, promptVersion, promptContext } = useLocalSearchParams<{ modelId: string; swap?: string; prompt?: string; duration?: string; aspect?: string; startOddling?: string; tpl?: string; tid?: string; tmodel?: string; tneeds?: string; tsource?: string; tratio?: string; tposter?: string; recipe?: string; sourceHandoff?: string; switched?: string; followup?: string; kind?: string; sourceJob?: string; filmId?: string; shotId?: string; promptVersion?: string; promptContext?: string }>();
+    const { modelId, swap, prompt: presetPrompt, duration: presetDuration, aspect: presetAspect, startOddling, tpl, tid, tmodel, tneeds, tsource, tratio, tposter, tnegative, recipe, sourceHandoff, switched, followup, kind, sourceJob, filmId, shotId, promptVersion, promptContext } = useLocalSearchParams<{ modelId: string; swap?: string; prompt?: string; duration?: string; aspect?: string; startOddling?: string; tpl?: string; tid?: string; tmodel?: string; tneeds?: string; tsource?: string; tratio?: string; tposter?: string; tnegative?: string; recipe?: string; sourceHandoff?: string; switched?: string; followup?: string; kind?: string; sourceJob?: string; filmId?: string; shotId?: string; promptVersion?: string; promptContext?: string }>();
     // A template also brings its name, picture, shape and what it needs; each is checked before it is used.
-    const template = useMemo(() => activeTemplate({ tpl, tid, tmodel, tneeds, tsource, tratio, tposter }, modelId, ['veyrnox.ai', hostOf(API_BASE)]), [tpl, tid, tmodel, tneeds, tsource, tratio, tposter, modelId]);
+    const template = useMemo(() => activeTemplate({ tpl, tid, tmodel, tneeds, tsource, tratio, tposter, tnegative }, modelId, ['veyrnox.ai', hostOf(API_BASE)]), [tpl, tid, tmodel, tneeds, tsource, tratio, tposter, tnegative, modelId]);
     const templatePreset = templateOnOriginalModel({ tmodel }, modelId);
     const handedSources = useMemo(() => readCreativeSourceHandoff(typeof sourceHandoff === 'string' ? sourceHandoff : undefined, typeof recipe === 'string' ? recipe : undefined, modelId), [modelId, recipe, sourceHandoff]);
     const { api } = useAuth();
@@ -81,7 +84,7 @@ export default function CreateWithModel() {
     const [references, setReferences] = useState<readonly GenerationReference[]>(() => handedSources?.references ?? legacyReferences(handedSources?.uploaded ?? {}, handedSources?.fromLibrary ?? {}));
     const [sending, setSending] = useState<Partial<Record<SlotName, boolean>>>({});
     const [error, setError] = useState<string | null>(null);
-    const [opts, setOpts] = useState<OptionValues>({ aspect: null, count: 1, seed: '', negative: '', voice: '', audioSeconds: '' });
+    const [opts, setOpts] = useState<OptionValues>({ aspect: null, count: 1, seed: '', negative: template?.negativePrompt || '', voice: '', audioSeconds: '' });
     const [cameraOn, setCameraOn] = useState(false);
     const [cinema, setCinema] = useState<Cinema>(DEFAULT_CINEMA);
     const [characterOn, setCharacterOn] = useState(false);
@@ -165,7 +168,7 @@ export default function CreateWithModel() {
                 const guidedAspect = handedSources?.aspect;
                 const handedAspect = nearestAspect(parseRatio(presetAspect), o.aspects);
                 const aspect = handedAspect ?? (guidedAspect && o.aspects.includes(guidedAspect) ? guidedAspect : null) ?? nearestAspect(template?.ratio ?? null, o.aspects) ?? defaultAspect(o.aspects, vibe?.answers ?? null);
-                const base: OptionValues = { aspect, count: 1, seed: '', negative: '', voice: '', audioSeconds: '' };
+                const base: OptionValues = { aspect, count: 1, seed: '', negative: template?.negativePrompt || '', voice: '', audioSeconds: '' };
                 setReferences(handedSources?.references ?? legacyReferences(handedSources?.uploaded ?? {}, handedSources?.fromLibrary ?? {}));
                 setNote(kind === 'prompt-unavailable' ? t('handoff.promptUnavailable') : [switched === '1' ? t('handoff.switchedModel', { model: found.name }) : null, handedSources?.adjusted ? t('handoff.referencesAdjusted', { count: handedSources.adjusted }) : null].filter(Boolean).join(' ') || null);
                 if (handedSources?.settings) {
@@ -218,9 +221,9 @@ export default function CreateWithModel() {
         add('aspect', opts.aspect ?? undefined);
         add('recipe', recipe); add('followup', followup ?? handedSources?.followup); if (kind !== 'prompt-unavailable') add('kind', kind); add('sourceJob', sourceJob); add('startOddling', startOddling);
         add('filmId', filmId); add('shotId', shotId); add('promptVersion', promptVersion); add('promptContext', promptContext);
-        add('tpl', tpl); add('tid', tid); add('tmodel', tmodel); add('tneeds', tneeds); add('tsource', tsource); add('tratio', tratio); add('tposter', tposter);
+        add('tpl', tpl); add('tid', tid); add('tmodel', tmodel); add('tneeds', tneeds); add('tsource', tsource); add('tratio', tratio); add('tposter', tposter); add('tnegative', opts.negative);
         return normalizeTemplateCarry(out, modelId);
-    }, [modelId, prompt, duration, opts.aspect, tpl, tid, tmodel, tneeds, tsource, tratio, tposter, recipe, followup, handedSources, kind, sourceJob, startOddling, filmId, shotId, promptVersion, promptContext]);
+    }, [modelId, prompt, duration, opts.aspect, opts.negative, tpl, tid, tmodel, tneeds, tsource, tratio, tposter, recipe, followup, handedSources, kind, sourceJob, startOddling, filmId, shotId, promptVersion, promptContext]);
     const takesStartImage = !!model && slotsFor(model).some((s) => s.slot === 'image' && s.kind === 'image');
     useEffect(() => {
         if (!startId || !takesStartImage) return;
@@ -260,6 +263,7 @@ export default function CreateWithModel() {
         setRestored(false);
         clearDraft().catch(() => undefined);
     }, []);
+    const { contract: loadedContract, loading: contractLoading, retry: retryContract } = useTemplateContract(swapScene ? null : template?.id);
     if (!model || (swap !== undefined && swapScene?.id !== swap)) {
         return <View style={styles.screen}>{error ? <Text variant="body" tone="danger" style={styles.error} accessibilityLiveRegion="polite">{error}</Text> : <ActivityIndicator color={styles.accentInk.color} />}</View>;
     }
@@ -278,7 +282,12 @@ export default function CreateWithModel() {
     const text = takesCamera && cameraOn ? buildCinemaPrompt(withCharacter, cinema) : withCharacter;
     const text_ = textInput(model);
     const promptTooLong = !!text_ && text.length > text_.max;
-    const slots = slotsFor(model, swapScene);
+    const contract = swapScene ? null : loadedContract;
+    const contractMissing = !swapScene && !!templateRouteContract(template?.id) && !contract;
+    const photoContract =  !cameraOn && !characterOn && fidelityTemplateId(contract, templateBoundPrompt(contract, text, modelId, contract?.slotCount || 1), modelId, { ...settingsInputs(options, { seed: opts.seed, negative: opts.negative, aspect: opts.aspect, voice: opts.voice, audioSeconds: opts.audioSeconds, resolution, audio }), duration_seconds: isVideo ? duration : null }) ? contract : null;
+    const boundCount = contract?.class === 'bound' && modelId === contract.modelId ? contract.slotCount || 0 : 0;
+    const photosUnavailable = contract?.class === 'bound' && modelId === contract.modelId && templatePhotosUnavailable(contract, model?.capabilities?.media);
+    const slots = slotsFor(model, swapScene).filter(slot => !photoContract || slot.slot === 'image' || references.some(ref => ref.slot === slot.slot)).map(slot => photoContract ? { ...slot, maxFiles: Math.min(slot.maxFiles ?? 1, photoContract.slotCount || 1), minSide: Math.max(slot.minSide || 0, photoContract.minPhotoDimension) } : slot);
     const waiting = attaching || Object.values(sending).some(Boolean);
     // New files join the latest references (never a stale copy), within each slot's room; the slot pickers show them
     // without remounting, so an upload in progress is never aborted.
@@ -294,8 +303,10 @@ export default function CreateWithModel() {
         });
     };
     const hasReference = references.length > 0 || !!startFile;
-    const ready = (!swapScene || (references.length === swapScene.people && references.every(ref => ref.slot === 'image'))) && !waiting && !promptTooLong && slots.every(slot => (!slot.required || references.some(ref => ref.slot === slot.slot)) && references.filter(ref => ref.slot === slot.slot).length <= (slot.maxFiles ?? 1)) && (!promptRequired(model) || !!text.trim()) && !seedIsInvalid(opts.seed) && !voiceIsMissing(options, opts.voice) && !audioLengthInvalid(options, opts.audioSeconds);
-    const request: SubmitRequest = { analyticsKind: kindOf(model.modality), modelId: model.id, swap: swapScene?.id, prompt: text, confirmedCredits: unit, durationSeconds: !swapScene && isVideo ? duration : null, references, sourceRights: hasReference ? true : undefined, textKey: text_?.key, extraInputs: settingsInputs(options, { seed: opts.seed, negative: opts.negative, aspect: opts.aspect, voice: opts.voice, audioSeconds: opts.audioSeconds, resolution, audio }), preset: !swapScene && templatePreset ? template?.id ?? undefined : undefined };
+    const ready = !contractMissing && !photosUnavailable && (!boundCount || references.length === boundCount) && !fidelityBlocked(contract, template ? text : '') && (!photoContract || (references.length <= photoContract.requiredReferences.imageMax && references.every(ref => ref.slot === 'image'))) && (!swapScene || (references.length === swapScene.people && references.every(ref => ref.slot === 'image'))) && !waiting && !promptTooLong && slots.every(slot => (!slot.required || references.some(ref => ref.slot === slot.slot)) && references.filter(ref => ref.slot === slot.slot).length <= (slot.maxFiles ?? 1)) && (!promptRequired(model) || !!text.trim()) && !seedIsInvalid(opts.seed) && !voiceIsMissing(options, opts.voice) && !audioLengthInvalid(options, opts.audioSeconds);
+    const requestPrompt = !cameraOn && !characterOn ? templateBoundPrompt(contract, text, modelId, references.length) : text;
+    let request: SubmitRequest = { analyticsKind: kindOf(model.modality), modelId: model.id, swap: swapScene?.id, prompt: requestPrompt, templateId: prompt === contract?.sourcePrompt && !cameraOn && !characterOn && (contract?.class !== 'bound' || references.length === contract.slotCount) ? fidelityTemplateId(contract, requestPrompt, modelId, { ...settingsInputs(options, { seed: opts.seed, negative: opts.negative, aspect: opts.aspect, voice: opts.voice, audioSeconds: opts.audioSeconds, resolution, audio }), duration_seconds: !swapScene && isVideo ? duration : null }) : undefined, confirmedCredits: unit, durationSeconds: !swapScene && isVideo ? duration : null, references, sourceRights: hasReference ? true : undefined, textKey: text_?.key, extraInputs: settingsInputs(options, { seed: opts.seed, negative: opts.negative, aspect: opts.aspect, voice: opts.voice, audioSeconds: opts.audioSeconds, resolution, audio }), preset: !swapScene && templatePreset ? template?.id ?? undefined : undefined };
+    if (request.templateId && typeof request.extraInputs?.negative_prompt === 'string') request = { ...request, extraInputs: { ...request.extraInputs, negative_prompt: request.extraInputs.negative_prompt.trimEnd() } };
     const signature = generationSignature(request, n);
     const matchingRetry = retry.current?.signature === signature ? retry.current : null;
     // Only an unchanged request retains its confirmed items and retry price.
@@ -366,10 +377,16 @@ export default function CreateWithModel() {
             <KeyboardFormScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
                 <FormHeader modelLabel={modelLabel} modality={kindOf(model.modality) ?? model.modality} stageLine={stageLine} stage={results ? <CreateResult api={api} batch={results} catalog={catalog} onTerminal={resultSettled} /> : undefined}
                     onTemplates={!template && !results ? () => router.push('/create/presets') : undefined} />
+                {contract && !boundCount && <Text accessibilityLiveRegion="polite">{t(contract.photoGuidance)}</Text>}
+                {photosUnavailable && <Text tone="danger" accessibilityLiveRegion="polite">{t('presets.fidelity.photosUnavailable')}</Text>}
+                {contractMissing && (contractLoading ? <ActivityIndicator /> : <><Text accessibilityLiveRegion="polite">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text><Button label={t('recovery.retry')} onPress={retryContract} /></>)}
+                {fidelityBlocked(contract, template ? text : '') && <Text tone="danger" accessibilityLiveRegion="polite">{t('public.TemplateRecipe.sourceVideoUnsupported')}</Text>}
+                {template && !templatePreset && <Text accessibilityLiveRegion="polite">{t('presets.fidelity.modelSwitch')}</Text>}
+                {template && !fidelityBlocked(contract, text) && !request.templateId && <Text accessibilityLiveRegion="polite">{t('presets.fidelity.previewNotice')}</Text>}
                 {template ? <TemplateBanner template={template} aspect={options.aspects.length ? opts.aspect : null} /> : null}
                 {startId && takesStartImage ? <Text variant="caption" tone="tertiary" style={styles.consent} accessibilityLiveRegion="polite">{startProblem ?? t('oddlings.animate.startNote')}</Text> : null}
                 {['swap-recast', 'swap-quick'].includes(model.id) ? <Text variant="caption" tone="secondary" style={styles.consent}>{t('app.create.swapConsentNotice')}</Text> : null}
-                {slots.length ? (
+                {slots.length && !photosUnavailable ? (
                     <View style={styles.section}>
                         <View style={styles.sectionTop}>
                             <SectionLabel style={styles.sectionLabel}>{t('create.workspace.references')}</SectionLabel>
@@ -377,7 +394,7 @@ export default function CreateWithModel() {
                         </View>
                         <UploadLimitNote model={model} />
                         <View pointerEvents={attaching ? 'none' : 'auto'} style={{ gap: ds.space.md }}>
-                        {slots.map((s) => (
+                        {boundCount ? <TemplatePhotoSlots key={`${template?.id}:${modelId}`} count={boundCount} hints={templatePhotoHints(contract)} model={model} api={api} references={references} onReferences={setReferences} onBusy={busy => setSending(previous => ({ ...previous, image: busy }))} /> : slots.map((s) => (
                             <SourcePicker
                                 key={s.slot}
                                 slot={s}
@@ -396,7 +413,7 @@ export default function CreateWithModel() {
                         </View>
                     </View>
                 ) : null}
-                {!swapScene && <View style={styles.section}><AttachMore hasSlots={slots.length > 0} api={api} current={model} carry={attachCarry} settings={{ opts, cameraOn, cinema, characterOn, character }} references={references} previous={handedSources ?? undefined} blocked={waiting} onBusy={setAttaching} onPlaced={placeAttached} /></View>}
+                {!swapScene && !boundCount && <View style={styles.section}><AttachMore hasSlots={slots.length > 0} api={api} current={model} carry={attachCarry} settings={{ opts, cameraOn, cinema, characterOn, character }} references={references} previous={handedSources ?? undefined} blocked={waiting} onBusy={setAttaching} onPlaced={placeAttached} /></View>}
                 {text_ ? (
                     <View style={styles.section}>
                         <View style={styles.sectionTop}>

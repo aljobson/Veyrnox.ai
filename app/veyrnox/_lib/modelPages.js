@@ -3,7 +3,7 @@
 // catalog cannot be reached.
 import { PRESETS } from './templates.js';
 import { modelBadges, modelSummary } from './modelSummaries.js';
-import { kindOf, modelIdForName } from './tokens.js';
+import { kindOf, templateModelId } from './tokens.js';
 import { outputDurationLabel } from './chatMedia.js';
 import { audioDurationLabel, sourceDurationLimit } from './modelPricing.js';
 import { translator } from '../../../lib/i18n/translate.mjs';
@@ -89,5 +89,5 @@ export function modelDetail(model) {
 
 /** Templates wired to this exact model id, not fuzzy name matching. */
 export function templatesForModel(modelId, limit = 6) {
-  return PRESETS.filter((preset) => modelIdForName(preset.model) === modelId).slice(0, limit);
+  return PRESETS.filter((preset) => templateModelId(preset) === modelId).slice(0, limit);
 }

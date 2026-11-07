@@ -12,8 +12,8 @@ export type SubmitRequest = Omit<GenerationRequest, 'idempotencyKey'>;
 
 // Price/allowance metadata never changes request identity or retry keys.
 export function generationSignature(request: SubmitRequest, count: number) {
-    const { modelId, prompt, textKey, durationSeconds, extraInputs, references, sources, assets, sourceRights, preset, swap } = request;
-    return JSON.stringify({ modelId, prompt, textKey, durationSeconds, extraInputs, references, sources, assets, sourceRights, preset, swap, count });
+    const { modelId, prompt, textKey, durationSeconds, extraInputs, references, sources, assets, sourceRights, preset, templateId, swap } = request;
+    return JSON.stringify({ modelId, prompt, textKey, durationSeconds, extraInputs, references, sources, assets, sourceRights, preset, templateId, swap, count });
 }
 export const unknownGenerationOutcome = (err: unknown) => !(err instanceof ApiError)
     || ['network', 'internal', 'gateway_error', 'debit_failed', 'account_changed', 'dispatch_acceptance_unknown', 'admission_unknown', 'outcome_unknown', 'bad_response'].includes(err.code)
@@ -95,6 +95,9 @@ export function generationMessage(err: unknown): string {
     if (err instanceof OfflineError) return OFFLINE_PAID_MESSAGE;
     if (!(err instanceof ApiError)) return t('common.error');
     switch (err.code) {
+        case 'template_blocked': return t('app.create.error.template_blocked');
+        case 'template_mismatch': return t('app.create.error.template_mismatch');
+        case 'template_references_invalid': return t('app.create.error.template_references_invalid');
         case 'price_changed':
         case 'admission_unknown':
         case 'admission_unavailable':

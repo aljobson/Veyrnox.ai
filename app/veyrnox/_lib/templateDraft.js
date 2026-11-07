@@ -1,4 +1,4 @@
-import { modelIdForName } from './tokens.js';
+import { templateModelId } from './tokens.js';
 import { ratioOf } from '../../../lib/aspectShapes.mjs';
 import { GENERATION_PROMPT_MAX } from '../../../lib/generationPromptLimits.js';
 
@@ -20,7 +20,7 @@ export const templateModelEligible = (model, templateModel) => Boolean(
 // Resolve the template from the URL even when session storage is unavailable.
 // Only the initial, validated arrival can bind a recipe to a different model.
 export function draftForTemplate(preset, modelId, arrivalTemplateId) {
-  const originalModel = preset && modelIdForName(preset.model);
+  const originalModel = preset && templateModelId(preset);
   if (!preset || typeof modelId !== 'string' || !modelId
     || !originalModel || (originalModel !== modelId && arrivalTemplateId !== preset.id)
     || !nonEmptyString(preset.prompt) || !nonEmptyString(preset.id)) return null;
@@ -54,12 +54,12 @@ export function resolveTemplateDraft(preset, modelId, storedDraft, arrivalTempla
 // Called once on arrival, after the catalog settles. URL settings win, even
 // with blocked storage; unrelated stored recipes never enter this binding.
 export function templateArrival(preset, models, params, storedDraft) {
-  const original = models.find(model => model.id === modelIdForName(preset.model));
+  const original = models.find(model => model.id === templateModelId(preset));
   const saved = storedDraft?.templateId === preset.id ? storedDraft : null;
   const requested = params.get('model') || saved?.model;
   const candidate = models.find(model => model.id === requested);
   const model = templateModelEligible(candidate, original) ? candidate : original;
-  const modelId = model?.id || modelIdForName(preset.model);
+  const modelId = model?.id || templateModelId(preset);
   const draft = resolveTemplateDraft(preset, modelId, saved, preset.id);
   if (!draft) return { modelId, draft: null };
   const seconds = /^\d{1,2}s?$/.test(params.get('duration') || '') ? Number(params.get('duration').replace('s', '')) : null;

@@ -9,13 +9,13 @@ register('data:text/javascript,' + encodeURIComponent(`export async function res
     return next(s, c);
 }`));
 const { ALL_TEMPLATES } = await import('../app/veyrnox/_lib/templates.js');
-const { modelIdForName } = await import('../app/veyrnox/_lib/tokens.js');
+const { modelIdForName, templateModelId } = await import('../app/veyrnox/_lib/tokens.js');
 const { ERROR_COPY } = await import('../app/veyrnox/_lib/createErrors.js');
 const { allocationSnapshot } = await import('../app/veyrnox/_lib/imageBatch.js');
 const { cachedSources, fileIdentity, keepUpload, UPLOAD_REUSE_MS, inlineBlockReason, photoOnlyModel, templateInputs, templateRun, submitTemplate, templateRunDead } = await import('../app/veyrnox/_lib/templateGenerate.js');
 
 const preset = ALL_TEMPLATES.find(p => modelIdForName(p.model) && p.prompt && !p.needs);
-const modelId = modelIdForName(preset.model);
+const modelId = templateModelId(preset);
 const model = { id: modelId, name: preset.model, kind: 'video', modality: 'video', credits: 4, durations: [5, 10], media: {} };
 const inputs = () => templateInputs(preset, model, { prompt: preset.prompt, aspect: '9:16', durationSeconds: 5, aspectOptions: ['9:16', '16:9'] });
 const gatewayError = (code, extra = {}) => Object.assign(new Error(code), { name: 'GatewayError', code, status: 400, ...extra });

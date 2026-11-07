@@ -348,6 +348,23 @@ const de = {
     'label.Photo of the new person': 'Foto der neuen Person',
     'label.Photos of the new people': 'Fotos der neuen Personen',
     'app.create.swapConsentNotice': 'Verwende nur Fotos von Personen, die zugestimmt haben.',
+    'app.create.error.template_blocked': 'Diese Vorlage benötigt nicht verfügbare Referenzen oder Funktionen. Wähle eine andere Vorlage. Es wurde nichts berechnet.',
+    'app.create.error.template_mismatch': 'Diese Einstellungen entsprechen nicht der geprüften Vorlage. Stelle Modell, Dauer, Format und Prompt wieder her oder schreibe einen eigenen Prompt. Es wurde nichts berechnet.',
+    'app.create.error.template_references_invalid': 'Füge die benötigten Fotos der Reihe nach hinzu, ohne zusätzliche Bilder oder Videos. Es wurde nichts berechnet.',
+    'presets.fidelity.blocked': 'Diese Vorlage benötigt nicht verfügbare Referenzen oder Funktionen. Wähle eine andere Vorlage.',
+    'presets.fidelity.custom': 'Eigener Prompt: Diese Generierung bildet die Vorlage nicht mehr exakt nach.',
+    'presets.fidelity.modelSwitch': 'Ein Modellwechsel erstellt eine benutzerdefinierte Generierung. Das Ergebnis wird von der Vorlagenvorschau abweichen.',
+    'presets.fidelity.noPhoto': 'Dieses Modell unterstützt kein Referenzfoto.',
+    'presets.fidelity.photoGuidance': 'Verwende ein gut beleuchtetes Foto einer einzelnen Person mit Blick in die Kamera, mindestens 256 × 256 Pixel. Dieses Modell akzeptiert ein Vorlagenfoto.',
+    'presets.fidelity.photoMinimum': 'Wähle ein Foto mit mindestens 256 × 256 Pixeln.',
+    'presets.fidelity.previewNotice': 'Du kannst diese Vorlage ausführen, aber das Ergebnis kann von der Vorschau abweichen. Die Übereinstimmung dieses Durchlaufs mit der Vorlage wurde nicht geprüft.',
+    'presets.fidelity.singlePhoto': 'Verwende genau ein Foto mit einem Modell, das ein Referenzbild unterstützt.',
+    'presets.fidelity.photoSlot': 'Foto {number}',
+    'presets.fidelity.orderedPhotos': 'Füge {count} Fotos der Reihe nach hinzu',
+    'presets.fidelity.photosRequired': 'Fülle alle {count} Fotofelder aus, bevor du fortfährst.',
+    'presets.fidelity.photoReady': 'Foto bereit',
+    'presets.use.photoReplace': 'Ersetzen',
+    'presets.fidelity.photosUnavailable': 'Diese Vorlage benötigt mehr Fotos, als das Modell derzeit unterstützt. Wähle eine andere Vorlage oder versuche es später erneut.',
 } as const;
 
 export default de;

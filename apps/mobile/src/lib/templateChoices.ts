@@ -1,3 +1,4 @@
+import { templateRouteContract } from './templateRoute';
 import type { Preset } from './presets';
 import { isSupported, kindOf, type CatalogModel } from './media';
 import { optionsFor } from './createOptions';
@@ -19,10 +20,13 @@ export interface TemplateChoices {
 
 export function templateOptions(preset: Preset, model: CatalogModel, choices: TemplateChoices = {}) {
     const aspects = optionsFor(model).aspects;
+    const contract = templateRouteContract(preset.id);
+    const recipeAspect = contract?.class === 'bound' && model.id === contract.modelId ? contract.aspect : null;
     const durations = kindOf(model.modality) === 'video' ? model.durations : [];
     return {
         aspects, durations,
         aspect: choices.aspect && aspects.includes(choices.aspect) ? choices.aspect
+            : recipeAspect && aspects.includes(recipeAspect) ? recipeAspect
             : nearestAspect(parseRatio(preset.previewAspect) ?? parseRatio(preset.sourceAspect), aspects) ?? aspects[0] ?? null,
         duration: choices.duration != null && durations.includes(choices.duration) ? choices.duration
             : preset.durationSeconds != null && durations.includes(preset.durationSeconds) ? preset.durationSeconds : durations[0] ?? null,

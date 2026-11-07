@@ -1,3 +1,5 @@
+import { rememberTemplateSource } from './templateSourceCache';
+import { templateRoute } from './templateRoute';
 import { t } from './i18n';
 import { ApiError, API_BASE } from './api';
 import { templateParams } from './templateHandoff';
@@ -14,10 +16,13 @@ export interface Preset {
     // cached and test fixtures from the older category-only contract remain valid.
     readonly theme?: string;
     readonly modelId: string;
+    readonly slotCount?: number;
+    readonly boundModelId?: string | null;
     readonly modelName: string;
     // What the model makes, from the catalog: an image, video or audio family (empty when the server did not say).
     readonly modality: string;
     readonly prompt: string;
+    readonly negativePrompt?: string;
     // Community feeds use community-source-exact; independent catalogs retain their origin.
     readonly promptOrigin?: string | null;
     // Exact text published with the source community record. Template detail always exposes
@@ -62,15 +67,18 @@ function parseOne(raw: unknown): Preset | null {
         : requestedSourceStatus === 'unavailable' ? 'unavailable' : 'adaptation-only';
     if (!id || !title || !modelId || !prompt) return null;
     if (typeof r.credits !== 'number' || !Number.isInteger(r.credits) || r.credits <= 0) return null;
-    return {
+    const parsed: Preset = {
         id,
         title,
         category: str(r.category) ?? 'OTHER',
         theme: str(r.theme) ?? str(r.category) ?? 'OTHER',
-        modelId,
+        modelId: templateRoute({ id }, modelId).modelId || modelId,
+        slotCount: templateRoute({ id }, modelId).slotCount,
+        boundModelId: templateRoute({ id }, modelId).boundModelId,
         modelName: str(r.modelName) ?? modelId,
         modality: str(r.modality) ?? '',
         prompt,
+        negativePrompt: typeof r.negativePrompt === 'string' ? r.negativePrompt.trim().slice(0, 2000).trimEnd() : '',
         promptOrigin: str(r.promptOrigin),
         sourcePrompt,
         sourcePromptOrigin: sourcePrompt && r.sourcePromptOrigin === 'community-source-exact' ? 'community-source-exact' : null,
@@ -89,6 +97,8 @@ function parseOne(raw: unknown): Preset | null {
         posterUrl: https(r.posterUrl),
         previewAspect: str(r.previewAspect),
     };
+    rememberTemplateSource(parsed);
+    return parsed;
 }
 
 export function parsePresets(body: unknown): Preset[] {
@@ -158,7 +168,8 @@ export function searchPresets(items: readonly Preset[], query: string): Preset[]
 // Opens Create on the template's model with its prompt, length, shape, name and picture carried over; an inactive model
 // returns to Templates with an explicit unavailable state.
 export function presetHref(p: Preset, overrides: TemplateChoices = {}, catalog?: readonly CatalogModel[]) {
-    const original = catalog?.find(model => model.id === p.modelId);
+    const routedId = templateRoute(p, p.modelId).modelId || p.modelId;
+    const original = catalog?.find(model => model.id === routedId);
     const candidate = catalog?.find(model => model.id === overrides.modelId);
     const template = original ?? p;
     const model = candidate && templateModelEligible(template, candidate) ? candidate : original;
@@ -171,10 +182,10 @@ export function presetHref(p: Preset, overrides: TemplateChoices = {}, catalog?:
     };
     const prompt = overrides.prompt ?? (p.sourcePromptOrigin === 'community-source-exact' && p.sourcePrompt ? p.sourcePrompt : p.prompt);
     return { pathname: '/create/[modelId]', params: {
-        modelId: model?.id ?? p.modelId, prompt,
+        modelId: model?.id ?? routedId, prompt,
         ...(choices.duration !== null ? { duration: String(choices.duration) } : {}),
         ...(choices.aspect ? { aspect: choices.aspect } : {}),
-        ...templateParams(p), tmodel: p.modelId,
+        ...templateParams(p), tmodel: routedId,
         ...(/^[a-z0-9-]{1,40}$/.test(p.id) ? { tid: p.id } : {}),
     } } as const;
 }

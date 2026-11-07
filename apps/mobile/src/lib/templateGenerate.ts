@@ -1,3 +1,4 @@
+import { templateContract, templateRouteContract, templateBoundPrompt, fidelityBlocked, fidelityTemplateId } from './templateFidelity';
 import { optionsFor, resolveAudio, resolveResolution, settingsInputs } from './createOptions';
 import type { SubmitRequest } from './generationSubmit';
 import { estimateCredits, kindOf, textInput, type CatalogModel } from './media';
@@ -13,8 +14,10 @@ import { slotsFor, type GenerationReference, type Slot } from './sources';
 // An exact prompt that points at a source video we cannot supply cannot reproduce its preview: the
 // model never sees the footage and invents a different clip. Such a template is inspiration only (web: templateSourceBlock).
 const UNSUPPORTED_SOURCE_ISSUES = ['reference-video-not-supported'];
-export function sourceUnsupported(preset: Pick<Preset, 'sourcePromptOrigin' | 'sourcePromptIssues'> | null | undefined): boolean {
-    return preset?.sourcePromptOrigin === 'community-source-exact' && (preset.sourcePromptIssues ?? []).some(issue => UNSUPPORTED_SOURCE_ISSUES.includes(issue));
+export function sourceUnsupported(preset: Partial<Pick<Preset, 'id' | 'sourcePrompt' | 'sourcePromptOrigin' | 'sourcePromptIssues'>> | null | undefined): boolean {
+    const contract = templateRouteContract(preset?.id);
+    if (contract) return fidelityBlocked(contract);
+    return /@video\s*[_-]?\d|<<<\s*video/i.test(preset?.sourcePrompt || '') || (preset?.sourcePromptOrigin === 'community-source-exact' && (preset.sourcePromptIssues ?? []).some(issue => UNSUPPORTED_SOURCE_ISSUES.includes(issue)));
 }
 
 /** The photo slot when the model's one required media is a single start image, else null. */
@@ -32,7 +35,7 @@ export function inlineBlockReason(preset: Preset, model: CatalogModel | undefine
     if (!preset.available || !model) return 'unavailable';
     const kind = kindOf(model.modality);
     if (kind !== 'image' && kind !== 'video') return 'options';
-    const photoOk = photo && !!photoSlot(model) && !NON_PHOTO_NEEDS.test(preset.needs ?? '');
+      const photoOk = photo && !!photoSlot(model) && !NON_PHOTO_NEEDS.test(preset.needs ?? '');
     if (!photoOk && (preset.needs || slotsFor(model).some(slot => slot.required))) return 'media';
     const options = optionsFor(model);
     if (textInput(model)?.key !== 'prompt' || options.voice || options.audioLength) return 'options';
@@ -40,6 +43,7 @@ export function inlineBlockReason(preset: Preset, model: CatalogModel | undefine
 }
 
 // A start image only fixes the first frame; this line keeps the person in it as the lead for the whole clip.
+// Only for a prompt the person edited: an unedited exact source prompt is never changed (ADR-0325).
 const PHOTO_CHARACTER_LINE = 'The person in the attached photo is the main character; keep their face, hair and clothing the same throughout.';
 function withPhotoLine(text: string, hasPhoto: boolean): string {
     const joined = `${text}\n\n${PHOTO_CHARACTER_LINE}`;
@@ -53,21 +57,27 @@ export function templateRequest(preset: Preset, model: CatalogModel, choice: { p
     const uneditedExact = preset.sourcePromptOrigin === 'community-source-exact' && choice.prompt === exact;
     const video = kindOf(model.modality) === 'video';
     const references = choice.references ?? [];
+    const extraInputs = settingsInputs(options, {
+        seed: '', negative: preset.negativePrompt || '', aspect: choice.aspect,
+        resolution: resolveResolution(model, options, null), audio: resolveAudio(model, options, null),
+    });
+    const contract = templateContract(preset.id);
+    const boundPrompt = templateBoundPrompt(contract, choice.prompt, model.id, references.length);
+    const templateId = choice.prompt === exact && (contract?.class !== 'bound' || references.length === contract.slotCount) ? fidelityTemplateId(contract, boundPrompt, model.id, { ...extraInputs, duration_seconds: video ? choice.duration : null }) : undefined;
+    if (templateId && typeof extraInputs.negative_prompt === 'string') extraInputs.negative_prompt = extraInputs.negative_prompt.trimEnd();
     return {
         analyticsKind: kindOf(model.modality),
         modelId: model.id,
         // Like Create: the recipe's own words go unchanged, anything the person edited is trimmed.
-        prompt: withPhotoLine(choice.prompt === exact ? choice.prompt : choice.prompt.trim(), references.length > 0 && !uneditedExact),
+        prompt: withPhotoLine(choice.prompt === exact ? boundPrompt : choice.prompt.trim(), references.length > 0 && !uneditedExact),
+        templateId,
         confirmedCredits: estimateCredits(model, video ? choice.duration : null),
         durationSeconds: video ? choice.duration : null,
         references,
         sourceRights: references.length ? choice.sourceRights === true : undefined,
         textKey: 'prompt',
-        extraInputs: settingsInputs(options, {
-            seed: '', negative: '', aspect: choice.aspect,
-            resolution: resolveResolution(model, options, null), audio: resolveAudio(model, options, null),
-        }),
+        extraInputs,
         // The gateway takes a template id only on the template's own model.
-        preset: model.id === preset.modelId ? preset.id : undefined,
+        preset: (model.id === preset.modelId || (contract?.class === 'bound' && model.id === contract.modelId)) ? preset.id : undefined,
     };
 }

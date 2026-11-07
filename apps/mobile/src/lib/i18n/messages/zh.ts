@@ -348,6 +348,23 @@ const zh = {
     'label.Photo of the new person': '新人物的照片',
     'label.Photos of the new people': '新人物们的照片',
     'app.create.swapConsentNotice': '仅使用已征得本人同意的照片。',
+    'app.create.error.template_blocked': '此模板需要目前不可用的参考素材或功能。请选择其他模板。未扣费。',
+    'app.create.error.template_mismatch': '这些设置与已审核的模板不符。请恢复原始模型、时长、画面比例和提示词，或编写自定义提示词。未扣费。',
+    'app.create.error.template_references_invalid': '请按顺序添加所需照片，不要添加多余图片或视频。未扣费。',
+    'presets.fidelity.blocked': '此模板需要目前不可用的参考素材或功能。请选择其他模板。',
+    'presets.fidelity.custom': '自定义提示词：此次生成不再精确复现模板。',
+    'presets.fidelity.modelSwitch': '更换模型将创建自定义生成任务，结果会与模板预览不同。',
+    'presets.fidelity.noPhoto': '此模型不支持参考照片。',
+    'presets.fidelity.photoGuidance': '请使用一张单人正面、光线充足且至少为 256 × 256 像素的照片。此模型接受一张模板照片。',
+    'presets.fidelity.photoMinimum': '请选择至少为 256 × 256 像素的照片。',
+    'presets.fidelity.previewNotice': '你可以运行此模板，但结果可能与预览不符。本次运行未经模板保真度审核。',
+    'presets.fidelity.singlePhoto': '请使用支持参考图像的模型，并且只上传一张照片。',
+    'presets.fidelity.photoSlot': '照片 {number}',
+    'presets.fidelity.orderedPhotos': '按顺序添加 {count} 张照片',
+    'presets.fidelity.photosRequired': '继续之前，请填满全部 {count} 个照片位置。',
+    'presets.fidelity.photoReady': '照片已就绪',
+    'presets.use.photoReplace': '替换',
+    'presets.fidelity.photosUnavailable': '此模板需要的照片数量超过模型目前支持的数量。请选择其他模板或稍后重试。',
 } as const;
 
 export default zh;

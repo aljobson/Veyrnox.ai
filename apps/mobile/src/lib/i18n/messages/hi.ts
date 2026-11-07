@@ -348,6 +348,23 @@ const hi = {
     'label.Photo of the new person': 'नए व्यक्ति की फ़ोटो',
     'label.Photos of the new people': 'नए लोगों की फ़ोटो',
     'app.create.swapConsentNotice': 'केवल उन लोगों की फ़ोटो इस्तेमाल करें जिन्होंने सहमति दी है।',
+    'app.create.error.template_blocked': 'इस टेम्पलेट को ऐसे संदर्भ या सुविधाएँ चाहिए जो उपलब्ध नहीं हैं। दूसरा टेम्पलेट चुनें। कोई शुल्क नहीं लिया गया।',
+    'app.create.error.template_mismatch': 'ये सेटिंग जाँचे गए टेम्पलेट से मेल नहीं खातीं। उसका मूल मॉडल, अवधि, आकार और प्रॉम्प्ट बहाल करें या कस्टम प्रॉम्प्ट लिखें। कोई शुल्क नहीं लिया गया।',
+    'app.create.error.template_references_invalid': 'ज़रूरी फ़ोटो क्रम से जोड़ें, बिना अतिरिक्त तस्वीर या वीडियो के। कोई शुल्क नहीं लगा।',
+    'presets.fidelity.blocked': 'इस टेम्पलेट को ऐसे संदर्भ या सुविधाएँ चाहिए जो उपलब्ध नहीं हैं। दूसरा टेम्पलेट चुनें।',
+    'presets.fidelity.custom': 'कस्टम प्रॉम्प्ट: यह जनरेशन अब टेम्पलेट का सटीक पुनरुत्पादन नहीं है।',
+    'presets.fidelity.modelSwitch': 'मॉडल बदलने पर यह कस्टम जनरेशन होगा। परिणाम टेम्पलेट के पूर्वावलोकन से अलग होगा।',
+    'presets.fidelity.noPhoto': 'यह मॉडल संदर्भ फ़ोटो का उपयोग नहीं कर सकता।',
+    'presets.fidelity.photoGuidance': 'कैमरे की ओर देख रहे एक व्यक्ति की अच्छी रोशनी वाली, कम से कम 256 × 256 पिक्सेल की एक फ़ोटो इस्तेमाल करें। यह मॉडल टेम्पलेट के लिए एक फ़ोटो स्वीकार करता है।',
+    'presets.fidelity.photoMinimum': 'कम से कम 256 × 256 पिक्सेल की फ़ोटो चुनें।',
+    'presets.fidelity.previewNotice': 'आप इस टेम्पलेट को चला सकते हैं, लेकिन परिणाम प्रीव्यू से अलग हो सकता है। इस रन की टेम्पलेट के प्रति सटीकता की जाँच नहीं की गई है।',
+    'presets.fidelity.singlePhoto': 'संदर्भ चित्र का समर्थन करने वाले मॉडल के साथ सिर्फ़ एक फ़ोटो इस्तेमाल करें।',
+    'presets.fidelity.photoSlot': 'फ़ोटो {number}',
+    'presets.fidelity.orderedPhotos': 'क्रम से {count} फ़ोटो जोड़ें',
+    'presets.fidelity.photosRequired': 'आगे बढ़ने से पहले सभी {count} फ़ोटो स्थान भरें।',
+    'presets.fidelity.photoReady': 'फ़ोटो तैयार है',
+    'presets.use.photoReplace': 'बदलें',
+    'presets.fidelity.photosUnavailable': 'इस टेम्पलेट को मॉडल की मौजूदा सीमा से ज़्यादा फ़ोटो चाहिए। दूसरा टेम्पलेट चुनें या बाद में फिर कोशिश करें।',
 } as const;
 
 export default hi;

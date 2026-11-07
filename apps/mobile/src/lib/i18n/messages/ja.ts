@@ -348,6 +348,23 @@ const ja = {
     'label.Photo of the new person': '新しい人物の写真',
     'label.Photos of the new people': '新しい人物たちの写真',
     'app.create.swapConsentNotice': '同意を得た人の写真のみ使用してください。',
+    'app.create.error.template_blocked': 'このテンプレートには利用できない参照素材や機能が必要です。別のテンプレートを選んでください。課金はされていません。',
+    'app.create.error.template_mismatch': '設定が監査済みテンプレートと一致しません。元のモデル、長さ、画面比率、プロンプトに戻すか、独自のプロンプトを入力してください。課金はされていません。',
+    'app.create.error.template_references_invalid': '必要な写真を順番に追加してください。追加の画像や動画は不要です。課金されていません。',
+    'presets.fidelity.blocked': 'このテンプレートには利用できない参照素材や機能が必要です。別のテンプレートを選んでください。',
+    'presets.fidelity.custom': 'カスタムプロンプト：この生成はテンプレートを正確に再現するものではありません。',
+    'presets.fidelity.modelSwitch': 'モデルを変更するとカスタム生成になります。結果はテンプレートのプレビューと異なります。',
+    'presets.fidelity.noPhoto': 'このモデルは参照写真に対応していません。',
+    'presets.fidelity.photoGuidance': '明るい場所でカメラを正面から見ている1人の写真を使用してください。256 × 256ピクセル以上が必要です。このモデルは写真1枚に対応します。',
+    'presets.fidelity.photoMinimum': '256 × 256ピクセル以上の写真を選んでください。',
+    'presets.fidelity.previewNotice': 'このテンプレートは実行できますが、結果がプレビューと一致しない場合があります。この実行のテンプレートへの忠実度は検証されていません。',
+    'presets.fidelity.singlePhoto': '参照画像に対応するモデルで写真を1枚だけ使用してください。',
+    'presets.fidelity.photoSlot': '写真 {number}',
+    'presets.fidelity.orderedPhotos': '写真を{count}枚、順番に追加してください',
+    'presets.fidelity.photosRequired': '続行する前に{count}個すべての写真枠を埋めてください。',
+    'presets.fidelity.photoReady': '写真の準備ができました',
+    'presets.use.photoReplace': '変更',
+    'presets.fidelity.photosUnavailable': 'このテンプレートには、モデルが現在対応している枚数より多くの写真が必要です。別のテンプレートを選ぶか、後でもう一度お試しください。',
 } as const;
 
 export default ja;

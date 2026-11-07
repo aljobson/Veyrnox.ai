@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { PRESETS, templateById } from '../app/veyrnox/_lib/templates.js';
-import { MODELS, modelIdForName, presetCredits, presetHref } from '../app/veyrnox/_lib/tokens.js';
+import { MODELS, modelIdForName, templateModelId, presetCredits, presetHref } from '../app/veyrnox/_lib/tokens.js';
 import { fallbackCapabilitiesFor, FALLBACK_MODEL_ENDPOINTS } from '../lib/fallbackModelCapabilities.js';
 import { toPublicPresets } from '../lib/publicPresets.js';
 import { exactSourcePromptRecord } from '../app/veyrnox/_lib/sourcePromptRecords.js';
@@ -194,22 +194,23 @@ test('phone parsing and handoff keep every exact community prompt available', ()
     const handoff = mobile.presetHref(row);
     assert.equal(handoff.pathname, '/create/[modelId]', id);
     assert.equal(handoff.params.prompt, row.sourcePrompt || template.prompt, id);
-    assert.equal(handoff.params.modelId, modelIdForName(template.model), id);
+    assert.equal(handoff.params.modelId, templateModelId(template), id);
     assert.equal(handoff.params.duration, row.modality.includes('video') ? String(template.durationSeconds) : undefined, id);
     assert.equal(handoff.params.tmodel, row.modelId, id);
   }
 });
 
-test('R1 assembled and missing-catalog prices use the Kling 10s quote', () => {
+test('R1 assembled and missing-catalog prices use the effective 10s quote', () => {
   const kling = catalog.find(model => model.id === 'kling-3.0-i2v');
   for (const id of changedIds.filter(id => templateById(id).model === 'Kling 3.0 · I2V')) {
     const preset = templateById(id);
     assert.equal(preset.credits, kling.credits, id);
-    assert.equal(presetCredits(preset, catalog), kling.credits * 2, id);
-    assert.equal(presetCredits(preset, []), kling.credits * 2, id);
+    const effective = MODELS.find(model => model.id === templateModelId(preset));
+    assert.equal(presetCredits(preset, catalog), effective.credits * 2, id);
+    assert.equal(presetCredits(preset, []), effective.credits * 2, id);
     const fallback = toPublicPresets([], [preset])[0];
     assert.equal(fallback.available, false);
-    assert.equal(fallback.credits, kling.credits * 2, id);
+    assert.equal(fallback.credits, effective.credits * 2, id);
   }
 });
 

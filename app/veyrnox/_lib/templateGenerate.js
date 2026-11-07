@@ -1,3 +1,4 @@
+import { templateContract, fidelityTemplateId, templateBoundPrompt } from '../../../lib/templateClientContract.js';
 // Generate from the template page itself (ADR-0120 amendment 1). Pure pieces, so they are unit-tested without React.
 // Everything sent is what Create sends for the same template with nothing attached: same body, same per-request
 // idempotency key, same max_charge_credits from allocationSnapshot, same refund path. A template whose only media is one
@@ -31,6 +32,7 @@ export function inlineBlockReason(preset, model, { photo = false } = {}) {
 }
 
 // A start image only fixes the first frame; this line keeps the person in it as the lead for the whole clip.
+// Only for a prompt the person edited: an unedited exact source prompt is never changed (ADR-0325).
 const PHOTO_CHARACTER_LINE = 'The person in the attached photo is the main character; keep their face, hair and clothing the same throughout.';
 
 function withPhotoLine(text, withPhoto) {
@@ -39,6 +41,7 @@ function withPhotoLine(text, withPhoto) {
 }
 
 /** The inputs object Create builds for this template: prompt, shape, length, the template's own negative prompt. */
+const auditedInputs = new WeakSet();
 export function templateInputs(preset, model, { prompt, aspect, durationSeconds, aspectOptions, withPhoto = false }) {
   const exact = preset.sourcePromptOrigin === 'community-source-exact' && typeof preset.sourcePrompt === 'string' ? preset.sourcePrompt : preset.prompt;
   const uneditedExact = preset.sourcePromptOrigin === 'community-source-exact' && prompt === exact;
@@ -50,6 +53,12 @@ export function templateInputs(preset, model, { prompt, aspect, durationSeconds,
     ...settingsInputs(model, { seed: '', negative: preset.negativePrompt || '', voice: '', duration: '' }),
   };
   Object.keys(inputs).forEach(key => inputs[key] === undefined && delete inputs[key]);
+  if (uneditedExact) {
+    const contract = templateContract(preset);
+    const eligible = fidelityTemplateId(contract, templateBoundPrompt(contract, inputs.prompt, model.id, contract?.slotCount || 1), model.id, inputs);
+    if (eligible && inputs.negative_prompt) inputs.negative_prompt = inputs.negative_prompt.slice(0, contract.negativeMax ?? 2000).trimEnd();
+    auditedInputs.add(inputs);
+  }
   return inputs;
 }
 
@@ -99,11 +108,14 @@ export async function submitTemplate({ run, quote, model, preset, inputs, makeKe
     // An attached photo is uploaded once; a retry of the same request reuses its key.
     run.sources ??= deps.sources ? await deps.sources() : { references: [] };
     const references = run.sources.references;
+    const contract = templateContract(preset);
+    const boundInputs = { ...inputs, prompt: templateBoundPrompt(contract, inputs.prompt, model.id, references.length) };
     const { error: failure } = await sendInOrder(1, async (i) => {
       const submitted = await gatewayFetch('/generations', {
         method: 'POST',
         body: JSON.stringify({
-          model_id: model.id, idempotency_key: run.keys[i], inputs,
+          template_id: auditedInputs.has(inputs) && (contract?.class !== 'bound' || references.length === contract.slotCount) ? fidelityTemplateId(contract, boundInputs.prompt, model.id, boundInputs) : undefined,
+          model_id: model.id, idempotency_key: run.keys[i], inputs: boundInputs,
           max_charge_credits: quote.ceilings[i],
           preset: templateStartIdFor(preset.id, preset, model.id) || undefined,
           references,

@@ -344,5 +344,22 @@
   "label.Video to change",
   "label.Photo of the new person",
   "label.Photos of the new people",
-  "app.create.swapConsentNotice"
+  "app.create.swapConsentNotice",
+  "app.create.error.template_blocked",
+  "app.create.error.template_mismatch",
+  "app.create.error.template_references_invalid",
+  "presets.fidelity.blocked",
+  "presets.fidelity.custom",
+  "presets.fidelity.modelSwitch",
+  "presets.fidelity.noPhoto",
+  "presets.fidelity.photoGuidance",
+  "presets.fidelity.photoMinimum",
+  "presets.fidelity.previewNotice",
+  "presets.fidelity.singlePhoto",
+  "presets.fidelity.photoSlot",
+  "presets.fidelity.orderedPhotos",
+  "presets.fidelity.photosRequired",
+  "presets.fidelity.photoReady",
+  "presets.use.photoReplace",
+  "presets.fidelity.photosUnavailable"
 ]

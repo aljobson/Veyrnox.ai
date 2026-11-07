@@ -12,7 +12,7 @@ import { TemplateRecipe } from '../../_components/TemplateRecipe';
 import { FilmPlayer } from '../../_components/FilmPlayer';
 import { ClipBadge } from '../../_components/ClipBadge';
 import { SHOWCASE_CLIPS } from '../../_lib/showcase';
-import { presetTitle, modelIdForName } from '../../_lib/tokens';
+import { presetTitle, templateModelId, MODELS } from '../../_lib/tokens';
 import { ALL_TEMPLATES, templateById } from '../../_lib/templates';
 import { exactSourcePromptRecord } from '../../_lib/sourcePromptRecords.js';
 import { sourcePromptAuditForModel } from '../../_lib/sourcePromptAudit.js';
@@ -48,7 +48,8 @@ export default async function TemplatePage({ params }) {
   const template = templateById(id);
   if (!template) notFound();
   if (template.id !== id) permanentRedirect(localizedHref(locale, `/presets/${encodeURIComponent(template.id)}`));
-  const modelId = modelIdForName(template.model);
+  const modelId = templateModelId(template);
+  const modelName = MODELS.find(model => model.id === modelId)?.name || template.model;
   const sourcePrompt = exactSourcePromptRecord(template.id)?.prompt ?? null;
   const sourceAudit = sourcePromptAuditForModel(template.id, fallbackCapabilitiesFor(modelId)?.inputs?.prompt?.max);
   const recipe = {
@@ -86,7 +87,7 @@ export default async function TemplatePage({ params }) {
             </p>
             <h1 className="mt-2 vx-display vx-title-detail">{presetTitle(template.name)}</h1>
             <p className="mt-4 text-vx-fg-body">
-              {rich(t('presets.detail.runsOn'), { model: modelId ? <Link href={localizedHref(locale, `/models/${encodeURIComponent(modelId)}`)} className="font-bold underline underline-offset-4">{template.model}</Link> : <span className="font-bold">{template.model}</span> })}
+              {rich(t('presets.detail.runsOn'), { model: modelId ? <Link href={localizedHref(locale, `/models/${encodeURIComponent(modelId)}`)} className="font-bold underline underline-offset-4">{modelName}</Link> : <span className="font-bold">{template.model}</span> })}
             </p>
             {template.needs && (sourceAspect ? (
               <div className="mt-4 rounded-xl border border-vx-border px-4 py-3 text-[14px] text-vx-fg-body">

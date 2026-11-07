@@ -58,7 +58,8 @@ test('the shipped fallback gives a new creator an image within the 10-credit sig
 test('bare Create starts from the cheapest image model while deep links remain authoritative', () => {
   const page = read('app/veyrnox/app/create/page.js');
   assert.match(page, /useState\(\(\) => starterModel\(catalogModels, 'image'\)\?\.id \|\| ''\)/);
-  assert.match(page, /const requested = params\.get\('model'\) \|\| \(preset && modelIdForName\(preset\.model\)\);/);
+  // A2: a template's route is its effective model (templateModelId), not the legacy catalog label.
+  assert.match(page, /const requested = params\.get\('model'\) \|\| \(preset && templateModelId\(preset\)\);/);
   assert.match(page, /const arrival = preset \? templateArrival\(preset, arrivalModels \|\| \[\], params, storedDraft\) : null;/);
   assert.match(page, /const wanted = arrival \? arrival\.modelId : requested;/);
   assert.match(page, /const models = catalogModels\.filter\(\(m\) => createPromptModelAvailable\(m, autoShortOn\)\);/);

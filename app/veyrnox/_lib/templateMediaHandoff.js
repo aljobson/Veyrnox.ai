@@ -44,10 +44,12 @@ export function templateMediaHandoffMatches(target, templateId) {
 }
 
 /** One immediate same-tab handoff. The file is never serialized or persisted. */
-export function writeTemplateMediaHandoff(target, { templateId, modelId, image }, now = Date.now()) {
-  if (!target || !TEMPLATE_ID.test(String(templateId || '')) || !MODEL_ID.test(String(modelId || '')) || templateImageFileError(image)) return false;
+export function writeTemplateMediaHandoff(target, { templateId, modelId, image, images }, now = Date.now()) {
+  const files = images === undefined ? [image] : images;
+  if (!Array.isArray(files) || files.length < 1 || files.length > 9 || Array.from(files).some(templateImageFileError)) return false;
+  if (!target || !TEMPLATE_ID.test(String(templateId || '')) || !MODEL_ID.test(String(modelId || ''))) return false;
   try {
-    target[KEY] = { at: now, templateId, modelId, image };
+    target[KEY] = { at: now, templateId, modelId, ...(images === undefined ? { image } : { images: [...images] }) };
     return true;
   } catch {
     return false;
@@ -64,6 +66,8 @@ export function takeTemplateMediaHandoff(target, templateId, modelId, now = Date
     return null;
   }
   if (!value || value.templateId !== templateId || value.modelId !== modelId || !Number.isFinite(value.at)) return null;
-  if (now - value.at < 0 || now - value.at > MAX_AGE_MS || templateImageFileError(value.image)) return null;
-  return { image: value.image };
+  const files = value.images || [value.image];
+  if (!Array.isArray(files) || files.length < 1 || files.length > 9 || Array.from(files).some(templateImageFileError)) return null;
+  if (now - value.at < 0 || now - value.at > MAX_AGE_MS) return null;
+  return value.images ? { images: [...value.images] } : { image: value.image };
 }

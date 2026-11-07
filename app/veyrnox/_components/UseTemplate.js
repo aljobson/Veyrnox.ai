@@ -1,4 +1,6 @@
 'use client';
+import { templatePhotoHints, templatePhotosUnavailable, templateContract, templatePhotoError, templateBoundPrompt, fidelityTemplateId, fidelityBlocked } from '../../../lib/templateClientContract';
+import { TemplatePhotoSlots } from './TemplatePhotoSlots';
 import { rich } from '../../../lib/i18n/rich';
 import { useI18n } from '../../../components/I18nProvider.jsx';
 import Link from 'next/link';
@@ -11,18 +13,18 @@ import { writeStudioDraft } from '../_lib/landingDraft';
 import { clearTemplateMediaHandoff, TEMPLATE_IMAGE_ACCEPT, templateImageFileError, writeTemplateMediaHandoff } from '../_lib/templateMediaHandoff';
 import { prepareUpload } from '../_lib/uploadConvert.mjs';
 import { TEMPLATE_PROMPT_MAX, templateModelEligible, createPromptModelAvailable } from '../_lib/templateDraft';
-import { clipCredits, modelAspectRatios, modelIdForName, presetCredits, presetHref } from '../_lib/tokens';
+import { clipCredits, modelAspectRatios, templateModelId, presetCredits, presetHref } from '../_lib/tokens';
 import { CHAT_USER_TEXT_MAX } from '../../../lib/chatLimits.js';
 import { Spinner } from './Spinner';
 import { TemplateGenerate } from './TemplateGenerate';
-import { inlineBlockReason } from '../_lib/templateGenerate';
+import { inlineBlockReason, templateInputs } from '../_lib/templateGenerate';
 import { nearestOption } from '../../../lib/aspectShapes.mjs';
 
-export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked = false }) {
+export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked: sourceGenerationBlocked = false }) {
   const { t } = useI18n();
   const router = useRouter();
   const { models, live } = useCatalog();
-  const originalId = modelIdForName(preset.model);
+  const originalId = templateModelId(preset);
   const original = models.find((m) => m.id === originalId) || null;
   const modelOptions = original && !original.gated && !original.premium && createPromptModelAvailable(original)
     ? [original, ...(live ? models.filter((m) => m.id !== originalId && templateModelEligible(m, original)) : [])] : [];
@@ -48,10 +50,20 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked 
   const [handoffError, setHandoffError] = useState('');
   const [opening, setOpening] = useState(false);
   const [photo, setPhoto] = useState(null);
-  const [photoBusy, setPhotoBusy] = useState(false);
+  const [singlePhotoBusy, setPhotoBusy] = useState(false);
+  const [photoError, setPhotoError] = useState('');
+  const [photos, setPhotos] = useState(() => photo ? [photo] : []);
+  const [slotBusy, setSlotBusy] = useState({});
   const photoSequence = useRef(0);
+  const contract = templateContract(preset);
+  const boundCount = contract?.class === 'bound' ? contract.slotCount : 0;
+  const boundReady = !boundCount || Array.from({ length: boundCount }, (_, i) => photos[i]).every(Boolean);
+  const photoBusy = singlePhotoBusy || Object.values(slotBusy).some(Boolean);
+  const auditedTemplateId = model ? fidelityTemplateId(contract, templateBoundPrompt(contract, prompt, model.id, boundCount || 1), model.id, templateInputs(preset, model, { prompt, aspect, durationSeconds, aspectOptions })) : undefined;
   const promptBlocked = !prompt.trim() || prompt.length > TEMPLATE_PROMPT_MAX;
-  const generationDisabled = generationBlocked || promptBlocked || !model || photoBusy;
+  const photosUnavailable = contract?.class === 'bound' && (!live || templatePhotosUnavailable(contract, model?.media));
+  const generationBlocked = photosUnavailable || sourceGenerationBlocked || (live && fidelityBlocked(contract, prompt));
+  const generationDisabled = generationBlocked || promptBlocked || !model || photoBusy || !boundReady;
   const chatBlocked = !prompt.trim() || prompt.length > CHAT_USER_TEXT_MAX;
   const requiredImage = model?.media?.image?.required === true;
   // A template that needs no media, or only one photo, generates right here; one that needs more keeps Create.
@@ -59,6 +71,7 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked 
 
   async function choosePhoto(file) {
     const sequence = ++photoSequence.current;
+    setPhotoError('');
     if (!file) {
       setPhoto(null);
       setPhotoBusy(false);
@@ -78,6 +91,17 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked 
       const ready = await prepareUpload(file);
       if (photoSequence.current !== sequence) return;
       if (templateImageFileError(ready)) { setHandoffError('mediaFile'); return; }
+      if (auditedTemplateId) {
+        let bitmap;
+        let dimensionError;
+        try {
+          bitmap = await createImageBitmap(ready);
+          dimensionError = templatePhotoError(contract, bitmap.width, bitmap.height);
+        } catch { /* Unknown dimensions: let server media inspection decide. */ }
+        finally { bitmap?.close(); }
+        if (photoSequence.current !== sequence) return;
+        if (dimensionError) { setPhotoError(dimensionError); return; }
+      }
       setPhoto(ready);
     } catch {
       if (photoSequence.current === sequence) setHandoffError('mediaFile');
@@ -87,6 +111,7 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked 
   }
 
   function use() {
+    if (generationDisabled) return;
     // The URL restores the recipe if storage is blocked; preserve edited text.
     if (modelId) {
       let saved = false;
@@ -94,7 +119,7 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked 
       if (!saved && prompt !== preset.prompt) { setHandoffError('studio'); return; }
     }
     if (!clearTemplateMediaHandoff(window)
-      || (requiredImage && photo && !writeTemplateMediaHandoff(window, { templateId: preset.id, modelId, image: photo }))) {
+      || (boundCount ? !writeTemplateMediaHandoff(window, { templateId: preset.id, modelId, images: photos }) : requiredImage && photo && !writeTemplateMediaHandoff(window, { templateId: preset.id, modelId, image: photo }))) {
       setHandoffError('media');
       return;
     }
@@ -132,7 +157,8 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked 
         {aspectOptions.length > 0 && <div><dt className="text-vx-fg-muted">{t("presets.use.aspect")}</dt><dd><select aria-label={t("presets.use.aspect")} value={aspect} onChange={(event) => setPickedAspect(event.target.value)} className="mt-1 min-h-11 max-w-full rounded-xl border border-vx-border bg-vx-panel px-3 py-2 font-vx-mono font-bold focus-visible:outline-2 focus-visible:outline-vx-accent">{aspectOptions.map((option) => <option key={option} value={option}>{option}</option>)}</select></dd></div>}
         {isVideo && <div><dt className="text-vx-fg-muted">{t("presets.use.clip")}</dt><dd><select aria-label={t("presets.use.clipLength")} value={durationSeconds} onChange={(event) => setDurationSeconds(Number(event.target.value))} className="mt-1 min-h-11 max-w-full rounded-xl border border-vx-border bg-vx-panel px-3 py-2 font-vx-mono font-bold focus-visible:outline-2 focus-visible:outline-vx-accent">{durationOptions.map((seconds) => <option key={seconds} value={seconds}>{t('presets.use.lengthCost', { length: t('presets.use.seconds', { count: seconds }), credits: costFor(seconds) })}</option>)}</select></dd></div>}
       </dl>
-      {requiredImage && (
+      {boundCount > 0 && !photosUnavailable && <TemplatePhotoSlots key={preset.id} count={boundCount} hints={templatePhotoHints(contract)} files={photos} onChange={(index, file) => setPhotos(previous => Array.from({ length: boundCount }, (_, i) => i === index ? file : previous[i] || null))} onBusy={(index, busy) => setSlotBusy(previous => ({ ...previous, [index]: busy }))} />}
+      {requiredImage && !boundCount && (
         <fieldset className="mt-5 rounded-xl border border-vx-border bg-vx-panel/40 p-4">
           <legend className="px-1 text-sm font-bold">{t('presets.use.photoTitle')}</legend>
           <p className="mt-1 text-[13px] leading-5 text-vx-fg-muted">{t('presets.use.photoPrivacy')}</p>
@@ -147,8 +173,13 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked 
           </div>
         </fieldset>
       )}
+      {model && pickedModel !== originalId && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t('presets.fidelity.modelSwitch')}</p>}
+      {(live && model && !generationBlocked && !auditedTemplateId) && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t('presets.fidelity.previewNotice')}</p>}
+      {photo && contract && !boundCount && <p className="mt-3 text-sm text-vx-fg-muted">{t(contract.photoGuidance)}</p>}
+      {generationBlocked && !sourceGenerationBlocked && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t(photosUnavailable ? 'presets.fidelity.photosUnavailable' : 'public.TemplateRecipe.sourceVideoUnsupported')}</p>}
+      {photoError && <p role="alert" className="mt-3 text-sm text-vx-danger">{t(photoError)}</p>}
       {inline && !(generationBlocked || promptBlocked || !model) && (
-        <TemplateGenerate preset={preset} model={model} prompt={prompt} aspect={aspect} aspectOptions={aspectOptions} durationSeconds={durationSeconds} unitCost={credits} photo={requiredImage ? photo : null} preparing={photoBusy} needsPhoto={requiredImage} />
+        <TemplateGenerate preset={preset} model={model} prompt={prompt} aspect={aspect} aspectOptions={aspectOptions} durationSeconds={durationSeconds} unitCost={credits} photo={requiredImage ? photo : null} photos={boundCount ? photos : undefined} requiredCount={boundCount} preparing={photoBusy} needsPhoto={requiredImage} />
       )}
       <button
         type="button"

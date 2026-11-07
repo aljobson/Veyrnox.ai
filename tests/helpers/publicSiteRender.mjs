@@ -44,9 +44,10 @@ export function fixture(locale, route, { consentReady = false, states = {}, sign
       if (id.endsWith('/NetworkLogo')) return { __esModule: true, default: () => null };
       if (!id.startsWith('.') && !id.startsWith('@/')) return require(id);
       const base = id.startsWith('@/') ? path.resolve(root, id.slice(2)) : path.resolve(path.dirname(absolute), id);
-      const target = [base, `${base}.js`, `${base}.jsx`, `${base}.mjs`].find(existsSync);
+      const target = [base, `${base}.js`, `${base}.jsx`, `${base}.mjs`, `${base}.ts`, `${base}.tsx`].find(existsSync);
       if (!target) throw new Error(`Cannot resolve ${id} in ${relative}`);
       if (target.endsWith('.mjs')) return require(target);
+      if (target.endsWith('.json')) return { __esModule: true, default: JSON.parse(readFileSync(target, 'utf8')) };
       return load(target);
     };
     new Function('require', 'module', 'exports', code)(localRequire, module, module.exports);
