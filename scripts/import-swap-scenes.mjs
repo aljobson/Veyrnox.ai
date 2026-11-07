@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Offline by default. Media and candidate revisions always stay outside this checkout.
-import { readFile, writeFile, mkdir, mkdtemp, realpath, stat, rm } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, mkdtemp, realpath, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -189,8 +189,9 @@ export async function importScenes({ decisions, download = downloadClip, outDir,
     const input = path.join(folder, 'original.mp4'), output = path.join(folder, 'normalised.mp4');
     try {
       await download(entry.sourceUrl, input);
-      if ((await stat(input)).size > MAX_BYTES) fail('source_over_cap');
-      const original = await readFile(input); assertMp4(original);
+      const original = await readFile(input);
+      if (original.length > MAX_BYTES) fail('source_over_cap');
+      assertMp4(original);
       const originalMedia = await measure(input);
       const minimum = capabilityFor(ENDPOINTS[entry.swapOffer]).media.video.minSeconds;
       for (const seconds of [originalMedia.seconds, originalMedia.videoSeconds]) {
@@ -201,8 +202,9 @@ export async function importScenes({ decisions, download = downloadClip, outDir,
       validateBounds(entry.swapOffer, media);
       if (media.codec !== 'h264' || Math.max(media.width, media.height) > 1280
           || media.width % 2 || media.height % 2 || (!keepAudio && media.audio)) fail('normalisation_failed');
-      if ((await stat(output)).size > MAX_BYTES) fail('source_over_cap');
-      const bytes = await readFile(output), sha256 = await sha256Hex(bytes), originalSha256 = await sha256Hex(original);
+      const bytes = await readFile(output);
+      if (bytes.length > MAX_BYTES) fail('source_over_cap');
+      const sha256 = await sha256Hex(bytes), originalSha256 = await sha256Hex(original);
       const source = { key: `swap-scenes/${entry.id}/${sha256}.mp4`, version: sha256.slice(0, 12),
         sha256, originalSha256, sizeBytes: bytes.length, originalSizeBytes: original.length,
         seconds: media.seconds, videoSeconds: media.videoSeconds, width: media.width, height: media.height, contentType: 'video/mp4' };
