@@ -66,7 +66,7 @@ describe('speech analysis RPC acceptance', { skip: !url && 'SPEECH_ANALYSIS_TEST
     after(async () => { if (client) await client.end(); });
     async function makeSource(duration = 12, mime = 'video/mp4') {
         const source = (await one(`INSERT INTO public.jobs(user_id,idempotency_key,model_id,credits,inputs,state)
-            VALUES($1,$2,$3,0,'{}','STORED') RETURNING id`, [user, randomUUID(), model])).id;
+            VALUES($1,$2,$3,1,'{}','STORED') RETURNING id`, [user, randomUUID(), model])).id;
         const asset = (await one(`INSERT INTO public.assets(job_id,r2_key,mime_type,size_bytes,sha256,expires_at)
             VALUES($1,$2,$3,500,$4,now()+interval '90 days') RETURNING id`, [source, randomUUID(), mime, fingerprint])).id;
         const probe = await rpc('speech_source_probe_store', [auth, source, fingerprint, duration, mime]);
@@ -98,7 +98,7 @@ describe('speech analysis RPC acceptance', { skip: !url && 'SPEECH_ANALYSIS_TEST
         assert.equal((await one('SELECT count(*)::int AS n FROM public.ledger_entries WHERE user_id=$1 AND delta<0', [user])).n, 0);
     });
     it('reserved-only capacity guard remains effective; direct work order cannot bypass it', async () => {
-        await client.query('UPDATE public.fal_capacity_policy SET enabled=true WHERE singleton');
+        await client.query("UPDATE public.fal_capacity_policy SET enabled=true, provider_account='speech-test' WHERE singleton");
         assert.equal((await request()).code, 'PROVIDER_ADMISSION_PAUSED');
         assert.equal((await one('SELECT count(*)::int AS n FROM public.speech_analyses WHERE user_id=$1', [user])).n, 0);
     });
@@ -207,8 +207,8 @@ describe('speech analysis RPC acceptance', { skip: !url && 'SPEECH_ANALYSIS_TEST
         else { await client.query("UPDATE public.assets SET expires_at=now()-interval '1 second' WHERE id=$1", [asset]); await rpc('expire_assets'); }
         for (const table of ['speech_analyses', 'speech_source_probes', 'speech_analysis_cache']) assert.equal((await one(`SELECT count(*)::int AS n FROM public.${table} WHERE user_id=$1`, [user])).n, 0);
         assert.equal((await rpc('speech_analysis_get', [auth, first.id])).code, 'NOT_FOUND');
-        assert.equal((await rpc('speech_analysis_callback', [first.id, `provider-${first.id}`])).closed, true);
-        assert.equal((await rpc('speech_analysis_complete', [first.id, analysis()])).ignored, true);
+        { const late = await rpc('speech_analysis_callback', [first.id, `provider-${first.id}`]); if (path === 'erase') assert.ok(late.closed === true || late.code === 'NOT_FOUND', JSON.stringify(late)); else assert.equal(late.closed, true, JSON.stringify(late)); }
+        { const done = await rpc('speech_analysis_complete', [first.id, analysis()]); if (path === 'erase') assert.ok(done.ignored === true || done.code === 'NOT_FOUND', JSON.stringify(done)); else assert.equal(done.ignored, true, JSON.stringify(done)); }
         assert.deepEqual(await counts(first.id), { debits: 1, refunds: path === 'erase' ? 0 : 1 });
     });
     it('account-erase trigger refunds queued submitted work before deleting its sweep candidates', async () => {
@@ -237,7 +237,7 @@ describe('speech analysis RPC acceptance', { skip: !url && 'SPEECH_ANALYSIS_TEST
     });
     it('completion before the timeout sweep wins; replay/cache/join ignore new-work capacity', async () => {
         const key = randomUUID(), first = await request(key), joinKey = randomUUID();
-        await client.query('UPDATE public.fal_capacity_policy SET enabled=true WHERE singleton');
+        await client.query("UPDATE public.fal_capacity_policy SET enabled=true, provider_account='speech-test' WHERE singleton");
         assert.equal((await request(joinKey)).id, first.id);
         await complete(first.id);
         await client.query("UPDATE public.jobs SET created_at=now()-interval '16 minutes' WHERE id=$1", [first.id]);

@@ -201,6 +201,8 @@ jobs:
           "
           DATABASE_URL="${DATABASE_URL%/*}/supplier_spend_check" node scripts/replay-migrations.mjs
           DATABASE_URL="${DATABASE_URL%/*}/supplier_spend_check" npx tsx --test --test-concurrency=1 packages/db/provider-spend-limits.acceptance.test.ts packages/db/user-inflight-cap.acceptance.test.ts
+          # These two need the full migration replay (0450-0452), not the migrate.mjs database.
+          DATABASE_URL="${DATABASE_URL%/*}/supplier_spend_check" EDITOR_AI_EDIT_TEST_DATABASE_URL="${DATABASE_URL%/*}/supplier_spend_check" npx tsx --test --test-concurrency=1 packages/db/editorAiEdit.acceptance.test.ts packages/db/speechAnalysis.acceptance.test.ts
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/replay-migrations.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-fal-dispatch-capped.mjs
           # These legacy fixtures exercise accounting with deliberately huge
@@ -325,5 +327,5 @@ jobs:
       # database, which must not land mid-way through another file's run.
       - name: Run ledger acceptance tests
         run: |
-          mapfile -t acceptance_files < <(find packages/db -maxdepth 1 -name '*.acceptance.test.ts' ! -name 'provider-spend-limits.acceptance.test.ts' ! -name 'user-inflight-cap.acceptance.test.ts' | sort)
+          mapfile -t acceptance_files < <(find packages/db -maxdepth 1 -name '*.acceptance.test.ts' ! -name 'provider-spend-limits.acceptance.test.ts' ! -name 'user-inflight-cap.acceptance.test.ts' ! -name 'editorAiEdit.acceptance.test.ts' ! -name 'speechAnalysis.acceptance.test.ts' | sort)
           npx tsx --test --test-concurrency=1 "${acceptance_files[@]}"
