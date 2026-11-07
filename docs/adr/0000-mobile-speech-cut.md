@@ -56,6 +56,9 @@ accounts/jobs, missing/expired/held assets and binds the returned object to its 
 A server-minted five-minute presigned URL is used only for bounded reads. The resulting
 probe is persisted against the asset FK and fingerprint. Admission trusts that probe,
 never client duration; the client value must match within 0.25 seconds.
+A stored probe with the same fingerprint and MIME is reused for up to 30 days,
+avoiding another bounded range read. Source ownership and availability are still
+checked on every request.
 
 Supported MIME/container combinations: non-fragmented MP4 (`video/mp4`), MOV
 (`video/quicktime`), M4A (`audio/mp4`, `audio/x-m4a`), fixed-frame WAV
@@ -68,6 +71,13 @@ MP3 requires counting all frames, so only entire MP3s fitting 5 MiB are supporte
 This is a proposed deviation from a header-only MP3 probe: the existing parser
 explicitly rejects a partial MP3 and does not trust Xing/VBRI duration hints.
 Unsupported/unreadable sources and sources longer than 60 seconds fail before debit.
+The object must also be at most **100 MiB**, and its total size divided by measured
+duration must be at most **2 MiB/second** (including video and container overhead).
+The probe/storage path and admission RPC both reject violations with
+`source_unsupported` before debit, including admissions using a stored probe.
+These conservative sanity bounds exclude some high-bitrate video. They limit bytes
+sent to the processor; they do not prove decoded duration against every lying
+container. Full decoding and extracted audio remain outside this release.
 
 ## Settlement, uncertainty and cleanup
 
@@ -86,8 +96,11 @@ successes. Tokens are consumed logically by the terminal attempt state; they are
 not a substitute for fal signature verification.
 
 The speech sweep covers DEBITED, SUBMITTED and unsettled failed attempts after
-15 minutes, updates analysis status and refunds in the same transaction. It runs
-before the existing generic sweep; the generic sweep excludes speech jobs.
+15 minutes, updates analysis status and refunds in the same transaction. Its separate
+pg_cron job `veyrnox-sweep-speech-analyses` runs every five minutes, starting from
+indexed queued analysis rows and locking their jobs. The existing generic sweep
+keeps its original command and ten-minute schedule and excludes speech jobs;
+a speech sweep error cannot roll back or starve the generic sweep.
 The 0414 indefinite unknown-submit hold is deliberately inapplicable: a bounded
 60-second transcription has at most $0.008 exposure and no long-running render spend.
 A callback and sweep serialize on the same job lock; whichever settles first wins.
@@ -95,7 +108,9 @@ A callback and sweep serialize on the same job lock; whichever settles first win
 Source deletion/expiry removes probes and analyses via asset foreign keys. A BEFORE
 DELETE trigger closes/refunds queued attempts, then cascading deletion erases content.
 Account erasure deletes analyses/probes using the users.deleted_at trigger; existing
-account-erasure admission refuses unsettled jobs. Cache rows cascade with analyses.
+account-erasure admission refuses unsettled jobs. As a defensive measure, the trigger
+fails/refunds any queued analysis before erasing its row so it cannot orphan an
+in-flight financial job. Cache rows cascade with analyses.
 The explicit sweep removes content older than 30 days. Reads recheck source existence,
 ownership, fingerprint, holds and expiry even before the retention sweep runs.
 Financial jobs and content-free request tombstones are retained. No browser grants,
@@ -121,15 +136,18 @@ Silence proposals use word gaps >=0.75s, 120ms padding, overlap merging and shor
 gap reinsertion to meet ten sections, with a sixty-second output cap. A word stretched
 over a pause is never split. Retakes first form utterances at 0.45s gaps or sentence
 punctuation, then compare ordered utterances within eight seconds. At least four
-tokens are required; normalized prefix restarts or >=0.8 ordered-token similarity
+tokens are required; normalized prefix restarts (only when the earlier utterance
+is the shorter prefix) or >=0.8 ordered-token similarity
 propose the earlier occurrence. Chinese/Japanese and unspaced Korean use characters.
 Two-token repetitions such as “had had” are excluded. This cannot establish intent,
 correctness or delivery quality; every removal has a checkbox and requires Apply.
+Similarity-based matches can include deliberate repetition and remain advisory.
 
 The selected audio/video clip (otherwise the first video) is previewed in source
 seconds. The resulting immutable timeline is committed through the editor's normal
-history once; Apply rechecks project, account and editRevision. Cuts ripple later
-clips on the selected lane, preserving other lanes, as the editor's lane-ripple
+history once; Apply rechecks project, account and editRevision. `applySpeechRanges`
+only ripples the selected clip's track: later clips on that lane move, preserving
+other lanes, as the editor's lane-ripple
 operation does. Reverse/rate are mapped in source time. Final timelines must fit
 ten video/audio sections and sixty seconds.
 
@@ -164,7 +182,11 @@ ten video/audio sections and sixty seconds.
   `private.fal_admission_paused(model,false)` (0240/0399). With reserved-only fal
   capacity enabled, the mandated direct debit is refused before any charge.
   The handler exposes `provider_admission_paused`; no safeguard is bypassed and
-  no production policy is changed. The acceptance suite pins this refusal, then
+  no production policy is changed. Quote reads the same service-role-readable
+  `fal_capacity_policy` and `fal_admission_control` singleton rows and returns
+  501 `speech_cut_unavailable` if either refuses direct admission (or is absent),
+  hiding the phone rows. The atomic ledger guard still handles a policy change
+  after quote. The acceptance suite pins this refusal, then
   uses rollback-scoped permissive test policy for the lifecycle cases. Proposed
   deviation for owner review: replace direct dispatch/admission with the existing
   reserved fal admission flow, preserving receipt identity and refund semantics.
@@ -173,3 +195,13 @@ ten video/audio sections and sixty seconds.
 - Live 15/60s latency, signed failure delivery, music-only, multiple speakers,
   additional languages/codecs and actual account billing remain unprobed. The owner
   must decide price/reuse window and whether retakes belong in the first release.
+
+## Owner activation checklist
+
+- Confirm fal capacity policy (reserved-only admission) is off; otherwise
+  `ledger_debit` refuses with a typed 503 `provider_admission_paused`. Also confirm
+  fal admission is not paused. Quote hides the feature while either policy blocks it.
+- Confirm billing and the outstanding live probes, approve price/reuse window and
+  retake behavior, apply the reviewed migrations, then activate the catalog row.
+- Provision the Worker webhook secret and enable server/mobile flags only after
+  those checks. Local/project clips remain unsupported.

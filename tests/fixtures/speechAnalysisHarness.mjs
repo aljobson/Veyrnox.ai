@@ -15,7 +15,7 @@ export function fixture(options = {}) {
     const fingerprint = 'a'.repeat(64), digest = createHash('sha256').update(`${assetId}:${fingerprint}:1`).digest('hex');
     const receipts = new Map();
     const env = { SPEECH_CUT_ENABLED: 'true', FAL_KEY: 'test', PUBLIC_HOST: 'https://worker.test', SPEECH_CUT_WEBHOOK_SECRET: 's'.repeat(32), ...options.env };
-    const asset = { ok: true, sha256: fingerprint, r2_key: 'private-object', mime_type: 'video/mp4', size_bytes: 500 };
+    const asset = { ok: true, sha256: fingerprint, r2_key: 'private-object', mime_type: 'video/mp4', size_bytes: 500, ...options.asset };
     const view = () => ({ ok: true, id: JOB, status: job?.status || 'queued', progress: job?.state === 'SUBMITTED' ? 'transcribing' : 'queued', analysis: job?.analysis, refunded: job?.state === 'REFUNDED' });
     const rpc = async (name, args) => {
         calls.push({ name, args });
@@ -50,7 +50,11 @@ export function fixture(options = {}) {
         if (name === 'speech_analysis_complete') { job.state = 'STORED'; job.status = 'completed'; job.analysis = args.p_analysis; return { ok: true }; }
         throw Error(`Unexpected RPC ${name}`);
     };
-    const handlers = speechAnalysisHandlers({ rpc, select: async () => options.inactive ? [] : [{ id: 'elevenlabs-scribe-v2', active: true, provider: 'fal', provider_endpoint: 'fal-ai/elevenlabs/speech-to-text/scribe-v2', credits_5s: 2 }],
+    const handlers = speechAnalysisHandlers({ rpc, select: async table => {
+        if (table === 'fal_capacity_policy') return options.missingPolicy ? [] : [{ enabled: options.capacity ?? false }];
+        if (table === 'fal_admission_control') return options.missingPolicy ? [] : [{ paused: options.paused ?? false }];
+        return options.inactive ? [] : [{ id: 'elevenlabs-scribe-v2', active: true, provider: 'fal', provider_endpoint: 'fal-ai/elevenlabs/speech-to-text/scribe-v2', credits_5s: 2 }];
+    },
         cfg: {}, r2cfg: r2, env, probe: options.probe || (async () => ({ duration: 12, mime: 'video/mp4', fingerprint })),
         sign: options.sign || (async () => ({ url: 'https://r2.test/source?signature=PRIVATE' })),
         submit: async (...args) => { submissions.push(args); if (options.submitThrow) throw Error('PRIVATE URL'); return options.submit || { ok: true, providerJobId: 'provider-1' }; } });

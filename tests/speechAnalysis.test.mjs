@@ -131,3 +131,46 @@ test('reserved admission refusal stays typed and never dispatches', async () => 
     const response = await f.run(request()); assert.equal(response.status, 503); assert.deepEqual(await response.json(), { error: 'provider_admission_paused' });
     assert.equal(f.debit(), 0); assert.equal(f.submissions.length, 0);
 });
+test('quote hides speech rows while fal is paused, reserved-only or missing policy; reads/replays remain available', async () => {
+    for (const patch of [{ paused: true }, { capacity: true }, { missingPolicy: true }]) {
+        const f = fixture(); await f.run(request()); Object.assign(f.options, patch);
+        const quote = await f.quote(request(null)); assert.equal(quote.status, 501);
+        assert.deepEqual(await quote.json(), { error: 'speech_cut_unavailable' });
+        assert.equal((await f.get(request(null), JOB)).status, 202);
+        assert.equal((await f.run(request())).status, 202);
+        assert.equal(f.debit(), 1); assert.equal(f.submissions.length, 1);
+    }
+});
+test('matching stored probe avoids another range read; mismatched fingerprint or MIME must probe again', async () => {
+    const stored = { duration: 12, mime: 'video/mp4', fingerprint: 'a'.repeat(64) };
+    for (const patch of [{}, { fingerprint: 'b'.repeat(64) }, { mime: 'audio/wav' }]) {
+        let probes = 0;
+        const f = fixture({ asset: { probe: { ...stored, ...patch } }, probe: async () => { probes++; return stored; } });
+        assert.equal((await f.run(request())).status, 202);
+        assert.equal(probes, Object.keys(patch).length ? 1 : 0);
+        assert.equal(f.calls.filter(c => c.name === 'speech_source_probe_store').length, probes);
+    }
+});
+test('oversized or implausible bytes/second sources fail before debit, including cached probes', async () => {
+    for (const [size, cached] of [[100 * 1024 * 1024 + 1, false], [25 * 1024 * 1024, false], [25 * 1024 * 1024, true]]) {
+        let probes = 0;
+        const measured = { duration: 12, mime: 'video/mp4', fingerprint: 'a'.repeat(64) };
+        const f = fixture({ asset: { size_bytes: size, ...(cached ? { probe: measured } : {}) }, probe: async () => { probes++; return measured; } });
+        const res = await f.run(request()); assert.equal(res.status, 400); assert.deepEqual(await res.json(), { error: 'source_unsupported' });
+        assert.equal(f.debit(), 0); assert.equal(f.submissions.length, 0);
+        assert.equal(probes, cached || size > 100 * 1024 * 1024 ? 0 : 1);
+    }
+});
+test('webhook operational failures log only a typed code and job id', async t => {
+    const lines = []; t.mock.method(console, 'error', (...args) => lines.push(args));
+    for (const [name, response, expected] of [
+        ['speech_analysis_callback', () => { throw Error('PRIVATE transcript https://r2.test/?signed=SECRET'); }, 'callback_unavailable'],
+        ['speech_analysis_callback', () => ({ ok: false, code: 'PRIVATE' }), 'callback_unavailable'],
+        ['speech_analysis_complete', () => ({ ok: false, code: 'PRIVATE' }), 'settlement_unavailable'],
+    ]) {
+        const f = fixture({ rpc: { [name]: response } }); await f.run(request());
+        assert.equal((await f.callback()).status, 503);
+        assert.deepEqual(lines.at(-1), ['[speech-webhook]', expected, JOB]);
+    }
+    assert.equal(lines.length, 3); assert.doesNotMatch(JSON.stringify(lines), /PRIVATE|transcript|https|SECRET/);
+});

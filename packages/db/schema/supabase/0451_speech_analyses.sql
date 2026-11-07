@@ -23,12 +23,17 @@ CREATE TABLE IF NOT EXISTS public.speech_analyses (
  created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS speech_analyses_open ON public.speech_analyses(user_id,created_at) WHERE status='queued';
+CREATE INDEX IF NOT EXISTS speech_analyses_asset ON public.speech_analyses(asset_id);
+CREATE INDEX IF NOT EXISTS speech_analyses_source ON public.speech_analyses(user_id,asset_job_id,source_fingerprint);
+CREATE INDEX IF NOT EXISTS speech_analyses_created ON public.speech_analyses(created_at);
+CREATE INDEX IF NOT EXISTS speech_analyses_queued_expiry ON public.speech_analyses(created_at) WHERE status='queued';
 CREATE TABLE IF NOT EXISTS public.speech_analysis_cache (
  user_id uuid NOT NULL REFERENCES public.users(id), asset_job_id uuid NOT NULL REFERENCES public.jobs(id),
  source_fingerprint text NOT NULL, schema_version int NOT NULL,
  analysis_id uuid NOT NULL REFERENCES public.speech_analyses(id) ON DELETE CASCADE,
  expires_at timestamptz NOT NULL, PRIMARY KEY(user_id,asset_job_id,source_fingerprint,schema_version)
 );
+CREATE INDEX IF NOT EXISTS speech_analysis_cache_analysis ON public.speech_analysis_cache(analysis_id);
 -- Content-free receipts outlive the analysis, so an expired key can never buy again.
 CREATE TABLE IF NOT EXISTS public.speech_analysis_requests (
  user_id uuid NOT NULL REFERENCES public.users(id), idempotency_key text NOT NULL,
@@ -58,7 +63,10 @@ BEGIN
  IF owned->>'ok' IS DISTINCT FROM 'true' THEN RETURN jsonb_build_object('ok',false,'code','NOT_FOUND'); END IF;
  SELECT * INTO a FROM public.assets WHERE job_id=j.id AND r2_key=owned->>'r2_key' AND held_at IS NULL AND (expires_at IS NULL OR expires_at>now());
  IF a.id IS NULL THEN RETURN jsonb_build_object('ok',false,'code','NOT_FOUND'); END IF;
- RETURN owned||jsonb_build_object('asset_id',a.id,'sha256',a.sha256);
+ RETURN owned||jsonb_build_object('asset_id',a.id,'sha256',a.sha256,'probe',(
+  SELECT jsonb_build_object('duration',p.duration,'mime',p.mime,'fingerprint',p.source_fingerprint)
+  FROM public.speech_source_probes p WHERE p.asset_id=a.id AND p.source_fingerprint=a.sha256 AND p.mime=a.mime_type
+  AND p.created_at>now()-interval '30 days'));
 END $$;
 REVOKE ALL ON FUNCTION public.speech_source(text,uuid) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.speech_source(text,uuid) TO service_role;
@@ -72,6 +80,9 @@ BEGIN
  IF p_duration IS NULL OR p_duration<=0 OR p_duration='NaN'::numeric OR p_duration>86400 OR p_fingerprint IS DISTINCT FROM a->>'sha256'
  OR p_mime IS DISTINCT FROM a->>'mime_type' OR p_mime NOT IN ('video/mp4','video/quicktime','audio/mp4','audio/x-m4a','audio/wav','audio/x-wav','audio/mpeg') THEN
   RETURN jsonb_build_object('ok',false,'code','SOURCE_UNSUPPORTED'); END IF;
+ -- Bound provider exposure even when a container understates its duration.
+ IF (a->>'size_bytes')::numeric IS NULL OR (a->>'size_bytes')::numeric NOT BETWEEN 1 AND 104857600
+ OR (a->>'size_bytes')::numeric>p_duration*2097152 THEN RETURN jsonb_build_object('ok',false,'code','SOURCE_UNSUPPORTED'); END IF;
  SELECT id INTO u FROM public.users WHERE auth_id=p_auth_id AND deleted_at IS NULL;
  INSERT INTO public.speech_source_probes(asset_id,user_id,asset_job_id,source_fingerprint,duration,mime)
  VALUES((a->>'asset_id')::uuid,u,p_asset_job_id,p_fingerprint,p_duration,p_mime)
@@ -142,6 +153,8 @@ BEGIN
  -- Durable receipts above survive probe/analysis retention; only new keys require a probe.
  SELECT * INTO probe FROM public.speech_source_probes WHERE asset_id=(source->>'asset_id')::uuid AND source_fingerprint=source->>'sha256';
  IF probe.asset_id IS NULL THEN RETURN jsonb_build_object('ok',false,'code','SOURCE_UNSUPPORTED'); END IF;
+ IF (source->>'size_bytes')::numeric IS NULL OR (source->>'size_bytes')::numeric NOT BETWEEN 1 AND 104857600
+ OR (source->>'size_bytes')::numeric>probe.duration*2097152 THEN RETURN jsonb_build_object('ok',false,'code','SOURCE_UNSUPPORTED'); END IF;
  IF probe.duration>60 THEN RETURN jsonb_build_object('ok',false,'code','SOURCE_TOO_LONG'); END IF;
  IF probe.duration<0.5 OR p_duration IS NULL OR p_duration='NaN'::numeric OR abs(probe.duration-p_duration)>0.25 THEN
   RETURN jsonb_build_object('ok',false,'code','DURATION_MISMATCH'); END IF;
@@ -242,9 +255,9 @@ CREATE OR REPLACE FUNCTION public.sweep_speech_analyses()
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
 DECLARE j record;
 BEGIN
- FOR j IN SELECT id FROM public.jobs WHERE inputs->>'kind'='speech_analysis' AND state IN ('DEBITED','SUBMITTED','FAILED','REFUNDED')
- AND created_at<=now()-interval '15 minutes' AND EXISTS(SELECT 1 FROM public.speech_analyses a WHERE a.job_id=jobs.id AND a.status='queued')
- ORDER BY created_at LIMIT 200 FOR UPDATE SKIP LOCKED LOOP
+ FOR j IN SELECT jobs.id FROM public.speech_analyses a JOIN public.jobs ON jobs.id=a.job_id
+ WHERE a.status='queued' AND a.created_at<=now()-interval '15 minutes' AND jobs.state IN ('DEBITED','SUBMITTED','FAILED','REFUNDED')
+ ORDER BY a.created_at LIMIT 200 FOR UPDATE OF jobs SKIP LOCKED LOOP
   PERFORM public.speech_analysis_fail(j.id,'analysis_timeout');
  END LOOP;
  DELETE FROM public.speech_analyses WHERE created_at<=now()-interval '30 days';
@@ -254,8 +267,8 @@ REVOKE ALL ON FUNCTION public.sweep_speech_analyses() FROM PUBLIC,anon,authentic
 GRANT EXECUTE ON FUNCTION public.sweep_speech_analyses() TO service_role;
 DO $cron$ BEGIN
  IF NOT EXISTS (SELECT 1 FROM pg_extension WHERE extname='pg_cron') THEN RETURN; END IF;
- PERFORM cron.unschedule(jobname) FROM cron.job WHERE jobname='veyrnox-sweep-stuck-jobs';
- PERFORM cron.schedule('veyrnox-sweep-stuck-jobs','*/10 * * * *',$$ SELECT public.sweep_speech_analyses(); SELECT public.sweep_stuck_jobs(); $$);
+ PERFORM cron.unschedule(jobname) FROM cron.job WHERE jobname='veyrnox-sweep-speech-analyses';
+ PERFORM cron.schedule('veyrnox-sweep-speech-analyses','*/5 * * * *',$$ SELECT public.sweep_speech_analyses(); $$);
 END $cron$;
 
 CREATE OR REPLACE FUNCTION private.speech_source_deleted()
@@ -272,8 +285,12 @@ DROP TRIGGER IF EXISTS speech_source_deleted ON public.assets;
 CREATE TRIGGER speech_source_deleted BEFORE DELETE ON public.assets FOR EACH ROW EXECUTE FUNCTION private.speech_source_deleted();
 CREATE OR REPLACE FUNCTION private.speech_user_erased()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+DECLARE a record;
 BEGIN
  IF NEW.deleted_at IS NOT NULL AND OLD.deleted_at IS NULL THEN
+  FOR a IN SELECT job_id FROM public.speech_analyses WHERE user_id=NEW.id AND status='queued' LOOP
+   PERFORM public.speech_analysis_fail(a.job_id,'account_erased');
+  END LOOP;
   DELETE FROM public.speech_analyses WHERE user_id=NEW.id;
   DELETE FROM public.speech_source_probes WHERE user_id=NEW.id;
  END IF;

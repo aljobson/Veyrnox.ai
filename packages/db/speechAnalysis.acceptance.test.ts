@@ -102,6 +102,23 @@ describe('speech analysis RPC acceptance', { skip: !url && 'SPEECH_ANALYSIS_TEST
         assert.equal((await request()).code, 'PROVIDER_ADMISSION_PAUSED');
         assert.equal((await one('SELECT count(*)::int AS n FROM public.speech_analyses WHERE user_id=$1', [user])).n, 0);
     });
+    it('probe storage and admission both refuse oversized/implausible sources before debit', async () => {
+        for (const size of [104857601, 12 * 2097152 + 1]) {
+            await client.query('UPDATE public.assets SET size_bytes=$2 WHERE id=$1', [asset, size]);
+            assert.equal((await rpc('speech_source_probe_store', [auth, source, fingerprint, 12, 'video/mp4'])).code, 'SOURCE_UNSUPPORTED');
+            // The original persisted probe is still present: admission must independently recheck size.
+            assert.equal((await request()).code, 'SOURCE_UNSUPPORTED');
+        }
+        assert.equal((await one('SELECT count(*)::int AS n FROM public.ledger_entries WHERE user_id=$1 AND delta<0', [user])).n, 0);
+    });
+    it('source resolver reuses only an unexpired probe for the exact fingerprint', async () => {
+        const get = () => rpc('speech_source', [auth, source]);
+        assert.deepEqual((await get()).probe, { duration: 12, mime: 'video/mp4', fingerprint });
+        await client.query("UPDATE public.speech_source_probes SET created_at=now()-interval '31 days' WHERE asset_id=$1", [asset]);
+        assert.equal((await get()).probe, null);
+        await client.query('UPDATE public.speech_source_probes SET created_at=now(),source_fingerprint=$2 WHERE asset_id=$1', [asset, 'b'.repeat(64)]);
+        assert.equal((await get()).probe, null);
+    });
     it('same key debits once, current-state replay after refund never pays again', async () => {
         const key = randomUUID(), first = await request(key); assert.equal(first.fresh, true);
         assert.equal((await request(key)).id, first.id); assert.deepEqual(await counts(first.id), { debits: 1, refunds: 0 });
@@ -193,6 +210,21 @@ describe('speech analysis RPC acceptance', { skip: !url && 'SPEECH_ANALYSIS_TEST
         assert.equal((await rpc('speech_analysis_callback', [first.id, `provider-${first.id}`])).closed, true);
         assert.equal((await rpc('speech_analysis_complete', [first.id, analysis()])).ignored, true);
         assert.deepEqual(await counts(first.id), { debits: 1, refunds: path === 'erase' ? 0 : 1 });
+    });
+    it('account-erase trigger refunds queued submitted work before deleting its sweep candidates', async () => {
+        const first = await request(); await rpc('speech_analysis_callback', [first.id, `provider-${first.id}`]);
+        // Normal erase_account refuses unsettled jobs. Exercise its defensive trigger in
+        // isolation without bypassing the public.users tombstone writer restriction.
+        await client.query('CREATE TEMP TABLE speech_erase_trigger_fixture(id uuid,deleted_at timestamptz) ON COMMIT DROP');
+        await client.query('CREATE TRIGGER erase_fixture AFTER UPDATE OF deleted_at ON speech_erase_trigger_fixture FOR EACH ROW EXECUTE FUNCTION private.speech_user_erased()');
+        await client.query('INSERT INTO speech_erase_trigger_fixture(id) VALUES($1)', [user]);
+        await client.query('UPDATE speech_erase_trigger_fixture SET deleted_at=now()');
+        assert.equal((await one('SELECT state FROM public.jobs WHERE id=$1', [first.id])).state, 'REFUNDED');
+        for (const table of ['speech_analyses', 'speech_source_probes', 'speech_analysis_cache']) assert.equal((await one(`SELECT count(*)::int AS n FROM public.${table} WHERE user_id=$1`, [user])).n, 0);
+        assert.deepEqual(await counts(first.id), { debits: 1, refunds: 1 });
+        assert.equal((await rpc('speech_analysis_callback', [first.id, `provider-${first.id}`])).closed, true);
+        await rpc('sweep_speech_analyses');
+        assert.deepEqual(await counts(first.id), { debits: 1, refunds: 1 });
     });
     it('completed/refunded analyses never enqueue creation pushes or appear in Library/delete', async () => {
         assert.equal((await rpc('register_push_token', [auth, `ExpoPushToken[${randomUUID()}]`, 'ios', randomUUID(), '1.0', true])).ok, true);

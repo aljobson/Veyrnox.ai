@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { probeSpeechSource, SPEECH_PROBE_MAX_BYTES } from '../lib/speechSourceProbe.js';
+import { probeSpeechSource, speechSourceSizeAllowed, SPEECH_PROBE_MAX_BYTES, SPEECH_SOURCE_MAX_BYTES, SPEECH_SOURCE_MAX_BYTES_PER_SECOND } from '../lib/speechSourceProbe.js';
 import { speechCorrelation, verifySpeechCorrelation } from '../lib/speechCutCorrelation.js';
 import { JOB, r2 } from './fixtures/speechAnalysisHarness.mjs';
 const wav = () => {
@@ -34,4 +34,26 @@ test('correlation token is bound to job and Worker secret; malformed/tampered to
     assert.equal(await verifySpeechCorrelation('33333333-3333-4333-8333-333333333333', token, secret), false);
     assert.equal(await verifySpeechCorrelation(JOB, token.slice(1), secret), false);
     assert.equal(await verifySpeechCorrelation(JOB, token, ''), false);
+});
+test('source size is capped before signing and measured bytes/second rejects an understated movie header', async () => {
+    const asset = { size_bytes: SPEECH_SOURCE_MAX_BYTES + 1, sha256: 'a'.repeat(64), mime_type: 'video/mp4', r2_key: 'owned' };
+    assert.equal(await probeSpeechSource(asset, r2, { sign: async () => { assert.fail('oversized source must not be signed'); } }), null);
+    assert.equal(speechSourceSizeAllowed({ size_bytes: SPEECH_SOURCE_MAX_BYTES }, 60), true);
+    assert.equal(speechSourceSizeAllowed({ size_bytes: SPEECH_SOURCE_MAX_BYTES + 1 }, 60), false);
+    assert.equal(speechSourceSizeAllowed({ size_bytes: SPEECH_SOURCE_MAX_BYTES_PER_SECOND }, 1), true);
+    assert.equal(speechSourceSizeAllowed({ size_bytes: SPEECH_SOURCE_MAX_BYTES_PER_SECOND + 1 }, 1), false);
+    const box = (type, content) => { const b = Buffer.alloc(8 + content.length); b.writeUInt32BE(b.length); b.write(type, 4); content.copy(b, 8); return b; };
+    const mvhd = Buffer.alloc(100); mvhd.writeUInt32BE(1000, 12);
+    // The same media payload is accepted with a sane duration, refused with a 1s claim.
+    for (const seconds of [2, 1]) {
+        mvhd.writeUInt32BE(seconds * 1000, 16);
+        const bytes = Buffer.concat([box('ftyp', Buffer.from('isom0000')), box('moov', box('mvhd', mvhd)), box('mdat', Buffer.alloc(3 * 1024 * 1024))]);
+        const result = await probeSpeechSource({ ...asset, size_bytes: bytes.length }, r2, {
+            sign: async () => ({ url: 'https://r2.test/owned' }), fetcher: async (_url, init) => {
+                const [, start, end] = init.headers.Range.match(/^bytes=(\d+)-(\d+)$/);
+                return new Response(bytes.subarray(Number(start), Number(end) + 1), { status: 206 });
+            },
+        });
+        if (seconds === 2) assert.equal(result.duration, 2); else assert.equal(result, null);
+    }
 });

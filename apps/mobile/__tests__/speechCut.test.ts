@@ -59,6 +59,12 @@ test('had had, very very, distant repeats, unknown language and fewer than four 
     expect(retakeRanges(a)).toEqual([]);
     expect(normalized({ ...fixtures[0].restart, language_code: 'xxx' }).language).toBe('und');
 });
+test('prefix restarts remove an earlier fragment, never a complete take followed by a shorter fragment', () => {
+    const fragment = 'I would like some', complete = 'I would like some coffee with milk today';
+    const result = (a: string, b: string) => ({ language_code: 'eng', text: `${a} ${b}`, words: [...words(a, 1), ...words(b, 5)] });
+    expect(retakeRanges(normalized(result(fragment, complete)))).toHaveLength(1);
+    expect(retakeRanges(normalized(result(complete, fragment)))).toEqual([]);
+});
 test('reverse, source trimming and rate preserve selected range; selected audio wins over first video', () => {
     const tl = timeline(); tl.video[0] = { ...tl.video[0], in: 60, len: 120, rate: 2, reverse: true };
     const next = applySpeechRanges(tl, speechClip(tl, null)!, [{ start: 1, end: 4, label: '' }, { start: 6, end: 11, label: '' }])!;

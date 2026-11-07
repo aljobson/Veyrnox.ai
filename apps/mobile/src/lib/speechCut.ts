@@ -89,7 +89,7 @@ export function retakeRanges(analysis: SpeechAnalysis): SpeechRange[] {
             for (const token of a) {
                 const next = [0]; for (let k = 0; k < b.length; k++) next.push(token === b[k] ? row[k] + 1 : Math.max(row[k + 1], next[k])); row = next;
             }
-            if ((prefix >= 4 && prefix === Math.min(a.length, b.length)) || row[b.length] / Math.max(a.length, b.length) >= .8) {
+            if ((prefix >= 4 && prefix === a.length && a.length < b.length) || row[b.length] / Math.max(a.length, b.length) >= .8) {
                 result.push({ ...earlier, start: Math.max(0, floor(earlier.start - .12)), end: Math.min(analysis.duration, ceil(earlier.end + .12), later.start) }); break;
             }
         }
