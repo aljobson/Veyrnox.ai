@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
 import { AccessibilityInfo, Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { colors, type Palette } from '../theme';
+import type { Leap } from '../lib/splashLeap';
 import { VeyRunner } from './VeyRunner';
 import {
     DOT_SCALE,
@@ -19,14 +20,27 @@ import {
     type WordLayout,
 } from '../lib/mascotPath';
 
+const LEAP_MS = 1100; // the hop from the i to the middle of the page
 const ACCENT_FROM = 7; // ".ai" is aqua, "VEYRNOX" is white (the website lockup)
 
 // The website lockup (aqua V mark + "VEYRNOX.ai") where the mascot leaps in, runs along the capitals one letter at a time
 // (each letter sinks under its weight), and lands on a dotless i as its dot. The row reads as "Veyrnox.ai" to a screen
 // reader; the mascot is decoration. Reduce Motion skips straight to the end.
-export function MascotWordmark({ fontSize = 36, palette = colors, onDone }: { fontSize?: number; palette?: Palette; onDone?: () => void }) {
+/** Where the mascot's feet rest as the dot, in window coordinates; null when that could not be measured or motion is reduced. */
+export type WordmarkRest = { feetX: number; feetY: number };
+
+export function MascotWordmark({ fontSize = 36, palette = colors, onDone, leap = null, onLeapDone, fadeOut = false }: {
+    fontSize?: number; palette?: Palette; onDone?: (rest: WordmarkRest | null) => void; leap?: Leap | null; onLeapDone?: () => void; fadeOut?: boolean;
+}) {
     const done = useRef(onDone);
     done.current = onDone;
+    const leapDone = useRef(onLeapDone);
+    leapDone.current = onLeapDone;
+    const lettersRef = useRef<ComponentRef<typeof View>>(null);
+    const leapX = useRef(new Animated.Value(0)).current;
+    const leapY = useRef(new Animated.Value(0)).current;
+    const leapScale = useRef(new Animated.Value(1)).current; // 1 at the dot's size, then up to the large Vey's size
+    const visible = useRef(new Animated.Value(1)).current;
     const [boxes, setBoxes] = useState<(Box | null)[]>(() => WORD.map(() => null));
     const [capTop, setCapTop] = useState(fontSize * FALLBACK_CAP_TOP);
     const [stemTop, setStemTop] = useState(fontSize * FALLBACK_STEM_TOP);
@@ -99,7 +113,7 @@ export function MascotWordmark({ fontSize = 36, palette = colors, onDone }: { fo
             release.setValue(0);
             shrink.setValue(1);
             shown.setValue(1);
-            done.current?.();
+            done.current?.(null);
             return;
         }
         const native = { useNativeDriver: true };
@@ -135,7 +149,10 @@ export function MascotWordmark({ fontSize = 36, palette = colors, onDone }: { fo
         run.start(({ finished }) => {
             legs.stop();
             stride.setValue(0);
-            if (finished) done.current?.();
+            if (!finished) return;
+            const node = lettersRef.current;
+            if (!node) { done.current?.(null); return; }
+            node.measureInWindow((x, y) => done.current?.(Number.isFinite(x) && Number.isFinite(y) ? { feetX: x + path.jump.x, feetY: y + path.jump.dotY } : null));
         });
         return () => {
             started.current = false;
@@ -144,7 +161,42 @@ export function MascotWordmark({ fontSize = 36, palette = colors, onDone }: { fo
         };
     }, [path, track, reduceMotion, along, jumpX, jumpY, release, tilt, squash, shrink, shown, stride]);
 
-    const scale = shrink.interpolate({ inputRange: [0, 1], outputRange: [1, DOT_SCALE] });
+    // Once the slot is known the mascot hops off the i, arcs over the page and lands in the middle, growing into the large Vey.
+    useEffect(() => {
+        if (!leap) return;
+        const native = { useNativeDriver: true };
+        const apex = Math.min(0, leap.dy) - fontSize * 2.2;
+        const hop = Animated.sequence([
+            Animated.parallel([
+                Animated.timing(leapX, { toValue: leap.dx, duration: LEAP_MS, easing: Easing.inOut(Easing.cubic), ...native }),
+                Animated.sequence([
+                    Animated.timing(leapY, { toValue: apex, duration: LEAP_MS * 0.38, easing: Easing.out(Easing.cubic), ...native }),
+                    Animated.timing(leapY, { toValue: leap.dy, duration: LEAP_MS * 0.62, easing: Easing.in(Easing.cubic), ...native }),
+                ]),
+                Animated.timing(leapScale, { toValue: leap.scale, duration: LEAP_MS, easing: Easing.in(Easing.quad), ...native }),
+            ]),
+            Animated.sequence([
+                Animated.timing(squash, { toValue: 1, duration: 70, easing: Easing.out(Easing.quad), ...native }),
+                Animated.timing(squash, { toValue: 0, duration: 190, easing: Easing.out(Easing.cubic), ...native }),
+            ]),
+        ]);
+        const legs = Animated.loop(Animated.timing(stride, { toValue: 1, duration: STRIDE_MS, easing: Easing.linear, ...native }));
+        legs.start();
+        hop.start(({ finished }) => {
+            legs.stop();
+            stride.setValue(0);
+            if (finished) leapDone.current?.();
+        });
+        return () => {
+            hop.stop();
+            legs.stop();
+        };
+    }, [leap, fontSize, leapX, leapY, leapScale, squash, stride]);
+    useEffect(() => {
+        if (fadeOut) Animated.timing(visible, { toValue: 0, duration: 180, useNativeDriver: true }).start();
+    }, [fadeOut, visible]);
+
+    const scale = Animated.multiply(shrink.interpolate({ inputRange: [0, 1], outputRange: [1, DOT_SCALE] }), leapScale);
     const sx = Animated.multiply(scale, squash.interpolate({ inputRange: [0, 1], outputRange: [1, 1.06] }));
     const sy = Animated.multiply(scale, squash.interpolate({ inputRange: [0, 1], outputRange: [1, 0.92] }));
     const rotate = tilt.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '5deg'] });
@@ -159,16 +211,16 @@ export function MascotWordmark({ fontSize = 36, palette = colors, onDone }: { fo
               height: path.mascotHeight,
               marginLeft: -path.mascotWidth / 2,
               marginTop: -path.mascotHeight,
-              opacity: shown,
+              opacity: Animated.multiply(shown, visible),
               transformOrigin: 'bottom' as const,
-              transform: [{ translateX: Animated.add(track.x, jumpX) }, { translateY: Animated.add(track.y, jumpY) }, { rotate }, { scaleX: sx }, { scaleY: sy }],
+              transform: [{ translateX: Animated.add(Animated.add(track.x, jumpX), leapX) }, { translateY: Animated.add(Animated.add(track.y, jumpY), leapY) }, { rotate }, { scaleX: sx }, { scaleY: sy }],
           }
         : null;
 
     return (
         <View accessible accessibilityRole="header" accessibilityLabel="Veyrnox.ai" style={[styles.row, { marginTop: mascotHeight * 1.8 }]}>
             <Image source={require('../../assets/logo-mark.png')} style={{ width: fontSize * 1.37, height: fontSize * 1.37 * 0.94 }} contentFit="contain" />
-            <View style={styles.letters}>
+            <View ref={lettersRef} collapsable={false} style={styles.letters}>
                 {WORD.map((ch, i) => (
                     <Animated.View
                         key={i}
