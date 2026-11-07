@@ -1868,6 +1868,8 @@ export default {
   "editor.horizontalposition": "Horizontale Position",
   "editor.hue": "Farbton",
   "editor.imageFallback": "Bild",
+  "editor.diagnostics": "Build {version} ({build}) · Editor-Schalter {editor} · Voll-Editor {full} · Arbeitsbereiche {workspaces}",
+  "editor.diagnosticsHttp": "Serverantwort: {status}",
   "editor.imagePreviewAlt": "Bildvorschau",
   "editor.increase": "{value1} erhöhen",
   "editor.items": "{value1} Elemente",

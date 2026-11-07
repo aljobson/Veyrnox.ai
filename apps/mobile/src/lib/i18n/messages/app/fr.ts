@@ -1905,6 +1905,8 @@ export default {
   "editor.horizontalposition": "Position horizontale",
   "editor.hue": "Teinte",
   "editor.imageFallback": "image",
+  "editor.diagnostics": "Version {version} ({build}) · interrupteur de l’éditeur {editor} · éditeur complet {full} · espaces de travail {workspaces}",
+  "editor.diagnosticsHttp": "Réponse du serveur : {status}",
   "editor.imagePreviewAlt": "Aperçu de l’image",
   "editor.increase": "Augmenter {value1}",
   "editor.items": "{value1} éléments",

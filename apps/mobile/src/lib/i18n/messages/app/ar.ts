@@ -2016,6 +2016,8 @@ export default {
   "editor.horizontalposition": "الموضع الأفقي",
   "editor.hue": "درجة اللون",
   "editor.imageFallback": "صور",
+  "editor.diagnostics": "الإصدار {version} ({build}) · مفتاح المحرر {editor} · المحرر الكامل {full} · مساحات العمل {workspaces}",
+  "editor.diagnosticsHttp": "رد الخادم: {status}",
   "editor.imagePreviewAlt": "معاينة الصورة",
   "editor.increase": "زيادة {value1}",
   "editor.items": "عدد العناصر: {value1}",

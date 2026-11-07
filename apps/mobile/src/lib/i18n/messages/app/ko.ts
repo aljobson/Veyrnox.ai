@@ -1831,6 +1831,8 @@ export default {
   "editor.horizontalposition": "가로 위치",
   "editor.hue": "색조",
   "editor.imageFallback": "이미지",
+  "editor.diagnostics": "빌드 {version} ({build}) · 편집기 스위치 {editor} · 전체 편집기 {full} · 작업 공간 {workspaces}",
+  "editor.diagnosticsHttp": "서버 응답: {status}",
   "editor.imagePreviewAlt": "이미지 미리보기",
   "editor.increase": "{value1} 늘리기",
   "editor.items": "항목 {value1}개",
