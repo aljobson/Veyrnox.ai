@@ -59,3 +59,10 @@ test('the studio and its template cover never import the catalog: the browser re
         assert.doesNotMatch(source, /from '[^']*sourcePrompt(?:Audit|Records)(?:\.js)?'/, `${file} imports the source prompt data`);
     }
 });
+
+test('templates that need a source video we cannot supply come after every one that can generate', () => {
+    const blocked = (card) => templateDetail(card.id).sourcePromptIssues?.includes('reference-video-not-supported') === true;
+    const flags = templateCards().map(blocked);
+    assert.ok(flags.some(Boolean) && flags.some((flag) => !flag), 'the catalog has both kinds');
+    assert.equal(flags.indexOf(true), flags.filter((flag) => !flag).length, 'no working template follows a blocked one');
+});
