@@ -12,6 +12,9 @@ test('route inventory is current and recognizes declarations, aliases and re-exp
   assert.ok(rows.some(r => r.path === '/app/admin/payments' && r.gate === 'page'));
   assert.ok(rows.some(r => r.path === '/api/v1/admin/revenue' && r.gate === 'admin'));
   assert.ok(rows.some(r => r.path === '/api/webhook/stripe' && r.gate === 'webhook'));
+  for (const [path, method] of [['/api/v1/editor/ai-edit', 'POST'], ['/api/v1/editor/ai-edit/quote', 'GET'], ['/api/v1/editor/ai-edit/by-key/:idempotencyKey', 'GET']]) {
+    assert.deepEqual(rows.find(r => r.path === path), { path, methods: [method], gate: 'v1' });
+  }
 });
 test('report routes enforce identity, bounds, safe errors and no-store', async t => {
   const env = { SUPABASE_URL:'https://db.test',SUPABASE_SERVICE_ROLE_KEY:'test',ADMIN_REQUIRE_AAL2:'true',ACCESS_TEAM_DOMAIN:'',ACCESS_AUD:'' };

@@ -1878,6 +1878,18 @@
     "ratio": 2
   },
   {
+    "id": "editorAi.apply",
+    "english": "Apply",
+    "translation": "लागू करें",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorAi.step.duplicate",
+    "english": "Duplicate {id}",
+    "translation": "{id} की प्रतिलिपि बनाएँ",
+    "ratio": 1.64
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

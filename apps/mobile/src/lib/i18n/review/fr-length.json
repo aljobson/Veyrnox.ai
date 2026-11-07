@@ -4896,6 +4896,18 @@
     "ratio": 1.75
   },
   {
+    "id": "editorAi.apply",
+    "english": "Apply",
+    "translation": "Appliquer",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorAi.subscription",
+    "english": "Subscribe to send an AI edit.",
+    "translation": "Abonnez-vous pour envoyer une modification par IA.",
+    "ratio": 1.72
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

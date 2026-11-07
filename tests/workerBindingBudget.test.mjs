@@ -34,7 +34,14 @@ test('production public variables retain Cloudflare text-binding headroom', () =
     // and fails deploy-production's secret preservation check, so it must never appear here.
     // ADR-0069: the requested standalone MAX_CHARGE_ENABLED rollout switch adds one var (67).
     // At the recorded 50-secret footprint that is 117 text bindings, leaving 11 of 128 slots.
-    assert.ok(Object.keys(config.vars).length <= 67, 'production vars must stay at or below 67');
+    // Frozen ADR-0000 adds the explicitly requested disabled AI-edit flag and empty model ID.
+    // 69 vars + the recorded 50-secret footprint = 119, retaining nine of 128 slots.
+    // The current live secret count must be checked before a future deployment.
+    assert.ok(Object.keys(config.vars).length <= 69, 'production vars must stay at or below 69');
+    for (const vars of [config.vars, config.env.staging.vars]) {
+        assert.equal(vars.EDITOR_AI_EDIT_ENABLED, 'false');
+        assert.equal(vars.EDITOR_AI_EDIT_MODEL_ID, '');
+    }
     assert.ok(!Object.hasOwn(config.vars, 'ACCOUNT_DELETION_ENABLED'), 'ACCOUNT_DELETION_ENABLED is a production secret, not a var');
     // ADR-0251 amendment (2026-10-29): CREATOR_PROFILE_ENABLED is also a production secret binding.
     assert.ok(!Object.hasOwn(config.vars, 'CREATOR_PROFILE_ENABLED'), 'CREATOR_PROFILE_ENABLED is a production secret, not a var');

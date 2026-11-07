@@ -3090,6 +3090,18 @@
     "ratio": 2
   },
   {
+    "id": "editorAi.stale",
+    "english": "The timeline changed. Ask again.",
+    "translation": "La línea de tiempo ha cambiado. Vuelve a solicitarlo.",
+    "ratio": 1.66
+  },
+  {
+    "id": "editorAi.edge.out",
+    "english": "end",
+    "translation": "final",
+    "ratio": 1.67
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

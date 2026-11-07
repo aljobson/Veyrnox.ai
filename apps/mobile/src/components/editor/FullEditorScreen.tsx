@@ -1,3 +1,5 @@
+import { EditorAiEditSheet, useAiEditAvailability } from './EditorAiEditSheet';
+import { sameRevision, type Freshness } from '../../lib/editorAgentPlan';
 import { VoiceoverSheet } from './VoiceoverSheet';
 import { VOICEOVER_AVAILABLE } from '../../lib/voiceoverRecorder';
 import { useAnnouncement } from '../../lib/useAnnouncement';
@@ -47,7 +49,6 @@ import type { SlotKind } from '../../lib/sources';
 import { colors } from '../../theme';
 import { HeaderAction } from '../HeaderAction';
 import { LibraryChooser } from '../LibraryChooser';
-
 type Tool = 'media' | 'audio' | 'generate' | 'text' | 'captions' | 'transcript' | 'effects' | 'transitions' | 'filters' | 'animation' | 'markers' | 'brand' | 'adjust';
 
 const tools: readonly { id: Tool; icon: string; label: string }[] = [
@@ -80,7 +81,10 @@ export function FullEditorScreen({ projectId, jobId, startAdvanced = false }: { 
     const [advanced, setAdvanced] = useState(startAdvanced);
     const [sheet, setSheet] = useState<SimpleSheetName | null>(null);
     const [panelOpen, setPanelOpen] = useState(false);
-    const { beginImport, replacing, leaveEditor, saveStatus, sync, currentDocument, preparePicked, savedDocument, api, router, name, document, dirty, problem, setProblem, tool, setTool, selection, setSelection, selections, setSelections, multiSelect, setMultiSelect, clipboard, setClipboard, snap, setSnap, ripple, setRipple, zoom, setZoom, privacyNotice, history, frameStore, setFrame, playing, setPlaying, projectAssets, localMediaUris, libraryKind, setLibraryKind, markDocument, save, acknowledgePrivacy, travel } = useFullEditorSession({ projectId, jobId, onOwnerChange: () => guard.teardown(() => router.back()), onCopy: id => guard.teardown(() => router.replace({ pathname: '/editor/[projectId]', params: { projectId: id } })) });
+    const { getEditRevision, beginImport, replacing, leaveEditor, saveStatus, sync, currentDocument, preparePicked, savedDocument, api, router, name, document, dirty, problem, setProblem, tool, setTool, selection, setSelection, selections, setSelections, multiSelect, setMultiSelect, clipboard, setClipboard, snap, setSnap, ripple, setRipple, zoom, setZoom, privacyNotice, history, frameStore, setFrame, playing, setPlaying, projectAssets, localMediaUris, libraryKind, setLibraryKind, markDocument, save, acknowledgePrivacy, travel } = useFullEditorSession({ projectId, jobId, onOwnerChange: () => guard.teardown(() => router.back()), onCopy: id => guard.teardown(() => router.replace({ pathname: '/editor/[projectId]', params: { projectId: id } })) });
+    const { aiQuote, setAiQuote, aiEditOpen, setAiEditOpen } = useAiEditAvailability(api, projectId);
+    const [aiAnnouncement, setAiAnnouncement] = useState<string | null>(null); useAnnouncement(aiAnnouncement);
+    const editFreshness = (): Freshness => ({ projectId, accountId: getCacheUser() ?? '', editRevision: getEditRevision() });
     const guard = useEditorLeaveGuard(leaveEditor, router.back);
     const [generate, setGenerate] = useState<{ visible: boolean; kind: Kind; frame: number; owner?: string } | null>(null);
     const [stemChoice, setStemChoice] = useState<{ choice: LibraryChoice; stems: EditorStem[] } | null>(null);
@@ -277,6 +281,7 @@ export function FullEditorScreen({ projectId, jobId, startAdvanced = false }: { 
         ...(VOICEOVER_AVAILABLE ? [{ id: 'voiceover', icon: '●', label: t('editorVoiceover.open'), hint: t('editorSimple.voiceoverHint'), disabled: replacing, onPress: () => { setPlaying(false); setVoiceoverAt(clampFrame(frameStore.get())); setVoiceoverMessage(null); } }] : []),
     ];
     const aiRows: SheetRow[] = [
+        ...(aiQuote ? [{ id: 'describe', icon: '✦', label: t('editorAi.describe'), disabled: !ready, onPress: () => { setPlaying(false); setAiAnnouncement(null); setAiEditOpen(true); } }] : []),
         { id: 'smart-cut', icon: '✦', label: t('editorSimple.smartCut'), hint: t('editorSimple.smartCutHint'), onPress: () => void openWorkflow('/smart-cut') },
         { id: 'make-clip', icon: '▶', label: t('editorSimple.makeClip'), hint: t('editorSimple.makeClipHint'), onPress: () => { showPanel('generate'); openGenerate('video'); } },
         { id: 'make-audio', icon: '♫', label: t('editorSimple.makeAudio'), hint: t('editorSimple.makeAudioHint'), onPress: () => { showPanel('generate'); openGenerate('audio'); } },
@@ -460,6 +465,9 @@ export function FullEditorScreen({ projectId, jobId, startAdvanced = false }: { 
             </> : null}
         </ScrollView> : null}
         {advanced ? null : <SimpleEditorBar onOpen={setSheet} />}
+        {aiEditOpen && aiQuote ? <EditorAiEditSheet api={api} quote={aiQuote} snapshot={() => ({ timeline: timelineOf(currentDocument()?.timeline), freshness: editFreshness() })}
+            apply={(next, expected) => { if (!isReady() || !sameRevision(expected, editFreshness())) return false; applyTimeline(next); setAiAnnouncement(t('editorAi.applied')); return true; }}
+            onClose={() => setAiEditOpen(false)} onUnavailable={() => { setAiEditOpen(false); setAiQuote(null); }} /> : null}
         {sheet === 'add' ? <SimpleEditorSheet title={t('editorSimple.addTitle')} rows={addRows} onClose={() => setSheet(null)} /> : null}
         {sheet === 'ai' ? <SimpleEditorSheet title={t('editorSimple.aiTitle')} rows={aiRows} onClose={() => setSheet(null)} /> : null}
         {sheet === 'more' ? <SimpleEditorSheet title={t('editorSimple.moreTitle')} rows={moreRows} onClose={() => setSheet(null)} /> : null}

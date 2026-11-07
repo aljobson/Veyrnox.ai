@@ -3372,6 +3372,12 @@
     "ratio": 1.8
   },
   {
+    "id": "editorAi.step.setSpeed",
+    "english": "Set {id} speed to {value}×",
+    "translation": "Geschwindigkeit von {id} auf {value}× setzen",
+    "ratio": 1.69
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

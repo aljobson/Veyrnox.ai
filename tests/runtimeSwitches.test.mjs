@@ -127,7 +127,9 @@ test('registry agrees with SQL key constraint, and other wrangler bindings are u
   // assertion for every other binding, rather than discarding the config guard.
   const allowance='    "FREE_ALLOWANCE_ENABLED": "true",\n';
   const rollout='    // ADR-0069: do not enable while FAL_DURABLE_DISPATCH_ENABLED is true in production until PR B capped durable admission exists.\n    "MAX_CHARGE_ENABLED": "false",\n';
-  const expected=previous.includes('"MAX_CHARGE_ENABLED"') ? previous : previous.replace(allowance,allowance+rollout);
+  let expected=previous.includes('"MAX_CHARGE_ENABLED"') ? previous : previous.replace(allowance,allowance+rollout);
+  // Frozen AI Edit work order adds only these two bindings, both disabled/unconfigured.
+  if (!expected.includes('"EDITOR_AI_EDIT_ENABLED"')) expected=expected.replace(/^(\s*)"CHAT_ENABLED":/gm, '$1"EDITOR_AI_EDIT_ENABLED": "false",\n$1"EDITOR_AI_EDIT_MODEL_ID": "",\n$1"CHAT_ENABLED":');
   assert.equal(await readFile(new URL('../wrangler.jsonc',import.meta.url),'utf8'),expected);
 });
 test('switch route requires owner permission, an exact registry key and trusted freshness', async t => {

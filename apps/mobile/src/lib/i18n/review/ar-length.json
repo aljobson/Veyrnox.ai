@@ -1764,6 +1764,12 @@
     "ratio": 3.29
   },
   {
+    "id": "editorAi.edge.out",
+    "english": "end",
+    "translation": "النهاية",
+    "ratio": 2.33
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "تسجيل الدخول",
