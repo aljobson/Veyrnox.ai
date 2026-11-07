@@ -1,6 +1,7 @@
 import { useGlobalSearchParams, usePathname, useRouter, useSegments } from 'expo-router';
 import { directionReconciler, languageReturnPath, reconcileLanguageDirection } from '../lib/languageDirection';
 import { useEffect, useState, type ReactNode } from 'react';
+import { View } from 'react-native';
 import { ACTIVE_LOCALES, type LocaleCode } from '../lib/i18n';
 import { useAuth } from '../auth/AuthProvider';
 import { needsLanguageChoice } from '../lib/languageTransition';
@@ -15,7 +16,8 @@ export function LanguageGate({ children, active = ACTIVE_LOCALES }: { children: 
     const router = useRouter();
     const returnPath = languageReturnPath(pathname, useGlobalSearchParams(), useSegments());
     const [, refreshChoice] = useState(0);
-    const [splashDone, setSplashDone] = useState(false);
+    const [splash, setSplash] = useState(true);
+    const [fading, setFading] = useState(false);
     const stored = readLanguage();
     useEffect(() => {
         const task = beginSessionTask();
@@ -32,7 +34,17 @@ export function LanguageGate({ children, active = ACTIVE_LOCALES }: { children: 
         }).catch(() => { if (task.current()) captureIssue('language_direction_failed', {}); });
         return () => { live = false; };
     }, [status, api, generation, beginSessionTask, stored, active, canReloadSession, returnPath, router]);
-    if (status === 'signedOut' && needsLanguageChoice(stored, active) && !splashDone) return <BrandSplash onContinue={() => setSplashDone(true)} />;
-    if (status === 'signedOut' && needsLanguageChoice(stored, active)) return <LanguageChoice active={active} returnPath="/sign-in" onComplete={() => refreshChoice(value => value + 1)} />;
+    // The brand page sits over the language choice and fades away to reveal it, so the choice is mounted from the start and
+    // hidden from screen readers until the page has gone.
+    if (status === 'signedOut' && needsLanguageChoice(stored, active)) {
+        return (
+            <View style={{ flex: 1 }}>
+                <View style={{ flex: 1 }} accessibilityElementsHidden={splash} importantForAccessibility={splash ? 'no-hide-descendants' : 'auto'}>
+                    <LanguageChoice active={active} returnPath="/sign-in" brand reveal={fading || !splash} onComplete={() => refreshChoice(value => value + 1)} />
+                </View>
+                {splash ? <BrandSplash onFadeStart={() => setFading(true)} onFinish={() => setSplash(false)} /> : null}
+            </View>
+        );
+    }
     return children;
 }
