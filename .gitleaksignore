@@ -278,3 +278,7 @@ def5ffcd88e938915cccbfcd1c252b298e8f3a2b:scripts/kling-o1-staging-probe.mjs:gene
 # `templates` and `records` maps (lines 2 and 3), the same false positive as exactOnlyBaseline.json above. Not credentials.
 1b636800ba299161eb8eafcca5bfe937b9b6a499:tests/fixtures/replacementTemplatesBaseline.json:generic-api-key:2
 1b636800ba299161eb8eafcca5bfe937b9b6a499:tests/fixtures/replacementTemplatesBaseline.json:generic-api-key:3
+
+# Squash commit of #1989: the same two template-id false positives as the entries above (`whiskey-gun-trick` contains "key"), now under the hash main carries.
+aba3757e9ebb8d43d510b54e6ffe384d0f7f0b3f:tests/fixtures/replacementTemplatesBaseline.json:generic-api-key:2
+aba3757e9ebb8d43d510b54e6ffe384d0f7f0b3f:tests/fixtures/replacementTemplatesBaseline.json:generic-api-key:3
