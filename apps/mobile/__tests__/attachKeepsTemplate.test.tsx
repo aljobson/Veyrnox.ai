@@ -12,7 +12,7 @@ jest.mock('expo-image-picker', () => ({
 }));
 jest.mock('expo-document-picker', () => ({ getDocumentAsync: jest.fn() }));
 jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalog: jest.fn(async () => []) }));
-jest.mock('../src/lib/attachModel', () => ({ planAttachments: jest.fn((_all: unknown, current: { id: string }, picked: { kind: string }[]) => ({ model: current, assignments: picked.map((item) => ({ slot: 'image', item })), unused: [] })) }));
+jest.mock('../src/lib/attachModel', () => ({ planOpenForm: (m: unknown, items: unknown[]) => ({ model: m, assignments: items.map(item => ({ slot: 'image', item })), unused: [] }), planAttachments: jest.fn((_all: unknown, current: { id: string }, picked: { kind: string }[]) => ({ model: current, assignments: picked.map((item) => ({ slot: 'image', item })), unused: [] })) }));
 jest.mock('../src/lib/sources', () => ({ ...jest.requireActual('../src/lib/sources'), checkPicked: () => ({ ok: true, contentType: 'image/jpeg' }) }));
 jest.mock('../src/lib/uploads', () => ({ uploadSource: jest.fn(async () => 'upload-1'), uploadMessage: () => 'failed', isConsentDeclined: (err: { code?: string }) => err?.code === 'consent_declined' }));
 jest.mock('../src/lib/creativeSourceHandoff', () => ({ stageCreativeSourceHandoff: jest.fn(() => 'handoff-1') }));
@@ -58,6 +58,15 @@ test.each([false, true])('P2: device attachment merges prior references and carr
     expect(stageCreativeSourceHandoff.mock.calls.at(-1)[0]).toMatchObject({ recipe: 'faceless-reel', followup: 'generated-sound',
         settings: { cameraOn: true, characterOn: true, opts: { count: 3, seed: '41', negative: 'rain' } },
         references: [{ slot: 'image', origin: 'asset', asset_id: 'old' }, { slot: 'image', origin: 'upload', key: 'upload-1' }] });
+});
+
+test('attaching with onPlaced stays on the open model: no navigation, references handed back', async () => {
+    const onPlaced = jest.fn();
+    const current = { id: 'model-a', modality: 'text-to-image', capabilities: { media: { image: { maxFiles: 3 } } } };
+    await act(async () => root.render(<AttachFromDevice api={{} as any} current={current as any} onPlaced={onPlaced} />));
+    await press();
+    expect(mockReplace).not.toHaveBeenCalled();
+    expect(onPlaced).toHaveBeenCalledWith([expect.objectContaining({ slot: 'image', origin: 'upload' })]);
 });
 
 test('QA-002: declining the AI-sharing question shows no upload error and leaves attaching usable', async () => {

@@ -127,33 +127,8 @@ test('Create initialization finishes after blur and is ready when focused again'
     expect(input().props.value).toBe(mockParams.prompt);
     expect(root.container.queryAll(n => typeof n.props.accessibilityLabel === 'string' && n.props.accessibilityLabel.startsWith(t('slip.generate') + '.')).length).toBeGreaterThan(0);
 });
-test.each([false, true])('P1 rendered model change carries duration, aspect, template and references; unavailable note=%s', async missingPrompt => {
-    const first = { ...video, capabilities: { inputs: { prompt: { max: 800 }, aspect_ratio: { values: ['9:16', '16:9'] } }, media: { image: { maxFiles: 2 } } } };
-    const next = { ...first, id: 'next-video', name: 'Next video' };
-    jest.mocked(fetchCatalog).mockResolvedValue([first, next]);
-    const template = { tid: 'paper', ...templateParams({ title: 'Paper', needs: 'A picture', posterUrl: null, previewAspect: '9:16' }) };
-    mockParams = { ...mockParams, ...template, duration: '10', aspect: '9:16', ...(missingPrompt ? { kind: 'prompt-unavailable' } : {}) };
-    const refs = [{ slot: 'image', origin: 'asset', asset_id: 'original-image' }];
-    handoff({ references: refs }); await render();
-    const unavailable = () => root.container.queryAll(n => n.children.includes(t('handoff.promptUnavailable')));
-    expect(unavailable().length > 0).toBe(missingPrompt);
-    const change = root.container.queryAll(n => typeof n.props.accessibilityLabel === 'string' && n.props.accessibilityLabel.endsWith(t('chat.model.change')))[0];
-    await act(async () => change.props.onClick(event));
-    const choice = root.container.queryAll(n => n.props.accessibilityRole === 'button' && n.props.accessibilityLabel === next.name)[0];
-    await act(async () => choice.props.onClick(event));
-    const href = mockReplace.mock.calls.at(-1)![0];
-    expect(href.params).toMatchObject({ ...template, tmodel: first.id, modelId: next.id, duration: '10', aspect: '9:16', prompt: mockParams.prompt });
-    expect(href.params).not.toHaveProperty('kind');
-    expect(readCreativeSourceHandoff(href.params.sourceHandoff, href.params.recipe, next.id)?.references).toEqual(refs);
-    mockParams = href.params; await render();
-    expect(input().props.value).toBe('A quiet original scene');
-    // QA-001: the template card stays on screen after a manual model change.
-    expect(root.container.queryAll(n => n.children.includes(t('create.template.label'))).length).toBeGreaterThan(0);
-    expect(unavailable()).toHaveLength(0);
-    expect(jest.mocked(SourcePicker).mock.calls.at(-1)?.[0].references).toEqual(refs);
-});
-
 const templatesEntry = () => root.container.queryAll(n => n.props.accessibilityLabel === t('label.Templates'));
+
 test('a bare form offers Templates and opens the gallery', async () => {
     await render();
     expect(templatesEntry()).toHaveLength(1);
@@ -173,35 +148,6 @@ test('Templates goes away once a result arrives', async () => {
     expect(templatesEntry()).toHaveLength(0);
 });
 
-test('Create derives banner and submitted preset across a legacy arrival and A → B → A', async () => {
-    const first = { ...video, capabilities: { inputs: { prompt: {}, aspect_ratio: { values: ['9:16', '16:9'] } } } };
-    const other = { ...first, id: 'other-video', name: 'Other video' };
-    jest.mocked(fetchCatalog).mockResolvedValue([first, other]);
-    mockParams = { ...mockParams, tid: 'paper', tpl: 'Paper', aspect: '9:16', duration: '10' };
-    // Avoid result UI so each step exercises the same editable form.
-    mockRun.mockImplementation(async () => undefined);
-    await render();
-    for (const target of [video, other, video]) {
-        if (mockParams.modelId !== target.id) {
-            const change = root.container.queryAll(n => typeof n.props.accessibilityLabel === 'string' && n.props.accessibilityLabel.endsWith(t('chat.model.change')))[0];
-            await act(async () => change.props.onClick(event));
-            const choice = root.container.queryAll(n => n.props.accessibilityRole === 'button' && n.props.accessibilityLabel === target.name)[0];
-            await act(async () => choice.props.onClick(event));
-            mockParams = mockReplace.mock.calls.at(-1)![0].params;
-            expect(mockParams).toMatchObject({ tid: 'paper', tpl: 'Paper', tmodel: video.id, duration: '10', aspect: '9:16' });
-            await render();
-        }
-        const original = target.id === video.id;
-        expect(root.container.queryAll(n => n.children.includes(t('create.template.label'))).length > 0).toBe(true);
-        const generate = root.container.queryAll(n => typeof n.props.accessibilityLabel === 'string' && n.props.accessibilityLabel.startsWith(t('slip.generate')+'.'))[0];
-        await act(async () => generate.props.onClick(event));
-        expect(mockRun.mock.calls.at(-1)?.[1]).toMatchObject({ modelId: target.id, prompt: 'A quiet original scene', durationSeconds: 10 });
-        expect(mockRun.mock.calls.at(-1)?.[1].preset).toBe(original ? 'paper' : undefined);
-        const another = root.container.queryAll(n => n.props.accessibilityLabel === t('libraryCreate.newNoCharge'))[0];
-        await act(async () => another.props.onClick(event));
-    }
-});
-
 test('QA-003: an automatic model switch keeps the template card and says why', async () => {
     const other = { ...video, id: 'image-edit', name: 'Image Edit' };
     jest.mocked(fetchCatalog).mockResolvedValue([video, other]);
@@ -216,13 +162,13 @@ test('QA-003: an automatic model switch keeps the template card and says why', a
     expect(mockRun.mock.calls.at(-1)?.[1].preset).toBeUndefined();
 });
 
-test('QA-005 / QA-007: with a reference and no rights tick, a line says why Generate is off; a lone model says why there is no Change model', async () => {
+test('QA-005 / QA-007: with a reference and no rights tick, a line says why Generate is off; there is no Change model control', async () => {
     jest.mocked(fetchCatalog).mockResolvedValue([video]);
     handoff({ references: [{ slot: 'image', origin: 'asset', asset_id: 'ref-1' }], rightsConfirmed: false });
     await render();
     const text = (key: string) => root.container.queryAll(n => n.children.includes(t(key))).length;
     expect(text('create.workspace.rightsNeeded')).toBeGreaterThan(0);
-    expect(text('create.workspace.onlyModel')).toBeGreaterThan(0);
+    expect(text('chat.model.change')).toBe(0);
     const ticks = root.container.queryAll(n => n.props.accessibilityRole === 'checkbox');
     await act(async () => ticks[0].props.onClick(event));
     expect(text('create.workspace.rightsNeeded')).toBe(0);

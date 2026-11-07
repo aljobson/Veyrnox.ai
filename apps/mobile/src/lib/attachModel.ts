@@ -48,6 +48,22 @@ export function planAttachments<T extends AttachItem>(models: readonly CatalogMo
     return { model: best.model, assignments: best.assignments, unused: items.filter((item) => !used.has(item)) };
 }
 
+// Files for a form whose model is already open: place the NEW files into the model's free slots, leaving references
+// already on the form where they are. A required slot may stay empty (checked at Generate), so photo and audio can be
+// added one at a time. Null when nothing fits.
+export function planOpenForm<T extends AttachItem>(model: CatalogModel, items: readonly T[], existing: readonly { slot: SlotName; kind: SlotKind }[] = []): AttachPlan<T> | null {
+    const slots = slotsFor(model).sort((x, y) => SLOT_ORDER.indexOf(x.slot) - SLOT_ORDER.indexOf(y.slot));
+    const left = [...items];
+    const out: { slot: SlotName; item: T }[] = [];
+    for (const slot of slots) {
+        const free = (slot.maxFiles ?? 1) - existing.filter((e) => e.slot === slot.slot).length;
+        const room = kindCap(slots, slot.kind) - existing.filter((e) => e.kind === slot.kind).length - out.filter((a) => a.item.kind === slot.kind).length;
+        const count = Math.min(free, room, left.filter((item) => item.kind === slot.kind).length);
+        for (let i = 0; i < count; i++) out.push({ slot: slot.slot, item: left.splice(left.findIndex((item) => item.kind === slot.kind), 1)[0] });
+    }
+    return out.length ? { model, assignments: out, unused: left } : null;
+}
+
 // How many files of each kind the Add files picker lets someone choose for a model: the sum of its slots' limits, at
 // most `kindCap` a kind (web lib/createAttach.mjs attachCapacity). A model with no file slots lets the files choose the
 // model, so each kind gets 3.

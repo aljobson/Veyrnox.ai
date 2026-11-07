@@ -166,3 +166,11 @@ test('negative credits dispatch positive magnitude to clawback RPC; exact replay
         assert.equal((await POST(request('POST', ADMIN, { user_id: USER, credits: -40, reason: 'correct allocation' }))).status, 400);
     });
 });
+
+for (const code of ['ACCOUNT_FROZEN', 'ACCOUNT_DELETED']) test(`${code} is a typed 409 without RPC details`, async () => {
+    stubRpc(() => Response.json({ ok: false, code, message: 'private detail', balance: 99 }));
+    await withEnv(CONFIGURED, async ({ POST }) => {
+        const res = await POST(request('POST', ADMIN, { user_id: USER, credits: -5, reason: 'correction' }));
+        assert.deepEqual([res.status, await res.json()], [409, { error: code.toLowerCase() }]);
+    });
+});

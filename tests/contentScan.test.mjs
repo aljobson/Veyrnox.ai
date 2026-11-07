@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { observeRecovery } from '../lib/recoveryHealth.js';
 import { decide, drainContentScans, IMAGE_CATEGORIES } from '../lib/contentScan.js';
 const cfg = { supabaseUrl: 'https://db.test', serviceRoleKey: 'service-test' };
 const r2 = { accountId: 'acct', accessKeyId: 'key', secretAccessKey: 'secret', bucket: 'test' };
@@ -21,8 +22,9 @@ test('threshold edges, self-harm flags and text-only categories', () => {
 function setup(rows) {
     const calls = []; let claimed = false;
     globalThis.fetch = async (url, init) => {
-        const name = new URL(url).pathname.split('/').pop(), args = JSON.parse(init.body);
+        const name = new URL(url).pathname.split('/').pop(), args = init.body ? JSON.parse(init.body) : null;
         calls.push({ name, args });
+        if (name === 'recovery_status') return Response.json({ content_scan_backlogged: 0, content_scan_claimable: 0 });
         if (name === 'claim_content_scans') { const batch = claimed ? [] : rows; claimed = true; return Response.json(batch); }
         return Response.json({ ok: true });
     };
@@ -44,10 +46,11 @@ test('drain arms, leases, presigns, sends image and bearer, and records its toke
     const recorded = calls.find(c => c.name === 'record_content_scan').args;
     assert.equal(recorded.p_claim_token, 'scan-token'); assert.equal(recorded.p_verdict, 'hold');
 });
-test('input 4xx unavailable, server/transport errors retry via expiry, near-expired leases skipped', async () => {
-    for (const status of [400, 413, 415, 429, 500, 503, 'throw']) {
+test('input 4xx unavailable, per-image errors retry via expiry, near-expired leases skipped', async () => {
+    for (const status of [400, 413, 415, 404, 'invalid_result', 'throw']) {
         const calls = setup([row()]);
-        await drainContentScans(cfg, r2, env, { fetcher: async () => { if (status === 'throw') throw Error('offline'); return new Response('', { status }); } });
+        await drainContentScans(cfg, r2, env, { fetcher: async () => { if (status === 'throw') throw Error('offline'); if (status === 'invalid_result') return Response.json({ results: [{}] }); return new Response('', { status }); } });
+        assert.equal(calls.filter(c => c.name === 'defer_content_scan').length, 0);
         const records = calls.filter(c => c.name === 'record_content_scan');
         assert.equal(records.length, [400, 413, 415].includes(status) ? 1 : 0);
         if (records.length) assert.deepEqual([records[0].args.p_verdict, records[0].args.p_scores], ['unavailable', { error: status }]);
@@ -112,9 +115,97 @@ test('scanning without hold checks logs the flag mismatch once per enabled drain
                 }
                 // Logging must not change arming, claiming, or disabled-path behavior.
                 assert.deepEqual(calls.map(c => c.name), scanFlag === 'true'
-                    ? ['arm_content_scan_monitor', 'claim_content_scans', 'claim_content_scans'] : []);
+                    ? ['arm_content_scan_monitor', 'claim_content_scans', 'claim_content_scans', 'refresh_recovery_health', 'recovery_status'] : []);
                 assert.equal(out.ok, true);
             }
         }
     } finally { console.error = savedError; }
+});
+
+for (const status of [401, 403, 429, 500, 503]) test(`provider ${status} returns attempts for the remaining chunk and stops claiming`, async () => {
+    const rows = [row('one'), row('two'), row('three')], calls = setup(rows);
+    let providers = 0;
+    const out = await drainContentScans(cfg, r2, env, { fetcher: async () => {
+        providers++; return new Response('', { status });
+    } });
+    assert.equal(providers, 1); assert.ok(out.errors > 0); assert.equal(out.providerUnavailable, true);
+    assert.equal(calls.filter(c => c.name === 'claim_content_scans').length, 1);
+    assert.equal(calls.filter(c => c.name === 'record_content_scan').length, 0);
+    assert.deepEqual(calls.filter(c => c.name === 'defer_content_scan').map(c => c.args), rows.map(r => ({
+        p_scan_id: r.id, p_claim_token: r.claim_token, p_backoff_seconds: [401, 403].includes(status) ? 900 : 300,
+    })));
+});
+
+for (const failure of ['missing', 'throw', 'refused']) test(`defer RPC ${failure} never aborts the drain or exposes details`, async () => {
+    const calls = setup([row('one'), row('two')]); const fetchRpc = globalThis.fetch;
+    const logs = [], saved = console.error; console.error = (...args) => logs.push(args.join(' '));
+    globalThis.fetch = async (url, init) => {
+        if (String(url).endsWith('/defer_content_scan')) {
+            calls.push({ name: 'defer_content_scan' });
+            if (failure === 'throw') throw Error('private-content');
+            if (failure === 'refused') return Response.json({ ok: false, code: 'STALE_CLAIM' });
+            return Response.json({ code: 'PGRST202', message: 'private-content' }, { status: 404 });
+        }
+        return fetchRpc(url, init);
+    };
+    try {
+        const out = await drainContentScans(cfg, r2, env, { fetcher: async () => new Response('', { status: 503 }) });
+        assert.ok(out.errors > 0); assert.equal(out.providerUnavailable, true);
+        assert.equal(calls.filter(c => c.name === 'defer_content_scan').length, 2);
+        assert.ok(logs.some(s => s.includes('defer failed')));
+        assert.ok(logs.every(s => !s.includes('private-content') && !s.includes('one-token') && !s.includes('images/')));
+    } finally { console.error = saved; }
+});
+
+test('provider failure, empty backoff run, recovery and idle run preserve heartbeat truth', async () => {
+    let deferred = false, available = false, claimed = false, finished = false;
+    const heartbeat = [], scan = row();
+    globalThis.fetch = async (url, init) => {
+        const u = new URL(url), name = u.pathname.split('/').pop();
+        if (name === 'recovery_status') return Response.json({ content_scan_backlogged: deferred && !available ? 1 : 0, content_scan_claimable: 0 });
+        if (name === 'claim_content_scans') {
+            if (finished || claimed || (deferred && !available)) return Response.json([]);
+            claimed = true; return Response.json([scan]);
+        }
+        if (name === 'defer_content_scan') deferred = true;
+        if (name === 'record_content_scan') { finished = true; deferred = false; }
+        return Response.json({ ok: true });
+    };
+    const run = () => observeRecovery('content_scan', () => drainContentScans(cfg, r2, env, {
+        fetcher: async () => available ? Response.json({ results: [result()] }) : new Response('', { status: 401 }),
+    }), { RECOVERY_HEALTH_ENABLED: 'true' }, async (_name, args) => heartbeat.push(args.p_ok));
+    assert.equal((await run()).providerUnavailable, true);
+    claimed = false;
+    const empty = await run(); assert.equal(empty.claimed, 0); assert.equal(empty.providerUnavailable, true); assert.ok(empty.errors > 0);
+    available = true;
+    assert.equal((await run()).decided, 1);
+    assert.equal((await run()).decided, 0);
+    assert.deepEqual(heartbeat, [false, false, true, true]);
+});
+
+test('an empty run with fresh claimable scans does not renew success', async () => {
+    setup([]); const fetchRpc = globalThis.fetch;
+    globalThis.fetch = async (url, init) => String(url).endsWith('/recovery_status')
+        ? Response.json({ content_scan_backlogged: 0, content_scan_claimable: 1 }) : fetchRpc(url, init);
+    const out = await drainContentScans(cfg, r2, env, { fetcher: () => assert.fail('no provider request') });
+    assert.equal(out.claimed, 0); assert.ok(out.errors > 0);
+});
+
+test('an unreadable health snapshot fails closed for an empty run', async () => {
+    for (const value of [{}, { content_scan_backlogged: -1, content_scan_claimable: 0 }, { content_scan_backlogged: 0, content_scan_claimable: -1 }, 'throw']) {
+        setup([]); const fetchRpc = globalThis.fetch;
+        globalThis.fetch = async (url, init) => {
+            if (!String(url).endsWith('/recovery_status')) return fetchRpc(url, init);
+            if (value === 'throw') throw Error('private detail');
+            return Response.json(value);
+        };
+        assert.ok((await drainContentScans(cfg, r2, env)).errors > 0);
+    }
+});
+
+test('a snapshot from before the claimable figure existed is healthy when nothing is backlogged', async () => {
+    setup([]); const fetchRpc = globalThis.fetch;
+    globalThis.fetch = async (url, init) => String(url).endsWith('/recovery_status')
+        ? Response.json({ content_scan_backlogged: 0 }) : fetchRpc(url, init);
+    assert.equal((await drainContentScans(cfg, r2, env)).errors, 0);
 });
