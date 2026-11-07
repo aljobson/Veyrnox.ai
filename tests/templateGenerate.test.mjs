@@ -163,7 +163,7 @@ test('a failed upload is reported as upload_failed and nothing is sent', async (
 test('the page offers Generate only when inlineBlockReason is null, keeps Create as "Edit before generating", and prices from the catalogue', () => {
   const use = readFileSync(new URL('../app/veyrnox/_components/UseTemplate.js', import.meta.url), 'utf8');
   assert.match(use, /const inline = inlineBlockReason\(preset, model, \{ photo: true \}\) === null;/);
-  assert.match(use, /\{inline && !generationDisabled && \(\s*<TemplateGenerate[^>]*unitCost=\{credits\}/);
+  assert.match(use, /\{inline && !\(generationBlocked \|\| promptBlocked \|\| !model\) && \(\s*<TemplateGenerate[^>]*unitCost=\{credits\}[^>]*preparing=\{photoBusy\}/);
   assert.match(use, /inline \? t\('presets\.use\.editBeforeGenerating'\)/);
   assert.match(use, /onClick=\{use\}/, 'the Create hand-off is unchanged');
   const comp = readFileSync(new URL('../app/veyrnox/_components/TemplateGenerate.js', import.meta.url), 'utf8');
@@ -178,4 +178,5 @@ test('the hook gates on balance and an unchanged request, and only a success sta
   assert.match(hook, /balance == null \|\| payable > balance/);
   assert.match(hook, /if \(!continuation\.current \|\| continuation\.current\.identity === identity\) return;/);
   assert.match(hook, /\} else continuation\.current = null;/);
+  assert.match(hook, /const photoBlocked = preparing \|\|/, 'a photo being prepared blocks submitting but the running job stays mounted');
 });

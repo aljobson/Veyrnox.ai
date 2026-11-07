@@ -151,8 +151,8 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked 
         </fieldset>
       )}
       {requiredImage && photo && <SourceRightsConfirmation confirmed={rightsConfirmed} onChange={setRightsConfirmed} />}
-      {inline && !generationDisabled && (
-        <TemplateGenerate preset={preset} model={model} prompt={prompt} aspect={aspect} aspectOptions={aspectOptions} durationSeconds={durationSeconds} unitCost={credits} photo={requiredImage ? photo : null} rightsConfirmed={rightsConfirmed} needsPhoto={requiredImage} />
+      {inline && !(generationBlocked || promptBlocked || !model) && (
+        <TemplateGenerate preset={preset} model={model} prompt={prompt} aspect={aspect} aspectOptions={aspectOptions} durationSeconds={durationSeconds} unitCost={credits} photo={requiredImage ? photo : null} preparing={photoBusy} rightsConfirmed={rightsConfirmed} needsPhoto={requiredImage} />
       )}
       <button
         type="button"

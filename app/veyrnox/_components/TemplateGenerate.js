@@ -12,9 +12,9 @@ import { JobAssetPreview } from './JobAssetPreview';
 // Generate on the template page, for a template that needs no media or only one photo (templateGenerate.inlineBlockReason). The price is the
 // catalog's (unitCost comes from the live model row), the quote caps the charge, and a failure is refunded by the
 // server exactly as on Create. The rights tick is asked for by the page when a photo is attached.
-export function TemplateGenerate({ preset, model, prompt, aspect, aspectOptions, durationSeconds, unitCost, photo = null, rightsConfirmed = false, needsPhoto = false }) {
+export function TemplateGenerate({ preset, model, prompt, aspect, aspectOptions, durationSeconds, unitCost, photo = null, rightsConfirmed = false, needsPhoto = false, preparing = false }) {
   const { t, locale } = useI18n();
-  const g = useTemplateGenerate({ preset, model, prompt, aspect, aspectOptions, durationSeconds, unitCost, photo, rightsConfirmed, needsPhoto });
+  const g = useTemplateGenerate({ preset, model, prompt, aspect, aspectOptions, durationSeconds, unitCost, photo, rightsConfirmed, needsPhoto, preparing });
   const job = g.jobs[0] || null;
   const failed = job?.state === 'failed';
   const cost = g.quote.total;

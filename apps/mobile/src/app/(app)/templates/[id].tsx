@@ -89,7 +89,7 @@ export default function TemplatePage() {
             {hasExactSourcePrompt && sourcePromptTruncated ? <Card><Text>{t('public.TemplateRecipe.sourcePromptTruncated')}</Text></Card> : null}
             {hasExactSourcePrompt && sourcePromptDuplicate ? <Card><Text>{t('public.TemplateRecipe.sourcePromptDuplicate')}</Text></Card> : null}
             {models.length > 1 ? <><Text>{t('create.model')}</Text><View style={styles.choices}>
-                {models.map(option => <Chip key={option.id} label={option.name} accessibilityLabel={rawText(option.name)} selected={model?.id === option.id} onPress={() => setChoices({ modelId: option.id })} />)}
+                {models.map(option => <Chip key={option.id} label={option.name} accessibilityLabel={rawText(option.name)} selected={model?.id === option.id} onPress={() => { if (option.id !== model?.id) setAttached(null); setChoices({ modelId: option.id }); }} />)}
             </View></> : null}
             {options && options.aspects.length > 0 ? <><Text>{t('opt.aspect')}</Text><View style={styles.choices}>
                 {options.aspects.map(aspect => <Chip key={aspect} label={aspect} accessibilityLabel={rawText(aspect)} selected={options.aspect === aspect} onPress={() => setChoices(previous => ({ ...previous, aspect }))} />)}
@@ -100,7 +100,7 @@ export default function TemplatePage() {
             <Text tone="warning">{templatePrice(model && options ? { ...preset, credits: estimateCredits(model, options.duration), durationSeconds: options.duration } : preset)}</Text>
             {unsupported ? <Card><Text accessibilityLiveRegion="polite">{t('public.TemplateRecipe.sourceVideoUnsupported')}</Text></Card> : available && inline ? <>
                 {slot && model ? <View style={{ gap: 12 }}>
-                    <SourcePicker key={model.id} slot={slot} api={generation.api} drawable={false} references={photos} onReferences={refs => setAttached(previous => ({ modelId: model.id, refs, rights: false, busy: previous?.modelId === model.id && previous.busy }))} onBusy={busy => setAttached(previous => ({ modelId: model.id, refs: previous?.modelId === model.id ? previous.refs : [], rights: previous?.modelId === model.id && previous.rights, busy }))} onChange={() => {}} onLibrary={() => {}} />
+                    <SourcePicker key={model.id} slot={slot} api={generation.api} drawable={false} references={photos} onReferences={refs => setAttached(previous => ({ modelId: model.id, refs, rights: false, busy: previous?.modelId === model.id && previous.busy }))} onBusy={busy => setAttached(previous => previous && previous.modelId !== model.id ? previous : { modelId: model.id, refs: previous?.refs ?? [], rights: previous?.rights === true, busy })} onChange={() => {}} onLibrary={() => {}} />
                     {photos.length ? <View>
                         <Checkbox checked={rights} accessibilityLanguage="en" accessibilityLabel={english('form.sourceRights')} accessibilityState={{ checked: rights, disabled: generation.busy }} disabled={generation.busy} onChange={value => setAttached(previous => previous && previous.modelId === model.id ? { ...previous, rights: value } : previous)}>
                             <Text variant="caption" tone="secondary">{english('form.sourceRights')}</Text>
