@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { register } from 'node:module';
 import { isDeepStrictEqual } from 'node:util';
-import { manifest, catalog } from './fixtures/templateClips.mjs';
+import { manifest, catalog, kieCatalog, kieSource } from './fixtures/templateClips.mjs';
 import { createFalWebhookHandler } from '../lib/falWebhookHandler.js';
 import { TEMPLATE_CLIP_PROMPT } from '../lib/templateClipPrompt.mjs';
 register('data:text/javascript,' + encodeURIComponent(`
@@ -13,7 +13,7 @@ export async function load(url,c,next) {
   return result;
 }`));
 Object.assign(process.env, {
-  TEMPLATE_CLIP_ENABLED: 'true', SUPABASE_URL: 'https://db.test', SUPABASE_SERVICE_ROLE_KEY: 'test-service', FAL_KEY: 'test-fal',
+  TEMPLATE_CLIP_ENABLED: 'true', SUPABASE_URL: 'https://db.test', SUPABASE_SERVICE_ROLE_KEY: 'test-service', FAL_KEY: 'test-fal', KIE_API_KEY: 'test-kie',
   PUBLIC_HOST: 'https://veyrnox.test', R2_ACCOUNT_ID: 'test', R2_ACCESS_KEY_ID: 'test', R2_SECRET_ACCESS_KEY: 'test', R2_BUCKET: 'test',
   FREE_ALLOWANCE_ENABLED: 'false', FAL_DURABLE_DISPATCH_ENABLED: 'false', FAL_DISPATCH_SCHEMA_ENABLED: 'false',
   SUPPLIER_ROUTES_ENABLED: 'false', MAX_CHARGE_ENABLED: 'false', MULTI_REFERENCE_ENABLED: 'false',
@@ -27,7 +27,11 @@ const PHOTO = '33333333-3333-4333-8333-333333333333';
 const photo = { slot: 'image', origin: 'asset', asset_id: PHOTO };
 const jpeg = Buffer.from([255,216,255,192,0,17,8,2,128,2,128,3,1,17,0,2,17,0,3,17,0,255,217]);
 function network(t, options = {}) {
-  const debits = [], submits = [], calls = [], identities = new Map(); let charges = 0;
+  const sourceJpeg = Buffer.from(jpeg);
+  if (options.imageDimensions) {
+    sourceJpeg.writeUInt16BE(options.imageDimensions.height, 7); sourceJpeg.writeUInt16BE(options.imageDimensions.width, 9);
+  }
+  const debits = [], submits = [], calls = [], refunds = [], identities = new Map(); let charges = 0;
   // Mirrors migration 0399's non-chat identity; SQL itself is not run here.
   const identity = body => ({ model: body.p_model_id, inputs: Object.fromEntries(Object.entries(body.p_inputs).filter(([k]) => !['preset_id','source_keys','source_assets'].includes(k))) });
   t.mock.method(globalThis, 'fetch', async (target, init = {}) => {
@@ -37,7 +41,8 @@ function network(t, options = {}) {
     if (name === 'runtime_switches') return Response.json([{ key: 'generation', state: 'off' }]);
     if (name === 'model_catalog') {
       if (options.catalogFailure) throw Error('offline');
-      return Response.json(catalog.filter(r => !url.searchParams.has('id') || `eq.${r.id}` === url.searchParams.get('id')).map(r => ({ ...r, active: options.active !== false })));
+      const filter = url.searchParams.get('id');
+      return Response.json((options.catalog || catalog).filter(r => !filter || `eq.${r.id}` === filter || filter === 'in.(seedance-2.0-reference,seedance-2.0-reference-kie)').map(r => ({ ...r, active: options.active === false ? false : r.active })));
     }
     if (name === 'users') return Response.json([{ id: AUTH }]);
     if (name === 'jobs') {
@@ -51,6 +56,7 @@ function network(t, options = {}) {
         assert.equal(body.p_auth_id, AUTH);
         return Response.json({ ok: true, state: 'STORED', mime_type: 'image/jpeg', r2_key: `jobs/${PHOTO}/output.jpg` });
       }
+      if (name === 'ledger_refund') refunds.push(body);
       if (name === 'ledger_debit') {
         debits.push(body); const value = identity(body), previous = identities.get(body.p_idempotency_key);
         if (previous && !isDeepStrictEqual(previous, value)) return Response.json({ ok: false, code: 'IDEMPOTENCY_CONFLICT' });
@@ -63,17 +69,17 @@ function network(t, options = {}) {
       assert.ok(!url.pathname.includes('template-clips/'), 'trusted shared clips are never sniffed or downloaded');
       assert.ok(url.pathname.endsWith(`jobs/${PHOTO}/output.jpg`));
       const [, a, b] = /bytes=(\d+)-(\d+)/.exec(init.headers.Range);
-      const start = Number(a), end = Math.min(Number(b), jpeg.length - 1);
-      return new Response(jpeg.subarray(start, end + 1), { status: 206, headers: { 'content-type': 'image/jpeg', 'content-range': `bytes ${start}-${end}/${jpeg.length}` } });
+      const start = Number(a), end = Math.min(Number(b), sourceJpeg.length - 1);
+      return new Response(sourceJpeg.subarray(start, end + 1), { status: 206, headers: { 'content-type': 'image/jpeg', 'content-range': `bytes ${start}-${end}/${sourceJpeg.length}` } });
     }
-    if (['queue.fal.run', 'api.crun.ai'].includes(url.hostname)) {
+    if (['queue.fal.run', 'api.crun.ai', 'api.kie.ai'].includes(url.hostname)) {
       submits.push(body);
       if (options.providerFailure) return Response.json({ detail: 'rejected' }, { status: 422 });
-      return Response.json({ request_id: 'fixture-task' });
+      return Response.json(url.hostname === 'api.kie.ai' ? { code: 200, data: { taskId: 'fixture-task' } } : { request_id: 'fixture-task' });
     }
     throw Error(`Unexpected network ${url.hostname}${url.pathname}`);
   });
-  return { debits, submits, calls, charges: () => charges };
+  return { debits, submits, calls, refunds, charges: () => charges };
 }
 function post(overrides = {}) {
   return POST(new Request('https://veyrnox.test/api/v1/generations', { method: 'POST', headers: { 'x-veyrnox-auth-id': AUTH }, body: JSON.stringify({ model_id: 'seedance-2.0-reference', template_clip: 'medieval-runway-look',
@@ -241,4 +247,143 @@ test('public and developer catalogs omit the video slot; developer video refs ke
   }), ['generations']);
   assert.equal(refused.status, 400); assert.deepEqual(await refused.json(), { error: 'source_slot_invalid' });
   assert.equal(net.debits.length, 0);
+});
+
+function useKieSource(t) {
+  const source = TEMPLATE_CLIP_SOURCES[ID];
+  TEMPLATE_CLIP_SOURCES[ID] = { ...kieSource };
+  t.after(() => { TEMPLATE_CLIP_SOURCES[ID] = source; });
+}
+for (const [fal, kie, expected] of [[true, false, catalog[0].id], [false, true, kieCatalog.id],
+  [true, true, catalog[0].id], [false, false, null]]) test(`offer selection fal=${fal} kie=${kie}`, async t => {
+  useKieSource(t);
+  const net = network(t, { catalog: [{ ...catalog[0], active: fal }, { ...kieCatalog, active: kie }] });
+  const available = await get(ID);
+  assert.equal(available.status, expected ? 200 : 404);
+  if (!expected) { assert.equal((await post()).status, 404); return; }
+  assert.equal((await available.json()).model, expected);
+  const other = expected === catalog[0].id ? kieCatalog.id : catalog[0].id;
+  const mismatch = await post({ model_id: other });
+  assert.equal(mismatch.status, 400); assert.equal((await mismatch.json()).error, 'template_clip_model_mismatch');
+  assert.equal(net.debits.length, 0);
+  const admitted = await post({ model_id: expected });
+  assert.equal(admitted.status, 200);
+  assert.equal(net.debits[0].p_model_id, expected);
+  assert.equal(net.debits[0].p_credits, expected === kieCatalog.id ? 70 : 85);
+});
+
+test('kie admission shapes the server prompt and private clip and replays without another charge', async t => {
+  useKieSource(t); const net = network(t, { catalog: [kieCatalog] });
+  const request = { model_id: kieCatalog.id, inputs: { prompt: 'caller edit', aspect_ratio: '9:16' } };
+  assert.equal((await post(request)).status, 200);
+  assert.equal((await (await post(request)).json()).idempotent, true);
+  assert.equal(net.charges(), 1); assert.equal(net.submits.length, 1);
+  const payload = net.submits[0];
+  assert.equal(payload.model, 'bytedance/seedance-2');
+  assert.equal(payload.callBackUrl, 'https://veyrnox.test/api/webhook/kie');
+  assert.deepEqual(Object.keys(payload.input).sort(), ['aspect_ratio', 'duration', 'generate_audio', 'prompt', 'reference_image_urls', 'reference_video_urls', 'resolution']);
+  assert.equal(payload.input.prompt, TEMPLATE_CLIP_PROMPT);
+  assert.equal(payload.input.duration, 5); assert.equal(payload.input.resolution, '720p');
+  assert.equal(payload.input.generate_audio, true); assert.equal(payload.input.aspect_ratio, '9:16');
+  assert.equal(payload.input.reference_image_urls.length, 1); assert.equal(payload.input.reference_video_urls.length, 1);
+});
+
+for (const initial of [catalog[0], kieCatalog]) test(`replay follows stored ${initial.provider} after preference flip, deactivation and manifest removal`, async t => {
+  useKieSource(t); const options = { catalog: [initial] }, net = network(t, options);
+  const request = { model_id: initial.id };
+  assert.equal((await post(request)).status, 200);
+  options.catalog = [initial.id === kieCatalog.id ? catalog[0] : kieCatalog];
+  assert.equal((await (await post(request)).json()).idempotent, true);
+  options.active = false;
+  assert.equal((await (await post(request)).json()).idempotent, true);
+  delete TEMPLATE_CLIP_SOURCES[ID];
+  assert.equal((await (await post(request)).json()).idempotent, true);
+  assert.equal(net.charges(), 1); assert.equal(net.submits.length, 1);
+});
+
+for (const [changes, error] of [[{ frameRate: undefined }, 'source_frame_rate_unknown'], [{ sizeBytes: undefined }, 'source_size_unknown'],
+  [{ width: 1280, height: 320 }, 'source_aspect_out_of_range'], [{ frameRate: 12 }, 'source_frame_rate_out_of_range'],
+  [{ seconds: 5.1, videoSeconds: 5.1 }, 'source_too_long']]) test(`kie rejects manifest ${error} before debit`, async t => {
+  useKieSource(t); Object.assign(TEMPLATE_CLIP_SOURCES[ID], changes);
+  const net = network(t, { catalog: [kieCatalog] });
+  const available = await get(ID), response = await post({ model_id: kieCatalog.id });
+  assert.equal(available.status, 404); assert.equal(response.status, 404);
+  assert.equal((await response.json()).error, 'template_clip_not_found');
+  assert.equal(net.debits.length, 0); assert.equal(net.submits.length, 0);
+});
+
+test('kie two-image request is refused before debit even with multi-reference enabled', async t => {
+  useKieSource(t); const net = network(t, { catalog: [kieCatalog] });
+  process.env.MULTI_REFERENCE_ENABLED = 'true'; t.after(() => { process.env.MULTI_REFERENCE_ENABLED = 'false'; });
+  assert.equal((await (await post({ model_id: kieCatalog.id, references: [photo, { ...photo, asset_id: AUTH }] })).json()).error, 'source_count_exceeded');
+  assert.equal(net.debits.length, 0); assert.equal(net.submits.length, 0);
+});
+
+test('kie proven submit failure uses the catalog price for one refund', async t => {
+  useKieSource(t); const net = network(t, { catalog: [kieCatalog], providerFailure: true });
+  const response = await post({ model_id: kieCatalog.id });
+  assert.equal(response.status, 502); assert.equal((await response.json()).error, 'provider_submit_failed');
+  assert.deepEqual(net.refunds, [{ p_job_id: JOB, p_user_id: AUTH, p_credits: 70, p_reason: 'refund:submit_failed' }]);
+});
+
+test('kie accepted job refunds provider failure once on duplicate completion', async t => {
+  useKieSource(t); const net = network(t, { catalog: [kieCatalog] });
+  assert.equal((await post({ model_id: kieCatalog.id })).status, 200);
+  const { completeJob } = await import('../lib/providerCompletion.js');
+  const debit = net.debits[0], calls = []; let processed = false, inserted = false;
+  const job = { id: JOB, user_id: AUTH, credits: debit.p_credits, model_id: debit.p_model_id, state: 'SUBMITTED' };
+  t.mock.method(globalThis, 'fetch', async (target, init = {}) => {
+    const url = new URL(target), name = url.pathname.split('/').at(-1);
+    if (name === 'jobs') return Response.json([job]);
+    if (name === 'webhook_events') {
+      if (init.method === 'POST') { const previous = inserted; inserted = true; return Response.json(previous ? [] : [{}], { status: 201 }); }
+      if (init.method === 'PATCH') { processed = true; return Response.json({}); }
+      return Response.json([{ processed_at: processed ? 'done' : null }]);
+    }
+    assert.ok(url.pathname.includes('/rpc/'));
+    calls.push({ name, body: JSON.parse(init.body) });
+    if (name === 'job_failed') job.state = 'FAILED';
+    if (name === 'ledger_refund') job.state = 'REFUNDED';
+    return Response.json({ ok: true });
+  });
+  const args = { source: 'kie', job, providerJobId: 'fixture-task', outcome: { state: 'fail', errorCode: 'provider_error' },
+    cfg: { supabaseUrl: 'https://db.test', serviceRoleKey: 'test' } };
+  assert.equal((await completeJob(args)).status, 200); assert.equal((await completeJob(args)).status, 200);
+  assert.deepEqual(calls.map(c => c.name), ['job_failed', 'ledger_refund']);
+  assert.deepEqual(calls[1].body, { p_job_id: JOB, p_user_id: AUTH, p_credits: 70, p_reason: 'refund:provider_failed' });
+});
+
+test('kie API catalog omits the private video slot', async t => {
+  network(t, { catalog: [kieCatalog] });
+  const response = await GET(new Request('https://veyrnox.test/api/catalog'));
+  assert.equal(response.status, 200);
+  const model = (await response.json()).models.find(r => r.id === kieCatalog.id);
+  assert.deepEqual(Object.keys(model.capabilities.media), ['image']);
+  assert.equal(model.capabilities.media.image.maxFiles, 1);
+});
+
+for (const imageDimensions of [{ width: 8000, height: 1000 }, { width: 128, height: 128 }]) test(`kie invalid photo ${JSON.stringify(imageDimensions)} cannot debit`, async t => {
+  useKieSource(t); const net = network(t, { catalog: [kieCatalog], imageDimensions });
+  const response = await post({ model_id: kieCatalog.id });
+  assert.equal(response.status, 400); assert.match((await response.json()).error, /^source_/);
+  assert.equal(net.debits.length, 0); assert.equal(net.submits.length, 0);
+});
+test('absent flag keeps both offers off without catalog, media or provider calls', async t => {
+  useKieSource(t); const net = network(t, { catalog: [catalog[0], kieCatalog] });
+  delete process.env.TEMPLATE_CLIP_ENABLED; t.after(() => { process.env.TEMPLATE_CLIP_ENABLED = 'true'; });
+  assert.equal((await get(ID)).status, 404);
+  assert.equal((await post({ model_id: kieCatalog.id })).status, 404);
+  assert.deepEqual(net.calls, ['check_generation_rate_limit']);
+});
+
+test('kie-only projection rejects a fal-era manifest and returns kie once measured metadata is complete', async t => {
+  const net = network(t, { catalog: [kieCatalog] });
+  const unavailable = await get(ID);
+  assert.equal(unavailable.status, 404);
+  assert.deepEqual(await unavailable.json(), { error: 'template_clip_not_found' });
+  useKieSource(t);
+  const available = await get(ID);
+  assert.equal(available.status, 200);
+  assert.deepEqual(await available.json(), { id: ID, model: kieCatalog.id, credits: 70, durationSeconds: 5 });
+  assert.equal(net.debits.length, 0); assert.equal(net.submits.length, 0);
 });

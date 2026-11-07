@@ -9,7 +9,7 @@ import { publicTemplateClip } from '../app/veyrnox/_lib/templateClips.js';
 import { templateById } from '../app/veyrnox/_lib/templates.js';
 import { SHOWCASE_CLIPS } from '../app/veyrnox/_lib/showcase.js';
 import { capabilityFor, checkSource } from '../lib/modelCapabilities.js';
-import { TEMPLATE_CLIP_ENDPOINT } from '../lib/templateClipGeneration.js';
+import { TEMPLATE_CLIP_MODEL, TEMPLATE_CLIP_MODELS } from '../lib/templateClipGeneration.js';
 import { envConfig, isConfigured, sha256Hex } from '../packages/adapters/r2.js';
 import { outsideRepo, boundedBytes, MAX_BYTES, assertMp4, measure, normalise, verifyUpload } from './import-swap-scenes.mjs';
 
@@ -52,8 +52,10 @@ export async function downloadClip(raw, destination, fetchImpl = fetch) {
   await writeFile(destination, bytes, { flag: 'wx' });
 }
 
-export async function importTemplateClips({ decisions, outDir, upload = false, confirmBucket,
+export async function importTemplateClips({ decisions, outDir, upload = false, confirmBucket, modelId = TEMPLATE_CLIP_MODEL,
   r2 = envConfig(), download = downloadClip, storage } = {}) {
+  if (!Object.hasOwn(TEMPLATE_CLIP_MODELS, modelId)) fail('template_clip_model_mismatch');
+  const kie = modelId === 'seedance-2.0-reference-kie';
   if (!Array.isArray(decisions)) fail('decisions_must_be_array');
   if (typeof upload !== 'boolean') fail('explicit_upload_required');
   if (upload && (!isConfigured(r2) || !confirmBucket || confirmBucket !== r2.bucket)) fail('confirmed_r2_bucket_required');
@@ -81,18 +83,20 @@ export async function importTemplateClips({ decisions, outDir, upload = false, c
         assertMp4(original);
         const before = await measure(input);
         if (![before.seconds, before.videoSeconds].every(value => Number.isFinite(value) && value >= 2)) fail('source_too_short');
-        const media = await normalise(input, output, false, 5);
-        const checked = checkSource(capabilityFor(TEMPLATE_CLIP_ENDPOINT), { video_url: {
-          ...media, dimensions: { width: media.width, height: media.height },
+        const media = await normalise(input, output, false, 5, kie ? 30 : null);
+        if (kie && [media.seconds, media.videoSeconds].some(seconds => Math.abs(seconds - 5) > 1 / 30)) fail('kie_reference_requires_five_seconds');
+        const bytes = await readFile(output);
+        const checked = checkSource(capabilityFor(TEMPLATE_CLIP_MODELS[modelId]), { video_url: {
+          ...media, sizeBytes: bytes.length, dimensions: { width: media.width, height: media.height },
         } });
         if (!checked.ok) fail(checked.error);
         if (media.seconds > 5.05 || media.videoSeconds > 5.05 || media.codec !== 'h264' || media.audio || Math.max(media.width, media.height) > 1280
             || media.width % 2 || media.height % 2) fail('normalisation_failed');
-        const bytes = await readFile(output);
         if (bytes.length > MAX_BYTES) fail('source_over_cap');
         const sha256 = await sha256Hex(bytes);
         manifest[entry.id] = { key: `template-clips/${entry.id}/${sha256}.mp4`, version: sha256.slice(0, 12),
-          seconds: media.seconds, videoSeconds: media.videoSeconds, width: media.width, height: media.height, contentType: 'video/mp4', sha256 };
+          seconds: media.seconds, videoSeconds: media.videoSeconds, width: media.width, height: media.height, pixels: media.width * media.height,
+          frameRate: media.frameRate, sizeBytes: bytes.length, contentType: 'video/mp4', sha256 };
         files.push({ id: entry.id, file: output, sizeBytes: bytes.length });
         report.results.push({ id: entry.id, status: 'normalised' });
       } finally { await rm(input, { force: true }); }
@@ -113,13 +117,13 @@ export async function importTemplateClips({ decisions, outDir, upload = false, c
 
 export async function cli(args = process.argv.slice(2)) {
   const { values } = parseArgs({ args, options: {
-    decisions: { type: 'string' }, 'out-dir': { type: 'string' }, 'dry-run': { type: 'boolean' },
+    'model-id': { type: 'string' }, decisions: { type: 'string' }, 'out-dir': { type: 'string' }, 'dry-run': { type: 'boolean' },
     upload: { type: 'boolean' }, 'confirm-bucket': { type: 'string' },
   } });
   if (!values.decisions) fail('decisions_path_required');
   if (values.upload && values['dry-run']) fail('conflicting_modes');
   const decisions = JSON.parse(await readFile(await outsideRepo(values.decisions), 'utf8'));
-  const result = await importTemplateClips({ decisions, outDir: values['out-dir'], upload: !!values.upload, confirmBucket: values['confirm-bucket'] });
+  const result = await importTemplateClips({ decisions, modelId: values['model-id'], outDir: values['out-dir'], upload: !!values.upload, confirmBucket: values['confirm-bucket'] });
   console.log(JSON.stringify({ runDir: result.runDir, ...result.report }));
   return result;
 }

@@ -104,7 +104,7 @@ export async function submitTemplate({ run, quote, model, preset, inputs, templa
         method: 'POST',
         body: JSON.stringify({
           ...(templateClip ? { template_clip: preset.id } : {}),
-          model_id: templateClip ? 'seedance-2.0-reference' : model.id, idempotency_key: run.keys[i], inputs,
+          model_id: templateClip ? templateClip.model : model.id, idempotency_key: run.keys[i], inputs,
           max_charge_credits: quote.ceilings[i],
           preset: templateStartIdFor(preset.id, preset, model.id) || undefined,
           references,
