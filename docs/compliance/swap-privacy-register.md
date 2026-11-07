@@ -41,3 +41,15 @@ identity keeps the scene/version/hash; public config exposes none of those
 private source facts. Shared clip retention is separate from disposable
 customer uploads and must be decided before import/activation; no retention
 period or rights clearance is implied by this implementation.
+
+Retained third-party scene clips contain a separate person's likeness even
+when the customer supplies only their own reference photo. Before an approved
+import, the owner must retain a private rights/provenance record covering that
+likeness, transformation and selected processor use; community reuse permission
+alone is insufficient. The importer strips soundtrack by default, and keeping
+it requires a separate rights review. Shared clips need an owner-set retention
+and review date independent of customer uploads; withdrawal or expiry requires
+removing the R2 object, manifest/scene entries and public audit row, with any
+provider-held copies addressed through the processor's removal process. The
+public audit carries technical provenance and approval only, never names or
+moderation reasons. See [the clip-import amendment](../adr/0000-swap-scene-clips.md).
