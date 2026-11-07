@@ -46,7 +46,7 @@ async function press(label: string, last = false) {
     expect(nodes.length).toBeGreaterThan(0);
     await act(async () => (last ? nodes.at(-1)! : nodes[0]).props.onClick({ nativeEvent: {} }));
 }
-async function open() { await act(async () => root.render(<FullEditorScreen projectId={projectId} />)); }
+async function open() { await act(async () => root.render(<FullEditorScreen projectId={projectId} startAdvanced />)); }
 async function generate(kind = 'video', frame = 42) {
     await act(async () => mockSession.setFrame(frame));
     if (kind === 'audio') { await press('Audio'); await press(t('editor.generatevoiceormusic')); }
@@ -237,7 +237,7 @@ test('a project change retains the late submission for its original project and 
     await open(); await generate(); const callback = mockMake.onJobStarted, poll = polls.get(jobId)!;
     const otherId = '44444444-4444-4444-4444-444444444444';
     head = { revision: 4, document: { schema_version: 3, project_id: otherId, timeline: emptyTimeline() } };
-    await act(async () => root.render(<FullEditorScreen projectId={otherId} />));
+    await act(async () => root.render(<FullEditorScreen projectId={otherId} startAdvanced />));
     expect(poll.signal.aborted).toBe(true);
     await act(async () => { poll.finish('succeeded'); callback('33333333-3333-3333-3333-333333333333', model()); });
     expect(generated()).toHaveLength(0); expect(await readPending(projectId)).toHaveLength(2); expect(await readPending(otherId)).toEqual([]);

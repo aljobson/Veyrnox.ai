@@ -1872,6 +1872,12 @@
     "ratio": 2.17
   },
   {
+    "id": "editorSimple.add",
+    "english": "Add",
+    "translation": "जोड़ें",
+    "ratio": 2
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

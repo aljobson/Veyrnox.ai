@@ -4884,6 +4884,18 @@
     "ratio": 1.78
   },
   {
+    "id": "editorSimple.add",
+    "english": "Add",
+    "translation": "Ajouter",
+    "ratio": 2.33
+  },
+  {
+    "id": "editorSimple.closePanel",
+    "english": "Done",
+    "translation": "Terminé",
+    "ratio": 1.75
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

@@ -54,6 +54,8 @@ export const styles = StyleSheet.create({
     clipBrowserRow: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 8, borderRadius: 10, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
     markerRow: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 7 }, markerJump: { minWidth: 70, minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 5 }, markerTime: { color: colors.body, fontSize: 9, fontVariant: ['tabular-nums'] }, markerInput: { flex: 1 },
     trackControl: { minHeight: 58, flexDirection: 'row', alignItems: 'center', gap: 6, padding: 7, borderRadius: 10, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+    simpleActions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 4, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border, backgroundColor: colors.background },
+    simpleSpacer: { flexGrow: 1 }, simpleFill: { flex: 1, height: undefined },
     danger: { color: colors.danger }, disabled: { opacity: 0.35 }, pressed: { opacity: 0.62, transform: [{ scale: 0.97 }] },
     noticeBackdrop: { flex: 1, justifyContent: 'center', padding: 24, backgroundColor: 'rgba(0,0,0,0.72)' }, noticeCard: { gap: 14, padding: 20, borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }, noticeTitle: { color: colors.text, fontSize: 20, fontWeight: '700' },
 });

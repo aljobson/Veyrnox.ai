@@ -33,7 +33,7 @@ async function press(label: string) {
     const nodes = root.container.queryAll(node => node.props.accessibilityLabel === label && typeof node.props.onClick === 'function');
     expect(nodes).toHaveLength(1); await act(async () => nodes[0].props.onClick({ nativeEvent: {} }));
 }
-async function open() { await act(async () => root.render(<FullEditorScreen projectId={projectId} />)); await press('Library audio'); await press('Pick audio'); }
+async function open() { await act(async () => root.render(<FullEditorScreen projectId={projectId} startAdvanced />)); await press('Library audio'); await press('Pick audio'); }
 beforeEach(() => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; jest.useFakeTimers(); jest.clearAllMocks(); mockOwner = 'owner'; stems = ['vocals', 'drums'];
     jest.mocked(probeDuration).mockReset().mockResolvedValue(4);
