@@ -211,30 +211,6 @@ for (const locale of ['de', 'ja', 'ar']) test(`${locale}: actual Cinema Pass and
   assert.ok(pass.includes(escape(LEGAL_CHROME[locale].notice)));
 });
 
-test('the actual source-rights checkbox preserves controlled state and reports both changes', () => {
-  const file = 'app/veyrnox/_components/SourceRightsConfirmation.jsx';
-  const f = fixture('de', '/app/create', { moduleMocks: {
-    '../../../components/I18nProvider': { useI18n: () => ({ t: key => key }) },
-  } });
-  const SourceRights = f.load(file).default;
-  for (const confirmed of [false, true]) {
-    const changes = [];
-    const tree = SourceRights({ confirmed, onChange: value => changes.push(value) });
-    let input;
-    function visit(node) {
-      if (!React.isValidElement(node)) return;
-      if (node.type === 'input') input = node;
-      React.Children.forEach(node.props.children, visit);
-    }
-    visit(tree);
-    assert.equal(input.props.checked, confirmed);
-    assert.equal(input.props.id, 'create-source-rights');
-    input.props.onChange({ target: { checked: true } });
-    input.props.onChange({ target: { checked: false } });
-    assert.deepEqual(changes, [true, false]);
-  }
-});
-
 test('binding wrappers retain every baseline version identifier and gateway request', () => {
   const baseline = JSON.parse(readFileSync('tests/fixtures/legal-binding-contracts-main.json', 'utf8'));
   for (const [file, expected] of Object.entries(baseline)) {

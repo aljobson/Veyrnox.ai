@@ -47,7 +47,6 @@ export function MakePanel({ visible, initialPrompt = '', initialKind = 'image', 
     const [prompt, setPrompt] = useState(initialPrompt);
     const [opts, setOpts] = useState<OptionValues>(defaults());
     const [references, setReferences] = useState<readonly GenerationReference[]>([]);
-    const [rights, setRights] = useState(false);
     const [sending, setSending] = useState<Partial<Record<SlotName, boolean>>>({});
     const epoch = useRef(0);
     const [sourceEpoch, setSourceEpoch] = useState(0);
@@ -55,7 +54,7 @@ export function MakePanel({ visible, initialPrompt = '', initialKind = 'image', 
     const model = models.find(m => m.id === modelId) ?? models[0] ?? null;
 
     function clearSources() {
-        setSourceEpoch(++epoch.current); setReferences([]); setRights(false); setSending({});
+        setSourceEpoch(++epoch.current); setReferences([]); setSending({});
     }
     function select(next: CatalogModel | null, nextKind = kind) {
         if (state.submitting) return;
@@ -89,7 +88,7 @@ export function MakePanel({ visible, initialPrompt = '', initialKind = 'image', 
     const promptTooLong = text.length > promptLimit;
     const request = model && options ? {
         modelId: model.id, prompt: text, confirmedCredits: unit, durationSeconds: kindOf(model.modality) === 'video' ? length : null,
-        references, sourceRights: references.length ? rights : undefined, textKey: 'prompt',
+        references, sourceRights: references.length ? true : undefined, textKey: 'prompt',
         extraInputs: settingsInputs(options, { ...opts, resolution, audio }),
     } : null;
     const retry = request && state.retry?.signature === generationSignature(request, n) ? state.retry : null;
@@ -97,7 +96,7 @@ export function MakePanel({ visible, initialPrompt = '', initialKind = 'image', 
     const price = quote?.total ?? null;
     const missing = retry?.blocked ? 0 : shortfall(balance, price ?? 0);
     const waiting = Object.values(sending).some(Boolean);
-    const ready = !!model && !promptTooLong && makeReady(model, text, references, rights, waiting, opts) && !state.submitting && missing === 0;
+    const ready = !!model && !promptTooLong && makeReady(model, text, references, waiting, opts) && !state.submitting && missing === 0;
     const close = () => { epoch.current++; state.close(); onClose(); };
     const buy = () => { close(); router.push('/credits'); };
     const label = retry?.quote ? t('app.create.confirmPrice', { credits: String(price) }) : price === null ? t('chat.make.button') : price === 0 ? t('opt.costFree') : plural('chat.make.buttonLabel', price);
@@ -132,10 +131,10 @@ export function MakePanel({ visible, initialPrompt = '', initialKind = 'image', 
                     </View>
                 ) : null}
                 {model && options ? <CreateOptions options={options} values={opts} showCount={takesImageCount(model)} resolution={resolution} audio={audio} outputPrice={plural('opt.outputPriceSame', unit)} onChange={value => { state.resetInputs(); setOpts(value); }} /> : null}
-                {model ? <MakeSources key={`${model.id}:${sourceEpoch}`} api={api} model={model} references={references} rights={rights} waiting={waiting}
-                    onRights={value => { state.resetInputs(); setRights(value); }} onReferences={(slot, files) => {
+                {model ? <MakeSources key={`${model.id}:${sourceEpoch}`} api={api} model={model} references={references}
+                    onReferences={(slot, files) => {
                         if (sourceEpoch !== epoch.current) return;
-                        state.resetInputs(); setRights(false); setReferences(all => replaceSlotReferences(all, slot, files));
+                        state.resetInputs(); setReferences(all => replaceSlotReferences(all, slot, files));
                     }} onBusy={(slot, busy) => { if (sourceEpoch === epoch.current) setSending(all => ({ ...all, [slot]: busy })); }} /> : null}
                 <TextField style={styles.input} value={prompt} onChangeText={value => { state.resetInputs(); setPrompt(value); }} multiline placeholder={t('chat.make.placeholder')} accessibilityLabel={t('chat.make.promptLabel')} />
                 {promptTooLong ? <Text tone="danger" accessibilityRole="alert">{t(promptLimitKey, { count: String(text.length), max: String(promptLimit) })}</Text> : null}

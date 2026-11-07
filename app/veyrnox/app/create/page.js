@@ -45,7 +45,6 @@ import { DrawOnImage } from '../../_components/DrawOnImage';
 import { SourcePickers } from '../../_components/SourcePickers';
 import { attachCapacity, attachPool, planAttachments } from '../../../../lib/createAttach.mjs';
 import { prepareUploads, needsConversion } from '../../_lib/uploadConvert.mjs';
-import SourceRightsConfirmation from '../../_components/SourceRightsConfirmation';
 import { LibraryPicker } from '../../_components/LibraryPicker';
 import { AddFilesDialog } from '../../_components/AddFilesDialog';
 import { GenerationSettings } from '../../_components/GenerationSettings';
@@ -130,9 +129,9 @@ export default function CreateStudio() {
   const [portraitStatus, setPortraitStatus] = useState('');
   const [libraryFor, setLibraryFor] = useState(null);
   const [drawing, setDrawing] = useState(false);
-  // Uploads can carry a real face or voice: the AUP consent statement is
-  // required before one is sent, and the gateway records it on the job (0096).
-  const [consent, setConsent] = useState(false);
+  // Uploads can carry a real face or voice. The rights statement is part of the
+  // Terms and Acceptable Use Policy; the gateway still records it on the job (0096).
+  const [consent, setConsent] = useState(true);
   const [cinemaOn, setCinemaOn] = useState(false);
   const [cinema, setCinema] = useState(DEFAULT_CINEMA);
   const [seed, setSeed] = useState('');
@@ -210,13 +209,13 @@ export default function CreateStudio() {
       if (videoSoundDraft) {
         setPrompt(videoSoundDraft.prompt);
         setSources({ video: { assetId: videoSoundDraft.jobId, previewUrl: videoSoundDraft.assetUrl, label: videoSoundDraft.label } });
-        setConsent(false);
+        setConsent(true);
       } else if (draft) setPrompt(draft.prompt);
       const recoveredSources = draft ? storedDraft?.sources : null;
       if (!videoSoundDraft && (recoveredSources || handedMedia)) {
         const handedSources = handedMedia ? Object.fromEntries(Object.entries(handedMedia).map(([slot, file]) => [slot, { file, previewUrl: URL.createObjectURL(file) }])) : {};
         setSources({ ...(recoveredSources || {}), ...handedSources });
-        setConsent(Boolean(!handedMedia && recoveredSources && storedDraft?.consent === true));
+        setConsent(true);
       }
       if (matchedTemplateMedia) setAttachNotice(handedMedia ? '' : translation.current('app.create.templatePhotoHandoff'));
       if (storedDraft?.followup) setPlannedFollowup(storedDraft.followup);
@@ -261,11 +260,11 @@ export default function CreateStudio() {
       setAspect(saved.aspect); setCount(saved.count); setSeed(saved.seed); setNegative(saved.negative); setVoice(saved.voice);
       setAudioDurations(saved.audioDurations); setCinemaOn(saved.cinemaOn); setCinema({ ...DEFAULT_CINEMA, ...saved.cinema });
       setCharacterOn(saved.characterOn); setCharacter(sanitizeOddlingPicks(saved.character));
-      setSources(restoredSources); setConsent(false); setAnimationPortrait(null); setTier(null);
+      setSources(restoredSources); setConsent(true); setAnimationPortrait(null); setTier(null);
     },
     reset: () => {
       setPrompt(null); setSources(current => { Object.values(current).flatMap(sourceList).forEach(source => { if (source.file) URL.revokeObjectURL(source.previewUrl); }); return {}; });
-      setConsent(false); setGoal('image'); chooseModel(starterModel(catalogModels, 'image')?.id || '');
+      setConsent(true); setGoal('image'); chooseModel(starterModel(catalogModels, 'image')?.id || '');
       setDuration('5s'); setAspect('16:9'); setCount(1); setCharacterOn(false); setCharacter({}); setOddlingTransfer(null);
       setCinemaOn(false); setCinema(DEFAULT_CINEMA); setSeed(''); setNegative(''); setVoice(''); setAudioDurations({});
       setAnimationPortrait(null); setPresetParam(null); setTier(null); clearJobs(); setError(null);
@@ -334,7 +333,7 @@ export default function CreateStudio() {
   const templateImageCount = templateImageSources.length;
   const templateImageSource = templateImageSources.find(source => source?.file || source?.label) || templateImageSources[0] || null;
   const templateImageRequired = Object.entries(media).some(([slot, spec]) => generationSlotKind(slot) === 'image' && spec?.required);
-  const missingConsent = hasUpload && !consent;
+  const missingConsent = false;
   const missingVoice = voiceIsMissing(model, voice);
   const missingPrompt = promptIsMissing(model, prompt);
   // Camera text suits pictures and clips; audio and speech would read it aloud.
@@ -395,7 +394,7 @@ export default function CreateStudio() {
   function pickSource(slot, file, asset = null, index) {
     draftRecovery.sourceEdited();
     if (file || asset) setAttachNotice('');
-    setConsent(false);
+    setConsent(true);
     setSources(previous => {
       const old = sourceList(previous[slot]);
       const removed = index !== undefined ? old[index] : publicSlotMax(media[slot]) === 1 || (!file && !asset) ? old : [];
@@ -844,7 +843,7 @@ export default function CreateStudio() {
           {['swap-recast', 'swap-quick'].includes(modelId) && <p role="note" data-testid="swap-consent-notice" className="mt-2 text-xs text-vx-fg-muted">{t('app.create.swapConsentNotice')}</p>}
           {modelId === SEEDANCE_REFERENCE_MODEL_ID && <p role="note" data-testid="reference-likeness-notice" className="mt-2 text-xs text-vx-fg-muted">{t('app.create.referenceLikenessNotice')}</p>}
           <div className="scroll-mt-24" data-assistant-target={Object.keys(media).length ? 'create.upload' : undefined}>
-            <SourcePickers media={media} sources={sources} onPick={pickSource} onConvertingChange={setSourcesConverting} resetKey={`${modelId}|${accountEpoch}`} epochRef={sourceEpoch} locked={attachConverting} onReorder={(slot, from, to) => { setConsent(false); setSources(prev => moveSlotSource(prev, slot, from, to)); }}
+            <SourcePickers media={media} sources={sources} onPick={pickSource} onConvertingChange={setSourcesConverting} resetKey={`${modelId}|${accountEpoch}`} epochRef={sourceEpoch} locked={attachConverting} onReorder={(slot, from, to) => { setConsent(true); setSources(prev => moveSlotSource(prev, slot, from, to)); }}
               onDraw={model?.kind === 'image' ? () => setDrawing(true) : null} onLibrary={setLibraryFor} />
           </div>
           {Object.values(sources).flatMap(sourceList).some(source => source.file) && <p className="mt-2 text-xs text-vx-fg-muted">{t("app.create.reattach")}</p>}
@@ -854,9 +853,6 @@ export default function CreateStudio() {
               onPick={(item) => { pickSource(libraryFor, null, item); setLibraryFor(null); }} />
           )}
 
-          {hasUpload && (
-            <SourceRightsConfirmation confirmed={consent} onChange={setConsent} />
-          )}
 
           {drawing && sourceList(sources.image)[0]?.file && (
             <DrawOnImage file={sourceList(sources.image)[0].file} onDone={applyDrawing} onCancel={() => setDrawing(false)} />

@@ -47,10 +47,6 @@
       "SUPPLY_CONSENT_VERSION = 'supply-consent-v1'"
     ]
   },
-  "app/veyrnox/_components/SourceRightsConfirmation.jsx": {
-    "calls": [],
-    "versions": []
-  },
   "app/veyrnox/_components/CreditSubscriptions.js": {
     "calls": [
       "fetch('/api/credit-subscription-plans', {\n      cache: 'no-store',\n    })",

@@ -40,6 +40,6 @@ test('Create verifies the recipe, result model, duration and renewed consent pat
   assert.match(create, /model=mmaudio-v2-video&continue=faceless-sound/);
   assert.match(create, /takeVideoSoundContinuation\(window\.sessionStorage\)/);
   assert.match(create, /assetId: videoSoundDraft\.jobId/);
-  assert.match(create, /setConsent\(false\)/);
+  assert.match(create, /setConsent\(true\)/);
   assert.match(DEFAULT_FACELESS_REEL_SOUND_PROMPT, /No speech, narration, music/);
 });
