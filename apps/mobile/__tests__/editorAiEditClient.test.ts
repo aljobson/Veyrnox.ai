@@ -8,7 +8,7 @@ import { emptyTimeline } from '../src/lib/nativeEditorModel';
 const accountId = '11111111-1111-4111-8111-111111111111';
 const token = `x.${btoa(JSON.stringify({ sub: accountId }))}.x`;
 const completed = { status: 'completed', credits: 3, plan: { commands: [{ op: 'addText', text: 'Title', start: 0, len: 30 }] }, skipped: [], summary: '1 step' };
-const args = () => ({ instruction: 'Add a title', timeline: emptyTimeline(), key: 'key-12345678', expectedCredits: 3, accountId });
+const args = () => ({ instruction: 'Add a title', timeline: emptyTimeline(), key: 'req-00000001', expectedCredits: 3, accountId });
 const api = (request: jest.Mock) => ({ request }) as unknown as ApiClient;
 const original = globalThis.fetch;
 beforeEach(() => { resetNetworkState(); setHardPaywallLocked(false); });
@@ -31,7 +31,7 @@ test('offline never starts a paid POST', async () => {
 test('lost response uses read-only recovery, never another POST', async () => {
     const request = jest.fn().mockRejectedValueOnce(new ApiError(0, 'network')).mockResolvedValueOnce(completed);
     expect(await runAiEdit(api(request), args())).toEqual(completed);
-    expect(request.mock.calls[1]).toEqual([`${AI_EDIT_PATH}/by-key/key-12345678`, {}, { owner: accountId }]);
+    expect(request.mock.calls[1]).toEqual([`${AI_EDIT_PATH}/by-key/req-00000001`, {}, { owner: accountId }]);
     expect(request).toHaveBeenCalledTimes(2);
 });
 test('an explicit retry after a missing recovery record preserves the request identity', async () => {
@@ -68,7 +68,7 @@ test('locked account cannot POST but can read its paid result', async () => {
     const client = createApiClient({ baseUrl: 'https://test.invalid', getAccessToken: async () => token, onSessionLost: jest.fn(), beforeSend: async (path, method) => guardPaidAction(path, method) });
     await expect(runAiEdit(client, args())).rejects.toMatchObject({ code: 'subscription_required' }); expect(fetcher).not.toHaveBeenCalled();
     expect(await recoverAiEdit(client, args().key, accountId)).toEqual(completed); expect(fetcher).toHaveBeenCalledTimes(1);
-    expect(isPaidAction(`${AI_EDIT_PATH}/by-key/key-12345678`, 'GET')).toBe(false);
+    expect(isPaidAction(`${AI_EDIT_PATH}/by-key/req-00000001`, 'GET')).toBe(false);
 });
 test('60-second JSON deadline allows a 31-second success and bounds a stalled body', async () => {
     jest.useFakeTimers();
