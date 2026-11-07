@@ -6,7 +6,7 @@ import { tOr, pluralKey } from '../../../../lib/i18n/translate.mjs';
 import { rich } from '../../../../lib/i18n/rich';
 import { localeTag } from '../../../../lib/i18n/locales.mjs';
 import { useI18n } from '../../../../components/I18nProvider';
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AppNav } from '../../_components/NavBar';
@@ -68,6 +68,8 @@ import { outputDurationLabel, mediaGenerationSources } from '../../_lib/chatMedi
 import { uploadSourceFile } from '../../_lib/uploadSourceFile';
 import { generationSlotKind, generationMimeTypes } from '../../../../lib/generationSourceSlots.mjs';
 import { GENERATION_PROMPT_MAX } from '../../../../lib/generationPromptLimits.js';
+import { SwapSceneEntry } from '../../_components/SwapSceneEntry';
+import { swapSceneModel, applySwapScene } from '../../_lib/swapSceneForm';
 // Auto Short stays hidden until launch unless this browser opts in
 // (CLAUDE.md "Delivery": new user paths behind localStorage.veyrnox_*).
 const AUTO_SHORT_FLAG = 'veyrnox_auto_short';
@@ -106,13 +108,20 @@ export default function CreateStudio() {
   const { models: catalogModels, live: catalogLive, loading: catalogLoading } = useCatalog();
   const freeMap = useFreeAllowance(); // ADR-0069: free jobs left today per model; empty while the feature is off
   const autoShortOn = useSyncExternalStore(never, autoShortFlag, off);
-  const models = catalogModels.filter((m) => createPromptModelAvailable(m, autoShortOn));
+
   const [modelId, setModelId] = useState(() => starterModel(catalogModels, 'image')?.id || '');
   const [goal, setGoal] = useState('image');
   const [presetParam, setPresetParam] = useState(null);
   const [templateData, setTemplateData] = useState(); // the whole template behind presetParam, from /api/templates/<id>; undefined until read, null when none
   const openingTemplate = useTemplateOpening(catalogLoading, templateData);
   const [accountEpoch, setAccountEpoch] = useState(0); // bumped when the account changes; drops conversions in flight
+  const [swap, setSwap] = useState({ id: null, scene: null, loading: false });
+  const swapId = swap.id;
+  const models = catalogModels.filter((m) => createPromptModelAvailable(m, autoShortOn));
+  if (swapId !== null) {
+    const sceneModel = catalogModels.find(m => m.id === swap.scene?.swapOffer);
+    models.splice(0, models.length, ...(sceneModel ? [swapSceneModel(sceneModel, swap.scene)] : []));
+  }
   // Bumped at the moment the model or account changes, so a conversion started before cannot land after.
   const sourceEpoch = useRef(0);
   const chooseModel = (id) => { sourceEpoch.current += 1; setModelId(id); };
@@ -166,6 +175,15 @@ export default function CreateStudio() {
   const arrivalModels = templateEntry ? catalogModels : null;
   const arrivalLoading = templateEntry && catalogLoading;
 
+  useEffect(() => {
+    if (!swap.scene) return;
+    sourceEpoch.current += 1;
+    applySwapScene(swap.scene, { setModelId, setGoal, setDuration, setPrompt });
+    setPresetParam(null); setTemplateData(null); setConsent(false); setAnimationPortrait(null);
+    setCinemaOn(false); setCharacterOn(false); setSeed(''); setNegative('');
+    setSources(current => { for (const item of Object.values(current).flatMap(sourceList)) if (item.file) URL.revokeObjectURL(item.previewUrl); return {}; });
+  }, [swap.scene]);
+
   // ?model=<id> from landing tiles / hero cards. Read once on mount —
   // avoids the Suspense boundary useSearchParams demands on client pages.
   // ?duration=10s and the prompt come from the landing price slip; the
@@ -173,6 +191,7 @@ export default function CreateStudio() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
+    if (params.has('swap')) { incomingDraft.current = true; return; }
     const presetId = params.get('preset');
     // Reserve the incoming recipe before waiting so recovery cannot replace it.
     if (presetId) incomingDraft.current = true;
@@ -285,7 +304,7 @@ export default function CreateStudio() {
     chooseModel(first.id);
   }, [models, modelId, catalogLoading, catalogLive, goal, draftRecovery.restoring]);
 
-  const model = models.find((m) => m.id === modelId) || null;
+  const model = models.find((m) => m.id === (swap.scene?.swapOffer || modelId)) || null;
   // The controls describe the next draft, not the already submitted job.
   // Keep the result attached to its own model even while the user browses.
   const resultModel = job ? catalogModels.find((m) => m.id === job.model_id) : null;
@@ -325,13 +344,14 @@ export default function CreateStudio() {
         : model?.kind === 'video' ? outputDurationLabel(model, Number(duration.replace('s', ''))) : null;
   const media = model?.media || {};
   const animationMismatch = !!animationPortrait && (model?.kind !== 'video' || !media.image?.required);
-  const { missingSource, needsReattach, overLimit, hasSource: hasUpload } = generationSourceState(media, sources);
+  const { missingSource: missingSlot, needsReattach, overLimit, hasSource: hasUpload } = generationSourceState(media, sources);
   // Only pictures this model actually takes count: a video-only attachment, or a picture kept from another model, never reaches the provider.
   const templateImageSources = Object.entries(media)
     .filter(([slot]) => generationSlotKind(slot) === 'image')
     .flatMap(([slot]) => sourceList(sources[slot]))
     .filter(source => !source?.needsUpload && (source?.file || source?.assetId || source?.sourceKey));
   const templateImageCount = templateImageSources.length;
+  const missingSource = missingSlot || (swap.scene && templateImageCount !== swap.scene.people);
   const templateImageSource = templateImageSources.find(source => source?.file || source?.label) || templateImageSources[0] || null;
   const templateImageRequired = Object.entries(media).some(([slot, spec]) => generationSlotKind(slot) === 'image' && spec?.required);
   const missingConsent = hasUpload && !consent;
@@ -353,12 +373,12 @@ export default function CreateStudio() {
     : tOr(t, `app.create.error.${HINT_CODES[hintKey]}`, ERROR_COPY[HINT_CODES[hintKey]] || t('app.create.error.unknown'));
   // Only offer aspect ratios explicitly declared by this model's provider contract.
   const aspectOptions = isShort ? [] : modelAspectRatios(model);
-  const unitCost = model ? (model.kind === 'video' ? clipCredits(model.credits, Number(duration.replace('s', ''))) : model.credits) : 0;
+  const unitCost = swap.scene ? swap.scene.credits : model ? (model.kind === 'video' ? clipCredits(model.credits, Number(duration.replace('s', ''))) : model.credits) : 0;
   // Other models always send one; the count control is image-only.
   const n = imageCount(model, count);
   // The server decides what is free; the first `freeLeft` jobs of a batch are, the rest cost the catalog price.
   const freeLeft = freeLeftFor(freeMap, modelId);
-  const formIdentity = useMemo(() => ({}), [modelId, prompt, duration, aspect, n, seed, negative, voice, audioDuration, cinemaOn, cinema, characterOn, character, sources, consent, presetParam, accountEpoch]);
+  const formIdentity = useMemo(() => ({}), [swapId, modelId, prompt, duration, aspect, n, seed, negative, voice, audioDuration, cinemaOn, cinema, characterOn, character, sources, consent, presetParam, accountEpoch]);
   const continuation = useRef(null);
   const [batchView, setBatchView] = useState(null);
   const activeBatch = batchView?.identity === formIdentity ? batchView : null;
@@ -562,7 +582,7 @@ export default function CreateStudio() {
       duration_seconds: model.kind === 'video' ? Number(duration.replace('s', '')) : undefined,
       ...(isShort ? { aspect_ratio: '9:16' } : aspectOptions.length ? { aspect_ratio: aspect } : {}),
     };
-    const run = (continuation.current?.identity === formIdentity ? continuation.current : null) ?? { ...createBatch(n, () => makeIdempotencyKey()), identity: formIdentity, unit: unitCost };
+    const run = (continuation.current?.identity === formIdentity ? continuation.current : null) ?? { ...createBatch(n, () => makeIdempotencyKey()), identity: formIdentity, unit: unitCost, swap: model.swap };
     continuation.current = run;
     run.quote = quote;
     run.confirm = false;
@@ -571,7 +591,7 @@ export default function CreateStudio() {
     const inputs = isShort ? { topic: prompt.trim() } : {
       prompt: finalPrompt(),
       aspect_ratio: aspectOptions.length ? aspect : undefined,
-      duration_seconds: model.kind === 'video' ? Number(duration.replace('s', '')) : undefined,
+      duration_seconds: !model.swap && model.kind === 'video' ? Number(duration.replace('s', '')) : undefined,
       ...settingsInputs(model, { seed, negative, voice, duration: audioDuration }),
     };
     // strip undefined so server sees a clean object
@@ -589,7 +609,7 @@ export default function CreateStudio() {
         const submitted = await gatewayFetch('/generations', {
           method: 'POST',
           body: JSON.stringify({
-            model_id: modelId, idempotency_key: keys[i], inputs: inputsForIndex(run.inputs, i, n),
+            model_id: modelId, swap: run.swap, idempotency_key: keys[i], inputs: inputsForIndex(run.inputs, i, n),
             max_charge_credits: quote.ceilings[i],
             preset: templateStartIdFor(presetParam, templateData, modelId) || undefined,
             references,
@@ -701,8 +721,12 @@ export default function CreateStudio() {
     control.focus({ preventScroll: true });
   }
 
+  const swapEntry = <Suspense fallback={null}><SwapSceneEntry onChange={setSwap} accountEpoch={accountEpoch} /></Suspense>;
+  if (swapId !== null && (swap.loading || !swap.scene || !model)) return <div className="min-h-dvh">{swapEntry}<AppNav balance={balance} active="create" /><Main><p role="status">{swap.loading || catalogLoading ? t('app.create.openingTemplate') : t('app.chat.error.model_not_found')}</p></Main></div>;
+
   return (
     <div className="min-h-dvh">
+      {swapEntry}
       {openingTemplate && <TemplateOpening name={openingTemplate.name} />}
       <AppNav balance={balance} active="create" />
 
@@ -713,6 +737,7 @@ export default function CreateStudio() {
             <div>
               <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">{t("app.create.untitled")}</div>
               <h1 className="text-2xl sm:text-3xl font-black tracking-[-0.02em] mt-1">{t("label.Create")}</h1>
+              {swap.scene && <p className="text-vx-fg-muted">{swap.scene.name}</p>}
             </div>
             <Chip tone="neutral">{draftRecovery.saved ? Object.values(sources).flatMap(sourceList).some(source => source.file) ? t("app.create.settingsSaved") : t("app.create.savedInTab") : t("app.create.unsaved")}</Chip>
           </div>

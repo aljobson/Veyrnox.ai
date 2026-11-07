@@ -1,3 +1,4 @@
+import { fetchSwapScene, swapSceneModel, type SwapScene } from '../../../lib/swapScenes';
 import { fetchFreeAllowance } from '../../../lib/freeAllowance';
 import { captureHandoffOwner } from '../../../lib/accountHandoffStore';
 import { createFormSheets as sheets } from '../../../components/create/createFormStyles';
@@ -19,7 +20,6 @@ import { SectionLabel } from '../../../components/create/SectionLabel';
 import { SourceDurationCard } from '../../../components/create/SourceDurationCard';
 import { Text, TextField, Button, Card, Chip, Checkbox, themedStyles, useThemedStyles } from '../../../components/ui';
 import { GENERATION_PROMPT_MAX } from '../../../lib/promptLimits';
-
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, ScrollView, View } from 'react-native';
@@ -47,14 +47,11 @@ import { estimateCredits, fetchCatalog, kindOf, promptRequired, textInput, type 
 import { MIN_TARGET, selectedState } from '../../../lib/a11y';
 import { portraitAsPickedFile, startOddlingId } from '../../../lib/oddlingsAnimate';
 import { legacyReferences, replaceSlotReferences, slotsFor, type GenerationReference, type PickedFile, type SlotName } from '../../../lib/sources';
-
 import { ds } from '../../../theme';
 import { plural, t } from '../../../lib/i18n';
 import { creativeFeature } from '../../../lib/creativeFeatures';
 import { consumeCreativeSourceHandoff, readCreativeSourceHandoff } from '../../../lib/creativeSourceHandoff';
-
 const PLACEHOLDER: Record<string, string> = { topic: 'form.topicPlaceholder' };
-
 // The host part of an address, or '' when it is not one.
 function hostOf(url: string): string {
     try {
@@ -63,17 +60,20 @@ function hostOf(url: string): string {
         return '';
     }
 }
-
 export default function CreateWithModel() {
     const styles = useThemedStyles(sheets);
-    const { modelId, prompt: presetPrompt, duration: presetDuration, aspect: presetAspect, startOddling, tpl, tid, tmodel, tneeds, tsource, tratio, tposter, recipe, sourceHandoff, switched, followup, kind, sourceJob, filmId, shotId, promptVersion, promptContext } = useLocalSearchParams<{ modelId: string; prompt?: string; duration?: string; aspect?: string; startOddling?: string; tpl?: string; tid?: string; tmodel?: string; tneeds?: string; tsource?: string; tratio?: string; tposter?: string; recipe?: string; sourceHandoff?: string; switched?: string; followup?: string; kind?: string; sourceJob?: string; filmId?: string; shotId?: string; promptVersion?: string; promptContext?: string }>();
+    const { modelId, swap, prompt: presetPrompt, duration: presetDuration, aspect: presetAspect, startOddling, tpl, tid, tmodel, tneeds, tsource, tratio, tposter, recipe, sourceHandoff, switched, followup, kind, sourceJob, filmId, shotId, promptVersion, promptContext } = useLocalSearchParams<{ modelId: string; swap?: string; prompt?: string; duration?: string; aspect?: string; startOddling?: string; tpl?: string; tid?: string; tmodel?: string; tneeds?: string; tsource?: string; tratio?: string; tposter?: string; recipe?: string; sourceHandoff?: string; switched?: string; followup?: string; kind?: string; sourceJob?: string; filmId?: string; shotId?: string; promptVersion?: string; promptContext?: string }>();
     // A template also brings its name, picture, shape and what it needs; each is checked before it is used.
     const template = useMemo(() => activeTemplate({ tpl, tid, tmodel, tneeds, tsource, tratio, tposter }, modelId, ['veyrnox.ai', hostOf(API_BASE)]), [tpl, tid, tmodel, tneeds, tsource, tratio, tposter, modelId]);
     const templatePreset = templateOnOriginalModel({ tmodel }, modelId);
     const handedSources = useMemo(() => readCreativeSourceHandoff(typeof sourceHandoff === 'string' ? sourceHandoff : undefined, typeof recipe === 'string' ? recipe : undefined, modelId), [modelId, recipe, sourceHandoff]);
     const { api } = useAuth();
     const router = useRouter();
+    const sceneServices = useRef({ api, router });
+    useEffect(() => { sceneServices.current = { api, router }; }, [api, router]);
+    const loadedEntry = useRef<{ swap?: string; modelId: string } | null>(null);
     const [model, setModel] = useState<CatalogModel | null>(null);
+    const [swapScene, setSwapScene] = useState<SwapScene | null>(null);
     // A template (ADR-0120) opens this form with its prompt and length filled in; both stay editable.
     const [prompt, setPrompt] = useState(typeof presetPrompt === 'string' ? presetPrompt : '');
     const [duration, setDuration] = useState<number | null>(null);
@@ -125,29 +125,35 @@ export default function CreateWithModel() {
         batch.current++; balanceSeq.current++; pending.current.reset(); retry.current = null;
         setResults(null); setConfirmed(0); setComplete(false); setError(null); setNote(null);
     }
-
     useEffect(() => {
         // Changing any identity input drops the quote and continuation, even if later changed back.
         if (!retry.current) return;
         batch.current++; balanceSeq.current++; pending.current.reset(); retry.current = null;
         setResults(null); setConfirmed(0); setComplete(false); setError(null); setNote(null);
         // busy stays set: the submit lock holds until the outstanding request settles (its finally clears it).
-    }, [modelId, prompt, duration, opts, references, sourceRights, cameraOn, cinema, characterOn, character, template?.id]);
-
+    }, [swap, modelId, prompt, duration, opts, references, sourceRights, cameraOn, cinema, characterOn, character, template?.id]);
     useEffect(() => {
         consumeCreativeSourceHandoff(typeof sourceHandoff === 'string' ? sourceHandoff : undefined, typeof recipe === 'string' ? recipe : undefined, modelId);
     }, [modelId, recipe, sourceHandoff]);
-
     useEffect(() => {
         let live = true;
         const current = captureHandoffOwner();
         const valid = () => live && current();
         draftReady.current = false;
+        const sceneChanged = loadedEntry.current?.swap !== swap;
+        const entryChanged = sceneChanged || loadedEntry.current?.modelId !== modelId;
+        if (entryChanged && (swap !== undefined || loadedEntry.current?.swap !== undefined)) { setModel(null); setSwapScene(null); setError(null); }
+        loadedEntry.current = { swap, modelId };
         fetchCatalog()
             .then(async (all) => {
                 if (!valid()) return;
                 setCatalog(all);
-                const found = all.find((m) => m.id === modelId) ?? null;
+                const scene = swap !== undefined ? await fetchSwapScene(sceneServices.current.api, swap) : null;
+                if (!valid()) return;
+                if (scene && scene.swapOffer !== modelId) { sceneServices.current.router.replace({ pathname: '/create/[modelId]', params: { modelId: scene.swapOffer, swap: scene.id } }); return; }
+                setSwapScene(scene);
+                const raw = all.find((m) => m.id === (scene?.swapOffer ?? modelId)) ?? null;
+                const found = raw && scene ? swapSceneModel(raw, scene) : raw;
                 setModel(found);
                 if (found && kindOf(found.modality) === 'video') {
                     const wanted = Number(presetDuration);
@@ -156,6 +162,7 @@ export default function CreateWithModel() {
                 if (!found) setError(t('form.modelGone'));
                 if (!found) return;
                 const o = optionsFor(found);
+                if (scene) { if (sceneChanged) { setPrompt(''); setReferences([]); setSourceRights(false); setOpts({ aspect: null, count: 1, seed: '', negative: '', voice: '', audioSeconds: '' }); setCameraOn(false); setCharacterOn(false); } return; }
                 // Where the person said the result will land (the vibe check) picks the opening ratio; no answer keeps 16:9.
                 const vibe = await loadVibe();
                 if (!valid()) return;
@@ -205,10 +212,9 @@ export default function CreateWithModel() {
                     draftReady.current = true;
                 });
             })
-            .catch(() => { if (valid()) setError(t('form.modelLoad')); });
+            .catch(() => { if (valid()) setError(t(swap !== undefined ? 'form.modelGone' : 'form.modelLoad')); });
         return () => { live = false; };
-    }, [modelId, presetDuration, presetAspect, handedSources, presetPrompt, template, switched]);
-
+    }, [swap, modelId, presetDuration, presetAspect, handedSources, presetPrompt, template, switched]);
     // Carried into the form that Attach from device reopens: the words typed so far and the template that started it.
     const attachCarry = useMemo(() => {
         const out: Record<string, string> = {};
@@ -232,7 +238,6 @@ export default function CreateWithModel() {
         );
         return () => { live = false; };
     }, [startId, takesStartImage]);
-
     // Words and settings are kept as they change, so a closed app or a call does not lose them.
     useEffect(() => {
         if (!model || !draftReady.current) return;
@@ -245,16 +250,13 @@ export default function CreateWithModel() {
         }, 600);
         return () => clearTimeout(id);
     }, [model, prompt, duration, opts, cameraOn, cinema, characterOn, character]);
-
     const flushDraft = useCallback(async () => {
         const draft = unsaved.current;
         unsaved.current = null;
         if (draft?.current()) await saveDraft(draft.draft, undefined, draft.owner).catch(() => undefined);
     }, []);
-
     // Closing the screen saves what was typed in the last moments too.
     useEffect(() => () => void flushDraft(), [flushDraft]);
-
     const discardDraft = useCallback(() => {
         setPrompt('');
         setOpts((o) => ({ ...o, seed: '', negative: '', count: 1, voice: '', audioSeconds: '' }));
@@ -264,13 +266,11 @@ export default function CreateWithModel() {
         setRestored(false);
         clearDraft().catch(() => undefined);
     }, []);
-
-    if (!model) {
+    if (!model || (swap !== undefined && swapScene?.id !== swap)) {
         return <View style={styles.screen}>{error ? <Text variant="body" tone="danger" style={styles.error} accessibilityLiveRegion="polite">{error}</Text> : <ActivityIndicator color={styles.accentInk.color} />}</View>;
     }
-
     const isVideo = kindOf(model.modality) === 'video';
-    const unit = estimateCredits(model, duration);
+    const unit = swapScene?.credits ?? estimateCredits(model, duration);
     const options = optionsFor(model);
     const n = imageCount(model, opts.count);
     const resolution = resolveResolution(model, options, opts.resolution);
@@ -284,7 +284,7 @@ export default function CreateWithModel() {
     const text = takesCamera && cameraOn ? buildCinemaPrompt(withCharacter, cinema) : withCharacter;
     const text_ = textInput(model);
     const promptTooLong = !!text_ && text.length > text_.max;
-    const slots = slotsFor(model);
+    const slots = slotsFor(model, swapScene);
     const waiting = attaching || Object.values(sending).some(Boolean);
     // New files join the latest references (never a stale copy), within each slot's room; the slot pickers show them
     // without remounting, so an upload in progress is never aborted.
@@ -301,8 +301,8 @@ export default function CreateWithModel() {
         });
     };
     const hasReference = references.length > 0 || !!startFile;
-    const ready = !waiting && !promptTooLong && (!hasReference || sourceRights) && slots.every(slot => (!slot.required || references.some(ref => ref.slot === slot.slot)) && references.filter(ref => ref.slot === slot.slot).length <= (slot.maxFiles ?? 1)) && (!promptRequired(model) || !!text.trim()) && !seedIsInvalid(opts.seed) && !voiceIsMissing(options, opts.voice) && !audioLengthInvalid(options, opts.audioSeconds);
-    const request: SubmitRequest = { analyticsKind: kindOf(model.modality), modelId: model.id, prompt: text, confirmedCredits: unit, durationSeconds: isVideo ? duration : null, references, sourceRights: hasReference ? sourceRights : undefined, textKey: text_?.key, extraInputs: settingsInputs(options, { seed: opts.seed, negative: opts.negative, aspect: opts.aspect, voice: opts.voice, audioSeconds: opts.audioSeconds, resolution, audio }), preset: templatePreset ? template?.id ?? undefined : undefined };
+    const ready = (!swapScene || (references.length === swapScene.people && references.every(ref => ref.slot === 'image'))) && !waiting && !promptTooLong && (!hasReference || sourceRights) && slots.every(slot => (!slot.required || references.some(ref => ref.slot === slot.slot)) && references.filter(ref => ref.slot === slot.slot).length <= (slot.maxFiles ?? 1)) && (!promptRequired(model) || !!text.trim()) && !seedIsInvalid(opts.seed) && !voiceIsMissing(options, opts.voice) && !audioLengthInvalid(options, opts.audioSeconds);
+    const request: SubmitRequest = { analyticsKind: kindOf(model.modality), modelId: model.id, swap: swapScene?.id, prompt: text, confirmedCredits: unit, durationSeconds: !swapScene && isVideo ? duration : null, references, sourceRights: hasReference ? sourceRights : undefined, textKey: text_?.key, extraInputs: settingsInputs(options, { seed: opts.seed, negative: opts.negative, aspect: opts.aspect, voice: opts.voice, audioSeconds: opts.audioSeconds, resolution, audio }), preset: !swapScene && templatePreset ? template?.id ?? undefined : undefined };
     const signature = generationSignature(request, n);
     const matchingRetry = retry.current?.signature === signature ? retry.current : null;
     // Only an unchanged request retains its confirmed items and retry price.
@@ -313,8 +313,7 @@ export default function CreateWithModel() {
         : hasReference
             ? t('create.workspace.stageReference')
             : t('create.workspace.stageEmpty');
-    const modelLabel = creativeFeature(typeof recipe === 'string' ? recipe : undefined)?.title ?? model.name;
-
+    const modelLabel = swapScene?.name ?? creativeFeature(typeof recipe === 'string' ? recipe : undefined)?.title ?? model.name;
     async function generate() {
         if (!model || (!ready && !matchingRetry) || busy || freeLoading || waiting) return;
         if (retry.current && !matchingRetry) newGeneration();
@@ -364,19 +363,16 @@ export default function CreateWithModel() {
     const generation = batch.current;
     const owner = getCacheUser();
     const resultSettled = () => { if (generation === batch.current) void refreshBalance(api, owner, () => generation === batch.current, balanceSeq); };
-
     const payable = quote.payable ?? price;
     const missing = complete ? 0 : shortfall(balance, payable);
     const disabled = busy || waiting || (!complete && (freeLoading || (!ready && !matchingRetry) || missing > 0));
     const generateLabel = matchingRetry?.quote ? t('app.create.confirmPrice', { credits: String(price) }) : `${n > 1 ? t('opt.generateCount', { count: String(n) }) : t('slip.generate')}. ${costLine(price, n, freeLeft, unit)}`;
-
     return (
         <KeyboardScreen style={styles.screen}>
             <Stack.Screen options={{ title: t('label.Create') }} />
             <KeyboardFormScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
                 <FormHeader modelLabel={modelLabel} modality={kindOf(model.modality) ?? model.modality} stageLine={stageLine} stage={results ? <CreateResult api={api} batch={results} catalog={catalog} onTerminal={resultSettled} /> : undefined}
                     onTemplates={!template && !results ? () => router.push('/create/presets') : undefined} />
-
                 {template ? <TemplateBanner template={template} aspect={options.aspects.length ? opts.aspect : null} /> : null}
                 {startId && takesStartImage ? <Text variant="caption" tone="tertiary" style={styles.consent} accessibilityLiveRegion="polite">{startProblem ?? t('oddlings.animate.startNote')}</Text> : null}
                 {['swap-recast', 'swap-quick'].includes(model.id) ? <Text variant="caption" tone="secondary" style={styles.consent}>{t('app.create.swapConsentNotice')}</Text> : null}
@@ -407,7 +403,7 @@ export default function CreateWithModel() {
                         </View>
                     </View>
                 ) : null}
-                <View style={styles.section}><AttachMore hasSlots={slots.length > 0} api={api} current={model} carry={attachCarry} settings={{ opts, cameraOn, cinema, characterOn, character }} references={references} previous={handedSources ?? undefined} blocked={waiting} onBusy={setAttaching} onPlaced={placeAttached} /></View>
+                {!swapScene && <View style={styles.section}><AttachMore hasSlots={slots.length > 0} api={api} current={model} carry={attachCarry} settings={{ opts, cameraOn, cinema, characterOn, character }} references={references} previous={handedSources ?? undefined} blocked={waiting} onBusy={setAttaching} onPlaced={placeAttached} /></View>}
                 {text_ ? (
                     <View style={styles.section}>
                         <View style={styles.sectionTop}>
@@ -487,7 +483,6 @@ export default function CreateWithModel() {
         </KeyboardScreen>
     );
 }
-
 // What Generate will cost, said before it is pressed. Free runs left today are applied first.
 function costLine(price: number, n: number, freeLeft: number, unit: number): string {
     if (price === 0) return t('opt.costFree');

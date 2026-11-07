@@ -119,3 +119,14 @@ test('a lost reply followed by a rate-limit refusal keeps the same key until a p
     expect(mockCreate.mock.calls.at(-1)![0].idempotencyKey).not.toBe(key);
 });
 
+
+test('scene retry after a lost response reuses its key; changing scene rotates the request and key', async () => {
+    const submit = createGenerationSubmit(), sceneRequest = { ...request, swap: 'scene-a' };
+    mockCreate.mockRejectedValue(new ApiError(0, 'network'));
+    await expect(submit.run(api, sceneRequest)).rejects.toMatchObject({ code: 'network' });
+    await expect(submit.run(api, { ...sceneRequest })).rejects.toMatchObject({ code: 'network' });
+    expect(mockCreate.mock.calls[1][0]).toEqual(mockCreate.mock.calls[0][0]);
+    await expect(submit.run(api, { ...sceneRequest, swap: 'scene-b' })).rejects.toMatchObject({ code: 'network' });
+    expect(mockCreate.mock.calls[2][0].swap).toBe('scene-b');
+    expect(mockCreate.mock.calls[2][0].idempotencyKey).not.toBe(mockCreate.mock.calls[0][0].idempotencyKey);
+});
