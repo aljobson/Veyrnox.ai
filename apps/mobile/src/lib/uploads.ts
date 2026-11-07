@@ -1,6 +1,9 @@
 import { t } from './i18n';
 import { ApiError, type ApiClient } from './api';
 
+// The most uploaded-but-unused files one account can hold (the server's MAX_PENDING_UPLOADS). Unused ones clear after 24 hours.
+export const MAX_UNUSED_UPLOADS = 20;
+
 interface UploadGrant {
     readonly key: string;
     readonly upload_url: string;
@@ -60,7 +63,9 @@ export function uploadMessage(err: unknown): string {
         case 'insufficient_credits':
             return t('uploads.youneedcreditstouploadafile');
         case 'too_many_pending_uploads':
+            return t('uploads.unusedFull', { max: MAX_UNUSED_UPLOADS });
         case 'upload_budget_exceeded':
+            return t('uploads.allowanceFull', { max: MAX_UNUSED_UPLOADS });
         case 'rate_limited':
             return t('uploads.toomanyuploadsrightnowWaita');
         case 'upload_too_large':
