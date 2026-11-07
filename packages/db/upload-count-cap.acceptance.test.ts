@@ -11,6 +11,8 @@ describe('upload count cap (0446)', { skip: !process.env.DATABASE_URL }, () => {
     const one = async (sql: string, args: unknown[] = []) => (await pool.query(sql, args)).rows[0];
     before(async () => {
         pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 12 });
+        // Production has this column from the account-deletion migration; check_upload_batch_budget (0401) reads it.
+        await pool.query(`ALTER TABLE public.users ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ`);
         for (const name of ['0037_free_credit_expiry.sql', '0038_free_credit_sweep_fixes.sql',
             '0071_signup_grant_on_email_confirmation.sql', '0129_upload_reservations.sql', '0446_upload_count_cap_20.sql', '0446_upload_count_cap_20.sql']) {
             await pool.query(await readFile(new URL(`./schema/supabase/${name}`, import.meta.url), 'utf8'));
