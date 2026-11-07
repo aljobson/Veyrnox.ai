@@ -1,6 +1,6 @@
 # Smart Cut — timed transcription and silence removal
 
-**Status:** production foundation plus provider decision; provider submission and billing are not enabled.
+**Status:** server and phone implementation draft built; flags OFF, model inactive, migrations unapplied. Regression suites are added; database execution and reserved fal admission integration remain unverified; see [speech-cut ADR](../adr/0331-mobile-speech-cut.md).
 **Extends:** [Clip Editor PRD](./PRD.md) and [captions addendum](./CAPTIONS.md).
 
 ## Product slice
@@ -62,12 +62,12 @@ Official candidate documentation:
 
 Analysis is a separate, explicit user action—not a side effect of opening Smart Cut.
 
-1. An authenticated `POST /api/v1/editor/smart-cut-analyses` accepts owned Asset ids plus confirmed credits and an idempotency key.
-2. The server rate-limits first, resolves ownership and stored media metadata, then debits once using the normal ledger path.
+1. An authenticated `POST /api/v1/editor/speech-analyses` accepts only `{source:{type:'job',jobId}, duration, expectedCredits, idempotencyKey}` for owned stored jobs. Project assets and local-device clips are excluded.
+2. Read quota covers quote/status/replay. New admissions verify ownership, persist a bounded server probe and compare duration and catalog price before generation quota and one ledger debit.
 3. One queued analysis step per unique source receives a short-lived presigned R2 URL. Signed webhooks normalize the provider payload into the versioned contract. The persistence envelope—not the browser contract—stores it against `(user_id, asset_id, source_fingerprint, schema_version)` and verifies that fingerprint before returning the analysis.
-4. The client polls the ordinary job status. Completed records are returned only to their owner; raw provider payloads and signed URLs never reach the browser.
-5. Planning is deterministic and free: it reads completed analyses, derives ranges locally, and sends those ranges through the existing `clip-edit` generation path.
-6. Any analysis failure refunds the analysis charge once. Rendering remains a separate confirmed charge because the user can review or abandon the plan before creating a video.
+4. The client polls the owner-only analysis/by-key endpoints (three-minute phone deadline). Completed records are returned only to their owner; raw provider payloads and signed URLs never reach the browser.
+5. Planning is deterministic and free: the phone derives ranges locally and applies them to its timeline as one Undo entry. Export/render remains the editor's separate action.
+6. Definitive failure refunds once. Ambiguous submission waits for a signed callback or the speech-specific 15-minute timeout; it never triggers immediate resubmission or refund. Rendering remains a separate confirmed charge because the user can review or abandon the plan before creating a video.
 
 The source fingerprint must change when the stored object changes, preventing a transcript from being reused against different bytes with the same logical id. Analysis retention follows the source Asset; deleting the source deletes its transcript and timed chunks.
 
@@ -80,9 +80,9 @@ The source fingerprint must change when the stored object changes, preventing a 
 
 ## Follow-on slices
 
-1. Migration for analysis jobs/results plus row-level ownership tests.
-2. Queue submit/webhook normalization with refund and replay tests.
+1. Schema/RPCs and money acceptance tests exist in 0451/0452 and `packages/db/speechAnalysis.acceptance.test.ts`. Execution needs an owner-provisioned local database. Direct `ledger_debit` is refused by reserved-only fal policy; the proposed admission-flow deviation needs owner review before launch.
+2. Submission, signed webhook dispatch, metadata-only deduplication, refunds and recovery have injected node:test regression coverage. Live failure webhooks remain unprobed.
 3. Extended provider probe for long clips, additional languages/codecs and signed webhook failures.
-4. Explicit “Analyse speech · N cr” UI and job progress.
+4. Phone quote/confirmation, progress, reviewable silence/retake suggestions and atomic Apply remain flag-off, with planner parity and installed test-renderer coverage. The host waived ARTEMIS exploration; device layout/accessibility checks remain unperformed.
 5. Script-to-transcript alignment and alternate-take comparison.
 6. Optional filler-word suggestions; never remove uncertain words without review.

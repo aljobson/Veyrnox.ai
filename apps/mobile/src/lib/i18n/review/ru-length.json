@@ -3282,6 +3282,18 @@
     "ratio": 2.67
   },
   {
+    "id": "editorAi.apply",
+    "english": "Apply",
+    "translation": "Применить",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorAi.edge.out",
+    "english": "end",
+    "translation": "конец",
+    "ratio": 1.67
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

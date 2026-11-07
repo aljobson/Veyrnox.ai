@@ -45,6 +45,7 @@ let jwksCache = null;
  * @param {string} cfg.falKey            FAL_KEY (Backend secret)
  * @param {string} cfg.webhookBaseUrl    Our host + /api/webhook/fal (public)
  * @param {number} [cfg.timeoutMs=15000] submit timeout
+ * @param {boolean} [cfg.sanitisedSubmission=false] suppress upstream bodies and exception messages
  * @param {typeof fetch} [fetchImpl=fetch] Internal transport injection for isolated exercises.
  * @returns {Promise<{ok: boolean, outcome: 'accepted'|'rejected'|'unknown', providerJobId?: string, statusUrl?: string, error?: string}>}
  */
@@ -98,17 +99,17 @@ export async function submitJob(job, cfg, fetchImpl = fetch) {
             });
         } catch (err) {
             const msg = err && err.message;
-            console.error('fal submit transport error:', msg);
-            return { ok: false, outcome: 'unknown', error: `transport: ${msg}` };
+            console.error('fal submit transport error:', cfg.sanitisedSubmission ? 'transport_failed' : msg);
+            return { ok: false, outcome: 'unknown', error: cfg.sanitisedSubmission ? 'transport_failed' : `transport: ${msg}` };
         }
 
         if (!res.ok) {
             const bytes = await readBoundedBody(res.body, 128 * 1024, controller.signal).catch(() => null);
             const text = bytes ? new TextDecoder().decode(bytes) : '';
-            console.error('fal submit non-ok:', res.status, text.slice(0, 200));
+            console.error('fal submit non-ok:', res.status, cfg.sanitisedSubmission ? 'upstream_error' : text.slice(0, 200));
             // A timeout or server error can follow acceptance of the request.
             const outcome = res.status >= 400 && res.status < 500 && res.status !== 408 ? 'rejected' : 'unknown';
-            return { ok: false, outcome, error: `fal ${res.status}: ${text.slice(0, 200)}` };
+            return { ok: false, outcome, error: cfg.sanitisedSubmission ? 'upstream_error' : `fal ${res.status}: ${text.slice(0, 200)}` };
         }
         /** @type {any} */
         let data;

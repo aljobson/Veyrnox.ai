@@ -13,6 +13,7 @@ const domains: Record<string, readonly string[]> = {
     'app.create.error.{}': ['price_changed', 'admission_unknown', 'admission_unavailable'],
     'wins.{}': ['week', 'all', 'creations', 'posts', 'streak', 'image', 'videoType', 'audio', 'other', 'first_image', 'first_video', 'creations_10', 'creations_50', 'first_post', 'first_cinema_upload', 'streak_7'],
     'mediaKind.{}': ['image', 'video', 'audio', 'text'],
+    'editorSpeech.{}': ['silences', 'retakes', 'quoting', 'queued', 'transcribing', 'planning'],
     'editor.track.{}': ['video', 'audio', 'text'],
     'start.continue.{}': ['photo', 'video', 'reference', 'prompt'],
     'credits.plan.{}': ['lite', 'starter', 'plus', 'ultra'],

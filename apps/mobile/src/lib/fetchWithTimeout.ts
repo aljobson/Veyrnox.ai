@@ -3,7 +3,7 @@ export const REQUEST_TIMEOUT_MS = 30_000;
 export class RequestTimeout extends Error {}
 
 // Race as well as abort: a transport that ignores its signal must still settle.
-export async function fetchWithTimeout(doFetch: typeof fetch, url: string, init: RequestInit): Promise<Response> {
+export async function fetchWithTimeout(doFetch: typeof fetch, url: string, init: RequestInit, timeoutMs = REQUEST_TIMEOUT_MS): Promise<Response> {
     const controller = new AbortController();
     const caller = init.signal;
     // RN 0.88 supports any(); caller cancellation still reaches a streamed body
@@ -23,7 +23,7 @@ export async function fetchWithTimeout(doFetch: typeof fetch, url: string, init:
             const reason = new RequestTimeout();
             reject(reason);
             controller.abort(reason);
-        }, REQUEST_TIMEOUT_MS);
+        }, timeoutMs);
     });
     try {
         if (caller?.aborted) return await stopped;

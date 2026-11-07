@@ -1,3 +1,4 @@
+import { speechCutLanguage } from '../../../lib/speechCutLanguage.js';
 export const SMART_CUT_ANALYSIS_VERSION = 1;
 export const SMART_CUT_PRIMARY_ANALYSIS_PROVIDER = 'fal-scribe-v2';
 export const SMART_CUT_ANALYSIS_PROVIDERS = Object.freeze([SMART_CUT_PRIMARY_ANALYSIS_PROVIDER, 'fal-wizper']);
@@ -50,7 +51,7 @@ export function parseSmartCutAnalysis(value, { assetId, duration } = {}) {
       duration: round(value.duration),
       provider: value.provider,
       transcript: cleanText(value.transcript),
-      language: value.language || null,
+      language: speechCutLanguage(value.language),
       chunks,
     },
   };
@@ -121,7 +122,7 @@ function transcriptGroups(analysis, clip, minimumSeconds) {
   const groups = [];
   for (const entry of entries) {
     const previous = groups.at(-1);
-    if (!previous || entry.start - previous.end > minimumSeconds) {
+    if (!previous || entry.start - previous.end >= minimumSeconds) {
       groups.push({ takeId: clip.id, start: entry.start, end: entry.end, entries: [entry] });
     } else {
       previous.end = Math.max(previous.end, entry.end);

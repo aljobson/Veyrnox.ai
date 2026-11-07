@@ -1764,6 +1764,24 @@
     "ratio": 3.29
   },
   {
+    "id": "editorAi.edge.out",
+    "english": "end",
+    "translation": "النهاية",
+    "ratio": 2.33
+  },
+  {
+    "id": "editorSpeech.queued",
+    "english": "Analysis queued…",
+    "translation": "التحليل في قائمة الانتظار…",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorSpeech.keep",
+    "english": "Keep {time}",
+    "translation": "الاحتفاظ بـ {time}",
+    "ratio": 1.64
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "تسجيل الدخول",

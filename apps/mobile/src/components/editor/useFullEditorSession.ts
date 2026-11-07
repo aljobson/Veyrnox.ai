@@ -29,6 +29,8 @@ export function useFullEditorSession({ projectId, jobId, onOwnerChange = () => {
     const mounted = useRef(true);
     const documentRef = useRef<ProjectDocument | null>(null);
     const revisionRef = useRef(0);
+    // Local monotonic freshness, independent of save revisions and timeline.seq.
+    const editRevisionRef = useRef(0);
     const dirtyRef = useRef(false);
     const syncRef = useRef<EditorSaveSync | null>(null);
     const pastRef = useRef<ProjectDocument[]>([]);
@@ -73,6 +75,7 @@ export function useFullEditorSession({ projectId, jobId, onOwnerChange = () => {
             setHistory({ canUndo: true, canRedo: false });
         }
         next = mergeBackups(next);
+        editRevisionRef.current++;
         documentRef.current = next;
         dirtyRef.current = true;
         setDocument(next);
@@ -82,6 +85,7 @@ export function useFullEditorSession({ projectId, jobId, onOwnerChange = () => {
 
     const applyBackup = useCallback((mediaId: string, source: NonNullable<Media['assetSource']>) => {
         if (!syncRef.current?.live()) return;
+        editRevisionRef.current++;
         backups.current[mediaId] = source;
         pastRef.current = pastRef.current.map(mergeBackups);
         futureRef.current = futureRef.current.map(mergeBackups);
@@ -89,6 +93,7 @@ export function useFullEditorSession({ projectId, jobId, onOwnerChange = () => {
     }, [mergeBackups]);
 
     const baseline = useCallback((head: DocumentHead) => {
+        editRevisionRef.current++;
         documentRef.current = head.document; revisionRef.current = head.revision; dirtyRef.current = false;
         pastRef.current = []; futureRef.current = [];
         setSelection(null); setSelections([]); setClipboard(null);
@@ -116,7 +121,7 @@ export function useFullEditorSession({ projectId, jobId, onOwnerChange = () => {
         finally { token.end(); }
     }, [api, jobId, markDocument]);
     const sync = useEditorSaveSync({ api, projectId, name, documentRef, revisionRef, dirtyRef, baseline, markDocument, mergeBackups, problem, setProblem, onOwnerChange, onCopy, entryImport,
-        clearDocument: () => { documentRef.current = null; setDocument(null); setPlaying(false); },
+        clearDocument: () => { editRevisionRef.current++; documentRef.current = null; setDocument(null); setPlaying(false); },
     });
     syncRef.current = sync;
     const { save, leaveEditor, beginImport, replacing, saveStatus, dirty, revision, saving } = sync;
@@ -187,5 +192,5 @@ export function useFullEditorSession({ projectId, jobId, onOwnerChange = () => {
         return documentRef.current;
     };
 
-    return { beginImport, replacing, leaveEditor, saveStatus, sync, currentDocument: () => documentRef.current, preparePicked, savedDocument, applyBackup, api, router, name, document, revision, dirty, saving, problem, setProblem, tool, setTool, selection, setSelection, selections, setSelections, multiSelect, setMultiSelect, clipboard, setClipboard, snap, setSnap, ripple, setRipple, zoom, setZoom, privacyNotice, history, frameStore, setFrame, playing, setPlaying, projectAssets, localMediaUris, setLocalMediaUris, libraryKind, setLibraryKind, markDocument, save, acknowledgePrivacy, travel };
+    return { getEditRevision: () => editRevisionRef.current, beginImport, replacing, leaveEditor, saveStatus, sync, currentDocument: () => documentRef.current, preparePicked, savedDocument, applyBackup, api, router, name, document, revision, dirty, saving, problem, setProblem, tool, setTool, selection, setSelection, selections, setSelections, multiSelect, setMultiSelect, clipboard, setClipboard, snap, setSnap, ripple, setRipple, zoom, setZoom, privacyNotice, history, frameStore, setFrame, playing, setPlaying, projectAssets, localMediaUris, setLocalMediaUris, libraryKind, setLibraryKind, markDocument, save, acknowledgePrivacy, travel };
 }

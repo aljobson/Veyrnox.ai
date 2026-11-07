@@ -31,7 +31,7 @@ export interface ClientTask {
     current(): boolean;
 }
 
-export interface CallOptions { readonly owner?: string; readonly task?: ClientTask }
+export interface CallOptions { readonly owner?: string; readonly task?: ClientTask; readonly timeoutMs?: number }
 
 export interface ApiClientOptions {
     readonly beginSessionTask?: () => ClientTask;
@@ -61,12 +61,12 @@ export interface ApiClient {
 }
 
 export function createApiClient(options: ApiClientOptions): ApiClient {
-    async function send(path: string, init: RequestInit, token: string, doFetch: typeof fetch): Promise<Response> {
+    async function send(path: string, init: RequestInit, token: string, doFetch: typeof fetch, timeoutMs?: number): Promise<Response> {
         try {
             const response = await fetchWithTimeout(doFetch, `${options.baseUrl}${path}`, {
                 ...init,
                 headers: { ...(init.headers as Record<string, string>), Authorization: `Bearer ${token}` },
-            });
+            }, timeoutMs);
             markOnline();
             return response;
         } catch (error) {
@@ -77,7 +77,7 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
     }
 
     // Sends with the current token; after a 401 refreshes once and retries.
-    async function authed(path: string, init: RequestInit, doFetch: typeof fetch, task?: ClientTask, owner?: string): Promise<Response> {
+    async function authed(path: string, init: RequestInit, doFetch: typeof fetch, task?: ClientTask, owner?: string, timeoutMs?: number): Promise<Response> {
         const check = () => { if (task && !task.current()) throw new ApiError(401, 'account_changed'); };
         const tokenFor = async (force: boolean) => {
             check();
@@ -99,13 +99,13 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
             throw new ApiError(401, 'account_changed');
         }
         const user = task?.user ?? tokenUser(token);
-        let res = await send(path, init, token, doFetch);
+        let res = await send(path, init, token, doFetch, timeoutMs);
         if (res.status === 401) {
             check();
             const retryToken = await tokenFor(true);
             check();
             if (task && retryToken && tokenUser(retryToken) !== user) throw new ApiError(401, 'account_changed');
-            if (retryToken && retryToken !== token) res = await send(path, init, retryToken, doFetch);
+            if (retryToken && retryToken !== token) res = await send(path, init, retryToken, doFetch, timeoutMs);
             if (res.status === 401) {
                 check();
                 lost();
@@ -118,23 +118,38 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
     async function request<T>(path: string, init: RequestInit = {}, call: CallOptions = {}): Promise<T> {
         const task = call.task ?? options.beginSessionTask?.();
         await options.beforeSend?.(path, init.method ?? 'GET');
-        const res = await authed(path, init, fetch, task, call.owner);
-        let body: unknown;
-        try { body = await res.json(); }
-        catch { if (res.ok) throw new ApiError(res.status, 'bad_response'); }
-        if (!res.ok) {
-            const errorBody = isRecord(body) ? body : {};
-            const wait = Number(res.headers.get('retry-after'));
-            throw new ApiError(res.status, typeof errorBody.error === 'string' ? errorBody.error : 'unknown',
-                wait > 0 ? { ...errorBody, retryAfterSeconds: wait } : errorBody);
-        }
-        return body as T;
+        // Explicit endpoint deadlines cover the complete JSON response as well as headers.
+        // Consent stays outside the clock; the caller must be allowed time to decide.
+        const controller = call.timeoutMs ? new AbortController() : null;
+        const timedInit = controller ? { ...init, signal: init.signal ? AbortSignal.any([init.signal, controller.signal]) : controller.signal } : init;
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        const stopped = call.timeoutMs ? new Promise<never>((_, reject) => {
+            timer = setTimeout(() => {
+                const error = new ApiError(0, 'network', { timedOut: true });
+                controller!.abort(error); markOffline(); reject(error);
+            }, call.timeoutMs);
+        }) : null;
+        const read = async () => {
+            const res = await authed(path, timedInit, fetch, task, call.owner, call.timeoutMs);
+            let body: unknown;
+            try { body = await res.json(); }
+            catch { if (res.ok) throw new ApiError(res.status, 'bad_response'); }
+            if (!res.ok) {
+                const errorBody = isRecord(body) ? body : {};
+                const wait = Number(res.headers.get('retry-after'));
+                throw new ApiError(res.status, typeof errorBody.error === 'string' ? errorBody.error : 'unknown',
+                    wait > 0 ? { ...errorBody, retryAfterSeconds: wait } : errorBody);
+            }
+            return body as T;
+        };
+        try { return stopped ? await Promise.race([read(), stopped]) : await read(); }
+        finally { clearTimeout(timer); }
     }
 
     async function stream(path: string, init: RequestInit = {}, call: CallOptions = {}): Promise<Response> {
         const task = call.task ?? options.beginSessionTask?.();
         await options.beforeSend?.(path, init.method ?? 'GET');
-        return authed(path, init, options.streamFetch ?? fetch, task, call.owner);
+        return authed(path, init, options.streamFetch ?? fetch, task, call.owner, call.timeoutMs);
     }
 
     return {
