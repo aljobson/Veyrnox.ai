@@ -316,7 +316,7 @@ function AppSidebar({ sections, homeLabel, logoLabel, accountLabel, accountHref,
                       <li key={item.href}>
                         <Link
                           href={item.href}
-                          title={item.label}
+                          title={item.hint ? `${item.label} — ${item.hint}` : item.label}
                           aria-current={current ? 'page' : undefined}
                           className={`flex min-h-10 items-center rounded-xl text-[13px] font-medium ${
                             rail ? 'justify-center px-0' : 'gap-2.5 px-2.5'
@@ -327,7 +327,12 @@ function AppSidebar({ sections, homeLabel, logoLabel, accountLabel, accountHref,
                           }`}
                         >
                           <Icon name={item.icon} size={16} />
-                          {!rail && <span className="min-w-0 truncate">{item.label}</span>}
+                          {!rail && (
+                            <span className="min-w-0">
+                              <span className="block truncate">{item.label}</span>
+                              {item.hint && <span className="block truncate text-[11px] font-normal text-vx-fg-muted">{item.hint}</span>}
+                            </span>
+                          )}
                         </Link>
                       </li>
                     );
@@ -361,7 +366,6 @@ export function AppNav({ balance, active, readAccount = true }) {
     { key: 'features', href: '/app/features', label: t('label.Tools') },
     // Video agent (ADR-0074): bought from a plan on its own page, so it has its own tab and is not in the Create picker.
     { key: 'agent', href: '/app/video-agent', label: t("app.nav.videoAgent") },
-    { key: 'skills', href: '/app/skills', label: t('label.Studio skills') },
     { key: 'chat', href: '/app/chat', label: t("label.LLM Chat") },
     { key: 'film', href: '/app/film-studio', label: t("label.Film Studio") },
     { key: 'library', href: '/app/library', label: t("label.Library") },
@@ -376,6 +380,8 @@ export function AppNav({ balance, active, readAccount = true }) {
   const activeCandidates = [
     ...items,
     ...utilityItems,
+    // Skills are chat presets (ADR-0073): reached from Chat and Create, shown in the sidebar, not a top-level destination.
+    { key: 'skills', href: '/app/skills' },
     { key: 'cinema', href: '/social-cinema' },
   ];
   const activeKey = active ?? activeStudioDestination(pathname, activeCandidates);
@@ -391,12 +397,12 @@ export function AppNav({ balance, active, readAccount = true }) {
     { id: 'agents', label: t('app.nav.side.agents'), items: [
       { key: 'skills', href: '/app/skills', label: t('label.Studio skills'), icon: 'wand' },
       { key: 'chat', href: '/app/chat', label: t('label.LLM Chat'), icon: 'chat' },
-      { key: 'agent', href: '/app/video-agent', label: t('app.nav.videoAgent'), icon: 'agent' },
+      { key: 'agent', href: '/app/video-agent', label: t('app.nav.videoAgent'), hint: t('app.nav.videoAgentHint'), icon: 'agent' },
     ] },
     { id: 'tools', label: t('app.nav.side.tools'), items: [
       { key: 'create', href: '/app/create', label: t('label.Create'), icon: 'image' },
       { key: 'features', href: '/app/features', label: t('label.Tools'), icon: 'wand' },
-      { key: 'film', href: '/app/film-studio', label: t('label.Film Studio'), icon: 'film' },
+      { key: 'film', href: '/app/film-studio', label: t('label.Film Studio'), hint: t('app.nav.filmStudioHint'), icon: 'film' },
       { key: 'oddlings', href: '/app/oddlings', label: t('label.Oddlings'), icon: 'character' },
       ...(enhanceEnabled ? [{ key: 'enhance', href: '/app/enhance', label: t('label.Enhance'), icon: 'wand' }] : []),
       ...(editorEnabled ? [{ key: 'editor', href: '/app/editor', label: t('label.Video editor'), icon: 'scissors' }] : []),
