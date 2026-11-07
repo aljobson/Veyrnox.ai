@@ -21,7 +21,10 @@ jest.mock('../src/lib/languageStore', () => ({ readLanguage: () => mockStored, l
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ generation: 0, sessionGeneration: () => 0, beginSessionTask: () => ({ gen: 0, user: 'u', current: () => true, tokens: async () => null }), status: mockStatus, canReloadSession: () => false, api: {} }) }));
 jest.mock('expo', () => ({ reloadAppAsync: jest.fn() }));
 jest.mock('../src/components/BrandSplash', () => ({ BrandSplash: (props: any) => require('react').createElement('splash', props) }));
-const pastSplash = async () => { await act(async () => root.container.queryAll(n => n.type === 'splash')[0].props.onContinue()); };
+jest.mock('../src/components/BrandHeader', () => ({ BrandHeader: () => require('react').createElement('brand-header') }));
+jest.mock('../src/components/Reveal', () => ({ Reveal: ({ active, index, children }: any) => require('react').createElement('reveal', { active, index }, children) }));
+const pastSplash = async () => { await act(async () => root.container.queryAll(n => n.type === 'splash')[0].props.onFinish()); };
+const choiceHidden = () => root.container.queryAll(n => n.props.importantForAccessibility === 'no-hide-descendants').length;
 jest.mock('expo-router', () => {
     const React = require('react');
     const Tabs = ({ children }: any) => React.createElement('tabs', null, children);
@@ -99,18 +102,29 @@ test('Account chooser returns on reselecting the current language without storag
     expect(saveLanguage).not.toHaveBeenCalled();
     expect(reloadAppAsync).not.toHaveBeenCalled();
 });
-test('first launch opens on the brand page, then the language choice', async () => {
+test('first launch fades the brand page into the language choice, which sits underneath from the start', async () => {
     await act(async () => root.render(<LanguageGate active={['en', 'es']}><RN.Text>Sign-in fixture</RN.Text></LanguageGate>));
     expect(root.container.queryAll(n => n.type === 'splash')).toHaveLength(1);
-    expect(root.container.queryAll(n => n.props.label === 'English')).toHaveLength(0);
+    expect(root.container.queryAll(n => n.props.label === 'English')).toHaveLength(1);
+    expect(choiceHidden()).toBe(1);
+    expect(root.container.queryAll(n => n.type === 'brand-header')).toHaveLength(1);
+    // The rows wait, unseen, until the splash starts to dissolve, then ease in under it.
+    expect(root.container.queryAll(n => n.type === 'reveal').map(n => n.props.active)).toEqual([false, false]);
+    await act(async () => root.container.queryAll(n => n.type === 'splash')[0].props.onFadeStart());
+    expect(root.container.queryAll(n => n.type === 'reveal').map(n => n.props.active)).toEqual([true, true]);
+    expect(root.container.queryAll(n => n.type === 'reveal').map(n => n.props.index)).toEqual([0, 1]);
     await pastSplash();
     expect(root.container.queryAll(n => n.type === 'splash')).toHaveLength(0);
     expect(root.container.queryAll(n => n.props.label === 'English')).toHaveLength(1);
+    expect(choiceHidden()).toBe(0);
 });
 test('the account language screen does not repeat the brand page', async () => {
     mockStatus = 'signedIn';
     await act(async () => root.render(<LanguageChoice active={['en', 'es']} returnPath="/language" />));
     expect(root.container.queryAll(n => n.type === 'splash')).toHaveLength(0);
+    expect(root.container.queryAll(n => n.type === 'brand-header')).toHaveLength(0);
+    expect(root.container.queryAll(n => n.type === 'reveal')).toHaveLength(0);
+    expect(root.container.queryAll(n => n.props.label === 'English')).toHaveLength(1);
 });
 test('first launch remembers an unchanged device language and advances to sign-in without reload', async () => {
     await act(async () => root.render(<LanguageGate active={['en', 'es']}><RN.Text>Sign-in fixture</RN.Text></LanguageGate>));
