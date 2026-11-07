@@ -183,16 +183,15 @@ const sourceModels = async () => {
 };
 const chooseImage = () => t('sourcePicker.choosefor', { value1: 'image', value2: t('sources.image') });
 const library = () => t('libsrc.chooseLabel', { kind: 'image', slot: t('sources.image') });
-test('required source Library selection needs explicit rights and sends asset references', async () => {
+test('required source Library selection sends asset references with the Terms-based rights consent', async () => {
     await sourceModels(); expect(disabled(paid())).toBe(true); expect(control(library())).toBeDefined();
-    await press(library()); await press('Pick test asset'); expect(disabled(paid())).toBe(true);
-    await press(t('form.sourceRights')); expect(disabled(paid())).toBe(false); await press(paid());
+    await press(library()); await press('Pick test asset'); expect(disabled(paid())).toBe(false); await press(paid());
     expect(mockCreate.mock.calls[0][0]).toMatchObject({ references: [{ slot: 'image', origin: 'asset', asset_id: 'asset' }], sourceRights: true });
 });
-test('model changes remount source rows and reset rights and options', async () => {
-    await sourceModels(); await press(library()); await press('Pick test asset'); await press(t('form.sourceRights')); await press('3');
+test('model changes remount source rows and reset options', async () => {
+    await sourceModels(); await press(library()); await press('Pick test asset'); await press('3');
     await press(`B, ${plural('chat.make.from', 2)}`);
-    expect(control(chooseImage())).toBeDefined(); expect(control(t('form.sourceRights'))).toBeUndefined(); expect(disabled(paid())).toBe(true);
+    expect(control(chooseImage())).toBeDefined(); expect(disabled(paid())).toBe(true);
     expect(control('1').props.accessibilityState.selected).toBe(true);
 });
 test('an upload finishing after a model switch cannot fill the new slot', async () => {
@@ -201,7 +200,7 @@ test('an upload finishing after a model switch cannot fill the new slot', async 
     jest.mocked(uploadSource).mockReturnValueOnce(upload.promise);
     await press(chooseImage()); await press(`B, ${plural('chat.make.from', 2)}`);
     await act(async () => upload.resolve('uploads/late'));
-    expect(control(chooseImage())).toBeDefined(); expect(control(t('form.sourceRights'))).toBeUndefined(); expect(disabled(paid())).toBe(true);
+    expect(control(chooseImage())).toBeDefined(); expect(disabled(paid())).toBe(true);
 });
 test('reopening the same model restores its first aspect and clears results', async () => {
     await press('16:9'); await press(paid()); await reopen();

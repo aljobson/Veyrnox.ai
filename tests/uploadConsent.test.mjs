@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
 const route = read('../app/api/v1/generations/route.js');
 const page = read('../app/veyrnox/app/create/page.js');
-const confirmation = read('../app/veyrnox/_components/SourceRightsConfirmation.jsx');
+const terms = read('../lib/i18n/messages/legal/en/terms.mjs');
 const errors = read('../app/veyrnox/_lib/createErrors.js');
 const aup = read('../lib/i18n/messages/legal/en/aup.mjs');
 const legalNav = read('../app/legal/_lib/Legal.js');
@@ -29,19 +29,14 @@ test('the statement is recorded on the job through the RPC, not a direct write',
     }
 });
 
-test('the create page blocks Generate until the box is ticked, and sends it', () => {
-    assert.match(page, /const missingConsent = hasUpload && !consent;/);
-    assert.match(page, /missingSource \|\| missingConsent\)\) \|\| \(!!activeBatch && \(balance == null \|\| payable > balance\)\) \|\| !!activeBatch\?\.confirm\}/);
+test('the create page asks for no tick: the Terms carry the statement and the request still sends consent', () => {
+    assert.match(page, /const missingConsent = false;/);
+    assert.ok(!page.includes('SourceRightsConfirmation'));
     // Sent whenever any source is attached: an upload or a Library image.
     assert.match(page, /const anySource = source_keys\.length \+ source_assets\.length > 0;/);
     assert.match(page, /consent: anySource \? true : undefined,/);
-    assert.match(page, /<SourceRightsConfirmation confirmed=\{consent\} onChange=\{setConsent\}/);
-    assert.match(confirmation, /I own this file, or I have the permission of everyone identifiable in it/);
-    assert.match(confirmation, /href="\/legal\/aup"/);
-    assert.match(confirmation, /checked=\{confirmed\}/);
-    assert.match(confirmation, /onChange\(event\.target\.checked\)/);
-    assert.match(confirmation, /h-11 w-11/);
-    assert.match(confirmation, /role="status".*data-confirmed=\{confirmed\}/);
+    assert.match(terms, /By attaching a file to a generation you confirm that you own it or have the permission of everyone identifiable in it/);
+    assert.match(aup, /By uploading a file or attaching it to a generation you confirm this/);
     assert.match(page, /data-create-cost-card/);
     const css = read('../app/veyrnox/veyrnox.css');
     assert.match(css, /html\[data-vey-mobile-workspace="true"\] \[data-create-cost-card\]\s*\{\s*position: static;/);

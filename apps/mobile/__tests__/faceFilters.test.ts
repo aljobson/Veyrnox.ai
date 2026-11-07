@@ -109,11 +109,10 @@ declare const __dirname: string;
 const fs = require('fs');
 const path = require('path');
 const read = (p: string) => fs.readFileSync(path.resolve(__dirname, p), 'utf8') as string;
-test('rights wording matches binding source and web statement; version belongs to server', () => {
-    const binding = read('../../../lib/i18n/messages/legal/en/binding.mjs');
-    const text = JSON.parse(binding.match(/"sourceRights": (".*"),/)![1]);
-    expect(strings['faceFilters.rights']).toBe(text.replace('{policy}', 'Acceptable Use'));
-    expect(read('../../../app/veyrnox/_components/SourceRightsConfirmation.jsx')).toContain('id="sourceRights"');
+test('the rights statement lives in the Terms and Acceptable Use Policy; version belongs to server', () => {
+    // No checkbox: attaching a file is the confirmation, recorded by the gateway with the wording version.
+    expect(read('../../../lib/i18n/messages/legal/en/terms.mjs')).toContain('By attaching a file to a generation you confirm that you own it');
+    expect(read('../../../lib/i18n/messages/legal/en/aup.mjs')).toContain('By uploading a file or attaching it to a generation you confirm this');
     expect(read('../../../app/api/v1/generations/route.js')).toContain("RIGHTS_ATTESTATION_VERSION = 'aup-2026-09-26'");
 });
 test('both front doors use shared submission; result uses existing poll and output helpers', () => {

@@ -41,14 +41,13 @@ describe('guided creative feature registry', () => {
         expect(detail).toContain("t('features.rEQUIREDSOURCES')");
         expect(en['features.rEQUIREDSOURCES']).toBe('REQUIRED SOURCES');
         expect(detail).toContain('<SourcePicker');
-        expect(detail).toContain('accessibilityRole="checkbox"');
+        expect(detail).not.toContain('accessibilityRole="checkbox"');
         expect(detail).toContain('stageCreativeSourceHandoff');
         expect(detail).toContain("feature.kind === 'video' ? '9:16' : '1:1'");
         expect(detail).not.toContain('model.name');
         expect(create).toContain('readCreativeSourceHandoff');
-        expect(create).toContain('sourceRights: hasReference ? sourceRights : undefined');
-        expect(create).toContain("english('form.sourceRights')");
-        expect(create).toContain('accessibilityLanguage="en" accessibilityLabel={english(');
+        expect(create).toContain('sourceRights: hasReference ? true : undefined');
+        expect(create).not.toContain("english('form.sourceRights')");
         expect(create).toContain('o.aspects.includes(guidedAspect)');
     });
 });

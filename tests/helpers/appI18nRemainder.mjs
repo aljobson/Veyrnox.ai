@@ -5,7 +5,7 @@ import { ODDLING_ARCHETYPES } from '../../app/veyrnox/_lib/character.js';
 import { CHARACTER_GROUPS } from '../../app/veyrnox/_lib/character.js';
 import { SLIDER_SCALES, SWATCHES } from '../../app/veyrnox/_lib/oddlingCatalog.js';
 export const files = Object.fromEntries(Object.entries({
- camera:'CameraPanel.js',goal:'CreateGoalPicker.js',download:'DownloadAsset.js',settings:'GenerationSettings.js',catalog:'OddlingCatalogControls.js',explore:'OddlingExplore.js',filters:'OddlingExploreFilters.js',gallery:'OddlingGalleryPreview.js',mannequin:'OddlingMannequin.js',motion:'OddlingMotionPanel.js',portrait:'OddlingPortrait.js',sheet:'OddlingSheet.js',paywall:'PaywallPrompt.js',referral:'ReferralPanel.js',duration:'SourceDurationCard.js',rights:'SourceRightsConfirmation.jsx',topups:'TopUpHistory.js',usage:'UsageMeters.js',voice:'VoiceDescription.js',picker:'chat/ModelPicker.js',skills:'chat/SkillsPanel.js',drafts:'chat/StudioDraftCards.js',stems:'editor/AudioStemResult.js',transition:'editor/TransitionPreview.js',boards:'film/FilmBoards.js',fields:'film/FilmFields.js',save:'film/FilmMasterSave.js',passports:'film/FilmPassports.js',
+ camera:'CameraPanel.js',goal:'CreateGoalPicker.js',download:'DownloadAsset.js',settings:'GenerationSettings.js',catalog:'OddlingCatalogControls.js',explore:'OddlingExplore.js',filters:'OddlingExploreFilters.js',gallery:'OddlingGalleryPreview.js',mannequin:'OddlingMannequin.js',motion:'OddlingMotionPanel.js',portrait:'OddlingPortrait.js',sheet:'OddlingSheet.js',paywall:'PaywallPrompt.js',referral:'ReferralPanel.js',duration:'SourceDurationCard.js',topups:'TopUpHistory.js',usage:'UsageMeters.js',voice:'VoiceDescription.js',picker:'chat/ModelPicker.js',skills:'chat/SkillsPanel.js',drafts:'chat/StudioDraftCards.js',stems:'editor/AudioStemResult.js',transition:'editor/TransitionPreview.js',boards:'film/FilmBoards.js',fields:'film/FilmFields.js',save:'film/FilmMasterSave.js',passports:'film/FilmPassports.js',
 }).map(([key,file])=>[key,`app/veyrnox/_components/${file}`]));
 files.activity='app/veyrnox/app/publish/activity/page.js';
 export const metadataFiles=['app/veyrnox/app/editor/layout.js','app/veyrnox/app/editor/review/page.js','app/veyrnox/app/film-studio/page.js'];
@@ -33,7 +33,6 @@ export const scenarios=[
  ...['first','low','depleted'].map(reason=>({area:'paywall',name:'PaywallOffer',props:{reason,onClose:noop,subscriptionsOpen:reason==='depleted'}})),
  ...[0,1,2,11,21].map(referred=>({area:'referral',name:'ReferralPanel',states:[{code:'user-code',referred}]})),
  {area:'duration',name:'SourceDurationCard',props:{model:{id:'latentsync',media:{video:{maxSeconds:30,required:true}}}}},
- ...[false,true].map(confirmed=>({area:'rights',name:'default',props:{confirmed,onChange:noop}})),
  {area:'topups',name:'TopUpHistory',states:[null,true,null,false]},
  {area:'topups',name:'TopUpHistory',states:[[],false,null,false]},
  {area:'topups',name:'TopUpHistory',states:[[{id:'a',status:'credited',credits:1200,price_usd_cents:999,created_at:'2026-10-18T10:00:00Z'},{id:'b',status:'future_status',credits:50,price_usd_cents:199,created_at:'2026-10-17T10:00:00Z'}],false,{id:'next'},false]},

@@ -1,7 +1,7 @@
 {
   "documents": {
     "terms": {
-      "translationsReviewedAgainstEnglishDated": "16 October 2026",
+      "translationsReviewedAgainstEnglishDated": "7 November 2026",
       "hashes": {
         "title": "4afa55bf7aec7ddc5dfb904271f881be278e7629ce258675bf4b62f460017abb",
         "description": "39ba81dd80f9a2120998c36d18e61a509839d1d1d23fbf5f696b555cc4f5b809",
@@ -34,7 +34,7 @@
         "b027": "d7250eb9a0557bfc86264d91b21495112b35c7955502847b1367b0b1801057c5",
         "b028": "8405426d8a956d4d00b4ab5b8e53dd7dad93928bd183d822eea577b3e985992d",
         "b029": "a63d5d09f03b5552703c12a92c17015d1c13695a6fd12c1faf748a48aadf1a8b",
-        "b030": "9f0d318b9098a6f573e8006e6eb6c849fb76f47b0ea40f05e36b33c4cd0e7336",
+        "b030": "3fe02d85510128c72b0f61ab93f2357e6c6c9ec91618c51c3fa9220ae1cc4e02",
         "b031": "3ce7c4e64c47d3c19d6928e8e59a1a02537221a04c8e06da50a5523a5469862f",
         "b032": "98af6e9ed6e54ecdcdfc4bcd0e211ae7f7ff3b503ea37eb38b99ed78ea3138bb",
         "b033": "a91e5d7909c25dbdc5947fe6f5a21c670eea8ec7f9a64d796481f857f9302420",
@@ -197,7 +197,7 @@
       }
     },
     "aup": {
-      "translationsReviewedAgainstEnglishDated": "13 October 2026",
+      "translationsReviewedAgainstEnglishDated": "7 November 2026",
       "hashes": {
         "title": "34aa287a1fcdb9ee8ecced499d87a3be07b5dc50453fe76721f9573b021591a8",
         "description": "88b50b3ead705dd85165e4398bbf36fc41bae74fe86496fdedd483e0f1c2bf78",
@@ -205,7 +205,7 @@
         "b003": "8db2f38aeeb2073934585800885252e57b536c3286abcfde7ff0bca7f1607b4c",
         "b001": "e0025c790ce01e26b53cebfe1a4324822a213487339d415835acce14d14cd5ea",
         "b004": "f0f3fe3535f34bdf45a8fbda637eb99c46d0cf0beb94d73c986b17046f2d401d",
-        "b005": "a8bf451f79dbcf11e6f16a6f3af4efa99c3fa5cb154a0f6a9a63d4cafa3256a7",
+        "b005": "28cb2666b3e259fc28eb3166920e3e312d436bbfd3a238d4519a15a78f8b438a",
         "b006": "8a410b8f941e71cfd9f6a6f31ffc6afb874568acd3897ed634bf5736bcfbc8e8",
         "b008": "6bddb752f2577e4bd513642cec250e20b220b4a9ecbaea01233be04b1379e9cf",
         "b007": "d814432c6affdc59f78c86017e0044f1d06de562cd74a86840a14af0a3fbffb7",
@@ -322,8 +322,6 @@
     "creatorSafety": "ff6e7166f9785b19f32813782c9d73749b45c987ae521b0e2f5bf289a5c0ebdb",
     "creatorMalware": "bdf73c12e54f356125a5f9e7db17e69460819ac4a58512ee9bae74a6dccef3a8",
     "publish": "e7719f71c8522fe7860384826813314a139fdbd348df7657ab68875fe539a250",
-    "sourceRights": "631fe11fee1e6da9957bbe807df71c19b9ba2c908373c0ce05d597ba1164e422",
-    "generationRights": "3ef53ddf0f58a44c593c450e74955ee653eb9e3e6765285be395c0323c9d9e72",
     "mediaRights": "ddaed8e061fd31e5063159b41c86643a02fa490fd66b01800b42b1f54481c898",
     "subscription": "fabd2ed3ccea8732597c78c33c597e48838b2ed179e82c667c4fc124e37d2d22",
     "subscriptionYearly": "61e7890a169d485b304d7411eb56407623696aa30f2623cf6a76861da936e15a",
@@ -352,12 +350,6 @@
   "anchors": {
     "subscriptionYearly": [],
     "subscription": [],
-    "sourceRights": [
-      {
-        "href": "/legal/aup",
-        "text": "Acceptable Use"
-      }
-    ],
     "supply": [
       {
         "href": "/legal/refund",
@@ -368,12 +360,6 @@
       {
         "href": "/legal/aup",
         "text": "Acceptable Use Policy"
-      }
-    ],
-    "generationRights": [
-      {
-        "href": "/legal/aup",
-        "text": "Acceptable Use"
       }
     ],
     "creatorRights": [],

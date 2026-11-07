@@ -1,6 +1,5 @@
 import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
-import { english } from '../../../lib/i18n/binding';
 import * as DocumentPicker from 'expo-document-picker';
 import { File } from 'expo-file-system';
 import { Image } from 'expo-image';
@@ -36,7 +35,6 @@ function FeatureStudio({ feature, reuse }: { feature: CreativeFeature; reuse: Cr
     const [error, setError] = useState('');
     const [references, setReferences] = useState<readonly GenerationReference[]>(() => reuse ? [{ slot: reuse.kind, origin: 'asset', asset_id: reuse.jobId }] : []);
     const [sending, setSending] = useState<Partial<Record<SlotName, boolean>>>({});
-    const [rights, setRights] = useState(false);
     useEffect(() => {
         let live = true;
         fetchCatalog().then((models) => { if (live) setModel(models.find((item) => item.id === feature.model) ?? null); }, () => { if (live) setModel(null); });
@@ -51,7 +49,7 @@ function FeatureStudio({ feature, reuse }: { feature: CreativeFeature; reuse: Cr
     const waiting = Object.values(sending).some(Boolean);
     const sourcesReady = slots.every(slot => (!slot.required || references.some(ref => ref.slot === slot.slot)) && references.filter(ref => ref.slot === slot.slot).length <= (slot.maxFiles ?? 1));
     const prompt = featurePrompt(feature, brief);
-    const canContinue = model !== undefined && model !== null && hasEverySlot && !waiting && sourcesReady && (!slots.length || rights) && (!feature.scriptUpload || !!script) && (feature.slug === 'lip-sync' || !!brief.trim());
+    const canContinue = model !== undefined && model !== null && hasEverySlot && !waiting && sourcesReady && (!feature.scriptUpload || !!script) && (feature.slug === 'lip-sync' || !!brief.trim());
 
     async function chooseScript() {
         setError('');
@@ -67,10 +65,10 @@ function FeatureStudio({ feature, reuse }: { feature: CreativeFeature; reuse: Cr
     }
     function openCreate() {
         if (!canContinue) {
-            setError(model === null || !hasEverySlot ? t('features.thelivemodelisnotavailableright') : waiting ? t('features.waitforeveryuploadtofinish') : !sourcesReady ? t('features.addeveryrequiredsource') : slots.length && !rights ? t('features.confirmthatyouhavepermissiontouse') : feature.scriptUpload && !script ? t('features.uploadascriptfirst') : t('features.completefirst', { value1: feature.input }));
+            setError(model === null || !hasEverySlot ? t('features.thelivemodelisnotavailableright') : waiting ? t('features.waitforeveryuploadtofinish') : !sourcesReady ? t('features.addeveryrequiredsource') : feature.scriptUpload && !script ? t('features.uploadascriptfirst') : t('features.completefirst', { value1: feature.input }));
             return;
         }
-        const sourceHandoff = stageCreativeSourceHandoff({ recipe: feature.slug, modelId: feature.model, aspect: feature.kind === 'video' ? '9:16' : '1:1', uploaded: {}, fromLibrary: {}, references, rightsConfirmed: rights });
+        const sourceHandoff = stageCreativeSourceHandoff({ recipe: feature.slug, modelId: feature.model, aspect: feature.kind === 'video' ? '9:16' : '1:1', uploaded: {}, fromLibrary: {}, references, rightsConfirmed: true });
         router.push({ pathname: '/create/[modelId]', params: { modelId: feature.model, prompt: prompt || feature.title, ...(feature.kind === 'video' ? { duration: '5' } : {}), recipe: feature.slug, sourceHandoff } });
     }
     return <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -82,7 +80,7 @@ function FeatureStudio({ feature, reuse }: { feature: CreativeFeature; reuse: Cr
             {feature.scriptUpload ? <><Pressable accessibilityRole="button" style={styles.secondary} onPress={() => void chooseScript()}><Text style={styles.secondaryText}>{script ? t('features.replacescript') : t('features.uploadTXTorMarkdownscript')}</Text></Pressable>{script ? <Text style={styles.note}>{script}</Text> : null}</> : null}
             <TextInput accessibilityLabel={rawText(feature.input)} value={brief} onChangeText={(value) => { setBrief(value.slice(0, 1000)); setError(''); }} placeholder={feature.placeholder} placeholderTextColor={colors.muted} style={styles.input} multiline maxLength={1000} />
         </View>
-        <View style={styles.card}><Text style={styles.kicker}>{t('features.rEQUIREDSOURCES')}</Text><Text style={styles.cardTitle}>{required.length ? required.join(' + ') : t('features.nomediarequired')}</Text>{model && slots.length ? slots.map((slot) => <SourcePicker key={slot.slot} slot={slot} api={api} references={references.filter(ref => ref.slot === slot.slot)} onReferences={files => { setRights(false); setReferences(all => replaceSlotReferences(all, slot.slot, files)); }} onChange={() => {}} onLibrary={() => {}} onBusy={(busy) => setSending((current) => ({ ...current, [slot.slot]: busy }))} hint={t('features.requiredfor', { value1: feature.title })} initialReady={reuse?.kind === slot.slot} initialReadyLabel={reuse?.kind === slot.slot ? t('features.reuse.selected') : undefined} />) : <Text style={styles.note}>{required.length ? t('features.checkingtheliveuploadrequirements') : t('features.yourscriptisthesourceforthis')}</Text>}{slots.length ? <Pressable accessibilityRole="checkbox" accessibilityLanguage="en" accessibilityLabel={english('features.ihavepermissiontousethesesources')} accessibilityState={{ checked: rights, disabled: waiting }} disabled={waiting} style={[styles.rights, rights && styles.rightsOn]} onPress={() => { setRights((value) => !value); setError(''); }}><Text style={styles.rightsText}>{english('features.ihavepermissiontousethesesources2', { value1: rights ? '☑' : '☐' })}</Text></Pressable> : null}</View>
+        <View style={styles.card}><Text style={styles.kicker}>{t('features.rEQUIREDSOURCES')}</Text><Text style={styles.cardTitle}>{required.length ? required.join(' + ') : t('features.nomediarequired')}</Text>{model && slots.length ? slots.map((slot) => <SourcePicker key={slot.slot} slot={slot} api={api} references={references.filter(ref => ref.slot === slot.slot)} onReferences={files => { setReferences(all => replaceSlotReferences(all, slot.slot, files)); }} onChange={() => {}} onLibrary={() => {}} onBusy={(busy) => setSending((current) => ({ ...current, [slot.slot]: busy }))} hint={t('features.requiredfor', { value1: feature.title })} initialReady={reuse?.kind === slot.slot} initialReadyLabel={reuse?.kind === slot.slot ? t('features.reuse.selected') : undefined} />) : <Text style={styles.note}>{required.length ? t('features.checkingtheliveuploadrequirements') : t('features.yourscriptisthesourceforthis')}</Text>}</View>
         <View style={styles.card}><Text style={styles.kicker}>{t('features.wORKFLOW')}</Text>{feature.steps.map((step, index) => <View key={step} style={styles.step}><Text style={styles.number}>0{index + 1}</Text><Text style={styles.stepText}>{step}</Text></View>)}</View>
         <View style={styles.card}><Text style={styles.kicker}>{t('features.lIVEMODEL')}</Text>{model === undefined ? <ActivityIndicator color={colors.accent} /> : <Text style={styles.cardTitle}>{model ? t('features.veyrnoxmodelcredits', { value1: feature.kind, value2: model.credits }) : t('features.unavailable')}</Text>}{error ? <StatusText variant="inherit" accessibilityRole="alert" style={styles.error}>{error}</StatusText> : null}<Pressable accessibilityRole="button" disabled={model === undefined || waiting} style={[styles.primary, (model === undefined || waiting) && styles.off]} onPress={openCreate}><Text style={styles.primaryText}>{t('features.continuetofinalreview')}</Text></Pressable><Text style={styles.note}>{t('features.youwillseetheexactpricebefore')}</Text></View>
     </ScrollView>;
@@ -115,5 +113,4 @@ const styles = StyleSheet.create({
     step: { flexDirection: 'row', gap: 12 }, number: { color: colors.accent, fontSize: 12, fontWeight: '900' }, stepText: { flex: 1, color: colors.body, fontSize: 14, lineHeight: 20 },
     example: { overflow: 'hidden', borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: '#050506' }, exampleHead: { padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.surface }, exampleMedia: { width: '100%', height: 260, backgroundColor: '#050506' }, link: { color: colors.accent, fontSize: 13, fontWeight: '800', textDecorationLine: 'underline' },
     primary: { minHeight: 50, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: colors.accent, paddingHorizontal: 16 }, primaryText: { color: colors.accentInk, fontSize: 15, fontWeight: '900', textAlign: 'center' }, secondary: { minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: colors.accent }, secondaryText: { color: colors.accent, fontSize: 14, fontWeight: '800' }, off: { opacity: 0.45 }, error: { color: colors.danger, fontSize: 13, lineHeight: 19 },
-    rights: { minHeight: 48, justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: colors.borderStrong, padding: 12 }, rightsOn: { borderColor: colors.accent, backgroundColor: colors.accentSoft }, rightsText: { color: colors.body, fontSize: 13, lineHeight: 19 },
 });
