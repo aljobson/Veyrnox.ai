@@ -151,6 +151,7 @@ function message(code) {
     unauthenticated: 'Sign in with an administrator account.',
     not_admin: 'This account is not an administrator.',
     mfa_required: 'Unlock this session with your authenticator above, then try again.',
+    hold_active: 'This image is still held. Release it or escalate it instead of resolving the report.',
     report_not_found: 'That report no longer exists. Refresh the list.',
     resolution_invalid: 'Write 3 to 500 characters.',
     rate_limited: 'Too many requests. Wait a minute and try again.',

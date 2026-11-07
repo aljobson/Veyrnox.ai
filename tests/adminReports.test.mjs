@@ -142,3 +142,11 @@ test('scanner release and disarm validate reason and identity and call the inten
         assert.equal((await POST(request('POST', ADMIN, { scanner_disarm: false, reason: 'reviewed' }))).status, 400);
     });
 });
+
+test('HOLD_ACTIVE is a typed 409 without RPC details', async () => {
+    stubRpc(() => Response.json({ ok: false, code: 'HOLD_ACTIVE', message: 'private detail' }));
+    await withEnv(CONFIGURED, async ({ POST }) => {
+        const res = await POST(request('POST', ADMIN, { report_id: REPORT, resolution: 'reviewed' }));
+        assert.deepEqual([res.status, await res.json()], [409, { error: 'hold_active' }]);
+    });
+});
