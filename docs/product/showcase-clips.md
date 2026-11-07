@@ -1,11 +1,11 @@
 # Landing showcase clips
 
-The current public gallery has 757 exact community templates; the homepage wall
+The current public gallery has 771 exact community templates; the homepage wall
 has 14. Seven dedicated landing placements retain their previews separately; Nano Banana is also an independent landing key sharing a retained template clip.
 Clip keys resolve through their owning templates, so `wall-event-character-swap`
 remains published while `wall-product-hero-360` is hidden with Miniature Crew.
 The explicit `model-video` and `ace-step` landing placements remain available.
-All 917 retained placements have unique shipped video/poster hashes.
+All 931 retained placements have unique shipped video/poster hashes.
 
 Community prompts are exact-only. Both API prompt fields carry the same text;
 audit compatibility is informational and never activates copy-only blocking.
@@ -260,7 +260,7 @@ five-second visual signatures also found no duplicate against the previous 58
 Syntx previews. The full evidence is in the
 [40-record machine-readable manifest](source-audit/syntx-40-2026-10-29.json).
 
-The current SHA-256 uniqueness checks cover all 827 retained source templates,
+The current SHA-256 uniqueness checks cover all 841 retained source templates,
 including 70 hidden rows: 27 promptless, 42 unavailable and one truncated.
 
 The kids-birthday expansion originally added twelve cards in a dedicated
@@ -925,3 +925,37 @@ The [category-fill audit](source-audit/higgsfield-category-fill-30-2026-11-05.js
 | `community-canine-expression-swap` | Canine Expression Swap | YOUR PHOTO | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/20e5867f-1e97-4cea-95c0-25bb51597333/generation-genjutsu-h264-600-v1.mp4) | 0 s |
 | `community-pampered-spa-day` | Pampered Spa Day | YOUR PHOTO | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/cbfde7d1-b161-4589-838f-c940f210acde/generation-genjutsu-h264-600-v1.mp4) | 0 s |
 <!-- END CATEGORY FILL EXACT -->
+
+<!-- BEGIN HF_REPLACEMENTS EXACT -->
+## 7 November 2026: Higgsfield community replacements
+
+11 of 12 prepared pairs accepted. Rejected: `community-cyberpunk-rooftop-encounter` — two separate character references cannot be bound by any offered route.
+The [replacement audit](source-audit/higgsfield-replacements-12-2026-11-07.json) locks exact prompts, reviewed routes and source/shipped hashes.
+
+| Tile | Source title | Category | Source asset | Start |
+| --- | --- | --- | --- | --- |
+| `community-spin-kick-puppy` | Spin Kick Puppy | REALISTIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/fc65d4c6-6a0e-4d2e-82a7-e8aee9066a20/generation.mp4) | 0 s |
+| `community-neon-paint-splash` | Neon Paint Splash | VFX | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/7648682f-3204-4fae-8e96-5d27c6c474c0/generation.mp4) | 0 s |
+| `community-neon-animal-dance` | Neon Animal Dance | CARTOONS | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/b2c106bb-a26d-49ac-bc45-43f94c098cbc/generation.mp4) | 0 s |
+| `community-island-life-performance` | Island Life Performance | REALISTIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/048e6c98-2f4a-454a-ab45-bb405e300412/generation.mp4) | 0 s |
+| `community-cinematic-persona-swap` | Cinematic Persona Swap | UGC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/01aae587-cc17-491a-8686-e586b40609f2/generation.mp4) | 0 s |
+| `community-roadside-service-pitch` | Roadside Service Pitch | UGC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/f90b4dad-35c9-4ccc-a419-0058459236b7/generation.mp4) | 0 s |
+| `community-martial-arts-feline` | Martial Arts Feline | REALISTIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/39943c12-1d36-4b55-b91c-82b66633e27d/generation.mp4) | 0 s |
+| `community-cosmic-sands-encounter` | Cosmic Sands Encounter | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/56bb41e6-0bdb-40b4-9edf-ac3daf180a40/generation.mp4) | 0 s |
+| `community-martial-arts-suit` | Martial Arts Suit | MOVIES | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/08aeb77c-da32-45e9-aafd-2cac66eb289a/generation.mp4) | 0 s |
+| `community-pet-affection-reveal` | Pet Affection Reveal | FASHION | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/17905e02-f430-4283-a335-748b16eae207/generation.mp4) | 0 s |
+| `community-luxe-timepiece-reveal` | Luxe Timepiece Reveal | PRODUCTS | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/f9b1e673-f4b8-4229-8418-bcf0a1feaa04/generation.mp4) | 0 s |
+<!-- END HF_REPLACEMENTS EXACT -->
+
+<!-- BEGIN SYNTX_REPLACEMENTS EXACT -->
+## 7 November 2026: Syntx Trends replacements
+
+3 of 4 prepared pairs accepted. Rejected: `the-push-2` — two separate character references cannot be bound by any offered route.
+The [replacement audit](source-audit/syntx-replacements-4-2026-11-07.json) locks exact prompts, reviewed routes and source/shipped hashes.
+
+| Tile | Source title | Category | Source asset | Start |
+| --- | --- | --- | --- | --- |
+| `on-the-wave` | On the Wave | REALISTIC | [Source asset](https://r2.syntx.ai/ERP/media-library/trends/variants/TgHRKTOaMD3DKBfsmTz09tNcCcIXJaYYSKsPtXEv.mp4) | 0 s |
+| `red-crystal-amulet` | Red Crystal Amulet | FANTASY | [Source asset](https://r2.syntx.ai/ERP/media-library/trends/variants/lq2aV7Gb4ItVddNMCCKTuNeoLRu1MKD7qnu0R4yq.webm) | 0 s |
+| `window-explode` | Window Explode | CINEMATIC | [Source asset](https://r2.syntx.ai/ERP/media-library/trends/variants/XikI8sWIP9KVlndGx8a9qCflOHi4TN6rzcHM4lH9.webm) | 0 s |
+<!-- END SYNTX_REPLACEMENTS EXACT -->

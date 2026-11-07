@@ -70,7 +70,7 @@ test('all 70 hidden ids and rejected captures are absent from lists, detail, sea
   const api = f.load('app/api/templates/[id]/route.js');
   const sitemap = await f.load('app/sitemap.js').default();
   const collections = [PRESETS, ALL_TEMPLATES, WALL_PRESETS, rows, mobile, templateCards(), runnableTemplates(templateCards(), MODELS).map(r => r.preset)];
-  const rejectedIds = ['higgsfield-300-exact', 'syntx-64-exact', 'higgsfield-category-fill-30'].flatMap(name => json('../../docs/product/source-audit/' + name + '-2026-11-05.json').rejected.map(r => r.id));
+  const rejectedIds = ['higgsfield-300-exact', 'syntx-64-exact', 'higgsfield-category-fill-30'].flatMap(name => json('../../docs/product/source-audit/' + name + '-2026-11-05.json').rejected.map(r => r.id)).concat(['higgsfield-replacements-12', 'syntx-replacements-4'].flatMap(name => json('../../docs/product/source-audit/' + name + '-2026-11-07.json').rejected.map(r => r.id)));
   for (const id of [...REMOVED_PROMPT_GAP_TEMPLATE_IDS, ...rejectedIds]) {
     for (const list of collections) assert.equal(list.some(t => t.id === publicTemplateId(id)), false, id);
     assert.equal(templateDetail(id), null, id);

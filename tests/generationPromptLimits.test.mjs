@@ -68,7 +68,7 @@ test('all recorded exact community prompts fit the new contract without truncati
   const prompts = Object.values(sourceRecords)
     .filter((record) => record.sourcePromptAvailable && typeof record.prompt === 'string')
     .map((record) => record.prompt);
-  assert.equal(prompts.length, 758);
+  assert.equal(prompts.length, 772);
   assert.ok(Math.max(...prompts.map((prompt) => prompt.length)) <= GENERATION_PROMPT_MAX);
   assert.ok(prompts.some((prompt) => prompt.length > 20_000));
 });

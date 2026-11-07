@@ -72,8 +72,8 @@ function mp4DurationSeconds(data) {
 }
 
 test('every imported clip has its own matching recipe and a supported video model', () => {
-  assert.equal(SOURCE_TEMPLATES.length, 827);
-  assert.equal(new Set(SOURCE_TEMPLATES.map((p) => p.clipKey)).size, 827);
+  assert.equal(SOURCE_TEMPLATES.length, 841);
+  assert.equal(new Set(SOURCE_TEMPLATES.map((p) => p.clipKey)).size, 841);
   for (const preset of SOURCE_TEMPLATES) {
     const clip = AUDIT_SHOWCASE_CLIPS[preset.clipKey];
     assert.ok(clip, preset.id);
@@ -98,13 +98,20 @@ test('every imported clip has its own matching recipe and a supported video mode
   }
 });
 
-test('Genjutsu-inspired I2V recipes describe source framing without claiming provider aspect support', () => {
+test('Genjutsu-inspired recipes describe source framing without claiming provider aspect support', () => {
   const community = SOURCE_TEMPLATES.filter((preset) => AUDIT_SHOWCASE_CLIPS[preset.clipKey].video.startsWith('/showcase/creator-') && !preset.sourceModel);
-  assert.equal(community.length, 427);
+  assert.equal(community.length, 438);
+  assert.equal(community.filter(p => p.needsKey === null).length, 9);
   for (const preset of community) {
     assert.equal(Object.hasOwn(preset, 'aspect'), false, preset.id);
     assert.match(preset.sourceAspect, /^(?:1:1|9:16|16:9)$/);
-    assert.match(preset.needsKey, /^community\.(?:cartoons|cinematic|fashion|movies|products|ugc|vfx|group|copyOnly)$/);
+    // Amendment 2 adds nine explicitly reviewed text-only routes; their complete
+    // per-id tuples are locked independently in replacementTemplates.test.mjs.
+    if (preset.needsKey === null) {
+      assert.equal(preset.needs, null, preset.id);
+      assert.equal(preset.model, 'Seedance 2.0 Fast', preset.id);
+      assert.equal(preset.durationSeconds, 5, preset.id);
+    } else assert.match(preset.needsKey, /^community\.(?:cartoons|cinematic|fashion|movies|products|ugc|vfx|group|copyOnly)$/);
   }
   const detail = readFileSync(new URL('../app/veyrnox/presets/[id]/page.js', import.meta.url), 'utf8');
   const handoff = readFileSync(new URL('../app/veyrnox/_components/TemplateHandoffCard.js', import.meta.url), 'utf8');
@@ -257,16 +264,16 @@ test('the 200 Seedance templates preserve full prompts and paired unique videos'
 test('public community templates are exact and all source-gap records are removed', () => {
   const audit = PRESETS.map((preset) => [preset.id, sourcePromptAuditRecord(preset.id)]);
   const groups = Object.groupBy(audit, ([, record]) => record.status);
-  assert.equal(groups.exact.length, 757);
+  assert.equal(groups.exact.length, 771);
   assert.equal(groups['adaptation-only'], undefined);
   assert.equal(groups['exact-truncated'], undefined);
   assert.equal(groups.unavailable, undefined);
-  assert.equal(audit.length, 757);
+  assert.equal(audit.length, 771);
   assert.ok(audit.some(([, record]) => record.runnable === true));
   assert.ok(audit.some(([, record]) => record.runnable === false));
   assert.equal(audit.filter(([, record]) => record.issues.includes('prompt-over-30000')).length, 0);
   assert.equal(audit.filter(([, record]) => record.issues.includes('more-than-two-reference-images')).length, 102);
-  assert.equal(audit.filter(([, record]) => record.issues.includes('audio-preservation-not-supported')).length, 221);
+  assert.equal(audit.filter(([, record]) => record.issues.includes('audio-preservation-not-supported')).length, 224);
   assert.equal(sourcePromptAuditRecord('community-survivor-memory-shift').status, 'exact-truncated');
   assert.equal(sourcePromptAuditRecord('keyboard-duo-swap').status, 'unavailable');
   assert.equal(REMOVED_PROMPT_GAP_TEMPLATE_IDS.length, 70);
@@ -438,10 +445,10 @@ test('source-aspect orientation agrees with every community preview', () => {
 });
 
 test('gallery and homepage templates have reachable recipe URLs', () => {
-  assert.equal(PRESETS.length, 757);
+  assert.equal(PRESETS.length, 771);
   assert.equal(WALL_PRESETS.length, 14);
   const visible = [...PRESETS, ...WALL_PRESETS];
-  assert.equal(new Set(visible.map((p) => p.clipKey).filter(Boolean)).size, 757);
+  assert.equal(new Set(visible.map((p) => p.clipKey).filter(Boolean)).size, 771);
   for (const preset of visible) {
     assert.equal(templateById(preset.id), preset);
     assert.equal(isUnknownStaticPage(`/presets/${preset.id}`), false);
@@ -516,7 +523,7 @@ test('every retained source video and poster is a unique local asset', () => {
 test('community inspiration previews contain no audio track', () => {
   const videos = Object.values(AUDIT_SHOWCASE_CLIPS).map((clip) => clip.video)
     .filter((path) => path.startsWith('/showcase/creator-') || path.startsWith('/showcase/viral-community-'));
-  assert.equal(videos.length, 580);
+  assert.equal(videos.length, 594);
   for (const path of videos) {
     const data = readFileSync(fileURLToPath(new URL(`../public${path}`, import.meta.url)));
     let offset = 0;

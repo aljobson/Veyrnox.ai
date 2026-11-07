@@ -58,10 +58,10 @@ test('299 retained raw and audit prompts match the immutable host hashes; publis
 
 test('exact-only publication retains the baseline records and non-prompt template metadata', () => {
   const frozen = JSON.parse(readFileSync(new URL('../fixtures/exactOnlyBaseline.json', import.meta.url)));
-  assert.equal(SOURCE_TEMPLATES.length, 827);
-  assert.equal(PRESETS.length, 757);
-  assert.equal(SOURCE_TEMPLATES.filter(t => exactSourcePromptRecord(t.id)).length, 758);
-  assert.equal(PRESETS.filter(t => exactSourcePromptRecord(t.id)).length, 757);
+  assert.equal(SOURCE_TEMPLATES.length, 841);
+  assert.equal(PRESETS.length, 771);
+  assert.equal(SOURCE_TEMPLATES.filter(t => exactSourcePromptRecord(t.id)).length, 772);
+  assert.equal(PRESETS.filter(t => exactSourcePromptRecord(t.id)).length, 771);
   assert.deepEqual([...REMOVED_PROMPT_GAP_TEMPLATE_IDS].sort(), [...baseline.excluded, ...frozen.hidden27].sort());
   const reviewed = JSON.parse(readFileSync(new URL('../fixtures/exactOnlyReviewedMetadata.json', import.meta.url)));
   const excluded = new Set(['prompt', 'sourcePrompt', 'sourcePromptOrigin', 'negativePrompt', 'promptOrigin', 'sourcePromptRunnable', 'sourcePromptIssues', 'sourcePromptModelPromptMax', 'preferAdaptedPrompt']);
@@ -79,7 +79,7 @@ test('exact-only publication retains the baseline records and non-prompt templat
   for (const [id, hash] of Object.entries(baseline.sourceRecords)) assert.equal(sha256(JSON.stringify(SOURCE_PROMPT_RECORDS[id])), hash, id);
 });
 
-test('827 retained templates reject all unapproved id, name, prompt, media, video, poster and visual duplicates', () => {
+test('841 retained templates reject all unapproved id, name, prompt, media, video, poster and visual duplicates', () => {
   const tables = uniquenessTables();
   for (const [field, table] of Object.entries(tables)) assert.deepEqual(table.unexpected, [], field);
   for (const [field, groups] of Object.entries(BASELINE_SOURCE_AUTHENTIC_DUPLICATES)) {
