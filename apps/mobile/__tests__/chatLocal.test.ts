@@ -105,6 +105,23 @@ test('hook restores once, debounces typing, flushes on unmount and drops sign-ou
     expect(await appCache.read(POLICIES.chatDrafts, 'A')).toBeNull(); jest.useRealTimers();
 });
 
+test('a saved draft beats the starting prompt after a reload, and flushDraft saves at once', async () => {
+    jest.useFakeTimers(); await bindCacheUser('A', appCache, createMemoryStorage(), docs);
+    let local!: ReturnType<typeof useChatLocal>;
+    function Harness() { local = useChatLocal('t2', 'seed prompt'); return null; }
+    const root = createRoot();
+    await act(async () => root.render(require('react').createElement(Harness)));
+    expect(local.draft).toBe('seed prompt');
+    await act(async () => local.setDraft('seed prompt plus my edits'));
+    await act(async () => local.flushDraft());
+    expect(await readDraft('t2')).toBe('seed prompt plus my edits');
+    await act(async () => root.unmount());
+    const again = createRoot();
+    await act(async () => again.render(require('react').createElement(Harness)));
+    expect(local.draft).toBe('seed prompt plus my edits');
+    await act(async () => again.unmount()); jest.useRealTimers();
+});
+
 test('integer-like ids retain recency and prototype-like ids never expose inherited values', async () => {
     const { cache } = await setup();
     expect(await readDraft('__proto__', cache)).toBe(''); expect(await readStars('constructor', cache)).toEqual([]);

@@ -52,7 +52,7 @@ export default function Conversation() {
     const [renaming, setRenaming] = useState<string | null>(null);
     const [messages, setMessages] = useState<ChatMessage[] | null>(null);
     const deltas = useChatDeltas(setMessages);
-    const { draft, setDraft, stars, star, starredOnly, setStarredOnly, mounted } = useChatLocal(id, typeof prompt === 'string' ? prompt : undefined);
+    const { draft, setDraft, flushDraft, stars, star, starredOnly, setStarredOnly, mounted } = useChatLocal(id, typeof prompt === 'string' ? prompt : undefined);
     const [round, setRound] = useState(0);
     const { left, loadedFor } = useChatFreeLeft(api, round);
     const [sending, setSending] = useState(false);
@@ -443,7 +443,7 @@ export default function Conversation() {
             {model && price !== null ? (
                 <View style={[styles.composerDock, { paddingBottom: Math.max(insets.bottom, 8) }]}>
                     <ChatComposerDeck
-                        free={isFree} onVideo={() => void addVideo()}
+                        free={isFree} onVideo={() => { flushDraft(); void addVideo(); }}
                         model={model}
                         options={cleanOptions(model, options)}
                         draft={draft}
@@ -458,8 +458,8 @@ export default function Conversation() {
                         onDraft={setDraft}
                         onModel={() => setPickerModelsOpen(true)}
                         onOptions={setOptions}
-                        onLibrary={() => setPickerOpen(true)}
-                        onPhotos={() => void addPhotos()}
+                        onLibrary={() => { flushDraft(); setPickerOpen(true); }}
+                        onPhotos={() => { flushDraft(); void addPhotos(); }}
                         onRemoveImage={(rid) => setImages((cur) => cur.filter((x) => x.id !== rid))}
                         onMake={openMake}
                         onSend={() => void send()}

@@ -45,6 +45,21 @@ test('rich chips retain spoken text, native states, disabled gates and decorativ
     expect(press).toHaveBeenCalledTimes(1);
 });
 
+test('the plus button opens one sheet; Photos there attaches and closes it, and the typed text stays in the box', async () => {
+    const onPhotos = jest.fn(), onDraft = jest.fn();
+    const props = { model, options: { thinking: false, web: false }, draft: 'My prompt', price: 2, canSend: true,
+        sending: false, stopping: false, images: [], imageExtra: 1, maxImages: 4, placeholder: 'Ask',
+        onDraft, onModel: jest.fn(), onOptions: jest.fn(), onLibrary: jest.fn(), onPhotos,
+        onRemoveImage: jest.fn(), onMake: jest.fn(), onSend: jest.fn(), onStop: jest.fn() };
+    await act(async () => root.render(<ChatComposerDeck {...props} />));
+    expect(root.container.queryAll(n => n.props.accessibilityLabel === t('chat.attach.photosLabel'))).toHaveLength(0);
+    await act(async () => control(t('chat.make.title')).props.onClick(event));
+    await act(async () => control(t('chat.attach.photosLabel')).props.onClick(event));
+    expect(onPhotos).toHaveBeenCalledTimes(1);
+    expect(control(t('chat.composer.message')).props.value).toBe('My prompt');
+    expect(onDraft).not.toHaveBeenCalled();
+});
+
 test('the deck retains modes, option prices, multiline constraints and send/stop gates', async () => {
     const onMake = jest.fn(), onOptions = jest.fn(), onSend = jest.fn(), onStop = jest.fn();
     const props = { model, options: { thinking: false, web: false }, draft: 'Hello', price: 2, canSend: true,
@@ -53,10 +68,14 @@ test('the deck retains modes, option prices, multiline constraints and send/stop
         onRemoveImage: jest.fn(), onMake, onSend, onStop };
     await act(async () => root.render(<ChatComposerDeck {...props} />));
     expect(control(t('chat.composer.message')).props).toMatchObject({ multiline: true, maxLength: 8000, value: 'Hello' });
+    // Modes and attachments live in one sheet, opened with the plus button beside the text box.
+    const openSheet = () => act(async () => control(t('chat.make.title')).props.onClick(event));
     for (const kind of ['image', 'video', 'audio'] as const) {
+        await openSheet();
         await act(async () => control(t(`chat.make.kind.${kind}`)).props.onClick(event));
         expect(onMake).toHaveBeenLastCalledWith(kind);
     }
+    await openSheet();
     expect(control(t('chat.composer.chat')).props.accessibilityState.selected).toBe(true);
     for (const icon of ['chat', 'image', 'video', 'audio', 'cpu', 'caretDown', 'brain', 'globe'] as const) {
         expect(root.container.queryAll(n => n.props.source === MENU_ICONS[icon]).length).toBeGreaterThan(0);

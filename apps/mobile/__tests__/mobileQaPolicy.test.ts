@@ -28,7 +28,7 @@ const containers = [
     ['app/(app)/(tabs)/index.tsx', 4], ['app/(app)/create/[modelId].tsx', 1],
     ['app/(app)/create/agent.tsx', 1], ['app/(app)/chat/persona/[id].tsx', 1],
     ['app/(app)/chat/[id].tsx', 1], ['app/(app)/chat/folders.tsx', 1],
-    ['components/KeyboardFormScrollView.tsx', 1], ['components/chat/ChatComposerDeck.tsx', 2], ['components/chat/AttachStrip.tsx', 1],
+    ['components/KeyboardFormScrollView.tsx', 1], ['components/chat/ChatComposerDeck.tsx', 1], ['components/chat/AttachStrip.tsx', 1],
 ] as const;
 test.each(containers)('%s: each scroll responder preserves handled taps', (file, count) => {
     const tree = ts.createSourceFile(file, source(file), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
