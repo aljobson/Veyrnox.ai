@@ -5853,7 +5853,7 @@ export default {
     "editorAi.instruction": "Que souhaitez-vous modifier ?",
     "editorAi.price": "{n} crédits",
     "editorAi.send": "Envoyer · {price}",
-    "editorAi.privacy": "Votre instruction et la structure de la timeline sont envoyées à un modèle d’IA. Les fichiers multimédias ne sont pas envoyés.",
+    "editorAi.privacy": "Votre instruction, la structure du montage et les noms des fichiers (60 caractères maximum chacun) sont envoyés à un modèle d’IA. Les fichiers multimédias ne sont pas envoyés.",
     "editorAi.counter": "{n}/500",
     "editorAi.quoting": "Vérification du prix…",
     "editorAi.sending": "Préparation de la modification…",

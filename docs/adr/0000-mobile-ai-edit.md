@@ -40,7 +40,7 @@ The lifecycle is checked `ledger_debit` → checked `job_submitted` → provider
 `editor_ai_edit_settle`, or checked failure then checked `ledger_refund`.
 `job_submit_rejected` handles a confirmed rejection before submission; an ambiguous
 submission never calls the provider. `debit:chat` is intentionally reused: migration
-0399's existing atomic request-identity comparison covers that reason. The distinct
+0399's existing atomic request-identity comparison covers that reason. Credit history therefore labels these debits as chat. The distinct
 inputs kind is `editor_ai_edit`, with only a SHA-256 request hash alongside it.
 The digest binds normalized instruction, canonical complete timeline JSON, and the
 admitted model ID. It contains no plaintext instruction or timeline. Ledger debit
@@ -74,12 +74,12 @@ only; unknown operations are reported by index and a fixed reason, never echoed.
 ## Privacy and retention
 
 The provider receives only `buildAgentRequest`'s reduced timeline and the typed
-instruction, fenced as untrusted data under a fixed contract. No media bytes or
+instruction, including media names truncated to 60 characters, fenced as untrusted data under a fixed contract. No media bytes or
 URLs, generated-asset prompts, account IDs or project IDs are sent. Provider text,
 instruction and timeline are not logged. The stored result can contain text commands;
 this is the explicitly required recovery exception to the original memory-only
 plan. Phone drafts/previews remain memory-only. Results expire after 24 hours and
-a minutely purge removes expired payloads. Account tombstoning clears payloads;
+an indexed ten-minute purge removes expired payloads. Account tombstoning clears payloads;
 expired recovery answers `result_expired` (410), never recharges or calls the model.
 The digest remains on the financial job for idempotency. Existing Library readers,
 cancel-status reads and Library-derived achievement counts exclude these jobs;

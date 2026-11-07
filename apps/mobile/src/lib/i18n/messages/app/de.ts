@@ -5786,7 +5786,7 @@ export default {
     "editorAi.instruction": "Was möchtest du ändern?",
     "editorAi.price": "{n} Credits",
     "editorAi.send": "Senden · {price}",
-    "editorAi.privacy": "Deine Anweisung und die Zeitleistenstruktur werden an ein KI-Modell gesendet. Mediendateien werden nicht gesendet.",
+    "editorAi.privacy": "Deine Anweisung, die Zeitleistenstruktur und Mediennamen (je bis zu 60 Zeichen) werden an ein KI-Modell gesendet. Mediendateien werden nicht gesendet.",
     "editorAi.counter": "{n}/500",
     "editorAi.quoting": "Preis wird geprüft…",
     "editorAi.sending": "Bearbeitung wird vorbereitet…",

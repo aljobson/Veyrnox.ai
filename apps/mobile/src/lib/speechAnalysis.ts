@@ -76,7 +76,7 @@ export function speechMessage(error: unknown): string {
     if (error instanceof OfflineError) return OFFLINE_PAID_MESSAGE;
     const code = error instanceof ApiError ? error.code : '';
     const messages: Record<string, string> = { source_too_long: 'editorSpeech.tooLong', source_unsupported: 'editorSpeech.unsupported', duration_mismatch: 'editorSpeech.durationChanged',
-        result_expired: 'editorAi.expired', poll_timeout: 'editorSpeech.timeout', outcome_pending: 'editorSpeech.timeout', price_changed: 'editorSpeech.priceChanged', speech_cut_unavailable: 'editorSpeech.unavailable',
+        result_expired: 'editorAi.expired', poll_timeout: 'editorSpeech.timeout', outcome_pending: 'editorSpeech.timeout', price_changed: 'editorSpeech.priceChanged', speech_cut_unavailable: 'editorSpeech.unavailable', provider_admission_paused: 'editorSpeech.unavailable',
         account_frozen: 'accountDeletion.youraccountisfrozenContactsupportto', insufficient_balance: 'editorAi.balance', subscription_required: 'editorAi.subscription',
         consent_declined: 'editorAi.consent', rate_limited: 'editorAi.rateLimited', idempotency_conflict: 'editorAi.conflict' };
     return t(messages[code] || 'editorSpeech.failed');

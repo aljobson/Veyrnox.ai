@@ -5719,7 +5719,7 @@ export default {
     "editorAi.instruction": "您想更改什么？",
     "editorAi.price": "{n}积分",
     "editorAi.send": "发送 · {price}",
-    "editorAi.privacy": "您的指令和时间线结构将发送给AI模型。不会发送媒体文件。",
+    "editorAi.privacy": "你的指令、时间线结构和媒体名称（每个最多60个字符）会发送给AI模型。不会发送媒体文件。",
     "editorAi.counter": "{n}/500",
     "editorAi.quoting": "正在核对价格…",
     "editorAi.sending": "正在准备编辑…",

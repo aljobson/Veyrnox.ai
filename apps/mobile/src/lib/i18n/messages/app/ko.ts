@@ -5719,7 +5719,7 @@ export default {
     "editorAi.instruction": "무엇을 변경하고 싶으세요?",
     "editorAi.price": "크레딧 {n}개",
     "editorAi.send": "보내기 · {price}",
-    "editorAi.privacy": "입력한 지시와 타임라인 구조가 AI 모델로 전송됩니다. 미디어 파일은 전송되지 않습니다.",
+    "editorAi.privacy": "입력한 지시, 타임라인 구조와 미디어 이름(각 최대 60자)이 AI 모델에 전송됩니다. 미디어 파일은 전송되지 않습니다.",
     "editorAi.counter": "{n}/500",
     "editorAi.quoting": "가격 확인 중…",
     "editorAi.sending": "편집 준비 중…",

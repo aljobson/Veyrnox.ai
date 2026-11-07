@@ -1,6 +1,6 @@
 # ADR-0000: Speech analysis and reviewable phone cuts
 
-Status: Implementation draft; OFF, migrations unapplied, acceptance proof blocked.
+Status: Implementation with regression suites; OFF, migrations unapplied, database execution unverified.
 Host assigns the permanent ADR number. Frozen plan SHA256:
 `d0c177d18d2993fa9e52d99d7036e0630b698ae9af153f1c78e84f07a87b6c18`.
 
@@ -40,8 +40,11 @@ owner, source job, stored SHA256 and schema version. Attempts remain independent
 the cache points to the newest completion via upsert. Admissions serialize per
 user (stronger than per-source serialization, also enforcing the three-open cap).
 A different key for an in-flight source joins it without a second debit or submit.
+Admission also holds the balance lock while checking request keys, preventing a
+concurrent feature from claiming that key between the check and ledger debit.
 Every accepted key has a content-free receipt referencing the financial job;
-receipts remain after analysis expiry. Replaying a failed/refunded key cannot buy
+receipts remain after analysis expiry. Receipt replay is resolved before requiring a
+probe, so probe retention cannot turn a terminal receipt into new work. Replaying a failed/refunded key cannot buy
 again. Replaying an expired key returns `result_expired`; the phone's next explicit
 start uses a new key. Quote, polling and replay use read quota. Generation quota
 is evaluated only for new paid work, inside the admission transaction.
@@ -135,21 +138,38 @@ ten video/audio sections and sixty seconds.
 - SQL is split into 0451 (new schema/lifecycle) and 0452 (existing readers/push/sweep)
   to keep new files under 500 lines. Neither migration has been applied. The local
   checkout already contains Plan A's 0450. `gh pr list` could not reach GitHub;
-  open PRs were checked through the GitHub connector. A fresh origin/main fetch
+  this revision could not verify current open PRs. A fresh origin/main fetch
   and final number reservation remain for the host.
 - Existing app translation catalogs/review JSON exceed 500 lines. New strings use
   that established format, with generated English and length-review metadata;
   this needs an exception to the literal all-files-under-500 rule. New modules
   and the modified editor screen stay below 500 lines.
-- New test authoring is blocked by the supplied ARTEMIS prerequisite: its diagnostic
-  tool requires approval that this session cannot obtain, and ADB cannot start a
-  listener in the sandbox. No device-verified interaction claim is made.
-- The full agreed proof is blocked because the mandatory shared build-slot lock is
-  outside writable roots. No independent lock or unlocked full-suite run substitutes
-  for it. No local test database is configured, and applying migrations is forbidden.
-- The requested new regression/acceptance suites, per-language word fixtures,
-  concurrent admissions, day-31 replay and ledger invariants remain unverified and
-  must be completed before this draft can be accepted.
+- The host explicitly waived ARTEMIS exploration and the build-slot wrapper for this
+  revision. Regression suites use node:test and the installed mobile test-renderer;
+  no device or provider interaction is claimed.
+- `tests/speechAnalysis.test.mjs` covers injected route/webhook boundaries, uncertain
+  submits, lost acknowledgment, refund responses, receipts, dedupe and log privacy.
+  `tests/speechSourceProbe.test.mjs` covers bounded reads and correlation tokens.
+  Mobile suites cover eleven word-shaped language fixtures against the actual web
+  planner (resulting timelines), utterance restarts/controls, limits, quotes, guards,
+  progress, memory invalidation, stale Apply and the editor's real history hook.
+- `packages/db/speechAnalysis.acceptance.test.ts` requires an already-provisioned,
+  disposable local database via `SPEECH_ANALYSIS_TEST_DATABASE_URL` or `DATABASE_URL`.
+  It never applies migrations. Money cases check the balance invariant and global
+  reconciliation after each test. Fixtures normally roll back; the two-connection
+  admission case erases its committed test account, retaining content-free audit rows.
+  It temporarily changes the local test catalog/capacity settings, then restores them.
+  Without a configured database the suite skips; this is not evidence of SQL correctness.
+- **Unresolved work-order conflict:** `ledger_debit` calls
+  `private.fal_admission_paused(model,false)` (0240/0399). With reserved-only fal
+  capacity enabled, the mandated direct debit is refused before any charge.
+  The handler exposes `provider_admission_paused`; no safeguard is bypassed and
+  no production policy is changed. The acceptance suite pins this refusal, then
+  uses rollback-scoped permissive test policy for the lifecycle cases. Proposed
+  deviation for owner review: replace direct dispatch/admission with the existing
+  reserved fal admission flow, preserving receipt identity and refund semantics.
+  That architecture is outside this frozen order; catalog activation and the two
+  feature flags alone are insufficient under reserved-only policy.
 - Live 15/60s latency, signed failure delivery, music-only, multiple speakers,
   additional languages/codecs and actual account billing remain unprobed. The owner
   must decide price/reuse window and whether retakes belong in the first release.

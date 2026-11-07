@@ -127,14 +127,11 @@ BEGIN
  IF u IS NULL THEN RETURN jsonb_build_object('ok',false,'code','NOT_FOUND'); END IF;
  -- Per-user serialization also bounds concurrency across different source keys.
  PERFORM pg_advisory_xact_lock(hashtextextended('speech:'||u::text,0));
+ -- Serialize the cross-feature key check with all ledger_debit callers as well.
+ PERFORM 1 FROM public.credit_balances WHERE user_id=u FOR UPDATE;
  source:=public.speech_source(p_auth_id,p_asset_job_id);
  IF source->>'ok' IS DISTINCT FROM 'true' THEN RETURN source; END IF;
- SELECT * INTO probe FROM public.speech_source_probes WHERE asset_id=(source->>'asset_id')::uuid AND source_fingerprint=source->>'sha256';
- IF probe.asset_id IS NULL THEN RETURN jsonb_build_object('ok',false,'code','SOURCE_UNSUPPORTED'); END IF;
- IF probe.duration>60 THEN RETURN jsonb_build_object('ok',false,'code','SOURCE_TOO_LONG'); END IF;
- IF probe.duration<0.5 OR p_duration IS NULL OR p_duration='NaN'::numeric OR abs(probe.duration-p_duration)>0.25 THEN
-  RETURN jsonb_build_object('ok',false,'code','DURATION_MISMATCH'); END IF;
- digest:=encode(pg_catalog.sha256(pg_catalog.convert_to(p_asset_job_id::text||':'||probe.source_fingerprint||':1','UTF8')),'hex');
+ digest:=encode(pg_catalog.sha256(pg_catalog.convert_to(p_asset_job_id::text||':'||(source->>'sha256')||':1','UTF8')),'hex');
  SELECT * INTO r FROM public.speech_analysis_requests WHERE user_id=u AND idempotency_key=p_key;
  IF r.attempt_id IS NOT NULL THEN
   IF r.digest<>digest THEN RETURN jsonb_build_object('ok',false,'code','IDEMPOTENCY_CONFLICT'); END IF;
@@ -142,6 +139,12 @@ BEGIN
  END IF;
  IF p_key IS NULL OR p_key!~'^[A-Za-z0-9._-]{8,128}$' OR EXISTS(SELECT 1 FROM public.jobs WHERE user_id=u AND idempotency_key=p_key) THEN
   RETURN jsonb_build_object('ok',false,'code','IDEMPOTENCY_CONFLICT'); END IF;
+ -- Durable receipts above survive probe/analysis retention; only new keys require a probe.
+ SELECT * INTO probe FROM public.speech_source_probes WHERE asset_id=(source->>'asset_id')::uuid AND source_fingerprint=source->>'sha256';
+ IF probe.asset_id IS NULL THEN RETURN jsonb_build_object('ok',false,'code','SOURCE_UNSUPPORTED'); END IF;
+ IF probe.duration>60 THEN RETURN jsonb_build_object('ok',false,'code','SOURCE_TOO_LONG'); END IF;
+ IF probe.duration<0.5 OR p_duration IS NULL OR p_duration='NaN'::numeric OR abs(probe.duration-p_duration)>0.25 THEN
+  RETURN jsonb_build_object('ok',false,'code','DURATION_MISMATCH'); END IF;
  -- The source lock prevents deletion between the probe check and admission.
  PERFORM 1 FROM public.assets WHERE id=probe.asset_id FOR KEY SHARE;
  SELECT s.* INTO a FROM public.speech_analysis_cache c JOIN public.speech_analyses s ON s.id=c.analysis_id
@@ -249,7 +252,11 @@ BEGIN
 END $$;
 REVOKE ALL ON FUNCTION public.sweep_speech_analyses() FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.sweep_speech_analyses() TO service_role;
-SELECT cron.schedule('veyrnox-sweep-stuck-jobs','*/10 * * * *',$$ SELECT public.sweep_speech_analyses(); SELECT public.sweep_stuck_jobs(); $$);
+DO $cron$ BEGIN
+ IF NOT EXISTS (SELECT 1 FROM pg_extension WHERE extname='pg_cron') THEN RETURN; END IF;
+ PERFORM cron.unschedule(jobname) FROM cron.job WHERE jobname='veyrnox-sweep-stuck-jobs';
+ PERFORM cron.schedule('veyrnox-sweep-stuck-jobs','*/10 * * * *',$$ SELECT public.sweep_speech_analyses(); SELECT public.sweep_stuck_jobs(); $$);
+END $cron$;
 
 CREATE OR REPLACE FUNCTION private.speech_source_deleted()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$

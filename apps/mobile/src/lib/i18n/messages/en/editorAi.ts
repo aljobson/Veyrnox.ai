@@ -15,7 +15,7 @@ export default {
     "editorAi.instruction": "What would you like to change?",
     "editorAi.price": "{n} credits",
     "editorAi.send": "Send · {price}",
-    "editorAi.privacy": "Your instruction and timeline structure are sent to an AI model. Media files are not sent.",
+    "editorAi.privacy": "Your instruction, timeline structure and media names (up to 60 characters each) are sent to an AI model. Media files are not sent.",
     "editorAi.counter": "{n}/500",
     "editorAi.quoting": "Checking price…",
     "editorAi.sending": "Preparing your edit…",

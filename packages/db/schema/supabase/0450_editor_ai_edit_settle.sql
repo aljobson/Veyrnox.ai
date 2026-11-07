@@ -65,7 +65,13 @@ RETURNS VOID LANGUAGE sql SECURITY DEFINER SET search_path = '' AS $$
 $$;
 REVOKE ALL ON FUNCTION public.purge_editor_ai_edit_results() FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.purge_editor_ai_edit_results() TO service_role;
-SELECT cron.schedule('veyrnox-purge-editor-ai-edit','* * * * *',$$ SELECT public.purge_editor_ai_edit_results(); $$);
+CREATE INDEX IF NOT EXISTS jobs_editor_ai_edit_expiry ON public.jobs(editor_ai_edit_expires_at)
+    WHERE editor_ai_edit_result IS NOT NULL;
+DO $cron$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_extension WHERE extname='pg_cron') THEN RETURN; END IF;
+    PERFORM cron.unschedule(jobname) FROM cron.job WHERE jobname='veyrnox-purge-editor-ai-edit';
+    PERFORM cron.schedule('veyrnox-purge-editor-ai-edit','*/10 * * * *',$$ SELECT public.purge_editor_ai_edit_results(); $$);
+END $cron$;
 
 CREATE OR REPLACE FUNCTION private.editor_ai_edit_forget_erased_user()
 RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
@@ -328,3 +334,92 @@ BEGIN
 END $$;
 REVOKE ALL ON FUNCTION public.read_your_wins(text) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.read_your_wins(text) TO service_role;
+
+-- Preserve the latest hold/scan protections; analysis jobs are not creations.
+CREATE OR REPLACE FUNCTION public.delete_user_job(p_auth_id TEXT, p_job_id UUID)
+RETURNS JSONB
+LANGUAGE plpgsql
+VOLATILE
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+    v_user public.users%ROWTYPE;
+    v_job  public.jobs%ROWTYPE;
+    v_rate JSONB;
+BEGIN
+    SELECT * INTO v_user FROM public.users WHERE auth_id = p_auth_id AND deleted_at IS NULL;
+    IF NOT FOUND THEN RETURN jsonb_build_object('ok', false, 'code', 'NOT_FOUND'); END IF;
+
+    v_rate := public.consume_job_read_request(v_user.id);
+    IF v_rate->>'ok' IS DISTINCT FROM 'true' THEN RETURN v_rate; END IF;
+
+    -- Owner only; the lock serialises two deletes of the same job, so the second sees the first.
+    SELECT * INTO v_job FROM public.jobs WHERE id = p_job_id AND user_id = v_user.id FOR UPDATE;
+    IF NOT FOUND THEN RETURN jsonb_build_object('ok', false, 'code', 'NOT_FOUND'); END IF;
+
+    IF v_job.deleted_at IS NOT NULL THEN
+        RETURN jsonb_build_object('ok', true, 'replayed', true);
+    END IF;
+    -- A chat reply is not a creation (the Library never lists it); chat has its own delete.
+    IF v_job.inputs->>'kind' IN ('chat','editor_ai_edit','speech_analysis') THEN RETURN jsonb_build_object('ok', false, 'code', 'NOT_FOUND'); END IF;
+
+    -- A person cannot delete their way out of a dispute (ADR-0111).
+    IF v_user.frozen_at IS NOT NULL THEN RETURN jsonb_build_object('ok', false, 'code', 'ACCOUNT_FROZEN'); END IF;
+
+    -- Only a settled job. SUCCEEDED means the file is still being copied; a fal request that has not
+    -- closed still holds the prompt, and the sweep will close it.
+    IF v_job.state NOT IN ('STORED', 'FAILED', 'REFUNDED')
+       OR EXISTS (SELECT 1 FROM public.fal_dispatch d WHERE d.job_id = v_job.id AND d.state <> 'CLOSED') THEN
+        RETURN jsonb_build_object('ok', false, 'code', 'IN_PROGRESS');
+    END IF;
+
+    -- Preserved material and open reports are not erased on request (ADR-0083).
+    IF EXISTS (SELECT 1 FROM public.evidence_holds h WHERE h.job_id = v_job.id AND h.released_at IS NULL)
+       OR EXISTS (SELECT 1 FROM public.assets a WHERE a.job_id = v_job.id AND a.held_at IS NOT NULL)
+       OR EXISTS (SELECT 1 FROM public.content_reports r
+                   WHERE r.subject_kind = 'job' AND r.subject_id = v_job.id AND r.status = 'open') THEN
+        RETURN jsonb_build_object('ok', false, 'code', 'ON_HOLD');
+    END IF;
+
+    -- Still in use. A post that failed or was cancelled no longer needs the file.
+    IF EXISTS (SELECT 1 FROM public.social_post_media m JOIN public.social_posts p ON p.id = m.post_id
+                WHERE m.source_job_id = v_job.id AND p.status IN ('draft', 'scheduled', 'published')) THEN
+        RETURN jsonb_build_object('ok', false, 'code', 'USED_BY_POST');
+    END IF;
+    IF EXISTS (SELECT 1 FROM public.cinema_uploads u WHERE u.source_job_id = v_job.id) THEN
+        RETURN jsonb_build_object('ok', false, 'code', 'USED_BY_CINEMA');
+    END IF;
+    IF EXISTS (SELECT 1 FROM public.film_library_masters m WHERE m.source_job_id = v_job.id) THEN
+        RETURN jsonb_build_object('ok', false, 'code', 'USED_BY_LIBRARY');
+    END IF;
+
+    -- Recheck held material after acquiring every source asset in a stable order.
+    PERFORM 1 FROM public.assets WHERE job_id = v_job.id ORDER BY id FOR UPDATE;
+    IF EXISTS (SELECT 1 FROM public.evidence_holds h WHERE h.job_id = v_job.id AND h.released_at IS NULL)
+       OR EXISTS (SELECT 1 FROM public.assets a WHERE a.job_id = v_job.id AND a.held_at IS NOT NULL)
+       OR EXISTS (SELECT 1 FROM public.content_reports r
+                   WHERE r.subject_kind = 'job' AND r.subject_id = v_job.id AND r.status = 'open') THEN
+        RETURN jsonb_build_object('ok', false, 'code', 'ON_HOLD');
+    END IF;
+
+    WITH gone AS (
+        DELETE FROM public.assets WHERE job_id = v_job.id AND held_at IS NULL RETURNING r2_key
+    )
+    INSERT INTO public.asset_reap_queue (r2_key)
+    SELECT r2_key FROM gone ON CONFLICT (r2_key) DO NOTHING;
+
+    -- Intermediate output of a multi-step job (script text, scene and voice files).
+    INSERT INTO public.asset_reap_queue (r2_key)
+    SELECT s.output_r2_key FROM public.job_steps s WHERE s.job_id = v_job.id AND s.output_r2_key IS NOT NULL
+    ON CONFLICT (r2_key) DO NOTHING;
+    UPDATE public.job_steps SET output_r2_key = NULL, output_text = NULL WHERE job_id = v_job.id;
+
+    -- The prompt, wherever it is kept. The job row, its state, model and credits stay: they back the ledger.
+    UPDATE public.fal_dispatch SET payload = '{}'::jsonb WHERE job_id = v_job.id;
+    UPDATE public.jobs SET inputs = '{}'::jsonb, deleted_at = now(), updated_at = now() WHERE id = v_job.id;
+
+    RETURN jsonb_build_object('ok', true, 'replayed', false);
+END $$;
+REVOKE ALL ON FUNCTION public.delete_user_job(TEXT,UUID) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.delete_user_job(TEXT,UUID) TO service_role;

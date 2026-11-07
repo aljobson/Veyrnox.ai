@@ -5719,7 +5719,7 @@ export default {
     "editorAi.instruction": "どのように変更しますか？",
     "editorAi.price": "{n}クレジット",
     "editorAi.send": "送信 · {price}",
-    "editorAi.privacy": "入力した指示とタイムラインの構造がAIモデルに送信されます。メディアファイルは送信されません。",
+    "editorAi.privacy": "指示、タイムライン構成、メディア名（各60文字まで）がAIモデルに送信されます。メディアファイルは送信されません。",
     "editorAi.counter": "{n}/500",
     "editorAi.quoting": "料金を確認中…",
     "editorAi.sending": "編集を準備中…",

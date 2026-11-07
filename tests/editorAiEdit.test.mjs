@@ -148,7 +148,14 @@ test('read quota fails closed; all routes reject missing identity', async () => 
 test('no instruction, timeline, reply or vendor/DB payload is logged', async t => {
     const lines = []; for (const method of ['error', 'warn', 'log', 'info']) t.mock.method(console, method, (...args) => lines.push(args));
     const f = fixture({ provider: async () => { throw Error('private vendor response'); }, overrides: { ledger_refund: new Error('private db message') } });
-    await f.run(request()); assert.deepEqual(lines, []);
+    await f.run(request());
+    assert.deepEqual(lines, [['[editor-ai-edit]', 'refund_pending', JOB]]);
+    await fixture({ overrides: { job_submitted: new Error('private DB') } }).run(request());
+    await fixture({ overrides: { editor_ai_edit_settle: new Error('private reply') } }).run(request());
+    await fixture({ overrides: { editor_ai_edit_lookup: new Error('private timeline') } }).run(request());
+    assert.deepEqual(lines.map(line => line[1]), ['refund_pending', 'outcome_pending', 'settle_failure', 'lookup_failure']);
+    for (const line of lines) assert.match(JSON.stringify(line), /^\["\[editor-ai-edit\]","[a-z_]+",(?:null|"[0-9a-f-]+")\]$/);
+    assert.doesNotMatch(JSON.stringify(lines), /private|instruction|timeline|reply|DB/);
 });
 test('whole request deadline bounds a stalled RPC without a second effect', async () => {
     const f = fixture({ requestMs: 10, overrides: { job_submitted: () => new Promise(() => {}) } });

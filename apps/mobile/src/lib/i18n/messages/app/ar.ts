@@ -6054,7 +6054,7 @@ export default {
     "editorAi.instruction": "ما الذي تريد تغييره؟",
     "editorAi.price": "{n} رصيد",
     "editorAi.send": "إرسال · {price}",
-    "editorAi.privacy": "تُرسل تعليماتك وبنية الخط الزمني إلى نموذج ذكاء اصطناعي. لا تُرسل ملفات الوسائط.",
+    "editorAi.privacy": "تُرسل تعليماتك وبنية المخطط الزمني وأسماء الوسائط (حتى 60 حرفًا لكل اسم) إلى نموذج ذكاء اصطناعي. لا تُرسل ملفات الوسائط.",
     "editorAi.counter": "{n}/500",
     "editorAi.quoting": "جارٍ التحقق من السعر…",
     "editorAi.sending": "جارٍ إعداد التعديل…",
