@@ -2974,6 +2974,8 @@ export default {
   "menu.toolDirectory": "Инструменты",
   "menu.tools": "Инструменты",
   "menu.videoAgent": "Видеоагент",
+  "menu.videoAgentHint": "Опишите видео — мы его сделаем",
+  "menu.filmHint": "Спланируйте и снимите фильм из нескольких кадров",
   "montage.describethevideoin3to500": "Опишите видео в 3–500 символах.",
   "montage.everyslotistakenrightnowTry": "Все места сейчас заняты. Повторите попытку примерно через {value1} мин.",
   "montage.everyslotistakenrightnowTry2": "Все места сейчас заняты. Повторите попытку через несколько минут.",
