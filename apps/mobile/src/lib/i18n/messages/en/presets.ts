@@ -1,4 +1,5 @@
 export default {
+    "presets.use.photoTitle": "Your photo",
     "presets.templates": "Templates",
     "presets.isnotavailablerightnow": "{value1} is not available right now.",
     "presets.thattemplateisnotavailablerightnow": "That template is not available right now.",

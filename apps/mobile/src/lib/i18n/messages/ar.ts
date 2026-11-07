@@ -348,6 +348,8 @@ const ar = {
     'label.Photo of the new person': 'صورة الشخص الجديد',
     'label.Photos of the new people': 'صور الأشخاص الجدد',
     'app.create.swapConsentNotice': 'استخدم فقط صور أشخاص وافقوا على ذلك.',
+    'public.TemplateRecipe.templateClipUsed': 'يستخدم هذا القالب مقطعه الخاص مع صورتك لاستبدال الشخصية الرئيسية.',
+    'presets.use.photoTitle': 'أضف صورتك',
 } as const;
 
 export default ar;

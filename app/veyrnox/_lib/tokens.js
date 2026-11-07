@@ -122,6 +122,7 @@ export function modelIdForName(name) {
  * user. Cards link to templateHref; an unresolved model stays on that detail page.
  */
 export function presetHref(preset, durationSeconds = preset.durationSeconds, extras = {}) {
+  if (extras.templateClip) return templateHref(preset);
   const modelId = extras.model || modelIdForName(preset.model);
   if (!modelId) return templateHref(preset);
   return `/app/create?model=${encodeURIComponent(modelId)}&preset=${encodeURIComponent(preset.id)}${durationSeconds ? `&duration=${encodeURIComponent(durationSeconds)}s` : ''}${extras.aspect ? `&aspect=${encodeURIComponent(extras.aspect)}` : ''}`;

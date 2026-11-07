@@ -348,6 +348,8 @@ const zh = {
     'label.Photo of the new person': '新人物的照片',
     'label.Photos of the new people': '新人物们的照片',
     'app.create.swapConsentNotice': '仅使用已征得本人同意的照片。',
+    'public.TemplateRecipe.templateClipUsed': '此模板使用自己的视频片段和你的照片来替换主角。',
+    'presets.use.photoTitle': '添加你的照片',
 } as const;
 
 export default zh;

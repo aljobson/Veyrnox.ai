@@ -116,7 +116,7 @@ test('no hop for media-input jobs, or without a route set; one submit, as before
 });
 
 test('the route submits through submitWithFailover and records the supplier that holds the job', () => {
-  const src = readFileSync(new URL('../app/api/v1/generations/route.js', import.meta.url), 'utf8');
+  const src = readFileSync(new URL('../lib/generationProviderSubmit.js', import.meta.url), 'utf8');
   assert.match(src, /const submitted = await submitWithFailover\(/);
   assert.match(src, /provider: servedBy, providerJobId: submitResult\.providerJobId/);
   assert.match(src, /attemptNo: submitted\.attemptNo/);

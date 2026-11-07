@@ -157,7 +157,8 @@ export function searchPresets(items: readonly Preset[], query: string): Preset[]
 
 // Opens Create on the template's model with its prompt, length, shape, name and picture carried over; an inactive model
 // returns to Templates with an explicit unavailable state.
-export function presetHref(p: Preset, overrides: TemplateChoices = {}, catalog?: readonly CatalogModel[]) {
+export function presetHref(p: Preset, overrides: TemplateChoices & { templateClip?: string } = {}, catalog?: readonly CatalogModel[]) {
+    if (overrides.templateClip) return { pathname: '/templates/[id]', params: { id: p.id } } as const;
     const original = catalog?.find(model => model.id === p.modelId);
     const candidate = catalog?.find(model => model.id === overrides.modelId);
     const template = original ?? p;

@@ -348,6 +348,8 @@ const ru = {
     'label.Photo of the new person': 'Фото нового человека',
     'label.Photos of the new people': 'Фото новых людей',
     'app.create.swapConsentNotice': 'Используйте только фотографии людей, давших согласие.',
+    'public.TemplateRecipe.templateClipUsed': 'Этот шаблон использует свой видеоклип и ваше фото для замены главного персонажа.',
+    'presets.use.photoTitle': 'Добавьте своё фото',
 } as const;
 
 export default ru;

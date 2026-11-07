@@ -348,6 +348,8 @@ const ja = {
     'label.Photo of the new person': '新しい人物の写真',
     'label.Photos of the new people': '新しい人物たちの写真',
     'app.create.swapConsentNotice': '同意を得た人の写真のみ使用してください。',
+    'public.TemplateRecipe.templateClipUsed': 'このテンプレート独自の動画クリップとあなたの写真を使って、主役を置き換えます。',
+    'presets.use.photoTitle': '写真を追加',
 } as const;
 
 export default ja;

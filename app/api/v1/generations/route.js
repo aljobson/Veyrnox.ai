@@ -1,8 +1,9 @@
+import { finishGenerationSubmit } from '../../../../lib/generationProviderSubmit.js';
 import { replaySwapScene } from '../../../../lib/swapSceneReplay.js';
 import { loadSwapScene } from '../../../../lib/swapSceneGate.js';
 import { checkSwapRequest, resolveSwapVideo } from '../../../../lib/swapSceneGeneration.js';
 import { hasRuntimeReplay } from '../../../../lib/runtimeReplay.js';
-import { COSTUME_STYLES } from '../../../../lib/costumePrompts.js';
+import { validateInputs } from '../../../../lib/generationInputValidation.js';
 import { isFeatureKilled } from '../../../../lib/runtimeSwitchCache.js';
 import { featurePaused } from '../../../../lib/runtimeAdmission.js';
 import { readBoundedBody } from '../../../../lib/boundedBody.js';
@@ -12,15 +13,12 @@ import { publishFalDispatchWakeup } from '../../../../lib/falDispatchWakeup.js';
 import { providerFor } from '../../../../packages/provider-sdk/registry.js';
 import { logShadowRoute, shadowEnabled } from '../../../../lib/supplierRoutesShadow.js';
 import { requestWaitUntil } from '../../../../lib/requestWaitUntil.js';
-import { resolveRouteSet, recordFirstAttempt } from '../../../../lib/supplierRoutesDispatch.js';
-import { submitWithFailover } from '../../../../lib/supplierRoutesFailover.js';
+import { resolveRouteSet } from '../../../../lib/supplierRoutesDispatch.js';
 import { NextResponse } from 'next/server';
-import { rpc, select, envConfig, SupabaseError } from '../../../../packages/db/supabase-client.js';
+import { rpc, select, envConfig } from '../../../../packages/db/supabase-client.js';
 import { capabilityFor, declaredInputs, checkSource } from '../../../../lib/modelCapabilities.js';
-import { refundRejectedSubmit, unknownSubmitResponse, recordSubmittedJob } from '../../../../lib/submitRejection.js';
 import { freeAllowanceOn as isFreeAllowanceOn, takeFreeJobDetailed } from '../../../../lib/freeJob.js';
 import { templateStartId } from '../../../../lib/templateStart.js';
-import { classifySubmitFailure } from '../../../../lib/submitFailureClass.js';
 import { readGenerationSources, resolveGenerationSources, sourceErrorStatus } from '../../../../lib/generationSources.js';
 import { mediaInputKey } from '../../../../lib/generationSourceSlots.mjs';
 import { envConfig as r2EnvConfig, isConfigured as r2IsConfigured } from '../../../../packages/adapters/r2.js';
@@ -30,7 +28,10 @@ import { resolveEdit, defaultDeps as editDeps } from '../../../../lib/clipEditSo
 import { checkPlan, checkCapacity } from '../../../../lib/montageGate.js';
 import { normaliseNarration } from '../../../../lib/montageNarration.js';
 import { providerSpendBody, providerSpendError, providerSpendLimit } from '../../../../lib/providerSpend.js';
-import { GENERATION_PROMPT_MAX, NEGATIVE_PROMPT_MAX } from '../../../../lib/generationPromptLimits.js';
+import { clientTemplateVideo, checkTemplateClipRequest, resolveTemplateClipVideo } from '../../../../lib/templateClipGeneration.js';
+import { loadTemplateClip } from '../../../../lib/templateClipGate.js';
+import { replayTemplateClip } from '../../../../lib/templateClipReplay.js';
+import { TEMPLATE_CLIP_PROMPT } from '../../../../lib/templateClipPrompt.mjs';
 
 // The wording version an upload consent attests to (ADR-0330: the Terms and AUP, no tick). Bump when the wording
 // at /legal/aup or on the create page changes; users re-attest under the new
@@ -43,102 +44,10 @@ const IDEMPOTENCY_RE = /^[A-Za-z0-9._-]{8,128}$/;
 // here so an unbounded string never reaches the PostgREST query string.
 const MODEL_ID_RE = /^[a-z0-9][a-z0-9.-]{0,63}$/;
 
-// Provider payload allowlist. `inputs` is forwarded to fal verbatim, so
-// every key the user may set is enumerated here with a bound; anything
-// else is rejected. Quantity knobs (num_images, num_frames, duration
-// beyond the priced unit, ...) are deliberately absent: the catalog price
-// is per 5-second unit / single output and the payload must not buy more.
-const MAX_INPUTS_BYTES = 256 * 1024;
-const MAX_NON_PROMPT_INPUTS_BYTES = 8 * 1024;
-// A 30,000-character prompt can occupy 180,000 JSON code units when every
-// character needs a \uXXXX escape. Leave room for references and the envelope
-// without weakening the per-field limits below.
 const MAX_REQUEST_BYTES = 512 * 1024;
 const UNIT_SECONDS = 5;
 const RATE_LIMIT_PER_WINDOW = 10;
 const RATE_WINDOW_SECONDS = 60;
-// Output choices are bounded again by the model contract before the debit.
-// Only tiers at or below the catalog's priced ceiling are declared there.
-const ALLOWED_INPUTS = {
-    prompt: { kind: 'string', max: GENERATION_PROMPT_MAX },
-    negative_prompt: { kind: 'string', max: NEGATIVE_PROMPT_MAX },
-    voice_description: { kind: 'string', max: 500 }, // a voice in words, for speech models that take one; never a recording
-    // Auto Short (ADR-0029); TOPIC_RE is checked again by its provider entry.
-    topic: { kind: 'string', max: 200 },
-    // Video agent (ADR-0074): the approved brief and its plan token; both are re-checked by verifyPlanToken before the debit.
-    brief: { kind: 'string', max: 500 },
-    plan_id: { kind: 'string', max: 600 },
-    narration_text: { kind: 'string', max: 300 },
-    // Clip Editor: structured, so checked by lib/clipEditSources.js (within MAX_INPUTS_BYTES).
-    clips: { kind: 'edit' },
-    audio: { kind: 'edit' },
-    captions: { kind: 'edit' },
-    aspect_ratio: { kind: 'enum', values: ['16:9', '9:16', '1:1', '4:3', '3:4', '4:5', '21:9'] },
-    duration_seconds: { kind: 'enum', values: [5, 10] },
-    // ACE-Step v1 supports longer audio, but its one-Credit catalog unit is
-    // costed at a maximum of 60 seconds. The model capability narrows this
-    // outer bound to the one endpoint that declares the control.
-    duration: { kind: 'int', min: 5, max: 60 },
-    output_resolution: { kind: 'enum', values: ['480p', '720p'] },
-    audio_enabled: { kind: 'bool' },
-    seed: { kind: 'int', min: 0, max: 2147483647 },
-    image_url: { kind: 'url' },
-    // Transform filters that operate on a clip (PRD A6). Same rule as
-    // image_url: HTTPS only, bounded length, and in practice always a
-    // presigned URL this server minted — never a client-supplied host.
-    video_url: { kind: 'url' },
-    // Filter feature selectors, verified against the live fal schemas on
-    // 2026-09-18 (scripts/verify-filter-endpoints.mjs). These are NOT the
-    // quantity knobs the comment above excludes: choosing a makeup style or
-    // a target age buys exactly one output, same as the default. Without
-    // them the filter has no controls and is not a product — you cannot
-    // "age modify" without saying to what age.
-    //
-    // Bounds mirror the provider's own enum and range, so a value this
-    // allowlist accepts is one the provider accepts.
-    makeup_style: { kind: 'enum', values: ['natural', 'glamorous', 'smoky_eyes', 'bold_lips', 'no_makeup', 'remove_makeup', 'dramatic', 'bridal', 'professional', 'korean_style', 'artistic'] },
-    intensity: { kind: 'enum', values: ['light', 'medium', 'heavy', 'dramatic'] },
-    // Costumes (face-costume): a style from our list; the wording is ours (lib/costumePrompts.js).
-    costume_style: { kind: 'enum', values: COSTUME_STYLES },
-    target_age: { kind: 'int', min: 6, max: 100 },
-    preserve_identity: { kind: 'bool' },
-};
-
-/** @returns {{ok:true}|{ok:false,error:string}} */
-function validateInputs(inputs) {
-    if (JSON.stringify(inputs).length > MAX_INPUTS_BYTES) return { ok: false, error: 'inputs_too_large' };
-    const nonPromptInputs = typeof inputs?.prompt === 'string' ? { ...inputs, prompt: '' } : inputs;
-    if (JSON.stringify(nonPromptInputs).length > MAX_NON_PROMPT_INPUTS_BYTES) return { ok: false, error: 'inputs_too_large' };
-    for (const [key, value] of Object.entries(inputs)) {
-        const rule = ALLOWED_INPUTS[key];
-        if (!rule) return { ok: false, error: `inputs_key_not_allowed:${key.slice(0, 32)}` };
-        switch (rule.kind) {
-            case 'string':
-                if (typeof value !== 'string' || value.length > rule.max) return { ok: false, error: `inputs_invalid:${key}` };
-                break;
-            case 'enum':
-                if (!rule.values.includes(value)) return { ok: false, error: `inputs_invalid:${key}` };
-                break;
-            case 'int':
-                if (!Number.isInteger(value) || value < rule.min || value > rule.max) return { ok: false, error: `inputs_invalid:${key}` };
-                break;
-            case 'bool':
-                if (typeof value !== 'boolean') return { ok: false, error: `inputs_invalid:${key}` };
-                break;
-            case 'edit':
-                break;
-            case 'url': {
-                let u;
-                try { u = new URL(value); } catch { return { ok: false, error: `inputs_invalid:${key}` }; }
-                if (u.protocol !== 'https:' || value.length > 2048) return { ok: false, error: `inputs_invalid:${key}` };
-                break;
-            }
-            default:
-                return { ok: false, error: `inputs_invalid:${key}` };
-        }
-    }
-    return { ok: true };
-}
 
 // Per-provider submit. Each entry: the secret it needs, a pre-debit check that
 // the inputs map onto a request the catalog price covers, and the submit call.
@@ -188,7 +97,7 @@ export async function POST(req) {
     if (!inputs || typeof inputs !== 'object' || Array.isArray(inputs)) {
         return NextResponse.json({ error: 'inputs_must_be_object' }, { status: 400 });
     }
-    const inputsCheck = validateInputs(inputs);
+    const inputsCheck = body.template_clip !== undefined ? { ok: true } : validateInputs(inputs);
     if (!inputsCheck.ok) return NextResponse.json({ error: inputsCheck.error }, { status: 400 });
     if (Object.hasOwn(inputs, 'narration_text')) {
         const narration = normaliseNarration(inputs.narration_text);
@@ -250,6 +159,15 @@ export async function POST(req) {
         return NextResponse.json({ error: 'rate_check_unavailable' }, { status: 503 });
     }
 
+    const hasTemplateClip = Object.hasOwn(body, 'template_clip');
+    if (hasTemplateClip && (process.env.TEMPLATE_CLIP_ENABLED !== 'true' || typeof body.template_clip !== 'string'
+        || !/^[a-z0-9][a-z0-9-]{0,127}$/.test(body.template_clip))) return NextResponse.json({ error: 'template_clip_not_found' }, { status: 404 });
+    const clipReplay = hasTemplateClip ? await replayTemplateClip(authId, body, cfg) : null;
+    if (clipReplay) return NextResponse.json(clipReplay.body, { status: clipReplay.status });
+    const templateClip = hasTemplateClip ? await loadTemplateClip(body.template_clip, cfg) : null;
+    if (hasTemplateClip && !templateClip) return NextResponse.json({ error: 'template_clip_not_found' }, { status: 404 });
+    if (templateClip && clientTemplateVideo(body)) return NextResponse.json({ error: 'template_clip_video_not_allowed' }, { status: 400 });
+
     const replay = body.swap !== undefined ? await replaySwapScene(authId, body, cfg) : null;
     if (replay) return NextResponse.json(replay.body, { status: replay.status });
     const swap = body.swap !== undefined ? await loadSwapScene(body.swap, cfg) : null;
@@ -263,6 +181,13 @@ export async function POST(req) {
     if (!references.ok) return NextResponse.json({ error: references.error }, { status: 400 });
     const swapError = swap && checkSwapRequest(swap, body, references.references);
     if (swapError) return NextResponse.json({ error: swapError }, { status: 400 });
+    if (templateClip) {
+        const error = checkTemplateClipRequest(body, references.references);
+        if (error) return NextResponse.json({ error }, { status: 400 });
+        inputs = { ...inputs, prompt: TEMPLATE_CLIP_PROMPT, duration_seconds: 5 };
+        const checked = validateInputs(inputs);
+        if (!checked.ok) return NextResponse.json({ error: checked.error }, { status: 400 });
+    }
     const rawKeys = references.keys, rawAssets = references.assets;
     if (rawKeys.length || rawAssets.length) {
         if (!consent) return NextResponse.json({ error: 'consent_required' }, { status: 400 });
@@ -274,7 +199,7 @@ export async function POST(req) {
     const freeAllowanceOn = isFreeAllowanceOn(process.env);
     let modelRow;
     try {
-        const rows = swap ? [swap.modelRow] : await select(
+        const rows = templateClip ? [templateClip.modelRow] : swap ? [swap.modelRow] : await select(
             'model_catalog',
             { columns: `id,provider,provider_endpoint,modality,credits_5s,gated_flag,active${freeAllowanceOn ? ',free_allowance_per_day' : ''}`, filter: `id=eq.${encodeURIComponent(modelId)}` },
             cfg,
@@ -316,20 +241,20 @@ export async function POST(req) {
     if (!providerKey) return NextResponse.json({ error: 'gateway_not_configured' }, { status: 503 });
     // Active capabilities precede source signing/inspection. Both frames pass caller
     // ownership, expiry, MIME sniffing and bounded size/length checks before debit.
-    const r2cfg = swap || rawKeys.length || rawAssets.length ? r2EnvConfig() : null;
+    const r2cfg = templateClip || swap || rawKeys.length || rawAssets.length ? r2EnvConfig() : null;
     if (r2cfg && !r2IsConfigured(r2cfg)) return NextResponse.json({ error: 'gateway_not_configured' }, { status: 503 });
     const resolved = await resolveGenerationSources({ authId, references: references.references, record, r2cfg, dbcfg: cfg });
     if (!resolved.ok) return NextResponse.json({ error: resolved.error }, { status: sourceErrorStatus(resolved.error) });
     const { sources } = resolved;
     Object.assign(inputs,resolved.inputs);
-    const swapVideo = swap ? await resolveSwapVideo(swap, record, r2cfg) : null;
+    const swapVideo = templateClip ? await resolveTemplateClipVideo(templateClip, record, r2cfg) : swap ? await resolveSwapVideo(swap, record, r2cfg) : null;
     if (swapVideo && !swapVideo.ok) return NextResponse.json({ error: swapVideo.error }, { status: sourceErrorStatus(swapVideo.error) });
     if (swapVideo) { inputs.video_url = swapVideo.url; sources.video_url = swapVideo.metadata; }
 
     // From here on only the keys this model declares exist: the create page
     // sends one control set for every model, and an undeclared key must not
     // reach the provider, the job row, or the price.
-    const modelInputs = declaredInputs(record, inputs);
+    const modelInputs = declaredInputs(record, inputs, { serverMedia: !!templateClip });
     // Refuse before the debit anything the provider request cannot express at
     // the priced unit (a longer clip, an aspect ratio the model lacks, ...).
     const providerCheck = provider.check(record, modelRow, modelInputs);
@@ -428,7 +353,7 @@ export async function POST(req) {
     // ADR-0072: the template this started from, recorded on the job for the Popular ranking only. It is believed only if it names a
     // real template that belongs to this model, it never reaches a provider (the provider gets storedInputs / modelInputs below),
     // and a bad or missing one is simply ignored.
-    const presetId = swap ? null : templateStartId(body && body.preset, modelId);
+    const presetId = swap || templateClip ? null : templateStartId(body && body.preset, modelId);
     const jobInputs = presetId ? { ...storedInputs, preset_id: presetId } : storedInputs;
     // Only authenticated ownership + key proves a replay. Malformed reads are unknown.
     async function existingJob() {
@@ -554,53 +479,5 @@ export async function POST(req) {
         return NextResponse.json({ job_id: jobId, idempotent: true, balance_after: balanceAfter });
     }
 
-    // These paid providers are always guarded: an ambiguous response may
-    // already have spent supplier credits, so it must never trigger an
-    // automatic refund. fal's durable outbox normally owns this boundary;
-    // this also protects the legacy path while rollout flags change.
-    // 4. Submit to the provider. With SUPPLIER_ROUTES_ENABLED and a second proven route, a supplier's
-    //    provable refusal (auth, payment, capacity) may be routed to the next route (ADR-0256 phase 2);
-    //    an ambiguous answer never is. Otherwise this is one submit, exactly as before.
-    const submitted = await submitWithFailover({
-        jobId, modelRow, ownRoute, routes: offerRoutes,
-        canHop: !rawKeys.length && !rawAssets.length && !record.edit,
-        inputs: modelInputs, jobInputs: record.edit ? storedInputs : modelInputs, publicHost, sources,
-        first: { provider, record, key: providerKey },
-        deps: { providerFor, capabilityFor },
-    }, cfg);
-    const submitResult = submitted.result;
-    // The supplier that actually holds the job: route 1 unless a failover moved it.
-    const servedBy = submitted.supplier;
-    const guardedSubmit = ['fal', 'kie', 'grsai', 'openrouter', 'crun', 'higgsfield'].includes(servedBy);
-
-    if (!submitResult.ok) {
-        if (guardedSubmit && submitResult.outcome === 'unknown') return unknownSubmitResponse(jobId, cfg);
-        // Record why on the job, then refund — the provider wouldn't take the
-        // job so we owe the credits back. An untyped refusal (fal and kie
-        // return log strings) may be classified by Jev (ADR-0066); null keeps
-        // the generic code, and the refund is the same either way.
-        const errorCode = submitResult.errorCode || await classifySubmitFailure(submitResult.error, process.env);
-        await refundRejectedSubmit({ jobId, userId, credits, errorCode }, cfg);
-        console.error('[generations] provider submit failed:', servedBy, submitResult.error);
-        // A topic the script writer refused is the user's to change, not an outage.
-        if (submitResult.errorCode === 'script_refused') return NextResponse.json({ error: 'topic_refused' }, { status: 422 });
-        // So is a prompt the provider refused, or an input it would not take.
-        if (errorCode === 'provider_moderation' || errorCode === 'provider_input_rejected') {
-            return NextResponse.json({ error: errorCode }, { status: 422 });
-        }
-        // Don't leak upstream vendor payloads to the client — log only.
-        return NextResponse.json({ error: 'provider_submit_failed' }, { status: 502 });
-    }
-
-    // 5. Move state to SUBMITTED and record provider job id.
-    const recorded = await recordSubmittedJob({ jobId, provider: servedBy, providerJobId: submitResult.providerJobId }, cfg);
-    if (guardedSubmit && !recorded) return unknownSubmitResponse(jobId, cfg);
-    if (recorded) await recordFirstAttempt({ jobId, route: submitted.route, attemptNo: submitted.attemptNo, providerJobId: submitResult.providerJobId }, cfg);
-
-    return NextResponse.json({
-        job_id: jobId,
-        state: 'SUBMITTED',
-        balance_after: balanceAfter,
-        ...(debit.free ? { free_allowance: true } : {}),
-    });
+    return finishGenerationSubmit({ jobId, userId, credits, modelRow, ownRoute, offerRoutes, rawKeys, rawAssets, record, modelInputs, storedInputs, publicHost, sources, provider, providerKey, balanceAfter, debit }, cfg);
 }

@@ -98,6 +98,7 @@ test('the formerly clipped 2,077-character exact prompt now fits the product con
 
 test('web, API, MCP and mobile boundaries all reference the shared 30,000 contract', () => {
   const api = readFileSync('app/api/v1/generations/route.js', 'utf8');
+  const validation = readFileSync('lib/generationInputValidation.js', 'utf8');
   const mcp = readFileSync('lib/veyrnoxMcp.js', 'utf8');
   const mobile = readFileSync('apps/mobile/src/lib/promptLimits.ts', 'utf8');
   const mobileCreate = readFileSync('apps/mobile/src/app/(app)/create/[modelId].tsx', 'utf8');
@@ -116,10 +117,10 @@ test('web, API, MCP and mobile boundaries all reference the shared 30,000 contra
   const webCreate = readFileSync('app/veyrnox/app/create/page.js', 'utf8');
   const webTemplate = readFileSync('app/veyrnox/_components/TemplateRecipe.js', 'utf8');
   const priceSlip = readFileSync('app/veyrnox/_components/PriceSlip.js', 'utf8');
-  assert.match(api, /prompt: \{ kind: 'string', max: GENERATION_PROMPT_MAX \}/);
-  assert.match(api, /const MAX_INPUTS_BYTES = 256 \* 1024/);
-  assert.match(api, /const MAX_NON_PROMPT_INPUTS_BYTES = 8 \* 1024/);
-  assert.match(api, /nonPromptInputs[\s\S]*MAX_NON_PROMPT_INPUTS_BYTES/);
+  assert.match(validation, /prompt: \{ kind: 'string', max: GENERATION_PROMPT_MAX \}/);
+  assert.match(validation, /const MAX_INPUTS_BYTES = 256 \* 1024/);
+  assert.match(validation, /const MAX_NON_PROMPT_INPUTS_BYTES = 8 \* 1024/);
+  assert.match(validation, /nonPromptInputs[\s\S]*MAX_NON_PROMPT_INPUTS_BYTES/);
   assert.match(api, /const MAX_REQUEST_BYTES = 512 \* 1024/);
   assert.match(mcp, /prompt: z\.string\(\)\.min\(1\)\.max\(GENERATION_PROMPT_MAX\)/);
   assert.match(mobile, /GENERATION_PROMPT_MAX = 30_000/);

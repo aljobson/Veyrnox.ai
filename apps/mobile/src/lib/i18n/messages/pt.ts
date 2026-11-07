@@ -348,6 +348,8 @@ const pt = {
     'label.Photo of the new person': 'Fotografia da nova pessoa',
     'label.Photos of the new people': 'Fotografias das novas pessoas',
     'app.create.swapConsentNotice': 'Use apenas fotografias de pessoas que tenham dado o seu consentimento.',
+    'public.TemplateRecipe.templateClipUsed': 'Este modelo usa o seu próprio clipe e a sua foto para substituir a personagem principal.',
+    'presets.use.photoTitle': 'Use sua foto',
 } as const;
 
 export default pt;

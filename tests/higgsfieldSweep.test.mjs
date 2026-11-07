@@ -145,8 +145,8 @@ test('cron and gateway are wired while flag and output hosts remain dark', async
   assert.match(worker, /apiKey: env\.HIGGSFIELD_API_KEY/);
   // Absent means off; no binding is added to the production 66-var budget.
   assert.doesNotMatch(readFileSync('wrangler.jsonc', 'utf8'), /HIGGSFIELD_ENABLED/);
-  assert.match(readFileSync('app/api/v1/generations/route.js', 'utf8'), /'crun', 'higgsfield'\]\.includes\(servedBy\)/);
-  assert.match(readFileSync('app/api/v1/generations/route.js', 'utf8'), /canHop: !rawKeys\.length && !rawAssets\.length && !record\.edit/);
+  assert.match(readFileSync('lib/generationProviderSubmit.js', 'utf8'), /'crun', 'higgsfield'\]\.includes\(servedBy\)/);
+  assert.match(readFileSync('lib/generationProviderSubmit.js', 'utf8'), /canHop: !rawKeys\.length && !rawAssets\.length && !record\.edit/);
   assert.doesNotMatch(readFileSync('packages/adapters/r2Copy.js', 'utf8'), /higgsfield/i);
   const { copyUrlToR2 } = await import('../packages/adapters/r2Copy.js');
   const real = globalThis.fetch, quiet = console.error;
