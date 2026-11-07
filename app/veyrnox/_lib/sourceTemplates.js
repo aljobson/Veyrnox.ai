@@ -1,3 +1,5 @@
+import { SYNTX_REPLACEMENTS_TEMPLATES } from './sourceTemplateExpansion18.js';
+import { HF_REPLACEMENTS_TEMPLATES } from './sourceTemplateExpansion17.js';
 import { CATEGORY_FILL_TEMPLATES } from './sourceTemplateExpansion16.js';
 import { SYNTX_64_TEMPLATES } from './sourceTemplateExpansion15.js';
 import { SOURCE_TEMPLATE_EXPANSION_14 } from './sourceTemplateExpansion14.js';
@@ -371,6 +373,8 @@ export const SOURCE_TEMPLATES = [
   ...SOURCE_TEMPLATE_EXPANSION_14,
   ...SYNTX_64_TEMPLATES,
   ...CATEGORY_FILL_TEMPLATES,
+  ...HF_REPLACEMENTS_TEMPLATES,
+  ...SYNTX_REPLACEMENTS_TEMPLATES,
   ...SEEDANCE_SOURCE_TEMPLATE_EXPANSION,
 ].map((template) => {
   const source = SEEDANCE_200_TEMPLATE_METADATA[template.id];

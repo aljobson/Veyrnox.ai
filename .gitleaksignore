@@ -273,3 +273,8 @@ f2562ab6742bfa99290c8315a6bed71db1a8a220:tests/chat.test.mjs:generic-api-key:50
 
 # Same reviewed publishable key as above, now at its squash-merge commit on main (#1951). Public sb_publishable_ prefix, not a JWT or service-role key.
 def5ffcd88e938915cccbfcd1c252b298e8f3a2b:scripts/kling-o1-staging-probe.mjs:generic-api-key:11
+
+# Replacement-templates baseline fixture (#1989): the existing template id `whiskey-gun-trick` contains the substring "key" in the
+# `templates` and `records` maps (lines 2 and 3), the same false positive as exactOnlyBaseline.json above. Not credentials.
+1b636800ba299161eb8eafcca5bfe937b9b6a499:tests/fixtures/replacementTemplatesBaseline.json:generic-api-key:2
+1b636800ba299161eb8eafcca5bfe937b9b6a499:tests/fixtures/replacementTemplatesBaseline.json:generic-api-key:3

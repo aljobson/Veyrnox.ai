@@ -171,7 +171,7 @@ The regression suite checks:
 This audit used Syntx’s public read-only Trends API on 29 October 2026. It did not run a paid generation or infer private prompts.
 
 <!-- BEGIN PUBLIC PROMPT HYGIENE -->
-Captured public text remains verbatim by owner decision, including third-party handles, plates, addresses, domains, promo codes and upload filenames. These are pattern-detected candidates, not verified identities. No redaction or publication change is applied. The shared offline scanner and regression test cover all 299 + 63 + 28 accepted raw prompts.
+Captured public text remains verbatim by owner decision, including third-party handles, plates, addresses, domains, promo codes and upload filenames. These are pattern-detected candidates, not verified identities. No redaction or publication change is applied. The shared offline scanner and regression test cover all 299 + 63 + 28 + 11 + 3 accepted raw prompts.
 
 | Capture | Affected public id | Detected kinds |
 | --- | --- | --- |
@@ -188,7 +188,7 @@ Captured public text remains verbatim by owner decision, including third-party h
 <!-- BEGIN SOURCE REFERENCE GAPS -->
 ## source-reference-gaps (informational)
 
-20 retained rows across the three captures are exact as published but incomplete by origin: source feeds delete reference mentions. The owner may hide them. Their captured bytes, publication and `sourcePromptRunnable` flags remain unchanged. Input-asset counts corroborate missing mentions where the capture records them; Syntx does not supply that count in this audit. The detector uses grammatical gaps, not upload counts alone, and does not guarantee detection of every missing mention.
+20 retained rows across the five captures are exact as published but incomplete by origin: source feeds delete reference mentions. The owner may hide them. Their captured bytes, publication and `sourcePromptRunnable` flags remain unchanged. Input-asset counts corroborate missing mentions where the capture records them; Syntx does not supply that count in this audit. The detector uses grammatical gaps, not upload counts alone, and does not guarantee detection of every missing mention.
 
 | Capture | Affected public id | Detected gaps | Captured input assets |
 | --- | --- | --- | ---: |

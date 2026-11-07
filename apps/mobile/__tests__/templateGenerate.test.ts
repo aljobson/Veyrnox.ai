@@ -94,7 +94,7 @@ describe('a template whose only media is one photo', () => {
         expect(inlineBlockReason(needing, twoImages, { photo: true })).toBe('media');
     });
 
-    test('the request carries the upload reference, the rights tick and a line naming the person as the lead', () => {
+    test('a non-exact request carries the upload reference, rights tick and photo guidance', () => {
         const request = templateRequest(needing, photoModel, { ...choice, references: photo, sourceRights: true });
         expect(request.references).toEqual(photo);
         expect(request.sourceRights).toBe(true);
@@ -104,6 +104,24 @@ describe('a template whose only media is one photo', () => {
         const plain = templateRequest(preset, model, choice);
         expect(plain.prompt).toBe('a rap battle');
         expect(plain.sourceRights).toBeUndefined();
+    });
+
+    test('an unedited exact prompt stays byte-for-byte unchanged with or without a photo', () => {
+        const source = ' \r\nKeep the red swimsuit.\r\n ';
+        const exact = { ...needing, prompt: 'fallback text', sourcePrompt: source, sourcePromptOrigin: 'community-source-exact' } as Preset;
+        for (const references of [undefined, photo]) {
+            const request = templateRequest(exact, photoModel, { ...choice, prompt: source, references, sourceRights: true });
+            expect(request.prompt).toBe(source);
+            expect(request.prompt.includes('main character')).toBe(false);
+            expect(request.references).toEqual(references ?? []);
+            expect(request.sourceRights).toBe(references ? true : undefined);
+        }
+        for (const prompt of ['  An edited scene.  ', source.trim()]) {
+            const request = templateRequest(exact, photoModel, { ...choice, prompt, references: photo, sourceRights: true });
+            expect(request.prompt.startsWith(`${prompt.trim()}\n\n`)).toBe(true);
+            expect(request.prompt).toMatch(/person in the attached photo is the main character/);
+            expect(templateRequest(exact, photoModel, { ...choice, prompt }).prompt).toBe(prompt.trim());
+        }
     });
 
     test('changing the photo is a different request with a new key', async () => {

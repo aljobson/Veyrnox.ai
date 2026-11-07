@@ -35,7 +35,7 @@ const update = (file, transform) => {
   else if (after !== before) writeFileSync(file, after);
 };
 update('docs/product/template-prompt-audit-2026-10-29.md', text => {
-  text = common(text).replace('Exact-only plus Syntx 64 |', 'Exact-only plus category fill |');
+  text = common(text).replace(/Exact-only plus (?:Syntx 64|category fill) \|/, 'Exact-only plus replacements |');
   for (const [label, value] of Object.entries({
     'Retained community templates': n.retained, 'Captured source texts, including one truncated record': n.captured,
     'Public community gallery': n.public, 'Public complete exact prompts': n.public, 'Hidden community rows': n.hidden,
@@ -100,7 +100,8 @@ update('docs/product/template-prompt-audit-2026-10-29.md', text => text.includes
 console.log(JSON.stringify(n));
 
 const rejectBegin = '<!-- BEGIN CLIPPED SOURCE REVIEW -->', rejectEnd = '<!-- END CLIPPED SOURCE REVIEW -->';
-const endingReviews = [expansion, fill, syntx].map(a => sourcePromptEndingReview(a.records));
+const replacements = ['higgsfield-replacements-12', 'syntx-replacements-4'].map(name => JSON.parse(readFileSync('docs/product/source-audit/' + name + '-2026-11-07.json')));
+const endingReviews = [expansion, fill, syntx, ...replacements].map(a => sourcePromptEndingReview(a.records));
 const ambiguousCount = endingReviews.reduce((sum, review) => sum + review.ambiguousUnpunctuatedCount, 0);
 const reviewedCount = endingReviews.reduce((sum, review) => sum + review.reviewedAmbiguousCount, 0);
 const notableEndings = endingReviews.flatMap(review => review.inventory)
@@ -109,7 +110,7 @@ const tableText = text => text.replaceAll('\r', '\\r').replaceAll('\n', '\\n').r
 const rejectionSection = rejectBegin + '\nThe final ending review rejected ' +
   expansion.rejected.map(r => '`' + r.id + '`: ' + r.reason).join(' ') +
   ' Only audit identifiers, hashes and reasons remain; the rejected records, recipes, clips, media and active fixtures were removed. The 300-record capture now retains ' + expansion.accepted + ' pairs. Historical stage-1 counts above describe the earlier snapshot.\n\n' +
-  'The detector reports ' + ambiguousCount + ' ambiguous unpunctuated endings, plus ' + reviewedCount + ' separately reviewed ambiguity. These rows remain published. A trailing connector without an origin-gap pattern stays ambiguous; a connector alone never auto-rejects or hides a row. Origin-stripped connectors remain under the source-reference-gaps policy. The complete id/reason/tail inventories are generated in the three audit JSONs under `ending-review`.\n\n' +
+  'The detector reports ' + ambiguousCount + ' ambiguous unpunctuated endings, plus ' + reviewedCount + ' separately reviewed ambiguity. These rows remain published. A trailing connector without an origin-gap pattern stays ambiguous; a connector alone never auto-rejects or hides a row. Origin-stripped connectors remain under the source-reference-gaps policy. The complete id/reason/tail inventories are generated in the five audit JSONs under `ending-review`.\n\n' +
   'Connector endings and separately reviewed ambiguities are listed below. Tails contain the last 80 characters (or the whole prompt if shorter); `\\r` and `\\n` represent captured line endings.\n\n' +
   '| Public id | Reason | Final 80 characters |\n| --- | --- | --- |\n' +
   notableEndings.map(r => '| `' + r.id + '` | ' + tableText(r.reason) + ' | `' + tableText(r.tail) + '` |').join('\n') + '\n' + rejectEnd;
