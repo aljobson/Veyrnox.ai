@@ -27,14 +27,13 @@ describe('hard paywall (ADR-0108 amendment 2)', () => {
         expect(isHardPaywallExempt('/delete-account')).toBe(true);
         expect(isHardPaywallExempt('/welcome')).toBe(true);
         expect(isHardPaywallExempt('/vibe')).toBe(true);
-        expect(isHardPaywallExempt('/start')).toBe(false);
-        expect(isHardPaywallExempt('/legal/terms')).toBe(true);
+                expect(isHardPaywallExempt('/legal/terms')).toBe(true);
         expect(isHardPaywallExempt('/legal/privacy')).toBe(true);
         for (const p of ['/', '/create', '/credits', '/templates', null, undefined]) expect(isHardPaywallExempt(p)).toBe(false);
     });
     it('orders first run Welcome -> Vibe check -> paywall when on, unchanged when off', () => {
-        expect(afterWelcomeHref(false, true)).toBe('/start');
-        expect(afterWelcomeHref(false, false)).toBe('/start');
+        expect(afterWelcomeHref(false, true)).toBe('/');
+        expect(afterWelcomeHref(false, false)).toBe('/');
         expect(afterWelcomeHref(true, true)).toBe('/vibe?from=welcome');
         expect(afterWelcomeHref(true, false)).toBe('/');
     });

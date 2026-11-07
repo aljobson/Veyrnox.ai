@@ -1,6 +1,7 @@
 import { rawText } from '../../lib/i18n/translate';
 import { captureEvent } from '../../lib/analytics/events';
 import { markWelcomeSeen } from '../../lib/markWelcomeSeen';
+import { noteOnboardingCompleted } from '../../lib/celebrate';
 import { afterWelcomeHref, hardPaywallEnabled } from '../../lib/hardPaywall';
 import { CREATOR_PROFILE_ENABLED } from '../../lib/creatorProfile';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -42,7 +43,8 @@ export default function Welcome() {
     async function done(action: 'next' | 'skip' = 'next') {
         captureEvent('onboarding_step', { step: 'welcome', action });
         await markWelcomeSeen();
-        // Start with the person's actual material; with the hard paywall on, Vibe check comes next, then the paywall.
+        // Flag off: straight to the home screen, which is where first run ends. Flag on: Vibe check next, then the paywall.
+        if (!hardPaywallEnabled()) noteOnboardingCompleted();
         router.replace(afterWelcomeHref(hardPaywallEnabled(), CREATOR_PROFILE_ENABLED));
     }
 
