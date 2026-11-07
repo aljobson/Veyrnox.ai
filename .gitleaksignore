@@ -282,3 +282,5 @@ def5ffcd88e938915cccbfcd1c252b298e8f3a2b:scripts/kling-o1-staging-probe.mjs:gene
 # Squash commit of #1989: the same two template-id false positives as the entries above (`whiskey-gun-trick` contains "key"), now under the hash main carries.
 aba3757e9ebb8d43d510b54e6ffe384d0f7f0b3f:tests/fixtures/replacementTemplatesBaseline.json:generic-api-key:2
 aba3757e9ebb8d43d510b54e6ffe384d0f7f0b3f:tests/fixtures/replacementTemplatesBaseline.json:generic-api-key:3
+# PR #1993: `key: 'key-12345678'` is a test idempotency key, not a secret (a squash merge will need the same entry under main's hash).
+22b6103a12742aad94db5cb6f5ba4256c6cc9486:apps/mobile/__tests__/editorAiEditClient.test.ts:generic-api-key:11
