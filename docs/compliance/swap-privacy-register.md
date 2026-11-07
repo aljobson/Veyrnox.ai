@@ -52,4 +52,4 @@ and review date independent of customer uploads; withdrawal or expiry requires
 removing the R2 object, manifest/scene entries and public audit row, with any
 provider-held copies addressed through the processor's removal process. The
 public audit carries technical provenance and approval only, never names or
-moderation reasons. See [the clip-import amendment](../adr/0000-swap-scene-clips.md).
+moderation reasons. See [the clip-import amendment](../adr/0331-swap-scene-clips.md).
