@@ -72,6 +72,12 @@
   "private": true,
   "overrides": {
     "@posthog/core": "1.58.1",
-    "@posthog/types": "1.415.3"
+    "@posthog/types": "1.415.3",
+    "minimatch@^9": "11.0.1",
+    "minimatch@^10": "11.0.1",
+    "glob@^13": "14.0.2",
+    "test-exclude": {
+      "glob": "14.0.2"
+    }
   }
 }
