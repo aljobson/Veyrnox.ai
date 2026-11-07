@@ -166,7 +166,7 @@ test('a successful provider taking more than 30 seconds remains within the 40-se
     const f = fixture({ provider: () => new Promise(resolve => setTimeout(() => resolve({ text: '{"commands":[{"op":"split","kind":"video","id":"v1","frame":30}]}' }), 31_000)) });
     const response = f.run(request());
     // Digest uses WebCrypto, so allow its real I/O callback before advancing fake time.
-    for (let i = 0; i < 200 && !f.providerCalls.length; i++) await new Promise(resolve => setImmediate(resolve));
+    for (let i = 0; i < 200_000 && !f.providerCalls.length; i++) await new Promise(resolve => setImmediate(resolve));
     assert.equal(f.providerCalls.length, 1); t.mock.timers.tick(31_001);
     assert.equal((await response).status, 200); assert.equal(f.count('ledger_refund'), 0);
 });
