@@ -1,3 +1,4 @@
+import { loadTemplateClip } from '../../../lib/templateClipGate.js';
 /**
  * GET /api/catalog — public model catalog (active rows only).
  *
@@ -20,6 +21,13 @@ export async function GET(req) {
     const cfg = envConfig();
     // A scene lookup is public catalog data, never caller identity or source media.
     // Keep it uncached: a paused offer or removed manifest must disappear immediately.
+    const templateId = req?.url ? new URL(req.url).searchParams.get('template_clip') : null;
+    if (templateId !== null) {
+        const clip = await loadTemplateClip(templateId, cfg);
+        const headers = { 'cache-control': 'no-store' };
+        return clip ? NextResponse.json(clip.template, { headers })
+            : NextResponse.json({ error: 'template_clip_not_found' }, { status: 404, headers });
+    }
     const swapId = req?.url ? new URL(req.url).searchParams.get('swap') : null;
     if (swapId !== null) {
         const swap = await loadSwapScene(swapId, cfg);

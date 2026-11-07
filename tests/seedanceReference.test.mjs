@@ -15,7 +15,9 @@ const png = n => ({ name: `${n}.png`, type: 'image/png' });
 
 test('reference record has a verified 9-picture slot and no frame slots', () => {
   assert.equal(record.provider, 'fal');
-  assert.deepEqual(Object.keys(record.media), ['image']);
+  assert.deepEqual(Object.keys(record.media), ['image', 'video']);
+  assert.equal(record.media.video.serverOnly, true);
+  assert.deepEqual(Object.keys(publicCapabilities(record).media), ['image']);
   assert.ok(verifiedReferenceLimit(record.media.image));
   assert.equal(hardMaxFiles(record.media.image), 9);
   assert.ok(MAX_REFERENCES >= 12);

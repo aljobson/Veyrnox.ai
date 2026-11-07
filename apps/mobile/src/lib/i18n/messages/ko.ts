@@ -348,6 +348,8 @@ const ko = {
     'label.Photo of the new person': '새 인물의 사진',
     'label.Photos of the new people': '새 인물들의 사진',
     'app.create.swapConsentNotice': '동의한 사람의 사진만 사용하세요.',
+    'public.TemplateRecipe.templateClipUsed': '이 템플릿은 자체 클립과 내 사진을 사용하여 주인공을 교체합니다.',
+    'presets.use.photoTitle': '내 사진 추가',
 } as const;
 
 export default ko;

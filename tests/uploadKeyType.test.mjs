@@ -58,7 +58,7 @@ test('a transform modality prices the same way its bucket implies', () => {
 // accepts must be one the provider accepts, or we debit and then fail.
 test('filter selectors are bounded to what the provider actually accepts', async () => {
     const mod = await import('node:fs');
-    const src = mod.readFileSync(new URL('../app/api/v1/generations/route.js', import.meta.url), 'utf8');
+    const src = mod.readFileSync(new URL('../lib/generationInputValidation.js', import.meta.url), 'utf8');
 
     // target_age: the provider range is 6-100 inclusive.
     assert.match(src, /target_age:\s*\{ kind: 'int', min: 6, max: 100 \}/);

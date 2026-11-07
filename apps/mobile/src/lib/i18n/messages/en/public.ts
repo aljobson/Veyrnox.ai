@@ -1,5 +1,6 @@
 // English strings for public. Add keys here; keep their original wording and placeholders.
 export default {
+    "public.TemplateRecipe.templateClipUsed": "This template uses its own clip with your photo to replace the lead character.",
     'public.vey.back': 'Back',
     'public.account.signOut': 'Sign out',
     'public.TemplateRecipe.exactCommunityPrompt': 'EXACT COMMUNITY PROMPT',

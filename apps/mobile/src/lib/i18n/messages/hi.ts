@@ -348,6 +348,8 @@ const hi = {
     'label.Photo of the new person': 'नए व्यक्ति की फ़ोटो',
     'label.Photos of the new people': 'नए लोगों की फ़ोटो',
     'app.create.swapConsentNotice': 'केवल उन लोगों की फ़ोटो इस्तेमाल करें जिन्होंने सहमति दी है।',
+    'public.TemplateRecipe.templateClipUsed': 'यह टेम्पलेट मुख्य किरदार को बदलने के लिए अपनी क्लिप और आपकी फ़ोटो का इस्तेमाल करता है।',
+    'presets.use.photoTitle': 'अपनी फ़ोटो जोड़ें',
 } as const;
 
 export default hi;

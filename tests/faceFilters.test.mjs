@@ -151,7 +151,7 @@ test('0445 stages Costumes inactive at the floor price and activates nothing', (
 });
 
 test('the generations gateway admits costume_style, from our own list only', () => {
-    const route = readFileSync(new URL('../app/api/v1/generations/route.js', import.meta.url), 'utf8');
-    assert.match(route, /import \{ COSTUME_STYLES \} from '\.\.\/\.\.\/\.\.\/\.\.\/lib\/costumePrompts\.js';/);
+    const route = readFileSync(new URL('../lib/generationInputValidation.js', import.meta.url), 'utf8');
+    assert.match(route, /import \{ COSTUME_STYLES \} from '\.\/costumePrompts\.js';/);
     assert.match(route, /costume_style: \{ kind: 'enum', values: COSTUME_STYLES \}/);
 });

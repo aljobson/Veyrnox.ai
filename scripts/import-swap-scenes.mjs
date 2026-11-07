@@ -80,7 +80,7 @@ export async function downloadClip(raw, destination, fetchImpl = fetch) {
   await writeFile(destination, bytes, { flag: 'wx' });
 }
 
-function assertMp4(bytes) {
+export function assertMp4(bytes) {
   // Reject QuickTime even though ffprobe shares its mov/mp4 demuxer.
   const brands = new Set(['isom', 'iso2', 'iso3', 'iso4', 'iso5', 'iso6', 'mp41', 'mp42', 'avc1', 'dash']);
   if (bytes.length < 16 || bytes.toString('ascii', 4, 8) !== 'ftyp'
@@ -124,10 +124,10 @@ export async function measure(file) {
     audio: probe.streams.some(s => s.codec_type === 'audio') };
 }
 
-export async function normalise(input, output, keepAudio = false) {
+export async function normalise(input, output, keepAudio = false, maxSeconds = 10) {
   await exec('ffmpeg', ['-v', 'error', '-nostdin', '-n', '-protocol_whitelist', 'file,pipe',
     '-i', input, '-map', '0:v:0', ...(keepAudio ? ['-map', '0:a:0?', '-c:a', 'aac'] : ['-an']),
-    '-t', '10', '-vf', "scale=w='trunc(iw*min(1,1280/max(iw,ih))/2)*2':h='trunc(ih*min(1,1280/max(iw,ih))/2)*2',setsar=1",
+    '-t', String(maxSeconds), '-vf', "scale=w='trunc(iw*min(1,1280/max(iw,ih))/2)*2':h='trunc(ih*min(1,1280/max(iw,ih))/2)*2',setsar=1",
     '-c:v', 'libx264', '-threads', '2', '-filter_threads', '2', '-pix_fmt', 'yuv420p',
     '-map_metadata', '-1', '-map_chapters', '-1', '-movflags', '+faststart', output],
   { timeout: 300_000, maxBuffer: 1024 * 1024 });

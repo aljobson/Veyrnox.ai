@@ -348,6 +348,8 @@ const de = {
     'label.Photo of the new person': 'Foto der neuen Person',
     'label.Photos of the new people': 'Fotos der neuen Personen',
     'app.create.swapConsentNotice': 'Verwende nur Fotos von Personen, die zugestimmt haben.',
+    'public.TemplateRecipe.templateClipUsed': 'Diese Vorlage verwendet ihren eigenen Clip und dein Foto, um die Hauptfigur zu ersetzen.',
+    'presets.use.photoTitle': 'Dein Foto verwenden',
 } as const;
 
 export default de;
