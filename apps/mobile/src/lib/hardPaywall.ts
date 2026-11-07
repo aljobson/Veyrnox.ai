@@ -25,10 +25,11 @@ const EXEMPT = ['/delete-account', '/welcome', '/vibe', '/analytics-consent'];
 export const isHardPaywallExempt = (pathname: string | null | undefined): boolean =>
     !!pathname && (EXEMPT.includes(pathname) || pathname.startsWith('/legal/'));
 
-// Where the Welcome cards lead. Flag off: the Start screen, as before. Flag on: Welcome -> Vibe check -> paywall, so the
-// next stop is the Vibe check (or, if that is not switched on in this build, straight to the gated app).
-export function afterWelcomeHref(hard: boolean, vibeAvailable: boolean): '/start' | '/vibe?from=welcome' | '/' {
-    if (!hard) return '/start';
+// Where the Welcome cards lead. Flag off: straight to the home screen (Create, LLM Chat, Film Studio...); the old
+// four-box Start screen is gone. Flag on: Welcome -> Vibe check -> paywall, so the next stop is the Vibe check (or, if
+// that is not switched on in this build, straight to the gated app).
+export function afterWelcomeHref(hard: boolean, vibeAvailable: boolean): '/vibe?from=welcome' | '/' {
+    if (!hard) return '/';
     return vibeAvailable ? '/vibe?from=welcome' : '/';
 }
 

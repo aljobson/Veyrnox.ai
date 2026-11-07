@@ -132,10 +132,10 @@ test('mood change cancels the reaction, drops its queue and resets every value',
 test('wave mood completes once and proceeds to idle', async () => {
     await render(<VeyCharacter mood="wave" />);
     expect(started).toHaveLength(1);
-    expect(flatten(started[0]).filter(a => a.config?.duration === 180)).toHaveLength(7);
+    expect(flatten(started[0]).filter(a => a.config?.duration === 360)).toHaveLength(7);
     await act(async () => started[0].done?.({ finished: true }));
     expect(started.slice(1).some(a => a.kind === 'loop')).toBe(true);
-    expect(started.slice(1).flatMap(flatten).filter(a => a.config?.duration === 180)).toHaveLength(0);
+    expect(started.slice(1).flatMap(flatten).filter(a => a.config?.duration === 360)).toHaveLength(0);
 });
 
 // Real PanResponder handlers consume React Native's touch history, including capture before bubble.
@@ -187,7 +187,7 @@ test('loader keeps its loading label on a status sibling before the reachable wo
 });
 test('empty state greets with an interactive one-shot wave', async () => {
     await render(<EmptyState title="Nothing yet" />); reachable(button());
-    expect(started).toHaveLength(1); expect(flatten(started[0]).filter(a => a.config?.duration === 180)).toHaveLength(7);
+    expect(started).toHaveLength(1); expect(flatten(started[0]).filter(a => a.config?.duration === 360)).toHaveLength(7);
 });
 test.each([['welcome', Welcome], ['rate', Rate]] as const)('%s exposes Vey and its Wave action without hidden ancestors', async (_, Screen) => {
     await render(<Screen />); expect(button()).toBeDefined(); reachable(button());
