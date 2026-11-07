@@ -15,6 +15,7 @@ import { clipCredits, modelAspectRatios, modelIdForName, presetCredits, presetHr
 import { CHAT_USER_TEXT_MAX } from '../../../lib/chatLimits.js';
 import { Spinner } from './Spinner';
 import { TemplateGenerate } from './TemplateGenerate';
+import SourceRightsConfirmation from './SourceRightsConfirmation';
 import { inlineBlockReason } from '../_lib/templateGenerate';
 import { nearestOption } from '../../../lib/aspectShapes.mjs';
 
@@ -49,16 +50,18 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked 
   const [opening, setOpening] = useState(false);
   const [photo, setPhoto] = useState(null);
   const [photoBusy, setPhotoBusy] = useState(false);
+  const [rightsConfirmed, setRightsConfirmed] = useState(false);
   const photoSequence = useRef(0);
   const promptBlocked = !prompt.trim() || prompt.length > TEMPLATE_PROMPT_MAX;
   const generationDisabled = generationBlocked || promptBlocked || !model || photoBusy;
   const chatBlocked = !prompt.trim() || prompt.length > CHAT_USER_TEXT_MAX;
   const requiredImage = model?.media?.image?.required === true;
-  // A template that needs no media generates right here; one that does keeps Create (inlineBlockReason).
-  const inline = inlineBlockReason(preset, model) === null;
+  // A template that needs no media, or only one photo, generates right here; one that needs more keeps Create.
+  const inline = inlineBlockReason(preset, model, { photo: true }) === null;
 
   async function choosePhoto(file) {
     const sequence = ++photoSequence.current;
+    setRightsConfirmed(false);
     if (!file) {
       setPhoto(null);
       setPhotoBusy(false);
@@ -147,8 +150,9 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked 
           </div>
         </fieldset>
       )}
+      {requiredImage && photo && <SourceRightsConfirmation confirmed={rightsConfirmed} onChange={setRightsConfirmed} />}
       {inline && !generationDisabled && (
-        <TemplateGenerate preset={preset} model={model} prompt={prompt} aspect={aspect} aspectOptions={aspectOptions} durationSeconds={durationSeconds} unitCost={credits} />
+        <TemplateGenerate preset={preset} model={model} prompt={prompt} aspect={aspect} aspectOptions={aspectOptions} durationSeconds={durationSeconds} unitCost={credits} photo={requiredImage ? photo : null} rightsConfirmed={rightsConfirmed} needsPhoto={requiredImage} />
       )}
       <button
         type="button"

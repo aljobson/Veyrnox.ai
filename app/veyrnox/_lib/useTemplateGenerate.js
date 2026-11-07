@@ -8,11 +8,14 @@ import { freeLeftFor } from './freeAllowance';
 import { allocationSnapshot } from './imageBatch';
 import { submitTemplate, templateInputs, templateRun, templateRunDead } from './templateGenerate';
 import { TEMPLATE_PROMPT_MAX } from './templateDraft';
+import { mediaGenerationSources } from './chatMedia';
+import { uploadSourceFile } from './uploadSourceFile';
 
 // The template page's Generate (ADR-0120 amendment 1): Create's submit for one item with nothing attached. The run keeps
 // its idempotency key across a retry of the same request, the quote caps the charge, a price change asks to confirm,
-// and any change to the request drops the continuation.
-export function useTemplateGenerate({ preset, model, prompt, aspect, aspectOptions, durationSeconds, unitCost }) {
+// and any change to the request drops the continuation. With a photo it is the one start image, uploaded once, sent with
+// the rights tick Create records on the job.
+export function useTemplateGenerate({ preset, model, prompt, aspect, aspectOptions, durationSeconds, unitCost, photo = null, rightsConfirmed = false, needsPhoto = false }) {
   const [balance, setBalance] = useState(null);
   const [error, setError] = useState(null);
   const [sending, setSending] = useState(false);
@@ -22,11 +25,13 @@ export function useTemplateGenerate({ preset, model, prompt, aspect, aspectOptio
   const freeMap = useFreeAllowance();
   const continuation = useRef(null);
   const inFlight = useRef(false);
-  const identity = JSON.stringify([model?.id, prompt, aspect, durationSeconds, preset.id]);
+  const photoToken = photo ? [photo.name, photo.size, photo.lastModified] : null;
+  const identity = JSON.stringify([model?.id, prompt, aspect, durationSeconds, preset.id, photoToken, rightsConfirmed]);
   const activeBatch = batchView?.identity === identity ? batchView : null;
   const quote = activeBatch?.quote ?? allocationSnapshot(activeBatch ?? { accepted: [null], unknown: new Set() }, activeBatch?.unit ?? unitCost, model ? freeLeftFor(freeMap, model.id) : 0);
   const payable = quote.payable ?? quote.total;
   const promptBlocked = !prompt.trim() || prompt.length > TEMPLATE_PROMPT_MAX;
+  const photoBlocked = needsPhoto && (!photo || !rightsConfirmed);
 
   useEffect(() => {
     let live = true;
@@ -49,7 +54,7 @@ export function useTemplateGenerate({ preset, model, prompt, aspect, aspectOptio
   }, [identity]);
 
   async function generate() {
-    if (inFlight.current || sending || generating || !model || balance == null || payable > balance || promptBlocked) return;
+    if (inFlight.current || sending || generating || !model || balance == null || payable > balance || promptBlocked || photoBlocked) return;
     inFlight.current = true;
     setError(null);
     setSending(true);
@@ -60,11 +65,12 @@ export function useTemplateGenerate({ preset, model, prompt, aspect, aspectOptio
       duration_seconds: model.kind === 'video' ? durationSeconds : undefined,
       ...(aspectOptions.length ? { aspect_ratio: aspect } : {}),
     };
-    const inputs = templateInputs(preset, model, { prompt, aspect, durationSeconds, aspectOptions });
+    const inputs = templateInputs(preset, model, { prompt, aspect, durationSeconds, aspectOptions, withPhoto: Boolean(photo) });
     let result;
     try {
       result = await submitTemplate({ run, quote, model, preset, inputs, makeKey: makeIdempotencyKey, deps: {
         gatewayFetch,
+        sources: photo ? () => mediaGenerationSources(model, { image: { file: photo } }, uploadSourceFile) : null,
         freeAllowance: async () => { const r = await gatewayFetch('/free-allowance'); return r?.enabled ? r.left : {}; },
         onJob: (submitted, credits) => {
           startJobs({ job_id: submitted.job_id, state: 'queued', credits, model_id: model.id, ...presentation });
@@ -86,8 +92,8 @@ export function useTemplateGenerate({ preset, model, prompt, aspect, aspectOptio
 
   const confirming = Boolean(activeBatch?.confirm);
   return {
-    jobs, generating, sending, error, quote, confirming, balance, promptBlocked,
-    canGenerate: !!model && !promptBlocked && !sending && !generating && balance != null && payable <= balance,
+    jobs, generating, sending, error, quote, confirming, balance, promptBlocked, photoBlocked,
+    canGenerate: !!model && !promptBlocked && !photoBlocked && !sending && !generating && balance != null && payable <= balance,
     generate, clear: () => { clearJobs(); setError(null); },
   };
 }

@@ -12,7 +12,7 @@ const { ALL_TEMPLATES } = await import('../app/veyrnox/_lib/templates.js');
 const { modelIdForName } = await import('../app/veyrnox/_lib/tokens.js');
 const { ERROR_COPY } = await import('../app/veyrnox/_lib/createErrors.js');
 const { allocationSnapshot } = await import('../app/veyrnox/_lib/imageBatch.js');
-const { inlineBlockReason, templateInputs, templateRun, submitTemplate, templateRunDead } = await import('../app/veyrnox/_lib/templateGenerate.js');
+const { inlineBlockReason, photoOnlyModel, templateInputs, templateRun, submitTemplate, templateRunDead } = await import('../app/veyrnox/_lib/templateGenerate.js');
 
 const preset = ALL_TEMPLATES.find(p => modelIdForName(p.model) && p.prompt && !p.needs);
 const modelId = modelIdForName(preset.model);
@@ -123,9 +123,46 @@ test('only a template that needs no media, no voice and an open model generates 
   assert.equal(inlineBlockReason(preset, null), 'unavailable');
 });
 
+test('a template whose only media is one photo generates here when the page can attach it', () => {
+  const photoModel = { ...model, media: { image: { required: true } } };
+  const needing = { ...preset, needs: 'A clear portrait or full-body photo of the person' };
+  assert.equal(photoOnlyModel(photoModel), true);
+  assert.equal(inlineBlockReason(needing, photoModel, { photo: true }), null);
+  assert.equal(inlineBlockReason(needing, photoModel), 'media', 'without the photo option the old rule stands');
+  assert.equal(inlineBlockReason({ ...preset, needs: 'One video (3-10 s) and two pictures' }, photoModel, { photo: true }), 'media');
+  assert.equal(inlineBlockReason(needing, { ...model, media: { image: { required: true }, video: { required: true } } }, { photo: true }), 'media');
+  assert.equal(inlineBlockReason(needing, { ...model, media: { image: { required: true, minFiles: 2 } } }, { photo: true }), 'media');
+  assert.equal(inlineBlockReason(needing, model, { photo: true }), 'media', 'a model with no photo slot cannot use a photo');
+});
+
+test('with a photo the prompt names the person as the lead, and the request carries the upload key and the rights tick', async () => {
+  const withPhoto = templateInputs(preset, model, { prompt: preset.prompt, aspect: '9:16', durationSeconds: 5, aspectOptions: ['9:16'], withPhoto: true });
+  assert.ok(withPhoto.prompt.startsWith(`${preset.prompt}\n\n`));
+  assert.match(withPhoto.prompt, /person in the attached photo is the main character/);
+  assert.equal(inputs().prompt, preset.prompt, 'no photo, no added line');
+  const h = harness([{ job_id: 'job-9' }]);
+  const run = templateRun(null, 'a', 4, makeKey);
+  let uploads = 0;
+  h.deps.sources = async () => { uploads += 1; return { references: [{ slot: 'image', origin: 'upload', key: 'u/1' }] }; };
+  await submitTemplate({ run, quote: allocationSnapshot(run, 4, 0), model, preset, inputs: withPhoto, makeKey, deps: h.deps });
+  assert.deepEqual(h.requests[0].body.references, [{ slot: 'image', origin: 'upload', key: 'u/1' }]);
+  assert.equal(h.requests[0].body.consent, true);
+  await submitTemplate({ run, quote: allocationSnapshot(run, 4, 0), model, preset, inputs: withPhoto, makeKey, deps: h.deps });
+  assert.equal(uploads, 1, 'a retry of the same request reuses the uploaded file');
+});
+
+test('a failed upload is reported as upload_failed and nothing is sent', async () => {
+  const h = harness([{ job_id: 'x' }]);
+  h.deps.sources = async () => { throw gatewayError('upload_failed'); };
+  const run = templateRun(null, 'a', 4, makeKey);
+  const out = await send(h, run);
+  assert.equal(out.error.code, 'upload_failed');
+  assert.equal(h.requests.length, 0);
+});
+
 test('the page offers Generate only when inlineBlockReason is null, keeps Create as "Edit before generating", and prices from the catalogue', () => {
   const use = readFileSync(new URL('../app/veyrnox/_components/UseTemplate.js', import.meta.url), 'utf8');
-  assert.match(use, /const inline = inlineBlockReason\(preset, model\) === null;/);
+  assert.match(use, /const inline = inlineBlockReason\(preset, model, \{ photo: true \}\) === null;/);
   assert.match(use, /\{inline && !generationDisabled && \(\s*<TemplateGenerate[^>]*unitCost=\{credits\}/);
   assert.match(use, /inline \? t\('presets\.use\.editBeforeGenerating'\)/);
   assert.match(use, /onClick=\{use\}/, 'the Create hand-off is unchanged');
