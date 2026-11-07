@@ -205,8 +205,8 @@ const ja = {
     'app.create.sources.sideRange': '縦横それぞれ {min}–{max} ピクセル',
     'app.create.sources.minSide': '縦横それぞれ {min} ピクセル以上',
     'app.create.sources.maxSide': '縦横それぞれ最大 {max} ピクセル',
-    'app.create.error.source_too_short': 'この動画は短すぎます。3 秒以上のクリップを使用してください。',
-    'app.create.error.source_resolution_out_of_range': 'この動画のサイズには対応していません。縦横それぞれが 720 ～ 2160 ピクセルのクリップを使用してください。',
+    'app.create.error.source_too_short': 'この動画はこのモデルには短すぎます。動画の選択欄に表示される最小の長さを満たすクリップを使用してください。',
+    'app.create.error.source_resolution_out_of_range': 'このファイルの寸法はこのモデルに対応していません。このファイルを削除し、ファイルの選択欄に表示されるサイズ制限内のものを選んでください。',
     'label.Reference pictures': '参照画像',
     'label.Start frame': '開始フレーム',
     'label.End frame': '終了フレーム',
@@ -344,6 +344,10 @@ const ja = {
     'app.explore.smartCutStart': 'Turn finished clips into a reviewed first cut.',
     'app.library.openSmartCut': 'Open Smart Cut',
     'app.editor.sheet.style': 'スタイル',
+    'label.Video to change': '変更する動画',
+    'label.Photo of the new person': '新しい人物の写真',
+    'label.Photos of the new people': '新しい人物たちの写真',
+    'app.create.swapConsentNotice': '同意を得た人の写真のみ使用してください。',
 } as const;
 
 export default ja;

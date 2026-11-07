@@ -205,8 +205,8 @@ const ar = {
     'app.create.sources.sideRange': '{min}–{max} بكسل لكل بُعد',
     'app.create.sources.minSide': '{min} بكسل على الأقل لكل بُعد',
     'app.create.sources.maxSide': 'حتى {max} بكسل لكل بُعد',
-    'app.create.error.source_too_short': 'هذا الفيديو قصير جداً. استخدم مقطعاً لا تقل مدته عن 3 ثوانٍ.',
-    'app.create.error.source_resolution_out_of_range': 'أبعاد هذا الفيديو غير مدعومة. استخدم مقطعاً يتراوح كل بُعد فيه بين 720 و2160 بكسل.',
+    'app.create.error.source_too_short': 'هذا الفيديو أقصر مما يقبله هذا النموذج. استخدم مقطعاً يستوفي الحد الأدنى للمدة الموضح عند اختيار الفيديو.',
+    'app.create.error.source_resolution_out_of_range': 'أبعاد هذا الملف غير مدعومة في هذا النموذج. أزل هذا الملف واختر ملفاً ضمن حدود الحجم الموضحة عند اختيار الملف.',
     'label.Reference pictures': 'صور مرجعية',
     'label.Start frame': 'إطار البداية',
     'label.End frame': 'إطار النهاية',
@@ -344,6 +344,10 @@ const ar = {
     'app.explore.smartCutStart': 'Turn finished clips into a reviewed first cut.',
     'app.library.openSmartCut': 'Open Smart Cut',
     'app.editor.sheet.style': 'النمط',
+    'label.Video to change': 'الفيديو المراد تغييره',
+    'label.Photo of the new person': 'صورة الشخص الجديد',
+    'label.Photos of the new people': 'صور الأشخاص الجدد',
+    'app.create.swapConsentNotice': 'استخدم فقط صور أشخاص وافقوا على ذلك.',
 } as const;
 
 export default ar;

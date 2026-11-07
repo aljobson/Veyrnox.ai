@@ -205,8 +205,8 @@ const de = {
     'app.create.sources.sideRange': '{min}–{max} Pixel auf jeder Seite',
     'app.create.sources.minSide': 'mindestens {min} Pixel auf jeder Seite',
     'app.create.sources.maxSide': 'bis zu {max} Pixel auf jeder Seite',
-    'app.create.error.source_too_short': 'Dieses Video ist zu kurz. Verwende einen Clip mit mindestens 3 Sekunden.',
-    'app.create.error.source_resolution_out_of_range': 'Die Abmessungen dieses Videos werden nicht unterstützt. Verwende einen Clip mit 720 bis 2160 Pixeln auf jeder Seite.',
+    'app.create.error.source_too_short': 'Dieses Video ist für dieses Modell zu kurz. Verwende einen Clip, der die bei der Videoauswahl angegebene Mindestlänge erfüllt.',
+    'app.create.error.source_resolution_out_of_range': 'Die Abmessungen dieser Datei werden von diesem Modell nicht unterstützt. Entferne die Datei und wähle eine innerhalb der bei der Dateiauswahl angegebenen Größenlimits.',
     'label.Reference pictures': 'Referenzbilder',
     'label.Start frame': 'Startbild',
     'label.End frame': 'Endbild',
@@ -344,6 +344,10 @@ const de = {
     'app.explore.smartCutStart': 'Turn finished clips into a reviewed first cut.',
     'app.library.openSmartCut': 'Open Smart Cut',
     'app.editor.sheet.style': 'Stil',
+    'label.Video to change': 'Zu änderndes Video',
+    'label.Photo of the new person': 'Foto der neuen Person',
+    'label.Photos of the new people': 'Fotos der neuen Personen',
+    'app.create.swapConsentNotice': 'Verwende nur Fotos von Personen, die zugestimmt haben.',
 } as const;
 
 export default de;

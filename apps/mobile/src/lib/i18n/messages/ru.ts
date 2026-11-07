@@ -205,8 +205,8 @@ const ru = {
     'app.create.sources.sideRange': '{min}–{max} пикселей с каждой стороны',
     'app.create.sources.minSide': 'не менее {min} пикселей с каждой стороны',
     'app.create.sources.maxSide': 'до {max} пикселей с каждой стороны',
-    'app.create.error.source_too_short': 'Это видео слишком короткое. Используйте ролик длительностью не менее 3 секунд.',
-    'app.create.error.source_resolution_out_of_range': 'Размер этого видео не поддерживается. Используйте ролик с каждой стороной от 720 до 2160 пикселей.',
+    'app.create.error.source_too_short': 'Это видео слишком короткое для этой модели. Используйте ролик, соответствующий минимальной длительности, указанной при выборе видео.',
+    'app.create.error.source_resolution_out_of_range': 'Размеры этого файла не поддерживаются этой моделью. Удалите этот файл и выберите другой в пределах ограничений размеров, указанных при выборе файла.',
     'label.Reference pictures': 'Референсные изображения',
     'label.Start frame': 'Начальный кадр',
     'label.End frame': 'Конечный кадр',
@@ -344,6 +344,10 @@ const ru = {
     'app.explore.smartCutStart': 'Turn finished clips into a reviewed first cut.',
     'app.library.openSmartCut': 'Open Smart Cut',
     'app.editor.sheet.style': 'Стиль',
+    'label.Video to change': 'Видео для изменения',
+    'label.Photo of the new person': 'Фото нового человека',
+    'label.Photos of the new people': 'Фото новых людей',
+    'app.create.swapConsentNotice': 'Используйте только фотографии людей, давших согласие.',
 } as const;
 
 export default ru;

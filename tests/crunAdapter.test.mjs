@@ -194,3 +194,23 @@ test('a Kling prompt over Crun\'s documented 2,500 characters is refused before 
   assert.equal(buildRequest({ model: 'kling/v2-6' }, { prompt: 'x'.repeat(2501) }).error, 'inputs_invalid:prompt');
   assert.equal(buildRequest({ model: 'kling/v3' }, { prompt: 'x'.repeat(2501), image_url: 'https://a/b.png' }).error, 'inputs_invalid:prompt');
 });
+
+test('Wan Animate replace is a strict poll-only whole-job request', () => {
+  const endpoint = 'crun:wan/2-2-animate-replace', target = parseEndpoint(endpoint);
+  const inputs = { image_url: 'https://owned.test/person.jpg', video_url: 'https://owned.test/source.mp4' };
+  assert.deepEqual(target, { model: 'wan/2-2-animate-replace' });
+  assert.equal(endpointKind(endpoint), 'video');
+  for (const image_url of [inputs.image_url, [inputs.image_url]]) {
+    assert.deepEqual(buildRequest(target, { ...inputs, image_url }), { ok: true, body: {
+      model: 'wan/2-2-animate-replace', input: { img_urls: [inputs.image_url], video_urls: [inputs.video_url], resolution: '720P' },
+    } });
+  }
+  assert.equal(buildRequest(target, { ...inputs, duration_seconds: 5 }).ok, true);
+  for (const key of ['callback_url', 'model', 'resolution', 'prompt', 'img_urls', 'unknown']) {
+    assert.equal(buildRequest(target, { ...inputs, [key]: 'override' }).error, `inputs_key_not_allowed:${key}`);
+  }
+  for (const key of ['image_url', 'video_url']) for (const value of [undefined, [], ['https://a.test/a', 'https://b.test/b'], 'http://owned.test/file', 'https://', 42]) {
+    assert.equal(buildRequest(target, { ...inputs, [key]: value }).ok, false, `${key}: ${JSON.stringify(value)}`);
+  }
+  assert.equal(buildRequest(target, { ...inputs, duration_seconds: 10 }).error, 'duration_not_supported');
+});

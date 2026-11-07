@@ -3196,5 +3196,11 @@
     "english": "Add",
     "translation": "Añadir",
     "ratio": 2
+  },
+  {
+    "id": "app.create.swapConsentNotice",
+    "english": "Only use photos of people who agreed.",
+    "translation": "Usa solo fotos de personas que hayan dado su consentimiento.",
+    "ratio": 1.62
   }
 ]

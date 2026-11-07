@@ -205,8 +205,8 @@ const pt = {
     'app.create.sources.sideRange': '{min}–{max} píxeis de cada lado',
     'app.create.sources.minSide': 'pelo menos {min} píxeis de cada lado',
     'app.create.sources.maxSide': 'até {max} píxeis de cada lado',
-    'app.create.error.source_too_short': 'Este vídeo é demasiado curto. Use um clipe com pelo menos 3 segundos.',
-    'app.create.error.source_resolution_out_of_range': 'As dimensões deste vídeo não são suportadas. Use um clipe com entre 720 e 2160 píxeis de cada lado.',
+    'app.create.error.source_too_short': 'Este vídeo é demasiado curto para este modelo. Use um clipe que cumpra a duração mínima indicada ao escolher o vídeo.',
+    'app.create.error.source_resolution_out_of_range': 'As dimensões deste ficheiro não são suportadas por este modelo. Remova esse ficheiro e escolha um dentro dos limites de tamanho indicados ao escolher o ficheiro.',
     'label.Reference pictures': 'Imagens de referência',
     'label.Start frame': 'Quadro inicial',
     'label.End frame': 'Quadro final',
@@ -344,6 +344,10 @@ const pt = {
     'app.explore.smartCutStart': 'Turn finished clips into a reviewed first cut.',
     'app.library.openSmartCut': 'Open Smart Cut',
     'app.editor.sheet.style': 'Estilo',
+    'label.Video to change': 'Vídeo a alterar',
+    'label.Photo of the new person': 'Fotografia da nova pessoa',
+    'label.Photos of the new people': 'Fotografias das novas pessoas',
+    'app.create.swapConsentNotice': 'Use apenas fotografias de pessoas que tenham dado o seu consentimento.',
 } as const;
 
 export default pt;

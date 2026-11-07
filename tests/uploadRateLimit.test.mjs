@@ -33,7 +33,7 @@ function stub({ rate = { ok: true }, balance = 1, stored = 0, fail, r2Failure = 
     calls.push('r2-list');
     assert.equal(u.hostname, 'test-account.r2.cloudflarestorage.com');
     assert.equal(u.searchParams.get('prefix'), `uploads/${auth}/`);
-    assert.equal(u.searchParams.get('max-keys'), '11');
+    assert.equal(u.searchParams.get('max-keys'), '21');
     if (r2Failure) return new Response('unavailable', { status: 503 });
     return new Response('<ListBucketResult>' + Array.from({ length: stored }, (_, i) =>
       `<Contents><Key>uploads/${auth}/${i}.png</Key><LastModified>2026-09-24T00:00:00Z</LastModified><Size>1</Size></Contents>`
@@ -85,13 +85,13 @@ test('quota approval preserves balance and R2 failure gates', async () => {
   stub({ r2Failure: true });
   assert.equal((await post()).status, 503);
 });
-test('nine stored objects allow issuance, ten or eleven refuse it', async () => {
-  for (const stored of [9, 10, 11]) {
+test('nineteen stored objects allow issuance, twenty or twenty-one refuse it', async () => {
+  for (const stored of [19, 20, 21]) {
     stub({ stored });
     const response = await post();
-    assert.equal(response.status, stored < 10 ? 200 : 429);
+    assert.equal(response.status, stored < 20 ? 200 : 429);
     const result = await response.json();
-    if (stored < 10) {
+    if (stored < 20) {
       assert.match(result.key, new RegExp(`^uploads/${auth}/[a-f0-9-]+\\.png$`));
       assert.equal(result.expires_in, 900);
       assert.equal(result.content_type, 'image/png');
@@ -99,7 +99,7 @@ test('nine stored objects allow issuance, ten or eleven refuse it', async () => 
       const signed = new URL(result.upload_url);
       assert.equal(signed.searchParams.get('X-Amz-Expires'), '900');
       assert.match(signed.searchParams.get('X-Amz-SignedHeaders'), /content-type/);
-    } else assert.equal(result.error, 'too_many_pending_uploads');
+    } else assert.deepEqual(result, { error: 'too_many_pending_uploads', limit: 20 });
     assert.deepEqual(calls, ['consume_upload_request', 'read_user_balance', 'r2-list']);
   }
 });

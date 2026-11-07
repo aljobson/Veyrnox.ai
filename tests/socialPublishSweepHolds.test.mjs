@@ -18,7 +18,7 @@ async function target(state = {}, network = 'threads') {
         network, token_expires_at: new Date(Date.now() + 3 * 86400000).toISOString(), r2_key: 'image.png', media_type: 'image', external_account_id: '123',
         access_token_enc: await encryptToken('token', cryptoCfg), provider_state: state };
 }
-for (const code of ['MEDIA_HELD', 'MEDIA_SCANNING', 'CLAIM_LOST']) test(`${code} defers before presign and consumes no attempt`, async () => {
+for (const code of ['MEDIA_HELD', 'MEDIA_EVIDENCE_HELD', 'MEDIA_REMOVED', 'MEDIA_SCANNING', 'CLAIM_LOST']) test(`${code} defers before presign and consumes no attempt`, async () => {
     const row = await target(); const calls = [];
     globalThis.fetch = async (url, init) => {
         const name = new URL(url).pathname.split('/').pop(); calls.push(name);
@@ -207,4 +207,42 @@ test('other probe failures use the existing claim-failure response without claim
             assert.equal(calls, 1);
         }
     } finally { console.error = originalError; }
+});
+
+for (const status of ['FINISHED', 'IN_PROGRESS']) test(`Instagram ${status}: held continuation respects the poll boundary`, async () => {
+    const row = await target({ container_id: '123456', started_at: new Date(Date.now() - (status === 'FINISHED' ? 3600000 : 3 * 3600000)).toISOString() }, 'instagram');
+    const calls = []; let completed;
+    globalThis.fetch = async (url, init) => {
+        const name = new URL(url).pathname.split('/').pop(); calls.push(name);
+        const probe = presentProbe(name, init, calls); if (probe) return probe;
+        if (name === 'claim_due_social_post_targets_v2') return Response.json([row]);
+        if (name === '123456') return Response.json({ status_code: status });
+        if (name === 'authorize_social_target_dispatch') return Response.json({ ok: false, code: 'MEDIA_HELD' });
+        if (name === 'complete_social_post_target') { completed = JSON.parse(init.body); return Response.json({ ok: true }); }
+        assert.fail('unexpected provider or mutation: ' + name);
+    };
+    const out = await runPublishSweep(deps);
+    if (status === 'FINISHED') {
+        assert.equal(out.deferred, 1); assert.equal(out.failed, 0);
+        assert.deepEqual(calls, ['hold_probe', 'claim_due_social_post_targets_v2', '123456', 'authorize_social_target_dispatch']);
+    } else {
+        assert.equal(out.failed, 1); assert.equal(completed.p_ok, false);
+        assert.equal(completed.p_error, 'poll_timeout');
+        assert.deepEqual(calls, ['hold_probe', 'claim_due_social_post_targets_v2', 'complete_social_post_target']);
+    }
+});
+
+test('Threads carousel holds defer before child or parent creation', async () => {
+    const row = await target({ children: [{ container_id: 'child' }], started_at: new Date().toISOString() });
+    row.media = [0, 1].map(position => ({ position, media_type: 'image', r2_key: `image-${position}.png`, mime_type: 'image/png', size_bytes: 100 }));
+    const calls = [];
+    globalThis.fetch = async (url, init) => {
+        const name = new URL(url).pathname.split('/').pop(); calls.push(name);
+        const probe = presentProbe(name, init, calls); if (probe) return probe;
+        if (name === 'claim_due_social_post_targets_v2') return Response.json([row]);
+        assert.equal(name, 'authorize_social_target_dispatch');
+        return Response.json({ ok: false, code: 'MEDIA_HELD' });
+    };
+    assert.equal((await runPublishSweep(deps)).deferred, 1);
+    assert.deepEqual(calls, ['hold_probe', 'claim_due_social_post_targets_v2', 'authorize_social_target_dispatch']);
 });

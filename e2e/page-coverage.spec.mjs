@@ -68,7 +68,13 @@ test('every page template and every sitemap page renders within accessibility an
   const response = await request.get('/sitemap.xml');
   expect(response.ok(), 'sitemap is required for complete concrete public-page coverage').toBeTruthy();
   const fixtures = JSON.parse(process.env.QA_PAGE_FIXTURES || '{}');
-  const manifest = buildPageManifest(sitemapPaths(await response.text(), baseURL), fixtures);
+  const fullManifest = buildPageManifest(sitemapPaths(await response.text(), baseURL), fixtures);
+  // QA_SHARD="i/n" runs every n-th page starting at the i-th, so a matrix of jobs covers the whole manifest in parallel.
+  const shard = /^(\d+)\/(\d+)$/.exec(process.env.QA_SHARD || '');
+  const shardIndex = shard ? Number(shard[1]) : 1;
+  const shardCount = shard ? Number(shard[2]) : 1;
+  if (shardIndex < 1 || shardIndex > shardCount) throw new Error(`QA_SHARD ${process.env.QA_SHARD} is out of range`);
+  const manifest = fullManifest.filter((_, index) => index % shardCount === shardIndex - 1);
   const results = [];
   const authenticated = testInfo.project.name.endsWith('-authenticated');
   const authentication = { required: authenticated, before: false, after: false };
@@ -120,7 +126,9 @@ test('every page template and every sitemap page renders within accessibility an
         expect(metrics.htmlBytes, `uncompressed HTML budget: ${label}`).toBeLessThan(800 * 1024);
         expect(metrics.ttfbMs, `cold navigation TTFB budget: ${label}`).toBeLessThan(5000);
         if (entry.pathname === '/app' || entry.pathname === '/presets') {
-          expect(metrics.images, 'first gallery page is bounded').toBeLessThanOrEqual(20);
+          // One batch of 50 template cards (#1631), each with a poster image, plus the roller's sample of up to 48.
+          expect(await page.locator('#preset-gallery-results img').count(), 'first gallery batch is bounded').toBeLessThanOrEqual(50);
+          expect(metrics.images, 'first gallery page is bounded').toBeLessThanOrEqual(110);
           const before = await page.locator('#preset-gallery-results > a').count();
           await page.getByRole('button', { name: 'Show more templates' }).click();
           await expect(page.locator('#preset-gallery-results > a')).toHaveCount(before + 50);

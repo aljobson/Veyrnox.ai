@@ -67,7 +67,9 @@ describe('uploadSource', () => {
 describe('uploadMessage', () => {
     test('turns server codes into plain advice', () => {
         expect(uploadMessage(new ApiError(402, 'insufficient_credits'))).toMatch(/credits/);
-        expect(uploadMessage(new ApiError(429, 'too_many_pending_uploads'))).toMatch(/wait/i);
+        expect(uploadMessage(new ApiError(429, 'too_many_pending_uploads'))).toMatch(/holding 20 uploads.*24 hours/);
+        expect(uploadMessage(new ApiError(429, 'upload_budget_exceeded'))).toMatch(/allowance \(up to 20 files or 200 MB/);
+        expect(uploadMessage(new ApiError(429, 'rate_limited'))).toMatch(/wait a minute/i);
         expect(uploadMessage(new ApiError(400, 'upload_too_large'))).toMatch(/too large/i);
         expect(uploadMessage(new ApiError(0, 'network'))).toMatch(/connection/i);
         expect(uploadMessage(new ApiError(500, 'something_else'))).toMatch(/could not upload/i);

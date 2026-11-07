@@ -32,7 +32,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 // This is a snapshot of stored objects, not a reservation for outstanding PUT
 // URLs. Concurrent issuance and later uploads can exceed it. The request quota
 // separately bounds signing and listing work; neither enforces a byte budget.
-const MAX_PENDING_UPLOADS = 10;
+const MAX_PENDING_UPLOADS = 20;
 
 export async function POST(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
@@ -111,7 +111,7 @@ export async function POST(req) {
         return NextResponse.json({ error: 'upload_check_unavailable' }, { status: 503 });
     }
     if (held.objects.length >= MAX_PENDING_UPLOADS) {
-        return NextResponse.json({ error: 'too_many_pending_uploads' }, { status: 429 });
+        return NextResponse.json({ error: 'too_many_pending_uploads', limit: MAX_PENDING_UPLOADS }, { status: 429 });
     }
 
     // Editor batch preflight: real account reservations plus legacy R2 objects.

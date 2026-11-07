@@ -53,6 +53,7 @@ export async function POST(req) {
     } catch (err) {
         return rpcFailure(err, WHERE);
     }
+    if (result?.code === 'HOLD_ACTIVE') return NextResponse.json({ error: 'hold_active' }, { status: 409, headers: NO_STORE });
     if (!result || result.ok !== true) return rpcRefusal(result, 'resolve_rejected', ['report_not_found']);
     return NextResponse.json({ report_id: result.report_id, replayed: result.replayed === true }, { status: result.replayed === true ? 200 : 201, headers: NO_STORE });
 }
