@@ -1,4 +1,4 @@
-# ADR-0000 — Swap scene clip import (host to assign number)
+# ADR-0331 — Swap scene clip import
 
 Status: implemented for offline review; no approved clips, upload or publication.
 Date: 2026-11-07. Supplements ADR-0329's scene mechanics amendment.
