@@ -76,6 +76,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           allowed_bots: 'claude'
           display_report: 'false'
+          show_full_output: true
           prompt: |
             You are the pull-request gate for Veyrnox.ai, a credit-metered AI generation platform.
             Review the change between origin/${{ github.base_ref }} and HEAD (git diff origin/${{ github.base_ref }}...HEAD).
