@@ -306,6 +306,8 @@ try {
         'social_publish_autolists', 'social_report_templates', 'social_team_events', 'social_uploads', 'social_webhook_endpoints',
         'store_customers', 'admin_change_log', 'admin_mutation_receipts', 'admin_roles', 'runtime_switches', 'user_ai_controls', 'ai_limit_policy', 'support_intake_receipts', 'support_messages', 'support_tickets', 'top_up_checkout_rate_limits', 'top_up_flagged_orders', 'top_up_read_rate_limits', 'top_up_return_rate_limits',
         'upload_request_rate_limits', 'upload_reservations', 'workspace_members',
+        // Speech Cut (ADR-0331): short-lived (30-day) derivatives of the user's own media, erased with the source and the account.
+        'speech_analyses', 'speech_analysis_cache', 'speech_analysis_requests', 'speech_source_probes',
     ]);
     const refs = await q(`SELECT DISTINCT c.conrelid::regclass::text AS tbl FROM pg_constraint c
         WHERE c.contype='f' AND c.confrelid IN ('public.users'::regclass,'auth.users'::regclass)`);
