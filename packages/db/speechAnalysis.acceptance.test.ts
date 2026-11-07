@@ -46,7 +46,8 @@ describe('speech analysis RPC acceptance', { skip: !url && 'SPEECH_ANALYSIS_TEST
         const row = await one(`SELECT b.balance,COALESCE(sum(l.delta),0)::integer AS ledger FROM public.credit_balances b
             LEFT JOIN public.ledger_entries l ON l.user_id=b.user_id WHERE b.user_id=$1 GROUP BY b.balance`, [user]);
         assert.equal(row.balance, row.ledger);
-        assert.deepEqual((await client.query('SELECT * FROM public.reconcile_balances()')).rows, []);
+        // Scoped to this test's user: a shared database may hold other suites' raw fixtures.
+        assert.deepEqual((await client.query('SELECT * FROM public.reconcile_balances()')).rows.filter((r: { user_id: string }) => r.user_id === user), []);
     }
     afterEach(async () => {
         try { await invariant(); } finally {

@@ -194,15 +194,18 @@ jobs:
               await c.connect();
               await c.query('DROP DATABASE IF EXISTS rebuild_check');
               await c.query('DROP DATABASE IF EXISTS supplier_spend_check');
+              await c.query('DROP DATABASE IF EXISTS editor_speech_check');
               await c.query('CREATE DATABASE rebuild_check');
               await c.query('CREATE DATABASE supplier_spend_check');
+              await c.query('CREATE DATABASE editor_speech_check');
               await c.end();
             })();
           "
           DATABASE_URL="${DATABASE_URL%/*}/supplier_spend_check" node scripts/replay-migrations.mjs
           DATABASE_URL="${DATABASE_URL%/*}/supplier_spend_check" npx tsx --test --test-concurrency=1 packages/db/provider-spend-limits.acceptance.test.ts packages/db/user-inflight-cap.acceptance.test.ts
-          # These two need the full migration replay (0450-0452), not the migrate.mjs database.
-          DATABASE_URL="${DATABASE_URL%/*}/supplier_spend_check" EDITOR_AI_EDIT_TEST_DATABASE_URL="${DATABASE_URL%/*}/supplier_spend_check" npx tsx --test --test-concurrency=1 packages/db/editorAiEdit.acceptance.test.ts packages/db/speechAnalysis.acceptance.test.ts
+          # AI edit and speech analysis (0450-0452) need a fully replayed database of their own.
+          DATABASE_URL="${DATABASE_URL%/*}/editor_speech_check" node scripts/replay-migrations.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/editor_speech_check" EDITOR_AI_EDIT_TEST_DATABASE_URL="${DATABASE_URL%/*}/editor_speech_check" npx tsx --test --test-concurrency=1 packages/db/editorAiEdit.acceptance.test.ts packages/db/speechAnalysis.acceptance.test.ts
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/replay-migrations.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-fal-dispatch-capped.mjs
           # These legacy fixtures exercise accounting with deliberately huge
