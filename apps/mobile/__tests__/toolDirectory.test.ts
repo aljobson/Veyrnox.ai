@@ -1,4 +1,4 @@
-import { TOOL_TASKS, isTool, requiresSource, toolGroups, toolNeeds } from '../src/lib/toolDirectory';
+import { PHONE_ONLY, TOOL_TASKS, isTool, requiresSource, toolGroups, toolNeeds } from '../src/lib/toolDirectory';
 import type { CatalogModel } from '../src/lib/media';
 
 declare const require: (id: string) => any;
@@ -18,7 +18,12 @@ describe('the tasks match the web /tools page', () => {
     }));
     test('same tasks, labels, blurbs, models and order', () => {
         expect(theirs.length).toBe(11);
-        expect(TOOL_TASKS.map((t) => ({ key: t.key, label: t.label, blurb: t.blurb, ids: [...t.ids] }))).toEqual(theirs);
+        expect(TOOL_TASKS.map((t) => ({ key: t.key, label: t.label, blurb: t.blurb, ids: t.ids.filter((id) => !PHONE_ONLY.includes(id)) }))).toEqual(theirs);
+    });
+    test('phone-only models are the intended ones, all under Face filters, and none is on the web yet', () => {
+        expect(PHONE_ONLY).toEqual(['face-costume']);
+        expect(TOOL_TASKS.find((t) => t.key === 'face-filters')?.ids).toEqual(expect.arrayContaining([...PHONE_ONLY]));
+        for (const id of PHONE_ONLY) expect(body).not.toContain(`'${id}'`);
     });
 });
 

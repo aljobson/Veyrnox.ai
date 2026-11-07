@@ -73,6 +73,17 @@ function ReferencePicker(props: SourcePickerProps) {
     const current = useRef(rows);
     const busy = useRef(new Set<number>());
     const max = props.slot.maxFiles ?? 1;
+    // References that arrive from outside (files attached from the device) join as new rows; rows being edited stay mounted.
+    const refId = (r: GenerationReference) => r.origin === 'upload' ? `u:${r.key}` : `a:${r.asset_id}`;
+    useEffect(() => {
+        const have = new Set(current.current.flatMap(row => row.reference ? [refId(row.reference)] : []));
+        const incoming = (props.references ?? []).filter(r => !have.has(refId(r)));
+        if (!incoming.length) return;
+        const kept = current.current.filter(row => row.reference || busy.current.has(row.id));
+        const next = [...kept, ...incoming.map(reference => ({ id: serial.current++, reference }))];
+        current.current = next; setRows(next);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- reacts to the references the form holds
+    }, [props.references]);
     function change(next: typeof rows) {
         current.current = next; setRows(next);
         props.onReferences?.(next.flatMap(row => row.reference ? [row.reference] : []));

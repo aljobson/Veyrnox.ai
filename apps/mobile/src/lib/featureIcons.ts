@@ -33,6 +33,7 @@ const FACE_ICONS: Readonly<Record<string, MenuIcon>> = {
     'face-relight': 'lightbulb',
     'face-makeup': 'brush',
     'face-age': 'hourglass',
+    'face-costume': 'magicWand',
 };
 export const faceIcon = (modelId: string): FeatureIcon => ({ icon: FACE_ICONS[modelId] ?? 'smiley', hue: 'rose' });
 

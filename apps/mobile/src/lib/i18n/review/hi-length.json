@@ -1866,6 +1866,12 @@
     "ratio": 1.64
   },
   {
+    "id": "faceFilters.jester",
+    "english": "Jester",
+    "translation": "दरबारी विदूषक",
+    "ratio": 2.17
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

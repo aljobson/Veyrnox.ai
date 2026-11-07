@@ -11,6 +11,8 @@ import { LOCALE_CODES, setLocaleFromDevice } from '../src/lib/i18n';
 
 // RNTL is absent and installs are forbidden. Use jest-expo's installed renderer
 // with real React Native controls, exercising their accessibility click handlers.
+jest.mock('@shopify/react-native-skia', () => { throw new Error('native Skia is not available in tests'); });
+jest.mock('../src/lib/lookThumb', () => ({ makeThumb: async () => null }));
 jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () => ({ push: jest.fn() }) }));
 jest.mock('expo-image', () => ({ Image: jest.requireActual('react-native').Image }));
 jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: jest.fn() }));

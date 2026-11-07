@@ -1,5 +1,5 @@
 import { ApiError, type ApiClient } from '../src/lib/api';
-import { faceFilters, faceInputs, faceRequest, comparisonUri, faceFilterMessage, faceFilterUploadMessage } from '../src/lib/faceFilters';
+import { faceDefaults, faceFilters, faceInputs, faceRequest, comparisonUri, faceFilterMessage, faceFilterUploadMessage } from '../src/lib/faceFilters';
 import { createGenerationSubmit, generationMessage } from '../src/lib/generationSubmit';
 import { mediaApi, type CatalogModel } from '../src/lib/media';
 import strings from '../src/lib/i18n/messages/en/faceFilters';
@@ -32,6 +32,17 @@ test('selectors intersect capability bounds and server allowlist; counts never l
     const makeup = model('face-makeup', { makeup_style: { type: 'enum', values: ['natural', 'glamorous'] }, intensity: { type: 'enum', values: ['light', 'medium'] } });
     expect(faceInputs(makeup, { makeup_style: 'natural', intensity: 'medium', target_age: 30 })).toEqual({ makeup_style: 'natural', intensity: 'medium' });
     expect(() => faceInputs(makeup, { makeup_style: 'invented' })).toThrow();
+});
+const costume = () => model('face-costume', { costume_style: { type: 'enum', values: ['clown', 'zombie', 'ghost', 'gore'] }, prompt: { type: 'string' } });
+test('costumes: only listed styles leave the phone, the default is the friendliest, and no words are sent', () => {
+    expect(faceFilters([costume()]).map(m => m.id)).toEqual(['face-costume']);
+    expect(faceDefaults(costume())).toEqual({ costume_style: 'clown' });
+    expect(faceInputs(costume(), { costume_style: 'zombie', prompt: 'anything', num_images: 4 })).toEqual({ costume_style: 'zombie' });
+    expect(() => faceInputs(costume(), { costume_style: 'gore' })).toThrow();
+    expect(() => faceInputs(costume(), { costume_style: 'invented' })).toThrow();
+    const body = faceRequest(costume(), 'uploads/photo', 'ignored words', { costume_style: 'ghost' }, true);
+    expect(body).toMatchObject({ modelId: 'face-costume', prompt: '', confirmedCredits: 17, extraInputs: { costume_style: 'ghost' }, sourceRights: true });
+    expect(() => faceRequest(costume(), 'uploads/photo', '', { costume_style: 'ghost' }, false)).toThrow('api_consent_required');
 });
 test('shared lifecycle retains keys after an ambiguous failure, clears on success, changes on edit', async () => {
     const submit = createGenerationSubmit();

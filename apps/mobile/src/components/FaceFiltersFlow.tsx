@@ -7,7 +7,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { AppState, Platform, ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { AppState, Platform, ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { ApiError, type ApiClient } from '../lib/api';
 import { getCacheUser, subscribeCacheUser } from '../lib/appCache';
 import { faceDefaults, faceFilterMessage, faceFilterUploadMessage, faceFilters, faceInputs, faceRequest, faceSelectors, type FaceValues } from '../lib/faceFilters';
@@ -20,9 +20,14 @@ import { uploadSource } from '../lib/uploads';
 import { t } from '../lib/i18n';
 import { colors } from '../theme';
 import { FaceFilterResult } from './FaceFilterResult';
-import { Button, Icon, IconBadge } from './ui';
+import { Button, Icon } from './ui';
+import { InstantPhoto, liveLooksAvailable } from './InstantPhoto';
+import { LookStrip } from './LookStrip';
+import { StrengthSlider } from './StrengthSlider';
+import { DEFAULT_STRENGTH, isUnchanged, lookMatrix, type Look, type LookId } from '../lib/instantLooks';
+import { saveLookToPhotos } from '../lib/lookExport';
+import { makeThumb } from '../lib/lookThumb';
 import { kindForMime } from '../lib/creativeReuse';
-import { faceIcon } from '../lib/featureIcons';
 import { GENERATION_PROMPT_MAX } from '../lib/promptLimits';
 
 export const RESULT_LINK_REFRESH_MS = 10 * 60 * 1000;
@@ -46,6 +51,14 @@ export function FaceFiltersFlow({ api, owner }: { api: ApiClient; owner: string 
     const [error, setError] = useState<string | null>(null);
     useAnnouncement(error);
     const [job, setJob] = useState<string | null>(null);
+    const [look, setLook] = useState<Look>({ id: 'original', strength: DEFAULT_STRENGTH });
+    const [thumb, setThumb] = useState<string | null>(null);
+    const [catalogError, setCatalogError] = useState<string | null>(null);
+    useAnnouncement(catalogError);
+    const [notice, setNotice] = useState<string | null>(null);
+    const [saving, setSaving] = useState(false);
+    useAnnouncement(notice);
+    const { width: screenWidth } = useWindowDimensions();
     useAnnouncement(fromResult && !model && !job ? t('faceFilterSwitch.resultAttached') : null);
     const submit = useRef(createGenerationSubmit());
     const source = useRef<string | null>(null);
@@ -112,18 +125,26 @@ export function FaceFiltersFlow({ api, owner }: { api: ApiClient; owner: string 
     }, [owner]);
 
     function load() {
-        setError(null);
-        fetchCatalog().then(all => { if (current()) setModels(faceFilters(all)); }).catch(() => { if (current()) setError(t('create.loadError')); });
+        // The catalog has its own error, so choosing a photo or a look never hides its retry button.
+        setCatalogError(null);
+        fetchCatalog().then(all => { if (current()) setModels(faceFilters(all)); }).catch(() => { if (current()) setCatalogError(t('create.loadError')); });
     }
     useEffect(load, []);
 
     function reset(next: CatalogModel | null = null) {
         discardPhoto(); source.current = null; clearResult(); submit.current.reset();
         setPhoto(null); setModel(next); setValues(next ? faceDefaults(next) : {}); setPrompt(''); setChecked(false); setJob(null); setError(null);
+        setLook({ id: 'original', strength: DEFAULT_STRENGTH }); setNotice(null);
     }
     function chooseFilter(next: CatalogModel) {
         setModel(next); setValues(faceDefaults(next)); setPrompt(''); setChecked(false);
         setError(null); setJob(null); submit.current.reset();
+        setLook({ id: 'original', strength: DEFAULT_STRENGTH }); setNotice(null);
+    }
+    function chooseLook(id: LookId) {
+        // A look is instant and on this phone: nothing is uploaded, no rights tick, no credits.
+        setModel(null); setChecked(false); setError(null); setNotice(null);
+        setLook(current => ({ id, strength: id === current.id ? current.strength : DEFAULT_STRENGTH }));
     }
     function applyResult(result: { jobId: string; uri: string }) {
         if (!current()) return;
@@ -132,6 +153,7 @@ export function FaceFiltersFlow({ api, owner }: { api: ApiClient; owner: string 
         resultRef.current = next; setFromResult(next);
         errorRefreshFor.current = null; setPreviewUnavailable(false);
         setModel(null); setValues({}); setPrompt(''); setChecked(false); setJob(null); setError(null);
+        setLook({ id: 'original', strength: DEFAULT_STRENGTH }); setNotice(null);
     }
     async function pick() {
         if (working.current) return;
@@ -191,6 +213,38 @@ export function FaceFiltersFlow({ api, owner }: { api: ApiClient; owner: string 
         } finally { working.current = false; if (current()) setBusy(false); }
     }
     const original = photo?.uri ?? fromResult?.uri;
+    // The strip's small copy of the photo. It is a face, so it is deleted when replaced, on leaving and on an account change.
+    useEffect(() => {
+        setThumb(null);
+        if (!original || !liveLooksAvailable()) return;
+        let live = true;
+        let made: string | null = null;
+        void makeThumb(original).then(uri => {
+            if (!uri) return;
+            if (live && current()) { made = uri; setThumb(uri); } else discardCacheCopy(uri);
+        });
+        return () => { live = false; if (made) discardCacheCopy(made); };
+    }, [original, owner]);
+    const lookChosen = !model && !!original && look.id !== 'original';
+    const lookOn = lookChosen && !isUnchanged(look);
+    async function saveLook() {
+        if (!original || saving || !current()) return;
+        setSaving(true); setNotice(null);
+        try {
+            let source = original;
+            const attached = resultRef.current;
+            if (attached && !photo) {
+                // A result's link lasts 15 minutes: ask for a fresh one right before exporting.
+                const fresh = await mediaApi(api).getAsset(attached.jobId);
+                if (!current() || resultRef.current?.jobId !== attached.jobId) return;
+                if (kindForMime(fresh.mime_type) !== 'image') throw new Error('look_export_failed');
+                source = fresh.url;
+            }
+            const saved = await saveLookToPhotos(source, look, () => current() && (!attached || resultRef.current?.jobId === attached.jobId));
+            if (current()) setNotice(t(saved ? 'faceFilters.look.saved' : 'faceFilters.look.denied'));
+        } catch (err) { if (current() && !(err instanceof Error && err.message === 'look_export_cancelled')) setNotice(t('faceFilters.look.saveFailed')); }
+        finally { if (current()) setSaving(false); }
+    }
     const unavailable = fromResult && previewUnavailable ? <>
         <Text style={styles.text}>{t('editor.previewunavailable')}</Text>
         <Pressable accessibilityRole="button" accessibilityLabel={t('filmWorkspace.retry')} style={styles.card} onPress={refreshResult}><Text style={styles.text}>{t('filmWorkspace.retry')}</Text></Pressable>
@@ -200,34 +254,27 @@ export function FaceFiltersFlow({ api, owner }: { api: ApiClient; owner: string 
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
             <Stack.Screen options={{ title: t('faceFilters.title') }} />
-            <Text style={styles.heading} accessibilityRole="header">{model?.name ?? t('faceFilters.title')}</Text>
-            <Text accessibilityLanguage="en" style={styles.text}>{english('faceFilters.privacy')}</Text>
-            {!models && !error ? <ActivityIndicator /> : null}
-            {!model ? <>
-                {original ? <>
-                    <Image source={{ uri: original }} cachePolicy="none" transition={0} style={styles.attached} contentFit="contain" accessibilityLabel={t('faceFilterSwitch.attached')} onError={fromResult ? resultImageError : undefined} onLoad={fromResult ? resultImageLoaded : undefined} />
-                    {unavailable}
-                    <Text style={styles.text}>{t('faceFilterSwitch.kept')}</Text>
-                </> : null}
-                {models?.length === 0 ? <Text style={styles.text}>{t('faceFilters.closed')}</Text> : null}
-                {models?.map(m => <Pressable key={m.id} accessibilityRole="button" accessibilityLabel={`${m.name}. ${t(`faceFilters.${m.id}`)}. ${t('faceFilters.price', { credits: String(m.credits) })}`} style={[styles.card, styles.option]} onPress={() => chooseFilter(m)}>
-                    <IconBadge {...faceIcon(m.id)} size="lg" />
-                    <View style={styles.optionText}>
-                        <Text style={styles.name}>{m.name}</Text>
-                        <Text style={styles.muted}>{t(`faceFilters.${m.id}`)}</Text>
-                        <Text style={styles.price}>{t('faceFilters.price', { credits: String(m.credits) })}</Text>
-                    </View>
-                    <Icon name="caretRight" size={20} />
-                </Pressable>)}
-                {error ? <Pressable accessibilityRole="button" accessibilityLabel={t('job.checkAgain')} style={styles.card} onPress={load}><Text style={styles.text}>{t('job.checkAgain')}</Text></Pressable> : null}
-            </> : <>
-                <Pressable accessibilityRole="button" accessibilityLabel={t('faceFilterSwitch.changeLabel', { name: model.name })} disabled={busy} accessibilityState={{ disabled: busy }} style={styles.card} onPress={() => { setModel(null); setChecked(false); }}><Text style={styles.text}>{t('faceFilterSwitch.current', { name: model.name })} · {t('faceFilterSwitch.change')}</Text></Pressable>
-                <Pressable accessibilityRole="button" accessibilityLabel={t('faceFilters.pick')} disabled={busy} accessibilityState={{ disabled: busy }} style={styles.card} onPress={pick}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Icon name="paperclip" size={20} tint={colors.text} /><Text style={styles.text}>{t('faceFilters.pick')}</Text></View></Pressable>
-                {original ? <Image source={{ uri: original }} cachePolicy="none" transition={0} style={styles.photo} contentFit="contain" accessibilityLabel={t('faceFilters.before')} onError={fromResult ? resultImageError : undefined} onLoad={fromResult ? resultImageLoaded : undefined} /> : null}
-                {unavailable}
+            <View style={[styles.stage, { height: Math.round(screenWidth * 1.25) }]}>
+                {original
+                    ? <InstantPhoto uri={original} matrix={lookMatrix(look)} cover label={t(model ? 'faceFilters.before' : 'faceFilterSwitch.attached')} style={StyleSheet.absoluteFill} onError={fromResult ? resultImageError : undefined} onLoad={fromResult ? resultImageLoaded : undefined} />
+                    : <Pressable accessibilityRole="button" accessibilityLabel={t('faceFilters.pick')} disabled={busy} accessibilityState={{ disabled: busy }} style={styles.empty} onPress={pick}><Icon name="paperclip" size={28} tint="#fff" /><Text style={styles.emptyText}>{t('faceFilters.pick')}</Text></Pressable>}
+                {original ? <Pressable accessibilityRole="button" accessibilityLabel={t('faceFilters.pick')} disabled={busy} accessibilityState={{ disabled: busy }} style={styles.pill} onPress={pick}><Icon name="paperclip" size={16} tint="#fff" /><Text style={styles.pillText}>{t('faceFilters.pick')}</Text></Pressable> : null}
+                {lookChosen ? <View style={styles.slider}><StrengthSlider label={t('faceFilters.look.strength')} value={look.strength} disabled={busy} onChange={strength => setLook(c => ({ ...c, strength }))} /></View> : null}
+            </View>
+            {unavailable}
+            {!models && !catalogError ? <ActivityIndicator /> : null}
+            <LookStrip thumb={thumb} enabled={!!original && liveLooksAvailable()} live={liveLooksAvailable()} look={look.id} modelId={model?.id ?? null} models={models ?? []} busy={busy} onLook={chooseLook} onModel={chooseFilter} />
+            <View style={styles.content}>
+            {models?.length === 0 ? <Text style={styles.text}>{t('faceFilters.closed')}</Text> : null}
+            {catalogError && !models ? <><Text style={styles.error}>{catalogError}</Text><Pressable accessibilityRole="button" accessibilityLabel={t('job.checkAgain')} style={styles.card} onPress={load}><Text style={styles.text}>{t('job.checkAgain')}</Text></Pressable></> : null}
+            {!original ? <Text style={styles.muted}>{t('faceFilters.look.needPhoto')}</Text> : null}
+            {lookOn ? <Button variant="primary" label={t('faceFilters.look.save')} accessibilityLabel={t('faceFilters.look.save')} loading={saving} disabled={saving} onPress={saveLook} /> : null}
+            {notice ? <StatusText variant="inherit" style={styles.text}>{notice}</StatusText> : null}
+            <Text accessibilityLanguage="en" style={styles.muted}>{english('faceFilters.privacy')}</Text>
+            {model ? <>
                 {selectors?.enums.map(({ key, values: choices }) => <View key={key} style={styles.group}>
                     <Text style={styles.heading} accessibilityRole="header">{t(`faceFilters.${key}`)}</Text>
-                    {choices.map(value => <Pressable key={value} accessibilityRole="radio" accessibilityLabel={t(`faceFilters.${value}`)} accessibilityState={{ checked: values[key] === value, disabled: busy }} disabled={busy} style={[styles.card, values[key] === value && styles.selected]} onPress={() => { setValues(v => ({ ...v, [key]: value })); setChecked(false); }}><Text style={styles.text}>{t(`faceFilters.${value}`)}</Text></Pressable>)}
+                    <View style={styles.wrap}>{choices.map(value => <Pressable key={value} accessibilityRole="radio" accessibilityLabel={t(`faceFilters.${value}`)} accessibilityState={{ checked: values[key] === value, disabled: busy }} disabled={busy} style={[styles.choice, values[key] === value && styles.selected]} onPress={() => { setValues(v => ({ ...v, [key]: value })); setChecked(false); }}><Text style={styles.text}>{t(`faceFilters.${value}`)}</Text></Pressable>)}</View>
                 </View>)}
                 {selectors?.age ? <>
                     <Text style={styles.text}>{t('faceFilters.target_age', { min: String(selectors.age.min), max: String(selectors.age.max) })}</Text>
@@ -241,18 +288,27 @@ export function FaceFiltersFlow({ api, owner }: { api: ApiClient; owner: string 
                 <Pressable accessibilityRole="checkbox" accessibilityLanguage="en" accessibilityLabel={english('faceFilters.rights')} accessibilityState={{ checked, disabled: busy }} disabled={busy} style={[styles.card, checked && styles.selected]} onPress={() => setChecked(v => !v)}><Text style={styles.text}>{checked ? '☑ ' : '☐ '}{english('faceFilters.rights')}</Text></Pressable>
                 <Pressable accessibilityRole="link" accessibilityLabel={t('faceFilters.policy')} style={styles.card} onPress={() => { router.push('/legal/aup'); }}><Text style={styles.text}>{t('faceFilters.policy')}</Text></Pressable>
                 <Button variant="primary" accessibilityLabel={rawText(`${t('faceFilters.run')}. ${t('faceFilters.price', { credits: String(model.credits) })}`)} accessibilityState={{ busy }} disabled={!ready} loading={busy} label={`${t('faceFilters.run')} · ${t('faceFilters.price', { credits: String(model.credits) })}`} onPress={run} />
-            </>}
+            </> : null}
             {error ? <StatusText variant="inherit" style={styles.error} accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : undefined}>{error}</StatusText> : null}
+            </View>
         </ScrollView>
     );
 }
 const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: colors.background }, body: { padding: 16, gap: 14, paddingBottom: 100 },
+    screen: { flex: 1, backgroundColor: colors.background }, body: { gap: 12, paddingBottom: 100 },
+    content: { paddingHorizontal: 16, gap: 12 },
+    stage: { backgroundColor: '#000', overflow: 'hidden', justifyContent: 'flex-end' },
+    empty: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', gap: 8 },
+    pill: { position: 'absolute', top: 12, right: 12, minHeight: 36, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, borderRadius: 18, backgroundColor: 'rgba(0,0,0,0.55)' },
+    emptyText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+    pillText: { color: '#fff', fontSize: 13, fontWeight: '600' },
+    slider: { paddingBottom: 12 },
     heading: { color: colors.text, fontSize: 20, fontWeight: '700' }, text: { color: colors.text, fontSize: 16 },
     card: { minHeight: 44, padding: 14, gap: 6, borderWidth: 1, borderColor: colors.border, borderRadius: 12, backgroundColor: colors.surface },
-    selected: { borderColor: colors.accent }, disabled: { opacity: 0.4 }, group: { gap: 8 },
+    wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    choice: { minHeight: 44, paddingHorizontal: 16, justifyContent: 'center', borderWidth: 1, borderColor: colors.border, borderRadius: 22, backgroundColor: colors.surface },
+    selected: { borderColor: colors.accent, borderWidth: 2 }, disabled: { opacity: 0.4 }, group: { gap: 8 },
     input: { minHeight: 44, padding: 14, color: colors.text, borderColor: colors.borderStrong, borderWidth: 1, borderRadius: 12 },
-    attached: { width: 96, height: 96 },
     photo: { width: '100%', height: 280 }, price: { color: colors.money, fontSize: 14, fontWeight: '600' }, error: { color: colors.danger },
     option: { flexDirection: 'row', alignItems: 'center', gap: 14 }, optionText: { flex: 1, gap: 2 },
     name: { color: colors.text, fontSize: 16, fontWeight: '600' }, muted: { color: colors.muted, fontSize: 14 },

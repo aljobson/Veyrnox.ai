@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { Button, Card, Chip, Text, TextField, themedStyles, useThemedStyles } from '../../../components/ui';
+import { Button, Card, Checkbox, Chip, Text, TextField, themedStyles, useThemedStyles } from '../../../components/ui';
 import { InlineMedia } from '../../../components/InlineMedia';
 import { fetchPresets, presetHref, themeTitle, type Preset } from '../../../lib/presets';
 import { previewRatio, templatePrice } from '../../../lib/templateFilters';
@@ -11,7 +11,10 @@ import { copyText } from '../../../lib/clipboard';
 import { t } from '../../../lib/i18n';
 import { estimateCredits, fetchCatalog, kindOf, type CatalogModel } from '../../../lib/media';
 import { CreateResult } from '../../../components/create/CreateResult';
-import { inlineBlockReason, sourceUnsupported, templateRequest } from '../../../lib/templateGenerate';
+import { inlineBlockReason, photoSlot, sourceUnsupported, templateRequest } from '../../../lib/templateGenerate';
+import { SourcePicker } from '../../../components/SourcePicker';
+import { english } from '../../../lib/i18n/binding';
+import type { GenerationReference } from '../../../lib/sources';
 import { useTemplateGenerate } from '../../../lib/useTemplateGenerate';
 import { templateModelEligible, templateOptions, type TemplateChoices } from '../../../lib/templateChoices';
 import { GENERATION_PROMPT_MAX } from '../../../lib/promptLimits';
@@ -29,6 +32,10 @@ export default function TemplatePage() {
     const [attempt, setAttempt] = useState(0);
     const [prompt, setPrompt] = useState('');
     const [copied, setCopied] = useState<string | null>(null);
+    // The photo, its rights tick and its upload state belong to the model they were picked for.
+    // Bumped when the photo is dropped, so the picker remounts empty.
+    const [pickerEpoch, setPickerEpoch] = useState(0);
+    const [attached, setAttached] = useState<{ modelId: string; refs: readonly GenerationReference[]; rights: boolean; busy: boolean } | null>(null);
     const hasExactSourcePrompt = preset?.sourcePromptOrigin === 'community-source-exact' && typeof preset.sourcePrompt === 'string';
     const sourcePromptUnavailable = preset?.sourcePromptStatus === 'unavailable';
     const sourcePromptNotRecorded = preset?.sourcePromptStatus === 'adaptation-only';
@@ -45,13 +52,19 @@ export default function TemplatePage() {
     // The exact community prompt is the only prompt; edits travel with the choices.
     const promptLabel = t(hasExactSourcePrompt ? 'public.TemplateRecipe.exactCommunityPrompt' : 'mobile.prompt');
     const tooLong = prompt.length > TEMPLATE_PROMPT_MAX;
-    // A template that needs no media generates right here; one that does opens Create (inlineBlockReason).
+    // A template that needs no media, or only one photo, generates right here; one that needs more opens Create.
     const unsupported = sourceUnsupported(preset);
-    const inline = !unsupported && !!preset && !!model && inlineBlockReason(preset, model) === null;
-    const request = inline && preset && model && options && !tooLong && prompt.trim() ? templateRequest(preset, model, { prompt, aspect: options.aspect, duration: options.duration }) : null;
+    const slot = photoSlot(model);
+    const inline = !unsupported && !!preset && !!model && inlineBlockReason(preset, model, { photo: true }) === null;
+    const mine = attached && attached.modelId === model?.id ? attached : null;
+    const photos = mine?.refs ?? [];
+    const rights = mine?.rights === true;
+    const photoBusy = mine?.busy === true;
+    const photoReady = !slot || (photos.length > 0 && rights && !photoBusy);
+    const request = inline && preset && model && options && !tooLong && prompt.trim() ? templateRequest(preset, model, { prompt, aspect: options.aspect, duration: options.duration, references: slot ? photos : [], sourceRights: rights }) : null;
     const generation = useTemplateGenerate(request, model && options ? estimateCredits(model, options.duration) : 0);
     useEffect(() => {
-        let live = true; setLoading(true); setFailed(false); setCopied(null); setChoices({});
+        let live = true; setLoading(true); setFailed(false); setCopied(null); setChoices({}); setAttached(null); setPickerEpoch(n => n + 1);
         fetchPresets().then(all => { if (live) { const found = all.find(p => p.id === id) ?? null; setPreset(found); setPrompt(found ? (found.sourcePromptOrigin === 'community-source-exact' && found.sourcePrompt ? found.sourcePrompt : found.prompt) : ''); } }).catch(() => { if (live) setFailed(true); }).finally(() => { if (live) setLoading(false); });
         return () => { live = false; };
     }, [id, attempt]);
@@ -78,7 +91,7 @@ export default function TemplatePage() {
             {hasExactSourcePrompt && sourcePromptTruncated ? <Card><Text>{t('public.TemplateRecipe.sourcePromptTruncated')}</Text></Card> : null}
             {hasExactSourcePrompt && sourcePromptDuplicate ? <Card><Text>{t('public.TemplateRecipe.sourcePromptDuplicate')}</Text></Card> : null}
             {models.length > 1 ? <><Text>{t('create.model')}</Text><View style={styles.choices}>
-                {models.map(option => <Chip key={option.id} label={option.name} accessibilityLabel={rawText(option.name)} selected={model?.id === option.id} onPress={() => setChoices({ modelId: option.id })} />)}
+                {models.map(option => <Chip key={option.id} label={option.name} accessibilityLabel={rawText(option.name)} selected={model?.id === option.id} onPress={() => { if (option.id !== model?.id) setAttached(null); setChoices({ modelId: option.id }); }} />)}
             </View></> : null}
             {options && options.aspects.length > 0 ? <><Text>{t('opt.aspect')}</Text><View style={styles.choices}>
                 {options.aspects.map(aspect => <Chip key={aspect} label={aspect} accessibilityLabel={rawText(aspect)} selected={options.aspect === aspect} onPress={() => setChoices(previous => ({ ...previous, aspect }))} />)}
@@ -88,11 +101,20 @@ export default function TemplatePage() {
             </View></> : null}
             <Text tone="warning">{templatePrice(model && options ? { ...preset, credits: estimateCredits(model, options.duration), durationSeconds: options.duration } : preset)}</Text>
             {unsupported ? <Card><Text accessibilityLiveRegion="polite">{t('public.TemplateRecipe.sourceVideoUnsupported')}</Text></Card> : available && inline ? <>
+                {slot && model ? <View style={{ gap: 12 }}>
+                    <SourcePicker key={`${model.id}:${pickerEpoch}`} slot={slot} api={generation.api} drawable={false} references={photos} onReferences={refs => setAttached(previous => ({ modelId: model.id, refs, rights: false, busy: previous?.modelId === model.id && previous.busy }))} onBusy={busy => setAttached(previous => previous && previous.modelId !== model.id ? previous : { modelId: model.id, refs: previous?.refs ?? [], rights: previous?.rights === true, busy })} onChange={() => {}} onLibrary={() => {}} />
+                    {photos.length ? <View>
+                        <Checkbox checked={rights} accessibilityLanguage="en" accessibilityLabel={english('form.sourceRights')} accessibilityState={{ checked: rights, disabled: generation.busy }} disabled={generation.busy} onChange={value => setAttached(previous => previous && previous.modelId === model.id ? { ...previous, rights: value } : previous)}>
+                            <Text variant="caption" tone="secondary">{english('form.sourceRights')}</Text>
+                        </Checkbox>
+                        <Text accessibilityLanguage="en" variant="caption" tone="tertiary">{english('form.consent')}</Text>
+                    </View> : null}
+                </View> : null}
                 {generation.run && model ? <CreateResult api={generation.api} batch={{ ids: [...generation.run.ids], modelId: generation.run.modelId, kind: kindOf(model.modality), aspect: options?.aspect ?? null, duration: options?.duration ?? null, count: 1 }} catalog={catalog ?? []} onTerminal={generation.settled} /> : null}
                 {generation.error ? <Text tone="danger" accessibilityLiveRegion="polite">{generation.error}</Text> : null}
                 {generation.run
-                    ? <Button label={t('libraryCreate.newGeneration')} disabled={generation.busy} onPress={generation.reset} />
-                    : <Button label={generation.confirming ? t('app.create.confirmPrice', { credits: String(generation.price) }) : t('slip.generate')} disabled={!generation.ready} onPress={() => void generation.generate()} />}
+                    ? <Button label={t('libraryCreate.newGeneration')} disabled={generation.busy} onPress={() => { generation.reset(); setAttached(null); setPickerEpoch(n => n + 1); }} />
+                    : <Button label={generation.confirming ? t('app.create.confirmPrice', { credits: String(generation.price) }) : t('slip.generate')} disabled={!generation.ready || !photoReady} onPress={() => void generation.generate()} />}
                 {generation.missing > 0 && !generation.run ? <Text accessibilityLiveRegion="polite">{t('form.err.insufficient')}</Text> : null}
                 <Button variant="secondary" label={t('libraryCreate.editBeforeGenerating')} disabled={generation.busy || tooLong || !prompt.trim()} onPress={() => router.push(presetHref(preset, { ...choices, modelId: model?.id, prompt }, catalog))} />
             </> : available ? <>

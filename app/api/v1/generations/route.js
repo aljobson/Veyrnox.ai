@@ -1,4 +1,5 @@
 import { hasRuntimeReplay } from '../../../../lib/runtimeReplay.js';
+import { COSTUME_STYLES } from '../../../../lib/costumePrompts.js';
 import { isFeatureKilled } from '../../../../lib/runtimeSwitchCache.js';
 import { featurePaused } from '../../../../lib/runtimeAdmission.js';
 import { readBoundedBody } from '../../../../lib/boundedBody.js';
@@ -94,6 +95,8 @@ const ALLOWED_INPUTS = {
     // allowlist accepts is one the provider accepts.
     makeup_style: { kind: 'enum', values: ['natural', 'glamorous', 'smoky_eyes', 'bold_lips', 'no_makeup', 'remove_makeup', 'dramatic', 'bridal', 'professional', 'korean_style', 'artistic'] },
     intensity: { kind: 'enum', values: ['light', 'medium', 'heavy', 'dramatic'] },
+    // Costumes (face-costume): a style from our list; the wording is ours (lib/costumePrompts.js).
+    costume_style: { kind: 'enum', values: COSTUME_STYLES },
     target_age: { kind: 'int', min: 6, max: 100 },
     preserve_identity: { kind: 'bool' },
 };

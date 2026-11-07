@@ -3,8 +3,7 @@ import { captureHandoffOwner } from '../../../lib/accountHandoffStore';
 import { createFormSheets as sheets } from '../../../components/create/createFormStyles';
 import { rememberFilmJob } from '../../../lib/filmGenerationReturns';
 import { rememberSubmitted } from '../../../lib/submittedRequests';
-import { createHandoff, acceptedSettings, nearestDuration, skillPromptHref } from '../../../lib/createHandoff';
-import { useHandoffScope } from '../../../lib/useHandoffScope';
+import { acceptedSettings, nearestDuration, skillPromptHref } from '../../../lib/createHandoff';
 import { useAnnouncement } from '../../../lib/useAnnouncement';
 import { rawText } from '../../../lib/i18n/translate';
 import { Image } from 'expo-image';
@@ -16,7 +15,6 @@ import { english } from '../../../lib/i18n/binding';
 import { KeyboardFormScrollView } from '../../../components/KeyboardFormScrollView';
 import { KeyboardScreen } from '../../../components/KeyboardScreen';
 import { FormHeader } from '../../../components/create/FormHeader';
-import { ModelPickerSheet } from '../../../components/create/ModelPickerSheet';
 import { SectionLabel } from '../../../components/create/SectionLabel';
 import { SourceDurationCard } from '../../../components/create/SourceDurationCard';
 import { Text, TextField, Button, Card, Chip, Checkbox, themedStyles, useThemedStyles } from '../../../components/ui';
@@ -37,7 +35,7 @@ import { SourcePicker } from '../../../components/SourcePicker';
 import { TemplateBanner } from '../../../components/TemplateBanner';
 import { DEFAULT_CINEMA, buildCinemaPrompt, sanitizeCinema, type Cinema } from '../../../lib/cinemaCamera';
 import { clearDraft, loadDraft, saveDraft } from '../../../lib/createDraftStore';
-import { SAVED_DRAFT_VERSION, pickerModels, type CreateDraft, audioLengthInvalid, freeLeftFor, hasAnyOption, imageCount, inputsForIndex, optionsFor, resolveAudio, resolveResolution, seedIsInvalid, settingsInputs, takesImageCount, voiceIsMissing } from '../../../lib/createOptions';
+import { SAVED_DRAFT_VERSION, type CreateDraft, audioLengthInvalid, freeLeftFor, hasAnyOption, imageCount, inputsForIndex, optionsFor, resolveAudio, resolveResolution, seedIsInvalid, settingsInputs, takesImageCount, voiceIsMissing } from '../../../lib/createOptions';
 import { loadVibe } from '../../../lib/creatorProfileStore';
 import { defaultAspect } from '../../../lib/creatorTaste';
 import { nearestAspect, parseRatio, activeTemplate, normalizeTemplateCarry, templateOnOriginalModel } from '../../../lib/templateHandoff';
@@ -75,7 +73,6 @@ export default function CreateWithModel() {
     const handedSources = useMemo(() => readCreativeSourceHandoff(typeof sourceHandoff === 'string' ? sourceHandoff : undefined, typeof recipe === 'string' ? recipe : undefined, modelId), [modelId, recipe, sourceHandoff]);
     const { api } = useAuth();
     const router = useRouter();
-    const beginHandoff = useHandoffScope();
     const [model, setModel] = useState<CatalogModel | null>(null);
     // A template (ADR-0120) opens this form with its prompt and length filled in; both stay editable.
     const [prompt, setPrompt] = useState(typeof presetPrompt === 'string' ? presetPrompt : '');
@@ -106,8 +103,8 @@ export default function CreateWithModel() {
     const { left: freeMap, loading: freeLoading } = useFreeLeftState(refreshKey);
     const [catalog, setCatalog] = useState<CatalogModel[]>([]);
     const [results, setResults] = useState<ResultBatch | null>(null);
-    const [picking, setPicking] = useState(false);
     const [complete, setComplete] = useState(false);
+    const [attaching, setAttaching] = useState(false);
     const [confirmed, setConfirmed] = useState(0);
     const batch = useRef(0);
     const balanceSeq = useRef(0);
@@ -258,17 +255,6 @@ export default function CreateWithModel() {
     // Closing the screen saves what was typed in the last moments too.
     useEffect(() => () => void flushDraft(), [flushDraft]);
 
-    // Another model for the same job replaces this form; the words typed so far go with it.
-    async function changeModel(id: string) {
-        setPicking(false);
-        if (busy || !model || id === model.id) return;
-        const valid = beginHandoff();
-        await flushDraft();
-        if (!valid()) return;
-        const target = catalog.find(m => m.id === id);
-        if (target) router.replace(createHandoff(target, attachCarry, { opts, cameraOn, cinema, characterOn, character }, references, { ...handedSources, rightsConfirmed: sourceRights }));
-    }
-
     const discardDraft = useCallback(() => {
         setPrompt('');
         setOpts((o) => ({ ...o, seed: '', negative: '', count: 1, voice: '', audioSeconds: '' }));
@@ -299,7 +285,21 @@ export default function CreateWithModel() {
     const text_ = textInput(model);
     const promptTooLong = !!text_ && text.length > text_.max;
     const slots = slotsFor(model);
-    const waiting = Object.values(sending).some(Boolean);
+    const waiting = attaching || Object.values(sending).some(Boolean);
+    // New files join the latest references (never a stale copy), within each slot's room; the slot pickers show them
+    // without remounting, so an upload in progress is never aborted.
+    const placeAttached = (added: GenerationReference[]) => {
+        setSourceRights(false);
+        setReferences(all => {
+            const next = [...all];
+            for (const ref of added) {
+                const room = slots.find(x => x.slot === ref.slot)?.maxFiles ?? 1;
+                const same = (x: GenerationReference) => x.origin === ref.origin && (x.origin === 'upload' ? x.key === (ref as typeof x).key : x.asset_id === (ref as { asset_id?: string }).asset_id);
+                if (!next.some(same) && next.filter(x => x.slot === ref.slot).length < room) next.push(ref);
+            }
+            return next;
+        });
+    };
     const hasReference = references.length > 0 || !!startFile;
     const ready = !waiting && !promptTooLong && (!hasReference || sourceRights) && slots.every(slot => (!slot.required || references.some(ref => ref.slot === slot.slot)) && references.filter(ref => ref.slot === slot.slot).length <= (slot.maxFiles ?? 1)) && (!promptRequired(model) || !!text.trim()) && !seedIsInvalid(opts.seed) && !voiceIsMissing(options, opts.voice) && !audioLengthInvalid(options, opts.audioSeconds);
     const request: SubmitRequest = { analyticsKind: kindOf(model.modality), modelId: model.id, prompt: text, confirmedCredits: unit, durationSeconds: isVideo ? duration : null, references, sourceRights: hasReference ? sourceRights : undefined, textKey: text_?.key, extraInputs: settingsInputs(options, { seed: opts.seed, negative: opts.negative, aspect: opts.aspect, voice: opts.voice, audioSeconds: opts.audioSeconds, resolution, audio }), preset: templatePreset ? template?.id ?? undefined : undefined };
@@ -316,7 +316,7 @@ export default function CreateWithModel() {
     const modelLabel = creativeFeature(typeof recipe === 'string' ? recipe : undefined)?.title ?? model.name;
 
     async function generate() {
-        if (!model || (!ready && !matchingRetry) || busy || freeLoading) return;
+        if (!model || (!ready && !matchingRetry) || busy || freeLoading || waiting) return;
         if (retry.current && !matchingRetry) newGeneration();
         const run: NonNullable<typeof retry.current> = matchingRetry ?? { signature, request, count: n, unit };
         retry.current = run;
@@ -367,8 +367,7 @@ export default function CreateWithModel() {
 
     const payable = quote.payable ?? price;
     const missing = complete ? 0 : shortfall(balance, payable);
-    const alternatives = pickerModels(catalog, model);
-    const disabled = busy || (!complete && (freeLoading || (!ready && !matchingRetry) || missing > 0));
+    const disabled = busy || waiting || (!complete && (freeLoading || (!ready && !matchingRetry) || missing > 0));
     const generateLabel = matchingRetry?.quote ? t('app.create.confirmPrice', { credits: String(price) }) : `${n > 1 ? t('opt.generateCount', { count: String(n) }) : t('slip.generate')}. ${costLine(price, n, freeLeft, unit)}`;
 
     return (
@@ -376,10 +375,7 @@ export default function CreateWithModel() {
             <Stack.Screen options={{ title: t('label.Create') }} />
             <KeyboardFormScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
                 <FormHeader modelLabel={modelLabel} modality={kindOf(model.modality) ?? model.modality} stageLine={stageLine} stage={results ? <CreateResult api={api} batch={results} catalog={catalog} onTerminal={resultSettled} /> : undefined}
-                    onChangeModel={alternatives.length > 1 && !busy ? () => setPicking(true) : undefined}
-                    modelNote={alternatives.length <= 1 && hasReference ? t('create.workspace.onlyModel') : undefined}
                     onTemplates={!template && !results ? () => router.push('/create/presets') : undefined} />
-                <ModelPickerSheet visible={picking} models={alternatives} currentId={model.id} freeLeft={freeMap} onPick={(id) => void changeModel(id)} onClose={() => setPicking(false)} />
 
                 {template ? <TemplateBanner template={template} aspect={options.aspects.length ? opts.aspect : null} /> : null}
                 {startId && takesStartImage ? <Text variant="caption" tone="tertiary" style={styles.consent} accessibilityLiveRegion="polite">{startProblem ?? t('oddlings.animate.startNote')}</Text> : null}
@@ -390,6 +386,7 @@ export default function CreateWithModel() {
                             <SectionLabel style={styles.sectionMeta}>{t('create.workspace.referencesMeta')}</SectionLabel>
                         </View>
                         <UploadLimitNote model={model} />
+                        <View pointerEvents={attaching ? 'none' : 'auto'} style={{ gap: ds.space.md }}>
                         {slots.map((s) => (
                             <SourcePicker
                                 key={s.slot}
@@ -406,9 +403,10 @@ export default function CreateWithModel() {
                                 hint={s.slot === 'image' && model.id === 'seedance-2.0-reference' ? t('app.create.referenceLikenessNotice') : s.slot === 'image' && template?.needs ? t('create.template.needs', { what: template.needs }) : undefined}
                             />
                         ))}
+                        </View>
                     </View>
                 ) : null}
-                <View style={styles.section}><AttachMore hasSlots={slots.length > 0} api={api} current={model} carry={attachCarry} settings={{ opts, cameraOn, cinema, characterOn, character }} references={references} previous={handedSources ?? undefined} /></View>
+                <View style={styles.section}><AttachMore hasSlots={slots.length > 0} api={api} current={model} carry={attachCarry} settings={{ opts, cameraOn, cinema, characterOn, character }} references={references} previous={handedSources ?? undefined} blocked={waiting} onBusy={setAttaching} onPlaced={placeAttached} /></View>
                 {text_ ? (
                     <View style={styles.section}>
                         <View style={styles.sectionTop}>

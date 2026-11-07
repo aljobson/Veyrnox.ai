@@ -95,6 +95,7 @@ jest.mock('expo-router', () => ({ Stack: Object.assign(() => <MockScreen />, { S
 jest.mock('../src/lib/languageDirection', () => ({ directionReconciler: { takeReturnPath: () => null, handledRepair: () => false }, languageReturnPath: () => '/account', reconcileLanguageDirection: jest.fn(async () => true) }));
 jest.mock('../src/lib/languageStore', () => ({ readLanguage: () => 'en', syncPendingAccountLanguage: jest.fn(async () => {}) }));
 jest.mock('../src/components/LanguageChoice', () => ({ LanguageChoice: () => null }));
+jest.mock('../src/components/BrandSplash', () => ({ BrandSplash: () => null }));
 jest.mock('../src/components/ErrorFallback', () => ({ SignedInErrorBoundary: () => null }));
 jest.mock('../src/lib/useOfflineRecovery', () => ({ useOfflineRecovery: () => {} }));
 jest.mock('../src/components/FirstRunGate', () => ({ FirstRunGate: () => null }));

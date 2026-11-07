@@ -3,7 +3,9 @@
 type Haptics = {
     notificationAsync: (type: unknown) => Promise<void>;
     selectionAsync: () => Promise<void>;
+    impactAsync: (style: unknown) => Promise<void>;
     NotificationFeedbackType: { Success: unknown; Error: unknown };
+    ImpactFeedbackStyle: { Light: unknown };
 };
 
 let loaded: Haptics | null | undefined;
@@ -41,5 +43,15 @@ export async function playError(): Promise<void> {
         if (h) await h.notificationAsync(h.NotificationFeedbackType.Error);
     } catch {
         // Validation still appears on screen when haptics are unavailable.
+    }
+}
+
+// One soft tap when the little Vey lands in the middle of the first-launch page. A refinement, never the only feedback.
+export async function playLanding(): Promise<void> {
+    try {
+        const h = haptics();
+        if (h) await h.impactAsync(h.ImpactFeedbackStyle.Light);
+    } catch {
+        // No motor, or the setting is off: nothing to do.
     }
 }

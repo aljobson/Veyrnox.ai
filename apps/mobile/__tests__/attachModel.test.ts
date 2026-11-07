@@ -1,4 +1,4 @@
-import { attachCapacity, planAttachments } from '../src/lib/attachModel';
+import { attachCapacity, planAttachments, planOpenForm } from '../src/lib/attachModel';
 import type { CatalogModel } from '../src/lib/media';
 import type { SlotKind } from '../src/lib/sources';
 
@@ -71,5 +71,28 @@ describe('attachCapacity (Add files picker limits)', () => {
     it('a slot verified for nine references raises the picture limit to nine', () => {
         const seedance = model('seed', 'image-to-video', 50, { image: { required: false, maxFiles: 9 } as never });
         expect(attachCapacity(seedance).image).toBe(9);
+    });
+});
+
+describe('planOpenForm', () => {
+    test('adds a photo alone to a model that also needs audio', () => {
+        expect(planOpenForm(lipsync, [item('image', 'a')])?.assignments.map((a) => a.slot)).toEqual(['image']);
+    });
+    test('adds audio alone', () => {
+        expect(planOpenForm(lipsync, [item('audio', 's')])?.assignments.map((a) => a.slot)).toEqual(['audio']);
+    });
+    test('never moves to another model; null when nothing fits', () => {
+        expect(planOpenForm(text, [item('image', 'a')])).toBeNull();
+        expect(planOpenForm(i2v, [item('image', 'a')])?.model.id).toBe('i2v');
+    });
+});
+
+describe('planOpenForm keeps existing references', () => {
+    test('end frame first, then a start image: the new file takes the free start slot', () => {
+        const plan = planOpenForm(frames, [item('image', 'new')], [{ slot: 'endImage', kind: 'image' }]);
+        expect(plan?.assignments.map((a) => a.slot)).toEqual(['image']);
+    });
+    test('a full slot is not overfilled', () => {
+        expect(planOpenForm(i2v, [item('image', 'b')], [{ slot: 'image', kind: 'image' }])).toBeNull();
     });
 });

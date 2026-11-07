@@ -3258,6 +3258,24 @@
     "ratio": 2
   },
   {
+    "id": "faceFilters.look.cool",
+    "english": "Cool",
+    "translation": "Холодный",
+    "ratio": 2
+  },
+  {
+    "id": "faceFilters.look.fade",
+    "english": "Fade",
+    "translation": "Выцветший",
+    "ratio": 2.25
+  },
+  {
+    "id": "faceFilters.wig_pink",
+    "english": "Pink wig",
+    "translation": "Розовый парик",
+    "ratio": 1.63
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

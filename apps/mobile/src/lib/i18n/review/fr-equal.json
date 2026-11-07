@@ -192,5 +192,10 @@
   "projectDocument.versionTitle": "Version is the standard word in this language for a saved revision.",
   "vey.touch.label": "Vey is the mascot’s proper name and stays unchanged across languages.",
   "wins.image": "Established fr term or conventional duration notation, identical to English.",
-  "create.lengthCost": "Seconds and the credit abbreviation are written the same as English, matching create.s."
+  "create.lengthCost": "Seconds and the credit abbreviation are written the same as English, matching create.s.",
+  "faceFilters.look.original": "Same word in French, kept as the common term.",
+  "faceFilters.look.mono": "Same word in French, kept as the common term.",
+  "faceFilters.clown": "Same word in French, kept as the common term.",
+  "faceFilters.zombie": "Same word in French, kept as the common term.",
+  "faceFilters.vampire": "Same word in French, kept as the common term."
 }
