@@ -34,6 +34,11 @@ CREATE TABLE IF NOT EXISTS public.speech_analysis_cache (
  expires_at timestamptz NOT NULL, PRIMARY KEY(user_id,asset_job_id,source_fingerprint,schema_version)
 );
 CREATE INDEX IF NOT EXISTS speech_analysis_cache_analysis ON public.speech_analysis_cache(analysis_id);
+-- Foreign keys need a leading index (scripts/test-fk-indexes.mjs).
+CREATE INDEX IF NOT EXISTS speech_analyses_asset_job ON public.speech_analyses(asset_job_id);
+CREATE INDEX IF NOT EXISTS speech_analysis_cache_asset_job ON public.speech_analysis_cache(asset_job_id);
+CREATE INDEX IF NOT EXISTS speech_source_probes_asset_job ON public.speech_source_probes(asset_job_id);
+CREATE INDEX IF NOT EXISTS speech_source_probes_user ON public.speech_source_probes(user_id);
 -- Content-free receipts outlive the analysis, so an expired key can never buy again.
 CREATE TABLE IF NOT EXISTS public.speech_analysis_requests (
  user_id uuid NOT NULL REFERENCES public.users(id), idempotency_key text NOT NULL,
@@ -41,6 +46,7 @@ CREATE TABLE IF NOT EXISTS public.speech_analysis_requests (
  kind text NOT NULL CHECK(kind IN ('new','reused_cache','joined_in_flight')),
  created_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY(user_id,idempotency_key)
 );
+CREATE INDEX IF NOT EXISTS speech_analysis_requests_attempt ON public.speech_analysis_requests(attempt_id);
 ALTER TABLE public.speech_source_probes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.speech_source_probes FORCE ROW LEVEL SECURITY;
 ALTER TABLE public.speech_analyses ENABLE ROW LEVEL SECURITY;
