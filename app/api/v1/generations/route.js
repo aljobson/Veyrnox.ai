@@ -182,7 +182,7 @@ export async function POST(req) {
     const swapError = swap && checkSwapRequest(swap, body, references.references);
     if (swapError) return NextResponse.json({ error: swapError }, { status: 400 });
     if (templateClip) {
-        const error = checkTemplateClipRequest(body, references.references);
+        const error = checkTemplateClipRequest(body, references.references, templateClip.modelRow.id);
         if (error) return NextResponse.json({ error }, { status: 400 });
         inputs = { ...inputs, prompt: TEMPLATE_CLIP_PROMPT, duration_seconds: 5 };
         const checked = validateInputs(inputs);

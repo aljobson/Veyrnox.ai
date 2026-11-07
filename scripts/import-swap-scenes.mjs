@@ -119,15 +119,17 @@ export async function measure(file) {
   const probe = JSON.parse(stdout), videos = probe.streams?.filter(s => s.codec_type === 'video');
   if (videos?.length !== 1 || videos[0].disposition?.attached_pic) fail('source_video_required');
   const video = videos[0];
+  const [frames, seconds] = String(video.avg_frame_rate).split('/').map(Number);
   return { seconds: Number(probe.format?.duration), videoSeconds: Number(video.duration),
-    width: video.width, height: video.height, codec: video.codec_name,
+    width: video.width, height: video.height, frameRate: frames / seconds, codec: video.codec_name,
     audio: probe.streams.some(s => s.codec_type === 'audio') };
 }
 
-export async function normalise(input, output, keepAudio = false, maxSeconds = 10) {
+export async function normalise(input, output, keepAudio = false, maxSeconds = 10, frameRate = null) {
   await exec('ffmpeg', ['-v', 'error', '-nostdin', '-n', '-protocol_whitelist', 'file,pipe',
     '-i', input, '-map', '0:v:0', ...(keepAudio ? ['-map', '0:a:0?', '-c:a', 'aac'] : ['-an']),
     '-t', String(maxSeconds), '-vf', "scale=w='trunc(iw*min(1,1280/max(iw,ih))/2)*2':h='trunc(ih*min(1,1280/max(iw,ih))/2)*2',setsar=1",
+    ...(frameRate ? ['-r', String(frameRate)] : []),
     '-c:v', 'libx264', '-threads', '2', '-filter_threads', '2', '-pix_fmt', 'yuv420p',
     '-map_metadata', '-1', '-map_chapters', '-1', '-movflags', '+faststart', output],
   { timeout: 300_000, maxBuffer: 1024 * 1024 });

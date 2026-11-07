@@ -183,3 +183,144 @@ simulator, Metro or native build is part of this work.
 Turning `TEMPLATE_CLIP_ENABLED` off also stops replay: a client retrying a lost response with the same key
 after the flag is removed gets `template_clip_not_found` instead of the existing job id. The job itself is
 unaffected and visible in the Library. Moving the read-only replay ahead of the flag check is a follow-up.
+
+## Amendment 1 — separate inactive kie offer (2026-11-07)
+
+Frozen work order: PLAN-KIE, SHA256
+`e09afe06365d262fd97df95b78ce63b3bc76fc4face66eb7d97674b3121201f5`,
+including amendments A-001 through A-006 and host dispositions KIE-R1–R4.
+This amendment supersedes the
+fal-only model binding above; fal's capability and importer acceptance stay
+unchanged. No new environment variable or public route is added.
+
+### Contract and admission
+
+The contract supplied in the frozen order was read on 2026-11-07 from
+[official kie documentation](https://docs.kie.ai/market/bytedance/seedance-2)
+(the capability record's `verification`). Create task is
+`POST https://api.kie.ai/api/v1/jobs/createTask` with model
+`bytedance/seedance-2`, the existing signed-callback route in `callBackUrl`,
+and `input`. Our shared payload shaper sends the server prompt,
+`reference_image_urls`, an optional server-only `reference_video_urls`,
+integer `duration` (5 or 10), `aspect_ratio`, `resolution: '720p'`, and
+`generate_audio: true`. There are no first/last-frame fields. Template clips
+always buy five output seconds. Ordinary image-only requests omit the video
+list. Callback verification, polling and refusal mapping are unchanged.
+
+The provider documents 3–20,000 prompt characters, up to nine images,
+three videos (combined at most 15 seconds), reference audio, 4–15 output
+seconds or -1, and 480p/720p/1080p/4k output. These are not all offered here.
+A-006 limits this offer to ONE image, without verified-list expansion; widening
+needs a billed probe and a review of the gateway's three-per-kind ceiling.
+The public capability is maxFiles 1, with no video slot in catalog, developer,
+MCP, web or mobile projections. Two images fail before debit.
+
+`seedance-2.0-reference-kie` is a distinct catalog offer, provider `kie`,
+endpoint `market:bytedance/seedance-2`. The immutable model-to-endpoint map
+is shared with admission and replay. Availability prefers the active,
+ungated fal row; otherwise the active, ungated kie row; otherwise 404. Each
+row must match its endpoint and capability provider. Before projecting kie,
+selection runs the same pure manifest metadata validator used by admission.
+A fal-era entry lacking measured frameRate/sizeBytes, or any entry outside the
+kie bounds, makes that candidate unavailable (404 when no candidate remains).
+Clients then retain their existing non-clip mode; a complete valid entry
+projects kie. Fal's existing projection behavior is unchanged. NEW admissions require
+`body.model_id === templateClip.modelRow.id`; even the other allowed model
+returns `template_clip_model_mismatch` before debit. Both clients validate the
+allow-list and submit the projection's id. Replay resolves the stored model,
+so preference flips, row deactivation and manifest removal do not strand an
+accepted key. The existing flag-off replay limitation remains unchanged.
+
+ADR-0256 `canHop=false` still holds: media is resolved at admission. This is
+not an automatic fal failover route. No supplier route cost row is required
+for an inactive offer: `resolveRouteSet` already dispatches the catalog offer
+when no own route exists, and 0367 is a one-time backfill, not an insert
+trigger. Under host disposition KIE-R3, migration 0454 adds the inactive row
+with `INSERT ... ON CONFLICT (id) DO NOTHING`. On replay it preserves an
+existing row entirely, including a real price/cost or an activated state set
+by later migrations. Later migrations own pricing and activation. The repo's
+catalog UPDATE guard allows this insert-only form: there is no UPDATE to
+require a ROW_COUNT DO block. This supersedes the frozen order's 0405 upsert
+pattern; no migration check forces an overwrite. Main and all six
+open PR file lists were checked through the GitHub connector on 2026-11-07;
+main ended at 0453 and no open PR used 0454. No migration was applied.
+
+### Media validation and importer choice
+
+Only the kie record opts into the new checks. Images must have 300–6000 px
+sides, aspect 0.4–2.5, and size strictly below 30 MB. The private video must
+have 300–1280 px sides, aspect 0.4–2.5, 409,600–927,408 total pixels,
+24–60 fps, size strictly below 50 MB, at least two seconds of visual coverage
+and at most 5.05 seconds. Missing measured dimensions, byte length or frame
+rate fail closed before signing/debit. MB is conservatively decimal bytes.
+
+**Our interpretation, retained fail-closed under KIE-R4:** the contract's
+“480p/720p class” is enforced as a short side of exactly 480 or 720 pixels.
+The source contract does not further define that class. Non-16:9/9:16 sources
+whose normalized short side falls outside that set (for example 4:3 at
+1280×960) are rejected by design until the probe confirms whether only the
+pixel window applies. This is not a blanket aspect-ratio ban: 720×720 still
+passes the unchanged rule and pixel window. No additional aspect allow-list
+is introduced. Confirm this interpretation at the owner probe before any
+relaxation. No crop, upscale or padding is introduced to make unsupported media fit. Thus 1280×720 passes,
+1280×320 fails its aspect even though its pixels pass, and 640×360 fails the
+pixel minimum. An existing narrow portrait manifest may therefore work for
+fal and fail for kie; it must be re-imported/reviewed before choosing kie.
+
+The importer previously had no route selector. It now accepts
+`--model-id seedance-2.0-reference-kie`; omission retains the fal default.
+For kie, the existing scale-to-1280 normalizer additionally pins 30 fps and
+`-t 5`. Measured container and video duration must be 5 seconds ± one frame;
+a shorter source is refused as `kie_reference_requires_five_seconds`, rather
+than inventing missing footage. Admission retains the explicit 5.05-second
+encoding tolerance. The manifest candidate records measured width, height,
+pixels, frameRate and sizeBytes. All clips validate before any upload.
+Synthetic 29.97-fps 1280×720 and 1920×1080 sources cover normalization and
+admission; the latter scales to 1280×720. No real download/upload was run.
+
+### Billing and owner checklist
+
+kie bills reference-video seconds PLUS output seconds at a lower rate than
+image-only input. [Pricing](https://kie.ai/pricing) advertises only “from
+$0.057/s”; this is NOT verification of this offer's price. The supplied
+third-party estimate of ~$0.125/s at 720p with video is **UNVERIFIED**.
+One kie credit is approximately $0.005. Migration 0454 records **provisional**
+`provider_cost_per_unit = 1.25`, `credits_5s = 70`, from
+`ceil(1.25 / 0.01796)`, assuming roughly ten billed seconds (reference
+<=5.05 plus five output seconds). This is a placeholder, not a proven margin
+or an exact bound including encoding tolerance. Catalog price remains
+normative; no application-layer price computation is added. The row stays
+inactive. Migration 0417 already activated fal in source; the absent
+`TEMPLATE_CLIP_ENABLED` flag, not “both rows inactive,” keeps the feature off.
+
+Before any activation, the owner must:
+
+1. Read the real model-page reference-video rate, then run ONE billed staging
+   probe with a template clip and a normal selfie. Read the invoice, account
+   for reference plus output duration (including tolerance), and set the
+   actual catalog price/cost in a NEW migration before activating the row.
+2. Establish whether kie accepts real-person photos; fal's refusal in
+   ADR-0309 amendment 1 does not prove kie's behavior. The prompt tokens
+   `@Video1`/`@Image1` are **UNVERIFIED for kie**. Verify them in the probe;
+   if kie requires different tokens, add a per-model prompt in the kie shaping
+   path, never by editing the fal prompt. Verify output and refund behavior.
+   Also verify our interpretation of “480p/720p class”: short side exactly
+   480 or 720. Non-16:9/9:16 sources outside that short-side rule are rejected
+   by design until the probe confirms whether only the pixel window applies;
+   the rule does not reject every non-widescreen source (720×720 passes).
+   Keep the current rule fail-closed until that evidence exists.
+3. Record preview rights as for #2000, import with the intended model id,
+   review measured metadata and the first five-second window, and publish the
+   manifest only through a separately reviewed source change.
+4. Complete the same flag/binding step as #2000, freeing a Worker binding
+   before enabling `TEMPLATE_CLIP_ENABLED`. Keep this row inactive and the
+   flag absent until all checks pass.
+
+Crun remains out of scope: the work order found no official Seedance
+reference contract (`https://crun.ai/docs` returned 404; a press release alone
+is insufficient). No Crun route is added here.
+
+### Kie review notes (inspection round 2)
+
+- Migration number 0454 was free on `origin/main` and in all open PRs when this branch was prepared (checked 2026-11-07); re-check at merge time.
+- Known fail-closed edge: if object storage answers a photo GET with 200 and no `Content-Length`, the kie image-size bound sees an unknown size and refuses the request before any debit (`source_size_unknown`). Confirm at the staging probe that R2 always returns a size, or have the source resolver report the bytes read.

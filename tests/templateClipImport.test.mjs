@@ -33,6 +33,7 @@ test('offline ffmpeg normalization, deterministic hashes and conditional in-memo
     execFileSync('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=blue:s=320x480:r=12', '-t', '2.5', '-c:v', 'libx264', '-threads', '2', '-pix_fmt', 'yuv420p', fixture]);
     const download = async (url, to) => { assert.equal(url, canonical); await copyFile(fixture, to); };
     const dry = await importTemplateClips({ decisions: [decision], outDir: root, download });
+    await assert.rejects(importTemplateClips({ decisions: [decision], outDir: root, download, modelId: 'seedance-2.0-reference-kie' }), /kie_reference_requires_five_seconds/);
     assert.equal(dry.report.publishable, false); assert.ok(dry.revisionDir.endsWith('/preview'));
     const bytes = await readFile(dry.files[0].file), sha = await sha256Hex(bytes), media = await measure(dry.files[0].file);
     assert.equal(dry.manifest[id].key, `template-clips/${id}/${sha}.mp4`);
@@ -68,5 +69,32 @@ test('a 10.04-second source imports its first five seconds with measured manifes
       assert.equal(entry[field], actual[field]);
       assert.ok(entry[field] >= 5 && entry[field] <= 5.05);
     }
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+for (const dimensions of ['1280x720', '1920x1080', '640x360']) test(`kie import 29.97 fps ${dimensions} enforces measured pixel window before upload`, async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'template-kie-import-'));
+  try {
+    const fixture = path.join(root, 'synthetic.mp4');
+    execFileSync('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', `color=c=blue:s=${dimensions}:r=30000/1001`, '-t', '6', '-c:v', 'libx264', '-threads', '2', '-pix_fmt', 'yuv420p', fixture]);
+    const r2 = { accountId: 'mock', accessKeyId: 'mock', secretAccessKey: 'mock', bucket: 'mock' };
+    let uploads = 0;
+    const options = { decisions: [decision], outDir: root, modelId: 'seedance-2.0-reference-kie',
+      r2, download: (_url, to) => copyFile(fixture, to), storage: { putObject() { uploads++; assert.fail('invalid clip uploaded'); } } };
+    if (dimensions === '640x360') {
+      await assert.rejects(importTemplateClips({ ...options, upload: true, confirmBucket: 'mock' }), /source_too_small/);
+      assert.equal(uploads, 0);
+      // The same undersized kie source retains fal's existing acceptance.
+      assert.equal((await importTemplateClips({ ...options, modelId: 'seedance-2.0-reference' })).report.results[0].status, 'normalised');
+      return;
+    }
+    const imported = await importTemplateClips(options), source = imported.manifest[id];
+    assert.equal(source.width, 1280); assert.equal(source.height, 720); assert.equal(source.pixels, 921600);
+    assert.equal(source.frameRate, 30); assert.equal(source.sizeBytes, (await readFile(imported.files[0].file)).length);
+    for (const seconds of [source.seconds, source.videoSeconds]) assert.ok(Math.abs(seconds - 5) <= 1 / 30);
+    const { resolveTemplateClipVideo } = await import('../lib/templateClipGeneration.js');
+    const { capabilityFor } = await import('../lib/modelCapabilities.js');
+    const admitted = await resolveTemplateClipVideo({ template: { id }, source }, capabilityFor('market:bytedance/seedance-2'), {}, async () => ({ url: 'https://fixture.test/clip.mp4' }));
+    assert.equal(admitted.ok, true);
   } finally { await rm(root, { recursive: true, force: true }); }
 });

@@ -19,7 +19,7 @@ import * as openrouter from '../packages/adapters/openrouter.js';
 const CATALOG = [
     // Swap offers ship inactive (ADR-0329).
     'fal-ai/minimax-h3-max-recast', 'crun:wan/2-2-animate-replace',
-    'bytedance/seedance-2.0/reference-to-video',
+    'bytedance/seedance-2.0/reference-to-video', 'market:bytedance/seedance-2',
     'fal-ai/kling-video/o1/video-to-video/reference',
     'fal-ai/sana/v1.5/4.8b',
     'fal-ai/ace-step', 'fal-ai/ace-step-1.5', 'fal-ai/elevenlabs/sound-effects/v2', 'fal-ai/inworld-tts',
