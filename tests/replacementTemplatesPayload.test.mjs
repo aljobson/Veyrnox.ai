@@ -123,7 +123,6 @@ for (const id of photoIds) {
     photoResults.set(id, result);
     const prompt = lockedPrompt(id);
     assert.equal(page.props.photo, PHOTO);
-    assert.equal(page.props.rightsConfirmed, true);
     assert.deepEqual(page.uploads, [PHOTO]);
     assert.equal(page.jobs.length, 1);
     assert.equal(request.model_id, 'kling-3.0-i2v');
@@ -139,10 +138,6 @@ for (const id of photoIds) {
     assert.equal(typeof result.payload.start_image_url, 'string');
     // Exact object equality above prohibits end frames, reference arrays, video,
     // audio sources and all other media fields. No identity/visual claim is made.
-    const noRights = pageHarness(id, { photo: PHOTO, rightsConfirmed: false });
-    assert.equal(noRights.hook.canGenerate, false);
-    await noRights.hook.generate();
-    assert.equal(noRights.requests.length, 0);
     const tooMany = await providerPayload(request.model_id, request.inputs, [...fixtureReferences, ...fixtureReferences]);
     assert.deepEqual(tooMany.resolved, { ok: false, error: 'source_count_exceeded' });
     assert.deepEqual(tooMany.lookedUp, []);

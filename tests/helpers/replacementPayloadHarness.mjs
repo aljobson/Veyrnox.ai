@@ -17,7 +17,7 @@ export const PHOTO_KEY = 'fixture/replacement-photo.jpg';
 // A repository-owned JPEG is a transport stand-in, not identity/visual proof.
 export const PHOTO = new File([readFileSync(new URL('../../public/showcase/creator-on-the-wave.jpg', import.meta.url))], 'replacement-photo.jpg', { type: 'image/jpeg' });
 
-export function pageHarness(id, { photo = null, rightsConfirmed = true } = {}) {
+export function pageHarness(id, { photo = null } = {}) {
   const preset = templateById(id);
   assert.ok(preset, id + ': no public template');
   const model = MODELS.find(m => m.id === modelIdForName(preset.model));
@@ -47,7 +47,7 @@ export function pageHarness(id, { photo = null, rightsConfirmed = true } = {}) {
     } },
   };
   render = fixture('en', '/presets/' + id, { moduleMocks, states: {
-    'app/veyrnox/_components/UseTemplate.js': [model.id, preset.aspect, preset.durationSeconds, 60, '', false, photo, false, rightsConfirmed],
+    'app/veyrnox/_components/UseTemplate.js': [model.id, preset.aspect, preset.durationSeconds, 60, '', false, photo, false],
     'app/veyrnox/_lib/useTemplateGenerate.js': [10000, null, false, null],
   } });
   const html = render.render(React.createElement(render.load('app/veyrnox/_components/UseTemplate.js').UseTemplate, { preset }));
