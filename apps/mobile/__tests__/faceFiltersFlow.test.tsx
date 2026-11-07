@@ -72,7 +72,6 @@ async function press(role: string, label: string) {
 }
 async function choosePhoto() {
     await press('button', 'Retouch. Gently retouch the face in your photo.. 17 credits per run');
-    expect(control('checkbox', rights).props.accessibilityState.checked).toBe(false);
     expect(control('button', runLabel).props.accessibilityState.disabled).toBe(true);
     await press('button', 'Choose one photo');
 }
@@ -89,20 +88,13 @@ test('renders the quiet not-open-yet state for an empty catalog', async () => {
     expect(send).not.toHaveBeenCalled();
 });
 
-test('rights starts unticked, Run stays disabled until ticked, and an attempted run clears it', async () => {
+test('no rights tick is asked for: Run is ready once a photo is chosen', async () => {
     await renderFlow();
     await choosePhoto();
-    expect(control('checkbox', rights).props.accessibilityState.checked).toBe(false);
-    expect(control('button', runLabel).props.accessibilityState.disabled).toBe(true);
-    await press('button', runLabel);
-    expect(uploadSource).not.toHaveBeenCalled();
-    await press('checkbox', rights);
+    expect(root.container.queryAll(node => node.props.accessibilityRole === 'checkbox' && node.props.accessibilityLabel === rights)).toHaveLength(0);
     expect(control('button', runLabel).props.accessibilityState.disabled).toBe(false);
-    expect(root.container.queryAll(node => node.children.includes('Run filter · 17 credits per run')).length).toBeGreaterThan(0);
     send.mockRejectedValueOnce(new ApiError(503, 'upload_admission_unavailable'));
     await press('button', runLabel);
-    expect(control('checkbox', rights).props.accessibilityState.checked).toBe(false);
-    expect(control('button', runLabel).props.accessibilityState.disabled).toBe(true);
     expect(root.container.queryAll(node => node.children.includes(strings['faceFilters.uploadPaused']))).toHaveLength(1);
     expect(JSON.parse(send.mock.calls[0][1].body).consent).toBe(true);
 });
@@ -110,7 +102,6 @@ test('rights starts unticked, Run stays disabled until ticked, and an attempted 
 test('successful run renders a working before/after toggle and Try this filter on a new photo resets rights', async () => {
     await renderFlow();
     await choosePhoto();
-    await press('checkbox', rights);
     await press('button', runLabel);
     expect(previewUri()).toBe('https://example.invalid/result.jpg');
     expect(control('button', 'After').props.accessibilityState.selected).toBe(true);
@@ -122,7 +113,6 @@ test('successful run renders a working before/after toggle and Try this filter o
     expect(uploadSource).toHaveBeenCalledTimes(1);
     expect(control('button', 'Open in Library')).toBeDefined();
     await press('button', 'Try this filter on a new photo');
-    expect(control('checkbox', rights).props.accessibilityState.checked).toBe(false);
     expect(control('button', runLabel).props.accessibilityState.disabled).toBe(true);
 });
 
@@ -133,7 +123,6 @@ test.each([
 ])('rendered upload rejection %s explains the reason before submitting', async (code, message) => {
     await renderFlow();
     await choosePhoto();
-    await press('checkbox', rights);
     jest.mocked(uploadSource).mockRejectedValueOnce(new ApiError(400, code));
     await press('button', runLabel);
     expect(root.container.queryAll(node => node.children.includes(message))).toHaveLength(1);

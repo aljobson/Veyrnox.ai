@@ -1,0 +1,33 @@
+name: dependency-audit
+
+# Daily npm audit of both lockfiles at moderate and above. The CI gate (scripts/check-audit.mjs)
+# runs only on pull requests and fails only on high and critical; Dependabot is weekly. A failed run
+# here sends GitHub's failed-workflow email to the repo owner. It opens no issue and comments nowhere:
+# the repo is public. What to do about a finding: scripts/daily-audit.mjs (IGNORED is for advisories
+# with no fix yet, one at a time, with a reason).
+on:
+  schedule:
+    - cron: '9 6 * * *'   # daily 06:09 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    # Only main, as the other watches: a dispatch on another branch would run that branch's script.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        dir: ['.', 'apps/mobile']
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+      # Reads the lockfile only: nothing is installed and no secrets are used.
+      - name: Audit ${{ matrix.dir }}
+        run: node scripts/daily-audit.mjs --dir "${{ matrix.dir }}"

@@ -96,7 +96,7 @@ test('owned start/end frames are inspected after admission and reach the correct
         assert.ok(net.calls.findIndex(c => c.pathname === '/rest/v1/model_catalog') < index(inspections(net)[0]));
         for (const name of ['job_consent_attested','attest_upload_rights']) assert.ok(index(rpcCalls(net,name)[0]) < index(submits(net)[0]),name);
         assert.deepEqual(rpcCalls(net,'job_consent_attested')[0].body,{ p_job_id: JOB });
-        assert.deepEqual(rpcCalls(net,'attest_upload_rights')[0].body,{ p_user_id: AUTH,p_version: 'aup-2026-09-26' });
+        assert.deepEqual(rpcCalls(net,'attest_upload_rights')[0].body,{ p_user_id: AUTH,p_version: 'terms-2026-11-07' });
     } finally { net.restore(); }
 });
 test('start-only, mixed legacy start with explicit end and the same image in both frame slots work without duplicate inspection',async () => {

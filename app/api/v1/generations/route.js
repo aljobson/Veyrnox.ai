@@ -29,10 +29,10 @@ import { normaliseNarration } from '../../../../lib/montageNarration.js';
 import { providerSpendBody, providerSpendError, providerSpendLimit } from '../../../../lib/providerSpend.js';
 import { GENERATION_PROMPT_MAX, NEGATIVE_PROMPT_MAX } from '../../../../lib/generationPromptLimits.js';
 
-// The AUP statement version a consent tick attests to. Bump when the wording
+// The wording version an upload consent attests to (ADR-0330: the Terms and AUP, no tick). Bump when the wording
 // at /legal/aup or on the create page changes; users re-attest under the new
 // name on their next upload (attest_upload_rights, migration 0146).
-export const RIGHTS_ATTESTATION_VERSION = 'aup-2026-09-26';
+export const RIGHTS_ATTESTATION_VERSION = 'terms-2026-11-07';
 
 // Constrain idempotency keys to a safe printable range.
 const IDEMPOTENCY_RE = /^[A-Za-z0-9._-]{8,128}$/;

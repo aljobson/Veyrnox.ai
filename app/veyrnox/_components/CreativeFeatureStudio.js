@@ -13,7 +13,6 @@ import { readCreativeScriptFile } from '../_lib/creativeScriptUpload.mjs';
 import { useCatalog } from '../_lib/useCatalog';
 import { LibraryPicker } from './LibraryPicker';
 import { SourcePickers } from './SourcePickers';
-import SourceRightsConfirmation from './SourceRightsConfirmation';
 
 const card = 'rounded-2xl border border-vx-border bg-vx-panel';
 
@@ -27,7 +26,6 @@ export default function CreativeFeatureStudio({ feature }) {
   const [sources, setSources] = useState({});
   const [libraryFor, setLibraryFor] = useState(null);
   const [scriptSource, setScriptSource] = useState(null);
-  const [consent, setConsent] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [sourcesConverting, setSourcesConverting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState('');
@@ -66,7 +64,6 @@ export default function CreativeFeatureStudio({ feature }) {
       }
       return editSlotSource(next, slot, asset ? { assetId: asset.id, previewUrl: asset.url, label: asset.label } : null, index, publicSlotMax(media[slot]));
     });
-    setConsent(false);
     setError('');
   }
 
@@ -74,20 +71,17 @@ export default function CreativeFeatureStudio({ feature }) {
     if (!file) {
       setScriptSource(null);
       setBrief('');
-      setConsent(false);
-      setError('');
+        setError('');
       return;
     }
     const result = await readCreativeScriptFile(file);
     if (result.problem) {
       setScriptSource(null);
-      setConsent(false);
-      setError(t(`app.features.error.script.${result.problem}`));
+        setError(t(`app.features.error.script.${result.problem}`));
       return;
     }
     setScriptSource({ name: file.name, size: file.size });
     setBrief(result.text);
-    setConsent(false);
     setError('');
   }
 
@@ -118,10 +112,6 @@ export default function CreativeFeatureStudio({ feature }) {
     }
     if (!catalog.live || !selectedModel || feature.media.some((slot) => !sourceList(sources[slot]).length || sourceList(sources[slot]).length > publicSlotMax(media[slot]))) {
       setError(t('app.features.error.sources'));
-      return;
-    }
-    if (hasUpload && !consent) {
-      setError(t('app.features.error.consent'));
       return;
     }
     setUploading(true);
@@ -188,7 +178,7 @@ export default function CreativeFeatureStudio({ feature }) {
         <section className={`${card} p-5 sm:p-6`}>
           <p className="font-vx-mono text-[10px] font-bold uppercase tracking-[0.14em] text-vx-accent">{t('app.features.sources')}</p>
           <h2 className="mt-1 text-xl font-black">{t('app.features.sourcesTitle')}</h2>
-          {feature.media.length > 0 && <SourcePickers media={media} sources={sources} onPick={pickSource} onConvertingChange={setSourcesConverting} onReorder={(slot, from, to) => { setConsent(false); setSources(prev => moveSlotSource(prev, slot, from, to)); }} onDraw={null} onLibrary={setLibraryFor} />}
+          {feature.media.length > 0 && <SourcePickers media={media} sources={sources} onPick={pickSource} onConvertingChange={setSourcesConverting} onReorder={(slot, from, to) => { setSources(prev => moveSlotSource(prev, slot, from, to)); }} onDraw={null} onLibrary={setLibraryFor} />}
           {feature.scriptUpload && <div className="mt-4 rounded-xl border border-vx-field bg-vx-base p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -210,7 +200,6 @@ export default function CreativeFeatureStudio({ feature }) {
             </div>}
           </div>}
           {libraryFor && <LibraryPicker kind={generationSlotKind(libraryFor)} mimeTypes={generationMimeTypes(generationSlotKind(libraryFor))} onClose={() => setLibraryFor(null)} onPick={asset => { pickSource(libraryFor, null, asset); setLibraryFor(null); }} />}
-          {hasUpload && <SourceRightsConfirmation confirmed={consent} onChange={(value) => { setConsent(value); setError(''); }} />}
           <p className="mt-4 text-xs leading-5 text-vx-fg-muted">{t('app.features.uploadSafety')}</p>
         </section>
       </div>

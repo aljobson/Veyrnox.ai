@@ -328,9 +328,9 @@ test('ordinary Create drafts still arrive before the catalog and do not replay w
   } finally { h.close(); }
 });
 
-test('Create still refuses missing required sources, missing consent and prompts over 30,000', async () => {
+test('Create still refuses missing required sources and prompts over 30,000', async () => {
   const withMedia = { ...original, media: { image: { required: true, maxFiles: 1 } } };
-  for (const saved of [undefined, { prompt: preset.prompt, model: original.id, templateId: preset.id, sources: { image: { assetId: 'test-asset' } }, consent: false }]) {
+  for (const saved of [undefined]) {
     const h = harness({ model: original.id }, { models: [withMedia], saved });
     try {
       const tree = await h.settle();
@@ -380,7 +380,7 @@ test('Create consumes the one-time template photo into the required source slot'
     assert.equal(sourcePickers(tree).props.sources.image.file, photo);
     assert.match(sourcePickers(tree).props.sources.image.previewUrl, /^blob:/);
     assert.equal(card(tree).props.settings.sourceLabel, 'portrait.jpg');
-    assert.equal(generate(tree).props.disabled, true, 'the existing rights confirmation still applies');
+    assert.equal(generate(tree).props.disabled, false, 'no rights tick is asked for: the Terms carry the statement');
     assert.equal(templateMediaHandoff.takeTemplateMediaHandoff(globalThis.window, preset.id, original.id), null);
   } finally { h.close(); }
 });

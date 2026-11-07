@@ -57,6 +57,7 @@ test('English source manifest is current, including document review dates and an
 
 test('wording, keys, dates, bindings, chrome and anchors cannot change without confirmation', async () => {
   const original = await currentSources();
+  const anchored = Object.keys(original.anchors).find(id => original.anchors[id].length);
   const mutations = [
     current => { current.documents.terms.hashes.b003 = hashText('Changed without any digits'); },
     current => { current.documents.terms.translationsReviewedAgainstEnglishDated = '20 October 2026'; },
@@ -64,8 +65,8 @@ test('wording, keys, dates, bindings, chrome and anchors cannot change without c
     current => { current.documents.terms.hashes.newKey = hashText('A new obligation'); },
     current => { current.binding.supply = hashText('A differently worded consent'); },
     current => { current.chrome.notice = hashText('A different notice'); },
-    current => { current.anchors.sourceRights[0].href = '/changed'; },
-    current => { current.anchors.sourceRights[0].text = 'Changed label'; },
+    current => { current.anchors[anchored][0].href = '/changed'; },
+    current => { current.anchors[anchored][0].text = 'Changed label'; },
   ];
   for (const mutate of mutations) {
     const current = structuredClone(original);
@@ -76,9 +77,7 @@ test('wording, keys, dates, bindings, chrome and anchors cannot change without c
 
 test('binding audit refuses changed English anchor destinations or text', () => {
   for (const [file, text] of [
-    ['app/veyrnox/_components/SourceRightsConfirmation.jsx', 'Acceptable Use'],
     ['app/veyrnox/_components/chat/MediaComposer.js', 'Acceptable Use Policy'],
-    ['app/veyrnox/_components/editor/GenerationPanel.js', 'Acceptable Use'],
     ['app/veyrnox/social-cinema/creator/CreatorWorkspace.js', 'Cinema Content Policy'],
     ['app/veyrnox/_components/TopUpPacks.js', 'Refund policy'],
   ]) {
