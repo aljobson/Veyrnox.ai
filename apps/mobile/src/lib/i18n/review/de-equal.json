@@ -180,5 +180,10 @@
   "projectDocument.versionTitle": "Version is the standard word in this language for a saved revision.",
   "vey.touch.label": "Vey is the mascot’s proper name and stays unchanged across languages.",
   "wins.videoType": "Established de term or conventional duration notation, identical to English.",
-  "credits.receipt.credits": "Established German term or label: Credits."
+  "credits.receipt.credits": "Established German term or label: Credits.",
+  "faceFilters.look.original": "Same word in German, kept as the common term.",
+  "faceFilters.look.warm": "Same word in German, kept as the common term.",
+  "faceFilters.look.mono": "Same word in German, kept as the common term.",
+  "faceFilters.clown": "Same word in German, kept as the common term.",
+  "faceFilters.zombie": "Same word in German, kept as the common term."
 }

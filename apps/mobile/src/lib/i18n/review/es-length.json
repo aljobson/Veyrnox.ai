@@ -3054,6 +3054,24 @@
     "ratio": 2
   },
   {
+    "id": "faceFilters.look.glow",
+    "english": "Glow",
+    "translation": "Resplandor",
+    "ratio": 2.5
+  },
+  {
+    "id": "faceFilters.look.fade",
+    "english": "Fade",
+    "translation": "Desvanecido",
+    "ratio": 2.75
+  },
+  {
+    "id": "faceFilters.look.strength",
+    "english": "Look strength",
+    "translation": "Intensidad del filtro",
+    "ratio": 1.62
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

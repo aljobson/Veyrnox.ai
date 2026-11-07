@@ -16,6 +16,7 @@ const FILTERS = [
     ['face-age', 'fal-ai/image-apps-v2/age-modify', 3, 0.04],
 ];
 const IMAGE = 'https://example.test/source.jpg';
+const COSTUME = 'fal-ai/nano-banana/edit';
 
 test('A1-A5 are staged inactive, never live (CLAUDE.md: verify against the live provider first)', () => {
     const rows = sql.split('\n').filter((l) => /^\s+\('face-/.test(l));
@@ -91,7 +92,7 @@ test('makeup takes only the listed styles and intensities', () => {
 
 test('the Tools page groups the filters in one place, web and phone', () => {
     const task = TOOL_TASKS.find((t) => t.key === 'face-filters');
-    assert.deepEqual(task.ids, FILTERS.map(([id]) => id));
+    assert.deepEqual(task.ids, FILTERS.map(([id]) => id), 'Costumes is phone-only until the web has a style picker');
     const models = FILTERS.map(([id, endpoint]) => ({ id, capabilities: { media: REGISTRY[endpoint].media } }));
     const group = toolGroups(models).find((g) => g.key === 'face-filters');
     assert.equal(group.tools.length, FILTERS.length);
@@ -106,4 +107,51 @@ test('0357 activates the four filters fal billed at list price, and leaves relig
     assert.match(act, /affected <> 4/);
     for (const id of ['face-retouch', 'face-enhance', 'face-makeup', 'face-age']) assert.match(act, new RegExp(`'${id}'`));
     assert.doesNotMatch(act, /'face-relight'|iclight-v2'\)/, 'relight is not activated');
+});
+
+test('costumes: the customer picks a style and nothing else; the prompt is ours', async () => {
+    const { COSTUME_STYLES, costumePrompt } = await import('../lib/costumePrompts.js');
+    const record = REGISTRY[COSTUME];
+    assert.ok(record, 'has a capability record');
+    assert.equal(checkInputs(record, { image_url: IMAGE, costume_style: 'zombie' }).ok, true);
+    assert.equal(checkInputs(record, { costume_style: 'zombie' }).ok, false, 'a source photo is required');
+    assert.equal(checkInputs(record, { image_url: IMAGE }).ok, true, 'an omitted style is allowed (the web has no picker yet)');
+    assert.equal(shapePayload(record, { image_url: IMAGE }).prompt, costumePrompt('clown'), 'and it means clown');
+    assert.equal(checkInputs(record, { image_url: IMAGE, costume_style: 'gore' }).ok, false, 'unknown style refused');
+    assert.equal(checkInputs(record, { image_url: IMAGE, costume_style: 'ghost', prompt: 'anything' }).ok, false, 'no free-text prompt');
+    assert.equal(checkInputs(record, { image_url: IMAGE, costume_style: 'ghost', num_images: 4 }).ok, false, 'no extra outputs');
+    for (const style of COSTUME_STYLES) {
+        const payload = shapePayload(record, { image_url: IMAGE, costume_style: style });
+        assert.equal(payload.prompt, costumePrompt(style), style);
+        assert.deepEqual(payload.image_urls, [IMAGE]);
+        assert.equal(payload.costume_style, undefined, 'the style name is not sent to the provider');
+        assert.equal(payload.num_images, 1);
+        assert.equal(payload.safety_tolerance, '1', 'fal strictest safety setting');
+    }
+});
+
+test('costume prompts stay theatrical and name no trademarked character', async () => {
+    const { COSTUME_STYLES, costumePrompt } = await import('../lib/costumePrompts.js');
+    assert.throws(() => costumePrompt('nope'), /invalid_costume_style/);
+    for (const style of COSTUME_STYLES) {
+        const text = costumePrompt(style);
+        assert.match(text, /no blood, no wounds/);
+        assert.doesNotMatch(text, /pennywise|\bit\b chapter|joker|freddy|jason|chucky|halloween/i, style);
+    }
+});
+
+test('0445 stages Costumes inactive at the floor price and activates nothing', () => {
+    const sql445 = readFileSync(new URL('../packages/db/schema/supabase/0445_face_costume_staged.sql', import.meta.url), 'utf8');
+    const row = sql445.split('\n').find((l) => l.includes("('face-costume'"));
+    assert.ok(row.includes(`'${COSTUME}', 'image-to-image', 3, 0.0390,`));
+    assert.match(row, /false, false\)$/);
+    assert.ok(3 === Math.ceil(0.039 / FLOOR_RATE), 'the minimum whole credits at the 50% floor');
+    assert.doesNotMatch(sql445, /\bUPDATE\b/);
+    assert.match(sql445, /ON CONFLICT \(id\) DO NOTHING;/);
+});
+
+test('the generations gateway admits costume_style, from our own list only', () => {
+    const route = readFileSync(new URL('../app/api/v1/generations/route.js', import.meta.url), 'utf8');
+    assert.match(route, /import \{ COSTUME_STYLES \} from '\.\.\/\.\.\/\.\.\/\.\.\/lib\/costumePrompts\.js';/);
+    assert.match(route, /costume_style: \{ kind: 'enum', values: COSTUME_STYLES \}/);
 });

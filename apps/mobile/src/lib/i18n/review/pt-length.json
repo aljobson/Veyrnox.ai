@@ -3018,6 +3018,30 @@
     "ratio": 2.6
   },
   {
+    "id": "faceFilters.look.fade",
+    "english": "Fade",
+    "translation": "Desbotado",
+    "ratio": 2.25
+  },
+  {
+    "id": "faceFilters.look.strength",
+    "english": "Look strength",
+    "translation": "Intensidade do filtro",
+    "ratio": 1.62
+  },
+  {
+    "id": "faceFilters.jester",
+    "english": "Jester",
+    "translation": "Bobo da corte",
+    "ratio": 2.17
+  },
+  {
+    "id": "faceFilters.wig_curly",
+    "english": "Curly wig",
+    "translation": "Peruca cacheada",
+    "ratio": 1.67
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",
