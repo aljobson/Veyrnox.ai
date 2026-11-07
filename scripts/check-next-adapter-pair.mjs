@@ -20,6 +20,8 @@ export const KNOWN_PAIRS = {
     // The framework-runtime dependency PR's worker-smoke completed successfully
     // with Next 16.4.2 before this compatibility row was added.
     '1.20.13': ['16.4'],
+    // PR #1985's worker-smoke completed successfully with Next 16.4.4.
+    '1.20.15': ['16.4'],
 };
 
 export function checkPair(nextVersion, adapterVersion, table = KNOWN_PAIRS) {
