@@ -120,7 +120,9 @@ test('every page template and every sitemap page renders within accessibility an
         expect(metrics.htmlBytes, `uncompressed HTML budget: ${label}`).toBeLessThan(800 * 1024);
         expect(metrics.ttfbMs, `cold navigation TTFB budget: ${label}`).toBeLessThan(5000);
         if (entry.pathname === '/app' || entry.pathname === '/presets') {
-          expect(metrics.images, 'first gallery page is bounded').toBeLessThanOrEqual(20);
+          // One batch of 50 template cards (#1631), each with a poster image, plus the roller's sample of up to 48.
+          expect(await page.locator('#preset-gallery-results img').count(), 'first gallery batch is bounded').toBeLessThanOrEqual(50);
+          expect(metrics.images, 'first gallery page is bounded').toBeLessThanOrEqual(110);
           const before = await page.locator('#preset-gallery-results > a').count();
           await page.getByRole('button', { name: 'Show more templates' }).click();
           await expect(page.locator('#preset-gallery-results > a')).toHaveCount(before + 50);
