@@ -118,7 +118,7 @@ export function BrandSplash({ onFadeStart, onFinish }: { onFadeStart?: () => voi
 
     return (
         <Animated.View style={[StyleSheet.absoluteFill, s.screen, { opacity: fade, paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-            <Pressable accessible={false} importantForAccessibility="no" style={StyleSheet.absoluteFill} onPress={() => end()} />
+            <Pressable accessible={false} accessibilityRole="none" importantForAccessibility="no" style={StyleSheet.absoluteFill} onPress={() => end()} />
             <View pointerEvents="none" style={s.middle}>
                 <BrandIntro fontSize={NAME_SIZE} onDone={onDone} leap={leap} onLand={onLand} onLeapDone={onLeapDone} fadeOut={landed} />
                 <View ref={slot} collapsable={false} style={s.slot}>
