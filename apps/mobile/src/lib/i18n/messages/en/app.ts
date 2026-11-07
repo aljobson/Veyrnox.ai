@@ -1,4 +1,6 @@
 export default {
+  "app.create.swapConsentNotice": "Only use photos of people who agreed.",
+
     "app.create.error.price_changed": "The price changed. This item was not charged. Confirm the revised remaining total to continue.",
     "app.create.error.admission_unknown": "We could not confirm whether this request started or was charged. Retry this same request to check its outcome.",
     "app.create.error.admission_unavailable": "This request could not be admitted. Nothing was charged. Try again later.",
@@ -11,8 +13,8 @@ export default {
     "app.create.sources.sideRange": "{min}–{max} pixels on each side",
     "app.create.sources.minSide": "at least {min} pixels on each side",
     "app.create.sources.maxSide": "up to {max} pixels on each side",
-    "app.create.error.source_too_short": "That video is too short. Use a clip of at least 3 seconds.",
-    "app.create.error.source_resolution_out_of_range": "That video's size isn't supported. Use a clip between 720 and 2160 pixels on each side.",
+    "app.create.error.source_too_short": "That video is too short for this model. Use a clip that meets the minimum length shown by the video picker.",
+    "app.create.error.source_resolution_out_of_range": "That file’s dimensions are not supported by this model. Remove that file and choose one within the size limits shown by the source picker.",
     "app.create.error.source_count_exceeded": "This model accepts fewer reference files. Remove extra files or choose another model. Nothing was charged.",
     "app.create.error.sources_too_large": "The reference files are too large together. Remove files or use smaller ones. Nothing was charged.",
     "app.create.error.source_size_unknown": "We could not verify a source file’s size. Reattach it or choose another file. Nothing was charged.",

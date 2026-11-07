@@ -205,8 +205,8 @@ const ko = {
     'app.create.sources.sideRange': '가로와 세로 각각 {min}–{max}픽셀',
     'app.create.sources.minSide': '가로와 세로 각각 최소 {min}픽셀',
     'app.create.sources.maxSide': '가로와 세로 각각 최대 {max}픽셀',
-    'app.create.error.source_too_short': '동영상이 너무 짧습니다. 최소 3초 길이의 클립을 사용하세요.',
-    'app.create.error.source_resolution_out_of_range': '지원하지 않는 동영상 크기입니다. 가로와 세로가 각각 720~2160픽셀인 클립을 사용하세요.',
+    'app.create.error.source_too_short': '이 동영상은 이 모델에 사용하기에 너무 짧습니다. 동영상 선택란에 표시된 최소 길이를 충족하는 클립을 사용하세요.',
+    'app.create.error.source_resolution_out_of_range': '이 파일의 크기는 이 모델에서 지원하지 않습니다. 이 파일을 제거하고 파일 선택란에 표시된 크기 제한에 맞는 파일을 선택하세요.',
     'label.Reference pictures': '참조 이미지',
     'label.Start frame': '시작 프레임',
     'label.End frame': '끝 프레임',
@@ -344,6 +344,10 @@ const ko = {
     'app.explore.smartCutStart': 'Turn finished clips into a reviewed first cut.',
     'app.library.openSmartCut': 'Open Smart Cut',
     'app.editor.sheet.style': '스타일',
+    'label.Video to change': '변경할 동영상',
+    'label.Photo of the new person': '새 인물의 사진',
+    'label.Photos of the new people': '새 인물들의 사진',
+    'app.create.swapConsentNotice': '동의한 사람의 사진만 사용하세요.',
 } as const;
 
 export default ko;

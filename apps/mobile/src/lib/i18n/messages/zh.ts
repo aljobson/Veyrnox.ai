@@ -205,8 +205,8 @@ const zh = {
     'app.create.sources.sideRange': '每边 {min}–{max} 像素',
     'app.create.sources.minSide': '每边至少 {min} 像素',
     'app.create.sources.maxSide': '每边最多 {max} 像素',
-    'app.create.error.source_too_short': '该视频太短。请使用至少 3 秒的片段。',
-    'app.create.error.source_resolution_out_of_range': '不支持该视频的尺寸。请使用宽和高均在 720 至 2160 像素之间的片段。',
+    'app.create.error.source_too_short': '该视频对这个模型而言太短。请使用符合视频选择区域所示最短时长的片段。',
+    'app.create.error.source_resolution_out_of_range': '该模型不支持此文件的尺寸。请移除此文件，并选择符合文件选择区域所示尺寸限制的文件。',
     'label.Reference pictures': '参考图片',
     'label.Start frame': '起始帧',
     'label.End frame': '结束帧',
@@ -344,6 +344,10 @@ const zh = {
     'app.explore.smartCutStart': 'Turn finished clips into a reviewed first cut.',
     'app.library.openSmartCut': 'Open Smart Cut',
     'app.editor.sheet.style': '样式',
+    'label.Video to change': '要修改的视频',
+    'label.Photo of the new person': '新人物的照片',
+    'label.Photos of the new people': '新人物们的照片',
+    'app.create.swapConsentNotice': '仅使用已征得本人同意的照片。',
 } as const;
 
 export default zh;

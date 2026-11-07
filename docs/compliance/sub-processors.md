@@ -79,3 +79,12 @@ The required `translationsReviewedAgainstEnglishDated` field in `lib/i18n/messag
 ## Public list and recipient roles (inspection 2)
 
 The public privacy notice separates service providers from networks a person chooses to connect; each named entry has a short purpose. Google appears in both roles (sign-in/store purchases versus requested YouTube/Business Profile publishing). Meta, TikTok, LinkedIn, X, Pinterest, Bluesky and Twitch are user-directed social recipients, not represented as processors merely because they appear in this inventory. Owners must confirm each actual legal role. BytePlus remains marked planned. A catalog test checks every public name against this register and checks that no registered vendor is omitted. No provider is enabled by this documentation change.
+
+## Swap data categories (inactive, 2026-11-07)
+
+The existing fal and Crun entries also cover the proposed customer-video plus
+reference face-photo flow in [Swap privacy register](swap-privacy-register.md)
+(ADR-0329). Pro sends video, up to two face photos and an optional replacement
+prompt to fal; Quick sends video and one face photo to Crun. Both offers remain
+inactive. No new processor, retention change or DPA/region assurance is implied;
+owner review of these categories is required before activation.

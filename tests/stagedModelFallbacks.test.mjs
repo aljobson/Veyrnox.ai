@@ -12,6 +12,11 @@ import { translator } from '../lib/i18n/translate.mjs';
 import * as translate from '../lib/i18n/translate.mjs';
 
 test('staged models stay resolvable but never enter public fallback lists', async () => {
+  for (const [id, name] of [['swap-recast', 'Swap · Pro'], ['swap-quick', 'Swap · Quick']]) {
+    assert.equal(MODELS.find(model => model.id === id)?.staged, true);
+    assert.equal(modelIdForName(name), id);
+    for (const rows of [fallbackModels(), fromFallback(), featuredModels()]) assert.ok(!rows.some(row => row.id === id));
+  }
   const id = 'kling-o1-reference';
   assert.equal(MODELS.find(model => model.id === id)?.staged, true);
   assert.equal(modelIdForName('Kling O1 · Reference'), id);
@@ -45,7 +50,7 @@ test('staged models stay resolvable but never enter public fallback lists', asyn
   const t = translator('en');
   const index = [...siteSearch.staticIndex(siteSearch.FALLBACK_MODELS, false, t), ...siteSearch.modelsToIndex(MODELS, t)];
   assert.ok(index.some(item => item.group === 'Models'));
-  assert.doesNotMatch(JSON.stringify(index), /kling-o1-reference|Kling O1 · Reference/);
+  assert.doesNotMatch(JSON.stringify(index), /kling-o1-reference|Kling O1 · Reference|swap-recast|swap-quick|Swap · Pro|Swap · Quick/);
   assert.ok(!featuredModels().some(model => model.id === id));
   // Featured ids may change later: even an otherwise featured row must respect staging.
   assert.deepEqual(featuredModels(MODELS.map(model => ({ ...model, staged: true }))), []);
