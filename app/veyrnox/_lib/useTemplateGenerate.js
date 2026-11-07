@@ -6,7 +6,7 @@ import { useStudioJobs } from './useStudioJobs';
 import { useFreeAllowance } from './useFreeAllowance';
 import { freeLeftFor } from './freeAllowance';
 import { allocationSnapshot } from './imageBatch';
-import { cachedSources, keepUpload, submitTemplate, templateInputs, templateRun, templateRunDead } from './templateGenerate';
+import { cachedSources, fileIdentity, keepUpload, submitTemplate, templateInputs, templateRun, templateRunDead } from './templateGenerate';
 import { TEMPLATE_PROMPT_MAX } from './templateDraft';
 import { mediaGenerationSources } from './chatMedia';
 import { uploadSourceFile } from './uploadSourceFile';
@@ -26,7 +26,7 @@ export function useTemplateGenerate({ preset, model, prompt, aspect, aspectOptio
   const continuation = useRef(null);
   const inFlight = useRef(false);
   const uploaded = useRef({});
-  const photoToken = photo ? [photo.name, photo.size, photo.lastModified] : null;
+  const photoToken = fileIdentity(photo);
   const identity = JSON.stringify([model?.id, prompt, aspect, durationSeconds, preset.id, photoToken, rightsConfirmed]);
   const activeBatch = batchView?.identity === identity ? batchView : null;
   const quote = activeBatch?.quote ?? allocationSnapshot(activeBatch ?? { accepted: [null], unknown: new Set() }, activeBatch?.unit ?? unitCost, model ? freeLeftFor(freeMap, model.id) : 0);

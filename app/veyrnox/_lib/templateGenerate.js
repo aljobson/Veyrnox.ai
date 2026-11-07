@@ -56,6 +56,15 @@ export function templateInputs(preset, model, { prompt, aspect, durationSeconds,
 export const errorFor = (e) => e?.name === 'GatewayError'
   ? { code: e.code, retryAfter: e.retryAfter, expectedCredits: e.body?.expected_credits } : { code: 'internal' };
 
+// One id per File object, so two different files that share a name, size and date are never taken for the same photo.
+const FILE_IDS = new WeakMap();
+let nextFileId = 0;
+export function fileIdentity(file) {
+  if (!file || typeof file !== 'object') return null;
+  if (!FILE_IDS.has(file)) FILE_IDS.set(file, ++nextFileId);
+  return FILE_IDS.get(file);
+}
+
 // An uploaded photo is reused for the same file for this long, even when the request that used it was refused and its
 // run (with its idempotency key) was discarded. Shorter than the 15-minute upload window, so a reused key is still valid.
 export const UPLOAD_REUSE_MS = 10 * 60 * 1000;

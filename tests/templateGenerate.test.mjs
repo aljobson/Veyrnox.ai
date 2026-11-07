@@ -12,7 +12,7 @@ const { ALL_TEMPLATES } = await import('../app/veyrnox/_lib/templates.js');
 const { modelIdForName } = await import('../app/veyrnox/_lib/tokens.js');
 const { ERROR_COPY } = await import('../app/veyrnox/_lib/createErrors.js');
 const { allocationSnapshot } = await import('../app/veyrnox/_lib/imageBatch.js');
-const { cachedSources, keepUpload, UPLOAD_REUSE_MS, inlineBlockReason, photoOnlyModel, templateInputs, templateRun, submitTemplate, templateRunDead } = await import('../app/veyrnox/_lib/templateGenerate.js');
+const { cachedSources, fileIdentity, keepUpload, UPLOAD_REUSE_MS, inlineBlockReason, photoOnlyModel, templateInputs, templateRun, submitTemplate, templateRunDead } = await import('../app/veyrnox/_lib/templateGenerate.js');
 
 const preset = ALL_TEMPLATES.find(p => modelIdForName(p.model) && p.prompt && !p.needs);
 const modelId = modelIdForName(preset.model);
@@ -163,6 +163,14 @@ test('the uploaded photo is reused after a refused request discards its run, unt
   await cachedSources(cache, 'photo-b', load, 3000 + UPLOAD_REUSE_MS + 1);
   assert.equal(loads, 3, 'an old upload is not trusted');
   await assert.rejects(cachedSources({}, 'x', async () => { throw new Error('upload_failed'); }));
+});
+
+test('two different files with the same name, size and date are different photos', () => {
+  const a = new Blob(['a']), b = new Blob(['a']);
+  Object.assign(a, { name: 'me.jpg', lastModified: 1 }); Object.assign(b, { name: 'me.jpg', lastModified: 1 });
+  assert.notEqual(fileIdentity(a), fileIdentity(b));
+  assert.equal(fileIdentity(a), fileIdentity(a));
+  assert.equal(fileIdentity(null), null);
 });
 
 test('a cached upload is kept only after a refusal that made no job', () => {
