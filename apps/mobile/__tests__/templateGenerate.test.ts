@@ -1,6 +1,6 @@
 import { ApiError, type ApiClient } from '../src/lib/api';
 import { createGenerationSubmit, generationMessage } from '../src/lib/generationSubmit';
-import { inlineBlockReason, templateRequest } from '../src/lib/templateGenerate';
+import { inlineBlockReason, photoSlot, templateRequest } from '../src/lib/templateGenerate';
 import type { Preset } from '../src/lib/presets';
 import type { CatalogModel } from '../src/lib/media';
 
@@ -74,4 +74,40 @@ test('the gates stay: no source rights are sent, and the provider agreement is e
     expect(templateRequest(preset, model, choice).sourceRights).toBeUndefined();
     const media = require('fs').readFileSync(require('path').join(process.cwd(), 'src/lib/media.ts'), 'utf8');
     expect(media).toMatch(/await aiConsent\.ensure\('\/api\/v1\/generations', 'POST'\)/);
+});
+
+describe('a template whose only media is one photo', () => {
+    const photoModel = { ...model, capabilities: { inputs: { prompt: {}, aspect_ratio: { values: ['16:9', '9:16'] } }, media: { image: { required: true } } } } as unknown as CatalogModel;
+    const needing = { ...preset, needs: 'A clear portrait of the person' } as Preset;
+    const photo = [{ slot: 'image', origin: 'upload', key: 'u/1' }] as const;
+
+    test('generates on its own page only when the page can take the photo', () => {
+        expect(photoSlot(photoModel)?.slot).toBe('image');
+        expect(inlineBlockReason(needing, photoModel, { photo: true })).toBeNull();
+        expect(inlineBlockReason(needing, photoModel)).toBe('media');
+        expect(inlineBlockReason({ ...preset, needs: 'One video and two pictures' } as Preset, photoModel, { photo: true })).toBe('media');
+        const withVideo = { ...photoModel, capabilities: { inputs: { prompt: {} }, media: { image: { required: true }, video: { required: true } } } } as unknown as CatalogModel;
+        expect(inlineBlockReason(needing, withVideo, { photo: true })).toBe('media');
+        expect(inlineBlockReason(needing, model, { photo: true })).toBe('media');
+    });
+
+    test('the request carries the upload reference, the rights tick and a line naming the person as the lead', () => {
+        const request = templateRequest(needing, photoModel, { ...choice, references: photo, sourceRights: true });
+        expect(request.references).toEqual(photo);
+        expect(request.sourceRights).toBe(true);
+        expect(request.prompt.startsWith('a rap battle\n\n')).toBe(true);
+        expect(request.prompt).toMatch(/person in the attached photo is the main character/);
+        expect(templateRequest(needing, photoModel, { ...choice, references: photo }).sourceRights).toBe(false);
+        const plain = templateRequest(preset, model, choice);
+        expect(plain.prompt).toBe('a rap battle');
+        expect(plain.sourceRights).toBeUndefined();
+    });
+
+    test('changing the photo is a different request with a new key', async () => {
+        const submit = createGenerationSubmit();
+        mockCreate.mockResolvedValue({ job_id: 'j' });
+        await submit.run(api, templateRequest(needing, photoModel, { ...choice, references: photo, sourceRights: true }), 1);
+        await submit.run(api, templateRequest(needing, photoModel, { ...choice, references: [{ slot: 'image', origin: 'upload', key: 'u/2' }], sourceRights: true }), 1);
+        expect(mockCreate.mock.calls[1][0].idempotencyKey).not.toBe(mockCreate.mock.calls[0][0].idempotencyKey);
+    });
 });
