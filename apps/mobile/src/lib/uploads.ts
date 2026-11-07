@@ -2,7 +2,7 @@ import { t } from './i18n';
 import { ApiError, type ApiClient } from './api';
 
 // The most uploaded-but-unused files one account can hold (the server's MAX_PENDING_UPLOADS). Unused ones clear after 24 hours.
-export const MAX_UNUSED_UPLOADS = 10;
+export const MAX_UNUSED_UPLOADS = 20;
 
 interface UploadGrant {
     readonly key: string;

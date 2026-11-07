@@ -32,7 +32,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 // This is a snapshot of stored objects, not a reservation for outstanding PUT
 // URLs. Concurrent issuance and later uploads can exceed it. The request quota
 // separately bounds signing and listing work; neither enforces a byte budget.
-const MAX_PENDING_UPLOADS = 10;
+const MAX_PENDING_UPLOADS = 20;
 
 export async function POST(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
