@@ -3336,6 +3336,30 @@
     "ratio": 1.78
   },
   {
+    "id": "faceFilters.look.fade",
+    "english": "Fade",
+    "translation": "Verblasst",
+    "ratio": 2.25
+  },
+  {
+    "id": "faceFilters.look.saveFailed",
+    "english": "Could not save this photo.",
+    "translation": "Dieses Foto konnte nicht gesichert werden.",
+    "ratio": 1.62
+  },
+  {
+    "id": "faceFilters.look.denied",
+    "english": "Allow photo access in Settings to save.",
+    "translation": "Erlaube in den Einstellungen den Zugriff auf Fotos, um zu sichern.",
+    "ratio": 1.69
+  },
+  {
+    "id": "faceFilters.face-costume",
+    "english": "Try a costume, mask or wig on your photo.",
+    "translation": "Probiere ein Kostüm, eine Maske oder eine Perücke an deinem Foto aus.",
+    "ratio": 1.68
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

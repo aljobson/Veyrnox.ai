@@ -50,6 +50,8 @@ const CATALOG = [
     // Face Filters A1-A5, staged inactive by migration 0356.
     'fal-ai/image-editing/retouch', 'fal-ai/image-editing/face-enhancement', 'fal-ai/iclight-v2',
     'fal-ai/image-apps-v2/makeup-application', 'fal-ai/image-apps-v2/age-modify',
+    // Costumes (A9), staged inactive by migration 0445.
+    'fal-ai/nano-banana/edit',
     // Zero-shot voice cloning through the existing fal provider.
     'fal-ai/zonos2',
 ];
@@ -62,7 +64,7 @@ const CORRECTED = new Set(['bytedance/seedance-2.0/reference-to-video', 'fal-ai/
     'fal-ai/mmaudio-v2', 'fal-ai/topaz/upscale/video',
     'fal-ai/elevenlabs/text-to-dialogue/eleven-v3', 'fal-ai/qwen-3-tts/voice-design/1.7b', 'fal-ai/demucs',
     'fal-ai/image-editing/retouch', 'fal-ai/image-editing/face-enhancement', 'fal-ai/iclight-v2',
-    'fal-ai/image-apps-v2/makeup-application', 'fal-ai/image-apps-v2/age-modify', 'fal-ai/zonos2']);
+    'fal-ai/image-apps-v2/makeup-application', 'fal-ai/image-apps-v2/age-modify', 'fal-ai/nano-banana/edit', 'fal-ai/zonos2']);
 
 /** Every valid combination of a record's inputs: all declared keys, each enum value, each length. */
 function fixtures(record) {

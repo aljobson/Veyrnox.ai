@@ -5,7 +5,11 @@ import { slotsFor } from './sources';
 // ADR-0221: the web's /tools page (app/veyrnox/_lib/tools.js) on the phone: models that work on a file you already
 // have, grouped by the job they do. Which models exist, what they cost and what they need come from the live catalog;
 // only the task names, blurbs and the order live here. __tests__/toolDirectory.test.ts reads the web file and fails if
-// the tasks, their order or their models differ.
+// the tasks, their order or their models differ, except the ids in PHONE_ONLY below.
+
+// Models the phone lists before the web does. Costumes needs a style picker the web Create page does not have yet,
+// so it is not on the web /tools page; remove it from this list when the web gains one.
+export const PHONE_ONLY: readonly string[] = ['face-costume'];
 
 export interface ToolTask {
     readonly key: string;
@@ -19,7 +23,7 @@ export const TOOL_TASKS: readonly ToolTask[] = [
     { key: 'background', label: t('toolDirectory.removebackground'), blurb: t('toolDirectory.cutthesubjectoutofaphoto'), ids: ['bria-bg-remove'] },
     { key: 'expand', label: t('toolDirectory.expand'), blurb: t('toolDirectory.extendanimagebeyonditsedges'), ids: ['bria-expand'] },
     { key: 'edit', label: t('toolDirectory.editwithaprompt'), blurb: t('toolDirectory.changeanimagebydescribingthechange'), ids: ['nano-banana-pro-edit', 'nano-banana-pro-edit-grsai'] },
-    { key: 'face-filters', label: t('toolDirectory.facefilters'), blurb: 'Retouch, relight or restyle the face in your own photo.', ids: ['face-retouch', 'face-enhance', 'face-relight', 'face-makeup', 'face-age'] },
+    { key: 'face-filters', label: t('toolDirectory.facefilters'), blurb: 'Retouch, relight or restyle the face in your own photo.', ids: ['face-retouch', 'face-enhance', 'face-relight', 'face-makeup', 'face-age', 'face-costume'] },
     { key: 'animate', label: t('toolDirectory.phototovideo'), blurb: t('toolDirectory.turnastillimageintoamoving'), ids: ['kling-3.0-i2v', 'kling-3.0-i2v-kie'] },
     { key: 'avatar', label: t('toolDirectory.talkingavatar'), blurb: t('toolDirectory.makeaphotospeakavoiceclip'), ids: ['kling-avatar-v2'] },
     { key: 'lipsync', label: t('toolDirectory.lipsync'), blurb: t('toolDirectory.matchavideoslipstonew'), ids: ['latentsync'] },

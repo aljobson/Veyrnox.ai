@@ -4860,6 +4860,30 @@
     "ratio": 1.74
   },
   {
+    "id": "faceFilters.look.save",
+    "english": "Save to Photos",
+    "translation": "Enregistrer dans Photos",
+    "ratio": 1.64
+  },
+  {
+    "id": "faceFilters.look.needPhoto",
+    "english": "Choose a photo to try looks.",
+    "translation": "Choisissez une photo pour essayer les filtres.",
+    "ratio": 1.64
+  },
+  {
+    "id": "faceFilters.wig_pink",
+    "english": "Pink wig",
+    "translation": "Perruque rose",
+    "ratio": 1.63
+  },
+  {
+    "id": "faceFilters.wig_curly",
+    "english": "Curly wig",
+    "translation": "Perruque bouclée",
+    "ratio": 1.78
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

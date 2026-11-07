@@ -4,7 +4,7 @@ import { generationMessage, type SubmitRequest } from './generationSubmit';
 import { t } from './i18n';
 import { createErrorMessage } from './failedJob';
 
-export const FACE_IDS = ['face-retouch', 'face-enhance', 'face-relight', 'face-makeup', 'face-age'] as const;
+export const FACE_IDS = ['face-retouch', 'face-enhance', 'face-relight', 'face-makeup', 'face-age', 'face-costume'] as const;
 // /api/catalog returns active rows only. No staged fallback and no cached catalog here.
 export function faceFilters(models: readonly CatalogModel[]): CatalogModel[] {
     return FACE_IDS.flatMap(id => models.filter(m => m.id === id && isSupported(m)));
@@ -13,6 +13,7 @@ export type FaceValues = Record<string, string | number | boolean>;
 const ENUMS: Record<string, readonly string[]> = {
     makeup_style: ['natural', 'glamorous', 'smoky_eyes', 'bold_lips', 'no_makeup', 'remove_makeup', 'dramatic', 'bridal', 'professional', 'korean_style', 'artistic'],
     intensity: ['light', 'medium', 'heavy', 'dramatic'],
+    costume_style: ['clown', 'creepy_clown', 'ghost', 'zombie', 'skeleton', 'vampire', 'masquerade', 'jester', 'wig_blonde', 'wig_pink', 'wig_curly', 'wig_powdered'],
 };
 export function faceSelectors(model: CatalogModel) {
     const caps = (model.capabilities?.inputs ?? {}) as Record<string, { type?: string; values?: string[]; min?: number; max?: number }>;
@@ -26,7 +27,7 @@ export function faceDefaults(model: CatalogModel): FaceValues {
     const selectors = faceSelectors(model);
     const values: FaceValues = {};
     for (const choice of selectors.enums) {
-        const preferred = choice.key === 'makeup_style' ? 'natural' : 'medium';
+        const preferred = choice.key === 'makeup_style' ? 'natural' : choice.key === 'costume_style' ? 'clown' : 'medium';
         const value = choice.values.includes(preferred) ? preferred : choice.values[0];
         if (value) values[choice.key] = value;
     }

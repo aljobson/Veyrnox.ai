@@ -59,6 +59,8 @@ export const BASE_PRICES = {
     'fal-ai/flux-2-pro': { price: 0.03, unit: 'processed megapixels' },
     'fal-ai/image-apps-v2/age-modify': { price: 0.04, unit: 'images' },
     'fal-ai/image-apps-v2/makeup-application': { price: 0.04, unit: 'images' },
+    // Costumes. Price not on fal's page: confirm against the staging bill before activation.
+    'fal-ai/nano-banana/edit': { price: 0.039, unit: 'images' },
     'fal-ai/image-editing/face-enhancement': { price: 0.04, unit: 'images' },
     'fal-ai/image-editing/retouch': { price: 0.04, unit: 'images' },
     'fal-ai/inworld-tts': { price: 0.01, unit: '1000 characters' },

@@ -14,6 +14,8 @@ import { setLocaleFromDevice } from '../src/lib/i18n';
 
 // RNTL is absent and installs are forbidden. Use jest-expo's installed renderer
 // with real React Native controls, exercising their accessibility click handlers.
+jest.mock('@shopify/react-native-skia', () => { throw new Error('native Skia is not available in tests'); });
+jest.mock('../src/lib/lookThumb', () => ({ makeThumb: async () => null }));
 jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () => ({ push: jest.fn() }) }));
 jest.mock('expo-image', () => ({ Image: jest.requireActual('react-native').Image }));
 jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: jest.fn() }));
@@ -43,6 +45,8 @@ void [ReactNative.ActivityIndicator, ReactNative.Image, ReactNative.Pressable, R
 const model: CatalogModel = { id: 'face-retouch', name: 'Retouch', modality: 'image-to-image', credits: 17, gated: false, durations: [], capabilities: { inputs: {}, media: { image: { required: true } } } };
 const makeup: CatalogModel = { ...model, id: 'face-makeup', name: 'Makeup', credits: 23, capabilities: { inputs: { makeup_style: { type: 'enum', values: ['natural', 'bold_lips'] } }, media: { image: { required: true } } } };
 const rights = strings['faceFilters.rights'];
+const retouchChip = 'Retouch. Gently retouch the face in your photo.. 17 credits per run';
+const makeupChip = 'Makeup. Try a makeup style on your photo.. 23 credits per run';
 const runLabel = 'Run filter. 17 credits per run';
 let root: Root;
 let send: jest.Mock;
@@ -127,8 +131,7 @@ test('switch keeps the photo and resets the selected filter settings and rights'
     await renderFlow(); await chooseMakeup(); await press('button', 'Choose one photo');
     await press('radio', 'Bold lips'); await press('checkbox', rights);
     jest.mocked(discardCacheCopy).mockClear();
-    await press('button', 'Change filter, current: Makeup');
-    expect(preview().props.accessibilityLabel).toBe('Attached photo');
+    await chooseRetouch();
     expect(previewUri()).toBe(photoUri);
     expect(preview().props.cachePolicy).toBe('none');
     await chooseMakeup();
@@ -136,7 +139,7 @@ test('switch keeps the photo and resets the selected filter settings and rights'
     expect(control('checkbox', rights).props.accessibilityState.checked).toBe(false);
     expect(previewUri()).toBe(photoUri);
     expect(discardCacheCopy).not.toHaveBeenCalled();
-    await press('button', 'Change filter, current: Makeup'); await chooseRetouch(); await tickAndRun();
+    await chooseRetouch(); await tickAndRun();
     expect(bodies()[0]).toMatchObject({ model_id: 'face-retouch', source_keys: [{ key: 'uploads/photo', slot: 'image' }] });
     expect(uploadSource).toHaveBeenCalledTimes(1);
 });
@@ -145,23 +148,22 @@ test('switch also retains a previously uploaded key after a failed attempt', asy
     await renderFlow(); await choosePhoto();
     send.mockRejectedValueOnce(new ApiError(0, 'network'));
     await tickAndRun();
-    await press('button', 'Change filter, current: Retouch'); await chooseMakeup(); await tickAndRun(makeupRun);
+    await chooseMakeup(); await tickAndRun(makeupRun);
     expect(uploadSource).toHaveBeenCalledTimes(1);
     expect(bodies()[1]).toMatchObject({ model_id: 'face-makeup', confirmed_credits: 23, source_keys: [{ key: 'uploads/photo', slot: 'image' }] });
 });
 
-test('header replaces the old control and is disabled while the picker is busy', async () => {
+test('every filter stays in one strip and is disabled while the picker is busy', async () => {
     await renderFlow(); await chooseRetouch();
     expect(matches('button', 'Choose another filter')).toHaveLength(0);
-    expect(control('button', 'Change filter, current: Retouch').props.accessibilityState.disabled).toBe(false);
+    expect(control('button', retouchChip).props.accessibilityState).toMatchObject({ selected: true, disabled: false });
+    expect(control('button', makeupChip).props.accessibilityState).toMatchObject({ selected: false, disabled: false });
     const pending = deferred<ImagePicker.ImagePickerResult>();
     jest.mocked(ImagePicker.launchImageLibraryAsync).mockReturnValueOnce(pending.promise);
     await press('button', 'Choose one photo');
-    expect(control('button', 'Change filter, current: Retouch').props.accessibilityState.disabled).toBe(true);
-    await press('button', 'Change filter, current: Retouch');
-    expect(control('button', runLabel)).toBeDefined();
+    expect(control('button', makeupChip).props.accessibilityState.disabled).toBe(true);
     await act(async () => pending.resolve({ canceled: true, assets: null }));
-    expect(control('button', 'Change filter, current: Retouch').props.accessibilityState.disabled).toBe(false);
+    expect(control('button', makeupChip).props.accessibilityState.disabled).toBe(false);
 });
 
 test('apply result refreshes its link, discards the picker copy and submits only the asset id', async () => {
