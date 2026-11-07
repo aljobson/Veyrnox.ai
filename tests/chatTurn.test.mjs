@@ -1147,3 +1147,12 @@ test('account language is read with the verified auth ID and changes only the mo
     await events(await run(english));
     assert.equal(english.streamCalls[0].messages[0].content, 'Write mathematics in plain text. Do not use LaTeX or dollar-sign delimiters.\n\nBe brief.');
 });
+
+test('an editor-only model is refused in Chat before any money moves (ADR-0332)', async () => {
+    const editorModel = { ...MODEL, id: 'editor-ai-edit-gemini-3.8-flash' };
+    const f = fakes({ model: editorModel, replies: { chat_turn_context: { ok: true, user_id: 'user-1', model_id: editorModel.id, system_prompt: '', history: [] } } });
+    const res = await run(f);
+    assert.equal(res.status, 409);
+    assert.equal((await res.json()).error, 'model_unavailable');
+    assert.equal(called(f, 'ledger_debit').length, 0);
+});
