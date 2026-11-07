@@ -89,6 +89,9 @@
     "postcss": "$postcss",
     "sharp": "$sharp",
     "prismjs": "^1.30.0",
-    "undici": "^7.29.1"
+    "undici": "^7.29.1",
+    "minimatch@^9": "11.0.1",
+    "minimatch@^10": "11.0.1",
+    "glob@^13": "14.0.2"
   }
 }
