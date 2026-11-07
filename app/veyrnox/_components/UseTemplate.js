@@ -15,7 +15,6 @@ import { clipCredits, modelAspectRatios, modelIdForName, presetCredits, presetHr
 import { CHAT_USER_TEXT_MAX } from '../../../lib/chatLimits.js';
 import { Spinner } from './Spinner';
 import { TemplateGenerate } from './TemplateGenerate';
-import SourceRightsConfirmation from './SourceRightsConfirmation';
 import { inlineBlockReason } from '../_lib/templateGenerate';
 import { nearestOption } from '../../../lib/aspectShapes.mjs';
 
@@ -50,7 +49,6 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked 
   const [opening, setOpening] = useState(false);
   const [photo, setPhoto] = useState(null);
   const [photoBusy, setPhotoBusy] = useState(false);
-  const [rightsConfirmed, setRightsConfirmed] = useState(false);
   const photoSequence = useRef(0);
   const promptBlocked = !prompt.trim() || prompt.length > TEMPLATE_PROMPT_MAX;
   const generationDisabled = generationBlocked || promptBlocked || !model || photoBusy;
@@ -61,7 +59,6 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked 
 
   async function choosePhoto(file) {
     const sequence = ++photoSequence.current;
-    setRightsConfirmed(false);
     if (!file) {
       setPhoto(null);
       setPhotoBusy(false);
@@ -150,9 +147,8 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked 
           </div>
         </fieldset>
       )}
-      {requiredImage && photo && <SourceRightsConfirmation confirmed={rightsConfirmed} onChange={setRightsConfirmed} />}
       {inline && !(generationBlocked || promptBlocked || !model) && (
-        <TemplateGenerate preset={preset} model={model} prompt={prompt} aspect={aspect} aspectOptions={aspectOptions} durationSeconds={durationSeconds} unitCost={credits} photo={requiredImage ? photo : null} preparing={photoBusy} rightsConfirmed={rightsConfirmed} needsPhoto={requiredImage} />
+        <TemplateGenerate preset={preset} model={model} prompt={prompt} aspect={aspect} aspectOptions={aspectOptions} durationSeconds={durationSeconds} unitCost={credits} photo={requiredImage ? photo : null} preparing={photoBusy} needsPhoto={requiredImage} />
       )}
       <button
         type="button"

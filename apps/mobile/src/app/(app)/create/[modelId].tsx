@@ -12,13 +12,12 @@ import { CreateResult, type ResultBatch } from '../../../components/create/Creat
 import { refreshBalance } from '../../../lib/createResult';
 import { getCacheUser, subscribeCacheUser } from '../../../lib/appCache';
 import type { SubmitRequest } from '../../../lib/generationSubmit';
-import { english } from '../../../lib/i18n/binding';
 import { KeyboardFormScrollView } from '../../../components/KeyboardFormScrollView';
 import { KeyboardScreen } from '../../../components/KeyboardScreen';
 import { FormHeader } from '../../../components/create/FormHeader';
 import { SectionLabel } from '../../../components/create/SectionLabel';
 import { SourceDurationCard } from '../../../components/create/SourceDurationCard';
-import { Text, TextField, Button, Card, Chip, Checkbox, themedStyles, useThemedStyles } from '../../../components/ui';
+import { Text, TextField, Button, Card, Chip, themedStyles, useThemedStyles } from '../../../components/ui';
 import { GENERATION_PROMPT_MAX } from '../../../lib/promptLimits';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -80,8 +79,6 @@ export default function CreateWithModel() {
     const [busy, setBusy] = useState(false);
     // Storage keys of the files already uploaded, by slot, and the slots still uploading.
     const [references, setReferences] = useState<readonly GenerationReference[]>(() => handedSources?.references ?? legacyReferences(handedSources?.uploaded ?? {}, handedSources?.fromLibrary ?? {}));
-    // Pre-ticked only when the handing screen showed the rights statement and the person ticked it (Attach from device does not).
-    const [sourceRights, setSourceRights] = useState(handedSources?.rightsConfirmed === true);
     const [sending, setSending] = useState<Partial<Record<SlotName, boolean>>>({});
     const [error, setError] = useState<string | null>(null);
     const [opts, setOpts] = useState<OptionValues>({ aspect: null, count: 1, seed: '', negative: '', voice: '', audioSeconds: '' });
@@ -93,8 +90,6 @@ export default function CreateWithModel() {
     const [recoveredPrompt, setRecoveredPrompt] = useState<string | null>(null);
     const [note, setNote] = useState<string | null>(null);
     useAnnouncement(note);
-    const rightsPending = references.length > 0 && !sourceRights;
-    useAnnouncement(rightsPending ? t('create.workspace.rightsNeeded') : null);
     // "Animate this portrait" (Oddlings): the cast portrait goes into the image slot like any picked file.
     const startId = startOddlingId(startOddling);
     const [startFile, setStartFile] = useState<PickedFile | null>(null);
@@ -116,7 +111,7 @@ export default function CreateWithModel() {
     const pending = useRef(createGenerationSubmit());
     const draftReady = useRef(false);
     useEffect(() => {
-        const clear = () => { void Image.clearMemoryCache?.().catch(() => {}); batch.current++; balanceSeq.current++; pending.current.reset(); retry.current = null; setResults(null); setConfirmed(0); setComplete(false); setBusy(false); setPrompt(''); setReferences([]); setSourceRights(false); unsaved.current = null; draftReady.current = false; };
+        const clear = () => { void Image.clearMemoryCache?.().catch(() => {}); batch.current++; balanceSeq.current++; pending.current.reset(); retry.current = null; setResults(null); setConfirmed(0); setComplete(false); setBusy(false); setPrompt(''); setReferences([]); unsaved.current = null; draftReady.current = false; };
         const unsubscribe = subscribeCacheUser(clear);
         return () => { unsubscribe(); batch.current++; balanceSeq.current++; };
     }, []);
@@ -131,7 +126,7 @@ export default function CreateWithModel() {
         batch.current++; balanceSeq.current++; pending.current.reset(); retry.current = null;
         setResults(null); setConfirmed(0); setComplete(false); setError(null); setNote(null);
         // busy stays set: the submit lock holds until the outstanding request settles (its finally clears it).
-    }, [swap, modelId, prompt, duration, opts, references, sourceRights, cameraOn, cinema, characterOn, character, template?.id]);
+    }, [swap, modelId, prompt, duration, opts, references, cameraOn, cinema, characterOn, character, template?.id]);
     useEffect(() => {
         consumeCreativeSourceHandoff(typeof sourceHandoff === 'string' ? sourceHandoff : undefined, typeof recipe === 'string' ? recipe : undefined, modelId);
     }, [modelId, recipe, sourceHandoff]);
@@ -162,7 +157,7 @@ export default function CreateWithModel() {
                 if (!found) setError(t('form.modelGone'));
                 if (!found) return;
                 const o = optionsFor(found);
-                if (scene) { if (sceneChanged) { setPrompt(''); setReferences([]); setSourceRights(false); setOpts({ aspect: null, count: 1, seed: '', negative: '', voice: '', audioSeconds: '' }); setCameraOn(false); setCharacterOn(false); } return; }
+                if (scene) { if (sceneChanged) { setPrompt(''); setReferences([]); setOpts({ aspect: null, count: 1, seed: '', negative: '', voice: '', audioSeconds: '' }); setCameraOn(false); setCharacterOn(false); } return; }
                 // Where the person said the result will land (the vibe check) picks the opening ratio; no answer keeps 16:9.
                 const vibe = await loadVibe();
                 if (!valid()) return;
@@ -172,7 +167,6 @@ export default function CreateWithModel() {
                 const aspect = handedAspect ?? (guidedAspect && o.aspects.includes(guidedAspect) ? guidedAspect : null) ?? nearestAspect(template?.ratio ?? null, o.aspects) ?? defaultAspect(o.aspects, vibe?.answers ?? null);
                 const base: OptionValues = { aspect, count: 1, seed: '', negative: '', voice: '', audioSeconds: '' };
                 setReferences(handedSources?.references ?? legacyReferences(handedSources?.uploaded ?? {}, handedSources?.fromLibrary ?? {}));
-                setSourceRights(handedSources?.rightsConfirmed === true);
                 setNote(kind === 'prompt-unavailable' ? t('handoff.promptUnavailable') : [switched === '1' ? t('handoff.switchedModel', { model: found.name }) : null, handedSources?.adjusted ? t('handoff.referencesAdjusted', { count: handedSources.adjusted }) : null].filter(Boolean).join(' ') || null);
                 if (handedSources?.settings) {
                     const saved = acceptedSettings(found, handedSources.settings);
@@ -289,7 +283,6 @@ export default function CreateWithModel() {
     // New files join the latest references (never a stale copy), within each slot's room; the slot pickers show them
     // without remounting, so an upload in progress is never aborted.
     const placeAttached = (added: GenerationReference[]) => {
-        setSourceRights(false);
         setReferences(all => {
             const next = [...all];
             for (const ref of added) {
@@ -301,8 +294,8 @@ export default function CreateWithModel() {
         });
     };
     const hasReference = references.length > 0 || !!startFile;
-    const ready = (!swapScene || (references.length === swapScene.people && references.every(ref => ref.slot === 'image'))) && !waiting && !promptTooLong && (!hasReference || sourceRights) && slots.every(slot => (!slot.required || references.some(ref => ref.slot === slot.slot)) && references.filter(ref => ref.slot === slot.slot).length <= (slot.maxFiles ?? 1)) && (!promptRequired(model) || !!text.trim()) && !seedIsInvalid(opts.seed) && !voiceIsMissing(options, opts.voice) && !audioLengthInvalid(options, opts.audioSeconds);
-    const request: SubmitRequest = { analyticsKind: kindOf(model.modality), modelId: model.id, swap: swapScene?.id, prompt: text, confirmedCredits: unit, durationSeconds: !swapScene && isVideo ? duration : null, references, sourceRights: hasReference ? sourceRights : undefined, textKey: text_?.key, extraInputs: settingsInputs(options, { seed: opts.seed, negative: opts.negative, aspect: opts.aspect, voice: opts.voice, audioSeconds: opts.audioSeconds, resolution, audio }), preset: !swapScene && templatePreset ? template?.id ?? undefined : undefined };
+    const ready = (!swapScene || (references.length === swapScene.people && references.every(ref => ref.slot === 'image'))) && !waiting && !promptTooLong && slots.every(slot => (!slot.required || references.some(ref => ref.slot === slot.slot)) && references.filter(ref => ref.slot === slot.slot).length <= (slot.maxFiles ?? 1)) && (!promptRequired(model) || !!text.trim()) && !seedIsInvalid(opts.seed) && !voiceIsMissing(options, opts.voice) && !audioLengthInvalid(options, opts.audioSeconds);
+    const request: SubmitRequest = { analyticsKind: kindOf(model.modality), modelId: model.id, swap: swapScene?.id, prompt: text, confirmedCredits: unit, durationSeconds: !swapScene && isVideo ? duration : null, references, sourceRights: hasReference ? true : undefined, textKey: text_?.key, extraInputs: settingsInputs(options, { seed: opts.seed, negative: opts.negative, aspect: opts.aspect, voice: opts.voice, audioSeconds: opts.audioSeconds, resolution, audio }), preset: !swapScene && templatePreset ? template?.id ?? undefined : undefined };
     const signature = generationSignature(request, n);
     const matchingRetry = retry.current?.signature === signature ? retry.current : null;
     // Only an unchanged request retains its confirmed items and retry price.
@@ -391,7 +384,7 @@ export default function CreateWithModel() {
                                 drawable={canDraw(model) && s.slot === 'image'}
                                 api={api}
                                 references={references.filter(ref => ref.slot === s.slot)}
-                                onReferences={files => { setSourceRights(false); setReferences(all => replaceSlotReferences(all, s.slot, files)); }}
+                                onReferences={files => { setReferences(all => replaceSlotReferences(all, s.slot, files)); }}
                                 onChange={() => {}}
                                 onLibrary={() => {}}
                                 onBusy={(b) => setSending((x) => ({ ...x, [s.slot]: b }))}
@@ -433,7 +426,7 @@ export default function CreateWithModel() {
                         <Button variant="tertiary" accessibilityRole="button" accessibilityLabel={t('opt.draftClear')} onPress={discardDraft} label={t('opt.draftClear')} />
                     </View>
                 ) : null}
-                {references.length ? <View style={styles.rightsBox}><Checkbox checked={sourceRights} accessibilityRole="checkbox" accessibilityLanguage="en" accessibilityLabel={english('form.sourceRights')} accessibilityState={{ checked: sourceRights, disabled: waiting }} disabled={waiting} onChange={() => setSourceRights((value) => !value)} style={styles.rightsControl}><Text variant="caption" tone="secondary" style={styles.rightsText}>{english('form.sourceRights')}</Text></Checkbox><Text accessibilityLanguage="en" variant="caption" tone="tertiary" style={styles.consent}>{english('form.consent')}</Text></View> : null}
+                
                 {((isVideo && model.durations.length > 1) || hasAnyOption(options) || takesImageCount(model) || takesCharacter || takesCamera) ? (
                     <View style={styles.settingsSection}>
                         <View style={styles.sectionTop}>
@@ -471,7 +464,6 @@ export default function CreateWithModel() {
                         </View>
                         <Text variant="caption" tone="secondary" style={styles.balance}>{t('create.workspace.balance', { credits: balance === null ? '—' : String(balance) })}</Text>
                     </View>
-                    {rightsPending && !complete ? <Text variant="caption" tone="warning" accessibilityLiveRegion="polite">{t('create.workspace.rightsNeeded')}</Text> : null}
                     <Button variant="primary" accessibilityRole="button" accessibilityLabel={rawText(complete ? t('libraryCreate.newNoCharge') : generateLabel)} accessibilityState={{ busy, disabled }} disabled={disabled} onPress={complete ? newGeneration : generate} label={complete ? t('libraryCreate.newGeneration') : matchingRetry?.quote ? generateLabel : price === 0 ? t('create.workspace.generateFree') : t('create.workspace.generate', { credits: String(price) })} loading={busy} />
                     <SectionLabel style={styles.refund}>{t('create.workspace.refund')}</SectionLabel>
                     <View style={styles.terms}>

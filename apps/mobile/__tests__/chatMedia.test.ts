@@ -47,19 +47,18 @@ describe('price and length', () => {
 describe('readiness shares Create validation', () => {
     const opts = { seed: '', voice: '', audioSeconds: '' };
     const refs = [{ slot: 'image' as const, origin: 'asset' as const, asset_id: 'asset' }];
-    test('required sources and rights are necessary', () => {
-        expect(makeReady(catalog[2], '', [], true, false, opts)).toBe(false);
-        expect(makeReady(catalog[2], '', refs, false, false, opts)).toBe(false);
-        expect(makeReady(catalog[2], '', refs, true, false, opts)).toBe(true);
-        expect(makeReady(catalog[2], '', refs, true, true, opts)).toBe(false);
-        expect(makeReady(catalog[2], '', [...refs, ...refs], true, false, opts)).toBe(false);
+    test('required sources are necessary and no rights tick is asked for', () => {
+        expect(makeReady(catalog[2], '', [], false, opts)).toBe(false);
+        expect(makeReady(catalog[2], '', refs, false, opts)).toBe(true);
+        expect(makeReady(catalog[2], '', refs, true, opts)).toBe(false);
+        expect(makeReady(catalog[2], '', [...refs, ...refs], false, opts)).toBe(false);
     });
     test('voice, seed, audio length and required words must be valid', () => {
         const voice = m('speech', 'text-to-speech', 1, { capabilities: { inputs: { prompt: {}, voice_description: {}, duration: { type: 'int', min: 1, max: 20 } } } });
-        expect(makeReady(voice, 'words', [], false, false, opts)).toBe(false);
-        expect(makeReady(voice, 'words', [], false, false, { ...opts, voice: 'warm' })).toBe(true);
-        expect(makeReady(voice, '', [], false, false, { ...opts, voice: 'warm' })).toBe(false);
-        expect(makeReady(voice, 'words', [], false, false, { ...opts, voice: 'warm', seed: '-1' })).toBe(false);
-        expect(makeReady(voice, 'words', [], false, false, { ...opts, voice: 'warm', audioSeconds: '21' })).toBe(false);
+        expect(makeReady(voice, 'words', [], false, opts)).toBe(false);
+        expect(makeReady(voice, 'words', [], false, { ...opts, voice: 'warm' })).toBe(true);
+        expect(makeReady(voice, '', [], false, { ...opts, voice: 'warm' })).toBe(false);
+        expect(makeReady(voice, 'words', [], false, { ...opts, voice: 'warm', seed: '-1' })).toBe(false);
+        expect(makeReady(voice, 'words', [], false, { ...opts, voice: 'warm', audioSeconds: '21' })).toBe(false);
     });
 });

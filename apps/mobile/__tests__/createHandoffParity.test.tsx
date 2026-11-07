@@ -95,13 +95,6 @@ test.each([{ duration:'5', hand:true, sound:true, follow:true },{ duration:'10',
     if (c.follow) expect(mockReplace).toHaveBeenCalledWith({ pathname:'/job/[id]',params:{id:'job',followup:'faceless-sound'} });
     else expect(mockReplace).not.toHaveBeenCalled();
 });
-test.each(['faceless-reel','faceless-sound','oddlings'])('%s does not pre-tick source rights', async recipe => {
-    jest.mocked(fetchCatalog).mockResolvedValue([{ ...video, capabilities: { ...video.capabilities, media: { video: { required:true } } } }]);
-    handoff({ references:[{ slot:'video',origin:'asset',asset_id:'source-job' }] },recipe); await render();
-    const rights = root.container.queryAll(n => n.props.accessibilityLabel === english('form.sourceRights'))[0];
-    expect(rights.props.accessibilityState.checked).toBe(false);
-});
-
 test.each([['9:16', '9:16'], ['unsupported', '16:9']])('Film Studio aspect %s opens as %s', async (aspect, expected) => {
     jest.mocked(fetchCatalog).mockResolvedValue([{ ...video, capabilities: { inputs: { prompt: { max: 800 }, aspect_ratio: { values: ['9:16', '16:9'] } } } }]);
     mockParams.aspect = aspect; await render();
@@ -165,20 +158,18 @@ test('QA-003: an automatic model switch keeps the template card and says why', a
     expect(mockRun.mock.calls.at(-1)?.[1].preset).toBeUndefined();
 });
 
-test('QA-005 / QA-007: with a reference and no rights tick, a line says why Generate is off; there is no Change model control', async () => {
+test('QA-007: with a reference there is no rights tick and no Change model control', async () => {
     jest.mocked(fetchCatalog).mockResolvedValue([video]);
     handoff({ references: [{ slot: 'image', origin: 'asset', asset_id: 'ref-1' }], rightsConfirmed: false });
     await render();
     const text = (key: string) => root.container.queryAll(n => n.children.includes(t(key))).length;
-    expect(text('create.workspace.rightsNeeded')).toBeGreaterThan(0);
-    expect(text('chat.model.change')).toBe(0);
-    const ticks = root.container.queryAll(n => n.props.accessibilityRole === 'checkbox');
-    await act(async () => ticks[0].props.onClick(event));
     expect(text('create.workspace.rightsNeeded')).toBe(0);
+    expect(text('chat.model.change')).toBe(0);
+    expect(root.container.queryAll(n => n.props.accessibilityRole === 'checkbox')).toHaveLength(0);
 });
 
 
-test.each([false, true])('API identity refresh preserves model, photos, rights and uploads (scene=%s)', async sceneMode => {
+test.each([false, true])('API identity refresh preserves model, photos and uploads (scene=%s)', async sceneMode => {
     const selected = { ...video, id: 'swap-recast', capabilities: { inputs: { prompt: { max: 1000 } }, media: { image: { required: true, maxFiles: 1 } } } };
     jest.mocked(fetchCatalog).mockResolvedValue([selected]);
     mockParams = { modelId: selected.id, ...(sceneMode ? { swap: 'scene-a' } : {}) };
@@ -187,9 +178,6 @@ test.each([false, true])('API identity refresh preserves model, photos, rights a
     const picked = [{ slot: 'image' as const, origin: 'upload' as const, key: 'uploads/owner/photo.jpg' }];
     const picker = () => jest.mocked(SourcePicker).mock.calls.at(-1)![0];
     await act(async () => { picker().onReferences!(picked); });
-    const rights = () => root.container.queryAll(n => n.props.accessibilityLabel === english('form.sourceRights'))[0];
-    await act(async () => rights().props.onClick(event));
-    expect(rights().props.accessibilityState.checked).toBe(true);
     await act(async () => { picker().onBusy?.(true); });
     const reads = jest.mocked(fetchCatalog).mock.calls.length, sceneReads = mockFetchScene.mock.calls.length;
     mockApi = { refreshed: true };
@@ -197,7 +185,6 @@ test.each([false, true])('API identity refresh preserves model, photos, rights a
     expect(jest.mocked(fetchCatalog)).toHaveBeenCalledTimes(reads);
     expect(mockFetchScene).toHaveBeenCalledTimes(sceneReads);
     expect(picker().references).toEqual(picked);
-    expect(rights().props.accessibilityState).toMatchObject({ checked: true, disabled: true });
     const generate = root.container.queryAll(n => typeof n.props.accessibilityLabel === 'string' && n.props.accessibilityLabel.startsWith(t('slip.generate') + '.'))[0];
     expect(generate.props.accessibilityState.disabled).toBe(true);
     await act(async () => { picker().onBusy?.(false); });
