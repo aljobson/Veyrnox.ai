@@ -4,10 +4,10 @@ import { Text, Button, themedStyles, useThemedStyles } from './ui';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import type { ApiClient } from '../lib/api';
-import { attachCapacity, planAttachments } from '../lib/attachModel';
+import { attachCapacity, planAttachments, planOpenForm } from '../lib/attachModel';
 import { LibraryMultiPicker, type LibraryPick } from './LibraryMultiPicker';
 import type { CreativeSourceHandoff } from '../lib/creativeSourceHandoff';
 import { createHandoff, referenceKind, uniqueReferences, type FormSnapshot } from '../lib/createHandoff';
@@ -52,11 +52,15 @@ interface Props {
     readonly references?: readonly GenerationReference[];
     readonly previous?: Partial<CreativeSourceHandoff>;
     readonly carry?: Readonly<Record<string, string>>;
+    // When given, files are placed on the open form and the model never changes.
+    readonly onPlaced?: (added: GenerationReference[]) => void;
+    // True while a source upload on the form is in flight: attaching waits so nothing is replaced under it.
+    readonly blocked?: boolean;
+    readonly onBusy?: (busy: boolean) => void;
 }
 
-// Always shown: pick several pictures, videos and audio files, and the app moves to the model that
-// takes the most of them (staying on this one when it can), with every file already uploaded.
-export function AttachFromDevice({ api, current, carry, settings, references = [], previous }: Props) {
+// Always shown: pick several pictures, videos and audio files, and files are placed on this form and the model never changes. Only with no open model does the app choose one.
+export function AttachFromDevice({ api, current, carry, settings, references = [], previous, onPlaced, blocked = false, onBusy }: Props) {
     const styles = useThemedStyles(sheets);
     const router = useRouter();
     const begin = useHandoffScope();
@@ -64,6 +68,8 @@ export function AttachFromDevice({ api, current, carry, settings, references = [
     const [progress, setProgress] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [choosingLibrary, setChoosingLibrary] = useState(false);
+    useEffect(() => { onBusy?.(busy !== null); }, [busy]); // eslint-disable-line react-hooks/exhaustive-deps
+    useEffect(() => () => onBusy?.(false), []); // eslint-disable-line react-hooks/exhaustive-deps
 
     async function attach(source: Exclude<Source, 'library'>) {
         const valid = begin();
@@ -82,7 +88,8 @@ export function AttachFromDevice({ api, current, carry, settings, references = [
         } catch (err) {
             if (valid()) setError(isConsentDeclined(err) ? null : uploadMessage(err));
         } finally {
-            if (valid()) { setBusy(null); setProgress(null); }
+            // Busy always clears, even when the screen lost focus mid-upload, so Generate is never left disabled.
+            setBusy(null); setProgress(null);
         }
     }
 
@@ -97,7 +104,8 @@ export function AttachFromDevice({ api, current, carry, settings, references = [
         } catch (err) {
             if (valid()) setError(isConsentDeclined(err) ? null : uploadMessage(err));
         } finally {
-            if (valid()) { setBusy(null); setProgress(null); }
+            // Busy always clears, even when the screen lost focus mid-upload, so Generate is never left disabled.
+            setBusy(null); setProgress(null);
         }
     }
 
@@ -110,14 +118,17 @@ export function AttachFromDevice({ api, current, carry, settings, references = [
             if (kind && checked?.ok) picked.push({ kind, file, contentType: checked.contentType });
             else problems.push(kind && checked && !checked.ok ? pickedProblem(checked.error, kind) : t('attachFromDevice.useJPEGPNGorWebPpicturesMP4'));
         }
+        const openForm = !!current && !!onPlaced;
         const items: ({ kind: SlotKind; ref: GenerationReference } | Picked)[] = [
-            ...uniqueReferences(references).map(ref => ({ kind: referenceKind(ref), ref })),
+            // On an open form the references already there stay in their own slots; only new files are placed.
+            ...(openForm ? [] : uniqueReferences(references).map(ref => ({ kind: referenceKind(ref), ref }))),
             ...library.map(pick => ({ kind: pick.kind, ref: { origin: 'asset' as const, slot: pick.kind as SlotName, asset_id: pick.jobId } })),
             ...picked,
         ];
-        const catalog = await fetchCatalog();
+        // The open model stays: files that it has no slot for are refused rather than moved to another model.
+        const catalog = current ? [current] : await fetchCatalog();
         if (!valid()) return;
-        const plan = planAttachments(catalog, current, items);
+        const plan = openForm && current ? planOpenForm(current, items, references.map(ref => ({ slot: ref.slot, kind: referenceKind(ref) }))) : planAttachments(catalog, current, items);
         if (!plan) { setError(problems[0] ?? t('attachFromDevice.nomodeltakesthosefilesrightnow')); return; }
         const merged: GenerationReference[] = [];
         const abort = new AbortController();
@@ -133,6 +144,11 @@ export function AttachFromDevice({ api, current, carry, settings, references = [
             }
         }
         if (!valid()) return;
+        if (current && onPlaced) {
+            onPlaced(merged);
+            if (plan.unused.length + problems.length > 0) setError(problems[0] ?? t('attachFromDevice.nomodeltakesthosefilesrightnow'));
+            return;
+        }
         const moved = plan.assignments.filter(a => 'ref' in a.item && a.slot !== a.item.ref.slot).length;
         router.replace(createHandoff(plan.model, carry ?? {}, settings, merged, { ...previous, rightsConfirmed: false }, plan.unused.length + problems.length + moved, !!current && plan.model.id !== current.id));
     }
@@ -143,9 +159,9 @@ export function AttachFromDevice({ api, current, carry, settings, references = [
             <Text variant="footnote" tone="tertiary" style={styles.hint}>{t('attachFromDevice.pickseveralpicturesvideosoraudiofiles')}</Text>
             <View style={styles.row}>
                 {(['photos', 'files'] as const).map((source) => (
-                    <Button variant="secondary" containerStyle={styles.grow} key={source} accessibilityRole="button" accessibilityLabel={rawText(source === 'photos' ? t('attachFromDevice.attachpicturesandvideosfromPhotos') : t('attachFromDevice.attachfilesfromFiles'))} accessibilityState={{ disabled: busy !== null }} disabled={busy !== null} onPress={() => void attach(source)} icon="paperclip" label={source === 'photos' ? t('attachFromDevice.photosvideos') : t('attachFromDevice.files')} loading={busy === source} />
+                    <Button variant="secondary" containerStyle={styles.grow} key={source} accessibilityRole="button" accessibilityLabel={rawText(source === 'photos' ? t('attachFromDevice.attachpicturesandvideosfromPhotos') : t('attachFromDevice.attachfilesfromFiles'))} accessibilityState={{ disabled: busy !== null || blocked }} disabled={busy !== null || blocked} onPress={() => void attach(source)} icon="paperclip" label={source === 'photos' ? t('attachFromDevice.photosvideos') : t('attachFromDevice.files')} loading={busy === source} />
                 ))}
-                <Button variant="secondary" containerStyle={styles.grow} accessibilityRole="button" accessibilityLabel={rawText(t('libsrc.choose'))} accessibilityState={{ disabled: busy !== null }} disabled={busy !== null} onPress={() => setChoosingLibrary(true)} label={t('libsrc.title')} loading={busy === 'library'} />
+                <Button variant="secondary" containerStyle={styles.grow} accessibilityRole="button" accessibilityLabel={rawText(t('libsrc.choose'))} accessibilityState={{ disabled: busy !== null || blocked }} disabled={busy !== null || blocked} onPress={() => setChoosingLibrary(true)} label={t('libsrc.title')} loading={busy === 'library'} />
             </View>
             {choosingLibrary ? <LibraryMultiPicker api={api} capacity={attachCapacity(current)} onConfirm={(picks) => void attachLibrary(picks)} onClose={() => setChoosingLibrary(false)} /> : null}
             {progress ? <Text variant="footnote" tone="tertiary" accessibilityLiveRegion="polite" style={styles.hint}>{progress}</Text> : null}
