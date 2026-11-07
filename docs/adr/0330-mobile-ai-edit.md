@@ -1,4 +1,4 @@
-# ADR-0000: Priced typed edits in the phone Cut editor
+# ADR-0330: Priced typed edits in the phone Cut editor
 
 Status: Proposed; frozen work order implementation, disabled by default.
 

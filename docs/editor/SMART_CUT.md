@@ -1,6 +1,6 @@
 # Smart Cut — timed transcription and silence removal
 
-**Status:** server and phone implementation draft built; flags OFF, model inactive, migrations unapplied. Regression suites are added; database execution and reserved fal admission integration remain unverified; see [speech-cut ADR](../adr/0000-mobile-speech-cut.md).
+**Status:** server and phone implementation draft built; flags OFF, model inactive, migrations unapplied. Regression suites are added; database execution and reserved fal admission integration remain unverified; see [speech-cut ADR](../adr/0331-mobile-speech-cut.md).
 **Extends:** [Clip Editor PRD](./PRD.md) and [captions addendum](./CAPTIONS.md).
 
 ## Product slice

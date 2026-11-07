@@ -1,4 +1,4 @@
-# ADR-0000: Speech analysis and reviewable phone cuts
+# ADR-0331: Speech analysis and reviewable phone cuts
 
 Status: Implementation with regression suites; OFF, migrations unapplied, database execution unverified.
 Host assigns the permanent ADR number. Frozen plan SHA256:
