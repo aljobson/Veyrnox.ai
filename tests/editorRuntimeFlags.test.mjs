@@ -126,3 +126,19 @@ test('AI edit and Speech Cut ride the grouped flags: absent is off, the model id
   assert.equal(editorFeatureEnabled('EDITOR_AI_EDIT_ENABLED', { ...on, EDITOR_AI_EDIT_ENABLED: 'false' }), false);
   assert.equal(editorAiEditModelId({ ...on, EDITOR_AI_EDIT_MODEL_ID: 'other' }), 'other');
 });
+
+test('production turns on AI edit (its dedicated 3-credit row) and Speech Cut inside the one grouped var (ADR-0332)', async () => {
+  const { editorFeatureEnabled, editorAiEditModelId } = await import('../lib/editorRuntimeFlags.mjs');
+  const vars = parseJsonc(readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8')).vars;
+  const env = { EDITOR_RUNTIME_FLAGS: vars.EDITOR_RUNTIME_FLAGS };
+  assert.equal(editorFeatureEnabled('EDITOR_AI_EDIT_ENABLED', env), true);
+  assert.equal(editorFeatureEnabled('SPEECH_CUT_ENABLED', env), true);
+  assert.equal(editorAiEditModelId(env), 'editor-ai-edit-gemini-3.8-flash');
+  assert.ok(vars.EDITOR_RUNTIME_FLAGS.length <= 1024);
+  // Existing switches are unchanged by the added keys.
+  assert.equal(editorFeatureEnabled('EDITOR_AUDIO_STEMS_ENABLED', env), true);
+  assert.equal(editorFeatureEnabled('EDITOR_SERVER_RENDER_RECOVERY_ENABLED', env), true);
+  // Staging stays off.
+  const staging = parseJsonc(readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8')).env.staging.vars;
+  assert.equal(editorFeatureEnabled('EDITOR_AI_EDIT_ENABLED', { EDITOR_RUNTIME_FLAGS: staging.EDITOR_RUNTIME_FLAGS }), false);
+});
