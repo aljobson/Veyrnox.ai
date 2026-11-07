@@ -205,8 +205,8 @@ const hi = {
     'app.create.sources.sideRange': 'हर तरफ {min}–{max} पिक्सेल',
     'app.create.sources.minSide': 'हर तरफ कम से कम {min} पिक्सेल',
     'app.create.sources.maxSide': 'हर तरफ अधिकतम {max} पिक्सेल',
-    'app.create.error.source_too_short': 'यह वीडियो बहुत छोटा है। कम से कम 3 सेकंड की क्लिप इस्तेमाल करें।',
-    'app.create.error.source_resolution_out_of_range': 'इस वीडियो का आकार समर्थित नहीं है। हर तरफ 720 से 2160 पिक्सेल वाली क्लिप इस्तेमाल करें।',
+    'app.create.error.source_too_short': 'यह वीडियो इस मॉडल के लिए बहुत छोटा है। वीडियो चुनते समय दिखाई गई न्यूनतम अवधि पूरी करने वाली क्लिप इस्तेमाल करें।',
+    'app.create.error.source_resolution_out_of_range': 'इस फ़ाइल के आयाम इस मॉडल में समर्थित नहीं हैं। इस फ़ाइल को हटाएँ और फ़ाइल चुनते समय दिखाई गई आकार की सीमाओं के भीतर वाली फ़ाइल चुनें।',
     'label.Reference pictures': 'संदर्भ तस्वीरें',
     'label.Start frame': 'शुरुआती फ़्रेम',
     'label.End frame': 'अंतिम फ़्रेम',
@@ -344,6 +344,10 @@ const hi = {
     'app.explore.smartCutStart': 'Turn finished clips into a reviewed first cut.',
     'app.library.openSmartCut': 'Open Smart Cut',
     'app.editor.sheet.style': 'शैली',
+    'label.Video to change': 'बदलने के लिए वीडियो',
+    'label.Photo of the new person': 'नए व्यक्ति की फ़ोटो',
+    'label.Photos of the new people': 'नए लोगों की फ़ोटो',
+    'app.create.swapConsentNotice': 'केवल उन लोगों की फ़ोटो इस्तेमाल करें जिन्होंने सहमति दी है।',
 } as const;
 
 export default hi;

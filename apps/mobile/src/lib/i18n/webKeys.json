@@ -340,5 +340,9 @@
   "app.smartCut.preview",
   "app.explore.smartCutStart",
   "app.library.openSmartCut",
-  "app.editor.sheet.style"
+  "app.editor.sheet.style",
+  "label.Video to change",
+  "label.Photo of the new person",
+  "label.Photos of the new people",
+  "app.create.swapConsentNotice"
 ]

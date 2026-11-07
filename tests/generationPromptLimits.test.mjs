@@ -25,6 +25,7 @@ const memoryStorage = () => {
 
 test('positive generation capabilities use 30,000 or an explicit verified provider cap', () => {
   const providerCaps = new Map([
+    ['fal-ai/minimax-h3-max-recast', 1000], // Frozen Swap contract (ADR-0329).
     ['market:wan/2-5-text-to-video', 800],
     ['market:kling-2.6/text-to-video', 1000],
     ['market:hailuo/02-text-to-video-standard', 1500],

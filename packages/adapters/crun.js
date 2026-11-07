@@ -57,13 +57,14 @@ const IMAGE_MODELS = {
     'google/nano-banana-2-1': { kind: 'image', aspects: new Set(['1:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9']), fixed: { resolution: '1K' } },
     'bytedance/seedream-4': { kind: 'image', aspects: new Set(['1:1']), fixed: { resolution: '2K', num_outputs: 1 } },
 };
+const WAN_ANIMATE_MODEL = 'wan/2-2-animate-replace';
 const ENDPOINT_RE = /^crun:([a-z0-9][a-z0-9./_-]{1,80})$/i;
 const TASK_ID_RE = /^[A-Za-z0-9._-]{1,128}$/;
 
 /** @returns {{model:string}|null} */
 export function parseEndpoint(endpoint) {
     const m = ENDPOINT_RE.exec(String(endpoint || ''));
-    return m && !m[1].includes('..') && (MODELS[m[1]] || IMAGE_MODELS[m[1]] || KLING_MODELS[m[1]]) ? { model: m[1] } : null;
+    return m && !m[1].includes('..') && (MODELS[m[1]] || IMAGE_MODELS[m[1]] || KLING_MODELS[m[1]] || m[1] === WAN_ANIMATE_MODEL) ? { model: m[1] } : null;
 }
 
 /** 'video' or 'image' for a Crun endpoint this adapter owns, else null. The sweep picks the file type from it. */
@@ -78,6 +79,7 @@ export function endpointKind(endpoint) {
  * @returns {{ok:true, body:object}|{ok:false, error:string}}
  */
 export function buildRequest(target, inputs) {
+    if (target.model === WAN_ANIMATE_MODEL) return buildWanAnimateRequest(inputs);
     const image = IMAGE_MODELS[target.model];
     if (image) return buildImageRequest(target, image, inputs);
     const kling = KLING_MODELS[target.model];
@@ -96,6 +98,24 @@ export function buildRequest(target, inputs) {
         ok: true,
         body: { model: target.model, input: { prompt, duration: seconds, resolution: [...spec.resolutions][0], aspect_ratio: aspect, ...(spec.audio ? { audio: true } : {}) } },
     };
+}
+
+function buildWanAnimateRequest(inputs) {
+    const allowed = new Set(['image_url', 'video_url', 'duration_seconds']);
+    for (const key of Object.keys(inputs)) {
+        if (!allowed.has(key)) return { ok: false, error: `inputs_key_not_allowed:${key.slice(0, 32)}` };
+    }
+    if (inputs.duration_seconds !== undefined && inputs.duration_seconds !== 5) return { ok: false, error: 'duration_not_supported' };
+    const input = {};
+    for (const [key, field] of [['image_url', 'img_urls'], ['video_url', 'video_urls']]) {
+        const urls = Array.isArray(inputs[key]) ? inputs[key] : [inputs[key]];
+        if (urls.length !== 1) return { ok: false, error: 'source_count_exceeded' };
+        try {
+            if (typeof urls[0] !== 'string' || new URL(urls[0]).protocol !== 'https:') throw new Error('invalid URL');
+        } catch { return { ok: false, error: `inputs_invalid:${key}` }; }
+        input[field] = [...urls];
+    }
+    return { ok: true, body: { model: WAN_ANIMATE_MODEL, input: { ...input, resolution: '720P' } } };
 }
 
 function buildKlingRequest(target, spec, inputs) {

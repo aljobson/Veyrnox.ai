@@ -83,3 +83,22 @@ test('the watcher and the database agree on one floor', () => {
     assert.ok(marginAt(edge * 1.001, credits) < MARGIN_FLOOR, `${credits} just over`);
   }
 });
+
+test('Swap stages one whole bounded job per generation at the minimum 50 percent floor', async () => {
+  const { findMarginBreaches } = await import('../packages/catalog/margin-validator.ts');
+  const sql = readFileSync(new URL('../packages/db/schema/supabase/0449_swap_offers_inactive.sql', import.meta.url), 'utf8');
+  const rows = [...sql.matchAll(/'(swap-[^']+)','([^']+)','(?:fal|crun)','[^']+',\s*'video-to-video',(\d+),([\d.]+),'per_generation',NULL,false,false/g)];
+  assert.equal(rows.length, 2);
+  for (const [, id, name, price, costText] of rows) {
+    const credits = Number(price), cost = Number(costText);
+    assert.equal(credits, id === 'swap-recast' ? 134 : 67);
+    assert.equal(cost, id === 'swap-recast' ? 2.4 : 1.2);
+    assert.equal(creditsForFloor(cost), credits);
+    assert.ok(marginAt(cost, credits) >= MARGIN_FLOOR);
+    assert.ok(marginAt(cost, credits - 1) < MARGIN_FLOOR);
+    assert.deepEqual(findMarginBreaches([{ id, name, credits, provider_cost_usd: cost }]), []);
+  }
+  assert.match(sql, /ON CONFLICT \(id\) DO UPDATE SET/);
+  assert.match(sql, /active=EXCLUDED.active/);
+  assert.match(sql, /count\(\*\)[\s\S]*active = false AND gated_flag = false\) <> 2/);
+});
