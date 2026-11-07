@@ -1,4 +1,7 @@
--- Run on a freshly replayed vx_loop. Fixtures and all audit rows roll back.
+-- Run on a freshly replayed disposable database. Fixtures and all audit rows roll back.
+-- Lock order: advisory (clawback) -> balances by user_id -> users -> jobs ->
+-- social targets -> assets by id -> scans -> evidence / reports / reap queue.
+-- Existing account erasure ordering exceptions are documented in amendment 4.
 \set QUIET on
 BEGIN;
 CREATE TEMP TABLE smoke_output(n BIGSERIAL, message TEXT);
@@ -113,7 +116,7 @@ BEGIN
  PERFORM public.mark_social_provider_submission(target,claimed.claim_key,'threads');
  UPDATE public.assets SET held_at=now() WHERE job_id=j2;
  r:=public.authorize_social_target_dispatch(target,claimed.claim_key);
- PERFORM pg_temp.check_ok(r->>'code'='MEDIA_HELD' AND EXISTS(SELECT 1 FROM public.social_post_targets WHERE id=target AND publish_status='pending' AND attempts=0 AND claim_key IS NULL AND provider_state='{}'),'social dispatch deferred: MEDIA_HELD');
+ PERFORM pg_temp.check_ok(r->>'code'='MEDIA_HELD' AND EXISTS(SELECT 1 FROM public.social_post_targets WHERE id=target AND publish_status='pending' AND attempts=0 AND claim_key IS NULL AND provider_state ? 'submission_started'),'social dispatch deferred: MEDIA_HELD');
  r:=public.authorize_social_target_dispatch(target,claimed.claim_key);
  PERFORM pg_temp.check_ok(r->>'code'='CLAIM_LOST','social deferred repeat: CLAIM_LOST');
  UPDATE public.assets SET held_at=NULL WHERE job_id=j2;
@@ -313,5 +316,196 @@ BEGIN
   AND (summary->>'content_scan_backlogged')::integer=0 AND (summary->>'content_scan_exhausted')::integer=0 FROM public.recovery_health_snapshot));
 
 END $$;
+-- Amendment 4: R1-R6 ordering and edge-case assertions.
+CREATE FUNCTION pg_temp.person(p_admin BOOLEAN DEFAULT false) RETURNS public.users LANGUAGE plpgsql AS $$
+DECLARE a UUID := gen_random_uuid(); u public.users;
+BEGIN
+ INSERT INTO auth.users(id,email,email_confirmed_at) VALUES(a,a::text||'@test.invalid',now());
+ UPDATE public.users SET is_admin=p_admin WHERE auth_id=a::text RETURNING * INTO u;
+ RETURN u;
+END $$;
+CREATE FUNCTION pg_temp.target(p_user UUID,p_job UUID,p_network TEXT DEFAULT 'threads') RETURNS UUID LANGUAGE plpgsql AS $$
+DECLARE b UUID:=gen_random_uuid(); ac UUID:=gen_random_uuid(); p UUID:=gen_random_uuid(); t UUID:=gen_random_uuid();
+BEGIN
+ INSERT INTO public.social_brands(id,owner_user_id,label) VALUES(b,p_user,'hardening');
+ INSERT INTO public.social_accounts(id,brand_id,network,external_account_id,access_token_enc) VALUES(ac,b,p_network,ac::text,'\x01');
+ INSERT INTO public.social_posts(id,brand_id,created_by_user_id,scheduled_at,idempotency_key) VALUES(p,b,p_user,now()-interval '1 minute',p::text);
+ INSERT INTO public.social_post_media(post_id,position,media_type,source_job_id) VALUES(p,0,'image',p_job);
+ INSERT INTO public.social_post_targets(id,post_id,account_id,network) VALUES(t,p,ac,p_network);
+ RETURN t;
+END $$;
+CREATE FUNCTION pg_temp.claim(p_target UUID,p_state JSONB DEFAULT '{}',p_network TEXT DEFAULT 'threads',p_current JSONB DEFAULT NULL) RETURNS UUID LANGUAGE plpgsql AS $$
+DECLARE k UUID:=gen_random_uuid();
+BEGIN
+ UPDATE public.social_post_targets SET network=p_network,publish_status='publishing',claimed_from_status='submitted',
+  claimed_attempts=2,attempts=3,provider_state=coalesce(p_current,p_state),claimed_provider_state=p_state,
+  claim_key=k,claimed_at=now(),next_attempt_at=now()+interval '5 minutes' WHERE id=p_target;
+ RETURN k;
+END $$;
+DO $$
+DECLARE
+ a public.users; u public.users; e public.users; gone_user public.users;
+ j UUID; j2 UUID; t UUID; t2 UUID; k UUID; report UUID; upload UUID:=gen_random_uuid();
+ r JSONB; saved JSONB; state JSONB; marker TEXT; network TEXT; c RECORD; i INTEGER; n INTEGER;
+ signature TEXT; ledger_count BIGINT; action_count BIGINT; balance_before INTEGER; first_key TEXT:=gen_random_uuid()::text;
+BEGIN
+ a:=pg_temp.person(true); u:=pg_temp.person(); e:=pg_temp.person(); gone_user:=pg_temp.person();
+ UPDATE public.content_scan_monitor SET armed=false,armed_at=NULL WHERE id=1;
+ -- R1: evidence takes precedence over removed, then released evidence becomes removed.
+ j:=pg_temp.image(e.id); t:=pg_temp.target(e.id,j); k:=pg_temp.claim(t,'{}');
+ UPDATE public.social_post_targets SET claimed_from_status='pending' WHERE id=t;
+ r:=public.record_csam_escalation(a.auth_id,e.id,j,'test preservation',gen_random_uuid()::text);
+ PERFORM pg_temp.check_ok(r->>'ok'='true'); saved:=r;
+ r:=public.authorize_social_target_dispatch(t,k);
+ PERFORM pg_temp.check_ok(r->>'code'='MEDIA_EVIDENCE_HELD' AND EXISTS(SELECT 1 FROM public.social_post_targets WHERE id=t AND publish_status='pending' AND attempts=2 AND claim_key IS NULL),'R1: evidence defers and restores');
+ PERFORM public.release_evidence_hold(a.auth_id,(saved->>'action_id')::uuid,'test release');
+ k:=pg_temp.claim(t); r:=public.authorize_social_target_dispatch(t,k);
+ PERFORM pg_temp.check_ok(r->>'code'='MEDIA_REMOVED','R1: released evidence has no usable source');
+ j:=pg_temp.image(u.id); t:=pg_temp.target(u.id,j); k:=pg_temp.claim(t);
+ DELETE FROM public.assets WHERE job_id=j;
+ PERFORM pg_temp.check_ok(public.authorize_social_target_dispatch(t,k)->>'code'='MEDIA_REMOVED','R1: removed source defers');
+ j2:=pg_temp.image(u.id);
+ INSERT INTO public.social_post_media(post_id,position,media_type,source_job_id) SELECT post_id,1,'image',j2 FROM public.social_post_targets WHERE id=t;
+ k:=pg_temp.claim(t);
+ PERFORM pg_temp.check_ok(public.authorize_social_target_dispatch(t,k)->>'code'='MEDIA_REMOVED','R1: one removed carousel source defers');
+ t2:=pg_temp.target(u.id,j2); k:=pg_temp.claim(t2);
+ PERFORM pg_temp.check_ok(public.authorize_social_target_dispatch(t2,k)->>'ok'='true','R1: intact source allowed');
+ -- The usable-source predicate also checks ownership and job tombstones.
+ UPDATE public.jobs SET user_id=e.id WHERE id=j2; k:=pg_temp.claim(t2);
+ PERFORM pg_temp.check_ok(public.authorize_social_target_dispatch(t2,k)->>'code'='MEDIA_REMOVED');
+ UPDATE public.jobs SET user_id=u.id,deleted_at=now() WHERE id=j2; k:=pg_temp.claim(t2);
+ PERFORM pg_temp.check_ok(public.authorize_social_target_dispatch(t2,k)->>'code'='MEDIA_REMOVED');
+ INSERT INTO public.social_uploads(id,user_id,r2_key,filename,mime_type,size_bytes,status) VALUES(upload,u.id,'smoke/upload/'||upload,'image.png','image/png',100,'ready');
+ UPDATE public.social_post_media SET source_job_id=NULL,source_upload_id=upload WHERE post_id=(SELECT post_id FROM public.social_post_targets WHERE id=t2);
+ k:=pg_temp.claim(t2);
+ PERFORM pg_temp.check_ok(public.authorize_social_target_dispatch(t2,k)->>'ok'='true','R1: upload source allowed');
+
+ -- R2: exact delete count, queue only removed rows, held job refusal and replay.
+ j:=pg_temp.image(u.id); j2:=pg_temp.image(u.id);
+ UPDATE public.assets SET expires_at=now()-interval '1 day',held_at=CASE WHEN job_id=j2 THEN now() END WHERE job_id IN(j,j2);
+ n:=public.expire_assets(500);
+ PERFORM pg_temp.check_ok(n=1 AND NOT EXISTS(SELECT 1 FROM public.assets WHERE job_id=j)
+  AND EXISTS(SELECT 1 FROM public.asset_reap_queue WHERE r2_key='smoke/'||j)
+  AND EXISTS(SELECT 1 FROM public.assets WHERE job_id=j2) AND NOT EXISTS(SELECT 1 FROM public.asset_reap_queue WHERE r2_key='smoke/'||j2),'R2: expiry deletes and queues only unheld rows');
+ PERFORM pg_temp.check_ok(public.expire_assets(500)=0,'R2: expiry replay deletes zero');
+ PERFORM pg_temp.check_ok(public.delete_user_job(u.auth_id,j2)->>'code'='ON_HOLD','R2: held job retained');
+ PERFORM public.release_content_hold(a.auth_id,j2,'test release');
+ r:=public.delete_user_job(u.auth_id,j2);
+ PERFORM pg_temp.check_ok(r->>'ok'='true' AND NOT EXISTS(SELECT 1 FROM public.assets WHERE job_id=j2)
+  AND (SELECT count(*)=1 FROM public.asset_reap_queue WHERE r2_key='smoke/'||j2),'R2: deleted job queues only deleted asset');
+ PERFORM pg_temp.check_ok(public.delete_user_job(u.auth_id,j2)->>'replayed'='true');
+
+ -- R3: frozen refusal changes neither ledger nor balance nor action log; replay precedes it.
+ PERFORM public.ledger_grant(u.id,100,'grant:smoke',gen_random_uuid()::text);
+ r:=public.admin_credit_clawback_guarded(a.auth_id,'aal2',extract(epoch FROM clock_timestamp())::bigint,u.id,5,'test correction',first_key);
+ PERFORM pg_temp.check_ok(r->>'ok'='true');
+ PERFORM 1 FROM public.credit_balances WHERE user_id=u.id FOR UPDATE;
+ PERFORM public.freeze_account(u.id,'test freeze',NULL);
+ SELECT count(*) INTO ledger_count FROM public.ledger_entries WHERE user_id=u.id;
+ SELECT count(*) INTO action_count FROM public.account_actions WHERE user_id=u.id;
+ SELECT balance INTO balance_before FROM public.credit_balances WHERE user_id=u.id;
+ r:=public.admin_credit_clawback_guarded(a.auth_id,'aal2',extract(epoch FROM clock_timestamp())::bigint,u.id,5,'test correction',gen_random_uuid()::text);
+ PERFORM pg_temp.check_ok(r->>'code'='ACCOUNT_FROZEN'
+  AND (SELECT count(*)=ledger_count FROM public.ledger_entries WHERE user_id=u.id)
+  AND (SELECT count(*)=action_count FROM public.account_actions WHERE user_id=u.id)
+  AND (SELECT balance=balance_before FROM public.credit_balances WHERE user_id=u.id),'R3: frozen target refused without writes');
+ r:=public.admin_credit_clawback_guarded(a.auth_id,'aal2',extract(epoch FROM clock_timestamp())::bigint,u.id,5,'test correction',first_key);
+ PERFORM pg_temp.check_ok(r->>'replayed'='true','R3: frozen target applied-key replay preserved');
+ r:=public.prepare_account_deletion(gone_user.auth_id);
+ PERFORM pg_temp.check_ok(r->>'eligible'='true');
+ PERFORM public.erase_account(gone_user.auth_id,r->>'confirmation_token');
+ PERFORM pg_temp.check_ok(public.admin_credit_clawback_guarded(a.auth_id,'aal2',extract(epoch FROM clock_timestamp())::bigint,gone_user.id,1,'test correction',gen_random_uuid()::text)->>'code'='ACCOUNT_DELETED','R3: deleted target refused');
+
+ -- R4: all unpublished Meta progress shapes reset on first hold, regardless of snapshot location.
+ j:=pg_temp.image(u.id); UPDATE public.assets SET held_at=now() WHERE job_id=j;
+ t:=pg_temp.target(u.id,j);
+ FOREACH network IN ARRAY ARRAY['threads','instagram'] LOOP
+  FOREACH state IN ARRAY ARRAY[jsonb_build_object('container_id','123456','started_at',now()-interval '3 hours'),'{"children":[{"id":"child"}]}'::jsonb,'{"creating":true}'::jsonb] LOOP
+   FOR i IN 1..2 LOOP
+    k:=pg_temp.claim(t,CASE WHEN i=1 THEN state ELSE '{}'::jsonb END,network,state);
+    r:=public.authorize_social_target_dispatch(t,k);
+    PERFORM pg_temp.check_ok(r->>'code'='MEDIA_HELD' AND EXISTS(SELECT 1 FROM public.social_post_targets WHERE id=t
+     AND publish_status='pending' AND provider_state='{}' AND attempts=2 AND next_attempt_at<=now() AND claim_key IS NULL));
+   END LOOP;
+  END LOOP;
+ END LOOP;
+ PERFORM pg_temp.check_ok(true,'R4: Threads and Instagram containers, children and creating reset');
+ FOREACH marker IN ARRAY ARRAY['post_id','submission_started'] LOOP
+  state:=jsonb_build_object('container_id','123456',marker,'protected');
+  -- Markers present only in the claimed snapshot survive restoration.
+  k:=pg_temp.claim(t,state,'instagram','{"container_id":"123456"}');
+  PERFORM public.authorize_social_target_dispatch(t,k);
+  PERFORM pg_temp.check_ok((SELECT provider_state ? marker AND publish_status='submitted' AND attempts=2 FROM public.social_post_targets WHERE id=t));
+  -- Markers written after claiming survive the older snapshot.
+  k:=pg_temp.claim(t,'{"container_id":"123456"}','instagram',state);
+  PERFORM public.authorize_social_target_dispatch(t,k);
+  PERFORM pg_temp.check_ok((SELECT provider_state=state AND publish_status='submitted' AND attempts=2 FROM public.social_post_targets WHERE id=t));
+ END LOOP;
+ k:=pg_temp.claim(t,'{"container_id":"123456"}','instagram');
+ PERFORM public.mark_social_provider_submission(t,k,'instagram');
+ PERFORM public.authorize_social_target_dispatch(t,k);
+ PERFORM pg_temp.check_ok((SELECT provider_state ? 'submission_started' AND publish_status='submitted' FROM public.social_post_targets WHERE id=t),'R4: current and claimed submission markers preserved');
+
+ -- R5: scanner holds require release; user reports and removed assets still resolve.
+ j:=pg_temp.image(a.id);
+ -- Drain fixture scans first so the hold helper always finds this job.
+ UPDATE public.content_scans SET status='clean',lease_until=NULL,claim_token=NULL WHERE status IN ('queued','scanning') AND job_id<>j;
+ PERFORM pg_temp.hold(j);
+ SELECT id INTO report FROM public.content_reports WHERE subject_id=j AND source='scanner';
+ r:=public.resolve_content_report(a.auth_id,report,'test resolution');
+ PERFORM pg_temp.check_ok(r->>'code'='HOLD_ACTIVE' AND EXISTS(SELECT 1 FROM public.content_reports WHERE id=report AND status='open')
+  AND EXISTS(SELECT 1 FROM public.assets WHERE job_id=j AND held_at IS NOT NULL),'R5: held scanner report stays open');
+ INSERT INTO public.content_reports(reporter_id,subject_kind,subject_id,category,details) VALUES(a.id,'job',j,'other','test report') RETURNING id INTO report;
+ PERFORM pg_temp.check_ok(public.resolve_content_report(a.auth_id,report,'test resolution')->>'ok'='true','R5: user report on held job resolves');
+ PERFORM public.release_content_hold(a.auth_id,j,'test release');
+ SELECT id INTO report FROM public.content_reports WHERE subject_id=j AND source='scanner';
+ PERFORM pg_temp.check_ok(public.resolve_content_report(a.auth_id,report,'test resolution')->>'replayed'='true','R5: released scanner report replays');
+ j:=pg_temp.image(a.id); PERFORM pg_temp.hold(j);
+ SELECT id INTO report FROM public.content_reports WHERE subject_id=j AND source='scanner';
+ DELETE FROM public.assets WHERE job_id=j;
+ PERFORM pg_temp.check_ok(public.resolve_content_report(a.auth_id,report,'test resolution')->>'ok'='true','R5: removed scanner asset resolves');
+
+ -- R6: deferral returns each attempt once, backoff clamps, stale writers cannot decide.
+ UPDATE public.content_scans SET decided_at=now()-interval '2 days' WHERE status='unavailable';
+ j:=pg_temp.image(a.id);
+ FOR i IN 1..6 LOOP
+  SELECT * INTO c FROM public.claim_content_scans(500,120) WHERE id=(SELECT id FROM public.content_scans WHERE job_id=j);
+  PERFORM pg_temp.check_ok(c.attempts=1 AND c.claim_token IS NOT NULL);
+  SELECT to_jsonb(s) INTO saved FROM public.content_scans s WHERE id=c.id;
+  PERFORM pg_temp.check_ok(public.defer_content_scan(c.id,gen_random_uuid(),300)->>'code'='STALE_CLAIM'
+   AND (SELECT to_jsonb(s)=saved FROM public.content_scans s WHERE id=c.id));
+  r:=public.defer_content_scan(c.id,c.claim_token,CASE i WHEN 1 THEN 1 WHEN 2 THEN 9999 WHEN 3 THEN NULL ELSE 300 END);
+  PERFORM pg_temp.check_ok(r->>'ok'='true' AND (r->>'backoff_seconds')::integer=CASE i WHEN 1 THEN 30 WHEN 2 THEN 1800 ELSE 300 END
+   AND EXISTS(SELECT 1 FROM public.content_scans WHERE id=c.id AND status='scanning' AND attempts=0 AND claim_token IS NULL AND lease_until>clock_timestamp()));
+  SELECT to_jsonb(s) INTO saved FROM public.content_scans s WHERE id=c.id;
+  PERFORM pg_temp.check_ok(public.defer_content_scan(c.id,c.claim_token,300)->>'code'='STALE_CLAIM');
+  PERFORM pg_temp.check_ok(public.defer_content_scan(c.id,NULL,300)->>'code'='STALE_CLAIM');
+  PERFORM pg_temp.check_ok(public.record_content_scan(c.id,c.claim_token,'clean','{}','test')->>'code'='STALE_CLAIM');
+  PERFORM pg_temp.check_ok((SELECT to_jsonb(s)=saved FROM public.content_scans s WHERE id=c.id));
+  PERFORM pg_temp.check_ok((SELECT count(*)=0 FROM public.claim_content_scans(500,120)));
+  IF i=1 THEN
+   PERFORM public.arm_content_scan_monitor();
+   PERFORM public.record_worker_task_health('content_scan',false);
+   PERFORM public.refresh_recovery_health();
+   PERFORM pg_temp.check_ok((SELECT (summary->>'content_scan_backlogged')::integer>=1 FROM public.recovery_health_snapshot),'R6: deferred scan visible during backoff');
+  END IF;
+  UPDATE public.content_scans SET lease_until=now()-interval '1 second' WHERE id=c.id;
+ END LOOP;
+ SELECT * INTO c FROM public.claim_content_scans(500,120) WHERE id=(SELECT id FROM public.content_scans WHERE job_id=j);
+ PERFORM pg_temp.check_ok(c.attempts=1 AND public.record_content_scan(c.id,c.claim_token,'clean','{}','test')->>'ok'='true','R6: six deferrals retain the per-image budget');
+ PERFORM pg_temp.check_ok(public.defer_content_scan(c.id,c.claim_token,300)->>'code'='STALE_CLAIM');
+ PERFORM pg_temp.check_ok(public.defer_content_scan(gen_random_uuid(),gen_random_uuid(),300)->>'code'='STALE_CLAIM');
+ PERFORM public.record_worker_task_health('content_scan',true); PERFORM public.refresh_recovery_health();
+ PERFORM pg_temp.check_ok((SELECT (summary->>'content_scan_claimable')::integer=0 AND (summary->>'content_scan_backlogged')::integer=0 AND NOT (summary->'unhealthy_tasks' ? 'content_scan') FROM public.recovery_health_snapshot),'R6: successful recovery clears scan health');
+ FOREACH signature IN ARRAY ARRAY['expire_assets(integer)','authorize_social_target_dispatch(uuid,uuid)','admin_credit_clawback_guarded(text,text,bigint,uuid,integer,text,text)','delete_user_job(text,uuid)','resolve_content_report(text,uuid,text)','defer_content_scan(uuid,uuid,integer)','refresh_recovery_health()'] LOOP
+  PERFORM pg_temp.check_ok(has_function_privilege('service_role','public.'||signature,'EXECUTE')
+   AND NOT has_function_privilege('anon','public.'||signature,'EXECUTE')
+   AND NOT has_function_privilege('authenticated','public.'||signature,'EXECUTE'));
+ END LOOP;
+ PERFORM pg_temp.check_ok(true,'amendment 4 RPC permissions: service only');
+ PERFORM pg_temp.check_ok(NOT EXISTS(SELECT 1 FROM public.reconcile_balances()) AND NOT EXISTS(SELECT 1 FROM public.reconcile_free_credits())
+  AND NOT EXISTS(SELECT 1 FROM public.reconcile_subscription_credits()),'amendment 4 reconcile: 0/0/0');
+END $$;
+
 SELECT message FROM smoke_output ORDER BY n;
 ROLLBACK;

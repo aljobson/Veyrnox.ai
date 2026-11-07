@@ -76,6 +76,7 @@ export async function POST(req) {
         return rpcFailure(err, WHERE);
     }
     if (result?.code === 'INSUFFICIENT_PACK_CREDITS') return NextResponse.json({ error: 'insufficient_pack_credits', pack_credits: result.pack_credits }, { status: 400, headers: NO_STORE });
+    if (['ACCOUNT_FROZEN', 'ACCOUNT_DELETED'].includes(result?.code)) return NextResponse.json({ error: result.code.toLowerCase() }, { status: 409, headers: NO_STORE });
     if (!result || result.ok !== true) return rpcRefusal(result, 'grant_rejected');
     const replayed = result.replayed === true;
     if (!replayed) console.error(`[${WHERE}] credit adjustment`, credits, 'credits to', userId, 'action', result.action_id);

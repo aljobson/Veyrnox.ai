@@ -322,6 +322,8 @@ function message(code) {
     unauthenticated: 'Sign in with an administrator account.',
     not_admin: 'This account is not an administrator.',
     mfa_required: 'Unlock this session with your authenticator above, then try again.',
+    account_frozen: 'This account is frozen. Review it and unfreeze it before taking credits back.',
+    account_deleted: 'This account was deleted; its balance is left as it is.',
     user_not_found: 'No account matches that email, user id or job id.',
     email_invalid: 'That does not look like an email address.',
     lookup_invalid: 'Enter one email, user id or job id.',
