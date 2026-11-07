@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { attachSlotFor, planAttachments } from '../lib/createAttach.mjs';
+import { attachPool, attachSlotFor, planAttachments } from '../lib/createAttach.mjs';
 
 const text = { id: 't', kind: 'video', credits: 10, media: {} };
 const i2v = { id: 'i2v', kind: 'video', credits: 20, media: { image: { required: true } } };
@@ -65,4 +65,15 @@ test('a generated file stands in for a file by its type', () => {
   const asset = { type: 'image/png', asset: { id: 'j1' } };
   const plan = planAttachments([i2v], i2v, [asset]);
   assert.equal(plan.assignments[0].file, asset);
+});
+
+test('an open model is never replaced: a model with no slots refuses the picture instead of moving', () => {
+  assert.deepEqual(attachPool([text, i2v, frames], text), [text]);
+  assert.equal(planAttachments(attachPool([text, i2v, frames], text), text, [png(1)]), null);
+  assert.equal(planAttachments(attachPool([text, i2v], i2v), i2v, [png(1)]).model, i2v);
+});
+
+test('with no model open the files choose one', () => {
+  assert.deepEqual(attachPool([text, i2v], null), [text, i2v]);
+  assert.equal(planAttachments(attachPool([text, i2v], null), null, [png(1)]).model, i2v);
 });

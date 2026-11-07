@@ -25,10 +25,10 @@ test('Add files renders translated copy with no raw keys', async () => {
   }
 });
 
-test('Create opens Add files from its button and from a template, keeping a template model that takes files', () => {
+test('Create opens Add files from its button and from a template, keeping the open model (a template's model stays)', () => {
   const page = readFileSync('app/veyrnox/app/create/page.js', 'utf8');
   assert.match(page, /data-testid="create-add-files"[^>]*onClick=\{\(\) => setAddFilesOpen\(true\)\}/);
   assert.match(page, /onChooseSource=\{\(\) => setAddFilesOpen\(true\)\}/);
   assert.match(page, /<AddFilesDialog capacity=\{attachCapacity\(model\)\} onAdd=\{attachFiles\}/);
-  assert.match(page, /const pool = currentModel && Object\.keys\(currentModel\.media \|\| \{\}\)\.length \? \[currentModel\] : currentModels;/);
+  assert.match(page, /const pool = attachPool\(currentModels, currentModel\);/);
 });
