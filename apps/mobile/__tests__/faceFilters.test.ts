@@ -113,7 +113,7 @@ test('the rights statement lives in the Terms and Acceptable Use Policy; version
     // No checkbox: attaching a file is the confirmation, recorded by the gateway with the wording version.
     expect(read('../../../lib/i18n/messages/legal/en/terms.mjs')).toContain('By attaching a file to a generation you confirm that you own it');
     expect(read('../../../lib/i18n/messages/legal/en/aup.mjs')).toContain('By uploading a file or attaching it to a generation you confirm this');
-    expect(read('../../../app/api/v1/generations/route.js')).toContain("RIGHTS_ATTESTATION_VERSION = 'aup-2026-09-26'");
+    expect(read('../../../app/api/v1/generations/route.js')).toContain("RIGHTS_ATTESTATION_VERSION = 'terms-2026-11-07'");
 });
 test('both front doors use shared submission; result uses existing poll and output helpers', () => {
     for (const p of ['../src/app/(app)/create/[modelId].tsx', '../src/components/FaceFiltersFlow.tsx']) {
