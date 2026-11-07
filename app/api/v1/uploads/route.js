@@ -111,7 +111,7 @@ export async function POST(req) {
         return NextResponse.json({ error: 'upload_check_unavailable' }, { status: 503 });
     }
     if (held.objects.length >= MAX_PENDING_UPLOADS) {
-        return NextResponse.json({ error: 'too_many_pending_uploads' }, { status: 429 });
+        return NextResponse.json({ error: 'too_many_pending_uploads', limit: MAX_PENDING_UPLOADS }, { status: 429 });
     }
 
     // Editor batch preflight: real account reservations plus legacy R2 objects.

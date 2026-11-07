@@ -99,7 +99,7 @@ test('nine stored objects allow issuance, ten or eleven refuse it', async () => 
       const signed = new URL(result.upload_url);
       assert.equal(signed.searchParams.get('X-Amz-Expires'), '900');
       assert.match(signed.searchParams.get('X-Amz-SignedHeaders'), /content-type/);
-    } else assert.equal(result.error, 'too_many_pending_uploads');
+    } else assert.deepEqual(result, { error: 'too_many_pending_uploads', limit: 10 });
     assert.deepEqual(calls, ['consume_upload_request', 'read_user_balance', 'r2-list']);
   }
 });

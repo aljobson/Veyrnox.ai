@@ -32,7 +32,7 @@ import { createGenerationSubmit, generationSignature, unknownGenerationOutcome, 
 import { CameraPanel } from '../../../components/CameraPanel';
 import { CharacterPanel } from '../../../components/CharacterPanel';
 import { CreateOptions, type OptionValues } from '../../../components/CreateOptions';
-import { AttachFromDevice } from '../../../components/AttachFromDevice';
+import { AttachMore, UploadLimitNote } from '../../../components/create/AttachMore';
 import { SourcePicker } from '../../../components/SourcePicker';
 import { TemplateBanner } from '../../../components/TemplateBanner';
 import { DEFAULT_CINEMA, buildCinemaPrompt, sanitizeCinema, type Cinema } from '../../../lib/cinemaCamera';
@@ -48,8 +48,7 @@ import { useFreeLeftState } from '../../../lib/useFreeLeft';
 import { estimateCredits, fetchCatalog, kindOf, promptRequired, textInput, type CatalogModel } from '../../../lib/media';
 import { MIN_TARGET, selectedState } from '../../../lib/a11y';
 import { portraitAsPickedFile, startOddlingId } from '../../../lib/oddlingsAnimate';
-import type { PickedFile } from '../../../lib/sources';
-import { legacyReferences, replaceSlotReferences, slotsFor, type GenerationReference, type SlotName } from '../../../lib/sources';
+import { legacyReferences, replaceSlotReferences, slotsFor, type GenerationReference, type PickedFile, type SlotName } from '../../../lib/sources';
 
 import { ds } from '../../../theme';
 import { plural, t } from '../../../lib/i18n';
@@ -390,6 +389,7 @@ export default function CreateWithModel() {
                             <SectionLabel style={styles.sectionLabel}>{t('create.workspace.references')}</SectionLabel>
                             <SectionLabel style={styles.sectionMeta}>{t('create.workspace.referencesMeta')}</SectionLabel>
                         </View>
+                        <UploadLimitNote model={model} />
                         {slots.map((s) => (
                             <SourcePicker
                                 key={s.slot}
@@ -408,7 +408,7 @@ export default function CreateWithModel() {
                         ))}
                     </View>
                 ) : null}
-                <View style={styles.section}><AttachFromDevice api={api} current={model} carry={attachCarry} settings={{ opts, cameraOn, cinema, characterOn, character }} references={references} previous={handedSources ?? undefined} /></View>
+                <View style={styles.section}><AttachMore hasSlots={slots.length > 0} api={api} current={model} carry={attachCarry} settings={{ opts, cameraOn, cinema, characterOn, character }} references={references} previous={handedSources ?? undefined} /></View>
                 {text_ ? (
                     <View style={styles.section}>
                         <View style={styles.sectionTop}>
