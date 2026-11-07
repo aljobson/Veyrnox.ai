@@ -1,3 +1,5 @@
+import { SYNTX_REPLACEMENTS_RECORDS } from './syntxReplacementRecords.js';
+import { HF_REPLACEMENTS_RECORDS } from './higgsfieldReplacementRecords.js';
 import { HIGGSFIELD_CATEGORY_FILL_RECORDS } from './higgsfieldCategoryFillRecords.js';
 import { SYNTX_64_SOURCE_PROMPT_RECORDS } from './syntxSourcePromptExpansion64Records.js';
 import { HIGGSFIELD_300_SOURCE_PROMPT_RECORDS } from './higgsfieldCommunityExpansion300Records.js';
@@ -17,6 +19,8 @@ const EXACT_SOURCE_RECORDS = Object.freeze({
   ...SEEDANCE_SOURCE_PROMPT_RECORDS,
   ...SYNTX_64_SOURCE_PROMPT_RECORDS,
   ...HIGGSFIELD_CATEGORY_FILL_RECORDS,
+  ...HF_REPLACEMENTS_RECORDS,
+  ...SYNTX_REPLACEMENTS_RECORDS,
 });
 const exactSourceRecordFor = recordLookup(EXACT_SOURCE_RECORDS);
 

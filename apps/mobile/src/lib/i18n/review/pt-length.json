@@ -3072,6 +3072,18 @@
     "ratio": 2.25
   },
   {
+    "id": "editorAi.preview",
+    "english": "Preview changes",
+    "translation": "Pré-visualizar alterações",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorAi.step.setSpeed",
+    "english": "Set {id} speed to {value}×",
+    "translation": "Definir a velocidade de {id} como {value}×",
+    "ratio": 1.62
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",

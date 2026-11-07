@@ -11,10 +11,10 @@ export function chatMediaModels(models: readonly CatalogModel[], kind: Kind): Ca
     return models.filter(m => !m.gated && kindOf(m.modality) === kind && textInput(m)?.key === 'prompt');
 }
 
-export function makeReady(model: CatalogModel, prompt: string, references: readonly GenerationReference[], rights: boolean,
+export function makeReady(model: CatalogModel, prompt: string, references: readonly GenerationReference[],
     uploading: boolean, opts: { seed: string; voice: string; audioSeconds: string }): boolean {
     const options = optionsFor(model);
-    return !uploading && (!references.length || rights)
+    return !uploading
         && slotsFor(model).every(slot => {
             const count = references.filter(ref => ref.slot === slot.slot).length;
             return (!slot.required || count > 0) && count <= (slot.maxFiles ?? 1);

@@ -135,10 +135,11 @@ test('a template whose only media is one photo generates here when the page can 
   assert.equal(inlineBlockReason(needing, model, { photo: true }), 'media', 'a model with no photo slot cannot use a photo');
 });
 
-test('with a photo the prompt names the person as the lead, and the request carries the upload key and the rights tick', async () => {
+test('with a photo an unedited exact prompt stays unchanged, and the request carries the upload key and the rights tick', async () => {
   const withPhoto = templateInputs(preset, model, { prompt: preset.prompt, aspect: '9:16', durationSeconds: 5, aspectOptions: ['9:16'], withPhoto: true });
-  assert.ok(withPhoto.prompt.startsWith(`${preset.prompt}\n\n`));
-  assert.match(withPhoto.prompt, /person in the attached photo is the main character/);
+  assert.equal(preset.sourcePromptOrigin, 'community-source-exact');
+  assert.equal(withPhoto.prompt, preset.sourcePrompt);
+  assert.equal(withPhoto.prompt.includes('main character'), false);
   assert.equal(inputs().prompt, preset.prompt, 'no photo, no added line');
   const h = harness([{ job_id: 'job-9' }]);
   const run = templateRun(null, 'a', 4, makeKey);
@@ -149,6 +150,25 @@ test('with a photo the prompt names the person as the lead, and the request carr
   assert.equal(h.requests[0].body.consent, true);
   await submitTemplate({ run, quote: allocationSnapshot(run, 4, 0), model, preset, inputs: withPhoto, makeKey, deps: h.deps });
   assert.equal(uploads, 1, 'a retry of the same request reuses the uploaded file');
+});
+
+test('photo guidance is skipped only for unedited exact source bytes, including whitespace', () => {
+  const source = ' \r\nKeep the red swimsuit.\r\n ';
+  const exact = { ...preset, prompt: 'fallback text', sourcePrompt: source, sourcePromptOrigin: 'community-source-exact' };
+  const prepare = (p, prompt, withPhoto = true) => templateInputs(p, model, {
+    prompt, withPhoto, aspect: '9:16', durationSeconds: 5, aspectOptions: ['9:16'],
+  }).prompt;
+  for (const withPhoto of [false, true]) assert.equal(prepare(exact, source, withPhoto), source);
+  for (const [p, prompt] of [
+    [{ ...exact, sourcePromptOrigin: 'veyrnox-adaptation' }, exact.prompt],
+    [exact, '  An edited scene.  '],
+    [exact, source.trim()], // A whitespace edit is still an edit, even after trimming.
+  ]) {
+    const sent = prepare(p, prompt);
+    assert.ok(sent.startsWith(`${prompt.trim()}\n\n`));
+    assert.match(sent, /person in the attached photo is the main character/);
+    assert.equal(prepare(p, prompt, false), prompt.trim());
+  }
 });
 
 test('the uploaded photo is reused after a refused request discards its run, until the token changes or it ages out', async () => {

@@ -6,7 +6,7 @@
 import { rpc } from '../../../../../packages/db/supabase-client.js';
 import { limitRequestBody } from '../../../../../lib/requestBodyLimit.js';
 import { enter, reply, refusal } from '../../../../../lib/chatRoute.js';
-import { MODEL_ID_RE } from '../../../../../lib/chat.js';
+import { MODEL_ID_RE, editorOnlyModel } from '../../../../../lib/chat.js';
 
 export async function GET(req) {
     const gate = await enter(req);
@@ -30,6 +30,7 @@ export async function POST(req) {
     if (!body || typeof body !== 'object' || Array.isArray(body) || typeof body.model_id !== 'string' || !MODEL_ID_RE.test(body.model_id)) {
         return reply({ error: 'model_id_required' }, 400);
     }
+    if (editorOnlyModel(body.model_id)) return reply({ error: 'model_unavailable' }, 404);
     try {
         const r = await rpc('chat_create_thread', { p_auth_id: gate.authId, p_model_id: body.model_id }, gate.cfg);
         return r && r.ok === true ? reply({ thread: r.thread }, 201) : refusal(r);

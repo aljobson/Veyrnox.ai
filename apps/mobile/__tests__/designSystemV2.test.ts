@@ -50,7 +50,7 @@ const migrated = [
     ...fs.readdirSync(path.join(root, 'components/legal')).map(name => `components/legal/${name}`),
     'app/sign-in.tsx',
     'app/email.tsx',
-    ...['welcome', 'start', 'vibe', 'appearance'].map((name) => `app/(app)/${name}.tsx`),
+    ...['welcome', 'vibe', 'appearance'].map((name) => `app/(app)/${name}.tsx`),
     'app/(app)/(tabs)/index.tsx',
     'app/(app)/(tabs)/_layout.tsx',
     'components/HeaderChips.tsx',

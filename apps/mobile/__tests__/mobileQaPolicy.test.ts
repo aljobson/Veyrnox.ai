@@ -57,7 +57,7 @@ test('HTTP Turnstile is restricted to exactly the configured loopback origin in 
     expect(allowTurnstileNavigation('https://challenges.cloudflare.com/challenge', 'https://veyrnox.ai')).toBe(true);
 });
 
-test.each(['welcome', 'start', 'vibe'])('%s is headerless in the parent stack and the screen', route => {
+test.each(['welcome', 'vibe'])('%s is headerless in the parent stack and the screen', route => {
     const layout = source('app/(app)/_layout.tsx');
     const tree = ts.createSourceFile('_layout.tsx', layout, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
     const screens: ts.JsxSelfClosingElement[] = [];

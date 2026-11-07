@@ -52,12 +52,12 @@ test('helper visibility and the simultaneous question/walkthrough mode survive r
   assert.deepEqual(readVeyWorkspace(s, 'bob', now), { open: false, chatting: false });
   assert.deepEqual(readVeyWorkspace(s, 'alice', now + 86400001), { open: false, chatting: false });
 });
-test('restoration guards submission and catalog normalization, resets rights, and never calls onSubmit', () => {
+test('restoration guards submission and catalog normalization and never calls onSubmit', () => {
   const page = readFileSync(new URL('../app/veyrnox/app/create/page.js', import.meta.url), 'utf8');
   const hook = readFileSync(new URL('../app/veyrnox/_lib/useCreateDraftRecovery.js', import.meta.url), 'utf8');
   assert.match(page, /if \(draftRecovery.restoring \|\| draftRecovery.blocked \|\| attachConverting \|\| sourcesConverting\) return;/);
   assert.match(page, /disabled=\{draftRecovery.restoring \|\| draftRecovery.blocked/);
-  assert.match(page, /setSources\(restoredSources\); setConsent\(false\)/);
+  assert.match(page, /setSources\(restoredSources\); setConsent\(true\)/);
   assert.match(page, /draftRecovery.restoring \|\| catalogLoading/);
   assert.match(page, /inert=\{draftRecovery.restoring\}/);
   assert.match(hook, /actorSnapshot\(\) !== actor/);

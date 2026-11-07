@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { Button, Card, Checkbox, Chip, Text, TextField, themedStyles, useThemedStyles } from '../../../components/ui';
+import { Button, Card, Chip, Text, TextField, themedStyles, useThemedStyles } from '../../../components/ui';
 import { InlineMedia } from '../../../components/InlineMedia';
 import { fetchPresets, presetHref, themeTitle, type Preset } from '../../../lib/presets';
 import { previewRatio, templatePrice } from '../../../lib/templateFilters';
@@ -13,7 +13,6 @@ import { estimateCredits, fetchCatalog, kindOf, type CatalogModel } from '../../
 import { CreateResult } from '../../../components/create/CreateResult';
 import { inlineBlockReason, photoSlot, sourceUnsupported, templateRequest } from '../../../lib/templateGenerate';
 import { SourcePicker } from '../../../components/SourcePicker';
-import { english } from '../../../lib/i18n/binding';
 import type { GenerationReference } from '../../../lib/sources';
 import { useTemplateGenerate } from '../../../lib/useTemplateGenerate';
 import { templateModelEligible, templateOptions, type TemplateChoices } from '../../../lib/templateChoices';
@@ -32,10 +31,10 @@ export default function TemplatePage() {
     const [attempt, setAttempt] = useState(0);
     const [prompt, setPrompt] = useState('');
     const [copied, setCopied] = useState<string | null>(null);
-    // The photo, its rights tick and its upload state belong to the model they were picked for.
+    // The photo and its upload state belong to the model they were picked for.
     // Bumped when the photo is dropped, so the picker remounts empty.
     const [pickerEpoch, setPickerEpoch] = useState(0);
-    const [attached, setAttached] = useState<{ modelId: string; refs: readonly GenerationReference[]; rights: boolean; busy: boolean } | null>(null);
+    const [attached, setAttached] = useState<{ modelId: string; refs: readonly GenerationReference[]; busy: boolean } | null>(null);
     const hasExactSourcePrompt = preset?.sourcePromptOrigin === 'community-source-exact' && typeof preset.sourcePrompt === 'string';
     const sourcePromptUnavailable = preset?.sourcePromptStatus === 'unavailable';
     const sourcePromptNotRecorded = preset?.sourcePromptStatus === 'adaptation-only';
@@ -58,10 +57,9 @@ export default function TemplatePage() {
     const inline = !unsupported && !!preset && !!model && inlineBlockReason(preset, model, { photo: true }) === null;
     const mine = attached && attached.modelId === model?.id ? attached : null;
     const photos = mine?.refs ?? [];
-    const rights = mine?.rights === true;
     const photoBusy = mine?.busy === true;
-    const photoReady = !slot || (photos.length > 0 && rights && !photoBusy);
-    const request = inline && preset && model && options && !tooLong && prompt.trim() ? templateRequest(preset, model, { prompt, aspect: options.aspect, duration: options.duration, references: slot ? photos : [], sourceRights: rights }) : null;
+    const photoReady = !slot || (photos.length > 0 && !photoBusy);
+    const request = inline && preset && model && options && !tooLong && prompt.trim() ? templateRequest(preset, model, { prompt, aspect: options.aspect, duration: options.duration, references: slot ? photos : [], sourceRights: true }) : null;
     const generation = useTemplateGenerate(request, model && options ? estimateCredits(model, options.duration) : 0);
     useEffect(() => {
         let live = true; setLoading(true); setFailed(false); setCopied(null); setChoices({}); setAttached(null); setPickerEpoch(n => n + 1);
@@ -83,7 +81,7 @@ export default function TemplatePage() {
             {preset.previewUrl ? <InlineMedia url={preset.previewUrl} label={t('job.playVideo')} /> : preset.posterUrl ? <Image source={{ uri: preset.posterUrl }} cachePolicy="memory" contentFit="contain" style={{ width: '100%', aspectRatio: previewRatio(preset) }} accessibilityLabel={rawText(preset.title)} /> : null}
             {sourcePromptUnavailable ? <Card><Text>{t('public.TemplateRecipe.sourcePromptUnavailable')}</Text></Card> : null}
             {sourcePromptNotRecorded ? <Card><Text>{t('public.TemplateRecipe.sourcePromptNotRecorded')}</Text></Card> : null}
-            <TextField label={promptLabel} accessibilityLabel={promptLabel} value={prompt} onChangeText={value => { setPrompt(value); setCopied(null); }} multiline style={hasExactSourcePrompt ? { writingDirection: 'auto', textAlign: 'auto' } : undefined} />
+            <TextField label={promptLabel} accessibilityLabel={promptLabel} value={prompt} onChangeText={value => { setPrompt(value); setCopied(null); }} multiline scrollEnabled style={hasExactSourcePrompt ? [styles.promptBox, { writingDirection: 'auto', textAlign: 'auto' }] : styles.promptBox} />
             <Button label={t(hasExactSourcePrompt ? 'public.TemplateRecipe.copyExactCommunityPrompt' : 'editor.copy')} onPress={async () => setCopied(t(await copyText(prompt) ? 'libraryCreate.copied' : 'libraryCreate.copyFailed'))} />
             {copied ? <Text accessibilityLiveRegion="polite">{copied}</Text> : null}
             {tooLong ? <Text tone="danger" accessibilityLiveRegion="polite">{t('public.TemplateRecipe.productPromptTooLong', { count: prompt.length, max: TEMPLATE_PROMPT_MAX })}</Text> : null}
@@ -102,13 +100,7 @@ export default function TemplatePage() {
             <Text tone="warning">{templatePrice(model && options ? { ...preset, credits: estimateCredits(model, options.duration), durationSeconds: options.duration } : preset)}</Text>
             {unsupported ? <Card><Text accessibilityLiveRegion="polite">{t('public.TemplateRecipe.sourceVideoUnsupported')}</Text></Card> : available && inline ? <>
                 {slot && model ? <View style={{ gap: 12 }}>
-                    <SourcePicker key={`${model.id}:${pickerEpoch}`} slot={slot} api={generation.api} drawable={false} references={photos} onReferences={refs => setAttached(previous => ({ modelId: model.id, refs, rights: false, busy: previous?.modelId === model.id && previous.busy }))} onBusy={busy => setAttached(previous => previous && previous.modelId !== model.id ? previous : { modelId: model.id, refs: previous?.refs ?? [], rights: previous?.rights === true, busy })} onChange={() => {}} onLibrary={() => {}} />
-                    {photos.length ? <View>
-                        <Checkbox checked={rights} accessibilityLanguage="en" accessibilityLabel={english('form.sourceRights')} accessibilityState={{ checked: rights, disabled: generation.busy }} disabled={generation.busy} onChange={value => setAttached(previous => previous && previous.modelId === model.id ? { ...previous, rights: value } : previous)}>
-                            <Text variant="caption" tone="secondary">{english('form.sourceRights')}</Text>
-                        </Checkbox>
-                        <Text accessibilityLanguage="en" variant="caption" tone="tertiary">{english('form.consent')}</Text>
-                    </View> : null}
+                    <SourcePicker key={`${model.id}:${pickerEpoch}`} slot={slot} api={generation.api} drawable={false} references={photos} onReferences={refs => setAttached(previous => ({ modelId: model.id, refs, busy: previous?.modelId === model.id && previous.busy }))} onBusy={busy => setAttached(previous => previous && previous.modelId !== model.id ? previous : { modelId: model.id, refs: previous?.refs ?? [], busy })} onChange={() => {}} onLibrary={() => {}} />
                 </View> : null}
                 {generation.run && model ? <CreateResult api={generation.api} batch={{ ids: [...generation.run.ids], modelId: generation.run.modelId, kind: kindOf(model.modality), aspect: options?.aspect ?? null, duration: options?.duration ?? null, count: 1 }} catalog={catalog ?? []} onTerminal={generation.settled} /> : null}
                 {generation.error ? <Text tone="danger" accessibilityLiveRegion="polite">{generation.error}</Text> : null}
@@ -123,4 +115,4 @@ export default function TemplatePage() {
         </>}
     </ScrollView>;
 }
-const sheets = themedStyles(p => ({ screen: { padding: 16, paddingBottom: 80, gap: 12, backgroundColor: p.bg }, row: { flexDirection: 'row', gap: 8 }, choices: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 } }));
+const sheets = themedStyles(p => ({ screen: { padding: 16, paddingBottom: 80, gap: 12, backgroundColor: p.bg }, row: { flexDirection: 'row', gap: 8 }, promptBox: { maxHeight: 180 }, choices: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 } }));

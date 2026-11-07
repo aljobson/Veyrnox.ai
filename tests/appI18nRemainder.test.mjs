@@ -21,9 +21,9 @@ test('Studio skills render several independent selected controls', async () => {
   assert.match(html, /2\/4 selected · combine up to 4/i);
 });
 
-test('all 32 remainder files have no unresolved copy, parse errors or translator shadowing', () => {
+test('all 31 remainder files have no unresolved copy, parse errors or translator shadowing', () => {
   const all = [...Object.values(files), ...metadataFiles];
-  assert.equal(all.length, 32);
+  assert.equal(all.length, 31);
   for (const file of all) {
     const source = readFileSync(file, 'utf8');
     assert.deepEqual(candidates(file, source, { app: true }).filter(row => row.status === 'unresolved'), [], file);
@@ -79,17 +79,6 @@ test('policy and billing numbers are extracted from the English source and ident
       assert.equal(en[key], english, key);
       assert.deepEqual(numbers(messages[key]), numbers(english), `${code}/${key}`);
     }
-  }
-});
-
-test('version-bound source rights stay exact English and keep the existing checkbox contract', async () => {
-  for (const { code } of LOCALES) {
-    const html = renderScenario(scenarios.find(s => s.area === 'rights'), code, await appMessagesFor(code));
-    assert.match(html, /lang="en" dir="ltr"/);
-    assert.match(html, /I own this file, or I have the permission of everyone identifiable in it\./);
-    assert.match(html, /This statement is recorded against the generation and your account\./);
-    assert.match(html, /href="\/legal\/aup"/);
-    assert.match(html, /data-testid="create-source-rights"/);
   }
 });
 

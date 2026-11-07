@@ -23,7 +23,7 @@ test('web Create submits React state to preserve a template CRLF prompt despite 
 });
 
 test('every template remains visibly linked from its recipe page into Create', () => {
-  assert.equal(ALL_TEMPLATES.length, 1799, 'audit every public template');
+  assert.equal(ALL_TEMPLATES.length, 1813, 'audit every public template');
   for (const preset of ALL_TEMPLATES) {
     assert.match(presetHref(preset), new RegExp(`[?&]preset=${preset.id}(?:&|$)`), preset.id);
     assert.ok(modelIdForName(preset.model), `${preset.id} opens a known model`);

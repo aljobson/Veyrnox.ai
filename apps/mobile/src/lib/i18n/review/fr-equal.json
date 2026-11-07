@@ -198,5 +198,6 @@
   "faceFilters.clown": "Same word in French, kept as the common term.",
   "faceFilters.zombie": "Same word in French, kept as the common term.",
   "faceFilters.vampire": "Same word in French, kept as the common term.",
-  "editorSimple.smartCut": "Product feature name, kept in English in every language."
+  "editorSimple.smartCut": "Product feature name, kept in English in every language.",
+  "editorAi.counter": "Numeric character counter; contains only a placeholder, slash and limit."
 }

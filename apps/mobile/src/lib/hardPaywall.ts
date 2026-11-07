@@ -25,10 +25,11 @@ const EXEMPT = ['/delete-account', '/welcome', '/vibe', '/analytics-consent'];
 export const isHardPaywallExempt = (pathname: string | null | undefined): boolean =>
     !!pathname && (EXEMPT.includes(pathname) || pathname.startsWith('/legal/'));
 
-// Where the Welcome cards lead. Flag off: the Start screen, as before. Flag on: Welcome -> Vibe check -> paywall, so the
-// next stop is the Vibe check (or, if that is not switched on in this build, straight to the gated app).
-export function afterWelcomeHref(hard: boolean, vibeAvailable: boolean): '/start' | '/vibe?from=welcome' | '/' {
-    if (!hard) return '/start';
+// Where the Welcome cards lead. Flag off: straight to the home screen (Create, LLM Chat, Film Studio...); the old
+// four-box Start screen is gone. Flag on: Welcome -> Vibe check -> paywall, so the next stop is the Vibe check (or, if
+// that is not switched on in this build, straight to the gated app).
+export function afterWelcomeHref(hard: boolean, vibeAvailable: boolean): '/vibe?from=welcome' | '/' {
+    if (!hard) return '/';
     return vibeAvailable ? '/vibe?from=welcome' : '/';
 }
 
@@ -53,6 +54,8 @@ export const hasIntroSteps = (trialDays: number, step: number): boolean => trial
 // costs credits runs until they subscribe. The check sits in the API client's beforeSend, so every create, chat, editor
 // export and montage path goes through it. It is an app-side guard (ADR-0108 amendment 2, "Limits").
 const PAID_ACTIONS: readonly RegExp[] = [
+    /^\/api\/v1\/editor\/speech-analyses\/?(\?|$)/,
+    /^\/api\/v1\/editor\/ai-edit\/?(\?|$)/,
     /^\/api\/v1\/generations\/?$/,
     /^\/api\/v1\/chat\/threads\/[^/]+\/messages\/?$/,
     /^\/api\/v1\/editor\/server-render\/?$/,

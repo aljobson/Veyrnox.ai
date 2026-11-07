@@ -46,7 +46,6 @@ export function FaceFiltersFlow({ api, owner }: { api: ApiClient; owner: string 
     const [previewUnavailable, setPreviewUnavailable] = useState(false);
     const [values, setValues] = useState<FaceValues>({});
     const [prompt, setPrompt] = useState('');
-    const [checked, setChecked] = useState(false);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
     useAnnouncement(error);
@@ -118,7 +117,7 @@ export function FaceFiltersFlow({ api, owner }: { api: ApiClient; owner: string 
         const off = subscribeCacheUser(() => {
             if (getCacheUser() !== owner) {
                 controller.current.abort(); discardPhoto(); source.current = null; submit.current.reset();
-                clearResult(); setPhoto(null); setChecked(false); setJob(null);
+                clearResult(); setPhoto(null); setJob(null);
             }
         });
         return () => { off(); controller.current.abort(); discardPhoto(); resultRef.current = null; submit.current.reset(); };
@@ -133,17 +132,17 @@ export function FaceFiltersFlow({ api, owner }: { api: ApiClient; owner: string 
 
     function reset(next: CatalogModel | null = null) {
         discardPhoto(); source.current = null; clearResult(); submit.current.reset();
-        setPhoto(null); setModel(next); setValues(next ? faceDefaults(next) : {}); setPrompt(''); setChecked(false); setJob(null); setError(null);
+        setPhoto(null); setModel(next); setValues(next ? faceDefaults(next) : {}); setPrompt(''); setJob(null); setError(null);
         setLook({ id: 'original', strength: DEFAULT_STRENGTH }); setNotice(null);
     }
     function chooseFilter(next: CatalogModel) {
-        setModel(next); setValues(faceDefaults(next)); setPrompt(''); setChecked(false);
+        setModel(next); setValues(faceDefaults(next)); setPrompt('');
         setError(null); setJob(null); submit.current.reset();
         setLook({ id: 'original', strength: DEFAULT_STRENGTH }); setNotice(null);
     }
     function chooseLook(id: LookId) {
         // A look is instant and on this phone: nothing is uploaded, no rights tick, no credits.
-        setModel(null); setChecked(false); setError(null); setNotice(null);
+        setModel(null); setError(null); setNotice(null);
         setLook(current => ({ id, strength: id === current.id ? current.strength : DEFAULT_STRENGTH }));
     }
     function applyResult(result: { jobId: string; uri: string }) {
@@ -152,7 +151,7 @@ export function FaceFiltersFlow({ api, owner }: { api: ApiClient; owner: string 
         discardPhoto(); source.current = null; submit.current.reset(); setPhoto(null);
         resultRef.current = next; setFromResult(next);
         errorRefreshFor.current = null; setPreviewUnavailable(false);
-        setModel(null); setValues({}); setPrompt(''); setChecked(false); setJob(null); setError(null);
+        setModel(null); setValues({}); setPrompt(''); setJob(null); setError(null);
         setLook({ id: 'original', strength: DEFAULT_STRENGTH }); setNotice(null);
     }
     async function pick() {
@@ -170,7 +169,7 @@ export function FaceFiltersFlow({ api, owner }: { api: ApiClient; owner: string 
             const valid = checkPicked('image', file);
             if (!valid.ok) { discardFile(file); setError(pickedProblem(valid.error, 'image')); return; }
             discardPhoto(); local.current = file; source.current = null; submit.current.reset();
-            clearResult(); setPhoto(file); setChecked(false);
+            clearResult(); setPhoto(file);
         } catch { if (current()) setError(t('common.error')); }
         finally { working.current = false; if (current()) setBusy(false); }
     }
@@ -181,15 +180,13 @@ export function FaceFiltersFlow({ api, owner }: { api: ApiClient; owner: string 
     const promptLimit = model ? textInput(model)?.max ?? GENERATION_PROMPT_MAX : GENERATION_PROMPT_MAX;
     const promptLimitKey = promptLimit < GENERATION_PROMPT_MAX ? 'public.TemplateRecipe.promptTooLong' : 'public.TemplateRecipe.productPromptTooLong';
     const promptTooLong = prompt.trim().length > promptLimit;
-    const ready = !!(photo || fromResult) && checked && !invalid && !promptTooLong && (model?.id !== 'face-relight' || !!prompt.trim()) && missing === 0;
+    const ready = !!(photo || fromResult) && !invalid && !promptTooLong && (model?.id !== 'face-relight' || !!prompt.trim()) && missing === 0;
 
     async function run() {
         if (!model || !(photo || fromResult) || !ready || promptTooLong || working.current || !current()) return;
         working.current = true; setBusy(true); setError(null);
-        // Snapshot the checked attestation for this one attempt, then require another
-        // deliberate tick for every later attempt. AI-sharing is a separate gate.
-        const attested = checked;
-        setChecked(false);
+        // The rights statement is part of the Terms and Acceptable Use Policy; AI-sharing is a separate gate.
+        const attested = true;
         try {
             let input: string | { assetId: string };
             if (fromResult) input = { assetId: fromResult.jobId };
@@ -274,18 +271,17 @@ export function FaceFiltersFlow({ api, owner }: { api: ApiClient; owner: string 
             {model ? <>
                 {selectors?.enums.map(({ key, values: choices }) => <View key={key} style={styles.group}>
                     <Text style={styles.heading} accessibilityRole="header">{t(`faceFilters.${key}`)}</Text>
-                    <View style={styles.wrap}>{choices.map(value => <Pressable key={value} accessibilityRole="radio" accessibilityLabel={t(`faceFilters.${value}`)} accessibilityState={{ checked: values[key] === value, disabled: busy }} disabled={busy} style={[styles.choice, values[key] === value && styles.selected]} onPress={() => { setValues(v => ({ ...v, [key]: value })); setChecked(false); }}><Text style={styles.text}>{t(`faceFilters.${value}`)}</Text></Pressable>)}</View>
+                    <View style={styles.wrap}>{choices.map(value => <Pressable key={value} accessibilityRole="radio" accessibilityLabel={t(`faceFilters.${value}`)} accessibilityState={{ checked: values[key] === value, disabled: busy }} disabled={busy} style={[styles.choice, values[key] === value && styles.selected]} onPress={() => { setValues(v => ({ ...v, [key]: value })); }}><Text style={styles.text}>{t(`faceFilters.${value}`)}</Text></Pressable>)}</View>
                 </View>)}
                 {selectors?.age ? <>
                     <Text style={styles.text}>{t('faceFilters.target_age', { min: String(selectors.age.min), max: String(selectors.age.max) })}</Text>
-                    <TextInput accessibilityLabel={rawText(t('faceFilters.target_age', { min: String(selectors.age.min), max: String(selectors.age.max) }))} keyboardType="number-pad" style={styles.input} editable={!busy} value={String(values.target_age ?? '')} placeholderTextColor={colors.muted} maxLength={3} onChangeText={value => { setValues(v => ({ ...v, target_age: value })); setChecked(false); }} />
+                    <TextInput accessibilityLabel={rawText(t('faceFilters.target_age', { min: String(selectors.age.min), max: String(selectors.age.max) }))} keyboardType="number-pad" style={styles.input} editable={!busy} value={String(values.target_age ?? '')} placeholderTextColor={colors.muted} maxLength={3} onChangeText={value => { setValues(v => ({ ...v, target_age: value })); }} />
                     {invalid ? <Text style={styles.error}>{t('faceFilters.invalidAge')}</Text> : null}
                 </> : null}
-                {selectors?.identity ? <Pressable accessibilityRole="checkbox" accessibilityLabel={t('faceFilters.preserve_identity')} accessibilityState={{ checked: values.preserve_identity === true, disabled: busy }} disabled={busy} style={styles.card} onPress={() => { setValues(v => ({ ...v, preserve_identity: !v.preserve_identity })); setChecked(false); }}><Text style={styles.text}>{values.preserve_identity ? '☑ ' : '☐ '}{t('faceFilters.preserve_identity')}</Text></Pressable> : null}
-                {model.id === 'face-relight' ? <><TextInput accessibilityLabel={t('faceFilters.prompt')} placeholder={t('faceFilters.prompt')} placeholderTextColor={colors.muted} style={styles.input} editable={!busy} multiline value={prompt} onChangeText={value => { setPrompt(value); setChecked(false); }} />{promptTooLong ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{t(promptLimitKey, { count: String(prompt.trim().length), max: String(promptLimit) })}</StatusText> : null}</> : null}
+                {selectors?.identity ? <Pressable accessibilityRole="checkbox" accessibilityLabel={t('faceFilters.preserve_identity')} accessibilityState={{ checked: values.preserve_identity === true, disabled: busy }} disabled={busy} style={styles.card} onPress={() => { setValues(v => ({ ...v, preserve_identity: !v.preserve_identity })); }}><Text style={styles.text}>{values.preserve_identity ? '☑ ' : '☐ '}{t('faceFilters.preserve_identity')}</Text></Pressable> : null}
+                {model.id === 'face-relight' ? <><TextInput accessibilityLabel={t('faceFilters.prompt')} placeholder={t('faceFilters.prompt')} placeholderTextColor={colors.muted} style={styles.input} editable={!busy} multiline value={prompt} onChangeText={value => { setPrompt(value); }} />{promptTooLong ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{t(promptLimitKey, { count: String(prompt.trim().length), max: String(promptLimit) })}</StatusText> : null}</> : null}
                 <View style={styles.card}><Text style={styles.price}>{t('faceFilters.price', { credits: String(model.credits) })}</Text></View>
                 {missing > 0 ? <Pressable accessibilityRole="button" accessibilityLabel={t('lowBalance.buy')} style={styles.card} onPress={() => router.push('/credits')}><Text style={styles.text}>{t('form.err.insufficient')} {t('lowBalance.buy')}</Text></Pressable> : null}
-                <Pressable accessibilityRole="checkbox" accessibilityLanguage="en" accessibilityLabel={english('faceFilters.rights')} accessibilityState={{ checked, disabled: busy }} disabled={busy} style={[styles.card, checked && styles.selected]} onPress={() => setChecked(v => !v)}><Text style={styles.text}>{checked ? '☑ ' : '☐ '}{english('faceFilters.rights')}</Text></Pressable>
                 <Pressable accessibilityRole="link" accessibilityLabel={t('faceFilters.policy')} style={styles.card} onPress={() => { router.push('/legal/aup'); }}><Text style={styles.text}>{t('faceFilters.policy')}</Text></Pressable>
                 <Button variant="primary" accessibilityLabel={rawText(`${t('faceFilters.run')}. ${t('faceFilters.price', { credits: String(model.credits) })}`)} accessibilityState={{ busy }} disabled={!ready} loading={busy} label={`${t('faceFilters.run')} · ${t('faceFilters.price', { credits: String(model.credits) })}`} onPress={run} />
             </> : null}

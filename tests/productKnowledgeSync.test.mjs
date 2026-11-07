@@ -28,6 +28,20 @@ const retiredChatKnowledge = {
     controls: new Set(['Capabilities', 'Tools']),
     descriptions: new Set(['This model does not offer Thinking.', 'This model cannot read images.', 'This model does not offer Web search.']),
 };
+// The source-rights tick on Create was removed: the statement now lives in the Terms of Service and
+// Acceptable Use Policy, so its help line, its Acceptable Use link and its assistant target are retired.
+const retiredCreateKnowledge = {
+    descriptions: new Set(['This confirmation applies only to this tab and these sources. Replacing a source or opening another draft requires a new confirmation.']),
+    links: new Set(['/legal/aup']),
+    targets: new Set(['create.consent']),
+};
+// The same move retired the Editor panel's Acceptable Use link, and the Terms and Acceptable Use Policy
+// paragraphs that described asking for the tick now say the statement is made by attaching a file.
+const retiredEditorKnowledge = { links: new Set(['/legal/aup']) };
+const retiredLegalKnowledge = {
+    '/legal/aup': new Set(['Before you upload a photo, a video or a recording of a voice, you must either own it or have the permission of everyone identifiable in it. When a generation takes an upload, we ask you to confirm that, and we record the confirmation against that job. Confirming it falsely is a breach of these terms.']),
+    '/legal/terms': new Set(['You keep whatever rights you hold in the prompts and reference files you upload. You grant us a licence to process them solely to run the service.']),
+};
 // ADR-0262: each attachment supplies its own type; the global media-type
 // selector and the single-selection instruction were replaced by an ordered strip.
 const retiredPublishKnowledge = {
@@ -58,6 +72,9 @@ test('phase B retains every app route knowledge item from origin/main', async ()
                 // ADR-0326 replaces the comma-separated palette with native swatches.
                 if (entry.route === '/app/editor' && field === 'descriptions' && value === 'Use up to 12 hex colours separated by commas.') continue;
                 if (entry.route === '/app/chat' && retiredChatKnowledge[field]?.has(value)) continue;
+                if (entry.route === '/app/create' && retiredCreateKnowledge[field]?.has(value)) continue;
+                if (entry.route === '/app/editor' && retiredEditorKnowledge[field]?.has(value)) continue;
+                if (field === 'descriptions' && retiredLegalKnowledge[entry.route]?.has(value)) continue;
                 assert.ok(actual.has(normal(value)), `${entry.route} ${field}: ${value}`);
             }
         }
@@ -139,6 +156,9 @@ test('all main route knowledge survives localization except the retired unknown-
                 if (route === '/app/oddlings' && retiredOddlingsKnowledge[field]?.has(expected)) continue;
                 if (route === '/app/publish' && retiredPublishKnowledge[field]?.has(expected)) continue;
                 if (route === '/app/chat' && retiredChatKnowledge[field]?.has(expected)) continue;
+                if (route === '/app/create' && retiredCreateKnowledge[field]?.has(expected)) continue;
+                if (route === '/app/editor' && retiredEditorKnowledge[field]?.has(expected)) continue;
+                if (field === 'descriptions' && retiredLegalKnowledge[route]?.has(expected)) continue;
                 if (route === '/presets/[id]' && field === 'headings' && expected === 'PROMPT') continue;
                 if (route === '/presets/[id]' && field === 'controls' && expected === 'Template prompt') continue;
                 assert.ok(actual.has(normal(expected)), `${route} ${field}: ${expected}`);
