@@ -4,8 +4,8 @@ import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import pg from 'pg';
 
-// 0446 raises the stored/reserved upload count from 10 to 20; the 200 MiB total is unchanged.
-describe('upload count cap (0446)', { skip: !process.env.DATABASE_URL }, () => {
+// 0448 raises the stored/reserved upload count from 10 to 20; the 200 MiB total is unchanged.
+describe('upload count cap (0448)', { skip: !process.env.DATABASE_URL }, () => {
     let pool: pg.Pool;
     const users: string[] = [];
     const one = async (sql: string, args: unknown[] = []) => (await pool.query(sql, args)).rows[0];
@@ -14,7 +14,7 @@ describe('upload count cap (0446)', { skip: !process.env.DATABASE_URL }, () => {
         // Production has this column from the account-deletion migration; check_upload_batch_budget (0401) reads it.
         await pool.query(`ALTER TABLE public.users ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ`);
         for (const name of ['0037_free_credit_expiry.sql', '0038_free_credit_sweep_fixes.sql',
-            '0071_signup_grant_on_email_confirmation.sql', '0129_upload_reservations.sql', '0446_upload_count_cap_20.sql', '0446_upload_count_cap_20.sql']) {
+            '0071_signup_grant_on_email_confirmation.sql', '0129_upload_reservations.sql', '0448_upload_count_cap_20.sql', '0448_upload_count_cap_20.sql']) {
             await pool.query(await readFile(new URL(`./schema/supabase/${name}`, import.meta.url), 'utf8'));
         }
     });
