@@ -73,7 +73,29 @@
   "overrides": {
     "@posthog/core": "1.58.1",
     "@posthog/types": "1.415.3",
+    "@expo/cli": {
+      "glob": "14.0.2"
+    },
+    "@expo/config": {
+      "glob": "14.0.2"
+    },
+    "@expo/config-plugins": {
+      "glob": "14.0.2"
+    },
+    "@expo/fingerprint": {
+      "glob": "14.0.2",
+      "minimatch": "11.0.1"
+    },
+    "@expo/metro-config": {
+      "glob": "14.0.2"
+    },
+    "expo-updates": {
+      "glob": "14.0.2"
+    },
     "@jest/reporters": {
+      "glob": "14.0.2"
+    },
+    "@sentry/bundler-plugins": {
       "glob": "14.0.2"
     },
     "jest-config": {
