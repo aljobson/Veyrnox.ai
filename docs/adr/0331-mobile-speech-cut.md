@@ -11,19 +11,16 @@ on the phone. It accepts only `{source:{type:'job',jobId}}` for an owned, stored
 Library/generated video or audio job. Project assets (`assetSource`, `p-`) and local
 files (`f-`, `e-`) are excluded. There is no upload or extracted-range path.
 
-Server `SPEECH_CUT_ENABLED` and phone `EXPO_PUBLIC_EDITOR_SPEECH_CUT_ENABLED` require
-exact `true`. Both Worker environments ship `false`; no editor runtime flag changes.
+Server `SPEECH_CUT_ENABLED` (the key `speechCut` inside the existing `EDITOR_RUNTIME_FLAGS` var, absent = off, with the legacy env name as an override) and phone `EXPO_PUBLIC_EDITOR_SPEECH_CUT_ENABLED` require
+exact `true`. It adds no Worker binding (Cloudflare refused a deploy at 131 text bindings, limit 128), so nothing is set in Wrangler.
 The phone also requires a successful quote. The inactive catalog row is
 `elevenlabs-scribe-v2`, provider `fal`, endpoint
 `fal-ai/elevenlabs/speech-to-text/scribe-v2`. The schema's modality column is text
 without an enumerated CHECK, so the row uses `audio-to-text`; cost_unit is
 `per_generation`, billing_seconds NULL, matching the staged catalog precedents.
 No activation, deployment, live request, or migration application is part of this work.
-A server-only `SPEECH_CUT_WEBHOOK_SECRET` of at least 32 characters is required before
-submission; it belongs in Worker secrets, never public/build configuration.
-The standalone flag raises the public-var budget from 69 to 70. With the recorded
-50-secret baseline plus this new secret, that is 121 of 128 text bindings; the
-owner must check the actual live secret count before any deployment.
+The webhook correlation token is an HMAC keyed by the existing `FAL_KEY` secret (domain-separated by its message label), because a new secret would exceed the Worker's text-binding cap. `FAL_KEY` must be at least 32 characters, which real fal keys are.
+No new Worker binding is added; the public-var budget stays at 67.
 
 ## Price and reusable results
 

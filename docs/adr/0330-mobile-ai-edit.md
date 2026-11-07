@@ -21,7 +21,7 @@ checks freshness synchronously before recording the single history entry.
 
 ## Price and admission
 
-`EDITOR_AI_EDIT_MODEL_ID` must name an active text/openrouter-chat catalog row.
+The model id (`aiEditModel` inside `EDITOR_RUNTIME_FLAGS`; the legacy env name `EDITOR_AI_EDIT_MODEL_ID` still overrides) must name an active text/openrouter-chat catalog row.
 `replyPrice(row)` with no options supplies its `credits_5s` / credits-per-reply.
 Neither the phone nor this change invents a price. The quote returns that price;
 the POST compares `expectedCredits` before charging. A changed price requires a
@@ -87,13 +87,9 @@ ledger/credit history retains the debit/refund.
 
 ## Flags and owner decisions
 
-Both Wrangler environments default `EDITOR_AI_EDIT_ENABLED` to the exact string
-`false` and `EDITOR_AI_EDIT_MODEL_ID` to empty. The mobile build flag
+The server switch is the key `aiEdit` in the existing `EDITOR_RUNTIME_FLAGS` JSON var (`editorFeatureEnabled('EDITOR_AI_EDIT_ENABLED')`), absent in production so off, and the model id is its `aiEditModel` key. They are not separate Wrangler vars: PR #1993's first deploy failed at Cloudflare with 131 text bindings against the limit of 128, so this feature adds no binding. The mobile build flag
 `EXPO_PUBLIC_EDITOR_AI_EDIT_ENABLED` also defaults off. The UI requires both that
-build flag and a successful quote. The two requested standalone variables raise
-the repository public-binding budget from 67 to 69. At the recorded 50-secret
-footprint this retains nine of Cloudflare’s 128 text-binding slots; a live secret
-count was not available and must be checked before any deployment. `EDITOR_RUNTIME_FLAGS` is unchanged.
+build flag and a successful quote.
 
 Before enabling, the owner must:
 

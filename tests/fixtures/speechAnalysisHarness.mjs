@@ -14,7 +14,7 @@ export function fixture(options = {}) {
     const calls = [], submissions = [], events = new Map(); let job, debit = 0, refunds = 0, verified = true;
     const fingerprint = 'a'.repeat(64), digest = createHash('sha256').update(`${assetId}:${fingerprint}:1`).digest('hex');
     const receipts = new Map();
-    const env = { SPEECH_CUT_ENABLED: 'true', FAL_KEY: 'test', PUBLIC_HOST: 'https://worker.test', SPEECH_CUT_WEBHOOK_SECRET: 's'.repeat(32), ...options.env };
+    const env = { SPEECH_CUT_ENABLED: 'true', FAL_KEY: 'f'.repeat(40), PUBLIC_HOST: 'https://worker.test', ...options.env };
     const asset = { ok: true, sha256: fingerprint, r2_key: 'private-object', mime_type: 'video/mp4', size_bytes: 500, ...options.asset };
     const view = () => ({ ok: true, id: JOB, status: job?.status || 'queued', progress: job?.state === 'SUBMITTED' ? 'transcribing' : 'queued', analysis: job?.analysis, refunded: job?.state === 'REFUNDED' });
     const rpc = async (name, args) => {
@@ -68,10 +68,10 @@ export function fixture(options = {}) {
         return Response.json(row ? [row] : []);
     };
     const webhook = createFalWebhookHandler({ rpcCall: rpc, fetchCall, verify: async () => verified,
-        config: () => ({ supabaseUrl: 'https://db.test', serviceRoleKey: 'test' }), storageConfig: () => r2, expectedTenant: () => 'tenant', speechSecret: () => env.SPEECH_CUT_WEBHOOK_SECRET });
+        config: () => ({ supabaseUrl: 'https://db.test', serviceRoleKey: 'test' }), storageConfig: () => r2, expectedTenant: () => 'tenant', speechSecret: () => env.FAL_KEY });
     const callback = async (event = {}, token = true) => {
         const url = new URL('https://worker.test/api/webhook/fal');
-        if (token) { url.searchParams.set('job_id', JOB); url.searchParams.set('speech_token', await speechCorrelation(JOB, env.SPEECH_CUT_WEBHOOK_SECRET)); }
+        if (token) { url.searchParams.set('job_id', JOB); url.searchParams.set('speech_token', await speechCorrelation(JOB, env.FAL_KEY)); }
         return webhook(new Request(url, { method: 'POST', headers: { 'x-fal-webhook-request-id': 'provider-1' },
             body: JSON.stringify({ request_id: 'provider-1', status: 'OK', payload: fixtures[0].restart, user_id: 'ATTACKER', ...event }) }));
     };
