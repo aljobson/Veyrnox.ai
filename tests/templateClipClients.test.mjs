@@ -99,12 +99,14 @@ test('registered-only web availability silently handles a flag-off 404', async t
     react: { useState: () => [null, value => states.push(value)], useEffect: effect => effects.push(effect) },
     './templateClips.js': { publicTemplateClip },
   });
-  t.mock.method(console, 'error', () => assert.fail('404 must not be logged'));
+  const logged = []; // Node's own warnings (e.g. typeless package) also reach console.error in CI, so only a 404 report counts
+  t.mock.method(console, 'error', (...args) => { logged.push(args.map(String).join(' ')); });
   t.mock.method(globalThis, 'fetch', async () => { calls++; return Response.json({ error: 'template_clip_not_found' }, { status: 404 }); });
   assert.equal(useTemplateClipAvailable('unregistered'), null); effects.shift()(); assert.equal(calls, 0);
   assert.equal(useTemplateClipAvailable(id), null); effects.shift()();
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(calls, 1); assert.deepEqual(states, [null]);
+  assert.deepEqual(logged.filter(line => /template_clip|404|catalog/.test(line)), []);
 });
 
 test('clip prompts remain exact and read-only beside existing help and the clip explanation', () => {
