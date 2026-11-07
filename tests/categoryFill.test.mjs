@@ -1,3 +1,5 @@
+import { HF_REPLACEMENTS_RECORDS } from '../app/veyrnox/_lib/higgsfieldReplacementRecords.js';
+import { SYNTX_REPLACEMENTS_RECORDS } from '../app/veyrnox/_lib/syntxReplacementRecords.js';
 import { GENJUTSU_SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/genjutsuSourcePromptRecords.js';
 import { HIGGSFIELD_90_SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/higgsfieldCommunityExpansion90Records.js';
 import { HIGGSFIELD_300_SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/higgsfieldCommunityExpansion300Records.js';
@@ -47,7 +49,7 @@ test('category fill preserves the 800 surviving baseline templates and their vis
   const oldPlacements = Object.fromEntries(baseline.visualPlacementIds.map(id => [id, visual.placements[baseline.publicIdRenames[id]?.id || id] || baseline.rejectedVisualPlacements[id]]));
   assert.equal(sha(JSON.stringify(oldPlacements)), baseline.visualPlacementsSha256);
   assert.deepEqual(Object.keys(visual.placements).sort(), Object.keys(AUDIT_SHOWCASE_CLIPS).sort());
-  assert.equal(new Set(Object.values(visual.placements).map(v => v.signature)).size, 917);
+  assert.equal(new Set(Object.values(visual.placements).map(v => v.signature)).size, 931);
 });
 
 test('28 accepted category records preserve exact text, manifest categories and existing model guidance', () => {
@@ -162,6 +164,6 @@ test('the incomplete record remains rejected, with hashes but no prompt or media
 });
 
 test('source record registry contains every module key without collisions', () => {
-  const modules = [GENJUTSU_SOURCE_PROMPT_RECORDS, HIGGSFIELD_90_SOURCE_PROMPT_RECORDS, HIGGSFIELD_300_SOURCE_PROMPT_RECORDS, SYNTX_SOURCE_PROMPT_RECORDS, SEEDANCE_SOURCE_PROMPT_RECORDS, SYNTX_64_SOURCE_PROMPT_RECORDS, HIGGSFIELD_CATEGORY_FILL_RECORDS];
+  const modules = [GENJUTSU_SOURCE_PROMPT_RECORDS, HIGGSFIELD_90_SOURCE_PROMPT_RECORDS, HIGGSFIELD_300_SOURCE_PROMPT_RECORDS, SYNTX_SOURCE_PROMPT_RECORDS, SEEDANCE_SOURCE_PROMPT_RECORDS, SYNTX_64_SOURCE_PROMPT_RECORDS, HIGGSFIELD_CATEGORY_FILL_RECORDS, HF_REPLACEMENTS_RECORDS, SYNTX_REPLACEMENTS_RECORDS];
   assert.equal(Object.keys(SOURCE_PROMPT_RECORDS).length, modules.reduce((sum, records) => sum + Object.keys(records).length, 0));
 });

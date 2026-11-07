@@ -3668,6 +3668,62 @@
     "community-pampered-spa-day": {
       "frames": 5,
       "signature": "101cc0914f5db5a0c9e629ec56aceab6ff5e2aa8b17060cef97a7d21a3dd7a10"
+    },
+    "community-spin-kick-puppy": {
+      "frames": 5,
+      "signature": "46c5be4598f345d398214fc8f2d75b70bbf83ae5f398bb87eaac424124c28787"
+    },
+    "community-neon-paint-splash": {
+      "frames": 5,
+      "signature": "68ce6d215180ddaf22b35cf2b97a338ed1d7fa6a182fbcb6f5a5fe2dcccd5d9c"
+    },
+    "community-neon-animal-dance": {
+      "frames": 5,
+      "signature": "de1bbb290c52b389398a82183a71f3038265aaf405a7569d98e0d3098bbf1100"
+    },
+    "community-island-life-performance": {
+      "frames": 5,
+      "signature": "d2ce05c98d292641dceb49da7b2609e45af537dd3a5ba86faace0bb8520b399a"
+    },
+    "community-cinematic-persona-swap": {
+      "frames": 5,
+      "signature": "c33018267a4437383d00f324bf6bc960b31adc29c0f2f9c7167b1dbf62392d53"
+    },
+    "community-roadside-service-pitch": {
+      "frames": 5,
+      "signature": "7877aa66be72f36df41dde5f2b1f3e16620d8b57df57bd388b18fcf8f09daece"
+    },
+    "community-martial-arts-feline": {
+      "frames": 5,
+      "signature": "b5c4923ee6a3a05e0715b72d74a42e67a89e27d6c5773e58a07d2aaa31adeb9d"
+    },
+    "community-cosmic-sands-encounter": {
+      "frames": 5,
+      "signature": "7e6a8e292ff981ecda7039d6cc42c4528be882e4b239ad2bca0a0a855453dba9"
+    },
+    "community-martial-arts-suit": {
+      "frames": 5,
+      "signature": "fc42540de701a4853ec749175900e52b289f5b22cfc8063461bd070f3e750642"
+    },
+    "community-pet-affection-reveal": {
+      "frames": 5,
+      "signature": "bc9bc3a9cbd8db4dab80a5895b175b1c18abcb7324daee6f16e7ecca5f48c670"
+    },
+    "community-luxe-timepiece-reveal": {
+      "frames": 5,
+      "signature": "86f9a08a69284b310912e4a86767e2cfd93e56fb4cbb950e1e95ed833f48f4dd"
+    },
+    "on-the-wave": {
+      "frames": 5,
+      "signature": "642bebd06dcd51f46e787a212432241b29671ab54d4187092790311ed792b873"
+    },
+    "red-crystal-amulet": {
+      "frames": 5,
+      "signature": "e76c97c268e9db74895a5564b35859e122bc7a362c49d2c1b310e4d4c7b23a0d"
+    },
+    "window-explode": {
+      "frames": 5,
+      "signature": "a908d9101a258267d6cd00ba8cf94129260930f21ba18b7304b90f748072129f"
     }
   }
 }

@@ -2,7 +2,7 @@
 // existing route; the drawer only navigates, it owns no screens.
 import type { MenuIcon } from './menuIcons';
 
-export type MenuItem = { key: string; label: string; href: string; icon: MenuIcon };
+export type MenuItem = { key: string; label: string; href: string; icon: MenuIcon; hint?: string };
 export type MenuSection = { id: 'agents' | 'tools' | 'assets' | 'inspire'; label: string; items: MenuItem[] };
 
 export const HOME_ICON: MenuIcon = 'house';
@@ -14,7 +14,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         items: [
             { key: 'chat', label: 'menu.chat', href: '/chat', icon: 'chat' },
             { key: 'skills', label: 'chat.skills.title', href: '/chat/skills', icon: 'sparkle' },
-            { key: 'videoAgent', label: 'menu.videoAgent', href: '/create/agent', icon: 'sparkle' },
+            { key: 'videoAgent', label: 'menu.videoAgent', hint: 'menu.videoAgentHint', href: '/create/agent', icon: 'sparkle' },
         ],
     },
     {
@@ -27,7 +27,7 @@ export const MENU_SECTIONS: MenuSection[] = [
             { key: 'tools', label: 'menu.toolDirectory', href: '/create/tools', icon: 'wrench' },
             { key: 'faceFilters', label: 'faceFilters.title', href: '/face-filters', icon: 'smiley' },
             { key: 'editor', label: 'tabs.editor', href: '/editor', icon: 'slate' },
-            { key: 'film', label: 'menu.film', href: '/film', icon: 'film' },
+            { key: 'film', label: 'menu.film', hint: 'menu.filmHint', href: '/film', icon: 'film' },
             { key: 'oddlings', label: 'menu.oddlings', href: '/oddlings', icon: 'user' },
             { key: 'mcp', label: 'menu.mcp', href: '/mcp', icon: 'wrench' },
             { key: 'publish', label: 'menu.publish', href: '/publish', icon: 'send' },

@@ -1,3 +1,5 @@
+import { SYNTX_REPLACEMENTS_SHOWCASE_CLIPS } from './sourceTemplateExpansion18.js';
+import { HF_REPLACEMENTS_SHOWCASE_CLIPS } from './sourceTemplateExpansion17.js';
 import { CATEGORY_FILL_SHOWCASE_CLIPS } from './sourceTemplateExpansion16.js';
 import { SYNTX_64_SHOWCASE_CLIPS } from './sourceTemplateExpansion15.js';
 import { SHOWCASE_CLIP_EXPANSION_14 } from './sourceTemplateExpansion14.js';
@@ -465,6 +467,8 @@ export const AUDIT_SHOWCASE_CLIPS = {
   ...SHOWCASE_CLIP_EXPANSION_14,
   ...SYNTX_64_SHOWCASE_CLIPS,
   ...CATEGORY_FILL_SHOWCASE_CLIPS,
+  ...HF_REPLACEMENTS_SHOWCASE_CLIPS,
+  ...SYNTX_REPLACEMENTS_SHOWCASE_CLIPS,
   ...SEEDANCE_SOURCE_SHOWCASE_CLIPS,
 
   ...SHOWCASE_CLIP_EXPANSION_6,

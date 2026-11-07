@@ -31,7 +31,10 @@ export function useChatLocal(threadId: string, prompt?: string) {
         const started = revision.current, starStarted = starsRevision.current;
         let active = true;
         void readDraft(threadId).then(text => {
-            if (active && currentCapture(capture) && started === revision.current && prompt === undefined && !value.current) { value.current = text; setText(text); }
+            // Untouched since mount: a saved unsent draft beats the starting prompt, so a reload while a photo or video picker
+            // was open (the app can be restarted by the system) brings back what was typed, not the original seed.
+            if (!active || !currentCapture(capture) || started !== revision.current || !text.trim()) return;
+            if (prompt === undefined ? !value.current : true) { value.current = text; setText(text); }
         });
         void readStars(threadId).then(ids => { if (active && currentCapture(capture) && starStarted === starsRevision.current) setStars(ids); });
         const unsubscribe = subscribeCacheUser(() => {
@@ -46,5 +49,5 @@ export function useChatLocal(threadId: string, prompt?: string) {
         const ids = await toggleStar(threadId, messageId);
         if (ids && mounted.current && currentCapture(capture)) { setStars(ids); if (!ids.length) setStarredOnly(false); }
     }, [threadId]);
-    return { draft, setDraft, stars, star, starredOnly, setStarredOnly, mounted };
+    return { draft, setDraft, flushDraft: flush, stars, star, starredOnly, setStarredOnly, mounted };
 }

@@ -41,9 +41,10 @@ function withPhotoLine(text, withPhoto) {
 /** The inputs object Create builds for this template: prompt, shape, length, the template's own negative prompt. */
 export function templateInputs(preset, model, { prompt, aspect, durationSeconds, aspectOptions, withPhoto = false }) {
   const exact = preset.sourcePromptOrigin === 'community-source-exact' && typeof preset.sourcePrompt === 'string' ? preset.sourcePrompt : preset.prompt;
+  const uneditedExact = preset.sourcePromptOrigin === 'community-source-exact' && prompt === exact;
   const inputs = {
     // Like Create: the recipe's own words go unchanged, anything the person edited is trimmed.
-    prompt: withPhotoLine(prompt === exact ? prompt : prompt.trim(), withPhoto),
+    prompt: withPhotoLine(prompt === exact ? prompt : prompt.trim(), withPhoto && !uneditedExact),
     aspect_ratio: aspectOptions.length ? aspect : undefined,
     duration_seconds: model.kind === 'video' ? durationSeconds : undefined,
     ...settingsInputs(model, { seed: '', negative: preset.negativePrompt || '', voice: '', duration: '' }),

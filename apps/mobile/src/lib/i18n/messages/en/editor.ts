@@ -282,4 +282,6 @@ export default {
     "editor.clips2Count.other": "{count} clips",
     "editor.imagePreviewAlt": "Image preview",
     "editor.imageFallback": "image",
+    "editor.diagnostics": "Build {version} ({build}) · editor switch {editor} · full editor {full} · workspaces {workspaces}",
+    "editor.diagnosticsHttp": "Server reply: {status}",
 } as const;

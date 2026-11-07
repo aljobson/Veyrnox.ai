@@ -53,12 +53,13 @@ function NewEditor() {
     const [choosing, setChoosing] = useState(false);
     const [pending, setPending] = useState(false);
     const [problem, setProblem] = useState<string | null>(null);
+    const [problemStatus, setProblemStatus] = useState<number | null>(null);
     const observedApi = useMemo(() => ({ ...api, request: <T,>(path: string, init?: RequestInit) => observe(api.request<T>(path, init)) }) as ApiClient, [api]);
     const current = () => alive.current && owner.current === getCacheUser();
     async function create(id?: string, label?: string) {
         if (busy.current || !current()) return;
         if (id && !MEDIA_ID.test(`j-${id}`)) { setProblem('editor.unavailable'); return; }
-        busy.current = true; setPending(true); setProblem(null);
+        busy.current = true; setPending(true); setProblem(null); setProblemStatus(null);
         try {
             await ensureOnline();
             if (!current()) return;
@@ -71,7 +72,7 @@ function NewEditor() {
             const project = await createProject(api, run.workspaceId, run.name, key.current!);
             if (current()) router.replace({ pathname: '/editor/[projectId]', params: { projectId: project.id, ...(run.jobId ? { jobId: run.jobId } : {}) } });
         } catch (err) {
-            if (current()) setProblem(err instanceof OfflineError || (err as ApiError).status === 0 ? 'editor.createOffline' : editorErrorKey((err as ApiError).status));
+            if (current()) { setProblem(err instanceof OfflineError || (err as ApiError).status === 0 ? 'editor.createOffline' : editorErrorKey((err as ApiError).status)); setProblemStatus(typeof (err as ApiError).status === 'number' ? (err as ApiError).status : null); }
         } finally { busy.current = false; if (current()) setPending(false); }
     }
     useEffect(() => {
@@ -90,6 +91,7 @@ function NewEditor() {
             <Text style={styles.intro}>{automatic ? t('editor.openingBody') : t('editor.newIntro')}</Text>
             {pending ? <View style={styles.progress}><ActivityIndicator color={colors.accent} /><StatusText variant="inherit" accessibilityLiveRegion="polite" style={styles.progressText}>{t('editor.opening')}</StatusText></View> : null}
             {problem ? <StatusText variant="inherit" style={styles.error} accessibilityLiveRegion="polite">{t(problem)}</StatusText> : null}
+            {problem && problemStatus !== null ? <StatusText variant="inherit" style={styles.intro} selectable>{t('editor.diagnosticsHttp', { status: String(problemStatus) })}</StatusText> : null}
             {!pending && (attempt.current || jobId) ? (
                 <Pressable style={[styles.retry, touchTarget]} accessibilityRole="button" accessibilityLabel={t('editor.retryNow')} onPress={() => { void create(jobId); }}><Text style={styles.retryText}>{t('editor.retryNow')}</Text></Pressable>
             ) : !automatic ? <View style={styles.choices}>

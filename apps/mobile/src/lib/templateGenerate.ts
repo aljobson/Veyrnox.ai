@@ -50,13 +50,14 @@ function withPhotoLine(text: string, hasPhoto: boolean): string {
 export function templateRequest(preset: Preset, model: CatalogModel, choice: { prompt: string; aspect: string | null; duration: number | null; references?: readonly GenerationReference[]; sourceRights?: boolean }): SubmitRequest {
     const options = optionsFor(model);
     const exact = preset.sourcePromptOrigin === 'community-source-exact' && preset.sourcePrompt ? preset.sourcePrompt : preset.prompt;
+    const uneditedExact = preset.sourcePromptOrigin === 'community-source-exact' && choice.prompt === exact;
     const video = kindOf(model.modality) === 'video';
     const references = choice.references ?? [];
     return {
         analyticsKind: kindOf(model.modality),
         modelId: model.id,
         // Like Create: the recipe's own words go unchanged, anything the person edited is trimmed.
-        prompt: withPhotoLine(choice.prompt === exact ? choice.prompt : choice.prompt.trim(), references.length > 0),
+        prompt: withPhotoLine(choice.prompt === exact ? choice.prompt : choice.prompt.trim(), references.length > 0 && !uneditedExact),
         confirmedCredits: estimateCredits(model, video ? choice.duration : null),
         durationSeconds: video ? choice.duration : null,
         references,

@@ -69,12 +69,10 @@ test('round 2 policy numbers survive translations and remain the original Englis
   }
 });
 
-test('generation rights consent stays English and exactly scoped in the audit', () => {
+test('generation panel asks for no rights tick and the gateway still records the attestation', () => {
   const source = readFileSync(files.generation, 'utf8');
-  assert.match(source, /<label lang="en" dir="ltr"[^>]*><input type="checkbox" checked=\{consent\}/);
-  const legal = candidates(files.generation, source, { app: true }).filter(row => row.kind === 'binding');
-  assert.equal(legal.length, 1);
-  assert.ok(legal.every(row => row.status === 'translated'));
+  assert.doesNotMatch(source, /type="checkbox"/);
+  assert.equal(candidates(files.generation, source, { app: true }).filter(row => row.kind === 'binding').length, 0);
   assert.equal(candidates(files.generation, '<label lang="en" dir="ltr">Untranslated controls</label>', { app: true })[0].status, 'unresolved');
   assert.match(readFileSync('app/api/v1/generations/route.js', 'utf8'), /p_version: RIGHTS_ATTESTATION_VERSION/);
 });

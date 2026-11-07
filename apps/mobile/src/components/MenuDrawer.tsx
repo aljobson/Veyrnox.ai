@@ -131,7 +131,7 @@ function MenuDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
                                     {collapsed ? null : (
                                         <View style={section.id === 'tools' ? styles.grid : undefined}>
                                             {section.items.filter(item => item.href !== '/face-filters' || faceAvailable).map((item) => (
-                                                <Row key={item.key} label={t(item.label)} icon={item.icon} active={active === item.key} half={section.id === 'tools'} onPress={() => go(item.href)} />
+                                                <Row key={item.key} label={t(item.label)} hint={item.hint ? t(item.hint) : undefined} icon={item.icon} active={active === item.key} half={section.id === 'tools'} onPress={() => go(item.href)} />
                                             ))}
                                         </View>
                                     )}
@@ -145,7 +145,7 @@ function MenuDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
     );
 }
 
-function Row({ label, icon, active, half, onPress }: { label: string; icon: MenuIcon; active: boolean; half?: boolean; onPress: () => void }) {
+function Row({ label, hint, icon, active, half, onPress }: { label: string; hint?: string; icon: MenuIcon; active: boolean; half?: boolean; onPress: () => void }) {
     const styles = useThemedStyles(sheets);
     return (
         <Button label={label} variant="tertiary"
@@ -156,7 +156,10 @@ function Row({ label, icon, active, half, onPress }: { label: string; icon: Menu
             onPress={onPress}
         >
             <Icon name={icon} tint={active ? styles.accentInk.color : styles.mutedInk.color} />
-            <Text variant="bodyStrong" style={[styles.rowText, active && styles.rowTextActive]} numberOfLines={1}>{label}</Text>
+            <View style={styles.rowBody}>
+                <Text variant="bodyStrong" style={[styles.rowText, active && styles.rowTextActive]} numberOfLines={1}>{label}</Text>
+                {hint ? <Text variant="caption" style={styles.rowHint} numberOfLines={2}>{hint}</Text> : null}
+            </View>
         </Button>
     );
 }
@@ -180,6 +183,8 @@ const sheets = themedStyles((p) => ({
     row: { justifyContent: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: MIN_TARGET, paddingHorizontal: 12, borderRadius: 14 },
     half: { width: '50%' },
     rowActive: { backgroundColor: p.accentSubtle },
+    rowBody: { flexShrink: 1 },
     rowText: { flexShrink: 1, color: p.textSecondary },
+    rowHint: { color: p.textSecondary },
     rowTextActive: { color: p.accent },
 }));

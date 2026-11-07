@@ -22,3 +22,34 @@ and holds apply; provider retention, locations, training use, transfer mechanism
 and DPA coverage for face photos remain UNKNOWN — owner to confirm before
 activation. Confirm Crun's documented 14-day media handling against its contract.
 Both catalog offers remain inactive pending that review and billing proof.
+
+## Scene source extension (inactive, 2026-11-07)
+
+A scene can supply a server-held vetted source clip (including soundtrack)
+instead of a customer-uploaded video. The customer supplies only the reference
+photo(s). The recipient and purpose remain the selected Swap offer above.
+Before any clip enters the manifest, record its provenance, owner approval,
+per-clip moderation/AUP decision and rights covering reuse, soundtrack and
+any depicted person's likeness. A clip containing a person's likeness needs
+its own rights record; the customer's photo consent does not cover that clip.
+
+The shipped registry and manifest are empty. No clip or preview is imported
+or published. Later imports must separately verify conservative duration,
+visual coverage, dimensions, MP4 type, immutable version and SHA-256. Provider
+access uses a server-only signed URL lasting at most fifteen minutes. Job
+identity keeps the scene/version/hash; public config exposes none of those
+private source facts. Shared clip retention is separate from disposable
+customer uploads and must be decided before import/activation; no retention
+period or rights clearance is implied by this implementation.
+
+Retained third-party scene clips contain a separate person's likeness even
+when the customer supplies only their own reference photo. Before an approved
+import, the owner must retain a private rights/provenance record covering that
+likeness, transformation and selected processor use; community reuse permission
+alone is insufficient. The importer strips soundtrack by default, and keeping
+it requires a separate rights review. Shared clips need an owner-set retention
+and review date independent of customer uploads; withdrawal or expiry requires
+removing the R2 object, manifest/scene entries and public audit row, with any
+provider-held copies addressed through the processor's removal process. The
+public audit carries technical provenance and approval only, never names or
+moderation reasons. See [the clip-import amendment](../adr/0000-swap-scene-clips.md).

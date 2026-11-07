@@ -44,7 +44,6 @@ void [ReactNative.ActivityIndicator, ReactNative.Image, ReactNative.Pressable, R
 
 const model: CatalogModel = { id: 'face-retouch', name: 'Retouch', modality: 'image-to-image', credits: 17, gated: false, durations: [], capabilities: { inputs: {}, media: { image: { required: true } } } };
 const makeup: CatalogModel = { ...model, id: 'face-makeup', name: 'Makeup', credits: 23, capabilities: { inputs: { makeup_style: { type: 'enum', values: ['natural', 'bold_lips'] } }, media: { image: { required: true } } } };
-const rights = strings['faceFilters.rights'];
 const retouchChip = 'Retouch. Gently retouch the face in your photo.. 17 credits per run';
 const makeupChip = 'Makeup. Try a makeup style on your photo.. 23 credits per run';
 const runLabel = 'Run filter. 17 credits per run';
@@ -102,7 +101,6 @@ async function press(role: string, label: string) {
 }
 async function choosePhoto() {
     await press('button', 'Retouch. Gently retouch the face in your photo.. 17 credits per run');
-    expect(control('checkbox', rights).props.accessibilityState.checked).toBe(false);
     expect(control('button', runLabel).props.accessibilityState.disabled).toBe(true);
     await press('button', 'Choose one photo');
 }
@@ -117,7 +115,7 @@ function matches(role: string, label: string) {
 }
 async function chooseMakeup() { await press('button', 'Makeup. Try a makeup style on your photo.. 23 credits per run'); }
 async function chooseRetouch() { await press('button', 'Retouch. Gently retouch the face in your photo.. 17 credits per run'); }
-async function tickAndRun(label = runLabel) { await press('checkbox', rights); await press('button', label); }
+async function tickAndRun(label = runLabel) { await press('button', label); }
 async function chain() {
     await renderFlow(); await choosePhoto(); await tickAndRun(); await press('button', applyLabel);
 }
@@ -129,14 +127,12 @@ const makeupRun = 'Run filter. 23 credits per run';
 
 test('switch keeps the photo and resets the selected filter settings and rights', async () => {
     await renderFlow(); await chooseMakeup(); await press('button', 'Choose one photo');
-    await press('radio', 'Bold lips'); await press('checkbox', rights);
-    jest.mocked(discardCacheCopy).mockClear();
+    await press('radio', 'Bold lips'); jest.mocked(discardCacheCopy).mockClear();
     await chooseRetouch();
     expect(previewUri()).toBe(photoUri);
     expect(preview().props.cachePolicy).toBe('none');
     await chooseMakeup();
     expect(control('radio', 'Natural').props.accessibilityState.checked).toBe(true);
-    expect(control('checkbox', rights).props.accessibilityState.checked).toBe(false);
     expect(previewUri()).toBe(photoUri);
     expect(discardCacheCopy).not.toHaveBeenCalled();
     await chooseRetouch(); await tickAndRun();
@@ -173,7 +169,6 @@ test('apply result refreshes its link, discards the picker copy and submits only
     expect(previewUri()).toBe(resultUri);
     expect(discardCacheCopy).toHaveBeenCalledWith(photoUri);
     await chooseMakeup();
-    expect(control('checkbox', rights).props.accessibilityState.checked).toBe(false);
     await tickAndRun(makeupRun);
     expect(bodies()[1]).toMatchObject({ model_id: 'face-makeup', source_assets: [{ asset_id: 'job', slot: 'image' }], consent: true });
     expect(bodies()[1].source_keys).toBeUndefined();
@@ -186,7 +181,6 @@ test('new photo after chaining clears every trace of the result source', async (
     const reads = assetReply.mock.calls.length;
     await press('button', sameLabel);
     expect(images()).toHaveLength(0);
-    await press('checkbox', rights);
     expect(control('button', makeupRun).props.accessibilityState.disabled).toBe(true);
     await act(async () => foreground('active'));
     expect(assetReply).toHaveBeenCalledTimes(reads);
@@ -220,7 +214,6 @@ test('expired links refresh on redisplay, image error and foreground; Before ref
     await act(async () => foreground('active'));
     expect(assetReply).toHaveBeenCalledTimes(reads + 3);
     expect(previewUri()).toBe('https://example.invalid/r3.jpg');
-    await press('checkbox', rights);
     expect(control('button', makeupRun).props.accessibilityState.disabled).toBe(false);
     await press('button', makeupRun);
     const body = JSON.stringify(bodies()[1]);
@@ -284,12 +277,10 @@ test('Before shares the error-loop guard and manual Retry', async () => {
 });
 
 test('account change clears a picked photo and rights', async () => {
-    await renderFlow(); await choosePhoto(); await press('checkbox', rights);
-    await act(async () => switchUser('other'));
+    await renderFlow(); await choosePhoto(); await act(async () => switchUser('other'));
     expect(getCacheUser()).toBe('other');
     expect(images()).toHaveLength(0);
     expect(discardCacheCopy).toHaveBeenCalledWith(photoUri);
-    expect(control('checkbox', rights).props.accessibilityState.checked).toBe(false);
 });
 
 test('account change closes the result and drops a late apply answer', async () => {
@@ -323,7 +314,6 @@ test.each(['source_not_found', 'source_asset_invalid'])('%s clears the result so
     send.mockRejectedValueOnce(new ApiError(400, code));
     await tickAndRun(makeupRun);
     expect(images()).toHaveLength(0);
-    await press('checkbox', rights);
     expect(control('button', makeupRun).props.accessibilityState.disabled).toBe(true);
     expect(root.container.queryAll(node => node.children.some(child => typeof child === 'string' && child.startsWith('The server rejected the photo:')))).toHaveLength(1);
 });

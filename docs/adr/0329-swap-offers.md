@@ -142,3 +142,66 @@ migrations to **any** database prevents its requested scratch replay here.
 Mobile typecheck/device tests are not run and no mobile dependencies installed.
 Root tests exercise the existing pure mobile source/translation helpers.
 No production build is required with the shared node_modules symlink.
+
+## Amendment — scene mechanics, slice 2a (2026-11-07)
+
+A separate `SWAP_SCENES` registry and server-only `SWAP_SCENE_SOURCES` manifest
+support photo-only scene entry through `?swap=<id>` on the existing web and
+mobile Create forms. Both ship empty. They do not extend `ALL_TEMPLATES`,
+`SOURCE_TEMPLATES`, presets, search, sitemap, previews or Popular attribution.
+No media is imported, copied, downloaded, hosted or moderated by this slice.
+The previous Phase 2 deferral above now applies to publication and media work.
+
+`swapSceneAvailable` is the shared publication gate for public
+`GET /api/catalog?swap=<id>` and generation admission. It requires staging,
+an active, ungated offer with catalog evidence, a manifest entry and a people
+count within `effectiveMaxFiles`. Two-person Pro scenes remain unknown with
+multi-reference off. Missing/failed catalog evidence, inactive offers,
+production and unknown scenes all resolve as not found. Clients use that
+endpoint and never import the server manifest. The response allowlists public
+scene fields and quotes the current offer's single catalog-unit price. It is
+an anonymous read-only catalog projection, ignores inbound identity headers,
+and returns `no-store`; ordinary catalog requests retain their existing cache.
+This uses the approved existing-catalog option: a new route would also require
+changing the SQL telemetry allowlist, incompatible with this slice's no-migration
+constraint. The route inventory is regenerated without introducing a new path.
+
+Generation requires the matching offer and exactly the scene's photo count,
+rejects caller video inputs and references, and preserves existing customer
+upload/asset ownership checks and consent. The server signs only the manifest
+key under `swap-scenes/` for 900 seconds. It supplies both conservative
+`seconds` and proven `videoSeconds` plus dimensions to `checkSource`; neither
+duration substitutes for the other. Import-time measurement and verification
+are a later slice. The route trusts those independently verified facts and
+does not read shared clip bytes. All clip lengths within the accepted bounds
+cost one catalog unit; clients send no `duration_seconds` for scene handoffs.
+
+`jobs.inputs.template_source` records immutable server-derived scene ID,
+version and SHA-256. Migration 0399 retains this field in generation identity.
+Signed URLs never enter stored identity or customer references. Same-key
+replay with a different scene/version/hash conflicts; unchanged replay does
+not resubmit. The generation kill switch and attempt quota run before scene
+publication lookup. After the quota, an authenticated existing-job read can
+recover an unchanged request even after the offer is paused or its manifest
+entry is removed; a still-present changed manifest revision conflicts. This
+read-only recovery compares stored inputs without signing media, debiting or
+dispatching. New admissions still require the publication gate. Both clients include the scene in continuation identity and
+snapshot it with pending work, preserving keys after an unknown response only
+while the scene and other request inputs are unchanged. Shared clips never
+enter upload cleanup; `swap-scenes/` is also outside the sweep's upload-key
+allowlist. Scene requests ignore caller `preset` attribution and never feed
+Popular ranking. Ordinary `preset_id`/`templateStartId` behavior is unchanged.
+
+Publication requires an owner-approved rights record and per-clip moderation /
+AUP review, including likeness and soundtrack permissions. Community reuse
+permission alone does not satisfy that review. The manifest stays empty until
+vetted import work is separately authorized; no offer or flag is activated.
+Phase 1 consent copy and source labels are reused in all eleven locales.
+
+Proof uses synthetic metadata/photos and mocked transports only. Replay tests
+model the unchanged migration 0399 comparator; no database replay, migration,
+provider call or native build is performed. ARTEMIS exploration was blocked
+by tool approval policy and ADB listener permissions, so device behavior is
+unverified. The pre-existing generation route and web Create page already
+exceed 500 lines; this slice keeps new modules and the mobile screen below
+that limit without refactoring unrelated admission or UI code.

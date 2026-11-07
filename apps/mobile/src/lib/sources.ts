@@ -61,7 +61,8 @@ const DEFAULT_LABEL: Record<SlotName, string> = { image: t('sources.image'), end
 export const kindCap = (slots: readonly Slot[], kind: SlotKind): number =>
     Math.max(3, ...slots.filter((s) => s.kind === kind).map((s) => s.maxFiles ?? 1));
 
-export function slotsFor(model: CatalogModel): Slot[] {
+export function slotsFor(model: CatalogModel, scene?: { people: 1 | 2 } | null): Slot[] {
+    if (scene) return slotsFor(model).filter(slot => slot.slot === 'image').map(slot => ({ ...slot, required: true, maxFiles: scene.people }));
     const media = model.capabilities?.media ?? {};
     return SLOT_ORDER.filter((name) => Object.hasOwn(media, name)).map((name) => ({
         slot: name,
