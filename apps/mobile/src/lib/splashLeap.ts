@@ -15,3 +15,12 @@ export function leapTarget(feet: Point, slot: Slot, dotHeight: number): Leap {
         scale: (slot.height * FIGURE_IN_SLOT) / dotHeight,
     };
 }
+
+type Measurable = { measureInWindow(callback: (x: number, y: number, width: number, height: number) => void): void };
+/** A view's box in window coordinates, or null when there is no view to measure. */
+export function measureWindow(node: Measurable | null | undefined): Promise<Slot | null> {
+    return new Promise((resolve) => {
+        if (!node || typeof node.measureInWindow !== 'function') { resolve(null); return; }
+        node.measureInWindow((x, y, width, height) => resolve({ x, y, width, height }));
+    });
+}

@@ -2,7 +2,10 @@ import { useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
 import { AccessibilityInfo, Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { colors, type Palette } from '../theme';
-import type { Leap } from '../lib/splashLeap';
+import { measureWindow, type Leap } from '../lib/splashLeap';
+import { settleWordmark } from '../lib/wordmarkSettle';
+import { EASE_IN_OUT, EASE_OUT } from '../lib/motionCurves';
+import { ds } from '../theme';
 import { VeyRunner } from './VeyRunner';
 import {
     DOT_SCALE,
@@ -29,13 +32,17 @@ const ACCENT_FROM = 7; // ".ai" is aqua, "VEYRNOX" is white (the website lockup)
 /** Where the mascot's feet rest as the dot, in window coordinates; null when that could not be measured or motion is reduced. */
 export type WordmarkRest = { feetX: number; feetY: number };
 
-export function MascotWordmark({ fontSize = 36, palette = colors, onDone, leap = null, onLeapDone, fadeOut = false }: {
-    fontSize?: number; palette?: Palette; onDone?: (rest: WordmarkRest | null) => void; leap?: Leap | null; onLeapDone?: () => void; fadeOut?: boolean;
+export function MascotWordmark({ fontSize = 36, palette = colors, onDone, leap = null, onLand, onLeapDone, fadeOut = false }: {
+    fontSize?: number; palette?: Palette; onDone?: (rest: WordmarkRest | null) => void; leap?: Leap | null; onLand?: () => void; onLeapDone?: () => void; fadeOut?: boolean;
 }) {
     const done = useRef(onDone);
     done.current = onDone;
     const leapDone = useRef(onLeapDone);
     leapDone.current = onLeapDone;
+    const landed = useRef(onLand);
+    landed.current = onLand;
+    const reported = useRef(false); // onDone fires once, whichever way the run ends
+    const reducedNow = useRef(false);
     const lettersRef = useRef<ComponentRef<typeof View>>(null);
     const leapX = useRef(new Animated.Value(0)).current;
     const leapY = useRef(new Animated.Value(0)).current;
@@ -51,8 +58,11 @@ export function MascotWordmark({ fontSize = 36, palette = colors, onDone, leap =
     useEffect(() => {
         let live = true;
         AccessibilityInfo.isReduceMotionEnabled().then((v) => live && setReduceMotion(v), () => live && setReduceMotion(false));
+        // Reduce Motion can be switched on while the run or the hop is under way: every effect below depends on it and settles.
+        const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', (v) => live && setReduceMotion(v));
         return () => {
             live = false;
+            sub.remove();
         };
     }, []);
 
@@ -113,7 +123,7 @@ export function MascotWordmark({ fontSize = 36, palette = colors, onDone, leap =
             release.setValue(0);
             shrink.setValue(1);
             shown.setValue(1);
-            done.current?.(null);
+            if (!reported.current) { reported.current = true; done.current?.(null); }
             return;
         }
         const native = { useNativeDriver: true };
@@ -150,50 +160,64 @@ export function MascotWordmark({ fontSize = 36, palette = colors, onDone, leap =
             legs.stop();
             stride.setValue(0);
             if (!finished) return;
-            const node = lettersRef.current;
-            if (!node) { done.current?.(null); return; }
-            node.measureInWindow((x, y) => done.current?.(Number.isFinite(x) && Number.isFinite(y) ? { feetX: x + path.jump.x, feetY: y + path.jump.dotY } : null));
+            reported.current = true;
+            void measureWindow(lettersRef.current).then((box) => {
+                // Reduce Motion came on while measuring: report no rest position, so the page shows the large Vey still.
+                const ok = !reducedNow.current && box && Number.isFinite(box.x) && Number.isFinite(box.y);
+                done.current?.(ok ? { feetX: box.x + path.jump.x, feetY: box.y + path.jump.dotY } : null);
+            });
         });
         return () => {
             started.current = false;
             run.stop();
             legs.stop();
+            stride.setValue(0);
         };
     }, [path, track, reduceMotion, along, jumpX, jumpY, release, tilt, squash, shrink, shown, stride]);
 
-    // Once the slot is known the mascot hops off the i, arcs over the page and lands in the middle, growing into the large Vey.
+    reducedNow.current = reduceMotion === true;
+    // Reduce Motion switched on part-way: the effects around this one have stopped their animations; settle what they left.
     useEffect(() => {
-        if (!leap) return;
+        if (reduceMotion) settleWordmark({ leapX, leapY, leapScale, tilt, squash, stride });
+    }, [reduceMotion, leapX, leapY, leapScale, tilt, squash, stride]);
+    // Once the slot is known the mascot hops off the i, arcs over the page and lands in the middle, growing into the large Vey.
+    // Reduce Motion (including switched on mid-hop) means no hop at all; whoever owns the page shows the large Vey instead.
+    useEffect(() => {
+        if (!leap || reduceMotion !== false) return;
         const native = { useNativeDriver: true };
         const apex = Math.min(0, leap.dy) - fontSize * 2.2;
-        const hop = Animated.sequence([
-            Animated.parallel([
-                Animated.timing(leapX, { toValue: leap.dx, duration: LEAP_MS, easing: Easing.inOut(Easing.cubic), ...native }),
-                Animated.sequence([
-                    Animated.timing(leapY, { toValue: apex, duration: LEAP_MS * 0.38, easing: Easing.out(Easing.cubic), ...native }),
-                    Animated.timing(leapY, { toValue: leap.dy, duration: LEAP_MS * 0.62, easing: Easing.in(Easing.cubic), ...native }),
-                ]),
-                Animated.timing(leapScale, { toValue: leap.scale, duration: LEAP_MS, easing: Easing.in(Easing.quad), ...native }),
-            ]),
+        const flight = Animated.parallel([
+            Animated.timing(leapX, { toValue: leap.dx, duration: LEAP_MS, easing: EASE_IN_OUT, ...native }),
             Animated.sequence([
-                Animated.timing(squash, { toValue: 1, duration: 70, easing: Easing.out(Easing.quad), ...native }),
-                Animated.timing(squash, { toValue: 0, duration: 190, easing: Easing.out(Easing.cubic), ...native }),
+                Animated.timing(leapY, { toValue: apex, duration: LEAP_MS * 0.38, easing: EASE_OUT, ...native }),
+                Animated.timing(leapY, { toValue: leap.dy, duration: LEAP_MS * 0.62, easing: EASE_IN_OUT, ...native }),
             ]),
+            Animated.timing(leapScale, { toValue: leap.scale, duration: LEAP_MS, easing: EASE_IN_OUT, ...native }),
+        ]);
+        const settle = Animated.sequence([
+            Animated.timing(squash, { toValue: 1, duration: 70, easing: EASE_OUT, ...native }),
+            Animated.timing(squash, { toValue: 0, duration: 190, easing: EASE_OUT, ...native }),
         ]);
         const legs = Animated.loop(Animated.timing(stride, { toValue: 1, duration: STRIDE_MS, easing: Easing.linear, ...native }));
         legs.start();
-        hop.start(({ finished }) => {
+        flight.start(({ finished }) => {
             legs.stop();
             stride.setValue(0);
-            if (finished) leapDone.current?.();
+            if (!finished) return;
+            landed.current?.(); // the feet have touched down: the moment for the haptic, before the squash
+            settle.start(({ finished: done }) => {
+                if (done) leapDone.current?.();
+            });
         });
         return () => {
-            hop.stop();
+            flight.stop();
+            settle.stop();
             legs.stop();
+            stride.setValue(0);
         };
-    }, [leap, fontSize, leapX, leapY, leapScale, squash, stride]);
+    }, [leap, reduceMotion, fontSize, leapX, leapY, leapScale, squash, stride]);
     useEffect(() => {
-        if (fadeOut) Animated.timing(visible, { toValue: 0, duration: 180, useNativeDriver: true }).start();
+        if (fadeOut) Animated.timing(visible, { toValue: 0, duration: ds.motion.state, easing: EASE_OUT, useNativeDriver: true }).start();
     }, [fadeOut, visible]);
 
     const scale = Animated.multiply(shrink.interpolate({ inputRange: [0, 1], outputRange: [1, DOT_SCALE] }), leapScale);
