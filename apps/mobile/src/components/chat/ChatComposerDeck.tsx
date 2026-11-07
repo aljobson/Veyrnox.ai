@@ -1,12 +1,13 @@
 import { rawText } from '../../lib/i18n/translate';
 import { useEffect, useState } from 'react';
-import { Keyboard, ScrollView, View } from 'react-native';
+import { Keyboard, Modal, Pressable, ScrollView, View } from 'react-native';
 import { cleanOptions, thinkingExtra, webExtra, type ChatModel, type ReplyOptions } from '../../lib/chat';
 import type { ChatImage } from '../../lib/chatAttach';
 import { plural, t } from '../../lib/i18n';
 import type { Kind } from '../../lib/media';
+import { radius } from '../../theme';
 import { Button, Chip, Text, TextField, themedStyles, useThemedStyles } from '../ui';
-import { AttachStrip } from './AttachStrip';
+import { AttachStrip, AttachThumbs } from './AttachStrip';
 import { ReplyOptionChip } from './ReplyOptionChip';
 
 interface Props {
@@ -56,18 +57,14 @@ function useKeyboardOpen(): boolean {
 export function ChatComposerDeck(props: Props) {
     const styles = useThemedStyles(sheets);
     const typing = useKeyboardOpen();
+    const [sheet, setSheet] = useState(false);
     const thinking = thinkingExtra(props.model);
     const web = webExtra(props.model);
     const chosen = cleanOptions(props.model, props.options);
+    const pick = (action: () => void) => () => { setSheet(false); action(); };
     return (
         <View>
             <View style={styles.deck} accessibilityLabel={t('chat.composer.label')}>
-                {typing ? null : <ScrollView keyboardShouldPersistTaps="handled" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.typeRow} accessibilityRole="tablist">
-                    {TYPES.map((item) => (
-                        <Chip key={item.id} accessibilityRole="tab" selected={item.id === 'chat'}
-                            icon={item.id} label={t(item.key)} onPress={() => item.id !== 'chat' && props.onMake(item.id)} />
-                    ))}
-                </ScrollView>}
                 {typing ? null : <ScrollView keyboardShouldPersistTaps="handled" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.setupRow} accessibilityLabel={t('chat.composer.setup')}>
                     <Chip icon="cpu" trailingIcon="caretDown" label={props.model.name}
                         accessibilityRole="button" accessibilityLabel={rawText(`${t('chat.model.change')}: ${props.model.name}, ${plural('chat.perReply', props.model.credits_per_reply)}`)}
@@ -80,10 +77,10 @@ export function ChatComposerDeck(props: Props) {
                     ) : null}
                     {web !== null ? <ReplyOptionChip label={t('chat.opt.web')} extra={web} selected={chosen.web} toggle disabled={props.sending} onPress={() => props.onOptions({ ...chosen, web: !chosen.web })} /> : null}
                 </ScrollView>}
-                {props.imageExtra !== null && !typing ? (
-                    <AttachStrip items={props.images} extra={props.imageExtra} max={props.maxImages} disabled={props.sending} embedded onLibrary={props.onLibrary} onPhotos={props.onPhotos} onVideo={props.onVideo} onRemove={props.onRemoveImage} />
-                ) : null}
+                <AttachThumbs items={props.images} disabled={props.sending} onRemove={props.onRemoveImage} />
                 <View style={styles.inputRow}>
+                    <Button variant="secondary" size="md" icon="plus" iconOnly label={t('chat.make.title')} accessibilityRole="button" accessibilityLabel={t('chat.make.title')}
+                        disabled={props.sending} containerStyle={styles.plus} onPress={() => { Keyboard.dismiss(); setSheet(true); }} />
                     <TextField containerStyle={styles.field} style={styles.input} value={props.draft} onChangeText={props.onDraft}
                         placeholder={props.placeholder} accessibilityLabel={t('chat.composer.message')} multiline maxLength={8000} />
                     {props.sending ? (
@@ -100,19 +97,39 @@ export function ChatComposerDeck(props: Props) {
                 </View>
             </View>
             {props.images.some(image => image.video) ? <Text variant="caption" tone="tertiary">{t('chatDepth.videoFrames')}</Text> : null}
-            {typing ? null : <Text variant="caption" tone="tertiary" style={styles.policy}>
+            {typing || props.draft.length > 0 ? null : <Text variant="caption" tone="tertiary" style={styles.policy}>
                 <Text variant="caption" tone="warning">{props.free ? t('chatDepth.free') : plural('chat.perReply', props.price)}</Text> {t('chat.composer.policy')}
             </Text>}
+            <Modal visible={sheet} transparent animationType="slide" onRequestClose={() => setSheet(false)}>
+                <Pressable style={styles.backdrop} accessibilityRole="button" accessibilityLabel={t('chat.make.close')} onPress={() => setSheet(false)} />
+                <View style={styles.sheet} onAccessibilityEscape={() => setSheet(false)}>
+                    <Text variant="title3" accessibilityRole="header">{t('chat.make.title')}</Text>
+                    <View style={styles.types} accessibilityRole="tablist">
+                        {TYPES.map((item) => (
+                            <Chip key={item.id} accessibilityRole="tab" selected={item.id === 'chat'}
+                                icon={item.id} label={t(item.key)} onPress={() => item.id !== 'chat' ? pick(() => props.onMake(item.id))() : setSheet(false)} />
+                        ))}
+                    </View>
+                    {props.imageExtra !== null ? (
+                        <AttachStrip hideThumbs items={props.images} extra={props.imageExtra} max={props.maxImages} disabled={props.sending}
+                            onLibrary={pick(props.onLibrary)} onPhotos={pick(props.onPhotos)} onVideo={props.onVideo ? pick(props.onVideo) : undefined} onRemove={props.onRemoveImage} />
+                    ) : null}
+                    <Button variant="tertiary" size="md" label={t('chat.make.close')} onPress={() => setSheet(false)} />
+                </View>
+            </Modal>
         </View>
     );
 }
 
 const sheets = themedStyles((p) => ({
     deck: { overflow: 'hidden', borderRadius: 28, borderWidth: 1, borderColor: p.borderSubtle, backgroundColor: p.bgElevated1 },
-    typeRow: { minHeight: 48, gap: 4, alignItems: 'center', paddingHorizontal: 10, borderBottomWidth: 1, borderBottomColor: p.borderSubtle },
-    setupRow: { minHeight: 52, gap: 6, alignItems: 'center', paddingHorizontal: 10, borderBottomWidth: 1, borderBottomColor: p.borderSubtle },
+    setupRow: { minHeight: 48, gap: 6, alignItems: 'center', paddingHorizontal: 10, borderBottomWidth: 1, borderBottomColor: p.borderSubtle },
     inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, paddingHorizontal: 8, paddingVertical: 7 },
+    plus: { minWidth: 44 },
     field: { flex: 1 },
+    backdrop: { flex: 1, backgroundColor: p.scrim },
+    sheet: { backgroundColor: p.bg, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: 16, paddingBottom: 28, gap: 12 },
+    types: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     input: { minHeight: 44, maxHeight: 132 },
     action: { maxWidth: 150 },
     sendPrice: { textAlign: 'center', marginTop: 4 },

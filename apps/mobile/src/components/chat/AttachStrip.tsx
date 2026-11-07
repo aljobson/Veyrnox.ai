@@ -13,6 +13,7 @@ interface Props {
     readonly max?: number;
     readonly disabled?: boolean;
     readonly embedded?: boolean;
+    readonly hideThumbs?: boolean;
     readonly onLibrary: () => void;
     readonly onVideo?: () => void;
     readonly onPhotos: () => void;
@@ -20,7 +21,7 @@ interface Props {
 }
 
 // The images for the next reply, and how to add more. The extra credits are shown here, before anything is sent.
-export function AttachStrip({ items, extra, max = MAX_ATTACHMENTS, disabled, embedded = false, onLibrary, onPhotos, onVideo, onRemove }: Props) {
+export function AttachStrip({ items, extra, max = MAX_ATTACHMENTS, disabled, embedded = false, hideThumbs = false, onLibrary, onPhotos, onVideo, onRemove }: Props) {
     const styles = useThemedStyles(sheets);
     const full = roomFor(items.length, max) === 0;
     return (
@@ -37,19 +38,25 @@ export function AttachStrip({ items, extra, max = MAX_ATTACHMENTS, disabled, emb
                 {onVideo ? <Button variant="secondary" label={t('chatDepth.video')} accessibilityLabel={t('chatDepth.videoLabel')} disabled={disabled} containerStyle={styles.btn} onPress={onVideo}><Icon name="paperclip" size={20} /><Text variant="footnote">{t('chatDepth.video')}</Text></Button> : null}
                 <Text variant="caption" tone="warning" style={styles.note}>{items.length > 0 ? <>{plural('chat.attach.extra', extra)}<Text variant="caption" tone="tertiary"> · {items.length}/{max}</Text></> : plural('chat.attach.hint', extra)}</Text>
             </View>
-            {items.length > 0 ? (
-                <ScrollView keyboardShouldPersistTaps="handled" horizontal contentContainerStyle={styles.thumbs}>
-                    {items.map((it, i) => (
-                        <View key={it.id} style={styles.thumb}>
-                            <Image source={it.preview ? { uri: it.preview } : undefined} style={styles.img} accessibilityLabel={rawText(t('chat.attach.imageN', { n: String(i + 1) }))} />
-                            <Button accessibilityRole="button" accessibilityLabel={rawText(t('chat.attach.removeN', { n: String(i + 1) }))} disabled={disabled} containerStyle={styles.x} style={styles.removeBadge} hitSlop={{ top: 0, right: 0, bottom: 20, left: 20 }} onPress={() => onRemove(it.id)} variant="secondary" size="md" label={t('chat.attach.removeN', { n: String(i + 1) })}>
-                                <Icon name="close" size={16} />
-                            </Button>
-                        </View>
-                    ))}
-                </ScrollView>
-            ) : null}
+            {items.length > 0 && !hideThumbs ? <AttachThumbs items={items} disabled={disabled} onRemove={onRemove} /> : null}
         </View>
+    );
+}
+
+// The pictures chosen for the next reply, each with a remove button.
+export function AttachThumbs({ items, disabled, onRemove }: { readonly items: readonly ChatImage[]; readonly disabled?: boolean; readonly onRemove: (id: string) => void }) {
+    const styles = useThemedStyles(sheets);
+    return (
+        <ScrollView keyboardShouldPersistTaps="handled" horizontal contentContainerStyle={styles.thumbs}>
+            {items.map((it, i) => (
+                <View key={it.id} style={styles.thumb}>
+                    <Image source={it.preview ? { uri: it.preview } : undefined} style={styles.img} accessibilityLabel={rawText(t('chat.attach.imageN', { n: String(i + 1) }))} />
+                    <Button accessibilityRole="button" accessibilityLabel={rawText(t('chat.attach.removeN', { n: String(i + 1) }))} disabled={disabled} containerStyle={styles.x} style={styles.removeBadge} hitSlop={{ top: 0, right: 0, bottom: 20, left: 20 }} onPress={() => onRemove(it.id)} variant="secondary" size="md" label={t('chat.attach.removeN', { n: String(i + 1) })}>
+                        <Icon name="close" size={16} />
+                    </Button>
+                </View>
+            ))}
+        </ScrollView>
     );
 }
 
@@ -61,8 +68,8 @@ const sheets = themedStyles((p) => ({
     btnText: { color: p.textPrimary },
     note: { flexShrink: 1 },
     thumbs: { gap: 8, paddingVertical: 4 },
-    thumb: { width: 64, height: 64, borderRadius: 8, backgroundColor: p.bgElevated1 },
-    img: { width: 64, height: 64, borderRadius: 8 },
+    thumb: { width: 48, height: 48, borderRadius: 8, backgroundColor: p.bgElevated1 },
+    img: { width: 48, height: 48, borderRadius: 8 },
     x: { position: 'absolute', top: 0, end: 0, width: MIN_TARGET, height: MIN_TARGET, alignItems: 'flex-end', justifyContent: 'flex-start' },
     removeBadge: { minWidth: 24, minHeight: 24, width: 24, height: 24, paddingHorizontal: 0, borderRadius: 12, backgroundColor: p.bgElevated2, borderWidth: StyleSheet.hairlineWidth, borderColor: p.borderSubtle },
 }));

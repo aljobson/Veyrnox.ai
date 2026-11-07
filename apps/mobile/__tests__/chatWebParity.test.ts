@@ -41,7 +41,6 @@ describe('the native LLM chat mirrors the website workspace', () => {
         expect(deck).toContain("{ id: 'audio'");
         expect(deck).toContain('props.onMake(item.id)');
         expect(deck).toContain('<AttachStrip');
-        expect(deck).toContain('embedded');
         expect(deck).toContain("plural('chat.sendPriceShort', props.price)");
         expect(deck).toContain('<Chip');
         expect(attachments).toContain('<Icon name="image"');
