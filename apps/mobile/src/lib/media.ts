@@ -136,6 +136,7 @@ export async function fetchAllCatalog(): Promise<CatalogModel[]> {
 }
 
 export interface GenerationRequest {
+    readonly swap?: string;
     readonly preset?: string;
     readonly analyticsKind?: Kind | null;
     // Explicit per-run rights for curated source flows; undefined preserves existing Create behavior.
@@ -171,6 +172,7 @@ export const mediaApi = (api: ApiClient) => ({
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 model_id: r.modelId,
+                ...(r.swap !== undefined ? { swap: r.swap } : {}),
                 ...(r.preset && /^[a-z0-9-]{1,40}$/.test(r.preset) ? { preset: r.preset } : {}),
                 idempotency_key: r.idempotencyKey,
                 confirmed_credits: r.confirmedCredits,
