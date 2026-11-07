@@ -32,9 +32,8 @@ export default function TemplatePage() {
     const [attempt, setAttempt] = useState(0);
     const [prompt, setPrompt] = useState('');
     const [copied, setCopied] = useState<string | null>(null);
-    const [photos, setPhotos] = useState<readonly GenerationReference[]>([]);
-    const [photoBusy, setPhotoBusy] = useState(false);
-    const [rights, setRights] = useState(false);
+    // The photo, its rights tick and its upload state belong to the model they were picked for.
+    const [attached, setAttached] = useState<{ modelId: string; refs: readonly GenerationReference[]; rights: boolean; busy: boolean } | null>(null);
     const hasExactSourcePrompt = preset?.sourcePromptOrigin === 'community-source-exact' && typeof preset.sourcePrompt === 'string';
     const sourcePromptUnavailable = preset?.sourcePromptStatus === 'unavailable';
     const sourcePromptNotRecorded = preset?.sourcePromptStatus === 'adaptation-only';
@@ -55,14 +54,15 @@ export default function TemplatePage() {
     const unsupported = sourceUnsupported(preset);
     const slot = photoSlot(model);
     const inline = !unsupported && !!preset && !!model && inlineBlockReason(preset, model, { photo: true }) === null;
+    const mine = attached && attached.modelId === model?.id ? attached : null;
+    const photos = mine?.refs ?? [];
+    const rights = mine?.rights === true;
+    const photoBusy = mine?.busy === true;
     const photoReady = !slot || (photos.length > 0 && rights && !photoBusy);
     const request = inline && preset && model && options && !tooLong && prompt.trim() ? templateRequest(preset, model, { prompt, aspect: options.aspect, duration: options.duration, references: slot ? photos : [], sourceRights: rights }) : null;
-    // A photo belongs to the model it was picked for.
-    const modelId = model?.id;
-    useEffect(() => { setPhotos([]); setRights(false); setPhotoBusy(false); }, [modelId]);
     const generation = useTemplateGenerate(request, model && options ? estimateCredits(model, options.duration) : 0);
     useEffect(() => {
-        let live = true; setLoading(true); setFailed(false); setCopied(null); setChoices({}); setPhotos([]); setRights(false);
+        let live = true; setLoading(true); setFailed(false); setCopied(null); setChoices({}); setAttached(null);
         fetchPresets().then(all => { if (live) { const found = all.find(p => p.id === id) ?? null; setPreset(found); setPrompt(found ? (found.sourcePromptOrigin === 'community-source-exact' && found.sourcePrompt ? found.sourcePrompt : found.prompt) : ''); } }).catch(() => { if (live) setFailed(true); }).finally(() => { if (live) setLoading(false); });
         return () => { live = false; };
     }, [id, attempt]);
@@ -100,9 +100,9 @@ export default function TemplatePage() {
             <Text tone="warning">{templatePrice(model && options ? { ...preset, credits: estimateCredits(model, options.duration), durationSeconds: options.duration } : preset)}</Text>
             {unsupported ? <Card><Text accessibilityLiveRegion="polite">{t('public.TemplateRecipe.sourceVideoUnsupported')}</Text></Card> : available && inline ? <>
                 {slot && model ? <View style={{ gap: 12 }}>
-                    <SourcePicker key={model.id} slot={slot} api={generation.api} drawable={false} references={photos} onReferences={setPhotos} onBusy={setPhotoBusy} onChange={() => {}} onLibrary={() => {}} />
+                    <SourcePicker key={model.id} slot={slot} api={generation.api} drawable={false} references={photos} onReferences={refs => setAttached(previous => ({ modelId: model.id, refs, rights: false, busy: previous?.modelId === model.id && previous.busy }))} onBusy={busy => setAttached(previous => ({ modelId: model.id, refs: previous?.modelId === model.id ? previous.refs : [], rights: previous?.modelId === model.id && previous.rights, busy }))} onChange={() => {}} onLibrary={() => {}} />
                     {photos.length ? <View>
-                        <Checkbox checked={rights} accessibilityLanguage="en" accessibilityLabel={english('form.sourceRights')} accessibilityState={{ checked: rights, disabled: generation.busy }} disabled={generation.busy} onChange={setRights}>
+                        <Checkbox checked={rights} accessibilityLanguage="en" accessibilityLabel={english('form.sourceRights')} accessibilityState={{ checked: rights, disabled: generation.busy }} disabled={generation.busy} onChange={value => setAttached(previous => previous && previous.modelId === model.id ? { ...previous, rights: value } : previous)}>
                             <Text variant="caption" tone="secondary">{english('form.sourceRights')}</Text>
                         </Checkbox>
                         <Text accessibilityLanguage="en" variant="caption" tone="tertiary">{english('form.consent')}</Text>

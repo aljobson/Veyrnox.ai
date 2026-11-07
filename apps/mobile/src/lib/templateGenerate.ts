@@ -20,7 +20,9 @@ export function sourceUnsupported(preset: Pick<Preset, 'sourcePromptOrigin' | 's
 /** The photo slot when the model's one required media is a single start image, else null. */
 export function photoSlot(model: CatalogModel | undefined): Slot | null {
     const required = model ? slotsFor(model).filter(slot => slot.required) : [];
-    return required.length === 1 && required[0].slot === 'image' ? required[0] : null;
+    // A model that wants two or more start images is not a one-photo template.
+    const minFiles = (model?.capabilities?.media?.image as { minFiles?: number } | undefined)?.minFiles;
+    return required.length === 1 && required[0].slot === 'image' && !(Number(minFiles) > 1) ? required[0] : null;
 }
 
 const NON_PHOTO_NEEDS = /\b(video|audio|voice|clip|recording)\b/i;

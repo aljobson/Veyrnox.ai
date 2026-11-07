@@ -89,6 +89,9 @@ describe('a template whose only media is one photo', () => {
         const withVideo = { ...photoModel, capabilities: { inputs: { prompt: {} }, media: { image: { required: true }, video: { required: true } } } } as unknown as CatalogModel;
         expect(inlineBlockReason(needing, withVideo, { photo: true })).toBe('media');
         expect(inlineBlockReason(needing, model, { photo: true })).toBe('media');
+        const twoImages = { ...photoModel, capabilities: { inputs: { prompt: {} }, media: { image: { required: true, minFiles: 2, maxFiles: 2 } } } } as unknown as CatalogModel;
+        expect(photoSlot(twoImages)).toBeNull();
+        expect(inlineBlockReason(needing, twoImages, { photo: true })).toBe('media');
     });
 
     test('the request carries the upload reference, the rights tick and a line naming the person as the lead', () => {
