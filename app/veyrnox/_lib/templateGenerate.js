@@ -56,6 +56,22 @@ export function templateInputs(preset, model, { prompt, aspect, durationSeconds,
 export const errorFor = (e) => e?.name === 'GatewayError'
   ? { code: e.code, retryAfter: e.retryAfter, expectedCredits: e.body?.expected_credits } : { code: 'internal' };
 
+// An uploaded photo is reused for the same file for this long, even when the request that used it was refused and its
+// run (with its idempotency key) was discarded. Shorter than the 15-minute upload window, so a reused key is still valid.
+export const UPLOAD_REUSE_MS = 10 * 60 * 1000;
+
+// The server consumes an upload when a job is accepted, so a cached upload survives only a refusal that made no job.
+const NO_JOB_REFUSALS = new Set(['rate_limited', 'insufficient_balance', 'price_changed']);
+export const keepUpload = (error) => Boolean(error) && NO_JOB_REFUSALS.has(error.code);
+
+/** The uploaded sources for this photo: the cached ones while fresh and unchanged, otherwise load() them once and cache. */
+export async function cachedSources(cache, token, load, now = Date.now()) {
+  if (cache.token === token && cache.sources && now - cache.at < UPLOAD_REUSE_MS) return cache.sources;
+  const sources = await load();
+  cache.token = token; cache.sources = sources; cache.at = now;
+  return sources;
+}
+
 /** A new continuation, or the same one while the request is unchanged (so a retry keeps its key). */
 export function templateRun(previous, identity, unit, makeKey) {
   return previous?.identity === identity ? previous : { ...createBatch(1, makeKey), identity, unit };

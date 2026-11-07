@@ -6,7 +6,7 @@ import { useStudioJobs } from './useStudioJobs';
 import { useFreeAllowance } from './useFreeAllowance';
 import { freeLeftFor } from './freeAllowance';
 import { allocationSnapshot } from './imageBatch';
-import { submitTemplate, templateInputs, templateRun, templateRunDead } from './templateGenerate';
+import { cachedSources, keepUpload, submitTemplate, templateInputs, templateRun, templateRunDead } from './templateGenerate';
 import { TEMPLATE_PROMPT_MAX } from './templateDraft';
 import { mediaGenerationSources } from './chatMedia';
 import { uploadSourceFile } from './uploadSourceFile';
@@ -25,6 +25,7 @@ export function useTemplateGenerate({ preset, model, prompt, aspect, aspectOptio
   const freeMap = useFreeAllowance();
   const continuation = useRef(null);
   const inFlight = useRef(false);
+  const uploaded = useRef({});
   const photoToken = photo ? [photo.name, photo.size, photo.lastModified] : null;
   const identity = JSON.stringify([model?.id, prompt, aspect, durationSeconds, preset.id, photoToken, rightsConfirmed]);
   const activeBatch = batchView?.identity === identity ? batchView : null;
@@ -71,7 +72,7 @@ export function useTemplateGenerate({ preset, model, prompt, aspect, aspectOptio
     try {
       result = await submitTemplate({ run, quote, model, preset, inputs, makeKey: makeIdempotencyKey, deps: {
         gatewayFetch,
-        sources: photo ? () => mediaGenerationSources(model, { image: { file: photo } }, uploadSourceFile) : null,
+        sources: photo ? () => cachedSources(uploaded.current, JSON.stringify([model.id, photoToken]), () => mediaGenerationSources(model, { image: { file: photo } }, uploadSourceFile)) : null,
         freeAllowance: async () => { const r = await gatewayFetch('/free-allowance'); return r?.enabled ? r.left : {}; },
         onJob: (submitted, credits) => {
           startJobs({ job_id: submitted.job_id, state: 'queued', credits, model_id: model.id, ...presentation });
@@ -82,6 +83,7 @@ export function useTemplateGenerate({ preset, model, prompt, aspect, aspectOptio
     } finally {
       inFlight.current = false;
     }
+    if (!keepUpload(result.error)) uploaded.current = {};
     if (run.accepted.some(Boolean)) notifyBalanceChanged();
     if (result.error) {
       setError(result.error);
