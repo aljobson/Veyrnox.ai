@@ -8,6 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useCallback, useRef, useState } from 'react';
 import { FlatList, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
+import { editorDiagnostics } from '../../../lib/editorDiagnostics';
 import { EDITOR_ENABLED } from '../../../lib/editorFlag';
 import { formatLocale, t } from '../../../lib/i18n';
 import { MENU_ICONS } from '../../../lib/menuIcons';
@@ -70,6 +71,7 @@ export default function EditorHome() {
                 <View style={styles.unavailable}>
                     <Image source={MENU_ICONS.slate} style={styles.heroIcon} tintColor={styles.mutedInk.color} contentFit="contain" alt="" accessibilityElementsHidden />
                     <Text variant="bodyStrong" style={styles.emptyTitle}>{t('editor.unavailable')}</Text>
+                    <Text variant="caption" style={styles.mutedInk} selectable>{editorDiagnostics(null)}</Text>
                 </View>
             </View>
         );
@@ -91,6 +93,7 @@ export default function EditorHome() {
                             <Text variant="caption" style={styles.eyebrow}>{t('editor.home.eyebrow')}</Text>
                             <Text variant="display" style={styles.heading} accessibilityRole="header">{t('editor.title')}</Text>
                             <Text variant="body" style={styles.summary}>{t('editor.home.summary')}</Text>
+                            <Text variant="caption" style={styles.mutedInk} selectable>{editorDiagnostics(workspaces ? workspaces.length : null)}</Text>
                         </View>
                         <Button label={t('editor.new')} variant="primary"
                             accessibilityRole="button"
