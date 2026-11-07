@@ -81,7 +81,7 @@ export default function TemplatePage() {
             {preset.previewUrl ? <InlineMedia url={preset.previewUrl} label={t('job.playVideo')} /> : preset.posterUrl ? <Image source={{ uri: preset.posterUrl }} cachePolicy="memory" contentFit="contain" style={{ width: '100%', aspectRatio: previewRatio(preset) }} accessibilityLabel={rawText(preset.title)} /> : null}
             {sourcePromptUnavailable ? <Card><Text>{t('public.TemplateRecipe.sourcePromptUnavailable')}</Text></Card> : null}
             {sourcePromptNotRecorded ? <Card><Text>{t('public.TemplateRecipe.sourcePromptNotRecorded')}</Text></Card> : null}
-            <TextField label={promptLabel} accessibilityLabel={promptLabel} value={prompt} onChangeText={value => { setPrompt(value); setCopied(null); }} multiline style={hasExactSourcePrompt ? { writingDirection: 'auto', textAlign: 'auto' } : undefined} />
+            <TextField label={promptLabel} accessibilityLabel={promptLabel} value={prompt} onChangeText={value => { setPrompt(value); setCopied(null); }} multiline scrollEnabled style={hasExactSourcePrompt ? [styles.promptBox, { writingDirection: 'auto', textAlign: 'auto' }] : styles.promptBox} />
             <Button label={t(hasExactSourcePrompt ? 'public.TemplateRecipe.copyExactCommunityPrompt' : 'editor.copy')} onPress={async () => setCopied(t(await copyText(prompt) ? 'libraryCreate.copied' : 'libraryCreate.copyFailed'))} />
             {copied ? <Text accessibilityLiveRegion="polite">{copied}</Text> : null}
             {tooLong ? <Text tone="danger" accessibilityLiveRegion="polite">{t('public.TemplateRecipe.productPromptTooLong', { count: prompt.length, max: TEMPLATE_PROMPT_MAX })}</Text> : null}
@@ -115,4 +115,4 @@ export default function TemplatePage() {
         </>}
     </ScrollView>;
 }
-const sheets = themedStyles(p => ({ screen: { padding: 16, paddingBottom: 80, gap: 12, backgroundColor: p.bg }, row: { flexDirection: 'row', gap: 8 }, choices: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 } }));
+const sheets = themedStyles(p => ({ screen: { padding: 16, paddingBottom: 80, gap: 12, backgroundColor: p.bg }, row: { flexDirection: 'row', gap: 8 }, promptBox: { maxHeight: 180 }, choices: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 } }));
