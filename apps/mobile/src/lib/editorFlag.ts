@@ -4,3 +4,5 @@ export const FULL_EDITOR_ENABLED = editorEnabled(process.env.EXPO_PUBLIC_FULL_ED
 export const EDITOR_SERVER_EXPORT_ENABLED = editorEnabled(process.env.EXPO_PUBLIC_EDITOR_SERVER_EXPORT_ENABLED);
 
 export const EDITOR_AI_EDIT_ENABLED = editorEnabled(process.env.EXPO_PUBLIC_EDITOR_AI_EDIT_ENABLED);
+
+export const EDITOR_SPEECH_CUT_ENABLED = editorEnabled(process.env.EXPO_PUBLIC_EDITOR_SPEECH_CUT_ENABLED);

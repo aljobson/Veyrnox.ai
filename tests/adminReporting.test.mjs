@@ -12,7 +12,7 @@ test('route inventory is current and recognizes declarations, aliases and re-exp
   assert.ok(rows.some(r => r.path === '/app/admin/payments' && r.gate === 'page'));
   assert.ok(rows.some(r => r.path === '/api/v1/admin/revenue' && r.gate === 'admin'));
   assert.ok(rows.some(r => r.path === '/api/webhook/stripe' && r.gate === 'webhook'));
-  for (const [path, method] of [['/api/v1/editor/ai-edit', 'POST'], ['/api/v1/editor/ai-edit/quote', 'GET'], ['/api/v1/editor/ai-edit/by-key/:idempotencyKey', 'GET']]) {
+  for (const [path, method] of [['/api/v1/editor/speech-analyses', 'POST'], ['/api/v1/editor/speech-analyses/quote', 'GET'], ['/api/v1/editor/speech-analyses/:id', 'GET'], ['/api/v1/editor/speech-analyses/by-key/:key', 'GET'], ['/api/v1/editor/ai-edit', 'POST'], ['/api/v1/editor/ai-edit/quote', 'GET'], ['/api/v1/editor/ai-edit/by-key/:idempotencyKey', 'GET']]) {
     assert.deepEqual(rows.find(r => r.path === path), { path, methods: [method], gate: 'v1' });
   }
 });

@@ -37,7 +37,9 @@ test('production public variables retain Cloudflare text-binding headroom', () =
     // Frozen ADR-0000 adds the explicitly requested disabled AI-edit flag and empty model ID.
     // 69 vars + the recorded 50-secret footprint = 119, retaining nine of 128 slots.
     // The current live secret count must be checked before a future deployment.
-    assert.ok(Object.keys(config.vars).length <= 69, 'production vars must stay at or below 69');
+    // Speech Cut adds one required disabled var; its new secret makes 121 bindings
+    // at the recorded 50-secret footprint, leaving seven slots. Verify live counts before deploy.
+    assert.ok(Object.keys(config.vars).length <= 70, 'production vars must stay at or below 70');
     for (const vars of [config.vars, config.env.staging.vars]) {
         assert.equal(vars.EDITOR_AI_EDIT_ENABLED, 'false');
         assert.equal(vars.EDITOR_AI_EDIT_MODEL_ID, '');

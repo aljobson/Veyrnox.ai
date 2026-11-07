@@ -88,6 +88,7 @@
     // ADR-0067: Chat is open here, but the screen is still behind the per-browser preview switch
     // (localStorage.veyrnox_chat). Needs OPENROUTER_CHAT_API_KEY on the Worker: production will not use the shared key.
     "EDITOR_AI_EDIT_ENABLED": "false",
+    "SPEECH_CUT_ENABLED": "false",
     "EDITOR_AI_EDIT_MODEL_ID": "",
     "CHAT_ENABLED": "true",
     // Vey's grounded in-product helper reuses the separately capped Chat key.
@@ -372,6 +373,7 @@
         // ADR-0067: Chat is open on staging for testing only. No text model is
         // active until the owner activates one; production stays "false".
         "EDITOR_AI_EDIT_ENABLED": "false",
+        "SPEECH_CUT_ENABLED": "false",
         "EDITOR_AI_EDIT_MODEL_ID": "",
         "CHAT_ENABLED": "true",
         // ADR-0067 amendment 11 (vars are not inherited). On in staging since 2026-10-09: 0242 was applied there that day

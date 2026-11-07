@@ -1890,6 +1890,18 @@
     "ratio": 1.64
   },
   {
+    "id": "editorSpeech.start",
+    "english": "Analyse clip",
+    "translation": "क्लिप का विश्लेषण करें",
+    "ratio": 1.83
+  },
+  {
+    "id": "editorSpeech.transcribing",
+    "english": "Transcribing audio…",
+    "translation": "ऑडियो का ट्रांसक्रिप्शन हो रहा है…",
+    "ratio": 1.79
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

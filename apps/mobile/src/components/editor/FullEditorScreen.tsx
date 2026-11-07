@@ -1,3 +1,5 @@
+import { EditorSpeechCutSheet } from './EditorSpeechCutSheet';
+import { useSpeechCutAvailability } from './useSpeechCutAvailability';
 import { EditorAiEditSheet, useAiEditAvailability } from './EditorAiEditSheet';
 import { sameRevision, type Freshness } from '../../lib/editorAgentPlan';
 import { VoiceoverSheet } from './VoiceoverSheet';
@@ -31,26 +33,20 @@ import { exportUnavailable } from '../../lib/editorServerExport';
 import { ServerExportSheet } from './ServerExportSheet';
 import { styles } from './fullEditorStyles';
 import { SimpleEditorBar, SimpleEditorSheet, type SheetRow, type SimpleSheetName } from './SimpleEditorChrome';
-
 import { randomUUID } from 'expo-crypto';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { Stack } from 'expo-router';
-
 import { Platform, ActivityIndicator, Modal, Pressable, ScrollView, Text, TextInput, View, useWindowDimensions } from 'react-native';
-
 import { touchTarget } from '../../lib/a11y';
-
 import { formatNumber, plural, t } from '../../lib/i18n';
 import type { LibraryChoice } from '../../lib/librarySource';
 import { DEFAULT_TEXT_STYLE, addMarker, addTrack, canvasOf, clipAt, copySelections, duplicateSelections, framesIn, groupSelections, pasteClipboard, removeSelections, splitClip, timelineOf, updateClip, type Canvas, type Clip, type EditorTrack, type Media, type Selection, type TextClip, type Timeline, type TrackKind } from '../../lib/nativeEditorModel';
-
 import type { SlotKind } from '../../lib/sources';
 import { colors } from '../../theme';
 import { HeaderAction } from '../HeaderAction';
 import { LibraryChooser } from '../LibraryChooser';
 type Tool = 'media' | 'audio' | 'generate' | 'text' | 'captions' | 'transcript' | 'effects' | 'transitions' | 'filters' | 'animation' | 'markers' | 'brand' | 'adjust';
-
 const tools: readonly { id: Tool; icon: string; label: string }[] = [
     { id: 'media', icon: '▣', label: t('editor.media2') },
     { id: 'audio', icon: '♫', label: t('editor.audio') },
@@ -67,7 +63,6 @@ const tools: readonly { id: Tool; icon: string; label: string }[] = [
     { id: 'adjust', icon: '☷', label: t('editor.adjust2') },
 ];
 const seconds = (frames = 0, fps = 30) => `${formatNumber(Math.max(0, frames / fps), 1)}s`;
-
 import { useFullEditorSession } from './useFullEditorSession';
 export function FullEditorScreen({ projectId, jobId, startAdvanced = false }: { projectId: string; jobId?: string; startAdvanced?: boolean }) {
     const mounted = useRef(true);
@@ -84,6 +79,7 @@ export function FullEditorScreen({ projectId, jobId, startAdvanced = false }: { 
     const { getEditRevision, beginImport, replacing, leaveEditor, saveStatus, sync, currentDocument, preparePicked, savedDocument, api, router, name, document, dirty, problem, setProblem, tool, setTool, selection, setSelection, selections, setSelections, multiSelect, setMultiSelect, clipboard, setClipboard, snap, setSnap, ripple, setRipple, zoom, setZoom, privacyNotice, history, frameStore, setFrame, playing, setPlaying, projectAssets, localMediaUris, libraryKind, setLibraryKind, markDocument, save, acknowledgePrivacy, travel } = useFullEditorSession({ projectId, jobId, onOwnerChange: () => guard.teardown(() => router.back()), onCopy: id => guard.teardown(() => router.replace({ pathname: '/editor/[projectId]', params: { projectId: id } })) });
     const { aiQuote, setAiQuote, aiEditOpen, setAiEditOpen } = useAiEditAvailability(api, projectId);
     const [aiAnnouncement, setAiAnnouncement] = useState<string | null>(null); useAnnouncement(aiAnnouncement);
+    const { speechQuote, setSpeechQuote, speechMode, setSpeechMode } = useSpeechCutAvailability(api, projectId);
     const editFreshness = (): Freshness => ({ projectId, accountId: getCacheUser() ?? '', editRevision: getEditRevision() });
     const guard = useEditorLeaveGuard(leaveEditor, router.back);
     const [generate, setGenerate] = useState<{ visible: boolean; kind: Kind; frame: number; owner?: string } | null>(null);
@@ -104,7 +100,6 @@ export function FullEditorScreen({ projectId, jobId, startAdvanced = false }: { 
     // Short phones: shrink the preview so the toolbars and tool rail are never pushed off screen.
     const { height: windowHeight } = useWindowDimensions();
     const previewHeight = Math.max(96, Math.min(178, Math.round(windowHeight * 0.14)));
-
     if (!document) return <View style={styles.loading}><Stack.Screen options={{ title: t('editor.title') }} /><ActivityIndicator color={colors.accent} /><Text style={styles.muted}>{problem ?? t('editor.fullLoading')}</Text></View>;
 
     const canvas = canvasOf(document.canvas);
@@ -281,6 +276,7 @@ export function FullEditorScreen({ projectId, jobId, startAdvanced = false }: { 
         ...(VOICEOVER_AVAILABLE ? [{ id: 'voiceover', icon: '●', label: t('editorVoiceover.open'), hint: t('editorSimple.voiceoverHint'), disabled: replacing, onPress: () => { setPlaying(false); setVoiceoverAt(clampFrame(frameStore.get())); setVoiceoverMessage(null); } }] : []),
     ];
     const aiRows: SheetRow[] = [
+        ...(speechQuote ? (['silences', 'retakes'] as const).map(mode => ({ id: `speech-${mode}`, icon: '✦', label: t(`editorSpeech.${mode}`), disabled: !ready, onPress: () => { setPlaying(false); setSheet(null); setSpeechMode(mode); } })) : []),
         ...(aiQuote ? [{ id: 'describe', icon: '✦', label: t('editorAi.describe'), disabled: !ready, onPress: () => { setPlaying(false); setAiAnnouncement(null); setAiEditOpen(true); } }] : []),
         { id: 'smart-cut', icon: '✦', label: t('editorSimple.smartCut'), hint: t('editorSimple.smartCutHint'), onPress: () => void openWorkflow('/smart-cut') },
         { id: 'make-clip', icon: '▶', label: t('editorSimple.makeClip'), hint: t('editorSimple.makeClipHint'), onPress: () => { showPanel('generate'); openGenerate('video'); } },
@@ -465,6 +461,9 @@ export function FullEditorScreen({ projectId, jobId, startAdvanced = false }: { 
             </> : null}
         </ScrollView> : null}
         {advanced ? null : <SimpleEditorBar onOpen={setSheet} />}
+        {speechMode && speechQuote ? <EditorSpeechCutSheet api={api} quote={speechQuote} mode={speechMode} snapshot={() => ({ timeline: timelineOf(currentDocument()?.timeline), freshness: editFreshness(), selection })}
+            apply={(next, expected) => { if (!isReady() || !sameRevision(expected, editFreshness())) return false; applyTimeline(next); setAiAnnouncement(t('editorSpeech.applied')); return true; }}
+            onClose={() => setSpeechMode(null)} onUnavailable={() => { setSpeechMode(null); setSpeechQuote(null); }} /> : null}
         {aiEditOpen && aiQuote ? <EditorAiEditSheet api={api} quote={aiQuote} snapshot={() => ({ timeline: timelineOf(currentDocument()?.timeline), freshness: editFreshness() })}
             apply={(next, expected) => { if (!isReady() || !sameRevision(expected, editFreshness())) return false; applyTimeline(next); setAiAnnouncement(t('editorAi.applied')); return true; }}
             onClose={() => setAiEditOpen(false)} onUnavailable={() => { setAiEditOpen(false); setAiQuote(null); }} /> : null}

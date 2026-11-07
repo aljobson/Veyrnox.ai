@@ -4908,6 +4908,12 @@
     "ratio": 1.72
   },
   {
+    "id": "editorSpeech.notCharged",
+    "english": "You were not charged",
+    "translation": "Aucun crédit ne vous a été facturé",
+    "ratio": 1.7
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

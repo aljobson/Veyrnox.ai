@@ -3378,6 +3378,12 @@
     "ratio": 1.69
   },
   {
+    "id": "editorSpeech.notCharged",
+    "english": "You were not charged",
+    "translation": "Dir wurden keine Credits berechnet",
+    "ratio": 1.7
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",
