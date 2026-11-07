@@ -16,7 +16,9 @@ import { english } from '../src/lib/i18n/binding';
 const mockReplace = jest.fn();
 const mockPush = jest.fn();
 const mockRun = jest.fn();
-const mockApi = {};
+let mockApi = {};
+const mockFetchScene = jest.fn();
+jest.mock('../src/lib/swapScenes', () => ({ ...jest.requireActual('../src/lib/swapScenes'), fetchSwapScene: (...args: unknown[]) => mockFetchScene(...args) }));
 let mockFocused = true;
 let mockParams: Record<string,string>;
 jest.mock('expo-router', () => ({ useFocusEffect: (effect: () => void | (() => void)) => { const React = jest.requireActual('react'); React.useEffect(() => mockFocused ? effect() : undefined, [effect, mockFocused]); }, Stack: { Screen: () => null }, useRouter: () => ({ replace: mockReplace, push: mockPush }), useLocalSearchParams: () => mockParams }));
@@ -37,6 +39,7 @@ const event = { nativeEvent: {}, currentTarget: 1, target: 1 };
 const video: CatalogModel = { id: 'wan-2.5-kie', name: 'Wan', modality: 'text-to-video', credits: 2, gated: false, durations: [5,10], capabilities: { inputs: { prompt: { max: 800 }, aspect: { values: ['9:16','16:9'] } } } };
 const input = () => root.container.queryAll(n => n.props.accessibilityLabel === t('mobile.prompt'))[0];
 beforeEach(async () => {
+    mockApi = {}; mockFetchScene.mockReset();
     resetCacheUser(); const storage = createMemoryStorage(); await bindCacheUser('create-owner', createCache(storage), storage, createMemoryStorage()); mockFocused = true;
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = createRoot(); mockReplace.mockClear(); mockPush.mockClear(); mockRun.mockReset().mockImplementation(async (_api: unknown, _request: unknown, _count: number, onStarted?: (n: number) => void, onJob?: (id: string, index: number) => void) => { onStarted?.(1); onJob?.('job', 0); return 'job'; }); jest.mocked(CharacterPanel).mockClear();
     mockParams = { modelId: video.id, prompt: 'A quiet original scene', duration: '5' };
@@ -163,4 +166,30 @@ test('QA-007: with a reference there is no rights tick and no Change model contr
     expect(text('create.workspace.rightsNeeded')).toBe(0);
     expect(text('chat.model.change')).toBe(0);
     expect(root.container.queryAll(n => n.props.accessibilityRole === 'checkbox')).toHaveLength(0);
+});
+
+
+test.each([false, true])('API identity refresh preserves model, photos and uploads (scene=%s)', async sceneMode => {
+    const selected = { ...video, id: 'swap-recast', capabilities: { inputs: { prompt: { max: 1000 } }, media: { image: { required: true, maxFiles: 1 } } } };
+    jest.mocked(fetchCatalog).mockResolvedValue([selected]);
+    mockParams = { modelId: selected.id, ...(sceneMode ? { swap: 'scene-a' } : {}) };
+    mockFetchScene.mockResolvedValue({ id: 'scene-a', swapOffer: selected.id, people: 1, credits: 134, durationSeconds: 5 });
+    await render();
+    const picked = [{ slot: 'image' as const, origin: 'upload' as const, key: 'uploads/owner/photo.jpg' }];
+    const picker = () => jest.mocked(SourcePicker).mock.calls.at(-1)![0];
+    await act(async () => { picker().onReferences!(picked); });
+    await act(async () => { picker().onBusy?.(true); });
+    const reads = jest.mocked(fetchCatalog).mock.calls.length, sceneReads = mockFetchScene.mock.calls.length;
+    mockApi = { refreshed: true };
+    await render();
+    expect(jest.mocked(fetchCatalog)).toHaveBeenCalledTimes(reads);
+    expect(mockFetchScene).toHaveBeenCalledTimes(sceneReads);
+    expect(picker().references).toEqual(picked);
+    const generate = root.container.queryAll(n => typeof n.props.accessibilityLabel === 'string' && n.props.accessibilityLabel.startsWith(t('slip.generate') + '.'))[0];
+    expect(generate.props.accessibilityState.disabled).toBe(true);
+    await act(async () => { picker().onBusy?.(false); });
+    // The mounted form's next request still belongs to the selected model.
+    const readyGenerate = root.container.queryAll(n => typeof n.props.accessibilityLabel === 'string' && n.props.accessibilityLabel.startsWith(t('slip.generate') + '.'))[0];
+    await act(async () => readyGenerate.props.onClick(event));
+    expect(mockRun.mock.calls.at(-1)?.[1]).toMatchObject({ modelId: selected.id, references: picked, sourceRights: true });
 });

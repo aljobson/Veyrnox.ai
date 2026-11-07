@@ -1,3 +1,6 @@
+import { replaySwapScene } from '../../../../lib/swapSceneReplay.js';
+import { loadSwapScene } from '../../../../lib/swapSceneGate.js';
+import { checkSwapRequest, resolveSwapVideo } from '../../../../lib/swapSceneGeneration.js';
 import { hasRuntimeReplay } from '../../../../lib/runtimeReplay.js';
 import { COSTUME_STYLES } from '../../../../lib/costumePrompts.js';
 import { isFeatureKilled } from '../../../../lib/runtimeSwitchCache.js';
@@ -247,11 +250,19 @@ export async function POST(req) {
         return NextResponse.json({ error: 'rate_check_unavailable' }, { status: 503 });
     }
 
+    const replay = body.swap !== undefined ? await replaySwapScene(authId, body, cfg) : null;
+    if (replay) return NextResponse.json(replay.body, { status: replay.status });
+    const swap = body.swap !== undefined ? await loadSwapScene(body.swap, cfg) : null;
+    if (body.swap !== undefined && !swap) return NextResponse.json({ error: 'swap_scene_not_found' }, { status: 404 });
+    if (swap && (Object.hasOwn(body, 'video_url') || Object.hasOwn(inputs, 'video_url'))) return NextResponse.json({ error: 'swap_video_not_allowed' }, { status: 400 });
+
     // Bounded references, never client URLs. Legacy arrays keep their meaning; explicit
     // Library descriptors bind one asset to a model-declared slot (ADR-0094).
     const consent = body && body.consent === true;
     const references = readGenerationSources(body);
     if (!references.ok) return NextResponse.json({ error: references.error }, { status: 400 });
+    const swapError = swap && checkSwapRequest(swap, body, references.references);
+    if (swapError) return NextResponse.json({ error: swapError }, { status: 400 });
     const rawKeys = references.keys, rawAssets = references.assets;
     if (rawKeys.length || rawAssets.length) {
         if (!consent) return NextResponse.json({ error: 'consent_required' }, { status: 400 });
@@ -263,7 +274,7 @@ export async function POST(req) {
     const freeAllowanceOn = isFreeAllowanceOn(process.env);
     let modelRow;
     try {
-        const rows = await select(
+        const rows = swap ? [swap.modelRow] : await select(
             'model_catalog',
             { columns: `id,provider,provider_endpoint,modality,credits_5s,gated_flag,active${freeAllowanceOn ? ',free_allowance_per_day' : ''}`, filter: `id=eq.${encodeURIComponent(modelId)}` },
             cfg,
@@ -305,12 +316,15 @@ export async function POST(req) {
     if (!providerKey) return NextResponse.json({ error: 'gateway_not_configured' }, { status: 503 });
     // Active capabilities precede source signing/inspection. Both frames pass caller
     // ownership, expiry, MIME sniffing and bounded size/length checks before debit.
-    const r2cfg = rawKeys.length || rawAssets.length ? r2EnvConfig() : null;
+    const r2cfg = swap || rawKeys.length || rawAssets.length ? r2EnvConfig() : null;
     if (r2cfg && !r2IsConfigured(r2cfg)) return NextResponse.json({ error: 'gateway_not_configured' }, { status: 503 });
     const resolved = await resolveGenerationSources({ authId, references: references.references, record, r2cfg, dbcfg: cfg });
     if (!resolved.ok) return NextResponse.json({ error: resolved.error }, { status: sourceErrorStatus(resolved.error) });
     const { sources } = resolved;
     Object.assign(inputs,resolved.inputs);
+    const swapVideo = swap ? await resolveSwapVideo(swap, record, r2cfg) : null;
+    if (swapVideo && !swapVideo.ok) return NextResponse.json({ error: swapVideo.error }, { status: sourceErrorStatus(swapVideo.error) });
+    if (swapVideo) { inputs.video_url = swapVideo.url; sources.video_url = swapVideo.metadata; }
 
     // From here on only the keys this model declares exist: the create page
     // sends one control set for every model, and an undeclared key must not
@@ -337,6 +351,7 @@ export async function POST(req) {
         ...Object.fromEntries(Object.entries(modelInputs).filter(([key]) => !Object.hasOwn(sources, key))),
         references: resolved.references,
     } : modelInputs;
+    if (swapVideo) storedInputs = { ...storedInputs, template_source: swapVideo.identity };
     // A Clip Editor job stores the resolved edit (owned R2 keys, real lengths)
     // and is priced on its output length, never on what the client sent.
     let pricedInputs = modelInputs;
@@ -413,7 +428,7 @@ export async function POST(req) {
     // ADR-0072: the template this started from, recorded on the job for the Popular ranking only. It is believed only if it names a
     // real template that belongs to this model, it never reaches a provider (the provider gets storedInputs / modelInputs below),
     // and a bad or missing one is simply ignored.
-    const presetId = templateStartId(body && body.preset, modelId);
+    const presetId = swap ? null : templateStartId(body && body.preset, modelId);
     const jobInputs = presetId ? { ...storedInputs, preset_id: presetId } : storedInputs;
     // Only authenticated ownership + key proves a replay. Malformed reads are unknown.
     async function existingJob() {

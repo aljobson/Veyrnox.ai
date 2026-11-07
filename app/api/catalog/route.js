@@ -11,12 +11,22 @@
  * migrations, not per-request state.
  */
 
+import { loadSwapScene } from '../../../lib/swapSceneGate.js';
 import { NextResponse } from 'next/server';
 import { envConfig } from '../../../packages/db/supabase-client.js';
 import { readPublicCatalog, CATALOG_TTL_SECONDS } from '../../../lib/publicCatalog.js';
 
-export async function GET() {
+export async function GET(req) {
     const cfg = envConfig();
+    // A scene lookup is public catalog data, never caller identity or source media.
+    // Keep it uncached: a paused offer or removed manifest must disappear immediately.
+    const swapId = req?.url ? new URL(req.url).searchParams.get('swap') : null;
+    if (swapId !== null) {
+        const swap = await loadSwapScene(swapId, cfg);
+        const headers = { 'cache-control': 'no-store' };
+        return swap ? NextResponse.json(swap.scene, { headers })
+            : NextResponse.json({ error: 'swap_scene_not_found' }, { status: 404, headers });
+    }
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey) {
         return NextResponse.json({ error: 'not_configured' }, { status: 503 });
     }
