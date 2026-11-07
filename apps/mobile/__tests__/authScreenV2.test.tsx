@@ -105,13 +105,15 @@ test('email submit requires captcha and prevents duplicate requests without cons
     const { t } = require('../src/lib/i18n');
     await act(async () => root.render(<EmailAuth />));
     const control = (key: string) => root.container.queryAll((n) => n.props.testID === t(key))[0];
-    expect(control('email.signInCta').props.disabled).toBe(true);
+    // The button stays tappable before the security check finishes, so the person sees why nothing happened.
+    expect(control('email.signInCta').props.disabled).toBe(false);
     await act(async () => {
         control('authGate.email').props.onChangeText('person@example.test');
         control('email.passwordTitle').props.onChangeText('password123');
     });
     await act(async () => control('email.signInCta').props.onPress());
     expect(mockEmail).not.toHaveBeenCalled();
+    expect(root.container.queryAll(n => n.props.children === t('email.securityFirst')).length).toBeGreaterThan(0);
     await act(async () => root.container.queryAll((n) => n.props.testID === 'captcha')[0].props.onMessage({ type: 'token', token: 'proof' }));
     expect(control('email.signInCta').props.disabled).toBe(false);
     let finish!: () => void;
@@ -122,7 +124,9 @@ test('email submit requires captcha and prevents duplicate requests without cons
     expect(mockEmail).toHaveBeenCalledTimes(1);
     expect(mockEmail).toHaveBeenCalledWith('person@example.test', 'password123', 'proof');
     await act(async () => finish());
-    expect(control('email.signInCta').props.disabled).toBe(true);
+    // The security token is single-use: tapping again sends nothing until a fresh check passes.
+    await act(async () => { control('email.signInCta').props.onPress(); });
+    expect(mockEmail).toHaveBeenCalledTimes(1);
 });
 
 test('email error announces once when it appears', async () => {

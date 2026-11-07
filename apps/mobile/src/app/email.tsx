@@ -24,6 +24,8 @@ export default function EmailAuth() {
     const [password, setPassword] = useState('');
     const [captcha, setCaptcha] = useState<string | null>(null);
     const [captchaError, setCaptchaError] = useState(false);
+    // Cloudflare's own error code (or load_failed / timeout), shown so a failing check can be reported precisely.
+    const [captchaCode, setCaptchaCode] = useState<string | null>(null);
     const [resetKey, setResetKey] = useState(0);
     const [busy, setBusy] = useState(false);
     const [providerBusy, setProviderBusy] = useState<'apple' | 'google' | null>(null);
@@ -85,7 +87,11 @@ export default function EmailAuth() {
     useEffect(() => {
         captchaReadyRef.current = false;
         setCaptchaError(false);
-        const t = setTimeout(() => setCaptchaError((e) => e || !captchaReadyRef.current), 15000);
+        setCaptchaCode(null);
+        const t = setTimeout(() => {
+            if (!captchaReadyRef.current) setCaptchaCode((c) => c ?? 'no_response');
+            setCaptchaError((e) => e || !captchaReadyRef.current);
+        }, 15000);
         return () => clearTimeout(t);
     }, [resetKey]);
 
@@ -105,6 +111,7 @@ export default function EmailAuth() {
             setCaptcha(null);
         } else {
             setCaptcha(null);
+            setCaptchaCode(m.code);
             setCaptchaError(true);
         }
     }
@@ -286,14 +293,14 @@ export default function EmailAuth() {
                         ) : null}
                         {captchaError ? (
                             <Text variant="footnote" tone="danger" accessibilityRole="alert">
-                                {t('email.captchaFailed')}
+                                {t('email.captchaFailed')}{captchaCode ? ` (${captchaCode})` : ''}
                             </Text>
                         ) : null}
                     </View>
                 </View>
                 <TurnstileView resetKey={resetKey} onMessage={onCaptcha} />
                 {captchaError ? <Button variant="tertiary" label={t('email.securityRetry')} onPress={retrySecurityCheck} /> : null}
-                {!pendingEmail && <Button label={t(mode === 'signIn' ? 'email.signInCta' : 'email.signUpCta')} loading={busy} disabled={!ready} onPress={submit} />}
+                {!pendingEmail && <Button label={t(mode === 'signIn' ? 'email.signInCta' : 'email.signUpCta')} loading={busy} disabled={authBusy} onPress={submit} />}
                 {message ? (
                     <Text
                         tone={messageTone === 'error' ? 'danger' : 'secondary'}
