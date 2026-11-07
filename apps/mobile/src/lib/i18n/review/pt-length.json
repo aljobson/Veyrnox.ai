@@ -3042,6 +3042,36 @@
     "ratio": 1.67
   },
   {
+    "id": "editorSimple.add",
+    "english": "Add",
+    "translation": "Adicionar",
+    "ratio": 3
+  },
+  {
+    "id": "editorSimple.aiEdit",
+    "english": "AI Edit",
+    "translation": "Edição com IA",
+    "ratio": 1.86
+  },
+  {
+    "id": "editorSimple.aiTitle",
+    "english": "AI Edit",
+    "translation": "Edição com IA",
+    "ratio": 1.86
+  },
+  {
+    "id": "editorSimple.allTools",
+    "english": "All editing tools",
+    "translation": "Todas as ferramentas de edição",
+    "ratio": 1.76
+  },
+  {
+    "id": "editorSimple.closePanel",
+    "english": "Done",
+    "translation": "Concluído",
+    "ratio": 2.25
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",

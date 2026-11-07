@@ -43,7 +43,7 @@ const tl = () => timelineOf(mockSession.currentDocument()?.timeline);
 const puts = () => mockRequest.mock.calls.filter(([, init]) => init?.method === 'PUT');
 const button = (label: string) => root.container.queryAll(node => node.props.accessibilityLabel === label && typeof node.props.onClick === 'function')[0];
 async function press(label: string) { const node = button(label); expect(node).toBeDefined(); await act(async () => node.props.onClick({ nativeEvent: {} })); }
-async function open() { await act(async () => root.render(<FullEditorScreen projectId={projectId} />)); await press(t('editor.audio')); }
+async function open() { await act(async () => root.render(<FullEditorScreen projectId={projectId} startAdvanced />)); await press(t('editor.audio')); }
 async function take() { await press(t('editorVoiceover.open')); await press(t('editorVoiceover.record')); await press(t('editorVoiceover.stop')); }
 beforeEach(() => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; jest.useFakeTimers(); jest.clearAllMocks(); mockNoToken = false; mockInvalidToken = false;

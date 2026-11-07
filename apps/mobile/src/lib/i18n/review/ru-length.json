@@ -3276,6 +3276,12 @@
     "ratio": 1.63
   },
   {
+    "id": "editorSimple.add",
+    "english": "Add",
+    "translation": "Добавить",
+    "ratio": 2.67
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

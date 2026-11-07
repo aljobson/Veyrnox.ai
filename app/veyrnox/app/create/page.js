@@ -43,7 +43,7 @@ import { CharacterPanel } from '../../_components/CharacterPanel';
 import { buildCharacterPrompt, sanitizeOddlingPicks } from '../../_lib/character';
 import { DrawOnImage } from '../../_components/DrawOnImage';
 import { SourcePickers } from '../../_components/SourcePickers';
-import { attachCapacity, planAttachments } from '../../../../lib/createAttach.mjs';
+import { attachCapacity, attachPool, planAttachments } from '../../../../lib/createAttach.mjs';
 import { prepareUploads, needsConversion } from '../../_lib/uploadConvert.mjs';
 import SourceRightsConfirmation from '../../_components/SourceRightsConfirmation';
 import { LibraryPicker } from '../../_components/LibraryPicker';
@@ -458,8 +458,8 @@ export default function CreateStudio() {
       return kept;
     });
   }
-  // The always-visible paperclip: the files' types pick the slots, and the model
-  // switches to the one that takes the most of them when the current one cannot.
+  // The always-visible paperclip: the files' types pick the slots on the open model, which never changes
+  // (files it has no slot for are refused); with no model open the files choose one.
   // HEIC, AVIF, GIF, MOV and WebM are converted to a stored type first (uploadConvert.mjs).
   // A newer attach supersedes one still converting, and the plan is made
   // against the page as it is when conversion ends, not when it started.
@@ -471,8 +471,7 @@ export default function CreateStudio() {
   useEffect(() => { latestAttach.current = { models, model, sources }; });
   // Files from the Add files dialog, in the order picked: device files ({file}) and
   // generated ones ({asset}). A generated file stands in by its type until a slot takes it.
-  // The current model is kept when it takes any files (a template's model stays); with
-  // no slots the files choose the model.
+  // The current model is always kept (a template's model stays).
   async function attachFiles(entries) {
     setAddFilesOpen(false);
     const seq = ++attachSeq.current;
@@ -491,7 +490,7 @@ export default function CreateStudio() {
     if (sourceEpoch.current !== epoch) { setAttachNotice(''); return; }
     const { models: currentModels, model: currentModel, sources: currentSources } = latestAttach.current;
     const failure = failed.length ? t(`app.create.convert.${failed[0].code}`) : '';
-    const pool = currentModel && Object.keys(currentModel.media || {}).length ? [currentModel] : currentModels;
+    const pool = attachPool(currentModels, currentModel);
     const plan = planAttachments(pool, currentModel, items);
     if (!plan) { setAttachNotice(failure || t('app.create.attach.unsupported')); return; }
     const switched = plan.model.id !== currentModel?.id;

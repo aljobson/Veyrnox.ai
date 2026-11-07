@@ -49,5 +49,6 @@
   "publishOps.queue.excludedAccount": "Formatting template; words are localized separately.",
   "cinema.position": "Reviewed: shared media terminology or language-neutral playback position notation.",
   "projectDocument.counter": "Numeric counter pattern; only the localized numbers change.",
-  "vey.touch.label": "Vey is the mascot’s proper name and stays unchanged across languages."
+  "vey.touch.label": "Vey is the mascot’s proper name and stays unchanged across languages.",
+  "editorSimple.smartCut": "Product feature name, kept in English in every language."
 }
