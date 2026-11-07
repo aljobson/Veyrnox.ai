@@ -79,7 +79,8 @@ try {
     await a.query('UPDATE public.assets SET held_at=now() WHERE job_id=$1', [job.id]);
     let state = watch(value(b, 'SELECT public.expire_assets(500) AS value'));
     assert.equal(await untilBlockedOrDone(state), false, 'expiry must skip the locked row, not wait');
-    assert.equal(await state.resultValue(), 0);
+    // The count covers every expired unheld asset in a shared database, so only this job's asset is asserted.
+    assert.ok(Number.isInteger(await state.resultValue()));
     await a.query('COMMIT'); await retained(job);
     console.log('PASS R2 expiry: locked held asset skipped, no queue row');
 
