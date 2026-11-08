@@ -69,7 +69,7 @@ jobs:
       # Workers build never installs it.
       - name: Install Playwright
         run: |
-          npm install --no-save --no-audit --no-fund @playwright/test@1.63.0
+          npm install --no-save --no-audit --no-fund @playwright/test@1.63.0 @axe-core/playwright@4.10.2
           npx playwright install --with-deps chromium
       - name: Run
         env:
