@@ -172,7 +172,9 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
         // Converting a photo happens after the picker closes; Generate waits for it (an upload in flight already holds busy).
         const holdsBusy = status.step !== 'uploading';
         let held = false;
-        const release = () => { if (!held) return; held = false; converting.current--; if (mounted.current && converting.current === 0 && !uploading.current) onBusy(false); };
+        // The upload takes over busy from the conversion (handOff); a cancel, failure or rejected file releases it.
+        const handOff = () => { if (held) { held = false; converting.current--; } };
+        const release = () => { if (!held) return; handOff(); if (mounted.current && converting.current === 0 && !uploading.current) onBusy(false); };
         try {
             file = await choose(slot.kind, () => { if (holdsBusy && current()) { held = true; converting.current++; onBusy(true); } });
         } catch {
@@ -182,10 +184,10 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
             return;
         }
         if (!current() || !file) { release(); return; }
-        await accept(file, release);
+        await accept(file, release, handOff);
     }
 
-    async function accept(file: PickedFile, release?: () => void) {
+    async function accept(file: PickedFile, release?: () => void, handOff?: () => void) {
         setError(null);
         const checked = checkPicked(slot.kind, file, slot);
         if (!checked.ok) {
@@ -198,6 +200,7 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
             releaseOwned();
             if (isDrawFile(file.uri)) { claimDrawFile(file.uri); owned.current = file.uri; }
         }
+        handOff?.();
         controller.current?.abort();
         const current = new AbortController();
         controller.current = current;
