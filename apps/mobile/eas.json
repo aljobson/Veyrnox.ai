@@ -48,7 +48,8 @@
         "EXPO_PUBLIC_CREATOR_PROFILE_ENABLED": "true",
         "EXPO_PUBLIC_YOUR_WINS_ENABLED": "true",
         "EXPO_PUBLIC_EDITOR_AI_EDIT_ENABLED": "true",
-        "EXPO_PUBLIC_EDITOR_SPEECH_CUT_ENABLED": "true"
+        "EXPO_PUBLIC_EDITOR_SPEECH_CUT_ENABLED": "true",
+        "EXPO_PUBLIC_BEST_CUT_ENABLED": "true"
       }
     },
     "production-simulator": {
