@@ -36,13 +36,13 @@ export function CheckInDialog({ status, onClose, onClaim, onDisabled }) {
           <h2 id="checkin-title" className="text-2xl font-extrabold leading-tight">{t('checkin.title')}</h2>
           <p className="mt-3 text-base text-vx-fg-body">{t('checkin.copy')}</p>
         </div>
-      </div>
-      <svg aria-hidden="true" viewBox="0 0 64 64" className="pointer-events-none absolute end-14 top-14 hidden size-16 text-vx-accent sm:block" fill="currentColor">
+      <svg aria-hidden="true" viewBox="0 0 64 64" className="hidden size-16 shrink-0 text-vx-accent sm:block" fill="currentColor">
         <rect x="8" y="24" width="48" height="12" rx="3" opacity=".9" /><rect x="12" y="36" width="40" height="22" rx="3" opacity=".7" />
         <rect x="28" y="24" width="8" height="34" opacity=".5" />
         <path d="M32 24c-10 0-16-12-8-14 6-1 8 8 8 14zm0 0c10 0 16-12 8-14-6-1-8 8-8 14z" opacity=".9" />
       </svg>
-      <div className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-full border border-vx-border bg-vx-fg/5 px-4 text-base font-bold text-vx-accent">
+      </div>
+      <div data-testid="checkin-today" className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-full border border-vx-border bg-vx-fg/5 px-4 text-base font-bold text-vx-accent">
         <svg aria-hidden="true" viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z" /></svg>
         {t(pluralKey(t, locale, 'checkin.credits', today), { credits: today })}
       </div>
@@ -50,7 +50,7 @@ export function CheckInDialog({ status, onClose, onClaim, onDisabled }) {
         {status.rewards.map((credits, i) => {
           const current = day === i + 1, past = i + 1 < day;
           return <li key={i} aria-current={current ? 'step' : undefined} className="flex min-w-0 flex-1 flex-col items-center gap-2">
-            <span className={`relative grid size-12 place-items-center rounded-full border-2 text-lg font-bold ${current ? 'border-vx-accent bg-vx-accent text-vx-accent-ink shadow-[0_0_24px_rgb(var(--vx-accent)/0.45)]' : past ? 'border-dashed border-vx-border text-vx-fg-muted' : 'border-vx-border bg-vx-fg/5 text-vx-fg-muted'}`}>
+            <span className={`relative grid size-10 place-items-center rounded-full border-2 text-base sm:size-12 sm:text-lg font-bold ${current ? 'border-vx-accent bg-vx-accent text-vx-accent-ink shadow-[0_0_24px_rgb(var(--vx-accent)/0.45)]' : past ? 'border-dashed border-vx-border text-vx-fg-muted' : 'border-vx-border bg-vx-fg/5 text-vx-fg-muted'}`}>
               {i + 1}
               {past && <span aria-hidden="true" className="absolute -end-0.5 -top-0.5 size-3 rounded-full bg-vx-accent" />}
             </span>
