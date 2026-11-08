@@ -64,3 +64,14 @@ test.each(['account', 'unmount', 'same', 'error'] as const)('pending native choo
     if (action !== 'same') { expect(onChange).not.toHaveBeenCalled(); expect(onBusy).not.toHaveBeenCalledWith(true); }
     else expect(onChange).toHaveBeenLastCalledWith('key');
 });
+
+test('a multi-file slot shows how many files it holds, and names each @Image1, @Image2 only when asked', async () => {
+    const slot = { slot: 'image', kind: 'image', label: 'Reference pictures', required: true, maxFiles: 9 } as const;
+    const refs = [{ slot: 'image', origin: 'asset', asset_id: 'a' }, { slot: 'image', origin: 'asset', asset_id: 'b' }] as const;
+    await act(async () => root.render(<SourcePicker slot={slot} api={{} as any} references={refs} onReferences={jest.fn()} onChange={onChange} onBusy={onBusy} />));
+    expect(renderedText()).toContain('2/9');
+    expect(renderedText()).not.toContain('@Image1');
+    await act(async () => root.render(<SourcePicker tokens slot={slot} api={{} as any} references={refs} onReferences={jest.fn()} onChange={onChange} onBusy={onBusy} />));
+    expect(renderedText()).toContain('@Image1');
+    expect(renderedText()).toContain('@Image2');
+});
