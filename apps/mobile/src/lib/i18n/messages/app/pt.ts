@@ -1,6 +1,11 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "editorSimple.describe": "Descreva o que deseja",
+  "editorSimple.promptHelp": "Associa frases fixas em inglês a ferramentas; nenhuma IA interpreta este pedido. Confira a ferramenta antes de aplicar ou pagar.",
+  "editorSimple.openTool": "Abrir ferramenta",
+  "editorSimple.unsupported": "Tente “add captions”, “smart cut” ou “generate video”, ou escolha uma ferramenta.",
+
 "bestCut.uploadBudget": "Os envios temporários compartilham um limite de 200 MB por conta. Clipes da biblioteca não usam esse limite.",
 "bestCut.dropped": "{n} clipes sem fala removidos, sem cobrança por eles.",
   "bestCut.clips.many": "{count} clipes",
@@ -5911,7 +5916,7 @@ export default {
   "editorSimple.aiEdit": "Edição com IA",
   "editorSimple.more": "Mais",
   "editorSimple.addTitle": "Adicionar ao seu vídeo",
-  "editorSimple.aiTitle": "Edição com IA",
+  "editorSimple.aiTitle": "Descreva o que deseja",
   "editorSimple.moreTitle": "Mais",
   "editorSimple.close": "Fechar",
   "editorSimple.smartCut": "Smart Cut",

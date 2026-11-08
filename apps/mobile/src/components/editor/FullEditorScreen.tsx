@@ -87,7 +87,7 @@ export function FullEditorScreen({ projectId, jobId, startAdvanced = false, star
     const { speechQuote, setSpeechQuote, speechMode, setSpeechMode } = useSpeechCutAvailability(api, projectId);
     const editFreshness = (): Freshness => ({ projectId, accountId: getCacheUser() ?? '', editRevision: getEditRevision() });
     const guard = useEditorLeaveGuard(leaveEditor, router.back);
-    const [generate, setGenerate] = useState<{ visible: boolean; kind: Kind; frame: number; owner?: string } | null>(null);
+    const [generate, setGenerate] = useState<{ visible: boolean; kind: Kind; frame: number; owner?: string; prompt?: string } | null>(null);
     const [stemChoice, setStemChoice] = useState<{ choice: LibraryChoice; stems: EditorStem[] } | null>(null);
     const isReady = () => currentDocument()?.project_id === projectId && sync.draftDecided && !sync.sheet && !sync.replacing && sync.live(), ready = isReady();
     const liveProject = useRef(projectId), readiness = useRef(ready); liveProject.current = projectId; readiness.current = ready;
@@ -100,7 +100,7 @@ export function FullEditorScreen({ projectId, jobId, startAdvanced = false, star
         markDocument({ ...current, schema_version: 3, timeline: result.timeline });
         if (select) { setSelection(result.selection); setSelections([result.selection]); } return 'placed';
     }
-    const openGenerate = (kind: Kind) => setGenerate({ visible: true, kind, frame: clampFrame(frameStore.get()), owner: getCacheUser() });
+    const openGenerate = (kind: Kind, prompt = '') => setGenerate({ visible: true, kind, prompt, frame: clampFrame(frameStore.get()), owner: getCacheUser() });
     useAnnouncement(problem);
     // Short phones: shrink the preview so the toolbars and tool rail are never pushed off screen.
     const { height: windowHeight } = useWindowDimensions();
@@ -469,9 +469,12 @@ export function FullEditorScreen({ projectId, jobId, startAdvanced = false, star
             apply={(next, expected) => { if (!isReady() || !sameRevision(expected, editFreshness())) return false; applyTimeline(next); setAiAnnouncement(t('editorAi.applied')); return true; }}
             onClose={() => setAiEditOpen(false)} onUnavailable={() => { setAiEditOpen(false); setAiQuote(null); }} /> : null}
         {sheet === 'add' ? <SimpleEditorSheet title={t('editorSimple.addTitle')} rows={addRows} onClose={() => setSheet(null)} /> : null}
-        {sheet === 'ai' ? <SimpleEditorSheet title={t('editorSimple.aiTitle')} rows={aiRows} onClose={() => setSheet(null)} /> : null}
+        {sheet === 'ai' ? <SimpleEditorSheet title={t('editorSimple.aiTitle')} rows={aiRows} describe onDescribe={(id, prompt) => {
+            if (id === 'make-clip' || id === 'make-audio') { showPanel('generate'); openGenerate(id === 'make-clip' ? 'video' : 'audio', prompt); }
+            else aiRows.find(row => row.id === id)?.onPress();
+        }} onClose={() => setSheet(null)} /> : null}
         {sheet === 'more' ? <SimpleEditorSheet title={t('editorSimple.moreTitle')} rows={moreRows} onClose={() => setSheet(null)} /> : null}
-        {generate ? <MakePanel visible={generate.visible && ready} initialKind={generate.kind} onClose={() => setGenerate(value => value && { ...value, visible: false })} resultNote={t('editorAi.note', { time: timecode(generate.frame, timeline.fps) })} onJobStarted={(id, model) => {
+        {generate ? <MakePanel visible={generate.visible && ready} initialKind={generate.kind} initialPrompt={generate.prompt} onClose={() => setGenerate(value => value && { ...value, visible: false })} resultNote={t('editorAi.note', { time: timecode(generate.frame, timeline.fps) })} onJobStarted={(id, model) => {
             const kind = kindOf(model.modality); if (!kind || generate.owner !== getCacheUser()) return;
             void addPending(projectId, { jobId: id, kind, frame: generate.frame, name: model.name, createdAt: Date.now() }).then(() => { if (mounted.current && liveProject.current === projectId && generate.owner === getCacheUser() && currentDocument()?.project_id === projectId) void returns.refresh(); });
         }} /> : null}

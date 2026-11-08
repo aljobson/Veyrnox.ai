@@ -1,6 +1,11 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "editorSimple.describe": "बताएँ कि आप क्या चाहते हैं",
+  "editorSimple.promptHelp": "तय अंग्रेज़ी वाक्यांशों को टूल से मिलाता है; कोई AI इस अनुरोध को नहीं समझता। बदलाव लागू करने या भुगतान से पहले टूल की जाँच करें।",
+  "editorSimple.openTool": "टूल खोलें",
+  "editorSimple.unsupported": "“add captions”, “smart cut” या “generate video” आज़माएँ, या टूल चुनें।",
+
 "bestCut.uploadBudget": "अस्थायी अपलोड खाते की साझा 200 MB सीमा का उपयोग करते हैं। लाइब्रेरी क्लिप इस सीमा का उपयोग नहीं करतीं।",
 "bestCut.dropped": "बिना बोली वाली {n} क्लिप छोड़ी गईं; उनका शुल्क नहीं है।",
   "bestCut.title": "बेहतरीन कट बनाएँ",
@@ -5843,7 +5848,7 @@ export default {
   "editorSimple.aiEdit": "AI एडिट",
   "editorSimple.more": "और",
   "editorSimple.addTitle": "अपने वीडियो में जोड़ें",
-  "editorSimple.aiTitle": "AI एडिट",
+  "editorSimple.aiTitle": "बताएँ कि आप क्या चाहते हैं",
   "editorSimple.moreTitle": "और",
   "editorSimple.close": "बंद करें",
   "editorSimple.smartCut": "Smart Cut",

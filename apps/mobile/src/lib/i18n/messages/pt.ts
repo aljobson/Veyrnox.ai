@@ -350,6 +350,23 @@ const pt = {
     'app.create.swapConsentNotice': 'Use apenas fotografias de pessoas que tenham dado o seu consentimento.',
     'public.TemplateRecipe.templateClipUsed': 'Este modelo usa o seu próprio clipe e a sua foto para substituir a personagem principal.',
     'presets.use.photoTitle': 'Use sua foto',
+    'app.create.error.template_blocked': 'Esta predefinição precisa de referências ou funções indisponíveis. Escolha outra predefinição. Nada foi cobrado.',
+    'app.create.error.template_mismatch': 'Estas definições não correspondem à predefinição auditada. Restaure o modelo, duração, formato e instrução originais ou escreva uma instrução personalizada. Nada foi cobrado.',
+    'app.create.error.template_references_invalid': 'Adicione as fotos necessárias em ordem, sem imagens ou vídeos extras. Nada foi cobrado.',
+    'presets.fidelity.blocked': 'Esta predefinição precisa de referências ou funções indisponíveis. Escolha outra predefinição.',
+    'presets.fidelity.custom': 'Instrução personalizada: esta geração já não reproduz exatamente a predefinição.',
+    'presets.fidelity.modelSwitch': 'Mudar o modelo cria uma geração personalizada. O resultado será diferente da prévia da predefinição.',
+    'presets.fidelity.noPhoto': 'Este modelo de IA não aceita uma foto de referência.',
+    'presets.fidelity.photoGuidance': 'Use uma foto de uma pessoa, de frente e bem iluminada, com pelo menos 256 × 256 píxeis. Este modelo de IA aceita uma foto.',
+    'presets.fidelity.photoMinimum': 'Escolha uma foto com pelo menos 256 × 256 píxeis.',
+    'presets.fidelity.previewNotice': 'Você pode usar este modelo, mas o resultado pode não corresponder à prévia. A fidelidade desta geração ao modelo não foi verificada.',
+    'presets.fidelity.singlePhoto': 'Use exatamente uma foto com um modelo de IA que aceite uma imagem de referência.',
+    'presets.fidelity.photoSlot': 'Foto {number}',
+    'presets.fidelity.orderedPhotos': 'Adicione {count} fotos, em ordem',
+    'presets.fidelity.photosRequired': 'Preencha os {count} espaços de fotos antes de continuar.',
+    'presets.fidelity.photoReady': 'Foto pronta',
+    'presets.use.photoReplace': 'Substituir',
+    'presets.fidelity.photosUnavailable': 'Este modelo de criação precisa de mais fotos do que o modelo de IA aceita atualmente. Escolha outro modelo de criação ou tente novamente mais tarde.',
 } as const;
 
 export default pt;

@@ -1,4 +1,22 @@
 export default {
+  "presets.use.photoReplace": "Replace",
+  "presets.fidelity.photosUnavailable": "This template needs more photos than the model currently supports. Choose another template or try again later.",
+  "presets.fidelity.photoSlot": "Photo {number}",
+  "presets.fidelity.orderedPhotos": "Add {count} photos, in order",
+  "presets.fidelity.photosRequired": "Fill all {count} photo slots before continuing.",
+  "presets.fidelity.photoReady": "Photo ready",
+
+
+
+    "presets.fidelity.previewNotice": "You can run this template, but the result may not match the preview. This run is not audited for template fidelity.",
+    "presets.fidelity.modelSwitch": "Changing the model makes this a custom run. The result will differ from the template preview.",
+    "presets.fidelity.custom": "Custom prompt — this run is no longer an exact template reproduction.",
+    "presets.fidelity.photoGuidance": "Use one photo of one person, facing the camera and well lit, at least 256 × 256 pixels. This model accepts one template photo.",
+    "presets.fidelity.noPhoto": "This model cannot use a reference photo.",
+    "presets.fidelity.singlePhoto": "Use exactly one photo with a model that supports a reference image.",
+    "presets.fidelity.photoMinimum": "Choose a photo at least 256 × 256 pixels.",
+    "presets.fidelity.blocked": "This template needs references or capabilities that are not available. Choose another template.",
+
     "presets.use.photoTitle": "Bring your photo",
     "presets.templates": "Templates",
     "presets.isnotavailablerightnow": "{value1} is not available right now.",

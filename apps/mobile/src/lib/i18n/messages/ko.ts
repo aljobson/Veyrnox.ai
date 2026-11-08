@@ -350,6 +350,23 @@ const ko = {
     'app.create.swapConsentNotice': '동의한 사람의 사진만 사용하세요.',
     'public.TemplateRecipe.templateClipUsed': '이 템플릿은 자체 클립과 내 사진을 사용하여 주인공을 교체합니다.',
     'presets.use.photoTitle': '내 사진 추가',
+    'app.create.error.template_blocked': '이 템플릿에는 사용할 수 없는 참조 자료나 기능이 필요합니다. 다른 템플릿을 선택하세요. 요금은 청구되지 않았습니다.',
+    'app.create.error.template_mismatch': '설정이 검토된 템플릿과 일치하지 않습니다. 원래 모델, 길이, 화면 비율 및 프롬프트를 복원하거나 사용자 지정 프롬프트를 작성하세요. 요금은 청구되지 않았습니다.',
+    'app.create.error.template_references_invalid': '필요한 사진을 순서대로 추가하세요. 추가 이미지나 동영상은 넣지 마세요. 요금은 청구되지 않았습니다.',
+    'presets.fidelity.blocked': '이 템플릿에는 사용할 수 없는 참조 자료나 기능이 필요합니다. 다른 템플릿을 선택하세요.',
+    'presets.fidelity.custom': '사용자 지정 프롬프트: 이 생성은 더 이상 템플릿을 정확히 재현하지 않습니다.',
+    'presets.fidelity.modelSwitch': '모델을 변경하면 사용자 지정 생성이 됩니다. 결과는 템플릿 미리보기와 달라집니다.',
+    'presets.fidelity.noPhoto': '이 모델은 참조 사진을 지원하지 않습니다.',
+    'presets.fidelity.photoGuidance': '조명이 밝고 카메라를 정면으로 보는 한 사람의 사진을 사용하세요. 최소 256 × 256픽셀이어야 합니다. 이 모델은 템플릿 사진 한 장을 지원합니다.',
+    'presets.fidelity.photoMinimum': '최소 256 × 256픽셀인 사진을 선택하세요.',
+    'presets.fidelity.previewNotice': '이 템플릿을 실행할 수 있지만 결과가 미리보기와 다를 수 있습니다. 이번 실행의 템플릿 재현도는 검증되지 않았습니다.',
+    'presets.fidelity.singlePhoto': '참조 이미지를 지원하는 모델에서 사진을 정확히 한 장만 사용하세요.',
+    'presets.fidelity.photoSlot': '사진 {number}',
+    'presets.fidelity.orderedPhotos': '사진 {count}장을 순서대로 추가하세요',
+    'presets.fidelity.photosRequired': '계속하기 전에 사진 슬롯 {count}개를 모두 채우세요.',
+    'presets.fidelity.photoReady': '사진 준비 완료',
+    'presets.use.photoReplace': '교체',
+    'presets.fidelity.photosUnavailable': '이 템플릿에는 현재 모델이 지원하는 수보다 많은 사진이 필요합니다. 다른 템플릿을 선택하거나 나중에 다시 시도하세요.',
 } as const;
 
 export default ko;

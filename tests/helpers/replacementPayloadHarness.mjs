@@ -6,8 +6,8 @@ import { readFileSync } from 'node:fs';
 import * as React from 'react';
 import { fixture } from './publicSiteRender.mjs';
 import { templateById } from '../../app/veyrnox/_lib/templates.js';
-import { MODELS, modelIdForName } from '../../app/veyrnox/_lib/tokens.js';
-import { FALLBACK_MODEL_ENDPOINTS } from '../../lib/fallbackModelCapabilities.js';
+import { MODELS, templateModelId } from '../../app/veyrnox/_lib/tokens.js';
+import { FALLBACK_MODEL_ENDPOINTS, fallbackCapabilitiesFor } from '../../lib/fallbackModelCapabilities.js';
 import { capabilityFor, declaredInputs, checkInputs, checkSource, shapePayload } from '../../lib/modelCapabilities.js';
 import { readGenerationSources, resolveGenerationSources } from '../../lib/generationSources.js';
 import { buildRequest, parseEndpoint } from '../../packages/adapters/crun.js';
@@ -20,12 +20,15 @@ export const PHOTO = new File([readFileSync(new URL('../../public/showcase/creat
 export function pageHarness(id, { photo = null } = {}) {
   const preset = templateById(id);
   assert.ok(preset, id + ': no public template');
-  const model = MODELS.find(m => m.id === modelIdForName(preset.model));
-  assert.ok(model, id + ': no model');
+  const baseModel = MODELS.find(m => m.id === templateModelId(preset));
+  assert.ok(baseModel, id + ': no model');
+  const cap = fallbackCapabilitiesFor(baseModel.id);
+  const model = { ...baseModel, aspects: cap.inputs.aspect_ratio?.values, media: cap.media, takesNegative: !!cap.inputs.negative_prompt, negativeMax: cap.inputs.negative_prompt?.max };
+  const catalog = MODELS.map(m => m.id === model.id ? model : m);
   const requests = [], uploads = [], jobs = [];
   let hook, props, render;
   const moduleMocks = {
-    '../_lib/useCatalog': { useCatalog: () => ({ models: MODELS, live: false }) },
+    '../_lib/useCatalog': { useCatalog: () => ({ models: catalog, live: true }) },
     './gateway': {
       gatewayFetch: async (path, init) => {
         assert.equal(path, '/generations');

@@ -1,0 +1,412 @@
+# Template fidelity audit — 2026-11-07
+
+Offline structural audit, contract version 1. Reproduce with `node scripts/audit-template-fidelity.mjs`; regenerate with `--write`.
+
+- like-for-like-safe: 232
+- bound: 162
+- blocked-needs-video: 355
+- unsupported: 22
+
+Original source hashes remain unchanged. Only recognized image tokens change in bound text; bound hashes and occurrence maps are recorded in `lib/templateFidelityContracts.json`. Bound templates use Seedance reference with 1–9 ordered photos, fixed generated audio, and catalog pricing. No external source audio can be supplied by an active template route.
+
+A2-3 routes all 162 bound templates by the contract model on feed, card, detail and Create. Web and mobile show exactly N required, ordered photo slots; only complete valid photo selections carry template_id. The web handoff holds up to nine photos in memory only; the mobile handoff uses the existing short-lived, owner-scoped memory store. Unsupported templates remain admitted with the notice. Source-video dependencies are blocked, including harmless prompt edits; independent custom text is admitted.
+
+Structurally validated, not output-verified. No paid provider call, migration, flag or price configuration change. TemplateRecipe and detail markup remain unchanged for non-bound, non-blocked recipes; bound detail model links/names and obsolete crop hints follow the effective model; prose-only video-blocked recipes now show the existing source-video note. Edited-prompt PHOTO_CHARACTER_LINE is preserved.
+
+Owner decision, 7 November 2026: higher Seedance-reference quotes for token-bearing templates are ACCEPTED: one-photo 19 → 85 Credits / 5s and 64 → 170 Credits / 10s; multi-photo templates likewise use the active reference-model quote. No pricing configuration changed.
+
+## All-class reason counts (overlapping)
+
+- reference-video-required: 355
+- source-audio-not-audited: 62
+- unmapped-image-reference: 38
+- unmapped-placeholder: 132
+- too-many-image-slots: 3
+
+These include reasons secondary to a video block. Source-audio dependencies in this inventory all also require source video; zero audio-only templates remain unsupported. The original 152 unsupported audio flags resolve to 24 genuine preserved-audio requirements (all blocked for video) and 128 generated/negated directions. The A2-1 review classified the original 142 multiple-reference flags as 98 bound, 41 needing video and 3 unsupported; it classified the original 73 no-image-input flags as 64 bound, 1 needing video and 8 unsupported. The current totals above supersede those historical splits. Multi-photo binding now has fixed-slot web and mobile controls. Round-three grammar changes and reviewed IDs are recorded in .gstack/a2-round3-report.md. Bare image labels require capital Image and a label delimiter; any remaining ambiguous named image reference prevents partial binding.
+
+## Unsupported reason counts (overlapping)
+
+- unmapped-image-reference: 11
+- unmapped-placeholder: 10
+- too-many-image-slots: 1
+
+## Remaining unbound templates
+
+- medieval-runway-look: reference-video-required
+- shadow-warriors: reference-video-required
+- storm-starring: reference-video-required
+- fat-parkour: reference-video-required, source-audio-not-audited
+- crazy-frog-race: reference-video-required
+- the-last-stagecoach: unmapped-image-reference
+- pumpkin-lings: unmapped-placeholder
+- dont-blow-out-the-pumpkin: unmapped-image-reference
+- rap-takeover: reference-video-required
+- urban-broomstick-flight: reference-video-required, source-audio-not-audited
+- broomstick-flight: reference-video-required
+- money-flex: reference-video-required
+- epic-slap-knockout: reference-video-required
+- event-character-swap: reference-video-required
+- character-takeover: reference-video-required, source-audio-not-audited
+- pumpkin-night: reference-video-required
+- identity-locked-performance: reference-video-required, source-audio-not-audited, unmapped-image-reference
+- studio-rap-duo: reference-video-required, unmapped-placeholder
+- football-character-recast: reference-video-required, source-audio-not-audited, unmapped-placeholder
+- k9-dance-groove: reference-video-required
+- twilight-field-memory: reference-video-required
+- community-urban-trio-performance: unmapped-image-reference
+- community-overhead-performance: unmapped-image-reference
+- community-overhead-expression: unmapped-image-reference
+- community-street-dance-ensemble: reference-video-required, source-audio-not-audited
+- community-driver-portrait: reference-video-required
+- community-foggy-street-dance: reference-video-required, unmapped-placeholder
+- community-noir-leading-role: reference-video-required, source-audio-not-audited
+- community-convertible-joyride: reference-video-required, unmapped-placeholder
+- community-portrait-performance-recast: reference-video-required, source-audio-not-audited, unmapped-image-reference
+- community-meadow-duo-dance: reference-video-required, unmapped-image-reference
+- community-supercar-getaway: reference-video-required
+- community-kitchen-duo: reference-video-required, unmapped-placeholder
+- community-canine-recording-session: reference-video-required
+- community-streetwear-intersection: reference-video-required, unmapped-placeholder
+- community-stone-arcade-pose: reference-video-required
+- community-balcony-club-encounter: reference-video-required
+- community-street-dance-trio: reference-video-required
+- community-lounge-group-performance: reference-video-required
+- community-car-selfie-performance: reference-video-required
+- community-feline-dance-duo: reference-video-required
+- community-liquid-truck-assembly: reference-video-required
+- community-marble-hallway-pose: reference-video-required
+- community-urban-street-pose: reference-video-required
+- beyond-gravity: reference-video-required, source-audio-not-audited
+- chasing-you: reference-video-required
+- cinematic-showcase-2: reference-video-required
+- cinematic-showcase: reference-video-required
+- basketball-3: reference-video-required
+- reality-shift: reference-video-required
+- live-stage-performance: reference-video-required, source-audio-not-audited
+- football: reference-video-required
+- brixton: reference-video-required
+- unforgettable: reference-video-required, source-audio-not-audited
+- freestyle: reference-video-required, source-audio-not-audited
+- the-lost-chase: reference-video-required, source-audio-not-audited
+- burning-bridges: reference-video-required, source-audio-not-audited
+- retro-hip-hop-spotlight: reference-video-required, source-audio-not-audited
+- wheelie-rider: reference-video-required, source-audio-not-audited
+- mystery-unboxing: reference-video-required
+- whiskey-gun-trick: reference-video-required
+- cyber-mask-transformation: reference-video-required
+- god-of-war: reference-video-required
+- basketball-2: reference-video-required
+- tesla-object-replace: reference-video-required
+- playing-chess-with-tesla: reference-video-required, source-audio-not-audited
+- tesla-lose-control: reference-video-required
+- fly-over-the-teslas: reference-video-required, source-audio-not-audited
+- desire-mode: reference-video-required
+- license-registration-liftoff: reference-video-required
+- tesla-started-something: reference-video-required
+- and-i-need-you: reference-video-required
+- just-a-lit-bit: reference-video-required, source-audio-not-audited
+- i-am-here: reference-video-required
+- somebody: reference-video-required
+- sega: reference-video-required, source-audio-not-audited
+- wassup-freestyle: reference-video-required
+- piano-vibe: reference-video-required
+- you-good-max: reference-video-required, source-audio-not-audited
+- cash-flow: reference-video-required
+- cliffside-silence: reference-video-required, source-audio-not-audited
+- icon-duet: reference-video-required
+- raindance: reference-video-required
+- kieza-dance-flow: reference-video-required
+- call-the-car: reference-video-required
+- haunted-motion: reference-video-required
+- my-other-hobby: reference-video-required
+- lil-yachti-coffin: reference-video-required, source-audio-not-audited
+- community-parking-lot-recast: reference-video-required, source-audio-not-audited
+- community-showroom-car-reveal: reference-video-required
+- community-urban-orbit-fashion: reference-video-required, unmapped-placeholder
+- community-black-trench: reference-video-required, unmapped-placeholder
+- community-urban-fashion-stroll: reference-video-required
+- community-urban-suit-swap: reference-video-required
+- community-athlete-dance-swap: reference-video-required, source-audio-not-audited, unmapped-placeholder
+- community-truck-jump-reveal: reference-video-required, unmapped-placeholder
+- community-vocalist-outfit-swap: reference-video-required, unmapped-placeholder
+- community-street-style-swap: reference-video-required, unmapped-placeholder
+- community-survivor-memory-montage: unmapped-placeholder
+- community-supercar-showreel-spin: reference-video-required, too-many-image-slots
+- community-party-dancer-swap: reference-video-required, source-audio-not-audited, unmapped-placeholder
+- community-orbital-truck-morph: reference-video-required, unmapped-placeholder
+- community-evening-party-recast: reference-video-required
+- community-sunset-rider: reference-video-required, unmapped-placeholder
+- community-urban-crosswalk-walk: reference-video-required, unmapped-placeholder
+- community-festival-stage-swap: reference-video-required
+- community-trio-urban-groove: reference-video-required, unmapped-placeholder
+- community-elevator-mirror-selfie: reference-video-required
+- community-pink-studio-recast: reference-video-required
+- community-marble-vanity-mirror: reference-video-required, unmapped-placeholder
+- community-stadium-orbit-rush: reference-video-required, unmapped-placeholder
+- community-convertible-outfit-swap: reference-video-required, unmapped-placeholder
+- community-cliffside-rescue: reference-video-required, unmapped-placeholder
+- community-retro-seoul-strut: reference-video-required, unmapped-image-reference
+- community-courtyard-fashion-spin: reference-video-required, unmapped-placeholder
+- community-sidewalk-groove-duo: reference-video-required
+- community-manor-bridge-blast: reference-video-required
+- community-suit-walk: reference-video-required
+- community-vehicle-swap-drift: reference-video-required, source-audio-not-audited
+- community-supercar-garage-swap: reference-video-required, unmapped-placeholder
+- community-neon-selfie-swap: reference-video-required, unmapped-placeholder
+- community-convertible-singalong-duo: reference-video-required, unmapped-placeholder
+- community-grey-coat-swap: reference-video-required, unmapped-placeholder
+- community-shopping-bag-unpack: reference-video-required
+- community-studio-product-showcase: reference-video-required, unmapped-image-reference
+- community-smoke-show-spotlight: reference-video-required
+- community-desert-truck-leap: reference-video-required, unmapped-placeholder
+- community-broomstick-flight-swap: reference-video-required
+- community-kitchen-duo-swap: reference-video-required, unmapped-placeholder
+- community-model-ensemble-swap: reference-video-required, unmapped-placeholder
+- community-night-range-swap: reference-video-required
+- community-soccer-dribble: reference-video-required, source-audio-not-audited, unmapped-placeholder
+- community-suit-duo-dance: reference-video-required
+- community-ceiling-fan-transition: reference-video-required
+- community-skyline-supercar-drive: reference-video-required, source-audio-not-audited, unmapped-image-reference
+- community-pampered-spa-feline: reference-video-required, unmapped-image-reference
+- community-street-corner-dance: reference-video-required
+- community-chandelier-lounge-performance: reference-video-required
+- community-ballroom-portrait-shift: reference-video-required, unmapped-placeholder
+- community-kitchen-coffee-swap: reference-video-required, unmapped-placeholder
+- community-offroad-flyover: reference-video-required
+- community-subway-landmark-swap: reference-video-required, unmapped-placeholder
+- community-midnight-wheelie: reference-video-required, unmapped-placeholder
+- community-burgundy-stride: reference-video-required, unmapped-placeholder
+- community-warrior-standoff: reference-video-required, source-audio-not-audited, unmapped-placeholder
+- community-locker-room-swap: reference-video-required, unmapped-placeholder
+- community-character-swap: reference-video-required
+- community-wellness-drink-prep: reference-video-required, unmapped-placeholder
+- community-style-swap-rhythm: reference-video-required
+- community-cinematic-memory-swap: reference-video-required
+- community-surprise-birthday-drift: reference-video-required, unmapped-placeholder
+- community-rooftop-dj-swap: reference-video-required, unmapped-placeholder
+- community-music-video-recast: reference-video-required
+- community-athlete-identity-swap: reference-video-required
+- community-showroom-customizer: reference-video-required, unmapped-image-reference
+- community-smoothie-walk: reference-video-required, unmapped-placeholder
+- community-duo-character-swap: reference-video-required
+- community-folding-ancient-city: reference-video-required, unmapped-placeholder
+- community-black-dress-walk: reference-video-required
+- community-suitcase-skate-kickflip: reference-video-required, unmapped-placeholder
+- community-gas-station-reveal: reference-video-required
+- community-urban-dance-trio: reference-video-required, unmapped-placeholder
+- community-identity-swap: reference-video-required
+- community-locker-room-swapping: reference-video-required, source-audio-not-audited
+- community-dynasty-warrior-duo: reference-video-required, unmapped-placeholder
+- community-luxury-sedan-swap: reference-video-required
+- community-pink-studio-groove: reference-video-required, unmapped-placeholder
+- community-architectural-blueprint-rise: reference-video-required
+- community-living-room-duo: reference-video-required, unmapped-placeholder
+- community-skydiving-cat-swap: reference-video-required
+- community-drive-thru-pup: reference-video-required
+- community-firelit-combat-duel: reference-video-required, unmapped-placeholder
+- community-musician-swap-performance: reference-video-required, unmapped-placeholder
+- community-highway-truck-rescue: reference-video-required, unmapped-image-reference
+- community-cart-fall-reaction: reference-video-required, unmapped-placeholder
+- community-mint-suite-grooves: reference-video-required, unmapped-placeholder
+- community-tactical-range-swap: reference-video-required
+- community-boombox-street-groove: reference-video-required, source-audio-not-audited, unmapped-image-reference
+- community-news-desk-recast: reference-video-required
+- community-flying-cake-ride: reference-video-required
+- community-kitchen-character-swap: reference-video-required, source-audio-not-audited, unmapped-placeholder
+- community-lobby-couple-walk: reference-video-required
+- community-hidden-wardrobe-swaps: reference-video-required, unmapped-placeholder
+- community-street-dance-recast: reference-video-required
+- community-kitchen-feline-barista: reference-video-required, unmapped-image-reference
+- community-cliffside-recast: reference-video-required, unmapped-placeholder
+- community-duet-exchange: reference-video-required, unmapped-placeholder
+- community-automotive-symbiote-forge: reference-video-required
+- community-tactical-sword-ambush: reference-video-required, unmapped-placeholder
+- community-garden-path-tea: reference-video-required
+- community-cabin-rhythm-duo: reference-video-required, unmapped-placeholder
+- community-dapper-animal-duet: reference-video-required, source-audio-not-audited, unmapped-image-reference
+- community-street-dance-swap: reference-video-required, unmapped-placeholder
+- community-studio-car-showcase: reference-video-required, unmapped-placeholder
+- community-card-reveal-swap: reference-video-required
+- community-feline-karate-cat: reference-video-required
+- community-drift-curve-replacement: reference-video-required
+- community-western-crowds-standstill: reference-video-required
+- community-athletic-pose-check: reference-video-required, unmapped-placeholder
+- community-fairy-tale-walk: reference-video-required, source-audio-not-audited
+- community-sofa-outfit-swap: reference-video-required, unmapped-image-reference
+- community-streetball-cross-over: reference-video-required, source-audio-not-audited
+- community-manor-character-recast: reference-video-required
+- community-car-snack-swap: reference-video-required
+- community-passenger-seat-serenade: reference-video-required, unmapped-placeholder
+- community-armored-duo-recast: reference-video-required
+- community-pet-dance-swapping: reference-video-required
+- community-urban-dance-squad: reference-video-required
+- community-showroom-vehicle-reveal: reference-video-required
+- community-mirror-flip-transition: reference-video-required, unmapped-placeholder
+- community-urban-style-walk: reference-video-required, unmapped-placeholder
+- community-tactical-range-drill: reference-video-required
+- community-tactical-hallway-brawl: reference-video-required
+- community-faux-fur-lift: reference-video-required, source-audio-not-audited, unmapped-placeholder
+- community-street-coffee-stir: reference-video-required, unmapped-placeholder
+- community-chic-leather-pose: reference-video-required, unmapped-placeholder
+- community-crowd-leader-pivot: reference-video-required, unmapped-image-reference
+- community-periscope-chase: reference-video-required
+- community-character-motion-swap: reference-video-required
+- community-mafia-boss-montage: reference-video-required
+- community-boxing-identity-swap: reference-video-required, source-audio-not-audited
+- community-costume-reveal-wipe: reference-video-required, unmapped-image-reference
+- community-bathroom-duo: reference-video-required, source-audio-not-audited
+- community-orange-case-spin: reference-video-required
+- community-rainy-street-encounter: reference-video-required
+- community-trolley-crash-billboard: reference-video-required, unmapped-placeholder
+- community-streetwear-dance-swap: reference-video-required, source-audio-not-audited
+- community-custom-drift-car-swap: reference-video-required, unmapped-placeholder
+- community-convertible-duo-swap: reference-video-required, unmapped-placeholder
+- community-trio-dance-swap: reference-video-required, unmapped-placeholder
+- community-showroom-car-swap: reference-video-required, unmapped-placeholder
+- community-cafe-crowd-swap: reference-video-required, unmapped-placeholder
+- community-gentleman-branch-chop: reference-video-required
+- community-street-squat-duo: reference-video-required, unmapped-placeholder
+- community-skincare-routine: reference-video-required, unmapped-image-reference
+- community-winter-streetwear-film: reference-video-required, unmapped-image-reference
+- community-graphic-hoodie-swap: reference-video-required
+- community-elevator-style-swap: reference-video-required, unmapped-placeholder
+- community-synchronized-group-formation: reference-video-required
+- community-kitchen-feline-reveal: reference-video-required
+- community-alleyway-identity-swap: reference-video-required, source-audio-not-audited
+- community-apocalypse-lounge: reference-video-required, unmapped-placeholder
+- community-urban-recast-suit: reference-video-required
+- community-costume-basketball-swap: reference-video-required, source-audio-not-audited
+- community-grooving-driver-dog: reference-video-required
+- community-electrician-character-swap: reference-video-required
+- community-canine-night-drive: reference-video-required
+- community-hillside-dance-swap: reference-video-required
+- community-playful-animal-duel: reference-video-required, unmapped-placeholder
+- community-skyline-luxury-reveal: reference-video-required
+- community-skyscraper-ledge-spin: reference-video-required
+- community-pitch-pitch-sprint: reference-video-required, unmapped-placeholder
+- community-urban-orbit-runway: reference-video-required, unmapped-placeholder
+- community-birthday-car-swap: reference-video-required, unmapped-placeholder
+- community-garden-duo-swap: reference-video-required, source-audio-not-audited, unmapped-image-reference
+- community-night-crosswalk: reference-video-required
+- community-city-night-trio: reference-video-required, unmapped-placeholder
+- community-sportbike-rider-swap: reference-video-required, unmapped-placeholder
+- community-street-character-swap: reference-video-required
+- community-nightclub-duo-recast: reference-video-required, source-audio-not-audited
+- community-white-outfit-swirl: reference-video-required, unmapped-placeholder
+- community-convertible-driver-swap: reference-video-required
+- community-symbiote-supercar-shift: reference-video-required
+- community-street-rap-collective: reference-video-required
+- community-skyline-rhythm-walk: reference-video-required
+- community-urban-sedan-pursuit: reference-video-required
+- community-vibrant-outfit-swap: reference-video-required, unmapped-placeholder
+- community-object-swap: reference-video-required, unmapped-image-reference
+- community-escalator-outfit-flow: unmapped-image-reference
+- community-chicken-bucket-swap: reference-video-required
+- community-suit-synchronized-dance: reference-video-required
+- community-leather-jacket-duo: reference-video-required, unmapped-placeholder
+- community-tunnel-drift-transformation: reference-video-required, unmapped-placeholder
+- community-cliffside-rescue-hero: reference-video-required, unmapped-placeholder
+- community-cinematic-face-swap: reference-video-required, source-audio-not-audited
+- community-reptilian-fridge-raid: reference-video-required, unmapped-placeholder
+- community-overhead-outfit-switch: too-many-image-slots
+- community-formal-groove: reference-video-required, unmapped-placeholder
+- community-nightclub-sway: reference-video-required
+- community-zombie-dance: reference-video-required, unmapped-placeholder
+- community-puppy-city-stroll: reference-video-required
+- community-kitchen-trombone-duo: reference-video-required, unmapped-placeholder
+- community-tracksuit-groove: reference-video-required, unmapped-placeholder
+- community-championship-knockout-swaps: reference-video-required, unmapped-placeholder
+- community-rap-battle-duo: reference-video-required, unmapped-placeholder
+- community-hotel-room-orbit: reference-video-required, unmapped-placeholder
+- community-keyboard-jam: reference-video-required, unmapped-placeholder
+- community-dystopian-lobby-firefight: reference-video-required, unmapped-image-reference
+- community-streetwear-apparel-showcase: reference-video-required, unmapped-image-reference
+- community-spooky-dog-groove: reference-video-required, source-audio-not-audited, unmapped-placeholder
+- community-courtyard-character-swap: reference-video-required
+- community-double-character-swap: reference-video-required
+- community-mummy-persona-swap: reference-video-required, source-audio-not-audited, unmapped-placeholder
+- community-soccer-star-swap: reference-video-required
+- community-minimalist-cafe-swap: reference-video-required
+- community-protest-speaker-swap: reference-video-required, unmapped-placeholder
+- community-car-trio-swap: reference-video-required, unmapped-placeholder
+- community-chic-wardrobe-swap: reference-video-required, too-many-image-slots
+- community-kitchen-percussion-pet: reference-video-required
+- community-urban-transit-swap: reference-video-required, unmapped-placeholder
+- community-model-vehicle-swap: reference-video-required
+- community-boutique-hoodie-reveal: reference-video-required, source-audio-not-audited
+- community-kitchen-canine-swap: reference-video-required, source-audio-not-audited, unmapped-placeholder
+- community-midnight-drive-party: reference-video-required, unmapped-placeholder
+- community-summit-lounge-style: reference-video-required, unmapped-placeholder
+- community-street-vendor-swap: reference-video-required, unmapped-placeholder
+- community-pampered-pet-spa: reference-video-required, unmapped-image-reference
+- community-gala-trophy-walk: reference-video-required
+- community-urban-giant-greeting: unmapped-image-reference
+- community-camera-knock-swap: reference-video-required, unmapped-placeholder
+- community-ceiling-fan-switch: reference-video-required
+- community-elevator-entrance-interaction: reference-video-required, source-audio-not-audited, unmapped-image-reference
+- community-treadmill-style-swap: reference-video-required, unmapped-placeholder
+- community-stage-performance-recast: reference-video-required
+- community-burgundy-fur-stroll: reference-video-required, unmapped-placeholder
+- community-office-orbit-sequence: reference-video-required, unmapped-placeholder
+- community-custom-car-swap: reference-video-required
+- community-alleyway-dance-crew: reference-video-required, unmapped-placeholder
+- community-party-crowd-swop: reference-video-required
+- community-brooklyn-bridge-groove: reference-video-required, unmapped-placeholder
+- community-parkside-dance-reimagined: reference-video-required, unmapped-placeholder
+- community-dual-character-swap: reference-video-required, unmapped-image-reference
+- community-highway-suv-swap: reference-video-required, unmapped-placeholder
+- community-natural-face-swap: reference-video-required, unmapped-placeholder
+- community-kitten-dance-challenge: reference-video-required, unmapped-placeholder
+- community-rug-fashion-rotation: reference-video-required, unmapped-placeholder
+- community-velvet-couch-lifestyle: unmapped-image-reference
+- community-lavish-cash-flow: reference-video-required, unmapped-placeholder
+- community-money-mobile-recast: reference-video-required, unmapped-placeholder
+- community-action-hero-recast: reference-video-required, source-audio-not-audited, unmapped-placeholder
+- community-retro-housewife-dance: reference-video-required
+- fancy-cafe: reference-video-required
+- morning-coffee: reference-video-required, source-audio-not-audited
+- crowd-choreography-recast: reference-video-required, source-audio-not-audited
+- vampire-voyage: reference-video-required, source-audio-not-audited
+- tilted-melody: reference-video-required, source-audio-not-audited
+- neon-city-freefall: reference-video-required
+- on-game: unmapped-placeholder
+- frozen-time: unmapped-placeholder
+- with-animal: unmapped-placeholder
+- remote-control: unmapped-placeholder
+- on-the-road: unmapped-placeholder
+- magical-reality: unmapped-image-reference
+- pov-dragon-flight: unmapped-placeholder
+- community-anime-passenger-glow: reference-video-required
+- community-chibi-monster-dance: reference-video-required, unmapped-placeholder
+- community-glossy-hair-flip: reference-video-required
+- community-coastal-car-showcase: reference-video-required
+- community-beverage-brand-swap: reference-video-required, unmapped-placeholder
+- community-aloe-drink-swap: reference-video-required, unmapped-placeholder
+- community-brand-billboard-swap: reference-video-required, source-audio-not-audited, unmapped-image-reference
+- community-billboard-product-swap: reference-video-required, unmapped-image-reference
+- community-cafeteria-hero-recast: reference-video-required, source-audio-not-audited
+- community-convertible-car-talk: reference-video-required
+- community-supercar-arrival: reference-video-required, unmapped-placeholder
+- community-showroom-handover: reference-video-required
+- community-supercar-night-drive: reference-video-required, source-audio-not-audited, unmapped-image-reference
+- community-actor-recast: reference-video-required
+- community-apocalypse-terrace: reference-video-required
+- community-canine-expression-swap: reference-video-required
+- community-pampered-spa-day: reference-video-required
+- on-the-wave: unmapped-image-reference
+- seedance-jean-phil: reference-video-required
+- seedance-3-meters: unmapped-image-reference
+- seedance-burning-stage: reference-video-required, source-audio-not-audited
+- seedance-motion-authority: reference-video-required
+- seedance-cinematic-car-drop: reference-video-required, source-audio-not-audited
+- seedance-big-stepper: reference-video-required
+- seedance-rooftop-shepherd: reference-video-required, source-audio-not-audited
+- seedance-riding-the-bear: reference-video-required
+- seedance-spider-dance: reference-video-required
+- seedance-matrix-bullet-dodge: reference-video-required
+- seedance-morning-parking-vibe: reference-video-required
+- seedance-hotel-lobby-2: reference-video-required
+- seedance-hotel-lobby: reference-video-required, source-audio-not-audited
+- seedance-jogging-in-the-subway: unmapped-placeholder
+- seedance-formula-1-documentary: unmapped-placeholder

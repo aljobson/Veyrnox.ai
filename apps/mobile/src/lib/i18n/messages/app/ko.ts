@@ -1,6 +1,11 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "editorSimple.describe": "원하는 작업을 설명하세요",
+  "editorSimple.promptHelp": "정해진 영어 표현을 도구에 연결합니다. AI가 요청을 이해하지는 않습니다. 적용하거나 결제하기 전에 도구를 확인하세요.",
+  "editorSimple.openTool": "도구 열기",
+  "editorSimple.unsupported": "“add captions”, “smart cut”, “generate video”를 입력하거나 도구를 선택하세요.",
+
 "bestCut.uploadBudget": "임시 업로드는 계정당 200 MB 한도를 공유합니다. 라이브러리 클립은 이 한도를 사용하지 않습니다.",
 "bestCut.dropped": "음성 없는 클립 {n}개를 제외했습니다. 해당 클립은 무료입니다.",
   "bestCut.title": "최적 컷 만들기",
@@ -5775,7 +5780,7 @@ export default {
   "editorSimple.aiEdit": "AI 편집",
   "editorSimple.more": "더보기",
   "editorSimple.addTitle": "영상에 추가",
-  "editorSimple.aiTitle": "AI 편집",
+  "editorSimple.aiTitle": "원하는 작업을 설명하세요",
   "editorSimple.moreTitle": "더보기",
   "editorSimple.close": "닫기",
   "editorSimple.smartCut": "Smart Cut",

@@ -1,5 +1,11 @@
 [
   {
+    "id": "editorSimple.openTool",
+    "english": "Open tool",
+    "translation": "Werkzeug öffnen",
+    "ratio": 1.67
+  },
+  {
     "id": "bestCut.settings",
     "english": "Best Cut",
     "translation": "Bester Schnitt",

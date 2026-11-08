@@ -1,4 +1,5 @@
 'use client';
+import { templatePhotoHints, templatePhotosUnavailable, templateContract, templateBoundPrompt, fidelityBlocked, fidelityTemplateId, templatePhotoError } from '../../../../lib/templateClientContract';
 import { generationSourceState, sourceList, publicSlotMax, editSlotSource, moveSlotSource, sourcesForModel } from '../../../../lib/generationSourceSlots.mjs';
 import LegalLink from '../../../../components/LegalLink';
 import { helperCopy } from '../../../../lib/i18n/helperCopy.mjs';
@@ -12,7 +13,7 @@ import { useRouter } from 'next/navigation';
 import { AppNav } from '../../_components/NavBar';
 import { Main } from '../../_components/Main';
 import { Chip } from '../../_components/Chip';
-import { clipCredits, modelAspectRatios, modelIdForName } from '../../_lib/tokens';
+import { clipCredits, modelAspectRatios, templateModelId } from '../../_lib/tokens';
 import { TemplateOpening, useTemplateOpening } from '../../_components/TemplateOpening';
 import { gatewayFetch, makeIdempotencyKey, notifyBalanceChanged, GatewayError } from '../../_lib/gateway';
 import { failedCreationCopy } from '../../../../lib/i18n/createCopy.mjs';
@@ -42,6 +43,7 @@ import { CameraPanel } from '../../_components/CameraPanel';
 import { CharacterPanel } from '../../_components/CharacterPanel';
 import { buildCharacterPrompt, sanitizeOddlingPicks } from '../../_lib/character';
 import { DrawOnImage } from '../../_components/DrawOnImage';
+import { TemplatePhotoSlots } from '../../_components/TemplatePhotoSlots';
 import { SourcePickers } from '../../_components/SourcePickers';
 import { attachCapacity, attachPool, planAttachments } from '../../../../lib/createAttach.mjs';
 import { prepareUploads, needsConversion } from '../../_lib/uploadConvert.mjs';
@@ -116,11 +118,12 @@ export default function CreateStudio() {
   const [accountEpoch, setAccountEpoch] = useState(0); // bumped when the account changes; drops conversions in flight
   const [swap, setSwap] = useState({ id: null, scene: null, loading: false });
   const swapId = swap.id;
-  const models = catalogModels.filter((m) => createPromptModelAvailable(m, autoShortOn));
-  if (swapId !== null) {
+  const models = useMemo(() => {
+    const models = catalogModels.filter((m) => createPromptModelAvailable(m, autoShortOn));
+    if (swapId === null) return models;
     const sceneModel = catalogModels.find(m => m.id === swap.scene?.swapOffer);
-    models.splice(0, models.length, ...(sceneModel ? [swapSceneModel(sceneModel, swap.scene)] : []));
-  }
+    return sceneModel ? [swapSceneModel(sceneModel, swap.scene)] : [];
+  }, [catalogModels, autoShortOn, swapId, swap.scene]);
   // Bumped at the moment the model or account changes, so a conversion started before cannot land after.
   const sourceEpoch = useRef(0);
   const chooseModel = (id) => { sourceEpoch.current += 1; setModelId(id); };
@@ -134,6 +137,7 @@ export default function CreateStudio() {
   // Sources for the model's media slots: { image|video|audio: { file, previewUrl } },
   // or { assetId, previewUrl, label } for an image picked from the Library.
   const [sources, setSources] = useState({});
+  const [templateSlotsBusy, setTemplateSlotsBusy] = useState({});
   const [animationPortrait, setAnimationPortrait] = useState(null);
   const [portraitStatus, setPortraitStatus] = useState('');
   const [libraryFor, setLibraryFor] = useState(null);
@@ -209,7 +213,7 @@ export default function CreateStudio() {
     const controller = new AbortController();
     const start = (preset) => {
       arrivalApplied.current = true;
-      const requested = params.get('model') || (preset && modelIdForName(preset.model));
+      const requested = params.get('model') || (preset && templateModelId(preset));
       let storedDraft = null;
       try { storedDraft = takeStudioDraft(window.sessionStorage, requested, Date.now(), preset?.id); } catch { /* The URL recipe still works. */ }
       const arrival = preset ? templateArrival(preset, arrivalModels || [], params, storedDraft) : null;
@@ -243,7 +247,7 @@ export default function CreateStudio() {
       } else if (draft) setPrompt(draft.prompt);
       const recoveredSources = draft ? storedDraft?.sources : null;
       if (!videoSoundDraft && (recoveredSources || handedMedia)) {
-        const handedSources = handedMedia ? Object.fromEntries(Object.entries(handedMedia).map(([slot, file]) => [slot, { file, previewUrl: URL.createObjectURL(file) }])) : {};
+        const handedSources = handedMedia ? { image: handedMedia.images ? handedMedia.images.map(file => ({ file, previewUrl: URL.createObjectURL(file) })) : { file: handedMedia.image, previewUrl: URL.createObjectURL(handedMedia.image) } } : {};
         setSources({ ...(recoveredSources || {}), ...handedSources });
         setConsent(true);
       }
@@ -314,7 +318,8 @@ export default function CreateStudio() {
     chooseModel(first.id);
   }, [models, modelId, catalogLoading, catalogLive, goal, draftRecovery.restoring]);
 
-  const model = models.find((m) => m.id === (swap.scene?.swapOffer || modelId)) || null;
+  const selectedModel = models.find((m) => m.id === (swap.scene?.swapOffer || modelId));
+  const model = selectedModel || null;
   // The controls describe the next draft, not the already submitted job.
   // Keep the result attached to its own model even while the user browses.
   const resultModel = job ? catalogModels.find((m) => m.id === job.model_id) : null;
@@ -327,14 +332,22 @@ export default function CreateStudio() {
   const activeTemplate = templateStartIdFor(presetParam, templateData, modelId) ? templateData : null;
   // Changing the model keeps the chosen template on screen; it just stops being sent (the gateway takes a template only on its own model).
   const keptTemplate = !activeTemplate && presetParam && templateData?.id === presetParam ? templateData : null;
-  const keptTemplateModel = keptTemplate ? models.find((m) => m.id === modelIdForName(keptTemplate.model)) : null;
+  const keptTemplateModel = keptTemplate ? models.find((m) => m.id === templateModelId(keptTemplate)) : null;
   const prompt = promptText(typed, model); // a starter shot until then, on picture and clip models only (see promptBox)
   // An exact template prompt that points at a source video or audio we cannot supply cannot reproduce its preview (templateSourceBlock).
+  const sourceTemplateId = (activeTemplate || keptTemplate)?.id;
+  const sourceContract = useMemo(() => swapId ? null : templateContract(activeTemplate || keptTemplate), [swapId, activeTemplate, keptTemplate]);
+  // The versioned contract also blocks edited and switched-model runs needing unavailable references.
+  const promptNeedsVideo = /@video\s*[_-]?\d|<<<\s*video/i.test(prompt);
+  const sourceReferenceBlocked = useMemo(() => !swapId && (fidelityBlocked(sourceContract) || templateSourceUnsupported(activeTemplate || keptTemplate)), [swapId, sourceContract, activeTemplate, keptTemplate]);
+  const photosUnavailable = sourceContract?.class === 'bound' && modelId === sourceContract.modelId && (!catalogLive || templatePhotosUnavailable(sourceContract, model?.media));
+  const templateBlocked = photosUnavailable || sourceReferenceBlocked || (!swapId && promptNeedsVideo);
   const sourceBlocked = !!activeTemplate && templateSourceUnsupported(activeTemplate) && prompt === activeTemplate.prompt;
+
   // The picked model stays listed even when the tier filter would hide it.
   const goalModels = modelsForGoal(models, goal);
   const listed = filterByTier(goalModels, tier);
-  const visibleModels = model && !listed.includes(model) ? [model, ...listed] : listed;
+  const visibleModels = model && !listed.some(item => item.id === model.id) ? [model, ...listed] : listed;
   // Lengths the gateway will actually sell for this model, from the catalog.
   // Rendering anything else offers a price the server then refuses.
   const durations = (model && model.durations && model.durations.length ? model.durations : [5]).map((s) => `${s}s`);
@@ -352,7 +365,14 @@ export default function CreateStudio() {
       : (model?.kind === 'video' || model?.kind === 'audio') && fixedDurationLabel
         ? fixedDurationLabel
         : model?.kind === 'video' ? outputDurationLabel(model, Number(duration.replace('s', ''))) : null;
-  const media = model?.media || {};
+  const fidelity = sourceContract;
+  const photoContract = fidelity && !cinemaOn && !characterOn && fidelityTemplateId(fidelity, templateBoundPrompt(fidelity, prompt, modelId, fidelity?.slotCount || 1), modelId, { aspect_ratio: modelAspectRatios(model).length ? aspect : undefined, duration_seconds: model?.kind === 'video' ? Number(duration.replace('s', '')) : undefined, ...settingsInputs(model, { seed, negative, voice, duration: audioDuration }) }) ? fidelity : null;
+  const boundCount = fidelity?.class === 'bound' && modelId === fidelity.modelId ? fidelity.slotCount : 0;
+  // Keep already attached extra slots visible so the user can remove them before an audited run.
+  const media = photoContract && model?.media?.image ? {
+    image: { ...model.media.image, maxFiles: Math.min(model.media.image.maxFiles ?? 1, photoContract.slotCount || 1) },
+    ...Object.fromEntries(Object.entries(model.media).filter(([slot]) => slot !== 'image' && sourceList(sources[slot]).length)),
+  } : model?.media || {};
   const animationMismatch = !!animationPortrait && (model?.kind !== 'video' || !media.image?.required);
   const { missingSource: missingSlot, needsReattach, overLimit, hasSource: hasUpload } = generationSourceState(media, sources);
   // Only pictures this model actually takes count: a video-only attachment, or a picture kept from another model, never reaches the provider.
@@ -361,7 +381,7 @@ export default function CreateStudio() {
     .flatMap(([slot]) => sourceList(sources[slot]))
     .filter(source => !source?.needsUpload && (source?.file || source?.assetId || source?.sourceKey));
   const templateImageCount = templateImageSources.length;
-  const missingSource = missingSlot || (swap.scene && templateImageCount !== swap.scene.people);
+  const missingSource = missingSlot || (boundCount && templateImageCount !== boundCount) || (swap.scene && templateImageCount !== swap.scene.people);
   const templateImageSource = templateImageSources.find(source => source?.file || source?.label) || templateImageSources[0] || null;
   const templateImageRequired = Object.entries(media).some(([slot, spec]) => generationSlotKind(slot) === 'image' && spec?.required);
   const missingConsent = false;
@@ -446,7 +466,7 @@ export default function CreateStudio() {
     attachSeq.current += 1; // a paperclip conversion still running must not undo this choice
     setAttachConverting(false);
     setAttachNotice('');
-    const nextId = modelIdForName(preset.model);
+    const nextId = templateModelId(preset);
     const nextModel = models.find((m) => m.id === nextId);
     const draft = draftForTemplate(preset, nextId);
     if (!nextModel || !draft) return;
@@ -476,7 +496,8 @@ export default function CreateStudio() {
   const attachSeq = useRef(0);
   const [addFilesOpen, setAddFilesOpen] = useState(false);
   const [attachConverting, setAttachConverting] = useState(false);
-  const [sourcesConverting, setSourcesConverting] = useState(false);
+  const [sourcePickerConverting, setSourcesConverting] = useState(false);
+  const sourcesConverting = sourcePickerConverting || Object.values(templateSlotsBusy).some(Boolean);
   const latestAttach = useRef(null);
   useEffect(() => { latestAttach.current = { models, model, sources }; });
   // Files from the Add files dialog, in the order picked: device files ({file}) and
@@ -586,6 +607,39 @@ export default function CreateStudio() {
     return text;
   }
 
+  // Template-specific preparation happens before upload and is frozen on the run for retries.
+  const uneditedTemplate = prompt === fidelity?.sourcePrompt;
+  const prepareTemplateRun = useCallback(async (inputs) => {
+    if (photoContract) {
+      if ((templateImageCount > photoContract.requiredReferences.imageMax || (photoContract.class === 'bound' && templateImageCount !== photoContract.slotCount)) || Object.entries(sources).some(([slot, value]) => slot !== 'image' && sourceList(value).length)) {
+        const error = new Error('template_references_invalid');
+        error.name = 'GatewayError'; error.code = 'template_references_invalid'; throw error;
+      }
+      for (const source of sourceList(sources.image)) {
+        if (!source.file) continue;
+        let bitmap;
+        let problem;
+        try {
+          bitmap = await createImageBitmap(source.file);
+          problem = templatePhotoError(photoContract, bitmap.width, bitmap.height, templateImageCount);
+        } catch { /* Unknown dimensions: let server media inspection decide. */ }
+        finally { bitmap?.close(); }
+        if (problem) {
+          setAttachNotice(t(problem));
+          const error = new Error('template_references_invalid');
+          error.name = 'GatewayError'; error.code = 'template_references_invalid'; throw error;
+        }
+      }
+    }
+    if (uneditedTemplate && !cinemaOn && !characterOn) {
+      inputs.prompt = templateBoundPrompt(fidelity, inputs.prompt, modelId, templateImageCount);
+    }
+    const templateId = uneditedTemplate && !cinemaOn && !characterOn && (fidelity?.class !== 'bound' || templateImageCount === fidelity.slotCount)
+      ? fidelityTemplateId(fidelity, inputs.prompt, modelId, inputs) : undefined;
+    if (templateId && inputs.negative_prompt) inputs.negative_prompt = inputs.negative_prompt.slice(0, fidelity.negativeMax ?? 2000).trimEnd();
+    return templateId;
+  }, [photoContract, templateImageCount, sources, t, uneditedTemplate, fidelity, cinemaOn, characterOn, modelId]);
+
   // ── submit ────────────────────────────────────────────────────────
   // N images are N separate generations: each its own key, debit, refund path
   // and job. Sent one at a time; the first failure stops the rest, and none is
@@ -594,10 +648,12 @@ export default function CreateStudio() {
     if (draftRecovery.restoring || draftRecovery.blocked || attachConverting || sourcesConverting) return;
     if (inFlight.current || sending || generating || !model || balance == null || payable > balance) return;
     if (catalogStatus !== 'live' || sourceBlocked) return;
+    if (templateData && templateBlocked) return;
     inFlight.current = true;
     if (model.gated) { inFlight.current = false; setError(LOCAL_ERRORS.model_gated); return; }
     if (animationMismatch) { inFlight.current = false; setError(LOCAL_ERRORS.source_required); return; }
     if (needsReattach) { inFlight.current = false; setError(LOCAL_ERRORS.source_reattach_required); return; }
+
     if (overLimit) { inFlight.current = false; setError(LOCAL_ERRORS.source_count_exceeded); return; }
     if (missingSource) { inFlight.current = false; setError(LOCAL_ERRORS.source_required); return; }
     if (missingConsent) { inFlight.current = false; setError(LOCAL_ERRORS.consent_required); return; }
@@ -630,6 +686,7 @@ export default function CreateStudio() {
 
     let failureCode = null;
     try {
+      if (!run.inputs && templateData) run.templateId = await prepareTemplateRun(inputs);
       // Only the slots this model takes; a leftover upload from another model stays local.
       // Each file is uploaded once and its key reused by every request.
       run.sources ??= await mediaGenerationSources(model, sources, uploadSource);
@@ -643,6 +700,7 @@ export default function CreateStudio() {
             model_id: modelId, swap: run.swap, idempotency_key: keys[i], inputs: inputsForIndex(run.inputs, i, n),
             max_charge_credits: quote.ceilings[i],
             preset: templateStartIdFor(presetParam, templateData, modelId) || undefined,
+            template_id: run.templateId,
             references,
             consent: anySource ? true : undefined,
           }),
@@ -875,6 +933,10 @@ export default function CreateStudio() {
             }}
             onEdit={focusCreateControl}
           />}
+          {(activeTemplate || keptTemplate) && modelId !== templateModelId((activeTemplate || keptTemplate)) && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t('presets.fidelity.modelSwitch')}</p>}
+          {!fidelity && (activeTemplate || keptTemplate) && !templateBlocked && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t('presets.fidelity.previewNotice')}</p>}
+          {fidelity && !templateBlocked && ((fidelity.class === 'bound' && fidelity.slotCount > 1) || !fidelityTemplateId(fidelity, templateBoundPrompt(fidelity, prompt, modelId, fidelity?.slotCount || 1), modelId, { aspect_ratio: aspectOptions.length ? aspect : undefined, duration_seconds: model?.kind === 'video' ? Number(duration.replace('s', '')) : undefined, ...settingsInputs(model, { seed, negative, voice, duration: audioDuration }) }) || cinemaOn || characterOn) && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t('presets.fidelity.previewNotice')}</p>}
+          {photoContract && !boundCount && <p className="mt-3 text-sm text-vx-fg-muted">{t(photoContract.photoGuidance)}</p>}
           {activeTemplate && templateImageCount > 0 && (
             <p role="status" data-testid="template-reference-overrides" className="mt-3 rounded-xl border border-vx-accent/30 bg-vx-panel p-3 text-xs text-vx-fg-body">
               {t(templateImageRequired ? 'app.create.templateReferenceRequired' : 'app.create.templateReferenceOverrides')}</p>
@@ -886,7 +948,7 @@ export default function CreateStudio() {
             <div className="mt-3 flex flex-wrap items-center gap-3">
               {/* A template on a text-only model cannot use a picture (it would not reach the provider), so offer no slot for one. */}
               {!(activeTemplate && Object.keys(media).length === 0) && <>
-                <button type="button" data-testid="create-add-files" disabled={attachConverting || sourcesConverting} onClick={() => setAddFilesOpen(true)}
+                <button type="button" data-testid="create-add-files" disabled={photosUnavailable || attachConverting || sourcesConverting} onClick={() => setAddFilesOpen(true)}
                   className="vx-press min-h-10 font-vx-mono text-[11px] font-bold rounded-full px-3.5 py-1.5 border border-vx-border text-vx-fg-muted hover:text-vx-fg disabled:opacity-50 pointer-coarse:min-h-11">
                   {t('app.create.addFiles.button')}</button>
                 <span className="text-xs text-vx-fg-muted">{t('app.create.attach.hint')}</span>
@@ -898,13 +960,20 @@ export default function CreateStudio() {
           )}
           {attachNotice && <p role="status" className="mt-2 text-xs text-vx-fg-muted">{attachNotice}</p>}
           {switchOffer && <button type="button" onClick={switchForFiles} className="mt-2 rounded-full border border-vx-border px-3 py-1.5 text-xs text-vx-fg hover:border-vx-accent">{t('app.create.attach.switchTo', { name: switchOffer.model.name })}</button>}
-          {addFilesOpen && <AddFilesDialog capacity={attachCapacity(model)} onAdd={attachFiles} onClose={() => setAddFilesOpen(false)} />}
+          {addFilesOpen && !photosUnavailable && <AddFilesDialog capacity={attachCapacity(model)} onAdd={attachFiles} onClose={() => setAddFilesOpen(false)} />}
           {templatesOpen && <TemplatePicker models={models} goal={goal} onPick={applyTemplate} onClose={() => setTemplatesOpen(false)} />}
           {['swap-recast', 'swap-quick'].includes(modelId) && <p role="note" data-testid="swap-consent-notice" className="mt-2 text-xs text-vx-fg-muted">{t('app.create.swapConsentNotice')}</p>}
           {modelId === SEEDANCE_REFERENCE_MODEL_ID && <p role="note" data-testid="reference-likeness-notice" className="mt-2 text-xs text-vx-fg-muted">{t('app.create.referenceLikenessNotice')}</p>}
           <div className="scroll-mt-24" data-assistant-target={Object.keys(media).length ? 'create.upload' : undefined}>
-            <SourcePickers tokens={/@(Image|Video|Audio)\d/i.test(prompt)} media={media} sources={sources} onPick={pickSource} onConvertingChange={setSourcesConverting} resetKey={`${modelId}|${accountEpoch}`} epochRef={sourceEpoch} locked={attachConverting} onReorder={(slot, from, to) => { setConsent(true); setSources(prev => moveSlotSource(prev, slot, from, to)); }}
-              onDraw={model?.kind === 'image' ? () => setDrawing(true) : null} onLibrary={setLibraryFor} />
+            {photosUnavailable ? null : boundCount ? <TemplatePhotoSlots key={`${sourceTemplateId}|${modelId}|${accountEpoch}`} count={boundCount} hints={templatePhotoHints(fidelity)} files={sourceList(sources.image).map(source => source.file || (source.assetId || source.sourceKey ? { name: source.label } : null))} locked={sending || attachConverting} onBusy={(index, busy) => setTemplateSlotsBusy(previous => ({ ...previous, [index]: busy }))} onChange={(index, file) => {
+              setSources(previous => ({ image: Array.from({ length: boundCount }, (_, i) => {
+                const old = sourceList(previous.image)[i];
+                if (i !== index) return old || {};
+                if (old?.previewUrl?.startsWith('blob:')) URL.revokeObjectURL(old.previewUrl);
+                return file ? { file, previewUrl: URL.createObjectURL(file) } : {};
+              }) })); setConsent(true);
+            }} /> : <SourcePickers tokens={/@(Image|Video|Audio)\d/i.test(prompt)} media={media} sources={sources} onPick={pickSource} onConvertingChange={setSourcesConverting} resetKey={`${modelId}|${accountEpoch}`} epochRef={sourceEpoch} locked={attachConverting} onReorder={(slot, from, to) => { setConsent(true); setSources(prev => moveSlotSource(prev, slot, from, to)); }}
+              onDraw={model?.kind === 'image' ? () => setDrawing(true) : null} onLibrary={setLibraryFor} />}
           </div>
           {Object.values(sources).flatMap(sourceList).some(source => source.file) && <p className="mt-2 text-xs text-vx-fg-muted">{t("app.create.reattach")}</p>}
           {libraryFor && (
@@ -936,14 +1005,14 @@ export default function CreateStudio() {
               {n > freeLeft ? t(pluralKey(t,locale,'app.create.freePartial',freeLeft),{free:number(freeLeft),total:number(n),left:number(freeLeft)}) : t(pluralKey(t,locale,'app.create.freeLeft',freeLeft),{count:number(freeLeft)})}
             </div>
           )}
-          {sourceBlocked && <p role="note" data-source-unsupported className="mt-3 rounded-lg border border-amber-400/40 bg-amber-400/[0.08] px-3 py-2 text-xs text-vx-fg-body">{t('public.TemplateRecipe.sourceVideoUnsupported')}</p>}
+          {(sourceBlocked || templateBlocked) && <p role="note" data-source-unsupported className="mt-3 rounded-xl border border-vx-border bg-vx-panel px-3 py-2 text-xs text-vx-fg-body">{t(photosUnavailable ? 'presets.fidelity.photosUnavailable' : 'public.TemplateRecipe.sourceVideoUnsupported')}</p>}
           <p id="vx-generate-why" aria-live="polite" className={hintText ? 'mt-3 text-xs text-vx-fg-muted' : 'sr-only'}>{hintText}</p>
           <ParticleButton
             data-assistant-target="create.generate"
             aria-describedby={hintText ? 'vx-generate-why' : undefined}
             onClick={hasJobs && !activeBatch ? cancel : onSubmit}
             className="scroll-mt-24 mt-4 w-full flex items-center justify-between bg-vx-accent text-vx-accent-ink rounded-full px-6 py-3.5 font-extrabold hover:bg-vx-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
-            disabled={draftRecovery.restoring || draftRecovery.blocked || sending || attachConverting || sourcesConverting || (!hasJobs && (catalogStatus !== 'live' || sourceBlocked || !model || model.gated || animationMismatch || missingPrompt || promptTooLong || missingVoice || invalidAudioDuration || balance == null || payable > balance || missingSource || missingConsent)) || (!!activeBatch && (balance == null || payable > balance)) || !!activeBatch?.confirm}
+            disabled={draftRecovery.restoring || draftRecovery.blocked || sending || attachConverting || sourcesConverting || (!hasJobs && (catalogStatus !== 'live' || sourceBlocked || templateBlocked || !model || model.gated || animationMismatch || missingPrompt || promptTooLong || missingVoice || invalidAudioDuration || balance == null || payable > balance || missingSource || missingConsent)) || (!!activeBatch && (balance == null || payable > balance)) || !!activeBatch?.confirm}
             aria-label={sending ? undefined : hasJobs && !activeBatch ? t("app.create.newNoCharge") : model?.gated ? undefined : n > 1 ? t(pluralKey(t,locale,cost===0?'app.create.generateImagesFree':'app.create.generateImagesPaid',n),{count:number(n),credits:creditLabel(cost)}) : t(cost===0?'app.create.generateFree':'app.create.generatePaid',{credits:creditLabel(cost)})}
           >
             <span>{sending ? t("app.publish.inbox.sending") : hasJobs && !activeBatch ? t("app.create.newGeneration") : model?.gated ? t("app.create.premiumGated") : n > 1 ? t('app.create.generateCount',{count:number(n)}) : t("label.Generate")}</span>

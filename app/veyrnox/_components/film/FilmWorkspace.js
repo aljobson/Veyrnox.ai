@@ -19,12 +19,12 @@ import { FilmTests } from './FilmTests';
 import { FilmPrompts } from './FilmPrompts';
 import { filmStudioStore } from '../../_lib/filmStudioStore';
 import { takeFilmStarter } from '../../_lib/filmTemplateDraft';
-import { modelIdForName, presetTitle, templateHref } from '../../_lib/tokens';
+import { templateModelId, presetTitle, templateHref } from '../../_lib/tokens';
 import { fetchTemplate } from '../../_lib/useTemplates';
 
 const storage = () => { try { return window.localStorage; } catch { return null; } };
 const serverState={film:emptyFilm(),stage:0,ready:false,userId:null,error:null,saved:false,cloud:null,generation:0,pending:null};
-const seededFilm = starter => filmFromTemplate(starter, modelIdForName(starter.model) || '');
+const seededFilm = starter => filmFromTemplate(starter, templateModelId(starter) || '');
 
 function SelectedTemplate({ templateId, targetSeconds, pending = false }) {
   const { t, locale } = useI18n();

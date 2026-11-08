@@ -58,7 +58,7 @@ for (const locale of ['en', 'de', 'ja', 'ar']) {
     assert.ok(known.includes(escape(t('app.publish.composer.status.delivered'))));
     const workspaceHtml = render(workspace, 'MultitrackWorkspace', { onCredits() {} });
     assert.ok(workspaceHtml.includes(`data-testid="editor-sections" aria-label="${escape(t('app.editor.workspace.mobileSections'))}"`));
-    assert.ok(workspaceHtml.includes(escape(t('app.editor.workspace.guidance.empty.body'))));
+    assert.ok(workspaceHtml.includes(escape(t('app.editor.simple.empty'))));
     assert.ok(workspaceHtml.includes('data-testid="editor-stage-inspector"'));
     const data = { posts: [post], evolution: [{ date: '2026-10-18', metrics: { followers: 2345, views: 9000, posts_count: 1 } }], sync: { last_ok_at: '2026-10-18T12:00:00Z' } };
     const accountHtml = render(analytics, 'AccountAnalytics', { account: { id: 'account', network: 'youtube' }, range: { from: '2026-10-01', to: '2026-10-18' }, includeContent: true }, [{ current: data, previous: null }, '', 0]);

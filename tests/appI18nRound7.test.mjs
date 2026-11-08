@@ -27,6 +27,14 @@ test('56 English component states remain byte-identical to main',async()=>{
  assert.equal(baseline.length,scenarios.length);
  for(const [index,scenario] of scenarios.entries()){
   const html=renderScenario(scenario,'en',messages);
+  if (scenario.area === 'rail') {
+   // Editor round: the flat rail is now six primary tools plus a More tools disclosure.
+   assert.equal(visibleText(html), 'MediaTextCaptionsAudioGenerateExportMore toolsTemplatesElementsTranscriptScenesClipsAssistantEffectsTransitionsFiltersAnimationAsset packsBrand kitReview');
+   const labels = [...html.matchAll(/(?:aria-label|title|placeholder|alt)="([^"]*)"/g)].map(match => match[0]);
+   const previous = baseline[index].labels;
+   assert.deepEqual(labels, [previous[0], ...['Media', 'Text', 'Captions', 'Audio', 'Generate', 'Export', 'Templates', 'Elements', 'Transcript', 'Scenes', 'Clips', 'Assistant', 'Effects', 'Transitions', 'Filters', 'Animation', 'Asset packs', 'Brand kit', 'Review'].map(label => `title="${label}"`)]);
+   continue;
+  }
   assert.equal(visibleText(html),baseline[index].text,`${index} ${scenario.area}`);
   assert.deepEqual([...html.matchAll(/(?:aria-label|title|placeholder|alt)="([^"]*)"/g)].map(match=>match[0]),baseline[index].labels,`${index} ${scenario.area} accessible copy`);
  }

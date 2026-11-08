@@ -8,7 +8,7 @@ import { cleanCreateDraft } from '../lib/createDraftRecovery.js';
 import { ALL_TEMPLATES, PRESETS } from '../app/veyrnox/_lib/templates.js';
 import { draftForTemplate } from '../app/veyrnox/_lib/templateDraft.js';
 import { filmStarterForTemplate } from '../app/veyrnox/_lib/filmTemplateDraft.js';
-import { modelIdForName } from '../app/veyrnox/_lib/tokens.js';
+import { modelIdForName, templateModelId } from '../app/veyrnox/_lib/tokens.js';
 import { writeStudioDraft, takeStudioDraft } from '../app/veyrnox/_lib/landingDraft.js';
 import { sourcePromptAuditForModel } from '../app/veyrnox/_lib/sourcePromptAudit.js';
 
@@ -171,8 +171,8 @@ test('handoffs reject an over-limit prompt instead of silently shortening it', (
 test('direct Create handoff accepts exact prompts and leaves reference validation to Create', () => {
   const seedance = ALL_TEMPLATES.find((item) => item.id === 'seedance-birthday-morning');
   assert.equal(seedance.promptOrigin, 'community-source-exact');
-  assert.equal(draftForTemplate(seedance, modelIdForName(seedance.model)).prompt, seedance.prompt);
+  assert.equal(draftForTemplate(seedance, templateModelId(seedance)).prompt, seedance.prompt);
   const adapted = ALL_TEMPLATES.find((item) => item.id === 'event-character-swap');
   const exact = { ...adapted, prompt: sourceRecords[adapted.id].prompt, sourcePromptOrigin: 'community-source-exact', sourcePromptRunnable: false };
-  assert.equal(draftForTemplate(exact, modelIdForName(exact.model)).prompt, exact.prompt);
+  assert.equal(draftForTemplate(exact, templateModelId(exact)).prompt, exact.prompt);
 });

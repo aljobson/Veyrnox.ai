@@ -1,5 +1,11 @@
 [
   {
+    "id": "editorSimple.openTool",
+    "english": "Open tool",
+    "translation": "Abrir herramienta",
+    "ratio": 1.89
+  },
+  {
     "id": "bestCut.auto",
     "english": "Auto-detect",
     "translation": "Detectar automáticamente",
@@ -3091,12 +3097,6 @@
   },
   {
     "id": "editorSimple.aiEdit",
-    "english": "AI Edit",
-    "translation": "Edición con IA",
-    "ratio": 2
-  },
-  {
-    "id": "editorSimple.aiTitle",
     "english": "AI Edit",
     "translation": "Edición con IA",
     "ratio": 2

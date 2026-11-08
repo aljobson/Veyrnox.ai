@@ -1,4 +1,8 @@
 export default {
+    "app.create.error.template_blocked": "This template needs references or capabilities that are not available. Choose another template. Nothing was charged.",
+    "app.create.error.template_mismatch": "These settings do not match the audited template. Restore its original model, duration, shape and prompt, or write a custom prompt. Nothing was charged.",
+    "app.create.error.template_references_invalid": "Add the required photos in order, with no extra images or video. Nothing was charged.",
+
   "app.create.swapConsentNotice": "Only use photos of people who agreed.",
 
     "app.create.error.price_changed": "The price changed. This item was not charged. Confirm the revised remaining total to continue.",

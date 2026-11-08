@@ -136,6 +136,7 @@ export async function fetchAllCatalog(): Promise<CatalogModel[]> {
 }
 
 export interface GenerationRequest {
+    readonly templateId?: string;
     readonly swap?: string;
     readonly templateClip?: string;
     readonly preset?: string;
@@ -175,6 +176,7 @@ export const mediaApi = (api: ApiClient) => ({
                 model_id: r.modelId,
                 ...(r.templateClip !== undefined ? { template_clip: r.templateClip } : {}),
                 ...(r.swap !== undefined ? { swap: r.swap } : {}),
+                ...(r.templateId ? { template_id: r.templateId } : {}),
                 ...(r.preset && /^[a-z0-9-]{1,40}$/.test(r.preset) ? { preset: r.preset } : {}),
                 idempotency_key: r.idempotencyKey,
                 confirmed_credits: r.confirmedCredits,

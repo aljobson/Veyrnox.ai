@@ -60,7 +60,7 @@ test('the payload carries source framing and exact public source prompts but no 
     // Source records stay keyed by original id; published ids name no source platform.
     const sourceRecord = recordLookup(SOURCE_PROMPT_RECORDS), genjutsuRecord = recordLookup(GENJUTSU_SOURCE_PROMPT_RECORDS);
     const seedanceMeta = recordLookup(SEEDANCE_200_TEMPLATE_METADATA);
-    const allowed = new Set(['id', 'title', 'category', 'theme', 'modelId', 'modelName', 'modality', 'prompt', 'promptOrigin', 'sourcePrompt', 'sourcePromptOrigin', 'sourcePromptStatus', 'sourcePromptRunnable', 'sourcePromptIssues', 'sourcePromptModelPromptMax', 'sourcePromptCharacterCount', 'sourcePromptReferenceImageCount', 'sourcePromptReferenceVideoCount', 'sourcePromptDuplicateOf', 'needs', 'sourceAspect', 'durationSeconds', 'credits', 'gated', 'available', 'isNew', 'previewUrl', 'posterUrl', 'previewAspect']);
+    const allowed = new Set(['id', 'title', 'category', 'theme', 'slotCount', 'boundModelId', 'modelId', 'modelName', 'modality', 'prompt', 'promptOrigin', 'sourcePrompt', 'sourcePromptOrigin', 'sourcePromptStatus', 'sourcePromptRunnable', 'sourcePromptIssues', 'sourcePromptModelPromptMax', 'sourcePromptCharacterCount', 'sourcePromptReferenceImageCount', 'sourcePromptReferenceVideoCount', 'sourcePromptDuplicateOf', 'needs', 'sourceAspect', 'durationSeconds', 'credits', 'gated', 'available', 'isNew', 'previewUrl', 'posterUrl', 'previewAspect']);
     for (const p of toPublicPresets(catalog)) for (const k of Object.keys(p)) assert.ok(allowed.has(k), `unexpected field ${k}`);
     for (const p of toPublicPresets(catalog)) {
         assert.doesNotMatch(p.id, /higgs|syntx/i);
@@ -68,7 +68,7 @@ test('the payload carries source framing and exact public source prompts but no 
         for (const u of [p.previewUrl, p.posterUrl, p.sourcePromptDuplicateOf]) assert.doesNotMatch(u ?? '', /higgs|syntx/i, p.id);
     }
     const framed = toPublicPresets(catalog).filter((p) => p.sourceAspect);
-    assert.equal(framed.length, 693);
+    assert.equal(framed.length, 692);
     assert.ok(framed.every((p) => /^(?:1:1|4:3|9:16|16:9)$/.test(p.sourceAspect)));
     const exact = toPublicPresets(catalog).filter((p) => p.sourcePromptOrigin === 'community-source-exact');
     assert.equal(exact.length, 771);
@@ -99,7 +99,8 @@ test('the payload carries source framing and exact public source prompts but no 
     assert.equal(seedance.filter((p) => p.sourcePromptRunnable === true).length, 79);
     assert.equal(seedance.filter((p) => p.sourcePromptRunnable === false).length, 121);
     assert.equal(seedance.filter(p => p.modelId === 'seedance-2.0-reference' && p.modelName === 'Seedance 2.0 · Reference' && p.durationSeconds === 10).length, 69);
-    assert.equal(seedance.filter(p => p.modelId === 'seedance-2.0-fast' && p.modelName === 'Seedance 2.0 Fast' && p.durationSeconds === 5).length, 131);
+    assert.equal(seedance.filter(p => p.modelId === 'seedance-2.0-fast' && p.modelName === 'Seedance 2.0 Fast' && p.durationSeconds === 5).length, 100);
+    assert.equal(seedance.filter(p => p.modelId === 'seedance-2.0-reference' && p.durationSeconds === 5).length, 31);
     assert.ok(seedance.every((p) => seedanceMeta(p.id).sourceUrl?.startsWith('https://')));
     const formerlyClipped = exact.find((p) => p.id === 'football-showstopper');
     assert.equal(formerlyClipped.sourcePromptCharacterCount, 2077);

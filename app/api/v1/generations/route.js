@@ -1,3 +1,5 @@
+import { templateRequestFingerprint } from '../../../../lib/templateRequestFingerprint.js';
+import { checkTemplateRequest } from '../../../../lib/templateFidelity.js';
 import { finishGenerationSubmit } from '../../../../lib/generationProviderSubmit.js';
 import { replaySwapScene } from '../../../../lib/swapSceneReplay.js';
 import { loadSwapScene } from '../../../../lib/swapSceneGate.js';
@@ -96,6 +98,42 @@ export async function POST(req) {
     }
     if (!inputs || typeof inputs !== 'object' || Array.isArray(inputs)) {
         return NextResponse.json({ error: 'inputs_must_be_object' }, { status: 400 });
+    }
+    // A server-held template clip has its own gate (checkTemplateClipRequest); the template_id contract does not apply to it.
+    const templateCheck = Object.hasOwn(body, 'template_clip') ? { ok: true } : checkTemplateRequest(body);
+    if (!templateCheck.ok) {
+        // A revised contract cannot invalidate an accepted job after a lost response.
+        // Ownership, key and the original request fingerprint prove a replay. All
+        // key format was validated above. Rate-limit even rejected attempts before
+        // either replay read; malformed templates must not bypass the shared gate.
+        try {
+            const rate = await rpc('check_generation_rate_limit', {
+                p_auth_id: authId,
+                p_limit_per_window: RATE_LIMIT_PER_WINDOW,
+                p_window_seconds: RATE_WINDOW_SECONDS,
+            }, cfg);
+            if (rate?.ok !== true) {
+                if (rate?.code === 'RATE_LIMITED') {
+                    const retryAfter = Math.max(1, Math.min(600, Number(rate.retry_after_seconds) || 60));
+                    return NextResponse.json({ error: 'rate_limited', limit: rate.limit, count: rate.count, retry_after_seconds: retryAfter }, { status: 429, headers: { 'retry-after': String(retryAfter) } });
+                }
+                return NextResponse.json({ error: 'rate_check_unavailable' }, { status: 503 });
+            }
+        } catch {
+            return NextResponse.json({ error: 'rate_check_unavailable' }, { status: 503 });
+        }
+        try {
+            const owners = await select('users', { columns: 'id', filter: `auth_id=eq.${encodeURIComponent(authId)}`, limit: 1 }, cfg);
+            if (owners?.[0]?.id) {
+                const jobs = await select('jobs', { columns: 'id,model_id,inputs', filter: `user_id=eq.${encodeURIComponent(owners[0].id)}&idempotency_key=eq.${encodeURIComponent(idempotencyKey)}`, limit: 1 }, cfg);
+                if (jobs?.[0]?.id) {
+                    const same = jobs[0].model_id === modelId && jobs[0].inputs?.template_fidelity?.request_hash === await templateRequestFingerprint(body);
+                    if (!same) return NextResponse.json({ error: 'idempotency_conflict' }, { status: 409 });
+                    return NextResponse.json({ job_id: jobs[0].id, idempotent: true });
+                }
+            }
+        } catch { /* A failed read never admits a new request. */ }
+        return NextResponse.json({ error: templateCheck.error }, { status: 400 });
     }
     const inputsCheck = body.template_clip !== undefined ? { ok: true } : validateInputs(inputs);
     if (!inputsCheck.ok) return NextResponse.json({ error: inputsCheck.error }, { status: 400 });
@@ -354,7 +392,8 @@ export async function POST(req) {
     // real template that belongs to this model, it never reaches a provider (the provider gets storedInputs / modelInputs below),
     // and a bad or missing one is simply ignored.
     const presetId = swap || templateClip ? null : templateStartId(body && body.preset, modelId);
-    const jobInputs = presetId ? { ...storedInputs, preset_id: presetId } : storedInputs;
+    const jobInputs = { ...storedInputs, ...(presetId ? { preset_id: presetId } : {}),
+        ...(templateCheck.metadata ? { template_fidelity: { ...templateCheck.metadata, request_hash: await templateRequestFingerprint(body) } } : {}) };
     // Only authenticated ownership + key proves a replay. Malformed reads are unknown.
     async function existingJob() {
         const rows = await select('jobs', {

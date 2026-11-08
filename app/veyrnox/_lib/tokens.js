@@ -1,3 +1,4 @@
+import { templateRoute } from '../../../lib/templateRoute.js';
 // Veyrnox.ai data constants — source of truth: platform_model.xlsx / handoff README
 // Do not drift these numbers. Credit costs & plan prices are contractual.
 
@@ -121,9 +122,11 @@ export function modelIdForName(name) {
  * in the catalog) plus the preset id, so Create records which card sent the
  * user. Cards link to templateHref; an unresolved model stays on that detail page.
  */
+export const templateModelId = (preset, referenceCount) => templateRoute(preset, modelIdForName(preset?.model), referenceCount).modelId;
+
 export function presetHref(preset, durationSeconds = preset.durationSeconds, extras = {}) {
   if (extras.templateClip) return templateHref(preset);
-  const modelId = extras.model || modelIdForName(preset.model);
+  const modelId = extras.model || templateModelId(preset);
   if (!modelId) return templateHref(preset);
   return `/app/create?model=${encodeURIComponent(modelId)}&preset=${encodeURIComponent(preset.id)}${durationSeconds ? `&duration=${encodeURIComponent(durationSeconds)}s` : ''}${extras.aspect ? `&aspect=${encodeURIComponent(extras.aspect)}` : ''}`;
 }
@@ -136,9 +139,9 @@ export function presetHref(preset, durationSeconds = preset.durationSeconds, ext
  * drifted out of it, or the row carries no numeric price.
  */
 export function presetCredits(preset, catalog, durationSeconds = preset.durationSeconds) {
-  const id = modelIdForName(preset.model);
+  const id = templateModelId(preset);
   const row = id && Array.isArray(catalog) ? catalog.find((m) => m.id === id) : null;
-  const unit = row && typeof row.credits === 'number' ? row.credits : preset.credits;
+  const unit = row && typeof row.credits === 'number' ? row.credits : (id !== modelIdForName(preset.model) ? MODELS.find(m => m.id === id)?.credits : preset.credits);
   return durationSeconds ? clipCredits(unit, durationSeconds) : unit;
 }
 

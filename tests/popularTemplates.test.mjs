@@ -69,7 +69,7 @@ test('the route records a valid template on the job but never sends it to a prov
 });
 
 test('a bad, unknown or mismatched template is ignored: the generation still runs and nothing is recorded', async () => {
-    const otherModel = PRESETS.find((p) => modelIdForName(p.model) && modelIdForName(p.model) !== mid);
+    const otherModel = PRESETS.find((p) => modelIdForName(p.model) && templateStartId(p.id, mid) === null);
     for (const preset of ['no-such-template', 42, '../x', otherModel.id]) { // the last is a real template, but for a different model
         const net = network({ model: kieModel });
         try {

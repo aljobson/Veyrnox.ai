@@ -1,6 +1,11 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "editorSimple.describe": "やりたいことを入力",
+  "editorSimple.promptHelp": "決まった英語の表現をツールに対応させます。AIがこの依頼を理解する機能ではありません。適用や支払いの前にツールを確認してください。",
+  "editorSimple.openTool": "ツールを開く",
+  "editorSimple.unsupported": "「add captions」「smart cut」「generate video」を試すか、ツールを選んでください。",
+
 "bestCut.uploadBudget": "一時アップロードはアカウント共通の200 MB枠を使用します。ライブラリのクリップはこの枠を使用しません。",
 "bestCut.dropped": "発話のない {n} クリップを除外しました。これらは無料です。",
   "bestCut.title": "ベストカットを作成",
@@ -5775,7 +5780,7 @@ export default {
   "editorSimple.aiEdit": "AI編集",
   "editorSimple.more": "その他",
   "editorSimple.addTitle": "動画に追加",
-  "editorSimple.aiTitle": "AI編集",
+  "editorSimple.aiTitle": "やりたいことを入力",
   "editorSimple.moreTitle": "その他",
   "editorSimple.close": "閉じる",
   "editorSimple.smartCut": "Smart Cut",

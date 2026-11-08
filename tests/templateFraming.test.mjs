@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { nearestShape, templateSourceAspect } from '../lib/templateFraming.js';
 import { templateDetail } from '../lib/clientTemplates.js';
 import { toPublicPresets } from '../lib/publicPresets.js';
-import { MODELS, modelIdForName } from '../app/veyrnox/_lib/tokens.js';
+import { MODELS, templateModelId } from '../app/veyrnox/_lib/tokens.js';
 import { PRESETS } from '../app/veyrnox/_lib/templates.js';
 
 test('a preview shape maps to the nearest of 1:1, 9:16 and 16:9', () => {
@@ -32,7 +32,7 @@ test('models that choose their own aspect or take many pictures get no fallback 
 test('a Kling 3.0 I2V template with no recorded hint carries one on the web detail and in the public list', () => {
     const catalog = MODELS.map((m) => ({ id: m.id, name: m.name, modality: m.kind, credits: m.credits + 1, gated: !!m.gated }));
     const publicList = toPublicPresets(catalog);
-    const before = PRESETS.find((p) => modelIdForName(p.model) === 'kling-3.0-i2v' && !p.sourceAspect && p.previewAspect);
+    const before = PRESETS.find((p) => templateModelId(p) === 'kling-3.0-i2v' && !p.sourceAspect && p.previewAspect);
     assert.ok(before, 'fixture: at least one Kling I2V template records no sourceAspect of its own');
     const detail = templateDetail(before.id);
     assert.match(detail.sourceAspect, /^(?:1:1|9:16|16:9)$/);
@@ -56,4 +56,15 @@ test('the public template page and the Create card both read the derived hint, n
     const page = readFileSync(new URL('../app/veyrnox/presets/[id]/page.js', import.meta.url), 'utf8');
     assert.match(page, /templateSourceAspect\(template/);
     assert.doesNotMatch(page, /template\.sourceAspect/);
+});
+
+// The approved bound-detail markup change removes this old start-frame crop hint.
+test('curtain-reveal is an identity-reference template and carries no derived crop hint', () => {
+    const preset = PRESETS.find(p => p.id === 'curtain-reveal');
+    assert.equal(preset.sourceAspect, undefined);
+    assert.equal(templateModelId(preset), 'seedance-2.0-reference');
+    assert.equal(templateSourceAspect(preset), null);
+    assert.equal(templateDetail(preset.id).sourceAspect, undefined);
+    const catalog = MODELS.map(m => ({ id: m.id, name: m.name, modality: m.kind, credits: m.credits }));
+    assert.equal(toPublicPresets(catalog).find(p => p.id === preset.id).sourceAspect, null);
 });

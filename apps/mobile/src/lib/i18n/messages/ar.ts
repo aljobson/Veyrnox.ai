@@ -350,6 +350,23 @@ const ar = {
     'app.create.swapConsentNotice': 'استخدم فقط صور أشخاص وافقوا على ذلك.',
     'public.TemplateRecipe.templateClipUsed': 'يستخدم هذا القالب مقطعه الخاص مع صورتك لاستبدال الشخصية الرئيسية.',
     'presets.use.photoTitle': 'أضف صورتك',
+    'app.create.error.template_blocked': 'يحتاج هذا القالب إلى مراجع أو ميزات غير متاحة. اختر قالبًا آخر. لم يتم خصم أي رسوم.',
+    'app.create.error.template_mismatch': 'هذه الإعدادات لا تطابق القالب المدقق. استعد النموذج والمدة والأبعاد والتعليمات الأصلية، أو اكتب تعليمات مخصصة. لم يتم خصم أي رسوم.',
+    'app.create.error.template_references_invalid': 'أضف الصور المطلوبة بالترتيب دون صور إضافية أو فيديو. لم تُخصم أي رسوم.',
+    'presets.fidelity.blocked': 'يحتاج هذا القالب إلى مراجع أو ميزات غير متاحة. اختر قالبًا آخر.',
+    'presets.fidelity.custom': 'تعليمات مخصصة: لم يعد هذا الإنشاء نسخة مطابقة للقالب.',
+    'presets.fidelity.modelSwitch': 'تغيير النموذج يجعل هذا إنشاءً مخصصًا. ستختلف النتيجة عن معاينة القالب.',
+    'presets.fidelity.noPhoto': 'لا يدعم هذا النموذج صورة مرجعية.',
+    'presets.fidelity.photoGuidance': 'استخدم صورة واحدة لشخص واحد يواجه الكاميرا بإضاءة جيدة، بدقة لا تقل عن 256 × 256 بكسل. يقبل هذا النموذج صورة واحدة للقالب.',
+    'presets.fidelity.photoMinimum': 'اختر صورة بدقة لا تقل عن 256 × 256 بكسل.',
+    'presets.fidelity.previewNotice': 'يمكنك تشغيل هذا القالب، لكن النتيجة قد لا تطابق المعاينة. لم يتم تدقيق مدى مطابقة هذا التشغيل للقالب.',
+    'presets.fidelity.singlePhoto': 'استخدم صورة واحدة فقط مع نموذج يدعم الصور المرجعية.',
+    'presets.fidelity.photoSlot': 'الصورة {number}',
+    'presets.fidelity.orderedPhotos': 'أضف {count} صور بالترتيب',
+    'presets.fidelity.photosRequired': 'أكمل جميع خانات الصور البالغ عددها {count} قبل المتابعة.',
+    'presets.fidelity.photoReady': 'الصورة جاهزة',
+    'presets.use.photoReplace': 'استبدال',
+    'presets.fidelity.photosUnavailable': 'يحتاج هذا القالب إلى صور أكثر مما يدعمه النموذج حاليًا. اختر قالبًا آخر أو حاول مرة أخرى لاحقًا.',
 } as const;
 
 export default ar;

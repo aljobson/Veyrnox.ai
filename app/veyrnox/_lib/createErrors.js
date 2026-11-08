@@ -2,6 +2,9 @@ import { ACCOUNT_PAUSED_COPY, ACCOUNT_ON_HOLD_COPY } from './gateway';
 
 // What the create page says for each gateway error code.
 export const ERROR_COPY = {
+  template_blocked: 'This template needs references or capabilities that are not available. Choose another template. Nothing was charged.',
+  template_mismatch: 'These settings do not match the audited template. Restore its original model, duration, shape and prompt, or write a custom prompt. Nothing was charged.',
+  template_references_invalid: 'Add the required photos in order, with no extra images or video. Nothing was charged.',
   price_changed: "The price changed. This item was not charged. Confirm the revised remaining total to continue.",
   admission_unknown: "We could not confirm whether this request started or was charged. Retry this same request to check its outcome.",
   admission_unavailable: "This request could not be admitted. Nothing was charged. Try again later.",

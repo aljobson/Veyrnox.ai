@@ -31,6 +31,7 @@ interface SourcePickerProps {
     // upload as a picked file, once, as soon as it is given.
     readonly initial?: PickedFile | null;
     readonly drawable?: boolean;
+    readonly replaceable?: boolean;
     // Name each file @Image1, @Video1 ... beside it, in order, when the prompt refers to files that way.
     readonly tokens?: boolean;
     // A line under the slot's name saying what it is for (the photo a template needs).
@@ -116,7 +117,7 @@ function ReferencePicker(props: SourcePickerProps) {
     </View>;
 }
 
-function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, drawable = false, hint, initialReady = false, initialReadyLabel }: SourcePickerProps) {
+function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, drawable = false, replaceable = false, hint, initialReady = false, initialReadyLabel }: SourcePickerProps) {
     const styles = useThemedStyles(sheets);
     const [status, setStatus] = useState<Status>(initialReady ? { step: 'ready' } : { step: 'empty' });
     const [preview, setPreview] = useState<string | null>(null);
@@ -265,15 +266,16 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
                         {status.step === 'uploading' ? (
                             <View style={styles.status}>
                                 <ActivityIndicator color={styles.accentInk.color} />
-                                <Text variant="body" tone="secondary" style={styles.body}>{t('sourcePicker.uploading', { value1: Math.round(status.fraction * 100) })}</Text>
+                                <Text accessibilityLiveRegion="polite" variant="body" tone="secondary" style={styles.body}>{t('sourcePicker.uploading', { value1: Math.round(status.fraction * 100) })}</Text>
                             </View>
                         ) : (
-                            <Text variant="body" tone="secondary" style={styles.body}>{libraryName ? t('libsrc.ready', { name: libraryName }) : t('sourcePicker.ready')}</Text>
+                            <Text accessibilityLiveRegion="polite" variant="body" tone="secondary" style={styles.body}>{libraryName ? t('libsrc.ready', { name: libraryName }) : t('sourcePicker.ready')}</Text>
                         )}
                     </View>
                     <Button variant="secondary" accessibilityRole="button" accessibilityLabel={rawText(t('sourcePicker.remove', { value1: slot.label }))} onPress={remove} hitSlop={12} label={status.step === 'uploading' ? t('sourcePicker.cancel') : t('sourcePicker.remove2')} />
                 </View>
             )}
+            {replaceable && status.step === 'ready' && <Button variant="secondary" accessibilityLabel={rawText(`${slot.label}: ${t('presets.use.photoReplace')}`)} label={t('presets.use.photoReplace')} onPress={pick} />}
             {status.step === 'empty' && onLibrary ? (
                 <Button variant="secondary" accessibilityRole="button" accessibilityLabel={rawText(t('libsrc.chooseLabel', { kind: NOUN[slot.kind], slot: slot.label }))} onPress={() => setChoosing(true)} label={t('libsrc.choose')} />
             ) : null}
@@ -295,7 +297,7 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
             {slot.minSide || slot.maxSide ? <Text variant="caption" tone="tertiary" style={styles.hint}>{slot.minSide && slot.maxSide
                 ? t('app.create.sources.sideRange', { min: slot.minSide, max: slot.maxSide })
                 : slot.minSide ? t('app.create.sources.minSide', { min: slot.minSide }) : t('app.create.sources.maxSide', { max: slot.maxSide! })}</Text> : null}
-            {error ? <Text variant="body" tone="danger" style={styles.error}>{error}</Text> : null}
+            {error ? <Text accessibilityRole="alert" accessibilityLiveRegion="assertive" variant="body" tone="danger" style={styles.error}>{error}</Text> : null}
         </View>
     );
 }

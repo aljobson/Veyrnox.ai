@@ -1,6 +1,11 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "editorSimple.describe": "Опишите, что вы хотите",
+  "editorSimple.promptHelp": "Сопоставляет фиксированные английские фразы с инструментами; ИИ не интерпретирует запрос. Проверьте инструмент перед применением или оплатой.",
+  "editorSimple.openTool": "Открыть инструмент",
+  "editorSimple.unsupported": "Попробуйте «add captions», «smart cut» или «generate video» либо выберите инструмент.",
+
 "bestCut.uploadBudget": "Временные загрузки делят лимит 200 МБ на аккаунт. Клипы из библиотеки его не используют.",
 "bestCut.dropped": "Пропущено {n} клипов без речи; плата за них не взимается.",
   "bestCut.title": "Создать лучший монтаж",
@@ -5979,7 +5984,7 @@ export default {
   "editorSimple.aiEdit": "ИИ-монтаж",
   "editorSimple.more": "Ещё",
   "editorSimple.addTitle": "Добавить в видео",
-  "editorSimple.aiTitle": "ИИ-монтаж",
+  "editorSimple.aiTitle": "Опишите, что вы хотите",
   "editorSimple.moreTitle": "Ещё",
   "editorSimple.close": "Закрыть",
   "editorSimple.smartCut": "Smart Cut",

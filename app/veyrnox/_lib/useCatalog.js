@@ -27,6 +27,7 @@ export function fromFallback() {
     takesPlan: !!inputs.plan_id,
     takesSeed: !!inputs.seed,
     takesNegative: !!inputs.negative_prompt,
+    negativeMax: inputs.negative_prompt?.max,
     takesVoice: !!inputs.voice_description,
     takesPrompt: !!inputs.prompt,
     promptMax: inputs.prompt?.max || GENERATION_PROMPT_MAX,
@@ -60,6 +61,7 @@ export function fromApi(models) {
     // Optional settings the gateway accepts for this model.
     takesSeed: !!m.capabilities?.inputs?.seed,
     takesNegative: !!m.capabilities?.inputs?.negative_prompt,
+    negativeMax: m.capabilities?.inputs?.negative_prompt?.max,
     // Speech in a voice the user describes in words; the description is required.
     takesVoice: !!m.capabilities?.inputs?.voice_description,
     takesPrompt: !!m.capabilities?.inputs?.prompt,

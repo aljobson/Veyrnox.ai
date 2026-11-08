@@ -2,16 +2,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { runnableTemplates } from '../app/veyrnox/_lib/runnableTemplates.js';
 import { PRESETS } from '../app/veyrnox/_lib/templates.js';
-import { modelIdForName } from '../app/veyrnox/_lib/tokens.js';
+import { templateModelId } from '../app/veyrnox/_lib/tokens.js';
 
-const sample = PRESETS.filter((p) => modelIdForName(p.model)).slice(0, 40);
-const ids = [...new Set(sample.map((p) => modelIdForName(p.model)))];
+const sample = PRESETS.filter((p) => templateModelId(p)).slice(0, 40);
+const ids = [...new Set(sample.map((p) => templateModelId(p)))];
 
 test('only templates whose model the studio offers are listed', () => {
   const offered = [{ id: ids[0], kind: 'image' }];
   const rows = runnableTemplates(sample, offered, 'all');
   assert.ok(rows.length > 0);
-  assert.ok(rows.every((row) => modelIdForName(row.preset.model) === ids[0]));
+  assert.ok(rows.every((row) => templateModelId(row.preset) === ids[0]));
   assert.deepEqual(runnableTemplates(sample, [], 'all'), []);
 });
 

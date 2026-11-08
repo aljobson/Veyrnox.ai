@@ -4,7 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { presetHref, presetCredits, modelIdForName } from '../app/veyrnox/_lib/tokens.js';
+import { presetHref, presetCredits, modelIdForName, templateModelId, MODELS } from '../app/veyrnox/_lib/tokens.js';
 import { WALL_PRESETS as PRESETS, templateById, hasTemplateVideo } from '../app/veyrnox/_lib/templates.js';
 import { wallShapes, tileClasses, LG_COLUMNS, SM_COLUMNS } from '../app/veyrnox/_lib/presetWall.js';
 
@@ -63,7 +63,7 @@ test('a preset links to the studio with its model and its own id', () => {
     assert.ok(p, 'expected at least one preset whose model is in the catalog');
     const href = presetHref(p);
     assert.ok(href.startsWith('/app/create?'));
-    assert.ok(href.includes(`model=${encodeURIComponent(modelIdForName(p.model))}`));
+    assert.ok(href.includes(`model=${encodeURIComponent(templateModelId(p))}`));
     assert.ok(href.includes(`preset=${encodeURIComponent(p.id)}`));
 });
 
@@ -129,12 +129,13 @@ test('the class strings match the layout metadata', () => {
 
 test('a wall tile prints the live catalog price, falling back to the preset figure', () => {
     const p = PRESETS.find((x) => modelIdForName(x.model));
-    const id = modelIdForName(p.model);
+    const id = templateModelId(p);
+    const fallback = id === modelIdForName(p.model) ? p.credits : MODELS.find(m => m.id === id).credits;
     const multiplier = p.durationSeconds === 10 ? 2 : 1;
     assert.equal(presetCredits(p, [{ id, credits: p.credits + 5 }]), (p.credits + 5) * multiplier, 're-priced row wins');
-    assert.equal(presetCredits(p, undefined), p.credits * multiplier, 'no catalog');
-    assert.equal(presetCredits(p, []), p.credits * multiplier, 'model not in the catalog');
-    assert.equal(presetCredits(p, [{ id, credits: null }]), p.credits * multiplier, 'non-numeric row price');
+    assert.equal(presetCredits(p, undefined), fallback * multiplier, 'no catalog');
+    assert.equal(presetCredits(p, []), fallback * multiplier, 'model not in the catalog');
+    assert.equal(presetCredits(p, [{ id, credits: null }]), fallback * multiplier, 'non-numeric row price');
 });
 
 test('the wall builds its links and prices through the shared helpers', () => {

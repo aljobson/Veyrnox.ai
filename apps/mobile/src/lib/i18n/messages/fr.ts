@@ -350,6 +350,23 @@ const fr = {
     'app.create.swapConsentNotice': 'Utilisez uniquement des photos de personnes ayant donné leur accord.',
     'public.TemplateRecipe.templateClipUsed': 'Ce modèle utilise son propre clip et votre photo pour remplacer le personnage principal.',
     'presets.use.photoTitle': 'Utilisez votre photo',
+    'app.create.error.template_blocked': 'Ce modèle prédéfini nécessite des références ou des fonctions indisponibles. Choisissez un autre modèle prédéfini. Rien n’a été facturé.',
+    'app.create.error.template_mismatch': 'Ces réglages ne correspondent pas au modèle prédéfini audité. Rétablissez son modèle de génération, sa durée, son format et sa consigne d’origine, ou écrivez une consigne personnalisée. Rien n’a été facturé.',
+    'app.create.error.template_references_invalid': 'Ajoutez les photos requises dans l’ordre, sans images ni vidéos supplémentaires. Aucun crédit débité.',
+    'presets.fidelity.blocked': 'Ce modèle prédéfini nécessite des références ou des fonctions indisponibles. Choisissez un autre modèle prédéfini.',
+    'presets.fidelity.custom': 'Consigne personnalisée : cette génération ne reproduit plus exactement le modèle prédéfini.',
+    'presets.fidelity.modelSwitch': 'Changer de modèle crée une génération personnalisée. Le résultat sera différent de l’aperçu du modèle prédéfini.',
+    'presets.fidelity.noPhoto': 'Ce modèle d’IA ne permet pas d’utiliser une photo de référence.',
+    'presets.fidelity.photoGuidance': 'Utilisez une photo d’une seule personne, face à l’appareil et bien éclairée, d’au moins 256 × 256 pixels. Ce modèle d’IA accepte une photo.',
+    'presets.fidelity.photoMinimum': 'Choisissez une photo d’au moins 256 × 256 pixels.',
+    'presets.fidelity.previewNotice': 'Vous pouvez utiliser ce modèle, mais le résultat peut différer de l’aperçu. La fidélité de cette génération au modèle n’a pas été vérifiée.',
+    'presets.fidelity.singlePhoto': 'Utilisez exactement une photo avec un modèle d’IA acceptant une image de référence.',
+    'presets.fidelity.photoSlot': 'Photo {number}',
+    'presets.fidelity.orderedPhotos': 'Ajoutez {count} photos dans l’ordre',
+    'presets.fidelity.photosRequired': 'Remplissez les {count} emplacements photo avant de continuer.',
+    'presets.fidelity.photoReady': 'Photo prête',
+    'presets.use.photoReplace': 'Remplacer',
+    'presets.fidelity.photosUnavailable': 'Ce modèle de création nécessite plus de photos que le modèle IA ne prend actuellement en charge. Choisissez un autre modèle de création ou réessayez plus tard.',
 } as const;
 
 export default fr;

@@ -1,6 +1,11 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "editorSimple.describe": "Beschreibe deinen Wunsch",
+  "editorSimple.promptHelp": "Ordnet feste englische Ausdrücke Werkzeugen zu; keine KI interpretiert diese Anfrage. Prüfe das Werkzeug vor Änderungen oder Zahlungen.",
+  "editorSimple.openTool": "Werkzeug öffnen",
+  "editorSimple.unsupported": "Versuche „add captions“, „smart cut“ oder „generate video“, oder wähle ein Werkzeug.",
+
 "bestCut.uploadBudget": "Temporäre Uploads teilen ein Kontolimit von 200 MB. Mediathek-Clips nutzen dieses Limit nicht.",
 "bestCut.dropped": "{n} Clips ohne Sprache ausgelassen; dafür fallen keine Kosten an.",
   "bestCut.title": "Besten Schnitt erstellen",
@@ -5843,7 +5848,7 @@ export default {
   "editorSimple.aiEdit": "KI-Schnitt",
   "editorSimple.more": "Mehr",
   "editorSimple.addTitle": "Zu deinem Video hinzufügen",
-  "editorSimple.aiTitle": "KI-Schnitt",
+  "editorSimple.aiTitle": "Beschreibe deinen Wunsch",
   "editorSimple.moreTitle": "Mehr",
   "editorSimple.close": "Schließen",
   "editorSimple.smartCut": "Smart Cut",

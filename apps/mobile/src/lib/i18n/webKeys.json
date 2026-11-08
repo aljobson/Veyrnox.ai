@@ -346,5 +346,22 @@
   "label.Photos of the new people",
   "app.create.swapConsentNotice",
   "public.TemplateRecipe.templateClipUsed",
-  "presets.use.photoTitle"
+  "presets.use.photoTitle",
+  "app.create.error.template_blocked",
+  "app.create.error.template_mismatch",
+  "app.create.error.template_references_invalid",
+  "presets.fidelity.blocked",
+  "presets.fidelity.custom",
+  "presets.fidelity.modelSwitch",
+  "presets.fidelity.noPhoto",
+  "presets.fidelity.photoGuidance",
+  "presets.fidelity.photoMinimum",
+  "presets.fidelity.previewNotice",
+  "presets.fidelity.singlePhoto",
+  "presets.fidelity.photoSlot",
+  "presets.fidelity.orderedPhotos",
+  "presets.fidelity.photosRequired",
+  "presets.fidelity.photoReady",
+  "presets.use.photoReplace",
+  "presets.fidelity.photosUnavailable"
 ]

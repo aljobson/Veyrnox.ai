@@ -1,6 +1,11 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "editorSimple.describe": "صف ما تريد",
+  "editorSimple.promptHelp": "يطابق عبارات إنجليزية محددة مع الأدوات؛ لا يفهم أي ذكاء اصطناعي هذا الطلب. راجع الأداة قبل التطبيق أو الدفع.",
+  "editorSimple.openTool": "فتح الأداة",
+  "editorSimple.unsupported": "جرّب “add captions” أو “smart cut” أو “generate video”، أو اختر أداة.",
+
 "bestCut.uploadBudget": "تشارك الرفوع المؤقتة حدًا قدره 200 MB لكل حساب. لا تستخدم مقاطع المكتبة هذا الحد.",
 "bestCut.dropped": "تم استبعاد {n} مقاطع بلا كلام؛ لا تُفرض عليها رسوم.",
   "bestCut.title": "إنشاء أفضل مونتاج",
@@ -6115,7 +6120,7 @@ export default {
   "editorSimple.aiEdit": "تحرير بالذكاء الاصطناعي",
   "editorSimple.more": "المزيد",
   "editorSimple.addTitle": "أضف إلى الفيديو",
-  "editorSimple.aiTitle": "تحرير بالذكاء الاصطناعي",
+  "editorSimple.aiTitle": "صف ما تريد",
   "editorSimple.moreTitle": "المزيد",
   "editorSimple.close": "إغلاق",
   "editorSimple.smartCut": "Smart Cut",

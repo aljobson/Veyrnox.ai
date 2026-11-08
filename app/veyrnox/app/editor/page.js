@@ -12,6 +12,7 @@ import { Button } from '../../_components/Button';
 import { TimelineView } from '../../_components/editor/TimelineView';
 import { ProjectBar } from '../../_components/editor/ProjectBar';
 import { MultitrackWorkspace } from '../../_components/editor/MultitrackWorkspace';
+import { EditorEmptyState } from '../../_components/editor/EditorEmptyState';
 import { EditorCreditsDialog } from '../../_components/editor/EditorCreditsDialog';
 import { useMultitrackEnabled } from '../../_components/editor/MultitrackFlag';
 import { MediaBin } from '../../_components/editor/MediaBin';
@@ -34,6 +35,7 @@ const field = 'rounded-xl border border-vx-border bg-vx-base px-3 py-2 text-sm f
 const range = 'mt-2 w-full accent-vx-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-vx-accent';
 
 function Editor() {
+    const addFileInput = useRef(null);
   const { t, locale } = useI18n();
   const number = value => locale === 'en' ? value : Number(value).toLocaleString(localeTag(locale));
   const formatTime = value => locale === 'en' ? sourceTime(value) : sourceTime(value).replace(/\d+/g, digits => Number(digits).toLocaleString(localeTag(locale), { useGrouping: false, minimumIntegerDigits: digits.length }));
@@ -193,7 +195,7 @@ function Editor() {
     return <div className="space-y-6 outline-none" role="region" data-testid="editor-legacy" aria-label={t("app.editor.legacy.workspace")} tabIndex={0} onKeyDown={keyboard}>
         <div className="flex flex-wrap items-center gap-3">
             <label className="inline-flex cursor-pointer rounded-full border border-vx-border px-5 py-3 text-sm font-bold focus-within:outline focus-within:outline-2 focus-within:outline-vx-accent">
-                <Icon name="paperclip" size={16} className="me-1.5 inline align-[-2px]" />{t("app.editor.legacy.addFiles")}<input aria-label={t("app.editor.legacy.addFiles")} className="sr-only" type="file" multiple accept="video/mp4,video/webm,video/quicktime,audio/mpeg,audio/wav,audio/mp4,audio/x-m4a" disabled={busy || exporting} onChange={chooseFiles} />
+                <Icon name="paperclip" size={16} className="me-1.5 inline align-[-2px]" />{t("app.editor.legacy.addFiles")}<input aria-label={t("app.editor.legacy.addFiles")} ref={addFileInput} className="sr-only" type="file" multiple accept="video/mp4,video/webm,video/quicktime,audio/mpeg,audio/wav,audio/mp4,audio/x-m4a" disabled={busy || exporting} onChange={chooseFiles} />
             </label>
             <Button variant="ghost" size="md" disabled={busy || exporting} onClick={openLibrary}>{t("app.editor.legacy.addLibrary")}</Button>
             <Button variant="ghost" size="md" disabled={exporting} onClick={() => { const next = apply(timeline => addText(timeline, initialText(frame))); if (next) setSelected({ track: 'text', id: `t${next.seq}` }); }}>{t("app.editor.workspace.addText")}</Button>
@@ -228,7 +230,7 @@ function Editor() {
                     <label className="flex items-center gap-2">{t("app.editor.workspace.zoom")}{' '}<input aria-label={t("app.editor.workspace.zoom")} className="accent-vx-accent" type="range" min={0.5} max={8} step={0.5} value={ppf} onChange={e => setPpf(Number(e.target.value))} /></label>
                     <span>{t("app.editor.legacy.shortcuts")}</span>
                 </div>
-                {empty ? <p className="rounded-2xl border border-dashed border-vx-border p-8 text-center text-sm text-vx-fg-muted">{t('app.editor.legacy.empty',{seconds:number(LIMITS.maxSeconds),videos:number(LIMITS.maxVideoClips),audio:number(LIMITS.maxAudioClips)})}</p>
+                {empty ? <EditorEmptyState disabled={busy || exporting} onAdd={() => addFileInput.current?.click()} />
                     : <TimelineView tl={tl} frame={frame} selected={clip || textItem} ppf={ppf} disabled={exporting} onSelect={s => { setSelected(s); }} onSeek={seek}
                         onTrim={(track, id, edge, delta) => apply(timeline => trimEdge(timeline, track, id, edge, delta))}
                         onMove={(track, id, to) => apply(timeline => track === 'video' ? moveVideoClip(timeline, id, to) : track === 'text' ? updateText(timeline, id, { start: to }) : moveAudioClip(timeline, id, to))} />}
@@ -293,7 +295,7 @@ export default function EditorPage() {
     return <><AppNav active="editor" readAccount={false} /><Main className="mx-auto max-w-[1600px] px-4 py-8 sm:px-8 sm:py-12">
         <div className="mb-5 flex items-center justify-between gap-4">
             <h1 className="text-2xl font-black">{t("label.Video editor")}</h1>
-            {!multitrack && <Button size="sm" variant="money" onClick={() => setCreditsOpen(true)}>Credits</Button>}
+            {!multitrack && <Button size="sm" variant="money" onClick={() => setCreditsOpen(true)}>{t('label.Credits')}</Button>}
         </div>
         {multitrack ? <MultitrackWorkspace onCredits={() => setCreditsOpen(true)} /> : <Editor />}
     </Main>{creditsOpen && <EditorCreditsDialog open onClose={() => setCreditsOpen(false)} />}</>;

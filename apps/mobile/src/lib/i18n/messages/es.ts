@@ -350,6 +350,23 @@ const es = {
     'app.create.swapConsentNotice': 'Usa solo fotos de personas que hayan dado su consentimiento.',
     'public.TemplateRecipe.templateClipUsed': 'Esta plantilla usa su propio vídeo y tu foto para reemplazar al personaje principal.',
     'presets.use.photoTitle': 'Usa tu foto',
+    'app.create.error.template_blocked': 'Esta plantilla necesita referencias o funciones que no están disponibles. Elige otra plantilla. No se ha cobrado nada.',
+    'app.create.error.template_mismatch': 'Estos ajustes no coinciden con la plantilla auditada. Restaura el modelo, duración, formato e instrucción originales, o escribe una instrucción personalizada. No se ha cobrado nada.',
+    'app.create.error.template_references_invalid': 'Añade las fotos necesarias en orden, sin imágenes ni vídeos adicionales. No se ha cobrado nada.',
+    'presets.fidelity.blocked': 'Esta plantilla necesita referencias o funciones que no están disponibles. Elige otra plantilla.',
+    'presets.fidelity.custom': 'Instrucción personalizada: esta generación ya no reproduce exactamente la plantilla.',
+    'presets.fidelity.modelSwitch': 'Cambiar el modelo crea una generación personalizada. El resultado diferirá de la vista previa de la plantilla.',
+    'presets.fidelity.noPhoto': 'Este modelo no admite fotos de referencia.',
+    'presets.fidelity.photoGuidance': 'Usa una foto de una persona, de frente y bien iluminada, de al menos 256 × 256 píxeles. Este modelo acepta una foto por plantilla.',
+    'presets.fidelity.photoMinimum': 'Elige una foto de al menos 256 × 256 píxeles.',
+    'presets.fidelity.previewNotice': 'Puedes ejecutar esta plantilla, pero el resultado puede no coincidir con la vista previa. Esta ejecución no está auditada para comprobar su fidelidad a la plantilla.',
+    'presets.fidelity.singlePhoto': 'Usa exactamente una foto con un modelo que admita una imagen de referencia.',
+    'presets.fidelity.photoSlot': 'Foto {number}',
+    'presets.fidelity.orderedPhotos': 'Añade {count} fotos, en orden',
+    'presets.fidelity.photosRequired': 'Completa los {count} espacios de fotos antes de continuar.',
+    'presets.fidelity.photoReady': 'Foto lista',
+    'presets.use.photoReplace': 'Reemplazar',
+    'presets.fidelity.photosUnavailable': 'Esta plantilla necesita más fotos de las que admite el modelo actualmente. Elige otra plantilla o inténtalo más tarde.',
 } as const;
 
 export default es;

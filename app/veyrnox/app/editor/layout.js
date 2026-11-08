@@ -4,7 +4,7 @@ import { editorFeatureEnabled, editorServerRenderMode } from '../../../../lib/ed
 import { SharedToolsFlagProvider } from '../../_components/editor/SharedToolsFlag';
 import { MultitrackFlagProvider } from '../../_components/editor/MultitrackFlag';
 import { CompletionFlagsProvider } from '../../_components/editor/CompletionFlags';
-import { notFound } from 'next/navigation';
+import { EditorUnavailable } from '../../_components/editor/EditorUnavailable';
 
 export async function generateMetadata() {
   const { t } = await getT();
@@ -19,7 +19,7 @@ export async function generateMetadata() {
 export const dynamic = 'force-dynamic';
 
 // ADR-0080: the editor has no server API, so the route itself is what the flag closes. Read per request.
-export default function Layout({ children }) {
-    if (process.env.EDITOR_TIMELINE_ENABLED !== 'true') notFound();
+export default async function Layout({ children }) {
+    if (process.env.EDITOR_TIMELINE_ENABLED !== 'true') return <EditorUnavailable />;
     return <MultitrackFlagProvider enabled={process.env.EDITOR_MULTITRACK_ENABLED === 'true'}><SharedToolsFlagProvider enabled={process.env.EDITOR_SHARED_TOOLS_ENABLED==='true'}><CompletionFlagsProvider serverRender={editorServerRenderMode()} localInference={editorFeatureEnabled('EDITOR_LOCAL_INFERENCE_ENABLED')} organization={editorFeatureEnabled('EDITOR_ORGANIZATION_ENABLED')} scenes={editorFeatureEnabled('EDITOR_SCENES_ENABLED')} clipper={editorFeatureEnabled('EDITOR_CLIPPER_ENABLED')} agent={editorFeatureEnabled('EDITOR_AGENT_ENABLED')}>{children}</CompletionFlagsProvider></SharedToolsFlagProvider></MultitrackFlagProvider>;
 }

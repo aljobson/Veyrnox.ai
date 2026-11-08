@@ -28,7 +28,7 @@ import {
   HIGGSFIELD_90_VIDEO_SIGNATURES,
 } from './fixtures/higgsfield90SourceAssetHashes.mjs';
 import { ALL_TEMPLATES, PRESETS, REMOVED_PROMPT_GAP_TEMPLATE_IDS, WALL_PRESETS, templateById } from '../app/veyrnox/_lib/templates.js';
-import { MODELS, modelIdForName, presetCredits, presetHref } from '../app/veyrnox/_lib/tokens.js';
+import { MODELS, templateModelId, modelIdForName, presetCredits, presetHref } from '../app/veyrnox/_lib/tokens.js';
 import { AUDIT_SHOWCASE_CLIPS, SHOWCASE_CLIPS } from '../app/veyrnox/_lib/showcase.js';
 import { isUnknownStaticPage } from '../lib/unknownStaticPage.js';
 import { templateStartId } from '../lib/templateStart.js';
@@ -452,7 +452,7 @@ test('gallery and homepage templates have reachable recipe URLs', () => {
   for (const preset of visible) {
     assert.equal(templateById(preset.id), preset);
     assert.equal(isUnknownStaticPage(`/presets/${preset.id}`), false);
-    assert.equal(templateStartId(preset.id, modelIdForName(preset.model)), preset.id);
+    assert.equal(templateStartId(preset.id, templateModelId(preset)), preset.id);
   }
 });
 
@@ -536,8 +536,8 @@ test('community inspiration previews contain no audio track', () => {
 
 test('ten-second recipes quote and hand off the same doubled cost', () => {
   for (const preset of SOURCE_TEMPLATES.filter((p) => p.durationSeconds === 10)) {
-    assert.equal(presetCredits(preset, []), preset.credits * 2);
-    assert.equal(presetCredits(preset, [{ id: modelIdForName(preset.model), credits: 41 }]), 82);
+    assert.equal(presetCredits(preset, []), (templateModelId(preset) === modelIdForName(preset.model) ? preset.credits : MODELS.find(m => m.id === templateModelId(preset)).credits) * 2);
+    assert.equal(presetCredits(preset, [{ id: templateModelId(preset), credits: 41 }]), 82);
     assert.match(presetHref(preset), /&duration=10s$/);
   }
 });
