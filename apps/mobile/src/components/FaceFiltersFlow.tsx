@@ -16,6 +16,7 @@ import { fetchCatalog, mediaApi, textInput, type CatalogModel } from '../lib/med
 import { shortfall } from '../lib/lowBalance';
 import { useBalance } from '../lib/useBalance';
 import { checkPicked, pickedProblem, type PickedFile } from '../lib/sources';
+import { pickedImageFile } from '../lib/pickedImage';
 import { uploadSource } from '../lib/uploads';
 import { t } from '../lib/i18n';
 import { colors } from '../theme';
@@ -158,10 +159,11 @@ export function FaceFiltersFlow({ api, owner }: { api: ApiClient; owner: string 
         if (working.current) return;
         working.current = true; setBusy(true); setError(null);
         try {
-            const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsMultipleSelection: false, allowsEditing: false, quality: 1, exif: false, base64: false });
+            const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsMultipleSelection: false, allowsEditing: false, quality: 1, exif: false, base64: false,
+                // An iPhone photo is HEIC by default; ask for a JPEG copy the server accepts.
+                preferredAssetRepresentationMode: ImagePicker.UIImagePickerPreferredAssetRepresentationMode?.Compatible });
             if (result.canceled) return;
-            const asset = result.assets[0];
-            const file: PickedFile = { uri: asset.uri, size: asset.fileSize, mimeType: asset.mimeType };
+            const file: PickedFile = await pickedImageFile(result.assets[0]);
             if (!current()) {
                 // A picker can resolve after the account has already left.
                 discardFile(file); return;

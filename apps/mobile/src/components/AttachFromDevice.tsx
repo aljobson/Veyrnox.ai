@@ -15,6 +15,7 @@ import { useHandoffScope } from '../lib/useHandoffScope';
 import type { GenerationReference } from '../lib/sources';
 import { fetchCatalog, type CatalogModel } from '../lib/media';
 import { checkPicked, kindOfMime, pickedProblem, slotsFor, type PickedFile, type SlotKind, type SlotName } from '../lib/sources';
+import { pickedImageFile } from '../lib/pickedImage';
 import { isConsentDeclined, uploadMessage, uploadSource } from '../lib/uploads';
 import { ds } from '../theme';
 
@@ -46,7 +47,18 @@ async function chooseMany(source: Source): Promise<PickedFile[]> {
         // Hands back JPEG and H.264 MP4 rather than HEIC or QuickTime, which the server does not accept.
         preferredAssetRepresentationMode: ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
     });
-    return res.canceled ? [] : res.assets.map((a) => ({ uri: a.uri, mimeType: a.mimeType, size: a.fileSize, durationSeconds: typeof a.duration === 'number' ? a.duration / 1000 : undefined }));
+    if (res.canceled) return [];
+    // One at a time, so several large photos are never decoded together. A photo that cannot be converted
+    // stays as picked: the per-file check reports it and the other picks are kept.
+    const files: PickedFile[] = [];
+    for (const a of res.assets) {
+        if (a.type === 'video' || a.mimeType?.startsWith('video/')) {
+            files.push({ uri: a.uri, mimeType: a.mimeType, size: a.fileSize, durationSeconds: typeof a.duration === 'number' ? a.duration / 1000 : undefined });
+            continue;
+        }
+        try { files.push(await pickedImageFile(a)); } catch { files.push({ uri: a.uri, mimeType: a.mimeType ?? undefined, size: a.fileSize }); }
+    }
+    return files;
 }
 
 interface Props {
