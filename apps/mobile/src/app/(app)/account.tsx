@@ -1,3 +1,4 @@
+import { BestCutSettings } from '../../components/editor/BestCutSettings';
 import { YourWinsCard } from '../../components/wins/YourWinsCard';
 import { rawText } from '../../lib/i18n/translate';
 import { isAccountChanged } from '../../auth/sessionTask';
@@ -140,6 +141,7 @@ export default function Account() {
             </Section>
 
             <Section title={t('acct.appearance')}>
+                {process.env.EXPO_PUBLIC_BEST_CUT_ENABLED === 'true' ? <BestCutSettings /> : null}
                 {ACTIVE_LOCALES.length > 1 ? <ListRow icon="globe" title={t('language.title')} onPress={() => router.push('/language' as never)} /> : null}
                 {isAnalyticsEnabled() ? <ListRow icon="shieldCheck" title={t('analyticsConsent.choices')} onPress={() => router.push('/privacy-choices')} /> : null}
                 <ListRow icon="swatches" title={t('acct.appearance')} onPress={() => router.push('/appearance')} />

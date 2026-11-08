@@ -22,6 +22,7 @@ import area_approvals from './en/approvals';
 import area_attachFromDevice from './en/attachFromDevice';
 import area_authGate from './en/authGate';
 import area_autolists from './en/autolists';
+import area_bestCut from './en/bestCut';
 import area_billing from './en/billing';
 import area_blocks from './en/blocks';
 import area_brand from './en/brand';
@@ -233,6 +234,7 @@ const catalog = {
     ...area_attachFromDevice,
     ...area_authGate,
     ...area_autolists,
+    ...area_bestCut,
     ...area_billing,
     ...area_blocks,
     ...area_brand,

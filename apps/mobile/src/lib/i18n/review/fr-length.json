@@ -1,5 +1,41 @@
 [
   {
+    "id": "bestCut.title",
+    "english": "Create Best Cut",
+    "translation": "Créer le meilleur montage",
+    "ratio": 1.67
+  },
+  {
+    "id": "bestCut.library",
+    "english": "From Library",
+    "translation": "Depuis la bibliothèque",
+    "ratio": 1.83
+  },
+  {
+    "id": "bestCut.settings",
+    "english": "Best Cut",
+    "translation": "Meilleur montage",
+    "ratio": 2
+  },
+  {
+    "id": "bestCut.auto",
+    "english": "Auto-detect",
+    "translation": "Détection automatique",
+    "ratio": 1.91
+  },
+  {
+    "id": "bestCut.tryAnyway",
+    "english": "Try Anyway",
+    "translation": "Essayer quand même",
+    "ratio": 1.8
+  },
+  {
+    "id": "bestCut.notNow",
+    "english": "Not Now",
+    "translation": "Pas maintenant",
+    "ratio": 2
+  },
+  {
     "id": "recovery.home",
     "english": "Go home",
     "translation": "Retour à l’accueil",

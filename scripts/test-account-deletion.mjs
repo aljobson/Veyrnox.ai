@@ -193,7 +193,7 @@ try {
 
     // 10. Drift guard. Every foreign key to a person's row is classified here on purpose, so a new table
     // that points at users forces a decision about deleting it, keeping it, or refusing the account.
-    const ERASED = new Set(['speech_analyses', 'speech_analysis_cache', 'speech_source_probes','support_intake_receipts', 'support_tickets', 'support_messages', // tombstoned by the deleted_at trigger (0432)
+    const ERASED = new Set(['speech_gate_daily', 'speech_analyses', 'speech_analysis_cache', 'speech_source_probes','support_intake_receipts', 'support_tickets', 'support_messages', // tombstoned by the deleted_at trigger (0432)
         'chat_threads', 'chat_folders', 'chat_personas', 'chat_closed_sends', 'cinema_profiles', 'cinema_memberships',
         'cinema_creator_applications', 'cinema_creator_follows', 'cinema_series_follows', 'cinema_saved_titles', 'cinema_retention_requests', 'cinema_watch_resume',
         'referral_codes', 'upload_reservations', 'social_uploads', 'film_library_masters', 'editor_library_renders',

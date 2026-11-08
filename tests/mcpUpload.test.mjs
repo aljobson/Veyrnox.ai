@@ -18,8 +18,9 @@ function harness(reply = { status: 200, body: GRANT }) {
 }
 
 test('the accepted types and ceilings are the upload allowlist itself, so the connector can never widen what the web app accepts', () => {
-  assert.deepEqual(MCP_UPLOAD_TYPES, Object.keys(ALLOWED_UPLOAD_TYPES));
-  assert.deepEqual(acceptedUploadTypes(), Object.entries(ALLOWED_UPLOAD_TYPES).map(([content_type, rule]) => ({ content_type, max_bytes: rule.maxBytes })));
+  assert.deepEqual(MCP_UPLOAD_TYPES, Object.keys(ALLOWED_UPLOAD_TYPES).filter((t) => t !== 'video/quicktime'));
+  assert.equal(MCP_UPLOAD_TYPES.includes('video/quicktime'), false); // Best Cut only
+  assert.deepEqual(acceptedUploadTypes(), Object.entries(ALLOWED_UPLOAD_TYPES).filter(([t]) => t !== 'video/quicktime').map(([content_type, rule]) => ({ content_type, max_bytes: rule.maxBytes })));
   assert.equal(MCP_UPLOAD_MAX_BYTES, 100 * 1024 * 1024);
   assert.ok(MCP_UPLOAD_KEY_RE.test(KEY));
   assert.ok(!MCP_UPLOAD_KEY_RE.test('uploads/../x.png') && !MCP_UPLOAD_KEY_RE.test(`${KEY}/..`) && !MCP_UPLOAD_KEY_RE.test('assets/x.png'));
