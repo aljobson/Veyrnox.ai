@@ -158,6 +158,8 @@ export default function CreateStudio() {
   const [plannedFollowup, setPlannedFollowup] = useState(null);
   const [continuationError, setContinuationError] = useState('');
   const [attachNotice, setAttachNotice] = useState('');
+  // Files the open model has no slot for, and the model that takes them: moved only when the person taps Switch.
+  const [switchOffer, setSwitchOffer] = useState(null);
 
   const [balance, setBalance] = useState(null);
   const [error, setError] = useState(null);
@@ -521,7 +523,23 @@ export default function CreateStudio() {
     const failure = failed.length ? t(`app.create.convert.${failed[0].code}`) : '';
     const pool = attachPool(currentModels, currentModel);
     const plan = planAttachments(pool, currentModel, items);
-    if (!plan) { setAttachNotice(failure || t('app.create.attach.unsupported')); return; }
+    if (!plan) {
+      // Say which model is open and which one takes the files; moving the page is the person's tap on Switch.
+      const other = currentModel && !failure ? planAttachments(attachPool(currentModels, null).filter(candidate => !candidate.gated), currentModel, items) : null;
+      if (other && other.model.id !== currentModel.id) {
+        setSwitchOffer(other);
+        setAttachNotice(t('app.create.attach.cantUse', { current: currentModel.name, name: other.model.name }));
+        return;
+      }
+      setAttachNotice(failure || t('app.create.attach.unsupported'));
+      return;
+    }
+    setSwitchOffer(null);
+    placePlan(plan, currentModel, currentSources, failure);
+  }
+
+  // Puts the planned files on the form, moving to the plan's model when it is a different one.
+  function placePlan(plan, currentModel, currentSources, failure = '') {
     const switched = plan.model.id !== currentModel?.id;
     setAttachNotice([failure, switched && t('app.create.attach.switched', { name: plan.model.name }), plan.unused.length && t('app.create.attach.unused', { count: plan.unused.length })].filter(Boolean).join(' '));
     if (switched) { setPresetParam(null); setGoal(plan.model.kind); chooseModel(plan.model.id); }
@@ -529,6 +547,12 @@ export default function CreateStudio() {
     setSources({});
     const positions = {};
     for (const { slot, file } of plan.assignments) pickSource(slot, file.asset ? null : file, file.asset || null, (positions[slot] = (positions[slot] || 0) + 1) - 1);
+  }
+  function switchForFiles() {
+    const offer = switchOffer;
+    if (!offer) return;
+    setSwitchOffer(null);
+    placePlan(offer, latestAttach.current.model, latestAttach.current.sources);
   }
 
   function applyDrawing(file) {
@@ -935,6 +959,7 @@ export default function CreateStudio() {
             </div>
           )}
           {attachNotice && <p role="status" className="mt-2 text-xs text-vx-fg-muted">{attachNotice}</p>}
+          {switchOffer && <button type="button" onClick={switchForFiles} className="mt-2 rounded-full border border-vx-border px-3 py-1.5 text-xs text-vx-fg hover:border-vx-accent">{t('app.create.attach.switchTo', { name: switchOffer.model.name })}</button>}
           {addFilesOpen && !photosUnavailable && <AddFilesDialog capacity={attachCapacity(model)} onAdd={attachFiles} onClose={() => setAddFilesOpen(false)} />}
           {templatesOpen && <TemplatePicker models={models} goal={goal} onPick={applyTemplate} onClose={() => setTemplatesOpen(false)} />}
           {['swap-recast', 'swap-quick'].includes(modelId) && <p role="note" data-testid="swap-consent-notice" className="mt-2 text-xs text-vx-fg-muted">{t('app.create.swapConsentNotice')}</p>}
