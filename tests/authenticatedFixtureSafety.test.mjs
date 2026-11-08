@@ -212,7 +212,7 @@ test('the default session fixture permits only POST refresh and fails unexpected
 test('actual fixture fulfills only the pinned synthetic analytics config/scripts without a proxy or network request', async () => {
   const { fixture, request, response } = await installedRouting();
   const scriptPaths = ['/ingest/array/phc_synthetic_privacy_qa/config.js',
-    '/ingest/static/1.438.10/exception-autocapture.js', '/ingest/static/exception-autocapture.js'];
+    '/ingest/static/1.444.4/exception-autocapture.js', '/ingest/static/exception-autocapture.js'];
   for (const path of [...scriptPaths, '/ingest/array/phc_synthetic_privacy_qa/config']) {
     assert.equal(await request(`http://localhost:3100${path}`, 'GET', 200, null, {
       fetch() { assert.fail('SDK fixtures must never call the ingest proxy or network'); },
@@ -239,7 +239,7 @@ test('actual fixture captures known analytics transport locally while preserving
   for (const [url, method] of [
     ['http://localhost:3100/ingest/array/phc_real_project/config', 'GET'],
     ['http://localhost:3100/ingest/static/unknown.js', 'GET'],
-    ['http://localhost:3100/ingest/static/1.438.11/exception-autocapture.js', 'GET'],
+    ['http://localhost:3100/ingest/static/1.444.5/exception-autocapture.js', 'GET'],
     ['http://localhost:3100/ingest/array/phc_synthetic_privacy_qa/config', 'POST'],
     ['http://localhost:3100/ingest/e/', 'GET'],
     ['http://localhost:3100/ingest/i/v0/e/', 'PUT'],

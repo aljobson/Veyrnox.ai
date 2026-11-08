@@ -57,9 +57,8 @@ export async function installProductFixtures(page, options = {}) {
   const fixture = { state, requests: [], analyticsRequests: [], unhandled: [], blocked: [], errors: [] };
   // The dedicated CI build enables only a made-up analytics key. Fulfill its
   // SDK bootstrap locally; never let the local ingest proxy reach a vendor.
-  // The SDK's versioned static path changes with every posthog-js release; match the shape, not one version.
-  const analyticsScripts = { has: pathname => pathname === '/ingest/array/phc_synthetic_privacy_qa/config.js'
-    || pathname === '/ingest/static/exception-autocapture.js' || /^\/ingest\/static\/\d+\.\d+\.\d+\/exception-autocapture\.js$/.test(pathname) };
+  const analyticsScripts = new Set(['/ingest/array/phc_synthetic_privacy_qa/config.js',
+    '/ingest/static/1.444.4/exception-autocapture.js', '/ingest/static/exception-autocapture.js']);
   const analyticsCaptures = new Set(['/ingest/e/', '/ingest/i/v0/e/', '/ingest/batch/']);
   const context = page.context();
   const pendingRoutes = new Set(), pendingPreparations = new Set();
