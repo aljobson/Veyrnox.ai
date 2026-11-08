@@ -8,7 +8,7 @@ const mockModels = [{ id: 'img', name: 'Img', modality: 'text-to-image' }, { id:
 const mockJobs = [job('i1', 'img', '2026-11-04T10:00:00Z'), job('i2', 'img', '2026-11-04T09:00:00Z'), job('v1', 'vid', '2026-11-04T08:00:00Z')];
 jest.mock('../src/lib/media', () => ({
     ...jest.requireActual('../src/lib/media'),
-    mediaApi: () => ({ listJobs: async () => ({ jobs: mockJobs, next: null }) }),
+    mediaApi: () => ({ listJobs: async () => ({ jobs: mockJobs, next: null }), getAsset: async () => ({ url: 'https://files.test/a.png', mime_type: 'image/png' }) }),
     fetchCatalogCached: async (cb: (m: unknown[]) => void) => { cb(mockModels); return mockModels; },
 }));
 

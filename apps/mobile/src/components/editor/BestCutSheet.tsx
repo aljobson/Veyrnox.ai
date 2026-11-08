@@ -13,6 +13,7 @@ import { probeDuration } from '../../lib/editorMediaDuration';
 import { libraryMedia } from '../../lib/editorLibraryLength';
 import type { LibraryChoice } from '../../lib/librarySource';
 import { LibraryChooser } from '../LibraryChooser';
+import { JobThumb, useAssetLinks } from '../JobThumb';
 import { fetchSpeechQuote, speechMessage, type SpeechQuote } from '../../lib/speechAnalysis';
 import { createBestCutFlow, bestCutPrice, type BestCutClip, type BestCutProgress } from '../../lib/bestCutFlow';
 import { buildBestCutPlan, type BestCutPlan, type BestCutPreset } from '../../lib/bestCutPlan';
@@ -25,6 +26,7 @@ import type { BestCutSettings as Settings } from '../../lib/bestCutSettings';
 type Result = { timeline: Timeline; before: Timeline; plan: BestCutPlan | null; uris: Record<string, string>; captionsOmitted?: boolean; refunded?: number };
 type Props = { api: ApiClient; projectId: string; quote: SpeechQuote; onClose(): void; onApply(result: Result): boolean };
 export function BestCutSheet({ api, projectId, quote: initialQuote, onClose, onApply }: Props) {
+    const links = useAssetLinks(api);
     const [account] = useState(() => getCacheUser() || '');
     const [flow] = useState(() => createBestCutFlow(api, account, randomUUID));
     const [consentGate] = useState(() => { const gate = createConsentGate(secureStorage, 'best-cut-2026-11-v1'); gate.setUser(account); return gate; });
@@ -126,7 +128,7 @@ export function BestCutSheet({ api, projectId, quote: initialQuote, onClose, onA
         <Button label={t('bestCut.camera')} onPress={() => void pick()} disabled={busy || clips.length >= 10} />
         <Button label={t('bestCut.library')} onPress={() => setLibraryOpen(true)} disabled={busy || clips.length >= 10} />
         <Text>{plural('bestCut.clips', clips.length)} · {t('bestCut.seconds', { n: Math.round(clips.reduce((n, c) => n + c.duration, 0)) })}</Text>
-        {clips.map((c, i) => <View key={c.media.id}><Text>{c.media.name}</Text>{progress.prices?.[i]?.cached ? <Text>{t('bestCut.cached')}</Text> : null}<Button variant="tertiary" label={t('bestCut.remove')} onPress={() => editClips(clips.filter(v => v !== c))} disabled={busy} /></View>)}
+        {clips.map((c, i) => <View key={c.media.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>{c.media.id.startsWith('j-') ? <JobThumb links={links} jobId={c.media.id.slice(2)} /> : null}<Text>{c.media.name}</Text>{progress.prices?.[i]?.cached ? <Text>{t('bestCut.cached')}</Text> : null}<Button variant="tertiary" label={t('bestCut.remove')} onPress={() => editClips(clips.filter(v => v !== c))} disabled={busy} /></View>)}
         <Text>{price.maximum ? t('bestCut.priceMax', { n: clips.length, price: quote.credits, total: price.total }) : t('bestCut.priceExact', { total: price.total })}</Text>
         {balance !== null && price.maximum && balance < price.total ? <Text accessibilityLiveRegion="polite">{t('editorAi.balance')}</Text> : null}
         {balance !== null ? <Text>{t('bestCut.balance', { n: balance })} · {t(price.maximum ? 'bestCut.afterMin' : 'bestCut.after', { n: price.remaining })}</Text> : null}

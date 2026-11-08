@@ -1,6 +1,6 @@
 import { editorTrackLabel } from '../../lib/editorTrackLabel';
 import { rawText } from '../../lib/i18n/translate';
-import { useEffect, useRef, useState, type ComponentRef } from 'react';
+import { useEffect, useRef, useState, type ComponentRef, type ReactNode } from 'react';
 import { ScrollView, StyleSheet, Text, View, type GestureResponderEvent } from 'react-native';
 import { t } from '../../lib/i18n';
 import { playSelection } from '../../lib/haptics';
@@ -14,6 +14,8 @@ import { styles } from './fullEditorStyles';
 type Props = {
     timeline: Timeline; selections: readonly Selection[]; ppf: number; total: number; frame: number; playing: boolean; snap: boolean;
     onGestureActive?(active: boolean): void;
+    // A picture of the clip's source, shown at the start of the clip block. Absent: text only.
+    clipThumb?(mediaId: string): ReactNode;
     onSeek(frame: number): void; onSelect(selection: Selection): void; onApply(timeline: Timeline): void; onViewport(width: number): void;
 };
 type Gesture = {
@@ -24,7 +26,7 @@ type Gesture = {
 const ROW = 56;
 const position = (item: Clip | TextClip, ppf: number) => ({ position: 'absolute' as const, left: item.start * ppf, top: 6, width: Math.max(8, item.len * ppf - 2), height: 44 });
 
-export function EditorTimeline({ timeline, selections, ppf, total, frame, playing, snap, onSeek, onSelect, onApply, onViewport, onGestureActive }: Props) {
+export function EditorTimeline({ timeline, selections, ppf, total, frame, playing, snap, onSeek, onSelect, onApply, onViewport, onGestureActive, clipThumb }: Props) {
     const scroller = useRef<ComponentRef<typeof ScrollView>>(null);
     const gesture = useRef<Gesture | null>(null);
     const sentActive = useRef(false), gestureCallback = useRef(onGestureActive); gestureCallback.current = onGestureActive;
@@ -149,7 +151,7 @@ export function EditorTimeline({ timeline, selections, ppf, total, frame, playin
                                 onAccessibilityAction={event => { if (['moveEarlier', 'moveLater'].includes(event.nativeEvent.actionName)) commit(moveItems(timeline, selections, selection, (event.nativeEvent.actionName === 'moveLater' ? 1 : -1) * timeline.fps, undefined, snap, frame)); }}
                                 onStartShouldSetResponder={() => true} onResponderGrant={event => begin(event, selection, row)} onResponderMove={move} onResponderRelease={release}
                                 onResponderTerminationRequest={() => !gesture.current?.active} onResponderTerminate={cancel}>
-                                <View pointerEvents="none"><Text style={styles.clipTitle} numberOfLines={1}>{name}</Text><Text style={styles.clipMeta} numberOfLines={1}>{formatTimecode(item.len, timeline.fps)}</Text></View>
+                                <View pointerEvents="none" style={local.clipBody}>{track.kind === 'text' || !(item as Clip).mediaId || size < 96 ? null : clipThumb?.((item as Clip).mediaId as string)}<View style={local.clipText}><Text style={styles.clipTitle} numberOfLines={1}>{name}</Text><Text style={styles.clipMeta} numberOfLines={1}>{formatTimecode(item.len, timeline.fps)}</Text></View></View>
                                 {active && !track.locked && canTrim(item) ? (['in', 'out'] as const).map(edge => <View key={edge} testID={`trim-${item.id}-${edge}`} style={[local.handle, edge === 'in' ? { left: 0 } : { right: 0 }]} hitSlop={{ top: 0, bottom: 0, left: 14, right: 14 }}
                                     accessibilityRole="adjustable" accessibilityLabel={rawText(edge === 'in' ? t('editorCore.trimStart', { name }) : t('editorCore.trimEnd', { name }))}
                                     accessibilityValue={{ text: formatTimecode(edge === 'in' ? item.start : item.start + item.len, timeline.fps) }} accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
@@ -167,6 +169,7 @@ export function EditorTimeline({ timeline, selections, ppf, total, frame, playin
     </View>;
 }
 const local = StyleSheet.create({
+    clipBody: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 }, clipText: { flexShrink: 1 },
     container: { flexDirection: 'row', direction: 'ltr' }, headers: { width: 92 }, header: { height: ROW, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 4, gap: 4 }, headerCopy: { flex: 1 },
     scroller: { flex: 1 }, ruler: { height: 32 }, row: { height: ROW, borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
     tick: { position: 'absolute', top: 0, height: 32, borderLeftWidth: 1, borderColor: colors.border, paddingLeft: 3 },

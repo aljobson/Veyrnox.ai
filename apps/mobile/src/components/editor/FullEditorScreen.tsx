@@ -47,6 +47,7 @@ import type { SlotKind } from '../../lib/sources';
 import { colors } from '../../theme';
 import { HeaderAction } from '../HeaderAction';
 import { LibraryChooser } from '../LibraryChooser';
+import { JobThumb, useAssetLinks } from '../JobThumb';
 type Tool = 'media' | 'audio' | 'generate' | 'text' | 'captions' | 'transcript' | 'effects' | 'transitions' | 'filters' | 'animation' | 'markers' | 'brand' | 'adjust';
 const tools: readonly { id: Tool; icon: string; label: string }[] = [
     { id: 'media', icon: '▣', label: t('editor.media2') },
@@ -80,6 +81,7 @@ export function FullEditorScreen({ projectId, jobId, startAdvanced = false, star
     const session = useFullEditorSession({ projectId, jobId, onOwnerChange: () => guard.teardown(() => router.back()), onCopy: id => guard.teardown(() => router.replace({ pathname: '/editor/[projectId]', params: { projectId: id } })) });
     const { getEditRevision, beginImport, replacing, leaveEditor, saveStatus, sync, currentDocument, preparePicked, savedDocument, api, router, name, document, dirty, problem, setProblem, tool, setTool, selection, setSelection, selections, setSelections, multiSelect, setMultiSelect, clipboard, setClipboard, snap, setSnap, ripple, setRipple, zoom, setZoom, privacyNotice, history, frameStore, setFrame, playing, setPlaying, projectAssets, localMediaUris, libraryKind, setLibraryKind, markDocument, save, acknowledgePrivacy, travel } = session;
     const bestCut = useBestCutEditor(session, projectId, startBestCut);
+    const thumbLinks = useAssetLinks(api);
     const { aiQuote, setAiQuote, aiEditOpen, setAiEditOpen } = useAiEditAvailability(api, projectId);
     const [aiAnnouncement, setAiAnnouncement] = useState<string | null>(null); useAnnouncement(aiAnnouncement);
     const { speechQuote, setSpeechQuote, speechMode, setSpeechMode } = useSpeechCutAvailability(api, projectId);
@@ -368,7 +370,7 @@ export function FullEditorScreen({ projectId, jobId, startAdvanced = false, star
                 <Text style={styles.eyebrow}>{t('editor.tIMELINE')}</Text>
                 <Text style={styles.timelineHelp}>{multiSelect ? t('editor.selectedtapclipstoadd', { value1: selections.length }) : selection ? t('editor.tapacommandtoeditselection') : t('editor.tapacliptoselect')}</Text>
             </View>
-            <PlaybackTimeline onGestureActive={returns.gestureActive} timeline={timeline} selections={selections} ppf={zoom} total={total} frameStore={frameStore} playing={playing} snap={snap} onViewport={setViewport} onSeek={value => { setPlaying(false); setFrame(value); }} onSelect={selectClip} onApply={applyTimeline} />
+            <PlaybackTimeline clipThumb={mediaId => mediaId.startsWith('j-') ? <JobThumb links={thumbLinks} jobId={mediaId.slice(2)} size={36} /> : null} onGestureActive={returns.gestureActive} timeline={timeline} selections={selections} ppf={zoom} total={total} frameStore={frameStore} playing={playing} snap={snap} onViewport={setViewport} onSeek={value => { setPlaying(false); setFrame(value); }} onSelect={selectClip} onApply={applyTimeline} />
         </View>
 
         {advanced ? <ScrollView testID="editor-tool-rail" horizontal showsHorizontalScrollIndicator={false} style={styles.toolRail} contentContainerStyle={styles.toolContent}>
