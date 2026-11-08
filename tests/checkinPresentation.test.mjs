@@ -42,6 +42,7 @@ test('the real web dialog renders a hidden claimed label and an aria-hidden tick
         '../../../lib/i18n/translate.mjs': { pluralKey },
         './Modal': { Modal: ({ children }) => createElement('div', null, children) },
         '../_lib/gateway': {},
+        'next/link': { __esModule: true, default: ({ children, href }) => createElement('a', { href }, children) },
     };
     const exports = {};
     new Function('require', 'exports', output)(name => { assert.ok(name in stubs, name); return stubs[name]; }, exports);
@@ -50,4 +51,11 @@ test('the real web dialog renders a hidden claimed label and an aria-hidden tick
     assert.match(html, /<span aria-hidden="true">✓<\/span><span class="sr-only">Claimed today<\/span>/);
     assert.equal((html.match(/class="sr-only"/g) || []).length, 1);
     assert.match(html, /2 credits/);
+    const pill = (st) => renderToStaticMarkup(createElement(exports.CheckInDialog, { status: st }))
+        .match(/data-testid="checkin-today"[^>]*>(?:<svg.*?<\/svg>)?([^<]*)</)[1];
+    const rewards = status.rewards;
+    assert.equal(pill({ claimed_today: false, streak: 0, next_day: 1, rewards }), '1 credit');
+    assert.equal(pill({ claimed_today: false, streak: 3, next_day: 4, rewards }), '2 credits');
+    assert.equal(pill({ claimed_today: true, streak: 3, next_day: 4, rewards }), '2 credits');
+    assert.equal(pill({ claimed_today: true, streak: 9, next_day: 7, rewards }), '3 credits');
 });
