@@ -133,6 +133,9 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
     const drawEpoch = useRef(0);
     const pickRun = useRef(0);
     const controller = useRef<AbortController | null>(null);
+    // Conversions holding busy, and whether an upload does: busy clears only when neither is left.
+    const converting = useRef(0);
+    const uploading = useRef(false);
 
     useEffect(
         () => {
@@ -169,9 +172,9 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
         // Converting a photo happens after the picker closes; Generate waits for it (an upload in flight already holds busy).
         const holdsBusy = status.step !== 'uploading';
         let held = false;
-        const release = () => { if (held && mounted.current) onBusy(false); held = false; };
+        const release = () => { if (!held) return; held = false; converting.current--; if (mounted.current && converting.current === 0 && !uploading.current) onBusy(false); };
         try {
-            file = await choose(slot.kind, () => { if (holdsBusy && current()) { held = true; onBusy(true); } });
+            file = await choose(slot.kind, () => { if (holdsBusy && current()) { held = true; converting.current++; onBusy(true); } });
         } catch {
             release();
             if (!current()) return;
@@ -205,14 +208,17 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
         setStatus({ step: 'uploading', fraction: 0 });
         onChange(undefined);
         onBusy(true);
+        uploading.current = true;
         try {
             const key = await uploadSource(api, file, checked.contentType, (fraction) => { if (!current.signal.aborted) setStatus({ step: 'uploading', fraction }); }, current.signal);
             if (current.signal.aborted || !mounted.current) return;
             setStatus({ step: 'ready' });
             onChange(key);
+            uploading.current = false;
             onBusy(false);
         } catch (err) {
             if (current.signal.aborted) return;
+            uploading.current = false;
             onBusy(false);
             setStatus({ step: 'empty' });
             setPreview(null);
@@ -235,6 +241,7 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
         drawEpoch.current++;
         setDrawing(null);
         controller.current?.abort();
+        uploading.current = false;
         onBusy(false);
         setError(null);
         setPreview(null);
@@ -251,6 +258,7 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
         controller.current?.abort();
         setLibraryName(null);
         onLibrary?.(undefined);
+        uploading.current = false;
         onBusy(false);
         setStatus({ step: 'empty' });
         setPreview(null);
