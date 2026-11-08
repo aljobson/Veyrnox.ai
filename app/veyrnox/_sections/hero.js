@@ -9,7 +9,7 @@ import { PriceSlip } from '../_components/PriceSlip';
 import { getT } from '../../../lib/i18n/server';
 import { localizedHref } from '../../../lib/i18n/locales.mjs';
 
-/* ─── Hero: the promise beside the promo film, the working price slip below ─── */
+/* ─── Hero: the promise, and the receipt that keeps it, side by side with the promo film ─── */
 
 export async function Hero({ models }) {
   const { locale, t } = await getT();
@@ -17,29 +17,30 @@ export async function Hero({ models }) {
     <section className="relative">
       <h2 className="sr-only">Veyrnox.ai</h2>
       <p className="sr-only">{t('home.breakthrough.film')}</p>
-      {/* The film sits in its own column, never under text, buttons or a
-          scrim: the picture is whole and the Play control is beneath it. On a
-          phone the headline comes first and the film follows it. */}
-      <div className="px-4 sm:px-6 max-w-[1300px] mx-auto grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-x-16 gap-y-10 lg:items-center pt-10 sm:pt-14">
-        <div className="flex flex-col justify-center">
+      {/* The headline says the price is on the receipt, so the receipt is
+          under it, printing in the first screen. The slip's Generate button
+          is the page's one primary action, which is why there is no second
+          "Start creating" pill beside it. The film sits in its own column,
+          never under text, buttons or a scrim: the picture is whole and the
+          Play control is beneath it. On a phone the headline and the slip
+          come first and the film follows. */}
+      <div className="px-4 sm:px-6 max-w-[1300px] mx-auto grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-x-16 gap-y-12 lg:items-start pt-8 sm:pt-10 pb-16 lg:pb-24">
+        <div className="min-w-0">
           <h1 className="vx-display vx-title-index vx-title-glow">
             {t('home.hero.title')}
           </h1>
-          <p className="mt-6 text-lg sm:text-xl text-vx-fg-body max-w-[40ch] leading-[1.5] text-pretty">
+          <p className="mt-5 text-lg sm:text-xl text-vx-fg-body max-w-[52ch] leading-[1.5] text-pretty">
             {t('home.hero.lead')}
           </p>
-          <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-4">
-            <Link
-              href="/app/create?model=nano-banana-kie"
-              className="vx-press inline-flex min-h-11 items-center rounded-full bg-vx-fg px-7 py-3.5 text-[15px] font-extrabold text-vx-base hover:bg-vx-fg/85"
-            >
-              {t('home.hero.start')}
-            </Link>
+          <div className="mt-8 sm:mt-10 max-w-[620px]">
+            <PriceSlip models={models} />
+          </div>
+          <div className="mt-7 flex max-w-[620px] flex-wrap items-baseline gap-x-6 gap-y-2 text-[14px] text-vx-fg-body">
             <Link href={localizedHref(locale, '/pricing')} className="text-[15px] font-bold text-vx-fg-body underline decoration-vx-fg-faint decoration-2 underline-offset-[6px] hover:text-vx-fg hover:decoration-vx-accent">
               {t('home.hero.prices')}
             </Link>
+            <span>{t('home.cta.note')}</span>
           </div>
-          <p className="mt-5 text-[14px] text-vx-fg-body">{t('home.cta.note')}</p>
         </div>
         {/* The fixed Contact / back-to-top rail (SiteChrome) is 44px wide, 8px from
             the right edge and scrolls over the page. Where the film could reach
@@ -49,11 +50,6 @@ export async function Hero({ models }) {
           <FilmPlayer film={BREAKTHROUGH_FILM} label={t('public.film.robot')} aspectRatio="9 / 16" controlsBelow />
         </div>
       </div>
-      <div className="px-4 sm:px-6 max-w-[1300px] mx-auto pt-12 pb-16 lg:pb-24">
-        <div className="mx-auto max-w-[620px]">
-          <PriceSlip models={models} />
-        </div>
-      </div>
     </section>
   );
 }
@@ -61,6 +57,13 @@ export async function Hero({ models }) {
 /* ─── What it makes: five tiles, each opens a model or the presets ─── */
 
 const modelOf = (href) => new URL(href, 'https://x').searchParams.get('model');
+
+// Four of the five clips are portrait (9:16 and 406:720) and one is 4:3. Each
+// at its own shape left the row ragged, with the 4:3 card a third of the height
+// of its neighbours and the five price lines on five different baselines. One
+// portrait frame (MediaTile `ambient`) keeps every clip whole, lines the
+// prices up, and lets the landscape clip sit in it on a blurred copy of itself.
+const PORTRAIT_FRAME = '9 / 16';
 
 export async function FeaturedHeroCards({ catalog }) {
   const { t } = await getT();
@@ -72,8 +75,8 @@ export async function FeaturedHeroCards({ catalog }) {
       {/* Below sm the five tiles are one swipe row, not a stack. It runs to
           the screen edge so the next tile shows there is more; the vertical
           padding keeps the rise and the focus ring inside the scroller,
-          which clips both axes. Tiles keep their clip's own shape, so they
-          are top-aligned, as in the grid from sm up. */}
+          which clips both axes. Every tile shares one frame, so the
+          captions and prices sit on one line across the row. */}
       <div role="region" aria-labelledby="featured-title" aria-describedby="featured-scroll-hint" className="-mx-4 -my-2 flex snap-x snap-mandatory items-start gap-x-3 gap-y-6 overflow-x-auto scroll-pl-4 px-4 py-2 sm:mx-0 sm:my-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:py-0 lg:grid-cols-5">
         {FEATURE_CARDS.map((f, i) => {
           const row = rowOf(modelOf(f.href));
@@ -89,7 +92,8 @@ export async function FeaturedHeroCards({ catalog }) {
               className="vx-rise block w-[72%] shrink-0 snap-start text-left sm:w-auto"
               style={{ '--vx-i': i }}
               mediaClassName="rounded-2xl"
-              mediaStyle={{ background: f.bg, aspectRatio: clip?.aspectRatio || '4 / 5' }}
+              ambient
+              mediaStyle={{ background: f.bg, aspectRatio: PORTRAIT_FRAME }}
               footer={
                 <div className="pt-3 flex flex-col gap-2">
                   <div className="font-black text-[17px] leading-[1.15] text-balance">{title}</div>

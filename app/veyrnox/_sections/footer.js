@@ -1,6 +1,7 @@
 import LegalLink from '../../../components/LegalLink';
 import Link from 'next/link';
 import { Logo } from '../_components/Logo';
+import { PrintOnView } from '../_components/PrintOnView';
 import { ENTITY } from '../../legal/_lib/entity';
 import { rich } from '../../../lib/i18n/rich';
 import { localizedHref, localeInfo } from '../../../lib/i18n/locales.mjs';
@@ -53,25 +54,30 @@ export function LedgerExample({ catalog, locale = 'en', t }) {
         <div className="order-2 lg:order-1 max-w-[460px] w-full mx-auto lg:mx-0">
           <div className="vx-paper-shadow">
             <div className="vx-paper px-6 sm:px-8 pt-9 pb-10">
-              <div className="flex items-baseline justify-between text-[13px] font-bold">
-                <span>{t('home.ledger.statement')}</span>
-                <span className="font-normal text-vx-fg-muted">{t('home.ledger.example')}</span>
-              </div>
-              <div className="vx-perf mt-4" aria-hidden />
-              <dl className="mt-4 space-y-2 font-vx-mono text-[13.5px] vx-num">
-                {lines.map((l, i) => (
-                  <div key={i} className="flex items-baseline gap-2">
-                    <dt className={`min-w-0 ${l.refund ? 'text-vx-accent font-bold' : 'truncate'}`}>{l.label}</dt>
-                    <span aria-hidden className="vx-leader flex-1" />
-                    <dd className={`shrink-0 font-bold ${l.delta > 0 ? 'text-vx-accent' : 'text-vx-money'}`}>{fmt(l.delta)}</dd>
-                  </div>
-                ))}
-              </dl>
-              <div className="vx-perf mt-5" aria-hidden />
-              <div className="mt-4 flex items-baseline justify-between font-vx-mono text-[15px] font-bold vx-num">
-                <span>{t('home.ledger.balance')}</span>
-                <span className="text-vx-money">{balance} cr</span>
-              </div>
+              {/* Append-only, so the example is drawn that way: each line is
+                  added under the last as the slip comes into view, the
+                  balance last (PrintOnView, .vx-feed in veyrnox.css). */}
+              <PrintOnView>
+                <div className="flex items-baseline justify-between text-[13px] font-bold">
+                  <span>{t('home.ledger.statement')}</span>
+                  <span className="font-normal text-vx-fg-muted">{t('home.ledger.example')}</span>
+                </div>
+                <div className="vx-perf mt-4" aria-hidden />
+                <dl className="mt-4 space-y-2 font-vx-mono text-[13.5px] vx-num">
+                  {lines.map((l, i) => (
+                    <div key={i} className="vx-feed-line flex items-baseline gap-2" style={{ '--vx-i': i }}>
+                      <dt className={`min-w-0 ${l.refund ? 'text-vx-accent font-bold' : 'truncate'}`}>{l.label}</dt>
+                      <span aria-hidden className="vx-leader flex-1" />
+                      <dd className={`shrink-0 font-bold ${l.delta > 0 ? 'text-vx-accent' : 'text-vx-money'}`}>{fmt(l.delta)}</dd>
+                    </div>
+                  ))}
+                </dl>
+                <div className="vx-feed-line vx-perf mt-5" aria-hidden style={{ '--vx-i': lines.length }} />
+                <div className="vx-feed-line mt-4 flex items-baseline justify-between font-vx-mono text-[15px] font-bold vx-num" style={{ '--vx-i': lines.length + 1 }}>
+                  <span>{t('home.ledger.balance')}</span>
+                  <span className="text-vx-money">{balance} cr</span>
+                </div>
+              </PrintOnView>
             </div>
           </div>
         </div>
