@@ -69,7 +69,7 @@ export function turnstileOrigins(baseUrl: string, development: boolean): string[
     return ['https://*', 'about:*', ...(local ? [local] : [])];
 }
 export function allowTurnstileNavigation(url: string, baseUrl: string, development = false): boolean {
-    if (url === 'about:blank') return true;
+    if (url === 'about:blank' || url === 'about:srcdoc') return true;
     try {
         const u = new URL(url), base = new URL(baseUrl);
         if (u.username || u.password) return false;
