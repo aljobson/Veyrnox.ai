@@ -27,7 +27,7 @@ beforeEach(() => {
 afterEach(async () => { await act(async () => root.unmount()); });
 
 const buttons = () => root.container.queryAll((n) => n.props.accessibilityRole === 'button' && typeof n.props.onClick === 'function');
-const click = (node: { props: { onClick: (e: unknown) => unknown } }) => act(async () => { await node.props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }); });
+const click = (node: { props: Record<string, any> }) => act(async () => { await node.props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }); });
 const mount = () => act(async () => root.render(<AttachFromDevice api={{} as any} current={noPictures as any} onPlaced={jest.fn()} carry={{ prompt: 'template words', tid: 'epic-train' }} />));
 
 test('the card no longer promises a silent move to another model', () => {
