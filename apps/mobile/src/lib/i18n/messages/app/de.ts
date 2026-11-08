@@ -482,6 +482,8 @@ export default {
   "attachFromDevice.filedidnotfitthismodeland": "{value1} Datei{value2} passten nicht zu diesem Modell und wurden ausgelassen ({value3}).",
   "attachFromDevice.files": "Dateien",
   "attachFromDevice.nomodeltakesthosefilesrightnow": "Gerade unterstützt kein Modell diese Dateien.",
+  "attachFromDevice.modelTakesNoFiles": "{value1} kann diese Dateien nicht nutzen. {value2} kann es.",
+  "attachFromDevice.switchTo": "Zu {value1} wechseln",
   "attachFromDevice.photosvideos": "Fotos und Videos",
   "attachFromDevice.pickseveralpicturesvideosoraudiofiles": "Wähle mehrere Bilder, Videos oder Audiodateien auf einmal. Deine Vorlage und deine Worte bleiben unverändert. Falls dieses Modell sie nicht nutzen kann, kannst du zu einem passenden wechseln.",
   "attachFromDevice.skippedFiles.one": "{count} Datei passte nicht zu diesem Modell und wurde ausgelassen.",

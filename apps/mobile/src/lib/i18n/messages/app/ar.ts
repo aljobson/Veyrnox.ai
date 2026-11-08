@@ -486,6 +486,8 @@ export default {
   "attachFromDevice.filedidnotfitthismodeland": "ملفات غير متوافقة مع هذا النموذج: {value1}{value2}، وقد استُبعدت {value3}.",
   "attachFromDevice.files": "الملفات",
   "attachFromDevice.nomodeltakesthosefilesrightnow": "لا يوجد نموذج يقبل هذه الملفات حاليًا.",
+  "attachFromDevice.modelTakesNoFiles": "لا يمكن لـ {value1} استخدام هذه الملفات. يمكن لـ {value2} ذلك.",
+  "attachFromDevice.switchTo": "التبديل إلى {value1}",
   "attachFromDevice.photosvideos": "الصور والفيديوهات",
   "attachFromDevice.pickseveralpicturesvideosoraudiofiles": "اختر عدة صور أو مقاطع فيديو أو ملفات صوتية دفعة واحدة. يبقى قالبك وكلماتك كما هي. وإذا تعذّر على هذا النموذج استخدامها، يمكنك التبديل إلى نموذج يستطيع ذلك.",
   "attachFromDevice.skippedFiles.few": "عدد الملفات المستبعدة لعدم توافقها مع هذا النموذج: {count}.",

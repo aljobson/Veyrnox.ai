@@ -481,6 +481,8 @@ export default {
   "attachFromDevice.filedidnotfitthismodeland": "{value1} 个文件{value2}不适用于此模型，{value3}被排除。",
   "attachFromDevice.files": "文件",
   "attachFromDevice.nomodeltakesthosefilesrightnow": "目前没有模型支持这些文件。",
+  "attachFromDevice.modelTakesNoFiles": "{value1} 无法使用这些文件，{value2} 可以。",
+  "attachFromDevice.switchTo": "切换到 {value1}",
   "attachFromDevice.photosvideos": "照片与视频",
   "attachFromDevice.pickseveralpicturesvideosoraudiofiles": "一次选择多张图片、视频或音频文件。您的模板和文字保持不变。如果当前模型无法使用这些文件，您可以切换到能使用的模型。",
   "attachFromDevice.skippedFiles.other": "{count} 个文件不适用于此模型，已被排除。",
