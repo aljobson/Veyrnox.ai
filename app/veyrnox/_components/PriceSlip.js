@@ -90,7 +90,7 @@ export function PriceSlip({ models }) {
         </label>
         <textarea
           id="slip-prompt"
-          rows={3}
+          rows={2}
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           placeholder={t('slip.placeholder')}
