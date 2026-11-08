@@ -1,4 +1,4 @@
-/** Disposable LOCAL Postgres, with 0450–0452 already applied by its owner.
+/** Disposable LOCAL Postgres, with 0450–0455 already applied by its owner.
  * Never applies migrations. Tests normally roll back all fixtures. The concurrency test
  * commits isolated fixtures so two connections can see them, then erases the account;
  * its content-free financial audit rows remain (the ledger is append-only).
@@ -15,14 +15,14 @@ describe('speech analysis RPC acceptance', { skip: !url && 'SPEECH_ANALYSIS_TEST
     let policies: { active: boolean; credits: number; capacity: boolean; paused: boolean }, committed = false;
     const one = async (sql: string, args: unknown[] = [], conn = client) => (await conn.query(sql, args)).rows[0];
     const rpc = async (name: string, args: unknown[] = [], conn = client) => {
-        assert.match(name, /^[a-z_]+$/); // Names here are fixed test constants; values are parameters.
+        assert.match(name, /^[a-z_][a-z_0-9]*$/); // Names here are fixed test constants; values are parameters.
         return (await one(`SELECT public.${name}(${args.map((_, i) => `$${i + 1}`).join(',')}) AS value`, args, conn)).value;
     };
     before(async () => {
         assert.ok(['localhost', '127.0.0.1', '[::1]'].includes(new URL(url!).hostname), 'Use a disposable local database only');
         Pg = (await import('pg')).default; client = new Pg.Client({ connectionString: url }); await client.connect();
         await client.query("SET statement_timeout='15s'");
-        assert.ok((await one("SELECT to_regprocedure('public.speech_analysis_request(text,uuid,numeric,text,integer)') AS fn")).fn, 'Owner must provision current migrations first');
+        assert.ok((await one("SELECT to_regprocedure('public.speech_analysis_request_v2(text,uuid,numeric,text,integer,text,text,text,bigint,numeric,text,boolean,boolean)') AS fn")).fn, 'Owner must provision current migrations first');
     });
     beforeEach(async () => {
         committed = false; await client.query('BEGIN');
@@ -132,7 +132,7 @@ describe('speech analysis RPC acceptance', { skip: !url && 'SPEECH_ANALYSIS_TEST
         assert.equal(joined.id, first.id); assert.equal(joined.kind, 'joined_in_flight');
         const other = await makeSource(); assert.equal((await request(key, other.source)).code, 'IDEMPOTENCY_CONFLICT');
         await complete(first.id); const cacheKey = randomUUID(), cached = await request(cacheKey);
-        assert.equal(cached.kind, 'reused_cache'); assert.equal(cached.id, first.id);
+        assert.equal(cached.kind, 'reused_cache'); assert.equal(cached.id, first.id); assert.equal(cached.credits, 0);
         assert.equal((await rpc('speech_analysis_by_key', [auth, key])).status, 'completed');
         assert.equal((await rpc('speech_analysis_by_key', [auth, cacheKey])).kind, 'reused_cache');
         assert.deepEqual(await counts(first.id), { debits: 1, refunds: 0 });
@@ -268,5 +268,77 @@ describe('speech analysis RPC acceptance', { skip: !url && 'SPEECH_ANALYSIS_TEST
             const row = await one('SELECT prosecdef,proconfig FROM pg_proc WHERE oid=$1::regprocedure', [`public.${fn}`]); assert.equal(row.prosecdef, true); assert.ok(row.proconfig.includes('search_path=""'));
             for (const role of ['anon', 'authenticated']) assert.equal((await one("SELECT has_function_privilege($1,$2,'EXECUTE') AS allowed", [role, `public.${fn}`])).allowed, false);
         }
+    });
+    // ADR-0334: service-only verified metadata; no object storage or remote database in this suite.
+    const bestRequest = (key = randomUUID(), options: { upload?: boolean; fingerprint?: string; accepts?: boolean; price?: number; cacheOnly?: boolean; uploadKey?: string } = {}, conn = client) => rpc('speech_analysis_request_v2', [
+        auth, options.upload ? null : source, 12, key, options.price ?? 2, options.upload ? 'upload' : 'job',
+        options.upload ? options.uploadKey || `uploads/${auth}/${randomUUID()}.mov` : null, options.fingerprint || fingerprint, 500, 12, 'video/quicktime', options.accepts !== false, options.cacheOnly === true,
+    ], conn);
+    for (const bestFirst of [true, false]) it(`silent shared source uses each receipt capability; best first=${bestFirst}`, async () => {
+        const bestKey = randomUUID(), legacyKey = randomUUID();
+        const first = bestFirst ? await bestRequest(bestKey) : await request(legacyKey);
+        const second = bestFirst ? await request(legacyKey) : await bestRequest(bestKey);
+        assert.equal(first.id, second.id);
+        await rpc('speech_analysis_callback', [first.id, 'provider-silent']);
+        for (let i = 0; i < 2; i++) assert.equal((await rpc('speech_analysis_fail', [first.id, 'analysis_no_speech'])).refunded, true);
+        const best = await rpc('speech_analysis_by_key', [auth, bestKey]);
+        assert.equal(best.status, 'completed'); assert.equal(best.speech, false); assert.equal(best.analysis, undefined);
+        assert.equal((await rpc('speech_analysis_by_key', [auth, legacyKey])).status, 'failed');
+        assert.equal((await rpc('speech_analysis_get', [auth, first.id])).status, 'failed');
+        assert.deepEqual(await counts(first.id), { debits: 1, refunds: 1 });
+        assert.deepEqual(await one('SELECT used,reserved FROM public.speech_gate_daily WHERE user_id=$1', [user]), { used: 1, reserved: 0 });
+    });
+    it('upload transcript survives a missing temporary key; owner-scoped hash and size reuse for 30 days', async () => {
+        const key = randomUUID(), first = await bestRequest(key, { upload: true }); assert.equal(first.fresh, true);
+        await rpc('speech_analysis_callback', [first.id, 'upload-provider']);
+        assert.equal((await rpc('speech_analysis_complete', [first.id, { ...analysis(), assetId: fingerprint }])).ok, true);
+        // The temporary object is deliberately absent: no source lookup exists for upload rows.
+        const got = await rpc('speech_analysis_by_key', [auth, key]); assert.equal(got.status, 'completed');
+        const second = await bestRequest(randomUUID(), { upload: true, price: 0, cacheOnly: true });
+        assert.equal(second.id, first.id); assert.equal(second.kind, 'reused_cache'); assert.equal(second.credits, 0);
+        assert.equal((await rpc('speech_analysis_get', [randomUUID(), first.id])).code, 'NOT_FOUND');
+        await client.query("UPDATE public.speech_analyses SET created_at=now()-interval '31 days' WHERE job_id=$1", [first.id]);
+        assert.equal((await bestRequest(randomUUID(), { upload: true, price: 0, cacheOnly: true })).code, 'PRICE_CHANGED');
+        assert.deepEqual(await counts(first.id), { debits: 1, refunds: 0 });
+        assert.equal((await one('SELECT count(*)::int AS n FROM public.ledger_entries WHERE user_id=$1 AND delta<0', [user])).n, 1);
+    });
+    it('foreign upload and traversal reject without debit; account deletion purges upload transcripts and quota', async () => {
+        for (const uploadKey of [`uploads/${randomUUID()}/${randomUUID()}.mov`, `uploads/${auth}/../${randomUUID()}.mov`]) {
+            assert.equal((await bestRequest(randomUUID(), { upload: true, uploadKey })).code, 'SOURCE_UNSUPPORTED');
+        }
+        const first = await bestRequest(randomUUID(), { upload: true });
+        await rpc('speech_analysis_fail', [first.id, 'analysis_no_speech']); await erase();
+        for (const table of ['speech_analyses', 'speech_gate_daily']) assert.equal((await one(`SELECT count(*)::int AS n FROM public.${table} WHERE user_id=$1`, [user])).n, 0);
+    });
+    it('UTC rollover resets settled use but preserves outstanding capacity, and release is once-only', async () => {
+        const first = await bestRequest(randomUUID(), { upload: true });
+        await client.query("UPDATE public.speech_gate_daily SET day=(now() AT TIME ZONE 'UTC')::date-1,used=9 WHERE user_id=$1", [user]);
+        const second = await bestRequest(randomUUID(), { upload: true, fingerprint: 'b'.repeat(64) }); assert.equal(second.fresh, true);
+        assert.deepEqual(await one('SELECT used,reserved FROM public.speech_gate_daily WHERE user_id=$1', [user]), { used: 0, reserved: 2 });
+        await rpc('speech_analysis_fail', [first.id, 'provider_failed']); await rpc('speech_analysis_fail', [first.id, 'provider_failed']);
+        await rpc('speech_analysis_fail', [second.id, 'analysis_no_speech']);
+        assert.deepEqual(await one('SELECT used,reserved FROM public.speech_gate_daily WHERE user_id=$1', [user]), { used: 1, reserved: 0 });
+    });
+    it('three concurrent admissions at nine used reserve one place and refuse two before debit', async () => {
+        await client.query("INSERT INTO public.speech_gate_daily(user_id,day,used) VALUES($1,(now() AT TIME ZONE 'UTC')::date,9)", [user]);
+        await client.query('COMMIT'); committed = true;
+        const peers = [new Pg.Client({ connectionString: url }), new Pg.Client({ connectionString: url })];
+        try {
+            await Promise.all(peers.map(p => p.connect()));
+            const results = await Promise.all([client, ...peers].map((conn, i) => bestRequest(randomUUID(), { upload: true, fingerprint: String(i + 1).repeat(64) }, conn)));
+            assert.equal(results.filter(r => r.fresh).length, 1);
+            assert.equal(results.filter(r => r.code === 'SPEECH_GATE_COOLDOWN').length, 2);
+            assert.equal((await one('SELECT count(*)::int AS n FROM public.ledger_entries WHERE user_id=$1 AND delta<0', [user])).n, 1);
+            assert.deepEqual(await one('SELECT used,reserved FROM public.speech_gate_daily WHERE user_id=$1', [user]), { used: 9, reserved: 1 });
+        } finally { await Promise.all(peers.map(p => p.end())); }
+    });
+    it('a previously refunded queued job releases its reservation without another refund', async () => {
+        const first = await bestRequest(randomUUID(), { upload: true });
+        await client.query("UPDATE public.jobs SET state='FAILED' WHERE id=$1", [first.id]);
+        assert.equal((await rpc('ledger_refund', [first.id, user, 2, 'refund:speech_analysis'])).ok, true);
+        await rpc('speech_analysis_fail', [first.id, 'analysis_timeout']);
+        assert.deepEqual(await counts(first.id), { debits: 1, refunds: 1 });
+        assert.deepEqual(await one('SELECT used,reserved FROM public.speech_gate_daily WHERE user_id=$1', [user]), { used: 0, reserved: 0 });
+        assert.equal((await rpc('speech_analysis_get', [auth, first.id])).status, 'failed');
     });
 });

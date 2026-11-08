@@ -24,6 +24,12 @@ interface Picked {
     readonly file: PickedFile;
     readonly contentType: string;
 }
+// The files the open model had no slot for, kept so a person's explicit "Switch to" can place them without picking again.
+interface SwitchOffer {
+    readonly model: CatalogModel;
+    readonly files: PickedFile[];
+    readonly library: readonly LibraryPick[];
+}
 
 const FILE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'audio/mpeg', 'audio/wav', 'audio/x-wav', 'audio/wave'];
 
@@ -68,12 +74,14 @@ export function AttachFromDevice({ api, current, carry, settings, references = [
     const [progress, setProgress] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [choosingLibrary, setChoosingLibrary] = useState(false);
+    const [offer, setOffer] = useState<SwitchOffer | null>(null);
     useEffect(() => { onBusy?.(busy !== null); }, [busy]); // eslint-disable-line react-hooks/exhaustive-deps
     useEffect(() => () => onBusy?.(false), []); // eslint-disable-line react-hooks/exhaustive-deps
 
     async function attach(source: Exclude<Source, 'library'>) {
         const valid = begin();
         setError(null);
+        setOffer(null);
         setBusy(source);
         try {
             let files: PickedFile[];
@@ -98,6 +106,7 @@ export function AttachFromDevice({ api, current, carry, settings, references = [
         setChoosingLibrary(false);
         const valid = begin();
         setError(null);
+        setOffer(null);
         setBusy('library');
         try {
             await place([], picks, valid);
@@ -109,7 +118,22 @@ export function AttachFromDevice({ api, current, carry, settings, references = [
         }
     }
 
-    async function place(files: PickedFile[], library: readonly LibraryPick[], valid: () => boolean) {
+    // Only the person's tap on "Switch to <model>" sets `switchModel`: attaching on its own never changes the model.
+    async function switchTo(chosen: SwitchOffer) {
+        const valid = begin();
+        setError(null);
+        setOffer(null);
+        setBusy('files');
+        try {
+            await place(chosen.files, chosen.library, valid, true);
+        } catch (err) {
+            if (valid()) setError(isConsentDeclined(err) ? null : uploadMessage(err));
+        } finally {
+            setBusy(null); setProgress(null);
+        }
+    }
+
+    async function place(files: PickedFile[], library: readonly LibraryPick[], valid: () => boolean, switchModel = false) {
         const picked: Picked[] = [];
         const problems: string[] = [];
         for (const file of files) {
@@ -118,7 +142,7 @@ export function AttachFromDevice({ api, current, carry, settings, references = [
             if (kind && checked?.ok) picked.push({ kind, file, contentType: checked.contentType });
             else problems.push(kind && checked && !checked.ok ? pickedProblem(checked.error, kind) : t('attachFromDevice.useJPEGPNGorWebPpicturesMP4'));
         }
-        const openForm = !!current && !!onPlaced;
+        const openForm = !!current && !!onPlaced && !switchModel;
         const items: ({ kind: SlotKind; ref: GenerationReference } | Picked)[] = [
             // On an open form the references already there stay in their own slots; only new files are placed.
             ...(openForm ? [] : uniqueReferences(references).map(ref => ({ kind: referenceKind(ref), ref }))),
@@ -126,10 +150,17 @@ export function AttachFromDevice({ api, current, carry, settings, references = [
             ...picked,
         ];
         // The open model stays: files that it has no slot for are refused rather than moved to another model.
-        const catalog = current ? [current] : await fetchCatalog();
+        const catalog = current && !switchModel ? [current] : await fetchCatalog();
         if (!valid()) return;
         const plan = openForm && current ? planOpenForm(current, items, references.map(ref => ({ slot: ref.slot, kind: referenceKind(ref) }))) : planAttachments(catalog, current, items);
-        if (!plan) { setError(problems[0] ?? t('attachFromDevice.nomodeltakesthosefilesrightnow')); return; }
+        if (!plan) {
+            // Say which model is open and which one takes the files; the switch itself is the person's tap.
+            const other = current && onPlaced && !problems.length ? planAttachments(await fetchCatalog(), current, items) : null;
+            if (!valid()) return;
+            if (current && other && other.model.id !== current.id) { setOffer({ model: other.model, files, library }); return; }
+            setError(problems[0] ?? t('attachFromDevice.nomodeltakesthosefilesrightnow'));
+            return;
+        }
         const merged: GenerationReference[] = [];
         const abort = new AbortController();
         let done = 0;
@@ -144,7 +175,7 @@ export function AttachFromDevice({ api, current, carry, settings, references = [
             }
         }
         if (!valid()) return;
-        if (current && onPlaced) {
+        if (current && onPlaced && !switchModel) {
             onPlaced(merged);
             if (plan.unused.length + problems.length > 0) setError(problems[0] ?? t('attachFromDevice.nomodeltakesthosefilesrightnow'));
             return;
@@ -165,6 +196,13 @@ export function AttachFromDevice({ api, current, carry, settings, references = [
             </View>
             {choosingLibrary ? <LibraryMultiPicker api={api} capacity={attachCapacity(current)} onConfirm={(picks) => void attachLibrary(picks)} onClose={() => setChoosingLibrary(false)} /> : null}
             {progress ? <Text variant="footnote" tone="tertiary" accessibilityLiveRegion="polite" style={styles.hint}>{progress}</Text> : null}
+            {offer && current ? (
+                <View style={styles.offer}>
+                    <Text variant="body" accessibilityLiveRegion="polite">{t('attachFromDevice.modelTakesNoFiles', { value1: current.name, value2: offer.model.name })}</Text>
+                    {offer.model.id === 'seedance-2.0-reference' ? <Text variant="footnote" tone="tertiary">{t('app.create.referenceLikenessNotice')}</Text> : null}
+                    <Button variant="secondary" accessibilityRole="button" disabled={busy !== null || blocked} onPress={() => void switchTo(offer)} label={t('attachFromDevice.switchTo', { value1: offer.model.name })} />
+                </View>
+            ) : null}
             {error ? <Text variant="body" tone="danger" accessibilityLiveRegion="polite" style={styles.error}>{error}</Text> : null}
         </View>
     );
@@ -178,4 +216,5 @@ const sheets = themedStyles((p) => ({
     hint: { color: p.textTertiary, },
     row: { flexDirection: 'row', gap: ds.space.sm },
     error: { color: p.danger },
+    offer: { gap: ds.space.sm },
 }));

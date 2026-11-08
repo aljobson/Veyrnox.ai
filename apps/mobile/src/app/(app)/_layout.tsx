@@ -1,12 +1,11 @@
 export { SignedInErrorBoundary as ErrorBoundary } from '../../components/ErrorFallback';
 import { t } from '../../lib/i18n';
 import { useOfflineRecovery } from '../../lib/useOfflineRecovery';
-import { Text } from '../../components/ui';
+import { Text, useAppearance } from '../../components/ui';
 import { CelebrationHost } from '../../components/CelebrationHost';
 import { CheckInModal } from '../../components/CheckInModal';
 import { ReferralAttach } from '../../components/ReferralAttach';
 import { Redirect, Stack } from 'expo-router';
-import { useColorScheme } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { Logo } from '../../components/Logo';
 import { AiConsentHost } from '../../components/AiConsentHost';
@@ -18,13 +17,14 @@ import { HomeBackButton } from '../../components/HomeBackButton';
 import { ServiceBanner } from '../../components/ServiceBanner';
 import { PaywallPrompt } from '../../components/PaywallPrompt';
 import { HardPaywallGate } from '../../components/HardPaywallGate';
-import { getThemePreference, paletteForScheme, resolveScheme } from '../../theme';
+import { paletteForScheme } from '../../theme';
 
 export default function AppLayout() {
     useOfflineRecovery();
     const { status, generation } = useAuth();
-    const systemScheme = useColorScheme();
-    const palette = paletteForScheme(resolveScheme(getThemePreference(), systemScheme));
+    // Live theme: the back chevron takes headerTintColor, so a palette read once would leave it dark-on-dark after a switch.
+    const { settings, scheme } = useAppearance();
+    const palette = paletteForScheme(scheme, settings);
     if (status === 'signedOut') return <Redirect href="/sign-in" />;
     return (
         <>

@@ -17,8 +17,11 @@ export default function Rate() {
         void markReviewAsked();
     }, []);
 
+    // A cold open (notification, link) has no screen behind it: go home rather than do nothing.
+    const close = () => { if (router.canGoBack()) router.back(); else router.replace('/'); };
+
     async function rate() {
-        router.back();
+        close();
         await openRatingSheet();
     }
 
@@ -37,7 +40,7 @@ export default function Rate() {
                 <Pressable accessibilityRole="button" style={[touchTarget, styles.primary]} onPress={() => void rate()}>
                     <Text style={styles.primaryText}>{t('rate.cta')}</Text>
                 </Pressable>
-                <Pressable accessibilityRole="button" style={[touchTarget, styles.skip]} onPress={() => router.back()}>
+                <Pressable accessibilityRole="button" style={[touchTarget, styles.skip]} onPress={close}>
                     <Text style={styles.skipText}>{t('rate.later')}</Text>
                 </Pressable>
             </View>

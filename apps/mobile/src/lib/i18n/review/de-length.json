@@ -1,5 +1,41 @@
 [
   {
+    "id": "bestCut.settings",
+    "english": "Best Cut",
+    "translation": "Bester Schnitt",
+    "ratio": 1.75
+  },
+  {
+    "id": "bestCut.auto",
+    "english": "Auto-detect",
+    "translation": "Automatisch erkennen",
+    "ratio": 1.82
+  },
+  {
+    "id": "bestCut.tryAnyway",
+    "english": "Try Anyway",
+    "translation": "Trotzdem versuchen",
+    "ratio": 1.8
+  },
+  {
+    "id": "bestCut.warning.sections",
+    "english": "Some short pauses were kept to fit 10 sections.",
+    "translation": "Einige kurze Pausen bleiben erhalten, damit es höchstens 10 Abschnitte sind.",
+    "ratio": 1.62
+  },
+  {
+    "id": "bestCut.apply",
+    "english": "Apply best cut",
+    "translation": "Besten Schnitt anwenden",
+    "ratio": 1.64
+  },
+  {
+    "id": "bestCut.close",
+    "english": "Close",
+    "translation": "Schließen",
+    "ratio": 1.8
+  },
+  {
     "id": "faceFilterSwitch.current",
     "english": "Filter: {name}",
     "translation": "Aktueller Filter: {name}",

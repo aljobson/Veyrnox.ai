@@ -1,5 +1,11 @@
 [
   {
+    "id": "bestCut.tryAnyway",
+    "english": "Try Anyway",
+    "translation": "المحاولة على أي حال",
+    "ratio": 1.9
+  },
+  {
     "id": "recovery.home",
     "english": "Go home",
     "translation": "العودة إلى الرئيسية",

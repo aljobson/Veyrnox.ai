@@ -308,6 +308,8 @@ try {
         'upload_request_rate_limits', 'upload_reservations', 'workspace_members',
         // Speech Cut (ADR-0331): short-lived (30-day) derivatives of the user's own media, erased with the source and the account.
         'speech_analyses', 'speech_analysis_cache', 'speech_analysis_requests', 'speech_source_probes',
+        // Best Cut (ADR-0334): a per-user daily no-speech counter, not user content; erased with the account.
+        'speech_gate_daily',
     ]);
     const refs = await q(`SELECT DISTINCT c.conrelid::regclass::text AS tbl FROM pg_constraint c
         WHERE c.contype='f' AND c.confrelid IN ('public.users'::regclass,'auth.users'::regclass)`);

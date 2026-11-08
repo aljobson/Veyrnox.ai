@@ -1,5 +1,17 @@
 [
   {
+    "id": "bestCut.auto",
+    "english": "Auto-detect",
+    "translation": "Detectar automaticamente",
+    "ratio": 2.18
+  },
+  {
+    "id": "bestCut.tryAnyway",
+    "english": "Try Anyway",
+    "translation": "Tentar mesmo assim",
+    "ratio": 1.8
+  },
+  {
     "id": "recovery.home",
     "english": "Go home",
     "translation": "Ir para o início",

@@ -8,6 +8,7 @@ import { libraryChoices } from '../lib/librarySource';
 import { fetchCatalogCached, mediaApi, type CatalogModel, type Job, type JobPage } from '../lib/media';
 import type { SlotKind } from '../lib/sources';
 import { colors } from '../theme';
+import { JobThumb, useAssetLinks } from './JobThumb';
 
 export interface LibraryPick {
     readonly jobId: string;
@@ -38,6 +39,7 @@ export function LibraryMultiPicker({ api, capacity, onConfirm, onClose }: Props)
     const [filter, setFilter] = useState<SlotKind | 'all'>('all');
     const [picked, setPicked] = useState<string[]>([]);
     const loading = useRef(false);
+    const links = useAssetLinks(api);
     const kinds = KINDS.filter((kind) => capacity[kind] > 0);
 
     async function load(cursor?: JobPage['next']) {
@@ -112,8 +114,9 @@ export function LibraryMultiPicker({ api, capacity, onConfirm, onClose }: Props)
                                     onPress={() => toggle(item.jobId, item.kind)}
                                 >
                                     <View style={[styles.badge, order >= 0 && styles.badgeOn]}><Text style={styles.badgeText}>{order >= 0 ? order + 1 : ''}</Text></View>
+                                    <JobThumb links={links} jobId={item.jobId} />
                                     <View style={styles.grow}>
-                                        <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
+                                        <Text style={styles.name} numberOfLines={2}>{item.name}</Text>
                                         <Text style={styles.muted}>{t(LABEL[item.kind])} · {new Date(item.createdAt).toLocaleDateString(formatLocale())}</Text>
                                     </View>
                                 </Pressable>
@@ -137,7 +140,7 @@ const styles = StyleSheet.create({
     chip: { minHeight: 40, paddingHorizontal: 12, borderRadius: 20, borderWidth: 1, borderColor: colors.border, justifyContent: 'center' },
     chipOn: { borderColor: colors.accent },
     chipText: { color: colors.text, fontSize: 14, fontWeight: '600' },
-    row: { minHeight: MIN_TARGET + 8, flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth },
+    row: { minHeight: 72, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth },
     grow: { flex: 1, gap: 2 },
     badge: { width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
     badgeOn: { backgroundColor: colors.accent, borderColor: colors.accent },

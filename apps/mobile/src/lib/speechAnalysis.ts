@@ -1,3 +1,4 @@
+import { uploadMessage } from './uploads';
 import { ApiError, type ApiClient } from './api';
 import { getCacheUser, subscribeCacheUser } from './appCache';
 import { sendKeyFor, type PendingSend } from './chat';
@@ -5,8 +6,8 @@ import { requireOnline, OfflineError, OFFLINE_PAID_MESSAGE } from './network';
 import { t } from './i18n';
 import { parseSmartCutAnalysis, type SpeechAnalysis } from './speechCut';
 export const SPEECH_PATH = '/api/v1/editor/speech-analyses';
-export type SpeechQuote = { credits: number; max_seconds: 60; languages: string[] };
-export type SpeechOutcome = { id: string; status: 'queued' | 'completed' | 'failed'; progress?: 'queued' | 'transcribing'; analysis?: SpeechAnalysis; refunded?: boolean };
+export type SpeechQuote = { credits: number; max_seconds: 60; languages: string[]; source_types?: string[] };
+export type SpeechOutcome = { id: string; status: 'queued' | 'completed' | 'failed'; progress?: 'queued' | 'transcribing'; analysis?: SpeechAnalysis; refunded?: boolean; speech?: boolean; credits?: number };
 // Memory only. appCache's identity subscription invalidates results, keys and active requests together.
 const results = new Map<string, SpeechOutcome>(), keys = new Map<string, PendingSend>(), active = new Set<AbortController>();
 subscribeCacheUser(() => { results.clear(); keys.clear(); for (const controller of active) controller.abort(); active.clear(); });
@@ -17,15 +18,16 @@ export function speechKeyFor(account: string, source: string, duration: number, 
     keys.set(id, pending); return pending.key;
 }
 export function forgetSpeechKey(account: string, source: string) { keys.delete(scope(account, source)); }
-export async function fetchSpeechQuote(api: ApiClient, signal?: AbortSignal): Promise<SpeechQuote | null> {
+export async function fetchSpeechQuote(api: ApiClient, signal?: AbortSignal, bestCut = false): Promise<SpeechQuote | null> {
     try {
-        const result = await api.request<SpeechQuote>(`${SPEECH_PATH}/quote`, { signal });
+        const result = await api.request<SpeechQuote>(`${SPEECH_PATH}/quote${bestCut ? '?capability=best-cut' : ''}`, { signal });
         if (!Number.isSafeInteger(result.credits) || result.credits < 1 || result.max_seconds !== 60 || !Array.isArray(result.languages)) throw new ApiError(200, 'bad_response');
         return result;
     } catch (error) { if (error instanceof ApiError && error.status === 501) return null; throw error; }
 }
 function outcome(value: SpeechOutcome): SpeechOutcome {
     if (!value || !['queued', 'completed', 'failed'].includes(value.status)) throw new ApiError(200, 'bad_response');
+    if (value.status === 'completed' && value.speech === false) return value;
     if (value.status === 'completed') {
         const parsed = parseSmartCutAnalysis(value.analysis); if (!parsed.ok) throw new ApiError(200, 'bad_response');
         return { ...value, analysis: parsed.analysis };
@@ -35,11 +37,11 @@ function outcome(value: SpeechOutcome): SpeechOutcome {
 export async function recoverSpeech(api: ApiClient, key: string, account: string, signal?: AbortSignal) {
     return outcome(await api.request<SpeechOutcome>(`${SPEECH_PATH}/by-key/${encodeURIComponent(key)}`, { signal }, { owner: account }));
 }
-export async function startSpeech(api: ApiClient, input: { account: string; jobId: string; duration: number; key: string; credits: number }, signal?: AbortSignal) {
+export async function startSpeech(api: ApiClient, input: { account: string; jobId?: string; source?: { type: 'job'; jobId: string } | { type: 'upload'; key: string }; bestCut?: boolean; cacheOnly?: boolean; duration: number; key: string; credits: number }, signal?: AbortSignal) {
     requireOnline();
     try {
         return outcome(await api.request<SpeechOutcome>(SPEECH_PATH, { method: 'POST', signal, headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ source: { type: 'job', jobId: input.jobId }, duration: input.duration, idempotencyKey: input.key, expectedCredits: input.credits }) }, { owner: input.account }));
+            body: JSON.stringify({ source: input.source || { type: 'job', jobId: input.jobId }, duration: input.duration, idempotencyKey: input.key, expectedCredits: input.credits, ...(input.bestCut ? { accepts_no_speech: true, cacheOnly: input.cacheOnly === true } : {}) }) }, { owner: input.account, ...(input.bestCut ? { timeoutMs: 90000 } : {}) }));
     } catch (error) {
         if (signal?.aborted) throw error;
         if (error instanceof ApiError && (error.body.refunded === true || (error.status > 0 && error.status < 500 && error.code !== 'bad_response'))) throw error;
@@ -75,9 +77,10 @@ export async function pollSpeech(api: ApiClient, key: string, account: string, s
 export function speechMessage(error: unknown): string {
     if (error instanceof OfflineError) return OFFLINE_PAID_MESSAGE;
     const code = error instanceof ApiError ? error.code : '';
+    if (/^upload_|^(too_many_pending_uploads|insufficient_credits)$/.test(code)) return uploadMessage(error);
     const messages: Record<string, string> = { source_too_long: 'editorSpeech.tooLong', source_unsupported: 'editorSpeech.unsupported', duration_mismatch: 'editorSpeech.durationChanged',
         result_expired: 'editorAi.expired', poll_timeout: 'editorSpeech.timeout', outcome_pending: 'editorSpeech.timeout', price_changed: 'editorSpeech.priceChanged', speech_cut_unavailable: 'editorSpeech.unavailable', provider_admission_paused: 'editorSpeech.unavailable',
         account_frozen: 'accountDeletion.youraccountisfrozenContactsupportto', insufficient_balance: 'editorAi.balance', subscription_required: 'editorAi.subscription',
-        consent_declined: 'editorAi.consent', rate_limited: 'editorAi.rateLimited', idempotency_conflict: 'editorAi.conflict' };
+        speech_gate_cooldown: 'bestCut.cooldown', source_not_admitted: 'editorSpeech.unavailable', consent_declined: 'editorAi.consent', rate_limited: 'editorAi.rateLimited', idempotency_conflict: 'editorAi.conflict' };
     return t(messages[code] || 'editorSpeech.failed');
 }
