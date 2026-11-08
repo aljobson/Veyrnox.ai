@@ -481,6 +481,8 @@ export default {
   "attachFromDevice.filedidnotfitthismodeland": "{value1}件のファイル{value2}がこのモデルに対応していないため、{value3}除外されました。",
   "attachFromDevice.files": "ファイル",
   "attachFromDevice.nomodeltakesthosefilesrightnow": "現在、そのファイルに対応するモデルはありません。",
+  "attachFromDevice.modelTakesNoFiles": "{value1}ではこれらのファイルを使えません。{value2}なら使えます。",
+  "attachFromDevice.switchTo": "{value1}に切り替える",
   "attachFromDevice.photosvideos": "写真と動画",
   "attachFromDevice.pickseveralpicturesvideosoraudiofiles": "画像、動画、音声ファイルを一度に複数選べます。テンプレートと入力した文章はそのまま残ります。このモデルで使えない場合は、使えるモデルに切り替えられます。",
   "attachFromDevice.skippedFiles.other": "{count}件のファイルがこのモデルに対応していないため、除外されました。",

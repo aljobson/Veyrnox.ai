@@ -482,6 +482,8 @@ export default {
   "attachFromDevice.filedidnotfitthismodeland": "{value1} फ़ाइल{value2} इस मॉडल के अनुकूल नहीं थीं और छोड़ दी गईं: {value3}।",
   "attachFromDevice.files": "फ़ाइलें",
   "attachFromDevice.nomodeltakesthosefilesrightnow": "अभी कोई मॉडल वे फ़ाइलें स्वीकार नहीं करता।",
+  "attachFromDevice.modelTakesNoFiles": "{value1} इन फ़ाइलों का उपयोग नहीं कर सकता। {value2} कर सकता है।",
+  "attachFromDevice.switchTo": "{value1} पर स्विच करें",
   "attachFromDevice.photosvideos": "फ़ोटो और वीडियो",
   "attachFromDevice.pickseveralpicturesvideosoraudiofiles": "एक साथ कई तस्वीरें, वीडियो या ऑडियो फ़ाइलें चुनें। आपका टेम्पलेट और आपके शब्द जैसे हैं वैसे ही रहते हैं। अगर यह मॉडल उन्हें इस्तेमाल नहीं कर सकता, तो आप ऐसे मॉडल पर स्विच कर सकते हैं जो कर सकता है।",
   "attachFromDevice.skippedFiles.one": "{count} फ़ाइल इस मॉडल के अनुकूल नहीं थी और छोड़ दी गई।",
