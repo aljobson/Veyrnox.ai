@@ -71,8 +71,8 @@
   },
   "private": true,
   "overrides": {
-    "@posthog/core": "1.58.1",
-    "@posthog/types": "1.415.3",
+    "@posthog/core": "1.63.1",
+    "@posthog/types": "1.419.0",
     "@expo/cli": {
       "glob": "14.0.2"
     },
