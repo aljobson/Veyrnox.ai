@@ -13,6 +13,7 @@ import { LibraryChooser } from './LibraryChooser';
 import { t, plural } from '../lib/i18n';
 import type { LibraryChoice } from '../lib/librarySource';
 import { checkPicked, pickedProblem, type PickedFile, type Slot, type GenerationReference } from '../lib/sources';
+import { pickedImageFile } from '../lib/pickedImage';
 import { uploadMessage, isConsentDeclined, uploadSource } from '../lib/uploads';
 import { ds } from '../theme';
 
@@ -48,7 +49,7 @@ type Status = { readonly step: 'empty' } | { readonly step: 'uploading'; readonl
 const TOKEN = { image: 'Image', video: 'Video', audio: 'Audio' } as const;
 const NOUN = { image: 'image', video: 'video', audio: 'audio file' } as const;
 
-export async function choose(kind: Slot['kind']): Promise<PickedFile | null> {
+export async function choose(kind: Slot['kind'], onConverting?: () => void): Promise<PickedFile | null> {
     if (kind === 'audio') {
         const res = await DocumentPicker.getDocumentAsync({ type: ['audio/mpeg', 'audio/wav', 'audio/x-wav', 'audio/wave'], copyToCacheDirectory: true });
         const a = res.canceled ? null : res.assets[0];
@@ -62,6 +63,7 @@ export async function choose(kind: Slot['kind']): Promise<PickedFile | null> {
     });
     const a = res.canceled ? null : res.assets[0];
     if (!a) return null;
+    if (kind === 'image') { onConverting?.(); return pickedImageFile(a); }
     return { uri: a.uri, mimeType: a.mimeType, size: a.fileSize, width: a.width, height: a.height, durationSeconds: typeof a.duration === 'number' ? a.duration / 1000 : undefined };
 }
 
@@ -131,6 +133,9 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
     const drawEpoch = useRef(0);
     const pickRun = useRef(0);
     const controller = useRef<AbortController | null>(null);
+    // Conversions holding busy, and whether an upload does: busy clears only when neither is left.
+    const converting = useRef(0);
+    const uploading = useRef(false);
 
     useEffect(
         () => {
@@ -164,21 +169,29 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
         const current = () => run === pickRun.current && mounted.current && owner === getCacheUser();
         setError(null);
         let file: PickedFile | null;
+        // Converting a photo happens after the picker closes; Generate waits for it (an upload in flight already holds busy).
+        const holdsBusy = status.step !== 'uploading';
+        let held = false;
+        // The upload takes over busy from the conversion (handOff); a cancel, failure or rejected file releases it.
+        const handOff = () => { if (held) { held = false; converting.current--; } };
+        const release = () => { if (!held) return; handOff(); if (mounted.current && converting.current === 0 && !uploading.current) onBusy(false); };
         try {
-            file = await choose(slot.kind);
+            file = await choose(slot.kind, () => { if (holdsBusy && current()) { held = true; converting.current++; onBusy(true); } });
         } catch {
+            release();
             if (!current()) return;
             setError(t('sourcePicker.couldnotopenyourfilesCheckthe'));
             return;
         }
-        if (!current()) return;
-        if (file) await accept(file);
+        if (!current() || !file) { release(); return; }
+        await accept(file, release, handOff);
     }
 
-    async function accept(file: PickedFile) {
+    async function accept(file: PickedFile, release?: () => void, handOff?: () => void) {
         setError(null);
         const checked = checkPicked(slot.kind, file, slot);
         if (!checked.ok) {
+            release?.();
             if (isDrawFile(file.uri)) deleteDrawFile(file.uri);
             setError(pickedProblem(checked.error, slot.kind));
             return;
@@ -187,6 +200,7 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
             releaseOwned();
             if (isDrawFile(file.uri)) { claimDrawFile(file.uri); owned.current = file.uri; }
         }
+        handOff?.();
         controller.current?.abort();
         const current = new AbortController();
         controller.current = current;
@@ -197,14 +211,17 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
         setStatus({ step: 'uploading', fraction: 0 });
         onChange(undefined);
         onBusy(true);
+        uploading.current = true;
         try {
             const key = await uploadSource(api, file, checked.contentType, (fraction) => { if (!current.signal.aborted) setStatus({ step: 'uploading', fraction }); }, current.signal);
             if (current.signal.aborted || !mounted.current) return;
             setStatus({ step: 'ready' });
             onChange(key);
+            uploading.current = false;
             onBusy(false);
         } catch (err) {
             if (current.signal.aborted) return;
+            uploading.current = false;
             onBusy(false);
             setStatus({ step: 'empty' });
             setPreview(null);
@@ -227,6 +244,7 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
         drawEpoch.current++;
         setDrawing(null);
         controller.current?.abort();
+        uploading.current = false;
         onBusy(false);
         setError(null);
         setPreview(null);
@@ -243,6 +261,7 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
         controller.current?.abort();
         setLibraryName(null);
         onLibrary?.(undefined);
+        uploading.current = false;
         onBusy(false);
         setStatus({ step: 'empty' });
         setPreview(null);
