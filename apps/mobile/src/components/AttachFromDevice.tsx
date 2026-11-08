@@ -14,7 +14,7 @@ import { createHandoff, referenceKind, uniqueReferences, type FormSnapshot } fro
 import { useHandoffScope } from '../lib/useHandoffScope';
 import type { GenerationReference } from '../lib/sources';
 import { fetchCatalog, type CatalogModel } from '../lib/media';
-import { checkPicked, kindOfMime, pickedProblem, type PickedFile, type SlotKind, type SlotName } from '../lib/sources';
+import { checkPicked, kindOfMime, pickedProblem, slotsFor, type PickedFile, type SlotKind, type SlotName } from '../lib/sources';
 import { isConsentDeclined, uploadMessage, uploadSource } from '../lib/uploads';
 import { ds } from '../theme';
 
@@ -157,8 +157,10 @@ export function AttachFromDevice({ api, current, carry, settings, references = [
             // Say which model is open and which one takes the files; the switch itself is the person's tap.
             const other = current && onPlaced && !problems.length ? planAttachments(await fetchCatalog(), current, items) : null;
             if (!valid()) return;
-            if (current && other && other.model.id !== current.id) { setOffer({ model: other.model, files, library }); return; }
-            setError(problems[0] ?? t('attachFromDevice.nomodeltakesthosefilesrightnow'));
+            // The open model has a slot of that kind but it is full: switching would not be the honest advice, so say what was left out.
+            const hasSlot = !!current && slotsFor(current).some(slot => items.some(item => item.kind === slot.kind));
+            if (current && other && other.model.id !== current.id && !hasSlot) { setOffer({ model: other.model, files, library }); return; }
+            setError(problems[0] ?? (hasSlot ? plural('attachFromDevice.skippedFiles', items.length) : t('attachFromDevice.nomodeltakesthosefilesrightnow')));
             return;
         }
         const merged: GenerationReference[] = [];
@@ -177,7 +179,7 @@ export function AttachFromDevice({ api, current, carry, settings, references = [
         if (!valid()) return;
         if (current && onPlaced && !switchModel) {
             onPlaced(merged);
-            if (plan.unused.length + problems.length > 0) setError(problems[0] ?? t('attachFromDevice.nomodeltakesthosefilesrightnow'));
+            if (plan.unused.length + problems.length > 0) setError(problems[0] ?? plural('attachFromDevice.skippedFiles', plan.unused.length));
             return;
         }
         const moved = plan.assignments.filter(a => 'ref' in a.item && a.slot !== a.item.ref.slot).length;

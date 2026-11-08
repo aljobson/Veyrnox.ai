@@ -382,6 +382,7 @@ export default function CreateWithModel() {
                                 key={s.slot}
                                 slot={s}
                                 drawable={canDraw(model) && s.slot === 'image'}
+                                tokens={model.id === 'seedance-2.0-reference' || /@(Image|Video|Audio)\d/i.test(prompt)}
                                 api={api}
                                 references={references.filter(ref => ref.slot === s.slot)}
                                 onReferences={files => { setReferences(all => replaceSlotReferences(all, s.slot, files)); }}

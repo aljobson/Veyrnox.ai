@@ -62,3 +62,12 @@ test('with no model that takes the files, the plain refusal stays', async () => 
     await click(buttons()[0]!);
     expect(root.container.queryAll(n => n.children.includes(t('attachFromDevice.nomodeltakesthosefilesrightnow'))).length).toBeGreaterThan(0);
 });
+
+test('a model that has a picture slot which is full says files were left out, and offers no switch', async () => {
+    const full = { id: 'one-slot', name: 'One slot', modality: 'image-to-video', capabilities: { media: { image: { maxFiles: 1 } } } };
+    await act(async () => root.render(<AttachFromDevice api={{} as any} current={full as any} onPlaced={jest.fn()} />));
+    await click(buttons()[0]!);
+    expect(mockReplace).not.toHaveBeenCalled();
+    expect(root.container.queryAll(n => JSON.stringify(n.children).includes('Switch to'))).toHaveLength(0);
+    expect(root.container.queryAll(n => JSON.stringify(n.children).includes('did not fit')).length).toBeGreaterThan(0);
+});
