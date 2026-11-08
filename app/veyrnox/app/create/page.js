@@ -164,6 +164,15 @@ export default function CreateStudio() {
   const frameFallback = models.find((m) => m.id === FRAME_MODEL_ID);
   // True while a batch is still being sent, so New generation cannot clear it halfway.
   const [sending, setSending] = useState(false);
+  // Offline notice: drafts stay readable, and the notice says why Generate will not work.
+  const [online, setOnline] = useState(true);
+  useEffect(() => {
+    const sync = () => setOnline(navigator.onLine);
+    sync();
+    window.addEventListener('online', sync);
+    window.addEventListener('offline', sync);
+    return () => { window.removeEventListener('online', sync); window.removeEventListener('offline', sync); };
+  }, []);
   const incomingDraft = useRef(false);
   // Keep the requested ratio until the live catalog (or the complete registry-derived
   // fallback after a failed read) resolves the selected model's real capabilities.
@@ -808,6 +817,7 @@ export default function CreateStudio() {
             placeholder={helperCopy(t, locale, promptPlaceholder(model))}
           />
           {promptTooLong && <p role="alert" className="mt-2 text-xs font-bold text-vx-danger">{t(promptLimitKey, { count: preparedPromptLength, max: promptLimit })}</p>}
+          {!online && <p role="status" data-testid="create-offline" className="mt-2 rounded-lg border border-vx-warn/40 bg-vx-warn/[0.07] px-3 py-2 text-xs text-vx-fg-body">{t('app.create.offline')}</p>}
           {(draftRecovery.restoring || draftRecovery.status) && <div role="status" data-testid="create-draft-recovery" data-restoring={draftRecovery.restoring} className="mt-2 rounded-lg border border-vx-border bg-vx-panel px-3 py-2 text-xs text-vx-fg-muted">
             {draftRecovery.restoring ? t("app.create.restoring") : draftRecovery.status}
             {draftRecovery.failed && <button type="button" onClick={draftRecovery.retry} className="ms-2 min-h-11 underline text-vx-accent">{t("app.create.retryDraft")}</button>}
