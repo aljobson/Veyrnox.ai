@@ -146,6 +146,14 @@ picked (reprint the price line, total as the biggest thing on it), one hero
 message, warm paper in the light theme, one crop rule and one grade for the
 stills.
 
+## After the critic
+
+Fixed, CSS only, not re-captured: a 0.5 px ink edge on the paper slip in the
+light theme (critic 3) and `word-spacing: 0.06em` on `.vx-display` (critic 7).
+Left alone on purpose: the quick-browse roller, because
+`tests/templateRoller.test.mjs` pins it on the landing page as a product
+decision. Everything else on the critic's list is still open.
+
 ## Open for the owner
 
 - The hero no longer has a "Start creating" pill; Generate on the slip is the

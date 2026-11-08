@@ -138,8 +138,8 @@
 }
 /* The mask would clip a shadow on the slip itself, so it lives on a wrapper. */
 .vx-paper-shadow { filter: drop-shadow(0 18px 28px rgb(0 0 0 / 0.45)); }
-:root[data-theme='light'] .vx-paper-shadow { filter: drop-shadow(0 14px 24px rgb(16 22 20 / 0.16)); }
-@media (prefers-color-scheme: light) { :root[data-theme='system'] .vx-paper-shadow { filter: drop-shadow(0 14px 24px rgb(16 22 20 / 0.16)); } }
+:root[data-theme='light'] .vx-paper-shadow { filter: drop-shadow(0 0 0.5px rgb(16 22 20 / 0.55)) drop-shadow(0 14px 24px rgb(16 22 20 / 0.16)); }
+@media (prefers-color-scheme: light) { :root[data-theme='system'] .vx-paper-shadow { filter: drop-shadow(0 0 0.5px rgb(16 22 20 / 0.55)) drop-shadow(0 14px 24px rgb(16 22 20 / 0.16)); } }
 .vx-paper ::selection { background: rgb(11 122 102 / 0.22); }
 .vx-paper textarea { caret-color: rgb(var(--vx-accent)); }
 
@@ -225,6 +225,9 @@
   font-weight: 900;
   line-height: 0.94;
   letter-spacing: -0.04em;
+  /* -0.04em tracking also closes the word gaps; a little back so two
+     words never read as one rope. */
+  word-spacing: 0.06em;
   text-wrap: balance;
 }
 
