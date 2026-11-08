@@ -49,12 +49,18 @@ export function PresetCard({ preset, clip = preset.clip ?? null, size = 'md', on
         </div>
       }
     >
-      {preset.isNew && <span className="absolute end-3 top-3 rounded-full bg-vx-base/80 px-2 py-0.5 font-vx-mono text-[10px] font-bold tracking-[0.12em]">{t('mobile.new')}</span>}
+      {/* A roller tile is 128-144px wide: the source disclosure on the left
+          and this chip on the right overlapped there (the "N" was cut off),
+          so on the roller the flag moves into the caption instead. */}
+      {preset.isNew && !roller && <span className="absolute end-3 top-3 rounded-full bg-vx-base/80 px-2 py-0.5 font-vx-mono text-[10px] font-bold tracking-[0.12em]">{t('mobile.new')}</span>}
       {roller && (
         <span className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 bg-black/75 p-2.5 text-white backdrop-blur-sm">
           <span className="min-w-0">
             <span className="block truncate text-[12px] font-extrabold tracking-tight">{title}</span>
-            <span className="mt-0.5 block truncate font-vx-mono text-[9px] text-white/70">{preset.durationSeconds ? t('mobile.templateDuration', { n: preset.durationSeconds }) : preset.model}</span>
+            <span className="mt-0.5 block truncate font-vx-mono text-[9px] text-white/70">
+              {preset.isNew && <span className="me-1.5 font-bold tracking-[0.12em] text-white">{t('mobile.new')}</span>}
+              {preset.durationSeconds ? t('mobile.templateDuration', { n: preset.durationSeconds }) : preset.model}
+            </span>
           </span>
           <span className="shrink-0 font-vx-mono text-[11px] font-bold text-vx-money">{presetCredits(preset, catalog)} cr</span>
         </span>

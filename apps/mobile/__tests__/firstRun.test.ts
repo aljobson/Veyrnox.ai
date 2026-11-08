@@ -1,7 +1,7 @@
 import en from '../src/lib/i18n/messages/en';
 declare const require: (id: string) => any;
 declare const __dirname: string;
-const fs = require('fs') as { readFileSync: (p: string, e: 'utf8') => string };
+const fs = require('fs') as { readFileSync: (p: string, e: 'utf8') => string; existsSync: (p: string) => boolean };
 const path = require('path') as { join: (...p: string[]) => string };
 const read = (...p: string[]) => fs.readFileSync(path.join(__dirname, '..', 'src', ...p), 'utf8');
 
@@ -92,18 +92,10 @@ describe('where the welcome shows', () => {
         expect(screen).toContain("t('welcome.skip')");
     });
 
-    test('welcome opens the Mobbin-inspired, input-first creation screen instead of the preference quiz', () => {
+    test('welcome leads to the home screen; the four-box Start screen is gone', () => {
         const welcome = read('app', '(app)', 'welcome.tsx');
-        const start = read('app', '(app)', 'start.tsx');
         expect(welcome).toContain('router.replace(afterWelcomeHref(hardPaywallEnabled(), CREATOR_PROFILE_ENABLED))');
-        for (const [key, label] of [['start.myphoto', 'My photo'], ['start.myvideo', 'My video'], ['start.areference', 'A reference'], ['start.justanidea', 'Just an idea']]) {
-            expect(start).toContain(`label: t('${key}')`);
-            expect((en as Record<string, string>)[key]).toBe(label);
-        }
-        expect(start).toContain('selected={source === item.key}');
-        expect(start).toContain("t('start.ortryatemplate')");
-        expect(en['start.ortryatemplate']).toBe('Or try a template');
-        expect(start).toContain('presetHref(template)');
+        expect(fs.existsSync(path.join(__dirname, '..', 'src', 'app', '(app)', 'start.tsx'))).toBe(false);
     });
 
     test('the Vibe screen asks no questions: language only, then it completes itself', () => {

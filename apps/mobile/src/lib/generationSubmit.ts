@@ -12,8 +12,8 @@ export type SubmitRequest = Omit<GenerationRequest, 'idempotencyKey'>;
 
 // Price/allowance metadata never changes request identity or retry keys.
 export function generationSignature(request: SubmitRequest, count: number) {
-    const { modelId, prompt, textKey, durationSeconds, extraInputs, references, sources, assets, sourceRights, preset, templateId, swap } = request;
-    return JSON.stringify({ modelId, prompt, textKey, durationSeconds, extraInputs, references, sources, assets, sourceRights, preset, templateId, swap, count });
+    const { modelId, prompt, textKey, durationSeconds, extraInputs, references, sources, assets, sourceRights, preset, templateId, swap, templateClip } = request;
+    return JSON.stringify({ modelId, prompt, textKey, durationSeconds, extraInputs, references, sources, assets, sourceRights, preset, templateId, swap, templateClip, count });
 }
 export const unknownGenerationOutcome = (err: unknown) => !(err instanceof ApiError)
     || ['network', 'internal', 'gateway_error', 'debit_failed', 'account_changed', 'dispatch_acceptance_unknown', 'admission_unknown', 'outcome_unknown', 'bad_response'].includes(err.code)

@@ -365,6 +365,8 @@ const ja = {
     'presets.fidelity.photoReady': '写真の準備ができました',
     'presets.use.photoReplace': '変更',
     'presets.fidelity.photosUnavailable': 'このテンプレートには、モデルが現在対応している枚数より多くの写真が必要です。別のテンプレートを選ぶか、後でもう一度お試しください。',
+    'public.TemplateRecipe.templateClipUsed': 'このテンプレート独自の動画クリップとあなたの写真を使って、主役を置き換えます。',
+    'presets.use.photoTitle': '写真を追加',
 } as const;
 
 export default ja;

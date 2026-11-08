@@ -40,12 +40,15 @@ test('recording attempt 1 sends the job, route and supplier job id, and never th
 });
 
 test('the route resolves before dispatch and records only after job_submitted succeeded', () => {
-  const src = readFileSync(new URL('../app/api/v1/generations/route.js', import.meta.url), 'utf8');
-  const resolve = src.indexOf('await resolveRouteSet(modelRow, cfg)');
-  const submit = src.indexOf('await submitWithFailover({');
-  const record = src.indexOf('if (recorded) await recordFirstAttempt(');
-  assert.ok(resolve > 0 && resolve < submit && submit < record);
-  assert.match(src, /const recorded = await recordSubmittedJob/);
+  const route = readFileSync(new URL('../app/api/v1/generations/route.js', import.meta.url), 'utf8');
+  const helper = readFileSync(new URL('../lib/generationProviderSubmit.js', import.meta.url), 'utf8');
+  const resolve = route.indexOf('await resolveRouteSet(modelRow, cfg)');
+  const finish = route.indexOf('return finishGenerationSubmit(');
+  assert.ok(resolve > 0 && finish > resolve);
+  const submit = helper.indexOf('await submitWithFailover({');
+  const submitted = helper.indexOf('const recorded = await recordSubmittedJob(');
+  const record = helper.indexOf('if (recorded) await recordFirstAttempt(');
+  assert.ok(submit > 0 && submitted > submit && record > submitted);
 });
 
 test('migration 0370 only inserts, checks the job and route, and is service-role only', () => {

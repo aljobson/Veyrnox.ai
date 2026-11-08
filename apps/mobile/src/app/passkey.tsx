@@ -18,7 +18,7 @@ export default function PasskeyAuth() {
     if (status === 'signedIn') return <Redirect href="/(app)/(tabs)" />;
     return (
         <ScrollView style={styles.screen} contentContainerStyle={[styles.body, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 }]}>
-            <Pressable accessibilityRole="button" accessibilityLabel={t('public.vey.back')} style={touchTarget} onPress={() => router.back()}>
+            <Pressable accessibilityRole="button" accessibilityLabel={t('public.vey.back')} style={touchTarget} onPress={() => (router.canGoBack() ? router.back() : router.replace('/sign-in'))}>
                 <Text style={styles.back}>{t('public.vey.back')}</Text>
             </Pressable>
             <Text accessibilityRole="header" style={styles.heading}>{t('passkey.title')}</Text>

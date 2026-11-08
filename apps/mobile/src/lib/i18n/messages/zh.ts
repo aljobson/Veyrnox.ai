@@ -365,6 +365,8 @@ const zh = {
     'presets.fidelity.photoReady': '照片已就绪',
     'presets.use.photoReplace': '替换',
     'presets.fidelity.photosUnavailable': '此模板需要的照片数量超过模型目前支持的数量。请选择其他模板或稍后重试。',
+    'public.TemplateRecipe.templateClipUsed': '此模板使用自己的视频片段和你的照片来替换主角。',
+    'presets.use.photoTitle': '添加你的照片',
 } as const;
 
 export default zh;

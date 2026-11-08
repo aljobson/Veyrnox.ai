@@ -5,12 +5,12 @@ export const INSTALL_RESET_KEYS = [
     'veyrnox_refresh_token',
     'veyrnox.welcome.seen.v2',
     'veyrnox.language.v1', 'veyrnox.language.direction.v1',
-    'veyrnox.vey.character.v1', 'veyrnox.theme', 'veyrnox.accent', 'veyrnox.typeface', 'veyrnox.textSize', 'veyrnox.theme.return',
+    'veyrnox.vey.character.v1', 'veyrnox.theme', 'veyrnox.accent', 'veyrnox.typeface', 'veyrnox.textSize', 'veyrnox.theme.return', 'veyrnox.themeKeep',
     'veyrnox.analytics.consent.v1', 'veyrnox_push_pref',
     'veyrnox.celebrate.submissions.v1', 'veyrnox.celebrate.owner.v1', 'veyrnox.celebrate.first.v1',
     'veyrnox.celebrate.video.v1', 'veyrnox.celebrate.onboarding.v1',
     'veyrnox.vibe.v1', 'veyrnox.vibe.v2', 'veyrnox.reviewAsk.v1', 'veyrnox.editorPrivacyNotice.v1',
-    'veyrnox.referral.v1',
+    'veyrnox.referral.v1', 'veyrnox.bestCut.settings.v1',
 ] as const;
 export const INSTALL_KEPT_KEYS = {
     veyrnox_push_device: 'Random device id, not personal data; preserves push registration identity.',

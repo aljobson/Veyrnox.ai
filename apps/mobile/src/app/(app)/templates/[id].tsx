@@ -19,6 +19,7 @@ import { SourcePicker } from '../../../components/SourcePicker';
 import type { GenerationReference } from '../../../lib/sources';
 import { useTemplateGenerate } from '../../../lib/useTemplateGenerate';
 import { templateModelEligible, templateOptions, type TemplateChoices } from '../../../lib/templateChoices';
+import { useTemplateClipAvailable, templateClipModel } from '../../../lib/templateClips';
 import { GENERATION_PROMPT_MAX } from '../../../lib/promptLimits';
 
 // The longest prompt the generations route accepts.
@@ -45,29 +46,34 @@ export default function TemplatePage() {
     const sourcePromptDuplicate = typeof preset?.sourcePromptDuplicateOf === 'string';
     const [catalog, setCatalog] = useState<CatalogModel[] | undefined>();
     const [choices, setChoices] = useState<TemplateChoices>({});
-    const original = catalog?.find(model => model.id === preset?.modelId);
+    const templateClip = useTemplateClipAvailable(id);
+    const displayPrompt = templateClip && preset ? (hasExactSourcePrompt ? preset.sourcePrompt! : preset.prompt) : prompt;
+    const catalogModel = catalog?.find(model => model.id === (templateClip?.model ?? preset?.modelId));
+    const original = templateClip && catalogModel ? templateClipModel(catalogModel, templateClip) : catalogModel;
     const models = preset && original && templateModelEligible(original, original)
-        ? [original, ...(catalog ?? []).filter(model => model.id !== original.id && templateModelEligible(original, model))] : [];
+        ? [original, ...(templateClip ? [] : catalog ?? []).filter(model => model.id !== original.id && templateModelEligible(original, model))] : [];
     const model = models.find(model => model.id === choices.modelId) ?? models[0];
-    const options = preset && model ? templateOptions(preset, model, choices) : null;
-    const contract = templateContract(preset?.id);
+    const options = templateClip ? { aspects: [], durations: [5], aspect: null, duration: 5 } : preset && model ? templateOptions(preset, model, choices) : null;
+    // A server-held template clip has its own gate; the template_id fidelity contract does not apply to it.
+    const contract = templateClip ? undefined : templateContract(preset?.id);
     const photosUnavailable = templatePhotosUnavailable(contract, model?.capabilities?.media);
-    const available = preset?.available && (catalog === undefined || !!model) && !photosUnavailable;
+    const available = (templateClip || preset?.available) && (catalog === undefined || !!model) && !photosUnavailable;
     // The exact community prompt is the only prompt; edits travel with the choices.
     const promptLabel = t(hasExactSourcePrompt ? 'public.TemplateRecipe.exactCommunityPrompt' : 'mobile.prompt');
     const tooLong = prompt.length > TEMPLATE_PROMPT_MAX;
     // A template that needs no media, or only one photo, generates right here; one that needs more opens Create.
-    const unsupported = sourceUnsupported(preset) || /@video\s*[_-]?\d|<<<\s*video/i.test(prompt);
+    const unsupported = !templateClip && (sourceUnsupported(preset) || /@video\s*[_-]?\d|<<<\s*video/i.test(prompt));
     const photoSpec = photoSlot(model);
     const photo = photoSpec ? { ...photoSpec, maxFiles: 1 } : null;
     const boundCount = contract?.class === 'bound' ? contract.slotCount || 0 : 0;
-    const slot = photo && contract && model && options && (contract.class === 'bound' || templateRequest(preset!, model, { prompt, aspect: options.aspect, duration: options.duration }).templateId) ? { ...photo, maxFiles: 1, minSide: Math.max(photo.minSide || 0, contract.minPhotoDimension) } : photo;
-    const inline = !photosUnavailable && !unsupported && !!preset && !!model && inlineBlockReason(preset, model, { photo: true }) === null;
+    const bslot = photo && contract && model && options && (contract.class === 'bound' || templateRequest(preset!, model, { prompt, aspect: options.aspect, duration: options.duration }).templateId) ? { ...photo, maxFiles: 1, minSide: Math.max(photo.minSide || 0, contract.minPhotoDimension) } : photo;
+    const slot = templateClip && photo ? { ...photo, maxFiles: 1, label: t('presets.use.photoTitle') } : bslot;
+    const inline = !photosUnavailable && !unsupported && !!preset && !!model && (!!templateClip || inlineBlockReason(preset, model, { photo: true }) === null);
     const mine = attached && attached.modelId === model?.id ? attached : null;
     const photos = mine?.refs ?? [];
     const photoBusy = mine?.busy === true;
     const photoReady = !photoBusy && (boundCount ? photos.length === boundCount : !slot || photos.length > 0);
-    const request = inline && preset && model && options && !tooLong && prompt.trim() ? templateRequest(preset, model, { prompt, aspect: options.aspect, duration: options.duration, references: slot ? photos : [], sourceRights: true }) : null;
+    const request = inline && preset && model && options && (templateClip || (!tooLong && prompt.trim())) ? templateRequest(preset, model, { prompt, aspect: options.aspect, duration: options.duration, references: slot ? photos : [], sourceRights: true, templateClip: templateClip?.id }) : null;
     const generation = useTemplateGenerate(request, model && options ? estimateCredits(model, options.duration) : 0);
     useEffect(() => {
         let live = true; setLoading(true); setFailed(false); setCopied(null); setChoices({}); setAttached(null); setPickerEpoch(n => n + 1);
@@ -89,11 +95,12 @@ export default function TemplatePage() {
             {preset.previewUrl ? <InlineMedia url={preset.previewUrl} label={t('job.playVideo')} /> : preset.posterUrl ? <Image source={{ uri: preset.posterUrl }} cachePolicy="memory" contentFit="contain" style={{ width: '100%', aspectRatio: previewRatio(preset) }} accessibilityLabel={rawText(preset.title)} /> : null}
             {sourcePromptUnavailable ? <Card><Text>{t('public.TemplateRecipe.sourcePromptUnavailable')}</Text></Card> : null}
             {sourcePromptNotRecorded ? <Card><Text>{t('public.TemplateRecipe.sourcePromptNotRecorded')}</Text></Card> : null}
-            <TextField label={promptLabel} accessibilityLabel={promptLabel} value={prompt} onChangeText={value => { setPrompt(value); setCopied(null); }} multiline style={hasExactSourcePrompt ? { writingDirection: 'auto', textAlign: 'auto' } : undefined} />
-            <Button label={t(hasExactSourcePrompt ? 'public.TemplateRecipe.copyExactCommunityPrompt' : 'editor.copy')} onPress={async () => setCopied(t(await copyText(prompt) ? 'libraryCreate.copied' : 'libraryCreate.copyFailed'))} />
+            <TextField label={promptLabel} accessibilityLabel={promptLabel} value={displayPrompt} editable={templateClip ? false : undefined} onChangeText={value => { setPrompt(value); setCopied(null); }} multiline scrollEnabled style={hasExactSourcePrompt ? [styles.promptBox, { writingDirection: 'auto', textAlign: 'auto' }] : styles.promptBox} />
+            <Button label={t(hasExactSourcePrompt ? 'public.TemplateRecipe.copyExactCommunityPrompt' : 'editor.copy')} onPress={async () => setCopied(t(await copyText(displayPrompt) ? 'libraryCreate.copied' : 'libraryCreate.copyFailed'))} />
             {copied ? <Text accessibilityLiveRegion="polite">{copied}</Text> : null}
             {tooLong ? <Text tone="danger" accessibilityLiveRegion="polite">{t('public.TemplateRecipe.productPromptTooLong', { count: prompt.length, max: TEMPLATE_PROMPT_MAX })}</Text> : null}
             {hasExactSourcePrompt ? <Text>{t('public.TemplateRecipe.exactCommunityPromptHelp')}</Text> : null}
+            {templateClip ? <Text>{t('public.TemplateRecipe.templateClipUsed')}</Text> : null}
             {hasExactSourcePrompt && sourcePromptTruncated ? <Card><Text>{t('public.TemplateRecipe.sourcePromptTruncated')}</Text></Card> : null}
             {hasExactSourcePrompt && sourcePromptDuplicate ? <Card><Text>{t('public.TemplateRecipe.sourcePromptDuplicate')}</Text></Card> : null}
             {models.length > 1 ? <><Text>{t('create.model')}</Text><View style={styles.choices}>
@@ -111,6 +118,7 @@ export default function TemplatePage() {
             <Text tone="warning">{templatePrice(model && options ? { ...preset, credits: estimateCredits(model, options.duration), durationSeconds: options.duration } : preset)}</Text>
             {photosUnavailable ? <Card><Text accessibilityLiveRegion="polite">{t('presets.fidelity.photosUnavailable')}</Text></Card> : unsupported ? <Card><Text accessibilityLiveRegion="polite">{t('public.TemplateRecipe.sourceVideoUnsupported')}</Text></Card> : available && inline ? <>
                 {boundCount && model ? <TemplatePhotoSlots key={`${preset.id}:${model.id}:${pickerEpoch}`} count={boundCount} hints={templatePhotoHints(contract)} model={model} api={generation.api} references={photos} onReferences={refs => setAttached(previous => ({ modelId: model.id, refs, busy: previous?.busy || false }))} onBusy={busy => setAttached(previous => ({ modelId: model.id, refs: previous?.refs ?? [], busy }))} /> : slot && model ? <View style={{ gap: 12 }}>
+                    {templateClip ? <Text>{t('app.create.referenceLikenessNotice')}</Text> : null}
                     <SourcePicker key={`${model.id}:${pickerEpoch}`} slot={slot} api={generation.api} drawable={false} references={photos} onReferences={refs => setAttached(previous => ({ modelId: model.id, refs, busy: previous?.modelId === model.id && previous.busy }))} onBusy={busy => setAttached(previous => previous && previous.modelId !== model.id ? previous : { modelId: model.id, refs: previous?.refs ?? [], busy })} onChange={() => {}} onLibrary={() => {}} />
                 </View> : null}
                 {generation.run && model ? <CreateResult api={generation.api} batch={{ ids: [...generation.run.ids], modelId: generation.run.modelId, kind: kindOf(model.modality), aspect: options?.aspect ?? null, duration: options?.duration ?? null, count: 1 }} catalog={catalog ?? []} onTerminal={generation.settled} /> : null}
@@ -119,17 +127,17 @@ export default function TemplatePage() {
                     ? <Button label={t('libraryCreate.newGeneration')} disabled={generation.busy} onPress={() => { generation.reset(); setAttached(null); setPickerEpoch(n => n + 1); }} />
                     : <Button label={generation.confirming ? t('app.create.confirmPrice', { credits: String(generation.price) }) : t('slip.generate')} disabled={!generation.ready || !photoReady} onPress={() => void generation.generate()} />}
                 {generation.missing > 0 && !generation.run ? <Text accessibilityLiveRegion="polite">{t('form.err.insufficient')}</Text> : null}
-                <Button variant="secondary" label={t('libraryCreate.editBeforeGenerating')} disabled={generation.busy || tooLong || !prompt.trim() || !photoReady} onPress={() => {
+                {!templateClip && <Button variant="secondary" label={t('libraryCreate.editBeforeGenerating')} disabled={generation.busy || tooLong || !prompt.trim() || !photoReady} onPress={() => {
                     const href = presetHref(preset, { ...choices, modelId: model?.id, prompt }, catalog);
                     if (boundCount && model) {
                         const sourceHandoff = stageCreativeSourceHandoff({ recipe: 'template', modelId: model.id, references: photos, uploaded: {}, fromLibrary: {}, rightsConfirmed: true });
                         router.push({ ...href, params: { ...href.params, recipe: 'template', sourceHandoff } });
                     } else router.push(href);
-                }} />
+                }} />}
             </> : available ? <>
                 <Button label={t('libraryCreate.useTemplate')} disabled={tooLong || !prompt.trim()} onPress={() => router.push(presetHref(preset, { ...choices, modelId: model?.id, prompt }, catalog))} />
             </> : <Text>{t('presets.notavailablerightnow')}</Text>}
         </>}
     </ScrollView>;
 }
-const sheets = themedStyles(p => ({ screen: { padding: 20, paddingBottom: 80, gap: 12, backgroundColor: p.bg }, row: { flexDirection: 'row', gap: 8 }, choices: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 } }));
+const sheets = themedStyles(p => ({ screen: { padding: 20, paddingBottom: 80, gap: 12, backgroundColor: p.bg }, row: { flexDirection: 'row', gap: 8 }, promptBox: { maxHeight: 180 }, choices: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 } }));

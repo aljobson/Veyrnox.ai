@@ -365,6 +365,8 @@ const ar = {
     'presets.fidelity.photoReady': 'الصورة جاهزة',
     'presets.use.photoReplace': 'استبدال',
     'presets.fidelity.photosUnavailable': 'يحتاج هذا القالب إلى صور أكثر مما يدعمه النموذج حاليًا. اختر قالبًا آخر أو حاول مرة أخرى لاحقًا.',
+    'public.TemplateRecipe.templateClipUsed': 'يستخدم هذا القالب مقطعه الخاص مع صورتك لاستبدال الشخصية الرئيسية.',
+    'presets.use.photoTitle': 'أضف صورتك',
 } as const;
 
 export default ar;

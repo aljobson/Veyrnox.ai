@@ -51,7 +51,8 @@ function withPhotoLine(text: string, hasPhoto: boolean): string {
 }
 
 /** The request Create would send for this template with nothing, or one start photo, attached and no extra settings. */
-export function templateRequest(preset: Preset, model: CatalogModel, choice: { prompt: string; aspect: string | null; duration: number | null; references?: readonly GenerationReference[]; sourceRights?: boolean }): SubmitRequest {
+export function templateRequest(preset: Preset, model: CatalogModel, choice: { prompt: string; aspect: string | null; duration: number | null; references?: readonly GenerationReference[]; sourceRights?: boolean; templateClip?: string }): SubmitRequest {
+    if (choice.templateClip === preset.id) return { analyticsKind: 'video', modelId: model.id, templateClip: preset.id, prompt: '', durationSeconds: 5, confirmedCredits: model.credits, references: choice.references ?? [], sourceRights: true };
     const options = optionsFor(model);
     const exact = preset.sourcePromptOrigin === 'community-source-exact' && preset.sourcePrompt ? preset.sourcePrompt : preset.prompt;
     const uneditedExact = preset.sourcePromptOrigin === 'community-source-exact' && choice.prompt === exact;

@@ -345,6 +345,8 @@
   "label.Photo of the new person",
   "label.Photos of the new people",
   "app.create.swapConsentNotice",
+  "public.TemplateRecipe.templateClipUsed",
+  "presets.use.photoTitle",
   "app.create.error.template_blocked",
   "app.create.error.template_mismatch",
   "app.create.error.template_references_invalid",

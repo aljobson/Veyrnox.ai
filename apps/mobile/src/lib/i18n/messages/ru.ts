@@ -365,6 +365,8 @@ const ru = {
     'presets.fidelity.photoReady': 'Фото готово',
     'presets.use.photoReplace': 'Заменить',
     'presets.fidelity.photosUnavailable': 'Для этого шаблона нужно больше фотографий, чем сейчас поддерживает модель. Выберите другой шаблон или повторите попытку позже.',
+    'public.TemplateRecipe.templateClipUsed': 'Этот шаблон использует свой видеоклип и ваше фото для замены главного персонажа.',
+    'presets.use.photoTitle': 'Добавьте своё фото',
 } as const;
 
 export default ru;

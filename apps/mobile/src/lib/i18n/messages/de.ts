@@ -365,6 +365,8 @@ const de = {
     'presets.fidelity.photoReady': 'Foto bereit',
     'presets.use.photoReplace': 'Ersetzen',
     'presets.fidelity.photosUnavailable': 'Diese Vorlage benötigt mehr Fotos, als das Modell derzeit unterstützt. Wähle eine andere Vorlage oder versuche es später erneut.',
+    'public.TemplateRecipe.templateClipUsed': 'Diese Vorlage verwendet ihren eigenen Clip und dein Foto, um die Hauptfigur zu ersetzen.',
+    'presets.use.photoTitle': 'Dein Foto verwenden',
 } as const;
 
 export default de;

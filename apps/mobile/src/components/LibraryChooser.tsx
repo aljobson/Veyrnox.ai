@@ -8,6 +8,7 @@ import { libraryChoices, type LibraryChoice } from '../lib/librarySource';
 import { fetchCatalogCached, mediaApi, type CatalogModel, type Job, type JobPage } from '../lib/media';
 import type { SlotKind } from '../lib/sources';
 import { colors } from '../theme';
+import { JobThumb, useAssetLinks } from './JobThumb';
 
 interface Props {
     readonly api: ApiClient;
@@ -23,6 +24,7 @@ export function LibraryChooser({ api, kind, onPick, onClose }: Props) {
     const [models, setModels] = useState<CatalogModel[]>([]);
     const [failed, setFailed] = useState(false);
     const loading = useRef(false);
+    const links = useAssetLinks(api);
 
     async function load(cursor?: JobPage['next']) {
         if (loading.current) return;
@@ -68,8 +70,11 @@ export function LibraryChooser({ api, kind, onPick, onClose }: Props) {
                         ListFooterComponent={next ? <Pressable accessibilityRole="button" style={styles.more} onPress={() => load(next)}><Text style={styles.moreText}>{t('libsrc.older')}</Text></Pressable> : undefined}
                         renderItem={({ item }) => (
                             <Pressable accessibilityRole="button" accessibilityLabel={rawText(`${item.name}, ${new Date(item.createdAt).toLocaleDateString(formatLocale())}`)} style={styles.row} onPress={() => { onPick(item); onClose(); }}>
-                                <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
-                                <Text style={styles.muted}>{new Date(item.createdAt).toLocaleDateString(formatLocale())}</Text>
+                                <JobThumb links={links} jobId={item.jobId} />
+                                <View style={styles.text}>
+                                    <Text style={styles.name} numberOfLines={2}>{item.name}</Text>
+                                    <Text style={styles.muted}>{new Date(item.createdAt).toLocaleDateString(formatLocale())}</Text>
+                                </View>
                             </Pressable>
                         )}
                     />
@@ -85,7 +90,8 @@ const styles = StyleSheet.create({
     title: { color: colors.text, fontSize: 18, fontWeight: '700', flexShrink: 1 },
     done: { minHeight: MIN_TARGET, justifyContent: 'center', paddingHorizontal: 12 },
     doneText: { color: colors.accent, fontWeight: '700', fontSize: 16 },
-    row: { minHeight: MIN_TARGET + 8, justifyContent: 'center', borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth, gap: 2 },
+    row: { minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8, borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth },
+    text: { flex: 1, gap: 2 },
     name: { color: colors.text, fontSize: 16 },
     muted: { color: colors.muted, fontSize: 13 },
     more: { minHeight: MIN_TARGET, alignItems: 'center', justifyContent: 'center' },

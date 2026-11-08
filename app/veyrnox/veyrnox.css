@@ -138,15 +138,41 @@
 }
 /* The mask would clip a shadow on the slip itself, so it lives on a wrapper. */
 .vx-paper-shadow { filter: drop-shadow(0 18px 28px rgb(0 0 0 / 0.45)); }
-:root[data-theme='light'] .vx-paper-shadow { filter: drop-shadow(0 14px 24px rgb(16 22 20 / 0.16)); }
-@media (prefers-color-scheme: light) { :root[data-theme='system'] .vx-paper-shadow { filter: drop-shadow(0 14px 24px rgb(16 22 20 / 0.16)); } }
+:root[data-theme='light'] .vx-paper-shadow { filter: drop-shadow(0 0 0.5px rgb(16 22 20 / 0.55)) drop-shadow(0 14px 24px rgb(16 22 20 / 0.16)); }
+@media (prefers-color-scheme: light) { :root[data-theme='system'] .vx-paper-shadow { filter: drop-shadow(0 0 0.5px rgb(16 22 20 / 0.55)) drop-shadow(0 14px 24px rgb(16 22 20 / 0.16)); } }
 .vx-paper ::selection { background: rgb(11 122 102 / 0.22); }
 .vx-paper textarea { caret-color: rgb(var(--vx-accent)); }
 
-/* The printer mouth above the hero slip. */
+/* The printer mouth above the hero slip. The aqua seam is the only light on
+   the page that has a source: it comes on just before the paper moves
+   (anticipation), stays up while the slip feeds out, and settles to a
+   standby glow once it has stopped (follow-through). */
 .vx-slot {
+  position: relative;
   background: rgb(var(--vx-panel));
   box-shadow: inset 0 2px 3px rgb(0 0 0 / 0.7), 0 1px 0 rgb(var(--vx-border));
+}
+.vx-slot::after {
+  content: '';
+  position: absolute;
+  inset: 4px 14px auto;
+  height: 2px;
+  border-radius: 999px;
+  background: rgb(var(--vx-accent));
+  box-shadow: 0 0 12px 1px rgb(var(--vx-accent) / 0.6), 0 10px 44px 8px rgb(var(--vx-accent) / 0.2);
+  opacity: 0.55;
+  animation: vxSeam 1400ms var(--vx-ease-out) backwards;
+}
+@keyframes vxSeam {
+  0% { opacity: 0; }
+  10% { opacity: 1; }
+  72% { opacity: 1; }
+  100% { opacity: 0.55; }
+}
+/* On a light page a glow is a smudge: the seam stays, as a hairline. */
+:root[data-theme='light'] .vx-slot::after { box-shadow: none; opacity: 0.8; }
+@media (prefers-color-scheme: light) {
+  :root[data-theme='system'] .vx-slot::after { box-shadow: none; opacity: 0.8; }
 }
 
 /* Dotted leader between a line item and its price. */
@@ -172,9 +198,12 @@
   70%  { transform: perspective(900px) rotateX(2deg); }
   to   { clip-path: inset(0 0 -40px 0); transform: perspective(900px) rotateX(0deg); }
 }
+/* A feed, not a wipe: the paper leaves the slot at a steady speed and eases
+   only as it stops. The seam (.vx-slot::after) is already lit 40ms before
+   it moves. */
 .vx-print {
   transform-origin: 50% 0;
-  animation: vxPrint 900ms cubic-bezier(0.32, 0.72, 0, 1) 150ms backwards;
+  animation: vxPrint 1100ms cubic-bezier(0.3, 0.5, 0.2, 1) 180ms backwards;
 }
 
 /* A changed figure rolls in from below, so the eye catches the new price. */
@@ -196,6 +225,9 @@
   font-weight: 900;
   line-height: 0.94;
   letter-spacing: -0.04em;
+  /* -0.04em tracking also closes the word gaps; a little back so two
+     words never read as one rope. */
+  word-spacing: 0.06em;
   text-wrap: balance;
 }
 
@@ -219,35 +251,38 @@
   .vx-title-index { font-size: 92px; }
 }
 
-/* Hero headline: white letters with an aqua glow and two twinkling stars,
-   dark theme only (a glow on the light page is a smudge). The stars are
-   drawn with gradients on a pseudo-element and fade in place: opacity only,
-   and still under reduced motion. */
+/* Hero headline: white ink on the dark page, with a faint aqua lift behind
+   the letters, dark theme only (a glow on the light page is a smudge). It
+   used to throw a 60px neon halo and two twinkling dots: next to a printed
+   slip that read as a second, unrelated style. The one real light on the
+   page is the printer seam above the slip (.vx-slot), so the headline stays
+   crisp and lets that carry the aqua. */
 .vx-title-glow {
-  position: relative;
   color: #fff;
-  text-shadow: 0 0 6px rgb(62 230 196 / 0.95), 0 0 22px rgb(62 230 196 / 0.55), 0 0 60px rgb(62 230 196 / 0.3);
+  text-shadow: 0 0 36px rgb(62 230 196 / 0.18);
 }
-.vx-title-glow::after {
-  content: '';
-  pointer-events: none;
-  position: absolute;
-  inset: -12% -4% -8% 0;
-  background:
-    radial-gradient(circle at 92% 58%, #fff 0 1.5px, rgb(62 230 196 / 0.7) 3px, transparent 14px),
-    radial-gradient(circle at 88% 92%, #fff 0 1.5px, rgb(62 230 196 / 0.7) 3px, transparent 12px),
-    radial-gradient(ellipse at 45% 60%, rgb(62 230 196 / 0.16), transparent 62%);
-  animation: vx-twinkle 3.2s ease-in-out infinite alternate;
-}
-@keyframes vx-twinkle { from { opacity: 0.55; } to { opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .vx-title-glow::after { animation: none; } }
 :root[data-theme='light'] .vx-title-glow { color: inherit; text-shadow: none; }
-:root[data-theme='light'] .vx-title-glow::after { display: none; }
 @media (prefers-color-scheme: light) {
   :root[data-theme='system'] .vx-title-glow { color: inherit; text-shadow: none; }
-  :root[data-theme='system'] .vx-title-glow::after { display: none; }
 }
 
+/* ─── The statement prints line by line ─────────────────────────────────
+   The ledger is append-only, so its example is drawn that way: the paper is
+   already there and each line is added under the last, once, as the slip
+   scrolls into view (PrintOnView sets data-printed). Hidden only where
+   script runs, so a page without it still shows every line. Reduced motion
+   shows them all at once (the kill switch in globals.css). */
+@media (scripting: enabled) {
+  .vx-feed[data-printed='false'] .vx-feed-line { opacity: 0; }
+}
+@keyframes vxLine {
+  from { opacity: 0; transform: translateY(5px); clip-path: inset(0 0 100% 0); }
+  to { opacity: 1; transform: none; clip-path: inset(0 0 -4px 0); }
+}
+.vx-feed[data-printed='true'] .vx-feed-line {
+  animation: vxLine 320ms var(--vx-ease-out) backwards;
+  animation-delay: calc(140ms + var(--vx-i, 0) * 170ms);
+}
 }
 
 /* The mobile helper already has its own reserved dock. A second sticky card

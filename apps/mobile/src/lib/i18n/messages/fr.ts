@@ -365,6 +365,8 @@ const fr = {
     'presets.fidelity.photoReady': 'Photo prête',
     'presets.use.photoReplace': 'Remplacer',
     'presets.fidelity.photosUnavailable': 'Ce modèle de création nécessite plus de photos que le modèle IA ne prend actuellement en charge. Choisissez un autre modèle de création ou réessayez plus tard.',
+    'public.TemplateRecipe.templateClipUsed': 'Ce modèle utilise son propre clip et votre photo pour remplacer le personnage principal.',
+    'presets.use.photoTitle': 'Utilisez votre photo',
 } as const;
 
 export default fr;

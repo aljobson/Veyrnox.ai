@@ -1,9 +1,39 @@
 [
   {
-    "id": "editorSimple.openTool",
-    "english": "Open tool",
-    "translation": "Werkzeug öffnen",
-    "ratio": 1.67
+    "id": "bestCut.settings",
+    "english": "Best Cut",
+    "translation": "Bester Schnitt",
+    "ratio": 1.75
+  },
+  {
+    "id": "bestCut.auto",
+    "english": "Auto-detect",
+    "translation": "Automatisch erkennen",
+    "ratio": 1.82
+  },
+  {
+    "id": "bestCut.tryAnyway",
+    "english": "Try Anyway",
+    "translation": "Trotzdem versuchen",
+    "ratio": 1.8
+  },
+  {
+    "id": "bestCut.warning.sections",
+    "english": "Some short pauses were kept to fit 10 sections.",
+    "translation": "Einige kurze Pausen bleiben erhalten, damit es höchstens 10 Abschnitte sind.",
+    "ratio": 1.62
+  },
+  {
+    "id": "bestCut.apply",
+    "english": "Apply best cut",
+    "translation": "Besten Schnitt anwenden",
+    "ratio": 1.64
+  },
+  {
+    "id": "bestCut.close",
+    "english": "Close",
+    "translation": "Schließen",
+    "ratio": 1.8
   },
   {
     "id": "faceFilterSwitch.current",
@@ -3378,6 +3408,18 @@
     "ratio": 1.8
   },
   {
+    "id": "editorAi.step.setSpeed",
+    "english": "Set {id} speed to {value}×",
+    "translation": "Geschwindigkeit von {id} auf {value}× setzen",
+    "ratio": 1.69
+  },
+  {
+    "id": "editorSpeech.notCharged",
+    "english": "You were not charged",
+    "translation": "Dir wurden keine Credits berechnet",
+    "ratio": 1.7
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",
@@ -3514,5 +3556,11 @@
     "english": "Add",
     "translation": "Hinzufügen",
     "ratio": 3.33
+  },
+  {
+    "id": "editorSimple.openTool",
+    "english": "Open tool",
+    "translation": "Werkzeug öffnen",
+    "ratio": 1.67
   }
 ]

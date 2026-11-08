@@ -227,7 +227,7 @@ developer surface is `/api/v1/developer/*` and requires a verified OAuth
     (prices, packs, published titles, ranked template ids, the template gallery priced
     from the catalog for the mobile app, the slim gallery list, one template and template
     search for the web so no page bundles the catalog). Nothing per-user. `/api/templates`
-    carries no price and reads no database.
+    carries no price and reads no database. `/api/catalog?template_clip=<id>` is an anonymous no-store availability/price projection (ADR-0333); no identity or source media is exposed.
   - `/api/cinema/voting`, `/api/cinema/discovery`, `/api/cinema/winners`, `/api/cinema/comments`, `/api/cinema/story-polls`, `/api/credit-subscription-plans`, `/api/cinema-pass-plans` — anonymous read-only, explicitly gated, no-store projections. Factories use `authed: false`, ignore inbound identity headers, and never return another account’s votes, pending comments, reports or billing records.
   - `/api/webhook/*` — the provider's signature (see Provider webhooks).
   - `/api/admin/*` — Cloudflare Access plus a shared token; cron callers only.
@@ -441,6 +441,7 @@ developer surface is `/api/v1/developer/*` and requires a verified OAuth
   `localStorage.veyrnox_social_cinema`. Projects navigation and cloud saving
   share the request-time `TENANT_PROJECTS_ENABLED` server flag; project media
   uploads have the additional `PROJECT_MEDIA_UPLOADS_ENABLED` gate.
+- `TEMPLATE_CLIP_ENABLED` enables the curated template-clip path only when exactly `"true"`; ships ABSENT (= off) because the 67-var Worker budget is full. Free a binding before activation (ADR-0333).
 - Every PR touching the money spine (ledger, jobs, webhooks) needs an ADR
   update if behavior visible to the user or auditor changes.
 

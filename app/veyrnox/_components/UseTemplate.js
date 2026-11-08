@@ -20,28 +20,29 @@ import { TemplateGenerate } from './TemplateGenerate';
 import { inlineBlockReason, templateInputs } from '../_lib/templateGenerate';
 import { nearestOption } from '../../../lib/aspectShapes.mjs';
 
-export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked: sourceGenerationBlocked = false }) {
+export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked: sourceGenerationBlocked = false, templateClip = null }) {
   const { t } = useI18n();
   const router = useRouter();
   const { models, live } = useCatalog();
-  const originalId = templateModelId(preset);
-  const original = models.find((m) => m.id === originalId) || null;
+  const originalId = templateClip ? templateClip.model : templateModelId(preset);
+  const catalogModel = models.find((m) => m.id === originalId) || null;
+  const original = templateClip && catalogModel ? { ...catalogModel, credits: templateClip.credits, durations: [5], media: { image: { ...catalogModel.media?.image, required: true, maxFiles: 1 } } } : catalogModel;
   const modelOptions = original && !original.gated && !original.premium && createPromptModelAvailable(original)
-    ? [original, ...(live ? models.filter((m) => m.id !== originalId && templateModelEligible(m, original)) : [])] : [];
+    ? [original, ...(!templateClip && live ? models.filter((m) => m.id !== originalId && templateModelEligible(m, original)) : [])] : [];
   const [pickedModel, setPickedModel] = useState(originalId);
   const model = modelOptions.find((m) => m.id === pickedModel) || modelOptions[0] || null;
   const modelId = model?.id;
-  const aspectOptions = modelAspectRatios(model);
+  const aspectOptions = templateClip ? [] : modelAspectRatios(model);
   const [pickedAspect, setPickedAspect] = useState(preset.aspect);
   const aspect = nearestOption(pickedAspect || preset.clip?.aspectRatio || preset.previewAspect, aspectOptions) || aspectOptions[0] || null;
   const isVideo = model ? model.kind === 'video' : Boolean(preset.durationSeconds);
   const durationOptions = model?.durations?.length ? model.durations : [5, 10];
   const [pickedSeconds, setDurationSeconds] = useState(preset.durationSeconds || 5);
-  const durationSeconds = isVideo ? (durationOptions.includes(pickedSeconds) ? pickedSeconds : durationOptions[0]) : undefined;
+  const durationSeconds = templateClip ? 5 : isVideo ? (durationOptions.includes(pickedSeconds) ? pickedSeconds : durationOptions[0]) : undefined;
   const [targetSeconds, setTargetSeconds] = useState(60);
   const costFor = (seconds) => model ? (isVideo ? clipCredits(model.credits, seconds) : model.credits) : presetCredits(preset, models, seconds);
   const credits = costFor(durationSeconds);
-  const href = presetHref(preset, durationSeconds, { model: modelId, aspect });
+  const href = presetHref(preset, durationSeconds, { model: modelId, aspect, templateClip });
   function pickModel(id) {
     setPickedModel(id);
     setPickedAspect(preset.aspect);
@@ -55,12 +56,13 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked:
   const [photos, setPhotos] = useState(() => photo ? [photo] : []);
   const [slotBusy, setSlotBusy] = useState({});
   const photoSequence = useRef(0);
-  const contract = templateContract(preset);
+  // A server-held template clip has its own gate; the template_id fidelity contract does not apply to it.
+  const contract = templateClip ? null : templateContract(preset);
   const boundCount = contract?.class === 'bound' ? contract.slotCount : 0;
   const boundReady = !boundCount || Array.from({ length: boundCount }, (_, i) => photos[i]).every(Boolean);
   const photoBusy = singlePhotoBusy || Object.values(slotBusy).some(Boolean);
-  const auditedTemplateId = model ? fidelityTemplateId(contract, templateBoundPrompt(contract, prompt, model.id, boundCount || 1), model.id, templateInputs(preset, model, { prompt, aspect, durationSeconds, aspectOptions })) : undefined;
-  const promptBlocked = !prompt.trim() || prompt.length > TEMPLATE_PROMPT_MAX;
+  const auditedTemplateId = model && contract ? fidelityTemplateId(contract, templateBoundPrompt(contract, prompt, model.id, boundCount || 1), model.id, templateInputs(preset, model, { prompt, aspect, durationSeconds, aspectOptions })) : undefined;
+  const promptBlocked = !templateClip && (!prompt.trim() || prompt.length > TEMPLATE_PROMPT_MAX);
   const photosUnavailable = contract?.class === 'bound' && (!live || templatePhotosUnavailable(contract, model?.media));
   const generationBlocked = photosUnavailable || sourceGenerationBlocked || (live && fidelityBlocked(contract, prompt));
   const generationDisabled = generationBlocked || promptBlocked || !model || photoBusy || !boundReady;
@@ -162,6 +164,7 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked:
         <fieldset className="mt-5 rounded-xl border border-vx-border bg-vx-panel/40 p-4">
           <legend className="px-1 text-sm font-bold">{t('presets.use.photoTitle')}</legend>
           <p className="mt-1 text-[13px] leading-5 text-vx-fg-muted">{t('presets.use.photoPrivacy')}</p>
+          {templateClip && <p role="note" className="mt-2 text-xs text-vx-fg-muted">{t('app.create.referenceLikenessNotice')}</p>}
           <div className="mt-3 flex min-h-14 items-center gap-3 rounded-xl border border-dashed border-vx-border bg-vx-base p-2.5">
             <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-vx-panel font-vx-mono text-sm text-vx-accent">{photoBusy ? '…' : photo ? '✓' : '+'}</span>
             <span role={photoBusy ? 'status' : undefined} className="min-w-0 flex-1 truncate text-xs text-vx-fg-muted">{photoBusy ? t('presets.use.photoPreparing') : photo?.name || t('presets.use.photoHint')}</span>
@@ -179,9 +182,9 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked:
       {generationBlocked && !sourceGenerationBlocked && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t(photosUnavailable ? 'presets.fidelity.photosUnavailable' : 'public.TemplateRecipe.sourceVideoUnsupported')}</p>}
       {photoError && <p role="alert" className="mt-3 text-sm text-vx-danger">{t(photoError)}</p>}
       {inline && !(generationBlocked || promptBlocked || !model) && (
-        <TemplateGenerate preset={preset} model={model} prompt={prompt} aspect={aspect} aspectOptions={aspectOptions} durationSeconds={durationSeconds} unitCost={credits} photo={requiredImage ? photo : null} photos={boundCount ? photos : undefined} requiredCount={boundCount} preparing={photoBusy} needsPhoto={requiredImage} />
+        <TemplateGenerate preset={preset} model={model} prompt={prompt} aspect={aspect} aspectOptions={aspectOptions} durationSeconds={durationSeconds} unitCost={credits} photo={requiredImage ? photo : null} photos={boundCount ? photos : undefined} requiredCount={boundCount} preparing={photoBusy} needsPhoto={requiredImage} templateClip={templateClip} />
       )}
-      <button
+      {!templateClip && <button
         type="button"
         onClick={use}
         disabled={generationDisabled || opening}
@@ -192,8 +195,8 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked:
         {opening
           ? <span className="grid w-[3.5ch] place-items-center"><Spinner size={18} /></span>
           : <span className="font-vx-mono vx-num text-[15px] font-bold">{credits} cr</span>}
-      </button>
-      <div className="mt-6 rounded-xl border border-vx-border bg-vx-panel/40 p-4">
+      </button>}
+      {!templateClip && <div className="mt-6 rounded-xl border border-vx-border bg-vx-panel/40 p-4">
         <p className="font-bold">{t("presets.use.longer")}</p>
         <p className="mt-1 text-[13px] text-vx-fg-muted">{t("presets.use.filmPlan")}</p>
         <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -202,7 +205,7 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked:
           </select>
           <button type="button" onClick={buildFilm} disabled={generationDisabled} className="vx-press rounded-full border border-vx-accent px-5 py-2 text-sm font-extrabold text-vx-accent disabled:opacity-50">{t("presets.use.build")}</button>
         </div>
-      </div>
+      </div>}
       <div className="mt-3 rounded-xl border border-vx-border bg-vx-panel/40 p-4">
         <p className="font-bold">{t("presets.use.chatTitle")}</p>
         <p className="mt-1 text-[13px] text-vx-fg-muted">{t("presets.use.chatPlan")}</p>

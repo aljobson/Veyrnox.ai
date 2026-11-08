@@ -365,6 +365,8 @@ const es = {
     'presets.fidelity.photoReady': 'Foto lista',
     'presets.use.photoReplace': 'Reemplazar',
     'presets.fidelity.photosUnavailable': 'Esta plantilla necesita más fotos de las que admite el modelo actualmente. Elige otra plantilla o inténtalo más tarde.',
+    'public.TemplateRecipe.templateClipUsed': 'Esta plantilla usa su propio vídeo y tu foto para reemplazar al personaje principal.',
+    'presets.use.photoTitle': 'Usa tu foto',
 } as const;
 
 export default es;

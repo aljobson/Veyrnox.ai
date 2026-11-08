@@ -18,8 +18,8 @@ test('the production gate waits longer than the CI build-test budget', () => {
 // no issue was opened because report-failure only watched the deploy job.
 test('a deploy refused by red ci opens a deploy-failure issue, as a failed deploy does', () => {
     const job = deploy.slice(deploy.indexOf('\n  report-failure:'));
-    assert.match(job, /needs: \[ci-green, deploy\]/);
-    assert.match(job, /if: failure\(\) && \(needs\.ci-green\.result == 'failure' \|\| needs\.deploy\.result == 'failure'\)/);
+    assert.match(job, /needs: \[ci-green, deploy, authed-smoke\]/);
+    assert.match(job, /if: failure\(\) && \(needs\.ci-green\.result == 'failure' \|\| needs\.deploy\.result == 'failure' \|\| needs\.authed-smoke\.result == 'failure'\)/);
     assert.match(job, /CI_GREEN: \$\{\{ needs\.ci-green\.result \}\}/);
     assert.match(job, /Production deploy refused/);
     assert.match(job, /Production deploy failed/);
@@ -29,13 +29,34 @@ test('a deploy refused by red ci opens a deploy-failure issue, as a failed deplo
 test('a verified production deploy closes every resolved deploy-failure incident', () => {
     assert.match(deploy, /deployed: \$\{\{ steps\.deploy\.outcome == 'success' && 'true' \|\| 'false' \}\}/);
     const job = deploy.slice(deploy.indexOf('\n  resolve-failure:'));
-    assert.match(job, /needs: \[deploy, report-failure, report-workers-dev\]/);
+    assert.match(job, /needs: \[deploy, authed-smoke, report-failure, report-workers-dev\]/);
+    assert.match(job, /needs\.authed-smoke\.result != 'failure'/);
     assert.match(job, /needs\.deploy\.result == 'success'/);
     assert.match(job, /needs\.deploy\.outputs\.deployed == 'true'/);
     assert.match(job, /needs\.deploy\.outputs\.workers_dev == 'closed'/);
     assert.match(job, /gh issue list --label deploy-failure --state open --limit 100/);
     assert.match(job, /gh issue close "\$number" --reason completed/);
     assert.match(job, /Resolved by verified production deploy/);
+});
+
+// The signed-in smoke test alerts but does not roll back, runs in its own job
+// so the service-role key never shares one with npm ci or the deploy, and
+// fails closed once a smoke user is configured.
+test('the signed-in smoke test is a separate, alert-only, fail-closed job', () => {
+    const start = deploy.indexOf('\n  authed-smoke:');
+    // Comments explain the design and mention npm ci; only the steps count.
+    const job = deploy.slice(start, deploy.indexOf('\n  report-failure:'))
+        .split('\n').filter(line => !line.trim().startsWith('#')).join('\n');
+    assert.match(job, /needs: deploy/);
+    assert.match(job, /needs\.deploy\.result == 'success' && needs\.deploy\.outputs\.deployed == 'true'/);
+    assert.match(job, /environment: production/);
+    assert.match(job, /node scripts\/check-authed-smoke\.mjs/);
+    assert.doesNotMatch(job, /npm (ci|install)/);
+    assert.doesNotMatch(job, /rollback/i);
+    // The service-role key is passed to the one step that runs the script, not job-wide.
+    assert.equal((job.match(/SUPABASE_SERVICE_ROLE_KEY/g) || []).length, 2);
+    assert.match(job, /SMOKE_USER_EMAIL: \$\{\{ vars\.SMOKE_USER_EMAIL \}\}/);
+    assert.match(job, /Skip until a smoke user is configured/);
 });
 
 // 2026-10-09 (#753): one 504 from the Cloudflare API, 55 s into the read that

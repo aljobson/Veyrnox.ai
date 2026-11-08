@@ -11,11 +11,14 @@ export function tasteScore(p: Pick<Preset, 'title' | 'category' | 'prompt'>, a: 
     return tasteScoreText(`${p.title} ${p.category} ${p.prompt}`, a);
 }
 
-// Available templates lead unavailable ones; within each group, matches lead and ties keep the server order.
+// Available templates lead unavailable ones; those that need a source video we cannot supply come after the rest;
+// within each group, matches lead and ties keep the server order.
+const inspirationOnly = (p: Preset): boolean => p.sourcePromptOrigin === 'community-source-exact' && (p.sourcePromptIssues ?? []).includes('reference-video-not-supported');
+
 export function rankPresets(presets: readonly Preset[], answers: CreatorAnswers | null): Preset[] {
     return presets
         .map((p, i) => ({ p, i, s: answers ? tasteScore(p, answers) : 0 }))
-        .sort((x, y) => Number(y.p.available) - Number(x.p.available) || y.s - x.s || x.i - y.i)
+        .sort((x, y) => Number(y.p.available) - Number(x.p.available) || Number(inspirationOnly(x.p)) - Number(inspirationOnly(y.p)) || y.s - x.s || x.i - y.i)
         .map((x) => x.p);
 }
 

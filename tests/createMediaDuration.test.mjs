@@ -70,7 +70,7 @@ test('Create sends the selected ACE-Step duration but keeps ACE-Step 1.5 visibly
 
   const page = resolveI18nSource(read('app/veyrnox/app/create/page.js'));
   const catalog = read('app/veyrnox/_lib/useCatalog.js');
-  const gateway = read('app/api/v1/generations/route.js');
+  const gateway = read('lib/generationInputValidation.js');
   assert.match(catalog, /durationInput: m\.capabilities\?\.inputs\?\.duration \|\| null/);
   assert.match(page, /id="audio-duration"/);
   assert.match(page, /settingsInputs\(model, \{ seed, negative, voice, duration: audioDuration \}\)/);

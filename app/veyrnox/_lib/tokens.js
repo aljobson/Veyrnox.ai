@@ -125,6 +125,7 @@ export function modelIdForName(name) {
 export const templateModelId = (preset, referenceCount) => templateRoute(preset, modelIdForName(preset?.model), referenceCount).modelId;
 
 export function presetHref(preset, durationSeconds = preset.durationSeconds, extras = {}) {
+  if (extras.templateClip) return templateHref(preset);
   const modelId = extras.model || templateModelId(preset);
   if (!modelId) return templateHref(preset);
   return `/app/create?model=${encodeURIComponent(modelId)}&preset=${encodeURIComponent(preset.id)}${durationSeconds ? `&duration=${encodeURIComponent(durationSeconds)}s` : ''}${extras.aspect ? `&aspect=${encodeURIComponent(extras.aspect)}` : ''}`;

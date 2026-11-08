@@ -21,7 +21,7 @@ import { ClipBadge } from './ClipBadge';
 
 import { useClipPlayback } from '../_lib/useClipPlayback';
 
-export function MediaTile({ href, clip, mediaClassName = '', mediaStyle, className = '', style, ariaLabel, onClick, footer, children, uncroppedOnMobile = false, imageSizes = '(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 25vw' }) {
+export function MediaTile({ href, clip, mediaClassName = '', mediaStyle, className = '', style, ariaLabel, onClick, footer, children, uncroppedOnMobile = false, ambient = false, imageSizes = '(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 25vw' }) {
   const rootRef = useRef(null);
   const videoRef = useRef(null);
   const [failed, setFailed] = useState(false);
@@ -51,6 +51,15 @@ export function MediaTile({ href, clip, mediaClassName = '', mediaStyle, classNa
   return (
     <Link ref={rootRef} href={href} aria-label={ariaLabel} onClick={onClick} className={`group vx-tile ${className}`} style={style}>
       <div className={`relative overflow-hidden ${mediaClassName}`} style={mediaStyle}>
+        {/* `ambient`: the clip keeps its own shape inside a frame shared with
+            its neighbours, and a blurred copy of its poster fills the bars,
+            so a row of mixed shapes lines up without cropping anything. */}
+        {ambient && clip?.poster && (
+          <>
+            <Image src={clip.poster} alt="" aria-hidden sizes="64px" fill className="scale-125 object-cover opacity-80 blur-2xl saturate-150" style={{ objectPosition: clip.objectPosition }} />
+            <span aria-hidden className="absolute inset-0 bg-black/30" />
+          </>
+        )}
         {clip?.poster && (
           <Image src={clip.poster} alt="" sizes={imageSizes} fill className={mediaFit} style={{ objectPosition: clip.objectPosition, objectFit: clip.objectFit }} />
         )}

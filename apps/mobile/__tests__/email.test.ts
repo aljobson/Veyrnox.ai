@@ -39,6 +39,7 @@ describe('turnstile bridge', () => {
     });
     test('navigation stays on Cloudflare', () => {
         expect(allowTurnstileNavigation('about:blank', BASE)).toBe(true);
+        expect(allowTurnstileNavigation('about:srcdoc', BASE)).toBe(true);
         expect(allowTurnstileNavigation('https://challenges.cloudflare.com/cdn-cgi/x', BASE)).toBe(true);
         expect(allowTurnstileNavigation('https://evil.example/', BASE)).toBe(false);
         expect(allowTurnstileNavigation('http://challenges.cloudflare.com/', BASE)).toBe(false);

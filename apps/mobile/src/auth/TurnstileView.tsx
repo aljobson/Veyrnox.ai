@@ -41,7 +41,12 @@ export function TurnstileView({ resetKey, onMessage }: Props) {
                 }}
                 onError={() => onMessage({ type: 'error', code: 'load_failed' })}
                 onHttpError={() => onMessage({ type: 'error', code: 'load_failed' })}
-                onShouldStartLoadWithRequest={(req) => allowTurnstileNavigation(req.url, config.apiBase, __DEV__)}
+                // Only the top-level page is held to the allowlist. Cloudflare's own challenge frame loads
+                // internal URLs (about:srcdoc, blob:) that this check would otherwise block, which
+                // surfaced as Turnstile error 300031 on the phone.
+                onShouldStartLoadWithRequest={(req) =>
+                    req.isTopFrame === false || allowTurnstileNavigation(req.url, config.apiBase, __DEV__)
+                }
             />
         </View>
     );

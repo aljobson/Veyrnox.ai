@@ -29,6 +29,8 @@ export const AI_CONSENT_TEXT = {
 
 // Calls that carry the person's own content toward a provider. Reads, balance and account calls do not.
 const CONTENT_POSTS: readonly RegExp[] = [
+    /^\/api\/v1\/editor\/speech-analyses(?:\/preflight)?\/?(\?|$)/,
+    /^\/api\/v1\/editor\/ai-edit\/?(\?|$)/,
     /^\/api\/v1\/generations(\?|$)/,
     /^\/api\/v1\/uploads(\/|\?|$)/,
     /^\/api\/v1\/montage\/plan(\?|$)/,
@@ -56,13 +58,13 @@ export interface ConsentGate {
     forget(): Promise<void>;
 }
 
-export function createConsentGate(storage: ConsentStorage): ConsentGate {
+export function createConsentGate(storage: ConsentStorage, version = AI_CONSENT_VERSION): ConsentGate {
     let userId: string | null = null;
     let ask: (() => Promise<boolean>) | null = null;
     let pending: Promise<boolean> | null = null;
     let pendingFor: string | null = null;
 
-    const keyFor = (id: string) => `veyrnox.consent.${AI_CONSENT_VERSION}.${id}`;
+    const keyFor = (id: string) => `veyrnox.consent.${version}.${id}`;
     const agreed = async (id: string) => (await storage.get(keyFor(id)).catch(() => null)) === 'agreed';
 
     return {

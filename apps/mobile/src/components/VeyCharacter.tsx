@@ -17,6 +17,7 @@ const art = {
 };
 
 const ease = Easing.inOut(Easing.sin);
+const WAVE_HALF_MS = 360; // one arm swing of the wave; was 180, which read as too fast
 
 // A back-and-forth that never stops: 0 to 1 and back.
 function swing(value: Animated.Value, duration: number) {
@@ -99,8 +100,8 @@ function VeyRobot({ width = 72, mood = 'idle', interactive = false, onReact }: V
         const hops = () => Animated.sequence([t(hop, 1, 220), t(hop, 0, 260), t(hop, 1, 200), t(hop, 0, 240)]);
         const cheers = () => Animated.sequence([t(cheer, 1, 260), Animated.delay(420), t(cheer, 0, 300)]);
         const waves = () => Animated.sequence([
-            ...Array.from({ length: 3 }, () => Animated.sequence([t(wave, 0, 180), t(wave, 1, 180)])),
-            t(wave, 0.5, 180),
+            ...Array.from({ length: 3 }, () => Animated.sequence([t(wave, 0, WAVE_HALF_MS), t(wave, 1, WAVE_HALF_MS)])),
+            t(wave, 0.5, WAVE_HALF_MS),
         ]);
         let animations: Animated.CompositeAnimation[] = [];
         let disposed = false;

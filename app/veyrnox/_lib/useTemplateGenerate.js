@@ -15,7 +15,7 @@ import { uploadSourceFile } from './uploadSourceFile';
 // its idempotency key across a retry of the same request, the quote caps the charge, a price change asks to confirm,
 // and any change to the request drops the continuation. With a photo it is the one start image, uploaded once, sent with
 // the rights tick Create records on the job.
-export function useTemplateGenerate({ preset, model, prompt, aspect, aspectOptions, durationSeconds, unitCost, photo = null, photos, requiredCount = 0, needsPhoto = false, preparing = false }) {
+export function useTemplateGenerate({ preset, model, prompt, aspect, aspectOptions, durationSeconds, unitCost, photo = null, photos, requiredCount = 0, needsPhoto = false, preparing = false, templateClip = null }) {
   const [balance, setBalance] = useState(null);
   const [error, setError] = useState(null);
   const [sending, setSending] = useState(false);
@@ -28,11 +28,11 @@ export function useTemplateGenerate({ preset, model, prompt, aspect, aspectOptio
   const uploaded = useRef({});
   const files = photos || (photo ? [photo] : []);
   const photoToken = files.map(fileIdentity);
-  const identity = JSON.stringify([model?.id, prompt, aspect, durationSeconds, preset.id, photoToken]);
+  const identity = JSON.stringify([model?.id, templateClip ? null : prompt, aspect, durationSeconds, preset.id, photoToken, templateClip?.id]);
   const activeBatch = batchView?.identity === identity ? batchView : null;
   const quote = activeBatch?.quote ?? allocationSnapshot(activeBatch ?? { accepted: [null], unknown: new Set() }, activeBatch?.unit ?? unitCost, model ? freeLeftFor(freeMap, model.id) : 0);
   const payable = quote.payable ?? quote.total;
-  const promptBlocked = !prompt.trim() || prompt.length > TEMPLATE_PROMPT_MAX;
+  const promptBlocked = !templateClip && (!prompt.trim() || prompt.length > TEMPLATE_PROMPT_MAX);
   // While a replacement photo is being prepared the page keeps this mounted (a running job stays on screen) but cannot submit.
   const photoBlocked = preparing || (requiredCount ? files.length !== requiredCount || files.some(file => !file) : needsPhoto && !photo);
 
@@ -68,10 +68,10 @@ export function useTemplateGenerate({ preset, model, prompt, aspect, aspectOptio
       duration_seconds: model.kind === 'video' ? durationSeconds : undefined,
       ...(aspectOptions.length ? { aspect_ratio: aspect } : {}),
     };
-    const inputs = templateInputs(preset, model, { prompt, aspect, durationSeconds, aspectOptions, withPhoto: files.some(Boolean) });
+    const inputs = templateClip ? { duration_seconds: 5 } : templateInputs(preset, model, { prompt, aspect, durationSeconds, aspectOptions, withPhoto: files.some(Boolean) });
     let result;
     try {
-      result = await submitTemplate({ run, quote, model, preset, inputs, makeKey: makeIdempotencyKey, deps: {
+      result = await submitTemplate({ run, quote, model, preset, inputs, templateClip, makeKey: makeIdempotencyKey, deps: {
         gatewayFetch,
         sources: files.length ? () => cachedSources(uploaded.current, JSON.stringify([model.id, photoToken]), () => mediaGenerationSources(model, { image: files.map(file => ({ file })) }, uploadSourceFile)) : null,
         freeAllowance: async () => { const r = await gatewayFetch('/free-allowance'); return r?.enabled ? r.left : {}; },

@@ -100,7 +100,7 @@ export function templateRun(previous, identity, unit, makeKey) {
  * Send the one request. Returns { error, confirm }: error is the banner object (null on success). Never retried under a
  * new key; the run keeps its key until the caller decides the batch is dead (templateRunDead).
  */
-export async function submitTemplate({ run, quote, model, preset, inputs, makeKey, deps }) {
+export async function submitTemplate({ run, quote, model, preset, inputs, templateClip = null, makeKey, deps }) {
   const { gatewayFetch, onJob, freeAllowance } = deps;
   run.quote = quote;
   run.confirm = false;
@@ -114,8 +114,9 @@ export async function submitTemplate({ run, quote, model, preset, inputs, makeKe
       const submitted = await gatewayFetch('/generations', {
         method: 'POST',
         body: JSON.stringify({
-          template_id: auditedInputs.has(inputs) && (contract?.class !== 'bound' || references.length === contract.slotCount) ? fidelityTemplateId(contract, boundInputs.prompt, model.id, boundInputs) : undefined,
-          model_id: model.id, idempotency_key: run.keys[i], inputs: boundInputs,
+          ...(templateClip ? { template_clip: preset.id } : {}),
+          template_id: !templateClip && auditedInputs.has(inputs) && (contract?.class !== 'bound' || references.length === contract.slotCount) ? fidelityTemplateId(contract, boundInputs.prompt, model.id, boundInputs) : undefined,
+          model_id: templateClip ? templateClip.model : model.id, idempotency_key: run.keys[i], inputs: templateClip ? inputs : boundInputs,
           max_charge_credits: quote.ceilings[i],
           preset: templateStartIdFor(preset.id, preset, model.id) || undefined,
           references,

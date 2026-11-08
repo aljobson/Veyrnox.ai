@@ -25,7 +25,7 @@
  *   KIE_WEBHOOK_HMAC_KEY the webhookHmacKey enabled in kie.ai settings
  */
 
-import { capabilityFor } from '../../lib/modelCapabilities.js';
+import { capabilityFor, checkInputs, shapePayload } from '../../lib/modelCapabilities.js';
 import { hardMaxFiles } from '../../lib/multiReference.mjs';
 import { buildKieDialogue } from '../../lib/kieDialogue.js';
 import { readBoundedBody } from '../../lib/boundedBody.js';
@@ -131,6 +131,12 @@ export function buildRequest(target, inputs) {
             prompt: supplierPrompt, image_urls, duration: String(seconds), mode: 'pro',
             sound: false, multi_shots: false, multi_prompt: [],
         } } };
+    }
+
+    if (target.model === 'bytedance/seedance-2') {
+        const record = capabilityFor(endpoint), checked = checkInputs(record, inputs);
+        if (!checked.ok) return checked;
+        return { ok: true, body: { model: target.model, input: shapePayload(record, inputs) } };
     }
 
     if (target.model === 'google/nano-banana') {

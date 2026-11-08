@@ -8,6 +8,7 @@ import { mockQaJobs, qaAsset } from './mockQaJobs.mjs';
 import { mockSecurity } from './mockSecurityFixtures.mjs';
 import { mockWins } from './mockWins.mjs';
 import { mockCheckin } from './mockCheckin.mjs';
+import { mockBestCut } from './mockBestCut.mjs';
 import { createServer } from 'node:http';
 import { deflateSync } from 'node:zlib';
 import { createHash, randomUUID } from 'node:crypto';
@@ -598,6 +599,8 @@ createServer(async (req, res) => {
         });
 
     if (!req.headers.authorization?.startsWith('Bearer ')) return send(res, 401, { error: 'not_authenticated' });
+    const bestCut = mockBestCut(req.method, path, url.search || '', body, state, process.env.MOCK_BEST_CUT);
+    if (bestCut) return send(res, bestCut.status, bestCut.body);
     if (path === '/api/v1/uploads' && req.method === 'POST') {
         const allowed = ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'audio/mpeg', 'audio/wav'];
         if (!allowed.includes(body.content_type)) return send(res, 400, { error: 'upload_type_not_allowed' });

@@ -1,9 +1,15 @@
 [
   {
-    "id": "editorSimple.openTool",
-    "english": "Open tool",
-    "translation": "Abrir ferramenta",
-    "ratio": 1.78
+    "id": "bestCut.auto",
+    "english": "Auto-detect",
+    "translation": "Detectar automaticamente",
+    "ratio": 2.18
+  },
+  {
+    "id": "bestCut.tryAnyway",
+    "english": "Try Anyway",
+    "translation": "Tentar mesmo assim",
+    "ratio": 1.8
   },
   {
     "id": "recovery.home",
@@ -3060,6 +3066,12 @@
     "ratio": 1.86
   },
   {
+    "id": "editorSimple.aiTitle",
+    "english": "AI Edit",
+    "translation": "Edição com IA",
+    "ratio": 1.86
+  },
+  {
     "id": "editorSimple.allTools",
     "english": "All editing tools",
     "translation": "Todas as ferramentas de edição",
@@ -3070,6 +3082,18 @@
     "english": "Done",
     "translation": "Concluído",
     "ratio": 2.25
+  },
+  {
+    "id": "editorAi.preview",
+    "english": "Preview changes",
+    "translation": "Pré-visualizar alterações",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorAi.step.setSpeed",
+    "english": "Set {id} speed to {value}×",
+    "translation": "Definir a velocidade de {id} como {value}×",
+    "ratio": 1.62
   },
   {
     "id": "chrome.privacyPolicy",
@@ -3196,5 +3220,11 @@
     "english": "Only use photos of people who agreed.",
     "translation": "Use apenas fotografias de pessoas que tenham dado o seu consentimento.",
     "ratio": 1.89
+  },
+  {
+    "id": "editorSimple.openTool",
+    "english": "Open tool",
+    "translation": "Abrir ferramenta",
+    "ratio": 1.78
   }
 ]

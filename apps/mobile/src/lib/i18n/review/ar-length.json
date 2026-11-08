@@ -1,5 +1,11 @@
 [
   {
+    "id": "bestCut.tryAnyway",
+    "english": "Try Anyway",
+    "translation": "المحاولة على أي حال",
+    "ratio": 1.9
+  },
+  {
     "id": "recovery.home",
     "english": "Go home",
     "translation": "العودة إلى الرئيسية",
@@ -1756,6 +1762,30 @@
     "english": "AI Edit",
     "translation": "تحرير بالذكاء الاصطناعي",
     "ratio": 3.29
+  },
+  {
+    "id": "editorSimple.aiTitle",
+    "english": "AI Edit",
+    "translation": "تحرير بالذكاء الاصطناعي",
+    "ratio": 3.29
+  },
+  {
+    "id": "editorAi.edge.out",
+    "english": "end",
+    "translation": "النهاية",
+    "ratio": 2.33
+  },
+  {
+    "id": "editorSpeech.queued",
+    "english": "Analysis queued…",
+    "translation": "التحليل في قائمة الانتظار…",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorSpeech.keep",
+    "english": "Keep {time}",
+    "translation": "الاحتفاظ بـ {time}",
+    "ratio": 1.64
   },
   {
     "id": "oauth.signIn",

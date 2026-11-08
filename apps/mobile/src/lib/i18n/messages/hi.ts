@@ -365,6 +365,8 @@ const hi = {
     'presets.fidelity.photoReady': 'फ़ोटो तैयार है',
     'presets.use.photoReplace': 'बदलें',
     'presets.fidelity.photosUnavailable': 'इस टेम्पलेट को मॉडल की मौजूदा सीमा से ज़्यादा फ़ोटो चाहिए। दूसरा टेम्पलेट चुनें या बाद में फिर कोशिश करें।',
+    'public.TemplateRecipe.templateClipUsed': 'यह टेम्पलेट मुख्य किरदार को बदलने के लिए अपनी क्लिप और आपकी फ़ोटो का इस्तेमाल करता है।',
+    'presets.use.photoTitle': 'अपनी फ़ोटो जोड़ें',
 } as const;
 
 export default hi;

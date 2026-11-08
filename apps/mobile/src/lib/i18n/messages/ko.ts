@@ -365,6 +365,8 @@ const ko = {
     'presets.fidelity.photoReady': '사진 준비 완료',
     'presets.use.photoReplace': '교체',
     'presets.fidelity.photosUnavailable': '이 템플릿에는 현재 모델이 지원하는 수보다 많은 사진이 필요합니다. 다른 템플릿을 선택하거나 나중에 다시 시도하세요.',
+    'public.TemplateRecipe.templateClipUsed': '이 템플릿은 자체 클립과 내 사진을 사용하여 주인공을 교체합니다.',
+    'presets.use.photoTitle': '내 사진 추가',
 } as const;
 
 export default ko;

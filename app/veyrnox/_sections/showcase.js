@@ -80,6 +80,13 @@ export const GROUP_KEYS = {
   audio: { label: 'home.models.audio', unit: 'home.models.unitAudio' },
 };
 
+// The three group tiles share one square frame. Their clips come in 4:3, 1:2
+// and 1:1, and drawn at their own shape the three headings sat 480px apart
+// across the row, so no price list lined up with another. Each clip stays
+// whole inside the frame and the bars take a blurred copy of its poster
+// (MediaTile `ambient`); the headings and lists now share a baseline.
+const SHELF_FRAME = '1 / 1';
+
 export async function ModelShelf({ catalog }) {
   const { locale, t } = await getT();
   const groups = LIST_GROUPS
@@ -107,10 +114,11 @@ export async function ModelShelf({ catalog }) {
                 href={localizedHref(locale, '/models')}
                 ariaLabel={t('home.models.explore', { kind: t(GROUP_KEYS[g.kind].label) })}
                 clip={clip && { ...clip, objectFit: 'contain' }}
+                ambient
                 imageSizes="(max-width: 767px) 100vw, (max-width: 1279px) 50vw, 33vw"
                 className="block mb-4"
                 mediaClassName="rounded-2xl"
-                mediaStyle={{ aspectRatio: clip?.aspectRatio || '4 / 5' }}
+                mediaStyle={{ aspectRatio: SHELF_FRAME }}
                 footer={
                   <div className="pt-3 flex items-baseline justify-between gap-3">
                     <h3 className="text-xl font-black">{t(GROUP_KEYS[g.kind].label)}</h3>

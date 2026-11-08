@@ -1,3 +1,8 @@
+import { useBestCutEditor } from './useBestCutEditor';
+import { EditorSpeechCutSheet } from './EditorSpeechCutSheet';
+import { useSpeechCutAvailability } from './useSpeechCutAvailability';
+import { EditorAiEditSheet, useAiEditAvailability } from './EditorAiEditSheet';
+import { sameRevision, type Freshness } from '../../lib/editorAgentPlan';
 import { VoiceoverSheet } from './VoiceoverSheet';
 import { VOICEOVER_AVAILABLE } from '../../lib/voiceoverRecorder';
 import { useAnnouncement } from '../../lib/useAnnouncement';
@@ -29,27 +34,21 @@ import { exportUnavailable } from '../../lib/editorServerExport';
 import { ServerExportSheet } from './ServerExportSheet';
 import { styles } from './fullEditorStyles';
 import { SimpleEditorBar, SimpleEditorSheet, type SheetRow, type SimpleSheetName } from './SimpleEditorChrome';
-
 import { randomUUID } from 'expo-crypto';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { Stack } from 'expo-router';
-
 import { Platform, ActivityIndicator, Modal, Pressable, ScrollView, Text, TextInput, View, useWindowDimensions } from 'react-native';
-
 import { touchTarget } from '../../lib/a11y';
-
 import { formatNumber, plural, t } from '../../lib/i18n';
 import type { LibraryChoice } from '../../lib/librarySource';
 import { DEFAULT_TEXT_STYLE, addMarker, addTrack, canvasOf, clipAt, copySelections, duplicateSelections, framesIn, groupSelections, pasteClipboard, removeSelections, splitClip, timelineOf, updateClip, type Canvas, type Clip, type EditorTrack, type Media, type Selection, type TextClip, type Timeline, type TrackKind } from '../../lib/nativeEditorModel';
-
 import type { SlotKind } from '../../lib/sources';
 import { colors } from '../../theme';
 import { HeaderAction } from '../HeaderAction';
 import { LibraryChooser } from '../LibraryChooser';
-
+import { JobThumb, useAssetLinks } from '../JobThumb';
 type Tool = 'media' | 'audio' | 'generate' | 'text' | 'captions' | 'transcript' | 'effects' | 'transitions' | 'filters' | 'animation' | 'markers' | 'brand' | 'adjust';
-
 const tools: readonly { id: Tool; icon: string; label: string }[] = [
     { id: 'media', icon: '▣', label: t('editor.media2') },
     { id: 'audio', icon: '♫', label: t('editor.audio') },
@@ -66,9 +65,8 @@ const tools: readonly { id: Tool; icon: string; label: string }[] = [
     { id: 'adjust', icon: '☷', label: t('editor.adjust2') },
 ];
 const seconds = (frames = 0, fps = 30) => `${formatNumber(Math.max(0, frames / fps), 1)}s`;
-
 import { useFullEditorSession } from './useFullEditorSession';
-export function FullEditorScreen({ projectId, jobId, startAdvanced = false }: { projectId: string; jobId?: string; startAdvanced?: boolean }) {
+export function FullEditorScreen({ projectId, jobId, startAdvanced = false, startBestCut = false }: { projectId: string; jobId?: string; startAdvanced?: boolean; startBestCut?: boolean }) {
     const mounted = useRef(true);
     const [libraryPending, setLibraryPending] = useState(false);
     const [viewport, setViewport] = useState(0);
@@ -80,7 +78,14 @@ export function FullEditorScreen({ projectId, jobId, startAdvanced = false }: { 
     const [advanced, setAdvanced] = useState(startAdvanced);
     const [sheet, setSheet] = useState<SimpleSheetName | null>(null);
     const [panelOpen, setPanelOpen] = useState(false);
-    const { beginImport, replacing, leaveEditor, saveStatus, sync, currentDocument, preparePicked, savedDocument, api, router, name, document, dirty, problem, setProblem, tool, setTool, selection, setSelection, selections, setSelections, multiSelect, setMultiSelect, clipboard, setClipboard, snap, setSnap, ripple, setRipple, zoom, setZoom, privacyNotice, history, frameStore, setFrame, playing, setPlaying, projectAssets, localMediaUris, libraryKind, setLibraryKind, markDocument, save, acknowledgePrivacy, travel } = useFullEditorSession({ projectId, jobId, onOwnerChange: () => guard.teardown(() => router.back()), onCopy: id => guard.teardown(() => router.replace({ pathname: '/editor/[projectId]', params: { projectId: id } })) });
+    const session = useFullEditorSession({ projectId, jobId, onOwnerChange: () => guard.teardown(() => router.back()), onCopy: id => guard.teardown(() => router.replace({ pathname: '/editor/[projectId]', params: { projectId: id } })) });
+    const { getEditRevision, beginImport, replacing, leaveEditor, saveStatus, sync, currentDocument, preparePicked, savedDocument, api, router, name, document, dirty, problem, setProblem, tool, setTool, selection, setSelection, selections, setSelections, multiSelect, setMultiSelect, clipboard, setClipboard, snap, setSnap, ripple, setRipple, zoom, setZoom, privacyNotice, history, frameStore, setFrame, playing, setPlaying, projectAssets, localMediaUris, libraryKind, setLibraryKind, markDocument, save, acknowledgePrivacy, travel } = session;
+    const bestCut = useBestCutEditor(session, projectId, startBestCut);
+    const thumbLinks = useAssetLinks(api);
+    const { aiQuote, setAiQuote, aiEditOpen, setAiEditOpen } = useAiEditAvailability(api, projectId);
+    const [aiAnnouncement, setAiAnnouncement] = useState<string | null>(null); useAnnouncement(aiAnnouncement);
+    const { speechQuote, setSpeechQuote, speechMode, setSpeechMode } = useSpeechCutAvailability(api, projectId);
+    const editFreshness = (): Freshness => ({ projectId, accountId: getCacheUser() ?? '', editRevision: getEditRevision() });
     const guard = useEditorLeaveGuard(leaveEditor, router.back);
     const [generate, setGenerate] = useState<{ visible: boolean; kind: Kind; frame: number; owner?: string; prompt?: string } | null>(null);
     const [stemChoice, setStemChoice] = useState<{ choice: LibraryChoice; stems: EditorStem[] } | null>(null);
@@ -100,9 +105,7 @@ export function FullEditorScreen({ projectId, jobId, startAdvanced = false }: { 
     // Short phones: shrink the preview so the toolbars and tool rail are never pushed off screen.
     const { height: windowHeight } = useWindowDimensions();
     const previewHeight = Math.max(96, Math.min(178, Math.round(windowHeight * 0.14)));
-
     if (!document) return <View style={styles.loading}><Stack.Screen options={{ title: t('editor.title') }} /><ActivityIndicator color={colors.accent} /><Text style={styles.muted}>{problem ?? t('editor.fullLoading')}</Text></View>;
-
     const canvas = canvasOf(document.canvas);
     const timeline = timelineOf(document.timeline);
     const total = framesIn(timeline);
@@ -113,7 +116,6 @@ export function FullEditorScreen({ projectId, jobId, startAdvanced = false }: { 
     const selectedGroup = selected?.groupId;
     const selectedTrack = selection ? timeline.tracks.find((track) => track.id === selected?.trackId) : undefined;
     const availableMedia = [...Object.values(timeline.media), ...projectAssets.filter((asset) => !Object.values(timeline.media).some((item) => item.assetSource?.assetId === asset.assetSource?.assetId))];
-
     const applyTimeline = (next: Timeline) => markDocument({ ...(currentDocument() ?? document), schema_version: 3, timeline: next });
     const placeVoiceover = (media: Media): 'placed' | 'track' | 'full' => { const result = insertMediaAt(timelineOf(currentDocument()?.timeline), media, voiceoverAt ?? 0); if ('error' in result) return result.error; applyTimeline(result.timeline); setSelection(result.selection); setSelections([result.selection]); return 'placed'; };
     const updateCanvas = (patch: Partial<Canvas>) => {
@@ -263,9 +265,7 @@ export function FullEditorScreen({ projectId, jobId, startAdvanced = false }: { 
         const saved = await save();
         if (saved) router.push(path as never);
     };
-
     const openExport = async () => { if (!EDITOR_SERVER_EXPORT_ENABLED) { setProblem(t('handoff.exportUnavailable')); return; } try { requireOnline(); } catch { setProblem(OFFLINE_PAID_MESSAGE); return; } if (exportUnavailable()) { setProblem(t('handoff.exportUnavailable')); return; } if (await savedDocument()) setExportVisible(true); };
-
     // Simple view: three entries open sheets that reuse the same handlers as the full tool set.
     const showPanel = (next: Tool) => { setTool(next); setPanelOpen(true); };
     const addRows: SheetRow[] = [
@@ -277,6 +277,9 @@ export function FullEditorScreen({ projectId, jobId, startAdvanced = false }: { 
         ...(VOICEOVER_AVAILABLE ? [{ id: 'voiceover', icon: '●', label: t('editorVoiceover.open'), hint: t('editorSimple.voiceoverHint'), disabled: replacing, onPress: () => { setPlaying(false); setVoiceoverAt(clampFrame(frameStore.get())); setVoiceoverMessage(null); } }] : []),
     ];
     const aiRows: SheetRow[] = [
+        ...(bestCut.available ? [{ id: 'best-cut', icon: '✦', label: t('bestCut.title'), disabled: !ready, onPress: () => { setSheet(null); bestCut.launch(); } }] : []),
+        ...(speechQuote ? (['silences', 'retakes'] as const).map(mode => ({ id: `speech-${mode}`, icon: '✦', label: t(`editorSpeech.${mode}`), disabled: !ready, onPress: () => { setPlaying(false); setSheet(null); setSpeechMode(mode); } })) : []),
+        ...(aiQuote ? [{ id: 'describe', icon: '✦', label: t('editorAi.describe'), disabled: !ready, onPress: () => { setPlaying(false); setAiAnnouncement(null); setAiEditOpen(true); } }] : []),
         { id: 'smart-cut', icon: '✦', label: t('editorSimple.smartCut'), hint: t('editorSimple.smartCutHint'), onPress: () => void openWorkflow('/smart-cut') },
         { id: 'make-clip', icon: '▶', label: t('editorSimple.makeClip'), hint: t('editorSimple.makeClipHint'), onPress: () => { showPanel('generate'); openGenerate('video'); } },
         { id: 'make-audio', icon: '♫', label: t('editorSimple.makeAudio'), hint: t('editorSimple.makeAudioHint'), onPress: () => { showPanel('generate'); openGenerate('audio'); } },
@@ -288,7 +291,6 @@ export function FullEditorScreen({ projectId, jobId, startAdvanced = false }: { 
         { id: 'versions', icon: '↺', label: t('editorSave.versions'), hint: t('editorSimple.versionsHint'), onPress: sync.openVersions },
         { id: 'all-tools', icon: '☷', label: t('editorSimple.allTools'), hint: t('editorSimple.allToolsHint'), onPress: () => setAdvanced(true) },
     ];
-
     // Tool panels are inline workspace sections with no close action; sheets below own their dismissal.
     return <View style={styles.screen}>
         {EDITOR_SERVER_EXPORT_ENABLED ? <ServerExportSheet api={api} router={router} now={Date.now} projectId={projectId} name={name} document={document} dirty={dirty} visible={exportVisible} onOpen={() => setExportVisible(true)} onClose={() => setExportVisible(false)} onFallback={() => { setExportVisible(false); setProblem(t('handoff.exportUnavailable')); }} /> : null}
@@ -302,7 +304,6 @@ export function FullEditorScreen({ projectId, jobId, startAdvanced = false }: { 
             {advanced ? <><Button label={t('editorSave.versions')} variant="tertiary" size="sm" containerStyle={{ marginVertical: -2 }} onPress={sync.openVersions} /><View style={styles.formatBadge}><Text style={styles.formatText}>{canvas.aspect_ratio}</Text><Text style={styles.formatMeta}>{t('editor.fPS', { value1: canvas.frame_rate })}</Text></View></> : null}
         </View>
         {problem ? <StatusText variant="inherit" accessibilityRole="alert" style={styles.problem}>{problem}</StatusText> : null}
-
         {advanced ? null : <View style={styles.simpleActions}>
             <Command icon="↶" label={t('editor.undo')} disabled={!history.canUndo} onPress={() => travel('undo')} />
             <Command icon="↷" label={t('editor.redo')} disabled={!history.canRedo} onPress={() => travel('redo')} />
@@ -338,7 +339,6 @@ export function FullEditorScreen({ projectId, jobId, startAdvanced = false }: { 
             <View style={styles.commandDivider} />
             <Command icon="◧" label={t('editorSimple.simpleView')} onPress={() => setAdvanced(false)} />
         </ScrollView> : null}
-
         {advanced ? <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.optionStrip} contentContainerStyle={styles.optionContent}>
             <Choice label={t('editor.snap')} selected={snap} onPress={() => setSnap((value) => !value)} compact />
             <Text style={styles.optionLabel}>{t('editor.ripple')}</Text>
@@ -352,6 +352,7 @@ export function FullEditorScreen({ projectId, jobId, startAdvanced = false }: { 
         </ScrollView> : null}
 
         <View style={[styles.previewArea, !advanced && !panelOpen && styles.simpleFill]}>
+            {bestCut.result}
             <View style={styles.previewHeading}>
                 <Text style={styles.eyebrow}>{t('editor.pREVIEW')}</Text>
                 <Text style={styles.previewMeta}>{clipCount ? t('editor.layers', { value1: clipCount }) : t('editor.emptysequence')}</Text>
@@ -369,7 +370,7 @@ export function FullEditorScreen({ projectId, jobId, startAdvanced = false }: { 
                 <Text style={styles.eyebrow}>{t('editor.tIMELINE')}</Text>
                 <Text style={styles.timelineHelp}>{multiSelect ? t('editor.selectedtapclipstoadd', { value1: selections.length }) : selection ? t('editor.tapacommandtoeditselection') : t('editor.tapacliptoselect')}</Text>
             </View>
-            <PlaybackTimeline onGestureActive={returns.gestureActive} timeline={timeline} selections={selections} ppf={zoom} total={total} frameStore={frameStore} playing={playing} snap={snap} onViewport={setViewport} onSeek={value => { setPlaying(false); setFrame(value); }} onSelect={selectClip} onApply={applyTimeline} />
+            <PlaybackTimeline clipThumb={mediaId => mediaId.startsWith('j-') ? <JobThumb links={thumbLinks} jobId={mediaId.slice(2)} size={36} /> : null} onGestureActive={returns.gestureActive} timeline={timeline} selections={selections} ppf={zoom} total={total} frameStore={frameStore} playing={playing} snap={snap} onViewport={setViewport} onSeek={value => { setPlaying(false); setFrame(value); }} onSelect={selectClip} onApply={applyTimeline} />
         </View>
 
         {advanced ? <ScrollView testID="editor-tool-rail" horizontal showsHorizontalScrollIndicator={false} style={styles.toolRail} contentContainerStyle={styles.toolContent}>
@@ -460,6 +461,13 @@ export function FullEditorScreen({ projectId, jobId, startAdvanced = false }: { 
             </> : null}
         </ScrollView> : null}
         {advanced ? null : <SimpleEditorBar onOpen={setSheet} />}
+        {bestCut.sheet}
+        {speechMode && speechQuote ? <EditorSpeechCutSheet api={api} quote={speechQuote} mode={speechMode} snapshot={() => ({ timeline: timelineOf(currentDocument()?.timeline), freshness: editFreshness(), selection })}
+            apply={(next, expected) => { if (!isReady() || !sameRevision(expected, editFreshness())) return false; applyTimeline(next); setAiAnnouncement(t('editorSpeech.applied')); return true; }}
+            onClose={() => setSpeechMode(null)} onUnavailable={() => { setSpeechMode(null); setSpeechQuote(null); }} /> : null}
+        {aiEditOpen && aiQuote ? <EditorAiEditSheet api={api} quote={aiQuote} snapshot={() => ({ timeline: timelineOf(currentDocument()?.timeline), freshness: editFreshness() })}
+            apply={(next, expected) => { if (!isReady() || !sameRevision(expected, editFreshness())) return false; applyTimeline(next); setAiAnnouncement(t('editorAi.applied')); return true; }}
+            onClose={() => setAiEditOpen(false)} onUnavailable={() => { setAiEditOpen(false); setAiQuote(null); }} /> : null}
         {sheet === 'add' ? <SimpleEditorSheet title={t('editorSimple.addTitle')} rows={addRows} onClose={() => setSheet(null)} /> : null}
         {sheet === 'ai' ? <SimpleEditorSheet title={t('editorSimple.aiTitle')} rows={aiRows} describe onDescribe={(id, prompt) => {
             if (id === 'make-clip' || id === 'make-audio') { showPanel('generate'); openGenerate(id === 'make-clip' ? 'video' : 'audio', prompt); }

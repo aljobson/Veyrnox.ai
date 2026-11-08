@@ -17,6 +17,7 @@ export default {
     "presets.fidelity.photoMinimum": "Choose a photo at least 256 × 256 pixels.",
     "presets.fidelity.blocked": "This template needs references or capabilities that are not available. Choose another template.",
 
+    "presets.use.photoTitle": "Bring your photo",
     "presets.templates": "Templates",
     "presets.isnotavailablerightnow": "{value1} is not available right now.",
     "presets.thattemplateisnotavailablerightnow": "That template is not available right now.",

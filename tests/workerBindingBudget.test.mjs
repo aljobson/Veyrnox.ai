@@ -34,7 +34,14 @@ test('production public variables retain Cloudflare text-binding headroom', () =
     // and fails deploy-production's secret preservation check, so it must never appear here.
     // ADR-0069: the requested standalone MAX_CHARGE_ENABLED rollout switch adds one var (67).
     // At the recorded 50-secret footprint that is 117 text bindings, leaving 11 of 128 slots.
-    assert.ok(Object.keys(config.vars).length <= 67, 'production vars must stay at or below 67');
+    // PR #1993: Cloudflare refused a deploy at 131 text bindings (limit 128), so AI edit and Speech Cut add NO binding:
+    // their switches and the model id live inside EDITOR_RUNTIME_FLAGS, and the speech webhook correlation reuses FAL_KEY.
+    assert.ok(Object.keys(config.vars).length <= 67, 'production vars must not grow: the Worker is at its 128 text-binding cap');
+    for (const vars of [config.vars, config.env.staging.vars]) {
+        for (const name of ['EDITOR_AI_EDIT_ENABLED', 'EDITOR_AI_EDIT_MODEL_ID', 'SPEECH_CUT_ENABLED', 'SPEECH_CUT_WEBHOOK_SECRET']) {
+            assert.ok(!Object.hasOwn(vars, name), `${name} must not be a separate binding`);
+        }
+    }
     assert.ok(!Object.hasOwn(config.vars, 'ACCOUNT_DELETION_ENABLED'), 'ACCOUNT_DELETION_ENABLED is a production secret, not a var');
     // ADR-0251 amendment (2026-10-29): CREATOR_PROFILE_ENABLED is also a production secret binding.
     assert.ok(!Object.hasOwn(config.vars, 'CREATOR_PROFILE_ENABLED'), 'CREATOR_PROFILE_ENABLED is a production secret, not a var');

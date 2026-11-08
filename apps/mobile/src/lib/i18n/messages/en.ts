@@ -22,6 +22,7 @@ import area_approvals from './en/approvals';
 import area_attachFromDevice from './en/attachFromDevice';
 import area_authGate from './en/authGate';
 import area_autolists from './en/autolists';
+import area_bestCut from './en/bestCut';
 import area_billing from './en/billing';
 import area_blocks from './en/blocks';
 import area_brand from './en/brand';
@@ -78,6 +79,7 @@ import area_editorProjects from './en/editorProjects';
 import area_editorSave from './en/editorSave';
 import area_editorServerExport from './en/editorServerExport';
 import area_editorSimple from './en/editorSimple';
+import area_editorSpeech from './en/editorSpeech';
 import area_editorSpike from './en/editorSpike';
 import area_editorVoiceover from './en/editorVoiceover';
 import area_email from './en/email';
@@ -232,6 +234,7 @@ const catalog = {
     ...area_attachFromDevice,
     ...area_authGate,
     ...area_autolists,
+    ...area_bestCut,
     ...area_billing,
     ...area_blocks,
     ...area_brand,
@@ -288,6 +291,7 @@ const catalog = {
     ...area_editorSave,
     ...area_editorServerExport,
     ...area_editorSimple,
+    ...area_editorSpeech,
     ...area_editorSpike,
     ...area_editorVoiceover,
     ...area_email,

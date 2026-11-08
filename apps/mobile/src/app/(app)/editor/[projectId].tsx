@@ -36,9 +36,9 @@ function Button({ label, onPress, disabled = false }: { label: string; onPress()
     return <Pressable accessibilityRole="button" accessibilityLabel={rawText(label)} accessibilityState={{ disabled }} disabled={disabled} style={touchTarget} onPress={onPress}><Text style={{ color: colors.accent }}>{label}</Text></Pressable>;
 }
 export default function EditorRoute() {
-    const { projectId, jobId } = useLocalSearchParams<{ projectId: string; jobId?: string }>();
+    const { projectId, jobId, bestCut } = useLocalSearchParams<{ projectId: string; jobId?: string; bestCut?: string }>();
     if (!EDITOR_ENABLED) return <View><Stack.Screen options={{ title: t('editor.title') }} /><Text>{t('editor.unavailable')}</Text></View>;
-    if (FULL_EDITOR_ENABLED) return <FullEditorScreen key={projectId} projectId={projectId} jobId={jobId} />;
+    if (FULL_EDITOR_ENABLED) return <FullEditorScreen key={projectId} projectId={projectId} jobId={jobId} startBestCut={bestCut === '1'} />;
     return <Editor key={projectId} projectId={projectId} jobId={jobId} />;
 }
 function Editor({ projectId, jobId }: { projectId: string; jobId?: string }) {
