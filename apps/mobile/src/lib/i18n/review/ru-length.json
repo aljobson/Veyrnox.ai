@@ -1,5 +1,23 @@
 [
   {
+    "id": "bestCut.balanced",
+    "english": "Balanced",
+    "translation": "Сбалансированный",
+    "ratio": 2
+  },
+  {
+    "id": "bestCut.settings",
+    "english": "Best Cut",
+    "translation": "Лучший монтаж",
+    "ratio": 1.63
+  },
+  {
+    "id": "bestCut.tryAnyway",
+    "english": "Try Anyway",
+    "translation": "Всё равно попробовать",
+    "ratio": 2.1
+  },
+  {
     "id": "recovery.home",
     "english": "Go home",
     "translation": "На главный экран",

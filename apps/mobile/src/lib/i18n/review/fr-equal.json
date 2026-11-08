@@ -199,5 +199,19 @@
   "faceFilters.zombie": "Same word in French, kept as the common term.",
   "faceFilters.vampire": "Same word in French, kept as the common term.",
   "editorSimple.smartCut": "Product feature name, kept in English in every language.",
-  "editorAi.counter": "Numeric character counter; contains only a placeholder, slash and limit."
+  "editorAi.counter": "Numeric character counter; contains only a placeholder, slash and limit.",
+  "bestCut.language.en": "Native language name, intentionally shared across locales.",
+  "bestCut.language.es": "Native language name, intentionally shared across locales.",
+  "bestCut.language.zh": "Native language name, intentionally shared across locales.",
+  "bestCut.language.hi": "Native language name, intentionally shared across locales.",
+  "bestCut.language.ar": "Native language name, intentionally shared across locales.",
+  "bestCut.language.fr": "Native language name, intentionally shared across locales.",
+  "bestCut.language.pt": "Native language name, intentionally shared across locales.",
+  "bestCut.language.ru": "Native language name, intentionally shared across locales.",
+  "bestCut.language.ja": "Native language name, intentionally shared across locales.",
+  "bestCut.language.de": "Native language name, intentionally shared across locales.",
+  "bestCut.language.ko": "Native language name, intentionally shared across locales.",
+  "bestCut.clips.many": "Shared spelling of the borrowed word clip with the same count placeholder.",
+  "bestCut.clips.one": "Shared spelling of the borrowed word clip with the same count placeholder.",
+  "bestCut.clips.other": "Shared spelling of the borrowed word clip with the same count placeholder."
 }

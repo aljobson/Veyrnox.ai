@@ -1,3 +1,5 @@
+import { BestCutEntry } from '../../components/editor/BestCutEntry';
+import { useBestCutAvailability } from '../../components/editor/useBestCutAvailability';
 import { rawText } from '../../lib/i18n/translate';
 import { randomUUID } from 'expo-crypto';
 import { Stack, useRouter } from 'expo-router';
@@ -49,6 +51,7 @@ const seconds = (value: number) => (Math.round(value * 10) / 10).toFixed(1);
 export default function SmartCutRoute() {
     const styles = useThemedStyles(sheets);
     const { api, beginSessionTask } = useAuth();
+    const bestCutQuote = useBestCutAvailability(api).quote;
     const router = useRouter();
     const alive = useRef(true);
     const [jobs, setJobs] = useState<Job[] | null>(null);
@@ -240,6 +243,7 @@ export default function SmartCutRoute() {
         <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <Stack.Screen options={{ title: t('app.smartCut.name') }} />
             <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+                <BestCutEntry />{bestCutQuote ? <Text variant="title2">{t('bestCut.quickPacing')}</Text> : null}
                 <View style={styles.hero}>
                     <Text variant="caption" tone="accent">{t('app.smartCut.name')}</Text>
                     <Text variant="display" accessibilityRole="header">{t('app.smartCut.entry.title')}</Text>

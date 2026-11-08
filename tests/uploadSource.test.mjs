@@ -113,7 +113,7 @@ test('a file that is not what it claims is rejected', () => {
 test('every allowlisted type can actually be recognised by gate 2', () => {
     // A type that gate 1 accepts but gate 2 can never confirm would be an
     // upload that always fails after a successful PUT.
-    const samples = { 'image/jpeg': JPEG, 'image/png': PNG, 'image/webp': WEBP, 'video/mp4': MP4,
+    const samples = { 'video/quicktime': new Uint8Array([0, 0, 0, 20, ...b('ftypqt  '), 0, 0, 0, 0]), 'image/jpeg': JPEG, 'image/png': PNG, 'image/webp': WEBP, 'video/mp4': MP4,
         'audio/wav': new Uint8Array([...b('RIFF'), 0, 0, 0, 0, ...b('WAVEfmt ')]),
         'audio/mpeg': new Uint8Array([...b('ID3'), 3, 0, 0, 0, 0, 0, 10, 0, 0]) };
     for (const type of Object.keys(ALLOWED_UPLOAD_TYPES)) {
@@ -149,4 +149,18 @@ test('admission requires proven dimensions for images and ignores other media', 
     assert.equal(requireImageDimensions('image/jpeg', new Uint8Array([0xff, 0xd8, 0xff, 0xe1, 0xff, 0xff, 0, 0, 0, 0, 0, 0])).error, 'upload_unreadable');
     assert.equal(requireImageDimensions('image/png', new Uint8Array(16)).error, 'upload_unreadable');
     assert.deepEqual(requireImageDimensions('video/mp4', new Uint8Array(16)), { ok: true, dimensions: null });
+});
+
+test('a QuickTime-brand file declared as video/mp4 still passes gate 2 (no regression)', () => {
+    const qt = new Uint8Array([0, 0, 0, 20, ...b('ftypqt  '), 0, 0, 0, 0]);
+    assert.equal(checkSniffed('video/mp4', qt).ok, true);
+    assert.equal(checkSniffed('video/quicktime', qt).ok, true);
+    assert.equal(checkSniffed('video/quicktime', MP4).ok, false);
+});
+
+test('a QuickTime upload key is refused by the generation resolver (Best Cut speech path only)', async () => {
+    const { resolveUploadedSource } = await import('../lib/resolveSource.js');
+    const owner = '11111111-1111-4111-8111-111111111111';
+    const key = `uploads/${owner}/22222222-2222-4222-8222-222222222222.mov`;
+    assert.deepEqual(await resolveUploadedSource(owner, key, {}), { ok: false, error: 'source_type_unsupported' });
 });
