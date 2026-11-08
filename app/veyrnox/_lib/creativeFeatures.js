@@ -89,3 +89,8 @@ export function translatedCreativeFeature(item, t) {
     steps: item.steps.map((step, index) => translated(`step${index + 1}`, step)),
   };
 }
+
+// Face filters are catalog models, not studio features: each opens in Create
+// with its model preselected (the same link the public /tools page uses).
+// Titles and blurbs live in the app catalog under app.features.face.<id>.*.
+export const FACE_FILTER_IDS = Object.freeze(['face-retouch', 'face-enhance', 'face-makeup', 'face-age']);
