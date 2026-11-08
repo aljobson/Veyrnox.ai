@@ -1,5 +1,11 @@
 [
   {
+    "id": "editorSimple.openTool",
+    "english": "Open tool",
+    "translation": "Abrir herramienta",
+    "ratio": 1.89
+  },
+  {
     "id": "bestCut.auto",
     "english": "Auto-detect",
     "translation": "Detectar automáticamente",
@@ -3096,12 +3102,6 @@
     "ratio": 2
   },
   {
-    "id": "editorSimple.aiTitle",
-    "english": "AI Edit",
-    "translation": "Edición con IA",
-    "ratio": 2
-  },
-  {
     "id": "editorAi.stale",
     "english": "The timeline changed. Ask again.",
     "translation": "La línea de tiempo ha cambiado. Vuelve a solicitarlo.",
@@ -3226,11 +3226,5 @@
     "english": "Only use photos of people who agreed.",
     "translation": "Usa solo fotos de personas que hayan dado su consentimiento.",
     "ratio": 1.62
-  },
-  {
-    "id": "editorSimple.openTool",
-    "english": "Open tool",
-    "translation": "Abrir herramienta",
-    "ratio": 1.89
   }
 ]

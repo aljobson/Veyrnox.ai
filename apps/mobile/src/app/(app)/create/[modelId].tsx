@@ -282,11 +282,9 @@ export default function CreateWithModel() {
     const text = takesCamera && cameraOn ? buildCinemaPrompt(withCharacter, cinema) : withCharacter;
     const text_ = textInput(model);
     const promptTooLong = !!text_ && text.length > text_.max;
-    const contract = swapScene ? null : loadedContract;
-    const contractMissing = !swapScene && !!templateRouteContract(template?.id) && !contract;
+    const contract = swapScene ? null : loadedContract; const contractMissing = !swapScene && !!templateRouteContract(template?.id) && !contract;
     const photoContract =  !cameraOn && !characterOn && fidelityTemplateId(contract, templateBoundPrompt(contract, text, modelId, contract?.slotCount || 1), modelId, { ...settingsInputs(options, { seed: opts.seed, negative: opts.negative, aspect: opts.aspect, voice: opts.voice, audioSeconds: opts.audioSeconds, resolution, audio }), duration_seconds: isVideo ? duration : null }) ? contract : null;
-    const boundCount = contract?.class === 'bound' && modelId === contract.modelId ? contract.slotCount || 0 : 0;
-    const photosUnavailable = contract?.class === 'bound' && modelId === contract.modelId && templatePhotosUnavailable(contract, model?.capabilities?.media);
+    const boundCount = contract?.class === 'bound' && modelId === contract.modelId ? contract.slotCount || 0 : 0; const photosUnavailable = contract?.class === 'bound' && modelId === contract.modelId && templatePhotosUnavailable(contract, model?.capabilities?.media);
     const slots = slotsFor(model, swapScene).filter(slot => !photoContract || slot.slot === 'image' || references.some(ref => ref.slot === slot.slot)).map(slot => photoContract ? { ...slot, maxFiles: Math.min(slot.maxFiles ?? 1, photoContract.slotCount || 1), minSide: Math.max(slot.minSide || 0, photoContract.minPhotoDimension) } : slot);
     const waiting = attaching || Object.values(sending).some(Boolean);
     // New files join the latest references (never a stale copy), within each slot's room; the slot pickers show them
@@ -377,11 +375,9 @@ export default function CreateWithModel() {
             <KeyboardFormScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
                 <FormHeader modelLabel={modelLabel} modality={kindOf(model.modality) ?? model.modality} stageLine={stageLine} stage={results ? <CreateResult api={api} batch={results} catalog={catalog} onTerminal={resultSettled} /> : undefined}
                     onTemplates={!template && !results ? () => router.push('/create/presets') : undefined} />
-                {contract && !boundCount && <Text accessibilityLiveRegion="polite">{t(contract.photoGuidance)}</Text>}
-                {photosUnavailable && <Text tone="danger" accessibilityLiveRegion="polite">{t('presets.fidelity.photosUnavailable')}</Text>}
+                {contract && !boundCount && <Text accessibilityLiveRegion="polite">{t(contract.photoGuidance)}</Text>} {photosUnavailable && <Text tone="danger" accessibilityLiveRegion="polite">{t('presets.fidelity.photosUnavailable')}</Text>}
                 {contractMissing && (contractLoading ? <ActivityIndicator /> : <><Text accessibilityLiveRegion="polite">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text><Button label={t('recovery.retry')} onPress={retryContract} /></>)}
-                {fidelityBlocked(contract, template ? text : '') && <Text tone="danger" accessibilityLiveRegion="polite">{t('public.TemplateRecipe.sourceVideoUnsupported')}</Text>}
-                {template && !templatePreset && <Text accessibilityLiveRegion="polite">{t('presets.fidelity.modelSwitch')}</Text>}
+                {fidelityBlocked(contract, template ? text : '') && <Text tone="danger" accessibilityLiveRegion="polite">{t('public.TemplateRecipe.sourceVideoUnsupported')}</Text>} {template && !templatePreset && <Text accessibilityLiveRegion="polite">{t('presets.fidelity.modelSwitch')}</Text>}
                 {template && !fidelityBlocked(contract, text) && !request.templateId && <Text accessibilityLiveRegion="polite">{t('presets.fidelity.previewNotice')}</Text>}
                 {template ? <TemplateBanner template={template} aspect={options.aspects.length ? opts.aspect : null} /> : null}
                 {startId && takesStartImage ? <Text variant="caption" tone="tertiary" style={styles.consent} accessibilityLiveRegion="polite">{startProblem ?? t('oddlings.animate.startNote')}</Text> : null}

@@ -29,7 +29,7 @@ test('all exact templates have provider-field parity through feed, parser, hando
         await mediaApi(api).createGeneration({ ...request, idempotencyKey: 'parity-key', maxCharge: 32 });
         expect({ model: nativeBody.model_id, template: nativeBody.template_id, inputs: nativeBody.inputs, references: nativeBody.references, consent: nativeBody.consent }).toEqual({ model: body.model_id, template: body.template_id, inputs: body.inputs, references: body.references, consent: body.consent });
     }
-    if (process.env.TEMPLATE_FIDELITY_AUDIT === '1') writeFileSync(resolve('../../.gstack/template-request-parity.json'), JSON.stringify(parity));
+    if (process.env.TEMPLATE_FIDELITY_AUDIT === '1') writeFileSync(resolve('../../.gstack/template-request-parity.json'), JSON.stringify({ total: Object.keys(parity).length, equal: Object.values(parity).filter((r: any) => r.equal).length }));
 });
 test('models without negative support never receive a negative prompt', () => {
     const { feed, model, contract } = fixtures.find((f: any) => !f.model.capabilities.inputs.negative_prompt);
@@ -61,7 +61,7 @@ test('negative prompt survives the feed parser and Create handoff', () => {
 
 test('long negative retains a safe template identity on web, mobile and server after model truncation', () => {
     const { feed, model, body, contract, serverCheck } = fixtureData.longNegative;
-    const data = require('../../../lib/templateFidelityContracts.json');
+    const data = require('../../../lib/expandTemplateContract').contractData(require('../../../lib/templateFidelityContracts.json'));
     const index = data.prompts.length;
     data.prompts.push(contract.sourcePrompt);
     data.templates[contract.id] = { ...contract, sourcePromptIndex: index, promptIndex: index, photoPromptIndex: index };

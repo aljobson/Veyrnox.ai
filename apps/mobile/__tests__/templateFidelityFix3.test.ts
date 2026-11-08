@@ -3,7 +3,7 @@ import { templateRequest } from '../src/lib/templateGenerate';
 import { checkPicked } from '../src/lib/sources';
 import type { CatalogModel } from '../src/lib/media';
 import type { Preset } from '../src/lib/presets';
-const data = require('../../../lib/templateFidelityContracts.json');
+const data = require('../../../lib/expandTemplateContract').contractData(require('../../../lib/templateFidelityContracts.json'));
 for (const id of Object.keys(data.templates)) rememberTemplateSource({ id, fidelity: require('../../../lib/expandTemplateContract').expandFidelityContract(data, id) });
 const c = Object.keys(data.templates).map(id => templateContract(id)!).find(c => c.class === 'like-for-like-safe' && c.aspect && c.duration)!;
 const model = { id: c.modelId, modality: 'text-to-video', credits: 10, durations: [5, 10], capabilities: { inputs: { prompt: { type: 'string' }, aspect_ratio: { type: 'enum', values: [c.aspect, 'custom-shape'] }, negative_prompt: { type: 'string' } }, media: {} } } as unknown as CatalogModel;

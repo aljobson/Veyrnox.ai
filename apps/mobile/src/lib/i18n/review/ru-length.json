@@ -1,5 +1,11 @@
 [
   {
+    "id": "editorSimple.openTool",
+    "english": "Open tool",
+    "translation": "Открыть инструмент",
+    "ratio": 2
+  },
+  {
     "id": "bestCut.balanced",
     "english": "Balanced",
     "translation": "Сбалансированный",
@@ -3412,11 +3418,5 @@
     "english": "Add",
     "translation": "Добавить",
     "ratio": 2.67
-  },
-  {
-    "id": "editorSimple.openTool",
-    "english": "Open tool",
-    "translation": "Открыть инструмент",
-    "ratio": 2
   }
 ]

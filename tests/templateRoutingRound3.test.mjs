@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import * as React from 'react';
 import ts from 'typescript';
@@ -91,6 +91,7 @@ test('all non-bound non-blocked recipe/detail markup is byte-identical to base',
     checked.push(preset.id);
   }
   assert.ok(checked.filter(id => templateContract(id)?.class === 'like-for-like-safe').length >= 3);
+  mkdirSync('.gstack/a2-round3', { recursive: true });
   writeFileSync('.gstack/a2-round3/nonbound-markup-ids.json', JSON.stringify(checked, null, 2) + '\n');
 });
 const normalize = html => html.replace(/<a href="\/models\/[^\"]+" class="font-bold underline underline-offset-4">[^<]+<\/a>/g, '<model-link/>');
@@ -113,5 +114,6 @@ test('bound detail differs only in model link/name and reviewed crop guidance; l
   }
   assert.deepEqual(cropChanges, ['curtain-reveal']);
   assert.deepEqual(changed, PRESETS.filter(p => templateContract(p.id)?.class === 'bound' && p.model !== 'Seedance 2.0 · Reference').map(p => p.id));
+  mkdirSync('.gstack/a2-round3', { recursive: true });
   writeFileSync('.gstack/a2-round3/bound-markup-changes.json', JSON.stringify({ changed, cropChanges }, null, 2) + '\n');
 });
