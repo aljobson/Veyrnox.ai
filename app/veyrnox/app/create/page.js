@@ -878,7 +878,7 @@ export default function CreateStudio() {
           {['swap-recast', 'swap-quick'].includes(modelId) && <p role="note" data-testid="swap-consent-notice" className="mt-2 text-xs text-vx-fg-muted">{t('app.create.swapConsentNotice')}</p>}
           {modelId === SEEDANCE_REFERENCE_MODEL_ID && <p role="note" data-testid="reference-likeness-notice" className="mt-2 text-xs text-vx-fg-muted">{t('app.create.referenceLikenessNotice')}</p>}
           <div className="scroll-mt-24" data-assistant-target={Object.keys(media).length ? 'create.upload' : undefined}>
-            <SourcePickers media={media} sources={sources} onPick={pickSource} onConvertingChange={setSourcesConverting} resetKey={`${modelId}|${accountEpoch}`} epochRef={sourceEpoch} locked={attachConverting} onReorder={(slot, from, to) => { setConsent(true); setSources(prev => moveSlotSource(prev, slot, from, to)); }}
+            <SourcePickers tokens={/@(Image|Video|Audio)\d/i.test(prompt)} media={media} sources={sources} onPick={pickSource} onConvertingChange={setSourcesConverting} resetKey={`${modelId}|${accountEpoch}`} epochRef={sourceEpoch} locked={attachConverting} onReorder={(slot, from, to) => { setConsent(true); setSources(prev => moveSlotSource(prev, slot, from, to)); }}
               onDraw={model?.kind === 'image' ? () => setDrawing(true) : null} onLibrary={setLibraryFor} />
           </div>
           {Object.values(sources).flatMap(sourceList).some(source => source.file) && <p className="mt-2 text-xs text-vx-fg-muted">{t("app.create.reattach")}</p>}
