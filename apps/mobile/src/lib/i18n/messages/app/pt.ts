@@ -1,6 +1,11 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "editorSimple.describe": "Descreva o que deseja",
+  "editorSimple.promptHelp": "Associa frases fixas em inglês a ferramentas; nenhuma IA interpreta este pedido. Confira a ferramenta antes de aplicar ou pagar.",
+  "editorSimple.openTool": "Abrir ferramenta",
+  "editorSimple.unsupported": "Tente “add captions”, “smart cut” ou “generate video”, ou escolha uma ferramenta.",
+
   "email.resendEmail": "Reenviar e-mail",
   "email.resendIn": "Reenviar em {seconds} s",
   "email.emailResent": "Se for possível enviar um e-mail para este endereço, ele está a caminho. Confira sua caixa de entrada.",
@@ -5835,7 +5840,7 @@ export default {
   "editorSimple.aiEdit": "Edição com IA",
   "editorSimple.more": "Mais",
   "editorSimple.addTitle": "Adicionar ao seu vídeo",
-  "editorSimple.aiTitle": "Edição com IA",
+  "editorSimple.aiTitle": "Descreva o que deseja",
   "editorSimple.moreTitle": "Mais",
   "editorSimple.close": "Fechar",
   "editorSimple.smartCut": "Smart Cut",

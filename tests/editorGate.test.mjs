@@ -23,7 +23,10 @@ test('the editor rollout is preserved in both environments with owner-authorized
 
 test('the request-time server flag controls the route and the Studio navigation', () => {
     const layout = read('app/veyrnox/app/editor/layout.js');
-    assert.match(layout, /EDITOR_TIMELINE_ENABLED !== 'true'\) notFound\(\)/);
+    assert.match(layout, /EDITOR_TIMELINE_ENABLED !== 'true'/);
+    assert.match(layout, /<EditorUnavailable \/>/);
+    assert.match(read('app/veyrnox/_components/editor/EditorUnavailable.js'), /app\.editor\.simple\.notAvailableHelp/);
+    assert.doesNotMatch(layout, /notFound\(/);
     assert.match(layout, /robots: \{ index: false/);
     assert.match(read('app/veyrnox/layout.js'), /EditorFlagProvider enabled=\{process.env.EDITOR_TIMELINE_ENABLED === 'true'\}/);
     assert.match(read('app/veyrnox/_components/NavBar.js'), /editorEnabled \? \[\{ key: 'editor', href: '\/app\/editor'/);

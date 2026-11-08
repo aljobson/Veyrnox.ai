@@ -1758,12 +1758,6 @@
     "ratio": 3.29
   },
   {
-    "id": "editorSimple.aiTitle",
-    "english": "AI Edit",
-    "translation": "تحرير بالذكاء الاصطناعي",
-    "ratio": 3.29
-  },
-  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "تسجيل الدخول",

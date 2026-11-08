@@ -1,5 +1,11 @@
 [
   {
+    "id": "editorSimple.openTool",
+    "english": "Open tool",
+    "translation": "Abrir herramienta",
+    "ratio": 1.89
+  },
+  {
     "id": "recovery.home",
     "english": "Go home",
     "translation": "Ir al inicio",
@@ -3079,12 +3085,6 @@
   },
   {
     "id": "editorSimple.aiEdit",
-    "english": "AI Edit",
-    "translation": "Edición con IA",
-    "ratio": 2
-  },
-  {
-    "id": "editorSimple.aiTitle",
     "english": "AI Edit",
     "translation": "Edición con IA",
     "ratio": 2

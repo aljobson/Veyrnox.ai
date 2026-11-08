@@ -1,5 +1,11 @@
 [
   {
+    "id": "editorSimple.openTool",
+    "english": "Open tool",
+    "translation": "Werkzeug öffnen",
+    "ratio": 1.67
+  },
+  {
     "id": "faceFilterSwitch.current",
     "english": "Filter: {name}",
     "translation": "Aktueller Filter: {name}",

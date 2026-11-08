@@ -1,6 +1,11 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "editorSimple.describe": "बताएँ कि आप क्या चाहते हैं",
+  "editorSimple.promptHelp": "तय अंग्रेज़ी वाक्यांशों को टूल से मिलाता है; कोई AI इस अनुरोध को नहीं समझता। बदलाव लागू करने या भुगतान से पहले टूल की जाँच करें।",
+  "editorSimple.openTool": "टूल खोलें",
+  "editorSimple.unsupported": "“add captions”, “smart cut” या “generate video” आज़माएँ, या टूल चुनें।",
+
   "email.resendEmail": "ईमेल फिर भेजें",
   "email.resendIn": "{seconds} सेकंड में फिर भेजें",
   "email.emailResent": "अगर इस पते पर ईमेल भेजा जा सकता है, तो वह जल्द पहुँचेगा। अपना इनबॉक्स देखें।",
@@ -5768,7 +5773,7 @@ export default {
   "editorSimple.aiEdit": "AI एडिट",
   "editorSimple.more": "और",
   "editorSimple.addTitle": "अपने वीडियो में जोड़ें",
-  "editorSimple.aiTitle": "AI एडिट",
+  "editorSimple.aiTitle": "बताएँ कि आप क्या चाहते हैं",
   "editorSimple.moreTitle": "और",
   "editorSimple.close": "बंद करें",
   "editorSimple.smartCut": "Smart Cut",

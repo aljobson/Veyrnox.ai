@@ -1,4 +1,8 @@
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useReducedMotion } from '../ui/useReducedMotion';
+import { useState } from 'react';
+import { mobileEditorAction } from '../../lib/editorIntentRouter';
+import { Text as UiText, TextField, Button as UiButton } from '../ui';
+import { Modal, Pressable, ScrollView, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
 import { touchTarget } from '../../lib/a11y';
 import { rawText } from '../../lib/i18n/translate';
 import { t } from '../../lib/i18n';
@@ -8,20 +12,40 @@ export interface SheetRow { id: string; icon: string; label: string; hint?: stri
 export type SimpleSheetName = 'add' | 'ai' | 'more';
 
 // One bottom sheet for all three entries. Choosing a row closes the sheet first, then runs the action.
-export function SimpleEditorSheet({ title, rows, onClose }: { title: string; rows: readonly SheetRow[]; onClose(): void }) {
-    return <Modal visible transparent animationType="slide" onRequestClose={onClose} accessibilityViewIsModal>
+export function SimpleEditorSheet({ title, rows, onClose, describe = false, onDescribe }: { title: string; rows: readonly SheetRow[]; onClose(): void; describe?: boolean; onDescribe?(id: string, prompt: string): void }) {
+    const reduced = useReducedMotion();
+    const [prompt, setPrompt] = useState('');
+    const [problem, setProblem] = useState('');
+    function openDescribed() {
+        const id = mobileEditorAction(prompt);
+        const row = rows.find(item => item.id === id);
+        if (!row || row.disabled) { setProblem(t('editorSimple.unsupported')); return; }
+        onClose();
+        if (onDescribe) onDescribe(row.id, prompt); else row.onPress();
+    }
+    return <Modal visible transparent animationType={reduced ? 'none' : 'slide'} onRequestClose={onClose} accessibilityViewIsModal>
         {/* Tap-outside dismissal only: the Close button below is the accessible control. */}
         <Pressable accessibilityRole="none" accessible={false} importantForAccessibility="no-hide-descendants" style={styles.backdrop} onPress={onClose} />
-        <View style={styles.sheet}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ maxHeight: '85%' }}>
+        <View style={[styles.sheet, { flexShrink: 1 }]}>
             <View style={styles.sheetHeader}>
                 <Text accessibilityRole="header" style={styles.sheetTitle}>{title}</Text>
                 <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('editorSimple.close'))} onPress={onClose} style={[styles.closeButton, touchTarget]}><Text style={styles.closeText}>{t('editorSimple.close')}</Text></Pressable>
             </View>
+            <ScrollView style={{ flexShrink: 1 }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: 8 }}>
+            {describe ? <View style={{ gap: 8 }}>
+                <TextField label={t('editorSimple.describe')} accessibilityLabel={rawText(t('editorSimple.describe'))} value={prompt} onChangeText={value => { setPrompt(value); setProblem(''); }} maxLength={500} onSubmitEditing={openDescribed} />
+                <UiText variant="footnote">{t('editorSimple.promptHelp')}</UiText>
+                {problem ? <UiText variant="footnote" accessibilityRole="alert" accessibilityLiveRegion="polite">{problem}</UiText> : null}
+                <UiButton label={t('editorSimple.openTool')} accessibilityLabel={rawText(t('editorSimple.openTool'))} disabled={!prompt.trim()} onPress={openDescribed} />
+            </View> : null}
             {rows.map((row) => <Pressable key={row.id} accessibilityRole="button" accessibilityLabel={rawText(row.label)} accessibilityState={{ disabled: !!row.disabled }} disabled={row.disabled} onPress={() => { onClose(); row.onPress(); }} style={({ pressed }) => [styles.row, row.disabled && styles.rowDisabled, pressed && styles.rowPressed]}>
                 <Text numberOfLines={1} adjustsFontSizeToFit style={[styles.rowIcon, row.icon.length > 1 && styles.rowIconWide]}>{row.icon}</Text>
                 <View style={styles.rowCopy}><Text style={styles.rowLabel}>{row.label}</Text>{row.hint ? <Text style={styles.rowHint}>{row.hint}</Text> : null}</View>
             </Pressable>)}
+            </ScrollView>
         </View>
+        </KeyboardAvoidingView>
     </Modal>;
 }
 

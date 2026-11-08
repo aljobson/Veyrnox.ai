@@ -1,5 +1,11 @@
 [
   {
+    "id": "editorSimple.openTool",
+    "english": "Open tool",
+    "translation": "Открыть инструмент",
+    "ratio": 2
+  },
+  {
     "id": "recovery.home",
     "english": "Go home",
     "translation": "На главный экран",

@@ -11,10 +11,10 @@ import { transcriptText } from '../../_lib/editorTranscript.mjs';
 const EXAMPLES = ['split the first clip at 2 seconds', 'remove the last clip', 'set the volume of the first clip to 40%', 'add the title "Day one"'];
 // ADR-0105 slice D, dry run. A stand-in for the model reads the instruction; the plan is checked and shown as a list of steps; nothing changes
 // until Apply, which re-checks the plan against the timeline as it is then and lands as ONE undoable edit. No AI is used yet and nothing is sent.
-export function AgentPanel({ tl, disabled, apply, onError }) {
+export function AgentPanel({ tl, disabled, apply, onError, initialInstruction = '' }) {
   const { t, locale } = useI18n();
     const number = value => locale === 'en' ? String(value) : new Intl.NumberFormat(localeTag(locale)).format(value);
-    const [instruction, setInstruction] = useState('');
+    const [instruction, setInstruction] = useState(initialInstruction);
     const [asked, setAsked] = useState(null);
     const stale = asked && asked.tl !== tl;
 

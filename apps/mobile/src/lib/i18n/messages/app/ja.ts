@@ -1,6 +1,11 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "editorSimple.describe": "やりたいことを入力",
+  "editorSimple.promptHelp": "決まった英語の表現をツールに対応させます。AIがこの依頼を理解する機能ではありません。適用や支払いの前にツールを確認してください。",
+  "editorSimple.openTool": "ツールを開く",
+  "editorSimple.unsupported": "「add captions」「smart cut」「generate video」を試すか、ツールを選んでください。",
+
   "email.resendEmail": "メールを再送信",
   "email.resendIn": "{seconds}秒後に再送信",
   "email.emailResent": "このアドレスに送信できる場合、メールが届きます。受信トレイをご確認ください。",
@@ -5701,7 +5706,7 @@ export default {
   "editorSimple.aiEdit": "AI編集",
   "editorSimple.more": "その他",
   "editorSimple.addTitle": "動画に追加",
-  "editorSimple.aiTitle": "AI編集",
+  "editorSimple.aiTitle": "やりたいことを入力",
   "editorSimple.moreTitle": "その他",
   "editorSimple.close": "閉じる",
   "editorSimple.smartCut": "Smart Cut",

@@ -1,6 +1,11 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "editorSimple.describe": "صف ما تريد",
+  "editorSimple.promptHelp": "يطابق عبارات إنجليزية محددة مع الأدوات؛ لا يفهم أي ذكاء اصطناعي هذا الطلب. راجع الأداة قبل التطبيق أو الدفع.",
+  "editorSimple.openTool": "فتح الأداة",
+  "editorSimple.unsupported": "جرّب “add captions” أو “smart cut” أو “generate video”، أو اختر أداة.",
+
   "email.resendEmail": "إعادة إرسال البريد",
   "email.resendIn": "إعادة الإرسال بعد {seconds} ث",
   "email.emailResent": "إذا أمكن إرسال بريد إلى هذا العنوان، فهو في طريقه إليك. تحقق من صندوق الوارد.",
@@ -6036,7 +6041,7 @@ export default {
   "editorSimple.aiEdit": "تحرير بالذكاء الاصطناعي",
   "editorSimple.more": "المزيد",
   "editorSimple.addTitle": "أضف إلى الفيديو",
-  "editorSimple.aiTitle": "تحرير بالذكاء الاصطناعي",
+  "editorSimple.aiTitle": "صف ما تريد",
   "editorSimple.moreTitle": "المزيد",
   "editorSimple.close": "إغلاق",
   "editorSimple.smartCut": "Smart Cut",

@@ -1,9 +1,14 @@
 export default {
+  "editorSimple.describe": "Describe what you want",
+  "editorSimple.promptHelp": "Matches fixed English phrases to tools; no AI understands this request. Review the tool before applying or paying.",
+  "editorSimple.openTool": "Open tool",
+  "editorSimple.unsupported": "Try “add captions”, “smart cut” or “generate video”, or choose a tool.",
+
     "editorSimple.add": "Add",
     "editorSimple.aiEdit": "AI Edit",
     "editorSimple.more": "More",
     "editorSimple.addTitle": "Add to your video",
-    "editorSimple.aiTitle": "AI Edit",
+    "editorSimple.aiTitle": "Describe what you want",
     "editorSimple.moreTitle": "More",
     "editorSimple.close": "Close",
     "editorSimple.smartCut": "Smart Cut",

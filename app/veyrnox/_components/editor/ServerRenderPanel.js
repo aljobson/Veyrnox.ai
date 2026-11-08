@@ -25,10 +25,29 @@ export function ServerRenderPanel(props) {
         try { return serverRenderVisible(props.mode, window.localStorage); } catch { return false; }
     }, [props.mode]);
     const enabled = useSyncExternalStore(watchPreview, readPreview, noPreview);
-    return enabled && actor ? <RenderSession key={actor} {...props} actor={actor} /> : null;
+    const [balanceInfo, setBalanceInfo] = useState(null), [balanceVersion, setBalanceVersion] = useState(0);
+    const refreshBalance = useCallback(() => setBalanceVersion(version => version + 1), []);
+    useEffect(() => {
+        if (!enabled || !actor) return;
+        let current = true;
+        const abort = new AbortController();
+        gatewayFetch('/balance', { signal: abort.signal }).then(result => {
+            if (current && actor === getStoredUserId()) setBalanceInfo({ actor, balance: Number.isSafeInteger(result.balance) ? result.balance : null });
+        }, () => {
+            if (current && actor === getStoredUserId()) setBalanceInfo({ actor, balance: null });
+        });
+        return () => { current = false; abort.abort(); };
+    }, [actor, enabled, balanceVersion]);
+    useEffect(() => {
+        if (!enabled || !actor) return;
+        window.addEventListener('veyrnox:balance-changed', refreshBalance);
+        return () => window.removeEventListener('veyrnox:balance-changed', refreshBalance);
+    }, [actor, enabled, refreshBalance]);
+    const currentBalance = balanceInfo?.actor === actor ? balanceInfo : null;
+    return enabled && actor ? <RenderSession key={actor} {...props} actor={actor} balanceInfo={currentBalance} onRefreshBalance={refreshBalance} /> : null;
 }
 
-function RenderSession({ actor, project, timeline, blobs, uploadCache, height, label, balanceInfo, state, onState, onCredits }) {
+function RenderSession({ actor, project, timeline, blobs, uploadCache, height, label, balanceInfo, state, onState, onCredits, onRefreshBalance }) {
     const { t, locale } = useI18n();
     const [quote, setQuote] = useState(null), [busy, setBusy] = useState(false), [cancelOpen, setCancelOpen] = useState(false);
     const [upload, setUpload] = useState(null), [fileErrors, setFileErrors] = useState([]);
@@ -192,10 +211,13 @@ function RenderSession({ actor, project, timeline, blobs, uploadCache, height, l
     const number = value => Number(value).toLocaleString(localeTag(locale));
     const error = current?.error;
     const balanceCopy = balanceInfo?.actor === actor && Number.isSafeInteger(balanceInfo.balance)
-        ? t('app.editor.generation.balance', { balance: number(balanceInfo.balance) }) : '';
-    return <section aria-label={t('app.editor.server.title')} className="mt-5 space-y-3 border-t border-vx-border pt-4 text-sm">
-        <h3 className="font-bold">{t('app.editor.server.title')}</h3>
+        ? t('app.editor.generation.balance', { balance: number(balanceInfo.balance) })
+        : t('app.editor.generation.balance', { balance: t('app.editor.generation.unavailable') });
+    return <section aria-label={t('app.editor.simple.highQuality')} className="mt-5 space-y-3 border-t border-vx-border pt-4 text-sm">
+        <h3 className="font-bold">{t('app.editor.simple.highQuality')}</h3>
         <p className="text-xs text-vx-fg-muted">{t('app.editor.server.note')}</p>
+        {!quote && <p data-testid="editor-export-balance" role="status">{balanceCopy}</p>}
+        {onRefreshBalance && <Button type="button" className="min-h-11" size="sm" variant="ghost" onClick={onRefreshBalance}>{t('app.editor.generation.refreshBalance')}</Button>}
         {reason && <p>{t(`app.editor.server.${reason}`)}</p>}
         {current?.uncertain && current.attempt && <div role="status" className="space-y-1 break-words">
             <p>{current.attempt.snapshot.label}</p>
