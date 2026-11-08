@@ -1,3 +1,4 @@
+import { contractData } from '../../lib/expandTemplateContract.js';
 import { nearestOption } from '../../lib/aspectShapes.mjs';
 // Executed in Node by Jest so web dependencies use their own module resolver.
 import { PRESETS } from '../../app/veyrnox/_lib/templates.js';
@@ -15,10 +16,11 @@ const longNegative = { ...negativeSource, id: 'fix4-long-negative', negativeProm
 const longContract = auditTemplate(longNegative);
 contracts[longNegative.id] = longContract;
 const packed = packContracts({ [longNegative.id]: longContract });
-const offset = data.prompts.length;
-data.prompts.push(...packed.prompts);
+const storedPrompts = contractData(data).prompts;
+const offset = storedPrompts.length;
+storedPrompts.push(...packed.prompts);
 for (const key of ['sourcePromptIndex', 'promptIndex', 'photoPromptIndex']) packed.templates[longNegative.id][key] += offset;
-data.templates[longNegative.id] = packed.templates[longNegative.id];
+contractData(data).templates[longNegative.id] = packed.templates[longNegative.id];
 for (const original of [...PRESETS, longNegative]) {
   const c = contracts[original.id];
   if (!c) continue;

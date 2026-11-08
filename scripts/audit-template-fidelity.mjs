@@ -1,4 +1,5 @@
 import { packTemplateRoutes } from './template-route-data.mjs';
+import { compressContractData } from '../lib/expandTemplateContract.js';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
@@ -86,7 +87,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   writeFileSync('.gstack/template-fidelity.json', JSON.stringify(report, null, 2) + '\n');
   if (process.argv.includes('--write')) {
     writeFileSync('lib/templateRoutes.json', JSON.stringify(packTemplateRoutes(report.contracts)) + '\n');
-    writeFileSync('lib/templateFidelityContracts.json', JSON.stringify(packContracts(report.contracts)) + '\n');
+    writeFileSync('lib/templateFidelityContracts.json', JSON.stringify(compressContractData(packContracts(report.contracts))) + '\n');
     writeFileSync('docs/product/source-audit/template-fidelity-2026-11-07.md', `# Template fidelity audit — 2026-11-07
 
 Offline structural audit, contract version 1. Reproduce with \`node scripts/audit-template-fidelity.mjs\`; regenerate with \`--write\`.

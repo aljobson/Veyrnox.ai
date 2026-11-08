@@ -1,3 +1,4 @@
+import { contractData } from '../lib/expandTemplateContract.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
@@ -44,7 +45,7 @@ function graph(root) {
 }
 test('route map is generated from the unchanged contract and stays under 60 KiB', () => {
   assert.ok(readFileSync('lib/templateRoutes.json').byteLength < 60 * 1024);
-  assert.deepEqual(routes, packTemplateRoutes(data.templates));
+  assert.deepEqual(routes, packTemplateRoutes(contractData(data).templates));
   assert.doesNotMatch(JSON.stringify(routes), /sourcePromptIndex|tokenMap|sourceHash|boundHash|reasons/);
 });
 test('routing, discovery and client entry graphs cannot import the full table or SSR-forbidden packages', () => {
@@ -56,7 +57,7 @@ test('routing, discovery and client entry graphs cannot import the full table or
   }
 });
 test('all 771 detail payloads reproduce only the UI fields of their original contracts', () => {
-  for (const id of Object.keys(data.templates)) {
+  for (const id of Object.keys(contractData(data).templates)) {
     const full = fullContract(id), ui = templateDetail(id).fidelity;
     assert.ok(ui, id);
     for (const key of ['class', 'modelId', 'sourcePrompt', 'prompt', 'allowedModels', 'aspect', 'duration', 'negativePrompt', 'negativeMax', 'requiredReferences', 'tokenMap', 'photoGuidance', 'minPhotoDimension']) assert.deepEqual(ui[key], full[key], `${id}: ${key}`);
@@ -65,11 +66,11 @@ test('all 771 detail payloads reproduce only the UI fields of their original con
   }
 });
 test('every bound contract requires exactly its slot count, independently of min/max drift', () => {
-  for (const c of Object.values(data.templates).filter(c => c.class === 'bound')) {
+  for (const c of Object.values(contractData(data).templates).filter(c => c.class === 'bound')) {
     assert.equal(c.requiredReferences.imageMin, c.slotCount, c.id);
     assert.equal(c.requiredReferences.imageMax, c.slotCount, c.id);
   }
-  const c = Object.values(data.templates).find(c => c.class === 'bound' && c.slotCount > 1);
+  const c = Object.values(contractData(data).templates).find(c => c.class === 'bound' && c.slotCount > 1);
   const original = c.requiredReferences;
   c.requiredReferences = { ...original, imageMin: 0, imageMax: 9 };
   try {

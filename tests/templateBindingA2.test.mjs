@@ -1,3 +1,4 @@
+import { contractData } from '../lib/expandTemplateContract.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
@@ -90,7 +91,7 @@ test('default feed/detail/Create routing, price, attribution and exact-count adm
 });
 test('the generated contract covers all exact-source templates', () => {
   // The repository's English markup baseline exercises rendering separately.
-  const { templates } = JSON.parse(readFileSync(new URL('../lib/templateFidelityContracts.json', import.meta.url)));
+  const { templates } = contractData(JSON.parse(readFileSync(new URL('../lib/templateFidelityContracts.json', import.meta.url))));
   assert.equal(Object.keys(templates).length, 771);
 });
 

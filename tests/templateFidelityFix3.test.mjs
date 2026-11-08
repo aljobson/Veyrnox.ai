@@ -1,3 +1,4 @@
+import { contractData } from '../lib/expandTemplateContract.js';
 import test from 'node:test';
 import { templateRequestFingerprint } from '../lib/templateRequestFingerprint.js';
 import assert from 'node:assert/strict';
@@ -15,7 +16,7 @@ import { MODELS } from '../app/veyrnox/_lib/tokens.js';
 register('data:text/javascript,' + encodeURIComponent(`export async function resolve(s,c,next) { return next(s === 'next/server' ? 'next/server.js' : s,c); }`));
 Object.assign(process.env, { SUPABASE_URL: 'https://db.test', SUPABASE_SERVICE_ROLE_KEY: 'test', PUBLIC_HOST: 'https://veyrnox.test', FAL_KEY: 'test-fal', KIE_API_KEY: 'test-kie' });
 const { POST } = await import('../app/api/v1/generations/route.js');
-const contract = Object.keys(data.templates).map(templateContract).find(c => c.class === 'like-for-like-safe' && c.aspect && c.duration);
+const contract = Object.keys(contractData(data).templates).map(templateContract).find(c => c.class === 'like-for-like-safe' && c.aspect && c.duration);
 const presetFor = c => ({ id: c.id, fidelity: c, prompt: c.sourcePrompt, sourcePrompt: c.sourcePrompt, sourcePromptOrigin: 'community-source-exact', negativePrompt: c.negativePrompt });
 async function webBody(c, changes = {}) {
   const cap = fallbackCapabilitiesFor(c.modelId);
@@ -35,7 +36,7 @@ for (const [name, changes] of [['aspect', { aspect: 'custom-shape' }], ['duratio
   });
 }
 test('web changed supported negative prompt omits template_id', async () => {
-  const c = Object.keys(data.templates).map(templateContract).find(c => fallbackCapabilitiesFor(c.modelId)?.inputs.negative_prompt && c.class === 'like-for-like-safe');
+  const c = Object.keys(contractData(data).templates).map(templateContract).find(c => fallbackCapabilitiesFor(c.modelId)?.inputs.negative_prompt && c.class === 'like-for-like-safe');
   assert.equal((await webBody(c, { preset: { negativePrompt: 'changed negative' } })).template_id, undefined);
 });
 
@@ -46,11 +47,12 @@ function fixture(id, modelId) {
   assert.ok(name, modelId);
   const c = auditTemplate({ id, model: name, sourcePrompt: 'A calm landscape', sourcePromptOrigin: 'community-source-exact', durationSeconds: 5 });
   const packed = packContracts({ [id]: c });
-  const offset = data.prompts.length;
-  data.prompts.push(...packed.prompts);
+  const stored = contractData(data).prompts;
+  const offset = stored.length;
+  stored.push(...packed.prompts);
   const row = packed.templates[id];
   for (const key of ['sourcePromptIndex', 'promptIndex', 'photoPromptIndex']) row[key] += offset;
-  data.templates[id] = row;
+  contractData(data).templates[id] = row;
   return c;
 }
 
@@ -112,9 +114,9 @@ test('custom run without template_id completes normal route admission', async t 
 test('lost response replay survives a revised contract; new key cannot debit', async t => {
   const body = await webBody(contract);
   const fingerprint = await templateRequestFingerprint(body);
-  const old = data.templates[contract.id].duration;
-  data.templates[contract.id].duration = 99;
-  t.after(() => { data.templates[contract.id].duration = old; });
+  const old = contractData(data).templates[contract.id].duration;
+  contractData(data).templates[contract.id].duration = 99;
+  t.after(() => { contractData(data).templates[contract.id].duration = old; });
   const calls = [];
   t.mock.method(globalThis, 'fetch', async url => {
     const u = new URL(url); calls.push(u.pathname.split('/').pop());
@@ -142,7 +144,7 @@ test('lost response replay survives a revised contract; new key cannot debit', a
 
 test('existing contract class controls video blocking even if local text changes', () => {
   assert.equal(templateSourceUnsupported({ id: contract.id, sourcePrompt: 'Mention @video1', sourcePromptOrigin: 'community-source-exact' }), false);
-  const blocked = Object.keys(data.templates).map(templateContract).find(c => c.class === 'blocked-needs-video');
+  const blocked = Object.keys(contractData(data).templates).map(templateContract).find(c => c.class === 'blocked-needs-video');
   assert.equal(templateSourceUnsupported({ id: blocked.id, sourcePrompt: 'Edited prompt' }), true);
 });
 
@@ -181,7 +183,7 @@ test('duration fixes move zero inventory templates to unsupported and preserve 3
 test('preset provenance is the public contract id sent by templateStartIdFor', async () => {
   const { PRESETS } = await import('../app/veyrnox/_lib/templates.js');
   const { templateStartIdFor } = await import('../lib/templateStartCheck.js');
-  const blocked = Object.keys(data.templates).map(templateContract).find(c => c.class === 'blocked-needs-video');
+  const blocked = Object.keys(contractData(data).templates).map(templateContract).find(c => c.class === 'blocked-needs-video');
   assert.equal(templateStartIdFor(blocked.id, PRESETS.find(p => p.id === blocked.id), blocked.modelId), blocked.id);
 });
 

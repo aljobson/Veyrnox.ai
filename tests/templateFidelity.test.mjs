@@ -1,3 +1,4 @@
+import { contractData } from '../lib/expandTemplateContract.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -8,7 +9,10 @@ const report = audit();
 const contracts = Object.values(report.contracts);
 test('fidelity classification totals and generated contract bytes are pinned', () => {
   assert.deepEqual(report.totals, {"like-for-like-safe":232,"bound":162,"blocked-needs-video":355,"unsupported":22});
-  assert.deepEqual(JSON.parse(readFileSync(new URL('../lib/templateFidelityContracts.json', import.meta.url))), packContracts(report.contracts));
+  const stored = JSON.parse(readFileSync(new URL('../lib/templateFidelityContracts.json', import.meta.url)));
+  const packed = packContracts(report.contracts);
+  // The prompts and rows are compressed on disk (Worker size budget); compare what they inflate to, not the compressed bytes.
+  assert.deepEqual({ contractVersion: stored.contractVersion, prompts: contractData(stored).prompts, templates: contractData(stored).templates }, packed);
 });
 test('all admitted exact templates preserve source bytes with and without a photo', () => {
   for (const c of contracts) {
