@@ -15,8 +15,8 @@ const MAX_ROWS = 3;
 // Top of the screen and never interactive: the bottom edge holds Create's sticky
 // cost card and Generate button, and a status line must not catch their taps.
 
-export function GenerationStatusBar() {
-  const { t } = useI18n();
+// Rows to show: running jobs plus any that just succeeded and hold at 100%.
+function useBarRows() {
   const [rows, setRows] = useState([]);
   const [finished, setFinished] = useState([]);
   const seen = useRef(new Map());
@@ -61,7 +61,37 @@ export function GenerationStatusBar() {
     };
   }, []);
 
-  const shown = [...rows, ...finished.filter((f) => !rows.some((r) => r.job_id === f.job_id))];
+  return [...rows, ...finished.filter((f) => !rows.some((r) => r.job_id === f.job_id))];
+}
+
+function BarRow({ row }) {
+  const { t } = useI18n();
+  return (
+    <li>
+      <div className="flex items-baseline justify-between gap-3 text-xs text-vx-fg-body">
+        <span className="truncate">{row.label || t('public.jobs.default')}</span>
+        <span className="font-vx-mono tabular-nums text-vx-fg">{row.percent}%</span>
+      </div>
+      <div
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={row.percent}
+        aria-label={t('public.jobs.progress.aria', { percent: row.percent })}
+        className="mt-1 h-1.5 overflow-hidden rounded-full bg-vx-border"
+      >
+        <div
+          className="h-full rounded-full bg-vx-accent transition-[width] duration-700 ease-out motion-reduce:transition-none"
+          style={{ width: `${row.percent}%` }}
+        />
+      </div>
+    </li>
+  );
+}
+
+export function GenerationStatusBar() {
+  const { t } = useI18n();
+  const shown = useBarRows();
   if (!shown.length) return null;
   const visible = shown.slice(0, MAX_ROWS);
   const hidden = shown.length - visible.length;
@@ -73,27 +103,7 @@ export function GenerationStatusBar() {
           {t('public.jobs.progress.title').toUpperCase()} · {t('public.jobs.progress.patient')}
         </p>
         <ul className="mt-2 space-y-2">
-          {visible.map((row) => (
-            <li key={row.job_id}>
-              <div className="flex items-baseline justify-between gap-3 text-xs text-vx-fg-body">
-                <span className="truncate">{row.label || t('public.jobs.default')}</span>
-                <span className="font-vx-mono tabular-nums text-vx-fg">{row.percent}%</span>
-              </div>
-              <div
-                role="progressbar"
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={row.percent}
-                aria-label={t('public.jobs.progress.aria', { percent: row.percent })}
-                className="mt-1 h-1.5 overflow-hidden rounded-full bg-vx-border"
-              >
-                <div
-                  className="h-full rounded-full bg-vx-accent transition-[width] duration-700 ease-out motion-reduce:transition-none"
-                  style={{ width: `${row.percent}%` }}
-                />
-              </div>
-            </li>
-          ))}
+          {visible.map((row) => <BarRow key={row.job_id} row={row} />)}
         </ul>
         {hidden > 0 && <p className="mt-2 text-xs text-vx-fg-muted">{t('public.jobs.progress.more', { count: hidden })}</p>}
       </div>

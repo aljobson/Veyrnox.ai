@@ -7,8 +7,9 @@
 // succeeded job reaches 100. It never goes backwards.
 
 export const CAP_PERCENT = 95;
-// Past this the entry is treated as stale, not as a job still in flight.
-export const BAR_MAX_AGE_MS = 30 * 60 * 1000;
+// Matches how long JobWatcher tracks a job (jobHistory WATCH_MAX_AGE_MS), so a
+// long run (Video Agent allows 45 min) keeps its row until it settles.
+export const BAR_MAX_AGE_MS = 60 * 60 * 1000;
 
 const SECOND = 1000;
 // Measured end to end in live tests (see studioStates.js SLOW_MODEL_WAIT).
