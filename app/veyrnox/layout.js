@@ -1,6 +1,7 @@
 import localFont from 'next/font/local';
 import './veyrnox.css';
 import { JobWatcher } from './_components/JobWatcher';
+import { GenerationStatusBar } from './_components/GenerationStatusBar';
 import { AccountBoundary } from './_components/AccountBoundary';
 import { PublishFlagProvider } from './_components/PublishFlag';
 import { EditorFlagProvider } from './_components/EditorFlag';
@@ -40,6 +41,7 @@ export default function VeyrnoxLayout({ children }) {
               <AccountBoundary>
                 {children}
                 <JobWatcher />
+                <GenerationStatusBar />
                 <HideWhileHardPaywall><MascotAssistant /></HideWhileHardPaywall>
               </AccountBoundary>
             </OddlingsPublicFlagProvider>

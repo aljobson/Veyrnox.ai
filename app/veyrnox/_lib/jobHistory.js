@@ -11,6 +11,12 @@ function historyKey() {
 }
 const MAX = 50;
 
+/** Fired on this tab whenever the history changes (other tabs fire `storage`). */
+export const JOBS_CHANGED_EVENT = 'veyrnox:jobs-changed';
+function announceChange() {
+  try { if (typeof window !== 'undefined') window.dispatchEvent(new Event(JOBS_CHANGED_EVENT)); } catch { /* no window */ }
+}
+
 /** @typedef {object} JobHistoryEntry
  *  @property {string} job_id
  *  @property {string} model_id
@@ -45,6 +51,7 @@ export function pushJobHistory(entry) {
   list.unshift({ ...entry, submitted_at: entry.submitted_at || Date.now() });
   if (list.length > MAX) list.length = MAX;
   try { localStorage.setItem(key, JSON.stringify(list)); } catch {}
+  announceChange();
 }
 
 /** Remove a specific job from history. */
@@ -54,6 +61,7 @@ export function removeFromJobHistory(job_id) {
   if (!key) return;
   const list = readJobHistory().filter((r) => r.job_id !== job_id);
   try { localStorage.setItem(key, JSON.stringify(list)); } catch {}
+  announceChange();
 }
 
 /** Remove every account cache and the retired unscoped cache on identity changes. */
@@ -68,6 +76,7 @@ export function clearJobHistory() {
       if (key?.startsWith(PREFIX)) localStorage.removeItem(key);
     }
   } catch { /* storage may be unavailable */ }
+  announceChange();
 }
 
 // A job older than this with no recorded outcome is left alone rather than
@@ -87,4 +96,5 @@ export function markJobSettled(job_id, state) {
   if (!key) return;
   const list = readJobHistory().map((r) => (r.job_id === job_id ? { ...r, settled: state } : r));
   try { localStorage.setItem(key, JSON.stringify(list)); } catch {}
+  announceChange();
 }
