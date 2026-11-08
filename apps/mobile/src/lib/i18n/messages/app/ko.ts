@@ -482,7 +482,7 @@ export default {
   "attachFromDevice.files": "파일",
   "attachFromDevice.nomodeltakesthosefilesrightnow": "현재 해당 파일을 지원하는 모델이 없습니다.",
   "attachFromDevice.photosvideos": "사진 및 영상",
-  "attachFromDevice.pickseveralpicturesvideosoraudiofiles": "사진, 영상 또는 오디오 파일을 여러 개 한 번에 선택하세요. 이 모델에서 사용할 수 없다면 지원하는 모델로 전환합니다.",
+  "attachFromDevice.pickseveralpicturesvideosoraudiofiles": "사진, 동영상, 오디오 파일을 한 번에 여러 개 선택하세요. 템플릿과 입력한 내용은 그대로 유지됩니다. 이 모델에서 사용할 수 없으면 사용할 수 있는 모델로 전환할 수 있습니다.",
   "attachFromDevice.skippedFiles.other": "파일 {count}개가 이 모델에 맞지 않아 제외되었습니다.",
   "attachFromDevice.uploadingof": "{value2}개 중 {value1}개 업로드 중…",
   "attachFromDevice.useJPEGPNGorWebPpicturesMP4": "JPEG, PNG, WebP 이미지, MP4 영상 또는 MP3, WAV 오디오를 사용하세요.",

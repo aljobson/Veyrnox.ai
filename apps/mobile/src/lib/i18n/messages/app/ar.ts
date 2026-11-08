@@ -487,7 +487,7 @@ export default {
   "attachFromDevice.files": "الملفات",
   "attachFromDevice.nomodeltakesthosefilesrightnow": "لا يوجد نموذج يقبل هذه الملفات حاليًا.",
   "attachFromDevice.photosvideos": "الصور والفيديوهات",
-  "attachFromDevice.pickseveralpicturesvideosoraudiofiles": "اختر عدة صور أو فيديوهات أو ملفات صوتية دفعة واحدة. إذا لم يستطع هذا النموذج استخدامها، فسننقلك إلى نموذج يستطيع.",
+  "attachFromDevice.pickseveralpicturesvideosoraudiofiles": "اختر عدة صور أو مقاطع فيديو أو ملفات صوتية دفعة واحدة. يبقى قالبك وكلماتك كما هي. وإذا تعذّر على هذا النموذج استخدامها، يمكنك التبديل إلى نموذج يستطيع ذلك.",
   "attachFromDevice.skippedFiles.few": "عدد الملفات المستبعدة لعدم توافقها مع هذا النموذج: {count}.",
   "attachFromDevice.skippedFiles.many": "عدد الملفات المستبعدة لعدم توافقها مع هذا النموذج: {count}.",
   "attachFromDevice.skippedFiles.one": "استُبعد ملف واحد ({count}) لعدم توافقه مع هذا النموذج.",

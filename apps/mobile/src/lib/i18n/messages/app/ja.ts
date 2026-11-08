@@ -482,7 +482,7 @@ export default {
   "attachFromDevice.files": "ファイル",
   "attachFromDevice.nomodeltakesthosefilesrightnow": "現在、そのファイルに対応するモデルはありません。",
   "attachFromDevice.photosvideos": "写真と動画",
-  "attachFromDevice.pickseveralpicturesvideosoraudiofiles": "複数の画像・動画・音声ファイルをまとめて選べます。このモデルで使えない場合は、対応するモデルに切り替えます。",
+  "attachFromDevice.pickseveralpicturesvideosoraudiofiles": "画像、動画、音声ファイルを一度に複数選べます。テンプレートと入力した文章はそのまま残ります。このモデルで使えない場合は、使えるモデルに切り替えられます。",
   "attachFromDevice.skippedFiles.other": "{count}件のファイルがこのモデルに対応していないため、除外されました。",
   "attachFromDevice.uploadingof": "{value2}件中{value1}件目をアップロード中…",
   "attachFromDevice.useJPEGPNGorWebPpicturesMP4": "画像はJPEG・PNG・WebP、動画はMP4、音声はMP3・WAVをご利用ください。",

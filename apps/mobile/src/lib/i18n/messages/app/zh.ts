@@ -482,7 +482,7 @@ export default {
   "attachFromDevice.files": "文件",
   "attachFromDevice.nomodeltakesthosefilesrightnow": "目前没有模型支持这些文件。",
   "attachFromDevice.photosvideos": "照片与视频",
-  "attachFromDevice.pickseveralpicturesvideosoraudiofiles": "一次选择多张图片、多段视频或音频文件。如果此模型无法使用这些文件，我们会为你切换到支持的模型。",
+  "attachFromDevice.pickseveralpicturesvideosoraudiofiles": "一次选择多张图片、视频或音频文件。您的模板和文字保持不变。如果当前模型无法使用这些文件，您可以切换到能使用的模型。",
   "attachFromDevice.skippedFiles.other": "{count} 个文件不适用于此模型，已被排除。",
   "attachFromDevice.uploadingof": "正在上传 {value1}/{value2}…",
   "attachFromDevice.useJPEGPNGorWebPpicturesMP4": "请使用 JPEG、PNG 或 WebP 图片、MP4 视频，或 MP3、WAV 音频。",
