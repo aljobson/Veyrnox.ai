@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, Switch, TextInput, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { SmartCutPreview } from '../../components/smart-cut/SmartCutPreview';
+import { JobThumb, useAssetLinks } from '../../components/JobThumb';
 import { Button, Card, Chip, SegmentedControl, Text, themedStyles, useThemedStyles } from '../../components/ui';
 import { aiConsent } from '../../lib/aiConsentStore';
 import {
@@ -51,6 +52,7 @@ const seconds = (value: number) => (Math.round(value * 10) / 10).toFixed(1);
 export default function SmartCutRoute() {
     const styles = useThemedStyles(sheets);
     const { api, beginSessionTask } = useAuth();
+    const links = useAssetLinks(api);
     const bestCutQuote = useBestCutAvailability(api).quote;
     const router = useRouter();
     const alive = useRef(true);
@@ -256,6 +258,7 @@ export default function SmartCutRoute() {
                         const selected = clips.some((clip) => clip.jobId === video.jobId);
                         const pending = pendingIds.includes(video.jobId);
                         return <Card key={video.jobId} style={styles.libraryRow}>
+                            <JobThumb links={links} jobId={video.jobId} size={64} />
                             <View style={styles.rowCopy}>
                                 <Text variant="bodyStrong" numberOfLines={1}>{video.name}</Text>
                                 <Text variant="footnote" tone="secondary">{new Date(video.createdAt).toLocaleDateString(formatLocale())}</Text>
