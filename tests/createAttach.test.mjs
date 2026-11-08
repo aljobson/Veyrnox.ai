@@ -77,3 +77,18 @@ test('with no model open the files choose one', () => {
   assert.deepEqual(attachPool([text, i2v], null), [text, i2v]);
   assert.equal(planAttachments(attachPool([text, i2v], null), null, [png(1)]).model, i2v);
 });
+
+test('a model with no picture slot gets no plan, and the fuller pool names the model to offer', () => {
+  assert.equal(planAttachments(attachPool([text, i2v], text), text, [png(1)]), null);
+  assert.equal(planAttachments(attachPool([text, i2v], null).filter(m => !m.gated), text, [png(1)]).model, i2v);
+});
+
+test('Create offers the switch and only moves the page when Switch is tapped', async () => {
+  const { readFileSync } = await import('node:fs');
+  const page = readFileSync(new URL('../app/veyrnox/app/create/page.js', import.meta.url), 'utf8');
+  assert.match(page, /setSwitchOffer\(other\)/);
+  assert.match(page, /onClick=\{switchForFiles\}/);
+  assert.match(page, /function switchForFiles\(\)[\s\S]*placePlan\(offer/);
+  // the refusal branch returns before anything is placed or the model changes
+  assert.match(page, /setAttachNotice\(t\('app\.create\.attach\.cantUse'[\s\S]{0,80}return;/);
+});
