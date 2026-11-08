@@ -26,7 +26,7 @@ export function CheckInDialog({ status, onClose, onClaim, onDisabled }) {
   }
   const today = status.rewards[day - 1] ?? status.rewards.at(-1);
   return <Modal onCancel={onClose} initialFocusRef={closeRef} aria-labelledby="checkin-title" className="items-center justify-center p-4">
-    <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-vx-border bg-vx-panel p-6 shadow-2xl">
+    <div className="relative w-full max-w-md overflow-hidden rounded-2xl border border-vx-border bg-vx-panel p-6 shadow-2xl">
       <button ref={closeRef} type="button" onClick={onClose} aria-label={t('checkin.close')}
         className="absolute end-4 top-4 grid size-11 place-items-center rounded-full bg-vx-fg/10 text-vx-fg-body hover:bg-vx-fg/20">
         <svg aria-hidden="true" viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
