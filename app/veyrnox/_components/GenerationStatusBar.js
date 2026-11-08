@@ -12,6 +12,8 @@ import { barRows } from '../_lib/generationProgress';
 const TICK_MS = 1000;
 const FINISH_HOLD_MS = 1400;
 const MAX_ROWS = 3;
+// Top of the screen and never interactive: the bottom edge holds Create's sticky
+// cost card and Generate button, and a status line must not catch their taps.
 
 export function GenerationStatusBar() {
   const { t } = useI18n();
@@ -65,8 +67,8 @@ export function GenerationStatusBar() {
   const hidden = shown.length - visible.length;
 
   return (
-    <div className="pointer-events-none fixed inset-x-4 bottom-4 z-40 mx-auto max-w-md">
-      <div className="pointer-events-auto rounded-2xl border border-vx-border bg-vx-panel px-4 py-3 shadow-lg">
+    <div className="pointer-events-none fixed inset-x-4 top-16 z-40 mx-auto max-w-md">
+      <div className="rounded-2xl border border-vx-border bg-vx-panel px-4 py-3 shadow-lg">
         <p role="status" className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-accent">
           {t('public.jobs.progress.title').toUpperCase()} · {t('public.jobs.progress.patient')}
         </p>
