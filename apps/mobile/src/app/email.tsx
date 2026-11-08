@@ -210,7 +210,7 @@ export default function EmailAuth() {
                 keyboardDismissMode="interactive"
                 showsVerticalScrollIndicator={false}
             >
-                <Button variant="tertiary" icon="arrowLeft" label={t('public.vey.back')} onPress={() => router.back()} />
+                <Button variant="tertiary" icon="arrowLeft" label={t('public.vey.back')} onPress={() => (router.canGoBack() ? router.back() : router.replace('/sign-in'))} />
                 <Text variant="display">{t(mode === 'signIn' ? 'email.signInTitle' : 'email.signUpTitle')}</Text>
                 <Text tone="secondary">{t(mode === 'signIn' ? 'email.signInBody' : 'email.signUpBody')}</Text>
                 {mode === 'signUp' ? <SignupOffer /> : null}

@@ -484,7 +484,7 @@ export default {
   "attachFromDevice.files": "Fichiers",
   "attachFromDevice.nomodeltakesthosefilesrightnow": "Aucun modèle ne prend ces fichiers en charge pour le moment.",
   "attachFromDevice.photosvideos": "Photos et vidéos",
-  "attachFromDevice.pickseveralpicturesvideosoraudiofiles": "Choisissez plusieurs images, vidéos ou fichiers audio à la fois. Si ce modèle ne peut pas les utiliser, nous vous orientons vers un modèle compatible.",
+  "attachFromDevice.pickseveralpicturesvideosoraudiofiles": "Choisissez plusieurs images, vidéos ou fichiers audio à la fois. Votre modèle et vos mots restent tels quels. Si ce modèle ne peut pas les utiliser, vous pouvez passer à un modèle compatible.",
   "attachFromDevice.skippedFiles.many": "{count} fichiers incompatibles avec ce modèle ont été exclus.",
   "attachFromDevice.skippedFiles.one": "{count} fichier incompatible avec ce modèle a été exclu.",
   "attachFromDevice.skippedFiles.other": "{count} fichiers incompatibles avec ce modèle ont été exclus.",
