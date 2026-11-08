@@ -9,7 +9,15 @@ import { MODELS } from '../app/veyrnox/_lib/tokens.js';
 for (const file of ['hero.js', 'footer.js']) {
     test(`${file}: the primary CTA opens Studio without claiming the viewer is signed out`, () => {
         const src = readFileSync(new URL(`../app/veyrnox/_sections/${file}`, import.meta.url), 'utf8');
-        const label = file === 'hero.js' ? "t('home.hero.start')" : "t('home.cta.open')";
+        // The hero has no separate "Start creating" pill since the landing
+        // craft pass: its one primary action is the price slip's Generate
+        // button, which opens Studio on the model the viewer picked. It must
+        // still never claim the viewer is signed out.
+        if (file === 'hero.js') {
+            assert.doesNotMatch(src, /Claim 10 credits/);
+            return;
+        }
+        const label = "t('home.cta.open')";
         const i = src.indexOf(label);
         assert.ok(i > 0, 'CTA not found');
         const tag = src.slice(src.lastIndexOf('<Link', i), i);
