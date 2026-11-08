@@ -104,3 +104,11 @@ test('a multi-file slot shows its count, and names files @Image1, @Image2 only w
   assert.match(named, /@Image1/);
   assert.match(named, /@Image2/);
 });
+
+test('a single start picture is named @Image1 when the prompt uses it, and the end frame is not', () => {
+  const media = { image: { required: true }, endImage: { required: false } };
+  const sources = { image: { previewUrl: 'https://fixture.test/a.png', label: 'a' }, endImage: { previewUrl: 'https://fixture.test/b.png', label: 'b' } };
+  const named = renderToStaticMarkup(createElement(module.exports.SourcePickers, { media, sources, onPick() {}, tokens: true }));
+  assert.equal((named.match(/@Image1/g) || []).length, 1);
+  assert.doesNotMatch(renderToStaticMarkup(createElement(module.exports.SourcePickers, { media, sources, onPick() {} })), /@Image1/);
+});
