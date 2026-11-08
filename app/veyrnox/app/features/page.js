@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useI18n } from '../../../../components/I18nProvider';
 import { AppNav } from '../../_components/NavBar';
 import { Main } from '../../_components/Main';
-import { creativeFeatureGroups, translatedCreativeFeature, FACE_FILTER_LINKS } from '../../_lib/creativeFeatures';
+import { creativeFeatureGroups, translatedCreativeFeature, FACE_FILTER_IDS } from '../../_lib/creativeFeatures';
 
 export default function CreativeFeaturesPage() {
   const { t } = useI18n();
@@ -19,12 +19,12 @@ export default function CreativeFeaturesPage() {
         </header>
         <div className="mt-12 space-y-12">
           <section data-testid="face-filters">
-            <div className="flex items-end justify-between border-b-2 border-vx-fg pb-3"><h2 className="text-2xl font-black">{t.messages['app.features.faceFilters'] ?? 'Face filters'}</h2><span className="font-vx-mono text-[10px] text-vx-fg-muted">{t('app.features.count', { count: FACE_FILTER_LINKS.length })}</span></div>
+            <div className="flex items-end justify-between border-b-2 border-vx-fg pb-3"><h2 className="text-2xl font-black">{t('app.features.faceFilters')}</h2><span className="font-vx-mono text-[10px] text-vx-fg-muted">{t('app.features.count', { count: FACE_FILTER_IDS.length })}</span></div>
             <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              {FACE_FILTER_LINKS.map((f) => <Link key={f.id} href={`/app/create?model=${encodeURIComponent(f.id)}`} className="group rounded-2xl border border-vx-border bg-vx-panel p-5 transition-colors hover:border-vx-accent">
-                <span className="font-vx-mono text-[10px] font-bold uppercase tracking-[0.12em] text-vx-accent">image</span>
-                <h3 className="mt-4 text-lg font-black group-hover:text-vx-accent">{t.messages[`app.features.face.${f.id}.title`] ?? f.title}</h3>
-                <p className="mt-3 text-xs leading-5 text-vx-fg-muted">{t.messages[`app.features.face.${f.id}.blurb`] ?? f.blurb}</p>
+              {FACE_FILTER_IDS.map((id) => <Link key={id} href={`/app/create?model=${encodeURIComponent(id)}`} className="group rounded-2xl border border-vx-border bg-vx-panel p-5 transition-colors hover:border-vx-accent">
+                <span className="font-vx-mono text-[10px] font-bold uppercase tracking-[0.12em] text-vx-accent">{t('app.features.faceKind')}</span>
+                <h3 className="mt-4 text-lg font-black group-hover:text-vx-accent">{t(`app.features.face.${id}.title`)}</h3>
+                <p className="mt-3 text-xs leading-5 text-vx-fg-muted">{t(`app.features.face.${id}.blurb`)}</p>
               </Link>)}
             </div>
           </section>
