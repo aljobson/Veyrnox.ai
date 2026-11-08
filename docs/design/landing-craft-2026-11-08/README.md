@@ -106,6 +106,46 @@ real time (opacity of each line every ~60 ms).
   changed file). Not checked: Safari and Firefox, a real phone, a screen
   reader, performance (LCP, INP), the 768 px capture by eye.
 
+## Critic round 1 (fresh agent, captures only, no fixes made after it)
+
+Weighted **6.45** against the Awwwards weights: Design 6.5, Usability 6.5,
+Creativity 6.5, Content 6.0. On the skill's scale that is below "solid
+professional work that nobody will remember" (7); the page does not meet the
+bar yet. The critic's claims are from stills and were not all re-measured here.
+
+Its biggest problems, in its order:
+
+1. The receipt is a hero skin, not a system: the price list is bare mono on
+   black, dividers are solid hairlines, FAQ and footer are stock, and about
+   4,000 px separate the two slips.
+2. The hero's right card carries a second message and red "£ / month" pills
+   in an otherwise calm first screen, and its right edge sits short of the
+   grid edge (37 px at 1440, per the critic).
+3. Light theme washes the paper out: the slip (#ECF0EE) on white is 1.15:1,
+   so it is defined by shadow alone.
+4. The quick-browse roller repeats the template grid right above it and
+   clips titles and metadata at 144 px (the critic's single most wrong note;
+   this pass only fixed the overlapping badges).
+5. Crop and grade rules still vary across tiles (the 4:3 music card's gray
+   bars, brown and side bars on the price-list tiles, a sideways frame).
+6. The hero slip reads as a form, not a thermal print: price lines are no
+   louder than the labels, and the entrance is a clip wipe.
+7. Display headings run tight word gaps ("leaves a line." reads as one
+   rope), and two price-list leaders start far from their labels.
+8. Chrome and pacing: the light announcement bar on a dark first screen, the
+   scroll-to-top button covering content on phone, Publish's empty right half
+   and a 703 px black film frame.
+
+Moments that nearly land: the print-out at load, the teal "failed, refund +1"
+line, the five tall stills. None reaches "wow" yet.
+
+What it says would win: spend the receipt idea down the whole page (direction
+B for the lower page: perforation between sections, the price list printing
+line by line, a torn-off total), make the hero slip react when a model is
+picked (reprint the price line, total as the biggest thing on it), one hero
+message, warm paper in the light theme, one crop rule and one grade for the
+stills.
+
 ## Open for the owner
 
 - The hero no longer has a "Start creating" pill; Generate on the slip is the
