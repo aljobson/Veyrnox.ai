@@ -348,6 +348,8 @@ const es = {
     'label.Photo of the new person': 'Foto de la nueva persona',
     'label.Photos of the new people': 'Fotos de las nuevas personas',
     'app.create.swapConsentNotice': 'Usa solo fotos de personas que hayan dado su consentimiento.',
+    'public.TemplateRecipe.templateClipUsed': 'Esta plantilla usa su propio vídeo y tu foto para reemplazar al personaje principal.',
+    'presets.use.photoTitle': 'Usa tu foto',
     'app.create.error.template_blocked': 'Esta plantilla necesita referencias o funciones que no están disponibles. Elige otra plantilla. No se ha cobrado nada.',
     'app.create.error.template_mismatch': 'Estos ajustes no coinciden con la plantilla auditada. Restaura el modelo, duración, formato e instrucción originales, o escribe una instrucción personalizada. No se ha cobrado nada.',
     'app.create.error.template_references_invalid': 'Añade las fotos necesarias en orden, sin imágenes ni vídeos adicionales. No se ha cobrado nada.',
@@ -365,8 +367,6 @@ const es = {
     'presets.fidelity.photoReady': 'Foto lista',
     'presets.use.photoReplace': 'Reemplazar',
     'presets.fidelity.photosUnavailable': 'Esta plantilla necesita más fotos de las que admite el modelo actualmente. Elige otra plantilla o inténtalo más tarde.',
-    'public.TemplateRecipe.templateClipUsed': 'Esta plantilla usa su propio vídeo y tu foto para reemplazar al personaje principal.',
-    'presets.use.photoTitle': 'Usa tu foto',
 } as const;
 
 export default es;

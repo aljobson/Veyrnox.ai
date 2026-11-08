@@ -348,6 +348,8 @@ const hi = {
     'label.Photo of the new person': 'नए व्यक्ति की फ़ोटो',
     'label.Photos of the new people': 'नए लोगों की फ़ोटो',
     'app.create.swapConsentNotice': 'केवल उन लोगों की फ़ोटो इस्तेमाल करें जिन्होंने सहमति दी है।',
+    'public.TemplateRecipe.templateClipUsed': 'यह टेम्पलेट मुख्य किरदार को बदलने के लिए अपनी क्लिप और आपकी फ़ोटो का इस्तेमाल करता है।',
+    'presets.use.photoTitle': 'अपनी फ़ोटो जोड़ें',
     'app.create.error.template_blocked': 'इस टेम्पलेट को ऐसे संदर्भ या सुविधाएँ चाहिए जो उपलब्ध नहीं हैं। दूसरा टेम्पलेट चुनें। कोई शुल्क नहीं लिया गया।',
     'app.create.error.template_mismatch': 'ये सेटिंग जाँचे गए टेम्पलेट से मेल नहीं खातीं। उसका मूल मॉडल, अवधि, आकार और प्रॉम्प्ट बहाल करें या कस्टम प्रॉम्प्ट लिखें। कोई शुल्क नहीं लिया गया।',
     'app.create.error.template_references_invalid': 'ज़रूरी फ़ोटो क्रम से जोड़ें, बिना अतिरिक्त तस्वीर या वीडियो के। कोई शुल्क नहीं लगा।',
@@ -365,8 +367,6 @@ const hi = {
     'presets.fidelity.photoReady': 'फ़ोटो तैयार है',
     'presets.use.photoReplace': 'बदलें',
     'presets.fidelity.photosUnavailable': 'इस टेम्पलेट को मॉडल की मौजूदा सीमा से ज़्यादा फ़ोटो चाहिए। दूसरा टेम्पलेट चुनें या बाद में फिर कोशिश करें।',
-    'public.TemplateRecipe.templateClipUsed': 'यह टेम्पलेट मुख्य किरदार को बदलने के लिए अपनी क्लिप और आपकी फ़ोटो का इस्तेमाल करता है।',
-    'presets.use.photoTitle': 'अपनी फ़ोटो जोड़ें',
 } as const;
 
 export default hi;

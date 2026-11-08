@@ -348,6 +348,8 @@ const ru = {
     'label.Photo of the new person': 'Фото нового человека',
     'label.Photos of the new people': 'Фото новых людей',
     'app.create.swapConsentNotice': 'Используйте только фотографии людей, давших согласие.',
+    'public.TemplateRecipe.templateClipUsed': 'Этот шаблон использует свой видеоклип и ваше фото для замены главного персонажа.',
+    'presets.use.photoTitle': 'Добавьте своё фото',
     'app.create.error.template_blocked': 'Для этого шаблона нужны недоступные референсы или функции. Выберите другой шаблон. Средства не списаны.',
     'app.create.error.template_mismatch': 'Эти настройки не соответствуют проверенному шаблону. Восстановите исходные модель, длительность, формат и запрос или напишите свой запрос. Средства не списаны.',
     'app.create.error.template_references_invalid': 'Добавьте нужные фото по порядку, без дополнительных изображений или видео. Списаний не было.',
@@ -365,8 +367,6 @@ const ru = {
     'presets.fidelity.photoReady': 'Фото готово',
     'presets.use.photoReplace': 'Заменить',
     'presets.fidelity.photosUnavailable': 'Для этого шаблона нужно больше фотографий, чем сейчас поддерживает модель. Выберите другой шаблон или повторите попытку позже.',
-    'public.TemplateRecipe.templateClipUsed': 'Этот шаблон использует свой видеоклип и ваше фото для замены главного персонажа.',
-    'presets.use.photoTitle': 'Добавьте своё фото',
 } as const;
 
 export default ru;

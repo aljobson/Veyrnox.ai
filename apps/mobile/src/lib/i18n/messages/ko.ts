@@ -348,6 +348,8 @@ const ko = {
     'label.Photo of the new person': '새 인물의 사진',
     'label.Photos of the new people': '새 인물들의 사진',
     'app.create.swapConsentNotice': '동의한 사람의 사진만 사용하세요.',
+    'public.TemplateRecipe.templateClipUsed': '이 템플릿은 자체 클립과 내 사진을 사용하여 주인공을 교체합니다.',
+    'presets.use.photoTitle': '내 사진 추가',
     'app.create.error.template_blocked': '이 템플릿에는 사용할 수 없는 참조 자료나 기능이 필요합니다. 다른 템플릿을 선택하세요. 요금은 청구되지 않았습니다.',
     'app.create.error.template_mismatch': '설정이 검토된 템플릿과 일치하지 않습니다. 원래 모델, 길이, 화면 비율 및 프롬프트를 복원하거나 사용자 지정 프롬프트를 작성하세요. 요금은 청구되지 않았습니다.',
     'app.create.error.template_references_invalid': '필요한 사진을 순서대로 추가하세요. 추가 이미지나 동영상은 넣지 마세요. 요금은 청구되지 않았습니다.',
@@ -365,8 +367,6 @@ const ko = {
     'presets.fidelity.photoReady': '사진 준비 완료',
     'presets.use.photoReplace': '교체',
     'presets.fidelity.photosUnavailable': '이 템플릿에는 현재 모델이 지원하는 수보다 많은 사진이 필요합니다. 다른 템플릿을 선택하거나 나중에 다시 시도하세요.',
-    'public.TemplateRecipe.templateClipUsed': '이 템플릿은 자체 클립과 내 사진을 사용하여 주인공을 교체합니다.',
-    'presets.use.photoTitle': '내 사진 추가',
 } as const;
 
 export default ko;

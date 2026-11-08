@@ -348,6 +348,8 @@ const pt = {
     'label.Photo of the new person': 'Fotografia da nova pessoa',
     'label.Photos of the new people': 'Fotografias das novas pessoas',
     'app.create.swapConsentNotice': 'Use apenas fotografias de pessoas que tenham dado o seu consentimento.',
+    'public.TemplateRecipe.templateClipUsed': 'Este modelo usa o seu próprio clipe e a sua foto para substituir a personagem principal.',
+    'presets.use.photoTitle': 'Use sua foto',
     'app.create.error.template_blocked': 'Esta predefinição precisa de referências ou funções indisponíveis. Escolha outra predefinição. Nada foi cobrado.',
     'app.create.error.template_mismatch': 'Estas definições não correspondem à predefinição auditada. Restaure o modelo, duração, formato e instrução originais ou escreva uma instrução personalizada. Nada foi cobrado.',
     'app.create.error.template_references_invalid': 'Adicione as fotos necessárias em ordem, sem imagens ou vídeos extras. Nada foi cobrado.',
@@ -365,8 +367,6 @@ const pt = {
     'presets.fidelity.photoReady': 'Foto pronta',
     'presets.use.photoReplace': 'Substituir',
     'presets.fidelity.photosUnavailable': 'Este modelo de criação precisa de mais fotos do que o modelo de IA aceita atualmente. Escolha outro modelo de criação ou tente novamente mais tarde.',
-    'public.TemplateRecipe.templateClipUsed': 'Este modelo usa o seu próprio clipe e a sua foto para substituir a personagem principal.',
-    'presets.use.photoTitle': 'Use sua foto',
 } as const;
 
 export default pt;

@@ -348,6 +348,8 @@ const ja = {
     'label.Photo of the new person': '新しい人物の写真',
     'label.Photos of the new people': '新しい人物たちの写真',
     'app.create.swapConsentNotice': '同意を得た人の写真のみ使用してください。',
+    'public.TemplateRecipe.templateClipUsed': 'このテンプレート独自の動画クリップとあなたの写真を使って、主役を置き換えます。',
+    'presets.use.photoTitle': '写真を追加',
     'app.create.error.template_blocked': 'このテンプレートには利用できない参照素材や機能が必要です。別のテンプレートを選んでください。課金はされていません。',
     'app.create.error.template_mismatch': '設定が監査済みテンプレートと一致しません。元のモデル、長さ、画面比率、プロンプトに戻すか、独自のプロンプトを入力してください。課金はされていません。',
     'app.create.error.template_references_invalid': '必要な写真を順番に追加してください。追加の画像や動画は不要です。課金されていません。',
@@ -365,8 +367,6 @@ const ja = {
     'presets.fidelity.photoReady': '写真の準備ができました',
     'presets.use.photoReplace': '変更',
     'presets.fidelity.photosUnavailable': 'このテンプレートには、モデルが現在対応している枚数より多くの写真が必要です。別のテンプレートを選ぶか、後でもう一度お試しください。',
-    'public.TemplateRecipe.templateClipUsed': 'このテンプレート独自の動画クリップとあなたの写真を使って、主役を置き換えます。',
-    'presets.use.photoTitle': '写真を追加',
 } as const;
 
 export default ja;

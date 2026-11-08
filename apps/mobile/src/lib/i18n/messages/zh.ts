@@ -348,6 +348,8 @@ const zh = {
     'label.Photo of the new person': '新人物的照片',
     'label.Photos of the new people': '新人物们的照片',
     'app.create.swapConsentNotice': '仅使用已征得本人同意的照片。',
+    'public.TemplateRecipe.templateClipUsed': '此模板使用自己的视频片段和你的照片来替换主角。',
+    'presets.use.photoTitle': '添加你的照片',
     'app.create.error.template_blocked': '此模板需要目前不可用的参考素材或功能。请选择其他模板。未扣费。',
     'app.create.error.template_mismatch': '这些设置与已审核的模板不符。请恢复原始模型、时长、画面比例和提示词，或编写自定义提示词。未扣费。',
     'app.create.error.template_references_invalid': '请按顺序添加所需照片，不要添加多余图片或视频。未扣费。',
@@ -365,8 +367,6 @@ const zh = {
     'presets.fidelity.photoReady': '照片已就绪',
     'presets.use.photoReplace': '替换',
     'presets.fidelity.photosUnavailable': '此模板需要的照片数量超过模型目前支持的数量。请选择其他模板或稍后重试。',
-    'public.TemplateRecipe.templateClipUsed': '此模板使用自己的视频片段和你的照片来替换主角。',
-    'presets.use.photoTitle': '添加你的照片',
 } as const;
 
 export default zh;

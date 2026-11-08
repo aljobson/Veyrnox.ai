@@ -348,6 +348,8 @@ const de = {
     'label.Photo of the new person': 'Foto der neuen Person',
     'label.Photos of the new people': 'Fotos der neuen Personen',
     'app.create.swapConsentNotice': 'Verwende nur Fotos von Personen, die zugestimmt haben.',
+    'public.TemplateRecipe.templateClipUsed': 'Diese Vorlage verwendet ihren eigenen Clip und dein Foto, um die Hauptfigur zu ersetzen.',
+    'presets.use.photoTitle': 'Dein Foto verwenden',
     'app.create.error.template_blocked': 'Diese Vorlage benötigt nicht verfügbare Referenzen oder Funktionen. Wähle eine andere Vorlage. Es wurde nichts berechnet.',
     'app.create.error.template_mismatch': 'Diese Einstellungen entsprechen nicht der geprüften Vorlage. Stelle Modell, Dauer, Format und Prompt wieder her oder schreibe einen eigenen Prompt. Es wurde nichts berechnet.',
     'app.create.error.template_references_invalid': 'Füge die benötigten Fotos der Reihe nach hinzu, ohne zusätzliche Bilder oder Videos. Es wurde nichts berechnet.',
@@ -365,8 +367,6 @@ const de = {
     'presets.fidelity.photoReady': 'Foto bereit',
     'presets.use.photoReplace': 'Ersetzen',
     'presets.fidelity.photosUnavailable': 'Diese Vorlage benötigt mehr Fotos, als das Modell derzeit unterstützt. Wähle eine andere Vorlage oder versuche es später erneut.',
-    'public.TemplateRecipe.templateClipUsed': 'Diese Vorlage verwendet ihren eigenen Clip und dein Foto, um die Hauptfigur zu ersetzen.',
-    'presets.use.photoTitle': 'Dein Foto verwenden',
 } as const;
 
 export default de;

@@ -15,7 +15,8 @@ import { templateArrival } from '../app/veyrnox/_lib/templateDraft.js';
 const page = 'app/veyrnox/presets/[id]/page.js';
 const recipe = 'app/veyrnox/_components/TemplateRecipe.js';
 const framing = 'lib/templateFraming.js';
-const base = path => execFileSync('git', ['show', `aba3757e9:${path}`], { encoding: 'utf8' });
+// Snapshots of the base-commit (aba3757e9) sources, so the comparison needs no git history (CI clones shallow).
+const base = path => readFileSync(new URL(`./fixtures/template-base-sources/${path.replaceAll('/', '_')}.txt`, import.meta.url), 'utf8');
 
 test('repository source routing uses the shared route; only catalog readers may resolve legacy labels', () => {
   const allow = new Map([
