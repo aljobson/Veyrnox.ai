@@ -164,6 +164,15 @@ export default function CreateStudio() {
   const frameFallback = models.find((m) => m.id === FRAME_MODEL_ID);
   // True while a batch is still being sent, so New generation cannot clear it halfway.
   const [sending, setSending] = useState(false);
+  // Offline notice: drafts stay readable, and the notice says why Generate will not work.
+  const [online, setOnline] = useState(true);
+  useEffect(() => {
+    const sync = () => setOnline(navigator.onLine);
+    sync();
+    window.addEventListener('online', sync);
+    window.addEventListener('offline', sync);
+    return () => { window.removeEventListener('online', sync); window.removeEventListener('offline', sync); };
+  }, []);
   const incomingDraft = useRef(false);
   // Keep the requested ratio until the live catalog (or the complete registry-derived
   // fallback after a failed read) resolves the selected model's real capabilities.
@@ -808,9 +817,10 @@ export default function CreateStudio() {
             placeholder={helperCopy(t, locale, promptPlaceholder(model))}
           />
           {promptTooLong && <p role="alert" className="mt-2 text-xs font-bold text-vx-danger">{t(promptLimitKey, { count: preparedPromptLength, max: promptLimit })}</p>}
+          {!online && <p role="status" data-testid="create-offline" className="mt-2 rounded-lg border border-vx-warn/40 bg-vx-warn/[0.07] px-3 py-2 text-xs text-vx-fg-body">{t('app.create.offline')}</p>}
           {(draftRecovery.restoring || draftRecovery.status) && <div role="status" data-testid="create-draft-recovery" data-restoring={draftRecovery.restoring} className="mt-2 rounded-lg border border-vx-border bg-vx-panel px-3 py-2 text-xs text-vx-fg-muted">
             {draftRecovery.restoring ? t("app.create.restoring") : draftRecovery.status}
-            {draftRecovery.failed && <button type="button" onClick={draftRecovery.retry} className="ms-2 min-h-8 underline text-vx-accent">{t("app.create.retryDraft")}</button>}
+            {draftRecovery.failed && <button type="button" onClick={draftRecovery.retry} className="ms-2 min-h-11 underline text-vx-accent">{t("app.create.retryDraft")}</button>}
           </div>}
           {oddlingTransfer && (
             <section role="status" data-assistant-target="create.oddling-handoff" className="mt-3 flex flex-col gap-3 rounded-xl border border-vx-accent/40 bg-vx-accent/[0.07] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
@@ -821,7 +831,7 @@ export default function CreateStudio() {
                   {[oddlingTransfer.body_type, oddlingTransfer.wardrobe_style, oddlingTransfer.hair].filter(Boolean).join(' · ')}
                 </p>
               </div>
-              {model?.kind === 'image' && <button type="button" onClick={() => document.querySelector('[data-assistant-target="create.character"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="shrink-0 rounded-full border border-vx-accent/50 px-3 py-2 text-xs font-extrabold text-vx-accent hover:bg-vx-accent/10">
+              {model?.kind === 'image' && <button type="button" onClick={() => document.querySelector('[data-assistant-target="create.character"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="vx-press min-h-11 shrink-0 rounded-full border border-vx-accent/50 px-3 py-2 text-xs font-extrabold text-vx-accent hover:bg-vx-accent/10">
                 {t("app.create.reviewCharacter")}</button>}
             </section>
           )}
@@ -853,12 +863,12 @@ export default function CreateStudio() {
               {/* A template on a text-only model cannot use a picture (it would not reach the provider), so offer no slot for one. */}
               {!(activeTemplate && Object.keys(media).length === 0) && <>
                 <button type="button" data-testid="create-add-files" disabled={attachConverting || sourcesConverting} onClick={() => setAddFilesOpen(true)}
-                  className="font-vx-mono text-[11px] font-bold rounded-full px-3.5 py-1.5 border border-vx-border text-vx-fg-muted hover:text-vx-fg disabled:opacity-50">
+                  className="vx-press min-h-10 font-vx-mono text-[11px] font-bold rounded-full px-3.5 py-1.5 border border-vx-border text-vx-fg-muted hover:text-vx-fg disabled:opacity-50 pointer-coarse:min-h-11">
                   {t('app.create.addFiles.button')}</button>
                 <span className="text-xs text-vx-fg-muted">{t('app.create.attach.hint')}</span>
               </>}
               <button type="button" data-testid="create-open-templates" disabled={attachConverting || sourcesConverting} onClick={() => setTemplatesOpen(true)}
-                className="ms-auto shrink-0 rounded-full border border-vx-accent/50 px-3.5 py-1.5 font-vx-mono text-[11px] font-bold text-vx-accent hover:bg-vx-accent/10 disabled:opacity-50">
+                className="vx-press ms-auto min-h-10 shrink-0 rounded-full border border-vx-accent/50 px-3.5 py-1.5 font-vx-mono pointer-coarse:min-h-11 text-[11px] font-bold text-vx-accent hover:bg-vx-accent/10 disabled:opacity-50">
                 {t('app.create.templates.open')}</button>
             </div>
           )}
@@ -920,8 +930,8 @@ export default function CreateStudio() {
           <p className="mt-3 text-center text-[11px] leading-relaxed text-vx-fg-muted">
             {rich(t('app.create.commercial'),{terms:<LegalLink element="Link" href="/legal/terms" className="text-vx-accent underline underline-offset-2">{t('home.publish.terms')}</LegalLink>})}
           </p>
-          {activeBatch?.confirm && <button type="button" disabled={sending || generating || balance == null || payable > balance} onClick={onSubmit} className="mt-3 w-full rounded-lg border border-vx-border p-3">{t('app.create.confirmPrice', { credits: creditLabel(cost) })}</button>}
-          {activeBatch && <button type="button" disabled={sending} onClick={cancel} className="mt-2 w-full p-2">{t('app.create.startNewBatch')}</button>}
+          {activeBatch?.confirm && <button type="button" disabled={sending || generating || balance == null || payable > balance} onClick={onSubmit} className="vx-press mt-3 min-h-11 w-full rounded-lg border border-vx-border p-3 hover:border-vx-accent disabled:opacity-50">{t('app.create.confirmPrice', { credits: creditLabel(cost) })}</button>}
+          {activeBatch && <button type="button" disabled={sending} onClick={cancel} className="mt-2 min-h-11 w-full p-2">{t('app.create.startNewBatch')}</button>}
           {balance != null && payable > balance && !model?.gated && (
             <div className="mt-4 rounded-xl border border-vx-money/40 bg-vx-money/[0.06] p-4 text-sm text-vx-fg-body">
               <p className="font-bold text-vx-fg">{t(pluralKey(t,locale,'app.create.moreCredits',cost-balance),{count:number(cost-balance)})}</p>
@@ -961,7 +971,7 @@ export default function CreateStudio() {
               <span className="font-vx-mono text-[10px] font-bold tracking-[0.14em] text-vx-accent">{t('app.create.oddlingPipeline')}</span>
               <h2 className="mt-2 text-lg font-extrabold text-vx-fg">{model?.name || t('app.create.checkingPrices')}</h2>
               <p className="mt-2 text-xs leading-5 text-vx-fg-muted">{t(model?.kind === 'video' ? 'app.create.oddlingMotionPipelineHelp' : model?.media?.image?.required ? 'app.create.oddlingReferencePipelineHelp' : 'app.create.oddlingPortraitPipelineHelp')}</p>
-              {model && <p className="mt-3 font-vx-mono text-[11px] font-bold text-vx-money">{creditLabel(model.credits)}</p>}
+              {model && <p className="mt-3 font-vx-mono text-[11px] font-bold text-vx-money vx-num">{creditLabel(model.credits)}</p>}
               <Link href="/app/oddlings" className="mt-4 inline-flex min-h-10 items-center rounded-full border border-vx-accent/50 px-4 py-2 text-xs font-extrabold text-vx-accent hover:bg-vx-accent/10">{t('app.create.changeOddling')}</Link>
             </section>
           ) : <div className="rounded-2xl border border-vx-border bg-vx-panel p-5">
@@ -989,7 +999,7 @@ export default function CreateStudio() {
                   key={type}
                   onClick={() => setTier(tier === type ? null : type)}
                   aria-pressed={tier === type}
-                  className={`rounded-full px-3 py-1 border font-vx-mono text-[10px] tracking-[0.1em] uppercase ${
+                  className={`vx-press inline-flex min-h-10 items-center rounded-full px-3 py-1 border font-vx-mono text-[10px] tracking-[0.1em] uppercase pointer-coarse:min-h-11 ${
                     tier === type ? 'border-vx-accent text-vx-accent' : 'border-vx-fg/15 text-vx-fg-muted hover:bg-vx-fg/[0.04]'
                   }`}
                 >
@@ -1015,7 +1025,7 @@ export default function CreateStudio() {
                 {model && (
                   <p className="mt-2 flex items-center justify-between gap-3 text-xs text-vx-fg-muted">
                     <span className="truncate">{model.name} · {tOr(t,`public.library.${model.kind}`,model.kind)}</span>
-                    <span className="shrink-0 font-vx-mono font-bold text-vx-money">{number(model.credits)} cr</span>
+                    <span className="shrink-0 font-vx-mono font-bold text-vx-money vx-num">{number(model.credits)} cr</span>
                   </p>
                 )}
               </div>
@@ -1027,7 +1037,7 @@ export default function CreateStudio() {
                     data-requires-image={m.media?.image?.required ? 'true' : undefined}
                     onClick={() => chooseModel(m.id)}
                     aria-pressed={modelId === m.id}
-                    className={`flex items-center justify-between rounded-lg px-3 py-2.5 border ${
+                    className={`vx-press flex items-center justify-between rounded-lg px-3 py-2.5 border pointer-coarse:min-h-11 ${
                       modelId === m.id
                         ? 'border-vx-accent bg-vx-accent/[0.07]'
                         : 'border-transparent hover:bg-vx-fg/[0.04]'
