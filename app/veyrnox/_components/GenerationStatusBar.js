@@ -23,7 +23,7 @@ function useBarRows() {
 
   useEffect(() => {
     let timer = null;
-    const holds = new Set();
+    let holds = new Set();
 
     function refresh() {
       const history = readJobHistory();
@@ -42,10 +42,10 @@ function useBarRows() {
       if (done.length) {
         setFinished((prev) => [...prev, ...done]);
         const hold = setTimeout(() => {
-          holds.delete(hold);
+          holds = new Set([...holds].filter((h) => h !== hold));
           setFinished((prev) => prev.filter((r) => !done.some((d) => d.job_id === r.job_id)));
         }, FINISH_HOLD_MS);
-        holds.add(hold);
+        holds = new Set([...holds, hold]);
       }
     }
 
