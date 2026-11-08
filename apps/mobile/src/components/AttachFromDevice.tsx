@@ -48,9 +48,17 @@ async function chooseMany(source: Source): Promise<PickedFile[]> {
         preferredAssetRepresentationMode: ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
     });
     if (res.canceled) return [];
-    return Promise.all(res.assets.map((a) => a.type === 'video' || a.mimeType?.startsWith('video/')
-        ? { uri: a.uri, mimeType: a.mimeType, size: a.fileSize, durationSeconds: typeof a.duration === 'number' ? a.duration / 1000 : undefined }
-        : pickedImageFile(a)));
+    // One at a time, so several large photos are never decoded together. A photo that cannot be converted
+    // stays as picked: the per-file check reports it and the other picks are kept.
+    const files: PickedFile[] = [];
+    for (const a of res.assets) {
+        if (a.type === 'video' || a.mimeType?.startsWith('video/')) {
+            files.push({ uri: a.uri, mimeType: a.mimeType, size: a.fileSize, durationSeconds: typeof a.duration === 'number' ? a.duration / 1000 : undefined });
+            continue;
+        }
+        try { files.push(await pickedImageFile(a)); } catch { files.push({ uri: a.uri, mimeType: a.mimeType ?? undefined, size: a.fileSize }); }
+    }
+    return files;
 }
 
 interface Props {

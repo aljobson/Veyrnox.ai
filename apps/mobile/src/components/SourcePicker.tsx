@@ -49,7 +49,7 @@ type Status = { readonly step: 'empty' } | { readonly step: 'uploading'; readonl
 const TOKEN = { image: 'Image', video: 'Video', audio: 'Audio' } as const;
 const NOUN = { image: 'image', video: 'video', audio: 'audio file' } as const;
 
-export async function choose(kind: Slot['kind']): Promise<PickedFile | null> {
+export async function choose(kind: Slot['kind'], onConverting?: () => void): Promise<PickedFile | null> {
     if (kind === 'audio') {
         const res = await DocumentPicker.getDocumentAsync({ type: ['audio/mpeg', 'audio/wav', 'audio/x-wav', 'audio/wave'], copyToCacheDirectory: true });
         const a = res.canceled ? null : res.assets[0];
@@ -63,7 +63,7 @@ export async function choose(kind: Slot['kind']): Promise<PickedFile | null> {
     });
     const a = res.canceled ? null : res.assets[0];
     if (!a) return null;
-    if (kind === 'image') return pickedImageFile(a);
+    if (kind === 'image') { onConverting?.(); return pickedImageFile(a); }
     return { uri: a.uri, mimeType: a.mimeType, size: a.fileSize, width: a.width, height: a.height, durationSeconds: typeof a.duration === 'number' ? a.duration / 1000 : undefined };
 }
 
@@ -166,21 +166,27 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
         const current = () => run === pickRun.current && mounted.current && owner === getCacheUser();
         setError(null);
         let file: PickedFile | null;
+        // Converting a photo happens after the picker closes; Generate waits for it (an upload in flight already holds busy).
+        const holdsBusy = status.step !== 'uploading';
+        let held = false;
+        const release = () => { if (held && mounted.current) onBusy(false); held = false; };
         try {
-            file = await choose(slot.kind);
+            file = await choose(slot.kind, () => { if (holdsBusy && current()) { held = true; onBusy(true); } });
         } catch {
+            release();
             if (!current()) return;
             setError(t('sourcePicker.couldnotopenyourfilesCheckthe'));
             return;
         }
-        if (!current()) return;
-        if (file) await accept(file);
+        if (!current() || !file) { release(); return; }
+        await accept(file, release);
     }
 
-    async function accept(file: PickedFile) {
+    async function accept(file: PickedFile, release?: () => void) {
         setError(null);
         const checked = checkPicked(slot.kind, file, slot);
         if (!checked.ok) {
+            release?.();
             if (isDrawFile(file.uri)) deleteDrawFile(file.uri);
             setError(pickedProblem(checked.error, slot.kind));
             return;
