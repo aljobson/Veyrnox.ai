@@ -32,6 +32,8 @@ interface SourcePickerProps {
     readonly initial?: PickedFile | null;
     readonly drawable?: boolean;
     readonly replaceable?: boolean;
+    // Name each file @Image1, @Video1 ... beside it, in order, when the prompt refers to files that way.
+    readonly tokens?: boolean;
     // A line under the slot's name saying what it is for (the photo a template needs).
     readonly hint?: string;
     // A source uploaded on the preceding guided-tool screen. The key itself is
@@ -43,6 +45,7 @@ interface SourcePickerProps {
 
 type Status = { readonly step: 'empty' } | { readonly step: 'uploading'; readonly fraction: number } | { readonly step: 'ready' };
 
+const TOKEN = { image: 'Image', video: 'Video', audio: 'Audio' } as const;
 const NOUN = { image: 'image', video: 'video', audio: 'audio file' } as const;
 
 export async function choose(kind: Slot['kind']): Promise<PickedFile | null> {
@@ -96,9 +99,10 @@ function ReferencePicker(props: SourcePickerProps) {
         const next = [...current.current]; next.splice(target, 0, next.splice(index, 1)[0]); change(next);
     }
     return <View style={{ gap: ds.space.md }}>
-        {max > 1 && <Text variant="caption" tone="tertiary" style={styles.hint}>{plural('app.create.sources.maxFiles', max)}</Text>}
+        {max > 1 && <Text variant="caption" tone="tertiary" style={styles.hint}>{`${plural('app.create.sources.maxFiles', max)} · ${rows.filter(row => row.reference).length}/${max}`}</Text>}
         {rows.filter(row => row.reference).length > max && <Text variant="body" tone="danger" accessibilityRole="alert" style={styles.error}>{plural('app.create.sources.overLimit', max)}</Text>}
         {rows.map((row, index) => <View key={row.id} style={{ gap: ds.space.sm }}>
+            {props.tokens && <Text variant="caption" tone="tertiary" style={styles.hint} accessibilityLabel={`${NOUN[props.slot.kind]} ${index + 1}`}>{`@${TOKEN[props.slot.kind]}${index + 1}`}</Text>}
             <SourceFilePicker {...props} slot={{ ...props.slot, required: props.slot.required && index === 0 }}
                 initial={row.id === 0 ? props.initial : null} initialReady={!!row.reference}
                 onChange={key => reference(row.id, key ? { slot: props.slot.slot, origin: 'upload', key } : undefined, 'upload')}

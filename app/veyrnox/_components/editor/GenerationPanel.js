@@ -118,7 +118,9 @@ export function GenerationPanel({ disabled, onIngest,voiceover=false,avatar=fals
         if (!plan) { setError(prepared.failed.length ? t(`app.create.convert.${prepared.failed[0].code}`) : t('app.create.attach.unsupported')); return; }
         dropConversions(); setModelId(plan.model.id); setSources({}); 
         const positions = {}; for (const { slot, file } of plan.assignments) pickFile(slot, file, (positions[slot] = (positions[slot] || 0) + 1) - 1);
-        if (plan.unused.length) setError(t('app.create.attach.unused', { count: number(plan.unused.length) }));
+        // The model followed the files: say so, as Create and chat do, instead of changing it silently.
+        const notice = [plan.model.id !== model?.id && t('app.create.attach.switched', { name: plan.model.name }), plan.unused.length && t('app.create.attach.unused', { count: number(plan.unused.length) })].filter(Boolean).join(' ');
+        if (notice) setError(notice);
     }
     async function generate() {
         if (sent.current || locked || promptTooLong || !catalog.live || !model || quote === null) return;

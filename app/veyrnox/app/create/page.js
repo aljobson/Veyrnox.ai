@@ -947,7 +947,7 @@ export default function CreateStudio() {
                 if (old?.previewUrl?.startsWith('blob:')) URL.revokeObjectURL(old.previewUrl);
                 return file ? { file, previewUrl: URL.createObjectURL(file) } : {};
               }) })); setConsent(true);
-            }} /> : <SourcePickers media={media} sources={sources} onPick={pickSource} onConvertingChange={setSourcesConverting} resetKey={`${modelId}|${accountEpoch}`} epochRef={sourceEpoch} locked={attachConverting} onReorder={(slot, from, to) => { setConsent(true); setSources(prev => moveSlotSource(prev, slot, from, to)); }}
+            }} /> : <SourcePickers tokens={/@(Image|Video|Audio)\d/i.test(prompt)} media={media} sources={sources} onPick={pickSource} onConvertingChange={setSourcesConverting} resetKey={`${modelId}|${accountEpoch}`} epochRef={sourceEpoch} locked={attachConverting} onReorder={(slot, from, to) => { setConsent(true); setSources(prev => moveSlotSource(prev, slot, from, to)); }}
               onDraw={model?.kind === 'image' ? () => setDrawing(true) : null} onLibrary={setLibraryFor} />}
           </div>
           {Object.values(sources).flatMap(sourceList).some(source => source.file) && <p className="mt-2 text-xs text-vx-fg-muted">{t("app.create.reattach")}</p>}

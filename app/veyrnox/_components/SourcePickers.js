@@ -30,9 +30,13 @@ const pill = 'font-vx-mono text-[11px] font-bold rounded-full px-3.5 py-1.5 bord
  * @param {(busy:boolean) => void} [props.onConvertingChange]  true while any slot is converting; the caller must not generate then
  * @param {string} [props.resetKey]  changes when the model or account changes: every conversion still running is dropped
  * @param {{current:number}} [props.epochRef]  the caller bumps it at the moment the model or account changes; a conversion started under an older value never lands
+ * @param {boolean} [props.tokens]  name each file @Image1, @Video1 ... beside it, in order, when the prompt refers to files that way
  * @param {boolean} [props.locked]  another conversion (the paperclip) is running: every source control waits
  */
-export function SourcePickers({ media, sources, onPick, onDraw, onLibrary, onReorder, onConvertingChange, resetKey = '', epochRef, locked = false }) {
+// How a prompt names an attached file: @Image1, @Video1, @Audio1 (a model-facing token, not UI copy).
+const promptToken = (kind, n) => ['@', { image: 'Image', video: 'Video' }[kind] || 'Audio', n].join('');
+
+export function SourcePickers({ media, sources, onPick, onDraw, onLibrary, onReorder, onConvertingChange, resetKey = '', epochRef, locked = false, tokens: showTokens = false }) {
   const { t, locale } = useI18n();
   // HEIC, AVIF, GIF, MOV and WebM are converted here before they reach onPick.
   // Each pick or removal bumps the slot's token, so a conversion that finishes
@@ -138,11 +142,12 @@ export function SourcePickers({ media, sources, onPick, onDraw, onLibrary, onReo
     }
     return <div key={slot} className="mt-3 space-y-3 rounded-lg border border-vx-border bg-vx-panel p-3">
       <div className="font-vx-mono text-[10px] text-vx-fg-muted">{spec.label ? tOr(t, `label.${spec.label}`, spec.label) : t(ui.labelKey)}{spec.required ? t('app.create.sources.required') : t('app.create.sources.optional')}</div>
-      {max > 1 && <p className="text-xs text-vx-fg-muted">{t(pluralKey(t, locale, 'app.create.sources.maxFiles', max), { count: number(max) })} · {[hint, ...limits].join(', ')}</p>}
+      {max > 1 && <p className="text-xs text-vx-fg-muted">{t(pluralKey(t, locale, 'app.create.sources.maxFiles', max), { count: number(max) })} · {files.length}/{number(max)} · {[hint, ...limits].join(', ')}</p>}
       {max === 1 && (spec.minSeconds || spec.minSide || spec.maxSide) ? <p className="text-xs text-vx-fg-muted">{(mp4Only ? [hint, ...limits] : limits).join(', ')}</p> : null}
       {files.length > max && <p role="alert">{t(pluralKey(t, locale, 'app.create.sources.overLimit', max), { count: number(max) })}</p>}
       {files.map((picked, index) => <div key={index} className="flex items-center gap-3">
         {kind === 'image' && picked.previewUrl && <img src={picked.previewUrl} alt={t(slot === 'endImage' ? 'app.create.sources.endAlt' : 'app.create.sources.startAlt')} className="w-16 h-16 rounded-sm object-cover" />}
+        {showTokens && <span className="font-vx-mono text-[10px] text-vx-fg-muted shrink-0">{promptToken(kind, index + 1)}</span>}
         <span className="min-w-0 flex-1 truncate text-xs">{picked.file?.name || picked.label || t('app.create.sources.image.label')}</span>
         {picked.needsUpload && <label className={pill}><Icon name="paperclip" size={16} className="me-1.5 inline align-[-2px]" />{t('app.create.reattach')}<input type="file" className="sr-only" accept={accept} disabled={hold} onChange={e => { const file = e.target.files?.[0]; e.target.value = ''; if (file) pickFile(slot, file, index); }} /></label>}
         {picked.file && slot === 'image' && index === 0 && onDraw && <button type="button" onClick={onDraw} disabled={hold} className={pill}>{t('app.create.sources.draw')}</button>}

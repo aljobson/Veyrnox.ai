@@ -94,3 +94,13 @@ test('three references render separately with per-file removal and an over-cap n
   assert.equal((html.match(/type="file"/g)||[]).length,0);
   assert.match(render({image:{maxFiles:1}},{image:files}),/role="alert"/);
 });
+
+test('a multi-file slot shows its count, and names files @Image1, @Image2 only when the prompt uses them', () => {
+  const media = { image: { required: true, maxFiles: 3 } };
+  const sources = { image: [{ previewUrl: 'https://fixture.test/a.png', label: 'a' }, { previewUrl: 'https://fixture.test/b.png', label: 'b' }] };
+  const plain = renderToStaticMarkup(createElement(module.exports.SourcePickers, { media, sources, onPick() {} }));
+  const named = renderToStaticMarkup(createElement(module.exports.SourcePickers, { media, sources, onPick() {}, tokens: true }));
+  assert.doesNotMatch(plain, /@Image1/);
+  assert.match(named, /@Image1/);
+  assert.match(named, /@Image2/);
+});
