@@ -12,6 +12,7 @@ jest.mock('../src/components/LanguageGate', () => ({ LanguageGate: ({ children }
 jest.mock('../src/components/AnalyticsHost', () => ({ AnalyticsHost: () => null }));
 jest.mock('../src/components/ui/FontCatalog', () => ({ typefaceFonts: { inter: {} } }));
 jest.mock('expo-font', () => ({ useFonts: () => [true, null] }));
+jest.mock('../src/components/ui/AppearanceContext', () => ({ ...jest.requireActual('../src/components/ui/AppearanceContext'), useAppearance: () => ({ settings: { typeface: 'inter' }, scheme: 'dark' }) }));
 jest.mock('expo-status-bar', () => ({ StatusBar: () => null }));
 jest.mock('expo-router', () => ({ Slot: () => 'usable app', usePathname: () => '/', useRouter: () => ({ replace: jest.fn() }) }));
 jest.mock('../src/theme', () => ({ ...jest.requireActual('../src/theme'), getAppearance: () => ({ typeface: 'inter' }), takeThemeReturnPath: jest.fn() }));
