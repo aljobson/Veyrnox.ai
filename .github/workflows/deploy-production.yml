@@ -442,13 +442,60 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: node scripts/check-workers-dev.mjs
 
+  # The public smoke test above proves pages render and the gateway answers
+  # 401. This proves a signed-in request still works end to end after the
+  # release (JWT verification, identity headers, a database read), using one
+  # dedicated test user. It alerts through report-failure and does not roll
+  # back: promote it once it has a clean record. A separate job so the
+  # service-role key never shares a job with `npm ci` or the deploy
+  # (scripts/check-authed-smoke.mjs uses Node builtins only).
+  #
+  # Setup (owner), in the production environment: variable SMOKE_USER_EMAIL
+  # (a confirmed test user nobody else uses) and secrets SUPABASE_URL,
+  # SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY for the production project.
+  # Until SMOKE_USER_EMAIL exists the job warns and passes; once it exists a
+  # missing secret fails the job, never skips it.
+  authed-smoke:
+    needs: deploy
+    if: needs.deploy.result == 'success' && needs.deploy.outputs.deployed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: production
+    permissions:
+      contents: read
+    env:
+      SMOKE_USER_EMAIL: ${{ vars.SMOKE_USER_EMAIL }}
+    steps:
+      - name: Skip until a smoke user is configured
+        if: env.SMOKE_USER_EMAIL == ''
+        run: echo "::warning::SMOKE_USER_EMAIL is not set on the production environment; the signed-in smoke test did not run."
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: env.SMOKE_USER_EMAIL != ''
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: env.SMOKE_USER_EMAIL != ''
+        with:
+          node-version: "22"
+
+      # Node builtins and global fetch only, so no npm install.
+      - name: Signed-in smoke test
+        if: env.SMOKE_USER_EMAIL != ''
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/check-authed-smoke.mjs
+
   # One open issue per episode. A later verified green deploy closes the
   # incident below because production has then advanced past the broken commit.
   # A deploy refused because ci is red counts too: the commit is merged but
   # not live, and nothing else would say so (2026-10-03, #448).
   report-failure:
-    needs: [ci-green, deploy]
-    if: failure() && (needs.ci-green.result == 'failure' || needs.deploy.result == 'failure')
+    needs: [ci-green, deploy, authed-smoke]
+    if: failure() && (needs.ci-green.result == 'failure' || needs.deploy.result == 'failure' || needs.authed-smoke.result == 'failure')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -460,11 +507,15 @@ jobs:
           GH_REPO: ${{ github.repository }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           CI_GREEN: ${{ needs.ci-green.result }}
+          AUTHED_SMOKE: ${{ needs.authed-smoke.result }}
           LAST_GOOD: ${{ needs.deploy.outputs.last_good }}
         run: |
           if [ "$CI_GREEN" = "failure" ]; then
             title="Production deploy refused — ci is not green at ${GITHUB_SHA:0:7}"
             detail='ci did not pass on this commit, so it was not deployed. Production still runs the previous version. Fix ci on main; the next green commit deploys.'
+          elif [ "$AUTHED_SMOKE" = "failure" ]; then
+            title="Signed-in smoke test failed after deploying ${GITHUB_SHA:0:7}"
+            detail='The deploy passed the public smoke test and is live, but a signed-in request failed (session, balance read, or no session could be opened as the smoke user). It was NOT rolled back. Read the authed-smoke job log; if signed-in users are affected, run wrangler rollback or revert the commit.'
           else
             title="Production deploy failed — ${GITHUB_SHA:0:7}"
             detail='If the smoke test or secret preservation check failed, the workflow rolled production back to the previously live version, unless the run log says ROLLBACK FAILED; main still holds the failing commit, so fix forward or revert it.'
@@ -482,9 +533,10 @@ jobs:
           gh issue create --title "$title" --label deploy-failure --body-file body.md
 
   resolve-failure:
-    needs: [deploy, report-failure, report-workers-dev]
+    needs: [deploy, authed-smoke, report-failure, report-workers-dev]
     if: >-
       always() && needs.deploy.result == 'success' &&
+      needs.authed-smoke.result != 'failure' &&
       needs.deploy.outputs.deployed == 'true' &&
       needs.deploy.outputs.workers_dev == 'closed'
     runs-on: ubuntu-latest
