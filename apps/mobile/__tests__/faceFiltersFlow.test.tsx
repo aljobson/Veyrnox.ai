@@ -15,7 +15,7 @@ jest.mock('@shopify/react-native-skia', () => { throw new Error('native Skia is 
 jest.mock('../src/lib/lookThumb', () => ({ makeThumb: async () => null }));
 jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () => ({ push: jest.fn() }) }));
 jest.mock('expo-image', () => ({ Image: jest.requireActual('react-native').Image }));
-jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: jest.fn() }));
+jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: jest.fn(), UIImagePickerPreferredAssetRepresentationMode: { Compatible: 'compatible' } }));
 jest.mock('expo-file-system', () => ({ File: class { exists = false; }, Paths: { cache: { uri: 'file:///cache/' } } }));
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'test-run-id' }));
 jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => 'owner', subscribeCacheUser: () => () => {} }));

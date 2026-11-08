@@ -13,6 +13,7 @@ import { LibraryChooser } from './LibraryChooser';
 import { t, plural } from '../lib/i18n';
 import type { LibraryChoice } from '../lib/librarySource';
 import { checkPicked, pickedProblem, type PickedFile, type Slot, type GenerationReference } from '../lib/sources';
+import { pickedImageFile } from '../lib/pickedImage';
 import { uploadMessage, isConsentDeclined, uploadSource } from '../lib/uploads';
 import { ds } from '../theme';
 
@@ -62,6 +63,7 @@ export async function choose(kind: Slot['kind']): Promise<PickedFile | null> {
     });
     const a = res.canceled ? null : res.assets[0];
     if (!a) return null;
+    if (kind === 'image') return pickedImageFile(a);
     return { uri: a.uri, mimeType: a.mimeType, size: a.fileSize, width: a.width, height: a.height, durationSeconds: typeof a.duration === 'number' ? a.duration / 1000 : undefined };
 }
 
