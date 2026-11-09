@@ -174,6 +174,8 @@ export default function JobScreen() {
         return () => { unsubscribe(); controller.abort(); ratingController.abort(); };
     }, [api, id, attempt]);
 
+    // Succeeded, but the file is still being fetched or no longer exists: never show a bare "Done".
+    const finishedNoFile = state === 'succeeded' && !asset && !held && !error && (lookup === 'pending' || lookup === 'missing');
     const waiting = !pollEnded && !held && !asset && !error && (state === 'queued' || state === 'running');
     useEffect(() => {
         if (!waiting) return;
@@ -302,14 +304,16 @@ export default function JobScreen() {
                 </View>
             ) : (
                 <View style={styles.center}>
-                    {waiting || pollEnded || state === 'failed' ? (
-                        <VeyCharacter width={96} interactive mood={cancelledCredits !== null ? 'idle' : state === 'failed' ? 'worried' : 'working'} />
+                    {waiting || pollEnded || state === 'failed' || finishedNoFile ? (
+                        <VeyCharacter width={96} interactive mood={cancelledCredits !== null || lookup === 'missing' ? 'idle' : state === 'failed' ? 'worried' : 'working'} />
                     ) : null}
                     <Text accessibilityLiveRegion="polite" variant="body" tone="danger" style={state === 'failed' ? styles.error : styles.status}>{cancelledCredits !== null
                         ? cancelledCredits > 0 ? plural('jobCancel.cancelled', cancelledCredits) : t('jobCancel.cancelledFree')
+                        : finishedNoFile ? t(lookup === 'missing' ? 'library.fileUnavailable' : 'common.loading')
                         : pollEnded ? t('job.stillWorking') : state === 'failed' && failedJob
                             ? failedJobMessage(failedJob.error_code, failedJob.refunded, t(LABEL[state])) : t(LABEL[state])}</Text>
                     {cancelNote ? <Text variant="body" tone="secondary" style={styles.note} accessibilityLiveRegion="polite">{cancelNote}</Text> : null}
+                    {state === 'succeeded' && lookup === 'missing' ? <Button variant="secondary" accessibilityRole="button" onPress={() => router.replace('/library')} label={t('label.Library')} /> : null}
                     {(waiting || (pollEnded && !held)) && state === 'queued' && cancelStatus?.cancellable ? (
                         <Button variant="secondary" accessibilityRole="button" accessibilityLabel={t(cancelling ? 'jobCancel.cancelling' : 'jobCancel.confirm')} accessibilityState={{ busy: cancelling, disabled: cancelling }} disabled={cancelling} onPress={confirmCancel} label={t(cancelling ? 'jobCancel.cancelling' : 'jobCancel.confirm')} />
                     ) : null}
