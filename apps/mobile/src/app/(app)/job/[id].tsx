@@ -175,7 +175,7 @@ export default function JobScreen() {
     }, [api, id, attempt]);
 
     // Succeeded, but the file is still being fetched or no longer exists: never show a bare "Done".
-    const finishedNoFile = state === 'succeeded' && !asset && !held && !error && (lookup === 'pending' || lookup === 'missing');
+    const hasFinishedWithoutFile = state === 'succeeded' && !asset && !held && !error && (lookup === 'pending' || lookup === 'missing');
     const waiting = !pollEnded && !held && !asset && !error && (state === 'queued' || state === 'running');
     useEffect(() => {
         if (!waiting) return;
@@ -304,12 +304,12 @@ export default function JobScreen() {
                 </View>
             ) : (
                 <View style={styles.center}>
-                    {waiting || pollEnded || state === 'failed' || finishedNoFile ? (
+                    {waiting || pollEnded || state === 'failed' || hasFinishedWithoutFile ? (
                         <VeyCharacter width={96} interactive mood={cancelledCredits !== null || lookup === 'missing' ? 'idle' : state === 'failed' ? 'worried' : 'working'} />
                     ) : null}
                     <Text accessibilityLiveRegion="polite" variant="body" tone="danger" style={state === 'failed' ? styles.error : styles.status}>{cancelledCredits !== null
                         ? cancelledCredits > 0 ? plural('jobCancel.cancelled', cancelledCredits) : t('jobCancel.cancelledFree')
-                        : finishedNoFile ? t(lookup === 'missing' ? 'library.fileUnavailable' : 'common.loading')
+                        : hasFinishedWithoutFile ? t(lookup === 'missing' ? 'library.fileUnavailable' : 'common.loading')
                         : pollEnded ? t('job.stillWorking') : state === 'failed' && failedJob
                             ? failedJobMessage(failedJob.error_code, failedJob.refunded, t(LABEL[state])) : t(LABEL[state])}</Text>
                     {cancelNote ? <Text variant="body" tone="secondary" style={styles.note} accessibilityLiveRegion="polite">{cancelNote}</Text> : null}
@@ -338,7 +338,7 @@ export default function JobScreen() {
                     ) : null}
                 </View>
             )}
-            {retentionText ? <Text variant="caption" tone={urgent ? 'danger' : 'tertiary'}>{retentionText}</Text> : null}
+            {retentionText && !hasFinishedWithoutFile ? <Text variant="caption" tone={urgent ? 'danger' : 'tertiary'}>{retentionText}</Text> : null}
             {asset && stems.length === 0 ? (
                 <ScrollView style={styles.actions} contentContainerStyle={styles.actionsBody}>
                     {next.edit || next.publish || next.makeAnother || next.reuse ? (
