@@ -51,7 +51,7 @@ test('a running job has no retention line', async () => {
 test('a succeeded job waits for the deferred asset lookup before showing a notice', async () => {
     let resolve!: (value: typeof file) => void;
     mockApi.getAsset.mockImplementation(() => new Promise(r => { resolve = r; })); await render();
-    expect(text(t('job.succeeded'))).toHaveLength(1); expect(notices()).toHaveLength(0);
+    expect(text(t('common.loading'))).toHaveLength(1); expect(text(t('job.succeeded'))).toHaveLength(0); expect(notices()).toHaveLength(0);
     await act(async () => resolve(file)); expect(text(t('library.keptDefault'))).toHaveLength(1);
 });
 test('502 keeps Check again; retry resets lookup to pending', async () => {
@@ -67,7 +67,8 @@ test('502 keeps Check again; retry resets lookup to pending', async () => {
 test('only an asset 404 not_found means the finished file is unavailable', async () => {
     mockApi.getAsset.mockRejectedValue(new ApiError(404, 'not_found')); await render();
     expect(text(t('library.fileUnavailable'))).toHaveLength(1);
-    expect(text(t('job.succeeded'))).toHaveLength(1);
+    expect(text(t('job.succeeded'))).toHaveLength(0);
+    expect(root.container.queryAll(n => n.props.accessibilityLabel === t('label.Library')).length).toBeGreaterThan(0);
     expect(text(t('job.checkError'))).toHaveLength(0); expect(text(t('job.checkAgain'))).toHaveLength(0);
 });
 test('a poll status 404 stays an error, without waiting or unavailable UI', async () => {
