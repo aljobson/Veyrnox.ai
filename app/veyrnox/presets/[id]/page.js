@@ -63,7 +63,7 @@ export default async function TemplatePage({ params }) {
       <div className="min-h-dvh">
         <MarketingNav />
         <Main className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-28">
-          <AudioTemplateDetail t={t} template={audio} />
+          <AudioTemplateDetail t={t} locale={locale} template={audio} />
         </Main>
       </div>
     );

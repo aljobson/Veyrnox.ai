@@ -8,7 +8,7 @@ import { templateCards, templateCategories } from '../../../lib/clientTemplates.
 
 // Public preset gallery. No card, no cost until you generate.
 export default async function Gallery({ searchParams }) {
-  const { t } = await getT();
+  const { locale, t } = await getT();
   const { kind, category } = await searchParams;
   // ?kind=audio lists the audio templates; everything else is the video gallery.
   if (kind === 'audio') {
@@ -16,7 +16,7 @@ export default async function Gallery({ searchParams }) {
       <div className="min-h-dvh">
         <MarketingNav />
         <Main className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-14 sm:pt-20 pb-28">
-          <AudioTemplateGallery t={t} category={category} />
+          <AudioTemplateGallery t={t} locale={locale} category={category} />
         </Main>
       </div>
     );
