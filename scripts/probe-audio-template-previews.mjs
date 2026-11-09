@@ -36,7 +36,8 @@ const args = process.argv.slice(2);
 const flag = (n) => args.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3);
 const submit = args.includes('--submit');
 const outDir = flag('out') || './audio-previews';
-const wanted = flag('ids')?.split(',').filter(Boolean);
+const idsFlag = flag('ids');
+const wanted = idsFlag === 'all' ? AUDIO_TEMPLATES.map((t) => t.id) : idsFlag?.split(',').filter(Boolean);
 const resume = flag('resume'); // fal request id from an earlier timed-out run; use with --ids=<one id>
 
 const picked = wanted
@@ -60,7 +61,7 @@ const findUrl = (v) => {
 };
 
 await mkdir(outDir, { recursive: true });
-for (const t of picked) {
+await Promise.all(picked.map(async (t) => {
   const ep = ENDPOINTS[t.modelId];
   let job;
   if (resume) {
@@ -69,7 +70,7 @@ for (const t of picked) {
     job = { request_id: resume, status: 'IN_PROGRESS', status_url: `${base}/status`, response_url: base };
   } else {
     const res = await fetch(`${FAL_QUEUE_BASE}/${ep.path}`, { method: 'POST', headers, body: JSON.stringify(ep.body(t)) });
-    if (!res.ok) { console.error(`${t.id}: submit failed ${res.status}`); continue; }
+    if (!res.ok) { console.error(`${t.id}: submit failed ${res.status}`); return; }
     job = await res.json();
   }
   const deadline = Date.now() + TIMEOUT_MS;
@@ -78,13 +79,13 @@ for (const t of picked) {
     await new Promise((r) => setTimeout(r, POLL_MS));
     status = (await (await fetch(job.status_url, { headers })).json()).status;
   }
-  if (status !== 'COMPLETED') { console.error(`${t.id}: timed out (${status}) request ${job.request_id}`); continue; }
+  if (status !== 'COMPLETED') { console.error(`${t.id}: timed out (${status}) request ${job.request_id}`); return; }
   const result = await (await fetch(job.response_url, { headers })).json();
   const url = findUrl(result);
   console.log(`${t.id}: request ${job.request_id}, output keys ${Object.keys(result).join(',')}`);
-  if (!url) { console.error(`${t.id}: no audio url in result`); continue; }
+  if (!url) { console.error(`${t.id}: no audio url in result`); return; }
   const audio = await fetch(url);
   const ext = (new URL(url).pathname.match(/\.(\w+)$/) || [, 'bin'])[1];
   await writeFile(join(outDir, `${t.id}.${ext}`), Buffer.from(await audio.arrayBuffer()));
   console.log(`  saved ${join(outDir, `${t.id}.${ext}`)}`);
-}
+}));
