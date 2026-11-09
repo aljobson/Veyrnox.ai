@@ -25,6 +25,8 @@ import { AUDIO_TEMPLATES } from '../app/veyrnox/_lib/audioTemplates.js';
 const FAL_QUEUE_BASE = 'https://queue.fal.run';
 const POLL_MS = 3000;
 const TIMEOUT_MS = 15 * 60 * 1000;
+const MAX_AUDIO_BYTES = 25 * 1024 * 1024;
+const AUDIO_EXT_BY_TYPE = Object.freeze({ 'audio/mpeg': 'mp3', 'audio/wav': 'wav', 'audio/x-wav': 'wav', 'audio/flac': 'flac', 'audio/x-flac': 'flac', 'audio/ogg': 'ogg', 'audio/mp4': 'm4a' });
 
 const ENDPOINTS = Object.freeze({
   'ace-step-1.5': { path: 'fal-ai/ace-step-1.5', body: (t) => ({ prompt: t.prompt, duration: 60, thinking: true, num_outputs: 1 }), cost: 0.036 },
@@ -84,8 +86,14 @@ await Promise.all(picked.map(async (t) => {
   const url = findUrl(result);
   console.log(`${t.id}: request ${job.request_id}, output keys ${Object.keys(result).join(',')}`);
   if (!url) { console.error(`${t.id}: no audio url in result`); return; }
+  if (!url.startsWith('https://')) { console.error(`${t.id}: refusing non-https audio url`); return; }
   const audio = await fetch(url);
-  const ext = (new URL(url).pathname.match(/\.(\w+)$/) || [, 'bin'])[1];
-  await writeFile(join(outDir, `${t.id}.${ext}`), Buffer.from(await audio.arrayBuffer()));
+  const bytes = Buffer.from(await audio.arrayBuffer());
+  if (bytes.length > MAX_AUDIO_BYTES) { console.error(`${t.id}: audio larger than ${MAX_AUDIO_BYTES} bytes, not saved`); return; }
+  // The file name comes from our own template id plus an extension from a fixed list, never from the response.
+  const fromType = AUDIO_EXT_BY_TYPE[(audio.headers.get('content-type') || '').split(';')[0].trim().toLowerCase()];
+  const fromPath = new URL(url).pathname.match(/\.(mp3|wav|flac|ogg|m4a)$/)?.[1];
+  const ext = fromType || fromPath || 'bin';
+  await writeFile(join(outDir, `${t.id}.${ext}`), bytes);
   console.log(`  saved ${join(outDir, `${t.id}.${ext}`)}`);
 }));
