@@ -172,7 +172,7 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
 
           <div className="mt-4 rounded-xl border border-vx-border bg-vx-panel p-3 flex flex-wrap items-end gap-3">
             <label className="flex flex-col gap-1 text-xs text-vx-fg-muted grow min-w-[200px]">
-              {t("app.editor.sheet.audio")}<select value={audioId} onChange={(e) => setAudioId(e.target.value)} className="rounded-lg bg-vx-base border border-vx-field px-2 py-2 text-sm text-vx-fg">
+              {t("app.editor.sheet.audio")}<select value={audioId} onChange={(e) => setAudioId(e.target.value)} className="min-h-11 rounded-lg bg-vx-base border border-vx-field px-2 py-2 text-sm text-vx-fg">
                 <option value="">{t("app.editor.sheet.noAudio")}</option>
                 {audios.map((a) => <option key={a.job_id} value={a.job_id}>{a.name || a.job_id.slice(0, 8)}</option>)}
               </select>
@@ -180,7 +180,7 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
             {audioId && (
               <label className="flex flex-col gap-1 text-xs text-vx-fg-muted">
                 {t("app.editor.sheet.startAt")}<input type="number" min={0} step={0.1} value={offset} onChange={(e) => setOffset(e.target.value)}
-                  className="w-24 rounded-lg bg-vx-base border border-vx-field px-2 py-2 text-sm text-vx-fg" />
+                  className="min-h-11 w-24 rounded-lg bg-vx-base border border-vx-field px-2 py-2 text-sm text-vx-fg" />
               </label>
             )}
             {audioId && <p className="text-xs text-vx-fg-muted basis-full">{t("app.editor.sheet.audioHelp")}</p>}
@@ -193,12 +193,12 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
 
           {showCaptions && (
             <div className="mt-3 rounded-xl border border-vx-border bg-vx-panel p-3 flex flex-wrap items-center gap-3">
-              <label className="flex items-center gap-2 text-sm text-vx-fg">
+              <label className="flex min-h-11 items-center gap-2 text-sm text-vx-fg">
                 <input type="checkbox" checked={captions} onChange={(e) => setCaptions(e.target.checked)} />
                 {t("app.editor.sheet.captions")}</label>
               {captions && (
                 <label className="flex items-center gap-2 text-xs text-vx-fg-muted">
-                  {t("app.editor.sheet.style")}<select value={style} onChange={(e) => setStyle(e.target.value)} className="rounded-lg bg-vx-base border border-vx-field px-2 py-2 text-sm text-vx-fg">
+                  {t("app.editor.sheet.style")}<select value={style} onChange={(e) => setStyle(e.target.value)} className="min-h-11 rounded-lg bg-vx-base border border-vx-field px-2 py-2 text-sm text-vx-fg">
                     {CAPTION_STYLES.map((n) => <option key={n} value={n}>{n[0].toUpperCase() + n.slice(1)}</option>)}
                   </select>
                 </label>
@@ -227,7 +227,7 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
           <div className="flex items-center justify-between gap-3">
             <span className="font-vx-mono text-xs text-vx-fg-muted vx-num">{t('app.editor.sheet.output', { seconds: locale === 'en' ? output.toFixed(1) : output.toLocaleString(localeTag(locale), { minimumFractionDigits: 1, maximumFractionDigits: 1 }) })}</span>
             <button onClick={submit} disabled={blocked}
-              className="rounded-full px-5 py-2.5 font-bold bg-vx-accent text-vx-accent-ink disabled:opacity-40">
+              className="min-h-11 rounded-full px-5 py-2.5 font-bold bg-vx-accent text-vx-accent-ink disabled:opacity-40">
               {busy ? t("app.editor.sheet.starting") : cost == null ? t("app.editor.sheet.create") : t('app.editor.sheet.createCost', { cost: number(cost) })}
             </button>
           </div>
@@ -271,10 +271,10 @@ function ClipRow({ item, index, count, showSlow, onChange, onMove, onRemove }) {
               <span className="w-8">{key === 'in_s' ? t("app.editor.sheet.in") : t("app.editor.sheet.out")}</span>
               <input type="number" min={0} max={d ?? undefined} step={0.1} disabled={d == null}
                 value={item[key] == null ? '' : round(item[key])} onChange={(e) => setPoint(key, e.target.value)}
-                className="w-24 rounded-lg bg-vx-base border border-vx-field px-2 py-1.5 text-sm text-vx-fg" />
+                className="min-h-11 w-24 rounded-lg bg-vx-base border border-vx-field px-2 py-1.5 text-sm text-vx-fg" />
             </label>
             <button disabled={d == null} onClick={() => setPoint(key, ref.current ? ref.current.currentTime : 0)}
-              className="rounded-full border border-vx-border px-3 py-1 hover:text-vx-fg disabled:opacity-40">
+              className="min-h-11 rounded-full border border-vx-border px-3 py-1 hover:text-vx-fg disabled:opacity-40">
               {t("app.editor.sheet.playhead")}</button>
           </div>
         ))}
@@ -282,7 +282,7 @@ function ClipRow({ item, index, count, showSlow, onChange, onMove, onRemove }) {
           <label className="flex items-center gap-2 text-xs text-vx-fg-muted">
             <span className="w-16">{t("app.editor.sheet.speed")}</span>
             <select value={item.slow || 1} onChange={(e) => onChange({ slow: Number(e.target.value) })}
-              className="rounded-lg bg-vx-base border border-vx-field px-2 py-1.5 text-sm text-vx-fg">
+              className="min-h-11 rounded-lg bg-vx-base border border-vx-field px-2 py-1.5 text-sm text-vx-fg">
               <option value={1}>{t("app.publish.inbox.priority.normal")}</option>
               {SLOW_FACTORS.map((n) => <option key={n} value={n}>{t('app.editor.sheet.slower', { factor: number(n) })}</option>)}
             </select>
