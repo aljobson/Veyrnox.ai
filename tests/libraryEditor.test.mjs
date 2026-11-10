@@ -44,7 +44,7 @@ test('the sheet refuses what the gateway would, before spending a request', () =
 
 test('the sheet keeps the failed-asset retry action touch-safe', () => {
     assert.match(sheet, /<AssetLoadStatus asset=\{asset\}/);
-    assert.match(assetLoadStatus, /className="inline-flex min-h-11 items-center underline font-bold text-vx-fg"/);
+    assert.match(assetLoadStatus, /<button[^>]*className="[^"]*\bmin-h-11\b[^"]*"[^>]*>\{t\("app\.account\.mfa\.retry"\)\}<\/button>/);
 });
 
 test('the landing shelf and site search never list the Clip Editor as a model', () => {
