@@ -60,7 +60,7 @@ Ultra yearly ($1,238.40) is above the App Store maximum. At $1,000 with 2,411 cr
 
 ## Amendment 4 (2026-10-31): RevenueCat dashboard paywalls behind a build switch
 
-The owner asked for RevenueCat paywalls. Three are built in the RevenueCat dashboard as unpublished drafts, one per offering: `generation` (pwe4ccc06c80fa437a), `credits` (pw263706de69cd4625) and `publish` (pw8610b5be6f72409e). The app shows them through `react-native-purchases-ui`, pinned to the same version as `react-native-purchases` (10.14.0; the UI package requires an exact match), on a modal route `/paywall?offering=<generation|credits|publish>`.
+The owner asked for RevenueCat paywalls. Three are built in the RevenueCat dashboard as unpublished drafts, one per offering: `generation` (pwe4ccc06c80fa437a), `credits` (pw263706de69cd4625) and `publish` (pw8610b5be6f72409e). The app shows them through `react-native-purchases-ui`, pinned to the same exact version as `react-native-purchases` (see the current mobile TRD), on a modal route `/paywall?offering=<generation|credits|publish>`.
 
 The paywall makes the purchase itself, so the app's rules run first: `onPurchasePackageInitiated` calls `checkPaywallPurchase` (`src/billing/paywallGate.ts`) and resumes the purchase only on `ok`. The checks are those of `BillingProvider.purchase`: the account is bound to its store customer id, a fresh read says sales are open, no other purchase holds the purchase lock, and a Generation plan is refused when a web or store plan is already active (or cannot be checked). Credits are still granted only by the store webhook; the app re-reads the balance after a purchase.
 
