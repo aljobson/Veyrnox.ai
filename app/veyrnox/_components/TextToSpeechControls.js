@@ -17,10 +17,12 @@ import {
 import { readVoiceFavourites, toggleVoiceFavourite } from '../_lib/voiceFavourites';
 import {
   BUILTIN_VOICE_PALETTES,
+  VOICE_PALETTE_CATEGORIES,
   readVoicePalettes,
   removeVoicePalette,
   saveVoicePalette,
 } from '../_lib/voicePalettes';
+import { VOICE_TEMPLATE_LANGUAGES, voiceTemplateSample } from '../_lib/voiceTemplateSamples';
 import { MAX_AUDITION_VOICES, toggleAuditionVoice } from '../_lib/voiceAuditions';
 
 const pressable = 'transition-[border-color,background-color,color,transform] duration-150 active:scale-[0.96]';
@@ -67,6 +69,7 @@ export function TextToSpeechControls({
   onAuditionVoices,
 }) {
   const [voiceOpen, setVoiceOpen] = useState(false);
+  const [templateLanguage, setTemplateLanguage] = useState('English');
   const [gender, setGender] = useState('all');
   const [age, setAge] = useState('all');
   const [query, setQuery] = useState('');
@@ -114,7 +117,15 @@ export function TextToSpeechControls({
   }
 
   function applyPalette(palette) {
-    onSettings({ ...settings, ...palette.settings });
+    const keepLanguage = VOICE_TEMPLATE_LANGUAGES.includes(templateLanguage) && !palette.id.startsWith('personal-');
+    onSettings({ ...settings, ...palette.settings, ...(keepLanguage ? { language: templateLanguage } : {}) });
+  }
+
+  function applySampleLine(category) {
+    const text = voiceTemplateSample(templateLanguage, category).slice(0, scriptLimit);
+    if (!text) return;
+    patchSetting('language', templateLanguage);
+    onScript(text);
   }
 
   function saveCurrentPalette(event) {
@@ -227,22 +238,51 @@ export function TextToSpeechControls({
             <Chevron open={false} />
           </summary>
           <p className="mt-1 max-w-2xl text-[11px] leading-4 text-vx-fg-muted">Start from a Veyrnox delivery recipe or save your current stock voice, language and performance controls as a personal palette.</p>
-          <div className="mt-3 grid gap-2 sm:grid-cols-2">
-            {[...BUILTIN_VOICE_PALETTES, ...personalPalettes].map((palette) => {
-              const voice = TTS_VOICES.find((item) => item.id === palette.settings.voice);
-              const personal = palette.id.startsWith('personal-');
-              return (
-                <div key={palette.id} className="flex min-h-20 overflow-hidden rounded-xl border border-vx-border bg-vx-panel hover:border-vx-accent">
-                  <button type="button" onClick={() => applyPalette(palette)} className={`${pressable} min-w-0 flex-1 p-3 text-left`}>
-                    <span className="block text-sm font-extrabold text-vx-fg">{palette.name}</span>
-                    <span className="mt-1 block text-[11px] leading-4 text-vx-fg-muted">{palette.description || `${voice?.label || 'Stock voice'} · ${palette.settings.emotion} · ${palette.settings.speed}×`}</span>
-                    <span className="mt-1.5 block font-vx-mono text-[9px] font-bold uppercase tracking-[0.08em] text-vx-accent">{personal ? 'Personal' : 'Veyrnox recipe'} · Apply</span>
-                  </button>
-                  {personal && <button type="button" aria-label={`Delete ${palette.name} voice palette`} onClick={() => setPersonalPalettes(removeVoicePalette(window.localStorage, palette.id))} className={`${pressable} w-11 shrink-0 border-l border-vx-border text-lg text-vx-fg-faint hover:text-red-300`}>×</button>}
-                </div>
-              );
-            })}
-          </div>
+          <label className="mt-3 flex flex-wrap items-center gap-2 text-[11px] font-extrabold text-vx-fg">Template language
+            <select aria-label="Template language" value={templateLanguage} onChange={(event) => setTemplateLanguage(event.target.value)} className={selectClass}>
+              {VOICE_TEMPLATE_LANGUAGES.map((language) => <option key={language} value={language}>{language}</option>)}
+            </select>
+          </label>
+          {VOICE_PALETTE_CATEGORIES.map((category) => (
+            <div key={category} className="mt-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="font-vx-mono text-[10px] font-bold uppercase tracking-[0.1em] text-vx-fg-faint">{category}</p>
+                <button type="button" onClick={() => applySampleLine(category)} className={`${pressable} min-h-8 rounded-lg border border-vx-border px-2.5 text-[10px] font-extrabold text-vx-accent hover:border-vx-accent`}>Use {templateLanguage} sample line</button>
+              </div>
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                {BUILTIN_VOICE_PALETTES.filter((palette) => palette.category === category).map((palette) => {
+                  const voice = TTS_VOICES.find((item) => item.id === palette.settings.voice);
+                  return (
+                    <div key={palette.id} className="flex min-h-20 overflow-hidden rounded-xl border border-vx-border bg-vx-panel hover:border-vx-accent">
+                      <button type="button" onClick={() => applyPalette(palette)} className={`${pressable} min-w-0 flex-1 p-3 text-left`}>
+                        <span className="block text-sm font-extrabold text-vx-fg">{palette.name}</span>
+                        <span className="mt-1 block text-[11px] leading-4 text-vx-fg-muted">{palette.description}</span>
+                        <span className="mt-1.5 block font-vx-mono text-[9px] font-bold uppercase tracking-[0.08em] text-vx-accent">{voice?.label || 'Stock voice'} · {palette.settings.speed}× · Apply</span>
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+          {personalPalettes.length > 0 && <div className="mt-4">
+            <p className="font-vx-mono text-[10px] font-bold uppercase tracking-[0.1em] text-vx-fg-faint">Personal</p>
+            <div className="mt-2 grid gap-2 sm:grid-cols-2">
+              {personalPalettes.map((palette) => {
+                const voice = TTS_VOICES.find((item) => item.id === palette.settings.voice);
+                return (
+                  <div key={palette.id} className="flex min-h-20 overflow-hidden rounded-xl border border-vx-border bg-vx-panel hover:border-vx-accent">
+                    <button type="button" onClick={() => applyPalette(palette)} className={`${pressable} min-w-0 flex-1 p-3 text-left`}>
+                      <span className="block text-sm font-extrabold text-vx-fg">{palette.name}</span>
+                      <span className="mt-1 block text-[11px] leading-4 text-vx-fg-muted">{`${voice?.label || 'Stock voice'} · ${palette.settings.emotion} · ${palette.settings.speed}×`}</span>
+                      <span className="mt-1.5 block font-vx-mono text-[9px] font-bold uppercase tracking-[0.08em] text-vx-accent">Personal · Apply</span>
+                    </button>
+                    <button type="button" aria-label={`Delete ${palette.name} voice palette`} onClick={() => setPersonalPalettes(removeVoicePalette(window.localStorage, palette.id))} className={`${pressable} w-11 shrink-0 border-l border-vx-border text-lg text-vx-fg-faint hover:text-red-300`}>×</button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>}
           <form onSubmit={saveCurrentPalette} className="mt-3 flex flex-col gap-2 sm:flex-row">
             <label className="min-w-0 flex-1">
               <span className="sr-only">Personal voice palette name</span>
