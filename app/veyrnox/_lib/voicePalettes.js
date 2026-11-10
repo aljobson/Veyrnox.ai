@@ -11,31 +11,36 @@ const VOICES = new Set(TTS_VOICES.map((voice) => voice.id));
 const EMOTIONS = new Set(TTS_EMOTIONS);
 const LANGUAGES = new Set(TTS_LANGUAGES);
 
+export const VOICE_PALETTE_CATEGORIES = Object.freeze(['Narration', 'Marketing', 'Explainers', 'Characters', 'Service']);
+
+// Delivery presets only: a supported stock voice plus emotion, speed, volume, pitch and
+// language. No script, no audio, no cloned or real-person voice. Applying one spends nothing.
+const palette = (category, id, name, description, voice, emotion, speed, pitch, volume = 2, language = 'auto') => Object.freeze({
+  id, name, description, category,
+  settings: Object.freeze({ voice, emotion, speed, volume, pitch, language }),
+});
+
 export const BUILTIN_VOICE_PALETTES = Object.freeze([
-  {
-    id: 'quiet-confidence',
-    name: 'Quiet confidence',
-    description: 'Measured and grounded for thoughtful narration.',
-    settings: Object.freeze({ voice: 'Calm_Woman', emotion: 'neutral', speed: 0.9, volume: 1, pitch: -1, language: 'auto' }),
-  },
-  {
-    id: 'bright-launch',
-    name: 'Bright launch',
-    description: 'Quick, upbeat delivery for product moments and hooks.',
-    settings: Object.freeze({ voice: 'Lively_Girl', emotion: 'happy', speed: 1.1, volume: 2, pitch: 1, language: 'English' }),
-  },
-  {
-    id: 'clear-guide',
-    name: 'Clear guide',
-    description: 'Even pacing and a steady tone for explainers.',
-    settings: Object.freeze({ voice: 'Patient_Man', emotion: 'neutral', speed: 1, volume: 2, pitch: 0, language: 'auto' }),
-  },
-  {
-    id: 'story-depth',
-    name: 'Story depth',
-    description: 'A slower, lower read for reflective storytelling.',
-    settings: Object.freeze({ voice: 'Wise_Woman', emotion: 'neutral', speed: 0.9, volume: 2, pitch: -2, language: 'English' }),
-  },
+  palette('Narration', 'quiet-confidence', 'Quiet confidence', 'Measured and grounded for thoughtful narration.', 'Calm_Woman', 'neutral', 0.9, -1, 1),
+  palette('Narration', 'story-depth', 'Story depth', 'A slower, lower read for reflective storytelling.', 'Wise_Woman', 'neutral', 0.9, -2, 2, 'English'),
+  palette('Narration', 'audiobook-warm', 'Audiobook warm', 'Unhurried and intimate for long-form fiction.', 'Abbess', 'neutral', 0.9, -1),
+  palette('Narration', 'documentary-gravitas', 'Documentary gravitas', 'Deep, steady and serious for nature and history.', 'Deep_Voice_Man', 'neutral', 0.9, -2),
+  palette('Narration', 'bedtime-hush', 'Bedtime hush', 'Slow and soft to wind a story down.', 'Lovely_Girl', 'neutral', 0.8, -1, 1),
+  palette('Marketing', 'bright-launch', 'Bright launch', 'Quick, upbeat delivery for product moments and hooks.', 'Lively_Girl', 'happy', 1.1, 1, 2, 'English'),
+  palette('Marketing', 'polished-product', 'Polished product', 'Smooth and premium for ad reads.', 'Elegant_Man', 'neutral', 1, 0),
+  palette('Marketing', 'scroll-stopper', 'Scroll stopper', 'Fast and punchy for short social hooks.', 'Exuberant_Girl', 'happy', 1.2, 1, 3),
+  palette('Marketing', 'trailer-voice', 'Trailer voice', 'Low and commanding for dramatic reveals.', 'Imposing_Manner', 'neutral', 0.8, -3, 3),
+  palette('Explainers', 'clear-guide', 'Clear guide', 'Even pacing and a steady tone for explainers.', 'Patient_Man', 'neutral', 1, 0),
+  palette('Explainers', 'friendly-tutorial', 'Friendly tutorial', 'Warm and approachable for step-by-step walkthroughs.', 'Friendly_Person', 'neutral', 1, 0),
+  palette('Explainers', 'podcast-host', 'Podcast host', 'Relaxed and conversational, slightly brisk.', 'Casual_Guy', 'happy', 1.1, 0),
+  palette('Explainers', 'news-desk', 'News desk', 'Crisp, even and neutral for bulletins.', 'Patient_Man', 'neutral', 1.1, 0, 3),
+  palette('Characters', 'young-hero', 'Young hero', 'Confident and earnest for adventure characters.', 'Young_Knight', 'neutral', 1, 1),
+  palette('Characters', 'storybook-sparkle', 'Storybook sparkle', 'Bright and curious for children’s tales.', 'Sweet_Girl_2', 'happy', 1, 2),
+  palette('Characters', 'wise-mentor', 'Wise mentor', 'Slow, low and knowing for guides and elders.', 'Wise_Woman', 'neutral', 0.9, -1),
+  palette('Characters', 'shadow-menace', 'Shadow menace', 'Slow and deep for a quiet antagonist.', 'Imposing_Manner', 'neutral', 0.8, -4),
+  palette('Service', 'hold-line', 'Hold line', 'Calm and reassuring for phone menus and hold messages.', 'Calm_Woman', 'neutral', 0.9, 0),
+  palette('Service', 'steady-announcer', 'Steady announcer', 'Firm and clear for public announcements.', 'Determined_Man', 'neutral', 1, 0, 3),
+  palette('Service', 'guided-calm', 'Guided calm', 'Very slow and low for meditation and breathing guides.', 'Abbess', 'neutral', 0.8, -2, 1),
 ]);
 
 const stepped = (value, min, max, step) => {

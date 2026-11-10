@@ -5,7 +5,7 @@
 // Kept apart from PRESETS on purpose: PRESETS is the video gallery and every entry needs
 // a video preview, a video category and a route contract. An audio template carries a
 // model id and a prompt only. It carries no price: clients price from the live catalog
-// (CLAUDE.md, "Money & billing"). Not yet listed on any surface.
+// (CLAUDE.md, "Money & billing"). 
 
 export const AUDIO_CATEGORIES = Object.freeze(['MUSIC', 'VOICE-OVER', 'SOUND FX']);
 
@@ -27,6 +27,27 @@ export const AUDIO_TEMPLATES = Object.freeze([
   music('epic-fantasy', 'EPIC FANTASY THEME', 'Sweeping fantasy orchestral theme, French horn melody, harp, choir pads, hopeful journey, medium tempo, instrumental.'),
   music('ad-jingle', 'AD JINGLE', 'Short catchy upbeat jingle, major key, whistling hook, ukulele and bells, bouncy and friendly, instrumental, resolves with a clear ending.'),
   music('calm-meditation', 'CALM MEDITATION', 'Slow ambient meditation music, soft sine pads, distant singing bowls, gentle breathing rhythm, very spacious, no drums, instrumental.'),
+
+  music('jazz-cafe', 'JAZZ CAFE', 'Relaxed late-night jazz trio, 84 BPM, brushed drums, walking upright bass, soft piano chords, warm room feel, instrumental.'),
+  music('chill-house', 'CHILL HOUSE GROOVE', 'Smooth deep house, 120 BPM, round kick, shuffled hi-hats, warm sub bass, airy chord stabs, sunset rooftop mood, instrumental.'),
+  music('dark-techno', 'DARK TECHNO PULSE', 'Hypnotic dark techno, 132 BPM, driving kick, rumbling bass, metallic percussion, evolving filtered synth, instrumental.'),
+  music('trap-beat', 'HARD TRAP BEAT', 'Hard trap instrumental, 140 BPM, booming 808 bass, rolling hi-hats, snappy snare, eerie bell melody, no vocals.'),
+  music('boom-bap', 'BOOM BAP SKETCH', 'Classic boom bap hip hop beat, 90 BPM, dusty drum break, jazzy sampled-style keys, deep upright bass, instrumental.'),
+  music('indie-folk', 'INDIE FOLK ROAD TRIP', 'Warm indie folk, 104 BPM, fingerpicked acoustic guitar, soft stomps, banjo accents, gentle harmonies without words, hopeful.'),
+  music('piano-reflection', 'SOLO PIANO REFLECTION', 'Intimate solo piano, slow tempo, simple tender melody, soft pedal, quiet room reverb, reflective and bittersweet, instrumental.'),
+  music('sad-strings', 'SAD STRINGS', 'Emotional string quartet, slow, mournful cello lead, sustained violins, restrained and cinematic, instrumental.'),
+  music('action-chase', 'ACTION CHASE', 'High-energy action score, 150 BPM, pounding percussion, ostinato strings, brass stabs, urgent and relentless, instrumental.'),
+  music('sports-hype', 'SPORTS HYPE', 'Stadium anthem energy, 128 BPM, stomp-clap drums, big synth brass, rising build and drop, triumphant, no vocals.'),
+  music('retro-8bit', '8-BIT ARCADE', 'Chiptune arcade theme, 140 BPM, square wave lead, pulse bass, noise drums, playful and bouncy, looping, instrumental.'),
+  music('tropical-pop', 'TROPICAL SUMMER POP', 'Sunny tropical pop instrumental, 100 BPM, marimba, steel drum, plucky guitar, light percussion, beach holiday mood.'),
+  music('latin-groove', 'LATIN GROOVE', 'Warm Latin groove, 98 BPM, congas, nylon guitar, bright brass, syncopated bass, festive and danceable, instrumental.'),
+  music('reggae-chill', 'REGGAE CHILL', 'Laid-back reggae, 78 BPM, offbeat guitar skank, deep round bass, one-drop drums, warm organ bubble, instrumental.'),
+  music('country-twang', 'COUNTRY ROAD', 'Easygoing country instrumental, 110 BPM, twangy electric guitar, acoustic strum, pedal steel, steady kick and snare.'),
+  music('cinematic-ambient', 'CINEMATIC AMBIENT', 'Vast cinematic ambient, evolving synth pads, soft pulsing tones, distant piano notes, slow and spacious, no drums, instrumental.'),
+  music('kids-playtime', 'KIDS PLAYTIME', 'Playful children’s song feel, 112 BPM, xylophone, pizzicato strings, hand claps, skipping rhythm, cheerful, instrumental.'),
+  music('wedding-waltz', 'ROMANTIC WALTZ', 'Elegant romantic waltz in three-four time, 90 BPM, string ensemble, harp arpeggios, soft piano, warm and graceful, instrumental.'),
+  music('podcast-bed', 'PODCAST UNDERSCORE', 'Subtle podcast underscore, 92 BPM, muted electric piano, soft pulse, light textures, neutral and focused, very quiet, no melody hook.'),
+  music('gaming-boss', 'BOSS BATTLE', 'Intense video game boss battle, 160 BPM, distorted guitars, orchestral hits, fast double-kick drums, choir stabs, instrumental.'),
 
   sfx('whoosh-transitions', 'WHOOSH TRANSITIONS', 'Three fast cinematic whooshes in a row, short and clean, rising air sweep each time, no music, no voice.'),
   sfx('ui-clicks', 'APP UI CLICKS', 'A set of clean soft app interface sounds: tap, toggle on, toggle off, success chime, error buzz, each separated by silence.'),

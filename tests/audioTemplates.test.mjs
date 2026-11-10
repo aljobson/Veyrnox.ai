@@ -8,9 +8,9 @@ import { TEMPLATE_ID_RE } from '../lib/clientTemplates.js';
 const KIND_BY_CATEGORY = { MUSIC: 'music', 'VOICE-OVER': 'voice-over', 'SOUND FX': 'sound-effect' };
 const NEGATIVE_MAX = 2000;
 
-test('ten audio templates in each of the three categories', () => {
-  assert.equal(AUDIO_TEMPLATES.length, 30);
-  for (const category of AUDIO_CATEGORIES) assert.equal(audioTemplatesIn(category).length, 10, category);
+test('thirty music templates and ten each of voice-over and sound effects', () => {
+  assert.equal(AUDIO_TEMPLATES.length, 50);
+  for (const category of AUDIO_CATEGORIES) assert.equal(audioTemplatesIn(category).length, category === 'MUSIC' ? 30 : 10, category);
 });
 
 test('ids are unique, well formed, and collide with no video template', () => {
