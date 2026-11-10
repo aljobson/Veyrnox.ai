@@ -9,6 +9,7 @@ import { CAPTIONS_UNITS, CAPTION_PRESETS, SLOW_FACTORS, SLOW_UNITS_PER_SECOND, S
 // JSX sources, so these read the text, like createAutoShort.test.mjs.
 const library = readFileSync(new URL('../app/veyrnox/app/library/page.js', import.meta.url), 'utf8');
 const sheet = readFileSync(new URL('../app/veyrnox/_components/EditSheet.js', import.meta.url), 'utf8');
+const assetLoadStatus = readFileSync(new URL('../app/veyrnox/_components/AssetLoadStatus.js', import.meta.url), 'utf8');
 
 test('the editor is off unless localStorage.veyrnox_editor is "1"', () => {
     assert.match(library, /const EDITOR_FLAG = 'veyrnox_editor';/);
@@ -30,6 +31,11 @@ test('the sheet refuses what the gateway would, before spending a request', () =
         assert.ok(sheet.includes(guard), guard);
     }
     assert.match(sheet, /const MAX_OUTPUT_S = 60;/);
+});
+
+test('the sheet keeps the failed-asset retry action touch-safe', () => {
+    assert.match(sheet, /<AssetLoadStatus asset=\{asset\}/);
+    assert.match(assetLoadStatus, /className="inline-flex min-h-11 items-center underline font-bold text-vx-fg"/);
 });
 
 test('the landing shelf and site search never list the Clip Editor as a model', () => {
