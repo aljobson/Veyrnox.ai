@@ -9,7 +9,13 @@ export const dynamic = 'force-dynamic';
 async function read(slug, countView = false) {
   if (!socialSmartLinksEnabled()) return null;
   const cfg = envConfig(); if (!cfg.supabaseUrl || !cfg.serviceRoleKey) return null;
-  const result = await rpc('read_social_smartlink_public', { p_slug: slug }, cfg);
+  let result;
+  try {
+    result = await rpc('read_social_smartlink_public', { p_slug: slug }, cfg);
+  } catch (err) {
+    console.error('[smartlink] read failed', err?.status ?? 0);
+    return null;
+  }
   if (!result?.ok) return null;
   if (countView) await rpc('record_social_smartlink_view', { p_slug: slug }, cfg).catch(() => null);
   return result;
