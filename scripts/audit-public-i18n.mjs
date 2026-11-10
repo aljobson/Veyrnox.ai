@@ -39,6 +39,7 @@ const exceptions = [
   { file: /\/_lib\/(?:editorVisionRuntime|localSpeechAssets)\.mjs$/, pattern: /^default-src /, reason: 'CSP protocol value, not visible text' },
   { file: /^lib\/social\/networks\.js$/, pattern: /./, reason: 'social network brand names remain unchanged (ADR-0107)' },
   { file: /\/_components\/editor\/(?:OriginalAudioPanel|PersonProcessingControls|MotionProcessingControls)\.js$/, pattern: /^(?:Processed video|Original audio\/|Veyrnox procedural synthesizer|Generated locally; version 1 preset\.)$/, reason: 'canonical persisted folder/attribution metadata; display translation is separate' },
+  { file: /^lib\/featureTours\.js$/, pattern: /./, reason: 'first-run tour step copy is English-only for now; the tour chrome uses app.tours.* keys' },
   { file: /\/publish\/ads\/page\.js$/, pattern: /^United Kingdom$/, reason: 'canonical stored campaign targeting value, not a translated display label' },
 
   { file: /\/lib\/creatorArchetype\.js$/, pattern: /^The$/, reason: 'English source of the creator card name for the phone and the server; the web words the card from app.vibe.card.* so it reads right in every language' },

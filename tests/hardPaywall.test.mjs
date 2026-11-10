@@ -59,7 +59,7 @@ test('the dismissible paywall prompt steps aside while the gate is on', () => {
 
 test('the app template wraps the page and the check-in in the gate', () => {
   const template = readFileSync(new URL('../app/veyrnox/app/template.js', import.meta.url), 'utf8');
-  assert.match(template, /<HardPaywallGate enabled=\{hardPaywallEnabled\(\)\}>\{children\}<CheckInHost \/><\/HardPaywallGate>/);
+  assert.match(template, /<HardPaywallGate enabled=\{hardPaywallEnabled\(\)\}>\{children\}<CheckInHost \/><FeatureTour \/><\/HardPaywallGate>/);
 });
 
 test('the gate reads the Publish plan from entitlement, uses the stored identity and keeps only the newest check', () => {
