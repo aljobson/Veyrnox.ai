@@ -132,5 +132,7 @@ test('the create page sends the Topic box as the topic, and waits for one', () =
     assert.match(page, /const missingPrompt = promptIsMissing\(model, prompt\);/);
     assert.match(page, /const inputs = isShort \? \{ topic: prompt\.trim\(\) \} :/);
     assert.match(page, /disabled=\{[^\n]*\|\| missingPrompt[^\n]*\}/);
+    assert.match(page, /const hydrated = useSyncExternalStore\(never, ready, off\);/);
+    assert.match(page, /data-assistant-target="create\.prompt"[\s\S]*?readOnly=\{!hydrated\}[\s\S]*?aria-busy=\{!hydrated\}[\s\S]*?data-client-ready=\{hydrated \? 'true' : 'false'\}/);
     assert.doesNotMatch(page, /neon-lit/);
 });
