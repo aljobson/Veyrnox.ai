@@ -17,10 +17,17 @@ export function CassettePlayer({ src, onError, onLoadedData, autoPlay = false, l
   const [progress, setProgress] = useState(0);
   const left = SPOOL_MIN + SPOOL_GAIN * (1 - progress);
   const right = SPOOL_MIN + SPOOL_GAIN * progress;
-  const toggle = () => {
+  const toggle = async () => {
     const el = audio.current;
     if (!el) return;
-    if (el.paused) el.play().catch(() => {}); else el.pause();
+    if (!el.paused) { el.pause(); return; }
+    try {
+      await el.play();
+    } catch (err) {
+      // A play() that a pause or a new load interrupts is expected; any other refusal is a real failure
+      // and goes to the same handler as a failed load, so the page can say so.
+      if (err?.name !== 'AbortError') onError?.();
+    }
   };
   return (
     <div className="vx-cassette flex w-full max-w-xl flex-col items-center gap-4" data-playing={playing}>

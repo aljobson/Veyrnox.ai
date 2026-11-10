@@ -14,7 +14,7 @@ export function JobAssetPreview({ job }) {
       <video src={asset.url} onError={asset.onError} onLoadedData={asset.onLoad} controls autoPlay loop playsInline
         className="absolute inset-0 w-full h-full object-contain bg-black" />
     ) : job.mime_type?.startsWith('audio/') ? (
-      <div className="absolute inset-0 flex items-center justify-center bg-black px-8">
+      <div className="relative flex items-center justify-center bg-black px-8 py-6">
         <CassettePlayer src={asset.url} onError={asset.onError} onLoadedData={asset.onLoad} autoPlay label={t("app.library.result")} />
       </div>
     ) : (

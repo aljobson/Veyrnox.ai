@@ -29,3 +29,14 @@ test('the audio result preview uses the cassette', () => {
   assert.match(preview, /<CassettePlayer src=\{asset\.url\}/);
   assert.doesNotMatch(preview, /<audio /);
 });
+
+test('a refused play is reported through onError, and only an interrupted one is ignored', () => {
+  assert.match(source, /err\?\.name !== 'AbortError'\) onError\?\.\(\)/);
+  assert.doesNotMatch(source, /\.catch\(\(\) => \{\}\)/);
+});
+
+test('the audio preview grows with the player instead of being clipped by a fixed frame', () => {
+  const preview = readFileSync(new URL('../app/veyrnox/_components/JobAssetPreview.js', import.meta.url), 'utf8');
+  const audioBranch = preview.slice(preview.indexOf("startsWith('audio/')"), preview.indexOf('CassettePlayer src'));
+  assert.doesNotMatch(audioBranch, /absolute inset-0/);
+});
