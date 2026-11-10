@@ -264,6 +264,16 @@ dashboard charge is not yet read. A fal route ($0.1500, probed the same day, 20 
 
 Margin waiver (decision 3, owner, 2026-11-10): at 2 credits the cap is 2 x $0.01796 = $0.0359 and kie costs $0.0900,
 so the route breaches the floor and carries a recorded waiver. Exposure is bounded by
-`daily_spend_cap_cents = 500` ($5 of kie spend a day, about 55 hops). The route earns nothing while it serves; it
+`daily_spend_cap_cents = 500` ($5 of kie spend a UTC day, about 55 hops). Review of #2063 found that column was
+stored and never read, so 0456 also redefines `job_route_failover` (0376's body plus two changes): it locks the next
+route's row and refuses the hop with `route_daily_cap` when that day's `provider_spend_reservations` for the supplier
+and offer, plus this hop, would pass the cap. A refused hop refunds as any other refusal does; a NULL cap behaves as
+before. The route earns nothing while it serves; it
 exists so a GrsAI outage costs the business a few cents per image instead of a failed generation for the user.
 If GrsAI is topped up and stays healthy the route is never used. To remove it, set its `state` to `disabled`.
+
+The same review found that the kie callback could not complete a hopped job: `findJob` required the offer's catalog
+provider to equal the callback's supplier, and read the task from the catalog endpoint. It now accepts a job whose
+recorded provider is a route of its offer (any route state, so a route switched off after a hop still lets its in-flight
+jobs finish) and reads the task from that route's endpoint. A job whose provider is no route of its offer is still not
+ours to complete.

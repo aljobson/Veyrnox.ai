@@ -70,9 +70,10 @@ async function runPolled(probe, apiKey, started, say, adapter) {
     const cfg = { apiKey, callbackUrl: 'https://example.com/probe-ignore' };
     const sub = await adapter.submitTask(job, cfg);
     if (!sub.ok) {
-        // --why: GrsAI refused the request, so nothing was made or billed. Ask once more, raw, and print only its own
-        // status, code and message (cut short) so the reason is visible. The key is never printed.
-        if (process.argv.includes('--why') && adapter === grsai) {
+        // --why: only when GrsAI answered with a refusal (outcome 'rejected': nothing was accepted, so nothing is billed).
+        // An ambiguous answer (timeout, unreadable reply) may already hold a billed task, so it is never sent again.
+        // The second request is raw; only GrsAI's own status, code and message (cut short) are printed, never the key.
+        if (process.argv.includes('--why') && adapter === grsai && sub.outcome === 'rejected') {
             const built = grsai.buildRequest(probe.endpoint, probe.inputs);
             const res = await fetch('https://grsaiapi.com/v1/draw/nano-banana', {
                 method: 'POST', redirect: 'manual',
@@ -82,6 +83,10 @@ async function runPolled(probe, apiKey, started, say, adapter) {
             const body = res ? await res.json().catch(() => null) : null;
             console.log('grsai http status:', res && res.status);
             console.log('grsai code:', body && body.code, '| msg:', String((body && body.msg) || '').slice(0, 200));
+            // If the account was topped up in between, this second request was accepted and billed: say so, with its id.
+            if (body && body.code === 0 && body.data && typeof body.data.id === 'string') {
+                console.log('WARNING: GrsAI accepted this second request and will bill it. Task id:', body.data.id);
+            }
         }
         throw new Error(`submit failed: ${sub.outcome} ${sub.error}`);
     }
