@@ -51,7 +51,9 @@ export function useJobResult(api: ApiClient, id: string): JobResult {
                     for (let tries = 0; ; tries++) {
                         try { asset = await media.getAsset(id); break; } catch (error) {
                             if ((error instanceof ApiError && error.code === 'held') || tries >= ASSET_TRIES - 1) throw error;
-                            await sleep(ASSET_RETRY_MS * (tries + 1));
+                            // A rate limit says how long to wait (up to 60 s); honor it instead of guessing.
+                            const asked = error instanceof ApiError && error.retryAfterSeconds ? Math.min(error.retryAfterSeconds, 60) * 1000 : 0;
+                            await sleep(Math.max(ASSET_RETRY_MS * (tries + 1), asked));
                             if (!current()) return;
                         }
                     }
