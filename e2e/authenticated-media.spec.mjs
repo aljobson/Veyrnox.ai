@@ -1,7 +1,7 @@
 import { test, expect, installProductFixtures, SYNTHETIC_USER, SYNTHETIC_MODELS } from './fixtures/authenticated-product.mjs';
 import { capabilityFor, publicCapabilities, lengthsFor } from '../lib/modelCapabilities.js';
 import { emptyFilm, STYLE_BOARDS, assetKey, testMatrix, lockAsset, buildShotPrompt, nextPromptVersion } from '../app/veyrnox/_lib/filmStudio.js';
-import { STARTER_PROMPT } from '../app/veyrnox/_lib/promptBox.js';
+import { STARTER_PROMPT } from '../app/veyrnox/_lib/starterPrompt.mjs';
 import { filmFixture } from '../tests/fixtures/filmStudio.mjs';
 
 const filmKey = `veyrnox_film_studio_v1:${SYNTHETIC_USER.id}`;
