@@ -97,6 +97,7 @@ function errorFor(e) {
 const never = () => () => {};
 const autoShortFlag = () => readFlag(AUTO_SHORT_FLAG);
 const off = () => false;
+const ready = () => true;
 
 export default function CreateStudio() {
   const router = useRouter();
@@ -109,6 +110,9 @@ export default function CreateStudio() {
   const { models: catalogModels, live: catalogLive, loading: catalogLoading } = useCatalog();
   const freeMap = useFreeAllowance(); // ADR-0069: free jobs left today per model; empty while the feature is off
   const autoShortOn = useSyncExternalStore(never, autoShortFlag, off);
+  // The server can show starter text before React attaches. Prevent edits to that
+  // controlled DOM value until hydration, when React would otherwise restore the starter.
+  const hydrated = useSyncExternalStore(never, ready, off);
 
   const [modelId, setModelId] = useState(() => starterModel(catalogModels, 'image')?.id || '');
   const [goal, setGoal] = useState('image');
@@ -893,6 +897,9 @@ export default function CreateStudio() {
             data-assistant-target="create.prompt"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
+            readOnly={!hydrated}
+            aria-busy={!hydrated}
+            data-client-ready={hydrated ? 'true' : 'false'}
             aria-label={isShort ? t("app.create.topic") : t("mobile.prompt")}
             rows={3}
             className="scroll-mt-24 mt-3 w-full bg-vx-panel border border-vx-field rounded-lg p-3.5 text-sm text-vx-fg placeholder:text-vx-fg-faint resize-none focus:outline-hidden focus:border-vx-accent"

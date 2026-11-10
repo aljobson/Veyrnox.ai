@@ -4,6 +4,7 @@ import { searchTemplateIds, templateCards, templateCategories, templateDetail } 
 import { readdirSync } from 'node:fs';
 import { PAGE_TEMPLATES, templateMatches } from '../page-manifest.mjs';
 import { settleStreamedPage } from './streamed-page.mjs';
+import { FEATURE_TOURS } from '../../lib/featureTours.js';
 
 export { expect };
 export const SYNTHETIC_USER = Object.freeze({ id: '00000000-0000-4000-8000-000000000001', email: 'synthetic-feature-qa@example.invalid' });
@@ -57,8 +58,12 @@ export async function installProductFixtures(page, options = {}) {
   const fixture = { state, requests: [], analyticsRequests: [], unhandled: [], blocked: [], errors: [] };
   // The dedicated CI build enables only a made-up analytics key. Fulfill its
   // SDK bootstrap locally; never let the local ingest proxy reach a vendor.
-  const analyticsScripts = new Set(['/ingest/array/phc_synthetic_privacy_qa/config.js',
-    '/ingest/static/1.444.4/exception-autocapture.js', '/ingest/static/exception-autocapture.js']);
+  const analyticsScripts = new Set([
+    '/ingest/array/phc_synthetic_privacy_qa/config.js',
+    '/ingest/static/exception-autocapture.js',
+  ]);
+  const isAnalyticsScript = pathname => analyticsScripts.has(pathname)
+    || /^\/ingest\/static\/\d+(?:\.\d+)+\/exception-autocapture\.js$/.test(pathname);
   const analyticsCaptures = new Set(['/ingest/e/', '/ingest/i/v0/e/', '/ingest/batch/']);
   const context = page.context();
   const pendingRoutes = new Set(), pendingPreparations = new Set();
@@ -82,7 +87,19 @@ export async function installProductFixtures(page, options = {}) {
   };
   context.on('page', onPage);
   const metadata = user => user ? { cookie_session: true, expires_at: Math.floor(Date.now() / 1000) + 3600, user, revision: 'synthetic-only' } : null;
-  await page.context().addInitScript(({ key, value }) => { if (value && !localStorage.getItem(key) && localStorage.getItem('veyrnox_session_signed_out') !== '1') localStorage.setItem(key, JSON.stringify(value)); }, { key: SESSION_KEY, value: metadata(state.user) });
+  await page.context().addInitScript(({ key, value, tourIds }) => {
+    if (value && !localStorage.getItem(key) && localStorage.getItem('veyrnox_session_signed_out') !== '1') localStorage.setItem(key, JSON.stringify(value));
+    if (!localStorage.getItem('veyrnox_analytics_preference_v1')) {
+      localStorage.setItem('veyrnox_analytics_preference_v1', JSON.stringify({ version: 1, analytics: false, replay: false }));
+    }
+    if (value?.user?.id && !localStorage.getItem(`veyrnox_feature_tours_v1:${value.user.id}`)) {
+      localStorage.setItem(`veyrnox_feature_tours_v1:${value.user.id}`, JSON.stringify(tourIds));
+    }
+  }, {
+    key: SESSION_KEY,
+    value: metadata(state.user),
+    tourIds: FEATURE_TOURS.map(({ id }) => id),
+  });
   const handleRoute = async route => {
     const request = route.request(), url = new URL(request.url()), method = request.method();
     let body = null;
@@ -106,7 +123,7 @@ export async function installProductFixtures(page, options = {}) {
       fixture.unhandled.push(unexpected);
       return route.abort('blockedbyclient');
     }
-    if (method === 'GET' && analyticsScripts.has(url.pathname)) {
+    if (method === 'GET' && isAnalyticsScript(url.pathname)) {
       fixture.analyticsRequests.push(entry);
       return route.fulfill({ status: 200, contentType: 'application/javascript', body: '' });
     }

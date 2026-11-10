@@ -5,7 +5,7 @@ import { PAGE_TEMPLATES, templateMatches } from './page-manifest.mjs';
 import { installInteractiveAnalyticsNavigator } from './fixtures/interactive-analytics.mjs';
 import { settleStreamedPage } from './fixtures/streamed-page.mjs';
 
-// Independent from authenticated-product: its automatic Decline handler would
+// Independent from authenticated-product: its pre-recorded declined choice would
 // conceal the exact consent/dismissal regression being exercised here.
 const PREFERENCE = 'veyrnox_analytics_preference_v1';
 const USER = Object.freeze({ id: '00000000-0000-4000-8000-000000000031', email: 'synthetic-privacy@example.invalid' });
