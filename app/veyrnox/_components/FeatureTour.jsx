@@ -24,77 +24,82 @@ function writeSeen(userId, id) {
  * @typedef {{ top: number, left: number, width: number, height: number }} TourBox
  */
 
-// First-runner tour: points at the controls of the feature just opened, once per person.
-// It never clicks, types or submits; the highlighted control stays usable.
-export default function FeatureTour() {
-  const { t } = useI18n();
-  const pathname = usePathname();
+function useSessionUserId() {
   const [userId, setUserId] = useState(null);
-  const [run, setRun] = useState(/** @type {TourRun | null} */ (null));
-  const [index, setIndex] = useState(0);
-  const [box, setBox] = useState(/** @type {TourBox | null} */ (null));
-  const [paused, setPaused] = useState(false);
-  const [replay, setReplay] = useState(0);
-  const nextRef = useRef(null);
-
   useEffect(() => {
     setUserId(getStoredUserId());
     return onSessionChange(() => setUserId(getStoredUserId()));
   }, []);
+  return userId;
+}
 
+// Bumps a counter when something asks to replay this page's tour (clears its seen mark first).
+function useReplayRequest(pathname, userId) {
+  const [replay, setReplay] = useState(0);
   useEffect(() => {
-    const again = () => { const tour = tourForPath(pathname); if (tour && userId) { try { const seen = readSeen(userId).filter((id) => id !== tour.id); localStorage.setItem(seenKey(userId), JSON.stringify(seen)); } catch { /* ignore */ } } setReplay((n) => n + 1); };
+    const again = () => {
+      const tour = tourForPath(pathname);
+      if (tour && userId) {
+        try { localStorage.setItem(seenKey(userId), JSON.stringify(readSeen(userId).filter((id) => id !== tour.id))); } catch { /* ignore */ }
+      }
+      setReplay((n) => n + 1);
+    };
     window.addEventListener(TOUR_REPLAY_EVENT, again);
     return () => window.removeEventListener(TOUR_REPLAY_EVENT, again);
   }, [pathname, userId]);
+  return replay;
+}
 
-  // Wait for the page to render its controls, then keep only the steps that exist.
+// Wait for the page to render its controls, then keep only the steps that exist.
+// Waiting behind a modal or walkthrough does not spend the retry budget.
+function useTourDiscovery(pathname, userId, replay, onReset, onReady) {
   useEffect(() => {
-    setRun(null); setIndex(0); setBox(null);
+    onReset();
     const tour = tourForPath(pathname);
     if (!tour || !userId || readSeen(userId).includes(tour.id)) return undefined;
+    const required = tour.steps.filter((step) => !step.optional).length;
     let attempt = 0;
     let timer;
     const look = () => {
-      if (isBlocked(document)) { timer = setTimeout(look, FIND_INTERVAL_MS); return; } // wait without spending attempts
+      if (isBlocked(document)) { timer = setTimeout(look, FIND_INTERVAL_MS); return; }
       const steps = tour.steps.filter((step) => findVisible(document, step.selector));
-      const required = tour.steps.filter((step) => !step.optional).length;
       const ready = steps.length > 0 && (steps.length >= required || attempt >= FIND_ATTEMPTS - 1);
-      if (ready) { setRun({ tour, steps }); return; }
+      if (ready) { onReady({ tour, steps }); return; }
       if (++attempt < FIND_ATTEMPTS) timer = setTimeout(look, FIND_INTERVAL_MS);
     };
     timer = setTimeout(look, FIND_INTERVAL_MS);
     return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- onReset/onReady are stable setters wrappers
   }, [pathname, userId, replay]);
+}
 
-  const step = run?.steps[index];
-
-  // Hide while a modal or walkthrough is open; drop steps whose control has gone.
+// Hide while a modal or walkthrough is open; drop steps whose control has gone.
+function useTourGuard(run, index, setRun, setIndex) {
+  const [paused, setPaused] = useState(false);
   useEffect(() => {
     if (!run) return undefined;
     const tick = () => {
-      setPaused(isBlocked(document));
-      if (isBlocked(document)) return;
+      const blocked = isBlocked(document);
+      setPaused(blocked);
+      if (blocked) return;
       const kept = run.steps.filter((s) => findVisible(document, s.selector));
       if (kept.length === run.steps.length) return;
-      const current = run.steps[index];
-      const at = current ? kept.indexOf(current) : -1;
-      if (!kept.length) { setRun(null); setBox(null); return; }
+      if (!kept.length) { setRun(null); return; }
+      const at = kept.indexOf(run.steps[index]);
       setRun({ ...run, steps: kept });
       setIndex(at >= 0 ? at : Math.min(index, kept.length - 1));
     };
     const id = setInterval(tick, 400);
     return () => clearInterval(id);
-  }, [run, index]);
+  }, [run, index, setRun, setIndex]);
+  return paused;
+}
 
-  const finish = useCallback(() => {
-    if (run && userId) writeSeen(userId, run.tour.id);
-    setRun(null); setBox(null);
-  }, [run, userId]);
-
-  // Follow the target through scroll and resize.
+// Follow the target through scroll and resize.
+function useTargetBox(step) {
+  const [box, setBox] = useState(/** @type {TourBox | null} */ (null));
   useEffect(() => {
-    if (!step) return undefined;
+    if (!step) { setBox(null); return undefined; }
     const element = findVisible(document, step.selector);
     if (!element) { setBox(null); return undefined; }
     const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
@@ -111,15 +116,40 @@ export default function FeatureTour() {
     const poll = setInterval(schedule, 400);
     return () => { cancelAnimationFrame(frame); clearInterval(poll); window.removeEventListener('scroll', schedule, true); window.removeEventListener('resize', schedule); };
   }, [step]);
+  return box;
+}
 
-  useEffect(() => { nextRef.current?.focus({ preventScroll: true }); }, [step]);
-
+function useEscapeToFinish(active, finish) {
   useEffect(() => {
-    if (!run) return undefined;
+    if (!active) return undefined;
     const onKey = (event) => { if (event.key === 'Escape' && !isBlocked(document)) finish(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [run, finish]);
+  }, [active, finish]);
+}
+
+// First-runner tour: points at the controls of the feature just opened, once per person.
+// It never clicks, types or submits; the highlighted control stays usable.
+export default function FeatureTour() {
+  const { t } = useI18n();
+  const pathname = usePathname();
+  const userId = useSessionUserId();
+  const replay = useReplayRequest(pathname, userId);
+  const [run, setRun] = useState(/** @type {TourRun | null} */ (null));
+  const [index, setIndex] = useState(0);
+  const nextRef = useRef(null);
+  const reset = useCallback(() => { setRun(null); setIndex(0); }, []);
+  useTourDiscovery(pathname, userId, replay, reset, setRun);
+  const step = run?.steps[index];
+  const paused = useTourGuard(run, index, setRun, setIndex);
+  const box = useTargetBox(paused ? null : step);
+  const finish = useCallback(() => {
+    if (run && userId) writeSeen(userId, run.tour.id);
+    setRun(null);
+  }, [run, userId]);
+  useEscapeToFinish(Boolean(run), finish);
+  // Focus the primary button on each step and again when the tour returns from a pause.
+  useEffect(() => { if (!paused) nextRef.current?.focus({ preventScroll: true }); }, [step, paused]);
 
   if (!run || !step || paused) return null;
   const last = index === run.steps.length - 1;
