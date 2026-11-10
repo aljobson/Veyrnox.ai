@@ -1,8 +1,9 @@
 import { helperEnglish, helperDiagnostic } from '../../../lib/helperMessages.mjs';
+import { STARTER_PROMPT } from './starterPrompt.mjs';
 // Pure helpers for the create page's prompt box (unit-tested).
 
 // A shot to try, shown until the user types. For pictures and clips only.
-export const STARTER_PROMPT = 'A neon-lit Tokyo alley at 3am, low anamorphic tracking shot';
+export { STARTER_PROMPT };
 
 // Models that use the box as it stands: speech reads it aloud, music and
 // sound effects make audio about it, an Auto Short is written about it.

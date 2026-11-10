@@ -64,7 +64,7 @@ export function LibraryJobCard({ row, models, selectable, selected, onToggle, st
         <div className="absolute top-3 left-3">
           <Chip tone={s.chip} noGlyph>
             <span aria-hidden="true" className="text-[10px] mr-1">{s.glyph}</span>
-            {s.label}
+            <span data-library-status={refundPending ? 'failed_pending' : row.state}>{s.label}</span>
           </Chip>
         </div>
         {row.asset_url && (
@@ -93,7 +93,7 @@ export function LibraryJobCard({ row, models, selectable, selected, onToggle, st
         </div>
         <div className="shrink-0 flex items-center gap-3">
           <span className={`font-vx-mono text-[13px] font-bold vx-num ${deltaCls}`}>{delta}{free ? '' : ' cr'}</span>
-          <button onClick={onStar} aria-pressed={starred} aria-label={starred ? 'Remove from favourites' : 'Add to favourites'} type="button"
+          <button onClick={onStar} aria-pressed={starred} data-testid="library-favourite" aria-label={starred ? 'Remove from favourites' : 'Add to favourites'} type="button"
             className={`text-[18px] leading-none ${starred ? 'text-vx-accent' : 'text-vx-fg-faint hover:text-vx-fg'}`}>
             {starred ? '★' : '☆'}
           </button>

@@ -54,6 +54,8 @@ test('every listed model can be selected and sends its own request', async ({ pa
     expect(ids.length, 'the create page lists models').toBeGreaterThan(0);
 
     const generate = page.locator('[data-assistant-target="create.generate"]');
+    const prompt = page.locator('[data-assistant-target="create.prompt"]');
+    await expect(prompt).toHaveAttribute('data-client-ready', 'true');
     const seen = new Map();
     const skipped = [];
     for (let i = 0; i < ids.length; i += 1) {
@@ -64,7 +66,7 @@ test('every listed model can be selected and sends its own request', async ({ pa
         await expect(button, `${label} becomes selected`).toHaveAttribute('aria-pressed', 'true');
         await expect(picker, `${label} is the selected model`).toHaveValue(id);
 
-        await page.locator('[data-assistant-target="create.prompt"]').fill('QA bot: a lighthouse at dusk');
+        await prompt.fill('QA bot: a lighthouse at dusk');
         // Gated, source-required and consent-gated models leave Generate disabled: note them, do not fail.
         const enabled = await expect(generate).toBeEnabled({ timeout: 3_000 }).then(() => true, () => false);
         if (!enabled) { skipped.push(`${label} (${id}): Generate disabled`); continue; }

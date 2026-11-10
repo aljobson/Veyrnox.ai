@@ -23,14 +23,14 @@ test('staging account smoke excludes synthetic fixture specs and preserves its p
 
 async function installedRouting(controls = {}) {
   const source = read('e2e/fixtures/authenticated-product.mjs').split('export async function installProductFixtures')[1];
-  const factory = new Function('base', 'publicFiles', 'PAGE_TEMPLATES', 'templateMatches', 'installed', 'SYNTHETIC_USER', 'SYNTHETIC_MODELS', 'SESSION_KEY', `return async function installProductFixtures${source}`);
-  const install = factory({}, new Set(['/favicon.ico']), [{ route: '/app/create' }], (template, path) => template === path, new WeakMap(), { id: 'synthetic' }, [], 'synthetic-session');
+  const factory = new Function('base', 'publicFiles', 'PAGE_TEMPLATES', 'templateMatches', 'installed', 'SYNTHETIC_USER', 'SYNTHETIC_MODELS', 'SESSION_KEY', 'FEATURE_TOURS', `return async function installProductFixtures${source}`);
+  const install = factory({}, new Set(['/favicon.ico']), [{ route: '/app/create' }], (template, path) => template === path, new WeakMap(), { id: 'synthetic' }, [], 'synthetic-session', [{ id: 'create' }]);
   let handler, fulfilled, fixture;
-  const events = [], pages = [], listeners = new Map();
+  const events = [], initScripts = [], pages = [], listeners = new Map();
   const context = {
     on: (event, callback) => listeners.set(event, callback),
     off: (event, callback) => { if (listeners.get(event) === callback) listeners.delete(event); },
-    addInitScript: async () => {}, route: async (_, callback) => { handler = callback; },
+    addInitScript: async (callback, value) => { initScripts.push({ callback, value }); }, route: async (_, callback) => { handler = callback; },
     pages: () => pages.filter(page => !page.isClosed()),
     unrouteAll: async options => { assert.deepEqual(options, { behavior: 'wait' }); assert.equal(context.pages().length, 0); events.push('unroute'); await controls.unroute?.(fixture); },
   };
@@ -48,8 +48,30 @@ async function installedRouting(controls = {}) {
     await handler({ request: () => ({ url: () => url, method: () => method, postDataJSON: () => body, headers: () => ({}) }), abort: async () => { disposition = 'abort'; }, continue: async () => { disposition = 'continue'; }, fetch: async options => { assert.equal(options.maxRedirects, 0); assert.equal(options.maxRetries, 0); await callbacks.fetch?.(); return { status: () => status }; }, fulfill: async response => { await callbacks.fulfill?.(); fulfilled = response; disposition = 'fulfill'; } });
     return disposition;
   };
-  return { fixture, request, response: () => fulfilled, context, page, events };
+  return { fixture, request, response: () => fulfilled, context, page, events, initScripts };
 }
+
+async function runInitScripts(harness) {
+  const values = new Map();
+  const previous = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: {
+    getItem: key => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, value),
+  } });
+  try { for (const script of harness.initScripts) await script.callback(script.value); }
+  finally {
+    if (previous) Object.defineProperty(globalThis, 'localStorage', previous);
+    else delete globalThis.localStorage;
+  }
+  return values;
+}
+
+test('authenticated fixtures pre-record declined privacy and completed tours before hydration', async () => {
+  const standard = await installedRouting();
+  const stored = await runInitScripts(standard);
+  assert.deepEqual(JSON.parse(stored.get('veyrnox_analytics_preference_v1')), { version: 1, analytics: false, replay: false });
+  assert.deepEqual(JSON.parse(stored.get('veyrnox_feature_tours_v1:synthetic')), ['create']);
+});
 
 function safetyTeardown(harness, use = async () => {}, audits = []) {
   const source = read('e2e/fixtures/authenticated-product.mjs');
@@ -209,10 +231,12 @@ test('the default session fixture permits only POST refresh and fails unexpected
   assert.equal(response().status, 401);
 });
 
-test('actual fixture fulfills only the pinned synthetic analytics config/scripts without a proxy or network request', async () => {
+test('actual fixture fulfills only synthetic analytics config and versioned scripts without a proxy or network request', async () => {
   const { fixture, request, response } = await installedRouting();
   const scriptPaths = ['/ingest/array/phc_synthetic_privacy_qa/config.js',
-    '/ingest/static/1.444.4/exception-autocapture.js', '/ingest/static/exception-autocapture.js'];
+    '/ingest/static/1.444.4/exception-autocapture.js',
+    '/ingest/static/1.445.1/exception-autocapture.js',
+    '/ingest/static/exception-autocapture.js'];
   for (const path of [...scriptPaths, '/ingest/array/phc_synthetic_privacy_qa/config']) {
     assert.equal(await request(`http://localhost:3100${path}`, 'GET', 200, null, {
       fetch() { assert.fail('SDK fixtures must never call the ingest proxy or network'); },
@@ -224,7 +248,7 @@ test('actual fixture fulfills only the pinned synthetic analytics config/scripts
   }
   assert.equal(fixture.unhandled.length, 0);
   assert.equal(fixture.requests.length, 0, 'analytics fixtures are not product API writes');
-  assert.equal(fixture.analyticsRequests.length, 4, 'synthetic analytics handling remains separately observable');
+  assert.equal(fixture.analyticsRequests.length, 5, 'synthetic analytics handling remains separately observable');
 });
 
 test('actual fixture captures known analytics transport locally while preserving unknown-path/method and origin refusals', async () => {
@@ -239,7 +263,8 @@ test('actual fixture captures known analytics transport locally while preserving
   for (const [url, method] of [
     ['http://localhost:3100/ingest/array/phc_real_project/config', 'GET'],
     ['http://localhost:3100/ingest/static/unknown.js', 'GET'],
-    ['http://localhost:3100/ingest/static/1.444.5/exception-autocapture.js', 'GET'],
+    ['http://localhost:3100/ingest/static/latest/exception-autocapture.js', 'GET'],
+    ['http://localhost:3100/ingest/static/1.445.1/other.js', 'GET'],
     ['http://localhost:3100/ingest/array/phc_synthetic_privacy_qa/config', 'POST'],
     ['http://localhost:3100/ingest/e/', 'GET'],
     ['http://localhost:3100/ingest/i/v0/e/', 'PUT'],
@@ -248,7 +273,7 @@ test('actual fixture captures known analytics transport locally while preserving
     ['http://localhost:3100/api/v1/generations', 'POST'],
     ['http://localhost:3100/api/auth/session', 'POST'],
   ]) assert.equal(await request(url, method), 'abort');
-  assert.equal(fixture.unhandled.length, 10);
+  assert.equal(fixture.unhandled.length, 11);
   assert.equal(fixture.blocked.length, 1, 'even known analytics endpoints on a vendor origin are refused');
   assert.equal(fixture.analyticsRequests.length, 3, 'refused transports do not enter the synthetic analytics acceptance list');
 });

@@ -22,7 +22,9 @@ test('generate sends a well-formed request for the chosen model', async ({ page 
     await page.goto('/app/create');
     expect((await account).status(), 'signed-in account read').toBe(200);
 
-    await page.locator('[data-assistant-target="create.prompt"]').fill('A lighthouse at dusk, slow pan');
+    const prompt = page.locator('[data-assistant-target="create.prompt"]');
+    await expect(prompt).toHaveAttribute('data-client-ready', 'true');
+    await prompt.fill('A lighthouse at dusk, slow pan');
     const generate = page.getByRole('button', { name: 'Generate' });
     await expect(generate).toBeEnabled();
     await generate.click();

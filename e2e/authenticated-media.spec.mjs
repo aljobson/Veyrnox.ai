@@ -1,6 +1,7 @@
 import { test, expect, installProductFixtures, SYNTHETIC_USER, SYNTHETIC_MODELS } from './fixtures/authenticated-product.mjs';
 import { capabilityFor, publicCapabilities, lengthsFor } from '../lib/modelCapabilities.js';
 import { emptyFilm, STYLE_BOARDS, assetKey, testMatrix, lockAsset, buildShotPrompt, nextPromptVersion } from '../app/veyrnox/_lib/filmStudio.js';
+import { STARTER_PROMPT } from '../app/veyrnox/_lib/starterPrompt.mjs';
 import { filmFixture } from '../tests/fixtures/filmStudio.mjs';
 
 const filmKey = `veyrnox_film_studio_v1:${SYNTHETIC_USER.id}`;
@@ -107,6 +108,19 @@ test('Video Agent returning focus refreshes the balance without submitting and b
   } finally { release(); }
 });
 
+test('Create keeps its untouched starter and preserves typed text across model initialization', async ({ page }) => {
+  const fixture = await installProductFixtures(page);
+  await fixture.open('/app/create?model=flux-2-pro');
+  const prompt = page.locator('[data-assistant-target="create.prompt"]');
+  await expect(prompt).toHaveAttribute('data-client-ready', 'true');
+  await expect(prompt).toHaveValue(STARTER_PROMPT);
+  await prompt.fill('Keep this prompt through model initialization');
+  await page.getByTestId('create-goal-video').click();
+  await expect(prompt).toHaveValue('Keep this prompt through model initialization');
+  await page.getByTestId('create-goal-image').click();
+  await expect(prompt).toHaveValue('Keep this prompt through model initialization');
+});
+
 test('Create multi-image batch preserves per-job idempotency and stops after an uncertain second submission', async ({ page }) => {
   let count = 0;
   const fixture = await installProductFixtures(page, { routes: ({ url, method, json }) => {
@@ -115,11 +129,15 @@ test('Create multi-image batch preserves per-job idempotency and stops after an 
     if (url.pathname === '/api/v1/jobs/00000000-0000-4000-8000-000000000031') return json({ state: 'running' });
     return false;
   } });
-  await fixture.open('/app/create?model=flux-2-pro'); await page.locator('[data-assistant-target="create.prompt"]').fill('Synthetic batch');
+  await fixture.open('/app/create?model=flux-2-pro');
+  const prompt = page.locator('[data-assistant-target="create.prompt"]');
+  await expect(prompt).toHaveAttribute('data-client-ready', 'true');
+  await prompt.fill('Synthetic batch');
   await page.getByRole('group', { name: 'IMAGES', exact: true }).getByRole('button', { name: '4', exact: true }).click();
   await page.locator('[data-assistant-target="create.generate"]').click();
   await expect.poll(() => fixture.requests.filter(row => row.path === '/api/v1/generations').length).toBe(2);
   const calls = fixture.requests.filter(row => row.path === '/api/v1/generations'); expect(new Set(calls.map(row => row.body.idempotency_key)).size).toBe(2);
+  expect(calls.map(row => row.body.inputs.prompt)).toEqual(['Synthetic batch', 'Synthetic batch']);
   await expect(page.getByText(/may have started and been charged/)).toBeVisible();
 });
 
@@ -180,7 +198,10 @@ test('Create completion cannot turn the no-charge New generation action into a s
 
 test('Create with unavailable live catalog remains non-billable and retains its prompt', async ({ page }) => {
   const fixture = await installProductFixtures(page, { routes: ({ url, json }) => url.pathname === '/api/catalog' ? json({ error: 'synthetic_catalog_unavailable' }, 503) : false });
-  await fixture.open('/app/create'); await page.locator('[data-assistant-target="create.prompt"]').fill('Keep my synthetic prompt');
+  await fixture.open('/app/create');
+  const prompt = page.locator('[data-assistant-target="create.prompt"]');
+  await expect(prompt).toHaveAttribute('data-client-ready', 'true');
+  await prompt.fill('Keep my synthetic prompt');
   await expect(page.locator('[data-assistant-target="create.generate"]')).toBeDisabled();
   await expect(page.locator('[data-assistant-target="create.prompt"]')).toHaveValue('Keep my synthetic prompt');
   expect(fixture.requests.filter(row => row.path === '/api/v1/generations')).toEqual([]);

@@ -7,7 +7,7 @@ import { useAssetUrl } from '../_lib/useAssetUrl';
 import { buildSpeechAwareCutPlan } from '../_lib/smartCutAnalysis';
 import { buildSmartCutPlan, SMART_CUT_PACING, smartCutPlanUsesAvailableTakes, smartCutPlanWithinLimits, swapSmartCutTake } from '../_lib/smartCut';
 
-const inputClass = 'mt-1 w-full rounded-xl border border-vx-border bg-vx-base px-3 py-2.5 text-sm text-vx-fg focus:border-vx-accent focus:outline-hidden';
+const inputClass = 'mt-1 min-h-11 w-full rounded-xl border border-vx-border bg-vx-base px-3 py-2.5 text-sm text-vx-fg focus:border-vx-accent focus:outline-hidden';
 
 export function SmartCutPlanner({ clips, analyses = null, disabled = false, onApply, onUndo, startOpen = false }) {
   const { t, locale } = useI18n();
@@ -88,8 +88,8 @@ export function SmartCutPlanner({ clips, analyses = null, disabled = false, onAp
             <p className="mt-1 max-w-xl text-xs leading-5 text-vx-fg-muted">{t(analysisReady ? 'app.smartCut.summary.speech' : 'app.smartCut.summary.local')}</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            {onUndo && <button type="button" disabled={disabled} onClick={onUndo} className="min-h-10 rounded-full border border-vx-border px-4 text-xs font-extrabold hover:border-vx-accent disabled:opacity-40">{t('app.smartCut.action.undo')}</button>}
-            <button type="button" disabled={disabled || !ready} onClick={() => setOpen(true)} className="min-h-10 rounded-full bg-vx-accent px-4 text-xs font-extrabold text-vx-accent-ink disabled:cursor-not-allowed disabled:opacity-40">{t('app.smartCut.action.plan')}</button>
+            {onUndo && <button type="button" disabled={disabled} onClick={onUndo} className="min-h-11 rounded-full border border-vx-border px-4 text-xs font-extrabold hover:border-vx-accent disabled:opacity-40">{t('app.smartCut.action.undo')}</button>}
+            <button type="button" disabled={disabled || !ready} onClick={() => setOpen(true)} className="min-h-11 rounded-full bg-vx-accent px-4 text-xs font-extrabold text-vx-accent-ink disabled:cursor-not-allowed disabled:opacity-40">{t('app.smartCut.action.plan')}</button>
           </div>
         </div>
         {!ready && <p className="mt-2 text-xs text-vx-fg-muted">{t('app.smartCut.wait')}</p>}
@@ -106,7 +106,7 @@ export function SmartCutPlanner({ clips, analyses = null, disabled = false, onAp
           <h3 id="smart-cut-heading" className="mt-1 text-lg font-black">{t(plan ? 'app.smartCut.review.title' : 'app.smartCut.shape.title')}</h3>
           <p className="mt-1 max-w-2xl text-xs leading-5 text-vx-fg-muted">{t(analysisReady ? 'app.smartCut.explainer.speech' : 'app.smartCut.explainer.local')}</p>
         </div>
-        <button type="button" disabled={disabled} onClick={discard} className="min-h-10 rounded-full border border-vx-border px-3 text-xs font-bold text-vx-fg-muted hover:border-vx-danger hover:text-vx-danger disabled:opacity-40">{t('app.smartCut.action.discard')}</button>
+        <button type="button" disabled={disabled} onClick={discard} className="min-h-11 rounded-full border border-vx-border px-3 text-xs font-bold text-vx-fg-muted hover:border-vx-danger hover:text-vx-danger disabled:opacity-40">{t('app.smartCut.action.discard')}</button>
       </div>
 
       {!plan ? (
@@ -123,7 +123,7 @@ export function SmartCutPlanner({ clips, analyses = null, disabled = false, onAp
             <legend className="text-[11px] font-bold text-vx-fg-muted">{t('app.smartCut.pacing')}</legend>
             <div className="mt-2 flex flex-wrap gap-2">
               {Object.entries(SMART_CUT_PACING).map(([key, option]) => (
-                <button key={key} type="button" disabled={disabled} aria-pressed={pacing === key} onClick={() => setPacing(key)} className="min-h-10 rounded-full border border-vx-border px-4 text-xs font-bold text-vx-fg-body hover:border-vx-accent aria-pressed:border-vx-accent aria-pressed:bg-vx-accent aria-pressed:text-vx-accent-ink disabled:opacity-40">{t(option.labelKey)}</button>
+                <button key={key} type="button" disabled={disabled} aria-pressed={pacing === key} onClick={() => setPacing(key)} className="min-h-11 rounded-full border border-vx-border px-4 text-xs font-bold text-vx-fg-body hover:border-vx-accent aria-pressed:border-vx-accent aria-pressed:bg-vx-accent aria-pressed:text-vx-accent-ink disabled:opacity-40">{t(option.labelKey)}</button>
               ))}
             </div>
           </fieldset>
@@ -135,7 +135,7 @@ export function SmartCutPlanner({ clips, analyses = null, disabled = false, onAp
         <div className="mt-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex gap-2" role="group" aria-label={t('app.smartCut.compare')}>
-              {Object.keys({ raw: true, cut: true }).map((mode) => <button key={mode} type="button" disabled={disabled} aria-pressed={view === mode} onClick={() => setView(mode)} className="min-h-10 rounded-full border border-vx-border px-4 text-xs font-bold uppercase tracking-wide aria-pressed:border-vx-accent aria-pressed:bg-vx-accent aria-pressed:text-vx-accent-ink disabled:opacity-40">{t(`app.smartCut.view.${mode}`)}</button>)}
+              {Object.keys({ raw: true, cut: true }).map((mode) => <button key={mode} type="button" disabled={disabled} aria-pressed={view === mode} onClick={() => setView(mode)} className="min-h-11 rounded-full border border-vx-border px-4 text-xs font-bold uppercase tracking-wide aria-pressed:border-vx-accent aria-pressed:bg-vx-accent aria-pressed:text-vx-accent-ink disabled:opacity-40">{t(`app.smartCut.view.${mode}`)}</button>)}
             </div>
             <span className="font-vx-mono text-[11px] font-bold text-vx-fg-muted vx-num">{t('app.smartCut.planSummary', {
               duration: number(plan.totalDuration, { minimumFractionDigits: 1, maximumFractionDigits: 1 }),

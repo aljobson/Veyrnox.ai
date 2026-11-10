@@ -29,7 +29,7 @@ export function dataException({ file, owner, field, text, templateFile }) {
   if (/\/_lib\/character\.js$/.test(file) && owner === 'CHARACTER_BASE') return 'Canonical character generation prompt.';
   if (/\/_lib\/editorGeneration\.mjs$/.test(file) && ['CAMERA_MOVEMENTS','MOVEMENT_PACES'].includes(owner) && field === 'direction') return 'Camera direction appended to model prompts, never translated.';
   if (/\/_lib\/cinema\.js$/.test(file) && owner === 'CAMERAS') return 'Camera descriptor appended to the provider prompt by cinemaSuffix.';
-  if (/\/_lib\/promptBox\.js$/.test(file) && owner === 'STARTER_PROMPT') return 'Editable sample prompt sent verbatim to the model.';
+  if (/\/_lib\/(?:promptBox\.js|starterPrompt\.mjs)$/.test(file) && owner === 'STARTER_PROMPT') return 'Editable sample prompt sent verbatim to the model.';
   if (file === 'lib/veyJourney.js' && owner === 'MOTION_DRAFT') return 'Canonical motion prompt used for the creation handoff.';
   if (/\/_lib\/(?:studioSkills|filmStudioAssistants)\.js$/.test(file) && ['SKILLS','FILM_ASSISTANTS'].includes(owner) && field === 'body') return 'Assistant system instructions; displayed names, descriptions and starters use app catalogs.';
   if (/\/_lib\/oddlingStudio\.js$/.test(file) && owner === 'ODDLING_SCENES') return 'Editable scene prompt: OddlingStudio shows numbered scene buttons and sends canonical text to the model.';
