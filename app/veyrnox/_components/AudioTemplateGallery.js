@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { AUDIO_CATEGORIES, AUDIO_TEMPLATES, audioTemplatesIn } from '../_lib/audioTemplates';
 import { MODELS } from '../_lib/tokens';
+import { FreeAudioLibrary } from './FreeAudioLibrary';
 
 // Audio templates, listed on /presets?kind=audio (the video gallery's own route, so no new
 // page route, rewrite or telemetry pattern is needed). Filter key for "no category"; never shown.
@@ -24,6 +25,7 @@ export function AudioTemplateGallery({ t, category }) {
             {c === EVERY ? t('audioTemplates.all') : t(`audioTemplates.cat.${c}`)} ({c === EVERY ? AUDIO_TEMPLATES.length : audioTemplatesIn(c).length})
           </Link>
         ))}
+        <a href="#free-audio" className="vx-press inline-flex min-h-11 items-center whitespace-nowrap rounded-full border border-vx-border px-4 text-[14px] font-semibold text-vx-fg-body hover:border-vx-fg-muted">{t('audioTemplates.free.title')}</a>
       </nav>
       <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {list.map((tpl) => (
@@ -37,6 +39,7 @@ export function AudioTemplateGallery({ t, category }) {
           </li>
         ))}
       </ul>
+      <FreeAudioLibrary t={t} />
     </>
   );
 }
