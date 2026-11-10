@@ -2,6 +2,7 @@ import { resolveI18nSource } from '../scripts/lib/vey-knowledge-i18n.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import ts from 'typescript';
 import { isShelfModel } from '../app/veyrnox/_lib/tokens.js';
 import { capabilityFor } from '../lib/modelCapabilities.js';
 import { CAPTIONS_UNITS, CAPTION_PRESETS, SLOW_FACTORS, SLOW_UNITS_PER_SECOND, SLOW_MAX_SOURCE_S } from '../lib/clipEdit.js';
@@ -10,6 +11,14 @@ import { CAPTIONS_UNITS, CAPTION_PRESETS, SLOW_FACTORS, SLOW_UNITS_PER_SECOND, S
 const library = readFileSync(new URL('../app/veyrnox/app/library/page.js', import.meta.url), 'utf8');
 const sheet = readFileSync(new URL('../app/veyrnox/_components/EditSheet.js', import.meta.url), 'utf8');
 const assetLoadStatus = readFileSync(new URL('../app/veyrnox/_components/AssetLoadStatus.js', import.meta.url), 'utf8');
+const smartCutPlanner = readFileSync(new URL('../app/veyrnox/_components/SmartCutPlanner.js', import.meta.url), 'utf8');
+
+test('the editor touch-target components remain valid JSX', () => {
+    for (const [name, source] of Object.entries({ EditSheet: sheet, AssetLoadStatus: assetLoadStatus, SmartCutPlanner: smartCutPlanner })) {
+        const tree = ts.createSourceFile(`${name}.js`, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JSX);
+        assert.deepEqual(tree.parseDiagnostics, [], name);
+    }
+});
 
 test('the editor is off unless localStorage.veyrnox_editor is "1"', () => {
     assert.match(library, /const EDITOR_FLAG = 'veyrnox_editor';/);
