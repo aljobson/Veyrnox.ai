@@ -222,6 +222,7 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
             {error === 'insufficient_balance' && <Link href="/app/credits" className="ms-2 inline-flex min-h-11 items-center font-bold text-vx-accent underline underline-offset-4" onClick={onClose}>{t("app.create.addCredits")}</Link>}
           </div>
         </div>
+        </div>
 
         <div className="shrink-0 border-t border-vx-border bg-vx-base px-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] pt-3 sm:px-6 sm:pb-6">
           <div className="flex items-center justify-between gap-3">
