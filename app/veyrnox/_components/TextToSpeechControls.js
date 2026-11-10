@@ -123,7 +123,9 @@ export function TextToSpeechControls({
 
   function applySampleLine(category) {
     const text = voiceTemplateSample(templateLanguage, category).slice(0, scriptLimit);
-    if (text) onScript(text);
+    if (!text) return;
+    patchSetting('language', templateLanguage);
+    onScript(text);
   }
 
   function saveCurrentPalette(event) {
