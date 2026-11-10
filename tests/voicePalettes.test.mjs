@@ -92,6 +92,11 @@ test('the voice controls expose accessible apply, save, and delete palette actio
   assert.match(source, /never your script, audio, or a cloned identity/);
 });
 
+test('a sample line also sets the speech language so the job matches the script', () => {
+  const source = readFileSync(new URL('../app/veyrnox/_components/TextToSpeechControls.js', import.meta.url), 'utf8');
+  assert.match(source, /function applySampleLine[\s\S]*?patchSetting\('language', templateLanguage\);[\s\S]*?onScript\(text\)/);
+});
+
 test('Text to Speech saves and consumes the exact submitted Voice Recipe', () => {
   const page = readFileSync(new URL('../app/veyrnox/app/text-to-speech/TextToSpeechStudioClient.js', import.meta.url), 'utf8');
   assert.match(page, /voice_recipe: \{ \.\.\.settings, voice: voiceId \}/);
