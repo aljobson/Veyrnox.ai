@@ -2,6 +2,7 @@
 import { useI18n } from '../../../../components/I18nProvider';
 import { pluralKey, tOr } from '../../../../lib/i18n/translate.mjs';
 import { localeTag } from '../../../../lib/i18n/locales.mjs';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { AppNav } from '../../_components/NavBar';
@@ -28,7 +29,7 @@ import { EditorLibraryRenders } from '../../_components/editor/EditorLibraryRend
 import { getSession, getStoredUserId, onSessionChange } from '../../../lib/authClient.js';
 import { useOlderLibraryJobs } from '../../_lib/useOlderLibraryJobs';
 import { useSmartCutIntent } from '../../_lib/useSmartCutIntent';
-
+const LibraryJobCard = dynamic(() => import('../../_components/LibraryJobCard').then((module) => module.LibraryJobCard), { ssr: false });
 // Account list is authoritative; local history supplies cached display names.
 const STATE_UI = {
   queued:    { chip: 'accent', glyph: '●' },
@@ -44,7 +45,6 @@ const STATE_UI = {
   // that we have not checked.
   unknown:   { chip: 'neutral', glyph: '?' },
 };
-
 const POLL_MS = 3000;
 // ~1 minute of consecutive failure before we stop and say so.
 const POLL_GIVE_UP_AFTER = 20;
@@ -347,7 +347,7 @@ export default function Library() {
         ) : (
           <div className={view === 'list' ? 'grid grid-cols-1 gap-3 max-w-[760px]' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'}>
             {list.map((r) => (
-              <JobCard key={r.job_id} row={r} models={models} starred={favourites.includes(r.job_id)} onStar={() => star(r.job_id)}
+              <LibraryJobCard key={r.job_id} row={r} models={models} starred={favourites.includes(r.job_id)} onStar={() => star(r.job_id)}
                 selectable={canSelect(r)} selected={selected.includes(r.job_id)} onToggle={() => toggle(r.job_id)} />
             ))}
           </div>
