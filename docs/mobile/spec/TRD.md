@@ -15,7 +15,7 @@ The server stack is inherited from the web product and is not repeated here. Thi
 | Navigation | Expo Router `~58.0.23` (file routes in `src/app/`), `typedRoutes` on | `src/app/**` |
 | Auth | Supabase Auth through plain `fetch`, Apple (native on iOS), Google and Apple-on-Android through a PKCE browser session | `src/lib/auth/*` |
 | Secure storage | `expo-secure-store` (refresh token), memory (access token) | `src/lib/auth/sessionStore.ts` |
-| Store billing | RevenueCat SDK (`react-native-purchases` `^10.14.0`) | `src/billing/BillingProvider.tsx` |
+| Store billing | RevenueCat SDKs (`react-native-purchases` and `react-native-purchases-ui` `11.0.1`, pinned in lockstep) | `src/billing/BillingProvider.tsx` |
 | Media | `expo-video` (playback and HLS), `expo-image-manipulator`, `expo-image`, `expo-image-picker`, `expo-document-picker`, `expo-file-system`, `expo-media-library`, `expo-sharing` | `src/components`, `src/lib/uploads.ts` |
 | Push | `expo-notifications`, Expo push service | `src/push/*` |
 | Crash reports | `@sentry/react-native` `~8.28.0`, release builds with a DSN only | `src/lib/crash.ts`, `scrub.ts` |
