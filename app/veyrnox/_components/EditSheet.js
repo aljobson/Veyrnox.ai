@@ -219,7 +219,7 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
             {!slowTooLong && slowNoAudio && <span className="text-vx-danger">{t('app.editor.sheet.error.slow_needs_audio')}</span>}
             {noop && <span className="text-vx-fg-muted">{t('app.editor.sheet.error.nothing_to_do')}</span>}
             {error && <span className="text-vx-danger">{errorCopy(error)}</span>}
-            {error === 'insufficient_balance' && <Link href="/app/credits" className="ms-2 font-bold text-vx-accent underline underline-offset-4" onClick={onClose}>{t("app.create.addCredits")}</Link>}
+            {error === 'insufficient_balance' && <Link href="/app/credits" className="ms-2 inline-flex min-h-11 items-center font-bold text-vx-accent underline underline-offset-4" onClick={onClose}>{t("app.create.addCredits")}</Link>}
           </div>
         </div>
 
