@@ -93,13 +93,13 @@ test('SmartLink edits save an unpublished synthetic page with its selected brand
   const fixture = await installPublishFixtures(page); await fixture.open('/app/publish/smartlink');
   await page.getByTestId('smartlink-title').fill('Edited synthetic title'); await page.getByRole('button', { name: 'Add link', exact: true }).click();
   await page.getByLabel('Link 2 label', { exact: true }).fill('Second synthetic link'); await page.getByLabel('Link 2 URL', { exact: true }).fill('https://example.invalid/second');
-  await page.getByTestId('smartlink-save').click(); await expect(page.getByRole('status')).toHaveText('SmartLink saved.');
+  await page.getByTestId('smartlink-save').click(); await expect(page.getByTestId('smartlink-status')).toHaveText('SmartLink saved.');
   expect(fixture.writes).toHaveLength(1); expect(fixture.writes[0].brand).toBe(BRAND); expect(fixture.writes[0].body.published).toBe(false); expect(fixture.writes[0].body.items).toHaveLength(2);
 });
 test('SmartLink readback failure retains edited title and every destination', async ({ page }) => {
   let reads = 0; const fixture = await installPublishFixtures(page, { routes: ({ url, method, json }) => url.pathname === '/api/v1/social/smartlink' && method === 'GET' && ++reads > 1 ? json({ error: 'synthetic_unavailable' }, 503) : false });
   await fixture.open('/app/publish/smartlink'); await page.getByTestId('smartlink-title').fill('Preserved edit'); await page.getByTestId('smartlink-save').click();
-  await expect(page.getByRole('status')).toContainText('Could not save your SmartLink'); await expect(page.getByTestId('smartlink-title')).toHaveValue('Preserved edit'); await expect(page.getByTestId('smartlink-link-label').first()).toHaveValue('Synthetic destination'); expect(fixture.writes).toHaveLength(1);
+  await expect(page.getByTestId('smartlink-status')).toContainText('Could not save your SmartLink'); await expect(page.getByTestId('smartlink-title')).toHaveValue('Preserved edit'); await expect(page.getByTestId('smartlink-link-label').first()).toHaveValue('Synthetic destination'); expect(fixture.writes).toHaveLength(1);
 });
 test('SmartLink ignores a pending default-brand response when the shell selects its initial brand', async ({ page }) => {
   let releaseBrands; const brandsReady = new Promise(resolve => { releaseBrands = resolve; });
@@ -115,7 +115,7 @@ test('SmartLink ignores a pending default-brand response when the shell selects 
   await fixture.open('/app/publish/smartlink'); await expect.poll(() => oldStarted).toBe(true); releaseBrands();
   await expect(page.getByTestId('smartlink-title')).toHaveValue('Selected brand title'); releaseOld();
   await expect(page.getByTestId('smartlink-title')).toHaveValue('Selected brand title'); await page.getByTestId('smartlink-save').click();
-  await expect(page.getByRole('status')).toHaveText('SmartLink saved.'); expect(fixture.writes[0].brand).toBe(SECOND_BRAND);
+  await expect(page.getByTestId('smartlink-status')).toHaveText('SmartLink saved.'); expect(fixture.writes[0].brand).toBe(SECOND_BRAND);
 });
 
 for (const mode of ['Post now', 'Schedule post', 'Send for approval']) test(`Composer ${mode} dispatches only an intercepted synthetic contract`, async ({ page }) => {
