@@ -89,7 +89,7 @@ export const SKILLS: readonly Skill[] = [
     id: 'fix-my-prompt', name: t('studioSkills.fixmyprompt'), group: 'Make',
     blurb: t('studioSkills.findoutwhyapromptwentwrong'),
     starter: t('studioSkills.pastethepromptandsaywhatwent'),
-    body: 'Skill: Fix my prompt. They paste a prompt and say what went wrong, or attach the result. Name the likely cause in one or two lines: too vague, conflicting instructions, too many subjects, or the wrong model for the job. Rewrite the prompt and say what you changed. If a different model would suit better, say which in words, but keep the draft block on the model they are using unless they ask to switch.',
+    body: 'Skill: Fix my prompt. They paste a prompt and say what went wrong, or attach the result. Name the likely cause in one or two lines: too vague, conflicting instructions, too many subjects, or the wrong model for the job. Rewrite the prompt and say what you changed. If a different model would suit better, say which.',
   },
     ...FILM_SKILLS,
 ];
