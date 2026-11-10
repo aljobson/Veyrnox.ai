@@ -13,6 +13,8 @@ export interface JobResult {
     held?: boolean;
     error?: boolean;
 }
+const ASSET_TRIES = 6;
+const ASSET_RETRY_MS = 2000;
 export async function refreshBalance(api: ApiClient, owner: string | undefined, isCurrent: () => boolean, balanceSeq: { current: number }): Promise<void> {
     const seq = ++balanceSeq.current;
     try {
@@ -43,7 +45,18 @@ export function useJobResult(api: ApiClient, id: string): JobResult {
                 if (state === 'succeeded' || state === 'failed') void settleFilmJob(id, state, undefined, current);
                 setResult({ state, job });
                 if (state === 'succeeded') {
-                    const asset = await media.getAsset(id);
+                    // The file can lag a moment behind "succeeded", and the link call can be rate limited or hit a
+                    // blip. Retry those; only a hold (or running out of tries) shows the error.
+                    let asset: JobResult['asset'];
+                    for (let tries = 0; ; tries++) {
+                        try { asset = await media.getAsset(id); break; } catch (error) {
+                            if ((error instanceof ApiError && error.code === 'held') || tries >= ASSET_TRIES - 1) throw error;
+                            // A rate limit says how long to wait (up to 60 s); honor it instead of guessing.
+                            const asked = error instanceof ApiError && error.retryAfterSeconds ? Math.min(error.retryAfterSeconds, 60) * 1000 : 0;
+                            await sleep(Math.max(ASSET_RETRY_MS * (tries + 1), asked));
+                            if (!current()) return;
+                        }
+                    }
                     if (current()) setResult({ state, job, asset });
                 } else if (state === 'failed') {
                     for (let tries = 0; !job.refunded && tries < 6 && current(); tries++) {
