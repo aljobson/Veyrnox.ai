@@ -69,7 +69,7 @@ export default function StudioSkills() {
             const thread = await chatApi(api).createThread(model.id);
             const discard = () => { void chatApi(api).deleteThread(thread.id).catch(() => undefined); };
             if (!current()) { discard(); return; }
-            try { await chatApi(api).updateThread(thread.id, { system_prompt: skillsInstructions(skills, catalog, (params.modelId && /^[A-Za-z0-9._-]{1,80}$/.test(params.modelId) ? `Current generation model: ${params.modelId}` : '')) }); }
+            try { await chatApi(api).updateThread(thread.id, { system_prompt: skillsInstructions(skills, catalog, (params.modelId && /^[A-Za-z0-9._-]{1,80}$/.test(params.modelId) ? `Current generation model: ${params.modelId}. Put this id in the studio block and write the prompt for it. If another model would suit better, say so in words only; use a different id only if the person asks to switch.` : '')) }); }
             catch (err) { discard(); if (!current()) return; throw err; }
             if (!current()) { discard(); return; }
             setSkill(null); setWorkflow(null);
