@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import { tOr } from '../../../lib/i18n/translate.mjs';
 import { useI18n } from '../../../components/I18nProvider.jsx';
 import { getStoredUserId, onSessionChange } from '../../lib/authClient';
-import { addSeen, findVisible, parseSeen, seenKey, tourForPath, TOUR_REPLAY_EVENT } from '../../../lib/featureTours.js';
+import { addSeen, findVisible, isBlocked, parseSeen, seenKey, tourForPath, TOUR_REPLAY_EVENT } from '../../../lib/featureTours.js';
 
 const FIND_ATTEMPTS = 25;
 const FIND_INTERVAL_MS = 200;
@@ -17,15 +17,23 @@ function writeSeen(userId, id) {
   try { localStorage.setItem(seenKey(userId), JSON.stringify(addSeen(readSeen(userId), id))); } catch { /* storage blocked: the tour may show again */ }
 }
 
+/**
+ * @typedef {{ selector: string, title: string, message: string, optional?: boolean }} TourStep
+ * @typedef {{ id: string, name: string, route: string, steps: TourStep[] }} Tour
+ * @typedef {{ tour: Tour, steps: TourStep[] }} TourRun
+ * @typedef {{ top: number, left: number, width: number, height: number }} TourBox
+ */
+
 // First-runner tour: points at the controls of the feature just opened, once per person.
 // It never clicks, types or submits; the highlighted control stays usable.
 export default function FeatureTour() {
   const { t } = useI18n();
   const pathname = usePathname();
   const [userId, setUserId] = useState(null);
-  const [run, setRun] = useState(null); // { tour, steps: [{...step, index}] }
+  const [run, setRun] = useState(/** @type {TourRun | null} */ (null));
   const [index, setIndex] = useState(0);
-  const [box, setBox] = useState(null);
+  const [box, setBox] = useState(/** @type {TourBox | null} */ (null));
+  const [paused, setPaused] = useState(false);
   const [replay, setReplay] = useState(0);
   const nextRef = useRef(null);
 
@@ -48,8 +56,8 @@ export default function FeatureTour() {
     let attempt = 0;
     let timer;
     const look = () => {
-      const blocked = document.querySelector('[role="dialog"][aria-modal="true"], [data-vey-walkthrough]');
-      const steps = blocked ? [] : tour.steps.filter((step) => findVisible(document, step.selector));
+      if (isBlocked(document)) { timer = setTimeout(look, FIND_INTERVAL_MS); return; } // wait without spending attempts
+      const steps = tour.steps.filter((step) => findVisible(document, step.selector));
       const required = tour.steps.filter((step) => !step.optional).length;
       const ready = steps.length > 0 && (steps.length >= required || attempt >= FIND_ATTEMPTS - 1);
       if (ready) { setRun({ tour, steps }); return; }
@@ -60,6 +68,24 @@ export default function FeatureTour() {
   }, [pathname, userId, replay]);
 
   const step = run?.steps[index];
+
+  // Hide while a modal or walkthrough is open; drop steps whose control has gone.
+  useEffect(() => {
+    if (!run) return undefined;
+    const tick = () => {
+      setPaused(isBlocked(document));
+      if (isBlocked(document)) return;
+      const kept = run.steps.filter((s) => findVisible(document, s.selector));
+      if (kept.length === run.steps.length) return;
+      const current = run.steps[index];
+      const at = current ? kept.indexOf(current) : -1;
+      if (!kept.length) { setRun(null); setBox(null); return; }
+      setRun({ ...run, steps: kept });
+      setIndex(at >= 0 ? at : Math.min(index, kept.length - 1));
+    };
+    const id = setInterval(tick, 400);
+    return () => clearInterval(id);
+  }, [run, index]);
 
   const finish = useCallback(() => {
     if (run && userId) writeSeen(userId, run.tour.id);
@@ -90,18 +116,18 @@ export default function FeatureTour() {
 
   useEffect(() => {
     if (!run) return undefined;
-    const onKey = (event) => { if (event.key === 'Escape') finish(); };
+    const onKey = (event) => { if (event.key === 'Escape' && !isBlocked(document)) finish(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [run, finish]);
 
-  if (!run || !step) return null;
+  if (!run || !step || paused) return null;
   const last = index === run.steps.length - 1;
   const key = `tours.${run.tour.id}.${step.selector.length}.${index}`;
   const title = tOr(t, `${key}.title`, step.title);
   const message = tOr(t, `${key}.message`, step.message);
   return <>
-    {box && <div aria-hidden="true" data-feature-tour-ring className="pointer-events-none fixed z-[70] rounded-xl border-2 border-vx-accent shadow-[0_0_0_9999px_rgba(0,0,0,0.45)] transition-all duration-200 motion-reduce:transition-none" style={box} />}
+    {box && <div aria-hidden="true" data-feature-tour-ring className="pointer-events-none fixed z-[70] rounded-xl border-2 border-vx-accent shadow-[0_0_0_9999px_rgba(0,0,0,0.45)]" style={box} />}
     <section role="dialog" aria-modal="false" aria-label={tOr(t, 'tours.label', 'Feature tour')} data-feature-tour className="fixed inset-x-3 bottom-[max(12px,env(safe-area-inset-bottom))] z-[71] rounded-xl border border-vx-accent/40 bg-vx-panel p-4 shadow-2xl sm:inset-x-auto sm:end-4 sm:bottom-4 sm:w-[340px]">
       <p className="font-vx-mono text-[10px] font-bold uppercase tracking-wide text-vx-accent">{tOr(t, 'tours.progress', '{name} tour · {n} of {total}', { name: run.tour.name, n: index + 1, total: run.steps.length })}</p>
       <h3 className="mt-1 text-base font-bold">{title}</h3>

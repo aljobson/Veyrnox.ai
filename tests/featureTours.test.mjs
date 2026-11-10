@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { FEATURE_TOURS, tourForPath, parseSeen, addSeen } from '../lib/featureTours.js';
+import { FEATURE_TOURS, tourForPath, parseSeen, addSeen, isBlocked } from '../lib/featureTours.js';
 import { HELP_TARGETS } from '../lib/productHelp.js';
 
 test('every tour has unique id, absolute route and at least one required-or-sole step', () => {
@@ -41,4 +41,16 @@ test('seen list is tolerant of junk and bounded', () => {
   assert.deepEqual(parseSeen('["a",3]'), ['a']);
   assert.deepEqual(addSeen(['a'], 'a'), ['a']);
   assert.equal(addSeen(Array.from({ length: 80 }, (_, i) => `t${i}`), 'new').length, 80);
+});
+
+test('isBlocked sees modal dialogs and walkthroughs but not the tour card', () => {
+  const doc = (el) => ({ querySelector: () => el });
+  assert.equal(isBlocked(doc(null)), false);
+  assert.equal(isBlocked(doc({ hasAttribute: () => false })), true);
+  assert.equal(isBlocked(doc({ hasAttribute: (n) => n === 'data-feature-tour' })), false);
+});
+
+test('tour selectors for fixed controls use the attributes the app renders', () => {
+  const library = FEATURE_TOURS.find((t) => t.id === 'library');
+  assert.ok(library.steps.some((s) => s.selector === '[data-testid="library-download"]'));
 });
