@@ -178,13 +178,15 @@ for (const [outcome, options, error] of [[success, { storeOk: false }, 'job_stor
 test('job lookup uses the catalog provider and rejects unknown or mismatched rows', async () => {
     const previous = globalThis.fetch;
     const calls = [];
-    let rows = [job], model = { provider: 'kie', provider_endpoint: 'fixture/endpoint' };
+    let rows = [job], model = { provider: 'kie', provider_endpoint: 'fixture/endpoint' }, routes = [];
     globalThis.fetch = async (url) => {
         const u = new URL(String(url));
         assert.equal(u.hostname, 'db.test');
         calls.push(u);
         if (u.pathname === '/rest/v1/jobs') return Response.json(rows);
         if (u.pathname === '/rest/v1/model_catalog') return Response.json(model ? [model] : []);
+        // A mismatched catalog provider is only ours to complete when the offer has a route for this supplier (ADR-0256).
+        if (u.pathname === '/rest/v1/model_routes') return Response.json(routes);
         throw new Error(`Unexpected mocked request: ${u.pathname}`);
     };
     try {
