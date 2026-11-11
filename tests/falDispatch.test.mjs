@@ -45,6 +45,14 @@ test('rollback of admission still drains existing work', async () => {
     assert.equal((await runFalDispatch({ ...env, FAL_DURABLE_DISPATCH_ENABLED: 'false' }, d)).ok, true);
     assert.equal(d.submitted, 1);
 });
+test('the consolidated Music switch drains pair work without enabling generic durable admission', async () => {
+    const d = deps();
+    const musicEnv = { ...env, FAL_DISPATCH_SCHEMA_ENABLED: undefined, FAL_DURABLE_DISPATCH_ENABLED: undefined,
+        MUSIC_RUNTIME_FLAGS: JSON.stringify({ dispatch: true }) };
+    assert.equal(falDispatchEnabled(musicEnv), false);
+    assert.equal((await runFalDispatch(musicEnv, d)).ok, true);
+    assert.equal(d.submitted, 1);
+});
 test('missing secrets or invalid callback host never claim work', async () => {
     for (const changed of [{ FAL_KEY: '' }, { PUBLIC_HOST: 'http://veyrnox.test' }]) {
         const d = deps();

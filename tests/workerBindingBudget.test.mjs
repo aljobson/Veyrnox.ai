@@ -32,7 +32,7 @@ test('production public variables retain Cloudflare text-binding headroom', () =
     // ADR-0316: SUBSCRIPTION_TRIAL_ENABLED turned on in production (owner, 2026-11-01): 66 vars, 116 bindings at the 50-secret footprint (12 free). Cap 66.
     // ACCOUNT_DELETION_ENABLED is a production *secret* binding (ADR-0111 amendment 2); a var of the same name replaces it
     // and fails deploy-production's secret preservation check, so it must never appear here.
-    // ADR-0069: the requested standalone MAX_CHARGE_ENABLED rollout switch adds one var (67).
+    // Music replaces the redundant false MAX_CHARGE_ENABLED binding with one consolidated runtime object (67).
     // At the recorded 50-secret footprint that is 117 text bindings, leaving 11 of 128 slots.
     // PR #1993: Cloudflare refused a deploy at 131 text bindings (limit 128), so AI edit and Speech Cut add NO binding:
     // their switches and the model id live inside EDITOR_RUNTIME_FLAGS, and the speech webhook correlation reuses FAL_KEY.
@@ -62,6 +62,20 @@ test('store billing production switches are secrets and sandbox crediting is for
 });
 
 test('maximum-charge enforcement ships disabled pending capped durable admission', () => {
-    assert.equal(config.vars.MAX_CHARGE_ENABLED, 'false');
+    assert.equal(config.vars.MAX_CHARGE_ENABLED, undefined);
     assert.equal(config.env.staging.vars.MAX_CHARGE_ENABLED, undefined);
+});
+
+test('production Music is wired through one binding while unverified provider actions stay closed', () => {
+    const flags = JSON.parse(config.vars.MUSIC_RUNTIME_FLAGS);
+    for (const name of [
+        'ui', 'schema', 'library', 'generation', 'dispatch', 'sources', 'distribution',
+        'publication', 'editing', 'playlists', 'studio', 'reuse', 'collaboration',
+    ]) assert.equal(flags[name], true, name);
+    for (const name of ['cover', 'stems', 'targetStems', 'trackAdd', 'extend', 'replace', 'addSection']) {
+        assert.equal(flags[name], false, name);
+    }
+    for (const name of ['MUSIC_UI_ENABLED', 'MUSIC_SCHEMA_ENABLED', 'MUSIC_LIBRARY_ENABLED', 'MUSIC_GENERATION_ENABLED']) {
+        assert.equal(Object.hasOwn(config.vars, name), false, `${name} must stay consolidated`);
+    }
 });

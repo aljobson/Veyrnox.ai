@@ -65,6 +65,7 @@ import { canonicalHttpsRedirect, stripTechnologyHeaders } from './lib/edgeTransp
 import { cinemaRuntimeGate, prepareRuntimeAdmission } from './lib/runtimeAdmission.js';
 import { beginTelemetry, finishTelemetry, refreshTelemetryControl } from './lib/telemetry.js';
 import { refreshRuntimeSwitches } from './lib/runtimeSwitchCache.js';
+import { musicDispatchSchemaEnabled } from './lib/musicRuntime.js';
 
 export default {
     async fetch(request, env, ctx) {
@@ -125,7 +126,7 @@ export default {
             }).then((out) => { if (out.checked) console.error('[higgsfield-sweep]', JSON.stringify(out)); return out; })] : []),
             ] : []),
             ...(event.cron === '*/5 * * * *' ? [
-            ...(env.FAL_DISPATCH_SCHEMA_ENABLED === 'true'
+            ...(musicDispatchSchemaEnabled(env)
                 ? [observeRecovery('fal_dispatch', () => runFalDispatch(env), env)] : []),
             cleanupProjectAssets(env),
             recoverCinemaUploads(env),

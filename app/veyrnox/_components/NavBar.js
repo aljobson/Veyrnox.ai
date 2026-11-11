@@ -129,6 +129,13 @@ const SIDE_ICONS = {
       <path d="M8 4v16M16 4v16M4 9h4m8 0h4M4 15h4m8 0h4" />
     </>
   ),
+  music: (
+    <>
+      <path d="M9 18V6l10-2v12" />
+      <circle cx="6" cy="18" r="3" />
+      <circle cx="16" cy="16" r="3" />
+    </>
+  ),
   character: (
     <>
       <circle cx="12" cy="8" r="4" />
@@ -368,6 +375,7 @@ export function AppNav({ balance, active, readAccount = true }) {
     { key: 'agent', href: '/app/video-agent', label: t("app.nav.videoAgent") },
     { key: 'chat', href: '/app/chat', label: t("label.LLM Chat") },
     { key: 'film', href: '/app/film-studio', label: t("label.Film Studio") },
+    { key: 'music', href: '/app/music/create', label: t("label.Music") },
     { key: 'library', href: '/app/library', label: t("label.Library") },
     ...(editorEnabled ? [{ key: 'editor', href: '/app/editor', label: t("label.Video editor") }] : []),
     ...(projectsEnabled ? [{ key: 'projects', href: '/app/projects', label: t("label.Projects") }] : []),
@@ -403,6 +411,7 @@ export function AppNav({ balance, active, readAccount = true }) {
       { key: 'create', href: '/app/create', label: t('label.Create'), icon: 'image' },
       { key: 'features', href: '/app/features', label: t('label.Tools'), icon: 'wand' },
       { key: 'film', href: '/app/film-studio', label: t('label.Film Studio'), hint: t('app.nav.filmStudioHint'), icon: 'film' },
+      { key: 'music', href: '/app/music/create', label: t('label.Music'), icon: 'music' },
       { key: 'oddlings', href: '/app/oddlings', label: t('label.Oddlings'), icon: 'character' },
       ...(enhanceEnabled ? [{ key: 'enhance', href: '/app/enhance', label: t('label.Enhance'), icon: 'wand' }] : []),
       ...(editorEnabled ? [{ key: 'editor', href: '/app/editor', label: t('label.Video editor'), icon: 'scissors' }] : []),

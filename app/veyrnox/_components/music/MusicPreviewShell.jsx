@@ -49,7 +49,7 @@ export function MusicPreviewShell({ children, initialEnabled = false, serverMode
 
   return (
     <div className="min-h-screen bg-vx-base text-vx-fg">
-      <AppNav active="create" readAccount={false} />
+      <AppNav active="music" readAccount={false} />
       {!(serverMode || enabled) ? (
         <Main className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
           <section className="rounded-2xl border border-vx-border bg-vx-panel p-8 shadow-2xl">
