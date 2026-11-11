@@ -367,6 +367,13 @@ const pt = {
     'presets.fidelity.photoReady': 'Foto pronta',
     'presets.use.photoReplace': 'Substituir',
     'presets.fidelity.photosUnavailable': 'Este modelo de criação precisa de mais fotos do que o modelo de IA aceita atualmente. Escolha outro modelo de criação ou tente novamente mais tarde.',
+    'templates.kind.label': 'Tipo de modelo',
+    'templates.kind.video': 'Vídeo',
+    'templates.kind.audio': 'Áudio',
+    'audioTemplates.all': 'Todos',
+    'audioTemplates.cat.MUSIC': 'Música',
+    'audioTemplates.cat.VOICE-OVER': 'Locução',
+    'audioTemplates.cat.SOUND FX': 'Efeitos sonoros',
 } as const;
 
 export default pt;
