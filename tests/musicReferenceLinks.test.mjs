@@ -12,6 +12,7 @@ const migrationUrl = new URL('../packages/db/schema/supabase/0493_music_referenc
 const deletionGuardUrl = new URL('../packages/db/schema/supabase/0490_music_account_deletion_guard.sql', import.meta.url);
 const routeUrl = new URL('../app/api/v1/music/reference-links/route.js', import.meta.url);
 const componentUrl = new URL('../app/veyrnox/_components/music/MusicReferenceImporter.jsx', import.meta.url);
+const discoverUrl = new URL('../app/veyrnox/_components/music/MusicDiscover.jsx', import.meta.url);
 
 test('reference URL normalization accepts canonical public YouTube and SoundCloud tracks only', () => {
   assert.deepEqual(normalizeMusicReferenceUrl('https://youtu.be/dQw4w9WgXcQ?si=tracking'), {
@@ -212,4 +213,9 @@ test('API and UI preserve provider playback, attribution and owned-master bounda
   assert.match(component, /Upload owned master/);
   assert.match(component, /Confirm remove/);
   assert.doesNotMatch(component, /Sample this track|Download audio/);
+});
+
+test('Discover does not render the provider reference-link shelf', async () => {
+  const discover = await readFile(discoverUrl, 'utf8');
+  assert.doesNotMatch(discover, /MusicReferenceImporter|reference-import-title|Bring a YouTube or SoundCloud link/);
 });

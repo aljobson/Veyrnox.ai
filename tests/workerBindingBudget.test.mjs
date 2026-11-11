@@ -72,8 +72,8 @@ test('production Music is wired through one binding while unverified provider ac
         'ui', 'schema', 'library', 'generation', 'dispatch', 'sources', 'distribution',
         'publication', 'editing', 'playlists', 'studio', 'reuse', 'collaboration',
     ]) assert.equal(flags[name], true, name);
-    assert.equal(flags.references, true, 'references opens only after migration 0493 is applied');
-    assert.equal(JSON.parse(config.env.staging.vars.MUSIC_RUNTIME_FLAGS).references, false, 'staging stays closed until its separate migration is applied');
+    assert.equal(flags.references, false, 'provider reference-link ingestion stays closed');
+    assert.equal(JSON.parse(config.env.staging.vars.MUSIC_RUNTIME_FLAGS).references, false, 'provider reference-link ingestion stays closed in staging');
     for (const name of ['cover', 'stems', 'targetStems', 'trackAdd', 'extend', 'replace', 'addSection']) {
         assert.equal(flags[name], false, name);
     }

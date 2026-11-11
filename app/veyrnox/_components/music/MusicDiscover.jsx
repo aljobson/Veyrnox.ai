@@ -4,7 +4,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MUSIC_DISCOVER_BEATS, MUSIC_DISCOVER_MOODS } from '../../../../lib/musicDiscover.js';
-import { MusicReferenceImporter } from './MusicReferenceImporter.jsx';
 
 const PREVIEW_SECONDS = 12;
 
@@ -125,7 +124,7 @@ function BeatCard({ beat, playing, onToggle }) {
   );
 }
 
-export function MusicDiscover({ referencesEnabled = false, sourcesEnabled = false }) {
+export function MusicDiscover() {
   const [mood, setMood] = useState('All');
   const [search, setSearch] = useState('');
   const [playingId, setPlayingId] = useState(null);
@@ -167,8 +166,6 @@ export function MusicDiscover({ referencesEnabled = false, sourcesEnabled = fals
         <h1 className="mt-2 font-vx text-4xl font-black tracking-tight sm:text-6xl">Find a beat. Make it yours.</h1>
         <p className="mt-4 text-lg leading-8 text-vx-fg-body">Preview original Veyrnox beat sketches, then carry one production recipe into Create and add your own direction before reviewing the exact credit quote.</p>
       </header>
-
-      <MusicReferenceImporter referencesEnabled={referencesEnabled} sourcesEnabled={sourcesEnabled} />
 
       <section aria-label="Discover filters" className="mt-8 rounded-2xl border border-vx-border bg-vx-panel p-4 sm:p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
