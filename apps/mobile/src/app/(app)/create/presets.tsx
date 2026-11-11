@@ -64,7 +64,7 @@ export default function Templates() {
             {(['video', 'audio'] as const).map(k => <Chip key={k} selected={kind === k} accessibilityRole="tab" accessibilityState={{ selected: kind === k }} label={t(`templates.kind.${k}`)} onPress={() => { setKind(k); setQuery(''); }} />)}
         </View>
         {kind === 'audio' ? (audioFailed ? <View><Text tone="danger">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text><Button label={t('recovery.retry')} onPress={() => setAttempt(n => n + 1)} /></View>
-            : audio === null ? <ActivityIndicator /> : <FlatList data={audioShown} keyExtractor={a => a.id} contentContainerStyle={styles.list}
+            : audio === null ? <ActivityIndicator /> : <FlatList key="audio" data={audioShown} keyExtractor={a => a.id} contentContainerStyle={styles.list}
                 ListHeaderComponent={<View style={styles.header}>
                     <TextField accessibilityLabel={t('libraryCreate.searchTemplates')} placeholder={t('libraryCreate.searchTemplates')} value={query} onChangeText={setQuery} />
                     <ScrollView horizontal contentContainerStyle={styles.chips}>{['ALL', ...audioCategoriesOf(audio)].map(c => <Chip key={c} selected={audioChip === c} accessibilityState={{ selected: audioChip === c }} label={c === 'ALL' ? t('audioTemplates.all') : t(`audioTemplates.cat.${c}`)} onPress={() => setAudioChip(c)} />)}</ScrollView>
@@ -72,7 +72,7 @@ export default function Templates() {
                 ListEmptyComponent={<Text tone="secondary">{t(query ? 'presets.nomatchingeffects' : 'presets.notemplatesavailablerightnow')}</Text>}
                 renderItem={({ item }) => <AudioTemplateCard template={item} onOpen={() => openAudio(item)} />} />)
         : failed ? <View><Text tone="danger">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text><Button label={t('recovery.retry')} onPress={() => setAttempt(n => n + 1)} /></View>
-            : presets === null ? <ActivityIndicator /> : <FlatList data={shown.slice(0, limit)} numColumns={2} keyExtractor={p => p.id} contentContainerStyle={styles.list}
+            : presets === null ? <ActivityIndicator /> : <FlatList key="video" data={shown.slice(0, limit)} numColumns={2} keyExtractor={p => p.id} contentContainerStyle={styles.list}
                 ListHeaderComponent={<View style={styles.header}>
                     <Text>{t('explore.templateCount', { templates: String(shown.length), models: String(new Set(shown.map(p => p.modelId)).size) })}</Text>
                     <TextField accessibilityLabel={t('libraryCreate.searchTemplates')} placeholder={t('libraryCreate.searchTemplates')} value={query} onChangeText={setQuery} />

@@ -5,7 +5,9 @@ import type { AudioTemplate } from '../../lib/audioTemplates';
 
 // An audio template has no picture or clip, so the card is text: a badge that says it is a sound,
 // its category, its name and the start of its prompt. Video cards show a preview instead.
-export function AudioTemplateCard({ template, onOpen }: { template: AudioTemplate; onOpen(): void }) {
+interface AudioTemplateCardProps { readonly template: AudioTemplate; onOpen(): void }
+
+export function AudioTemplateCard({ template, onOpen }: AudioTemplateCardProps) {
     const styles = useThemedStyles(sheets);
     return <Card onPress={onOpen} accessibilityRole="button" accessibilityLabel={`${t('templates.kind.audio')}, ${template.name}`} style={styles.card}>
         <View style={styles.meta}>

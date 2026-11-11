@@ -20,6 +20,7 @@ import area_appeals from './en/appeals';
 import area_appearance from './en/appearance';
 import area_approvals from './en/approvals';
 import area_attachFromDevice from './en/attachFromDevice';
+import area_audioTemplates from './en/audioTemplates';
 import area_authGate from './en/authGate';
 import area_autolists from './en/autolists';
 import area_bestCut from './en/bestCut';
@@ -197,6 +198,7 @@ import area_studioSkills from './en/studioSkills';
 import area_tabs from './en/tabs';
 import area_team from './en/team';
 import area_templateCollage from './en/templateCollage';
+import area_templates from './en/templates';
 import area_toolDirectory from './en/toolDirectory';
 import area_tools from './en/tools';
 import area_toolsDir from './en/toolsDir';
@@ -232,6 +234,7 @@ const catalog = {
     ...area_appearance,
     ...area_approvals,
     ...area_attachFromDevice,
+    ...area_audioTemplates,
     ...area_authGate,
     ...area_autolists,
     ...area_bestCut,
@@ -409,6 +412,7 @@ const catalog = {
     ...area_tabs,
     ...area_team,
     ...area_templateCollage,
+    ...area_templates,
     ...area_toolDirectory,
     ...area_tools,
     ...area_toolsDir,
