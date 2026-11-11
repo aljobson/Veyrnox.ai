@@ -40,3 +40,7 @@ test('the audio preview grows with the player instead of being clipped by a fixe
   const audioBranch = preview.slice(preview.indexOf("startsWith('audio/')"), preview.indexOf('CassettePlayer src'));
   assert.doesNotMatch(audioBranch, /absolute inset-0/);
 });
+
+test('a track that autoplayed before hydration still turns the reels', () => {
+  assert.match(source, /useEffect\(\(\) => \{ if \(audio\.current && !audio\.current\.paused\) setPlaying\(true\)/);
+});
