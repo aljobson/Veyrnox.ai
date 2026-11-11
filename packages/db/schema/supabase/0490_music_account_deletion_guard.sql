@@ -40,7 +40,7 @@ BEGIN
       JOIN LATERAL unnest(c.conkey) k(attnum) ON true
       JOIN pg_catalog.pg_attribute a ON a.attrelid=c.conrelid AND a.attnum=k.attnum
      WHERE c.contype='f' AND c.confrelid='public.users'::regclass
-       AND n.nspname='public' AND r.relname LIKE 'music\_%' ESCAPE '\'
+       AND n.nspname='public' AND r.relname LIKE 'music!_%' ESCAPE '!'
   LOOP
     EXECUTE format('SELECT EXISTS (SELECT 1 FROM %s WHERE %I=$1)', v_ref.conrelid::regclass, v_ref.attname)
        INTO v_music_present USING p_user_id;
