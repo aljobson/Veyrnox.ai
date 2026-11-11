@@ -1,6 +1,6 @@
 # ADR-0335 — Music reference links use official provider embeds
 
-**Status:** Accepted 2026-11-11
+**Status:** Reversed 2026-11-11
 
 ## Context
 
@@ -30,6 +30,14 @@ Veyrnox Music needs a larger discovery shelf without copying recordings or artwo
 | Original seeds only | Safest | No new surface | Does not meet discovery need |
 
 ## Decision
+
+The Discover shelf was removed at the owner's request. Production and staging
+keep `references` disabled, and Discover no longer imports or renders the
+provider-link component. The applied schema remains dormant so the rollback is
+non-destructive and existing rows, if any, can be handled through a separate
+data-retention decision.
+
+The superseded implementation decision follows for historical context.
 
 The surface has its own `references` Music runtime flag. It first shipped off
 and production was enabled only after migration 0493 applied successfully, so
