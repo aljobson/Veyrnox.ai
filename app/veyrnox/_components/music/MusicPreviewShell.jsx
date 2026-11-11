@@ -9,6 +9,7 @@ import { MUSIC_PREVIEW_FLAG } from '../../_lib/music/previewStore';
 
 const LINKS = [
   { href: '/app/music/create', label: 'Create' },
+  { href: '/app/music/discover', label: 'Discover', discover: true },
   { href: '/app/music/library', label: 'Music Library' },
   { href: '/app/music/workspaces', label: 'Workspaces' },
   { href: '/app/music/playlists', label: 'Playlists' },
@@ -81,6 +82,7 @@ export function MusicPreviewShell({ children, initialEnabled = false, serverMode
                 {LINKS.filter((link) => {
                   if (link.independent) return serverMode;
                   if (link.studio) return studioMode;
+                  if (link.discover) return true;
                   if (link.href.endsWith('/playlists')) return playlistsMode;
                   return !serverMode ? !link.href.endsWith('/workspaces') : libraryMode || link.href.endsWith('/create');
                 }).map((link) => {

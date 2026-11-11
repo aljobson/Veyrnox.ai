@@ -15,7 +15,9 @@ concurrency:
 
 jobs:
   isolated-feature-qa:
-    runs-on: ubuntu-latest
+    # Playwright installs distro-specific browser dependencies. Keep this on a
+    # stable image instead of following the rolling ubuntu-latest alias.
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -31,7 +33,9 @@ jobs:
       - name: Install pinned isolated browser QA tools
         run: |
           npm install --no-save --no-audit --no-fund @playwright/test@1.63.0
-          npx playwright install --with-deps chromium
+          # The pinned runner image already carries Chromium's shared-library
+          # dependencies. Avoid making this required check depend on apt DNS.
+          npx playwright install chromium
       - name: Lint isolated browser fixtures
         run: npx eslint e2e/fixtures/authenticated-product.mjs e2e/authenticated-privacy-choices.spec.mjs tests/authenticatedFixtureSafety.test.mjs tests/authenticatedFeatureQaWorkflow.test.mjs --max-warnings=0
       - name: Build owned local application

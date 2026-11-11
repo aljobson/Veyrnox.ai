@@ -7,7 +7,9 @@ import { Modal } from '../Modal';
 import { useMusicServerState } from './useMusicServerState';
 import { useMusicCustomDraft } from './useMusicCustomDraft';
 import { MusicSourceUploadPanel } from './MusicSourceUploadPanel';
+import { MusicSampleSeedCard } from './MusicSampleSeedCard';
 import { MusicLyricistProfiles } from './MusicLyricistProfiles';
+import { buildMusicSamplePrompt, MUSIC_SAMPLE_DIRECTION_MAX } from '../../../../lib/musicDiscover.js';
 import { MUSIC_PUBLIC_DRAFT_KEY } from './MusicPublicPrompt';
 import { clearMusicLyricHandoff, readMusicLyricHandoff, replaceMusicLyricSelection, writeMusicLyricHandoff } from './musicLyricHandoff';
 import {
@@ -446,10 +448,11 @@ function CustomDraftFields({ custom, entitlements, quote, busy, clearQuote, revi
   );
 }
 
-export function MusicServerStudio({ sourcesEnabled = false }) {
+export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null }) {
   const { entitlements, quote, generations, busy, error, clearQuote, reviewQuote, confirmQuote, reload } = useMusicServerState();
   const [mode, setMode] = useState('simple');
   const [description, setDescription] = useState('');
+  const [activeSeed, setActiveSeed] = useState(sampleSeed);
   const [title, setTitle] = useState('');
   const [modelId, setModelId] = useState('ace-step');
   const [variety, setVariety] = useState(50);
@@ -462,7 +465,7 @@ export function MusicServerStudio({ sourcesEnabled = false }) {
   const custom = useMusicCustomDraft({ active: mode === 'custom', defaultModelId: model?.id || modelId });
   const customSelectedModel = entitlements?.models?.find((item) => item.id === custom.draft.model_id);
   const customReady = Boolean(customSelectedModel?.generation_modes?.includes('custom') && customSelectedModel?.available !== false);
-  const prompt = description.trim();
+  const prompt = activeSeed ? buildMusicSamplePrompt(activeSeed, description) : description.trim();
   const concurrencyLimit = Number(entitlements?.concurrency_limit) || 4;
   const activeGenerationCount = generations.filter((item) => !['succeeded', 'partial', 'failed', 'refunded'].includes(item.state)).length;
   const hasSharedSlot = activeGenerationCount < concurrencyLimit;
@@ -543,9 +546,10 @@ export function MusicServerStudio({ sourcesEnabled = false }) {
             <MusicSourceUploadPanel enabled={sourcesEnabled} selectedId={sourceId} onSelectionChange={(next) => { setSourceId(next); clearQuote(); }} />
             {mode === 'simple' ? (
               <>
+            <MusicSampleSeedCard seed={activeSeed} onRemove={() => { setActiveSeed(null); clearQuote(); }} />
             <label className="block">
-              <span className="flex items-center justify-between text-sm font-bold text-vx-fg-body"><span>Describe the sound</span><span className="font-vx-mono text-xs text-vx-fg-faint">{description.length}/500</span></span>
-              <textarea value={description} onChange={change(setDescription)} maxLength={500} rows={7} placeholder="A slow instrumental night drive with brushed drums and glassy synths" className="mt-2 w-full resize-y rounded-2xl border border-vx-border-boost bg-vx-base px-4 py-3 leading-6 text-vx-fg placeholder:text-vx-fg-faint focus:border-vx-accent focus:outline-none" />
+              <span className="flex items-center justify-between text-sm font-bold text-vx-fg-body"><span>{activeSeed ? 'Add a new direction' : 'Describe the sound'}</span><span className="font-vx-mono text-xs text-vx-fg-faint">{description.length}/{activeSeed ? MUSIC_SAMPLE_DIRECTION_MAX : 500}</span></span>
+              <textarea value={description} onChange={change(setDescription)} maxLength={activeSeed ? MUSIC_SAMPLE_DIRECTION_MAX : 500} rows={7} placeholder={activeSeed ? 'Optional: make it slower, add dusty piano, and open into a wide final chorus' : 'A slow instrumental night drive with brushed drums and glassy synths'} className="mt-2 w-full resize-y rounded-2xl border border-vx-border-boost bg-vx-base px-4 py-3 leading-6 text-vx-fg placeholder:text-vx-fg-faint focus:border-vx-accent focus:outline-none" />
             </label>
             <button type="button" onClick={() => { setDescription((current) => nextMusicPrompt(current)); clearQuote(); }} className="min-h-10 rounded-full border border-vx-border px-4 text-sm font-bold text-vx-fg-body hover:border-vx-border-boost">Try a direction</button>
             <label className="block text-sm font-bold text-vx-fg-body">

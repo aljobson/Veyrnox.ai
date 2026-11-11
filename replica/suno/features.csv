@@ -121,7 +121,8 @@ Copy share link,sharing,must,yes,partial,Owner can create and copy a high-entrop
 Allow or disable comments,sharing,should,yes,partial,Publication stores and publicly projects the owner's explicit comments permission; an actual comments system remains absent
 Allow or disable remixes,sharing,should,yes,partial,Publication stores and publicly projects the owner's explicit remix permission; remix generation remains unavailable
 Public creator profile,community,could,yes,partial,Public handle and display name list live Music publications behind the disabled publication gate; avatar bio albums and rollout remain
-Discover or home feed,community,could,yes,no,Recommendation network excluded
+Discover or home feed,community,could,yes,partial,An original six-beat Veyrnox seed library now provides cover art search mood filters and playable browser-rendered previews; personalized ranking public creator content and the social graph remain excluded
+Carry a discovery beat recipe into Create,creation,must,yes,yes,Allowlisted seed ids open Create with an attached cover card and separate bounded new-direction field; the exact combined prompt uses the existing quote confirmation and two-candidate generation path without copying source audio
 Comments likes and play counts,community,could,yes,no,Existing network data excluded
 Hooks short-form video posts,community,could,yes,no,Song excerpt plus owned video and lyrics
 Download MP3,downloads,must,yes,partial,Exact allowance quote and short-lived signed download are implemented only when the immutable source asset is already MP3; migration R2 acceptance and rollout remain

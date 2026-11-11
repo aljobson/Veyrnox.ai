@@ -34,6 +34,7 @@ const exceptions = [
   { file: /^app\/s\/\[slug\]\/page\.js$/, pattern: /^(?:— Veyrnox|bg-\[#080b14\] text-white|bg-\[#f5f5f2\] text-\[#171717\]|bg-gradient-to-br from-\[#35133d\] via-\[#9d3155\] to-\[#f49b55\] text-white)$/, reason: 'Brand suffix and the three exact theme CSS class lists; no visitor prose.' },
   { file: /\/_lib\/(?:showcase|sourceTemplateExpansion\d*|character|characterOptions|oddlingCatalog)\.js$/, pattern: /./, reason: 'source catalog names, descriptors and prompts remain unchanged (ADR-0107)' },
   { file: /\/_lib\/audioTemplates\.js$/, pattern: /./, reason: 'audio template names and generation prompts stay English, like the video template catalog (ADR-0107)' },
+  { file: /^lib\/musicDiscover\.js$/, pattern: /./, reason: 'original beat titles and canonical generation recipes are creative catalog data, matching the existing audio template policy (ADR-0107)' },
   { file: /\/_lib\/(?:studioSkills|filmStudioAssistants)\.js$/, pattern: /^(?:Skill:|Film stage|Models \(id\|kind\|Credits per generation\):$)/, reason: 'canonical assistant instructions, not UI copy (ADR-0107)' },
   { file: /\/_lib\/(?:studioSkillIcons|studioWorkflows)\.js$/, pattern: /^M(?=.*\d)[0-9MmLlHhVvCcSsQqTtAaZz., +\-]+$/, reason: 'validated SVG geometry, not display copy' },
   { file: /\/_components\/chat\/StudioSkillIcon\.js$/, pattern: /^(?:size-5 rounded-md|size-11 rounded-xl|size-16 rounded-2xl sm:size-\[72px\])$/, reason: 'validated icon-size CSS classes, not display copy' },
