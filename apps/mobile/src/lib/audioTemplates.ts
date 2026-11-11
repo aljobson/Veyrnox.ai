@@ -1,6 +1,6 @@
 import { API_BASE } from './api';
 
-// Audio templates (music, voice-over, sound effects), read from the anonymous GET /api/audio-templates.
+// Audio templates (music, voice-over, sound effects), read from the anonymous GET /api/templates?kind=audio.
 // They carry a model id and a prompt only; the price is read from the live catalog in Create.
 export interface AudioTemplate {
     readonly id: string;
@@ -26,7 +26,7 @@ export function parseAudioTemplates(body: unknown): AudioTemplate[] {
 }
 
 export async function fetchAudioTemplates(): Promise<AudioTemplate[]> {
-    const response = await fetch(`${API_BASE}/api/audio-templates`);
+    const response = await fetch(`${API_BASE}/api/templates?kind=audio`);
     if (!response.ok) throw new Error('audio_templates_unavailable');
     return parseAudioTemplates(await response.json());
 }

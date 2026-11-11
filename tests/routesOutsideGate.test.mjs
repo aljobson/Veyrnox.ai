@@ -32,7 +32,6 @@ const OUTSIDE = {
     'app/api/cinema/story-polls/route.js': 'public read',
     'app/api/cinema/titles/route.js': 'public read',
     'app/api/cinema/titles/[id]/route.js': 'public read',
-    'app/api/audio-templates/route.js': 'public read',
     'app/api/popular-templates/route.js': 'public read',
     'app/api/presets/route.js': 'public read',
     'app/api/templates/route.js': 'public read',
