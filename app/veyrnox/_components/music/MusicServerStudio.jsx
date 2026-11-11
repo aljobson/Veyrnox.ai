@@ -36,7 +36,7 @@ function MusicFirstRunGuide() {
 
   if (!visible) return null;
   return (
-    <section aria-label="Create guide" className="mb-6 rounded-3xl border border-vx-border bg-vx-panel p-5 sm:p-6">
+    <section aria-label="Create guide" className="mb-6 rounded-2xl border border-vx-border bg-vx-panel p-5 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div><p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-accent">Your first private draft</p><h2 className="mt-1 font-vx text-2xl font-black">Three deliberate steps, no surprise spend.</h2></div>
         <button type="button" onClick={dismiss} className="min-h-10 rounded-full border border-vx-border px-4 text-sm font-bold">Got it</button>
@@ -530,7 +530,7 @@ export function MusicServerStudio({ sourcesEnabled = false }) {
       <MusicFirstRunGuide />
 
       <div className="grid gap-8 lg:grid-cols-5">
-        <form onSubmit={review} className="self-start rounded-3xl border border-vx-border bg-vx-panel p-5 shadow-2xl lg:sticky lg:top-24 lg:col-span-2 sm:p-6">
+        <form onSubmit={review} className="self-start rounded-2xl border border-vx-border bg-vx-panel p-5 shadow-2xl lg:sticky lg:top-24 lg:col-span-2 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="font-vx text-2xl font-black">{mode === 'simple' ? 'Direction' : 'Custom draft'}</h2>
             <div role="tablist" aria-label="Music creation mode" className="flex rounded-full border border-vx-border bg-vx-base p-1 text-sm font-bold">
@@ -626,7 +626,7 @@ export function MusicServerStudio({ sourcesEnabled = false }) {
         <section aria-labelledby="results-title" className="min-w-0 lg:col-span-3">
           <div className="mb-4"><p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-accent">{mode === 'simple' ? 'Independent candidates' : 'Revision-safe writing'}</p><h2 id="results-title" className="mt-1 font-vx text-2xl font-black">{mode === 'simple' ? 'Current server request' : 'Custom workspace'}</h2></div>
           {mode === 'custom' && !generations.length ? (
-            <div className="rounded-3xl border border-dashed border-vx-border p-8 sm:p-12">
+            <div className="rounded-2xl border border-dashed border-vx-border p-8 sm:p-12">
               <p className="font-vx text-2xl font-black">{customReady ? 'Your saved lyrics can become a private pair.' : 'Draft first. Generate only when verified.'}</p>
               <p className="mt-3 max-w-xl text-vx-fg-muted">{customReady ? 'The selected paid model accepts exact saved lyrics and style direction. Nothing is quoted or spent until the ownership attestation and separate confirmation.' : 'This workspace keeps original lyrics, style direction and title with optimistic revisions. Choose a Custom-ready catalog model before any quote or spend.'}</p>
               <dl className="mt-6 grid gap-3 text-sm sm:grid-cols-2">
@@ -635,10 +635,10 @@ export function MusicServerStudio({ sourcesEnabled = false }) {
               </dl>
             </div>
           ) : !generations.length ? (
-            <div className="rounded-3xl border border-dashed border-vx-border p-8 sm:p-12"><p className="font-vx text-2xl font-black">Your confirmed pair will land here.</p><p className="mt-3 max-w-xl text-vx-fg-muted">Reviewing a quote does not create or charge anything. After confirmation, both versions progress independently.</p></div>
+            <div className="rounded-2xl border border-dashed border-vx-border p-8 sm:p-12"><p className="font-vx text-2xl font-black">Your confirmed pair will land here.</p><p className="mt-3 max-w-xl text-vx-fg-muted">Reviewing a quote does not create or charge anything. After confirmation, both versions progress independently.</p></div>
           ) : (
             <div className="space-y-5">{generations.map((generation, index) => (
-              <section key={generation.id} data-testid={`music-generation-${generation.id}`} aria-label={`Music request ${generations.length - index}`} className="rounded-3xl border border-vx-border bg-vx-panel p-4 sm:p-5">
+              <section key={generation.id} data-testid={`music-generation-${generation.id}`} aria-label={`Music request ${generations.length - index}`} className="rounded-2xl border border-vx-border bg-vx-panel p-4 sm:p-5">
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-2"><div><p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-accent">Pair request</p><h3 className="mt-1 font-vx text-xl font-black">{generation.title || 'Untitled sound draft'}</h3></div><span className="rounded-full border border-vx-border px-3 py-1 font-vx-mono text-xs uppercase text-vx-fg-muted">{generation.state}</span></div>
                 <div className="space-y-3">{(generation.candidates || []).map((candidate) => <ServerCandidate key={candidate.job_id || candidate.ordinal} candidate={candidate} title={generation.title} />)}</div>
               </section>

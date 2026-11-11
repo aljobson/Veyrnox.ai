@@ -13,16 +13,16 @@ test('publication parser requires exact permissions, rights and creator identity
     version_id: 'a5ed2d0d-8276-4fbb-9c4f-39f401a3158b',
     handle: 'night_signal', display_name: 'Night Signal',
     allow_comments: false, allow_remixes: true, rights_confirmed: true,
-    idempotency_key: 'publish.12345678',
+    idempotency_key: 'publish.12345678', // gitleaks:allow -- synthetic idempotency fixture
   };
   assert.deepEqual(parseMusicPublish(body), {
     ok: true, versionId: body.version_id, handle: 'night_signal', displayName: 'Night Signal',
-    allowComments: false, allowRemixes: true, idempotencyKey: 'publish.12345678',
+    allowComments: false, allowRemixes: true, idempotencyKey: 'publish.12345678', // gitleaks:allow -- synthetic idempotency fixture
   });
   assert.equal(parseMusicPublish({ ...body, rights_confirmed: false }).error, 'rights_confirmation_required');
   assert.equal(parseMusicPublish({ ...body, handle: '../admin' }).error, 'handle_invalid');
   assert.equal(parseMusicPublish({ ...body, commercial: true }).error, 'invalid_request');
-  assert.deepEqual(parseMusicUnpublish({ idempotency_key: 'publish.87654321' }), { ok: true, idempotencyKey: 'publish.87654321' });
+  assert.deepEqual(parseMusicUnpublish({ idempotency_key: 'publish.87654321' }), { ok: true, idempotencyKey: 'publish.87654321' }); // gitleaks:allow -- synthetic idempotency fixture
 });
 
 test('publication migration is owner-scoped, reversible and honest about commercial eligibility', async () => {

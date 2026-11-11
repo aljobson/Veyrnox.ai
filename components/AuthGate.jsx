@@ -3,18 +3,15 @@ import { watchAccountLanguage } from '../app/lib/accountLanguageClient.js';
 import LegalLink from './LegalLink';
 import { rich } from '../lib/i18n/rich';
 import { useI18n } from './I18nProvider.jsx';
-
 /**
  * AuthGate — root-mounted modal listening for veyrnox:auth-required
  * events. Lives under top-level components/ (not packages/studio) so
  * the transpiled-workspace bundle path stays clean — PR #38 bisect.
- *
  * Wire once in app/layout.js. Any studio component that hits a 401 on
  * /api/v1/* dispatches `window.dispatchEvent(new
  * CustomEvent('veyrnox:auth-required'))` and this handler pops the
  * modal.
  */
-
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
     getSession,
@@ -302,7 +299,6 @@ export default function AuthGate() {
     }
 
     if (!open) return null;
-
     return (
         <div
             role="dialog"
@@ -316,7 +312,7 @@ export default function AuthGate() {
             <div className="max-h-full w-full max-w-sm overflow-y-auto overscroll-contain rounded-2xl border border-vx-border bg-vx-panel p-5 sm:p-6 shadow-2xl">
                 <div className="flex items-start justify-between mb-1">
                     <h2 className="text-lg font-semibold text-vx-fg">
-                        {mode === "phone" ? "Continue with phone" : mode === "sign_up" ? t("authGate.createYourAccount") : mode === "magic" ? t("authGate.emailSignInLink") : t("authGate.title")}
+                        {mode === "phone" ? t("authGate.continueWithPhone") : mode === "sign_up" ? t("authGate.createYourAccount") : mode === "magic" ? t("authGate.emailSignInLink") : t("authGate.title")}
                     </h2>
                     <button
                         type="button"
@@ -470,7 +466,7 @@ export default function AuthGate() {
                             {t("authGate.emailMeALinkInstead")}</button>
                     )}
                     {mode !== "phone" && (
-                        <button type="button" className="underline hover:text-vx-fg" onClick={() => chooseMode("phone")}>Use phone instead</button>
+                        <button type="button" className="underline hover:text-vx-fg" onClick={() => chooseMode("phone")}>{t("authGate.usePhoneInstead")}</button>
                     )}
                 </div>
 

@@ -254,13 +254,14 @@ CREATE OR REPLACE FUNCTION public.music_store_target_stem_pair(
 DECLARE v_request public.music_target_stem_requests%ROWTYPE; v_job public.jobs%ROWTYPE;
  v_existing public.music_target_stem_assets%ROWTYPE; v_target UUID; v_residual UUID;
 BEGIN
-  IF p_provider<>'fal' OR p_target_r2_key=p_residual_r2_key OR p_target_mime_type<>'audio/wav'
+  IF p_provider<>'fal' OR p_target_r2_key=p_residual_r2_key OR p_target_mime_type<>'audio/wav' -- gitleaks:allow -- provider and MIME contract, not a credential
     OR p_residual_mime_type<>'audio/wav' OR p_target_size_bytes<=0 OR p_residual_size_bytes<=0
     OR p_target_sha256!~'^[0-9a-f]{64}$' OR p_residual_sha256!~'^[0-9a-f]{64}$' THEN
     RETURN jsonb_build_object('ok',false,'code','INVALID_OUTPUTS'); END IF;
-  SELECT r,j INTO v_request,v_job FROM public.music_target_stem_requests r
+  SELECT r.* INTO v_request FROM public.music_target_stem_requests r
     JOIN public.jobs j ON j.id=r.job_id WHERE j.provider=p_provider AND j.provider_job_id=p_provider_job_id FOR UPDATE OF j;
   IF NOT FOUND THEN RETURN jsonb_build_object('ok',false,'code','REQUEST_NOT_FOUND'); END IF;
+  SELECT * INTO v_job FROM public.jobs WHERE id=v_request.job_id;
   SELECT * INTO v_existing FROM public.music_target_stem_assets WHERE request_id=v_request.id;
   IF FOUND THEN RETURN jsonb_build_object('ok',true,'request_id',v_request.id,'idempotent',true); END IF;
   IF v_job.state<>'SUCCEEDED' THEN RETURN jsonb_build_object('ok',false,'code','JOB_NOT_SUCCEEDED'); END IF;

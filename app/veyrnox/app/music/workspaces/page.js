@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation';
 import { MusicServerLibrary } from '../../../_components/music/MusicServerLibrary';
+import { getT } from '../../../../../lib/i18n/server';
 
-export const metadata = { title: 'Music Workspaces' };
+export async function generateMetadata() { const { t } = await getT(); return { title: t('music.meta.workspaces') }; }
 
 export default function MusicWorkspacesPage() {
   const enabled = process.env.MUSIC_UI_ENABLED === 'true'

@@ -101,18 +101,18 @@ export function MusicServerSongDetail({ id }) {
     return () => window.clearTimeout(timer);
   }, [focusLineage, song]);
 
-  if (loading) return <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6" aria-busy="true"><div className="vx-shimmer h-96 rounded-3xl bg-vx-panel" /></div>;
+  if (loading) return <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6" aria-busy="true"><div className="vx-shimmer h-96 rounded-2xl bg-vx-panel" /></div>;
   if (!song) return (
     <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
-      <section role="alert" className="rounded-3xl border border-vx-border bg-vx-panel p-8"><p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-danger">Private version unavailable</p><h1 className="mt-3 font-vx text-4xl font-black">This version cannot be opened.</h1><p className="mt-4 text-vx-fg-body">{error}</p><div className="mt-6 flex flex-wrap gap-3"><button type="button" onClick={load} className="min-h-11 rounded-full border border-vx-border px-5 font-bold">Retry</button><Link href="/app/music/library" className="inline-flex min-h-11 items-center rounded-full bg-vx-accent px-5 font-bold text-vx-accent-ink">Open Music Library</Link></div></section>
+      <section role="alert" className="rounded-2xl border border-vx-border bg-vx-panel p-8"><p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-danger">Private version unavailable</p><h1 className="mt-3 font-vx text-4xl font-black">This version cannot be opened.</h1><p className="mt-4 text-vx-fg-body">{error}</p><div className="mt-6 flex flex-wrap gap-3"><button type="button" onClick={load} className="min-h-11 rounded-full border border-vx-border px-5 font-bold">Retry</button><Link href="/app/music/library" className="inline-flex min-h-11 items-center rounded-full bg-vx-accent px-5 font-bold text-vx-accent-ink">Open Music Library</Link></div></section>
     </div>
   );
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
       <Link href="/app/music/library" className="text-sm font-bold text-vx-fg-muted underline-offset-4 hover:text-vx-fg hover:underline">← Music Library</Link>
-      <article className="mt-6 overflow-hidden rounded-3xl border border-vx-border bg-vx-panel shadow-2xl">
+      <article className="mt-6 overflow-hidden rounded-2xl border border-vx-border bg-vx-panel shadow-2xl">
         <div className="grid gap-8 p-6 sm:p-8 lg:grid-cols-2">
-          <div className="grid min-h-72 place-items-center rounded-3xl border border-vx-border bg-vx-panel-raised"><div className="text-center"><span aria-hidden="true" className="font-vx text-8xl font-black text-vx-accent">♪</span><p className="mt-3 font-vx-mono text-xs uppercase tracking-widest text-vx-fg-muted">Private server version</p></div></div>
+          <div className="grid min-h-72 place-items-center rounded-2xl border border-vx-border bg-vx-panel-raised"><div className="text-center"><span aria-hidden="true" className="font-vx text-8xl font-black text-vx-accent">♪</span><p className="mt-3 font-vx-mono text-xs uppercase tracking-widest text-vx-fg-muted">Private server version</p></div></div>
           <div className="min-w-0 self-center">
             <div className="flex flex-wrap items-center gap-2"><span className="rounded-full bg-vx-accent/15 px-3 py-1 text-xs font-bold text-vx-accent">Ready</span><span className="rounded-full border border-vx-border px-3 py-1 text-xs text-vx-fg-muted">Private</span></div>
             <div className="mt-4 flex items-start gap-3"><h1 className="min-w-0 flex-1 break-words font-vx text-4xl font-black tracking-tight sm:text-5xl">{song.title}</h1><MusicSongActions songId={song.id} title={song.title} actions={song.actions} onViewLineage={focusLineage} onShare={() => setDistributionMode('share')} onDownload={() => setDistributionMode('download')} onPublish={() => setDistributionMode('publish')} onCover={() => setDistributionMode('cover')} onExtend={() => setDistributionMode('extend')} onReplace={() => setDistributionMode('replace')} onAddSection={() => setDistributionMode('add-section')} onReuse={() => setDistributionMode('reuse')} onStems={() => setDistributionMode('stems')} onTargetStem={() => setDistributionMode('target-stem')} onAddTrack={() => setDistributionMode('add-track')} onCrop={() => setDistributionMode('crop')} onRender={() => setDistributionMode('render')} externalTriggerRef={actionsTriggerRef} /></div>

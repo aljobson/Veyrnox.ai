@@ -67,7 +67,7 @@ function MusicPreviewCreateStudio() {
       {(storageError || error) && <div role="alert" className="mb-5 rounded-2xl border border-vx-danger/50 bg-vx-danger/10 px-4 py-3 text-sm text-vx-danger">{storageError || error}</div>}
 
       <div className="grid gap-8 lg:grid-cols-5">
-        <form onSubmit={submit} className="self-start rounded-3xl border border-vx-border bg-vx-panel p-5 shadow-2xl lg:sticky lg:top-24 lg:col-span-2 sm:p-6">
+        <form onSubmit={submit} className="self-start rounded-2xl border border-vx-border bg-vx-panel p-5 shadow-2xl lg:sticky lg:top-24 lg:col-span-2 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="font-vx text-2xl font-black">Direction</h2>
             <div role="tablist" aria-label="Music creation mode" className="flex rounded-full border border-vx-border bg-vx-base p-1 text-sm font-bold">
@@ -136,7 +136,7 @@ function MusicPreviewCreateStudio() {
           {!state ? (
             <div aria-busy="true" className="space-y-3"><div className="vx-shimmer h-28 rounded-2xl bg-vx-panel"/><div className="vx-shimmer h-28 rounded-2xl bg-vx-panel"/></div>
           ) : rows.length === 0 ? (
-            <div className="rounded-3xl border border-dashed border-vx-border p-8 sm:p-12"><p className="font-vx text-2xl font-black">Your first pair will land here.</p><p className="mt-3 max-w-xl text-vx-fg-muted">Both versions stay private. Listen here, then reopen finished versions from Music Library.</p></div>
+            <div className="rounded-2xl border border-dashed border-vx-border p-8 sm:p-12"><p className="font-vx text-2xl font-black">Your first pair will land here.</p><p className="mt-3 max-w-xl text-vx-fg-muted">Both versions stay private. Listen here, then reopen finished versions from Music Library.</p></div>
           ) : (
             <div className="space-y-3">{rows.map((song) => <MusicCandidateCard key={song.id} song={song} onCancel={cancel} />)}</div>
           )}

@@ -17,15 +17,15 @@ import { TURNSTILE_SITE_KEY, Turnstile } from './Turnstile.jsx';
 
 const E164_RE = /^\+[1-9]\d{7,14}$/;
 
-function phoneError(error) {
+function phoneError(t, error) {
     const raw = String(error?.message || '');
-    if (/phone provider is disabled|sms provider|unsupported phone provider/i.test(raw)) return "Phone sign-in isn't configured for this environment yet. Use another method.";
-    if (/rate limit/i.test(raw)) return 'Too many codes requested. Wait a minute and try again.';
-    if (/token.*expired|otp.*expired/i.test(raw)) return 'That code expired. Request a new one.';
-    if (/invalid.*(token|otp)|token.*invalid/i.test(raw)) return "That code isn't correct. Check all six digits.";
-    if (/captcha/i.test(raw)) return 'The security check failed or expired. Try again.';
-    if (/network|fetch|failed to fetch/i.test(raw)) return "Couldn't reach the server. Check your connection.";
-    return "Phone sign-in didn't work. Try again or use another method.";
+    if (/phone provider is disabled|sms provider|unsupported phone provider/i.test(raw)) return t('phoneAuth.unavailable');
+    if (/rate limit/i.test(raw)) return t('phoneAuth.rateLimited');
+    if (/token.*expired|otp.*expired/i.test(raw)) return t('phoneAuth.expired');
+    if (/invalid.*(token|otp)|token.*invalid/i.test(raw)) return t('phoneAuth.invalid');
+    if (/captcha/i.test(raw)) return t('phoneAuth.captcha');
+    if (/network|fetch|failed to fetch/i.test(raw)) return t('phoneAuth.network');
+    return t('phoneAuth.failed');
 }
 
 export default function PhoneOtpForm() {
@@ -52,11 +52,11 @@ export default function PhoneOtpForm() {
         setNotice(null);
         const normalized = phone.replace(/[\s()-]/g, '');
         if (!E164_RE.test(normalized)) {
-            setNotice({ kind: 'error', text: 'Enter a mobile number with country code, such as +44 7700 900123.' });
+            setNotice({ kind: 'error', text: t('phoneAuth.numberHelp') });
             return;
         }
         if (!phoneAvailable(settings)) {
-            setNotice({ kind: 'error', text: "Phone sign-in isn't configured for this environment yet. Use another method." });
+            setNotice({ kind: 'error', text: t('phoneAuth.unavailable') });
             return;
         }
         if (TURNSTILE_SITE_KEY && !captcha) {
@@ -68,9 +68,9 @@ export default function PhoneOtpForm() {
             await sendPhoneOtp(normalized, captcha);
             setPhone(normalized);
             setStep('verify');
-            setNotice({ kind: 'success', text: `We sent a six-digit code to ${normalized}.` });
+            setNotice({ kind: 'success', text: t('phoneAuth.sent', { phone: normalized }) });
         } catch (error) {
-            setNotice({ kind: 'error', text: phoneError(error) });
+            setNotice({ kind: 'error', text: phoneError(t, error) });
         } finally {
             setBusy(false);
             if (TURNSTILE_SITE_KEY) setCaptchaReset((value) => value + 1);
@@ -81,14 +81,14 @@ export default function PhoneOtpForm() {
         event.preventDefault();
         setNotice(null);
         if (!/^\d{6}$/.test(code)) {
-            setNotice({ kind: 'error', text: 'Enter the six-digit code from the text message.' });
+            setNotice({ kind: 'error', text: t('phoneAuth.codeHelp') });
             return;
         }
         setBusy(true);
         try {
             await verifyPhoneOtp(phone, code);
         } catch (error) {
-            setNotice({ kind: 'error', text: phoneError(error) });
+            setNotice({ kind: 'error', text: phoneError(t, error) });
             setBusy(false);
         }
     }
@@ -96,7 +96,7 @@ export default function PhoneOtpForm() {
     return (
         <form onSubmit={step === 'request' ? requestCode : verifyCode} className="space-y-3">
             <label className="block">
-                <span className="text-xs text-vx-fg-muted">Mobile number</span>
+                <span className="text-xs text-vx-fg-muted">{t('phoneAuth.mobileNumber')}</span>
                 <input type="tel" inputMode="tel" autoComplete="tel" required disabled={step === 'verify' || busy}
                     value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="+44 7700 900123"
                     className="mt-1 w-full rounded-lg border border-vx-border bg-vx-base px-3 py-2 text-sm text-vx-fg outline-hidden focus:border-vx-accent focus-visible:ring-2 focus-visible:ring-vx-accent/40 disabled:opacity-70" />
@@ -113,7 +113,7 @@ export default function PhoneOtpForm() {
                 />
             ) : (
                 <label className="block">
-                    <span className="text-xs text-vx-fg-muted">Six-digit code</span>
+                    <span className="text-xs text-vx-fg-muted">{t('phoneAuth.sixDigitCode')}</span>
                     <input type="text" inputMode="numeric" autoComplete="one-time-code" required pattern="[0-9]{6}" maxLength={6}
                         value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
                         className="mt-1 w-full rounded-lg border border-vx-border bg-vx-base px-3 py-2 text-center text-lg tracking-[0.4em] text-vx-fg outline-hidden focus:border-vx-accent focus-visible:ring-2 focus-visible:ring-vx-accent/40" />
@@ -127,9 +127,9 @@ export default function PhoneOtpForm() {
             </div>
 
             <button type="submit" disabled={busy} className="w-full rounded-full bg-vx-accent py-2.5 text-sm font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent disabled:opacity-60">
-                {busy ? 'Working…' : step === 'request' ? 'Text me a code' : 'Verify and continue'}
+                {t(busy ? 'phoneAuth.working' : step === 'request' ? 'phoneAuth.send' : 'phoneAuth.verify')}
             </button>
-            {step === 'verify' && <button type="button" disabled={busy} onClick={() => { setStep('request'); setCode(''); setNotice(null); }} className="w-full text-xs text-vx-fg-muted underline hover:text-vx-fg disabled:opacity-60">Change number or request a new code</button>}
+            {step === 'verify' && <button type="button" disabled={busy} onClick={() => { setStep('request'); setCode(''); setNotice(null); }} className="w-full text-xs text-vx-fg-muted underline hover:text-vx-fg disabled:opacity-60">{t('phoneAuth.change')}</button>}
         </form>
     );
 }

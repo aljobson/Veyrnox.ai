@@ -60,8 +60,8 @@ export function GenerationSettings({ model, seed, onSeed, negative, onNegative, 
         <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-vx-border bg-vx-base px-3 py-3 text-sm text-vx-fg-body">
           <input type="checkbox" checked={loop} onChange={(event) => onLoop(event.target.checked)} className="mt-0.5 accent-vx-accent" />
           <span>
-            <strong className="block text-vx-fg">Seamless loop</strong>
-            <span className="mt-1 block text-xs leading-5 text-vx-fg-muted">Blend the ending into the beginning for repeat playback. BPM and musical key remain part of the written brief, not guaranteed controls.</span>
+            <strong className="block text-vx-fg">{t('app.create.settings.seamlessLoop')}</strong>
+            <span className="mt-1 block text-xs leading-5 text-vx-fg-muted">{t('app.create.settings.seamlessLoopHelp')}</span>
           </span>
         </label>
       )}

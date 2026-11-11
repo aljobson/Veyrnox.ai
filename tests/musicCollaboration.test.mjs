@@ -9,10 +9,10 @@ test('collaboration parsers accept only exact handle invite and response shapes'
   const workspace = 'a5ed2d0d-8276-4fbb-9c4f-39f401a3158b';
   const invitation = 'b6ed2d0d-8276-4fbb-9c4f-39f401a3158c';
   assert.equal(parseMusicCollaboration({ action: 'profile', handle: 'Harbour_Writer', display_name: 'Harbour Writer' }).handle, 'harbour_writer');
-  assert.equal(parseMusicCollaboration({ action: 'invite', workspace_id: workspace, handle: 'guest_one', idempotency_key: 'invite.123456' }).ok, true);
-  assert.equal(parseMusicCollaboration({ action: 'respond', invitation_id: invitation, decision: 'accept', idempotency_key: 'reply.123456' }).ok, true);
-  assert.equal(parseMusicCollaboration({ action: 'invite', workspace_id: workspace, handle: 'guest_one', idempotency_key: 'invite.123456', role: 'owner' }).error, 'invalid_request');
-  assert.equal(parseMusicCollaboration({ action: 'respond', invitation_id: invitation, decision: 'owner', idempotency_key: 'reply.123456' }).error, 'response_invalid');
+  assert.equal(parseMusicCollaboration({ action: 'invite', workspace_id: workspace, handle: 'guest_one', idempotency_key: 'invite.123456' }).ok, true); // gitleaks:allow -- synthetic idempotency fixture
+  assert.equal(parseMusicCollaboration({ action: 'respond', invitation_id: invitation, decision: 'accept', idempotency_key: 'reply.123456' }).ok, true); // gitleaks:allow -- synthetic idempotency fixture
+  assert.equal(parseMusicCollaboration({ action: 'invite', workspace_id: workspace, handle: 'guest_one', idempotency_key: 'invite.123456', role: 'owner' }).error, 'invalid_request'); // gitleaks:allow -- synthetic idempotency fixture
+  assert.equal(parseMusicCollaboration({ action: 'respond', invitation_id: invitation, decision: 'owner', idempotency_key: 'reply.123456' }).error, 'response_invalid'); // gitleaks:allow -- synthetic idempotency fixture
   assert.equal(musicCollaborationEnabled({ MUSIC_SCHEMA_ENABLED: 'true', MUSIC_LIBRARY_ENABLED: 'true', MUSIC_COLLABORATION_ENABLED: 'true' }), true);
 });
 

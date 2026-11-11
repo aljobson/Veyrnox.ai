@@ -174,7 +174,7 @@ for (const modelId of ['flux-2-pro-1k-kie', 'flux-2-pro']) test(`actual web conf
         activeBatch: null, continuation: { current: null }, formIdentity: identity, unitCost: 2, n: 2,
         createBatch, makeIdempotencyKey: () => `key-${++sequence}`, allocationSnapshot,
         quote: allocationSnapshot({ accepted: [null, null], unknown: new Set() }, 2, 2),
-        prompt: 'lake', finalPrompt: () => 'lake', settingsInputs: () => ({ seed: 7 }), seed: '7', negative: '', voice: '', audioDuration: null,
+        prompt: 'lake', finalPrompt: () => 'lake', settingsInputs: () => ({ seed: 7 }), seed: '7', negative: '', loop: false, voice: '', audioDuration: null,
         sources: {}, uploadSource: () => {}, mediaGenerationSources: async () => { uploads++; return { references: [], source_keys: [], source_assets: [] }; },
         sendInOrder, inputsForIndex, presetParam: null, templateData: null, templateStartIdFor: () => null,
         gatewayFetch: async (path, init) => {
@@ -245,7 +245,7 @@ async function retryHandlerHarness(count, replies) {
         getJourney: () => ({}), duration: '5s', isShort: false, aspectOptions: [], aspect: '1:1',
         activeBatch: null, continuation: { current: null }, formIdentity: {}, unitCost: 2, n: count,
         makeIdempotencyKey: () => `retry-key-${++sequence}`,
-        prompt: 'lake', finalPrompt: () => 'lake', settingsInputs: () => ({ seed: 7 }), seed: '7', negative: '', voice: '', audioDuration: null,
+        prompt: 'lake', finalPrompt: () => 'lake', settingsInputs: () => ({ seed: 7 }), seed: '7', negative: '', loop: false, voice: '', audioDuration: null,
         sources: {}, uploadSource: () => {}, mediaGenerationSources: async () => ({ references: [], source_keys: [], source_assets: [] }),
         presetParam: null, templateData: null, templateStartIdFor: () => null,
         gatewayFetch: async (path, init) => {

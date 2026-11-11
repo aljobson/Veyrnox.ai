@@ -12,13 +12,13 @@ const routeUrl=new URL('../app/api/v1/music/songs/[id]/crop/route.js',import.met
 const localRenderRouteUrl=new URL('../app/api/v1/music/songs/[id]/render/route.js',import.meta.url);
 const exportUrl=new URL('../app/api/v1/music/songs/[id]/export-quotes/route.js',import.meta.url);
 test('crop parser accepts one bounded exact range and rejects ambiguous shapes',()=>{
-  const value={version_id:'a5ed2d0d-8276-4fbb-9c4f-39f401a3158b',start_seconds:1.25,end_seconds:9.5,idempotency_key:'crop.12345678'};
-  assert.deepEqual(parseMusicCrop(value),{ok:true,versionId:value.version_id,start:1.25,end:9.5,idempotencyKey:'crop.12345678'});
+  const value={version_id:'a5ed2d0d-8276-4fbb-9c4f-39f401a3158b',start_seconds:1.25,end_seconds:9.5,idempotency_key:'crop.12345678'}; // gitleaks:allow -- synthetic idempotency fixture
+  assert.deepEqual(parseMusicCrop(value),{ok:true,versionId:value.version_id,start:1.25,end:9.5,idempotencyKey:'crop.12345678'}); // gitleaks:allow -- synthetic idempotency fixture
   assert.equal(parseMusicCrop({...value,end_seconds:1.5}).error,'crop_too_short');
   assert.equal(parseMusicCrop({...value,overwrite:true}).error,'invalid_request');
 });
 test('local render parser accepts exact fade, speed, two-section reorder and remaster contracts only',()=>{
-  const version_id='a5ed2d0d-8276-4fbb-9c4f-39f401a3158b',idempotency_key='render.12345678';
+  const version_id='a5ed2d0d-8276-4fbb-9c4f-39f401a3158b',idempotency_key='render.12345678'; // gitleaks:allow -- synthetic idempotency fixture
   assert.deepEqual(parseMusicLocalRender({operation:'fade',version_id,fade_in_seconds:1.5,fade_out_seconds:2,idempotency_key}),{
     ok:true,operation:'fade',versionId:version_id,parameters:{fade_in_seconds:1.5,fade_out_seconds:2},idempotencyKey:idempotency_key,
   });

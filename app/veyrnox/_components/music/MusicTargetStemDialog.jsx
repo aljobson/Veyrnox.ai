@@ -81,7 +81,7 @@ export function MusicTargetStemDialog({ song, onClose }) {
 
   return (
     <div className="fixed inset-0 z-[80] grid place-items-center overflow-y-auto bg-black/70 p-4 backdrop-blur-sm" onPointerDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <section role="dialog" aria-modal="true" aria-labelledby="target-stem-title" className="w-full max-w-xl rounded-3xl border border-vx-border bg-vx-panel p-6 shadow-2xl sm:p-8">
+      <section role="dialog" aria-modal="true" aria-labelledby="target-stem-title" className="w-full max-w-xl rounded-2xl border border-vx-border bg-vx-panel p-6 shadow-2xl sm:p-8">
         <div className="flex items-start gap-4"><div className="min-w-0 flex-1"><p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-accent">Paid target separation</p><h2 id="target-stem-title" className="mt-2 font-vx text-2xl font-black">Isolate one instrument from “{song.title}”</h2></div><button ref={closeRef} type="button" aria-label="Close" onClick={onClose} className="grid min-h-11 min-w-11 place-items-center rounded-full border border-vx-border">×</button></div>
         <p className="mt-4 text-sm leading-6 text-vx-fg-muted">Create two private WAV files: the isolated target and a residual containing everything else. The original version remains unchanged.</p>
         {!request ? <div className="mt-6 space-y-4">

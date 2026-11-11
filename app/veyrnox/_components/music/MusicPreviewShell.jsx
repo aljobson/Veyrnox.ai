@@ -52,7 +52,7 @@ export function MusicPreviewShell({ children, initialEnabled = false, serverMode
       <AppNav active="create" readAccount={false} />
       {!(serverMode || enabled) ? (
         <Main className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
-          <section className="rounded-3xl border border-vx-border bg-vx-panel p-8 shadow-2xl">
+          <section className="rounded-2xl border border-vx-border bg-vx-panel p-8 shadow-2xl">
             <p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-accent">Development preview</p>
             <h1 className="mt-3 font-vx text-4xl font-black tracking-tight">Music Studio is closed here.</h1>
             <p className="mt-4 max-w-2xl leading-7 text-vx-fg-body">

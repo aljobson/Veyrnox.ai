@@ -277,11 +277,14 @@ DECLARE v_request public.music_track_add_requests%ROWTYPE; v_quote public.music_
 BEGIN
   IF p_provider_job_id IS NULL OR p_upload_audio_id!~'^[A-Za-z0-9_-]{1,128}$' THEN
     RETURN jsonb_build_object('ok',false,'code','INVALID_OUTPUT'); END IF;
-  SELECT r,q,u,t INTO v_request,v_quote,v_upload,v_track
+  SELECT r.* INTO v_request
   FROM public.music_track_add_requests r JOIN public.music_track_add_quotes q ON q.id=r.quote_id
   JOIN public.jobs u ON u.id=r.upload_job_id JOIN public.jobs t ON t.id=r.track_job_id
   WHERE u.provider='fal' AND u.provider_job_id=p_provider_job_id FOR UPDATE OF u,t;
   IF NOT FOUND THEN RETURN jsonb_build_object('ok',false,'code','REQUEST_NOT_FOUND'); END IF;
+  SELECT * INTO v_quote FROM public.music_track_add_quotes WHERE id=v_request.quote_id;
+  SELECT * INTO v_upload FROM public.jobs WHERE id=v_request.upload_job_id;
+  SELECT * INTO v_track FROM public.jobs WHERE id=v_request.track_job_id;
   IF v_request.upload_model_id<>'mureka-audio-upload' OR v_request.track_model_id<>'mureka-track-add-v8' THEN
     RETURN jsonb_build_object('ok',false,'code','MODEL_MISMATCH'); END IF;
   IF v_upload.state='STORED' AND EXISTS(SELECT 1 FROM public.fal_dispatch WHERE job_id=v_track.id) THEN
@@ -304,10 +307,12 @@ CREATE OR REPLACE FUNCTION public.music_fail_track_add_upload(
 DECLARE v_request public.music_track_add_requests%ROWTYPE; v_upload public.jobs%ROWTYPE; v_track public.jobs%ROWTYPE;
  v_upload_refund JSONB; v_track_refund JSONB;
 BEGIN
-  SELECT r,u,t INTO v_request,v_upload,v_track FROM public.music_track_add_requests r
+  SELECT r.* INTO v_request FROM public.music_track_add_requests r
   JOIN public.jobs u ON u.id=r.upload_job_id JOIN public.jobs t ON t.id=r.track_job_id
   WHERE u.provider='fal' AND u.provider_job_id=p_provider_job_id FOR UPDATE OF u,t;
   IF NOT FOUND THEN RETURN jsonb_build_object('ok',false,'code','REQUEST_NOT_FOUND'); END IF;
+  SELECT * INTO v_upload FROM public.jobs WHERE id=v_request.upload_job_id;
+  SELECT * INTO v_track FROM public.jobs WHERE id=v_request.track_job_id;
   IF v_request.upload_model_id<>'mureka-audio-upload' OR v_request.track_model_id<>'mureka-track-add-v8' THEN
     RETURN jsonb_build_object('ok',false,'code','MODEL_MISMATCH'); END IF;
   UPDATE public.jobs SET state='FAILED',error_code=left(COALESCE(p_error_code,'provider_error'),128),updated_at=now()

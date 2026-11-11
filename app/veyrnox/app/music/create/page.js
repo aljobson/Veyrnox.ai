@@ -1,6 +1,7 @@
 import { MusicCreateStudio } from '../../../_components/music/MusicCreateStudio';
+import { getT } from '../../../../../lib/i18n/server';
 
-export const metadata = { title: 'Create music' };
+export async function generateMetadata() { const { t } = await getT(); return { title: t('music.meta.createPrivate') }; }
 
 export default function MusicCreatePage() {
   const serverMode = process.env.MUSIC_UI_ENABLED === 'true';

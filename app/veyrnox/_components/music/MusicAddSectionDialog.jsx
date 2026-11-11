@@ -89,7 +89,7 @@ export function MusicAddSectionDialog({ song, onClose, onSaved }) {
   const terminal = generation && TERMINAL.has(generation.state);
   return (
     <div className="fixed inset-0 z-[80] grid place-items-center overflow-y-auto bg-black/70 p-4 backdrop-blur-sm" onPointerDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <section role="dialog" aria-modal="true" aria-labelledby="add-section-title" className="w-full max-w-xl rounded-3xl border border-vx-border bg-vx-panel p-6 shadow-2xl sm:p-8">
+      <section role="dialog" aria-modal="true" aria-labelledby="add-section-title" className="w-full max-w-xl rounded-2xl border border-vx-border bg-vx-panel p-6 shadow-2xl sm:p-8">
         <div className="flex items-start gap-4"><div className="min-w-0 flex-1"><p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-accent">Structured audio outpaint</p><h2 id="add-section-title" className="mt-2 font-vx text-2xl font-black">Add a section to “{song.title}”</h2></div><button ref={closeRef} type="button" aria-label="Close" onClick={onClose} className="grid min-h-11 min-w-11 place-items-center rounded-full border border-vx-border">×</button></div>
         <p className="mt-4 text-sm leading-6 text-vx-fg-muted">Create two 10, 20, or 30 second alternatives at the beginning or end. Style and optional structured lyrics are frozen with the exact source; each result is a separate recoverable branch.</p>
         <p className="mt-3 rounded-2xl border border-vx-border bg-vx-base p-3 text-sm text-vx-fg-muted">This adds at an edge; it does not insert into the middle, count beats, replace an existing passage, or promise a seamless join before live provider acceptance.</p>

@@ -24,12 +24,13 @@ DECLARE v_user UUID; v_prompt public.music_prompt_specs%ROWTYPE; v_title TEXT; v
 BEGIN
  SELECT id INTO v_user FROM public.users WHERE auth_id=p_auth_id;
  IF v_user IS NULL THEN RETURN jsonb_build_object('ok',false,'code','USER_NOT_FOUND'); END IF;
- SELECT ps,s.title INTO v_prompt,v_title FROM public.music_songs s
+ SELECT ps.* INTO v_prompt FROM public.music_songs s
  JOIN public.music_song_versions v ON v.id=p_version_id AND v.user_id=v_user AND v.song_id=s.id
  JOIN public.music_generation_requests r ON r.id=v.generation_request_id AND r.user_id=v_user
  JOIN public.music_prompt_specs ps ON ps.id=r.prompt_spec_id AND ps.user_id=v_user
  WHERE s.id=p_song_id AND s.user_id=v_user AND s.status='active' AND s.current_version_id=p_version_id;
  IF NOT FOUND THEN RETURN jsonb_build_object('ok',false,'code','REVISION_CONFLICT'); END IF;
+ SELECT title INTO v_title FROM public.music_songs WHERE id=p_song_id AND user_id=v_user;
  v_lyrics:=COALESCE(v_prompt.lyrics,'');
  v_styles:=COALESCE(NULLIF(v_prompt.styles,''),NULLIF(v_prompt.prompt,''),'');
  IF v_lyrics='' AND v_styles='' THEN RETURN jsonb_build_object('ok',false,'code','REUSE_UNAVAILABLE'); END IF;

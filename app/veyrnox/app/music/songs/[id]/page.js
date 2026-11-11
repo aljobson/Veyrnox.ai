@@ -1,7 +1,8 @@
 import { MusicSongDetail } from '../../../../_components/music/MusicSongDetail';
 import { MusicServerSongDetail } from '../../../../_components/music/MusicServerSongDetail';
+import { getT } from '../../../../../../lib/i18n/server';
 
-export const metadata = { title: 'Music version' };
+export async function generateMetadata() { const { t } = await getT(); return { title: t('music.meta.version') }; }
 
 export default async function MusicSongPage({ params }) {
   const { id } = await params;

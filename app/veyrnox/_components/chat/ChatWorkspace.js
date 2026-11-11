@@ -85,7 +85,7 @@ function Footer({ m, starred, onStar, onMusicReturn }) {
       <span>{label}</span>
       <button type="button" onClick={copy} className="rounded-sm px-1.5 py-0.5 font-sans hover:text-vx-fg" aria-label={t("app.chat.workspace.copy")}>{copied ? t("common.copied") : t("common.copy")}</button>
       <button type="button" onClick={onStar} aria-pressed={starred} className="rounded-sm px-1.5 py-0.5 font-sans hover:text-vx-fg" aria-label={starred ? t("app.chat.workspace.unstar") : t("app.chat.workspace.starReply")}>{starred ? t("app.chat.workspace.starred") : t("app.chat.workspace.star")}</button>
-      {onMusicReturn ? <button type="button" onClick={onMusicReturn} className="inline-flex min-h-10 items-center rounded-full border border-vx-accent px-3 font-sans font-bold text-vx-fg hover:bg-vx-panel">Review in Music</button> : null}
+      {onMusicReturn ? <button type="button" onClick={onMusicReturn} className="inline-flex min-h-10 items-center rounded-full border border-vx-accent px-3 font-sans font-bold text-vx-fg hover:bg-vx-panel">{t('app.chat.workspace.reviewInMusic')}</button> : null}
     </p>
   );
 }

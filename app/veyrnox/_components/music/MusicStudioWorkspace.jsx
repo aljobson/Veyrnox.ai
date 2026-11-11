@@ -51,14 +51,14 @@ export function MusicStudioWorkspace({ id }) {
     if (audio.paused) { try { await audio.play(); } catch {} } else audio.pause();
   }
 
-  if (error) return <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6"><section role="alert" className="rounded-3xl border border-vx-border bg-vx-panel p-8"><h1 className="font-vx text-3xl font-black">Studio unavailable</h1><p className="mt-3 text-vx-fg-body">{error}</p><button type="button" onClick={load} className="mt-5 min-h-11 rounded-full border border-vx-border px-5 font-bold">Retry</button></section></div>;
-  if (!song) return <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6" aria-busy="true"><div className="vx-shimmer h-[36rem] rounded-3xl bg-vx-panel" /></div>;
+  if (error) return <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6"><section role="alert" className="rounded-2xl border border-vx-border bg-vx-panel p-8"><h1 className="font-vx text-3xl font-black">Studio unavailable</h1><p className="mt-3 text-vx-fg-body">{error}</p><button type="button" onClick={load} className="mt-5 min-h-11 rounded-full border border-vx-border px-5 font-bold">Retry</button></section></div>;
+  if (!song) return <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6" aria-busy="true"><div className="vx-shimmer h-[36rem] rounded-2xl bg-vx-panel" /></div>;
   const versions = Array.isArray(song.versions) ? song.versions : [];
   return (
     <div className={`mx-auto max-w-7xl px-3 py-6 sm:px-6 ${contrast === 'high' ? 'contrast-125' : ''}`}>
       <div className="flex flex-wrap items-center justify-between gap-3"><div><Link href={`/app/music/songs/${song.id}`} className="text-sm font-bold text-vx-fg-muted hover:text-vx-fg">← Song details</Link><p className="mt-3 font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-accent">Unsaved local session</p><h1 className="mt-1 font-vx text-3xl font-black sm:text-4xl">{song.title}</h1></div><span className="rounded-full border border-amber-400/50 bg-amber-400/10 px-3 py-2 text-xs font-bold text-amber-200">No project save</span></div>
       <div className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
-        <section aria-label="Studio timeline" className="min-w-0 overflow-hidden rounded-3xl border border-vx-border bg-vx-panel shadow-2xl">
+        <section aria-label="Studio timeline" className="min-w-0 overflow-hidden rounded-2xl border border-vx-border bg-vx-panel shadow-2xl">
           <div className="flex flex-wrap items-center gap-2 border-b border-vx-border p-3">
             <button type="button" onClick={() => { if (audioRef.current) audioRef.current.currentTime = 0; }} aria-label="Return to start" className="min-h-11 rounded-full border border-vx-border px-4 font-bold">↤</button>
             <button type="button" onClick={togglePlayback} className="min-h-11 rounded-full bg-vx-accent px-5 font-bold text-vx-accent-ink">{playing ? 'Pause' : 'Play'}</button>
@@ -91,7 +91,7 @@ export function MusicStudioWorkspace({ id }) {
           <MusicStudioLatencyCalibration />
           <MusicStudioMidi tempo={tempo} playheadSeconds={current} />
         </section>
-        <aside aria-label="Studio Library dock" className="rounded-3xl border border-vx-border bg-vx-panel p-4">
+        <aside aria-label="Studio Library dock" className="rounded-2xl border border-vx-border bg-vx-panel p-4">
           <p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-accent">Library dock</p><h2 className="mt-2 font-vx text-xl font-black">Owned versions</h2>
           <p className="mt-2 text-xs leading-5 text-vx-fg-muted">Read-only in this slice. Opening a prior version does not change the current song.</p>
           <ol className="mt-4 max-h-72 space-y-2 overflow-y-auto">{versions.map((version) => <li key={version.id} className="rounded-xl border border-vx-border bg-vx-base p-3 text-sm"><strong>Version {version.version_number}</strong><span className="mt-1 block text-xs capitalize text-vx-fg-muted">{String(version.operation || 'generation').replaceAll('_', ' ')}{version.is_current ? ' · current' : ''}</span></li>)}</ol>

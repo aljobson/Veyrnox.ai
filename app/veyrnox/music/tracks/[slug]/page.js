@@ -1,3 +1,5 @@
 import { MusicPublicTrack } from '../../../_components/music/MusicPublicTrack';
-export const metadata = { title: 'Public Music track' };
-export default async function PublicTrackPage({ params }) { const { slug } = await params; return <MusicPublicTrack slug={slug} />; }
+import { Main } from '../../../_components/Main';
+import { getT } from '../../../../../lib/i18n/server';
+export async function generateMetadata() { const { t } = await getT(); return { title: t('music.track.eyebrow') }; }
+export default async function PublicTrackPage({ params }) { const { slug } = await params; return <Main><MusicPublicTrack slug={slug} /></Main>; }

@@ -69,7 +69,7 @@ export function MusicRenderDialog({ song, onClose, onSaved }) {
 
   return (
     <div className="fixed inset-0 z-[80] grid place-items-center overflow-y-auto bg-black/70 p-4 backdrop-blur-sm" onPointerDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <section role="dialog" aria-modal="true" aria-labelledby="render-title" className="w-full max-w-lg rounded-3xl border border-vx-border bg-vx-panel p-6 shadow-2xl sm:p-8">
+      <section role="dialog" aria-modal="true" aria-labelledby="render-title" className="w-full max-w-lg rounded-2xl border border-vx-border bg-vx-panel p-6 shadow-2xl sm:p-8">
         <div className="flex items-start gap-4">
           <div className="min-w-0 flex-1"><p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-accent">Rendered WAV edit</p><h2 id="render-title" className="mt-2 font-vx text-2xl font-black">Edit “{song.title}”</h2></div>
           <button ref={closeRef} type="button" aria-label="Close" onClick={onClose} className="grid min-h-11 min-w-11 place-items-center rounded-full border border-vx-border">×</button>

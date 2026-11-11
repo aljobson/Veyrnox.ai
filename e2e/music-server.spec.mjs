@@ -86,8 +86,15 @@ const exactQuote = ({ quoteId = QUOTE_ID, modelId = 'ace-step', unitCredits = 5 
   policy_version: 'music-prompt-v1',
 });
 
-function isExpectedDevProbe(url) {
-  return url.endsWith('/reticle') || url.includes('/auth/v1/settings') || url.includes('challenges.cloudflare.com');
+function isExpectedDevProbe(value) {
+  try {
+    const url = new URL(value);
+    return url.pathname.endsWith('/reticle')
+      || url.pathname.includes('/auth/v1/settings')
+      || url.hostname === 'challenges.cloudflare.com';
+  } catch {
+    return false;
+  }
 }
 
 test.beforeEach(async ({ page }) => {

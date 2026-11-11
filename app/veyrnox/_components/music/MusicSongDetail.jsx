@@ -8,19 +8,19 @@ export function MusicSongDetail({ id }) {
   const { state, find } = useMusicPreviewState();
   const song = find(id);
 
-  if (!state) return <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6" aria-busy="true"><div className="vx-shimmer h-96 rounded-3xl bg-vx-panel" /></div>;
+  if (!state) return <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6" aria-busy="true"><div className="vx-shimmer h-96 rounded-2xl bg-vx-panel" /></div>;
   if (!song) return (
     <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
-      <section className="rounded-3xl border border-vx-border bg-vx-panel p-8"><p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-danger">Not found</p><h1 className="mt-3 font-vx text-4xl font-black">This version is not in this browser.</h1><p className="mt-4 text-vx-fg-body">Preview songs are local to the browser that created them.</p><Link href="/app/music/library" className="mt-6 inline-flex min-h-12 items-center rounded-full bg-vx-accent px-6 font-extrabold text-vx-accent-ink">Open Music Library</Link></section>
+      <section className="rounded-2xl border border-vx-border bg-vx-panel p-8"><p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-danger">Not found</p><h1 className="mt-3 font-vx text-4xl font-black">This version is not in this browser.</h1><p className="mt-4 text-vx-fg-body">Preview songs are local to the browser that created them.</p><Link href="/app/music/library" className="mt-6 inline-flex min-h-12 items-center rounded-full bg-vx-accent px-6 font-extrabold text-vx-accent-ink">Open Music Library</Link></section>
     </div>
   );
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
       <Link href="/app/music/library" className="text-sm font-bold text-vx-fg-muted underline-offset-4 hover:text-vx-fg hover:underline">← Music Library</Link>
-      <article className="mt-6 overflow-hidden rounded-3xl border border-vx-border bg-vx-panel shadow-2xl">
+      <article className="mt-6 overflow-hidden rounded-2xl border border-vx-border bg-vx-panel shadow-2xl">
         <div className="grid gap-8 p-6 sm:p-8 lg:grid-cols-2">
-          <div className="grid min-h-72 place-items-center rounded-3xl border border-vx-border bg-vx-panel-raised">
+          <div className="grid min-h-72 place-items-center rounded-2xl border border-vx-border bg-vx-panel-raised">
             <div className="text-center"><span aria-hidden="true" className="font-vx text-8xl font-black text-vx-accent">{song.label}</span><p className="mt-3 font-vx-mono text-xs uppercase tracking-widest text-vx-fg-muted">Private version</p></div>
           </div>
           <div className="min-w-0 self-center">

@@ -162,7 +162,7 @@ export function MusicDistributionDialog({ mode, song, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/70 p-4 backdrop-blur-sm" onPointerDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <section ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="music-distribution-title" className="w-full max-w-lg rounded-3xl border border-vx-border bg-vx-panel p-6 shadow-2xl sm:p-8">
+      <section ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="music-distribution-title" className="w-full max-w-lg rounded-2xl border border-vx-border bg-vx-panel p-6 shadow-2xl sm:p-8">
         <div className="flex items-start gap-4">
           <div className="min-w-0 flex-1">
             <p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-accent">{mode === 'share' ? 'Link-only sharing' : 'Owned audio download'}</p>

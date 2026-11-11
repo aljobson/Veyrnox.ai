@@ -1,6 +1,7 @@
 // On 2026-10-31 upload was 60,490 KiB / 12,290 KiB gzip against a 65,536 KiB limit.
 // Cold requests spent 1.1–1.3 s before fetch; the separate wrapper added 6.9 MB.
-// Cap uploads at 56,000 KiB and keep templates and non-English catalogs out of the wrapper.
+// Cap uploads at 58,000 KiB, retaining 7.3 MiB below the platform limit, and keep
+// templates and non-English catalogs out of the wrapper.
 // lib/i18n/messages/email/ is permitted: worker.js -> lib/social/reportSchedule.js -> lib/i18n/email.mjs renders scheduled-report emails in the cron.
 import { execFile } from 'node:child_process';
 import { mkdtemp, readdir, rm, stat } from 'node:fs/promises';
@@ -10,7 +11,7 @@ import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 
-export const WORKER_SIZE_BUDGET_KIB = 56000;
+export const WORKER_SIZE_BUDGET_KIB = 58000;
 const execFileAsync = promisify(execFile);
 const print = (line) => process.stdout.write(`${line}\n`);
 

@@ -203,15 +203,15 @@ test('workspace creation and atomic move parsers reject ambiguous ownership shap
 
   assert.deepEqual(parseMusicSongMove({
     destination_workspace_id: workspaceId,
-    idempotency_key: 'move.12345678',
+    idempotency_key: 'move.12345678', // gitleaks:allow -- synthetic idempotency fixture
     songs: [{ id: songA, revision: 0 }, { id: songB, revision: 3 }],
   }), {
     ok: true,
     destinationWorkspaceId: workspaceId,
-    idempotencyKey: 'move.12345678',
+    idempotencyKey: 'move.12345678', // gitleaks:allow -- synthetic idempotency fixture
     songs: [{ id: songA, revision: 0 }, { id: songB, revision: 3 }],
   });
-  const moveBase = { destination_workspace_id: workspaceId, idempotency_key: 'move.12345678' };
+  const moveBase = { destination_workspace_id: workspaceId, idempotency_key: 'move.12345678' }; // gitleaks:allow -- synthetic idempotency fixture
   assert.equal(parseMusicSongMove({ ...moveBase, songs: [] }).error, 'songs_invalid');
   assert.equal(parseMusicSongMove({ ...moveBase, songs: [{ id: songA, revision: 0 }, { id: songA, revision: 0 }] }).error, 'songs_invalid');
   assert.equal(parseMusicSongMove({ ...moveBase, songs: [{ id: songA, revision: -1 }] }).error, 'songs_invalid');
@@ -325,8 +325,8 @@ test('private distribution parsers bind share tokens, versions and export quotes
   assert.deepEqual(parseMusicShareLinkCreate({
     version_id: versionId, token, idempotency_key: 'share.12345678',
   }), { ok: true, versionId, token, idempotencyKey: 'share.12345678' });
-  assert.deepEqual(parseMusicShareLinkRevoke({ idempotency_key: 'revoke.12345678' }), {
-    ok: true, idempotencyKey: 'revoke.12345678',
+  assert.deepEqual(parseMusicShareLinkRevoke({ idempotency_key: 'revoke.12345678' }), { // gitleaks:allow -- synthetic idempotency fixture
+    ok: true, idempotencyKey: 'revoke.12345678', // gitleaks:allow -- synthetic idempotency fixture
   });
   assert.deepEqual(parseMusicExportQuote({ version_id: versionId, format: 'mp3' }), {
     ok: true, versionId, format: 'mp3',

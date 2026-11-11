@@ -100,7 +100,7 @@ function MusicUploadsCollection({ active }) {
       {error ? <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-vx-danger/50 bg-vx-danger/10 p-4 text-sm text-vx-danger"><span>{error}</span><button type="button" onClick={load} className="min-h-10 rounded-full border border-current px-4 font-bold">Retry uploads</button></div> : null}
       {loading ? <div aria-busy="true" aria-label="Loading owned uploads" className="space-y-3"><div className="vx-shimmer h-32 rounded-2xl bg-vx-panel"/><div className="vx-shimmer h-32 rounded-2xl bg-vx-panel"/></div> : null}
       {!loading && !error && loaded && sources.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-vx-border p-10"><h3 className="font-vx text-2xl font-black">No verified uploads yet.</h3><p className="mt-3 text-vx-fg-muted">Add an owned MP3, WAV, or microphone recording in Create. Rights confirmation and server-side inspection happen before it appears here.</p></div>
+        <div className="rounded-2xl border border-dashed border-vx-border p-10"><h3 className="font-vx text-2xl font-black">No verified uploads yet.</h3><p className="mt-3 text-vx-fg-muted">Add an owned MP3, WAV, or microphone recording in Create. Rights confirmation and server-side inspection happen before it appears here.</p></div>
       ) : null}
       {!loading && !error && sources.length ? <div data-testid="music-upload-items" className="grid gap-3 md:grid-cols-2">{sources.map((source) => (
         <article key={source.id} className="min-w-0 rounded-2xl border border-vx-border bg-vx-panel p-4 shadow-lg">
@@ -164,7 +164,7 @@ export function MusicServerLibrary({ workspaceView = false, sourcesEnabled = fal
 
       {library.error ? <div role="alert" className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-vx-danger/50 bg-vx-danger/10 px-4 py-3 text-sm text-vx-danger"><span>{library.error}</span><button type="button" onClick={library.load} className="min-h-10 rounded-full border border-current px-4 font-bold">Reload Library</button></div> : null}
 
-      {!['uploads', 'trash'].includes(collection) ? <section aria-label="Private workspaces" className="mt-8 rounded-3xl border border-vx-border bg-vx-panel p-4 sm:p-5">
+      {!['uploads', 'trash'].includes(collection) ? <section aria-label="Private workspaces" className="mt-8 rounded-2xl border border-vx-border bg-vx-panel p-4 sm:p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0 flex-1">
             <h2 className="font-vx text-xl font-black">Choose a workspace</h2>
@@ -225,11 +225,11 @@ export function MusicServerLibrary({ workspaceView = false, sourcesEnabled = fal
         ) : library.loading ? (
           <div aria-busy="true" className="space-y-3"><div className="vx-shimmer h-28 rounded-2xl bg-vx-panel"/><div className="vx-shimmer h-28 rounded-2xl bg-vx-panel"/></div>
         ) : collection === 'trash' && visible.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-vx-border p-10"><h2 className="font-vx text-2xl font-black">Trash is empty.</h2><p className="mt-3 text-vx-fg-muted">Versions moved here can be restored. Permanent deletion remains unavailable while private asset cleanup is being validated.</p></div>
+          <div className="rounded-2xl border border-dashed border-vx-border p-10"><h2 className="font-vx text-2xl font-black">Trash is empty.</h2><p className="mt-3 text-vx-fg-muted">Versions moved here can be restored. Permanent deletion remains unavailable while private asset cleanup is being validated.</p></div>
         ) : collection !== 'trash' && library.songs.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-vx-border p-10"><h2 className="font-vx text-2xl font-black">No completed private versions yet.</h2><p className="mt-3 text-vx-fg-muted">Create an instrumental pair and completed versions will appear here.</p><Link href="/app/music/create" className="mt-6 inline-flex min-h-11 items-center rounded-full bg-vx-accent px-5 font-bold text-vx-accent-ink">Open Create</Link></div>
+          <div className="rounded-2xl border border-dashed border-vx-border p-10"><h2 className="font-vx text-2xl font-black">No completed private versions yet.</h2><p className="mt-3 text-vx-fg-muted">Create an instrumental pair and completed versions will appear here.</p><Link href="/app/music/create" className="mt-6 inline-flex min-h-11 items-center rounded-full bg-vx-accent px-5 font-bold text-vx-accent-ink">Open Create</Link></div>
         ) : visible.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-vx-border p-10"><h2 className="font-vx text-2xl font-black">Nothing matches this private view.</h2><p className="mt-3 text-vx-fg-muted">Clear the search or choose another workspace.</p></div>
+          <div className="rounded-2xl border border-dashed border-vx-border p-10"><h2 className="font-vx text-2xl font-black">Nothing matches this private view.</h2><p className="mt-3 text-vx-fg-muted">Clear the search or choose another workspace.</p></div>
         ) : (
           <>
             {collection !== 'trash' ? <label className="mb-3 flex min-h-10 items-center gap-3 text-sm font-bold text-vx-fg-body"><input type="checkbox" checked={allVisibleSelected} onChange={() => library.selectVisible(visible.map((song) => song.id))} className="h-5 w-5 accent-vx-accent" />Select all shown</label> : null}

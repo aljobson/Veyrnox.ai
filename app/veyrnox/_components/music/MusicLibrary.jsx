@@ -45,9 +45,9 @@ export function MusicLibrary() {
         {!state ? (
           <div aria-busy="true" className="space-y-3"><div className="vx-shimmer h-24 rounded-2xl bg-vx-panel"/><div className="vx-shimmer h-24 rounded-2xl bg-vx-panel"/></div>
         ) : rows.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-vx-border p-10"><h2 className="font-vx text-2xl font-black">No private versions yet.</h2><p className="mt-3 text-vx-fg-muted">Create a pair and both candidates will be stored here, including failures and refunds.</p></div>
+          <div className="rounded-2xl border border-dashed border-vx-border p-10"><h2 className="font-vx text-2xl font-black">No private versions yet.</h2><p className="mt-3 text-vx-fg-muted">Create a pair and both candidates will be stored here, including failures and refunds.</p></div>
         ) : visible.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-vx-border p-10"><h2 className="font-vx text-2xl font-black">Nothing matches this view.</h2><p className="mt-3 text-vx-fg-muted">Clear the search or choose another status.</p></div>
+          <div className="rounded-2xl border border-dashed border-vx-border p-10"><h2 className="font-vx text-2xl font-black">Nothing matches this view.</h2><p className="mt-3 text-vx-fg-muted">Clear the search or choose another status.</p></div>
         ) : (
           <div className="space-y-3">{visible.map((song) => <MusicCandidateCard key={song.id} song={song} library />)}</div>
         )}
