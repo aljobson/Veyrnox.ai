@@ -310,6 +310,9 @@ try {
         'speech_analyses', 'speech_analysis_cache', 'speech_analysis_requests', 'speech_source_probes',
         // Best Cut (ADR-0334): a per-user daily no-speech counter, not user content; erased with the account.
         'speech_gate_daily',
+        // Provider reference links contain public metadata only, are available in-app,
+        // and are erased with the account. The generic export has no Music section yet.
+        'music_reference_links',
         // Music export is deliberately not implied by the generic profile/jobs projections. Account
         // deletion refuses while this provider/media-backed content exists (0490).
         'music_collaboration_profiles', 'music_creator_profiles', 'music_download_claims', 'music_download_periods',

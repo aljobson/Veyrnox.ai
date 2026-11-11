@@ -1,5 +1,6 @@
 import { MusicDiscover } from '../../../_components/music/MusicDiscover';
 import { getT } from '../../../../../lib/i18n/server';
+import { musicReferencesEnabled, musicSourcesEnabled, musicUiEnabled } from '../../../../../lib/musicBackend.js';
 
 export async function generateMetadata() {
   const { t } = await getT();
@@ -10,5 +11,6 @@ export async function generateMetadata() {
 }
 
 export default function MusicDiscoverPage() {
-  return <MusicDiscover />;
+  const serverMode = musicUiEnabled();
+  return <MusicDiscover referencesEnabled={serverMode && musicReferencesEnabled()} sourcesEnabled={serverMode && musicSourcesEnabled()} />;
 }

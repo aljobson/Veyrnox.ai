@@ -107,7 +107,7 @@
     // Music's migrated pair queue is independent of generic durable admission. One JSON binding opens the
     // verified ACE-Step create/library/Studio paths and its recovery sweep while provider-specific models
     // that remain inactive in model_catalog stay hidden behind their own false switches.
-    "MUSIC_RUNTIME_FLAGS": "{\"ui\":true,\"schema\":true,\"library\":true,\"generation\":true,\"dispatch\":true,\"sources\":true,\"distribution\":true,\"publication\":true,\"editing\":true,\"playlists\":true,\"studio\":true,\"reuse\":true,\"collaboration\":true,\"cover\":false,\"stems\":false,\"targetStems\":false,\"trackAdd\":false,\"extend\":false,\"replace\":false,\"addSection\":false}",
+    "MUSIC_RUNTIME_FLAGS": "{\"ui\":true,\"schema\":true,\"library\":true,\"references\":false,\"generation\":true,\"dispatch\":true,\"sources\":true,\"distribution\":true,\"publication\":true,\"editing\":true,\"playlists\":true,\"studio\":true,\"reuse\":true,\"collaboration\":true,\"cover\":false,\"stems\":false,\"targetStems\":false,\"trackAdd\":false,\"extend\":false,\"replace\":false,\"addSection\":false}",
     // ADR-0069: MAX_CHARGE_ENABLED is omitted (unset is off) while generic durable admission remains off.
     // ADR-0080: free browser editing and MP4 export, visible in Studio (owner, 2026-10-10).
     // Cloud saving and Projects navigation share the separate TENANT_PROJECTS_ENABLED gate.
@@ -343,7 +343,7 @@
         "TENANT_PROJECTS_ENABLED": "true",
         "PROJECT_MEDIA_UPLOADS_ENABLED": "true",
         "FAL_DISPATCH_SCHEMA_ENABLED": "true",
-        "MUSIC_RUNTIME_FLAGS": "{\"ui\":true,\"schema\":true,\"library\":true,\"generation\":true,\"dispatch\":true,\"sources\":true,\"distribution\":true,\"publication\":true,\"editing\":true,\"playlists\":true,\"studio\":true,\"reuse\":true,\"collaboration\":true,\"cover\":false,\"stems\":false,\"targetStems\":false,\"trackAdd\":false,\"extend\":false,\"replace\":false,\"addSection\":false}",
+        "MUSIC_RUNTIME_FLAGS": "{\"ui\":true,\"schema\":true,\"library\":true,\"references\":false,\"generation\":true,\"dispatch\":true,\"sources\":true,\"distribution\":true,\"publication\":true,\"editing\":true,\"playlists\":true,\"studio\":true,\"reuse\":true,\"collaboration\":true,\"cover\":false,\"stems\":false,\"targetStems\":false,\"trackAdd\":false,\"extend\":false,\"replace\":false,\"addSection\":false}",
         "RECOVERY_HEALTH_ENABLED": "true",
         // ADR-0256 phase 0: log the supplier route chooseRoute would pick next to the real dispatch. Log only; staging only.
         // Needs migration 0367 applied on the staging database to find anything; without it the log says so and nothing else happens.
