@@ -41,9 +41,16 @@ describe('music pair foundation (0250)', { skip: !DATABASE_URL && 'DATABASE_URL 
 
   const one = async (sql: string, params: unknown[] = []) => (await client.query(sql, params)).rows[0];
 
-  async function user() {
+  async function user(packCredits = 0) {
     const authId = randomUUID();
     const row = await one('SELECT public.signup_grant($1, $2) AS id', [authId, `${authId}@test.veyrnox.ai`]);
+    if (packCredits > 0) {
+      const granted = (await one(
+        "SELECT public.ledger_grant($1, $2, 'grant:topup') AS r",
+        [row.id, packCredits],
+      )).r;
+      assert.equal(granted.ok, true);
+    }
     return { authId, id: row.id as string };
   }
 
@@ -52,7 +59,7 @@ describe('music pair foundation (0250)', { skip: !DATABASE_URL && 'DATABASE_URL 
   }
 
   it('charges once and creates exactly two independently linked jobs', async () => {
-    const owner = await user();
+    const owner = await user(100);
     const beforeBalance = Number((await one('SELECT balance FROM public.credit_balances WHERE user_id=$1', [owner.id])).balance);
     const q = await quote(owner.authId);
     assert.equal(q.ok, true);
@@ -77,7 +84,7 @@ describe('music pair foundation (0250)', { skip: !DATABASE_URL && 'DATABASE_URL 
   });
 
   it('does not reveal another account generation', async () => {
-    const owner = await user();
+    const owner = await user(100);
     const stranger = await user();
     const q = await quote(owner.authId, 'private pulse');
     const made = (await one('SELECT public.music_submit_pair($1,$2,$3) AS r', [owner.authId, q.quote_id, `music.${randomUUID()}`])).r;
