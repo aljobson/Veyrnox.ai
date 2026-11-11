@@ -4,7 +4,7 @@
 
 ALTER TABLE public.jobs DROP CONSTRAINT IF EXISTS jobs_credits_check;
 ALTER TABLE public.jobs ADD CONSTRAINT jobs_credits_check CHECK (
-    credits > 0 OR (
+    credits > 0 OR free_allowance OR (
         credits = 0 AND model_id IN (
             'music-local-crop','music-local-fade','music-local-speed',
             'music-local-reorder','music-local-remaster'

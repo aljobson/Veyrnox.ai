@@ -47,6 +47,7 @@ test('remaster is a canonical no-credit replay-safe child with bounded level-onl
   ]);
   assert.match(route,/renderPcmWavRemaster/);
   assert.match(sql,/'music-local-remaster'/);
+  assert.match(sql,/credits > 0 OR free_allowance OR/);
   assert.match(sql,/CHECK \(operation IN \('crop','fade','speed','reorder','remaster'\)\)/);
   assert.match(sql,/v_target_peak NOT IN \(-3,-2,-1\)/);
   assert.match(sql,/'pcm-wav-remaster-v1'/);
