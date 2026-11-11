@@ -20,11 +20,12 @@ export function audioDurationIsInvalid(model, value) {
   return !Number.isInteger(candidate) || candidate < config.min || candidate > config.max;
 }
 
-export function settingsInputs(model, { seed, negative, voice = '', duration = '' }) {
+export function settingsInputs(model, { seed, negative, voice = '', duration = '', loop = false }) {
   const out = {};
   if (model?.takesSeed && /^\d+$/.test(seed) && Number(seed) <= SEED_MAX) out.seed = Number(seed);
   if (model?.takesNegative && negative.trim()) out.negative_prompt = negative.trim();
   if (model?.takesVoice && voice.trim()) out.voice_description = voice.trim();
+  if (model?.takesLoop) out.loop = loop === true;
   const durationConfig = audioDurationConfig(model);
   if (durationConfig && !audioDurationIsInvalid(model, duration)) {
     out.duration = duration === '' || duration == null ? durationConfig.defaultValue : Number(duration);

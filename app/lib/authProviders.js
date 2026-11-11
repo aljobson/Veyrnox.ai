@@ -43,6 +43,12 @@ export function providerAvailable(settings, provider) {
     return ext[provider] === true;
 }
 
+/** Phone stays visible, but a successful settings read can fail closed. */
+export function phoneAvailable(settings) {
+    if (!settings || typeof settings !== 'object') return true;
+    return settings.external?.phone === true && settings.disable_signup !== true;
+}
+
 /** A visible passkey option explains missing support rather than disappearing. */
 export function passkeyUnavailableReason(settings, supported, t = defaultT) {
     if (!supported) return t('authGate.passkeyBrowser');

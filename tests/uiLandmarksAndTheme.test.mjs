@@ -18,7 +18,11 @@ test('one component holds the only <main>, and every page renders it', () => {
     // content" skipped nothing and neither could be a landmark.
     assert.doesNotMatch(read('app/layout.js'), /<Main[\s>]/);
     // In its own page, or in the one shell that route's pages share.
-    const SHELLS = { 'app/legal/': 'app/legal/_lib/Legal.js', 'app/veyrnox/m/': 'app/veyrnox/m/layout.js' };
+    const SHELLS = {
+        'app/legal/': 'app/legal/_lib/Legal.js',
+        'app/veyrnox/m/': 'app/veyrnox/m/layout.js',
+        'app/veyrnox/app/music/': 'app/veyrnox/_components/music/MusicPreviewShell.jsx',
+    };
     const routes = SOURCES.filter((f) => /\/(page|not-found|loading)\.js$/.test(f));
     assert.ok(routes.length > 40, 'the route files were found');
     for (const route of routes) {

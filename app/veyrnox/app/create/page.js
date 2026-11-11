@@ -153,6 +153,7 @@ export default function CreateStudio() {
   const [cinema, setCinema] = useState(DEFAULT_CINEMA);
   const [seed, setSeed] = useState('');
   const [negative, setNegative] = useState('');
+  const [loop, setLoop] = useState(false);
   const [voice, setVoice] = useState(''); // the voice in words, for a speech model that takes one
   const [characterOn, setCharacterOn] = useState(false);
   const [character, setCharacter] = useState({});
@@ -683,7 +684,7 @@ export default function CreateStudio() {
       prompt: finalPrompt(),
       aspect_ratio: aspectOptions.length ? aspect : undefined,
       duration_seconds: !model.swap && model.kind === 'video' ? Number(duration.replace('s', '')) : undefined,
-      ...settingsInputs(model, { seed, negative, voice, duration: audioDuration }),
+      ...settingsInputs(model, { seed, negative, voice, duration: audioDuration, loop }),
     };
     // strip undefined so server sees a clean object
     Object.keys(inputs).forEach((k) => inputs[k] === undefined && delete inputs[k]);
@@ -1201,7 +1202,7 @@ export default function CreateStudio() {
           )}
 
           {!isShort && (
-            <div className="scroll-mt-24" data-assistant-target="create.settings"><GenerationSettings model={model} seed={seed} onSeed={setSeed} negative={negative} onNegative={setNegative} /></div>
+            <div className="scroll-mt-24" data-assistant-target="create.settings"><GenerationSettings model={model} seed={seed} onSeed={setSeed} negative={negative} onNegative={setNegative} loop={loop} onLoop={setLoop} /></div>
           )}
 
           {takesCamera && (

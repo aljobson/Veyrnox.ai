@@ -41,6 +41,10 @@ await c.query('BEGIN');
 try {
     const migration = await readFile(new URL('../packages/db/schema/supabase/0347_account_deletion.sql', import.meta.url), 'utf8');
     await c.query('SAVEPOINT again'); await c.query(migration); await c.query(migration); await c.query('RELEASE SAVEPOINT again');
+    // 0347's idempotency replay restores its historical blocker body. Reapply the
+    // current Music guard so the rest of this full-schema test exercises production.
+    const musicGuard = await readFile(new URL('../packages/db/schema/supabase/0490_music_account_deletion_guard.sql', import.meta.url), 'utf8');
+    await c.query(musicGuard);
 
     // 1. Nobody else's account, nobody's guess.
     assert.equal((await prepare(randomUUID())).error, 'account_not_found');
@@ -166,6 +170,9 @@ try {
         const other = await signUp();
         await c.query(`INSERT INTO public.social_brand_members (brand_id, user_id, role, invited_by) VALUES ($1, $2, 'editor', $3)`, [b.id, other.userId, u.userId]);
     }, 'publish_team_present');
+    await blocked((u) => c.query(
+        `INSERT INTO public.music_lyric_drafts (user_id, model_id, lyrics, title)
+         VALUES ($1, 'ace-step', '[Verse]\nPrivate words', 'Private draft')`, [u.userId]), 'music_content_present');
 
     // 8. A token is short-lived and rate limited.
     const slow = await signUp();
@@ -202,7 +209,18 @@ try {
     const WITH_AUTH_USER = new Set(['organisation_members', 'workspace_members', 'project_members', 'api_requests', 'editor_requests',
         'social_connection_selections', 'social_oauth_states', 'film_studio_projects', 'film_studio_save_windows', 'mfa_recovery_codes', 'mfa_recovery_attempts']);
     const REFUSED_UNTIL_CLEARED = new Set(['cinema_submissions', 'cinema_competitions', 'cinema_story_polls', 'credit_subscriptions',
-        'social_publish_subscriptions', 'social_brand_members', 'social_brand_invitations', 'voice_profiles']);
+        'social_publish_subscriptions', 'social_brand_members', 'social_brand_invitations', 'voice_profiles',
+        // Music owns generated media, provider receipts and collaboration state. Until the dedicated
+        // provider/media cleanup path exists, refuse erasure rather than retain it silently.
+        'music_collaboration_profiles', 'music_creator_profiles', 'music_download_claims', 'music_download_periods',
+        'music_export_attempts', 'music_export_quotes', 'music_generation_candidates', 'music_generation_quotes',
+        'music_generation_requests', 'music_lyric_drafts', 'music_playlist_mutations', 'music_playlists',
+        'music_prompt_specs', 'music_publication_attestations', 'music_publications', 'music_replace_take_commits',
+        'music_reuse_draft_receipts', 'music_rights_attestations', 'music_share_links', 'music_song_feedback',
+        'music_song_versions', 'music_songs', 'music_source_assets', 'music_stem_quotes', 'music_stem_requests',
+        'music_target_stem_assets', 'music_target_stem_quotes', 'music_target_stem_requests', 'music_track_add_quotes',
+        'music_track_add_requests', 'music_version_operation_receipts', 'music_version_sources',
+        'music_workspace_invitations', 'music_workspace_members', 'music_workspace_moves', 'music_workspaces']);
     const RETAINED = new Set([
         'speech_analysis_requests', // content-free idempotency tombstones; no transcript
 
