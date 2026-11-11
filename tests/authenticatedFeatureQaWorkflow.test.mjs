@@ -22,7 +22,10 @@ const runtimeScript = () => {
 test('isolated feature QA gates pull requests and main pushes with read-only permissions', () => {
   assert.match(workflow, /on:\n  pull_request:\n  push:\n    branches: \[main\]/);
   assert.match(workflow, /permissions:\n  contents: read\n/);
-  assert.match(workflow, /isolated-feature-qa:\n    runs-on: ubuntu-latest\n    timeout-minutes: 35/);
+  assert.match(
+    workflow,
+    /isolated-feature-qa:\n(?:    #[^\n]*\n){2}    runs-on: ubuntu-24\.04\n    timeout-minutes: 35/,
+  );
   assert.doesNotMatch(workflow, /pull_request_target|contents: write|actions: write|id-token: write|continue-on-error/);
 });
 test('QA uses existing pinned actions, Node22 and recursive public source checkout without persistent credentials', () => {

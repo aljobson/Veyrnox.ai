@@ -23,7 +23,9 @@ concurrency:
 
 jobs:
   build-test:
-    runs-on: ubuntu-latest
+    # This job installs Ubuntu media packages. Pin the image so an
+    # ubuntu-latest migration cannot strand the required gate on a new mirror.
+    runs-on: ubuntu-24.04
     # Installing ffmpeg can stall on the hosted runner's Ubuntu mirror. Keep
     # enough headroom for that external download plus the actual test/build.
     timeout-minutes: 30
