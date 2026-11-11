@@ -3226,5 +3226,11 @@
     "english": "Only use photos of people who agreed.",
     "translation": "Usa solo fotos de personas que hayan dado su consentimiento.",
     "ratio": 1.62
+  },
+  {
+    "id": "audioTemplates.all",
+    "english": "All",
+    "translation": "Todas",
+    "ratio": 1.67
   }
 ]
