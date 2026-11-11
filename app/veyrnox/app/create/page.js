@@ -470,7 +470,8 @@ export default function CreateStudio() {
     const nextModel = models.find((m) => m.id === tpl.modelId);
     if (!nextModel) return;
     setTemplateData(null);
-    setPresetParam('');
+    setPresetParam(null);
+    setAnimationPortrait(null); // an Oddling portrait is animation-only; an audio template needs none
     setGoal(nextModel.kind || 'all');
     setTier(null);
     chooseModel(tpl.modelId);

@@ -39,3 +39,31 @@ test('with no runnable model the picker says so instead of listing templates', (
   assert.match(html, /No templates match\./);
   assert.doesNotMatch(html, /data-testid="create-template-(?!picker")/);
 });
+
+const audio = audioTemplates.AUDIO_TEMPLATES[0];
+const renderPicker = (props) => renderToStaticMarkup(createElement(module.exports.TemplatePicker, { onPick() {}, onPickAudio() {}, onClose() {}, ...props }));
+
+test('the picker keeps video and audio templates on separate tabs', () => {
+  const html = renderPicker({ models, goal: 'video' });
+  assert.match(html, /data-testid="create-kind-video"/);
+  assert.match(html, /data-testid="create-kind-audio"/);
+  assert.doesNotMatch(html, /data-testid="create-template-audio-/);
+});
+
+test('the audio tab lists audio templates only, and only those whose model is offered', () => {
+  const html = renderPicker({ models: [{ id: audio.modelId, name: 'm', kind: 'audio' }], goal: 'audio' });
+  assert.ok(html.includes(`data-testid="create-template-${audio.id}"`));
+  assert.doesNotMatch(html, new RegExp(`data-testid="create-template-${preset.id}"`));
+  const none = renderPicker({ models: [{ id: 'unrelated-model', name: 'x', kind: 'audio' }], goal: 'audio' });
+  assert.match(none, /No templates match\./);
+  assert.doesNotMatch(none, /data-testid="create-template-audio-/);
+});
+
+test('create wires an audio pick to applyAudioTemplate and clears animation-only state', () => {
+  const page = read('app/veyrnox/app/create/page.js');
+  assert.match(page, /onPickAudio=\{applyAudioTemplate\}/);
+  const fn = page.slice(page.indexOf('function applyAudioTemplate'), page.indexOf('async function applyTemplate'));
+  assert.match(fn, /setAnimationPortrait\(null\)/);
+  assert.match(fn, /chooseModel\(tpl\.modelId\)/);
+  assert.match(fn, /setPrompt\(tpl\.prompt\)/);
+});
