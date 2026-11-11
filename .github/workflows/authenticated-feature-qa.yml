@@ -33,7 +33,9 @@ jobs:
       - name: Install pinned isolated browser QA tools
         run: |
           npm install --no-save --no-audit --no-fund @playwright/test@1.63.0
-          npx playwright install --with-deps chromium
+          # The pinned runner image already carries Chromium's shared-library
+          # dependencies. Avoid making this required check depend on apt DNS.
+          npx playwright install chromium
       - name: Lint isolated browser fixtures
         run: npx eslint e2e/fixtures/authenticated-product.mjs e2e/authenticated-privacy-choices.spec.mjs tests/authenticatedFixtureSafety.test.mjs tests/authenticatedFeatureQaWorkflow.test.mjs --max-warnings=0
       - name: Build owned local application
