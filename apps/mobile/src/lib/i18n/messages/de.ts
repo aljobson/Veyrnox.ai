@@ -367,6 +367,13 @@ const de = {
     'presets.fidelity.photoReady': 'Foto bereit',
     'presets.use.photoReplace': 'Ersetzen',
     'presets.fidelity.photosUnavailable': 'Diese Vorlage benötigt mehr Fotos, als das Modell derzeit unterstützt. Wähle eine andere Vorlage oder versuche es später erneut.',
+    'templates.kind.label': 'Vorlagentyp',
+    'templates.kind.video': 'Video',
+    'templates.kind.audio': 'Audio',
+    'audioTemplates.all': 'Alle',
+    'audioTemplates.cat.MUSIC': 'Musik',
+    'audioTemplates.cat.VOICE-OVER': 'Sprecher',
+    'audioTemplates.cat.SOUND FX': 'Soundeffekte',
 } as const;
 
 export default de;

@@ -367,6 +367,13 @@ const ar = {
     'presets.fidelity.photoReady': 'الصورة جاهزة',
     'presets.use.photoReplace': 'استبدال',
     'presets.fidelity.photosUnavailable': 'يحتاج هذا القالب إلى صور أكثر مما يدعمه النموذج حاليًا. اختر قالبًا آخر أو حاول مرة أخرى لاحقًا.',
+    'templates.kind.label': 'نوع القالب',
+    'templates.kind.video': 'فيديو',
+    'templates.kind.audio': 'صوت',
+    'audioTemplates.all': 'الكل',
+    'audioTemplates.cat.MUSIC': 'موسيقى',
+    'audioTemplates.cat.VOICE-OVER': 'تعليق صوتي',
+    'audioTemplates.cat.SOUND FX': 'مؤثرات صوتية',
 } as const;
 
 export default ar;

@@ -10,6 +10,8 @@ const fs = require('fs'), path = require('path'), ts = require('typescript');
 // Fixed id domains for the dynamic t() families in production source. New families require a fixture;
 // these are input ids, deliberately independent of translated output and the current catalog contents.
 const domains: Record<string, readonly string[]> = {
+    'templates.kind.{}': ['video', 'audio'],
+    'audioTemplates.cat.{}': ['MUSIC', 'VOICE-OVER', 'SOUND FX'],
     'app.create.error.{}': ['price_changed', 'admission_unknown', 'admission_unavailable'],
     'wins.{}': ['week', 'all', 'creations', 'posts', 'streak', 'image', 'videoType', 'audio', 'other', 'first_image', 'first_video', 'creations_10', 'creations_50', 'first_post', 'first_cinema_upload', 'streak_7'],
     'mediaKind.{}': ['image', 'video', 'audio', 'text'],

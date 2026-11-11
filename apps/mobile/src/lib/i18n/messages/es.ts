@@ -367,6 +367,13 @@ const es = {
     'presets.fidelity.photoReady': 'Foto lista',
     'presets.use.photoReplace': 'Reemplazar',
     'presets.fidelity.photosUnavailable': 'Esta plantilla necesita más fotos de las que admite el modelo actualmente. Elige otra plantilla o inténtalo más tarde.',
+    'templates.kind.label': 'Tipo de plantilla',
+    'templates.kind.video': 'Vídeo',
+    'templates.kind.audio': 'Audio',
+    'audioTemplates.all': 'Todas',
+    'audioTemplates.cat.MUSIC': 'Música',
+    'audioTemplates.cat.VOICE-OVER': 'Locución',
+    'audioTemplates.cat.SOUND FX': 'Efectos de sonido',
 } as const;
 
 export default es;

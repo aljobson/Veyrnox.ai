@@ -367,6 +367,13 @@ const ja = {
     'presets.fidelity.photoReady': '写真の準備ができました',
     'presets.use.photoReplace': '変更',
     'presets.fidelity.photosUnavailable': 'このテンプレートには、モデルが現在対応している枚数より多くの写真が必要です。別のテンプレートを選ぶか、後でもう一度お試しください。',
+    'templates.kind.label': 'テンプレートの種類',
+    'templates.kind.video': '動画',
+    'templates.kind.audio': '音声',
+    'audioTemplates.all': 'すべて',
+    'audioTemplates.cat.MUSIC': '音楽',
+    'audioTemplates.cat.VOICE-OVER': 'ナレーション',
+    'audioTemplates.cat.SOUND FX': '効果音',
 } as const;
 
 export default ja;

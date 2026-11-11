@@ -31,7 +31,7 @@ export function AudioTemplateGallery({ t, category }) {
         {list.map((tpl) => (
           <li key={tpl.id}>
             <Link href={`/presets/${encodeURIComponent(tpl.id)}`} className="block h-full rounded-2xl border border-vx-border p-5 hover:border-vx-fg">
-              <p className="font-vx-mono text-[11px] tracking-[0.12em] text-vx-fg-muted">{t(`audioTemplates.cat.${tpl.category}`)}</p>
+              <p className="font-vx-mono text-[11px] tracking-[0.12em] text-vx-fg-muted"><span className="mr-2 rounded-full border border-vx-border px-2 py-0.5 font-bold">{t('templates.kind.audio')}</span>{t(`audioTemplates.cat.${tpl.category}`)}</p>
               <h2 className="mt-2 text-base font-extrabold tracking-tight">{tpl.name}</h2>
               <p className="mt-1 text-xs text-vx-fg-muted">{modelName(tpl.modelId)}</p>
               <p className="mt-3 line-clamp-3 text-[13px] text-vx-fg-body">{tpl.prompt}</p>
