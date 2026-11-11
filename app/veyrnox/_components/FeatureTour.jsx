@@ -155,14 +155,14 @@ export default function FeatureTour() {
   const { title, message } = step;
   return <>
     {box && <div aria-hidden="true" data-feature-tour-ring className="pointer-events-none fixed z-[70] rounded-xl border-2 border-vx-accent shadow-[0_0_0_9999px_rgba(0,0,0,0.45)]" style={box} />}
-    <section role="dialog" aria-modal="false" aria-label={t('app.tours.label')} data-feature-tour className="fixed inset-x-3 bottom-[max(12px,env(safe-area-inset-bottom))] z-[71] rounded-xl border border-vx-accent/40 bg-vx-panel p-4 shadow-2xl sm:inset-x-auto sm:end-4 sm:bottom-4 sm:w-[340px]">
+    <section role="dialog" aria-modal="false" aria-label={t('app.tours.label')} data-feature-tour className="pointer-events-none fixed inset-x-3 bottom-[max(12px,env(safe-area-inset-bottom))] z-[71] rounded-xl border border-vx-accent/40 bg-vx-panel p-4 shadow-2xl sm:inset-x-auto sm:end-4 sm:bottom-4 sm:w-[340px]">
       <p className="font-vx-mono text-[10px] font-bold uppercase tracking-wide text-vx-accent">{t('app.tours.progress', { name: run.tour.name, n: index + 1, total: run.steps.length })}</p>
       <h3 className="mt-1 text-base font-bold">{title}</h3>
       <p role="status" className="mt-2 text-sm leading-6 text-vx-fg-body">{message}</p>
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <button ref={nextRef} type="button" className={`${btn} bg-vx-accent text-vx-accent-ink`} onClick={() => (last ? finish() : setIndex(index + 1))}>{last ? t('app.tours.done') : t('app.tours.next')}</button>
-        {index > 0 && <button type="button" className={`${btn} border border-vx-border`} onClick={() => setIndex(index - 1)}>{t('app.tours.back')}</button>}
-        {!last && <button type="button" className={`${btn} text-vx-fg-muted`} onClick={finish}>{t('app.tours.skip')}</button>}
+        <button ref={nextRef} type="button" className={`${btn} pointer-events-auto bg-vx-accent text-vx-accent-ink`} onClick={() => (last ? finish() : setIndex(index + 1))}>{last ? t('app.tours.done') : t('app.tours.next')}</button>
+        {index > 0 && <button type="button" className={`${btn} pointer-events-auto border border-vx-border`} onClick={() => setIndex(index - 1)}>{t('app.tours.back')}</button>}
+        {!last && <button type="button" className={`${btn} pointer-events-auto text-vx-fg-muted`} onClick={finish}>{t('app.tours.skip')}</button>}
       </div>
     </section>
   </>;

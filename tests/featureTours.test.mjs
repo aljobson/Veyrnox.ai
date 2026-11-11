@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { FEATURE_TOURS, tourForPath, parseSeen, addSeen, isBlocked } from '../lib/featureTours.js';
 import { HELP_TARGETS } from '../lib/productHelp.js';
+import { readFileSync } from 'node:fs';
 
 test('every tour has unique id, absolute route and at least one required-or-sole step', () => {
   const ids = new Set();
@@ -53,4 +54,10 @@ test('isBlocked sees modal dialogs and walkthroughs but not the tour card', () =
 test('tour selectors for fixed controls use the attributes the app renders', () => {
   const library = FEATURE_TOURS.find((t) => t.id === 'library');
   assert.ok(library.steps.some((s) => s.selector === '[data-testid="library-download"]'));
+});
+
+test('tour copy cannot block its highlighted control on a small screen', () => {
+  const component = readFileSync(new URL('../app/veyrnox/_components/FeatureTour.jsx', import.meta.url), 'utf8');
+  assert.match(component, /data-feature-tour className="pointer-events-none /);
+  assert.equal((component.match(/pointer-events-auto/g) || []).length, 3);
 });
