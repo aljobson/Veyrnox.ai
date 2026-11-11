@@ -31,9 +31,10 @@ Veyrnox Music needs a larger discovery shelf without copying recordings or artwo
 
 ## Decision
 
-The surface has its own `references` Music runtime flag. It ships off and must
-be enabled only after migration 0493 is applied, so deploy order cannot expose
-a route whose table and RPCs do not exist yet.
+The surface has its own `references` Music runtime flag. It first shipped off
+and production was enabled only after migration 0493 applied successfully, so
+deploy order could not expose a route whose table and RPCs did not exist yet.
+Staging remains off until that separate database has the same migration.
 
 Use option 3. The server accepts only canonical public YouTube video and SoundCloud track URLs, calls only each provider's fixed oEmbed endpoint with a bounded timeout/body, extracts a minimal safe DTO, and persists no media bytes. The database is owner-scoped and service-role-only.
 
