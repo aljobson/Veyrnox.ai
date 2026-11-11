@@ -90,7 +90,8 @@ export default function Create() {
 
                     <SectionLabel style={styles.sectionTop}>{t('create.startFrom')}</SectionLabel>
                     <View style={styles.entries}>
-                        <EntryTile icon="squares" label={t('label.Templates')} onPress={() => router.push('/create/presets')} />
+                        <EntryTile icon="squares" label={`${t('templates.kind.video')} ${t('label.Templates')}`} onPress={() => router.push('/create/presets')} />
+                        <EntryTile icon="squares" label={`${t('templates.kind.audio')} ${t('label.Templates')}`} onPress={() => router.push({ pathname: '/create/presets', params: { kind: 'audio' } })} />
                         <EntryTile icon="wrench" label={t('menu.tools')} accessibilityLabel={t('toolsDir.entry')} onPress={() => router.push('/create/tools')} />
                         {faceAvailable ? <EntryTile icon="smiley" label={t('faceFilters.title')} onPress={() => router.push('/face-filters')} /> : null}
                         {models.some(m => m.id === 'wan-2.5-kie' && !m.gated) ? <EntryTile icon="film" label={t('facelessReel.chip')} onPress={() => router.push('/faceless-reel')} /> : null}

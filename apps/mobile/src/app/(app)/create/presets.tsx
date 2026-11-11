@@ -16,7 +16,7 @@ import { useVibeAnswers } from '../../../lib/useVibeAnswers';
 export default function Templates() {
     const styles = useThemedStyles(sheets);
     const router = useRouter();
-    const params = useLocalSearchParams<{ unavailable?: string | string[] }>();
+    const params = useLocalSearchParams<{ unavailable?: string | string[]; kind?: string | string[] }>();
     const [presets, setPresets] = useState<Preset[] | null>(null);
     const [popular, setPopular] = useState<string[]>([]);
     const [failed, setFailed] = useState(false);
@@ -26,7 +26,7 @@ export default function Templates() {
     const [playing, setPlaying] = useState<string | null>(null);
     const [attempt, setAttempt] = useState(0);
     // Video and audio templates are separate lists behind a switch, never mixed in one grid.
-    const [kind, setKind] = useState<'video' | 'audio'>('video');
+    const [kind, setKind] = useState<'video' | 'audio'>(params.kind === 'audio' ? 'audio' : 'video');
     const [audio, setAudio] = useState<AudioTemplate[] | null>(null);
     const [audioFailed, setAudioFailed] = useState(false);
     const [audioChip, setAudioChip] = useState('ALL');
