@@ -1,11 +1,12 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getT } from '../../../../../lib/i18n/server';
+import { musicUiEnabled } from '../../../../../lib/musicBackend.js';
 
 export async function generateMetadata() { const { t } = await getT(); return { title: t('music.meta.sounds') }; }
 
 export default function MusicSoundsPage() {
-  if (process.env.MUSIC_UI_ENABLED !== 'true') redirect('/app/music/create');
+  if (!musicUiEnabled()) redirect('/app/music/create');
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
       <header>

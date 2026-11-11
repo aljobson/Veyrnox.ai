@@ -56,6 +56,23 @@ test('music generation needs all server-side rollout gates', () => {
   assert.equal(musicSourcesEnabled({ MUSIC_SCHEMA_ENABLED: 'true', MUSIC_LIBRARY_ENABLED: 'true', MUSIC_SOURCES_ENABLED: 'false' }), false);
 });
 
+test('one Music runtime binding opens the production-safe surface and legacy flags can still stop it', () => {
+  const flags = {
+    ui: true, schema: true, library: true, generation: true, dispatch: true,
+    sources: true, distribution: true, publication: true, editing: true,
+    playlists: true, studio: true, reuse: true, collaboration: true,
+  };
+  const env = { MUSIC_RUNTIME_FLAGS: JSON.stringify(flags) };
+  assert.equal(musicUiEnabled(env), true);
+  assert.equal(musicSchemaEnabled(env), true);
+  assert.equal(musicLibraryEnabled(env), true);
+  assert.equal(musicGenerationEnabled(env), true);
+  assert.equal(musicSourcesEnabled(env), true);
+  assert.equal(musicDistributionEnabled(env), true);
+  assert.equal(musicGenerationEnabled({ ...env, MUSIC_GENERATION_ENABLED: 'false' }), false);
+  assert.equal(musicGenerationEnabled({ MUSIC_RUNTIME_FLAGS: '{invalid' }), false);
+});
+
 test('music entitlements expose verified pair models and fail closed on paid access', () => {
   const result = musicEntitlementProjection({
     models: [

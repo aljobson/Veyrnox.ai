@@ -104,8 +104,11 @@
     // owner's word, 2026-11-10: the only giveaway is the 10 sign-up Credits, every generation is charged. The code, migrations and
     // catalog columns stay; only this flag changes. Set it back to "true" to restore the daily free runs.
     "FREE_ALLOWANCE_ENABLED": "false",
-    // ADR-0069: do not enable while FAL_DURABLE_DISPATCH_ENABLED is true in production until PR B capped durable admission exists.
-    "MAX_CHARGE_ENABLED": "false",
+    // Music's migrated pair queue is independent of generic durable admission. One JSON binding opens the
+    // verified ACE-Step create/library/Studio paths and its recovery sweep while provider-specific models
+    // that remain inactive in model_catalog stay hidden behind their own false switches.
+    "MUSIC_RUNTIME_FLAGS": "{\"ui\":true,\"schema\":true,\"library\":true,\"generation\":true,\"dispatch\":true,\"sources\":true,\"distribution\":true,\"publication\":true,\"editing\":true,\"playlists\":true,\"studio\":true,\"reuse\":true,\"collaboration\":true,\"cover\":false,\"stems\":false,\"targetStems\":false,\"trackAdd\":false,\"extend\":false,\"replace\":false,\"addSection\":false}",
+    // ADR-0069: MAX_CHARGE_ENABLED is omitted (unset is off) while generic durable admission remains off.
     // ADR-0080: free browser editing and MP4 export, visible in Studio (owner, 2026-10-10).
     // Cloud saving and Projects navigation share the separate TENANT_PROJECTS_ENABLED gate.
     // ADR-0314: HARD_PAYWALL_ENABLED is omitted here on purpose (production vars are at their binding cap; absent means off).
@@ -340,6 +343,7 @@
         "TENANT_PROJECTS_ENABLED": "true",
         "PROJECT_MEDIA_UPLOADS_ENABLED": "true",
         "FAL_DISPATCH_SCHEMA_ENABLED": "true",
+        "MUSIC_RUNTIME_FLAGS": "{\"ui\":true,\"schema\":true,\"library\":true,\"generation\":true,\"dispatch\":true,\"sources\":true,\"distribution\":true,\"publication\":true,\"editing\":true,\"playlists\":true,\"studio\":true,\"reuse\":true,\"collaboration\":true,\"cover\":false,\"stems\":false,\"targetStems\":false,\"trackAdd\":false,\"extend\":false,\"replace\":false,\"addSection\":false}",
         "RECOVERY_HEALTH_ENABLED": "true",
         // ADR-0256 phase 0: log the supplier route chooseRoute would pick next to the real dispatch. Log only; staging only.
         // Needs migration 0367 applied on the staging database to find anything; without it the log says so and nothing else happens.
