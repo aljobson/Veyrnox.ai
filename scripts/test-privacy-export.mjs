@@ -310,6 +310,17 @@ try {
         'speech_analyses', 'speech_analysis_cache', 'speech_analysis_requests', 'speech_source_probes',
         // Best Cut (ADR-0334): a per-user daily no-speech counter, not user content; erased with the account.
         'speech_gate_daily',
+        // Music export is deliberately not implied by the generic profile/jobs projections. Account
+        // deletion refuses while this provider/media-backed content exists (0490).
+        'music_collaboration_profiles', 'music_creator_profiles', 'music_download_claims', 'music_download_periods',
+        'music_export_attempts', 'music_export_quotes', 'music_generation_candidates', 'music_generation_quotes',
+        'music_generation_requests', 'music_lyric_drafts', 'music_playlist_mutations', 'music_playlists',
+        'music_prompt_specs', 'music_publication_attestations', 'music_publications', 'music_replace_take_commits',
+        'music_reuse_draft_receipts', 'music_rights_attestations', 'music_share_links', 'music_song_feedback',
+        'music_song_versions', 'music_songs', 'music_source_assets', 'music_stem_quotes', 'music_stem_requests',
+        'music_target_stem_assets', 'music_target_stem_quotes', 'music_target_stem_requests', 'music_track_add_quotes',
+        'music_track_add_requests', 'music_version_operation_receipts', 'music_version_sources',
+        'music_workspace_invitations', 'music_workspace_members', 'music_workspace_moves', 'music_workspaces',
     ]);
     const refs = await q(`SELECT DISTINCT c.conrelid::regclass::text AS tbl FROM pg_constraint c
         WHERE c.contype='f' AND c.confrelid IN ('public.users'::regclass,'auth.users'::regclass)`);
