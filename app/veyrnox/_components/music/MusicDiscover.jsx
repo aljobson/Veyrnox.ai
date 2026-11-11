@@ -96,7 +96,7 @@ function schedulePreview(beat, onEnded) {
 
 function BeatCard({ beat, playing, onToggle }) {
   return (
-    <article className="group overflow-hidden rounded-3xl border border-vx-border bg-vx-panel shadow-xl transition hover:-translate-y-0.5 hover:border-vx-border-boost">
+    <article className="group overflow-hidden rounded-2xl border border-vx-border bg-vx-panel shadow-xl transition hover:-translate-y-0.5 hover:border-vx-border-boost">
       <div className="relative aspect-square overflow-hidden bg-vx-panel-raised">
         <Image src={beat.artwork} alt={`${beat.title} cover artwork`} fill sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 92vw" className="object-cover transition duration-500 group-hover:scale-[1.03]" />
         <div className="absolute inset-x-0 bottom-0 flex items-end justify-between bg-gradient-to-t from-black/80 via-black/20 to-transparent p-4 pt-16 text-white">
@@ -167,7 +167,7 @@ export function MusicDiscover() {
         <p className="mt-4 text-lg leading-8 text-vx-fg-body">Preview original Veyrnox beat sketches, then carry one production recipe into Create and add your own direction before reviewing the exact credit quote.</p>
       </header>
 
-      <section aria-label="Discover filters" className="mt-8 rounded-3xl border border-vx-border bg-vx-panel p-4 sm:p-5">
+      <section aria-label="Discover filters" className="mt-8 rounded-2xl border border-vx-border bg-vx-panel p-4 sm:p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex max-w-full gap-2 overflow-x-auto pb-1" role="group" aria-label="Filter by mood">
             {MUSIC_DISCOVER_MOODS.map((item) => <button key={item} type="button" aria-pressed={mood === item} onClick={() => setMood(item)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold ${mood === item ? 'bg-vx-fg text-vx-base' : 'border border-vx-border text-vx-fg-body hover:border-vx-border-boost'}`}>{item}</button>)}
@@ -184,7 +184,7 @@ export function MusicDiscover() {
         return <section key={section} aria-labelledby={`discover-${section.replace(/\s/g, '-').toLowerCase()}`} className="mt-10"><div className="mb-5 flex items-end justify-between gap-4"><div><p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-accent">Curated by Veyrnox</p><h2 id={`discover-${section.replace(/\s/g, '-').toLowerCase()}`} className="mt-1 font-vx text-3xl font-black">{section}</h2></div><p className="hidden text-sm text-vx-fg-muted sm:block">Playable 12-second sketches</p></div><div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{beats.map((beat) => <BeatCard key={beat.id} beat={beat} playing={playingId === beat.id} onToggle={() => toggle(beat)} />)}</div></section>;
       })}
 
-      {!visible.length ? <section className="mt-10 rounded-3xl border border-dashed border-vx-border p-10 text-center"><h2 className="font-vx text-2xl font-black">No beats match that filter.</h2><button type="button" onClick={() => { setMood('All'); setSearch(''); }} className="mt-4 min-h-11 rounded-full border border-vx-border px-4 text-sm font-bold">Show every beat</button></section> : null}
+      {!visible.length ? <section className="mt-10 rounded-2xl border border-dashed border-vx-border p-10 text-center"><h2 className="font-vx text-2xl font-black">No beats match that filter.</h2><button type="button" onClick={() => { setMood('All'); setSearch(''); }} className="mt-4 min-h-11 rounded-full border border-vx-border px-4 text-sm font-bold">Show every beat</button></section> : null}
 
       <p className="mt-10 text-xs leading-5 text-vx-fg-faint">Previews are original procedural sketches rendered in your browser. “Sample” carries the musical recipe—not a copied recording—into a new private generation, where you can change the direction before any credits move.</p>
     </div>

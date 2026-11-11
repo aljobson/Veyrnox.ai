@@ -1,9 +1,13 @@
 import { MusicDiscover } from '../../../_components/music/MusicDiscover';
+import { getT } from '../../../../../lib/i18n/server';
 
-export const metadata = {
-  title: 'Discover original beat seeds',
-  description: 'Preview original Veyrnox beat sketches and carry a production recipe into Music Create.',
-};
+export async function generateMetadata() {
+  const { t } = await getT();
+  return {
+    title: t('music.meta.discover'),
+    description: t('music.meta.discoverDescription'),
+  };
+}
 
 export default function MusicDiscoverPage() {
   return <MusicDiscover />;
