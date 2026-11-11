@@ -1,5 +1,5 @@
 'use client';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 const SPOOL_MIN = 5;
 const SPOOL_GAIN = 4;
@@ -15,6 +15,8 @@ export function CassettePlayer({ src, onError, onLoadedData, autoPlay = false, l
   const audio = useRef(null);
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
+  // Autoplay can start before React attaches onPlay, so pick up a track that is already playing.
+  useEffect(() => { if (audio.current && !audio.current.paused) setPlaying(true); }, []);
   const left = SPOOL_MIN + SPOOL_GAIN * (1 - progress);
   const right = SPOOL_MIN + SPOOL_GAIN * progress;
   const toggle = async () => {

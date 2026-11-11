@@ -5,8 +5,7 @@ name: pr gate
 # (no gh, no push): the workflow posts the comment from structured output, so
 # nothing in a PR can talk the reviewer into acting.
 #
-# Needs one repository secret: CLAUDE_CODE_OAUTH_TOKEN (run `claude setup-token`)
-# or ANTHROPIC_API_KEY. Without either the job passes with a notice.
+# Needs the repository's ANTHROPIC_API_KEY. Without it the job passes with a notice.
 # Fork and Dependabot PRs get no secrets and are skipped.
 
 on:
@@ -41,12 +40,11 @@ jobs:
         id: key
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
         run: |
-          if [ -n "$ANTHROPIC_API_KEY$CLAUDE_CODE_OAUTH_TOKEN" ]; then
+          if [ -n "$ANTHROPIC_API_KEY" ]; then
             echo "present=true" >> "$GITHUB_OUTPUT"
           else
-            echo "::notice::pr gate skipped: set CLAUDE_CODE_OAUTH_TOKEN or ANTHROPIC_API_KEY"
+            echo "::notice::pr gate skipped: set ANTHROPIC_API_KEY"
           fi
 
       - name: Find protected paths touched
@@ -72,7 +70,6 @@ jobs:
         uses: anthropics/claude-code-action@61a9c274fa7110a66dfafc1bbbced03833eb25fe # v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           allowed_bots: 'claude'
           display_report: 'false'
@@ -92,7 +89,7 @@ jobs:
             Severity: CRITICAL = exploitable security hole, money or data loss, or a rule in CLAUDE.md broken in a way that ships a vulnerability. HIGH = real bug or rule break without direct exploit. MEDIUM = maintainability risk.
             Set verdict BLOCK only if at least one CRITICAL finding exists; otherwise PASS.
           claude_args: >-
-            --model claude-sonnet-5-5
+            --model claude-sonnet-4-6
             --max-turns 30
             --allowedTools "Read,Grep,Glob,Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(git merge-base:*)"
             --json-schema '{"type":"object","required":["verdict","summary","findings"],"properties":{"verdict":{"type":"string","enum":["PASS","BLOCK"]},"summary":{"type":"string"},"findings":{"type":"array","items":{"type":"object","required":["severity","file","rule","failure"],"properties":{"severity":{"type":"string","enum":["CRITICAL","HIGH","MEDIUM"]},"file":{"type":"string"},"line":{"type":"integer"},"rule":{"type":"string"},"failure":{"type":"string"}}}}}}'
