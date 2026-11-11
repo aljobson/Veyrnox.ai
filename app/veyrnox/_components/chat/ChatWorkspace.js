@@ -4,6 +4,7 @@ import { useI18n } from '../../../../components/I18nProvider';
 import { localeTag } from '../../../../lib/i18n/locales.mjs';
 import { pluralKey, tOr } from '../../../../lib/i18n/translate.mjs';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { gatewayFetch } from '../../_lib/gateway';
 import { getStoredUserId, onSessionChange } from '../../../lib/authClient';
@@ -38,6 +39,7 @@ import { COMPOSER_KINDS } from '../../_lib/chatMedia';
 import { CHAT_SCREEN_COPY, chatScreen, loadFailure } from '../../_lib/chatScreen';
 import { ask, enter, forget, giveUp, land, leave, newChatView, onScreen } from '../../_lib/chatSendHome';
 import { askKeptWarning, settleKeptWarning } from '../../_lib/chatWarning';
+import { parseMusicLyricAssistantReply, parseMusicLyricReplacementReply, readMusicLyricHandoff, writeMusicLyricProposal } from '../music/musicLyricHandoff';
 
 function errorText(t, error) {
   const code = error.code || 'unknown';
@@ -72,23 +74,25 @@ const wordsFor = (tokens) => Math.round(((tokens || 1024) * 0.75) / 10) * 10;
 // A reply still arriving, or stopped or cut off and not yet read back from the server: it has no price and nothing to star.
 const isLive = (m) => m.status === 'streaming' || m.status === 'saving' || m.status === 'lost';
 
-function Footer({ m, starred, onStar }) {
+function Footer({ m, starred, onStar, onMusicReturn }) {
   const { t, locale } = useI18n();
   const [copied, setCopied] = useState(false);
   const price = m.credits === 0 ? t('publish.plan.colFree') : credits(t, locale, m.credits); // a reply that used a free allowance (ADR-0069)
   const label = m.status === 'error' ? t("app.chat.workspace.cutOff") : m.status === 'canceled' ? t('app.chat.workspace.stoppedPrice', { price }) : price;
   const copy = async () => { try { await navigator.clipboard.writeText(m.content); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* blocked */ } };
   return (
-    <p className="mt-2 flex items-center gap-3 font-vx-mono text-xs text-vx-fg-muted vx-num">
+    <p className="mt-2 flex flex-wrap items-center gap-3 font-vx-mono text-xs text-vx-fg-muted vx-num">
       <span>{label}</span>
       <button type="button" onClick={copy} className="rounded-sm px-1.5 py-0.5 font-sans hover:text-vx-fg" aria-label={t("app.chat.workspace.copy")}>{copied ? t("common.copied") : t("common.copy")}</button>
       <button type="button" onClick={onStar} aria-pressed={starred} className="rounded-sm px-1.5 py-0.5 font-sans hover:text-vx-fg" aria-label={starred ? t("app.chat.workspace.unstar") : t("app.chat.workspace.starReply")}>{starred ? t("app.chat.workspace.starred") : t("app.chat.workspace.star")}</button>
+      {onMusicReturn ? <button type="button" onClick={onMusicReturn} className="inline-flex min-h-10 items-center rounded-full border border-vx-accent px-3 font-sans font-bold text-vx-fg hover:bg-vx-panel">Review in Music</button> : null}
     </p>
   );
 }
 
 export function ChatWorkspace() {
   const { t, locale } = useI18n();
+  const router = useRouter();
   const number = n => locale === 'en' ? String(n) : n.toLocaleString(localeTag(locale));
   const [models, setModels] = useState([]);
   const [threads, setThreads] = useState([]);
@@ -146,11 +150,20 @@ export function ChatWorkspace() {
   const [tiers, setTiers] = useState(() => new Set());
   const [instr, setInstr] = useState('');
   const [saved, setSaved] = useState(false);
+  const [musicHandoff, setMusicHandoff] = useState(null);
+  const musicProfileApplied = useRef(false);
   const endRef = useRef(null);
   // Which chat is on screen and which was last pressed (chatSendHome.js): a send that ends for another chat leaves this one alone.
   const chatView = useRef(null);
   if (chatView.current === null) chatView.current = newChatView();
   useEffect(() => { const v = chatView.current; enter(v); return () => leave(v); }, []);
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('from') !== 'music') return;
+    let storage = null;
+    try { storage = window.sessionStorage; } catch {}
+    const handoff = readMusicLyricHandoff(storage, getStoredUserId());
+    queueMicrotask(() => setMusicHandoff(handoff));
+  }, []);
   useEffect(() => onSessionChange((session) => {
     const nextOwner = session?.user?.id || '';
     if (nextOwner === oddlingOwnerRef.current) return;
@@ -238,6 +251,12 @@ export function ChatWorkspace() {
   const clear = () => { oddlingLaunchRef.current = ''; oddlingGenerationRef.current += 1; setPersonaId(''); setActive(null); setSkillIds([]); setOddlingContext(null); setOddlingCanonBlocked(false); setOddlingLaunchId(''); setMessages([]); setInstr(''); land(chatView.current, NEW_CHAT); setError(waiting(NEW_CHAT)); setDrawer(false); setText(readDraft(store(), getStoredUserId(), NEW_CHAT)); setStars([]); setStarredOnly(false); settleNew(); };
   const blank = () => { ask(chatView.current, NEW_CHAT); clear(); };
   const star = (id) => { if (active) setStars(toggleStar(store(), getStoredUserId(), active.id, id)); };
+  const returnLyricsToMusic = (reply) => {
+    let storage = null;
+    try { storage = window.sessionStorage; } catch {}
+    if (!writeMusicLyricProposal(storage, getStoredUserId(), reply)) return;
+    router.push('/app/music/create?mode=custom&lyricReturn=1');
+  };
   const shown = starredOnly ? messages.filter((x) => x.role === 'assistant' && stars.includes(x.id)) : messages;
   const patch = async (id, body) => {
     try {
@@ -350,6 +369,17 @@ export function ChatWorkspace() {
     if (p.model_id && models.some((m) => m.id === p.model_id)) setDraftModel(p.model_id);
     setOpts({ thinking: p.thinking, web: p.web, research: false });
   };
+  useEffect(() => {
+    if (musicProfileApplied.current || !musicHandoff?.profile_id || !personasOn || active || oddlingContext) return;
+    const profile = personas.find((persona) => persona.id === musicHandoff.profile_id);
+    if (!profile) return;
+    musicProfileApplied.current = true;
+    queueMicrotask(() => {
+      setSkillIds([]); setPersonaId(profile.id); setInstr(profile.instructions);
+      if (profile.model_id && models.some((model) => model.id === profile.model_id)) setDraftModel(profile.model_id);
+      setOpts({ thinking: profile.thinking, web: profile.web, research: false });
+    });
+  }, [active, models, musicHandoff, oddlingContext, personas, personasOn]);
   const oddlingGeneration = oddlingGenerationRef.current;
   const bindOddlingToThread = (threadId, sendOwner) => {
     if (!oddlingContext) return false;
@@ -541,7 +571,7 @@ export function ChatWorkspace() {
                     : <div aria-live={m.status === 'streaming' ? 'polite' : undefined}>{m.content ? <ChatText text={m.content} /> : <p className="text-vx-fg-muted">{m.status === 'saving' ? t("app.chat.workspace.stopping") : m.status === 'lost' ? t("app.chat.workspace.connectionChecking") : helperCopy(t, locale, researchProgressLabel(progress)) || t("app.chat.settings.thinking")}</p>}</div>}
                   {(m.status === 'saving' || m.status === 'lost') && m.content && <p role="status" className="mt-2 font-vx-mono text-xs text-vx-fg-muted">{m.status === 'saving' ? t("app.chat.workspace.savingStopped") : t("app.chat.workspace.connectionLost")}</p>}
                   {m.role === 'assistant' && !isLive(m) && !oddlingCanonBlocked && <StudioDraftCards text={m.content} models={studioModels} oddlingHandoff={oddlingContext} />}
-                  {m.role === 'assistant' && !isLive(m) && <Footer m={m} starred={stars.includes(m.id)} onStar={() => star(m.id)} />}
+                  {m.role === 'assistant' && !isLive(m) && <Footer m={m} starred={stars.includes(m.id)} onStar={() => star(m.id)} onMusicReturn={musicHandoff && (musicHandoff.mode === 'selection' ? parseMusicLyricReplacementReply(m.content) : parseMusicLyricAssistantReply(m.content)) ? () => returnLyricsToMusic(m.content) : null} />}
                 </div>
               </article>
             ))}

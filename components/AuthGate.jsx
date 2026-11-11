@@ -28,6 +28,7 @@ import { signInWithPasskey, passkeysSupported } from "../app/lib/passkeys.js";
 import { configuredProviders, readAuthSettings, providerAvailable, passkeyUnavailableReason } from "../app/lib/authProviders.js";
 import { Turnstile, TURNSTILE_SITE_KEY } from "./Turnstile.jsx";
 import { AppleMark, PasskeyMark, GoogleMark } from "./AuthMarks.jsx";
+import PhoneOtpForm from "./PhoneOtpForm.jsx";
 import { captchaNotice, noticeAfterCaptchaFailure, noticeAfterCaptchaToken, noticeWhileCaptchaWaits, CAPTCHA_BLOCKED_CODE, CAPTCHA_UNSUPPORTED, CAPTCHA_WAITING } from "../app/lib/turnstileFailure.js";
 import { authCallbackUrl, safeAuthReturnPath } from "../app/lib/authReturn.js";
 
@@ -315,7 +316,7 @@ export default function AuthGate() {
             <div className="max-h-full w-full max-w-sm overflow-y-auto overscroll-contain rounded-2xl border border-vx-border bg-vx-panel p-5 sm:p-6 shadow-2xl">
                 <div className="flex items-start justify-between mb-1">
                     <h2 className="text-lg font-semibold text-vx-fg">
-                        {mode === "sign_up" ? t("authGate.createYourAccount") : mode === "magic" ? t("authGate.emailSignInLink") : t("authGate.title")}
+                        {mode === "phone" ? "Continue with phone" : mode === "sign_up" ? t("authGate.createYourAccount") : mode === "magic" ? t("authGate.emailSignInLink") : t("authGate.title")}
                     </h2>
                     <button
                         type="button"
@@ -354,7 +355,7 @@ export default function AuthGate() {
                         <div className="h-px bg-vx-border flex-1" /> {t("authGate.orEmail")}<div className="h-px bg-vx-border flex-1" />
                     </div>
                 </>
-                <form onSubmit={handleSubmit} className="space-y-3">
+                {mode === "phone" ? <PhoneOtpForm /> : <form onSubmit={handleSubmit} className="space-y-3">
                     <label className="block">
                         <span className="text-xs text-vx-fg-muted">{t("authGate.email")}</span>
                         <input
@@ -453,7 +454,7 @@ export default function AuthGate() {
                                     ? t("authGate.sendMagicLink")
                                     : t("oauth.signIn")}
                     </button>}
-                </form>
+                </form>}
 
                 <div className="mt-4 flex flex-wrap gap-3 text-xs text-vx-fg-muted">
                     {mode !== "sign_in" && (
@@ -467,6 +468,9 @@ export default function AuthGate() {
                     {mode !== "magic" && (
                         <button type="button" className="-my-2 py-2 underline hover:text-vx-fg" onClick={() => chooseMode("magic")}>
                             {t("authGate.emailMeALinkInstead")}</button>
+                    )}
+                    {mode !== "phone" && (
+                        <button type="button" className="underline hover:text-vx-fg" onClick={() => chooseMode("phone")}>Use phone instead</button>
                     )}
                 </div>
 

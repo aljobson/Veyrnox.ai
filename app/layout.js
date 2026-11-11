@@ -81,7 +81,7 @@ export default async function RootLayout({ children }) {
       <body>
         <I18nProvider locale={locale} enabled={localesEnabled()} messages={messages}>
         <AnalyticsProvider>
-          {process.env.NODE_ENV === 'development' ? <ReticleDev /> : null}
+          {process.env.NODE_ENV === 'development' && process.env.VEYRNOX_E2E_ISOLATED !== 'true' ? <ReticleDev /> : null}
           <a href="#main" className="vx-skip rounded-full bg-vx-accent px-4 py-2 text-sm font-extrabold text-vx-accent-ink">
             {t('ui.skip')}
           </a>
