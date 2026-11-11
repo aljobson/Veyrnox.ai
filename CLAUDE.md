@@ -223,7 +223,7 @@ developer surface is `/api/v1/developer/*` and requires a verified OAuth
     mobile app. It reads no identity header, lives outside `/api/v1` so it answers when sign-in cannot be
     verified, and never probes more than once per 15 s per isolate.
   - `/api/catalog`, `/api/credit-packs`, `/api/cinema/titles[/:id]`, `/api/cinema/posters/:id`,
-    `/api/popular-templates`, `/api/presets`, `/api/templates[/:id]` — anonymous, read-only, cached public data
+    `/api/audio-templates` (the audio template list for the mobile app: static, no price), `/api/popular-templates`, `/api/presets`, `/api/templates[/:id]` — anonymous, read-only, cached public data
     (prices, packs, published titles, ranked template ids, the template gallery priced
     from the catalog for the mobile app, the slim gallery list, one template and template
     search for the web so no page bundles the catalog). Nothing per-user. `/api/templates`

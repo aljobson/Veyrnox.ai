@@ -367,6 +367,13 @@ const ko = {
     'presets.fidelity.photoReady': '사진 준비 완료',
     'presets.use.photoReplace': '교체',
     'presets.fidelity.photosUnavailable': '이 템플릿에는 현재 모델이 지원하는 수보다 많은 사진이 필요합니다. 다른 템플릿을 선택하거나 나중에 다시 시도하세요.',
+    'templates.kind.label': '템플릿 유형',
+    'templates.kind.video': '비디오',
+    'templates.kind.audio': '오디오',
+    'audioTemplates.all': '전체',
+    'audioTemplates.cat.MUSIC': '음악',
+    'audioTemplates.cat.VOICE-OVER': '보이스오버',
+    'audioTemplates.cat.SOUND FX': '효과음',
 } as const;
 
 export default ko;
