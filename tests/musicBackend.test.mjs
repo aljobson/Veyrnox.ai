@@ -14,6 +14,7 @@ import {
   musicDistributionEnabled,
   musicSourcesEnabled,
   musicLibraryEnabled,
+  musicReferencesEnabled,
   musicPromptPolicy,
   musicRpcStatus,
   musicSchemaEnabled,
@@ -50,6 +51,8 @@ test('music generation needs all server-side rollout gates', () => {
   assert.equal(musicUiEnabled({ MUSIC_UI_ENABLED: 'false' }), false);
   assert.equal(musicLibraryEnabled({ MUSIC_SCHEMA_ENABLED: 'true', MUSIC_LIBRARY_ENABLED: 'true' }), true);
   assert.equal(musicLibraryEnabled({ MUSIC_SCHEMA_ENABLED: 'false', MUSIC_LIBRARY_ENABLED: 'true' }), false);
+  assert.equal(musicReferencesEnabled({ MUSIC_SCHEMA_ENABLED: 'true', MUSIC_LIBRARY_ENABLED: 'true', MUSIC_REFERENCES_ENABLED: 'true' }), true);
+  assert.equal(musicReferencesEnabled({ MUSIC_SCHEMA_ENABLED: 'true', MUSIC_LIBRARY_ENABLED: 'true', MUSIC_REFERENCES_ENABLED: 'false' }), false);
   assert.equal(musicDistributionEnabled({ MUSIC_SCHEMA_ENABLED: 'true', MUSIC_LIBRARY_ENABLED: 'true', MUSIC_DISTRIBUTION_ENABLED: 'true' }), true);
   assert.equal(musicDistributionEnabled({ MUSIC_SCHEMA_ENABLED: 'true', MUSIC_LIBRARY_ENABLED: 'false', MUSIC_DISTRIBUTION_ENABLED: 'true' }), false);
   assert.equal(musicSourcesEnabled({ MUSIC_SCHEMA_ENABLED: 'true', MUSIC_LIBRARY_ENABLED: 'true', MUSIC_SOURCES_ENABLED: 'true' }), true);
@@ -58,7 +61,7 @@ test('music generation needs all server-side rollout gates', () => {
 
 test('one Music runtime binding opens the production-safe surface and legacy flags can still stop it', () => {
   const flags = {
-    ui: true, schema: true, library: true, generation: true, dispatch: true,
+    ui: true, schema: true, library: true, references: true, generation: true, dispatch: true,
     sources: true, distribution: true, publication: true, editing: true,
     playlists: true, studio: true, reuse: true, collaboration: true,
   };
@@ -66,6 +69,7 @@ test('one Music runtime binding opens the production-safe surface and legacy fla
   assert.equal(musicUiEnabled(env), true);
   assert.equal(musicSchemaEnabled(env), true);
   assert.equal(musicLibraryEnabled(env), true);
+  assert.equal(musicReferencesEnabled(env), true);
   assert.equal(musicGenerationEnabled(env), true);
   assert.equal(musicSourcesEnabled(env), true);
   assert.equal(musicDistributionEnabled(env), true);

@@ -10,6 +10,8 @@ const SUPABASE_HOST = 'https://xdxdzmsztyzbnzeforxx.supabase.co';
 const TURNSTILE_HOST = 'https://challenges.cloudflare.com';
 const YOUTUBE_PLAYER_HOST = 'https://www.youtube-nocookie.com';
 const YOUTUBE_IMAGE_HOST = 'https://i.ytimg.com';
+const SOUNDCLOUD_PLAYER_HOST = 'https://w.soundcloud.com';
+const SOUNDCLOUD_IMAGE_HOST = 'https://i1.sndcdn.com';
 const LIPSYNC_REFERENCE_MEDIA_HOST = 'https://cdn.lipsync.video';
 const MIN_HSTS_AGE = 63072000;
 
@@ -61,20 +63,21 @@ test("no 'unsafe-eval' outside next dev, and no wildcard script source", async (
         `script-src may name only Turnstile as a remote origin: ${scriptSrc.join(' ')}`);
 });
 
-test('frame-src admits Turnstile and the two documented cinema players, nothing else', async () => {
+test('frame-src admits Turnstile and the documented media players, nothing else', async () => {
     // Without frame-src, frames fall back to default-src 'self' and the
     // widget's challenge iframe is blocked. The Stream player host is the
     // ADR-0059 admits Stream for owned titles. ADR-0098 admits YouTube's
-    // privacy-enhanced player for free curated titles; this must stay narrow.
+    // privacy-enhanced player for free curated titles; ADR-0335 admits only
+    // SoundCloud's official widget for Music references. This must stay narrow.
     const csp = (await headerMap()).get('content-security-policy');
-    assert.deepEqual(directives(csp).get('frame-src'), [TURNSTILE_HOST, 'https://*.cloudflarestream.com', YOUTUBE_PLAYER_HOST]);
+    assert.deepEqual(directives(csp).get('frame-src'), [TURNSTILE_HOST, 'https://*.cloudflarestream.com', YOUTUBE_PLAYER_HOST, SOUNDCLOUD_PLAYER_HOST]);
 });
 
 test('img-src admits only owned storage and the documented artwork/reference hosts', async () => {
     const csp = (await headerMap()).get('content-security-policy');
     const imageSrc = directives(csp).get('img-src');
     assert.ok(imageSrc.some((source) => source === YOUTUBE_IMAGE_HOST));
-    assert.deepEqual(imageSrc.filter((source) => source.startsWith('http') && !source.includes('r2.cloudflarestorage.com')), [YOUTUBE_IMAGE_HOST, LIPSYNC_REFERENCE_MEDIA_HOST]);
+    assert.deepEqual(imageSrc.filter((source) => source.startsWith('http') && !source.includes('r2.cloudflarestorage.com')), [YOUTUBE_IMAGE_HOST, SOUNDCLOUD_IMAGE_HOST, LIPSYNC_REFERENCE_MEDIA_HOST]);
     assert.ok(directives(csp).get('media-src').some((source) => source === LIPSYNC_REFERENCE_MEDIA_HOST));
 });
 
