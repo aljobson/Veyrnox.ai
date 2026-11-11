@@ -41,6 +41,28 @@ test('the audio preview grows with the player instead of being clipped by a fixe
   assert.doesNotMatch(audioBranch, /absolute inset-0/);
 });
 
-test('a track that autoplayed before hydration still turns the reels', () => {
-  assert.match(source, /useEffect\(\(\) => \{ if \(audio\.current && !audio\.current\.paused\) setPlaying\(true\)/);
+// No DOM library is installed, so drive the component through a minimal hook harness: the audio element
+// is a stub whose `paused` we set before the mount effect runs, and we read the rendered data-playing.
+async function mountWith(paused) {
+  const hooks = { states: [], refs: [], effects: [], s: 0, r: 0, dirty: false };
+  globalThis.__cassetteHooks = hooks;
+  const fake = `export const useRef = (i) => { const h = globalThis.__cassetteHooks; return h.refs[h.r++] ??= { current: i }; };
+    export const useState = (i) => { const h = globalThis.__cassetteHooks; const n = h.s++; if (!(n in h.states)) h.states[n] = i; return [h.states[n], (v) => { h.states[n] = v; h.dirty = true; }]; };
+    export const useEffect = (fn) => { globalThis.__cassetteHooks.effects.push(fn); };`;
+  const fakeUrl = `data:text/javascript,${encodeURIComponent(fake)}`;
+  const mod = await import(`data:text/javascript,${encodeURIComponent(code.replace('"react/jsx-runtime"', `"${import.meta.resolve('react/jsx-runtime')}"`).replace('"react"', `"${fakeUrl}"`) + `\n// ${paused}`)}`);
+  const render = () => { hooks.s = 0; hooks.r = 0; hooks.effects = []; return mod.CassettePlayer({ src: '/a.mp3' }); };
+  render();
+  hooks.refs[0].current = { paused }; // the browser attached the element, already playing or not
+  hooks.dirty = false;
+  hooks.effects.forEach((fn) => fn());
+  return render().props['data-playing'];
+}
+
+test('a track that autoplayed before hydration turns the reels', async () => {
+  assert.equal(await mountWith(false), true);
+});
+
+test('a paused track keeps the reels still', async () => {
+  assert.equal(await mountWith(true), false);
 });
