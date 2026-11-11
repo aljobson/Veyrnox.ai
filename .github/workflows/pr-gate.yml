@@ -92,7 +92,6 @@ jobs:
             Severity: CRITICAL = exploitable security hole, money or data loss, or a rule in CLAUDE.md broken in a way that ships a vulnerability. HIGH = real bug or rule break without direct exploit. MEDIUM = maintainability risk.
             Set verdict BLOCK only if at least one CRITICAL finding exists; otherwise PASS.
           claude_args: >-
-            --model claude-sonnet-5-5
             --max-turns 30
             --allowedTools "Read,Grep,Glob,Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(git merge-base:*)"
             --json-schema '{"type":"object","required":["verdict","summary","findings"],"properties":{"verdict":{"type":"string","enum":["PASS","BLOCK"]},"summary":{"type":"string"},"findings":{"type":"array","items":{"type":"object","required":["severity","file","rule","failure"],"properties":{"severity":{"type":"string","enum":["CRITICAL","HIGH","MEDIUM"]},"file":{"type":"string"},"line":{"type":"integer"},"rule":{"type":"string"},"failure":{"type":"string"}}}}}}'

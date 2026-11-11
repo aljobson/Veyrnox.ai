@@ -285,3 +285,21 @@ aba3757e9ebb8d43d510b54e6ffe384d0f7f0b3f:tests/fixtures/replacementTemplatesBase
 # PR #1993: a test idempotency key in editorAiEditClient.test.ts, not a secret (a squash merge will need the same entry under main's hash).
 22b6103a12742aad94db5cb6f5ba4256c6cc9486:apps/mobile/__tests__/editorAiEditClient.test.ts:generic-api-key:11
 48f8eabdf1b79bc5cb6ca5f0eb6165e6e70d44bd:.gitleaksignore:generic-api-key:285
+
+# PR #2065: synthetic Music idempotency fixtures and an exact provider/MIME SQL contract, not credentials.
+63748a1e04bca0185b3f8175d4ebdb797c448bbb:tests/musicCollaboration.test.mjs:generic-api-key:12
+63748a1e04bca0185b3f8175d4ebdb797c448bbb:tests/musicCollaboration.test.mjs:generic-api-key:13
+63748a1e04bca0185b3f8175d4ebdb797c448bbb:tests/musicCollaboration.test.mjs:generic-api-key:14
+63748a1e04bca0185b3f8175d4ebdb797c448bbb:tests/musicCollaboration.test.mjs:generic-api-key:15
+63748a1e04bca0185b3f8175d4ebdb797c448bbb:packages/db/schema/supabase/0488_music_target_stem_pair.sql:generic-api-key:257
+63748a1e04bca0185b3f8175d4ebdb797c448bbb:tests/musicEditing.test.mjs:generic-api-key:15
+63748a1e04bca0185b3f8175d4ebdb797c448bbb:tests/musicEditing.test.mjs:generic-api-key:16
+63748a1e04bca0185b3f8175d4ebdb797c448bbb:tests/musicEditing.test.mjs:generic-api-key:21
+63748a1e04bca0185b3f8175d4ebdb797c448bbb:tests/musicPublication.test.mjs:generic-api-key:16
+63748a1e04bca0185b3f8175d4ebdb797c448bbb:tests/musicPublication.test.mjs:generic-api-key:20
+63748a1e04bca0185b3f8175d4ebdb797c448bbb:tests/musicPublication.test.mjs:generic-api-key:25
+63748a1e04bca0185b3f8175d4ebdb797c448bbb:tests/musicBackend.test.mjs:generic-api-key:206
+63748a1e04bca0185b3f8175d4ebdb797c448bbb:tests/musicBackend.test.mjs:generic-api-key:211
+63748a1e04bca0185b3f8175d4ebdb797c448bbb:tests/musicBackend.test.mjs:generic-api-key:214
+63748a1e04bca0185b3f8175d4ebdb797c448bbb:tests/musicBackend.test.mjs:generic-api-key:328
+63748a1e04bca0185b3f8175d4ebdb797c448bbb:tests/musicBackend.test.mjs:generic-api-key:329
