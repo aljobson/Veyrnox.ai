@@ -221,8 +221,8 @@ BEGIN
     OR v_model.modality<>'audio-to-audio' OR v_model.credits_5s<>13
     OR v_model.provider_cost_per_unit<>0.2000::numeric OR v_model.cost_unit<>'per_generation'
     OR v_model.billing_seconds IS NOT NULL OR v_model.updated_at IS DISTINCT FROM v_quote.catalog_updated_at
-    OR v_quote.unit_credits<>CASE WHEN v_quote.source_duration_seconds<=30 THEN 4
-      WHEN v_quote.source_duration_seconds<=60 THEN 7 WHEN v_quote.source_duration_seconds<=90 THEN 10 ELSE 13 END THEN
+    OR v_quote.unit_credits<>(CASE WHEN v_quote.source_duration_seconds<=30 THEN 4
+      WHEN v_quote.source_duration_seconds<=60 THEN 7 WHEN v_quote.source_duration_seconds<=90 THEN 10 ELSE 13 END) THEN
     RETURN jsonb_build_object('ok',false,'code','QUOTE_STALE'); END IF;
   IF v_balance<v_quote.unit_credits THEN RETURN jsonb_build_object('ok',false,'code','INSUFFICIENT_BALANCE'); END IF;
   BEGIN
