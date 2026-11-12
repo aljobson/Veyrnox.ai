@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { MusicCandidateCard } from './MusicCandidateCard';
+import { SavedMusicMixes } from './SavedMusicMixes';
 import { useMusicPreviewState } from './useMusicPreviewState';
 
 const FILTERS = [
@@ -9,6 +10,7 @@ const FILTERS = [
   { value: 'ready', label: 'Ready' },
   { value: 'in-progress', label: 'In progress' },
   { value: 'refunded', label: 'Refunded' },
+  { value: 'mixes', label: 'Saved mixes' },
 ];
 
 export function MusicLibrary() {
@@ -41,7 +43,7 @@ export function MusicLibrary() {
 
       {storageError && <div role="alert" className="mt-5 rounded-2xl border border-vx-danger/50 bg-vx-danger/10 px-4 py-3 text-sm text-vx-danger">{storageError}</div>}
 
-      <section aria-label="Music versions" className="mt-6">
+      {filter === 'mixes' ? <section aria-label="Saved sample mixes" className="mt-6"><SavedMusicMixes query={query} /></section> : <section aria-label="Music versions" className="mt-6">
         {!state ? (
           <div aria-busy="true" className="space-y-3"><div className="vx-shimmer h-24 rounded-2xl bg-vx-panel"/><div className="vx-shimmer h-24 rounded-2xl bg-vx-panel"/></div>
         ) : rows.length === 0 ? (
@@ -51,7 +53,7 @@ export function MusicLibrary() {
         ) : (
           <div className="space-y-3">{visible.map((song) => <MusicCandidateCard key={song.id} song={song} library />)}</div>
         )}
-      </section>
+      </section>}
     </div>
   );
 }
