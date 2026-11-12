@@ -51,6 +51,9 @@ test('Discover exposes playable licensed recordings without a generation handoff
   assert.match(library, /Download MP3/);
   assert.match(library, /Show \{Math\.min\(PAGE_SIZE/);
   assert.match(library, /51-track licensed music library/);
+  assert.match(library, /h-16 w-16.*sm:h-20 sm:w-20/);
+  assert.match(library, /sizes="80px"/);
+  assert.doesNotMatch(library, /aspect-square/);
   assert.match(library, /SoundCloud source/);
   assert.match(library, /Creator download/);
   assert.doesNotMatch(library, /Sample this beat|\/app\/music\/create|generation.*href/i);
