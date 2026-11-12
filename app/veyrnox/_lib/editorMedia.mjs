@@ -14,6 +14,21 @@ const IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp']);
 const AUDIO_TYPES = new Set(['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-wav', 'audio/wave', 'audio/mp4', 'audio/x-m4a', 'audio/aac', 'audio/webm', 'audio/ogg']);
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 
+/**
+ * Where a finished Library result opens in the timeline editor, or null when the editor could not take it. Only the job
+ * id and the model name travel in the address (the address is logged and kept in history): never the prompt or the title.
+ * The editor reads it back with editorJobHandoffFromUrl, so the two agree on what is valid.
+ */
+export function libraryEditorHref(row, modelName = '') {
+    if (!row || row.state !== 'succeeded' || !row.asset_url) return null;
+    if (typeof row.job_id !== 'string' || !UUID.test(row.job_id)) return null;
+    if (!VIDEO_TYPES.has(row.mime_type) && !AUDIO_TYPES.has(row.mime_type)) return null;
+    const params = new URLSearchParams({ job: row.job_id.toLowerCase() });
+    const name = String(modelName || '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80);
+    if (name) params.set('name', name);
+    return `/app/editor?${params.toString()}`;
+}
+
 /** Read a private Library handoff without trusting arbitrary query values as asset ids. */
 export function editorJobHandoffFromUrl(value) {
     try {
