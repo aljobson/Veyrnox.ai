@@ -213,6 +213,7 @@ test('the public view carries no provider field names or editable pins', () => {
             aspect_ratio: { type: 'enum', values: ['16:9', '9:16'] } },
         media: {},
         presentation: { resolutionLabel: '720p', audioIncluded: true, fixedDurationLabel: '4s' },
+        resolutionTiers: { base: '720p', options: [{ id: '720p', multiplier: 1 }, { id: '1080p', multiplier: 1.5 }, { id: '4k', multiplier: 3.5 }] },
     });
 });
 
@@ -267,8 +268,9 @@ test('Nano Banana Pro pins every billed parameter, and Edit sends its source as 
     const pins = { resolution: '2K', num_images: 1, enable_web_search: false, sync_mode: false };
     const pro = capabilityFor('fal-ai/nano-banana-pro');
     assert.deepEqual(shapePayload(pro, { prompt: 'p', aspect_ratio: '16:9' }), { prompt: 'p', aspect_ratio: '16:9', ...pins });
-    // A client cannot lift the resolution to the 4K rate: the key is dropped.
-    assert.deepEqual(declaredInputs(pro, { prompt: 'p', resolution: '4K', enable_web_search: true }), { prompt: 'p' });
+    // A client chooses a tier by our id ('4k'), never the provider's value, and the web-search upcharge stays dropped.
+    assert.deepEqual(declaredInputs(pro, { prompt: 'p', resolution: '4k', enable_web_search: true }), { prompt: 'p', resolution: '4k' });
+    assert.equal(shapePayload(pro, { prompt: 'p', resolution: '4k' }).resolution, '4K');
 
     const edit = capabilityFor('fal-ai/nano-banana-pro/edit');
     assert.equal(checkInputs(edit, { prompt: 'p' }).ok, false, 'a source image is required');
