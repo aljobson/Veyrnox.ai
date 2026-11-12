@@ -1,5 +1,6 @@
 'use client';
 
+import { PromptBox } from '../PromptBox';
 import { useMemo, useRef, useState } from 'react';
 import { quoteMusicRequest } from '../../_lib/music/previewStore';
 import { MusicCandidateCard } from './MusicCandidateCard';
@@ -91,14 +92,14 @@ function MusicPreviewCreateStudio({ sampleSeed, sampleMix }) {
                 <MusicSampleSeedCard seed={activeSeed} mix={activeMix} onRemove={() => { setActiveSeed(null); setActiveMix(null); }} />
                 <label className="block">
                   <span className="flex items-center justify-between text-sm font-bold text-vx-fg-body"><span>{activeSeed ? 'Add a new direction' : 'Describe the sound'}</span><span className="font-vx-mono text-xs text-vx-fg-faint">{description.length}/{activeSeed ? MUSIC_SAMPLE_DIRECTION_MAX : 500}</span></span>
-                  <textarea value={description} onChange={(event) => setDescription(event.target.value)} maxLength={activeSeed ? MUSIC_SAMPLE_DIRECTION_MAX : 500} rows={7} placeholder={activeSeed ? 'Optional: make it slower, add dusty piano, and open into a wide final chorus' : 'A slow instrumental night drive with brushed drums and glassy synths'} className="mt-2 w-full resize-y rounded-2xl border border-vx-border-boost bg-vx-base px-4 py-3 leading-6 text-vx-fg placeholder:text-vx-fg-faint focus:border-vx-accent focus:outline-none" />
+                  <PromptBox enhance value={description} onChange={(event) => setDescription(event.target.value)} maxLength={activeSeed ? MUSIC_SAMPLE_DIRECTION_MAX : 500} rows={7} placeholder={activeSeed ? 'Optional: make it slower, add dusty piano, and open into a wide final chorus' : 'A slow instrumental night drive with brushed drums and glassy synths'} />
                 </label>
               </>
             ) : (
               <>
                 <label className="block">
                   <span className="flex items-center justify-between text-sm font-bold text-vx-fg-body"><span>Original lyrics or structure</span><span className="font-vx-mono text-xs text-vx-fg-faint">{lyrics.length}/3000</span></span>
-                  <textarea value={lyrics} onChange={(event) => setLyrics(event.target.value)} maxLength={3000} rows={7} placeholder={'[Verse]\nWrite your own words here'} className="mt-2 w-full resize-y rounded-2xl border border-vx-border-boost bg-vx-base px-4 py-3 leading-6 text-vx-fg placeholder:text-vx-fg-faint focus:border-vx-accent focus:outline-none" />
+                  <PromptBox value={lyrics} onChange={(event) => setLyrics(event.target.value)} maxLength={3000} rows={7} placeholder={'[Verse]\nWrite your own words here'} />
                 </label>
                 <label className="block text-sm font-bold text-vx-fg-body">
                   Style direction

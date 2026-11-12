@@ -1,4 +1,5 @@
 'use client';
+import { PromptBox } from './PromptBox';
 import { publicSlotMax } from '../../../lib/generationSourceSlots.mjs';
 import { Icon } from './Icon';
 import { pluralKey } from '../../../lib/i18n/translate.mjs';
@@ -404,7 +405,7 @@ export default function OddlingStudio() {
 
             <label className="mt-5 block">
               <span className="mb-1 block font-vx-mono text-[9px] font-bold tracking-[0.1em] text-vx-fg-muted">{mode === 'motion' ? t("app.oddlings.portraitScene") : t("app.oddlings.firstScene")}</span>
-              <textarea value={scene} onChange={(event) => setScene(event.target.value)} maxLength={300} rows={3} className={`${field} resize-none`} />
+              <PromptBox enhance value={scene} onChange={(event) => setScene(event.target.value)} maxLength={300} rows={3} />
             </label>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {ODDLING_SCENES.slice(0, 3).map((item, index) => <button key={item} type="button" onClick={() => setScene(item)} className={chip(scene === item)}>{t('app.oddlings.scene',{count:number(index+1)})}</button>)}
