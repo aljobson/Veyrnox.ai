@@ -4,8 +4,8 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { LICENSED_MUSIC_CATEGORIES, LICENSED_MUSIC_TRACKS, licensedArtworkUrl, licensedMusicUrl } from '../lib/licensedMusicCatalog.js';
 
-test('licensed music exposes exactly 51 recordings across broad listening categories', () => {
-  assert.equal(LICENSED_MUSIC_TRACKS.length, 51);
+test('licensed music exposes exactly 87 recordings across broad listening categories', () => {
+  assert.equal(LICENSED_MUSIC_TRACKS.length, 87);
   assert.deepEqual(LICENSED_MUSIC_CATEGORIES, [
     'All',
     'Cinematic adventure',
@@ -17,18 +17,33 @@ test('licensed music exposes exactly 51 recordings across broad listening catego
     'Whimsical',
     'Epic orchestral',
     'Jazz & acoustic',
+    'Hip-hop',
+    'Rock',
+    'Jazz',
+    'Electronic',
+    'Funk',
+    'Ambient',
+    'Classical',
+    'Acoustic',
+    'Soul',
+    'Indie',
+    'Blues',
+    'Reggae',
   ]);
-  assert.equal(new Set(LICENSED_MUSIC_TRACKS.map((track) => track.id)).size, 51);
+  assert.equal(new Set(LICENSED_MUSIC_TRACKS.map((track) => track.id)).size, 87);
+  for (const category of LICENSED_MUSIC_CATEGORIES.slice(-12)) {
+    assert.equal(LICENSED_MUSIC_TRACKS.filter((track) => track.category === category).length, 3, category);
+  }
 });
 
 test('every licensed track has an immutable local audio file, artwork and CC BY receipt', () => {
   for (const track of LICENSED_MUSIC_TRACKS) {
     assert.match(track.id, /^[a-z0-9-]+$/);
     assert.match(track.file, /^[a-z0-9-]+\.mp3$/);
-    assert.match(track.artwork, /^[a-z0-9-]+\.jpg$/);
-    assert.equal(track.license, 'CC BY 4.0');
-    assert.equal(track.licenseUrl, 'https://creativecommons.org/licenses/by/4.0/');
-    assert.match(track.sourceUrl, /^https:\/\/soundcloud\.com\//);
+    assert.match(track.artwork, /^[a-z0-9-]+\.(?:jpg|svg)$/);
+    assert.match(track.license, /^CC BY (?:2\.5|3\.0|4\.0)$/);
+    assert.match(track.licenseUrl, /^https:\/\/creativecommons\.org\/licenses\/by\/(?:2\.5|3\.0|4\.0)\/$/);
+    assert.match(track.sourceUrl, /^https:\/\/(?:soundcloud\.com|ccmixter\.org)\//);
     assert.match(track.downloadSourceUrl, /^https:\/\//);
     assert.ok(track.attribution.includes(track.creator));
     const audio = new URL(`../public/music-licensed/${track.file}`, import.meta.url);
@@ -40,6 +55,18 @@ test('every licensed track has an immutable local audio file, artwork and CC BY 
     assert.equal(createHash('sha256').update(audioBytes).digest('hex'), track.sha256);
     assert.equal(licensedMusicUrl(track), `/music-licensed/${track.file}`);
     assert.equal(licensedArtworkUrl(track), `/music-licensed/${track.artwork}`);
+  }
+});
+
+test('the ccMixter expansion uses official source records and original local artwork', () => {
+  const tracks = LICENSED_MUSIC_TRACKS.filter((track) => track.sourceProvider === 'ccMixter');
+  assert.equal(tracks.length, 36);
+  for (const track of tracks) {
+    assert.match(track.id, /^ccmixter-\d+-/);
+    assert.match(track.sourceUrl, /^https:\/\/ccmixter\.org\/files\//);
+    assert.match(track.downloadSourceUrl, /^https:\/\/ccmixter\.org\/content\//);
+    assert.match(track.artwork, /^ccmixter-\d+-.+\.svg$/);
+    assert.match(track.attribution, /available at ccMixter\.org/);
   }
 });
 
