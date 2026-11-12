@@ -1,5 +1,6 @@
 'use client';
 
+import { PromptBox } from './PromptBox';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '../../../components/I18nProvider';
@@ -99,7 +100,7 @@ export default function FacelessReelStudio() {
           <div className="space-y-6">
             <section className={`${card} p-4 sm:p-5`}>
               <div className="flex items-start justify-between gap-4"><div><p className="font-vx-mono text-[10px] font-bold tracking-[0.14em] text-vx-accent">{t('app.facelessReel.step1')}</p><h2 className="mt-1 text-lg font-black">{t('app.facelessReel.storyBrief')}</h2></div><span aria-live="polite" className={`font-vx-mono text-[11px] ${promptLong ? 'text-vx-danger' : 'text-vx-fg-faint'}`}>{t('app.facelessReel.counter', { n: used, room })}{promptLong && ` · ${t('app.facelessReel.over', { over: used - room })}`}</span></div>
-              <textarea aria-label={t('app.facelessReel.briefLabel')} value={topic} maxLength={800} rows={6} onChange={(event) => { setTopic(event.target.value); setError(''); }} placeholder={t('app.facelessReel.briefPlaceholder')} className={`${field} mt-4 resize-y`} />
+              <PromptBox enhance aria-label={t('app.facelessReel.briefLabel')} value={topic} maxLength={800} rows={6} onChange={(event) => { setTopic(event.target.value); setError(''); }} placeholder={t('app.facelessReel.briefPlaceholder')} />
               <label className="mt-4 block text-xs font-bold text-vx-fg-body">{t('app.facelessReel.hookLabel')}<input aria-label={t('app.facelessReel.hookAria')} value={hook} maxLength={160} onChange={(event) => setHook(event.target.value)} placeholder={t('app.facelessReel.hookPlaceholder')} className={`${field} mt-2 font-normal`} /></label>
               <p className="mt-2 text-[11px] leading-4 text-vx-fg-faint">{t('app.facelessReel.hookHelp')}</p>
             </section>
