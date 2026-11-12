@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { LICENSED_MUSIC_CATEGORIES, LICENSED_MUSIC_TRACKS, licensedArtworkUrl, licensedMusicUrl } from '../lib/licensedMusicCatalog.js';
 
 test('licensed music spans six distinct listening categories', () => {
@@ -22,10 +22,11 @@ test('every licensed track has an immutable local audio file, artwork and CC BY 
     assert.ok(track.attribution.includes(track.creator));
     const audio = new URL(`../public/music-licensed/${track.file}`, import.meta.url);
     const artwork = new URL(`../public/music-licensed/${track.artwork}`, import.meta.url);
-    assert.ok(existsSync(audio), `${track.file} missing`);
-    assert.ok(existsSync(artwork), `${track.artwork} missing`);
-    assert.equal(statSync(audio).size, track.bytes);
-    assert.equal(createHash('sha256').update(readFileSync(audio)).digest('hex'), track.sha256);
+    const audioBytes = readFileSync(audio);
+    const artworkBytes = readFileSync(artwork);
+    assert.equal(audioBytes.byteLength, track.bytes);
+    assert.ok(artworkBytes.byteLength > 0, `${track.artwork} is empty`);
+    assert.equal(createHash('sha256').update(audioBytes).digest('hex'), track.sha256);
     assert.equal(licensedMusicUrl(track), `/music-licensed/${track.file}`);
     assert.equal(licensedArtworkUrl(track), `/music-licensed/${track.artwork}`);
   }
