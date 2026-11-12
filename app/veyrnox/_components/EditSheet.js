@@ -8,6 +8,7 @@ import { useAssetUrl } from '../_lib/useAssetUrl';
 import { Modal } from './Modal';
 import { AssetLoadStatus } from './AssetLoadStatus';
 import { SmartCutPlanner } from './SmartCutPlanner';
+import { SmartCutAnalyse } from './SmartCutAnalyse';
 import { applySmartCutState, undoSmartCutState } from '../_lib/smartCut';
 import { gatewayFetch, GatewayError, makeIdempotencyKey } from '../_lib/gateway';
 
@@ -64,6 +65,8 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
     smartCutSnapshot: null,
   }));
   const { items, smartCutSnapshot } = editState;
+  const [analyses, setAnalyses] = useState(() => new Map());
+  const addAnalysis = (jobId, analysis) => setAnalyses((map) => new Map(map).set(jobId, analysis));
   const [audioId, setAudioId] = useState('');
   const [offset, setOffset] = useState(0);
   const [captions, setCaptions] = useState(false);
@@ -153,9 +156,11 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 sm:px-6 sm:pb-6">
+          {smartCut && <SmartCutAnalyse clips={items} analyses={analyses} onAnalysed={addAnalysis} disabled={busy} />}
           {smartCut && (
             <SmartCutPlanner
               clips={items}
+              analyses={analyses.size ? analyses : null}
               disabled={busy}
               onApply={applySmartCut}
               onUndo={smartCutSnapshot ? undoSmartCut : null}
