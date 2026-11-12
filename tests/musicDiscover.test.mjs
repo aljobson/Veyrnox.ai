@@ -13,12 +13,14 @@ const createUrl = new URL('../app/veyrnox/_components/music/MusicServerStudio.js
 const createPageUrl = new URL('../app/veyrnox/app/music/create/page.js', import.meta.url);
 const navUrl = new URL('../app/veyrnox/_components/music/MusicPreviewShell.jsx', import.meta.url);
 
-test('the discovery library exposes six unique original seed recipes with thumbnails', async () => {
-  assert.equal(MUSIC_DISCOVER_BEATS.length, 6);
+test('the discovery library exposes twelve unique original seed recipes with thumbnails', async () => {
+  assert.equal(MUSIC_DISCOVER_BEATS.length, 12);
   assert.equal(new Set(MUSIC_DISCOVER_BEATS.map((beat) => beat.id)).size, MUSIC_DISCOVER_BEATS.length);
+  assert.equal(new Set(MUSIC_DISCOVER_BEATS.map((beat) => beat.section)).size, 4);
+  assert.ok(new Set(MUSIC_DISCOVER_BEATS.map((beat) => beat.mood)).size >= 10);
   for (const beat of MUSIC_DISCOVER_BEATS) {
     assert.match(beat.id, /^[a-z0-9-]+$/);
-    assert.match(beat.artwork, /^\/music-discover\/[a-z0-9-]+\.jpg$/);
+    assert.match(beat.artwork, /^\/music-discover\/[a-z0-9-]+\.(?:jpg|svg)$/);
     assert.ok(beat.recipe.length > 80 && beat.recipe.length < 260);
     assert.ok(beat.bpm >= 80 && beat.bpm <= 140);
     await access(new URL(`../public${beat.artwork}`, import.meta.url));
@@ -44,6 +46,10 @@ test('discover provides playable cards, filters, cover art and a transparent rec
   assert.match(source, /musicDiscover\.searchPlaceholder/);
   assert.match(source, /musicDiscover\.note/);
   assert.match(source, /<Image src=\{beat\.artwork\}/);
+  assert.match(source, /h-16 w-16/);
+  assert.match(source, /sm:h-20 sm:w-20/);
+  assert.match(source, /sizes="80px"/);
+  assert.doesNotMatch(source, /aspect-square/);
 });
 
 test('create resolves only known sample ids and keeps the new direction separate from the seed card', async () => {
