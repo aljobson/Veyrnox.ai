@@ -1,4 +1,5 @@
 'use client';
+import { DictateButton, EnhanceButton, appendSpoken, ENHANCE_HANDOFF_KEY } from '../PromptTools';
 import { helperCopy } from '../../../../lib/i18n/helperCopy.mjs';
 import { useI18n } from '../../../../components/I18nProvider';
 import { localeTag } from '../../../../lib/i18n/locales.mjs';
@@ -347,6 +348,7 @@ export function ChatWorkspace() {
     const frame = window.requestAnimationFrame(() => {
       if (!wanted.length) return;
       setSkillIds(wanted); setPersonaId('');
+      try { const seed = window.sessionStorage.getItem(ENHANCE_HANDOFF_KEY); if (seed && wanted[0] === 'prompt-writer') { setText(seed.slice(0, MAX_TEXT)); } window.sessionStorage.removeItem(ENHANCE_HANDOFF_KEY); } catch { /* storage blocked */ }
       setInstr(instructionsFor(wanted, oddlingContext));
       const first = skillById(wanted[0]);
       if (first && models.some((m) => m.id === first.model)) setDraftModel(first.model);
@@ -643,6 +645,8 @@ export function ChatWorkspace() {
                 {offer.images && <AttachButton onPick={att.add} disabled={busy} full={att.items.length >= limits.maxAttachments} />}
                 <ComposerControls compact models={models} model={model} offer={offer} opts={{ ...opts, research: researchOn }} busy={busy} onSelectModel={selectModel} onOpts={setOpts}
                   onLibrary={() => setPickingLibrary(true)} libraryDisabled={att.items.length >= limits.maxAttachments} onSettings={() => setSettingsOpen(true)} settingsOpen={settingsOpen} />
+                <DictateButton disabled={busy} onText={(spoken) => setText((current) => appendSpoken(current, spoken).slice(0, MAX_TEXT))} />
+                <EnhanceButton disabled={busy} text={text} />
                 {busy
                   ? <button type="button" onClick={stop} disabled={stopping || checking} className="shrink-0 rounded-full border border-vx-border px-5 py-2.5 text-sm font-semibold disabled:opacity-50">{stopping ? t("app.chat.workspace.stopping") : checking ? t("app.chat.workspace.checking") : t("app.chat.workspace.stop")}</button>
                   : <button type="button" onClick={send} disabled={!text.trim() || imagesBlocked || oddlingSendPending} className="shrink-0 rounded-full bg-vx-accent px-4 py-2.5 text-sm font-semibold text-vx-accent-ink transition-colors hover:bg-vx-accent-hover disabled:opacity-50">{isFree ? t("app.chat.workspace.sendFree") : t('app.chat.workspace.send', { price: credits(t, locale, price) })}</button>}

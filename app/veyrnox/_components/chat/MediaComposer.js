@@ -11,6 +11,7 @@ import { ERROR_COPY } from '../../_lib/createErrors';
 import { mediaPromptIsMissing, outputDurationLabel, resolutionLabel, videoAudioLabelDiagnostic as videoAudioLabel } from '../../_lib/chatMedia';
 import { sourceDurationLimit } from '../../_lib/modelPricing';
 import { attachAccept } from '../../../../lib/createAttach.mjs';
+import { DictateButton, EnhanceButton, appendSpoken } from '../PromptTools';
 import { SourcePickers } from '../SourcePickers';
 import { LibraryPicker } from '../LibraryPicker';
 import { GENERATION_PROMPT_MAX } from '../../../../lib/generationPromptLimits.js';
@@ -141,6 +142,8 @@ export function MediaComposer({ kind, media, prompt, onPrompt }) {
           ) : <OutputFact title={t("app.chat.media.fixedAudio")}>{helperCopy(t, locale, videoAudioLabel(model))}</OutputFact>)}
           {model?.kind === 'audio' && actualLength && !sourceDurationMax && <OutputFact>{actualLength} {' '}{t("app.chat.media.output")}</OutputFact>}
         </div>
+          <DictateButton disabled={busy} onText={(spoken) => onPrompt(appendSpoken(prompt, spoken))} />
+          <EnhanceButton disabled={busy} text={prompt} />
           <button data-testid="chat-media-generate" type="button" onClick={() => generate(prompt)} disabled={!canGenerate}
             className="inline-flex h-10 shrink-0 items-center gap-2 rounded-full bg-vx-accent px-4 text-sm font-semibold text-vx-accent-ink transition-colors hover:bg-vx-accent-hover disabled:opacity-50">
             {sending ? t("app.editor.sheet.starting") : generating ? t("app.chat.media.generating") : freeLeft > 0 && cost === 0 ? t("app.chat.media.free") : t('app.chat.media.generate', { cost: number(cost) })}

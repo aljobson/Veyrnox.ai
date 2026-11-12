@@ -51,6 +51,7 @@ import { LibraryPicker } from '../../_components/LibraryPicker';
 import { AddFilesDialog } from '../../_components/AddFilesDialog';
 import { GenerationSettings } from '../../_components/GenerationSettings';
 import { VoiceDescription } from '../../_components/VoiceDescription';
+import { DictateButton, EnhanceButton, appendSpoken } from '../../_components/PromptTools';
 import { ChipSelect } from '../../_components/ChipSelect';
 import { aspectLabel } from '../../../../lib/platformFormats.js';
 import { TemplateHandoffCard } from '../../_components/TemplateHandoffCard';
@@ -937,6 +938,8 @@ export default function CreateStudio() {
                   formatOption={(id) => { const m = tierOptions.find((o) => o.id === id).multiplier; const c = Math.max(model.credits, Math.ceil(model.credits * m - 1e-9)); return `${id === '4k' ? '4K' : id} · ${model.kind === 'video' ? clipCredits(c, Number(duration.replace('s', ''))) : c}`; }} />
               )}
               {takesImageCount(model) && <ChipSelect assistantTarget="create.count" label={t("app.create.imagesHeading")} options={IMAGE_COUNTS} value={count} onChange={setCount} formatValue={(n) => `×${n}`} formatOption={(n) => String(n)} />}
+              <DictateButton disabled={!hydrated} onText={(spoken) => setPrompt((current) => appendSpoken(current, spoken))} />
+              <EnhanceButton disabled={!hydrated} text={prompt} />
               <button type="button" data-testid="create-open-templates" disabled={attachConverting || sourcesConverting} onClick={() => setTemplatesOpen(true)}
                 className="vx-press ms-auto min-h-10 shrink-0 rounded-full border border-vx-accent/50 px-3.5 py-1.5 font-vx-mono pointer-coarse:min-h-11 text-[11px] font-bold text-vx-accent hover:bg-vx-accent/10 disabled:opacity-50">
                 {t('app.create.templates.open')}</button>
