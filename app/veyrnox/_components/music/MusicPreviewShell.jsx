@@ -10,6 +10,7 @@ import { MUSIC_PREVIEW_FLAG } from '../../_lib/music/previewStore';
 const LINKS = [
   { href: '/app/music/create', label: 'Create' },
   { href: '/app/music/discover', label: 'Discover', discover: true },
+  { href: '/app/music/instruments', label: 'Instruments', discover: true },
   { href: '/app/music/library', label: 'Music Library' },
   { href: '/app/music/workspaces', label: 'Workspaces' },
   { href: '/app/music/playlists', label: 'Playlists' },
