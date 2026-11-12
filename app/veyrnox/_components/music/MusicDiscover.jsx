@@ -5,8 +5,12 @@ import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MUSIC_DISCOVER_BEATS, MUSIC_DISCOVER_MOODS } from '../../../../lib/musicDiscover.js';
 import { LicensedMusicLibrary } from './LicensedMusicLibrary.jsx';
+import { useI18n } from '../../../../components/I18nProvider';
+import { tOr } from '../../../../lib/i18n/translate.mjs';
 
 const PREVIEW_SECONDS = 12;
+const moodKey = (mood) => `musicDiscover.mood.${mood.replace(/\s/g, '')}`;
+const SECTION_KEYS = { 'For you': 'forYou', 'Fresh signal': 'freshSignal' };
 
 function ramp(param, start, peak, end, value) {
   param.setValueAtTime(0.0001, start);
@@ -96,12 +100,13 @@ function schedulePreview(beat, onEnded) {
 }
 
 function BeatCard({ beat, playing, onToggle }) {
+  const { t } = useI18n();
   return (
     <article className="group overflow-hidden rounded-2xl border border-vx-border bg-vx-panel shadow-xl transition hover:-translate-y-0.5 hover:border-vx-border-boost">
       <div className="relative aspect-square overflow-hidden bg-vx-panel-raised">
-        <Image src={beat.artwork} alt={`${beat.title} cover artwork`} fill sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 92vw" className="object-cover transition duration-500 group-hover:scale-[1.03]" />
+        <Image src={beat.artwork} alt={t('musicDiscover.cover', { title: beat.title })} fill sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 92vw" className="object-cover transition duration-500 group-hover:scale-[1.03]" />
         <div className="absolute inset-x-0 bottom-0 flex items-end justify-between bg-gradient-to-t from-black/80 via-black/20 to-transparent p-4 pt-16 text-white">
-          <button type="button" aria-label={`${playing ? 'Pause' : 'Play'} ${beat.title} preview`} aria-pressed={playing} onClick={onToggle} className="grid h-12 w-12 place-items-center rounded-full bg-white text-xl font-black text-black shadow-2xl transition hover:scale-105">
+          <button type="button" aria-label={t(playing ? 'musicDiscover.pause' : 'musicDiscover.play', { title: beat.title })} aria-pressed={playing} onClick={onToggle} className="grid h-12 w-12 place-items-center rounded-full bg-white text-xl font-black text-black shadow-2xl transition hover:scale-105">
             <span aria-hidden="true">{playing ? 'Ⅱ' : '▶'}</span>
           </button>
           <span className="rounded-full bg-black/55 px-2.5 py-1 font-vx-mono text-[11px] font-bold">{beat.duration}</span>
@@ -115,10 +120,10 @@ function BeatCard({ beat, playing, onToggle }) {
         <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold text-vx-fg-muted">
           <span className="rounded-full border border-vx-border px-2.5 py-1">{beat.bpm} BPM</span>
           <span className="rounded-full border border-vx-border px-2.5 py-1">{beat.musicalKey}</span>
-          <span className="rounded-full border border-vx-border px-2.5 py-1">{beat.mood}</span>
+          <span className="rounded-full border border-vx-border px-2.5 py-1">{tOr(t, moodKey(beat.mood), beat.mood)}</span>
         </div>
         <Link href={{ pathname: '/app/music/create', query: { sample: beat.id } }} className="vx-press mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-full bg-vx-accent px-4 text-sm font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover">
-          Sample this beat
+          {t('musicDiscover.sample')}
         </Link>
       </div>
     </article>
@@ -126,6 +131,7 @@ function BeatCard({ beat, playing, onToggle }) {
 }
 
 export function MusicDiscover() {
+  const { t } = useI18n();
   const [mood, setMood] = useState('All');
   const [search, setSearch] = useState('');
   const [playingId, setPlayingId] = useState(null);
@@ -137,8 +143,8 @@ export function MusicDiscover() {
   const visible = useMemo(() => {
     const query = search.trim().toLowerCase();
     return MUSIC_DISCOVER_BEATS.filter((beat) => (mood === 'All' || beat.mood === mood)
-      && (!query || [beat.title, beat.creator, beat.mood, beat.musicalKey].some((value) => value.toLowerCase().includes(query))));
-  }, [mood, search]);
+      && (!query || [beat.title, beat.creator, beat.mood, tOr(t, moodKey(beat.mood), beat.mood), beat.musicalKey].some((value) => value.toLowerCase().includes(query))));
+  }, [mood, search, t]);
 
   function toggle(beat) {
     stopRef.current?.();
@@ -156,24 +162,24 @@ export function MusicDiscover() {
       });
     } catch {
       setPlayingId(null);
-      setAudioError('Audio preview is not available in this browser. You can still open the seed in Create.');
+      setAudioError(t('musicDiscover.audioError'));
     }
   }
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10">
       <header className="max-w-3xl">
-        <p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-accent">Original seeds · ready to shape</p>
-        <h1 className="mt-2 font-vx text-4xl font-black tracking-tight sm:text-6xl">Find a beat. Make it yours.</h1>
-        <p className="mt-4 text-lg leading-8 text-vx-fg-body">Preview original Veyrnox beat sketches, then carry one production recipe into Create and add your own direction before reviewing the exact credit quote.</p>
+        <p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-accent">{t('musicDiscover.eyebrow')}</p>
+        <h1 className="mt-2 font-vx text-4xl font-black tracking-tight sm:text-6xl">{t('musicDiscover.title')}</h1>
+        <p className="mt-4 text-lg leading-8 text-vx-fg-body">{t('musicDiscover.lead')}</p>
       </header>
 
-      <section aria-label="Discover filters" className="mt-8 rounded-2xl border border-vx-border bg-vx-panel p-4 sm:p-5">
+      <section aria-label={t('musicDiscover.filters')} className="mt-8 rounded-2xl border border-vx-border bg-vx-panel p-4 sm:p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex max-w-full gap-2 overflow-x-auto pb-1" role="group" aria-label="Filter by mood">
-            {MUSIC_DISCOVER_MOODS.map((item) => <button key={item} type="button" aria-pressed={mood === item} onClick={() => setMood(item)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold ${mood === item ? 'bg-vx-fg text-vx-base' : 'border border-vx-border text-vx-fg-body hover:border-vx-border-boost'}`}>{item}</button>)}
+          <div className="flex max-w-full gap-2 overflow-x-auto pb-1" role="group" aria-label={t('musicDiscover.filterMood')}>
+            {MUSIC_DISCOVER_MOODS.map((item) => <button key={item} type="button" aria-pressed={mood === item} onClick={() => setMood(item)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold ${mood === item ? 'bg-vx-fg text-vx-base' : 'border border-vx-border text-vx-fg-body hover:border-vx-border-boost'}`}>{tOr(t, moodKey(item), item)}</button>)}
           </div>
-          <label className="relative block lg:w-72"><span className="sr-only">Search beats</span><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search beats, moods or keys" className="min-h-11 w-full rounded-full border border-vx-border-boost bg-vx-base px-4 text-sm text-vx-fg placeholder:text-vx-fg-faint focus:border-vx-accent focus:outline-none" /></label>
+          <label className="relative block lg:w-72"><span className="sr-only">{t('musicDiscover.searchLabel')}</span><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder={t('musicDiscover.searchPlaceholder')} className="min-h-11 w-full rounded-full border border-vx-border-boost bg-vx-base px-4 text-sm text-vx-fg placeholder:text-vx-fg-faint focus:border-vx-accent focus:outline-none" /></label>
         </div>
       </section>
 
@@ -182,12 +188,12 @@ export function MusicDiscover() {
       {['For you', 'Fresh signal'].map((section) => {
         const beats = visible.filter((beat) => beat.section === section);
         if (!beats.length) return null;
-        return <section key={section} aria-labelledby={`discover-${section.replace(/\s/g, '-').toLowerCase()}`} className="mt-10"><div className="mb-5 flex items-end justify-between gap-4"><div><p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-accent">Curated by Veyrnox</p><h2 id={`discover-${section.replace(/\s/g, '-').toLowerCase()}`} className="mt-1 font-vx text-3xl font-black">{section}</h2></div><p className="hidden text-sm text-vx-fg-muted sm:block">Playable 12-second sketches</p></div><div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{beats.map((beat) => <BeatCard key={beat.id} beat={beat} playing={playingId === beat.id} onToggle={() => toggle(beat)} />)}</div></section>;
+        return <section key={section} aria-labelledby={`discover-${section.replace(/\s/g, '-').toLowerCase()}`} className="mt-10"><div className="mb-5 flex items-end justify-between gap-4"><div><p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-accent">{t('musicDiscover.curated')}</p><h2 id={`discover-${section.replace(/\s/g, '-').toLowerCase()}`} className="mt-1 font-vx text-3xl font-black">{tOr(t, `musicDiscover.section.${SECTION_KEYS[section]}`, section)}</h2></div><p className="hidden text-sm text-vx-fg-muted sm:block">{t('musicDiscover.sketches')}</p></div><div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{beats.map((beat) => <BeatCard key={beat.id} beat={beat} playing={playingId === beat.id} onToggle={() => toggle(beat)} />)}</div></section>;
       })}
 
-      {!visible.length ? <section className="mt-10 rounded-2xl border border-dashed border-vx-border p-10 text-center"><h2 className="font-vx text-2xl font-black">No beats match that filter.</h2><button type="button" onClick={() => { setMood('All'); setSearch(''); }} className="mt-4 min-h-11 rounded-full border border-vx-border px-4 text-sm font-bold">Show every beat</button></section> : null}
+      {!visible.length ? <section className="mt-10 rounded-2xl border border-dashed border-vx-border p-10 text-center"><h2 className="font-vx text-2xl font-black">{t('musicDiscover.empty')}</h2><button type="button" onClick={() => { setMood('All'); setSearch(''); }} className="mt-4 min-h-11 rounded-full border border-vx-border px-4 text-sm font-bold">{t('musicDiscover.showAll')}</button></section> : null}
 
-      <p className="mt-10 text-xs leading-5 text-vx-fg-faint">Previews are original procedural sketches rendered in your browser. “Sample” carries the musical recipe—not a copied recording—into a new private generation, where you can change the direction before any credits move.</p>
+      <p className="mt-10 text-xs leading-5 text-vx-fg-faint">{t('musicDiscover.note')}</p>
 
       <LicensedMusicLibrary />
     </div>
