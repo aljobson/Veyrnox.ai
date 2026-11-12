@@ -5896,4 +5896,8 @@ export default {
   "instruments.shareFail": "테이크를 공유할 수 없었습니다.",
   "instruments.homeBody": "피아노, 기타, 드럼을 연주하고 테이크를 녹음해 샘플을 간직하세요.",
   "instruments.homeHint": "악기를 엽니다",
+  "instruments.savedTitle": "이 휴대폰에 저장됨",
+  "instruments.remove": "테이크 삭제",
+  "instruments.savedMsg": "테이크를 이 휴대폰에 저장했습니다. 재생하거나 WAV를 공유하세요.",
+  "instruments.saveFailed": "테이크를 이 휴대폰에 저장할 수 없었습니다.",
 } as const;

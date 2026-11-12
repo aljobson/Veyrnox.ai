@@ -5896,4 +5896,8 @@ export default {
   "instruments.shareFail": "无法分享这段录音。",
   "instruments.homeBody": "弹奏钢琴、吉他和鼓，录下一段并保留采样。",
   "instruments.homeHint": "打开乐器",
+  "instruments.savedTitle": "已保存在此手机",
+  "instruments.remove": "删除录音",
+  "instruments.savedMsg": "录音已保存在此手机。可回放或分享 WAV。",
+  "instruments.saveFailed": "无法将录音保存到此手机。",
 } as const;

@@ -6,7 +6,9 @@ import { DRUM_PADS, GUITAR_CHORDS, GUITAR_FRETS, GUITAR_STRINGS, INSTRUMENTS, IN
 import { t } from '../../lib/i18n';
 import { useAnnouncement } from '../../lib/useAnnouncement';
 import { touchTarget } from '../../lib/a11y';
-import { playFile, playVoice, prepareInstrumentAudio, releaseInstrumentAudio, renderTakeFile, type RawTake, type RenderedTake } from '../../lib/instrumentPlayer';
+import { playFile, playVoice, prepareInstrumentAudio, releaseInstrumentAudio, renderTakeFile, type RawTake } from '../../lib/instrumentPlayer';
+import { deleteTake, listTakes, saveTake, type StoredTake } from '../../lib/instrumentTakes';
+import { getCacheUser } from '../../lib/appCache';
 import { colors } from '../../theme';
 
 // Plays on the phone by rendering each voice to a small WAV once (pure JS), then replaying it from a player pool.
@@ -15,7 +17,7 @@ export default function Instruments() {
     const [preset, setPreset] = useState('grand');
     const [shift, setShift] = useState(0);
     const [recording, setRecording] = useState(false);
-    const [take, setTake] = useState<RenderedTake | null>(null);
+    const [takes, setTakes] = useState<StoredTake[]>([]);
     const [messageKey, setMessageKey] = useState('instruments.idle');
     const message = t(messageKey);
     useAnnouncement(message);
@@ -25,7 +27,10 @@ export default function Instruments() {
 
     useEffect(() => {
         prepareInstrumentAudio();
-        return releaseInstrumentAudio;
+        const user = getCacheUser();
+        let live = true;
+        if (user) listTakes(user).then((rows) => { if (live) setTakes(rows); }).catch(() => undefined);
+        return () => { live = false; releaseInstrumentAudio(); };
     }, []);
 
     const hit = (value: number | string, vel = 0.85) => {
@@ -54,14 +59,30 @@ export default function Instruments() {
         setRecording(false);
         const rendered = renderTakeFile({ instrument, preset, events: r.events });
         if (!rendered) { setMessageKey('instruments.nothing'); return; }
-        setTake(rendered);
-        setMessageKey('instruments.captured');
+        const user = getCacheUser();
+        const presetLabel = (PRESETS[instrument] as Preset[]).find((p) => p.id === preset)?.label ?? preset;
+        const label = `${INSTRUMENTS[instrument].label} · ${presetLabel}`;
+        if (!user) {
+            setTakes((current) => [{ id: `unsaved-${Date.now()}`, label, name: '', seconds: rendered.seconds, createdAt: Date.now(), uri: rendered.uri }, ...current]);
+            setMessageKey('instruments.captured');
+            return;
+        }
+        saveTake(user, label, rendered.uri, rendered.seconds).then((saved) => {
+            if (!saved) { setMessageKey('instruments.saveFailed'); return; }
+            setTakes((current) => [saved, ...current.filter((item) => item.id !== saved.id)].slice(0, 12));
+            setMessageKey('instruments.savedMsg');
+        });
     };
 
-    const share = async () => {
-        if (!take) return;
+    const remove = (item: StoredTake) => {
+        const user = getCacheUser();
+        setTakes((current) => current.filter((row) => row.id !== item.id));
+        if (user && item.name) deleteTake(user, item.id).catch(() => undefined);
+    };
+
+    const share = async (item: StoredTake) => {
         try {
-            if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(take.uri, { mimeType: 'audio/wav', UTI: 'com.microsoft.waveform-audio' });
+            if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(item.uri, { mimeType: 'audio/wav', UTI: 'com.microsoft.waveform-audio' });
             else setMessageKey('instruments.shareNo');
         } catch { setMessageKey('instruments.shareFail'); }
     };
@@ -147,10 +168,19 @@ export default function Instruments() {
                 </Pressable>
                 <Text style={styles.muted}>{message}</Text>
 
-                {take ? (
-                    <View style={styles.row}>
-                        <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => playFile(take.uri)}><Text style={styles.secondaryText}>{t('instruments.playTake', { seconds: take.seconds.toFixed(1) })}</Text></Pressable>
-                        <Pressable accessibilityRole="button" style={styles.secondary} onPress={share}><Text style={styles.secondaryText}>{t('instruments.share')}</Text></Pressable>
+                {takes.length ? (
+                    <View style={styles.takes}>
+                        <Text style={styles.heading} accessibilityRole="header">{t('instruments.savedTitle')}</Text>
+                        {takes.map((item) => (
+                            <View key={item.id} style={styles.takeCard}>
+                                <Text style={styles.takeLabel}>{item.label}</Text>
+                                <View style={styles.row}>
+                                    <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => playFile(item.uri)}><Text style={styles.secondaryText}>{t('instruments.playTake', { seconds: item.seconds.toFixed(1) })}</Text></Pressable>
+                                    <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => share(item)}><Text style={styles.secondaryText}>{t('instruments.share')}</Text></Pressable>
+                                    <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => remove(item)}><Text style={styles.secondaryText}>{t('instruments.remove')}</Text></Pressable>
+                                </View>
+                            </View>
+                        ))}
                     </View>
                 ) : null}
             </ScrollView>
@@ -187,6 +217,10 @@ const styles = StyleSheet.create({
     primary: { minHeight: 48, borderRadius: 12, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
     recording: { backgroundColor: '#ef4444' },
     primaryText: { color: colors.accentInk, fontWeight: '700', fontSize: 16 },
+    takes: { gap: 8, marginTop: 8 },
+    heading: { color: colors.text, fontSize: 17, fontWeight: '600' },
+    takeCard: { gap: 6, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: colors.border },
+    takeLabel: { color: colors.body, fontSize: 14 },
     secondary: { ...touchTarget, flex: 1, borderRadius: 10, borderColor: colors.border, borderWidth: 1, alignItems: 'center' },
     secondaryText: { color: colors.accent, fontWeight: '600' },
 });

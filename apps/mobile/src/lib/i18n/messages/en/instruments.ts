@@ -17,4 +17,8 @@ export default {
     "instruments.shareFail": "The take could not be shared.",
     "instruments.homeBody": "Play piano, guitar and drums, record a take, keep the sample.",
     "instruments.homeHint": "Opens the instruments",
+    "instruments.savedTitle": "Saved on this phone",
+    "instruments.remove": "Delete take",
+    "instruments.savedMsg": "Take saved on this phone. Play it back or share the WAV.",
+    "instruments.saveFailed": "The take could not be saved on this phone.",
 } as const;

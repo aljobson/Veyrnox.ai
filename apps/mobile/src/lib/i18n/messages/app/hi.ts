@@ -5964,4 +5964,8 @@ export default {
   "instruments.shareFail": "टेक साझा नहीं किया जा सका।",
   "instruments.homeBody": "पियानो, गिटार और ड्रम बजाएँ, टेक रिकॉर्ड करें और सैंपल रखें।",
   "instruments.homeHint": "वाद्य यंत्र खोलता है",
+  "instruments.savedTitle": "इस फ़ोन पर सहेजा गया",
+  "instruments.remove": "टेक हटाएँ",
+  "instruments.savedMsg": "टेक इस फ़ोन पर सहेजा गया। इसे चलाएँ या WAV साझा करें।",
+  "instruments.saveFailed": "टेक इस फ़ोन पर सहेजा नहीं जा सका।",
 } as const;

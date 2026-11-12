@@ -6032,4 +6032,8 @@ export default {
   "instruments.shareFail": "No se pudo compartir la toma.",
   "instruments.homeBody": "Toca piano, guitarra y batería, graba una toma y quédate con el sample.",
   "instruments.homeHint": "Abre los instrumentos",
+  "instruments.savedTitle": "Guardado en este teléfono",
+  "instruments.remove": "Eliminar toma",
+  "instruments.savedMsg": "Toma guardada en este teléfono. Reprodúcela o comparte el WAV.",
+  "instruments.saveFailed": "No se pudo guardar la toma en este teléfono.",
 } as const;

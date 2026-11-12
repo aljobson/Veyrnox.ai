@@ -5896,4 +5896,8 @@ export default {
   "instruments.shareFail": "テイクを共有できませんでした。",
   "instruments.homeBody": "ピアノ、ギター、ドラムを演奏して録音し、サンプルを残しましょう。",
   "instruments.homeHint": "楽器を開きます",
+  "instruments.savedTitle": "この端末に保存済み",
+  "instruments.remove": "テイクを削除",
+  "instruments.savedMsg": "テイクをこの端末に保存しました。再生するか、WAVを共有できます。",
+  "instruments.saveFailed": "テイクをこの端末に保存できませんでした。",
 } as const;

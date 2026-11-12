@@ -6032,4 +6032,8 @@ export default {
   "instruments.shareFail": "Não foi possível compartilhar o take.",
   "instruments.homeBody": "Toque piano, violão e bateria, grave um take e fique com o sample.",
   "instruments.homeHint": "Abre os instrumentos",
+  "instruments.savedTitle": "Salvo neste telefone",
+  "instruments.remove": "Excluir take",
+  "instruments.savedMsg": "Take salvo neste telefone. Reproduza ou compartilhe o WAV.",
+  "instruments.saveFailed": "Não foi possível salvar o take neste telefone.",
 } as const;

@@ -5964,4 +5964,8 @@ export default {
   "instruments.shareFail": "Die Aufnahme konnte nicht geteilt werden.",
   "instruments.homeBody": "Spiele Klavier, Gitarre und Schlagzeug, nimm auf und behalte das Sample.",
   "instruments.homeHint": "Öffnet die Instrumente",
+  "instruments.savedTitle": "Auf diesem Telefon gespeichert",
+  "instruments.remove": "Aufnahme löschen",
+  "instruments.savedMsg": "Aufnahme auf diesem Telefon gespeichert. Spiele sie ab oder teile die WAV-Datei.",
+  "instruments.saveFailed": "Die Aufnahme konnte nicht auf diesem Telefon gespeichert werden.",
 } as const;

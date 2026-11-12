@@ -6236,4 +6236,8 @@ export default {
   "instruments.shareFail": "تعذّرت مشاركة المقطع.",
   "instruments.homeBody": "اعزف البيانو والغيتار والطبول، وسجّل مقطعًا واحتفظ بالعيّنة.",
   "instruments.homeHint": "يفتح الآلات",
+  "instruments.savedTitle": "محفوظ على هذا الهاتف",
+  "instruments.remove": "حذف المقطع",
+  "instruments.savedMsg": "تم حفظ المقطع على هذا الهاتف. شغّله أو شارك ملف WAV.",
+  "instruments.saveFailed": "تعذّر حفظ المقطع على هذا الهاتف.",
 } as const;

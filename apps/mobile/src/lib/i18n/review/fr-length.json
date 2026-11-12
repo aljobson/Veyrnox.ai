@@ -4998,6 +4998,12 @@
     "ratio": 1.73
   },
   {
+    "id": "instruments.remove",
+    "english": "Delete take",
+    "translation": "Supprimer la prise",
+    "ratio": 1.64
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

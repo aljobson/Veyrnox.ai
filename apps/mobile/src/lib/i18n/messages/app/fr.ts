@@ -6032,4 +6032,8 @@ export default {
   "instruments.shareFail": "Impossible de partager la prise.",
   "instruments.homeBody": "Jouez du piano, de la guitare et de la batterie, enregistrez une prise et gardez le sample.",
   "instruments.homeHint": "Ouvre les instruments",
+  "instruments.savedTitle": "Enregistré sur ce téléphone",
+  "instruments.remove": "Supprimer la prise",
+  "instruments.savedMsg": "Prise enregistrée sur ce téléphone. Écoutez-la ou partagez le WAV.",
+  "instruments.saveFailed": "Impossible d'enregistrer la prise sur ce téléphone.",
 } as const;

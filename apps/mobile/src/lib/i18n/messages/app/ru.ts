@@ -6100,4 +6100,8 @@ export default {
   "instruments.shareFail": "Не удалось поделиться дублем.",
   "instruments.homeBody": "Играйте на пианино, гитаре и барабанах, записывайте дубль и сохраняйте сэмпл.",
   "instruments.homeHint": "Открывает инструменты",
+  "instruments.savedTitle": "Сохранено на этом телефоне",
+  "instruments.remove": "Удалить дубль",
+  "instruments.savedMsg": "Дубль сохранён на этом телефоне. Прослушайте его или поделитесь WAV.",
+  "instruments.saveFailed": "Не удалось сохранить дубль на этом телефоне.",
 } as const;
