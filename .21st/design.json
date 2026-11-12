@@ -161,6 +161,11 @@
       "id": "mobile-create-website-parity",
       "choice": "Structure native Create like the website Studio: source shortcuts, creation goal, free price filtering, live-priced model cards and clear disclosure that the final price appears before Generate.",
       "reason": "The person should understand what they are creating, what can be used as a reference and what it will cost before entering a generation form."
+    },
+    {
+      "id": "music-sample-listen-mix-use",
+      "choice": "Make sample discovery follow an explicit Listen, Mix and Use flow, with a visible 12-second progress bar, tempo presets and independent drum, bass and melody levels before handoff to Create.",
+      "reason": "A large sample catalogue is only useful when people can audition and shape a beat before committing to it; the controls stay compact and carry production directions rather than copied audio."
     }
   ],
   "evidence": [

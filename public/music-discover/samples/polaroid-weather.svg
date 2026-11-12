@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160" role="img" aria-labelledby="title desc">
+  <title id="title">Polaroid Weather artwork</title>
+  <desc id="desc">Original geometric artwork for the Indie sample Polaroid Weather.</desc>
+  <rect width="160" height="160" rx="28" fill="#111114"/>
+  <circle cx="62" cy="69" r="53" fill="#f9a8d4" opacity=".34"/>
+  <path d="M-12 118 C28 80,58 132,94 92 S142 78,174 88" fill="none" stroke="#f9a8d4" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="122" cy="38" r="18" fill="#f4f4f5" opacity=".93"/>
+  <text x="122" y="44" fill="#111114" font-family="Arial, sans-serif" font-size="14" font-weight="800" text-anchor="middle">PW</text>
+  <text x="18" y="137" fill="#f4f4f5" font-family="Arial, sans-serif" font-size="10" font-weight="700" letter-spacing="1">INDIE</text>
+</svg>
