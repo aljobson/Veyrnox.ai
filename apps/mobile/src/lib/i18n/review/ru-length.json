@@ -3318,6 +3318,12 @@
     "ratio": 1.67
   },
   {
+    "id": "instruments.strum",
+    "english": "Strum {chord}",
+    "translation": "Сыграть аккорд {chord}",
+    "ratio": 1.69
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

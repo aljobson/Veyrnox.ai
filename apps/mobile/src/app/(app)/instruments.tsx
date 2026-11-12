@@ -3,7 +3,8 @@ import * as Sharing from 'expo-sharing';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { DRUM_PADS, GUITAR_CHORDS, GUITAR_FRETS, GUITAR_STRINGS, INSTRUMENTS, INSTRUMENT_IDS, MAX_TAKE_EVENTS, MAX_TAKE_SECONDS, PRESETS, chordNotes, isBlackKey, keyRange, noteLabel, type Chord, type Pad, type Preset } from '../../lib/instrumentShared';
-import { rawText } from '../../lib/i18n/translate';
+import { t } from '../../lib/i18n';
+import { useAnnouncement } from '../../lib/useAnnouncement';
 import { touchTarget } from '../../lib/a11y';
 import { playFile, playVoice, prepareInstrumentAudio, releaseInstrumentAudio, renderTakeFile, type RawTake, type RenderedTake } from '../../lib/instrumentPlayer';
 import { colors } from '../../theme';
@@ -15,7 +16,9 @@ export default function Instruments() {
     const [shift, setShift] = useState(0);
     const [recording, setRecording] = useState(false);
     const [take, setTake] = useState<RenderedTake | null>(null);
-    const [message, setMessage] = useState('Tap to play. Press Record to capture a take.');
+    const [messageKey, setMessageKey] = useState('instruments.idle');
+    const message = t(messageKey);
+    useAnnouncement(message);
     const rec = useRef<{ on: boolean; started: number; events: RawTake['events'] }>({ on: false, started: 0, events: [] });
     const state = useRef({ instrument, preset });
     state.current = { instrument, preset };
@@ -44,23 +47,23 @@ export default function Instruments() {
         if (!r.on) {
             rec.current = { on: true, started: Date.now(), events: [] };
             setRecording(true);
-            setMessage('Recording. Play, then press Stop.');
+            setMessageKey('instruments.recording');
             return;
         }
         r.on = false;
         setRecording(false);
         const rendered = renderTakeFile({ instrument, preset, events: r.events });
-        if (!rendered) { setMessage('Nothing was played. Try again.'); return; }
+        if (!rendered) { setMessageKey('instruments.nothing'); return; }
         setTake(rendered);
-        setMessage('Take captured. Play it back or share the WAV.');
+        setMessageKey('instruments.captured');
     };
 
     const share = async () => {
         if (!take) return;
         try {
             if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(take.uri, { mimeType: 'audio/wav', UTI: 'com.microsoft.waveform-audio' });
-            else setMessage('Sharing is not available on this device.');
-        } catch { setMessage('The take could not be shared.'); }
+            else setMessageKey('instruments.shareNo');
+        } catch { setMessageKey('instruments.shareFail'); }
     };
 
     const keys = keyRange(instrument, shift);
@@ -69,9 +72,9 @@ export default function Instruments() {
 
     return (
         <>
-            <Stack.Screen options={{ title: rawText('Instruments') }} />
+            <Stack.Screen options={{ title: t('instruments.title') }} />
             <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-                <Text style={styles.title} accessibilityRole="header">Play it. Record it. Keep the sample.</Text>
+                <Text style={styles.title} accessibilityRole="header">{t('instruments.headline')}</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
                     {INSTRUMENT_IDS.map((id: string) => (
                         <Pressable key={id} accessibilityRole="tab" accessibilityState={{ selected: instrument === id }} onPress={() => choose(id)} style={[styles.chip, instrument === id && styles.chipOn]}>
@@ -90,8 +93,8 @@ export default function Instruments() {
                 {INSTRUMENTS[instrument].surface === 'keys' ? (
                     <View>
                         <View style={styles.row}>
-                            <Pressable accessibilityRole="button" style={styles.small} onPress={() => setShift((v) => Math.max(-2, v - 1))}><Text style={styles.smallText}>Octave −</Text></Pressable>
-                            <Pressable accessibilityRole="button" style={styles.small} onPress={() => setShift((v) => Math.min(2, v + 1))}><Text style={styles.smallText}>Octave +</Text></Pressable>
+                            <Pressable accessibilityRole="button" style={styles.small} onPress={() => setShift((v) => Math.max(-2, v - 1))}><Text style={styles.smallText}>{t('instruments.octaveDown')}</Text></Pressable>
+                            <Pressable accessibilityRole="button" style={styles.small} onPress={() => setShift((v) => Math.min(2, v + 1))}><Text style={styles.smallText}>{t('instruments.octaveUp')}</Text></Pressable>
                         </View>
                         <ScrollView horizontal contentContainerStyle={styles.keyboard}>
                             {whites.map((note) => {
@@ -111,7 +114,7 @@ export default function Instruments() {
                     <View style={{ gap: 6 }}>
                         <ScrollView horizontal contentContainerStyle={styles.chips}>
                             {GUITAR_CHORDS.map((chord: Chord) => (
-                                <Pressable key={chord.id} accessibilityRole="button" accessibilityLabel={`Strum ${chord.label}`} style={styles.chord} onPress={() => chordNotes(chord).forEach((n, i) => setTimeout(() => hit(n.note, 0.7), i * 28))}>
+                                <Pressable key={chord.id} accessibilityRole="button" accessibilityLabel={t('instruments.strum', { chord: chord.label })} style={styles.chord} onPress={() => chordNotes(chord).forEach((n, i) => setTimeout(() => hit(n.note, 0.7), i * 28))}>
                                     <Text style={styles.chordText}>{chord.label}</Text>
                                 </Pressable>
                             ))}
@@ -121,7 +124,7 @@ export default function Instruments() {
                                 {Array.from({ length: GUITAR_FRETS + 1 }, (_, fret) => {
                                     const note = GUITAR_STRINGS[string] + fret;
                                     return (
-                                        <Pressable key={fret} accessibilityRole="button" accessibilityLabel={`String ${string + 1} fret ${fret}`} onPressIn={() => hit(note)} style={({ pressed }) => [styles.fret, pressed && styles.keyDown]}>
+                                        <Pressable key={fret} accessibilityRole="button" accessibilityLabel={t('instruments.stringFret', { string: string + 1, fret })} onPressIn={() => hit(note)} style={({ pressed }) => [styles.fret, pressed && styles.keyDown]}>
                                             <Text style={styles.fretText}>{noteLabel(note)}</Text>
                                         </Pressable>
                                     );
@@ -140,14 +143,14 @@ export default function Instruments() {
                 )}
 
                 <Pressable accessibilityRole="button" accessibilityState={{ selected: recording }} onPress={toggleRecord} style={[styles.primary, recording && styles.recording]}>
-                    <Text style={styles.primaryText}>{recording ? '■ Stop' : '● Record'}</Text>
+                    <Text style={styles.primaryText}>{recording ? t('instruments.stop') : t('instruments.record')}</Text>
                 </Pressable>
-                <Text accessibilityLiveRegion="polite" style={styles.muted}>{message}</Text>
+                <Text style={styles.muted}>{message}</Text>
 
                 {take ? (
                     <View style={styles.row}>
-                        <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => playFile(take.uri)}><Text style={styles.secondaryText}>Play take ({take.seconds.toFixed(1)}s)</Text></Pressable>
-                        <Pressable accessibilityRole="button" style={styles.secondary} onPress={share}><Text style={styles.secondaryText}>Share WAV</Text></Pressable>
+                        <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => playFile(take.uri)}><Text style={styles.secondaryText}>{t('instruments.playTake', { seconds: take.seconds.toFixed(1) })}</Text></Pressable>
+                        <Pressable accessibilityRole="button" style={styles.secondary} onPress={share}><Text style={styles.secondaryText}>{t('instruments.share')}</Text></Pressable>
                     </View>
                 ) : null}
             </ScrollView>
