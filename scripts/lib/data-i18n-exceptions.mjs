@@ -26,6 +26,7 @@ export function dataException({ file, owner, field, text, templateFile }) {
   if (file.endsWith('/_lib/freeAudio.js') && owner === 'FREE_AUDIO' && ['title', 'creator'].includes(field)) return 'Proper title and creator of a public-domain recording, shown as the source credits it; never translated.';
   if (file.endsWith('/_lib/audioTemplates.js') && owner === 'AUDIO_TEMPLATES') return 'Original audio template prompt sent verbatim to the model, and its catalog name; never mutated for display (ADR-0107).';
   if (file === 'lib/musicDiscover.js' && owner === 'MUSIC_DISCOVER_BEATS' && field === 'recipe') return 'Original beat generation recipe sent verbatim to Music Create; never mutated for display (ADR-0107).';
+  if (file === 'lib/licensedMusicCatalog.js' && owner === 'LICENSED_MUSIC_TRACKS' && field === 'attribution') return 'Canonical CC BY attribution receipt supplied with the recording; must remain verbatim (ADR-0107).';
   if (templateFile && ['prompt','negativePrompt','promptOrigin','model','name'].includes(field)) return 'Exact model input, provenance or catalog name; templates are never mutated for display.';
   if (/\/_lib\/tokens\.js$/.test(file) && owner === 'MODELS' && field === 'name') return 'Provider model name; stable catalog identity.';
   if (/\/_lib\/showcase\.js$/.test(file) && ['SHOWCASE_CLIPS', 'AUDIT_SHOWCASE_CLIPS'].includes(owner) && field === 'title') return 'Film title from the source showcase catalog; proper title remains unchanged.';

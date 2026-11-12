@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MUSIC_DISCOVER_BEATS, MUSIC_DISCOVER_MOODS } from '../../../../lib/musicDiscover.js';
+import { LicensedMusicLibrary } from './LicensedMusicLibrary.jsx';
 
 const PREVIEW_SECONDS = 12;
 
@@ -187,6 +188,8 @@ export function MusicDiscover() {
       {!visible.length ? <section className="mt-10 rounded-2xl border border-dashed border-vx-border p-10 text-center"><h2 className="font-vx text-2xl font-black">No beats match that filter.</h2><button type="button" onClick={() => { setMood('All'); setSearch(''); }} className="mt-4 min-h-11 rounded-full border border-vx-border px-4 text-sm font-bold">Show every beat</button></section> : null}
 
       <p className="mt-10 text-xs leading-5 text-vx-fg-faint">Previews are original procedural sketches rendered in your browser. “Sample” carries the musical recipe—not a copied recording—into a new private generation, where you can change the direction before any credits move.</p>
+
+      <LicensedMusicLibrary />
     </div>
   );
 }
