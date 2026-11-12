@@ -24,7 +24,7 @@ function harness() {
     '../../../../lib/montageNarration.js': { normaliseNarration, MAX_NARRATION_LENGTH },
     '../../_lib/useStudioJobs': { useStudioJobs: () => ({ jobs: [], generating: false, startJobs() {} }) },
     '../../_lib/authenticatedMedia': { videoAgentBalanceState },
-    '../../_lib/jobHistory': { pushJobHistory() {} },
+    '../../_lib/jobHistory': { pushJobHistory() {} }, '../../_components/PromptBox': { PromptBox: 'textarea' },
   };
   const output = { exports: {} }, source = readFileSync(new URL('../app/veyrnox/app/video-agent/page.js', import.meta.url), 'utf8');
   const code = ts.transpileModule(source, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS } }).outputText;
