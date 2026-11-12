@@ -26,7 +26,7 @@ import {
     effectiveTransition, addText, updateText, removeText,
 } from '../../_lib/editorTimeline.mjs';
 import { timelineSize } from '../../_lib/editorRender.mjs';
-import { checkLocalFile, probeMedia, checkProbe, mediaFromProbe, libraryMediaId, localMediaId } from '../../_lib/editorMedia.mjs';
+import { checkLocalFile, editorJobHandoffFromUrl, probeMedia, checkProbe, mediaFromProbe, libraryMediaId, localMediaId } from '../../_lib/editorMedia.mjs';
 import { listLibraryMedia, loadLibraryBlob } from '../../_lib/editorLibrary.mjs';
 import { createPreviewer } from '../../_lib/editorPreview.mjs';
 import { exportBlocker, exportTimeline, exportFileName } from '../../_lib/editorExport.mjs';
@@ -35,7 +35,7 @@ const field = 'rounded-xl border border-vx-border bg-vx-base px-3 py-2 text-sm f
 const range = 'mt-2 w-full accent-vx-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-vx-accent';
 
 function Editor() {
-    const addFileInput = useRef(null);
+    const addFileInput = useRef(null), jobHandoffStarted = useRef(false);
   const { t, locale } = useI18n();
   const number = value => locale === 'en' ? value : Number(value).toLocaleString(localeTag(locale));
   const formatTime = value => locale === 'en' ? sourceTime(value) : sourceTime(value).replace(/\d+/g, digits => Number(digits).toLocaleString(localeTag(locale), { useGrouping: false, minimumIntegerDigits: digits.length }));
@@ -129,6 +129,31 @@ function Editor() {
         if (!inserted) setNotice(t("app.editor.legacy.imported"));
         else if (inserted.len < media.frames) setNotice(t('app.editor.legacy.importedPart',{time:formatTime(inserted.len)}));
     }
+    useEffect(() => {
+        if (jobHandoffStarted.current) return undefined;
+        const handoff = editorJobHandoffFromUrl(window.location.href);
+        if (!handoff) return undefined;
+        jobHandoffStarted.current = true;
+        let current = true;
+        void Promise.resolve().then(() => {
+            if (!current) return undefined;
+            setBusy(true); setNotice('');
+            return loadLibraryBlob(gatewayFetch, handoff.jobId);
+        }).then(result => {
+            if (!result) return undefined;
+            const { blob } = result;
+            if (!current) return;
+            return ingest(libraryMediaId(handoff.jobId), handoff.name || t('app.library.kind.audio'), blob).then(() => {
+                if (!current) return;
+                const url = new URL(window.location.href); url.searchParams.delete('job'); url.searchParams.delete('name');
+                window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+            });
+        }).catch(error => { if (current) setNotice(error.message || t('app.editor.legacy.libraryFailed')); })
+          .finally(() => { if (current) setBusy(false); });
+        return () => { current = false; };
+        // A URL handoff is consumed once. Timeline edits must not import it again.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
     async function chooseFiles(event) {
         const files = [...event.target.files]; event.target.value = '';
         setBusy(true); setNotice('');
