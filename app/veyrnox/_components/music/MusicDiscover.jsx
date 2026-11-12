@@ -9,6 +9,11 @@ import {
   MUSIC_DISCOVER_SECTIONS,
   normalizeMusicSampleMix,
 } from '../../../../lib/musicDiscover.js';
+import { getStoredUserId } from '../../../lib/authClient.js';
+import {
+  MUSIC_SAVED_MIXES_CHANGED,
+  saveMusicSavedMix,
+} from '../../_lib/music/savedMixes.js';
 import { LicensedMusicLibrary } from './LicensedMusicLibrary.jsx';
 import { useI18n } from '../../../../components/I18nProvider';
 import { tOr } from '../../../../lib/i18n/translate.mjs';
@@ -189,7 +194,7 @@ function MixControl({ id, label, value, onChange }) {
   );
 }
 
-function SampleMixLab({ beat, mix, playing, progress, onChange, onToggle, onClose }) {
+function SampleMixLab({ beat, mix, mixName, savedMixId, saveNotice, playing, progress, onChange, onNameChange, onSave, onToggle, onClose }) {
   const effectiveBpm = Math.round(beat.bpm * mix.tempo);
   const query = { sample: beat.id, tempo: mix.tempo.toFixed(2), drums: mix.drums, bass: mix.bass, melody: mix.melody };
   return (
@@ -219,23 +224,33 @@ function SampleMixLab({ beat, mix, playing, progress, onChange, onToggle, onClos
           <MixControl id="sample-melody" label="Melody" value={mix.melody} onChange={(melody) => onChange({ ...mix, melody })} />
         </div>
       </div>
-      <div className="mt-5 flex flex-col gap-3 border-t border-vx-border pt-5 sm:flex-row sm:items-center sm:justify-between">
-        <p className="max-w-2xl text-xs leading-5 text-vx-fg-muted">The mixer changes the tempo and layer balance of this local preview. “Use this mix” carries those settings as production directions for a new, distinct generation.</p>
-        <Link href={{ pathname: '/app/music/create', query }} className="vx-press inline-flex min-h-12 shrink-0 items-center justify-center rounded-full bg-vx-accent px-6 font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover">Use this mix</Link>
+      <div className="mt-5 border-t border-vx-border pt-5">
+        <p className="max-w-3xl text-xs leading-5 text-vx-fg-muted">This saves an editable recipe, not copied audio. “Use this mix” carries the speed and layer balance into a new generation. A single generated track is currently limited to 60 seconds; longer videos need an extended or timeline-fitted soundtrack.</p>
+        <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-end">
+          <label htmlFor="sample-mix-name" className="min-w-0 flex-1 text-xs font-bold text-vx-fg-muted">Mix name
+            <input id="sample-mix-name" value={mixName} onChange={(event) => onNameChange(event.target.value)} maxLength={64} placeholder={`${beat.title} mix`} className="mt-2 min-h-12 w-full rounded-xl border border-vx-border-boost bg-vx-base px-4 text-sm text-vx-fg placeholder:text-vx-fg-faint focus:border-vx-accent focus:outline-none" />
+          </label>
+          <button type="button" onClick={onSave} className="min-h-12 shrink-0 rounded-full border border-vx-accent px-5 font-extrabold text-vx-accent hover:bg-vx-accent/10">{savedMixId ? 'Update saved mix' : 'Save to Music Library'}</button>
+          <Link href={{ pathname: '/app/music/create', query }} className="vx-press inline-flex min-h-12 shrink-0 items-center justify-center rounded-full bg-vx-accent px-6 font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover">Use this mix</Link>
+        </div>
+        {saveNotice ? <p role={saveNotice.kind === 'error' ? 'alert' : 'status'} className={`mt-3 text-sm font-bold ${saveNotice.kind === 'error' ? 'text-vx-danger' : 'text-vx-accent'}`}>{saveNotice.text}{saveNotice.kind === 'success' ? <> · <Link href="/app/music/library" className="underline underline-offset-4">Open Music Library</Link></> : null}</p> : null}
       </div>
     </section>
   );
 }
 
-export function MusicDiscover() {
+export function MusicDiscover({ initialSample = null, initialMix = null, initialSavedMixId = '', initialMixName = '' }) {
   const { t } = useI18n();
   const [mood, setMood] = useState('All');
   const [search, setSearch] = useState('');
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [playingKey, setPlayingKey] = useState(null);
   const [progress, setProgress] = useState(0);
-  const [mixingId, setMixingId] = useState(null);
-  const [mix, setMix] = useState(DEFAULT_MIX);
+  const [mixingId, setMixingId] = useState(initialSample?.id || null);
+  const [mix, setMix] = useState(initialMix || DEFAULT_MIX);
+  const [activeSavedMixId, setActiveSavedMixId] = useState(initialSavedMixId);
+  const [mixName, setMixName] = useState(initialMixName || (initialSample ? `${initialSample.title} mix` : ''));
+  const [saveNotice, setSaveNotice] = useState(null);
   const [audioError, setAudioError] = useState('');
   const stopRef = useRef(null);
 
@@ -281,12 +296,35 @@ export function MusicDiscover() {
     stopPlayback();
     setMixingId(beat.id);
     setMix(DEFAULT_MIX);
+    setActiveSavedMixId('');
+    setMixName(`${beat.title} mix`);
+    setSaveNotice(null);
     window.requestAnimationFrame(() => document.querySelector('[aria-label^="Mix "]')?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
   }
 
   function updateMix(next) {
     if (playingKey?.startsWith('mix:')) stopPlayback();
     setMix(normalizeMusicSampleMix(next));
+    setSaveNotice(null);
+  }
+
+  function saveMix() {
+    if (!mixingBeat) return;
+    try {
+      const saved = saveMusicSavedMix(window.localStorage, getStoredUserId() || 'signed-out', {
+        id: activeSavedMixId,
+        name: mixName,
+        beatId: mixingBeat.id,
+        mix,
+      });
+      if (!saved) throw new Error('invalid_mix');
+      setActiveSavedMixId(saved.id);
+      setMixName(saved.name);
+      setSaveNotice({ kind: 'success', text: 'Saved. You can reopen, edit, or use this recipe from Music Library' });
+      window.dispatchEvent(new Event(MUSIC_SAVED_MIXES_CHANGED));
+    } catch {
+      setSaveNotice({ kind: 'error', text: 'This mix could not be saved in this browser. Your current settings are still here.' });
+    }
   }
 
   return (
@@ -309,7 +347,7 @@ export function MusicDiscover() {
       </section>
 
       {audioError ? <p role="alert" className="mt-5 rounded-2xl border border-vx-danger/50 bg-vx-danger/10 px-4 py-3 text-sm text-vx-danger">{audioError}</p> : null}
-      {mixingBeat ? <SampleMixLab beat={mixingBeat} mix={mix} playing={playingKey === `mix:${mixingBeat.id}`} progress={playingKey === `mix:${mixingBeat.id}` ? progress : 0} onChange={updateMix} onToggle={() => toggle(mixingBeat, mix, `mix:${mixingBeat.id}`)} onClose={() => { stopPlayback(); setMixingId(null); }} /> : null}
+      {mixingBeat ? <SampleMixLab beat={mixingBeat} mix={mix} mixName={mixName} savedMixId={activeSavedMixId} saveNotice={saveNotice} playing={playingKey === `mix:${mixingBeat.id}`} progress={playingKey === `mix:${mixingBeat.id}` ? progress : 0} onChange={updateMix} onNameChange={(value) => { setMixName(value); setSaveNotice(null); }} onSave={saveMix} onToggle={() => toggle(mixingBeat, mix, `mix:${mixingBeat.id}`)} onClose={() => { stopPlayback(); setMixingId(null); setSaveNotice(null); }} /> : null}
 
       {MUSIC_DISCOVER_SECTIONS.map((section) => {
         const beats = displayed.filter((beat) => beat.section === section);

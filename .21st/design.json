@@ -166,6 +166,11 @@
       "id": "music-sample-listen-mix-use",
       "choice": "Make sample discovery follow an explicit Listen, Mix and Use flow, with a visible 12-second progress bar, tempo presets and independent drum, bass and melody levels before handoff to Create.",
       "reason": "A large sample catalogue is only useful when people can audition and shape a beat before committing to it; the controls stay compact and carry production directions rather than copied audio."
+    },
+    {
+      "id": "music-saved-mix-library",
+      "choice": "Save sample customizations as compact account-scoped recipes, surface them as a dedicated Music Library collection, and keep Edit and Use in Create as separate actions.",
+      "reason": "People can return to an exact tempo and layer balance without duplicating audio or confusing a 12-second preview with an unrestricted finished soundtrack."
     }
   ],
   "evidence": [
