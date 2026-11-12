@@ -11,7 +11,7 @@ const fail = (status, code, body = {}) => Object.assign(new Error(code), { statu
 export async function fetchSpeechQuote(fetcher) {
   try {
     const result = await fetcher(`${SPEECH_PATH}/quote`);
-    if (!Number.isSafeInteger(result?.credits) || result.credits < 1 || result.max_seconds !== 60 || !Array.isArray(result.languages)) throw fail(200, 'bad_response');
+    if (!Number.isSafeInteger(result?.credits) || result.credits < 1 || !Number.isSafeInteger(result.max_seconds) || result.max_seconds < 1 || !Array.isArray(result.languages)) throw fail(200, 'bad_response');
     return { credits: result.credits, maxSeconds: result.max_seconds };
   } catch (error) {
     if (error?.status === 501) return null;

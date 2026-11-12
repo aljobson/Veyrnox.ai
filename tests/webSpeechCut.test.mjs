@@ -18,6 +18,7 @@ test('quote reads the typed price and treats 501 as unavailable', async () => {
   const quote = await fetchSpeechQuote(async (path) => { seen.push(path); return { credits: 3, max_seconds: 60, languages: ['en'] }; });
   assert.deepEqual(quote, { credits: 3, maxSeconds: 60 });
   assert.equal(seen[0], `${SPEECH_PATH}/quote`);
+  assert.deepEqual(await fetchSpeechQuote(async () => ({ credits: 3, max_seconds: 90, languages: ['en'] })), { credits: 3, maxSeconds: 90 });
   assert.equal(await fetchSpeechQuote(async () => { throw err(501, 'speech_cut_unavailable'); }), null);
   await assert.rejects(fetchSpeechQuote(async () => ({ credits: 0, max_seconds: 60, languages: [] })), /bad_response/);
   await assert.rejects(fetchSpeechQuote(async () => { throw err(500, 'gateway_error'); }));
