@@ -10,7 +10,7 @@ jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () =
 jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalogCached: jest.fn() }));
 jest.mock('../src/lib/useFaceFiltersAvailable', () => ({ useFaceFiltersAvailable: () => false }));
 jest.mock('../src/lib/montage', () => ({ fetchAgentListing: async () => null }));
-jest.mock('../src/lib/firstGoalStore', () => ({ readFirstGoal: async () => 'skipped', writeFirstGoal: async () => undefined })); // the first-goal question is already answered
+jest.mock('../src/lib/firstGoalStore', () => ({ readFirstGoal: async () => 'skipped', writeFirstGoal: async () => undefined, homeStartRecorded: () => false })); // the first-goal question is already answered
 jest.mock('../src/auth/AuthProvider', () => { const api = {}; return { useAuth: () => ({ api }) }; }); // a stable client, so the first-goal effect runs once
 jest.mock('../src/lib/firstGoalSync', () => ({ fetchRemoteFirstGoal: async () => ({ kind: 'unavailable' }), pushFirstGoal: jest.fn(async () => undefined) })); // the server is not asked here
 

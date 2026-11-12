@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { tOr } from '../../../lib/i18n/translate.mjs';
 import { useI18n } from '../../../components/I18nProvider';
 import { FIRST_GOALS, FIRST_GOAL_EXAMPLES, FIRST_GOAL_SLOT, firstGoalTarget, parseFirstGoal, serializeFirstGoal } from '../_lib/firstGoal';
-import { fetchRemoteFirstGoal, pushFirstGoal } from '../_lib/firstGoalSync';
+import { fetchRemoteFirstGoal, homeStartRecorded, pushFirstGoal } from '../_lib/firstGoalSync';
 
 function readStored() {
   try { return parseFirstGoal(window.localStorage.getItem(FIRST_GOAL_SLOT)); } catch { return null; }
@@ -18,7 +18,7 @@ function store(goal) {
 
 const noSubscribe = () => () => {};
 
-// One question, once per browser, skippable. Creation goals stay here and filter the models; Edit and Publish route to
+// One question, once per browser, skippable, and skipped when a home start option already answered it. Creation goals stay here and filter the models; Edit and Publish route to
 // their own area. "Not sure" lists one example per area. After a creation goal the card offers one example prompt, like the "Surprise me" chip competitors use.
 export function FirstGoalCard({ hidden, onPick, onExample }) {
   const { t } = useI18n();
@@ -39,7 +39,8 @@ export function FirstGoalCard({ hidden, onPick, onExample }) {
   }, []);
   const [local, setState] = useState(null); // ask | example | done, once the person has acted
   const resolved = device === 'checking' || remote === null ? 'checking' : remote.kind === 'goal' ? 'done' : remote.kind === 'none' ? 'ask' : device;
-  const state = local ?? resolved;
+  // A home start option already answered it (Create is asked only when someone arrives without one).
+  const state = local ?? (homeStartRecorded() ? 'done' : resolved);
   const [chosen, setChosen] = useState(null);
 
   if (hidden || state === 'checking' || state === 'done') return null;

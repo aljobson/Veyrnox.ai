@@ -27,3 +27,7 @@ Clients ask the account first. A stored goal on the server wins and is copied to
 ## Consequences
 
 Web and mobile agree and a second account is asked. The cost is one more table and route on the user-data surface, covered by the deletion, export and grant tests (`scripts/test-first-goal.mjs`, `test-account-deletion.mjs`, `test-privacy-export.mjs`).
+
+## Amendment 1: the home start options are the answer
+
+A new person used to meet two "what do you want to do" questions: the home start options, then the card on Create. Now they are asked once. Tapping a home start option records the first goal with the existing words (no route or migration change): Film is `video`, Smart Cut is `edit`, and Create and Chat, which name no area, hold `skipped`, the lowest word, so any real goal given later still replaces it. An answer already held on the device is left alone, and the server's ranking already protects the account's. For that visit Create treats the question as answered even if the account copy has not arrived yet. The card on Create stays for anyone who reaches it without a home tap (a link, a bookmark), and on the phone the goal list under it stays, so the medium is still one tap away.
