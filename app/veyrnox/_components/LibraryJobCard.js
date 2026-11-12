@@ -3,6 +3,7 @@ import { AssetLoadStatus } from './AssetLoadStatus';
 import { Chip } from './Chip';
 import { ScheduleGeneration } from './ScheduleGeneration';
 import { SaveToAudioShelfButton } from './SaveToAudioShelfButton';
+import { useI18n } from '../../../components/I18nProvider';
 import { useAssetUrl } from '../_lib/useAssetUrl';
 
 // Account list is authoritative; local history supplies cached display names.
@@ -21,8 +22,9 @@ const STATE_UI = {
   unknown:   { chip: 'neutral', glyph: '?', label: 'UNKNOWN' },
 };
 
-export function LibraryJobCard({ row, models, selectable, selected, onToggle, starred, onStar }) {
+export function LibraryJobCard({ row, models, selectable, selected, onToggle, starred, onStar, onSmartCut }) {
   const asset = useAssetUrl(row.job_id, row.asset_url);
+  const { t } = useI18n();
   const refundPending = row.state === 'failed' && row.refunded !== true;
   const s = STATE_UI[refundPending ? 'failed_pending' : row.state] || STATE_UI.queued;
   // No delta for `unknown`: a +N would claim a refund landed and a −N would
@@ -100,6 +102,14 @@ export function LibraryJobCard({ row, models, selectable, selected, onToggle, st
         </div>
       </div>
       <ScheduleGeneration job={row} className="mx-4 mb-3" />
+      {selectable && onSmartCut && row.mime_type?.startsWith('video/') && (
+        <div className="mx-4 mb-3">
+          <button type="button" onClick={onSmartCut} data-testid="library-smart-cut"
+            className="inline-flex min-h-10 w-full items-center justify-center rounded-full border border-vx-border px-4 text-xs font-extrabold hover:border-vx-accent">
+            {t('app.library.smartCutThis')}
+          </button>
+        </div>
+      )}
       {row.state === 'succeeded' && row.asset_url && row.mime_type?.startsWith('audio/') && (
         <div className="mx-4 mb-3">
           <SaveToAudioShelfButton
