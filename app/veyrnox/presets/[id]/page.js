@@ -14,8 +14,6 @@ import { ClipBadge } from '../../_components/ClipBadge';
 import { SHOWCASE_CLIPS } from '../../_lib/showcase';
 import { presetTitle, templateModelId, MODELS } from '../../_lib/tokens';
 import { ALL_TEMPLATES, templateById } from '../../_lib/templates';
-import { AUDIO_TEMPLATES, audioTemplateById } from '../../_lib/audioTemplates';
-import { AudioTemplateDetail } from '../../_components/AudioTemplateDetail';
 import { exactSourcePromptRecord } from '../../_lib/sourcePromptRecords.js';
 import { sourcePromptAuditForModel } from '../../_lib/sourcePromptAudit.js';
 import { templateRecreateEnabled } from '../../_lib/templateRecreate.js';
@@ -25,23 +23,13 @@ import { OPEN_GRAPH_BASE } from '../../../seo';
 // Templates are static data, so each page is built once; the price is read
 // from the live catalog in the browser (UseTemplate), never from here.
 export function generateStaticParams() {
-  return [...ALL_TEMPLATES, ...AUDIO_TEMPLATES].map((p) => ({ id: p.id }));
+  return ALL_TEMPLATES.map((p) => ({ id: p.id }));
 }
 export const dynamicParams = true;
 
 export async function generateMetadata({ params }) {
   const { locale, t } = await getT();
   const { id } = await params;
-  const audio = audioTemplateById(id);
-  if (audio) {
-    const description = audio.prompt.slice(0, 150);
-    return {
-      title: t('audioTemplates.metaTitle', { title: presetTitle(audio.name) }),
-      description,
-      alternates: pageAlternates(locale, `/presets/${audio.id}`),
-      openGraph: { ...OPEN_GRAPH_BASE, title: t('audioTemplates.metaTitle', { title: presetTitle(audio.name) }), description, url: localizedHref(locale, `/presets/${audio.id}`), ...openGraphLocale(locale) },
-    };
-  }
   const template = templateById(id);
   if (!template) return { title: t("presets.detail.templateNotFound"), robots: { index: false } };
   const title = presetTitle(template.name);
@@ -57,17 +45,6 @@ export async function generateMetadata({ params }) {
 export default async function TemplatePage({ params }) {
   const { locale, t } = await getT();
   const { id } = await params;
-  const audio = audioTemplateById(id);
-  if (audio) {
-    return (
-      <div className="min-h-dvh">
-        <MarketingNav />
-        <Main className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-28">
-          <AudioTemplateDetail t={t} template={audio} />
-        </Main>
-      </div>
-    );
-  }
   const template = templateById(id);
   if (!template) notFound();
   if (template.id !== id) permanentRedirect(localizedHref(locale, `/presets/${encodeURIComponent(template.id)}`));

@@ -1,7 +1,7 @@
 import { MarketingNav } from '../_components/NavBar';
 import { Main } from '../_components/Main';
 import { PresetGallery } from '../_components/PresetGallery';
-import { AudioTemplateGallery } from '../_components/AudioTemplateGallery';
+import { MusicDiscover } from '../_components/music/MusicDiscover.jsx';
 import { TemplateKindSwitch } from '../_components/TemplateKindSwitch';
 import { getT } from '../../../lib/i18n/server';
 import { templateCards, templateCategories } from '../../../lib/clientTemplates.js';
@@ -9,15 +9,15 @@ import { templateCards, templateCategories } from '../../../lib/clientTemplates.
 // Public preset gallery. No card, no cost until you generate.
 export default async function Gallery({ searchParams }) {
   const { t } = await getT();
-  const { kind, category } = await searchParams;
-  // ?kind=audio lists the audio templates; everything else is the video gallery.
+  const { kind } = await searchParams;
+  // ?kind=audio shows the Music Discover samples; everything else is the video gallery.
   if (kind === 'audio') {
     return (
       <div className="min-h-dvh">
         <MarketingNav />
         <Main className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-14 sm:pt-20 pb-28">
           <TemplateKindSwitch t={t} kind="audio" />
-          <AudioTemplateGallery t={t} category={category} />
+          <MusicDiscover />
         </Main>
       </div>
     );

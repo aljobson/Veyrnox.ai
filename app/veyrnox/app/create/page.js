@@ -464,20 +464,6 @@ export default function CreateStudio() {
   // Picking a template here does what arriving on ?preset=<id> does: its model,
   // prompt and settings load, and the user's own files stay where the new model
   // has a slot for them. The template is a reference only; nothing is charged.
-  // An audio template carries a model id and a prompt only; load both, drop any linked video template.
-  function applyAudioTemplate(tpl) {
-    setTemplatesOpen(false);
-    const nextModel = models.find((m) => m.id === tpl.modelId);
-    if (!nextModel) return;
-    setTemplateData(null);
-    setPresetParam(null);
-    setAnimationPortrait(null); // an Oddling portrait is animation-only; an audio template needs none
-    setGoal(nextModel.kind || 'all');
-    setTier(null);
-    chooseModel(tpl.modelId);
-    setPrompt(tpl.prompt);
-    setNegative(tpl.negativePrompt || '');
-  }
   async function applyTemplate(card) {
     setTemplatesOpen(false);
     const preset = await fetchTemplate(card.id); // the picker lists cards; the prompt comes with the whole template
@@ -983,7 +969,7 @@ export default function CreateStudio() {
           {attachNotice && <p role="status" className="mt-2 text-xs text-vx-fg-muted">{attachNotice}</p>}
           {switchOffer && <button type="button" onClick={switchForFiles} className="mt-2 rounded-full border border-vx-border px-3 py-1.5 text-xs text-vx-fg hover:border-vx-accent">{t('app.create.attach.switchTo', { name: switchOffer.model.name })}</button>}
           {addFilesOpen && !photosUnavailable && <AddFilesDialog capacity={attachCapacity(model)} onAdd={attachFiles} onClose={() => setAddFilesOpen(false)} />}
-          {templatesOpen && <TemplatePicker models={models} goal={goal} onPick={applyTemplate} onPickAudio={applyAudioTemplate} onClose={() => setTemplatesOpen(false)} />}
+          {templatesOpen && <TemplatePicker models={models} goal={goal} onPick={applyTemplate} onClose={() => setTemplatesOpen(false)} />}
           {['swap-recast', 'swap-quick'].includes(modelId) && <p role="note" data-testid="swap-consent-notice" className="mt-2 text-xs text-vx-fg-muted">{t('app.create.swapConsentNotice')}</p>}
           {modelId === SEEDANCE_REFERENCE_MODEL_ID && <p role="note" data-testid="reference-likeness-notice" className="mt-2 text-xs text-vx-fg-muted">{t('app.create.referenceLikenessNotice')}</p>}
           <div className="scroll-mt-24" data-assistant-target={Object.keys(media).length ? 'create.upload' : undefined}>
