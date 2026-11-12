@@ -32,6 +32,7 @@ export async function GET(request, { params }) {
                 ...(musicTargetStemsEnabled() ? ['target_stem'] : []),
                 ...(musicTrackAddEnabled() ? ['add_track'] : []),
                 ...(musicStudioEnabled() ? ['open_studio'] : []),
+                ...(isUuid(result.song?.job_id || '') ? ['open_editor'] : []),
                 ...(musicEditingEnabled() ? ['crop', 'render'] : []),
             ])],
         });

@@ -19,7 +19,7 @@ function ServerSongRow({ song, checked, onToggle, onFeedback, onTrash, busy }) {
             <Link href={`/app/music/songs/${song.id}`} className="break-words font-bold text-vx-fg underline-offset-4 hover:underline">{song.title}</Link>
             <span className="rounded-full bg-vx-accent/15 px-2 py-1 text-xs font-bold text-vx-accent">Ready</span>
             <span className="rounded-full border border-vx-border px-2 py-1 text-xs text-vx-fg-muted">Private</span>
-            <MusicSongActions songId={song.id} title={song.title} />
+            <MusicSongActions songId={song.id} jobId={song.job_id} title={song.title} actions={['view_lineage', 'open_editor', 'organize']} />
           </div>
           <p className="mt-2 text-sm text-vx-fg-muted">{song.workspace_name}</p>
           {song.audio_url ? <audio className="mt-3 w-full" controls preload="none" src={song.audio_url} aria-label={`Play ${song.title}`} /> : null}

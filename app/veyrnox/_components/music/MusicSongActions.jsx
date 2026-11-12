@@ -3,8 +3,10 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 
+const jobIdPattern = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
+
 export function MusicSongActions({
-  songId, title, actions = ['view_lineage', 'organize'], onViewLineage, onShare, onDownload, onPublish, onCover, onExtend, onReplace, onAddSection, onReuse, onStems, onTargetStem, onAddTrack, onCrop, onRender,
+  songId, jobId, title, actions = ['view_lineage', 'organize'], onViewLineage, onShare, onDownload, onPublish, onCover, onExtend, onReplace, onAddSection, onReuse, onStems, onTargetStem, onAddTrack, onCrop, onRender,
   externalTriggerRef,
 }) {
   const [open, setOpen] = useState(false);
@@ -28,6 +30,7 @@ export function MusicSongActions({
   const canStudio = enabled.has('open_studio');
   const canCrop = enabled.has('crop') && typeof onCrop === 'function';
   const canRender = enabled.has('render') && typeof onRender === 'function';
+  const canEditor = enabled.has('open_editor') && jobIdPattern.test(jobId || '');
   const canOrganize = enabled.has('organize');
 
   useEffect(() => {
@@ -49,7 +52,7 @@ export function MusicSongActions({
     };
   }, [open]);
 
-  if (!canViewLineage && !canShare && !canDownload && !canPublish && !canCover && !canExtend && !canReplace && !canAddSection && !canReuse && !canStems && !canTargetStem && !canAddTrack && !canCrop && !canRender && !canStudio && !canOrganize) return null;
+  if (!canViewLineage && !canShare && !canDownload && !canPublish && !canCover && !canExtend && !canReplace && !canAddSection && !canReuse && !canStems && !canTargetStem && !canAddTrack && !canCrop && !canRender && !canStudio && !canEditor && !canOrganize) return null;
 
   function moveMenuFocus(event) {
     if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
@@ -207,12 +210,17 @@ export function MusicSongActions({
             </button>
           ) : null}
           {canStudio ? (
-            <Link role="menuitem" href={`/app/music/studio/${songId}`} className={itemClass}>
+            <Link ref={!canViewLineage && !canShare && !canDownload && !canPublish && !canCover && !canExtend && !canReplace && !canAddSection && !canReuse && !canStems && !canTargetStem && !canAddTrack && !canCrop && !canRender ? firstItemRef : undefined} role="menuitem" href={`/app/music/studio/${songId}`} className={itemClass}>
               Open in Studio workspace
             </Link>
           ) : null}
+          {canEditor ? (
+            <Link ref={!canViewLineage && !canShare && !canDownload && !canPublish && !canCover && !canExtend && !canReplace && !canAddSection && !canReuse && !canStems && !canTargetStem && !canAddTrack && !canCrop && !canRender && !canStudio ? firstItemRef : undefined} role="menuitem" href={`/app/editor?job=${encodeURIComponent(jobId)}&name=${encodeURIComponent(title)}`} className={itemClass}>
+              Open in Veyrnox Edit
+            </Link>
+          ) : null}
           {canOrganize ? (
-            <Link ref={!canViewLineage && !canShare && !canDownload && !canPublish && !canCover && !canExtend && !canReplace && !canAddSection && !canReuse && !canStems && !canTargetStem && !canCrop && !canRender ? firstItemRef : undefined} role="menuitem" href="/app/music/library" className={itemClass}>
+            <Link ref={!canViewLineage && !canShare && !canDownload && !canPublish && !canCover && !canExtend && !canReplace && !canAddSection && !canReuse && !canStems && !canTargetStem && !canAddTrack && !canCrop && !canRender && !canStudio && !canEditor ? firstItemRef : undefined} role="menuitem" href="/app/music/library" className={itemClass}>
               Organize in Music Library
             </Link>
           ) : null}
