@@ -12,6 +12,20 @@ export const MEDIA_LIMITS = Object.freeze({
 const VIDEO_TYPES = new Set(['video/mp4', 'video/quicktime', 'video/webm']);
 const IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp']);
 const AUDIO_TYPES = new Set(['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-wav', 'audio/wave', 'audio/mp4', 'audio/x-m4a', 'audio/aac', 'audio/webm', 'audio/ogg']);
+const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
+
+/** Read a private Library handoff without trusting arbitrary query values as asset ids. */
+export function editorJobHandoffFromUrl(value) {
+    try {
+        const url = new URL(value, 'https://veyrnox.invalid');
+        const jobId = url.searchParams.get('job') || '';
+        if (!UUID.test(jobId)) return null;
+        const name = (url.searchParams.get('name') || '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80);
+        return { jobId: jobId.toLowerCase(), name };
+    } catch {
+        return null;
+    }
+}
 
 /** Judge what a local file CLAIMS to be, before reading any of it. Returns { kind } or { error }. */
 export function checkLocalFile(file) {

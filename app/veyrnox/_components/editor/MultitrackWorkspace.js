@@ -6,6 +6,8 @@ import { tOr, pluralKey } from '../../../../lib/i18n/translate.mjs';
 import { localeTag } from '../../../../lib/i18n/locales.mjs';
 import { saveDeviceLibrary, loadDeviceLibrary } from '../../_lib/deviceLibrary.mjs';
 import { librarySourceFromId } from '../../_lib/editorLibraryCollection.mjs';
+import { loadLibraryBlob } from '../../_lib/editorLibrary.mjs';
+import { gatewayFetch } from '../../_lib/gateway';
 import { CommandIcon } from './CommandIcon';
 import { EditorToolRail } from './EditorToolRail';
 import { EditorHelperHost } from './EditorHelperLauncher';
@@ -66,7 +68,7 @@ import { ShortcutGuide } from './ShortcutGuide';
 import { emptySequence, upgradeSequence, sequenceEnd, SEQUENCE_MAX, addSequenceMedia, addSequenceClip, addSequenceText, addSequenceTrack, removeSequenceTrack, updateSequenceTrack, addSequenceMarker, updateSequenceMarker, removeSequenceMarker, moveSequence, trimSequence, splitSequenceClip, updateSequenceClip, replaceSequenceClipMedia, trackFor, removeSequenceMedia, setSequenceRate, setSequenceSpeedCurve, reverseSequenceClip, insertSequenceFreeze, extractSequenceAudio, updateMediaDetails } from '../../_lib/editorSequence.mjs';
 import { validateSequenceDiagnostic as validateSequence } from '../../_lib/editorSequenceValidation.mjs';
 import { createHistory, commitHistory, undoHistory, redoHistory, retainedMedia } from '../../_lib/editorHistory.mjs';
-import { checkLocalFile, probeMedia, checkProbe, mediaFromProbe, localMediaId } from '../../_lib/editorMedia.mjs';
+import { checkLocalFile, editorJobHandoffFromUrl, probeMedia, checkProbe, mediaFromProbe, libraryMediaId, localMediaId } from '../../_lib/editorMedia.mjs';
 import { createPreviewer } from '../../_lib/editorPreview.mjs';
 import { createAudioPlayer } from '../../_lib/editorPlayback.mjs';
 import { timelineSize } from '../../_lib/editorRender.mjs';
@@ -99,7 +101,7 @@ export function MultitrackWorkspace({ onCredits }) {
     const [draftCandidate,setDraftCandidate]=useState(undefined),[draftStatus,setDraftStatus]=useState('');
     const draftIdentity=useRef(null),draftTimer=useRef(null);
     const [ppf, setPpf] = useState(2), [timelineViewport,setTimelineViewport]=useState(800),[shortcuts,setShortcuts]=useState(false),[exportOpen,setExportOpen]=useState(false),[mobileStage,setMobileStage]=useState('preview'), [snap, setSnap] = useState(true), [ripple, setRipple] = useState('none'), [binWidth, setBinWidth] = useState(320), [panel, setPanel] = useState('Media'), [height, setHeight] = useState(720), [blocker, setBlocker] = useState(''), [exportName, setExportName] = useState('veyrnox-studio-edit');
-    const addMediaInput = useRef(null);
+    const addMediaInput = useRef(null), jobHandoffStarted = useRef(false);
     const [intentRequest, setIntentRequest] = useState(null), [moreTools, setMoreTools] = useState(false);
     const guidance = timelineGuidance(tl);
     const translatedGuidance = guidance && { ...guidance, title: tOr(t, `app.editor.workspace.guidance.${guidance.id}.title`, guidance.title), body: tOr(t, `app.editor.workspace.guidance.${guidance.id}.body`, guidance.body), action: t('app.editor.workspace.guidance.action') };
@@ -190,6 +192,25 @@ export function MultitrackWorkspace({ onCredits }) {
         if (!next) throw new Error(t("app.editor.workspace.projectLimit"));
         if (next) {if(scoped)privateSession.current=true;blobs.current.set(media.id, file); setLoaded([...blobs.current.keys()]); setTick(n => n + 1); }
     }
+    useEffect(()=>{
+        if(draftCandidate!==null || jobHandoffStarted.current)return undefined;
+        const handoff=editorJobHandoffFromUrl(window.location.href);if(!handoff)return undefined;
+        jobHandoffStarted.current=true;let current=true;const actor=getStoredUserId() || 'guest';
+        void Promise.resolve().then(()=>{
+            if(!current)return undefined;setBusy(true);setNotice('');return loadLibraryBlob(gatewayFetch,handoff.jobId);
+        }).then(result=>{
+            if(!result)return undefined;const {blob}=result;
+            if(!current || actor!==(getStoredUserId() || 'guest'))return;
+            return ingest(blob,handoff.name || t('app.library.kind.audio'),libraryMediaId(handoff.jobId)).then(()=>{
+                if(!current)return;const url=new URL(window.location.href);url.searchParams.delete('job');url.searchParams.delete('name');
+                window.history.replaceState(window.history.state,'',`${url.pathname}${url.search}${url.hash}`);
+            });
+        }).catch(error=>{if(current)setNotice(error.message || t('app.editor.media.importFailed'));})
+          .finally(()=>{if(current)setBusy(false);});
+        return()=>{current=false;};
+        // A saved draft is resolved first; then the URL handoff is consumed once.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    },[draftCandidate]);
     async function files(event) {
         const chosen = [...event.target.files]; event.target.value = ''; setBusy(true);
         for (const file of chosen) { const bad = checkLocalFile(file).error; if (bad) { setNotice(bad); continue; } try { const actor=getStoredUserId() || 'guest',probe=await probeMedia(file);const problem=checkProbe(probe);if(problem)throw new Error(problem);let saved,storageError;try{saved=await saveDeviceLibrary(actor,file,probe,{isCurrent:()=>alive.current && actor===(getStoredUserId() || 'guest')});}catch(e){storageError=e.message;}if(actor!==(getStoredUserId() || 'guest'))throw new Error(t("app.editor.workspace.retryAccount"));await ingest(file,file.name,saved?.mediaId || localMediaId());setNotice(saved?t("app.editor.workspace.originalSaved"):t('app.editor.workspace.editOnly', { error: storageError })); } catch (e) { setNotice(e.message || t("app.editor.workspace.importFailed")); } }
