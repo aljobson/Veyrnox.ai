@@ -4956,6 +4956,18 @@
     "ratio": 2
   },
   {
+    "id": "instruments.octaveDown",
+    "english": "Octave −",
+    "translation": "Octave plus basse",
+    "ratio": 2.13
+  },
+  {
+    "id": "instruments.octaveUp",
+    "english": "Octave +",
+    "translation": "Octave plus haute",
+    "ratio": 2.13
+  },
+  {
     "id": "instruments.record",
     "english": "● Record",
     "translation": "● Enregistrer",
