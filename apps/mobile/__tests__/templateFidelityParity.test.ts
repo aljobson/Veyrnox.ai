@@ -117,7 +117,7 @@ test('all bound contracts use ordered references and the same bound transport on
         const options = optionsFor(model), duration = Number(href.params.duration);
         const context = { contract, model, modelId: href.params.modelId, prompt: href.params.prompt, text: href.params.prompt, cameraOn: false, characterOn: false,
             references: body.references, options, opts: { seed: '', negative: detail?.negativePrompt || '', aspect: href.params.aspect || null },
-            resolution: resolveResolution(model, options, null), audio: resolveAudio(model, options, null), duration, isVideo: true, swapScene: null,
+            resolution: resolveResolution(model, options, null), audio: resolveAudio(model, options, null), tier: null, duration, isVideo: true, swapScene: null,
             unit: feed.credits, hasReference: true, text_: { key: 'prompt' }, templatePreset: true, template: detail,
             kindOf: () => 'video', settingsInputs, templateBoundPrompt, fidelityTemplateId };
         const fromCreate = createRequest(context);

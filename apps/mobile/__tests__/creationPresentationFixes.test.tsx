@@ -57,7 +57,7 @@ test.each([true, false, 'Invalid seed'])('TextField error=%s styles its shell an
 
 test('invalid seed and audio length retain one help line each and a single field border', async () => {
     await act(async () => root.render(<CreateOptions
-        options={{ seed: true, negativeMax: 100, aspects: [], voice: true, audioLength: { min: 1, max: 30, def: 10 }, resolutions: [], audioChoice: false }}
+        options={{ seed: true, negativeMax: 100, aspects: [], voice: true, audioLength: { min: 1, max: 30, def: 10 }, resolutions: [], audioChoice: false, tiers: [], tierBase: null }}
         values={{ aspect: null, count: 1, seed: 'bad', negative: '', voice: '', audioSeconds: '99' }}
         showCount={false} onChange={jest.fn()}
     />));
