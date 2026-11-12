@@ -94,6 +94,20 @@ jobs:
             --allowedTools "Read,Grep,Glob,Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(git merge-base:*)"
             --json-schema '{"type":"object","required":["verdict","summary","findings"],"properties":{"verdict":{"type":"string","enum":["PASS","BLOCK"]},"summary":{"type":"string"},"findings":{"type":"array","items":{"type":"object","required":["severity","file","rule","failure"],"properties":{"severity":{"type":"string","enum":["CRITICAL","HIGH","MEDIUM"]},"file":{"type":"string"},"line":{"type":"integer"},"rule":{"type":"string"},"failure":{"type":"string"}}}}}}'
 
+      # The action hides why a review run failed (display_report is off on purpose: the repo is public).
+      # When the CLI stopped after at most one turn, its result text is an API or setup error, not review
+      # content, so print that short text only.
+      - name: Why the review failed
+        if: always() && steps.review.outcome == 'failure'
+        run: |
+          f="$RUNNER_TEMP/claude-execution-output.json"
+          if [ ! -f "$f" ]; then echo "::warning::pr gate: no execution file at $f"; exit 0; fi
+          jq -r '[.[] | select(.type == "result")] | last
+            | if (.num_turns // 0) <= 1
+              then "pr gate review error: is_error=\(.is_error) subtype=\(.subtype) api_status=\(.api_error_status // "none") turns=\(.num_turns) result=\((.result // "") | tostring | .[0:300])"
+              else "pr gate review stopped after \(.num_turns) turns (no error text printed)" end' "$f" \
+            | while IFS= read -r line; do echo "::warning::${line}"; done
+
       - name: Post result
         if: steps.key.outputs.present == 'true'
         env:
