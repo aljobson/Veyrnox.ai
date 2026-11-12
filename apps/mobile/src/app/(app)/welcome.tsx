@@ -2,7 +2,7 @@ import { rawText } from '../../lib/i18n/translate';
 import { captureEvent } from '../../lib/analytics/events';
 import { markWelcomeSeen } from '../../lib/markWelcomeSeen';
 import { noteOnboardingCompleted } from '../../lib/celebrate';
-import { afterWelcomeHref, hardPaywallEnabled } from '../../lib/hardPaywall';
+import { HARD_PAYWALL_STARTER_CREDITS, afterWelcomeHref, hardPaywallEnabled } from '../../lib/hardPaywall';
 import { CREATOR_PROFILE_ENABLED } from '../../lib/creatorProfile';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
@@ -38,7 +38,7 @@ export default function Welcome() {
 
     const card = WELCOME_CARDS[index] ?? 'hello';
     const last = index === WELCOME_CARDS.length - 1;
-    const credits = creditsCardKeys(free);
+    const credits = creditsCardKeys(free, hardPaywallEnabled() ? HARD_PAYWALL_STARTER_CREDITS : null);
 
     async function done(action: 'next' | 'skip' = 'next') {
         captureEvent('onboarding_step', { step: 'welcome', action });
@@ -72,7 +72,7 @@ export default function Welcome() {
                             {t(credits.title)}
                         </Text>
                         <Text tone="secondary" style={styles.text}>
-                            {credits.count === null ? t(credits.body) : plural(credits.body, credits.count)}
+                            {credits.count !== null ? plural(credits.body, credits.count) : t(credits.body, credits.params)}
                         </Text>
                         <Text tone="secondary" style={styles.text}>
                             {t('welcome.credits.price')}
