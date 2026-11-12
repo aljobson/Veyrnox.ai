@@ -37,7 +37,7 @@ import { SourcePicker } from '../../../components/SourcePicker';
 import { TemplateBanner } from '../../../components/TemplateBanner';
 import { DEFAULT_CINEMA, buildCinemaPrompt, sanitizeCinema, type Cinema } from '../../../lib/cinemaCamera';
 import { clearDraft, loadDraft, saveDraft } from '../../../lib/createDraftStore';
-import { SAVED_DRAFT_VERSION, type CreateDraft, audioLengthInvalid, freeLeftFor, hasAnyOption, imageCount, inputsForIndex, optionsFor, resolveAudio, resolveResolution, seedIsInvalid, settingsInputs, takesImageCount, voiceIsMissing } from '../../../lib/createOptions';
+import { SAVED_DRAFT_VERSION, type CreateDraft, audioLengthInvalid, freeLeftFor, hasAnyOption, imageCount, inputsForIndex, optionsFor, resolveAudio, resolveResolution, resolveTier, seedIsInvalid, settingsInputs, takesImageCount, voiceIsMissing } from '../../../lib/createOptions';
 import { loadVibe } from '../../../lib/creatorProfileStore';
 import { defaultAspect } from '../../../lib/creatorTaste';
 import { nearestAspect, parseRatio, activeTemplate, normalizeTemplateCarry, templateOnOriginalModel } from '../../../lib/templateHandoff';
@@ -268,8 +268,9 @@ export default function CreateWithModel() {
         return <View style={styles.screen}>{error ? <Text variant="body" tone="danger" style={styles.error} accessibilityLiveRegion="polite">{error}</Text> : <ActivityIndicator color={styles.accentInk.color} />}</View>;
     }
     const isVideo = kindOf(model.modality) === 'video';
-    const unit = swapScene?.credits ?? estimateCredits(model, duration);
     const options = optionsFor(model);
+    const tier = resolveTier(options, opts.tier);
+    const unit = swapScene?.credits ?? estimateCredits(model, duration, tier);
     const n = imageCount(model, opts.count);
     const resolution = resolveResolution(model, options, opts.resolution);
     const audio = resolveAudio(model, options, opts.audio);
@@ -283,7 +284,7 @@ export default function CreateWithModel() {
     const text_ = textInput(model);
     const promptTooLong = !!text_ && text.length > text_.max;
     const contract = swapScene ? null : loadedContract; const contractMissing = !swapScene && !!templateRouteContract(template?.id) && !contract;
-    const photoContract =  !cameraOn && !characterOn && fidelityTemplateId(contract, templateBoundPrompt(contract, text, modelId, contract?.slotCount || 1), modelId, { ...settingsInputs(options, { seed: opts.seed, negative: opts.negative, aspect: opts.aspect, voice: opts.voice, audioSeconds: opts.audioSeconds, resolution, audio }), duration_seconds: isVideo ? duration : null }) ? contract : null;
+    const photoContract =  !cameraOn && !characterOn && fidelityTemplateId(contract, templateBoundPrompt(contract, text, modelId, contract?.slotCount || 1), modelId, { ...settingsInputs(options, { seed: opts.seed, negative: opts.negative, aspect: opts.aspect, voice: opts.voice, audioSeconds: opts.audioSeconds, resolution, audio, tier }), duration_seconds: isVideo ? duration : null }) ? contract : null;
     const boundCount = contract?.class === 'bound' && modelId === contract.modelId ? contract.slotCount || 0 : 0; const photosUnavailable = contract?.class === 'bound' && modelId === contract.modelId && templatePhotosUnavailable(contract, model?.capabilities?.media);
     const slots = slotsFor(model, swapScene).filter(slot => !photoContract || slot.slot === 'image' || references.some(ref => ref.slot === slot.slot)).map(slot => photoContract ? { ...slot, maxFiles: Math.min(slot.maxFiles ?? 1, photoContract.slotCount || 1), minSide: Math.max(slot.minSide || 0, photoContract.minPhotoDimension) } : slot);
     const waiting = attaching || Object.values(sending).some(Boolean);
@@ -303,7 +304,7 @@ export default function CreateWithModel() {
     const hasReference = references.length > 0 || !!startFile;
     const ready = !contractMissing && !photosUnavailable && (!boundCount || references.length === boundCount) && !fidelityBlocked(contract, template ? text : '') && (!photoContract || (references.length <= photoContract.requiredReferences.imageMax && references.every(ref => ref.slot === 'image'))) && (!swapScene || (references.length === swapScene.people && references.every(ref => ref.slot === 'image'))) && !waiting && !promptTooLong && slots.every(slot => (!slot.required || references.some(ref => ref.slot === slot.slot)) && references.filter(ref => ref.slot === slot.slot).length <= (slot.maxFiles ?? 1)) && (!promptRequired(model) || !!text.trim()) && !seedIsInvalid(opts.seed) && !voiceIsMissing(options, opts.voice) && !audioLengthInvalid(options, opts.audioSeconds);
     const requestPrompt = !cameraOn && !characterOn ? templateBoundPrompt(contract, text, modelId, references.length) : text;
-    let request: SubmitRequest = { analyticsKind: kindOf(model.modality), modelId: model.id, swap: swapScene?.id, prompt: requestPrompt, templateId: prompt === contract?.sourcePrompt && !cameraOn && !characterOn && (contract?.class !== 'bound' || references.length === contract.slotCount) ? fidelityTemplateId(contract, requestPrompt, modelId, { ...settingsInputs(options, { seed: opts.seed, negative: opts.negative, aspect: opts.aspect, voice: opts.voice, audioSeconds: opts.audioSeconds, resolution, audio }), duration_seconds: !swapScene && isVideo ? duration : null }) : undefined, confirmedCredits: unit, durationSeconds: !swapScene && isVideo ? duration : null, references, sourceRights: hasReference ? true : undefined, textKey: text_?.key, extraInputs: settingsInputs(options, { seed: opts.seed, negative: opts.negative, aspect: opts.aspect, voice: opts.voice, audioSeconds: opts.audioSeconds, resolution, audio }), preset: !swapScene && templatePreset ? template?.id ?? undefined : undefined };
+    let request: SubmitRequest = { analyticsKind: kindOf(model.modality), modelId: model.id, swap: swapScene?.id, prompt: requestPrompt, templateId: prompt === contract?.sourcePrompt && !cameraOn && !characterOn && (contract?.class !== 'bound' || references.length === contract.slotCount) ? fidelityTemplateId(contract, requestPrompt, modelId, { ...settingsInputs(options, { seed: opts.seed, negative: opts.negative, aspect: opts.aspect, voice: opts.voice, audioSeconds: opts.audioSeconds, resolution, audio, tier }), duration_seconds: !swapScene && isVideo ? duration : null }) : undefined, confirmedCredits: unit, durationSeconds: !swapScene && isVideo ? duration : null, references, sourceRights: hasReference ? true : undefined, textKey: text_?.key, extraInputs: settingsInputs(options, { seed: opts.seed, negative: opts.negative, aspect: opts.aspect, voice: opts.voice, audioSeconds: opts.audioSeconds, resolution, audio, tier }), preset: !swapScene && templatePreset ? template?.id ?? undefined : undefined };
     if (request.templateId && typeof request.extraInputs?.negative_prompt === 'string') request = { ...request, extraInputs: { ...request.extraInputs, negative_prompt: request.extraInputs.negative_prompt.trimEnd() } };
     const signature = generationSignature(request, n);
     const matchingRetry = retry.current?.signature === signature ? retry.current : null;
@@ -450,11 +451,11 @@ export default function CreateWithModel() {
                         {isVideo && model.durations.length > 1 ? (
                             <View style={styles.chips}>
                                 {model.durations.map((d) => (
-                                    <Chip key={d} label={t('create.lengthCost', { value1: d, credits: String(estimateCredits(model, d)) })} accessibilityRole="button" accessibilityLabel={`${rawText(plural('form.seconds', d))}, ${t('create.workspace.cost', { credits: String(estimateCredits(model, d)) })}`} accessibilityState={selectedState(duration === d)} selected={duration === d} onPress={() => setDuration(d)} />
+                                    <Chip key={d} label={t('create.lengthCost', { value1: d, credits: String(estimateCredits(model, d, tier)) })} accessibilityRole="button" accessibilityLabel={`${rawText(plural('form.seconds', d))}, ${t('create.workspace.cost', { credits: String(estimateCredits(model, d, tier)) })}`} accessibilityState={selectedState(duration === d)} selected={duration === d} onPress={() => setDuration(d)} />
                                 ))}
                             </View>
                         ) : null}
-                        {hasAnyOption(options) || takesImageCount(model) ? <CreateOptions options={options} values={opts} showCount={takesImageCount(model)} resolution={resolution} audio={audio} outputPrice={plural('opt.outputPriceSame', unit)} onChange={setOpts} /> : null}
+                        {hasAnyOption(options) || takesImageCount(model) ? <CreateOptions options={options} values={opts} showCount={takesImageCount(model)} resolution={resolution} audio={audio} tier={tier} tierLabel={(id) => `${id === '4k' ? '4K' : id} · ${estimateCredits(model, duration, id)}`} outputPrice={plural('opt.outputPriceSame', unit)} onChange={setOpts} /> : null}
                         {takesCharacter ? <CharacterPanel on={characterOn} picks={character} onToggle={setCharacterOn} onChange={setCharacter} /> : null}
                         {takesCamera ? <CameraPanel on={cameraOn} value={cinema} onToggle={setCameraOn} onChange={setCinema} /> : null}
                     </View>

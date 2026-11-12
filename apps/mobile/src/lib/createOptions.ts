@@ -78,6 +78,10 @@ export interface ModelOptions {
     // is flat across every choice (ADR-0027, 2026-10-15), so these never change the credits.
     readonly resolutions: readonly string[];
     readonly audioChoice: boolean;
+    // Resolution tiers (720p … 4k) that cost more than the catalog price, with the tier that price buys. Empty when the
+    // model offers one tier only.
+    readonly tiers: readonly { readonly id: string; readonly multiplier: number }[];
+    readonly tierBase: string | null;
 }
 
 export function optionsFor(model: CatalogModel): ModelOptions {
@@ -92,6 +96,8 @@ export function optionsFor(model: CatalogModel): ModelOptions {
         audioLength: audioLengthOf(model),
         resolutions: resolutionsOf(model),
         audioChoice: audioChoiceOf(model),
+        tiers: (model.capabilities?.resolutionTiers?.options.length ?? 0) > 1 ? model.capabilities!.resolutionTiers!.options : [],
+        tierBase: model.capabilities?.resolutionTiers?.base ?? null,
     };
 }
 
@@ -125,6 +131,12 @@ export function resolveAudio(model: CatalogModel, o: ModelOptions, wanted: boole
     return typeof priced === 'boolean' ? priced : true;
 }
 
+// The tier shown when none was chosen: the one the catalog price buys.
+export function resolveTier(o: ModelOptions, wanted: string | null | undefined): string | null {
+    if (!o.tiers.length) return null;
+    return wanted && o.tiers.some((t) => t.id === wanted) ? wanted : o.tierBase;
+}
+
 export const VOICE_MAX = 500;
 
 // The audio models that let you pick a length declare `duration` as an int range (web: audioDurationConfig).
@@ -148,7 +160,7 @@ export function audioLengthInvalid(o: ModelOptions, value: string): boolean {
 }
 
 export const hasSettings = (o: ModelOptions): boolean => o.seed || o.negativeMax !== null;
-export const hasOutputChoice = (o: ModelOptions): boolean => o.resolutions.length > 0 || o.audioChoice;
+export const hasOutputChoice = (o: ModelOptions): boolean => o.resolutions.length > 0 || o.audioChoice || o.tiers.length > 0;
 export const hasAnyOption = (o: ModelOptions): boolean => hasSettings(o) || o.aspects.length > 0 || o.voice || o.audioLength !== null || hasOutputChoice(o);
 
 // The count control is for image models only, never an Auto Short.
@@ -165,10 +177,11 @@ export const seedIsInvalid = (seed: string): boolean => seed !== '' && !(/^\d+$/
 // What to send for the settings: only what the model takes and the person set. An invalid seed is dropped.
 export function settingsInputs(
     options: ModelOptions,
-    s: { seed: string; negative: string; aspect: string | null; voice?: string; audioSeconds?: string; resolution?: string | null; audio?: boolean | null },
+    s: { seed: string; negative: string; aspect: string | null; voice?: string; audioSeconds?: string; resolution?: string | null; audio?: boolean | null; tier?: string | null },
 ): Record<string, string | number | boolean> {
     const out: Record<string, string | number | boolean> = {};
     if (options.resolutions.length && s.resolution && options.resolutions.includes(s.resolution)) out.output_resolution = s.resolution;
+    if (options.tiers.length && s.tier && s.tier !== options.tierBase && options.tiers.some((t) => t.id === s.tier)) out.resolution = s.tier;
     if (options.audioChoice && typeof s.audio === 'boolean') out.audio_enabled = s.audio;
     if (options.seed && /^\d+$/.test(s.seed) && Number(s.seed) <= SEED_MAX) out.seed = Number(s.seed);
     if (options.negativeMax !== null && s.negative.trim()) out.negative_prompt = s.negative.trim().slice(0, options.negativeMax);

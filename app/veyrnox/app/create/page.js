@@ -52,6 +52,7 @@ import { AddFilesDialog } from '../../_components/AddFilesDialog';
 import { GenerationSettings } from '../../_components/GenerationSettings';
 import { VoiceDescription } from '../../_components/VoiceDescription';
 import { ControlRow } from '../../_components/ControlRow';
+import { AspectRow, ResolutionRow } from '../../_components/CreateFormatRows';
 import { TemplateHandoffCard } from '../../_components/TemplateHandoffCard';
 import { TemplatePicker } from '../../_components/TemplatePicker';
 import { CreateGoalPicker } from '../../_components/CreateGoalPicker';
@@ -135,6 +136,8 @@ export default function CreateStudio() {
   const [duration, setDuration] = useState('5s');
   const [audioDurations, setAudioDurations] = useState({});
   const [aspect, setAspect] = useState('16:9');
+  // Output tier (720p … 4k) for models whose provider offers more than the catalog tier; '' = the model's base tier.
+  const [resolution, setResolution] = useState('');
   const [recoveredPrompt, setRecoveredPrompt] = useState(null); // Recovery has no template provenance; preserve its unedited bytes.
   const [typed, setPrompt] = useState(null); // null until the user types or a draft is restored
   // Start image for models whose catalog capabilities declare an image slot.
@@ -304,7 +307,7 @@ export default function CreateStudio() {
     reset: () => {
       setPrompt(null); setSources(current => { Object.values(current).flatMap(sourceList).forEach(source => { if (source.file) URL.revokeObjectURL(source.previewUrl); }); return {}; });
       setConsent(true); setGoal('image'); chooseModel(starterModel(catalogModels, 'image')?.id || '');
-      setDuration('5s'); setAspect('16:9'); setCount(1); setCharacterOn(false); setCharacter({}); setOddlingTransfer(null);
+      setDuration('5s'); setAspect('16:9'); setResolution(''); setCount(1); setCharacterOn(false); setCharacter({}); setOddlingTransfer(null);
       setCinemaOn(false); setCinema(DEFAULT_CINEMA); setSeed(''); setNegative(''); setVoice(''); setAudioDurations({});
       setAnimationPortrait(null); setPresetParam(null); setTier(null); clearJobs(); setError(null);
       // A conversion the previous account started must not land in this one's form.
@@ -408,12 +411,16 @@ export default function CreateStudio() {
     : tOr(t, `app.create.error.${HINT_CODES[hintKey]}`, ERROR_COPY[HINT_CODES[hintKey]] || t('app.create.error.unknown'));
   // Only offer aspect ratios explicitly declared by this model's provider contract.
   const aspectOptions = isShort ? [] : modelAspectRatios(model);
-  const unitCost = swap.scene ? swap.scene.credits : model ? (model.kind === 'video' ? clipCredits(model.credits, Number(duration.replace('s', ''))) : model.credits) : 0;
+  // Higher tiers cost more; the gateway applies the same multiplier (lib/resolutionTiers.js) and the catalog publishes it.
+  const tierOptions = model?.resolutionTiers?.options || [];
+  const activeTier = tierOptions.find((o) => o.id === resolution) || tierOptions.find((o) => o.id === model?.resolutionTiers?.base) || null;
+  const tierUnit = model ? Math.max(model.credits, Math.ceil(model.credits * (activeTier?.multiplier ?? 1) - 1e-9)) : 0;
+  const unitCost = swap.scene ? swap.scene.credits : model ? (model.kind === 'video' ? clipCredits(tierUnit, Number(duration.replace('s', ''))) : tierUnit) : 0;
   // Other models always send one; the count control is image-only.
   const n = imageCount(model, count);
   // The server decides what is free; the first `freeLeft` jobs of a batch are, the rest cost the catalog price.
   const freeLeft = freeLeftFor(freeMap, modelId);
-  const formIdentity = useMemo(() => ({}), [swapId, modelId, prompt, duration, aspect, n, seed, negative, voice, audioDuration, cinemaOn, cinema, characterOn, character, sources, consent, presetParam, accountEpoch]);
+  const formIdentity = useMemo(() => ({}), [swapId, modelId, prompt, duration, aspect, resolution, n, seed, negative, voice, audioDuration, cinemaOn, cinema, characterOn, character, sources, consent, presetParam, accountEpoch]);
   const continuation = useRef(null);
   const [batchView, setBatchView] = useState(null);
   const activeBatch = batchView?.identity === formIdentity ? batchView : null;
@@ -683,6 +690,7 @@ export default function CreateStudio() {
     const inputs = isShort ? { topic: prompt.trim() } : {
       prompt: finalPrompt(),
       aspect_ratio: aspectOptions.length ? aspect : undefined,
+      resolution: activeTier && activeTier.id !== model.resolutionTiers.base ? activeTier.id : undefined,
       duration_seconds: !model.swap && model.kind === 'video' ? Number(duration.replace('s', '')) : undefined,
       ...settingsInputs(model, { seed, negative, voice, duration: audioDuration, loop }),
     };
@@ -1191,7 +1199,11 @@ export default function CreateStudio() {
             </div>
           )}
           {aspectOptions.length > 0 && (
-            <ControlRow assistantTarget="create.aspect" label={t("app.create.aspectHeading")} options={aspectOptions} value={aspect} onChange={setAspect} />
+            <AspectRow assistantTarget="create.aspect" label={t("app.create.aspectHeading")} options={aspectOptions} value={aspect} onChange={setAspect} />
+          )}
+          {tierOptions.length > 1 && (
+            <ResolutionRow assistantTarget="create.resolution" label={t('app.create.resolutionHeading')} tiers={tierOptions} value={activeTier?.id} onChange={setResolution}
+              priceFor={(multiplier) => { const c = Math.max(model.credits, Math.ceil(model.credits * multiplier - 1e-9)); return model.kind === 'video' ? clipCredits(c, Number(duration.replace('s', ''))) : c; }} />
           )}
           {takesImageCount(model) && (
             <ControlRow assistantTarget="create.count" label={t("app.create.imagesHeading")} options={IMAGE_COUNTS} value={count} onChange={setCount} />

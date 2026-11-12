@@ -5,6 +5,7 @@ import { View } from 'react-native';
 
 import { IMAGE_COUNTS, SEED_MAX, VOICE_MAX, audioLengthInvalid, seedIsInvalid, type ModelOptions } from '../lib/createOptions';
 import { t } from '../lib/i18n';
+import { aspectLabel } from '../lib/platformFormats';
 import { ds } from '../theme';
 
 export interface OptionValues {
@@ -17,6 +18,8 @@ export interface OptionValues {
     // Unset means the model's priced default (resolveResolution / resolveAudio).
     readonly resolution?: string | null;
     readonly audio?: boolean | null;
+    // Unset means the tier the catalog price buys (resolveTier).
+    readonly tier?: string | null;
 }
 
 interface Props {
@@ -28,12 +31,15 @@ interface Props {
     readonly resolution?: string | null;
     readonly audio?: boolean | null;
     readonly outputPrice?: string;
+    // The tier shown now and the label for each tier chip (name and price), when the model offers tiers.
+    readonly tier?: string | null;
+    readonly tierLabel?: (id: string) => string;
     readonly onChange: (next: OptionValues) => void;
 }
 
 // The web Create page's shape, image count and Settings (seed, leave out), for the options a model's catalog entry
 // declares (ADR-0153). The server checks every value again, so a control that does not apply is simply not shown.
-export function CreateOptions({ options, values, showCount, resolution, audio, outputPrice, onChange }: Props) {
+export function CreateOptions({ options, values, showCount, resolution, audio, outputPrice, tier, tierLabel, onChange }: Props) {
     const styles = useThemedStyles(sheets);
     const [open, setOpen] = useState(values.seed !== '' || values.negative !== '');
     const bad = seedIsInvalid(values.seed);
@@ -45,7 +51,7 @@ export function CreateOptions({ options, values, showCount, resolution, audio, o
             {options.aspects.length > 0 ? (
                 <Group label={t('opt.aspect')}>
                     {options.aspects.map((a) => (
-                        <Chip key={a} label={a} accessibilityLabel={rawText(a)} selected={values.aspect === a} onPress={() => set({ aspect: a })} />
+                        <Chip key={a} label={aspectLabel(a)} accessibilityLabel={rawText(aspectLabel(a))} selected={values.aspect === a} onPress={() => set({ aspect: a })} />
                     ))}
                 </Group>
             ) : null}
@@ -53,6 +59,13 @@ export function CreateOptions({ options, values, showCount, resolution, audio, o
                 <Group label={t('opt.resolution')}>
                     {options.resolutions.map((r) => (
                         <Chip key={r} label={r} accessibilityLabel={rawText(r)} selected={resolution === r} onPress={() => set({ resolution: r })} />
+                    ))}
+                </Group>
+            ) : null}
+            {options.tiers.length > 0 ? (
+                <Group label={t('opt.resolution')}>
+                    {options.tiers.map((r) => (
+                        <Chip key={r.id} label={tierLabel?.(r.id) ?? r.id} accessibilityLabel={rawText(tierLabel?.(r.id) ?? r.id)} selected={tier === r.id} onPress={() => set({ tier: r.id })} />
                     ))}
                 </Group>
             ) : null}
