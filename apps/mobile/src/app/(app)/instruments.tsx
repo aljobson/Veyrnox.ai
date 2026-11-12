@@ -2,15 +2,11 @@ import { Stack } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-// @ts-expect-error shared plain-JS module outside the app root (Metro watches ../../lib)
-import { DRUM_PADS, GUITAR_CHORDS, GUITAR_FRETS, GUITAR_STRINGS, INSTRUMENTS, INSTRUMENT_IDS, MAX_TAKE_EVENTS, MAX_TAKE_SECONDS, PRESETS, chordNotes, isBlackKey, keyRange, noteLabel } from '../../../../lib/musicInstruments.js';
+import { DRUM_PADS, GUITAR_CHORDS, GUITAR_FRETS, GUITAR_STRINGS, INSTRUMENTS, INSTRUMENT_IDS, MAX_TAKE_EVENTS, MAX_TAKE_SECONDS, PRESETS, chordNotes, isBlackKey, keyRange, noteLabel, type Chord, type Pad, type Preset } from '../../lib/instrumentShared';
 import { rawText } from '../../lib/i18n/translate';
 import { touchTarget } from '../../lib/a11y';
 import { playFile, playVoice, prepareInstrumentAudio, releaseInstrumentAudio, renderTakeFile, type RawTake, type RenderedTake } from '../../lib/instrumentPlayer';
 import { colors } from '../../theme';
-
-type Preset = { id: string; label: string; hint: string };
-type Chord = { id: string; label: string; frets: number[] };
 
 // Plays on the phone by rendering each voice to a small WAV once (pure JS), then replaying it from a player pool.
 export default function Instruments() {
@@ -67,8 +63,8 @@ export default function Instruments() {
         } catch { setMessage('The take could not be shared.'); }
     };
 
-    const keys: number[] = keyRange(instrument, shift);
-    const presets = PRESETS[instrument] as Preset[];
+    const keys = keyRange(instrument, shift);
+    const presets: Preset[] = PRESETS[instrument];
     const whites = keys.filter((n) => !isBlackKey(n));
 
     return (
@@ -114,8 +110,8 @@ export default function Instruments() {
                 ) : INSTRUMENTS[instrument].surface === 'strings' ? (
                     <View style={{ gap: 6 }}>
                         <ScrollView horizontal contentContainerStyle={styles.chips}>
-                            {(GUITAR_CHORDS as Chord[]).map((chord) => (
-                                <Pressable key={chord.id} accessibilityRole="button" accessibilityLabel={`Strum ${chord.label}`} style={styles.chord} onPress={() => (chordNotes(chord) as { note: number }[]).forEach((n, i) => setTimeout(() => hit(n.note, 0.7), i * 28))}>
+                            {GUITAR_CHORDS.map((chord: Chord) => (
+                                <Pressable key={chord.id} accessibilityRole="button" accessibilityLabel={`Strum ${chord.label}`} style={styles.chord} onPress={() => chordNotes(chord).forEach((n, i) => setTimeout(() => hit(n.note, 0.7), i * 28))}>
                                     <Text style={styles.chordText}>{chord.label}</Text>
                                 </Pressable>
                             ))}
@@ -135,7 +131,7 @@ export default function Instruments() {
                     </View>
                 ) : (
                     <View style={styles.pads}>
-                        {(DRUM_PADS as { id: string; label: string }[]).map((pad) => (
+                        {DRUM_PADS.map((pad: Pad) => (
                             <Pressable key={pad.id} accessibilityRole="button" accessibilityLabel={pad.label} onPressIn={() => hit(pad.id, 0.9)} style={({ pressed }) => [styles.pad, pressed && styles.keyDown]}>
                                 <Text style={styles.padText}>{pad.label}</Text>
                             </Pressable>

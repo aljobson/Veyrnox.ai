@@ -1,11 +1,7 @@
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
 import { File, Paths } from 'expo-file-system';
-// @ts-expect-error shared plain-JS module outside the app root (Metro watches ../../lib)
-import { renderTakeSamples, renderVoiceWav, SYNTH_RATE } from '../../../../lib/musicInstrumentSynth.js';
-// @ts-expect-error shared plain-JS module outside the app root
-import { encodeWav, normalizeTake, trimSamples } from '../../../../lib/musicInstruments.js';
-
-export type RawTake = { instrument: string; preset: string; events: { at: number; dur: number; vel: number; value: number | string }[] };
+import { SYNTH_RATE, encodeWav, normalizeTake, renderTakeSamples, renderVoiceWav, trimSamples, type RawTake } from './instrumentShared';
+export type { RawTake };
 
 const MAX_PLAYERS = 24;
 const players = new Map<string, AudioPlayer>();
@@ -45,8 +41,8 @@ export type RenderedTake = { uri: string; seconds: number };
 export function renderTakeFile(raw: RawTake, start = 0, end?: number): RenderedTake | null {
     const take = normalizeTake(raw);
     if (!take) return null;
-    const mixed: Float32Array = renderTakeSamples(take);
-    const clip: Float32Array = trimSamples(mixed, SYNTH_RATE, start, end ?? mixed.length / SYNTH_RATE);
+    const mixed = renderTakeSamples(take);
+    const clip = trimSamples(mixed, SYNTH_RATE, start, end ?? mixed.length / SYNTH_RATE);
     const uri = writeWav(`veyrnox-take-${take.instrument}-${take.preset}-${Date.now()}.wav`, encodeWav(clip, SYNTH_RATE));
     return { uri, seconds: clip.length / SYNTH_RATE };
 }
