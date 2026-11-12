@@ -121,7 +121,19 @@ export async function fetchCatalog(): Promise<CatalogModel[]> {
     return (await fetchAllCatalog()).filter(isSupported);
 }
 
-export async function fetchAllCatalog(): Promise<CatalogModel[]> {
+// Screens that mount together (a tab and the sheet over it) each ask for the catalog. Calls that overlap share one
+// request; nothing is kept once it settles, so the next call reads fresh data.
+let catalogInFlight: Promise<CatalogModel[]> | null = null;
+
+export function fetchAllCatalog(): Promise<CatalogModel[]> {
+    if (!catalogInFlight) {
+        const request = requestCatalog().finally(() => { if (catalogInFlight === request) catalogInFlight = null; });
+        catalogInFlight = request;
+    }
+    return catalogInFlight;
+}
+
+async function requestCatalog(): Promise<CatalogModel[]> {
     let res: Response;
     try {
         res = await fetch(`${API_BASE}/api/catalog`);
