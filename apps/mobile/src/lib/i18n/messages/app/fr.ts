@@ -6003,7 +6003,7 @@ export default {
     "editorSpeech.limits": "Gardez de 1 à 10 sections et 60 secondes maximum dans la timeline.",
     "editorSpeech.checkStatus": "Vérifier l’état",
     "editorSpeech.applied": "Coupes appliquées. Annuler restaure la timeline précédente.",
-  "instruments.title": "Instruments",
+  "instruments.title": "Instruments de musique",
   "instruments.headline": "Jouez. Enregistrez. Gardez le sample.",
   "instruments.octaveDown": "Octave −",
   "instruments.octaveUp": "Octave +",

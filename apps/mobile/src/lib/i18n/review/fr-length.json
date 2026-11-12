@@ -4950,6 +4950,12 @@
     "ratio": 1.7
   },
   {
+    "id": "instruments.title",
+    "english": "Instruments",
+    "translation": "Instruments de musique",
+    "ratio": 2
+  },
+  {
     "id": "instruments.record",
     "english": "● Record",
     "translation": "● Enregistrer",
