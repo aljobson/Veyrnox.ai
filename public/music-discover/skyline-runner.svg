@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Abstract cyan night skyline">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#020617"/><stop offset=".58" stop-color="#075985"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs>
+  <rect width="512" height="512" fill="url(#g)"/><path d="M0 392h64V221h59v171h48V144h80v248h44V190h62v202h47V112h74v280h34v120H0z" fill="#020617" opacity=".78"/><path d="M14 92l410 0M-20 164h322M94 244h438" stroke="#67e8f9" stroke-width="8" stroke-linecap="round" opacity=".3"/><path d="M52 430h408" stroke="#e0f2fe" stroke-width="12" stroke-dasharray="52 28" opacity=".7"/>
+</svg>
