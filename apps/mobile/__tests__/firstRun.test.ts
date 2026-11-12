@@ -48,6 +48,26 @@ describe('the cards', () => {
     });
 });
 
+describe('the credits card under the hard paywall', () => {
+    test('quotes the paywall\'s fixed amount and wording, never the account balance', () => {
+        const hard = { title: 'welcome.credits.title', body: 'credits.hardPaywall.bodyFree', count: null, params: { count: 10 } };
+        expect(creditsCardKeys(0, 10)).toEqual(hard);
+        expect(creditsCardKeys(25, 10)).toEqual(hard);
+        expect(creditsCardKeys(null, 10)).toEqual(hard);
+    });
+
+    test('its words are the paywall\'s own, so the two screens cannot disagree', () => {
+        const paywall = read('components', 'HardPaywallGate.tsx');
+        expect(paywall).toContain("t('credits.hardPaywall.bodyFree', { count: HARD_PAYWALL_STARTER_CREDITS })");
+        expect(read('app', '(app)', 'welcome.tsx')).toContain('HARD_PAYWALL_STARTER_CREDITS');
+        expect(en['credits.hardPaywall.bodyFree' as keyof typeof en]).toContain('{count}');
+    });
+
+    test('without the hard paywall the card is unchanged', () => {
+        expect(creditsCardKeys(10, null)).toEqual({ title: 'welcome.credits.title', body: 'welcome.credits.free', count: 10 });
+    });
+});
+
 describe('where the welcome shows', () => {
     test('the shared consent and provider controls introduce creation on sign-in', () => {
         const signIn = read('app', 'sign-in.tsx');

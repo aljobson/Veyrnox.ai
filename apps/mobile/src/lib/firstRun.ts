@@ -36,8 +36,13 @@ export function resetWelcomeRedirect(): void {
 
 // The credits card quotes the free credits the server says this account holds (GET /api/v1/balance, free_credits). When
 // there are none, or the number is unreadable, it explains credits without a number rather than promising one.
-export function creditsCardKeys(free: number | null | undefined): { title: string; body: string; count: number | null } {
+export interface CreditsCard { title: string; body: string; count: number | null; params?: { count: number } }
+
+// Under the hard paywall (hardStarter = the fixed starter amount) the first credits arrive when the person subscribes, so
+// the card says what the paywall says, with the paywall's own words and its fixed amount, never the account balance.
+export function creditsCardKeys(free: number | null | undefined, hardStarter: number | null = null): CreditsCard {
     const title = 'welcome.credits.title';
+    if (hardStarter !== null) return { title, body: 'credits.hardPaywall.bodyFree', count: null, params: { count: hardStarter } };
     if (typeof free === 'number' && Number.isFinite(free) && free > 0) return { title, body: 'welcome.credits.free', count: Math.floor(free) };
     return { title, body: 'welcome.credits.generic', count: null };
 }
