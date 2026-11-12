@@ -64,3 +64,37 @@ test('web sync: signed out asks nothing; failures read as unavailable; a push is
   assert.deepEqual(await fetchRemoteFirstGoal(down, () => ({})), { kind: 'unavailable' });
   await pushFirstGoal('image', down, () => ({})); // never throws
 });
+
+test('a home start option is the answer: Film is video, Smart Cut is edit, Create and Chat name no area', async () => {
+  const { HOME_START_GOALS, homeStartGoal } = await import('../app/veyrnox/_lib/firstGoal.js');
+  assert.deepEqual(HOME_START_GOALS, { create: 'skipped', chat: 'skipped', film: 'video', 'smart-cut': 'edit' });
+  assert.equal(homeStartGoal('film'), 'video');
+  assert.equal(homeStartGoal('nonsense'), null);
+  for (const goal of Object.values(HOME_START_GOALS)) assert.doesNotThrow(() => serializeFirstGoal(goal));
+});
+
+test('web: a home tap stores the goal once, pushes it, and never replaces an answer already held', async () => {
+  const sync = await import('../app/veyrnox/_lib/firstGoalSync.js');
+  const store = new Map();
+  const storage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, v) };
+  const calls = [];
+  const fetcher = async (path, init) => { calls.push([path, init?.method, init?.body]); return {}; };
+  assert.equal(sync.homeStartRecorded(), false);
+  await sync.recordHomeStart('smart-cut', { storage, fetcher, session: () => ({}) });
+  assert.equal(store.get('veyrnox.firstGoal.v1'), '{"version":1,"goal":"edit"}');
+  assert.deepEqual(calls, [['/first-goal', 'PUT', '{"goal":"edit"}']]);
+  assert.equal(sync.homeStartRecorded(), true, 'the Create page treats this visit as answered even before the server replies');
+  await sync.recordHomeStart('create', { storage, fetcher, session: () => ({}) });
+  assert.equal(store.get('veyrnox.firstGoal.v1'), '{"version":1,"goal":"edit"}', 'a held answer stays');
+  assert.equal(calls.length, 1);
+  await sync.recordHomeStart('unknown', { storage, fetcher, session: () => ({}) });
+  assert.equal(calls.length, 1);
+});
+
+test('the home page records the start option and Create no longer asks after it', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const home = await readFile(new URL('../app/veyrnox/app/page.js', import.meta.url), 'utf8');
+  assert.match(home, /recordHomeStart\(icon\)/);
+  const card = await readFile(new URL('../app/veyrnox/_components/FirstGoalCard.js', import.meta.url), 'utf8');
+  assert.match(card, /homeStartRecorded\(\)/);
+});

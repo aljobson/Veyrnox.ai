@@ -70,3 +70,41 @@ describe('the first-goal question', () => {
         await expect(pushFirstGoal(down as never, 'image')).resolves.toBeUndefined();
     });
 });
+
+const mockSecure = new Map<string, string>();
+const mockCache = new Map<string, string>();
+jest.mock('expo-secure-store', () => ({
+    getItemAsync: async (k: string) => mockSecure.get(k) ?? null,
+    setItemAsync: async (k: string, v: string) => { mockSecure.set(k, v); },
+}));
+jest.mock('../src/lib/appCache', () => ({
+    appStorage: { get: async (k: string) => mockCache.get(k) ?? null, set: async (k: string, v: string) => { mockCache.set(k, v); } },
+}));
+
+describe('a home start option is the answer', () => {
+    const { HOME_START_GOALS, homeStartGoal } = require('../src/lib/firstGoal');
+    const store = require('../src/lib/firstGoalStore');
+
+    test('Film is video, Smart Cut is edit, Create and Chat name no area; same table as the web', () => {
+        expect(HOME_START_GOALS).toEqual({ create: 'skipped', chat: 'skipped', film: 'video', 'smart-cut': 'edit' });
+        expect(homeStartGoal('film')).toBe('video');
+        expect(homeStartGoal('nonsense')).toBeNull();
+        const web = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'app', 'veyrnox', '_lib', 'firstGoal.js'), 'utf8');
+        expect(web).toContain("HOME_START_GOALS = { create: 'skipped', chat: 'skipped', film: 'video', 'smart-cut': 'edit' }");
+    });
+
+    test('a tap stores and pushes the goal once, and keeps an answer already held', async () => {
+        const request = jest.fn(async () => ({}));
+        expect(store.homeStartRecorded()).toBe(false);
+        await store.recordHomeStart({ request }, 'film');
+        expect(await store.readFirstGoal()).toBe('video');
+        expect(request).toHaveBeenCalledWith('/api/v1/first-goal', expect.objectContaining({ method: 'PUT', body: '{"goal":"video"}' }));
+        expect(store.homeStartRecorded()).toBe(true);
+        request.mockClear();
+        await store.recordHomeStart({ request }, 'create');
+        expect(await store.readFirstGoal()).toBe('video');
+        expect(request).not.toHaveBeenCalled();
+        await store.recordHomeStart({ request }, 'unknown');
+        expect(request).not.toHaveBeenCalled();
+    });
+});
