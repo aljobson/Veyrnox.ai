@@ -10,7 +10,12 @@ import { tOr } from '../../../../lib/i18n/translate.mjs';
 
 const PREVIEW_SECONDS = 12;
 const moodKey = (mood) => `musicDiscover.mood.${mood.replace(/\s/g, '')}`;
-const SECTION_KEYS = { 'For you': 'forYou', 'Fresh signal': 'freshSignal' };
+const SECTION_KEYS = {
+  'For you': 'forYou',
+  'Fresh signal': 'freshSignal',
+  'New textures': 'newTextures',
+  'Fast lane': 'fastLane',
+};
 
 function ramp(param, start, peak, end, value) {
   param.setValueAtTime(0.0001, start);
@@ -185,7 +190,7 @@ export function MusicDiscover() {
 
       {audioError ? <p role="alert" className="mt-5 rounded-2xl border border-vx-danger/50 bg-vx-danger/10 px-4 py-3 text-sm text-vx-danger">{audioError}</p> : null}
 
-      {['For you', 'Fresh signal'].map((section) => {
+      {['For you', 'Fresh signal', 'New textures', 'Fast lane'].map((section) => {
         const beats = visible.filter((beat) => beat.section === section);
         if (!beats.length) return null;
         return <section key={section} aria-labelledby={`discover-${section.replace(/\s/g, '-').toLowerCase()}`} className="mt-10"><div className="mb-5 flex items-end justify-between gap-4"><div><p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-accent">{t('musicDiscover.curated')}</p><h2 id={`discover-${section.replace(/\s/g, '-').toLowerCase()}`} className="mt-1 font-vx text-3xl font-black">{tOr(t, `musicDiscover.section.${SECTION_KEYS[section]}`, section)}</h2></div><p className="hidden text-sm text-vx-fg-muted sm:block">{t('musicDiscover.sketches')}</p></div><div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{beats.map((beat) => <BeatCard key={beat.id} beat={beat} playing={playingId === beat.id} onToggle={() => toggle(beat)} />)}</div></section>;
