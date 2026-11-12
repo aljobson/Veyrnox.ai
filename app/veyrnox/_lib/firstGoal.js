@@ -41,3 +41,11 @@ export function parseFirstGoal(raw) {
     return null;
   }
 }
+
+// What the server said (GET /api/v1/first-goal). A listed word is the account's answer, null means it has none yet,
+// and anything else is unreadable, which falls back to this device's own copy.
+export function readRemoteFirstGoal(body) {
+  if (!body || typeof body !== 'object' || Array.isArray(body) || !('goal' in body)) return { kind: 'unavailable' };
+  if (body.goal === null) return { kind: 'none' };
+  return typeof body.goal === 'string' && GOAL_IDS.has(body.goal) ? { kind: 'goal', goal: body.goal } : { kind: 'unavailable' };
+}

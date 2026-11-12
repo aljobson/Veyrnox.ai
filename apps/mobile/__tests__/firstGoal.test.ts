@@ -3,7 +3,8 @@ declare const __dirname: string;
 const fs = require('fs') as { readFileSync: (p: string, e: 'utf8') => string };
 const path = require('path') as { join: (...p: string[]) => string };
 
-import { FIRST_GOALS, FIRST_GOAL_EXAMPLES, FIRST_GOAL_SLOT, firstGoalTarget, parseFirstGoal, serializeFirstGoal } from '../src/lib/firstGoal';
+import { FIRST_GOALS, FIRST_GOAL_EXAMPLES, FIRST_GOAL_SLOT, firstGoalTarget, parseFirstGoal, readRemoteFirstGoal, serializeFirstGoal } from '../src/lib/firstGoal';
+import { fetchRemoteFirstGoal, pushFirstGoal } from '../src/lib/firstGoalSync';
 
 describe('the first-goal question', () => {
     test('covers every creation area plus "not sure"', () => {
@@ -48,5 +49,24 @@ describe('the first-goal question', () => {
     test('"not sure" offers one example for each creation area', () => {
         expect([...FIRST_GOAL_EXAMPLES]).toEqual(['image', 'video', 'audio']);
         for (const goal of FIRST_GOAL_EXAMPLES) expect(firstGoalTarget(goal)).toEqual({ kind: 'create', goal });
+    });
+
+    test('the server reply is read strictly: a listed word, none yet, or unavailable', () => {
+        for (const goal of [...FIRST_GOALS, 'skipped']) expect(readRemoteFirstGoal({ goal })).toEqual({ kind: 'goal', goal });
+        expect(readRemoteFirstGoal({ goal: null })).toEqual({ kind: 'none' });
+        for (const bad of [null, undefined, 'image', [], {}, { goal: 7 }, { goal: 'rm -rf' }, { goal: ['image'] }]) {
+            expect(readRemoteFirstGoal(bad)).toEqual({ kind: 'unavailable' });
+        }
+    });
+
+    test('sync never throws: failures read as unavailable and a failed push is swallowed', async () => {
+        const ok = { request: jest.fn(async () => ({ goal: 'video' })) };
+        expect(await fetchRemoteFirstGoal(ok as never)).toEqual({ kind: 'goal', goal: 'video' });
+        expect(ok.request).toHaveBeenCalledWith('/api/v1/first-goal');
+        await pushFirstGoal(ok as never, 'image');
+        expect(ok.request).toHaveBeenLastCalledWith('/api/v1/first-goal', expect.objectContaining({ method: 'PUT', body: '{"goal":"image"}' }));
+        const down = { request: jest.fn(async () => { throw new Error('offline'); }) };
+        expect(await fetchRemoteFirstGoal(down as never)).toEqual({ kind: 'unavailable' });
+        await expect(pushFirstGoal(down as never, 'image')).resolves.toBeUndefined();
     });
 });

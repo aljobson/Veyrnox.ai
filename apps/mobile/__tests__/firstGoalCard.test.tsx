@@ -5,6 +5,7 @@ import { fetchCatalogCached, type CatalogModel } from '../src/lib/media';
 import { type CacheMeta } from '../src/lib/cache';
 import { t } from '../src/lib/i18n';
 import { readFirstGoal, writeFirstGoal } from '../src/lib/firstGoalStore';
+import { fetchRemoteFirstGoal, pushFirstGoal } from '../src/lib/firstGoalSync';
 const mockPrompt: CatalogModel = { id: 'prompt-image', name: 'Prompt image', modality: 'text-to-image', credits: 2, durations: [], gated: false, capabilities: { inputs: { prompt: {} } } };
 
 
@@ -14,6 +15,8 @@ jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media')
 jest.mock('../src/lib/useFaceFiltersAvailable', () => ({ useFaceFiltersAvailable: () => false }));
 jest.mock('../src/lib/montage', () => ({ fetchAgentListing: async () => null }));
 jest.mock('../src/lib/firstGoalStore', () => ({ readFirstGoal: jest.fn(), writeFirstGoal: jest.fn(async () => undefined) }));
+jest.mock('../src/auth/AuthProvider', () => { const api = {}; return { useAuth: () => ({ api }) }; }); // a stable client, so the first-goal effect runs once
+jest.mock('../src/lib/firstGoalSync', () => ({ fetchRemoteFirstGoal: jest.fn(), pushFirstGoal: jest.fn(async () => undefined) }));
 
 let root: Root;
 const event = { nativeEvent: {}, currentTarget: 1, target: 1 };
@@ -27,6 +30,8 @@ beforeEach(() => {
     root = createRoot();
     mockPush.mockReset();
     jest.mocked(writeFirstGoal).mockClear();
+    jest.mocked(pushFirstGoal).mockClear();
+    jest.mocked(fetchRemoteFirstGoal).mockReset().mockResolvedValue({ kind: 'unavailable' });
     jest.mocked(fetchCatalogCached).mockReset().mockImplementation(async (onData?: (models: CatalogModel[], meta: CacheMeta) => void) => {
         onData?.([mockPrompt], meta);
         return { value: [mockPrompt], meta };
@@ -93,4 +98,35 @@ test('Skip from the examples remembers the dismissal and shows the usual goal li
     expect(writeFirstGoal).toHaveBeenLastCalledWith('skipped');
     expect(hasText(t('create.firstGoal.title'))).toBe(false);
     expect(labelled(t('create.goal.image'))).toBeDefined();
+});
+
+test('the account\'s own answer wins: a goal on the server hides the question and is kept on this phone', async () => {
+    jest.mocked(fetchRemoteFirstGoal).mockResolvedValue({ kind: 'goal', goal: 'video' });
+    jest.mocked(readFirstGoal).mockResolvedValue(null);
+    await act(async () => root.render(<Create />));
+    expect(hasText(t('create.firstGoal.title'))).toBe(false);
+    expect(writeFirstGoal).toHaveBeenCalledWith('video');
+    expect(labelled(t('create.goal.image'))).toBeDefined();
+});
+
+test('a second account on a phone that already answered is still asked: the server has none for it', async () => {
+    jest.mocked(fetchRemoteFirstGoal).mockResolvedValue({ kind: 'none' });
+    jest.mocked(readFirstGoal).mockResolvedValue('image');
+    await act(async () => root.render(<Create />));
+    expect(hasText(t('create.firstGoal.title'))).toBe(true);
+});
+
+test('an answer is sent to the account as well as kept on the phone', async () => {
+    jest.mocked(fetchRemoteFirstGoal).mockResolvedValue({ kind: 'none' });
+    await act(async () => root.render(<Create />));
+    await act(async () => { labelled(t('create.firstGoal.video'))!.props.onClick(event); });
+    expect(writeFirstGoal).toHaveBeenCalledWith('video');
+    expect(pushFirstGoal).toHaveBeenCalledWith(expect.anything(), 'video');
+});
+
+test('with the server unavailable the phone\'s own copy decides', async () => {
+    jest.mocked(fetchRemoteFirstGoal).mockResolvedValue({ kind: 'unavailable' });
+    jest.mocked(readFirstGoal).mockResolvedValue('audio');
+    await act(async () => root.render(<Create />));
+    expect(hasText(t('create.firstGoal.title'))).toBe(false);
 });

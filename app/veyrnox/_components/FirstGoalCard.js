@@ -1,16 +1,19 @@
 'use client';
-import { useState, useSyncExternalStore } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 import { tOr } from '../../../lib/i18n/translate.mjs';
 import { useI18n } from '../../../components/I18nProvider';
 import { FIRST_GOALS, FIRST_GOAL_EXAMPLES, FIRST_GOAL_SLOT, firstGoalTarget, parseFirstGoal, serializeFirstGoal } from '../_lib/firstGoal';
+import { fetchRemoteFirstGoal, pushFirstGoal } from '../_lib/firstGoalSync';
 
 function readStored() {
   try { return parseFirstGoal(window.localStorage.getItem(FIRST_GOAL_SLOT)); } catch { return null; }
 }
 
+// This browser's copy, plus the account's own (when the server has the feature on and someone is signed in).
 function store(goal) {
   try { window.localStorage.setItem(FIRST_GOAL_SLOT, serializeFirstGoal(goal)); } catch { /* storage blocked: it may be asked once more */ }
+  void pushFirstGoal(goal);
 }
 
 const noSubscribe = () => () => {};
@@ -21,9 +24,22 @@ export function FirstGoalCard({ hidden, onPick, onExample }) {
   const { t } = useI18n();
   const router = useRouter();
   // Server and first client render say 'checking' (nothing shown); the browser then reads its own stored answer.
-  const stored = useSyncExternalStore(noSubscribe, () => (readStored() ? 'done' : 'ask'), () => 'checking');
+  const device = useSyncExternalStore(noSubscribe, () => (readStored() ? 'done' : 'ask'), () => 'checking');
+  // The account's own answer wins when the server has one (so a second device, or a second account in this browser, is
+  // right); only when it cannot be asked does this browser's copy decide.
+  const [remote, setRemote] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    fetchRemoteFirstGoal().then((answer) => {
+      if (!alive) return;
+      if (answer.kind === 'goal') { try { window.localStorage.setItem(FIRST_GOAL_SLOT, serializeFirstGoal(answer.goal)); } catch { /* ignore */ } }
+      setRemote(answer);
+    });
+    return () => { alive = false; };
+  }, []);
   const [local, setState] = useState(null); // ask | example | done, once the person has acted
-  const state = local ?? stored;
+  const resolved = device === 'checking' || remote === null ? 'checking' : remote.kind === 'goal' ? 'done' : remote.kind === 'none' ? 'ask' : device;
+  const state = local ?? resolved;
   const [chosen, setChosen] = useState(null);
 
   if (hidden || state === 'checking' || state === 'done') return null;

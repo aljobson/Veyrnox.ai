@@ -14,6 +14,8 @@ import { starterModel } from '../../../lib/createOptions';
 import { EXAMPLE, FirstGoalCard } from '../../../components/create/FirstGoalCard';
 import { firstGoalTarget, type FirstGoal } from '../../../lib/firstGoal';
 import { readFirstGoal, writeFirstGoal } from '../../../lib/firstGoalStore';
+import { fetchRemoteFirstGoal, pushFirstGoal } from '../../../lib/firstGoalSync';
+import { useAuth } from '../../../auth/AuthProvider';
 import { fetchAgentListing } from '../../../lib/montage';
 import { type MenuIcon } from '../../../lib/menuIcons';
 import { type FeatureIcon } from '../../../lib/featureIcons';
@@ -59,23 +61,34 @@ export default function Create() {
 
     const starters = useMemo(() => MAKE.map((goal) => ({ ...goal, model: starterModel(models ?? [], goal.kind) })).filter((goal) => goal.model), [models]);
 
-    // The first-goal question is asked once per phone; until the stored answer is read nothing is shown.
+    // The first-goal question is asked once per account. The account's own answer wins when the server has one (so a
+    // second phone, or a second account on this phone, is right); only when it cannot be asked does this phone's copy decide.
+    // Until the answer is known nothing is shown.
+    const { api } = useAuth();
     const [asked, setAsked] = useState<'checking' | 'ask' | 'done'>('checking');
     useEffect(() => {
         let alive = true;
-        readFirstGoal().then((stored) => alive && setAsked(stored ? 'done' : 'ask'));
+        (async () => {
+            const remote = await fetchRemoteFirstGoal(api);
+            if (!alive) return;
+            if (remote.kind === 'goal') { void writeFirstGoal(remote.goal); setAsked('done'); return; }
+            if (remote.kind === 'none') { setAsked('ask'); return; }
+            const local = await readFirstGoal();
+            if (alive) setAsked(local ? 'done' : 'ask');
+        })();
         return () => { alive = false; };
-    }, []);
+    }, [api]);
     const chooseFirstGoal = useCallback((goal: FirstGoal) => {
         setAsked('done');
         void writeFirstGoal(goal);
+        void pushFirstGoal(api, goal);
         const target = firstGoalTarget(goal);
         if (target.kind === 'tab') return router.push(target.href);
         if (target.kind !== 'create') return;
         const model = starters.find((s) => s.kind === target.goal)?.model;
         if (model) router.push({ pathname: '/create/[modelId]', params: { modelId: model.id, prompt: EXAMPLE[target.goal]() } });
-    }, [router, starters]);
-    const skipFirstGoal = useCallback(() => { setAsked('done'); void writeFirstGoal('skipped'); }, []);
+    }, [api, router, starters]);
+    const skipFirstGoal = useCallback(() => { setAsked('done'); void writeFirstGoal('skipped'); void pushFirstGoal(api, 'skipped'); }, [api]);
 
     return (
         <View style={styles.screen}>

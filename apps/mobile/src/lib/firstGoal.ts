@@ -41,3 +41,14 @@ export function parseFirstGoal(raw: string | null | undefined): StoredFirstGoal 
         return null;
     }
 }
+
+export type RemoteFirstGoal = { readonly kind: 'goal'; readonly goal: StoredFirstGoal } | { readonly kind: 'none' } | { readonly kind: 'unavailable' };
+
+// What the server said (GET /api/v1/first-goal). A listed word is the account's answer, null means it has none yet, and
+// anything else is unreadable, which falls back to this phone's own copy. Mirrors readRemoteFirstGoal on the web.
+export function readRemoteFirstGoal(body: unknown): RemoteFirstGoal {
+    if (!body || typeof body !== 'object' || Array.isArray(body) || !('goal' in body)) return { kind: 'unavailable' };
+    const goal = (body as { goal: unknown }).goal;
+    if (goal === null) return { kind: 'none' };
+    return typeof goal === 'string' && KNOWN.has(goal) ? { kind: 'goal', goal: goal as StoredFirstGoal } : { kind: 'unavailable' };
+}
