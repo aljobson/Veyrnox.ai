@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160" role="img" aria-labelledby="title desc">
+  <title id="title">Weightless Room artwork</title>
+  <desc id="desc">Original geometric artwork for the Ambient sample Weightless Room.</desc>
+  <rect width="160" height="160" rx="28" fill="#111114"/>
+  <circle cx="46" cy="83" r="60" fill="#67e8f9" opacity=".34"/>
+  <path d="M-12 114 C28 88,58 136,94 108 S142 68,174 90" fill="none" stroke="#67e8f9" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="122" cy="38" r="18" fill="#f4f4f5" opacity=".93"/>
+  <text x="122" y="44" fill="#111114" font-family="Arial, sans-serif" font-size="14" font-weight="800" text-anchor="middle">WR</text>
+  <text x="18" y="137" fill="#f4f4f5" font-family="Arial, sans-serif" font-size="10" font-weight="700" letter-spacing="1">AMBIENT</text>
+</svg>

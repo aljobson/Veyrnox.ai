@@ -6,6 +6,7 @@ import {
   MUSIC_SAMPLE_DIRECTION_MAX,
   buildMusicSamplePrompt,
   getMusicDiscoverSeed,
+  normalizeMusicSampleMix,
 } from '../lib/musicDiscover.js';
 
 const discoverUrl = new URL('../app/veyrnox/_components/music/MusicDiscover.jsx', import.meta.url);
@@ -13,16 +14,16 @@ const createUrl = new URL('../app/veyrnox/_components/music/MusicServerStudio.js
 const createPageUrl = new URL('../app/veyrnox/app/music/create/page.js', import.meta.url);
 const navUrl = new URL('../app/veyrnox/_components/music/MusicPreviewShell.jsx', import.meta.url);
 
-test('the discovery library exposes twelve unique original seed recipes with thumbnails', async () => {
-  assert.equal(MUSIC_DISCOVER_BEATS.length, 12);
+test('the discovery library exposes one hundred unique original seed recipes with thumbnails', async () => {
+  assert.equal(MUSIC_DISCOVER_BEATS.length, 100);
   assert.equal(new Set(MUSIC_DISCOVER_BEATS.map((beat) => beat.id)).size, MUSIC_DISCOVER_BEATS.length);
-  assert.equal(new Set(MUSIC_DISCOVER_BEATS.map((beat) => beat.section)).size, 4);
-  assert.ok(new Set(MUSIC_DISCOVER_BEATS.map((beat) => beat.mood)).size >= 10);
+  assert.equal(new Set(MUSIC_DISCOVER_BEATS.map((beat) => beat.section)).size, 5);
+  assert.equal(new Set(MUSIC_DISCOVER_BEATS.map((beat) => beat.mood)).size, 20);
   for (const beat of MUSIC_DISCOVER_BEATS) {
     assert.match(beat.id, /^[a-z0-9-]+$/);
-    assert.match(beat.artwork, /^\/music-discover\/[a-z0-9-]+\.(?:jpg|svg)$/);
+    assert.match(beat.artwork, /^\/music-discover\/samples\/[a-z0-9-]+\.svg$/);
     assert.ok(beat.recipe.length > 80 && beat.recipe.length < 260);
-    assert.ok(beat.bpm >= 80 && beat.bpm <= 140);
+    assert.ok(beat.bpm >= 76 && beat.bpm <= 144);
     await access(new URL(`../public${beat.artwork}`, import.meta.url));
   }
 });
@@ -39,10 +40,24 @@ test('sample handoff is allowlisted and always remains inside the 500-character 
   assert.match(buildMusicSamplePrompt(seed), /fresh instrumental variation/);
 });
 
+test('sample mix handoff clamps controls and adds an explicit production direction', () => {
+  const seed = getMusicDiscoverSeed('neon-rain');
+  const mix = normalizeMusicSampleMix({ tempo: 4, drums: -20, bass: 65.4, melody: '40' });
+  assert.deepEqual(mix, { tempo: 1.25, drums: 0, bass: 65, melody: 40 });
+  const prompt = buildMusicSamplePrompt(seed, 'keep the chorus spacious', mix);
+  assert.match(prompt, /125% speed, drums 0%, bass 65%, melody 40%/);
+  assert.match(prompt, /New direction: keep the chorus spacious$/);
+  assert.ok(prompt.length <= 500);
+});
+
 test('discover provides playable cards, filters, cover art and a transparent recipe handoff', async () => {
   const source = await readFile(discoverUrl, 'utf8');
   assert.match(source, /musicDiscover\.sample/);
   assert.match(source, /schedulePreview/);
+  assert.match(source, /Listen · 12 sec/);
+  assert.match(source, /Mix &amp; tempo/);
+  assert.match(source, /Listen to this mix/);
+  assert.match(source, /Show \{Math\.min\(PAGE_SIZE/);
   assert.match(source, /musicDiscover\.searchPlaceholder/);
   assert.match(source, /musicDiscover\.note/);
   assert.match(source, /<Image src=\{beat\.artwork\}/);
@@ -55,9 +70,11 @@ test('discover provides playable cards, filters, cover art and a transparent rec
 test('create resolves only known sample ids and keeps the new direction separate from the seed card', async () => {
   const [page, create] = await Promise.all([readFile(createPageUrl, 'utf8'), readFile(createUrl, 'utf8')]);
   assert.match(page, /getMusicDiscoverSeed\(sampleId\)/);
+  assert.match(page, /normalizeMusicSampleMix/);
+  assert.match(page, /sampleMix=\{sampleMix\}/);
   assert.match(page, /sampleSeed=\{sampleSeed\}/);
-  assert.match(create, /MusicSampleSeedCard seed=\{activeSeed\}/);
-  assert.match(create, /buildMusicSamplePrompt\(activeSeed, description\)/);
+  assert.match(create, /MusicSampleSeedCard seed=\{activeSeed\} mix=\{activeMix\}/);
+  assert.match(create, /buildMusicSamplePrompt\(activeSeed, description, activeMix\)/);
   assert.match(create, /Add a new direction/);
   assert.match(create, /Review exact quote/);
 });
