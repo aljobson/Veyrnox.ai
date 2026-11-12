@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { gatewayFetch } from '../../_lib/gateway';
 import { MusicStudioClipEditor } from './MusicStudioClipEditor';
 import { MusicStudioEffects } from './MusicStudioEffects';
+import { MusicStudioInstrumentTakes } from './MusicStudioInstrumentTakes';
 import { MusicStudioLatencyCalibration } from './MusicStudioLatencyCalibration';
 import { MusicStudioMidi } from './MusicStudioMidi';
 import { MusicStudioRecorder } from './MusicStudioRecorder';
@@ -90,6 +91,7 @@ export function MusicStudioWorkspace({ id }) {
           <MusicStudioRecorder tempo={tempo} signature={signature} sourceAudioRef={audioRef} />
           <MusicStudioLatencyCalibration />
           <MusicStudioMidi tempo={tempo} playheadSeconds={current} />
+          <MusicStudioInstrumentTakes sourceAudioRef={audioRef} />
         </section>
         <aside aria-label="Studio Library dock" className="rounded-2xl border border-vx-border bg-vx-panel p-4">
           <p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-accent">Library dock</p><h2 className="mt-2 font-vx text-xl font-black">Owned versions</h2>

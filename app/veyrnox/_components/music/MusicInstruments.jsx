@@ -7,6 +7,7 @@ import {
   MAX_TAKE_SECONDS, PRESETS, chordNotes, encodeWav, isBlackKey, keyRange, noteLabel, sampleFileName, trimSamples,
 } from '../../../../lib/musicInstruments.js';
 import { makeNoise, playEvent, renderTake } from '../../_lib/music/instrumentEngine';
+import { addShelfTake } from '../../_lib/music/instrumentShelf';
 
 const TYPING_KEYS = Object.freeze('awsedftgyhujkolp;'.split(''));
 const STRUM_GAP = 0.028;
@@ -132,6 +133,12 @@ export function MusicInstruments() {
     source.buffer = buffer; source.connect(masterRef.current); source.start();
   }
 
+  function sendToStudio(item) {
+    const clip = trimSamples(item.samples, item.sampleRate, item.start, item.end);
+    addShelfTake({ label: item.label, samples: clip, sampleRate: item.sampleRate });
+    setMessage('Sent to the Studio shelf. Open a song in Studio (Music Library, More Actions) to play it against the track.');
+  }
+
   function download(item) {
     const clip = trimSamples(item.samples, item.sampleRate, item.start, item.end);
     const url = URL.createObjectURL(new Blob([encodeWav(clip, item.sampleRate)], { type: 'audio/wav' }));
@@ -236,6 +243,7 @@ export function MusicInstruments() {
                   <strong className="mr-auto">{item.label}</strong>
                   <span className="font-vx-mono text-xs text-vx-fg-muted">{(item.end - item.start).toFixed(2)}s</span>
                   <button type="button" onClick={() => playTake(item)} className="min-h-11 rounded-full border border-vx-border px-4 font-bold">Play</button>
+                  <button type="button" onClick={() => sendToStudio(item)} className="min-h-11 rounded-full border border-vx-border px-4 font-bold">Send to Studio</button>
                   <button type="button" onClick={() => download(item)} className="min-h-11 rounded-full bg-vx-accent px-4 font-bold text-vx-accent-ink">Download WAV</button>
                   <button type="button" onClick={() => setTakes((c) => c.filter((t) => t.id !== item.id))} className="min-h-11 rounded-full border border-vx-border px-4 text-vx-fg-muted">Remove</button>
                 </div>
