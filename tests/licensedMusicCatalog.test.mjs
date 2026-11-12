@@ -48,10 +48,10 @@ test('Discover exposes playable licensed recordings without a generation handoff
   const library = readFileSync(new URL('../app/veyrnox/_components/music/LicensedMusicLibrary.jsx', import.meta.url), 'utf8');
   assert.match(discover, /<LicensedMusicLibrary \/>/);
   assert.match(library, /<audio controls preload="none"/);
-  assert.match(library, /Download MP3/);
-  assert.match(library, /Show \{Math\.min\(PAGE_SIZE/);
-  assert.match(library, /51-track licensed music library/);
-  assert.match(library, /SoundCloud source/);
-  assert.match(library, /Creator download/);
+  assert.match(library, /musicDiscover\.lic\.download/);
+  assert.match(library, /Math\.min\(PAGE_SIZE/);
+  assert.match(library, /musicDiscover\.lic\.title/);
+  assert.match(library, /musicDiscover\.lic\.source/);
+  assert.match(library, /musicDiscover\.lic\.creatorDownload/);
   assert.doesNotMatch(library, /Sample this beat|\/app\/music\/create|generation.*href/i);
 });
