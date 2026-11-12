@@ -52,7 +52,7 @@ test('groups, icon cards and Film Studio link; body only opens details', async (
     expect(textPresent(t('chat.skills.filmNote'))).toBe(false);
     for (const skill of SKILLS) {
         expect(control(body(skill.id))).toBeDefined();
-        expect(control(body(skill.id)).queryAll(n => n.props.testID === `icon:${skillIcon(skill.id, skill.group).icon}`)).toHaveLength(1);
+        expect(control(body(skill.id)).queryAll(n => n.props.testID === (skillIcon(skill.id, skill.group).art ? 'icon-art' : `icon:${skillIcon(skill.id, skill.group).icon}`))).toHaveLength(1);
     }
     await press(t('chat.openFilmStudio')); expect(mockRouter.push).toHaveBeenCalledWith('/film');
     expect(control(t('chatDepth.startSkills'))).toBeUndefined();
