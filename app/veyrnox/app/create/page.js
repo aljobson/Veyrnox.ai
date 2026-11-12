@@ -927,17 +927,17 @@ export default function CreateStudio() {
                 
               </>}
               {model?.kind === 'video' && !fixedDurationLabel && !sourceDurationMax && (
-                <ChipSelect assistantTarget="create.duration" label={t("app.create.durationHeading")} options={durations} value={duration} onChange={setDuration}
+                <ChipSelect assistantTarget="create.duration" aria-label={t("app.create.durationHeading")} options={durations} value={duration} onChange={setDuration}
                   formatOption={(option) => t('presets.use.lengthCost', { length: outputDurationLabel(model, Number(option.replace('s', ''))), credits: clipCredits(model.credits, Number(option.replace('s', ''))) })}
                   formatValue={(option) => outputDurationLabel(model, Number(option.replace('s', '')))} />
               )}
-              {aspectOptions.length > 0 && <ChipSelect assistantTarget="create.aspect" label={t("app.create.aspectHeading")} options={aspectOptions} value={aspect} onChange={setAspect} formatOption={aspectLabel} formatValue={(option) => option} />}
+              {aspectOptions.length > 0 && <ChipSelect assistantTarget="create.aspect" aria-label={t("app.create.aspectHeading")} options={aspectOptions} value={aspect} onChange={setAspect} formatOption={aspectLabel} formatValue={(option) => option} />}
               {tierOptions.length > 1 && (
-                <ChipSelect assistantTarget="create.resolution" label={t('app.create.resolutionHeading')} options={tierOptions.map((o) => o.id)} value={activeTier?.id} onChange={setResolution}
+                <ChipSelect assistantTarget="create.resolution" aria-label={t('app.create.resolutionHeading')} options={tierOptions.map((o) => o.id)} value={activeTier?.id} onChange={setResolution}
                   formatValue={(id) => (id === '4k' ? '4K' : id)}
                   formatOption={(id) => { const m = tierOptions.find((o) => o.id === id).multiplier; const c = Math.max(model.credits, Math.ceil(model.credits * m - 1e-9)); return `${id === '4k' ? '4K' : id} · ${model.kind === 'video' ? clipCredits(c, Number(duration.replace('s', ''))) : c}`; }} />
               )}
-              {takesImageCount(model) && <ChipSelect assistantTarget="create.count" label={t("app.create.imagesHeading")} options={IMAGE_COUNTS} value={count} onChange={setCount} formatValue={(n) => `×${n}`} formatOption={(n) => String(n)} />}
+              {takesImageCount(model) && <ChipSelect assistantTarget="create.count" aria-label={t("app.create.imagesHeading")} options={IMAGE_COUNTS} value={count} onChange={setCount} formatValue={(n) => `×${n}`} formatOption={(n) => String(n)} />}
               <DictateButton disabled={!hydrated} onText={(spoken) => setPrompt((current) => appendSpoken(current, spoken))} />
               <EnhanceButton disabled={!hydrated} text={prompt} />
               <button type="button" data-testid="create-open-templates" disabled={attachConverting || sourcesConverting} onClick={() => setTemplatesOpen(true)}
