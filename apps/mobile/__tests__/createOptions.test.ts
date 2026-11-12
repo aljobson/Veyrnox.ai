@@ -36,8 +36,8 @@ describe('goals and tiers', () => {
 
 describe('model options from the catalog', () => {
     test('reads seed, negative prompt limit and aspect ratios', () => {
-        expect(optionsFor(rich)).toEqual({ seed: true, negativeMax: 500, aspects: ['16:9', '1:1'], voice: false, audioLength: null, resolutions: [], audioChoice: false });
-        expect(optionsFor(model())).toEqual({ seed: false, negativeMax: null, aspects: [], voice: false, audioLength: null, resolutions: [], audioChoice: false });
+        expect(optionsFor(rich)).toEqual({ seed: true, negativeMax: 500, aspects: ['16:9', '1:1'], voice: false, audioLength: null, resolutions: [], audioChoice: false, tiers: [], tierBase: null });
+        expect(optionsFor(model())).toEqual({ seed: false, negativeMax: null, aspects: [], voice: false, audioLength: null, resolutions: [], audioChoice: false, tiers: [], tierBase: null });
     });
     test('negative prompt defaults to the 2000 character limit', () => {
         expect(optionsFor(model({ capabilities: { inputs: { negative_prompt: {} }, media: {} } })).negativeMax).toBe(2000);
