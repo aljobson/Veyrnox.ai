@@ -409,7 +409,7 @@ export default function CreateStudio() {
     needsReattach, overLimit, missingSource, animationMismatch, missingConsent, missingPrompt, missingVoice, invalidAudioDuration });
   const hintText = !hintKey ? '' : hintKey === 'reattach' ? t('app.create.reattach')
     : hintKey === 'duration' ? t('app.create.durationInvalid', { min: number(audioDurationControl?.min), max: number(audioDurationControl?.max) })
-    : tOr(t, `app.create.error.${HINT_CODES[hintKey]}`, ERROR_COPY[HINT_CODES[hintKey]] || tOr(t, 'app.create.error.unknown', ERROR_COPY.unknown));
+    : tOr(t, `app.create.error.${HINT_CODES[hintKey]}`, ERROR_COPY[HINT_CODES[hintKey]] || t('app.create.error.unknown'));
   // Only offer aspect ratios explicitly declared by this model's provider contract.
   const aspectOptions = isShort ? [] : modelAspectRatios(model);
   // Higher tiers cost more; the gateway applies the same multiplier (lib/resolutionTiers.js) and the catalog publishes it.
