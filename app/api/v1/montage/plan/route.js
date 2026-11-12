@@ -1,3 +1,4 @@
+import { retryAfterSeconds } from '../../../../../lib/rateLimitHeaders.js';
 /**
  * POST /api/v1/montage/plan — step 1 of the video agent (ADR-0074 §2).
  *
@@ -14,14 +15,14 @@ import { callRunner, runtimeConfig } from '../../../../../lib/montageRuntime.js'
 import { BRIEF_RE, ASPECTS, mintPlanToken, planIdempotencyKey, publicPlan } from '../../../../../lib/montagePlan.js';
 import { normaliseNarration } from '../../../../../lib/montageNarration.js';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../../lib/validate.js';
 const CATALOG_ID = 'video-agent';
 const RATE_LIMIT_PER_WINDOW = 10;
 const RATE_WINDOW_SECONDS = 60;
 
 export async function POST(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
-    if (!authId || !UUID_RE.test(authId)) return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
+    if (!authId || !isUuidLoose(authId)) return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
     if (process.env.AGENT_VIDEO_ENABLED !== 'true') return NextResponse.json({ error: 'video_agent_unavailable' }, { status: 404 });
 
     const cfg = envConfig();
@@ -44,7 +45,7 @@ export async function POST(req) {
         if (!rl || typeof rl.ok !== 'boolean') return NextResponse.json({ error: 'rate_check_unavailable' }, { status: 503 });
         if (rl.ok === false) {
             if (rl.code === 'RATE_LIMITED') {
-                const retryAfter = Math.max(1, Math.min(600, Number(rl.retry_after_seconds) || 60));
+                const retryAfter = retryAfterSeconds(rl.retry_after_seconds, { max: 600, fallback: 60 });
                 return new NextResponse(JSON.stringify({ error: 'rate_limited', retry_after_seconds: retryAfter }),
                     { status: 429, headers: { 'content-type': 'application/json', 'retry-after': String(retryAfter) } });
             }

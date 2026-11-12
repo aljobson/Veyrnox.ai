@@ -32,13 +32,13 @@ import { youtubeConfig, exchangeCodeForToken, fetchConnectedAccount, YOUTUBE_SCO
 import { consumeOAuthState } from '../../../../../../../lib/social/oauthStateStore.js';
 import { tokenCryptoConfig, encryptToken } from '../../../../../../../lib/social/tokenCrypto.js';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../../../../lib/validate.js';
 // Must match the connect route's CALLBACK_PATH exactly — this is the
 // redirect_uri the token exchange authenticates against.
 
 export async function POST(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
-    if (!authId || !UUID_RE.test(authId)) {
+    if (!authId || !isUuidLoose(authId)) {
         return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
     }
 

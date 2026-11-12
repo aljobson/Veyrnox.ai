@@ -1,7 +1,7 @@
 import { MEDIA_LIMITS } from './editorMedia.mjs';
-const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../lib/validate.js';
 const HOSTS=new Set(['fb18d9f7052afbea5a5e0eae69948af2.r2.cloudflarestorage.com','fb18d9f7052afbea5a5e0eae69948af2.eu.r2.cloudflarestorage.com']);
-export function assetSourceProblem(v){return v===undefined?null:(!v||typeof v!=='object'||Object.keys(v).length!==2||!UUID.test(v.projectId)||!UUID.test(v.assetId))?'Invalid project asset source.':null;}
+export function assetSourceProblem(v){return v===undefined?null:(!v||typeof v!=='object'||Object.keys(v).length!==2||!isUuidLoose(v.projectId)||!isUuidLoose(v.assetId))?'Invalid project asset source.':null;}
 export async function loadProjectAssetBlob(fetcher,source,fetchBytes=fetch) {
     const problem=assetSourceProblem(source);if(problem || !source)throw new Error(problem || 'Choose a project asset.');
     const asset=await fetcher(`/projects/${source.projectId}/assets/${source.assetId}/download`);

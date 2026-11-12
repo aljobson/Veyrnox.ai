@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { jobReadLimitResponse } from '../../../../../../lib/jobReadLimit.js';
 import { rpc, envConfig } from '../../../../../../packages/db/supabase-client.js';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../../../lib/validate.js';
 const REFUSALS = {
     NOT_FOUND: [404, 'not_found'],
     ACCOUNT_FROZEN: [403, 'account_frozen'],
@@ -16,7 +16,7 @@ async function handle(req, { params }, cancel) {
     if (!authId) return json({ error: 'not_authenticated' }, 401);
     if (process.env.JOB_CANCEL_ENABLED !== 'true') return json({ error: 'not_found' }, 404);
     const { id } = await params;
-    if (!id || !UUID_RE.test(id)) return json({ error: 'invalid_job_id' }, 400);
+    if (!id || !isUuidLoose(id)) return json({ error: 'invalid_job_id' }, 400);
     const cfg = envConfig();
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey) return json({ error: 'not_configured' }, 503);
     let row;

@@ -10,9 +10,9 @@ import { resolveBrand } from '../../../../../lib/social/resolveBrand.js';
 import { socialUploadsEnabled } from '../../../../../lib/social/uploadPolicy.js';
 import { envConfig, rpc, SupabaseError } from '../../../../../packages/db/supabase-client.js';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../../lib/validate.js';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const isUuid = (value) => typeof value === 'string' && UUID_RE.test(value);
+const isUuid = (value) => typeof value === 'string' && isUuidLoose(value);
 
 function setup(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');

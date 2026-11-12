@@ -2,7 +2,7 @@ import { adminGate } from '../../../../../../lib/adminGate.js';
 import { panelGateResponse, panelRead, panelReply, panelWrite, panelWriteInput } from '../../../../../../lib/adminPanelApi.js';
 
 // ADR-0327. Reuses the switches.write permission and its fresh-second-factor rule.
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../../../lib/validate.js';
 
 export async function GET(req) {
   const g = await adminGate(req);
@@ -24,7 +24,7 @@ export async function POST(req) {
   const limit = body.gen_limit_per_window ?? null;
   const disabled = body.ai_disabled ?? false;
   if (Object.keys(body).some(k => !['user_id', 'ai_disabled', 'gen_limit_per_window', 'reason'].includes(k))
-    || (userId !== null && (typeof userId !== 'string' || !UUID.test(userId)))
+    || (userId !== null && (typeof userId !== 'string' || !isUuidLoose(userId)))
     || typeof disabled !== 'boolean'
     || (limit !== null && (!Number.isInteger(limit) || limit < 1 || limit > 10))
     || (userId === null && disabled)

@@ -1,3 +1,4 @@
+import { retryAfterSeconds } from '../../../../../lib/rateLimitHeaders.js';
 import { rpc, envConfig } from '../../../../../packages/db/supabase-client.js';
 import { publishFalDispatchWakeup } from '../../../../../lib/falDispatchWakeup.js';
 import {
@@ -38,7 +39,7 @@ export async function POST(request) {
     if (!result?.ok) {
         const status = musicRpcStatus(result?.code);
         const headers = status === 429 || status === 503
-            ? { 'Retry-After': String(Math.max(1, Math.min(600, Number(result?.retry_after_seconds) || 60))) }
+            ? { 'Retry-After': String(retryAfterSeconds(result?.retry_after_seconds, { max: 600, fallback: 60 })) }
             : {};
         return reply({ error: publicMusicError(result?.code) }, status, headers);
     }

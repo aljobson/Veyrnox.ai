@@ -5,7 +5,7 @@ import { socialReportDeliveryEnabled, socialReportExportsEnabled, socialReportsE
 import { resolveBrand } from '../../../../../lib/social/resolveBrand.js';
 import { envConfig, rpc, SupabaseError } from '../../../../../packages/db/supabase-client.js';
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../../lib/validate.js';
 const RANGES = new Set([7, 30, 90, 365]);
 const COLOR = /^#[0-9a-f]{6}$/i;
 const CADENCES = new Set(['manual', 'weekly', 'monthly']);
@@ -15,7 +15,7 @@ const EMAIL = /^[^\s<>@]{1,64}@[^\s<>@]{1,185}\.[^\s<>@]{1,63}$/;
 
 function setup(req) {
   const authId = req.headers.get('x-veyrnox-auth-id');
-  if (!UUID.test(authId || '')) return { error: NextResponse.json({ error: 'not_authenticated' }, { status: 401 }) };
+  if (!isUuidLoose(authId || '')) return { error: NextResponse.json({ error: 'not_authenticated' }, { status: 401 }) };
   if (!socialReportsEnabled()) return { error: NextResponse.json({ error: 'reports_not_open' }, { status: 404 }) };
   const cfg = envConfig();
   if (!cfg.supabaseUrl || !cfg.serviceRoleKey) return { error: NextResponse.json({ error: 'supabase_not_configured' }, { status: 503 }) };
@@ -64,7 +64,7 @@ export async function PUT(req) {
   const deliveryMessage = typeof body?.deliveryMessage === 'string' ? body.deliveryMessage.trim() : '';
   const deliveryFormat = typeof body?.deliveryFormat === 'string' ? body.deliveryFormat : 'pdf';
   if (deliveryCadence !== 'manual' && !socialScheduledReportsEnabled()) return NextResponse.json({ error: 'scheduled_reports_not_open' }, { status: 404 });
-  if ((id !== null && !UUID.test(id)) || !name || name.length > 80 || (accountId !== null && !UUID.test(accountId))
+  if ((id !== null && !isUuidLoose(id)) || !name || name.length > 80 || (accountId !== null && !isUuidLoose(accountId))
     || !RANGES.has(body?.rangeDays) || typeof body?.comparePrevious !== 'boolean' || typeof body?.includeContent !== 'boolean'
     || reportTitle.length > 100 || !COLOR.test(accentColor) || !CADENCES.has(deliveryCadence)
     || (deliveryCadence !== 'manual' && (!Number.isInteger(deliveryHourUtc) || deliveryHourUtc < 0 || deliveryHourUtc > 23))
@@ -92,7 +92,7 @@ export async function PUT(req) {
 export async function DELETE(req) {
   const { authId, cfg, error } = setup(req); if (error) return error;
   const id = new URL(req.url).searchParams.get('id');
-  if (!UUID.test(id || '')) return NextResponse.json({ error: 'invalid_id' }, { status: 400 });
+  if (!isUuidLoose(id || '')) return NextResponse.json({ error: 'invalid_id' }, { status: 400 });
   const limited = await socialPostWriteLimit(authId, cfg); if (limited) return limited;
   const brand = await resolveBrand(authId, cfg, 'api/v1/social/reports:DELETE', { request: req, allowedRoles: ['owner', 'manager', 'editor', 'analyst'] }); if (brand.error) return brand.error;
   try {

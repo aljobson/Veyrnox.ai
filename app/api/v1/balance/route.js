@@ -16,11 +16,11 @@ import { NextResponse } from 'next/server';
 import { accountReadLimit } from '../../../../lib/accountReadLimit.js';
 import { rpc, envConfig, SupabaseError } from '../../../../packages/db/supabase-client.js';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../lib/validate.js';
 
 export async function GET(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
-    if (!authId || !UUID_RE.test(authId)) {
+    if (!authId || !isUuidLoose(authId)) {
         return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
     }
 

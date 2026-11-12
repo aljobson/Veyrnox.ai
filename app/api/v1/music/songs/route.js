@@ -2,7 +2,7 @@ import { rpc, envConfig } from '../../../../../packages/db/supabase-client.js';
 import { musicLibraryEnabled, musicSchemaEnabled, musicRpcStatus, publicMusicError, validMusicAuthId } from '../../../../../lib/musicBackend.js';
 
 const reply = (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+import { isUuid } from '../../../../../lib/validate.js';
 
 export async function GET(request) {
     const authId = request.headers.get('x-veyrnox-auth-id');
@@ -15,7 +15,7 @@ export async function GET(request) {
     const workspaceId = search.get('workspace');
     const query = search.get('q') || '';
     const collection = search.get('collection') || 'active';
-    if (workspaceId && !UUID_RE.test(workspaceId)) return reply({ error: 'workspace_id_invalid' }, 400);
+    if (workspaceId && !isUuid(workspaceId)) return reply({ error: 'workspace_id_invalid' }, 400);
     if (query.length > 100) return reply({ error: 'query_invalid' }, 400);
     if (!['active', 'trash'].includes(collection)) return reply({ error: 'collection_invalid' }, 400);
     const cfg = envConfig();

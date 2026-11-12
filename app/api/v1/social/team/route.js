@@ -6,14 +6,14 @@ import { resolveBrand } from '../../../../../lib/social/resolveBrand.js';
 import { socialPostWriteLimit } from '../../../../../lib/socialPostWriteLimit.js';
 import { envConfig, rpc, SupabaseError } from '../../../../../packages/db/supabase-client.js';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../../lib/validate.js';
 // Bound every repeated group so validation remains constant-cost for request data.
 const EMAIL_RE = /^[^\s<>@]{1,64}@[^\s<>@]{1,185}\.[^\s<>@]{1,63}$/;
 const ROLES = new Set(['manager', 'editor', 'reviewer', 'analyst', 'viewer']);
 
 function setup(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
-    if (!UUID_RE.test(authId || '')) return { error: NextResponse.json({ error: 'not_authenticated' }, { status: 401 }) };
+    if (!isUuidLoose(authId || '')) return { error: NextResponse.json({ error: 'not_authenticated' }, { status: 401 }) };
     if (!socialTeamsEnabled()) return { error: NextResponse.json({ error: 'teams_not_open' }, { status: 404 }) };
     const cfg = envConfig();
     const signingSecret = teamInviteSigningSecret();
@@ -29,7 +29,7 @@ function mapped(result) {
     return NextResponse.json({ error: code }, { status });
 }
 async function brandIdFor(req, authId, cfg, routeTag, supplied) {
-    if (supplied != null) return UUID_RE.test(supplied) ? supplied : null;
+    if (supplied != null) return isUuidLoose(supplied) ? supplied : null;
     const brand = await resolveBrand(authId, cfg, routeTag);
     return brand.error ? brand : brand.brandId;
 }
@@ -61,7 +61,7 @@ export async function POST(req) {
     const { authId, cfg, signingSecret, error } = setup(req); if (error) return error;
     let body; try { body = await req.json(); } catch { return NextResponse.json({ error: 'invalid_body' }, { status: 400 }); }
     const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : '';
-    if (email.length > 254 || !EMAIL_RE.test(email) || !ROLES.has(body?.role) || body?.brandId != null && !UUID_RE.test(body.brandId)) return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
+    if (email.length > 254 || !EMAIL_RE.test(email) || !ROLES.has(body?.role) || body?.brandId != null && !isUuidLoose(body.brandId)) return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
     const limited = await socialPostWriteLimit(authId, cfg); if (limited) return limited;
     try {
         const resolved = await brandIdFor(req, authId, cfg, 'api/v1/social/team:POST', body.brandId);
@@ -79,7 +79,7 @@ export async function POST(req) {
 export async function PATCH(req) {
     const { authId, cfg, error } = setup(req); if (error) return error;
     let body; try { body = await req.json(); } catch { return NextResponse.json({ error: 'invalid_body' }, { status: 400 }); }
-    if (!UUID_RE.test(body?.brandId || '') || !UUID_RE.test(body?.memberUserId || '') || !['role', 'remove'].includes(body?.action)
+    if (!isUuidLoose(body?.brandId || '') || !isUuidLoose(body?.memberUserId || '') || !['role', 'remove'].includes(body?.action)
         || body.action === 'role' && !ROLES.has(body?.role)) return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
     const limited = await socialPostWriteLimit(authId, cfg); if (limited) return limited;
     try {
@@ -95,7 +95,7 @@ export async function PATCH(req) {
 export async function DELETE(req) {
     const { authId, cfg, error } = setup(req); if (error) return error;
     const url = new URL(req.url); const brandId = url.searchParams.get('brand_id'); const inviteId = url.searchParams.get('invite_id');
-    if (!UUID_RE.test(brandId || '') || !UUID_RE.test(inviteId || '')) return NextResponse.json({ error: 'invalid_id' }, { status: 400 });
+    if (!isUuidLoose(brandId || '') || !isUuidLoose(inviteId || '')) return NextResponse.json({ error: 'invalid_id' }, { status: 400 });
     const limited = await socialPostWriteLimit(authId, cfg); if (limited) return limited;
     try {
         const result = await rpc('revoke_social_team_invite', { p_auth_id: authId, p_brand_id: brandId, p_invite_id: inviteId }, cfg);

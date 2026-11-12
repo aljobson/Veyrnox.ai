@@ -25,7 +25,7 @@ import { Chip } from '../../../_components/Chip';
 import { gatewayFetch } from '../../../_lib/gateway';
 import { adminUserHandoff } from '../../../_lib/adminUserHandoff';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+import { isUuid } from '../../../../../lib/validate.js';
 const when = (iso) => (iso ? new Date(iso).toISOString().replace('T', ' ').slice(0, 16) + ' UTC' : '—');
 
 export default function Page() {
@@ -78,7 +78,7 @@ function Violations({ initialQuery }) {
     const version = ++generation.current;
     activeLookup.current = null;
     setBusy(true); setError(''); setLookup(null); setRecord([]); setRecordLoaded(false);
-    const key = UUID_RE.test(q) ? 'user_id' : 'email';
+    const key = isUuid(q) ? 'user_id' : 'email';
     try {
       let data;
       try {

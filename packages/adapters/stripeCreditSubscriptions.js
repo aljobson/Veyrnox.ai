@@ -1,6 +1,6 @@
-import { TAX_CODE, STRIPE_CHECKOUT_API_VERSION, invoiceSubscriptionId, invoicePayment } from './stripe.js';
+import { stripeJsonRequest as creditStripeRequest } from './stripeClient.js';
+import { TAX_CODE, invoiceSubscriptionId, invoicePayment } from './stripe.js';
 
-const BASE = 'https://api.stripe.com/v1';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const enc = (s) => new TextEncoder().encode(s);
 const objectId = (v) => typeof v === 'string' ? v : v?.id;
@@ -17,19 +17,7 @@ export async function verifyCreditSubscriptionMetadata(metadata, secret) {
 }
 
 /** Plain fetch, constant host, bounded lifetime; no Stripe SDK on the SSR graph. */
-export async function creditStripeRequest(path, cfg, fields, key) {
-  try {
-    const body = fields && new URLSearchParams(Object.entries(fields).filter(([, v]) => v !== undefined));
-    const res = await cfg.fetch(`${BASE}/${path}`, {
-      method: body ? 'POST' : 'GET', signal: AbortSignal.timeout(10000),
-      headers: { Authorization: `Bearer ${cfg.apiKey}`, ...(body ? {
-        'Content-Type': 'application/x-www-form-urlencoded', ...(key ? { 'Idempotency-Key': key } : {}),
-      } : {}), ...(path === 'checkout/sessions' ? { 'Stripe-Version': STRIPE_CHECKOUT_API_VERSION } : {}) },
-      ...(body ? { body: body.toString() } : {}),
-    });
-    return res.ok ? await res.json() : null;
-  } catch { return null; }
-}
+export { creditStripeRequest };
 
 export async function createCreditSubscriptionCheckout(input, cfg) {
   if (!UUID.test(input.subscriptionId || '') || !/^[a-z0-9-]{1,32}$/.test(input.planId || '')
