@@ -53,7 +53,7 @@ export function readMusicSavedMixes(storage, ownerId) {
 function newId(now) {
   const random = globalThis.crypto?.randomUUID?.().replace(/-/g, '').slice(0, 16)
     || Math.random().toString(36).slice(2, 14);
-  return `mix-${now.toString(36)}-${random}`;
+  return ['mix', now.toString(36), random].join('-');
 }
 
 export function saveMusicSavedMix(storage, ownerId, value, now = Date.now()) {
