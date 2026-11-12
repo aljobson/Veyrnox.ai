@@ -1,4 +1,4 @@
-import { MusicInstruments } from '../../../_components/music/MusicInstruments';
+import { MusicInstrumentsLoader } from '../../../_components/music/MusicInstrumentsLoader';
 import { getT } from '../../../../../lib/i18n/server';
 
 export async function generateMetadata() {
@@ -7,5 +7,5 @@ export async function generateMetadata() {
 }
 
 export default function MusicInstrumentsPage() {
-  return <MusicInstruments />;
+  return <MusicInstrumentsLoader />;
 }
