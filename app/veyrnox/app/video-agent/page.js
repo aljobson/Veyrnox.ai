@@ -1,4 +1,5 @@
 'use client';
+import { PromptBox } from '../../_components/PromptBox';
 import { useI18n } from '../../../../components/I18nProvider';
 import { pluralKey, tOr } from '../../../../lib/i18n/translate.mjs';
 import { localeTag } from '../../../../lib/i18n/locales.mjs';
@@ -156,16 +157,15 @@ export default function VideoAgent() {
 
         <div className="rounded-2xl border border-vx-border bg-vx-panel p-5">
           <label htmlFor="brief" className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">{t("app.videoAgent.brief")}</label>
-          <textarea
+          <PromptBox enhance
             id="brief" data-testid="agent-brief" rows={4} maxLength={MAX_BRIEF} value={brief} disabled={approving || generating}
             onChange={(e) => editDraft(setBrief, e.target.value)}
             placeholder={t("app.videoAgent.briefPlaceholder")}
-            className="mt-2 w-full rounded-lg border border-vx-border bg-vx-bg p-3 text-sm"
           />
           <label htmlFor="narration-text" className="mt-4 block text-sm font-bold">{t("app.videoAgent.narration")}</label>
-          <textarea id="narration-text" data-testid="agent-narration" rows={3} maxLength={MAX_NARRATION_LENGTH} value={narrationText}
+          <PromptBox id="narration-text" data-testid="agent-narration" rows={3} maxLength={MAX_NARRATION_LENGTH} value={narrationText}
             disabled={approving || generating} onChange={e => editDraft(setNarrationText, e.target.value)}
-            aria-describedby="narration-help" className="mt-2 w-full rounded-lg border border-vx-border bg-vx-bg p-3 text-sm"
+            aria-describedby="narration-help"
             placeholder={t("app.videoAgent.narrationPlaceholder")} />
           <p id="narration-help" data-testid="agent-narration-help" className="mt-2 text-xs text-vx-fg-muted">{t("app.videoAgent.narrationHelp")}</p>
           {!narration.ok && <p role="alert" className="mt-2 text-xs text-vx-danger">{t("app.videoAgent.narrationLimit")}</p>}
