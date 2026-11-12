@@ -1266,6 +1266,18 @@
     "ratio": 2.5
   },
   {
+    "id": "create.firstGoal.unsure",
+    "english": "Not sure yet",
+    "translation": "Je ne sais pas encore",
+    "ratio": 1.75
+  },
+  {
+    "id": "create.firstGoal.skip",
+    "english": "Skip for now",
+    "translation": "Passer pour l’instant",
+    "ratio": 1.75
+  },
+  {
     "id": "create.noModels",
     "english": "No {kind} models available in the app yet.",
     "translation": "Aucun modèle de type {kind} n’est encore disponible dans l’application.",

@@ -738,6 +738,12 @@
     "ratio": 1.61
   },
   {
+    "id": "create.firstGoal.skip",
+    "english": "Skip for now",
+    "translation": "Vorerst überspringen",
+    "ratio": 1.67
+  },
+  {
     "id": "create.goalLabel",
     "english": "What to make",
     "translation": "Was du erstellen möchtest",

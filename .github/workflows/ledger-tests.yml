@@ -65,6 +65,7 @@ on:
       - "scripts/test-supplier-route-breaker.mjs"
       - "scripts/test-push-tokens.mjs"
       - "scripts/test-creator-profile.mjs"
+      - "scripts/test-first-goal.mjs"
       - "scripts/test-fk-indexes.mjs"
       - "scripts/test-append-only.mjs"
       - "scripts/test-checkin.mjs"
@@ -294,6 +295,7 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-supplier-route-breaker.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-push-tokens.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-creator-profile.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-first-goal.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-fk-indexes.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-append-only.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-checkin.mjs

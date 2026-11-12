@@ -83,8 +83,12 @@ test('SQL and code allowlists agree for all inventory patterns; telemetry has no
  const extension=await readFile(new URL('../packages/db/schema/supabase/0493_music_reference_links.sql',import.meta.url),'utf8');
  const base=replacement.match(/SELECT p_path = ANY \(ARRAY\[([^\]]+)\]::text\[\]\)/)[1].split(',').map(p=>p.slice(1,-1));
  const added=extension.match(/SELECT p_path = '([^']+)'\s+OR public\.telemetry_path_allowed_pre_0493\(p_path\)/)?.[1];
- assert.ok(added,'the latest route migration must extend the prior telemetry allowlist');
- const actual=[...new Set([...base,added])].sort();
+ assert.ok(added,'the route migration must extend the prior telemetry allowlist');
+ // 0494 (ADR-0334) wraps 0493's function in turn; each wrapper admits exactly one new route.
+ const latest=await readFile(new URL('../packages/db/schema/supabase/0494_first_goal.sql',import.meta.url),'utf8');
+ const addedLatest=latest.match(/SELECT p_path = '([^']+)'\s+OR public\.telemetry_path_allowed_pre_0494\(p_path\)/)?.[1];
+ assert.ok(addedLatest,'the latest route migration must extend the prior telemetry allowlist');
+ const actual=[...new Set([...base,added,addedLatest])].sort();
  assert.deepEqual(actual,expected,'update SQL patterns with inventory; the generic 404 catch-all never emits');
  assert.doesNotMatch(sql,/REFERENCES (?:public\.)?users|user_id|user_agent|ip_address/);
 });
