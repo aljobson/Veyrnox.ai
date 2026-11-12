@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 import { LICENSED_MUSIC_CATEGORIES, LICENSED_MUSIC_TRACKS, licensedArtworkUrl, licensedMusicUrl } from '../../../../lib/licensedMusicCatalog.js';
 
 const duration = (seconds) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+const PAGE_SIZE = 12;
 
 function LicensedTrackCard({ track }) {
   const audioUrl = licensedMusicUrl(track);
@@ -36,30 +37,48 @@ function LicensedTrackCard({ track }) {
 export function LicensedMusicLibrary() {
   const [category, setCategory] = useState('All');
   const [search, setSearch] = useState('');
+  const [visibleLimit, setVisibleLimit] = useState(PAGE_SIZE);
   const visible = useMemo(() => {
     const query = search.trim().toLowerCase();
     return LICENSED_MUSIC_TRACKS.filter((track) => (category === 'All' || track.category === category)
       && (!query || [track.title, track.creator, track.category].some((value) => value.toLowerCase().includes(query))));
   }, [category, search]);
+  const displayed = visible.slice(0, visibleLimit);
+  const updateCategory = (nextCategory) => {
+    setCategory(nextCategory);
+    setVisibleLimit(PAGE_SIZE);
+  };
+  const updateSearch = (event) => {
+    setSearch(event.target.value);
+    setVisibleLimit(PAGE_SIZE);
+  };
+  const resetFilters = () => {
+    setCategory('All');
+    setSearch('');
+    setVisibleLimit(PAGE_SIZE);
+  };
 
   return (
     <section aria-labelledby="licensed-music-title" className="mt-16 border-t border-vx-border pt-12">
       <div className="max-w-3xl">
         <p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-accent">Reusable recordings · attribution required</p>
-        <h2 id="licensed-music-title" className="mt-2 font-vx text-3xl font-black sm:text-4xl">Licensed music library</h2>
+        <h2 id="licensed-music-title" className="mt-2 font-vx text-3xl font-black sm:text-4xl">51-track licensed music library</h2>
         <p className="mt-3 leading-7 text-vx-fg-body">Full playable recordings discovered on SoundCloud and downloaded only from links supplied by their creators. Every track below is CC BY 4.0, includes ready-to-copy credit text, and remains separate from generation.</p>
       </div>
       <div className="mt-6 rounded-2xl border border-vx-border bg-vx-panel p-4 sm:p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex max-w-full gap-2 overflow-x-auto pb-1" role="group" aria-label="Filter licensed music by category">
-            {LICENSED_MUSIC_CATEGORIES.map((item) => <button key={item} type="button" aria-pressed={category === item} onClick={() => setCategory(item)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold ${category === item ? 'bg-vx-fg text-vx-base' : 'border border-vx-border text-vx-fg-body hover:border-vx-border-boost'}`}>{item}</button>)}
+            {LICENSED_MUSIC_CATEGORIES.map((item) => <button key={item} type="button" aria-pressed={category === item} onClick={() => updateCategory(item)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold ${category === item ? 'bg-vx-fg text-vx-base' : 'border border-vx-border text-vx-fg-body hover:border-vx-border-boost'}`}>{item}</button>)}
           </div>
-          <label className="relative block lg:w-72"><span className="sr-only">Search licensed music</span><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search tracks or creators" className="min-h-11 w-full rounded-full border border-vx-border-boost bg-vx-base px-4 text-sm text-vx-fg placeholder:text-vx-fg-faint focus:border-vx-accent focus:outline-none" /></label>
+          <label className="relative block lg:w-72"><span className="sr-only">Search licensed music</span><input type="search" value={search} onChange={updateSearch} placeholder="Search tracks or creators" className="min-h-11 w-full rounded-full border border-vx-border-boost bg-vx-base px-4 text-sm text-vx-fg placeholder:text-vx-fg-faint focus:border-vx-accent focus:outline-none" /></label>
         </div>
       </div>
-      <p className="mt-5 text-sm text-vx-fg-muted">{visible.length} of {LICENSED_MUSIC_TRACKS.length} licensed tracks</p>
-      {visible.length ? <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{visible.map((track) => <LicensedTrackCard key={track.id} track={track} />)}</div>
-        : <div className="mt-4 rounded-2xl border border-dashed border-vx-border p-8 text-center"><p className="font-bold">No licensed tracks match this view.</p><button type="button" onClick={() => { setCategory('All'); setSearch(''); }} className="mt-4 min-h-11 rounded-full border border-vx-border px-4 text-sm font-bold">Show all licensed tracks</button></div>}
+      <p className="mt-5 text-sm text-vx-fg-muted">Showing {displayed.length} of {visible.length} matching tracks · {LICENSED_MUSIC_TRACKS.length} total</p>
+      {visible.length ? <>
+        <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{displayed.map((track) => <LicensedTrackCard key={track.id} track={track} />)}</div>
+        {displayed.length < visible.length ? <div className="mt-8 text-center"><button type="button" onClick={() => setVisibleLimit((current) => current + PAGE_SIZE)} className="min-h-11 rounded-full border border-vx-border-boost px-5 text-sm font-bold hover:border-vx-accent">Show {Math.min(PAGE_SIZE, visible.length - displayed.length)} more tracks</button></div> : null}
+      </>
+        : <div className="mt-4 rounded-2xl border border-dashed border-vx-border p-8 text-center"><p className="font-bold">No licensed tracks match this view.</p><button type="button" onClick={resetFilters} className="mt-4 min-h-11 rounded-full border border-vx-border px-4 text-sm font-bold">Show all licensed tracks</button></div>}
       <p className="mt-6 text-xs leading-5 text-vx-fg-faint">Veyrnox converted the creator-provided WAV or MP3 into a 128 kbps MP3 delivery copy and did not alter the composition. Keep the displayed attribution with any reuse. These recordings are not submitted to music-generation models.</p>
     </section>
   );

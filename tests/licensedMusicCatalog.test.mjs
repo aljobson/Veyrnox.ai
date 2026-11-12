@@ -4,10 +4,21 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { LICENSED_MUSIC_CATEGORIES, LICENSED_MUSIC_TRACKS, licensedArtworkUrl, licensedMusicUrl } from '../lib/licensedMusicCatalog.js';
 
-test('licensed music spans six distinct listening categories', () => {
-  assert.equal(LICENSED_MUSIC_TRACKS.length, 6);
-  assert.equal(new Set(LICENSED_MUSIC_TRACKS.map((track) => track.category)).size, 6);
-  assert.deepEqual(LICENSED_MUSIC_CATEGORIES, ['All', ...LICENSED_MUSIC_TRACKS.map((track) => track.category)]);
+test('licensed music exposes exactly 51 recordings across broad listening categories', () => {
+  assert.equal(LICENSED_MUSIC_TRACKS.length, 51);
+  assert.deepEqual(LICENSED_MUSIC_CATEGORIES, [
+    'All',
+    'Cinematic adventure',
+    'Piano & reflective',
+    'Dark & suspense',
+    'Action & hybrid',
+    'Ambient & atmospheric',
+    'Uplifting',
+    'Whimsical',
+    'Epic orchestral',
+    'Jazz & acoustic',
+  ]);
+  assert.equal(new Set(LICENSED_MUSIC_TRACKS.map((track) => track.id)).size, 51);
 });
 
 test('every licensed track has an immutable local audio file, artwork and CC BY receipt', () => {
@@ -38,6 +49,8 @@ test('Discover exposes playable licensed recordings without a generation handoff
   assert.match(discover, /<LicensedMusicLibrary \/>/);
   assert.match(library, /<audio controls preload="none"/);
   assert.match(library, /Download MP3/);
+  assert.match(library, /Show \{Math\.min\(PAGE_SIZE/);
+  assert.match(library, /51-track licensed music library/);
   assert.match(library, /SoundCloud source/);
   assert.match(library, /Creator download/);
   assert.doesNotMatch(library, /Sample this beat|\/app\/music\/create|generation.*href/i);
