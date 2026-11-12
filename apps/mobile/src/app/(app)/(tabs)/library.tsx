@@ -146,7 +146,9 @@ export default function Library() {
                 if (failures.current >= 20) setUnreachable(true);
             } finally {
                 running = false;
-                delay = changed ? POLL_MIN_MS : Math.min(POLL_MAX_MS, Math.round(delay * 1.5));
+                // Pending asset lookups retry on their own cooldown, so keep the fast cadence while any wait.
+                // Failed requests also keep the fast cadence: the 20-failure "unreachable" count assumes it.
+                delay = changed || unresolved.current.size > 0 || outcomes.includes(false) ? POLL_MIN_MS : Math.min(POLL_MAX_MS, Math.round(delay * 1.5));
                 schedule();
             }
         };
