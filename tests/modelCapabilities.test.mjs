@@ -213,7 +213,7 @@ test('the public view carries no provider field names or editable pins', () => {
             aspect_ratio: { type: 'enum', values: ['16:9', '9:16'] } },
         media: {},
         presentation: { resolutionLabel: '720p', audioIncluded: true, fixedDurationLabel: '4s' },
-        resolutionTiers: { base: '720p', options: [{ id: '720p', multiplier: 1 }, { id: '1080p', multiplier: 1.5 }, { id: '4k', multiplier: 3.5 }] },
+        resolutionTiers: { base: '720p', options: [{ id: '720p', multiplier: 1 }, { id: '1080p', multiplier: 1 }, { id: '4k', multiplier: 2.34 }] },
     });
 });
 
