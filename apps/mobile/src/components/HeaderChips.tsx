@@ -17,7 +17,7 @@ export function CreditsChip({ palette: override }: { palette?: Palette }) {
     const balance = useBalance();
     const label = balance === null ? t('tabs.creditsUnknown') : plural('home.credits', balance);
     return (
-        <Pressable accessibilityRole="button" accessibilityLabel={rawText(label)} accessibilityHint={t('tabs.creditsHint')} style={styles.chip} onPress={() => router.push('/credits')}>
+        <Pressable accessibilityRole="button" accessibilityLabel={rawText(label)} accessibilityHint={t('tabs.creditsHint')} style={({ pressed }) => [styles.chip, pressed && styles.pressed]} onPress={() => router.push('/credits')}>
             <Icon name="coins" size={16} tint={palette.money} />
             <Text variant="caption" style={styles.chipText} maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} numberOfLines={1}>
                 {balance === null ? '—' : balance}
@@ -30,7 +30,7 @@ export function AvatarButton({ palette: override }: { palette?: Palette }) {
     const styles = useThemedStyles(sheets);
     const router = useRouter();
     return (
-        <Pressable accessibilityRole="button" accessibilityLabel={t('tabs.account')} style={styles.hit} onPress={() => router.push('/account')}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('tabs.account')} style={({ pressed }) => [styles.hit, pressed && styles.pressed]} onPress={() => router.push('/account')}>
             <Icon name="user" tint={palette.text} />
         </Pressable>
     );
@@ -46,7 +46,7 @@ export function ThemeButton({ palette: override }: { palette?: Palette }) {
             accessibilityRole="button"
             accessibilityLabel={t(dark ? 'ui.themeToLight' : 'ui.themeToDark')}
             accessibilityHint={t('ui.themeHint')}
-            style={styles.hit}
+            style={({ pressed }) => [styles.hit, pressed && styles.pressed]}
             onPress={() => void applyAppearance({ theme: toggledTheme(scheme) }, pathname)}
         >
             <Icon name={dark ? 'sun' : 'moon'} tint={palette.text} />
@@ -58,7 +58,6 @@ export function HeaderRight({ palette }: { palette?: Palette }) {
     return (
         <View style={styles.row}>
             <CreditsChip palette={palette} />
-            <ThemeButton palette={palette} />
             <AvatarButton palette={palette} />
         </View>
     );
@@ -79,5 +78,6 @@ const sheets = themedStyles((p) => ({
         backgroundColor: p.bgElevated1,
     },
     chipText: { color: p.warning, fontVariant: ['tabular-nums'] },
+    pressed: { opacity: 0.7 },
     hit: { width: 44, height: 44, borderRadius: ds.radius.pill, justifyContent: 'center', alignItems: 'center' },
 }));

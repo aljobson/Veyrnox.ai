@@ -5,17 +5,12 @@ import Link from 'next/link';
 import { getFreshAccessToken, getStoredSession, onSessionChange, signOut } from '../../lib/authClient';
 import { ConfirmDialog } from './ConfirmDialog';
 import { accountLabel } from '../_lib/account.js';
-import { usePublishEnabled } from './PublishFlag';
-import { useEditorEnabled } from './EditorFlag';
-import { useProjectsEnabled } from './ProjectsFlag';
-import { STUDIO_LINKS } from '../_lib/studioNavigation';
 import { useI18n } from '../../../components/I18nProvider';
 
+// The sidebar and the studio menu already list every destination; the account
+// menu keeps only the way in and the things that belong to the person.
 const ACCOUNT_LINKS = [
-  { href: '/social-cinema', label: 'Social Cinema' },
   { href: '/app', label: 'Open Studio' },
-  ...STUDIO_LINKS,
-  { href: '/app/publish', label: 'Veyrnox.ai Publish' },
   { href: '/app/credits', label: 'Credits' },
   { href: '/app/account', label: 'Account & security' },
 ];
@@ -43,15 +38,7 @@ export function NavAuthButtons({ account: given }) {
   const { t, href } = useI18n();
   const wrapRef = useRef(null);
   const triggerRef = useRef(null);
-  const publishOpen = usePublishEnabled();
-  const editorOpen = useEditorEnabled();
-  const projectsOpen = useProjectsEnabled();
-  const links = ACCOUNT_LINKS.filter((link) => {
-    if (link.href === '/app/publish') return publishOpen;
-    if (link.href === '/app/editor') return editorOpen;
-    if (link.href === '/app/projects') return projectsOpen;
-    return true;
-  });
+  const links = ACCOUNT_LINKS;
 
   const account = given || sessionAccount;
   // Refresh an expired access token on mount. setSession notifies the store,

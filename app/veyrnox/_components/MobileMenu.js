@@ -12,8 +12,10 @@ import { LanguageMenu } from './LanguageMenu';
 import { useI18n } from '../../../components/I18nProvider';
 
 // A visible menu keeps every destination reachable on a narrow screen.
-export function MobileMenu({ items, className = '', buttonLabel = 'Menu', buttonText = '', navLabel = 'Site', activeHref, grouped = false, languageMenu = false }) {
+export function MobileMenu({ items: allItems, className = '', buttonLabel = 'Menu', buttonText = '', navLabel = 'Site', activeHref, grouped = false, languageMenu = false }) {
   const pathname = usePathname() || '/';
+  // A route listed twice (Models is primary and in More) appears once.
+  const items = [...new Map(allItems.map((it) => [it.href, it])).values()];
   const [open, setOpen] = useState(false);
   const triggerRef = useRef(null);
   const oddlingsPublic = useOddlingsPublic();
@@ -28,6 +30,8 @@ export function MobileMenu({ items, className = '', buttonLabel = 'Menu', button
     // than the page moving.
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    // Move focus into the panel so keyboard and screen-reader users start on the first destination.
+    document.querySelector('#vx-mobile-menu a')?.focus();
     const onKey = (e) => {
       if (e.key !== 'Escape') return;
       setOpen(false);
@@ -44,15 +48,16 @@ export function MobileMenu({ items, className = '', buttonLabel = 'Menu', button
     // Home-page sections use a plain link, as on the marketing bar.
     // A public page that is still behind its flag links to the studio instead.
     const href = localHref(navHref(it, oddlingsPublic));
+    const current = Boolean(activeHref) && href === localHref(activeHref);
     const Item = it.href.includes('#') || isAppLocalePath(pathname) !== isAppLocalePath(href) ? 'a' : Link;
     return (
       <li key={it.href}>
         <Item
           href={href}
           onClick={() => setOpen(false)}
-          aria-current={href === activeHref ? 'page' : undefined}
+          aria-current={current ? 'page' : undefined}
           className={`flex items-center gap-2 rounded-xl border px-3 py-3 text-[15px] font-bold transition-colors ${
-            href === activeHref
+            current
               ? it.featured ? 'border-vx-accent bg-vx-accent text-vx-accent-ink' : 'vx-side-row border-transparent'
               : it.featured
                 ? 'border-vx-accent/50 bg-vx-accent/10 text-vx-accent hover:bg-vx-accent/20'
