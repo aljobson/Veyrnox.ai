@@ -8,6 +8,7 @@ import {
 } from '../../../../lib/musicInstruments.js';
 import { makeNoise, playEvent, renderTake } from '../../_lib/music/instrumentEngine';
 import { addShelfTake } from '../../_lib/music/instrumentShelf';
+import { deleteSavedTake, listSavedTakes, putSavedTake } from '../../_lib/music/instrumentTakeDb';
 
 const TYPING_KEYS = Object.freeze('awsedftgyhujkolp;'.split(''));
 const STRUM_GAP = 0.028;
@@ -28,7 +29,28 @@ export function MusicInstruments() {
   const stateRef = useRef({ instrument, presetId });
 
   useEffect(() => { stateRef.current = { instrument, presetId }; }, [instrument, presetId]);
-  useEffect(() => () => { ctxRef.current?.close?.(); }, []);
+  const pendingRef = useRef(new Map());
+  const flushRef = useRef(null);
+  useEffect(() => () => { ctxRef.current?.close?.(); window.clearTimeout(flushRef.current); }, []);
+  useEffect(() => {
+    let live = true;
+    listSavedTakes('takes').then((rows) => {
+      if (!live || !rows.length) return;
+      setTakes((current) => {
+        const known = new Set(current.map((item) => item.id));
+        return [...current, ...rows.filter((row) => !known.has(row.id))].slice(0, 12);
+      });
+    });
+    return () => { live = false; };
+  }, []);
+  function saveSoon(item) {
+    pendingRef.current.set(item.id, item);
+    window.clearTimeout(flushRef.current);
+    flushRef.current = window.setTimeout(() => {
+      pendingRef.current.forEach((row) => putSavedTake('takes', row));
+      pendingRef.current.clear();
+    }, 600);
+  }
 
   const audio = useCallback(() => {
     const Context = window.AudioContext || window.webkitAudioContext;
@@ -118,8 +140,14 @@ export function MusicInstruments() {
     if (!rec.events.length) { setMessage('Nothing was played. Try again.'); return; }
     renderTake(take).then(({ samples, sampleRate }) => {
       const seconds = samples.length / sampleRate;
-      setTakes((current) => [{ id: crypto.randomUUID(), take, samples, sampleRate, seconds, start: 0, end: Math.round(seconds * 100) / 100, label: `${INSTRUMENTS[take.instrument].label} · ${PRESETS[take.instrument].find((p) => p.id === take.preset).label}` }, ...current].slice(0, 12));
-      setMessage('Take captured. Trim it and download the sample below.');
+      const item = { id: crypto.randomUUID(), take, samples, sampleRate, seconds, start: 0, end: Math.round(seconds * 100) / 100, createdAt: Date.now(), label: `${INSTRUMENTS[take.instrument].label} · ${PRESETS[take.instrument].find((p) => p.id === take.preset).label}` };
+      setTakes((current) => {
+        const next = [item, ...current];
+        next.slice(12).forEach((old) => deleteSavedTake('takes', old.id));
+        return next.slice(0, 12);
+      });
+      putSavedTake('takes', item);
+      setMessage('Take captured and saved in this browser. Trim it and download the sample below.');
     }).catch(() => setMessage('That take could not be rendered.'));
   }
 
@@ -147,7 +175,12 @@ export function MusicInstruments() {
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
-  const updateTake = (id, patch) => setTakes((current) => current.map((item) => (item.id === id ? { ...item, ...patch } : item)));
+  const updateTake = (id, patch) => {
+    const found = takes.find((item) => item.id === id);
+    if (found) saveSoon({ ...found, ...patch });
+    setTakes((current) => current.map((item) => (item.id === id ? { ...item, ...patch } : item)));
+  };
+  const removeTake = (id) => { setTakes((current) => current.filter((t) => t.id !== id)); deleteSavedTake('takes', id); };
   const spec = INSTRUMENTS[instrument];
   const keys = keyRange(instrument, shift);
   const pressProps = (value, id, onRelease) => ({
@@ -235,7 +268,7 @@ export function MusicInstruments() {
 
       <section aria-label="Takes and samples" className="mt-8">
         <h2 className="font-vx text-2xl font-black">Your takes</h2>
-        {takes.length === 0 ? <p className="mt-2 text-sm text-vx-fg-muted">Takes stay in this tab. Download a WAV to keep one.</p> : (
+        {takes.length === 0 ? <p className="mt-2 text-sm text-vx-fg-muted">Takes are saved in this browser only. Download a WAV to keep one for good.</p> : (
           <ul className="mt-4 space-y-3">
             {takes.map((item) => (
               <li key={item.id} className="rounded-2xl border border-vx-border bg-vx-panel p-4">
@@ -245,7 +278,7 @@ export function MusicInstruments() {
                   <button type="button" onClick={() => playTake(item)} className="min-h-11 rounded-full border border-vx-border px-4 font-bold">Play</button>
                   <button type="button" onClick={() => sendToStudio(item)} className="min-h-11 rounded-full border border-vx-border px-4 font-bold">Send to Studio</button>
                   <button type="button" onClick={() => download(item)} className="min-h-11 rounded-full bg-vx-accent px-4 font-bold text-vx-accent-ink">Download WAV</button>
-                  <button type="button" onClick={() => setTakes((c) => c.filter((t) => t.id !== item.id))} className="min-h-11 rounded-full border border-vx-border px-4 text-vx-fg-muted">Remove</button>
+                  <button type="button" onClick={() => removeTake(item.id)} className="min-h-11 rounded-full border border-vx-border px-4 text-vx-fg-muted">Remove</button>
                 </div>
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
                   <label className="text-xs font-bold text-vx-fg-muted">Sample start<input type="range" min="0" max={item.seconds} step="0.01" value={item.start} onChange={(e) => updateTake(item.id, { start: Math.min(Number(e.target.value), item.end - 0.05) })} className="mt-1 w-full" /></label>

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { getServerShelf, getShelf, removeShelfTake, subscribeShelf } from '../../_lib/music/instrumentShelf';
+import { getServerShelf, getShelf, hydrateShelf, removeShelfTake, subscribeShelf } from '../../_lib/music/instrumentShelf';
 
 export function MusicStudioInstrumentTakes({ sourceAudioRef }) {
   const takes = useSyncExternalStore(subscribeShelf, getShelf, getServerShelf);
@@ -11,6 +11,7 @@ export function MusicStudioInstrumentTakes({ sourceAudioRef }) {
   const contextRef = useRef(null);
   const activeRef = useRef([]);
 
+  useEffect(() => { hydrateShelf(); }, []);
   const stopAll = () => { activeRef.current.forEach((source) => { try { source.stop(); } catch {} }); activeRef.current = []; };
   useEffect(() => () => { stopAll(); contextRef.current?.close?.(); }, []);
 
@@ -53,7 +54,7 @@ export function MusicStudioInstrumentTakes({ sourceAudioRef }) {
         </ol>
       )}
       {message ? <p role="status" className="mt-3 text-xs text-vx-fg-muted">{message}</p> : null}
-      <p className="mt-3 text-xs leading-5 text-vx-fg-muted">Auditioning only: takes are held in this tab, are not saved with the song and are not part of any export.</p>
+      <p className="mt-3 text-xs leading-5 text-vx-fg-muted">Auditioning only: takes are saved in this browser only, are not saved with the song and are not part of any export.</p>
     </section>
   );
 }
