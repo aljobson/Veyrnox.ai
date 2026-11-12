@@ -20,6 +20,7 @@ import { FilmPrompts } from './FilmPrompts';
 import { filmStudioStore } from '../../_lib/filmStudioStore';
 import { takeFilmStarter } from '../../_lib/filmTemplateDraft';
 import { templateModelId, presetTitle, templateHref } from '../../_lib/tokens';
+import { withFilmStackDefaults } from '../../_lib/authenticatedMedia';
 import { fetchTemplate } from '../../_lib/useTemplates';
 
 const storage = () => { try { return window.localStorage; } catch { return null; } };
@@ -100,6 +101,12 @@ export function FilmWorkspace({cloud=false}) {
     filmStudioStore.set({film:next,saved:false,error:null});
     persist();
   };
+  useEffect(()=>{
+    if(!ready||!models?.length) return;
+    const next=withFilmStackDefaults(film,models);
+    if(next!==film) update(next);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[ready,models,film]);
   const available=accessibleStage(film), current=Math.min(stage,available);
   const issues=stageIssues(film,current);
   if(!ready) return <p role="status" className="p-8">{t("app.film.workspace.loading")}</p>;

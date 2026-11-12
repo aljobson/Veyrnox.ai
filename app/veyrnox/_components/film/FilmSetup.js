@@ -4,7 +4,7 @@ import { localeTag } from '../../../../lib/i18n/locales.mjs';
 import { pluralKey } from '../../../../lib/i18n/translate.mjs';
 import { STUDIO_FOLDERS } from '../../_lib/filmStudio';
 import { FilmField, FilmSelect } from './FilmFields';
-import { normalizeFilmStack } from '../../_lib/authenticatedMedia';
+import { eligibleFilmModels, normalizeFilmStack } from '../../_lib/authenticatedMedia';
 
 const ACCESS_SUFFIX = 'Access';
 export function FilmSetup({ film, update, models }) {
@@ -23,7 +23,7 @@ export function FilmSetup({ film, update, models }) {
     {['image','video'].map(kind => <section key={kind} className="space-y-4 rounded-xl border border-vx-border p-4">
       <FilmSelect data-testid={`film-${kind}-workflow`} label={kind === 'image' ? t('app.film.setup.imageWorkflow') : t('app.film.setup.videoWorkflow')} value={film.stack[kind + ACCESS_SUFFIX]} onChange={v => stack(kind + ACCESS_SUFFIX,v)} options={access}/>
       {film.stack[kind + ACCESS_SUFFIX] === 'Studio' ? <FilmSelect data-testid={`film-${kind}-model`} label={kind === 'image' ? t('app.film.setup.imageModel') : t('app.film.setup.videoModel')} value={film.stack[kind]} onChange={v=>stack(kind,v)} options={[
-        ['', t('app.film.setup.choose')], ...models.filter(m=>m.kind===kind&&m.takesPrompt!==false&&!m.gated&&!m.isEdit&&!m.takesTopic&&!m.takesPlan&&(kind!=='video'||m.durations?.some(n=>n>=10&&n<=15))).map(m=>[m.id,m.name]),
+        ['', t('app.film.setup.choose')], ...eligibleFilmModels(models,kind).map(m=>[m.id,m.name]),
       ]}/> : <FilmField label={kind === 'image' ? t('app.film.setup.imageModel') : t('app.film.setup.videoModel')} value={film.stack[kind]} onChange={v=>stack(kind,v)} hint={t('app.film.setup.credentials')}/>}
     </section>)}
     <div className="grid gap-4 sm:grid-cols-2"><FilmSelect data-testid="film-clip-length" label={t("app.film.setup.length")} value={film.stack.seconds} onChange={v=>stack('seconds',v)} options={(clipLengths.length ? clipLengths : [10]).map(seconds=>[String(seconds),t(pluralKey(t, locale, 'app.film.setup.seconds', seconds), {count: number(seconds)})])}/>
