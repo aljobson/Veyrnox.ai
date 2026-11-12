@@ -72,7 +72,31 @@ export function MediaComposer({ kind, media, prompt, onPrompt }) {
   return (
     <>
       <fieldset disabled={busy} className="min-w-0">
-        <div className="scrollbar-none flex gap-1.5 overflow-x-auto border-b border-vx-border px-3 py-2" role="group" aria-label={t('app.chat.media.setup', { kind: kindLabel })}>
+        {model?.takesVoice && (
+          <div className="px-3 pt-3">
+            <label htmlFor="chat-media-voice" className="sr-only">{t("app.editor.generation.voiceDescription")}</label>
+            <input id="chat-media-voice" value={voice} maxLength={500} onChange={(event) => setVoice(event.target.value)}
+              placeholder={t("app.chat.media.voiceExample")}
+              className="w-full rounded-lg bg-vx-base/60 px-3 py-2 text-sm text-vx-fg outline-hidden placeholder:text-vx-fg-faint" />
+          </div>
+        )}
+        <div className="px-3 pt-3">
+          <label className="sr-only" htmlFor="chat-media-prompt">{t("app.editor.generation.prompt")}</label>
+          <textarea id="chat-media-prompt" rows={3} value={prompt} placeholder={placeholder}
+            onChange={(event) => onPrompt(event.target.value)}
+            onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); if (canGenerate) generate(prompt); } }}
+            className="max-h-56 min-h-[4.5rem] w-full resize-none bg-transparent px-1 py-1 text-[15px] text-vx-fg outline-hidden placeholder:text-vx-fg-faint" />
+        </div>
+        {promptTooLong && <p role="alert" className="px-4 pb-2 text-xs text-vx-danger">{t(promptLimitKey, { count: number(prompt.trim().length), max: number(promptLimit) })}</p>}
+        <div className="flex items-center gap-2 border-t border-vx-border/60 bg-vx-base/40 px-2 py-2">
+          {model && (
+            <label className="grid h-9 w-9 shrink-0 cursor-pointer place-items-center rounded-full text-vx-fg-muted hover:text-vx-fg has-focus-visible:outline-solid has-focus-visible:outline-2 has-focus-visible:outline-vx-accent" title={t('app.create.attach.hint')}>
+              <Icon name="paperclip" size={20} /><span className="sr-only">{t('app.create.attach.button')}</span>
+              <input data-testid="chat-media-attach" type="file" multiple accept={attachAccept()} disabled={busy || converting} className="sr-only"
+                onChange={(e) => { attachFromDevice(e.target.files); e.target.value = ''; }} />
+            </label>
+          )}
+        <div className="scrollbar-none flex min-w-0 flex-1 gap-1.5 overflow-x-auto" role="group" aria-label={t('app.chat.media.setup', { kind: kindLabel })}>
           {model ? (
             <SelectControl label={t('app.chat.media.modelPrice', { name: model.name, count: number(model.credits) })} ariaLabel={t('app.chat.media.model', { kind: kindLabel })} value={model.id} disabled={busy} onChange={selectModel}>
               {availableModels.map((item) => <option key={item.id} value={item.id}>{item.name} · {credits(t, locale, item.credits)}</option>)}
@@ -117,6 +141,11 @@ export function MediaComposer({ kind, media, prompt, onPrompt }) {
           ) : <OutputFact title={t("app.chat.media.fixedAudio")}>{helperCopy(t, locale, videoAudioLabel(model))}</OutputFact>)}
           {model?.kind === 'audio' && actualLength && !sourceDurationMax && <OutputFact>{actualLength} {' '}{t("app.chat.media.output")}</OutputFact>}
         </div>
+          <button data-testid="chat-media-generate" type="button" onClick={() => generate(prompt)} disabled={!canGenerate}
+            className="inline-flex h-10 shrink-0 items-center gap-2 rounded-full bg-vx-accent px-4 text-sm font-semibold text-vx-accent-ink transition-colors hover:bg-vx-accent-hover disabled:opacity-50">
+            {sending ? t("app.editor.sheet.starting") : generating ? t("app.chat.media.generating") : freeLeft > 0 && cost === 0 ? t("app.chat.media.free") : t('app.chat.media.generate', { cost: number(cost) })}
+          </button>
+        </div>
 
         {model?.kind === 'video' && (model.resolutions?.length || model.audioOptions?.length) > 0 && (
           <p className="px-4 py-2 text-xs text-vx-fg-muted">{t("app.chat.media.samePrice")}</p>
@@ -126,18 +155,6 @@ export function MediaComposer({ kind, media, prompt, onPrompt }) {
             className="px-4 py-2 text-start text-xs text-vx-accent underline disabled:opacity-50">{t("app.chat.media.chooseControls")}</button>
         )}
 
-        {model && (
-          <div className="border-b border-vx-border px-3 py-3">
-            <div className="flex items-center gap-3">
-              <label className="shrink-0 cursor-pointer rounded-full border border-vx-border px-3.5 py-1.5 font-vx-mono text-[11px] font-bold text-vx-fg-muted hover:text-vx-fg has-focus-visible:outline-solid has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-vx-accent">
-                <Icon name="paperclip" size={16} className="me-1.5 inline align-[-2px]" />{t('app.create.attach.button')}
-                <input data-testid="chat-media-attach" type="file" multiple accept={attachAccept()} disabled={busy || converting} className="sr-only"
-                  onChange={(e) => { attachFromDevice(e.target.files); e.target.value = ''; }} />
-              </label>
-              <span className="text-xs text-vx-fg-muted">{t('app.create.attach.hint')}</span>
-            </div>
-          </div>
-        )}
         {attachNotice && (
           <p role="status" className="border-b border-vx-border px-4 py-2 text-xs text-vx-fg-muted">
             {attachNotice.converting ? t('app.create.convert.working') : attachNotice.unsupported ? t('app.create.attach.unsupported') : [
@@ -160,27 +177,6 @@ export function MediaComposer({ kind, media, prompt, onPrompt }) {
           </div>
         )}
 
-        {model?.takesVoice && (
-          <div className="border-b border-vx-border px-3 py-2">
-            <label htmlFor="chat-media-voice" className="sr-only">{t("app.editor.generation.voiceDescription")}</label>
-            <input id="chat-media-voice" value={voice} maxLength={500} onChange={(event) => setVoice(event.target.value)}
-              placeholder={t("app.chat.media.voiceExample")}
-              className="w-full bg-transparent px-2 py-1.5 text-sm text-vx-fg outline-hidden placeholder:text-vx-fg-faint" />
-          </div>
-        )}
-
-        <div className="flex items-end gap-2 px-2 pb-2">
-          <label className="sr-only" htmlFor="chat-media-prompt">{t("app.editor.generation.prompt")}</label>
-          <textarea id="chat-media-prompt" rows={1} value={prompt} placeholder={placeholder}
-            onChange={(event) => onPrompt(event.target.value)}
-            onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); if (canGenerate) generate(prompt); } }}
-            className="max-h-48 min-h-14 min-w-0 flex-1 resize-none bg-transparent px-2 py-3 text-[15px] text-vx-fg outline-hidden placeholder:text-vx-fg-faint" />
-          <button data-testid="chat-media-generate" type="button" onClick={() => generate(prompt)} disabled={!canGenerate}
-            className="mb-1 min-w-32 rounded-xl bg-vx-accent px-4 py-2.5 text-sm font-semibold text-vx-accent-ink transition-colors hover:bg-vx-accent-hover disabled:opacity-50">
-            {sending ? t("app.editor.sheet.starting") : generating ? t("app.chat.media.generating") : freeLeft > 0 && cost === 0 ? t("app.chat.media.free") : t('app.chat.media.generate', { cost: number(cost) })}
-          </button>
-        </div>
-        {promptTooLong && <p role="alert" className="px-4 pb-2 text-xs text-vx-danger">{t(promptLimitKey, { count: number(prompt.trim().length), max: number(promptLimit) })}</p>}
       </fieldset>
 
       <div className="border-t border-vx-border px-3 py-2 text-xs text-vx-fg-muted">

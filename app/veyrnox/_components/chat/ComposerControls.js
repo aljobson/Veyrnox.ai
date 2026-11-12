@@ -64,7 +64,7 @@ function SelectControl({ label, ariaLabel, value, disabled, onChange, children, 
   );
 }
 
-export function ComposerControls({ models, model, offer, opts, busy, onSelectModel, onOpts, onLibrary, libraryDisabled, onSettings, settingsOpen = false }) {
+export function ComposerControls({ models, model, offer, opts, busy, onSelectModel, onOpts, onLibrary, libraryDisabled, onSettings, settingsOpen = false, compact = false }) {
   const { t, locale } = useI18n();
   const number = value => locale === 'en' ? String(value) : new Intl.NumberFormat(localeTag(locale)).format(value);
   const credits = count => t(pluralKey(t, locale, 'app.chat.settings.credits', count), {count:number(count)});
@@ -72,7 +72,7 @@ export function ComposerControls({ models, model, offer, opts, busy, onSelectMod
   const modeLabel = mode === REPLY_MODES.RESEARCH ? t("app.chat.settings.research") : mode === REPLY_MODES.THINKING ? t('app.chat.settings.thinking') : t('app.chat.controls.standard');
 
   return (
-    <div className="scrollbar-none flex gap-1.5 overflow-x-auto border-b border-vx-border px-3 py-2" role="group" aria-label={t("app.chat.controls.setup")}>
+    <div className={compact ? 'scrollbar-none flex min-w-0 flex-1 gap-1.5 overflow-x-auto' : 'scrollbar-none flex gap-1.5 overflow-x-auto border-b border-vx-border px-3 py-2'} role="group" aria-label={t("app.chat.controls.setup")}>
       <SelectControl label={model.name} ariaLabel={t("app.chat.controls.model")} value={model.id} disabled={busy} onChange={onSelectModel} icon={<ModelIcon />}>
         {models.map((item) => <option key={item.id} value={item.id}>{item.name} · {credits(item.credits_per_reply)}</option>)}
       </SelectControl>
