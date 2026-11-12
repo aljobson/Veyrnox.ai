@@ -17,6 +17,9 @@ const CACHE = 'public, max-age=60, s-maxage=300, stale-while-revalidate=300';
 
 export function GET(request) {
     const params = new URL(request.url).searchParams;
+    // The audio templates were removed (audio samples live in Music Discover). Older mobile builds still ask for
+    // ?kind=audio, so answer the shape they parse with an empty list instead of video cards.
+    if (params.get('kind') === 'audio') return NextResponse.json({ templates: [], categories: [] }, { headers: { 'Cache-Control': CACHE } });
     const q = params.get('q');
     if (q === null) return NextResponse.json({ templates: templateCards(), categories: templateCategories() }, { headers: { 'Cache-Control': CACHE } });
     if (q.length > SEARCH_QUERY_MAX * 4) return NextResponse.json({ error: 'invalid_query' }, { status: 400, headers: { 'Cache-Control': 'no-store' } });
