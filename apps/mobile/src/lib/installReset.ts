@@ -3,7 +3,7 @@ import { retainDiscardedSession } from './auth/discardedSession';
 // Keep this dependency graph free of theme, i18n and any other stored-state readers.
 export const INSTALL_RESET_KEYS = [
     'veyrnox_refresh_token',
-    'veyrnox.welcome.seen.v2',
+    'veyrnox.welcome.seen.v2', 'veyrnox.firstGoal.v1',
     'veyrnox.language.v1', 'veyrnox.language.direction.v1',
     'veyrnox.vey.character.v1', 'veyrnox.theme', 'veyrnox.accent', 'veyrnox.typeface', 'veyrnox.textSize', 'veyrnox.theme.return', 'veyrnox.themeKeep',
     'veyrnox.analytics.consent.v1', 'veyrnox_push_pref',
@@ -97,8 +97,10 @@ export function resetInstall(): void {
         // A failure here is reported but does not hold the marker pending: re-wiping every launch
         // (and signing the person out each time) would be worse than one skipped welcome.
         const { File, Paths } = require('expo-file-system') as typeof import('expo-file-system');
-        const welcome = new File(Paths.cache, 'veyrnox-cache', `${encodeURIComponent('veyrnox.welcome.seen.v2')}.json`);
-        if (welcome.exists) welcome.delete();
+        for (const slot of ['veyrnox.welcome.seen.v2', 'veyrnox.firstGoal.v1']) {
+            const cached = new File(Paths.cache, 'veyrnox-cache', `${encodeURIComponent(slot)}.json`);
+            if (cached.exists) cached.delete();
+        }
     } catch { failed('delete'); }
     void Promise.all(deletions).then(() => {
         if (!wiped) return; // Leave pending so an interrupted/failed wipe resumes on launch.

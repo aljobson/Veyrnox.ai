@@ -11,6 +11,9 @@ import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { VeyLoader } from '../../../components/VeyLoader';
 import { fetchCatalogCached, type CatalogModel, type Kind } from '../../../lib/media';
 import { starterModel } from '../../../lib/createOptions';
+import { FirstGoalCard } from '../../../components/create/FirstGoalCard';
+import { firstGoalTarget, type FirstGoal } from '../../../lib/firstGoal';
+import { readFirstGoal, writeFirstGoal } from '../../../lib/firstGoalStore';
 import { fetchAgentListing } from '../../../lib/montage';
 import { type MenuIcon } from '../../../lib/menuIcons';
 import { type FeatureIcon } from '../../../lib/featureIcons';
@@ -31,6 +34,13 @@ const MAKE: readonly { readonly kind: Kind; readonly label: string; readonly bad
     { kind: 'video', label: 'create.goal.video', badge: { icon: 'video', hue: 'iris' } },
     { kind: 'audio', label: 'create.goal.audio', badge: { icon: 'audio', hue: 'amber' } },
 ];
+
+// The example prompt a creation goal opens the form with. Literal keys, so the translation tooling sees them.
+const EXAMPLE: Record<'image' | 'video' | 'audio', () => string> = {
+    image: () => t('create.firstGoal.example.image'),
+    video: () => t('create.firstGoal.example.video'),
+    audio: () => t('create.firstGoal.example.audio'),
+};
 
 // Create starts from what you want to make, not from a list of models. Each goal opens the form with its starter
 // model (the cheapest one that works from a prompt alone, as on the web); "Change model" on the form switches it, and
@@ -56,6 +66,24 @@ export default function Create() {
 
     const starters = useMemo(() => MAKE.map((goal) => ({ ...goal, model: starterModel(models ?? [], goal.kind) })).filter((goal) => goal.model), [models]);
 
+    // The first-goal question is asked once per phone; until the stored answer is read nothing is shown.
+    const [asked, setAsked] = useState<'checking' | 'ask' | 'done'>('checking');
+    useEffect(() => {
+        let alive = true;
+        readFirstGoal().then((stored) => alive && setAsked(stored ? 'done' : 'ask'));
+        return () => { alive = false; };
+    }, []);
+    const chooseFirstGoal = useCallback((goal: FirstGoal) => {
+        setAsked('done');
+        void writeFirstGoal(goal);
+        const target = firstGoalTarget(goal);
+        if (target.kind === 'tab') return router.push(target.href);
+        if (target.kind !== 'create') return;
+        const model = starters.find((s) => s.kind === target.goal)?.model;
+        if (model) router.push({ pathname: '/create/[modelId]', params: { modelId: model.id, prompt: EXAMPLE[target.goal]() } });
+    }, [router, starters]);
+    const skipFirstGoal = useCallback(() => { setAsked('done'); void writeFirstGoal('skipped'); }, []);
+
     return (
         <View style={styles.screen}>
             <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
@@ -74,6 +102,9 @@ export default function Create() {
                         <Text variant="body" tone="secondary" style={styles.introText}>{t('create.intro')}</Text>
                     </View>
 
+                    {asked === 'ask' ? <FirstGoalCard onChoose={chooseFirstGoal} onSkip={skipFirstGoal} /> : null}
+
+                    {asked !== 'ask' ? (<>
                     <SectionLabel style={styles.sectionTop}>{t('create.what')}</SectionLabel>
                     <View style={styles.goals}>
                         {starters.map((goal) => (
@@ -87,6 +118,7 @@ export default function Create() {
                         ))}
                         {starters.length === 0 ? <Text variant="body" tone="tertiary">{t('create.noModels', { kind: t('library.type.all') })}</Text> : null}
                     </View>
+                    </>) : null}
 
                     <SectionLabel style={styles.sectionTop}>{t('create.startFrom')}</SectionLabel>
                     <View style={styles.entries}>

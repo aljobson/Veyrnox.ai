@@ -10,6 +10,7 @@ jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () =
 jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalogCached: jest.fn() }));
 jest.mock('../src/lib/useFaceFiltersAvailable', () => ({ useFaceFiltersAvailable: () => false }));
 jest.mock('../src/lib/montage', () => ({ fetchAgentListing: async () => null }));
+jest.mock('../src/lib/firstGoalStore', () => ({ readFirstGoal: async () => 'skipped', writeFirstGoal: async () => undefined })); // the first-goal question is already answered
 
 let root: Root;
 const event = { nativeEvent: {}, currentTarget: 1, target: 1 };
