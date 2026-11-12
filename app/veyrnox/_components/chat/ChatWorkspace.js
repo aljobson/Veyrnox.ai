@@ -1,4 +1,5 @@
 'use client';
+import { DictateButton, EnhanceButton, appendSpoken, ENHANCE_HANDOFF_KEY } from '../PromptTools';
 import { helperCopy } from '../../../../lib/i18n/helperCopy.mjs';
 import { useI18n } from '../../../../components/I18nProvider';
 import { localeTag } from '../../../../lib/i18n/locales.mjs';
@@ -347,6 +348,7 @@ export function ChatWorkspace() {
     const frame = window.requestAnimationFrame(() => {
       if (!wanted.length) return;
       setSkillIds(wanted); setPersonaId('');
+      try { const seed = window.sessionStorage.getItem(ENHANCE_HANDOFF_KEY); if (seed && wanted[0] === 'prompt-writer') { setText(seed.slice(0, MAX_TEXT)); } window.sessionStorage.removeItem(ENHANCE_HANDOFF_KEY); } catch { /* storage blocked */ }
       setInstr(instructionsFor(wanted, oddlingContext));
       const first = skillById(wanted[0]);
       if (first && models.some((m) => m.id === first.model)) setDraftModel(first.model);
@@ -627,22 +629,27 @@ export function ChatWorkspace() {
                 setComposerKind(next);
                 setSettingsOpen(false);
               }} />
-              {composerKind === COMPOSER_KINDS.CHAT ? <><ComposerControls models={models} model={model} offer={offer} opts={{ ...opts, research: researchOn }} busy={busy} onSelectModel={selectModel} onOpts={setOpts}
-                onLibrary={() => setPickingLibrary(true)} libraryDisabled={att.items.length >= limits.maxAttachments} onSettings={() => setSettingsOpen(true)} settingsOpen={settingsOpen} />
+              {composerKind === COMPOSER_KINDS.CHAT ? <>
               {hasImages && (
-                <div className="border-t border-vx-border px-3 pt-3">
+                <div className="px-3 pt-3">
                   <AttachChips items={att.items} onRemove={att.remove} disabled={busy} />
                 </div>
               )}
-              <div className="flex items-end gap-2 px-2 pb-2">
-                {offer.images && <AttachButton onPick={att.add} disabled={busy} full={att.items.length >= limits.maxAttachments} />}
+              <div className="px-3 pt-3">
                 <label className="sr-only" htmlFor="chat-msg">{t("app.chat.message")}</label>
-                <textarea id="chat-msg" rows={1} value={text} maxLength={MAX_TEXT} placeholder={skillIds.length ? tOr(t, `app.chat.skill.${skillIds[0]}.starter`, skillById(skillIds[0])?.starter || t('app.chat.ask')) : t('app.chat.ask')} onChange={(e) => setText(e.target.value)}
+                <textarea id="chat-msg" rows={3} value={text} maxLength={MAX_TEXT} placeholder={skillIds.length ? tOr(t, `app.chat.skill.${skillIds[0]}.starter`, skillById(skillIds[0])?.starter || t('app.chat.ask')) : t('app.chat.ask')} onChange={(e) => setText(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (!oddlingSendPending) send(); } }}
-                  className="max-h-48 min-h-14 min-w-0 flex-1 resize-none bg-transparent px-2 py-3 text-[15px] text-vx-fg outline-hidden placeholder:text-vx-fg-faint" />
+                  className="max-h-56 min-h-[4.5rem] w-full resize-none bg-transparent px-1 py-1 text-[15px] text-vx-fg outline-hidden placeholder:text-vx-fg-faint" />
+              </div>
+              <div className="flex items-center gap-2 border-t border-vx-border/60 bg-vx-base/40 px-2 py-2">
+                {offer.images && <AttachButton onPick={att.add} disabled={busy} full={att.items.length >= limits.maxAttachments} />}
+                <ComposerControls compact models={models} model={model} offer={offer} opts={{ ...opts, research: researchOn }} busy={busy} onSelectModel={selectModel} onOpts={setOpts}
+                  onLibrary={() => setPickingLibrary(true)} libraryDisabled={att.items.length >= limits.maxAttachments} onSettings={() => setSettingsOpen(true)} settingsOpen={settingsOpen} />
+                <DictateButton disabled={busy} onText={(spoken) => setText((current) => appendSpoken(current, spoken).slice(0, MAX_TEXT))} />
+                <EnhanceButton disabled={busy} text={text} />
                 {busy
-                  ? <button type="button" onClick={stop} disabled={stopping || checking} className="mb-1 rounded-full border border-vx-border px-5 py-2.5 text-sm font-semibold disabled:opacity-50">{stopping ? t("app.chat.workspace.stopping") : checking ? t("app.chat.workspace.checking") : t("app.chat.workspace.stop")}</button>
-                  : <button type="button" onClick={send} disabled={!text.trim() || imagesBlocked || oddlingSendPending} className="mb-1 min-w-28 rounded-full bg-vx-accent px-5 py-2.5 text-sm font-semibold text-vx-accent-ink transition-colors hover:bg-vx-accent-hover disabled:opacity-50">{isFree ? t("app.chat.workspace.sendFree") : t('app.chat.workspace.send', { price: credits(t, locale, price) })}</button>}
+                  ? <button type="button" onClick={stop} disabled={stopping || checking} className="shrink-0 rounded-full border border-vx-border px-5 py-2.5 text-sm font-semibold disabled:opacity-50">{stopping ? t("app.chat.workspace.stopping") : checking ? t("app.chat.workspace.checking") : t("app.chat.workspace.stop")}</button>
+                  : <button type="button" onClick={send} disabled={!text.trim() || imagesBlocked || oddlingSendPending} className="shrink-0 rounded-full bg-vx-accent px-4 py-2.5 text-sm font-semibold text-vx-accent-ink transition-colors hover:bg-vx-accent-hover disabled:opacity-50">{isFree ? t("app.chat.workspace.sendFree") : t('app.chat.workspace.send', { price: credits(t, locale, price) })}</button>}
               </div>
               </> : <MediaComposer kind={composerKind} media={mediaGeneration} prompt={mediaPrompt} onPrompt={setMediaPrompt} />}
             </div>
