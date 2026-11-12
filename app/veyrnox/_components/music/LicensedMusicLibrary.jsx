@@ -14,25 +14,26 @@ function LicensedTrackCard({ track }) {
   const { t } = useI18n();
   const audioUrl = licensedMusicUrl(track);
   return (
-    <article className="overflow-hidden rounded-2xl border border-vx-border bg-vx-panel shadow-xl">
-      <div className="relative aspect-square overflow-hidden bg-vx-panel-raised">
-        <Image src={licensedArtworkUrl(track)} alt={t('musicDiscover.lic.artwork', { title: track.title })} fill sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 92vw" className="object-cover" />
-        <span className="absolute left-4 top-4 rounded-full bg-black/70 px-3 py-1 font-vx-mono text-[10px] font-bold uppercase tracking-wide text-white">{tOr(t, categoryKey(track.category), track.category)}</span>
-      </div>
-      <div className="p-5">
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0"><h3 className="font-vx text-xl font-black">{track.title}</h3><p className="mt-1 text-sm text-vx-fg-muted">{track.creator}</p></div>
+    <article className="rounded-2xl border border-vx-border bg-vx-panel p-4 shadow-xl sm:p-5">
+      <div className="flex items-start gap-3 sm:gap-4">
+        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-vx-panel-raised sm:h-20 sm:w-20">
+          <Image src={licensedArtworkUrl(track)} alt={t('musicDiscover.lic.artwork', { title: track.title })} fill sizes="80px" className="object-cover" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0"><p className="font-vx-mono text-[10px] font-bold uppercase tracking-wide text-vx-accent">{tOr(t, categoryKey(track.category), track.category)}</p><h3 className="mt-1 truncate font-vx text-xl font-black">{track.title}</h3><p className="mt-1 text-sm text-vx-fg-muted">{track.creator}</p></div>
           <span className="shrink-0 rounded-full border border-vx-accent/40 px-2.5 py-1 text-xs font-bold text-vx-accent">{track.license}</span>
+          </div>
+          <p className="mt-2 text-xs text-vx-fg-muted">{t('musicDiscover.lic.meta', { duration: duration(track.durationSec) })}</p>
         </div>
-        <p className="mt-3 text-xs text-vx-fg-muted">{t('musicDiscover.lic.meta', { duration: duration(track.durationSec) })}</p>
-        <audio controls preload="none" src={audioUrl} aria-label={t('musicDiscover.lic.play', { title: track.title, creator: track.creator })} className="mt-4 h-10 w-full" />
-        <p className="mt-4 rounded-xl border border-vx-border bg-vx-base p-3 text-xs leading-5 text-vx-fg-body"><strong>{t('musicDiscover.lic.credit')}</strong> {track.attribution}</p>
-        <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs font-bold">
-          <a href={audioUrl} download className="inline-flex min-h-11 items-center text-vx-accent underline underline-offset-2">{t('musicDiscover.lic.download')}</a>
-          <a href={track.sourceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-vx-fg-muted underline underline-offset-2">{t('musicDiscover.lic.source')}</a>
-          <a href={track.downloadSourceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-vx-fg-muted underline underline-offset-2">{t('musicDiscover.lic.creatorDownload')}</a>
-          <a href={track.licenseUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-vx-fg-muted underline underline-offset-2">{t('musicDiscover.lic.licence')}</a>
-        </div>
+      </div>
+      <audio controls preload="none" src={audioUrl} aria-label={t('musicDiscover.lic.play', { title: track.title, creator: track.creator })} className="mt-4 h-10 w-full" />
+      <p className="mt-4 rounded-xl border border-vx-border bg-vx-base p-3 text-xs leading-5 text-vx-fg-body"><strong>{t('musicDiscover.lic.credit')}</strong> {track.attribution}</p>
+      <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs font-bold">
+        <a href={audioUrl} download className="inline-flex min-h-11 items-center text-vx-accent underline underline-offset-2">{t('musicDiscover.lic.download')}</a>
+        <a href={track.sourceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-vx-fg-muted underline underline-offset-2">{t('musicDiscover.lic.source')}</a>
+        <a href={track.downloadSourceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-vx-fg-muted underline underline-offset-2">{t('musicDiscover.lic.creatorDownload')}</a>
+        <a href={track.licenseUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-vx-fg-muted underline underline-offset-2">{t('musicDiscover.lic.licence')}</a>
       </div>
     </article>
   );

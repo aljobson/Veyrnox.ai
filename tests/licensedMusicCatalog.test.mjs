@@ -51,6 +51,9 @@ test('Discover exposes playable licensed recordings without a generation handoff
   assert.match(library, /musicDiscover\.lic\.download/);
   assert.match(library, /Math\.min\(PAGE_SIZE/);
   assert.match(library, /musicDiscover\.lic\.title/);
+  assert.match(library, /h-16 w-16.*sm:h-20 sm:w-20/);
+  assert.match(library, /sizes="80px"/);
+  assert.doesNotMatch(library, /aspect-square/);
   assert.match(library, /musicDiscover\.lic\.source/);
   assert.match(library, /musicDiscover\.lic\.creatorDownload/);
   assert.doesNotMatch(library, /Sample this beat|\/app\/music\/create|generation.*href/i);
