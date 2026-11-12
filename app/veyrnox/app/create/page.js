@@ -55,6 +55,7 @@ import { ControlRow } from '../../_components/ControlRow';
 import { TemplateHandoffCard } from '../../_components/TemplateHandoffCard';
 import { TemplatePicker } from '../../_components/TemplatePicker';
 import { CreateGoalPicker } from '../../_components/CreateGoalPicker';
+import { FirstGoalCard } from '../../_components/FirstGoalCard';
 import { TIERS, TIER_LABEL, filterByTier } from '../../_lib/modelTiers';
 import { modelsForGoal, starterModel } from '../../_lib/starterModels';
 import { audioDurationConfig, audioDurationIsInvalid, settingsInputs, voiceIsMissing } from '../../_lib/generationSettings';
@@ -1067,6 +1068,7 @@ export default function CreateStudio() {
 
         {/* ============ CONTROLS ============ */}
         <aside className="flex flex-col gap-5 lg:col-start-2 lg:row-start-1 lg:row-span-3">
+          {!oddlingTransfer && <FirstGoalCard hidden={!!presetParam || !!activeTemplate || swapId !== null} onPick={pickGoal} onExample={setPrompt} />}
           {!oddlingTransfer && <CreateGoalPicker goal={goal} onChange={pickGoal} />}
           {oddlingTransfer ? (
             <section data-testid="oddling-generation-pipeline" className="rounded-2xl border border-vx-accent/40 bg-vx-accent/[0.06] p-5">
