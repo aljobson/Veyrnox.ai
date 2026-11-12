@@ -51,7 +51,7 @@ export function CreateOptions({ options, values, showCount, resolution, audio, o
             {options.aspects.length > 0 ? (
                 <Group label={t('opt.aspect')}>
                     {options.aspects.map((a) => (
-                        <Chip key={a} label={aspectLabel(a)} accessibilityLabel={rawText(aspectLabel(a))} selected={values.aspect === a} onPress={() => set({ aspect: a })} />
+                        <Chip key={a} label={aspectLabel(a)} accessibilityLabel={rawText(a)} selected={values.aspect === a} onPress={() => set({ aspect: a })} />
                     ))}
                 </Group>
             ) : null}

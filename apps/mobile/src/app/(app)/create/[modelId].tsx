@@ -268,8 +268,7 @@ export default function CreateWithModel() {
         return <View style={styles.screen}>{error ? <Text variant="body" tone="danger" style={styles.error} accessibilityLiveRegion="polite">{error}</Text> : <ActivityIndicator color={styles.accentInk.color} />}</View>;
     }
     const isVideo = kindOf(model.modality) === 'video';
-    const options = optionsFor(model);
-    const tier = resolveTier(options, opts.tier);
+    const options = optionsFor(model), tier = resolveTier(options, opts.tier);
     const unit = swapScene?.credits ?? estimateCredits(model, duration, tier);
     const n = imageCount(model, opts.count);
     const resolution = resolveResolution(model, options, opts.resolution);
