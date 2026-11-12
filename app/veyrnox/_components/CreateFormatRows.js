@@ -6,10 +6,7 @@ import { aspectLabel, platformsFor } from '../../../lib/platformFormats.js';
 export function AspectRow({ assistantTarget, label, options, value, onChange }) {
   const platforms = platformsFor(value);
   return (
-    <>
-      <ControlRow assistantTarget={assistantTarget} label={label} options={options} value={value} onChange={onChange} formatOption={aspectLabel} />
-      {platforms.length > 0 && <p className="-mt-2 text-xs text-vx-fg-muted">{platforms.join(' · ')}</p>}
-    </>
+    <ControlRow assistantTarget={assistantTarget} label={label} options={options} value={value} onChange={onChange} formatOption={aspectLabel} hint={platforms.length ? platforms.join(' · ') : undefined} />
   );
 }
 

@@ -1,4 +1,4 @@
-import { hasAnyOption, resolveAudio, resolveResolution, audioLengthInvalid, voiceIsMissing, SAVED_DRAFT_VERSION, batchCost, draftIsEmpty, filterByTier, freeLeftFor, imageCount, inputsForIndex, modelsForGoal, optionsFor, pickerModels, starterModel, parseDraft, seedIsInvalid, settingsInputs, takesImageCount, tierById } from '../src/lib/createOptions';
+import { hasAnyOption, resolveTier, resolveAudio, resolveResolution, audioLengthInvalid, voiceIsMissing, SAVED_DRAFT_VERSION, batchCost, draftIsEmpty, filterByTier, freeLeftFor, imageCount, inputsForIndex, modelsForGoal, optionsFor, pickerModels, starterModel, parseDraft, seedIsInvalid, settingsInputs, takesImageCount, tierById } from '../src/lib/createOptions';
 import { DEFAULT_CINEMA } from '../src/lib/cinemaCamera';
 import { loadDraft, saveDraft, clearDraft } from '../src/lib/createDraftStore';
 import { createCache, createMemoryStorage } from '../src/lib/cache';
@@ -229,5 +229,46 @@ describe('starter and picker models', () => {
         const list = [prompt('dear', 9), prompt('cheap', 2), upload('edit', 1), upload('edit-2', 4), prompt('clip', 1, 'text-to-video'), prompt('locked', 1, 'text-to-image', { gated: true })];
         expect(pickerModels(list, list[0]).map(m => m.id)).toEqual(['cheap', 'dear']);
         expect(pickerModels(list, list[2]).map(m => m.id)).toEqual(['edit', 'edit-2']);
+    });
+});
+
+
+describe('resolution tiers from the catalog', () => {
+    const veo = model({
+        id: 'veo', modality: 'text-to-video', credits: 40, durations: [5],
+        capabilities: {
+            inputs: { prompt: { type: 'string' } }, media: {},
+            resolutionTiers: { base: '720p', options: [{ id: '720p', multiplier: 1 }, { id: '1080p', multiplier: 1 }, { id: '4k', multiplier: 1.5 }] },
+        },
+    });
+    test('a model with several tiers offers them with the tier its price buys', () => {
+        const o = optionsFor(veo);
+        expect(o.tiers.map((t) => t.id)).toEqual(['720p', '1080p', '4k']);
+        expect(o.tierBase).toBe('720p');
+        expect(hasAnyOption(o)).toBe(true);
+        expect(optionsFor(model()).tiers).toEqual([]);
+    });
+    test('the shown tier is the choice when it is offered, else the base tier', () => {
+        const o = optionsFor(veo);
+        expect(resolveTier(o, '4k')).toBe('4k');
+        expect(resolveTier(o, '1440p')).toBe('720p');
+        expect(resolveTier(o, null)).toBe('720p');
+        expect(resolveTier(optionsFor(model()), '4k')).toBeNull();
+    });
+    test('only a non-base tier the model offers is sent, as resolution', () => {
+        const o = optionsFor(veo);
+        const base = { seed: '', negative: '', aspect: null };
+        expect(settingsInputs(o, { ...base, tier: '4k' })).toEqual({ resolution: '4k' });
+        expect(settingsInputs(o, { ...base, tier: '720p' })).toEqual({});
+        expect(settingsInputs(o, { ...base, tier: '1440p' })).toEqual({});
+        expect(settingsInputs(optionsFor(model()), { ...base, tier: '4k' })).toEqual({});
+    });
+    test('the estimate follows the tier multiplier, never below the catalog price', () => {
+        expect(estimateCredits(veo, 5, '720p')).toBe(40);
+        expect(estimateCredits(veo, 5, '1080p')).toBe(40);
+        expect(estimateCredits(veo, 5, '4k')).toBe(60);
+        expect(estimateCredits(veo, 10, '4k')).toBe(120);
+        expect(estimateCredits(veo, 5)).toBe(40);
+        expect(estimateCredits(veo, 5, 'nope')).toBe(40);
     });
 });
