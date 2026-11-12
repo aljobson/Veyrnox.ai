@@ -46,8 +46,8 @@ export function LicensedMusicLibrary() {
   const visible = useMemo(() => {
     const query = search.trim().toLowerCase();
     return LICENSED_MUSIC_TRACKS.filter((track) => (category === 'All' || track.category === category)
-      && (!query || [track.title, track.creator, track.category].some((value) => value.toLowerCase().includes(query))));
-  }, [category, search]);
+      && (!query || [track.title, track.creator, track.category, tOr(t, categoryKey(track.category), track.category)].some((value) => value.toLowerCase().includes(query))));
+  }, [category, search, t]);
   const displayed = visible.slice(0, visibleLimit);
   const updateCategory = (nextCategory) => {
     setCategory(nextCategory);

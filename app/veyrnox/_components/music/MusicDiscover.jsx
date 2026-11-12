@@ -143,8 +143,8 @@ export function MusicDiscover() {
   const visible = useMemo(() => {
     const query = search.trim().toLowerCase();
     return MUSIC_DISCOVER_BEATS.filter((beat) => (mood === 'All' || beat.mood === mood)
-      && (!query || [beat.title, beat.creator, beat.mood, beat.musicalKey].some((value) => value.toLowerCase().includes(query))));
-  }, [mood, search]);
+      && (!query || [beat.title, beat.creator, beat.mood, tOr(t, moodKey(beat.mood), beat.mood), beat.musicalKey].some((value) => value.toLowerCase().includes(query))));
+  }, [mood, search, t]);
 
   function toggle(beat) {
     stopRef.current?.();
