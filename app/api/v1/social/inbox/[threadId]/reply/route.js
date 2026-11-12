@@ -7,15 +7,15 @@ import { decryptToken, tokenCryptoConfig } from '../../../../../../../lib/social
 import { sendInboxReply, safeInboxFailureCode } from '../../../../../../../packages/adapters/social/inbox.js';
 import { envConfig, rpc, SupabaseError } from '../../../../../../../packages/db/supabase-client.js';
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../../../../lib/validate.js';
 const KEY = /^[A-Za-z0-9:_-]{16,128}$/;
 const headers = { 'Cache-Control': 'no-store' };
 
 export async function POST(req, context) {
     const { threadId } = await context.params;
     const authId = req.headers.get('x-veyrnox-auth-id');
-    if (!UUID.test(authId || '')) return NextResponse.json({ error: 'not_authenticated' }, { status: 401, headers });
-    if (!UUID.test(threadId || '')) return NextResponse.json({ error: 'invalid_thread_id' }, { status: 400, headers });
+    if (!isUuidLoose(authId || '')) return NextResponse.json({ error: 'not_authenticated' }, { status: 401, headers });
+    if (!isUuidLoose(threadId || '')) return NextResponse.json({ error: 'invalid_thread_id' }, { status: 400, headers });
     if (!socialInboxEnabled()) return NextResponse.json({ error: 'publish_inbox_not_open' }, { status: 503, headers });
     if (!publishPlansEnabled()) return NextResponse.json({ error: 'publish_plans_not_open' }, { status: 503, headers });
     const cfg = envConfig(), cryptoCfg = tokenCryptoConfig();

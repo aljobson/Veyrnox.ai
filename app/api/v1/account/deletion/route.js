@@ -17,13 +17,13 @@ import { NextResponse } from 'next/server';
 import { rpc, envConfig } from '../../../../../packages/db/supabase-client.js';
 import { accountDeletionEnabled } from '../../../../../lib/accountDeletion.js';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../../lib/validate.js';
 const NO_STORE = { 'Cache-Control': 'no-store' };
 const json = (body, status = 200, headers = {}) => NextResponse.json(body, { status, headers: { ...NO_STORE, ...headers } });
 
 export async function POST(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
-    if (!authId || !UUID_RE.test(authId)) return json({ error: 'not_authenticated' }, 401);
+    if (!authId || !isUuidLoose(authId)) return json({ error: 'not_authenticated' }, 401);
     if (!accountDeletionEnabled()) return json({ error: 'not_found' }, 404);
     const cfg = envConfig();
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey) return json({ error: 'gateway_not_configured' }, 503);

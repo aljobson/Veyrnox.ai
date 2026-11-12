@@ -27,16 +27,16 @@ import { rpc, envConfig, SupabaseError } from '../../../../../packages/db/supaba
 import { resolveBrand } from '../../../../../lib/social/resolveBrand.js';
 import { parsePostVariants } from '../../../../../lib/social/postVariants.js';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../../lib/validate.js';
 const MEDIA_TYPES = new Set(['image', 'video']);
 
 function isUuid(v) {
-    return typeof v === 'string' && UUID_RE.test(v);
+    return typeof v === 'string' && isUuidLoose(v);
 }
 
 export async function GET(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
-    if (!authId || !UUID_RE.test(authId)) {
+    if (!authId || !isUuidLoose(authId)) {
         return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
     }
 
@@ -89,7 +89,7 @@ export async function GET(req) {
 
 export async function POST(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
-    if (!authId || !UUID_RE.test(authId)) {
+    if (!authId || !isUuidLoose(authId)) {
         return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
     }
 

@@ -21,8 +21,8 @@ import { readPublishEntitlement } from '../../../../../lib/social/publishPlanApi
 import { resolveBrand } from '../../../../../lib/social/resolveBrand.js';
 import { rpc, envConfig, SupabaseError } from '../../../../../packages/db/supabase-client.js';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const isUuid = (v) => typeof v === 'string' && UUID_RE.test(v);
+import { isUuidLoose } from '../../../../../lib/validate.js';
+const isUuid = (v) => typeof v === 'string' && isUuidLoose(v);
 
 function setup(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');

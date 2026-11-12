@@ -6,13 +6,13 @@ import { normalizeReferralCode, referralsEnabled } from '../../../../../lib/refe
 
 // ADR-0071: record that this (new) account was sent by the owner of a code. One field, { code }. It never says who the referrer is,
 // and an unknown code and a malformed one answer the same, so the route cannot be used to find out which codes exist.
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../../lib/validate.js';
 const json = (body, status = 200) => NextResponse.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
 const REFUSED = { INVALID_CODE: 400, SELF_REFERRAL: 400, NOT_NEW: 409, ALREADY_ATTACHED: 409, USER_NOT_FOUND: 409 };
 
 export async function POST(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
-    if (!authId || !UUID.test(authId)) return json({ error: 'not_authenticated' }, 401);
+    if (!authId || !isUuidLoose(authId)) return json({ error: 'not_authenticated' }, 401);
     if (!referralsEnabled(process.env)) return json({ error: 'not_found' }, 404);
     const limited = await limitRequestBody(req);
     if (limited.response) return limited.response;

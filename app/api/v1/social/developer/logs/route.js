@@ -4,14 +4,14 @@ import { socialCustomerApiEnabled } from '../../../../../../lib/social/publishFe
 import { resolveBrand } from '../../../../../../lib/social/resolveBrand.js';
 import { envConfig, rpc, SupabaseError } from '../../../../../../packages/db/supabase-client.js';
 
-const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../../../lib/validate.js';
 const STATUSES=new Set(['success','error','pending']);
 const ROUTES=new Set(['/api/publish/v1/accounts','/api/publish/v1/posts']);
 function mapped(result){if(result?.ok)return null;const code=result?.code||'INTERNAL';const status=code==='PLAN_REQUIRED'?402:code==='FORBIDDEN'?403:code==='BRAND_NOT_FOUND'?404:code==='INVALID_INPUT'?400:502;return NextResponse.json({error:status===502?'internal':code.toLowerCase()},{status});}
 
 export async function GET(req){
   const authId=req.headers.get('x-veyrnox-auth-id');
-  if(!UUID.test(authId||''))return NextResponse.json({error:'not_authenticated'},{status:401});
+  if(!isUuidLoose(authId||''))return NextResponse.json({error:'not_authenticated'},{status:401});
   if(!socialCustomerApiEnabled())return NextResponse.json({error:'customer_api_not_open'},{status:404});
   const cfg=envConfig();if(!cfg.supabaseUrl||!cfg.serviceRoleKey)return NextResponse.json({error:'service_unavailable'},{status:503});
   const params=new URL(req.url).searchParams,status=params.get('status'),route=params.get('route'),query=(params.get('q')||'').trim(),limit=params.has('limit')?Number(params.get('limit')):100;

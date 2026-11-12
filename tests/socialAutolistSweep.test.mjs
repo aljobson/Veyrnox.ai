@@ -41,6 +41,7 @@ test('records 304 responses and typed failures without leaking provider bodies',
   };
   const out = await runSocialAutolistSweep({ env: enabled, cfg, rpcCall, fetcher: async () => new Response(null, { status: 304 }) });
   assert.deepEqual(out, { ok: true, claimed: 2, refreshed: 1, scheduled: 0, failed: 1 });
-  assert.equal(reports[0].args.p_not_modified, true);
-  assert.equal(reports[1].args.p_error, 'unsafe_feed_url');
+  // Feeds are swept in parallel, so report order is not fixed; match by RPC name.
+  assert.equal(reports.find((r) => r.name === 'record_social_publish_autolist_refresh').args.p_not_modified, true);
+  assert.equal(reports.find((r) => r.name === 'fail_social_publish_autolist_refresh').args.p_error, 'unsafe_feed_url');
 });

@@ -85,7 +85,7 @@ test('asks Instagram for insights only for an account that was granted the permi
     try {
         const out = await runAnalyticsSweep({ cfg, cryptoCfg, now });
         assert.deepEqual(out, { ok: true, claimed: 2, synced: 2, failed: 0, errors: 0 });
-        assert.deepEqual(graph, ['/v25.0/me', '/v25.0/me/media', '/v25.0/me', '/v25.0/me/media', '/v25.0/me/insights']);
+        assert.deepEqual(graph.toSorted(), ['/v25.0/me', '/v25.0/me/media', '/v25.0/me', '/v25.0/me/media', '/v25.0/me/insights'].toSorted());
     } finally { globalThis.fetch = real; }
 });
 
@@ -104,10 +104,10 @@ test('one account failing is recorded on that account and does not stop the next
             } },
         });
         assert.deepEqual(out, { ok: true, claimed: 3, synced: 1, failed: 2, errors: 0 });
-        assert.deepEqual(calls[1], { name: 'record_social_analytics_failure', args: { p_account_id: 'a-bad', p_error: 'Session has expired' } });
-        assert.equal(calls[2].name, 'record_social_analytics_failure');
-        assert.equal(calls[2].args.p_account_id, 'a-undecryptable');
-        assert.equal(calls[3].args.p_account_id, 'a-good');
+        const byAccount = id => calls.find(call => call.args.p_account_id === id);
+        assert.deepEqual(byAccount('a-bad'), { name: 'record_social_analytics_failure', args: { p_account_id: 'a-bad', p_error: 'Session has expired' } });
+        assert.equal(byAccount('a-undecryptable').name, 'record_social_analytics_failure');
+        assert.equal(byAccount('a-good').name, 'record_social_analytics');
     });
 });
 
@@ -296,4 +296,42 @@ test('posting cache is refreshed only when enabled and metrics recorded, and cac
             assert.equal(calls.some((c) => c.name === 'refresh_social_posting_insights'), enabled);
         });
     }
+});
+
+// The observable contract is per account; accounts can finish in any order.
+test('mixed accounts retain counters and record before insights even when failure reporting rejects', async () => {
+    const rows = await Promise.all(['bad', 'good-1', 'good-2'].map(account_id => account({ account_id })));
+    await withRpc({
+        claim_social_analytics_accounts: async () => rows,
+        record_social_analytics_failure: async () => { throw new Error('report failure'); },
+        record_social_analytics: async () => ({ ok: true }),
+        refresh_social_posting_insights: async () => ({ ok: true }),
+    }, async calls => {
+        const out = await runAnalyticsSweep({ cfg, cryptoCfg, now, postingInsightsOn: true,
+            fetchers: { instagram: async (_, row) => {
+                if (row.account_id === 'bad') throw new Error('fetch failure');
+                return { metrics: { followers: 1 }, posts: [] };
+            } },
+        });
+        assert.deepEqual(out, { ok: true, claimed: 3, synced: 2, failed: 1, errors: 1 });
+        for (const id of ['good-1', 'good-2']) assert.deepEqual(calls.filter(c => c.args.p_account_id === id).map(c => c.name),
+            ['record_social_analytics', 'refresh_social_posting_insights']);
+    });
+});
+
+test('starts another account while the first provider read is blocked', { timeout: 5000 }, async () => {
+    const rows = await Promise.all(['first', 'second'].map(account_id => account({ account_id })));
+    let release;
+    const gate = new Promise(resolve => { release = resolve; });
+    const started = [];
+    await withRpc({ claim_social_analytics_accounts: async () => rows, record_social_analytics: async () => ({ ok: true }) }, async () => {
+        const out = await runAnalyticsSweep({ cfg, cryptoCfg, now, fetchers: { instagram: async (_, row) => {
+            started.push(row.account_id);
+            if (row.account_id === 'first') await gate;
+            else release();
+            return {};
+        } } });
+        assert.equal(out.synced, 2);
+        assert.equal(started.length, 2);
+    });
 });

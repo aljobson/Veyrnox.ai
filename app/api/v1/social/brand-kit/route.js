@@ -8,12 +8,12 @@ import { socialPostWriteLimit } from '../../../../../lib/socialPostWriteLimit.js
 import { resolveBrand } from '../../../../../lib/social/resolveBrand.js';
 import { envConfig, rpc, SupabaseError } from '../../../../../packages/db/supabase-client.js';
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../../lib/validate.js';
 const ALL_ROLES = ['owner', 'manager', 'editor', 'reviewer', 'analyst', 'viewer'];
 
 function setup(req) {
   const authId = req.headers.get('x-veyrnox-auth-id');
-  if (!UUID.test(authId || '')) return { error: NextResponse.json({ error: 'not_authenticated' }, { status: 401 }) };
+  if (!isUuidLoose(authId || '')) return { error: NextResponse.json({ error: 'not_authenticated' }, { status: 401 }) };
   // The kit lives behind the editor's shared-tools switch; no kit, nothing to link.
   if (process.env.EDITOR_SHARED_TOOLS_ENABLED !== 'true') return { error: NextResponse.json({ error: 'brand_kit_not_open' }, { status: 404 }) };
   const cfg = envConfig();
@@ -50,7 +50,7 @@ export async function PUT(req) {
   let body; try { body = await req.json(); } catch { return NextResponse.json({ error: 'invalid_body' }, { status: 400 }); }
   const keys = body && typeof body === 'object' && !Array.isArray(body) ? Object.keys(body) : [];
   const workspaceId = body?.workspaceId;
-  if (keys.length !== 1 || keys[0] !== 'workspaceId' || (workspaceId !== null && (typeof workspaceId !== 'string' || !UUID.test(workspaceId)))) {
+  if (keys.length !== 1 || keys[0] !== 'workspaceId' || (workspaceId !== null && (typeof workspaceId !== 'string' || !isUuidLoose(workspaceId)))) {
     return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
   }
   const limited = await socialPostWriteLimit(authId, cfg); if (limited) return limited;

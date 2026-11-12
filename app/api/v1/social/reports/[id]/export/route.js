@@ -6,15 +6,15 @@ import { loadSocialReportData } from '../../../../../../../lib/social/reportData
 import { resolveBrand } from '../../../../../../../lib/social/resolveBrand.js';
 import { envConfig, rpc, SupabaseError } from '../../../../../../../packages/db/supabase-client.js';
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../../../../lib/validate.js';
 
 export async function GET(req, { params }) {
   const authId = req.headers.get('x-veyrnox-auth-id');
   const id = (await params).id;
   const format = new URL(req.url).searchParams.get('format') || 'pdf';
-  if (!UUID.test(authId || '')) return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
+  if (!isUuidLoose(authId || '')) return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
   if (!socialReportsEnabled() || !socialReportExportsEnabled()) return NextResponse.json({ error: 'report_exports_not_open' }, { status: 404 });
-  if (!UUID.test(id) || !['pdf', 'pptx'].includes(format)) return NextResponse.json({ error: 'invalid_request' }, { status: 400 });
+  if (!isUuidLoose(id) || !['pdf', 'pptx'].includes(format)) return NextResponse.json({ error: 'invalid_request' }, { status: 400 });
   const cfg = envConfig();
   if (!cfg.supabaseUrl || !cfg.serviceRoleKey) return NextResponse.json({ error: 'supabase_not_configured' }, { status: 503 });
   const limited = await accountReadLimit(authId, cfg, {}); if (limited) return limited;

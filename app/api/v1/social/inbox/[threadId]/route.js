@@ -5,7 +5,7 @@ import { socialPostWriteLimit } from '../../../../../../lib/socialPostWriteLimit
 import { resolveBrand } from '../../../../../../lib/social/resolveBrand.js';
 import { envConfig, rpc, SupabaseError } from '../../../../../../packages/db/supabase-client.js';
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../../../lib/validate.js';
 const ACTIONS = new Set(['read', 'unread', 'resolve', 'reopen']);
 const WORKFLOW_ACTIONS = new Set(['assign', 'unassign', 'priority', 'tags']);
 const PRIORITIES = new Set(['normal', 'high', 'urgent']);
@@ -13,8 +13,8 @@ const headers = { 'Cache-Control': 'no-store' };
 
 function identity(req, threadId) {
     const authId = req.headers.get('x-veyrnox-auth-id');
-    if (!UUID.test(authId || '')) return { error: NextResponse.json({ error: 'not_authenticated' }, { status: 401, headers }) };
-    if (!UUID.test(threadId || '')) return { error: NextResponse.json({ error: 'invalid_thread_id' }, { status: 400, headers }) };
+    if (!isUuidLoose(authId || '')) return { error: NextResponse.json({ error: 'not_authenticated' }, { status: 401, headers }) };
+    if (!isUuidLoose(threadId || '')) return { error: NextResponse.json({ error: 'invalid_thread_id' }, { status: 400, headers }) };
     if (!socialInboxEnabled()) return { error: NextResponse.json({ error: 'publish_inbox_not_open' }, { status: 503, headers }) };
     if (!publishPlansEnabled()) return { error: NextResponse.json({ error: 'publish_plans_not_open' }, { status: 503, headers }) };
     const cfg = envConfig();
@@ -55,7 +55,7 @@ export async function PATCH(req, context) {
     if (ACTIONS.has(action)) {
         if (Object.keys(body).length !== 1) return NextResponse.json({ error: 'invalid_action' }, { status: 400, headers });
     } else if (action === 'assign') {
-        if (Object.keys(body).length !== 2 || !UUID.test(body.userId || '')) return NextResponse.json({ error: 'invalid_assignee' }, { status: 400, headers });
+        if (Object.keys(body).length !== 2 || !isUuidLoose(body.userId || '')) return NextResponse.json({ error: 'invalid_assignee' }, { status: 400, headers });
         value = { user_id: body.userId };
     } else if (action === 'unassign') {
         if (Object.keys(body).length !== 1) return NextResponse.json({ error: 'invalid_assignee' }, { status: 400, headers });

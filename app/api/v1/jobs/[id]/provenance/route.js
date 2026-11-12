@@ -22,7 +22,7 @@ import { NextResponse } from 'next/server';
 import { jobReadLimitResponse } from '../../../../../../lib/jobReadLimit.js';
 import { rpc, select, envConfig } from '../../../../../../packages/db/supabase-client.js';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../../../lib/validate.js';
 
 // A job only has meaningful provenance once its output is actually stored.
 // Anything earlier describes an intention, not a thing that exists.
@@ -39,7 +39,7 @@ export async function GET(req, { params }) {
     if (!authId) return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
 
     const { id } = await params;
-    if (!id || !UUID_RE.test(id)) {
+    if (!id || !isUuidLoose(id)) {
         return NextResponse.json({ error: 'invalid_job_id' }, { status: 400 });
     }
 

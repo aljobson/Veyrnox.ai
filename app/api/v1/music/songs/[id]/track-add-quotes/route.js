@@ -3,7 +3,7 @@ import { envConfig as r2EnvConfig, isConfigured as r2IsConfigured } from '../../
 import { inspectStoredSource } from '../../../../../../../lib/resolveSource.js';
 import { MUSIC_TRACK_ADD_SOURCE_MAX, musicRpcStatus, musicTrackAddEnabled, parseMusicTrackAddQuote, publicMusicError, readMusicJson, validMusicAuthId } from '../../../../../../../lib/musicBackend.js';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+import { isUuid } from '../../../../../../../lib/validate.js';
 const MAX_BYTES = 10 * 1024 * 1024;
 const reply = (body, status = 200, headers = {}) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store', ...headers } });
 
@@ -11,7 +11,7 @@ export async function POST(request, { params }) {
   const authId = request.headers.get('x-veyrnox-auth-id'); const { id } = await params;
   if (!validMusicAuthId(authId)) return reply({ error: 'not_authenticated' }, 401);
   if (!musicTrackAddEnabled()) return reply({ error: 'music_track_add_unavailable' }, 404);
-  if (!UUID_RE.test(id || '')) return reply({ error: 'song_id_invalid' }, 400);
+  if (!isUuid(id || '')) return reply({ error: 'song_id_invalid' }, 400);
   const decoded = await readMusicJson(request);
   if (!decoded.ok) return reply({ error: decoded.error }, decoded.error === 'body_too_large' ? 413 : 400);
   const input = parseMusicTrackAddQuote(decoded.value);

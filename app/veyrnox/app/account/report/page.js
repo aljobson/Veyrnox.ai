@@ -15,7 +15,7 @@ import { Main } from '../../../_components/Main';
 import { Button } from '../../../_components/Button';
 import { gatewayFetch } from '../../../_lib/gateway';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../../lib/validate.js';
 const CATEGORIES = [
   ['csam', 'app.account.report.category.csam'],
   ['intimate_image', 'app.account.report.category.intimate_image'],
@@ -36,7 +36,7 @@ function ReportForm() {
   const params = useSearchParams();
   const job = params.get('job');
   const title = params.get('title');
-  const subject = job && UUID_RE.test(job) ? { kind: 'job', id: job } : title && UUID_RE.test(title) ? { kind: 'cinema_title', id: title } : { kind: 'other', id: null };
+  const subject = job && isUuidLoose(job) ? { kind: 'job', id: job } : title && isUuidLoose(title) ? { kind: 'cinema_title', id: title } : { kind: 'other', id: null };
   const [category, setCategory] = useState('');
   const [details, setDetails] = useState('');
   const [busy, setBusy] = useState(false);

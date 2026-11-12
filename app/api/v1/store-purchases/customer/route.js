@@ -11,13 +11,13 @@ import { NextResponse } from 'next/server';
 import { rpc, envConfig } from '../../../../../packages/db/supabase-client.js';
 import { storeBillingEnabled, storeSalesOpen } from '../../../../../lib/storeBilling.js';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../../lib/validate.js';
 const NO_STORE = { 'Cache-Control': 'no-store' };
 
 export async function GET(req) {
     if (!storeBillingEnabled()) return NextResponse.json({ error: 'not_found' }, { status: 404, headers: NO_STORE });
     const authId = req.headers.get('x-veyrnox-auth-id');
-    if (!authId || !UUID_RE.test(authId)) return NextResponse.json({ error: 'not_authenticated' }, { status: 401, headers: NO_STORE });
+    if (!authId || !isUuidLoose(authId)) return NextResponse.json({ error: 'not_authenticated' }, { status: 401, headers: NO_STORE });
 
     const cfg = envConfig();
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey) return NextResponse.json({ error: 'gateway_not_configured' }, { status: 503, headers: NO_STORE });

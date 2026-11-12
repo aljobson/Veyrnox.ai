@@ -1,3 +1,4 @@
+import { retryAfterSeconds } from '../../../../lib/rateLimitHeaders.js';
 /**
  * POST /api/v1/top-ups — start a Top-up and get a hosted checkout URL (#92).
  * GET  /api/v1/top-ups — the caller's Top-up history (#95), at the bottom.
@@ -31,7 +32,7 @@ import { createCheckout } from '../../../../packages/adapters/stripe.js';
 
 const PACK_ID_RE = /^[a-z0-9-]{1,32}$/;
 // Same shape as POST /api/v1/generations and the top_ups CHECK.
-const IDEMPOTENCY_RE = /^[A-Za-z0-9._-]{8,128}$/;
+import { IDEMPOTENCY_RE } from '../../../../lib/idempotency.js';
 // The only Supply Consent wording approved (#99). The buy dialog sends the
 // same constant; a new wording needs a new sign-off and a new version.
 const SUPPLY_CONSENT_VERSION = 'supply-consent-v1';
@@ -133,7 +134,7 @@ export async function POST(req) {
     }
     if (created.ok === false) {
         if (created.code === 'RATE_LIMITED') {
-            const retryAfter = Math.max(1, Math.min(RATE_WINDOW_SECONDS, Number(created.retry_after_seconds) || RATE_WINDOW_SECONDS));
+            const retryAfter = retryAfterSeconds(created.retry_after_seconds, { max: RATE_WINDOW_SECONDS, fallback: RATE_WINDOW_SECONDS });
             return NextResponse.json(
                 { error: 'rate_limited', retry_after_seconds: retryAfter },
                 { status: 429, headers: { 'retry-after': String(retryAfter) } },

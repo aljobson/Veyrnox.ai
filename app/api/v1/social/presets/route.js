@@ -5,11 +5,11 @@ import { socialContentPresetsEnabled } from '../../../../../lib/social/publishFe
 import { resolveBrand } from '../../../../../lib/social/resolveBrand.js';
 import { envConfig, rpc, SupabaseError } from '../../../../../packages/db/supabase-client.js';
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../../lib/validate.js';
 
 function setup(req) {
   const authId = req.headers.get('x-veyrnox-auth-id');
-  if (!UUID.test(authId || '')) return { error: NextResponse.json({ error: 'not_authenticated' }, { status: 401 }) };
+  if (!isUuidLoose(authId || '')) return { error: NextResponse.json({ error: 'not_authenticated' }, { status: 401 }) };
   if (!socialContentPresetsEnabled()) return { error: NextResponse.json({ error: 'presets_not_open' }, { status: 404 }) };
   const cfg = envConfig();
   if (!cfg.supabaseUrl || !cfg.serviceRoleKey) return { error: NextResponse.json({ error: 'supabase_not_configured' }, { status: 503 }) };
@@ -47,8 +47,8 @@ export async function PUT(req) {
   const name = typeof body?.name === 'string' ? body.name.trim() : '';
   const caption = typeof body?.caption === 'string' ? body.caption : '';
   const accountIds = body?.accountIds;
-  if ((id !== null && !UUID.test(id)) || !name || name.length > 80 || !caption || caption.length > 4000 ||
-      !Array.isArray(accountIds) || accountIds.length > 20 || accountIds.some((value) => !UUID.test(value)) || new Set(accountIds).size !== accountIds.length) {
+  if ((id !== null && !isUuidLoose(id)) || !name || name.length > 80 || !caption || caption.length > 4000 ||
+      !Array.isArray(accountIds) || accountIds.length > 20 || accountIds.some((value) => !isUuidLoose(value)) || new Set(accountIds).size !== accountIds.length) {
     return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
   }
   const limited = await socialPostWriteLimit(authId, cfg); if (limited) return limited;
@@ -66,7 +66,7 @@ export async function PUT(req) {
 export async function DELETE(req) {
   const { authId, cfg, error } = setup(req); if (error) return error;
   const id = new URL(req.url).searchParams.get('id');
-  if (!UUID.test(id || '')) return NextResponse.json({ error: 'invalid_id' }, { status: 400 });
+  if (!isUuidLoose(id || '')) return NextResponse.json({ error: 'invalid_id' }, { status: 400 });
   const limited = await socialPostWriteLimit(authId, cfg); if (limited) return limited;
   const brand = await resolveBrand(authId, cfg, 'api/v1/social/presets:DELETE', { request: req, allowedRoles: ['owner', 'manager', 'editor'] }); if (brand.error) return brand.error;
   try {

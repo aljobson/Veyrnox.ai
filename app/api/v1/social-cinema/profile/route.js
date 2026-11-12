@@ -2,7 +2,7 @@ import { rpc, envConfig } from '../../../../../packages/db/supabase-client.js';
 import { cinemaFeatures } from '../../../../../lib/cinema/features.js';
 import { limitRequestBody } from '../../../../../lib/requestBodyLimit.js';
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../../lib/validate.js';
 const reply = (body, status = 200, headers = {}) => Response.json(body, {
   status, headers: { 'Cache-Control': 'no-store', ...headers },
 });
@@ -11,7 +11,7 @@ const codes = { account_not_active: 403, invalid_profile: 400, user_not_provisio
 
 async function handle(req, create) {
   const authId = req.headers.get('x-veyrnox-auth-id');
-  if (!UUID.test(authId || '')) return reply({ error: 'not_authenticated' }, 401);
+  if (!isUuidLoose(authId || '')) return reply({ error: 'not_authenticated' }, 401);
   if (!cinemaFeatures(process.env).profiles) {
     return reply({ error: 'profiles_not_open' }, 503);
   }
@@ -33,7 +33,7 @@ async function handle(req, create) {
       return reply({ profile });
     }
     const key = req.headers.get('idempotency-key');
-    if (!UUID.test(key || '')) return reply({ error: 'invalid_idempotency_key' }, 400);
+    if (!isUuidLoose(key || '')) return reply({ error: 'invalid_idempotency_key' }, 400);
     if (req.headers.get('content-type')?.split(';')[0].trim() !== 'application/json') {
       return reply({ error: 'invalid_content_type' }, 415);
     }
@@ -54,7 +54,7 @@ async function handle(req, create) {
       p_profile: { username: body.username, display_name: body.display_name.trim(), bio: body.bio || '' },
     }, cfg);
     if (result?.error && Object.hasOwn(codes, result.error)) return reply({ error: result.error }, codes[result.error]);
-    if (!UUID.test(result?.profile_id || '')) return reply({ error: 'temporarily_unavailable' }, 503);
+    if (!isUuidLoose(result?.profile_id || '')) return reply({ error: 'temporarily_unavailable' }, 503);
     return reply({ profile_id: result.profile_id, idempotent: result.idempotent === true }, result.idempotent ? 200 : 201);
   } catch {
     console.error('[social-cinema] profile request failed');

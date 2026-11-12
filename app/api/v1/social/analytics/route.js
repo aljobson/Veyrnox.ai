@@ -17,7 +17,7 @@ import { accountReadLimit } from '../../../../../lib/accountReadLimit.js';
 import { resolveBrand } from '../../../../../lib/social/resolveBrand.js';
 import { rpc, envConfig, SupabaseError } from '../../../../../packages/db/supabase-client.js';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../../lib/validate.js';
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_RANGE_DAYS = 366;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -31,13 +31,13 @@ function dayMs(value) {
 
 export async function GET(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
-    if (!authId || !UUID_RE.test(authId)) {
+    if (!authId || !isUuidLoose(authId)) {
         return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
     }
 
     const url = new URL(req.url);
     const accountId = url.searchParams.get('accountId') || '';
-    if (!UUID_RE.test(accountId)) {
+    if (!isUuidLoose(accountId)) {
         return NextResponse.json({ error: 'invalid_account_id' }, { status: 400 });
     }
     const from = url.searchParams.get('from');
