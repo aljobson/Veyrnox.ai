@@ -25,10 +25,10 @@ export function MusicInstruments() {
   const masterRef = useRef(null);
   const noiseRef = useRef(null);
   const recRef = useRef({ on: false, started: 0, events: [], open: new Map() });
-  const heldRef = useRef(new Set());
-  const stateRef = useRef({ instrument, presetId });
+  const heldRef = useRef(new Map());
+  const stateRef = useRef({ instrument, presetId, shift });
 
-  useEffect(() => { stateRef.current = { instrument, presetId }; }, [instrument, presetId]);
+  useEffect(() => { stateRef.current = { instrument, presetId, shift }; }, [instrument, presetId, shift]);
   const pendingRef = useRef(new Map());
   const flushRef = useRef(null);
   useEffect(() => () => { ctxRef.current?.close?.(); window.clearTimeout(flushRef.current); }, []);
@@ -108,16 +108,16 @@ export function MusicInstruments() {
         if (pad) { event.preventDefault(); trigger(pad.id, pad.id, 0.9); }
       } else if (INSTRUMENTS[inst].surface === 'keys') {
         const slot = TYPING_KEYS.indexOf(key);
-        const notes = keyRange(inst, 0);
-        if (slot >= 0 && notes[slot] != null && !heldRef.current.has(key)) { event.preventDefault(); heldRef.current.add(key); trigger(notes[slot] + stateRef.current.shift * 12, `n${notes[slot]}`, 0.85, true); }
+        const note = keyRange(inst, stateRef.current.shift)[slot];
+        if (slot >= 0 && note != null && !heldRef.current.has(key)) { event.preventDefault(); heldRef.current.set(key, `n${note}`); trigger(note, `n${note}`, 0.85, true); }
       }
     };
     const up = (event) => {
       const key = event.key.toLowerCase();
-      if (!heldRef.current.delete(key)) return;
-      const slot = TYPING_KEYS.indexOf(key);
-      const notes = keyRange(stateRef.current.instrument, 0);
-      if (notes[slot] != null) release(`n${notes[slot]}`);
+      const id = heldRef.current.get(key);
+      if (!id) return;
+      heldRef.current.delete(key);
+      release(id);
     };
     window.addEventListener('keydown', down); window.addEventListener('keyup', up);
     return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); };

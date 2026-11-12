@@ -164,6 +164,7 @@ export async function installProductFixtures(page, options = {}) {
           : json({ error: 'not_authenticated' }, 401);
         // Your wins ships off (YOUR_WINS_ENABLED unset): the route answers 404 and the card stays hidden.
         if (url.pathname === '/api/v1/wins') return state.user ? json({ error: 'not_found' }, 404) : json({ error: 'not_authenticated' }, 401);
+        if (url.pathname === '/api/v1/first-goal') return state.user ? json({ error: 'not_found' }, 404) : json({ error: 'not_authenticated' }, 401);
         if (url.pathname === '/api/v1/free-allowance') return json({ enabled: false, left: {} });
         if (url.pathname === '/api/v1/jobs') return json({ jobs: [], next: null });
         if (url.pathname === '/api/v1/library/masters') return json({ masters: [], next: null });
