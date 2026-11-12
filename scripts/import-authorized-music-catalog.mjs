@@ -11,7 +11,7 @@
  */
 
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -122,8 +122,9 @@ for (const [slug, title, category, sourceUrl, audioPath, artworkPath, expectedDu
   if (probe.status !== 0) throw new Error(`ffprobe failed for ${file}`);
   const durationSec = Math.round(Number(probe.stdout.trim()));
   if (Math.abs(durationSec - expectedDurationSec) > 2) throw new Error(`Duration mismatch for ${title}: ${durationSec}s vs ${expectedDurationSec}s`);
-  const bytes = statSync(audioOutput).size;
-  const sha256 = createHash('sha256').update(readFileSync(audioOutput)).digest('hex');
+  const audioBytes = readFileSync(audioOutput);
+  const bytes = audioBytes.length;
+  const sha256 = createHash('sha256').update(audioBytes).digest('hex');
   imported.push({
     id, title, creator: 'Scott Buckley', category, durationSec, file, artwork, bytes, sha256,
     sourceUrl, downloadSourceUrl: `${libraryRoot}${slug}/`, license: 'CC BY 4.0',
