@@ -128,14 +128,16 @@
   },
   {
     "area": "export",
-    "text": "ExportFile nameSize360p480p720p1080p1440p · 2K2160p · 4K1920 × 1080 pixelsFrame rate24 fps25 fps30 fps50 fps60 fpsContainerMP4 · H.264 / AACMOV · H.264 / AACQualitycompact · 2 Mbpsstandard · 8 Mbpshigh · 16 Mbpsmaximum · 32 MbpsExport MP4Save cover frameCancel exportDownload User export.mp4Export uses the source frames at the chosen rate. Higher rates do not create new motion between source frames.",
+    "text": "ExportFile nameSize360p480p720p1080p1440p · 2K2160p · 4K1920 × 1080 pixelsFrame rate24 fps25 fps30 fps50 fps60 fpsContainerMP4 · H.264 / AACMOV · H.264 / AACQualitycompact · 2 Mbpsstandard · 8 Mbpshigh · 16 Mbpsmaximum · 32 MbpsExport MP4Save cover frame50%Please keep this tab open while your video exports.Cancel exportReady to shareDownload User export.mp4This file is only on this device for now. Download it, or save it to your Library below, to keep it.Export uses the source frames at the chosen rate. Higher rates do not create new motion between source frames.",
     "labels": [
       "aria-label=\"Export file name\"",
       "aria-label=\"Export size\"",
       "aria-label=\"Export frame rate\"",
       "aria-label=\"Export format\"",
       "aria-label=\"Export quality\"",
-      "aria-label=\"Export progress\""
+      "aria-label=\"Export progress\"",
+      "aria-label=\"Ready to share\"",
+      "aria-label=\"Preview of your exported video\""
     ]
   },
   {
