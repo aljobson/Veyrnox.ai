@@ -44,6 +44,10 @@ test('discover provides playable cards, filters, cover art and a transparent rec
   assert.match(source, /musicDiscover\.searchPlaceholder/);
   assert.match(source, /musicDiscover\.note/);
   assert.match(source, /<Image src=\{beat\.artwork\}/);
+  assert.match(source, /h-16 w-16/);
+  assert.match(source, /sm:h-20 sm:w-20/);
+  assert.match(source, /sizes="80px"/);
+  assert.doesNotMatch(source, /aspect-square/);
 });
 
 test('create resolves only known sample ids and keeps the new direction separate from the seed card', async () => {

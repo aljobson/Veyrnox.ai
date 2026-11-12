@@ -102,30 +102,30 @@ function schedulePreview(beat, onEnded) {
 function BeatCard({ beat, playing, onToggle }) {
   const { t } = useI18n();
   return (
-    <article className="group overflow-hidden rounded-2xl border border-vx-border bg-vx-panel shadow-xl transition hover:-translate-y-0.5 hover:border-vx-border-boost">
-      <div className="relative aspect-square overflow-hidden bg-vx-panel-raised">
-        <Image src={beat.artwork} alt={t('musicDiscover.cover', { title: beat.title })} fill sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 92vw" className="object-cover transition duration-500 group-hover:scale-[1.03]" />
-        <div className="absolute inset-x-0 bottom-0 flex items-end justify-between bg-gradient-to-t from-black/80 via-black/20 to-transparent p-4 pt-16 text-white">
-          <button type="button" aria-label={t(playing ? 'musicDiscover.pause' : 'musicDiscover.play', { title: beat.title })} aria-pressed={playing} onClick={onToggle} className="grid h-12 w-12 place-items-center rounded-full bg-white text-xl font-black text-black shadow-2xl transition hover:scale-105">
+    <article className="group rounded-2xl border border-vx-border bg-vx-panel p-4 shadow-xl transition hover:-translate-y-0.5 hover:border-vx-border-boost sm:p-5">
+      <div className="flex items-start gap-4">
+        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-vx-panel-raised sm:h-20 sm:w-20">
+          <Image src={beat.artwork} alt={t('musicDiscover.cover', { title: beat.title })} fill sizes="80px" className="object-cover transition duration-500 group-hover:scale-[1.03]" />
+          <button type="button" aria-label={t(playing ? 'musicDiscover.pause' : 'musicDiscover.play', { title: beat.title })} aria-pressed={playing} onClick={onToggle} className="absolute bottom-1.5 left-1.5 grid h-8 w-8 place-items-center rounded-full bg-white text-sm font-black text-black shadow-xl transition hover:scale-105">
             <span aria-hidden="true">{playing ? 'Ⅱ' : '▶'}</span>
           </button>
-          <span className="rounded-full bg-black/55 px-2.5 py-1 font-vx-mono text-[11px] font-bold">{beat.duration}</span>
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0"><h3 className="truncate font-vx text-xl font-black">{beat.title}</h3><p className="mt-1 text-sm text-vx-fg-muted">{beat.creator}</p></div>
+            <span className="rounded-full border border-vx-border px-2 py-1 font-vx-mono text-[10px] font-bold text-vx-fg-muted">{beat.duration}</span>
+          </div>
+          <span className="mt-1 block h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: beat.accent }} aria-hidden="true" />
         </div>
       </div>
-      <div className="p-5">
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0"><h3 className="truncate font-vx text-xl font-black">{beat.title}</h3><p className="mt-1 text-sm text-vx-fg-muted">{beat.creator}</p></div>
-          <span className="mt-1 h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: beat.accent }} aria-hidden="true" />
-        </div>
-        <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold text-vx-fg-muted">
-          <span className="rounded-full border border-vx-border px-2.5 py-1">{beat.bpm} BPM</span>
-          <span className="rounded-full border border-vx-border px-2.5 py-1">{beat.musicalKey}</span>
-          <span className="rounded-full border border-vx-border px-2.5 py-1">{tOr(t, moodKey(beat.mood), beat.mood)}</span>
-        </div>
-        <Link href={{ pathname: '/app/music/create', query: { sample: beat.id } }} className="vx-press mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-full bg-vx-accent px-4 text-sm font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover">
-          {t('musicDiscover.sample')}
-        </Link>
+      <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold text-vx-fg-muted">
+        <span className="rounded-full border border-vx-border px-2.5 py-1">{beat.bpm} BPM</span>
+        <span className="rounded-full border border-vx-border px-2.5 py-1">{beat.musicalKey}</span>
+        <span className="rounded-full border border-vx-border px-2.5 py-1">{tOr(t, moodKey(beat.mood), beat.mood)}</span>
       </div>
+      <Link href={{ pathname: '/app/music/create', query: { sample: beat.id } }} className="vx-press mt-4 inline-flex min-h-10 w-full items-center justify-center rounded-full bg-vx-accent px-4 text-sm font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover">
+        {t('musicDiscover.sample')}
+      </Link>
     </article>
   );
 }
