@@ -2,6 +2,8 @@ import { ACCOUNT_PAUSED_COPY, ACCOUNT_ON_HOLD_COPY } from './gateway';
 
 // What the create page says for each gateway error code.
 export const ERROR_COPY = {
+  // English fallback for a code with no copy; public pages do not load the app.* catalog, so t() alone would print the key.
+  unknown: 'Something went wrong. Nothing was charged unless the panel above says otherwise.',
   template_blocked: 'This template needs references or capabilities that are not available. Choose another template. Nothing was charged.',
   template_mismatch: 'These settings do not match the audited template. Restore its original model, duration, shape and prompt, or write a custom prompt. Nothing was charged.',
   template_references_invalid: 'Add the required photos in order, with no extra images or video. Nothing was charged.',
