@@ -1,9 +1,10 @@
 import { MusicInstruments } from '../../../_components/music/MusicInstruments';
+import { getT } from '../../../../../lib/i18n/server';
 
-export const metadata = {
-  title: 'Instruments',
-  description: 'Play piano, guitar, drums, bass and synth in the browser, record a take and download it as a sample.',
-};
+export async function generateMetadata() {
+  const { t } = await getT();
+  return { title: t('music.meta.instruments'), description: t('music.meta.instrumentsDescription') };
+}
 
 export default function MusicInstrumentsPage() {
   return <MusicInstruments />;

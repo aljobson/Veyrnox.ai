@@ -213,7 +213,7 @@ export function MusicInstruments() {
         ))}
       </section>
 
-      <section aria-label={`${spec.label} playing surface`} className="mt-5 select-none rounded-3xl border border-vx-border bg-vx-panel p-3 shadow-2xl sm:p-5" style={{ touchAction: 'none' }}>
+      <section aria-label={`${spec.label} playing surface`} className="mt-5 select-none rounded-2xl border border-vx-border bg-vx-panel p-3 shadow-2xl sm:p-5" style={{ touchAction: 'none' }}>
         {spec.surface === 'keys' ? (
           <>
             <div className="mb-3 flex items-center gap-2 text-sm font-bold">
