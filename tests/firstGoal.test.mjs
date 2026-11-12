@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   FIRST_GOALS,
+  FIRST_GOAL_EXAMPLES,
   FIRST_GOAL_SLOT,
   firstGoalTarget,
   parseFirstGoal,
@@ -33,4 +34,9 @@ test('the stored choice is versioned and anything unreadable reads as "never cho
 
 test('serialising an unknown goal is refused instead of storing it', () => {
   assert.throws(() => serializeFirstGoal('rm -rf'), /unknown first goal/);
+});
+
+test('"not sure" offers one example for each creation area, in the same order as the goals', () => {
+  assert.deepEqual(FIRST_GOAL_EXAMPLES, ['image', 'video', 'audio']);
+  for (const goal of FIRST_GOAL_EXAMPLES) assert.equal(firstGoalTarget(goal).href, null);
 });

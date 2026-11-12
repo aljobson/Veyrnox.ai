@@ -3,7 +3,7 @@ declare const __dirname: string;
 const fs = require('fs') as { readFileSync: (p: string, e: 'utf8') => string };
 const path = require('path') as { join: (...p: string[]) => string };
 
-import { FIRST_GOALS, FIRST_GOAL_SLOT, firstGoalTarget, parseFirstGoal, serializeFirstGoal } from '../src/lib/firstGoal';
+import { FIRST_GOALS, FIRST_GOAL_EXAMPLES, FIRST_GOAL_SLOT, firstGoalTarget, parseFirstGoal, serializeFirstGoal } from '../src/lib/firstGoal';
 
 describe('the first-goal question', () => {
     test('covers every creation area plus "not sure"', () => {
@@ -14,6 +14,7 @@ describe('the first-goal question', () => {
         const web = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'app', 'veyrnox', '_lib', 'firstGoal.js'), 'utf8');
         const ids = [...web.matchAll(/\{ id: '(\w+)', label:/g)].map((m) => m[1]);
         expect(ids).toEqual([...FIRST_GOALS]);
+        expect(web).toMatch(/FIRST_GOAL_EXAMPLES = \['image', 'video', 'audio'\]/);
         expect(web).toContain(`veyrnox.firstGoal.v`);
         expect(FIRST_GOAL_SLOT).toBe('veyrnox.firstGoal.v1');
     });
@@ -42,5 +43,10 @@ describe('the first-goal question', () => {
 
     test('an unknown goal is refused instead of stored', () => {
         expect(() => serializeFirstGoal('rm -rf' as never)).toThrow('unknown first goal');
+    });
+
+    test('"not sure" offers one example for each creation area', () => {
+        expect([...FIRST_GOAL_EXAMPLES]).toEqual(['image', 'video', 'audio']);
+        for (const goal of FIRST_GOAL_EXAMPLES) expect(firstGoalTarget(goal)).toEqual({ kind: 'create', goal });
     });
 });

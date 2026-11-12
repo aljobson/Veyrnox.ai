@@ -12,6 +12,9 @@ export const FIRST_GOALS = [
   { id: 'unsure', label: 'Not sure yet' },
 ];
 
+// "Not sure yet" shows one example for each of these, so a person with no idea still has something to tap.
+export const FIRST_GOAL_EXAMPLES = ['image', 'video', 'audio'];
+
 const GOAL_IDS = new Set([...FIRST_GOALS.map(({ id }) => id), 'skipped']);
 
 // Where a goal leads: a Create model filter, or another area of the app. Unknown values fall back to all models.

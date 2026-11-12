@@ -3,7 +3,7 @@ import { useState, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 import { tOr } from '../../../lib/i18n/translate.mjs';
 import { useI18n } from '../../../components/I18nProvider';
-import { FIRST_GOALS, FIRST_GOAL_SLOT, firstGoalTarget, parseFirstGoal, serializeFirstGoal } from '../_lib/firstGoal';
+import { FIRST_GOALS, FIRST_GOAL_EXAMPLES, FIRST_GOAL_SLOT, firstGoalTarget, parseFirstGoal, serializeFirstGoal } from '../_lib/firstGoal';
 
 function readStored() {
   try { return parseFirstGoal(window.localStorage.getItem(FIRST_GOAL_SLOT)); } catch { return null; }
@@ -16,7 +16,7 @@ function store(goal) {
 const noSubscribe = () => () => {};
 
 // One question, once per browser, skippable. Creation goals stay here and filter the models; Edit and Publish route to
-// their own area. After a creation goal the card offers one example prompt, like the "Surprise me" chip competitors use.
+// their own area. "Not sure" lists one example per area. After a creation goal the card offers one example prompt, like the "Surprise me" chip competitors use.
 export function FirstGoalCard({ hidden, onPick, onExample }) {
   const { t } = useI18n();
   const router = useRouter();
@@ -30,10 +30,36 @@ export function FirstGoalCard({ hidden, onPick, onExample }) {
 
   function choose(goal) {
     store(goal);
+    if (goal === 'unsure') { onPick('all'); setState('examples'); return; }
     const target = firstGoalTarget(goal);
     if (target.href) { router.push(target.href); return; }
     onPick(target.createGoal);
     if (['image', 'video', 'audio'].includes(goal)) { setChosen(goal); setState('example'); } else setState('done');
+  }
+
+  if (state === 'examples') {
+    return (
+      <div data-testid="first-goal-examples" className="rounded-2xl border border-vx-accent/40 bg-vx-accent/[0.06] p-5">
+        <h2 className="text-lg font-extrabold text-vx-fg">{t('app.create.firstGoal.title')}</h2>
+        <div className="mt-3 flex flex-col gap-2">
+          {FIRST_GOAL_EXAMPLES.map((goal) => (
+            <button
+              key={goal}
+              type="button"
+              data-testid={`first-goal-example-${goal}`}
+              onClick={() => { store(goal); onPick(goal); onExample(t(`app.create.firstGoal.example.${goal}`)); setState('done'); }}
+              className="min-h-11 rounded-xl border border-vx-border px-3 py-2 text-start transition-colors hover:border-vx-fg-muted"
+            >
+              <span className="block text-sm font-bold text-vx-fg">{tOr(t, `app.create.firstGoal.${goal}`, goal)}</span>
+              <span className="mt-0.5 block text-xs text-vx-fg-muted">{t(`app.create.firstGoal.example.${goal}`)}</span>
+            </button>
+          ))}
+        </div>
+        <button type="button" onClick={() => { store('skipped'); setState('done'); }} className="mt-3 min-h-11 text-sm font-bold text-vx-fg-muted hover:text-vx-fg">
+          {t('app.create.firstGoal.skip')}
+        </button>
+      </div>
+    );
   }
 
   if (state === 'example') {

@@ -11,7 +11,7 @@ import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { VeyLoader } from '../../../components/VeyLoader';
 import { fetchCatalogCached, type CatalogModel, type Kind } from '../../../lib/media';
 import { starterModel } from '../../../lib/createOptions';
-import { FirstGoalCard } from '../../../components/create/FirstGoalCard';
+import { EXAMPLE, FirstGoalCard } from '../../../components/create/FirstGoalCard';
 import { firstGoalTarget, type FirstGoal } from '../../../lib/firstGoal';
 import { readFirstGoal, writeFirstGoal } from '../../../lib/firstGoalStore';
 import { fetchAgentListing } from '../../../lib/montage';
@@ -34,13 +34,6 @@ const MAKE: readonly { readonly kind: Kind; readonly label: string; readonly bad
     { kind: 'video', label: 'create.goal.video', badge: { icon: 'video', hue: 'iris' } },
     { kind: 'audio', label: 'create.goal.audio', badge: { icon: 'audio', hue: 'amber' } },
 ];
-
-// The example prompt a creation goal opens the form with. Literal keys, so the translation tooling sees them.
-const EXAMPLE: Record<'image' | 'video' | 'audio', () => string> = {
-    image: () => t('create.firstGoal.example.image'),
-    video: () => t('create.firstGoal.example.video'),
-    audio: () => t('create.firstGoal.example.audio'),
-};
 
 // Create starts from what you want to make, not from a list of models. Each goal opens the form with its starter
 // model (the cheapest one that works from a prompt alone, as on the web); "Change model" on the form switches it, and

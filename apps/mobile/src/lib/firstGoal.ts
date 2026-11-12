@@ -5,6 +5,8 @@ export const FIRST_GOAL_VERSION = 1;
 export const FIRST_GOAL_SLOT = `veyrnox.firstGoal.v${FIRST_GOAL_VERSION}`;
 
 export const FIRST_GOALS = ['image', 'video', 'audio', 'edit', 'publish', 'unsure'] as const;
+// "Not sure yet" shows one example for each of these (same list as the web card).
+export const FIRST_GOAL_EXAMPLES = ['image', 'video', 'audio'] as const;
 export type FirstGoal = (typeof FIRST_GOALS)[number];
 export type StoredFirstGoal = FirstGoal | 'skipped';
 

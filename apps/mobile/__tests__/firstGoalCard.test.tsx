@@ -67,3 +67,30 @@ test('once answered, the question is not asked again', async () => {
     expect(hasText(t('create.firstGoal.title'))).toBe(false);
     expect(labelled(t('create.goal.image'))).toBeDefined();
 });
+
+test('"Not sure yet" shows an example for each creation area; picking one opens the form with it and remembers that goal', async () => {
+    jest.mocked(readFirstGoal).mockResolvedValue(null);
+    await act(async () => root.render(<Create />));
+    await act(async () => { labelled(t('create.firstGoal.unsure'))!.props.onClick(event); });
+    expect(writeFirstGoal).not.toHaveBeenCalled();
+    expect(mockPush).not.toHaveBeenCalled();
+    expect(hasText(t('create.firstGoal.title'))).toBe(true);
+    const rows = buttons().filter(n => typeof n.props.accessibilityLabel === 'string' && n.props.accessibilityLabel.includes(t('create.firstGoal.example.image')));
+    expect(rows.length).toBe(1);
+    expect(buttons().some(n => String(n.props.accessibilityLabel).includes(t('create.firstGoal.example.video')))).toBe(true);
+    expect(buttons().some(n => String(n.props.accessibilityLabel).includes(t('create.firstGoal.example.audio')))).toBe(true);
+    expect(labelled(t('create.firstGoal.edit'))).toBeUndefined();
+    await act(async () => { rows[0].props.onClick(event); });
+    expect(writeFirstGoal).toHaveBeenCalledWith('image');
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/create/[modelId]', params: { modelId: 'prompt-image', prompt: t('create.firstGoal.example.image') } });
+});
+
+test('Skip from the examples remembers the dismissal and shows the usual goal list', async () => {
+    jest.mocked(readFirstGoal).mockResolvedValue(null);
+    await act(async () => root.render(<Create />));
+    await act(async () => { labelled(t('create.firstGoal.unsure'))!.props.onClick(event); });
+    await act(async () => { labelled(t('create.firstGoal.skip'))!.props.onClick(event); });
+    expect(writeFirstGoal).toHaveBeenLastCalledWith('skipped');
+    expect(hasText(t('create.firstGoal.title'))).toBe(false);
+    expect(labelled(t('create.goal.image'))).toBeDefined();
+});
