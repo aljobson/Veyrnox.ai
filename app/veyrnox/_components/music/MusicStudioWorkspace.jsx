@@ -5,10 +5,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { gatewayFetch } from '../../_lib/gateway';
 import { MusicStudioClipEditor } from './MusicStudioClipEditor';
 import { MusicStudioEffects } from './MusicStudioEffects';
-import { MusicStudioInstrumentTakes } from './MusicStudioInstrumentTakes';
+import dynamic from 'next/dynamic';
 import { MusicStudioLatencyCalibration } from './MusicStudioLatencyCalibration';
 import { MusicStudioMidi } from './MusicStudioMidi';
 import { MusicStudioRecorder } from './MusicStudioRecorder';
+
+// Browser-only (Web Audio, IndexedDB): keep it out of the server render and the Worker bundle's size budget.
+const MusicStudioInstrumentTakes = dynamic(() => import('./MusicStudioInstrumentTakes').then((module) => module.MusicStudioInstrumentTakes), { ssr: false });
 
 function clock(value) {
   const seconds = Number.isFinite(value) ? Math.max(0, value) : 0;
