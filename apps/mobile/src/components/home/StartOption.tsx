@@ -5,10 +5,10 @@ import type { MenuIcon } from '../../lib/menuIcons';
 import { ds } from '../../theme';
 import { Icon, Text, themedStyles, useThemedStyles } from '../ui';
 
-export function StartOption({ href, icon, title, body, hint, divided = false, style }: { href: Href; icon: MenuIcon; title: string; body: string; hint: string; divided?: boolean; style: { minHeight: number } }) {
+export function StartOption({ href, icon, title, body, hint, divided = false, style, onPress }: { href: Href; onPress?: () => void; icon: MenuIcon; title: string; body: string; hint: string; divided?: boolean; style: { minHeight: number } }) {
     const styles = useThemedStyles(sheets);
     return (
-        <Link href={href} asChild>
+        <Link href={href} asChild onPress={onPress}>
             <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={rawText(title)}

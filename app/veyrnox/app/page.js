@@ -8,6 +8,7 @@ import { PresetGallery } from '../_components/PresetGallery';
 import { VibeOffer } from '../_components/VibeOffer';
 import { YourWinsCard } from '../_components/YourWinsCard';
 import { useVibe } from '../_lib/creatorProfile';
+import { recordHomeStart } from '../_lib/firstGoalSync';
 
 function StarterIcon({ name }) {
   return (
@@ -24,6 +25,7 @@ function StarterCard({ href, label, description, icon }) {
   return (
     <Link
       href={href}
+      onClick={() => { void recordHomeStart(icon); }}
       data-testid={`explore-starter-${icon}`}
       className="group flex min-h-48 flex-col rounded-[20px] border border-vx-border bg-vx-panel p-5 transition-[border-color,background-color,scale] duration-150 ease-(--vx-ease-out) hover:border-vx-accent hover:bg-vx-base active:scale-[0.96]"
     >
