@@ -66,9 +66,9 @@ test('the page, the OAuth landing and the menu link are gated on the same switch
         assert.match(src, /if \(!publishShellAvailable\(\)\) notFound\(\);/, p);
     }
     assert.match(read('app/veyrnox/layout.js'), /<PublishFlagProvider enabled=\{publishEnabled\(\)\} pilot=/);
-    const nav = read('app/veyrnox/_components/NavAuthButtons.js');
-    assert.match(nav, /usePublishEnabled\(\)/);
-    assert.match(nav, /\{links\.map\(/);
+    // The menu link now lives in the shared destination table, behind the same switch.
+    assert.match(read('app/veyrnox/_lib/studioNavigation.js'), /href: '\/app\/publish'[^\n]*flag: 'publish'/);
+    assert.match(read('app/veyrnox/_components/NavBar.js'), /publish: publishEnabled/);
 });
 
 test('production prepares Instagram credentials while keeping its release closed', () => {

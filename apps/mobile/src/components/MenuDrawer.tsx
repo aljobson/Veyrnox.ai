@@ -11,7 +11,8 @@ import { useAuth } from '../auth/AuthProvider';
 import { fetchProfile, type Profile } from '../lib/auth/accountCalls';
 import { HEADER_MAX_FONT_SCALE, MIN_TARGET } from '../lib/a11y';
 import { t } from '../lib/i18n';
-import { HOME_ICON, MENU_SECTIONS, activeItemKey } from '../lib/menu';
+import { HOME_ICON, MENU_SECTIONS, TAB_KEYS, activeItemKey } from '../lib/menu';
+import { ThemeButton } from './HeaderChips';
 import { type MenuIcon } from '../lib/menuIcons';
 import { type Palette } from '../theme';
 import { Logo } from './Logo';
@@ -106,9 +107,12 @@ function MenuDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
                 >
                     <View style={styles.top}>
                         <Logo size={24} />
+                        <View style={styles.topActions}>
+                        <ThemeButton />
                         <Button label={t('menu.close')} variant="tertiary" accessibilityRole="button" accessibilityLabel={t('menu.close')} style={styles.hit} onPress={onClose}>
                             <Icon name="close" tint={styles.mutedInk.color} size={20} />
                         </Button>
+                        </View>
                     </View>
                     <ListRow accessibilityRole="button" accessibilityLabel={rawText(who)} accessibilityHint={t('menu.account')} style={styles.pill} title={<Text variant="bodyStrong" numberOfLines={1}>{who}</Text>} icon="user" onPress={() => go('/account')} />
                     <ScrollView contentContainerStyle={styles.list}>
@@ -130,7 +134,7 @@ function MenuDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
                                     </Button>
                                     {collapsed ? null : (
                                         <View style={section.id === 'tools' ? styles.grid : undefined}>
-                                            {section.items.filter(item => item.href !== '/face-filters' || faceAvailable).map((item) => (
+                                            {section.items.filter(item => !TAB_KEYS.has(item.key) && (item.href !== '/face-filters' || faceAvailable)).map((item) => (
                                                 <Row key={item.key} label={t(item.label)} hint={item.hint ? t(item.hint) : undefined} icon={item.icon} active={active === item.key} half={section.id === 'tools'} onPress={() => go(item.href)} />
                                             ))}
                                         </View>
@@ -172,6 +176,7 @@ const sheets = themedStyles((p) => ({
     scrim: { ...StyleSheet.absoluteFill, backgroundColor: p.scrim },
     drawer: { backgroundColor: p.bg, borderEndWidth: StyleSheet.hairlineWidth, borderEndColor: p.borderSubtle },
     top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingStart: 16, paddingEnd: 4, minHeight: 52 },
+    topActions: { flexDirection: 'row', alignItems: 'center' },
     pill: { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 12, marginTop: 8, marginBottom: 4, minHeight: 56, paddingVertical: 8, paddingStart: 10, paddingEnd: 14, borderRadius: 999, backgroundColor: p.surface, borderColor: p.borderSubtle, borderWidth: 1 },
     list: { paddingHorizontal: 8, paddingTop: 8, paddingBottom: 24 },
     hit: { minWidth: MIN_TARGET, minHeight: MIN_TARGET, alignItems: 'center', justifyContent: 'center' },

@@ -80,7 +80,7 @@ test('the app route and sidebar expose the workflow suite', async () => {
   const [page, detail, nav] = await Promise.all([
     readFile(new URL('../app/veyrnox/app/features/page.js', import.meta.url), 'utf8'),
     readFile(new URL('../app/veyrnox/app/features/[slug]/page.js', import.meta.url), 'utf8'),
-    readFile(new URL('../app/veyrnox/_components/NavBar.js', import.meta.url), 'utf8'),
+    readFile(new URL('../app/veyrnox/_lib/studioNavigation.js', import.meta.url), 'utf8'),
   ]);
   assert.match(page, /creativeFeatureGroups/);
   assert.match(detail, /generateStaticParams/);
