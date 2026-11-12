@@ -121,6 +121,12 @@ test('Create keeps its untouched starter and preserves typed text across model i
   await expect(prompt).toHaveValue('Keep this prompt through model initialization');
 });
 
+// Create's ratio, size, length and count options sit in toolbar chips (ChipSelect): open the chip, then pick from its menu.
+async function chooseChip(page, label, option) {
+  await page.getByRole('button', { name: new RegExp(`^${label}: `) }).click();
+  await page.getByRole('group', { name: label, exact: true }).getByRole('button', option).click();
+}
+
 test('Create multi-image batch preserves per-job idempotency and stops after an uncertain second submission', async ({ page }) => {
   let count = 0;
   const fixture = await installProductFixtures(page, { routes: ({ url, method, json }) => {
@@ -133,7 +139,7 @@ test('Create multi-image batch preserves per-job idempotency and stops after an 
   const prompt = page.locator('[data-assistant-target="create.prompt"]');
   await expect(prompt).toHaveAttribute('data-client-ready', 'true');
   await prompt.fill('Synthetic batch');
-  await page.getByRole('group', { name: 'IMAGES', exact: true }).getByRole('button', { name: '4', exact: true }).click();
+  await chooseChip(page, 'IMAGES', { name: '4', exact: true });
   await page.locator('[data-assistant-target="create.generate"]').click();
   await expect.poll(() => fixture.requests.filter(row => row.path === '/api/v1/generations').length).toBe(2);
   const calls = fixture.requests.filter(row => row.path === '/api/v1/generations'); expect(new Set(calls.map(row => row.body.idempotency_key)).size).toBe(2);
@@ -153,11 +159,11 @@ test('Create keeps the submitted image label and frame while its next draft swit
   } });
   await fixture.open('/app/create?model=nano-banana');
   await page.locator('[data-assistant-target="create.prompt"]').fill('Synthetic portrait-format still life');
-  await page.getByRole('group', { name: 'ASPECT', exact: true }).getByRole('button', { name: /^9:16( ·|$)/ }).click();
+  await chooseChip(page, 'ASPECT', { name: /^9:16( ·|$)/ });
   await page.locator('[data-assistant-target="create.generate"]').click();
   const result = page.locator('[data-assistant-target="create.result"]');
   await expect(result).toContainText(/RUNNING · SYNTHETIC NANO-BANANA/);
-  await page.getByRole('group', { name: 'ASPECT', exact: true }).getByRole('button', { name: /^16:9( ·|$)/ }).click();
+  await chooseChip(page, 'ASPECT', { name: /^16:9( ·|$)/ });
   await page.getByTestId('create-goal-audio').click();
   await expect(page.locator('[data-assistant-target="create.models"]')).toHaveAttribute('data-selected-kind', 'audio');
   await expect(result).toContainText(/RUNNING · SYNTHETIC NANO-BANANA/);
