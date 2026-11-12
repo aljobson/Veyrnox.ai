@@ -153,11 +153,11 @@ test('Create keeps the submitted image label and frame while its next draft swit
   } });
   await fixture.open('/app/create?model=nano-banana');
   await page.locator('[data-assistant-target="create.prompt"]').fill('Synthetic portrait-format still life');
-  await page.getByRole('group', { name: 'ASPECT', exact: true }).getByRole('button', { name: /^9:16\b/ }).click();
+  await page.getByRole('group', { name: 'ASPECT', exact: true }).getByRole('button', { name: /^9:16( ·|$)/ }).click();
   await page.locator('[data-assistant-target="create.generate"]').click();
   const result = page.locator('[data-assistant-target="create.result"]');
   await expect(result).toContainText(/RUNNING · SYNTHETIC NANO-BANANA/);
-  await page.getByRole('group', { name: 'ASPECT', exact: true }).getByRole('button', { name: /^16:9\b/ }).click();
+  await page.getByRole('group', { name: 'ASPECT', exact: true }).getByRole('button', { name: /^16:9( ·|$)/ }).click();
   await page.getByTestId('create-goal-audio').click();
   await expect(page.locator('[data-assistant-target="create.models"]')).toHaveAttribute('data-selected-kind', 'audio');
   await expect(result).toContainText(/RUNNING · SYNTHETIC NANO-BANANA/);
