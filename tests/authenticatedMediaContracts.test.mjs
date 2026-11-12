@@ -89,7 +89,7 @@ function agent(balance, loading = false) {
   const { default: Page } = load('app/veyrnox/app/video-agent/page.js', {
     react: fakeReact, '../../../components/LegalLink': 'a', '../../../lib/i18n/rich': load('lib/i18n/rich.js', { './translate.mjs': { richParts } }), 'next/link': 'a', '../../_components/NavBar': { AppNav: () => null }, '../../_components/Main': { Main: 'main' },
     '../../_components/JobAssetPreview': { JobAssetPreview: () => null }, '../../_lib/gateway': { GatewayError: Error },
-    '../../_lib/createErrors': { ERROR_COPY: {}, failedJobCopy() {} }, '../../_lib/jobHistory': {}, '../../_components/PromptBox': { PromptBox: 'textarea' }, '../../_lib/videoAgentResume': {},
+    '../../_lib/createErrors': { ERROR_COPY: {}, failedJobCopy() {} }, '../../_lib/jobHistory': {}, '../../_components/PromptBox': { PromptBox: ({ children, enhance, ...rest }) => React.createElement(React.Fragment, null, React.createElement('textarea', rest), children) }, '../../_components/ChipSelect': { ChipSelect: () => null }, '../../_lib/videoAgentResume': {},
     '../../_lib/useStudioJobs': { useStudioJobs: () => ({ jobs: [], generating: false }) }, '../../_lib/studioStates': {},
     '../../../../lib/montageNarration.js': narration,
   });

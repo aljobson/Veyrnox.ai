@@ -17,7 +17,7 @@ const submit = page.slice(page.indexOf('async function onSubmit()'), page.indexO
 const sendOne = submit.slice(submit.indexOf('await sendInOrder('));
 
 test('the IMAGES control is shown for image models only', () => {
-    assert.match(page, /\{takesImageCount\(model\) && <ChipSelect assistantTarget="create.count" label="IMAGES" options=\{IMAGE_COUNTS\} value=\{count\} onChange=\{setCount\}/);
+    assert.match(page, /\{takesImageCount\(model\) && <ChipSelect assistantTarget="create.count" aria-label="IMAGES" options=\{IMAGE_COUNTS\} value=\{count\} onChange=\{setCount\}/);
     assert.equal((page.match(/assistantTarget="create.count"/g) || []).length, 1);
     assert.match(page, /const n = imageCount\(model, count\);/);
 });
