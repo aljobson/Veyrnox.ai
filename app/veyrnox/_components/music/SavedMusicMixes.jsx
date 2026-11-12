@@ -63,6 +63,7 @@ export function SavedMusicMixes({ query = '' }) {
 
   return (
     <div data-testid="music-saved-mixes" className="space-y-3">
+      <p className="rounded-2xl border border-vx-border bg-vx-base px-4 py-3 text-xs leading-5 text-vx-fg-muted">Saved in this browser for the current account. Each item is an editable recipe; generated songs remain in the private server Library.</p>
       {visible.map((item) => {
         const beat = getMusicDiscoverSeed(item.beatId);
         if (!beat) return null;

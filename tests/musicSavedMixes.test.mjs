@@ -59,6 +59,7 @@ test('Discover and both Library modes expose save, edit, listen and reuse paths'
   assert.match(page, /initialSavedMixId/);
   assert.match(saved, /Edit &amp; listen/);
   assert.match(saved, /Use in Create/);
+  assert.match(saved, /Saved in this browser for the current account/);
   assert.match(saved, /h-16 w-16/);
   assert.match(saved, /sizes="80px"/);
   assert.match(serverLibrary, /Saved mixes/);
