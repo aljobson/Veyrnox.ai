@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic';
 // server render and the Worker bundle, which has a hard size budget (scripts/check-worker-size.mjs).
 const MusicInstruments = dynamic(() => import('./MusicInstruments').then((module) => module.MusicInstruments), {
   ssr: false,
-  loading: () => <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6" aria-busy="true"><div className="vx-shimmer h-[28rem] rounded-2xl bg-vx-panel" /></div>,
+  loading: () => <div className="vx-shimmer m-6 h-96 rounded-2xl bg-vx-panel" aria-busy="true" />,
 });
 
 export function MusicInstrumentsLoader() {
