@@ -2,7 +2,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '../../../components/I18nProvider';
-import { tOr } from '../../../lib/i18n/translate.mjs';
 
 export const ENHANCE_HANDOFF_KEY = 'veyrnox_enhance_prompt';
 const button = 'grid h-9 w-9 shrink-0 place-items-center rounded-full text-vx-fg-muted transition-colors hover:text-vx-fg disabled:opacity-40 pointer-coarse:h-11 pointer-coarse:w-11';
@@ -21,7 +20,7 @@ export function DictateButton({ onText, disabled = false }) {
   // Support is a browser fact known only after mount.
   useEffect(() => { setSupported(Boolean(recognitionClass())); return () => recognition.current?.abort?.(); }, []);
   if (!supported) return null;
-  const label = tOr(t, listening ? 'app.promptTools.stopDictation' : 'app.promptTools.dictate', listening ? 'Stop dictation' : 'Dictate your prompt');
+  const label = t(listening ? 'app.promptTools.stopDictation' : 'app.promptTools.dictate');
   const toggle = () => {
     if (listening) { recognition.current?.stop(); return; }
     const Recognition = recognitionClass();
@@ -51,7 +50,7 @@ export function DictateButton({ onText, disabled = false }) {
 export function EnhanceButton({ text, disabled = false }) {
   const { t } = useI18n();
   const router = useRouter();
-  const label = tOr(t, 'app.promptTools.enhance', 'Improve this prompt with the Prompt writer');
+  const label = t('app.promptTools.enhance');
   const go = () => {
     try { window.sessionStorage.setItem(ENHANCE_HANDOFF_KEY, text.slice(0, 4000)); } catch { /* storage blocked: chat opens empty */ }
     router.push('/app/chat?skill=prompt-writer');
