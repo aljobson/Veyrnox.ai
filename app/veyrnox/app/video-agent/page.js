@@ -1,4 +1,5 @@
 'use client';
+import { ChipSelect } from '../../_components/ChipSelect';
 import { PromptBox } from '../../_components/PromptBox';
 import { useI18n } from '../../../../components/I18nProvider';
 import { pluralKey, tOr } from '../../../../lib/i18n/translate.mjs';
@@ -161,7 +162,13 @@ export default function VideoAgent() {
             id="brief" data-testid="agent-brief" rows={4} maxLength={MAX_BRIEF} value={brief} disabled={approving || generating}
             onChange={(e) => editDraft(setBrief, e.target.value)}
             placeholder={t("app.videoAgent.briefPlaceholder")}
-          />
+          >
+            <ChipSelect aria-label={t("label.Aspect ratio")} options={ASPECTS} value={aspect} disabled={approving || generating} onChange={(a) => editDraft(setAspect, a)} />
+            <button
+              data-testid="agent-plan" type="button" onClick={onPlan} disabled={!briefOk || !narration.ok || busy || generating}
+              className="ms-auto rounded-full bg-vx-accent px-4 py-2 text-sm font-bold text-black disabled:opacity-40"
+            >{busy && !plan ? t("app.videoAgent.planning") : plan ? t("app.videoAgent.replan") : t("app.videoAgent.makePlan")}</button>
+          </PromptBox>
           <label htmlFor="narration-text" className="mt-4 block text-sm font-bold">{t("app.videoAgent.narration")}</label>
           <PromptBox id="narration-text" data-testid="agent-narration" rows={3} maxLength={MAX_NARRATION_LENGTH} value={narrationText}
             disabled={approving || generating} onChange={e => editDraft(setNarrationText, e.target.value)}
@@ -169,19 +176,6 @@ export default function VideoAgent() {
             placeholder={t("app.videoAgent.narrationPlaceholder")} />
           <p id="narration-help" data-testid="agent-narration-help" className="mt-2 text-xs text-vx-fg-muted">{t("app.videoAgent.narrationHelp")}</p>
           {!narration.ok && <p role="alert" className="mt-2 text-xs text-vx-danger">{t("app.videoAgent.narrationLimit")}</p>}
-          <div className="mt-3 flex items-center gap-1.5" role="group" aria-label={t("label.Aspect ratio")}>
-            {ASPECTS.map((a) => (
-              <button
-                key={a} type="button" aria-pressed={aspect === a} disabled={approving || generating}
-                onClick={() => editDraft(setAspect, a)}
-                className={`rounded-lg border px-3 py-1.5 font-vx-mono text-[11px] ${aspect === a ? 'border-vx-accent text-vx-accent' : 'border-vx-border text-vx-fg-muted'}`}
-              >{a}</button>
-            ))}
-            <button
-              data-testid="agent-plan" type="button" onClick={onPlan} disabled={!briefOk || !narration.ok || busy || generating}
-              className="ms-auto rounded-lg bg-vx-accent px-4 py-2 text-sm font-bold text-black disabled:opacity-40"
-            >{busy && !plan ? t("app.videoAgent.planning") : plan ? t("app.videoAgent.replan") : t("app.videoAgent.makePlan")}</button>
-          </div>
           <p className="mt-2 text-xs text-vx-fg-muted">{t("app.videoAgent.freePlanning")}</p>
         </div>
 
