@@ -124,7 +124,7 @@ export const OVERRIDES = {
     'meal-together',
   ],
   FESTIVAL: [
-    'enchanted-forest-selfie', 'pumpkin-lings', 'dont-blow-out-the-pumpkin',
+    'enchanted-forest-selfie',
     'pumpkin-night',
   ],
 };

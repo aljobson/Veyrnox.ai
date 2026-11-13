@@ -1,3 +1,5 @@
+import { BROKEN_TEMPLATE_IDS } from '../app/veyrnox/_lib/brokenTemplateIds.js';
+import { publicTemplateId } from '../app/veyrnox/_lib/templateIds.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
@@ -8,7 +10,7 @@ import { isPublishableSourcePromptTemplate } from '../app/veyrnox/_lib/sourcePro
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 // Exact-only publication hides 27 former adaptations and adds 63 accepted Syntx and 29 category-fill records.
-const publicCommunityCount = SOURCE_TEMPLATES.filter(p => isPublishableSourcePromptTemplate(p.id)).length;
+const publicCommunityCount = SOURCE_TEMPLATES.filter(p => isPublishableSourcePromptTemplate(p.id) && !BROKEN_TEMPLATE_IDS.includes(publicTemplateId(p.id))).length;
 
 test('gallery video eligibility excludes recipes with missing previews', () => {
   assert.equal(PRESETS.filter(hasTemplateVideo).length, publicCommunityCount);

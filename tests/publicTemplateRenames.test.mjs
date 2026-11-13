@@ -39,6 +39,7 @@ test('all 63 Syntx public IDs, clip keys and shipped filenames are neutral; orig
   const files = readdirSync(new URL('../public/showcase/', import.meta.url));
   const projections = [PRESETS, templateCards(), toPublicPresets([])];
   for (const row of audit.records) {
+    if (!PRESETS.some(t => t.id === row.id)) continue; // withdrawn as broken (brokenTemplateIds.js)
     const template = SOURCE_TEMPLATES.find(t => t.id === row.id);
     const record = SOURCE_PROMPT_RECORDS[row.id];
     const clip = AUDIT_SHOWCASE_CLIPS[row.id];

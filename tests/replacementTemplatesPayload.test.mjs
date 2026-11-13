@@ -18,7 +18,7 @@ const json = file => JSON.parse(readFileSync(new URL(file, import.meta.url)));
 const hashes = { ...json('./fixtures/higgsfieldReplacementPromptHashes.json'), ...json('./fixtures/syntxReplacementPromptHashes.json') };
 const sha = text => createHash('sha256').update(text).digest('hex');
 // Independent owner-reviewed table. Do not infer image requirements from prompt tokens.
-const photoIds = ['on-the-wave', 'window-explode', 'red-crystal-amulet', 'community-martial-arts-suit', 'community-pet-affection-reveal'];
+const photoIds = ['window-explode', 'red-crystal-amulet', 'community-martial-arts-suit', 'community-pet-affection-reveal'];
 const textIds = ['community-spin-kick-puppy', 'community-neon-paint-splash', 'community-neon-animal-dance', 'community-island-life-performance', 'community-cinematic-persona-swap', 'community-roadside-service-pitch', 'community-martial-arts-feline', 'community-cosmic-sands-encounter', 'community-luxe-timepiece-reveal'];
 const fixtureReferences = [{ slot: 'image', origin: 'upload', key: PHOTO_KEY }];
 const photoResults = new Map();
@@ -66,9 +66,9 @@ async function runPhoto(id) {
 
 test('G1 covers exactly the fourteen imported IDs and their reviewed route tuples', () => {
   const imported = [...HF_REPLACEMENTS_TEMPLATES, ...SYNTX_REPLACEMENTS_TEMPLATES];
-  assert.deepEqual(imported.map(t => t.id).sort(), [...photoIds, ...textIds].sort());
+  assert.deepEqual(imported.filter(t => templateById(t.id)).map(t => t.id).sort(), [...photoIds, ...textIds].sort());
   assert.deepEqual(Object.keys(hashes).sort(), imported.map(t => t.id).sort());
-  for (const t of imported) {
+  for (const t of imported.filter(t => templateById(t.id))) {
     const photo = photoIds.includes(t.id);
     assert.deepEqual([t.model, t.credits, t.durationSeconds, t.needsKey], photo
       ? ['Kling 3.0 · I2V', 32, 10, 'community.cinematic'] : ['Seedance 2.0 Fast', 19, 5, null], t.id);

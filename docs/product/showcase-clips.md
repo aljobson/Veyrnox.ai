@@ -1,6 +1,6 @@
 # Landing showcase clips
 
-The current public gallery has 771 exact community templates; the homepage wall
+The current public gallery has 749 exact community templates; the homepage wall
 has 14. Seven dedicated landing placements retain their previews separately; Nano Banana is also an independent landing key sharing a retained template clip.
 Clip keys resolve through their owning templates, so `wall-event-character-swap`
 remains published while `wall-product-hero-360` is hidden with Miniature Crew.

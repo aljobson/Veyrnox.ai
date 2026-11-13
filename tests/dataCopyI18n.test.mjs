@@ -27,14 +27,14 @@ const tree = (file, source) => ts.createSourceFile(file, source, ts.ScriptTarget
 
 test('all template needs and 16 distinct steps have exact English and ten translated display entries', () => {
   const original = JSON.stringify(ALL_TEMPLATES);
-  assert.equal(ALL_TEMPLATES.length, 1813);
+  assert.equal(ALL_TEMPLATES.length, 1791);
   const audit = JSON.parse(readFileSync(new URL('../docs/product/source-audit/seedance-200-exact-2026-10-29.json', import.meta.url)));
   const syntxAudit = JSON.parse(readFileSync(new URL('../docs/product/source-audit/syntx-64-exact-2026-11-05.json', import.meta.url)));
   const syntxTextOnlyIds = syntxAudit.records.filter(r => r.referenceImageCount === 0 && r.referenceVideoCount === 0 && !/\b(audio|music|soundtrack|speech|lip[ -]?sync|voice|dialogue)\b/i.test(r.prompt) && r.prompt.length <= 30000).map(r => r.id);
   const textOnlyIds = audit.records.filter(r => !r.existing && r.referenceImageCount === 0 && sourcePromptAuditRecord(r.id).runnable).map(r => publicTemplateId(r.id));
   assert.equal(textOnlyIds.length, 78);
   assert.ok(textOnlyIds.every(id => !/higgs|syntx/.test(id)), 'template ids name no source platform');
-  assert.deepEqual(ALL_TEMPLATES.filter(p => !p.needs).map(p => p.id).sort(), [...HF_REPLACEMENTS_TEMPLATES.filter(t => !t.needs).map(t => t.id), ...textOnlyIds, ...syntxTextOnlyIds, 'a-moment-between-strangers', 'blood-moon-dance', 'dreamworks-castle', 'epic-train-doorway-scene', 'meal-together', 'red-thread-story', 'tentacle-breakout', 'the-last-stagecoach', 'the-push'].sort());
+  assert.deepEqual(ALL_TEMPLATES.filter(p => !p.needs).map(p => p.id).sort(), [...HF_REPLACEMENTS_TEMPLATES.filter(t => !t.needs).map(t => t.id), ...textOnlyIds, ...syntxTextOnlyIds, 'a-moment-between-strangers', 'blood-moon-dance', 'dreamworks-castle', 'epic-train-doorway-scene', 'meal-together', 'red-thread-story', 'tentacle-breakout', 'the-push'].sort());
   assert.equal(Object.keys(PRESET_STEP_KEYS).length, 16);
   for (const code of codes) {
     const t = translator(code, messagesFor(code));
