@@ -3126,6 +3126,102 @@
     "ratio": 1.67
   },
   {
+    "id": "liveEdit.title",
+    "english": "Live Edit",
+    "translation": "Edición en vivo",
+    "ratio": 1.67
+  },
+  {
+    "id": "liveEdit.foundation",
+    "english": "Foundation",
+    "translation": "Base de maquillaje",
+    "ratio": 1.8
+  },
+  {
+    "id": "liveEdit.wing",
+    "english": "Wing length",
+    "translation": "Longitud del rabillo",
+    "ratio": 1.82
+  },
+  {
+    "id": "liveEdit.volume",
+    "english": "Lash volume",
+    "translation": "Volumen de pestañas",
+    "ratio": 1.73
+  },
+  {
+    "id": "liveEdit.ombre",
+    "english": "Ombre",
+    "translation": "Degradado",
+    "ratio": 1.8
+  },
+  {
+    "id": "liveEdit.noFace",
+    "english": "No face found. Face and hair effects are off.",
+    "translation": "No se encontró ninguna cara. Los efectos de cara y pelo están desactivados.",
+    "ratio": 1.67
+  },
+  {
+    "id": "liveEdit.undo",
+    "english": "Undo",
+    "translation": "Deshacer",
+    "ratio": 2
+  },
+  {
+    "id": "liveEdit.redo",
+    "english": "Redo",
+    "translation": "Rehacer",
+    "ratio": 1.75
+  },
+  {
+    "id": "liveEdit.wig",
+    "english": "Wig",
+    "translation": "Peluca",
+    "ratio": 2
+  },
+  {
+    "id": "liveEdit.wigNone",
+    "english": "No wig",
+    "translation": "Sin peluca",
+    "ratio": 1.67
+  },
+  {
+    "id": "liveEdit.camera.preview",
+    "english": "Live camera preview",
+    "translation": "Vista previa de la cámara en vivo",
+    "ratio": 1.74
+  },
+  {
+    "id": "liveEdit.camera.noFace",
+    "english": "No face found. Face effects are off.",
+    "translation": "No se encontró ninguna cara. Los efectos faciales están desactivados.",
+    "ratio": 1.92
+  },
+  {
+    "id": "liveEdit.tool.makeup",
+    "english": "Makeup",
+    "translation": "Maquillaje",
+    "ratio": 1.67
+  },
+  {
+    "id": "liveEdit.wigSize",
+    "english": "Wig size",
+    "translation": "Tamaño de la peluca",
+    "ratio": 2.38
+  },
+  {
+    "id": "liveEdit.wigPosition",
+    "english": "Wig height",
+    "translation": "Altura de la peluca",
+    "ratio": 1.9
+  },
+  {
+    "id": "liveEdit.wigStrength",
+    "english": "Wig opacity",
+    "translation": "Opacidad de la peluca",
+    "ratio": 1.91
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

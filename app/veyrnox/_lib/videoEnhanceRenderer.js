@@ -1,3 +1,4 @@
+import { BILATERAL_GLSL } from './liveEdit/bilateral.js';
 import { lookSettings } from './videoEnhance.mjs';
 
 const VERTEX = `attribute vec2 position; varying vec2 uv;
@@ -5,18 +6,12 @@ void main(){ uv=(position+1.0)*0.5; gl_Position=vec4(position,0.,1.); }`;
 const FRAGMENT = `precision mediump float;
 varying vec2 uv; uniform sampler2D source; uniform sampler2D mask;
 uniform vec2 pixel; uniform float smoothing; uniform vec3 look;
+${BILATERAL_GLSL}
 void main(){
  vec4 original=texture2D(source,uv); vec3 color=original.rgb;
  float amount=texture2D(mask,uv).r*smoothing;
  if(amount>0.001){
-   vec3 sum=vec3(0.); float weights=0.;
-   for(int x=-2;x<=2;x++){ for(int y=-2;y<=2;y++){
-     vec3 sampleColor=texture2D(source,uv+vec2(float(x),float(y))*pixel*2.).rgb;
-     vec3 delta=sampleColor-color;
-     float weight=exp(-dot(delta,delta)*65.-float(x*x+y*y)*0.18);
-     sum+=sampleColor*weight; weights+=weight;
-   }}
-   color=mix(color,sum/weights,amount*0.85);
+   color=bilateral(source,uv,pixel,color,amount);
  }
  float luma=dot(color,vec3(0.2126,0.7152,0.0722));
  color=mix(vec3(luma),color,look.x);

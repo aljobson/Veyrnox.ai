@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 
 const root = new URL('../app/veyrnox/_lib/', import.meta.url);
 const rendererSource = (await readFile(new URL('videoEnhanceRenderer.js', root), 'utf8'))
+    .replace("'./liveEdit/bilateral.js'", JSON.stringify(new URL('liveEdit/bilateral.js', root).href))
     .replace("'./videoEnhance.mjs'", JSON.stringify(new URL('videoEnhance.mjs', root).href));
 const { createRenderer } = await import(`data:text/javascript,${encodeURIComponent(rendererSource)}`);
 

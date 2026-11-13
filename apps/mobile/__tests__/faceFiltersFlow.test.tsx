@@ -8,6 +8,7 @@ import { fetchCatalog, type CatalogModel } from '../src/lib/media';
 import { uploadSource } from '../src/lib/uploads';
 import strings from '../src/lib/i18n/messages/en/faceFilters';
 import { LOCALE_CODES, setLocaleFromDevice } from '../src/lib/i18n';
+import { clearHandoff, offerPhoto } from '../src/lib/liveEdit/faceFilterHandoff';
 
 // RNTL is absent and installs are forbidden. Use jest-expo's installed renderer
 // with real React Native controls, exercising their accessibility click handlers.
@@ -127,4 +128,29 @@ test.each([
     await press('button', runLabel);
     expect(root.container.queryAll(node => node.children.includes(message))).toHaveLength(1);
     expect(send).not.toHaveBeenCalled();
+});
+
+// From Live Edit's AI wig tool: the editor offers its photo once and Face Filters opens on the wig model with it.
+const costume: CatalogModel = { id: 'face-costume', name: 'Costume', modality: 'image-to-image', credits: 25, gated: false, durations: [], capabilities: { inputs: { costume_style: { type: 'enum', values: ['clown', 'wig_blonde', 'wig_pink'] } }, media: { image: { required: true } } } };
+const handed = { uri: 'file:///cache/handed.jpg', size: 100, mimeType: 'image/jpeg', width: 100, height: 100 };
+afterEach(() => clearHandoff());
+
+test('a photo handed over by Live Edit is used without opening the picker, on the wig model with a wig style', async () => {
+    jest.mocked(fetchCatalog).mockResolvedValue([model, costume]);
+    offerPhoto('owner', handed);
+    await renderFlow();
+    expect(ImagePicker.launchImageLibraryAsync).not.toHaveBeenCalled();
+    const run = control('button', 'Run filter. 25 credits per run');
+    expect(run.props.accessibilityState.disabled).toBe(false);
+    await press('button', 'Run filter. 25 credits per run');
+    expect(jest.mocked(uploadSource).mock.calls[0]!.some(arg => (arg as { uri?: string } | undefined)?.uri === handed.uri)).toBe(true);
+    expect(JSON.stringify(send.mock.calls[0]![1])).toContain('wig_blonde');
+});
+
+test('a handed-over photo the server could not take shows the problem and is not uploaded', async () => {
+    jest.mocked(fetchCatalog).mockResolvedValue([model, costume]);
+    offerPhoto('owner', { ...handed, mimeType: 'image/tiff' });
+    await renderFlow();
+    expect(uploadSource).not.toHaveBeenCalled();
+    expect(root.container.queryAll(node => node.props.accessibilityRole === 'button' && node.props.accessibilityLabel === 'Run filter. 25 credits per run' && node.props.accessibilityState?.disabled === false)).toHaveLength(0);
 });

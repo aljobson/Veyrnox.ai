@@ -55,7 +55,8 @@
     "jest": "~30.5.2",
     "jest-expo": "~58.0.14",
     "typescript": "~6.0.3",
-    "wobnimo": "0.2.0"
+    "wobnimo": "0.2.0",
+    "esbuild": "0.28.2"
   },
   "scripts": {
     "start": "expo start",
@@ -67,7 +68,9 @@
     "typecheck": "tsc --noEmit",
     "update:preview": "eas update --channel preview",
     "update:production": "eas update --channel production",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "prepare:live-edit": "node scripts/prepare-live-edit.mjs",
+    "eas-build-post-install": "node scripts/build-live-edit.mjs"
   },
   "private": true,
   "overrides": {

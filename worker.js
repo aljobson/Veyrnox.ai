@@ -27,6 +27,8 @@ import { apiEdgeRateLimit } from './lib/apiEdgeRateLimit.js';
 import { turnstileReportRateLimit } from './lib/turnstileFailureReport.js';
 import { refuseNextData } from './lib/nextDataGuard.js';
 import { refuseCdnCgi } from './lib/cdnCgiGuard.js';
+import { photoStudioRouteDisabled } from './lib/photoStudioGate.mjs';
+import { serveEditorVision } from './lib/editorVisionAdmission.mjs';
 import { serveShowcase } from './lib/showcaseVideo.js';
 import { withOutageShape } from './lib/outageScope.js';
 import { dropInternalHeaders } from './lib/internalRequestHeaders.js';
@@ -73,6 +75,9 @@ export default {
         if (redirect) return redirect;
         const refused = refuseNextData(request) || refuseCdnCgi(request);
         if (refused) return refused;
+        if (photoStudioRouteDisabled(new URL(request.url).pathname, env)) return new Response(null, { status: 404, headers: { 'Cache-Control': 'no-store' } });
+        const vision = await serveEditorVision(request, env);
+        if (vision) return stripTechnologyHeaders(vision);
         const showcase = await serveShowcase(request, env);
         if (showcase) return stripTechnologyHeaders(showcase);
         const limited = await adminEdgeRateLimit(request, env) || await turnstileReportRateLimit(request, env)

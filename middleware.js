@@ -22,7 +22,8 @@ import { recentMfaTimestamp } from './lib/cinema/strongAuth.js';
 import { NextResponse } from 'next/server';
 import { contentSecurityPolicy } from './lib/contentSecurityPolicy.mjs';
 import { LOCAL_SPEECH_WORKER_URL,localSpeechWorkerPolicy } from './app/veyrnox/_lib/localSpeechAssets.mjs';
-import {EDITOR_VISION_PATH,editorVisionWorkerPolicy} from './app/veyrnox/_lib/editorVisionRuntime.mjs';
+import { photoStudioRouteDisabled } from './lib/photoStudioGate.mjs';
+import { visionAdmission } from './lib/editorVisionAdmission.mjs';
 import { readToken, validateClaims, verifyES256 } from './lib/supabaseJwt.js';
 import { isPublishApiPath, publishShellAvailable, publishAllowed } from './lib/social/publishFeature.js';
 import { isUnknownStaticPage } from './lib/unknownStaticPage.js';
@@ -82,6 +83,9 @@ export async function middleware(req, event) {
     // Same-origin analytics proxy: the browser CSP never needs a PostHog
     // origin. With no configured project key, do not expose a free relay.
     const pathname = req.nextUrl?.pathname ?? requestUrl.pathname;
+    if (photoStudioRouteDisabled(pathname, process.env)) {
+        return new NextResponse(null, { status: 404, headers: { 'Cache-Control': 'no-store' } });
+    }
     if (pathname === POSTHOG_INGEST_PATH || pathname.startsWith(`${POSTHOG_INGEST_PATH}/`)) {
         if (!process.env.NEXT_PUBLIC_POSTHOG_KEY?.startsWith('phc_')) {
             return new NextResponse(null, { status: 404, headers: { 'cache-control': 'no-store' } });
@@ -118,10 +122,17 @@ export async function middleware(req, event) {
     // NextRequest carries nextUrl; a plain Request (tests) only has url.
     // Only this immutable local inference Worker can compile its pinned WASM.
     // HTML and every other script keep the existing nonce policy.
-    if(pathname===LOCAL_SPEECH_WORKER_URL||pathname===`${EDITOR_VISION_PATH}/worker.mjs`){
+    const vision = visionAdmission(req, process.env);
+    if (vision) {
+        if (vision.status !== 200) return new NextResponse(null, vision);
+        const response = NextResponse.next({ request: { headers } });
+        for (const [name, value] of Object.entries(vision.headers)) response.headers.set(name, value);
+        return response;
+    }
+    if(pathname===LOCAL_SPEECH_WORKER_URL){
         if(!editorFeatureEnabled('EDITOR_LOCAL_INFERENCE_ENABLED'))return new NextResponse(null,{status:404});
         const response=NextResponse.next({request:{headers}});
-        response.headers.set('Content-Security-Policy',(pathname===LOCAL_SPEECH_WORKER_URL?localSpeechWorkerPolicy:editorVisionWorkerPolicy)(new URL(req.url).origin));
+        response.headers.set('Content-Security-Policy',localSpeechWorkerPolicy(new URL(req.url).origin));
         response.headers.set('Cache-Control','no-cache');
         return response;
     }
