@@ -9,10 +9,13 @@ const flags = (patch) => JSON.stringify({ ui: true, schema: true, library: true,
 
 test('the song page picks the server view from MUSIC_RUNTIME_FLAGS, like the Library page', () => {
   const source = readFileSync(path.join(root, 'app/veyrnox/app/music/songs/[id]/page.js'), 'utf8');
-  assert.match(source, /import \{ musicLibraryEnabled, musicUiEnabled \} from '[./]*lib\/musicBackend\.js'/);
-  assert.match(source, /const serverLibrary = musicUiEnabled\(\) && musicLibraryEnabled\(\);/);
+  // Whitespace and quote style are free; the helpers and where they come from are not.
+  const importsHelpers = (text) => /import\s*\{[^}]*\bmusicUiEnabled\b[^}]*\}\s*from\s*['"][^'"]*lib\/musicBackend\.js['"]/.test(text)
+    && /import\s*\{[^}]*\bmusicLibraryEnabled\b[^}]*\}\s*from\s*['"][^'"]*lib\/musicBackend\.js['"]/.test(text);
+  const usesGate = (text) => /musicUiEnabled\(\)\s*&&\s*musicLibraryEnabled\(\)/.test(text);
+  assert.ok(importsHelpers(source) && usesGate(source), 'the song page must gate on the shared helpers');
   const library = readFileSync(path.join(root, 'app/veyrnox/app/music/library/page.js'), 'utf8');
-  assert.match(library, /musicUiEnabled\(\) && musicLibraryEnabled\(\)/);
+  assert.ok(importsHelpers(library) && usesGate(library), 'the Library page uses the same gate');
 });
 
 test('the shared gate is on with the JSON flags alone and off when any needed flag is false', () => {
