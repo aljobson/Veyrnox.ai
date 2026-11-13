@@ -93,7 +93,6 @@ export default function EditorHome() {
                             <Text variant="caption" style={styles.eyebrow}>{t('editor.home.eyebrow')}</Text>
                             <Text variant="display" style={styles.heading} accessibilityRole="header">{t('editor.title')}</Text>
                             <Text variant="body" style={styles.summary}>{t('editor.home.summary')}</Text>
-                            <Text variant="caption" style={styles.mutedInk} selectable>{editorDiagnostics(workspaces ? workspaces.length : null)}</Text>
                         </View>
                         <Button label={t('editor.new')} variant="primary"
                             accessibilityRole="button"
