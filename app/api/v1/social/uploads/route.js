@@ -9,11 +9,11 @@ import { checkSniffed, requireImageDimensions, DIMENSION_BYTES } from '../../../
 import { admissionAvailable } from '../../../../../lib/uploadAdmission.js';
 import { fetchWithTimeout } from '../../../../../lib/fetchWithTimeout.js';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../../lib/validate.js';
 const reply = (body, status = 200) => NextResponse.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
 function context(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
-    if (!authId || !UUID_RE.test(authId)) return { error: reply({ error: 'not_authenticated' }, 401) };
+    if (!authId || !isUuidLoose(authId)) return { error: reply({ error: 'not_authenticated' }, 401) };
     if (!socialUploadsEnabled(process.env, authId)) return { error: reply({ error: 'uploads_not_open' }, 503) };
     const cfg = envConfig(), r2cfg = r2EnvConfig();
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !isConfigured(r2cfg)) return { error: reply({ error: 'not_configured' }, 503) };
@@ -62,7 +62,7 @@ export async function POST(req) {
             const signed = await presignPutUrl(result.r2_key, checked.contentType, 900, r2cfg, body.size_bytes);
             return reply({ id: result.id, upload_url: signed.url, content_type: signed.contentType, headers: signed.headers });
         }
-        if (body.action !== 'complete' || typeof body.id !== 'string' || !UUID_RE.test(body.id)) return reply({ error: 'invalid_body' }, 400);
+        if (body.action !== 'complete' || typeof body.id !== 'string' || !isUuidLoose(body.id)) return reply({ error: 'invalid_body' }, 400);
         const result = await rpc('read_social_upload', { p_auth_id: authId, p_id: body.id }, cfg);
         const upload = result?.uploads?.[0];
         if (!upload) return reply({ error: 'upload_not_found' }, 404);
@@ -89,7 +89,7 @@ export async function DELETE(req) {
     let body;
     try { body = JSON.parse(new TextDecoder().decode(await readBoundedBody(req.body, 4096, req.signal))); }
     catch (err) { return reply({ error: err.status === 413 ? 'body_too_large' : 'invalid_body' }, err.status === 413 ? 413 : 400); }
-    if (typeof body?.id !== 'string' || !UUID_RE.test(body.id)) return reply({ error: 'invalid_body' }, 400);
+    if (typeof body?.id !== 'string' || !isUuidLoose(body.id)) return reply({ error: 'invalid_body' }, 400);
     const limited = await socialPostWriteLimit(ctx.authId, ctx.cfg);
     if (limited) return limited;
     try {

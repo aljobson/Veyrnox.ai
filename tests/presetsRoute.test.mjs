@@ -173,3 +173,23 @@ test('all 299 retained API rows expose one exact prompt and informational compat
     assert.equal(pink.sourcePromptReferenceVideoCount, 1);
     assert.equal(pink.sourcePromptRunnable, false);
 });
+
+
+test('legacy mobile route excludes images with publication both on and off', async () => {
+  const previous = process.env.IMAGE_TEMPLATES_ENABLED;
+  const restore = stubCatalog([]);
+  try {
+    for (const flag of ['true', 'false']) {
+      process.env.IMAGE_TEMPLATES_ENABLED = flag;
+      const res = await route.GET();
+      assert.equal(res.status, 200);
+      const { presets } = await res.json();
+      assert.equal(presets.length, PRESETS.length);
+      assert.ok(presets.every(p => p.category !== 'CHRISTMAS' && p.modality !== 'text-to-image'));
+    }
+  } finally {
+    restore();
+    if (previous === undefined) delete process.env.IMAGE_TEMPLATES_ENABLED;
+    else process.env.IMAGE_TEMPLATES_ENABLED = previous;
+  }
+});

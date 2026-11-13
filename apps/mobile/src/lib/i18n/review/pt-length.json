@@ -1,5 +1,23 @@
 [
   {
+    "id": "brand.swatch.teal",
+    "english": "Teal",
+    "translation": "Turquesa",
+    "ratio": 2
+  },
+  {
+    "id": "brand.swatch.red",
+    "english": "Red",
+    "translation": "Vermelho",
+    "ratio": 2.67
+  },
+  {
+    "id": "brand.swatch.navy",
+    "english": "Navy",
+    "translation": "Azul-marinho",
+    "ratio": 3
+  },
+  {
     "id": "editorSimple.openTool",
     "english": "Open tool",
     "translation": "Abrir ferramenta",
@@ -3178,6 +3196,12 @@
     "english": "Wig opacity",
     "translation": "Opacidade da peruca",
     "ratio": 1.73
+  },
+  {
+    "id": "instruments.share",
+    "english": "Share WAV",
+    "translation": "Compartilhar WAV",
+    "ratio": 1.78
   },
   {
     "id": "chrome.privacyPolicy",

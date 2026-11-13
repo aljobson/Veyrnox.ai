@@ -1,3 +1,4 @@
+import { form, stripePost, stripeGet, STRIPE_CHECKOUT_API_VERSION } from './stripeClient.js';
 /**
  * Stripe adapter — Credit Pack checkout after LemonSqueezy refused AI media
  * generation (2026-09-22). Plain fetch against a constant API host, no SDK
@@ -19,7 +20,7 @@
  */
 
 const STRIPE_API_BASE = 'https://api.stripe.com/v1';
-export const STRIPE_CHECKOUT_API_VERSION = '2025-03-31.basil';
+export { STRIPE_CHECKOUT_API_VERSION } from './stripeClient.js';
 // AI as a service (LLMs, image generators). The category Stripe's own
 // Managed Payments eligibility list names for this business.
 export const TAX_CODE = 'txcd_10105001';
@@ -32,15 +33,6 @@ const SESSION_RE = /^cs_[A-Za-z0-9_]{1,251}$/;
 const PAYMENT_INTENT_RE = /^pi_[A-Za-z0-9_]{1,250}$/;
 
 const enc = (s) => new TextEncoder().encode(s);
-
-/** Stripe takes form-encoded bodies with bracketed nested keys. */
-function form(fields) {
-    const body = new URLSearchParams();
-    for (const [key, value] of Object.entries(fields)) {
-        if (value !== undefined && value !== null) body.set(key, String(value));
-    }
-    return body;
-}
 
 async function hmacHex(message, secret) {
     const key = await crypto.subtle.importKey('raw', enc(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
@@ -258,42 +250,6 @@ export async function verifyPassMetadata(metadata, secret) {
         return false;
     }
     return (await hmacHex(passMessage(passId), secret)) === sig ? true : false;
-}
-
-async function stripePost(path, fields, cfg, idempotencyKey) {
-    let res;
-    try {
-        res = await cfg.fetch(`${STRIPE_API_BASE}${path}`, {
-            method: 'POST',
-            headers: {
-                Authorization: `Bearer ${cfg.apiKey}`,
-                'Content-Type': 'application/x-www-form-urlencoded',
-                ...(path === '/checkout/sessions' ? { 'Stripe-Version': STRIPE_CHECKOUT_API_VERSION } : {}),
-                ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
-            },
-            signal: AbortSignal.timeout(STRIPE_TIMEOUT_MS),
-            body: form(fields).toString(),
-        });
-    } catch (err) {
-        return { ok: false, error: `transport: ${err && err.message}` };
-    }
-    const data = await res.json().catch(() => null);
-    return { ok: res.ok, status: res.status, data };
-}
-
-async function stripeGet(path, cfg, expectObject) {
-    let res;
-    try {
-        res = await cfg.fetch(`${STRIPE_API_BASE}${path}`, {
-            headers: { Authorization: `Bearer ${cfg.apiKey}` },
-            signal: AbortSignal.timeout(STRIPE_TIMEOUT_MS),
-        });
-    } catch (err) {
-        return { ok: false, error: `transport: ${err && err.message}` };
-    }
-    const data = await res.json().catch(() => null);
-    if (!res.ok || !data || data.object !== expectObject) return { ok: false, error: `stripe ${res.status}` };
-    return { ok: true, data };
 }
 
 /**

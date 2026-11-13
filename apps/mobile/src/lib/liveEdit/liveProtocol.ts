@@ -2,7 +2,7 @@ import { MAX_MESSAGE } from './protocol';
 import { normalizeStack, type Stack } from './engine';
 import { jpegSize, pngSize } from './imageHeader';
 
-// Live camera boundary (ADR-0335 S8). The WebView page runs the camera, the face tracker and the web live engine; this side only
+// Live camera boundary (ADR-0338 S8). The WebView page runs the camera, the face tracker and the web live engine; this side only
 // sends settings and commands and validates every reply as untrusted data (strict allowlists, size caps, no pass-through).
 export const LIVE_FACE = ['detecting', 'one-face', 'no-face', 'multiple-faces', 'face-unavailable'] as const;
 export const LIVE_WIG = ['off', 'face-required', 'loading', 'unavailable', 'ready', 'angle', 'coverage-unknown', 'uncovered', 'angle-uncovered'] as const;

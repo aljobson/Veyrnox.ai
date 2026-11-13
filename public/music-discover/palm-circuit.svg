@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Abstract green palm circuit">
+  <defs><linearGradient id="g" x1="0" y1="1" x2="1" y2="0"><stop stop-color="#022c22"/><stop offset=".55" stop-color="#059669"/><stop offset="1" stop-color="#fbbf24"/></linearGradient></defs>
+  <rect width="512" height="512" fill="url(#g)"/><circle cx="388" cy="112" r="70" fill="#fef3c7" opacity=".72"/><path d="M254 474V222m0 28c-30-78-87-111-157-99 48 22 80 58 96 107m61-8c30-78 87-111 157-99-48 22-80 58-96 107m-61 15c-53-54-112-62-176-28 55 5 100 29 132 72m44-44c53-54 112-62 176-28-55 5-100 29-132 72" fill="none" stroke="#d1fae5" stroke-linecap="round" stroke-width="18" opacity=".85"/><path d="M70 420h372" stroke="#a7f3d0" stroke-width="10" stroke-dasharray="18 18" opacity=".6"/>
+</svg>

@@ -1,3 +1,4 @@
+import { IMAGE_SOURCE_PROMPT_RECORDS } from './imageSourcePromptRecords.js';
 import { SYNTX_REPLACEMENTS_RECORDS } from './syntxReplacementRecords.js';
 import { HF_REPLACEMENTS_RECORDS } from './higgsfieldReplacementRecords.js';
 import { HIGGSFIELD_CATEGORY_FILL_RECORDS } from './higgsfieldCategoryFillRecords.js';
@@ -12,6 +13,7 @@ import { publicTemplateId, recordLookup } from './templateIds.js';
 
 const EXACT_PROMPT_MAX = GENERATION_PROMPT_MAX;
 const EXACT_SOURCE_RECORDS = Object.freeze({
+  ...IMAGE_SOURCE_PROMPT_RECORDS,
   ...GENJUTSU_SOURCE_PROMPT_RECORDS,
   ...HIGGSFIELD_90_SOURCE_PROMPT_RECORDS,
   ...HIGGSFIELD_300_SOURCE_PROMPT_RECORDS,

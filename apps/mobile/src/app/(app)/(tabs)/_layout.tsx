@@ -5,6 +5,7 @@ import { HeaderRight } from '../../../components/HeaderChips';
 import { Logo } from '../../../components/Logo';
 import { MenuButton } from '../../../components/MenuDrawer';
 import { HEADER_MAX_FONT_SCALE, MIN_TARGET } from '../../../lib/a11y';
+import { EDITOR_ENABLED } from '../../../lib/editorFlag';
 import { t } from '../../../lib/i18n';
 import { MENU_ICONS, type MenuIcon } from '../../../lib/menuIcons';
 import { paletteForScheme } from '../../../theme';
@@ -66,7 +67,7 @@ export default function TabsLayout() {
             />
             <Tabs.Screen
                 name="editor"
-                options={{ tabBarIcon: tabIcon('slate'), title: t('tabs.editor'), tabBarLabel: tabLabel('tabs.editor'), tabBarAccessibilityLabel: t('tabs.editor') }}
+                options={{ href: EDITOR_ENABLED ? undefined : null, tabBarIcon: tabIcon('slate'), title: t('tabs.editor'), tabBarLabel: tabLabel('tabs.editor'), tabBarAccessibilityLabel: t('tabs.editor') }}
             />
             <Tabs.Screen
                 name="library"

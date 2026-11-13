@@ -1,5 +1,11 @@
 [
   {
+    "id": "brand.swatch.navy",
+    "english": "Navy",
+    "translation": "Dunkelblau",
+    "ratio": 2.5
+  },
+  {
     "id": "editorSimple.openTool",
     "english": "Open tool",
     "translation": "Werkzeug öffnen",
@@ -736,6 +742,12 @@
     "english": "Free, {count} left",
     "translation": "Kostenlos, noch {count} übrig",
     "ratio": 1.61
+  },
+  {
+    "id": "create.firstGoal.skip",
+    "english": "Skip for now",
+    "translation": "Vorerst überspringen",
+    "ratio": 1.67
   },
   {
     "id": "create.goalLabel",

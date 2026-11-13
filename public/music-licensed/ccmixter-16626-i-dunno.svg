@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" role="img" aria-labelledby="title desc">
+  <title id="title">I dunno artwork</title>
+  <desc id="desc">Original abstract Veyrnox artwork for Hip-hop</desc>
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="hsl(170 82% 52%)"/><stop offset="1" stop-color="hsl(290 78% 28%)"/></linearGradient><filter id="b"><feGaussianBlur stdDeviation="32"/></filter></defs>
+  <rect width="600" height="600" rx="72" fill="#09090b"/><circle cx="160" cy="150" r="210" fill="url(#g)" opacity=".9" filter="url(#b)"/><circle cx="510" cy="470" r="190" fill="hsl(290 90% 55%)" opacity=".42" filter="url(#b)"/>
+  <path d="M72 390c78-120 147 105 229-31s151 79 227-45" fill="none" stroke="rgba(255,255,255,.72)" stroke-width="18" stroke-linecap="round"/>
+  <text x="72" y="118" fill="white" font-family="system-ui,sans-serif" font-size="30" font-weight="700" letter-spacing="5">HIP-HOP</text><text x="72" y="530" fill="white" font-family="system-ui,sans-serif" font-size="112" font-weight="900">ID</text>
+</svg>

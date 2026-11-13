@@ -20,7 +20,7 @@ const CAPTURE_TIMEOUT_MS = 15_000;
 const decode = (value: string) => Uint8Array.from(atob(value), c => c.charCodeAt(0));
 
 /**
- * Live camera (ADR-0335 S8). The camera, the face tracker and the web live engine run inside one offline WebView document
+ * Live camera (ADR-0338 S8). The camera, the face tracker and the web live engine run inside one offline WebView document
  * (assets/live-edit/runtime.html): no network, no new native module. Mounting this view is what opens the camera and
  * unmounting it destroys the WebView, which releases the camera. It is only mounted after the OS camera permission is granted.
  */

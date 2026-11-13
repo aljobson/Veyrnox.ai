@@ -40,7 +40,7 @@ work order was used, especially D1, D4, D7, S4 and the R2/R3 contracts.
   English registry and length-review artifacts, including de-length, regenerated.
   Existing locale equality review remains valid. Native linguistic review is
   still pending under the catalog's existing machine-translation convention.
-- ADR-0335 amended with bridge, offline delivery, privacy, bounds and qualification
+- ADR-0338 amended with bridge, offline delivery, privacy, bounds and qualification
   requirements. Images/landmarks have no upload or analytics path in this slice.
   No camera, wig, 3D, AI provider or credit-metered behavior was added.
 
@@ -215,7 +215,7 @@ Proof logs for this run are in `/tmp/live-edit-*.log` (local transient artifacts
 - `apps/mobile/src/lib/liveEdit/stack.ts`
 - `apps/mobile/src/lib/lookExport.ts`
 - `apps/mobile/src/lib/photoStudioFlag.ts`
-- `docs/adr/0335-local-photo-studio.md`
+- `docs/adr/0338-local-photo-studio.md`
 - `docs/mobile/S4-LIVE-EDIT-REPORT.md`
 
 ## Design goal criteria

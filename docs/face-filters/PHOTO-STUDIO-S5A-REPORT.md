@@ -121,8 +121,8 @@ checks, **not evidence of a successful GPU run**. No real photos are committed.
 - `app/veyrnox/app/photo-studio/Controls.jsx`
 - `app/veyrnox/app/photo-studio/PhotoEditor.jsx`
 - `app/veyrnox/app/photo-studio/WigControls.jsx`
-- `docs/adr/0335-local-photo-studio.md`
-- `docs/adr/0335-photo-studio-s4-appendix.md`
+- `docs/adr/0338-local-photo-studio.md`
+- `docs/adr/0338-photo-studio-s4-appendix.md`
 - `docs/face-filters/PHOTO-STUDIO-S5A-REPORT.md`
 - `e2e/photo-studio.proof.mjs`
 - `lib/generatedProductInventory.js`

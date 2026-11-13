@@ -80,7 +80,7 @@ test('exactly three releases fit the documented proposed cap, counting every dec
     const total = totals.reduce((sum, bytes) => sum + bytes, 0);
     assert.equal(total, 73259684); assert.equal(VISION_COMBINED_BUDGET_BYTES, 72 * 1024 * 1024);
     assert.ok(total <= VISION_COMBINED_BUDGET_BYTES);
-    const adr = await readFile('docs/adr/0335-local-photo-studio.md', 'utf8');
+    const adr = await readFile('docs/adr/0338-local-photo-studio.md', 'utf8');
     assert.match(adr, /72 MiB/); assert.match(adr, /proposed, pending owner approval/);
     assert.ok(adr.includes('73,259,684'));
 });

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { gatewayFetch } from '../../_lib/gateway';
 import { MusicSongActions } from './MusicSongActions';
+import { SavedMusicMixes } from './SavedMusicMixes';
 import { MusicWorkspaceCollaboration } from './MusicWorkspaceCollaboration';
 import { useMusicLibraryState } from './useMusicLibraryState';
 
@@ -18,7 +19,7 @@ function ServerSongRow({ song, checked, onToggle, onFeedback, onTrash, busy }) {
             <Link href={`/app/music/songs/${song.id}`} className="break-words font-bold text-vx-fg underline-offset-4 hover:underline">{song.title}</Link>
             <span className="rounded-full bg-vx-accent/15 px-2 py-1 text-xs font-bold text-vx-accent">Ready</span>
             <span className="rounded-full border border-vx-border px-2 py-1 text-xs text-vx-fg-muted">Private</span>
-            <MusicSongActions songId={song.id} title={song.title} />
+            <MusicSongActions songId={song.id} jobId={song.job_id} title={song.title} actions={['view_lineage', 'open_editor', 'organize']} />
           </div>
           <p className="mt-2 text-sm text-vx-fg-muted">{song.workspace_name}</p>
           {song.audio_url ? <audio className="mt-3 w-full" controls preload="none" src={song.audio_url} aria-label={`Play ${song.title}`} /> : null}
@@ -164,7 +165,7 @@ export function MusicServerLibrary({ workspaceView = false, sourcesEnabled = fal
 
       {library.error ? <div role="alert" className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-vx-danger/50 bg-vx-danger/10 px-4 py-3 text-sm text-vx-danger"><span>{library.error}</span><button type="button" onClick={library.load} className="min-h-10 rounded-full border border-current px-4 font-bold">Reload Library</button></div> : null}
 
-      {!['uploads', 'trash'].includes(collection) ? <section aria-label="Private workspaces" className="mt-8 rounded-2xl border border-vx-border bg-vx-panel p-4 sm:p-5">
+      {!['uploads', 'trash', 'mixes'].includes(collection) ? <section aria-label="Private workspaces" className="mt-8 rounded-2xl border border-vx-border bg-vx-panel p-4 sm:p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0 flex-1">
             <h2 className="font-vx text-xl font-black">Choose a workspace</h2>
@@ -183,25 +184,26 @@ export function MusicServerLibrary({ workspaceView = false, sourcesEnabled = fal
 
       <div className="mt-6 flex flex-col gap-3 rounded-2xl border border-vx-border bg-vx-panel p-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm font-bold text-vx-fg">{collection === 'uploads' ? 'Owned source recordings' : collection === 'trash' ? 'Recently removed versions' : selectedWorkspace?.name || 'All private versions'}</p>
-          <p className="text-xs text-vx-fg-muted">{collection === 'uploads' ? 'Original files only' : `${visible.length} shown`}</p>
+          <p className="text-sm font-bold text-vx-fg">{collection === 'uploads' ? 'Owned source recordings' : collection === 'trash' ? 'Recently removed versions' : collection === 'mixes' ? 'Saved sample mixes' : selectedWorkspace?.name || 'All private versions'}</p>
+          <p className="text-xs text-vx-fg-muted">{collection === 'uploads' ? 'Original files only' : collection === 'mixes' ? 'Editable speed and layer recipes' : `${visible.length} shown`}</p>
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:justify-end">
           <div role="group" aria-label="Library collection" className="flex rounded-full border border-vx-border bg-vx-base p-1 text-sm font-bold">
             <button type="button" aria-pressed={collection === 'all'} onClick={() => setCollection('all')} className={`rounded-full px-3 py-2 ${collection === 'all' ? 'bg-vx-fg text-vx-base' : 'text-vx-fg-muted'}`}>All</button>
             <button type="button" aria-pressed={collection === 'liked'} onClick={() => setCollection('liked')} className={`rounded-full px-3 py-2 ${collection === 'liked' ? 'bg-vx-fg text-vx-base' : 'text-vx-fg-muted'}`}>Liked</button>
+            <button type="button" aria-pressed={collection === 'mixes'} onClick={() => setCollection('mixes')} className={`rounded-full px-3 py-2 ${collection === 'mixes' ? 'bg-vx-fg text-vx-base' : 'text-vx-fg-muted'}`}>Saved mixes</button>
             {sourcesEnabled ? <button type="button" aria-pressed={collection === 'uploads'} onClick={() => setCollection('uploads')} className={`rounded-full px-3 py-2 ${collection === 'uploads' ? 'bg-vx-fg text-vx-base' : 'text-vx-fg-muted'}`}>Uploads</button> : null}
             <button type="button" aria-pressed={collection === 'trash'} onClick={() => { setCollection('trash'); if (!library.trashLoaded) library.loadTrash(); }} className={`rounded-full px-3 py-2 ${collection === 'trash' ? 'bg-vx-fg text-vx-base' : 'text-vx-fg-muted'}`}>Trash</button>
           </div>
-          {collection !== 'uploads' ? <div role="group" aria-label="Library view" className="flex rounded-full border border-vx-border bg-vx-base p-1 text-sm font-bold">
+          {!['uploads', 'mixes'].includes(collection) ? <div role="group" aria-label="Library view" className="flex rounded-full border border-vx-border bg-vx-base p-1 text-sm font-bold">
             <button type="button" aria-pressed={view === 'list'} onClick={() => setView('list')} className={`rounded-full px-3 py-2 ${view === 'list' ? 'bg-vx-fg text-vx-base' : 'text-vx-fg-muted'}`}>List</button>
             <button type="button" aria-pressed={view === 'grid'} onClick={() => setView('grid')} className={`rounded-full px-3 py-2 ${view === 'grid' ? 'bg-vx-fg text-vx-base' : 'text-vx-fg-muted'}`}>Grid</button>
           </div> : null}
-          {collection !== 'uploads' ? <><label className="sr-only" htmlFor="server-music-library-search">Search Music Library</label><input id="server-music-library-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search owned titles" className="min-h-11 w-full rounded-xl border border-vx-border-boost bg-vx-base px-4 text-sm text-vx-fg placeholder:text-vx-fg-faint focus:border-vx-accent focus:outline-none sm:max-w-xs" /></> : null}
+          {collection !== 'uploads' ? <><label className="sr-only" htmlFor="server-music-library-search">Search Music Library</label><input id="server-music-library-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={collection === 'mixes' ? 'Search saved mixes' : 'Search owned titles'} className="min-h-11 w-full rounded-xl border border-vx-border-boost bg-vx-base px-4 text-sm text-vx-fg placeholder:text-vx-fg-faint focus:border-vx-accent focus:outline-none sm:max-w-xs" /></> : null}
         </div>
       </div>
 
-      {!['uploads', 'trash'].includes(collection) && library.selectedSongs.length ? (
+      {!['uploads', 'trash', 'mixes'].includes(collection) && library.selectedSongs.length ? (
         <form onSubmit={move} className="mt-4 flex flex-col gap-3 rounded-2xl border border-vx-accent/50 bg-vx-accent/10 p-4 sm:flex-row sm:items-end">
           <label className="min-w-0 flex-1 text-sm font-bold text-vx-fg-body">Move {library.selectedSongs.length} selected {library.selectedSongs.length === 1 ? 'version' : 'versions'} to
             <select value={destinationId} onChange={(event) => setDestinationId(event.target.value)} className="mt-2 min-h-11 w-full rounded-xl border border-vx-border-boost bg-vx-base px-4 text-vx-fg focus:border-vx-accent focus:outline-none">
@@ -215,11 +217,13 @@ export function MusicServerLibrary({ workspaceView = false, sourcesEnabled = fal
 
       {sourcesEnabled ? <MusicUploadsCollection active={collection === 'uploads'} /> : null}
 
+      {collection === 'mixes' ? <section aria-label="Saved sample mixes" className="mt-6"><SavedMusicMixes query={query} /></section> : null}
+
       {collection === 'trash' ? <div className="mt-6 rounded-2xl border border-vx-border bg-vx-base p-4 text-sm text-vx-fg-muted">Restore is available immediately. Permanent deletion remains unavailable while private asset cleanup is being validated.</div> : null}
 
       {workspaceView && collaborationEnabled ? <MusicWorkspaceCollaboration /> : null}
 
-      {collection !== 'uploads' ? <section aria-label={collection === 'trash' ? 'Trashed music versions' : 'Owned music versions'} className="mt-6">
+      {!['uploads', 'mixes'].includes(collection) ? <section aria-label={collection === 'trash' ? 'Trashed music versions' : 'Owned music versions'} className="mt-6">
         {collection === 'trash' && library.trashLoading ? (
           <div aria-busy="true" className="space-y-3"><div className="vx-shimmer h-24 rounded-2xl bg-vx-panel"/><div className="vx-shimmer h-24 rounded-2xl bg-vx-panel"/></div>
         ) : library.loading ? (

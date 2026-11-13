@@ -13,7 +13,7 @@ const REQUEST_TIMEOUT_MS = 30_000, START_TIMEOUT_MS = 45_000, DEBOUNCE_MS = 120;
 const keyOf = (job: Wig3dJob) => overlayKey(job.wig, job.landmarks, job.width, job.height);
 
 /**
- * Renders a 3D wig overlay for a still photo (ADR-0335 S9). three.js runs inside the same offline WebView document as the face models;
+ * Renders a 3D wig overlay for a still photo (ADR-0338 S9). three.js runs inside the same offline WebView document as the face models;
  * this component only sends landmarks and stores the returned PNG for planWig. One persistent hidden WebView, one request at a time,
  * the latest job wins. It exists only while a 3D wig is chosen; unmounting destroys the WebView and its GPU context.
  * This document is NOT the camera document: it is loaded without `#live`, capture is denied, and the page refuses live.* operations.

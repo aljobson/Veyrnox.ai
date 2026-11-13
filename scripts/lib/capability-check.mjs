@@ -106,6 +106,14 @@ export function checkRecord(record, schema, schemas = {}) {
         need(field, 'pinned');
         inEnum(field, value, 'pinned');
     }
+    // Every provider value a tier can send must exist on the endpoint, and every non-base tier needs a price source.
+    for (const [tier, fields] of Object.entries(record.tiers?.options || {})) {
+        for (const [field, value] of Object.entries(fields)) {
+            need(field, `tier ${tier}`);
+            inEnum(field, value, `tier ${tier}`);
+        }
+        if (!Number.isFinite(record.tiers.multipliers?.[tier])) problems.push(`tier "${tier}" has no multiplier from the provider's price list`);
+    }
     for (const [field, value] of Object.entries(record.assumes)) {
         if (!has(props, field)) { problems.push(`assumed field "${field}" does not exist`); continue; }
         const live = props[field].default;

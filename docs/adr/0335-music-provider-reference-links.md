@@ -1,6 +1,6 @@
 # ADR-0335 — Music reference links use official provider embeds
 
-**Status:** Accepted 2026-11-11
+**Status:** Reversed 2026-11-11
 
 ## Context
 
@@ -31,9 +31,18 @@ Veyrnox Music needs a larger discovery shelf without copying recordings or artwo
 
 ## Decision
 
-The surface has its own `references` Music runtime flag. It ships off and must
-be enabled only after migration 0493 is applied, so deploy order cannot expose
-a route whose table and RPCs do not exist yet.
+The Discover shelf was removed at the owner's request. Production and staging
+keep `references` disabled, and Discover no longer imports or renders the
+provider-link component. The applied schema remains dormant so the rollback is
+non-destructive and existing rows, if any, can be handled through a separate
+data-retention decision.
+
+The superseded implementation decision follows for historical context.
+
+The surface has its own `references` Music runtime flag. It first shipped off
+and production was enabled only after migration 0493 applied successfully, so
+deploy order could not expose a route whose table and RPCs did not exist yet.
+Staging remains off until that separate database has the same migration.
 
 Use option 3. The server accepts only canonical public YouTube video and SoundCloud track URLs, calls only each provider's fixed oEmbed endpoint with a bounded timeout/body, extracts a minimal safe DTO, and persists no media bytes. The database is owner-scoped and service-role-only.
 

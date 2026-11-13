@@ -89,7 +89,7 @@ builder report below is historical, including its earlier build blockers.
 
 Files changed in this round only:
 
-- `tests/runtimeSwitches.test.mjs`: permit exactly the reviewed ADR-0335 comment
+- `tests/runtimeSwitches.test.mjs`: permit exactly the reviewed ADR-0338 comment
   and Worker-first array in the HEAD-based byte pin; retain equality for all
   other configuration bytes/bindings.
 - `tests/showcaseVideo.test.mjs`: require exactly `["/showcase/*.mp4", "/editor-vision/*"]`
@@ -169,7 +169,7 @@ no sibling source or build environment was changed.
 
 - S0: pinned Face Landmarker Worker beside the unchanged person Worker; two-prefix
   preparation/verification and notices; actual Worker-first Assets admission;
-  GET/HEAD gates, exact per-prefix WASM CSP, no-cache (revalidate) policy with no-store denials; ADR-0335.
+  GET/HEAD gates, exact per-prefix WASM CSP, no-cache (revalidate) policy with no-store denials; ADR-0338.
 - S1: `/app/photo-studio`, server layout/Worker/middleware gates and subordinate
   browser opt-in; Vey also hides the dark route. Pure shared effect math and nine
   look parity, WebGL2 renderer, shared bilateral kernel, conservative skin/eye/
@@ -236,7 +236,7 @@ Recorded local logs are `/tmp/photo-studio-final-tests.log`,
 | `node scripts/verify-editor-vision.mjs .open-next/assets` | Ran, exited 1: ENOENT for `.open-next/assets/editor-vision`; no production build exists here. The public-tree verification is separate evidence. |
 | `node scripts/probe-photo-studio-worker.mjs` | Ran, exited 1 before launching a server: `.open-next/worker.js` is missing. No built Worker HTTP request was made. |
 | Built Worker + real-renderer browser proof | Not run: requires that build and local Worker. Playwright is resolvable, but no browser was driven. |
-| Remote `origin/main` / next ADR recheck | `git ls-remote` failed: GitHub DNS could not resolve. Local cached `origin/main` remains `8bb562cfb`; ADR-0335 is provisional pending host remote recheck. |
+| Remote `origin/main` / next ADR recheck | `git ls-remote` failed: GitHub DNS could not resolve. Local cached `origin/main` remains `8bb562cfb`; ADR-0338 is provisional pending host remote recheck. |
 | Initial model download | Google Storage DNS failed. Recovered using existing exact SHA-256-matching cached files; no download or package installation was required. |
 
 The mandatory shared build lock was not replaced with a private lock or bypassed.
@@ -342,7 +342,7 @@ this checkout for the host's build; no duplicate native environment was created.
 - `app/veyrnox/app/photo-studio/StickerHandles.jsx`
 - `app/veyrnox/app/photo-studio/layout.js`
 - `app/veyrnox/app/photo-studio/page.js`
-- `docs/adr/0335-local-photo-studio.md`
+- `docs/adr/0338-local-photo-studio.md`
 - `docs/face-filters/PHOTO-STUDIO-S0-S1-REPORT.md`
 - `e2e/photo-studio-proof.config.mjs`
 - `e2e/photo-studio.proof.mjs`

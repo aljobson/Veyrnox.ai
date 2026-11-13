@@ -4,14 +4,14 @@ import {
     publicMusicError, readMusicJson, validMusicAuthId,
 } from '../../../../../../../lib/musicBackend.js';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+import { isUuid } from '../../../../../../../lib/validate.js';
 const reply = (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
 
 function context(request, id) {
     const authId = request.headers.get('x-veyrnox-auth-id');
     if (!validMusicAuthId(authId)) return { response: reply({ error: 'not_authenticated' }, 401) };
     if (!musicReuseEnabled()) return { response: reply({ error: 'music_reuse_unavailable' }, 404) };
-    if (!UUID_RE.test(id || '')) return { response: reply({ error: 'song_id_invalid' }, 400) };
+    if (!isUuid(id || '')) return { response: reply({ error: 'song_id_invalid' }, 400) };
     const cfg = envConfig();
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey) return { response: reply({ error: 'gateway_not_configured' }, 503) };
     return { authId, cfg };
@@ -22,7 +22,7 @@ export async function GET(request, { params }) {
     const current = context(request, id);
     if (current.response) return current.response;
     const versionId = new URL(request.url).searchParams.get('version_id');
-    if (!UUID_RE.test(versionId || '')) return reply({ error: 'version_id_invalid' }, 400);
+    if (!isUuid(versionId || '')) return reply({ error: 'version_id_invalid' }, 400);
     try {
         const result = await rpc('music_get_reuse_draft_context', {
             p_auth_id: current.authId, p_song_id: id, p_version_id: versionId,

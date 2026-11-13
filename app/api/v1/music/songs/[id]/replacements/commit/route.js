@@ -4,7 +4,7 @@ import {
     publicMusicError, readMusicJson, validMusicAuthId,
 } from '../../../../../../../../lib/musicBackend.js';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+import { isUuid } from '../../../../../../../../lib/validate.js';
 const reply = (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
 
 export async function POST(request, { params }) {
@@ -12,7 +12,7 @@ export async function POST(request, { params }) {
     const { id } = await params;
     if (!validMusicAuthId(authId)) return reply({ error: 'not_authenticated' }, 401);
     if (!musicReplaceEnabled()) return reply({ error: 'music_replace_unavailable' }, 404);
-    if (!UUID_RE.test(id || '')) return reply({ error: 'song_id_invalid' }, 400);
+    if (!isUuid(id || '')) return reply({ error: 'song_id_invalid' }, 400);
     const decoded = await readMusicJson(request);
     if (!decoded.ok) return reply({ error: decoded.error }, decoded.error === 'body_too_large' ? 413 : 400);
     const input = parseMusicReplaceCommit(decoded.value);

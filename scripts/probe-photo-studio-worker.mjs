@@ -77,7 +77,7 @@ async function check(localInference, photoStudio) {
     if (photoStudio === 'false') for (const path of ['/app/photo-studio', '/veyrnox/app/photo-studio']) {
         const response = await fetch(origin + path, { redirect: 'manual' }); assert.equal(response.status, 404, path); await response.arrayBuffer();
     }
-    // Camera permission (ADR-0335, S2b): camera=(self) on the Photo Studio route only, and only when the page is served.
+    // Camera permission (ADR-0338, S2b): camera=(self) on the Photo Studio route only, and only when the page is served.
     const policy = async path => { const response = await fetch(origin + path, { redirect: 'manual' }); await response.arrayBuffer(); return response; };
     if (photoStudio === 'true' && localInference === 'true') {
         const page = await policy('/app/photo-studio');

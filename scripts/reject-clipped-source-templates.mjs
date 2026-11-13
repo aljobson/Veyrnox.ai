@@ -2,7 +2,8 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync, existsSync, rmSync } from 'node:fs';
-import { templatesIn } from '../app/veyrnox/_lib/templates.js';
+import { PRESETS } from '../app/veyrnox/_lib/templates.js';
+const templatesIn = (category) => PRESETS.filter((p) => p.category === category);
 import { sourcePromptEnding } from './lib/source-prompt-endings.mjs';
 
 const id = 'community-miniature-desktop-chase';

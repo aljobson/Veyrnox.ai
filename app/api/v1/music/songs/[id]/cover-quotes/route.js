@@ -1,3 +1,4 @@
+import { retryAfterSeconds } from '../../../../../../../lib/rateLimitHeaders.js';
 import { rpc, envConfig } from '../../../../../../../packages/db/supabase-client.js';
 import { envConfig as r2EnvConfig, isConfigured as r2IsConfigured } from '../../../../../../../packages/adapters/r2.js';
 import { inspectStoredSource } from '../../../../../../../lib/resolveSource.js';
@@ -6,7 +7,7 @@ import {
     parseMusicCoverQuote, publicMusicError, readMusicJson, validMusicAuthId,
 } from '../../../../../../../lib/musicBackend.js';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+import { isUuid } from '../../../../../../../lib/validate.js';
 const reply = (body, status = 200, headers = {}) => Response.json(body, {
     status, headers: { 'Cache-Control': 'no-store', ...headers },
 });
@@ -16,7 +17,7 @@ export async function POST(request, { params }) {
     const { id } = await params;
     if (!validMusicAuthId(authId)) return reply({ error: 'not_authenticated' }, 401);
     if (!musicCoverEnabled()) return reply({ error: 'music_cover_unavailable' }, 404);
-    if (!UUID_RE.test(id || '')) return reply({ error: 'song_id_invalid' }, 400);
+    if (!isUuid(id || '')) return reply({ error: 'song_id_invalid' }, 400);
 
     const decoded = await readMusicJson(request);
     if (!decoded.ok) return reply({ error: decoded.error }, decoded.error === 'body_too_large' ? 413 : 400);
@@ -56,7 +57,7 @@ export async function POST(request, { params }) {
         if (!result?.ok) {
             const status = musicRpcStatus(result?.code);
             const headers = status === 429
-                ? { 'Retry-After': String(Math.max(1, Math.min(600, Number(result.retry_after_seconds) || 60))) }
+                ? { 'Retry-After': String(retryAfterSeconds(result.retry_after_seconds, { max: 600, fallback: 60 })) }
                 : {};
             return reply({ error: publicMusicError(result?.code) }, status, headers);
         }

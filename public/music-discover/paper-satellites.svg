@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Abstract pastel paper satellites">
+  <defs><linearGradient id="g" x1="0" y1="1" x2="1" y2="0"><stop stop-color="#fbcfe8"/><stop offset=".5" stop-color="#bae6fd"/><stop offset="1" stop-color="#fef3c7"/></linearGradient></defs>
+  <rect width="512" height="512" fill="url(#g)"/><circle cx="258" cy="254" r="92" fill="#f8fafc" opacity=".8"/><ellipse cx="256" cy="256" rx="210" ry="92" fill="none" stroke="#7c3aed" stroke-width="12" transform="rotate(-20 256 256)" opacity=".58"/><ellipse cx="256" cy="256" rx="190" ry="68" fill="none" stroke="#db2777" stroke-width="10" transform="rotate(44 256 256)" opacity=".48"/><path d="M235 184l112 74-112 69 22-62z" fill="#fff" stroke="#0f172a" stroke-linejoin="round" stroke-width="8"/><circle cx="83" cy="170" r="25" fill="#f472b6"/><circle cx="427" cy="364" r="32" fill="#38bdf8"/>
+</svg>

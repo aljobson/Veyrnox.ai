@@ -23,11 +23,11 @@ import { envConfig } from '../../../../../../../packages/db/supabase-client.js';
 import { linkedinConfig, buildAuthorizeUrl } from '../../../../../../../packages/adapters/social/linkedin.js';
 import { issueOAuthState } from '../../../../../../../lib/social/oauthStateStore.js';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../../../../lib/validate.js';
 
 export async function POST(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
-    if (!authId || !UUID_RE.test(authId)) {
+    if (!authId || !isUuidLoose(authId)) {
         return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
     }
 

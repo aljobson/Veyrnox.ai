@@ -350,7 +350,9 @@ test('Syntx templates preserve every currently published source prompt exactly',
     assert.equal(row.match(/\/variants\/([A-Za-z0-9]+)\.(?:mp4|webm)/)?.[1], source.sourceMediaId, `${template.id} reverse media-ID match`);
   }
   const detailPage = readFileSync(new URL('../app/veyrnox/presets/[id]/page.js', import.meta.url), 'utf8');
-  assert.match(detailPage, /exactSourcePromptRecord\(template\.id\)/, 'detail pages must use the combined exact-prompt source map');
+  assert.match(detailPage, /templateRecipe\(template\)/, 'detail pages use the shared provenance recipe');
+  const recipeSource = readFileSync(new URL('../app/veyrnox/_lib/templateRecipe.js', import.meta.url), 'utf8');
+  assert.match(recipeSource, /exactSourcePromptRecord\(template\.id\)/, 'exact recipes must use the combined exact-prompt source map');
   assert.equal(exactSourcePromptRecord('chasing-you'), SYNTX_SOURCE_PROMPT_RECORDS['chasing-you']);
   assert.equal(exactSourcePromptRecord('keyboard-duo-swap'), null, 'unresolved source prompts must stay off detail pages');
   assert.equal(exactSourcePromptRecord('fairytale-castle'), null, 'unattributed historical previews must stay off detail pages');

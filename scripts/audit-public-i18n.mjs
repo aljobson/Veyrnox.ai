@@ -28,6 +28,7 @@ const privateFunctions = {
 const exceptions = [
   { file: /^app\/veyrnox\/_components\/music\/(?!MusicPublicPrompt|MusicPublicProfile|MusicPublicTrack|MusicSharedSong)[^/]+\.jsx$/, pattern: /./, reason: 'disabled-by-default private Music preview copy remains English-only until rollout localization; public Music surfaces stay audited' },
   { file: /^app\/veyrnox\/app\/music\//, pattern: /./, reason: 'disabled-by-default private Music preview routes remain English-only until rollout localization; public Music surfaces stay audited' },
+  { file: /^lib\/musicInstruments\.js$/, pattern: /./, reason: 'instrument and sound-template names for the disabled-by-default private Music preview, which stays English-only until rollout localization' },
   { file: /^app\/veyrnox\/_lib\/performanceStudio\.js$/, pattern: /./, reason: 'canonical workflow and provider contract catalog data; localized display labels are resolved by the consuming UI' },
   { file: /^(?:app\/layout\.js|app\/veyrnox\/_components\/ThemeToggle\.js|lib\/themePreference\.mjs)$/, pattern: /^(?:\(prefers-color-scheme: (?:light|dark)\)|= ; Path=\/; Max-Age= ; SameSite=Lax)$/, reason: 'CSS media query and cookie attributes for the theme preference, not copy' },
   ...helperExceptions,
@@ -35,6 +36,7 @@ const exceptions = [
   { file: /\/_lib\/(?:showcase|sourceTemplateExpansion\d*|character|characterOptions|oddlingCatalog)\.js$/, pattern: /./, reason: 'source catalog names, descriptors and prompts remain unchanged (ADR-0107)' },
   { file: /\/_lib\/audioTemplates\.js$/, pattern: /./, reason: 'audio template names and generation prompts stay English, like the video template catalog (ADR-0107)' },
   { file: /^lib\/musicDiscover\.js$/, pattern: /./, reason: 'original beat titles and canonical generation recipes are creative catalog data, matching the existing audio template policy (ADR-0107)' },
+  { file: /^lib\/licensedMusicCatalog\.js$/, pattern: /./, reason: 'creator track titles and canonical CC BY attribution receipts must remain verbatim (ADR-0107)' },
   { file: /\/_lib\/(?:studioSkills|filmStudioAssistants)\.js$/, pattern: /^(?:Skill:|Film stage|Models \(id\|kind\|Credits per generation\):$)/, reason: 'canonical assistant instructions, not UI copy (ADR-0107)' },
   { file: /\/_lib\/(?:studioSkillIcons|studioWorkflows)\.js$/, pattern: /^M(?=.*\d)[0-9MmLlHhVvCcSsQqTtAaZz., +\-]+$/, reason: 'validated SVG geometry, not display copy' },
   { file: /\/_components\/chat\/StudioSkillIcon\.js$/, pattern: /^(?:size-5 rounded-md|size-11 rounded-xl|size-16 rounded-2xl sm:size-\[72px\])$/, reason: 'validated icon-size CSS classes, not display copy' },
@@ -124,7 +126,7 @@ export function candidates(file, source, { app = false } = {}) {
     if (kind === 'expression' && (/^[/.#]/.test(value) || /^[?&][a-z_]+=/.test(value))) return;
     if (!/[A-Za-z]{2}/.test(value) && !kind.startsWith('metadata')) return;
     if (!status && helper && catalogValues.has(value)) { status = 'translated'; reason = 'helper copy has an English catalog entry; display mapping requires review'; }
-    if (!status) { reason = allowed(file, value); status = reason ? 'allowlisted' : 'unresolved'; }
+    if (!status || status === 'unresolved') { reason = allowed(file, value) || reason; status = allowed(file, value) ? 'allowlisted' : 'unresolved'; }
     output.push({ file, line: tree.getLineAndCharacterOfPosition(node.getStart()).line + 1, kind, text: value, status, ...(reason ? { reason } : {}) });
   }
   function visit(node) {

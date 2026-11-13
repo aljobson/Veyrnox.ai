@@ -1,4 +1,4 @@
-// ADR-0335 S2b: Permissions-Policy belongs to the DOCUMENT that was loaded, not to a client-side route. A document loaded at
+// ADR-0338 S2b: Permissions-Policy belongs to the DOCUMENT that was loaded, not to a client-side route. A document loaded at
 // Photo Studio keeps camera=(self) after a soft (next/link) navigation to another page, which would hand the camera to a
 // route that is not meant to have it. So every way out of Photo Studio becomes a full document navigation, and the next
 // page is served with its own header. (Nothing links INTO Photo Studio; a future link must be a plain <a href>.)

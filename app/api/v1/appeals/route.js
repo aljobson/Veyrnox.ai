@@ -16,13 +16,13 @@ import { NextResponse } from 'next/server';
 import { rpc, envConfig } from '../../../../packages/db/supabase-client.js';
 import { accountReadLimit } from '../../../../lib/accountReadLimit.js';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../lib/validate.js';
 const MAX_BODY_BYTES = 8 * 1024;
 const json = (body, status = 200) => NextResponse.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
 
 function gate(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
-    if (!authId || !UUID_RE.test(authId)) return { response: json({ error: 'not_authenticated' }, 401) };
+    if (!authId || !isUuidLoose(authId)) return { response: json({ error: 'not_authenticated' }, 401) };
     const cfg = envConfig();
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey) return { response: json({ error: 'not_configured' }, 503) };
     return { authId, cfg };
@@ -55,7 +55,7 @@ export async function POST(req) {
     try { body = await req.json(); } catch { return json({ error: 'body_invalid' }, 400); }
     if (!body || typeof body !== 'object' || Array.isArray(body)) return json({ error: 'body_invalid' }, 400);
     const { action_id: actionId, statement } = body;
-    if (typeof actionId !== 'string' || !UUID_RE.test(actionId)) return json({ error: 'action_id_invalid' }, 400);
+    if (typeof actionId !== 'string' || !isUuidLoose(actionId)) return json({ error: 'action_id_invalid' }, 400);
     if (typeof statement !== 'string' || statement.trim().length < 10 || statement.length > 2000) return json({ error: 'statement_invalid' }, 400);
 
     let result;

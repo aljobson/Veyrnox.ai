@@ -8,7 +8,7 @@ const MAX_LYRICS = 3000;
 const MAX_REQUEST = 280;
 const MAX_AGE_MS = 60 * 60 * 1000;
 const USER_RE = /^[A-Za-z0-9_-]{1,128}$/;
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+import { isUuid } from '../../../../lib/validate.js';
 
 export function parseMusicLyricAssistantReply(value) {
   const text = String(value || '').replace(/\r\n?/g, '\n');
@@ -50,7 +50,7 @@ function validContext(value, userId, now) {
     && (value.mode === undefined || value.mode === 'selection')
     && (value.mode !== 'selection' || (Number.isInteger(value.selection_start) && Number.isInteger(value.selection_end)
       && value.selection_start >= 0 && value.selection_end > value.selection_start && value.selection_end <= value.source_lyrics.length))
-    && (value.profile_id === undefined || (typeof value.profile_id === 'string' && UUID_RE.test(value.profile_id)))
+    && (value.profile_id === undefined || (typeof value.profile_id === 'string' && isUuid(value.profile_id)))
     && Number.isFinite(value.created_at) && value.created_at <= now && now - value.created_at <= MAX_AGE_MS
     && (value.proposal === undefined || (typeof value.proposal === 'string' && value.proposal.length > 0 && value.proposal.length <= MAX_LYRICS));
 }

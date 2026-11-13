@@ -127,7 +127,7 @@ remains active and other chats' environments were preserved.
 - `app/veyrnox/_lib/liveEdit/masks.js`
 - `apps/mobile/src/lib/i18n/messages/en/liveEdit.ts`
 - `apps/mobile/src/lib/i18n/messages/app/{ar,de,es,fr,hi,ja,ko,pt,ru,zh}.ts`
-- `docs/adr/0335-local-photo-studio.md`
+- `docs/adr/0338-local-photo-studio.md`
 - `docs/mobile/S4-LIVE-EDIT-REPORT.md` (historical-report pointer)
 - `docs/mobile/S4-LIVE-EDIT-REVISION.md` (this report)
 

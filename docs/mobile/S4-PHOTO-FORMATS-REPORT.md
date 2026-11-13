@@ -112,7 +112,7 @@ created or removed, and no other checkout was edited.
 - apps/mobile/__tests__/liveEditMedia.test.ts
 - apps/mobile/src/lib/i18n/messages/en/liveEdit.ts
 - apps/mobile/src/lib/i18n/messages/app/{ar,de,es,fr,hi,ja,ko,pt,ru,zh}.ts
-- docs/adr/0335-local-photo-studio.md (supported formats amendment)
+- docs/adr/0338-local-photo-studio.md (supported formats amendment)
 - docs/mobile/S4-PHOTO-FORMATS-REPORT.md (this report)
 
 ## Design goal criteria

@@ -21,6 +21,7 @@ export function fromFallback() {
     presentation: capabilities?.presentation || {},
     durationInput: inputs.duration || null,
     resolutions: inputs.output_resolution?.values || [],
+    resolutionTiers: capabilities?.resolutionTiers || null,
     audioOptions: inputs.audio_enabled?.values || [],
     takesTopic: !!inputs.topic,
     isEdit: !!inputs.clips,
@@ -52,6 +53,7 @@ export function fromApi(models) {
     presentation: m.capabilities?.presentation || {},
     durationInput: m.capabilities?.inputs?.duration || null,
     resolutions: m.capabilities?.inputs?.output_resolution?.values || [],
+    resolutionTiers: m.capabilities?.resolutionTiers || null,
     audioOptions: m.capabilities?.inputs?.audio_enabled?.values || [],
     // Auto Short (ADR-0029): takes a topic instead of a prompt.
     takesTopic: !!m.capabilities?.inputs?.topic,

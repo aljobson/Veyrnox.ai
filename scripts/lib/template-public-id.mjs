@@ -1,6 +1,7 @@
 // Offline collision checks include retained evidence and independent landing keys.
 import assert from 'node:assert/strict';
 import { publicTemplateId } from '../../app/veyrnox/_lib/templateIds.js';
+import { IMAGE_TEMPLATES } from '../../app/veyrnox/_lib/imageTemplates.js';
 import { SOURCE_TEMPLATES } from '../../app/veyrnox/_lib/sourceTemplates.js';
 import { EFFECT_CONCEPT_TEMPLATES } from '../../app/veyrnox/_lib/effectConceptTemplates.js';
 import { REFERENCE_TEMPLATES } from '../../app/veyrnox/_lib/referenceTemplates.js';
@@ -12,7 +13,7 @@ import { FEATURE_CARDS } from '../../app/veyrnox/_lib/tokens.js';
 export function assertAvailablePublicIds(ids, ownIds) {
   const owned = new Set(ownIds);
   const occupied = new Set([
-    ...[...SOURCE_TEMPLATES.filter(t => !owned.has(t.id)), ...EFFECT_CONCEPT_TEMPLATES, ...REFERENCE_TEMPLATES].flatMap(t => [t.id, t.clipKey]),
+    ...[...SOURCE_TEMPLATES.filter(t => !owned.has(t.id)), ...EFFECT_CONCEPT_TEMPLATES, ...REFERENCE_TEMPLATES, ...IMAGE_TEMPLATES.filter(t => !owned.has(t.id))].flatMap(t => [t.id, t.clipKey]),
     ...Object.keys(SOURCE_PROMPT_RECORDS).filter(id => !owned.has(id)),
     ...Object.keys(AUDIT_SHOWCASE_CLIPS).filter(id => !owned.has(id)),
     ...Object.keys(SEEDANCE_200_TEMPLATE_METADATA),

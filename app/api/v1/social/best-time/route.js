@@ -7,13 +7,13 @@ import { readPublishEntitlement } from '../../../../../lib/social/publishPlanApi
 import { resolveBrand } from '../../../../../lib/social/resolveBrand.js';
 import { rpc, envConfig, SupabaseError } from '../../../../../packages/db/supabase-client.js';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../../lib/validate.js';
 export async function GET(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
-    if (!authId || !UUID_RE.test(authId)) return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
+    if (!authId || !isUuidLoose(authId)) return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
     if (!postingInsightsEnabled()) return NextResponse.json({ error: 'posting_insights_not_open' }, { status: 503 });
     const accountId = new URL(req.url).searchParams.get('accountId') || '';
-    if (!UUID_RE.test(accountId)) return NextResponse.json({ error: 'invalid_account_id' }, { status: 400 });
+    if (!isUuidLoose(accountId)) return NextResponse.json({ error: 'invalid_account_id' }, { status: 400 });
     const cfg = envConfig();
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey) return NextResponse.json({ error: 'supabase_not_configured' }, { status: 503 });
     const limited = await accountReadLimit(authId, cfg, { insights: null });

@@ -1,7 +1,7 @@
 import { WIG_DEFAULTS, normalizeWig, validWigLandmarks, wigPose } from './wigFit.js';
 import { smooth } from './hair.js';
 
-// Original procedural 3D wigs (ADR-0335 S6). No third-party meshes, textures or provider output:
+// Original procedural 3D wigs (ADR-0338 S6). No third-party meshes, textures or provider output:
 // the shape is plain maths below, so there is no art licence to track. They are stylised wigs.
 export const WIG3D_VERSION = 1;
 export const THREE_VERSION = '0.187.0';

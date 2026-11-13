@@ -23,8 +23,8 @@ test('staging account smoke excludes synthetic fixture specs and preserves its p
 
 async function installedRouting(controls = {}) {
   const source = read('e2e/fixtures/authenticated-product.mjs').split('export async function installProductFixtures')[1];
-  const factory = new Function('base', 'publicFiles', 'PAGE_TEMPLATES', 'templateMatches', 'installed', 'SYNTHETIC_USER', 'SYNTHETIC_MODELS', 'SESSION_KEY', 'FEATURE_TOURS', `return async function installProductFixtures${source}`);
-  const install = factory({}, new Set(['/favicon.ico']), [{ route: '/app/create' }], (template, path) => template === path, new WeakMap(), { id: 'synthetic' }, [], 'synthetic-session', [{ id: 'create' }]);
+  const factory = new Function('base', 'publicFiles', 'PAGE_TEMPLATES', 'templateMatches', 'installed', 'SYNTHETIC_USER', 'SYNTHETIC_MODELS', 'SESSION_KEY', 'COMPLETED_TOUR_IDS', `return async function installProductFixtures${source}`);
+  const install = factory({}, new Set(['/favicon.ico']), [{ route: '/app/create' }, { route: '/app/publish/queues' }], (template, path) => template === path, new WeakMap(), { id: 'synthetic' }, [], 'synthetic-session', ['create', 'page:publish/queues']);
   let handler, fulfilled, fixture;
   const events = [], initScripts = [], pages = [], listeners = new Map();
   const context = {
@@ -70,7 +70,7 @@ test('authenticated fixtures pre-record declined privacy and completed tours bef
   const standard = await installedRouting();
   const stored = await runInitScripts(standard);
   assert.deepEqual(JSON.parse(stored.get('veyrnox_analytics_preference_v1')), { version: 1, analytics: false, replay: false });
-  assert.deepEqual(JSON.parse(stored.get('veyrnox_feature_tours_v1:synthetic')), ['create']);
+  assert.deepEqual(JSON.parse(stored.get('veyrnox_feature_tours_v1:synthetic')), ['create', 'page:publish/queues']);
 });
 
 function safetyTeardown(harness, use = async () => {}, audits = []) {

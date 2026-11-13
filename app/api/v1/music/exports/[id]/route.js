@@ -3,7 +3,7 @@ import { presignGetUrl, isConfigured as r2IsConfigured, envConfig as r2EnvConfig
 import { assetDownloadName } from '../../../../../../lib/assetDownloadName.js';
 import { musicDistributionEnabled, musicRpcStatus, publicMusicError, validMusicAuthId } from '../../../../../../lib/musicBackend.js';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+import { isUuid } from '../../../../../../lib/validate.js';
 const DOWNLOAD_TTL_SECONDS = 300;
 const FORMAT_MIME_TYPES = Object.freeze({
     mp3: new Set(['audio/mpeg', 'audio/mp3']),
@@ -17,7 +17,7 @@ export async function GET(request, { params }) {
     if (!validMusicAuthId(authId)) return reply({ error: 'not_authenticated' }, 401);
     if (!musicDistributionEnabled()) return reply({ error: 'music_distribution_unavailable' }, 404);
     const { id } = await params;
-    if (!UUID_RE.test(id || '')) return reply({ error: 'export_id_invalid' }, 400);
+    if (!isUuid(id || '')) return reply({ error: 'export_id_invalid' }, 400);
     const cfg = envConfig();
     const r2cfg = r2EnvConfig();
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !r2IsConfigured(r2cfg)) {

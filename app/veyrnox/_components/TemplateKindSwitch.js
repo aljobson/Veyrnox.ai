@@ -1,9 +1,10 @@
 import Link from 'next/link';
 
-// Video and audio templates are different things (a clip vs a sound), so the two galleries
-// open on a clear switch instead of a text link. Both live on /presets: ?kind=audio is audio,
+// Image, video and audio templates are different things (a still, a clip, a sound), so the three galleries
+// open on a clear switch instead of a text link. All live on /presets: ?kind=image is image, ?kind=audio is audio,
 // anything else is video. Server component: plain links, so it works before hydration.
 const KINDS = [
+  { id: 'image', href: '/presets?kind=image' },
   { id: 'video', href: '/presets' },
   { id: 'audio', href: '/presets?kind=audio' },
 ];

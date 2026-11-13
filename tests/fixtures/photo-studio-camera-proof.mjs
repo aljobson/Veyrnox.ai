@@ -1,4 +1,4 @@
-// Live camera proof page (ADR-0335, S2b). Runs under the strict harness CSP against the BUILT Worker with Chromium's
+// Live camera proof page (ADR-0338, S2b). Runs under the strict harness CSP against the BUILT Worker with Chromium's
 // FAKE camera (no real camera, no person). The camera must start only from the click on #start.
 import { startCamera } from '../../app/veyrnox/_lib/liveEdit/camera.js';
 import { createLiveEngine } from '../../app/veyrnox/_lib/liveEdit/liveEngine.js';

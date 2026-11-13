@@ -1,0 +1,16 @@
+[
+["app/api/v1/help/route.js", "Math.max(1, Math.min(60, Number(rate.retry_after_seconds) || 60))", "60", "rate.retry_after_seconds", "60", 60, 60],
+["app/api/v1/montage/plan/route.js", "Math.max(1, Math.min(600, Number(rl.retry_after_seconds) || 60))", "600", "rl.retry_after_seconds", "60", 600, 60],
+["app/api/v1/music/generations/route.js", "Math.max(1, Math.min(600, Number(result?.retry_after_seconds) || 60))", "600", "result?.retry_after_seconds", "60", 600, 60],
+["app/api/v1/music/songs/[id]/add-section-quotes/route.js", "Math.max(1, Math.min(600, Number(result.retry_after_seconds) || 60))", "600", "result.retry_after_seconds", "60", 600, 60],
+["app/api/v1/music/songs/[id]/cover-quotes/route.js", "Math.max(1, Math.min(600, Number(result.retry_after_seconds) || 60))", "600", "result.retry_after_seconds", "60", 600, 60],
+["app/api/v1/music/songs/[id]/covers/route.js", "Math.max(1, Math.min(600, Number(result.retry_after_seconds) || 60))", "600", "result.retry_after_seconds", "60", 600, 60],
+["app/api/v1/music/songs/[id]/extend-quotes/route.js", "Math.max(1, Math.min(600, Number(result.retry_after_seconds) || 60))", "600", "result.retry_after_seconds", "60", 600, 60],
+["app/api/v1/music/songs/[id]/extends/route.js", "Math.max(1, Math.min(600, Number(result.retry_after_seconds) || 60))", "600", "result.retry_after_seconds", "60", 600, 60],
+["app/api/v1/music/songs/[id]/sections/route.js", "Math.max(1, Math.min(600, Number(result.retry_after_seconds) || 60))", "600", "result.retry_after_seconds", "60", 600, 60],
+["app/api/v1/top-ups/route.js", "Math.max(1, Math.min(RATE_WINDOW_SECONDS, Number(created.retry_after_seconds) || RATE_WINDOW_SECONDS))", "RATE_WINDOW_SECONDS", "created.retry_after_seconds", "RATE_WINDOW_SECONDS", 600, 600],
+["lib/chatTurn.js", "Math.max(1, Math.min(600, Number(r.retry_after_seconds) || RATE_WINDOW_SECONDS))", "600", "r.retry_after_seconds", "RATE_WINDOW_SECONDS", 600, 60],
+["lib/cinema/passApi.js", "Math.max(1, Math.min(RATE_WINDOW_SECONDS, Number(r.retry_after_seconds) || RATE_WINDOW_SECONDS))", "RATE_WINDOW_SECONDS", "r.retry_after_seconds", "RATE_WINDOW_SECONDS", 600, 600],
+["lib/editorAiEdit.js", "Math.max(1, Math.min(600, Number(result.retry_after_seconds) || RATE_WINDOW_SECONDS))", "600", "result.retry_after_seconds", "RATE_WINDOW_SECONDS", 600, 60],
+["lib/subscriptions/api.js", "Math.max(1, Math.min(600, Number(r.retry_after_seconds) || 600))", "600", "r.retry_after_seconds", "600", 600, 600]
+]

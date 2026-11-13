@@ -22,7 +22,7 @@ export const HAIR_ASSETS = Object.freeze(VISION_ASSETS.map(file => Object.freeze
     ? { ...file, source: 'scripts/editor-vision-hair-worker.mjs', bytes: 3741, sha256: '9bc776a4e7fbf3dd87aae422a673f8fa68d3f2e4e477a8f399f074a3c217b503' } : file)));
 // One previous segmentation protocol, its current replacement, and the current face runtime.
 // Each source is the real build input; v1 retains its original source filename.
-// Proposed, pending owner approval (ADR-0335). Static assets, excluding manifests.
+// Proposed, pending owner approval (ADR-0338). Static assets, excluding manifests.
 export const VISION_COMBINED_BUDGET_BYTES = 72 * 1024 * 1024;
 export const VISION_RELEASES = Object.freeze([
     { version: EDITOR_VISION_VERSION, assets: VISION_ASSETS, model: 'selfie_multiclass_256x256.tflite' },

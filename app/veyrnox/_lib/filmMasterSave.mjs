@@ -1,4 +1,4 @@
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../lib/validate.js';
 export const SAVE_ERRORS = {
     source_not_found: 'The original take is no longer available in your Library.',
     upload_expired: 'The upload expired. Try Save to Library again.',
@@ -13,7 +13,7 @@ export const SAVE_ERRORS = {
     unauthenticated: 'Sign in to save your master to Library.',
 };
 export async function saveFilmMaster({ blob, jobId, label, uploadId, consent, signal, onProgress = () => {}, fetcher, transfer = fetch }) {
-    if (!UUID.test(jobId || '') || !UUID.test(uploadId || '') || !consent) throw new Error('Confirm your rights to this Library take before saving.');
+    if (!isUuidLoose(jobId || '') || !isUuidLoose(uploadId || '') || !consent) throw new Error('Confirm your rights to this Library take before saving.');
     if (!blob?.size || blob.size > 25 * 1024 * 1024) throw new Error('Library masters must be no larger than 25 MiB. You can still download this file.');
     signal?.throwIfAborted(); onProgress('Checking master…');
     const hash = [...new Uint8Array(await crypto.subtle.digest('SHA-256', await blob.arrayBuffer()))].map(b => b.toString(16).padStart(2, '0')).join('');
@@ -31,6 +31,6 @@ export async function saveFilmMaster({ blob, jobId, label, uploadId, consent, si
         signal?.throwIfAborted(); onProgress('Verifying and saving…');
         result = await fetcher('/library/masters', { method: 'POST', signal, body: JSON.stringify({ ticket: grant.ticket }) });
     }
-    if (!result?.saved || !UUID.test(result.id || '')) throw new Error('The save could not be confirmed. Try again.');
+    if (!result?.saved || !isUuidLoose(result.id || '')) throw new Error('The save could not be confirmed. Try again.');
     return { id: result.id, url: `/app/library#master-${result.id}`, idempotent: result.idempotent };
 }

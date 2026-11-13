@@ -1,5 +1,6 @@
 'use client';
 import { useI18n } from '../../../components/I18nProvider';
+import { TemplateImage } from './TemplateImage';
 import { MediaTile } from './MediaTile';
 import { templateHref, presetCredits, presetTitle } from '../_lib/tokens.js';
 
@@ -45,10 +46,11 @@ export function PresetCard({ preset, clip = preset.clip ?? null, size = 'md', on
             <div className="mt-1 line-clamp-1 text-[11px] text-vx-fg-muted">{preset.promptPreview ?? preset.prompt}</div>
           </div>
           <span aria-hidden className="vx-leader flex-1 self-start mt-3 text-vx-fg-muted" />
-          <div className="shrink-0 self-start font-vx-mono text-[14px] font-bold text-vx-money vx-num pt-0.5">{presetCredits(preset, catalog)} cr</div>
+          <div className="shrink-0 self-start font-vx-mono text-[14px] font-bold text-vx-money vx-num pt-0.5">{presetCredits(preset, catalog) ?? '—'} cr</div>
         </div>
       }
     >
+      {preset.kind === 'image' && <TemplateImage preset={preset} className="h-full w-full" />}
       {/* A roller tile is 128-144px wide: the source disclosure on the left
           and this chip on the right overlapped there (the "N" was cut off),
           so on the roller the flag moves into the caption instead. */}
@@ -62,7 +64,7 @@ export function PresetCard({ preset, clip = preset.clip ?? null, size = 'md', on
               {preset.durationSeconds ? t('mobile.templateDuration', { n: preset.durationSeconds }) : preset.model}
             </span>
           </span>
-          <span className="shrink-0 font-vx-mono text-[11px] font-bold text-vx-money">{presetCredits(preset, catalog)} cr</span>
+          <span className="shrink-0 font-vx-mono text-[11px] font-bold text-vx-money">{presetCredits(preset, catalog) ?? '—'} cr</span>
         </span>
       )}
     </MediaTile>

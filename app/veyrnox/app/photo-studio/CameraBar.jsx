@@ -1,5 +1,5 @@
 'use client';
-// Live camera controls (ADR-0335, S2b). The camera starts only from the Start button below, never on load.
+// Live camera controls (ADR-0338, S2b). The camera starts only from the Start button below, never on load.
 export function CameraBar({ t, control, camera, note, ready, canSwitch, start, stop, take, switchCamera }) {
     const notes = { stopped: t('app.photoStudio.camera.stopped'), hidden: t('app.photoStudio.camera.hidden') };
     return <div className="mt-4 rounded-xl border border-vx-border p-4" aria-label={t('app.photoStudio.camera.title')} role="group">

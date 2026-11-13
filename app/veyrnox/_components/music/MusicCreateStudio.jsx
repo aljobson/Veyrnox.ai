@@ -1,5 +1,6 @@
 'use client';
 
+import { PromptBox } from '../PromptBox';
 import { useMemo, useRef, useState } from 'react';
 import { quoteMusicRequest } from '../../_lib/music/previewStore';
 import { MusicCandidateCard } from './MusicCandidateCard';
@@ -8,16 +9,17 @@ import { MusicServerStudio } from './MusicServerStudio';
 import { MusicSampleSeedCard } from './MusicSampleSeedCard';
 import { buildMusicSamplePrompt, MUSIC_SAMPLE_DIRECTION_MAX } from '../../../../lib/musicDiscover.js';
 
-export function MusicCreateStudio({ serverMode = false, sourcesEnabled = false, sampleSeed = null }) {
-  if (serverMode) return <MusicServerStudio sourcesEnabled={sourcesEnabled} sampleSeed={sampleSeed} />;
-  return <MusicPreviewCreateStudio sampleSeed={sampleSeed} />;
+export function MusicCreateStudio({ serverMode = false, sourcesEnabled = false, sampleSeed = null, sampleMix = null }) {
+  if (serverMode) return <MusicServerStudio sourcesEnabled={sourcesEnabled} sampleSeed={sampleSeed} sampleMix={sampleMix} />;
+  return <MusicPreviewCreateStudio sampleSeed={sampleSeed} sampleMix={sampleMix} />;
 }
 
-function MusicPreviewCreateStudio({ sampleSeed }) {
+function MusicPreviewCreateStudio({ sampleSeed, sampleMix }) {
   const { state, rows, storageError, create, cancel, reset } = useMusicPreviewState();
   const [mode, setMode] = useState('simple');
   const [description, setDescription] = useState('');
   const [activeSeed, setActiveSeed] = useState(sampleSeed);
+  const [activeMix, setActiveMix] = useState(sampleMix);
   const [lyrics, setLyrics] = useState('');
   const [styles, setStyles] = useState('');
   const [title, setTitle] = useState('');
@@ -27,7 +29,7 @@ function MusicPreviewCreateStudio({ sampleSeed }) {
   const sendingRef = useRef(false);
 
   const prompt = mode === 'simple'
-    ? activeSeed ? buildMusicSamplePrompt(activeSeed, description) : description.trim()
+    ? activeSeed ? buildMusicSamplePrompt(activeSeed, description, activeMix) : description.trim()
     : [lyrics.trim(), styles.trim()].filter(Boolean).join('\n\n');
   const quote = useMemo(() => state ? quoteMusicRequest({ prompt }, state) : null, [prompt, state]);
 
@@ -87,17 +89,17 @@ function MusicPreviewCreateStudio({ sampleSeed }) {
           <div className="mt-6 space-y-5">
             {mode === 'simple' ? (
               <>
-                <MusicSampleSeedCard seed={activeSeed} onRemove={() => setActiveSeed(null)} />
+                <MusicSampleSeedCard seed={activeSeed} mix={activeMix} onRemove={() => { setActiveSeed(null); setActiveMix(null); }} />
                 <label className="block">
                   <span className="flex items-center justify-between text-sm font-bold text-vx-fg-body"><span>{activeSeed ? 'Add a new direction' : 'Describe the sound'}</span><span className="font-vx-mono text-xs text-vx-fg-faint">{description.length}/{activeSeed ? MUSIC_SAMPLE_DIRECTION_MAX : 500}</span></span>
-                  <textarea value={description} onChange={(event) => setDescription(event.target.value)} maxLength={activeSeed ? MUSIC_SAMPLE_DIRECTION_MAX : 500} rows={7} placeholder={activeSeed ? 'Optional: make it slower, add dusty piano, and open into a wide final chorus' : 'A slow instrumental night drive with brushed drums and glassy synths'} className="mt-2 w-full resize-y rounded-2xl border border-vx-border-boost bg-vx-base px-4 py-3 leading-6 text-vx-fg placeholder:text-vx-fg-faint focus:border-vx-accent focus:outline-none" />
+                  <PromptBox enhance value={description} onChange={(event) => setDescription(event.target.value)} maxLength={activeSeed ? MUSIC_SAMPLE_DIRECTION_MAX : 500} rows={7} placeholder={activeSeed ? 'Optional: make it slower, add dusty piano, and open into a wide final chorus' : 'A slow instrumental night drive with brushed drums and glassy synths'} />
                 </label>
               </>
             ) : (
               <>
                 <label className="block">
                   <span className="flex items-center justify-between text-sm font-bold text-vx-fg-body"><span>Original lyrics or structure</span><span className="font-vx-mono text-xs text-vx-fg-faint">{lyrics.length}/3000</span></span>
-                  <textarea value={lyrics} onChange={(event) => setLyrics(event.target.value)} maxLength={3000} rows={7} placeholder={'[Verse]\nWrite your own words here'} className="mt-2 w-full resize-y rounded-2xl border border-vx-border-boost bg-vx-base px-4 py-3 leading-6 text-vx-fg placeholder:text-vx-fg-faint focus:border-vx-accent focus:outline-none" />
+                  <PromptBox value={lyrics} onChange={(event) => setLyrics(event.target.value)} maxLength={3000} rows={7} placeholder={'[Verse]\nWrite your own words here'} />
                 </label>
                 <label className="block text-sm font-bold text-vx-fg-body">
                   Style direction

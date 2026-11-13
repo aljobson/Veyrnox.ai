@@ -1,7 +1,7 @@
 import { rpc, envConfig } from '../../../../../../packages/db/supabase-client.js';
 import { musicAddSectionEnabled, musicCoverEnabled, musicDistributionEnabled, musicEditingEnabled, musicExtendEnabled, musicLibraryEnabled, musicPublicationEnabled, musicReplaceEnabled, musicReuseEnabled, musicRpcStatus, musicSchemaEnabled, musicStemsEnabled, musicStudioEnabled, musicTargetStemsEnabled, musicTrackAddEnabled, parseMusicSongLifecycle, publicMusicError, readMusicJson, validMusicAuthId } from '../../../../../../lib/musicBackend.js';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+import { isUuid } from '../../../../../../lib/validate.js';
 const reply = (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
 
 export async function GET(request, { params }) {
@@ -9,7 +9,7 @@ export async function GET(request, { params }) {
     if (!validMusicAuthId(authId)) return reply({ error: 'not_authenticated' }, 401);
     if (!musicSchemaEnabled()) return reply({ error: 'music_unavailable' }, 404);
     const { id } = await params;
-    if (!UUID_RE.test(id || '')) return reply({ error: 'song_id_invalid' }, 400);
+    if (!isUuid(id || '')) return reply({ error: 'song_id_invalid' }, 400);
     const cfg = envConfig();
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey) return reply({ error: 'gateway_not_configured' }, 503);
     try {
@@ -32,6 +32,7 @@ export async function GET(request, { params }) {
                 ...(musicTargetStemsEnabled() ? ['target_stem'] : []),
                 ...(musicTrackAddEnabled() ? ['add_track'] : []),
                 ...(musicStudioEnabled() ? ['open_studio'] : []),
+                ...(isUuid(result.song?.job_id || '') ? ['open_editor'] : []),
                 ...(musicEditingEnabled() ? ['crop', 'render'] : []),
             ])],
         });
@@ -46,7 +47,7 @@ export async function PATCH(request, { params }) {
     if (!validMusicAuthId(authId)) return reply({ error: 'not_authenticated' }, 401);
     if (!musicLibraryEnabled()) return reply({ error: 'music_library_unavailable' }, 404);
     const { id } = await params;
-    if (!UUID_RE.test(id || '')) return reply({ error: 'song_id_invalid' }, 400);
+    if (!isUuid(id || '')) return reply({ error: 'song_id_invalid' }, 400);
     const decoded = await readMusicJson(request);
     if (!decoded.ok) return reply({ error: decoded.error }, decoded.error === 'body_too_large' ? 413 : 400);
     const input = parseMusicSongLifecycle(decoded.value);

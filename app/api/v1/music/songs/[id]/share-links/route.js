@@ -5,14 +5,14 @@ import {
 } from '../../../../../../../lib/musicBackend.js';
 import { hashMusicShareToken } from '../../../../../../../lib/musicDistribution.js';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+import { isUuid } from '../../../../../../../lib/validate.js';
 const reply = (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
 
 function context(request, id) {
     const authId = request.headers.get('x-veyrnox-auth-id');
     if (!validMusicAuthId(authId)) return { response: reply({ error: 'not_authenticated' }, 401) };
     if (!musicDistributionEnabled()) return { response: reply({ error: 'music_distribution_unavailable' }, 404) };
-    if (!UUID_RE.test(id || '')) return { response: reply({ error: 'song_id_invalid' }, 400) };
+    if (!isUuid(id || '')) return { response: reply({ error: 'song_id_invalid' }, 400) };
     const cfg = envConfig();
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey) return { response: reply({ error: 'gateway_not_configured' }, 503) };
     return { authId, cfg };

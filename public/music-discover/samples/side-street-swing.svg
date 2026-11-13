@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160" role="img" aria-labelledby="title desc">
+  <title id="title">Side Street Swing artwork</title>
+  <desc id="desc">Original geometric artwork for the Jazz sample Side Street Swing.</desc>
+  <rect width="160" height="160" rx="28" fill="#111114"/>
+  <circle cx="27" cy="42" r="58" fill="#fbbf24" opacity=".34"/>
+  <path d="M-12 109 C28 69,58 143,94 113 S142 83,174 91" fill="none" stroke="#fbbf24" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="122" cy="38" r="18" fill="#f4f4f5" opacity=".93"/>
+  <text x="122" y="44" fill="#111114" font-family="Arial, sans-serif" font-size="14" font-weight="800" text-anchor="middle">SS</text>
+  <text x="18" y="137" fill="#f4f4f5" font-family="Arial, sans-serif" font-size="10" font-weight="700" letter-spacing="1">JAZZ</text>
+</svg>

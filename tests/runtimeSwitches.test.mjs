@@ -128,10 +128,10 @@ test('registry agrees with SQL key constraint, and other wrangler bindings are u
   const allowance='    "FREE_ALLOWANCE_ENABLED": "true",\n';
   const rollout='    // ADR-0069: do not enable while FAL_DURABLE_DISPATCH_ENABLED is true in production until PR B capped durable admission exists.\n    "MAX_CHARGE_ENABLED": "false",\n';
   let expected=previous.includes('"MAX_CHARGE_ENABLED"') ? previous : previous.replace(allowance,allowance+rollout);
-  // ADR-0335: reviewed Worker-first vision admission; all other bytes stay pinned.
+  // ADR-0338: reviewed Worker-first vision admission; all other bytes stay pinned.
   expected=expected.replace(
     '    // answers them (lib/showcaseVideo.js). Everything else stays edge-served:',
-    '    // answers them (lib/showcaseVideo.js). ADR-0335 also admits the two pinned\n    // vision prefixes here before ASSETS.fetch for gates/CSP. Other assets stay edge-served:',
+    '    // answers them (lib/showcaseVideo.js). ADR-0338 also admits the two pinned\n    // vision prefixes here before ASSETS.fetch for gates/CSP. Other assets stay edge-served:',
   ).replace('"run_worker_first": ["/showcase/*.mp4"]','"run_worker_first": ["/showcase/*.mp4", "/editor-vision/*"]');
   assert.equal(await readFile(new URL('../wrangler.jsonc',import.meta.url),'utf8'),expected);
 });

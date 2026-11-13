@@ -9,7 +9,7 @@ for (const file of ['scripts/editor-vision-assets.mjs', 'app/veyrnox/_lib/editor
     'scripts/editor-vision-notices/Apache-2.0.txt', 'node_modules/@mediapipe/tasks-vision/vision_bundle.mjs',
     'node_modules/@mediapipe/tasks-vision/wasm/vision_wasm_internal.js',
     'node_modules/@mediapipe/tasks-vision/wasm/vision_wasm_internal.wasm',
-    // Live camera (ADR-0335 S8/S9): the web engine, three.js for 3D wigs, and the wig art are inlined into the same document.
+    // Live camera (ADR-0338 S8/S9): the web engine, three.js for 3D wigs, and the wig art are inlined into the same document.
     'app/veyrnox/_lib/liveEdit/liveEngine.js', 'packages/live-edit/wig3d.js', 'node_modules/three/build/three.module.js', 'node_modules/three/build/three.core.js', 'node_modules/three/LICENSE']) {
     try { await access(new URL(file, root)); }
     catch { throw Error(`Live Edit preparation requires the full monorepo and root dependencies; missing ${file}. Run EAS from apps/mobile with the repository root included.`); }

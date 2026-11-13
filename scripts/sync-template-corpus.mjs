@@ -91,7 +91,7 @@ const section = begin + '\n## Amendment 1: at least ten exact templates per cont
   'Archery Face Swap was dropped because its source text ends mid-word; Anime Court Match was dropped because both replacement subjects were stripped from an incomplete fragment. Only identifiers, hashes and reasons are retained for these rejections; no prompt or media is shipped.\n' +
   'The source categories follow the manifest except Cartoon Hero Swap, corrected from ANIME to CARTOONS after inspection. The existing Kling I2V route, price and ten-second recipe duration apply; source input totals and numbered tokens select existing starting-image guidance without changing reference support.\n\n' +
   '| Content category | Public exact templates |\n| --- | ---: |\n' +
-  required.map(c => '| ' + c + ' | ' + templatesIn(c).length + ' |').join('\n') +
+  required.map(c => '| ' + c + ' | ' + PRESETS.filter((p) => c === 'ALL' || (c === 'NEW' ? p.isNew : p.category === c)).length + ' |').join('\n') +
   '\n\nKIDS BIRTHDAY is explicitly excluded pending an owner decision: its twelve promptless rows remain retained and hidden, zero are public, and the category is absent from the gallery filter. It remains in CATEGORY_ORDER.\n' +
   'The [category-fill audit](source-audit/higgsfield-category-fill-30-2026-11-05.json) and fixed-list regression tests lock this state.\n' + end;
 update('docs/product/template-prompt-audit-2026-10-29.md', text => text.includes(begin)

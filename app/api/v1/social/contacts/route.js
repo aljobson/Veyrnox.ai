@@ -6,7 +6,7 @@ import { publishPlansEnabled, socialInboxEnabled } from '../../../../../lib/soci
 import { resolveBrand } from '../../../../../lib/social/resolveBrand.js';
 import { envConfig, rpc, SupabaseError } from '../../../../../packages/db/supabase-client.js';
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../../lib/validate.js';
 const NETWORKS = new Set(['instagram', 'facebook', 'twitter', 'linkedin', 'tiktok', 'youtube', 'threads', 'bluesky', 'twitch', 'gmb']);
 const STATUSES = new Set(['unknown', 'subscribed', 'unsubscribed']);
 const TAG = /^[a-z0-9][a-z0-9 _-]*$/;
@@ -14,7 +14,7 @@ const headers = { 'Cache-Control': 'no-store' };
 
 function setup(req) {
   const authId = req.headers.get('x-veyrnox-auth-id');
-  if (!UUID.test(authId || '')) return { error: NextResponse.json({ error: 'not_authenticated' }, { status: 401, headers }) };
+  if (!isUuidLoose(authId || '')) return { error: NextResponse.json({ error: 'not_authenticated' }, { status: 401, headers }) };
   if (!socialInboxEnabled() || !publishPlansEnabled()) return { error: NextResponse.json({ error: 'publish_inbox_not_open' }, { status: 503, headers }) };
   const cfg = envConfig();
   if (!cfg.supabaseUrl || !cfg.serviceRoleKey) return { error: NextResponse.json({ error: 'supabase_not_configured' }, { status: 503, headers }) };
@@ -38,7 +38,7 @@ export async function GET(req) {
   const subscriptionStatus = url.searchParams.get('subscriptionStatus') || null;
   const search = url.searchParams.get('search')?.trim() || null;
   const tag = url.searchParams.get('tag')?.trim().toLowerCase() || null;
-  if ((accountId && !UUID.test(accountId)) || (network && !NETWORKS.has(network))
+  if ((accountId && !isUuidLoose(accountId)) || (network && !NETWORKS.has(network))
     || (subscriptionStatus && !STATUSES.has(subscriptionStatus)) || (search && search.length > 100)
     || (tag && (tag.length > 32 || !TAG.test(tag)))) return NextResponse.json({ error: 'invalid_filter' }, { status: 400, headers });
   const limited = await accountReadLimit(authId, cfg, { contacts: [] }); if (limited) return limited;
@@ -64,7 +64,7 @@ export async function PATCH(req) {
   const tags = Array.isArray(body?.tags) ? [...new Set(body.tags.map((value) => typeof value === 'string' ? value.trim().toLowerCase() : ''))] : null;
   const subscriptionStatus = body?.subscriptionStatus;
   const notes = typeof body?.notes === 'string' ? body.notes.trim() : '';
-  if (!UUID.test(accountId || '') || !externalId || externalId.length > 256 || !STATUSES.has(subscriptionStatus)
+  if (!isUuidLoose(accountId || '') || !externalId || externalId.length > 256 || !STATUSES.has(subscriptionStatus)
     || !tags || tags.length > 10 || tags.some((tag) => !tag || tag.length > 32 || !TAG.test(tag)) || notes.length > 2000) {
     return NextResponse.json({ error: 'invalid_body' }, { status: 400, headers });
   }
@@ -89,7 +89,7 @@ export async function POST(req) {
   let body; try { body = await limitedBody.request.json(); } catch { return NextResponse.json({ error: 'invalid_body' }, { status: 400, headers }); }
   const accountId = body?.accountId;
   const source = body?.source;
-  if (!UUID.test(accountId || '') || !['manual', 'csv'].includes(source) || !Array.isArray(body?.contacts)
+  if (!isUuidLoose(accountId || '') || !['manual', 'csv'].includes(source) || !Array.isArray(body?.contacts)
     || body.contacts.length < 1 || body.contacts.length > 250) return NextResponse.json({ error: 'invalid_body' }, { status: 400, headers });
   const contacts = body.contacts.map((item) => ({
     external_id: typeof item?.externalId === 'string' ? item.externalId.trim() : '',

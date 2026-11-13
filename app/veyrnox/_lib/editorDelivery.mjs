@@ -1,7 +1,7 @@
 import { SOCIAL_CATALOGUE } from '../../../lib/social/networks.js';
 
 export const EDITOR_RENDER_MAX_BYTES = 25 * 1024 * 1024;
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../lib/validate.js';
 const fail = (code, message) => Object.assign(new Error(message), { code });
 
 /** An export stays local until its owner explicitly chooses a save or upload. */
@@ -41,7 +41,7 @@ export async function saveEditorRender(file, { idempotencyKey, consent, call, tr
     const sha256 = [...new Uint8Array(await crypto.subtle.digest('SHA-256', await file.arrayBuffer()))].map(b => b.toString(16).padStart(2, '0')).join('');
     signal?.throwIfAborted();
     const reservation = await call('/library/editor-renders', { method: 'POST', signal, headers: { 'Idempotency-Key': idempotencyKey }, body: JSON.stringify({ label: file.name.slice(0, 160), size_bytes: file.size, sha256, rights_confirmed: true }) });
-    if (!UUID.test(reservation?.id || '')) throw fail('save_unavailable', 'The save could not be started. Try again.');
+    if (!isUuidLoose(reservation?.id || '')) throw fail('save_unavailable', 'The save could not be started. Try again.');
     if (reservation.state !== 'stored') {
         if (!reservation.upload_url || !reservation.headers) throw fail('save_unavailable', 'The save could not be started. Try again.');
         onProgress('Uploading to your private Library…');
@@ -55,7 +55,7 @@ export async function saveEditorRender(file, { idempotencyKey, consent, call, tr
 }
 
 export async function ownedPublishUpload(call, id) {
-    if (!UUID.test(id || '')) throw fail('invalid_upload', 'Choose a saved upload from your account.');
+    if (!isUuidLoose(id || '')) throw fail('invalid_upload', 'Choose a saved upload from your account.');
     const page = await call('/social/uploads');
     const upload = page?.uploads?.find(item => item.id === id && item.mime_type === 'video/mp4');
     if (!upload || typeof upload.url !== 'string' || !upload.url.startsWith('https://')) throw fail('upload_unavailable', 'This upload is unavailable. Choose media from your current account.');

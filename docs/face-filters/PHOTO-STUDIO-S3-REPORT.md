@@ -29,7 +29,7 @@ Paths changed **in this round** (11, including one added and one removed):
 | Modified | `tests/liveEditHairLifecycle.test.mjs` |
 | Modified | `tests/editorVisionHairProtocol.test.mjs` |
 | Modified | `tests/liveEditAdmission.test.mjs` |
-| Modified | `docs/adr/0335-local-photo-studio.md` |
+| Modified | `docs/adr/0338-local-photo-studio.md` |
 | Modified | this report |
 
 No UI strings, hair maths/shaders, browser fixtures/goldens, flags, admission or
@@ -117,7 +117,7 @@ Files changed **in this fix round** (12; existing round-0 changes preserved):
 | Localized help / non-retry status | `app/veyrnox/app/photo-studio/HairControls.jsx`, `lib/i18n/photoStudioEnglish.mjs` |
 | Regression tests | `tests/liveEditHair.test.mjs`, `tests/liveEditHairLifecycle.test.mjs` |
 | Host browser proof | `tests/fixtures/photo-studio-hair-proof.mjs`, `tests/fixtures/photo-studio-hair-model-proof.mjs`, `e2e/photo-studio.proof.mjs` |
-| Documentation | `docs/adr/0335-local-photo-studio.md`, this report |
+| Documentation | `docs/adr/0338-local-photo-studio.md`, this report |
 
 The browser harness now runs component selection, checks a remote blob stays
 unchanged while both side locks change, rejects a lone speck, and checks the
@@ -184,7 +184,7 @@ Files changed (relative to this checkout):
 | Controls/copy | new `app/veyrnox/app/photo-studio/HairControls.jsx`, `app/veyrnox/app/photo-studio/Controls.jsx`, `app/veyrnox/app/photo-studio/PhotoEditor.jsx`, `lib/i18n/photoStudioEnglish.mjs` |
 | Focused tests | new `tests/editorVisionHairProtocol.test.mjs`, new `tests/liveEditHair.test.mjs`, new `tests/liveEditHairLifecycle.test.mjs`, extended `tests/liveEditAdmission.test.mjs` |
 | Host proof | `scripts/probe-photo-studio-worker.mjs`, `e2e/photo-studio.proof.mjs`, `e2e/photo-studio-proof.config.mjs`, `tests/fixtures/photo-studio-browser-proof.mjs`, new `tests/fixtures/photo-studio-hair-fixture.mjs`, new `tests/fixtures/photo-studio-hair-proof.mjs`, new `tests/fixtures/photo-studio-hair-model-proof.mjs` |
-| Documentation | `docs/adr/0335-local-photo-studio.md`, this report |
+| Documentation | `docs/adr/0338-local-photo-studio.md`, this report |
 
 The previous `editorVisionAssets`, `editorVisionWorkerClient` and
 `editorVisionProcessing` test files were not edited. No mobile, wigs, camera,
@@ -255,7 +255,7 @@ Not run / blocked or deferred:
   the built Worker**, despite passing admission tests and static asset hashes.
 - Real portrait quality / known-background alpha <0.05: not run; no private
   portrait fixture was supplied. The optional second browser test requires
-  `PHOTO_HAIR_FIXTURE`, otherwise it explicitly skips. See ADR-0335 for its
+  `PHOTO_HAIR_FIXTURE`, otherwise it explicitly skips. See ADR-0338 for its
   private image-hash/background-rectangle manifest. No image fixture is committed.
 - Actual shader compilation, golden crops, browser pixel identity/export parity,
   network-panel privacy check, keyboard/screen-reader use, mobile-width and
@@ -297,7 +297,7 @@ Deviations / limits for review:
   plus current hair and face totals **73,259,684 bytes**, 21 files excluding
   manifests. 48 MiB is impossible with these required pinned copies. Per-prefix
   32 MiB and per-file 25 MiB limits remain; largest file 16,371,837 bytes. The
-  decision and measured inventory are recorded in ADR-0335.
+  decision and measured inventory are recorded in ADR-0338.
 - LAB-like separation is implemented as linear-light luminance/chroma with gamut
   contraction, preserving Rec.709 luminance rather than claiming literal CIELAB.
   Very dark hair cannot become bright blonde; UI copy states this limitation.

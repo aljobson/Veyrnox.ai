@@ -1,4 +1,5 @@
-// Every built-in Studio skill has a stable visual identity. These paths are
+// Every built-in Studio skill has a stable visual identity. A skill with `art` shows that Kubai
+// illustration (public/skill-icons, MIT); the rest draw `path` in `color`. These paths are
 // original Veyrnox line icons, not marks copied from a model vendor or another
 // skills library.
 export const STUDIO_SKILL_ICONS = {
@@ -8,26 +9,32 @@ export const STUDIO_SKILL_ICONS = {
   },
   'model-picker': {
     color: '#91e8ff',
+    art: '/skill-icons/filter.svg',
     path: 'M4 6h10M18 6h2M4 12h3M11 12h9M4 18h8M16 18h4M14 3v6M7 9v6M12 15v6',
   },
   'fix-my-photo': {
     color: '#b4a1ff',
+    art: '/skill-icons/photo.svg',
     path: 'M4 5.5h10v13H4zM5 16l3-3 2 2 2.5-2.5 1.5 1.5M17 4v5M14.5 6.5h5M17.8 14.2l.8 1.6 1.7.8-1.7.8-.8 1.6-.8-1.6-1.7-.8 1.7-.8z',
   },
   'edit-with-words': {
     color: '#d59bff',
+    art: '/skill-icons/edit.svg',
     path: 'M4 6h9M4 10h7M4 14h5M13.5 17.5 18 13l3 3-4.5 4.5-4 1zM17 14l3 3',
   },
   'bring-to-life': {
     color: '#77f0a7',
+    art: '/skill-icons/play.svg',
     path: 'M9 7.5v9l7-4.5zM4 6 2.5 8M4 18l-1.5-2M20 6l1.5 2M20 18l1.5-2M6 3.5 8 2M18 3.5 16 2',
   },
   'add-sound': {
     color: '#ffb66e',
+    art: '/skill-icons/volume.svg',
     path: 'M3 12h3l3-4v8l3-8v8l3-6v4l3-2h3',
   },
   storyboard: {
     color: '#ffd66e',
+    art: '/skill-icons/video.svg',
     path: 'M3.5 5h17v14h-17zM9 5v14M15 5v14M3.5 10h17M3.5 15h17',
   },
   'oddling-continuity': {

@@ -28,7 +28,7 @@ import { NextResponse } from 'next/server';
 import { rpc, envConfig } from '../../../../packages/db/supabase-client.js';
 import { pushEnabled, PUSH_TOKEN_RE } from '../../../../lib/pushNotifications.js';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../lib/validate.js';
 const DEVICE_ID_RE = /^[A-Za-z0-9._-]{8,64}$/;
 const APP_VERSION_RE = /^[A-Za-z0-9._+-]{1,32}$/;
 const NO_STORE = { 'Cache-Control': 'no-store' };
@@ -38,7 +38,7 @@ const fail = (error, status, extra = {}, headers = {}) =>
 
 async function gate(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
-    if (!authId || !UUID_RE.test(authId)) return { response: fail('not_authenticated', 401) };
+    if (!authId || !isUuidLoose(authId)) return { response: fail('not_authenticated', 401) };
     if (!pushEnabled()) return { response: fail('not_found', 404) };
     const cfg = envConfig();
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey) return { response: fail('gateway_not_configured', 503) };

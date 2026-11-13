@@ -1,4 +1,4 @@
-// 2D wig overlay (ADR-0335, S5b). The SAME fit maths as web (shared/wigFit.js), drawn by Skia as a clipped, tinted image layer.
+// 2D wig overlay (ADR-0338, S5b). The SAME fit maths as web (shared/wigFit.js), drawn by Skia as a clipped, tinted image layer.
 // A wig never removes or reconstructs the photographed hair: it is drawn over the picture, and natural hair that extends
 // beyond the wig stays visible (the coverage hint says so). Stylised placeholder art, not photo-real wigs.
 import { Skia, ClipOp, ColorType, AlphaType, type SkCanvas, type SkImage } from '@shopify/react-native-skia';

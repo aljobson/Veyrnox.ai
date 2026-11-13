@@ -1,4 +1,4 @@
-// Live camera lifecycle for the web Photo Studio (ADR-0335, S2b).
+// Live camera lifecycle for the web Photo Studio (ADR-0338, S2b).
 // Frames never leave this page: no recording, no audio (audio is never requested), no upload.
 // Every failure maps to its own state so the UI can say what actually happened.
 export const CAMERA_LIMITS = Object.freeze({ idealWidth: 1280, idealHeight: 720, maxWidth: 1920, maxHeight: 1080, frameRate: 30, startTimeoutMs: 15000 });

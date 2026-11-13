@@ -4,7 +4,7 @@ import { searchTemplateIds, templateCards, templateCategories, templateDetail } 
 import { readdirSync } from 'node:fs';
 import { PAGE_TEMPLATES, templateMatches } from '../page-manifest.mjs';
 import { settleStreamedPage } from './streamed-page.mjs';
-import { FEATURE_TOURS } from '../../lib/featureTours.js';
+import { FEATURE_TOURS, tourForPath } from '../../lib/featureTours.js';
 
 export { expect };
 export const SYNTHETIC_USER = Object.freeze({ id: '00000000-0000-4000-8000-000000000001', email: 'synthetic-feature-qa@example.invalid' });
@@ -48,6 +48,11 @@ export const SYNTHETIC_MODELS = [
   const record = capabilityFor(endpoint);
   return { id, name: `Synthetic ${id}`, modality, credits, gated: false, durations: lengthsFor(record), capabilities: publicCapabilities(record) };
 });
+
+const COMPLETED_TOUR_IDS = [...new Set([
+  ...FEATURE_TOURS.map(({ id }) => id),
+  ...PAGE_TEMPLATES.map(({ route }) => tourForPath(route)?.id).filter(Boolean),
+])];
 
 /** Install before any navigation. Only owned localhost HTML/static GETs can reach the network. */
 export async function installProductFixtures(page, options = {}) {
@@ -98,7 +103,7 @@ export async function installProductFixtures(page, options = {}) {
   }, {
     key: SESSION_KEY,
     value: metadata(state.user),
-    tourIds: FEATURE_TOURS.map(({ id }) => id),
+    tourIds: COMPLETED_TOUR_IDS,
   });
   const handleRoute = async route => {
     const request = route.request(), url = new URL(request.url()), method = request.method();
@@ -164,6 +169,8 @@ export async function installProductFixtures(page, options = {}) {
           : json({ error: 'not_authenticated' }, 401);
         // Your wins ships off (YOUR_WINS_ENABLED unset): the route answers 404 and the card stays hidden.
         if (url.pathname === '/api/v1/wins') return state.user ? json({ error: 'not_found' }, 404) : json({ error: 'not_authenticated' }, 401);
+        // First-goal answer (ADR-0336): already answered, so the Create question card stays out of the way.
+        if (url.pathname === '/api/v1/first-goal') return state.user ? json({ goal: 'skipped' }) : json({ error: 'not_authenticated' }, 401);
         if (url.pathname === '/api/v1/free-allowance') return json({ enabled: false, left: {} });
         if (url.pathname === '/api/v1/jobs') return json({ jobs: [], next: null });
         if (url.pathname === '/api/v1/library/masters') return json({ masters: [], next: null });

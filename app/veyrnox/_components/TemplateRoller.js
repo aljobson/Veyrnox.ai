@@ -19,7 +19,7 @@ export function TemplateRoller({ presets, catalog, className = '' }) {
   };
 
   return (
-    <section className={className} aria-labelledby="template-roller-title">
+    <section className={className}>
       <div className="mb-3 flex items-end justify-between gap-4">
         <div>
           <h2 id="template-roller-title" className="text-[15px] font-bold tracking-tight">{t('presets.quick.title')}</h2>

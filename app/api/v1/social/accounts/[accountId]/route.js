@@ -13,16 +13,16 @@
 import { NextResponse } from 'next/server';
 import { rpc, envConfig, SupabaseError } from '../../../../../../packages/db/supabase-client.js';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../../../lib/validate.js';
 
 export async function DELETE(req, { params }) {
     const authId = req.headers.get('x-veyrnox-auth-id');
-    if (!authId || !UUID_RE.test(authId)) {
+    if (!authId || !isUuidLoose(authId)) {
         return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
     }
 
     const { accountId } = await params;
-    if (!accountId || !UUID_RE.test(accountId)) {
+    if (!accountId || !isUuidLoose(accountId)) {
         return NextResponse.json({ error: 'invalid_account_id' }, { status: 400 });
     }
 

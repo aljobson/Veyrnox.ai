@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { PRESETS } from '../app/veyrnox/_lib/templates.js';
+import { PRESETS, galleryTemplates } from '../app/veyrnox/_lib/templates.js';
 import { templateCards, templateCategories, templateDetail, searchTemplateIds } from '../lib/clientTemplates.js';
 import { register } from 'node:module';
 
@@ -10,11 +10,14 @@ register('data:text/javascript,' + encodeURIComponent(
 const list = await import('../app/api/templates/route.js');
 const one = await import('../app/api/templates/[id]/route.js');
 
-test('the card list is the gallery: one card per video-backed template, with a clip and no full prompt', () => {
+test('the card list is the gallery: one card per published template, with its preview and no full prompt', () => {
     const cards = templateCards();
-    assert.equal(cards.length, PRESETS.length);
+    assert.equal(cards.length, galleryTemplates().length);
     for (const card of cards) {
-        assert.ok(card.clip?.video, card.id);
+        if (card.kind === 'image') {
+            assert.equal(card.durationSeconds, null);
+            assert.ok(card.previewImage);
+        } else assert.ok(card.clip?.video, card.id);
         assert.equal('prompt' in card, false, `${card.id} sends only a preview of its prompt`);
     }
     assert.deepEqual(templateCategories().slice(0, 2), ['ALL', 'NEW']);

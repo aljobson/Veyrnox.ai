@@ -111,15 +111,24 @@ export default function Library() {
         let live = true, running = false;
         const generation = version.current;
         const current = () => live && generation === version.current;
-        const timer = setInterval(() => void (async () => {
-            if (running || !current()) return;
+        // Poll fast while jobs are moving, then back off (3 s -> 15 s) while nothing changes, and skip the
+        // request entirely while the app is in the background.
+        const POLL_MIN_MS = 3000, POLL_MAX_MS = 15000;
+        let delay = POLL_MIN_MS, timer: ReturnType<typeof setTimeout> | undefined;
+        const schedule = () => { if (live) timer = setTimeout(() => void tick(), delay); };
+        const tick = async () => {
+            if (!current()) return;
+            if (running || AppState.currentState !== 'active') { schedule(); return; }
             running = true;
             const outcomes: boolean[] = [];
+            let changed = false;
             try {
                 await Promise.all(inFlightIds(jobsRef.current ?? []).map(async id => {
                     try {
+                        const before = jobsRef.current?.find(j => j.job_id === id)?.state;
                         const status = await mediaApi(api).getJob(id);
                         if (!current()) return;
+                        if (status.state !== before) changed = true;
                         outcomes.push(true);
                         if (status.state === 'succeeded') retentionPending.current.add(id);
                         setJobs(rows => applyStatus(rows ?? [], id, status));
@@ -135,9 +144,16 @@ export default function Library() {
                 if (outcomes.some(Boolean)) failures.current = 0;
                 else if (outcomes.length) failures.current++;
                 if (failures.current >= 20) setUnreachable(true);
-            } finally { running = false; }
-        })(), 3000);
-        return () => { live = false; clearInterval(timer); };
+            } finally {
+                running = false;
+                // Pending asset lookups retry on their own cooldown, so keep the fast cadence while any wait.
+                // Failed requests also keep the fast cadence: the 20-failure "unreachable" count assumes it.
+                delay = changed || unresolved.current.size > 0 || outcomes.includes(false) ? POLL_MIN_MS : Math.min(POLL_MAX_MS, Math.round(delay * 1.5));
+                schedule();
+            }
+        };
+        schedule();
+        return () => { live = false; if (timer) clearTimeout(timer); };
     }, [api, focused, active, unreachable, hasWork, resolveAsset]);
     async function toggleAudio(id: string) {
         const wasPlaying = playing === id;

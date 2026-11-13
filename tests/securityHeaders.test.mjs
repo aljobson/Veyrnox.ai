@@ -20,7 +20,7 @@ async function headerMap() {
     assert.equal(groups.length, 7, 'global hardening, two microphone policies, the Photo Studio camera policy, API CSP and the two exact inference Workers are separate');
     assert.equal(groups[0].source, '/:path*');
     assert.equal(groups[1].source, '/app/editor/:path*');
-    assert.equal(groups[2].source, '/app/photo-studio/:path*'); // ADR-0335 S2b: the only route that may use the camera
+    assert.equal(groups[2].source, '/app/photo-studio/:path*'); // ADR-0338 S2b: the only route that may use the camera
     assert.equal(groups[3].source, '/app/music/studio/:path*');
     assert.equal(groups[4].source, '/api/:path*');
     assert.equal(groups[5].source,LOCAL_SPEECH_WORKER_URL);
@@ -132,7 +132,7 @@ test('the anon key in env is a publishable key, not a service-role key', async (
     }
 });
 
-test('the camera is allowed on Photo Studio only; microphone and geolocation stay denied everywhere (ADR-0335 S2b)', async () => {
+test('the camera is allowed on Photo Studio only; microphone and geolocation stay denied everywhere (ADR-0338 S2b)', async () => {
     const groups = await nextConfig.headers();
     const policyOf = group => group.headers.find(header => header.key === 'Permissions-Policy')?.value;
     const photo = groups.find(group => group.source === '/app/photo-studio/:path*');

@@ -96,3 +96,35 @@ test('fal requests are read from the app queue: pending, completed, and failed r
         { state: 'fail', errorCode: 'provider_failed', reason: 'host_unreachable', transient: true });
     assert.deepEqual(await pollFal(voice, 'k', reply('COMPLETED', { detail: 'bad input' }, 422)), { state: 'fail', errorCode: 'provider_failed' });
 });
+
+test('mixed rejected poll and successful completions preserve counters and original apply order', async t => {
+    const originalFetch = globalThis.fetch;
+    t.after(() => { globalThis.fetch = originalFetch; });
+    stubDb([step({ ordinal: 1, provider_job_id: 'bad' }), step({ ordinal: 2, provider_job_id: 'slow' }), step({ ordinal: 3, provider_job_id: 'fast' })]);
+    const { deps, rpcs } = fakeDeps();
+    const out = await sweepSteps({ cfg, deps, now: NOW, poll: { kie: async row => {
+        if (row.provider_job_id === 'bad') throw new Error('poll rejected');
+        if (row.provider_job_id === 'slow') await new Promise(resolve => setTimeout(resolve, 20));
+        return { state: 'success', outputUrl: 'https://x.aiquickdraw.com/1.mp4' };
+    } } });
+    assert.deepEqual(out, { checked: 3, applied: 2, timedOut: 0, errors: 1 });
+    assert.deepEqual(rpcs.filter(r => r.name === 'job_step_stored').map(r => r.args.p_output_r2_key),
+        [`auto-short/${JOB}/scene-2.mp4`, `auto-short/${JOB}/scene-3.mp4`]);
+});
+
+test('polls overlap while callback writes wait for polling and retain step order', { timeout: 5000 }, async t => {
+    const originalFetch = globalThis.fetch;
+    t.after(() => { globalThis.fetch = originalFetch; });
+    stubDb([step({ ordinal: 1 }), step({ ordinal: 2, provider_job_id: 'task-2' })]);
+    const { deps, rpcs } = fakeDeps();
+    let release;
+    const gate = new Promise(resolve => { release = resolve; });
+    const out = await sweepSteps({ cfg, deps, now: NOW, poll: { kie: async row => {
+        if (row.ordinal === 1) await gate;
+        else { assert.equal(rpcs.length, 0); release(); }
+        return { state: 'success', outputUrl: 'https://x.aiquickdraw.com/1.mp4' };
+    } } });
+    assert.deepEqual(out, { checked: 2, applied: 2, timedOut: 0, errors: 0 });
+    assert.deepEqual(rpcs.filter(r => r.name === 'job_step_stored').map(r => r.args.p_output_r2_key),
+        [`auto-short/${JOB}/scene-1.mp4`, `auto-short/${JOB}/scene-2.mp4`]);
+});

@@ -1,5 +1,35 @@
 [
   {
+    "id": "brand.swatch.teal",
+    "english": "Teal",
+    "translation": "Бирюзовый",
+    "ratio": 2.25
+  },
+  {
+    "id": "brand.swatch.purple",
+    "english": "Purple",
+    "translation": "Фиолетовый",
+    "ratio": 1.67
+  },
+  {
+    "id": "brand.swatch.pink",
+    "english": "Pink",
+    "translation": "Розовый",
+    "ratio": 1.75
+  },
+  {
+    "id": "brand.swatch.red",
+    "english": "Red",
+    "translation": "Красный",
+    "ratio": 2.33
+  },
+  {
+    "id": "brand.swatch.navy",
+    "english": "Navy",
+    "translation": "Тёмно-синий",
+    "ratio": 2.75
+  },
+  {
     "id": "editorSimple.openTool",
     "english": "Open tool",
     "translation": "Открыть инструмент",
@@ -3376,6 +3406,12 @@
     "english": "Wig opacity",
     "translation": "Непрозрачность парика",
     "ratio": 1.91
+  },
+  {
+    "id": "instruments.strum",
+    "english": "Strum {chord}",
+    "translation": "Сыграть аккорд {chord}",
+    "ratio": 1.69
   },
   {
     "id": "chrome.privacyPolicy",

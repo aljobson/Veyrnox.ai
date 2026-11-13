@@ -23,7 +23,7 @@ import { assetDownloadName } from '../../../../../../lib/assetDownloadName.js';
 import { readProjectAssetRange } from '../../../../../../lib/projectAssetRange.js';
 import { PROVIDER_SNIFF_BYTES, sniffProviderOutputType } from '../../../../../../lib/providerOutputType.js';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../../../lib/validate.js';
 // CLAUDE.md R2 rule: "Presigned URL TTL <=15 min. Longer TTLs need an ADR."
 const DEFAULT_EXPIRES_SEC = 900; // 15 min
 
@@ -32,7 +32,7 @@ export async function GET(req, { params }) {
     if (!authId) return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
 
     const { id } = await params;
-    if (!id || !UUID_RE.test(id)) {
+    if (!id || !isUuidLoose(id)) {
         return NextResponse.json({ error: 'invalid_job_id' }, { status: 400 });
     }
     const query = new URL(req.url).searchParams, stem = query.getAll('stem');

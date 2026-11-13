@@ -22,7 +22,7 @@ import { LanguageMenu } from './LanguageMenu';
 import { useI18n } from '../../../components/I18nProvider';
 import { localeTag } from '../../../lib/i18n/locales.mjs';
 import { pluralKey } from '../../../lib/i18n/translate.mjs';
-import { activeStudioDestination } from '../_lib/studioNavigation';
+import { activeStudioDestination, studioActiveCandidates, studioMenuItems, studioSidebarSections } from '../_lib/studioNavigation';
 
 // Studio pages keep the making tools in the tab strip. This complementary
 // list makes the rest of the public site reachable from that same header,
@@ -208,14 +208,14 @@ function writeStore(key, value) {
 }
 
 function SectionHeading({ id, label, open, onToggle, rail }) {
-  if (rail) return <div role="separator" className="mx-3 my-2 border-t border-vx-border" />;
+  if (rail) return <div role="separator" aria-label={label} className="mx-3 my-2 border-t border-vx-border" />;
   return (
     <button
       type="button"
       onClick={onToggle}
       aria-expanded={open}
       aria-controls={`vx-side-${id}`}
-      className="flex min-h-10 w-full items-center gap-2 px-2.5 pt-3 text-start text-[11px] font-semibold text-vx-fg-muted transition-colors duration-150 hover:text-vx-fg"
+      className="flex min-h-11 w-full items-center gap-2 px-2.5 pt-3 text-start text-[11px] font-semibold text-vx-fg-muted transition-colors duration-150 hover:text-vx-fg"
     >
       <Icon name={open ? 'chevronDown' : 'chevronRight'} size={10} className="rtl:-scale-x-100" />
       {label}
@@ -262,7 +262,6 @@ function AppSidebar({ sections, homeLabel, logoLabel, accountLabel, accountHref,
   return (
     <aside
       data-print="hide"
-      aria-label={label}
       className="vx-sidebar fixed inset-y-0 start-0 z-30 hidden w-64 flex-col border-e border-vx-border bg-vx-base lg:flex"
     >
       <div className={`flex h-16 shrink-0 items-center ${rail ? 'justify-center' : 'justify-between px-4'}`}>
@@ -301,7 +300,7 @@ function AppSidebar({ sections, homeLabel, logoLabel, accountLabel, accountHref,
           href="/app"
           title={homeLabel}
           aria-current={activeKey === 'explore' ? 'page' : undefined}
-          className={`vx-side-row flex min-h-10 items-center gap-2.5 rounded-xl text-[13px] font-medium text-vx-fg-body ${rail ? 'justify-center px-0' : 'px-2.5'}`}
+          className={`vx-side-row flex min-h-11 items-center gap-2.5 rounded-xl text-[13px] font-medium text-vx-fg-body ${rail ? 'justify-center px-0' : 'px-2.5'}`}
         >
           <Icon name="home" size={16} />
           {!rail && homeLabel}
@@ -325,7 +324,7 @@ function AppSidebar({ sections, homeLabel, logoLabel, accountLabel, accountHref,
                           href={item.href}
                           title={item.hint ? `${item.label} — ${item.hint}` : item.label}
                           aria-current={current ? 'page' : undefined}
-                          className={`flex min-h-10 items-center rounded-xl text-[13px] font-medium ${
+                          className={`flex min-h-11 items-center rounded-xl text-[13px] font-medium ${
                             rail ? 'justify-center px-0' : 'gap-2.5 px-2.5'
                           } ${
                             item.featured && !rail
@@ -366,70 +365,17 @@ export function AppNav({ balance, active, readAccount = true }) {
   const publishEnabled = usePublishEnabled();
   const enhanceEnabled = useVideoEnhancePreview();
   const editorEnabled = useEditorEnabled();
-  const items = [
-    { key: 'explore', href: '/app',         label: t("label.Explore") },
-    { key: 'oddlings', href: '/app/oddlings', label: t("label.Oddlings") },
-    { key: 'create',  href: '/app/create',  label: t("label.Create") },
-    { key: 'features', href: '/app/features', label: t('label.Tools') },
-    // Video agent (ADR-0074): bought from a plan on its own page, so it has its own tab and is not in the Create picker.
-    { key: 'agent', href: '/app/video-agent', label: t("app.nav.videoAgent") },
-    { key: 'chat', href: '/app/chat', label: t("label.LLM Chat") },
-    { key: 'film', href: '/app/film-studio', label: t("label.Film Studio") },
-    { key: 'music', href: '/app/music/create', label: t("label.Music") },
-    { key: 'library', href: '/app/library', label: t("label.Library") },
-    ...(editorEnabled ? [{ key: 'editor', href: '/app/editor', label: t("label.Video editor") }] : []),
-    ...(projectsEnabled ? [{ key: 'projects', href: '/app/projects', label: t("label.Projects") }] : []),
-    ...(publishEnabled ? [{ key: 'publish', href: '/app/publish', label: t("app.nav.publish") }] : []),
-    ...(enhanceEnabled ? [{ key: 'enhance', href: '/app/enhance', label: t("label.Enhance") }] : []),
-  ];
-  const utilityItems = [
-    { key: 'credits', href: '/app/credits', label: t('label.Credits') },
-  ];
-  const activeCandidates = [
-    ...items,
-    ...utilityItems,
-    // Skills are chat presets (ADR-0073): reached from Chat and Create, shown in the sidebar, not a top-level destination.
-    { key: 'skills', href: '/app/skills' },
-    { key: 'cinema', href: '/social-cinema' },
-  ];
+  const flags = { projects: projectsEnabled, publish: publishEnabled, enhance: enhanceEnabled, editor: editorEnabled };
+  const activeCandidates = studioActiveCandidates(flags);
   const activeKey = active ?? activeStudioDestination(pathname, activeCandidates);
   // The public taxonomy intentionally mentions some destinations in more
   // than one group. The compact app menu is one flat list, so keep the first
   // useful occurrence of each route instead of rendering duplicate links.
   const menuItems = [...new Map([
-    ...items,
-    ...utilityItems,
+    ...studioMenuItems(t, flags),
     ...APP_BROWSE_CATEGORIES,
   ].map((item) => [item.href, item])).values()];
-  const sidebarSections = [
-    { id: 'agents', label: t('app.nav.side.agents'), items: [
-      { key: 'skills', href: '/app/skills', label: t('label.Studio skills'), icon: 'wand' },
-      { key: 'chat', href: '/app/chat', label: t('label.LLM Chat'), icon: 'chat' },
-      { key: 'agent', href: '/app/video-agent', label: t('app.nav.videoAgent'), hint: t('app.nav.videoAgentHint'), icon: 'agent' },
-    ] },
-    { id: 'tools', label: t('app.nav.side.tools'), items: [
-      { key: 'create', href: '/app/create', label: t('label.Create'), icon: 'image' },
-      { key: 'features', href: '/app/features', label: t('label.Tools'), icon: 'wand' },
-      { key: 'film', href: '/app/film-studio', label: t('label.Film Studio'), hint: t('app.nav.filmStudioHint'), icon: 'film' },
-      { key: 'music', href: '/app/music/create', label: t('label.Music'), icon: 'music' },
-      { key: 'oddlings', href: '/app/oddlings', label: t('label.Oddlings'), icon: 'character' },
-      ...(enhanceEnabled ? [{ key: 'enhance', href: '/app/enhance', label: t('label.Enhance'), icon: 'wand' }] : []),
-      ...(editorEnabled ? [{ key: 'editor', href: '/app/editor', label: t('label.Video editor'), icon: 'scissors' }] : []),
-      { href: '/mcp', label: t('label.MCP'), icon: 'plug' },
-    ] },
-    { id: 'assets', label: t('app.nav.side.assets'), items: [
-      { key: 'library', href: '/app/library', label: t('label.Library'), icon: 'library' },
-      ...(projectsEnabled ? [{ key: 'projects', href: '/app/projects', label: t('label.Projects'), icon: 'folder' }] : []),
-      ...(publishEnabled ? [{ key: 'publish', href: '/app/publish', label: t('app.nav.publish'), icon: 'send' }] : []),
-      { key: 'credits', href: '/app/credits', label: t('label.Credits'), icon: 'coins' },
-    ] },
-    { id: 'inspire', label: t('app.nav.side.inspire'), items: [
-      { key: 'cinema', href: '/social-cinema', label: t.label('Social Cinema'), icon: 'film' },
-      { href: '/presets', label: t('label.Templates'), icon: 'template' },
-      { href: '/models', label: t('label.Models'), icon: 'cube' },
-      { href: '/guides', label: t('label.Guides'), icon: 'book' },
-    ] },
-  ];
+  const sidebarSections = studioSidebarSections(t, flags);
   // Stored identity is display metadata, not authorization. It needs no
   // network to draw the nav while the HttpOnly session restores. Google puts
   // one in user_metadata, and public.users has no such column. The endpoint
@@ -527,7 +473,7 @@ export function AppNav({ balance, active, readAccount = true }) {
                 <button
                   type="button"
                   onClick={loadSummary}
-                  className="inline-flex min-h-10 items-center justify-center px-2 text-[11px] font-bold text-vx-danger focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-danger"
+                  className="inline-flex min-h-11 items-center justify-center px-2 text-[11px] font-bold text-vx-danger focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-danger"
                 >
                   {t('recovery.retry')}
                 </button>

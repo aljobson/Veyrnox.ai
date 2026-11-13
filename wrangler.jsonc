@@ -53,7 +53,7 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS",
     // Template preview MP4s need byte ranges for Apple's video player; worker.js
-    // answers them (lib/showcaseVideo.js). ADR-0335 also admits the two pinned
+    // answers them (lib/showcaseVideo.js). ADR-0338 also admits the two pinned
     // vision prefixes here before ASSETS.fetch for gates/CSP. Other assets stay edge-served:
     // routing the JPG posters through the Worker too made a landing page's
     // burst of poster requests fail with 503, leaving template tiles blank.

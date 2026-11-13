@@ -4,12 +4,12 @@ import { accountReadLimit } from '../../../../lib/accountReadLimit.js';
 import { historyCursor, historyPage } from '../../../../lib/historyCursor.js';
 import { ledgerKind } from '../../../../lib/ledgerKind.js';
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../lib/validate.js';
 const LIMIT = 25;
 const json = (body, status = 200) => NextResponse.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
 export async function GET(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
-    if (!authId || !UUID.test(authId)) return json({ error: 'not_authenticated' }, 401);
+    if (!authId || !isUuidLoose(authId)) return json({ error: 'not_authenticated' }, 401);
     let cursor;
     try { cursor = historyCursor(req.url); } catch { return json({ error: 'invalid_cursor' }, 400); }
     const cfg = envConfig();
@@ -19,7 +19,7 @@ export async function GET(req) {
     try {
         const users = await select('users', { columns: 'id', filter: `auth_id=eq.${encodeURIComponent(authId)}`, limit: 1 }, cfg);
         const id = users?.[0]?.id;
-        if (!id || !UUID.test(id)) return json({ entries: [], next: null });
+        if (!id || !isUuidLoose(id)) return json({ entries: [], next: null });
         const rows = await select('ledger_entries', {
             columns: 'id,delta,free_delta,reason,job_id,created_at',
             filter: `user_id=eq.${id}${cursor}&order=created_at.desc,id.desc`, limit: LIMIT + 1,

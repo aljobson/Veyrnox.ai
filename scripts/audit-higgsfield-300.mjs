@@ -1,3 +1,4 @@
+import { sourceMediaEntries, hasSourceMediaId } from './lib/source-record-media.mjs';
 // Offline proof for the 2026-11-05 capture. Never downloads or encodes media.
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
@@ -53,10 +54,10 @@ export function unexpectedDuplicateGroups(field, entries) {
 
 export function uniquenessTables() {
   const records = SOURCE_TEMPLATES.map(t => [t.id, SOURCE_PROMPT_RECORDS[t.id]]).filter(([, r]) => r?.prompt);
-  const knownMedia = new Map(Object.entries(SOURCE_PROMPT_RECORDS).filter(([, r]) => r.sourceMediaId).map(([id, r]) => [id, r.sourceMediaId]));
+  const knownMedia = new Map(sourceMediaEntries(SOURCE_PROMPT_RECORDS));
   for (const name of ['higgsfield-90-exact-2026-10-29', 'seedance-200-exact-2026-10-29', 'syntx-40-2026-10-29']) {
     const prior = JSON.parse(readFileSync(resolve(root, `docs/product/source-audit/${name}.json`)));
-    for (const r of prior.records) knownMedia.set(r.id, r.sourceMediaId);
+    for (const r of prior.records) if (hasSourceMediaId(r.sourceMediaId)) knownMedia.set(r.id, r.sourceMediaId);
   }
   const signatures = Object.fromEntries(Object.entries(visualFixture.placements).map(([id, row]) => [id, row.signature]));
   const tables = {

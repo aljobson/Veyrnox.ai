@@ -25,8 +25,8 @@ test('chat is switched on in production and nothing else gates it per browser', 
         assert.doesNotMatch(src, /useChatPreview|localStorage\.veyrnox_chat|veyrnox_chat['"]/, `${f} has no per-browser chat switch`);
     }
     assert.throws(() => readFileSync(new URL('../app/veyrnox/_lib/useChatPreview.js', import.meta.url)), /ENOENT/, 'the switch hook is gone');
-    const nav = readFileSync(new URL('../app/veyrnox/_components/NavBar.js', import.meta.url), 'utf8');
-    assert.match(nav, /key: 'chat', href: '\/app\/chat', label: t\("label.LLM Chat"\)/, 'LLM Chat is a normal tab');
+    const nav = readFileSync(new URL('../app/veyrnox/_lib/studioNavigation.js', import.meta.url), 'utf8');
+    assert.match(nav, /key: 'chat', href: '\/app\/chat', labelKey: 'label\.LLM Chat'/, 'LLM Chat is a normal tab');
     const api = readFileSync(new URL('../app/veyrnox/_lib/chatApi.js', import.meta.url), 'utf8');
     assert.match(api, /chat_not_open/, 'a closed flag still reads as "not open yet", not an error');
 });

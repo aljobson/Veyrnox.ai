@@ -34,6 +34,7 @@ import { clientTemplateVideo, checkTemplateClipRequest, resolveTemplateClipVideo
 import { loadTemplateClip } from '../../../../lib/templateClipGate.js';
 import { replayTemplateClip } from '../../../../lib/templateClipReplay.js';
 import { TEMPLATE_CLIP_PROMPT } from '../../../../lib/templateClipPrompt.mjs';
+import { tieredCredits } from '../../../../lib/resolutionTiers.js';
 
 // The wording version an upload consent attests to (ADR-0330: the Terms and AUP, no tick). Bump when the wording
 // at /legal/aup or on the create page changes; users re-attest under the new
@@ -58,10 +59,12 @@ const RATE_WINDOW_SECONDS = 60;
 // OpenRouter adapters still build their own bodies and must agree with it.
 
 /** Credits owed: catalog price is per UNIT_SECONDS of video, per single image/audio output. */
-function priceFor(modelRow, inputs) {
+function priceFor(modelRow, inputs, record = null) {
     const isVideo = typeof modelRow.modality === 'string' && modelRow.modality.endsWith('video');
     const seconds = isVideo ? (inputs.duration_seconds || UNIT_SECONDS) : UNIT_SECONDS;
-    return modelRow.credits_5s * Math.ceil(seconds / UNIT_SECONDS);
+    // A higher resolution tier multiplies the unit price (lib/resolutionTiers.js); the base tier is the catalog price.
+    const unit = record ? tieredCredits(modelRow.credits_5s, record, inputs.resolution) : modelRow.credits_5s;
+    return unit * Math.ceil(seconds / UNIT_SECONDS);
 }
 
 // Like the other admission switches, absent or anything except exact 'true' is off.
@@ -301,7 +304,7 @@ export async function POST(req) {
     // plan route issued for this caller, this exact brief and this price, and
     // with the idempotency key that ticket names, so one plan buys one run.
     if (record.agent) {
-        const bad = await checkPlan({ modelInputs, authId, idempotencyKey, credits: priceFor(modelRow, {}) });
+        const bad = await checkPlan({ modelInputs, authId, idempotencyKey, credits: priceFor(modelRow, {}, record) });
         if (bad) return NextResponse.json(bad.body, { status: bad.status });
     }
     // A model priced by output size or length caps its sources' pixels/seconds.
@@ -347,7 +350,7 @@ export async function POST(req) {
 
     // An enabled net ceiling takes precedence over the legacy gross-price equality check.
     // Both fields are still type-validated; without an enabled ceiling, preserve the exact check.
-    const quotedCredits = priceFor(modelRow, pricedInputs);
+    const quotedCredits = priceFor(modelRow, pricedInputs, record);
     if (maxCharge === undefined && confirmedCredits !== undefined && confirmedCredits !== quotedCredits) {
         return NextResponse.json({
             error: 'credit_confirmation_mismatch',

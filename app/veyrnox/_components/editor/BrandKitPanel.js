@@ -10,6 +10,7 @@ import { useEditorResource } from './useEditorResource';
 import { TEXT_DEFAULTS } from '../../_lib/editorSequenceValidation.mjs';
 import { addSequenceText } from '../../_lib/editorSequence.mjs';
 
+// `apply` is absent outside the editor (the Brand kit page): canvas swatches and text-style inserts need a timeline, so they are hidden.
 export function BrandKitPanel({ project, item, frame, disabled, apply, onSelect, onIngest }) {
   const { t, locale } = useI18n();
   const resource = useEditorResource(project?.workspaceId ? `/workspaces/${project.workspaceId}/brand-kit` : null);
@@ -63,10 +64,10 @@ export function BrandKitPanel({ project, item, frame, disabled, apply, onSelect,
         {t('app.editor.brand.saveStyle')}
       </Button>
     </fieldset>
-    <div className="flex flex-wrap gap-1">{kit.palette.filter(c => /^#[0-9a-f]{6}$/i.test(c)).map((c, i) => <button key={`${c}:${i}`} type="button" disabled={useDisabled}
+    {apply && <div className="flex flex-wrap gap-1">{kit.palette.filter(c => /^#[0-9a-f]{6}$/i.test(c)).map((c, i) => <button key={`${c}:${i}`} type="button" disabled={useDisabled}
       aria-label={t('app.editor.brand.canvas', { colour: c })} className="size-11 rounded-xl border border-vx-border focus-visible:outline focus-visible:outline-vx-accent"
-      style={{ background: c }} onClick={() => apply(timeline => ({ ...timeline, background: c }))}></button>)}</div>
-    <BrandTextStyles kit={kit} set={set} locked={locked} useDisabled={useDisabled} onInsert={insertStyle} />
+      style={{ background: c }} onClick={() => apply(timeline => ({ ...timeline, background: c }))}></button>)}</div>}
+    <BrandTextStyles kit={kit} set={set} locked={locked} useDisabled={useDisabled} onInsert={apply ? insertStyle : null} />
     <BrandAssetPicker key={`${project.workspaceId}:${resource.accountId}`} useDisabled={useDisabled} workspaceId={project.workspaceId}
       assets={kit.assets} disabled={locked} logo={v2 ? kit.logo : undefined} onLogo={v2 ? logo => set('logo', logo) : undefined} onChange={setAssets} onIngest={onIngest} />
     <BrandFieldError kit={kit} name="assets" />{v2 && <BrandFieldError kit={kit} name="logo" />}
@@ -89,7 +90,7 @@ function BrandTextStyles({ kit, set, locked, useDisabled, onInsert }) {
         <input aria-label={t('app.editor.brand.editSize', { number: i + 1 })} className={field} type="number" min={2} max={40} step={1} disabled={locked} value={preset.size} aria-invalid={brandTextStyleSize(preset.size) === null} onChange={e => edit(i, 'size', e.target.value)} onBlur={() => { const size = brandTextStyleSize(preset.size); if (size !== null) edit(i, 'size', size); }} />
       </label>
       {brandTextStyleSize(preset.size) === null && <p role="alert" className="text-xs text-vx-danger">{t('app.editor.brand.invalid.styleSize')}</p>}
-      <Button type="button" className="min-h-11" size="sm" disabled={useDisabled || brandTextStyleSize(preset.size) === null} onClick={() => onInsert(preset)}>{t('app.editor.original.insertName', { name: preset.name })}</Button>
+      {onInsert && <Button type="button" className="min-h-11" size="sm" disabled={useDisabled || brandTextStyleSize(preset.size) === null} onClick={() => onInsert(preset)}>{t('app.editor.original.insertName', { name: preset.name })}</Button>}
       <Button type="button" className="min-h-11" size="sm" variant="ghost" disabled={locked} aria-label={t('app.editor.brand.removeStyle', { name: preset.name })}
         onClick={() => set('textStyles', kit.textStyles.filter((_, j) => j !== i))}>×</Button>
     </div>)}

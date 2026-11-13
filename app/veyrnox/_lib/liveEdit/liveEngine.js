@@ -1,4 +1,4 @@
-// Live camera engine (ADR-0335, S2b). Same renderer and face Worker as a still photo, driven by a playing <video>.
+// Live camera engine (ADR-0338, S2b). Same renderer and face Worker as a still photo, driven by a playing <video>.
 //  - Render at display/video rate; landmarks arrive as fast as the Worker answers.
 //  - ONE detection in flight, latest frame wins: while busy, frames are dropped, never queued, so lag cannot build up.
 //  - Landmarks are smoothed (One-Euro). Switching face effects OFF is immediate and never throttled; only building

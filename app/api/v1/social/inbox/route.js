@@ -4,7 +4,7 @@ import { publishPlansEnabled, socialInboxEnabled } from '../../../../../lib/soci
 import { resolveBrand } from '../../../../../lib/social/resolveBrand.js';
 import { envConfig, rpc, SupabaseError } from '../../../../../packages/db/supabase-client.js';
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../../lib/validate.js';
 const STATES = new Set(['all', 'unread', 'unresolved', 'resolved']);
 const KINDS = new Set(['message', 'comment', 'review']);
 const PRIORITIES = new Set(['normal', 'high', 'urgent']);
@@ -12,7 +12,7 @@ const headers = { 'Cache-Control': 'no-store' };
 
 export async function GET(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
-    if (!UUID.test(authId || '')) return NextResponse.json({ error: 'not_authenticated' }, { status: 401, headers });
+    if (!isUuidLoose(authId || '')) return NextResponse.json({ error: 'not_authenticated' }, { status: 401, headers });
     if (!socialInboxEnabled()) return NextResponse.json({ error: 'publish_inbox_not_open' }, { status: 503, headers });
     if (!publishPlansEnabled()) return NextResponse.json({ error: 'publish_plans_not_open' }, { status: 503, headers });
     const cfg = envConfig();
@@ -25,10 +25,10 @@ export async function GET(req) {
     const assignee = url.searchParams.get('assignee') || null;
     const priority = url.searchParams.get('priority') || null;
     const tag = url.searchParams.get('tag')?.trim().toLowerCase() || null;
-    if ((accountId && !UUID.test(accountId)) || !STATES.has(state) || (kind && !KINDS.has(kind)) || (search && search.length > 100)) {
+    if ((accountId && !isUuidLoose(accountId)) || !STATES.has(state) || (kind && !KINDS.has(kind)) || (search && search.length > 100)) {
         return NextResponse.json({ error: 'invalid_filter' }, { status: 400, headers });
     }
-    if ((assignee && assignee !== 'unassigned' && !UUID.test(assignee)) || (priority && !PRIORITIES.has(priority))
+    if ((assignee && assignee !== 'unassigned' && !isUuidLoose(assignee)) || (priority && !PRIORITIES.has(priority))
         || (tag && (tag.length > 32 || !/^[a-z0-9][a-z0-9 _-]*$/.test(tag)))) {
         return NextResponse.json({ error: 'invalid_filter' }, { status: 400, headers });
     }
