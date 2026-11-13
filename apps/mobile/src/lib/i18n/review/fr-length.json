@@ -4986,6 +4986,132 @@
     "ratio": 1.7
   },
   {
+    "id": "liveEdit.title",
+    "english": "Live Edit",
+    "translation": "Retouche en direct",
+    "ratio": 2
+  },
+  {
+    "id": "liveEdit.blush",
+    "english": "Blush",
+    "translation": "Fard à joues",
+    "ratio": 2.4
+  },
+  {
+    "id": "liveEdit.eyeshadow",
+    "english": "Eyeshadow",
+    "translation": "Ombre à paupières",
+    "ratio": 1.89
+  },
+  {
+    "id": "liveEdit.eyeliner",
+    "english": "Eyeliner",
+    "translation": "Trait de paupière",
+    "ratio": 2.13
+  },
+  {
+    "id": "liveEdit.hair",
+    "english": "Hair colour",
+    "translation": "Couleur des cheveux",
+    "ratio": 1.73
+  },
+  {
+    "id": "liveEdit.undo",
+    "english": "Undo",
+    "translation": "Annuler",
+    "ratio": 1.75
+  },
+  {
+    "id": "liveEdit.redo",
+    "english": "Redo",
+    "translation": "Rétablir",
+    "ratio": 2
+  },
+  {
+    "id": "liveEdit.wig",
+    "english": "Wig",
+    "translation": "Perruque",
+    "ratio": 2.67
+  },
+  {
+    "id": "liveEdit.wigNone",
+    "english": "No wig",
+    "translation": "Aucune perruque",
+    "ratio": 2.5
+  },
+  {
+    "id": "liveEdit.camera.take",
+    "english": "Take photo",
+    "translation": "Prendre une photo",
+    "ratio": 1.7
+  },
+  {
+    "id": "liveEdit.camera.noFace",
+    "english": "No face found. Face effects are off.",
+    "translation": "Aucun visage détecté. Les effets de visage sont désactivés.",
+    "ratio": 1.64
+  },
+  {
+    "id": "liveEdit.wig3dLegend",
+    "english": "3D wigs (new)",
+    "translation": "Perruques 3D (nouveau)",
+    "ratio": 1.69
+  },
+  {
+    "id": "liveEdit.tool.makeup",
+    "english": "Makeup",
+    "translation": "Maquillage",
+    "ratio": 1.67
+  },
+  {
+    "id": "liveEdit.tool.hair",
+    "english": "Hair",
+    "translation": "Cheveux",
+    "ratio": 1.75
+  },
+  {
+    "id": "liveEdit.tool.aiWig",
+    "english": "AI wig",
+    "translation": "Perruque IA",
+    "ratio": 1.83
+  },
+  {
+    "id": "liveEdit.aiWig.open",
+    "english": "Choose a wig",
+    "translation": "Choisir une perruque",
+    "ratio": 1.67
+  },
+  {
+    "id": "liveEdit.wig.bob",
+    "english": "Bob",
+    "translation": "Carré",
+    "ratio": 1.67
+  },
+  {
+    "id": "liveEdit.wig.waves",
+    "english": "Waves",
+    "translation": "Ondulations",
+    "ratio": 2.2
+  },
+  {
+    "id": "liveEdit.wigSize",
+    "english": "Wig size",
+    "translation": "Taille de la perruque",
+    "ratio": 2.63
+  },
+  {
+    "id": "liveEdit.wigPosition",
+    "english": "Wig height",
+    "translation": "Hauteur de la perruque",
+    "ratio": 2.2
+  },
+  {
+    "id": "liveEdit.wigStrength",
+    "english": "Wig opacity",
+    "translation": "Opacité de la perruque",
+    "ratio": 2
+  },
+  {
     "id": "instruments.title",
     "english": "Instruments",
     "translation": "Instruments de musique",

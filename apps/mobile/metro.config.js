@@ -1,7 +1,9 @@
 const { getDefaultConfig } = require('expo/metro-config');
 const path = require('path');
 
+require('./scripts/ensure-live-edit.cjs')();
 const config = getDefaultConfig(__dirname);
+config.resolver.assetExts = [...new Set([...config.resolver.assetExts, 'html'])];
 
 // The repo root holds the Next.js app's own node_modules (a different React).
 // Prefer this app's copy so the bundle never picks up the web copy.

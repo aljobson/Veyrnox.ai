@@ -3438,6 +3438,78 @@
     "ratio": 1.7
   },
   {
+    "id": "liveEdit.title",
+    "english": "Live Edit",
+    "translation": "Live-Bearbeitung",
+    "ratio": 1.78
+  },
+  {
+    "id": "liveEdit.brows",
+    "english": "Brows",
+    "translation": "Augenbrauen",
+    "ratio": 2.2
+  },
+  {
+    "id": "liveEdit.ombre",
+    "english": "Ombre",
+    "translation": "Farbverlauf",
+    "ratio": 2.2
+  },
+  {
+    "id": "liveEdit.retry",
+    "english": "Try again",
+    "translation": "Erneut versuchen",
+    "ratio": 1.78
+  },
+  {
+    "id": "liveEdit.undo",
+    "english": "Undo",
+    "translation": "Rückgängig",
+    "ratio": 2.5
+  },
+  {
+    "id": "liveEdit.redo",
+    "english": "Redo",
+    "translation": "Wiederholen",
+    "ratio": 2.75
+  },
+  {
+    "id": "liveEdit.wig",
+    "english": "Wig",
+    "translation": "Perücke",
+    "ratio": 2.33
+  },
+  {
+    "id": "liveEdit.wigNone",
+    "english": "No wig",
+    "translation": "Keine Perücke",
+    "ratio": 2.17
+  },
+  {
+    "id": "liveEdit.camera.failed",
+    "english": "The camera could not start. Try again.",
+    "translation": "Die Kamera konnte nicht gestartet werden. Versuche es erneut.",
+    "ratio": 1.61
+  },
+  {
+    "id": "liveEdit.tool.aiWig",
+    "english": "AI wig",
+    "translation": "KI-Perücke",
+    "ratio": 1.67
+  },
+  {
+    "id": "liveEdit.wigSize",
+    "english": "Wig size",
+    "translation": "Perückengröße",
+    "ratio": 1.63
+  },
+  {
+    "id": "liveEdit.wigReady",
+    "english": "Wig fitted.",
+    "translation": "Perücke angepasst.",
+    "ratio": 1.64
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

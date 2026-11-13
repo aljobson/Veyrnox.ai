@@ -107,7 +107,8 @@ test('publication gate controls list, search, detail, categories and hard 404 in
     assert.equal(toPublicPresets(models, galleryTemplates()).some(p => ids.has(p.id)), false);
     assert.deepEqual(toPublicPresets(models, IMAGE_TEMPLATES), []);
   });
-  assert.doesNotMatch(readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8'), /IMAGE_TEMPLATES_ENABLED/);
+  // Production turns the gate on (owner, 2026-11-13): the line exists only as the exact string "true".
+  assert.match(readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8'), /^\s*"IMAGE_TEMPLATES_ENABLED": "true",$/m);
 });
 
 test('image cards are additive, have no video key and price only from the catalog', async () => withFlag('true', () => {

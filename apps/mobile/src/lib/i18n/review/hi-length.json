@@ -1914,6 +1914,54 @@
     "ratio": 1.79
   },
   {
+    "id": "liveEdit.frame",
+    "english": "Use this frame",
+    "translation": "यह फ़्रेम इस्तेमाल करें",
+    "ratio": 1.64
+  },
+  {
+    "id": "liveEdit.blush",
+    "english": "Blush",
+    "translation": "गालों की लाली",
+    "ratio": 2.6
+  },
+  {
+    "id": "liveEdit.tint",
+    "english": "Tint",
+    "translation": "हल्का रंग",
+    "ratio": 2.25
+  },
+  {
+    "id": "liveEdit.ombre",
+    "english": "Ombre",
+    "translation": "रंग का ढलाव",
+    "ratio": 2.2
+  },
+  {
+    "id": "liveEdit.undo",
+    "english": "Undo",
+    "translation": "पूर्ववत करें",
+    "ratio": 3
+  },
+  {
+    "id": "liveEdit.redo",
+    "english": "Redo",
+    "translation": "फिर करें",
+    "ratio": 2
+  },
+  {
+    "id": "liveEdit.wigNone",
+    "english": "No wig",
+    "translation": "कोई विग नहीं",
+    "ratio": 2
+  },
+  {
+    "id": "liveEdit.wigStrength",
+    "english": "Wig opacity",
+    "translation": "विग की अपारदर्शिता",
+    "ratio": 1.64
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

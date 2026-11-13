@@ -52,6 +52,22 @@ export default function SiteChrome({ analyticsEnabled = false }) {
     applyStoredTheme();
   }, []);
 
+  // The notice is fixed to the bottom edge, so it would sit on top of the last
+  // controls on a short screen (at 390 px it hid 'Show more templates'). While it
+  // is open, the page gets the same amount of room underneath it.
+  const noticeRef = useRef(null);
+  useEffect(() => {
+    const box = noticeRef.current;
+    if (!noticeOpen || !box) return undefined;
+    const body = document.body;
+    const before = body.style.paddingBottom;
+    const reserve = () => { body.style.paddingBottom = `${Math.ceil(box.getBoundingClientRect().height)}px`; };
+    reserve();
+    const observer = new ResizeObserver(reserve);
+    observer.observe(box);
+    return () => { observer.disconnect(); body.style.paddingBottom = before; };
+  }, [noticeOpen]);
+
   const ackNotice = useCallback(() => {
     setAcked(true);
     try {
@@ -65,7 +81,7 @@ export default function SiteChrome({ analyticsEnabled = false }) {
       <ReferralBridge />
       <FloatingActions />
       {noticeOpen && (
-        <div data-print="hide" className="fixed inset-x-0 bottom-0 z-[70]">
+        <div ref={noticeRef} data-print="hide" className="fixed inset-x-0 bottom-0 z-[70]">
           <StorageNotice onDismiss={ackNotice} />
         </div>
       )}

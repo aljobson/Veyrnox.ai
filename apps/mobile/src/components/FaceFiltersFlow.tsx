@@ -1,8 +1,10 @@
+import { PHOTO_STUDIO_ENABLED } from '../lib/photoStudioFlag';
 import { rawText } from '../lib/i18n/translate';
 import { Text as StatusText } from './ui/Text';
 import { english } from '../lib/i18n/binding';
 import { useAnnouncement } from '../lib/useAnnouncement';
 import { discardCacheCopy } from '../lib/cacheFiles';
+import { takeOffer } from '../lib/liveEdit/faceFilterHandoff';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { Stack, useRouter } from 'expo-router';
@@ -64,6 +66,7 @@ export function FaceFiltersFlow({ api, owner }: { api: ApiClient; owner: string 
     const source = useRef<string | null>(null);
     const local = useRef<PickedFile | null>(null);
     const working = useRef(false);
+    const wigIntent = useRef(false); // the photo came from Live Edit's AI wig tool
     const controller = useRef(new AbortController());
     const current = () => !controller.current.signal.aborted && getCacheUser() === owner;
 
@@ -127,9 +130,26 @@ export function FaceFiltersFlow({ api, owner }: { api: ApiClient; owner: string 
     function load() {
         // The catalog has its own error, so choosing a photo or a look never hides its retry button.
         setCatalogError(null);
-        fetchCatalog().then(all => { if (current()) setModels(faceFilters(all)); }).catch(() => { if (current()) setCatalogError(t('create.loadError')); });
+        fetchCatalog().then(all => {
+            if (!current()) return;
+            const list = faceFilters(all);
+            setModels(list);
+            // Arriving from the editor's AI wig tool: start on the wig model so the person only has to pick a style.
+            const costume = wigIntent.current ? list.find(m => m.id === 'face-costume') : undefined;
+            wigIntent.current = false;
+            if (costume) { chooseFilter(costume); const style = faceSelectors(costume).enums.find(e => e.key === 'costume_style'); if (style?.values.includes('wig_blonde')) setValues(v => ({ ...v, costume_style: 'wig_blonde' })); }
+        }).catch(() => { if (current()) setCatalogError(t('create.loadError')); });
     }
     useEffect(load, []);
+    // A photo offered by Live Edit is claimed once, validated like a picked one, and owned (and later deleted) by this screen.
+    useEffect(() => {
+        const offered = takeOffer(owner);
+        if (!offered) return;
+        const valid = checkPicked('image', offered);
+        if (!valid.ok) { discardFile(offered); setError(pickedProblem(valid.error, 'image')); return; }
+        discardPhoto(); local.current = offered; source.current = null; submit.current.reset();
+        clearResult(); setPhoto(offered); wigIntent.current = true;
+    }, [owner]); // eslint-disable-line react-hooks/exhaustive-deps
 
     function reset(next: CatalogModel | null = null) {
         discardPhoto(); source.current = null; clearResult(); submit.current.reset();
@@ -253,6 +273,7 @@ export function FaceFiltersFlow({ api, owner }: { api: ApiClient; owner: string 
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
             <Stack.Screen options={{ title: t('faceFilters.title') }} />
+            {PHOTO_STUDIO_ENABLED ? <Button variant="secondary" label={t('liveEdit.title')} onPress={() => router.push('/live-edit')} /> : null}
             <View style={[styles.stage, { height: Math.round(screenWidth * 1.25) }]}>
                 {original
                     ? <InstantPhoto uri={original} matrix={lookMatrix(look)} cover label={t(model ? 'faceFilters.before' : 'faceFilterSwitch.attached')} style={StyleSheet.absoluteFill} onError={fromResult ? resultImageError : undefined} onLoad={fromResult ? resultImageLoaded : undefined} />

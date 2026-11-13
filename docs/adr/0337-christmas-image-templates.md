@@ -22,8 +22,10 @@ missing media fields and still compares captured prompt hashes. Public-ID and
 name collision checks reserve all image recipes, including gated originals.
 
 `IMAGE_TEMPLATES_ENABLED` enables publication only when its value is exactly
-`"true"`. Absence is off. The flag is not installed in `wrangler.jsonc` and is
-not activated by this change. `allPublishedTemplates`, `galleryTemplates` and
+`"true"`. Absence is off. The flag was installed in production `wrangler.jsonc` as `"true"` on
+2026-11-13 on the owner's word (amendment 1). It replaced the redundant
+`PUBLISH_CAROUSEL_ENABLED: "false"` var (absent is off), so the Worker stays at
+its 67-var cap. Remove the line to turn image templates off. `allPublishedTemplates`, `galleryTemplates` and
 `galleryCategories` read it on each call. Legacy `ALL_TEMPLATES`, `PRESETS` and
 `PRESET_CATEGORIES` remain video-only exports for existing consumers and
 corpus/fidelity generation. Web list/search/detail, sitemap, and the middleware

@@ -53,10 +53,11 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS",
     // Template preview MP4s need byte ranges for Apple's video player; worker.js
-    // answers them (lib/showcaseVideo.js). Everything else stays edge-served:
+    // answers them (lib/showcaseVideo.js). ADR-0338 also admits the two pinned
+    // vision prefixes here before ASSETS.fetch for gates/CSP. Other assets stay edge-served:
     // routing the JPG posters through the Worker too made a landing page's
     // burst of poster requests fail with 503, leaving template tiles blank.
-    "run_worker_first": ["/showcase/*.mp4"]
+    "run_worker_first": ["/showcase/*.mp4", "/editor-vision/*"]
   },
   // Public config — safe to commit. SUPABASE_URL used by middleware.js;
   // NEXT_PUBLIC_* by client bundle.
@@ -251,7 +252,9 @@
     // Migrations through 0323 are applied before this rollout. Paid Publish
     // accounts receive the management suite; native video stays separately
     // gated until each provider's production review is complete.
-    "PUBLISH_CAROUSEL_ENABLED": "false",
+    // PUBLISH_CAROUSEL_ENABLED "false" was removed here to free this binding (absent is off, lib/social/postCapabilities.js).
+    // ADR-0337: still-image templates on (owner, 2026-11-13); remove the line to turn them off.
+    "IMAGE_TEMPLATES_ENABLED": "true",
     "PUBLISH_RUNTIME_FLAGS": "{\"multiAccount\":\"true\",\"plans\":\"true\",\"videoDestinations\":\"false\",\"inbox\":\"true\",\"inboxWorkflows\":\"true\",\"smartlinks\":\"true\",\"contentPresets\":\"true\",\"queues\":\"true\",\"approvals\":\"true\",\"teams\":\"true\",\"variants\":\"true\",\"reports\":\"true\",\"scheduledReports\":\"true\",\"reportExports\":\"true\",\"reportDelivery\":\"true\",\"customerApi\":\"true\",\"customerWebhooks\":\"true\",\"ads\":\"true\",\"commerce\":\"true\",\"rssAutolists\":\"true\",\"automation\":\"true\"}",
     // Preserve the private pilot secret and default YouTube uploads to Private.
     "PUBLISH_YOUTUBE_VISIBILITY_ENABLED": "true",

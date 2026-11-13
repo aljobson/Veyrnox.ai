@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="640" viewBox="0 0 512 640">
+<title>Veyrnox original stylised long wig</title>
+<defs>
+<mask id="opening" maskUnits="userSpaceOnUse" x="0" y="0" width="512" height="640"><rect width="512" height="640" fill="white"/><path d="M256 185 C190 185 145 230 142 300 L151 640 H361 L370 300 C367 230 322 185 256 185 Z" fill="black"/></mask>
+<clipPath id="silhouette"><path d="M71 622 Q105 484 93 338 Q78 196 122 125 Q163 64 254 63 Q351 57 397 136 Q431 211 416 353 Q406 492 446 622 Q389 643 338 615 L174 615 Q117 645 71 622 Z"/></clipPath>
+</defs>
+<g mask="url(#opening)" clip-path="url(#silhouette)">
+<path d="M71 622 Q105 484 93 338 Q78 196 122 125 Q163 64 254 63 Q351 57 397 136 Q431 211 416 353 Q406 492 446 622 Q389 643 338 615 L174 615 Q117 645 71 622 Z" fill="#4d3540"/>
+<g fill="none" stroke="#916a64" stroke-width="12" stroke-linecap="round">
+<path d="M208 87 Q110 154 98 292 T104 618"/>
+<path d="M224 87 Q151 154 139 292 T145 618"/>
+<path d="M240 87 Q192 154 180 292 T186 618"/>
+<path d="M256 87 Q233 154 221 292 T227 618"/>
+<path d="M272 87 Q274 154 262 292 T268 618"/>
+<path d="M288 87 Q315 154 303 292 T309 618"/>
+<path d="M304 87 Q356 154 344 292 T350 618"/>
+<path d="M320 87 Q397 154 385 292 T391 618"/>
+</g>
+<path d="M112 192 Q160 85 254 91 Q345 78 398 190" fill="none" stroke="#b88b75" stroke-width="9"/>
+</g>
+</svg>

@@ -389,7 +389,7 @@ export default function Conversation() {
                 </Button>
                 <View style={styles.conversationTitle}>
                     <Text variant="callout" numberOfLines={1} style={styles.threadTitle}>{title}</Text>
-                    {model ? <Text variant="caption" numberOfLines={1} style={styles.modelMeta}>{model.name} · <Text variant="caption" tone="warning">{plural('chat.perReply', model.credits_per_reply)}</Text></Text> : null}
+                    {model ? <Text variant="caption" numberOfLines={2} style={styles.modelMeta}>{model.name} · <Text variant="caption" tone="warning">{plural('chat.perReply', model.credits_per_reply)}</Text></Text> : null}
                 </View>
                 <Button accessibilityRole="button" accessibilityLabel={t('chat.settings.open')} disabled={!thread || sending} containerStyle={styles.headerControl} onPress={() => setSettingsOpen(true)} variant="tertiary" size="md" label={t('chat.settings.open')}>
                     <Text variant="footnote" style={styles.headerControlText}>{t('chat.settings.open')}</Text>

@@ -277,11 +277,11 @@ test('the generated inventory holds the gallery routes, and the closed gate hide
     for (const env of [{}, { ODDLINGS_PUBLIC_ENABLED: 'false' }, { ODDLINGS_PUBLIC_ENABLED: 'TRUE' }, undefined]) {
         const visible = publicProductInventory(env);
         assert.ok(!visible.some((entry) => GALLERY_ROUTE.test(entry.route)), JSON.stringify(env));
-        assert.equal(visible.length, AUTO_PRODUCT_INVENTORY.length - 2, 'only the gallery routes are removed');
+        assert.equal(visible.length, AUTO_PRODUCT_INVENTORY.length - 3, 'the gallery and dark Photo Studio are removed');
         assert.ok(visible.some((entry) => entry.route === '/app/oddlings'), 'the signed-in studio stays known');
     }
     const open = publicProductInventory({ ODDLINGS_PUBLIC_ENABLED: 'true' });
-    assert.equal(open.length, AUTO_PRODUCT_INVENTORY.length);
+    assert.equal(open.length, AUTO_PRODUCT_INVENTORY.length - 1, 'Photo Studio retains its independent dark gate');
     assert.ok(open.some((entry) => entry.route === '/oddlings') && open.some((entry) => entry.route === '/oddlings/[id]'));
 });
 

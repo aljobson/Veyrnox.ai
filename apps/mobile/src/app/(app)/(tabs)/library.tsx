@@ -314,7 +314,7 @@ const sheets = themedStyles((p) => ({
     accentInk: { color: p.accent },
 
     list: { paddingBottom: LIST_END_PADDING },
-    barScroll: { flexGrow: 0, marginBottom: ds.space.sm },
+    barScroll: { flexGrow: 0, flexShrink: 0, marginBottom: ds.space.sm },
     bar: { flexDirection: 'row', gap: ds.space.sm },
     screen: { flex: 1, backgroundColor: p.bg, padding: ds.space.lg },
     heading: { color: p.textPrimary, marginBottom: ds.space.xs },

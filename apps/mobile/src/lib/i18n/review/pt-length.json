@@ -3114,6 +3114,90 @@
     "ratio": 1.62
   },
   {
+    "id": "liveEdit.eyeshadow",
+    "english": "Eyeshadow",
+    "translation": "Sombra para olhos",
+    "ratio": 1.89
+  },
+  {
+    "id": "liveEdit.brows",
+    "english": "Brows",
+    "translation": "Sobrancelhas",
+    "ratio": 2.4
+  },
+  {
+    "id": "liveEdit.gloss",
+    "english": "Gloss",
+    "translation": "Brilhante",
+    "ratio": 1.8
+  },
+  {
+    "id": "liveEdit.tint",
+    "english": "Tint",
+    "translation": "Tonalizado",
+    "ratio": 2.5
+  },
+  {
+    "id": "liveEdit.wing",
+    "english": "Wing length",
+    "translation": "Comprimento do traço",
+    "ratio": 1.82
+  },
+  {
+    "id": "liveEdit.retry",
+    "english": "Try again",
+    "translation": "Tentar novamente",
+    "ratio": 1.78
+  },
+  {
+    "id": "liveEdit.undo",
+    "english": "Undo",
+    "translation": "Desfazer",
+    "ratio": 2
+  },
+  {
+    "id": "liveEdit.redo",
+    "english": "Redo",
+    "translation": "Refazer",
+    "ratio": 1.75
+  },
+  {
+    "id": "liveEdit.wig",
+    "english": "Wig",
+    "translation": "Peruca",
+    "ratio": 2
+  },
+  {
+    "id": "liveEdit.wigNone",
+    "english": "No wig",
+    "translation": "Sem peruca",
+    "ratio": 1.67
+  },
+  {
+    "id": "liveEdit.camera.preview",
+    "english": "Live camera preview",
+    "translation": "Pré-visualização da câmera ao vivo",
+    "ratio": 1.79
+  },
+  {
+    "id": "liveEdit.camera.noFace",
+    "english": "No face found. Face effects are off.",
+    "translation": "Nenhum rosto encontrado. Os efeitos de rosto estão desligados.",
+    "ratio": 1.72
+  },
+  {
+    "id": "liveEdit.wigSize",
+    "english": "Wig size",
+    "translation": "Tamanho da peruca",
+    "ratio": 2.13
+  },
+  {
+    "id": "liveEdit.wigStrength",
+    "english": "Wig opacity",
+    "translation": "Opacidade da peruca",
+    "ratio": 1.73
+  },
+  {
     "id": "instruments.share",
     "english": "Share WAV",
     "translation": "Compartilhar WAV",

@@ -3348,6 +3348,66 @@
     "ratio": 1.67
   },
   {
+    "id": "liveEdit.title",
+    "english": "Live Edit",
+    "translation": "Живое редактирование",
+    "ratio": 2.22
+  },
+  {
+    "id": "liveEdit.tint",
+    "english": "Tint",
+    "translation": "Тонирование",
+    "ratio": 2.75
+  },
+  {
+    "id": "liveEdit.undo",
+    "english": "Undo",
+    "translation": "Отменить",
+    "ratio": 2
+  },
+  {
+    "id": "liveEdit.redo",
+    "english": "Redo",
+    "translation": "Вернуть",
+    "ratio": 1.75
+  },
+  {
+    "id": "liveEdit.wig",
+    "english": "Wig",
+    "translation": "Парик",
+    "ratio": 1.67
+  },
+  {
+    "id": "liveEdit.wigNone",
+    "english": "No wig",
+    "translation": "Без парика",
+    "ratio": 1.67
+  },
+  {
+    "id": "liveEdit.camera.start",
+    "english": "Live camera",
+    "translation": "Камера в реальном времени",
+    "ratio": 2.27
+  },
+  {
+    "id": "liveEdit.wig.long",
+    "english": "Long",
+    "translation": "Длинный",
+    "ratio": 1.75
+  },
+  {
+    "id": "liveEdit.wigSize",
+    "english": "Wig size",
+    "translation": "Размер парика",
+    "ratio": 1.63
+  },
+  {
+    "id": "liveEdit.wigStrength",
+    "english": "Wig opacity",
+    "translation": "Непрозрачность парика",
+    "ratio": 1.91
+  },
+  {
     "id": "instruments.strum",
     "english": "Strum {chord}",
     "translation": "Сыграть аккорд {chord}",
