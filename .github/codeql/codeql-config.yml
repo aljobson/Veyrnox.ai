@@ -3,6 +3,13 @@
 # they only produce js/remote-property-injection noise. The 64 web alerts (2026-10-16)
 # and the 11 phone alerts (2026-10-20) were dismissed as false positives; this stops
 # the next generated diagram from failing the check again.
+# The Photo Studio's 3D layer ships a vendored, unmodified copy of three.js (MIT). Its two
+# files are copied byte for byte by scripts/sync-three-vendor.mjs, pinned by SHA-256 in
+# public/photo-studio/vendor/three-*/manifest.json, and a test checks them against that
+# manifest and the installed package, so they are not our code to fix.
+# js/insecure-randomness fires on Math.random() in MathUtils.generateUUID, which only makes
+# scene-object ids, never tokens or keys.
 name: veyrnox-codeql-config
 paths-ignore:
   - 'docs/**/diagrams/*.html'
+  - 'public/photo-studio/vendor/**'
