@@ -252,7 +252,9 @@
     // Migrations through 0323 are applied before this rollout. Paid Publish
     // accounts receive the management suite; native video stays separately
     // gated until each provider's production review is complete.
-    "PUBLISH_CAROUSEL_ENABLED": "false",
+    // PUBLISH_CAROUSEL_ENABLED "false" was removed here to free this binding (absent is off, lib/social/postCapabilities.js).
+    // ADR-0337: still-image templates on (owner, 2026-11-13); remove the line to turn them off.
+    "IMAGE_TEMPLATES_ENABLED": "true",
     "PUBLISH_RUNTIME_FLAGS": "{\"multiAccount\":\"true\",\"plans\":\"true\",\"videoDestinations\":\"false\",\"inbox\":\"true\",\"inboxWorkflows\":\"true\",\"smartlinks\":\"true\",\"contentPresets\":\"true\",\"queues\":\"true\",\"approvals\":\"true\",\"teams\":\"true\",\"variants\":\"true\",\"reports\":\"true\",\"scheduledReports\":\"true\",\"reportExports\":\"true\",\"reportDelivery\":\"true\",\"customerApi\":\"true\",\"customerWebhooks\":\"true\",\"ads\":\"true\",\"commerce\":\"true\",\"rssAutolists\":\"true\",\"automation\":\"true\"}",
     // Preserve the private pilot secret and default YouTube uploads to Private.
     "PUBLISH_YOUTUBE_VISIBILITY_ENABLED": "true",
