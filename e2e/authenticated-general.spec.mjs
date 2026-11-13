@@ -23,7 +23,7 @@ async function fixtureFor(page, options = {}) {
     return false;
   } });
 }
-const writes = fixture => fixture.requests.filter(row => !['GET', 'HEAD', 'OPTIONS'].includes(row.method) && !(row.method === 'POST' && row.path === '/api/auth/session' && row.body?.action === 'refresh'));
+const writes = fixture => fixture.requests.filter(row => !['GET', 'HEAD', 'OPTIONS'].includes(row.method) && !(row.method === 'POST' && row.path === '/api/auth/session' && row.body?.action === 'refresh') && !row.path.startsWith('/api/v1/library-sync'));
 async function open(fixture, page, path, heading) {
   const response = await fixture.open(path);
   expect(response.status(), 'Actual first-party document must render').toBe(200);

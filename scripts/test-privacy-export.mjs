@@ -21,7 +21,7 @@ const start = async (auth, aal = 'aal1') => (await one('SELECT public.start_priv
 const read = async (auth, id, section, cursor = null, size = null, thread = null, aal = 'aal1') =>
     (await one('SELECT public.read_privacy_export_page($1,$2,$3,$4,$5,$6,$7,$8) AS r', [auth, aal, id, section, thread, cursor?.after ?? null, cursor?.key ?? null, size])).r;
 const ALLOW = {
-    profile: 'id email created_at preferred_locale rights_attested_at rights_attestation_version age_confirmed_at age_confirmation_version balance free_balance subscription_balance subscription_expires_at cinema_profile cinema_membership referral_code referred_at referrals_made creator_profile first_goal checkin_streak push_devices voice_profiles sanctions_hold_until frozen',
+    profile: 'id email created_at preferred_locale rights_attested_at rights_attestation_version age_confirmed_at age_confirmation_version balance free_balance subscription_balance subscription_expires_at cinema_profile cinema_membership referral_code referred_at referrals_made creator_profile first_goal library_favourites create_draft checkin_streak push_devices voice_profiles sanctions_hold_until frozen',
     credit_history: 'id delta free_delta subscription_delta job_id created_at reason',
     top_ups: 'id pack_id sales_channel credits price_usd_cents status consent_at consent_version created_at credited_at refunded_cents clawed_back_credits returned_at',
     credit_subscriptions: 'id plan_id status price_usd_cents consent_version consent_at started_at current_period_end cancel_at_period_end ended_at end_reason created_at credits',
@@ -140,6 +140,9 @@ try {
     // 0499 (ADR-0339) replaces that wrapper to add role and destination, so it comes after 0494.
     const withFirstAnswers = await readFile(new URL('../packages/db/schema/supabase/0499_first_run_answers.sql', import.meta.url), 'utf8');
     await q(withFirstAnswers); await q(withFirstAnswers);
+    // 0500 (ADR-0340) wraps the 0499 wrapper, so it comes after it.
+    const withLibrarySync = await readFile(new URL('../packages/db/schema/supabase/0500_library_sync.sql', import.meta.url), 'utf8');
+    await q(withLibrarySync); await q(withLibrarySync);
     await q('ALTER TABLE public.chat_messages ALTER COLUMN seq RESTART WITH 3000000000');
     const alice = await person('alice'), bob = await person('bob-private');
     otherIds.push(bob.id, bob.auth); secrets.push(bob.email);
@@ -294,7 +297,7 @@ try {
         'account_actions', 'chat_folders', 'chat_personas', 'chat_threads', 'cinema_creator_follows',
         'cinema_memberships', 'cinema_profiles', 'cinema_saved_titles', 'cinema_series_follows', 'cinema_watch_resume',
         'content_appeals', 'content_reports', 'credit_balances', 'credit_subscriptions', 'jobs',
-        'checkin_streaks', 'creator_profiles', 'first_goals', 'ledger_entries', 'push_tokens', 'referral_codes', 'referrals', 'social_brands',
+        'checkin_streaks', 'creator_profiles', 'first_goals', 'library_favourites', 'create_drafts', 'ledger_entries', 'push_tokens', 'referral_codes', 'referrals', 'social_brands',
         'social_posts', 'social_publish_subscriptions', 'top_ups', 'user_blocks', 'voice_profiles',
     ]);
     const NOT_EXPORTED = new Set([

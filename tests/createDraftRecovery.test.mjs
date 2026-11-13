@@ -63,3 +63,20 @@ test('restoration guards submission and catalog normalization and never calls on
   assert.match(hook, /actorSnapshot\(\) !== actor/);
   assert.doesNotMatch(hook, /onSubmit|\/generations|method: 'POST'/);
 });
+
+// ADR-0340: the account copy of the draft is the words and settings both clients can restore, nothing else.
+import { toSharedDraft, fromSharedDraft } from '../lib/createDraftRecovery.js';
+test('the shared draft carries words and settings only, as numbers the phone also reads', () => {
+  const shared = toSharedDraft({ ...draft, count: 2, seed: '42', negative: 'blur', voice: 'v1', cinemaOn: true, cinema: { lens: 'x' }, sources: { image: { assetId: 'saved-max-rep' } } });
+  assert.deepEqual(shared, { v: 1, modelId: 'kling-3.0-i2v', prompt: draft.prompt, duration: 5, aspect: '16:9', count: 2, seed: '42', negative: 'blur', voice: 'v1' });
+  assert.equal(toSharedDraft({ ...draft, prompt: '', sources: {} }), null, 'no words, nothing to share');
+  assert.equal(toSharedDraft({ modelId: 'bad id!', prompt: 'x' }), null);
+});
+test('a shared draft reopens as a web draft with no sources and no upload to redo', () => {
+  const back = fromSharedDraft({ v: 1, modelId: 'veo-3', prompt: 'a fox', duration: 8, aspect: '9:16', count: 3, seed: '', negative: '', voice: '' });
+  assert.equal(back.modelId, 'veo-3'); assert.equal(back.duration, '8s'); assert.equal(back.aspect, '9:16'); assert.equal(back.count, 3);
+  assert.deepEqual(back.sources, {}); assert.equal(back.needsUpload, false);
+  assert.equal(fromSharedDraft({ v: 2, modelId: 'veo-3', prompt: 'x' }), null);
+  assert.equal(fromSharedDraft(null), null);
+  assert.equal(fromSharedDraft({ v: 1, modelId: 'veo-3', prompt: 'x'.repeat(40000) }), null);
+});
