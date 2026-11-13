@@ -16,11 +16,11 @@ export const OUTPUT_FILE_FACTS = Object.freeze([
   },
   {
     label: 'Provenance',
-    value: 'Separate JSON',
-    detail: 'Download the generation record separately and keep it alongside the media file.',
+    value: 'Not embedded',
+    detail: 'Veyrnox does not embed a generation record in the downloaded media file.',
   },
 ]);
 
 export function outputFileSummary() {
-  return 'No Veyrnox overlay · provider marks can vary · provenance is separate';
+  return 'No Veyrnox overlay · provider marks can vary';
 }
