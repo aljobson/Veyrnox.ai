@@ -1,3 +1,4 @@
+import type { ApiClient } from '../src/lib/api';
 import { clearRemoteDraft, fetchLibrarySync, fromSharedDraft, pushDraft, pushFavourite, reconcileFavourites, toSharedDraft } from '../src/lib/librarySync';
 import { clearDraft, loadDraft, saveDraft } from '../src/lib/createDraftStore';
 import { createCache, createMemoryStorage } from '../src/lib/cache';
@@ -10,7 +11,8 @@ const C = '33333333-3333-4333-8333-333333333333';
 const local: CreateDraft = { v: SAVED_DRAFT_VERSION, modelId: 'veo-3', prompt: 'a red fox', duration: 8, aspect: '16:9', count: 2, seed: '42', negative: 'blur', voice: 'v1', audioSeconds: '3', cinemaOn: true, characterOn: true };
 const api = (reply: (path: string, init?: RequestInit) => unknown) => {
     const calls: { path: string; init?: RequestInit }[] = [];
-    return { calls, request: jest.fn(async (path: string, init?: RequestInit) => { calls.push({ path, init }); return reply(path, init); }) };
+    const request = async (path: string, init?: RequestInit) => { calls.push({ path, init }); return reply(path, init); };
+    return { calls, request } as unknown as Pick<ApiClient, 'request'> & { calls: typeof calls };
 };
 const off = () => api(() => { throw Object.assign(new Error('not_found'), { status: 404 }); });
 
