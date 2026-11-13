@@ -154,7 +154,7 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked:
   return (
     <div className="mt-8">
       <dl className="grid grid-cols-2 gap-3 text-[14px]">
-        <div><dt className="text-vx-fg-muted">{t("presets.use.cost")}</dt><dd className="font-vx-mono vx-num text-[22px] font-bold text-vx-money">{credits} cr</dd></div>
+        <div><dt className="text-vx-fg-muted">{t("presets.use.cost")}</dt><dd className="font-vx-mono vx-num text-[22px] font-bold text-vx-money">{credits == null ? "—" : `${credits} cr`}</dd></div>
         {modelOptions.length > 1 && <div className="col-span-2"><dt className="text-vx-fg-muted">{t("label.Models")}</dt><dd><select aria-label={t("label.Model picker")} value={modelId} onChange={(event) => pickModel(event.target.value)} className="mt-1 min-h-11 w-full rounded-xl border border-vx-border bg-vx-panel px-3 py-2 font-bold focus-visible:outline-2 focus-visible:outline-vx-accent">{modelOptions.map((option) => <option key={option.id} value={option.id}>{option.name}</option>)}</select></dd></div>}
         {aspectOptions.length > 0 && <div><dt className="text-vx-fg-muted">{t("presets.use.aspect")}</dt><dd><select aria-label={t("presets.use.aspect")} value={aspect} onChange={(event) => setPickedAspect(event.target.value)} className="mt-1 min-h-11 max-w-full rounded-xl border border-vx-border bg-vx-panel px-3 py-2 font-vx-mono font-bold focus-visible:outline-2 focus-visible:outline-vx-accent">{aspectOptions.map((option) => <option key={option} value={option}>{option}</option>)}</select></dd></div>}
         {isVideo && <div><dt className="text-vx-fg-muted">{t("presets.use.clip")}</dt><dd><select aria-label={t("presets.use.clipLength")} value={durationSeconds} onChange={(event) => setDurationSeconds(Number(event.target.value))} className="mt-1 min-h-11 max-w-full rounded-xl border border-vx-border bg-vx-panel px-3 py-2 font-vx-mono font-bold focus-visible:outline-2 focus-visible:outline-vx-accent">{durationOptions.map((seconds) => <option key={seconds} value={seconds}>{t('presets.use.lengthCost', { length: t('presets.use.seconds', { count: seconds }), credits: costFor(seconds) })}</option>)}</select></dd></div>}
@@ -177,7 +177,7 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked:
         </fieldset>
       )}
       {model && pickedModel !== originalId && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t('presets.fidelity.modelSwitch')}</p>}
-      {(live && model && !generationBlocked && !auditedTemplateId) && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t('presets.fidelity.previewNotice')}</p>}
+      {(preset.kind !== 'image' && live && model && !generationBlocked && !auditedTemplateId) && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t('presets.fidelity.previewNotice')}</p>}
       {photo && contract && !boundCount && <p className="mt-3 text-sm text-vx-fg-muted">{t(contract.photoGuidance)}</p>}
       {generationBlocked && !sourceGenerationBlocked && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t(photosUnavailable ? 'presets.fidelity.photosUnavailable' : 'public.TemplateRecipe.sourceVideoUnsupported')}</p>}
       {photoError && <p role="alert" className="mt-3 text-sm text-vx-danger">{t(photoError)}</p>}
@@ -194,9 +194,9 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked:
         <span>{inline ? t('presets.use.editBeforeGenerating') : requiredImage && photo ? t('presets.use.withPhoto') : preset.inspired ? t("presets.use.similar") : t("presets.use.template")}</span>
         {opening
           ? <span className="grid w-[3.5ch] place-items-center"><Spinner size={18} /></span>
-          : <span className="font-vx-mono vx-num text-[15px] font-bold">{credits} cr</span>}
+          : <span className="font-vx-mono vx-num text-[15px] font-bold">{credits == null ? "—" : `${credits} cr`}</span>}
       </button>}
-      {!templateClip && <div className="mt-6 rounded-xl border border-vx-border bg-vx-panel/40 p-4">
+      {!templateClip && isVideo && <div className="mt-6 rounded-xl border border-vx-border bg-vx-panel/40 p-4">
         <p className="font-bold">{t("presets.use.longer")}</p>
         <p className="mt-1 text-[13px] text-vx-fg-muted">{t("presets.use.filmPlan")}</p>
         <div className="mt-3 flex flex-wrap items-center gap-3">

@@ -62,7 +62,8 @@ test('availability failures and unregistered IDs keep mobile in the original mod
 test('both pages hide unsupported Create handoffs in clip mode and preserve warning and exact prompt', () => {
   const web = read('app/veyrnox/_components/UseTemplate.js'), mobile = read('apps/mobile/src/app/(app)/templates/[id].tsx');
   assert.match(web, /!templateClip && <button[\s\S]*onClick=\{use\}/);
-  assert.match(web, /!templateClip && <div[\s\S]*onClick=\{buildFilm\}/);
+  // Film handoff requires a video recipe as well as the absence of clip mode.
+  assert.match(web, /!templateClip && isVideo && <div[\s\S]*onClick=\{buildFilm\}/);
   assert.match(mobile, /!templateClip && <Button[^>]*editBeforeGenerating/);
   for (const source of [web, mobile]) assert.match(source, /app\.create\.referenceLikenessNotice/);
   for (const source of [read('app/veyrnox/_components/TemplateRecipe.js'), mobile]) assert.match(source, /public\.TemplateRecipe\.exactCommunityPrompt/);

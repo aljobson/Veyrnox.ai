@@ -7,6 +7,7 @@ import { useTemplateCards, useTemplateSearch } from '../_lib/useTemplates';
 import { presetTitle } from '../_lib/tokens.js';
 import { runnableTemplates } from '../_lib/runnableTemplates.js';
 import { templateHandoffVisual } from '../_lib/templateHandoff.js';
+import { TemplateImage } from './TemplateImage';
 import { TemplateArtwork } from './TemplateArtwork';
 import { Modal } from './Modal';
 
@@ -47,7 +48,7 @@ export function TemplatePicker({ models, goal, onPick, onClose }) {
                   data-testid={`create-template-${preset.id}`}
                   className="group block w-full overflow-hidden rounded-lg border border-vx-border text-start hover:border-vx-accent focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vx-accent">
                   <div className="relative aspect-[3/4] bg-vx-base">
-                    {visual?.kind === 'video'
+                    {preset.kind === 'image' ? <TemplateImage preset={preset} className="h-full w-full" /> : visual?.kind === 'video'
                       ? <img src={visual.poster} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
                       : <TemplateArtwork preset={preset} eyebrow={model.name} title={title} compact />}
                   </div>

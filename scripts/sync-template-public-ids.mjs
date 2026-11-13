@@ -1,3 +1,4 @@
+import { sourceRecordIdsForMedia } from './lib/source-record-media.mjs';
 // Owner-approved public identifier migration. No prompt edits, downloads or encoding.
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync, existsSync, renameSync } from 'node:fs';
@@ -28,7 +29,7 @@ let recipes = COMMUNITY_300_RECIPES;
 for (const [oldId, {id:newId, name:newName}] of Object.entries(stageOneRenames)) {
   const row = audit.records.find(r => r.id === oldId || r.id === newId);
   assert.ok(row);
-  assertAvailablePublicIds([newId], Object.entries(SOURCE_PROMPT_RECORDS).filter(([, r]) => r.sourceMediaId === row.sourceMediaId).map(([id]) => id));
+  assertAvailablePublicIds([newId], sourceRecordIdsForMedia(SOURCE_PROMPT_RECORDS, row.sourceMediaId));
   assert.equal(sha(row.prompt), row.sourcePromptSha256);
   for (const [ext, hash] of [['mp4', row.localPreviewSha256], ['jpg', row.localPosterSha256]]) {
     const previous = resolve(root, `public/showcase/creator-${oldId}.${ext}`);

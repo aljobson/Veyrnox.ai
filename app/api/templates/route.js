@@ -1,7 +1,8 @@
 /**
  * GET /api/templates: the template gallery for the browser, slimmed to what a card shows. Without a query it answers
  * { templates: [{ id, name, category, model, credits, durationSeconds, isNew?, bg, previewAspect, clipKey, promptPreview, taste?, clip }],
- * categories: [...] }. With ?q=<words> it answers { ids: [...] }: the gallery templates whose name, model, category, needs or whole
+ * categories: [...] }. Image cards add kind: 'image' and previewImage, use durationSeconds: null and omit clipKey.
+ * Images appear only with IMAGE_TEMPLATES_ENABLED="true"; /api/presets remains video-only. With ?q=<words> it answers { ids: [...] }: the gallery templates whose name, model, category, needs or whole
  * prompt contain every word, so the browser never holds the prompts to search them.
  *
  * Unauthenticated by design and the same for everyone: static template data with no price and nothing per-user. Lives outside /api/v1

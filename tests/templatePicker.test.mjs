@@ -14,18 +14,18 @@ import { templateCards } from '../lib/clientTemplates.js';
 
 const require = createRequire(import.meta.url);
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
-const local = { '../_lib/tokens.js': tokens, '../_lib/runnableTemplates.js': runnable, '../_lib/templateHandoff.js': handoff, '../_lib/useTemplates': { useTemplateCards: () => ({ templates: templateCards(), categories: [], ready: true }), useTemplateSearch: (cards) => cards }, './TemplateArtwork': { TemplateArtwork: () => null }, './Modal': { Modal: ({ children, onCancel, initialFocusRef, ...labels }) => createElement('dialog', { open: true, ...labels }, children) } };
-const module = { exports: {} };
+const local = { '../_lib/tokens.js': tokens, '../_lib/runnableTemplates.js': runnable, '../_lib/templateHandoff.js': handoff, '../_lib/useTemplates': { useTemplateCards: () => ({ templates: templateCards(), categories: [], ready: true }), useTemplateSearch: (cards) => cards }, './TemplateImage': { TemplateImage: () => null }, './TemplateArtwork': { TemplateArtwork: () => null }, './Modal': { Modal: ({ children, onCancel, initialFocusRef, ...labels }) => createElement('dialog', { open: true, ...labels }, children) } };
+const compiledModule = { exports: {} };
 const compiled = ts.transpileModule(read('app/veyrnox/_components/TemplatePicker.js'), {
   compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS },
 }).outputText;
-new Function('require', 'module', 'exports', compiled)((id) => local[id] || englishAppImports[id.replace('../../../', '../../../../').replace(/\.jsx$/, '')] || require(id), module, module.exports);
+new Function('require', 'module', 'exports', compiled)((id) => local[id] || englishAppImports[id.replace('../../../', '../../../../').replace(/\.jsx$/, '')] || require(id), compiledModule, compiledModule.exports);
 
 const preset = templates.PRESETS.find((p) => tokens.modelIdForName(p.model));
 const models = [{ id: tokens.modelIdForName(preset.model), name: preset.model, kind: 'video' }];
 
 test('the Create template picker lists runnable templates as buttons that name the template', () => {
-  const html = renderToStaticMarkup(createElement(module.exports.TemplatePicker, { models, goal: 'video', onPick() {}, onClose() {} }));
+  const html = renderToStaticMarkup(createElement(compiledModule.exports.TemplatePicker, { models, goal: 'video', onPick() {}, onClose() {} }));
   assert.match(html, /<dialog[^>]*aria-labelledby="create-template-picker-title"/);
   assert.match(html, /TEMPLATES/);
   assert.match(html, /Search templates/);
@@ -34,12 +34,12 @@ test('the Create template picker lists runnable templates as buttons that name t
 });
 
 test('with no runnable model the picker says so instead of listing templates', () => {
-  const html = renderToStaticMarkup(createElement(module.exports.TemplatePicker, { models: [], goal: 'image', onPick() {}, onClose() {} }));
+  const html = renderToStaticMarkup(createElement(compiledModule.exports.TemplatePicker, { models: [], goal: 'image', onPick() {}, onClose() {} }));
   assert.match(html, /No templates match\./);
   assert.doesNotMatch(html, /data-testid="create-template-(?!picker")/);
 });
 
-const renderPicker = (props) => renderToStaticMarkup(createElement(module.exports.TemplatePicker, { onPick() {}, onClose() {}, ...props }));
+const renderPicker = (props) => renderToStaticMarkup(createElement(compiledModule.exports.TemplatePicker, { onPick() {}, onClose() {}, ...props }));
 
 test('the picker lists video templates only; audio samples live in Music Discover', () => {
   const html = renderPicker({ models, goal: 'video' });
