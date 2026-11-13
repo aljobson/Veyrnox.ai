@@ -25,6 +25,8 @@ import { colors, ds, LIST_END_PADDING } from '../../../theme';
 import { Button, Card, Text, TextField, Chip, themedStyles, useThemedStyles, useAppearance } from '../../../components/ui';
 
 import { recordHomeStart } from '../../../lib/firstGoalStore';
+import { hasRealAnswer, phoneStarts } from '../../../lib/firstProfile';
+import { useFirstProfile } from '../../../lib/useFirstProfile';
 import { StartOption } from '../../../components/home/StartOption';
 import { EntryRow } from '../../../components/home/EntryRow';
 import { PresetCard } from '../../../components/home/PresetCard';
@@ -44,6 +46,7 @@ export default function Explore() {
     const styles = useThemedStyles(sheets);
     const { scheme } = useAppearance();
     const { api, generation, beginSessionTask } = useAuth();
+    const profile = useFirstProfile();
     const router = useRouter();
     const { focusIdea } = useLocalSearchParams<{ focusIdea?: string }>();
     const ideaField = useRef<ComponentRef<typeof TextInput>>(null);
@@ -185,9 +188,15 @@ export default function Explore() {
 
                 <YourWinsCard />
                 <Card style={styles.startGroup} accessibilityLabel={t('explore.start.title')}>
-                    <StartOption href="/create" onPress={() => void recordHomeStart(api, 'create')} style={styles.startOption} icon="sparkle" title={t('menu.create')} body={t('explore.start.create.body')} hint={t('explore.start.create.hint')} />
-                    <StartOption href="/chat" onPress={() => void recordHomeStart(api, 'chat')} style={styles.startOption} icon="chat" title={t('menu.chat')} body={t('explore.start.chat.body')} hint={t('explore.chat.hint')} divided />
-                    <StartOption href="/film" onPress={() => void recordHomeStart(api, 'film')} style={styles.startOption} icon="slate" title={t('menu.film')} body={t('explore.start.film.body')} hint={t('explore.start.film.hint')} divided />
+                    {phoneStarts(profile.ready ? profile.role : null, profile.ready ? profile.goal : null).map((key, index) => {
+                        // The first-run answers (ADR-0339) set the order; the first option says it is suggested.
+                        const badge = index === 0 && profile.ready && hasRealAnswer(profile) ? t('create.firstRun.suggested') : undefined;
+                        const onPress = () => void recordHomeStart(api, key);
+                        const divided = index > 0;
+                        if (key === 'create') return <StartOption href="/create" key={key} onPress={onPress} style={styles.startOption} icon="sparkle" title={t('menu.create')} body={t('explore.start.create.body')} hint={t('explore.start.create.hint')} divided={divided} badge={badge} />;
+                        if (key === 'chat') return <StartOption href="/chat" key={key} onPress={onPress} style={styles.startOption} icon="chat" title={t('menu.chat')} body={t('explore.start.chat.body')} hint={t('explore.chat.hint')} divided={divided} badge={badge} />;
+                        return <StartOption href="/film" key={key} onPress={onPress} style={styles.startOption} icon="slate" title={t('menu.film')} body={t('explore.start.film.body')} hint={t('explore.start.film.hint')} divided={divided} badge={badge} />;
+                    })}
                     <StartOption href="/instruments" style={styles.startOption} icon="sparkle" title={t('instruments.title')} body={t('instruments.homeBody')} hint={t('instruments.homeHint')} divided />
                 </Card>
 

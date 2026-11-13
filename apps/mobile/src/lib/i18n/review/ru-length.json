@@ -3414,6 +3414,12 @@
     "ratio": 1.69
   },
   {
+    "id": "create.firstRun.role.pro",
+    "english": "Creative pro",
+    "translation": "Креативный профессионал",
+    "ratio": 1.92
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// 0494 (ADR-0336): the first-goal answer follows the account. Runs against the full migration replay
+// 0494 (ADR-0336) and 0499 (ADR-0339): the first-run answers follow the account. Runs against the full migration replay
 // (ledger-tests.yml). Everything is rolled back.
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -94,7 +94,7 @@ try {
     const page = await call('read_privacy_export_page', alice.authId, 'aal1', exportId, 'profile', null, null, null, null);
     assert.equal(page.ok, true);
     assert.equal(page.rows[0].first_goal.goal, 'audio');
-    assert.deepEqual(Object.keys(page.rows[0].first_goal).sort(), ['created_at', 'goal', 'updated_at']);
+    assert.deepEqual(Object.keys(page.rows[0].first_goal).sort(), ['created_at', 'destination', 'goal', 'role', 'updated_at']);
     assert.ok(Object.hasOwn(page.rows[0], 'voice_profiles'), 'the existing wrapper key survives');
     assert.ok(Object.hasOwn(page.rows[0], 'creator_profile'), 'the existing profile keys survive');
     for (const role of ['anon', 'authenticated', 'service_role']) {
@@ -104,6 +104,49 @@ try {
     const early = (await one(`INSERT INTO public.privacy_export_requests(user_id, created_at, as_of, expires_at, aal)
         VALUES ($1, now() - interval '3 days', now() - interval '3 days', now() + interval '1 hour', 'aal1') RETURNING id`, [alice.userId])).id;
     assert.equal((await call('read_privacy_export_page', alice.authId, 'aal1', early, 'profile', null, null, null, null)).rows[0].first_goal, null);
+
+    // 0499 (ADR-0339): role and destination ride beside the goal. Any of the three may be sent; each is checked on its own list.
+    const setAll = (authId, goal, role, destination) => call('set_first_answers', authId, goal, role, destination);
+    const getAll = (authId) => call('get_first_answers', authId);
+    const carol = await signUp();
+    assert.deepEqual(await getAll(carol.authId), { ok: true, goal: null, role: null, destination: null });
+    // A role alone creates the row with no goal: the goal still reads as "never chose" on both read paths.
+    assert.deepEqual(await setAll(carol.authId, null, 'creator', null), { ok: true, changed: true, goal: null, role: 'creator', destination: null });
+    assert.equal((await get(carol.authId)).goal, null);
+    assert.deepEqual(await setAll(carol.authId, null, 'creator', null), { ok: true, changed: false, goal: null, role: 'creator', destination: null });
+    // The 0494 function still works on a row that has a role, and a goal sent through the new one obeys the same ranks.
+    assert.deepEqual(await set(carol.authId, 'video'), { ok: true, changed: true, goal: 'video' });
+    assert.deepEqual(await setAll(carol.authId, 'unsure', null, 'tiktok'), { ok: true, changed: true, goal: 'video', role: 'creator', destination: 'tiktok' });
+    // "skipped" never lowers a real word, and one real word may replace another.
+    assert.deepEqual(await setAll(carol.authId, null, 'skipped', 'skipped'), { ok: true, changed: false, goal: 'video', role: 'creator', destination: 'tiktok' });
+    assert.deepEqual(await setAll(carol.authId, null, 'business', 'youtube'), { ok: true, changed: true, goal: 'video', role: 'business', destination: 'youtube' });
+    // Skipped everything is stored when nothing better exists, and a later real answer replaces it.
+    const dave = await signUp();
+    assert.deepEqual(await setAll(dave.authId, 'skipped', 'skipped', 'skipped'), { ok: true, changed: true, goal: 'skipped', role: 'skipped', destination: 'skipped' });
+    assert.deepEqual(await setAll(dave.authId, null, 'hobbyist', null), { ok: true, changed: true, goal: 'skipped', role: 'hobbyist', destination: 'skipped' });
+    // Bad words and an empty call are refused and nothing is written.
+    for (const bad of [[null, null, null], ['rm -rf', null, null], [null, 'CREATOR', null], [null, 'creator ', null], [null, null, 'tik tok'], [null, 'unsure', null], [null, null, 'unsure']]) {
+        assert.deepEqual(await setAll(carol.authId, ...bad), { ok: false, error: 'invalid_answers' }, JSON.stringify(bad));
+    }
+    assert.deepEqual(await getAll(carol.authId), { ok: true, goal: 'video', role: 'business', destination: 'youtube' });
+    await c.query('SAVEPOINT chk2');
+    await assert.rejects(c.query("UPDATE public.first_goals SET role = 'bogus' WHERE user_id = $1", [carol.userId]), (err) => err.code === '23514');
+    await c.query('ROLLBACK TO SAVEPOINT chk2');
+    assert.deepEqual(await setAll(randomUUID(), null, 'creator', null), { ok: false, error: 'account_not_found' });
+    assert.deepEqual(await getAll(randomUUID()), { ok: false, error: 'account_not_found' });
+    for (const role of ['anon', 'authenticated']) {
+        await refusedAs(role, "SELECT public.set_first_answers('x', null, 'creator', null)");
+        await refusedAs(role, "SELECT public.get_first_answers('x')");
+    }
+    await c.query('SET LOCAL ROLE service_role');
+    assert.equal((await one("SELECT public.get_first_answers($1) AS r", [carol.authId])).r.role, 'business');
+    await c.query('RESET ROLE');
+    const exportCarol = (await call('start_privacy_export', carol.authId, 'aal1')).export_id;
+    const carolPage = await call('read_privacy_export_page', carol.authId, 'aal1', exportCarol, 'profile', null, null, null, null);
+    assert.deepEqual({ goal: carolPage.rows[0].first_goal.goal, role: carolPage.rows[0].first_goal.role, destination: carolPage.rows[0].first_goal.destination }, { goal: 'video', role: 'business', destination: 'youtube' });
+    // Account deletion removes it too.
+    await c.query('UPDATE public.users SET deleted_at = now() WHERE id = $1', [carol.userId]);
+    assert.equal(await stored(carol.userId), undefined);
 
     // Account deletion removes the row in the same transaction.
     assert.ok(await stored(bob.userId));

@@ -20,8 +20,8 @@ export function hardPaywallState({ enabled, paidAccess, accessResolved, billingS
     return 'locked';
 }
 
-// Store rules: the person can always read the terms and delete their account. First-run screens (welcome, then the Vibe check) come before the paywall.
-const EXEMPT = ['/delete-account', '/welcome', '/vibe', '/analytics-consent'];
+// Store rules: the person can always read the terms and delete their account. First-run screens (welcome, the first-run questions, then the Vibe check) come before the paywall.
+const EXEMPT = ['/delete-account', '/welcome', '/first-run', '/vibe', '/analytics-consent'];
 export const isHardPaywallExempt = (pathname: string | null | undefined): boolean =>
     !!pathname && (EXEMPT.includes(pathname) || pathname.startsWith('/legal/'));
 

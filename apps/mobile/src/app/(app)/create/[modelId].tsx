@@ -39,7 +39,7 @@ import { DEFAULT_CINEMA, buildCinemaPrompt, sanitizeCinema, type Cinema } from '
 import { clearDraft, loadDraft, saveDraft } from '../../../lib/createDraftStore';
 import { SAVED_DRAFT_VERSION, type CreateDraft, audioLengthInvalid, freeLeftFor, hasAnyOption, imageCount, inputsForIndex, optionsFor, resolveAudio, resolveResolution, resolveTier, seedIsInvalid, settingsInputs, takesImageCount, voiceIsMissing } from '../../../lib/createOptions';
 import { loadVibe } from '../../../lib/creatorProfileStore';
-import { defaultAspect } from '../../../lib/creatorTaste';
+import { defaultAspect, readDestinationAspect } from '../../../lib/creatorTaste';
 import { nearestAspect, parseRatio, activeTemplate, normalizeTemplateCarry, templateOnOriginalModel } from '../../../lib/templateHandoff';
 import { buildCharacterPrompt, sanitizePicks, type Picks } from '../../../lib/oddlingsBuilder';
 import { useBalance } from '../../../lib/useBalance';
@@ -167,7 +167,7 @@ export default function CreateWithModel() {
                 // A template that has a shape of its own opens in the model's nearest one; otherwise the usual default.
                 const guidedAspect = handedSources?.aspect;
                 const handedAspect = nearestAspect(parseRatio(presetAspect), o.aspects);
-                const aspect = handedAspect ?? (guidedAspect && o.aspects.includes(guidedAspect) ? guidedAspect : null) ?? nearestAspect(template?.ratio ?? null, o.aspects) ?? defaultAspect(o.aspects, vibe?.answers ?? null);
+                const aspect = handedAspect ?? (guidedAspect && o.aspects.includes(guidedAspect) ? guidedAspect : null) ?? nearestAspect(template?.ratio ?? null, o.aspects) ?? nearestAspect(parseRatio(await readDestinationAspect()), o.aspects) /* where it will go (ADR-0339) */ ?? defaultAspect(o.aspects, vibe?.answers ?? null);
                 const base: OptionValues = { aspect, count: 1, seed: '', negative: template?.negativePrompt || '', voice: '', audioSeconds: '' };
                 setReferences(handedSources?.references ?? legacyReferences(handedSources?.uploaded ?? {}, handedSources?.fromLibrary ?? {}));
                 setNote(kind === 'prompt-unavailable' ? t('handoff.promptUnavailable') : [switched === '1' ? t('handoff.switchedModel', { model: found.name }) : null, handedSources?.adjusted ? t('handoff.referencesAdjusted', { count: handedSources.adjusted }) : null].filter(Boolean).join(' ') || null);
