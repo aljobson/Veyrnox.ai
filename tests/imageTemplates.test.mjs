@@ -38,10 +38,10 @@ async function withFlag(value, fn) {
   }
 }
 
-test('fifty image records, forty-eight authored and two hash-locked captures', () => {
-  assert.equal(IMAGE_TEMPLATES.length, 50);
-  assert.equal(ids.size, 50);
-  assert.equal(IMAGE_TEMPLATES.filter(p => p.promptOrigin === 'original').length, 48);
+test('two image records, both hash-locked captures and no authored originals', () => {
+  assert.equal(IMAGE_TEMPLATES.length, 2);
+  assert.equal(ids.size, 2);
+  assert.equal(IMAGE_TEMPLATES.filter(p => p.promptOrigin === 'original').length, 0);
   for (const p of IMAGE_TEMPLATES) {
     assert.equal(p.kind, 'image');
     assert.equal(p.category, 'CHRISTMAS');
@@ -65,10 +65,10 @@ test('fifty image records, forty-eight authored and two hash-locked captures', (
   assert.equal(captured.sourceModel, 'banana2');
 });
 
-test('all 50 image recipes have unique public ids and names, supported aspects and no duration', async () => {
+test('both image recipes have unique public ids and names, supported aspects and no duration', async () => {
   const { assertAvailablePublicIds } = await import('../scripts/lib/template-public-id.mjs');
-  assert.equal(IMAGE_TEMPLATES.length, 50);
-  assert.equal(new Set(IMAGE_TEMPLATES.map(p => p.name)).size, 50);
+  assert.equal(IMAGE_TEMPLATES.length, 2);
+  assert.equal(new Set(IMAGE_TEMPLATES.map(p => p.name)).size, 2);
   // Exclude only these image records from reservations; retain videos and public renames.
   assert.doesNotThrow(() => assertAvailablePublicIds([...ids], [...ids]));
   for (const template of IMAGE_TEMPLATES) {
@@ -90,10 +90,10 @@ test('publication gate controls list, search, detail, categories and hard 404 in
     assert.equal(imageTemplatesEnabled(), enabled);
     const response = await list.GET(new Request('https://example.test/api/templates'));
     const body = await response.json();
-    assert.equal(body.templates.filter(t => ids.has(t.id)).length, enabled ? 50 : 0);
+    assert.equal(body.templates.filter(t => ids.has(t.id)).length, enabled ? 2 : 0);
     assert.equal(body.categories.includes('CHRISTMAS'), enabled);
     const search = await list.GET(new Request('https://example.test/api/templates?q=CHRISTMAS'));
-    assert.equal((await search.json()).ids.filter(id => ids.has(id)).length, enabled ? 50 : 0);
+    assert.equal((await search.json()).ids.filter(id => ids.has(id)).length, enabled ? 2 : 0);
     for (const p of IMAGE_TEMPLATES) {
       assert.equal(Boolean(templateById(p.id)), enabled);
       assert.equal(Boolean(templateDetail(p.id)), enabled);
@@ -103,7 +103,8 @@ test('publication gate controls list, search, detail, categories and hard 404 in
       assert.equal(isUnknownStaticPage(`/presets/${p.id}`), !enabled);
       assert.equal(isUnknownStaticPage(`/veyrnox/presets/${p.id}`), !enabled);
     }
-    for (const category of galleryCategories().filter(c => !['ALL', 'NEW'].includes(c))) assert.ok(templatesIn(category).length >= 10, category);
+    // ADR-0325's ten-per-category floor covers the twelve video content categories; the image-only Christmas set is two exact captures (ADR-0337, amended 2026-11-13).
+    for (const category of galleryCategories().filter(c => !['ALL', 'NEW', 'CHRISTMAS'].includes(c))) assert.ok(templatesIn(category).length >= 10, category);
     assert.equal(toPublicPresets(models, galleryTemplates()).some(p => ids.has(p.id)), false);
     assert.deepEqual(toPublicPresets(models, IMAGE_TEMPLATES), []);
   });
@@ -254,7 +255,7 @@ test('the rendered image card and picker use the real resolver and catalog price
   const { TemplatePicker } = f.load('app/veyrnox/_components/TemplatePicker.js');
   const tree = TemplatePicker({ models, goal: 'image', onPick: p => { picked = p; }, onClose() {} });
   const choices = nodes(tree).filter(node => node.props?.['data-testid']?.startsWith('create-template-') && node.type === 'button');
-  assert.equal(choices.length, 50);
+  assert.equal(choices.length, 2);
   choices.find(node => node.props['data-testid'] === `create-template-${chosen.id}`).props.onClick();
   assert.equal(picked.id, chosen.id);
   const { PresetCard } = f.load('app/veyrnox/_components/PresetCard.js');

@@ -446,8 +446,8 @@ test('real image templates arrive and submit image inputs without a video durati
 
 test('selecting a real image card inside Create replaces a video recipe and submits no duration', async () => {
   const { IMAGE_TEMPLATES } = await import('../app/veyrnox/_lib/imageTemplates.js');
-  const image = IMAGE_TEMPLATES[1];
-  const model = { id: image.model, name: image.model, kind: 'image', modality: 'text-to-image', credits: 7, aspects: ['4:3'] };
+  const image = IMAGE_TEMPLATES.find((template) => !template.photo);
+  const model = { id: image.model, name: image.model, kind: 'image', modality: 'text-to-image', credits: 7, aspects: [image.aspect] };
   const h = harness({ preset: '', model: original.id }, { fetchedPreset: image, models: [original, model] });
   try {
     let tree = await h.settle();
