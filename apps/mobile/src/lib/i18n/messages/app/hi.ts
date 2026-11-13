@@ -1,6 +1,18 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "brand.swatch.teal": "फ़िरोज़ी",
+  "brand.swatch.blue": "नीला",
+  "brand.swatch.purple": "बैंगनी",
+  "brand.swatch.pink": "गुलाबी",
+  "brand.swatch.red": "लाल",
+  "brand.swatch.orange": "नारंगी",
+  "brand.swatch.yellow": "पीला",
+  "brand.swatch.green": "हरा",
+  "brand.swatch.white": "सफ़ेद",
+  "brand.swatch.navy": "गहरा नीला",
+  "brand.swatch.custom": "कस्टम रंग",
+  "brand.paletteTap": "अधिकतम {max} रंग। जोड़ने या हटाने के लिए टैप करें।",
   "editorSimple.describe": "बताएँ कि आप क्या चाहते हैं",
   "editorSimple.promptHelp": "तय अंग्रेज़ी वाक्यांशों को टूल से मिलाता है; कोई AI इस अनुरोध को नहीं समझता। बदलाव लागू करने या भुगतान से पहले टूल की जाँच करें।",
   "editorSimple.openTool": "टूल खोलें",

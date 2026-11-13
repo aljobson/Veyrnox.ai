@@ -8,6 +8,12 @@ export const FONTS = ['sans-serif', 'serif', 'monospace', 'Arial', 'Helvetica', 
 export const NAME_MAX = 80;
 export const PALETTE_MAX = 12;
 export const FONTS_MAX = 10;
+// The ten colours a brand kit offers. The website keeps the same list in lib/editorShared.js.
+export const BRAND_SWATCHES = [
+    { id: 'teal', hex: '#32d6c5' }, { id: 'blue', hex: '#2563eb' }, { id: 'purple', hex: '#7c3aed' }, { id: 'pink', hex: '#ec4899' },
+    { id: 'red', hex: '#ef4444' }, { id: 'orange', hex: '#f97316' }, { id: 'yellow', hex: '#facc15' }, { id: 'green', hex: '#22c55e' },
+    { id: 'white', hex: '#ffffff' }, { id: 'navy', hex: '#101827' },
+] as const;
 const HEX_RE = /^#[0-9a-f]{6}$/i;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SAVE_LIMIT_BYTES = 8192;

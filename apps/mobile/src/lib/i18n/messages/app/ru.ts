@@ -1,6 +1,18 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "brand.swatch.teal": "Бирюзовый",
+  "brand.swatch.blue": "Синий",
+  "brand.swatch.purple": "Фиолетовый",
+  "brand.swatch.pink": "Розовый",
+  "brand.swatch.red": "Красный",
+  "brand.swatch.orange": "Оранжевый",
+  "brand.swatch.yellow": "Жёлтый",
+  "brand.swatch.green": "Зелёный",
+  "brand.swatch.white": "Белый",
+  "brand.swatch.navy": "Тёмно-синий",
+  "brand.swatch.custom": "Свой цвет",
+  "brand.paletteTap": "До {max} цветов. Нажмите, чтобы добавить или убрать.",
   "editorSimple.describe": "Опишите, что вы хотите",
   "editorSimple.promptHelp": "Сопоставляет фиксированные английские фразы с инструментами; ИИ не интерпретирует запрос. Проверьте инструмент перед применением или оплатой.",
   "editorSimple.openTool": "Открыть инструмент",

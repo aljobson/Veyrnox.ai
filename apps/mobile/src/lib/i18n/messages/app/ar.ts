@@ -1,6 +1,18 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "brand.swatch.teal": "فيروزي",
+  "brand.swatch.blue": "أزرق",
+  "brand.swatch.purple": "بنفسجي",
+  "brand.swatch.pink": "وردي",
+  "brand.swatch.red": "أحمر",
+  "brand.swatch.orange": "برتقالي",
+  "brand.swatch.yellow": "أصفر",
+  "brand.swatch.green": "أخضر",
+  "brand.swatch.white": "أبيض",
+  "brand.swatch.navy": "كحلي",
+  "brand.swatch.custom": "لون مخصص",
+  "brand.paletteTap": "حتى {max} ألوان. اضغط للإضافة أو الإزالة.",
   "editorSimple.describe": "صف ما تريد",
   "editorSimple.promptHelp": "يطابق عبارات إنجليزية محددة مع الأدوات؛ لا يفهم أي ذكاء اصطناعي هذا الطلب. راجع الأداة قبل التطبيق أو الدفع.",
   "editorSimple.openTool": "فتح الأداة",

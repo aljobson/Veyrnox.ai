@@ -1,5 +1,29 @@
 [
   {
+    "id": "brand.swatch.teal",
+    "english": "Teal",
+    "translation": "Turquoise",
+    "ratio": 2.25
+  },
+  {
+    "id": "brand.swatch.red",
+    "english": "Red",
+    "translation": "Rouge",
+    "ratio": 1.67
+  },
+  {
+    "id": "brand.swatch.navy",
+    "english": "Navy",
+    "translation": "Bleu marine",
+    "ratio": 2.75
+  },
+  {
+    "id": "brand.swatch.custom",
+    "english": "Custom colour",
+    "translation": "Couleur personnalisée",
+    "ratio": 1.62
+  },
+  {
     "id": "bestCut.title",
     "english": "Create Best Cut",
     "translation": "Créer le meilleur montage",
