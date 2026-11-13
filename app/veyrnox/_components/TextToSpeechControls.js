@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   DEFAULT_TTS_SETTINGS,
-  TTS_EMOTIONS,
   TTS_EXAMPLES,
   TTS_INTERJECTIONS,
   TTS_LANGUAGES,
@@ -294,12 +293,6 @@ export function TextToSpeechControls({
         </details>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <label className="grid rounded-xl border border-vx-border bg-vx-base/70 p-4 text-xs font-extrabold">Delivery style
-            <span className="mt-1 text-[11px] font-normal leading-4 text-vx-fg-muted">Set the emotional direction for the whole read.</span>
-            <select aria-label="Speaking style" value={settings.emotion} onChange={(event) => patchSetting('emotion', event.target.value)} className={`${selectClass} mt-3`}>
-              {TTS_EMOTIONS.map((emotion) => <option key={emotion} value={emotion}>{emotion[0].toUpperCase() + emotion.slice(1)}</option>)}
-            </select>
-          </label>
           <Range label="Speed" value={settings.speed} min={0.5} max={2} step={0.1} onChange={(value) => patchSetting('speed', value)} suffix="×" />
           <Range label="Volume" value={settings.volume} min={0} max={10} step={1} onChange={(value) => patchSetting('volume', value)} />
           <Range label="Pitch" value={settings.pitch} min={-12} max={12} step={1} onChange={(value) => patchSetting('pitch', value)} />
