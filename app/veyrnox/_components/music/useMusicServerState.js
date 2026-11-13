@@ -1,5 +1,6 @@
 'use client';
 
+import { createQuoteGate } from '../../../../lib/quoteRevisionGate.js';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { gatewayFetch, makeIdempotencyKey, notifyBalanceChanged } from '../../_lib/gateway';
 
@@ -34,11 +35,9 @@ export function useMusicServerState() {
   const [error, setError] = useState('');
   const confirmKey = useRef(null);
   const confirming = useRef(false);
-  // Advances whenever a quote is requested or cleared, so a quote response that
-  // arrives after the input changed is discarded instead of restoring a quote
-  // for text the person no longer has.
-  const quoteRevision = useRef(0);
-  const lastQuoteRequest = useRef(0);
+  // A quote response that arrives after the input changed is discarded instead
+  // of restoring a quote for text the person no longer has.
+  const [gate] = useState(createQuoteGate);
   const pollingError = useRef('');
 
   const loadEntitlements = useCallback(async () => {
@@ -59,15 +58,18 @@ export function useMusicServerState() {
   }, [loadEntitlements]);
 
   const clearQuote = useCallback(() => {
-    quoteRevision.current += 1;
+    gate.invalidate();
     setQuote(null);
     confirmKey.current = null;
-  }, []);
+  }, [gate]);
 
-  const reviewQuote = useCallback(async (request) => {
-    const mine = quoteRevision.current + 1;
-    quoteRevision.current = mine;
-    lastQuoteRequest.current = mine;
+  const quoteRevisionNow = useCallback(() => gate.current(), [gate]);
+
+  // `startedAt` is the revision captured before slow preparation (for example a
+  // draft save); if anything invalidated the quote meanwhile, do not request one.
+  const reviewQuote = useCallback(async (request, startedAt) => {
+    if (startedAt !== undefined && !gate.unchanged(startedAt)) return null;
+    const mine = gate.start();
     setBusy('quoting');
     setError('');
     setQuote(null);
@@ -77,16 +79,16 @@ export function useMusicServerState() {
         method: 'POST',
         body: JSON.stringify(request),
       });
-      if (quoteRevision.current !== mine) return null;
+      if (!gate.isCurrent(mine)) return null;
       setQuote(next);
       return next;
     } catch (reason) {
-      if (quoteRevision.current === mine) setError(musicServerError(reason));
+      if (gate.isCurrent(mine)) setError(musicServerError(reason));
       return null;
     } finally {
-      if (lastQuoteRequest.current === mine) setBusy('');
+      if (gate.isLatestStart(mine)) setBusy('');
     }
-  }, []);
+  }, [gate]);
 
   const confirmQuote = useCallback(async (context = {}) => {
     if (!quote?.quote_id || confirming.current) return null;
@@ -178,7 +180,7 @@ export function useMusicServerState() {
   }, [activeGenerationKey]);
 
   return {
-    entitlements, quote, generations, busy, error,
+    entitlements, quote, generations, busy, error, quoteRevisionNow,
     clearQuote, reviewQuote, confirmQuote, reload: loadEntitlements,
   };
 }

@@ -176,7 +176,7 @@ function ServerCandidate({ candidate, title }) {
   );
 }
 
-function CustomDraftFields({ custom, entitlements, quote, busy, clearQuote, reviewQuote, confirmQuote, hasSharedSlot }) {
+function CustomDraftFields({ custom, entitlements, quote, busy, clearQuote, quoteRevisionNow, reviewQuote, confirmQuote, hasSharedSlot }) {
   const [assistantRequest, setAssistantRequest] = useState('');
   const [assistantBusy, setAssistantBusy] = useState(false);
   const [assistantError, setAssistantError] = useState('');
@@ -297,6 +297,7 @@ function CustomDraftFields({ custom, entitlements, quote, busy, clearQuote, revi
   async function reviewCustomQuote() {
     if (!canQuoteCustom) return;
     setGenerationError('');
+    const startedAt = quoteRevisionNow();
     const saved = await custom.saveNow();
     if (!saved) {
       setGenerationError('Save the current private draft before reviewing its generation quote.');
@@ -306,7 +307,7 @@ function CustomDraftFields({ custom, entitlements, quote, busy, clearQuote, revi
       mode: 'custom', draft_revision: saved.revision,
       instrumental, rights_confirmed: instrumental ? false : true,
       duration_seconds: durationSeconds,
-    });
+    }, startedAt);
   }
 
   return (
@@ -451,7 +452,7 @@ function CustomDraftFields({ custom, entitlements, quote, busy, clearQuote, revi
 }
 
 export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, sampleMix = null, licensedTemplate = null }) {
-  const { entitlements, quote, generations, busy, error, clearQuote, reviewQuote, confirmQuote, reload } = useMusicServerState();
+  const { entitlements, quote, generations, busy, error, clearQuote, quoteRevisionNow, reviewQuote, confirmQuote, reload } = useMusicServerState();
   const [mode, setMode] = useState('simple');
   const [description, setDescription] = useState(() => resolveInitialDescription({ sampleSeed, licensedTemplate }));
   const [activeTemplate, setActiveTemplate] = useState(sampleSeed ? null : licensedTemplate);
@@ -552,8 +553,8 @@ export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, s
               <>
             <MusicSampleSeedCard seed={activeSeed} mix={activeMix} onRemove={() => { setActiveSeed(null); setActiveMix(null); clearQuote(); }} />
             <LicensedTemplateCard template={activeTemplate} disabled={Boolean(busy)} onRemove={() => {
-              // Drop the pre-filled direction only if the person has not edited it, and drop any reviewed quote.
-              if (description === activeTemplate.direction.slice(0, MUSIC_SAMPLE_DIRECTION_MAX)) setDescription('');
+              // The description began as the template direction, so it goes with the template; any reviewed quote goes too.
+              setDescription('');
               setActiveTemplate(null);
               clearQuote();
             }} />
@@ -633,7 +634,7 @@ export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, s
             )}
             <p className="text-center text-xs text-vx-fg-faint">Credits move only after the second confirmation. Each candidate is tracked independently.</p>
               </>
-            ) : <CustomDraftFields custom={custom} entitlements={entitlements} quote={quote} busy={busy} clearQuote={clearQuote} reviewQuote={reviewQuote} confirmQuote={confirmQuote} hasSharedSlot={hasSharedSlot} />}
+            ) : <CustomDraftFields custom={custom} entitlements={entitlements} quote={quote} busy={busy} clearQuote={clearQuote} quoteRevisionNow={quoteRevisionNow} reviewQuote={reviewQuote} confirmQuote={confirmQuote} hasSharedSlot={hasSharedSlot} />}
           </div>
         </form>
 

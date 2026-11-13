@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { LICENSED_MUSIC_CATEGORIES, LICENSED_MUSIC_TRACKS } from '../lib/licensedMusicCatalog.js';
 import { MUSIC_SAMPLE_DIRECTION_MAX } from '../lib/musicDiscover.js';
+import { createQuoteGate } from '../lib/quoteRevisionGate.js';
 import {
   LICENSED_CATEGORY_DIRECTIONS, licensedTemplateFor, licensedTemplateHref, resolveInitialDescription,
 } from '../lib/licensedTrackTemplates.js';
@@ -58,11 +59,49 @@ test('an explicit sample or template beats the stored public draft', () => {
   assert.equal(resolveInitialDescription(), '');
 });
 
-test('the quote hook advances a revision on clear and on request, and drops stale responses', () => {
-  const source = readFileSync(new URL('../app/veyrnox/_components/music/useMusicServerState.js', import.meta.url), 'utf8');
-  assert.match(source, /const clearQuote = useCallback\(\(\) => \{\s*quoteRevision\.current \+= 1;/);
-  assert.match(source, /if \(quoteRevision\.current !== mine\) return null;\s*setQuote\(next\);/);
-  assert.match(source, /if \(lastQuoteRequest\.current === mine\) setBusy\(''\);/);
+test('a quote that finishes after an invalidation is not current', () => {
+  const gate = createQuoteGate();
+  const first = gate.start();
+  assert.equal(gate.isCurrent(first), true);
+  gate.invalidate(); // template removed, mode switched or input edited
+  assert.equal(gate.isCurrent(first), false);
+  assert.equal(gate.isLatestStart(first), true, 'busy state must still clear for the latest request');
+});
+
+test('a newer request supersedes an older one and only the newest clears busy', () => {
+  const gate = createQuoteGate();
+  const older = gate.start();
+  const newer = gate.start();
+  assert.equal(gate.isCurrent(older), false);
+  assert.equal(gate.isLatestStart(older), false);
+  assert.equal(gate.isCurrent(newer), true);
+  assert.equal(gate.isLatestStart(newer), true);
+});
+
+test('slow preparation (a delayed draft save) cannot outlive a removal or mode switch', async () => {
+  const gate = createQuoteGate();
+  const startedAt = gate.current();
+  const save = new Promise((resolve) => setTimeout(resolve, 5));
+  gate.invalidate(); // the person switches mode and removes the template during the save
+  await save;
+  assert.equal(gate.unchanged(startedAt), false, 'the request must not be made');
+  const untouched = createQuoteGate();
+  const before = untouched.current();
+  await new Promise((resolve) => setTimeout(resolve, 1));
+  assert.equal(untouched.unchanged(before), true);
+});
+
+test('the hook and Custom review wire the gate, and removal clears the whole direction', () => {
+  const hook = readFileSync(new URL('../app/veyrnox/_components/music/useMusicServerState.js', import.meta.url), 'utf8');
+  assert.match(hook, /gate\.invalidate\(\);\s*setQuote\(null\);/);
+  assert.match(hook, /if \(startedAt !== undefined && !gate\.unchanged\(startedAt\)\) return null;/);
+  assert.match(hook, /if \(!gate\.isCurrent\(mine\)\) return null;\s*setQuote\(next\);/);
+  const studio = readFileSync(new URL('../app/veyrnox/_components/music/MusicServerStudio.jsx', import.meta.url), 'utf8');
+  assert.match(studio, /const startedAt = quoteRevisionNow\(\);\s*const saved = await custom\.saveNow\(\);/);
+  assert.match(studio, /\}, startedAt\);/);
+  assert.match(studio, /setDescription\(''\);\s*setActiveTemplate\(null\);\s*clearQuote\(\);/);
+  const preview = readFileSync(new URL('../app/veyrnox/_components/music/MusicCreateStudio.jsx', import.meta.url), 'utf8');
+  assert.match(preview, /setDescription\(''\); setActiveTemplate\(null\);/);
 });
 
 test('the Create page ignores a template when a sample is present', () => {
