@@ -205,8 +205,8 @@ test('the whole nav still fits without a hidden horizontal rail', () => {
         'the nav no longer hides destinations in a horizontal scroller');
     assert.doesNotMatch(appNav, /grid: true|grid-cols-2/,
         'long and translated tool names keep a full-width row instead of colliding in a two-column grid');
-    assert.match(src, /flex min-h-10 items-center rounded-xl/,
-        'desktop sidebar destinations keep at least a 40px target');
+    assert.match(src, /flex min-h-11 items-center rounded-xl/,
+        'desktop sidebar destinations keep at least a 44px target');
     assert.match(signedIn, /href="\/app\/library"[\s\S]*max-\[429px\]:hidden/,
         'only the secondary asset count yields on the narrowest phones');
     const balanceLink = signedIn.slice(signedIn.indexOf('data-testid="app-credit-balance"'), signedIn.indexOf('</Link>', signedIn.indexOf('data-testid="app-credit-balance"')));

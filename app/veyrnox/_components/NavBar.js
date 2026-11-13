@@ -208,14 +208,14 @@ function writeStore(key, value) {
 }
 
 function SectionHeading({ id, label, open, onToggle, rail }) {
-  if (rail) return <div role="separator" className="mx-3 my-2 border-t border-vx-border" />;
+  if (rail) return <div role="separator" aria-label={label} className="mx-3 my-2 border-t border-vx-border" />;
   return (
     <button
       type="button"
       onClick={onToggle}
       aria-expanded={open}
       aria-controls={`vx-side-${id}`}
-      className="flex min-h-10 w-full items-center gap-2 px-2.5 pt-3 text-start text-[11px] font-semibold text-vx-fg-muted transition-colors duration-150 hover:text-vx-fg"
+      className="flex min-h-11 w-full items-center gap-2 px-2.5 pt-3 text-start text-[11px] font-semibold text-vx-fg-muted transition-colors duration-150 hover:text-vx-fg"
     >
       <Icon name={open ? 'chevronDown' : 'chevronRight'} size={10} className="rtl:-scale-x-100" />
       {label}
@@ -300,7 +300,7 @@ function AppSidebar({ sections, homeLabel, logoLabel, accountLabel, accountHref,
           href="/app"
           title={homeLabel}
           aria-current={activeKey === 'explore' ? 'page' : undefined}
-          className={`vx-side-row flex min-h-10 items-center gap-2.5 rounded-xl text-[13px] font-medium text-vx-fg-body ${rail ? 'justify-center px-0' : 'px-2.5'}`}
+          className={`vx-side-row flex min-h-11 items-center gap-2.5 rounded-xl text-[13px] font-medium text-vx-fg-body ${rail ? 'justify-center px-0' : 'px-2.5'}`}
         >
           <Icon name="home" size={16} />
           {!rail && homeLabel}
@@ -324,7 +324,7 @@ function AppSidebar({ sections, homeLabel, logoLabel, accountLabel, accountHref,
                           href={item.href}
                           title={item.hint ? `${item.label} — ${item.hint}` : item.label}
                           aria-current={current ? 'page' : undefined}
-                          className={`flex min-h-10 items-center rounded-xl text-[13px] font-medium ${
+                          className={`flex min-h-11 items-center rounded-xl text-[13px] font-medium ${
                             rail ? 'justify-center px-0' : 'gap-2.5 px-2.5'
                           } ${
                             item.featured && !rail
@@ -473,7 +473,7 @@ export function AppNav({ balance, active, readAccount = true }) {
                 <button
                   type="button"
                   onClick={loadSummary}
-                  className="inline-flex min-h-10 items-center justify-center px-2 text-[11px] font-bold text-vx-danger focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-danger"
+                  className="inline-flex min-h-11 items-center justify-center px-2 text-[11px] font-bold text-vx-danger focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-danger"
                 >
                   {t('recovery.retry')}
                 </button>
