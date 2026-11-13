@@ -272,8 +272,10 @@
     // The overall Publish launch still follows PUBLISH_ENABLED.
     "PUBLISH_CALENDAR_ENABLED": "true",
     "PUBLISH_UPLOADS_ENABLED": "false",
-    // Requires 0228 and provider app credentials before tester activation.
-    "PUBLISH_EXTENDED_NETWORKS_ENABLED": "false",
+    // ADR-0336/0339: first goal, role and destination follow the account. Needs 0494 and 0499 (both applied).
+    // Took the binding of PUBLISH_EXTENDED_NETWORKS_ENABLED, whose absent value is the same "off" it held here
+    // ("false"); the 67-var budget is full, so re-activating extended networks needs a binding freed first.
+    "FIRST_GOAL_SYNC_ENABLED": "true",
     // Provider-review scopes share one binding to remain below Cloudflare's
     // 128 text-binding limit. Enable each only after its provider approves it;
     // existing connections must reconnect to receive newly enabled scopes.
