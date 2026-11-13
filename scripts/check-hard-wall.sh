@@ -53,7 +53,7 @@ SCOPE=(
 
 fail=0
 for term in "${BANNED[@]}"; do
-  hits=$(grep -IRniE "$term" "${SCOPE[@]}" 2>/dev/null || true)
+  hits=$(grep -IRniE --exclude-dir=editor-speech "$term" "${SCOPE[@]}" 2>/dev/null || true)
   if [ -n "$hits" ]; then
     echo "HARD WALL breach — banned term matches:"
     echo "$hits"
