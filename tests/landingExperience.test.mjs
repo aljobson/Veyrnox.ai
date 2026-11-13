@@ -40,7 +40,8 @@ test('the working hero price slip starts on the shared affordable model', () => 
 
 test('the featured carousel is named and explains horizontal scrolling', () => {
   const hero = read('app/veyrnox/_sections/hero.js');
-  assert.match(hero, /<section id="explore" aria-labelledby="featured-title"/);
+  // The section itself is unnamed: naming it as well as the scroll region below gave two landmarks the same name.
+  assert.match(hero, /<section id="explore" data-vey-perch/);
   assert.match(hero, /<h2 id="featured-title" className="sr-only">/);
   assert.match(hero, /<div role="region" aria-labelledby="featured-title" aria-describedby="featured-scroll-hint"/);
   assert.match(hero, /id="featured-scroll-hint"[^>]*>\{t\('home\.cards\.hint'\)\}/);
