@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { ornament, ornamentModel } from './helpers/imageTemplatePhoto.mjs';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -25,6 +26,7 @@ const list = await import('../app/api/templates/route.js');
 const one = await import('../app/api/templates/[id]/route.js');
 const ids = new Set(IMAGE_TEMPLATES.map(p => p.id));
 const models = fromFallback().filter(model => IMAGE_TEMPLATE_MODELS.includes(model.id)).map(model => ({ ...model, modality: 'text-to-image', credits: 37 }));
+models.push(ornamentModel);
 const nodes = tree => Array.isArray(tree) ? tree.flatMap(nodes) : tree && typeof tree === 'object' ? [tree, ...nodes(tree.props?.children)] : [];
 async function withFlag(value, fn) {
   const previous = process.env.IMAGE_TEMPLATES_ENABLED;
@@ -36,10 +38,10 @@ async function withFlag(value, fn) {
   }
 }
 
-test('fifty separate text-only image records, forty-nine authored and one hash-locked capture', () => {
+test('fifty image records, forty-eight authored and two hash-locked captures', () => {
   assert.equal(IMAGE_TEMPLATES.length, 50);
   assert.equal(ids.size, 50);
-  assert.equal(IMAGE_TEMPLATES.filter(p => p.promptOrigin === 'original').length, 49);
+  assert.equal(IMAGE_TEMPLATES.filter(p => p.promptOrigin === 'original').length, 48);
   for (const p of IMAGE_TEMPLATES) {
     assert.equal(p.kind, 'image');
     assert.equal(p.category, 'CHRISTMAS');
@@ -74,7 +76,8 @@ test('all 50 image recipes have unique public ids and names, supported aspects a
     const model = models.find(model => model.id === templateModelId(template));
     assert.equal(model.kind, 'image', template.id);
     assert.ok(model.aspects?.includes(template.aspect), `${template.id}: supported aspect`);
-    assert.deepEqual(model.media, {}, `${template.id}: no reference media`);
+    if (template.photo) assert.deepEqual(model.media, { image: { required: true, maxFiles: 1 } });
+    else assert.deepEqual(model.media, {}, `${template.id}: no reference media`);
     const draft = draftForTemplate(template, model.id);
     assert.equal('durationSeconds' in draft, false, template.id);
     assert.equal('durationSeconds' in template, false, template.id);
@@ -112,6 +115,7 @@ test('image cards are additive, have no video key and price only from the catalo
     const card = templateCards().find(c => c.id === p.id);
     assert.equal(card.kind, 'image');
     assert.equal(card.previewImage, p.previewImage);
+    assert.deepEqual(card.photo, p.photo);
     assert.equal(card.durationSeconds, null);
     assert.equal('clipKey' in card, false);
     assert.equal('prompt' in card, false);
@@ -135,9 +139,10 @@ test('image drafts and generation stay in image modality without routing or dura
     const arrival = templateArrival(p, [...models, { id: 'video', modality: 'text-to-video', kind: 'video' }], new URLSearchParams('model=video&duration=10s'), { templateId: p.id, durationSeconds: 10 });
     assert.equal(arrival.modelId, p.model);
     assert.equal('durationSeconds' in arrival.draft, false);
-    const inputs = templateInputs(p, model, { prompt: p.prompt, aspect: p.aspect, aspectOptions: model.aspects, durationSeconds: 10 });
+    const inputs = templateInputs(p, model, { prompt: p.prompt, aspect: p.aspect, aspectOptions: model.aspects, durationSeconds: 10, withPhoto: Boolean(p.photo) });
     let sent;
     await submitTemplate({ run: templateRun(null, p.id, 37, () => 'test-key'), quote: { ceilings: [37] }, model, preset: p, inputs, makeKey: () => 'test-key', deps: {
+      sources: p.photo ? async () => ({ references: [{ slot: 'image', origin: 'upload', key: 'test-photo' }] }) : null,
       gatewayFetch: async (_, options) => { sent = JSON.parse(options.body); return { job_id: 'fake' }; }, onJob() {},
     } });
     assert.equal(sent.model_id, p.model);
@@ -146,6 +151,7 @@ test('image drafts and generation stay in image modality without routing or dura
     assert.equal(sent.inputs.prompt, p.prompt);
     assert.equal(sent.template_id, undefined);
     assert.equal(sent.preset, undefined);
+    assert.equal(sent.references.length, p.photo ? 1 : 0);
   }
 });
 
@@ -224,7 +230,7 @@ test('actual detail recipes render original provenance and the exact Flying Elf 
 
 test('missing preview art keeps the gradient and removes the broken image', () => {
   let failed = null;
-  const f = fixture('en', '/', { moduleMocks: { react: { ...React, useState: () => [failed, value => { failed = value; }] } } });
+  const f = fixture('en', '/', { moduleMocks: { '../../../components/I18nProvider.jsx': { useI18n: () => ({ t: key => key }) }, react: { ...React, useState: () => [failed, value => { failed = value; }] } } });
   const { TemplateImage } = f.load('app/veyrnox/_components/TemplateImage.js');
   const preset = IMAGE_TEMPLATES[0];
   let tree = TemplateImage({ preset });
@@ -279,3 +285,30 @@ test('video import collision checks reserve every image id even with publication
   }
   assert.doesNotThrow(() => assertAvailablePublicIds(['unused-christmas-test-id'], []));
 }));
+
+
+test('ornament exact bytes, metadata, photo requirement and fallback absence are pinned independently', () => {
+  const hash = '1082539cb0da501164497e48479807657804cd60042ed6902e00127ac4750129';
+  const record = IMAGE_SOURCE_PROMPT_RECORDS['christmas-tree-ornament'];
+  assert.equal(createHash('sha256').update(ornament.prompt, 'utf8').digest('hex'), hash);
+  assert.equal(record.promptSha256, hash);
+  assert.equal(ornament.prompt, record.prompt);
+  assert.equal(record.sourceRecordId, '01a1cb5f-c1b3-7030-b572-c82fbba8b92c');
+  assert.equal(record.sourceModel, 'banana');
+  assert.equal(record.sourceGenerationSettings.model_type, 'banana-2.1');
+  assert.equal(record.sourceAspect, '3:4');
+  assert.deepEqual(ornament.photo, { required: true, count: 1 });
+  assert.equal(ornament.model, 'nano-banana-pro-edit-grsai');
+  assert.deepEqual(IMAGE_TEMPLATES.filter(p => p.promptOrigin === 'community-source-exact').map(p => p.id).sort(), ['christmas-tree-ornament', 'flying-elf']);
+  assert.equal(IMAGE_TEMPLATES.some(p => p.id === 'pet-in-a-santa-hat'), false);
+  assert.equal(fromFallback().some(m => m.id === ornament.model), false);
+  assert.equal(presetCredits(ornament, fromFallback()), null);
+});
+
+test('photo artwork renders the requirement without any preview image', () => {
+  const f = fixture('en', '/');
+  const { TemplateImage } = f.load('app/veyrnox/_components/TemplateImage.js');
+  const html = f.render(React.createElement(TemplateImage, { preset: ornament }));
+  assert.match(html, /This template needs your photo/);
+  assert.doesNotMatch(html, /<img/);
+});

@@ -47,7 +47,7 @@ export function templateInputs(preset, model, { prompt, aspect, durationSeconds,
   const uneditedExact = preset.sourcePromptOrigin === 'community-source-exact' && prompt === exact;
   const inputs = {
     // Like Create: the recipe's own words go unchanged, anything the person edited is trimmed.
-    prompt: withPhotoLine(prompt === exact ? prompt : prompt.trim(), withPhoto && !uneditedExact),
+    prompt: withPhotoLine(prompt === exact ? prompt : prompt.trim(), withPhoto && preset.kind !== 'image' && !uneditedExact),
     aspect_ratio: aspectOptions.length ? aspect : undefined,
     duration_seconds: model.kind === 'video' ? durationSeconds : undefined,
     ...settingsInputs(model, { seed: '', negative: preset.negativePrompt || '', voice: '', duration: '' }),

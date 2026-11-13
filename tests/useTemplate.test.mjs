@@ -1,3 +1,4 @@
+import { ornament, ornamentModel } from './helpers/imageTemplatePhoto.mjs';
 import test from 'node:test';
 import { fromFallback as imageFallbackCatalog } from '../app/veyrnox/_lib/useCatalog.js';
 import assert from 'node:assert/strict';
@@ -206,7 +207,7 @@ test('image registry flows through UseTemplate model selection, catalog prices a
   try {
     const storage = new Map();
     globalThis.window = { sessionStorage: { setItem: (key, value) => storage.set(key, value) } };
-    for (const template of IMAGE_TEMPLATES) {
+    for (const template of IMAGE_TEMPLATES.filter(p => !p.photo)) {
       const h = harness({ template, models: [...models, original] });
       const picker = select(h.render(), 'label.Model picker');
       assert.equal(picker.props.value, template.model);
@@ -231,4 +232,50 @@ test('image registry flows through UseTemplate model selection, catalog prices a
       assert.equal('durationSeconds' in arrival.draft, false);
     }
   } finally { globalThis.window = oldWindow; }
+});
+
+
+test('ornament requires a photo, uses catalog price, and hands its exact prompt and photo to Create', async () => {
+  const savedWindow = globalThis.window;
+  const photo = new File(['photo'], 'portrait.png', { type: 'image/png' });
+  const storage = new Map();
+  globalThis.window = { sessionStorage: { setItem: (key, value) => storage.set(key, value) } };
+  try {
+    const h = harness({ template: ornament, models: [ornamentModel], prepare: async file => file });
+    let tree = h.render();
+    assert.equal(launchButton(tree).props.disabled, true);
+    assert.match(JSON.stringify(tree), /presets.use.photoRequired/);
+    launchButton(tree).props.onClick();
+    assert.deepEqual(h.pushed, []);
+    const picker = nodes(tree).find(n => n.type === 'input' && n.props.type === 'file');
+    await picker.props.onChange({ target: { files: [photo], value: '' } });
+    tree = h.render();
+    assert.equal(launchButton(tree).props.disabled, false);
+    assert.match(JSON.stringify(launchButton(tree)), /37/);
+    assert.equal(select(tree, 'presets.use.clipLength'), undefined);
+    launchButton(tree).props.onClick();
+    const params = new URL(h.pushed[0], 'https://test').searchParams;
+    assert.equal(params.get('model'), ornamentModel.id);
+    assert.equal(params.get('preset'), ornament.id);
+    assert.equal(params.has('duration'), false);
+    assert.equal(params.has('template_id'), false);
+    assert.equal(takeTemplateMediaHandoff(window, ornament.id, ornamentModel.id).image, photo);
+    const draft = JSON.parse(storage.get(LANDING_DRAFT_KEY));
+    assert.equal(draft.prompt, ornament.prompt);
+    assert.equal('durationSeconds' in draft, false);
+  } finally { globalThis.window = savedWindow; }
+});
+
+test('ornament never offers an absent, fallback-only, or photo-incompatible model', () => {
+  for (const config of [
+    { models: imageFallbackCatalog() },
+    { models: [ornamentModel], live: false },
+    { models: [{ ...ornamentModel, media: {} }] },
+    { models: [{ ...ornamentModel, gated: true }] },
+  ]) {
+    const tree = harness({ template: ornament, ...config }).render();
+    assert.equal(launchButton(tree).props.disabled, true);
+    assert.equal(select(tree, 'label.Model picker'), undefined);
+    assert.match(JSON.stringify(tree), /presets.fidelity.blocked/);
+  }
 });
