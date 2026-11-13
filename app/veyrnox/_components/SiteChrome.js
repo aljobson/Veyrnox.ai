@@ -142,7 +142,8 @@ function FloatingActions() {
   }, []);
 
   return (
-    <div
+    <aside
+      aria-label={t('chrome.contact')}
       data-print="hide"
       data-site-actions
       className="fixed right-2 top-[9.75rem] z-50 flex flex-col items-center gap-2"
@@ -167,7 +168,7 @@ function FloatingActions() {
       >
         <Icon name="mail" />
       </a>
-    </div>
+    </aside>
   );
 }
 
