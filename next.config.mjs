@@ -76,6 +76,13 @@ const nextConfig = {
         headers: [{ key: 'Permissions-Policy', value: 'camera=(), microphone=(self), geolocation=()' }],
       },
       {
+        // Live camera (ADR-0335, S2b) is available only inside Photo Studio, which is itself off unless the
+        // photoStudio runtime flag is on. Every other route keeps camera=() and no route may use the microphone
+        // or location. Deleting this one rule rolls the camera back everywhere.
+        source: '/app/photo-studio/:path*',
+        headers: [{ key: 'Permissions-Policy', value: 'camera=(self), microphone=(), geolocation=()' }],
+      },
+      {
         // Music Studio requests microphone access only after explicit record intent.
         source: '/app/music/studio/:path*',
         headers: [{ key: 'Permissions-Policy', value: 'camera=(), microphone=(self), geolocation=()' }],

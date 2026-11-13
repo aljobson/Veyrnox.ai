@@ -41,7 +41,7 @@ export async function createFaceProcessor({ signal, WorkerClass = globalThis.Wor
         return {
             async detect(source) {
                 if (closed || signal?.aborted) throw abortError();
-                const width = source.naturalWidth ?? source.width, height = source.naturalHeight ?? source.height;
+                const width = source.videoWidth || (source.naturalWidth ?? source.width), height = source.videoHeight || (source.naturalHeight ?? source.height);
                 if (!Number.isFinite(width) || !Number.isFinite(height) || Math.min(width, height) < 8) throw new Error('invalid-photo');
                 const scale = Math.min(1, 384 / Math.max(width, height));
                 const bitmap = await bitmapFactory(source, { resizeWidth: Math.max(8, Math.round(width * scale)), resizeHeight: Math.max(8, Math.round(height * scale)), resizeQuality: 'high' });

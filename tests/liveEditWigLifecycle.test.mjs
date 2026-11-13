@@ -51,3 +51,35 @@ test('export waits for wig assets, snapshots settings, fails on load error and c
         }
     } finally { [globalThis.requestAnimationFrame, globalThis.cancelAnimationFrame] = saved; }
 });
+
+function stillEngine({ wigApplied = true } = {}) {
+    const saved = [globalThis.requestAnimationFrame, globalThis.cancelAnimationFrame];
+    let queued; const flush = () => { const fn = queued; queued = undefined; fn?.(); };
+    globalThis.requestAnimationFrame = fn => { queued = fn; return 1; }; globalThis.cancelAnimationFrame = () => { queued = undefined; };
+    const draws = [];
+    const canvas = { width: 1, height: 1, toBlob(cb, type) { cb(new Blob(['x'], { type })); } };
+    const engine = createPhotoEngine(canvas, {}, {
+        rendererFactory: () => ({ draw: (settings, options) => draws.push({ settings, options }), setLandmarks() {}, setHairMask: () => false, wigApplied: () => wigApplied, close() {} }),
+        processorFactory: async () => ({ detect: async () => ({ count: 0, landmarks: new Float32Array() }), close() {} }), hairProcessorFactory: async () => ({ segment: async () => ({}), close() {} }),
+    });
+    return { engine, draws, flush, restore: () => { [globalThis.requestAnimationFrame, globalThis.cancelAnimationFrame] = saved; } };
+}
+const withWig = { ...DEFAULTS, wig: { ...DEFAULTS.wig, style: 'bob', strength: 1 } };
+
+test('hold-to-compare draws quietly, so assistive technology is not told the wig switched off (S5a F1)', async () => {
+    const { engine, draws, flush, restore } = stillEngine();
+    try {
+        await engine.ready; flush(); engine.setSettings(withWig); flush();
+        engine.compare(true); flush(); assert.deepEqual(draws.at(-1).options, { quiet: true }); assert.equal(draws.at(-1).settings, DEFAULTS);
+        engine.compare(false); flush(); assert.deepEqual(draws.at(-1).options, { quiet: false });
+    } finally { engine.close(); restore(); }
+});
+
+test('an export that had to leave out a chosen wig says so; one that kept it, or never wanted one, stays silent (S5a F2)', async () => {
+    for (const [applied, settings, expected] of [[false, withWig, ['wig-omitted']], [true, withWig, []], [false, DEFAULTS, []], [false, { ...withWig, wig: { ...withWig.wig, strength: 0 } }, []]]) {
+        const { engine, restore } = stillEngine({ wigApplied: applied }), notices = [];
+        try { await engine.ready; engine.setSettings(settings); const blob = await engine.export('image/png', { onNotice: n => notices.push(n) }); assert.ok(blob.size > 0); }
+        finally { engine.close(); restore(); }
+        assert.deepEqual(notices, expected, JSON.stringify({ applied, style: settings.wig.style, strength: settings.wig.strength }));
+    }
+});

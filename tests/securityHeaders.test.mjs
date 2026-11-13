@@ -17,16 +17,17 @@ const MIN_HSTS_AGE = 63072000;
 
 async function headerMap() {
     const groups = await nextConfig.headers();
-    assert.equal(groups.length, 6, 'global hardening, two microphone policies, API CSP and the two exact inference Workers are separate');
+    assert.equal(groups.length, 7, 'global hardening, two microphone policies, the Photo Studio camera policy, API CSP and the two exact inference Workers are separate');
     assert.equal(groups[0].source, '/:path*');
     assert.equal(groups[1].source, '/app/editor/:path*');
-    assert.equal(groups[2].source, '/app/music/studio/:path*');
-    assert.equal(groups[3].source, '/api/:path*');
-    assert.equal(groups[4].source,LOCAL_SPEECH_WORKER_URL);
-    assert.deepEqual(groups[4].headers,[{key:'Content-Security-Policy',value:localSpeechWorkerPolicy('https://veyrnox.ai')}]);
-    assert.equal(groups[5].source,`${EDITOR_VISION_PATH}/worker.mjs`);
-    assert.deepEqual(groups[5].headers,[{key:'Content-Security-Policy',value:editorVisionWorkerPolicy('https://veyrnox.ai')}]);
-    return new Map([groups[0], groups[3]].flatMap(group => group.headers).map((h) => [h.key.toLowerCase(), h.value]));
+    assert.equal(groups[2].source, '/app/photo-studio/:path*'); // ADR-0335 S2b: the only route that may use the camera
+    assert.equal(groups[3].source, '/app/music/studio/:path*');
+    assert.equal(groups[4].source, '/api/:path*');
+    assert.equal(groups[5].source,LOCAL_SPEECH_WORKER_URL);
+    assert.deepEqual(groups[5].headers,[{key:'Content-Security-Policy',value:localSpeechWorkerPolicy('https://veyrnox.ai')}]);
+    assert.equal(groups[6].source,`${EDITOR_VISION_PATH}/worker.mjs`);
+    assert.deepEqual(groups[6].headers,[{key:'Content-Security-Policy',value:editorVisionWorkerPolicy('https://veyrnox.ai')}]);
+    return new Map([groups[0], groups[4]].flatMap(group => group.headers).map((h) => [h.key.toLowerCase(), h.value]));
 }
 
 function directives(csp) {
@@ -128,5 +129,21 @@ test('the anon key in env is a publishable key, not a service-role key', async (
     assert.ok(anon.startsWith('sb_publishable_'), 'only a publishable key may be exposed to the client');
     for (const bad of ['service_role', 'sb_secret_']) {
         assert.ok(!anon.includes(bad), `client key must not contain ${bad}`);
+    }
+});
+
+test('the camera is allowed on Photo Studio only; microphone and geolocation stay denied everywhere (ADR-0335 S2b)', async () => {
+    const groups = await nextConfig.headers();
+    const policyOf = group => group.headers.find(header => header.key === 'Permissions-Policy')?.value;
+    const photo = groups.find(group => group.source === '/app/photo-studio/:path*');
+    assert.equal(policyOf(photo), 'camera=(self), microphone=(), geolocation=()');
+    // Exactly one rule may grant the camera, and none may grant the microphone to it or geolocation to anything.
+    const granting = groups.filter(group => /camera=\((?!\))/.test(policyOf(group) ?? ''));
+    assert.deepEqual(granting.map(group => group.source), ['/app/photo-studio/:path*']);
+    for (const group of groups) {
+        const policy = policyOf(group); if (!policy) continue;
+        assert.match(policy, /geolocation=\(\)/, group.source);
+        if (group.source !== '/app/editor/:path*' && group.source !== '/app/music/studio/:path*') assert.match(policy, /microphone=\(\)/, group.source);
+        assert.doesNotMatch(policy, /\*/, group.source); // no wildcard origin delegation
     }
 });

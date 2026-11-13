@@ -15,7 +15,7 @@ export function createPhotoRenderer(output, source, { onWigChange = () => {}, on
     if (!gl) throw new Error('graphics-unavailable');
     const ctx = output.getContext('2d');
     const shaders = [], textures = [];
-    let program, buffer, landmarks, makeupKey, hairMask, wigLayer, wigMask, wigKey, wigStatus, closed = false;
+    let program, buffer, landmarks, makeupKey, hairMask, wigLayer, wigMask, wigKey, wigStatus, wigApplied = false, closed = false;
     function close() {
         if (closed) return;
         closed = true; wigLayer?.close(); wigMask = null; landmarks = undefined; makeupKey = undefined; hairMask = null;
@@ -25,7 +25,7 @@ export function createPhotoRenderer(output, source, { onWigChange = () => {}, on
         canvas.width = canvas.height = output.width = output.height = 1;
     }
     try {
-        const width = source.naturalWidth ?? source.width, height = source.naturalHeight ?? source.height;
+        const width = source.videoWidth || (source.naturalWidth ?? source.width), height = source.videoHeight || (source.naturalHeight ?? source.height);
         const bound = Math.min(gl.getParameter(gl.MAX_TEXTURE_SIZE), gl.getParameter(gl.MAX_RENDERBUFFER_SIZE), ...gl.getParameter(gl.MAX_VIEWPORT_DIMS));
         if (!ctx || Math.max(width, height) > bound) throw new Error('photo-too-large');
         wigLayer = createWigLayer(width, height, onWigChange);
@@ -78,6 +78,11 @@ export function createPhotoRenderer(output, source, { onWigChange = () => {}, on
         gl.uniform2f(locations.pixel, 1 / width, 1 / height); gl.viewport(0, 0, width, height);
         let lutKind, mask;
         const api = {
+            /** Live sources (a playing <video>): upload the current frame. Stills never call this. */
+            updateSource() {
+                if (closed || gl.isContextLost()) throw new Error('graphics-lost');
+                upload(0, source);
+            },
             prepareWig(settings) {
                 const wig = normalize(settings).wig;
                 return wig.strength > 0 ? wigLayer.prepare(wig.style) : Promise.resolve();
@@ -98,11 +103,15 @@ export function createPhotoRenderer(output, source, { onWigChange = () => {}, on
                 mask = createFaceMask(width, height, points); upload(1, mask);
                 mask.width = mask.height = 1;
             },
-            draw(settings) {
+            /** Whether the last draw actually composited a wig (export uses this to say when a chosen wig was left out). */
+            wigApplied() { return wigApplied; },
+            // quiet: a hold-to-compare draw (no wig by design) must not announce "wig off" to assistive technology.
+            draw(settings, { quiet = false } = {}) {
                 if (closed || gl.isContextLost()) throw new Error('graphics-lost');
                 const s = normalize(settings);
                 const wig = wigLayer.render(s.wig, landmarks, wigMask);
-                if (wigStatus !== wig.status) { wigStatus = wig.status; onWig(wig.status); }
+                wigApplied = wig.active;
+                if (wigStatus !== wig.status) { wigStatus = wig.status; if (!quiet) onWig(wig.status); }
                 gl.uniform1f(locations.wigOpacity, wig.active ? wig.opacity : 0);
                 if (wig.active && wigKey !== wig.key) {
                     gl.activeTexture(gl.TEXTURE5); gl.bindTexture(gl.TEXTURE_2D, wigTexture);

@@ -77,6 +77,26 @@ async function check(localInference, photoStudio) {
     if (photoStudio === 'false') for (const path of ['/app/photo-studio', '/veyrnox/app/photo-studio']) {
         const response = await fetch(origin + path, { redirect: 'manual' }); assert.equal(response.status, 404, path); await response.arrayBuffer();
     }
+    // Camera permission (ADR-0335, S2b): camera=(self) on the Photo Studio route only, and only when the page is served.
+    const policy = async path => { const response = await fetch(origin + path, { redirect: 'manual' }); await response.arrayBuffer(); return response; };
+    if (photoStudio === 'true' && localInference === 'true') {
+        const page = await policy('/app/photo-studio');
+        assert.equal(page.status, 200, 'photo studio page'); assert.equal(page.headers.get('Permissions-Policy'), 'camera=(self), microphone=(), geolocation=()');
+        console.log(`PASS ${localInference}/${photoStudio} /app/photo-studio Permissions-Policy: camera=(self) only`);
+    }
+    // Every other route, and a switched-off Photo Studio, must keep the camera denied; the editor keeps only its own microphone exception.
+    for (const [path, expected] of [['/', 'camera=(), microphone=(), geolocation=()'], ['/app', 'camera=(), microphone=(), geolocation=()'], ['/api/status', 'camera=(), microphone=(), geolocation=()'], ['/pricing', 'camera=(), microphone=(), geolocation=()'], ['/app/editor', 'camera=(), microphone=(self), geolocation=()']]) {
+        const response = await policy(path);
+        const got = response.headers.get('Permissions-Policy');
+        // A route may redirect or need a session; what matters is that no camera permission is ever granted off Photo Studio.
+        assert.ok(!/camera=\(self\)|camera=\*/.test(got ?? ''), `${path} must not allow the camera: ${got}`);
+        if (response.status === 200) assert.equal(got, expected, path);
+    }
+    if (photoStudio === 'false') {
+        const off = await policy('/app/photo-studio'); assert.equal(off.status, 404);
+        assert.ok(!/camera=\(self\)/.test(off.headers.get('Permissions-Policy') ?? ''), 'a switched-off Photo Studio must not allow the camera');
+        console.log(`PASS ${localInference}/${photoStudio} photo studio off: no camera permission`);
+    }
 }
 try {
     for (const [local, photo] of [['false','false'], ['false','true'], ['true','false'], ['true','true']]) {

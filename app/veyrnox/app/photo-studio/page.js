@@ -4,6 +4,7 @@ import { useI18n } from '../../../../components/I18nProvider';
 import { AppNav } from '../../_components/NavBar';
 import { Main } from '../../_components/Main';
 import PhotoEditor from './PhotoEditor';
+import { HardNavigation } from './HardNavigation';
 import { control } from './Controls';
 const key = 'veyrnox_photo_studio_preview';
 const subscribe = listener => { window.addEventListener('storage', listener); return () => window.removeEventListener('storage', listener); };
@@ -12,7 +13,7 @@ export default function PhotoStudio() {
     const { t } = useI18n();
     const [storageFailed, setStorageFailed] = useState(false);
     const enabled = useSyncExternalStore(subscribe, snapshot, () => false);
-    return <><AppNav readAccount={false} /><Main className="mx-auto max-w-6xl px-4 py-8 sm:px-8 sm:py-12">
+    return <><HardNavigation /><AppNav readAccount={false} /><Main className="mx-auto max-w-6xl px-4 py-8 sm:px-8 sm:py-12">
         <p className="mb-2 font-vx-mono text-xs tracking-widest text-vx-accent">{t('app.photoStudio.eyebrow')}</p>
         <h1 className="mb-6 font-vx text-4xl">{t('app.photoStudio.title')}</h1>
         {storageFailed && <p role="alert" className="mb-4 text-vx-danger">{t('app.photoStudio.storageUnavailable')}</p>}

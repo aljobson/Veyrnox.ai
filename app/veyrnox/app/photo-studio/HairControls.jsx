@@ -6,7 +6,7 @@ export function HairControls({ t, hair, update, state, retry, control, range }) 
     const statuses = {
         waiting: t('app.photoStudio.hair.waiting'), detecting: t('app.photoStudio.hair.detecting'), ready: t('app.photoStudio.hair.ready'),
         'no-hair': t('app.photoStudio.hair.noHair'), 'face-required': t('app.photoStudio.hair.faceRequired'), unavailable: t('app.photoStudio.hair.unavailable'),
-        invalid: t('app.photoStudio.hair.invalid'),
+        invalid: t('app.photoStudio.hair.invalid'), live: t('app.photoStudio.hair.live'),
     };
     const shadeField = { id: 'shade', label: t('app.photoStudio.hair.shade') };
     const tipField = { id: 'shade2', label: t('app.photoStudio.hair.shade2') };

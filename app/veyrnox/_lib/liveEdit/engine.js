@@ -34,7 +34,7 @@ export async function decodePhoto(file, signal, decoder = (blob, options) => cre
 export function createPhotoEngine(canvas, source, { onFace = () => {}, onWig = () => {}, onHair = () => {}, hairProcessorFactory = createVisionProcessor, onError = () => {}, rendererFactory = createPhotoRenderer, processorFactory = createFaceProcessor, createFlatCanvas = () => document.createElement('canvas') } = {}) {
     const controller = new AbortController(), renderer = rendererFactory(canvas, source, { onWigChange: schedule, onWig }), filter = createLandmarkFilter();
     let closed = false, processor, hairProcessor, frame = 0, settings = normalize(DEFAULTS), compare = false, landmarks = new Float32Array();
-    function draw() { frame = 0; if (closed) return; try { renderer.draw(compare ? DEFAULTS : settings); } catch { onError('graphics-lost'); } }
+    function draw() { frame = 0; if (closed) return; try { renderer.draw(compare ? DEFAULTS : settings, { quiet: compare }); } catch { onError('graphics-lost'); } }
     function schedule() { if (!closed && !frame) frame = requestAnimationFrame(draw); }
     function clearHair() {
         try { renderer.setHairMask?.(null); return true; }
@@ -88,7 +88,7 @@ export function createPhotoEngine(canvas, source, { onFace = () => {}, onWig = (
         get landmarks() { return landmarks.slice(); },
         setSettings(next) { settings = normalize(next); schedule(); },
         compare(value) { compare = Boolean(value); schedule(); },
-        async export(type = 'image/png') {
+        async export(type = 'image/png', { onNotice = () => {} } = {}) {
             if (closed) throw new Error('photo-closed');
             if (!['image/png', 'image/jpeg'].includes(type)) throw new Error('invalid-format');
             const snapshot = settings;
@@ -96,6 +96,9 @@ export function createPhotoEngine(canvas, source, { onFace = () => {}, onWig = (
             if (closed) throw new DOMException('Cancelled', 'AbortError');
             // toBlob snapshots this exact render; hold-to-compare never leaks into export.
             renderer.draw(snapshot);
+            // A chosen wig can be left out if the face was lost, doubled or turned away between the preview and now: say so.
+            const wanted = normalize(snapshot).wig;
+            if (wanted.style !== 'none' && wanted.strength > 0 && renderer.wigApplied?.() === false) onNotice('wig-omitted');
             let source = canvas;
             if (type === 'image/jpeg') {
                 // JPEG has no alpha: flatten onto white here, or transparent PNG/WebP areas would encode as black.
