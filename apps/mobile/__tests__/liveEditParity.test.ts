@@ -7,7 +7,7 @@ import { MAKEUP, normalizeStack, history } from '../src/lib/liveEdit/engine';
 import { assembleStack } from '../src/lib/liveEdit/stack';
 import { regionFor } from '../src/lib/liveEdit/geometry';
 import type { Inference } from '../src/lib/liveEdit/protocol';
-const names = ['effects', 'makeup', 'hair', 'regions', 'looks', 'smoothing'];
+const names = ['effects', 'makeup', 'hair', 'regions', 'looks', 'smoothing', 'wigs', 'wigFit'];
 test.each(names)('%s generated source and exported descriptor tables exactly match web', name => {
     const source = resolve(__dirname, '../../../packages/live-edit', `${name}.js`), target = resolve(__dirname, '../src/lib/liveEdit/shared', `${name}.js`);
     expect(readFileSync(target, 'utf8')).toBe(readFileSync(source, 'utf8'));

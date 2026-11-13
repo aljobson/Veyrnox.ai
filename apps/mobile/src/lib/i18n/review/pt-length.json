@@ -3144,6 +3144,30 @@
     "ratio": 1.75
   },
   {
+    "id": "liveEdit.wig",
+    "english": "Wig",
+    "translation": "Peruca",
+    "ratio": 2
+  },
+  {
+    "id": "liveEdit.wigNone",
+    "english": "No wig",
+    "translation": "Sem peruca",
+    "ratio": 1.67
+  },
+  {
+    "id": "liveEdit.wigSize",
+    "english": "Wig size",
+    "translation": "Tamanho da peruca",
+    "ratio": 2.13
+  },
+  {
+    "id": "liveEdit.wigStrength",
+    "english": "Wig opacity",
+    "translation": "Opacidade da peruca",
+    "ratio": 1.73
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",

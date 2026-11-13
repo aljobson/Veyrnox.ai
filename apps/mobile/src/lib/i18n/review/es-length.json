@@ -3162,6 +3162,36 @@
     "ratio": 1.75
   },
   {
+    "id": "liveEdit.wig",
+    "english": "Wig",
+    "translation": "Peluca",
+    "ratio": 2
+  },
+  {
+    "id": "liveEdit.wigNone",
+    "english": "No wig",
+    "translation": "Sin peluca",
+    "ratio": 1.67
+  },
+  {
+    "id": "liveEdit.wigSize",
+    "english": "Wig size",
+    "translation": "Tamaño de la peluca",
+    "ratio": 2.38
+  },
+  {
+    "id": "liveEdit.wigPosition",
+    "english": "Wig height",
+    "translation": "Altura de la peluca",
+    "ratio": 1.9
+  },
+  {
+    "id": "liveEdit.wigStrength",
+    "english": "Wig opacity",
+    "translation": "Opacidad de la peluca",
+    "ratio": 1.91
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

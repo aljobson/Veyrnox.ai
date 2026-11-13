@@ -7,12 +7,15 @@ import { assembleStack } from './stack';
 import { SKIN_SMOOTHING } from './smoothing';
 import { runtimeEffect } from './runtimeEffects';
 import { MATRIX, SMOOTH, MAKEUP_SHADER, HAIR_SHADER } from './shaders';
+import { planWig, drawWig } from './wig';
 export type RenderSource = FrameId & { image: SkImage };
 // The caller owns the returned picture. Recording retains native paint/shader references.
 // No separate preview approximation or export implementation is permitted.
 export function renderEffectStack(source: RenderSource, stack: Stack, inference: Inference | null) {
     const { image } = source, w = image.width(), h = image.height();
     const { stack: s, active, passes } = assembleStack(stack, source, inference);
+    // The wig is drawn OVER the finished picture (looks, smoothing, makeup, hair colour), exactly once, for preview and export alike.
+    const wig = planWig(s.wig, s.hair, active, w, h).plan;
     const resources: { dispose(): void }[] = [];
     const own = <T extends { dispose(): void }>(value: T): T => { resources.push(value); return value; };
     const shader = (img: SkImage, width = w, height = h) => {
@@ -49,6 +52,7 @@ export function renderEffectStack(source: RenderSource, stack: Stack, inference:
         if (!passes.length) {
             const recorder = own(Skia.PictureRecorder()), canvas = recorder.beginRecording(Skia.XYWHRect(0, 0, w, h));
             canvas.drawImage(image, 0, 0);
+            if (wig) drawWig(canvas, wig, w, h);
             return recorder.finishRecordingAsPicture();
         }
         let current = shader(image);
@@ -71,6 +75,7 @@ export function renderEffectStack(source: RenderSource, stack: Stack, inference:
         }
         const recorder = own(Skia.PictureRecorder()), canvas = recorder.beginRecording(Skia.XYWHRect(0, 0, w, h));
         const paint = own(Skia.Paint()); paint.setShader(current); canvas.drawPaint(paint);
+        if (wig) drawWig(canvas, wig, w, h);
         return recorder.finishRecordingAsPicture();
     } finally { resources.reverse().forEach(r => r.dispose()); }
 }

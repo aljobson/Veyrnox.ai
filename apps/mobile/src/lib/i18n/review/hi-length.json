@@ -1938,6 +1938,18 @@
     "ratio": 2
   },
   {
+    "id": "liveEdit.wigNone",
+    "english": "No wig",
+    "translation": "कोई विग नहीं",
+    "ratio": 2
+  },
+  {
+    "id": "liveEdit.wigStrength",
+    "english": "Wig opacity",
+    "translation": "विग की अपारदर्शिता",
+    "ratio": 1.64
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

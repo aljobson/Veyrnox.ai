@@ -4992,6 +4992,48 @@
     "ratio": 2
   },
   {
+    "id": "liveEdit.wig",
+    "english": "Wig",
+    "translation": "Perruque",
+    "ratio": 2.67
+  },
+  {
+    "id": "liveEdit.wigNone",
+    "english": "No wig",
+    "translation": "Aucune perruque",
+    "ratio": 2.5
+  },
+  {
+    "id": "liveEdit.wig.bob",
+    "english": "Bob",
+    "translation": "Carré",
+    "ratio": 1.67
+  },
+  {
+    "id": "liveEdit.wig.waves",
+    "english": "Waves",
+    "translation": "Ondulations",
+    "ratio": 2.2
+  },
+  {
+    "id": "liveEdit.wigSize",
+    "english": "Wig size",
+    "translation": "Taille de la perruque",
+    "ratio": 2.63
+  },
+  {
+    "id": "liveEdit.wigPosition",
+    "english": "Wig height",
+    "translation": "Hauteur de la perruque",
+    "ratio": 2.2
+  },
+  {
+    "id": "liveEdit.wigStrength",
+    "english": "Wig opacity",
+    "translation": "Opacité de la perruque",
+    "ratio": 2
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

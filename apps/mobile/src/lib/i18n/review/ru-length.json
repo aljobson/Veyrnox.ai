@@ -3342,6 +3342,36 @@
     "ratio": 1.75
   },
   {
+    "id": "liveEdit.wig",
+    "english": "Wig",
+    "translation": "Парик",
+    "ratio": 1.67
+  },
+  {
+    "id": "liveEdit.wigNone",
+    "english": "No wig",
+    "translation": "Без парика",
+    "ratio": 1.67
+  },
+  {
+    "id": "liveEdit.wig.long",
+    "english": "Long",
+    "translation": "Длинный",
+    "ratio": 1.75
+  },
+  {
+    "id": "liveEdit.wigSize",
+    "english": "Wig size",
+    "translation": "Размер парика",
+    "ratio": 1.63
+  },
+  {
+    "id": "liveEdit.wigStrength",
+    "english": "Wig opacity",
+    "translation": "Непрозрачность парика",
+    "ratio": 1.91
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

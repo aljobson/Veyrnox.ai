@@ -150,5 +150,7 @@
   "bestCut.language.ru": "Native language name, intentionally shared across locales.",
   "bestCut.language.ja": "Native language name, intentionally shared across locales.",
   "bestCut.language.de": "Native language name, intentionally shared across locales.",
-  "bestCut.language.ko": "Native language name, intentionally shared across locales."
+  "bestCut.language.ko": "Native language name, intentionally shared across locales.",
+  "liveEdit.wig.pixie": "Established Portuguese term or label: Pixie.",
+  "liveEdit.wig.bob": "Established Portuguese term or label: Bob."
 }

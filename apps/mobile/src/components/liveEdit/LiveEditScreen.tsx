@@ -1,5 +1,5 @@
 import { Stack as RouteStack } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, ScrollView, View, useWindowDimensions } from 'react-native';
 import { t } from '../../lib/i18n';
 import { getCacheUser, subscribeCacheUser } from '../../lib/appCache';
@@ -18,6 +18,7 @@ import { LookStrip } from '../LookStrip';
 import { StrengthSlider } from '../StrengthSlider';
 import { EffectPhoto } from './EffectPhoto';
 import { EffectControls } from './EffectControls';
+import { wigStatus, type WigStatus } from '../../lib/liveEdit/wig';
 import { VisionBridge } from './VisionBridge';
 type Status = 'empty' | 'loading' | 'ready' | 'noFace' | 'multiple' | 'noHair' | 'failed' | 'invalid' | 'saved' | 'denied' | 'unsupportedFormat' | 'tooLarge';
 export function LiveEditScreen({ owner }: { owner: string }) {
@@ -105,6 +106,11 @@ export function LiveEditScreen({ owner }: { owner: string }) {
     const rendered = useCallback(() => setRenderReady(true), []);
     const messages: Record<Status, string> = { empty: t('liveEdit.intro'), loading: t('liveEdit.loading'), ready: t('liveEdit.ready'), noFace: t('liveEdit.noFace'), multiple: t('liveEdit.multiple'), noHair: t('liveEdit.noHair'), failed: t('liveEdit.failed'), invalid: t('liveEdit.invalid'), unsupportedFormat: t('liveEdit.unsupportedFormat'), tooLarge: t('liveEdit.tooLarge'), saved: t('faceFilters.look.saved'), denied: t('faceFilters.look.denied') };
     const disabled = busy || saving;
+    // Derived from the same plan the renderer uses; never throws into the screen (a failed probe just means "unknown").
+    const wigState = useMemo<WigStatus>(() => {
+        if (!source || stack.wig.style === 'none') return 'off';
+        try { return wigStatus(stack.wig, stack.hair, inference, source.width, source.height); } catch { return 'coverage-unknown'; }
+    }, [source, stack.wig, stack.hair, inference]);
     return <View style={styles.screen}>
         {source ? <View style={styles.preview}><EffectPhoto source={source} stack={compare ? DEFAULT_STACK : stack} inference={compare ? null : inference} label={t('faceFilterSwitch.attached')} maxHeight={screenHeight * .35} onError={renderError} onReady={rendered} /></View> : null}
         <ScrollView contentContainerStyle={styles.body}>
@@ -123,7 +129,7 @@ export function LiveEditScreen({ owner }: { owner: string }) {
             {status === 'failed' ? <Button variant="secondary" label={t('liveEdit.retry')} disabled={disabled} onPress={() => { lifecycle.current.reset(); setInference(null); setStatus('loading'); setRetry(n => n + 1); setStack(timeline.current.value); }} /> : null}
             <LookStrip thumb={source.frame.jpeg} enabled={!compare} live look={stack.look} modelId={null} models={[]} busy={disabled} onLook={look => change({ ...stack, look })} onModel={() => {}} />
             <View style={styles.section}><Text>{t('faceFilters.look.strength')}</Text><StrengthSlider onChangeStart={beginChange} onChangeEnd={endChange} tone="surface" label={t('faceFilters.look.strength')} value={stack.strength} disabled={disabled || compare} onChange={strength => change({ ...stack, strength })} /></View>
-            <EffectControls onChangeStart={beginChange} onChangeEnd={endChange} value={stack} onChange={change} face={inference?.count === 1} hair={!!inference?.hair} disabled={disabled || compare} />
+            <EffectControls onChangeStart={beginChange} onChangeEnd={endChange} value={stack} onChange={change} face={inference?.count === 1} hair={!!inference?.hair} disabled={disabled || compare} wigState={wigState} />
         </> : null}
         <Text tone="secondary">{t('liveEdit.privacy')}</Text>
     </ScrollView></View>;

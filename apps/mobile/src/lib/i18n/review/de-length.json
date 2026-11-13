@@ -3462,6 +3462,30 @@
     "ratio": 2.75
   },
   {
+    "id": "liveEdit.wig",
+    "english": "Wig",
+    "translation": "Perücke",
+    "ratio": 2.33
+  },
+  {
+    "id": "liveEdit.wigNone",
+    "english": "No wig",
+    "translation": "Keine Perücke",
+    "ratio": 2.17
+  },
+  {
+    "id": "liveEdit.wigSize",
+    "english": "Wig size",
+    "translation": "Perückengröße",
+    "ratio": 1.63
+  },
+  {
+    "id": "liveEdit.wigReady",
+    "english": "Wig fitted.",
+    "translation": "Perücke angepasst.",
+    "ratio": 1.64
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",
