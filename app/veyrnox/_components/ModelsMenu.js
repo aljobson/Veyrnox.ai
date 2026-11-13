@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useI18n } from '../../../components/I18nProvider';
 import { featuredModels, modelSummary, modelTag } from '../_lib/modelSummaries';
@@ -5,6 +6,28 @@ import { useCatalog } from '../_lib/useCatalog';
 
 export function ModelsMenu({ active = false }) {
   const { t } = useI18n();
+  const menuRef = useRef(null);
+  // A <details> never closes itself: close on Escape (focus back on the summary),
+  // on a click outside, and after a link inside is followed.
+  useEffect(() => {
+    const el = menuRef.current;
+    if (!el) return undefined;
+    const onKey = (e) => {
+      if (e.key !== 'Escape' || !el.open) return;
+      el.open = false;
+      el.querySelector('summary')?.focus();
+    };
+    const onDown = (e) => { if (el.open && !el.contains(e.target)) el.open = false; };
+    const onClick = (e) => { if (e.target.closest?.('a')) el.open = false; };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('pointerdown', onDown);
+    el.addEventListener('click', onClick);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('pointerdown', onDown);
+      el.removeEventListener('click', onClick);
+    };
+  }, []);
   // Names and blurbs come from the built-in list; prices only from the live catalog. The built-in prices drifted
   // (Wan 2.5 showed 19 cr against a catalog price of 17, QA 2026-10-29), so none is shown until the catalog answers.
   const catalog = useCatalog();
@@ -12,7 +35,7 @@ export function ModelsMenu({ active = false }) {
   const models = featuredModels().filter((model) => !livePrice || livePrice.has(model.id));
 
   return (
-    <details className="group relative">
+    <details ref={menuRef} className="group relative">
       <summary
         aria-current={active ? 'page' : undefined}
         className={`flex cursor-pointer list-none items-center gap-1 rounded-full px-3 py-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent [&::-webkit-details-marker]:hidden ${
