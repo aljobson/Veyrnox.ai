@@ -13,8 +13,9 @@ const ROUTE_FILES = (href: string) => {
 };
 
 describe('grouped menu', () => {
-    test('has the four web sections in order', () => {
-        expect(MENU_SECTIONS.map((s) => s.id)).toEqual(['agents', 'tools', 'assets', 'inspire']);
+    test('holds only the destinations the bottom tabs do not carry', () => {
+        expect(MENU_SECTIONS.map((s) => s.id)).toEqual(['tools', 'assets']);
+        expect(MENU_SECTIONS.flatMap((s) => s.items.map((i) => i.key))).toEqual(['cinema', 'chat', 'help', 'credits']);
     });
 
     test('every entry and heading is in the English catalog', () => {
@@ -39,32 +40,9 @@ describe('grouped menu', () => {
         expect(new Set(hrefs).size).toBe(hrefs.length);
     });
 
-    test('Quick edit is retired from Tools', () => {
-        const tools = MENU_SECTIONS.find((s) => s.id === 'tools')!.items;
-        expect(tools.some((i) => i.href === '/edit')).toBe(false);
-    });
-
-    test('the full Editor is directly available from the left Tools navigation', () => {
-        expect(MENU_SECTIONS.find((section) => section.id === 'tools')?.items).toContainEqual(
-            expect.objectContaining({ key: 'editor', href: '/editor', icon: 'slate' }),
-        );
-    });
-
-    test('MCP is a direct destination; Tool directory, Face filters and Faceless reel live on the Create tab, not the drawer', () => {
-        const tools = MENU_SECTIONS.find((section) => section.id === 'tools')?.items ?? [];
-        expect(tools).toEqual(expect.arrayContaining([expect.objectContaining({ key: 'mcp', href: '/mcp' })]));
-        for (const key of ['tools', 'faceFilters', 'facelessReel']) expect(tools.some((i) => i.key === key)).toBe(false);
-    });
-
-    test('the guided creative feature suite is directly available from Tools', () => {
-        expect(MENU_SECTIONS.find((section) => section.id === 'tools')?.items).toContainEqual(
-            expect.objectContaining({ key: 'features', href: '/features', label: 'menu.features' }),
-        );
-    });
-
-    test('Social Cinema is named and directly available from Inspire', () => {
+    test('Social Cinema is named and directly available from the drawer', () => {
         expect((en as Record<string, string>)['menu.cinema']).toBe('Social Cinema');
-        expect(MENU_SECTIONS.find((section) => section.id === 'inspire')?.items).toContainEqual(
+        expect(MENU_SECTIONS.find((section) => section.id === 'tools')?.items).toContainEqual(
             expect.objectContaining({ key: 'cinema', href: '/cinema', label: 'menu.cinema', icon: 'slate' }),
         );
     });
@@ -82,20 +60,19 @@ describe('the current screen in the menu', () => {
 
     test('Home is lit only on the home screen', () => {
         expect(activeItemKey('/')).toBe('home');
-        expect(activeItemKey('/library')).toBe('library');
+        expect(activeItemKey('/library')).toBeNull();
     });
 
-    test('a screen inside a section lights its own item, not the parent', () => {
-        expect(activeItemKey('/create')).toBe('create');
-        expect(activeItemKey('/create/agent')).toBe('videoAgent');
-        expect(activeItemKey('/create/presets')).toBe('templates');
-        expect(activeItemKey('/features/talking-avatar')).toBe('features');
-        expect(activeItemKey('/chat/skills')).toBe('skills');
-    });
-
-    test('a deeper screen lights the item it belongs to', () => {
+    test('a screen inside a section lights its own item', () => {
+        expect(activeItemKey('/cinema/watch/abc')).toBe('cinema');
         expect(activeItemKey('/chat/abc-123')).toBe('chat');
-        expect(activeItemKey('/oddlings/some-character')).toBe('oddlings');
+        expect(activeItemKey('/credits')).toBe('credits');
+    });
+
+    test('screens that left the drawer light nothing but stay routable', () => {
+        for (const href of ['/create', '/create/agent', '/features', '/oddlings/x', '/projects', '/brand-kit', '/models']) {
+            expect(activeItemKey(href)).toBeNull();
+        }
     });
 
     test('a screen that is not in the menu lights nothing', () => {

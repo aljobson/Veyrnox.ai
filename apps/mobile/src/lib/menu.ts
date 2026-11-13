@@ -1,57 +1,32 @@
-// The grouped menu (Agents / Tools / Assets / Inspire), the same shape as the web app's left sidebar. Every href is an
-// existing route; the drawer only navigates, it owns no screens.
+// The drawer. The bottom tabs carry the pillars (Create, Editor, Library, Publish), so the drawer holds only what the
+// tabs do not: Cinema, the Vey chat, Help and Credits. Every other screen (Skills, Video agent, Features, Film,
+// Oddlings, MCP, Projects, Brand kit, Templates, Models) keeps its route for deep links and in-screen links, and is
+// simply not listed. Every href is an existing route; the drawer only navigates, it owns no screens.
 import type { MenuIcon } from './menuIcons';
 
 export type MenuItem = { key: string; label: string; href: string; icon: MenuIcon; hint?: string };
 export type MenuSection = { id: 'agents' | 'tools' | 'assets' | 'inspire'; label: string; items: MenuItem[] };
 
 // Destinations the bottom tab bar already carries; the drawer does not list them again.
-// Faceless reel, Face filters and the Tool directory are tiles on the Create tab, so they are not repeated here.
 export const TAB_KEYS: ReadonlySet<string> = new Set(['create', 'editor', 'library', 'publish']);
 
 export const HOME_ICON: MenuIcon = 'house';
 
 export const MENU_SECTIONS: MenuSection[] = [
     {
-        id: 'agents',
-        label: 'menu.agents',
-        items: [
-            { key: 'chat', label: 'menu.chat', href: '/chat', icon: 'chat' },
-            { key: 'skills', label: 'chat.skills.title', href: '/chat/skills', icon: 'sparkle' },
-            { key: 'videoAgent', label: 'menu.videoAgent', hint: 'menu.videoAgentHint', href: '/create/agent', icon: 'sparkle' },
-        ],
-    },
-    {
         id: 'tools',
         label: 'menu.tools',
         items: [
-            { key: 'create', label: 'menu.create', href: '/create', icon: 'image' },
-            { key: 'features', label: 'menu.features', href: '/features', icon: 'sparkle' },
-            { key: 'editor', label: 'tabs.editor', href: '/editor', icon: 'slate' },
-            { key: 'film', label: 'menu.film', hint: 'menu.filmHint', href: '/film', icon: 'film' },
-            { key: 'oddlings', label: 'menu.oddlings', href: '/oddlings', icon: 'user' },
-            { key: 'mcp', label: 'menu.mcp', href: '/mcp', icon: 'wrench' },
-            { key: 'publish', label: 'menu.publish', href: '/publish', icon: 'send' },
+            { key: 'cinema', label: 'menu.cinema', href: '/cinema', icon: 'slate' },
+            { key: 'chat', label: 'menu.chat', href: '/chat', icon: 'chat' },
+            { key: 'help', label: 'menu.help', href: '/help', icon: 'help' },
         ],
     },
     {
         id: 'assets',
         label: 'menu.assets',
         items: [
-            { key: 'library', label: 'menu.library', href: '/library', icon: 'play' },
-            { key: 'projects', label: 'menu.projects', href: '/projects', icon: 'folder' },
-            { key: 'brandKit', label: 'menu.brandKit', href: '/brand-kit', icon: 'palette' },
             { key: 'credits', label: 'menu.credits', href: '/credits', icon: 'coins' },
-        ],
-    },
-    {
-        id: 'inspire',
-        label: 'menu.inspire',
-        items: [
-            { key: 'templates', label: 'menu.templates', href: '/create/presets', icon: 'squares' },
-            { key: 'models', label: 'menu.models', href: '/models', icon: 'cube' },
-            { key: 'cinema', label: 'menu.cinema', href: '/cinema', icon: 'slate' },
-            { key: 'help', label: 'menu.help', href: '/help', icon: 'help' },
         ],
     },
 ];

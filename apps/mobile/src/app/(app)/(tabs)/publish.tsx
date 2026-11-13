@@ -26,6 +26,9 @@ const GROUPS = ['work', 'engage', 'grow', 'manage'] as const;
 type Group = (typeof GROUPS)[number];
 type Destination = { readonly group: Group; readonly icon: MenuIcon; readonly path: Href; readonly title: string; readonly body: string };
 
+// Beyond the publishing pillar: the routes stay live for deep links, but the dashboard does not advertise them.
+const OFF_HOME: ReadonlySet<PublishDestinationId> = new Set<PublishDestinationId>(['ads', 'commerce', 'workflows', 'developer']);
+
 const DESTINATIONS: Record<PublishDestinationId, Destination> = {
     accounts: { group: 'manage', icon: 'user', path: '/publish/accounts', title: 'plan.menu.accounts', body: 'publishHome.tool.accounts' },
     posts: { group: 'work', icon: 'send', path: '/publish/posts', title: 'plan.menu.posts', body: 'publishHome.tool.posts' },
@@ -97,7 +100,7 @@ export default function Publish() {
     useFocusEffect(useCallback(() => { void load(); }, [load]));
 
     const summary = useMemo(() => data ? publishSummary(data, posts) : null, [data, posts]);
-    const visible = useMemo(() => data ? publishDestinations(data) : [], [data]);
+    const visible = useMemo(() => data ? publishDestinations(data).filter((id) => !OFF_HOME.has(id)) : [], [data]);
     const chosenBrand = selectedBrand ? brands.find((brand) => brand.id === selectedBrand) ?? null : null;
     const brandName = chosenBrand?.label ?? t('brands.mine');
     const paid = data ? hasPublishPlan(data) || publishActive : publishActive;
