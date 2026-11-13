@@ -1,3 +1,5 @@
+import { proveMakeup } from './photo-studio-makeup-proof.mjs';
+import { MAKEUP_PRESETS } from '../../packages/live-edit/makeup.js';
 // Original synthetic colours/geometry only; no person photo or third-party fixture.
 import { createPhotoRenderer } from '../../app/veyrnox/_lib/liveEdit/renderer.js';
 import { createPhotoEngine } from '../../app/veyrnox/_lib/liveEdit/engine.js';
@@ -15,6 +17,7 @@ try {
     let blocked = false;
     try { await WebAssembly.compile(new Uint8Array([0,97,115,109,1,0,0,0])); } catch { blocked = true; }
     assert(blocked, 'Page WASM must be blocked'); checks.push('page-wasm-blocked');
+    checks.push(...proveMakeup());
     const source = canvas(); source.width = 192; source.height = 128;
     const ctx = source.getContext('2d');
     for (let y = 0; y < source.height; y++) for (let x = 0; x < source.width; x++) {
@@ -40,12 +43,17 @@ try {
     checks.push('webgl-orientation-reference'); renderer.close(); renderer = undefined;
     engine = createPhotoEngine(target, decodedSource, { processorFactory: async () => ({ detect: async () => ({ count: 1, landmarks: points }), close() {} }) });
     await engine.ready;
-    engine.setSettings({ ...DEFAULTS, warmth: .3, grain: .2, smoothing: .4, lut: 'film', lutStrength: .4, stickers: [{ kind: 'heart', x: .5, y: .5, size: .15 }] });
+    engine.setSettings({ ...DEFAULTS, makeup: { ...MAKEUP_PRESETS.glam, foundation: { strength: .4, shade: 'sand' } }, warmth: .3, grain: .2, smoothing: .4, lut: 'film', lutStrength: .4, stickers: [{ kind: 'heart', x: .5, y: .5, size: .15 }] });
     await new Promise(requestAnimationFrame); const preview = pixels(target).slice(); engine.compare(true);
     const blob = await engine.export('image/png'); const image = await createImageBitmap(blob); const decoded = canvas(); decoded.width = image.width; decoded.height = image.height; decoded.getContext('2d').drawImage(image, 0, 0); image.close();
     assert(decoded.width === source.width && decoded.height === source.height, 'Source resolution export');
-    assert(maxDifference(preview, pixels(decoded)) === 0, 'Combined-stack PNG export must equal preview'); checks.push('export-equality');
+    assert(maxDifference(preview, pixels(decoded)) === 0, 'Combined-stack PNG export must equal preview'); checks.push('export-equality', 'makeup-export-equality');
     engine.close(); engine = undefined;
+    engine = createPhotoEngine(target, decodedSource, { processorFactory: async () => ({ detect: async () => ({ count: 2, landmarks: points }), close() {} }) });
+    await engine.ready; engine.setSettings({ ...DEFAULTS, makeup: MAKEUP_PRESETS.glam });
+    await new Promise(requestAnimationFrame);
+    assert(maxDifference(original, pixels(target)) === 0, 'Multiple faces disable makeup even if stale points are supplied');
+    checks.push('makeup-multiple-faces'); engine.close(); engine = undefined;
     oldClient = await createVisionProcessor(); const segmentation = await oldClient.segment(source, 1);
     assert(segmentation.face.length === segmentation.width * segmentation.height && segmentation.background.length > 0, 'Old client must process through retained prefix');
     checks.push('retained-person-client'); oldClient.close(); oldClient = undefined;

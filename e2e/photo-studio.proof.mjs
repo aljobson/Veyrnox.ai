@@ -6,7 +6,7 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 test('real WebGL2 rendering, export, page CSP and retained-client inference', async ({ page }) => {
     const root = resolve(import.meta.dirname, '..');
-    const allowed = /^(app\/veyrnox\/_lib\/(?:liveEdit\/[^/]+|editorVisionRuntime|editorVisionWorkerClient|editorMotionAnalysis)|packages\/live-edit\/[^/]+|tests\/fixtures\/photo-studio-browser-proof)\.(?:js|mjs)$/;
+    const allowed = /^(app\/veyrnox\/_lib\/(?:liveEdit\/[^/]+|editorVisionRuntime|editorVisionWorkerClient|editorMotionAnalysis)|packages\/live-edit\/[^/]+|tests\/fixtures\/photo-studio-(?:browser-proof|makeup-proof|makeup-fixture|makeup-goldens))\.(?:js|mjs)$/;
     const outbound = [];
     page.on('request', request => { if (!['GET','HEAD'].includes(request.method())) outbound.push(request.url()); });
     await page.route('**/__photo-proof/**', async route => {
@@ -22,6 +22,7 @@ test('real WebGL2 rendering, export, page CSP and retained-client inference', as
     expect(result.error, JSON.stringify(result)).toBeUndefined();
     expect(result.checks).toContain('retained-person-client');
     expect(result.checks).toContain('face-worker-no-face');
+    for (const check of ['makeup-zero-identical', 'makeup-golden-crops', 'makeup-regions-holes-monotonic', 'makeup-finishes-gradient-wing-volume', 'makeup-face-lost', 'makeup-export-equality', 'makeup-multiple-faces']) expect(result.checks).toContain(check);
     expect(outbound).toEqual([]);
     console.log(JSON.stringify(result));
 });

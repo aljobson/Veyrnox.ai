@@ -47,7 +47,7 @@ export function createPhotoEngine(canvas, source, { onFace = () => {}, onError =
             if (closed) return;
             const result = await processor.detect(source);
             if (closed) return;
-            landmarks = filter.update(result.landmarks, performance.now());
+            landmarks = filter.update(result.count === 1 ? result.landmarks : null, performance.now());
             renderer.setLandmarks(landmarks); onFace(result.count === 1 ? 'one-face' : result.count === 2 ? 'multiple-faces' : 'no-face');
             schedule();
         } catch (error) {

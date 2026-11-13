@@ -1,3 +1,4 @@
+import { MakeupControls } from './MakeupControls';
 import { EFFECTS, LOOK_IDS } from '../../../../packages/live-edit/effects.js';
 import { STICKERS } from '../../../../packages/live-edit/stickers.js';
 export const control = 'min-h-11 rounded-xl border border-vx-border bg-vx-panel px-4 py-2 text-sm text-vx-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-vx-accent disabled:opacity-40';
@@ -14,6 +15,7 @@ export function Controls({ t, settings, update, disabled, faceReady, addSticker 
         </label>)}</div>
         <label className="block text-sm">{t('app.photoStudio.lut')}<select className={`${control} mt-2 w-full`} value={settings.lut} onChange={e => update({ lut: e.target.value })}>{TONE_CURVES.map(id => <option key={id} value={id}>{t(`app.photoStudio.${id}`)}</option>)}</select></label>
         <label className="block text-sm">{t('app.photoStudio.lutStrength')}<input className={range} type="range" min="0" max="1" step="0.01" value={settings.lutStrength} disabled={settings.lut === 'none'} onChange={e => update({ lutStrength: Number(e.target.value) })} /></label>
+        <MakeupControls t={t} makeup={settings.makeup} update={update} faceReady={faceReady} control={control} range={range} />
         <fieldset disabled={!faceReady || settings.stickers.length >= 8} className="border-t border-vx-border pt-6"><legend className="text-sm">{t('app.photoStudio.stickers')}</legend><div className="flex flex-wrap gap-2">{Object.keys(STICKERS).map(kind => <button key={kind} type="button" className={control} onClick={() => addSticker(kind)}>{t(`app.photoStudio.${kind}`)}</button>)}</div><p className="mt-3 text-xs leading-relaxed text-vx-fg-muted">{t('app.photoStudio.stickerHelp')}</p></fieldset>
     </fieldset>;
 }
