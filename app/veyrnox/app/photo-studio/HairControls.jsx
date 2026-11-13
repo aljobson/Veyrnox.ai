@@ -17,8 +17,8 @@ export function HairControls({ t, hair, update, state, retry, control, range }) 
             <svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20"><circle cx="10" cy="10" r="9" fill={colour} /></svg>{shades[id]}
         </button>)}</div>
     </fieldset>;
-    return <section className="border-t border-vx-border pt-6" aria-label={t('app.photoStudio.hair.title')}>
-        <h2 className="text-xl font-vx">{t('app.photoStudio.hair.title')}</h2>
+    return <section aria-label={t('app.photoStudio.hair.title')}>
+        <h2 className="sr-only">{t('app.photoStudio.hair.title')}</h2>
         <p role="status" className="mt-3 text-sm text-vx-fg-muted">{statuses[state]}</p>
         {state === 'unavailable' && <button type="button" className={`${control} mt-3`} onClick={retry}>{t('app.photoStudio.retry')}</button>}
         <fieldset disabled={state !== 'ready'} className="mt-4">

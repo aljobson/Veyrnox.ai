@@ -48,8 +48,8 @@ export function MakeupControls({ t, makeup, update, faceReady, control, range })
             <input className={range} aria-label={`${labels[id]}: ${field.label}`} type="range" min="0" max="1" step="0.01" value={makeup[id][field.id]} onChange={e => change(id, { [field.id]: Number(e.target.value) })} />
         </label>;
     }
-    return <fieldset disabled={!faceReady} className="space-y-4 border-t border-vx-border pt-6">
-        <legend className="text-xl font-vx">{t('app.photoStudio.makeup.title')}</legend>
+    return <fieldset disabled={!faceReady} className="space-y-4">
+        <legend className="sr-only">{t('app.photoStudio.makeup.title')}</legend>
         <fieldset><legend className="mb-2 text-sm">{t('app.photoStudio.makeup.presets')}</legend><div className="flex flex-wrap gap-2">{Object.entries(MAKEUP_PRESETS).map(([id, preset]) => <button key={id} type="button" className={control} onClick={() => update({ makeup: preset })}>{labels[id]}</button>)}</div></fieldset>
         {MAKEUP.map(effect => <fieldset key={effect.id} className="rounded-xl border border-vx-border p-4">
             <legend className="px-2 text-sm">{labels[effect.id]}</legend>

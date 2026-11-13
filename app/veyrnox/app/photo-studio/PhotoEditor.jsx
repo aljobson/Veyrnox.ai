@@ -14,7 +14,7 @@ export default function PhotoEditor() {
     useEffect(() => () => { selectionEpoch.current++; }, []);
     const canvas = useRef(null), video = useRef(null), cameraDevice = useRef(''), engine = useRef(null), history = useRef(createHistory()), epoch = useRef(0);
     const [source, setSource] = useState(null), [settings, setSettings] = useState(DEFAULTS);
-    const [state, setState] = useState('empty'), [face, setFace] = useState(''), [hair, setHair] = useState('waiting'), [wig, setWig] = useState('off'), [error, setFailure] = useState(''), [rejected, setRejected] = useState(false);
+    const [state, setState] = useState('empty'), [face, setFace] = useState(''), [hair, setHair] = useState('waiting'), [, setWig] = useState('off'), [error, setFailure] = useState(''), [rejected, setRejected] = useState(false);
     const [notice, setNotice] = useState(''), [camera, setCamera] = useState('off'), [cameraNote, setCameraNote] = useState(''), [cameras, setCameras] = useState(0);
     const [format, setFormat] = useState('image/png'), [result, setResult] = useState(null), [offline, setOffline] = useState(false);
     const [aspect, setAspect] = useState(4 / 3);
@@ -179,7 +179,7 @@ export default function PhotoEditor() {
                 {notice === 'wig-omitted' && <p role="status" className="mt-4 text-sm text-vx-fg-muted">{t('app.photoStudio.wig-omitted')}</p>}
                 {result && <div role="status" className="mt-4"><p className="text-sm">{t('app.photoStudio.saved')}</p><a className={`${control} mt-3 inline-flex items-center text-vx-accent`} href={result.url} download={`photo-studio.${result.extension}`}>{t('app.photoStudio.download')}</a></div>}
             </section>
-            <aside className="min-w-0 rounded-2xl border border-vx-border p-6"><Controls t={t} settings={settings} disabled={!ready} faceReady={face === 'one-face'} hairState={hair} wigState={wig} stickersDisabled={camera === 'live'} retry={retry} update={update} addSticker={kind => { const sticker = anchoredSticker(kind, engine.current?.landmarks); if (sticker) update({ stickers: [...settings.stickers, sticker] }); }} /></aside>
+            <aside className="min-w-0 rounded-2xl border border-vx-border p-6"><Controls t={t} settings={settings} disabled={!ready} faceReady={face === 'one-face'} hairState={hair} stickersDisabled={camera === 'live'} retry={retry} update={update} addSticker={kind => { const sticker = anchoredSticker(kind, engine.current?.landmarks); if (sticker) update({ stickers: [...settings.stickers, sticker] }); }} /></aside>
         </div>
     </>;
 }

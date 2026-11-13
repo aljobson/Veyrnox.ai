@@ -598,3 +598,21 @@ exists, makeup locked without exactly one face, second shade only for ombre and 
 have unit tests. Typecheck, the translation checks in all 11 languages and lint (0 errors) pass.
 **Not verified.** How it looks and feels on the phone, including dial responsiveness and haptic strength, 375 pt widths, Dynamic Type at the largest size,
 VoiceOver, and light versus dark appearance. The web photo studio still has the older stacked layout and the 2D and 3D wigs.
+
+## Web photo studio follows the same decisions (2026-11-13)
+
+**Tabbed panel.** The right-hand controls were one long stack. They are now four tabs (Adjustments, Virtual makeup, Hair recolour, Stickers) and only the
+chosen tool is shown, like the Photos editor. The tab row is a real tab list: arrow keys move and focus the next tab, Home and End jump, only the chosen tab
+is in the tab order, and the panel is labelled by its tab. The tool's own heading became screen-reader-only so the name is announced once. The tab row
+follows the width of its own panel (one column when very narrow, two, then four), because at a 1024 px screen the panel is only about 160 px wide and four
+tabs in a row clipped "Hair recolour" and "Adjustments". The logic of the keys lives in `_lib/liveEdit/tabs.js` and is unit-tested.
+
+**Wigs leave the web panel too.** For the same reason as on mobile (code-drawn wigs cannot look photo-real), the 2D and 3D wig controls are no longer shown.
+The layers, their tests and a saved wig setting are unchanged, so this can be reversed by re-adding one component. There is no web AI-wig flow to hand
+over to: the `face-costume` model is staged (migration 0445) and the web has no Face Filters screen, so the web has no realistic-wig option for now. The
+camera help line no longer says "wigs".
+
+**Verified in a real browser (desktop 1024 px and phone 375 px, dev server):** the tabs fit without clipping and the page does not scroll sideways; a click
+selects a tab and swaps the panel; the arrow keys, Home and End move the selection and focus; and no wig text appears in the panel.
+**Not verified:** a signed-in session (the sign-in dialog was hidden for the layout check only), a real photo and face on the page, contrast in dark mode,
+Safari, and VoiceOver.
