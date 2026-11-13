@@ -3,7 +3,7 @@
 // First-run answers (ADR-0339) on this device and on the account. The server answers 404 while FIRST_GOAL_SYNC_ENABLED is
 // off and a signed-out browser has no account to ask, so every failure means "unavailable" and the device copy decides.
 // Nothing here ever blocks a page or throws.
-import { getFreshAccessToken, getSession, getStoredUserId } from '../../lib/authClient.js';
+import { getStoredSession } from '../../lib/authClient.js';
 import { gatewayFetch } from './gateway.js';
 import { FIRST_GOAL_SLOT, parseFirstGoal, readRemoteFirstGoal, serializeFirstGoal } from './firstGoal.js';
 import { FIRST_PROFILE_SLOT, parseFirstProfile, readRemoteFirstProfile, serializeFirstProfile } from './firstProfile.js';
@@ -35,11 +35,11 @@ export function saveDeviceAnswers(answers, storage) {
 }
 
 /** { kind: 'answers', goal, role, destination } | { kind: 'unavailable' }. Signed out: unavailable, without opening the sign-in dialog. */
-export async function fetchRemoteAnswers(fetcher = gatewayFetch, session = getSession) {
+// "Signed in" is the stored session, not a live access token: the token is absent or expired for a moment on every page
+// load and the gateway refreshes it. Asking for the live token here made a signed-in person look unanswerable and opened the questions.
+export async function fetchRemoteAnswers(fetcher = gatewayFetch, session = getStoredSession) {
+  if (!session()) return { kind: 'unavailable' };
   try {
-    // A returning visitor has stored account metadata but no live token until the refresh lands: wait for it rather than
-    // reading "no session" as "unavailable" (which would ask the questions of someone who already answered).
-    if (!session() && (!getStoredUserId() || !(await getFreshAccessToken()))) return { kind: 'unavailable' };
     const body = await fetcher('/first-goal');
     const profile = readRemoteFirstProfile(body);
     const goal = readRemoteFirstGoal(body);
@@ -51,7 +51,7 @@ export async function fetchRemoteAnswers(fetcher = gatewayFetch, session = getSe
 }
 
 /** Best effort and safe to repeat: the server never lowers an answer and treats the same words again as a replay. */
-export async function pushAnswers(answers, fetcher = gatewayFetch, session = getSession) {
+export async function pushAnswers(answers, fetcher = gatewayFetch, session = getStoredSession) {
   const body = Object.fromEntries(['goal', 'role', 'destination'].filter((key) => typeof answers[key] === 'string').map((key) => [key, answers[key]]));
   if (!session() || Object.keys(body).length === 0) return;
   try {
