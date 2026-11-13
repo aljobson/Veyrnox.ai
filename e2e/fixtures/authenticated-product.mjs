@@ -147,6 +147,8 @@ export async function installProductFixtures(page, options = {}) {
         fixture.unhandled.push({ method, path: url.pathname });
         return route.abort('blockedbyclient');
       }
+      // Library sync (ADR-0340) ships off (LIBRARY_SYNC_ENABLED unset): every method answers 404 and the pages keep their own copy.
+      if (url.pathname.startsWith('/api/v1/library-sync')) return state.user ? json({ error: 'not_found' }, 404) : json({ error: 'not_authenticated' }, 401);
       if (method === 'GET') {
         if (url.pathname === '/api/catalog') return json({ models: options.models || SYNTHETIC_MODELS });
         // The template gallery and one template in full: static data the browser no longer bundles (the same functions the
@@ -171,8 +173,6 @@ export async function installProductFixtures(page, options = {}) {
         if (url.pathname === '/api/v1/wins') return state.user ? json({ error: 'not_found' }, 404) : json({ error: 'not_authenticated' }, 401);
         // First-goal answer (ADR-0336) and first-run answers (ADR-0339): already answered, so neither the Create question card nor the first-run questions open over the page.
         if (url.pathname === '/api/v1/first-goal') return state.user ? json({ goal: 'skipped', role: 'skipped', destination: 'skipped' }) : json({ error: 'not_authenticated' }, 401);
-        // Library sync (ADR-0340) ships off (LIBRARY_SYNC_ENABLED unset): the routes answer 404 and the pages keep their own copy.
-        if (url.pathname.startsWith('/api/v1/library-sync')) return state.user ? json({ error: 'not_found' }, 404) : json({ error: 'not_authenticated' }, 401);
         if (url.pathname === '/api/v1/free-allowance') return json({ enabled: false, left: {} });
         if (url.pathname === '/api/v1/jobs') return json({ jobs: [], next: null });
         if (url.pathname === '/api/v1/library/masters') return json({ masters: [], next: null });
