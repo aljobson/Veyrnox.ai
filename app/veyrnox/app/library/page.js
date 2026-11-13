@@ -21,7 +21,10 @@ import { SmartCutEntry } from '../../_components/SmartCutEntry';
 import { useCatalog } from '../../_lib/useCatalog';
 import { mergeHydrated, shouldPoll } from '../../_lib/jobWindow';
 import { STATE_TABS, KIND_TABS, VIEWS, VIEW_KEY, filterRows, readView } from '../../_lib/libraryFilter';
-import { readFavourites, toggleFavourite } from '../../_lib/favourites';
+import { readFavourites, toggleFavourite, reconcileFavourites } from '../../_lib/favourites';
+import { fetchLibrarySync, pushFavourite } from '../../_lib/librarySync';
+import { hydrateFromHistory, serverRow } from '../../_lib/libraryRows';
+import { useLibraryRefresh } from '../../_lib/useLibraryRefresh';
 import { formatWhen } from '../../_lib/formatWhen';
 import { FilmLibraryMasters } from '../../_components/film/FilmLibraryMasters';
 import { DeviceLibrary } from '../../_components/DeviceLibrary';
@@ -69,11 +72,25 @@ export default function Library() {
   const { models } = useCatalog();
   const [tab, setTab] = useState('all');
   const [kind, setKind] = useState('all');
-  // Starred job ids, per account in this browser (_lib/favourites.js).
+  // Starred job ids: this browser's copy shows first (_lib/favourites.js); with library sync on (ADR-0340) the account's
+  // list replaces it, so a star made on the phone is here too. Sync off or unreachable: the local copy stands.
   const [favourites, setFavourites] = useState([]);
   const [favOnly, setFavOnly] = useState(false);
-  useEffect(() => { setFavourites(readFavourites(window.localStorage, getSession()?.user?.id)); }, []);
-  const star = (id) => setFavourites(toggleFavourite(window.localStorage, getSession()?.user?.id, id));
+  const syncFavourites = useCallback(async () => {
+    const userId = getSession()?.user?.id;
+    const synced = await fetchLibrarySync();
+    if (synced.kind !== 'ok' || getSession()?.user?.id !== userId) return;
+    const { ids, upload } = reconcileFavourites(window.localStorage, userId, synced.favourites);
+    setFavourites(ids);
+    for (const id of upload) await pushFavourite(id, true);
+  }, []);
+  useEffect(() => { setFavourites(readFavourites(window.localStorage, getSession()?.user?.id)); void syncFavourites(); }, [syncFavourites]);
+  const star = (id) => {
+    const userId = getSession()?.user?.id;
+    const next = toggleFavourite(window.localStorage, userId, id);
+    setFavourites(next);
+    void pushFavourite(id, next.includes(id));
+  };
   // Grid on the server and first paint; the saved layout is applied after mount.
   const stored = useSyncExternalStore(never, savedView, gridView);
   const [chosen, setChosen] = useState(null);
@@ -132,10 +149,7 @@ export default function Library() {
           const local = new Map(prev.map((r) => [r.job_id, r]));
           const server = page.jobs.map((j) => {
             const h = labels.get(j.job_id) || local.get(j.job_id) || {};
-            return { ...hydrateFromHistory({ ...h, job_id: j.job_id, model_id: j.model_id, credits: j.credits }),
-              name: h.name || j.label, prompt: h.prompt || j.label,
-              submitted_at: h.submitted_at || Date.parse(j.created_at) || undefined,
-              state: j.state, refunded: j.refunded, error_code: j.error_code, has_asset: j.has_asset, held: j.held, ...(j.held ? { asset_url: undefined } : {}), asset_expires_at: j.asset_expires_at };
+            return serverRow(j, h);
           });
           // A job submitted seconds ago may not be in this page yet; keep it.
           const seen = new Set(server.map((r) => r.job_id));
@@ -151,6 +165,9 @@ export default function Library() {
     })();
     return () => { cancelled = true; };
   }, [actor]);
+
+  // A creation finished on the phone shows here when this tab is looked at again (ADR-0340).
+  useLibraryRefresh({ actor, pageSize: PAGE * 2, setRows, setListLive, syncFavourites });
 
   // fetch: hydrate the visible window's real state; then poll the in-flight ones.
   // Growing the window re-hydrates a bounded page.
@@ -477,23 +494,3 @@ function JobCard({ row, models, selectable, selected, onToggle, starred, onStar 
   );
 }
 
-// Turn a history entry into a display row.
-function hydrateFromHistory(h) {
-  return {
-    job_id: h.job_id,
-    model_id: h.model_id,
-    credits: h.credits,
-    prompt: h.prompt,
-    name: h.name,
-    submitted_at: h.submitted_at,
-    state: 'queued',
-    bg: gradientFor(h.job_id),
-  };
-}
-
-// Deterministic thumbnail placeholder based on job id — until an asset arrives.
-function gradientFor(id) {
-  const seed = [...id].reduce((n, c) => (n * 31 + c.charCodeAt(0)) | 0, 0);
-  const hue = Math.abs(seed) % 360;
-  return `linear-gradient(135deg, hsl(${hue} 40% 12%), hsl(${hue} 50% 30%), hsl(${(hue + 30) % 360} 55% 55%))`;
-}

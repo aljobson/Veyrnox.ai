@@ -205,7 +205,7 @@ try {
         'cinema_creator_applications', 'cinema_creator_follows', 'cinema_series_follows', 'cinema_saved_titles', 'cinema_retention_requests', 'cinema_watch_resume',
         'referral_codes', 'upload_reservations', 'social_uploads', 'film_library_masters', 'editor_library_renders',
         'social_brands', 'social_api_keys', 'social_webhook_endpoints', 'social_posts', 'jobs', 'music_reference_links',
-        'push_tokens', 'push_outbox', 'push_token_writes', 'user_blocks', 'creator_profiles', 'first_goals', 'checkin_streaks']);
+        'push_tokens', 'push_outbox', 'push_token_writes', 'user_blocks', 'creator_profiles', 'first_goals', 'library_favourites', 'create_drafts', 'checkin_streaks']);
     const WITH_AUTH_USER = new Set(['organisation_members', 'workspace_members', 'project_members', 'api_requests', 'editor_requests',
         'social_connection_selections', 'social_oauth_states', 'film_studio_projects', 'film_studio_save_windows', 'mfa_recovery_codes', 'mfa_recovery_attempts']);
     const REFUSED_UNTIL_CLEARED = new Set(['cinema_submissions', 'cinema_competitions', 'cinema_story_polls', 'credit_subscriptions',

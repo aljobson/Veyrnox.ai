@@ -37,7 +37,7 @@ describe('the native Create workspace mirrors the website contract', () => {
         expect(screen).toContain('<CreateOptions');
         expect(screen).toContain('<CharacterPanel');
         expect(screen).toContain('<CameraPanel');
-        expect(screen).toContain('saveDraft(draft, undefined, owner)');
+        expect(screen).toContain('saveDraft(draft, undefined, owner, sceneServices.current.api)');
         expect(fs.readFileSync(path.join(__dirname, '..', 'src', 'components', 'create', 'createFormStyles.ts'), 'utf8')).toContain('minHeight: MIN_TARGET');
     });
 });

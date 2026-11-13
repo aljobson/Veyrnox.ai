@@ -45,6 +45,9 @@ export const POLICIES = {
     library: { name: 'library', perUser: true, freshMs: 0, maxAgeMs: 7 * DAY },
     // Starred creations (ADR-0156): job ids only, local, per account, wiped with the cache on sign-out.
     favourites: { name: 'favourites', perUser: true, freshMs: 0, maxAgeMs: 365 * DAY },
+    // Set once this phone has met the account's favourites list (ADR-0340): the first time it adds its own stars to it,
+    // after that the account's list replaces this phone's. Per account; wiped with the cache on sign-out.
+    favouritesSynced: { name: 'favourites-synced', perUser: true, freshMs: 0, maxAgeMs: 365 * DAY },
     // The words of an unsent Create form (ADR-0153). Per account; no files or keys.
     createDraft: { name: 'create-draft', perUser: true, freshMs: 0, maxAgeMs: 7 * DAY },
     // The studio a person imported from the web's Film Studio export (ADR-0210). Per account; words only, no media.
