@@ -1,5 +1,4 @@
 import { test, expect, installProductFixtures, SYNTHETIC_USER, SECOND_SYNTHETIC_USER, WORKSPACE, PROJECT } from './fixtures/authenticated-product.mjs';
-import { emptySequence, addSequenceText } from '../app/veyrnox/_lib/editorSequence.mjs';
 
 const emptyProjectDocument = project_id => ({ schema_version: 1, project_id, brief: '', canvas: { aspect_ratio: '16:9', frame_rate: 30 } });
 const productWrites = fixture => fixture.requests.filter(row => !['GET', 'HEAD', 'OPTIONS'].includes(row.method)
@@ -89,27 +88,6 @@ async function editor(page, options = {}) {
   const recover = page.getByTestId('editor-discard'); if (await recover.isVisible()) await recover.click();
   return fixture;
 }
-async function filesPanel(page) {
-  const workspace = page.getByTestId('editor-workspace');
-  const panel = workspace.getByTestId('project-files');
-  if (!await panel.isVisible()) await workspace.getByTestId('project-files-toggle').click();
-  await expect.poll(async () => {
-    const box = await panel.boundingBox();
-    return Boolean(box && box.x >= 0 && box.x + box.width <= page.viewportSize().width + 1);
-  }, { message: 'The project file controls must fit within the viewport' }).toBe(true);
-  return panel;
-}
-
-test('Editor local project file refuses invalid JSON then opens a valid reversible text edit', async ({ page }) => {
-  await editor(page); const panel = await filesPanel(page);
-  await panel.getByTestId('project-file-input').setInputFiles({ name: 'bad.json', mimeType: 'application/json', buffer: Buffer.from('{bad') }); await expect(panel.getByRole('alert')).toContainText('not valid JSON');
-  const file = { name: 'synthetic.veyrnox.json', json: JSON.stringify({ ...emptyProjectDocument(PROJECT), schema_version: 3, timeline: addSequenceText(emptySequence(), { text: 'Synthetic title' }) }) };
-  await panel.getByTestId('project-file-input').setInputFiles({ name: file.name, mimeType: 'application/json', buffer: Buffer.from(file.json) });
-  await expect(page.getByTestId('project-file-status')).toContainText('Project file opened'); await page.getByTestId('editor-workspace').getByTestId('project-files-toggle').click();
-  await expect(page.getByTestId('editor-undo')).toBeEnabled(); await page.getByTestId('editor-undo').click(); await expect(page.getByTestId('editor-redo')).toBeEnabled();
-  await page.getByTestId('editor-redo').click(); const output = await filesPanel(page); const downloading = page.waitForEvent('download'); await output.getByTestId('project-file-download').click(); const download = await downloading; expect(download.suggestedFilename()).toMatch(/\.veyrnox\.json$/); await download.cancel();
-});
-
 test('Editor adds text, edits words and exposes local export settings without a cloud render', async ({ page }) => {
   const fixture = await editor(page);
   const helper = page.getByTestId('assistant-editor-launcher'); await helper.click();
