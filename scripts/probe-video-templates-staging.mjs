@@ -59,6 +59,18 @@ export const quoteCredits = (unitCredits, seconds) => unitCredits * Math.ceil((N
 export const paid = pick => pick.contract.class !== 'blocked-needs-video';
 export const photoCount = c => (c.class === 'bound' ? c.slotCount : Math.max(c.requiredReferences.imageMin, c.class === 'blocked-needs-video' ? 1 : 0));
 
+/** Drops the dearest paid probes until the rest fit the budget (blocked ones cost nothing and always stay). */
+export function fitToBudget(picks, unitByModel, budget) {
+  const kept = [...picks];
+  const cost = p => quoteCredits(unitByModel[p.contract.modelId], p.contract.duration);
+  while (projectedCredits(kept, unitByModel) > budget) {
+    const dearest = kept.filter(paid).sort((a, b) => cost(b) - cost(a))[0];
+    if (!dearest) break;
+    kept.splice(kept.indexOf(dearest), 1);
+  }
+  return kept;
+}
+
 export function projectedCredits(picks, unitByModel) {
   return picks.filter(paid).reduce((sum, p) => sum + quoteCredits(unitByModel[p.contract.modelId], p.contract.duration), 0);
 }
@@ -156,9 +168,15 @@ async function main(argv) {
   const run = argv.includes('--run');
   const cap = Number(argv[argv.indexOf('--max-credits') + 1]) || DEFAULT_MAX_CREDITS;
   const outDir = path.resolve('.gstack/staging-template-probe');
-  const picks = selectProbeSet(audit().contracts);
+  const allPicks = selectProbeSet(audit().contracts);
   const catalog = await publicGet('/api/catalog'); if (!catalog.ok) throw new Error(`Staging catalog read failed (${catalog.status})`);
   const unit = unitCreditsFrom(catalog.body);
+  let picks = allPicks;
+  if (run && argv.includes('--fit-balance')) {
+    const token = await signIn(); const have = (await client(token)('/balance')).body.balance;
+    picks = fitToBudget(allPicks, unit, Math.min(cap, have));
+    console.log(`--fit-balance: staging account has ${have} credits; running ${picks.length} of ${allPicks.length} probes, skipping ${allPicks.filter(p => !picks.includes(p)).map(p => p.contract.id).join(', ') || 'none'}`);
+  }
   const projected = projectedCredits(picks, unit);
   const listing = await publicGet('/api/templates');
   const stagingIds = new Set((listing.body.templates || []).map(t => t.id));

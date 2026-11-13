@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { audit } from '../scripts/audit-template-fidelity.mjs';
 import { BROKEN_TEMPLATE_IDS } from '../app/veyrnox/_lib/brokenTemplateIds.js';
-import { selectProbeSet, projectedCredits, generationBody, quoteCredits, syntheticPng, fileRow, paid, photoCount, DEFAULT_MAX_CREDITS } from '../scripts/probe-video-templates-staging.mjs';
+import { selectProbeSet, projectedCredits, generationBody, quoteCredits, syntheticPng, fileRow, fitToBudget, paid, photoCount, DEFAULT_MAX_CREDITS } from '../scripts/probe-video-templates-staging.mjs';
 
 const unit = { 'kling-3.0-i2v': 32, 'seedance-2.0-fast': 19, 'seedance-2.0-reference': 85 };
 const picks = selectProbeSet(audit().contracts);
@@ -51,4 +51,12 @@ test('files carry only known words: network text, amounts and job ids never reac
   assert.equal(out.jobId, undefined);
   assert.equal(fileRow({ ...row, submit: '400:template_blocked', charged: 0, note: 'refused before charge (as designed)' }).charged, 'none');
   assert.equal(fileRow({ label: 'x', id: 't', modelId: 'm', class: 'c', quoted: 0 }).submit, '(dry run)');
+});
+
+test('fitToBudget drops the dearest paid probes first and always keeps the free blocked ones', () => {
+  const fit = fitToBudget(picks, unit, 47);
+  assert.ok(projectedCredits(fit, unit) <= 47);
+  assert.equal(fit.filter(p => !paid(p)).length, 4);
+  assert.ok(fit.filter(paid).every(p => p.contract.modelId === 'seedance-2.0-fast'));
+  assert.equal(fitToBudget(picks, unit, 280).length, 9);
 });
