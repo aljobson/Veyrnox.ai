@@ -275,7 +275,7 @@ function ToolCard({ destination, onPress }: { readonly destination: Destination;
                 <Image source={MENU_ICONS.caretRight} style={[styles.smallCaret, directionalStyle()]} tintColor={styles.mutedInk.color} contentFit="contain" accessibilityElementsHidden />
             </View>
             <Text variant="bodyStrong" style={styles.toolTitle}>{t(destination.title)}</Text>
-            <Text variant="footnote" style={styles.toolBody} numberOfLines={2}>{t(destination.body)}</Text>
+            <Text variant="footnote" style={styles.toolBody} numberOfLines={3}>{t(destination.body)}</Text>
         </Card>
     );
 }

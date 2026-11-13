@@ -118,6 +118,7 @@ function MenuDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
                         {MENU_SECTIONS.map((section) => {
                             const collapsed = closed[section.id] === true;
                             const name = t(section.label);
+                            const shown = section.items.filter(item => !TAB_KEYS.has(item.key));
                             return (
                                 <View key={section.id}>
                                     <Button label={name} variant="tertiary"
@@ -131,9 +132,9 @@ function MenuDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
                                         <Text variant="caption" style={styles.headingText} maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE}>{name}</Text>
                                     </Button>
                                     {collapsed ? null : (
-                                        <View style={section.id === 'tools' ? styles.grid : undefined}>
-                                            {section.items.filter(item => !TAB_KEYS.has(item.key)).map((item) => (
-                                                <Row key={item.key} label={t(item.label)} hint={item.hint ? t(item.hint) : undefined} icon={item.icon} active={active === item.key} half={section.id === 'tools'} onPress={() => go(item.href)} />
+                                        <View style={twoColumns(section.id, shown.length) ? styles.grid : undefined}>
+                                            {shown.map((item) => (
+                                                <Row key={item.key} label={t(item.label)} hint={item.hint ? t(item.hint) : undefined} icon={item.icon} active={active === item.key} half={twoColumns(section.id, shown.length)} onPress={() => go(item.href)} />
                                             ))}
                                         </View>
                                     )}
@@ -147,6 +148,9 @@ function MenuDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
     );
 }
 
+// Short lists read better one per line; the two-column grid is for a long tools list.
+const twoColumns = (sectionId: string, count: number): boolean => sectionId === 'tools' && count > 4;
+
 function Row({ label, hint, icon, active, half, onPress }: { label: string; hint?: string; icon: MenuIcon; active: boolean; half?: boolean; onPress: () => void }) {
     const styles = useThemedStyles(sheets);
     return (
@@ -159,7 +163,7 @@ function Row({ label, hint, icon, active, half, onPress }: { label: string; hint
         >
             <Icon name={icon} tint={active ? styles.accentInk.color : styles.mutedInk.color} />
             <View style={styles.rowBody}>
-                <Text variant="bodyStrong" style={[styles.rowText, active && styles.rowTextActive]} numberOfLines={1}>{label}</Text>
+                <Text variant="bodyStrong" style={[styles.rowText, active && styles.rowTextActive]} numberOfLines={half ? 2 : 1}>{label}</Text>
                 {hint ? <Text variant="caption" style={styles.rowHint} numberOfLines={2}>{hint}</Text> : null}
             </View>
         </Button>
