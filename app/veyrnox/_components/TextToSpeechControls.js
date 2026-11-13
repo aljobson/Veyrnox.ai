@@ -5,7 +5,6 @@ import {
   DEFAULT_TTS_SETTINGS,
   TTS_EXAMPLES,
   TTS_INTERJECTIONS,
-  TTS_LANGUAGES,
   TTS_PAUSES,
   TTS_SCRIPT_LIMIT,
   TTS_VOICES,
@@ -170,9 +169,6 @@ export function TextToSpeechControls({
                 <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" className="pointer-events-none absolute left-3 top-3 h-5 w-5 text-vx-fg-faint" aria-hidden="true"><circle cx="9" cy="9" r="5.5" /><path d="m13 13 4 4" /></svg>
                 <input aria-label="Search stock voices" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search voice or tone" className="min-h-11 w-full rounded-xl border border-vx-border bg-vx-panel pl-10 pr-3 text-sm text-vx-fg outline-hidden transition-[border-color,box-shadow] placeholder:text-vx-fg-faint focus:border-vx-accent focus:shadow-[0_0_0_3px_rgba(102,232,207,0.12)]" />
               </label>
-              <select aria-label="Speech language" value={settings.language} onChange={(event) => patchSetting('language', event.target.value)} className={`${selectClass} lg:w-44`}>
-                {TTS_LANGUAGES.map((language) => <option key={language} value={language}>{language === 'auto' ? 'Auto language' : language}</option>)}
-              </select>
               <select aria-label="Voice presentation" value={gender} onChange={(event) => setGender(event.target.value)} className={`${selectClass} lg:w-40`}>
                 <option value="all">All voices</option><option value="female">Female</option><option value="male">Male</option><option value="neutral">Neutral</option>
               </select>
