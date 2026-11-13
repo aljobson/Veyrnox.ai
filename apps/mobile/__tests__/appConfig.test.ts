@@ -51,7 +51,13 @@ describe('permissions', () => {
     });
 
     test('no other usage strings are set by hand', () => {
-        expect(Object.keys(expo.ios.infoPlist)).toEqual(['ITSAppUsesNonExemptEncryption', 'CFBundleName']);
+        expect(Object.keys(expo.ios.infoPlist)).toEqual(['ITSAppUsesNonExemptEncryption', 'UIViewControllerBasedStatusBarAppearance', 'CFBundleName']);
+    });
+
+    test('the status bar style is the app\'s own, not the system appearance', () => {
+        // With view-controller-based appearance on, iOS ignores expo-status-bar and follows system dark mode, which
+        // turned the clock and battery white on a light app.
+        expect(expo.ios.infoPlist.UIViewControllerBasedStatusBarAppearance).toBe(false);
     });
 
     test('iOS names the app Veyrnox.ai in its own prompts, not the dot-less project name', () => {
