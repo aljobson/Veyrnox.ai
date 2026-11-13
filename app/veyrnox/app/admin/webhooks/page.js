@@ -62,9 +62,9 @@ function Webhooks() {
         Logging is on when <code className="font-vx-mono text-xs">WEBHOOK_DELIVERY_LOG_ENABLED</code> is true.
       </p>
       <MfaPanel />
-      <div className="mt-6 flex flex-wrap gap-2" role="group" aria-label="Window">
+      <div className="mt-6 flex flex-wrap gap-2" role="tablist" aria-label="Window">
         {[1, 24, 168].map((h) => (
-          <Button key={h} size="sm" variant={hours === h ? 'primary' : 'ghost'} aria-pressed={hours === h} onClick={() => setHours(h)}>
+          <Button key={h} size="sm" variant={hours === h ? 'primary' : 'ghost'} role="tab" aria-selected={hours === h} onClick={() => setHours(h)}>
             {h === 1 ? 'Last hour' : h === 24 ? 'Last 24 hours' : 'Last 7 days'}
           </Button>
         ))}

@@ -67,9 +67,9 @@ function Security() {
       </p>
       <MfaPanel />
       {data && <Summary counts={data.open_by_severity} />}
-      <div className="mt-6 flex flex-wrap gap-2" role="group" aria-label="Alert state">
+      <div className="mt-6 flex flex-wrap gap-2" role="tablist" aria-label="Alert state">
         {FILTERS.map(([value, label]) => (
-          <Button key={value || 'active'} size="sm" variant={filter === value ? 'primary' : 'ghost'} aria-pressed={filter === value} onClick={() => setFilter(value)}>{label}</Button>
+          <Button key={value || 'active'} size="sm" variant={filter === value ? 'primary' : 'ghost'} role="tab" aria-selected={filter === value} onClick={() => setFilter(value)}>{label}</Button>
         ))}
         <Button size="sm" variant="ghost" onClick={() => load(filter)}>Refresh</Button>
       </div>

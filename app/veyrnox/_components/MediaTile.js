@@ -50,9 +50,10 @@ export function MediaTile({ href, clip, mediaClassName = '', mediaStyle, classNa
 
   return (
     <Link ref={rootRef} href={href} onClick={onClick} className={`group vx-tile ${className}`} style={style}>
-      {/* The tile's name comes from its content, not aria-label, so it always contains the visible text (WCAG 2.5.3). */}
-      {ariaLabel && <span className="sr-only">{ariaLabel}</span>}
       <div className={`relative overflow-hidden ${mediaClassName}`} style={mediaStyle}>
+        {/* The tile's name comes from its content, not aria-label, so it always contains the visible text (WCAG 2.5.3).
+            Inside the clipped media box so the hidden text never takes part in the tile's layout. */}
+        {ariaLabel && <span className="sr-only">{ariaLabel}</span>}
         {/* `ambient`: the clip keeps its own shape inside a frame shared with
             its neighbours, and a blurred copy of its poster fills the bars,
             so a row of mixed shapes lines up without cropping anything. */}

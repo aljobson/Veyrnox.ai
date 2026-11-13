@@ -59,9 +59,9 @@ function Appeals() {
       </p>
       <MfaPanel />
 
-      <div className="mt-6 flex flex-wrap gap-2" role="group" aria-label="Appeal status">
+      <div className="mt-6 flex flex-wrap gap-2" role="tablist" aria-label="Appeal status">
         {['open', 'upheld', 'rejected'].map((s) => (
-          <Button key={s} size="sm" variant={status === s ? 'primary' : 'ghost'} aria-pressed={status === s} onClick={() => { setRows(null); setStatus(s); }}>
+          <Button key={s} size="sm" variant={status === s ? 'primary' : 'ghost'} role="tab" aria-selected={status === s} onClick={() => { setRows(null); setStatus(s); }}>
             {s[0].toUpperCase() + s.slice(1)}
           </Button>
         ))}
