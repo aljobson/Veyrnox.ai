@@ -1,5 +1,17 @@
 [
   {
+    "id": "brand.swatch.teal",
+    "english": "Teal",
+    "translation": "Turquesa",
+    "ratio": 2
+  },
+  {
+    "id": "brand.swatch.navy",
+    "english": "Navy",
+    "translation": "Azul marino",
+    "ratio": 2.75
+  },
+  {
     "id": "editorSimple.openTool",
     "english": "Open tool",
     "translation": "Abrir herramienta",

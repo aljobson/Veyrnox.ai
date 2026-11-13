@@ -13,6 +13,11 @@ import { BrandTextStyles } from './BrandTextStyles';
 import { BrandAssetsEditor } from './BrandAssetsEditor';
 import { colors } from '../../theme';
 
+const SWATCH_NAMES: Record<string, () => string> = {
+    teal: () => t('brand.swatch.teal'), blue: () => t('brand.swatch.blue'), purple: () => t('brand.swatch.purple'), pink: () => t('brand.swatch.pink'),
+    red: () => t('brand.swatch.red'), orange: () => t('brand.swatch.orange'), yellow: () => t('brand.swatch.yellow'), green: () => t('brand.swatch.green'),
+    white: () => t('brand.swatch.white'), navy: () => t('brand.swatch.navy'), custom: () => t('brand.swatch.custom'),
+};
 const LIGHT_SWATCHES = new Set(['#ffffff', '#facc15', '#32d6c5', '#22c55e']);
 type Draft = { kit: Kit; rows: AssetRow[] };
 export function BrandKitEditor({ workspaceId, state, onSaved, catalog = null, projects = null, onCatalogChanged = () => {} }: {
@@ -92,7 +97,7 @@ export function BrandKitEditor({ workspaceId, state, onSaved, catalog = null, pr
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
                     {swatches.map(({ id, hex }) => {
                         const on = kit.palette.some((c) => c.toLowerCase() === hex);
-                        const name = id === 'custom' ? t('brand.swatch.custom') : t(`brand.swatch.${id}`);
+                        const name = SWATCH_NAMES[id]();
                         return (
                             <Pressable
                                 key={hex}

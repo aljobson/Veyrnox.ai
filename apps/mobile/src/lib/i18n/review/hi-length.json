@@ -1,5 +1,17 @@
 [
   {
+    "id": "brand.swatch.teal",
+    "english": "Teal",
+    "translation": "फ़िरोज़ी",
+    "ratio": 2
+  },
+  {
+    "id": "brand.swatch.navy",
+    "english": "Navy",
+    "translation": "गहरा नीला",
+    "ratio": 2.25
+  },
+  {
     "id": "acct.mfa.unlock",
     "english": "Unlock",
     "translation": "अनलॉक करें",
