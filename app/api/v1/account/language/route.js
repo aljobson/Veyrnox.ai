@@ -1,12 +1,12 @@
 import { rpc, envConfig } from '../../../../../packages/db/supabase-client.js';
 import { isAccountLocale } from '../../../../../lib/accountLanguage.js';
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../../lib/validate.js';
 const reply = (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
 
 async function language(req, write) {
     const authId = req.headers.get('x-veyrnox-auth-id');
-    if (!UUID.test(authId || '')) return reply({ error: 'not_authenticated' }, 401);
+    if (!isUuidLoose(authId || '')) return reply({ error: 'not_authenticated' }, 401);
     const origin = req.headers.get('origin');
     if ((origin && origin !== new URL(req.url).origin)
         || ['cross-site', 'same-site'].includes(req.headers.get('sec-fetch-site'))) return reply({ error: 'origin_forbidden' }, 403);

@@ -5,14 +5,14 @@ import { socialPostWriteLimit } from '../../../../../lib/socialPostWriteLimit.js
 import { resolveBrand } from '../../../../../lib/social/resolveBrand.js';
 import { envConfig, rpc, SupabaseError } from '../../../../../packages/db/supabase-client.js';
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../../lib/validate.js';
 const KINDS = new Set(['message', 'comment', 'review']);
 const MATCHES = new Set(['contains', 'exact']);
 const headers = { 'Cache-Control': 'no-store' };
 
 function identity(req) {
   const authId = req.headers.get('x-veyrnox-auth-id');
-  if (!UUID.test(authId || '')) return { error: NextResponse.json({ error: 'not_authenticated' }, { status: 401, headers }) };
+  if (!isUuidLoose(authId || '')) return { error: NextResponse.json({ error: 'not_authenticated' }, { status: 401, headers }) };
   if (!socialInboxEnabled() || !socialInboxWorkflowsEnabled()) return { error: NextResponse.json({ error: 'inbox_workflows_not_open' }, { status: 503, headers }) };
   if (!publishPlansEnabled()) return { error: NextResponse.json({ error: 'publish_plans_not_open' }, { status: 503, headers }) };
   const cfg = envConfig();
@@ -52,7 +52,7 @@ export async function PUT(req) {
   const keyword = typeof body?.keyword === 'string' ? body.keyword.trim() : '';
   const replyText = typeof body?.replyText === 'string' ? body.replyText.trim() : '';
   const matchMode = body?.matchMode;
-  if (workflowId && !UUID.test(workflowId) || accountId && !UUID.test(accountId) || kind && !KINDS.has(kind)
+  if (workflowId && !isUuidLoose(workflowId) || accountId && !isUuidLoose(accountId) || kind && !KINDS.has(kind)
     || !MATCHES.has(matchMode) || !name || name.length > 80 || !keyword || keyword.length > 100
     || !replyText || replyText.length > 8000 || typeof body?.enabled !== 'boolean') {
     return NextResponse.json({ error: 'invalid_workflow' }, { status: 400, headers });
@@ -76,7 +76,7 @@ export async function PUT(req) {
 export async function DELETE(req) {
   const resolved = identity(req); if (resolved.error) return resolved.error;
   const id = new URL(req.url).searchParams.get('id');
-  if (!UUID.test(id || '')) return NextResponse.json({ error: 'invalid_workflow' }, { status: 400, headers });
+  if (!isUuidLoose(id || '')) return NextResponse.json({ error: 'invalid_workflow' }, { status: 400, headers });
   const brand = await resolveBrand(resolved.authId, resolved.cfg, 'api/v1/social/workflows:DELETE', {
     request: req, allowedRoles: ['owner', 'manager', 'editor'],
   });

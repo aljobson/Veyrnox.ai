@@ -1,0 +1,184 @@
+feature,area,priority,original,clone,notes
+Public prompt-first landing,onboarding,must,yes,yes,Public Music entry preserves a bounded guest direction through the sign-up handoff into authenticated private Create without quoting or spending first
+Sign up with Google,onboarding,must,yes,yes,Existing Veyrnox AuthGate uses Supabase Google OAuth with PKCE and a configured-provider check
+Sign up with Apple,onboarding,should,yes,yes,Existing Veyrnox AuthGate exposes Supabase Apple OAuth and reports environment configuration honestly
+Sign up with phone,onboarding,should,yes,yes,Shared AuthGate now exposes a real E.164 SMS OTP flow through Supabase GoTrue with Turnstile on code requests exact six-digit verification public provider preflight plain-language failures and the existing persisted session store; live SMS delivery still depends on environment provider configuration
+Sign up with Discord Facebook or Microsoft,onboarding,could,yes,no,Observed on expanded public sign-in modal
+First-run product tour,onboarding,should,yes,yes,Public prompt-first guidance continues into a dismissible contextual three-step private Create guide that persists completion locally
+Simple natural-language song creation,creation,must,yes,partial,Server-mode UI now connects Simple input to entitlements quote confirmation pair admission and status polling; migration and live-provider activation remain gated off
+Advanced or Custom creation mode,creation,must,yes,yes,Revision-safe Custom drafts now bind one exact saved ACE-Step 1.5 revision and ownership attestation to an exact quote then the same atomic two-candidate confirmation and polling spine
+Generate two candidates per request,creation,must,yes,partial,Server UI confirms one exact pair then renders two independently polled candidates; atomic RPC exists but production migration and provider activation remain gated
+Random prompt,creation,should,yes,yes,Original bounded direction suggestions cycle on both the public prompt-first landing and authenticated Simple creation
+Own lyrics input,creation,must,yes,yes,Authenticated Custom preserves exact Unicode lyrics privately with optimistic revisions then reads the authoritative saved revision server-side and freezes explicit ownership permission before ACE-Step 1.5 dispatch
+Co-write or generate lyrics,creation,should,yes,yes,Custom saves before a bounded priced Chat writing request supports exact whole-draft or selected-line review and can explicitly generate the resulting saved lyrics through the verified paid Music model
+Instrumental toggle,creation,must,yes,yes,Simple keeps the verified base model instrumental-only while Custom explicitly freezes vocal versus instrumental mode into the quote; ACE-Step 1.5 receives exact saved lyrics for vocals or its documented [Instrumental] marker without sending retained draft lyrics
+Style prompt and tags,creation,must,yes,yes,Authenticated Custom durably preserves bounded style direction and dispatches that exact saved value as the verified ACE-Step 1.5 music prompt beside the owner-attested lyrics
+Exclude styles or instruments,creation,should,yes,yes,ACE-Step 1.5 Advanced controls freeze a bounded exclusion string into the quote and dispatch it as the provider-documented LM negative music prompt with an explicit non-guarantee disclosure
+Vocal gender control,creation,could,yes,partial,The disabled Mureka matching-vocal workflow exposes only its documented female or male vocal-range preference plus automatic omission and explicitly states that it does not select or clone a person's voice; the control is not available across general creation and live provider acceptance remains missing
+Variety or weirdness slider,creation,should,yes,yes,ACE-Step 1.5 exposes a real 0–100 control frozen into the quote snapshot and mapped to fal lm_temperature 0–2; 50 preserves the provider default and the base model does not show a decorative control
+Style influence slider,creation,should,yes,yes,ACE-Step 1.5 exposes a real 0–100 style-guidance control mapped to provider lm_cfg_scale 1–10; zero preserves the default and higher values disclose the provider's substantial slowdown
+Audio strength or influence slider,creation,should,yes,partial,Cover exposes a bounded 10–90 source-character control frozen into the quote and mapped to the provider noise level; broader creation and Voice use remain unavailable
+Max Mode,creation,could,yes,no,Higher-credit quality mode
+Model picker,models,must,yes,partial,Authenticated entitlements now project two verified instrumental pair models with exact live-catalog prices and availability; free ACE-Step and paid-plan ACE-Step 1.5 are selectable but lyric models remain absent
+Free v6-mini model,models,must,yes,partial,Clean-room default ACE-Step v1 is an active schema-pinned instrumental pair model available without a paid subscription; it is not Suno v6-mini and live Music acceptance remains pending
+Premium v6 model,models,should,yes,partial,Clean-room analogue ACE-Step 1.5 is an active schema-pinned higher-quality pair model; UI and both database spend boundaries require a current active paid period while live Music acceptance remains pending and no Suno v6 identity is claimed
+Experimental v6-wild model,models,could,yes,no,Pro and Premier
+Eight-minute song generations,creation,should,yes,no,All current v6 variants
+Generation queue and progress,creation,must,yes,partial,Server-mode candidate cards poll queued running ready failed and refunded projections independently; cancellation priority and live-provider validation remain
+Concurrent generations,creation,should,yes,partial,Client retains and independently polls multiple accepted pairs while service-role admission serializes each owner and rejects a fifth active shared pair before debit; paid priority capacity and live database races remain pending
+Credit quote before generation,billing,must,yes,partial,Server UI requires an explicit exact live-catalog quote before a separate pair confirmation and shows affordability expiry and balance-after; production rollout remains gated
+Daily Free credits,billing,must,yes,partial,Preview opens with 50 local credits; daily renewal and account entitlement remain
+Monthly Pro or Premier credits,billing,must,yes,yes,Veyrnox provides independently priced Starter Plus and Ultra monthly credit plans; Suno plan names and exact allowances are not copied
+Add-on credits,billing,should,yes,yes,Existing Stripe credit packs provide non-expiring one-off top-ups
+Content moderation before generation,safety,must,yes,partial,A clean-room normalized pre-debit policy rejects narrow high-confidence unsafe combinations with one public error; broader classifier and abuse review remain
+Attach owned audio to a prompt,uploads,must,yes,partial,Verified current private song audio now reaches the staged Cover audio-to-audio contract through a server-signed URL; the provider row and rollout gate remain inactive pending live acceptance
+Record audio in browser,uploads,should,yes,yes,Owned-source panel requests microphone permission only on explicit intent records up to 60 seconds and locally decodes the browser container into a validated WAV before the existing rights gate
+Upload audio up to plan limit,uploads,must,yes,partial,Private MP3/WAV upload uses a direct signed PUT server-side byte/type inspection immutable rights evidence and measured 8-minute free or 30-minute paid caps; 20 MB storage cap and rollout gate remain
+Attach Suno songs or playlists as references,creation,should,yes,no,Replace with owned clean-room assets and collections
+Attach images and video as references,creation,could,yes,no,v6 multimodal input
+Attach multiple references in one prompt,creation,should,yes,no,Cost may rise with many visual inputs
+Create mashups from multiple owned sources,creation,could,yes,no,Must preserve rights and lineage
+Suno Sounds one-shot generation,sounds,could,yes,yes,Music Sounds links to two active schema-pinned text-to-sound models with exact 10s and 8s outputs and pre-debit generic Create pricing
+Suno Sounds loop generation,sounds,could,yes,yes,ElevenLabs Sound Effects v2 exposes one real seamless-loop checkbox through the shared catalog and pre-debit capability contract and sends the provider-documented loop boolean with the same fixed 10-second price; MMAudio cannot receive it while BPM and musical key remain honest prompt directions rather than guaranteed structured controls
+Speech generation with soundtrack,speech,should,yes,no,Web beta combines spoken voice and music
+Exact Speech script,speech,should,yes,yes,Existing Veyrnox stock-voice studio preserves the reviewed script exactly until an explicitly priced real speech job is approved and stores completed audio in Library
+Speech tone pacing mood and setting,speech,should,yes,yes,Existing stock-voice studio provides language emotion speed pitch volume pauses interjections and reusable delivery palettes
+Speech backing music toggle,speech,could,yes,no,Advanced control
+Speech Variety and vocal gender,speech,could,yes,partial,Existing stock-voice studio filters female male and neutral voices and supports multi-voice auditions; a dedicated Variety control is absent
+Sample an owned audio range,remix,should,yes,no,Select a slice from song upload or recording
+Sample Chop mode,remix,could,yes,no,Slices and rearranges the sample
+Sample As-is mode,remix,could,yes,no,Places sample without added instrumentation on top
+Sample Blend mode,remix,could,yes,no,Mixes sample with new instruments
+Keep sample pitch and speed,remix,could,yes,no,Optional preservation toggle
+Mashup exactly two owned songs,remix,should,yes,no,Explicit two-source workflow
+Prompt-driven cover art editor,visuals,could,yes,no,Available for songs playlists profiles and banners
+Upload an image as cover-art reference,visuals,could,yes,no,Iterate with text
+Generate image or video artwork,visuals,could,yes,no,Independent licensed visual model required
+Lyricist profile from writing examples,lyrics,could,yes,yes,Private reusable Chat personas require explicit ownership consent for bounded examples infer only broad craft traits provide delete controls and auto-apply only to the next explicitly priced lyric Chat
+Natural-language lyric editing,lyrics,should,yes,yes,Custom sends only on explicit confirmation through priced Veyrnox Chat then imports one bounded delimited lyric block into an explicit current-versus-proposal review before applying through revision-safe autosave
+Rhyme and line references,lyrics,could,yes,yes,Focused private editor derives curated rhymes and original line prompts from the selected word or caret without rewriting lyrics or calling a model
+Full-screen lyrics editor,lyrics,should,yes,yes,Custom mode opens a mobile-safe focused full-screen writing workspace backed by the same private revision-safe autosave
+Song structure labels,lyrics,should,yes,yes,Focused writing inserts bounded Intro Verse Pre-Chorus Chorus Bridge Instrumental and Outro labels without exceeding the lyric limit
+Lyrics autosave,lyrics,must,yes,partial,Private server draft autosave preserves exact text across reloads; disjoint tab edits three-way merge and same-field conflicts retain both values until resolution; migration and rollout remain gated off
+Song duration slider,creation,should,yes,yes,Both admitted ACE-Step endpoints expose a quote-frozen 10–60 second slider; the cap stays inside the existing 60-second catalog price tier and dispatch overrides the provider payload for both candidates
+Workspace result list,results,must,yes,yes,Two candidate cards appear where created with independent status refund and cancellation records
+Song waveform playback,results,must,yes,yes,Accessible play pause seek and waveform treatment use deterministic browser-generated preview audio
+Like and dislike feedback,results,should,yes,partial,Owner-only durable like dislike and clear mutations are implemented behind disabled schema and Library gates; reason capture and live database acceptance remain
+Song More Actions menu,results,must,yes,partial,Accessible owner menu exposes implemented Cover tail Extend exact-range Replace owner-only Reuse paid vocals/instrumental separation lineage Library private sharing publication crop render and exact-format export while unsupported transforms and formats stay hidden
+Library of owned songs,library,must,yes,partial,Authenticated owner-scoped server Library UI and read APIs now exist behind separate schema/library rollout gates; migration and rollout remain off
+Liked songs collection,library,should,yes,partial,Private Library filters the owner-scoped durable liked projection behind disabled schema and Library gates; live database acceptance remains
+Uploads and stems collections,library,should,yes,partial,Owner-only verified uploads are browsable and playable and a song action can return a private stem archive; a dedicated browsable Stems collection and individual stem rows remain unavailable
+List and grid views,library,could,yes,yes,Private Library provides accessible list and responsive two-column grid controls on desktop and mobile
+Search and filter library,library,must,yes,yes,Search plus All Ready In progress and Refunded filters are implemented with empty and no-match states
+Move songs to Workspace,organization,must,yes,partial,Atomic revision-checked single/batch movement of up to 50 owned songs includes durable same-key replay behind disabled schema/library gates
+Create personal Workspaces,organization,must,yes,partial,Private default and named personal workspaces with idempotent creation are implemented behind disabled schema/library gates
+Share Workspace,collaboration,should,yes,partial,Named private Music workspaces can be shared as a read-only listening view behind a separate disabled collaboration gate; live database isolation and owner-plan gating remain
+Invite collaborators by handle,collaboration,should,yes,partial,Owners invite an exact private collaboration handle with durable replay protection and a ten-member transaction limit; removal and live database races remain
+Owner and collaborator roles,collaboration,should,yes,partial,Membership persists explicit owner or collaborator roles; only owners receive invitation controls while collaborators get read-only shared songs and member lists
+Workspace invitation notifications,collaboration,should,yes,partial,Private Workspaces lists pending invitations with accept and decline actions; external delivery unread counts expiry and live database acceptance remain
+Create playlists,organization,should,yes,partial,Private ordered collections of owned songs with atomic revision-checked replacement are implemented behind disabled playlist and schema gates
+Shuffle playlist playback,organization,could,yes,partial,Client-side shuffle changes the visible listening order but does not yet provide continuous queue playback
+Pin playlists in Library,organization,could,yes,partial,Private playlists can be pinned and unpinned behind the disabled playlist gate
+Filter playlists by creator type,organization,could,yes,no,Own Suno-curated or other creator
+Search within and across playlists,organization,could,yes,yes,Private playlists provide explicit selected-playlist and all-playlist search across song and collection titles with duplicate membership kept attributable
+Generate playlist cover art,organization,could,yes,no,Independent visual assets only
+Inspire from a playlist,creation,should,yes,no,Recommended three to five owned songs
+Create and publish albums,organization,could,yes,no,Publishing also publishes included songs
+Cover a song,remix,must,yes,partial,Rights-bound current-version Cover freezes prompt influence duration price and source evidence then creates two non-destructive lineage branches; provider catalog row and production gate remain inactive pending billed live acceptance
+Extend a song,remix,must,yes,partial,A rights-bound current source can quote and create two fixed 30-second instrumental tail continuations as immutable branches; head extension new-ending control lyrics and billed live provider acceptance remain unavailable
+Adjust song speed,remix,should,yes,yes,Owner can render a 0.5x to 2x speed-and-linked-pitch PCM WAV child with a measured new duration immutable source lineage and explicit disclosure
+Reuse styles and lyrics,remix,should,yes,partial,One exact owner-current generated version can revision-safely copy selected stored lyrics and/or style direction into the private Custom draft with durable replay and no spend; live database acceptance and reuse from non-generation edits remain unavailable
+Remix another creator's permitted song,remix,could,yes,no,Network content itself is not clonable
+Remix attribution and lineage,remix,must,yes,partial,Cover Extend and Replace outputs settle as owner-scoped immutable sibling versions with typed source edges exact source version duration/range controls and rights evidence; live database/provider acceptance remains gated
+Crop beginning or end,editing,must,yes,partial,Owner can save a measured beginning/end range as a new immutable child with a durable edit-source edge; fixed-frame PCM WAV creates a distinct canonical exportable master while MP3 and unsupported WAV remain preview-only and migration R2 acceptance remains gated
+Fade in and fade out,editing,should,yes,yes,Owner can render bounded linear fade-in and fade-out envelopes into a distinct canonical PCM WAV child while preserving the source version and edit lineage
+Split and reorder sections,editing,should,yes,partial,Current owner can split one canonical PCM WAV at an exact measured point and move section 2 before section 1 into a new exportable immutable WAV child with replay-safe edit lineage; arbitrary multi-section ordering compressed formats and a timeline editor remain unavailable
+Replace a section,editing,must,yes,partial,A rights-bound exact 1–30 second range on a current source up to 60 seconds can quote two immutable full-song instrumental alternatives audition both and commit exactly one current take while preserving its sibling and source; live provider/database/R2 acceptance remains unavailable
+Add a new section,editing,should,yes,partial,A rights-bound current MP3 or WAV up to two minutes can quote two 10 20 or 30 second beginning/end outpaint branches with exact style and optional structured lyrics; middle insertion beat-count control and live billed database/R2/provider acceptance remain unavailable
+Edit one lyric or line in place,editing,must,yes,yes,Focus lyrics captures an exact non-empty range opens an unsent priced Chat request accepts only one bounded replacement block and splices it into the unchanged source revision while preserving all surrounding text
+Quick Extend,editing,should,yes,partial,More Actions offers one fixed 30-second tail continuation with explicit exact quote and two branches; seamlessness variable length head extension and live provider acceptance are not claimed
+Remaster a song,editing,should,yes,yes,Current owner can create a deterministic zero-credit PCM WAV child with per-channel DC correction and linked peak normalization at an explicit -3 -2 or -1 dBFS ceiling; source bytes stereo image duration and immutable edit lineage are preserved while compression EQ AI mastering and compressed inputs are not claimed
+Non-destructive versions and take lanes,editing,must,yes,partial,Immutable history parent/source links current markers canonical local edits and generated Cover Extend or Replace sibling branches are implemented; Replace now auditions both ready takes and commits one idempotently while broader Studio take lanes and live database acceptance remain unavailable
+Add Vocals to an instrumental,editing,should,yes,partial,Disabled paid two-stage Mureka workflow freezes one owner/current MP3 up to 10 MB and 120 seconds plus exact lyrics and both rights attestations; it charges a one-credit provider upload plus six-credit vocal generation and returns one separate private vocal part without automatically mixing it into the source; migrated database R2 and billed provider acceptance remain missing
+Add Instrumental to an existing song,editing,should,yes,partial,The same disabled two-stage Mureka workflow supports a lyric-free Instrumental request against one owner/current MP3 and returns a separate private generated part; it does not claim an automatic mix Premier entitlement parity or live provider acceptance
+Auto stem separation,stems,should,yes,partial,Staged paid Mureka audio-separation-3 splits one owned current MP3 into vocals plus instrumental and returns one opaque ZIP; broader multi-stem output and live billed provider acceptance remain unavailable
+Split one instrument from mix,stems,should,yes,partial,Owner can isolate one allowlisted sound from a measured current MP3 or WAV up to two minutes and receive separate private target plus residual WAVs; live billed database/R2/provider acceptance and arbitrary instrument prompting remain unavailable
+Advanced custom stem split,stems,could,yes,no,Nearly 100 instruments; Premier
+Stem credit confirmation,stems,must,yes,partial,Owner must attest source rights and review the exact 13-credit quote plus an explicit warning that an absent or unclear part may be silent or limited while still spending credits; live database/provider acceptance remains gated
+Create Style Persona,identity,could,yes,no,Save essence of an owned song
+Create own Voice profile,identity,should,yes,no,Pro/Premier and age/region limits
+Voice verification,identity,must,yes,no,Independent anti-impersonation system required
+Voice privacy setting,identity,should,yes,no,Public or private where supported
+Use Voice in creation,identity,should,yes,no,Compatible model required
+Create Custom Model from owned tracks,models,could,yes,no,Minimum six tracks and up to three models
+Bulk upload Custom Model training songs,models,could,yes,no,Rights attestation required
+Share Custom Model with collaborators,models,could,yes,no,Do not replicate Suno model artifacts
+My Taste personalization,personalization,could,yes,no,Enabled by default
+Magic Wand style augmentation,personalization,could,yes,yes,Custom drafts can append bounded original production details one at a time without model calls; My Taste remains a separate unavailable feature
+Link-Only default visibility,sharing,must,yes,partial,Revocable hashed listen-only server links and a fail-closed public projection are implemented behind a disabled distribution gate; database rollout remains
+Publish song to profile,sharing,must,yes,partial,Owner can policy-check and publish the current immutable version to a reversible public track and creator listing behind the disabled publication gate; database/R2 rollout acceptance remains
+Copy share link,sharing,must,yes,partial,Owner can create and copy a high-entropy private link then revoke it; migration and rollout remain disabled
+Allow or disable comments,sharing,should,yes,partial,Publication stores and publicly projects the owner's explicit comments permission; an actual comments system remains absent
+Allow or disable remixes,sharing,should,yes,partial,Publication stores and publicly projects the owner's explicit remix permission; remix generation remains unavailable
+Public creator profile,community,could,yes,partial,Public handle and display name list live Music publications behind the disabled publication gate; avatar bio albums and rollout remain
+Discover or home feed,community,could,yes,partial,An original six-beat Veyrnox seed library now provides cover art search mood filters and playable browser-rendered previews; personalized ranking public creator content and the social graph remain excluded
+Carry a discovery beat recipe into Create,creation,must,yes,yes,Allowlisted seed ids open Create with an attached cover card and separate bounded new-direction field; the exact combined prompt uses the existing quote confirmation and two-candidate generation path without copying source audio
+Comments likes and play counts,community,could,yes,no,Existing network data excluded
+Hooks short-form video posts,community,could,yes,no,Song excerpt plus owned video and lyrics
+Download MP3,downloads,must,yes,partial,Exact allowance quote and short-lived signed download are implemented only when the immutable source asset is already MP3; migration R2 acceptance and rollout remain
+Download WAV,downloads,should,yes,partial,Exact allowance quote and short-lived signed download are implemented only when the immutable source asset is already WAV; no transcoding exists and migration R2 acceptance and rollout remain
+Download stems,downloads,should,yes,partial,A completed separation exposes one owner-only five-minute signed ZIP attachment; individual files parent-song allowance accounting and live storage/provider acceptance remain unavailable
+Download quota ledger,downloads,must,yes,partial,Owner and period scoped unique version claims make retries and repeat downloads consume allowance at most once; database acceptance remains
+Free lifetime trial downloads,downloads,should,yes,partial,A seven-download lifetime period is implemented behind the disabled distribution gate
+Paid monthly downloads,downloads,must,yes,partial,Active Starter receives 20 and higher Veyrnox subscriptions receive 60 per period behind the disabled distribution gate
+Commercial rights flag,rights,must,yes,partial,Publication and public profile project personal-use-only or plan-eligible-terms-apply from an allowlisted active paid plan without claiming third-party clearance; legal and rollout acceptance remain
+Trash and restore songs,library,should,yes,partial,Owner-only revision-checked soft trash and restore pass; permanent deletion and live database acceptance remain unavailable
+Subscription and billing page,billing,must,yes,yes,Existing Account and Credits pages show balance packs monthly plans checkout recovery and cancellation
+Upgrade feature gates,billing,must,yes,partial,ACE-Step 1.5 now has a Music-specific paid-period gate in entitlements quote and confirmation while reusable billing surfaces remain available; broader paid capabilities and live subscription-race acceptance remain
+Suno Studio project hub,studio,could,yes,partial,A disabled clean-room Studio entry explains the local session workspace and routes owners through Library songs; durable named projects and saved arrangements remain absent
+Open existing song in Studio,studio,could,yes,partial,An owner-only More Actions link opens the current private song and immutable version history in a dedicated workspace without changing the song; session controls are explicitly unsaved
+Audio and MIDI tracks,studio,could,yes,partial,The session workspace renders one real current-song audio clip plus one local MIDI note track through a bounded playable wavetable instrument; additional tracks routing durable clips and full instrument racks remain absent
+Record audio in Studio,studio,could,yes,partial,A permission-on-intent local recorder selects an enumerated input supports none or 1/2/4-bar count-in or project pre-roll and decodes each take to PCM WAV on a session lane; takes are unsaved unaligned and not latency-corrected
+Record MIDI in Studio,studio,could,yes,partial,An armed local capture records musical-typing or selected Web MIDI note-on/off messages at the playhead-derived beat with pitch timing length and velocity; takes are session-only and do not loop-comp or persist
+Latency calibration,studio,could,yes,partial,After explicit permission and exact input selection the session emits three scheduled speaker clicks analyses returned microphone peaks inside bounded windows and reports their average acoustic round-trip milliseconds; the result is not persisted and does not shift or align recorded takes
+Transport and metronome,studio,could,yes,partial,Local play pause return-to-start seek loop follow-playhead and an audible tempo-bound metronome work for the single audio clip; record and durable transport state remain absent
+Tempo and time signature,studio,could,yes,partial,Bounded 40–240 BPM and 3/4 4/4 6/8 controls drive the session grid and metronome with explicit disclosure that they do not stretch source audio
+Take lanes with two generated options,studio,could,yes,no,Audition rate and commit
+Studio chat bar,studio,could,yes,no,Generate arrange mix and ask project questions
+Studio Library dock,studio,could,yes,partial,A read-only owner dock lists immutable versions and current state beside the workspace; asset drag audition and cross-song browsing remain absent
+Piano roll editor,studio,could,yes,partial,A bounded 64-note local grid can add delete edit pitch start length and velocity and quantize timing to sixteenth-note steps; drag editing pitch bend modulation scale assist and durable clips remain absent
+Musical typing,studio,could,yes,partial,A focused session MIDI track maps the documented home-row white/black keys plus Z/X octave and C/V velocity controls into audible and recordable local notes and also exposes an eight-key mouse/touch floating keyboard; chords and arpeggiator remain absent
+External MIDI and MIDI Learn,studio,could,yes,partial,Permission-on-intent Web MIDI enumerates and selects an input and consumes note-on/off messages with an explicit Safari fallback; MIDI Learn CC transport clock and saved bindings remain absent
+Wavetable synthesizer,studio,could,yes,partial,A bounded 12-voice Web Audio instrument builds two independent harmonic PeriodicWave tables per voice morphs them through a resonant low-pass filter and amplitude envelope applies a filter LFO and exposes three presets; table upload or timeline capture multiple envelopes full modulation matrix glide detune mono mode persistence and chat patch design remain absent
+Factory audio effects,studio,could,yes,partial,After explicit activation one real media-element graph runs an ordered chain with peaking EQ compressor waveshaper distortion feedback delay and generated-impulse convolution reverb plus live controls independent instances reorder and bypass; gate sidechain presets and saved state remain absent
+Generate custom effects by chat,studio,could,yes,no,Independent plugin sandbox and safety needed
+Automation lanes,studio,could,yes,partial,A bounded 16-point local track-volume lane linearly interpolates the live playhead value and drives the audible Web Audio master gain alongside manual volume and mute; drag curves pan effect-parameter lanes copy paste persistence and effect-bearing export remain absent
+Audio to MIDI transcription,studio,could,yes,no,Drag audio to MIDI track
+MIDI to generated audio,studio,could,yes,no,Cover MIDI through generation system
+Remove FX,studio,could,yes,no,Generate dry version
+Warp markers and time stretch,studio,could,yes,no,Timing correction without pitch shift
+Clip settings and info sidebars,studio,could,yes,partial,The single audio track exposes current version operation mute volume loop visibility bounded trim reverse semitone/cents tuning and fade settings with a rendered local preview; pitch-preserving stretch formant warp lyrics styles stems and durable sidebar state remain absent
+Auto-stretch imported audio,studio,could,yes,no,Optional tempo matching with exceptions for unsteady audio and stem groups
+Fine pitch adjustment,studio,could,yes,partial,A bounded local renderer applies audible minus/plus 12-semitone and minus/plus 100-cent linear resampling to the selected clip range and creates PCM WAV; pitch and speed remain linked with no formant or pitch-preserving stretch
+Show and hide tracks,studio,could,yes,partial,The audio track can be hidden and restored from the timeline without mutating or deleting its immutable source
+Grid density and contrast controls,studio,could,yes,partial,Local wide or dense grid spacing and soft or high contrast are available in the workspace and disappear with the unsaved session
+Nonlinear clip fade curves,studio,could,yes,partial,The bounded local clip renderer applies measured fade-in and fade-out sample envelopes with selectable linear exponential or logarithmic shapes and produces an audible PCM WAV; timeline dragging crossfades persistence and project export remain absent
+Pop-out synth keyboard and plugin windows,studio,could,yes,partial,A labelled floating in-page wavetable keyboard provides eight mouse or touch keys through the current octave velocity and patch; it cannot detach to another display and effect plugin windows do not float yet
+Copy move and duplicate plugins,studio,could,yes,partial,The tab-local rack copies a parameter snapshot to a local clipboard pastes or directly duplicates an independent processor instance moves instances earlier/later removes them and caps the chain at ten while retaining one media source; cross-track drag/drop keyboard shortcuts persistence and library reuse remain absent
+Full song export from Studio,studio,could,yes,no,High-quality render
+Selected-range export from Studio,studio,could,yes,no,Partial render
+Multitrack export from Studio,studio,could,yes,no,DAW handoff
+Clip WAV download,studio,could,yes,partial,Real local microphone takes and one rendered trim/reverse/pitch/fade preview each expose immediate object-URL PCM WAV downloads; immutable song versions durable Studio projects and project effects still have no export
+Stem to MIDI export,studio,could,yes,no,Costs credits
+Suno MCP assistant connection,integrations,could,yes,yes,Veyrnox exposes an independently implemented OAuth-protected remote MCP endpoint with model cost balance generation and Library inspection tools; it is deliberately read-only
+Create music through an assistant,integrations,could,yes,no,Explicit user confirmation before credit spend
+Upload audio through MCP,integrations,could,yes,no,Owned voice memo or loop
+Remix and mash up Library songs through MCP,integrations,could,yes,no,Credit spend and lineage must remain explicit
+Add assistant-created song to playlist,integrations,could,yes,no,Post-generation organization
+Exact Suno model weights and training corpus,proprietary,skip,yes,skip,Not clonable or appropriate
+Suno songs creator graph and engagement data,network,skip,yes,skip,Network and user content belong to Suno and its users
+Suno brand logo copy artwork audio and videos,brand,skip,yes,skip,Use original Veyrnox identity and assets
+Private APIs request shapes bundles and source code,implementation,skip,yes,skip,Explicitly excluded from recon
+WMG BMG and other partner rights,partnerships,skip,yes,skip,Commercial relationships cannot be cloned
+Exact moderation fingerprinting watermarking and fraud systems,safety,skip,yes,skip,Implement independent safety provenance and abuse controls
+Exact recommendation and My Taste behavior,personalization,skip,yes,skip,Only the user-facing concept is mapped

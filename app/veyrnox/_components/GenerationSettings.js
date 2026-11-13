@@ -9,9 +9,9 @@ import { seedIsInvalid, SEED_MAX } from '../_lib/generationSettings';
 // against the same record (lib/modelCapabilities.js), so this is a form, not
 // a guard.
 
-export function GenerationSettings({ model, seed, onSeed, negative, onNegative }) {
+export function GenerationSettings({ model, seed, onSeed, negative, onNegative, loop, onLoop }) {
   const { t, locale } = useI18n();
-  if (!model?.takesSeed && !model?.takesNegative) return null;
+  if (!model?.takesSeed && !model?.takesNegative && !model?.takesLoop) return null;
   const bad = seedIsInvalid(seed);
   return (
     <details className="rounded-2xl border border-vx-border bg-vx-panel p-5">
@@ -55,6 +55,15 @@ export function GenerationSettings({ model, seed, onSeed, negative, onNegative }
             className="mt-1.5 w-full rounded-lg border border-vx-field bg-vx-base px-3 py-2 text-[13px]"
           />
         </div>
+      )}
+      {model.takesLoop && (
+        <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-vx-border bg-vx-base px-3 py-3 text-sm text-vx-fg-body">
+          <input type="checkbox" checked={loop} onChange={(event) => onLoop(event.target.checked)} className="mt-0.5 accent-vx-accent" />
+          <span>
+            <strong className="block text-vx-fg">{t('app.create.settings.seamlessLoop')}</strong>
+            <span className="mt-1 block text-xs leading-5 text-vx-fg-muted">{t('app.create.settings.seamlessLoopHelp')}</span>
+          </span>
+        </label>
       )}
     </details>
   );

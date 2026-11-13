@@ -1,7 +1,7 @@
-import { TAX_CODE, STRIPE_CHECKOUT_API_VERSION } from './stripe.js';
+import { stripeJsonRequest as request } from './stripeClient.js';
+import { TAX_CODE } from './stripe.js';
 
-const BASE = 'https://api.stripe.com/v1';
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../lib/validate.js';
 const enc = (value) => new TextEncoder().encode(value);
 
 async function key(secret, usage) {
@@ -15,35 +15,13 @@ function objectId(value) {
 export async function verifyPublishPlanMetadata(metadata, secret) {
   const id = metadata?.social_publish_subscription_id;
   const sig = metadata?.social_publish_subscription_sig;
-  if (!secret || metadata?.kind !== 'social_publish_plan' || !UUID.test(id || '') || !/^[0-9a-f]{64}$/.test(sig || '')) return false;
+  if (!secret || metadata?.kind !== 'social_publish_plan' || !isUuidLoose(id || '') || !/^[0-9a-f]{64}$/.test(sig || '')) return false;
   const bytes = Uint8Array.from(sig.match(/../g), (part) => parseInt(part, 16));
   return crypto.subtle.verify('HMAC', await key(secret, 'verify'), bytes, enc(`social_publish_subscription:${id}`));
 }
 
-async function request(path, cfg, fields, idempotencyKey) {
-  try {
-    const body = fields ? new URLSearchParams(Object.entries(fields).filter(([, value]) => value !== undefined)) : null;
-    const response = await cfg.fetch(`${BASE}/${path}`, {
-      method: body ? 'POST' : 'GET',
-      signal: AbortSignal.timeout(10000),
-      headers: {
-        Authorization: `Bearer ${cfg.apiKey}`,
-        ...(body ? {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
-        } : {}),
-        ...(path === 'checkout/sessions' ? { 'Stripe-Version': STRIPE_CHECKOUT_API_VERSION } : {}),
-      },
-      ...(body ? { body: body.toString() } : {}),
-    });
-    return response.ok ? await response.json() : null;
-  } catch {
-    return null;
-  }
-}
-
 export async function createPublishPlanCheckout(input, cfg) {
-  if (!UUID.test(input.subscriptionId || '') || !/^[a-z0-9-]{1,32}$/.test(input.planId || '')
+  if (!isUuidLoose(input.subscriptionId || '') || !/^[a-z0-9-]{1,32}$/.test(input.planId || '')
       || !['week', 'month', 'year'].includes(input.interval) || !Number.isSafeInteger(input.priceUsdCents)
       || input.priceUsdCents < 100 || input.priceUsdCents > 9999999 || !cfg.signingSecret) {
     return { ok: false, error: 'invalid_checkout' };

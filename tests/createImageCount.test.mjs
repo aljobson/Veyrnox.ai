@@ -17,8 +17,8 @@ const submit = page.slice(page.indexOf('async function onSubmit()'), page.indexO
 const sendOne = submit.slice(submit.indexOf('await sendInOrder('));
 
 test('the IMAGES control is shown for image models only', () => {
-    assert.match(page, /\{takesImageCount\(model\) && \(\s*<ControlRow assistantTarget="create.count" label="IMAGES" options=\{IMAGE_COUNTS\} value=\{count\} onChange=\{setCount\} \/>/);
-    assert.equal((page.match(/label="IMAGES"/g) || []).length, 1);
+    assert.match(page, /\{takesImageCount\(model\) && <ChipSelect assistantTarget="create.count" aria-label="IMAGES" options=\{IMAGE_COUNTS\} value=\{count\} onChange=\{setCount\}/);
+    assert.equal((page.match(/assistantTarget="create.count"/g) || []).length, 1);
     assert.match(page, /const n = imageCount\(model, count\);/);
 });
 
@@ -171,10 +171,10 @@ for (const modelId of ['flux-2-pro-1k-kie', 'flux-2-pro']) test(`actual web conf
         missingSource: false, missingConsent: false, missingPrompt: false, promptTooLong: false, missingVoice: false,
         invalidAudioDuration: false, setError: value => { error = value; }, setSending: () => {},
         getJourney: () => ({}), duration: '5s', isShort: false, aspectOptions: [], aspect: '1:1',
-        activeBatch: null, continuation: { current: null }, formIdentity: identity, unitCost: 2, n: 2,
+        activeBatch: null, continuation: { current: null }, formIdentity: identity, activeTier: null, unitCost: 2, n: 2,
         createBatch, makeIdempotencyKey: () => `key-${++sequence}`, allocationSnapshot,
         quote: allocationSnapshot({ accepted: [null, null], unknown: new Set() }, 2, 2),
-        prompt: 'lake', finalPrompt: () => 'lake', settingsInputs: () => ({ seed: 7 }), seed: '7', negative: '', voice: '', audioDuration: null,
+        prompt: 'lake', finalPrompt: () => 'lake', settingsInputs: () => ({ seed: 7 }), seed: '7', negative: '', loop: false, voice: '', audioDuration: null,
         sources: {}, uploadSource: () => {}, mediaGenerationSources: async () => { uploads++; return { references: [], source_keys: [], source_assets: [] }; },
         sendInOrder, inputsForIndex, presetParam: null, templateData: null, templateStartIdFor: () => null,
         gatewayFetch: async (path, init) => {
@@ -243,9 +243,9 @@ async function retryHandlerHarness(count, replies) {
         missingSource: false, missingConsent: false, missingPrompt: false, promptTooLong: false, missingVoice: false,
         invalidAudioDuration: false, setError: value => { context.error = value; }, setSending: () => {},
         getJourney: () => ({}), duration: '5s', isShort: false, aspectOptions: [], aspect: '1:1',
-        activeBatch: null, continuation: { current: null }, formIdentity: {}, unitCost: 2, n: count,
+        activeBatch: null, continuation: { current: null }, formIdentity: {}, activeTier: null, unitCost: 2, n: count,
         makeIdempotencyKey: () => `retry-key-${++sequence}`,
-        prompt: 'lake', finalPrompt: () => 'lake', settingsInputs: () => ({ seed: 7 }), seed: '7', negative: '', voice: '', audioDuration: null,
+        prompt: 'lake', finalPrompt: () => 'lake', settingsInputs: () => ({ seed: 7 }), seed: '7', negative: '', loop: false, voice: '', audioDuration: null,
         sources: {}, uploadSource: () => {}, mediaGenerationSources: async () => ({ references: [], source_keys: [], source_assets: [] }),
         presetParam: null, templateData: null, templateStartIdFor: () => null,
         gatewayFetch: async (path, init) => {

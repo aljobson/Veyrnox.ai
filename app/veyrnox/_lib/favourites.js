@@ -4,7 +4,7 @@
 
 const PREFIX = 'veyrnox_favourites_v1:';
 export const MAX_FAVOURITES = 200;
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../lib/validate.js';
 
 const keyFor = (userId) => (typeof userId === 'string' && userId ? PREFIX + userId : null);
 
@@ -14,7 +14,7 @@ export function readFavourites(storage, userId) {
   if (!key) return [];
   try {
     const arr = JSON.parse(storage.getItem(key) || '[]');
-    return Array.isArray(arr) ? arr.filter((id) => typeof id === 'string' && UUID_RE.test(id)).slice(0, MAX_FAVOURITES) : [];
+    return Array.isArray(arr) ? arr.filter((id) => typeof id === 'string' && isUuidLoose(id)).slice(0, MAX_FAVOURITES) : [];
   } catch {
     return [];
   }
@@ -24,7 +24,7 @@ export function readFavourites(storage, userId) {
 export function toggleFavourite(storage, userId, jobId) {
   const current = readFavourites(storage, userId);
   const key = keyFor(userId);
-  if (!key || !UUID_RE.test(String(jobId))) return current;
+  if (!key || !isUuidLoose(String(jobId))) return current;
   const next = current.includes(jobId) ? current.filter((id) => id !== jobId) : [jobId, ...current].slice(0, MAX_FAVOURITES);
   try {
     storage.setItem(key, JSON.stringify(next));

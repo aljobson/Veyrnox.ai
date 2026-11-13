@@ -14,7 +14,7 @@ import { NextResponse } from 'next/server';
 import { rpc, envConfig } from '../../../../packages/db/supabase-client.js';
 import { accountReadLimit } from '../../../../lib/accountReadLimit.js';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../lib/validate.js';
 const KINDS = new Set(['job', 'cinema_title', 'other']);
 export const CATEGORIES = ['csam', 'intimate_image', 'real_person', 'violence', 'hate', 'fraud', 'copyright', 'other'];
 const MAX_BODY_BYTES = 8 * 1024;
@@ -22,7 +22,7 @@ const json = (body, status = 200) => NextResponse.json(body, { status, headers: 
 
 export async function POST(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
-    if (!authId || !UUID_RE.test(authId)) return json({ error: 'not_authenticated' }, 401);
+    if (!authId || !isUuidLoose(authId)) return json({ error: 'not_authenticated' }, 401);
     const cfg = envConfig();
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey) return json({ error: 'not_configured' }, 503);
     const limited = await accountReadLimit(authId, cfg, { error: 'rate_limited' });
@@ -34,7 +34,7 @@ export async function POST(req) {
     if (!body || typeof body !== 'object' || Array.isArray(body)) return json({ error: 'body_invalid' }, 400);
     const { subject_kind: kind, subject_id: subjectId = null, category, details = '' } = body;
     if (!KINDS.has(kind)) return json({ error: 'subject_invalid' }, 400);
-    if (kind === 'other' ? subjectId !== null : (typeof subjectId !== 'string' || !UUID_RE.test(subjectId))) return json({ error: 'subject_invalid' }, 400);
+    if (kind === 'other' ? subjectId !== null : (typeof subjectId !== 'string' || !isUuidLoose(subjectId))) return json({ error: 'subject_invalid' }, 400);
     if (!CATEGORIES.includes(category)) return json({ error: 'category_invalid' }, 400);
     if (typeof details !== 'string' || details.length > 2000 || (kind === 'other' && details.trim().length < 10)) return json({ error: 'details_invalid' }, 400);
 

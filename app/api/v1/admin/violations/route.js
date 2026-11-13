@@ -33,13 +33,13 @@ import { notifyViolation } from '../../../../../lib/violationEmail.js';
 import { requireDashboardAccess } from '../../../../../lib/accessJwt.js';
 
 const NOT_ADMIN = '42501';
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+import { isUuid } from '../../../../../lib/validate.js';
 const TIERS = new Set(['warning', 'takedown', 'csam_escalation']);
 const MAX_BODY_BYTES = 4 * 1024;
 // The form sends one key per attempt; the RPC stores it on the strike and
 // answers a replay with the first result, so a lost response and a resubmit
 // record one strike, not two (0253, audit P-07).
-const IDEMPOTENCY_RE = /^[A-Za-z0-9._-]{8,128}$/;
+import { IDEMPOTENCY_RE } from '../../../../../lib/idempotency.js';
 
 const requireAal2 = () => process.env.ADMIN_REQUIRE_AAL2 === 'true';
 
@@ -73,7 +73,7 @@ export async function GET(req) {
     if (g.response) return g.response;
     const url = new URL(req.url);
     const userId = url.searchParams.get('user_id');
-    if (userId !== null && !UUID_RE.test(userId)) {
+    if (userId !== null && !isUuid(userId)) {
         return NextResponse.json({ error: 'user_id_invalid' }, { status: 400 });
     }
     const limitRaw = url.searchParams.get('limit');
@@ -106,8 +106,8 @@ export async function POST(req) {
         return NextResponse.json({ error: 'body_invalid' }, { status: 400 });
     }
     const { user_id: userId, job_id: jobId = null, tier, reason } = body;
-    if (typeof userId !== 'string' || !UUID_RE.test(userId)) return NextResponse.json({ error: 'user_id_invalid' }, { status: 400 });
-    if (jobId !== null && (typeof jobId !== 'string' || !UUID_RE.test(jobId))) return NextResponse.json({ error: 'job_id_invalid' }, { status: 400 });
+    if (typeof userId !== 'string' || !isUuid(userId)) return NextResponse.json({ error: 'user_id_invalid' }, { status: 400 });
+    if (jobId !== null && (typeof jobId !== 'string' || !isUuid(jobId))) return NextResponse.json({ error: 'job_id_invalid' }, { status: 400 });
     if (!TIERS.has(tier)) return NextResponse.json({ error: 'tier_invalid' }, { status: 400 });
     if (typeof reason !== 'string' || !reason.trim() || reason.length > 500) return NextResponse.json({ error: 'reason_invalid' }, { status: 400 });
     if (tier !== 'warning' && jobId === null) return NextResponse.json({ error: 'job_id_required' }, { status: 400 });

@@ -51,6 +51,7 @@ export function gateHarness(ctx, overrides = {}) {
     const Gate = load('../../components/AuthGate.jsx', { ...mocks,
         './useEmailResend.js': hook, './humanAuthError.js': load('../../components/humanAuthError.js', { './useEmailResend.js': hook }),
         './EmailResendControls.jsx': { __esModule: true, default: Controls },
+        './PhoneOtpForm.jsx': { __esModule: true, default: 'phone-otp' },
         '../app/lib/accountLanguageClient.js': { watchAccountLanguage: () => () => {} },
         './LegalLink': { default: 'a' }, '../lib/i18n/rich': { rich: text => text },
         './I18nProvider.jsx': { useI18n: () => ({ t: translator('en'), locale: 'en' }) },

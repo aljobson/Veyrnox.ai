@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160" role="img" aria-labelledby="title desc">
+  <title id="title">After Hours artwork</title>
+  <desc id="desc">Original geometric artwork for the Electronic sample After Hours.</desc>
+  <rect width="160" height="160" rx="28" fill="#111114"/>
+  <circle cx="61" cy="47" r="66" fill="#38bdf8" opacity=".34"/>
+  <path d="M-12 99 C28 79,58 127,94 107 S142 69,174 91" fill="none" stroke="#38bdf8" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="122" cy="38" r="18" fill="#f4f4f5" opacity=".93"/>
+  <text x="122" y="44" fill="#111114" font-family="Arial, sans-serif" font-size="14" font-weight="800" text-anchor="middle">AH</text>
+  <text x="18" y="137" fill="#f4f4f5" font-family="Arial, sans-serif" font-size="10" font-weight="700" letter-spacing="1">ELECTRONIC</text>
+</svg>

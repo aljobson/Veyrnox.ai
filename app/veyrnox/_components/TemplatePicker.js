@@ -35,7 +35,7 @@ export function TemplatePicker({ models, goal, onPick, onClose }) {
         <p className="mt-2 text-xs text-vx-fg-muted">{t('app.create.templates.help')}</p>
         <input ref={search} type="search" value={query} onChange={(event) => setQuery(event.target.value)}
           aria-label={t('app.create.templates.search')} placeholder={t('app.create.templates.search')}
-          className="mt-4 w-full rounded-lg border border-vx-field bg-vx-base px-3 py-2 text-sm text-vx-fg placeholder:text-vx-fg-faint focus:border-vx-accent focus:outline-hidden" />
+          className="mt-3 w-full rounded-lg border border-vx-field bg-vx-base px-3 py-2 text-sm text-vx-fg placeholder:text-vx-fg-faint focus:border-vx-accent focus:outline-hidden" />
         {shown.length === 0 && <p className="mt-4 text-sm text-vx-fg-muted">{t('app.create.templates.empty')}</p>}
         <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
           {shown.map(({ preset, model }) => {

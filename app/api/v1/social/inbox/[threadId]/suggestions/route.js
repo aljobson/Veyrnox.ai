@@ -5,12 +5,12 @@ import { socialPostWriteLimit } from '../../../../../../../lib/socialPostWriteLi
 import { resolveBrand } from '../../../../../../../lib/social/resolveBrand.js';
 import { envConfig, rpc, SupabaseError } from '../../../../../../../packages/db/supabase-client.js';
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../../../../lib/validate.js';
 const headers = { 'Cache-Control': 'no-store' };
 function identity(req, threadId) {
   const authId = req.headers.get('x-veyrnox-auth-id');
-  if (!UUID.test(authId || '')) return { error: NextResponse.json({ error: 'not_authenticated' }, { status: 401, headers }) };
-  if (!UUID.test(threadId || '')) return { error: NextResponse.json({ error: 'invalid_thread_id' }, { status: 400, headers }) };
+  if (!isUuidLoose(authId || '')) return { error: NextResponse.json({ error: 'not_authenticated' }, { status: 401, headers }) };
+  if (!isUuidLoose(threadId || '')) return { error: NextResponse.json({ error: 'invalid_thread_id' }, { status: 400, headers }) };
   if (!socialInboxEnabled() || !socialInboxWorkflowsEnabled()) return { error: NextResponse.json({ error: 'inbox_workflows_not_open' }, { status: 503, headers }) };
   if (!publishPlansEnabled()) return { error: NextResponse.json({ error: 'publish_plans_not_open' }, { status: 503, headers }) };
   const cfg = envConfig();
@@ -40,7 +40,7 @@ export async function PATCH(req, context) {
   const { threadId } = await context.params; const resolved = identity(req, threadId); if (resolved.error) return resolved.error;
   const limited = await limitRequestBody(req); if (limited.response) return limited.response;
   let body; try { body = await limited.request.json(); } catch { return NextResponse.json({ error: 'invalid_body' }, { status: 400, headers }); }
-  if (!UUID.test(body?.suggestionId || '') || !['use', 'dismiss'].includes(body?.action) || Object.keys(body || {}).length !== 2) {
+  if (!isUuidLoose(body?.suggestionId || '') || !['use', 'dismiss'].includes(body?.action) || Object.keys(body || {}).length !== 2) {
     return NextResponse.json({ error: 'invalid_action' }, { status: 400, headers });
   }
   const brand = await resolveBrand(resolved.authId, resolved.cfg, 'api/v1/social/inbox/suggestions:PATCH', {

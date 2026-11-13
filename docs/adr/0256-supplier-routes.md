@@ -249,3 +249,31 @@ open spend admission until each line is true:
 3. The Worker var is set to the string `"true"` by the owner, who also checks the 66-variable budget
    (`tests/workerBindingBudget.test.mjs`); `wrangler.jsonc` deliberately carries no entry, so absent
    means off.
+
+## Amendment 2026-11-10: kie as the active second route for Nano Banana Pro (0456)
+
+`nano-banana-pro-grsai` (2 credits) had one route, so when the GrsAI account ran out of credits every job was
+refused and refunded. Migration 0456 adds an `active` priority-2 kie route (`market:nano-banana-pro`, $0.0900,
+`licensed_reseller`) behind it, and the GrsAI adapter now reports its balance refusal (HTTP 200, code -1, message
+"insufficient credits") as `provider_payment_required`, the same code kie's 402 uses, so decision 5 hops it.
+Any other GrsAI refusal still stops and refunds. No price, credits, catalog row or route 1 changes.
+
+Evidence: paid probe 2026-11-10 (owner's kie key), task `26cba7722184e514a7373068284b82fa`, success after 38 s,
+PNG 2048x2048 from `tempfile.aiquickdraw.com` (already on the kie allowlist), image read by Claude Code. The kie
+dashboard charge is not yet read. A fal route ($0.1500, probed the same day, 20 s, 1024x1024) was left out.
+
+Margin waiver (decision 3, owner, 2026-11-10): at 2 credits the cap is 2 x $0.01796 = $0.0359 and kie costs $0.0900,
+so the route breaches the floor and carries a recorded waiver. Exposure is bounded by
+`daily_spend_cap_cents = 500` ($5 of kie spend a UTC day, about 55 hops). Review of #2063 found that column was
+stored and never read, so 0456 also redefines `job_route_failover` (0376's body plus two changes): it locks the next
+route's row and refuses the hop with `route_daily_cap` when that day's `provider_spend_reservations` for the supplier
+and offer, plus this hop, would pass the cap. A refused hop refunds as any other refusal does; a NULL cap behaves as
+before. The route earns nothing while it serves; it
+exists so a GrsAI outage costs the business a few cents per image instead of a failed generation for the user.
+If GrsAI is topped up and stays healthy the route is never used. To remove it, set its `state` to `disabled`.
+
+The same review found that the kie callback could not complete a hopped job: `findJob` required the offer's catalog
+provider to equal the callback's supplier, and read the task from the catalog endpoint. It now accepts a job whose
+recorded provider is a route of its offer (any route state, so a route switched off after a hop still lets its in-flight
+jobs finish) and reads the task from that route's endpoint. A job whose provider is no route of its offer is still not
+ours to complete.

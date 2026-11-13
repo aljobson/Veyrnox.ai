@@ -5,13 +5,13 @@ import { socialSmartLinksEnabled } from '../../../../../lib/social/publishFeatur
 import { resolveBrand } from '../../../../../lib/social/resolveBrand.js';
 import { envConfig, rpc, SupabaseError } from '../../../../../packages/db/supabase-client.js';
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../../lib/validate.js';
 const SLUG = /^[a-z0-9](?:[a-z0-9-]{1,46}[a-z0-9])?$/;
 const THEMES = new Set(['midnight', 'light', 'sunset']);
 
 function setup(req) {
   const authId = req.headers.get('x-veyrnox-auth-id');
-  if (!UUID.test(authId || '')) return { error: NextResponse.json({ error: 'not_authenticated' }, { status: 401 }) };
+  if (!isUuidLoose(authId || '')) return { error: NextResponse.json({ error: 'not_authenticated' }, { status: 401 }) };
   if (!socialSmartLinksEnabled()) return { error: NextResponse.json({ error: 'smartlinks_not_open' }, { status: 404 }) };
   const cfg = envConfig();
   if (!cfg.supabaseUrl || !cfg.serviceRoleKey) return { error: NextResponse.json({ error: 'supabase_not_configured' }, { status: 503 }) };
@@ -48,7 +48,7 @@ export async function PUT(req) {
   const theme = body?.theme;
   const items = body?.items;
   if (!SLUG.test(slug) || !title || title.length > 80 || bio.length > 280 || !THEMES.has(theme) || typeof body?.published !== 'boolean' || !Array.isArray(items) || items.length > 20 ||
-      items.some((item) => !item || (item.id != null && (typeof item.id !== 'string' || !UUID.test(item.id))) || typeof item.label !== 'string' || !item.label.trim() || item.label.trim().length > 60 || typeof item.url !== 'string' || !/^https:\/\//.test(item.url) || item.url.length > 1000 || typeof item.enabled !== 'boolean') ||
+      items.some((item) => !item || (item.id != null && (typeof item.id !== 'string' || !isUuidLoose(item.id))) || typeof item.label !== 'string' || !item.label.trim() || item.label.trim().length > 60 || typeof item.url !== 'string' || !/^https:\/\//.test(item.url) || item.url.length > 1000 || typeof item.enabled !== 'boolean') ||
       (avatarUrl && (!/^https:\/\//.test(avatarUrl) || avatarUrl.length > 1000))) return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
   const limited = await socialPostWriteLimit(authId, cfg); if (limited) return limited;
   const brand = await resolveBrand(authId, cfg, 'api/v1/social/smartlink:PUT', { request: req, allowedRoles: ['owner', 'manager', 'editor'] }); if (brand.error) return brand.error;

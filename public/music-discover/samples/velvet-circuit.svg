@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160" role="img" aria-labelledby="title desc">
+  <title id="title">Velvet Circuit artwork</title>
+  <desc id="desc">Original geometric artwork for the Rock sample Velvet Circuit.</desc>
+  <rect width="160" height="160" rx="28" fill="#111114"/>
+  <circle cx="39" cy="73" r="67" fill="#fb7185" opacity=".34"/>
+  <path d="M-12 113 C28 81,58 131,94 93 S142 73,174 91" fill="none" stroke="#fb7185" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="122" cy="38" r="18" fill="#f4f4f5" opacity=".93"/>
+  <text x="122" y="44" fill="#111114" font-family="Arial, sans-serif" font-size="14" font-weight="800" text-anchor="middle">VC</text>
+  <text x="18" y="137" fill="#f4f4f5" font-family="Arial, sans-serif" font-size="10" font-weight="700" letter-spacing="1">ROCK</text>
+</svg>

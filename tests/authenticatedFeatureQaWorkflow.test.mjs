@@ -22,7 +22,10 @@ const runtimeScript = () => {
 test('isolated feature QA gates pull requests and main pushes with read-only permissions', () => {
   assert.match(workflow, /on:\n  pull_request:\n  push:\n    branches: \[main\]/);
   assert.match(workflow, /permissions:\n  contents: read\n/);
-  assert.match(workflow, /isolated-feature-qa:\n    runs-on: ubuntu-latest\n    timeout-minutes: 35/);
+  assert.match(
+    workflow,
+    /isolated-feature-qa:\n(?:    #[^\n]*\n){2}    runs-on: ubuntu-24\.04\n    timeout-minutes: 35/,
+  );
   assert.doesNotMatch(workflow, /pull_request_target|contents: write|actions: write|id-token: write|continue-on-error/);
 });
 test('QA uses existing pinned actions, Node22 and recursive public source checkout without persistent credentials', () => {
@@ -37,9 +40,10 @@ test('QA uses existing pinned actions, Node22 and recursive public source checko
 });
 test('reproducible install, pinned browser and webpack build precede all feature tests', () => {
   const steps = ['npm ci --no-audit --no-fund', 'npm install --no-save --no-audit --no-fund @playwright/test@1.63.0',
-    'npx playwright install --with-deps chromium', 'npm run build -- --webpack', 'name: Exercise all isolated authenticated features'];
+    'npx playwright install chromium', 'npm run build -- --webpack', 'name: Exercise all isolated authenticated features'];
   let previous = -1;
   for (const step of steps) { const index = workflow.indexOf(step); assert.ok(index > previous, `ordered required step: ${step}`); previous = index; }
+  assert.doesNotMatch(workflow, /playwright install --with-deps|apt-get/);
 });
 test('the fixture lifecycle source and its regression tests pass lint before browser acceptance', () => {
   const lint = 'npx eslint e2e/fixtures/authenticated-product.mjs e2e/authenticated-privacy-choices.spec.mjs tests/authenticatedFixtureSafety.test.mjs tests/authenticatedFeatureQaWorkflow.test.mjs --max-warnings=0';

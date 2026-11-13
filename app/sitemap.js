@@ -4,7 +4,6 @@ import { listModelsForDetails, shelfModels } from './veyrnox/_lib/modelPages';
 import { readPublicCatalog } from '../lib/publicCatalog.js';
 import { comparisonSlugs } from '../lib/comparePairs';
 import { PRESETS } from './veyrnox/_lib/templates';
-import { AUDIO_TEMPLATES } from './veyrnox/_lib/audioTemplates';
 import { GUIDES } from './veyrnox/_lib/guides';
 import { oddlingSitemapPaths, oddlingsPublicEnabled } from './veyrnox/_lib/oddlingsPublic';
 import { editorialSeries } from './veyrnox/social-cinema/editorialSeries';
@@ -40,7 +39,6 @@ export default async function sitemap() {
     page('/publish', 'monthly', 0.7),
     page('/presets', 'weekly', 0.7),
     ...PRESETS.map((t) => page(`/presets/${t.id}`, 'monthly', 0.5)),
-    ...AUDIO_TEMPLATES.map((t) => page(`/presets/${t.id}`, 'monthly', 0.4)),
     page('/models', 'weekly', 0.8),
     page('/tools', 'weekly', 0.7),
     page('/guides', 'monthly', 0.6),

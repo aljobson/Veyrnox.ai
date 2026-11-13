@@ -3,6 +3,7 @@ import { useI18n } from '../../../components/I18nProvider';
 import { useAssetUrl } from '../_lib/useAssetUrl';
 import { ScheduleGeneration } from './ScheduleGeneration';
 import { AssetLoadStatus } from './AssetLoadStatus';
+import { CassettePlayer } from './CassettePlayer';
 
 export function JobAssetPreview({ job }) {
   const { t } = useI18n();
@@ -13,8 +14,8 @@ export function JobAssetPreview({ job }) {
       <video src={asset.url} onError={asset.onError} onLoadedData={asset.onLoad} controls autoPlay loop playsInline
         className="absolute inset-0 w-full h-full object-contain bg-black" />
     ) : job.mime_type?.startsWith('audio/') ? (
-      <div className="absolute inset-0 flex items-center justify-center bg-black px-8">
-        <audio src={asset.url} onError={asset.onError} onLoadedData={asset.onLoad} controls autoPlay className="w-full max-w-xl" />
+      <div className="relative flex h-full min-h-[19rem] items-center justify-center bg-black px-8 py-6">
+        <CassettePlayer src={asset.url} onError={asset.onError} onLoadedData={asset.onLoad} autoPlay label={t("app.library.result")} />
       </div>
     ) : (
       <img src={asset.url} onError={asset.onError} onLoad={asset.onLoad} data-testid="generated-result-image" alt={t("app.library.result")}

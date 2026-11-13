@@ -4,10 +4,10 @@ import { carouselAdmission, postCapabilityError } from '../../../../../lib/socia
 import { socialUploadsEnabled } from '../../../../../lib/social/uploadPolicy.js';
 import { rpc, SupabaseError } from '../../../../../packages/db/supabase-client.js';
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../../lib/validate.js';
 const MEDIA_TYPES = new Set(['image', 'video']);
 const BODY_KEYS = new Set(['scheduledAt', 'publishNow', 'text', 'idempotencyKey', 'accountIds', 'media']);
-const isUuid = (value) => typeof value === 'string' && UUID.test(value);
+const isUuid = (value) => typeof value === 'string' && isUuidLoose(value);
 const reply = (authenticated, body, status = 200, error = null) => socialCustomerApiResponse(authenticated, body, status, error);
 
 export async function GET(req) {

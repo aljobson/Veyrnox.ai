@@ -23,7 +23,7 @@ import { presignPutUrl, listObjects, isConfigured as r2IsConfigured, envConfig a
 import { checkDeclared, uploadKeyFor, UPLOAD_URL_TTL_SECONDS, UPLOAD_PREFIX } from '../../../../lib/uploadSource.js';
 import { admissionAvailable } from '../../../../lib/uploadAdmission.js';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../lib/validate.js';
 
 // How many un-swept sources one account may be holding. Sources are consumed
 // within seconds of upload and swept after 24h, so a caller with more than a
@@ -36,7 +36,7 @@ const MAX_PENDING_UPLOADS = 20;
 
 export async function POST(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
-    if (!authId || !UUID_RE.test(authId)) return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
+    if (!authId || !isUuidLoose(authId)) return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
 
     const cfg = envConfig();
     const r2cfg = r2EnvConfig();

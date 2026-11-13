@@ -46,6 +46,7 @@ const BROWSER_CALLABLE = new Set([
     'private.editor_render_available(uuid,uuid,text)',
     'public.remove_editor_library_render(uuid)',
     'private.remove_editor_library_render(uuid)',
+    'private.music_owns_user(uuid)',            // 0457: authenticated, RLS-only Music ownership helper
     // 0280: authenticated, RLS-scoped brand/review invokers and their private operations.
     'public.read_editor_brand_kit(uuid)',
     'public.save_editor_brand_kit(uuid,integer,jsonb,text)',

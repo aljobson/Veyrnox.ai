@@ -20,7 +20,7 @@ import { jobReadLimitResponse } from '../../../../lib/jobReadLimit.js';
 import { rpc, envConfig } from '../../../../packages/db/supabase-client.js';
 import { jobCursorTimestamp } from '../../../../lib/jobListCursor.js';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../lib/validate.js';
 const PUBLIC_ERROR_RE = /^[a-z0-9_]{1,64}$/;
 const DEFAULT_LIMIT = 24;
 const MAX_LIMIT = 50;
@@ -71,7 +71,7 @@ export async function GET(req) {
     try { if (before !== null) before = jobCursorTimestamp(before); } catch {
         return NextResponse.json({ error: 'invalid_cursor' }, { status: 400 });
     }
-    if (before !== null && !UUID_RE.test(beforeId)) {
+    if (before !== null && !isUuidLoose(beforeId)) {
         return NextResponse.json({ error: 'invalid_cursor' }, { status: 400 });
     }
 

@@ -26,6 +26,8 @@ export interface CatalogModel {
             readonly audioIncluded?: boolean;
         };
         readonly inputs?: Record<string, unknown>;
+        // Output tiers beyond the catalog price: the base tier and each tier's price multiplier (server-owned).
+        readonly resolutionTiers?: { readonly base: string; readonly options: readonly { readonly id: string; readonly multiplier: number }[] };
         readonly media?: Record<string, { readonly required?: boolean; readonly label?: string; readonly maxFiles?: number; readonly maxSeconds?: number; readonly minSeconds?: number; readonly minSide?: number; readonly maxSide?: number; readonly maxPixels?: number }>;
         // Present on stem-splitting models (six labelled files from one audio file). The server marks the model
         // gated in the catalog while its flag is off, so the gated check already hides it.
@@ -71,9 +73,11 @@ const UNIT_SECONDS = 5;
 
 // Display estimate only. Create sends its net per-item ceiling separately;
 // the server prices from the catalog and rejects any excess.
-export function estimateCredits(model: CatalogModel, durationSeconds: number | null): number {
+export function estimateCredits(model: CatalogModel, durationSeconds: number | null, tier: string | null = null): number {
     const seconds = kindOf(model.modality) === 'video' ? durationSeconds ?? model.durations[0] ?? UNIT_SECONDS : UNIT_SECONDS;
-    return model.credits * Math.ceil(seconds / UNIT_SECONDS);
+    const multiplier = model.capabilities?.resolutionTiers?.options.find((o) => o.id === tier)?.multiplier ?? 1;
+    const unit = Math.max(model.credits, Math.ceil(model.credits * multiplier - 1e-9));
+    return unit * Math.ceil(seconds / UNIT_SECONDS);
 }
 
 const KNOWN_SLOTS = ['image', 'endImage', 'video', 'audio'];
@@ -121,7 +125,19 @@ export async function fetchCatalog(): Promise<CatalogModel[]> {
     return (await fetchAllCatalog()).filter(isSupported);
 }
 
-export async function fetchAllCatalog(): Promise<CatalogModel[]> {
+// Screens that mount together (a tab and the sheet over it) each ask for the catalog. Calls that overlap share one
+// request; nothing is kept once it settles, so the next call reads fresh data.
+let catalogInFlight: Promise<CatalogModel[]> | null = null;
+
+export function fetchAllCatalog(): Promise<CatalogModel[]> {
+    if (!catalogInFlight) {
+        const request = requestCatalog().finally(() => { if (catalogInFlight === request) catalogInFlight = null; });
+        catalogInFlight = request;
+    }
+    return catalogInFlight;
+}
+
+async function requestCatalog(): Promise<CatalogModel[]> {
     let res: Response;
     try {
         res = await fetch(`${API_BASE}/api/catalog`);

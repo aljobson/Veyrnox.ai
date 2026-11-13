@@ -4,11 +4,11 @@ import { checkinEnabled } from '../../../../lib/checkin.js';
 import { accountReadLimit } from '../../../../lib/accountReadLimit.js';
 import { limitRequestBody } from '../../../../lib/requestBodyLimit.js';
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../lib/validate.js';
 const json = (body, status = 200) => NextResponse.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
 async function handle(req, claim) {
     const authId = req.headers.get('x-veyrnox-auth-id');
-    if (!authId || !UUID.test(authId)) return json({ error: 'not_authenticated' }, 401);
+    if (!authId || !isUuidLoose(authId)) return json({ error: 'not_authenticated' }, 401);
     if (!checkinEnabled(process.env)) return json({ error: 'not_found' }, 404);
     if (claim) {
         const limited = await limitRequestBody(req);

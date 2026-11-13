@@ -25,7 +25,7 @@ import { accountDeletionEnabled, deleteAuthUser } from '../../../../lib/accountD
 
 import { ageConfirmationEnabled } from '../../../../lib/minimumAge.js';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../lib/validate.js';
 
 // Rolling deploy: the disabled feature must not break account reads before 0425.
 async function accountProfile(authId, cfg) {
@@ -47,7 +47,7 @@ async function accountProfile(authId, cfg) {
 export async function GET(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
     // A missing or malformed sub is an unauthenticated caller, not a 500.
-    if (!authId || !UUID_RE.test(authId)) {
+    if (!authId || !isUuidLoose(authId)) {
         return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
     }
     const authEmail = req.headers.get('x-veyrnox-auth-email');
@@ -136,7 +136,7 @@ export async function GET(req) {
 export async function DELETE(req) {
     const noStore = { 'Cache-Control': 'no-store' };
     const authId = req.headers.get('x-veyrnox-auth-id');
-    if (!authId || !UUID_RE.test(authId)) return NextResponse.json({ error: 'not_authenticated' }, { status: 401, headers: noStore });
+    if (!authId || !isUuidLoose(authId)) return NextResponse.json({ error: 'not_authenticated' }, { status: 401, headers: noStore });
     if (!accountDeletionEnabled()) return NextResponse.json({ error: 'not_found' }, { status: 404, headers: noStore });
     const cfg = envConfig();
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey) return NextResponse.json({ error: 'gateway_not_configured' }, { status: 503, headers: noStore });

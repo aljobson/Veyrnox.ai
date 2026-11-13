@@ -38,3 +38,16 @@ test('with no runnable model the picker says so instead of listing templates', (
   assert.match(html, /No templates match\./);
   assert.doesNotMatch(html, /data-testid="create-template-(?!picker")/);
 });
+
+const renderPicker = (props) => renderToStaticMarkup(createElement(module.exports.TemplatePicker, { onPick() {}, onClose() {}, ...props }));
+
+test('the picker lists video templates only; audio samples live in Music Discover', () => {
+  const html = renderPicker({ models, goal: 'video' });
+  assert.doesNotMatch(html, /data-testid="create-kind-/);
+  assert.doesNotMatch(html, /data-testid="create-template-audio-/);
+});
+
+test('create no longer wires audio templates', () => {
+  const page = read('app/veyrnox/app/create/page.js');
+  assert.doesNotMatch(page, /applyAudioTemplate|onPickAudio/);
+});

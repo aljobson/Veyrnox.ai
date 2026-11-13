@@ -16,14 +16,6 @@ const rate = (pack) => pack.price_usd_cents / 100 / pack.credits;
 // marker and the ticker takes its place.
 const SLOT = '\u0000';
 
-function Tick() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 16 16" className="mt-[3px] h-3.5 w-3.5 shrink-0 text-vx-accent" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="m3 8.5 3.2 3.2L13 4.5" />
-    </svg>
-  );
-}
-
 /**
  * @param {{ packs: Array<{ id: string, credits: number, price_usd_cents: number }>,
  *           typical: null | { image: number | null, video: number | null } }} props
@@ -50,15 +42,16 @@ export function PricingCards({ packs, typical }) {
           const clips = typical?.video ? Math.floor(pack.credits / typical.video) : null;
           return (
             <li key={pack.id} data-pack={pack.id} className="flex">
-              <div className={`flex w-full flex-col rounded-2xl border bg-vx-panel p-6 ${best ? 'border-vx-accent/70 shadow-[0_24px_60px_-28px_rgb(var(--vx-accent)/0.55)]' : 'border-vx-border'}`}>
-                {/* The top row keeps its height with or without the pill, so
-                    the credit boxes line up across the row. */}
-                <div className="flex h-6 items-center justify-between gap-3 font-vx-mono text-[11px] font-bold">
+              <div className={`flex w-full flex-col rounded-xl border bg-vx-panel p-6 ${best ? 'border-vx-accent' : 'border-vx-border'}`}>
+                {/* The top row keeps its height with or without the marker, so
+                    the credit lines align across the row. The best-value pack
+                    is marked by its border and a line of text, not a glow. */}
+                <div className="flex h-6 items-center justify-between gap-3 font-vx-mono text-[12px]">
                   <span className="text-vx-fg-muted">{t('pricing.cards.once')}</span>
-                  {best && <span className="shrink-0 rounded-full bg-vx-accent px-2.5 py-1 text-vx-accent-ink">{t('pricing.packs.best')}</span>}
+                  {best && <span className="shrink-0 font-bold text-vx-accent">{t('pricing.packs.best')}</span>}
                 </div>
 
-                <div className="mt-4 rounded-2xl border border-vx-accent/40 bg-vx-accent/[0.06] p-4">
+                <div className="mt-4">
                   <div className="font-vx-mono text-[24px] font-bold leading-tight text-vx-money vx-num">
                     {t('pricing.cards.credits', { credits: SLOT }).split(SLOT).flatMap((part, i, all) => (
                       i < all.length - 1 ? [part, <NumberTicker key={i} value={pack.credits} locale={tag} />] : [part]
@@ -80,14 +73,14 @@ export function PricingCards({ packs, typical }) {
 
                 <Link
                   href="/app/credits"
-                  className={`vx-press mt-6 block rounded-full px-6 py-3.5 text-center text-[14px] font-extrabold uppercase tracking-[0.08em] ${best ? 'bg-vx-accent text-vx-accent-ink hover:bg-vx-accent-hover' : 'bg-vx-fg text-vx-base hover:bg-vx-fg/85'}`}
+                  className={`vx-press mt-6 block rounded-full px-6 py-3.5 text-center text-[15px] font-extrabold ${best ? 'bg-vx-accent text-vx-accent-ink hover:bg-vx-accent-hover' : 'bg-vx-fg text-vx-base hover:bg-vx-fg/85'}`}
                 >
                   {t('pricing.packs.buy')}
                 </Link>
 
-                <ul className="mt-6 space-y-2.5 border-t border-vx-border pt-5 text-[14px] text-vx-fg-body">
-                  <li className="flex items-start gap-2"><Tick />{t('pricing.cards.never')}</li>
-                  <li className="flex items-start gap-2"><Tick />{t('pricing.cards.refund')}</li>
+                <ul className="mt-7 space-y-2 text-[14px] text-vx-fg-body">
+                  <li>{t('pricing.cards.never')}</li>
+                  <li>{t('pricing.cards.refund')}</li>
                 </ul>
               </div>
             </li>

@@ -100,7 +100,7 @@ export function Plans({ plans, packs, selected, onSelect, publicOnly = false, in
           ))}
         </div>
       )}
-      <ul className="mt-[4.5rem] grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <ul className="mt-[4.5rem] grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {shown.map((p) => {
           // A yearly plan holds a month of credits: its rate per credit is the yearly price over twelve months.
           const saving = subscriptionSavingPercent(p.billing_interval === 'year' ? { ...p, credits: p.credits * 12 } : p, packs);
@@ -109,12 +109,12 @@ export function Plans({ plans, packs, selected, onSelect, publicOnly = false, in
           return <li key={p.id} className="relative rounded-xl border border-vx-border p-5">
             {!publicOnly && selected === p.id && <VeyCardPeek />}
             {saving && (
-              <p className="mb-2 font-vx-mono text-[10px] font-bold uppercase tracking-[0.1em] text-vx-accent">
+              <p className="mb-2 font-vx-mono text-[12px] font-bold text-vx-accent">
                 {t('pricing.subs.saving', { pct: saving })}
               </p>
             )}
             <h3 className="text-xl font-bold">{planName}</h3>
-            <p className="mt-1 text-xs font-bold uppercase tracking-widest text-vx-accent">
+            <p className="mt-1 text-sm font-bold text-vx-accent">
               {tOr(t, `cinema.pass.${p.billing_interval}ly`, p.billing_interval)}
             </p>
             <p className="mt-3 font-vx-mono text-2xl">

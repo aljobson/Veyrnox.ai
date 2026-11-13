@@ -367,6 +367,13 @@ const hi = {
     'presets.fidelity.photoReady': 'फ़ोटो तैयार है',
     'presets.use.photoReplace': 'बदलें',
     'presets.fidelity.photosUnavailable': 'इस टेम्पलेट को मॉडल की मौजूदा सीमा से ज़्यादा फ़ोटो चाहिए। दूसरा टेम्पलेट चुनें या बाद में फिर कोशिश करें।',
+    'templates.kind.label': 'टेम्पलेट प्रकार',
+    'templates.kind.video': 'वीडियो',
+    'templates.kind.audio': 'ऑडियो',
+    'audioTemplates.all': 'सभी',
+    'audioTemplates.cat.MUSIC': 'संगीत',
+    'audioTemplates.cat.VOICE-OVER': 'वॉइस-ओवर',
+    'audioTemplates.cat.SOUND FX': 'साउंड इफ़ेक्ट',
 } as const;
 
 export default hi;

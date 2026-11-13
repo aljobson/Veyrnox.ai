@@ -1,4 +1,5 @@
 'use client';
+import { PromptBox } from './PromptBox';
 import { sourceList, publicSlotMax, editSlotSource, moveSlotSource, generationSlotKind, generationMimeTypes } from '../../../lib/generationSourceSlots.mjs';
 
 import Link from 'next/link';
@@ -172,7 +173,7 @@ export default function CreativeFeatureStudio({ feature }) {
             <div><p className="font-vx-mono text-[10px] font-bold uppercase tracking-[0.14em] text-vx-accent">{t('app.features.brief')}</p><h2 className="mt-1 text-xl font-black">{copy.input}</h2></div>
             <span className="font-vx-mono text-[10px] text-vx-fg-faint">{brief.length}/1000</span>
           </div>
-          <textarea disabled={feature.blocked} value={brief} maxLength={1000} rows={7} onChange={(event) => { setBrief(event.target.value); setError(''); }} placeholder={copy.placeholder} aria-label={copy.input} className="mt-4 w-full resize-y rounded-xl border border-vx-field bg-vx-base px-4 py-3 text-sm text-vx-fg placeholder:text-vx-fg-faint focus:border-vx-accent focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-55" />
+          <PromptBox enhance disabled={feature.blocked} value={brief} maxLength={1000} rows={7} onChange={(event) => { setBrief(event.target.value); setError(''); }} placeholder={copy.placeholder} aria-label={copy.input} />
         </section>
 
         <section className={`${card} p-5 sm:p-6`}>

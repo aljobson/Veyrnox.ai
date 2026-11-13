@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Abstract amber cassette glow">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#451a03"/><stop offset=".52" stop-color="#d97706"/><stop offset="1" stop-color="#fde68a"/></linearGradient></defs>
+  <rect width="512" height="512" fill="url(#g)"/><circle cx="100" cy="108" r="116" fill="#fff7ed" opacity=".22"/><rect x="86" y="168" width="340" height="214" rx="34" fill="#1c1917" opacity=".72"/><circle cx="183" cy="272" r="57" fill="none" stroke="#fde68a" stroke-width="19"/><circle cx="329" cy="272" r="57" fill="none" stroke="#fde68a" stroke-width="19"/><path d="M160 357h192l-25-45H185z" fill="#fff7ed" opacity=".78"/>
+</svg>

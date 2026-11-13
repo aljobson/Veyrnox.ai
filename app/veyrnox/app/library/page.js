@@ -28,7 +28,7 @@ import { DeviceLibrary } from '../../_components/DeviceLibrary';
 import { EditorLibraryRenders } from '../../_components/editor/EditorLibraryRenders';
 import { getSession, getStoredUserId, onSessionChange } from '../../../lib/authClient.js';
 import { useOlderLibraryJobs } from '../../_lib/useOlderLibraryJobs';
-import { useSmartCutIntent } from '../../_lib/useSmartCutIntent';
+import { markSmartCutIntent, useSmartCutIntent } from '../../_lib/useSmartCutIntent';
 const LibraryJobCard = dynamic(() => import('../../_components/LibraryJobCard').then((module) => module.LibraryJobCard), { ssr: false });
 // Account list is authoritative; local history supplies cached display names.
 const STATE_UI = {
@@ -348,7 +348,7 @@ export default function Library() {
           <div className={view === 'list' ? 'grid grid-cols-1 gap-3 max-w-[760px]' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'}>
             {list.map((r) => (
               <LibraryJobCard key={r.job_id} row={r} models={models} starred={favourites.includes(r.job_id)} onStar={() => star(r.job_id)}
-                selectable={canSelect(r)} selected={selected.includes(r.job_id)} onToggle={() => toggle(r.job_id)} />
+                selectable={canSelect(r)} selected={selected.includes(r.job_id)} onToggle={() => toggle(r.job_id)} onSmartCut={() => { setSelected([r.job_id]); markSmartCutIntent(); setEditing(true); }} />
             ))}
           </div>
         )}

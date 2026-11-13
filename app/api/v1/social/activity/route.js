@@ -5,12 +5,12 @@ import { resolveBrand } from '../../../../../lib/social/resolveBrand.js';
 import { decodeActivityCursor } from '../../../../../lib/social/activityCursor.js';
 import { envConfig, rpc, SupabaseError } from '../../../../../packages/db/supabase-client.js';
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../../lib/validate.js';
 const headers = { 'Cache-Control': 'no-store' };
 
 export async function GET(req) {
   const authId = req.headers.get('x-veyrnox-auth-id');
-  if (!UUID.test(authId || '')) return NextResponse.json({ error: 'not_authenticated' }, { status: 401, headers });
+  if (!isUuidLoose(authId || '')) return NextResponse.json({ error: 'not_authenticated' }, { status: 401, headers });
   if (!socialTeamsEnabled()) return NextResponse.json({ error: 'teams_not_open' }, { status: 404, headers });
   const cfg = envConfig();
   if (!cfg.supabaseUrl || !cfg.serviceRoleKey) return NextResponse.json({ error: 'supabase_not_configured' }, { status: 503, headers });

@@ -28,6 +28,12 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
+  // Keep the Music browser suite isolated from an owner's active preview.
+  distDir: process.env.VEYRNOX_E2E_ISOLATED === 'true' ? '.next-music-e2e' : '.next',
+  allowedDevOrigins: process.env.VEYRNOX_E2E_ISOLATED === 'true' ? ['127.0.0.1'] : [],
+  // The development status badge sits over the mobile storage notice. Runtime
+  // and compilation errors remain visible when only the badge is disabled.
+  devIndicators: process.env.VEYRNOX_E2E_ISOLATED === 'true' ? false : undefined,
   deploymentId,
   poweredByHeader: false,
   images: {
@@ -46,7 +52,9 @@ const nextConfig = {
     // Public, like the anon key. Empty = no widget and no token sent, which is
     // the pre-CAPTCHA behaviour. Never empty this while Supabase CAPTCHA is on:
     // every email/password sign-in would fail (ADR-0026).
-    NEXT_PUBLIC_TURNSTILE_SITE_KEY: '0x4AAAAAAE-nahDRUDwD5HEx',
+    NEXT_PUBLIC_TURNSTILE_SITE_KEY: process.env.VEYRNOX_E2E_ISOLATED === 'true'
+      ? ''
+      : '0x4AAAAAAE-nahDRUDwD5HEx',
     // Public PostHog project token. Empty keeps analytics, replay, consent UI,
     // proxying and error delivery completely dormant.
     NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY || '',
@@ -65,6 +73,11 @@ const nextConfig = {
         // Voiceover recording is available only inside the editor. Keep the
         // default site-wide microphone denial and override it for this route.
         source: '/app/editor/:path*',
+        headers: [{ key: 'Permissions-Policy', value: 'camera=(), microphone=(self), geolocation=()' }],
+      },
+      {
+        // Music Studio requests microphone access only after explicit record intent.
+        source: '/app/music/studio/:path*',
         headers: [{ key: 'Permissions-Policy', value: 'camera=(), microphone=(self), geolocation=()' }],
       },
       {
@@ -94,6 +107,8 @@ const nextConfig = {
       { source: '/presets/seedance-:platform(higgs|syntx)-:rest([a-z0-9-]+)', destination: '/presets/seedance-:rest', permanent: true },
       { source: '/:locale([a-z][a-z])/presets/seedance-:platform(higgs|syntx)-:rest([a-z0-9-]+)', destination: '/:locale/presets/seedance-:rest', permanent: true },
       { source: '/veyrnox', destination: '/', permanent: true },
+      { source: '/veyrnox/music', destination: '/music', permanent: true },
+      { source: '/veyrnox/music/:path*', destination: '/music/:path*', permanent: true },
       { source: '/cinema', destination: '/social-cinema', permanent: false },
       { source: '/veyrnox/social-cinema', destination: '/social-cinema', permanent: true },
       { source: '/veyrnox/social-cinema/creator', destination: '/social-cinema/creator', permanent: true },
@@ -118,12 +133,15 @@ const nextConfig = {
       { source: '/veyrnox/app/:path*', destination: '/app/:path*', permanent: true },
       { source: '/veyrnox/m', destination: '/m', permanent: true },
       { source: '/veyrnox/m/:path*', destination: '/m/:path*', permanent: true },
+      { source: '/veyrnox/listen/:path*', destination: '/listen/:path*', permanent: true },
     ];
   },
   async rewrites() {
     return {
       beforeFiles: [
         { source: '/', destination: '/veyrnox' },
+        { source: '/music', destination: '/veyrnox/music' },
+        { source: '/music/:path*', destination: '/veyrnox/music/:path*' },
         { source: '/social-cinema', destination: '/veyrnox/social-cinema' },
         { source: '/social-cinema/creator', destination: '/veyrnox/social-cinema/creator' },
         // Cinema Pass (ADR-0057) and the viewer pages (ADR-0059).
@@ -155,6 +173,7 @@ const nextConfig = {
         { source: '/app/:path*', destination: '/veyrnox/app/:path*' },
         { source: '/m', destination: '/veyrnox/m' },
         { source: '/m/:path*', destination: '/veyrnox/m/:path*' },
+        { source: '/listen/:path*', destination: '/veyrnox/listen/:path*' },
       ],
     };
   },
@@ -166,7 +185,9 @@ const postHogSourceMapsEnabled = Boolean(
   && process.env.POSTHOG_PROJECT_ID
 );
 
-const reticleConfig = withReticle(nextConfig);
+const reticleConfig = process.env.VEYRNOX_E2E_ISOLATED === 'true'
+  ? nextConfig
+  : withReticle(nextConfig);
 const postHogConfig = {
   personalApiKey: process.env.POSTHOG_PERSONAL_API_KEY || '',
   projectId: process.env.POSTHOG_PROJECT_ID,

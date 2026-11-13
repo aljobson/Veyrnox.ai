@@ -363,5 +363,12 @@
   "presets.fidelity.photosRequired",
   "presets.fidelity.photoReady",
   "presets.use.photoReplace",
-  "presets.fidelity.photosUnavailable"
+  "presets.fidelity.photosUnavailable",
+  "templates.kind.label",
+  "templates.kind.video",
+  "templates.kind.audio",
+  "audioTemplates.all",
+  "audioTemplates.cat.MUSIC",
+  "audioTemplates.cat.VOICE-OVER",
+  "audioTemplates.cat.SOUND FX"
 ]

@@ -9,15 +9,15 @@ import { NextResponse } from 'next/server';
 import { rpc, envConfig } from '../../../../../../packages/db/supabase-client.js';
 import { limitRequestBody } from '../../../../../../lib/requestBodyLimit.js';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isUuidLoose } from '../../../../../../lib/validate.js';
 const SESSION_ID_RE = /^cs_[A-Za-z0-9_]{1,251}$/;
 
 export async function POST(req, { params }) {
     const authId = req.headers.get('x-veyrnox-auth-id');
-    if (!authId || !UUID_RE.test(authId)) return NextResponse.json({ error: 'not-authenticated' }, { status: 401 });
+    if (!authId || !isUuidLoose(authId)) return NextResponse.json({ error: 'not-authenticated' }, { status: 401 });
 
     const { id } = await params;
-    if (!id || !UUID_RE.test(id)) return NextResponse.json({ error: 'invalid-top-up-id' }, { status: 400 });
+    if (!id || !isUuidLoose(id)) return NextResponse.json({ error: 'invalid-top-up-id' }, { status: 400 });
 
     if (new URL(req.url).searchParams.size) return NextResponse.json({ error: 'invalid-request' }, { status: 400 });
     if (req.headers.get('content-type')?.split(';')[0].trim() !== 'application/json') {

@@ -1,5 +1,7 @@
 'use client';
 
+import { ChipSelect } from './ChipSelect';
+import { PromptBox } from './PromptBox';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '../../../components/I18nProvider';
@@ -23,22 +25,6 @@ import {
 
 const card = 'rounded-2xl border border-vx-border bg-vx-panel';
 const field = 'w-full rounded-xl border border-vx-field bg-vx-base px-4 py-3 text-sm text-vx-fg placeholder:text-vx-fg-faint focus:border-vx-accent focus:outline-hidden';
-
-function ChoiceCards({ label, value, options, onChange }) {
-  return (
-    <fieldset>
-      <legend className="font-vx-mono text-[10px] font-bold uppercase tracking-[0.14em] text-vx-fg-muted">{label}</legend>
-      <div className="mt-2 grid gap-2 sm:grid-cols-2">
-        {options.map((option) => (
-          <button key={option.id} type="button" aria-pressed={value === option.id} onClick={() => onChange(option.id)} className="rounded-xl border border-vx-border p-3 text-left transition-colors hover:border-vx-accent aria-pressed:border-vx-accent aria-pressed:bg-vx-accent/[0.07]">
-            <span className="block text-xs font-black">{option.label}</span>
-            {option.description && <span className="mt-1 block text-[10px] leading-4 text-vx-fg-muted">{option.description}</span>}
-          </button>
-        ))}
-      </div>
-    </fieldset>
-  );
-}
 
 export default function FacelessReelStudio() {
   const router = useRouter();
@@ -99,23 +85,19 @@ export default function FacelessReelStudio() {
           <div className="space-y-6">
             <section className={`${card} p-4 sm:p-5`}>
               <div className="flex items-start justify-between gap-4"><div><p className="font-vx-mono text-[10px] font-bold tracking-[0.14em] text-vx-accent">{t('app.facelessReel.step1')}</p><h2 className="mt-1 text-lg font-black">{t('app.facelessReel.storyBrief')}</h2></div><span aria-live="polite" className={`font-vx-mono text-[11px] ${promptLong ? 'text-vx-danger' : 'text-vx-fg-faint'}`}>{t('app.facelessReel.counter', { n: used, room })}{promptLong && ` · ${t('app.facelessReel.over', { over: used - room })}`}</span></div>
-              <textarea aria-label={t('app.facelessReel.briefLabel')} value={topic} maxLength={800} rows={6} onChange={(event) => { setTopic(event.target.value); setError(''); }} placeholder={t('app.facelessReel.briefPlaceholder')} className={`${field} mt-4 resize-y`} />
+              <PromptBox enhance aria-label={t('app.facelessReel.briefLabel')} value={topic} maxLength={800} rows={6} onChange={(event) => { setTopic(event.target.value); setError(''); }} placeholder={t('app.facelessReel.briefPlaceholder')}>
+                <ChipSelect aria-label={t('app.facelessReel.platformLabel')} options={platformOptions.map((item) => item.id)} value={platform} onChange={setPlatform}
+                  formatOption={(id) => { const item = platformOptions.find((o) => o.id === id); return `${item.label} · ${item.aspect}`; }} formatValue={(id) => platformOptions.find((o) => o.id === id)?.label} />
+                <ChipSelect aria-label={t('app.facelessReel.duration')} options={[5, 10]} value={duration} onChange={(seconds) => { setDuration(seconds); if (seconds > 8) setSound(false); }} formatOption={(seconds) => `${seconds}s`} />
+                <ChipSelect aria-label={t('app.facelessReel.formatLabel')} options={formatOptions.map((item) => item.id)} value={format} onChange={setFormat} formatOption={(id) => formatOptions.find((o) => o.id === id)?.label} />
+                <ChipSelect aria-label={t('app.facelessReel.pacingLabel')} options={pacingOptions.map((item) => item.id)} value={pacing} onChange={setPacing} formatOption={(id) => pacingOptions.find((o) => o.id === id)?.label} />
+              </PromptBox>
               <label className="mt-4 block text-xs font-bold text-vx-fg-body">{t('app.facelessReel.hookLabel')}<input aria-label={t('app.facelessReel.hookAria')} value={hook} maxLength={160} onChange={(event) => setHook(event.target.value)} placeholder={t('app.facelessReel.hookPlaceholder')} className={`${field} mt-2 font-normal`} /></label>
               <p className="mt-2 text-[11px] leading-4 text-vx-fg-faint">{t('app.facelessReel.hookHelp')}</p>
             </section>
 
-            <section className={`${card} p-4 sm:p-5`}>
-              <p className="font-vx-mono text-[10px] font-bold tracking-[0.14em] text-vx-accent">{t('app.facelessReel.step2')}</p><h2 className="mt-1 text-lg font-black">{t('app.facelessReel.visualStructure')}</h2>
-              <div className="mt-5"><ChoiceCards label={t('app.facelessReel.formatLabel')} value={format} options={formatOptions} onChange={setFormat} /></div>
-              <div className="mt-6"><ChoiceCards label={t('app.facelessReel.pacingLabel')} value={pacing} options={pacingOptions} onChange={setPacing} /></div>
-            </section>
-
             <section className={`${card} space-y-6 p-4 sm:p-5`}>
-              <div><p className="font-vx-mono text-[10px] font-bold tracking-[0.14em] text-vx-accent">{t('app.facelessReel.step3')}</p><h2 className="mt-1 text-lg font-black">{t('app.facelessReel.delivery')}</h2></div>
-              <div className="grid gap-2 sm:grid-cols-3" role="group" aria-label={t('app.facelessReel.platformLabel')}>
-                {platformOptions.map((item) => <button key={item.id} type="button" aria-pressed={platform === item.id} onClick={() => setPlatform(item.id)} className="rounded-xl border border-vx-border p-3 text-left transition-colors hover:border-vx-accent aria-pressed:border-vx-accent aria-pressed:bg-vx-accent/[0.07]"><span className="block text-xs font-black">{item.label}</span><span className="mt-1 block font-vx-mono text-[10px] text-vx-fg-muted">{item.aspect}</span></button>)}
-              </div>
-              <fieldset><legend className="font-vx-mono text-[10px] font-bold uppercase tracking-[0.14em] text-vx-fg-muted">{t('app.facelessReel.duration')}</legend><div className="mt-2 flex gap-2">{[5, 10].map((seconds) => <button key={seconds} type="button" aria-pressed={duration === seconds} onClick={() => { setDuration(seconds); if (seconds > 8) setSound(false); }} className="min-h-10 rounded-full border border-vx-border px-5 text-xs font-black hover:border-vx-accent aria-pressed:border-vx-accent aria-pressed:bg-vx-accent/[0.08]">{seconds}s</button>)}</div></fieldset>
+              <div><p className="font-vx-mono text-[10px] font-bold tracking-[0.14em] text-vx-accent">{t('app.facelessReel.step2')}</p><h2 className="mt-1 text-lg font-black">{t('app.facelessReel.delivery')}</h2></div>
               <label className="flex cursor-pointer items-start justify-between gap-4 rounded-xl border border-vx-border bg-vx-base p-4"><span><strong className="block text-sm">{t('app.facelessReel.soundTitle')}</strong><span className="mt-1 block text-[11px] leading-4 text-vx-fg-muted">{t('app.facelessReel.soundHelp')}</span></span><input aria-label={t('app.facelessReel.soundTitle')} type="checkbox" checked={sound} disabled={duration > 8} onChange={(event) => setSound(event.target.checked)} className="mt-1 h-4 w-4 accent-[var(--vx-accent)] disabled:opacity-40"/></label>
             </section>
           </div>

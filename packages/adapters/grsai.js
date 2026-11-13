@@ -61,6 +61,12 @@ async function request(path, body, { apiKey, timeoutMs = 15000 }) {
         }
         const payload = await readJson(res);
         if (payload?.code !== 0 || !payload.data || typeof payload.data !== 'object') {
+            // GrsAI answers an empty balance as HTTP 200, code -1, "insufficient credits". It was refused before it was
+            // accepted, so it is a payment refusal like kie's 402 and may be routed around. The message is only matched,
+            // never kept, logged or returned.
+            if (payload?.code !== 0 && /insufficient credits?/i.test(String(payload?.msg ?? '').slice(0, 200))) {
+                return { ok: false, error: 'provider_payment_required', outcome: 'rejected' };
+            }
             return { ok: false, error: 'provider_request_rejected', outcome: 'rejected' };
         }
         return { ok: true, data: payload.data };

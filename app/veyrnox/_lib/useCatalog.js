@@ -21,12 +21,14 @@ export function fromFallback() {
     presentation: capabilities?.presentation || {},
     durationInput: inputs.duration || null,
     resolutions: inputs.output_resolution?.values || [],
+    resolutionTiers: capabilities?.resolutionTiers || null,
     audioOptions: inputs.audio_enabled?.values || [],
     takesTopic: !!inputs.topic,
     isEdit: !!inputs.clips,
     takesPlan: !!inputs.plan_id,
     takesSeed: !!inputs.seed,
     takesNegative: !!inputs.negative_prompt,
+    takesLoop: inputs.loop?.type === 'bool',
     negativeMax: inputs.negative_prompt?.max,
     takesVoice: !!inputs.voice_description,
     takesPrompt: !!inputs.prompt,
@@ -51,6 +53,7 @@ export function fromApi(models) {
     presentation: m.capabilities?.presentation || {},
     durationInput: m.capabilities?.inputs?.duration || null,
     resolutions: m.capabilities?.inputs?.output_resolution?.values || [],
+    resolutionTiers: m.capabilities?.resolutionTiers || null,
     audioOptions: m.capabilities?.inputs?.audio_enabled?.values || [],
     // Auto Short (ADR-0029): takes a topic instead of a prompt.
     takesTopic: !!m.capabilities?.inputs?.topic,
@@ -61,6 +64,7 @@ export function fromApi(models) {
     // Optional settings the gateway accepts for this model.
     takesSeed: !!m.capabilities?.inputs?.seed,
     takesNegative: !!m.capabilities?.inputs?.negative_prompt,
+    takesLoop: m.capabilities?.inputs?.loop?.type === 'bool',
     negativeMax: m.capabilities?.inputs?.negative_prompt?.max,
     // Speech in a voice the user describes in words; the description is required.
     takesVoice: !!m.capabilities?.inputs?.voice_description,

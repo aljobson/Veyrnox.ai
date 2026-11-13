@@ -1,3 +1,4 @@
+import * as validation from '../lib/validate.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -38,11 +39,15 @@ function harness(kind, search = '', gateway) {
     return { violations: [] };
   };
   const page = compile(`app/veyrnox/app/admin/${kind}/page.js`, id => {
+    if (id.endsWith('/validate.js')) return validation;
     if (id === 'react') return hooks;
     if (id === 'react/jsx-runtime') return require(id);
     if (id === 'next/navigation') return { useSearchParams: () => new URLSearchParams(currentSearch) };
     if (id === 'next/link') return 'a';
-    if (id.endsWith('/adminUserHandoff')) return compile('app/veyrnox/_lib/adminUserHandoff.js', () => assert.fail('pure helper must have no imports'));
+    if (id.endsWith('/adminUserHandoff')) return compile('app/veyrnox/_lib/adminUserHandoff.js', dependency => {
+      assert.ok(dependency.endsWith('/validate.js'), 'handoff only imports the pure validator');
+      return validation;
+    });
     return new Proxy({}, { get: (_, key) => key === 'gatewayFetch' ? fetch : String(key) });
   });
   const wrapper = nodes(page.default()).find(node => typeof node.type === 'function' && ['AccountHandoff', 'ViolationsHandoff'].includes(node.type.name));

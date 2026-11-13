@@ -10,20 +10,23 @@ const SUPABASE_HOST = 'https://xdxdzmsztyzbnzeforxx.supabase.co';
 const TURNSTILE_HOST = 'https://challenges.cloudflare.com';
 const YOUTUBE_PLAYER_HOST = 'https://www.youtube-nocookie.com';
 const YOUTUBE_IMAGE_HOST = 'https://i.ytimg.com';
+const SOUNDCLOUD_PLAYER_HOST = 'https://w.soundcloud.com';
+const SOUNDCLOUD_IMAGE_HOST = 'https://i1.sndcdn.com';
 const LIPSYNC_REFERENCE_MEDIA_HOST = 'https://cdn.lipsync.video';
 const MIN_HSTS_AGE = 63072000;
 
 async function headerMap() {
     const groups = await nextConfig.headers();
-    assert.equal(groups.length, 5, 'global hardening, editor microphone policy, API CSP and the two exact inference Workers are separate');
+    assert.equal(groups.length, 6, 'global hardening, two microphone policies, API CSP and the two exact inference Workers are separate');
     assert.equal(groups[0].source, '/:path*');
     assert.equal(groups[1].source, '/app/editor/:path*');
-    assert.equal(groups[2].source, '/api/:path*');
-    assert.equal(groups[3].source,LOCAL_SPEECH_WORKER_URL);
-    assert.deepEqual(groups[3].headers,[{key:'Content-Security-Policy',value:localSpeechWorkerPolicy('https://veyrnox.ai')}]);
-    assert.equal(groups[4].source,`${EDITOR_VISION_PATH}/worker.mjs`);
-    assert.deepEqual(groups[4].headers,[{key:'Content-Security-Policy',value:editorVisionWorkerPolicy('https://veyrnox.ai')}]);
-    return new Map([groups[0], groups[2]].flatMap(group => group.headers).map((h) => [h.key.toLowerCase(), h.value]));
+    assert.equal(groups[2].source, '/app/music/studio/:path*');
+    assert.equal(groups[3].source, '/api/:path*');
+    assert.equal(groups[4].source,LOCAL_SPEECH_WORKER_URL);
+    assert.deepEqual(groups[4].headers,[{key:'Content-Security-Policy',value:localSpeechWorkerPolicy('https://veyrnox.ai')}]);
+    assert.equal(groups[5].source,`${EDITOR_VISION_PATH}/worker.mjs`);
+    assert.deepEqual(groups[5].headers,[{key:'Content-Security-Policy',value:editorVisionWorkerPolicy('https://veyrnox.ai')}]);
+    return new Map([groups[0], groups[3]].flatMap(group => group.headers).map((h) => [h.key.toLowerCase(), h.value]));
 }
 
 function directives(csp) {
@@ -60,20 +63,21 @@ test("no 'unsafe-eval' outside next dev, and no wildcard script source", async (
         `script-src may name only Turnstile as a remote origin: ${scriptSrc.join(' ')}`);
 });
 
-test('frame-src admits Turnstile and the two documented cinema players, nothing else', async () => {
+test('frame-src admits Turnstile and the documented media players, nothing else', async () => {
     // Without frame-src, frames fall back to default-src 'self' and the
     // widget's challenge iframe is blocked. The Stream player host is the
     // ADR-0059 admits Stream for owned titles. ADR-0098 admits YouTube's
-    // privacy-enhanced player for free curated titles; this must stay narrow.
+    // privacy-enhanced player for free curated titles; ADR-0335 admits only
+    // SoundCloud's official widget for Music references. This must stay narrow.
     const csp = (await headerMap()).get('content-security-policy');
-    assert.deepEqual(directives(csp).get('frame-src'), [TURNSTILE_HOST, 'https://*.cloudflarestream.com', YOUTUBE_PLAYER_HOST]);
+    assert.deepEqual(directives(csp).get('frame-src'), [TURNSTILE_HOST, 'https://*.cloudflarestream.com', YOUTUBE_PLAYER_HOST, SOUNDCLOUD_PLAYER_HOST]);
 });
 
 test('img-src admits only owned storage and the documented artwork/reference hosts', async () => {
     const csp = (await headerMap()).get('content-security-policy');
     const imageSrc = directives(csp).get('img-src');
     assert.ok(imageSrc.some((source) => source === YOUTUBE_IMAGE_HOST));
-    assert.deepEqual(imageSrc.filter((source) => source.startsWith('http') && !source.includes('r2.cloudflarestorage.com')), [YOUTUBE_IMAGE_HOST, LIPSYNC_REFERENCE_MEDIA_HOST]);
+    assert.deepEqual(imageSrc.filter((source) => source.startsWith('http') && !source.includes('r2.cloudflarestorage.com')), [YOUTUBE_IMAGE_HOST, SOUNDCLOUD_IMAGE_HOST, LIPSYNC_REFERENCE_MEDIA_HOST]);
     assert.ok(directives(csp).get('media-src').some((source) => source === LIPSYNC_REFERENCE_MEDIA_HOST));
 });
 
@@ -104,14 +108,17 @@ test('the remaining hardening headers are all present', async () => {
     assert.match(h.get('permissions-policy') ?? '', /camera=\(\)/);
 });
 
-test('microphone access remains denied globally and is allowed only for editor voiceover', async () => {
+test('microphone access remains denied globally and is allowed only for editing workspaces', async () => {
     const groups = await nextConfig.headers();
     const globalPolicy = groups.find((group) => group.source === '/:path*')?.headers
         .find((header) => header.key === 'Permissions-Policy')?.value;
     const editorPolicy = groups.find((group) => group.source === '/app/editor/:path*')?.headers
         .find((header) => header.key === 'Permissions-Policy')?.value;
+    const musicPolicy = groups.find((group) => group.source === '/app/music/studio/:path*')?.headers
+        .find((header) => header.key === 'Permissions-Policy')?.value;
     assert.equal(globalPolicy, 'camera=(), microphone=(), geolocation=()');
     assert.equal(editorPolicy, 'camera=(), microphone=(self), geolocation=()');
+    assert.equal(musicPolicy, 'camera=(), microphone=(self), geolocation=()');
 });
 
 test('the anon key in env is a publishable key, not a service-role key', async () => {

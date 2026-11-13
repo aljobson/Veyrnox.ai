@@ -56,7 +56,7 @@ function ResultTile({ api, id, batch, catalog, onTerminal, onSuccess }: { api: A
     }
     const failure = refunded === true ? result.job?.credits ? plural('library.refunded', result.job.credits) : t('library.refundedFree') : t('library.status.failed');
     return <Card style={[styles.card, batchTile && styles.tile]}>
-        <View style={[styles.frame, batchTile ? { aspectRatio: 1 } : batch.kind === 'audio' ? { height: 120 } : { aspectRatio: parseRatio(batch.aspect) ?? (batch.kind === 'video' ? 16 / 9 : 1) }]}>
+        <View style={[styles.frame, batchTile ? { aspectRatio: 1 } : batch.kind === 'audio' ? { minHeight: 120, paddingVertical: 8 } : { aspectRatio: parseRatio(batch.aspect) ?? (batch.kind === 'video' ? 16 / 9 : 1) }]}>
             {result.held ? <><Text accessibilityRole="header">{t('library.status.held')}</Text><Text>{t('libraryCreate.heldBody')}</Text></>
                 : result.error ? <Text tone="danger">{t('job.checkError')}</Text>
                 : file ? <>{file.output_stems?.length ? <Text>{t('libraryCreate.stems')}</Text> : file.mime_type.startsWith('image/') ? <Image source={{ uri: file.url }} cachePolicy="memory" contentFit="contain" style={styles.image} accessible accessibilityRole="image" accessibilityLabel={t('job.title')} /> : <InlineMedia url={file.url} audio={!file.mime_type.startsWith('video/')} label={t(file.mime_type.startsWith('video/') ? 'job.playVideo' : 'job.playAudio')} />}<GeneratedChip /></>

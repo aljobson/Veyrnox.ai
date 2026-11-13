@@ -51,10 +51,13 @@ import { LibraryPicker } from '../../_components/LibraryPicker';
 import { AddFilesDialog } from '../../_components/AddFilesDialog';
 import { GenerationSettings } from '../../_components/GenerationSettings';
 import { VoiceDescription } from '../../_components/VoiceDescription';
-import { ControlRow } from '../../_components/ControlRow';
+import { DictateButton, EnhanceButton, appendSpoken } from '../../_components/PromptTools';
+import { ChipSelect } from '../../_components/ChipSelect';
+import { aspectLabel } from '../../../../lib/platformFormats.js';
 import { TemplateHandoffCard } from '../../_components/TemplateHandoffCard';
 import { TemplatePicker } from '../../_components/TemplatePicker';
 import { CreateGoalPicker } from '../../_components/CreateGoalPicker';
+import { FirstGoalCard } from '../../_components/FirstGoalCard';
 import { TIERS, TIER_LABEL, filterByTier } from '../../_lib/modelTiers';
 import { modelsForGoal, starterModel } from '../../_lib/starterModels';
 import { audioDurationConfig, audioDurationIsInvalid, settingsInputs, voiceIsMissing } from '../../_lib/generationSettings';
@@ -135,6 +138,8 @@ export default function CreateStudio() {
   const [duration, setDuration] = useState('5s');
   const [audioDurations, setAudioDurations] = useState({});
   const [aspect, setAspect] = useState('16:9');
+  // Output tier (720p … 4k) for models whose provider offers more than the catalog tier; '' = the model's base tier.
+  const [resolution, setResolution] = useState('');
   const [recoveredPrompt, setRecoveredPrompt] = useState(null); // Recovery has no template provenance; preserve its unedited bytes.
   const [typed, setPrompt] = useState(null); // null until the user types or a draft is restored
   // Start image for models whose catalog capabilities declare an image slot.
@@ -153,6 +158,7 @@ export default function CreateStudio() {
   const [cinema, setCinema] = useState(DEFAULT_CINEMA);
   const [seed, setSeed] = useState('');
   const [negative, setNegative] = useState('');
+  const [loop, setLoop] = useState(false);
   const [voice, setVoice] = useState(''); // the voice in words, for a speech model that takes one
   const [characterOn, setCharacterOn] = useState(false);
   const [character, setCharacter] = useState({});
@@ -303,7 +309,7 @@ export default function CreateStudio() {
     reset: () => {
       setPrompt(null); setSources(current => { Object.values(current).flatMap(sourceList).forEach(source => { if (source.file) URL.revokeObjectURL(source.previewUrl); }); return {}; });
       setConsent(true); setGoal('image'); chooseModel(starterModel(catalogModels, 'image')?.id || '');
-      setDuration('5s'); setAspect('16:9'); setCount(1); setCharacterOn(false); setCharacter({}); setOddlingTransfer(null);
+      setDuration('5s'); setAspect('16:9'); setResolution(''); setCount(1); setCharacterOn(false); setCharacter({}); setOddlingTransfer(null);
       setCinemaOn(false); setCinema(DEFAULT_CINEMA); setSeed(''); setNegative(''); setVoice(''); setAudioDurations({});
       setAnimationPortrait(null); setPresetParam(null); setTier(null); clearJobs(); setError(null);
       // A conversion the previous account started must not land in this one's form.
@@ -407,12 +413,16 @@ export default function CreateStudio() {
     : tOr(t, `app.create.error.${HINT_CODES[hintKey]}`, ERROR_COPY[HINT_CODES[hintKey]] || t('app.create.error.unknown'));
   // Only offer aspect ratios explicitly declared by this model's provider contract.
   const aspectOptions = isShort ? [] : modelAspectRatios(model);
-  const unitCost = swap.scene ? swap.scene.credits : model ? (model.kind === 'video' ? clipCredits(model.credits, Number(duration.replace('s', ''))) : model.credits) : 0;
+  // Higher tiers cost more; the gateway applies the same multiplier (lib/resolutionTiers.js) and the catalog publishes it.
+  const tierOptions = model?.resolutionTiers?.options || [];
+  const activeTier = tierOptions.find((o) => o.id === resolution) || tierOptions.find((o) => o.id === model?.resolutionTiers?.base) || null;
+  const tierUnit = model ? Math.max(model.credits, Math.ceil(model.credits * (activeTier?.multiplier ?? 1) - 1e-9)) : 0;
+  const unitCost = swap.scene ? swap.scene.credits : model ? (model.kind === 'video' ? clipCredits(tierUnit, Number(duration.replace('s', ''))) : tierUnit) : 0;
   // Other models always send one; the count control is image-only.
   const n = imageCount(model, count);
   // The server decides what is free; the first `freeLeft` jobs of a batch are, the rest cost the catalog price.
   const freeLeft = freeLeftFor(freeMap, modelId);
-  const formIdentity = useMemo(() => ({}), [swapId, modelId, prompt, duration, aspect, n, seed, negative, voice, audioDuration, cinemaOn, cinema, characterOn, character, sources, consent, presetParam, accountEpoch]);
+  const formIdentity = useMemo(() => ({}), [swapId, modelId, prompt, duration, aspect, resolution, n, seed, negative, voice, audioDuration, cinemaOn, cinema, characterOn, character, sources, consent, presetParam, accountEpoch]);
   const continuation = useRef(null);
   const [batchView, setBatchView] = useState(null);
   const activeBatch = batchView?.identity === formIdentity ? batchView : null;
@@ -682,8 +692,9 @@ export default function CreateStudio() {
     const inputs = isShort ? { topic: prompt.trim() } : {
       prompt: finalPrompt(),
       aspect_ratio: aspectOptions.length ? aspect : undefined,
+      resolution: activeTier && activeTier.id !== model.resolutionTiers.base ? activeTier.id : undefined,
       duration_seconds: !model.swap && model.kind === 'video' ? Number(duration.replace('s', '')) : undefined,
-      ...settingsInputs(model, { seed, negative, voice, duration: audioDuration }),
+      ...settingsInputs(model, { seed, negative, voice, duration: audioDuration, loop }),
     };
     // strip undefined so server sees a clean object
     Object.keys(inputs).forEach((k) => inputs[k] === undefined && delete inputs[k]);
@@ -893,6 +904,7 @@ export default function CreateStudio() {
           {soundRequested && job?.state === 'succeeded' && !soundEligible && <p className="mt-3 text-xs leading-5 text-vx-fg-muted">{t('app.create.soundPassDuration')}</p>}
           {continuationError && <p role="alert" className="mt-3 text-xs text-vx-danger">{continuationError}</p>}
 
+          <div className="mt-3 rounded-2xl border border-vx-field bg-vx-panel focus-within:border-vx-accent">
           <textarea
             data-assistant-target="create.prompt"
             value={prompt}
@@ -901,10 +913,39 @@ export default function CreateStudio() {
             aria-busy={!hydrated}
             data-client-ready={hydrated ? 'true' : 'false'}
             aria-label={isShort ? t("app.create.topic") : t("mobile.prompt")}
-            rows={3}
-            className="scroll-mt-24 mt-3 w-full bg-vx-panel border border-vx-field rounded-lg p-3.5 text-sm text-vx-fg placeholder:text-vx-fg-faint resize-none focus:outline-hidden focus:border-vx-accent"
+            rows={4}
+            className="scroll-mt-24 block w-full bg-transparent p-3.5 text-sm text-vx-fg placeholder:text-vx-fg-faint resize-none outline-hidden"
             placeholder={helperCopy(t, locale, promptPlaceholder(model))}
           />
+          {(
+            <div className="flex flex-wrap items-center gap-2 rounded-b-2xl border-t border-vx-border/60 bg-vx-base/40 px-2 py-2">
+              {/* A template on a text-only model cannot use a picture (it would not reach the provider), so offer no slot for one. */}
+              {!(activeTemplate && Object.keys(media).length === 0) && <>
+                <button type="button" data-testid="create-add-files" disabled={photosUnavailable || attachConverting || sourcesConverting} onClick={() => setAddFilesOpen(true)}
+                  className="vx-press min-h-10 font-vx-mono text-[11px] font-bold rounded-full px-3.5 py-1.5 border border-vx-border text-vx-fg-muted hover:text-vx-fg disabled:opacity-50 pointer-coarse:min-h-11">
+                  {t('app.create.addFiles.button')}</button>
+                
+              </>}
+              {model?.kind === 'video' && !fixedDurationLabel && !sourceDurationMax && (
+                <ChipSelect assistantTarget="create.duration" aria-label={t("app.create.durationHeading")} options={durations} value={duration} onChange={setDuration}
+                  formatOption={(option) => t('presets.use.lengthCost', { length: outputDurationLabel(model, Number(option.replace('s', ''))), credits: clipCredits(model.credits, Number(option.replace('s', ''))) })}
+                  formatValue={(option) => outputDurationLabel(model, Number(option.replace('s', '')))} />
+              )}
+              {aspectOptions.length > 0 && <ChipSelect assistantTarget="create.aspect" aria-label={t("app.create.aspectHeading")} options={aspectOptions} value={aspect} onChange={setAspect} formatOption={aspectLabel} formatValue={(option) => option} />}
+              {tierOptions.length > 1 && (
+                <ChipSelect assistantTarget="create.resolution" aria-label={t('app.create.resolutionHeading')} options={tierOptions.map((o) => o.id)} value={activeTier?.id} onChange={setResolution}
+                  formatValue={(id) => (id === '4k' ? '4K' : id)}
+                  formatOption={(id) => { const m = tierOptions.find((o) => o.id === id).multiplier; const c = Math.max(model.credits, Math.ceil(model.credits * m - 1e-9)); return `${id === '4k' ? '4K' : id} · ${model.kind === 'video' ? clipCredits(c, Number(duration.replace('s', ''))) : c}`; }} />
+              )}
+              {takesImageCount(model) && <ChipSelect assistantTarget="create.count" aria-label={t("app.create.imagesHeading")} options={IMAGE_COUNTS} value={count} onChange={setCount} formatValue={(n) => `×${n}`} formatOption={(n) => String(n)} />}
+              <DictateButton disabled={!hydrated} onText={(spoken) => setPrompt((current) => appendSpoken(current, spoken))} />
+              <EnhanceButton disabled={!hydrated} text={prompt} />
+              <button type="button" data-testid="create-open-templates" disabled={attachConverting || sourcesConverting} onClick={() => setTemplatesOpen(true)}
+                className="vx-press ms-auto min-h-10 shrink-0 rounded-full border border-vx-accent/50 px-3.5 py-1.5 font-vx-mono pointer-coarse:min-h-11 text-[11px] font-bold text-vx-accent hover:bg-vx-accent/10 disabled:opacity-50">
+                {t('app.create.templates.open')}</button>
+            </div>
+          )}
+          </div>
           {promptTooLong && <p role="alert" className="mt-2 text-xs font-bold text-vx-danger">{t(promptLimitKey, { count: preparedPromptLength, max: promptLimit })}</p>}
           {!online && <p role="status" data-testid="create-offline" className="mt-2 rounded-lg border border-vx-warn/40 bg-vx-warn/[0.07] px-3 py-2 text-xs text-vx-fg-body">{t('app.create.offline')}</p>}
           {(draftRecovery.restoring || draftRecovery.status) && <div role="status" data-testid="create-draft-recovery" data-restoring={draftRecovery.restoring} className="mt-2 rounded-lg border border-vx-border bg-vx-panel px-3 py-2 text-xs text-vx-fg-muted">
@@ -951,20 +992,6 @@ export default function CreateStudio() {
           {model?.takesVoice && <VoiceDescription value={voice} onChange={setVoice} />}
 
           {animationPortrait && <div role="status" className="mt-4 rounded-xl border border-vx-accent/30 bg-vx-panel p-4 text-sm text-vx-fg-body">{portraitStatus}{animationMismatch && <p className="mt-2 text-vx-danger">{t("app.create.animationModel")}</p>}</div>}
-          {(
-            <div className="mt-3 flex flex-wrap items-center gap-3">
-              {/* A template on a text-only model cannot use a picture (it would not reach the provider), so offer no slot for one. */}
-              {!(activeTemplate && Object.keys(media).length === 0) && <>
-                <button type="button" data-testid="create-add-files" disabled={photosUnavailable || attachConverting || sourcesConverting} onClick={() => setAddFilesOpen(true)}
-                  className="vx-press min-h-10 font-vx-mono text-[11px] font-bold rounded-full px-3.5 py-1.5 border border-vx-border text-vx-fg-muted hover:text-vx-fg disabled:opacity-50 pointer-coarse:min-h-11">
-                  {t('app.create.addFiles.button')}</button>
-                <span className="text-xs text-vx-fg-muted">{t('app.create.attach.hint')}</span>
-              </>}
-              <button type="button" data-testid="create-open-templates" disabled={attachConverting || sourcesConverting} onClick={() => setTemplatesOpen(true)}
-                className="vx-press ms-auto min-h-10 shrink-0 rounded-full border border-vx-accent/50 px-3.5 py-1.5 font-vx-mono pointer-coarse:min-h-11 text-[11px] font-bold text-vx-accent hover:bg-vx-accent/10 disabled:opacity-50">
-                {t('app.create.templates.open')}</button>
-            </div>
-          )}
           {attachNotice && <p role="status" className="mt-2 text-xs text-vx-fg-muted">{attachNotice}</p>}
           {switchOffer && <button type="button" onClick={switchForFiles} className="mt-2 rounded-full border border-vx-border px-3 py-1.5 text-xs text-vx-fg hover:border-vx-accent">{t('app.create.attach.switchTo', { name: switchOffer.model.name })}</button>}
           {addFilesOpen && !photosUnavailable && <AddFilesDialog capacity={attachCapacity(model)} onAdd={attachFiles} onClose={() => setAddFilesOpen(false)} />}
@@ -1066,6 +1093,7 @@ export default function CreateStudio() {
 
         {/* ============ CONTROLS ============ */}
         <aside className="flex flex-col gap-5 lg:col-start-2 lg:row-start-1 lg:row-span-3">
+          {!oddlingTransfer && <FirstGoalCard hidden={!!presetParam || !!activeTemplate || swapId !== null} onPick={pickGoal} onExample={setPrompt} />}
           {!oddlingTransfer && <CreateGoalPicker goal={goal} onChange={pickGoal} />}
           {oddlingTransfer ? (
             <section data-testid="oddling-generation-pipeline" className="rounded-2xl border border-vx-accent/40 bg-vx-accent/[0.06] p-5">
@@ -1160,10 +1188,6 @@ export default function CreateStudio() {
             </div>
           </div>}
 
-          {model?.kind === 'video' && !fixedDurationLabel && !sourceDurationMax && (
-            <ControlRow assistantTarget="create.duration" label={t("app.create.durationHeading")} options={durations} value={duration} onChange={setDuration}
-              formatOption={(option) => t('presets.use.lengthCost', { length: outputDurationLabel(model, Number(option.replace('s', ''))), credits: clipCredits(model.credits, Number(option.replace('s', ''))) })} />
-          )}
           {(model?.kind === 'video' || model?.kind === 'audio') && sourceDurationMax && <SourceDurationCard model={model} />}
           {(model?.kind === 'video' || model?.kind === 'audio') && fixedDurationLabel && (
             <div data-assistant-target="create.duration" tabIndex={-1} className="scroll-mt-24 rounded-2xl border border-vx-border bg-vx-panel p-5">
@@ -1189,19 +1213,12 @@ export default function CreateStudio() {
               </p>
             </div>
           )}
-          {aspectOptions.length > 0 && (
-            <ControlRow assistantTarget="create.aspect" label={t("app.create.aspectHeading")} options={aspectOptions} value={aspect} onChange={setAspect} />
-          )}
-          {takesImageCount(model) && (
-            <ControlRow assistantTarget="create.count" label={t("app.create.imagesHeading")} options={IMAGE_COUNTS} value={count} onChange={setCount} />
-          )}
-
           {model?.kind === 'image' && !oddlingTransfer && (
             <div className="scroll-mt-24" data-assistant-target="create.character"><CharacterPanel enabled={characterOn} onToggle={setCharacterOn} picks={character} onChange={setCharacter} /></div>
           )}
 
           {!isShort && (
-            <div className="scroll-mt-24" data-assistant-target="create.settings"><GenerationSettings model={model} seed={seed} onSeed={setSeed} negative={negative} onNegative={setNegative} /></div>
+            <div className="scroll-mt-24" data-assistant-target="create.settings"><GenerationSettings model={model} seed={seed} onSeed={setSeed} negative={negative} onNegative={setNegative} loop={loop} onLoop={setLoop} /></div>
           )}
 
           {takesCamera && (
