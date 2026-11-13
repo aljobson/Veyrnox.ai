@@ -6,11 +6,7 @@ const sizes = {
   detail: 'size-16 rounded-2xl sm:size-[72px]',
 };
 
-const artSizes = {
-  chip: 'size-[18px]',
-  card: 'size-8',
-  detail: 'size-12 sm:size-14',
-};
+const artPixels = { chip: 18, card: 32, detail: 52 };
 
 export function StudioSkillIcon({ skillId, size = 'card', className = '' }) {
   const icon = studioSkillIcon(skillId);
@@ -24,7 +20,10 @@ export function StudioSkillIcon({ skillId, size = 'card', className = '' }) {
       style={{ color: icon.color, boxShadow: `inset 0 0 24px ${icon.color}18, 0 8px 24px #00000024` }}
     >
       {icon.art ? (
-        <img src={icon.art} alt="" draggable={false} className={`relative ${artSizes[size] || artSizes.card}`} />
+        <span
+          className="relative bg-contain bg-center bg-no-repeat"
+          style={{ backgroundImage: `url(${icon.art})`, width: artPixels[size] || artPixels.card, height: artPixels[size] || artPixels.card }}
+        />
       ) : (
         <>
           <span className="absolute inset-[18%] rounded-full opacity-20 blur-md" style={{ backgroundColor: icon.color }} />
