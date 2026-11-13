@@ -322,6 +322,20 @@ test('public copy audit classifies every literal; it rejects new untranslated UI
   assert.equal(probe.filter(row => row.status === 'unresolved').length, 4);
 });
 
+test('image recipe audit exceptions cover only canonical names and prompts, never new UI prose', () => {
+  for (const [file, owner] of [
+    ['app/veyrnox/_lib/imageTemplates.js', 'IMAGE_TEMPLATES'],
+    ['app/veyrnox/_lib/imageTemplatesChristmasExpansion.js', 'CHRISTMAS_IMAGE_ORIGINALS'],
+    ['app/veyrnox/_lib/imageSourcePromptRecords.js', 'IMAGE_SOURCE_PROMPT_RECORDS'],
+  ]) {
+    const titleField = owner === 'IMAGE_SOURCE_PROMPT_RECORDS' ? 'sourceTitle' : 'name';
+    const rows = candidates(file, `export const ${owner} = [{ ${titleField}: 'Canonical Christmas scene title', prompt: 'Canonical image generation prompt.', description: 'New untranslated user interface prose.' }];`);
+    assert.equal(rows.filter(row => row.status === 'allowlisted').length, 2, file);
+    assert.deepEqual(rows.filter(row => row.status === 'unresolved').map(row => row.text), ['New untranslated user interface prose.'], file);
+    assert.equal(candidates(file, '<button>New untranslated action label</button>').filter(row => row.status === 'unresolved').length, 1, file);
+  }
+});
+
 test('public helper questions, destination labels and actions have every translation', () => {
   for (const { code } of LOCALES) {
     const m = CATALOGS[code];

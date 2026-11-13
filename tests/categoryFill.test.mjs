@@ -1,3 +1,4 @@
+import { IMAGE_SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/imageSourcePromptRecords.js';
 import { HF_REPLACEMENTS_RECORDS } from '../app/veyrnox/_lib/higgsfieldReplacementRecords.js';
 import { SYNTX_REPLACEMENTS_RECORDS } from '../app/veyrnox/_lib/syntxReplacementRecords.js';
 import { GENJUTSU_SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/genjutsuSourcePromptRecords.js';
@@ -164,6 +165,8 @@ test('the incomplete record remains rejected, with hashes but no prompt or media
 });
 
 test('source record registry contains every module key without collisions', () => {
-  const modules = [GENJUTSU_SOURCE_PROMPT_RECORDS, HIGGSFIELD_90_SOURCE_PROMPT_RECORDS, HIGGSFIELD_300_SOURCE_PROMPT_RECORDS, SYNTX_SOURCE_PROMPT_RECORDS, SEEDANCE_SOURCE_PROMPT_RECORDS, SYNTX_64_SOURCE_PROMPT_RECORDS, HIGGSFIELD_CATEGORY_FILL_RECORDS, HF_REPLACEMENTS_RECORDS, SYNTX_REPLACEMENTS_RECORDS];
-  assert.equal(Object.keys(SOURCE_PROMPT_RECORDS).length, modules.reduce((sum, records) => sum + Object.keys(records).length, 0));
+  const modules = [IMAGE_SOURCE_PROMPT_RECORDS, GENJUTSU_SOURCE_PROMPT_RECORDS, HIGGSFIELD_90_SOURCE_PROMPT_RECORDS, HIGGSFIELD_300_SOURCE_PROMPT_RECORDS, SYNTX_SOURCE_PROMPT_RECORDS, SEEDANCE_SOURCE_PROMPT_RECORDS, SYNTX_64_SOURCE_PROMPT_RECORDS, HIGGSFIELD_CATEGORY_FILL_RECORDS, HF_REPLACEMENTS_RECORDS, SYNTX_REPLACEMENTS_RECORDS];
+  const keys = modules.flatMap(records => Object.keys(records));
+  assert.equal(new Set(keys).size, keys.length, 'source modules must not overwrite each other');
+  assert.deepEqual(Object.keys(SOURCE_PROMPT_RECORDS).sort(), keys.sort());
 });

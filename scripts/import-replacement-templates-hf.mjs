@@ -1,3 +1,4 @@
+import { sameSourceMedia } from './lib/source-record-media.mjs';
 // Offline frozen Amendment 2 import: read-only inputs, no network or encoding.
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
@@ -11,6 +12,7 @@ import { sourceReferenceGaps } from './lib/source-reference-gaps.mjs';
 import { sourcePromptEndingReview } from './lib/source-prompt-endings.mjs';
 import { referenceCount } from '../app/veyrnox/_lib/sourcePromptAudit.js';
 import { SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/sourcePromptRecords.js';
+import { IMAGE_TEMPLATES } from '../app/veyrnox/_lib/imageTemplates.js';
 import { SOURCE_TEMPLATES } from '../app/veyrnox/_lib/sourceTemplates.js';
 import { EFFECT_CONCEPT_TEMPLATES } from '../app/veyrnox/_lib/effectConceptTemplates.js';
 import { REFERENCE_TEMPLATES } from '../app/veyrnox/_lib/referenceTemplates.js';
@@ -70,7 +72,7 @@ const visual = JSON.parse(readFileSync(resolve(root, signaturesPath)));
 assert.equal(visual.method, VISUAL_SIGNATURE_METHOD);
 const ownIds = manifest.map(m => publicId(m)).filter(id => {
   const m = manifest.find(m => publicId(m) === id), r = SOURCE_PROMPT_RECORDS[id];
-  return r && r.sourceMediaId === (m.mediaId || m.sourceMediaId)
+  return sameSourceMedia(r, m.mediaId || m.sourceMediaId)
     && r.sourceRecordId === (m.recordId || m.sourceRecordId);
 });
 const own = new Set(ownIds);
@@ -85,7 +87,7 @@ for (const r of priorRecords.filter(r => r.prompt)) {
 }
 const historic = JSON.parse(readFileSync(resolve(root, 'tests/fixtures/higgsfield300Baseline.json')));
 for (const id of historic.documentedCommunityMediaIds) known.sourceMediaId.add(id);
-const knownNames = new Set([...SOURCE_TEMPLATES.filter(t => !own.has(t.id)), ...EFFECT_CONCEPT_TEMPLATES, ...REFERENCE_TEMPLATES].map(t => normalize(t.name)));
+const knownNames = new Set([...SOURCE_TEMPLATES.filter(t => !own.has(t.id)), ...EFFECT_CONCEPT_TEMPLATES, ...REFERENCE_TEMPLATES, ...IMAGE_TEMPLATES].map(t => normalize(t.name)));
 for (const [, clip] of Object.entries(AUDIT_SHOWCASE_CLIPS).filter(([id]) => !own.has(id))) {
   for (const [key, field] of [['video', 'localPreviewSha256'], ['poster', 'localPosterSha256']]) {
     known[field].add(sha(readFileSync(resolve(root, 'public', clip[key].replace(/^\//, '').replace(/-(?:higgs|syntx)-/, '-')))));

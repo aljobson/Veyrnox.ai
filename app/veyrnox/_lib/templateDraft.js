@@ -28,7 +28,7 @@ export function draftForTemplate(preset, modelId, arrivalTemplateId) {
     prompt: preset.sourcePromptOrigin === 'community-source-exact' && nonEmptyString(preset.sourcePrompt) ? preset.sourcePrompt : preset.prompt,
     // A template that records no aspect keeps its preview's own ratio, unsnapped; the Create page matches it once against the options its model offers.
     aspect: nonEmptyString(preset.aspect) ? preset.aspect : previewRatio(preset),
-    durationSeconds: supportedDuration(preset.durationSeconds) ? preset.durationSeconds : 5,
+    ...(preset.kind !== 'image' ? { durationSeconds: supportedDuration(preset.durationSeconds) ? preset.durationSeconds : 5 } : {}),
     negativePrompt: nonEmptyString(preset.negativePrompt) ? preset.negativePrompt : '',
     templateId: preset.id,
   };
@@ -46,7 +46,7 @@ export function resolveTemplateDraft(preset, modelId, storedDraft, arrivalTempla
     ...draft,
     ...(nonEmptyString(storedDraft.prompt) ? { prompt: storedDraft.prompt } : {}),
     ...(nonEmptyString(storedDraft.aspect) ? { aspect: storedDraft.aspect } : {}),
-    ...(supportedDuration(storedDraft.durationSeconds) ? { durationSeconds: storedDraft.durationSeconds } : {}),
+    ...(preset.kind !== 'image' && supportedDuration(storedDraft.durationSeconds) ? { durationSeconds: storedDraft.durationSeconds } : {}),
     ...(nonEmptyString(storedDraft.negativePrompt) ? { negativePrompt: storedDraft.negativePrompt } : {}),
   };
 }
@@ -68,6 +68,6 @@ export function templateArrival(preset, models, params, storedDraft) {
   return { modelId, draft: {
     ...draft,
     ...(ratioOf(params.get('aspect')) !== null ? { aspect: params.get('aspect') } : {}),
-    durationSeconds,
+    ...(preset.kind !== 'image' ? { durationSeconds } : {}),
   } };
 }

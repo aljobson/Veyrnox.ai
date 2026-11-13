@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { fromFallback as imageFallbackCatalog } from '../app/veyrnox/_lib/useCatalog.js';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import ts from 'typescript';
@@ -30,6 +31,7 @@ assert.match(source, /takeTemplateMediaHandoff\(window, preset\.id, wanted\)/);
 assert.match(source, /previewUrl: URL\.createObjectURL\(file\)/);
 const code = ts.transpileModule(source, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS } }).outputText;
 const HandoffCard = () => null;
+const TemplatePicker = () => null;
 const SourcePickers = () => null;
 const AddFilesDialog = () => null;
 function find(tree, predicate) {
@@ -104,6 +106,7 @@ function harness(params, { saved, handoff, handoffModelId, handoffTemplateId = p
     }, makeIdempotencyKey: () => 'test-key', notifyBalanceChanged() {}, GatewayError: class extends Error {} },
     '../../_lib/chatMedia': { ...chatMedia, mediaGenerationSources: async () => ({ references: [], source_keys: [], source_assets: [] }) },
     '../../_lib/veyJourneyStore': { getJourney: () => ({}), trackJourneyJob() {} },
+    '../../_components/TemplatePicker': { TemplatePicker },
     '../../_components/TemplateHandoffCard': { TemplateHandoffCard: HandoffCard },
     '../../_components/SourcePickers': { SourcePickers },
     '../../_components/AddFilesDialog': { AddFilesDialog },
@@ -413,4 +416,48 @@ test('Create silently clears a one-time photo for another or missing template', 
       assert.equal(templateMediaHandoff.hasTemplateMediaHandoff(globalThis.window), false);
     } finally { h.close(); }
   }
+});
+
+
+test('real image templates arrive and submit image inputs without a video duration', async () => {
+  const { IMAGE_TEMPLATES } = await import('../app/veyrnox/_lib/imageTemplates.js');
+  const models = imageFallbackCatalog().filter(model => ['nano-banana-kie', 'nano-banana-pro-grsai', 'seedream-4'].includes(model.id)).map(model => ({ ...model, modality: 'text-to-image', credits: 7 }));
+  for (const image of IMAGE_TEMPLATES) {
+    const h = harness({ preset: image.id, model: image.model, duration: '10s' }, { fetchedPreset: image, models });
+    try {
+      const tree = await h.settle();
+      assert.equal(prompt(tree).props.value, image.prompt);
+      assert.equal(generate(tree).props.disabled, false);
+      await generate(tree).props.onClick();
+      assert.equal(h.requests[0].model_id, image.model);
+      assert.equal(h.requests[0].inputs.prompt, image.prompt);
+      assert.equal(h.requests[0].inputs.aspect_ratio, image.aspect);
+      assert.equal('duration_seconds' in h.requests[0].inputs, false);
+      assert.equal('durationSeconds' in h.requests[0].inputs, false);
+      assert.equal(h.requests[0].template_id, undefined);
+      assert.equal(h.requests[0].preset, undefined);
+    } finally { h.close(); }
+  }
+});
+
+
+test('selecting a real image card inside Create replaces a video recipe and submits no duration', async () => {
+  const { IMAGE_TEMPLATES } = await import('../app/veyrnox/_lib/imageTemplates.js');
+  const image = IMAGE_TEMPLATES[1];
+  const model = { id: image.model, name: image.model, kind: 'image', modality: 'text-to-image', credits: 7, aspects: ['4:3'] };
+  const h = harness({ preset: '', model: original.id }, { fetchedPreset: image, models: [original, model] });
+  try {
+    let tree = await h.settle();
+    find(tree, node => node.props?.['data-testid'] === 'create-open-templates').props.onClick();
+    tree = await h.settle();
+    await find(tree, node => node.type === TemplatePicker).props.onPick({ id: image.id });
+    tree = await h.settle();
+    assert.equal(prompt(tree).props.value, image.prompt);
+    assert.equal(card(tree).props.preset.id, image.id);
+    assert.equal(generate(tree).props.disabled, false);
+    await generate(tree).props.onClick();
+    assert.equal(h.requests[0].model_id, image.model);
+    assert.equal(h.requests[0].inputs.aspect_ratio, image.aspect);
+    assert.equal('duration_seconds' in h.requests[0].inputs, false);
+  } finally { h.close(); }
 });

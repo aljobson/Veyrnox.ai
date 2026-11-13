@@ -86,3 +86,14 @@ test('every app area has the same keys and placeholders in all languages', async
     }
   }
 });
+
+
+test('Christmas has a short explicit public category translation in every locale', async () => {
+  const expected = { en: 'Christmas', ar: 'عيد الميلاد المجيد', de: 'Weihnachten', es: 'Navidad', fr: 'Noël', hi: 'क्रिसमस', ja: 'クリスマス', ko: '크리스마스', pt: 'Natal', ru: 'Рождество', zh: '圣诞节' };
+  assert.deepEqual(Object.keys(expected).sort(), LOCALES.map(({ code }) => code).sort());
+  for (const { code } of LOCALES) {
+    const catalog = (await import(`../lib/i18n/messages/${code}.mjs`)).default;
+    assert.equal(catalog['presets.cat.CHRISTMAS'], expected[code], code);
+    assert.equal(translator(code, catalog)('presets.cat.CHRISTMAS'), expected[code], code);
+  }
+});

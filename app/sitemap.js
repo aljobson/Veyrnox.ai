@@ -4,11 +4,14 @@ import { listModelsForDetails, shelfModels } from './veyrnox/_lib/modelPages';
 import { readPublicCatalog } from '../lib/publicCatalog.js';
 import { comparisonSlugs } from '../lib/comparePairs';
 import { PRESETS } from './veyrnox/_lib/templates';
+import { publishedImageTemplates } from './veyrnox/_lib/imageTemplates.js';
 import { GUIDES } from './veyrnox/_lib/guides';
 import { oddlingSitemapPaths, oddlingsPublicEnabled } from './veyrnox/_lib/oddlingsPublic';
 import { editorialSeries } from './veyrnox/social-cinema/editorialSeries';
 
-// Rendered per request so /models/<id> entries follow the live catalog.
+// Request-time metadata: image URLs follow the current publication gate.
+// Video paths are bundled once; they require no catalog lookup or page rendering.
+const videoTemplatePaths = PRESETS.map(template => `/presets/${template.id}`);
 export const dynamic = 'force-dynamic';
 
 // Public sitemap for veyrnox.ai. Every URL is the public path produced by the
@@ -38,7 +41,8 @@ export default async function sitemap() {
     page('/pricing', 'monthly', 0.9),
     page('/publish', 'monthly', 0.7),
     page('/presets', 'weekly', 0.7),
-    ...PRESETS.map((t) => page(`/presets/${t.id}`, 'monthly', 0.5)),
+    ...videoTemplatePaths.map(path => page(path, 'monthly', 0.5)),
+    ...publishedImageTemplates().map(t => page(`/presets/${t.id}`, 'monthly', 0.5)),
     page('/models', 'weekly', 0.8),
     page('/tools', 'weekly', 0.7),
     page('/guides', 'monthly', 0.6),

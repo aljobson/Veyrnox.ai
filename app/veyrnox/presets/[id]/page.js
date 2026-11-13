@@ -6,6 +6,7 @@ import { rich } from '../../../../lib/i18n/rich';
 import { localizedHref } from '../../../../lib/i18n/locales.mjs';
 import Link from 'next/link';
 import { notFound, permanentRedirect } from 'next/navigation';
+import { connection } from 'next/server';
 import { MarketingNav } from '../../_components/NavBar';
 import { Main } from '../../_components/Main';
 import { TemplateRecipe } from '../../_components/TemplateRecipe';
@@ -14,22 +15,28 @@ import { ClipBadge } from '../../_components/ClipBadge';
 import { SHOWCASE_CLIPS } from '../../_lib/showcase';
 import { presetTitle, templateModelId, MODELS } from '../../_lib/tokens';
 import { ALL_TEMPLATES, templateById } from '../../_lib/templates';
-import { exactSourcePromptRecord } from '../../_lib/sourcePromptRecords.js';
-import { sourcePromptAuditForModel } from '../../_lib/sourcePromptAudit.js';
+import { IMAGE_TEMPLATES } from '../../_lib/imageTemplates.js';
+import { templateRecipe } from '../../_lib/templateRecipe.js';
+import { TemplateImage } from '../../_components/TemplateImage';
 import { templateRecreateEnabled } from '../../_lib/templateRecreate.js';
-import { fallbackCapabilitiesFor } from '../../../../lib/fallbackModelCapabilities.js';
 import { OPEN_GRAPH_BASE } from '../../../seo';
 
-// Templates are static data, so each page is built once; the price is read
-// from the live catalog in the browser (UseTemplate), never from here.
+// Preserve the video build-parameter list. Image IDs are always request-only.
+// Actual HTML still inherits the nonce-CSP root policy (ADR-0060).
 export function generateStaticParams() {
   return ALL_TEMPLATES.map((p) => ({ id: p.id }));
 }
 export const dynamicParams = true;
 
+async function imageRequestBoundary(id) {
+  // Check even unpublished image IDs after a request boundary, never at build time.
+  if (IMAGE_TEMPLATES.some(template => template.id === id)) await connection();
+}
+
 export async function generateMetadata({ params }) {
   const { locale, t } = await getT();
   const { id } = await params;
+  await imageRequestBoundary(id);
   const template = templateById(id);
   if (!template) return { title: t("presets.detail.templateNotFound"), robots: { index: false } };
   const title = presetTitle(template.name);
@@ -45,23 +52,13 @@ export async function generateMetadata({ params }) {
 export default async function TemplatePage({ params }) {
   const { locale, t } = await getT();
   const { id } = await params;
+  await imageRequestBoundary(id);
   const template = templateById(id);
   if (!template) notFound();
   if (template.id !== id) permanentRedirect(localizedHref(locale, `/presets/${encodeURIComponent(template.id)}`));
   const modelId = templateModelId(template);
   const modelName = MODELS.find(model => model.id === modelId)?.name || template.model;
-  const sourcePrompt = exactSourcePromptRecord(template.id)?.prompt ?? null;
-  const sourceAudit = sourcePromptAuditForModel(template.id, fallbackCapabilitiesFor(modelId)?.inputs?.prompt?.max);
-  const recipe = {
-    ...template,
-    sourcePrompt,
-    sourcePromptOrigin: sourcePrompt ? 'community-source-exact' : null,
-    sourcePromptStatus: sourceAudit.status,
-    sourcePromptRunnable: sourceAudit.runnable,
-    sourcePromptIssues: [...sourceAudit.issues],
-    sourcePromptModelPromptMax: sourceAudit.modelPromptMax ?? null,
-    sourcePromptDuplicateOf: sourceAudit.duplicateOf,
-  };
+  const recipe = templateRecipe(template);
   const clip = SHOWCASE_CLIPS[template.clipKey];
   const sourceAspect = templateSourceAspect(template, clip?.aspectRatio ?? template.previewAspect);
   const TemplateRecreate = templateRecreateEnabled()
@@ -101,7 +98,7 @@ export default async function TemplatePage({ params }) {
             ))}
           </div>
           <div className="lg:col-start-1 lg:row-start-1 lg:row-span-2">
-            {clip ? (
+            {template.kind === 'image' ? <TemplateImage preset={template} className="mx-auto w-full max-w-[640px] rounded-2xl" /> : clip ? (
               <div className="relative mx-auto max-w-[480px]">
                 <FilmPlayer key={template.id} film={clip} label={t('presets.detail.preview', { title: presetTitle(template.name) })} aspectRatio={clip.aspectRatio || template.previewAspect || '9 / 16'} />
                 <ClipBadge clip={clip} />

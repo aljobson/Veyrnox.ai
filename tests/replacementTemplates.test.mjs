@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
+import { IMAGE_TEMPLATES } from '../app/veyrnox/_lib/imageTemplates.js';
 import { SOURCE_TEMPLATES } from '../app/veyrnox/_lib/sourceTemplates.js';
 import { SOURCE_PROMPT_RECORDS, exactSourcePromptRecord } from '../app/veyrnox/_lib/sourcePromptRecords.js';
 import { sourcePromptAuditRecord, isPublishableSourcePromptTemplate, referenceCount } from '../app/veyrnox/_lib/sourcePromptAudit.js';
@@ -165,7 +166,7 @@ test('replacement identities, prompts, assets and names join no existing or with
     }
   }
   for (const field of ['id', 'name']) {
-    const previous = [...SOURCE_TEMPLATES.filter(t => !ids.has(t.id)), ...EFFECT_CONCEPT_TEMPLATES, ...REFERENCE_TEMPLATES];
+    const previous = [...SOURCE_TEMPLATES.filter(t => !ids.has(t.id)), ...EFFECT_CONCEPT_TEMPLATES, ...REFERENCE_TEMPLATES, ...IMAGE_TEMPLATES];
     const known = new Set(previous.map(r => normalize(r[field])));
     for (const r of recipes) {
       assert.equal(known.has(normalize(r[field])), false, r.id + ': ' + field);
