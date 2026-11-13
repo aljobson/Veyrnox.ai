@@ -7,17 +7,20 @@ import { MusicCandidateCard } from './MusicCandidateCard';
 import { useMusicPreviewState } from './useMusicPreviewState';
 import { MusicServerStudio } from './MusicServerStudio';
 import { MusicSampleSeedCard } from './MusicSampleSeedCard';
+import { LicensedTemplateCard } from './LicensedTemplateCard';
+import { resolveInitialDescription } from '../../../../lib/licensedTrackTemplates.js';
 import { buildMusicSamplePrompt, MUSIC_SAMPLE_DIRECTION_MAX } from '../../../../lib/musicDiscover.js';
 
-export function MusicCreateStudio({ serverMode = false, sourcesEnabled = false, sampleSeed = null, sampleMix = null }) {
-  if (serverMode) return <MusicServerStudio sourcesEnabled={sourcesEnabled} sampleSeed={sampleSeed} sampleMix={sampleMix} />;
-  return <MusicPreviewCreateStudio sampleSeed={sampleSeed} sampleMix={sampleMix} />;
+export function MusicCreateStudio({ serverMode = false, sourcesEnabled = false, sampleSeed = null, sampleMix = null, licensedTemplate = null }) {
+  if (serverMode) return <MusicServerStudio sourcesEnabled={sourcesEnabled} sampleSeed={sampleSeed} sampleMix={sampleMix} licensedTemplate={licensedTemplate} />;
+  return <MusicPreviewCreateStudio sampleSeed={sampleSeed} sampleMix={sampleMix} licensedTemplate={licensedTemplate} />;
 }
 
-function MusicPreviewCreateStudio({ sampleSeed, sampleMix }) {
+function MusicPreviewCreateStudio({ sampleSeed, sampleMix, licensedTemplate }) {
   const { state, rows, storageError, create, cancel, reset } = useMusicPreviewState();
   const [mode, setMode] = useState('simple');
-  const [description, setDescription] = useState('');
+  const [description, setDescription] = useState(() => resolveInitialDescription({ sampleSeed, licensedTemplate }));
+  const [activeTemplate, setActiveTemplate] = useState(sampleSeed ? null : licensedTemplate);
   const [activeSeed, setActiveSeed] = useState(sampleSeed);
   const [activeMix, setActiveMix] = useState(sampleMix);
   const [lyrics, setLyrics] = useState('');
@@ -90,6 +93,7 @@ function MusicPreviewCreateStudio({ sampleSeed, sampleMix }) {
             {mode === 'simple' ? (
               <>
                 <MusicSampleSeedCard seed={activeSeed} mix={activeMix} onRemove={() => { setActiveSeed(null); setActiveMix(null); }} />
+                <LicensedTemplateCard template={activeTemplate} onRemove={() => { if (description === activeTemplate.direction) setDescription(''); setActiveTemplate(null); }} />
                 <label className="block">
                   <span className="flex items-center justify-between text-sm font-bold text-vx-fg-body"><span>{activeSeed ? 'Add a new direction' : 'Describe the sound'}</span><span className="font-vx-mono text-xs text-vx-fg-faint">{description.length}/{activeSeed ? MUSIC_SAMPLE_DIRECTION_MAX : 500}</span></span>
                   <PromptBox enhance value={description} onChange={(event) => setDescription(event.target.value)} maxLength={activeSeed ? MUSIC_SAMPLE_DIRECTION_MAX : 500} rows={7} placeholder={activeSeed ? 'Optional: make it slower, add dusty piano, and open into a wide final chorus' : 'A slow instrumental night drive with brushed drums and glassy synths'} />

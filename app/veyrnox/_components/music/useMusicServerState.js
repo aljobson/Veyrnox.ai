@@ -34,6 +34,11 @@ export function useMusicServerState() {
   const [error, setError] = useState('');
   const confirmKey = useRef(null);
   const confirming = useRef(false);
+  // Advances whenever a quote is requested or cleared, so a quote response that
+  // arrives after the input changed is discarded instead of restoring a quote
+  // for text the person no longer has.
+  const quoteRevision = useRef(0);
+  const lastQuoteRequest = useRef(0);
   const pollingError = useRef('');
 
   const loadEntitlements = useCallback(async () => {
@@ -54,11 +59,15 @@ export function useMusicServerState() {
   }, [loadEntitlements]);
 
   const clearQuote = useCallback(() => {
+    quoteRevision.current += 1;
     setQuote(null);
     confirmKey.current = null;
   }, []);
 
   const reviewQuote = useCallback(async (request) => {
+    const mine = quoteRevision.current + 1;
+    quoteRevision.current = mine;
+    lastQuoteRequest.current = mine;
     setBusy('quoting');
     setError('');
     setQuote(null);
@@ -68,13 +77,14 @@ export function useMusicServerState() {
         method: 'POST',
         body: JSON.stringify(request),
       });
+      if (quoteRevision.current !== mine) return null;
       setQuote(next);
       return next;
     } catch (reason) {
-      setError(musicServerError(reason));
+      if (quoteRevision.current === mine) setError(musicServerError(reason));
       return null;
     } finally {
-      setBusy('');
+      if (lastQuoteRequest.current === mine) setBusy('');
     }
   }, []);
 

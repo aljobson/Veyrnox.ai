@@ -8,6 +8,8 @@ import { useMusicServerState } from './useMusicServerState';
 import { useMusicCustomDraft } from './useMusicCustomDraft';
 import { MusicSourceUploadPanel } from './MusicSourceUploadPanel';
 import { MusicSampleSeedCard } from './MusicSampleSeedCard';
+import { LicensedTemplateCard } from './LicensedTemplateCard';
+import { resolveInitialDescription } from '../../../../lib/licensedTrackTemplates.js';
 import { MusicLyricistProfiles } from './MusicLyricistProfiles';
 import { buildMusicSamplePrompt, MUSIC_SAMPLE_DIRECTION_MAX } from '../../../../lib/musicDiscover.js';
 import { MUSIC_PUBLIC_DRAFT_KEY } from './MusicPublicPrompt';
@@ -448,10 +450,11 @@ function CustomDraftFields({ custom, entitlements, quote, busy, clearQuote, revi
   );
 }
 
-export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, sampleMix = null }) {
+export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, sampleMix = null, licensedTemplate = null }) {
   const { entitlements, quote, generations, busy, error, clearQuote, reviewQuote, confirmQuote, reload } = useMusicServerState();
   const [mode, setMode] = useState('simple');
-  const [description, setDescription] = useState('');
+  const [description, setDescription] = useState(() => resolveInitialDescription({ sampleSeed, licensedTemplate }));
+  const [activeTemplate, setActiveTemplate] = useState(sampleSeed ? null : licensedTemplate);
   const [activeSeed, setActiveSeed] = useState(sampleSeed);
   const [activeMix, setActiveMix] = useState(sampleMix);
   const [title, setTitle] = useState('');
@@ -480,16 +483,16 @@ export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, s
     const timer = window.setTimeout(() => {
       try {
         const saved = JSON.parse(sessionStorage.getItem(MUSIC_PUBLIC_DRAFT_KEY) || 'null');
-        if (typeof saved?.prompt === 'string' && saved.prompt.trim() && saved.prompt.length <= 500) {
-          setDescription(saved.prompt.trim());
-        }
+        // An explicit sample or template handoff wins; the stored draft is still consumed.
+        const restored = resolveInitialDescription({ sampleSeed, licensedTemplate, savedPrompt: saved?.prompt });
+        if (!sampleSeed && !licensedTemplate && restored) setDescription(restored);
         sessionStorage.removeItem(MUSIC_PUBLIC_DRAFT_KEY);
       } catch {
         sessionStorage.removeItem(MUSIC_PUBLIC_DRAFT_KEY);
       }
     }, 0);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [sampleSeed, licensedTemplate]);
 
   function change(setter) {
     return (event) => {
@@ -548,6 +551,12 @@ export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, s
             {mode === 'simple' ? (
               <>
             <MusicSampleSeedCard seed={activeSeed} mix={activeMix} onRemove={() => { setActiveSeed(null); setActiveMix(null); clearQuote(); }} />
+            <LicensedTemplateCard template={activeTemplate} disabled={Boolean(busy)} onRemove={() => {
+              // Drop the pre-filled direction only if the person has not edited it, and drop any reviewed quote.
+              if (description === activeTemplate.direction.slice(0, MUSIC_SAMPLE_DIRECTION_MAX)) setDescription('');
+              setActiveTemplate(null);
+              clearQuote();
+            }} />
             <label className="block">
               <span className="flex items-center justify-between text-sm font-bold text-vx-fg-body"><span>{activeSeed ? 'Add a new direction' : 'Describe the sound'}</span><span className="font-vx-mono text-xs text-vx-fg-faint">{description.length}/{activeSeed ? MUSIC_SAMPLE_DIRECTION_MAX : 500}</span></span>
               <textarea value={description} onChange={change(setDescription)} maxLength={activeSeed ? MUSIC_SAMPLE_DIRECTION_MAX : 500} rows={7} placeholder={activeSeed ? 'Optional: make it slower, add dusty piano, and open into a wide final chorus' : 'A slow instrumental night drive with brushed drums and glassy synths'} className="mt-2 w-full resize-y rounded-2xl border border-vx-border-boost bg-vx-base px-4 py-3 leading-6 text-vx-fg placeholder:text-vx-fg-faint focus:border-vx-accent focus:outline-none" />

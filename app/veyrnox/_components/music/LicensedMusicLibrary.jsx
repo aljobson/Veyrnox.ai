@@ -1,10 +1,12 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { useI18n } from '../../../../components/I18nProvider';
 import { tOr } from '../../../../lib/i18n/translate.mjs';
 import { LICENSED_MUSIC_CATEGORIES, LICENSED_MUSIC_TRACKS, licensedArtworkUrl, licensedMusicUrl } from '../../../../lib/licensedMusicCatalog.js';
+import { licensedTemplateHref } from '../../../../lib/licensedTrackTemplates.js';
 
 const duration = (seconds) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 const PAGE_SIZE = 12;
@@ -30,6 +32,7 @@ function LicensedTrackCard({ track }) {
       <audio controls preload="none" src={audioUrl} aria-label={t('musicDiscover.lic.play', { title: track.title, creator: track.creator })} className="mt-4 h-10 w-full" />
       <p className="mt-4 rounded-xl border border-vx-border bg-vx-base p-3 text-xs leading-5 text-vx-fg-body"><strong>{t('musicDiscover.lic.credit')}</strong> {track.attribution}</p>
       <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs font-bold">
+        <Link href={licensedTemplateHref(track.id)} data-testid="licensed-use-template" className="inline-flex min-h-11 items-center rounded-full bg-vx-accent px-4 text-vx-accent-ink">{t('musicDiscover.lic.useTemplate')}</Link>
         <a href={audioUrl} download className="inline-flex min-h-11 items-center text-vx-accent underline underline-offset-2">{t('musicDiscover.lic.download')}</a>
         <a href={track.sourceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-vx-fg-muted underline underline-offset-2">{t('musicDiscover.lic.source')}</a>
         <a href={track.downloadSourceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-vx-fg-muted underline underline-offset-2">{t('musicDiscover.lic.creatorDownload')}</a>
