@@ -1,3 +1,4 @@
+import { WIG_GLSL } from './wigShader.js';
 import { HAIR_GLSL } from './hairShader.js';
 import { MAKEUP_GLSL } from './makeupShader.js';
 import { BILATERAL_GLSL } from './bilateral.js';
@@ -13,6 +14,7 @@ uniform vec4 touch; uniform vec3 finish;
 ${BILATERAL_GLSL.replaceAll('texture2D', 'texture')}
 ${MAKEUP_GLSL}
 ${HAIR_GLSL}
+${WIG_GLSL}
 void main(){
  vec4 original=texture(source,uv); vec3 color=original.rgb; vec3 region=texture(mask,uv).rgb;
  float amount=region.r*touch.x;
@@ -28,7 +30,7 @@ void main(){
  float whiten=whitePixels*region.g*touch.z;
  color=mix(color,vec3(light),whiten*.65); color+=vec3(whiten*.16+region.b*touch.w*whitePixels*.15);
  color=applyHair(applyMakeup(color));
- vec4 rgba=vec4(color,original.a);
+ vec4 rgba=applyWig(vec4(color,original.a));
  color=vec3(dot(row0,rgba),dot(row1,rgba),dot(row2,rgba))+offset;
  if(finish.z>0.) {
    vec3 lookup=clamp(color,0.,1.)*(255./256.)+vec3(.5/256.);
@@ -39,5 +41,5 @@ void main(){
  // Source-pixel deterministic noise: export and preview are identical.
  float noise=fract(sin(dot(floor(uv/pixel),vec2(12.9898,78.233)))*43758.5453)-.5;
  color+=noise*finish.y*.12;
- outputColor=vec4(clamp(color,0.,1.),original.a);
+ outputColor=vec4(clamp(color,0.,1.),rgba.a);
 }`;

@@ -1,3 +1,4 @@
+import { proveWigs } from './photo-studio-wig-proof.mjs';
 import { proveHair } from './photo-studio-hair-proof.mjs';
 import { proveMakeup } from './photo-studio-makeup-proof.mjs';
 import { MAKEUP_PRESETS } from '../../packages/live-edit/makeup.js';
@@ -8,8 +9,8 @@ import { createVisionProcessor } from '../../app/veyrnox/_lib/editorVisionWorker
 import { createFaceProcessor } from '../../app/veyrnox/_lib/liveEdit/faceClient.mjs';
 import { DEFAULTS } from '../../packages/live-edit/effects.js';
 import { OVAL, LEFT_EYE, RIGHT_EYE, LIPS, INNER_LIPS, LEFT_BROW, RIGHT_BROW } from '../../packages/live-edit/regions.js';
-const checks = [];
-const assert = (value, label) => { if (!value) throw new Error(label); };
+const checks = [], misses = [];
+const assert = (value, label) => { if (!value) misses.push({ name: label, expected: true, actual: Boolean(value) }); };
 const canvas = () => document.createElement('canvas');
 const pixels = c => c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
 const maxDifference = (a, b) => a.reduce((max, value, i) => Math.max(max, Math.abs(value - b[i])), 0);
@@ -18,8 +19,10 @@ try {
     let blocked = false;
     try { await WebAssembly.compile(new Uint8Array([0,97,115,109,1,0,0,0])); } catch { blocked = true; }
     assert(blocked, 'Page WASM must be blocked'); checks.push('page-wasm-blocked');
-    checks.push(...proveMakeup());
-    checks.push(...await proveHair());
+    const wigs = await proveWigs(); checks.push(...wigs.checks); misses.push(...wigs.misses);
+    for (const [name, run] of [['makeup', proveMakeup], ['hair', proveHair]]) {
+        try { checks.push(...await run()); } catch (error) { misses.push({ name, expected: 'all checks pass', actual: error.message }); }
+    }
     const source = canvas(); source.width = 192; source.height = 128;
     const ctx = source.getContext('2d');
     for (let y = 0; y < source.height; y++) for (let x = 0; x < source.width; x++) {
@@ -64,6 +67,6 @@ try {
     checks.push('hair-worker-channel'); hairClient.close(); hairClient=undefined;
     faceClient = await createFaceProcessor(); const result = await faceClient.detect(source);
     assert(result.count === 0 && result.landmarks.length === 0, 'Synthetic gradient must return no face'); checks.push('face-worker-no-face');
-    window.photoProof = { checks };
-} catch (error) { window.photoProof = { checks, error: error.message }; }
+    window.photoProof = { checks, misses };
+} catch (error) { window.photoProof = { checks, misses, error: error.message }; }
 finally { renderer?.close(); engine?.close(); oldClient?.close(); hairClient?.close(); faceClient?.close(); decodedSource?.close(); }

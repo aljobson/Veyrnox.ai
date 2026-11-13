@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { useI18n } from '../../../../components/I18nProvider';
-import { createHistory, DEFAULTS } from '../../../../packages/live-edit/effects.js';
+import { createHistory, DEFAULTS } from '../../_lib/liveEdit/settings.js';
 import { anchoredSticker } from '../../../../packages/live-edit/stickers.js';
 import { Controls, control } from './Controls';
 import { StickerHandles } from './StickerHandles';
@@ -13,7 +13,7 @@ export default function PhotoEditor() {
     useEffect(() => () => { selectionEpoch.current++; }, []);
     const canvas = useRef(null), engine = useRef(null), history = useRef(createHistory()), epoch = useRef(0);
     const [source, setSource] = useState(null), [settings, setSettings] = useState(DEFAULTS);
-    const [state, setState] = useState('empty'), [face, setFace] = useState(''), [hair, setHair] = useState('waiting'), [error, setFailure] = useState(''), [rejected, setRejected] = useState(false);
+    const [state, setState] = useState('empty'), [face, setFace] = useState(''), [hair, setHair] = useState('waiting'), [wig, setWig] = useState('off'), [error, setFailure] = useState(''), [rejected, setRejected] = useState(false);
     const [format, setFormat] = useState('image/png'), [result, setResult] = useState(null), [offline, setOffline] = useState(false);
     const [aspect, setAspect] = useState(4 / 3);
     const [undoState, setUndoState] = useState({ undo: false, redo: false });
@@ -37,6 +37,7 @@ export default function PhotoEditor() {
                 if (controller.signal.aborted || current !== epoch.current) { image.close(); return; }
                 setAspect(image.width / image.height);
                 instance = createPhotoEngine(canvas.current, image, {
+                    onWig: status => { if (!controller.signal.aborted && current === epoch.current) setWig(status); },
                     onHair: status => { if (!controller.signal.aborted && current === epoch.current) setHair(status); },
                     onFace: status => { if (!controller.signal.aborted && current === epoch.current) setFace(status); },
                     onError: message => { if (!controller.signal.aborted && current === epoch.current) { setFailure(message); setRejected(false); setState('error'); } },
@@ -63,10 +64,10 @@ export default function PhotoEditor() {
         catch (e) { if (selection === selectionEpoch.current) { setFailure(e.message === 'photo-too-large' ? 'photo-too-large' : 'invalid-photo'); setRejected(true); } return; }
         if (selection !== selectionEpoch.current) return;
         epoch.current++; engine.current?.close(); engine.current = null;
-        history.current = createHistory(); setUndoState({ undo: false, redo: false }); setSettings(history.current.value); setComparison(false); setResult(null); setFailure(''); setRejected(false); setFace(''); setHair('waiting'); setState('loading'); setSource({ file });
+        history.current = createHistory(); setUndoState({ undo: false, redo: false }); setSettings(history.current.value); setComparison(false); setResult(null); setFailure(''); setRejected(false); setFace(''); setHair('waiting'); setWig('off'); setState('loading'); setSource({ file });
     }
     function retry() {
-        epoch.current++; engine.current?.close(); engine.current = null; setComparison(false); setFailure(''); setRejected(false); setResult(null); setFace(''); setHair('waiting'); setState('loading'); setSource({ file: source.file });
+        epoch.current++; engine.current?.close(); engine.current = null; setComparison(false); setFailure(''); setRejected(false); setResult(null); setFace(''); setHair('waiting'); setWig('off'); setState('loading'); setSource({ file: source.file });
     }
     function compare(value) { setComparison(value); engine.current?.compare(value); }
     async function exportPhoto() {
@@ -120,7 +121,7 @@ export default function PhotoEditor() {
                 {state === 'exporting' && <p role="status" className="mt-4 text-sm">{t('app.photoStudio.exporting')}</p>}
                 {result && <div role="status" className="mt-4"><p className="text-sm">{t('app.photoStudio.saved')}</p><a className={`${control} mt-3 inline-flex items-center text-vx-accent`} href={result.url} download={`photo-studio.${result.extension}`}>{t('app.photoStudio.download')}</a></div>}
             </section>
-            <aside className="min-w-0 rounded-2xl border border-vx-border p-6"><Controls t={t} settings={settings} disabled={!ready} faceReady={face === 'one-face'} hairState={hair} retry={retry} update={update} addSticker={kind => { const sticker = anchoredSticker(kind, engine.current?.landmarks); if (sticker) update({ stickers: [...settings.stickers, sticker] }); }} /></aside>
+            <aside className="min-w-0 rounded-2xl border border-vx-border p-6"><Controls t={t} settings={settings} disabled={!ready} faceReady={face === 'one-face'} hairState={hair} wigState={wig} retry={retry} update={update} addSticker={kind => { const sticker = anchoredSticker(kind, engine.current?.landmarks); if (sticker) update({ stickers: [...settings.stickers, sticker] }); }} /></aside>
         </div>
     </>;
 }

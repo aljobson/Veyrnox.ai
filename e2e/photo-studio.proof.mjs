@@ -6,7 +6,7 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 test('real WebGL2 rendering, export, page CSP and retained-client inference', async ({ page }) => {
     const root = resolve(import.meta.dirname, '..');
-    const allowed = /^(app\/veyrnox\/_lib\/(?:liveEdit\/[^/]+|editorVisionRuntime|editorVisionWorkerClient|editorMotionAnalysis)|packages\/live-edit\/[^/]+|tests\/fixtures\/photo-studio-(?:browser-proof|makeup-proof|makeup-fixture|makeup-goldens|hair-proof|hair-fixture))\.(?:js|mjs)$/;
+    const allowed = /^(app\/veyrnox\/_lib\/(?:liveEdit\/[^/]+|editorVisionRuntime|editorVisionWorkerClient|editorMotionAnalysis)|packages\/live-edit\/[^/]+|tests\/fixtures\/photo-studio-(?:browser-proof|makeup-proof|makeup-fixture|makeup-goldens|hair-proof|hair-fixture|wig-proof|wig-fixture))\.(?:js|mjs)$/;
     const outbound = [];
     page.on('request', request => { if (!['GET','HEAD'].includes(request.method())) outbound.push(request.url()); });
     await page.route('**/__photo-proof/**', async route => {
@@ -19,13 +19,15 @@ test('real WebGL2 rendering, export, page CSP and retained-client inference', as
     await page.goto('/__photo-proof/index.html');
     await page.waitForFunction(() => window.photoProof !== undefined, undefined, { timeout: 240000 });
     const result = await page.evaluate(() => window.photoProof);
-    expect(result.error, JSON.stringify(result)).toBeUndefined();
-    expect(result.checks).toContain('retained-person-client');
-    expect(result.checks).toContain('face-worker-no-face');
-    for (const check of ['makeup-zero-identical', 'makeup-golden-crops', 'makeup-regions-holes-monotonic', 'makeup-finishes-gradient-wing-volume', 'makeup-face-lost', 'makeup-export-equality', 'makeup-multiple-faces']) expect(result.checks).toContain(check);
-    for (const check of ['hair-worker-channel', 'hair-subject-association-speck', 'hair-zero-identical', 'hair-golden-crops', 'hair-feather-luminance-alpha-monotonic', 'hair-face-lost-multiple-no-hair', 'hair-export-equality']) expect(result.checks).toContain(check);
-    expect(outbound).toEqual([]);
     console.log(JSON.stringify(result));
+    expect.soft(result.misses, JSON.stringify(result)).toEqual([]);
+    expect.soft(result.error, JSON.stringify(result)).toBeUndefined();
+    expect.soft(result.checks).toContain('retained-person-client');
+    expect.soft(result.checks).toContain('face-worker-no-face');
+    for (const check of ['makeup-zero-identical', 'makeup-golden-crops', 'makeup-regions-holes-monotonic', 'makeup-finishes-gradient-wing-volume', 'makeup-face-lost', 'makeup-export-equality', 'makeup-multiple-faces']) expect.soft(result.checks).toContain(check);
+    for (const check of ['hair-worker-channel', 'hair-subject-association-speck', 'hair-zero-identical', 'hair-golden-crops', 'hair-feather-luminance-alpha-monotonic', 'hair-face-lost-multiple-no-hair', 'hair-export-equality']) expect.soft(result.checks).toContain(check);
+    for (const check of ['wig-zero-identical','wig-r4-long-hair-short-wig','wig-tint-luminance','wig-face-lost-pose-off','wig-face-count-0','wig-face-count-2','wig-transparent-source','wig-export-history-compare', ...['pixie','bob','waves','curls','long','braids'].map(id => `wig-svg-${id}`)]) expect.soft(result.checks).toContain(check);
+    expect.soft(outbound).toEqual([]);
 });
 
 // Private NASA-style fixture per ADR-0092; image/metadata never enter git or a service.

@@ -1,7 +1,7 @@
 import { createVisionProcessor } from '../editorVisionWorkerClient.mjs';
 import { createPhotoRenderer } from './renderer.js';
 import { createFaceProcessor } from './faceClient.mjs';
-import { DEFAULTS, normalize } from '../../../../packages/live-edit/effects.js';
+import { DEFAULTS, normalize } from './settings.js';
 import { createLandmarkFilter } from '../../../../packages/live-edit/smoothing.js';
 import { selectFaceHair } from '../../../../packages/live-edit/hair.js';
 import { validatePhoto, validatePhotoDimensions, decodeFailure } from './photoFormat.js';
@@ -31,8 +31,8 @@ export async function decodePhoto(file, signal, decoder = (blob, options) => cre
     });
 }
 /** Ownership is synchronous: caller can close while model initialization is pending. */
-export function createPhotoEngine(canvas, source, { onFace = () => {}, onHair = () => {}, hairProcessorFactory = createVisionProcessor, onError = () => {}, rendererFactory = createPhotoRenderer, processorFactory = createFaceProcessor, createFlatCanvas = () => document.createElement('canvas') } = {}) {
-    const controller = new AbortController(), renderer = rendererFactory(canvas, source), filter = createLandmarkFilter();
+export function createPhotoEngine(canvas, source, { onFace = () => {}, onWig = () => {}, onHair = () => {}, hairProcessorFactory = createVisionProcessor, onError = () => {}, rendererFactory = createPhotoRenderer, processorFactory = createFaceProcessor, createFlatCanvas = () => document.createElement('canvas') } = {}) {
+    const controller = new AbortController(), renderer = rendererFactory(canvas, source, { onWigChange: schedule, onWig }), filter = createLandmarkFilter();
     let closed = false, processor, hairProcessor, frame = 0, settings = normalize(DEFAULTS), compare = false, landmarks = new Float32Array();
     function draw() { frame = 0; if (closed) return; try { renderer.draw(compare ? DEFAULTS : settings); } catch { onError('graphics-lost'); } }
     function schedule() { if (!closed && !frame) frame = requestAnimationFrame(draw); }
@@ -91,8 +91,11 @@ export function createPhotoEngine(canvas, source, { onFace = () => {}, onHair = 
         async export(type = 'image/png') {
             if (closed) throw new Error('photo-closed');
             if (!['image/png', 'image/jpeg'].includes(type)) throw new Error('invalid-format');
+            const snapshot = settings;
+            await renderer.prepareWig?.(snapshot);
+            if (closed) throw new DOMException('Cancelled', 'AbortError');
             // toBlob snapshots this exact render; hold-to-compare never leaks into export.
-            renderer.draw(settings);
+            renderer.draw(snapshot);
             let source = canvas;
             if (type === 'image/jpeg') {
                 // JPEG has no alpha: flatten onto white here, or transparent PNG/WebP areas would encode as black.

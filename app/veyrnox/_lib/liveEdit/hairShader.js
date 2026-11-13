@@ -4,8 +4,7 @@ uniform vec3 hairColor; uniform vec3 hairSecond;
 uniform vec4 hairParams; // strength, mode, mask top, mask span
 vec3 hairLinear(vec3 v) { return mix(v/12.92,pow((v+.055)/1.055,vec3(2.4)),step(vec3(.04045),v)); }
 vec3 hairSrgb(vec3 v) { return mix(v*12.92,1.055*pow(max(v,vec3(0.)),vec3(1./2.4))-.055,step(vec3(.0031308),v)); }
-vec3 applyHair(vec3 color) {
- float alpha=smoothstep(.2,.8,texture(hairMask,uv).r)*hairParams.x;
+vec3 hairPigment(vec3 color, float alpha) {
  if(alpha<=0.) return color;
  vec3 weights=vec3(.2126,.7152,.0722), base=hairLinear(clamp(color,0.,1.));
  float y=dot(base,weights);
@@ -19,4 +18,7 @@ vec3 applyHair(vec3 color) {
  }
  if(hairParams.y==2.) alpha*=smoothstep(.08,.55,y);
  return hairSrgb(mix(base,vec3(y)+chroma*gamut,alpha));
+}
+vec3 applyHair(vec3 color) {
+ return hairPigment(color,smoothstep(.2,.8,texture(hairMask,uv).r)*hairParams.x);
 }`;
