@@ -325,7 +325,6 @@ test('public copy audit classifies every literal; it rejects new untranslated UI
 test('image recipe audit exceptions cover only canonical names and prompts, never new UI prose', () => {
   for (const [file, owner] of [
     ['app/veyrnox/_lib/imageTemplates.js', 'IMAGE_TEMPLATES'],
-    ['app/veyrnox/_lib/imageTemplatesChristmasExpansion.js', 'CHRISTMAS_IMAGE_ORIGINALS'],
     ['app/veyrnox/_lib/imageSourcePromptRecords.js', 'IMAGE_SOURCE_PROMPT_RECORDS'],
   ]) {
     const titleField = owner === 'IMAGE_SOURCE_PROMPT_RECORDS' ? 'sourceTitle' : 'name';
