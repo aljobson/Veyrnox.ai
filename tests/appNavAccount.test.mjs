@@ -134,8 +134,10 @@ test('the studio nav exposes the rest of the public site on desktop and mobile',
         'the public destination list stays derived from the shared site nav');
     assert.match(appNav, /const menuItems = \[\.\.\.new Map\(\[[\s\S]*studioMenuItems\(t, flags\),[\s\S]*\.\.\.APP_BROWSE_CATEGORIES,[\s\S]*\.map\(\(item\) => \[item\.href, item\]\)\)\.values\(\)\];/,
         'the phone menu combines studio tools with the public site and de-duplicates repeated routes');
-    assert.match(tableSrc, /section: 'inspire', key: 'cinema', href: '\/social-cinema'[\s\S]*href: '\/presets'[\s\S]*href: '\/models'[\s\S]*href: '\/guides'/,
-        'the desktop sidebar carries Social Cinema and the public Inspire destinations');
+    assert.match(tableSrc, /section: 'tools', key: 'cinema', href: '\/social-cinema'/,
+        'the desktop sidebar carries Social Cinema as a pillar');
+    assert.match(tableSrc, /href: '\/presets'[^}]*nav: false[\s\S]*href: '\/models'[^}]*nav: false[\s\S]*href: '\/guides'[^}]*nav: false/,
+        'Templates, Models and Guides stay routable but leave the signed-in nav');
     assert.match(tableSrc, /key: 'music', href: '\/app\/music\/create', labelKey: 'label\.Music'/,
         'Music is discoverable from the signed-in navigation');
 });
@@ -199,8 +201,8 @@ test('the whole nav still fits without a hidden horizontal rail', () => {
         'the mark yields to signed-in account controls below sm, and only then');
     assert.match(appNav, /<AppSidebar[\s\S]*sections=\{sidebarSections\}/,
         'desktop destinations live in the grouped left sidebar');
-    assert.match(tableSrc, /SECTION_ORDER = \['agents', 'tools', 'assets', 'inspire'\]/,
-        'the sidebar groups Agents, Tools, Assets and Inspire');
+    assert.match(tableSrc, /SECTION_ORDER = \['tools', 'assets'\]/,
+        'the sidebar groups the pillars and the utility rows');
     assert.doesNotMatch(appNav, /<nav[^>]*overflow-x-auto/,
         'the nav no longer hides destinations in a horizontal scroller');
     assert.doesNotMatch(appNav, /grid: true|grid-cols-2/,
