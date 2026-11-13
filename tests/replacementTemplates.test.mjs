@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { IMAGE_TEMPLATES } from '../app/veyrnox/_lib/imageTemplates.js';
+import { BROKEN_TEMPLATE_IDS } from "../app/veyrnox/_lib/brokenTemplateIds.js";
+import { publicTemplateId } from "../app/veyrnox/_lib/templateIds.js";
 import { SOURCE_TEMPLATES } from '../app/veyrnox/_lib/sourceTemplates.js';
 import { SOURCE_PROMPT_RECORDS, exactSourcePromptRecord } from '../app/veyrnox/_lib/sourcePromptRecords.js';
 import { sourcePromptAuditRecord, isPublishableSourcePromptTemplate, referenceCount } from '../app/veyrnox/_lib/sourcePromptAudit.js';
@@ -42,7 +44,7 @@ const expected = {
   'community-luxe-timepiece-reveal': ['PRODUCTS', ...text],
   'community-martial-arts-suit': ['MOVIES', ...portrait],
   'community-pet-affection-reveal': ['FASHION', ...portrait],
-  'on-the-wave': ['REALISTIC', ...portrait],
+  'on-the-wave': ['REALISTIC', ...portrait], // withdrawn as broken (brokenTemplateIds.js); record kept
   'red-crystal-amulet': ['FANTASY', ...portrait],
   'window-explode': ['CINEMATIC', ...portrait],
 };
@@ -55,6 +57,7 @@ test('14 replacements use the reviewed routes, exact captured bytes and existing
   assert.deepEqual(Object.keys(hashes).sort(), Object.keys(expected).sort());
   for (const r of rows) {
     const raw = SOURCE_PROMPT_RECORDS[r.id], t = templateById(r.id);
+    if (!t) { assert.ok(BROKEN_TEMPLATE_IDS.includes(r.id), r.id); continue; }
     assert.equal(r.name, r.sourceTitle.toUpperCase(), r.id);
     assert.equal(raw.prompt, r.prompt, r.id);
     for (const prompt of [raw.prompt, r.prompt]) assert.equal(sha(prompt), hashes[r.id], r.id);
@@ -100,11 +103,13 @@ test('all old records, recipes, visual signatures and hidden rows remain unchang
   assert.deepEqual(REMOVED_PROMPT_GAP_TEMPLATE_IDS, baseline.hidden);
   assert.equal(REMOVED_PROMPT_GAP_TEMPLATE_IDS.length, 70);
   assert.equal(SOURCE_TEMPLATES.length, 841);
-  assert.equal(PRESETS.length, 771);
-  assert.equal(ALL_TEMPLATES.length, 1813);
+  assert.equal(PRESETS.length, 749);
+  assert.equal(ALL_TEMPLATES.length, 1791);
   const deltas = { REALISTIC: 4, CINEMATIC: 2, UGC: 2, CARTOONS: 1, VFX: 1, MOVIES: 1, FASHION: 1, PRODUCTS: 1, FANTASY: 1 };
+  const withdrawn = {};
+  for (const t of new Map(SOURCE_TEMPLATES.concat(HF_REPLACEMENTS_TEMPLATES, SYNTX_REPLACEMENTS_TEMPLATES).map(t => [t.id, t])).values()) if (BROKEN_TEMPLATE_IDS.includes(publicTemplateId(t.id))) withdrawn[t.category] = (withdrawn[t.category] || 0) + 1;
   for (const category of new Set([...Object.keys(baseline.categories), ...PRESETS.map(t => t.category)])) {
-    assert.equal(PRESETS.filter(t => t.category === category).length, (baseline.categories[category] || 0) + (deltas[category] || 0), category);
+    assert.equal(PRESETS.filter(t => t.category === category).length, (baseline.categories[category] || 0) + (deltas[category] || 0) - (withdrawn[category] || 0), category);
   }
 });
 

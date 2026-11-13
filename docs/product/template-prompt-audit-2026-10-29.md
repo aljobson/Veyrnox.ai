@@ -12,11 +12,11 @@ such as the literal `SYNTX.AI` in Frozen Time is preserved by that existing rule
 | --- | ---: | ---: |
 | Retained community templates | 737 | 841 |
 | Captured source texts, including one truncated record | 668 | 772 |
-| Public community gallery | 694 | 771 |
-| Public complete exact prompts | 667 | 771 |
-| Hidden community rows | 43 | 70 |
-| All addressable recipes including independent catalogs | 1,736 | 1,813 |
-| Homepage wall templates | 24 | 14 |
+| Public community gallery | 694 | 749 |
+| Public complete exact prompts | 667 | 749 |
+| Hidden community rows | 43 | 92 |
+| All addressable recipes including independent catalogs | 1,736 | 1,791 |
+| Homepage wall templates | 24 | 13 |
 
 The 27 previously visible `adaptation-only` rows are now hidden everywhere.
 They join 42 unavailable and one truncated record. Hidden templates contain no
@@ -33,19 +33,19 @@ a hash-only fixture prevents them returning in served fields.
 The owner explicitly requires the complete exact prompt to be handed to the
 existing generation route even when source slots cannot be filled. No copy-only
 blocking or limit increase is introduced. The Syntx routing correction follows the existing Seedance importer precedent. Existing required-upload,
-price and consent checks remain. Audit-compatible: **285**; incompatible: **486**.
+price and consent checks remain. Audit-compatible: **285**; incompatible: **464**.
 The previous stage had 244 compatible and 423 incompatible public exact prompts.
 
 | Constraint | Public exact prompts |
 | --- | ---: |
 | Exceeds assigned verified prompt limit | 0 |
-| Explicit numbered slot tokens (`@imageN`, `@videoN`, `<<<video_1>>>` family) | 414 |
-| Image/video reference requirement under the broader audit parser | 444 |
-| Any image reference | 432 |
-| More than one image reference | 266 |
-| More than two image references | 102 |
+| Explicit numbered slot tokens (`@imageN`, `@videoN`, `<<<video_1>>>` family) | 400 |
+| Image/video reference requirement under the broader audit parser | 424 |
+| Any image reference | 412 |
+| More than one image reference | 258 |
+| More than two image references | 99 |
 | Video reference | 201 |
-| Audio/music/voice/dialogue/lip-sync mention | 224 |
+| Audio/music/voice/dialogue/lip-sync mention | 208 |
 
 All assigned route limits are 30,000 characters: `kling-3.0-i2v`,
 `seedance-2.0-fast`, `seedance-2.0-reference`. None is shortened. The longest
@@ -106,16 +106,16 @@ The source categories follow the manifest except Cartoon Hero Swap, corrected fr
 | Content category | Public exact templates |
 | --- | ---: |
 | YOUR PHOTO | 13 |
-| CINEMATIC | 142 |
-| ANIME | 13 |
+| CINEMATIC | 140 |
+| ANIME | 12 |
 | CARTOONS | 22 |
-| MOVIES | 33 |
-| FANTASY | 109 |
-| REALISTIC | 94 |
-| FASHION | 121 |
+| MOVIES | 32 |
+| FANTASY | 105 |
+| REALISTIC | 93 |
+| FASHION | 117 |
 | PRODUCTS | 52 |
-| VFX | 120 |
-| UGC | 36 |
+| VFX | 114 |
+| UGC | 33 |
 | ADS | 16 |
 
 KIDS BIRTHDAY is explicitly excluded pending an owner decision: its twelve promptless rows remain retained and hidden, zero are public, and the category is absent from the gallery filter. It remains in CATEGORY_ORDER.

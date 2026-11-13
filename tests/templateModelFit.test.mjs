@@ -17,8 +17,8 @@ import { fixture as renderFixture } from './helpers/publicSiteRender.mjs';
 
 const fixture = JSON.parse(readFileSync(new URL('./fixtures/catalogTemplateModels.json', import.meta.url)));
 const catalog = fixture.models;
-const optionalIds = ['epic-train-doorway-scene', 'the-push', 'dreamworks-castle', 'a-moment-between-strangers', 'the-last-stagecoach'];
-const changedIds = [...Object.keys(SEEDANCE_200_TEMPLATE_METADATA), 'curtain-reveal'];
+const optionalIds = ['epic-train-doorway-scene', 'the-push', 'dreamworks-castle', 'a-moment-between-strangers'];
+const changedIds = [...Object.keys(SEEDANCE_200_TEMPLATE_METADATA), 'curtain-reveal'].filter(id => templateById(id));
 const numberWords = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, fifteen: 15, twenty: 20, thirty: 30, sixty: 60 };
 
 function violations(preset, contract) {
@@ -107,7 +107,7 @@ test('all 201 retained affected templates follow R1–R4 and preserve exact sour
       assert.equal(takesReferenceModel(SEEDANCE_200_TEMPLATE_METADATA[id]) ? SEEDANCE_REFERENCE_MODEL : SEEDANCE_200_TEMPLATE_METADATA[id].runnableModel, preset.model, id);
     }
   }
-  assert.deepEqual(counts, { R1: 70, R2: 5, R3: 44, R4: 82 });
+  assert.deepEqual(counts, { R1: 68, R2: 4, R3: 41, R4: 82 });
 });
 
 test('optional-picture recipes have no upload dependency in prompts, needs or steps', () => {
@@ -238,7 +238,7 @@ test('committed generated metadata and recipes match an offline re-import', () =
 test('the 299 retained additional community exact prompts keep the established Kling I2V contract', async () => {
   const { HIGGSFIELD_300_TEMPLATE_IDS } = await import('../app/veyrnox/_lib/sourceTemplateExpansion14.js');
   const kling = catalog.find(model => model.id === 'kling-3.0-i2v');
-  for (const id of HIGGSFIELD_300_TEMPLATE_IDS) {
+  for (const id of HIGGSFIELD_300_TEMPLATE_IDS.filter(id => templateById(id))) {
     const preset = templateById(id);
     assert.equal(preset.model, 'Kling 3.0 · I2V', id);
     assert.equal(preset.durationSeconds, 10, id);

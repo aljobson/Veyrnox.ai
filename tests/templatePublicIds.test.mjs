@@ -29,7 +29,7 @@ test('published template ids, fields and clip files name no source platform', ()
 });
 
 test('every old id still resolves to its renamed template and reaches the redirect', () => {
-  assert.equal(LEGACY_TEMPLATE_IDS.length, 122);
+  assert.equal(LEGACY_TEMPLATE_IDS.length, 119);
   for (const legacy of LEGACY_TEMPLATE_IDS) {
     const template = templateById(legacy);
     assert.ok(template, legacy);

@@ -11,19 +11,19 @@ prompts survive only as hashes in the regression fixture.
 
 Publication requires a complete source prompt, scoped to `SOURCE_TEMPLATES`.
 The 27 promptless adaptations join the 42 unavailable and one truncated row:
-70 hidden rows, 841 retained community rows, 771 public exact templates.
+70 hidden rows, 841 retained community rows, 749 public exact templates.
 Of 64 prepared Syntx pairs, 63 add 126 local assets; Dark Couture is rejected because stripping nine typography mentions materially rewrites its prompt. Source media, hashes and
 provenance remain evidence. Clip publication uses template ownership, with
 explicit independent landing placements; clip keys need not equal template IDs.
 Ten promptless homepage wall cards are removed, leaving 14.
 
 `sourcePromptRunnable` is informational by owner decision: 285 public templates
-are audit-compatible and 486 incompatible. The application sends the selected
+are audit-compatible and 464 incompatible. The application sends the selected
 exact text even when reference slots cannot be filled. This decision does not
 change limits, pricing contracts, required-input validation or consent. The Syntx route correction described below follows the existing importer precedent. All three
 assigned model routes currently have a 30,000-character prompt limit; none of
-the public exact prompts exceeds it. There are 414 prompts with explicit
-`@imageN`, `@videoN` or angle-bracket slots, and 444 with reference requirements
+the public exact prompts exceeds it. There are 400 prompts with explicit
+`@imageN`, `@videoN` or angle-bracket slots, and 424 with reference requirements
 under the broader audit parser. No reference is silently invented or substituted.
 
 Both API prompt fields remain populated for installed mobile versions. Unedited

@@ -80,9 +80,10 @@ test('production prepares Instagram credentials while keeping its release closed
     assert.match(prod, /"INSTAGRAM_CLIENT_ID": "1116196098057142"/);
     assert.match(prod, /"PUBLISH_ANALYTICS_ENABLED": "true"/);
     assert.match(prod, /"PUBLISH_POSTING_INSIGHTS_ENABLED": "true"/);
-    for (const flag of ['PUBLISH_UPLOADS_ENABLED', 'PUBLISH_EXTENDED_NETWORKS_ENABLED']) {
-        assert.match(prod, new RegExp(`"${flag}": "false"`), flag);
-    }
+    assert.match(prod, /"PUBLISH_UPLOADS_ENABLED": "false"/);
+    // Extended networks stay off by being absent: its binding went to FIRST_GOAL_SYNC_ENABLED (the Worker var budget is full).
+    assert.doesNotMatch(prod, /"PUBLISH_EXTENDED_NETWORKS_ENABLED"/);
+    assert.match(prod, /"FIRST_GOAL_SYNC_ENABLED": "true"/);
     assert.match(prod, /"PUBLISH_SCOPE_FLAGS": "\{\\"instagramInsights\\":\\"false\\",\\"instagramEngagement\\":\\"false\\",\\"facebookEngagement\\":\\"false\\",\\"tiktokAnalytics\\":\\"false\\"\}"/);
     assert.match(staging, /"PUBLISH_SCOPE_FLAGS": "\{\\"instagramInsights\\":\\"false\\",\\"instagramEngagement\\":\\"false\\",\\"facebookEngagement\\":\\"false\\",\\"tiktokAnalytics\\":\\"false\\"\}"/);
     for (const flag of ['INSTAGRAM_INSIGHTS_SCOPE_ENABLED', 'INSTAGRAM_ENGAGEMENT_SCOPE_ENABLED', 'FACEBOOK_ENGAGEMENT_SCOPE_ENABLED', 'TIKTOK_ANALYTICS_SCOPE_ENABLED']) {

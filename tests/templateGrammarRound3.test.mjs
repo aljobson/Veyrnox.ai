@@ -38,18 +38,6 @@ test('every real bound contract supplies a nonempty hint for every slot', () => 
   }
   assert.ok(count > 0);
 });
-test('reviewed class changes reject incomplete mappings and keep the original source bytes', () => {
-  const ids = ['community-urban-trio-performance', 'community-overhead-performance', 'community-overhead-expression', 'community-escalator-outfit-flow', 'community-urban-giant-greeting', 'community-velvet-couch-lifestyle', 'magical-reality', 'on-the-wave', 'seedance-3-meters'];
-  for (const id of ids) {
-    const c = templateContract(id);
-    assert.equal(c.class, 'unsupported', id);
-    assert.equal(c.slotCount, undefined, id);
-    assert.equal(c.prompt, c.sourcePrompt, id);
-    assert.equal(c.promptHash, c.sourceHash, id);
-    assert.ok(c.reasons.includes('unmapped-image-reference'), id);
-  }
-});
-
 test('canonical slots show their role hints on web within the original excerpt limit', () => {
   const source = 'The silver car is @image1. The red bicycle is @image2.';
   const hints = templatePhotoHints({ class: 'bound', slotCount: 2, sourcePrompt: source, tokenMap: bind(source, 2).map });

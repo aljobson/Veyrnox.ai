@@ -50,7 +50,7 @@ test('public serializers cannot carry server source fields; templates, presets, 
     assert.equal(templateStartId(scene.id, scene.swapOffer), null);
     assert.ok(!searchTemplateIds(scene.id).includes(scene.id));
   }
-  assert.equal(ALL_TEMPLATES.length, 1813); assert.equal(PRESETS.length, 771); assert.equal(templateCards().length, 771);
+  assert.equal(ALL_TEMPLATES.length, 1791); assert.equal(PRESETS.length, 749); assert.equal(templateCards().length, 749);
   for (const template of ALL_TEMPLATES) {
     assert.ok(!Object.hasOwn(template, 'template_source')); assert.ok(!Object.hasOwn(template, 'sha256'));
   }

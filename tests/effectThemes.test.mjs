@@ -17,7 +17,7 @@ test('every theme is useful and contains no source branding or media', () => {
   // templates or restore hidden cards to satisfy the old gallery minimum.
   const retainedSmallThemes = {
     'AI GIFT': ['dandelion-ball', 'red-thread-story', 'meal-together'],
-    FESTIVAL: ['enchanted-forest-selfie', 'pumpkin-lings', 'dont-blow-out-the-pumpkin', 'pumpkin-night'],
+    FESTIVAL: ['enchanted-forest-selfie', 'pumpkin-night'],
   };
   for (const theme of EFFECT_THEMES) {
     const rows = templatesInTheme(theme.id);

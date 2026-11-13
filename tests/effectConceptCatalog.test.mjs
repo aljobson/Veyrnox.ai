@@ -1,3 +1,5 @@
+import { BROKEN_TEMPLATE_IDS } from '../app/veyrnox/_lib/brokenTemplateIds.js';
+import { publicTemplateId } from '../app/veyrnox/_lib/templateIds.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { EFFECT_CONCEPTS } from '../app/veyrnox/_lib/effectConceptCatalog.js';
@@ -10,7 +12,7 @@ import { ALL_TEMPLATES, EFFECT_THEMES, PRESETS, hasTemplateVideo, searchTemplate
 test('the complete effect inventory is deduplicated into the public Veyrnox gallery', () => {
   assert.equal(EFFECT_CONCEPTS.length, 1036);
   assert.equal(EFFECT_CONCEPT_TEMPLATES.length, 1036);
-  const communityCount = SOURCE_TEMPLATES.filter(p => isPublishableSourcePromptTemplate(p.id)).length;
+  const communityCount = SOURCE_TEMPLATES.filter(p => isPublishableSourcePromptTemplate(p.id) && !BROKEN_TEMPLATE_IDS.includes(publicTemplateId(p.id))).length;
   assert.equal(ALL_TEMPLATES.length, EFFECT_CONCEPT_TEMPLATES.length + REFERENCE_TEMPLATES.length + communityCount);
   assert.equal(new Set(ALL_TEMPLATES.map((preset) => preset.id)).size, ALL_TEMPLATES.length);
   assert.equal(new Set(EFFECT_CONCEPTS.map((concept) => concept.name)).size, EFFECT_CONCEPTS.length);

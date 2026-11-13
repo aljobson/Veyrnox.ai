@@ -264,16 +264,16 @@ test('the 200 Seedance templates preserve full prompts and paired unique videos'
 test('public community templates are exact and all source-gap records are removed', () => {
   const audit = PRESETS.map((preset) => [preset.id, sourcePromptAuditRecord(preset.id)]);
   const groups = Object.groupBy(audit, ([, record]) => record.status);
-  assert.equal(groups.exact.length, 771);
+  assert.equal(groups.exact.length, 749);
   assert.equal(groups['adaptation-only'], undefined);
   assert.equal(groups['exact-truncated'], undefined);
   assert.equal(groups.unavailable, undefined);
-  assert.equal(audit.length, 771);
+  assert.equal(audit.length, 749);
   assert.ok(audit.some(([, record]) => record.runnable === true));
   assert.ok(audit.some(([, record]) => record.runnable === false));
   assert.equal(audit.filter(([, record]) => record.issues.includes('prompt-over-30000')).length, 0);
-  assert.equal(audit.filter(([, record]) => record.issues.includes('more-than-two-reference-images')).length, 102);
-  assert.equal(audit.filter(([, record]) => record.issues.includes('audio-preservation-not-supported')).length, 224);
+  assert.equal(audit.filter(([, record]) => record.issues.includes('more-than-two-reference-images')).length, 99);
+  assert.equal(audit.filter(([, record]) => record.issues.includes('audio-preservation-not-supported')).length, 208);
   assert.equal(sourcePromptAuditRecord('community-survivor-memory-shift').status, 'exact-truncated');
   assert.equal(sourcePromptAuditRecord('keyboard-duo-swap').status, 'unavailable');
   assert.equal(REMOVED_PROMPT_GAP_TEMPLATE_IDS.length, 70);
@@ -447,10 +447,10 @@ test('source-aspect orientation agrees with every community preview', () => {
 });
 
 test('gallery and homepage templates have reachable recipe URLs', () => {
-  assert.equal(PRESETS.length, 771);
-  assert.equal(WALL_PRESETS.length, 14);
+  assert.equal(PRESETS.length, 749);
+  assert.equal(WALL_PRESETS.length, 13);
   const visible = [...PRESETS, ...WALL_PRESETS];
-  assert.equal(new Set(visible.map((p) => p.clipKey).filter(Boolean)).size, 771);
+  assert.equal(new Set(visible.map((p) => p.clipKey).filter(Boolean)).size, 749);
   for (const preset of visible) {
     assert.equal(templateById(preset.id), preset);
     assert.equal(isUnknownStaticPage(`/presets/${preset.id}`), false);
