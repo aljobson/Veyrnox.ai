@@ -1812,6 +1812,36 @@
     "ratio": 1.83
   },
   {
+    "id": "liveEdit.wig3d.pixie",
+    "english": "3D pixie crop",
+    "translation": "قصة بيكسي ثلاثية الأبعاد",
+    "ratio": 1.85
+  },
+  {
+    "id": "liveEdit.wig3d.bob",
+    "english": "3D bob",
+    "translation": "بوب ثلاثي الأبعاد",
+    "ratio": 2.83
+  },
+  {
+    "id": "liveEdit.wig3d.long",
+    "english": "3D long hair",
+    "translation": "شعر طويل ثلاثي الأبعاد",
+    "ratio": 1.83
+  },
+  {
+    "id": "liveEdit.wig3dLegend",
+    "english": "3D wigs (new)",
+    "translation": "باروكات ثلاثية الأبعاد (جديد)",
+    "ratio": 2.23
+  },
+  {
+    "id": "liveEdit.wigLoading",
+    "english": "Fitting the 3D wig…",
+    "translation": "جارٍ ضبط الباروكة ثلاثية الأبعاد…",
+    "ratio": 1.74
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "تسجيل الدخول",

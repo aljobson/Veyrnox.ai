@@ -4,7 +4,8 @@ export type MakeupId = 'foundation' | 'blush' | 'eyeshadow' | 'brows' | 'eyeline
 export type MakeupValue = { strength: number; shade: string; shade2?: string; finish?: string; wing?: number; volume?: number };
 export type Hair = { strength: number; shade: string; shade2: string; mode: string };
 export type WigId = 'pixie' | 'bob' | 'waves' | 'curls' | 'long' | 'braids';
-export type Wig = { style: WigId | 'none'; size: number; offset: number; strength: number };
+export type Wig3dId = '3d-pixie' | '3d-bob' | '3d-long' | '3d-fringe';
+export type Wig = { style: WigId | Wig3dId | 'none'; size: number; offset: number; strength: number };
 export type Stack = { look: LookId; strength: number; smoothing: number; makeup: Record<MakeupId, MakeupValue>; hair: Hair; wig: Wig };
 export type HairMask = { width: number; height: number; hair: Float32Array };
 export type HairTexture = { width: number; height: number; data: Uint8Array; top: number; span: number };
@@ -17,7 +18,11 @@ export const { HAIR_SHADES, HAIR_PRESETS, hairRgb, hairTexture, selectFaceHair }
     hairTexture: (mask: HairMask | null) => HairTexture | null;
     selectFaceHair: (mask: HairMask, points: Float32Array) => HairMask | null;
 };
-export const { normalizeWig } = require('./shared/wigFit') as { normalizeWig: (value?: Partial<Wig>) => Wig };
+// 3D wigs (S9) are accepted here; the shared 2D normalizer still only knows the 2D ids, so this wraps it exactly like the web does.
+const wig3dShared = require('./shared/wig3d') as { WIGS_3D: readonly { id: Wig3dId }[]; isWig3d(style: unknown): boolean; normalizeWigWeb(value?: Partial<Wig>): Wig };
+export const normalizeWig: (value?: Partial<Wig>) => Wig = wig3dShared.normalizeWigWeb;
+export const WIG3D_IDS = wig3dShared.WIGS_3D.map(wig => wig.id);
+export const isWig3d = (style: unknown): style is Wig3dId => wig3dShared.isWig3d(style);
 export const WIG_IDS = (require('./shared/wigs') as { WIGS: readonly { id: WigId }[] }).WIGS.map(wig => wig.id);
 export const WIG_RANGE = { size: [0.75, 1.3], offset: [-0.15, 0.15] } as const; // the same clamps normalizeWig applies
 const shared = require('./shared/effects') as { normalize: (input?: Partial<Stack>) => Stack };

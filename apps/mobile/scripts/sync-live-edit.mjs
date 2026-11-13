@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 const source = new URL('../../../packages/live-edit/', import.meta.url);
 const target = new URL('../src/lib/liveEdit/shared/', import.meta.url);
 mkdirSync(target, { recursive: true });
-for (const name of ['effects', 'makeup', 'hair', 'regions', 'looks', 'smoothing', 'wigs', 'wigFit']) {
+for (const name of ['effects', 'makeup', 'hair', 'regions', 'looks', 'smoothing', 'wigs', 'wigFit', 'wig3d']) {
     const body = readFileSync(new URL(`${name}.js`, source), 'utf8');
     const path = new URL(`${name}.js`, target);
     if (process.argv.includes('--check')) {

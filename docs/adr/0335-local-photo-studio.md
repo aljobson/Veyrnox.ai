@@ -477,3 +477,91 @@ GPU squares negative numbers correctly, so it cannot show the `pow()` bug itself
 **Not verified here.** Phone speed and memory with a second WebGL context, the live
 camera with a 3D wig at frame rate, real faces (the proof uses a synthetic face),
 Safari/iOS, and any look beyond "reads as a wig on a synthetic face".
+
+## S8 and S9 — mobile live camera and mobile 3D wigs (owner: "complete the build", 2026-11-13)
+
+Mobile only, dark behind `PHOTO_STUDIO_ENABLED` (still `false` in the committed source; flipping it is a release decision).
+**No new native module, no native rebuild for the code itself, no Credits, no provider.** Nothing here has run on a phone or
+in a WKWebView/Android WebView yet; it was proved only in desktop Chromium from a `file://` page, in software Skia and in jest.
+
+**Decision (S8): the camera lives in the offline WebView, not in a native camera library.** The app has no camera module
+(no expo-camera, no vision-camera, no worklets), and the only camera path a native build offers without one is the system
+picker. The existing offline WebView document (`assets/live-edit/runtime.html`, which already runs the pinned MediaPipe face and
+hair models for stills) now also contains the web live engine (`liveEngine.js`, `renderer.js`, `camera.js`), bundled by
+esbuild from the same source files as the web studio, so mobile and web cannot drift. A visible WebView (`LiveCameraView`)
+shows its canvas; the screen's own controls send the effect settings as JSON. Rejected: vision-camera plus Skia frame
+processors (new native module and rebuild, worklets, blind to test without a device), expo-camera (new native module, snapshots
+only). Cost of this choice: MediaPipe runs in WASM on the CPU inside a WebView, so frame rate on a phone is unknown until
+measured, and `getUserMedia` from a local `file://` document in WKWebView / Android WebView is the main unproven risk.
+The code reports `camera-unsupported` or `camera-blocked` honestly and the person can still pick a photo.
+
+**Permission and privacy.** `ImagePicker.requestCameraPermissionsAsync()` (already installed) runs before the WebView is
+mounted: a denied permission never reaches `getUserMedia`. The WebView has `mediaCapturePermissionGrantType="grant"` and inline
+playback; the hidden still-photo WebViews have neither. The page requests video only (`audio:false`), starts only after the
+person taps Live camera, stops on Stop, on a hidden page and when the app leaves the foreground, and unmounting destroys the
+WebView (which releases the camera). Frames never leave the document: CSP is `default-src 'none'` with data: only, no
+network, and the Playwright proof asserts no non-`file:`/`data:` request. Take photo sends one JPEG (about 1 MB) over the
+bridge; it is validated (bounded base64 JPEG data URL, id matched to the pending request, one answer per request), written
+to the cache and sent through the normal still flow, so hair recolour and wig coverage work at full quality; the cache copy
+is deleted afterwards. Hair recolour is not run live (16 MB model, same as web).
+
+**Protocol.** Every reply from the page is untrusted: strict allowlists for statuses and error codes, size caps, malformed
+messages ignored; an unknown error code becomes the generic failure rather than being ignored (a dead camera must be shown).
+`liveMessage` normalizes the settings stack before sending. The page adds an `error.detail` (underlying error name/message,
+no user data) only for diagnosing a device that reports a generic code. A 90 s start timeout covers decoding the ~40 MB of
+models on a slow phone.
+
+**Fix found on the way (S4 correction).** The S4 runtime loaded MediaPipe's WASM through the `module` loader variant
+(`vision_wasm_module_internal.js`, which uses `import.meta`) from a classic script, which can never run in a page
+("ModuleFactory not set"): the S4 hidden runtime could not initialise on any device. It now uses the classic variant
+(`vision_wasm_internal.js/.wasm`), pinned by size and SHA-256 in `prepare-live-edit.mjs` (not added to the shared web asset
+inventory, so the web asset budget is unchanged). S4's claims about on-device inference were therefore unverified, and
+the first real run was in this change.
+
+**S9 — 3D wigs on mobile.** In live mode they are the same engine as web (three.js is inlined in the document as
+`globalThis.__veyrnoxThree`; the layer prefers it over its dynamic import; the 2D wig art maps to inlined `data:` images through
+`globalThis.__veyrnoxAssetUrl`). For a still photo the hidden WebView renders the overlay: the app sends the landmarks and
+the photo size, the page returns one full-image RGBA PNG (already fitted and face-carved by the same code as web), and Skia
+composites it in `planWig`/`drawWig` exactly like the 2D wig, so preview and save stay one code path (tested byte-identical).
+The overlay is rendered at strength 1 and the app applies strength and the pose fade, so one overlay serves every strength.
+Overlays are cached by style, size, offset, photo size and a hash of the landmarks (four kept); a different slider value needs a
+new overlay, requested after the slider settles, one request at a time, latest wins, 30 s timeout then `unavailable`. Save is
+disabled while a 3D wig is still loading. `Stack`/`normalizeStack` accept the four 3D ids on mobile through the same wrapper the
+web uses; the shared 2D normalizer is unchanged.
+
+**Dependencies and size.** `three` (MIT, root devDependency) is bundled into the runtime document by esbuild at build time;
+its licence text is carried inside the document and as `THREE-LICENSE.txt` beside it (esbuild drops legal comments).
+`prepare-live-edit.mjs` now also requires the web engine sources and three at build time (monorepo root, as before).
+
+**Inspection round 1 (S8/S9) and what changed.** (1) Camera capability is per document: only the visible view loads the page
+with `#live`; every other document (the hidden still and 3D-wig views) has `getUserMedia` replaced by a function that always
+refuses, rejects every `live.*` operation, and iOS capture is denied explicitly. Android's WebView grants capture whenever the
+app holds the permission, so on Android the in-page refusal is the control, not the prop. (2) Replies are checked against their
+own headers before anything decodes them: the PNG/JPEG header must state the claimed size, within a budget (overlay: at most
+1024 on a side and exactly the size the request implies; camera photo: at most 4096 on a side and 8.5 megapixels). (3) An
+export pins the overlay it starts with and refuses, instead of silently omitting the wig, if it is missing. (4) A crashed or
+stalled hidden 3D view is terminal: the request in flight, the one waiting and every later one end as `unavailable`, and a
+document that does not finish loading in 45 s does the same. (5) `live.stop` during start-up cancels the start before the camera is
+opened (a generation counter checked after every await); the proof fails without that check. (6) A partial fade draws the
+wig faded, as the 2D wig does; only a fully faded one (fade 0) draws nothing. (7) The runtime manifest records a SHA-256 for every
+bundler input and embedded asset (36 files: the web engine, the shared packages, three.js, the wig art), and Metro refuses a
+stale runtime after any of them changes. (8) A capture that cannot be written deletes its partial cache file. (9) A camera
+error no longer hides the still-photo status after another photo is chosen.
+
+**Inspection round 2 (S8/S9).** (1) `react-native-webview` hands every URL outside `originWhitelist` to the OS browser BEFORE
+asking `onShouldStartLoadWithRequest`; all three views therefore use `originWhitelist={['*']}` and let the strict callback be the only
+gate (a page that tries to navigate to a web address with captured data in it is refused, not opened). (2) The callback now
+also requires the exact fragment for the view's role: hidden views reject `#live`, so a hidden document can never reload itself
+as the camera document; the camera view accepts only `#live`. The page closes `getUserMedia` on the instance and on
+`MediaDevices.prototype`, non-writable and non-configurable. **Residual, stated plainly:** on Android the WebView grants capture
+whenever the app holds CAMERA and the iOS deny prop does not exist there, so the platform does not enforce the boundary; the
+control is that every byte of page code is ours and shipped inside the app, the CSP forbids network and external scripts,
+navigation is locked, and the camera call is closed in code. Code execution inside a hidden document would defeat it; no such path is known.
+(3) Base64 length must be a multiple of 4 and a decode failure is caught at the cache boundary: the overlay ends as
+`unavailable` and the next request still goes out. (4) Returning from the background with the camera closed no longer shows the
+still-photo loading message.
+
+**Not verified.** Any phone, WKWebView or Android WebView behaviour; camera frame rate and thermals; the 90 s start budget;
+Android WebView camera permission handling; background/foreground transitions with the camera on; 24 MP 3D overlay time and
+memory; looks as a live camera filter list (the strip shows plain tiles without a photo). The real-device test is the next
+step.

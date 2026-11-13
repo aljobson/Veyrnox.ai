@@ -27,8 +27,8 @@ test('inactive permission overlays preserve the exact export lease; background r
 });
 test('vision navigation normalizes local URLs but blocks other documents and remote origins', () => {
     const asset = 'file:///cache/My%20Asset.html?version=1#start';
-    for (const url of ['about:blank', 'file:///cache/My Asset.html', 'file:///cache/My%20Asset.html?version=2#end']) expect(allowsVisionNavigation(url, asset)).toBe(true);
-    for (const url of ['https://example.com/cache/My%20Asset.html', 'file:///cache/other.html', 'file://other/cache/My%20Asset.html', 'data:text/html,hello', 'about:blank#other', 'file:///cache/%zz']) expect(allowsVisionNavigation(url, asset)).toBe(false);
+    for (const url of ['about:blank', 'file:///cache/My Asset.html', 'file:///cache/My%20Asset.html?version=2']) expect(allowsVisionNavigation(url, asset)).toBe(true);
+    for (const url of ['https://example.com/cache/My%20Asset.html', 'file:///cache/other.html', 'file://other/cache/My%20Asset.html', 'data:text/html,hello', 'about:blank#other', 'file:///cache/My%20Asset.html?version=2#end', 'file:///cache/My%20Asset.html#live', 'file:///cache/%zz']) expect(allowsVisionNavigation(url, asset)).toBe(false);
     expect(allowsVisionNavigation('file:///cache/a', 'not a URL')).toBe(false);
 });
 test('build flag parsing fails ambiguous forms, and every dark build replaces a prepared runtime', () => {

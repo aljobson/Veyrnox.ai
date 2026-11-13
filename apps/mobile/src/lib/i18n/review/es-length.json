@@ -3174,6 +3174,18 @@
     "ratio": 1.67
   },
   {
+    "id": "liveEdit.camera.preview",
+    "english": "Live camera preview",
+    "translation": "Vista previa de la cámara en vivo",
+    "ratio": 1.74
+  },
+  {
+    "id": "liveEdit.camera.noFace",
+    "english": "No face found. Face effects are off.",
+    "translation": "No se encontró ninguna cara. Los efectos faciales están desactivados.",
+    "ratio": 1.92
+  },
+  {
     "id": "liveEdit.wigSize",
     "english": "Wig size",
     "translation": "Tamaño de la peluca",

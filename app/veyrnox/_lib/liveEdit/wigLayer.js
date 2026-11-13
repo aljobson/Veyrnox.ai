@@ -37,7 +37,8 @@ export function createWigLayer(width, height, onChange = () => {}) {
             entry.cancel = () => finish(new DOMException('Cancelled', 'AbortError'));
             image.onload = () => finish(image.naturalWidth === wig.dimensions[0] && image.naturalHeight === wig.dimensions[1] ? null : new Error('wig-unavailable'));
             image.onerror = () => finish(new Error('wig-unavailable'));
-            image.src = wig.file;
+            // The mobile WebView page maps these site paths to inlined data: images (globalThis.__veyrnoxAssetUrl).
+            image.src = globalThis.__veyrnoxAssetUrl?.(wig.file) ?? wig.file;
         });
         return entry.promise;
     }

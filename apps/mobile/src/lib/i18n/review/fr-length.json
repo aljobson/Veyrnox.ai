@@ -5004,6 +5004,24 @@
     "ratio": 2.5
   },
   {
+    "id": "liveEdit.camera.take",
+    "english": "Take photo",
+    "translation": "Prendre une photo",
+    "ratio": 1.7
+  },
+  {
+    "id": "liveEdit.camera.noFace",
+    "english": "No face found. Face effects are off.",
+    "translation": "Aucun visage détecté. Les effets de visage sont désactivés.",
+    "ratio": 1.64
+  },
+  {
+    "id": "liveEdit.wig3dLegend",
+    "english": "3D wigs (new)",
+    "translation": "Perruques 3D (nouveau)",
+    "ratio": 1.69
+  },
+  {
     "id": "liveEdit.wig.bob",
     "english": "Bob",
     "translation": "Carré",

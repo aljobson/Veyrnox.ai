@@ -5,8 +5,9 @@ import { renderEffectStack } from '../../lib/liveEdit/renderEffectStack';
 import type { Stack } from '../../lib/liveEdit/engine';
 import type { LocalSource } from '../../lib/liveEdit/media';
 import type { Inference } from '../../lib/liveEdit/protocol';
-type Props = { source: LocalSource; stack: Stack; inference: Inference | null; label: string; maxHeight: number; onError(): void; onReady(): void };
-export function EffectPhoto({ source, stack, inference, label, maxHeight, onError, onReady }: Props) {
+// `revision` changes when an asynchronously produced 3D wig overlay arrives, so the picture is redrawn with it.
+type Props = { source: LocalSource; stack: Stack; inference: Inference | null; label: string; maxHeight: number; revision?: number; onError(): void; onReady(): void };
+export function EffectPhoto({ source, stack, inference, label, maxHeight, revision = 0, onError, onReady }: Props) {
     const image = useImage(source.uri, onError), [picture, setPicture] = useState<SkPicture | null>(null);
     const canvas = useCanvasRef();
     const current = useRef<SkPicture | null>(null), retired = useRef<SkPicture[]>([]);
@@ -18,7 +19,7 @@ export function EffectPhoto({ source, stack, inference, label, maxHeight, onErro
             if (current.current) retired.current.push(current.current);
             current.current = result; setPicture(result);
         } catch { onError(); }
-    }, [image, source, stack, inference, onError, onReady]);
+    }, [image, source, stack, inference, revision, onError, onReady]); // eslint-disable-line react-hooks/exhaustive-deps
     // Canvas commits its children in a layout effect. The tiny async snapshot fences
     // native rendering after that commit; it is never encoded, stored or uploaded.
     useEffect(() => {

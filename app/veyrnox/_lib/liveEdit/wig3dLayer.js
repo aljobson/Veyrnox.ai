@@ -4,7 +4,9 @@ import { carveFace, sampleCoverage } from './wigCommon.js';
 
 // three.js is a same-origin static module (public/photo-studio/vendor), never bundled: it stays out of the Worker.
 let threeLoad;
-const loadThree = () => threeLoad ??= import(/* webpackIgnore: true */ /* turbopackIgnore: true */ THREE_URL).catch(error => { threeLoad = undefined; throw error; });
+// The mobile WebView page (no URL space of its own) injects its inlined copy as globalThis.__veyrnoxThree.
+const loadThree = () => globalThis.__veyrnoxThree ? Promise.resolve(globalThis.__veyrnoxThree)
+    : threeLoad ??= import(/* webpackIgnore: true */ /* turbopackIgnore: true */ THREE_URL).catch(error => { threeLoad = undefined; throw error; });
 
 /**
  * Same contract as the 2D wig layer: render(settings, landmarks, mask) -> { active, image, key, opacity, coverage, status }.

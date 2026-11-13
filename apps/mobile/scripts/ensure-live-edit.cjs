@@ -16,5 +16,12 @@ module.exports = function ensureLiveEdit() {
         if (manifest.inventorySha256 !== digest(fs.readFileSync(path.join(__dirname, '../../../scripts/editor-vision-assets.mjs'))) || manifest.htmlBytes !== html.length || manifest.htmlSha256 !== digest(html) ||
             manifest.runnerSha256 !== digest(fs.readFileSync(path.join(__dirname, 'live-edit-webview.js'))) ||
             manifest.prepareSha256 !== digest(fs.readFileSync(path.join(__dirname, 'prepare-live-edit.mjs')))) throw Error('Stale mobile vision asset: run prepare-live-edit.mjs');
+        // Every recorded bundler input (web engine, shared packages, three.js, wig art) must still match what was bundled.
+        const root = path.join(__dirname, '../../..');
+        for (const [relative, hash] of Object.entries(manifest.inputs ?? {})) {
+            const target = path.join(root, relative);
+            if (!fs.existsSync(target) || digest(fs.readFileSync(target)) !== hash) throw Error(`Stale mobile vision asset: ${relative} changed; run prepare-live-edit.mjs`);
+        }
+        if (!manifest.inputs || Object.keys(manifest.inputs).length < 10) throw Error('Stale mobile vision asset: no input hashes; run prepare-live-edit.mjs');
     }
 };

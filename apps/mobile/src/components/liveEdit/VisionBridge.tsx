@@ -52,10 +52,12 @@ export function VisionBridge({ frame, onResult, onError }: Props) {
             onError={fail}
             onContentProcessDidTerminate={fail}
             onRenderProcessGone={fail}
-            originWhitelist={['file://*', 'about:blank']} onShouldStartLoadWithRequest={request => allowsVisionNavigation(request.url, uri)}
+            // '*' hands every URL to the strict callback below; with a narrower list react-native-webview opens the rest in the OS browser itself.
+            originWhitelist={['*']} onShouldStartLoadWithRequest={request => allowsVisionNavigation(request.url, uri)}
             allowingReadAccessToURL={uri} allowFileAccess allowFileAccessFromFileURLs={false} allowUniversalAccessFromFileURLs={false}
             javaScriptEnabled domStorageEnabled={false} cacheEnabled={false} incognito
             mixedContentMode="never" setSupportMultipleWindows={false} mediaPlaybackRequiresUserAction
+            mediaCapturePermissionGrantType="deny"
         /> : null}
     </View>;
 }

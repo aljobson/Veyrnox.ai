@@ -3474,6 +3474,12 @@
     "ratio": 2.17
   },
   {
+    "id": "liveEdit.camera.failed",
+    "english": "The camera could not start. Try again.",
+    "translation": "Die Kamera konnte nicht gestartet werden. Versuche es erneut.",
+    "ratio": 1.61
+  },
+  {
     "id": "liveEdit.wigSize",
     "english": "Wig size",
     "translation": "Perückengröße",

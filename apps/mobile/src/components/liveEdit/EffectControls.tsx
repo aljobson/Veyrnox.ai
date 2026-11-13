@@ -1,6 +1,6 @@
 import { View } from 'react-native';
 import { t } from '../../lib/i18n';
-import { MAKEUP, HAIR_SHADES, WIG_IDS, WIG_RANGE, type Stack, type MakeupId, type WigId } from '../../lib/liveEdit/engine';
+import { MAKEUP, HAIR_SHADES, WIG_IDS, WIG3D_IDS, WIG_RANGE, type Stack, type MakeupId, type WigId, type Wig3dId } from '../../lib/liveEdit/engine';
 import type { WigStatus } from '../../lib/liveEdit/wig';
 import { Button, Text } from '../ui';
 import { themedStyles, useThemedStyles } from '../ui/AppearanceContext';
@@ -10,8 +10,9 @@ export function EffectControls({ value, onChange, onChangeStart, onChangeEnd, fa
     const styles = useThemedStyles(sheets);
     const labels = { foundation: t('liveEdit.foundation'), blush: t('liveEdit.blush'), eyeshadow: t('liveEdit.eyeshadow'), brows: t('liveEdit.brows'), eyeliner: t('liveEdit.eyeliner'), lashes: t('liveEdit.lashes'), lips: t('liveEdit.lips') };
     const wigNames: Record<WigId, string> = { pixie: t('liveEdit.wig.pixie'), bob: t('liveEdit.wig.bob'), waves: t('liveEdit.wig.waves'), curls: t('liveEdit.wig.curls'), long: t('liveEdit.wig.long'), braids: t('liveEdit.wig.braids') };
+    const wig3dNames: Record<Wig3dId, string> = { '3d-pixie': t('liveEdit.wig3d.pixie'), '3d-bob': t('liveEdit.wig3d.bob'), '3d-long': t('liveEdit.wig3d.long'), '3d-fringe': t('liveEdit.wig3d.fringe') };
     const wigMessages: Record<WigStatus, string> = {
-        off: '', 'face-required': t('liveEdit.wigFaceRequired'), angle: t('liveEdit.wigAngle'), unavailable: t('liveEdit.wigUnavailable'), ready: t('liveEdit.wigReady'),
+        off: '', loading: t('liveEdit.wigLoading'), 'face-required': t('liveEdit.wigFaceRequired'), angle: t('liveEdit.wigAngle'), unavailable: t('liveEdit.wigUnavailable'), ready: t('liveEdit.wigReady'),
         'coverage-unknown': t('liveEdit.wigCoverageUnknown'), uncovered: t('liveEdit.wigUncovered'), 'angle-uncovered': `${t('liveEdit.wigAngle')} ${t('liveEdit.wigUncovered')}`,
     };
     // The hair strength and first shade also tint a selected wig, which does not need a hair mask; hair-only modes and the second shade still do.
@@ -38,6 +39,9 @@ export function EffectControls({ value, onChange, onChangeStart, onChangeEnd, fa
         <View style={styles.row}>{[{ id: 'solid', name: t('liveEdit.solid') }, { id: 'ombre', name: t('liveEdit.ombre') }, { id: 'highlights', name: t('liveEdit.highlights') }].map(mode => <Button key={mode.id} size="md" variant="secondary" label={mode.name} tone={value.hair.mode === mode.id ? 'accent' : 'primary'} accessibilityState={{ selected: value.hair.mode === mode.id }} disabled={disabled || !hair} onPress={() => onChange({ ...value, hair: { ...value.hair, mode: mode.id } })} />)}</View>
         <Text variant="title3">{t('liveEdit.wig')}</Text>
         <View style={styles.row}>{[{ id: 'none', name: t('liveEdit.wigNone') }, ...WIG_IDS.map(id => ({ id, name: wigNames[id] }))].map(item => <Button key={item.id} size="md" variant="secondary" label={item.name} tone={value.wig.style === item.id ? 'accent' : 'primary'} accessibilityState={{ selected: value.wig.style === item.id }} disabled={disabled || !face} onPress={() => { onChangeStart(); setWig({ style: item.id as Stack['wig']['style'] }); onChangeEnd(); }} />)}</View>
+        <Text>{t('liveEdit.wig3dLegend')}</Text>
+        <View style={styles.row}>{WIG3D_IDS.map(id => <Button key={id} size="md" variant="secondary" label={wig3dNames[id]} tone={value.wig.style === id ? 'accent' : 'primary'} accessibilityState={{ selected: value.wig.style === id }} disabled={disabled || !face} onPress={() => { onChangeStart(); setWig({ style: id }); onChangeEnd(); }} />)}</View>
+        <Text tone="secondary">{t('liveEdit.wig3dHelp')}</Text>
         <Text>{t('liveEdit.wigSize')}</Text>
         <StrengthSlider onChangeStart={onChangeStart} onChangeEnd={onChangeEnd} tone="surface" label={t('liveEdit.wigSize')} value={fraction(value.wig.size, WIG_RANGE.size)} disabled={disabled || !face || value.wig.style === 'none'} onChange={f => setWig({ size: unfraction(f, WIG_RANGE.size) })} />
         <Text>{t('liveEdit.wigPosition')}</Text>
