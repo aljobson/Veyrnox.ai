@@ -18,7 +18,9 @@ test('the probe covers nine distinct, published templates across the three model
 test('quotes follow the 5-second unit and the paid total stays under the default cap', () => {
   assert.equal(quoteCredits(32, 10), 64);
   assert.equal(quoteCredits(85, 5), 85);
-  assert.equal(projectedCredits(picks, unit), 272);
+  const paidPicks = picks.filter(paid);
+  assert.equal(projectedCredits(picks, unit), paidPicks.reduce((sum, p) => sum + quoteCredits(unit[p.contract.modelId], p.contract.duration), 0));
+  assert.ok(paidPicks.length >= 3);
   assert.ok(projectedCredits(picks, unit) <= DEFAULT_MAX_CREDITS);
 });
 

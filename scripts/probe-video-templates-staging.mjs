@@ -18,10 +18,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { audit } from './audit-template-fidelity.mjs';
 import { BROKEN_TEMPLATE_IDS } from '../app/veyrnox/_lib/brokenTemplateIds.js';
+import { AI_ENVIRONMENTS } from '../packages/security/environments.js';
 
 export const STAGING_ORIGIN = 'https://veyrnox-ai-staging.al-jobson.workers.dev';
-export const STAGING_SUPABASE = 'https://yrqzwqywxfesmbvhzjgj.supabase.co';
-const STAGING_ANON_KEY = 'sb_publishable_bAxQiodzBhI6bV7lmo9gMQ_Hlg9_Ish';
+// The staging project's public URL and publishable key come from the shared environment table, not a copy.
+export const STAGING_SUPABASE = AI_ENVIRONMENTS.staging.supabaseUrl;
+const STAGING_ANON_KEY = AI_ENVIRONMENTS.staging.publishableKey;
 export const DEFAULT_MAX_CREDITS = 280;
 export const USD_PER_CREDIT_ESTIMATE = 0.84 / 47; // Kling O1 probe: 47 credits = $0.84 provider cost
 const POLL_MS = 15_000, DEADLINE_MS = 20 * 60_000;
