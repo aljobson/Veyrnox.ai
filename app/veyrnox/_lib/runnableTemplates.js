@@ -1,3 +1,4 @@
+import { imageTemplateModelAvailable } from './imageTemplateModels.js';
 import { templateModelId } from './tokens.js';
 
 /**
@@ -8,7 +9,7 @@ import { templateModelId } from './tokens.js';
 export function runnableTemplates(templates, models, goal) {
   const byId = new Map((models || []).map((model) => [model.id, model]));
   const rows = (templates || []).map((preset) => ({ preset, model: byId.get(templateModelId(preset)) }))
-    .filter((row) => row.model && (row.preset.promptPreview ?? row.preset.prompt)?.trim());
+    .filter((row) => row.model && imageTemplateModelAvailable(row.preset, row.model) && (row.preset.promptPreview ?? row.preset.prompt)?.trim());
   if (goal !== 'image' && goal !== 'video') return rows;
   return [...rows.filter((row) => row.model.kind === goal), ...rows.filter((row) => row.model.kind !== goal)];
 }

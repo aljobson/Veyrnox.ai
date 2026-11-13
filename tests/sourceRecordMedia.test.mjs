@@ -28,8 +28,8 @@ test('public-id reservations and exact-source audit remain safe without image me
   assert.equal(sourcePromptAuditRecord('flying-elf').runnable, true);
   const captured = Object.entries(SOURCE_PROMPT_RECORDS).filter(([, r]) => r.sourcePromptAvailable && typeof r.prompt === 'string');
   assert.equal(captured.filter(([id]) => !Object.hasOwn(IMAGE_SOURCE_PROMPT_RECORDS, id)).length, 772);
-  assert.equal(captured.filter(([id]) => Object.hasOwn(IMAGE_SOURCE_PROMPT_RECORDS, id)).length, 1);
-  assert.equal(captured.length, 773);
+  assert.equal(captured.filter(([id]) => Object.hasOwn(IMAGE_SOURCE_PROMPT_RECORDS, id)).length, 2);
+  assert.equal(captured.length, 774);
 });
 
 test('migration, audit and replacement consumers use the guarded media identity operations', () => {
@@ -38,5 +38,15 @@ test('migration, audit and replacement consumers use the guarded media identity 
   assert.match(read('scripts/audit-higgsfield-300.mjs'), /sourceMediaEntries\(SOURCE_PROMPT_RECORDS\)/);
   for (const file of ['scripts/import-replacement-templates-hf.mjs', 'scripts/import-replacement-templates-syntx.mjs']) {
     assert.match(read(file), /sameSourceMedia\(r, m\.mediaId \|\| m\.sourceMediaId\)/);
+  }
+});
+
+
+test('both exact image records are excluded from video media identity joins', () => {
+  assert.deepEqual(sourceMediaEntries(IMAGE_SOURCE_PROMPT_RECORDS), []);
+  for (const [id, record] of Object.entries(IMAGE_SOURCE_PROMPT_RECORDS)) {
+    assert.equal(record.sourceMediaId, undefined);
+    assert.deepEqual(sourceRecordIdsForMedia(SOURCE_PROMPT_RECORDS, record.sourceMediaId), []);
+    assert.equal(sourcePromptAuditRecord(id).status, 'exact');
   }
 });

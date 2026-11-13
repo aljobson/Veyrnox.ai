@@ -143,8 +143,7 @@ will be assessed during deferred preview-art work; no generation was performed.
 
 ## Deferred
 
-Preview-art generation and spend, reference-photo templates (including
-Christmas Tree Ornament), mobile image rendering and flag activation require
+Preview-art generation and spend, mobile image rendering and flag activation require
 separate work. No provider generation, deployment or publication is performed.
 
 ## Verification
@@ -165,3 +164,54 @@ host.
 Number allocation: checked the main-branch `docs/adr` directory and all five
 open PRs (#2097, #2096, #2092, #2089, #1979) through the GitHub connector on
 2026-11-12. Main's highest number was 0336; none of those PRs added an ADR.
+
+
+## Photo-reference amendment (2026-11-13)
+
+The registry remains exactly fifty: two exact community captures (Flying Elf
+and Christmas Tree Ornament) and forty-eight originals. `pet-in-a-santa-hat`
+is removed: its invented pet portrait overlaps the ornament's ability to use a
+person's own pet, while the remaining originals retain wider scene variety.
+
+Christmas Tree Ornament uses the exact UTF-8 prompt from Syntx record
+`01a1cb5f-c1b3-7030-b572-c82fbba8b92c`, slug `christmas-tree-ornament`, captured
+2026-11-13 from the public trends feed, published `2026-11-11T19:06:00Z`.
+The source records banana / banana-2.1, 2K, 3:4. Its independent test hash is
+`1082539cb0da501164497e48479807657804cd60042ed6902e00127ac4750129`.
+No prompt rewriting, source artwork copying or preview generation occurs.
+Shared provenance now contains 772 video captures + 2 image captures = 774;
+nonempty source-media guards continue excluding both image records.
+
+The declarative image-only `photo: { required: true, count: 1 }` requirement
+uses UseTemplate's existing one-photo picker and in-memory same-tab handoff.
+This photo recipe proceeds to Create; text-only templates retain inline
+Generate. Create receives `sources.image`, requires exactly one usable photo,
+and submits an ordinary image request with `references`, no duration, no
+ranking `preset` and no fidelity `template_id`, including after prompt edits.
+The template ID in the draft and handoff is only a UI key. Images also never
+receive the video-specific character-preservation sentence.
+
+The lightweight allowlist adds `nano-banana-pro-edit-grsai`. Its existing
+`grsai:nano-banana-pro-edit` capability requires one image and accepts 3:4;
+`nano-banana-pro-grsai` remains text-only. Price still comes from the catalog.
+UseTemplate requires a live compatible model; the Create picker omits the
+ornament when its model is absent or cannot accept a photo. Arrival never
+silently substitutes a fallback model. A missing photo, expired/lost handoff,
+removed photo or missing capability blocks Generate and explains the problem.
+All eleven locales include the photo-required message. Gallery, picker and
+detail artwork show that note instead of any preview image for this recipe.
+
+Existing gateway tests prove admission, source ownership, provider payload and
+polling using simulated I/O; an added explicit-reference test preserves the
+ornament prompt and 3:4 aspect through the real gateway. Server, ledger, jobs,
+webhooks, migrations, routes and Worker variables are unchanged. The publication
+gate remains exactly `"true"`, absent/off by default. `/api/presets` still skips
+image records before video routing; the sitemap and hard 404 behavior remain.
+
+Validation limitations and bounded deviations: live `/api/catalog` verification
+was attempted but shell DNS and the web-fetch tool could not reach it. No live
+availability or provider generation is claimed; runtime capability checks fail
+closed. The pre-existing Create page and public locale catalogs exceed the
+500-line rule; this amendment makes narrow edits without an unrelated split.
+New helper files remain below 500 lines. No commit, push, publish, new native
+build environment or additional preview server is part of this work.

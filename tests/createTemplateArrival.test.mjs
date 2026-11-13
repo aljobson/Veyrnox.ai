@@ -1,3 +1,5 @@
+import { registerPhotoArrivalTests } from './helpers/imageTemplatePhotoChecks.mjs';
+import * as imageTemplateModels from '../app/veyrnox/_lib/imageTemplateModels.js';
 import test from 'node:test';
 import { fromFallback as imageFallbackCatalog } from '../app/veyrnox/_lib/useCatalog.js';
 import assert from 'node:assert/strict';
@@ -50,7 +52,7 @@ const addFilesDialog = tree => find(tree, node => node.type === AddFilesDialog);
 
 // Execute the real page's hooks/effects and event handlers offline. Only I/O
 // and unrelated child components are stubbed; recipe and submit logic is real.
-function harness(params, { saved, handoff, handoffModelId, handoffTemplateId = preset.id, fetchedPreset = preset, blocked = false, models = [original, other], loading = false } = {}) {
+function harness(params, { saved, handoff, handoffModelId, handoffTemplateId = preset.id, fetchedPreset = preset, blocked = false, models = [original, other], loading = false, upload } = {}) {
   const values = new Map();
   const storage = { getItem: key => values.get(key), setItem: (key, value) => values.set(key, value), removeItem: key => values.delete(key) };
   if (saved) landingDraft.writeStudioDraft(storage, saved);
@@ -85,6 +87,7 @@ function harness(params, { saved, handoff, handoffModelId, handoffTemplateId = p
     '../../../../lib/aspectShapes.mjs': aspectShapes,
     '../../../../lib/templateStartCheck': templateStart,
     '../../_lib/templateDraft': templateDraft,
+    '../../_lib/imageTemplateModels.js': imageTemplateModels,
     '../../_lib/templateMediaHandoff': templateMediaHandoff,
     '../../_lib/landingDraft': landingDraft,
     '../../_lib/tokens': tokens,
@@ -104,7 +107,7 @@ function harness(params, { saved, handoff, handoffModelId, handoffTemplateId = p
       if (path === '/balance') return { balance: 1000 };
       assert.equal(path, '/generations'); requests.push(JSON.parse(options.body)); return { job_id: 'test-job' };
     }, makeIdempotencyKey: () => 'test-key', notifyBalanceChanged() {}, GatewayError: class extends Error {} },
-    '../../_lib/chatMedia': { ...chatMedia, mediaGenerationSources: async () => ({ references: [], source_keys: [], source_assets: [] }) },
+    '../../_lib/chatMedia': { ...chatMedia, mediaGenerationSources: upload ? (model, sources) => chatMedia.mediaGenerationSources(model, sources, upload) : async () => ({ references: [], source_keys: [], source_assets: [] }) },
     '../../_lib/veyJourneyStore': { getJourney: () => ({}), trackJourneyJob() {} },
     '../../_components/TemplatePicker': { TemplatePicker },
     '../../_components/TemplateHandoffCard': { TemplateHandoffCard: HandoffCard },
@@ -422,7 +425,7 @@ test('Create silently clears a one-time photo for another or missing template', 
 test('real image templates arrive and submit image inputs without a video duration', async () => {
   const { IMAGE_TEMPLATES } = await import('../app/veyrnox/_lib/imageTemplates.js');
   const models = imageFallbackCatalog().filter(model => ['nano-banana-kie', 'nano-banana-pro-grsai', 'seedream-4'].includes(model.id)).map(model => ({ ...model, modality: 'text-to-image', credits: 7 }));
-  for (const image of IMAGE_TEMPLATES) {
+  for (const image of IMAGE_TEMPLATES.filter(p => !p.photo)) {
     const h = harness({ preset: image.id, model: image.model, duration: '10s' }, { fetchedPreset: image, models });
     try {
       const tree = await h.settle();
@@ -461,3 +464,5 @@ test('selecting a real image card inside Create replaces a video recipe and subm
     assert.equal('duration_seconds' in h.requests[0].inputs, false);
   } finally { h.close(); }
 });
+
+registerPhotoArrivalTests({ harness, generate, prompt, sourcePickers });

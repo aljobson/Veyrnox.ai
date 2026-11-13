@@ -1,3 +1,4 @@
+import { ornament } from './helpers/imageTemplatePhoto.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { register } from 'node:module';
@@ -174,5 +175,23 @@ test('transient storage failure retries completion without buying another edit',
         assert.equal(net.job.state, 'STORED');
         assert.equal(submits(net).length, 1);
         assert.equal(rpcCalls(net, 'ledger_refund').length, 0);
+    } finally { net.restore(); }
+});
+
+
+test('the existing gateway accepts an unattributed ornament image reference with exact prompt and aspect', async () => {
+    const net = network();
+    try {
+        const references = [{ slot: 'image', origin: 'upload', key: SOURCE }];
+        const response = await post({ source_key: undefined, references,
+            inputs: { prompt: ornament.prompt, aspect_ratio: ornament.aspect } });
+        assert.equal(response.status, 200);
+        const debit = rpcCalls(net, 'ledger_debit')[0].body;
+        assert.deepEqual(debit.p_inputs.references, references);
+        assert.equal(debit.p_inputs.prompt, ornament.prompt);
+        assert.equal(debit.p_inputs.template_id, undefined);
+        assert.equal(submits(net)[0].body.prompt, ornament.prompt);
+        assert.equal(submits(net)[0].body.aspectRatio, '3:4');
+        assert.equal(submits(net)[0].body.urls.length, 1);
     } finally { net.restore(); }
 });

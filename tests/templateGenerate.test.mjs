@@ -208,9 +208,9 @@ test('a failed upload is reported as upload_failed and nothing is sent', async (
   assert.equal(h.requests.length, 0);
 });
 
-test('the page offers Generate only when inlineBlockReason is null, keeps Create as "Edit before generating", and prices from the catalogue', () => {
+test('the page keeps photo image recipes in Create and prices inline generation from the catalogue', () => {
   const use = readFileSync(new URL('../app/veyrnox/_components/UseTemplate.js', import.meta.url), 'utf8');
-  assert.match(use, /const inline = inlineBlockReason\(preset, model, \{ photo: true \}\) === null;/);
+  assert.match(use, /const inline = !imagePhotoRequired && inlineBlockReason\(preset, model, \{ photo: true \}\) === null;/);
   assert.match(use, /\{inline && !\(generationBlocked \|\| promptBlocked \|\| !model\) && \(\s*<TemplateGenerate[^>]*unitCost=\{credits\}[^>]*preparing=\{photoBusy\}/);
   assert.match(use, /inline \? t\('presets\.use\.editBeforeGenerating'\)/);
   assert.match(use, /onClick=\{use\}/, 'the Create hand-off is unchanged');

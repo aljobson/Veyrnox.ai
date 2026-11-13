@@ -1,3 +1,5 @@
+import { ornament, ornamentModel } from './helpers/imageTemplatePhoto.mjs';
+import { fromFallback } from '../app/veyrnox/_lib/useCatalog.js';
 import { englishAppImports } from './helpers/appI18nStub.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -50,4 +52,11 @@ test('the picker lists video templates only; audio samples live in Music Discove
 test('create no longer wires audio templates', () => {
   const page = read('app/veyrnox/app/create/page.js');
   assert.doesNotMatch(page, /applyAudioTemplate|onPickAudio/);
+});
+
+
+test('photo templates require their own catalog model and a usable photo capability in the picker', () => {
+  assert.deepEqual(runnable.runnableTemplates([ornament], fromFallback(), 'image'), []);
+  assert.deepEqual(runnable.runnableTemplates([ornament], [{ ...ornamentModel, media: {} }], 'image'), []);
+  assert.equal(runnable.runnableTemplates([ornament], [ornamentModel], 'image')[0].model.id, ornament.model);
 });
