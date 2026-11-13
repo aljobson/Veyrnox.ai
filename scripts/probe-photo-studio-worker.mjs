@@ -9,7 +9,7 @@ import { tmpdir } from 'node:os';
 import assert from 'node:assert/strict';
 import { parseJsonc } from './check-migration-ledger.mjs';
 import { VISION_RELEASES, verifyVisionAssets, visionDigest } from './editor-vision-assets.mjs';
-import { editorVisionWorkerPolicy } from '../app/veyrnox/_lib/editorVisionRuntime.mjs';
+import { EDITOR_VISION_VERSION, editorVisionWorkerPolicy } from '../app/veyrnox/_lib/editorVisionRuntime.mjs';
 const root = process.cwd(), port = Number(process.env.PHOTO_PROOF_PORT || 8796), origin = `http://127.0.0.1:${port}`;
 await access(resolve(root, '.open-next/worker.js'));
 await verifyVisionAssets(resolve(root, '.open-next/assets'));
@@ -52,8 +52,8 @@ async function start(localInference, photoStudio) {
     throw new Error('Local built Worker startup timed out.');
 }
 async function check(localInference, photoStudio) {
-    for (const [index, release] of VISION_RELEASES.entries()) {
-        const prefix = `/editor-vision/${release.version}`, enabled = localInference === 'true' && (index === 0 || photoStudio === 'true');
+    for (const release of VISION_RELEASES) {
+        const prefix = `/editor-vision/${release.version}`, enabled = localInference === 'true' && (release.version === EDITOR_VISION_VERSION || photoStudio === 'true');
         for (const name of ['worker.mjs', release.model]) for (const method of ['GET', 'HEAD']) {
             const response = await fetch(`${origin}${prefix}/${name}`, { method, redirect: 'manual' });
             assert.equal(response.status, enabled ? 200 : 404, `${localInference}/${photoStudio} ${method} ${prefix}/${name}`);

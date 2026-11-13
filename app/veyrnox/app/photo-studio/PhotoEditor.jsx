@@ -10,7 +10,7 @@ export default function PhotoEditor() {
     const { t } = useI18n();
     const canvas = useRef(null), engine = useRef(null), history = useRef(createHistory()), epoch = useRef(0);
     const [source, setSource] = useState(null), [settings, setSettings] = useState(DEFAULTS);
-    const [state, setState] = useState('empty'), [face, setFace] = useState(''), [error, setFailure] = useState('');
+    const [state, setState] = useState('empty'), [face, setFace] = useState(''), [hair, setHair] = useState('waiting'), [error, setFailure] = useState('');
     const [format, setFormat] = useState('image/png'), [result, setResult] = useState(null), [offline, setOffline] = useState(false);
     const [aspect, setAspect] = useState(4 / 3);
     const [undoState, setUndoState] = useState({ undo: false, redo: false });
@@ -34,6 +34,7 @@ export default function PhotoEditor() {
                 if (controller.signal.aborted || current !== epoch.current) { image.close(); return; }
                 setAspect(image.width / image.height);
                 instance = createPhotoEngine(canvas.current, image, {
+                    onHair: status => { if (!controller.signal.aborted && current === epoch.current) setHair(status); },
                     onFace: status => { if (!controller.signal.aborted && current === epoch.current) setFace(status); },
                     onError: message => { if (!controller.signal.aborted && current === epoch.current) { setFailure(message); setState('error'); } },
                 });
@@ -56,10 +57,10 @@ export default function PhotoEditor() {
         const file = event.target.files?.[0]; event.target.value = ''; if (!file) return;
         if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size < 1 || file.size > 50 * 1024 * 1024) { setFailure('invalid-photo'); return; }
         epoch.current++; engine.current?.close(); engine.current = null;
-        history.current = createHistory(); setUndoState({ undo: false, redo: false }); setSettings(history.current.value); setComparison(false); setResult(null); setFailure(''); setFace(''); setState('loading'); setSource({ file });
+        history.current = createHistory(); setUndoState({ undo: false, redo: false }); setSettings(history.current.value); setComparison(false); setResult(null); setFailure(''); setFace(''); setHair('waiting'); setState('loading'); setSource({ file });
     }
     function retry() {
-        epoch.current++; engine.current?.close(); engine.current = null; setComparison(false); setFailure(''); setResult(null); setFace(''); setState('loading'); setSource({ file: source.file });
+        epoch.current++; engine.current?.close(); engine.current = null; setComparison(false); setFailure(''); setResult(null); setFace(''); setHair('waiting'); setState('loading'); setSource({ file: source.file });
     }
     function compare(value) { setComparison(value); engine.current?.compare(value); }
     async function exportPhoto() {
@@ -113,7 +114,7 @@ export default function PhotoEditor() {
                 {state === 'exporting' && <p role="status" className="mt-4 text-sm">{t('app.photoStudio.exporting')}</p>}
                 {result && <div role="status" className="mt-4"><p className="text-sm">{t('app.photoStudio.saved')}</p><a className={`${control} mt-3 inline-flex items-center text-vx-accent`} href={result.url} download={`photo-studio.${result.extension}`}>{t('app.photoStudio.download')}</a></div>}
             </section>
-            <aside className="min-w-0 rounded-2xl border border-vx-border p-6"><Controls t={t} settings={settings} disabled={!ready} faceReady={face === 'one-face'} update={update} addSticker={kind => { const sticker = anchoredSticker(kind, engine.current?.landmarks); if (sticker) update({ stickers: [...settings.stickers, sticker] }); }} /></aside>
+            <aside className="min-w-0 rounded-2xl border border-vx-border p-6"><Controls t={t} settings={settings} disabled={!ready} faceReady={face === 'one-face'} hairState={hair} retry={retry} update={update} addSticker={kind => { const sticker = anchoredSticker(kind, engine.current?.landmarks); if (sticker) update({ stickers: [...settings.stickers, sticker] }); }} /></aside>
         </div>
     </>;
 }

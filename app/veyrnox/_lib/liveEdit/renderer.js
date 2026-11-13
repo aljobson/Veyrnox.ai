@@ -1,3 +1,4 @@
+import { hairTexture, hairRgb } from '../../../../packages/live-edit/hair.js';
 import { MAKEUP, rgb } from '../../../../packages/live-edit/makeup.js';
 import { createMakeupMasks } from './makeupMasks.js';
 import { VERTEX, FRAGMENT } from './shaders.js';
@@ -12,10 +13,10 @@ export function createPhotoRenderer(output, source) {
     if (!gl) throw new Error('graphics-unavailable');
     const ctx = output.getContext('2d');
     const shaders = [], textures = [];
-    let program, buffer, landmarks, makeupKey, closed = false;
+    let program, buffer, landmarks, makeupKey, hairMask, closed = false;
     function close() {
         if (closed) return;
-        closed = true; landmarks = undefined; makeupKey = undefined;
+        closed = true; landmarks = undefined; makeupKey = undefined; hairMask = null;
         textures.forEach(t => gl.deleteTexture(t)); shaders.forEach(s => gl.deleteShader(s));
         if (buffer) gl.deleteBuffer(buffer); if (program) gl.deleteProgram(program);
         gl.getExtension('WEBGL_lose_context')?.loseContext();
@@ -39,7 +40,7 @@ export function createPhotoRenderer(output, source) {
         buffer = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,1,1]), gl.STATIC_DRAW);
         const position = gl.getAttribLocation(program, 'position'); gl.enableVertexAttribArray(position); gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
-        const locations = Object.fromEntries(['source','mask','lut','pixel','row0','row1','row2','offset','touch','finish','makeupMask','makeupStrength[0]','makeupColor[0]','shadowSecond','lipFinish'].map(k => [k, gl.getUniformLocation(program, k)]));
+        const locations = Object.fromEntries(['source','mask','lut','pixel','row0','row1','row2','offset','touch','finish','makeupMask','makeupStrength[0]','makeupColor[0]','shadowSecond','lipFinish','hairMask','hairColor','hairSecond','hairParams'].map(k => [k, gl.getUniformLocation(program, k)]));
         for (let unit = 0; unit < 3; unit++) {
             const texture = gl.createTexture(); textures.push(texture); gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, texture);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
@@ -52,6 +53,13 @@ export function createPhotoRenderer(output, source) {
         gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
         gl.uniform1i(locations.makeupMask, 3);
+        const hairGlTexture = gl.createTexture(); textures.push(hairGlTexture);
+        gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, hairGlTexture);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.uniform1i(locations.hairMask, 4);
         function upload(unit, input) {
             gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, textures[unit]);
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, input);
@@ -61,8 +69,18 @@ export function createPhotoRenderer(output, source) {
         gl.uniform2f(locations.pixel, 1 / width, 1 / height); gl.viewport(0, 0, width, height);
         let lutKind, mask;
         const api = {
+            setHairMask(value) {
+                hairMask = null;
+                if (closed || gl.isContextLost()) throw new Error('graphics-lost');
+                hairMask = hairTexture(value);
+                gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, hairGlTexture);
+                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, hairMask?.width ?? 1, hairMask?.height ?? 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, hairMask?.data ?? new Uint8Array(4));
+                if (gl.isContextLost() || gl.getError() !== gl.NO_ERROR) { hairMask = null; throw new Error('graphics-lost'); }
+                return Boolean(hairMask);
+            },
             setLandmarks(points) {
                 landmarks = points?.slice(); makeupKey = undefined;
+                if (landmarks?.length !== 1434) api.setHairMask(null);
                 mask = createFaceMask(width, height, points); upload(1, mask);
                 mask.width = mask.height = 1;
             },
@@ -70,10 +88,14 @@ export function createPhotoRenderer(output, source) {
                 if (closed || gl.isContextLost()) throw new Error('graphics-lost');
                 const s = normalize(settings);
                 const makeupActive = landmarks?.length === 1434 && MAKEUP.some(e => s.makeup[e.id].strength > 0);
-                const neutral = !makeupActive && EFFECTS.every(e => s[e.id] === 0) && (s.look === 'original' || s.strength === 0) && (s.lut === 'none' || s.lutStrength === 0);
+                const hairActive = landmarks?.length === 1434 && hairMask && s.hair.strength > 0;
+                const neutral = !hairActive && !makeupActive && EFFECTS.every(e => s[e.id] === 0) && (s.look === 'original' || s.strength === 0) && (s.lut === 'none' || s.lutStrength === 0);
                 ctx.clearRect(0, 0, width, height);
                 if (neutral) ctx.drawImage(source, 0, 0);
                 else {
+                    gl.uniform3fv(locations.hairColor, hairRgb(s.hair.shade));
+                    gl.uniform3fv(locations.hairSecond, hairRgb(s.hair.shade2));
+                    gl.uniform4f(locations.hairParams, hairActive ? s.hair.strength : 0, ['solid', 'ombre', 'highlights'].indexOf(s.hair.mode), hairMask?.top ?? 0, hairMask?.span ?? 1);
                     const key = `${s.makeup.eyeliner.wing}:${s.makeup.lashes.volume}`;
                     if (makeupKey !== key) {
                         const masks = createMakeupMasks(width, height, landmarks, s.makeup);

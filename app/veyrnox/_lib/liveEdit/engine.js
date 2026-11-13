@@ -1,7 +1,9 @@
+import { createVisionProcessor } from '../editorVisionWorkerClient.mjs';
 import { createPhotoRenderer } from './renderer.js';
 import { createFaceProcessor } from './faceClient.mjs';
 import { DEFAULTS, normalize } from '../../../../packages/live-edit/effects.js';
 import { createLandmarkFilter } from '../../../../packages/live-edit/smoothing.js';
+import { selectFaceHair } from '../../../../packages/live-edit/hair.js';
 export const PHOTO_LIMITS = Object.freeze({ bytes: 50 * 1024 * 1024, pixels: 24 * 1000 * 1000, edge: 8192 });
 export function validatePhoto(file, width, height) {
     if (!file || !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > PHOTO_LIMITS.bytes || file.size < 1) throw new Error('invalid-photo');
@@ -35,13 +37,18 @@ export function decodePhoto(file, signal) {
     });
 }
 /** Ownership is synchronous: caller can close while model initialization is pending. */
-export function createPhotoEngine(canvas, source, { onFace = () => {}, onError = () => {}, rendererFactory = createPhotoRenderer, processorFactory = createFaceProcessor, createFlatCanvas = () => document.createElement('canvas') } = {}) {
+export function createPhotoEngine(canvas, source, { onFace = () => {}, onHair = () => {}, hairProcessorFactory = createVisionProcessor, onError = () => {}, rendererFactory = createPhotoRenderer, processorFactory = createFaceProcessor, createFlatCanvas = () => document.createElement('canvas') } = {}) {
     const controller = new AbortController(), renderer = rendererFactory(canvas, source), filter = createLandmarkFilter();
-    let closed = false, processor, frame = 0, settings = normalize(DEFAULTS), compare = false, landmarks = new Float32Array();
+    let closed = false, processor, hairProcessor, frame = 0, settings = normalize(DEFAULTS), compare = false, landmarks = new Float32Array();
     function draw() { frame = 0; if (closed) return; try { renderer.draw(compare ? DEFAULTS : settings); } catch { onError('graphics-lost'); } }
     function schedule() { if (!closed && !frame) frame = requestAnimationFrame(draw); }
+    function clearHair() {
+        try { renderer.setHairMask?.(null); return true; }
+        catch { onHair('invalid'); onError('graphics-lost'); return false; }
+    }
     const ready = (async () => {
-        onFace('detecting');
+        let faceProcessorFailed = false;
+        onFace('detecting'); onHair('waiting');
         try {
             processor = await processorFactory({ signal: controller.signal });
             if (closed) return;
@@ -52,10 +59,34 @@ export function createPhotoEngine(canvas, source, { onFace = () => {}, onError =
             schedule();
         } catch (error) {
             if (!closed && error.name !== 'AbortError') {
+                faceProcessorFailed = true;
                 landmarks = new Float32Array(); filter.reset(); onFace('face-unavailable');
                 try { renderer.setLandmarks(null); schedule(); } catch { onError('graphics-lost'); }
             }
         } finally { processor?.close(); }
+        if (closed) return;
+        if (landmarks.length !== 1434) { if (clearHair()) onHair(faceProcessorFailed ? 'unavailable' : 'face-required'); return; }
+        onHair('detecting');
+        let masks;
+        try {
+            hairProcessor = await hairProcessorFactory({ signal: controller.signal, hair: true });
+            if (closed) return;
+            masks = await hairProcessor.segment(source, 1);
+        } catch (error) {
+            if (!closed && error.name !== 'AbortError' && clearHair()) { onHair('unavailable'); schedule(); }
+            return;
+        } finally { hairProcessor?.close(); }
+        if (closed) return;
+        // Processing/upload errors are not a failed model download. Do not offer
+        // an inference Retry loop for a malformed internal mask or a lost GPU.
+        try {
+            const found = renderer.setHairMask(selectFaceHair(masks, landmarks));
+            onHair(found ? 'ready' : 'no-hair'); schedule();
+        } catch (error) {
+            onHair('invalid');
+            if (error.message === 'invalid-hair-mask') { if (clearHair()) schedule(); }
+            else onError('graphics-lost');
+        }
     })();
     schedule();
     return {
@@ -80,6 +111,6 @@ export function createPhotoEngine(canvas, source, { onFace = () => {}, onError =
             if (closed) throw new DOMException('Cancelled', 'AbortError');
             return blob;
         },
-        close() { if (closed) return; closed = true; controller.abort(); processor?.close(); cancelAnimationFrame(frame); filter.reset(); landmarks = new Float32Array(); renderer.close(); },
+        close() { if (closed) return; closed = true; controller.abort(); processor?.close(); hairProcessor?.close(); cancelAnimationFrame(frame); filter.reset(); landmarks = new Float32Array(); renderer.close(); },
     };
 }

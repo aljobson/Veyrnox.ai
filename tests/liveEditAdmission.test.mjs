@@ -3,14 +3,14 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { serveEditorVision, visionAdmission } from '../lib/editorVisionAdmission.mjs';
 import { editorFeatureEnabled } from '../lib/editorRuntimeFlags.mjs';
-import { EDITOR_VISION_PATH, FACE_VISION_PATH, editorVisionWorkerPolicy } from '../app/veyrnox/_lib/editorVisionRuntime.mjs';
+import { EDITOR_VISION_PATH, FACE_VISION_PATH, HAIR_VISION_PATH, editorVisionWorkerPolicy } from '../app/veyrnox/_lib/editorVisionRuntime.mjs';
 import { VISION_RELEASES, FACE_ASSETS, visionDigest, validateVisionManifest } from '../scripts/editor-vision-assets.mjs';
 import { parseJsonc } from '../scripts/check-migration-ledger.mjs';
 test('Worker-first GET/HEAD admission has independent gates and overrides asset caching', async () => {
     let fetches = 0;
     for (const localInference of ['false', 'true']) for (const photoStudio of ['false', 'true']) {
         const env = { EDITOR_RUNTIME_FLAGS: JSON.stringify({ localInference, photoStudio }), ASSETS: { fetch: async () => { fetches++; return new Response('asset', { headers: { 'Cache-Control': 'public, max-age=31536000', 'Content-Type': 'application/octet-stream' } }); } } };
-        for (const [prefix, model] of [[EDITOR_VISION_PATH, 'selfie_multiclass_256x256.tflite'], [FACE_VISION_PATH, 'face_landmarker.task']]) for (const name of ['worker.mjs', model]) for (const method of ['GET', 'HEAD']) {
+        for (const [prefix, model] of [[EDITOR_VISION_PATH, 'selfie_multiclass_256x256.tflite'], [FACE_VISION_PATH, 'face_landmarker.task'], [HAIR_VISION_PATH, 'selfie_multiclass_256x256.tflite']]) for (const name of ['worker.mjs', model]) for (const method of ['GET', 'HEAD']) {
             const enabled = localInference === 'true' && (prefix === EDITOR_VISION_PATH || photoStudio === 'true');
             const before = fetches, result = await serveEditorVision(new Request(`https://veyrnox.ai${prefix}/${name}`, { method }), env);
             assert.equal(result.status, enabled ? 200 : 404); assert.equal(fetches - before, enabled ? 1 : 0);
@@ -25,12 +25,12 @@ test('Worker-first GET/HEAD admission has independent gates and overrides asset 
     for (const path of ['/editor-vision/unknown/worker.mjs', `${FACE_VISION_PATH}/worker.mjs/extra`, `${FACE_VISION_PATH}/%77orker.mjs`]) assert.equal(visionAdmission(new Request(`https://veyrnox.ai${path}`), enabled).status, 404);
     assert.equal(visionAdmission(new Request(`https://veyrnox.ai${FACE_VISION_PATH}/worker.mjs`, { method: 'POST' }), enabled).status, 405);
 });
-test('production stays dark with no extra binding and both immutable Workers remain pinned', async () => {
+test('production stays dark with no extra binding and all immutable Workers remain pinned', async () => {
     const config = parseJsonc(await readFile(new URL('../wrangler.jsonc', import.meta.url), 'utf8'));
     assert.equal(editorFeatureEnabled('PHOTO_STUDIO_ENABLED', config.vars), false);
     assert.ok(config.vars.EDITOR_RUNTIME_FLAGS.length < 1024);
     assert.ok(config.assets.run_worker_first.includes('/editor-vision/*'));
-    assert.equal(VISION_RELEASES.length, 2);
+    assert.equal(VISION_RELEASES.length, 3);
     for (const release of VISION_RELEASES) {
         const worker = release.assets.find(file => file.path === 'worker.mjs');
         assert.equal(visionDigest(await readFile(new URL(`../${worker.source}`, import.meta.url))), worker.sha256);

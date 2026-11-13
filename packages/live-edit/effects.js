@@ -1,3 +1,4 @@
+import { HAIR_DEFAULTS, normalizeHair } from './hair.js';
 import { MAKEUP_DEFAULTS, normalizeMakeup } from './makeup.js';
 import { lookMatrix, IDENTITY, LOOK_IDS, chain } from './looks.js';
 export { LOOK_IDS };
@@ -7,9 +8,9 @@ export const EFFECTS = Object.freeze([
     ['warmth', -1, 1], ['tint', -1, 1], ['vignette', 0, 1], ['grain', 0, 1],
     ['smoothing', 0, 1], ['blemish', 0, 1], ['teeth', 0, 1], ['eyes', 0, 1],
 ].map(([id, min, max]) => Object.freeze({ id, min, max, step: 0.01, defaultStrength: 0, face: ['smoothing', 'blemish', 'teeth', 'eyes'].includes(id) })));
-export const DEFAULTS = Object.freeze({ ...Object.fromEntries(EFFECTS.map(e => [e.id, 0])), look: 'original', strength: 0.8, lut: 'none', lutStrength: 0, stickers: [], makeup: MAKEUP_DEFAULTS });
+export const DEFAULTS = Object.freeze({ ...Object.fromEntries(EFFECTS.map(e => [e.id, 0])), look: 'original', strength: 0.8, lut: 'none', lutStrength: 0, stickers: [], hair: HAIR_DEFAULTS, makeup: MAKEUP_DEFAULTS });
 export function normalize(settings = {}) {
-    return { makeup: normalizeMakeup(settings.makeup), ...Object.fromEntries(EFFECTS.map(e => [e.id, clamp(Number.isFinite(settings[e.id]) ? settings[e.id] : 0, e.min, e.max)])),
+    return { hair: normalizeHair(settings.hair), makeup: normalizeMakeup(settings.makeup), ...Object.fromEntries(EFFECTS.map(e => [e.id, clamp(Number.isFinite(settings[e.id]) ? settings[e.id] : 0, e.min, e.max)])),
         look: LOOK_IDS.includes(settings.look) ? settings.look : 'original', strength: clamp(settings.strength ?? 0.8),
         lut: ['none', 'film', 'print'].includes(settings.lut) ? settings.lut : 'none', lutStrength: clamp(settings.lutStrength ?? 0),
         stickers: (settings.stickers ?? []).slice(0, 8).filter(s => ['spark', 'heart', 'flower'].includes(s.kind)).map(s => ({ kind: s.kind, x: clamp(s.x), y: clamp(s.y), size: clamp(s.size, 0.02, 0.3) })),

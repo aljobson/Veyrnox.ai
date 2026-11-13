@@ -4,13 +4,19 @@ import { VISION_RELEASES, visionDigest, verifyVisionAssets } from './editor-visi
 const root = new URL('../', import.meta.url);
 const pkg = JSON.parse(await readFile(new URL('node_modules/@mediapipe/tasks-vision/package.json', root), 'utf8'));
 if (pkg.version !== '1.0.1' || pkg.license !== 'Apache-2.0') throw new Error('The pinned vision package changed.');
-for (const { version, assets } of VISION_RELEASES) {
+for (const release of VISION_RELEASES) {
+const { version, assets } = release;
 const target = new URL(`public/editor-vision/${version}/`, root);
 const files = assets.map(file => ({ ...file }));
 for (const item of files) {
     const destination = new URL(item.path, target); let bytes;
     if (item.source.startsWith('https:')) {
         bytes = await readFile(destination).catch(error => { if (error.code !== 'ENOENT') throw error; return null; });
+        // Reuse a hash-checked local copy when a new immutable release shares a model.
+        for (const other of VISION_RELEASES) {
+            if (bytes) break;
+            if (other.assets.some(f => f.path === item.path && f.sha256 === item.sha256)) bytes = await readFile(new URL(`public/editor-vision/${other.version}/${item.path}`, root)).catch(error => { if (error.code !== 'ENOENT') throw error; return null; });
+        }
         if (!bytes && item.path === 'face_landmarker.task') bytes = await readFile(new URL('public/video-enhance/mediapipe-1.0.1-face-landmarker-1/face_landmarker.task', root)).catch(error => { if (error.code !== 'ENOENT') throw error; return null; });
         if (!bytes) { const response = await fetch(item.source, { redirect: 'error', signal: AbortSignal.timeout(60000) }); if (!response.ok || Number(response.headers.get('content-length')) > 20000000) throw new Error('The pinned segmentation model download failed.'); bytes = Buffer.from(await response.arrayBuffer()); }
     } else bytes = await readFile(new URL(item.source, root));

@@ -1,3 +1,4 @@
+import { HAIR_GLSL } from './hairShader.js';
 import { MAKEUP_GLSL } from './makeupShader.js';
 import { BILATERAL_GLSL } from './bilateral.js';
 export const VERTEX = `#version 300 es
@@ -11,6 +12,7 @@ uniform vec2 pixel; uniform vec4 row0; uniform vec4 row1; uniform vec4 row2; uni
 uniform vec4 touch; uniform vec3 finish;
 ${BILATERAL_GLSL.replaceAll('texture2D', 'texture')}
 ${MAKEUP_GLSL}
+${HAIR_GLSL}
 void main(){
  vec4 original=texture(source,uv); vec3 color=original.rgb; vec3 region=texture(mask,uv).rgb;
  float amount=region.r*touch.x;
@@ -25,7 +27,7 @@ void main(){
  float whitePixels=smoothstep(.3,.7,light)*(1.-smoothstep(.1,.4,hi-lo));
  float whiten=whitePixels*region.g*touch.z;
  color=mix(color,vec3(light),whiten*.65); color+=vec3(whiten*.16+region.b*touch.w*whitePixels*.15);
- color=applyMakeup(color);
+ color=applyHair(applyMakeup(color));
  vec4 rgba=vec4(color,original.a);
  color=vec3(dot(row0,rgba),dot(row1,rgba),dot(row2,rgba))+offset;
  if(finish.z>0.) {

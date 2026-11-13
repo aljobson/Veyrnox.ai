@@ -1,3 +1,4 @@
+import { proveHair } from './photo-studio-hair-proof.mjs';
 import { proveMakeup } from './photo-studio-makeup-proof.mjs';
 import { MAKEUP_PRESETS } from '../../packages/live-edit/makeup.js';
 // Original synthetic colours/geometry only; no person photo or third-party fixture.
@@ -12,12 +13,13 @@ const assert = (value, label) => { if (!value) throw new Error(label); };
 const canvas = () => document.createElement('canvas');
 const pixels = c => c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
 const maxDifference = (a, b) => a.reduce((max, value, i) => Math.max(max, Math.abs(value - b[i])), 0);
-let renderer, engine, oldClient, faceClient, decodedSource;
+let renderer, engine, oldClient, hairClient, faceClient, decodedSource;
 try {
     let blocked = false;
     try { await WebAssembly.compile(new Uint8Array([0,97,115,109,1,0,0,0])); } catch { blocked = true; }
     assert(blocked, 'Page WASM must be blocked'); checks.push('page-wasm-blocked');
     checks.push(...proveMakeup());
+    checks.push(...await proveHair());
     const source = canvas(); source.width = 192; source.height = 128;
     const ctx = source.getContext('2d');
     for (let y = 0; y < source.height; y++) for (let x = 0; x < source.width; x++) {
@@ -41,7 +43,7 @@ try {
     renderer.draw({ ...DEFAULTS, brightness: 0.2 }); const brighter = pixels(target);
     for (let i = 0; i < original.length; i += 4) for (let c = 0; c < 3; c++) assert(Math.abs(brighter[i+c] - Math.min(255, original[i+c] + 25.5)) <= 1, 'Brightness/orientation reference');
     checks.push('webgl-orientation-reference'); renderer.close(); renderer = undefined;
-    engine = createPhotoEngine(target, decodedSource, { processorFactory: async () => ({ detect: async () => ({ count: 1, landmarks: points }), close() {} }) });
+    engine = createPhotoEngine(target, decodedSource, { processorFactory: async () => ({ detect: async () => ({ count: 1, landmarks: points }), close() {} }), hairProcessorFactory: async () => ({ segment: async () => ({ width:8,height:8,hair:new Float32Array(64) }), close() {} }) });
     await engine.ready;
     engine.setSettings({ ...DEFAULTS, makeup: { ...MAKEUP_PRESETS.glam, foundation: { strength: .4, shade: 'sand' } }, warmth: .3, grain: .2, smoothing: .4, lut: 'film', lutStrength: .4, stickers: [{ kind: 'heart', x: .5, y: .5, size: .15 }] });
     await new Promise(requestAnimationFrame); const preview = pixels(target).slice(); engine.compare(true);
@@ -57,8 +59,11 @@ try {
     oldClient = await createVisionProcessor(); const segmentation = await oldClient.segment(source, 1);
     assert(segmentation.face.length === segmentation.width * segmentation.height && segmentation.background.length > 0, 'Old client must process through retained prefix');
     checks.push('retained-person-client'); oldClient.close(); oldClient = undefined;
+    hairClient = await createVisionProcessor({ hair:true }); const hairResult = await hairClient.segment(source,1);
+    assert(hairResult.hair instanceof Float32Array && hairResult.hair.length === hairResult.width * hairResult.height && hairResult.hair.every(v=>v>=0 && v<=1), 'New hair Worker confidence channel');
+    checks.push('hair-worker-channel'); hairClient.close(); hairClient=undefined;
     faceClient = await createFaceProcessor(); const result = await faceClient.detect(source);
     assert(result.count === 0 && result.landmarks.length === 0, 'Synthetic gradient must return no face'); checks.push('face-worker-no-face');
     window.photoProof = { checks };
 } catch (error) { window.photoProof = { checks, error: error.message }; }
-finally { renderer?.close(); engine?.close(); oldClient?.close(); faceClient?.close(); decodedSource?.close(); }
+finally { renderer?.close(); engine?.close(); oldClient?.close(); hairClient?.close(); faceClient?.close(); decodedSource?.close(); }
