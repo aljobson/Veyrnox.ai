@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { audit } from '../scripts/audit-template-fidelity.mjs';
 import { BROKEN_TEMPLATE_IDS } from '../app/veyrnox/_lib/brokenTemplateIds.js';
-import { selectProbeSet, projectedCredits, generationBody, quoteCredits, syntheticPng, plain, plainRows, paid, photoCount, DEFAULT_MAX_CREDITS } from '../scripts/probe-video-templates-staging.mjs';
+import { selectProbeSet, projectedCredits, generationBody, quoteCredits, syntheticPng, fileRow, paid, photoCount, DEFAULT_MAX_CREDITS } from '../scripts/probe-video-templates-staging.mjs';
 
 const unit = { 'kling-3.0-i2v': 32, 'seedance-2.0-fast': 19, 'seedance-2.0-reference': 85 };
 const picks = selectProbeSet(audit().contracts);
@@ -44,10 +44,11 @@ test('the synthetic photo is a valid 512 px PNG', () => {
   assert.equal(png.readUInt32BE(20), 512);
 });
 
-test('text read back from the network is reduced to plain short words before it is written', () => {
-  assert.equal(plain('<script>alert(1)</script>\n'), '?script?alert(1)?/script??');
-  assert.equal(plain('x'.repeat(500)).length, 120);
-  assert.equal(plain(64), 64);
-  assert.equal(plain(true), true);
-  assert.deepEqual(plainRows([{ note: 'a|b\n', charged: 0 }]), [{ note: 'a?b?', charged: 0 }]);
+test('files carry only known words: network text, amounts and job ids never reach them', () => {
+  const row = { label: 'x', id: 't', modelId: 'm', class: 'bound', quoted: 85, submit: '400:<script>alert(1)</script>', jobId: 'secret-job', state: 'weird', charged: 85, refunded: true, note: 'error: boom\n' };
+  const out = fileRow(row);
+  assert.deepEqual([out.submit, out.state, out.charged, out.refunded, out.note], ['400:other', 'other', 'matches quote', 'yes', 'error']);
+  assert.equal(out.jobId, undefined);
+  assert.equal(fileRow({ ...row, submit: '400:template_blocked', charged: 0, note: 'refused before charge (as designed)' }).charged, 'none');
+  assert.equal(fileRow({ label: 'x', id: 't', modelId: 'm', class: 'c', quoted: 0 }).submit, '(dry run)');
 });

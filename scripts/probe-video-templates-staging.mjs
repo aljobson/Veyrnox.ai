@@ -128,14 +128,28 @@ export const unitCreditsFrom = catalog => Object.fromEntries([KLING, FAST, REFER
   return [id, row.credits];
 }));
 
-// Everything read back from the network is reduced to short plain words before it reaches a file: numbers and
-// booleans pass, text keeps letters, digits and a few separators, capped at 120 characters.
-export const plain = value => (typeof value === 'number' && Number.isFinite(value) ? value : typeof value === 'boolean' ? value : String(value ?? '').replace(/[^\w .:,()\/=-]/g, '?').slice(0, 120));
-export const plainRows = rows => rows.map(row => Object.fromEntries(Object.entries(row).map(([key, value]) => [key, plain(value)])));
+// Files get only words this script already knows. Anything read back from the network is matched against a fixed list
+// and replaced by that list's own entry (or "other"); amounts are compared with the quote, never copied.
+const pick = (value, allowed) => allowed.find(entry => entry === value) ?? 'other';
+const STATUSES = ['200', '201', '202', '400', '401', '402', '403', '404', '409', '422', '429', '500', '502', '503'];
+const ERRORS = ['template_blocked', 'template_mismatch', 'template_references_invalid', 'consent_required', 'confirmed_credits_mismatch', 'insufficient_credits', 'rate_limited', 'model_unavailable', 'source_too_short'];
+const NOTES = ['refused before charge (as designed)', 'UNEXPECTED: expected 400 template_blocked and no charge', 'no job created', 'did not finish in 20 min', 'cap would be exceeded'];
+export function fileRow(row) {
+  const [status, error] = String(row.submit ?? '').split(':');
+  return {
+    label: row.label, id: row.id, modelId: row.modelId, class: row.class, quoted: row.quoted,
+    submit: row.submit === undefined ? '(dry run)' : row.submit === 'skipped' ? 'skipped' : `${pick(status, STATUSES)}${error ? ':' + pick(error, ERRORS) : ''}`,
+    state: row.state === undefined ? '' : pick(row.state, ['succeeded', 'failed', 'unknown']),
+    charged: row.charged === undefined ? '' : row.charged === 0 ? 'none' : row.charged === row.quoted ? 'matches quote' : 'other amount',
+    refunded: row.refunded === undefined ? '' : row.refunded ? 'yes' : 'no',
+    note: String(row.note ?? '').startsWith('error:') ? 'error' : pick(row.note ?? '', NOTES),
+  };
+}
+export const fileRows = rows => rows.map(fileRow);
 
 export function renderTable(results) {
-  const head = '| slot | template | model | class | quoted cr | submit | job | state | charged | refunded | note |\n|---|---|---|---|---|---|---|---|---|---|---|';
-  return [head, ...results.map(r => `| ${r.label} | ${r.id} | ${r.modelId} | ${r.class} | ${r.quoted} | ${r.submit ?? '(dry run)'} | ${r.jobId ?? ''} | ${r.state ?? ''} | ${r.charged ?? ''} | ${r.refunded ?? ''} | ${r.note ?? ''} |`)].join('\n');
+  const head = '| slot | template | model | class | quoted cr | submit | state | charged | refunded | note |\n|---|---|---|---|---|---|---|---|---|---|';
+  return [head, ...results.map(r => `| ${r.label} | ${r.id} | ${r.modelId} | ${r.class} | ${r.quoted} | ${r.submit ?? '(dry run)'} | ${r.state ?? ''} | ${r.charged ?? ''} | ${r.refunded ?? ''} | ${r.note ?? ''} |`)].join('\n');
 }
 
 async function main(argv) {
@@ -176,12 +190,12 @@ async function main(argv) {
       const terminal = await waitTerminal(api, row.jobId); row.state = terminal.state; row.refunded = Boolean(terminal.refunded);
       row.charged = before - (await api('/balance')).body.balance; row.note = terminal.timedOut ? 'did not finish in 20 min' : (terminal.error_code || '');
     } catch (error) { row.note = `error: ${error.message}`; }
-    await writeFile(path.join(outDir, 'results.json'), JSON.stringify({ startBalance: plain(startBalance), spent, results: plainRows(results) }, null, 2));
+    await writeFile(path.join(outDir, 'results.json'), JSON.stringify({ spent, results: fileRows(results) }, null, 2));
   }
-  const clean = plainRows(results), table = renderTable(clean);
-  await writeFile(path.join(outDir, 'results.json'), JSON.stringify({ startBalance: plain(startBalance), spent, results: clean }, null, 2));
+  const clean = fileRows(results), table = renderTable(clean);
+  await writeFile(path.join(outDir, 'results.json'), JSON.stringify({ spent, results: clean }, null, 2));
   await writeFile(path.join(outDir, 'results.md'), `# Staging video template probe\n\nSpent ${spent} credits (cap ${cap}).\n\n${table}\n`);
-  console.log(table); console.log(`\nSpent ${spent} credits. Written to ${outDir}`);
+  console.log(table); console.log(results.filter(r => r.jobId).map(r => `job ${r.jobId} ${r.id}`).join('\n')); console.log(`\nSpent ${spent} credits. Written to ${outDir}`);
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === realpathSync(path.resolve(process.argv[1]))) {
