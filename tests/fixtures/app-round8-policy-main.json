@@ -3,7 +3,7 @@
   "app.editor.audio.gateHelp": "At −96 dB the gate is off. Raising it suppresses sound below the threshold. Deep/bright voices adjust pitch; radio and robot add original effects.",
   "app.editor.audio.widthHelp": "Zero combines the channels into mono, 100 keeps the original width, and 200 doubles their difference. Mono recordings stay centered.",
   "app.editor.audio.effectsHelp": "Depth and mix at zero turn tremolo and echo off. Echo repeats must fit within four seconds and stop at the clip boundary. Clip fades also shape the echoes; preview before exporting.",
-  "app.editor.words.help": "Even timing is an estimate. Import timestamped VTT, enhanced LRC or word/start/end JSON for source timing, then adjust it here.",
+  "app.editor.words.help": "Even timing is an estimate. Import timestamped VTT or enhanced LRC for source timing, then adjust it here.",
   "app.editor.speed.help": "Curve rates change duration while keeping the selected source range. Existing transform and mask keyframes are reset; Undo restores them.",
   "app.editor.speed.freeze": "Freeze source frame (2s)",
   "app.film.tests.repeat": "Ten of ten repeatability images must pass, plus every scene-lighting and pairing test. One miss keeps the asset draft.",

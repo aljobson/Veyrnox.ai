@@ -60,7 +60,7 @@
   },
   {
     "area": "words",
-    "text": "Word timing and highlightingWord caption stylenonehighlightkaraokewordActive word colourDistribute words evenlyEven timing is an estimate. Import timestamped VTT, enhanced LRC or word/start/end JSON for source timing, then adjust it here.Timed word or segment1. User wordWord start in caption (seconds)Word duration (seconds)Estimated or manually adjusted word timing.Clear word timing",
+    "text": "Word timing and highlightingWord caption stylenonehighlightkaraokewordActive word colourDistribute words evenlyEven timing is an estimate. Import timestamped VTT or enhanced LRC for source timing, then adjust it here.Timed word or segment1. User wordWord start in caption (seconds)Word duration (seconds)Estimated or manually adjusted word timing.Clear word timing",
     "labels": [
       "aria-label=\"Word caption style\"",
       "aria-label=\"Active word colour\"",
@@ -71,7 +71,7 @@
   },
   {
     "area": "words",
-    "text": "Word timing and highlightingWord caption stylenonehighlightkaraokewordActive word colourDistribute words evenlyEven timing is an estimate. Import timestamped VTT, enhanced LRC or word/start/end JSON for source timing, then adjust it here.Timed word or segment1. User wordWord start in caption (seconds)Word duration (seconds)Imported source timing.Clear word timing",
+    "text": "Word timing and highlightingWord caption stylenonehighlightkaraokewordActive word colourDistribute words evenlyEven timing is an estimate. Import timestamped VTT or enhanced LRC for source timing, then adjust it here.Timed word or segment1. User wordWord start in caption (seconds)Word duration (seconds)Imported source timing.Clear word timing",
     "labels": [
       "aria-label=\"Word caption style\"",
       "aria-label=\"Active word colour\"",
