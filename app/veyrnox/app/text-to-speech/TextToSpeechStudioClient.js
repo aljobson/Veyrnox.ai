@@ -10,7 +10,6 @@ import { Button } from '../../_components/Button';
 import { Chip } from '../../_components/Chip';
 import { JobAssetPreview } from '../../_components/JobAssetPreview';
 import { DownloadAsset } from '../../_components/DownloadAsset';
-import { DownloadProvenance } from '../../_components/DownloadProvenance';
 import { OutputFileDisclosure } from '../../_components/OutputFileDisclosure';
 import { SaveToAudioShelfButton } from '../../_components/SaveToAudioShelfButton';
 import { TextToSpeechControls } from '../../_components/TextToSpeechControls';
@@ -190,7 +189,7 @@ export default function TextToSpeechStudio() {
                           <div className="flex items-center justify-between gap-3 border-b border-vx-border px-3 py-2.5"><p className="text-xs font-extrabold">{voice?.label || 'Stock voice'}</p><Chip tone={item.state === 'failed' ? 'danger' : 'accent'}>{jobStateUi(item).label}</Chip></div>
                           <div className="p-3">{item.asset_url ? <JobAssetPreview job={item} /> : <p className="py-5 text-center text-xs text-vx-fg-muted">This provider audition is {jobStateUi(item).label.toLowerCase()}.</p>}</div>
                           {item.state === 'failed' && <p className="border-t border-vx-border px-3 py-2.5 text-xs text-vx-danger">{failedJobCopy(item)}</p>}
-                          {item.state === 'succeeded' && item.asset_url && <div className="flex flex-wrap gap-2 border-t border-vx-border px-3 py-2.5"><DownloadAsset row={item} label="Download" className="inline-flex min-h-9 items-center rounded-full bg-vx-accent px-3 text-[11px] font-extrabold text-vx-accent-ink" errorClassName="basis-full text-xs text-vx-danger" /><DownloadProvenance row={item} className="inline-flex min-h-9 items-center rounded-full border border-vx-border px-3 text-[11px] font-extrabold" errorClassName="basis-full text-xs text-vx-danger" /><SaveToAudioShelfButton jobId={item.job_id} name={`Audition · ${voice?.label || 'Stock voice'}`} purpose="character-performance" voiceRecipe={item.voice_recipe} offerSignature/><Link href={`/app/performance?audio=${encodeURIComponent(item.job_id)}`} className="inline-flex min-h-9 items-center text-[11px] font-bold text-vx-accent underline">Use for lip sync</Link></div>}
+                          {item.state === 'succeeded' && item.asset_url && <div className="flex flex-wrap gap-2 border-t border-vx-border px-3 py-2.5"><DownloadAsset row={item} label="Download" className="inline-flex min-h-9 items-center rounded-full bg-vx-accent px-3 text-[11px] font-extrabold text-vx-accent-ink" errorClassName="basis-full text-xs text-vx-danger" /><SaveToAudioShelfButton jobId={item.job_id} name={`Audition · ${voice?.label || 'Stock voice'}`} purpose="character-performance" voiceRecipe={item.voice_recipe} offerSignature/><Link href={`/app/performance?audio=${encodeURIComponent(item.job_id)}`} className="inline-flex min-h-9 items-center text-[11px] font-bold text-vx-accent underline">Use for lip sync</Link></div>}
                         </article>
                       );
                     })}
@@ -201,7 +200,7 @@ export default function TextToSpeechStudio() {
               {job?.state === 'succeeded' && job?.asset_url && (
                 <div className="flex flex-wrap gap-2 border-t border-vx-border px-5 py-4">
                   <DownloadAsset row={job} label="Download audio" className="inline-flex min-h-10 items-center rounded-full bg-vx-accent px-4 text-xs font-extrabold text-vx-accent-ink" errorClassName="basis-full text-xs text-vx-danger" />
-                  <DownloadProvenance row={job} className="inline-flex min-h-10 items-center rounded-full border border-vx-border px-4 text-xs font-extrabold" errorClassName="basis-full text-xs text-vx-danger" />
+                  
                   <SaveToAudioShelfButton jobId={job.job_id} name={`Stock voice · ${TTS_VOICES.find((item) => item.id === (job.voice_recipe?.voice || settings.voice))?.label || 'Speech'}`} purpose="narration-presenter" voiceRecipe={job.voice_recipe} offerSignature className="inline-flex min-h-10 items-center rounded-full border border-vx-border px-4 text-xs font-extrabold disabled:opacity-60"/>
                   <Link href={`/app/performance?audio=${encodeURIComponent(job.job_id)}`} className="inline-flex min-h-10 items-center px-2 text-xs font-bold text-vx-accent underline">Use for lip sync</Link>
                   <button type="button" onClick={startAgain} className="min-h-10 px-2 text-xs font-bold text-vx-fg-muted underline">Adjust and make another</button>

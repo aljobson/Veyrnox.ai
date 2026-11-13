@@ -7,7 +7,6 @@ import { Button } from '../../_components/Button';
 import { Chip } from '../../_components/Chip';
 import { JobAssetPreview } from '../../_components/JobAssetPreview';
 import { DownloadAsset } from '../../_components/DownloadAsset';
-import { DownloadProvenance } from '../../_components/DownloadProvenance';
 import { OutputFileDisclosure } from '../../_components/OutputFileDisclosure';
 import { SaveToAudioShelfButton } from '../../_components/SaveToAudioShelfButton';
 import { LibraryPicker } from '../../_components/LibraryPicker';
@@ -422,7 +421,7 @@ export default function DialogueStudio() {
               {job?.state === 'succeeded' && job?.asset_url && (
                 <div className="flex flex-wrap gap-3 border-t border-vx-border px-5 py-4">
                   <DownloadAsset row={job} label={modeId === 'photo-dialogue' ? 'Download video' : 'Download dialogue'} className="inline-flex min-h-10 items-center rounded-full bg-vx-accent px-4 text-xs font-extrabold text-vx-accent-ink" errorClassName="basis-full text-xs text-vx-danger" />
-                  <DownloadProvenance row={job} className="inline-flex min-h-10 items-center rounded-full border border-vx-border px-4 text-xs font-extrabold" errorClassName="basis-full text-xs text-vx-danger" />
+                  
                   {modeId !== 'photo-dialogue' && <SaveToAudioShelfButton jobId={job.job_id} name={`Dialogue · ${validation.speakers.map((speaker) => speaker.speaker).join(' + ')}`} purpose="lip-sync-dialogue" className="inline-flex min-h-10 items-center rounded-full border border-vx-border px-4 text-xs font-extrabold disabled:opacity-60"/>}
                   {modeId !== 'photo-dialogue' && <Link href={`/app/performance?audio=${encodeURIComponent(job.job_id)}`} className="text-sm font-bold text-vx-accent underline">Use for lip sync</Link>}
                   {modeId !== 'photo-dialogue' && <Link href={`/app/video-dubbing?audio=${encodeURIComponent(job.job_id)}&speakers=${validation.speakers.length}`} onClick={() => writeDialogueDubbingHandoff(window.sessionStorage, { jobId: job.job_id, turns, cast: audioAssignments })} className="text-sm font-bold text-vx-accent underline">Use in Video Dubbing</Link>}
