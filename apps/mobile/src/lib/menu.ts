@@ -5,7 +5,7 @@
 import type { MenuIcon } from './menuIcons';
 
 export type MenuItem = { key: string; label: string; href: string; icon: MenuIcon; hint?: string };
-export type MenuSection = { id: 'agents' | 'tools' | 'assets' | 'inspire'; label: string; items: MenuItem[] };
+export type MenuSection = { id: 'tools' | 'assets'; label: string; items: MenuItem[] };
 
 // Destinations the bottom tab bar already carries; the drawer does not list them again.
 export const TAB_KEYS: ReadonlySet<string> = new Set(['create', 'editor', 'library', 'publish']);
