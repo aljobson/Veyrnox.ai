@@ -1,6 +1,18 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "brand.swatch.teal": "ティール",
+  "brand.swatch.blue": "青",
+  "brand.swatch.purple": "紫",
+  "brand.swatch.pink": "ピンク",
+  "brand.swatch.red": "赤",
+  "brand.swatch.orange": "オレンジ",
+  "brand.swatch.yellow": "黄",
+  "brand.swatch.green": "緑",
+  "brand.swatch.white": "白",
+  "brand.swatch.navy": "ネイビー",
+  "brand.swatch.custom": "カスタムカラー",
+  "brand.paletteTap": "最大{max}色。タップして追加または削除。",
   "editorSimple.describe": "やりたいことを入力",
   "editorSimple.promptHelp": "決まった英語の表現をツールに対応させます。AIがこの依頼を理解する機能ではありません。適用や支払いの前にツールを確認してください。",
   "editorSimple.openTool": "ツールを開く",

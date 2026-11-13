@@ -22,6 +22,7 @@ export const STUDIO_DESTINATIONS = [
   { section: 'tools', key: 'publish', href: '/app/publish', labelKey: 'app.nav.publish', icon: 'send', flag: 'publish' },
   { section: 'tools', key: 'cinema', href: '/social-cinema', labelKey: 'label.Social Cinema', icon: 'film' },
   { section: 'assets', key: 'library', href: '/app/library', labelKey: 'label.Library', icon: 'library' },
+  { section: 'assets', key: 'brandKit', href: '/app/brand-kit', labelKey: 'app.editor.rail.brand', icon: 'palette', flag: 'projects' },
   { section: 'assets', key: 'credits', href: '/app/credits', labelKey: 'label.Credits', icon: 'coins' },
   { section: 'assets', key: 'chat', href: '/app/chat', labelKey: 'label.LLM Chat', icon: 'chat' },
   // The Audio studios light the Audio row while you are inside one.

@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useI18n } from '../../../../components/I18nProvider';
 import { Button } from '../Button';
-import { brandKitProblem, emptyBrandKit } from '../../../../lib/editorShared';
+import { BRAND_SWATCHES, brandKitProblem, emptyBrandKit } from '../../../../lib/editorShared';
 import { TEXT_FONTS } from '../../_lib/editorTextStyle.mjs';
 export const brandField = 'min-h-11 w-full rounded-xl border border-vx-border bg-vx-base p-2 text-xs focus-visible:outline focus-visible:outline-vx-accent';
 export function BrandFieldError({ kit, name }) {
@@ -33,14 +33,26 @@ export function BrandKitFields({ kit, set }) {
 
 export function BrandPaletteFields({ kit, set }) {
   const { t } = useI18n();
+  const known = new Set(BRAND_SWATCHES.map(s => s.hex));
+  const has = hex => kit.palette.some(c => c.toLowerCase() === hex);
+  // Colours saved before the swatch list (any hex) stay selectable, so nothing in a saved kit is lost.
+  const options = [...BRAND_SWATCHES, ...kit.palette.filter(c => !known.has(c.toLowerCase())).map(hex => ({ id: 'custom', hex: hex.toLowerCase() }))];
+  const toggle = hex => set('palette', has(hex) ? kit.palette.filter(c => c.toLowerCase() !== hex) : [...kit.palette, hex]);
   return <>
       <p className="text-xs font-bold">{t('app.editor.brand.palette')}</p>
-      {kit.palette.map((colour, index) => <div key={index} className="flex items-center gap-2">
-        <input type="color" aria-label={t('app.editor.brand.colour', { number: index + 1 })} className="min-h-11 w-11" value={/^#[0-9a-f]{6}$/i.test(colour) ? colour : '#000000'} onChange={e => set('palette', kit.palette.map((c, i) => i === index ? e.target.value : c))} />
-        <input aria-label={t('app.editor.brand.hex', { number: index + 1 })} className={brandField} value={colour} maxLength={7} onChange={e => set('palette', kit.palette.map((c, i) => i === index ? e.target.value : c))} />
-        <Button type="button" className="min-h-11" size="sm" aria-label={t('app.editor.brand.removeColour', { number: index + 1 })} disabled={kit.palette.length <= 1} onClick={() => set('palette', kit.palette.filter((_, i) => i !== index))}>×</Button>
-      </div>)}
-      <Button type="button" className="min-h-11" size="sm" disabled={kit.palette.length >= 12} onClick={() => set('palette', [...kit.palette, '#ffffff'])}>{t('app.editor.brand.addColour')}</Button>
+      <p className="text-xs text-vx-fg-muted">{t('app.editor.brand.paletteHint', { max: 12 })}</p>
+      <div role="group" aria-label={t('app.editor.brand.paletteLabel')} className="flex flex-wrap gap-2">
+        {options.map(({ id, hex }) => {
+          const on = has(hex);
+          const name = id === 'custom' ? t('app.editor.brand.swatch.custom') : t(`app.editor.brand.swatch.${id}`);
+          return <button key={hex} type="button" aria-pressed={on} aria-label={name} title={name}
+            disabled={on && kit.palette.length <= 1 || !on && kit.palette.length >= 12}
+            className={`grid size-11 place-items-center rounded-full border-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent disabled:opacity-50 ${on ? 'border-vx-accent ring-2 ring-vx-accent' : 'border-vx-border'}`}
+            style={{ background: hex }} onClick={() => toggle(hex)}>
+            {on && <svg aria-hidden="true" viewBox="0 0 24 24" className="size-5" fill="none" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" stroke={['#ffffff', '#facc15', '#32d6c5', '#22c55e'].includes(hex) ? '#000' : '#fff'}><path d="m5 12 5 5 9-10" /></svg>}
+          </button>;
+        })}
+      </div>
       <BrandFieldError kit={kit} name="palette" />
   </>;
 }

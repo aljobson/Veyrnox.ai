@@ -1,5 +1,11 @@
 [
   {
+    "id": "brand.swatch.navy",
+    "english": "Navy",
+    "translation": "Dunkelblau",
+    "ratio": 2.5
+  },
+  {
     "id": "editorSimple.openTool",
     "english": "Open tool",
     "translation": "Werkzeug öffnen",

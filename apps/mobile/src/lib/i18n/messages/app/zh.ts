@@ -1,6 +1,18 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "brand.swatch.teal": "青绿色",
+  "brand.swatch.blue": "蓝色",
+  "brand.swatch.purple": "紫色",
+  "brand.swatch.pink": "粉色",
+  "brand.swatch.red": "红色",
+  "brand.swatch.orange": "橙色",
+  "brand.swatch.yellow": "黄色",
+  "brand.swatch.green": "绿色",
+  "brand.swatch.white": "白色",
+  "brand.swatch.navy": "藏青色",
+  "brand.swatch.custom": "自定义颜色",
+  "brand.paletteTap": "最多 {max} 种颜色。点按即可添加或移除。",
   "editorSimple.describe": "描述你想做什么",
   "editorSimple.promptHelp": "按固定英语短语匹配工具；不会由 AI 理解此请求。应用更改或付费前请检查工具设置。",
   "editorSimple.openTool": "打开工具",
