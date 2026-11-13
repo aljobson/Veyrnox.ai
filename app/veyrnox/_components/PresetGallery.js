@@ -16,7 +16,7 @@ const TEMPLATE_BATCH_SIZE = 50;
 // `taste` is the person's vibe check answers (ADR-0251), or null: templates that fit come first and nothing else changes.
 // The cards come from /api/templates, not the bundle; `initial` ({ templates, categories }) is what the server page already
 // rendered, so the public page has its templates in the first HTML and the list does not blink in.
-export function PresetGallery({ size = 'lg', columns = 'lg:columns-3', taste = null, initial = null }) {
+export function PresetGallery({ size = 'lg', columns = 'lg:columns-3', taste = null, initial = null, kind = null }) {
   const { t } = useI18n();
   const [cat, setCat] = useState('ALL');
   const [query, setQuery] = useState('');
@@ -24,7 +24,12 @@ export function PresetGallery({ size = 'lg', columns = 'lg:columns-3', taste = n
   const [visibleCount, setVisibleCount] = useState(TEMPLATE_BATCH_SIZE);
   const { models } = useCatalog();
   const loaded = useTemplateCards();
-  const { templates: cards, categories: allCategories } = loaded.ready || !initial ? loaded : initial;
+  const { templates: allCards, categories: everyCategory } = loaded.ready || !initial ? loaded : initial;
+  // `kind` ('image' or 'video') narrows the gallery to that kind; null shows every template (the studio's Explore tab).
+  const isKind = (card) => (kind === 'image' ? card.kind === 'image' : card.kind !== 'image');
+  const cards = kind ? allCards.filter(isKind) : allCards;
+  const present = new Set(cards.map((card) => card.category));
+  const allCategories = kind ? everyCategory.filter((c) => c === 'ALL' || c === 'NEW' || present.has(c)) : everyCategory;
   const popularIds = usePopularTemplates();
   // Popular (ADR-0072) is a ranking, not a home category: it appears only once some template has enough use to rank, in rank order.
   const popular = popularIds.map((id) => cards.find((preset) => preset.id === id)).filter(Boolean);
