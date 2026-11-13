@@ -4,7 +4,7 @@ import { builtinModules } from 'node:module';
 import { checkWorkerSize, checkWrapper, forbiddenWrapperInput, parseUploadKiB, WORKER_SIZE_BUDGET_KIB } from '../scripts/check-worker-size.mjs';
 
 test('size parser reads uncompressed KiB and fails closed for missing or invalid output', () => {
-  assert.equal(WORKER_SIZE_BUDGET_KIB, 58500);
+  assert.equal(WORKER_SIZE_BUDGET_KIB, 59000);
   assert.equal(parseUploadKiB('Total Upload: 60490 KiB / gzip: 12290 KiB'), 60490);
   assert.equal(parseUploadKiB('Total Upload: 54,321.50 KiB / gzip: 9000 KiB'), 54321.5);
   assert.equal(parseUploadKiB('Total Upload: 10 KiB\nTotal Upload: 20 KiB'), 20);
@@ -20,9 +20,9 @@ test('size guard uses the larger measurement and rejects either over-budget resu
     measure: async () => disk * 1024, report: (line) => lines.push(line),
   });
   assert.equal(await checkWorkerSize(options(54000, 55000)), 55000);
-  assert.equal(await checkWorkerSize(options(58500, 55000)), 58500);
+  assert.equal(await checkWorkerSize(options(59000, 55000)), 59000);
   await assert.rejects(checkWorkerSize(options(60490, 55000)), /exceeds/);
-  await assert.rejects(checkWorkerSize(options(54000, 58500.01)), /exceeds/);
+  await assert.rejects(checkWorkerSize(options(54000, 59000.01)), /exceeds/);
   await assert.rejects(checkWorkerSize(options(54000, 0)), /no measurable/);
   await assert.rejects(checkWorkerSize({ ...options(1, 1), run: async () => { throw new Error('dry-run failed'); } }), /dry-run failed/);
   assert.match(lines[0], /55000.00 KiB/);

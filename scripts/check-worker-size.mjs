@@ -1,9 +1,13 @@
 // On 2026-10-31 upload was 60,490 KiB / 12,290 KiB gzip against a 65,536 KiB limit.
 // Cold requests spent 1.1–1.3 s before fetch; the separate wrapper added 6.9 MB.
-// Cap uploads at 58,500 KiB, retaining 6.8 MiB below the platform limit, and keep
+// Cap uploads at 59,000 KiB (see the 2026-11-13 note below), retaining 6.8 MiB below the platform limit, and keep
 // templates and non-English catalogs out of the wrapper.
 // 2026-11-12: raised from 58,000 by the owner. main sat at ~57,960 KiB, so one new page route
 // (about 40 KiB of manifests and chunks) tipped every PR over; 500 KiB is under 1% of the upload.
+// 2026-11-13: raised from 58,500 by the owner. main sat at ~58,431 KiB, leaving 69 KiB; the
+// licensed-track template link on the Music Create page (PR #2126) adds a second server copy of the
+// 67 KB licensed-music catalog (~83 KiB). A static asset for that data was offered and declined.
+// The step is the same 500 KiB as the 2026-11-12 raise, still ~6.3 MiB under the 65,536 KiB limit.
 // lib/i18n/messages/email/ is permitted: worker.js -> lib/social/reportSchedule.js -> lib/i18n/email.mjs renders scheduled-report emails in the cron.
 import { execFile } from 'node:child_process';
 import { mkdtemp, readdir, rm, stat } from 'node:fs/promises';
@@ -13,7 +17,7 @@ import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 
-export const WORKER_SIZE_BUDGET_KIB = 58500;
+export const WORKER_SIZE_BUDGET_KIB = 59000;
 const execFileAsync = promisify(execFile);
 const print = (line) => process.stdout.write(`${line}\n`);
 
