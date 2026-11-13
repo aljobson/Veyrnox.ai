@@ -49,7 +49,9 @@ export function MediaTile({ href, clip, mediaClassName = '', mediaStyle, classNa
   const mediaFit = uncroppedOnMobile ? 'object-contain lg:object-cover' : 'object-cover';
 
   return (
-    <Link ref={rootRef} href={href} aria-label={ariaLabel} onClick={onClick} className={`group vx-tile ${className}`} style={style}>
+    <Link ref={rootRef} href={href} onClick={onClick} className={`group vx-tile ${className}`} style={style}>
+      {/* The tile's name comes from its content, not aria-label, so it always contains the visible text (WCAG 2.5.3). */}
+      {ariaLabel && <span className="sr-only">{ariaLabel}</span>}
       <div className={`relative overflow-hidden ${mediaClassName}`} style={mediaStyle}>
         {/* `ambient`: the clip keeps its own shape inside a frame shared with
             its neighbours, and a blurred copy of its poster fills the bars,

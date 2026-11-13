@@ -175,7 +175,7 @@ function Jobs({ jobs, user, onDone }) {
   return (
     <section className="mt-6">
       <h2 className="text-lg font-black tracking-[-0.02em] mb-3">Last {jobs.length} generation{jobs.length === 1 ? '' : 's'}</h2>
-      <div className="rounded-[10px] border border-vx-border bg-vx-panel overflow-x-auto">
+      <div className="rounded-[10px] border border-vx-border bg-vx-panel overflow-x-auto" tabIndex={0}>
         <div className="min-w-[760px]">
           <div className="grid grid-cols-[1fr_170px_90px_130px_150px] px-5 py-3 border-b border-vx-border font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">
             <div>JOB</div><div>MODEL</div><div>STATE</div><div>ASSET</div><div className="text-right">ACTION</div>
@@ -286,7 +286,7 @@ function Record({ rows, loaded, scoped }) {
   return (
     <section className="mt-10">
       <h2 className="text-lg font-black tracking-[-0.02em] mb-3">{scoped ? 'Record for this account' : 'Recent record, all accounts'}</h2>
-      <div className="rounded-[10px] border border-vx-border bg-vx-panel overflow-x-auto">
+      <div className="rounded-[10px] border border-vx-border bg-vx-panel overflow-x-auto" tabIndex={0}>
         <div className="min-w-[760px]">
           <div className="grid grid-cols-[150px_110px_1fr_1fr_170px] px-5 py-3 border-b border-vx-border font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">
             <div>WHEN</div><div>ACTION</div><div>ACCOUNT</div><div>REASON</div><div>BY</div>

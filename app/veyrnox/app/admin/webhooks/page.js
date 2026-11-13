@@ -62,9 +62,9 @@ function Webhooks() {
         Logging is on when <code className="font-vx-mono text-xs">WEBHOOK_DELIVERY_LOG_ENABLED</code> is true.
       </p>
       <MfaPanel />
-      <div className="mt-6 flex flex-wrap gap-2" role="tablist" aria-label="Window">
+      <div className="mt-6 flex flex-wrap gap-2" role="group" aria-label="Window">
         {[1, 24, 168].map((h) => (
-          <Button key={h} size="sm" variant={hours === h ? 'primary' : 'ghost'} role="tab" aria-selected={hours === h} onClick={() => setHours(h)}>
+          <Button key={h} size="sm" variant={hours === h ? 'primary' : 'ghost'} aria-pressed={hours === h} onClick={() => setHours(h)}>
             {h === 1 ? 'Last hour' : h === 24 ? 'Last 24 hours' : 'Last 7 days'}
           </Button>
         ))}
@@ -89,7 +89,7 @@ function Polled({ data }) {
         Overdue means a job is still submitted well past the age its sweep would have failed and refunded it. That is delayed settlement:
         check that the sweep is running and the Worker log for provider read errors, because a failed read leaves a job waiting.
       </p>
-      <div className="rounded-[10px] border border-vx-border bg-vx-panel overflow-x-auto">
+      <div className="rounded-[10px] border border-vx-border bg-vx-panel overflow-x-auto" tabIndex={0}>
         <div className="min-w-[640px]" role="table" aria-label="Polled providers">
           <div role="row" className={`grid ${cols} px-5 py-3 border-b border-vx-border font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted`}>
             <div role="columnheader">PROVIDER</div><div role="columnheader" className="text-right">IN FLIGHT</div><div role="columnheader" className="text-right">OLDEST</div><div role="columnheader" className="text-right">OVERDUE</div><div role="columnheader" className="text-right">FAILS AT</div><div role="columnheader" className="pl-4">SWEEP</div>
@@ -116,7 +116,7 @@ function BySource({ rows }) {
   return (
     <section className="mt-8">
       <h2 className="text-lg font-black tracking-[-0.02em] mb-3">By source</h2>
-      <div className="rounded-[10px] border border-vx-border bg-vx-panel overflow-x-auto">
+      <div className="rounded-[10px] border border-vx-border bg-vx-panel overflow-x-auto" tabIndex={0}>
         <div className="min-w-[900px]">
           <div className={`grid ${cols} px-5 py-3 border-b border-vx-border font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted`}>
             <div>SOURCE</div><div className="text-right">TOTAL</div><div className="text-right">ACCEPTED</div><div className="text-right">DUPLICATE</div>
@@ -152,7 +152,7 @@ function Failures({ rows }) {
           {classes.map((c) => FIX[c] && <li key={c}><b>{c.replace('_', ' ')}:</b> {FIX[c]}</li>)}
         </ul>
       )}
-      <div className="rounded-[10px] border border-vx-border bg-vx-panel overflow-x-auto">
+      <div className="rounded-[10px] border border-vx-border bg-vx-panel overflow-x-auto" tabIndex={0}>
         <div className="min-w-[640px]">
           <div className="grid grid-cols-[150px_120px_170px_80px_1fr] px-5 py-3 border-b border-vx-border font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">
             <div>WHEN</div><div>SOURCE</div><div>OUTCOME</div><div className="text-right">STATUS</div><div className="pl-4">ERROR</div>
@@ -177,7 +177,7 @@ function Stuck({ rows }) {
   return (
     <section className="mt-10">
       <h2 className="text-lg font-black tracking-[-0.02em] mb-3">Accepted, never finished (over 10 minutes)</h2>
-      <div className="rounded-[10px] border border-vx-border bg-vx-panel overflow-x-auto">
+      <div className="rounded-[10px] border border-vx-border bg-vx-panel overflow-x-auto" tabIndex={0}>
         <div className="min-w-[560px]">
           <div className="grid grid-cols-[150px_120px_1fr] px-5 py-3 border-b border-vx-border font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">
             <div>RECEIVED</div><div>SOURCE</div><div>EXTERNAL ID</div>
