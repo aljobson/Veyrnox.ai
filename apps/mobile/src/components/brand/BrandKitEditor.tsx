@@ -4,7 +4,7 @@ import { Pressable, Text, TextInput, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { Action, Card, Status, styles } from '../account/shared';
 import { selectedState } from '../../lib/a11y';
-import { FONTS, FONTS_MAX, NAME_MAX, PALETTE_MAX, kitErrorKey, kitProblem, newSaveKey, normaliseColour, saveKit, type Kit, type KitState } from '../../lib/brandKit';
+import { FONTS, FONTS_MAX, NAME_MAX, BRAND_SWATCHES, PALETTE_MAX, kitErrorKey, kitProblem, newSaveKey, saveKit, type Kit, type KitState } from '../../lib/brandKit';
 import { t } from '../../lib/i18n';
 import { isAccountChanged } from '../../auth/sessionTask';
 import type { Project } from '../../lib/projects';
@@ -13,6 +13,7 @@ import { BrandTextStyles } from './BrandTextStyles';
 import { BrandAssetsEditor } from './BrandAssetsEditor';
 import { colors } from '../../theme';
 
+const LIGHT_SWATCHES = new Set(['#ffffff', '#facc15', '#32d6c5', '#22c55e']);
 type Draft = { kit: Kit; rows: AssetRow[] };
 export function BrandKitEditor({ workspaceId, state, onSaved, catalog = null, projects = null, onCatalogChanged = () => {} }: {
     workspaceId: string; state: KitState; onSaved: (s: KitState) => void;
@@ -23,11 +24,13 @@ export function BrandKitEditor({ workspaceId, state, onSaved, catalog = null, pr
     const draftRef = useRef(draft), mounted = useRef(false);
     useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
     const kit = draft.kit;
-    const [colour, setColour] = useState('');
     const [busy, setBusy] = useState(false);
     const [note, setNote] = useState<{ text: string; error: boolean } | null>(null);
     const attempt = useRef<{ json: string; key: string } | null>(null);
     const locked = !state.canEdit;
+    // Colours saved before the swatch list stay selectable, so nothing in a saved kit is lost.
+    const known = new Set<string>(BRAND_SWATCHES.map((s) => s.hex));
+    const swatches: { id: string; hex: string }[] = [...BRAND_SWATCHES, ...kit.palette.filter((c) => !known.has(c.toLowerCase())).map((c) => ({ id: 'custom', hex: c.toLowerCase() }))];
 
     const commit = (next: Draft) => { draftRef.current = next; setDraft(next); setNote(null); };
     const set = (patch: Partial<Kit>) => commit({ ...draftRef.current, kit: { ...draftRef.current.kit, ...patch } });
@@ -37,14 +40,14 @@ export function BrandKitEditor({ workspaceId, state, onSaved, catalog = null, pr
         return result;
     }
 
-    function addColour() {
+    function toggleColour(hex: string) {
         const kit = draftRef.current.kit;
-        const c = normaliseColour(colour);
-        if (!c) return setNote({ text: t('brand.colourInvalid'), error: true });
-        if (kit.palette.includes(c)) return setColour('');
+        if (kit.palette.some((c) => c.toLowerCase() === hex)) {
+            if (kit.palette.length <= 1) return;
+            return set({ palette: kit.palette.filter((c) => c.toLowerCase() !== hex) });
+        }
         if (kit.palette.length >= PALETTE_MAX) return setNote({ text: t('brand.paletteFull', { max: PALETTE_MAX }), error: true });
-        set({ palette: [...kit.palette, c] });
-        setColour('');
+        set({ palette: [...kit.palette, hex] });
     }
 
     function toggleFont(font: string) {
@@ -85,37 +88,26 @@ export function BrandKitEditor({ workspaceId, state, onSaved, catalog = null, pr
             <Card title={t('brand.name')}>
                 <TextInput accessibilityLabel={t('brand.name')} editable={!locked} style={styles.input} maxLength={NAME_MAX} value={kit.name} onChangeText={(name) => set({ name })} placeholderTextColor={colors.muted} />
             </Card>
-            <Card title={t('brand.palette')} help={t('brand.paletteHelp', { max: PALETTE_MAX })}>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                    {kit.palette.map((c) => (
-                        <Pressable
-                            key={c}
-                            accessibilityRole="button"
-                            accessibilityLabel={rawText(t('brand.removeColour', { colour: c }))}
-                            disabled={locked || kit.palette.length <= 1}
-                            onPress={() => set({ palette: draftRef.current.kit.palette.filter((x) => x !== c) })}
-                            style={{ minHeight: 44, minWidth: 44, borderRadius: 10, borderWidth: 1, borderColor: colors.border, backgroundColor: c, justifyContent: 'flex-end', padding: 4 }}
-                        >
-                            <Text style={{ fontSize: 11, color: '#000', backgroundColor: '#ffffffcc', paddingHorizontal: 3, borderRadius: 4 }}>{c}</Text>
-                        </Pressable>
-                    ))}
+            <Card title={t('brand.palette')} help={t('brand.paletteTap', { max: PALETTE_MAX })}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                    {swatches.map(({ id, hex }) => {
+                        const on = kit.palette.some((c) => c.toLowerCase() === hex);
+                        const name = id === 'custom' ? t('brand.swatch.custom') : t(`brand.swatch.${id}`);
+                        return (
+                            <Pressable
+                                key={hex}
+                                accessibilityRole="button"
+                                accessibilityLabel={rawText(name)}
+                                accessibilityState={{ selected: on, disabled: locked }}
+                                disabled={locked}
+                                onPress={() => toggleColour(hex)}
+                                style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: hex, borderWidth: on ? 3 : 1, borderColor: on ? colors.accent : colors.border, alignItems: 'center', justifyContent: 'center' }}
+                            >
+                                {on ? <Text style={{ fontSize: 20, fontWeight: '800', color: LIGHT_SWATCHES.has(hex) ? '#000' : '#fff' }}>✓</Text> : null}
+                            </Pressable>
+                        );
+                    })}
                 </View>
-                {locked ? null : (
-                    <>
-                        <TextInput
-                            accessibilityLabel={t('brand.addColour')}
-                            placeholder={t('brandKitEditor.32d6c5')}
-                            placeholderTextColor={colors.muted}
-                            autoCapitalize="none"
-                            autoCorrect={false}
-                            maxLength={7}
-                            style={styles.input}
-                            value={colour}
-                            onChangeText={setColour}
-                        />
-                        <Action label={t('brand.addColour')} onPress={addColour} />
-                    </>
-                )}
             </Card>
             <Card title={t('brand.fonts')}>
                 {FONTS.map((font) => {

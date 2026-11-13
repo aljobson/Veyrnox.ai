@@ -1,5 +1,17 @@
 // English strings for brand. Add keys here; keep their original wording and placeholders.
 export default {
+    'brand.swatch.teal': "Teal",
+    'brand.swatch.blue': "Blue",
+    'brand.swatch.purple': "Purple",
+    'brand.swatch.pink': "Pink",
+    'brand.swatch.red': "Red",
+    'brand.swatch.orange': "Orange",
+    'brand.swatch.yellow': "Yellow",
+    'brand.swatch.green': "Green",
+    'brand.swatch.white': "White",
+    'brand.swatch.navy': "Navy",
+    'brand.swatch.custom': "Custom colour",
+    'brand.paletteTap': "Up to {max} colours. Tap to add or remove.",
     'brand.title': 'Brand kit',
     'brand.intro': 'Colours and fonts for a workspace, saved to your account.',
     'brand.loading': 'Loading your brand kit',

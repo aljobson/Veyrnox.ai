@@ -207,7 +207,7 @@ export default [
     "chat.resume.saved", "chat.resume.unsaved", "chat.resume.nothing", "chat.resume.pending", "explore.oddlings.title", "explore.oddlings.body",
     "explore.oddlings.hint", "chat.skills.group.Film", "chat.skills.filmNote", "acct.exploreSection", "acct.search", "acct.models",
     "acct.pricing", "acct.brandKit", "acct.about", "brand.title", "brand.intro", "brand.loading",
-    "brand.noWorkspace", "brand.name", "brand.palette", "brand.paletteHelp", "brand.addColour", "brand.removeColour",
+    "brand.noWorkspace", "brand.name", "brand.palette", "brand.paletteHelp", "brand.swatch.teal", "brand.swatch.blue", "brand.swatch.purple", "brand.swatch.pink", "brand.swatch.red", "brand.swatch.orange", "brand.swatch.yellow", "brand.swatch.green", "brand.swatch.white", "brand.swatch.navy", "brand.swatch.custom", "brand.paletteTap", "brand.addColour", "brand.removeColour",
     "brand.colourInvalid", "brand.paletteFull", "brand.fonts", "brand.kept", "brand.keptHelp", "brand.keptNote",
     "brand.readOnly", "brand.save", "brand.saving", "brand.saved", "brand.problem.name", "brand.problem.palette",
     "brand.problem.fonts", "brand.problem.size", "brand.assets", "brand.assetsHelp", "brand.assetsNone", "brand.assetsMore",

@@ -1,6 +1,18 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "brand.swatch.teal": "Turquesa",
+  "brand.swatch.blue": "Azul",
+  "brand.swatch.purple": "Roxo",
+  "brand.swatch.pink": "Rosa",
+  "brand.swatch.red": "Vermelho",
+  "brand.swatch.orange": "Laranja",
+  "brand.swatch.yellow": "Amarelo",
+  "brand.swatch.green": "Verde",
+  "brand.swatch.white": "Branco",
+  "brand.swatch.navy": "Azul-marinho",
+  "brand.swatch.custom": "Cor personalizada",
+  "brand.paletteTap": "Até {max} cores. Toque para adicionar ou remover.",
   "editorSimple.describe": "Descreva o que deseja",
   "editorSimple.promptHelp": "Associa frases fixas em inglês a ferramentas; nenhuma IA interpreta este pedido. Confira a ferramenta antes de aplicar ou pagar.",
   "editorSimple.openTool": "Abrir ferramenta",

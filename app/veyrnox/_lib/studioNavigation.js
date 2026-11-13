@@ -24,6 +24,7 @@ export const STUDIO_DESTINATIONS = [
   { section: 'tools', href: '/mcp', labelKey: 'label.MCP', icon: 'plug', menu: false },
   { section: 'assets', key: 'library', href: '/app/library', labelKey: 'label.Library', icon: 'library' },
   { section: 'assets', key: 'projects', href: '/app/projects', labelKey: 'label.Projects', icon: 'folder', flag: 'projects' },
+  { section: 'assets', key: 'brandKit', href: '/app/brand-kit', labelKey: 'app.editor.rail.brand', icon: 'palette', flag: 'projects' },
   { section: 'assets', key: 'publish', href: '/app/publish', labelKey: 'app.nav.publish', icon: 'send', flag: 'publish' },
   { section: 'assets', key: 'credits', href: '/app/credits', labelKey: 'label.Credits', icon: 'coins' },
   { section: 'inspire', key: 'cinema', href: '/social-cinema', labelKey: 'label.Social Cinema', icon: 'film' },

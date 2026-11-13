@@ -1,6 +1,18 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "brand.swatch.teal": "청록",
+  "brand.swatch.blue": "파랑",
+  "brand.swatch.purple": "보라",
+  "brand.swatch.pink": "분홍",
+  "brand.swatch.red": "빨강",
+  "brand.swatch.orange": "주황",
+  "brand.swatch.yellow": "노랑",
+  "brand.swatch.green": "초록",
+  "brand.swatch.white": "흰색",
+  "brand.swatch.navy": "남색",
+  "brand.swatch.custom": "사용자 색상",
+  "brand.paletteTap": "최대 {max}색. 탭하여 추가하거나 제거하세요.",
   "editorSimple.describe": "원하는 작업을 설명하세요",
   "editorSimple.promptHelp": "정해진 영어 표현을 도구에 연결합니다. AI가 요청을 이해하지는 않습니다. 적용하거나 결제하기 전에 도구를 확인하세요.",
   "editorSimple.openTool": "도구 열기",
