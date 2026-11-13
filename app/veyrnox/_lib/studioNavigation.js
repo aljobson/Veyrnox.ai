@@ -12,12 +12,12 @@ export function activeStudioDestination(pathname, items) {
 // `flag` names a feature switch; `menu: false` keeps a row out of the phone menu.
 // `nav: false` keeps a row out of the sidebar AND the phone menu while its route
 // stays live (deep links, the active-route lookup and search still work). The
-// visible nav is the product pillars only: Create (image, video and audio
-// models behind its goal chips), Music, Editor, Publish and Cinema, with
+// visible nav is the product pillars only: Create (image and video models
+// behind its goal chips), Audio (the hub for music, speech, dialogue and lip sync), Editor, Publish and Cinema, with
 // Library, Credits and the Vey chat as the utility group.
 export const STUDIO_DESTINATIONS = [
   { section: 'tools', key: 'create', href: '/app/create', labelKey: 'label.Create', icon: 'image' },
-  { section: 'tools', key: 'music', href: '/app/music/create', labelKey: 'label.Music', icon: 'music' },
+  { section: 'tools', key: 'audio', href: '/app/audio', labelKey: 'app.audio.title', icon: 'music' },
   { section: 'tools', key: 'editor', href: '/app/editor', labelKey: 'label.Video editor', icon: 'scissors', flag: 'editor' },
   { section: 'tools', key: 'publish', href: '/app/publish', labelKey: 'app.nav.publish', icon: 'send', flag: 'publish' },
   { section: 'tools', key: 'cinema', href: '/social-cinema', labelKey: 'label.Social Cinema', icon: 'film' },
@@ -25,6 +25,12 @@ export const STUDIO_DESTINATIONS = [
   { section: 'assets', key: 'brandKit', href: '/app/brand-kit', labelKey: 'app.editor.rail.brand', icon: 'palette', flag: 'projects' },
   { section: 'assets', key: 'credits', href: '/app/credits', labelKey: 'label.Credits', icon: 'coins' },
   { section: 'assets', key: 'chat', href: '/app/chat', labelKey: 'label.LLM Chat', icon: 'chat' },
+  // The Audio studios light the Audio row while you are inside one.
+  { section: 'tools', key: 'audio', href: '/app/music', labelKey: 'app.audio.title', icon: 'music', nav: false },
+  { section: 'tools', key: 'audio', href: '/app/text-to-speech', labelKey: 'app.audio.title', icon: 'music', nav: false },
+  { section: 'tools', key: 'audio', href: '/app/dialogue', labelKey: 'app.audio.title', icon: 'music', nav: false },
+  { section: 'tools', key: 'audio', href: '/app/lip-sync', labelKey: 'app.audio.title', icon: 'music', nav: false },
+  { section: 'tools', key: 'audio', href: '/app/performance', labelKey: 'app.audio.title', icon: 'music', nav: false },
   // Hidden from the nav, routes unchanged.
   { section: 'tools', key: 'skills', href: '/app/skills', labelKey: 'label.Studio skills', icon: 'wand', menu: false, nav: false },
   { section: 'tools', key: 'agent', href: '/app/video-agent', labelKey: 'app.nav.videoAgent', hintKey: 'app.nav.videoAgentHint', icon: 'agent', nav: false },

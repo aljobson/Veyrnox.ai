@@ -138,8 +138,11 @@ test('the studio nav exposes the rest of the public site on desktop and mobile',
         'the desktop sidebar carries Social Cinema as a pillar');
     assert.match(tableSrc, /href: '\/presets'[^}]*nav: false[\s\S]*href: '\/models'[^}]*nav: false[\s\S]*href: '\/guides'[^}]*nav: false/,
         'Templates, Models and Guides stay routable but leave the signed-in nav');
-    assert.match(tableSrc, /key: 'music', href: '\/app\/music\/create', labelKey: 'label\.Music'/,
-        'Music is discoverable from the signed-in navigation');
+    assert.match(tableSrc, /key: 'audio', href: '\/app\/audio', labelKey: 'app\.audio\.title'/,
+        'Audio (music, speech, dialogue, lip sync) is discoverable from the signed-in navigation');
+    for (const route of ['/app/music', '/app/text-to-speech', '/app/dialogue', '/app/lip-sync']) {
+        assert.match(tableSrc, new RegExp(`key: 'audio', href: '${route.replaceAll('/', '\\/')}'[^}]*nav: false`), `${route} lights the Audio row`);
+    }
 });
 
 test('credits and assets come from the endpoint, the name from the session', () => {
