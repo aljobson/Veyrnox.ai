@@ -193,7 +193,7 @@ export default function CreateWithModel() {
                     draftReady.current = true;
                     return;
                 }
-                loadDraft(found.id).then((d) => {
+                loadDraft(found.id, undefined, undefined, sceneServices.current.api).then((d) => {
                     if (!valid()) return;
                     if (d) {
                         setPrompt(d.prompt);
@@ -243,14 +243,14 @@ export default function CreateWithModel() {
         unsaved.current = { draft, owner, current };
         const id = setTimeout(() => {
             unsaved.current = null;
-            if (current()) saveDraft(draft, undefined, owner).catch(() => undefined);
+            if (current()) saveDraft(draft, undefined, owner, sceneServices.current.api).catch(() => undefined);
         }, 600);
         return () => clearTimeout(id);
     }, [model, prompt, duration, opts, cameraOn, cinema, characterOn, character]);
     const flushDraft = useCallback(async () => {
         const draft = unsaved.current;
         unsaved.current = null;
-        if (draft?.current()) await saveDraft(draft.draft, undefined, draft.owner).catch(() => undefined);
+        if (draft?.current()) await saveDraft(draft.draft, undefined, draft.owner, sceneServices.current.api).catch(() => undefined);
     }, []);
     // Closing the screen saves what was typed in the last moments too.
     useEffect(() => () => void flushDraft(), [flushDraft]);
@@ -261,7 +261,7 @@ export default function CreateWithModel() {
         setCharacterOn(false);
         setCharacter({});
         setRestored(false);
-        clearDraft().catch(() => undefined);
+        clearDraft(undefined, undefined, sceneServices.current.api).catch(() => undefined);
     }, []);
     const { contract: loadedContract, loading: contractLoading, retry: retryContract } = useTemplateContract(swapScene ? null : template?.id);
     if (!model || (swap !== undefined && swapScene?.id !== swap)) {
@@ -337,7 +337,7 @@ export default function CreateWithModel() {
                 setResults(previous => previous ? { ...previous, ids: previous.ids.includes(id) ? previous.ids : [...previous.ids, id] } : { ids: [id], modelId: model.id, kind: kindOf(model.modality), aspect: opts.aspect, duration, count: run.count });
             }, quote);
             if (!current()) return;
-            clearDraft().catch(() => undefined);
+            clearDraft(undefined, undefined, sceneServices.current.api).catch(() => undefined);
             // A single Faceless Reel clip still opens its job page, where the sound step is offered (ADR-0279).
             const facelessSound = recipe === 'faceless-reel' && (followup ?? handedSources?.followup) === 'generated-sound' && model.id === 'wan-2.5-kie' && duration !== null && duration <= 8;
             if (run.count === 1 && firstId && facelessSound) router.replace({ pathname: '/job/[id]', params: { id: firstId, followup: 'faceless-sound' } });

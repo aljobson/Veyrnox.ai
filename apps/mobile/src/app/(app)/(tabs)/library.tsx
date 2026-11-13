@@ -14,6 +14,7 @@ import { appCache, getCacheUser, subscribeCacheUser } from '../../../lib/appCach
 import { POLICIES, type CacheMeta } from '../../../lib/cache';
 import { observe } from '../../../lib/network';
 import { KIND_FILTERS, STATE_FILTERS, expiryOf, canReuse, canSchedule, filterJobs, kindMap, readFavourites, toggled, writeFavourites, type KindFilter, type StateFilter, type View as LayoutView } from '../../../lib/libraryView';
+import { fetchLibrarySync, pushFavourite, reconcileFavourites } from '../../../lib/librarySync';
 import { fetchCatalogCached, mediaApi, type CatalogModel, type Job, type JobPage } from '../../../lib/media';
 import { publishHref, askAboutHref } from '../../../lib/nextSteps';
 import { creativeReuseHref } from '../../../lib/creativeReuse';
@@ -174,6 +175,7 @@ export default function Library() {
         const nextList = toggled(favourites, jobId);
         setFavourites(nextList);
         void writeFavourites(appCache, getCacheUser(), nextList);
+        void pushFavourite(api, jobId, nextList.includes(jobId));
     }
 
     const load = useCallback(async () => {
@@ -209,11 +211,19 @@ export default function Library() {
             setFocused(true);
             void load();
             const generation = version.current;
-            void readFavourites(appCache, getCacheUser()).then(ids => { if (generation === version.current) setFavourites(ids); });
+            // This phone's stars show first; with library sync on (ADR-0340) the account's list replaces them.
+            const owner = getCacheUser();
+            void readFavourites(appCache, owner).then(ids => { if (generation === version.current) setFavourites(ids); });
+            void fetchLibrarySync(api).then(async (sync) => {
+                if (sync.kind !== 'ok' || generation !== version.current || getCacheUser() !== owner) return;
+                const { ids, upload } = await reconcileFavourites(appCache, owner, sync.favourites);
+                if (generation === version.current && getCacheUser() === owner) setFavourites(ids);
+                for (const id of upload) await pushFavourite(api, id, true);
+            });
             // The model list only names and sorts what the server returned; a failed read leaves them unfiltered by type.
             fetchCatalogCached((list) => setModels(list)).catch(() => undefined);
             return () => { setFocused(false); pause(); };
-        }, [load, pause]),
+        }, [load, pause, api]),
     );
 
     async function more() {

@@ -56,3 +56,31 @@ test('the Library offers a star on each card and a Favourites filter', () => {
     assert.match(page, /aria-pressed=\{starred\} data-testid="library-favourite"/);
     assert.ok(page.split('\n').length <= 500, 'library page stays under 500 lines');
 });
+
+// ADR-0340: favourites follow the account once the server has them.
+import { reconcileFavourites } from '../app/veyrnox/_lib/favourites.js';
+const C = '33333333-3333-4333-8333-333333333333';
+test('first sync: favourites only this browser knows are kept and handed back to upload; the account list is not lost', () => {
+    const s = store();
+    toggleFavourite(s, USER, A);
+    const out = reconcileFavourites(s, USER, [B]);
+    assert.deepEqual(out.ids.sort(), [A, B].sort());
+    assert.deepEqual(out.upload, [A]);
+    assert.deepEqual(readFavourites(s, USER).sort(), [A, B].sort(), 'the merged list is what the browser now holds');
+});
+test('later syncs: the account list wins, so an unstar on another device is not brought back', () => {
+    const s = store();
+    toggleFavourite(s, USER, A);
+    reconcileFavourites(s, USER, [A]);
+    const out = reconcileFavourites(s, USER, [C]);
+    assert.deepEqual(out.ids, [C]);
+    assert.deepEqual(out.upload, []);
+    assert.deepEqual(readFavourites(s, USER), [C]);
+});
+test('sync state is per account and never read for another one', () => {
+    const s = store();
+    toggleFavourite(s, 'a', A); reconcileFavourites(s, 'a', []);
+    assert.deepEqual(reconcileFavourites(s, 'b', [B]).upload, [], 'b had nothing local');
+    assert.deepEqual(readFavourites(s, 'a'), [A]);
+    assert.deepEqual(reconcileFavourites(s, '', [B]), { ids: [], upload: [] }, 'no user id: nothing is read or written');
+});

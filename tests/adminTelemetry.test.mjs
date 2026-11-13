@@ -83,7 +83,7 @@ test('SQL and code allowlists agree for all inventory patterns; telemetry has no
  const names=(await readdir(new URL('../packages/db/schema/supabase/',import.meta.url))).filter(n=>/^\d{4}_.*\.sql$/.test(n)&&n>'0455').sort();
  const base=replacement.match(/SELECT p_path = ANY \(ARRAY\[([^\]]+)\]::text\[\]\)/)[1].split(',').map(p=>p.slice(1,-1));
  const added=[];
- for(const name of names){const m=(await readFile(new URL('../packages/db/schema/supabase/'+name,import.meta.url),'utf8')).match(/SELECT p_path = '([^']+)'\s+OR public\.telemetry_path_allowed_pre_\d{4}\(p_path\)/);if(m)added.push(m[1]);}
+ for(const name of names){const m=(await readFile(new URL('../packages/db/schema/supabase/'+name,import.meta.url),'utf8')).match(/SELECT (p_path (?:= '[^']+'|IN \([^)]+\)))\s+OR public\.telemetry_path_allowed_pre_\d{4}\(p_path\)/);if(m)added.push(...[...m[1].matchAll(/'([^']+)'/g)].map(x=>x[1]));}
  assert.ok(added.includes('/app/music/instruments'),'route migrations must extend the prior telemetry allowlist');
  const actual=[...new Set([...base,...added])].sort();
  assert.deepEqual(actual,expected,'update SQL patterns with inventory; the generic 404 catch-all never emits');
