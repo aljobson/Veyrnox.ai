@@ -1,6 +1,8 @@
 import { WIGS } from '../../../../packages/live-edit/wigs.js';
-import { fitWig, protectedFace, wigPose, wigCoverage, wigEdgeAlpha, validWigLandmarks } from '../../../../packages/live-edit/wigFit.js';
-import { polygonFromLandmarks, LEFT_EYE, RIGHT_EYE, LEFT_BROW, RIGHT_BROW, LIPS } from '../../../../packages/live-edit/regions.js';
+import { isWig3d } from '../../../../packages/live-edit/wig3d.js';
+import { fitWig, wigPose, validWigLandmarks } from '../../../../packages/live-edit/wigFit.js';
+import { carveFace, sampleCoverage } from './wigCommon.js';
+import { createWig3dLayer } from './wig3dLayer.js';
 
 /** Same-origin SVG images, like public/photo-studio/stickers; no page WASM or remote art. */
 export function createWigLayer(width, height, onChange = () => {}) {
@@ -8,7 +10,14 @@ export function createWigLayer(width, height, onChange = () => {}) {
     const ratio = Math.min(1, 1024 / Math.max(width, height));
     layer.width = Math.max(1, Math.round(width * ratio)); layer.height = Math.max(1, Math.round(height * ratio));
     const ctx = layer.getContext('2d', { willReadFrequently: true });
-    let closed = false, version = 0, cacheKey, cached;
+    let closed = false, version = 0, cacheKey, cached, layer3d;
+    const get3d = () => layer3d ??= createWig3dLayer(width, height, onChange);
+    /** Leaving 3D mode frees its WebGL context; the downloaded module stays cached for the next 3D choice. */
+    const drop3d = () => { layer3d?.close(); layer3d = null; };
+    // Hold-to-compare draws the plain photo for a moment: that is not leaving 3D mode, so release only after a pause.
+    let dropTimer;
+    const cancelDrop = () => { clearTimeout(dropTimer); dropTimer = undefined; };
+    const scheduleDrop = () => { if (layer3d && dropTimer === undefined) dropTimer = setTimeout(() => { dropTimer = undefined; drop3d(); }, 1500); };
     function load(style) {
         const wig = WIGS.find(w => w.id === style);
         if (!wig || closed) return Promise.resolve();
@@ -32,15 +41,19 @@ export function createWigLayer(width, height, onChange = () => {}) {
         });
         return entry.promise;
     }
-    function polygon(vertices) {
-        if (!vertices.length) return;
-        ctx.beginPath(); vertices.forEach(([x, y], i) => i ? ctx.lineTo(x * layer.width, y * layer.height) : ctx.moveTo(x * layer.width, y * layer.height));
-        ctx.closePath(); ctx.fill(); ctx.stroke();
-    }
     return {
-        prepare: load,
-        invalidate() { version++; },
+        prepare(style) {
+            if (!isWig3d(style)) { scheduleDrop(); return load(style); }
+            if (closed) return Promise.resolve();
+            cancelDrop();
+            const layer = get3d();
+            // If the layer was replaced while its load was pending (closed by a release), wait on the current one instead.
+            return layer.prepare(style).then(() => layer3d === layer || closed ? undefined : this.prepare(style));
+        },
+        invalidate() { version++; layer3d?.invalidate(); },
         render(settings, points, mask) {
+            if (isWig3d(settings.style)) { cancelDrop(); return settings.strength === 0 ? { active: false, status: 'off' } : get3d().render(settings, points, mask); }
+            scheduleDrop();
             const wig = WIGS.find(w => w.id === settings.style);
             if (!wig || settings.strength === 0) return { active: false, status: 'off' };
             if (!validWigLandmarks(points)) return { active: false, status: 'face-required' };
@@ -56,26 +69,16 @@ export function createWigLayer(width, height, onChange = () => {}) {
             const rx = layer.width / width, ry = layer.height / height;
             ctx.save(); ctx.setTransform(fit.a * rx, fit.b * ry, -fit.b * rx, fit.a * ry, fit.tx * rx, fit.ty * ry);
             ctx.drawImage(entry.image, 0, 0); ctx.restore();
-            // Subtraction is ONLY from the overlay. The source photograph is never masked out.
-            ctx.save(); ctx.globalCompositeOperation = 'destination-out'; ctx.fillStyle = '#000'; ctx.strokeStyle = '#000'; ctx.lineWidth = 4; ctx.lineJoin = 'round';
-            polygon(protectedFace(points));
-            for (const indices of [LEFT_EYE, RIGHT_EYE, LEFT_BROW, RIGHT_BROW, LIPS]) polygon(polygonFromLandmarks(points, indices, 1.15));
-            ctx.restore();
-            let coverage = { known: false, hint: false, fraction: 0 };
+            carveFace(ctx, layer, points);
             const opacity = settings.strength * pose.fade;
-            if (mask) {
-                sample.width = mask.width; sample.height = mask.height;
-                const sc = sample.getContext('2d', { willReadFrequently: true }); sc.drawImage(layer, 0, 0, sample.width, sample.height);
-                const data = sc.getImageData(0, 0, sample.width, sample.height).data;
-                coverage = wigCoverage(mask, Float32Array.from(mask.hair, (_, i) => wigEdgeAlpha(data[i * 4 + 3] / 255, Math.round(mask.hair[i] * 255) / 255)), opacity);
-            }
+            const coverage = sampleCoverage(layer, sample, mask, opacity);
             cacheKey = key;
             cached = { active: true, image: layer, key, opacity, coverage,
                 status: pose.fade < 1 ? (coverage.hint ? 'angle-uncovered' : 'angle') : coverage.hint ? 'uncovered' : coverage.known ? 'ready' : 'coverage-unknown' };
             return cached;
         },
         close() {
-            closed = true; for (const entry of images.values()) { entry.cancel(); entry.image.src = ''; }
+            closed = true; cancelDrop(); drop3d(); for (const entry of images.values()) { entry.cancel(); entry.image.src = ''; }
             images.clear(); cached = null; cacheKey = null; layer.width = layer.height = sample.width = sample.height = 1;
         },
     };

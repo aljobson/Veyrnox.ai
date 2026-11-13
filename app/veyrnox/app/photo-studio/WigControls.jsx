@@ -1,7 +1,9 @@
 import { WIGS } from '../../../../packages/live-edit/wigs.js';
+import { WIGS_3D } from '../../../../packages/live-edit/wig3d.js';
 import { HAIR_SHADES } from '../../../../packages/live-edit/hair.js';
 export function WigControls({ t, wig, hair, update, state, faceReady, retry, control, range }) {
     const names = { pixie: t('app.photoStudio.wig.pixie'), bob: t('app.photoStudio.wig.bob'), waves: t('app.photoStudio.wig.waves'), curls: t('app.photoStudio.wig.curls'), long: t('app.photoStudio.wig.long'), braids: t('app.photoStudio.wig.braids') };
+    const names3d = { '3d-pixie': t('app.photoStudio.wig3d.pixie'), '3d-bob': t('app.photoStudio.wig3d.bob'), '3d-long': t('app.photoStudio.wig3d.long'), '3d-fringe': t('app.photoStudio.wig3d.fringe') };
     const shades = { copper: t('app.photoStudio.hair.copper'), plum: t('app.photoStudio.hair.plum'), teal: t('app.photoStudio.hair.teal'), blonde: t('app.photoStudio.hair.blonde') };
     const statuses = {
         off: t('app.photoStudio.wig.off'), 'face-required': t('app.photoStudio.wig.faceRequired'),
@@ -27,6 +29,11 @@ export function WigControls({ t, wig, hair, update, state, faceReady, retry, con
                 <button type="button" className={control} aria-pressed={wig.style === 'none'} onClick={() => change({ style: 'none' })}>{t('app.photoStudio.none')}</button>
                 {WIGS.map(item => <button key={item.id} type="button" className={`${control} ${wig.style === item.id ? 'border-vx-accent' : ''}`} aria-pressed={wig.style === item.id} onClick={() => change({ style: item.id })}>{names[item.id]}</button>)}
             </div>
+            <p className="mt-4 text-sm">{t('app.photoStudio.wig3d.legend')}</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+                {WIGS_3D.map(item => <button key={item.id} type="button" className={`${control} ${wig.style === item.id ? 'border-vx-accent' : ''}`} aria-pressed={wig.style === item.id} onClick={() => change({ style: item.id })}>{names3d[item.id]}</button>)}
+            </div>
+            <p className="mt-2 text-xs leading-relaxed text-vx-fg-muted">{t('app.photoStudio.wig3d.help')}</p>
             {sliders.map(({ id, label, min, max }) => <label key={id} className="mt-4 block text-sm"><span className="flex justify-between gap-4"><span>{label}</span><output className="font-vx-mono text-vx-fg-muted">{Math.round(wig[id] * 100)}%</output></span>
                 <input className={range} type="range" min={min} max={max} step="0.01" value={wig[id]} onChange={e => change({ [id]: Number(e.target.value) })} />
             </label>)}

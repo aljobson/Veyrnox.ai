@@ -1,4 +1,5 @@
 import { proveWigs } from './photo-studio-wig-proof.mjs';
+import { proveWigs3d } from './photo-studio-wig3d-proof.mjs';
 import { proveHair } from './photo-studio-hair-proof.mjs';
 import { proveMakeup } from './photo-studio-makeup-proof.mjs';
 import { MAKEUP_PRESETS } from '../../packages/live-edit/makeup.js';
@@ -20,6 +21,7 @@ try {
     try { await WebAssembly.compile(new Uint8Array([0,97,115,109,1,0,0,0])); } catch { blocked = true; }
     assert(blocked, 'Page WASM must be blocked'); checks.push('page-wasm-blocked');
     const wigs = await proveWigs(); checks.push(...wigs.checks); misses.push(...wigs.misses);
+    const wigs3d = await proveWigs3d(); checks.push(...wigs3d.checks); misses.push(...wigs3d.misses);
     for (const [name, run] of [['makeup', proveMakeup], ['hair', proveHair]]) {
         try { checks.push(...await run()); } catch (error) { misses.push({ name, expected: 'all checks pass', actual: error.message }); }
     }

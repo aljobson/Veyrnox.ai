@@ -4,9 +4,10 @@
 import { test, expect } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
+const WIG3D_IDS = ['3d-pixie', '3d-bob', '3d-long', '3d-fringe'];
 test('real WebGL2 rendering, export, page CSP and retained-client inference', async ({ page }) => {
     const root = resolve(import.meta.dirname, '..');
-    const allowed = /^(app\/veyrnox\/_lib\/(?:liveEdit\/[^/]+|editorVisionRuntime|editorVisionWorkerClient|editorMotionAnalysis)|packages\/live-edit\/[^/]+|tests\/fixtures\/photo-studio-(?:browser-proof|makeup-proof|makeup-fixture|makeup-goldens|hair-proof|hair-fixture|wig-proof|wig-fixture))\.(?:js|mjs)$/;
+    const allowed = /^(app\/veyrnox\/_lib\/(?:liveEdit\/[^/]+|editorVisionRuntime|editorVisionWorkerClient|editorMotionAnalysis)|packages\/live-edit\/[^/]+|tests\/fixtures\/photo-studio-(?:browser-proof|wig3d-proof|makeup-proof|makeup-fixture|makeup-goldens|hair-proof|hair-fixture|wig-proof|wig-fixture))\.(?:js|mjs)$/;
     const outbound = [];
     page.on('request', request => { if (!['GET','HEAD'].includes(request.method())) outbound.push(request.url()); });
     await page.route('**/__photo-proof/**', async route => {
@@ -25,6 +26,7 @@ test('real WebGL2 rendering, export, page CSP and retained-client inference', as
     expect.soft(result.checks).toContain('retained-person-client');
     expect.soft(result.checks).toContain('face-worker-no-face');
     for (const check of ['makeup-zero-identical', 'makeup-golden-crops', 'makeup-regions-holes-monotonic', 'makeup-finishes-gradient-wing-volume', 'makeup-face-lost', 'makeup-export-equality', 'makeup-multiple-faces']) expect.soft(result.checks).toContain(check);
+    for (const check of ['wig3d-loads-and-zero-identical', 'wig3d-prepare-waits-for-inflight-load', 'wig3d-hairline-window-both-sides', 'wig3d-context-loss-render-failure-and-release', 'wig3d-compare-keeps-layer-and-export', 'wig3d-shader-failure-refuses-and-recovers', 'wig3d-turns-with-head-and-fades', 'wig3d-face-lost-and-count', 'wig3d-export-equality', ...WIG3D_IDS.map(id => `wig3d-${id}`)]) expect.soft(result.checks).toContain(check);
     for (const check of ['hair-worker-channel', 'hair-subject-association-speck', 'hair-zero-identical', 'hair-golden-crops', 'hair-feather-luminance-alpha-monotonic', 'hair-face-lost-multiple-no-hair', 'hair-export-equality']) expect.soft(result.checks).toContain(check);
     for (const check of ['wig-zero-identical','wig-r4-long-hair-short-wig','wig-tint-luminance','wig-face-lost-pose-off','wig-face-count-0','wig-face-count-2','wig-transparent-source','wig-export-history-compare', ...['pixie','bob','waves','curls','long','braids'].map(id => `wig-svg-${id}`)]) expect.soft(result.checks).toContain(check);
     expect.soft(outbound).toEqual([]);

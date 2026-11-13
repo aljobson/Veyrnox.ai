@@ -1,8 +1,9 @@
 // Web-only S5a extension: leave the byte-synced mobile S4 engine unchanged.
 import { DEFAULTS as BASE, normalize as normalizeBase } from '../../../../packages/live-edit/effects.js';
-import { WIG_DEFAULTS, normalizeWig } from '../../../../packages/live-edit/wigFit.js';
+import { WIG_DEFAULTS } from '../../../../packages/live-edit/wigFit.js';
+import { normalizeWigWeb } from '../../../../packages/live-edit/wig3d.js';
 export const DEFAULTS = Object.freeze({ ...BASE, wig: WIG_DEFAULTS });
-export const normalize = (settings = {}) => ({ ...normalizeBase(settings), wig: normalizeWig(settings.wig) });
+export const normalize = (settings = {}) => ({ ...normalizeBase(settings), wig: normalizeWigWeb(settings.wig) });
 export function createHistory(initial = DEFAULTS) {
     let past = [], present = normalize(initial), future = [];
     return {

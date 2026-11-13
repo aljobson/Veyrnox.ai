@@ -1,0 +1,10 @@
+{
+  "package": "three",
+  "version": "0.187.0",
+  "licence": "MIT",
+  "source": "npm three build/",
+  "files": {
+    "three.module.js": "104f56145899722094556490d787aae0617cc2fc3382f31df02d724ea1aee341",
+    "three.core.js": "613e370f76638fdef83926642bf256dc9615684922de1ce1f63a8583e5d78578"
+  }
+}
