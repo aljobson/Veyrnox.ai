@@ -65,9 +65,9 @@ function Reports() {
       {unavailable !== null && <p className="mt-4 text-sm">Unavailable scans in the last 24 hours: {unavailable}</p>}
       {assetGone > 0 && <p className="mt-2 text-sm">Scans in the last 24 hours skipped, file already gone: {assetGone}</p>}
 
-      <div className="mt-6 flex flex-wrap gap-2" role="group" aria-label="Report status">
+      <div className="mt-6 flex flex-wrap gap-2" role="tablist" aria-label="Report status">
         {['open', 'resolved'].map((s) => (
-          <Button key={s} size="sm" variant={status === s ? 'primary' : 'ghost'} aria-pressed={status === s} onClick={() => { setRows(null); setStatus(s); }}>
+          <Button key={s} size="sm" variant={status === s ? 'primary' : 'ghost'} role="tab" aria-selected={status === s} onClick={() => { setRows(null); setStatus(s); }}>
             {s[0].toUpperCase() + s.slice(1)}
           </Button>
         ))}
