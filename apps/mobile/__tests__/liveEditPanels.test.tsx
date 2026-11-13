@@ -1,12 +1,10 @@
 import { act } from 'react';
 import { createRoot } from 'test-renderer';
-import { router } from 'expo-router';
 import { AiWigPanel, HairPanel, MakeupPanel, RetouchPanel, type PanelProps } from '../src/components/liveEdit/Panels';
 import { ToolStrip } from '../src/components/liveEdit/ToolStrip';
 import { normalizeStack, DEFAULT_STACK } from '../src/lib/liveEdit/engine';
 import { t } from '../src/lib/i18n';
 
-jest.mock('expo-router', () => ({ router: { push: jest.fn() } }));
 type Props = PanelProps;
 const base = (over: Partial<Props> = {}): Props => ({ stack: DEFAULT_STACK, onChange: jest.fn(), onChangeStart: jest.fn(), onChangeEnd: jest.fn(), face: true, hair: true, disabled: false, ...over });
 const flat = <T,>(nodes: T[]) => nodes;
@@ -68,12 +66,16 @@ test('live camera explains that hair colour is not shown live', async () => {
     await act(async () => root.unmount());
 });
 
-test('the AI wig panel only opens the existing Face Filters flow, which shows the price and asks for consent', async () => {
-    const { root, all } = await mount(<AiWigPanel />);
-    const open = all(p => typeof p.onClick === 'function' && p.accessibilityLabel === t('liveEdit.aiWig.open'))[0]!;
+test('the AI wig panel hands off to the screen, and cannot be pressed while the screen is busy', async () => {
+    const onOpen = jest.fn();
+    const ready = await mount(<AiWigPanel onOpen={onOpen} disabled={false} />);
+    const open = ready.all(p => typeof p.onClick === 'function' && p.accessibilityLabel === t('liveEdit.aiWig.open'))[0]!;
     await act(async () => tap(open));
-    expect(router.push).toHaveBeenCalledWith('/face-filters');
-    await act(async () => root.unmount());
+    expect(onOpen).toHaveBeenCalledTimes(1);
+    await act(async () => ready.root.unmount());
+    const busy = await mount(<AiWigPanel onOpen={onOpen} disabled />);
+    expect(busy.all(p => p.accessibilityLabel === t('liveEdit.aiWig.open') && (p.accessibilityState as { disabled?: boolean } | undefined)?.disabled === true).length).toBeGreaterThan(0);
+    await act(async () => busy.root.unmount());
 });
 
 test('the tool strip marks the current tool and reports the one tapped', async () => {

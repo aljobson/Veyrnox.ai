@@ -1,9 +1,10 @@
-import { Stack as RouteStack } from 'expo-router';
+import { Stack as RouteStack, router } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { t } from '../../lib/i18n';
 import { getCacheUser, subscribeCacheUser } from '../../lib/appCache';
 import { discardCacheCopy } from '../../lib/cacheFiles';
+import { jpegCopy, offerPhoto } from '../../lib/liveEdit/faceFilterHandoff';
 import { DEFAULT_STACK, history, isWig3d, type Stack } from '../../lib/liveEdit/engine';
 import { preparePhoto, extractFrame, validateLocalMedia, type LocalSource } from '../../lib/liveEdit/media';
 import { pickLiveMedia, preparePickedPhoto, photoStatus } from '../../lib/liveEdit/pickedPhoto';
@@ -105,6 +106,15 @@ export function LiveEditScreen({ owner }: { owner: string }) {
         setCameraError(null); setLiveFace('detecting'); setLiveWig('off'); setCompare(false); setCamera('starting');
     }
     const stopCamera = () => { setCamera('off'); setCompare(false); };
+    async function openAiWig() {
+        if (locking.current || !current()) return;
+        locking.current = true; setBusy(true); setCamera('off'); setCompare(false); // leaving this screen must release the camera
+        try {
+            if (sourceRef.current) { const file = await jpegCopy(sourceRef.current.uri); if (current()) offerPhoto(owner, file); else discardCacheCopy(file.uri); }
+        } catch { /* The person can still choose the photo in Face Filters. */ }
+        finally { locking.current = false; if (mounted.current) setBusy(false); }
+        if (current()) router.push('/face-filters');
+    }
     async function cameraPhoto(uri: string) {
         // The captured frame (raw, not mirrored, no effects) goes through the normal still flow, where hair and wig coverage work at full quality.
         setCamera('off'); setCompare(false); setCameraError(null);
@@ -158,7 +168,7 @@ export function LiveEditScreen({ owner }: { owner: string }) {
         : tool === 'retouch' ? <RetouchPanel {...common} />
         : tool === 'makeup' ? <MakeupPanel {...common} />
         : tool === 'hair' ? <HairPanel {...common} live={live} />
-        : <AiWigPanel />;
+        : <AiWigPanel onOpen={() => void openAiWig()} disabled={disabled} />;
     return <View style={styles.screen}>
         <RouteStack.Screen options={{ title: t('liveEdit.title') }} />
         <View style={styles.top}>

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
-import { router } from 'expo-router';
 import { t } from '../../lib/i18n';
 import { HAIR_SHADES, MAKEUP, SHADES, type MakeupId, type Stack } from '../../lib/liveEdit/engine';
 import { ds } from '../../theme';
@@ -51,14 +50,14 @@ export function HairPanel({ stack, onChange, onChangeStart, onChangeEnd, hair, d
     );
 }
 
-// Realistic wigs are drawn by the server's image model, not on the phone: it costs credits and uploads the photo, so it only opens the existing Face Filters flow (which shows the price and asks for consent).
-export function AiWigPanel() {
+// Realistic wigs are drawn by the server's image model, not on the phone: it costs credits and uploads the photo, so this only opens the existing Face Filters flow (which shows the price and asks for consent) with the current photo.
+export function AiWigPanel({ onOpen, disabled }: { onOpen: () => void; disabled: boolean }) {
     const s = useThemedStyles(sheets);
     return (
         <View style={s.panel}>
             <Text variant="title3" style={s.note}>{t('liveEdit.aiWig.title')}</Text>
             <Text variant="footnote" tone="secondary" style={s.note}>{t('liveEdit.aiWig.help')}</Text>
-            <Button label={t('liveEdit.aiWig.open')} onPress={() => router.push('/face-filters')} />
+            <Button label={t('liveEdit.aiWig.open')} disabled={disabled} onPress={onOpen} />
         </View>
     );
 }

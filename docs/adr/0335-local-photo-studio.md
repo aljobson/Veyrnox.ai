@@ -576,8 +576,15 @@ tuning would not change that. The mobile editor no longer offers them. The wig e
 in a saved stack still renders and exports. A new **AI wig** tool opens the existing Face Filters flow, whose `face-costume` model already draws
 `wig_blonde`, `wig_pink`, `wig_curly` and `wig_powdered` on a photo. That flow shows the catalog price, asks for consent and uploads the photo, so the
 editor itself still never uploads anything. The owner chose this over licensed wig assets (live, free per use, but needs art we do not have) and over
-dropping wigs. **Limit:** the AI wig button opens Face Filters without the photo, so the person picks it again. More styles than the four above need a
-new catalog row and a verified provider endpoint, which is a separate decision.
+dropping wigs.
+
+**Photo hand-over (follow-up, same day).** Opening the tool offers the current photo to Face Filters once. The editor makes its own JPEG copy
+(the editor keeps full-size PNGs, which can exceed the server's size limit), `faceFilterHandoff` holds it for the signed-in account only, and Face Filters
+claims it on open, validates it like a picked photo (type, size, resolution), owns it and deletes it like any picked copy. An unclaimed copy is deleted when
+replaced, cleared or claimed by another account. Face Filters opens on the `face-costume` model with `wig_blonde` selected when the catalog offers it,
+so the person only chooses a style and runs it. Opening the tool from the live camera releases the camera first. The effects already applied in the
+editor (makeup, hair colour, looks) are not baked into the photo that is sent; the AI model works from the original. **Limit:** more styles than the
+four server wigs need a new catalog row and a verified provider endpoint, which is a separate decision.
 
 **Decision 2 — Apple Photos layout.** The screen is one photo that fills the space, a top row (photos, camera, undo, redo, save), and a dock with a tool
 strip (Looks, Retouch, Makeup, Hair, AI wig) whose selected tool opens its panel above it. Touch and hold the photo to see the original; for a screen
