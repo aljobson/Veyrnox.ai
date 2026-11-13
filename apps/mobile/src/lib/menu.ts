@@ -6,6 +6,7 @@ export type MenuItem = { key: string; label: string; href: string; icon: MenuIco
 export type MenuSection = { id: 'agents' | 'tools' | 'assets' | 'inspire'; label: string; items: MenuItem[] };
 
 // Destinations the bottom tab bar already carries; the drawer does not list them again.
+// Faceless reel, Face filters and the Tool directory are tiles on the Create tab, so they are not repeated here.
 export const TAB_KEYS: ReadonlySet<string> = new Set(['create', 'editor', 'library', 'publish']);
 
 export const HOME_ICON: MenuIcon = 'house';
@@ -26,9 +27,6 @@ export const MENU_SECTIONS: MenuSection[] = [
         items: [
             { key: 'create', label: 'menu.create', href: '/create', icon: 'image' },
             { key: 'features', label: 'menu.features', href: '/features', icon: 'sparkle' },
-            { key: 'facelessReel', label: 'facelessReel.chip', href: '/faceless-reel', icon: 'film' },
-            { key: 'tools', label: 'menu.toolDirectory', href: '/create/tools', icon: 'wrench' },
-            { key: 'faceFilters', label: 'faceFilters.title', href: '/face-filters', icon: 'smiley' },
             { key: 'editor', label: 'tabs.editor', href: '/editor', icon: 'slate' },
             { key: 'film', label: 'menu.film', hint: 'menu.filmHint', href: '/film', icon: 'film' },
             { key: 'oddlings', label: 'menu.oddlings', href: '/oddlings', icon: 'user' },
