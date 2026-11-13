@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { fromFallback as imageFallbackCatalog } from '../app/veyrnox/_lib/useCatalog.js';
 import assert from 'node:assert/strict';
 import * as React from 'react';
 import { fixture } from './helpers/publicSiteRender.mjs';
@@ -17,7 +18,7 @@ const select = (tree, label) => nodes(tree).find(node => node.type === 'select' 
 const button = tree => nodes(tree).find(node => node.type === 'button');
 const options = node => nodes(node.props.children).filter(child => child.type === 'option').map(child => child.props.value);
 const launchButton = tree => nodes(tree).find(node => node.type === 'button' && String(node.props.className).includes('bg-vx-accent'));
-function harness({ models = [other, original], live = true, template = preset, prompt = template.prompt, prepare } = {}) {
+function harness({ models = [other, original], live = true, template = preset, prompt = template.prompt, prepare, templateClip = null } = {}) {
   const states = [];
   let index = 0;
   const pushed = [];
@@ -37,7 +38,7 @@ function harness({ models = [other, original], live = true, template = preset, p
     ...(prepare ? { '../_lib/uploadConvert.mjs': { prepareUpload: prepare } } : {}),
   } });
   const { UseTemplate } = f.load('app/veyrnox/_components/UseTemplate.js');
-  return { render: () => { index = 0; return UseTemplate({ preset: template, prompt }); }, pushed };
+  return { render: () => { index = 0; return UseTemplate({ preset: template, prompt, templateClip }); }, pushed };
 }
 
 test('UseTemplate renders an enabled button and defaults for a non-runnable exact prompt', () => {
@@ -49,6 +50,19 @@ test('UseTemplate renders an enabled button and defaults for a non-runnable exac
   assert.equal(select(tree, 'presets.use.clipLength').props.value, 10);
   assert.deepEqual(options(select(tree, 'presets.use.clipLength')), [5, 10]);
   assert.match(JSON.stringify(button(tree)), /34/);
+});
+
+test('film handoff is available for ordinary video only, never image or clip mode', async () => {
+  const { IMAGE_TEMPLATES } = await import('../app/veyrnox/_lib/imageTemplates.js');
+  const image = IMAGE_TEMPLATES[0];
+  const imageModel = { ...imageFallbackCatalog().find(model => model.id === image.model), modality: 'text-to-image' };
+  const hasFilm = tree => nodes(tree).some(node => node.type === 'button' && node.props.children === 'presets.use.build');
+  assert.equal(hasFilm(harness().render()), true);
+  assert.equal(hasFilm(harness({ template: image, models: [imageModel] }).render()), false);
+  const clipTree = harness({ templateClip: { id: preset.id, model: original.id, credits: 17 } }).render();
+  assert.equal(hasFilm(clipTree), false);
+  assert.equal(launchButton(clipTree), undefined);
+  assert.ok(JSON.stringify(clipTree).includes('app.create.referenceLikenessNotice'));
 });
 
 test('changing model updates ratio, seconds and live catalog cost; switching back restores template defaults', () => {
@@ -180,4 +194,41 @@ test('catalog normalization retains full modality and fallback does not guess it
   assert.deepEqual(models.map(model => model.kind), ['video', 'video']);
   assert.equal(models[1].gated, true);
   assert.ok(fromFallback().every(model => Object.hasOwn(model, 'modality')));
+});
+
+
+// Real registry rows exercise the same hooks, pricing and handoff as video recipes.
+test('image registry flows through UseTemplate model selection, catalog prices and duration-free handoff', async () => {
+  const { IMAGE_TEMPLATES } = await import('../app/veyrnox/_lib/imageTemplates.js');
+  const { presetCredits, presetHref } = await import('../app/veyrnox/_lib/tokens.js');
+  const models = imageFallbackCatalog().filter(model => ['nano-banana-kie', 'nano-banana-pro-grsai', 'seedream-4'].includes(model.id)).map((model, i) => ({ ...model, modality: 'text-to-image', credits: 71 + i }));
+  const oldWindow = globalThis.window;
+  try {
+    const storage = new Map();
+    globalThis.window = { sessionStorage: { setItem: (key, value) => storage.set(key, value) } };
+    for (const template of IMAGE_TEMPLATES) {
+      const h = harness({ template, models: [...models, original] });
+      const picker = select(h.render(), 'label.Model picker');
+      assert.equal(picker.props.value, template.model);
+      assert.ok(options(picker).every(id => models.some(model => model.id === id)));
+      assert.equal(select(h.render(), 'presets.use.clipLength'), undefined);
+      const chosen = models.find(model => model.id !== template.model);
+      picker.props.onChange({ target: { value: chosen.id } });
+      const tree = h.render();
+      assert.ok(JSON.stringify(tree).includes(String(chosen.credits)));
+      assert.equal(presetCredits(template, models), models.find(model => model.id === template.model).credits);
+      assert.equal(new URL(presetHref(template, 10), 'https://test').searchParams.has('duration'), false);
+      button(tree).props.onClick();
+      const draft = JSON.parse(storage.get(LANDING_DRAFT_KEY));
+      assert.equal(draft.model, chosen.id);
+      assert.equal(draft.prompt, template.prompt);
+      assert.equal(draft.aspect, template.aspect);
+      assert.equal('durationSeconds' in draft, false);
+      const params = new URL(h.pushed[0], 'https://test').searchParams;
+      assert.equal(params.has('duration'), false);
+      const arrival = templateArrival(template, models, params, draft);
+      assert.equal(arrival.modelId, chosen.id);
+      assert.equal('durationSeconds' in arrival.draft, false);
+    }
+  } finally { globalThis.window = oldWindow; }
 });

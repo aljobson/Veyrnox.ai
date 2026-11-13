@@ -3,7 +3,7 @@
  *
  * Unauthenticated by design, and per-account data never reaches it: the list is static template data priced from the public catalog, the
  * same for everyone. Lives outside /api/v1 so the auth middleware does not gate it, like /api/catalog and /api/popular-templates. It
- * takes no input and reads no identity header. Every web template is listed. Credits come from its active catalog row when present;
+ * takes no input and reads no identity header. Only legacy video templates are listed; image templates never enter this contract. Credits come from its active catalog row when present;
  * otherwise the web gallery's template fallback is returned with available: false, so clients can show it without offering generation.
  *
  * Response: { presets: [{ id, title, category, modelId, modelName, modality, prompt, promptOrigin, sourcePrompt, sourcePromptOrigin, sourcePromptStatus, sourcePromptRunnable, sourcePromptIssues, needs, durationSeconds, credits, gated, available,

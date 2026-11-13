@@ -1,3 +1,4 @@
+import { IMAGE_SOURCE_PROMPT_RECORDS } from './imageSourcePromptRecords.js';
 import { SYNTX_REPLACEMENTS_RECORDS } from './syntxReplacementRecords.js';
 import { HF_REPLACEMENTS_RECORDS } from './higgsfieldReplacementRecords.js';
 import { HIGGSFIELD_CATEGORY_FILL_RECORDS } from './higgsfieldCategoryFillRecords.js';
@@ -9,7 +10,10 @@ import { SYNTX_SOURCE_PROMPT_RECORDS } from './syntxSourcePromptRecords.js';
 import { SEEDANCE_SOURCE_PROMPT_RECORDS } from './seedanceSourcePromptRecords.js';
 import { recordLookup } from './templateIds.js';
 
+// Captured provenance for both images and videos, not a list of video templates.
+// Media fields are optional; video consumers must start from SOURCE_TEMPLATES.
 export const SOURCE_PROMPT_RECORDS = Object.freeze({
+  ...IMAGE_SOURCE_PROMPT_RECORDS,
   ...GENJUTSU_SOURCE_PROMPT_RECORDS,
   ...HIGGSFIELD_90_SOURCE_PROMPT_RECORDS,
   ...HIGGSFIELD_300_SOURCE_PROMPT_RECORDS,

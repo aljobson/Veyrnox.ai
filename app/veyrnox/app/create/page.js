@@ -35,7 +35,7 @@ import { takeVideoSoundContinuation, writeVideoSoundContinuation } from '../../_
 import { oddlingPortrait, buildOddlingAnimationPrompt } from '../../_lib/oddlingStudio';
 import { fetchTemplate } from '../../_lib/useTemplates';
 import { resolveTemplateDraft, draftForTemplate, templateArrival, createPromptModelAvailable } from '../../_lib/templateDraft';
-import { templateStartIdFor } from '../../../../lib/templateStartCheck';
+import { templateStartIdFor, templateSelectionMatches } from '../../../../lib/templateStartCheck';
 import { templateSourceUnsupported } from '../../_lib/templateSourceBlock';
 import { nearestOption } from '../../../../lib/aspectShapes.mjs';
 import { DEFAULT_CINEMA, buildCinemaPrompt } from '../../_lib/cinema';
@@ -338,7 +338,7 @@ export default function CreateStudio() {
   // Completion must not turn an imminent reset click into a charged submission.
   const hasJobs = jobs.length > 0;
   const catalogStatus = catalogLoading ? 'loading' : catalogLive ? 'live' : 'unavailable';
-  const activeTemplate = templateStartIdFor(presetParam, templateData, modelId) ? templateData : null;
+  const activeTemplate = templateSelectionMatches(presetParam, templateData, modelId) ? templateData : null;
   // Changing the model keeps the chosen template on screen; it just stops being sent (the gateway takes a template only on its own model).
   const keptTemplate = !activeTemplate && presetParam && templateData?.id === presetParam ? templateData : null;
   const keptTemplateModel = keptTemplate ? models.find((m) => m.id === templateModelId(keptTemplate)) : null;
@@ -489,7 +489,7 @@ export default function CreateStudio() {
     setTier(null);
     chooseModel(nextId);
     setPrompt(draft.prompt);
-    setDuration(`${draft.durationSeconds}s`);
+    if (draft.durationSeconds) setDuration(`${draft.durationSeconds}s`);
     setNegative(draft.negativePrompt);
     if (draft.aspect) {
       if (nextId === modelId) { const nearest = nearestOption(draft.aspect, aspectOptions); if (nearest) setAspect(nearest); }

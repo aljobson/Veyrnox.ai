@@ -8,6 +8,7 @@
 // modelIdForName; `credits` must equal that model's 5s price
 // (tests/presetLinking.test.mjs). Prices shown come from the live catalog.
 
+import { publishedImageTemplates } from './imageTemplates.js';
 import { SOURCE_TEMPLATES } from './sourceTemplates.js';
 import { REFERENCE_TEMPLATES } from './referenceTemplates.js';
 import { EFFECT_CONCEPT_TEMPLATES } from './effectConceptTemplates.js';
@@ -19,7 +20,7 @@ import {
   HIGGSFIELD_90_WALL_CLIP_KEYS,
 } from './sourceTemplateExpansion12.js';
 
-const CATEGORY_ORDER = ['YOUR PHOTO', 'KIDS BIRTHDAY', 'CINEMATIC', 'ANIME', 'CARTOONS', 'MOVIES', 'FANTASY', 'REALISTIC', 'FASHION', 'PRODUCTS', 'VFX', 'UGC', 'ADS'];
+const CATEGORY_ORDER = ['CHRISTMAS', 'YOUR PHOTO', 'KIDS BIRTHDAY', 'CINEMATIC', 'ANIME', 'CARTOONS', 'MOVIES', 'FANTASY', 'REALISTIC', 'FASHION', 'PRODUCTS', 'VFX', 'UGC', 'ADS'];
 
 export const WALL_CLIP_KEYS = [
   'wall-warm-portrait', 'wall-film-portrait', 'wall-trick-or-skin',
@@ -51,14 +52,23 @@ export const hasTemplateVideo = (preset) => Boolean(preset?.clipKey && SHOWCASE_
 export const PRESETS = ALL_TEMPLATES.filter(hasTemplateVideo);
 export const WALL_PRESETS = WALL_CLIP_KEYS.map((key) => ALL_TEMPLATES.find((p) => p.clipKey === key)).filter(Boolean);
 export const PRESET_CATEGORIES = ['ALL', 'NEW', ...CATEGORY_ORDER.filter((category) => PRESETS.some((p) => p.category === category))];
+// Video exports remain stable for legacy clients and generated fidelity data.
+// Web discovery reads the gate at request time, including after a cached video list.
+export const allPublishedTemplates = () => [...ALL_TEMPLATES, ...publishedImageTemplates()];
+export const galleryTemplates = () => [...PRESETS, ...publishedImageTemplates()];
+export function galleryCategories() {
+  const templates = galleryTemplates();
+  return ['ALL', 'NEW', ...CATEGORY_ORDER.filter(category => templates.some(p => p.category === category))];
+}
 export { QUICK_PRESET_CATEGORIES } from './tokens.js';
 export { EFFECT_THEMES, effectThemeId };
 
 // "New" is a flag, not a home category: a new template also sits in its own.
 export function templatesIn(category) {
-  if (category === 'ALL') return PRESETS;
-  if (category === 'NEW') return PRESETS.filter((p) => p.isNew);
-  return PRESETS.filter((p) => p.category === category);
+  const templates = galleryTemplates();
+  if (category === 'ALL') return templates;
+  if (category === 'NEW') return templates.filter((p) => p.isNew);
+  return templates.filter((p) => p.category === category);
 }
 
 export function templatesInTheme(theme) {
@@ -88,7 +98,7 @@ export function searchTemplates(templates, query) {
 
 export function templateById(id) {
   const wanted = publicTemplateId(id);
-  return ALL_TEMPLATES.find((p) => p.id === wanted) || null;
+  return allPublishedTemplates().find((p) => p.id === wanted) || null;
 }
 
 // Defined in tokens.js so components that only need the link do not pull in
