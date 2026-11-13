@@ -25,6 +25,8 @@ import { SHOWCASE_CLIP_EXPANSION_4 } from './sourceTemplateExpansion4.js';
 import { SHOWCASE_CLIP_EXPANSION_5 } from './sourceTemplateExpansion5.js';
 import { SOURCE_TEMPLATES } from './sourceTemplates.js';
 import { isPublishableSourcePromptTemplate } from './sourcePromptAudit.js';
+import { BROKEN_TEMPLATE_IDS } from './brokenTemplateIds.js';
+import { publicTemplateId } from './templateIds.js';
 
 export const AUDIT_SHOWCASE_CLIPS = {
   'product-hero-360': {
@@ -478,11 +480,14 @@ export const AUDIT_SHOWCASE_CLIPS = {
 // after the unrelated Keyboard Duo template is removed. All other clips owned
 // only by prompt-gap templates stay in the audit manifest above.
 const INDEPENDENT_LANDING_CLIP_KEYS = new Set(['nano-banana-kie', 'ace-step', 'wan-2.5-kie', 'kling-26', 'presets', 'model-video', 'model-image', 'model-audio']);
+const BROKEN_TEMPLATE_ID_SET = new Set(BROKEN_TEMPLATE_IDS);
+const isWithdrawnTemplate = template => !isPublishableSourcePromptTemplate(template.id)
+  || BROKEN_TEMPLATE_ID_SET.has(publicTemplateId(template.id));
 const REMOVED_TEMPLATE_ONLY_CLIP_KEYS = new Set(SOURCE_TEMPLATES
-  .filter(template => !isPublishableSourcePromptTemplate(template.id))
+  .filter(isWithdrawnTemplate)
   .map(template => template.clipKey)
   .filter(key => !INDEPENDENT_LANDING_CLIP_KEYS.has(key)
-    && !SOURCE_TEMPLATES.some(template => template.clipKey === key && isPublishableSourcePromptTemplate(template.id))));
+    && !SOURCE_TEMPLATES.some(template => template.clipKey === key && !isWithdrawnTemplate(template))));
 const REPLACED_HIGGSFIELD_CLIP_KEY_SET = new Set(REPLACED_HIGGSFIELD_CLIP_KEYS);
 const PRESERVED_REPLACED_LANDING_CLIP_KEYS = new Set([
   'wan-2.5-kie', 'kling-26', 'presets',
@@ -502,14 +507,14 @@ export const SHOWCASE_CLIPS = Object.freeze(Object.fromEntries(
 
 // Give each public placement its own clip, including templates also on /presets.
 // Only retained published wall owners belong in the public placement map.
-export const WALL_SHOWCASE_KEYS = Object.freeze({
+export const WALL_SHOWCASE_KEYS = Object.freeze(Object.fromEntries(Object.entries({
   'a-moment-between-strangers': 'wall-warm-portrait',
   'the-last-stagecoach': 'wall-film-portrait',
   'trick-or-skin': 'wall-trick-or-skin',
   'the-wrong-one': 'wall-the-wrong-one',
   'event-character-swap': 'wall-event-character-swap',
   ...HIGGSFIELD_90_WALL_SHOWCASE_KEYS,
-});
+}).filter(([id]) => !BROKEN_TEMPLATE_ID_SET.has(id))));
 
 export const MODEL_SHOWCASE_KEYS = {
   video: 'model-video',

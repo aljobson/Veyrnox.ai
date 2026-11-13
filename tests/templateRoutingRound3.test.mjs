@@ -66,7 +66,7 @@ test('Create arrival restores an edited bound-model draft without a model URL pa
 });
 
 test('detail runnable verdict and /api/templates detail agree for every bound template', async () => {
-  const f = fixture('en', '/presets/on-the-wave', { moduleMocks: { '../../_components/TemplateRecipe': { TemplateRecipe: () => null } } });
+  const f = fixture('en', '/presets/window-explode', { moduleMocks: { '../../_components/TemplateRecipe': { TemplateRecipe: () => null } } });
   const Page = f.load(page).default;
   for (const preset of PRESETS.filter(p => templateContract(p.id)?.class === 'bound')) {
     const tree = await Page({ params: Promise.resolve({ id: preset.id }) });

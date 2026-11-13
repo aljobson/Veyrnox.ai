@@ -16,13 +16,14 @@ import { EFFECT_THEMES, effectThemeId, themedTemplates } from './effectThemes.js
 import { SHOWCASE_CLIPS } from './showcase.js';
 import { isPublishableSourcePromptTemplate } from './sourcePromptAudit.js';
 import { publicTemplateId } from './templateIds.js';
+import { BROKEN_TEMPLATE_IDS } from './brokenTemplateIds.js';
 import {
   HIGGSFIELD_90_WALL_CLIP_KEYS,
 } from './sourceTemplateExpansion12.js';
 
 const CATEGORY_ORDER = ['CHRISTMAS', 'YOUR PHOTO', 'KIDS BIRTHDAY', 'CINEMATIC', 'ANIME', 'CARTOONS', 'MOVIES', 'FANTASY', 'REALISTIC', 'FASHION', 'PRODUCTS', 'VFX', 'UGC', 'ADS'];
 
-export const WALL_CLIP_KEYS = [
+const DECLARED_WALL_CLIP_KEYS = [
   'wall-warm-portrait', 'wall-film-portrait', 'wall-trick-or-skin',
   'wall-the-wrong-one', 'wall-event-character-swap',
   ...HIGGSFIELD_90_WALL_CLIP_KEYS,
@@ -33,6 +34,8 @@ export const REMOVED_PROMPT_GAP_TEMPLATE_IDS = Object.freeze(SOURCE_TEMPLATES
   .filter((template) => !isPublishableSourcePromptTemplate(template.id))
   .map((template) => template.id));
 const REMOVED_PROMPT_GAP_TEMPLATE_ID_SET = new Set(REMOVED_PROMPT_GAP_TEMPLATE_IDS);
+const BROKEN_TEMPLATE_ID_SET = new Set(BROKEN_TEMPLATE_IDS);
+const withdrawn = (template) => REMOVED_PROMPT_GAP_TEMPLATE_ID_SET.has(template.id) || BROKEN_TEMPLATE_ID_SET.has(publicTemplateId(template.id));
 
 // Source records with an absent or truncated matched prompt remain in the
 // audit corpus, but are removed from every public surface and direct route.
@@ -42,12 +45,13 @@ const REMOVED_PROMPT_GAP_TEMPLATE_ID_SET = new Set(REMOVED_PROMPT_GAP_TEMPLATE_I
 // in the source records, and an old link's id still resolves (templateById).
 const publishable = ({ sourcePlatform: _platform, sourceUrl: _url, ...template }) => ({ ...template, id: publicTemplateId(template.id) });
 export const ALL_TEMPLATES = TEMPLATE_CANDIDATES
-  .filter((template) => !REMOVED_PROMPT_GAP_TEMPLATE_ID_SET.has(template.id))
+  .filter((template) => !withdrawn(template))
   .map(publishable);
 /** Ids templates were published under before they lost their source name; each redirects to its template. */
 export const LEGACY_TEMPLATE_IDS = Object.freeze(TEMPLATE_CANDIDATES
-  .filter((template) => !REMOVED_PROMPT_GAP_TEMPLATE_ID_SET.has(template.id) && publicTemplateId(template.id) !== template.id)
+  .filter((template) => !withdrawn(template) && publicTemplateId(template.id) !== template.id)
   .map((template) => template.id));
+export const WALL_CLIP_KEYS = DECLARED_WALL_CLIP_KEYS.filter((key) => ALL_TEMPLATES.some((template) => template.clipKey === key));
 export const hasTemplateVideo = (preset) => Boolean(preset?.clipKey && SHOWCASE_CLIPS[preset.clipKey]?.video);
 export const PRESETS = ALL_TEMPLATES.filter(hasTemplateVideo);
 export const WALL_PRESETS = WALL_CLIP_KEYS.map((key) => ALL_TEMPLATES.find((p) => p.clipKey === key)).filter(Boolean);

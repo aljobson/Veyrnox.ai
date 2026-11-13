@@ -26,7 +26,7 @@ const positives = [
   'community-street-corner-dance', 'community-luxury-sedan-swap',
 ];
 const negatives = [
-  'jellyfish-airlines', 'sm-brand-new-day', 'the-wrong-one', 'pumpkin-lings', 'hotel-window-watch',
+  'jellyfish-airlines', 'sm-brand-new-day', 'the-wrong-one', 'hotel-window-watch',
   'escalator-loop', 'fashion-catch', 'red-thread-story', 'meal-together', 'natural-viral-makeover',
   'studio-ballerina-turns', 'little-storm-knight', 'community-suit-crowd-shift', 'community-bipedal-cat-sprint',
 ];
@@ -65,4 +65,4 @@ for (const id of ['fat-parkour', 'urban-broomstick-flight', 'identity-locked-per
   assert.equal(templateAudioDependency(text), true);
   for (const e of templateAudioEvidence(text)) assert.equal(text.slice(e.offset, e.offset + e.phrase.length), e.phrase);
 });
-for (const id of ['epic-train-doorway-scene', 'a-moment-between-strangers', 'the-last-stagecoach', 'trick-or-skin', 'curtain-reveal', 'sheep-kingdom', 'tentacle-breakout', 'community-candle-wish-drift', 'community-rotating-wardrobe-wipe', 'pizzeria-hide-and-seek', 'coliseum-drift', 'theater-ceiling-horror', 'wear-the-moment', 'reflection-in-the-mirror', 'car-blows-up', 'pumpkin-guardian', 'ghost-makeover', 'one-last-embrace', 'birthday-drift', 'office-escape', 'rap-takeover', 'event-character-swap', 'seedance-riding-the-bear', 'seedance-best-friend', 'seedance-spilled-into-love', 'seedance-still-my-friend']) test(`reviewed generated/silent audio: ${id}`, () => assert.equal(templateAudioDependency(source(id)), false));
+for (const id of ['epic-train-doorway-scene', 'a-moment-between-strangers', 'trick-or-skin', 'curtain-reveal', 'sheep-kingdom', 'tentacle-breakout', 'community-candle-wish-drift', 'community-rotating-wardrobe-wipe', 'pizzeria-hide-and-seek', 'coliseum-drift', 'theater-ceiling-horror', 'wear-the-moment', 'reflection-in-the-mirror', 'car-blows-up', 'pumpkin-guardian', 'ghost-makeover', 'one-last-embrace', 'birthday-drift', 'office-escape', 'rap-takeover', 'event-character-swap', 'seedance-riding-the-bear', 'seedance-best-friend', 'seedance-spilled-into-love', 'seedance-still-my-friend']) test(`reviewed generated/silent audio: ${id}`, () => assert.equal(templateAudioDependency(source(id)), false));

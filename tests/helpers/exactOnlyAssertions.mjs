@@ -135,6 +135,7 @@ test('63 accepted records lock raw text, shipped hashes, silent five-second medi
   assert.deepEqual(unexpectedDuplicateGroups('normalizedPrompt', records.map(([id,r]) => [id, r.prompt.trim().replace(/\s+/g, ' ').toLowerCase()])), []);
   for (const field of ['id', 'name']) assert.deepEqual(duplicateGroups(SOURCE_TEMPLATES.map(t => [t.id, t[field].toLowerCase()])), [], field);
   for (const r of audit.records) {
+    if (!templateById(r.id)) continue; // withdrawn as broken (brokenTemplateIds.js)
     assert.equal(r.sourceVideoSignature, visual.placements[r.id].signature, r.id);
     assert.equal(r.signatureFrameCount, 5, r.id);
     assert.equal(templateById(r.id).sourceModel, r.sourceModel, r.id);
@@ -171,14 +172,13 @@ test('63 accepted records lock raw text, shipped hashes, silent five-second medi
 });
 
 // Literal scene typography is preserved by the documented whitespace-only stripping rule.
-const PLATFORM_SCENE_TEXT_ALLOWLIST = ['frozen-time'];
+const PLATFORM_SCENE_TEXT_ALLOWLIST = [];
 test('public prompt fields contain no platform names except pinned original scene typography', () => {
   const leaks = ALL_TEMPLATES.filter(t => /higgsfield|syntx/i.test(t.prompt || '') || /higgsfield|syntx/i.test(t.sourcePrompt || '')).map(t => t.id);
   assert.deepEqual(leaks, PLATFORM_SCENE_TEXT_ALLOWLIST);
-  assert.match(templateById('frozen-time').prompt, /"SYNTX\.AI"/);
 });
 test('every declared wall clip resolves to the pinned published video template', () => {
-  assert.deepEqual(WALL_PRESETS.map(t => t.id), ['a-moment-between-strangers', 'the-last-stagecoach', 'trick-or-skin', 'the-wrong-one', 'event-character-swap', 'community-parking-lot-recast', 'community-black-trench', 'community-urban-fashion-stroll', 'community-courtyard-style-shift', 'community-rugside-wardrobe-swaps', 'community-fur-coat-walk', 'community-urban-suit-swap', 'community-dancing-feline-duo', 'community-athlete-dance-swap']);
+  assert.deepEqual(WALL_PRESETS.map(t => t.id), ['a-moment-between-strangers', 'trick-or-skin', 'the-wrong-one', 'event-character-swap', 'community-parking-lot-recast', 'community-black-trench', 'community-urban-fashion-stroll', 'community-courtyard-style-shift', 'community-rugside-wardrobe-swaps', 'community-fur-coat-walk', 'community-urban-suit-swap', 'community-dancing-feline-duo', 'community-athlete-dance-swap']);
   assert.equal(WALL_CLIP_KEYS.length, WALL_PRESETS.length);
   assert.deepEqual(WALL_SHOWCASE_KEYS, Object.fromEntries(WALL_PRESETS.map(t => [t.id, t.clipKey])));
   for (const key of WALL_CLIP_KEYS) {
@@ -198,11 +198,11 @@ test('dark couture rejection keeps identifiers and hashes but no prompt, templat
 
 test('hidden templates do not publish their differently named clips, except the explicit independent landing placement', () => {
   const hidden = SOURCE_TEMPLATES.filter(t => !templateById(t.id) && t.clipKey !== t.id);
-  assert.equal(hidden.length, 12);
+  assert.equal(hidden.length, 13);
   const independent = hidden.filter(t => t.id === 'keyboard-duo-swap');
   assert.deepEqual(independent.map(t => t.clipKey), ['ace-step']);
   assert.ok(SHOWCASE_CLIPS['ace-step']?.video); // Explicit independent landing placement in the frozen plan.
   const excluded = hidden.filter(t => t.id !== 'keyboard-duo-swap');
-  assert.equal(excluded.length, 11);
+  assert.equal(excluded.length, 12);
   for (const t of excluded) assert.equal(SHOWCASE_CLIPS[t.clipKey], undefined, t.id + ': ' + t.clipKey);
 });

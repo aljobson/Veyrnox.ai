@@ -12,7 +12,7 @@ jest.mock('../src/lib/analytics/generations', () => ({ noteGenerationSubmitted: 
 const fixtureData = JSON.parse(execFileSync(process.execPath, [resolve('../../tests/fixtures/templateFidelityParity.mjs')], { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024, env: { ...process.env, NODE_NO_WARNINGS: '1' } }));
 const fixtures = fixtureData.inventory;
 test('all exact templates have provider-field parity through feed, parser, handoff and request', async () => {
-    expect(fixtures).toHaveLength(771);
+    expect(fixtures).toHaveLength(749);
     const parity: Record<string, unknown> = {};
     for (const { feed, model, body, contract } of fixtures) {
         const [parsed] = parsePresets({ presets: [feed] });

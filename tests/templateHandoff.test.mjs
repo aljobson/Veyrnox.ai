@@ -23,7 +23,7 @@ test('web Create submits React state to preserve a template CRLF prompt despite 
 });
 
 test('every template remains visibly linked from its recipe page into Create', () => {
-  assert.equal(ALL_TEMPLATES.length, 1813, 'audit every public template');
+  assert.equal(ALL_TEMPLATES.length, 1791, 'audit every public template');
   for (const preset of ALL_TEMPLATES) {
     assert.match(presetHref(preset), new RegExp(`[?&]preset=${preset.id}(?:&|$)`), preset.id);
     assert.ok(modelIdForName(preset.model), `${preset.id} opens a known model`);
@@ -121,10 +121,9 @@ test('real whitespace-bearing templates survive web Create, Film Studio, chat dr
   let sent;
   const mocks = { './appCache': { getCacheUser: () => 'test' }, 'expo-crypto': { randomUUID: () => 'test-id' }, './aiConsent': {}, './api': { ApiError: Error }, './network': {}, './createOptions': { inputsForIndex: value => value }, './media': { mediaApi: () => ({ createGeneration: async request => { sent = request; return { job_id: 'job' }; } }) }, './i18n': { t: key => key }, './failedJob': {} };
   const native = fixture('en', '/presets', { moduleMocks: mocks }).load('apps/mobile/src/lib/generationSubmit.ts');
-  for (const id of ['pov-dragon-flight', 'coliseum-drift', 'fashion-halloween']) {
+  for (const id of ['coliseum-drift', 'fashion-halloween']) {
     const prompt = exactSourcePromptRecord(id).prompt, preset = templateById(id), modelId = modelIdForName(preset.model);
     assert.ok(prompt.endsWith('\n'), id);
-    if (id === 'pov-dragon-flight') assert.ok(prompt.endsWith('\n\n'));
     const draft = draftForTemplate(preset, modelId, id);
     assert.equal(draft.prompt, prompt);
     assert.equal(writeStudioDraft(storage, { ...draft, model: modelId }), true);

@@ -53,11 +53,10 @@ for (const [name, body, error] of [
 });
 for (const [name, body] of [
   ['valid audited request', bodyFor(safe)],
-  ...['unsupported', 'bound', 'like-for-like-safe'].map(kind => {
+  ...['bound', 'like-for-like-safe'].map(kind => {
     const c = cs.find(c => c.class === kind);
     return [`${kind} unchanged without template_id`, { ...bodyFor(c), template_id: undefined, preset: c.id }];
   }),
-  ...['unsupported'].map(kind => [`${kind} legacy template_id bypasses audited checks`, bodyFor(cs.find(c => c.class === kind))]),
   ['custom blocked-preset edit without video token', { ...bodyFor(blocked), template_id: undefined, preset: blocked.id, inputs: { prompt: 'Custom landscape' } }],
   ['custom edit without template id', { ...bodyFor(safe), template_id: undefined, inputs: { prompt: 'Custom scene' } }],
 ]) test(`${name} reaches normal admission`, async t => {

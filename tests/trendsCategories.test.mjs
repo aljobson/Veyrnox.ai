@@ -17,7 +17,7 @@ test('all twelve required content categories are present with at least ten publi
             assert.equal(row.promptOrigin, 'community-source-exact', row.id);
         }
     }
-    assert.equal(templatesIn('ANIME').length, 13);
+    assert.equal(templatesIn('ANIME').length, 12);
     assert.equal(templatesIn('ADS').length, 16);
     assert.equal(templatesIn('YOUR PHOTO').length, 13);
 });

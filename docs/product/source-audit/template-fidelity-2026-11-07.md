@@ -5,7 +5,7 @@ Offline structural audit, contract version 1. Reproduce with `node scripts/audit
 - like-for-like-safe: 232
 - bound: 162
 - blocked-needs-video: 355
-- unsupported: 22
+- unsupported: 0
 
 Original source hashes remain unchanged. Only recognized image tokens change in bound text; bound hashes and occurrence maps are recorded in `lib/templateFidelityContracts.json`. Bound templates use Seedance reference with 1–9 ordered photos, fixed generated audio, and catalog pricing. No external source audio can be supplied by an active template route.
 
@@ -19,17 +19,15 @@ Owner decision, 7 November 2026: higher Seedance-reference quotes for token-bear
 
 - reference-video-required: 355
 - source-audio-not-audited: 62
-- unmapped-image-reference: 38
-- unmapped-placeholder: 132
-- too-many-image-slots: 3
+- unmapped-image-reference: 27
+- unmapped-placeholder: 122
+- too-many-image-slots: 2
 
 These include reasons secondary to a video block. Source-audio dependencies in this inventory all also require source video; zero audio-only templates remain unsupported. The original 152 unsupported audio flags resolve to 24 genuine preserved-audio requirements (all blocked for video) and 128 generated/negated directions. The A2-1 review classified the original 142 multiple-reference flags as 98 bound, 41 needing video and 3 unsupported; it classified the original 73 no-image-input flags as 64 bound, 1 needing video and 8 unsupported. The current totals above supersede those historical splits. Multi-photo binding now has fixed-slot web and mobile controls. Round-three grammar changes and reviewed IDs are recorded in .gstack/a2-round3-report.md. Bare image labels require capital Image and a label delimiter; any remaining ambiguous named image reference prevents partial binding.
 
 ## Unsupported reason counts (overlapping)
 
-- unmapped-image-reference: 11
-- unmapped-placeholder: 10
-- too-many-image-slots: 1
+
 
 ## Remaining unbound templates
 
@@ -38,9 +36,6 @@ These include reasons secondary to a video block. Source-audio dependencies in t
 - storm-starring: reference-video-required
 - fat-parkour: reference-video-required, source-audio-not-audited
 - crazy-frog-race: reference-video-required
-- the-last-stagecoach: unmapped-image-reference
-- pumpkin-lings: unmapped-placeholder
-- dont-blow-out-the-pumpkin: unmapped-image-reference
 - rap-takeover: reference-video-required
 - urban-broomstick-flight: reference-video-required, source-audio-not-audited
 - broomstick-flight: reference-video-required
@@ -54,9 +49,6 @@ These include reasons secondary to a video block. Source-audio dependencies in t
 - football-character-recast: reference-video-required, source-audio-not-audited, unmapped-placeholder
 - k9-dance-groove: reference-video-required
 - twilight-field-memory: reference-video-required
-- community-urban-trio-performance: unmapped-image-reference
-- community-overhead-performance: unmapped-image-reference
-- community-overhead-expression: unmapped-image-reference
 - community-street-dance-ensemble: reference-video-required, source-audio-not-audited
 - community-driver-portrait: reference-video-required
 - community-foggy-street-dance: reference-video-required, unmapped-placeholder
@@ -131,7 +123,6 @@ These include reasons secondary to a video block. Source-audio dependencies in t
 - community-truck-jump-reveal: reference-video-required, unmapped-placeholder
 - community-vocalist-outfit-swap: reference-video-required, unmapped-placeholder
 - community-street-style-swap: reference-video-required, unmapped-placeholder
-- community-survivor-memory-montage: unmapped-placeholder
 - community-supercar-showreel-spin: reference-video-required, too-many-image-slots
 - community-party-dancer-swap: reference-video-required, source-audio-not-audited, unmapped-placeholder
 - community-orbital-truck-morph: reference-video-required, unmapped-placeholder
@@ -301,7 +292,6 @@ These include reasons secondary to a video block. Source-audio dependencies in t
 - community-urban-sedan-pursuit: reference-video-required
 - community-vibrant-outfit-swap: reference-video-required, unmapped-placeholder
 - community-object-swap: reference-video-required, unmapped-image-reference
-- community-escalator-outfit-flow: unmapped-image-reference
 - community-chicken-bucket-swap: reference-video-required
 - community-suit-synchronized-dance: reference-video-required
 - community-leather-jacket-duo: reference-video-required, unmapped-placeholder
@@ -309,7 +299,6 @@ These include reasons secondary to a video block. Source-audio dependencies in t
 - community-cliffside-rescue-hero: reference-video-required, unmapped-placeholder
 - community-cinematic-face-swap: reference-video-required, source-audio-not-audited
 - community-reptilian-fridge-raid: reference-video-required, unmapped-placeholder
-- community-overhead-outfit-switch: too-many-image-slots
 - community-formal-groove: reference-video-required, unmapped-placeholder
 - community-nightclub-sway: reference-video-required
 - community-zombie-dance: reference-video-required, unmapped-placeholder
@@ -341,7 +330,6 @@ These include reasons secondary to a video block. Source-audio dependencies in t
 - community-street-vendor-swap: reference-video-required, unmapped-placeholder
 - community-pampered-pet-spa: reference-video-required, unmapped-image-reference
 - community-gala-trophy-walk: reference-video-required
-- community-urban-giant-greeting: unmapped-image-reference
 - community-camera-knock-swap: reference-video-required, unmapped-placeholder
 - community-ceiling-fan-switch: reference-video-required
 - community-elevator-entrance-interaction: reference-video-required, source-audio-not-audited, unmapped-image-reference
@@ -359,7 +347,6 @@ These include reasons secondary to a video block. Source-audio dependencies in t
 - community-natural-face-swap: reference-video-required, unmapped-placeholder
 - community-kitten-dance-challenge: reference-video-required, unmapped-placeholder
 - community-rug-fashion-rotation: reference-video-required, unmapped-placeholder
-- community-velvet-couch-lifestyle: unmapped-image-reference
 - community-lavish-cash-flow: reference-video-required, unmapped-placeholder
 - community-money-mobile-recast: reference-video-required, unmapped-placeholder
 - community-action-hero-recast: reference-video-required, source-audio-not-audited, unmapped-placeholder
@@ -370,13 +357,6 @@ These include reasons secondary to a video block. Source-audio dependencies in t
 - vampire-voyage: reference-video-required, source-audio-not-audited
 - tilted-melody: reference-video-required, source-audio-not-audited
 - neon-city-freefall: reference-video-required
-- on-game: unmapped-placeholder
-- frozen-time: unmapped-placeholder
-- with-animal: unmapped-placeholder
-- remote-control: unmapped-placeholder
-- on-the-road: unmapped-placeholder
-- magical-reality: unmapped-image-reference
-- pov-dragon-flight: unmapped-placeholder
 - community-anime-passenger-glow: reference-video-required
 - community-chibi-monster-dance: reference-video-required, unmapped-placeholder
 - community-glossy-hair-flip: reference-video-required
@@ -394,9 +374,7 @@ These include reasons secondary to a video block. Source-audio dependencies in t
 - community-apocalypse-terrace: reference-video-required
 - community-canine-expression-swap: reference-video-required
 - community-pampered-spa-day: reference-video-required
-- on-the-wave: unmapped-image-reference
 - seedance-jean-phil: reference-video-required
-- seedance-3-meters: unmapped-image-reference
 - seedance-burning-stage: reference-video-required, source-audio-not-audited
 - seedance-motion-authority: reference-video-required
 - seedance-cinematic-car-drop: reference-video-required, source-audio-not-audited
@@ -408,5 +386,3 @@ These include reasons secondary to a video block. Source-audio dependencies in t
 - seedance-morning-parking-vibe: reference-video-required
 - seedance-hotel-lobby-2: reference-video-required
 - seedance-hotel-lobby: reference-video-required, source-audio-not-audited
-- seedance-jogging-in-the-subway: unmapped-placeholder
-- seedance-formula-1-documentary: unmapped-placeholder
