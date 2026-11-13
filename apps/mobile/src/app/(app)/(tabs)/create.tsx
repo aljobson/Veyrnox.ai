@@ -13,7 +13,7 @@ import { fetchCatalogCached, type CatalogModel, type Kind } from '../../../lib/m
 import { starterModel } from '../../../lib/createOptions';
 import { EXAMPLE, FirstGoalCard } from '../../../components/create/FirstGoalCard';
 import { firstGoalTarget, type FirstGoal } from '../../../lib/firstGoal';
-import { readFirstGoal, writeFirstGoal } from '../../../lib/firstGoalStore';
+import { homeStartRecorded, readFirstGoal, writeFirstGoal } from '../../../lib/firstGoalStore';
 import { fetchRemoteFirstGoal, pushFirstGoal } from '../../../lib/firstGoalSync';
 import { useAuth } from '../../../auth/AuthProvider';
 import { fetchAgentListing } from '../../../lib/montage';
@@ -69,6 +69,7 @@ export default function Create() {
     useEffect(() => {
         let alive = true;
         (async () => {
+            if (homeStartRecorded()) { setAsked('done'); return; }
             const remote = await fetchRemoteFirstGoal(api);
             if (!alive) return;
             if (remote.kind === 'goal') { void writeFirstGoal(remote.goal); setAsked('done'); return; }

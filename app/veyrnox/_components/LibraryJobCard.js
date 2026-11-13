@@ -1,9 +1,13 @@
+import Link from 'next/link';
 import { AssetFooter } from './AssetFooter';
 import { AssetLoadStatus } from './AssetLoadStatus';
 import { Chip } from './Chip';
 import { ScheduleGeneration } from './ScheduleGeneration';
 import { SaveToAudioShelfButton } from './SaveToAudioShelfButton';
+import { useI18n } from '../../../components/I18nProvider';
 import { useAssetUrl } from '../_lib/useAssetUrl';
+import { libraryEditorHref } from '../_lib/editorMedia.mjs';
+import { useEditorEnabled } from './EditorFlag';
 
 // Account list is authoritative; local history supplies cached display names.
 const STATE_UI = {
@@ -21,8 +25,10 @@ const STATE_UI = {
   unknown:   { chip: 'neutral', glyph: '?', label: 'UNKNOWN' },
 };
 
-export function LibraryJobCard({ row, models, selectable, selected, onToggle, starred, onStar }) {
+export function LibraryJobCard({ row, models, selectable, selected, onToggle, starred, onStar, onSmartCut }) {
   const asset = useAssetUrl(row.job_id, row.asset_url);
+  const { t } = useI18n();
+  const editorEnabled = useEditorEnabled();
   const refundPending = row.state === 'failed' && row.refunded !== true;
   const s = STATE_UI[refundPending ? 'failed_pending' : row.state] || STATE_UI.queued;
   // No delta for `unknown`: a +N would claim a refund landed and a −N would
@@ -37,6 +43,8 @@ export function LibraryJobCard({ row, models, selectable, selected, onToggle, st
   const deltaCls = free || row.state === 'failed' ? 'text-vx-accent' : 'text-vx-fg-muted';
   // Live catalog (tokens.js fallback) so newly added models show their name.
   const model = models.find((m) => m.id === row.model_id);
+  // The full editor takes a finished video or audio result straight from the Library, where the editor is switched on.
+  const editHref = libraryEditorHref(row, model?.name);
   const shelfPurpose = row.model_id === 'elevenlabs-dialogue'
     ? 'lip-sync-dialogue'
     : row.model_id === 'minimax-speech-2.6-hd'
@@ -100,6 +108,14 @@ export function LibraryJobCard({ row, models, selectable, selected, onToggle, st
         </div>
       </div>
       <ScheduleGeneration job={row} className="mx-4 mb-3" />
+      {selectable && onSmartCut && row.mime_type?.startsWith('video/') && (
+        <div className="mx-4 mb-3">
+          <button type="button" onClick={onSmartCut} data-testid="library-smart-cut"
+            className="inline-flex min-h-10 w-full items-center justify-center rounded-full border border-vx-border px-4 text-xs font-extrabold hover:border-vx-accent">
+            {t('app.library.smartCutThis')}
+          </button>
+        </div>
+      )}
       {row.state === 'succeeded' && row.asset_url && row.mime_type?.startsWith('audio/') && (
         <div className="mx-4 mb-3">
           <SaveToAudioShelfButton
@@ -108,6 +124,14 @@ export function LibraryJobCard({ row, models, selectable, selected, onToggle, st
             purpose={shelfPurpose}
             className="inline-flex min-h-10 w-full items-center justify-center rounded-full border border-vx-border px-4 text-xs font-extrabold disabled:opacity-60"
           />
+        </div>
+      )}
+      {editorEnabled && editHref && (
+        <div className="mx-4 mb-3">
+          <Link href={editHref} data-testid="library-open-editor"
+            className="inline-flex min-h-10 w-full items-center justify-center rounded-full border border-vx-border px-4 text-xs font-extrabold hover:border-vx-fg-muted">
+            {t('app.library.openInEditor')}
+          </Link>
         </div>
       )}
       <AssetFooter row={row} />

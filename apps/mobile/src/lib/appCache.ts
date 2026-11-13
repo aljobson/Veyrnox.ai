@@ -51,6 +51,17 @@ export function clearExportFiles(): void {
     }
 }
 
+// Saved instrument takes are audio the person made, kept in the document directory under their own id.
+export const instrumentTakeRoot = () => new Directory(Paths.document, 'veyrnox-instrument-takes');
+export function clearInstrumentTakeFiles(): void {
+    try {
+        const directory = instrumentTakeRoot();
+        if (directory.exists) directory.delete();
+    } catch {
+        // Best effort, like the export files: the next owner change or sign-out retries.
+    }
+}
+
 export const appStorage: CacheStorage = createFileStorage(() => new Directory(Paths.cache, 'veyrnox-cache'));
 export const userDocStorage: CacheStorage = createFileStorage(() => new Directory(Paths.document, 'veyrnox-user-docs'));
 export const appCache: Cache = createCache(appStorage);
@@ -94,7 +105,7 @@ export async function bindCacheUser(userId: string | null, cache: Cache = appCac
     const last = activeUser ?? (await storage.get(USER_KEY).catch(() => null));
     if (!live()) return;
     setCacheUser(userId);
-    if (last !== userId) { clearExportFiles(); await cache.clear(live); }
+    if (last !== userId) { clearExportFiles(); clearInstrumentTakeFiles(); await cache.clear(live); }
     if (!live()) return;
     await sweepUserDocs(userId, docs, live).catch(() => undefined);
     if (!live()) return;
@@ -107,6 +118,7 @@ export async function wipeCache(cache: Cache = appCache, docs: CacheStorage = us
     const live = () => ticket === ownerTicket;
     setCacheUser(null);
     clearExportFiles();
+    clearInstrumentTakeFiles();
     await Promise.all([cache.clear(live), docs.keys().then(keys => Promise.all(keys.map(key => live() ? docs.remove(key) : undefined)))]);
 }
 

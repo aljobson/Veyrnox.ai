@@ -13,6 +13,8 @@ function find(node, predicate) {
   if (!node || typeof node !== 'object') return null;
   return predicate(node) ? node : find(node.props?.children, predicate);
 }
+// Stand-in for the page's PromptBox: a plain function, so the tree walker sees it as a component (with children), not a DOM textarea.
+function PromptBox() { return null; }
 function harness() {
   const values = [1000, false], refs = [], calls = [];
   let stateIndex = 0, refIndex = 0;
@@ -24,13 +26,13 @@ function harness() {
     '../../../../lib/montageNarration.js': { normaliseNarration, MAX_NARRATION_LENGTH },
     '../../_lib/useStudioJobs': { useStudioJobs: () => ({ jobs: [], generating: false, startJobs() {} }) },
     '../../_lib/authenticatedMedia': { videoAgentBalanceState },
-    '../../_lib/jobHistory': { pushJobHistory() {} },
+    '../../_lib/jobHistory': { pushJobHistory() {} }, '../../_components/PromptBox': { PromptBox }, '../../_components/ChipSelect': { ChipSelect: () => null },
   };
   const output = { exports: {} }, source = readFileSync(new URL('../app/veyrnox/app/video-agent/page.js', import.meta.url), 'utf8');
   const code = ts.transpileModule(source, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS } }).outputText;
   new Function('require', 'module', 'exports', code)(id => imports[id] || (id === 'react/jsx-runtime' ? require(id) : new Proxy({}, { get: () => () => null })), output, output.exports);
   const render = () => { stateIndex = 0; refIndex = 0; return output.exports.default(); };
-  const field = id => find(render(), node => node.type === 'textarea' && node.props.id === id);
+  const field = id => find(render(), node => (node.type === 'textarea' || node.type === PromptBox) && node.props.id === id);
   const button = name => find(render(), node => node.props['data-testid'] === name) || null;
   render();
   return { render, field, button, calls, edit(id, value) { const target = field(id); assert.ok(target, `field ${id} exists`); target.props.onChange({ target: { value } }); }, respond(at = calls.length - 1) { const call = calls[at]; call.resolve({ plan_id: 'synthetic-ticket', idempotency_key: 'synthetic-key', credits: 165, expires_at: Date.now() / 1000 + 600, narration_text: call.body.narration_text, plan: { summary: 'Synthetic plan', narration_supported: true } }); } };

@@ -24,6 +24,7 @@ import { fetchPopularIds, templateChips, templatesFor, templatePageHref } from '
 import { colors, ds, LIST_END_PADDING } from '../../../theme';
 import { Button, Card, Text, TextField, Chip, themedStyles, useThemedStyles, useAppearance } from '../../../components/ui';
 
+import { recordHomeStart } from '../../../lib/firstGoalStore';
 import { StartOption } from '../../../components/home/StartOption';
 import { EntryRow } from '../../../components/home/EntryRow';
 import { PresetCard } from '../../../components/home/PresetCard';
@@ -184,9 +185,10 @@ export default function Explore() {
 
                 <YourWinsCard />
                 <Card style={styles.startGroup} accessibilityLabel={t('explore.start.title')}>
-                    <StartOption href="/create" style={styles.startOption} icon="sparkle" title={t('menu.create')} body={t('explore.start.create.body')} hint={t('explore.start.create.hint')} />
-                    <StartOption href="/chat" style={styles.startOption} icon="chat" title={t('menu.chat')} body={t('explore.start.chat.body')} hint={t('explore.chat.hint')} divided />
-                    <StartOption href="/film" style={styles.startOption} icon="slate" title={t('menu.film')} body={t('explore.start.film.body')} hint={t('explore.start.film.hint')} divided />
+                    <StartOption href="/create" onPress={() => void recordHomeStart(api, 'create')} style={styles.startOption} icon="sparkle" title={t('menu.create')} body={t('explore.start.create.body')} hint={t('explore.start.create.hint')} />
+                    <StartOption href="/chat" onPress={() => void recordHomeStart(api, 'chat')} style={styles.startOption} icon="chat" title={t('menu.chat')} body={t('explore.start.chat.body')} hint={t('explore.chat.hint')} divided />
+                    <StartOption href="/film" onPress={() => void recordHomeStart(api, 'film')} style={styles.startOption} icon="slate" title={t('menu.film')} body={t('explore.start.film.body')} hint={t('explore.start.film.hint')} divided />
+                    <StartOption href="/instruments" style={styles.startOption} icon="sparkle" title={t('instruments.title')} body={t('instruments.homeBody')} hint={t('instruments.homeHint')} divided />
                 </Card>
 
 

@@ -50,13 +50,10 @@ describe('grouped menu', () => {
         );
     });
 
-    test('the previously hidden tools, face filters and MCP surfaces are direct destinations', () => {
+    test('MCP is a direct destination; Tool directory, Face filters and Faceless reel live on the Create tab, not the drawer', () => {
         const tools = MENU_SECTIONS.find((section) => section.id === 'tools')?.items ?? [];
-        expect(tools).toEqual(expect.arrayContaining([
-            expect.objectContaining({ key: 'tools', href: '/create/tools' }),
-            expect.objectContaining({ key: 'faceFilters', href: '/face-filters' }),
-            expect.objectContaining({ key: 'mcp', href: '/mcp' }),
-        ]));
+        expect(tools).toEqual(expect.arrayContaining([expect.objectContaining({ key: 'mcp', href: '/mcp' })]));
+        for (const key of ['tools', 'faceFilters', 'facelessReel']) expect(tools.some((i) => i.key === key)).toBe(false);
     });
 
     test('the guided creative feature suite is directly available from Tools', () => {
@@ -112,7 +109,7 @@ describe('the current screen in the menu', () => {
     });
 });
 
-test('Faceless reel follows Features in Tools', () => {
-    const items = MENU_SECTIONS.find(s => s.id === 'tools')!.items;
-    expect(items[items.findIndex(i => i.key === 'features') + 1]).toMatchObject({ key: 'facelessReel', href: '/faceless-reel', label: 'facelessReel.chip' });
+test('Faceless reel is not repeated in the drawer', () => {
+    const items = MENU_SECTIONS.flatMap(s => s.items);
+    expect(items.some(i => i.href === '/faceless-reel')).toBe(false);
 });

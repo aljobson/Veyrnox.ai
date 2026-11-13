@@ -3096,6 +3096,12 @@
     "ratio": 1.62
   },
   {
+    "id": "instruments.share",
+    "english": "Share WAV",
+    "translation": "Compartilhar WAV",
+    "ratio": 1.78
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",

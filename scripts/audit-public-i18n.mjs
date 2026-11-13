@@ -28,6 +28,7 @@ const privateFunctions = {
 const exceptions = [
   { file: /^app\/veyrnox\/_components\/music\/(?!MusicPublicPrompt|MusicPublicProfile|MusicPublicTrack|MusicSharedSong)[^/]+\.jsx$/, pattern: /./, reason: 'disabled-by-default private Music preview copy remains English-only until rollout localization; public Music surfaces stay audited' },
   { file: /^app\/veyrnox\/app\/music\//, pattern: /./, reason: 'disabled-by-default private Music preview routes remain English-only until rollout localization; public Music surfaces stay audited' },
+  { file: /^lib\/musicInstruments\.js$/, pattern: /./, reason: 'instrument and sound-template names for the disabled-by-default private Music preview, which stays English-only until rollout localization' },
   { file: /^app\/veyrnox\/_lib\/performanceStudio\.js$/, pattern: /./, reason: 'canonical workflow and provider contract catalog data; localized display labels are resolved by the consuming UI' },
   { file: /^(?:app\/layout\.js|app\/veyrnox\/_components\/ThemeToggle\.js|lib\/themePreference\.mjs)$/, pattern: /^(?:\(prefers-color-scheme: (?:light|dark)\)|= ; Path=\/; Max-Age= ; SameSite=Lax)$/, reason: 'CSS media query and cookie attributes for the theme preference, not copy' },
   ...helperExceptions,
@@ -125,7 +126,7 @@ export function candidates(file, source, { app = false } = {}) {
     if (kind === 'expression' && (/^[/.#]/.test(value) || /^[?&][a-z_]+=/.test(value))) return;
     if (!/[A-Za-z]{2}/.test(value) && !kind.startsWith('metadata')) return;
     if (!status && helper && catalogValues.has(value)) { status = 'translated'; reason = 'helper copy has an English catalog entry; display mapping requires review'; }
-    if (!status) { reason = allowed(file, value); status = reason ? 'allowlisted' : 'unresolved'; }
+    if (!status || status === 'unresolved') { reason = allowed(file, value) || reason; status = allowed(file, value) ? 'allowlisted' : 'unresolved'; }
     output.push({ file, line: tree.getLineAndCharacterOfPosition(node.getStart()).line + 1, kind, text: value, status, ...(reason ? { reason } : {}) });
   }
   function visit(node) {

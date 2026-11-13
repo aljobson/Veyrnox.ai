@@ -2,6 +2,8 @@ import { ACCOUNT_PAUSED_COPY, ACCOUNT_ON_HOLD_COPY } from './gateway';
 
 // What the create page says for each gateway error code.
 export const ERROR_COPY = {
+  // English fallback for a code with no copy; public pages do not load the app.* catalog, so t() alone would print the key.
+  unknown: 'Something went wrong. Nothing was charged unless the panel above says otherwise.',
   template_blocked: 'This template needs references or capabilities that are not available. Choose another template. Nothing was charged.',
   template_mismatch: 'These settings do not match the audited template. Restore its original model, duration, shape and prompt, or write a custom prompt. Nothing was charged.',
   template_references_invalid: 'Add the required photos in order, with no extra images or video. Nothing was charged.',
@@ -31,6 +33,15 @@ export const ERROR_COPY = {
   reference_rejected_likeness: "This model can't use pictures that show a real person. Credits refunded. Try an illustration or a character that isn't a real person, or run the template on a model that accepts people.",
   internal:              'Something on our side broke. Credits refunded.',
   rate_limited:          'Too many generations in a short window. Wait a moment.',
+  // Raised before any job starts (app/api/v1/generations/route.js), so nothing was charged. Server-side or temporary.
+  rate_check_unavailable:'We could not check your generation limit just now. Nothing was charged — try again in a moment.',
+  user_lookup_failed:    'We could not load your account just now. Nothing was charged — try again in a moment.',
+  catalog_lookup_failed: 'We could not load the model list just now. Nothing was charged — try again in a moment.',
+  debit_failed:          'We could not take the credits for this generation, so it did not start. Nothing was charged — try again in a moment.',
+  provider_admission_paused:'This model is paused for a short while. Nothing was charged — try again later or choose another model.',
+  model_not_found:       'This model is no longer available. Nothing was charged — choose another model.',
+  credit_confirmation_mismatch:'The price you confirmed no longer matches. Nothing was charged — review the price and confirm again.',
+  max_charge_credits_invalid:'The price limit on this request was not valid. Nothing was charged — reload the page and try again.',
   model_gated:           'This model is not open for generation yet. Nothing was charged.',
   model_region_unavailable: 'This model is unavailable in your region. Choose another model. Nothing was charged.',
   duration_not_supported:'This model only makes 5s clips. Nothing was charged.',

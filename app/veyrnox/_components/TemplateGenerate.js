@@ -41,7 +41,8 @@ export function TemplateGenerate({ preset, model, prompt, aspect, aspectOptions,
         <div role="alert" className="mt-4 flex items-start gap-2 rounded-lg border border-vx-danger/40 bg-vx-danger/[0.07] px-4 py-3 text-sm text-vx-danger">
           <span aria-hidden="true">✕</span>
           <span>
-            {tOr(t, `app.create.error.${error.code}`, ERROR_COPY[error.code] || t('app.create.error.unknown'))}
+            {tOr(t, `app.create.error.${error.code}`, ERROR_COPY[error.code] || tOr(t, 'app.create.error.unknown', ERROR_COPY.unknown))}
+            {!ERROR_COPY[error.code] && error.code && <span className="ms-1 font-vx-mono text-[11px] opacity-70" data-testid="template-error-code">({error.code})</span>}
             {error.retryAfter && t('app.create.retryIn', { seconds: locale === 'en' ? error.retryAfter : Number(error.retryAfter).toLocaleString(localeTag(locale)) })}
           </span>
         </div>

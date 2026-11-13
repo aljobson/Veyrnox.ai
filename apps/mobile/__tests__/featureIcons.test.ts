@@ -2,6 +2,7 @@ import { STUDIO_WORKFLOWS } from '../src/lib/studioWorkflows';
 // Every Tools task, Face filter and Studio skill shows its own icon, and every icon file exists.
 import { FACE_IDS } from '../src/lib/faceFilters';
 import { faceIcon, skillIcon, toolIcon, workflowIcon } from '../src/lib/featureIcons';
+import { KUBAI_SKILL_ART } from '../src/lib/kubaiSkillArt';
 import { MENU_ICONS } from '../src/lib/menuIcons';
 import { SKILLS } from '../src/lib/studioSkills';
 import { TOOL_TASKS } from '../src/lib/toolDirectory';
@@ -33,4 +34,18 @@ test('every workflow has a distinct registered icon, never the fallback', () => 
     expect(new Set(icons).size).toBe(5);
     expect(icons).not.toContain('squares');
     for (const icon of icons) expect(MENU_ICONS[icon]).toBeDefined();
+});
+
+test('Kubai artwork belongs to real skills, every PNG exists and the art reaches the card', () => {
+    const ids = new Set(SKILLS.map((s) => s.id));
+    for (const id of Object.keys(KUBAI_SKILL_ART)) {
+        expect(ids.has(id)).toBe(true);
+        const skill = SKILLS.find((s) => s.id === id)!;
+        expect(skillIcon(id, skill.group).art).toBeDefined();
+    }
+    const source = fs.readFileSync(path.join(__dirname, '../src/lib/kubaiSkillArt.ts'), 'utf8');
+    const files = [...source.matchAll(/assets\/icons\/kubai\/([\w-]+\.png)/g)].map((m) => m[1]);
+    expect(files).toHaveLength(Object.keys(KUBAI_SKILL_ART).length);
+    for (const file of files) expect(fs.existsSync(path.join(__dirname, '../assets/icons/kubai', file))).toBe(true);
+    expect(skillIcon('prompt-writer', 'Make').art).toBeUndefined();
 });

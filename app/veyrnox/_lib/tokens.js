@@ -175,9 +175,9 @@ export const SUPPORT_EMAIL = 'legal@veyrnox.com';
 export const PRIMARY_NAV_CATEGORIES = [
   { href: '/models', label: 'Models', group: 'Discover' },
   { href: '/app/create?model=nano-banana-kie', label: 'Create', group: 'Product' },
-  { href: '/tools', label: 'Edit', group: 'Product' },
+  { href: '/tools', label: 'Tools', group: 'Product' },
   { href: '/app/film-studio', label: 'Make a film', group: 'Product' },
-  { href: '/#publish', label: 'Publish', group: 'Product' },
+  { href: '/publish', label: 'Publish', group: 'Product' },
   { href: '/pricing', label: 'Pricing', group: 'Product' },
 ];
 

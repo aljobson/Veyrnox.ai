@@ -1,6 +1,8 @@
 import type { MenuIcon } from './menuIcons';
 import type { SkillGroup } from './studioSkills';
 import type { FeatureHue } from '../theme';
+import { KUBAI_SKILL_ART } from './kubaiSkillArt';
+import type { ImageSourcePropType } from 'react-native';
 
 // The icon and colour each Tools task, Face filter and Studio skill shows on its row. Colour follows what the item
 // works on, so a page reads at a glance: blue for photos, violet for video, amber for sound, pink for faces, green for
@@ -9,6 +11,8 @@ export type Hue = FeatureHue;
 export interface FeatureIcon {
     readonly icon: MenuIcon;
     readonly hue: Hue;
+    // Coloured artwork shown in place of the tinted line icon.
+    readonly art?: ImageSourcePropType;
 }
 
 const TOOL_ICONS: Readonly<Record<string, FeatureIcon>> = {
@@ -56,7 +60,10 @@ const SKILL_ICONS: Readonly<Record<string, MenuIcon>> = {
     'film-shot-prompt': 'aperture',
 };
 const GROUP_HUE: Readonly<Record<SkillGroup, Hue>> = { Make: 'mint', Edit: 'sky', Plan: 'iris', Film: 'amber' };
-export const skillIcon = (id: string, group: SkillGroup): FeatureIcon => ({ icon: SKILL_ICONS[id] ?? 'chat', hue: GROUP_HUE[group] });
+export const skillIcon = (id: string, group: SkillGroup): FeatureIcon => {
+    const art = (KUBAI_SKILL_ART as Readonly<Record<string, ImageSourcePropType>>)[id];
+    return { icon: SKILL_ICONS[id] ?? 'chat', hue: GROUP_HUE[group], ...(art ? { art } : null) };
+};
 
 const WORKFLOW_ICONS: Readonly<Record<string, FeatureIcon>> = {
     'viral-short': { icon: 'lightning', hue: 'mint' },

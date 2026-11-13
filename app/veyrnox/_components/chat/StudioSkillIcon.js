@@ -6,6 +6,8 @@ const sizes = {
   detail: 'size-16 rounded-2xl sm:size-[72px]',
 };
 
+const artPixels = { chip: 18, card: 32, detail: 52 };
+
 export function StudioSkillIcon({ skillId, size = 'card', className = '' }) {
   const icon = studioSkillIcon(skillId);
   if (!icon) return null;
@@ -17,10 +19,19 @@ export function StudioSkillIcon({ skillId, size = 'card', className = '' }) {
       className={`relative grid shrink-0 place-items-center overflow-hidden border border-white/10 bg-vx-base ${sizes[size] || sizes.card} ${className}`}
       style={{ color: icon.color, boxShadow: `inset 0 0 24px ${icon.color}18, 0 8px 24px #00000024` }}
     >
-      <span className="absolute inset-[18%] rounded-full opacity-20 blur-md" style={{ backgroundColor: icon.color }} />
-      <svg className={size === 'detail' ? 'relative size-9' : size === 'chip' ? 'relative size-3.5' : 'relative size-6'} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round">
-        <path d={icon.path} />
-      </svg>
+      {icon.art ? (
+        <span
+          className="relative bg-contain bg-center bg-no-repeat"
+          style={{ backgroundImage: `url(${icon.art})`, width: artPixels[size] || artPixels.card, height: artPixels[size] || artPixels.card }}
+        />
+      ) : (
+        <>
+          <span className="absolute inset-[18%] rounded-full opacity-20 blur-md" style={{ backgroundColor: icon.color }} />
+          <svg className={size === 'detail' ? 'relative size-9' : size === 'chip' ? 'relative size-3.5' : 'relative size-6'} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round">
+            <path d={icon.path} />
+          </svg>
+        </>
+      )}
     </span>
   );
 }

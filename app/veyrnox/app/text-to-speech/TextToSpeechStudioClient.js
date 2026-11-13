@@ -1,5 +1,7 @@
 'use client';
 
+import { ChipSelect } from '../../_components/ChipSelect';
+import { PromptBox } from '../../_components/PromptBox';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { getStoredUserId } from '../../../lib/authClient.js';
@@ -22,6 +24,8 @@ import { useStudioJobs } from '../../_lib/useStudioJobs';
 import { sendInOrder, submitErrorCode } from '../../_lib/imageBatch';
 import {
   DEFAULT_TTS_SETTINGS,
+  TTS_EMOTIONS,
+  TTS_LANGUAGES,
   TTS_SCRIPT_LIMIT,
   TTS_VOICES,
   ttsGenerationInputs,
@@ -159,7 +163,10 @@ export default function TextToSpeechStudio() {
                 {cleanScript && <Chip tone="accent">Ready</Chip>}
               </div>
               <label htmlFor="tts-script" className="sr-only">Speech script</label>
-              <textarea id="tts-script" aria-label="Speech script" value={script} maxLength={TTS_SCRIPT_LIMIT} rows={7} disabled={busy} onChange={(event) => { setScript(event.target.value); setError(null); }} placeholder="Write exactly what the stock voice should say…" className="mt-4 w-full resize-y rounded-xl border border-vx-border bg-vx-base px-4 py-3 text-sm text-vx-fg placeholder:text-vx-fg-faint focus:border-vx-accent focus:outline-hidden" />
+              <PromptBox id="tts-script" aria-label="Speech script" value={script} maxLength={TTS_SCRIPT_LIMIT} rows={7} disabled={busy} onChange={(event) => { setScript(event.target.value); setError(null); }} placeholder="Write exactly what the stock voice should say…">
+                <ChipSelect aria-label="Speech language" options={TTS_LANGUAGES} value={settings.language} disabled={busy} onChange={(language) => setSettings({ ...settings, language })} formatOption={(language) => (language === 'auto' ? 'Auto language' : language)} />
+                <ChipSelect aria-label="Speaking style" options={TTS_EMOTIONS} value={settings.emotion} disabled={busy} onChange={(emotion) => setSettings({ ...settings, emotion })} formatOption={(emotion) => emotion[0].toUpperCase() + emotion.slice(1)} />
+              </PromptBox>
               <div className="mt-2 flex justify-between gap-3 text-xs text-vx-fg-muted"><span>Edits are local until you approve Generate.</span><span className="font-vx-mono">{script.length}/{TTS_SCRIPT_LIMIT}</span></div>
             </section>
             <TextToSpeechControls recipeId="stock-voice" script={script} settings={settings} onSettings={setSettings} onScript={setScript} auditionVoices={auditionVoices} onAuditionVoices={setAuditionVoices} />

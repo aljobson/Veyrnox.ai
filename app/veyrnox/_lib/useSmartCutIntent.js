@@ -36,3 +36,10 @@ export function useSmartCutIntent(onOpen, { editorKey = EDITOR_FLAG, getEditorFl
   };
   return { editorOn, smartCutIntent, enableEditorPreview };
 }
+
+/** Same state as following the #smart-cut link, without a page load. */
+export function markSmartCutIntent() {
+  if (window.location.hash === '#smart-cut') return;
+  window.history.pushState(null, '', '#smart-cut');
+  window.dispatchEvent(new HashChangeEvent('hashchange'));
+}
