@@ -1,4 +1,5 @@
 'use client';
+import { imageTemplateNeedsPhoto, imageTemplateModelAvailable } from '../../_lib/imageTemplateModels.js';
 import { templatePhotoHints, templatePhotosUnavailable, templateContract, templateBoundPrompt, fidelityBlocked, fidelityTemplateId, templatePhotoError } from '../../../../lib/templateClientContract';
 import { generationSourceState, sourceList, publicSlotMax, editSlotSource, moveSlotSource, sourcesForModel } from '../../../../lib/generationSourceSlots.mjs';
 import LegalLink from '../../../../components/LegalLink';
@@ -324,10 +325,10 @@ export default function CreateStudio() {
   // and resetting against it threw away any ?model= it didn't list.
   useEffect(() => {
     if (draftRecovery.restoring || catalogLoading || !catalogLive || !models.length) return;
-    if (models.some((m) => m.id === modelId)) return;
+    if (models.some((m) => m.id === modelId) || imageTemplateNeedsPhoto(templateData)) return;
     const first = starterModel(models, goal) || starterModel(models, 'all') || models[0];
     chooseModel(first.id);
-  }, [models, modelId, catalogLoading, catalogLive, goal, draftRecovery.restoring]);
+  }, [models, modelId, catalogLoading, catalogLive, goal, draftRecovery.restoring, templateData]);
 
   const selectedModel = models.find((m) => m.id === (swap.scene?.swapOffer || modelId));
   const model = selectedModel || null;
@@ -352,7 +353,9 @@ export default function CreateStudio() {
   const promptNeedsVideo = /@video\s*[_-]?\d|<<<\s*video/i.test(prompt);
   const sourceReferenceBlocked = useMemo(() => !swapId && (fidelityBlocked(sourceContract) || templateSourceUnsupported(activeTemplate || keptTemplate)), [swapId, sourceContract, activeTemplate, keptTemplate]);
   const photosUnavailable = sourceContract?.class === 'bound' && modelId === sourceContract.modelId && (!catalogLive || templatePhotosUnavailable(sourceContract, model?.media));
-  const templateBlocked = photosUnavailable || sourceReferenceBlocked || (!swapId && promptNeedsVideo);
+  const imagePhotoRequired = imageTemplateNeedsPhoto(activeTemplate || keptTemplate);
+  const imagePhotoUnavailable = imagePhotoRequired && (!catalogLive || !imageTemplateModelAvailable(activeTemplate || keptTemplate, model));
+  const templateBlocked = imagePhotoUnavailable || photosUnavailable || sourceReferenceBlocked || (!swapId && promptNeedsVideo);
   const sourceBlocked = !!activeTemplate && templateSourceUnsupported(activeTemplate) && prompt === activeTemplate.prompt;
 
   // The picked model stays listed even when the tier filter would hide it.
@@ -383,7 +386,7 @@ export default function CreateStudio() {
   const media = photoContract && model?.media?.image ? {
     image: { ...model.media.image, maxFiles: Math.min(model.media.image.maxFiles ?? 1, photoContract.slotCount || 1) },
     ...Object.fromEntries(Object.entries(model.media).filter(([slot]) => slot !== 'image' && sourceList(sources[slot]).length)),
-  } : model?.media || {};
+  } : imagePhotoRequired && model?.media?.image ? { ...model.media, image: { ...model.media.image, required: true, maxFiles: 1 } } : model?.media || {};
   const animationMismatch = !!animationPortrait && (model?.kind !== 'video' || !media.image?.required);
   const { missingSource: missingSlot, needsReattach, overLimit, hasSource: hasUpload } = generationSourceState(media, sources);
   // Only pictures this model actually takes count: a video-only attachment, or a picture kept from another model, never reaches the provider.
@@ -392,7 +395,7 @@ export default function CreateStudio() {
     .flatMap(([slot]) => sourceList(sources[slot]))
     .filter(source => !source?.needsUpload && (source?.file || source?.assetId || source?.sourceKey));
   const templateImageCount = templateImageSources.length;
-  const missingSource = missingSlot || (boundCount && templateImageCount !== boundCount) || (swap.scene && templateImageCount !== swap.scene.people);
+  const missingSource = missingSlot || (imagePhotoRequired && templateImageCount !== 1) || (boundCount && templateImageCount !== boundCount) || (swap.scene && templateImageCount !== swap.scene.people);
   const templateImageSource = templateImageSources.find(source => source?.file || source?.label) || templateImageSources[0] || null;
   const templateImageRequired = Object.entries(media).some(([slot, spec]) => generationSlotKind(slot) === 'image' && spec?.required);
   const missingConsent = false;
@@ -984,7 +987,7 @@ export default function CreateStudio() {
             onEdit={focusCreateControl}
           />}
           {(activeTemplate || keptTemplate) && modelId !== templateModelId((activeTemplate || keptTemplate)) && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t('presets.fidelity.modelSwitch')}</p>}
-          {!fidelity && (activeTemplate || keptTemplate) && !templateBlocked && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t('presets.fidelity.previewNotice')}</p>}
+          {!fidelity && (activeTemplate || keptTemplate)?.kind !== 'image' && (activeTemplate || keptTemplate) && !templateBlocked && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t('presets.fidelity.previewNotice')}</p>}
           {fidelity && !templateBlocked && ((fidelity.class === 'bound' && fidelity.slotCount > 1) || !fidelityTemplateId(fidelity, templateBoundPrompt(fidelity, prompt, modelId, fidelity?.slotCount || 1), modelId, { aspect_ratio: aspectOptions.length ? aspect : undefined, duration_seconds: model?.kind === 'video' ? Number(duration.replace('s', '')) : undefined, ...settingsInputs(model, { seed, negative, voice, duration: audioDuration }) }) || cinemaOn || characterOn) && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t('presets.fidelity.previewNotice')}</p>}
           {photoContract && !boundCount && <p className="mt-3 text-sm text-vx-fg-muted">{t(photoContract.photoGuidance)}</p>}
           {activeTemplate && templateImageCount > 0 && (
@@ -1041,7 +1044,8 @@ export default function CreateStudio() {
               {n > freeLeft ? t(pluralKey(t,locale,'app.create.freePartial',freeLeft),{free:number(freeLeft),total:number(n),left:number(freeLeft)}) : t(pluralKey(t,locale,'app.create.freeLeft',freeLeft),{count:number(freeLeft)})}
             </div>
           )}
-          {(sourceBlocked || templateBlocked) && <p role="note" data-source-unsupported className="mt-3 rounded-xl border border-vx-border bg-vx-panel px-3 py-2 text-xs text-vx-fg-body">{t(photosUnavailable ? 'presets.fidelity.photosUnavailable' : 'public.TemplateRecipe.sourceVideoUnsupported')}</p>}
+          {imagePhotoRequired && !imagePhotoUnavailable && templateImageCount !== 1 && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t('presets.use.photoRequired')}</p>}
+          {(sourceBlocked || templateBlocked) && <p role="note" data-source-unsupported className="mt-3 rounded-xl border border-vx-border bg-vx-panel px-3 py-2 text-xs text-vx-fg-body">{t(imagePhotoUnavailable ? 'presets.fidelity.blocked' : photosUnavailable ? 'presets.fidelity.photosUnavailable' : 'public.TemplateRecipe.sourceVideoUnsupported')}</p>}
           <p id="vx-generate-why" aria-live="polite" className={hintText ? 'mt-3 text-xs text-vx-fg-muted' : 'sr-only'}>{hintText}</p>
           <ParticleButton
             data-assistant-target="create.generate"

@@ -1,3 +1,4 @@
+import { imageTemplateModelAvailable } from './imageTemplateModels.js';
 import { templateModelId } from './tokens.js';
 import { ratioOf } from '../../../lib/aspectShapes.mjs';
 import { GENERATION_PROMPT_MAX } from '../../../lib/generationPromptLimits.js';
@@ -58,7 +59,7 @@ export function templateArrival(preset, models, params, storedDraft) {
   const saved = storedDraft?.templateId === preset.id ? storedDraft : null;
   const requested = params.get('model') || saved?.model;
   const candidate = models.find(model => model.id === requested);
-  const model = templateModelEligible(candidate, original) ? candidate : original;
+  const model = templateModelEligible(candidate, original) && imageTemplateModelAvailable(preset, candidate) ? candidate : original;
   const modelId = model?.id || templateModelId(preset);
   const draft = resolveTemplateDraft(preset, modelId, saved, preset.id);
   if (!draft) return { modelId, draft: null };

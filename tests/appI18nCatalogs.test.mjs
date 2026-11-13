@@ -97,3 +97,14 @@ test('Christmas has a short explicit public category translation in every locale
     assert.equal(translator(code, catalog)('presets.cat.CHRISTMAS'), expected[code], code);
   }
 });
+
+
+test('photo-template requirement is explicitly translated for every public and Create locale', async () => {
+  for (const { code } of LOCALES) {
+    const publicCatalog = (await import(`../lib/i18n/messages/${code}.mjs`)).default;
+    assert.ok(publicCatalog['presets.use.photoRequired']?.trim(), code);
+    // Create's nested I18nProvider inherits the public catalog from the root.
+    const t = translator(code, { ...publicCatalog, ...await appMessagesFor(code) });
+    assert.equal(t('presets.use.photoRequired'), publicCatalog['presets.use.photoRequired']);
+  }
+});

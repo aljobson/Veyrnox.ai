@@ -18,17 +18,19 @@ import { CHAT_USER_TEXT_MAX } from '../../../lib/chatLimits.js';
 import { Spinner } from './Spinner';
 import { TemplateGenerate } from './TemplateGenerate';
 import { inlineBlockReason, templateInputs } from '../_lib/templateGenerate';
+import { imageTemplateNeedsPhoto, imageTemplateModelAvailable } from '../_lib/imageTemplateModels.js';
 import { nearestOption } from '../../../lib/aspectShapes.mjs';
 
 export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked: sourceGenerationBlocked = false, templateClip = null }) {
   const { t } = useI18n();
   const router = useRouter();
   const { models, live } = useCatalog();
+  const imagePhotoRequired = imageTemplateNeedsPhoto(preset);
   const originalId = templateClip ? templateClip.model : templateModelId(preset);
   const catalogModel = models.find((m) => m.id === originalId) || null;
   const original = templateClip && catalogModel ? { ...catalogModel, credits: templateClip.credits, durations: [5], media: { image: { ...catalogModel.media?.image, required: true, maxFiles: 1 } } } : catalogModel;
-  const modelOptions = original && !original.gated && !original.premium && createPromptModelAvailable(original)
-    ? [original, ...(!templateClip && live ? models.filter((m) => m.id !== originalId && templateModelEligible(m, original)) : [])] : [];
+  const modelOptions = original && (!imagePhotoRequired || live) && imageTemplateModelAvailable(preset, original) && !original.gated && !original.premium && createPromptModelAvailable(original)
+    ? [original, ...(!templateClip && live ? models.filter((m) => m.id !== originalId && templateModelEligible(m, original) && imageTemplateModelAvailable(preset, m)) : [])] : [];
   const [pickedModel, setPickedModel] = useState(originalId);
   const model = modelOptions.find((m) => m.id === pickedModel) || modelOptions[0] || null;
   const modelId = model?.id;
@@ -65,11 +67,11 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked:
   const promptBlocked = !templateClip && (!prompt.trim() || prompt.length > TEMPLATE_PROMPT_MAX);
   const photosUnavailable = contract?.class === 'bound' && (!live || templatePhotosUnavailable(contract, model?.media));
   const generationBlocked = photosUnavailable || sourceGenerationBlocked || (live && fidelityBlocked(contract, prompt));
-  const generationDisabled = generationBlocked || promptBlocked || !model || photoBusy || !boundReady;
+  const generationDisabled = (imagePhotoRequired && !photo) || generationBlocked || promptBlocked || !model || photoBusy || !boundReady;
   const chatBlocked = !prompt.trim() || prompt.length > CHAT_USER_TEXT_MAX;
-  const requiredImage = model?.media?.image?.required === true;
-  // A template that needs no media, or only one photo, generates right here; one that needs more keeps Create.
-  const inline = inlineBlockReason(preset, model, { photo: true }) === null;
+  const requiredImage = imagePhotoRequired || model?.media?.image?.required === true;
+  // Photo image recipes continue to Create with the existing handoff; video inline generation stays unchanged.
+  const inline = !imagePhotoRequired && inlineBlockReason(preset, model, { photo: true }) === null;
 
   async function choosePhoto(file) {
     const sequence = ++photoSequence.current;
@@ -176,6 +178,8 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked:
           </div>
         </fieldset>
       )}
+      {imagePhotoRequired && !photo && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t('presets.use.photoRequired')}</p>}
+      {imagePhotoRequired && !model && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t('presets.fidelity.blocked')}</p>}
       {model && pickedModel !== originalId && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t('presets.fidelity.modelSwitch')}</p>}
       {(preset.kind !== 'image' && live && model && !generationBlocked && !auditedTemplateId) && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t('presets.fidelity.previewNotice')}</p>}
       {photo && contract && !boundCount && <p className="mt-3 text-sm text-vx-fg-muted">{t(contract.photoGuidance)}</p>}
