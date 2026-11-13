@@ -23,7 +23,7 @@ export function ModelsMenu({ active = false }) {
         <span aria-hidden="true" className="text-[10px] transition-transform group-open:rotate-180">▾</span>
       </summary>
 
-      <div className="absolute left-0 top-[calc(100%+0.75rem)] z-50 w-[min(440px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-vx-border bg-vx-panel shadow-2xl">
+      <div className="absolute start-0 top-[calc(100%+0.75rem)] z-50 w-[min(440px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-vx-border bg-vx-panel shadow-2xl">
         <div className="flex items-center justify-between border-b border-vx-border px-4 py-3">
           <div>
             <p className="text-sm font-black text-vx-fg">{t('models.title')}</p>

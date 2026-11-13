@@ -29,7 +29,8 @@ test('the request-time server flag controls the route and the Studio navigation'
     assert.doesNotMatch(layout, /notFound\(/);
     assert.match(layout, /robots: \{ index: false/);
     assert.match(read('app/veyrnox/layout.js'), /EditorFlagProvider enabled=\{process.env.EDITOR_TIMELINE_ENABLED === 'true'\}/);
-    assert.match(read('app/veyrnox/_components/NavBar.js'), /editorEnabled \? \[\{ key: 'editor', href: '\/app\/editor'/);
+    assert.match(read('app/veyrnox/_lib/studioNavigation.js'), /key: 'editor', href: '\/app\/editor'[^\n]*flag: 'editor'/);
+    assert.match(read('app/veyrnox/_components/NavBar.js'), /editor: editorEnabled/);
     assert.doesNotMatch(read('app/veyrnox/app/editor/page.js'), /useEditorPreview|Preview unavailable/);
 });
 

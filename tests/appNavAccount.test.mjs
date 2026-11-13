@@ -36,6 +36,7 @@ const strip = (t) => t
 const authSrc = strip(readFileSync(new URL('../app/veyrnox/_components/NavAuthButtons.js', import.meta.url), 'utf8'));
 const raw = readFileSync(new URL('../app/veyrnox/_components/NavBar.js', import.meta.url), 'utf8');
 const src = strip(raw);
+const tableSrc = strip(readFileSync(new URL('../app/veyrnox/_lib/studioNavigation.js', import.meta.url), 'utf8'));
 const adminPageSrc = strip(readFileSync(new URL('../app/veyrnox/app/admin/page.js', import.meta.url), 'utf8'));
 
 const appNav = src.slice(src.indexOf('export function AppNav'));
@@ -109,8 +110,9 @@ test('the studio nav derives current page instead of defaulting to Explore', () 
     assert.match(appNav, /activeKey=\{activeKey\}/, 'the desktop sidebar receives the derived destination');
     assert.match(appNav, /activeCandidates\.find\(\(item\) => item\.key === activeKey\)/,
         'the mobile menu receives the same derived destination');
-    assert.match(appNav, /\.\.\.utilityItems,[\s\S]*\.\.\.APP_BROWSE_CATEGORIES/,
-        'mobile navigation includes utility destinations such as Credits');
+    assert.match(appNav, /studioMenuItems\(t, flags\),[\s\S]*\.\.\.APP_BROWSE_CATEGORIES/,
+        'mobile navigation includes the studio table and the public destinations');
+    assert.match(tableSrc, /key: 'credits', href: '\/app\/credits'/, 'utility destinations such as Credits live in the table');
     assert.match(adminPageSrc, /<AppNav \/>/,
         'the Admin landing page must not override the route-derived selection');
     assert.doesNotMatch(adminPageSrc, /<AppNav[^>]*active=/,
@@ -130,11 +132,11 @@ test('public app pages do not open sign-in merely to draw their nav', () => {
 test('the studio nav exposes the rest of the public site on desktop and mobile', () => {
     assert.match(src, /const APP_BROWSE_CATEGORIES = NAV_CATEGORIES\.filter/,
         'the public destination list stays derived from the shared site nav');
-    assert.match(appNav, /const menuItems = \[\.\.\.new Map\(\[[\s\S]*\.\.\.items,[\s\S]*\.\.\.APP_BROWSE_CATEGORIES,[\s\S]*\.map\(\(item\) => \[item\.href, item\]\)\)\.values\(\)\];/,
+    assert.match(appNav, /const menuItems = \[\.\.\.new Map\(\[[\s\S]*studioMenuItems\(t, flags\),[\s\S]*\.\.\.APP_BROWSE_CATEGORIES,[\s\S]*\.map\(\(item\) => \[item\.href, item\]\)\)\.values\(\)\];/,
         'the phone menu combines studio tools with the public site and de-duplicates repeated routes');
-    assert.match(appNav, /id: 'inspire'[\s\S]*href: '\/social-cinema'[\s\S]*href: '\/presets'[\s\S]*href: '\/models'[\s\S]*href: '\/guides'/,
+    assert.match(tableSrc, /section: 'inspire', key: 'cinema', href: '\/social-cinema'[\s\S]*href: '\/presets'[\s\S]*href: '\/models'[\s\S]*href: '\/guides'/,
         'the desktop sidebar carries Social Cinema and the public Inspire destinations');
-    assert.match(appNav, /key: 'music', href: '\/app\/music\/create', label: t\('label\.Music'\)/,
+    assert.match(tableSrc, /key: 'music', href: '\/app\/music\/create', labelKey: 'label\.Music'/,
         'Music is discoverable from the signed-in navigation');
 });
 
@@ -197,7 +199,7 @@ test('the whole nav still fits without a hidden horizontal rail', () => {
         'the mark yields to signed-in account controls below sm, and only then');
     assert.match(appNav, /<AppSidebar[\s\S]*sections=\{sidebarSections\}/,
         'desktop destinations live in the grouped left sidebar');
-    assert.match(appNav, /id: 'agents'[\s\S]*id: 'tools'[\s\S]*id: 'assets'[\s\S]*id: 'inspire'/,
+    assert.match(tableSrc, /SECTION_ORDER = \['agents', 'tools', 'assets', 'inspire'\]/,
         'the sidebar groups Agents, Tools, Assets and Inspire');
     assert.doesNotMatch(appNav, /<nav[^>]*overflow-x-auto/,
         'the nav no longer hides destinations in a horizontal scroller');
@@ -217,12 +219,10 @@ test('the whole nav still fits without a hidden horizontal rail', () => {
 });
 
 test('Oddlings is available without looking permanently selected', () => {
-    const oddlingEntries = appNav.split('\n').filter((line) => line.includes("key: 'oddlings'"));
-    assert.equal(oddlingEntries.length, 2, 'Oddlings remains in the app destinations and desktop sidebar');
+    const oddlingEntries = tableSrc.split('\n').filter((line) => line.includes("key: 'oddlings'"));
+    assert.equal(oddlingEntries.length, 1, 'Oddlings has one entry in the shared destination table');
     assert.ok(oddlingEntries.every((line) => !line.includes('featured')),
         'Oddlings uses the same neutral resting style as other destinations');
-    assert.ok(appNav.indexOf("key: 'oddlings'") < appNav.indexOf("key: 'create'"),
-        'Oddlings appears before Create in the studio destination list');
     const compactBar = appNav.slice(appNav.indexOf('<MobileMenu'), appNav.indexOf('<span aria-hidden="true" className="flex-1"'));
     assert.doesNotMatch(compactBar, /href="\/app\/oddlings"/,
         'the compact bar does not duplicate the Oddlings menu item');
