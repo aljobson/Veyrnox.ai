@@ -9,10 +9,7 @@ import { Button } from '../../_components/Button';
 import { Chip } from '../../_components/Chip';
 import { JobAssetPreview } from '../../_components/JobAssetPreview';
 import { DownloadAsset } from '../../_components/DownloadAsset';
-import { DownloadProvenance } from '../../_components/DownloadProvenance';
 import { OutputFileDisclosure } from '../../_components/OutputFileDisclosure';
-import { DownloadPerformanceProject } from '../../_components/DownloadPerformanceProject';
-import { ImportPerformanceProject } from '../../_components/ImportPerformanceProject';
 import { SavePerformanceProject } from '../../_components/SavePerformanceProject';
 import { takePerformanceProjectHandoff } from '../../../../lib/performanceProjectSnapshot';
 import { LibraryPicker } from '../../_components/LibraryPicker';
@@ -1919,7 +1916,6 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
                             {downloadJob?.asset_url && (
                               <>
                                 <DownloadAsset row={downloadJob} label={downloadLabel} className="inline-flex min-h-9 items-center rounded-full bg-vx-accent px-3 text-[11px] font-extrabold text-vx-accent-ink disabled:opacity-50" errorClassName="basis-full text-xs text-vx-danger" />
-                                <DownloadProvenance row={downloadJob} className="inline-flex min-h-9 items-center rounded-full border border-vx-border px-3 text-[11px] font-extrabold text-vx-fg disabled:opacity-50" errorClassName="basis-full text-xs text-vx-danger" />
                               </>
                             )}
                             {retryQuote && (
@@ -2055,21 +2051,18 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
                 {workflow.id === 'talking-photo' && recipeId === 'talking-avatar' && <TalkingAvatarCompositionPreview settings={composition} background={background} visual={visual} script={script} />}
               </div>
               <p className="border-t border-vx-border px-5 py-3 text-[11px] leading-5 text-vx-fg-muted">
-                Every completed result includes a downloadable provenance JSON with its job, model, timestamps, disclosure guidance and stored-file SHA-256 when available. It is a generation record, not an embedded content credential.
+                Veyrnox does not embed a content credential in the generated file.
               </p>
               <OutputFileDisclosure className="mx-5 my-4" />
               <div className="flex flex-wrap gap-2 border-t border-vx-border px-5 py-4">
-                <DownloadPerformanceProject project={projectExport} className="inline-flex min-h-10 items-center rounded-full border border-vx-border px-4 text-xs font-extrabold text-vx-fg hover:border-vx-accent" />
-                <ImportPerformanceProject allowedWorkflowIds={visibleWorkflows.filter((item) => item.status === 'available').map((item) => item.id)} onImport={importProject} className="inline-flex min-h-10 items-center rounded-full border border-vx-border px-4 text-xs font-extrabold text-vx-fg hover:border-vx-accent" />
                 <SavePerformanceProject project={projectExport} allowedWorkflowIds={visibleWorkflows.filter((item) => item.status === 'available').map((item) => item.id)} className="inline-flex min-h-10 items-center rounded-full border border-vx-border px-4 text-xs font-extrabold text-vx-fg hover:border-vx-accent" />
                 {projectRestoreNotice && <p role="status" className="basis-full rounded-lg border border-vx-accent/30 bg-vx-accent/[0.06] px-3 py-2 text-[11px] leading-5 text-vx-fg-muted">{projectRestoreNotice}</p>}
-                <p className="basis-full text-[11px] leading-4 text-vx-fg-muted">Saves workflow settings, safe source descriptors, quote components and job lineage. JSON import restores editable settings only: media, consent, job authority and the live price are never trusted from a file. An authenticated project can recheck owned Library job IDs; local files still need re-selection, and consent and live pricing always reset.</p>
+                <p className="basis-full text-[11px] leading-4 text-vx-fg-muted">Saves workflow settings, safe source descriptors, quote components and job lineage. Opening a saved project restores editable settings only: media, consent, job authority and the live price are never trusted from a file. An authenticated project can recheck owned Library job IDs; local files still need re-selection, and consent and live pricing always reset.</p>
               </div>
               {job?.state === 'failed' && <p className="border-t border-vx-border px-5 py-4 text-sm text-vx-danger">{failedJobCopy(job)}</p>}
               {stage === 'done' && outputJob && (
                 <div className="flex flex-wrap gap-2 border-t border-vx-border px-5 py-4">
                   <DownloadAsset row={outputJob} label="Download video" className="inline-flex min-h-10 items-center rounded-full bg-vx-accent px-4 text-xs font-extrabold text-vx-accent-ink disabled:opacity-50" errorClassName="basis-full text-xs text-vx-danger" />
-                  <DownloadProvenance row={outputJob} className="inline-flex min-h-10 items-center rounded-full border border-vx-border px-4 text-xs font-extrabold text-vx-fg disabled:opacity-50" errorClassName="basis-full text-xs text-vx-danger" />
                   {composition.pictureInPicture && background?.file && <LocalPipExport jobId={outputJob.job_id} background={background} settings={composition} />}
                   <Button size="sm" variant="ghost" onClick={useResultAsVideoInput}>Use as video input</Button>
                   <Button size="sm" variant="ghost" onClick={startAgain}>Adjust and make another</Button>

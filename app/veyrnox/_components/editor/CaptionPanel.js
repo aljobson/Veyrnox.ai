@@ -29,7 +29,7 @@ export function CaptionPanel({ tl, blobs, disabled, frame, apply, onSelect, onSe
     const save = format => setDownload({ url: URL.createObjectURL(new Blob([exportCaptions(tl, format)], { type: 'text/plain' })), name: `captions.${format}` });
     return <section aria-label={t("app.editor.captions.title")} className="space-y-3">
         <p className="text-xs text-vx-fg-muted">{t("app.editor.captions.help")}</p>
-        <label className="block cursor-pointer rounded-lg border border-dashed border-vx-border p-3 text-xs">{t("app.editor.captions.importTypes")}<input aria-label={t("app.editor.captions.import")} data-testid="caption-import" type="file" accept=".srt,.vtt,.ass,.lrc,.json" className="sr-only" disabled={disabled} onChange={upload} /></label>
+        <label className="block cursor-pointer rounded-lg border border-dashed border-vx-border p-3 text-xs">{t("app.editor.captions.importTypes")}<input aria-label={t("app.editor.captions.import")} data-testid="caption-import" type="file" accept=".srt,.vtt,.ass,.lrc" className="sr-only" disabled={disabled} onChange={upload} /></label>
         <p className="text-[10px] text-vx-fg-muted">{t("app.editor.captions.formats")}</p>
         <Button size="sm" disabled={disabled} onClick={() => { const next = apply(timeline => addSequenceText(timeline, { text: t("app.editor.captions.default"), caption: true, start: Math.min(frame, 17910), len: 90 })); if (next) onSelect({ track: 'text', id: `t${next.seq}` }); }}>{t("app.editor.captions.add")}</Button>
         <CaptionTranslationControls tl={tl} disabled={disabled} apply={apply} onError={onError} onBusy={onBusy} />
