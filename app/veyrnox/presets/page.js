@@ -1,7 +1,7 @@
 import { MarketingNav } from '../_components/NavBar';
 import { Main } from '../_components/Main';
 import { PresetGallery } from '../_components/PresetGallery';
-import { MusicDiscover } from '../_components/music/MusicDiscover.jsx';
+import { redirect } from 'next/navigation';
 import { TemplateKindSwitch } from '../_components/TemplateKindSwitch';
 import { getT } from '../../../lib/i18n/server';
 import { templateCards, templateCategories } from '../../../lib/clientTemplates.js';
@@ -10,18 +10,8 @@ import { templateCards, templateCategories } from '../../../lib/clientTemplates.
 export default async function Gallery({ searchParams }) {
   const { t } = await getT();
   const { kind } = await searchParams;
-  // ?kind=audio shows the Music Discover samples, ?kind=image the still-image templates; everything else is the video gallery.
-  if (kind === 'audio') {
-    return (
-      <div className="min-h-dvh">
-        <MarketingNav />
-        <Main className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-14 sm:pt-20 pb-28">
-          <TemplateKindSwitch t={t} kind="audio" />
-          <MusicDiscover />
-        </Main>
-      </div>
-    );
-  }
+  // ?kind=audio sends old links to Music Discover, ?kind=image the still-image templates; everything else is the video gallery.
+  if (kind === 'audio') redirect('/app/music/discover');
   const galleryKind = kind === 'image' ? 'image' : 'video';
   return (
     <div className="min-h-dvh">
