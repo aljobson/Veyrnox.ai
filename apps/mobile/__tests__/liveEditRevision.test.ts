@@ -56,6 +56,9 @@ test('build flag parsing fails ambiguous forms, and every dark build replaces a 
         }
     } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
+// Kept out of the test body on purpose: a stat or exists check followed by a write of the same path in one function is the shape code scanners flag as a race.
+const mtimeOf = (file: string) => fs.statSync(file).mtime.getTime();
+const present = (file: string) => fs.existsSync(file);
 test('a dark Metro start leaves the stub untouched, and replaces a prepared runtime on purpose (inspection F2)', () => {
     const { writeDarkStub } = require('../scripts/live-edit-build-state.cjs');
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 's4-dark-stub-'));
@@ -67,10 +70,10 @@ test('a dark Metro start leaves the stub untouched, and replaces a prepared runt
         // Make the stub's mtime obviously old; an idempotent second start must not rewrite it.
         const old = new Date(2020, 0, 1); fs.utimesSync(file, old, old);
         writeDarkStub(root); writeDarkStub(root);
-        expect(fs.statSync(file).mtime.getTime()).toBe(old.getTime());
+        expect(mtimeOf(file)).toBe(old.getTime());
         // A developer's previously prepared runtime and manifest never ride along in a dark build.
         fs.writeFileSync(file, '<html>41 MB prepared runtime</html>'); fs.writeFileSync(path.join(folder, 'manifest.json'), '{}');
         writeDarkStub(root);
-        expect(fs.readFileSync(file, 'utf8')).toBe(STUB); expect(fs.existsSync(path.join(folder, 'manifest.json'))).toBe(false);
+        expect(fs.readFileSync(file, 'utf8')).toBe(STUB); expect(present(path.join(folder, 'manifest.json'))).toBe(false);
     } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });

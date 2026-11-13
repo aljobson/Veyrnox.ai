@@ -16,7 +16,10 @@ function writeDarkStub(appRoot = path.resolve(__dirname, '..')) {
     fs.mkdirSync(folder, { recursive: true });
     // Idempotent: a dark Metro start (including a test that loads metro.config.js) touches nothing once the stub is in place.
     // A previously prepared runtime IS replaced on purpose, so a dark release can never bundle the 41 MB runtime.
-    if (!fs.existsSync(file) || fs.readFileSync(file, 'utf8') !== STUB) fs.writeFileSync(file, STUB);
+    // Read directly instead of checking that the file exists first: a missing file is the normal first-run case, not an error.
+    let current;
+    try { current = fs.readFileSync(file, 'utf8'); } catch (error) { if (error.code !== 'ENOENT') throw error; }
+    if (current !== STUB) fs.writeFileSync(file, STUB);
     fs.rmSync(path.join(folder, 'manifest.json'), { force: true });
 }
 module.exports = { readEnabled, writeDarkStub, STUB };
