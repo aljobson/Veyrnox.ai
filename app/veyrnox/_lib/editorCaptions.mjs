@@ -24,9 +24,9 @@ function seconds(value) {
 }
 export function parseCaptions(input, extension = 'srt') {
     if (typeof input !== 'string' || new TextEncoder().encode(input).byteLength > MAX_BYTES) return { error: 'Choose a subtitle file under 256 KiB.' };
-    if(extension==='json')return parseWordJson(input);
     const text = input.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n'), cues = [];
     const push = (from, to, words) => { const start = Math.round(from * 30), end = Math.round(to * 30); cues.push({ text: clean(words), start, len: end - start, ...inlineWordTiming(words,from,to,clean) }); };
+    if(extension==='json')return parseWordJson(input);
     if (['srt', 'vtt'].includes(extension)) {
         for (const block of text.split(/\n\s*\n/)) {
             const lines = block.split('\n'), index = lines.findIndex(l => l.includes('-->'));
@@ -51,7 +51,7 @@ export function parseCaptions(input, extension = 'srt') {
         for (const line of text.split('\n')) for (const stamp of line.matchAll(/\[(\d{1,2}:\d{2}(?:[.,]\d{1,3})?)\]/g)) stamped.push({ at: seconds(stamp[1].includes('.') || stamp[1].includes(',') ? stamp[1] : `${stamp[1]}.0`), text: line.replace(/\[[^\]]*\]/g, '') });
         stamped.sort((a, b) => a.at - b.at);
         stamped.forEach((cue, i) => push(cue.at, stamped[i + 1]?.at ?? Math.min(600, cue.at + 3), cue.text));
-    } else return { error: 'Choose SRT, VTT, ASS, LRC or word timing JSON.' };
+    } else return { error: 'Choose SRT, VTT, ASS or LRC.' };
     if (!cues.length || cues.length > 150) return { error: 'Choose a file with 1 to 150 subtitle lines.' };
     if (cues.some(c => !c.text || c.text.length > 1000 || !Number.isInteger(c.start) || c.start < 0 || !Number.isInteger(c.len) || c.len < 1 || c.start + c.len > 18000 || (c.words && (wordTimingProblem({...c,caption:true}) || c.words.some(w=>w.start<0 || w.start+w.len>c.len))))) return { error: 'Subtitle text or timing is outside the 10-minute project.' };
     return { cues: cues.sort((a, b) => a.start - b.start) };

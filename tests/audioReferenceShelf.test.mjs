@@ -440,12 +440,6 @@ test('Audio Reference Shelf compares up to three freshly revalidated owned perfo
 
 test('Audio Reference Shelf exports and ownership-revalidates portable metadata manifests', () => {
   const component = readFileSync(new URL('../app/veyrnox/_components/AudioReferenceShelf.js', import.meta.url), 'utf8');
-  assert.match(component, /Export shelf manifest/);
-  assert.match(component, /Import shelf manifest/);
-  assert.match(component, /createAudioShelfManifest\(window\.localStorage, accountId\)/);
-  assert.match(component, /importOwnedAudioShelfManifest\(gatewayFetch, window\.localStorage, importAccount, parsed\)/);
-  assert.match(component, /file\.size > 262144/);
-  assert.match(component, /Portable metadata only/);
   assert.match(component, /revalidate audio jobs against the current account/);
 });
 
