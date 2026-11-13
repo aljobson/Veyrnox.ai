@@ -27,6 +27,8 @@ CREATE TABLE IF NOT EXISTS public.library_favourites (
     PRIMARY KEY (user_id, job_id)
 );
 CREATE INDEX IF NOT EXISTS library_favourites_user_idx ON public.library_favourites (user_id, created_at DESC);
+-- A deleted creation cascades to its stars; the foreign key needs its own leading index (scripts/test-fk-indexes.mjs).
+CREATE INDEX IF NOT EXISTS library_favourites_job_idx ON public.library_favourites (job_id);
 ALTER TABLE public.library_favourites ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.library_favourites FORCE ROW LEVEL SECURITY;
 REVOKE ALL ON public.library_favourites FROM PUBLIC, anon, authenticated, service_role;
