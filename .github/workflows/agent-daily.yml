@@ -158,9 +158,11 @@ jobs:
             gate=$(jq '[.statusCheckRollup[] | select(.name == "pr gate" and .conclusion == "SUCCESS")] | length' <<<"$info")
             if [ "$bad" != "0" ] || [ "$gate" = "0" ]; then echo "#$pr: checks not all green or no pr gate pass"; continue; fi
             git fetch -q origin "pull/${pr}/head"
-            git diff --name-only origin/main...FETCH_HEAD > "$RUNNER_TEMP/changed.txt"
+            git -c core.quotepath=false diff --name-only origin/main...FETCH_HEAD > "$RUNNER_TEMP/changed.txt"
             # Fail closed: exit 0 = protected path hit, 1 = clean, anything else (missing rules file, bad regex) = skip.
             [ -s .github/agent-protected-paths.regex ] || { echo "#$pr: protected-path rules missing; not merging"; continue; }
+            # git still quotes names holding a quote, backslash or control character; a quoted line would dodge the ^-anchored rules, so never merge one.
+            if grep -q '^"' "$RUNNER_TEMP/changed.txt"; then echo "#$pr: a changed file name is quoted by git (unusual characters); not merging"; continue; fi
             rc=0
             grep -E -f .github/agent-protected-paths.regex "$RUNNER_TEMP/changed.txt" > /dev/null || rc=$?
             if [ "$rc" != "1" ]; then echo "#$pr: touches protected paths or the check failed (grep exit $rc)"; continue; fi

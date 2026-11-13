@@ -178,12 +178,12 @@ jobs:
             exit 1
           }
           git apply --check out/fix.patch || reject "patch does not apply to main"
-          git apply --numstat out/fix.patch > "$RUNNER_TEMP/numstat.txt"
+          git -c core.quotepath=false apply --numstat out/fix.patch > "$RUNNER_TEMP/numstat.txt"
           cut -f3 "$RUNNER_TEMP/numstat.txt" > "$RUNNER_TEMP/files.txt"
           [ -s "$RUNNER_TEMP/files.txt" ] || reject "empty patch"
           [ "$(wc -l < "$RUNNER_TEMP/files.txt")" -le 15 ] || reject "more than 15 files"
           awk -F'\t' '{a+=$1; d+=$2} END {exit !(a+d <= 800)}' "$RUNNER_TEMP/numstat.txt" || reject "more than 800 changed lines (or a binary file)"
-          if grep -E '(^/|(^|/)\.\.(/|$)|(^|/)\.git(/|$)|\{|=>)' "$RUNNER_TEMP/files.txt" > /dev/null; then reject "unsafe path or rename"; fi
+          if grep -E '(^"|^/|(^|/)\.\.(/|$)|(^|/)\.git(/|$)|\{|=>)' "$RUNNER_TEMP/files.txt" > /dev/null; then reject "unsafe path or rename"; fi
           # Fail closed: exit 0 = protected path hit, 1 = clean, anything else (missing rules file, bad regex) = reject.
           [ -s .github/agent-protected-paths.regex ] || reject "protected-path rules missing on main"
           rc=0
