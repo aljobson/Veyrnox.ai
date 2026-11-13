@@ -1,5 +1,6 @@
 import { rawText } from '../../lib/i18n/translate';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useKeyboardOpen } from '../../lib/useKeyboardOpen';
 import { Keyboard, Modal, Pressable, ScrollView, View } from 'react-native';
 import { cleanOptions, thinkingExtra, webExtra, type ChatModel, type ReplyOptions } from '../../lib/chat';
 import type { ChatImage } from '../../lib/chatAttach';
@@ -44,16 +45,6 @@ const TYPES = [
 
 // With the keyboard open the whole deck (modes, model, attach strip, text box) is taller than
 // the space above the keyboard, so the text box ends up under it. While typing, show only the input row.
-function useKeyboardOpen(): boolean {
-    const [open, setOpen] = useState(Keyboard.isVisible());
-    useEffect(() => {
-        const show = Keyboard.addListener('keyboardDidShow', () => setOpen(true));
-        const hide = Keyboard.addListener('keyboardDidHide', () => setOpen(false));
-        return () => { show.remove(); hide.remove(); };
-    }, []);
-    return open;
-}
-
 export function ChatComposerDeck(props: Props) {
     const styles = useThemedStyles(sheets);
     const typing = useKeyboardOpen();
@@ -81,7 +72,7 @@ export function ChatComposerDeck(props: Props) {
                 <View style={styles.inputRow}>
                     <Button variant="secondary" size="md" icon="plus" iconOnly label={t('chat.make.title')} accessibilityRole="button" accessibilityLabel={t('chat.make.title')}
                         disabled={props.sending} containerStyle={styles.plus} onPress={() => { Keyboard.dismiss(); setSheet(true); }} />
-                    <TextField containerStyle={styles.field} style={styles.input} value={props.draft} onChangeText={props.onDraft}
+                    <TextField containerStyle={styles.field} style={typing ? styles.inputTyping : styles.input} value={props.draft} onChangeText={props.onDraft}
                         placeholder={props.placeholder} accessibilityLabel={t('chat.composer.message')} multiline maxLength={8000} />
                     {props.sending ? (
                         <Button variant="secondary" size="md" label={props.stopping ? '…' : t('chat.stop')}
@@ -131,6 +122,8 @@ const sheets = themedStyles((p) => ({
     sheet: { backgroundColor: p.bg, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: 16, paddingBottom: 28, gap: 12 },
     types: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     input: { minHeight: 44, maxHeight: 132 },
+    // Keyboard up: cap the box at about three lines so the conversation keeps its room.
+    inputTyping: { minHeight: 44, maxHeight: 84 },
     action: { maxWidth: 150 },
     sendPrice: { textAlign: 'center', marginTop: 4 },
     policy: { paddingHorizontal: 5, paddingTop: 5 },

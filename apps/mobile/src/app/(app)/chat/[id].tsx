@@ -29,6 +29,7 @@ import { attachmentRefs, MAX_ATTACHMENTS, roomFor, type ChatImage } from '../../
 import { pickPhotos, pickVideoFrames, uploadChatImages } from '../../../lib/chatPhotos';
 import { fetchCatalog, type CatalogModel, type Kind } from '../../../lib/media';
 import { skillsInstructions, fittingSkills, selectedSkillIds, skillById, MAX_SELECTED_SKILLS, type Skill } from '../../../lib/studioSkills';
+import { useKeyboardOpen } from '../../../lib/useKeyboardOpen';
 import { isQuiet, makeSendKey, resolveResumedSend, resolveStoppedSend, RESUME_QUIET_MS, resumeNoticeKey, stopNoticeKey, type StopOutcome } from '../../../lib/chatStop';
 import { plural, t } from '../../../lib/i18n';
 import { ensureOnline, OFFLINE_PAID_MESSAGE, OfflineError } from '../../../lib/network';
@@ -47,6 +48,7 @@ export default function Conversation() {
     const { api, generation } = useAuth();
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const typing = useKeyboardOpen();
     const [title, setTitle] = useState(t('chat.chat2'));
     const [pinned, setPinned] = useState(false);
     const [renaming, setRenaming] = useState<string | null>(null);
@@ -381,7 +383,7 @@ export default function Conversation() {
     return (
         <KeyboardScreen style={styles.screen}>
             <Stack.Screen options={{ title: t('chat.lLMChat') }} />
-            <View style={styles.conversationBar}>
+            {typing ? null : <View style={styles.conversationBar}>
                 <Button accessibilityRole="button" accessibilityLabel={t('chat.openchats')} containerStyle={styles.headerControl} onPress={() => router.push('/chat/library')} variant="tertiary" size="md" label={t('chat.openchats')}>
                     <Text variant="footnote" style={styles.headerControlText}>{t('chat.chats')}</Text>
                 </Button>
@@ -395,8 +397,8 @@ export default function Conversation() {
                 <Button accessibilityRole="button" accessibilityLabel={t('chat.workspace.manage')} containerStyle={styles.moreControl} onPress={showManage} variant="tertiary" size="md" label={t('chat.workspace.manage')}>
                     <Icon name="sliders" size={20} />
                 </Button>
-            </View>
-            {stars.length > 0 ? <View><Button variant="tertiary" containerStyle={styles.headerControl} label={t(starredOnly ? 'chatDepth.showAll' : 'chatDepth.showStarred')} accessibilityState={{ selected: starredOnly }} onPress={() => setStarredOnly(value => !value)} /></View> : null}
+            </View>}
+            {stars.length > 0 && !typing ? <View><Button variant="tertiary" containerStyle={styles.headerControl} label={t(starredOnly ? 'chatDepth.showAll' : 'chatDepth.showStarred')} accessibilityState={{ selected: starredOnly }} onPress={() => setStarredOnly(value => !value)} /></View> : null}
             {renaming !== null ? (
                 <View style={styles.renameBar}>
                     <TextField containerStyle={styles.field} style={styles.renameInput} value={renaming} onChangeText={setRenaming} placeholder={t('chat.renamePlaceholder')} accessibilityLabel={t('chat.rename')} maxLength={120} autoFocus />
@@ -441,7 +443,7 @@ export default function Conversation() {
             <MakePanel visible={makeOpen} initialKind={makeKind} initialPrompt={draft.trim()} onClose={() => setMakeOpen(false)} />
             <LibraryImagePicker visible={pickerOpen} chosen={images} max={maxImages} onClose={() => setPickerOpen(false)} onPick={(img) => setImages((cur) => (cur.length < maxImages && !cur.some((c) => c.assetId === img.assetId) ? [...cur, img] : cur))} />
             {model && price !== null ? (
-                <View style={[styles.composerDock, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+                <View style={[styles.composerDock, { paddingBottom: typing ? 8 : Math.max(insets.bottom, 8) }]}>
                     <ChatComposerDeck
                         free={isFree} onVideo={() => { flushDraft(); void addVideo(); }}
                         model={model}
