@@ -215,5 +215,8 @@
   "bestCut.clips.one": "Shared spelling of the borrowed word clip with the same count placeholder.",
   "bestCut.clips.other": "Shared spelling of the borrowed word clip with the same count placeholder.",
   "liveEdit.wig.pixie": "Established French term or label: Pixie.",
-  "brand.swatch.orange": "Orange is the same word in this language."
+  "brand.swatch.orange": "Orange is the same word in this language.",
+  "create.firstRun.dest.tiktok": "Product name written the same in this language: TikTok.",
+  "create.firstRun.dest.reels": "Product name written the same in this language: Instagram Reels.",
+  "create.firstRun.dest.youtube": "Product name written the same in this language: YouTube."
 }

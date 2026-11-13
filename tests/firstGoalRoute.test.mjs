@@ -67,23 +67,52 @@ test('with the flag off every verb answers 404 and calls nothing', async () => {
     assert.deepEqual(calls, []);
 });
 
-test('GET returns the stored goal, or null, never anything else', async () => {
-    stub({ ok: true, goal: 'video', updated_at: '2026-11-12T10:00:00Z', secret: 'x' });
+test('GET returns the stored answers, or null, never anything else', async () => {
+    stub({ ok: true, goal: 'video', role: 'creator', destination: 'youtube', updated_at: '2026-11-12T10:00:00Z', secret: 'x' });
     let res = await route.GET(req('GET'));
     assert.equal(res.status, 200);
     assert.equal(res.headers.get('cache-control'), 'no-store');
-    assert.deepEqual(await res.json(), { goal: 'video' });
-    assert.deepEqual(calls, [{ name: 'get_first_goal', args: { p_auth_id: auth } }]);
+    assert.deepEqual(await res.json(), { goal: 'video', role: 'creator', destination: 'youtube' });
+    assert.deepEqual(calls, [{ name: 'get_first_answers', args: { p_auth_id: auth } }]);
     stub({ ok: true, goal: null });
     res = await route.GET(req('GET'));
-    assert.deepEqual(await res.json(), { goal: null });
+    assert.deepEqual(await res.json(), { goal: null, role: null, destination: null });
+});
+
+test('GET falls back to the goal alone while migration 0499 is not applied', async () => {
+    calls = [];
+    globalThis.fetch = async (url, init) => {
+        const name = new URL(url).pathname.split('/').pop();
+        calls.push(name);
+        if (name === 'get_first_answers') return new Response('{}', { status: 404 });
+        return Response.json({ ok: true, goal: 'edit' });
+    };
+    const res = await route.GET(req('GET'));
+    assert.equal(res.status, 200);
+    assert.deepEqual(await res.json(), { goal: 'edit', role: null, destination: null });
+    assert.deepEqual(calls, ['get_first_answers', 'get_first_goal']);
+});
+
+test('PUT with a role or destination goes through set_first_answers and returns all three', async () => {
+    stub({ ok: true, changed: true, goal: null, role: 'pro', destination: 'reels' });
+    let res = await route.PUT(req('PUT', { role: 'pro', destination: 'reels' }));
+    assert.equal(res.status, 200);
+    assert.deepEqual(await res.json(), { goal: null, role: 'pro', destination: 'reels', changed: true });
+    assert.deepEqual(calls, [{ name: 'set_first_answers', args: { p_auth_id: auth, p_goal: null, p_role: 'pro', p_destination: 'reels' } }]);
+    calls = [];
+    for (const body of [{ role: 'CEO' }, { destination: 'mars' }, { goal: 'image', role: 'x' }, { role: 'pro', user_id: 'someone-else' }]) {
+        res = await route.PUT(req('PUT', body));
+        assert.equal(res.status, 400, JSON.stringify(body));
+    }
+    assert.deepEqual(calls, [], 'nothing invalid reaches the database');
+    assert.deepEqual(await (await route.PUT(req('PUT', { role: 'CEO' }))).json(), { error: 'invalid_goal', field: 'role' });
 });
 
 test('PUT validates, calls the database with the caller\'s own id, and returns what the account holds', async () => {
     stub({ ok: true, changed: false, goal: 'video' });
     let res = await route.PUT(req('PUT', { goal: 'unsure' }));
     assert.equal(res.status, 200);
-    assert.deepEqual(await res.json(), { goal: 'video', changed: false });
+    assert.deepEqual(await res.json(), { goal: 'video', role: null, destination: null, changed: false });
     assert.deepEqual(calls, [{ name: 'set_first_goal', args: { p_auth_id: auth, p_goal: 'unsure' } }]);
 
     calls = []; stub();
