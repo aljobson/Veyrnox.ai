@@ -21,7 +21,6 @@ import { timelineGuidance } from '../../_lib/editorGuidance.mjs';
 import { Logo } from '../Logo';
 import { Modal } from '../Modal';
 import { ProjectBar } from './ProjectBar';
-import { ProjectFileControls } from './ProjectFileControls';
 import { KeepMountedPanel } from './KeepMountedPanel';
 import { EditorIntentBox } from './EditorIntentBox';
 import { EditorEmptyState } from './EditorEmptyState';
@@ -325,7 +324,6 @@ export function MultitrackWorkspace({ onCredits }) {
             <EditorHelperHost />
             {draftStatus&&draftStatus!=='recovery'&&<span role="status" className="hidden shrink-0 text-[10px] text-vx-fg-muted xl:inline">{tOr(t, `app.editor.workspace.draft.${draftStatus}`, draftStatus)}</span>}
             <div className="flex w-full shrink-0 items-center justify-end gap-1.5 border-t border-vx-border pt-2 sm:ms-auto sm:w-auto sm:gap-2 sm:border-t-0 sm:pt-0">
-                <ProjectFileControls compact tl={tl} onLoadTimeline={loadProjectFile} disabled={disabled} openDisabled={!!projectContext?.id} name={projectContext?.id ? 'veyrnox-cloud-project' : 'veyrnox-studio-project'} />
                 <WorkspaceLayout compact layout={layout} onChange={setLayout} />
                 <Button data-testid="editor-export" className="px-3" size="sm" onClick={()=>setExportOpen(true)}>{t("app.editor.workspace.export")}</Button>
                 <Button className="px-3" size="sm" variant="money" onClick={onCredits}>{t('label.Credits')}</Button>

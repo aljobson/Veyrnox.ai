@@ -256,7 +256,7 @@
   },
   {
     "area": "captions",
-    "text": "Import timed subtitles or write captions. Text and timing remain editable.Import SRT, VTT, ASS, LRC or word JSONTimestamped VTT and enhanced LRC retain word timing. JSON accepts word/start/end in seconds. ASS retains text and cue timing; its style tags use your editor style.Add manual captionExport SRTExport VTTStyle all captions0:01.0 — 0:03.0User caption unchangedStart of caption captionDuration of caption captionRemove captionCut this range",
+    "text": "Import timed subtitles or write captions. Text and timing remain editable.Import SRT, VTT, ASS or LRCTimestamped VTT and enhanced LRC retain word timing. ASS retains text and cue timing; its style tags use your editor style.Add manual captionExport SRTExport VTTStyle all captions0:01.0 — 0:03.0User caption unchangedStart of caption captionDuration of caption captionRemove captionCut this range",
     "labels": [
       "aria-label=\"Captions and transcript\"",
       "aria-label=\"Import captions\"",
@@ -519,7 +519,7 @@
   },
   {
     "area": "lyrics",
-    "text": "Align supplied lyricsPaste lyrics you have permission to use, one display line per line. Match them to existing word timestamps from imported subtitles or local automatic captions. Review recognition before aligning, especially singing. This replaces the selected timed captions and adds karaoke highlighting; Undo restores them. It makes no paid request.Timed lyric sourceAll captions with source word timingSupplied lyricsImport word timing JSON, timestamped VTT or enhanced LRC, or create local automatic captions first. Evenly distributed word timing is an estimate.Align lyrics and replace timed captions",
+    "text": "Align supplied lyricsPaste lyrics you have permission to use, one display line per line. Match them to existing word timestamps from imported subtitles or local automatic captions. Review recognition before aligning, especially singing. This replaces the selected timed captions and adds karaoke highlighting; Undo restores them. It makes no paid request.Timed lyric sourceAll captions with source word timingSupplied lyricsImport timestamped VTT or enhanced LRC, or create local automatic captions first. Evenly distributed word timing is an estimate.Align lyrics and replace timed captions",
     "labels": [
       "aria-label=\"Timed lyric source\"",
       "aria-label=\"Supplied lyrics\"",

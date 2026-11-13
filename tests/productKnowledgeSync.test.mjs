@@ -37,7 +37,8 @@ const retiredCreateKnowledge = {
 };
 // The same move retired the Editor panel's Acceptable Use link, and the Terms and Acceptable Use Policy
 // paragraphs that described asking for the tick now say the statement is made by attaching a file.
-const retiredEditorKnowledge = { links: new Set(['/legal/aup']) };
+// Project JSON save/open controls were removed from the editor (JSON is too technical for users).
+const retiredEditorKnowledge = { links: new Set(['/legal/aup']), controls: new Set(['Download project file','Files Project files','Choose project JSON file','Local project files']), descriptions: new Set(['Opening project file…','Timestamped VTT and enhanced LRC retain word timing. JSON accepts word/start/end in seconds. ASS retains text and cue timing; its style tags use your editor style.','Detach from the cloud project before opening a local project file.','Project files contain your edits and media details. Keep the original media and font files; reopening may require relinking them.']) };
 const retiredLegalKnowledge = {
     '/legal/aup': new Set(['Before you upload a photo, a video or a recording of a voice, you must either own it or have the permission of everyone identifiable in it. When a generation takes an upload, we ask you to confirm that, and we record the confirmation against that job. Confirming it falsely is a breach of these terms.']),
     '/legal/terms': new Set(['You keep whatever rights you hold in the prompts and reference files you upload. You grant us a licence to process them solely to run the service.']),
