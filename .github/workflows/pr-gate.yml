@@ -60,8 +60,10 @@ jobs:
             echo "::notice::protected-path rules not on ${BASE} yet; using this PR's copy"
             git show "HEAD:.github/agent-protected-paths.regex" > "$RUNNER_TEMP/protected.regex"
           fi
-          git diff --name-only "origin/${BASE}...HEAD" > "$RUNNER_TEMP/changed.txt"
+          git -c core.quotepath=false diff --name-only "origin/${BASE}...HEAD" > "$RUNNER_TEMP/changed.txt"
           grep -E -f "$RUNNER_TEMP/protected.regex" "$RUNNER_TEMP/changed.txt" > "$RUNNER_TEMP/hits.txt" || true
+          # Names git still quotes (quote, backslash, control characters) dodge the ^-anchored rules: count them as protected.
+          grep '^"' "$RUNNER_TEMP/changed.txt" >> "$RUNNER_TEMP/hits.txt" || true
           echo "count=$(wc -l < "$RUNNER_TEMP/hits.txt" | tr -d ' ')" >> "$GITHUB_OUTPUT"
 
       - name: Review
