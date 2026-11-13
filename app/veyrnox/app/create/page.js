@@ -59,6 +59,7 @@ import { TemplateHandoffCard } from '../../_components/TemplateHandoffCard';
 import { TemplatePicker } from '../../_components/TemplatePicker';
 import { CreateGoalPicker } from '../../_components/CreateGoalPicker';
 import { FirstGoalCard } from '../../_components/FirstGoalCard';
+import { useFirstRunCreate } from '../../_lib/useFirstRunCreate';
 import { TIERS, TIER_LABEL, filterByTier } from '../../_lib/modelTiers';
 import { modelsForGoal, starterModel } from '../../_lib/starterModels';
 import { audioDurationConfig, audioDurationIsInvalid, settingsInputs, voiceIsMissing } from '../../_lib/generationSettings';
@@ -416,6 +417,7 @@ export default function CreateStudio() {
     : tOr(t, `app.create.error.${HINT_CODES[hintKey]}`, ERROR_COPY[HINT_CODES[hintKey]] || t('app.create.error.unknown'));
   // Only offer aspect ratios explicitly declared by this model's provider contract.
   const aspectOptions = isShort ? [] : modelAspectRatios(model);
+  useFirstRunCreate({ t, blocked: !!presetParam || !!activeTemplate || swapId !== null, catalogLoading, pickGoal, setPrompt, aspect, aspectOptions, setAspect });
   // Higher tiers cost more; the gateway applies the same multiplier (lib/resolutionTiers.js) and the catalog publishes it.
   const tierOptions = model?.resolutionTiers?.options || [];
   const activeTier = tierOptions.find((o) => o.id === resolution) || tierOptions.find((o) => o.id === model?.resolutionTiers?.base) || null;

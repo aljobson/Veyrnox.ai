@@ -3222,6 +3222,12 @@
     "ratio": 1.91
   },
   {
+    "id": "create.firstRun.role.pro",
+    "english": "Creative pro",
+    "translation": "Profesional creativo",
+    "ratio": 1.67
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

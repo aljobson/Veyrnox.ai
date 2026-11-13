@@ -57,3 +57,6 @@ export function tastePicks(presets: readonly Preset[], answers: CreatorAnswers |
     }
     return picks;
 }
+
+// Where the person said it will go in the first-run questions (ADR-0339), as the opening ratio; sits beside the Vibe check's own.
+export { readDestinationAspect } from './firstProfileStore';

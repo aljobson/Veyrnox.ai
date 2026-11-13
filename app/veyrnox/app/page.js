@@ -9,6 +9,9 @@ import { VibeOffer } from '../_components/VibeOffer';
 import { YourWinsCard } from '../_components/YourWinsCard';
 import { useVibe } from '../_lib/creatorProfile';
 import { recordHomeStart } from '../_lib/firstGoalSync';
+import { FirstRunFlow } from '../_components/FirstRunFlow';
+import { hasRealAnswer, orderStarts } from '../_lib/firstProfile';
+import { useFirstProfile } from '../_lib/useFirstProfile';
 
 function StarterIcon({ name }) {
   return (
@@ -21,7 +24,7 @@ function StarterIcon({ name }) {
   );
 }
 
-function StarterCard({ href, label, description, icon }) {
+function StarterCard({ href, label, description, icon, suggested }) {
   return (
     <Link
       href={href}
@@ -32,7 +35,8 @@ function StarterCard({ href, label, description, icon }) {
       <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-vx-accent/10 text-vx-accent">
         <StarterIcon name={icon} />
       </span>
-      <span className="mt-5 text-xl font-bold tracking-[-0.02em]">{label}</span>
+      {suggested && <span data-testid="explore-starter-suggested" className="mb-2 mt-4 w-fit rounded-full bg-vx-accent/10 px-2.5 py-1 font-vx-mono text-[10px] font-bold tracking-[0.12em] text-vx-accent">{suggested}</span>}
+      <span className={`${suggested ? 'mt-1' : 'mt-5'} text-xl font-bold tracking-[-0.02em]`}>{label}</span>
       <span className="mt-2 text-pretty text-sm leading-6 text-vx-fg-body">{description}</span>
       <span aria-hidden="true" className="mt-auto pt-5 text-lg leading-none text-vx-accent transition-transform duration-150 ease-(--vx-ease-out) group-hover:translate-x-1 rtl:group-hover:-translate-x-1">→</span>
     </Link>
@@ -43,12 +47,16 @@ export default function Explore() {
   const { t } = useI18n();
   // The vibe check (ADR-0251): an invitation while no choice is on record, and the order of templates once there is one.
   const vibe = useVibe();
+  // The first-run answers (ADR-0339) order the start options; with none on record the order is the default one.
+  const profile = useFirstProfile();
+  const suggestedLabel = (index) => (index === 0 && profile.ready && hasRealAnswer(profile) ? t('app.create.firstRun.suggested') : null);
   return (
     <div className="min-h-dvh">
       {/* No balance prop: AppNav reads the signed-in balance itself. This
           used to pass a hardcoded 823, so the pill showed a number that
           belonged to nobody. */}
       <AppNav active="explore" />
+      <FirstRunFlow />
       <Main className="mx-auto max-w-[1400px] px-4 pb-16 pt-8 sm:px-8 sm:pt-10">
         <header className="max-w-[760px]">
           <h1 className="vx-display text-balance text-[40px] sm:text-[56px]">{t('app.explore.start')}</h1>
@@ -56,10 +64,12 @@ export default function Explore() {
         </header>
 
         <section aria-label={t('app.explore.start')} className="my-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <StarterCard href="/app/create" label={t('label.Create')} description={t('app.explore.createStart')} icon="create" />
-          <StarterCard href="/app/chat" label={t('label.LLM Chat')} description={t('app.explore.chat')} icon="chat" />
-          <StarterCard href="/app/film-studio" label={t('label.Film Studio')} description={t('app.explore.filmStart')} icon="film" />
-          <StarterCard href="/app/library#smart-cut" label={t('app.explore.smartCut')} description={t('app.explore.smartCutStart')} icon="smart-cut" />
+          {orderStarts(profile.ready ? profile.role : null, profile.ready ? profile.goal : null).map((key, index) => (
+            key === 'create' ? <StarterCard href="/app/create" key={key} label={t('label.Create')} description={t('app.explore.createStart')} icon="create" suggested={suggestedLabel(index)} />
+              : key === 'chat' ? <StarterCard href="/app/chat" key={key} label={t('label.LLM Chat')} description={t('app.explore.chat')} icon="chat" suggested={suggestedLabel(index)} />
+              : key === 'film' ? <StarterCard href="/app/film-studio" key={key} label={t('label.Film Studio')} description={t('app.explore.filmStart')} icon="film" suggested={suggestedLabel(index)} />
+              : <StarterCard href="/app/library#smart-cut" key={key} label={t('app.explore.smartCut')} description={t('app.explore.smartCutStart')} icon="smart-cut" suggested={suggestedLabel(index)} />
+          ))}
         </section>
 
         <YourWinsCard />

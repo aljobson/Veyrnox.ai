@@ -5,6 +5,8 @@ import { tOr } from '../../../lib/i18n/translate.mjs';
 import { useI18n } from '../../../components/I18nProvider';
 import { FIRST_GOALS, FIRST_GOAL_EXAMPLES, FIRST_GOAL_SLOT, firstGoalTarget, parseFirstGoal, serializeFirstGoal } from '../_lib/firstGoal';
 import { fetchRemoteFirstGoal, homeStartRecorded, pushFirstGoal } from '../_lib/firstGoalSync';
+import { exampleSetFor } from '../_lib/firstProfile';
+import { readDeviceAnswers } from '../_lib/firstProfileSync';
 
 function readStored() {
   try { return parseFirstGoal(window.localStorage.getItem(FIRST_GOAL_SLOT)); } catch { return null; }
@@ -42,6 +44,8 @@ export function FirstGoalCard({ hidden, onPick, onExample }) {
   // A home start option already answered it (Create is asked only when someone arrives without one).
   const state = local ?? (homeStartRecorded() ? 'done' : resolved);
   const [chosen, setChosen] = useState(null);
+  // Someone who said they are a creator, business or pro (first-run flow, ADR-0339) gets the work examples.
+  const example = (goal) => t(exampleSetFor(readDeviceAnswers().role) === 'work' ? `app.create.firstRun.example.work.${goal}` : `app.create.firstGoal.example.${goal}`);
 
   if (hidden || state === 'checking' || state === 'done') return null;
 
@@ -64,11 +68,11 @@ export function FirstGoalCard({ hidden, onPick, onExample }) {
               key={goal}
               type="button"
               data-testid={`first-goal-example-${goal}`}
-              onClick={() => { store(goal); onPick(goal); onExample(t(`app.create.firstGoal.example.${goal}`)); setState('done'); }}
+              onClick={() => { store(goal); onPick(goal); onExample(example(goal)); setState('done'); }}
               className="min-h-11 rounded-xl border border-vx-border px-3 py-2 text-start transition-colors hover:border-vx-fg-muted"
             >
               <span className="block text-sm font-bold text-vx-fg">{tOr(t, `app.create.firstGoal.${goal}`, goal)}</span>
-              <span className="mt-0.5 block text-xs text-vx-fg-muted">{t(`app.create.firstGoal.example.${goal}`)}</span>
+              <span className="mt-0.5 block text-xs text-vx-fg-muted">{example(goal)}</span>
             </button>
           ))}
         </div>
@@ -86,7 +90,7 @@ export function FirstGoalCard({ hidden, onPick, onExample }) {
           <button
             type="button"
             data-testid="first-goal-use-example"
-            onClick={() => { onExample(t(`app.create.firstGoal.example.${chosen}`)); setState('done'); }}
+            onClick={() => { onExample(example(chosen)); setState('done'); }}
             className="min-h-11 rounded-full bg-vx-accent px-4 py-2 text-sm font-extrabold text-vx-accent-ink"
           >
             {t('app.create.firstGoal.tryExample')}

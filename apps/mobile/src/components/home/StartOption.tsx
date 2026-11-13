@@ -5,7 +5,7 @@ import type { MenuIcon } from '../../lib/menuIcons';
 import { ds } from '../../theme';
 import { Icon, Text, themedStyles, useThemedStyles } from '../ui';
 
-export function StartOption({ href, icon, title, body, hint, divided = false, style, onPress }: { href: Href; onPress?: () => void; icon: MenuIcon; title: string; body: string; hint: string; divided?: boolean; style: { minHeight: number } }) {
+export function StartOption({ href, icon, title, body, hint, divided = false, badge, style, onPress }: { href: Href; onPress?: () => void; icon: MenuIcon; title: string; body: string; hint: string; divided?: boolean; badge?: string; style: { minHeight: number } }) {
     const styles = useThemedStyles(sheets);
     return (
         <Link href={href} asChild onPress={onPress}>
@@ -19,6 +19,7 @@ export function StartOption({ href, icon, title, body, hint, divided = false, st
                     <Icon name={icon} />
                 </View>
                 <View style={styles.startText}>
+                    {badge ? <Text variant="caption" style={styles.startBadge}>{badge}</Text> : null}
                     <Text variant="title3" style={styles.startTitle}>
                         {title}
                     </Text>
@@ -53,6 +54,7 @@ const sheets = themedStyles((p) => ({
         backgroundColor: p.surface,
     },
     startText: { flex: 1, gap: 3 },
+    startBadge: { color: p.textSecondary },
     startTitle: { color: p.textPrimary },
     startBody: { color: p.textSecondary },
 }));

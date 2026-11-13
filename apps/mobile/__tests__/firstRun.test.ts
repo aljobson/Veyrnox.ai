@@ -112,9 +112,11 @@ describe('where the welcome shows', () => {
         expect(screen).toContain("t('welcome.skip')");
     });
 
-    test('welcome leads to the home screen; the four-box Start screen is gone', () => {
+    test('welcome leads to the first-run questions, which lead on to the home screen; the four-box Start screen is gone', () => {
         const welcome = read('app', '(app)', 'welcome.tsx');
-        expect(welcome).toContain('router.replace(afterWelcomeHref(hardPaywallEnabled(), CREATOR_PROFILE_ENABLED))');
+        expect(welcome).toContain("router.replace('/first-run')");
+        expect(read('app', '(app)', 'first-run.tsx')).toContain('router.replace(afterWelcomeHref(hardPaywallEnabled(), CREATOR_PROFILE_ENABLED))');
+        expect(read('lib', 'hardPaywall.ts')).toContain("'/first-run'");
         expect(fs.existsSync(path.join(__dirname, '..', 'src', 'app', '(app)', 'start.tsx'))).toBe(false);
     });
 

@@ -152,5 +152,8 @@
   "bestCut.language.de": "Native language name, intentionally shared across locales.",
   "bestCut.language.ko": "Native language name, intentionally shared across locales.",
   "liveEdit.wig.pixie": "Established Portuguese term or label: Pixie.",
-  "liveEdit.wig.bob": "Established Portuguese term or label: Bob."
+  "liveEdit.wig.bob": "Established Portuguese term or label: Bob.",
+  "create.firstRun.dest.tiktok": "Product name written the same in this language: TikTok.",
+  "create.firstRun.dest.reels": "Product name written the same in this language: Instagram Reels.",
+  "create.firstRun.dest.youtube": "Product name written the same in this language: YouTube."
 }

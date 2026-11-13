@@ -62,5 +62,8 @@
   "bestCut.language.ru": "Native language name, intentionally shared across locales.",
   "bestCut.language.ja": "Native language name, intentionally shared across locales.",
   "bestCut.language.de": "Native language name, intentionally shared across locales.",
-  "bestCut.language.ko": "Native language name, intentionally shared across locales."
+  "bestCut.language.ko": "Native language name, intentionally shared across locales.",
+  "create.firstRun.dest.tiktok": "Product name written the same in this language: TikTok.",
+  "create.firstRun.dest.reels": "Product name written the same in this language: Instagram Reels.",
+  "create.firstRun.dest.youtube": "Product name written the same in this language: YouTube."
 }

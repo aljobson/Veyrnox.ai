@@ -2,8 +2,7 @@ import { rawText } from '../../lib/i18n/translate';
 import { captureEvent } from '../../lib/analytics/events';
 import { markWelcomeSeen } from '../../lib/markWelcomeSeen';
 import { noteOnboardingCompleted } from '../../lib/celebrate';
-import { HARD_PAYWALL_STARTER_CREDITS, afterWelcomeHref, hardPaywallEnabled } from '../../lib/hardPaywall';
-import { CREATOR_PROFILE_ENABLED } from '../../lib/creatorProfile';
+import { HARD_PAYWALL_STARTER_CREDITS, hardPaywallEnabled } from '../../lib/hardPaywall';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -43,9 +42,10 @@ export default function Welcome() {
     async function done(action: 'next' | 'skip' = 'next') {
         captureEvent('onboarding_step', { step: 'welcome', action });
         await markWelcomeSeen();
-        // Flag off: straight to the home screen, which is where first run ends. Flag on: Vibe check next, then the paywall.
+        // Flag off: the first-run questions, then the home screen, which is where first run ends. Flag on: the questions, the Vibe check, then the paywall.
         if (!hardPaywallEnabled()) noteOnboardingCompleted();
-        router.replace(afterWelcomeHref(hardPaywallEnabled(), CREATOR_PROFILE_ENABLED));
+        // The first-run questions come next (ADR-0339); they send an already-answered account straight on to this same place.
+        router.replace('/first-run');
     }
 
     return (

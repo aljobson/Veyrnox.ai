@@ -137,6 +137,9 @@ try {
     // ADR-0334 (0494) wraps whatever the public function is at that moment, so it is applied last, twice.
     const withFirstGoal = await readFile(new URL('../packages/db/schema/supabase/0494_first_goal.sql', import.meta.url), 'utf8');
     await q(withFirstGoal); await q(withFirstGoal);
+    // 0499 (ADR-0339) replaces that wrapper to add role and destination, so it comes after 0494.
+    const withFirstAnswers = await readFile(new URL('../packages/db/schema/supabase/0499_first_run_answers.sql', import.meta.url), 'utf8');
+    await q(withFirstAnswers); await q(withFirstAnswers);
     await q('ALTER TABLE public.chat_messages ALTER COLUMN seq RESTART WITH 3000000000');
     const alice = await person('alice'), bob = await person('bob-private');
     otherIds.push(bob.id, bob.auth); secrets.push(bob.email);
