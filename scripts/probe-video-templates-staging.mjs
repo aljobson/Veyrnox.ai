@@ -128,6 +128,11 @@ export const unitCreditsFrom = catalog => Object.fromEntries([KLING, FAST, REFER
   return [id, row.credits];
 }));
 
+// Everything read back from the network is reduced to short plain words before it reaches a file: numbers and
+// booleans pass, text keeps letters, digits and a few separators, capped at 120 characters.
+export const plain = value => (typeof value === 'number' && Number.isFinite(value) ? value : typeof value === 'boolean' ? value : String(value ?? '').replace(/[^\w .:,()\/=-]/g, '?').slice(0, 120));
+export const plainRows = rows => rows.map(row => Object.fromEntries(Object.entries(row).map(([key, value]) => [key, plain(value)])));
+
 export function renderTable(results) {
   const head = '| slot | template | model | class | quoted cr | submit | job | state | charged | refunded | note |\n|---|---|---|---|---|---|---|---|---|---|---|';
   return [head, ...results.map(r => `| ${r.label} | ${r.id} | ${r.modelId} | ${r.class} | ${r.quoted} | ${r.submit ?? '(dry run)'} | ${r.jobId ?? ''} | ${r.state ?? ''} | ${r.charged ?? ''} | ${r.refunded ?? ''} | ${r.note ?? ''} |`)].join('\n');
@@ -171,10 +176,10 @@ async function main(argv) {
       const terminal = await waitTerminal(api, row.jobId); row.state = terminal.state; row.refunded = Boolean(terminal.refunded);
       row.charged = before - (await api('/balance')).body.balance; row.note = terminal.timedOut ? 'did not finish in 20 min' : (terminal.error_code || '');
     } catch (error) { row.note = `error: ${error.message}`; }
-    await writeFile(path.join(outDir, 'results.json'), JSON.stringify({ startBalance, spent, results }, null, 2));
+    await writeFile(path.join(outDir, 'results.json'), JSON.stringify({ startBalance: plain(startBalance), spent, results: plainRows(results) }, null, 2));
   }
-  const table = renderTable(results);
-  await writeFile(path.join(outDir, 'results.json'), JSON.stringify({ startBalance, spent, results }, null, 2));
+  const clean = plainRows(results), table = renderTable(clean);
+  await writeFile(path.join(outDir, 'results.json'), JSON.stringify({ startBalance: plain(startBalance), spent, results: clean }, null, 2));
   await writeFile(path.join(outDir, 'results.md'), `# Staging video template probe\n\nSpent ${spent} credits (cap ${cap}).\n\n${table}\n`);
   console.log(table); console.log(`\nSpent ${spent} credits. Written to ${outDir}`);
 }

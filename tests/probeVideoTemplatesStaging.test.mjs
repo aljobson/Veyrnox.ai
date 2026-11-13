@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { audit } from '../scripts/audit-template-fidelity.mjs';
 import { BROKEN_TEMPLATE_IDS } from '../app/veyrnox/_lib/brokenTemplateIds.js';
-import { selectProbeSet, projectedCredits, generationBody, quoteCredits, syntheticPng, paid, photoCount, DEFAULT_MAX_CREDITS } from '../scripts/probe-video-templates-staging.mjs';
+import { selectProbeSet, projectedCredits, generationBody, quoteCredits, syntheticPng, plain, plainRows, paid, photoCount, DEFAULT_MAX_CREDITS } from '../scripts/probe-video-templates-staging.mjs';
 
 const unit = { 'kling-3.0-i2v': 32, 'seedance-2.0-fast': 19, 'seedance-2.0-reference': 85 };
 const picks = selectProbeSet(audit().contracts);
@@ -42,4 +42,12 @@ test('the synthetic photo is a valid 512 px PNG', () => {
   assert.deepEqual([...png.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
   assert.equal(png.readUInt32BE(16), 512);
   assert.equal(png.readUInt32BE(20), 512);
+});
+
+test('text read back from the network is reduced to plain short words before it is written', () => {
+  assert.equal(plain('<script>alert(1)</script>\n'), '?script?alert(1)?/script??');
+  assert.equal(plain('x'.repeat(500)).length, 120);
+  assert.equal(plain(64), 64);
+  assert.equal(plain(true), true);
+  assert.deepEqual(plainRows([{ note: 'a|b\n', charged: 0 }]), [{ note: 'a?b?', charged: 0 }]);
 });
