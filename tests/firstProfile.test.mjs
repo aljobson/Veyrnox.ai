@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import {
     FIRST_ROLES, FIRST_DESTINATIONS, FIRST_PROFILE_SLOT, parseFirstProfile, serializeFirstProfile, readRemoteFirstProfile,
     needsFirstRun, orderStarts, exampleSetFor, defaultAspectFor, hasRealAnswer,
@@ -137,4 +138,10 @@ test('web hand-off: one creation goal, once, in this tab only', async () => {
     setFirstRunHandoff('edit');
     assert.equal(takeFirstRunHandoff(), null, 'only creation goals are handed over');
   } finally { delete globalThis.window; }
+});
+
+test('web sync asks with the stored session, so an expired access token (refreshed by the gateway) never reads as "no account"', async () => {
+  const src = await readFile(new URL('../app/veyrnox/_lib/firstProfileSync.js', import.meta.url), 'utf8');
+  assert.match(src, /session = getStoredSession\)/);
+  assert.ok(!/getSession\b/.test(src.replace(/getStoredSession/g, '')), 'no call asks for the live token session');
 });
