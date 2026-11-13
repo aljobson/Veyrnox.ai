@@ -1,3 +1,10 @@
+// Shared skin-bilateral parameters; temporal landmark filtering below is separate.
+// These values preserve the existing web shader/mask behavior.
+export const SKIN_SMOOTHING = Object.freeze({
+    kernelRadius: 2, sampleStepPixels: 2, rangeWeight: 65, spatialWeight: 0.18,
+    strengthScale: 0.85, ovalScale: 0.92, holeScale: 1.5,
+    maskExclusions: Object.freeze(['LEFT_EYE', 'RIGHT_EYE', 'LIPS', 'LEFT_BROW', 'RIGHT_BROW']),
+});
 /** One-Euro filter. A gap or lost/multiple face clears state, never predicts a stale face. */
 export function createLandmarkFilter({ minCutoff = 1, beta = 0.02, derivativeCutoff = 1 } = {}) {
     let previous, derivative, timestamp;

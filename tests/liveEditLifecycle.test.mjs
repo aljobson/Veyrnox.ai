@@ -60,27 +60,21 @@ test('engine closes late initialization, clears lost faces, and exports the edit
         active.close(); await assert.rejects(active.export(), /closed/);
     } finally { globalThis.requestAnimationFrame = oldRAF; globalThis.cancelAnimationFrame = oldCancel; }
 });
-test('photo decoding refuses unsupported, oversized and degenerate sources', () => {
-    const file = { type: 'image/png', size: 200 };
-    validatePhoto(file, 4000, 3000);
-    for (const [w, h] of [[0, 100], [9000, 400], [6000, 6000], [NaN, 50]]) assert.throws(() => validatePhoto(file, w, h));
-    assert.throws(() => validatePhoto({ ...file, type: 'image/svg+xml' }));
-    assert.throws(() => validatePhoto({ ...file, size: 51 * 1024 * 1024 }));
+test('photo decoding refuses unsupported, oversized and degenerate sources', async () => {
+    const file = new Blob([Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10])], { type: 'image/png' });
+    await validatePhoto(file, 4000, 3000);
+    for (const [w, h] of [[0, 100], [9000, 400], [6000, 6000], [NaN, 50]]) await assert.rejects(validatePhoto(file, w, h));
+    await assert.rejects(validatePhoto(new Blob([file], { type: 'image/svg+xml' })));
+    await assert.rejects(validatePhoto({ size: 51 * 1024 * 1024, slice() { throw Error('must not read'); } }), /photo-too-large/);
 });
 test('photo decoding freezes a bitmap and closes a late bitmap after source cancellation', async () => {
     const { decodePhoto } = await import('../app/veyrnox/_lib/liveEdit/engine.js');
-    const oldImage = globalThis.Image, oldBitmap = globalThis.createImageBitmap;
-    let loaded, finishBitmap, closes = 0;
-    globalThis.Image = class {
-        naturalWidth = 100; naturalHeight = 100;
-        set src(value) { if (value) loaded = () => this.onload?.(); }
-    };
-    globalThis.createImageBitmap = async () => new Promise(resolve => { finishBitmap = () => resolve({ close() { closes++; } }); });
-    try {
-        const controller = new AbortController();
-        const promise = decodePhoto(new Blob(['data'], { type: 'image/png' }), controller.signal);
-        const loading = loaded(); controller.abort();
-        await assert.rejects(promise, { name: 'AbortError' });
-        finishBitmap(); await loading; assert.equal(closes, 1);
-    } finally { globalThis.Image = oldImage; globalThis.createImageBitmap = oldBitmap; }
+    let finishBitmap, closes = 0, started;
+    const decoding = new Promise(resolve => { started = resolve; });
+    const decoder = () => { started(); return new Promise(resolve => { finishBitmap = () => resolve({ close() { closes++; } }); }); };
+    const controller = new AbortController();
+    const promise = decodePhoto(new Blob([Uint8Array.from([255, 216, 255])]), controller.signal, decoder);
+    await decoding; controller.abort();
+    await assert.rejects(promise, { name: 'AbortError' });
+    finishBitmap(); await new Promise(resolve => setImmediate(resolve)); assert.equal(closes, 1);
 });

@@ -21,10 +21,18 @@ export async function pickedImageFile(asset: PickedAsset, options: { load?: () =
     const base: PickedFile = { uri: asset.uri, size: asset.fileSize, mimeType: asset.mimeType ?? undefined, width: asset.width, height: asset.height };
     if (kindOfMime(asset.mimeType ?? undefined) === 'image' || !needsConversion(asset)) return base;
     const lib = (options.load ?? loadManipulator)();
-    const rendered = await lib.ImageManipulator.manipulate(asset.uri).renderAsync();
-    const saved = await rendered.saveAsync({ compress: 1, format: lib.SaveFormat.JPEG });
-    const size = (options.sizeOf ?? ((uri) => new File(uri).size))(saved.uri);
-    // Delete only the picker's temporary copy of the original; the converted copy is the one kept.
-    discardCacheCopy(asset.uri);
-    return { uri: saved.uri, size, mimeType: 'image/jpeg', width: saved.width, height: saved.height };
+    const context = lib.ImageManipulator.manipulate(asset.uri);
+    let savedUri: string | undefined;
+    try {
+        const rendered = await context.renderAsync();
+        try {
+            const saved = await rendered.saveAsync({ compress: 1, format: lib.SaveFormat.JPEG });
+            savedUri = saved.uri;
+            const size = (options.sizeOf ?? ((uri) => new File(uri).size))(saved.uri);
+            // Delete only the picker's temporary original; the caller owns the converted copy.
+            discardCacheCopy(asset.uri);
+            return { uri: saved.uri, size, mimeType: 'image/jpeg', width: saved.width, height: saved.height };
+        } finally { rendered.release?.(); }
+    } catch (error) { discardCacheCopy(savedUri); throw error; }
+    finally { context.release?.(); }
 }

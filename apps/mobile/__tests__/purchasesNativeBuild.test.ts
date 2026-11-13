@@ -6,7 +6,7 @@ declare const __dirname: string;
 const appRoot = path.resolve(__dirname, '..');
 function resolver(flag?: string) {
     const sandbox = {
-        require: (name: string) => name === 'expo/metro-config' ? { getDefaultConfig: () => ({ resolver: {} }) } : require(name),
+        require: (name: string) => name === 'expo/metro-config' ? { getDefaultConfig: () => ({ resolver: { assetExts: [] } }) } : name === './scripts/ensure-live-edit.cjs' ? () => {} : require(name),
         __dirname: appRoot, module: { exports: {} as any }, process: { env: { VEYRNOX_NATIVE_PURCHASES: flag } },
     };
     vm.runInNewContext(fs.readFileSync(path.join(appRoot, 'metro.config.js'), 'utf8'), sandbox);

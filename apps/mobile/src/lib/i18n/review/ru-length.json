@@ -3318,6 +3318,30 @@
     "ratio": 1.67
   },
   {
+    "id": "liveEdit.title",
+    "english": "Live Edit",
+    "translation": "Живое редактирование",
+    "ratio": 2.22
+  },
+  {
+    "id": "liveEdit.tint",
+    "english": "Tint",
+    "translation": "Тонирование",
+    "ratio": 2.75
+  },
+  {
+    "id": "liveEdit.undo",
+    "english": "Undo",
+    "translation": "Отменить",
+    "ratio": 2
+  },
+  {
+    "id": "liveEdit.redo",
+    "english": "Redo",
+    "translation": "Вернуть",
+    "ratio": 1.75
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

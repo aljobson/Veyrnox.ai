@@ -4,36 +4,30 @@ import { createFaceProcessor } from './faceClient.mjs';
 import { DEFAULTS, normalize } from '../../../../packages/live-edit/effects.js';
 import { createLandmarkFilter } from '../../../../packages/live-edit/smoothing.js';
 import { selectFaceHair } from '../../../../packages/live-edit/hair.js';
-export const PHOTO_LIMITS = Object.freeze({ bytes: 50 * 1024 * 1024, pixels: 24 * 1000 * 1000, edge: 8192 });
-export function validatePhoto(file, width, height) {
-    if (!file || !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > PHOTO_LIMITS.bytes || file.size < 1) throw new Error('invalid-photo');
-    if (width !== undefined && (!Number.isInteger(width) || !Number.isInteger(height) || Math.min(width, height) < 8 || Math.max(width, height) > PHOTO_LIMITS.edge || width * height > PHOTO_LIMITS.pixels)) throw new Error('photo-too-large');
-}
-export function decodePhoto(file, signal) {
-    validatePhoto(file);
+import { validatePhoto, validatePhotoDimensions, decodeFailure } from './photoFormat.js';
+export { PHOTO_LIMITS, validatePhoto } from './photoFormat.js';
+export async function decodePhoto(file, signal, decoder = (blob, options) => createImageBitmap(blob, options)) {
+    const type = await validatePhoto(file);
+    if (signal?.aborted) throw new DOMException('Cancelled', 'AbortError');
     return new Promise((resolve, reject) => {
-        const image = new Image(), url = URL.createObjectURL(file);
         let settled = false;
         const finish = (error, bitmap) => {
             if (settled) { bitmap?.close(); return; }
             settled = true;
-            clearTimeout(timer); signal?.removeEventListener('abort', abort); URL.revokeObjectURL(url);
-            image.onload = image.onerror = null; image.src = '';
+            clearTimeout(timer); signal?.removeEventListener('abort', abort);
             if (error) reject(error); else resolve(bitmap);
         };
         const abort = () => finish(new DOMException('Cancelled', 'AbortError'));
-        const timer = setTimeout(() => finish(new Error('photo-decode-failed')), 15000);
-        image.onload = async () => {
-            try {
-                validatePhoto(file, image.naturalWidth, image.naturalHeight);
-                // Freeze a still, including animated PNG/WebP, and make alpha handling explicit.
-                const bitmap = await createImageBitmap(image, { premultiplyAlpha: 'none' });
-                finish(null, bitmap);
-            } catch (error) { finish(error); }
-        };
-        image.onerror = () => finish(new Error('photo-decode-failed'));
+        const timer = setTimeout(() => finish(new Error(decodeFailure(type))), 15000);
         signal?.addEventListener('abort', abort, { once: true });
-        if (signal?.aborted) abort(); else image.src = url;
+        // Blob decoding selects the default still, or first animation frame. Apply EXIF orientation
+        // exactly once, before dimensions, inference, preview and export see the pixels.
+        Promise.resolve().then(() => decoder(file.slice(0, file.size, type), { imageOrientation: 'from-image', premultiplyAlpha: 'none' })).then(bitmap => {
+            if (settled) { bitmap.close(); return; }
+            try { validatePhotoDimensions(bitmap.width, bitmap.height); }
+            catch (error) { bitmap.close(); finish(error); return; }
+            finish(null, bitmap);
+        }, () => finish(new Error(decodeFailure(type))));
     });
 }
 /** Ownership is synchronous: caller can close while model initialization is pending. */

@@ -4,11 +4,13 @@ import { RESIZE_UNAVAILABLE, scaledSize, type ImageResizer } from './chatAttach'
 // Re-encoding is what drops the EXIF block (camera, time, GPS) and turns HEIC into something the server accepts; a photo is
 // never sent as picked. Backed by expo-image-manipulator, a native module.
 interface Rendered {
+    release?(): void;
     readonly width: number;
     readonly height: number;
     saveAsync(options: { compress: number; format: string }): Promise<{ uri: string; width: number; height: number }>;
 }
 interface Context {
+    release?(): void;
     resize(size: { width: number; height: number }): Context;
     renderAsync(): Promise<Rendered>;
 }

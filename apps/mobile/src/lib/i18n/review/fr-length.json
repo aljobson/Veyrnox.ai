@@ -4950,6 +4950,48 @@
     "ratio": 1.7
   },
   {
+    "id": "liveEdit.title",
+    "english": "Live Edit",
+    "translation": "Retouche en direct",
+    "ratio": 2
+  },
+  {
+    "id": "liveEdit.blush",
+    "english": "Blush",
+    "translation": "Fard à joues",
+    "ratio": 2.4
+  },
+  {
+    "id": "liveEdit.eyeshadow",
+    "english": "Eyeshadow",
+    "translation": "Ombre à paupières",
+    "ratio": 1.89
+  },
+  {
+    "id": "liveEdit.eyeliner",
+    "english": "Eyeliner",
+    "translation": "Trait de paupière",
+    "ratio": 2.13
+  },
+  {
+    "id": "liveEdit.hair",
+    "english": "Hair colour",
+    "translation": "Couleur des cheveux",
+    "ratio": 1.73
+  },
+  {
+    "id": "liveEdit.undo",
+    "english": "Undo",
+    "translation": "Annuler",
+    "ratio": 1.75
+  },
+  {
+    "id": "liveEdit.redo",
+    "english": "Redo",
+    "translation": "Rétablir",
+    "ratio": 2
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

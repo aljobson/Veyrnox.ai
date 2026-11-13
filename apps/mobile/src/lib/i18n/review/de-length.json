@@ -3426,6 +3426,42 @@
     "ratio": 1.7
   },
   {
+    "id": "liveEdit.title",
+    "english": "Live Edit",
+    "translation": "Live-Bearbeitung",
+    "ratio": 1.78
+  },
+  {
+    "id": "liveEdit.brows",
+    "english": "Brows",
+    "translation": "Augenbrauen",
+    "ratio": 2.2
+  },
+  {
+    "id": "liveEdit.ombre",
+    "english": "Ombre",
+    "translation": "Farbverlauf",
+    "ratio": 2.2
+  },
+  {
+    "id": "liveEdit.retry",
+    "english": "Try again",
+    "translation": "Erneut versuchen",
+    "ratio": 1.78
+  },
+  {
+    "id": "liveEdit.undo",
+    "english": "Undo",
+    "translation": "Rückgängig",
+    "ratio": 2.5
+  },
+  {
+    "id": "liveEdit.redo",
+    "english": "Redo",
+    "translation": "Wiederholen",
+    "ratio": 2.75
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

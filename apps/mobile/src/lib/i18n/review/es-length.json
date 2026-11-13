@@ -3114,6 +3114,54 @@
     "ratio": 1.67
   },
   {
+    "id": "liveEdit.title",
+    "english": "Live Edit",
+    "translation": "Edición en vivo",
+    "ratio": 1.67
+  },
+  {
+    "id": "liveEdit.foundation",
+    "english": "Foundation",
+    "translation": "Base de maquillaje",
+    "ratio": 1.8
+  },
+  {
+    "id": "liveEdit.wing",
+    "english": "Wing length",
+    "translation": "Longitud del rabillo",
+    "ratio": 1.82
+  },
+  {
+    "id": "liveEdit.volume",
+    "english": "Lash volume",
+    "translation": "Volumen de pestañas",
+    "ratio": 1.73
+  },
+  {
+    "id": "liveEdit.ombre",
+    "english": "Ombre",
+    "translation": "Degradado",
+    "ratio": 1.8
+  },
+  {
+    "id": "liveEdit.noFace",
+    "english": "No face found. Face and hair effects are off.",
+    "translation": "No se encontró ninguna cara. Los efectos de cara y pelo están desactivados.",
+    "ratio": 1.67
+  },
+  {
+    "id": "liveEdit.undo",
+    "english": "Undo",
+    "translation": "Deshacer",
+    "ratio": 2
+  },
+  {
+    "id": "liveEdit.redo",
+    "english": "Redo",
+    "translation": "Rehacer",
+    "ratio": 1.75
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

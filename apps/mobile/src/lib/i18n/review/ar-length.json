@@ -1782,6 +1782,24 @@
     "ratio": 1.64
   },
   {
+    "id": "liveEdit.blush",
+    "english": "Blush",
+    "translation": "أحمر الخدود",
+    "ratio": 2.2
+  },
+  {
+    "id": "liveEdit.tint",
+    "english": "Tint",
+    "translation": "صبغة خفيفة",
+    "ratio": 2.5
+  },
+  {
+    "id": "liveEdit.ombre",
+    "english": "Ombre",
+    "translation": "تدرج لوني",
+    "ratio": 1.8
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "تسجيل الدخول",

@@ -46,3 +46,6 @@ yarn-error.*
 # Continuous Native Generation: ios/ and android/ are generated
 /ios
 /android
+
+# SHA-pinned offline Live Edit runtime, generated before app bundling
+/assets/live-edit/

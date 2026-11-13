@@ -1,3 +1,4 @@
+import { PHOTO_STUDIO_ENABLED } from '../lib/photoStudioFlag';
 import { rawText } from '../lib/i18n/translate';
 import { Text as StatusText } from './ui/Text';
 import { english } from '../lib/i18n/binding';
@@ -253,6 +254,7 @@ export function FaceFiltersFlow({ api, owner }: { api: ApiClient; owner: string 
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
             <Stack.Screen options={{ title: t('faceFilters.title') }} />
+            {PHOTO_STUDIO_ENABLED ? <Button variant="secondary" label={t('liveEdit.title')} onPress={() => router.push('/live-edit')} /> : null}
             <View style={[styles.stage, { height: Math.round(screenWidth * 1.25) }]}>
                 {original
                     ? <InstantPhoto uri={original} matrix={lookMatrix(look)} cover label={t(model ? 'faceFilters.before' : 'faceFilterSwitch.attached')} style={StyleSheet.absoluteFill} onError={fromResult ? resultImageError : undefined} onLoad={fromResult ? resultImageLoaded : undefined} />
