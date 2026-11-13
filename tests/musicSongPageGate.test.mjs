@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { musicLibraryEnabled, musicUiEnabled } from '../lib/musicBackend.js';
 
@@ -30,10 +30,11 @@ test('the shared gate is on with the JSON flags alone and off when any needed fl
 test('no app page reads a legacy MUSIC_*_ENABLED variable directly', () => {
   const offenders = [];
   const walk = (dir) => {
-    for (const name of readdirSync(dir)) {
-      const full = path.join(dir, name);
-      if (statSync(full).isDirectory()) { if (name !== 'node_modules') walk(full); continue; }
-      if (!/\.(js|jsx|mjs)$/.test(name)) continue;
+    // File types come from the directory listing itself, so nothing is stat'ed and then read separately.
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) { if (entry.name !== 'node_modules') walk(full); continue; }
+      if (!entry.isFile() || !/\.(js|jsx|mjs)$/.test(entry.name)) continue;
       if (/process\.env\.MUSIC_[A-Z_]+_ENABLED/.test(readFileSync(full, 'utf8'))) offenders.push(path.relative(root, full));
     }
   };
