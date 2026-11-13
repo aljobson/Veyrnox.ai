@@ -4962,6 +4962,48 @@
     "ratio": 1.7
   },
   {
+    "id": "instruments.title",
+    "english": "Instruments",
+    "translation": "Instruments de musique",
+    "ratio": 2
+  },
+  {
+    "id": "instruments.octaveDown",
+    "english": "Octave −",
+    "translation": "Octave plus basse",
+    "ratio": 2.13
+  },
+  {
+    "id": "instruments.octaveUp",
+    "english": "Octave +",
+    "translation": "Octave plus haute",
+    "ratio": 2.13
+  },
+  {
+    "id": "instruments.record",
+    "english": "● Record",
+    "translation": "● Enregistrer",
+    "ratio": 1.63
+  },
+  {
+    "id": "instruments.share",
+    "english": "Share WAV",
+    "translation": "Partager le WAV",
+    "ratio": 1.67
+  },
+  {
+    "id": "instruments.recording",
+    "english": "Recording. Play, then press Stop.",
+    "translation": "Enregistrement en cours. Jouez, puis appuyez sur Arrêter.",
+    "ratio": 1.73
+  },
+  {
+    "id": "instruments.remove",
+    "english": "Delete take",
+    "translation": "Supprimer la prise",
+    "ratio": 1.64
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

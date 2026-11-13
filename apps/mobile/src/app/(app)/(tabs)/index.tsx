@@ -188,6 +188,7 @@ export default function Explore() {
                     <StartOption href="/create" onPress={() => void recordHomeStart(api, 'create')} style={styles.startOption} icon="sparkle" title={t('menu.create')} body={t('explore.start.create.body')} hint={t('explore.start.create.hint')} />
                     <StartOption href="/chat" onPress={() => void recordHomeStart(api, 'chat')} style={styles.startOption} icon="chat" title={t('menu.chat')} body={t('explore.start.chat.body')} hint={t('explore.chat.hint')} divided />
                     <StartOption href="/film" onPress={() => void recordHomeStart(api, 'film')} style={styles.startOption} icon="slate" title={t('menu.film')} body={t('explore.start.film.body')} hint={t('explore.start.film.hint')} divided />
+                    <StartOption href="/instruments" style={styles.startOption} icon="sparkle" title={t('instruments.title')} body={t('instruments.homeBody')} hint={t('instruments.homeHint')} divided />
                 </Card>
 
 
