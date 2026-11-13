@@ -1,6 +1,5 @@
 import { rawText } from '../lib/i18n/translate';
 import { I18nManager } from 'react-native';
-import { useFaceFiltersAvailable } from '../lib/useFaceFiltersAvailable';
 import { Button, ListRow, Text, Icon, themedStyles, useThemedStyles } from './ui';
 import { useEffect, useRef, useState } from 'react';
 import { setMenuOpen } from '../lib/menuOpen';
@@ -55,7 +54,6 @@ function MenuDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
     const [mounted, setMounted] = useState(open);
     const [still, setStill] = useState(false);
     const [profile, setProfile] = useState<Profile | null>(null);
-    const faceAvailable = useFaceFiltersAvailable();
     const active = activeItemKey(pathname);
 
     useEffect(() => {
@@ -134,7 +132,7 @@ function MenuDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
                                     </Button>
                                     {collapsed ? null : (
                                         <View style={section.id === 'tools' ? styles.grid : undefined}>
-                                            {section.items.filter(item => !TAB_KEYS.has(item.key) && (item.href !== '/face-filters' || faceAvailable)).map((item) => (
+                                            {section.items.filter(item => !TAB_KEYS.has(item.key)).map((item) => (
                                                 <Row key={item.key} label={t(item.label)} hint={item.hint ? t(item.hint) : undefined} icon={item.icon} active={active === item.key} half={section.id === 'tools'} onPress={() => go(item.href)} />
                                             ))}
                                         </View>
