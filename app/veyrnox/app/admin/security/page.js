@@ -67,9 +67,9 @@ function Security() {
       </p>
       <MfaPanel />
       {data && <Summary counts={data.open_by_severity} />}
-      <div className="mt-6 flex flex-wrap gap-2" role="tablist" aria-label="Alert state">
+      <div className="mt-6 flex flex-wrap gap-2" role="group" aria-label="Alert state">
         {FILTERS.map(([value, label]) => (
-          <Button key={value || 'active'} size="sm" variant={filter === value ? 'primary' : 'ghost'} role="tab" aria-selected={filter === value} onClick={() => setFilter(value)}>{label}</Button>
+          <Button key={value || 'active'} size="sm" variant={filter === value ? 'primary' : 'ghost'} aria-pressed={filter === value} onClick={() => setFilter(value)}>{label}</Button>
         ))}
         <Button size="sm" variant="ghost" onClick={() => load(filter)}>Refresh</Button>
       </div>
@@ -151,7 +151,7 @@ function Events({ rows }) {
   return (
     <section className="mt-10">
       <h2 className="text-lg font-black tracking-[-0.02em] mb-3">Latest security events</h2>
-      <div className="rounded-[10px] border border-vx-border bg-vx-panel overflow-x-auto">
+      <div className="rounded-[10px] border border-vx-border bg-vx-panel overflow-x-auto" tabIndex={0}>
         <div className="min-w-[680px]">
           <div className={`grid ${cols} px-5 py-3 border-b border-vx-border font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted`}>
             <div>WHEN</div><div>CATEGORY</div><div>ACTION</div><div className="text-right">STATUS</div><div className="pl-4">PATH · REASON</div>
