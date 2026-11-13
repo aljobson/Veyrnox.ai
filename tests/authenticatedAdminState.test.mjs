@@ -101,6 +101,15 @@ test('a successful read renders real metrics and hides retry; read never adds a 
   assert.ok(nodes(app.render()).some(node => typeof node.type === 'function' && node.type.name === 'Kpis'));
   assert.ok(!nodes(app.render()).some(node => node.type === 'button' && text(node) === 'Retry metrics'));
 });
+test('metrics without a valid generated_at render the cards and omit the timestamp line instead of crashing', async () => {
+  for (const payload of [{ jobs_total: 3 }, { jobs_total: 3, generated_at: 'not a date' }]) {
+    const app = harness(async () => payload);
+    await tick();
+    const out = app.render();
+    assert.ok(nodes(out).some(node => typeof node.type === 'function' && node.type.name === 'Kpis'));
+    assert.doesNotMatch(text(out), /READ FROM JOBS AND THE LEDGER/);
+  }
+});
 test('late rejected request cannot hide a newer successful response', async () => {
   const pending = [];
   const app = harness(() => new Promise((resolve, reject) => pending.push({ resolve, reject })));

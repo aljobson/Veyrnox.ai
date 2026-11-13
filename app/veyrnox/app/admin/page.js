@@ -94,9 +94,11 @@ export default function Admin() {
           <>
             <Kpis m={metrics} />
             <ModelTable rows={metrics.models || []} />
-            <p className="mt-6 font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">
-              READ FROM JOBS AND THE LEDGER AT {new Date(metrics.generated_at).toISOString().replace('T', ' ').slice(0, 19)} UTC
-            </p>
+            {Number.isFinite(new Date(metrics.generated_at).getTime()) && (
+              <p className="mt-6 font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">
+                READ FROM JOBS AND THE LEDGER AT {new Date(metrics.generated_at).toISOString().replace('T', ' ').slice(0, 19)} UTC
+              </p>
+            )}
           </>
         )}
       </Main>
