@@ -37,6 +37,7 @@ const exceptions = [
   { file: /\/_lib\/audioTemplates\.js$/, pattern: /./, reason: 'audio template names and generation prompts stay English, like the video template catalog (ADR-0107)' },
   { file: /^lib\/musicDiscover\.js$/, pattern: /./, reason: 'original beat titles and canonical generation recipes are creative catalog data, matching the existing audio template policy (ADR-0107)' },
   { file: /^lib\/licensedMusicCatalog\.js$/, pattern: /./, reason: 'creator track titles and canonical CC BY attribution receipts must remain verbatim (ADR-0107)' },
+  { file: /^lib\/licensedTrackTemplates\.js$/, pattern: /./, reason: 'category style directions are English generation prompts sent to the music model, not UI copy (ADR-0107)' },
   { file: /\/_lib\/(?:studioSkills|filmStudioAssistants)\.js$/, pattern: /^(?:Skill:|Film stage|Models \(id\|kind\|Credits per generation\):$)/, reason: 'canonical assistant instructions, not UI copy (ADR-0107)' },
   { file: /\/_lib\/(?:studioSkillIcons|studioWorkflows)\.js$/, pattern: /^M(?=.*\d)[0-9MmLlHhVvCcSsQqTtAaZz., +\-]+$/, reason: 'validated SVG geometry, not display copy' },
   { file: /\/_components\/chat\/StudioSkillIcon\.js$/, pattern: /^(?:size-5 rounded-md|size-11 rounded-xl|size-16 rounded-2xl sm:size-\[72px\])$/, reason: 'validated icon-size CSS classes, not display copy' },
