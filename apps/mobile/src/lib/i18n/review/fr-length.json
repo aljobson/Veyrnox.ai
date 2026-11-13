@@ -5022,6 +5022,30 @@
     "ratio": 1.69
   },
   {
+    "id": "liveEdit.tool.makeup",
+    "english": "Makeup",
+    "translation": "Maquillage",
+    "ratio": 1.67
+  },
+  {
+    "id": "liveEdit.tool.hair",
+    "english": "Hair",
+    "translation": "Cheveux",
+    "ratio": 1.75
+  },
+  {
+    "id": "liveEdit.tool.aiWig",
+    "english": "AI wig",
+    "translation": "Perruque IA",
+    "ratio": 1.83
+  },
+  {
+    "id": "liveEdit.aiWig.open",
+    "english": "Choose a wig",
+    "translation": "Choisir une perruque",
+    "ratio": 1.67
+  },
+  {
     "id": "liveEdit.wig.bob",
     "english": "Bob",
     "translation": "Carré",

@@ -3480,6 +3480,12 @@
     "ratio": 1.61
   },
   {
+    "id": "liveEdit.tool.aiWig",
+    "english": "AI wig",
+    "translation": "KI-Perücke",
+    "ratio": 1.67
+  },
+  {
     "id": "liveEdit.wigSize",
     "english": "Wig size",
     "translation": "Perückengröße",

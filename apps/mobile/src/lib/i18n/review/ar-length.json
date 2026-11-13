@@ -1836,6 +1836,12 @@
     "ratio": 2.23
   },
   {
+    "id": "liveEdit.tool.aiWig",
+    "english": "AI wig",
+    "translation": "باروكة بالذكاء الاصطناعي",
+    "ratio": 4
+  },
+  {
     "id": "liveEdit.wigLoading",
     "english": "Fitting the 3D wig…",
     "translation": "جارٍ ضبط الباروكة ثلاثية الأبعاد…",

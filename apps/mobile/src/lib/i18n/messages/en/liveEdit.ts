@@ -80,5 +80,14 @@ export default {
     "liveEdit.wig3d.fringe": "3D curtain fringe",
     "liveEdit.wig3dLegend": "3D wigs (new)",
     "liveEdit.wigLoading": "Fitting the 3D wig…",
-    "liveEdit.wig3dHelp": "3D wigs turn with your head. They are stylised shapes, not photo-real wigs."
+    "liveEdit.wig3dHelp": "3D wigs turn with your head. They are stylised shapes, not photo-real wigs.",
+    "liveEdit.tool.looks": "Looks",
+    "liveEdit.tool.retouch": "Retouch",
+    "liveEdit.tool.makeup": "Makeup",
+    "liveEdit.tool.hair": "Hair",
+    "liveEdit.tool.aiWig": "AI wig",
+    "liveEdit.holdCompare": "Touch and hold the photo to see the original.",
+    "liveEdit.aiWig.title": "Realistic wigs",
+    "liveEdit.aiWig.help": "An AI model draws a realistic wig on your photo. It uploads the photo and uses credits, and you see the price first.",
+    "liveEdit.aiWig.open": "Choose a wig"
 } as const;

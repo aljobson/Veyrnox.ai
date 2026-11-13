@@ -3186,6 +3186,12 @@
     "ratio": 1.92
   },
   {
+    "id": "liveEdit.tool.makeup",
+    "english": "Makeup",
+    "translation": "Maquillaje",
+    "ratio": 1.67
+  },
+  {
     "id": "liveEdit.wigSize",
     "english": "Wig size",
     "translation": "Tamaño de la peluca",

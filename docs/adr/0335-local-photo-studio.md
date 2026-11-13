@@ -565,3 +565,29 @@ still-photo loading message.
 Android WebView camera permission handling; background/foreground transitions with the camera on; 24 MP 3D overlay time and
 memory; looks as a live camera filter list (the strip shows plain tiles without a photo). The real-device test is the next
 step.
+
+## First phone test feedback (owner, 2026-11-13) — Apple-style editor and realistic wigs on mobile
+
+**What the owner found on an iPhone 17 Pro Max.** The editor works. The 3D wigs "don't look real", and the tools were expected to "look and feel like
+what Apple would give you to edit a picture".
+
+**Decision 1 — wigs on mobile become the existing AI wigs.** The 2D and 3D wigs are code-drawn, stylised shapes. They cannot look photo-real, and more
+tuning would not change that. The mobile editor no longer offers them. The wig engine, its tests and the web photo studio are unchanged; a hidden wig
+in a saved stack still renders and exports. A new **AI wig** tool opens the existing Face Filters flow, whose `face-costume` model already draws
+`wig_blonde`, `wig_pink`, `wig_curly` and `wig_powdered` on a photo. That flow shows the catalog price, asks for consent and uploads the photo, so the
+editor itself still never uploads anything. The owner chose this over licensed wig assets (live, free per use, but needs art we do not have) and over
+dropping wigs. **Limit:** the AI wig button opens Face Filters without the photo, so the person picks it again. More styles than the four above need a
+new catalog row and a verified provider endpoint, which is a separate decision.
+
+**Decision 2 — Apple Photos layout.** The screen is one photo that fills the space, a top row (photos, camera, undo, redo, save), and a dock with a tool
+strip (Looks, Retouch, Makeup, Hair, AI wig) whose selected tool opens its panel above it. Touch and hold the photo to see the original; for a screen
+reader the photo has an activate action that toggles the comparison. Sliders became a ruler-style **dial**: the ruler slides under a fixed needle, a
+haptic tick fires every 5%, and a screen reader steps by 10% with increment and decrement. Makeup shades and hair shades are round colour dots taken from
+the engine's own shade table, so a dot is exactly what gets painted. Live camera keeps a shutter button with Stop and Switch camera either side.
+Text uses the type ramp and spacing uses `ds.space` steps; no colour literal was added outside the engine's shade data.
+
+**Verified.** Dial maths (drag direction, needle position, haptic steps, clamping, screen-reader steps) and the panels (hair colour locked until a hair mask
+exists, makeup locked without exactly one face, second shade only for ombre and highlights, the AI wig button opening `/face-filters`, the tool strip)
+have unit tests. Typecheck, the translation checks in all 11 languages and lint (0 errors) pass.
+**Not verified.** How it looks and feels on the phone, including dial responsiveness and haptic strength, 375 pt widths, Dynamic Type at the largest size,
+VoiceOver, and light versus dark appearance. The web photo studio still has the older stacked layout and the 2D and 3D wigs.
