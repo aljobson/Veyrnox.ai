@@ -215,3 +215,17 @@ closed. The pre-existing Create page and public locale catalogs exceed the
 500-line rule; this amendment makes narrow edits without an unrelated split.
 New helper files remain below 500 lines. No commit, push, publish, new native
 build environment or additional preview server is part of this work.
+
+## Amendment 3 (2026-11-13): only the two exact captures stay
+
+Owner decision in chat: the 48 authored originals are removed, because their
+preview tiles were blank and the owner wants image templates taken from the
+Higgsfield and Syntx feeds. A full scan found two Christmas image prompts in
+Syntx's 173 image templates (Flying Elf, Christmas Tree Ornament) and none in
+Higgsfield, whose template feed returns video only. The registry is now those
+two hash-locked captures; `imageTemplatesChristmasExpansion.js` and every
+authored recipe are deleted. The gate, photo support, model allowlist and
+provenance records are unchanged. ADR-0325's ten-per-category floor covers the
+twelve video content categories; the image-only Christmas set is exempt, and
+`tests/imageTemplates.test.mjs` says so. Previews for both remain absent:
+Flying Elf shows the gradient, the ornament shows its photo-required note.
