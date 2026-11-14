@@ -940,7 +940,7 @@ export default function CreateStudio() {
               {takesImageCount(model) && <ChipSelect assistantTarget="create.count" aria-label={t("app.create.imagesHeading")} options={IMAGE_COUNTS} value={count} onChange={setCount} formatValue={(n) => `×${n}`} formatOption={(n) => String(n)} />}
               <DictateButton disabled={!hydrated} onText={(spoken) => setPrompt((current) => appendSpoken(current, spoken))} />
               <EnhanceButton disabled={!hydrated} text={prompt} />
-              <button type="button" data-testid="create-open-templates" disabled={attachConverting || sourcesConverting} onClick={() => setTemplatesOpen(true)}
+              <button type="button" data-testid="create-open-templates" disabled={attachConverting || sourcesConverting} onClick={() => (goal === 'audio' ? router.push('/app/music/discover') : setTemplatesOpen(true))}
                 className="vx-press ms-auto min-h-10 shrink-0 rounded-full border border-vx-accent/50 px-3.5 py-1.5 font-vx-mono pointer-coarse:min-h-11 text-[11px] font-bold text-vx-accent hover:bg-vx-accent/10 disabled:opacity-50">
                 {t('app.create.templates.open')}</button>
             </div>

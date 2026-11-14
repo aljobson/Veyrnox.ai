@@ -15,13 +15,15 @@ test('only templates whose model the studio offers are listed', () => {
   assert.deepEqual(runnableTemplates(sample, [], 'all'), []);
 });
 
-test('the current goal kind comes first, nothing is dropped', () => {
+test('only templates of the current goal kind are listed', () => {
   const models = ids.map((id, i) => ({ id, kind: i % 2 ? 'video' : 'image' }));
   const all = runnableTemplates(sample, models, 'all');
-  const video = runnableTemplates(sample, models, 'video');
-  assert.equal(video.length, all.length);
-  const firstImage = video.findIndex((row) => row.model.kind === 'image');
-  assert.ok(firstImage === -1 || video.slice(firstImage).every((row) => row.model.kind === 'image'));
+  for (const kind of ['image', 'video']) {
+    const rows = runnableTemplates(sample, models, kind);
+    assert.ok(rows.every((row) => row.model.kind === kind));
+    assert.equal(rows.length, all.filter((row) => row.model.kind === kind).length);
+  }
+  assert.deepEqual(runnableTemplates(sample, models, 'audio'), []);
 });
 
 test('switching to a template keeps files only where the new model has room for them', async () => {
