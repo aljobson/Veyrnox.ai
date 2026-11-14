@@ -37,7 +37,8 @@ test('every public community projection serves one exact prompt and no removed a
   assert.equal(removed.size, 793);
   for (const record of Object.values(SOURCE_PROMPT_RECORDS)) if (record.prompt) assert.equal(removed.has(sha(record.prompt)), false);
   const communityIds = new Set(SOURCE_TEMPLATES.map(t => publicTemplateId(t.id)));
-  const rows = toPublicPresets([]);
+  // Serialize every preview-backed template, not only the capped gallery (2026-11-14) the route lists.
+  const rows = toPublicPresets([], PRESETS);
   for (const t of ALL_TEMPLATES.filter(t => communityIds.has(t.id))) {
     for (const p of [t, templateDetail(t.id), rows.find(p => p.id === t.id)]) {
       assert.ok(p, t.id);

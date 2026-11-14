@@ -4,7 +4,7 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { SOURCE_TEMPLATES } from '../app/veyrnox/_lib/sourceTemplates.js';
 import { SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/sourcePromptRecords.js';
-import { PRESETS, LEGACY_TEMPLATE_IDS, templateById } from '../app/veyrnox/_lib/templates.js';
+import { PRESETS, GALLERY_PRESETS, LEGACY_TEMPLATE_IDS, templateById } from '../app/veyrnox/_lib/templates.js';
 import { AUDIT_SHOWCASE_CLIPS } from '../app/veyrnox/_lib/showcase.js';
 import { templateCards, templateDetail } from '../lib/clientTemplates.js';
 import { toPublicPresets } from '../lib/publicPresets.js';
@@ -37,7 +37,9 @@ test('all 63 Syntx public IDs, clip keys and shipped filenames are neutral; orig
   assert.deepEqual(Object.fromEntries(audit.records.filter(r => r.id !== r.sourceSlug).map(r => [r.sourceSlug, r.id])),
     Object.fromEntries(Object.entries(SOURCE_SLUG_ALLOWLIST).sort((a, b) => audit.records.findIndex(r => r.sourceSlug === a[0]) - audit.records.findIndex(r => r.sourceSlug === b[0]))));
   const files = readdirSync(new URL('../public/showcase/', import.meta.url));
-  const projections = [PRESETS, templateCards(), toPublicPresets([])];
+  // The capped gallery (2026-11-14) lists 100; the rest keep their neutral ids in every full-set projection.
+  const projections = [PRESETS, toPublicPresets([], PRESETS)];
+  const listed = [templateCards(), toPublicPresets([])];
   for (const row of audit.records) {
     if (!PRESETS.some(t => t.id === row.id)) continue; // withdrawn as broken (brokenTemplateIds.js)
     const template = SOURCE_TEMPLATES.find(t => t.id === row.id);
@@ -51,6 +53,7 @@ test('all 63 Syntx public IDs, clip keys and shipped filenames are neutral; orig
     assert.equal(template.sourceUrl, 'https://syntx.ai/trends/' + row.sourceSlug);
     assert.equal(sha(record.prompt), row.sourcePromptSha256);
     for (const projection of projections) assert.ok(projection.some(t => t.id === row.id));
+    if (GALLERY_PRESETS.some(t => t.id === row.id)) for (const projection of listed) assert.ok(projection.some(t => t.id === row.id));
     assert.equal(templateDetail(row.id).id, row.id);
     for (const [ext, field, hash] of [['mp4', 'video', row.localPreviewSha256], ['jpg', 'poster', row.localPosterSha256]]) {
       const filename = 'creator-' + row.id + '.' + ext;

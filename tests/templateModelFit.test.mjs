@@ -186,7 +186,7 @@ test('phone parsing and handoff keep every exact community prompt available', ()
   const f = renderFixture('en', '/presets', { moduleMocks });
   moduleMocks['./templateHandoff'] = f.load('apps/mobile/src/lib/templateHandoff.ts');
   const mobile = f.load('apps/mobile/src/lib/presets.ts');
-  const rows = mobile.parsePresets({ presets: toPublicPresets(catalog) });
+  const rows = mobile.parsePresets({ presets: toPublicPresets(catalog, PRESETS) });
   assert.equal(rows.length, PRESETS.length);
   for (const id of changedIds) {
     const row = rows.find(preset => preset.id === publicTemplateId(id));

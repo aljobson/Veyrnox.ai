@@ -698,6 +698,8 @@ export default {
   "chat.composer.chat": "चैट",
   "chat.composer.label": "Veyrnox.ai से बनाएँ",
   "chat.composer.message": "संदेश",
+  "chat.composer.longMessage": "लंबा संदेश: +{price}",
+  "chat.composer.tooLong": "इस मॉडल के लिए बहुत लंबा। इसे छोटा करें या दूसरा मॉडल चुनें।",
   "chat.composer.policy": "इस जवाब के लिए। टेक्स्ट दिखने के बाद रोकने पर वह आपके पास रहता है और शुल्क लगा रहता है। कुछ न आने पर क्रेडिट लौट जाते हैं।",
   "chat.composer.setup": "जवाब की सेटिंग",
   "chat.couldnotloadmodels": "मॉडल लोड नहीं हो सके।",
