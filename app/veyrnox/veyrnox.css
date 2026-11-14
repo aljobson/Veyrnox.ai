@@ -275,19 +275,6 @@
   .vx-title-index { font-size: 92px; }
 }
 
-/* Hero headline: white ink on the dark page and nothing behind it. It used to
-   throw a 60px neon halo and two twinkling dots, then a fainter 36px one:
-   next to a printed slip either read as a second, unrelated style. The one
-   real light on the page is the printer seam above the slip (.vx-slot). The
-   class stays because tests/publicPageConsistency.test.mjs pins it. */
-.vx-title-glow {
-  color: #fff;
-}
-:root[data-theme='light'] .vx-title-glow { color: inherit; }
-@media (prefers-color-scheme: light) {
-  :root[data-theme='system'] .vx-title-glow { color: inherit; }
-}
-
 /* ─── The statement prints line by line ─────────────────────────────────
    The ledger is append-only, so its example is drawn that way: the paper is
    already there and each line is added under the last, once, as the slip

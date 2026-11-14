@@ -25,7 +25,7 @@ test('Create reserves complete-word space and switches to one column at AX5', ()
     expect(createTileColumns(1024, 3.12)).toBe(2);
 });
 const containers = [
-    ['app/(app)/(tabs)/index.tsx', 4], ['app/(app)/create/[modelId].tsx', 1],
+    ['app/(app)/(tabs)/index.tsx', 3], ['app/(app)/create/[modelId].tsx', 1],
     ['app/(app)/create/agent.tsx', 1], ['app/(app)/chat/persona/[id].tsx', 1],
     ['app/(app)/chat/[id].tsx', 1], ['app/(app)/chat/folders.tsx', 1],
     ['components/KeyboardFormScrollView.tsx', 1], ['components/chat/ChatComposerDeck.tsx', 1], ['components/chat/AttachStrip.tsx', 1],

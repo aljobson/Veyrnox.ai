@@ -24,7 +24,7 @@ export async function Hero({ models }) {
           come first and the film follows. */}
       <div className="px-4 sm:px-6 max-w-[1300px] mx-auto grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-x-16 gap-y-12 lg:items-start pt-8 sm:pt-10 pb-16 lg:pb-24">
         <div className="min-w-0">
-          <h1 className="vx-display vx-title-index vx-title-glow">
+          <h1 className="vx-display vx-title-index">
             {t('home.hero.title')}
           </h1>
           <p className="mt-5 text-lg sm:text-xl text-vx-fg-body max-w-[52ch] leading-[1.5] text-pretty">
@@ -34,7 +34,7 @@ export async function Hero({ models }) {
             <PriceSlip models={models} />
           </div>
           <div className="mt-7 flex max-w-[620px] flex-wrap items-baseline gap-x-6 gap-y-2 text-[14px] text-vx-fg-body">
-            <Link href={localizedHref(locale, '/pricing')} className="text-[15px] font-bold text-vx-fg-body underline decoration-vx-fg-faint decoration-2 underline-offset-[6px] hover:text-vx-fg hover:decoration-vx-accent">
+            <Link href={localizedHref(locale, '/pricing')} className="text-[15px] font-medium text-vx-fg-body underline decoration-vx-fg-faint decoration-2 underline-offset-[6px] hover:text-vx-fg hover:decoration-vx-accent">
               {t('home.hero.prices')}
             </Link>
             <span>{t('home.cta.note')}</span>
