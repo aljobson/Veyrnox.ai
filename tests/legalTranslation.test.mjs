@@ -52,8 +52,9 @@ test('numeric parity normalizes grouping and Arabic-Indic/Devanagari digits with
 // the two notice dates; existing text (including retention commitments) still pins.
 // Higgsfield updates the privacy provider block and its notice date on 3 November;
 // GDPR retains its ADR-0317 date. Copy changes bump dates, as in commits 20e0672c8 and 797884f91.
+// 14 November: product naming (Veyrnox.ai) in privacy, terms and cinema-content bumps their dates.
 const amendments0317 = {
-  privacy: { keys: ['b075', 'b076', 'b077', 'b078', 'b079', 'b080', 'b081', 'b082'], previousDate: '28 October 2026', currentDate: '3 November 2026' },
+  privacy: { keys: ['b075', 'b076', 'b077', 'b078', 'b079', 'b080', 'b081', 'b082'], previousDate: '28 October 2026', currentDate: '14 November 2026' },
   gdpr: { keys: ['b029'], previousDate: '18 October 2026', currentDate: '2 November 2026' },
 };
 for (const document of LEGAL_DOCUMENTS) {

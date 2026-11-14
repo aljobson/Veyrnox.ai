@@ -1,7 +1,7 @@
 {
   "documents": {
     "terms": {
-      "translationsReviewedAgainstEnglishDated": "7 November 2026",
+      "translationsReviewedAgainstEnglishDated": "14 November 2026",
       "hashes": {
         "title": "4afa55bf7aec7ddc5dfb904271f881be278e7629ce258675bf4b62f460017abb",
         "description": "39ba81dd80f9a2120998c36d18e61a509839d1d1d23fbf5f696b555cc4f5b809",
@@ -47,7 +47,7 @@
         "b039": "162ca64b511d1b3a80622a8772e4b014eaa3d9daefe5fed89146651965d5052d",
         "b041": "bcb9fc1b6ac81fe9238950b247b4b57c36b50d11bb16b4784b25aeb8132622f7",
         "b043": "8db2f38aeeb2073934585800885252e57b536c3286abcfde7ff0bca7f1607b4c",
-        "b042": "d9983b4f0ab221d5fded67fa03e88005efa8403d6f1c1e9b240848864263b88d",
+        "b042": "eb7e14612dd447f72b2a1b1cdd6d43b4be033d71f0081763c78b1d95f7fd3508",
         "b044": "55cd05508448499b53f0f38a2e30d6b7215b85f199aca32e97f51fb0785df91d",
         "b045": "f97530ef7fb29e7f7c567e2299fdc567bf66cce710f8024ab7860709b230c7b7",
         "b046": "5c68d419b80459e65ac7a246097107c3668afa7e1fdd5f1dbdcd1ce4cee46747",
@@ -69,7 +69,7 @@
       }
     },
     "privacy": {
-      "translationsReviewedAgainstEnglishDated": "3 November 2026",
+      "translationsReviewedAgainstEnglishDated": "14 November 2026",
       "hashes": {
         "title": "506ff394621596dd88138642eddfc1e41833b3ae92d95e5c77c94327098abd9a",
         "description": "9a947e06da6b04c331677eb2f632b0a2a73371115df7dd1b1f5adac91972f186",
@@ -106,7 +106,7 @@
         "b028": "ee253fbe1041ce37170086d17a27233e60cd9a3f638107fa6aa54466edadb203",
         "b030": "bab5c757eb58bd4336f7ab865bd60a353341479aa488f056dbecb91021a0c49f",
         "b031": "56ecb78407257a23837e876ad8240e7daf84d4dee87dc8a839495b7617e8fa8c",
-        "b032": "49acdd9404f4bd6534191410ca793e3ae45f8fce88cfb6e5551837aaf8075c0c",
+        "b032": "b83535974558231c1415a4eec291beb1eade232ff355cbf5504aa84118d1e5a0",
         "b034": "1fd7fd2453f42f84ebcde8604103ab9d689904653741a881207d7d8112518e3b",
         "b033": "d8aeeae12aa72de87c4c7cea112e3bdebc97e183a7a663bbb92e371d32bbd590",
         "b035": "5fa4316064783f3a7abe5127c25021a05384549f01636f151dc578445a21a25e",
@@ -237,10 +237,10 @@
       }
     },
     "cinema-content": {
-      "translationsReviewedAgainstEnglishDated": "13 October 2026",
+      "translationsReviewedAgainstEnglishDated": "14 November 2026",
       "hashes": {
         "title": "8db2f38aeeb2073934585800885252e57b536c3286abcfde7ff0bca7f1607b4c",
-        "description": "95ec1fc660727ad9232e0cec0d5aebc08c550a116c5aa04eefc904cf20e8c8b5",
+        "description": "af96120b1504a36c19f22a3e4eb7c58a3af63cec63751bcb3bf4ab18c355751d",
         "b002": "ede5489964834a514b61c7a4a8370be2452dd4a7d807180f14991ccc11ad2430",
         "b003": "34aa287a1fcdb9ee8ecced499d87a3be07b5dc50453fe76721f9573b021591a8",
         "b001": "c718d03d8efbed24b3b87e9378bebd9f3839e5e89e0656631c88ddce9711d534",
@@ -257,8 +257,8 @@
         "b013": "579be3763afe0da31eae775810e30daecda869ef060688e559785f517cfea020",
         "b016": "ec5fcb8fc0a3c1a998f101552e10c7f78b88bb4118725004e39d245487de4e9e",
         "b015": "0f2664956fbc171904a3c6400b9d6a358d0a8f3983178f3c3bdd74b1c8bf6bda",
-        "b017": "67b68d88bbf632ec37e12572b2271dcc3ce502ed23837dbbfbba246763dc7969",
-        "b018": "4486b0fe97c9214d0f26856b7162625b3c5704c0d99abff4d915ce7df90cc339",
+        "b017": "3e006d0660c5b7115e1493f3e2d029f49043b128941d500e85a10b6199b9a508",
+        "b018": "f40bbbbbd4a26326755a9c4fb386bc43ca164ad8638a96e4dbcd73798d954a27",
         "b020": "2ac4c49cd3d3c615de67e7b43ab786af0058756fa010fbf96342511a8bb8c1d3",
         "b019": "8403c0cb1d8fe2bc0e35a3d95a78a208003a748ff66f8a57b12cc49bf325e515",
         "b022": "013c9d86b9b0b86fadc9c18b762d2c4690163e98046e21c015a2add918934caf",
@@ -320,7 +320,7 @@
     "unlock": "3463c79a778c91c8e03cf1327e9a28c3f959843ca9dda08324d7056a7cbb024a",
     "creatorRights": "e86cf11279f13dfe39c927e8371ccbd18b0e1de7c617665d70054d44a327a0be",
     "creatorSafety": "ff6e7166f9785b19f32813782c9d73749b45c987ae521b0e2f5bf289a5c0ebdb",
-    "creatorMalware": "bdf73c12e54f356125a5f9e7db17e69460819ac4a58512ee9bae74a6dccef3a8",
+    "creatorMalware": "6a5f29a6c3b619cf5e5715bd79a8d2a60c4280f5059c66ea011d55fd8f59c4cc",
     "publish": "e7719f71c8522fe7860384826813314a139fdbd348df7657ab68875fe539a250",
     "mediaRights": "ddaed8e061fd31e5063159b41c86643a02fa490fd66b01800b42b1f54481c898",
     "subscription": "fabd2ed3ccea8732597c78c33c597e48838b2ed179e82c667c4fc124e37d2d22",
