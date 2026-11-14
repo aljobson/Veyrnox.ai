@@ -224,7 +224,9 @@ test('QA create-result: a started job lowers the keyboard and scrolls its card i
 test('QA create-result: the progress card says Library once, with the refund promise', async () => {
     mockJob.mockResolvedValue({ state: 'running', credits: 10, model_id: 'm', refunded: false });
     await act(async () => root.render(<CreateResult api={mockApi as unknown as ApiClient} batch={batch} catalog={[]} onTerminal={() => {}} />));
-    expect(text(t('job.elapsedSoFar', { elapsed: t('libraryCreate.elapsed', { seconds: '0' }) }))).toHaveLength(1);
+    // The bar's own clock runs from the job start, so match the line's wording, not its number.
+    const soFar = t('job.elapsedSoFar', { elapsed: '' }).trim();
+    expect(root.container.queryAll(n => n.children.some(c => typeof c === 'string' && c.endsWith(soFar)))).toHaveLength(1);
     expect(text(t('job.keepsRunning'))).toHaveLength(1);
     expect(root.container.queryAll(n => n.children.some(c => typeof c === 'string' && /library/i.test(c)))).toHaveLength(1);
 });

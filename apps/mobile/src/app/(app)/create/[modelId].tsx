@@ -311,9 +311,7 @@ export default function CreateWithModel() {
     const price = quote.total;
     const stageLine = template
         ? t('create.workspace.stageTemplate', { name: template.title })
-        : hasReference
-            ? t('create.workspace.stageReference')
-            : t(text.trim() ? 'create.workspace.stagePrompt' : 'create.workspace.stageEmpty');
+        : t(hasReference ? 'create.workspace.stageReference' : text.trim() ? 'create.workspace.stagePrompt' : 'create.workspace.stageEmpty');
     const modelLabel = swapScene?.name ?? creativeFeature(typeof recipe === 'string' ? recipe : undefined)?.title ?? model.name;
     async function generate() {
         if (!model || (!ready && !matchingRetry) || busy || freeLoading || waiting) return;
