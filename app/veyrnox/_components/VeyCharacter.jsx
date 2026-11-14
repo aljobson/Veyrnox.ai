@@ -1,5 +1,7 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { VEY_SHOULDER } from '../../../lib/veyPointer';
+import { veyPoseFor } from '../../../lib/veyMood';
+import { VeyFace, VeyMoodProp, VEY_FACES } from './VeyFace';
 
 const LOOP = { duration: 1.8, repeat: Infinity, ease: 'easeInOut' };
 const QUICK_LOOP = { duration: 0.52, repeat: Infinity, ease: 'easeInOut' };
@@ -10,7 +12,16 @@ function animated(reducedMotion, active, still) {
   return reducedMotion ? still : active;
 }
 
-export default function VeyCharacter({ pose = 'idle', reducedMotion = false, hand = null }) {
+// `mood` (lib/veyMood.js) swaps the face and adds a small prop; the body keeps animating from `pose`.
+export default function VeyCharacter({ pose: poseProp = 'idle', mood = null, reducedMotion = false, hand = null }) {
+  const face = mood ? VEY_FACES[mood] : null;
+  const pose = veyPoseFor(poseProp, mood);
+  const waving = pose === 'wave';
+  const drooping = pose === 'droop';
+  const firm = pose === 'firm';
+  const shrugging = pose === 'shrug';
+  const playing = pose === 'play';
+  const waiting = pose === 'wait';
   const walking = pose === 'walking';
   const pointing = pose === 'guiding' || pose === 'tapping';
   const tapping = pose === 'tapping';
@@ -27,6 +38,12 @@ export default function VeyCharacter({ pose = 'idle', reducedMotion = false, han
   const headAnimation = animated(reducedMotion,
     cheering
       ? { rotate: [-5, 5, -5], y: [0, -4, 0] }
+      : drooping
+        ? { rotate: [0, 0, 0], y: [0, 0, 0] }
+        : waving
+          ? { rotate: [3, 6, 3], y: [0, -2, 0] }
+          : firm
+            ? { rotate: [0, 0, 0], y: [0, -1, 0] }
       : worried
         ? { rotate: [-7, -3, -7], y: [1, 3, 1] }
     : thinking
@@ -40,9 +57,19 @@ export default function VeyCharacter({ pose = 'idle', reducedMotion = false, han
 
   const leftArmAnimation = animated(reducedMotion,
     cheering
-      ? { rotate: [92, 112, 92] }
+      ? { rotate: [82, 92, 82] }
+      : drooping
+        ? { rotate: [-52, -50, -52] }
+        : waving
+          ? { rotate: [-30, -28, -30] }
+          : waiting
+          ? { rotate: [-14, -18, -14] }
+          : firm || playing
+          ? { rotate: [-35, -34, -35] }
+          : shrugging
+            ? { rotate: [18, 22, 18] }
       : worried
-        ? { rotate: [-4, 2, -4] }
+        ? { rotate: [50, 56, 50] }
     : walking
       ? { rotate: [24, -18, 24] }
       : listening
@@ -50,13 +77,25 @@ export default function VeyCharacter({ pose = 'idle', reducedMotion = false, han
         : thinking
           ? { rotate: [2, 10, 2] }
           : { rotate: [5, -5, 5] },
-    { rotate: cheering ? 100 : listening ? -18 : 0 });
+    { rotate: cheering ? 86 : drooping ? -52 : waiting ? -14 : firm || playing ? -35 : shrugging ? 20 : worried ? 53 : waving ? -30 : listening ? -18 : 0 });
 
   const rightArmAnimation = animated(reducedMotion,
     cheering
-      ? { rotate: [-36, -54, -36] }
+      ? { rotate: [-14, -22, -14] }
+      : waving
+        ? { rotate: [-20, -14, -20] }
+        : playing
+          ? { rotate: [-22, -26, -22] }
+          : waiting
+            ? { rotate: [34, 38, 34] }
+          : shrugging
+            ? { rotate: [38, 42, 38] }
+        : drooping
+          ? { rotate: [116, 118, 116] }
+          : firm
+            ? { rotate: [-10, -8, -10] }
       : worried
-        ? { rotate: [20, 26, 20] }
+        ? { rotate: [16, 22, 16] }
     : tapping
       ? { rotate: [-34, -39, -34], x: [0, 5, 0] }
       : pointing
@@ -66,7 +105,7 @@ export default function VeyCharacter({ pose = 'idle', reducedMotion = false, han
           : walking
             ? { rotate: [-18, 24, -18] }
             : { rotate: [12, 5, 12] },
-    { rotate: cheering ? -44 : pointing ? -34 : thinking ? -60 : worried ? 22 : 8 });
+    { rotate: cheering ? -17 : pointing ? -34 : thinking ? -60 : waving ? -17 : playing ? -24 : waiting ? 36 : shrugging ? 40 : firm ? -9 : drooping ? 116 : worried ? 19 : 8 });
 
   const armTransition = cheering ? CHEER_LOOP : walking ? QUICK_LOOP : LOOP;
   const jump = animated(reducedMotion,
@@ -84,6 +123,7 @@ export default function VeyCharacter({ pose = 'idle', reducedMotion = false, han
       viewBox="0 0 160 170"
       className="pointer-events-none h-full w-full overflow-visible drop-shadow-[0_12px_22px_rgb(0_0_0/0.34)]"
       data-vey-pose={pose}
+      data-vey-mood={face ? mood : undefined}
     >
       <defs>
         <linearGradient id="vey-shell" x1="0" y1="0" x2="1" y2="1">
@@ -114,6 +154,8 @@ export default function VeyCharacter({ pose = 'idle', reducedMotion = false, han
         transition={hopping ? HOP_ONCE : cheering ? CHEER_LOOP : walking ? QUICK_LOOP : LOOP}
       />
 
+      {drooping && <ellipse data-part="pillow" cx="30" cy="124" rx="24" ry="16" fill="#5aaee0" fillOpacity="0.35" stroke="#5aaee0" strokeWidth="1.5" />}
+      <g data-part="lying" transform={drooping ? 'translate(80 118) scale(0.85) rotate(-90) translate(-80 -100)' : undefined}>
       <motion.g data-part="figure" animate={jump} transition={jumpTransition}>
 
       <motion.g
@@ -179,8 +221,8 @@ export default function VeyCharacter({ pose = 'idle', reducedMotion = false, han
         <motion.g
           data-part="right-hand"
           style={{ transformBox: 'fill-box', transformOrigin: 'left bottom' }}
-          animate={animated(reducedMotion, tapping ? { x: [0, 5, 0], rotate: [0, -3, 0] } : { rotate: [0, 3, 0] }, { x: tapping ? 4 : 0 })}
-          transition={tapping ? { duration: 0.36, repeat: Infinity, ease: 'easeInOut' } : LOOP}
+          animate={animated(reducedMotion, tapping ? { x: [0, 5, 0], rotate: [0, -3, 0] } : waving ? { rotate: [-24, 12, -24] } : firm ? { rotate: -38 } : shrugging ? { rotate: 24 } : { rotate: [0, 3, 0] }, { x: tapping ? 4 : 0, rotate: waving ? 0 : firm ? -38 : shrugging ? 24 : 0 })}
+          transition={tapping ? { duration: 0.36, repeat: Infinity, ease: 'easeInOut' } : waving ? { duration: 0.55, repeat: Infinity, ease: 'easeInOut' } : LOOP}
         >
           <path d="M139 59 C137 54 139 50 143 50 C146 50 147 53 146 56 L153 48 C156 45 160 48 158 52 L151 62 C149 68 143 72 138 69 C134 67 134 62 139 59Z" fill="#172329" stroke="#6b858b" strokeWidth="1.5" />
           <path d="M146 56 L151 61 M149 53 L154 58" stroke="#92adb1" strokeWidth="1" strokeLinecap="round" />
@@ -215,7 +257,7 @@ export default function VeyCharacter({ pose = 'idle', reducedMotion = false, han
         <path d="M36 30 C42 18 56 18 80 40 C104 18 118 18 124 30 C131 50 114 77 80 85 C46 77 29 50 36 30Z" fill="url(#vey-visor)" stroke="#1ee6c2" strokeWidth="2" />
         <path d="M39 25 C48 14 61 21 79 38" fill="none" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" opacity="0.58" />
 
-        <motion.g
+        {face ? <g transform={face.tilt ? `rotate(${face.tilt} 80 60)` : undefined}><VeyFace mood={mood} reducedMotion={reducedMotion} /></g> : <motion.g
           data-part="eyes"
           animate={animated(reducedMotion, { scaleY: [1, 1, 0.12, 1, 1] }, { scaleY: 1 })}
           style={{ transformBox: 'fill-box', transformOrigin: 'center' }}
@@ -227,9 +269,9 @@ export default function VeyCharacter({ pose = 'idle', reducedMotion = false, han
           <ellipse cx="100" cy="57" rx="6" ry="10" fill="#102328" />
           <circle cx="63" cy="52" r="2.7" fill="white" />
           <circle cx="103" cy="52" r="2.7" fill="white" />
-        </motion.g>
+        </motion.g>}
 
-        {thinking ? (
+        {face ? null : thinking ? (
           <motion.circle cx="80" cy="72" r="4" fill="#3ef0d0" animate={animated(reducedMotion, { scale: [0.72, 1, 0.72] }, { scale: 1 })} transition={QUICK_LOOP} />
         ) : cheering ? (
           <path d="M70 68 Q80 86 90 68Z" fill="#49f3d5" stroke="#49f3d5" strokeWidth="3" strokeLinejoin="round" />
@@ -240,9 +282,12 @@ export default function VeyCharacter({ pose = 'idle', reducedMotion = false, han
         )}
       </motion.g>
       </motion.g>
+      </g>
+
+      {face && <VeyMoodProp mood={mood} />}
 
       <AnimatePresence>
-        {cheering && !reducedMotion && [[22, 22, 0], [142, 28, 0.3], [128, 6, 0.6]].map(([x, y, delay]) => (
+        {cheering && !reducedMotion && !face && [[22, 22, 0], [142, 28, 0.3], [128, 6, 0.6]].map(([x, y, delay]) => (
           <motion.path
             key={`${x}-${y}`}
             data-part="sparkle"
@@ -255,7 +300,7 @@ export default function VeyCharacter({ pose = 'idle', reducedMotion = false, han
             style={{ transformBox: 'fill-box', transformOrigin: 'center' }}
           />
         ))}
-        {worried && !reducedMotion && (
+        {worried && !reducedMotion && !face && (
           <motion.path
             key="sweat"
             data-part="sweat"

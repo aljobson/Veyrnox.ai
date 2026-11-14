@@ -42,6 +42,7 @@ test('the real web dialog renders a hidden claimed label and an aria-hidden tick
         '../../../lib/i18n/translate.mjs': { pluralKey },
         './Modal': { Modal: ({ children }) => createElement('div', null, children) },
         '../_lib/gateway': {},
+        '../../../lib/veyMood': { signalVeyMood() {} },
         'next/link': { __esModule: true, default: ({ children, href }) => createElement('a', { href }, children) },
     };
     const exports = {};

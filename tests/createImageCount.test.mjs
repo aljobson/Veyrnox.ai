@@ -100,7 +100,7 @@ test('one interval polls every in-flight job and keeps the give-up', () => {
     assert.equal((hook.match(/setInterval\(/g) || []).length, 1);
     assert.match(hook, /export const POLL_GIVE_UP_AFTER = 30;/);
     assert.match(hook, /const POLL_MS = 2000;/);
-    assert.match(hook, /markJobSettled\(id, next\.state\);/);
+    assert.match(hook, /markJobSettled\(id, next\.state, next\.error_code\);/);
     assert.match(hook, /notifyBalanceChanged\(\);/);
     assert.match(hook, /gatewayFetch\(`\/jobs\/\$\{id\}\/asset`\)/);
     assert.match(page, /setError\(LOCAL_ERRORS\.poll_unreachable\)/);

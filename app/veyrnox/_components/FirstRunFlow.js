@@ -7,6 +7,7 @@ import { FIRST_GOALS, firstGoalTarget } from '../_lib/firstGoal';
 import { FIRST_DESTINATIONS, FIRST_ROLES, needsFirstRun } from '../_lib/firstProfile';
 import { pushAnswers, saveDeviceAnswers, setFirstRunHandoff } from '../_lib/firstProfileSync';
 import { useFirstProfile } from '../_lib/useFirstProfile';
+import { signalVeyMood } from '../../../lib/veyMood';
 
 const STEPS = ['role', 'goal', 'destination'];
 
@@ -25,6 +26,7 @@ export function FirstRunFlow() {
   // The answers on record only change when the session does, so "is it needed" is read straight off them.
   const open = !closed && profile.ready && profile.signedIn && needsFirstRun(profile);
   useEffect(() => { if (open) heading.current?.focus(); }, [open, step]);
+  useEffect(() => { if (open && step === 0) signalVeyMood('first-sign-in', 9000); }, [open, step]);
 
   function finish() {
     setClosed(true);
