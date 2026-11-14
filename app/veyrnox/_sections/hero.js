@@ -22,7 +22,7 @@ export async function Hero({ models }) {
           phone the headline comes first and the film follows it. */}
       <div className="px-4 sm:px-6 max-w-[1300px] mx-auto grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-x-16 gap-y-10 lg:items-center pt-10 sm:pt-14">
         <div className="flex flex-col justify-center">
-          <h1 className="vx-display vx-title-index vx-title-glow">
+          <h1 className="vx-display vx-title-index">
             {t('home.hero.title')}
           </h1>
           <p className="mt-6 text-lg sm:text-xl text-vx-fg-body max-w-[40ch] leading-[1.5] text-pretty">
@@ -31,11 +31,11 @@ export async function Hero({ models }) {
           <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-4">
             <Link
               href="/app/create?model=nano-banana-kie"
-              className="vx-press inline-flex min-h-11 items-center rounded-full bg-vx-fg px-7 py-3.5 text-[15px] font-extrabold text-vx-base hover:bg-vx-fg/85"
+              className="vx-press inline-flex min-h-11 items-center rounded-full bg-vx-fg px-7 py-3.5 text-[15px] font-semibold text-vx-base hover:bg-vx-fg/85"
             >
               {t('home.hero.start')}
             </Link>
-            <Link href={localizedHref(locale, '/pricing')} className="text-[15px] font-bold text-vx-fg-body underline decoration-vx-fg-faint decoration-2 underline-offset-[6px] hover:text-vx-fg hover:decoration-vx-accent">
+            <Link href={localizedHref(locale, '/pricing')} className="text-[15px] font-medium text-vx-fg-body underline decoration-vx-fg-faint decoration-2 underline-offset-[6px] hover:text-vx-fg hover:decoration-vx-accent">
               {t('home.hero.prices')}
             </Link>
           </div>

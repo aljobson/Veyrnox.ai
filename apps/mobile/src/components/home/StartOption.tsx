@@ -2,7 +2,6 @@ import { rawText } from '../../lib/i18n/translate';
 import { Link, type Href } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 import type { MenuIcon } from '../../lib/menuIcons';
-import { ds } from '../../theme';
 import { Icon, Text, themedStyles, useThemedStyles } from '../ui';
 
 export function StartOption({ href, icon, title, body, hint, divided = false, style }: { href: Href; icon: MenuIcon; title: string; body: string; hint: string; divided?: boolean; style: { minHeight: number } }) {
@@ -40,18 +39,8 @@ const sheets = themedStyles((p) => ({
         paddingHorizontal: 14,
         paddingVertical: 12,
     },
-    startOptionDivided: {
-        borderTopColor: p.borderSubtle,
-        borderTopWidth: StyleSheet.hairlineWidth,
-    },
-    startIcon: {
-        width: 44,
-        height: 44,
-        borderRadius: ds.radius.pill,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: p.surface,
-    },
+    startOptionDivided: { marginTop: 4 },
+    startIcon: { width: 28, alignItems: 'center', justifyContent: 'center' },
     startText: { flex: 1, gap: 3 },
     startTitle: { color: p.textPrimary },
     startBody: { color: p.textSecondary },

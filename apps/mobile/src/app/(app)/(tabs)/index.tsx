@@ -4,11 +4,11 @@ import { CheckInEntry } from '../../../components/credits/CheckInEntry';
 import { Link, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { type ComponentRef, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { ScrollView, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { celebrateFinished } from '../../../lib/celebrate';
 import { ALL_CATEGORIES, ALL_TYPES, filterPresets, firstModelFor, pickUp, promptHref, recentCreations, type TypeFilter } from '../../../lib/explore';
-import { t } from '../../../lib/i18n';
+import { plural, t } from '../../../lib/i18n';
 import { fetchCatalogCached, mediaApi, type CatalogModel, type Job, type Kind } from '../../../lib/media';
 import { LowBalanceNote } from '../../../components/LowBalanceNote';
 import { CREATOR_PROFILE_ENABLED } from '../../../lib/creatorProfile';
@@ -166,6 +166,7 @@ export default function Explore() {
 
     const empty = prompt.trim().length === 0;
     const label = (j: Job) => j.label || t('edit.untitled');
+    const cost = (j: Job) => (j.credits > 0 ? plural('library.cost', j.credits) : t('library.costFree'));
 
     const searchShown = searchOpen || query.length > 0;
 
@@ -177,14 +178,11 @@ export default function Explore() {
                     <Text variant="title1" style={styles.pageTitle} accessibilityRole="header">
                         {t('explore.start.title')}
                     </Text>
-                    <Text variant="body" style={styles.pageIntro}>
-                        {t('explore.start.body')}
-                    </Text>
                 </View>
 
                 <YourWinsCard />
                 <Card style={styles.startGroup} accessibilityLabel={t('explore.start.title')}>
-                    <StartOption href="/create" style={styles.startOption} icon="sparkle" title={t('menu.create')} body={t('explore.start.create.body')} hint={t('explore.start.create.hint')} />
+                    <StartOption href="/create" style={styles.startOption} icon="image" title={t('menu.create')} body={t('explore.start.create.body')} hint={t('explore.start.create.hint')} />
                     <StartOption href="/chat" style={styles.startOption} icon="chat" title={t('menu.chat')} body={t('explore.start.chat.body')} hint={t('explore.chat.hint')} divided />
                     <StartOption href="/film" style={styles.startOption} icon="slate" title={t('menu.film')} body={t('explore.start.film.body')} hint={t('explore.start.film.hint')} divided />
                 </Card>
@@ -321,35 +319,30 @@ export default function Explore() {
                         <Text variant="title3" style={styles.subheading} accessibilityRole="header">
                             {t('explore.recent')}
                         </Text>
-                        <ScrollView keyboardShouldPersistTaps="handled" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-                            {resume ? (
-                                <Button
-                                    variant="secondary"
-                                    size="md"
-                                    label={t(resume.kind === 'making' ? 'explore.pickUp.making' : 'explore.pickUp.latest', { label: label(resume.job) })}
-                                    onPress={() =>
-                                        router.push({
-                                            pathname: '/job/[id]',
-                                            params: { id: resume.job.job_id },
-                                        })
-                                    }
-                                />
-                            ) : null}
+                        {resume && resume.kind === 'making' ? (
+                            <Button
+                                variant="secondary"
+                                size="md"
+                                label={t('explore.pickUp.making', { label: label(resume.job) })}
+                                onPress={() => router.push({ pathname: '/job/[id]', params: { id: resume.job.job_id } })}
+                            />
+                        ) : null}
+                        <View accessibilityRole="list">
                             {recent.map((j) => (
-                                <Button
+                                <Pressable
                                     key={j.job_id}
-                                    variant="secondary"
-                                    size="md"
-                                    label={label(j)}
-                                    onPress={() =>
-                                        router.push({
-                                            pathname: '/job/[id]',
-                                            params: { id: j.job_id },
-                                        })
-                                    }
-                                />
+                                    accessibilityRole="button"
+                                    accessibilityLabel={`${label(j)}, ${cost(j)}`}
+                                    style={styles.receiptLine}
+                                    onPress={() => router.push({ pathname: '/job/[id]', params: { id: j.job_id } })}
+                                >
+                                    <Text numberOfLines={1} style={styles.receiptLabel}>
+                                        {label(j)}
+                                    </Text>
+                                    <Text style={styles.receiptAmount}>{cost(j)}</Text>
+                                </Pressable>
                             ))}
-                        </ScrollView>
+                        </View>
                     </>
                 ) : null}
 
@@ -370,9 +363,8 @@ const sheets = themedStyles((p, ramp) => ({
         paddingBottom: LIST_END_PADDING,
         gap: 16,
     },
-    intro: { gap: 8, marginBottom: 4 },
+    intro: { marginBottom: 4 },
     pageTitle: { color: p.textPrimary },
-    pageIntro: { color: p.textSecondary, maxWidth: 520 },
     startGroup: { overflow: 'hidden', padding: 0 },
     startOption: { minHeight: 80 },
     composer: { gap: ds.space.md },
@@ -398,6 +390,19 @@ const sheets = themedStyles((p, ramp) => ({
     heading: { color: p.textPrimary },
     count: { color: p.textTertiary },
     subheading: { color: p.textTertiary, marginTop: 8 },
+    // Recent creations read as a receipt: the name, then what it cost, on one ruled line.
+    receiptLine: {
+        flexDirection: 'row',
+        alignItems: 'baseline',
+        justifyContent: 'space-between',
+        gap: 16,
+        minHeight: 44,
+        paddingVertical: 12,
+        borderBottomColor: p.borderSubtle,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+    },
+    receiptLabel: { flex: 1, color: p.textPrimary },
+    receiptAmount: { color: p.textSecondary, fontVariant: ['tabular-nums'], textAlign: 'right' },
     chips: { flexDirection: 'row', gap: 6, paddingVertical: 2 },
     // Only the chosen chip is a pill; the rest are plain words, so one thing in the row is lit.
     search: {

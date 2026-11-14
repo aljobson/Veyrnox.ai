@@ -245,7 +245,7 @@ export const ds = {
 export const TEXT_SCALE = { s: 0.9, m: 1, l: 1.12, xl: 1.25 } as const;
 export const RAMP = {
     display: [34, 40, -0.6, '700', true],
-    title1: [28, 34, -0.4, '700', true],
+    title1: [28, 34, -0.4, '600', true],
     title2: [22, 28, -0.2, '600', true],
     title3: [18, 24, -0.1, '600', false],
     body: [16, 22, 0, '400', false],
