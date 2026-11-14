@@ -7,11 +7,11 @@ import { selectProbeSet, projectedCredits, generationBody, quoteCredits, synthet
 const unit = { 'kling-3.0-i2v': 32, 'seedance-2.0-fast': 19, 'seedance-2.0-reference': 85 };
 const picks = selectProbeSet(audit().contracts);
 
-test('the probe covers nine distinct, published templates across the three models', () => {
+test('the probe covers nine distinct, published templates across the two people-safe models', () => {
   assert.equal(picks.length, 9);
   assert.equal(new Set(picks.map(p => p.contract.id)).size, 9);
   assert.ok(picks.every(p => !BROKEN_TEMPLATE_IDS.includes(p.contract.id)));
-  for (const model of ['kling-3.0-i2v', 'seedance-2.0-fast', 'seedance-2.0-reference']) assert.ok(picks.some(p => p.contract.modelId === model), model);
+  for (const model of ['kling-3.0-i2v', 'seedance-2.0-fast']) assert.ok(picks.some(p => p.contract.modelId === model), model);
   assert.equal(picks.filter(p => p.contract.class === 'blocked-needs-video').length, 4);
 });
 

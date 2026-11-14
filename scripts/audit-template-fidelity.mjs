@@ -8,7 +8,7 @@ import { PRESETS } from '../app/veyrnox/_lib/templates.js';
 import { modelIdForName } from '../app/veyrnox/_lib/tokens.js';
 import { fallbackCapabilitiesFor } from '../lib/fallbackModelCapabilities.js';
 import { referenceCount } from '../app/veyrnox/_lib/sourcePromptAudit.js';
-import { bind, imageSlots, imageTokenPattern, BINDING_MODEL } from '../lib/templateBinding.js';
+import { bind, imageSlots, imageTokenPattern, PEOPLE_BINDING_MODEL } from '../lib/templateBinding.js';
 import { templateVideoDependency } from '../lib/templateVideoDependency.js';
 import { templateAudioDependency } from '../lib/templateAudioDependency.js';
 import { GENERATION_PROMPT_MAX } from '../lib/generationPromptLimits.js';
@@ -24,14 +24,16 @@ export function auditTemplate(p) {
   const imageCount = slots.length || referenceCount(sourcePrompt, 'image');
   const videoCount = referenceCount(sourcePrompt, 'video');
   const video = templateVideoDependency(sourcePrompt);
+  // Real-person photos must work: only the Kling frame model (one photo) is a binding target; multi-photo recipes take the legacy route.
   const binding = bind(sourcePrompt, slots.length);
   const reasons = [];
   if (video) reasons.push('reference-video-required');
   if (templateAudioDependency(sourcePrompt)) reasons.push('source-audio-not-audited');
   if (slots.length && binding.error) reasons.push(binding.error);
+  else if (slots.length > 1) reasons.push('multi-photo-needs-people-model');
   if (!slots.length && imageCount) reasons.push('unmapped-image-reference');
   if (!slots.length && /<[^>]+>/.test(sourcePrompt)) reasons.push('unmapped-placeholder');
-  const target = slots.length && !binding.error ? BINDING_MODEL : legacyModelId;
+  const target = slots.length && !binding.error ? PEOPLE_BINDING_MODEL : legacyModelId;
   let cap = fallbackCapabilitiesFor(target);
   if (!cap || p.sourcePromptStatus === 'exact-truncated') reasons.push('unsupported-source-or-model');
   const wanted = p.aspect || p.clip?.aspectRatio || SHOWCASE_CLIPS[p.clipKey]?.aspectRatio || p.previewAspect;
@@ -43,7 +45,7 @@ export function auditTemplate(p) {
   if ((binding.text || sourcePrompt).length > Math.min(GENERATION_PROMPT_MAX, cap?.inputs?.prompt?.max || 0)) reasons.push('prompt-limit');
   const classification = video ? 'blocked-needs-video' : reasons.length ? 'unsupported' : slots.length ? 'bound' : 'like-for-like-safe';
   const bound = classification === 'bound';
-  const modelId = bound ? BINDING_MODEL : legacyModelId;
+  const modelId = bound ? PEOPLE_BINDING_MODEL : legacyModelId;
   cap = fallbackCapabilitiesFor(modelId);
   const text = bound ? binding.text : sourcePrompt;
   const hasPhoto = !!cap?.media?.image;

@@ -72,3 +72,25 @@ error") and the missing warning were not.
 at all (`takesReferenceModel`)? Mapping gives up to nine references and a better fit for Seedance-made templates, but
 every self-portrait upload can be refused (credits refunded, a wasted wait). Reverting is the single constant
 `SEEDANCE_REFERENCE_ACTIVE` (with the catalog row left or set inactive); it was not changed.
+
+## Amendment 2 (2026-11-14): real-person photos must work; templates leave the reference model
+
+**Finding.** The phone's template flow (a person uploads their own photo, 10 s, 170 credits) ended with "This model can't
+use pictures that show a real person". Template users upload real photos by design, so every such run was refused and refunded.
+Two things pinned templates to the reference model: the `SEEDANCE_REFERENCE_ACTIVE` mapping (69 Seedance-origin templates) and
+`BINDING_MODEL` in `lib/templateBinding.js` (every `@ImageN` recipe, 171 contracts).
+
+**Decision.**
+
+1. `SEEDANCE_REFERENCE_ACTIVE` is `false`: Seedance-origin templates run on `Kling 3.0 · I2V` (32 credits for 5 s unit, accepts people).
+2. A single-photo `@Image1` recipe is a `bound` contract on `kling-3.0-i2v` (`PEOPLE_BINDING_MODEL`): same exact-token rewrite, the
+   photo goes in as the Kling start frame. 73 contracts remain `bound`; those whose duration or framing Kling cannot take
+   (`unsupported-duration`, `unsupported-aspect`) take the legacy route.
+3. A recipe that needs several pictures has no people-safe model (no registered video model takes several image references and accepts
+   real people), so it is `unsupported` with reason `multi-photo-needs-people-model` (96): normal admission on the template's own model, one
+   photo, literal tokens, as before activation. The multi-slot web and phone controls stay in the code, dormant.
+4. The reference model stays active and selectable on Create with the real-person note and the one-tap Kling switch (amendment 1).
+   Revisit only if a provider accepts real-person references.
+
+Contracts regenerated with `node scripts/audit-template-fidelity.mjs --write`. Totals: safe 232, bound 73, blocked-needs-video 392,
+unsupported 98.

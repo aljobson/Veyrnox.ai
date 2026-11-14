@@ -9,7 +9,7 @@ const report = audit();
 const contracts = Object.values(report.contracts);
 test('fidelity classification totals and generated contract bytes are pinned', () => {
   // Baseline classifications plus the independently audited 46-video split (syntx100Templates.test.mjs).
-  assert.deepEqual(report.totals, {"like-for-like-safe":232 + 0,"bound":162 + 9,"blocked-needs-video":355 + 37,"unsupported":0});
+  assert.deepEqual(report.totals, {"like-for-like-safe":232 + 0,"bound":70 + 3,"blocked-needs-video":355 + 37,"unsupported":92 + 6});
   const stored = JSON.parse(readFileSync(new URL('../lib/templateFidelityContracts.json', import.meta.url)));
   const packed = packContracts(report.contracts);
   // The prompts and rows are compressed on disk (Worker size budget); compare what they inflate to, not the compressed bytes.
@@ -54,7 +54,7 @@ test('server stores only informative safe-contract metadata', async () => {
 test('unsupported templates remain admitted without audited identity', async () => {
   const { fidelityTemplateId } = await import('../lib/templateFidelityRuntime.js');
   const unbound = contracts.filter(c => c.class === 'unsupported');
-  assert.equal(unbound.length, 0);
+  assert.equal(unbound.length, 98, 'multi-photo recipes (96) and Kling-unsupported framings keep the legacy route');
   for (const c of unbound) {
     assert.equal(fidelityTemplateId(c, c.sourcePrompt, c.modelId), undefined);
     assert.equal(fidelityTemplateId(c, c.sourcePrompt, 'different-model'), undefined);

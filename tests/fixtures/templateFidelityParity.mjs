@@ -43,12 +43,12 @@ for (const p of PRESETS.filter(p => contracts[p.id]?.class === 'bound')) {
   // Use default navigation, with no model injected from the contract.
   const modelId = templateModelId(p);
   const cap = fallbackCapabilitiesFor(modelId);
-  const model = { id: modelId, modality: 'image-to-video', credits: 85, durations: cap.lengths, capabilities: cap };
+  const model = { id: modelId, modality: 'image-to-video', credits: 32, durations: cap.lengths, capabilities: cap };
   const [feed] = toPublicPresets([model], [p]);
   const references = Array.from({ length: c.slotCount }, (_, i) => ({ slot: 'image', origin: 'upload', key: `uploads/photo-${i}.png` }));
-  const inputs = templateInputs(p, { ...model, kind: 'video', negativeMax: cap.inputs.negative_prompt?.max, takesNegative: !!cap.inputs.negative_prompt }, { prompt: p.sourcePrompt, aspect: c.aspect, aspectOptions: cap.inputs.aspect_ratio.values, durationSeconds: c.duration, withPhoto: true });
+  const inputs = templateInputs(p, { ...model, kind: 'video', negativeMax: cap.inputs.negative_prompt?.max, takesNegative: !!cap.inputs.negative_prompt }, { prompt: p.sourcePrompt, aspect: c.aspect, aspectOptions: cap.inputs.aspect_ratio?.values || [], durationSeconds: c.duration, withPhoto: true });
   let body;
-  await submitTemplate({ run: templateRun(null, p.id, 85, () => 'bound-parity'), quote: { ceilings: [85] }, model, preset: p, inputs, deps: { sources: async () => ({ references }), gatewayFetch: async (_, init) => { body = JSON.parse(init.body); return { job_id: 'job' }; }, onJob() {} } });
+  await submitTemplate({ run: templateRun(null, p.id, 32, () => 'bound-parity'), quote: { ceilings: [32] }, model, preset: p, inputs, deps: { sources: async () => ({ references }), gatewayFetch: async (_, init) => { body = JSON.parse(init.body); return { job_id: 'job' }; }, onJob() {} } });
   boundInventory.push({ feed, model, body, contract: c, serverCheck: checkTemplateRequest(body) });
 }
 console.log(JSON.stringify({ longNegative: output.pop(), inventory: output, boundInventory }));

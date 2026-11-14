@@ -57,10 +57,10 @@ test('Create arrival restores an edited bound-model draft without a model URL pa
   const values = new Map();
   const storage = { getItem: key => values.get(key), setItem: (key, value) => values.set(key, value), removeItem: key => values.delete(key) };
   const prompt = 'Edited draft: keep these exact words.  ';
-  assert.equal(writeStudioDraft(storage, { prompt, model: 'seedance-2.0-reference', templateId: preset.id }), true);
+  assert.equal(writeStudioDraft(storage, { prompt, model: 'kling-3.0-i2v', templateId: preset.id }), true);
   const draft = takeStudioDraft(storage, requested, Date.now(), preset.id);
   const arrival = templateArrival(preset, MODELS, params, draft);
-  assert.equal(requested, 'seedance-2.0-reference');
+  assert.equal(requested, 'kling-3.0-i2v');
   assert.equal(arrival.modelId, requested);
   assert.equal(arrival.draft.prompt, prompt);
 });
@@ -110,10 +110,10 @@ test('bound detail differs only in model link/name and reviewed crop guidance; l
       expected = expected.replace(/<div class="mt-4 rounded-xl border border-vx-border px-4 py-3 text-\[14px\] text-vx-fg-body"><p>(.*?)<\/p><p class="mt-2 font-bold">[^<]+<\/p><\/div>/s, '<p class="mt-4 rounded-xl border border-vx-border px-4 py-3 text-[14px] text-vx-fg-body">$1</p>');
     }
     assert.equal(normalize(after), expected, preset.id);
-    assert.match(after, /href="\/models\/seedance-2.0-reference"[^>]*>Seedance 2.0 · Reference<\/a>/);
+    assert.match(after, /href="\/models\/kling-3.0-i2v"[^>]*>Kling 3.0 · I2V<\/a>/);
   }
-  assert.deepEqual(cropChanges, ['curtain-reveal']);
-  assert.deepEqual(changed, PRESETS.filter(p => templateContract(p.id)?.class === 'bound' && p.model !== 'Seedance 2.0 · Reference').map(p => p.id));
+  assert.deepEqual(cropChanges, []);
+  assert.deepEqual(changed, PRESETS.filter(p => templateContract(p.id)?.class === 'bound' && p.model !== 'Kling 3.0 · I2V').map(p => p.id));
   mkdirSync('.gstack/a2-round3', { recursive: true });
   writeFileSync('.gstack/a2-round3/bound-markup-changes.json', JSON.stringify({ changed, cropChanges }, null, 2) + '\n');
 });
