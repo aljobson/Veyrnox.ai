@@ -11,7 +11,7 @@ import { Text, Button, themedStyles, useThemedStyles } from '../../../components
 import { useReducedMotion } from '../../../components/ui/useReducedMotion';
 import { Image } from 'expo-image';
 import { InlineMedia } from '../../../components/InlineMedia';
-import { Link, Stack, useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
+import { Link, Stack, useLocalSearchParams, useRouter, useFocusEffect, useNavigation } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
@@ -36,6 +36,9 @@ import { cancelErrorKey, cancelJob, getCancelStatus, type CancelStatus } from '.
 
 // Embedded renderers without navigation focus support still clean up on unmount.
 const useRatingFocusEffect = useFocusEffect ?? ((effect: () => void | (() => void)) => useEffect(effect, [effect]));
+// Only the leave event is used; the stack's own event map does not name it, so the shape is stated here.
+type LeaveEvents = { addListener: (event: 'beforeRemove', listener: () => void) => () => void };
+const useRatingNavigation = (): LeaveEvents | undefined => useNavigation?.<LeaveEvents>();
 
 // Catalog keys, looked up when shown.
 const LABEL: Record<JobState, string> = {
@@ -86,14 +89,21 @@ export default function JobScreen() {
     const ratingAbort = useRef<AbortController | null>(null);
     const [resultReady, setResultReady] = useState(false);
     const [review, setReview] = useState<CelebrationResult | null>(null);
+    const ratingOwed = useRef(false);
     const outputReady = useCallback(() => setResultReady(true), []);
     useEffect(() => {
         const signal = ratingAbort.current?.signal;
         if (!resultReady || !review || !signal || signal.aborted) return;
-        return afterCelebration(review, REVIEW_ASK_DELAY_MS, signal, () => {
-            if (claimReviewAsk()) routerRef.current.push('/rate');
-        });
+        return afterCelebration(review, REVIEW_ASK_DELAY_MS, signal, () => { ratingOwed.current = true; });
     }, [resultReady, review]);
+    // Once the result has been seen, the ask waits until the person leaves this screen, so it never covers the result
+    // (QA: it opened over a result that was still arriving). Leaving forward (share, edit) keeps it owed.
+    const navigation = useRatingNavigation();
+    useEffect(() => navigation?.addListener('beforeRemove', () => {
+        if (!ratingOwed.current) return;
+        ratingOwed.current = false;
+        if (claimReviewAsk()) setTimeout(() => routerRef.current.push('/rate'), 0);
+    }), [navigation]);
     // Losing focus cancels only the rating continuation; polling keeps its original lifecycle.
     useRatingFocusEffect(useCallback(() => () => ratingAbort.current?.abort(), []));
 
@@ -103,12 +113,13 @@ export default function JobScreen() {
         setHeld(false); setAsset(null); setStems([]); setExpiresAt(null); setLookup('pending');
         setResultReady(false);
         setReview(null);
+        ratingOwed.current = false;
         setCancelStatus(null);
         const controller = new AbortController();
         const ratingController = new AbortController();
         ratingAbort.current = ratingController;
         const unsubscribe = subscribeCacheUser(() => {
-            controller.abort(); ratingController.abort(); setAsset(null); setStems([]); setHeld(false); setExpiresAt(null); setLookup('pending');
+            controller.abort(); ratingController.abort(); ratingOwed.current = false; setAsset(null); setStems([]); setHeld(false); setExpiresAt(null); setLookup('pending');
             setFailedJob(null);
             void Image.clearMemoryCache?.().catch(() => {});
         });

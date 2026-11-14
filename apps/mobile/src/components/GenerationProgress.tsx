@@ -14,6 +14,8 @@ export interface GenerationProgressProps {
     kind?: ProgressKind | null;
     // Compact rows (editor, film, chat) show the bar, the figure and the time only.
     compact?: boolean;
+    // False when the caller already says the creation will appear in the Library (Create's result card).
+    leaveNote?: boolean;
     // When the job was submitted, if the caller stored it (ms since epoch).
     startedAt?: number;
 }
@@ -27,7 +29,7 @@ export function formatElapsed(seconds: number): string {
 // One progress bar for every running generation in the app. Providers do not report
 // how far along a job is, so the figure is an estimate (lib/generationProgress.ts) that
 // stops short of 100 until the job settles; the caller stops rendering this when it does.
-export function GenerationProgress({ jobId, modelId, kind, compact = false, startedAt: submittedAt }: GenerationProgressProps) {
+export function GenerationProgress({ jobId, modelId, kind, compact = false, leaveNote = true, startedAt: submittedAt }: GenerationProgressProps) {
     const styles = useThemedStyles(sheets);
     const [startedAt] = useState(() => noteJobStarted(jobId, submittedAt));
     const [now, setNow] = useState(Date.now);
@@ -49,7 +51,7 @@ export function GenerationProgress({ jobId, modelId, kind, compact = false, star
             <Text variant="footnote" style={styles.figure} accessibilityElementsHidden importantForAccessibility="no">{figure}</Text>
         </View>
         <Text variant="footnote" tone="tertiary" style={compact ? undefined : styles.center}>
-            {compact ? t('job.elapsedSoFar', { elapsed }) : t('job.waiting', { elapsed })}
+            {compact || !leaveNote ? t('job.elapsedSoFar', { elapsed }) : t('job.waiting', { elapsed })}
         </Text>
     </View>;
 }

@@ -37,7 +37,11 @@ jest.mock('../src/lib/useBalance', () => ({ useBalance: () => {
     React.useEffect(() => require('../src/lib/balanceEvents').subscribeBalance((_owner: string, next: number) => setBalance(next)), []); return balance;
 } }));
 jest.mock('../src/components/KeyboardScreen', () => ({ KeyboardScreen: jest.requireActual('react-native').View }));
-jest.mock('../src/components/KeyboardFormScrollView', () => ({ KeyboardFormScrollView: jest.requireActual('react-native').View }));
+const mockScroll = { scrollTo: jest.fn() };
+jest.mock('../src/components/KeyboardFormScrollView', () => ({ KeyboardFormScrollView: ({ ref, ...props }: any) => {
+    const React = jest.requireActual('react'); React.useImperativeHandle(ref, () => mockScroll, []);
+    return React.createElement(jest.requireActual('react-native').View, props);
+} }));
 jest.mock('../src/components/CreateOptions', () => ({ CreateOptions: (props: any) => { mockOptions = props; return null; } }));
 jest.mock('../src/components/CameraPanel', () => ({ CameraPanel: () => null }));
 jest.mock('../src/components/CharacterPanel', () => ({ CharacterPanel: () => null }));
@@ -198,4 +202,29 @@ test('QA-4: shortening an over-long prompt re-enables Generate', async () => {
     expect(generate().props.accessibilityState.disabled).toBe(true);
     await act(async () => promptField().props.onChangeText('a'.repeat(100)));
     expect(generate().props.accessibilityState.disabled).toBe(false);
+});
+
+test('QA create-result: a prompt that arrived with the link is ready, so the stage does not ask for one', async () => {
+    await render();
+    expect(text(t('create.workspace.stagePrompt'))).toHaveLength(1);
+    expect(text(t('create.workspace.stageEmpty'))).toHaveLength(0);
+});
+test('QA create-result: a started job lowers the keyboard and scrolls its card into view once', async () => {
+    const dismiss = jest.spyOn(RN.Keyboard, 'dismiss');
+    await render(); await click(generate());
+    const holder = root.container.queryAll(n => typeof n.props.onLayout === 'function' && n.queryAll(c => c.props.accessibilityLabel === t('publishReporting.open')).length > 0).at(-1)!;
+    await act(async () => holder.props.onLayout({ nativeEvent: { layout: { x: 0, y: 300, width: 300, height: 200 } } }));
+    expect(dismiss).toHaveBeenCalled();
+    expect(mockScroll.scrollTo).toHaveBeenCalledTimes(1);
+    expect(mockScroll.scrollTo.mock.calls[0][0]).toMatchObject({ y: 288 });
+    await act(async () => holder.props.onLayout({ nativeEvent: { layout: { x: 0, y: 300, width: 300, height: 500 } } }));
+    expect(mockScroll.scrollTo).toHaveBeenCalledTimes(1);
+    dismiss.mockRestore();
+});
+test('QA create-result: the progress card says Library once, with the refund promise', async () => {
+    mockJob.mockResolvedValue({ state: 'running', credits: 10, model_id: 'm', refunded: false });
+    await act(async () => root.render(<CreateResult api={mockApi as unknown as ApiClient} batch={batch} catalog={[]} onTerminal={() => {}} />));
+    expect(text(t('job.elapsedSoFar', { elapsed: t('libraryCreate.elapsed', { seconds: '0' }) }))).toHaveLength(1);
+    expect(text(t('job.keepsRunning'))).toHaveLength(1);
+    expect(root.container.queryAll(n => n.children.some(c => typeof c === 'string' && /library/i.test(c)))).toHaveLength(1);
 });

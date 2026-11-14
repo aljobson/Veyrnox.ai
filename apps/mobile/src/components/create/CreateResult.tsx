@@ -60,7 +60,7 @@ function ResultTile({ api, id, batch, catalog, onTerminal, onSuccess }: { api: A
                 : file ? <>{file.output_stems?.length ? <Text>{t('libraryCreate.stems')}</Text> : file.mime_type.startsWith('image/') ? <Image source={{ uri: file.url }} cachePolicy="memory" contentFit="contain" style={styles.image} accessible accessibilityRole="image" accessibilityLabel={t('job.title')} /> : <InlineMedia url={file.url} audio={!file.mime_type.startsWith('video/')} label={t(file.mime_type.startsWith('video/') ? 'job.playVideo' : 'job.playAudio')} />}<GeneratedChip /></>
                 : result.state === 'failed' ? <Text tone="danger">{result.job?.error_code === 'user_cancelled'
                     ? failure : failedJobMessage(result.job?.error_code, refunded, failure)}</Text>
-                : <><View accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><VeyCharacter width={batchTile ? 40 : 48} mood="working" /></View><Text>{t(result.state === 'queued' ? 'job.queued' : 'job.running')}</Text><GenerationProgress jobId={id} modelId={batch.modelId} kind={batch.kind} compact={batchTile} /><Text>{t('job.keepsRunning')}</Text></>}
+                : <><View accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><VeyCharacter width={batchTile ? 40 : 48} mood="working" /></View><Text style={styles.centred}>{t(result.state === 'queued' ? 'job.queued' : 'job.running')}</Text><GenerationProgress jobId={id} modelId={batch.modelId} kind={batch.kind} compact={batchTile} leaveNote={false} /><Text style={styles.centred}>{t('job.keepsRunning')}</Text></>}
         </View>
         <Button variant="secondary" label={t('publishReporting.open')} onPress={open} />
         {sound?.kind === 'tooLong' ? <Text>{t('libraryCreate.soundTooLong', { seconds: String(sound.seconds) })}</Text> : sound ? <Card>
@@ -92,4 +92,6 @@ const sheets = themedStyles(p => ({
     single: { gap: 12 }, grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     card: { padding: 8, gap: 8 }, tile: { width: '48%' }, frame: { width: '100%', justifyContent: 'center', alignItems: 'center', overflow: 'hidden', backgroundColor: p.bgElevated1 },
     image: { width: '100%', height: '100%' },
+    // The progress lines sit under the centred character and title, so they centre too.
+    centred: { textAlign: 'center', paddingHorizontal: 8 },
 }));
