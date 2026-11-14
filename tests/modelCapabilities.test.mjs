@@ -15,6 +15,9 @@ import * as openrouter from '../packages/adapters/openrouter.js';
 // kie twins staged inactive by migration 0105 (a row with no record can never
 // be listed or bought, so the record ships before the row is switched on).
 const CATALOG = [
+    // ADR-0238 candidates staged inactive by migration 0358.
+    'market:kling-3.0/video-std', 'market:bytedance/seedance-2-mini',
+    'market:wan/2-6-flash-image-to-video', 'market:seedream/5-flash-text-to-image',
     'fal-ai/sana/v1.5/4.8b',
     'fal-ai/ace-step', 'fal-ai/ace-step-1.5', 'fal-ai/elevenlabs/sound-effects/v2', 'fal-ai/inworld-tts',
     'fal-ai/flux-2-pro', 'fal-ai/bytedance/seedream/v4/text-to-image', 'fal-ai/nano-banana',

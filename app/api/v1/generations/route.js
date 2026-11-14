@@ -157,6 +157,7 @@ export async function POST(req) {
     if (!inputs || typeof inputs !== 'object' || Array.isArray(inputs)) {
         return NextResponse.json({ error: 'inputs_must_be_object' }, { status: 400 });
     }
+    const suppliedInputKeys = Object.keys(inputs);
     const inputsCheck = validateInputs(inputs);
     if (!inputsCheck.ok) return NextResponse.json({ error: inputsCheck.error }, { status: 400 });
     if (Object.hasOwn(inputs, 'narration_text')) {
@@ -249,6 +250,10 @@ export async function POST(req) {
         console.error('[generations] no capability record for', modelRow.id, modelRow.provider_endpoint);
         return NextResponse.json({ error: 'provider_unsupported' }, { status: 501 });
     }
+    // New staged contracts refuse undeclared controls before legacy filtering.
+    if (record.strictInputs && suppliedInputKeys.some(key => key !== 'duration_seconds' && !Object.hasOwn(record.inputs, key))) {
+        return NextResponse.json({ error: 'inputs_key_not_allowed' }, { status: 400 });
+    }
     if (record.outputStems && !editorFeatureEnabled('EDITOR_AUDIO_STEMS_ENABLED')) return NextResponse.json({ error: 'audio_stems_unavailable' }, { status: 503 });
     if (modelRow.gated_flag) return NextResponse.json({ error: 'model_gated' }, { status: 402 });
     for (const key of ['output_resolution', 'audio_enabled']) {
@@ -267,10 +272,9 @@ export async function POST(req) {
     const { sources, sourceKeys, sourceAssets } = resolved;
     Object.assign(inputs,resolved.inputs);
 
-    // From here on only the keys this model declares exist: the create page
-    // sends one control set for every model, and an undeclared key must not
-    // reach the provider, the job row, or the price.
-    const modelInputs = declaredInputs(record, inputs);
+    // Legacy records filter the shared control set. Strict staged records
+    // retain every resolved input so preflight also refuses extra source slots.
+    const modelInputs = record.strictInputs ? inputs : declaredInputs(record, inputs);
     // Refuse before the debit anything the provider request cannot express at
     // the priced unit (a longer clip, an aspect ratio the model lacks, ...).
     const providerCheck = provider.check(record, modelRow, modelInputs);

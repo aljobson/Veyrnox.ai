@@ -103,6 +103,36 @@ export function buildRequest(target, inputs) {
         return { ok: true, body };
     }
 
+    // Separate contracts priced for one unit; never forward caller tier controls.
+    const staged = {
+        __proto__: null,
+        'kling-3.0/video-std': { image: true, aspects: CLIP_ASPECTS, min: 1, max: 2000 },
+        'bytedance/seedance-2-mini': { aspects: new Set(['1:1', '4:3', '3:4', '16:9', '9:16', '21:9']), min: 3, max: 2000 },
+        'wan/2-6-flash-image-to-video': { image: true, min: 2, max: 1500 },
+        'seedream/5-flash-text-to-image': { aspects: new Set(['1:1', '4:3', '3:4', '16:9', '9:16', '21:9']), min: 4, max: 2000 },
+    }[target.model];
+    if (staged) {
+        const allowed = new Set(['prompt', 'duration_seconds', ...(staged.image ? ['image_url'] : []), ...(staged.aspects ? ['aspect_ratio'] : [])]);
+        if (Object.keys(inputs).some(key => !allowed.has(key))) return { ok: false, error: 'inputs_key_not_allowed' };
+        if (prompt.trim().length < staged.min || prompt.length > staged.max) return { ok: false, error: 'inputs_invalid:prompt' };
+        if (inputs.duration_seconds !== undefined && inputs.duration_seconds !== 5) return { ok: false, error: 'duration_not_supported' };
+        if (aspect !== undefined && !staged.aspects?.has(aspect)) return { ok: false, error: 'inputs_invalid:aspect_ratio' };
+        if (staged.image && (typeof inputs.image_url !== 'string' || !inputs.image_url.trim())) return { ok: false, error: 'inputs_invalid:image_url' };
+        let model = target.model, input;
+        if (model === 'kling-3.0/video-std') {
+            model = 'kling-3.0/video';
+            input = { prompt, image_urls: [inputs.image_url], duration: '5', mode: 'std', sound: false, multi_shots: false, multi_prompt: [] };
+            if (aspect !== undefined) input.aspect_ratio = aspect;
+        } else if (model === 'bytedance/seedance-2-mini') {
+            input = { prompt, resolution: '720p', duration: 5, generate_audio: false, aspect_ratio: aspect || '16:9', nsfw_checker: true };
+        } else if (model === 'wan/2-6-flash-image-to-video') {
+            input = { prompt, image_urls: [inputs.image_url], duration: '5', resolution: '720p', audio: false, multi_shots: false, nsfw_checker: true };
+        } else {
+            input = { prompt, size: '1K', output_format: 'png', aspect_ratio: aspect || '1:1', nsfw_checker: true };
+        }
+        return { ok: true, body: { model, input } };
+    }
+
     // Separate inactive i2v candidate: pro is 1080p, single shot, no audio.
     // Do not silently discard controls from the existing fal route.
     if (target.model === 'kling-3.0/video') {
