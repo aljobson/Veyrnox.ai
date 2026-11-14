@@ -322,6 +322,9 @@ try {
         // Provider reference links contain public metadata only, are available in-app,
         // and are erased with the account. The generic export has no Music section yet.
         'music_reference_links',
+        // Song reactions, creator follows and their write receipts (0515): ids and an emoji,
+        // erased with the account. Counts are public; the generic export has no Music section yet.
+        'music_song_reactions', 'music_creator_follows', 'music_social_mutations',
         // Music export is deliberately not implied by the generic profile/jobs projections. Account
         // deletion refuses while this provider/media-backed content exists (0490).
         'music_collaboration_profiles', 'music_creator_profiles', 'music_download_claims', 'music_download_periods',
