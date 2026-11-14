@@ -55,10 +55,10 @@ export default function SignIn() {
         >
             <View style={styles.hero}>
                 <BrandIntro fontSize={32} />
-                <Text variant="caption" tone="accent" accessibilityRole="header">{t('signIn.kicker')}</Text>
+                <Text variant="caption" tone="accent">{t('signIn.kicker')}</Text>
                 <Text variant="display">{t('signIn.title')}</Text>
                 <Text tone="secondary">{t('signIn.subtitle')}</Text>
-                <View accessible accessibilityLabel={t('signIn.promiseLabel')} style={styles.promises}>
+                <View accessible style={styles.promises}>
                     {PROMISES.map((p) => (
                         <View key={p.label} style={styles.promise}>
                             <Icon name={p.icon} size={20} />
@@ -69,7 +69,7 @@ export default function SignIn() {
             </View>
             <SignupOffer />
             <ConsentRow agreed={agreed} onChange={setAgreed} />
-            <Text variant="footnote" tone="tertiary">
+            <Text variant="footnote" tone="tertiary" accessibilityLiveRegion="polite">
                 {t(agreed ? 'signIn.ready' : 'signIn.tickFirst')}
             </Text>
             <AuthProviderButton
