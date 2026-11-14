@@ -243,7 +243,7 @@ export function MascotWordmark({ fontSize = 36, palette = colors, onDone, leap =
 
     return (
         <View accessible accessibilityRole="header" accessibilityLabel="Veyrnox.ai" style={[styles.row, { marginTop: mascotHeight * 1.8 }]}>
-            <Image source={require('../../assets/logo-mark.png')} style={{ width: fontSize * 1.37, height: fontSize * 1.37 * 0.94 }} contentFit="contain" />
+            <Image source={require('../../assets/logo-mark.png')} style={{ width: fontSize * 1.37, height: fontSize * 1.37 * 0.94 }} tintColor={palette.accent} contentFit="contain" />
             <View ref={lettersRef} collapsable={false} style={styles.letters}>
                 {WORD.map((ch, i) => (
                     <Animated.View

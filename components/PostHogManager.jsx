@@ -153,9 +153,9 @@ export default function PostHogManager() {
       role="region"
       data-storage-notice="analytics"
       aria-label={t('privacy.choices')}
-      className="fixed inset-x-0 bottom-0 z-[70] border-t border-vx-border bg-vx-panel/95 px-4 py-4 shadow-2xl backdrop-blur-sm sm:px-6"
+      className="fixed inset-x-0 bottom-0 z-[70] border-t border-vx-border bg-vx-panel/95 px-4 py-3 shadow-2xl backdrop-blur-sm sm:px-6 sm:py-4"
     >
-      <div className="mx-auto grid max-w-[1100px] gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
+      <div className="mx-auto grid max-w-[1100px] gap-3 sm:gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
         <div>
           <p className="text-sm font-extrabold text-vx-fg">{t('privacy.title')}</p>
           <p className="mt-1 max-w-3xl text-[13px] leading-[1.55] text-vx-fg-body">
@@ -164,7 +164,7 @@ export default function PostHogManager() {
             })}
           </p>
         </div>
-        <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap lg:max-w-[390px] lg:justify-end">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap lg:max-w-[390px] lg:justify-end">
           <button type="button" onClick={() => choose({ analytics: true, replay: false })} className="min-h-12 rounded-full bg-vx-accent px-5 py-2.5 text-[14px] font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover">
             {t('privacy.analytics')}</button>
           <button type="button" data-storage-decline onClick={() => choose({ analytics: false, replay: false })} className="min-h-12 rounded-full border border-vx-border bg-vx-base px-5 py-2.5 text-[14px] font-bold text-vx-fg hover:border-vx-accent">

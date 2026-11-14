@@ -28,7 +28,7 @@ import { appStorage, getCacheUser, subscribeCacheUser } from '../../../lib/appCa
 import { createDraftKeys, draftSignature, isDefiniteRefusal } from '../../../lib/draftKey';
 import { PublishUploadPanel } from '../../../components/PublishUploadPanel';
 import { choiceMedia, toggleChoice, type CreationPick, type MediaChoice } from '../../../lib/publishMediaChoice';
-import { colors } from '../../../theme';
+import { colors, noticeColor } from '../../../theme';
 import { usePublishApi } from '../../../lib/usePublishApi';
 
 const draftKeys = createDraftKeys(appStorage);
@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
     chipTextOn: { color: colors.accentInk, fontWeight: '600' },
     input: { backgroundColor: colors.surface, borderColor: colors.borderStrong, borderWidth: 1, borderRadius: 12, padding: 12, color: colors.text, fontSize: 16, minHeight: 48 },
     muted: { color: colors.muted, fontSize: 13 },
-    warn: { color: colors.money, fontSize: 13 },
+    warn: { color: noticeColor, fontSize: 13 },
     error: { color: colors.danger },
     button: { backgroundColor: colors.accent, borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginTop: 8 },
     off: { opacity: 0.4 },

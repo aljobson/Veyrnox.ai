@@ -9,6 +9,7 @@ import { useAuth } from '../../../auth/AuthProvider';
 import { celebrateFinished } from '../../../lib/celebrate';
 import { ALL_CATEGORIES, ALL_TYPES, filterPresets, firstModelFor, pickUp, promptHref, recentCreations, type TypeFilter } from '../../../lib/explore';
 import { t } from '../../../lib/i18n';
+import { useAnnouncement } from '../../../lib/useAnnouncement';
 import { fetchCatalogCached, mediaApi, type CatalogModel, type Job, type Kind } from '../../../lib/media';
 import { LowBalanceNote } from '../../../components/LowBalanceNote';
 import { CREATOR_PROFILE_ENABLED } from '../../../lib/creatorProfile';
@@ -168,6 +169,17 @@ export default function Explore() {
         router.push(templatePageHref(p));
     }
 
+    const search = query.trim();
+    const filtered = search.length > 0 || type !== ALL_TYPES || category !== ALL_CATEGORIES;
+    // Said once when the list empties. The line on screen echoes the query; this one does not, so typing on does not repeat it.
+    const noResults = !presetsFailed && presets !== null && shown.length === 0;
+    useAnnouncement(noResults ? (type === 'audio' && !search ? t('explore.audioSoon') : t('explore.noMatch')) : null, { everywhere: true });
+    function clearFilters() {
+        setQuery('');
+        setType(ALL_TYPES);
+        setCategory(ALL_CATEGORIES);
+    }
+
     const empty = prompt.trim().length === 0;
     const label = (j: Job) => j.label || t('edit.untitled');
 
@@ -193,11 +205,11 @@ export default function Explore() {
                         const badge = index === 0 && profile.ready && hasRealAnswer(profile) ? t('create.firstRun.suggested') : undefined;
                         const onPress = () => void recordHomeStart(api, key);
                         const divided = index > 0;
-                        if (key === 'create') return <StartOption href="/create" key={key} onPress={onPress} style={styles.startOption} icon="sparkle" title={t('menu.create')} body={t('explore.start.create.body')} hint={t('explore.start.create.hint')} divided={divided} badge={badge} />;
-                        if (key === 'chat') return <StartOption href="/chat" key={key} onPress={onPress} style={styles.startOption} icon="chat" title={t('menu.chat')} body={t('explore.start.chat.body')} hint={t('explore.chat.hint')} divided={divided} badge={badge} />;
-                        return <StartOption href="/film" key={key} onPress={onPress} style={styles.startOption} icon="slate" title={t('menu.film')} body={t('explore.start.film.body')} hint={t('explore.start.film.hint')} divided={divided} badge={badge} />;
+                        if (key === 'create') return <StartOption href="/create" hue="mint" key={key} onPress={onPress} style={styles.startOption} icon="sparkle" title={t('menu.create')} body={t('explore.start.create.body')} hint={t('explore.start.create.hint')} divided={divided} badge={badge} />;
+                        if (key === 'chat') return <StartOption href="/chat" hue="sky" key={key} onPress={onPress} style={styles.startOption} icon="chat" title={t('menu.chat')} body={t('explore.start.chat.body')} hint={t('explore.chat.hint')} divided={divided} badge={badge} />;
+                        return <StartOption href="/film" hue="iris" key={key} onPress={onPress} style={styles.startOption} icon="slate" title={t('menu.film')} body={t('explore.start.film.body')} hint={t('explore.start.film.hint')} divided={divided} badge={badge} />;
                     })}
-                    <StartOption href="/instruments" style={styles.startOption} icon="sparkle" title={t('instruments.title')} body={t('instruments.homeBody')} hint={t('instruments.homeHint')} divided />
+                    <StartOption href="/instruments" hue="rose" style={styles.startOption} icon="sparkle" title={t('instruments.title')} body={t('instruments.homeBody')} hint={t('instruments.homeHint')} divided />
                 </Card>
 
 
@@ -266,7 +278,10 @@ export default function Explore() {
                     </View>
                 </View>
                 {presetsFailed ? (
-                    <Button variant="tertiary" label={t('explore.templatesError')} onPress={loadPresets} />
+                    <View style={styles.notice}>
+                        <Text tone="danger" accessibilityRole="alert">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text>
+                        <Button variant="secondary" size="md" label={t('recovery.retry')} onPress={loadPresets} />
+                    </View>
                 ) : presets === null ? (
                     <VeyLoader />
                 ) : (
@@ -311,9 +326,12 @@ export default function Explore() {
                             </ScrollView>
                         ) : null}
                         {shown.length === 0 ? (
-                            <Text style={styles.empty} accessibilityLiveRegion="polite">
-                                {type === 'audio' && !query.trim() ? t('explore.audioSoon') : t('explore.noMatch')}
-                            </Text>
+                            <View style={styles.notice}>
+                                <Text tone="tertiary">
+                                    {type === 'audio' && !search ? t('explore.audioSoon') : search ? t('explore.noMatchQuery', { query: search }) : t('explore.noMatch')}
+                                </Text>
+                                {filtered ? <Button variant="secondary" size="md" label={t('common.clearFilters')} onPress={clearFilters} /> : null}
+                            </View>
                         ) : (
                             <View style={styles.grid}>
                                 {shown.map((preset) => (
@@ -396,7 +414,7 @@ const sheets = themedStyles((p, ramp) => ({
         paddingHorizontal: 0,
         paddingTop: 2,
     },
-    actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10 },
+    actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: ds.space.sm },
     note: { color: p.textSecondary },
     headerRow: {
         flexDirection: 'row',
@@ -409,7 +427,7 @@ const sheets = themedStyles((p, ramp) => ({
     heading: { color: p.textPrimary },
     count: { color: p.textTertiary },
     subheading: { color: p.textTertiary, marginTop: 8 },
-    chips: { flexDirection: 'row', gap: 6, paddingVertical: 2 },
+    chips: { flexDirection: 'row', gap: ds.space.sm, paddingVertical: ds.space.xxs },
     // Only the chosen chip is a pill; the rest are plain words, so one thing in the row is lit.
     search: {
         ...ramp.body,
@@ -418,10 +436,10 @@ const sheets = themedStyles((p, ramp) => ({
         backgroundColor: p.bgElevated1,
         borderColor: p.borderStrong,
         borderWidth: 1,
-        borderRadius: 12,
-        paddingHorizontal: 14,
+        borderRadius: ds.radius.sm,
+        paddingHorizontal: ds.space.md,
     },
-    empty: { color: p.textTertiary, paddingVertical: 12 },
+    notice: { alignItems: 'flex-start', gap: ds.space.sm, paddingVertical: ds.space.md },
     grid: {
         flexDirection: 'row',
         flexWrap: 'wrap',

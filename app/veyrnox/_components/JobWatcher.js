@@ -1,6 +1,7 @@
 'use client';
 import { useI18n } from '../../../components/I18nProvider';
 import { useEffect } from 'react';
+import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { getStoredUserId } from '../../lib/authClient';
 import { gatewayFetch, notifyBalanceChanged } from '../_lib/gateway';
@@ -28,10 +29,21 @@ export function JobWatcher() {
         notifyBalanceChanged();
         const label = job.name || job.prompt || t('public.jobs.default');
         if (next.state === 'succeeded') {
+          // Success says what was spent, as a line of the statement does. The
+          // figure is the job's own (/jobs/:id `credits`), never worked out here.
+          const spent = typeof next.credits === 'number' && next.credits > 0 ? next.credits : null;
           toast.success((toastItem) => (
-            <span>
-              {t('public.jobs.ready', { label })}{' '}
-              <a href="/app/library" onClick={() => toast.dismiss(toastItem.id)} className="underline">{t('public.vey.action.open_library')}</a>
+            <span className="block min-w-0">
+              <span className="flex items-baseline gap-2">
+                <span className="min-w-0">{t('public.jobs.ready', { label })}</span>
+                {spent !== null && (
+                  <>
+                    <span aria-hidden="true" className="vx-leader flex-1" />
+                    <span dir="ltr" className="shrink-0 font-vx-mono font-bold text-vx-money vx-num">{`\u2212${spent}`} cr</span>
+                  </>
+                )}
+              </span>
+              <Link href="/app/library" onClick={() => toast.dismiss(toastItem.id)} className="underline">{t('public.vey.action.open_library')}</Link>
             </span>
           ), { duration: 10000 });
         } else {

@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 // Page and card sources are read, like createImageCount.test.mjs: they are client components.
 const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
 const create = read('../app/veyrnox/app/create/page.js');
-const library = read('../app/veyrnox/app/library/page.js');
+const library = read('../app/veyrnox/_components/LibraryJobCard.js');
 const migration = read('../packages/db/schema/supabase/0207_reconcile_includes_free_allowance.sql');
 const prior = read('../packages/db/schema/supabase/0184_subscription_credit_cycle.sql');
 
@@ -34,6 +34,7 @@ test('0207 keeps the five existing reconcile checks and adds the free-allowance 
 });
 
 test('the Library never prints a unit after FREE: "FREE cr" was shipped once, and a free job that failed shows nothing, not a bare "cr"', () => {
-    assert.match(library, /\{delta\}\{free \? '' : ' cr'\}/);
+    // Nor after an empty delta (refund pending, or state unknown).
+    assert.match(library, /\{delta\}\{free \|\| !delta \? '' : ' cr'\}/);
     assert.doesNotMatch(library, /\{delta\} cr<\/span>/);
 });

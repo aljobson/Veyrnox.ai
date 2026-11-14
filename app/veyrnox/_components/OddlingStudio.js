@@ -179,7 +179,7 @@ export default function OddlingStudio() {
     setScene(ODDLING_SCENES[0]);
     setSheet(null);
     setNotice(t('app.oddlings.freshStarted'));
-    window.setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 0);
+    window.setTimeout(() => window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }), 0);
   }
 
   function loadOddling(oddling) {
@@ -190,7 +190,7 @@ export default function OddlingStudio() {
     setNotice(t('app.oddlings.loaded',{name:oddling.name}));
     // The sheet's dialog hands focus back to its card as it closes, which scrolls
     // the card into view; scroll to the builder after that has happened.
-    window.setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 0);
+    window.setTimeout(() => window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }), 0);
   }
 
   function animateOddling(oddling) {

@@ -1,21 +1,15 @@
 'use client';
 import { useI18n } from '../../../../components/I18nProvider';
-import { pluralKey, tOr } from '../../../../lib/i18n/translate.mjs';
+import { pluralKey } from '../../../../lib/i18n/translate.mjs';
 import { localeTag } from '../../../../lib/i18n/locales.mjs';
 import dynamic from 'next/dynamic';
-import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { AppNav } from '../../_components/NavBar';
 import { Main } from '../../_components/Main';
-import { LibraryAccessState } from '../../_components/LibraryAccessState';
-import { LibraryClip } from '../../_components/LibraryClip';
-import { Chip } from '../../_components/Chip';
+import { LibraryAccessState, LibrarySkeleton } from '../../_components/LibraryAccessState';
+import { LibraryEmpty } from './LibraryEmpty';
 import { gatewayFetch, GatewayError, notifyBalanceChanged } from '../../_lib/gateway';
 import { readJobHistory, pushJobHistory } from '../../_lib/jobHistory';
-import { useAssetUrl } from '../../_lib/useAssetUrl';
-import { ScheduleGeneration } from '../../_components/ScheduleGeneration';
-import { AssetFooter } from '../../_components/AssetFooter';
-import { AssetLoadStatus } from '../../_components/AssetLoadStatus';
 import { EditSheet } from '../../_components/EditSheet';
 import { SmartCutEntry } from '../../_components/SmartCutEntry';
 import { useCatalog } from '../../_lib/useCatalog';
@@ -25,7 +19,6 @@ import { readFavourites, toggleFavourite, reconcileFavourites } from '../../_lib
 import { fetchLibrarySync, pushFavourite } from '../../_lib/librarySync';
 import { hydrateFromHistory, serverRow } from '../../_lib/libraryRows';
 import { useLibraryRefresh } from '../../_lib/useLibraryRefresh';
-import { formatWhen } from '../../_lib/formatWhen';
 import { FilmLibraryMasters } from '../../_components/film/FilmLibraryMasters';
 import { DeviceLibrary } from '../../_components/DeviceLibrary';
 import { EditorLibraryRenders } from '../../_components/editor/EditorLibraryRenders';
@@ -33,21 +26,6 @@ import { getSession, getStoredUserId, onSessionChange } from '../../../lib/authC
 import { useOlderLibraryJobs } from '../../_lib/useOlderLibraryJobs';
 import { markSmartCutIntent, useSmartCutIntent } from '../../_lib/useSmartCutIntent';
 const LibraryJobCard = dynamic(() => import('../../_components/LibraryJobCard').then((module) => module.LibraryJobCard), { ssr: false });
-// Account list is authoritative; local history supplies cached display names.
-const STATE_UI = {
-  queued:    { chip: 'accent', glyph: '●' },
-  running:   { chip: 'accent', glyph: '●' },
-  succeeded: { chip: 'accent', glyph: '✓' },
-  // FAILED is not REFUNDED: the refund is a second call, and /jobs/:id says
-  // whether it has landed. Claiming it either way was the old bug.
-  failed:    { chip: 'danger', glyph: '✕' },
-  failed_pending: { chip: 'danger', glyph: '✕' },
-  // We could not read this job's state: it 404s (not ours, or aged out of the
-  // window) or the server was unreachable. Deliberately neutral — claiming
-  // either DONE or FAILED · REFUNDED would assert something about the ledger
-  // that we have not checked.
-  unknown:   { chip: 'neutral', glyph: '?' },
-};
 const POLL_MS = 3000;
 // ~1 minute of consecutive failure before we stop and say so.
 const POLL_GIVE_UP_AFTER = 20;
@@ -143,7 +121,9 @@ export default function Library() {
     (async () => {
       try {
         const page = await gatewayFetch(`/jobs?limit=${PAGE * 2}`);
-        if (cancelled || !Array.isArray(page.jobs)) return;
+        if (cancelled) return;
+        // An answer without a list is not a live list: say so, or the skeleton below never ends.
+        if (!Array.isArray(page.jobs)) { setListLive(false); return; }
         const labels = new Map(readJobHistory().map((h) => [h.job_id, h]));
         setRows((prev) => {
           const local = new Map(prev.map((r) => [r.job_id, r]));
@@ -261,6 +241,9 @@ export default function Library() {
   const shown = rows.slice(0, visible);
   const list = filterRows(shown, { state: tab, kind, favourites: favOnly ? favourites : null }, models);
   const hasMore = rows.length > visible;
+  const filtered = tab !== 'all' || kind !== 'all' || favOnly;
+  // The button that was pressed leaves with the empty state: focus goes to the filter now in force, not to the page.
+  const clearFilters = () => { setTab('all'); setKind('all'); setFavOnly(false); document.querySelector('[data-testid="library-state-all"]')?.focus(); };
   const canSelect = (r) => editorOn && r.state === 'succeeded' && (isVideo(r) || isAudio(r));
   const toggle = (id) => setSelected((xs) => (xs.includes(id) ? xs.filter((x) => x !== id) : [...xs, id]));
   const picked = selected.map((id) => rows.find((r) => r.job_id === id)).filter(Boolean);
@@ -297,9 +280,12 @@ export default function Library() {
 
       {unreachable && (
         <div className="max-w-[1500px] mx-auto px-4 sm:px-8 pt-4">
-          <div role="status" className="rounded-lg border border-vx-danger/40 bg-vx-danger/[0.07] px-4 py-3 text-sm text-vx-danger flex items-start gap-2">
+          <div role="alert" className="rounded-lg border border-vx-danger/40 bg-vx-danger/[0.07] px-4 py-3 text-sm text-vx-danger grid grid-cols-[auto_minmax(0,1fr)] items-start gap-2">
             <span aria-hidden="true">△</span>
             <span>{t("app.library.unreachable")}</span>
+            {/* A new array restarts the polling effect, which stopped itself when it gave up.
+                The banner and this button stay until the first tick that answers clears them. */}
+            <button type="button" onClick={() => setRows((prev) => [...prev])} className="vx-press col-start-2 justify-self-start rounded-full border border-vx-danger/40 px-3 py-1.5 text-xs font-bold pointer-coarse:min-h-11">{t("recovery.retry")}</button>
           </div>
         </div>
       )}
@@ -317,7 +303,7 @@ export default function Library() {
               onClick={() => setTab(state)}
               aria-pressed={tab === state}
               type="button"
-              className="vx-press rounded-full border px-4 py-2 text-[14px] font-semibold capitalize border-vx-border text-vx-fg-body hover:border-vx-fg-muted aria-pressed:border-vx-fg aria-pressed:bg-vx-fg aria-pressed:text-vx-base"
+              className="vx-press rounded-full border px-4 py-2 text-[14px] font-semibold capitalize pointer-coarse:min-h-11 border-vx-border text-vx-fg-body hover:border-vx-fg-muted aria-pressed:border-vx-fg aria-pressed:bg-vx-fg aria-pressed:text-vx-base"
             >
               {t(`app.library.tab.${state}`)}
             </button>
@@ -327,18 +313,18 @@ export default function Library() {
           <div className="flex flex-wrap gap-2" role="group" data-testid="library-types" aria-label={t("app.library.typeFilter")}>
             {KIND_TABS.map((k) => (
               <button data-testid={`library-kind-${k}`} key={k} onClick={() => setKind(k)} aria-pressed={kind === k} type="button"
-                className="vx-press rounded-full border px-4 py-2 text-[14px] font-semibold border-vx-border text-vx-fg-body hover:border-vx-fg-muted aria-pressed:border-vx-fg aria-pressed:bg-vx-fg aria-pressed:text-vx-base">
+                className="vx-press rounded-full border px-4 py-2 text-[14px] font-semibold pointer-coarse:min-h-11 border-vx-border text-vx-fg-body hover:border-vx-fg-muted aria-pressed:border-vx-fg aria-pressed:bg-vx-fg aria-pressed:text-vx-base">
                 {t(`app.library.kind.${k}`)}
               </button>
             ))}
             <button data-testid="library-favourites" onClick={() => setFavOnly((v) => !v)} aria-pressed={favOnly} type="button"
-              className="vx-press rounded-full border px-4 py-2 text-[14px] font-semibold border-vx-border text-vx-fg-body hover:border-vx-fg-muted aria-pressed:border-vx-fg aria-pressed:bg-vx-fg aria-pressed:text-vx-base">
+              className="vx-press rounded-full border px-4 py-2 text-[14px] font-semibold pointer-coarse:min-h-11 border-vx-border text-vx-fg-body hover:border-vx-fg-muted aria-pressed:border-vx-fg aria-pressed:bg-vx-fg aria-pressed:text-vx-base">
               {t("app.library.favourites")}</button>
           </div>
           <div className="flex gap-2" role="group" data-testid="library-layout" aria-label={t("app.library.layout")}>
             {VIEWS.map((v) => (
               <button data-testid={`library-view-${v}`} key={v} onClick={() => chooseView(v)} aria-pressed={view === v} type="button"
-                className="vx-press rounded-full border px-4 py-2 text-[14px] font-semibold capitalize border-vx-border text-vx-fg-body hover:border-vx-fg-muted aria-pressed:border-vx-fg aria-pressed:bg-vx-fg aria-pressed:text-vx-base">
+                className="vx-press rounded-full border px-4 py-2 text-[14px] font-semibold capitalize pointer-coarse:min-h-11 border-vx-border text-vx-fg-body hover:border-vx-fg-muted aria-pressed:border-vx-fg aria-pressed:bg-vx-fg aria-pressed:text-vx-base">
                 {t(`app.library.view.${v}`)}
               </button>
             ))}
@@ -353,15 +339,8 @@ export default function Library() {
       {smartCutIntent && <SmartCutEntry enabled={editorOn} selectedCount={pickedClips.length} onEnable={enableEditorPreview} />}
 
       <section id="library-assets" className="max-w-[1400px] mx-auto scroll-mt-24 px-4 sm:px-8 pb-16">
-        {!historyLoaded ? null : list.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-vx-border p-12 text-center">
-            <div data-testid="library-empty" className="text-lg font-black">{t("app.library.empty")}</div>
-            <div className="text-[15px] text-vx-fg-body mt-1">
-              {t("app.library.emptyHelp")}</div>
-            <Link href="/app/create" className="vx-press inline-block mt-5 rounded-full bg-vx-accent text-vx-accent-ink px-5 py-2.5 text-sm font-extrabold hover:bg-vx-accent-hover">
-              {t("app.library.openStudio")}</Link>
-          </div>
-        ) : (
+        {/* Nothing cached and the account list not answered yet is still loading, not an empty Library. */}
+        {!historyLoaded || (listLive === null && rows.length === 0) ? <LibrarySkeleton view={view} /> : list.length === 0 ? <LibraryEmpty models={models} fresh={rows.length === 0} filtered={filtered} onClear={clearFilters} /> : (
           <div className={view === 'list' ? 'grid grid-cols-1 gap-3 max-w-[760px]' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'}>
             {list.map((r) => (
               <LibraryJobCard key={r.job_id} row={r} models={models} starred={favourites.includes(r.job_id)} onStar={() => star(r.job_id)}
@@ -412,85 +391,3 @@ export default function Library() {
     </div>
   );
 }
-
-function JobCard({ row, models, selectable, selected, onToggle, starred, onStar }) {
-  const { t, locale } = useI18n();
-  const asset = useAssetUrl(row.job_id, row.asset_url);
-  const refundPending = row.state === 'failed' && row.refunded !== true;
-  const s = STATE_UI[refundPending ? 'failed_pending' : row.state] || STATE_UI.queued;
-  // No delta for `unknown`: a +N would claim a refund landed and a −N would
-  // claim the debit stands, and we do not know which.
-  // No delta while a refund is owed but not yet made: +N would claim it landed.
-  // A job that used a free allowance (ADR-0069) has credits 0: say FREE, and show nothing if it failed
-  // (its allowance went back, there is no refund line to claim).
-  const free = row.credits === 0;
-  const creditCount = locale === 'en' ? row.credits : Number(row.credits).toLocaleString(localeTag(locale));
-  const delta = row.state === 'unknown' || refundPending ? ''
-    : free ? (row.state === 'failed' ? '' : t('app.library.free'))
-    : row.state === 'failed' ? `+${creditCount}` : `−${creditCount}`;
-  const deltaCls = free || row.state === 'failed' ? 'text-vx-accent' : 'text-vx-fg-muted';
-  // Live catalog (tokens.js fallback) so newly added models show their name.
-  const model = models.find((m) => m.id === row.model_id);
-  const card = useRef(null);
-  return (
-    <div ref={card} className="rounded-2xl border border-vx-border bg-vx-panel overflow-hidden">
-      <div
-        className={`h-48 relative ${row.state === 'running' ? 'vx-shimmer' : ''}`}
-        style={{ background: row.asset_url ? 'black' : row.bg }}
-      >
-        {row.asset_url && row.mime_type?.startsWith('video/') && (
-          <LibraryClip cardRef={card} src={asset.url} onError={asset.onError} onLoadedData={asset.onLoad} />
-        )}
-        {row.asset_url && row.mime_type?.startsWith('audio/') && (
-          <div className="absolute inset-0 flex items-end px-4 pb-4">
-            <audio src={asset.url} onError={asset.onError} onLoadedData={asset.onLoad} controls className="w-full" />
-          </div>
-        )}
-        {row.asset_url && row.mime_type?.startsWith('image/') && (
-          <img loading="lazy" decoding="async" src={asset.url} onError={asset.onError} onLoad={asset.onLoad} alt={row.name || t("app.library.generation")} className="absolute inset-0 w-full h-full object-cover" />
-        )}
-        <AssetLoadStatus asset={asset} />
-        <div className="absolute top-3 start-3">
-          <Chip tone={s.chip} noGlyph>
-            <span aria-hidden="true" className="text-[10px] me-1">{s.glyph}</span>
-            <span data-library-status={refundPending ? 'failed_pending' : row.state}>{tOr(t, `app.library.status.${refundPending ? 'failed_pending' : row.state}`, t('app.library.status.queued'))}</span>
-          </Chip>
-        </div>
-        {row.asset_url && (
-          // Disclosure on every generated asset (ADR-0058 decision 8; provider
-          // GenAI policies and EU AI Act Article 50 both ask for it).
-          <div className={`absolute top-3 ${selectable ? 'end-14' : 'end-3'}`}>
-            <Chip tone="neutral" noGlyph className="bg-black/50">{t("app.library.generated")}</Chip>
-          </div>
-        )}
-        {selectable && (
-          <button onClick={onToggle} aria-pressed={selected} data-testid="library-add-to-edit" aria-label={t("app.library.addToEdit")}
-            className={`absolute top-3 end-3 w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold ${
-              selected ? 'bg-vx-accent border-vx-accent text-vx-accent-ink' : 'bg-black/50 border-white/70 text-transparent'
-            }`}>
-            ✓
-          </button>
-        )}
-      </div>
-      <div className="px-4 py-3 flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="text-sm font-bold truncate">{row.name || row.prompt || row.job_id.slice(0, 8)}</div>
-          <div className="text-xs text-vx-fg-muted mt-0.5 truncate">
-            {model?.name || row.model_id}
-            {row.submitted_at ? ` · ${formatWhen(row.submitted_at, locale)}` : ''}
-          </div>
-        </div>
-        <div className="shrink-0 flex items-center gap-3">
-          <span className={`font-vx-mono text-[13px] font-bold vx-num ${deltaCls}`}>{delta}{free ? '' : ' cr'}</span>
-          <button onClick={onStar} aria-pressed={starred} data-testid="library-favourite" aria-label={t("app.library.favourite")} type="button"
-            className={`text-[18px] leading-none ${starred ? 'text-vx-accent' : 'text-vx-fg-faint hover:text-vx-fg'}`}>
-            {starred ? '★' : '☆'}
-          </button>
-        </div>
-      </div>
-      <ScheduleGeneration job={row} className="mx-4 mb-3" />
-      <AssetFooter row={row} />
-    </div>
-  );
-}
-

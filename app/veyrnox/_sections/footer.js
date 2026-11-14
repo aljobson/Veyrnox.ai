@@ -37,7 +37,7 @@ function exampleLines(catalog, t) {
   };
   charge(images[0]);
   if (images[1]) {
-    charge(images[1], [{ label: t('home.ledger.failed', { name: nameOf(images[1]) }), delta: images[1].credits, refund: true }]);
+    charge(images[1], [{ label: t('home.ledger.refund'), delta: images[1].credits, refund: true }]);
   }
   charge(audio);
   return lines;
@@ -49,7 +49,7 @@ export function LedgerExample({ catalog, locale = 'en', t }) {
   const lines = exampleLines(catalog, t);
   const balance = lines.reduce((n, l) => n + l.delta, 0);
   return (
-    <section data-vey-perch className="px-4 sm:px-6 pt-28 sm:pt-36 max-w-[1300px] mx-auto">
+    <section data-vey-perch className="px-4 sm:px-6 pt-32 sm:pt-44 max-w-[1300px] mx-auto">
       <div className="grid grid-cols-1 lg:grid-cols-[0.8fr_1fr] gap-12 lg:gap-20 items-center">
         <div className="order-2 lg:order-1 max-w-[460px] w-full mx-auto lg:mx-0">
           <div className="vx-paper-shadow">
@@ -107,7 +107,7 @@ export function LedgerExample({ catalog, locale = 'en', t }) {
 
 export function FAQBlock({ locale = 'en', t }) {
   return (
-    <section data-vey-perch id="faq" className="px-4 sm:px-6 pt-28 sm:pt-36 max-w-[1300px] mx-auto">
+    <section data-vey-perch id="faq" className="px-4 sm:px-6 pt-24 sm:pt-28 max-w-[1300px] mx-auto">
       <div className="grid grid-cols-1 lg:grid-cols-[0.8fr_1fr] gap-8 lg:gap-20">
         <h2 className="vx-display text-[40px] sm:text-[56px] lg:sticky lg:top-24 self-start">{t('home.faq.title')}</h2>
         <div className="border-t-2 border-vx-fg">
@@ -117,7 +117,7 @@ export function FAQBlock({ locale = 'en', t }) {
                 <span className="text-[17px] font-bold">{t(`home.faq.${i}.q`)}</span>
                 <span
                   aria-hidden="true"
-                  className="shrink-0 text-2xl leading-none text-vx-fg-muted transition-transform duration-200 group-open:rotate-45 group-hover:text-vx-fg"
+                  className="shrink-0 text-2xl leading-none text-vx-fg-muted transition-transform duration-200 group-open:rotate-45 group-open:text-vx-accent group-hover:text-vx-fg"
                 >
                   +
                 </span>
@@ -147,13 +147,10 @@ export function ClosingCTA({ locale = 'en', t }) {
   return (
     <section data-vey-perch className="px-4 sm:px-6 pt-28 sm:pt-36 max-w-[1300px] mx-auto">
       {/* A panel, not loose type: the last screen of the page reads as the
-          place to act. The glow is one soft accent wash behind the headline. */}
-      <div className="relative overflow-hidden rounded-2xl border border-vx-border bg-vx-panel px-6 py-14 sm:px-12 sm:py-20 lg:px-16 lg:py-24">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -right-24 -top-32 h-[420px] w-[420px] rounded-full bg-vx-accent/20 blur-3xl"
-        />
-        <div className="relative">
+          place to act. Beside the headline, the slip a new account starts
+          with: the page ends on the receipt it opened with. */}
+      <div className="rounded-2xl border border-vx-border bg-vx-panel px-6 py-14 sm:px-12 sm:py-20 lg:px-16 lg:py-24 lg:grid lg:grid-cols-[1fr_auto] lg:items-center lg:gap-16">
+        <div>
           <h2 className="vx-display vx-title-index max-w-[11ch]">
             {t('home.cta.title')}
           </h2>
@@ -167,6 +164,23 @@ export function ClosingCTA({ locale = 'en', t }) {
           </div>
           <p className="mt-6 text-vx-fg-muted text-[15px]">{t('home.cta.note')}</p>
         </div>
+        {/* Decorative: the note above says the same thing in words. */}
+        <div aria-hidden="true" className="hidden lg:block w-72 rotate-2 vx-paper-shadow">
+          <div className="vx-paper px-6 pt-8 pb-9">
+            <PrintOnView>
+              <div className="vx-feed-line flex items-baseline gap-2 font-vx-mono text-[13.5px] vx-num" style={{ '--vx-i': 0 }}>
+                <span className="min-w-0 truncate">{t('home.ledger.signup')}</span>
+                <span className="vx-leader flex-1" />
+                <span className="shrink-0 font-bold text-vx-accent">{fmt(SIGNUP_CREDITS)}</span>
+              </div>
+              <div className="vx-feed-line vx-perf mt-4" style={{ '--vx-i': 1 }} />
+              <div className="vx-feed-line mt-4 flex items-baseline justify-between font-vx-mono text-[15px] font-bold vx-num" style={{ '--vx-i': 2 }}>
+                <span>{t('home.ledger.balance')}</span>
+                <span className="text-vx-money">{SIGNUP_CREDITS} cr</span>
+              </div>
+            </PrintOnView>
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -174,10 +188,12 @@ export function ClosingCTA({ locale = 'en', t }) {
 
 /* ─── Footer forest ─── */
 
-export function FooterForest({ locale = 'en', t }) {
+// `flush`: for a page whose <Main> already ends with its own bottom padding
+// (every public page but the home page), so the gap is not doubled.
+export function FooterForest({ locale = 'en', t, flush = false }) {
   const info = localeInfo(locale);
   return (
-    <footer className="mt-28 sm:mt-36 border-t border-vx-border">
+    <footer className={`${flush ? '' : 'mt-28 sm:mt-36 '}border-t border-vx-border`}>
       <div className="max-w-[1300px] mx-auto px-4 sm:px-6 py-10 sm:py-14">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-[1.4fr_repeat(4,1fr)] gap-8 sm:gap-10">
           <div className="col-span-2 sm:col-span-3 lg:col-span-1">
@@ -222,13 +238,14 @@ export function FooterForest({ locale = 'en', t }) {
             </span>
           </div>
           {/* py-2 on each link, taken back out of the bar's own padding: the
-              row reads the same and a thumb gets 32px instead of 16. */}
+              row reads the same and a mouse gets 32px instead of 16. A thumb
+              gets 44. */}
           <div className="flex flex-wrap gap-x-4">
-            <LegalLink element="Link" href="/legal/terms" className="py-2 transition-colors hover:text-vx-fg">{t.label('Terms')}</LegalLink>
-            <LegalLink element="Link" href="/legal/privacy" className="py-2 transition-colors hover:text-vx-fg">{t.label('Privacy')}</LegalLink>
-            <LegalLink element="Link" href="/legal/aup" className="py-2 transition-colors hover:text-vx-fg">{t.label('Acceptable Use')}</LegalLink>
-            <LegalLink element="Link" href="/legal/cinema-content" className="py-2 transition-colors hover:text-vx-fg">{t.label('Cinema Content')}</LegalLink>
-            <Link href="/design-system" className="py-2 transition-colors hover:text-vx-fg">{t.label('Design')}</Link>
+            <LegalLink element="Link" href="/legal/terms" className="py-2 pointer-coarse:py-3.5 transition-colors hover:text-vx-fg">{t.label('Terms')}</LegalLink>
+            <LegalLink element="Link" href="/legal/privacy" className="py-2 pointer-coarse:py-3.5 transition-colors hover:text-vx-fg">{t.label('Privacy')}</LegalLink>
+            <LegalLink element="Link" href="/legal/aup" className="py-2 pointer-coarse:py-3.5 transition-colors hover:text-vx-fg">{t.label('Acceptable Use')}</LegalLink>
+            <LegalLink element="Link" href="/legal/cinema-content" className="py-2 pointer-coarse:py-3.5 transition-colors hover:text-vx-fg">{t.label('Cinema Content')}</LegalLink>
+            <Link href="/design-system" className="py-2 pointer-coarse:py-3.5 transition-colors hover:text-vx-fg">{t.label('Design')}</Link>
           </div>
         </div>
       </div>
@@ -240,9 +257,10 @@ export function FooterForest({ locale = 'en', t }) {
 // is for routes it can prefetch.
 
 // The row's height is the link's own padding, not a gap between rows, so the
-// whole 32px pitch is tappable; as bare inline text each link was 14px tall.
+// whole pitch is tappable (32px, 44px on touch); as bare inline text each
+// link was 14px tall.
 export function FooterLink({ href, children }) {
-  const cls = 'inline-block py-1.5 text-[13px] leading-5 text-vx-fg-body transition-colors hover:text-vx-fg underline-offset-4 hover:underline';
+  const cls = 'inline-block py-1.5 pointer-coarse:py-3 text-[13px] leading-5 text-vx-fg-body transition-colors hover:text-vx-fg underline-offset-4 hover:underline';
   if (!href) return <span className="inline-block py-1.5 text-[13px] leading-5 text-vx-fg-muted">{children}</span>;
   if (/^[a-z]+:/i.test(href)) {
     return <a href={href} className={cls}>{children}</a>;

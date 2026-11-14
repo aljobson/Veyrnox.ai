@@ -41,7 +41,7 @@ export function SkillDetailsDialog({ skill, onClose }) {
   }, [relativeHref, skill.id]);
 
   return (
-    <Modal onCancel={onClose} initialFocusRef={closeRef} aria-labelledby="skill-detail-title" className="items-end justify-center p-0 sm:items-center sm:p-6">
+    <Modal onCancel={onClose} initialFocusRef={closeRef} aria-labelledby="skill-detail-title" className="vx-overlay-sheet items-end justify-center p-0 sm:items-center sm:p-6">
       <article className="max-h-[92dvh] w-full max-w-2xl overflow-y-auto rounded-t-2xl border border-vx-border bg-vx-base p-5 shadow-2xl sm:rounded-2xl sm:p-7">
         <header className="flex items-start justify-between gap-5 border-b border-vx-border pb-5">
           <div className="flex min-w-0 items-start gap-4 sm:gap-5">

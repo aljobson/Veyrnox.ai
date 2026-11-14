@@ -121,7 +121,7 @@ export default function PhoneOtpForm() {
             )}
 
             <div role="status" aria-live="polite" className={notice ? 'block' : 'sr-only'}>
-                {notice && <div className={`flex items-start gap-2 rounded-md border px-3 py-2 text-xs ${notice.kind === 'error' ? 'border-vx-danger/30 bg-vx-danger/10 text-vx-danger' : 'border-vx-accent/30 bg-vx-accent/10 text-vx-accent'}`}>
+                {notice && <div className={`flex items-start gap-2 rounded-md border px-3 py-2 text-xs ${notice.kind === 'error' ? 'border-vx-danger/30 bg-vx-danger/10 text-vx-danger' : 'border-vx-accent/30 bg-vx-base text-vx-accent'}`}>
                     <span aria-hidden="true">{notice.kind === 'error' ? '✕' : '✓'}</span><span>{notice.text}</span>
                 </div>}
             </div>

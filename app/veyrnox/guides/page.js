@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { MarketingNav } from '../_components/NavBar';
 import { Main } from '../_components/Main';
+import { FooterForest } from '../_sections/footer';
 import { GUIDES } from '../_lib/guides';
 import { OPEN_GRAPH_BASE } from '../../seo';
 import { JsonLd } from '../../seo';
@@ -45,6 +46,7 @@ export default async function Guides() {
         </ul>
         </div>
       </Main>
+      <FooterForest locale={locale} t={t} flush />
     </div>
   );
 }

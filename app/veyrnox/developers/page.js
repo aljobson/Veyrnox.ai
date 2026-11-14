@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { MarketingNav } from '../_components/NavBar';
 import { CopyButton } from '../_components/CopyButton';
 import { Main } from '../_components/Main';
+import { FooterForest } from '../_sections/footer';
 import { getT } from '../../../lib/i18n/server';
 import { pageAlternates, openGraphLocale } from '../../../lib/i18n/metadata.mjs';
 import { rich } from '../../../lib/i18n/rich';
@@ -33,7 +34,7 @@ const endpoints = [
 const CODE = (text) => <code className="font-vx-mono text-[13px]">{text}</code>;
 
 export default async function DevelopersPage() {
-  const { t } = await getT();
+  const { locale, t } = await getT();
   return <div className="min-h-dvh">
     <MarketingNav />
     <Main className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-14 sm:pt-20 pb-24">
@@ -105,5 +106,6 @@ export default async function DevelopersPage() {
         </div>
       </section>
     </Main>
+    <FooterForest locale={locale} t={t} flush />
   </div>;
 }

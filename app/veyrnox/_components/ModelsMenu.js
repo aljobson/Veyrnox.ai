@@ -8,7 +8,7 @@ export function ModelsMenu({ active = false }) {
   const { t } = useI18n();
   const menuRef = useRef(null);
   // A <details> never closes itself: close on Escape (focus back on the summary),
-  // on a click outside, and after a link inside is followed.
+  // on a click or keyboard focus outside, and after a link inside is followed.
   useEffect(() => {
     const el = menuRef.current;
     if (!el) return undefined;
@@ -21,10 +21,12 @@ export function ModelsMenu({ active = false }) {
     const onClick = (e) => { if (e.target.closest?.('a')) el.open = false; };
     document.addEventListener('keydown', onKey);
     document.addEventListener('pointerdown', onDown);
+    document.addEventListener('focusin', onDown);
     el.addEventListener('click', onClick);
     return () => {
       document.removeEventListener('keydown', onKey);
       document.removeEventListener('pointerdown', onDown);
+      document.removeEventListener('focusin', onDown);
       el.removeEventListener('click', onClick);
     };
   }, []);
@@ -73,8 +75,8 @@ export function ModelsMenu({ active = false }) {
                     <span className="flex min-w-0 items-center gap-2">
                       <span className="truncate text-[13px] font-bold text-vx-fg">{model.name}</span>
                       {tag && (
-                        <span className={`shrink-0 rounded-full px-1.5 py-0.5 font-vx-mono text-[9px] font-black ${
-                          model.premium ? 'bg-vx-money/15 text-vx-money' : 'bg-vx-accent/12 text-vx-accent'
+                        <span className={`shrink-0 rounded-full bg-vx-base px-1.5 py-0.5 font-vx-mono text-[9px] font-black ${
+                          model.premium ? 'text-vx-money' : 'text-vx-accent'
                         }`}>
                           {tag}
                         </span>

@@ -45,7 +45,7 @@ test('Arabic document direction and touched layout edges use logical placement',
   assert.equal(localeInfo('ar').hreflang, 'ar');
   const root = readFileSync('app/layout.js', 'utf8');
   assert.match(root, /<html lang=\{info.hreflang\} dir=\{info.dir\}/);
-  for (const file of ['app/veyrnox/_components/NavBar.js', 'app/veyrnox/_components/chat/ChatWorkspace.js', 'app/veyrnox/app/library/page.js', 'app/veyrnox/app/create/page.js']) {
+  for (const file of ['app/veyrnox/_components/NavBar.js', 'app/veyrnox/_components/chat/ChatWorkspace.js', 'app/veyrnox/app/library/page.js', 'app/veyrnox/_components/LibraryJobCard.js', 'app/veyrnox/app/create/page.js']) {
     assert.doesNotMatch(readFileSync(file, 'utf8'), /(?:className=|className:[^\n]*)[^\n]*(?:\b(?:left|right|ml|mr|pl|pr)-|\bborder-[lr](?:-|\s))/, file);
   }
 });

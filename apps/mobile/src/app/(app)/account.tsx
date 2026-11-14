@@ -15,7 +15,7 @@ import { fetchProfile, type Profile } from '../../lib/auth/accountCalls';
 import { signInMethodKey } from '../../lib/accountSecurity';
 import { LEGAL_LINKS, SUPPORT_EMAIL } from '../../lib/account';
 import { usePush } from '../../push/pushContext';
-import { LIST_END_PADDING } from '../../theme';
+import { ds, LIST_END_PADDING } from '../../theme';
 import { CREATOR_PROFILE_ENABLED, fetchVibeStatus, withVibeDeadline } from '../../lib/creatorProfile';
 import { runVibeIntent } from '../../lib/creatorProfileStore';
 import { getCacheUser, subscribeCacheUser } from '../../lib/appCache';
@@ -30,6 +30,8 @@ export default function Account() {
     const styles = useThemedStyles(sheets);
     const { api, signOut, getAccessToken, beginSessionTask, generation } = useAuth();
     const [profile, setProfile] = useState<Profile | null>(null);
+    const [profileFailed, setProfileFailed] = useState(false);
+    const [profileAttempt, setProfileAttempt] = useState(0);
     const push = usePush();
     const [pushNote, setPushNote] = useState<string | null>(null);
     const [pushDenied, setPushDenied] = useState(false);
@@ -40,14 +42,18 @@ export default function Account() {
     const [stayBusy, setStayBusy] = useState(false);
     const [stayNote, setStayNote] = useState<string | null>(null);
 
-    // Best effort: when it fails the section simply shows no details.
+    // When the read fails the card says so and offers another try.
     useEffect(() => {
         let live = true;
-        fetchProfile(getAccessToken, 'account').then((p) => live && setProfile(p), () => undefined);
+        fetchProfile(getAccessToken, 'account').then((p) => live && setProfile(p), () => live && setProfileFailed(true));
         return () => {
             live = false;
         };
-    }, [getAccessToken]);
+    }, [getAccessToken, profileAttempt]);
+    function retryProfile() {
+        setProfileFailed(false);
+        setProfileAttempt((attempt) => attempt + 1);
+    }
 
     const owner = useSyncExternalStore(subscribeCacheUser, getCacheUser, getCacheUser);
     const [vibeStatus, setVibeStatus] = useState<{ owner: string; generation: number; available: boolean } | null>(null);
@@ -129,11 +135,19 @@ export default function Account() {
             <Stack.Screen options={{ title: t('account.title') }} />
 
             <Section title={t('acct.profile')}>
-                <Card style={styles.row} accessible accessibilityLabel={rawText(`${t('acct.email')}: ${profile?.email ?? t('acct.profileLoading')}`)}>
-                    <Text variant="footnote" style={styles.note}>{t('acct.email')}</Text>
-                    <Text variant="body" style={styles.rowText}>{profile?.email ?? t('acct.profileLoading')}</Text>
-                    {profile ? <Text variant="footnote" style={styles.note}>{t('acct.signedInWith', { method: t(signInMethodKey(profile.provider)) })}</Text> : null}
-                </Card>
+                {profileFailed && !profile ? (
+                    <Card style={[styles.row, styles.problem]}>
+                        <Text variant="footnote" style={styles.note}>{t('acct.email')}</Text>
+                        <Text variant="body" tone="danger" accessibilityRole="alert">{t('acct.profileError')}</Text>
+                        <Button variant="secondary" size="md" label={t('recovery.retry')} containerStyle={styles.retry} style={styles.retryOutline} onPress={retryProfile} />
+                    </Card>
+                ) : (
+                    <Card style={styles.row} accessible accessibilityLabel={rawText(`${t('acct.email')}: ${profile?.email ?? t('acct.profileLoading')}`)}>
+                        <Text variant="footnote" style={styles.note}>{t('acct.email')}</Text>
+                        <Text variant="body" style={styles.rowText}>{profile?.email ?? t('acct.profileLoading')}</Text>
+                        {profile ? <Text variant="footnote" style={styles.note}>{t('acct.signedInWith', { method: t(signInMethodKey(profile.provider)) })}</Text> : null}
+                    </Card>
+                )}
                 <Row label={t('public.account.signOut')} danger onPress={() => confirmSignOut(onSignOut)} />
                 <Link href="/security" asChild>
                     <Row icon="user" label={t('acct.securityRow')} />
@@ -282,12 +296,17 @@ const sheets = themedStyles((p) => ({
     borderInk: { color: p.borderSubtle },
     accentInk: { color: p.accent },
     screen: { flex: 1, backgroundColor: p.bg },
-    content: { padding: 16, paddingBottom: 16 + LIST_END_PADDING, gap: 24 },
+    content: { paddingHorizontal: ds.space.gutter, paddingTop: ds.space.lg, paddingBottom: ds.space.lg + LIST_END_PADDING, gap: 24 },
     section: { gap: 8 },
     sectionTitle: { color: p.textSecondary },
-    row: { backgroundColor: p.surface, borderColor: p.borderSubtle, borderWidth: 1, borderRadius: 12, padding: 16 },
+    row: { backgroundColor: p.surface, borderColor: p.borderSubtle, borderWidth: 1, borderRadius: ds.radius.md, padding: 16 },
+    // A step down from the card surface. The two greys are too close to tell apart (about 1.1:1), so the secondary
+    // Retry button also takes a strong outline (3.6:1 light, 4.2:1 dark, 4.4:1 OLED) to read as a button.
+    problem: { gap: ds.space.sm, backgroundColor: p.bgElevated1 },
+    retry: { alignSelf: 'flex-start' },
+    retryOutline: { borderWidth: 1, borderColor: p.borderStrong },
     rowText: { color: p.textPrimary, flexShrink: 1 },
-    switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, backgroundColor: p.surface, borderColor: p.borderSubtle, borderWidth: 1, borderRadius: 12, padding: 16 },
+    switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, backgroundColor: p.surface, borderColor: p.borderSubtle, borderWidth: 1, borderRadius: ds.radius.md, padding: 16 },
     off: { opacity: 0.5 },
     note: { color: p.textSecondary },
     signOutText: { color: p.accent },

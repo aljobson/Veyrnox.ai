@@ -155,10 +155,10 @@ function PreviewProgress({ title, progress }) {
 function BeatCard({ beat, playing, progress, onToggle, onMix }) {
   const { t } = useI18n();
   return (
-    <article className="group rounded-2xl border border-vx-border bg-vx-panel p-4 shadow-xl transition hover:-translate-y-0.5 hover:border-vx-border-boost sm:p-5">
+    <article className="group rounded-2xl border border-vx-border bg-vx-panel p-4 shadow-xl transition motion-safe:hover:-translate-y-0.5 hover:border-vx-border-boost sm:p-5">
       <div className="flex items-start gap-4">
         <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-vx-panel-raised sm:h-20 sm:w-20">
-          <Image src={beat.artwork} alt={t('musicDiscover.cover', { title: beat.title })} fill sizes="80px" className="object-cover transition duration-500 group-hover:scale-[1.03]" />
+          <Image src={beat.artwork} alt={t('musicDiscover.cover', { title: beat.title })} fill sizes="80px" className="object-cover transition duration-500 motion-safe:group-hover:scale-[1.03]" />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-3">
@@ -299,7 +299,7 @@ export function MusicDiscover({ initialSample = null, initialMix = null, initial
     setActiveSavedMixId('');
     setMixName(`${beat.title} mix`);
     setSaveNotice(null);
-    window.requestAnimationFrame(() => document.querySelector('[aria-label^="Mix "]')?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+    window.requestAnimationFrame(() => document.querySelector('[aria-label^="Mix "]')?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' }));
   }
 
   function updateMix(next) {

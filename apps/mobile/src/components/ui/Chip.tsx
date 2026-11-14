@@ -1,6 +1,7 @@
 import { rawText } from '../../lib/i18n/translate';
 import { ControlLabelContext } from './ControlLabelContext';
 import { getLocale } from '../../lib/i18n';
+import { playSelection } from '../../lib/haptics';
 import { Pressable, View, type PressableProps } from 'react-native';
 import { ds } from '../../theme';
 import type { ReactNode } from 'react';
@@ -18,8 +19,10 @@ export function Chip({ label, selected, onPress, style, fullWidth = false, icon,
             {trailingIcon ? <Icon name={trailingIcon} size={16} /> : null}
         </ControlLabelContext>
     );
+    // A tick only when the tap changes something: a selected chip stays selected, a switch always flips.
+    const ticks = !selected || props.accessibilityRole === 'switch';
     return onPress ? (
-        <Pressable {...props} accessibilityRole={props.accessibilityRole ?? "button"} accessibilityLabel={rawText(props.accessibilityLabel ?? label)} accessibilityState={{ ...props.accessibilityState, ...(selected === undefined || props.accessibilityRole === 'switch' ? {} : { selected }) }} onPress={onPress} style={(state) => [s.hit, props.disabled && s.disabled, typeof style === 'function' ? style(state) : style]}>
+        <Pressable {...props} accessibilityRole={props.accessibilityRole ?? "button"} accessibilityLabel={rawText(props.accessibilityLabel ?? label)} accessibilityState={{ ...props.accessibilityState, ...(selected === undefined || props.accessibilityRole === 'switch' ? {} : { selected }) }} onPress={(event) => { if (ticks) void playSelection(); onPress(event); }} style={(state) => [s.hit, props.disabled && s.disabled, typeof style === 'function' ? style(state) : style]}>
             <View style={[s.chip, translated && { maxWidth: '100%' }, fullWidth && s.fullWidth, selected && s.selected]}>{selected ? <View pointerEvents="none" style={s.outline} /> : null}{content}</View>
         </Pressable>
     ) : (

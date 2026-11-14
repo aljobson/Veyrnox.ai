@@ -36,7 +36,7 @@ export default async function NotFound() {
             <p className="mt-6 text-lg text-vx-fg-body max-w-[40ch] leading-[1.5]">{t('notfound.lead')}</p>
             <Link
               href={localizedHref(locale, '/')}
-              className="vx-press inline-block mt-9 rounded-full bg-vx-fg text-vx-base px-7 py-3.5 text-[15px] font-extrabold hover:bg-vx-fg/85"
+              className="vx-press inline-block mt-9 rounded-full bg-vx-accent text-vx-accent-ink px-7 py-3.5 text-[15px] font-extrabold hover:bg-vx-accent-hover"
             >
               {t('notfound.back')}
             </Link>

@@ -157,7 +157,7 @@ function ServerCandidate({ candidate, title }) {
           <p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-accent">Version {label}</p>
           <h3 className="mt-1 font-vx text-xl font-black">{title || `Private draft ${label}`}</h3>
         </div>
-        <span className={`rounded-full border px-3 py-1 text-xs font-bold ${state === 'ready' ? 'border-vx-success/50 text-vx-success' : state === 'refunded' || state === 'failed' ? 'border-vx-danger/50 text-vx-danger' : 'border-vx-border text-vx-fg-muted'}`}>
+        <span className={`rounded-full border px-3 py-1 text-xs font-bold ${state === 'ready' ? 'border-vx-accent/50 text-vx-accent' : state === 'refunded' || state === 'failed' ? 'border-vx-danger/50 text-vx-danger' : 'border-vx-border text-vx-fg-muted'}`}>
           {LABELS[state] || state}
         </span>
       </div>

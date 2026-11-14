@@ -167,7 +167,7 @@ function InboxDashboard() {
       </div>
       <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label={t("app.publish.inbox.conversationState")}>
         {states.map((item) => <button key={item.key} type="button" aria-pressed={state === item.key}
-          className={`${button} ${state === item.key ? 'border-vx-accent bg-vx-accent text-black' : ''}`}
+          className={`${button} ${state === item.key ? 'border-vx-accent bg-vx-accent text-vx-accent-ink' : ''}`}
           onClick={() => { setState(item.key); setSelected(null); }}>{t(item.labelKey)}{listing?.counts?.[item.key] !== undefined ? ` (${number(listing.counts[item.key])})` : ''}</button>)}
       </div>
     </section>
@@ -181,7 +181,7 @@ function InboxDashboard() {
             <div className="flex items-start gap-3">
               <span className="mt-0.5"><NetworkLogo network={thread.network} /></span>
               <span className="min-w-0 flex-1"><span className="flex items-center justify-between gap-2"><strong className="truncate text-sm">{thread.participant_name || t("app.publish.inbox.socialUser")}</strong>
-                {thread.unread_count > 0 && <span className="rounded-full bg-vx-accent px-2 py-0.5 text-xs font-black text-black">{number(thread.unread_count)}</span>}</span>
+                {thread.unread_count > 0 && <span className="rounded-full bg-vx-accent px-2 py-0.5 text-xs font-black text-vx-accent-ink">{number(thread.unread_count)}</span>}</span>
                 <span className="mt-1 block truncate text-xs text-vx-fg-muted">{label(thread.network)} · {kindLabel(thread.kind)} · {thread.account_name || t("app.publish.analytics.account")}</span>
                 <span className="mt-2 block text-sm text-vx-fg-body line-clamp-2">{thread.preview || thread.subject || t("app.publish.inbox.mediaActivity")}</span>
                 <span className="mt-2 flex flex-wrap gap-1">{thread.priority !== 'normal' && <span className="rounded-full border border-vx-border px-2 py-0.5 text-[11px] font-bold capitalize">{priorityLabel(thread.priority)}</span>}
@@ -209,7 +209,7 @@ function Upgrade() {
     <p className="text-xs font-bold uppercase tracking-widest text-vx-accent">{t("publish.plan.colPlan")}</p>
     <h2 className="mt-2 text-2xl font-black">{t("app.publish.inbox.unlock")}</h2>
     <p className="mt-3 text-sm text-vx-fg-body">{t("app.publish.inbox.planIncludes")}</p>
-    <Link href="/app/publish/plan" className="mt-5 inline-block rounded-full bg-vx-accent px-5 py-2.5 text-sm font-bold text-black">{t("app.publish.smartlink.viewPlan")}</Link>
+    <Link href="/app/publish/plan" className="mt-5 inline-block rounded-full bg-vx-accent px-5 py-2.5 text-sm font-bold text-vx-accent-ink">{t("app.publish.smartlink.viewPlan")}</Link>
   </section>;
 }
 
@@ -235,9 +235,9 @@ function Conversation({ selected, members, canTriage, canReply, onAction, onRepl
     </header>
     {canTriage && <Workflow key={`${thread.id}:${(thread.tags || []).join('|')}`} thread={thread} members={members} onAction={onAction} />}
     <ol className="flex-1 space-y-3 overflow-y-auto p-4">{messages.map((message) => <li key={message.id} className={`flex ${message.direction === 'outbound' ? 'justify-end' : 'justify-start'}`}>
-      <div className={`max-w-[85%] rounded-2xl px-4 py-3 ${message.direction === 'outbound' ? 'bg-vx-accent text-black' : 'bg-vx-panel text-vx-fg'}`}>
+      <div className={`max-w-[85%] rounded-2xl px-4 py-3 ${message.direction === 'outbound' ? 'bg-vx-accent text-vx-accent-ink' : 'bg-vx-panel text-vx-fg'}`}>
         <p className="whitespace-pre-wrap text-sm">{message.body || t("app.publish.inbox.attachment")}</p>
-        <p className={`mt-2 text-xs ${message.direction === 'outbound' ? 'text-black/70' : 'text-vx-fg-muted'}`}>{dateTime.format(new Date(message.sent_at))}{message.delivery_status === 'failed' ? t("app.publish.inbox.failedSuffix") : ''}</p>
+        <p className={`mt-2 text-xs ${message.direction === 'outbound' ? 'text-vx-accent-ink/70' : 'text-vx-fg-muted'}`}>{dateTime.format(new Date(message.sent_at))}{message.delivery_status === 'failed' ? t("app.publish.inbox.failedSuffix") : ''}</p>
       </div>
     </li>)}</ol>
     {canReply && <InboxReplySuggestions threadId={thread.id} suggestions={selected.suggestions || []} onUse={setReplyDraft} onChanged={onReplied} />}
@@ -280,7 +280,7 @@ function Notes({ thread, notes, canWrite, onAdded }) {
   }
   return <section aria-label={t("app.publish.inbox.notes")} className="border-t border-vx-border bg-vx-panel/30 p-4">
     <h3 className="text-sm font-black">{t("app.publish.inbox.notes")}</h3>
-    {notes.length === 0 ? <p className="mt-2 text-xs text-vx-fg-muted">{t("app.publish.inbox.emptyNotes")}</p> : <ol className="mt-3 space-y-2">{notes.map((item) => <li key={item.id} className="rounded-xl border border-vx-border bg-vx-bg p-3"><p className="whitespace-pre-wrap text-sm">{item.body}</p><p className="mt-2 text-xs text-vx-fg-muted">{item.actor_email} · {dateTime.format(new Date(item.created_at))}</p></li>)}</ol>}
+    {notes.length === 0 ? <p className="mt-2 text-xs text-vx-fg-muted">{t("app.publish.inbox.emptyNotes")}</p> : <ol className="mt-3 space-y-2">{notes.map((item) => <li key={item.id} className="rounded-xl border border-vx-border bg-vx-base p-3"><p className="whitespace-pre-wrap text-sm">{item.body}</p><p className="mt-2 text-xs text-vx-fg-muted">{item.actor_email} · {dateTime.format(new Date(item.created_at))}</p></li>)}</ol>}
     {canWrite && <form onSubmit={submit} className="mt-3 flex gap-2"><input className={`${input} min-w-0 flex-1`} value={note} maxLength={2000} placeholder={t("app.publish.inbox.notePlaceholder")} onChange={(event) => setNote(event.target.value)} />
       <button type="submit" className={button} disabled={busy || !note.trim()}>{busy ? t("social.saving") : t("app.publish.inbox.addNote")}</button></form>}
     {error && <p role="alert" className="mt-2 text-sm text-vx-danger">{error}</p>}
@@ -301,7 +301,7 @@ function Reply({ thread, body, onBodyChange, onReplied }) {
   }
   return <form onSubmit={submit} className="border-t border-vx-border p-4">
     <label className="grid gap-2 text-sm font-bold">{t("app.publish.inbox.reply")}<textarea className={`${input} min-h-24 resize-y font-normal`} value={body} maxLength={8000} onChange={(event) => onBodyChange(event.target.value)} /></label>
-    <div className="mt-3 flex items-center justify-between gap-3"><span className="text-xs text-vx-fg-muted">{number(body.length)}/{number(8000)}</span><button type="submit" className={`${button} border-vx-accent bg-vx-accent text-black`} disabled={busy || !body.trim()}>{busy ? t("app.publish.inbox.sending") : t("app.publish.inbox.sendReply")}</button></div>
+    <div className="mt-3 flex items-center justify-between gap-3"><span className="text-xs text-vx-fg-muted">{number(body.length)}/{number(8000)}</span><button type="submit" className={`${button} border-vx-accent bg-vx-accent text-vx-accent-ink`} disabled={busy || !body.trim()}>{busy ? t("app.publish.inbox.sending") : t("app.publish.inbox.sendReply")}</button></div>
     {error && <p role="alert" className="mt-3 text-sm text-vx-danger">{error}</p>}
   </form>;
 }

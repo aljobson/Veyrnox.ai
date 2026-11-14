@@ -70,7 +70,7 @@ function CalendarControls({today}) {
         return()=>{active=false;window.clearTimeout(timeout);};
     },[queryKey,range.from,range.to,status,network,planTier,t]);
     if(planTier===null)return <p className="text-sm text-vx-fg-muted">{t("app.publish.analytics.loadingPlan")}</p>;
-    if(planTier!=='publish')return <section className="rounded-2xl border border-vx-accent/40 bg-vx-accent/[0.06] p-6"><p className="text-xs font-bold uppercase tracking-widest text-vx-accent">{t("publish.plan.colPlan")}</p><h2 className="mt-2 text-2xl font-black">{t("app.publish.calendar.unlock")}</h2><p className="mt-3 text-sm text-vx-fg-body">{t("app.publish.calendar.planIncludes")}</p><Link href="/app/publish/plan" className="mt-5 inline-block rounded-full bg-vx-accent px-5 py-2.5 text-sm font-bold text-black">{t("app.publish.smartlink.viewPlan")}</Link></section>;
+    if(planTier!=='publish')return <section className="rounded-2xl border border-vx-accent/40 bg-vx-accent/[0.06] p-6"><p className="text-xs font-bold uppercase tracking-widest text-vx-accent">{t("publish.plan.colPlan")}</p><h2 className="mt-2 text-2xl font-black">{t("app.publish.calendar.unlock")}</h2><p className="mt-3 text-sm text-vx-fg-body">{t("app.publish.calendar.planIncludes")}</p><Link href="/app/publish/plan" className="mt-5 inline-block rounded-full bg-vx-accent px-5 py-2.5 text-sm font-bold text-vx-accent-ink">{t("app.publish.smartlink.viewPlan")}</Link></section>;
     const loading=result?.key!==queryKey;
     const posts=loading?[]:result.posts;
     const currentDay=dateKey(new Date());
@@ -93,7 +93,7 @@ function CalendarControls({today}) {
     const groups=new Map(range.days.map(day=>[day,posts.filter(p=>dateKey(p.scheduled_at)===day)]));
     return <div className="space-y-5">
         <div className="flex flex-wrap gap-2" role="group" data-assistant-target="publish.calendar" aria-label={t("app.publish.calendar.view")}>
-            {CALENDAR_VIEWS.map(option=><button key={option.id} type="button" className={`${button} capitalize ${view===option.id?'bg-vx-accent text-black':''}`} aria-pressed={view===option.id} onClick={()=>setView(option.id)}>{t(option.key)}</button>)}
+            {CALENDAR_VIEWS.map(option=><button key={option.id} type="button" className={`${button} capitalize ${view===option.id?'bg-vx-accent text-vx-accent-ink':''}`} aria-pressed={view===option.id} onClick={()=>setView(option.id)}>{t(option.key)}</button>)}
         </div>
         <div className="flex flex-wrap items-center gap-3">
             <button type="button" className={button} onClick={()=>setAnchor(shiftCalendar(anchor,view,-1))} aria-label={t(view === 'week' ? 'app.publish.calendar.previousWeek' : 'app.publish.calendar.previousMonth')}>{t('app.publish.calendar.previous')}</button>
@@ -170,7 +170,7 @@ function ScheduleDialog({mode,post,value,timezone,onClose,onSaved}) {
             <label className="block text-sm font-bold">{t("app.publish.calendar.newDate")}<input ref={inputRef} type="datetime-local" required className={`${input} mt-2 block w-full`} value={when} disabled={busy} onChange={e=>setWhen(e.target.value)}/></label>
             {proposed&&<p className="text-xs text-vx-fg-muted">{t('app.publish.calendar.utcTime',{time:proposed})}</p>}
             {error&&<p role="alert" className="text-sm text-vx-danger">{error}</p>}
-            <div className="flex flex-wrap gap-3"><button type="submit" className={`${button} bg-vx-accent text-black`} disabled={busy}>{busy?t("social.saving"):restoring?t("app.publish.calendar.restorePost"):t("app.publish.calendar.confirmTime")}</button><button type="button" className={button} disabled={busy} onClick={onClose}>{t("authGate.close")}</button></div>
+            <div className="flex flex-wrap gap-3"><button type="submit" className={`${button} bg-vx-accent text-vx-accent-ink`} disabled={busy}>{busy?t("social.saving"):restoring?t("app.publish.calendar.restorePost"):t("app.publish.calendar.confirmTime")}</button><button type="button" className={button} disabled={busy} onClick={onClose}>{t("authGate.close")}</button></div>
         </form>
     </Modal>;
 }

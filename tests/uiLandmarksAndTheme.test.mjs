@@ -56,7 +56,7 @@ test('the account button opens a list of links, not an ARIA menu, and takes focu
 });
 
 test('a toggle has one name, and the password field is named by its label alone', () => {
-    const library = read('app/veyrnox/app/library/page.js');
+    const library = read('app/veyrnox/_components/LibraryJobCard.js');
     assert.match(library, /aria-pressed=\{selected\} data-testid="library-add-to-edit"/);
     const menu = read('app/veyrnox/_components/MobileMenu.js');
     assert.match(menu, /aria-expanded=\{open\}/);
@@ -145,3 +145,27 @@ test('the paper slip uses the light-theme red', () => {
     const light = /:root\[data-theme='light'\] \{[^}]*--vx-danger: ([\d ]+);/.exec(read('app/globals.css'))[1];
     assert.match(paper, new RegExp(`--vx-danger: ${light};`));
 });
+
+test('every vx colour class has a token behind it', async () => {
+    // A class such as border-vx-border-boost with no --color-vx-border-boost in
+    // the theme compiles to nothing: 75 classes did, and their outlines fell
+    // back to a near-white grey. A new colour name needs a token first.
+    const { readdirSync } = await import('node:fs');
+    const tokens = new Set([...read('app/globals.css').matchAll(/--color-vx-([a-z-]+):/g)].map((m) => m[1]));
+    const missing = new Set();
+    const walk = (dir) => {
+        for (const entry of readdirSync(new URL(`../${dir}`, import.meta.url), { withFileTypes: true })) {
+            const path = `${dir}/${entry.name}`;
+            if (entry.isDirectory()) { if (entry.name !== 'node_modules') walk(path); continue; }
+            if (!/\.(js|jsx)$/.test(entry.name)) continue;
+            const source = read(path);
+            for (const m of source.matchAll(/(?<![\w-])(?:bg|text|border|ring|outline|fill|stroke|from|to|via|decoration|divide|placeholder|caret|shadow)-vx-(?=([a-z]+(?:-[a-z]+)*))\1(?!-?\$\{)/g)) {
+                if (!tokens.has(m[1])) missing.add(`${m[0]} (${path})`);
+            }
+        }
+    };
+    walk('app');
+    walk('components');
+    assert.deepEqual([...missing].slice(0, 20), []);
+});
+

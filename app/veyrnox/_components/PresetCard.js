@@ -39,14 +39,14 @@ export function PresetCard({ preset, clip = preset.clip ?? null, size = 'md', on
       mediaStyle={{ background: preset.bg, ...(roller ? {} : { aspectRatio: clip?.aspectRatio || preset.previewAspect || '4 / 5' }) }}
       imageSizes={roller ? '(max-width: 639px) 45vw, 220px' : undefined}
       footer={!roller &&
-        <div className="pt-3 flex items-baseline gap-2">
-          <div className="min-w-0">
-            <div className={`font-extrabold tracking-tight truncate ${s.title}`}>{title}</div>
-            <div className="mt-0.5 text-vx-fg-muted text-xs truncate">{preset.model}{preset.durationSeconds ? t('mobile.templateDuration', { n: preset.durationSeconds }) : ''}</div>
-            <div className="mt-1 line-clamp-1 text-[11px] text-vx-fg-muted">{preset.promptPreview ?? preset.prompt}</div>
+        <div className="pt-3">
+          <div className="flex items-baseline gap-2">
+            <div className={`min-w-0 font-extrabold tracking-tight truncate ${s.title}`}>{title}</div>
+            <span aria-hidden className="vx-leader flex-1 text-vx-fg-muted" />
+            <div className="shrink-0 font-vx-mono text-[14px] font-bold text-vx-money vx-num">{presetCredits(preset, catalog) ?? '—'} cr</div>
           </div>
-          <span aria-hidden className="vx-leader flex-1 self-start mt-3 text-vx-fg-muted" />
-          <div className="shrink-0 self-start font-vx-mono text-[14px] font-bold text-vx-money vx-num pt-0.5">{presetCredits(preset, catalog) ?? '—'} cr</div>
+          <div className="mt-0.5 text-vx-fg-muted text-xs truncate">{preset.model}{preset.durationSeconds ? t('mobile.templateDuration', { n: preset.durationSeconds }) : ''}</div>
+          <div className="mt-1 line-clamp-1 text-[11px] text-vx-fg-muted">{preset.promptPreview ?? preset.prompt}</div>
         </div>
       }
     >
@@ -55,11 +55,13 @@ export function PresetCard({ preset, clip = preset.clip ?? null, size = 'md', on
           and this chip on the right overlapped there (the "N" was cut off),
           so on the roller the flag moves into the caption instead. */}
       {preset.isNew && !roller && <span className="absolute end-3 top-3 rounded-full bg-vx-base/80 px-2 py-0.5 font-vx-mono text-[10px] font-bold tracking-[0.12em]">{t('mobile.new')}</span>}
+      {/* The caption is black in both themes, so the price keeps the dark
+          theme's amber here: the light theme's reads 1.8:1 on it. */}
       {roller && (
-        <span className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 bg-black/75 p-2.5 text-white backdrop-blur-sm">
+        <span className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 bg-black/75 p-2.5 text-white backdrop-blur-sm [--vx-money:228_169_60]">
           <span className="min-w-0">
             <span className="block truncate text-[12px] font-extrabold tracking-tight">{title}</span>
-            <span className="mt-0.5 block truncate font-vx-mono text-[9px] text-white/70">
+            <span className="mt-0.5 block truncate font-vx-mono text-[11px] text-white/70">
               {preset.isNew && <span className="me-1.5 font-bold tracking-[0.12em] text-white">{t('mobile.new')}</span>}
               {preset.durationSeconds ? t('mobile.templateDuration', { n: preset.durationSeconds }) : preset.model}
             </span>

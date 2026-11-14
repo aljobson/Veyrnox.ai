@@ -8,6 +8,7 @@ import { Main } from '../../_components/Main';
 import Link from 'next/link';
 import { CheckInEntry } from '../../_components/CheckInHost';
 import { Chip } from '../../_components/Chip';
+import { Button } from '../../_components/Button';
 import { TopUpPacks, TopUpReturn } from '../../_components/TopUpPacks';
 import { CreditStatement } from '../../_components/CreditStatement';
 import { CreditSubscriptions } from '../../_components/CreditSubscriptions';
@@ -24,6 +25,8 @@ const STATE_UI = {
   failed:    { chip: 'danger', glyph: '✕' },
   queued:    { chip: 'accent', glyph: '●' },
   running:   { chip: 'accent', glyph: '●' },
+  // The status read failed: neither QUEUED nor a refund is known.
+  unknown:   { chip: 'neutral', glyph: '?' },
 };
 
 export default function Credits() {
@@ -33,14 +36,19 @@ export default function Credits() {
   const [balance, setBalance] = useState(null);
   const [free, setFree] = useState(null);
   const [error, setError] = useState(null);
-  const [ledger, setLedger] = useState([]);
+  // null until the job reads answer: no rows yet is not the same as no generations.
+  const [ledger, setLedger] = useState(null);
+  const [retrying, setRetrying] = useState(false);
+  const [ledgerRun, setLedgerRun] = useState(0);
+  // The figure rolls only when it changes after the first one shown, not on load.
+  const [figure, setFigure] = useState({ last: null, current: balance });
+  if (figure.current !== balance) setFigure({ last: figure.current, current: balance });
   const load = useCallback(async () => {
     try {
-      // Clear first: a transient failure used to leave the previous error up
-      // permanently, so a signed-in user kept seeing "Sign in to see your
-      // balance" after the next successful load.
-      setError(null);
       const b = await gatewayFetch('/balance');
+      // Cleared on success only: the alert and its Try again button stay
+      // mounted while a retry runs, and a good read always removes the error.
+      setError(null);
       setBalance(b.balance);
       setFree(b.free_credits > 0 && b.free_expires_at ? { credits: b.free_credits, expiresAt: b.free_expires_at } : null);
     } catch (e) {
@@ -51,11 +59,19 @@ export default function Credits() {
       }
     }
   }, []);
+  const retry = async () => {
+    if (retrying) return;
+    setRetrying(true);
+    setLedgerRun((n) => n + 1);
+    await load();
+    setRetrying(false);
+  };
 
   useEffect(() => {
     load();
-    const onFocus = () => load();
-    const onBalance = () => load();
+    // Rows that could not be checked are read again too, not only on Retry.
+    const onFocus = () => { load(); setLedgerRun((n) => n + 1); };
+    const onBalance = () => { load(); setLedgerRun((n) => n + 1); };
     window.addEventListener('focus', onFocus);
     window.addEventListener('veyrnox:balance-changed', onBalance);
     return () => {
@@ -74,12 +90,12 @@ export default function Credits() {
         try {
           const j = await gatewayFetch(`/jobs/${h.job_id}`);
           return { ...h, state: j.state, error_code: j.error_code, refunded: j.refunded === true };
-        } catch { return { ...h, state: 'queued' }; }
+        } catch { return { ...h, state: 'unknown' }; }
       }));
       if (!cancelled) setLedger(enriched);
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [ledgerRun]);
 
   return (
     <div className="min-h-dvh">
@@ -98,7 +114,7 @@ export default function Credits() {
               <div className="vx-paper px-6 sm:px-8 pt-9 pb-10">
                 <div className="text-[13px] font-bold">{t("app.credits.page.current")}</div>
                 <div className="mt-2 font-vx-mono text-[56px] sm:text-[72px] font-bold text-vx-money leading-none vx-num">
-                  {balance == null ? '—' : new Intl.NumberFormat(balanceLocale).format(balance)}
+                  <span key={balance ?? 'none'} className={figure.last != null ? 'vx-tick' : undefined}>{balance == null ? '—' : new Intl.NumberFormat(balanceLocale).format(balance)}</span>
                   <span className="text-2xl align-middle ms-2 text-vx-fg-muted">cr</span>
                 </div>
                 {free && (
@@ -121,16 +137,21 @@ export default function Credits() {
             )}
 
             {error === 'unavailable' && (
-              <div role="alert" className="mt-6 rounded-lg border border-vx-danger/40 bg-vx-danger/[0.07] px-4 py-3 text-sm text-vx-danger flex items-start gap-2">
+              <div role="alert" className="mt-6 rounded-lg border border-vx-danger/40 bg-vx-danger/[0.07] px-4 py-3 text-sm text-vx-danger grid grid-cols-[auto_minmax(0,1fr)] items-start gap-2">
                 <span aria-hidden="true">△</span>
                 <span>{t("app.credits.page.unavailable")}</span>
+                {/* aria-disabled, not disabled: a disabled button gives up keyboard focus. */}
+                <button type="button" onClick={retry} aria-disabled={retrying} aria-busy={retrying}
+                  className="vx-press col-start-2 justify-self-start rounded-full border border-vx-danger/40 px-3 py-1.5 text-xs font-bold pointer-coarse:min-h-11 aria-disabled:cursor-wait aria-disabled:opacity-50">{t("recovery.retry")}</button>
               </div>
             )}
 
             {error === 'sign_in_required' && (
-              <div className="mt-6 rounded-lg border border-vx-warn/40 bg-vx-warn/[0.07] px-4 py-3 text-sm text-vx-warn flex items-start gap-2">
+              <div className="mt-6 rounded-lg border border-vx-warn/40 bg-vx-warn/[0.07] px-4 py-3 text-sm text-vx-warn grid grid-cols-[auto_minmax(0,1fr)] items-start gap-2">
                 <span aria-hidden="true">△</span>
                 <span>{t("app.credits.page.signIn")}</span>
+                <Button type="button" size="sm" className="col-start-2 justify-self-start" onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>
+                  {t("oauth.signIn")}</Button>
               </div>
             )}
 
@@ -170,6 +191,13 @@ export default function Credits() {
       {balance != null && <UsageMeters />}
       {balance != null && <CreditStatement />}
       {balance != null && <TopUpHistory />}
+      {/* Their room is held while the balance loads, so Recent generations does not jump down. */}
+      {balance == null && !error && [0, 1, 2].map((i) => (
+        <section key={i} aria-hidden="true" className="max-w-[1200px] mx-auto px-4 sm:px-8 pb-10">
+          <div className="vx-shimmer h-7 w-48 rounded-full bg-vx-panel" />
+          <div className="vx-shimmer mt-4 h-32 rounded-2xl bg-vx-panel" />
+        </section>
+      ))}
 
       {/* ============ RECENT GENERATIONS (client-side ledger) ============ */}
       <section className="max-w-[1200px] mx-auto px-4 sm:px-8 pb-16">
@@ -177,7 +205,15 @@ export default function Credits() {
           <h2 className="text-xl font-black tracking-[-0.02em]">{t("app.credits.page.recent")}</h2>
           <p className="text-[13px] text-vx-fg-muted">{t("app.credits.page.history")}</p>
         </div>
-        {ledger.length === 0 ? (
+        {ledger === null ? (
+          <div aria-hidden="true" className="rounded-2xl border border-vx-border bg-vx-panel overflow-hidden">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="px-4 py-3 sm:px-5 border-b border-vx-border/60 last:border-b-0">
+                <div className="vx-shimmer h-6 rounded-full bg-vx-border/60" />
+              </div>
+            ))}
+          </div>
+        ) : ledger.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-vx-border p-8 text-center">
             <p className="text-[15px] text-vx-fg-body">{t("app.credits.page.empty")}</p>
             <Link href="/app/create" className="vx-press inline-block mt-4 rounded-full bg-vx-accent text-vx-accent-ink px-5 py-2.5 text-sm font-extrabold hover:bg-vx-accent-hover">{t("app.library.openStudio")}</Link>
@@ -189,8 +225,10 @@ export default function Credits() {
               // `refunded` comes from /jobs/:id; a failure whose refund has
               // not landed yet shows the debit it still is.
               const isRefund = l.state === 'failed' && l.refunded === true;
-              const delta = isRefund ? `+${number(l.credits)}` : `−${number(l.credits)}`;
-              const cls = isRefund ? 'text-vx-accent' : 'text-vx-money';
+              // No signed figure for `unknown`: −N would say the debit stands and +N that it came back.
+              const unknown = l.state === 'unknown';
+              const delta = unknown ? '—' : <span dir="ltr">{`${isRefund ? '+' : '−'}${number(l.credits)} cr`}</span>;
+              const cls = unknown ? 'text-vx-fg-muted' : isRefund ? 'text-vx-accent' : 'text-vx-money';
               const s = STATE_UI[l.state] || STATE_UI.queued;
               return (
                 <div
@@ -211,11 +249,11 @@ export default function Credits() {
                       {tOr(t, `app.credits.page.status.${l.state}`, l.state.toUpperCase())}
                     </Chip>
                     <div className={`font-vx-mono text-[14px] font-bold vx-num sm:hidden ${cls}`}>
-                      {delta} cr
+                      {delta}
                     </div>
                   </div>
                   <div className={`hidden text-end font-vx-mono text-[14px] font-bold vx-num sm:block ${cls}`}>
-                    {delta} cr
+                    {delta}
                   </div>
                 </div>
               );

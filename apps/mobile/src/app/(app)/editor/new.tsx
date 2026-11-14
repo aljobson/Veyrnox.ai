@@ -1,5 +1,6 @@
 import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
+import { usePressStyle } from '../../../components/ui/usePressStyle';
 import { directionalStyle } from '../../../lib/rtl';
 import { randomUUID } from 'expo-crypto';
 import { Image } from 'expo-image';
@@ -26,8 +27,9 @@ export default function NewEditorRoute() {
 }
 
 function Choice({ icon, title, body, disabled, onPress }: { readonly icon: MenuIcon; readonly title: string; readonly body: string; readonly disabled: boolean; readonly onPress: () => void }) {
+    const pressStyle = usePressStyle();
     return (
-        <Pressable accessibilityRole="button" accessibilityLabel={rawText(title)} accessibilityState={{ disabled }} disabled={disabled} style={({ pressed }) => [styles.choice, touchTarget, disabled && styles.disabled, pressed && styles.pressed]} onPress={onPress}>
+        <Pressable accessibilityRole="button" accessibilityLabel={rawText(title)} accessibilityState={{ disabled }} disabled={disabled} style={({ pressed }) => [styles.choice, touchTarget, disabled && styles.disabled, pressed && pressStyle]} onPress={onPress}>
             <View style={styles.iconBox}>
                 <Image source={MENU_ICONS[icon]} style={styles.icon} tintColor={colors.accent} contentFit="contain" alt="" accessibilityElementsHidden />
             </View>
@@ -123,5 +125,4 @@ const styles = StyleSheet.create({
     retry: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18, borderRadius: 13, backgroundColor: colors.accent },
     retryText: { color: colors.accentInk, fontSize: 16, fontWeight: '800' },
     disabled: { opacity: 0.4 },
-    pressed: { opacity: 0.76, transform: [{ scale: 0.992 }] },
 });

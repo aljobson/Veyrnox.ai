@@ -54,7 +54,12 @@ test('low balance renders worried decorative Vey after text and a working Buy cr
         const art = root.container.queryAll(n => n.props.pointerEvents === 'none')[0];
         expect(art.props).toMatchObject({ accessibilityElementsHidden: true, importantForAccessibility: 'no-hide-descendants' });
         expect(art.props.style.width).toBe(40);
-        expect(art.parent!.children.indexOf(buttons[0].parent!)).toBeLessThan(art.parent!.children.indexOf(art));
+        // The art is the last child of the card, after the block that holds the text and the button.
+        const siblings = art.parent!.children;
+        expect(siblings.length).toBeGreaterThan(1);
+        expect(siblings.indexOf(art)).toBe(siblings.length - 1);
+        const before = siblings.slice(0, -1).filter((n): n is typeof art => typeof n !== 'string');
+        expect(before.some(n => n.queryAll(m => m === buttons[0]).length === 1)).toBe(true);
         expect(timing.mock.calls.some(([, config]) => config.duration === 320 && config.toValue === 1)).toBe(true);
         await act(async () => buttons[0].props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }));
         expect(mockPush).toHaveBeenCalledWith('/credits');

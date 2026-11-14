@@ -53,7 +53,7 @@ export function PresetGallery({ size = 'lg', columns = 'lg:columns-3', taste = n
           value={query}
           onChange={(event) => { setQuery(event.target.value); setVisibleCount(TEMPLATE_BATCH_SIZE); }}
           placeholder={t('presets.search.placeholder')}
-          className="mt-3 w-full rounded-xl border border-vx-border bg-vx-panel px-4 py-3 text-[16px] text-vx-fg outline-none placeholder:text-vx-fg-muted focus:border-vx-accent focus:ring-2 focus:ring-vx-accent/30"
+          className="mt-3 w-full rounded-xl border border-vx-field bg-vx-panel px-4 py-3 text-[16px] text-vx-fg placeholder:text-vx-fg-muted focus:border-vx-accent focus:outline-hidden focus:ring-2 focus:ring-vx-accent/30"
         />
       </label>
       <div className="mt-7 mb-3 flex flex-wrap items-center justify-between gap-3">

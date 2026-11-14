@@ -180,8 +180,10 @@ function FloatingActions() {
         href={`mailto:${SUPPORT_EMAIL}`}
         aria-label={t('chrome.contact')}
         title={t('chrome.contactTitle')}
-        className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-vx-accent text-sm font-extrabold text-vx-accent-ink shadow-lg hover:bg-vx-accent-hover"
+        className="hidden sm:inline-flex h-11 w-11 items-center justify-center rounded-full bg-vx-accent text-sm font-extrabold text-vx-accent-ink shadow-lg hover:bg-vx-accent-hover"
       >
+        {/* Not on a phone, where it sat over prices and text: the menu
+            carries the same address there (MobileMenu.js). */}
         <Icon name="mail" />
       </a>
     </aside>
@@ -210,7 +212,7 @@ function StorageNotice({ onDismiss }) {
           type="button"
           data-storage-dismiss
           onClick={onDismiss}
-          className="shrink-0 self-start rounded-full bg-vx-accent px-5 py-2 text-[13px] font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover sm:self-auto"
+          className="shrink-0 self-start rounded-full bg-vx-accent px-5 py-2 text-[13px] font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover pointer-coarse:min-h-11 sm:self-auto"
         >
           {t('chrome.gotIt')}</button>
       </div>

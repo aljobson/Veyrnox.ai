@@ -23,7 +23,7 @@ export function ChipSelect({ 'aria-label': label, options, value, onChange, form
         <svg viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="m3 4.5 3 3 3-3" /></svg>
       </button>
       {open && (
-        <div className="absolute bottom-full start-0 z-40 mb-2 flex max-h-72 min-w-44 flex-col gap-1 overflow-y-auto rounded-2xl border border-vx-border bg-vx-panel p-2 shadow-2xl">
+        <div className="vx-menu-in origin-bottom-left rtl:origin-bottom-right absolute bottom-full start-0 z-40 mb-2 flex max-h-72 min-w-44 flex-col gap-1 overflow-y-auto rounded-2xl border border-vx-border bg-vx-panel p-2 shadow-2xl">
           {options.map((option) => (
             <button key={option} type="button" aria-pressed={value === option} onClick={() => { onChange(option); setOpen(false); }}
               className={`rounded-xl px-3 py-2 text-start font-vx-mono text-[11px] font-bold pointer-coarse:min-h-11 ${value === option ? 'bg-vx-accent/[0.1] text-vx-accent' : 'text-vx-fg-muted hover:bg-vx-fg/[0.05] hover:text-vx-fg'}`}>

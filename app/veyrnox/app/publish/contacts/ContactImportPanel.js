@@ -44,7 +44,7 @@ export default function ContactImportPanel({ accounts, onImport }) {
     <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-xl font-black">{t("app.publish.contactImport.title")}</h2>
       <p className="mt-1 text-sm text-vx-fg-muted">{t("app.publish.contactImport.help")}</p></div>
       <div role="group" aria-label={t("app.publish.contactImport.method")} className="flex gap-2">
-        {INPUT_MODES.map((item) => <button type="button" key={item} className={`${button} ${mode === item ? 'border-vx-accent bg-vx-accent text-black' : ''}`}
+        {INPUT_MODES.map((item) => <button type="button" key={item} className={`${button} ${mode === item ? 'border-vx-accent bg-vx-accent text-vx-accent-ink' : ''}`}
           aria-pressed={mode === item} onClick={() => { setMode(item); setError(''); setMessage(''); }}>{item === 'manual' ? t("app.publish.contactImport.one") : t("app.publish.contactImport.csv")}</button>)}
       </div></div>
     <form className="mt-5 grid gap-4 sm:grid-cols-2" onSubmit={submit}>
@@ -63,7 +63,7 @@ export default function ContactImportPanel({ accounts, onImport }) {
         onChange={(event) => { setFile(event.target.files?.[0] || null); setError(''); setMessage(''); }} /></label>
         <p className="mt-2 text-xs text-vx-fg-muted">{t("app.publish.contactImport.headers")}</p></div>}
       <div className="flex items-center gap-3 sm:col-span-2"><button type="submit" disabled={busy} className={button}>{busy ? t("app.publish.contactImport.importing") : mode === 'manual' ? t("app.publish.contactImport.add") : t("app.publish.contactImport.import")}</button>
-        {message && <span role="status" className="text-sm font-bold text-vx-success">{message}</span>}{error && <span role="alert" className="text-sm text-vx-danger">{error}</span>}</div>
+        {message && <span role="status" className="text-sm font-bold text-vx-accent">{message}</span>}{error && <span role="alert" className="text-sm text-vx-danger">{error}</span>}</div>
     </form>
   </section>;
 }

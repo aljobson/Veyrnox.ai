@@ -7,7 +7,7 @@ import { isAppLocalePath } from '../../../lib/i18n/localeCookie.mjs';
 import { ThemeToggle } from './ThemeToggle';
 import { Icon } from './Icon';
 import { useOddlingsPublic } from './OddlingsPublicFlag';
-import { navHref } from '../_lib/tokens';
+import { navHref, SUPPORT_EMAIL } from '../_lib/tokens';
 import { LanguageMenu } from './LanguageMenu';
 import { useI18n } from '../../../components/I18nProvider';
 
@@ -18,6 +18,7 @@ export function MobileMenu({ items: allItems, className = '', buttonLabel = 'Men
   const items = [...new Map(allItems.map((it) => [it.href, it])).values()];
   const [open, setOpen] = useState(false);
   const triggerRef = useRef(null);
+  const wrapRef = useRef(null);
   const oddlingsPublic = useOddlingsPublic();
   const { t, href: localHref } = useI18n();
 
@@ -37,10 +38,14 @@ export function MobileMenu({ items: allItems, className = '', buttonLabel = 'Men
       setOpen(false);
       triggerRef.current?.focus();
     };
+    // Tabbing past the last link leaves the panel: close it, or focus goes on behind an open menu.
+    const onFocusIn = (e) => { if (!wrapRef.current?.contains(e.target)) setOpen(false); };
     window.addEventListener('keydown', onKey);
+    document.addEventListener('focusin', onFocusIn);
     return () => {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', onKey);
+      document.removeEventListener('focusin', onFocusIn);
     };
   }, [open]);
 
@@ -74,7 +79,7 @@ export function MobileMenu({ items: allItems, className = '', buttonLabel = 'Men
   });
 
   return (
-    <div className={className} data-print="hide">
+    <div ref={wrapRef} className={className} data-print="hide">
       <button
         ref={triggerRef}
         type="button"
@@ -119,6 +124,17 @@ export function MobileMenu({ items: allItems, className = '', buttonLabel = 'Men
             ) : (
               <ul className="grid gap-1 sm:grid-cols-2 lg:grid-cols-3">{renderLinks(items)}</ul>
             )}
+            {/* The floating mail button is hidden on phones (it covered
+                prices and text), so the menu carries the support address. */}
+            <a
+              href={`mailto:${SUPPORT_EMAIL}`}
+              onClick={() => setOpen(false)}
+              data-menu-contact
+              className="vx-side-row mt-2 flex items-center gap-2 rounded-xl border border-transparent px-3 py-3 text-[15px] font-bold text-vx-fg-body"
+            >
+              <Icon name="mail" size={16} />
+              {t('chrome.contactTitle')}
+            </a>
             <div className="mt-2 flex items-center justify-between border-t border-vx-border pt-3">
               <span className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-faint">{t('ui.theme')}</span>
               <div className="flex items-center gap-2">{languageMenu && <LanguageMenu id="vx-studio-language-menu" />}<ThemeToggle /></div>

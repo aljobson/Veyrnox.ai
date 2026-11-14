@@ -7,6 +7,7 @@ import { GeneratedChip } from '../../../components/library/GeneratedChip';
 import { ApiError } from '../../../lib/api';
 import { FacelessSoundCard } from '../../../components/FacelessSoundCard';
 import { Text, Button, themedStyles, useThemedStyles } from '../../../components/ui';
+import { useReducedMotion } from '../../../components/ui/useReducedMotion';
 import { Image } from 'expo-image';
 import { InlineMedia } from '../../../components/InlineMedia';
 import { Link, Stack, useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
@@ -50,6 +51,7 @@ function elapsed(seconds: number): string {
 
 export default function JobScreen() {
     const styles = useThemedStyles(sheets);
+    const reduced = useReducedMotion();
     const { id, followup, fromCreate } = useLocalSearchParams<{ id: string; followup?: string; fromCreate?: string }>();
     const { api } = useAuth();
     const beginHandoff = useHandoffScope();
@@ -254,7 +256,7 @@ export default function JobScreen() {
         Alert.alert(t('jobCancel.confirmTitle'), cancelStatus.credits > 0
             ? plural('jobCancel.confirmPaid', cancelStatus.credits) : t('jobCancel.confirmFree'), [
             { text: t('jobCancel.keep'), style: 'cancel' },
-            { text: t('jobCancel.confirm'), style: 'destructive', onPress: doCancel },
+            { text: t('jobCancel.confirmAction'), style: 'destructive', onPress: doCancel },
         ]);
     }
 
@@ -298,7 +300,7 @@ export default function JobScreen() {
                 </ScrollView>
             ) : asset ? (
                 <View style={styles.output}>
-                    {asset.mime.startsWith('image/') ? <Image onLoad={outputReady} source={{ uri: asset.url }} style={styles.image} contentFit="contain" cachePolicy="memory" accessibilityLabel={t('job.title')} accessibilityIgnoresInvertColors />
+                    {asset.mime.startsWith('image/') ? <Image onLoad={outputReady} source={{ uri: asset.url }} style={styles.image} contentFit="contain" transition={reduced ? 0 : { duration: ds.motion.enter, effect: 'cross-dissolve', timing: 'ease-out' }} cachePolicy="memory" accessibilityLabel={t('job.title')} accessibilityIgnoresInvertColors />
                         : <InlineMedia onReady={outputReady} key={asset.url} url={asset.url} audio={!asset.mime.startsWith('video/')} label={asset.mime.startsWith('video/') ? t('job.playVideo') : t('job.playAudio')} />}
                     <GeneratedChip />
                 </View>
@@ -384,7 +386,7 @@ export default function JobScreen() {
 const sheets = themedStyles((p) => ({
     accentInk: { color: p.accent },
 
-    screen: { flex: 1, backgroundColor: p.bg, padding: ds.space.lg, justifyContent: 'center' },
+    screen: { flex: 1, backgroundColor: p.bg, paddingHorizontal: ds.space.gutter, paddingVertical: ds.space.lg, justifyContent: 'center' },
     center: { alignItems: 'center', gap: ds.space.md },
     status: { color: p.textSecondary, },
     hint: { color: p.textTertiary, textAlign: 'center' },

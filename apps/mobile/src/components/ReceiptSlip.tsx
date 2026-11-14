@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, View, type LayoutChangeEvent } from 'react-native';
-import { ds } from '../theme';
+import { ds, receipt } from '../theme';
 import { Text } from './ui/Text';
 import { themedStyles, useThemedStyles } from './ui/AppearanceContext';
 import { useReducedMotion } from './ui/useReducedMotion';
@@ -59,20 +59,19 @@ export function ReceiptSlip({ title, rows, footer }: ReceiptSlipProps) {
     );
 }
 
-const PAPER = '#f5f1e8';
-const PAPER_INK = '#1d1b17';
 const sheets = themedStyles((p) => ({
     wrap: { alignSelf: 'center', width: '86%', maxWidth: 340 },
     slot: { height: 8, borderRadius: 4, backgroundColor: p.textPrimary, opacity: 0.85 },
     clip: { overflow: 'hidden', marginHorizontal: ds.space.md, marginTop: -3 },
-    paper: { backgroundColor: PAPER, paddingHorizontal: ds.space.lg, paddingTop: ds.space.lg, gap: ds.space.xs },
-    title: { color: PAPER_INK, textAlign: 'center', letterSpacing: 2, fontWeight: '700' },
-    rule: { borderBottomWidth: 1, borderStyle: 'dashed', borderColor: PAPER_INK, opacity: 0.35, marginVertical: ds.space.xs },
+    paper: { backgroundColor: receipt.paper, paddingHorizontal: ds.space.lg, paddingTop: ds.space.lg, gap: ds.space.xs },
+    title: { color: receipt.ink, textAlign: 'center', letterSpacing: 2, fontWeight: '700' },
+    rule: { borderBottomWidth: 1, borderStyle: 'dashed', borderColor: receipt.ink, opacity: 0.35, marginVertical: ds.space.xs },
     row: { flexDirection: 'row', justifyContent: 'space-between', gap: ds.space.md },
-    ink: { color: PAPER_INK },
-    value: { fontVariant: ['tabular-nums'], fontWeight: '600' },
-    footer: { color: PAPER_INK, opacity: 0.7, textAlign: 'center', paddingBottom: ds.space.sm },
+    ink: { color: receipt.ink },
+    // Amounts print in the money colour, as on the web's slip: the light-theme amber, since the paper is light in every theme.
+    value: { color: receipt.money, fontVariant: ['tabular-nums'], fontWeight: '600' },
+    footer: { color: receipt.inkMuted, textAlign: 'center', paddingBottom: ds.space.sm },
     teeth: { flexDirection: 'row', height: TOOTH / 2, marginHorizontal: -ds.space.lg, overflow: 'hidden', backgroundColor: p.bg },
     tooth: { width: 0, height: 0, borderLeftWidth: TOOTH / 2, borderRightWidth: TOOTH / 2, borderTopWidth: TOOTH / 2,
-        borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: PAPER },
+        borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: receipt.paper },
 }));

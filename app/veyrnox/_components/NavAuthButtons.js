@@ -109,7 +109,7 @@ export function NavAuthButtons({ account: given }) {
         {menuOpen && (
           <div
             id="vx-account-menu"
-            className="absolute end-0 top-full mt-2 max-h-[calc(100dvh-5rem)] w-60 overflow-y-auto rounded-xl border border-vx-border bg-vx-panel p-1.5 shadow-2xl z-50"
+            className="vx-menu-in origin-top-right rtl:origin-top-left absolute end-0 top-full mt-2 max-h-[calc(100dvh-5rem)] w-60 overflow-y-auto rounded-xl border border-vx-border bg-vx-panel p-1.5 shadow-2xl z-50"
           >
             <div className="mb-1 border-b border-vx-border px-3 py-2">
               <div className="break-words text-sm font-bold text-vx-fg">{account.name}</div>
@@ -166,7 +166,7 @@ export function NavAuthButtons({ account: given }) {
       <button
         type="button"
         onClick={() => openAuth('sign_up')}
-        className="inline-flex min-h-11 items-center rounded-full bg-vx-accent text-vx-accent-ink text-sm font-bold px-4 sm:px-5 py-2.5 hover:bg-vx-accent-hover"
+        className="vx-press inline-flex min-h-11 items-center rounded-full bg-vx-accent text-vx-accent-ink text-sm font-bold px-4 sm:px-5 py-2.5 hover:bg-vx-accent-hover"
       >
         {t('ui.signUp')}
       </button>

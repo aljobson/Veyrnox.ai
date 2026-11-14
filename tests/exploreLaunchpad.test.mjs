@@ -22,7 +22,7 @@ test('the launchpad is usable at narrow widths and names the template gallery', 
     'cards stack by default and become columns only when space allows');
   assert.match(page, /aria-labelledby="explore-presets-title"/);
   assert.match(page, /id="explore-presets-title"/);
-  assert.match(page, /active:scale-\[0\.96\]/,
+  assert.match(page, /active:scale-\[0\.97\]/,
     'interactive cards use the restrained shared press scale');
 });
 

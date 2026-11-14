@@ -69,19 +69,19 @@ export function FirstRunFlow() {
       aria-label={t('app.create.firstRun.label')}
       data-testid="first-run-flow"
       onKeyDown={(event) => { if (event.key === 'Escape') skipRest(); }}
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 sm:items-center"
+      className="vx-overlay vx-overlay-sheet fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 sm:items-center"
     >
       <div className="w-full max-w-[460px] rounded-[20px] border border-vx-border bg-vx-panel p-6 shadow-2xl">
-        <h2 ref={heading} tabIndex={-1} data-testid="first-run-title" className="vx-display text-balance text-[28px] outline-none">{title}</h2>
+        <h2 key={`title-${key}`} ref={heading} tabIndex={-1} data-testid="first-run-title" className="vx-fade-in vx-display text-balance text-[28px] outline-none">{title}</h2>
         <p className="mt-2 text-sm text-vx-fg-muted">{t('app.create.firstRun.personalise')}</p>
-        <div className="mt-5 grid gap-2" role="group" aria-label={title}>
+        <div key={`options-${key}`} className="vx-fade-in mt-5 grid gap-2" role="group" aria-label={title}>
           {options.map((id) => (
             <button
               key={id}
               type="button"
               data-testid={`first-run-${key}-${id}`}
               onClick={() => answer(id)}
-              className="min-h-12 rounded-xl border border-vx-border px-4 py-3 text-start text-sm font-bold text-vx-fg-body transition-colors hover:border-vx-accent hover:text-vx-fg focus-visible:outline-2 focus-visible:outline-vx-accent"
+              className="min-h-12 rounded-xl border border-vx-border px-4 py-3 text-start text-sm font-bold text-vx-fg-body vx-press hover:border-vx-accent hover:text-vx-fg focus-visible:outline-2 focus-visible:outline-vx-accent"
             >
               {label(id)}
             </button>
@@ -90,7 +90,7 @@ export function FirstRunFlow() {
         <div className="mt-5 flex items-center justify-between">
           <div aria-hidden="true" className="flex gap-2">
             {STEPS.map((name, index) => (
-              <span key={name} className={`h-2 w-2 rounded-full ${index === step ? 'bg-vx-accent' : 'bg-vx-border'}`} />
+              <span key={name} className={`h-2 w-2 rounded-full transition-colors duration-200 ${index === step ? 'bg-vx-accent' : 'bg-vx-border'}`} />
             ))}
           </div>
           <button type="button" data-testid="first-run-skip" onClick={() => answer('skipped')} className="min-h-11 px-3 text-sm font-bold text-vx-fg-muted hover:text-vx-fg">
