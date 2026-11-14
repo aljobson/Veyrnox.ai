@@ -45,9 +45,9 @@ export function LanguageChoice({ returnPath, active = ACTIVE_LOCALES, onComplete
             }));
         if (ok && unchanged) {
             if (onComplete) onComplete();
-            // A reload leaves nothing behind this screen: go to Account instead of a back that does nothing.
+            // A reload leaves nothing behind this screen: go to the return path instead of a back that does nothing.
             else if (router.canGoBack()) router.back();
-            else router.replace('/account' as never);
+            else router.replace(returnPath as never);
         }
         if (!ok) setFailed(true);
         setBusy(false);
