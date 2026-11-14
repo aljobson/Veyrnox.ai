@@ -4892,6 +4892,7 @@ export default {
   "filmWorkspace.defaultsFilled": "已应用建议：{value1}。继续前请检查。",
   "filmWorkspace.defaultsFilledRemaining": "已应用建议：{value1}。仍需填写的空白字段：{value2}。继续前请检查每个值。",
   "filmWorkspace.defaultsRemaining": "其余空白字段没有安全建议：{value1}。继续前请填写。",
+  "filmWorkspace.defaultsNeedYou": "有两项只能由你填写。第一，场景标签：一个 @、一个简短名称、一个冒号，然后是 v 和数字，例如 @desk:v1。第二，当镜头确实只有一个动作时，勾选“此片段只包含一个动作”。",
   "filmWorkspace.defaultsNone": "未更改任何空白字段。继续前请查看下方验证结果。",
   "filmWorkspace.shotLabel": "镜头 {value1}",
   "filmWorkspace.saved": "已保存在此手机上",

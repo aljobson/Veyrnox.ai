@@ -4,6 +4,7 @@ export default {
     "filmWorkspace.defaultsFilled": "Suggestions applied to fields: {value1}. Check them before you continue.",
     "filmWorkspace.defaultsFilledRemaining": "Suggestions applied: {value1}. Empty fields still need your input: {value2}. Check every value before you continue.",
     "filmWorkspace.defaultsRemaining": "No safe suggestions are available for the remaining empty fields: {value1}. Fill them before you continue.",
+    "filmWorkspace.defaultsNeedYou": "Two things only you can fill in. First, the location tag: an @ sign, a short name, a colon, then v and a number, for example @desk:v1. Second, tick “This clip contains one action” once the shot really is a single action.",
     "filmWorkspace.defaultsNone": "No empty fields were changed. Review validation below before continuing.",
     "filmWorkspace.shotLabel": "Shot {value1}",
     "filmWorkspace.saved": "Saved on this phone",

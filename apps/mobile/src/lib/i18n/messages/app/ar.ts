@@ -5242,6 +5242,7 @@ export default {
   "filmWorkspace.defaultsFilled": "الاقتراحات المطبقة: {value1}. راجعها قبل المتابعة.",
   "filmWorkspace.defaultsFilledRemaining": "الاقتراحات المطبقة: {value1}. لا تزال الحقول الفارغة بحاجة إلى إدخالك: {value2}. راجع كل قيمة قبل المتابعة.",
   "filmWorkspace.defaultsRemaining": "لا توجد اقتراحات آمنة للحقول الفارغة المتبقية: {value1}. املأها قبل المتابعة.",
+  "filmWorkspace.defaultsNeedYou": "هناك أمران لا يستطيع غيرك ملأهما. أولاً، وسم الموقع: علامة @ ثم اسم قصير ثم نقطتان ثم v ورقم، مثل @desk:v1. ثانياً، حدّد «يحتوي هذا المقطع على إجراء واحد» عندما تكون اللقطة فعلاً إجراءً واحداً.",
   "filmWorkspace.defaultsNone": "لم تتغير أي حقول فارغة. راجع التحقق أدناه قبل المتابعة.",
   "filmWorkspace.shotLabel": "اللقطة {value1}",
   "filmWorkspace.saved": "محفوظ على هذا الهاتف",

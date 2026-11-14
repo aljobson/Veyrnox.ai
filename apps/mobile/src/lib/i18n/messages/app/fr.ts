@@ -5032,6 +5032,7 @@ export default {
   "filmWorkspace.defaultsFilled": "Suggestions appliquées : {value1}. Vérifiez-les avant de continuer.",
   "filmWorkspace.defaultsFilledRemaining": "Suggestions appliquées : {value1}. Des champs vides nécessitent encore votre saisie : {value2}. Vérifiez chaque valeur avant de continuer.",
   "filmWorkspace.defaultsRemaining": "Aucune suggestion sûre n’est disponible pour les champs encore vides : {value1}. Remplissez-les avant de continuer.",
+  "filmWorkspace.defaultsNeedYou": "Deux choses ne peuvent venir que de vous. D’abord l’étiquette de lieu : un @, un nom court, deux-points, puis v et un nombre, par exemple @desk:v1. Ensuite, cochez « Ce clip contient une seule action » quand le plan est vraiment une seule action.",
   "filmWorkspace.defaultsNone": "Aucun champ vide n’a été modifié. Vérifiez la validation ci-dessous avant de continuer.",
   "filmWorkspace.shotLabel": "Plan {value1}",
   "filmWorkspace.saved": "Enregistré sur ce téléphone",
