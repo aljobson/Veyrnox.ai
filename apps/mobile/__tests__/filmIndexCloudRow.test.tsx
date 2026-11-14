@@ -87,6 +87,18 @@ test('no saved films says so under the intro', async () => {
 });
 test('a failed list says the saved films could not be loaded', async () => {
     mockRequest.mockRejectedValue(new ApiError(503, 'unknown')); await mount();
-    expect(has('Your saved films could not be loaded. Try again later.')).toBe(true);
+    expect(has('Your saved films could not be loaded. The problem is on our side')).toBe(true);
     expect(has('No films are saved')).toBe(false);
+});
+test.each([[0, 'Check your internet connection'], [403, 'could not confirm your account'], [503, 'problem is on our side']] as const)(
+    'failed list (%s) says why and Retry loads the films', async (status, copy) => {
+        mockRequest.mockRejectedValueOnce(new ApiError(status, 'unknown')); await mount();
+        expect(has(copy)).toBe(true); expect(has(intro)).toBe(true);
+        mockRequest.mockResolvedValue({ projects: [row] });
+        await press('Retry');
+        expect(has(copy)).toBe(false); expect(has('Films saved to your account')).toBe(true);
+    });
+test('a 404 (account saving switched off on the server) shows no error line', async () => {
+    mockRequest.mockRejectedValue(new ApiError(404, 'unknown')); await mount();
+    expect(has('could not be loaded')).toBe(false); expect(has('Retry')).toBe(false); expect(has(intro)).toBe(true);
 });
