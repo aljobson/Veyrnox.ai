@@ -19,7 +19,7 @@ test('a row offers research only when its credits, write cap and search model ar
 });
 
 test('the models route shape is unchanged for a row without research, and gains one key for a row with it', () => {
-    assert.deepEqual(Object.keys(rowOptions(base)).sort(), ['images', 'thinking', 'web']);
+    assert.deepEqual(Object.keys(rowOptions(base)).sort(), ['images', 'long_text', 'thinking', 'web']);
     assert.deepEqual(rowOptions(offered).research, { extra_credits: 15 });
 });
 

@@ -31,7 +31,7 @@ test('models that choose their own aspect or take many pictures get no fallback 
 
 test('a Kling 3.0 I2V template with no recorded hint carries one on the web detail and in the public list', () => {
     const catalog = MODELS.map((m) => ({ id: m.id, name: m.name, modality: m.kind, credits: m.credits + 1, gated: !!m.gated }));
-    const publicList = toPublicPresets(catalog);
+    const publicList = toPublicPresets(catalog, PRESETS);
     const before = PRESETS.find((p) => templateModelId(p) === 'kling-3.0-i2v' && !p.sourceAspect && p.previewAspect);
     assert.ok(before, 'fixture: at least one Kling I2V template records no sourceAspect of its own');
     const detail = templateDetail(before.id);
@@ -41,7 +41,7 @@ test('a Kling 3.0 I2V template with no recorded hint carries one on the web deta
 
 test('every Kling 3.0 I2V template with a readable preview now has a hint that agrees with its preview orientation', () => {
     const catalog = MODELS.map((m) => ({ id: m.id, name: m.name, modality: m.kind, credits: m.credits + 1, gated: !!m.gated }));
-    const kling = toPublicPresets(catalog).filter((p) => p.modelId === 'kling-3.0-i2v');
+    const kling = toPublicPresets(catalog, PRESETS).filter((p) => p.modelId === 'kling-3.0-i2v');
     assert.ok(kling.length > 100);
     for (const p of kling) {
         assert.match(p.sourceAspect ?? '', /^(?:1:1|9:16|16:9)$/, p.id);
@@ -66,5 +66,5 @@ test('curtain-reveal is an identity-reference template and carries no derived cr
     assert.equal(templateSourceAspect(preset), null);
     assert.equal(templateDetail(preset.id).sourceAspect, undefined);
     const catalog = MODELS.map(m => ({ id: m.id, name: m.name, modality: m.kind, credits: m.credits }));
-    assert.equal(toPublicPresets(catalog).find(p => p.id === preset.id).sourceAspect, null);
+    assert.equal(toPublicPresets(catalog, PRESETS).find(p => p.id === preset.id).sourceAspect, null);
 });

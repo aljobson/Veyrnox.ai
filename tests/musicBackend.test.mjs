@@ -103,6 +103,7 @@ test('music entitlements expose verified pair models and fail closed on paid acc
       variety: false,
       style_influence: false,
       exclude_styles: false,
+      tempo_key_meter: false,
       duration_seconds: { min: 10, max: 60, default: 60 },
       lyrics: false,
       styles: false,
@@ -123,6 +124,7 @@ test('music entitlements expose verified pair models and fail closed on paid acc
       variety: true,
       style_influence: true,
       exclude_styles: true,
+      tempo_key_meter: true,
       duration_seconds: { min: 10, max: 60, default: 60 },
       lyrics: true,
       styles: true,
@@ -278,6 +280,7 @@ test('the proof quote accepts only bounded simple instrumental requests', () => 
     styleInfluence: null,
     excludeStyles: null,
     durationSeconds: 60,
+    bpm: null, keyScale: null, timeSignature: null,
   });
   assert.equal(parseMusicQuote({ prompt: 'harbour lights', model_id: 'ace-step-1.5' }).modelId, 'ace-step-1.5');
   assert.equal(parseMusicQuote({ prompt: 'harbour lights', model_id: 'ace-step-1.5', variety: 0 }).variety, 0);
@@ -292,6 +295,7 @@ test('the proof quote accepts only bounded simple instrumental requests', () => 
     ok: true, prompt: 'harbour lights', title: null, mode: 'simple', modelId: 'ace-step-1.5',
     instrumental: true, variety: null, styleInfluence: 72,
     excludeStyles: 'distorted guitar, orchestral strings', durationSeconds: 60,
+    bpm: null, keyScale: null, timeSignature: null,
   });
   assert.equal(parseMusicQuote({ prompt: 'x', model_id: 'ace-step-1.5', style_influence: -1 }).error, 'style_influence_invalid');
   assert.equal(parseMusicQuote({ prompt: 'x', model_id: 'ace-step-1.5', style_influence: 1.5 }).error, 'style_influence_invalid');

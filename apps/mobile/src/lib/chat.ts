@@ -1,6 +1,8 @@
 import { ApiError, type ApiClient } from './api';
 import type { JobRead } from './chatStop';
 import { createSseParser } from './sse';
+import { longTextExtra } from './chatLongText';
+export { isLongText, longTextState } from './chatLongText';
 
 export interface ChatModel {
     readonly id: string;
@@ -8,6 +10,8 @@ export interface ChatModel {
     readonly maker_label: string;
     readonly credits_per_reply: number;
     readonly gated: boolean;
+    // The longest message this model takes: 30,000 when it offers the long-message extra, else 8,000 (ADR-0067 amendment 17).
+    readonly max_message_chars?: number;
     // What the model offers on top of a plain reply, and what each costs (GET /api/v1/chat/models, ADR-0067).
     // Absent or null means not offered. Deep research is not read here: it is off in production.
     readonly options?: ChatModelOptions;
@@ -21,6 +25,7 @@ export interface ChatModelOptions {
     readonly thinking?: ChatOptionOffer | null;
     readonly web?: ChatOptionOffer | null;
     readonly images?: ChatOptionOffer | null;
+    readonly long_text?: ChatOptionOffer | null;
 }
 
 export const imagesExtra = (m: ChatModel): number | null => extraOf(m.options?.images);
@@ -46,11 +51,12 @@ export function cleanOptions(model: ChatModel, options: ReplyOptions): ReplyOpti
 
 // Credits for one reply: the catalog base plus the catalog extra for each choice made. This only adds what the server
 // listed; the server prices the turn itself (lib/chat.js replyPrice) and charges that.
-export function replyPrice(model: ChatModel, options: ReplyOptions, imageCount = 0): number {
+export function replyPrice(model: ChatModel, options: ReplyOptions, imageCount = 0, text = ''): number {
     const o = cleanOptions(model, options);
     // Any attached image adds the model's image extra once, however many there are (lib/chatTurn.js).
     const images = imageCount > 0 ? (imagesExtra(model) ?? 0) : 0;
-    return model.credits_per_reply + (o.thinking ? (thinkingExtra(model) ?? 0) : 0) + (o.web ? (webExtra(model) ?? 0) : 0) + images;
+    // A message over the standard length adds the model's long-message extra once (lib/chatTurn.js).
+    return model.credits_per_reply + (o.thinking ? (thinkingExtra(model) ?? 0) : 0) + (o.web ? (webExtra(model) ?? 0) : 0) + images + longTextExtra(model, text);
 }
 
 export const optionsKey = (o: ReplyOptions): string => `${o.thinking ? 't' : ''}${o.web ? 'w' : ''}`;

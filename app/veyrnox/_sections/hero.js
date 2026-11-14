@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { MediaTile } from '../_components/MediaTile';
 import { SHOWCASE_CLIPS } from '../_lib/showcase';
 import { FEATURE_CARDS, shelfName } from '../_lib/tokens';
-import { PRESETS } from '../_lib/templates';
+import { GALLERY_PRESETS } from '../_lib/templates';
 import { FilmPlayer } from '../_components/FilmPlayer';
 import { BREAKTHROUGH_FILM } from '../_lib/film';
 import { PriceSlip } from '../_components/PriceSlip';
@@ -99,7 +99,7 @@ export async function FeaturedHeroCards({ catalog }) {
                   <div className="flex items-baseline gap-2 font-vx-mono text-[12px] text-vx-fg-body vx-num">
                     <span className="truncate">{row ? shelfName(row.name) : t('home.cards.presets')}</span>
                     <span aria-hidden className="vx-leader flex-1" />
-                    <span className={`shrink-0 font-bold ${row ? 'text-vx-money' : ''}`}>{row ? `${row.credits} cr` : t('home.cards.looks', { n: PRESETS.length })}</span>
+                    <span className={`shrink-0 font-bold ${row ? 'text-vx-money' : ''}`}>{row ? `${row.credits} cr` : t('home.cards.looks', { n: GALLERY_PRESETS.length })}</span>
                   </div>
                 </div>
               }

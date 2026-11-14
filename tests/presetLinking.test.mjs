@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { MODELS, modelIdForName, presetHref, templateHref } from '../app/veyrnox/_lib/tokens.js';
-import { PRESETS, PRESET_CATEGORIES, templatesIn } from '../app/veyrnox/_lib/templates.js';
+import { PRESETS, GALLERY_PRESETS, PRESET_CATEGORIES, templatesIn } from '../app/veyrnox/_lib/templates.js';
 
 test('every preset names a model that still exists in the catalog list', () => {
     // A drifted name makes the card link without a model — not broken, but it
@@ -50,7 +50,7 @@ test('the template card navigates to its template page', () => {
 
 test('every template carries a prompt, a unique id and a known category', () => {
     const ids = new Set();
-    for (const p of PRESETS) {
+    for (const p of GALLERY_PRESETS) {
         assert.ok(!ids.has(p.id), `duplicate template id ${p.id}`);
         ids.add(p.id);
         assert.match(p.id, /^[a-z0-9-]+$/);

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { REGISTRY } from '../lib/modelCapabilities.js';
 import { publicModelName, readPublicCatalog, toPublicModels } from '../lib/publicCatalog.js';
 import { MODEL_ID_RE, fallbackModels, findModel, modelDetail, modelFacts, shelfModels, templatesForModel } from '../app/veyrnox/_lib/modelPages.js';
-import { MODELS } from '../app/veyrnox/_lib/tokens.js';
+import { MODELS, templateModelId } from '../app/veyrnox/_lib/tokens.js';
 
 const endpoints = Object.keys(REGISTRY);
 const shelfEndpoint = endpoints.find((e) => !REGISTRY[e].edit && !REGISTRY[e].inputs.clips && !REGISTRY[e].inputs.topic);
@@ -146,8 +146,10 @@ test('model details explain the real inputs, price, workflow and failure refund'
 });
 
 test('model template matches use exact model ids and respect the limit', () => {
-    const kling = templatesForModel('kling-3.0-i2v', 2);
-    assert.ok(kling.length > 0 && kling.length <= 2);
-    assert.ok(kling.every((preset) => preset.model === 'Kling 3.0 · I2V'));
+    // Every template in the capped gallery (2026-11-14) is bound to Seedance 2.0 · Reference.
+    const reference = templatesForModel('seedance-2.0-reference', 2);
+    assert.equal(reference.length, 2);
+    assert.ok(reference.every((preset) => templateModelId(preset) === 'seedance-2.0-reference'));
+    assert.deepEqual(templatesForModel('kling-3.0-i2v'), []);
     assert.deepEqual(templatesForModel('not-a-model'), []);
 });

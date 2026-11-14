@@ -9,7 +9,7 @@ import { fixture } from './helpers/publicSiteRender.mjs';
 import { IMAGE_TEMPLATES, imageTemplatesEnabled } from '../app/veyrnox/_lib/imageTemplates.js';
 import { IMAGE_SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/imageSourcePromptRecords.js';
 import { IMAGE_TEMPLATE_MODELS } from '../app/veyrnox/_lib/imageTemplateModels.js';
-import { ALL_TEMPLATES, PRESETS, galleryTemplates, galleryCategories, templateById, templatesIn, hasTemplateVideo } from '../app/veyrnox/_lib/templates.js';
+import { ALL_TEMPLATES, PRESETS, GALLERY_PRESETS, galleryTemplates, galleryCategories, templateById, templatesIn, hasTemplateVideo } from '../app/veyrnox/_lib/templates.js';
 import { SOURCE_TEMPLATES } from '../app/veyrnox/_lib/sourceTemplates.js';
 import { templateCards, templateDetail, searchTemplateIds } from '../lib/clientTemplates.js';
 import { toPublicPresets } from '../lib/publicPresets.js';
@@ -40,13 +40,15 @@ async function withFlag(value, fn) {
   }
 }
 
-test('52 image records, all hash-locked captures and no authored originals', () => {
+test('52 image records, all hash-locked captures and no authored originals', async () => {
+  const galleryCategoriesWithImages = await withFlag('true', () => galleryCategories());
   assert.equal(IMAGE_TEMPLATES.length, 52);
   assert.equal(ids.size, 52);
   assert.equal(IMAGE_TEMPLATES.filter(p => p.promptOrigin === 'original').length, 0);
   for (const p of IMAGE_TEMPLATES) {
     assert.equal(p.kind, 'image');
-    assert.ok(galleryCategories().includes(p.category) || p.category === 'CHRISTMAS');
+    // With the gate on, every image category is a gallery filter (the image set alone can supply one since the 2026-11-14 video cap).
+    assert.ok(galleryCategoriesWithImages.includes(p.category));
     assert.ok(IMAGE_TEMPLATE_MODELS.includes(p.model));
     assert.ok(p.prompt.length > 100);
     assert.match(p.previewImage, /^\/showcase\/(?:christmas|images)\/[a-z0-9-]+\.webp$/);
@@ -109,8 +111,9 @@ test('publication gate controls list, search, detail, categories and hard 404 in
       assert.equal(isUnknownStaticPage(`/presets/${p.id}`), !enabled);
       assert.equal(isUnknownStaticPage(`/veyrnox/presets/${p.id}`), !enabled);
     }
-    // ADR-0325's ten-per-category floor covers the twelve video content categories; the image-only Christmas set is two exact captures (ADR-0337, amended 2026-11-13).
-    for (const category of galleryCategories().filter(c => !['ALL', 'NEW', 'CHRISTMAS'].includes(c))) assert.ok(templatesIn(category).length >= 10, category);
+    // ADR-0325's ten-per-category floor gave way to the 2026-11-14 cap (100 video templates that use the person's photo);
+    // every listed category still has a template, so no filter is empty.
+    for (const category of galleryCategories().filter(c => !['ALL', 'NEW'].includes(c))) assert.ok(templatesIn(category).length >= 1, category);
     assert.equal(toPublicPresets(models, galleryTemplates()).some(p => ids.has(p.id)), false);
     assert.deepEqual(toPublicPresets(models, IMAGE_TEMPLATES), []);
   });
@@ -183,7 +186,7 @@ test('actual detail static params, notFound and sitemap follow both gate states'
     const enabled = flag === 'true';
     const params = page.generateStaticParams();
     const urls = (await sitemap()).map(row => row.url);
-    assert.deepEqual(urls.filter(url => PRESETS.some(p => url.endsWith(`/presets/${p.id}`))).map(url => url.split('/').pop()).sort(), PRESETS.map(p => p.id).sort());
+    assert.deepEqual(urls.filter(url => PRESETS.some(p => url.endsWith(`/presets/${p.id}`))).map(url => url.split('/').pop()).sort(), GALLERY_PRESETS.map(p => p.id).sort());
     for (const p of IMAGE_TEMPLATES) {
       assert.equal(params.some(row => row.id === p.id), false, 'images are request-only in both gate states');
       assert.equal(urls.some(url => url.endsWith(`/presets/${p.id}`)), enabled);

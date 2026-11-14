@@ -1,6 +1,7 @@
 import { rpc, envConfig } from '../../../../../packages/db/supabase-client.js';
 import { musicPublicationEnabled } from '../../../../../lib/musicBackend.js';
 import { musicSocialEnabled, publicMusicSocial } from '../../../../../lib/musicSocial.js';
+import { musicRailsEnabled, publicMusicRail } from '../../../../../lib/musicRails.js';
 
 const SLUG_RE = /^[a-f0-9]{24}$/;
 const reply = (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
@@ -18,7 +19,13 @@ export async function GET(_request, { params }) {
         // Counts only: who reacted is never public. A failed count read hides the counts, not the track.
         const social = musicSocialEnabled()
             ? await rpc('music_social_summary', { p_slug: slug, p_handle: null, p_auth_id: null }, cfg).catch(() => null) : null;
-        return reply({ track: { ...safe, audio_url: `/api/music/public/${slug}/asset` }, ...(social?.ok ? { social: publicMusicSocial(social) } : {}) });
+        const rails = musicRailsEnabled()
+            ? await rpc('music_public_rails', { p_slug: slug }, cfg).catch(() => null) : null;
+        return reply({
+            track: { ...safe, audio_url: `/api/music/public/${slug}/asset` },
+            ...(social?.ok ? { social: publicMusicSocial(social) } : {}),
+            ...(rails?.ok ? { rails: { by_creator: publicMusicRail(rails.by_creator), similar: publicMusicRail(rails.similar) } } : {}),
+        });
     } catch (error) {
         console.error('[music/public] resolve failed:', error?.message);
         return reply({ error: 'temporarily_unavailable' }, 502);

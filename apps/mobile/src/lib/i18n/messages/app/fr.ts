@@ -705,6 +705,8 @@ export default {
   "chat.composer.chat": "Chat",
   "chat.composer.label": "Créer avec Veyrnox.ai",
   "chat.composer.message": "Message",
+  "chat.composer.longMessage": "Message long : +{price}",
+  "chat.composer.tooLong": "Trop long pour ce modèle. Raccourcissez-le ou choisissez un autre modèle.",
   "chat.composer.policy": "pour cette réponse. Si vous arrêtez après l’apparition du texte, vous conservez celui-ci et son coût reste facturé. Si rien n’arrive, les crédits vous sont rendus.",
   "chat.composer.setup": "Réglages de réponse",
   "chat.couldnotloadmodels": "Impossible de charger les modèles.",

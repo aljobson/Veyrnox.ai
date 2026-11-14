@@ -6,6 +6,7 @@ import { addToDraft, NEW_CHAT, readDraft } from '../../_lib/chatLocal';
 import { Modal } from '../Modal';
 import { useMusicServerState } from './useMusicServerState';
 import { MusicPrivateAudio } from '../../_lib/useMusicAudioSrc';
+import { MusicTempoKeyControls, tempoKeyInvalid, tempoKeyQuoteFields } from './MusicTempoKeyControls';
 import { useMusicCustomDraft } from './useMusicCustomDraft';
 import { MusicSourceUploadPanel } from './MusicSourceUploadPanel';
 import { MusicSampleSeedCard } from './MusicSampleSeedCard';
@@ -464,6 +465,7 @@ export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, s
   const [variety, setVariety] = useState(50);
   const [styleInfluence, setStyleInfluence] = useState(0);
   const [excludeStyles, setExcludeStyles] = useState('');
+  const [tempoKey, setTempoKey] = useState({ bpm: '', keyScale: '', timeSignature: '' });
   const [durationSeconds, setDurationSeconds] = useState(60);
   const [instrumental, setInstrumental] = useState(true);
   const [sourceId, setSourceId] = useState(null);
@@ -475,7 +477,9 @@ export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, s
   const concurrencyLimit = Number(entitlements?.concurrency_limit) || 4;
   const activeGenerationCount = generations.filter((item) => !['succeeded', 'partial', 'failed', 'refunded'].includes(item.state)).length;
   const hasSharedSlot = activeGenerationCount < concurrencyLimit;
-  const canQuote = Boolean(prompt && instrumental && model?.available !== false && entitlements?.available && !busy && !sourceId && hasSharedSlot);
+  // An invalid BPM blocks the quote instead of being dropped and priced as Auto.
+  const tempoKeyBlocked = Boolean(model?.controls?.tempo_key_meter && tempoKeyInvalid(tempoKey));
+  const canQuote = Boolean(prompt && instrumental && model?.available !== false && entitlements?.available && !busy && !sourceId && hasSharedSlot && !tempoKeyBlocked);
 
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get('mode') === 'custom') setMode('custom');
@@ -505,13 +509,14 @@ export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, s
 
   async function review(event) {
     event.preventDefault();
-    if (mode !== 'simple') return;
+    if (mode !== 'simple' || tempoKeyBlocked) return;
     await reviewQuote({
       mode: 'simple', prompt, title: title.trim(), instrumental: true, model_id: model.id,
       duration_seconds: durationSeconds,
       ...(model.controls?.variety ? { variety } : {}),
       ...(model.controls?.style_influence ? { style_influence: styleInfluence } : {}),
       ...(model.controls?.exclude_styles ? { exclude_styles: excludeStyles } : {}),
+      ...(model.controls?.tempo_key_meter ? tempoKeyQuoteFields(tempoKey) : {}),
     });
   }
 
@@ -602,6 +607,7 @@ export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, s
                     <input value={excludeStyles} onChange={change(setExcludeStyles)} maxLength={500} placeholder="e.g. distorted guitar, orchestral strings" className="mt-2 min-h-12 w-full rounded-xl border border-vx-border-boost bg-vx-panel px-4 font-normal text-vx-fg placeholder:text-vx-fg-faint focus:border-vx-accent focus:outline-none" />
                     <span className="mt-2 block font-normal leading-5 text-vx-fg-muted">Sent as ACE-Step 1.5&apos;s negative music guidance; it is not a guaranteed content filter.</span>
                   </label>
+                  {model.controls?.tempo_key_meter ? <MusicTempoKeyControls value={tempoKey} onChange={(next) => { setTempoKey(next); clearQuote(); }} /> : null}
                 </div>
               </details>
             ) : null}
