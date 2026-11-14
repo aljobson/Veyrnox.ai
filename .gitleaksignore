@@ -310,3 +310,6 @@ dae2edacf363878ee7beededb7694a87dbcfdb03:scripts/probe-video-templates-staging.m
 393e8ae7b38c3fc15725ab4b186761a60bd60edb:apps/mobile/__tests__/signedInRedirect.test.tsx:generic-api-key:16
 393e8ae7b38c3fc15725ab4b186761a60bd60edb:apps/mobile/__tests__/nativeIntent.test.ts:generic-api-key:18
 393e8ae7b38c3fc15725ab4b186761a60bd60edb:apps/mobile/__tests__/pendingLink.test.ts:generic-api-key:12
+# PR #2173: synthetic UUID assigned to the test's AUTH constant, not an API key.
+# The source was renamed in the follow-up commit so the squash commit will not repeat the false positive.
+5954225bece7bb0bfe2aef2bc2c87bec59ab0ef1:tests/musicMp3OnlyActions.test.mjs:generic-api-key:15
