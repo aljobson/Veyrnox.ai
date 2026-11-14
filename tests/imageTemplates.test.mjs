@@ -21,6 +21,7 @@ import { fromFallback } from '../app/veyrnox/_lib/useCatalog.js';
 import { templateRecipe } from '../app/veyrnox/_lib/templateRecipe.js';
 import { isUnknownStaticPage } from '../lib/unknownStaticPage.js';
 import { createTemplatesFor } from '../app/veyrnox/_lib/createTemplates.js';
+import { translator } from '../lib/i18n/translate.mjs';
 
 register('data:text/javascript,' + encodeURIComponent(`export async function resolve(s,c,next) { return next(s === 'next/server' ? 'next/server.js' : s,c); }`));
 const list = await import('../app/api/templates/route.js');
@@ -254,10 +255,11 @@ test('the rendered image card and picker use the real resolver and catalog price
   const chosen = IMAGE_TEMPLATES[1];
   const createChoice = createTemplatesFor('image')[1];
   let picked;
+  const t = translator('en');
   const f = fixture('en', '/', { moduleMocks: {
     react: { ...React, useState: initial => [initial, () => {}], useMemo: fn => fn(), useRef: initial => ({ current: initial }) },
-    '../../../components/I18nProvider.jsx': { useI18n: () => ({ t: key => key }) },
-    '../../../components/I18nProvider': { useI18n: () => ({ t: key => key }) },
+    '../../../components/I18nProvider.jsx': { useI18n: () => ({ t, locale: 'en' }) },
+    '../../../components/I18nProvider': { useI18n: () => ({ t, locale: 'en' }) },
   } });
   const { TemplatePicker } = f.load('app/veyrnox/_components/TemplatePicker.js');
   const tree = TemplatePicker({ models, goal: 'image', onPick: p => { picked = p; }, onClose() {} });
