@@ -10,7 +10,7 @@ import { acceptedSettings, nearestDuration, skillPromptHref } from '../../../lib
 import { useAnnouncement } from '../../../lib/useAnnouncement';
 import { rawText } from '../../../lib/i18n/translate';
 import { Image } from 'expo-image';
-import { CreateResult, type ResultBatch } from '../../../components/create/CreateResult';
+import { CostTick, CreateResult, type ResultBatch } from '../../../components/create/CreateResult';
 import { refreshBalance } from '../../../lib/createResult';
 import { getCacheUser, subscribeCacheUser } from '../../../lib/appCache';
 import type { SubmitRequest } from '../../../lib/generationSubmit';
@@ -474,7 +474,7 @@ export default function CreateWithModel() {
                     <View style={styles.costTop}>
                         <View>
                             <SectionLabel style={styles.sectionLabel}>{t('create.workspace.total')}</SectionLabel>
-                            <Text variant="title1" tone="warning" style={styles.cost} accessibilityLiveRegion="polite">{price === 0 ? t('opt.costFree') : t('create.workspace.cost', { credits: String(price) })}</Text>
+                            <CostTick value={price}><Text variant="title1" tone="warning" style={styles.cost} accessibilityLiveRegion="polite">{price === 0 ? t('opt.costFree') : t('create.workspace.cost', { credits: String(price) })}</Text></CostTick>
                         </View>
                         <Text variant="caption" tone="secondary" style={styles.balance}>{t('create.workspace.balance', { credits: balance === null ? '—' : String(balance) })}</Text>
                     </View>

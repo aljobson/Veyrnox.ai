@@ -180,7 +180,7 @@ function SearchOverlay({ onClose }) {
             onKeyDown={onKeyDown}
             placeholder={t('search.placeholder')}
             aria-label={t('search.queryAria')}
-            className="w-full bg-transparent py-4 text-[15px] text-vx-fg outline-hidden placeholder:text-vx-fg-faint"
+            className="w-full bg-transparent px-2 py-4 text-[15px] text-vx-fg -outline-offset-2 placeholder:text-vx-fg-faint"
           />
           <button
             type="button"

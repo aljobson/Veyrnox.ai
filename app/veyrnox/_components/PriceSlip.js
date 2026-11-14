@@ -82,7 +82,7 @@ export function PriceSlip({ models }) {
   return (
     <div className="relative">
       {/* The printer mouth the slip feeds out of. */}
-      <div aria-hidden className="vx-slot mx-auto h-3 w-[calc(100%+12px)] -translate-x-[6px] rounded-full" />
+      <div key={`${model.id}-${seconds}`} aria-hidden className="vx-slot mx-auto h-3 w-[calc(100%+12px)] -translate-x-[6px] rounded-full" />
       <div className="vx-paper-shadow -mt-1.5">
       <form onSubmit={onSubmit} className="vx-paper vx-print relative px-5 sm:px-7 pt-8 pb-9" aria-label={t('slip.aria')}>
         <label htmlFor="slip-prompt" className="block text-[13px] font-bold text-vx-fg">
@@ -94,7 +94,7 @@ export function PriceSlip({ models }) {
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           placeholder={t('slip.placeholder')}
-          className="mt-2 w-full resize-none rounded-lg border border-vx-field bg-vx-base px-3 py-2.5 text-[15px] leading-snug text-vx-fg placeholder:text-vx-fg-faint focus:border-vx-accent focus:outline-hidden"
+          className="mt-2 w-full resize-none rounded-lg border border-vx-field bg-vx-base px-3 py-2.5 text-[15px] leading-snug text-vx-fg placeholder:text-vx-fg-faint focus:border-vx-accent"
         />
         {promptTooLong && <p role="alert" className="mt-2 text-[12.5px] font-bold text-vx-danger">{t(promptLimitKey, { count: prompt.length, max: promptLimit })}</p>}
 
@@ -107,7 +107,7 @@ export function PriceSlip({ models }) {
                 type="button"
                 aria-pressed={m.id === model.id}
                 onClick={() => pickModel(m.id)}
-                className="vx-press rounded-full border px-3 py-1.5 text-[13px] font-semibold pointer-coarse:min-h-10 border-vx-border text-vx-fg-body hover:border-vx-fg-muted aria-pressed:border-vx-fg aria-pressed:bg-vx-fg aria-pressed:text-vx-base"
+                className="vx-press rounded-full border px-3 py-1.5 text-[13px] font-semibold pointer-coarse:min-h-11 border-vx-border text-vx-fg-body hover:border-vx-fg-muted aria-pressed:border-vx-fg aria-pressed:bg-vx-fg aria-pressed:text-vx-base"
               >
                 {nameOf(m)}
               </button>
@@ -118,7 +118,7 @@ export function PriceSlip({ models }) {
               aria-label={t('slip.other')}
               value={inChips ? '' : model.id}
               onChange={(e) => e.target.value && pickModel(e.target.value)}
-              className={`min-w-0 max-w-full rounded-full border bg-transparent px-3 py-1.5 text-[13px] font-semibold pointer-coarse:min-h-10 ${inChips ? 'border-vx-border text-vx-fg-muted' : 'border-vx-fg text-vx-fg'}`}
+              className={`min-w-0 max-w-full rounded-full border bg-transparent px-3 py-1.5 text-[13px] font-semibold pointer-coarse:min-h-11 ${inChips ? 'border-vx-border text-vx-fg-muted' : 'border-vx-fg text-vx-fg'}`}
             >
               <option value="">{t('slip.more', { n: models.length - chips.length })}</option>
               {['video', 'image', 'audio'].map((kind) => {
@@ -148,7 +148,7 @@ export function PriceSlip({ models }) {
                   type="button"
                   aria-pressed={s === seconds}
                   onClick={() => setSeconds(s)}
-                  className="vx-press rounded-full px-3.5 py-1 text-[13px] font-semibold text-vx-fg-body pointer-coarse:min-h-9 pointer-coarse:px-4 aria-pressed:bg-vx-fg aria-pressed:text-vx-base"
+                  className="vx-press rounded-full px-3.5 py-1 text-[13px] font-semibold text-vx-fg-body pointer-coarse:min-h-11 pointer-coarse:px-4 aria-pressed:bg-vx-fg aria-pressed:text-vx-base"
                 >
                   {outputDurationLabel(model, s)}
                 </button>
@@ -170,7 +170,7 @@ export function PriceSlip({ models }) {
         <button
           type="submit"
           disabled={promptTooLong}
-          className="vx-press group mt-6 flex w-full items-center justify-between gap-4 rounded-xl bg-vx-accent px-5 py-4 text-left text-vx-accent-ink hover:bg-vx-accent-hover"
+          className="vx-press group mt-6 flex w-full items-center justify-between gap-4 rounded-xl bg-vx-accent px-5 py-4 text-left text-vx-accent-ink hover:bg-vx-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
         >
           <span className="text-[17px] font-extrabold">{t('slip.generate')}</span>
           <span key={cost} className="vx-tick font-vx-mono text-[17px] font-bold vx-num">{cost} cr</span>

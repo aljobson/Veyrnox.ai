@@ -42,7 +42,7 @@ function PresetGrid({ items, disabled, onChoose, currentId, kind }) {
     if (!items.length) return null;
     return <div className="grid grid-cols-2 gap-2">{items.map(item => {
         const selected = currentId !== undefined && currentId === item.id;
-        return <button key={item.id} type="button" aria-label={item.name} disabled={disabled} aria-pressed={currentId === undefined ? undefined : selected} onClick={() => onChoose(item.id)} className={`group min-w-0 rounded-xl border bg-vx-base p-1.5 text-start text-xs transition-all hover:-translate-y-0.5 hover:border-vx-accent hover:shadow-lg hover:shadow-black/10 disabled:translate-y-0 disabled:opacity-40 ${selected ? 'border-vx-accent ring-1 ring-vx-accent/50' : 'border-vx-border'}`}>
+        return <button key={item.id} type="button" aria-label={item.name} disabled={disabled} aria-pressed={currentId === undefined ? undefined : selected} onClick={() => onChoose(item.id)} className={`group min-w-0 rounded-xl border bg-vx-base p-1.5 text-start text-xs transition-[translate,border-color,box-shadow,opacity] motion-safe:enabled:hover:-translate-y-0.5 hover:border-vx-accent hover:shadow-lg hover:shadow-black/10 disabled:translate-y-0 disabled:opacity-40 ${selected ? 'border-vx-accent ring-1 ring-vx-accent/50' : 'border-vx-border'}`}>
             <PresetPreview item={item} kind={kind} />
             <span className={`mt-2 block truncate px-0.5 font-bold ${selected ? 'text-vx-accent' : ''}`}>{item.name}</span>
             {item.description && <span className="mt-0.5 line-clamp-2 block px-0.5 text-xs leading-4 text-vx-fg-muted">{helperCopy(t, locale, item.description)}</span>}

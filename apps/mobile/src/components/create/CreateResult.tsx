@@ -1,8 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { Animated, Easing, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Text, Button, Card, themedStyles, useThemedStyles } from '../ui';
+import { useReducedMotion } from '../ui/useReducedMotion';
+import { VeyCharacter } from '../VeyCharacter';
+import { ds } from '../../theme';
 import { InlineMedia } from '../InlineMedia';
 import { GeneratedChip } from '../library/GeneratedChip';
 import { useJobResult, soundPassFor } from '../../lib/createResult';
@@ -62,7 +65,7 @@ function ResultTile({ api, id, batch, catalog, onTerminal, onSuccess }: { api: A
                 : file ? <>{file.output_stems?.length ? <Text>{t('libraryCreate.stems')}</Text> : file.mime_type.startsWith('image/') ? <Image source={{ uri: file.url }} cachePolicy="memory" contentFit="contain" style={styles.image} accessible accessibilityRole="image" accessibilityLabel={t('job.title')} /> : <InlineMedia url={file.url} audio={!file.mime_type.startsWith('video/')} label={t(file.mime_type.startsWith('video/') ? 'job.playVideo' : 'job.playAudio')} />}<GeneratedChip /></>
                 : result.state === 'failed' ? <Text tone="danger">{result.job?.error_code === 'user_cancelled'
                     ? failure : failedJobMessage(result.job?.error_code, refunded, failure)}</Text>
-                : <><ActivityIndicator /><Text>{t(result.state === 'queued' ? 'job.queued' : 'job.running')}</Text><Text>{t('job.waiting', { elapsed: t('libraryCreate.elapsed', { seconds: String(seconds) }) })}</Text><Text>{t('job.keepsRunning')}</Text></>}
+                : <><View accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><VeyCharacter width={batchTile ? 40 : 48} mood="working" /></View><Text>{t(result.state === 'queued' ? 'job.queued' : 'job.running')}</Text><Text>{t('job.waiting', { elapsed: t('libraryCreate.elapsed', { seconds: String(seconds) }) })}</Text><Text>{t('job.keepsRunning')}</Text></>}
         </View>
         <Button variant="secondary" label={t('publishReporting.open')} onPress={open} />
         {sound?.kind === 'tooLong' ? <Text>{t('libraryCreate.soundTooLong', { seconds: String(sound.seconds) })}</Text> : sound ? <Card>
@@ -70,6 +73,25 @@ function ResultTile({ api, id, batch, catalog, onTerminal, onSuccess }: { api: A
             <Text>{t('libraryCreate.soundHelp')}</Text><Button label={t('libraryCreate.soundAction')} onPress={addSound} />
         </Card> : null}
     </Card>;
+}
+const COST_RISE = 6;
+// The cost figure on the Create form: when a setting changes the price, the new figure fades in and rises into place.
+// Presentation only; with reduced motion the figure simply changes.
+export function CostTick({ value, children }: { value: number; children: ReactNode }) {
+    const reduced = useReducedMotion();
+    const tick = useRef(new Animated.Value(1)).current;
+    const shown = useRef(value);
+    // A layout effect, so the new figure is hidden before it is painted (no one-frame flash at full opacity).
+    useLayoutEffect(() => {
+        if (shown.current === value) return;
+        shown.current = value;
+        if (reduced) return;
+        tick.setValue(0);
+        const run = Animated.timing(tick, { toValue: 1, duration: ds.motion.state, easing: Easing.out(Easing.cubic), useNativeDriver: true });
+        run.start();
+        return () => { run.stop(); tick.setValue(1); };
+    }, [value, reduced, tick]);
+    return <Animated.View style={{ opacity: tick, transform: [{ translateY: tick.interpolate({ inputRange: [0, 1], outputRange: [COST_RISE, 0] }) }] }}>{children}</Animated.View>;
 }
 const sheets = themedStyles(p => ({
     single: { gap: 12 }, grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

@@ -5,8 +5,8 @@ import { KUBAI_SKILL_ART } from './kubaiSkillArt';
 import type { ImageSourcePropType } from 'react-native';
 
 // The icon and colour each Tools task, Face filter and Studio skill shows on its row. Colour follows what the item
-// works on, so a page reads at a glance: blue for photos, violet for video, amber for sound, pink for faces, green for
-// writing and anything else.
+// works on, so a page reads at a glance: blue for photos, violet for video and film, pink for sound and faces, green for
+// writing and anything else. Amber is money only, never a feature.
 export type Hue = FeatureHue;
 export interface FeatureIcon {
     readonly icon: MenuIcon;
@@ -25,8 +25,8 @@ const TOOL_ICONS: Readonly<Record<string, FeatureIcon>> = {
     avatar: { icon: 'userSound', hue: 'iris' },
     lipsync: { icon: 'waveform', hue: 'iris' },
     'video-upscale': { icon: 'monitorPlay', hue: 'iris' },
-    'audio-separation': { icon: 'faders', hue: 'amber' },
-    'video-sound': { icon: 'speaker', hue: 'amber' },
+    'audio-separation': { icon: 'faders', hue: 'rose' },
+    'video-sound': { icon: 'speaker', hue: 'rose' },
 };
 const OTHER_TOOL: FeatureIcon = { icon: 'squares', hue: 'mint' };
 export const toolIcon = (taskKey: string): FeatureIcon => TOOL_ICONS[taskKey] ?? OTHER_TOOL;
@@ -59,7 +59,7 @@ const SKILL_ICONS: Readonly<Record<string, MenuIcon>> = {
     'film-stress-test': 'gauge',
     'film-shot-prompt': 'aperture',
 };
-const GROUP_HUE: Readonly<Record<SkillGroup, Hue>> = { Make: 'mint', Edit: 'sky', Plan: 'iris', Film: 'amber' };
+const GROUP_HUE: Readonly<Record<SkillGroup, Hue>> = { Make: 'mint', Edit: 'sky', Plan: 'iris', Film: 'iris' };
 export const skillIcon = (id: string, group: SkillGroup): FeatureIcon => {
     const art = (KUBAI_SKILL_ART as Readonly<Record<string, ImageSourcePropType>>)[id];
     return { icon: SKILL_ICONS[id] ?? 'chat', hue: GROUP_HUE[group], ...(art ? { art } : null) };
@@ -70,6 +70,6 @@ const WORKFLOW_ICONS: Readonly<Record<string, FeatureIcon>> = {
     'product-ad': { icon: 'bag', hue: 'iris' },
     'photo-to-motion': { icon: 'play', hue: 'sky' },
     'consistent-film': { icon: 'film', hue: 'rose' },
-    'oddling-series': { icon: 'smiley', hue: 'amber' },
+    'oddling-series': { icon: 'smiley', hue: 'mint' },
 };
 export const workflowIcon = (id: string): FeatureIcon => WORKFLOW_ICONS[id] ?? OTHER_TOOL;

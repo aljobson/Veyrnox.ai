@@ -77,7 +77,7 @@ export function MusicServerSongDetail({ id }) {
   const lineage = Array.isArray(song?.lineage) ? song.lineage : [];
 
   const focusLineage = useCallback(() => {
-    lineageRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    lineageRef.current?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
     lineageRef.current?.focus({ preventScroll: true });
   }, []);
 

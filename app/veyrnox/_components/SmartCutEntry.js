@@ -39,7 +39,7 @@ export function SmartCutEntry({ enabled, selectedCount, onEnable }) {
                 : t('app.smartCut.entry.enableHelp')}
             </p>
             {enabled ? (
-              <button type="button" onClick={() => document.getElementById('library-assets')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="vx-press mt-5 inline-flex min-h-11 items-center justify-center rounded-full bg-vx-accent px-5 text-sm font-extrabold text-vx-accent-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent">
+              <button type="button" onClick={() => document.getElementById('library-assets')?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' })} className="vx-press mt-5 inline-flex min-h-11 items-center justify-center rounded-full bg-vx-accent px-5 text-sm font-extrabold text-vx-accent-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent">
                 {t(selectedCount > 0 ? 'app.smartCut.entry.pickAnother' : 'app.smartCut.entry.pickBelow')}
               </button>
             ) : (

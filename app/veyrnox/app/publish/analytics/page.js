@@ -124,7 +124,7 @@ function DashboardView({ report }) {
     <p className="text-xs font-bold uppercase tracking-widest text-vx-accent">{t("publish.plan.colPlan")}</p>
     <h2 className="mt-2 text-2xl font-black">{t("app.publish.analytics.unlock")}</h2>
     <p className="mt-3 text-sm text-vx-fg-body">{t("app.publish.analytics.planIncludes")}</p>
-    <Link href="/app/publish/plan" className="mt-5 inline-block rounded-full bg-vx-accent px-5 py-2.5 text-sm font-bold text-black">{t("app.publish.smartlink.viewPlan")}</Link>
+    <Link href="/app/publish/plan" className="mt-5 inline-block rounded-full bg-vx-accent px-5 py-2.5 text-sm font-bold text-vx-accent-ink">{t("app.publish.smartlink.viewPlan")}</Link>
   </section>;
 
   const selected = accounts.find((a) => a.id === chosenId) || accounts[0];
@@ -155,7 +155,7 @@ function DashboardView({ report }) {
             key={r.days}
             type="button"
             aria-pressed={presetDays === r.days}
-            className={`${button} ${presetDays === r.days ? 'bg-vx-accent text-black border-vx-accent' : ''}`}
+            className={`${button} ${presetDays === r.days ? 'bg-vx-accent text-vx-accent-ink border-vx-accent' : ''}`}
             onClick={() => { setRange(rangeForDays(r.days)); setPresetDays(r.days); }}
           >{t(r.key)}</button>
         ))}

@@ -6,6 +6,7 @@ export default {
     'acct.profile': 'Profile',
     'acct.email': 'Email',
     'acct.profileLoading': 'Loading your details',
+    'acct.profileError': 'Could not load your details.',
     'acct.signedInWith': 'Signed in with {method}',
     'acct.method.email': 'email and password',
     'acct.method.google': 'Google',

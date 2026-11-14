@@ -1,8 +1,9 @@
 import Link from 'next/link';
 import { MarketingNav } from '../_components/NavBar';
 import { Main } from '../_components/Main';
+import { FooterForest } from '../_sections/footer';
 import { PremiumTag } from '../_components/PremiumTag';
-import { LIST_GROUPS, GROUP_KEYS } from '../_sections/showcase';
+import { LIST_GROUPS, GROUP_KEYS, KIND_HUE } from '../_sections/showcase';
 import { listModels } from '../_lib/modelPages';
 import { modelPriceUnit } from '../_lib/modelPricing';
 import { OPEN_GRAPH_BASE } from '../../seo';
@@ -49,20 +50,20 @@ export default async function ModelsIndex() {
           {groups.map((g) => (
             <div key={g.kind}>
               <div className="flex items-baseline justify-between gap-3 border-b-2 border-vx-fg pb-2">
-                <h2 className="text-xl font-black">{t(GROUP_KEYS[g.kind].label)}</h2>
+                <h2 className={`text-xl font-black ${KIND_HUE[g.kind] || ''}`}>{t(GROUP_KEYS[g.kind].label)}</h2>
                 <span className="text-[13px] text-vx-fg-muted">{t(GROUP_KEYS[g.kind].unit)}</span>
               </div>
               <ul className="mt-2 font-vx-mono text-[14px] vx-num">
                 {g.rows.map((m) => (
                   <li key={m.id}>
-                    <Link href={localizedHref(locale, `/models/${encodeURIComponent(m.id)}`)} className="group flex items-baseline gap-2 py-2 text-vx-fg-body hover:text-vx-fg">
-                      <span className="min-w-0">
-                        <span className="block truncate group-hover:underline underline-offset-4">{m.title}</span>
-                        <span className="block text-[11px] text-vx-fg-muted">{modelPriceUnit(m, t)}</span>
+                    <Link href={localizedHref(locale, `/models/${encodeURIComponent(m.id)}`)} className="group block py-2 text-vx-fg-body hover:text-vx-fg">
+                      <span className="flex items-baseline gap-2">
+                        <span className="min-w-0 truncate group-hover:underline underline-offset-4">{m.title}</span>
+                        {m.gated && <PremiumTag className="shrink-0" />}
+                        <span aria-hidden className="vx-leader flex-1" />
+                        <span className="shrink-0 font-bold text-vx-money">{m.credits} cr</span>
                       </span>
-                      {m.gated && <PremiumTag className="shrink-0" />}
-                      <span aria-hidden className="vx-leader flex-1" />
-                      <span className="shrink-0 font-bold text-vx-money">{m.credits} cr</span>
+                      <span className="block text-[11px] text-vx-fg-muted">{modelPriceUnit(m, t)}</span>
                     </Link>
                   </li>
                 ))}
@@ -71,6 +72,7 @@ export default async function ModelsIndex() {
           ))}
         </div>
       </Main>
+      <FooterForest locale={locale} t={t} flush />
     </div>
   );
 }

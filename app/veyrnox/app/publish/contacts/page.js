@@ -84,7 +84,7 @@ function ContactsDashboard() {
   if (!enabled) return <p className="text-sm text-vx-fg-muted">{t("app.publish.inbox.notOpen")}</p>;
   if (!paid) return <section className="rounded-2xl border border-vx-accent/40 bg-vx-accent/[0.06] p-6"><h2 className="text-2xl font-black">{t("app.publish.contacts.unlock")}</h2>
     <p className="mt-3 text-sm text-vx-fg-body">{t("app.publish.contacts.plan")}</p>
-    <Link href="/app/publish/plan" className="mt-5 inline-block rounded-full bg-vx-accent px-5 py-2.5 text-sm font-bold text-black">{t("app.publish.smartlink.viewPlan")}</Link></section>;
+    <Link href="/app/publish/plan" className="mt-5 inline-block rounded-full bg-vx-accent px-5 py-2.5 text-sm font-bold text-vx-accent-ink">{t("app.publish.smartlink.viewPlan")}</Link></section>;
 
   return <div className="space-y-5">
     {canImport && <ContactImportPanel accounts={accounts.map((item) => ({ id: item.id,

@@ -22,7 +22,7 @@ test('U3: warnings and notices do not use amber', () => {
   ]) assert.doesNotMatch(read(p), /vx-money/, p);
   const credits = resolveI18nSource(read('app/veyrnox/app/credits/page.js'));
   assert.match(credits, /text-vx-warn[^\n]*\n[^\n]*\n\s*<span>\{?"?Sign in to see your balance/);
-  assert.doesNotMatch(read('app/veyrnox/app/library/page.js'), /starred \? 'text-vx-money'/);
+  assert.doesNotMatch(read('app/veyrnox/_components/LibraryJobCard.js'), /starred \? 'text-vx-money'/);
 });
 
 test('U3: debits and tile prices are amber', () => {

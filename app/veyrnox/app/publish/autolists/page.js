@@ -70,7 +70,7 @@ function Autolists() {
       <div className="space-y-2"><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={draft.enabled} onChange={(e)=>setDraft({...draft,enabled:e.target.checked})}/>{t("app.publish.autolists.refreshFeed")}</label><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={draft.autoSchedule} onChange={(e)=>setDraft({...draft,autoSchedule:e.target.checked})}/>{t("app.publish.autolists.scheduleNew")}</label></div>
       {draft.autoSchedule&&<p role="status" className="rounded-xl bg-vx-panel p-3 text-sm">{t("app.publish.autolists.scheduleHelp")}</p>}
       <p className="text-xs text-vx-fg-muted">{t("app.publish.autolists.refreshHelp")}</p>{message&&<p role="status" className="text-sm text-vx-accent">{message}</p>}
-      <div className="flex gap-3"><button type="button" disabled={busy||queues.length===0} onClick={save} className="rounded-full bg-vx-accent px-4 py-2 text-sm font-bold text-black disabled:opacity-50">{busy?t("social.saving"):t("app.publish.autolists.save")}</button>{draft.id&&<button type="button" disabled={busy} onClick={remove} className={button}>{t("app.publish.autolists.delete")}</button>}</div>
+      <div className="flex gap-3"><button type="button" disabled={busy||queues.length===0} onClick={save} className="rounded-full bg-vx-accent px-4 py-2 text-sm font-bold text-vx-accent-ink disabled:opacity-50">{busy?t("social.saving"):t("app.publish.autolists.save")}</button>{draft.id&&<button type="button" disabled={busy} onClick={remove} className={button}>{t("app.publish.autolists.delete")}</button>}</div>
     </section>}
   </Main></>;
 }

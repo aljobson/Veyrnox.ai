@@ -22,7 +22,7 @@
 /* The global :focus-visible rule squares corners to 4px; on a clipped tile
    that squares the video and gradient too. Keep the card's own radius
    (rounded-2xl, as every large panel is). */
-.vx-root .vx-tile:focus-visible { border-radius: 1rem; }
+.vx-root .vx-tile:focus-visible { border-radius: 1.5rem; }
 /* Hover lift only where hover exists; on touch it fires on tap and sticks. */
 @media (hover: hover) and (pointer: fine) {
   .vx-tile:hover { transform: scale(1.015); }
@@ -40,16 +40,16 @@
 }
 
 /* Short first-paint stagger for the hero cards. Decorative, and it never
-   waits on interaction: 5 cards x 50ms lands inside 250ms. */
+   waits on interaction: 5 cards x 30ms lands inside 150ms. */
 @keyframes vxRise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 /* `backwards`, not `both`: a held end-state would pin transform:none over the
    tile's hover and press states. */
-.vx-rise { animation: vxRise 300ms var(--vx-ease-out) backwards; animation-delay: calc(var(--vx-i, 0) * 50ms); }
+.vx-rise { animation: vxRise 300ms var(--vx-ease-out) backwards; animation-delay: calc(var(--vx-i, 0) * 30ms); }
 
 .vx-shimmer { position: relative; overflow: hidden; }
 .vx-shimmer::after {
   content: ''; position: absolute; inset: 0;
-  background: linear-gradient(100deg, transparent 34%, rgba(62,230,196,.16) 50%, transparent 66%);
+  background: linear-gradient(100deg, transparent 34%, rgb(var(--vx-accent) / 0.16) 50%, transparent 66%);
   transform: translateX(-100%);
   animation: vxScan 1.6s linear infinite;
 }
@@ -79,6 +79,7 @@
      !important because the fills are utilities, which outrank this layer.
      forced-color-adjust: none, or the browser paints a Canvas backplate
      behind the label and HighlightText on it is white on white. */
+  .vx-root [aria-current='page'],
   .vx-root [aria-pressed='true'] {
     background-color: Highlight !important;
     color: HighlightText !important;
@@ -127,6 +128,9 @@
   --vx-danger: 196 36 26;
   --vx-danger-ink: 255 255 255;
   --vx-warn: 43 78 190;
+  --vx-hue-iris: 90 70 214;
+  --vx-hue-sky: 29 95 201;
+  --vx-hue-rose: 184 35 95;
   color-scheme: light;
   color: rgb(var(--vx-fg));
   background: rgb(var(--vx-panel));
@@ -138,9 +142,9 @@
 }
 /* The mask would clip a shadow on the slip itself, so it lives on a wrapper. */
 .vx-paper-shadow { filter: drop-shadow(0 18px 28px rgb(0 0 0 / 0.45)); }
-:root[data-theme='light'] .vx-paper-shadow { filter: drop-shadow(0 0 0.5px rgb(16 22 20 / 0.55)) drop-shadow(0 14px 24px rgb(16 22 20 / 0.16)); }
-@media (prefers-color-scheme: light) { :root[data-theme='system'] .vx-paper-shadow { filter: drop-shadow(0 0 0.5px rgb(16 22 20 / 0.55)) drop-shadow(0 14px 24px rgb(16 22 20 / 0.16)); } }
-.vx-paper ::selection { background: rgb(11 122 102 / 0.22); }
+:root[data-theme='light'] .vx-paper-shadow { filter: drop-shadow(0 0 0.5px rgb(16 22 20 / 0.7)) drop-shadow(0 0 0.5px rgb(16 22 20 / 0.7)) drop-shadow(0 14px 24px rgb(16 22 20 / 0.16)); }
+@media (prefers-color-scheme: light) { :root[data-theme='system'] .vx-paper-shadow { filter: drop-shadow(0 0 0.5px rgb(16 22 20 / 0.7)) drop-shadow(0 0 0.5px rgb(16 22 20 / 0.7)) drop-shadow(0 14px 24px rgb(16 22 20 / 0.16)); } }
+.vx-paper ::selection { background: rgb(var(--vx-accent) / 0.22); }
 .vx-paper textarea { caret-color: rgb(var(--vx-accent)); }
 
 /* The printer mouth above the hero slip. The aqua seam is the only light on
@@ -225,8 +229,19 @@
 /* Press feedback for anything that acts on click. Do not add a Tailwind
    transition-* utility to the same element: utilities outrank this layer
    and would drop `transform` from the list, so the press would snap. */
-.vx-press { transition: transform 140ms var(--vx-ease-out), background-color 160ms ease, color 160ms ease, border-color 160ms ease; }
-.vx-press:active { transform: scale(0.96); }
+.vx-press { transition: transform 120ms var(--vx-ease-out), background-color 160ms ease, color 160ms ease, border-color 160ms ease; }
+.vx-press:active { transform: scale(0.97); }
+
+/* Edge panels. The phone chat list comes in from the start edge and the chat
+   settings drawer from the end edge, on the phone sheet's curve; right-to-left
+   pages mirror both. Entrances only: each unmounts on close, and the
+   reduced-motion rule in globals.css switches them off. */
+@keyframes vxSlideEdge { from { transform: translateX(var(--vx-slide-from, -100%)); } }
+.vx-slide-start { animation: vxSlideEdge 280ms var(--vx-ease-out) backwards; }
+[dir='rtl'] .vx-slide-start { --vx-slide-from: 100%; }
+.vx-overlay.vx-overlay-side { overflow-x: clip; }
+.vx-overlay.vx-overlay-side > :first-child { --vx-slide-from: 100%; animation: vxSlideEdge 280ms var(--vx-ease-out) backwards; }
+[dir='rtl'] .vx-overlay.vx-overlay-side > :first-child { --vx-slide-from: -100%; }
 
 /* Display voice: Archivo at full weight, set tight. Section headings choose
    their size in markup; a page title takes one of the two classes below. */
@@ -260,19 +275,17 @@
   .vx-title-index { font-size: 92px; }
 }
 
-/* Hero headline: white ink on the dark page, with a faint aqua lift behind
-   the letters, dark theme only (a glow on the light page is a smudge). It
-   used to throw a 60px neon halo and two twinkling dots: next to a printed
-   slip that read as a second, unrelated style. The one real light on the
-   page is the printer seam above the slip (.vx-slot), so the headline stays
-   crisp and lets that carry the aqua. */
+/* Hero headline: white ink on the dark page and nothing behind it. It used to
+   throw a 60px neon halo and two twinkling dots, then a fainter 36px one:
+   next to a printed slip either read as a second, unrelated style. The one
+   real light on the page is the printer seam above the slip (.vx-slot). The
+   class stays because tests/publicPageConsistency.test.mjs pins it. */
 .vx-title-glow {
   color: #fff;
-  text-shadow: 0 0 36px rgb(62 230 196 / 0.18);
 }
-:root[data-theme='light'] .vx-title-glow { color: inherit; text-shadow: none; }
+:root[data-theme='light'] .vx-title-glow { color: inherit; }
 @media (prefers-color-scheme: light) {
-  :root[data-theme='system'] .vx-title-glow { color: inherit; text-shadow: none; }
+  :root[data-theme='system'] .vx-title-glow { color: inherit; }
 }
 
 /* ─── The statement prints line by line ─────────────────────────────────
@@ -281,8 +294,13 @@
    scrolls into view (PrintOnView sets data-printed). Hidden only where
    script runs, so a page without it still shows every line. Reduced motion
    shows them all at once (the kill switch in globals.css). */
+/* Not while focus is inside: the price list's lines are links, and a
+   keyboard must never land on one it cannot see. Never on paper. */
 @media (scripting: enabled) {
-  .vx-feed[data-printed='false'] .vx-feed-line { opacity: 0; }
+  .vx-feed[data-printed='false']:not(:focus-within) .vx-feed-line { opacity: 0; }
+}
+@media print {
+  .vx-feed .vx-feed-line { opacity: 1 !important; }
 }
 @keyframes vxLine {
   from { opacity: 0; transform: translateY(5px); clip-path: inset(0 0 100% 0); }
@@ -292,6 +310,9 @@
   animation: vxLine 320ms var(--vx-ease-out) backwards;
   animation-delay: calc(140ms + var(--vx-i, 0) * 170ms);
 }
+/* A finished result arrives the same way a statement line does, once, when
+   its first frame has loaded (JobAssetPreview sets data-in). */
+.vx-arrive[data-in] { animation: vxLine 320ms var(--vx-ease-out) backwards; }
 }
 
 /* The mobile helper already has its own reserved dock. A second sticky card

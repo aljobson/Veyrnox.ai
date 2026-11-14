@@ -396,7 +396,7 @@ export default function AuthGate() {
                                     aria-label={showPassword ? t("authGate.hidePassword") : t("authGate.showPassword")}
                                     className="absolute inset-y-0 end-0 px-3 text-[11px] font-bold uppercase tracking-wide text-vx-fg-muted hover:text-vx-fg"
                                 >
-                                    {showPassword ? t("authGate.hide") : t("oddlings.detail.show")}
+                                    {showPassword ? t("authGate.hide") : t("authGate.show")}
                                 </button>
                             </span>
                             {/* Sign-up runs Supabase's leaked-password check (it
@@ -427,7 +427,7 @@ export default function AuthGate() {
                                 className={`flex items-start gap-2 text-xs rounded-md px-3 py-2 border ${
                                     notice.kind === "error"
                                         ? "bg-vx-danger/10 text-vx-danger border-vx-danger/30"
-                                        : "bg-vx-accent/10 text-vx-accent border-vx-accent/30"
+                                        : "bg-vx-base text-vx-accent border-vx-accent/30"
                                 }`}
                             >
                                 <span aria-hidden="true">{notice.kind === "error" ? "✕" : "✓"}</span>
@@ -440,7 +440,7 @@ export default function AuthGate() {
                     {!resendState.pending && <button
                         type="submit"
                         disabled={busy}
-                        className="w-full rounded-full bg-vx-accent text-vx-accent-ink font-extrabold py-2.5 text-sm hover:bg-vx-accent-hover focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent disabled:opacity-60"
+                        className="vx-press w-full rounded-full bg-vx-accent text-vx-accent-ink font-extrabold py-2.5 text-sm hover:bg-vx-accent-hover focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent disabled:opacity-60"
                     >
                         {busy
                             ? t("authGate.working")
@@ -466,7 +466,7 @@ export default function AuthGate() {
                             {t("authGate.emailMeALinkInstead")}</button>
                     )}
                     {mode !== "phone" && (
-                        <button type="button" className="underline hover:text-vx-fg" onClick={() => chooseMode("phone")}>{t("authGate.usePhoneInstead")}</button>
+                        <button type="button" className="-my-2 py-2 underline hover:text-vx-fg" onClick={() => chooseMode("phone")}>{t("authGate.usePhoneInstead")}</button>
                     )}
                 </div>
 

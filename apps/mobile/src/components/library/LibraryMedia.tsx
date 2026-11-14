@@ -1,8 +1,9 @@
-import { ActivityIndicator, View } from 'react-native';
+import { View } from 'react-native';
 import { Image } from 'expo-image';
 import type { VideoThumbnail } from 'expo-video';
 import { Text, Icon, Button, themedStyles, useThemedStyles } from '../ui';
 import { GeneratedChip } from './GeneratedChip';
+import { VeyCharacter } from '../VeyCharacter';
 import { rowStatus, expiryOf } from '../../lib/libraryView';
 import type { AssetLink } from '../../lib/libraryMedia';
 import type { Job, Kind } from '../../lib/media';
@@ -18,7 +19,7 @@ export function LibraryMedia({ job, kind, link, poster, audio }: LibraryMediaPro
     const file = !held && expiryOf(job).kind !== 'gone' && link?.kind === 'file' ? link : null;
     return <View style={styles.frame}>
         {held ? <><Text variant="caption" tone="secondary">{t('library.status.held')}</Text><Text variant="caption" tone="tertiary">{t('libraryCreate.heldBody')}</Text></>
-            : status === 'creating' ? <ActivityIndicator />
+            : status === 'creating' ? <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><VeyCharacter width={40} mood="working" /></View>
             : file?.mime.startsWith('image/') ? <Image source={{ uri: file.url }} cachePolicy="memory" contentFit="cover" style={styles.fill} accessibilityLabel={t('job.title')} />
             : file?.mime.startsWith('video/') ? <>{poster ? <Image source={poster} cachePolicy="memory" contentFit="cover" style={styles.fill} /> : <Icon name="video" />}<View style={styles.play}><Icon name="play" /></View></>
             : <><Icon name={file?.mime.startsWith('audio/') ? 'audio' : kind ?? 'image'} tint={status === 'failed' || status === 'refunded' ? styles.danger.color : styles.dim.color} />

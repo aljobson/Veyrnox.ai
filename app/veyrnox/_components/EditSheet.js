@@ -232,7 +232,7 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
           <div className="flex items-center justify-between gap-3">
             <span className="font-vx-mono text-xs text-vx-fg-muted vx-num">{t('app.editor.sheet.output', { seconds: locale === 'en' ? output.toFixed(1) : output.toLocaleString(localeTag(locale), { minimumFractionDigits: 1, maximumFractionDigits: 1 }) })}</span>
             <button onClick={submit} disabled={blocked}
-              className="min-h-11 rounded-full px-5 py-2.5 font-bold bg-vx-accent text-vx-accent-ink disabled:opacity-40">
+              className="vx-press min-h-11 rounded-full px-5 py-2.5 font-bold bg-vx-accent text-vx-accent-ink disabled:opacity-40">
               {busy ? t("app.editor.sheet.starting") : cost == null ? t("app.editor.sheet.create") : t('app.editor.sheet.createCost', { cost: number(cost) })}
             </button>
           </div>

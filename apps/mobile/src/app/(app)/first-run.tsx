@@ -17,7 +17,7 @@ import { afterWelcomeHref, hardPaywallEnabled } from '../../lib/hardPaywall';
 import { t } from '../../lib/i18n';
 import { rawText } from '../../lib/i18n/translate';
 import { ds } from '../../theme';
-import { Button, Text, themedStyles, useThemedStyles } from '../../components/ui';
+import { Button, Text, themedStyles, usePressStyle, useThemedStyles } from '../../components/ui';
 
 const STEPS = ['role', 'goal', 'destination'] as const;
 type Step = (typeof STEPS)[number];
@@ -51,6 +51,7 @@ export default function FirstRun() {
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const styles = useThemedStyles(sheets);
+    const pressStyle = usePressStyle();
     const { api } = useAuth();
     const [step, setStep] = useState(0);
     const [asking, setAsking] = useState(false);
@@ -126,7 +127,7 @@ export default function FirstRun() {
                 <View style={styles.choices}>
                     {options.map((option) => (
                         <Pressable key={option.id} accessibilityRole="button" accessibilityLabel={rawText(option.label)} onPress={() => answer(option.id)}
-                            style={({ pressed }) => [styles.choice, pressed && styles.pressed]}>
+                            style={({ pressed }) => [styles.choice, pressed && pressStyle]}>
                             <Text variant="bodyStrong" tone="primary">{option.label}</Text>
                         </Pressable>
                     ))}
@@ -149,7 +150,6 @@ const sheets = themedStyles((p) => ({
     text: { textAlign: 'center' },
     choices: { gap: ds.space.sm, marginTop: ds.space.sm },
     choice: { minHeight: 56, justifyContent: 'center', paddingHorizontal: ds.space.md, borderRadius: ds.radius.md, backgroundColor: p.bgElevated1, borderColor: p.borderSubtle, borderWidth: 1 },
-    pressed: { opacity: 0.7, transform: [{ scale: 0.98 }] },
     footer: { padding: ds.space.gutter, gap: ds.space.sm },
     dots: { flexDirection: 'row', justifyContent: 'center', gap: ds.space.sm },
     dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: p.borderSubtle },

@@ -29,7 +29,7 @@ export function LanguageSwitcher({ locale, path = '/' }) {
                 rememberLocale(l.code);
                 saveAccountLanguage(l.code);
               }}
-              className={`inline-block py-1.5 hover:text-vx-fg ${l.code === locale ? 'font-bold text-vx-fg' : 'text-vx-fg-body underline underline-offset-4'}`}
+              className={`inline-flex items-center gap-1 py-1.5 pointer-coarse:min-h-11 hover:text-vx-fg ${l.code === locale ? 'font-bold text-vx-fg' : 'text-vx-fg-body underline underline-offset-4'}`}
             >
               <span aria-hidden="true">{l.flag}</span> {l.name}
             </a>

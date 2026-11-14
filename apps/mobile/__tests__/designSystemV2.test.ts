@@ -55,7 +55,7 @@ const migrated = [
     'app/(app)/(tabs)/_layout.tsx',
     'components/HeaderChips.tsx',
     ...['(tabs)/create', 'create/[modelId]', 'job/[id]', '(tabs)/library', 'credits'].map(name => `app/(app)/${name}.tsx`),
-    ...['FreeAllowanceCard', 'CameraPanel', 'CharacterPanel', 'CreateOptions', 'AttachFromDevice', 'SourcePicker', 'TemplateBanner', 'VeyCardPeek', 'JobProvenance', 'StemList', 'LibraryItem', 'StaleNote', 'EmptyState'].map(name => `components/${name}.tsx`),
+    ...['FreeAllowanceCard', 'CameraPanel', 'CharacterPanel', 'CreateOptions', 'AttachFromDevice', 'SourcePicker', 'TemplateBanner', 'VeyCardPeek', 'JobProvenance', 'StemList', 'LibraryItem', 'StaleNote', 'EmptyState', 'OfflineBanner', 'ServiceBanner', 'LowBalanceNote'].map(name => `components/${name}.tsx`),
     ...fs.readdirSync(path.join(root, 'components/create')).map(name => `components/create/${name}`),
     ...fs.readdirSync(path.join(root, 'components/ui')).map((name) => `components/ui/${name}`),
     ...fs.readdirSync(path.join(root, 'components/home')).map((name) => `components/home/${name}`),
@@ -98,6 +98,35 @@ test.each(migrated)('%s uses tokens, the ramp and real icons', (file) => {
     expect(source).not.toMatch(/\p{Extended_Pictographic}/u);
     expect(source).not.toMatch(/textTransform\s*:\s*['"]uppercase['"]/);
     expect(source.split('\n').length).toBeLessThan(file.includes('components/ui') ? 250 : 500);
+});
+// ADR-0264: spacing is 2/4/8/12/16/20/24/32/40/56 and radii are 6/10/14/20/28/999 (zero is always allowed).
+// Checked on the migrated files already on the scale; the rest of `migrated` joins as each one is brought over.
+const onScale = [
+    ...['index', 'create', 'editor', 'library', 'publish'].map(name => `app/(app)/(tabs)/${name}.tsx`),
+    'app/(app)/account.tsx',
+    ...['OfflineBanner', 'ServiceBanner', 'LowBalanceNote', 'LibraryItem'].map(name => `components/${name}.tsx`),
+    ...['PresetCard', 'StartOption'].map(name => `components/home/${name}.tsx`),
+    ...fs.readdirSync(path.join(root, 'components/ui')).map(name => `components/ui/${name}`),
+];
+const SPACE_STEPS = [0, 2, 4, 8, 12, 16, 20, 24, 32, 40, 56];
+const RADIUS_STEPS = [0, 6, 10, 14, 20, 28, 999];
+const sized = /\b(padding\w*|margin\w*|gap|rowGap|columnGap|border\w*Radius)['"]?\s*:\s*(-?\d+(?:\.\d+)?)/g;
+function offScale(source: string): string[] {
+    return [...source.matchAll(sized)]
+        .filter(([, name, value]) => !(name.endsWith('Radius') ? RADIUS_STEPS : SPACE_STEPS).includes(Math.abs(Number(value))))
+        .map(([whole]) => whole);
+}
+test.each(['{ gap: 6 }', '{ padding: 14 }', '{ paddingHorizontal: 10 }', '{ marginTop: -3 }', '{ rowGap: 18 }', '{ columnGap: 2.5 }', "{ 'marginBottom': 5 }", '{ borderRadius: 12 }', '{ borderTopLeftRadius: 8 }'])('rejects off-scale sizes: %s', source => {
+    expect(offScale(source)).toHaveLength(1);
+});
+test('scale steps, zero, negatives of a step and token references remain valid', () => {
+    expect(offScale('{ gap: 8, padding: 0, marginTop: -4, columnGap: ds.space.md, paddingBottom: 16 + LIST_END_PADDING, borderRadius: 999, borderTopLeftRadius: ds.radius.md, width: 42, minHeight: 82 }')).toEqual([]);
+});
+test.each(migrated.filter(file => onScale.includes(file)))('%s keeps spacing and radii on the scale', (file) => {
+    expect(offScale(fs.readFileSync(path.join(root, file), 'utf8'))).toEqual([]);
+});
+test('every file checked for the scale is a migrated file', () => {
+    expect(onScale.filter(file => !migrated.includes(file))).toEqual([]);
 });
 test('parsers accept only the enumerated choices, with defaults for invalid storage', () => {
     for (const [parser, options, fallback] of [

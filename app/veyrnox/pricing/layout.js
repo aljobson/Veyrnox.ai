@@ -4,6 +4,7 @@ import { OG_IMAGE, OPEN_GRAPH_BASE } from '../../seo';
 import { JsonLd } from '../../seo';
 import { breadcrumbLd } from '../../../lib/jsonLd';
 import { getT } from '../../../lib/i18n/server';
+import { FooterForest } from '../_sections/footer';
 import { LOCALES, languageAlternates, localeInfo, localesEnabled } from '../../../lib/i18n/locales.mjs';
 
 export async function generateMetadata() {
@@ -30,6 +31,7 @@ export default async function Layout({ children }) {
     <>
       <JsonLd data={breadcrumbLd([{ name: 'Veyrnox.ai', href: locale === 'en' ? '/' : `/${locale}` }, { name: t('pricing.meta.title'), href: path }])} />
       {children}
+      <FooterForest locale={locale} t={t} flush />
     </>
   );
 }

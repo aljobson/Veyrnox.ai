@@ -81,7 +81,7 @@ test('no surface claims a refund the ledger has not made', () => {
     const watcher = readFileSync(new URL('../app/veyrnox/_components/JobWatcher.js', import.meta.url), 'utf8');
     const create = readFileSync(new URL('../app/veyrnox/app/create/page.js', import.meta.url), 'utf8');
     const credits = readFileSync(new URL('../app/veyrnox/app/credits/page.js', import.meta.url), 'utf8');
-    const library = readFileSync(new URL('../app/veyrnox/app/library/page.js', import.meta.url), 'utf8');
+    const library = readFileSync(new URL('../app/veyrnox/_components/LibraryJobCard.js', import.meta.url), 'utf8');
     const grid = readFileSync(new URL('../app/veyrnox/_components/StudioJobGrid.js', import.meta.url), 'utf8');
 
     // Every "Credits refunded" is now behind the flag.

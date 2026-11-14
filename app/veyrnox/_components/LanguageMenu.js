@@ -26,9 +26,12 @@ export function LanguageMenu({ className = '', id = 'vx-language-menu' }) {
     const onDown = (e) => { if (!wrapRef.current?.contains(e.target)) setOpen(false); };
     window.addEventListener('keydown', onKey);
     window.addEventListener('pointerdown', onDown);
+    // Focus that leaves by keyboard closes the list the same way a press outside does.
+    document.addEventListener('focusin', onDown);
     return () => {
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('pointerdown', onDown);
+      document.removeEventListener('focusin', onDown);
     };
   }, [open]);
 
@@ -53,7 +56,7 @@ export function LanguageMenu({ className = '', id = 'vx-language-menu' }) {
       {open && (
         <ul
           id={id}
-          className="absolute end-0 top-full z-50 mt-2 max-h-[calc(100dvh-5rem)] w-56 overflow-y-auto rounded-xl border border-vx-border bg-vx-panel p-1.5 shadow-2xl"
+          className="vx-menu-in origin-top-right rtl:origin-top-left absolute end-0 top-full z-50 mt-2 max-h-[calc(100dvh-5rem)] w-56 overflow-y-auto rounded-xl border border-vx-border bg-vx-panel p-1.5 shadow-2xl"
         >
           {LOCALES.map((l) => (
             <li key={l.code}>

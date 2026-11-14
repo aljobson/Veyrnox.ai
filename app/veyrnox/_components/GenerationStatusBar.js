@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useI18n } from '../../../components/I18nProvider';
 import { readJobHistory, JOBS_CHANGED_EVENT } from '../_lib/jobHistory';
 import { barRows } from '../_lib/generationProgress';
@@ -15,6 +15,22 @@ const MAX_ROWS = 3;
 // Top of the screen and never interactive: the bottom edge holds Create's sticky
 // cost card and Generate button, and a status line must not catch their taps.
 
+// What the bar last worked out, for a page that draws a job's progress in its
+// own layout (Create's canvas). It reads this rather than keep a second clock,
+// so the two figures cannot disagree.
+let progress = new Map();
+let watchers = new Set();
+function watchProgress(onChange) {
+  watchers = new Set([...watchers, onChange]);
+  return () => { watchers = new Set([...watchers].filter((w) => w !== onChange)); };
+}
+const noProgress = () => null;
+
+/** `{ percent, elapsedMs }` for a job the bar is tracking, else null. */
+export function useGenerationProgress(jobId) {
+  return useSyncExternalStore(watchProgress, () => progress.get(jobId) ?? null, noProgress);
+}
+
 // Rows to show: running jobs plus any that just succeeded and hold at 100%.
 function useBarRows() {
   const [rows, setRows] = useState([]);
@@ -26,8 +42,9 @@ function useBarRows() {
     let holds = new Set();
 
     function refresh() {
+      const now = Date.now();
       const history = readJobHistory();
-      const next = barRows(history);
+      const next = barRows(history, now);
       const nextIds = new Set(next.map((r) => r.job_id));
       // A job that left the list and settled as succeeded gets a full bar for
       // a moment. One that failed just goes: the toast says what happened.
@@ -39,6 +56,11 @@ function useBarRows() {
       }
       for (const row of next) seen.current.set(row.job_id, row);
       setRows(next);
+      progress = new Map(next.map((row) => [row.job_id, {
+        percent: row.percent,
+        elapsedMs: now - (history.find((h) => h.job_id === row.job_id)?.submitted_at || now),
+      }]));
+      watchers.forEach((notify) => notify());
       if (done.length) {
         setFinished((prev) => [...prev, ...done]);
         const hold = setTimeout(() => {
@@ -58,6 +80,10 @@ function useBarRows() {
       holds.forEach(clearTimeout);
       window.removeEventListener(JOBS_CHANGED_EVENT, refresh);
       window.removeEventListener('storage', refresh);
+      // Nothing is working the figures out any more: a page reading them
+      // (Create's clock) goes back to "no reading", not a frozen last value.
+      progress = new Map();
+      watchers.forEach((notify) => notify());
     };
   }, []);
 
@@ -100,7 +126,7 @@ export function GenerationStatusBar() {
     <div className="pointer-events-none fixed inset-x-4 top-16 z-40 mx-auto max-w-md">
       <div className="rounded-2xl border border-vx-border bg-vx-panel px-4 py-3 shadow-lg">
         <p role="status" className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-accent">
-          {t('public.jobs.progress.title').toUpperCase()} · {t('public.jobs.progress.patient')}
+          <span className="uppercase">{t('public.jobs.progress.title')}</span> · {t('public.jobs.progress.patient')}
         </p>
         <ul className="mt-2 space-y-2">
           {visible.map((row) => <BarRow key={row.job_id} row={row} />)}

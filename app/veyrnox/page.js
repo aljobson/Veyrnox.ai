@@ -103,8 +103,10 @@ export default async function VeyrnoxLanding() {
       <MarketingNav hideAnnouncementOnMobile />
       <Main>
       <Hero models={catalog} />
-      <LandingFilm />
+      {/* Output first: on a phone the hero is a headline and a form, so the
+          clips are the first pictures a visitor sees. The film follows. */}
       <FeaturedHeroCards catalog={catalog} />
+      <LandingFilm />
       <PresetWall catalog={catalog} />
       <ModelShelf catalog={catalog} />
       <LedgerExample catalog={catalog} locale={locale} t={t} />
@@ -112,9 +114,11 @@ export default async function VeyrnoxLanding() {
           content column: it used to touch the statement section's last line
           and overhang the text by the page gutter on both sides. */}
       <section data-vey-perch id="publish" aria-labelledby="publish-title" className="max-w-[1300px] mx-auto px-4 sm:px-6 mt-28 sm:mt-36">
-        <div className="border-t border-vx-border pt-16">
+        <div className="vx-perf" aria-hidden="true" />
+        <div className="pt-16 grid grid-cols-1 lg:grid-cols-[0.8fr_1fr] gap-8 lg:gap-20">
         <h2 id="publish-title" className="vx-display text-[36px] sm:text-[48px]">{t('home.publish.title')}</h2>
-        <p className="mt-5 max-w-[68ch] text-vx-fg-body text-[16px] leading-[1.7]">
+        <div>
+        <p className="max-w-[68ch] text-vx-fg-body text-[16px] leading-[1.7]">
           {t('home.publish.p1')}
         </p>
         <p className="mt-4 max-w-[68ch] text-vx-fg-body text-[16px] leading-[1.7]">
@@ -124,8 +128,9 @@ export default async function VeyrnoxLanding() {
           })}
         </p>
         <p className="mt-6">
-          <a href="/publish" className="font-bold underline underline-offset-4 hover:text-vx-accent">{t('home.publish.more')} →</a>
+          <a href="/publish" className="font-bold underline underline-offset-4 hover:text-vx-accent">{t('home.publish.more')} <span aria-hidden="true" className="inline-block rtl:-scale-x-100">→</span></a>
         </p>
+        </div>
         </div>
       </section>
       <FAQBlock locale={locale} t={t} />

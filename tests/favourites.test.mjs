@@ -53,7 +53,8 @@ test('the Library offers a star on each card and a Favourites filter', () => {
     const page = readFileSync(new URL('../app/veyrnox/app/library/page.js', import.meta.url), 'utf8');
     assert.match(page, /favourites: favOnly \? favourites : null/);
     // One name; whether it is starred is the pressed state, not a second name.
-    assert.match(page, /aria-pressed=\{starred\} data-testid="library-favourite"/);
+    const card = readFileSync(new URL('../app/veyrnox/_components/LibraryJobCard.js', import.meta.url), 'utf8');
+    assert.match(card, /aria-pressed=\{starred\} data-testid="library-favourite"/);
     assert.ok(page.split('\n').length <= 500, 'library page stays under 500 lines');
 });
 

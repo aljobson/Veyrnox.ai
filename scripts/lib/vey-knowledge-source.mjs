@@ -100,7 +100,10 @@ async function collectRouteSources(pageFile, productRoot, sourceCache) {
       sourceCache.set(file, source);
     }
     const importPattern = /(?:import|export)\s+(?:[^'";]+?\s+from\s+)?['"]([^'"]+)['"]/g;
-    for (const match of source.matchAll(importPattern)) {
+    // A component loaded with next/dynamic or a bare import() is part of the
+    // route too: the Library page renders its cards that way.
+    const dynamicPattern = /\bimport\(\s*['"]([^'"]+)['"]\s*\)/g;
+    for (const match of [...source.matchAll(importPattern), ...source.matchAll(dynamicPattern)]) {
       const resolved = await resolveImport(match[1], file, productRoot);
       if (resolved && !visited.has(resolved)) queue.push(resolved);
     }

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { OPEN_GRAPH_BASE } from '../../seo';
 import { MarketingNav } from '../_components/NavBar';
 import { Main } from '../_components/Main';
+import { FooterForest } from '../_sections/footer';
 import { getT } from '../../../lib/i18n/server';
 import { appMessagesFor } from '../../../lib/i18n/appMessages.mjs';
 import { localeTag } from '../../../lib/i18n/locales.mjs';
@@ -138,6 +139,7 @@ export default async function PublishPage() {
           </section>
         </article>
       </Main>
+      <FooterForest locale={locale} t={publicT} flush />
     </div>
   );
 }

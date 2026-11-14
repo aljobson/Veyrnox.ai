@@ -160,6 +160,9 @@ test('all main route knowledge survives localization except the retired unknown-
                 if (route === '/app/create' && retiredCreateKnowledge[field]?.has(expected)) continue;
                 if (route === '/app/editor' && retiredEditorKnowledge[field]?.has(expected)) continue;
                 if (field === 'descriptions' && retiredLegalKnowledge[route]?.has(expected)) continue;
+                // A hidden h2 that came before the page's h1 (WCAG 1.3.1); the
+                // brand name is still the page title and the logo's name.
+                if (route === '/' && field === 'headings' && expected === 'Veyrnox.ai') continue;
                 if (route === '/presets/[id]' && field === 'headings' && expected === 'PROMPT') continue;
                 if (route === '/presets/[id]' && field === 'controls' && expected === 'Template prompt') continue;
                 assert.ok(actual.has(normal(expected)), `${route} ${field}: ${expected}`);

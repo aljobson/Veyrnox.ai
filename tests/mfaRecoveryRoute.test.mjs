@@ -82,8 +82,11 @@ test('all returned bound IDs are deleted', async () => {
 test('malformed JSON is uniform invalid-code and still rate limited', async () => {
     await error(await consume(req({ raw: '{' })), 'invalid_recovery_code', 400); assert.equal(attempts, 1);
 });
-test('generation requires aal2 and the exact server freshness window', async () => {
+test('generation requires aal2 and the exact server freshness window', async ctx => {
+    // Freeze the clock so the route's own Date.now() cannot tick past ours and
+    // pull now + 6 inside its +5 s skew allowance.
     const now = Math.floor(Date.now() / 1000);
+    ctx.mock.method(Date, 'now', () => now * 1000);
     await error(await generate(req({ mfaAt: now })), 'reauth_required', 403);
     for (const mfaAt of [undefined, '', 'NaN', -1, now - 301, now + 6, '1.5', '9007199254740992']) {
         await error(await generate(req({ aal: 'aal2', mfaAt })), 'reauth_required', 403);

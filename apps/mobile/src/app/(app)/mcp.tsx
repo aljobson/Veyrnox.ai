@@ -3,7 +3,7 @@ import { Stack, useRouter } from 'expo-router';
 import { Share, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { GrantsCard } from '../../components/account/GrantsCard';
 import { t } from '../../lib/i18n';
-import { colors, fonts } from '../../theme';
+import { colors, fonts, noticeColor } from '../../theme';
 
 export const MCP_ENDPOINT = 'https://veyrnox.ai/api/v1/mcp';
 
@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
     stepTitle: { color: colors.text, fontSize: 16, fontWeight: '700' },
     body: { color: colors.body, fontSize: 15, lineHeight: 22 },
     note: { color: colors.muted, fontSize: 13, lineHeight: 19, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, paddingTop: 12 },
-    safety: { color: colors.money, fontSize: 14, lineHeight: 20 },
+    safety: { color: noticeColor, fontSize: 14, lineHeight: 20 },
     primary: { minHeight: 48, borderRadius: 12, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
     primaryText: { color: colors.accentInk, fontSize: 16, fontWeight: '800' },
     secondary: { minHeight: 44, borderRadius: 12, borderWidth: 1, borderColor: colors.borderStrong, alignItems: 'center', justifyContent: 'center' },
