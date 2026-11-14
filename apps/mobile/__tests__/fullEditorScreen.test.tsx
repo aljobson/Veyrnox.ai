@@ -402,7 +402,10 @@ test('split, paste, text, markers and media insertion read the position after se
     const tl = await savedTimeline();
     expect(tl.video.some((clip: any) => clip.start === 0 && clip.len === 10)).toBe(true);
     expect(tl.video.some((clip: any) => clip.start === 20 && clip.len === 10)).toBe(true);
-    expect(tl.text.find((clip: any) => clip.text === 'Your title').start).toBe(40);
+    // The playhead (frame 40) is past the last video frame (60 when the title was added), so the title is pulled back inside the video.
+    const title = tl.text.find((clip: any) => clip.text === 'Your title');
+    expect(title.start).toBe(0);
+    expect(title.start + title.len).toBeLessThanOrEqual(60);
     expect(tl.markers[0].frame).toBe(45);
     expect(tl.video.at(-1).start).toBe(50);
 });
@@ -452,4 +455,15 @@ test('project bar shows recovered changes until a clean save includes its revisi
     expect(root.container.queryAll(node => StyleSheet.flatten(node.props.style)?.fontSize === styles.status.fontSize && node.children.includes('Recovered changes, not saved yet')).length).toBeGreaterThan(0);
     await act(async () => jest.advanceTimersByTimeAsync(900));
     expect(root.container.queryAll(node => StyleSheet.flatten(node.props.style)?.fontSize === styles.status.fontSize && node.children.includes('Saved · v5')).length).toBeGreaterThan(0);
+});
+
+test('Add text at the end of the video puts the title inside the video and does not make the project longer', async () => {
+    playbackDocument(); await render();
+    await seekTime('00:00:02'); await press('Add text');
+    const tl = await savedTimeline();
+    const title = tl.text.find((item: any) => item.id === 't3');
+    const videoEnd = Math.max(...tl.video.map((clip: any) => clip.start + clip.len));
+    expect(title.start).toBeGreaterThanOrEqual(0);
+    expect(title.start + title.len).toBeLessThanOrEqual(videoEnd);
+    expect(Math.max(...[...tl.video, ...tl.text].map((clip: any) => clip.start + clip.len))).toBe(videoEnd);
 });

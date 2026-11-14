@@ -8,6 +8,7 @@ import { VOICEOVER_AVAILABLE } from '../../lib/voiceoverRecorder';
 import { useAnnouncement } from '../../lib/useAnnouncement';
 import { getCacheUser, subscribeCacheUser } from '../../lib/appCache';
 import { addPending } from '../../lib/editorGenerationReturns';
+import { placeTitle } from '../../lib/editorTitlePlacement';
 import { clampFrame, insertMediaAt } from '../../lib/editorInsertMedia';
 import { libraryStems, type EditorStem } from '../../lib/editorStems';
 import { kindOf, type Kind } from '../../lib/media';
@@ -158,7 +159,7 @@ export function FullEditorScreen({ projectId, jobId, startAdvanced = false, star
     const addText = () => {
         const seq = timeline.seq + 1;
         const trackId = timeline.tracks.find((track) => track.kind === 'text' && !track.locked)?.id;
-        const item: TextClip = { id: `t${seq}`, text: t('editor.yourtitle'), start: Math.min(frameStore.get(), Math.max(0, total)), len: 90, x: 0.5, y: 0.85, size: 6, trackId, style: DEFAULT_TEXT_STYLE };
+        const item: TextClip = { id: `t${seq}`, text: t('editor.yourtitle'), ...placeTitle(frameStore.get(), Math.max(0, ...timeline.video.map((clip) => clip.start + clip.len)), total), x: 0.5, y: 0.85, size: 6, trackId, style: DEFAULT_TEXT_STYLE };
         applyTimeline({ ...timeline, seq, text: [...timeline.text, item] });
         setSelection({ track: 'text', id: item.id });
         setSelections([{ track: 'text', id: item.id }]);
@@ -304,7 +305,7 @@ export function FullEditorScreen({ projectId, jobId, startAdvanced = false, star
             </View>
             {advanced ? <><Button label={t('editorSave.versions')} variant="tertiary" size="sm" containerStyle={{ marginVertical: -2 }} onPress={sync.openVersions} /><View style={styles.formatBadge}><Text style={styles.formatText}>{canvas.aspect_ratio}</Text><Text style={styles.formatMeta}>{t('editor.fPS', { value1: canvas.frame_rate })}</Text></View></> : null}
         </View>
-        {problem ? <StatusText variant="inherit" accessibilityRole="alert" style={styles.problem}>{problem}</StatusText> : null}
+        {problem ? <StatusText variant="inherit" accessibilityRole="alert" numberOfLines={2} style={styles.problem}>{problem}</StatusText> : null}
         {advanced ? null : <View style={styles.simpleActions}>
             <Command icon="↶" label={t('editor.undo')} disabled={!history.canUndo} onPress={() => travel('undo')} />
             <Command icon="↷" label={t('editor.redo')} disabled={!history.canRedo} onPress={() => travel('redo')} />

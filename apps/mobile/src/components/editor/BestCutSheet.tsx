@@ -146,7 +146,7 @@ export function BestCutSheet({ api, projectId, quote: initialQuote, onClose, onA
         }} /></> : result ? <><Text>{t('bestCut.summary', { pauses: result.plan!.removedPauses, retakes: result.plan!.removedRetakes, matched: result.plan!.matchedLines })}</Text>
             {result.plan!.warnings.map(w => <Text key={w}>{t(`bestCut.warning.${w}`)}</Text>)}
             {!!result.plan!.missingLines.length && <Text>{t('bestCut.missing', { lines: result.plan!.missingLines.join(', ') })}</Text>}
-            <Button label={t('bestCut.apply')} onPress={() => apply(result)} /></> : <Button label={t('bestCut.title')} onPress={() => void run()} disabled={busy || !clips.length || !consent} />}
+            <Button label={t('bestCut.apply')} onPress={() => apply(result)} /></> : <><Button label={t('bestCut.title')} accessibilityHint={!consent && !busy ? t('bestCut.needsAgree') : undefined} onPress={() => void run()} disabled={busy || !clips.length || !consent} />{!consent && !busy ? <Text variant="footnote" tone="secondary" accessibilityLiveRegion="polite">{t('bestCut.needsAgree')}</Text> : null}</>}
         <Button variant="tertiary" label={t('bestCut.notNow')} onPress={() => { abort.current.abort(); onClose(); }} />
     </ScrollView>{libraryOpen ? <LibraryChooser api={api} kind="video" onClose={() => setLibraryOpen(false)} onPick={choice => { setLibraryOpen(false); void select(choice); }} /> : null}</Modal>;
 }

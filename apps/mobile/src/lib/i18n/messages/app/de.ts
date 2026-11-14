@@ -48,6 +48,7 @@ export default {
   "bestCut.language": "Videosprache",
   "bestCut.auto": "Automatisch erkennen",
   "bestCut.agree": "Ich stimme dieser Verarbeitung zu",
+  "bestCut.needsAgree": "Aktiviere „Ich stimme dieser Verarbeitung zu“, um diese Schaltfläche zu aktivieren.",
   "bestCut.cancel": "Abbrechen und später prüfen",
   "bestCut.refunded": "{n} Credits erstattet",
   "bestCut.uploading": "Clip {n} wird hochgeladen: {percent}%",

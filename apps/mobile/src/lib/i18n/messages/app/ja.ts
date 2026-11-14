@@ -47,6 +47,7 @@ export default {
   "bestCut.language": "動画の言語",
   "bestCut.auto": "自動検出",
   "bestCut.agree": "この処理に同意します",
+  "bestCut.needsAgree": "このボタンを有効にするには「この処理に同意します」をオンにしてください。",
   "bestCut.cancel": "キャンセルして後で確認",
   "bestCut.refunded": "{n} クレジット返金済み",
   "bestCut.uploading": "クリップ {n} をアップロード中：{percent}%",

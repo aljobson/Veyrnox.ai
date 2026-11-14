@@ -1,5 +1,6 @@
 import { useReducedMotion } from '../ui/useReducedMotion';
-import { useState } from 'react';
+import { useContext, useState } from 'react';
+import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import { mobileEditorAction } from '../../lib/editorIntentRouter';
 import { Text as UiText, TextField, Button as UiButton } from '../ui';
 import { Modal, Pressable, ScrollView, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
@@ -56,7 +57,9 @@ export function SimpleEditorBar({ onOpen }: { onOpen(sheet: SimpleSheetName): vo
         { id: 'ai', icon: '✦', label: t('editorSimple.aiEdit'), primary: true },
         { id: 'more', icon: '⋯', label: t('editorSimple.more') },
     ];
-    return <View style={styles.bar}>
+    // Keep the bar above the home indicator; the panel above it scrolls instead of pushing the bar off screen.
+    const bottom = useContext(SafeAreaInsetsContext)?.bottom ?? 0;
+    return <View style={[styles.bar, { paddingBottom: Math.max(22, bottom + 8) }]}>
         {items.map((item) => <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={rawText(item.label)} onPress={() => onOpen(item.id)} style={({ pressed }) => [styles.barButton, item.primary && styles.barPrimary, pressed && styles.rowPressed]}>
             <Text style={[styles.barIcon, item.primary && styles.barPrimaryText]}>{item.icon}</Text>
             <Text style={[styles.barLabel, item.primary && styles.barPrimaryText]}>{item.label}</Text>
@@ -79,7 +82,7 @@ const styles = StyleSheet.create({
     rowCopy: { flex: 1, minWidth: 0 },
     rowLabel: { color: colors.text, fontSize: 16, fontWeight: '700' },
     rowHint: { color: colors.muted, fontSize: 12, marginTop: 2 },
-    bar: { flexDirection: 'row', gap: 10, paddingHorizontal: 12, paddingTop: 8, paddingBottom: 22, borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.border, backgroundColor: colors.background },
+    bar: { flexShrink: 0, flexDirection: 'row', gap: 10, paddingHorizontal: 12, paddingTop: 8, paddingBottom: 22, borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.border, backgroundColor: colors.background },
     barButton: { flex: 1, minHeight: 56, alignItems: 'center', justifyContent: 'center', gap: 2, borderRadius: 14, borderWidth: 1, borderColor: colors.borderStrong, backgroundColor: colors.surface },
     barPrimary: { borderColor: colors.accent, backgroundColor: colors.accent },
     barIcon: { color: colors.text, fontSize: 18, fontWeight: '800' },

@@ -27,6 +27,7 @@ export default function EditorHome() {
     const router = useRouter();
     const selectedWorkspace = useRef<string | null>(null);
     const request = useRef(0);
+    const loadedOnce = useRef(false);
     const [workspaces, setWorkspaces] = useState<Workspace[] | null>(null);
     const [workspaceId, setWorkspaceId] = useState<string | null>(null);
     const [projects, setProjects] = useState<Project[] | null>(null);
@@ -35,7 +36,8 @@ export default function EditorHome() {
     const load = useCallback(async (requestedWorkspace?: string) => {
         const currentRequest = ++request.current;
         setProblem(null);
-        setProjects(null);
+        // Keep the rows on screen when coming back to the tab or re-fetching; only a first load or a workspace switch starts empty.
+        if (requestedWorkspace || !loadedOnce.current) setProjects(null);
         try {
             const spaces = await fetchWorkspaces(api);
             if (currentRequest !== request.current) return;
@@ -49,7 +51,7 @@ export default function EditorHome() {
                 return;
             }
             const list = await fetchProjects(api, selected.id);
-            if (currentRequest === request.current) setProjects(newestFirst(list));
+            if (currentRequest === request.current) { loadedOnce.current = true; setProjects(newestFirst(list)); }
         } catch (error) {
             if (currentRequest === request.current) {
                 setProblem(projectsErrorMessage(error));
@@ -169,7 +171,7 @@ export default function EditorHome() {
                         </View>
                         <View style={styles.projectCopy}>
                             <Text variant="bodyStrong" style={styles.projectName} numberOfLines={1}>{item.name}</Text>
-                            <Text variant="footnote" style={styles.projectMeta}>{t('editor.home.version', { version: String(item.version) })}{item.updatedAt ? ` · ${new Date(item.updatedAt).toLocaleDateString(formatLocale())}` : ''}</Text>
+                            <Text variant="footnote" style={styles.projectMeta}>{t('editor.home.version', { version: String(item.version) })}{item.updatedAt ? ` · ${new Date(item.updatedAt).toLocaleString(formatLocale(), { dateStyle: 'medium', timeStyle: 'short' })}` : ''}</Text>
                         </View>
                         <Image source={MENU_ICONS.caretRight} style={[styles.caret, directionalStyle()]} tintColor={styles.mutedInk.color} contentFit="contain" alt="" accessibilityElementsHidden />
                     </Card>
@@ -212,7 +214,8 @@ const sheets = themedStyles((p) => ({
     projectName: { color: p.textPrimary },
     projectMeta: { color: p.textSecondary },
     caret: { width: 16, height: 16 },
-    loading: { paddingVertical: 20 },
+    // Holds about two project rows (70 + gap each) so the list arriving does not push the page down under a finger.
+    loading: { paddingVertical: 20, minHeight: 152, justifyContent: 'center' },
     problem: { minHeight: 44, flexDirection: 'column', justifyContent: 'center', gap: 4, paddingVertical: 8 },
     error: { color: p.danger },
     retry: { color: p.accent },

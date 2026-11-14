@@ -103,10 +103,10 @@ test('actual web Create preparation accepts only exactly N filled slots for ever
     const c = templateContract(preset.id); if (c?.class !== 'bound') continue;
     tested++;
     const modelId = templateModelId(preset), cap = fallbackCapabilitiesFor(modelId);
-    const model = { ...MODELS.find(m => m.id === modelId), media: cap.media, aspects: cap.inputs.aspect_ratio.values };
+    const model = { ...MODELS.find(m => m.id === modelId), media: cap.media, aspects: cap.inputs.aspect_ratio?.values || [] };
     const arrival = templateArrival(preset, [model], new URL(presetHref(preset), 'https://test').searchParams, null);
     assert.equal(arrival.modelId, c.modelId);
-    assert.equal(nearestOption(arrival.draft.aspect, model.aspects) || model.aspects[0], c.aspect, c.id);
+    assert.equal(nearestOption(arrival.draft.aspect, model.aspects) || model.aspects[0] || null, c.aspect, c.id);
     const inputs = templateInputs(preset, model, { prompt: arrival.draft.prompt, aspect: c.aspect, aspectOptions: model.aspects, durationSeconds: c.duration });
     for (const count of [0, c.slotCount - 1, c.slotCount, c.slotCount + 1]) {
       const context = { photoContract: c, fidelity: c, templateImageCount: count, sources: { image: Array.from({ length: count }, (_, i) => ({ file: new Blob([String(i)], { type: 'image/png' }) })) }, sourceList, templateBoundPrompt, fidelityTemplateId, templatePhotoError,
@@ -117,5 +117,5 @@ test('actual web Create preparation accepts only exactly N filled slots for ever
       else await assert.rejects(run({ ...inputs }), { code: 'template_references_invalid' });
     }
   }
-  assert.equal(tested, 162 + 9, 'baseline bound contracts plus the 9 audited Syntx bindings');
+  assert.equal(tested, 70 + 3, 'single-photo bound contracts (ADR-0309 amendment 2: multi-photo recipes take the legacy route)');
 });

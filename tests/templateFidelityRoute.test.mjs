@@ -7,7 +7,7 @@ Object.assign(process.env, { SUPABASE_URL: 'https://db.test', SUPABASE_SERVICE_R
 const { POST } = await import('../app/api/v1/generations/route.js');
 const cs = Object.values(audit().contracts);
 const safe = cs.find(c => c.class === 'like-for-like-safe' && c.requiredReferences.imageMin === 1);
-const bound = cs.find(c => c.class === 'bound' && c.slotCount === 1);
+const bound = cs.find(c => c.class === 'bound' && c.slotCount === 1 && c.prompt !== c.sourcePrompt);
 const blocked = cs.find(c => c.class === 'blocked-needs-video');
 const ref = { slot: 'image', origin: 'upload', key: 'uploads/example.png' };
 const bodyFor = c => ({ model_id: c.modelId, template_id: c.id, idempotency_key: 'template-fidelity-key', inputs: { prompt: c.photoPrompt, duration_seconds: c.duration, ...(c.aspect ? { aspect_ratio: c.aspect } : {}), ...(c.negativePrompt ? { negative_prompt: c.negativePrompt } : {}) }, references: [ref] });
@@ -20,7 +20,7 @@ for (const [name, body, error] of [
     ['missing references', { references: [] }, 'template_references_invalid'],
     ['excess references', { references: [ref, ref] }, 'template_references_invalid'],
     ['wrong kind', { references: [{ ...ref, slot: 'video' }] }, 'template_references_invalid'],
-    ['wrong model', { model_id: 'kling-3.0-i2v' }, 'template_mismatch'],
+    ['wrong model', { model_id: 'seedance-2.0-fast' }, 'template_mismatch'],
     ['source not bound', { inputs: { ...bodyFor(bound).inputs, prompt: bound.sourcePrompt } }, 'template_mismatch'],
   ].map(([label, changes, error]) => [`bound ${label}`, { ...bodyFor(bound), ...changes }, error]),
   ['blocked unchanged', bodyFor(blocked), 'template_blocked'],

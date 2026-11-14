@@ -100,7 +100,7 @@ const createRequest = new Function('context', `with (context) { ${ts.transpileMo
 
 test('all bound contracts use ordered references and the same bound transport on web and mobile', async () => {
     const { templateRoute } = require('../src/lib/templateFidelity');
-    expect(fixtureData.boundInventory).toHaveLength(162 + 9);
+    expect(fixtureData.boundInventory).toHaveLength(70 + 3);
     for (const { feed, model, body, contract, serverCheck } of fixtureData.boundInventory) {
         const [parsed] = parsePresets({ presets: [feed] });
         const route = templateRoute(parsed, parsed.modelId, body.references.length);
@@ -108,7 +108,7 @@ test('all bound contracts use ordered references and the same bound transport on
         expect(route.slotCount).toBe(body.references.length);
         const href = presetHref(parsed, {}, [model]);
         const detail = readTemplate(href.params, ['veyrnox.ai']);
-        expect('modelId' in href.params && href.params.modelId).toBe('seedance-2.0-reference');
+        expect('modelId' in href.params && href.params.modelId).toBe('kling-3.0-i2v');
         expect(detail?.id).toBe(parsed.id);
         if (!('prompt' in href.params)) throw new Error('Create route unavailable');
         expect(href.params.prompt).toBe(contract.sourcePrompt);
@@ -132,7 +132,7 @@ test('all bound contracts use ordered references and the same bound transport on
         expect(serverCheck.ok).toBe(true);
         let nativeBody: any;
         const api = { request: async (_path: string, init: { body: string }) => { nativeBody = JSON.parse(init.body); return { job_id: 'bound-job' }; } } as unknown as ApiClient;
-        await mediaApi(api).createGeneration({ ...request, idempotencyKey: 'bound-key', maxCharge: 85 });
+        await mediaApi(api).createGeneration({ ...request, idempotencyKey: 'bound-key', maxCharge: 32 });
         expect({ model: nativeBody.model_id, template: nativeBody.template_id, inputs: nativeBody.inputs, references: nativeBody.references, consent: nativeBody.consent }).toEqual({ model: body.model_id, template: body.template_id, inputs: body.inputs, references: body.references, consent: body.consent });
     }
 });
