@@ -25,7 +25,7 @@ export function JobWatcher() {
         if (next.state !== 'succeeded' && next.state !== 'failed') continue;
         // Re-read: another tab or the create page may have announced it.
         if (!jobsToWatch(readJobHistory()).some((r) => r.job_id === job.job_id)) continue;
-        markJobSettled(job.job_id, next.state);
+        markJobSettled(job.job_id, next.state, next.error_code);
         notifyBalanceChanged();
         const label = job.name || job.prompt || t('public.jobs.default');
         if (next.state === 'succeeded') {

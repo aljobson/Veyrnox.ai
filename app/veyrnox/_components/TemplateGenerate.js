@@ -5,6 +5,7 @@ import { tOr } from '../../../lib/i18n/translate.mjs';
 import { localeTag } from '../../../lib/i18n/locales.mjs';
 import { failedCreationCopy } from '../../../lib/i18n/createCopy.mjs';
 import { ERROR_COPY, failedJobCopy } from '../_lib/createErrors';
+import useVeyErrorMood from '../_lib/useVeyErrorMood';
 import { jobStateUi } from '../_lib/studioStates';
 import { useTemplateGenerate } from '../_lib/useTemplateGenerate';
 import { JobAssetPreview } from './JobAssetPreview';
@@ -20,6 +21,7 @@ export function TemplateGenerate({ preset, model, prompt, aspect, aspectOptions,
   const cost = g.quote.total;
   const resultAspect = (job?.aspect_ratio || aspect || '16:9').replace(':', '/');
   const error = g.error;
+  useVeyErrorMood(error?.code);
   return (
     <div data-testid="template-generate">
       {job && (

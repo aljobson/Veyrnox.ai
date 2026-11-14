@@ -2,6 +2,7 @@
 
 // Account-scoped display cache. Server job listings remain authoritative.
 import { getSession } from '../../lib/authClient.js';
+import { signalVeyMood, veyErrorSituation } from '../../../lib/veyMood.js';
 
 const LEGACY_KEY = 'veyrnox_job_history_v1';
 const PREFIX = 'veyrnox_job_history_v2:';
@@ -89,11 +90,20 @@ export function jobsToWatch(history, now = Date.now()) {
   return (history || []).filter((r) => r && r.job_id && !r.settled && now - (r.submitted_at || 0) < WATCH_MAX_AGE_MS);
 }
 
-/** Record a job's outcome so no page announces it twice. */
-export function markJobSettled(job_id, state) {
+// Every studio and the background watcher settle jobs here, so this is the one place Vey's face follows a result
+// (lib/veyMood.js): happy on success, apologetic on failure, firm when the prompt was refused on safety grounds.
+function signalSettled(entry, state, errorCode) {
+  if (!entry || entry.settled === state || Date.now() - (entry.submitted_at || 0) >= WATCH_MAX_AGE_MS) return;
+  if (state === 'succeeded') signalVeyMood('generation-succeeded');
+  else if (state === 'failed') signalVeyMood(veyErrorSituation(errorCode, { refunded: true }) || 'generation-failed');
+}
+
+/** Record a job's outcome so no page announces it twice. `errorCode` (optional) picks Vey's face for a failure. */
+export function markJobSettled(job_id, state, errorCode) {
   if (typeof localStorage === 'undefined') return;
   const key = historyKey();
   if (!key) return;
+  signalSettled(readJobHistory().find((r) => r.job_id === job_id), state, errorCode);
   const list = readJobHistory().map((r) => (r.job_id === job_id ? { ...r, settled: state } : r));
   try { localStorage.setItem(key, JSON.stringify(list)); } catch {}
   announceChange();

@@ -11,6 +11,7 @@ import { OutputFileDisclosure } from '../../_components/OutputFileDisclosure';
 import { SaveToAudioShelfButton } from '../../_components/SaveToAudioShelfButton';
 import { LibraryPicker } from '../../_components/LibraryPicker';
 import { ERROR_COPY, failedJobCopy } from '../../_lib/createErrors';
+import useVeyErrorMood from '../../_lib/useVeyErrorMood';
 import { gatewayFetch, GatewayError, makeIdempotencyKey, notifyBalanceChanged } from '../../_lib/gateway';
 import { pushJobHistory } from '../../_lib/jobHistory';
 import { jobStateUi } from '../../_lib/studioStates';
@@ -103,6 +104,7 @@ export default function DialogueStudio() {
   const [balance, setBalance] = useState(null);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
+  useVeyErrorMood(error?.code);
   const nextId = useRef(3);
   const inFlight = useRef(false);
   const audioModel = models.find((item) => item.id === DIALOGUE_MODEL_ID) || null;

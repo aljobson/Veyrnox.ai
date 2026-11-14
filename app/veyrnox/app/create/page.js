@@ -339,12 +339,8 @@ export default function CreateStudio() {
   const resultModel = job ? catalogModels.find((m) => m.id === job.model_id) : null;
   const resultModelName = job?.model_name || resultModel?.name || job?.model_id || 'Generation';
   const soundRequested = recipeId === 'faceless-reel' && plannedFollowup === 'generated-sound' && job?.model_id === 'wan-2.5-kie';
-  // Vey's face follows the result: happy when it lands, apologetic when it fails, and its own face for no credits or a blocked prompt.
-  const jobState = job?.state, jobId = job?.job_id || job?.id, jobCode = job?.error_code || job?.failure_code;
-  useEffect(() => {
-    if (jobState === 'succeeded') signalVeyMood('generation-succeeded');
-    else if (jobState === 'failed') signalVeyMood(veyErrorSituation(jobCode, { refunded: true }) || 'generation-failed');
-  }, [jobState, jobId, jobCode]);
+  // Vey's face follows job results from jobHistory.markJobSettled; here, only errors Create shows before a job exists
+  // (no credits, a refused prompt).
   const errorCode = error?.code;
   useEffect(() => {
     const situation = veyErrorSituation(errorCode);
