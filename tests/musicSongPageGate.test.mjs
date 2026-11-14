@@ -1,0 +1,43 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync, readdirSync } from 'node:fs';
+import path from 'node:path';
+import { musicLibraryEnabled, musicUiEnabled } from '../lib/musicBackend.js';
+
+const root = new URL('../', import.meta.url).pathname;
+const flags = (patch) => JSON.stringify({ ui: true, schema: true, library: true, ...patch });
+
+test('the song page picks the server view from MUSIC_RUNTIME_FLAGS, like the Library page', () => {
+  const source = readFileSync(path.join(root, 'app/veyrnox/app/music/songs/[id]/page.js'), 'utf8');
+  // Whitespace and quote style are free; the helpers and where they come from are not.
+  const importsHelpers = (text) => /import\s*\{[^}]*\bmusicUiEnabled\b[^}]*\}\s*from\s*['"][^'"]*lib\/musicBackend\.js['"]/.test(text)
+    && /import\s*\{[^}]*\bmusicLibraryEnabled\b[^}]*\}\s*from\s*['"][^'"]*lib\/musicBackend\.js['"]/.test(text);
+  const usesGate = (text) => /musicUiEnabled\(\)\s*&&\s*musicLibraryEnabled\(\)/.test(text);
+  assert.ok(importsHelpers(source) && usesGate(source), 'the song page must gate on the shared helpers');
+  const library = readFileSync(path.join(root, 'app/veyrnox/app/music/library/page.js'), 'utf8');
+  assert.ok(importsHelpers(library) && usesGate(library), 'the Library page uses the same gate');
+});
+
+test('the shared gate is on with the JSON flags alone and off when any needed flag is false', () => {
+  const on = { MUSIC_RUNTIME_FLAGS: flags({}) };
+  assert.equal(musicUiEnabled(on) && musicLibraryEnabled(on), true);
+  for (const off of [{ ui: false }, { schema: false }, { library: false }]) {
+    const env = { MUSIC_RUNTIME_FLAGS: flags(off) };
+    assert.equal(musicUiEnabled(env) && musicLibraryEnabled(env), false, JSON.stringify(off));
+  }
+});
+
+test('no app page reads a legacy MUSIC_*_ENABLED variable directly', () => {
+  const offenders = [];
+  const walk = (dir) => {
+    // File types come from the directory listing itself, so nothing is stat'ed and then read separately.
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) { if (entry.name !== 'node_modules') walk(full); continue; }
+      if (!entry.isFile() || !/\.(js|jsx|mjs)$/.test(entry.name)) continue;
+      if (/process\.env\.MUSIC_[A-Z_]+_ENABLED/.test(readFileSync(full, 'utf8'))) offenders.push(path.relative(root, full));
+    }
+  };
+  walk(path.join(root, 'app'));
+  assert.deepEqual(offenders, [], 'read the flag through lib/musicBackend.js so MUSIC_RUNTIME_FLAGS is honoured');
+});
