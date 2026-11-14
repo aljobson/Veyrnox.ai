@@ -365,6 +365,7 @@
   "presets.use.photoReplace",
   "presets.fidelity.photosUnavailable",
   "templates.kind.label",
+  "templates.kind.image",
   "templates.kind.video",
   "templates.kind.audio",
   "audioTemplates.all",

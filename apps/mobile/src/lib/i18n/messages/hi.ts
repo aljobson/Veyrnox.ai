@@ -368,6 +368,7 @@ const hi = {
     'presets.use.photoReplace': 'बदलें',
     'presets.fidelity.photosUnavailable': 'इस टेम्पलेट को मॉडल की मौजूदा सीमा से ज़्यादा फ़ोटो चाहिए। दूसरा टेम्पलेट चुनें या बाद में फिर कोशिश करें।',
     'templates.kind.label': 'टेम्पलेट प्रकार',
+    'templates.kind.image': 'छवि',
     'templates.kind.video': 'वीडियो',
     'templates.kind.audio': 'ऑडियो',
     'audioTemplates.all': 'सभी',

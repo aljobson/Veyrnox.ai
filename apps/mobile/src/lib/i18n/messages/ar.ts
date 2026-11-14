@@ -368,6 +368,7 @@ const ar = {
     'presets.use.photoReplace': 'استبدال',
     'presets.fidelity.photosUnavailable': 'يحتاج هذا القالب إلى صور أكثر مما يدعمه النموذج حاليًا. اختر قالبًا آخر أو حاول مرة أخرى لاحقًا.',
     'templates.kind.label': 'نوع القالب',
+    'templates.kind.image': 'صورة',
     'templates.kind.video': 'فيديو',
     'templates.kind.audio': 'صوت',
     'audioTemplates.all': 'الكل',

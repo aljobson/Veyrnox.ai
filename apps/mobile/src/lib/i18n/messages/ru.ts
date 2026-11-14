@@ -368,6 +368,7 @@ const ru = {
     'presets.use.photoReplace': 'Заменить',
     'presets.fidelity.photosUnavailable': 'Для этого шаблона нужно больше фотографий, чем сейчас поддерживает модель. Выберите другой шаблон или повторите попытку позже.',
     'templates.kind.label': 'Тип шаблона',
+    'templates.kind.image': 'Изображение',
     'templates.kind.video': 'Видео',
     'templates.kind.audio': 'Аудио',
     'audioTemplates.all': 'Все',

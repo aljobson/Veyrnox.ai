@@ -368,6 +368,7 @@ const ja = {
     'presets.use.photoReplace': '変更',
     'presets.fidelity.photosUnavailable': 'このテンプレートには、モデルが現在対応している枚数より多くの写真が必要です。別のテンプレートを選ぶか、後でもう一度お試しください。',
     'templates.kind.label': 'テンプレートの種類',
+    'templates.kind.image': '画像',
     'templates.kind.video': '動画',
     'templates.kind.audio': '音声',
     'audioTemplates.all': 'すべて',
