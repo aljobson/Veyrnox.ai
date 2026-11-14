@@ -82,13 +82,18 @@ export function trimItem(timeline: Timeline, selection: Selection, edge: 'in' | 
         if (fromStart) low = Math.max(low, clip.reverse ? Math.floor((sourceIn - media.frames) / rate) + 1 : Math.ceil(-sourceIn / rate));
         else high = Math.min(high, (clip.reverse ? Math.floor(sourceIn / rate) + 1 : Math.floor((media.frames - sourceIn) / rate)) - item.len);
     }
+    // Trimming an end closes (or opens) the gap for the clips after it on the same track (ripple).
+    const oldEnd = item.start + item.len;
+    const followers = fromStart || selection.track === 'text' ? [] : timeline[selection.track].filter(other => other.id !== item.id && other.trackId === item.trackId && other.start >= oldEnd);
+    if (followers.length) high = Math.min(high, SEQUENCE_MAX - Math.max(...followers.map(other => other.start + other.len)));
     if (low > high) return null;
     const oldEdge = fromStart ? item.start : item.start + item.len;
     const requested = oldEdge + Math.round(deltaFrames);
     const at = snap ? snapTo(timeline, [item.id], requested, 0, playhead).at : requested;
     const delta = clamp(at - oldEdge, low, high);
     const len = item.len + (fromStart ? -delta : delta);
-    return updateClip(timeline, selection, {
+    const rippled = followers.reduce((next, other) => updateClip(next, { track: selection.track, id: other.id }, { start: other.start + delta }), timeline);
+    return updateClip(rippled, selection, {
         len,
         ...(fromStart ? { start: item.start + delta, ...(selection.track !== 'text' ? { in: sourceIn + delta * rate * (clip.reverse ? -1 : 1) } : {}) } : {}),
         ...(selection.track !== 'text' ? { fadeIn: Math.min(clip.fadeIn ?? 0, len), fadeOut: Math.min(clip.fadeOut ?? 0, len) } : {}),

@@ -1,5 +1,5 @@
 import { canTrim, fitPpf, formatTimecode, frameAtX, moveItems, parseTimecode, SEQUENCE_MAX, snapTo, trimItem } from '../src/lib/editorTimeline';
-import { emptyTimeline, type Clip, type Timeline } from '../src/lib/nativeEditorModel';
+import { emptyTimeline, framesIn, type Clip, type Timeline } from '../src/lib/nativeEditorModel';
 const selected = { track: 'video' as const, id: 'v1' };
 const fixture = (patch: Partial<Clip> = {}): Timeline => ({ ...emptyTimeline(), media: { m: { id: 'm', kind: 'video', frames: 300 } }, video: [{ id: 'v1', mediaId: 'm', trackId: 'video-0', start: 30, in: 30, len: 90, ...patch }] });
 
@@ -88,4 +88,29 @@ test('still-media head trims retain the nonnegative in required by the save vali
     const tl = fixture({ in: 0 }); tl.media.m.kind = 'image';
     expect(trimItem(tl, selected, 'in', -20, false, 0)?.video[0]).toMatchObject({ start: 30, in: 0, len: 90 });
     expect(trimItem(tl, selected, 'out', 500, false, 0)?.video[0].len).toBe(590);
+});
+test('trimming the end of a clip ripples the following clips on the same track and total follows', () => {
+    const tl = fixture({ start: 0, len: 137 });
+    tl.media.m.frames = 600;
+    tl.video.push({ ...tl.video[0], id: 'v2', start: 137, len: 138 }, { ...tl.video[0], id: 'v3', start: 400, len: 10, trackId: 'video-other' });
+    const out = trimItem(tl, selected, 'out', -46, false, 0)!;
+    expect(out.video.map(c => [c.id, c.start, c.len])).toEqual([['v1', 0, 91], ['v2', 91, 138], ['v3', 400, 10]]);
+    expect(framesIn(out)).toBe(Math.max(229, 410));
+    const longer = trimItem(tl, selected, 'out', 20, false, 0)!;
+    expect(longer.video[1].start).toBe(157);
+    expect(tl.video[1].start).toBe(137);
+});
+test('trimming the start keeps later clips in place and does not ripple', () => {
+    const tl = fixture({ start: 0, len: 100 });
+    tl.video.push({ ...tl.video[0], id: 'v2', start: 100, len: 50 });
+    const out = trimItem(tl, selected, 'in', 30, false, 0)!;
+    expect(out.video[0]).toMatchObject({ start: 30, len: 70 });
+    expect(out.video[1].start).toBe(100);
+});
+test('a ripple that would push later clips past the sequence limit is bounded', () => {
+    const tl = fixture({ start: 0, len: 100 });
+    tl.media.m.frames = 100000;
+    tl.video.push({ ...tl.video[0], id: 'v2', start: 100, len: SEQUENCE_MAX - 100 });
+    const out = trimItem(tl, selected, 'out', 50, false, 0)!;
+    expect([out.video[0].len, out.video[1].start]).toEqual([100, 100]);
 });
