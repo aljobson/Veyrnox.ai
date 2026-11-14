@@ -909,6 +909,7 @@ export default {
   "chatLibrary.personasarenotavailableyet": "Las personas aún no están disponibles.",
   "chatLibrary.somethingwentwrongTryagain": "Algo salió mal. Inténtalo de nuevo.",
   "chatLibrary.thatisnolongerthere": "Eso ya no existe.",
+  "chatLibrary.afolderwiththatnamealreadyexists": "Ya tienes una carpeta con ese nombre.",
   "chatLibrary.thatnameisnotallowedUse1": "Ese nombre no está permitido. Usa entre 1 y 60 caracteres.",
   "chatLibrary.thatpersonanameisnotallowedUse": "Ese nombre de persona no está permitido. Usa entre 1 y 60 caracteres.",
   "chatLibrary.theinstructionscanbeatmostcharacters": "Las instrucciones pueden tener como máximo {value1} caracteres.",

@@ -871,6 +871,7 @@ export default {
   "chatLibrary.personasarenotavailableyet": "预设角色暂不可用。",
   "chatLibrary.somethingwentwrongTryagain": "出了点问题。请重试。",
   "chatLibrary.thatisnolongerthere": "该内容已不存在。",
+  "chatLibrary.afolderwiththatnamealreadyexists": "已有同名文件夹。",
   "chatLibrary.thatnameisnotallowedUse1": "名称无效。请使用 1 至 60 个字符。",
   "chatLibrary.thatpersonanameisnotallowedUse": "预设角色名称无效。请使用 1 至 60 个字符。",
   "chatLibrary.theinstructionscanbeatmostcharacters": "指令最多为 {value1} 个字符。",

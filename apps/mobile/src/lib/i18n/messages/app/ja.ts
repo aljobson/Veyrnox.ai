@@ -871,6 +871,7 @@ export default {
   "chatLibrary.personasarenotavailableyet": "ペルソナはまだ利用できません。",
   "chatLibrary.somethingwentwrongTryagain": "問題が発生しました。もう一度お試しください。",
   "chatLibrary.thatisnolongerthere": "その項目は存在しません。",
+  "chatLibrary.afolderwiththatnamealreadyexists": "その名前のフォルダはすでにあります。",
   "chatLibrary.thatnameisnotallowedUse1": "その名前は使用できません。1〜60文字で入力してください。",
   "chatLibrary.thatpersonanameisnotallowedUse": "そのペルソナ名は使用できません。1〜60文字で入力してください。",
   "chatLibrary.theinstructionscanbeatmostcharacters": "指示は最大{value1}文字です。",

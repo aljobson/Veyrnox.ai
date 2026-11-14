@@ -890,6 +890,7 @@ export default {
   "chatLibrary.personasarenotavailableyet": "Personas sind noch nicht verfügbar.",
   "chatLibrary.somethingwentwrongTryagain": "Etwas ist schiefgelaufen. Versuche es erneut.",
   "chatLibrary.thatisnolongerthere": "Das ist nicht mehr vorhanden.",
+  "chatLibrary.afolderwiththatnamealreadyexists": "Diesen Ordnernamen gibt es schon.",
   "chatLibrary.thatnameisnotallowedUse1": "Dieser Name ist nicht erlaubt. Verwende 1 bis 60 Zeichen.",
   "chatLibrary.thatpersonanameisnotallowedUse": "Dieser Persona-Name ist nicht erlaubt. Verwende 1 bis 60 Zeichen.",
   "chatLibrary.theinstructionscanbeatmostcharacters": "Die Anweisungen dürfen höchstens {value1} Zeichen haben.",

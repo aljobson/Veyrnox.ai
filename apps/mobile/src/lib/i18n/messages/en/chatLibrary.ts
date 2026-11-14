@@ -13,6 +13,7 @@ export default {
     "chatLibrary.youalreadyhaveapersonawiththat": "You already have a persona with that name.",
     "chatLibrary.personasarenotavailableyet": "Personas are not available yet.",
     "chatLibrary.thatisnolongerthere": "That is no longer there.",
+    "chatLibrary.afolderwiththatnamealreadyexists": "You already have a folder with that name.",
     "chatLibrary.theserviceisbusyTryagainin": "The service is busy. Try again in a moment.",
     "chatLibrary.toomanyrequestsTryagainina": "Too many requests. Try again in a moment.",
     "chatLibrary.somethingwentwrongTryagain": "Something went wrong. Try again.",

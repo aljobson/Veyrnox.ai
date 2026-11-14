@@ -890,6 +890,7 @@ export default {
   "chatLibrary.personasarenotavailableyet": "पर्सोना अभी उपलब्ध नहीं हैं।",
   "chatLibrary.somethingwentwrongTryagain": "कुछ गलत हो गया। फिर कोशिश करें।",
   "chatLibrary.thatisnolongerthere": "वह अब मौजूद नहीं है।",
+  "chatLibrary.afolderwiththatnamealreadyexists": "इस नाम का फ़ोल्डर पहले से है।",
   "chatLibrary.thatnameisnotallowedUse1": "वह नाम मान्य नहीं है। 1 से 60 अक्षर इस्तेमाल करें।",
   "chatLibrary.thatpersonanameisnotallowedUse": "पर्सोना का वह नाम मान्य नहीं है। 1 से 60 अक्षर इस्तेमाल करें।",
   "chatLibrary.theinstructionscanbeatmostcharacters": "निर्देशों में अधिकतम {value1} अक्षर हो सकते हैं।",
