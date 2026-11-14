@@ -16,6 +16,11 @@ export async function GET(request, { params }) {
         const result = await rpc('music_get_song', { p_auth_id: authId, p_song_id: id }, cfg);
         if (!result?.ok) return reply({ error: 'not_found' }, 404);
         const actions = Array.isArray(result.song?.actions) ? result.song.actions : [];
+        // Stems and Track add take an MP3 source only (Mureka), and the only Music
+        // version stored as MP3 is a Cover. Offering them on any other version led
+        // to a quote that always answered format_unavailable. The SQL gates stay the
+        // authority; this only stops showing an action that cannot succeed.
+        const mp3Source = result.song?.current_version?.operation === 'cover';
         const distributionActions = musicDistributionEnabled()
             ? [...actions, 'share_link', 'download_mp3'] : actions;
         return reply({
@@ -28,9 +33,9 @@ export async function GET(request, { params }) {
                 ...(musicReplaceEnabled() ? ['replace_section'] : []),
                 ...(musicAddSectionEnabled() ? ['add_section'] : []),
                 ...(musicReuseEnabled() && result.song?.generation_id ? ['reuse'] : []),
-                ...(musicStemsEnabled() ? ['stems'] : []),
+                ...(musicStemsEnabled() && mp3Source ? ['stems'] : []),
                 ...(musicTargetStemsEnabled() ? ['target_stem'] : []),
-                ...(musicTrackAddEnabled() ? ['add_track'] : []),
+                ...(musicTrackAddEnabled() && mp3Source ? ['add_track'] : []),
                 ...(musicStudioEnabled() ? ['open_studio'] : []),
                 ...(isUuid(result.song?.job_id || '') ? ['open_editor'] : []),
                 ...(musicEditingEnabled() ? ['crop', 'render'] : []),
