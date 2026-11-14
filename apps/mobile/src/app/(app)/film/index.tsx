@@ -127,13 +127,16 @@ export default function FilmStudio() {
 
             <Text style={styles.heading} accessibilityRole="header">{t('film.shots')}</Text>
             {rows.length === 0 ? <Text style={styles.muted}>{t('film.noshotsyetAddtheminthe')}</Text> : null}
-            {rows.map((r) => (
-                <Pressable key={r.shot.id} accessibilityRole="button" accessibilityLabel={rawText(`${r.shot.id}, ${r.label}`)} style={[styles.row, touchTarget]} onPress={() => router.push({ pathname: '/film/shot/[id]', params: { id: r.shot.id } })}>
-                    <Text style={styles.name}>{r.shot.id}</Text>
+            {rows.map((r, index) => {
+                const shotLabel = `${t('filmWorkspace.shotLabel', { value1: index + 1 })} · ${r.shot.id}`;
+                return (
+                <Pressable key={r.shot.id} accessibilityRole="button" accessibilityLabel={rawText(`${shotLabel}, ${r.label}`)} style={[styles.row, touchTarget]} onPress={() => router.push({ pathname: '/film/shot/[id]', params: { id: r.shot.id } })}>
+                    <Text style={styles.name}>{shotLabel}</Text>
                     <Text style={styles.muted}>{String(r.shot.description).slice(0, 110)}</Text>
                     <Text style={r.state === 'accepted' ? styles.good : r.state === 'prompt-ready' ? styles.ready : styles.muted}>{r.label}</Text>
                 </Pressable>
-            ))}
+                );
+            })}
 
             <Pressable accessibilityRole="button" style={[styles.secondary, touchTarget]} onPress={remove}>
                 <Text style={styles.secondaryText}>{t('film.removefromthisphone')}</Text>

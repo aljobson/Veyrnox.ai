@@ -56,6 +56,7 @@ export default function FilmShot() {
     }
 
     const label = t('filmWorkspace.shotLabel', { value1: film.shots.indexOf(shot) + 1 });
+    const displayLabel = `${label} · ${shot.id}`;
     const row = shotRow(film, shot);
     const prompt = latestPrompt(film, shot.id);
     const attempts = film.attempts.filter((a) => a.shot === shot.id);
@@ -67,8 +68,8 @@ export default function FilmShot() {
 
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-            <Stack.Screen options={{ title: label }} />
-            <Text style={styles.title} accessibilityRole="header">{label}</Text>
+            <Stack.Screen options={{ title: displayLabel }} />
+            <Text style={styles.title} accessibilityRole="header">{displayLabel}</Text>
             <Text style={styles.status}>{row.label}</Text>
 
             <Text style={styles.heading} accessibilityRole="header">{t('film.assets')}</Text>

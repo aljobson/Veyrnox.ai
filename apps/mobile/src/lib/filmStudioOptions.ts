@@ -1,4 +1,4 @@
-import { SHOT_LANES, type Film, type Shot } from './filmStudio';
+import { SHOT_LANES, assetKey, validAssetKey, type Film, type Shot } from './filmStudio';
 import { optionsFor } from './createOptions';
 import { kindOf, textInput, type CatalogModel } from './media';
 
@@ -70,30 +70,61 @@ export function promptOpenState(model: CatalogModel | null | undefined, options:
 }
 
 const present = (v: unknown): boolean => typeof v === 'string' && v.trim().length > 0;
-const clip = (text: string, max: number): string => text.length <= max ? text : `${text.slice(0, max - 1).trimEnd()}…`;
-const firstSentence = (text: string): string => (text.trim().split(/(?<=[.!?])\s|\n/)[0] ?? '').trim();
+const clip = (text: string, max: number): string => {
+    const characters = Array.from(text);
+    return characters.length <= max ? text : `${characters.slice(0, max - 1).join('').trimEnd()}…`;
+};
+const SCREENPLAY_SLUG = /^(?:INT\.?|EXT\.?|INT\/EXT\.?|I\/E\.?)\b/i;
+const SCREENPLAY_PARENTHETICAL = /^\([^)]*\)$/;
+const SCREENPLAY_TRANSITION = /^(?:(?:FADE|DISSOLVE|CUT|SMASH CUT|MATCH CUT|WIPE)\s+(?:IN|OUT|TO(?: BLACK)?))\s*:?$/i;
+const screenplayCue = (line: string): boolean => {
+    const letters = line.match(/\p{L}/gu) ?? [];
+    const hasCase = /\p{Lu}/u.test(line) && line !== line.toLocaleLowerCase();
+    return letters.length > 0 && hasCase && line.length <= 80 && line.split(/\s+/).length <= 6 && line === line.toLocaleUpperCase();
+};
+export function scriptBeats(text: string): string[] {
+    const beats: string[] = [];
+    let dialogueFollows = false;
+    for (const raw of text.split(/\r?\n/)) {
+        const line = raw.trim();
+        if (!line) { dialogueFollows = false; continue; }
+        if (SCREENPLAY_SLUG.test(line) || SCREENPLAY_TRANSITION.test(line)) { dialogueFollows = false; continue; }
+        if (screenplayCue(line)) { dialogueFollows = true; continue; }
+        if (SCREENPLAY_PARENTHETICAL.test(line)) continue;
+        if (dialogueFollows) { dialogueFollows = false; continue; }
+        if ((line.match(/\p{L}/gu) ?? []).length >= 2) beats.push(line);
+    }
+    return beats;
+}
 
 // Quick start for one shot card. Fills only the fields that are empty, from the shot's own description (or the film's
 // script) and the film setup. Plain local text: no network, no credits. The user reviews every value; the one-action
 // confirmation is never ticked for them. Returns how many fields were filled.
-export function fillShotDefaults(film: Film, index: number): { film: Film; filled: number } {
+export function fillShotDefaults(film: Film, index: number): { film: Film; filled: number; remaining: number } {
     const shot = film.shots[index];
-    if (!shot) return { film, filled: 0 };
-    const beat = firstSentence(String(shot.description ?? '')) || firstSentence(film.script) || `Shot ${index + 1}`;
-    const known = film.shots.find((s, i) => i !== index && present(s.location))?.location;
+    if (!shot) return { film, filled: 0, remaining: 0 };
+    const ownBeat = String(shot.description ?? '').trim();
+    const beat = ownBeat || scriptBeats(film.script)[index] || '';
+    const declaredLocations = new Set(film.assets.filter(asset => asset.type === 'location').map(assetKey));
+    const nearbyShots = [...film.shots.slice(0, index).reverse(), ...film.shots.slice(index + 1)];
+    const known = nearbyShots.find(s => validAssetKey(s.location) && declaredLocations.has(String(s.location)))?.location;
     const suggestions: Record<string, string> = {
-        location: String(known ?? '@location:v1'), time: 'Day', description: clip(beat, 400), complexity: 'Simple',
-        goal: clip(`Show: ${beat}`, 200), action: 'Show', dramaturgy: 'Set up the moment, then let it land',
+        ...(known ? { location: String(known) } : {}),
+        // Film generation prompts are intentionally authored in English; the localized UI explains that these are
+        // suggestions to review. Meaningful description/goal fields remain empty when no real beat exists.
+        time: 'Day', ...(beat ? { description: clip(beat, 400), goal: clip(`Show: ${beat}`, 200) } : {}), complexity: 'Simple',
+        action: 'Show', dramaturgy: 'Set up the moment, then let it land',
         blocking: 'Subject stays in one place in frame', acting: 'Natural and understated', style: 'Naturalistic',
         size: 'Medium', movement: 'Static', lens: '35mm', angle: 'Eye level', cut: 'Hard cut', pace: 'Steady', transition: 'Cut',
-        seconds: film.stack.seconds || '10', characters: 'none', props: 'none', dialogue: 'none',
+        seconds: film.stack.seconds || '10',
     };
     const next: Record<string, string | boolean> = { ...shot };
     let filled = 0;
     SHOT_LANES.flatMap(([, fields]) => fields).forEach(([key]) => {
-        if (key === 'id' || present(shot[key]) || !(key in suggestions)) return;
+        if (key === 'id' || present(shot[key]) || !present(suggestions[key])) return;
         next[key] = suggestions[key]; filled++;
     });
-    if (!filled) return { film, filled: 0 };
-    return { film: { ...film, shots: film.shots.map((s, i) => i === index ? next as Shot : s) }, filled };
+    const remaining = SHOT_LANES.flatMap(([, fields]) => fields).filter(([key]) => key !== 'id' && !present(next[key])).length;
+    if (!filled) return { film, filled: 0, remaining };
+    return { film: { ...film, shots: film.shots.map((s, i) => i === index ? next as Shot : s) }, filled, remaining };
 }

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { AccessibilityInfo, Pressable, Text, View } from 'react-native';
 import { SHOT_LANES, type Film } from '../../lib/filmStudio';
 import { fillShotDefaults, newShot, sanitizeShotId, shotIdProblem } from '../../lib/filmStudioOptions';
 import { t } from '../../lib/i18n';
@@ -8,21 +8,34 @@ import { touchTarget } from '../../lib/a11y';
 import { GENERATION_PROMPT_MAX } from '../../lib/promptLimits';
 import { colors } from '../../theme';
 import { Button } from '../ui';
-import { Text as StatusText } from '../ui/Text';
 import { Field } from './FilmFields';
 import { FilmSelect } from './FilmSelect';
 
 export function FilmBreakdownStage({ film, change }: { film: Film; change: (film: Film) => void; catalog: readonly CatalogModel[]; live: boolean }) {
     const [selected, setSelected] = useState(0);
     const [draft, setDraft] = useState<string | null>(null);
-    const [filledNote, setFilledNote] = useState<number | null>(null);
+    const [filledNote, setFilledNote] = useState<{ filled: number; remaining: number } | null>(null);
     const [problem, setProblem] = useState<ReturnType<typeof shotIdProblem>>(null);
     const index = film.shots[selected] ? selected : 0;
     const shot = film.shots[index];
     const errors = { format: t('filmWorkspace.id.format'), duplicate: t('filmWorkspace.id.duplicate'), history: t('filmWorkspace.id.history') };
-    const edit = (key: string, value: string | boolean) => change({ ...film, shots: film.shots.map((s, i) => i === index ? { ...s, [key]: value } : s) });
-    const resetDraft = () => { setDraft(null); setProblem(null); setFilledNote(null); };
-    const fillDefaults = () => { const result = fillShotDefaults(film, index); setFilledNote(result.filled); if (result.filled) change(result.film); };
+    const filledMessage = filledNote ? filledNote.filled && filledNote.remaining
+        ? t('filmWorkspace.defaultsFilledRemaining', { value1: filledNote.filled, value2: filledNote.remaining })
+        : filledNote.filled ? t('filmWorkspace.defaultsFilled', { value1: filledNote.filled })
+            : filledNote.remaining ? t('filmWorkspace.defaultsRemaining', { value1: filledNote.remaining }) : t('filmWorkspace.defaultsNone') : null;
+    useEffect(() => {
+        if (!filledMessage) return;
+        const timer = setTimeout(() => AccessibilityInfo.announceForAccessibility(filledMessage), 100);
+        return () => clearTimeout(timer);
+    }, [filledNote, filledMessage]);
+    const edit = (key: string, value: string | boolean) => { setFilledNote(null); change({ ...film, shots: film.shots.map((s, i) => i === index ? { ...s, [key]: value } : s) }); };
+    const resetIdentityDraft = () => { setDraft(null); setProblem(null); };
+    const resetSelection = () => { resetIdentityDraft(); setFilledNote(null); };
+    const fillDefaults = () => {
+        const result = fillShotDefaults(film, index);
+        setFilledNote({ filled: result.filled, remaining: result.remaining });
+        if (result.filled) change(result.film);
+    };
     const commitId = () => {
         if (draft === null || !shot) return;
         const error = shotIdProblem(film, index, draft);
@@ -34,28 +47,29 @@ export function FilmBreakdownStage({ film, change }: { film: Film; change: (film
             prompts: film.prompts.map(p => p.shot === shot.id ? { ...p, shot: draft } : p),
             attempts: film.attempts.map(a => a.shot === shot.id ? { ...a, shot: draft } : a),
         });
-        resetDraft();
+        resetIdentityDraft();
     };
     const add = () => {
         if (film.shots.length >= 200) return;
-        setSelected(film.shots.length); resetDraft();
+        setSelected(film.shots.length); resetSelection();
         change({ ...film, shots: [...film.shots, newShot(film)] });
     };
     return <View style={{ gap: 14 }}>
-        <Field label={t('film.scripttreatmentoridea')} value={film.script} onChange={script => change({ ...film, script })} multiline maxLength={GENERATION_PROMPT_MAX} placeholder={t('film.pastethesourcematerialyouarebreaking')} />
+        <Field label={t('film.scripttreatmentoridea')} value={film.script} onChange={script => { setFilledNote(null); change({ ...film, script }); }} multiline maxLength={GENERATION_PROMPT_MAX} placeholder={t('film.pastethesourcematerialyouarebreaking')} />
         <Text style={{ color: colors.body }}>{t('filmWorkspace.runtime', { value1: film.shots.reduce((sum, s) => sum + (Number(s.seconds) || 0), 0), value2: film.targetSeconds })}</Text>
-        {shot ? <FilmSelect label={t('filmWorkspace.shotCards')} value={String(index)} options={film.shots.map((s, i) => ({ value: String(i), label: t('filmWorkspace.shotLabel', { value1: i + 1 }) }))} onChange={v => { setSelected(Number(v)); resetDraft(); }} /> : null}
+        {shot ? <FilmSelect label={t('filmWorkspace.shotCards')} value={String(index)} options={film.shots.map((s, i) => ({ value: String(i), label: `${t('filmWorkspace.shotLabel', { value1: i + 1 })} · ${s.id}` }))} onChange={v => { setSelected(Number(v)); resetSelection(); }} /> : null}
         <Button label={t('film.addshot')} disabled={film.shots.length >= 200} onPress={add} />
         {shot ? <>
             <Button variant="secondary" label={t('filmWorkspace.fillDefaults')} onPress={fillDefaults} />
-            <StatusText variant="inherit" accessibilityLiveRegion="polite" style={{ color: colors.muted }}>{filledNote === null ? t('filmWorkspace.fillDefaultsHelp') : filledNote ? t('filmWorkspace.defaultsFilled', { value1: filledNote }) : t('filmWorkspace.defaultsNone')}</StatusText>
-            <Button variant="tertiary" tone="danger" label={t('film.remove')} onPress={() => { change({ ...film, shots: film.shots.filter((_, i) => i !== index) }); setSelected(0); resetDraft(); }} />
+            <Text style={{ color: colors.muted }}>{t('filmWorkspace.fillDefaultsHelp')}</Text>
+            {filledMessage ? <Text style={{ color: colors.muted }}>{filledMessage}</Text> : null}
+            <Button variant="tertiary" tone="danger" label={t('film.remove')} onPress={() => { change({ ...film, shots: film.shots.filter((_, i) => i !== index) }); setSelected(0); resetSelection(); }} />
             {SHOT_LANES.map(([lane, fields]) => <View key={lane} style={{ gap: 10 }}>
                 <Text accessibilityRole="header" style={{ color: colors.accent, fontWeight: '700' }}>{lane}</Text>
                 {fields.map(([key, label]) => <Field key={key} label={label} value={key === 'id' ? draft ?? shot.id : String(shot[key] ?? '')}
                     onChange={value => {
                         if (key !== 'id') return edit(key, value);
-                        setDraft(sanitizeShotId(value)); setProblem(null);
+                        setDraft(sanitizeShotId(value)); setProblem(null); setFilledNote(null);
                     }} onBlur={key === 'id' ? commitId : undefined} onSubmitEditing={key === 'id' ? commitId : undefined}
                     multiline={['description', 'dialogue', 'blocking', 'acting'].includes(key)}
                     hint={['location', 'characters', 'props'].includes(key) ? t('filmWorkspace.assetHint') : key === 'seconds' ? t('filmWorkspace.durationHint') : undefined}
