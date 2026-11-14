@@ -148,3 +148,15 @@ test('a plain server error leaves Try again enabled at once', async () => {
     const retry = root.container.queryAll(n => n.props.accessibilityRole === 'button' && n.props.accessibilityLabel === t('recovery.retry'))[0];
     expect(retry.props.accessibilityState.disabled).toBe(false);
 });
+test('switching to an empty type filter and back keeps today first after older pages load', async () => {
+    const today = [row('today-running', 'running'), row('today-done', 'succeeded')];
+    await render(today, { before: '2026-11-14', before_id: 'today-done' });
+    const press = (label: string) => act(async () => root.container.queryAll(n => n.props.accessibilityLabel === label && n.props.onClick)[0].props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }));
+    await press(t('library.type.audio'));
+    expect(mockList.data).toHaveLength(0);
+    // An empty filtered list reaches its end at once, so older pages load while it is shown.
+    mockMedia.listJobs.mockResolvedValueOnce({ jobs: [{ ...row('nov-10', 'succeeded'), created_at: '2026-11-10' }], next: null });
+    await act(async () => mockList.onEndReached());
+    await press(t('library.type.all'));
+    expect(mockList.data.map((j: Job) => j.job_id)).toEqual(['today-running', 'today-done', 'nov-10']);
+});

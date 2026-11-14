@@ -17,3 +17,9 @@ export function mergePage(current: readonly Job[], page: readonly Job[]): Job[] 
     const existing = new Set(current.map(j => j.job_id));
     return [...page.filter(j => !existing.has(j.job_id)), ...current.map(j => replacements.get(j.job_id) ?? j)];
 }
+// Older pages (a "next" cursor) go after what is loaded, so the list stays newest first.
+export function appendPage(current: readonly Job[], page: readonly Job[]): Job[] {
+    const replacements = new Map(page.map(j => [j.job_id, j]));
+    const existing = new Set(current.map(j => j.job_id));
+    return [...current.map(j => replacements.get(j.job_id) ?? j), ...page.filter(j => !existing.has(j.job_id))];
+}
