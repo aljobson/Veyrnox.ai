@@ -25,9 +25,13 @@ test('Worker-first GET/HEAD admission has independent gates and overrides asset 
     for (const path of ['/editor-vision/unknown/worker.mjs', `${FACE_VISION_PATH}/worker.mjs/extra`, `${FACE_VISION_PATH}/%77orker.mjs`]) assert.equal(visionAdmission(new Request(`https://veyrnox.ai${path}`), enabled).status, 404);
     assert.equal(visionAdmission(new Request(`https://veyrnox.ai${FACE_VISION_PATH}/worker.mjs`, { method: 'POST' }), enabled).status, 405);
 });
-test('production stays dark with no extra binding and all immutable Workers remain pinned', async () => {
+test('Photo Studio is on in production through the shared binding, staging stays dark, and all immutable Workers remain pinned', async () => {
     const config = parseJsonc(await readFile(new URL('../wrangler.jsonc', import.meta.url), 'utf8'));
-    assert.equal(editorFeatureEnabled('PHOTO_STUDIO_ENABLED', config.vars), false);
+    // The owner switched the web Photo Studio on in production (2026-11-14). It reads the one shared binding, so no Worker variable was added.
+    assert.equal(editorFeatureEnabled('PHOTO_STUDIO_ENABLED', config.vars), true);
+    // The face assets need both gates (see the admission test above), so local inference must stay on with it.
+    assert.equal(editorFeatureEnabled('EDITOR_LOCAL_INFERENCE_ENABLED', config.vars), true);
+    assert.equal(editorFeatureEnabled('PHOTO_STUDIO_ENABLED', config.env.staging.vars), false);
     assert.ok(config.vars.EDITOR_RUNTIME_FLAGS.length < 1024);
     assert.ok(config.assets.run_worker_first.includes('/editor-vision/*'));
     assert.equal(VISION_RELEASES.length, 3);
