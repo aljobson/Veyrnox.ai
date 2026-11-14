@@ -60,7 +60,7 @@ test('free plan hides forbidden controls, replaces selection, and posts only all
     expect(mockRequest.mock.calls.some(([path]) => path.endsWith('/queues'))).toBe(false);
     expect(root.container.queryAll(n => n.props.accessibilityLabel === t('publishDepth.presets.name'))).toHaveLength(0);
     expect(root.container.queryAll(n => n.props.accessibilityLabel === t('compose.networkText', { network: 'X' }))).toHaveLength(0);
-    await press(root, t('publishParity.plan.see')); expect(mockPush).toHaveBeenCalledWith('/publish');
+    const seePlan = buttons(root, t('publishParity.plan.see')); expect(seePlan).toHaveLength(2); await act(async () => { seePlan[1].props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }); }); expect(mockPush).toHaveBeenCalledWith('/publish');
     await input(root, t('publish.caption'), 'Main caption');
     const body = await sendNow(); expect(body).toMatchObject({ publishNow: true, accountIds: ['b'], globalText: 'Main caption' });
     expect(body).not.toHaveProperty('scheduledAt'); expect(body).not.toHaveProperty('networkText');

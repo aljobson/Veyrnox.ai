@@ -5,6 +5,8 @@ import { publishScope, usePublishRole } from '../../../lib/usePublishRole';
 import { canPublish } from '../../../lib/publishDashboard';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack } from 'expo-router';
+import { PlanLocked } from '../../../components/publish/PlanLocked';
+import { isPlanLockMessage } from '../../../lib/publishPlanLocked';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, Share, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { touchTarget } from '../../../lib/a11y';
@@ -93,8 +95,8 @@ export default function SmartlinkScreen() {
         }
     }
 
-    if (error && !link) return <View style={styles.screen}><Stack.Screen options={{ title: t('smartlink.title') }} /><StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{error}</StatusText></View>;
-    if (!link) return <View style={styles.screen}><ActivityIndicator color={colors.accent} /></View>;
+    if (error && !link) return <View style={styles.screen}><Stack.Screen options={{ title: t('smartlink.title') }} />{isPlanLockMessage(error) ? <PlanLocked message={error} /> : <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{error}</StatusText>}</View>;
+    if (!link) return <View style={styles.screen}><Stack.Screen options={{ title: t('smartlink.title') }} /><ActivityIndicator color={colors.accent} /></View>;
     const saved = link !== EMPTY && link.slug !== '';
 
     return (

@@ -4,6 +4,8 @@ import { NetworkLogo } from '../../../components/publish/NetworkLogo';
 import { networkName } from '../../../lib/networkLogos';
 import { usePublishRole } from '../../../lib/usePublishRole';
 import { LoadError } from '../../../components/publish/LoadError';
+import { PlanLocked } from '../../../components/publish/PlanLocked';
+import { isPlanLockMessage } from '../../../lib/publishPlanLocked';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -35,10 +37,12 @@ export default function Contacts() {
     }, [api, search, status]);
 
     useFocusEffect(useCallback(() => { void load(); }, [load]));
+    const locked = !contacts && isPlanLockMessage(error);
 
     return (
         <View style={styles.screen}>
             <Stack.Screen options={{ title: t('contacts.title') }} />
+            {locked && error ? <PlanLocked message={error} /> : <>
             {canImport ? <Button label={t('publishOps.import.title')} onPress={() => router.push('/publish/contact-import')} /> : null}
             <TextInput style={styles.input} value={search} onChangeText={setSearch} onSubmitEditing={load} returnKeyType="search" placeholder={t('contacts.search')} accessibilityLabel={t('contacts.search')} autoCapitalize="none" placeholderTextColor={colors.muted} maxLength={100} />
             <View style={styles.chips}>
@@ -68,6 +72,7 @@ export default function Contacts() {
                     )}
                 />
             )}
+            </>}
         </View>
     );
 }
