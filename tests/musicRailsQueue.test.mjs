@@ -22,6 +22,9 @@ test('the rails are read-only, published-only and service-role only', () => {
     assert.match(sql, /GRANT EXECUTE ON FUNCTION public\.music_public_rails\(TEXT\) TO service_role/);
     assert.match(sql, /REVOKE ALL ON FUNCTION public\.music_public_rails\(TEXT\) FROM PUBLIC, anon, authenticated/);
     assert.match(sql, /SET search_path = ''/);
+    // The Similar scan is bounded so an anonymous page view cannot cost O(library).
+    assert.match(sql, /ORDER BY published_at DESC LIMIT 200/);
+    assert.match(sql, /CREATE INDEX IF NOT EXISTS music_publications_published_idx/);
     for (const built of sql.match(/jsonb_build_object\('slug'[^)]*\)/g)) {
         assert.equal(built, "jsonb_build_object('slug', t.slug, 'title', t.title, 'handle', t.handle, 'display_name', t.display_name)");
     }

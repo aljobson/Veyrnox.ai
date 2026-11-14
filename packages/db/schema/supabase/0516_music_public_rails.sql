@@ -6,8 +6,12 @@
 -- creator handle and name). Similar ranks other creators' tracks by how many
 -- style words (four letters or more, minus words like "music" and "draft" that
 -- every default title has) their generation direction shares with this
--- one, newest first on a tie; the words themselves are never returned. Off until
+-- one, newest first on a tie, among the 200 newest such tracks; the words
+-- themselves are never returned. Off until
 -- MUSIC_RUNTIME_FLAGS rails is true.
+
+CREATE INDEX IF NOT EXISTS music_publications_published_idx
+    ON public.music_publications(published_at DESC) WHERE status = 'published';
 
 CREATE OR REPLACE FUNCTION private.music_publication_words(p_publication_id UUID)
 RETURNS TEXT[]
@@ -48,10 +52,16 @@ BEGIN
     INTO v_similar FROM (
         SELECT p.slug, s.title, cp.handle, cp.display_name, p.published_at,
                cardinality(ARRAY(SELECT unnest(private.music_publication_words(p.id)) INTERSECT SELECT unnest(v_words))) AS shared
-        FROM public.music_publications p
+        FROM (
+            -- Bounded: only the 200 newest published tracks by other creators are
+            -- scored, so an anonymous page view costs the same whatever the size of
+            -- the library (pr gate, HIGH). Uses music_publications_published_idx.
+            SELECT * FROM public.music_publications
+            WHERE status = 'published' AND user_id <> v_pub.user_id
+            ORDER BY published_at DESC LIMIT 200
+        ) p
         JOIN public.music_songs s ON s.id = p.song_id AND s.user_id = p.user_id AND s.status = 'active'
         JOIN public.music_creator_profiles cp ON cp.user_id = p.user_id
-        WHERE p.user_id <> v_pub.user_id AND p.status = 'published'
         ORDER BY shared DESC, p.published_at DESC LIMIT 6
     ) t;
 
