@@ -3,23 +3,24 @@
 import Link from 'next/link';
 import { useMemo, useRef } from 'react';
 import { useI18n } from '../../../components/I18nProvider.jsx';
+import { pluralKey } from '../../../lib/i18n/translate.mjs';
 import { createTemplatesFor } from '../_lib/createTemplates.js';
-import { presetCredits, presetTitle, templateModelId } from '../_lib/tokens.js';
+import { modelNameForId, presetCredits, presetTitle, templateModelId } from '../_lib/tokens.js';
 import { Modal } from './Modal';
 
 const CREATE_KINDS = new Set(['video', 'image', 'audio']);
 
 /** Three curated, runnable starts for the medium selected in Create. */
 export function TemplatePicker({ models, goal, selectedKind, onPick, onClose }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const firstChoice = useRef(null);
   const closeButton = useRef(null);
   const kind = CREATE_KINDS.has(goal) ? goal : CREATE_KINDS.has(selectedKind) ? selectedKind : 'video';
-  const rows = useMemo(() => createTemplatesFor(kind).map((preset) => ({
-    preset,
-    model: models.find((item) => item.id === templateModelId(preset)) || null,
-    credits: presetCredits(preset, models),
-  })), [kind, models]);
+  const rows = useMemo(() => createTemplatesFor(kind).map((preset) => {
+    const modelId = templateModelId(preset);
+    const model = models.find((item) => item.id === modelId) || null;
+    return { preset, model, modelName: model?.name || modelNameForId(modelId), credits: presetCredits(preset, models) };
+  }), [kind, models]);
   const firstEnabledIndex = rows.findIndex(({ model }) => model);
   const initialFocusRef = firstEnabledIndex === -1 ? closeButton : firstChoice;
 
@@ -36,7 +37,7 @@ export function TemplatePicker({ models, goal, selectedKind, onPick, onClose }) 
         <p className="mt-2 max-w-2xl text-sm leading-6 text-vx-fg-muted">{t('app.create.templates.help')}</p>
 
         <ul className="mt-5 grid gap-4 sm:grid-cols-3">
-          {rows.map(({ preset, model, credits }, index) => {
+          {rows.map(({ preset, model, modelName, credits }, index) => {
             const title = presetTitle(preset.name);
             return (
               <li key={preset.id} className="overflow-hidden rounded-2xl border border-vx-border bg-vx-base">
@@ -58,7 +59,10 @@ export function TemplatePicker({ models, goal, selectedKind, onPick, onClose }) 
                 )}
                 <div className="p-3">
                   <h3 className="text-sm font-extrabold text-vx-fg">{title}</h3>
-                  <p className="mt-1 font-vx-mono text-[10px] text-vx-fg-muted">{model?.name || preset.model}{Number.isFinite(credits) ? ` · ${credits} cr` : ''}</p>
+                  <p className="mt-1 font-vx-mono text-[10px] text-vx-fg-muted">
+                    {modelName || t('app.create.templates.unavailable')}
+                    {Number.isFinite(credits) ? ` · ${t(pluralKey(t, locale, 'model.credits', credits), { n: credits })}` : ''}
+                  </p>
                   <p className="mt-2 line-clamp-3 text-xs leading-5 text-vx-fg-body">{preset.prompt}</p>
                   <button ref={index === firstEnabledIndex ? firstChoice : undefined} type="button" onClick={() => onPick(preset)} disabled={!model}
                     aria-label={model ? t('app.create.templates.use', { title }) : `${t('app.create.templates.use', { title })} · ${t('app.create.templates.unavailable')}`} data-testid={`create-template-${preset.id}`}

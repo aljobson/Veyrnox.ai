@@ -88,8 +88,8 @@ test('Create offers exactly three audio templates with real licensed song previe
   assert.match(html, /CC BY 3\.0/);
   assert.match(html, /CC BY 4\.0/);
   assert.match(html, /Only a style direction is used/);
-  assert.match(html, /ccmixter\.org\/files\/cdk\/14246/);
-  assert.match(html, /soundcloud\.com\/scottbuckley\/amberlight-cc-by/);
+  assert.ok(html.includes('href="https://ccmixter.org/files/cdk/14246"'));
+  assert.ok(html.includes('href="https://soundcloud.com/scottbuckley/amberlight-cc-by"'));
   assert.match(html, /href="\/app\/music\/discover"/);
 });
 
@@ -98,6 +98,17 @@ test('the three choices remain visible but disabled when their models are unavai
   assert.equal(templateButtons(html), 3);
   assert.equal([...html.matchAll(/Model unavailable/g)].length, 6);
   assert.equal([...html.matchAll(/ disabled=""/g)].length, 3);
+});
+
+test('template metadata keeps human model names and grammatically correct credit labels', () => {
+  const videoWithoutLiveCatalog = renderPicker('video', []);
+  assert.match(videoWithoutLiveCatalog, /Wan 2\.5 · 17 credits/);
+  assert.doesNotMatch(videoWithoutLiveCatalog, /wan-2\.5-kie/);
+  assert.doesNotMatch(videoWithoutLiveCatalog, />\s*· 17 credits/);
+
+  const image = renderPicker('image');
+  assert.match(image, /Nano Banana · 1 credit/);
+  assert.doesNotMatch(image, /1 credits/);
 });
 
 test('the all-goal picker follows the currently selected model kind', () => {

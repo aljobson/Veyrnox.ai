@@ -118,6 +118,11 @@ export function modelIdForName(name) {
   return hit ? hit.id : null;
 }
 
+/** Human-readable fallback for a routed catalog id when its live row is absent. */
+export function modelNameForId(id) {
+  return MODELS.find((model) => model.id === id)?.name || null;
+}
+
 /**
  * Studio link for a preset: the model it is wired to (when that model is still
  * in the catalog) plus the preset id, so Create records which card sent the
