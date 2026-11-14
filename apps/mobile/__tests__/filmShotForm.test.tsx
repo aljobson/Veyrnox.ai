@@ -76,6 +76,7 @@ test('the shot list shows Shot 1, Shot 2 while the stored id stays the raw id', 
 });
 test('Fill sensible defaults fills only empty fields, keeps typed values and leaves the one-action box for the user', async () => {
     await mount(ready()); await stage(2); await press(t('film.addshot'));
+    await tick();
     expect(stageIssues((await saved())!, 2).length).toBeGreaterThan(1);
     await type(t('filmStudio.description'), 'Maya pours the first coffee. She smiles.');
     await type(t('filmStudio.timeofday'), 'Dusk');
