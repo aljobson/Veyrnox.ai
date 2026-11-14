@@ -27,7 +27,9 @@ test('a spec with its own config never runs in the smoke, and no spec is left un
   const smoke = new Set(smokeConfig().testMatch);
   const owned = configs.flatMap(name => [...read(name).matchAll(/testMatch:\s*'([^']+\.spec\.mjs)'/g)].map(([, pattern]) => pattern));
   assert.ok(['page-coverage.spec.mjs', 'music-preview.spec.mjs', 'music-server.spec.mjs', 'authenticated-*.spec.mjs'].every(pattern => owned.includes(pattern)));
-  const ownedBy = (name) => owned.some(pattern => new RegExp(`^${pattern.replace(/[.]/g, '\\.').replace(/\*/g, '.*')}$`).test(name));
+  // A config glob as a regular expression: escape every special character (backslash included), then let * match anything.
+  const globToRegExp = (pattern) => new RegExp(`^${pattern.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&').replace(/\\\*/g, '.*')}$`);
+  const ownedBy = (name) => owned.some(pattern => globToRegExp(pattern).test(name));
   for (const name of specs) {
     assert.notEqual(smoke.has(name), ownedBy(name), `${name} must run from exactly one config`);
   }
