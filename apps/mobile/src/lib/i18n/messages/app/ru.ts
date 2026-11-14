@@ -6231,4 +6231,9 @@ export default {
   "credits.planDetails.loading": "Загружаем кредиты тарифов…",
   "credits.planDetails.failed": "Не удалось загрузить кредиты тарифов. Проверьте подключение и повторите попытку.",
   "credits.planDetails.retry": "Повторить",
+  "job.patient": "Пожалуйста, подождите. Хорошему результату нужно немного времени.",
+  "job.progressLabel": "Ход создания",
+  "job.percent": "{percent} %",
+  "job.elapsedMinutes": "{minutes} мин {seconds} с",
+  "job.elapsedSoFar": "Прошло {elapsed}",
 } as const;

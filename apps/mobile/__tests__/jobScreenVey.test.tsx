@@ -1,5 +1,6 @@
 import { act } from 'react';
 import * as RN from 'react-native';
+import { formatElapsed } from '../src/components/GenerationProgress';
 import { createRoot, type Root } from 'test-renderer';
 import JobScreen from '../src/app/(app)/job/[id]';
 import { mediaApi, waitForJob, type JobState } from '../src/lib/media';
@@ -47,7 +48,7 @@ test('waiting uses interactive working Vey, no spinner, and unchanged status and
     await act(async () => update('running')); live(t('job.running'));
     expect(vey()[0].props.mood).toBe('working');
     expect(root.container.queryAll(n => n.props.accessibilityLabel === t('job.stopWaiting'))).toHaveLength(1);
-    expect(root.container.queryAll(n => n.children.includes(t('job.waiting', { elapsed: '0s' })))).toHaveLength(1);
+    expect(root.container.queryAll(n => n.children.includes(t('job.waiting', { elapsed: formatElapsed(0) })))).toHaveLength(1);
 });
 test('poll-ended still-working status retains working Vey', async () => {
     await render(); await complete('running'); expect(vey()[0].props.mood).toBe('working'); live(t('job.stillWorking'));

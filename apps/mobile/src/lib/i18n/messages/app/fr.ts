@@ -6163,4 +6163,9 @@ export default {
   "credits.planDetails.loading": "Chargement des crédits des forfaits…",
   "credits.planDetails.failed": "Impossible de charger les crédits des forfaits. Vérifiez votre connexion et réessayez.",
   "credits.planDetails.retry": "Réessayer",
+  "job.patient": "Merci de patienter. Un bon résultat demande un peu de temps.",
+  "job.progressLabel": "Progression de la création",
+  "job.percent": "{percent} %",
+  "job.elapsedMinutes": "{minutes} min {seconds} s",
+  "job.elapsedSoFar": "{elapsed} écoulées",
 } as const;

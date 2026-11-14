@@ -155,5 +155,7 @@
   "liveEdit.wig.bob": "Established Portuguese term or label: Bob.",
   "create.firstRun.dest.tiktok": "Product name written the same in this language: TikTok.",
   "create.firstRun.dest.reels": "Product name written the same in this language: Instagram Reels.",
-  "create.firstRun.dest.youtube": "Product name written the same in this language: YouTube."
+  "create.firstRun.dest.youtube": "Product name written the same in this language: YouTube.",
+  "job.percent": "Percent sign directly after the number is the standard form in this language.",
+  "job.elapsedMinutes": "Standard abbreviations for minutes and seconds in this language: min and s."
 }

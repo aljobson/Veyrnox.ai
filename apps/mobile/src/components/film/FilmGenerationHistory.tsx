@@ -9,6 +9,7 @@ import type { Film } from '../../lib/filmStudio';
 import { Button, Text } from '../ui';
 import { t } from '../../lib/i18n';
 import { useAnnouncement } from '../../lib/useAnnouncement';
+import { GenerationProgress } from '../GenerationProgress';
 
 // Test doubles of expo-router may omit useFocusEffect; pick once at module level so the hook order never changes.
 function useEffectOnMount(effect: () => void | (() => void)) { useEffect(effect, [effect]); }
@@ -41,6 +42,7 @@ export function FilmGenerationHistory({ film, shotId, onResult }: { film: Film; 
     useAnnouncement(rows.map(line).join('. '));
     return <>{rows.map(item => <View key={item.id}><Text>
         {t('filmOutput.version', { value1: shotId, value2: item.version, value3: line(item) })}</Text>
+        {item.state === 'pending' ? <GenerationProgress jobId={item.id} kind="video" startedAt={item.createdAt} compact /> : null}
         <Button variant="tertiary" label={t('handoff.openFilmJob')} accessibilityLabel={t('handoff.openFilmJobVersion', { version: item.version })} onPress={() => { if (current()) router.push({ pathname: '/job/[id]', params: { id: item.id } }); }} />
         {onResult && item.state === 'succeeded' && returnMatches(film, item) ? <Button variant="tertiary" label={t('handoff.useFilmResult')} accessibilityLabel={t('handoff.useFilmResultVersion', { version: item.version })} onPress={() => { if (current()) onResult(item.id); }} /> : null}
     </View>)}</>;

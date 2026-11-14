@@ -6027,4 +6027,9 @@ export default {
   "credits.planDetails.loading": "요금제 크레딧을 불러오는 중…",
   "credits.planDetails.failed": "요금제 크레딧을 불러오지 못했어요. 연결을 확인하고 다시 시도하세요.",
   "credits.planDetails.retry": "다시 시도",
+  "job.patient": "잠시만 기다려 주세요. 좋은 결과에는 시간이 조금 걸립니다.",
+  "job.progressLabel": "생성 진행률",
+  "job.percent": "{percent}%",
+  "job.elapsedMinutes": "{minutes}분 {seconds}초",
+  "job.elapsedSoFar": "현재까지 {elapsed}",
 } as const;

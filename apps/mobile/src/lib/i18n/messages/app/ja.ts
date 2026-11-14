@@ -6027,4 +6027,9 @@ export default {
   "credits.planDetails.loading": "プランのクレジットを読み込み中…",
   "credits.planDetails.failed": "プランのクレジット数を読み込めませんでした。接続を確認して再試行してください。",
   "credits.planDetails.retry": "再試行",
+  "job.patient": "しばらくお待ちください。良い仕上がりには少し時間がかかります。",
+  "job.progressLabel": "作成の進捗",
+  "job.percent": "{percent}%",
+  "job.elapsedMinutes": "{minutes}分{seconds}秒",
+  "job.elapsedSoFar": "経過時間：{elapsed}",
 } as const;

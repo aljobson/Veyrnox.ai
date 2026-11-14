@@ -105,7 +105,7 @@ export function MakePanel({ visible, initialPrompt = '', initialKind = 'image', 
         <Modal visible={visible} animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={close}>
             <ScrollView style={styles.screen} onAccessibilityEscape={close} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
                 <Text variant="title2" accessibilityRole="header">{t('chat.make.title')}</Text>
-                <MakeResult jobs={state.jobs} count={state.count} canMakeAnother={!state.submitting && !state.retry?.blocked}
+                <MakeResult jobs={state.jobs} count={state.count} modelId={model?.id} canMakeAnother={!state.submitting && !state.retry?.blocked}
                     onOpen={id => { close(); router.push({ pathname: '/job/[id]', params: { id } }); }}
                     onLibrary={onJobStarted ? undefined : () => { close(); router.push('/library'); }}
                     onMakeAnother={() => { if (state.makeAnother()) clearSources(); }} />
