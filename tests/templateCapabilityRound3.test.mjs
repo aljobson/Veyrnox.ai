@@ -9,7 +9,8 @@ import { PRESETS } from '../app/veyrnox/_lib/templates.js';
 import { MODELS } from '../app/veyrnox/_lib/tokens.js';
 import { capabilityFor, publicCapabilities } from '../lib/modelCapabilities.js';
 const contract = PRESETS.map(p => templateContract(p.id)).find(c => c?.class === 'bound' && c.slotCount === 3);
-const preset = PRESETS.find(p => p.id === contract.id);
+const dormant = contract ? false : 'no multi-photo bound contract: none has a people-safe model (ADR-0309 amendment 2)';
+const preset = contract && PRESETS.find(p => p.id === contract.id);
 const paths = ['app/veyrnox/_components/UseTemplate.js', 'app/veyrnox/app/create/page.js', 'apps/mobile/src/app/(app)/templates/[id].tsx', 'apps/mobile/src/app/(app)/create/[modelId].tsx'];
 function expression(path, name) {
   const source = ts.createSourceFile(path, readFileSync(path, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
@@ -18,7 +19,7 @@ function expression(path, name) {
   assert.ok(found, `${path}: ${name}`);
   return found;
 }
-for (const flag of ['false', 'true']) test(`live capability gates web and mobile template/Create before uploads, flag=${flag}`, async t => {
+for (const flag of ['false', 'true']) test(`live capability gates web and mobile template/Create before uploads, flag=${flag}`, { skip: dormant }, async t => {
   const old = process.env.MULTI_REFERENCE_ENABLED;
   process.env.MULTI_REFERENCE_ENABLED = flag;
   t.after(() => { if (old === undefined) delete process.env.MULTI_REFERENCE_ENABLED; else process.env.MULTI_REFERENCE_ENABLED = old; });
@@ -41,7 +42,7 @@ for (const flag of ['false', 'true']) test(`live capability gates web and mobile
   assert.equal((html.match(/type="file"/g) || []).length, flag === 'true' ? 3 : 0);
   if (flag === 'false') { assert.match(html, /needs more photos than the model currently supports/); assert.match(html, /disabled=""/); }
 });
-test('single-photo and custom templates retain their capability behavior', () => {
+test('single-photo and custom templates retain their capability behavior', { skip: dormant }, () => {
   assert.equal(templatePhotosUnavailable({ ...contract, slotCount: 1 }, { image: {} }), false);
   assert.equal(templatePhotosUnavailable({ ...contract, class: 'like-for-like-safe' }, {}), false);
   assert.equal(templatePhotosUnavailable(contract, undefined), true);

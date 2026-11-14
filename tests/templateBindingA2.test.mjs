@@ -41,8 +41,8 @@ test('shared detectors distinguish source dependencies from generated or negated
 });
 test('audit classification, reasons, source hashes and non-token bytes are locked', () => {
   const report = audit();
-  assert.deepEqual(report.totals, {"like-for-like-safe":232 + 0,"bound":162 + 9,"blocked-needs-video":355 + 37,"unsupported":0});
-  assert.deepEqual(report.unsupportedReasons, {});
+  assert.deepEqual(report.totals, {"like-for-like-safe":232 + 0,"bound":70 + 3,"blocked-needs-video":355 + 37,"unsupported":92 + 6});
+  assert.deepEqual(report.unsupportedReasons, { 'multi-photo-needs-people-model': 96, 'unsupported-aspect': 9 });
   for (const p of PRESETS) {
     const c = report.contracts[p.id];
     if (!c) continue;
@@ -68,25 +68,25 @@ test('default feed/detail/Create routing, price, attribution and exact-count adm
     const c = templateContract(p.id);
     if (c?.class !== 'bound') continue;
     const id = templateModelId(p), cap = fallbackCapabilitiesFor(id);
-    const model = { ...MODELS.find(m => m.id === id), modality: cap.media.image ? 'image-to-video' : 'text-to-video', aspects: cap.inputs.aspect_ratio?.values, credits: 91 };
+    const model = { ...MODELS.find(m => m.id === id), modality: cap.media.image ? 'image-to-video' : 'text-to-video', aspects: cap.inputs.aspect_ratio?.values, credits: 32 };
     const [feed] = toPublicPresets([model], [p]);
     const href = new URL(presetHref(p), 'https://veyrnox.test');
     const arrival = templateArrival(p, [model], href.searchParams, null);
     assert.equal(feed.modelId, id); assert.equal(arrival.modelId, id);
     assert.equal(feed.modality, model.modality); assert.equal(feed.slotCount, c.slotCount);
     assert.equal(feed.credits, presetCredits(p, [model]));
-    assert.equal(feed.credits, 91 * Math.ceil(p.durationSeconds / 5));
+    assert.equal(feed.credits, 32 * Math.ceil(p.durationSeconds / 5));
     assert.equal(feed.available, true); assert.equal(toPublicPresets([], [p])[0].available, false);
     assert.equal(draftForTemplate(p, id).prompt, c.sourcePrompt);
     assert.equal(templateStartIdFor(p.id, p, id), p.id);
-    assert.equal(id, 'seedance-2.0-reference');
+    assert.equal(id, 'kling-3.0-i2v');
     const refs = [{ slot: 'image', origin: 'upload', key: 'photo' }];
     const inputs = templateInputs(p, { ...model, kind: 'video' }, { prompt: c.sourcePrompt, aspect: c.aspect, aspectOptions: c.aspect ? [c.aspect] : [], durationSeconds: c.duration, withPhoto: true });
     let body;
-    await submitTemplate({ preset: p, model, inputs, run: templateRun(null, p.id, 91, () => 'key'), quote: { ceilings: [91] }, deps: { sources: async () => ({ references: refs }), gatewayFetch: async (_, init) => { body = JSON.parse(init.body); return { job_id: 'job' }; }, onJob() {} } });
+    await submitTemplate({ preset: p, model, inputs, run: templateRun(null, p.id, 32, () => 'key'), quote: { ceilings: [32] }, deps: { sources: async () => ({ references: refs }), gatewayFetch: async (_, init) => { body = JSON.parse(init.body); return { job_id: 'job' }; }, onJob() {} } });
     if (c.slotCount === 1) { assert.equal(body.template_id, c.id); assert.equal(body.inputs.prompt, c.prompt); assert.equal(checkTemplateRequest(body).ok, true); }
     else { assert.equal(body.template_id, undefined); assert.equal(body.inputs.prompt, c.sourcePrompt); }
-    assert.equal(templateRoute(p, id, c.slotCount).modelId, 'seedance-2.0-reference');
+    assert.equal(templateRoute(p, id, c.slotCount).modelId, 'kling-3.0-i2v');
   }
 });
 test('the generated contract covers all exact-source templates', () => {
@@ -98,7 +98,7 @@ test('the generated contract covers all exact-source templates', () => {
 test('reviewed overlapping reason counts are pinned across all classes', () => {
   const counts = {};
   for (const c of Object.values(audit().contracts)) for (const reason of c.reasons) counts[reason] = (counts[reason] || 0) + 1;
-  assert.deepEqual(counts, { 'reference-video-required': 355 + 37, 'source-audio-not-audited': 62 + 9, 'unmapped-image-reference': 27, 'unmapped-placeholder': 122, 'too-many-image-slots': 2 });
+  assert.deepEqual(counts, { 'reference-video-required': 355 + 37, 'source-audio-not-audited': 62 + 9, 'unmapped-image-reference': 27, 'unmapped-placeholder': 122, 'too-many-image-slots': 2, 'multi-photo-needs-people-model': 180, 'unsupported-aspect': 12 });
 });
 
 test('all bound detail pages offer exactly N fixed required slots', async t => {
@@ -107,7 +107,7 @@ test('all bound detail pages offer exactly N fixed required slots', async t => {
   t.after(() => { if (old === undefined) delete process.env.MULTI_REFERENCE_ENABLED; else process.env.MULTI_REFERENCE_ENABLED = old; });
   const React = await import('react');
   const { fixture } = await import('./helpers/publicSiteRender.mjs');
-  for (const count of [1, 2, 3, 4, 5, 7, 8]) {
+  for (const count of [1]) {
     const p = PRESETS.find(p => templateContract(p.id)?.slotCount === count);
     const base = MODELS.find(m => m.id === templateModelId(p));
     const cap = fallbackCapabilitiesFor(base.id);

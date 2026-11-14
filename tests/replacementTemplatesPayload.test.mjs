@@ -38,7 +38,6 @@ function boundPrompt(id) {
   exactBytes(c.prompt, text + source.slice(cursor));
   return c.prompt;
 }
-const referenceCost = seconds => MODELS.find(m => m.id === 'seedance-2.0-reference').credits * Math.ceil(seconds / 5);
 
 before(() => mock.method(globalThis, 'fetch', () => { throw new Error('G1 forbids network'); }));
 after(() => mock.restoreAll());
@@ -79,11 +78,11 @@ for (const id of [...photoIds, ...textIds]) {
   const takesPhoto = photoIds.includes(id);
   test(`G1 withPhoto=false exact provider preparation and UI slot contract: ${id}`, async () => {
     const page = pageHarness(id), prompt = lockedPrompt(id);
-    const modelId = isBound(id) ? 'seedance-2.0-reference' : takesPhoto ? 'kling-3.0-i2v' : 'seedance-2.0-fast';
+    const modelId = takesPhoto ? 'kling-3.0-i2v' : 'seedance-2.0-fast';
     assert.equal(page.model.id, modelId);
     assert.equal(page.props.model.id, modelId);
     assert.equal(page.props.durationSeconds, takesPhoto ? 10 : 5);
-    assert.equal(page.props.unitCost, isBound(id) ? referenceCost(10) : takesPhoto ? 64 : 19);
+    assert.equal(page.props.unitCost, takesPhoto ? 64 : 19);
     assert.equal(page.props.needsPhoto, takesPhoto);
     assert.equal((page.html.match(/type="file"/g) || []).length, takesPhoto ? 1 : 0);
     assert.equal(page.props.photo, null);
@@ -97,8 +96,7 @@ for (const id of [...photoIds, ...textIds]) {
     exactBytes(result.payload.prompt, prompt);
     assert.equal(sha(result.payload.prompt), hashes[id]);
     if (takesPhoto) {
-      if (isBound(id)) assert.deepEqual(result.payload.image_urls, [PHOTO_URL]);
-      else assert.equal(result.payload.start_image_url, PHOTO_URL);
+      assert.equal(result.payload.start_image_url, PHOTO_URL);
       assert.equal(page.hook.canGenerate, false);
       await page.hook.generate();
       assert.equal(page.requests.length, 0);
@@ -146,9 +144,9 @@ for (const id of photoIds) {
     assert.equal(page.props.photo, PHOTO);
     assert.deepEqual(page.uploads, [PHOTO]);
     assert.equal(page.jobs.length, 1);
-    assert.equal(request.model_id, isBound(id) ? 'seedance-2.0-reference' : 'kling-3.0-i2v');
+    assert.equal(request.model_id, 'kling-3.0-i2v');
     assert.equal(request.preset, id);
-    assert.equal(request.max_charge_credits, isBound(id) ? referenceCost(10) : 64);
+    assert.equal(request.max_charge_credits, 64);
     assert.equal(request.consent, true);
     assert.deepEqual(request.references, fixtureReferences);
     exactBytes(request.inputs.prompt, boundPrompt(id));
@@ -156,7 +154,7 @@ for (const id of photoIds) {
     assert.deepEqual(result.lookedUp, [PHOTO_KEY]);
     assert.deepEqual(result.resolved.inputs, { image_url: PHOTO_URL });
     if (isBound(id)) {
-      assert.deepEqual(result.body, { prompt: boundPrompt(id), image_urls: [PHOTO_URL], duration: '10', aspect_ratio: page.props.aspect, resolution: '720p', generate_audio: true });
+      assert.deepEqual(result.body, { prompt: boundPrompt(id), start_image_url: PHOTO_URL, duration: '10', generate_audio: false });
       assert.equal(request.template_id, id);
       assert.equal(checkTemplateRequest(request).ok, true);
     } else {

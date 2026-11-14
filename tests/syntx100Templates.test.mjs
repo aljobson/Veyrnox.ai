@@ -130,7 +130,7 @@ test('all new videos pass through the unchanged fidelity classifier', () => {
     assert.equal(actual.sourcePrompt, t.prompt, t.id);
     classes[actual.class] = (classes[actual.class] || 0) + 1;
   }
-  assert.deepEqual(classes, { 'blocked-needs-video': 37, bound: 9 });
+  assert.deepEqual(classes, { 'blocked-needs-video': 37, bound: 3, unsupported: 6 });
   const videos = audit.records.filter(r => r.kind === 'video');
   assert.equal(videos.filter(r => r.sourceMinFiles === 2).length, 35);
   assert.equal(videos.filter(r => r.sourceMinFiles === 3).length, 5);

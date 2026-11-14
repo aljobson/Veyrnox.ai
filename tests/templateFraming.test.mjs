@@ -59,12 +59,13 @@ test('the public template page and the Create card both read the derived hint, n
 });
 
 // The approved bound-detail markup change removes this old start-frame crop hint.
-test('curtain-reveal is an identity-reference template and carries no derived crop hint', () => {
+// ADR-0309 amendment 2: curtain-reveal needs several photos, has no people-safe binding and so keeps the legacy start-frame crop hint.
+test('curtain-reveal takes the legacy route and keeps its derived crop hint', () => {
     const preset = PRESETS.find(p => p.id === 'curtain-reveal');
     assert.equal(preset.sourceAspect, undefined);
-    assert.equal(templateModelId(preset), 'seedance-2.0-reference');
-    assert.equal(templateSourceAspect(preset), null);
-    assert.equal(templateDetail(preset.id).sourceAspect, undefined);
+    assert.equal(templateModelId(preset), 'kling-3.0-i2v');
+    assert.equal(templateSourceAspect(preset), '16:9');
+    assert.equal(templateDetail(preset.id).sourceAspect, '16:9');
     const catalog = MODELS.map(m => ({ id: m.id, name: m.name, modality: m.kind, credits: m.credits }));
-    assert.equal(toPublicPresets(catalog).find(p => p.id === preset.id).sourceAspect, null);
+    assert.equal(toPublicPresets(catalog).find(p => p.id === preset.id).sourceAspect, '16:9');
 });
