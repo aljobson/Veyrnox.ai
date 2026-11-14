@@ -179,7 +179,7 @@ export function FullEditorScreen({ projectId, jobId, startAdvanced = false, star
         applyTimeline(updateClip(timeline, selection, patch));
     };
     const adjustStart = (delta: number) => { if (selection) { const next = moveItems(timeline, [selection], selection, delta, undefined, false, frameStore.get()); if (next) applyTimeline(next); } };
-    const adjustLength = (delta: number) => { if (selection) { const next = trimItem(timeline, selection, 'out', delta, false, frameStore.get()); if (next) applyTimeline(next); } };
+    const adjustLength = (delta: number) => { if (selection) { const next = trimItem(timeline, selection, 'out', delta, false, frameStore.get(), advanced ? ripple : 'lane'); if (next) applyTimeline(next); } };
     const changeSpeed = (rate: number) => {
         if (!selection || selection.track === 'text' || !selected || !canTrim(selected)) return;
         const clip = selected as Clip;
@@ -377,7 +377,7 @@ export function FullEditorScreen({ projectId, jobId, startAdvanced = false, star
                 <Text style={styles.eyebrow}>{t('editor.tIMELINE')}</Text>
                 <Text style={styles.timelineHelp}>{multiSelect ? t('editor.selectedtapclipstoadd', { value1: selections.length }) : selection ? (advanced ? t('editor.tapacommandtoeditselection') : t('editor.clipSelectedUseButtons')) : t('editor.tapacliptoselect')}</Text>
             </View>
-            <PlaybackTimeline clipThumb={mediaId => mediaId.startsWith('j-') ? <JobThumb links={thumbLinks} jobId={mediaId.slice(2)} size={36} /> : null} onGestureActive={returns.gestureActive} timeline={timeline} selections={selections} ppf={zoom} total={total} frameStore={frameStore} playing={playing} snap={snap} onViewport={setViewport} onSeek={value => { setPlaying(false); setFrame(value); }} onSelect={selectClip} onApply={applyTimeline} />
+            <PlaybackTimeline clipThumb={mediaId => mediaId.startsWith('j-') ? <JobThumb links={thumbLinks} jobId={mediaId.slice(2)} size={36} /> : null} onGestureActive={returns.gestureActive} timeline={timeline} selections={selections} ppf={zoom} total={total} frameStore={frameStore} playing={playing} snap={snap} ripple={advanced ? ripple : 'lane'} onViewport={setViewport} onSeek={value => { setPlaying(false); setFrame(value); }} onSelect={selectClip} onApply={applyTimeline} />
         </View>
 
         {advanced ? <ScrollView testID="editor-tool-rail" horizontal showsHorizontalScrollIndicator={false} style={styles.toolRail} contentContainerStyle={styles.toolContent}>

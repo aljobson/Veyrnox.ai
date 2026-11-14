@@ -3,8 +3,9 @@ import { ActivityIndicator, Modal, ScrollView, View } from 'react-native';
 import type { ApiClient } from '../../lib/api';
 import { isAccountChanged } from '../../auth/sessionTask';
 import { fetchHistory, mergeVersions, projectsErrorMessage, type Version } from '../../lib/projects';
+import { formatTimecode } from '../../lib/editorTimeline';
 import { getDocumentAt, type DocumentHead } from '../../lib/editorProjects';
-import { timelineOf } from '../../lib/nativeEditorModel';
+import { framesIn, timelineOf } from '../../lib/nativeEditorModel';
 import { formatLocale, plural, t } from '../../lib/i18n';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
@@ -66,7 +67,7 @@ export function EditorVersionsSheet({ sync, api, projectId }: { sync: EditorSave
                 {!busy && !versions.length ? <Text>{t('projects.nosavedversionsyet')}</Text> : null}
                 {busy || previewBusy ? <ActivityIndicator /> : null}
                 {nextBefore !== null ? <Button label={t('editorSave.loadOlder')} disabled={busy} onPress={() => void load(nextBefore)} /> : null}
-                {preview ? <Card><Text>{plural('editor.clips2Count', timeline.video.length + timeline.audio.length + timeline.text.length)}</Text>
+                {preview ? <Card><Text>{`${t('editorSave.versionRow', { value1: preview.revision })} · ${t('editorCore.totalTime', { value1: formatTimecode(framesIn(timeline), timeline.fps) })}`}</Text><Text>{plural('editor.clips2Count', timeline.video.length + timeline.audio.length + timeline.text.length)}</Text>
                     {!sync.restoreUnknown ? <Button label={t('projects.restore')} disabled={sync.dirty || preview.revision === sync.revision || !sync.canStart} onPress={() => sync.restore(preview.revision)} /> : null}
                 </Card> : null}
                 {sync.dirty ? <Text>{t('editorSave.saveFirst')}</Text> : null}

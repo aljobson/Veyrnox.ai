@@ -276,7 +276,7 @@ export function useEditorSaveSync(options: Options) {
         function restore(revision: number) {
             const allowed = () => canStart(locks()) && !o().dirtyRef.current && revision !== o().revisionRef.current;
             if (!allowed()) return;
-            Alert.alert(t('projects.restoreversion'), t('projects.thissavesanewversioncopiedfrom'), [
+            Alert.alert(t('projects.restoreversion', { value1: revision }), t('projects.thissavesanewversioncopiedfrom'), [
                 { text: t('projects.cancel'), style: 'cancel' }, { text: t('projects.restore'), onPress: () => {
                     if (!allowed()) return;
                     restoreOp = { ...start(), state: 'ambiguous', key: randomUUID(), current: o().revisionRef.current, restore: revision, identity: identity() };
