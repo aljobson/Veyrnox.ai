@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { writeStudioDraft } from '../_lib/landingDraft';
 import { AFFORDABLE_START_MODEL_ID, distinctShelfNames } from '../_lib/tokens';
-import { affordableStarterModel } from '../_lib/starterModels';
+import { affordableStarterModel, affordableVideoModel, freeCreditLine } from '../_lib/starterModels';
 import { outputDurationLabel } from '../_lib/chatMedia';
 import { creditLabel, sourceDurationLimit } from '../_lib/modelPricing';
 import { useI18n } from '../../../components/I18nProvider';
@@ -34,12 +34,14 @@ export function PriceSlip({ models }) {
     () => affordableStarterModel(open, AFFORDABLE_START_MODEL_ID, SIGNUP_CREDITS),
     [open],
   );
+  // A video the welcome credits pay for, so the chips are not all past the grant.
+  const starterVideo = useMemo(() => affordableVideoModel(open, SIGNUP_CREDITS), [open]);
   const chips = useMemo(
-    () => [starter?.id, ...FEATURED]
+    () => [starter?.id, starterVideo?.id, ...FEATURED]
       .filter((id, index, ids) => id && ids.indexOf(id) === index)
       .map((id) => open.find((m) => m.id === id))
       .filter(Boolean),
-    [open, starter],
+    [open, starter, starterVideo],
   );
   // One naming function for the chips, the select and the slip line, so the
   // picker never prints the same name for two models.
@@ -64,6 +66,7 @@ export function PriceSlip({ models }) {
   const unit = sourceDurationMax ? t('slip.unitSource', { n: sourceDurationMax })
     : isVideo ? t('slip.unitClip', { length: outputDurationLabel(model, seconds) }) : model.kind === 'audio' ? t('slip.unitAudio') : t('slip.unitImage');
   const inChips = chips.some((c) => c.id === model.id);
+  const free = freeCreditLine(cost, SIGNUP_CREDITS);
 
   function onSubmit(e) {
     e.preventDefault();
@@ -164,6 +167,14 @@ export function PriceSlip({ models }) {
         <dl className="mt-4 space-y-1.5 font-vx-mono text-[13px] vx-num">
           <SlipLine label={`${nameOf(model)}, ${unit}`} value={`${cost} cr`} tick={`${model.id}-${seconds}`} />
           <SlipLine label={t('slip.fails')} value={t('slip.back', { n: cost })} muted tick={`${model.id}-${seconds}-r`} />
+          {!model.gated && (
+            <SlipLine
+              label={free.fits ? t('slip.freeAfter') : t('slip.freeCover')}
+              value={free.fits ? t('slip.freeLeft', { n: free.left }) : t('slip.freeOf', { free: free.covered, cost: free.cost })}
+              muted
+              tick={`${model.id}-${seconds}-f`}
+            />
+          )}
           {model.gated && <SlipLine label={t('slip.premium')} value={t('slip.signupNeeded')} muted />}
         </dl>
 
