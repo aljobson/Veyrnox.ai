@@ -10,6 +10,8 @@ export function AuthProviderButton({ provider, consent, busy, nativeAvailable, o
     const s = useThemedStyles(sheets);
     const { scheme } = useAppearance();
     const blocked = !consent || busy;
+    // VoiceOver says only "dimmed" for a disabled button; say why while the consent box is unticked.
+    const hint = consent ? undefined : t('signIn.tickFirst');
     const press = () => {
         if (!consent || busy) return;
         onPress();
@@ -22,6 +24,7 @@ export function AuthProviderButton({ provider, consent, busy, nativeAvailable, o
                 style={blocked ? s.disabled : undefined}
                 accessible={blocked}
                 accessibilityLabel={rawText(title)}
+                accessibilityHint={hint && rawText(hint)}
                 accessibilityRole="button"
                 accessibilityState={{ disabled: blocked }}
             >
@@ -42,6 +45,7 @@ export function AuthProviderButton({ provider, consent, busy, nativeAvailable, o
             variant="secondary"
             icon={provider === 'google' ? 'googleG' : provider === 'email' ? 'envelope' : undefined}
             disabled={blocked}
+            accessibilityHint={hint}
             onPress={press}
             style={provider === 'email' ? undefined : s[provider]}
             textStyle={provider === 'email' ? undefined : s[`${provider}Text`]}
