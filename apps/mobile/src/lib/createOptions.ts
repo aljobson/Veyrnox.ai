@@ -1,7 +1,7 @@
 import { sanitizeCinema, type Cinema } from './cinemaCamera';
 import { GENERATION_PROMPT_MAX } from './promptLimits';
 import { sanitizePicks, type Picks } from './oddlingsBuilder';
-import { kindOf, textInput, type CatalogModel, type Kind } from './media';
+import { estimateCredits, kindOf, textInput, type CatalogModel, type Kind } from './media';
 
 // ADR-0153: the web Create page's option set, as pure helpers. The catalog (`capabilities.inputs`) says which
 // options a model takes; the server checks each value again against the same record, so this is a form, not a guard.
@@ -37,6 +37,15 @@ export function starterModel(models: readonly CatalogModel[], kind: Kind): Catal
 export function pickerModels(models: readonly CatalogModel[], current: CatalogModel): CatalogModel[] {
     const kind = kindOf(current.modality);
     return models.filter((m) => !m.gated && kindOf(m.modality) === kind && needsUpload(m) === needsUpload(current)).sort(cheapestFirst);
+}
+
+// What the Create form's model row offers: every open model of the same kind, cheapest first by the catalog price of
+// its shortest run. The current model is always listed, so the sheet can show which one is in use.
+export function modelChoices(models: readonly CatalogModel[], current: CatalogModel): CatalogModel[] {
+    const kind = kindOf(current.modality);
+    const from = (m: CatalogModel) => estimateCredits(m, m.durations[0] ?? null);
+    return models.filter((m) => m.id === current.id || (!m.gated && kindOf(m.modality) === kind))
+        .sort((a, b) => from(a) - from(b) || a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
 }
 
 export type Tier = 'low' | 'medium' | 'high';
