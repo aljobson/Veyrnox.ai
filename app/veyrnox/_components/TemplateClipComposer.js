@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import { useI18n } from '../../../components/I18nProvider.jsx';
 import { TEMPLATE_CLIP_IMAGE_TOKEN, TEMPLATE_CLIP_PROMPT, TEMPLATE_CLIP_VIDEO_TOKEN, templateClipPhotoPrompt, templateClipSegments, validTemplateClipPrompt } from '../../../lib/templateClipPrompt.mjs';
 
@@ -29,15 +29,26 @@ function PromptText({ value, onChange, label }) {
     onDrop={event => event.preventDefault()} />;
 }
 
-function Thumb({ src, file }) {
-  const [objectUrl, setObjectUrl] = useState(null);
+function FileThumb({ file }) {
+  const node = useRef(null);
   useEffect(() => {
-    if (!file) { setObjectUrl(null); return; }
-    const url = URL.createObjectURL(file);
-    setObjectUrl(url);
-    return () => URL.revokeObjectURL(url);
+    let active = true, bitmap;
+    createImageBitmap(file).then(image => {
+      if (!active) { image.close(); return; }
+      bitmap = image;
+      const canvas = node.current, context = canvas?.getContext('2d');
+      if (!context) return;
+      const side = Math.min(image.width, image.height);
+      context.drawImage(image, (image.width - side) / 2, (image.height - side) / 2, side, side, 0, 0, 64, 64);
+    }).catch(() => {});
+    return () => { active = false; bitmap?.close(); };
   }, [file]);
-  return src || objectUrl ? <img src={src || objectUrl} alt="" className="h-full w-full rounded-xl object-cover" /> : <span aria-hidden="true">＋</span>;
+  return <canvas ref={node} width="64" height="64" aria-hidden="true" className="h-full w-full rounded-xl object-cover" />;
+}
+
+function Thumb({ src, file }) {
+  if (src) return <img src={src} alt="" className="h-full w-full rounded-xl object-cover" />;
+  return file ? <FileThumb file={file} /> : <span aria-hidden="true">＋</span>;
 }
 
 export function TemplateClipComposer({ preset, photo, value, onChange, onRemove }) {
