@@ -51,6 +51,35 @@ test('chat follows new messages and send start, but respects dragging during and
     expect(scrollToEnd).toHaveBeenCalledTimes(5);
 });
 
+test('chat keeps the newest message in view when the keyboard opens or the list shrinks, unless the person scrolled up', async () => {
+    const scrollToEnd = jest.fn();
+    let scroll!: ReturnType<typeof useChatAutoScroll>;
+    function Chat({ count, keyboard }: { count: number; keyboard: boolean }) {
+        scroll = useChatAutoScroll(count, false, keyboard);
+        scroll.messageList.current = { scrollToEnd } as never;
+        return null;
+    }
+    const at = (y: number) => ({ nativeEvent: { contentOffset: { x: 0, y }, layoutMeasurement: { width: 300, height: 400 }, contentSize: { width: 300, height: 1000 } } }) as never;
+    await act(async () => root.render(<Chat count={4} keyboard={false} />));
+    scrollToEnd.mockClear();
+    await act(async () => root.render(<Chat count={4} keyboard />));
+    expect(scrollToEnd).toHaveBeenCalledTimes(1);
+    scroll.onLayout();
+    expect(scrollToEnd).toHaveBeenCalledTimes(2);
+    scroll.onScrollBeginDrag();
+    scroll.onScroll(at(100));
+    scroll.onScrollEndDrag(at(100));
+    await act(async () => root.render(<Chat count={4} keyboard={false} />));
+    await act(async () => root.render(<Chat count={4} keyboard />));
+    scroll.onLayout();
+    scroll.onContentSizeChange();
+    expect(scrollToEnd).toHaveBeenCalledTimes(2);
+    scroll.onScrollBeginDrag();
+    scroll.onMomentumScrollEnd(at(600));
+    scroll.onContentSizeChange();
+    expect(scrollToEnd).toHaveBeenCalledTimes(3);
+});
+
 test('Face Filters consumers share pending catalog reads and retain availability on refocus or failure', async () => {
     const fetch = jest.mocked(fetchCatalogCached);
     let publish!: (models: CatalogModel[]) => void;
