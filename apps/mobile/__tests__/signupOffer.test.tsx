@@ -17,7 +17,7 @@ afterEach(async () => {
 });
 
 test('without the hard paywall the offer is the confirm-email grant', () => {
-    expect(signupOfferCopy(null)).toEqual({ title: 'signIn.offer.title', count: SIGNUP_FREE_CREDITS, body: 'signIn.offer.body' });
+    expect(signupOfferCopy(null)).toEqual({ count: SIGNUP_FREE_CREDITS, body: 'signIn.offer.body' });
 });
 
 test('with the hard paywall the offer uses the welcome card\'s own words, never the 90-day confirm-email promise', () => {

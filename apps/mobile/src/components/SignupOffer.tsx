@@ -15,7 +15,7 @@ export function SignupOffer() {
                 <Icon name="coins" size={24} tint={s.coinInk.color} />
             </View>
             <View style={s.copy}>
-                <Text variant="title3">{plural(copy.title, copy.count)}</Text>
+                <Text variant="title3">{plural('signIn.offer.title', copy.count)}</Text>
                 <Text variant="footnote" tone="secondary">
                     {t(copy.body, copy.params)}
                 </Text>
