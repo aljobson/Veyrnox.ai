@@ -38,6 +38,13 @@ export function MusicTempoKeyControls({ value, onChange }) {
   );
 }
 
+/** True when the BPM field holds something that is not a whole number in range. */
+export function tempoKeyInvalid(value) {
+  if (value.bpm === '') return false;
+  const bpm = Number(value.bpm);
+  return !Number.isInteger(bpm) || bpm < MUSIC_BPM_MIN || bpm > MUSIC_BPM_MAX;
+}
+
 /** The quote fields for the current value; empty fields are left out. */
 export function tempoKeyQuoteFields(value) {
   const bpm = value.bpm === '' ? null : Number(value.bpm);

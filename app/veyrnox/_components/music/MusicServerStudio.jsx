@@ -6,7 +6,7 @@ import { addToDraft, NEW_CHAT, readDraft } from '../../_lib/chatLocal';
 import { Modal } from '../Modal';
 import { useMusicServerState } from './useMusicServerState';
 import { MusicPrivateAudio } from '../../_lib/useMusicAudioSrc';
-import { MusicTempoKeyControls, tempoKeyQuoteFields } from './MusicTempoKeyControls';
+import { MusicTempoKeyControls, tempoKeyInvalid, tempoKeyQuoteFields } from './MusicTempoKeyControls';
 import { useMusicCustomDraft } from './useMusicCustomDraft';
 import { MusicSourceUploadPanel } from './MusicSourceUploadPanel';
 import { MusicSampleSeedCard } from './MusicSampleSeedCard';
@@ -477,7 +477,9 @@ export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, s
   const concurrencyLimit = Number(entitlements?.concurrency_limit) || 4;
   const activeGenerationCount = generations.filter((item) => !['succeeded', 'partial', 'failed', 'refunded'].includes(item.state)).length;
   const hasSharedSlot = activeGenerationCount < concurrencyLimit;
-  const canQuote = Boolean(prompt && instrumental && model?.available !== false && entitlements?.available && !busy && !sourceId && hasSharedSlot);
+  // An invalid BPM blocks the quote instead of being dropped and priced as Auto.
+  const tempoKeyBlocked = Boolean(model?.controls?.tempo_key_meter && tempoKeyInvalid(tempoKey));
+  const canQuote = Boolean(prompt && instrumental && model?.available !== false && entitlements?.available && !busy && !sourceId && hasSharedSlot && !tempoKeyBlocked);
 
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get('mode') === 'custom') setMode('custom');
@@ -507,7 +509,7 @@ export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, s
 
   async function review(event) {
     event.preventDefault();
-    if (mode !== 'simple') return;
+    if (mode !== 'simple' || tempoKeyBlocked) return;
     await reviewQuote({
       mode: 'simple', prompt, title: title.trim(), instrumental: true, model_id: model.id,
       duration_seconds: durationSeconds,
