@@ -47,7 +47,7 @@ export function LibraryEmpty({ models, fresh, filtered = false, onClear }) {
 
   return (
     <div className="rounded-2xl border border-dashed border-vx-border p-8 text-center sm:p-12">
-      {fresh && <div aria-hidden="true" className="mx-auto mb-4 w-24"><VeyCharacter reducedMotion={reduced !== false} /></div>}
+      {fresh && <div aria-hidden="true" className="mx-auto mb-4 w-24"><VeyCharacter mood="curious" reducedMotion={reduced !== false} /></div>}
       <div data-testid="library-empty" className="text-lg font-black">{t("app.library.empty")}</div>
       <div className="text-[15px] text-vx-fg-body mt-1">{t("app.library.emptyHelp")}</div>
       {examples.length > 0 && (

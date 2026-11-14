@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { VEY_SHOULDER } from '../../../lib/veyPointer';
+import { VeyFace, VeyMoodProp, VEY_FACES } from './VeyFace';
 
 const LOOP = { duration: 1.8, repeat: Infinity, ease: 'easeInOut' };
 const QUICK_LOOP = { duration: 0.52, repeat: Infinity, ease: 'easeInOut' };
@@ -10,7 +11,9 @@ function animated(reducedMotion, active, still) {
   return reducedMotion ? still : active;
 }
 
-export default function VeyCharacter({ pose = 'idle', reducedMotion = false, hand = null }) {
+// `mood` (lib/veyMood.js) swaps the face and adds a small prop; the body keeps animating from `pose`.
+export default function VeyCharacter({ pose = 'idle', mood = null, reducedMotion = false, hand = null }) {
+  const face = mood ? VEY_FACES[mood] : null;
   const walking = pose === 'walking';
   const pointing = pose === 'guiding' || pose === 'tapping';
   const tapping = pose === 'tapping';
@@ -84,6 +87,7 @@ export default function VeyCharacter({ pose = 'idle', reducedMotion = false, han
       viewBox="0 0 160 170"
       className="pointer-events-none h-full w-full overflow-visible drop-shadow-[0_12px_22px_rgb(0_0_0/0.34)]"
       data-vey-pose={pose}
+      data-vey-mood={face ? mood : undefined}
     >
       <defs>
         <linearGradient id="vey-shell" x1="0" y1="0" x2="1" y2="1">
@@ -215,7 +219,7 @@ export default function VeyCharacter({ pose = 'idle', reducedMotion = false, han
         <path d="M36 30 C42 18 56 18 80 40 C104 18 118 18 124 30 C131 50 114 77 80 85 C46 77 29 50 36 30Z" fill="url(#vey-visor)" stroke="#1ee6c2" strokeWidth="2" />
         <path d="M39 25 C48 14 61 21 79 38" fill="none" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" opacity="0.58" />
 
-        <motion.g
+        {face ? <g transform={face.tilt ? `rotate(${face.tilt} 80 60)` : undefined}><VeyFace mood={mood} reducedMotion={reducedMotion} /></g> : <motion.g
           data-part="eyes"
           animate={animated(reducedMotion, { scaleY: [1, 1, 0.12, 1, 1] }, { scaleY: 1 })}
           style={{ transformBox: 'fill-box', transformOrigin: 'center' }}
@@ -227,9 +231,9 @@ export default function VeyCharacter({ pose = 'idle', reducedMotion = false, han
           <ellipse cx="100" cy="57" rx="6" ry="10" fill="#102328" />
           <circle cx="63" cy="52" r="2.7" fill="white" />
           <circle cx="103" cy="52" r="2.7" fill="white" />
-        </motion.g>
+        </motion.g>}
 
-        {thinking ? (
+        {face ? null : thinking ? (
           <motion.circle cx="80" cy="72" r="4" fill="#3ef0d0" animate={animated(reducedMotion, { scale: [0.72, 1, 0.72] }, { scale: 1 })} transition={QUICK_LOOP} />
         ) : cheering ? (
           <path d="M70 68 Q80 86 90 68Z" fill="#49f3d5" stroke="#49f3d5" strokeWidth="3" strokeLinejoin="round" />
@@ -241,8 +245,10 @@ export default function VeyCharacter({ pose = 'idle', reducedMotion = false, han
       </motion.g>
       </motion.g>
 
+      {face && <VeyMoodProp mood={mood} />}
+
       <AnimatePresence>
-        {cheering && !reducedMotion && [[22, 22, 0], [142, 28, 0.3], [128, 6, 0.6]].map(([x, y, delay]) => (
+        {cheering && !reducedMotion && !face && [[22, 22, 0], [142, 28, 0.3], [128, 6, 0.6]].map(([x, y, delay]) => (
           <motion.path
             key={`${x}-${y}`}
             data-part="sparkle"
@@ -255,7 +261,7 @@ export default function VeyCharacter({ pose = 'idle', reducedMotion = false, han
             style={{ transformBox: 'fill-box', transformOrigin: 'center' }}
           />
         ))}
-        {worried && !reducedMotion && (
+        {worried && !reducedMotion && !face && (
           <motion.path
             key="sweat"
             data-part="sweat"

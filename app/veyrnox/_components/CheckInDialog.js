@@ -1,5 +1,6 @@
 'use client';
 import { useRef, useState } from 'react';
+import { signalVeyMood } from '../../../lib/veyMood';
 import Link from 'next/link';
 import { useI18n } from '../../../components/I18nProvider';
 import { pluralKey } from '../../../lib/i18n/translate.mjs';
@@ -18,6 +19,7 @@ export function CheckInDialog({ status, onClose, onClaim, onDisabled }) {
     try {
       const result = await gatewayFetch('/checkin', { method: 'POST' });
       onClaim(result);
+      signalVeyMood('checkin-claimed');
       window.dispatchEvent(new Event('veyrnox:balance-changed'));
     } catch (e) {
       if (e.status === 404 || (e.status === 403 && e.code === 'account_unavailable')) { onDisabled(); return; }

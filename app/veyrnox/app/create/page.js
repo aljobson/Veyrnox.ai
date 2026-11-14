@@ -8,6 +8,7 @@ import { tOr, pluralKey } from '../../../../lib/i18n/translate.mjs';
 import { rich } from '../../../../lib/i18n/rich';
 import { localeTag } from '../../../../lib/i18n/locales.mjs';
 import { useI18n } from '../../../../components/I18nProvider';
+import { signalVeyMood, veyErrorSituation } from '../../../../lib/veyMood.js';
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -338,6 +339,17 @@ export default function CreateStudio() {
   const resultModel = job ? catalogModels.find((m) => m.id === job.model_id) : null;
   const resultModelName = job?.model_name || resultModel?.name || job?.model_id || 'Generation';
   const soundRequested = recipeId === 'faceless-reel' && plannedFollowup === 'generated-sound' && job?.model_id === 'wan-2.5-kie';
+  // Vey's face follows the result: happy when it lands, apologetic when it fails, and its own face for no credits or a blocked prompt.
+  const jobState = job?.state, jobId = job?.job_id || job?.id, jobCode = job?.error_code || job?.failure_code;
+  useEffect(() => {
+    if (jobState === 'succeeded') signalVeyMood('generation-succeeded');
+    else if (jobState === 'failed') signalVeyMood(veyErrorSituation(jobCode, { refunded: true }) || 'generation-failed');
+  }, [jobState, jobId, jobCode]);
+  const errorCode = error?.code;
+  useEffect(() => {
+    const situation = veyErrorSituation(errorCode);
+    if (situation) signalVeyMood(situation);
+  }, [errorCode]);
   const soundEligible = soundRequested && job?.state === 'succeeded' && Boolean(job.asset_url) && Number(job.duration_seconds) <= 8;
   // Completion must not turn an imminent reset click into a charged submission.
   const hasJobs = jobs.length > 0;

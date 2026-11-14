@@ -18,7 +18,7 @@ export function GeneratingProgress({ jobId }) {
         {/* Beside the figure, at its height: the canvas can be 180px tall, with no room above it.
             The helper's own shadow is sized for the full-height mascot. */}
         <div aria-hidden="true" className="w-10 shrink-0 [&>svg]:drop-shadow-none">
-          <VeyCharacter pose="thinking" reducedMotion={reduced !== false} />
+          <VeyCharacter pose="thinking" mood="patient" reducedMotion={reduced !== false} />
         </div>
         {/* The bar above announces the percent; a bare "02:15" read aloud adds nothing. */}
         <div aria-hidden="true" className="font-vx-mono text-[42px] font-bold leading-none vx-num">{progress ? `${pad(Math.floor(seconds / 60))}:${pad(seconds % 60)}` : '…'}</div>
