@@ -9,7 +9,7 @@ const memory = (initial: string | null = null) => {
     return { store, peek: () => value };
 };
 const ID = '11111111-1111-4111-8111-111111111111';
-const TOKEN = 'abc_DEF-123.sig_456';
+const TOKEN = 'abc_DEF-123.sig_456'; // gitleaks:allow -- synthetic team-invite token fixture
 const NOW = 1_800_000_000_000;
 
 describe('isAppLinkRoute: only what the link mapper produces', () => {

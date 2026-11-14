@@ -15,7 +15,7 @@ jest.mock('../src/lib/media', () => ({ fetchCatalog: jest.fn(async () => [{ id: 
 jest.mock('../src/lib/presets', () => ({ fetchPresets: jest.fn(async () => []), presetHref: jest.fn() }));
 
 const ID = '11111111-1111-4111-8111-111111111111';
-const TOKEN = 'abc_DEF-123.sig_456';
+const TOKEN = 'abc_DEF-123.sig_456'; // gitleaks:allow -- synthetic team-invite token fixture
 beforeEach(() => { mockSlots.clear(); });
 
 describe('the sign-in and Publish connect callbacks (Android delivers them as ordinary links)', () => {

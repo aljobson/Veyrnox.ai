@@ -306,3 +306,7 @@ aba3757e9ebb8d43d510b54e6ffe384d0f7f0b3f:tests/fixtures/replacementTemplatesBase
 63748a1e04bca0185b3f8175d4ebdb797c448bbb:tests/musicPublication.test.mjs:generic-api-key:25
 # Public staging Supabase publishable (anon) key in the capped staging probe script; public by design, not a credential.
 dae2edacf363878ee7beededb7694a87dbcfdb03:scripts/probe-video-templates-staging.mjs:generic-api-key:24
+# Synthetic team-invite token fixture ('abc_DEF-123.sig_456') in the mobile pending-link tests; not a credential.
+393e8ae7b38c3fc15725ab4b186761a60bd60edb:apps/mobile/__tests__/signedInRedirect.test.tsx:generic-api-key:16
+393e8ae7b38c3fc15725ab4b186761a60bd60edb:apps/mobile/__tests__/nativeIntent.test.ts:generic-api-key:18
+393e8ae7b38c3fc15725ab4b186761a60bd60edb:apps/mobile/__tests__/pendingLink.test.ts:generic-api-key:12

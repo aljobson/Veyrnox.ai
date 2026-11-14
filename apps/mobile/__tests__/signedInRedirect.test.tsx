@@ -13,7 +13,7 @@ jest.mock('expo-secure-store', () => ({
 }));
 jest.mock('expo-router', () => ({ Redirect: (props: { href: string }) => mockRedirect(props) }));
 
-const TOKEN = 'abc_DEF-123.sig_456';
+const TOKEN = 'abc_DEF-123.sig_456'; // gitleaks:allow -- synthetic team-invite token fixture
 let root: Root;
 beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; mockSlots.clear(); mockRedirect.mockClear(); root = createRoot(); });
 afterEach(async () => act(async () => root.unmount()));
