@@ -65,12 +65,13 @@ test('all generated detail payloads reproduce only the UI fields of their origin
     assert.ok(!('sourcePromptIndex' in ui) && !('sourceHash' in ui));
   }
 });
-test('every bound contract requires exactly its slot count, independently of min/max drift', () => {
+test('every bound contract requires exactly its slot count, independently of min/max drift', t => {
   for (const c of Object.values(contractData(data).templates).filter(c => c.class === 'bound')) {
     assert.equal(c.requiredReferences.imageMin, c.slotCount, c.id);
     assert.equal(c.requiredReferences.imageMax, c.slotCount, c.id);
   }
   const c = Object.values(contractData(data).templates).find(c => c.class === 'bound' && c.slotCount > 1);
+  if (!c) return t.skip('multi-photo binding has no people-safe target (ADR-0309 amendment 2)');
   const original = c.requiredReferences;
   c.requiredReferences = { ...original, imageMin: 0, imageMax: 9 };
   try {

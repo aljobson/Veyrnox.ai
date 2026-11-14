@@ -39,9 +39,10 @@ const PICKS = [
   ['fast safe A (text)', c => c.class === 'like-for-like-safe' && c.modelId === FAST && c.requiredReferences.imageMin === 0],
   ['fast safe B (text)', c => c.class === 'like-for-like-safe' && c.modelId === FAST && c.requiredReferences.imageMin === 0],
   ['fast blocked', c => c.class === 'blocked-needs-video' && c.modelId === FAST && c.requiredReferences.imageMin >= 1],
-  ['reference bound, 1 photo, 5s', c => c.class === 'bound' && c.modelId === REFERENCE && c.slotCount === 1 && c.duration === 5],
-  ['reference bound, 2 photos, 5s', c => c.class === 'bound' && c.modelId === REFERENCE && c.slotCount === 2 && c.duration === 5],
-  ['reference blocked', c => c.class === 'blocked-needs-video' && c.modelId === REFERENCE],
+  // ADR-0309 amendment 2: bound (@Image1) templates run on Kling so real-person photos are accepted.
+  ['kling bound, 1 photo, 10s A', c => c.class === 'bound' && c.modelId === KLING && c.slotCount === 1 && c.duration === 10],
+  ['kling bound, 1 photo, 10s B', c => c.class === 'bound' && c.modelId === KLING && c.slotCount === 1 && c.duration === 10],
+  ['kling blocked C', c => c.class === 'blocked-needs-video' && c.modelId === KLING],
 ];
 
 export function selectProbeSet(contracts) {

@@ -1,6 +1,7 @@
 // ADR-0309: templates made for Seedance take reference pictures, not a start and end frame.
-// Turned on by the owner 2026-10-31 (migration 0417). Set false, with the row inactive, to put the templates back on Kling.
-export const SEEDANCE_REFERENCE_ACTIVE = true;
+// Turned on by the owner 2026-10-31 (migration 0417); OFF since 2026-11-14 (ADR-0309 amendment 2): ByteDance refuses
+// reference pictures of real people and template users upload their own photo. Templates stay on Kling; the model stays selectable on Create.
+export const SEEDANCE_REFERENCE_ACTIVE = false;
 export const SEEDANCE_REFERENCE_MODEL = 'Seedance 2.0 · Reference';
 export const SEEDANCE_REFERENCE_CREDITS = 85;
 const FRAME_MODEL = 'Kling 3.0 · I2V';
