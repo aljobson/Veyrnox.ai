@@ -12,15 +12,15 @@ import { id, manifest, catalog } from './fixtures/templateClips.mjs';
 
 const env = { TEMPLATE_CLIP_ENABLED: 'true' };
 const record = capabilityFor(catalog[0].provider_endpoint);
-test('one registered recast, frozen and unpublished; original community prompt remains exact', () => {
-  assert.equal(TEMPLATE_CLIPS.length, 1); assert.equal(TEMPLATE_CLIPS[0].id, id);
+test('every registered video, frozen and unpublished; original community prompt remains exact', () => {
+  assert.ok(TEMPLATE_CLIPS.length > 700); assert.ok(TEMPLATE_CLIPS.some(c => c.id === id));
   assert.ok(Object.isFrozen(TEMPLATE_CLIPS)); assert.ok(Object.isFrozen(TEMPLATE_CLIPS[0]));
   assert.deepEqual(TEMPLATE_CLIP_SOURCES, {});
   assert.equal(templateClipAvailable(id, { env, catalog }), false);
   assert.match(templateDetail(id).sourcePrompt, /Replace the green character in @video1/);
   assert.equal(templateDetail(id).clip.video, '/showcase/viral-medieval-runway-look.mp4');
   assert.equal(publicTemplateClip('__proto__'), null);
-  assert.match(TEMPLATE_CLIP_PROMPT, /@Video1/); assert.match(TEMPLATE_CLIP_PROMPT, /@Image1/);
+  assert.match(TEMPLATE_CLIP_PROMPT, /@video1/); assert.match(TEMPLATE_CLIP_PROMPT, /@image1/);
   assert.ok(TEMPLATE_CLIP_PROMPT.length < 2500);
 });
 

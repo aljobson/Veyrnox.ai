@@ -346,5 +346,12 @@
   "label.Photos of the new people",
   "app.create.swapConsentNotice",
   "public.TemplateRecipe.templateClipUsed",
-  "presets.use.photoTitle"
+  "presets.use.photoTitle",
+  "templateClip.prompt",
+  "templateClip.reset",
+  "templateClip.addPhoto",
+  "templateClip.videoName",
+  "templateClip.photoName",
+  "templateClip.invalid",
+  "templateClip.consent"
 ]

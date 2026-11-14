@@ -1996,5 +1996,11 @@
     "english": " Retry in {seconds}s.",
     "translation": " {seconds} सेकंड बाद फिर कोशिश करें।",
     "ratio": 1.71
+  },
+  {
+    "id": "templateClip.reset",
+    "english": "Reset prompt",
+    "translation": "प्रॉम्प्ट रीसेट करें",
+    "ratio": 1.67
   }
 ]

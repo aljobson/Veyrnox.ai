@@ -350,6 +350,13 @@ const ru = {
     'app.create.swapConsentNotice': 'Используйте только фотографии людей, давших согласие.',
     'public.TemplateRecipe.templateClipUsed': 'Этот шаблон использует свой видеоклип и ваше фото для замены главного персонажа.',
     'presets.use.photoTitle': 'Добавьте своё фото',
+    'templateClip.prompt': 'Промпт для клипа',
+    'templateClip.reset': 'Сбросить промпт',
+    'templateClip.addPhoto': 'Добавьте своё фото',
+    'templateClip.videoName': '@video1: клип шаблона',
+    'templateClip.photoName': '@image1: ваше фото',
+    'templateClip.invalid': 'Используйте @video1 и @image1 ровно по одному разу, не более 2000 символов.',
+    'templateClip.consent': 'У меня есть разрешение использовать это фото и образ человека.',
 } as const;
 
 export default ru;

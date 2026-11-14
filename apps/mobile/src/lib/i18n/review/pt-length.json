@@ -3208,5 +3208,17 @@
     "english": "Only use photos of people who agreed.",
     "translation": "Use apenas fotografias de pessoas que tenham dado o seu consentimento.",
     "ratio": 1.89
+  },
+  {
+    "id": "templateClip.prompt",
+    "english": "Clip prompt",
+    "translation": "Instruções do clipe",
+    "ratio": 1.73
+  },
+  {
+    "id": "templateClip.reset",
+    "english": "Reset prompt",
+    "translation": "Redefinir instruções",
+    "ratio": 1.67
   }
 ]

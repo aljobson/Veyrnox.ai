@@ -350,6 +350,13 @@ const zh = {
     'app.create.swapConsentNotice': '仅使用已征得本人同意的照片。',
     'public.TemplateRecipe.templateClipUsed': '此模板使用自己的视频片段和你的照片来替换主角。',
     'presets.use.photoTitle': '添加你的照片',
+    'templateClip.prompt': '片段提示词',
+    'templateClip.reset': '重置提示词',
+    'templateClip.addPhoto': '添加你的照片',
+    'templateClip.videoName': '@video1：模板片段',
+    'templateClip.photoName': '@image1：你的照片',
+    'templateClip.invalid': '请各使用一次 @video1 和 @image1，且不超过2000个字符。',
+    'templateClip.consent': '我有权使用这张照片和人物肖像。',
 } as const;
 
 export default zh;

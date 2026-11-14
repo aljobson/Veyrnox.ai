@@ -350,6 +350,13 @@ const ar = {
     'app.create.swapConsentNotice': 'استخدم فقط صور أشخاص وافقوا على ذلك.',
     'public.TemplateRecipe.templateClipUsed': 'يستخدم هذا القالب مقطعه الخاص مع صورتك لاستبدال الشخصية الرئيسية.',
     'presets.use.photoTitle': 'أضف صورتك',
+    'templateClip.prompt': 'وصف المقطع',
+    'templateClip.reset': 'إعادة ضبط الوصف',
+    'templateClip.addPhoto': 'أضف صورتك',
+    'templateClip.videoName': '@video1: مقطع القالب',
+    'templateClip.photoName': '@image1: صورتك',
+    'templateClip.invalid': 'استخدم @video1 و@image1 مرة واحدة لكل منهما، وبحد أقصى 2000 حرف.',
+    'templateClip.consent': 'لدي إذن باستخدام هذه الصورة وصورة الشخص.',
 } as const;
 
 export default ar;

@@ -350,6 +350,13 @@ const ja = {
     'app.create.swapConsentNotice': '同意を得た人の写真のみ使用してください。',
     'public.TemplateRecipe.templateClipUsed': 'このテンプレート独自の動画クリップとあなたの写真を使って、主役を置き換えます。',
     'presets.use.photoTitle': '写真を追加',
+    'templateClip.prompt': 'クリップのプロンプト',
+    'templateClip.reset': 'プロンプトをリセット',
+    'templateClip.addPhoto': '写真を追加',
+    'templateClip.videoName': '@video1: テンプレートのクリップ',
+    'templateClip.photoName': '@image1: あなたの写真',
+    'templateClip.invalid': '@video1 と @image1 をそれぞれ1回だけ使い、2000文字以内で入力してください。',
+    'templateClip.consent': 'この写真と人物の肖像を使用する許可を得ています。',
 } as const;
 
 export default ja;

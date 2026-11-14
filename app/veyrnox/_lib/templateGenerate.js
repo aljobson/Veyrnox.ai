@@ -14,6 +14,10 @@ export function photoOnlyModel(model) {
   return required.length === 1 && required[0][0] === 'image' && !(Number(required[0][1].minFiles) > 1);
 }
 
+export function clipInlineEligible(clip, model) {
+  return !!clip && clip.model === model?.id && !model.gated && !model.premium && createPromptModelAvailable(model);
+}
+
 const NON_PHOTO_NEEDS = /\b(video|audio|voice|clip|recording)\b/i;
 
 /**

@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import * as clipPrompt from '../lib/templateClipPrompt.mjs';
 import { readFileSync } from 'node:fs';
 import ts from 'typescript';
 import { publicTemplateClip, isTemplateClipModel } from '../app/veyrnox/_lib/templateClips.js';
@@ -38,9 +39,9 @@ for (const clip of [{ id, model: catalog[0].id, credits: 85, durationSeconds: 5 
   const model = templateClipModel({ ...catalog[0], credits: 1, durations: [5, 10], capabilities: publicCapabilities(capabilityFor(catalog[0].provider_endpoint)) }, clip);
   assert.deepEqual(model.durations, [5]); assert.equal(model.credits, clip.credits);
   assert.deepEqual(Object.keys(model.capabilities.media), ['image']); assert.equal(model.capabilities.media.image.maxFiles, 1);
-  const { templateRequest } = load('apps/mobile/src/lib/templateGenerate.ts');
-  const request = templateRequest({ id }, model, { prompt: 'community text', templateClip: id, references: [photo] });
-  assert.equal(request.templateClip, id); assert.equal(request.modelId, clip.model); assert.equal(request.durationSeconds, 5); assert.equal(request.prompt, '');
+  const { templateRequest } = load('apps/mobile/src/lib/templateGenerate.ts', { '../../../../lib/templateClipPrompt.mjs': clipPrompt });
+  const request = templateRequest({ id }, model, { prompt: clipPrompt.TEMPLATE_CLIP_PROMPT, templateClip: id, references: [photo] });
+  assert.equal(request.templateClip, id); assert.equal(request.modelId, clip.model); assert.equal(request.durationSeconds, 5); assert.equal(request.prompt, clipPrompt.TEMPLATE_CLIP_PROMPT);
   let wire;
   const { mediaApi } = load('apps/mobile/src/lib/media.ts', {
     './network': { ensureOnline: async () => {} }, './aiConsentStore': { aiConsent: { ensure: async () => {}, hasAgreed: async () => true } },
@@ -48,7 +49,7 @@ for (const clip of [{ id, model: catalog[0].id, credits: 85, durationSeconds: 5 
   });
   await mediaApi({ request: async (_path, init) => { wire = JSON.parse(init.body); return { job_id: 'job' }; } }).createGeneration({ ...request, idempotencyKey: 'mobile-proof' });
   assert.equal(wire.model_id, clip.model); assert.equal(wire.template_clip, id); assert.deepEqual(wire.references, [photo]); assert.equal(wire.consent, true);
-  assert.equal(wire.inputs.duration_seconds, 5);
+  assert.equal(wire.inputs.duration_seconds, 5); assert.equal(wire.inputs.prompt, clipPrompt.TEMPLATE_CLIP_PROMPT);
 });
 
 test('availability failures and unregistered IDs keep mobile in the original mode', async t => {
@@ -154,4 +155,24 @@ test('fal-era kie manifest keeps web and mobile clip UI off; complete metadata e
       assert.deepEqual(client.useTemplateClipAvailable(id), source === kieSource ? projection.template : null);
     }
   }
+});
+
+test('mobile normalized prompt retries reuse a key and edits invalidate the quote and key', async () => {
+  const { templateRequest } = load('apps/mobile/src/lib/templateGenerate.ts', { '../../../../lib/templateClipPrompt.mjs': clipPrompt });
+  const sent = []; let serial = 0;
+  class ApiError extends Error {}
+  const { createGenerationSubmit, generationSignature } = load('apps/mobile/src/lib/generationSubmit.ts', {
+    './api': { ApiError }, './appCache': { getCacheUser: () => 'owner' },
+    'expo-crypto': { randomUUID: () => String(++serial) }, './createOptions': { inputsForIndex: value => value },
+    './media': { mediaApi: () => ({ createGeneration: async value => { sent.push(value); throw Error('lost reply'); } }) },
+  });
+  const make = prompt => templateRequest({ id }, { id: clip.model, credits: 85 }, { prompt, templateClip: id, references: [photo] });
+  const pending = createGenerationSubmit();
+  for (const prompt of ['Use @video1 with @image1.', ' Use  @VIDEO1 with @IMAGE1. ']) await assert.rejects(pending.run({}, make(prompt)), /lost reply/);
+  assert.equal(sent[0].idempotencyKey, sent[1].idempotencyKey);
+  const edited = make('Use @video1 then @image1.');
+  assert.notEqual(generationSignature(edited, 1), generationSignature(make('Use @video1 with @image1.'), 1));
+  assert.equal(pending.snapshot(edited, 1, 70, 1).total, 0);
+  await assert.rejects(pending.run({}, edited), /lost reply/);
+  assert.notEqual(sent[2].idempotencyKey, sent[0].idempotencyKey);
 });

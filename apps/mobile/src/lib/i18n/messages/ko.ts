@@ -350,6 +350,13 @@ const ko = {
     'app.create.swapConsentNotice': '동의한 사람의 사진만 사용하세요.',
     'public.TemplateRecipe.templateClipUsed': '이 템플릿은 자체 클립과 내 사진을 사용하여 주인공을 교체합니다.',
     'presets.use.photoTitle': '내 사진 추가',
+    'templateClip.prompt': '클립 프롬프트',
+    'templateClip.reset': '프롬프트 초기화',
+    'templateClip.addPhoto': '사진 추가',
+    'templateClip.videoName': '@video1: 템플릿 클립',
+    'templateClip.photoName': '@image1: 내 사진',
+    'templateClip.invalid': '@video1과 @image1을 각각 한 번씩 사용하고 2000자 이내로 입력하세요.',
+    'templateClip.consent': '이 사진과 인물의 초상을 사용할 허가를 받았습니다.',
 } as const;
 
 export default ko;

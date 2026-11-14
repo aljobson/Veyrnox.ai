@@ -350,6 +350,13 @@ const hi = {
     'app.create.swapConsentNotice': 'केवल उन लोगों की फ़ोटो इस्तेमाल करें जिन्होंने सहमति दी है।',
     'public.TemplateRecipe.templateClipUsed': 'यह टेम्पलेट मुख्य किरदार को बदलने के लिए अपनी क्लिप और आपकी फ़ोटो का इस्तेमाल करता है।',
     'presets.use.photoTitle': 'अपनी फ़ोटो जोड़ें',
+    'templateClip.prompt': 'क्लिप प्रॉम्प्ट',
+    'templateClip.reset': 'प्रॉम्प्ट रीसेट करें',
+    'templateClip.addPhoto': 'अपनी फ़ोटो जोड़ें',
+    'templateClip.videoName': '@video1: टेम्पलेट क्लिप',
+    'templateClip.photoName': '@image1: आपकी फ़ोटो',
+    'templateClip.invalid': '@video1 और @image1 का ठीक एक-एक बार उपयोग करें, अधिकतम 2000 अक्षरों में।',
+    'templateClip.consent': 'मुझे इस फ़ोटो और व्यक्ति की छवि का उपयोग करने की अनुमति है।',
 } as const;
 
 export default hi;

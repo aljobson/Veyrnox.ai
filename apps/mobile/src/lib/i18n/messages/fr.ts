@@ -350,6 +350,13 @@ const fr = {
     'app.create.swapConsentNotice': 'Utilisez uniquement des photos de personnes ayant donné leur accord.',
     'public.TemplateRecipe.templateClipUsed': 'Ce modèle utilise son propre clip et votre photo pour remplacer le personnage principal.',
     'presets.use.photoTitle': 'Utilisez votre photo',
+    'templateClip.prompt': 'Instructions du clip',
+    'templateClip.reset': 'Réinitialiser les instructions',
+    'templateClip.addPhoto': 'Ajoutez votre photo',
+    'templateClip.videoName': '@video1 : clip du modèle',
+    'templateClip.photoName': '@image1 : votre photo',
+    'templateClip.invalid': 'Utilisez @video1 et @image1 une seule fois, avec un maximum de 2000 caractères.',
+    'templateClip.consent': 'J’ai l’autorisation d’utiliser cette photo et l’image de la personne.',
 } as const;
 
 export default fr;

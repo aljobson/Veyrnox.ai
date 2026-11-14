@@ -15,7 +15,9 @@ import { clipCredits, modelAspectRatios, modelIdForName, presetCredits, presetHr
 import { CHAT_USER_TEXT_MAX } from '../../../lib/chatLimits.js';
 import { Spinner } from './Spinner';
 import { TemplateGenerate } from './TemplateGenerate';
-import { inlineBlockReason } from '../_lib/templateGenerate';
+import { TemplateClipComposer } from './TemplateClipComposer';
+import { TEMPLATE_CLIP_PROMPT, templateClipPhotoPrompt } from '../../../lib/templateClipPrompt.mjs';
+import { inlineBlockReason, clipInlineEligible } from '../_lib/templateGenerate';
 import { nearestOption } from '../../../lib/aspectShapes.mjs';
 
 export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked = false, templateClip = null }) {
@@ -49,6 +51,8 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked 
   const [handoffError, setHandoffError] = useState('');
   const [opening, setOpening] = useState(false);
   const [photo, setPhoto] = useState(null);
+  const [clipPrompt, setClipPrompt] = useState(() => templateClipPhotoPrompt(TEMPLATE_CLIP_PROMPT, false));
+  const [clipConsent, setClipConsent] = useState(false);
   const [photoBusy, setPhotoBusy] = useState(false);
   const photoSequence = useRef(0);
   const promptBlocked = !templateClip && (!prompt.trim() || prompt.length > TEMPLATE_PROMPT_MAX);
@@ -56,10 +60,12 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked 
   const chatBlocked = !prompt.trim() || prompt.length > CHAT_USER_TEXT_MAX;
   const requiredImage = model?.media?.image?.required === true;
   // A template that needs no media, or only one photo, generates right here; one that needs more keeps Create.
-  const inline = inlineBlockReason(preset, model, { photo: true }) === null;
+  const inline = templateClip ? clipInlineEligible(templateClip, model) : inlineBlockReason(preset, model, { photo: true }) === null;
 
   async function choosePhoto(file) {
     const sequence = ++photoSequence.current;
+    setClipConsent(false);
+    setClipPrompt(text => templateClipPhotoPrompt(text, false));
     if (!file) {
       setPhoto(null);
       setPhotoBusy(false);
@@ -80,6 +86,7 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked 
       if (photoSequence.current !== sequence) return;
       if (templateImageFileError(ready)) { setHandoffError('mediaFile'); return; }
       setPhoto(ready);
+      setClipPrompt(text => templateClipPhotoPrompt(text, true));
     } catch {
       if (photoSequence.current === sequence) setHandoffError('mediaFile');
     } finally {
@@ -136,7 +143,8 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked 
       {requiredImage && (
         <fieldset className="mt-5 rounded-xl border border-vx-border bg-vx-panel/40 p-4">
           <legend className="px-1 text-sm font-bold">{t('presets.use.photoTitle')}</legend>
-          <p className="mt-1 text-[13px] leading-5 text-vx-fg-muted">{t('presets.use.photoPrivacy')}</p>
+          {templateClip ? <p className="mt-1 text-[13px] leading-5 text-vx-fg-muted">{t('templateClip.addPhoto')}</p>
+            : <p className="mt-1 text-[13px] leading-5 text-vx-fg-muted">{t('presets.use.photoPrivacy')}</p>}
           {templateClip && <p role="note" className="mt-2 text-xs text-vx-fg-muted">{t('app.create.referenceLikenessNotice')}</p>}
           <div className="mt-3 flex min-h-14 items-center gap-3 rounded-xl border border-dashed border-vx-border bg-vx-base p-2.5">
             <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-vx-panel font-vx-mono text-sm text-vx-accent">{photoBusy ? '…' : photo ? '✓' : '+'}</span>
@@ -149,8 +157,10 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked 
           </div>
         </fieldset>
       )}
+      {templateClip && <TemplateClipComposer preset={preset} photo={photo} value={clipPrompt} onChange={setClipPrompt} onRemove={() => choosePhoto(null)} />}
+      {templateClip && photo && <label className="mt-4 flex min-h-11 items-center gap-3 text-sm"><input type="checkbox" checked={clipConsent} onChange={event => setClipConsent(event.target.checked)} className="h-5 w-5 accent-vx-accent focus-visible:outline-2 focus-visible:outline-vx-accent" />{t('templateClip.consent')}</label>}
       {inline && !(generationBlocked || promptBlocked || !model) && (
-        <TemplateGenerate preset={preset} model={model} prompt={prompt} aspect={aspect} aspectOptions={aspectOptions} durationSeconds={durationSeconds} unitCost={credits} photo={requiredImage ? photo : null} preparing={photoBusy} needsPhoto={requiredImage} templateClip={templateClip} />
+        <TemplateGenerate preset={preset} model={model} prompt={templateClip ? clipPrompt : prompt} aspect={aspect} aspectOptions={aspectOptions} durationSeconds={durationSeconds} unitCost={credits} photo={requiredImage ? photo : null} preparing={photoBusy || (!!templateClip && !clipConsent)} needsPhoto={requiredImage} templateClip={templateClip} />
       )}
       {!templateClip && <button
         type="button"

@@ -9,6 +9,7 @@ import { allocationSnapshot } from './imageBatch';
 import { cachedSources, fileIdentity, keepUpload, submitTemplate, templateInputs, templateRun, templateRunDead } from './templateGenerate';
 import { TEMPLATE_PROMPT_MAX } from './templateDraft';
 import { mediaGenerationSources } from './chatMedia';
+import { normalizeTemplateClipPrompt, validTemplateClipPrompt } from '../../../lib/templateClipPrompt.mjs';
 import { uploadSourceFile } from './uploadSourceFile';
 
 // The template page's Generate (ADR-0120 amendment 1): Create's submit for one item with nothing attached. The run keeps
@@ -27,11 +28,11 @@ export function useTemplateGenerate({ preset, model, prompt, aspect, aspectOptio
   const inFlight = useRef(false);
   const uploaded = useRef({});
   const photoToken = fileIdentity(photo);
-  const identity = JSON.stringify([model?.id, templateClip ? null : prompt, aspect, durationSeconds, preset.id, photoToken, templateClip?.id]);
+  const identity = JSON.stringify([model?.id, templateClip ? normalizeTemplateClipPrompt(prompt) : prompt, aspect, durationSeconds, preset.id, photoToken, templateClip?.id]);
   const activeBatch = batchView?.identity === identity ? batchView : null;
   const quote = activeBatch?.quote ?? allocationSnapshot(activeBatch ?? { accepted: [null], unknown: new Set() }, activeBatch?.unit ?? unitCost, model ? freeLeftFor(freeMap, model.id) : 0);
   const payable = quote.payable ?? quote.total;
-  const promptBlocked = !templateClip && (!prompt.trim() || prompt.length > TEMPLATE_PROMPT_MAX);
+  const promptBlocked = templateClip ? !validTemplateClipPrompt(prompt) : (!prompt.trim() || prompt.length > TEMPLATE_PROMPT_MAX);
   // While a replacement photo is being prepared the page keeps this mounted (a running job stays on screen) but cannot submit.
   const photoBlocked = preparing || (needsPhoto && !photo);
 
@@ -67,7 +68,7 @@ export function useTemplateGenerate({ preset, model, prompt, aspect, aspectOptio
       duration_seconds: model.kind === 'video' ? durationSeconds : undefined,
       ...(aspectOptions.length ? { aspect_ratio: aspect } : {}),
     };
-    const inputs = templateClip ? { duration_seconds: 5 } : templateInputs(preset, model, { prompt, aspect, durationSeconds, aspectOptions, withPhoto: Boolean(photo) });
+    const inputs = templateClip ? { duration_seconds: 5, prompt: normalizeTemplateClipPrompt(prompt) } : templateInputs(preset, model, { prompt, aspect, durationSeconds, aspectOptions, withPhoto: Boolean(photo) });
     let result;
     try {
       result = await submitTemplate({ run, quote, model, preset, inputs, templateClip, makeKey: makeIdempotencyKey, deps: {

@@ -195,6 +195,7 @@ import area_stems from './en/stems';
 import area_studioSkills from './en/studioSkills';
 import area_tabs from './en/tabs';
 import area_team from './en/team';
+import area_templateClip from './en/templateClip';
 import area_templateCollage from './en/templateCollage';
 import area_toolDirectory from './en/toolDirectory';
 import area_tools from './en/tools';
@@ -406,6 +407,7 @@ const catalog = {
     ...area_studioSkills,
     ...area_tabs,
     ...area_team,
+    ...area_templateClip,
     ...area_templateCollage,
     ...area_toolDirectory,
     ...area_tools,
