@@ -6,6 +6,11 @@ export function isAudioDriven(model: CatalogModel): boolean {
     return kindOf(model.modality) === 'video' && slotsFor(model).some((slot) => slot.slot === 'audio' && slot.required);
 }
 
+/** Adds generated sound to a clip you supply: lens words and "describe the change" do not fit it. */
+export function isSoundPass(model: CatalogModel): boolean {
+    return model.id === 'mmaudio-v2-video';
+}
+
 /** Text to speech: the box holds the words to say, not a description of what to create. */
 export function isSpeechModel(model: CatalogModel): boolean {
     return kindOf(model.modality) === 'audio' && /speech|voice|tts|narrat/i.test(`${model.modality} ${model.id}`);

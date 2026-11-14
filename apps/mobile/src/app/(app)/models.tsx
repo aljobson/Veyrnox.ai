@@ -4,8 +4,10 @@ import { ScrollView, View } from 'react-native';
 import { Card, Icon, Text, themedStyles, useThemedStyles } from '../../components/ui';
 import { CatalogList, kindTitleKey } from '../../components/CatalogList';
 import { needs, priceLines } from '../../lib/catalogPages';
-import { t } from '../../lib/i18n';
+import { plural, t } from '../../lib/i18n';
 import { LIST_END_PADDING } from '../../theme';
+
+const upperFirst = (s: string) => s.charAt(0).toLocaleUpperCase() + s.slice(1);
 
 // Open and gated catalog rows share their kind group and link to model details.
 export default function Models() {
@@ -21,13 +23,13 @@ export default function Models() {
                     const from = priceLines(model)[0].credits;
                     return <Link key={model.id} href={`/model/${encodeURIComponent(model.id)}`} asChild>
                         <Card style={styles.row} accessibilityRole="button"
-                            accessibilityLabel={rawText(`${t('mdl.rowLabel', { name: model.name, credits: from })}${model.gated ? `, ${t('projectHome.premium')}` : ''}`)}>
+                            accessibilityLabel={rawText(`${model.name}, ${plural('create.from', from)}${model.gated ? `, ${t('projectHome.premium')}` : ''}`)}>
                             <Text variant="bodyStrong">{model.name}</Text>
                             {model.gated ? <View style={styles.tag}>
                                 <Icon name="sparkleFill" size={20} /><Text>{t('projectHome.premium')}</Text>
                             </View> : null}
                             <Text variant="footnote" tone="secondary">
-                                {t('mdl.from', { credits: from })}
+                                {upperFirst(plural('create.from', from))}
                                 {extra.length ? ` · ${t('mdl.needs', { items: extra.join(', ') })}` : ''}
                             </Text>
                         </Card>

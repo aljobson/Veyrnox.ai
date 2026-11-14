@@ -1,4 +1,4 @@
-import { plural, t } from './i18n';
+import { formatLocale, plural, t } from './i18n';
 import type { ApiClient } from './api';
 
 // ADR-0130: the two read-only file lists in the Library, film masters and editor renders, with the short-lived
@@ -22,6 +22,30 @@ const isObject = (v: unknown): v is Record<string, unknown> => !!v && typeof v =
 const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v : null);
 const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? v : null);
 
+// Film masters arrive labelled "Title — 16:9 — sc01-sh01 v2 — 16:9 master": the shot code is an internal id and the shape appears twice.
+// Parts that are a shot code are dropped and repeated parts are kept once.
+export function cleanLabel(label: string | null): string | null {
+    if (!label) return null;
+    const seen = new Set<string>();
+    const parts = label.split(/\s+[—–]\s+/).map(p => p.trim()).filter(p => {
+        if (!p || /^sc\d+-sh\d+(\s+v\d+)?$/i.test(p)) return false;
+        const key = p.toLowerCase().replace(/\s*master$/, '');
+        if (seen.has(key)) return false;
+        seen.add(key); return true;
+    });
+    return parts.length ? parts.join(' — ') : null;
+}
+
+// Rows that still read the same get their creation date and time so they can be told apart.
+function tellApart(files: LibraryFile[]): LibraryFile[] {
+    const counts = new Map<string, number>();
+    for (const f of files) counts.set(f.label, (counts.get(f.label) ?? 0) + 1);
+    return files.map(f => {
+        if ((counts.get(f.label) ?? 0) < 2 || !f.createdAt || Number.isNaN(Date.parse(f.createdAt))) return f;
+        return { ...f, label: `${f.label} · ${new Date(f.createdAt).toLocaleString(formatLocale(), { dateStyle: 'medium', timeStyle: 'short' })}` };
+    });
+}
+
 export function parseFiles(body: unknown, kind: FileKind): { enabled: boolean; files: LibraryFile[] } {
     const b = isObject(body) ? body : {};
     if (b.enabled !== true) return { enabled: false, files: [] };
@@ -33,7 +57,7 @@ export function parseFiles(body: unknown, kind: FileKind): { enabled: boolean; f
         if (!id) continue;
         files.push({
             id,
-            label: str(raw.label) ?? t('libraryFiles.untitledvideo'),
+            label: cleanLabel(str(raw.label)) ?? t('libraryFiles.untitledvideo'),
             sizeBytes: num(raw.size_bytes),
             width: num(raw.width),
             height: num(raw.height),
@@ -43,7 +67,7 @@ export function parseFiles(body: unknown, kind: FileKind): { enabled: boolean; f
             expiresAt: str(raw.expires_at),
         });
     }
-    return { enabled: true, files };
+    return { enabled: true, files: tellApart(files) };
 }
 
 export function sizeLabel(bytes: number | null): string | null {

@@ -4,6 +4,7 @@ import * as ReactNative from 'react-native';
 import { createRoot, type Root } from 'test-renderer';
 import { CheckInModal } from '../src/components/CheckInModal';
 import { ApiError } from '../src/lib/api';
+import { requestCheckinOpen } from '../src/lib/checkinEntry';
 import { appStorage, bindCacheUser, getCacheUser, wipeCache } from '../src/lib/appCache';
 
 const mockRequest = jest.fn();
@@ -111,4 +112,14 @@ test('wins waits for the open check-in modal and acknowledges its milestone only
         expect(checkinDialogOpen()).toBe(false); expect(events).toHaveLength(1); expect(seen).toEqual([]);
         events[0].onShown(); expect(seen).toEqual(['creations_10']); events[0].onDone();
     } finally { off(); coordinator.clear(); }
+});
+
+test('reopening after today is claimed shows "Claimed today" once and no tappable claim button', async () => {
+    mockRequest.mockResolvedValue({ ...status, claimed_today: true, streak: 2, next_day: 3 });
+    await mount();
+    await act(async () => { requestCheckinOpen(); });
+    expect(has('Earn Credits by Checking In')).toBe(true);
+    expect(root.container.queryAll(n => n.children.includes('Claimed today') && typeof n.children[0] === 'string')).toHaveLength(1);
+    expect(root.container.queryAll(n => n.props.accessibilityRole === 'button' && n.props.accessibilityLabel === 'Check in')).toHaveLength(0);
+    await press('Close');
 });
