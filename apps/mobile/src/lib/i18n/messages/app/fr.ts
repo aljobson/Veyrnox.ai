@@ -5958,6 +5958,8 @@ export default {
   "editorSimple.closePanel": "Terminé",
   "editorSimple.voiceoverHint": "Enregistrez avec le micro",
   "editorSimple.exportHint": "Générez et enregistrez votre vidéo",
+  "editorSimple.exportOffHint": "Pas encore dans l’app. Utilisez veyrnox.ai",
+  "editorSimple.exportOff": "L’export n’est pas encore dans l’app. Votre montage est enregistré : ouvrez-le dans l’éditeur sur veyrnox.ai pour l’exporter. Ajoutez-y à nouveau les clips venant de Photos ou Fichiers.",
     "editorAi.describe": "Décrire la modification",
     "editorAi.instruction": "Que souhaitez-vous modifier ?",
     "editorAi.price": "{n} crédits",

@@ -208,10 +208,12 @@ test('keeps the Library item selected while a new project opens in the full nati
     expect(saved.video).toEqual([expect.objectContaining({ mediaId: 'j-33333333-3333-3333-3333-333333333333', len: 120 })]);
 });
 
-test('B1: flag off Export stays in place with an unavailable note', async () => {
-    await render(); await press('Add text'); await press('Export');
+test('B1: flag off Export saves and says export is on veyrnox.ai, not in the app (QA F09)', async () => {
+    await render(); await press('Add text'); const before = puts().length; await press('Export');
+    await act(async () => jest.advanceTimersByTimeAsync(900));
     expect(mockRouter.push).not.toHaveBeenCalled();
-    expect(visible("Export isn't available yet.")).toBe(true);
+    expect(puts().length).toBeGreaterThan(before);
+    expect(visible("Export isn't in the app yet. Your edit is saved: open it in the editor on veyrnox.ai to export. Clips added from this phone's Photos or Files need adding there again.")).toBe(true);
     expect(mockRequest.mock.calls.some(([path]) => path.includes('/editor/server-render'))).toBe(false);
 });
 

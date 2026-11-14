@@ -5822,6 +5822,8 @@ export default {
   "editorSimple.closePanel": "완료",
   "editorSimple.voiceoverHint": "마이크로 녹음",
   "editorSimple.exportHint": "영상을 렌더링하고 저장",
+  "editorSimple.exportOffHint": "아직 앱에 없어요. veyrnox.ai를 이용하세요",
+  "editorSimple.exportOff": "내보내기는 아직 앱에 없어요. 편집은 저장되었어요. veyrnox.ai 편집기에서 열어 내보내세요. 이 휴대폰의 사진이나 파일에서 추가한 클립은 그곳에서 다시 추가해야 해요.",
     "editorAi.describe": "편집 내용 설명",
     "editorAi.instruction": "무엇을 변경하고 싶으세요?",
     "editorAi.price": "크레딧 {n}개",

@@ -25,5 +25,7 @@ export default {
     "editorSimple.simpleView": "Simple view",
     "editorSimple.closePanel": "Done",
     "editorSimple.voiceoverHint": "Record from the microphone",
-    "editorSimple.exportHint": "Render and save your video"
+    "editorSimple.exportHint": "Render and save your video",
+    "editorSimple.exportOffHint": "Not in the app yet. Use veyrnox.ai",
+    "editorSimple.exportOff": "Export isn't in the app yet. Your edit is saved: open it in the editor on veyrnox.ai to export. Clips added from this phone's Photos or Files need adding there again."
 } as const;

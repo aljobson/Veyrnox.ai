@@ -5822,6 +5822,8 @@ export default {
   "editorSimple.closePanel": "完成",
   "editorSimple.voiceoverHint": "使用麦克风录音",
   "editorSimple.exportHint": "渲染并保存视频",
+  "editorSimple.exportOffHint": "应用内暂不可用，请使用 veyrnox.ai",
+  "editorSimple.exportOff": "应用内暂不支持导出。你的剪辑已保存：在 veyrnox.ai 的编辑器中打开即可导出。从本机照片或文件添加的片段需在那里重新添加。",
     "editorAi.describe": "描述编辑内容",
     "editorAi.instruction": "您想更改什么？",
     "editorAi.price": "{n}积分",

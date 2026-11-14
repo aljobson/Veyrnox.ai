@@ -6162,6 +6162,8 @@ export default {
   "editorSimple.closePanel": "تم",
   "editorSimple.voiceoverHint": "سجّل من الميكروفون",
   "editorSimple.exportHint": "اعرض الفيديو واحفظه",
+  "editorSimple.exportOffHint": "غير متاح في التطبيق بعد. استخدم veyrnox.ai",
+  "editorSimple.exportOff": "التصدير غير متاح في التطبيق بعد. تم حفظ تعديلك: افتحه في المحرر على veyrnox.ai لتصديره. أعد إضافة المقاطع التي أضفتها من الصور أو الملفات على هذا الهاتف.",
     "editorAi.describe": "صِف التعديل",
     "editorAi.instruction": "ما الذي تريد تغييره؟",
     "editorAi.price": "{n} رصيد",

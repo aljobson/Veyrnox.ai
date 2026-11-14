@@ -127,3 +127,18 @@ existing test falls back to English `.other` for locale-only plural forms. Runni
 add that fallback to check-app-i18n.mjs and regenerate. That script is outside the
 frozen whitelist; it remains unchanged. Existing translations were not rewritten to
 hide this discrepancy. This prevents a claim that all agreed proof checks pass.
+
+## Amendment (2026-11-14): Export with the phone switch off
+
+ADR-0304 replaced the save-and-compose fallback with a bare "Export isn't available
+yet." shown only after a tap. With `EXPO_PUBLIC_EDITOR_SERVER_EXPORT_ENABLED` off, the
+More sheet now says up front that Export is not in the app yet, and a tap saves the
+project and explains that it can be exported from the editor on veyrnox.ai (phone
+Photos and Files clips must be added there again). When the build switch is on
+but the server refuses the account (`preview_only`, `not_enabled`, 501, 404), the
+shorter "Export isn't available yet." stays, since the app does have Export then.
+
+Export from the phone works only when both are true: the EAS profile sets
+`EXPO_PUBLIC_EDITOR_SERVER_EXPORT_ENABLED=true` (a new build), and production
+`EDITOR_RUNTIME_FLAGS.serverRender` is `"on"`, or `"preview"` with the account in the
+preview list. Production has `serverRender: "preview"` today.

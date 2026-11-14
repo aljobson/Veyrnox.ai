@@ -5958,6 +5958,8 @@ export default {
   "editorSimple.closePanel": "Concluído",
   "editorSimple.voiceoverHint": "Grave com o microfone",
   "editorSimple.exportHint": "Renderize e salve seu vídeo",
+  "editorSimple.exportOffHint": "Ainda não está no app. Use veyrnox.ai",
+  "editorSimple.exportOff": "A exportação ainda não está no app. Sua edição está salva: abra-a no editor em veyrnox.ai para exportar. Clipes de Fotos ou Arquivos deste celular precisam ser adicionados lá novamente.",
     "editorAi.describe": "Descrever a edição",
     "editorAi.instruction": "O que pretende alterar?",
     "editorAi.price": "{n} créditos",
