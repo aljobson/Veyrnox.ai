@@ -2,10 +2,11 @@ import { passkeyGate } from '../lib/passkeys';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Link, Redirect, useRouter } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { useAuth } from '../auth/AuthProvider';
 import { BrandIntro } from '../components/BrandIntro';
 import { SignupOffer } from '../components/SignupOffer';
+import { SignedInRedirect } from '../components/SignedInRedirect';
 import { Button, Icon, Text, AuthProviderButton, themedStyles, useThemedStyles } from '../components/ui';
 import { ConsentRow } from '../components/ui/ConsentRow';
 import { DEV_MOCK } from '../lib/config';
@@ -34,8 +35,8 @@ export default function SignIn() {
         setBusy(true);
         setError(null);
         try {
+            // A finished sign-in flips status, and the redirect below takes over; a cancelled one stays here.
             await action();
-            router.replace('/(app)/(tabs)');
         } catch {
             setError(t('signIn.failed'));
         } finally {
@@ -44,7 +45,7 @@ export default function SignIn() {
         }
     }
 
-    if (status === 'signedIn') return <Redirect href="/(app)/(tabs)" />;
+    if (status === 'signedIn') return <SignedInRedirect />;
     return (
         <ScrollView
             style={styles.scroll}

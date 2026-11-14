@@ -6,6 +6,8 @@ import { CelebrationHost } from '../../components/CelebrationHost';
 import { CheckInModal } from '../../components/CheckInModal';
 import { ReferralAttach } from '../../components/ReferralAttach';
 import { Redirect, Stack } from 'expo-router';
+import { useEffect } from 'react';
+import { forgetPendingLink } from '../../lib/pendingLink';
 import { useAuth } from '../../auth/AuthProvider';
 import { Logo } from '../../components/Logo';
 import { AiConsentHost } from '../../components/AiConsentHost';
@@ -25,6 +27,8 @@ export default function AppLayout() {
     // Live theme: the back chevron takes headerTintColor, so a palette read once would leave it dark-on-dark after a switch.
     const { settings, scheme } = useAppearance();
     const palette = paletteForScheme(scheme, settings);
+    // A link opened while already signed in went straight to its screen: nothing is owed after a later sign-in.
+    useEffect(() => { if (status === 'signedIn') forgetPendingLink(); }, [status]);
     if (status === 'signedOut') return <Redirect href="/sign-in" />;
     return (
         <>

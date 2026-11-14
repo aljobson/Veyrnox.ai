@@ -1,5 +1,5 @@
-import { rpc, envConfig } from '../../../../../../packages/db/supabase-client.js';
-import { musicPublicationEnabled } from '../../../../../../lib/musicBackend.js';
+import { rpc, envConfig } from '../../../../../packages/db/supabase-client.js';
+import { musicPublicationEnabled } from '../../../../../lib/musicBackend.js';
 
 const HANDLE_RE = /^[a-z][a-z0-9_]{2,29}$/;
 const reply = (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });

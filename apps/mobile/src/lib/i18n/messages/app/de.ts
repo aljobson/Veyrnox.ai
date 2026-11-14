@@ -6088,4 +6088,7 @@ export default {
   "create.firstRun.example.work.image": "Ein hochwertiges Produktfoto einer gläsernen Parfümflasche auf nassem Stein, weiches Morgenlicht",
   "create.firstRun.example.work.video": "Eine 10-Sekunden-Werbung: Kaffee füllt in Zeitlupe eine Tasse, Dampf steigt auf, warmes Studiolicht",
   "create.firstRun.example.work.audio": "Ein fröhlicher 30-Sekunden-Markenjingle mit leichter Gitarre und Klatschen",
+  "credits.planDetails.loading": "Abo-Credits werden geladen…",
+  "credits.planDetails.failed": "Die Credits der Abos konnten nicht geladen werden. Prüfe deine Verbindung und versuche es erneut.",
+  "credits.planDetails.retry": "Erneut versuchen",
 } as const;

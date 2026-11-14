@@ -12,10 +12,8 @@ import { getPurchaseSnapshot, type PurchaseOutcome } from '../../billing/storePu
 import { LEGAL_LINKS } from '../../lib/account';
 import {
     isWebParityPack,
-    parseGenerationCatalog,
     renewalTerms,
     toDisplayPackages,
-    type GenerationCatalogPlan,
 } from '../../lib/billing';
 import { t } from '../../lib/i18n';
 import { ds } from '../../theme';
@@ -25,6 +23,8 @@ import { BalanceCard } from '../../components/credits/BalanceCard';
 import { CheckInEntry } from '../../components/credits/CheckInEntry';
 import { PackCard, PackTaxNote } from '../../components/credits/PackCard';
 import { PlanCards, initialCadence, type Cadence } from '../../components/credits/PlanCards';
+import { PlanCatalogNotice } from '../../components/credits/PlanCatalogNotice';
+import { usePlanCatalog } from '../../lib/usePlanCatalog';
 import { CurrentPlanCard } from '../../components/credits/CurrentPlanCard';
 import { useBalanceDetails } from '../../lib/useBalance';
 import { getCacheUser, subscribeCacheUser } from '../../lib/appCache';
@@ -41,7 +41,6 @@ export default function Credits() {
     const { api } = useAuth();
     const billing = useBilling();
     useFocusEffect(useCallback(() => { void billing.refreshSales(); }, [billing.refreshSales]));
-    const [catalog, setCatalog] = useState<GenerationCatalogPlan[]>([]);
     const purchase = useStorePurchase();
     const [localBusyId, setBusyId] = useState<string | null>(null);
     const [localOutcome, setOutcome] = useState<PurchaseOutcome | null>(null);
@@ -124,15 +123,8 @@ export default function Credits() {
     const chosenPlan = plans.find(plan => plan.id === chosenPlanId && plan.interval === cadence)
         ?? (cadenceChoice === null ? plans.find(plan => plan.generationPlan === 'starter' && plan.interval === cadence) ?? plans.find(plan => plan.interval === cadence) : null)
         ?? null;
+    const { catalog, status: catalogStatus, retry: retryCatalog } = usePlanCatalog(api);
     const catalogCredits = new Map(catalog.map((plan) => [plan.id, plan.credits]));
-
-    useEffect(() => {
-        let live = true;
-        void api.request<unknown>('/api/credit-subscription-plans')
-            .then((value) => { if (live) setCatalog(parseGenerationCatalog(value)); })
-            .catch(() => {});
-        return () => { live = false; };
-    }, [api]);
 
     async function runPurchase(request: Parameters<typeof purchase.start>[0]) {
         if (busyId) return;
@@ -203,6 +195,7 @@ export default function Credits() {
                     <Text variant="body" tone="tertiary" style={styles.muted}>{t('credits.subscriptions.unavailable')}</Text>
                 ) : (
                     <View style={styles.list}>
+                        <PlanCatalogNotice status={catalogStatus} onRetry={retryCatalog} />
                         <PlanCards plans={plans} packs={packs} credits={catalogCredits} cadence={cadence} chosenId={chosenPlan?.id}
                             onCadence={next => { setCadence(next); setChosenPlanId(null); setOutcome(null); }}
                             onChoose={id => { setChosenPlanId(id); setOutcome(null); }} />

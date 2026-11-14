@@ -6020,4 +6020,7 @@ export default {
   "create.firstRun.example.work.image": "젖은 돌 위에 놓인 유리 향수병의 프리미엄 제품 사진, 부드러운 아침 햇살",
   "create.firstRun.example.work.video": "10초 광고: 커피가 슬로모션으로 컵에 채워지고 김이 피어오르는 따뜻한 스튜디오 조명",
   "create.firstRun.example.work.audio": "가벼운 기타와 박수가 들어간 경쾌한 30초 브랜드 징글",
+  "credits.planDetails.loading": "요금제 크레딧을 불러오는 중…",
+  "credits.planDetails.failed": "요금제 크레딧을 불러오지 못했어요. 연결을 확인하고 다시 시도하세요.",
+  "credits.planDetails.retry": "다시 시도",
 } as const;

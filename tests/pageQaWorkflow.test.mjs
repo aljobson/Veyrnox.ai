@@ -28,8 +28,20 @@ test('anonymous coverage and its artifact are independent of authenticated crede
 test('page sweep bounds browser actions and stabilizes animation-dependent accessibility snapshots', () => {
   assert.match(config, /actionTimeout: 10_000/);
   assert.match(config, /reducedMotion: 'reduce'/);
-  assert.match(sweep,  /locator\('\[data-storage-notice="analytics"\]'\)/);
-  assert.match(sweep, /locator\('\[data-storage-decline\]'\)\.click\(\)/);
+  assert.match(sweep, /\['\[data-storage-notice="analytics"\]', '\[data-storage-decline\]'\]/);
+  assert.match(sweep, /\['\[data-storage-notice="essential"\]', '\[data-storage-dismiss\]'\]/);
+  assert.match(sweep, /privacyChoices\.locator\(control\)\.click\(\)/);
+});
+
+test('every fixed storage notice the site can render has a handler using its own dismiss control', () => {
+  // The two components that render a notice; each must be matched by the sweep, hook for hook.
+  const sources = ['../components/PostHogManager.jsx', '../app/veyrnox/_components/SiteChrome.js']
+    .map(file => readFileSync(new URL(file, import.meta.url), 'utf8')).join('\n');
+  const variants = [...sources.matchAll(/data-storage-notice="([a-z]+)"/g)].map(([, name]) => name).sort();
+  assert.deepEqual(variants, ['analytics', 'essential']);
+  const handled = [...privacyHandlerSource().matchAll(/\['\[data-storage-notice="([a-z]+)"\]', '\[(data-storage-[a-z]+)\]'\]/g)];
+  assert.deepEqual(handled.map(([, name]) => name).sort(), variants);
+  for (const [, , control] of handled) assert.match(sources, new RegExp(`<button[^>]*\\s${control}\\s`), control);
 });
 
 function privacyHandlerSource() {
@@ -41,27 +53,31 @@ function privacyHandlerSource() {
 test('late privacy hydration is handled through the genuine Decline UI, not bypassed or consented', async () => {
   const source = privacyHandlerSource();
   assert.doesNotMatch(source, /localStorage|storageState|evaluate|force:|waitForTimeout|timeout:|noWaitAfter|Allow analytics|Analytics only/);
-  let visible = false;
-  let handler;
+  const controls = { '[data-storage-notice="analytics"]': '[data-storage-decline]', '[data-storage-notice="essential"]': '[data-storage-dismiss]' };
+  const visible = {};
+  const handlers = {};
+  const notices = {};
   const clicks = [];
-  const privacy = { locator: (selector) => {
-    assert.equal(selector, '[data-storage-decline]');
-    return { click: async (...arguments_) => { assert.equal(visible, true); assert.deepEqual(arguments_, []); clicks.push('Decline'); visible = false; } };
-  } };
   const page = { locator: (selector) => {
-    assert.equal(selector, '[data-storage-notice="analytics"]');
-    return privacy;
+    assert.ok(controls[selector], `unexpected notice ${selector}`);
+    notices[selector] = { selector, locator: (control) => {
+      assert.equal(control, controls[selector], 'each notice is closed by its own control');
+      return { click: async (...arguments_) => { assert.equal(visible[selector], true); assert.deepEqual(arguments_, []); clicks.push(control); visible[selector] = false; } };
+    } };
+    return notices[selector];
   }, addLocatorHandler: async (locator, callback, ...options) => {
-    assert.equal(locator, privacy); assert.deepEqual(options, []); handler = callback;
+    assert.equal(locator, notices[locator.selector]); assert.deepEqual(options, []); handlers[locator.selector] = callback;
   } };
-  const install = runInNewContext(`(${source})`, { expect: locator => ({ toBeHidden: async () => { assert.equal(locator, privacy); assert.equal(visible, false); } }) });
+  const install = runInNewContext(`(${source})`, { expect: locator => ({ toBeHidden: async () => { assert.equal(visible[locator.selector], false); } }) });
   await install(page);
-  assert.equal(typeof handler, 'function');
+  assert.deepEqual(Object.keys(handlers).sort(), Object.keys(controls).sort(), 'both fixed bottom notices are handled');
   assert.deepEqual(clicks, [], 'an absent banner must not cause a click or storage write');
-  visible = true; // Hydration occurs after setup: the handler remains registered.
-  await handler(privacy);
-  assert.deepEqual(clicks, ['Decline']);
-  assert.equal(visible, false, 'the normal gallery action can now proceed without forcing it');
+  for (const selector of Object.keys(controls)) {
+    visible[selector] = true; // Hydration occurs after setup: the handler remains registered.
+    await handlers[selector](notices[selector]);
+    assert.equal(visible[selector], false, 'the normal gallery action can now proceed without forcing it');
+  }
+  assert.deepEqual(clicks, ['[data-storage-decline]', '[data-storage-dismiss]']);
 });
 
 test('a broken Decline control stays a failure rather than being retried or hidden by the harness', async () => {
@@ -82,7 +98,8 @@ test('replacement pages receive their own privacy locator and callback, never a 
     const locator = { id, locator: () => ({ click: async () => selected.push(`decline:${id}`) }) };
     await install({ locator: () => locator, addLocatorHandler: async (_, callback) => callbacks.push(callback) });
   }
-  await callbacks[1]();
+  assert.equal(callbacks.length, 4, 'two notices on each of the two pages');
+  await callbacks[2]();
   await callbacks[0]();
   assert.deepEqual(selected, ['decline:replacement', 'hidden:replacement', 'decline:original', 'hidden:original']);
 });
@@ -93,7 +110,15 @@ test('privacy handler is installed before navigation and on replacement pages wi
   assert.match(sweep, /page = await context.newPage\(\);\s+await handlePrivacyChoices\(page\);/);
   assert.doesNotMatch(sweep, /if \(await privacyChoices\.isVisible\(\)\)/);
   assert.match(sweep, /getByRole\('button', \{ name: 'Show more templates' \}\)\.click\(\)/);
-  assert.match(sweep, /toHaveCount\(before \+ 50\)/);
+  assert.match(sweep, /const GALLERY_BATCH = 50;/);
+  assert.doesNotMatch(sweep, /const before = await .*\.count\(\)/, 'a non-waiting count read before the client batch renders is 0');
+  const firstBatch = sweep.indexOf("await expect(cards, 'first gallery batch renders').toHaveCount(GALLERY_BATCH);");
+  const more = sweep.indexOf("getByRole('button', { name: 'Show more templates' }).click()");
+  const secondBatch = sweep.indexOf('await expect(cards).toHaveCount(GALLERY_BATCH * 2);');
+  assert.ok(firstBatch >= 0 && firstBatch < more && more < secondBatch, 'wait for the first batch, then ask for more, then expect two batches');
+  assert.match(sweep, /const cards = page\.locator\('#preset-gallery-results > a'\);/);
+  assert.match(sweep, /locator\('#preset-gallery-results img'\)\.count\(\), 'first gallery batch is bounded'\)\.toBeLessThanOrEqual\(GALLERY_BATCH\)/);
+  assert.match(sweep, /expect\(metrics\.images, 'first gallery page is bounded'\)\.toBeLessThanOrEqual\(110\)/);
   assert.match(config, /actionTimeout: 10_000/);
   assert.match(config, /navigationTimeout: 30_000/);
   assert.match(config, /retries: 0/);
@@ -109,10 +134,29 @@ test('missing authentication fails explicitly without running or overwriting ano
   assert.match(stateSetup, /if \(!HAS_ACCOUNT\) throw new Error\('Page QA requires confirmed staging E2E_EMAIL and E2E_PASSWORD'\)/);
   assert.match(workflow, /id: auth_session/);
   assert.match(workflow, /if: always\(\) && steps\.auth_session\.outcome == 'success'/);
-  assert.match(workflow, /--project desktop-authenticated --project mobile-authenticated --output test-results\/page-qa-authenticated/);
   assert.match(workflow, /QA_REPORT_DIR: page-coverage-report\/authenticated/);
   assert.match(workflow, /name: page-qa-authenticated/);
   assert.doesNotMatch(workflow, /path:.*\.scratch\/qa-session/);
+});
+
+test('each authenticated project sweeps from its own freshly created session, never a shared one', () => {
+  // The refresh cookie rotates on first use: a second project given the same saved state starts signed out.
+  const staging = workflow.slice(0, workflow.indexOf('  production-anonymous:'));
+  const prepare = staging.slice(staging.indexOf('id: auth_session'), staging.indexOf('name: Sweep every page on authenticated desktop'));
+  const sweeps = [...staging.matchAll(/QA_STORAGE_STATE: (\S+)\n\s+QA_REPORT_DIR: (\S+)\n\s+run: npx playwright test -c e2e\/page-coverage\.config\.mjs((?: --project \S+)+) --output (\S+)/g)]
+    .map(([, state, report, projects, output]) => ({ state, report, projects: projects.trim(), output }));
+  assert.deepEqual(sweeps, [
+    { state: '.scratch/qa-session-desktop.json', report: 'page-coverage-report/authenticated/desktop', projects: '--project desktop-authenticated', output: 'test-results/page-qa-authenticated/desktop' },
+    { state: '.scratch/qa-session-mobile.json', report: 'page-coverage-report/authenticated/mobile', projects: '--project mobile-authenticated', output: 'test-results/page-qa-authenticated/mobile' },
+  ]);
+  for (const { state } of sweeps) assert.ok(prepare.includes(`QA_STORAGE_STATE=${state} node e2e/create-qa-state.mjs`), state);
+  assert.equal((prepare.match(/node e2e\/create-qa-state\.mjs/g) || []).length, 2);
+  assert.equal((staging.match(/if: always\(\) && steps\.auth_session\.outcome == 'success'/g) || []).length, 3, 'both sweeps and the artifact wait on the sessions');
+  // The artifact keeps both reports and both outputs, and no path can reach a storage state.
+  const artifact = staging.slice(staging.indexOf('name: Retain authenticated page coverage'));
+  assert.match(artifact, /path: \|\n\s+page-coverage-report\/authenticated\/\n\s+test-results\/page-qa-authenticated\/\n/);
+  assert.doesNotMatch(workflow, /include-hidden-files/);
+  for (const [, block] of workflow.matchAll(/path: \|\n((?:\s{12}\S.*\n)+)/g)) assert.doesNotMatch(block, /\.scratch|qa-session|\.json/);
 });
 
 function qaConfig(env) {
@@ -138,21 +182,48 @@ function authFunction(name) {
 
 test('page QA retains uncaught error details and redacts sensitive fixture paths', () => {
   const details = runInNewContext(`(${authFunction('browserErrorDetails')})`, { URL });
-  const errors = ['Editor hydration failed\n    at https://veyrnox.ai/_next/static/editor.js:1:20'];
-  assert.deepEqual([...details(errors, { sensitive: false })], errors);
+  const plain = (list) => [...list].map(item => ({ ...item }));
+  const errors = [{ url: 'https://veyrnox.ai/app/oddlings', message: 'Editor hydration failed\n    at https://veyrnox.ai/_next/static/editor.js:1:20' }];
+  assert.deepEqual(plain(details(errors, { sensitive: false })), errors);
   const privatePath = '/app/projects/private-project-id?revision=4';
-  const redacted = details([`Could not render ${privatePath}\n at ${privatePath}`], {
+  const redacted = details([{ url: `https://staging.invalid${privatePath}`, message: `Could not render ${privatePath}\n at ${privatePath}` }], {
     sensitive: true, pathname: privatePath, template: '/app/projects/[id]',
   });
-  assert.deepEqual([...redacted], ['Could not render /app/projects/[id]\n at /app/projects/[id]']);
-  assert.deepEqual([...details([
-    'Review failed at /social/review/synthetic-token?qa=1\n at https://staging.invalid/social/review/synthetic-token:1:20',
-  ], { sensitive: true, pathname: '/social/review/synthetic-token?qa=1', template: '/social/review/[token]' })], [
-    'Review failed at /social/review/[token]\n at https://staging.invalid/social/review/[token]:1:20',
-  ]);
-  assert.deepEqual([...details([], { sensitive: false })], []);
-  assert.match(sweep, /errors\.push\(error\.stack \|\| error\.message\)/);
-  assert.match(sweep, /finally \{\s+result\.browserErrors = browserErrorDetails\(errors, entry\);\s+page\.off\('pageerror', onError\)/);
+  assert.deepEqual(plain(redacted), [{ url: 'https://staging.invalid/app/projects/[id]', message: 'Could not render /app/projects/[id]\n at /app/projects/[id]' }]);
+  assert.deepEqual(plain(details([{ url: 'https://staging.invalid/social/review/synthetic-token#top',
+    message: 'Review failed at /social/review/synthetic-token?qa=1\n at https://staging.invalid/social/review/synthetic-token:1:20',
+  }], { sensitive: true, pathname: '/social/review/synthetic-token?qa=1', template: '/social/review/[token]' })), [{
+    url: 'https://staging.invalid/social/review/[token]#top',
+    message: 'Review failed at /social/review/[token]\n at https://staging.invalid/social/review/[token]:1:20',
+  }]);
+  assert.deepEqual(plain(details([], { sensitive: false })), []);
+  assert.match(sweep, /errors\.push\(\{ url: watched\.url\(\), message: error\.stack \|\| error\.message \}\)/);
+  assert.match(sweep, /finally \{\s+result\.browserErrors = browserErrorDetails\(errors, entry\);\s+watched\.off\('pageerror', onError\)/);
+});
+
+test('an error is recorded against the document that raised it, never the next page', () => {
+  // The previous document is unloaded before this entry's listener is attached, on the same page object.
+  assert.match(sweep, /const watched = page;\n\s+const onError = [^\n]+\n(?:\s+\/\/[^\n]*\n)*\s+await watched\.goto\('about:blank'\);\n\s+watched\.on\('pageerror', onError\);/);
+  const blank = sweep.indexOf("await watched.goto('about:blank')");
+  const listen = sweep.indexOf("watched.on('pageerror', onError)");
+  const navigate = sweep.indexOf('await page.goto(entry.pathname');
+  assert.ok(blank >= 0 && blank < listen && listen < navigate);
+  assert.equal((sweep.match(/\.on\('pageerror'/g) || []).length, 1);
+});
+
+test('a dark route is a controlled 200 or 404 and never a tolerated server error', () => {
+  const outcome = runInNewContext(`(${authFunction('darkRouteOutcome')})`, { Error });
+  assert.equal(outcome(200), 'render');
+  assert.equal(outcome(404), 'dark');
+  for (const status of [0, 204, 301, 401, 403, 500, 502, 503]) assert.throws(() => outcome(status), /Dark route answered/, String(status));
+  // The status is read without a browser navigation first: Chromium rejects page.goto on an empty 404.
+  assert.match(sweep, /entry\.mode === 'dark-route' && darkRouteOutcome\(\(await request\.get\(entry\.pathname\)\)\.status\(\)\) === 'dark'/);
+  assert.match(sweep, /if \(error\.message\.includes\('ERR_HTTP_RESPONSE_CODE_FAILURE'\)\) return 404;\n\s+throw error;/);
+  assert.match(sweep, /expect\(darkStatus, [^)]+\)\.toBe\(404\);\n\s+expect\(errors\.length, `uncaught errors on dark route: \$\{label\}`\)\.toBe\(0\);\n\s+return;/);
+  const dark = sweep.indexOf("entry.mode === 'dark-route'");
+  assert.ok(dark > sweep.indexOf("watched.on('pageerror', onError)") && dark < sweep.indexOf('const res = await page.goto(entry.pathname'));
+  // Switched on, the route falls through to the ordinary render assertions.
+  assert.match(sweep, /expect\(status, label\)\.toBe\(200\);/);
 });
 
 function authPage({ status = 200, controls = true, menu = true, signIn = false } = {}) {

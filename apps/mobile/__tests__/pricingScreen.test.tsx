@@ -2,14 +2,15 @@ import { act } from 'react';
 import * as RN from 'react-native';
 import { createRoot, type Root, type TestInstance } from 'test-renderer';
 import Pricing from '../src/app/(app)/pricing';
-import { setLocaleFromDevice } from '../src/lib/i18n';
+import { setLocaleFromDevice, t } from '../src/lib/i18n';
 const mockAll = jest.fn(async () => [{ id: 'premium', name: 'Premium fixture', modality: 'image', gated: true, credits: 10, capabilities: null, durations: [] }]);
 const mockSupported = jest.fn(async () => []);
 const mockBilling = { status: 'ready', offerings: { all: {
     generation: { availablePackages: [{ identifier: 'monthly', product: { identifier: 'ai.veyrnox.generation.starter.monthly', title: 'Starter', priceString: '£10.00' } }] },
     credits: { availablePackages: [{ identifier: 'pack', product: { identifier: 'ai.veyrnox.credits.209', title: 'Pack', priceString: '£10.00' } }] },
 } } };
-const mockApi = { request: async () => ({ plans: [] }) };
+const mockRequest = jest.fn(async (_path: string): Promise<unknown> => ({ plans: [] }));
+const mockApi = { request: (path: string) => mockRequest(path) };
 jest.mock('../src/billing/BillingProvider', () => ({ useBilling: () => mockBilling }));
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi }) }));
 jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchAllCatalog: () => mockAll(), fetchCatalog: () => mockSupported() }));
@@ -18,7 +19,7 @@ jest.mock('expo-router', () => ({ Stack: { Screen: () => null } }));
 void [RN.View, RN.Text, RN.Pressable, RN.ScrollView, RN.ActivityIndicator];
 let root: Root;
 const textOf = (node: TestInstance): string => node.children.map(c => typeof c === 'string' ? c : textOf(c)).join('');
-beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; setLocaleFromDevice(['en']); mockBilling.status = 'ready'; mockAll.mockClear(); mockSupported.mockClear(); root = createRoot(); });
+beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; setLocaleFromDevice(['en']); mockBilling.status = 'ready'; mockRequest.mockReset().mockImplementation(async () => ({ plans: [] })); mockAll.mockClear(); mockSupported.mockClear(); root = createRoot(); });
 afterEach(async () => act(async () => root.unmount()));
 test('shows gated models with a non-pressable Premium chip and read-only offers', async () => {
     await act(async () => root.render(<Pricing />)); const text = textOf(root.container);
@@ -29,4 +30,32 @@ test('shows gated models with a non-pressable Premium chip and read-only offers'
 test.each(['off', 'loading', 'unavailable'])('billing %s hides offer sections, leaving catalog visible', async status => {
     mockBilling.status = status; await act(async () => root.render(<Pricing />)); const text = textOf(root.container);
     expect(text).not.toContain('Monthly subscriptions'); expect(text).not.toContain('One-off credit packs'); expect(text).toContain('Premium model');
+});
+test('plan credits show a loading line until the server answers', async () => {
+    let answer!: (value: unknown) => void;
+    mockRequest.mockImplementationOnce(() => new Promise(resolve => { answer = resolve; }));
+    await act(async () => root.render(<Pricing />));
+    expect(textOf(root.container)).toContain(t('credits.planDetails.loading'));
+    await act(async () => answer({ plans: [{ id: 'starter-monthly', credits: 200 }] }));
+    expect(textOf(root.container)).not.toContain(t('credits.planDetails.loading'));
+    expect(textOf(root.container)).toContain('200 creation credits each month');
+});
+test('a failed plan-credits load shows a short error with a retry that loads them, and never a made-up amount', async () => {
+    mockRequest.mockRejectedValueOnce(new Error('offline'));
+    await act(async () => root.render(<Pricing />));
+    expect(mockRequest).toHaveBeenCalledWith('/api/credit-subscription-plans');
+    expect(textOf(root.container)).toContain(t('credits.planDetails.failed'));
+    expect(textOf(root.container)).not.toMatch(/\d+ creation credits each month/);
+    const retry = root.container.queryAll(n => n.props.accessibilityLabel === t('credits.planDetails.retry') && n.props.onClick);
+    expect(retry.length).toBeGreaterThan(0);
+    mockRequest.mockResolvedValueOnce({ plans: [{ id: 'starter-monthly', credits: 200 }] });
+    await act(async () => retry[0].props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }));
+    expect(mockRequest).toHaveBeenCalledTimes(2);
+    expect(textOf(root.container)).not.toContain(t('credits.planDetails.failed'));
+    expect(textOf(root.container)).toContain('200 creation credits each month');
+});
+test('with billing off there is no plan section, so no plan-credits notice either', async () => {
+    mockBilling.status = 'off'; mockRequest.mockRejectedValueOnce(new Error('offline'));
+    await act(async () => root.render(<Pricing />));
+    expect(textOf(root.container)).not.toContain(t('credits.planDetails.failed'));
 });

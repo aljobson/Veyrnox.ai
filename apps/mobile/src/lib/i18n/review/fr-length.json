@@ -5154,6 +5154,12 @@
     "ratio": 1.64
   },
   {
+    "id": "credits.planDetails.loading",
+    "english": "Loading plan credits…",
+    "translation": "Chargement des crédits des forfaits…",
+    "ratio": 1.71
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

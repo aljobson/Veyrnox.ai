@@ -6156,4 +6156,7 @@ export default {
   "create.firstRun.example.work.image": "Une photo produit haut de gamme d'un flacon de parfum en verre sur une pierre mouillée, douce lumière du matin",
   "create.firstRun.example.work.video": "Une pub de 10 secondes : du café remplit une tasse au ralenti, la vapeur monte, lumière chaude de studio",
   "create.firstRun.example.work.audio": "Un jingle de marque entraînant de 30 secondes avec guitare légère et claquements de mains",
+  "credits.planDetails.loading": "Chargement des crédits des forfaits…",
+  "credits.planDetails.failed": "Impossible de charger les crédits des forfaits. Vérifiez votre connexion et réessayez.",
+  "credits.planDetails.retry": "Réessayer",
 } as const;

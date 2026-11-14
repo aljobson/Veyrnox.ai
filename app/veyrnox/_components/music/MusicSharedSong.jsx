@@ -11,7 +11,7 @@ export function MusicSharedSong({ token }) {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetch(`/api/v1/music/shared/${encodeURIComponent(token)}`, { signal: controller.signal, cache: 'no-store' })
+    fetch(`/api/music/shared/${encodeURIComponent(token)}`, { signal: controller.signal, cache: 'no-store' })
       .then(async (response) => {
         if (!response.ok) throw new Error('unavailable');
         return response.json();

@@ -1,12 +1,12 @@
 import { t } from '../../../lib/i18n';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Redirect, Stack, useLocalSearchParams } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { manifestUrl } from '../../../lib/cinemaPlayback';
 
 // Development only (spike part 2): plays a real Stream manifest from a token minted elsewhere, and shows
-// the startup time and player status. Open it with dev/open-manifest.mjs. Not reachable in a release build.
+// the startup time and player status. Open it with dev/open-manifest.mjs. A release build sends its address Home.
 export default function Probe() {
     const { code, token } = useLocalSearchParams<{ code?: string; token?: string }>();
     const started = useRef(0);
@@ -26,7 +26,7 @@ export default function Probe() {
         return () => subs.forEach((s) => s.remove());
     }, [player, code, token]);
 
-    if (!__DEV__) return null;
+    if (!__DEV__) return <Redirect href="/" />;
     return (
         <View style={styles.screen}>
             <Stack.Screen options={{ title: t('cinema.playbackprobe') }} />

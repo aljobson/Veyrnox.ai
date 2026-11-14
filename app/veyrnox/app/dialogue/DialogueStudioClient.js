@@ -424,7 +424,7 @@ export default function DialogueStudio() {
                   
                   {modeId !== 'photo-dialogue' && <SaveToAudioShelfButton jobId={job.job_id} name={`Dialogue · ${validation.speakers.map((speaker) => speaker.speaker).join(' + ')}`} purpose="lip-sync-dialogue" className="inline-flex min-h-10 items-center rounded-full border border-vx-border px-4 text-xs font-extrabold disabled:opacity-60"/>}
                   {modeId !== 'photo-dialogue' && <Link href={`/app/performance?audio=${encodeURIComponent(job.job_id)}`} className="text-sm font-bold text-vx-accent underline">Use for lip sync</Link>}
-                  {modeId !== 'photo-dialogue' && <Link href={`/app/video-dubbing?audio=${encodeURIComponent(job.job_id)}&speakers=${validation.speakers.length}`} onClick={() => writeDialogueDubbingHandoff(window.sessionStorage, { jobId: job.job_id, turns, cast: audioAssignments })} className="text-sm font-bold text-vx-accent underline">Use in Video Dubbing</Link>}
+                  {modeId !== 'photo-dialogue' && <Link href={`/app/performance?workflow=video-dubbing&audio=${encodeURIComponent(job.job_id)}&speakers=${validation.speakers.length}`} onClick={() => writeDialogueDubbingHandoff(window.sessionStorage, { jobId: job.job_id, turns, cast: audioAssignments })} className="text-sm font-bold text-vx-accent underline">Use in Video Dubbing</Link>}
                   <Link href="/app/library" className="text-sm font-bold text-vx-fg-muted underline">Open Library</Link>
                 </div>
               )}
@@ -473,7 +473,7 @@ export default function DialogueStudio() {
                                 <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
                                   <p className="min-w-0 truncate text-[10px] text-vx-fg-faint">{member.portraitLabel}</p>
                                   <div className="flex items-center gap-3">
-                                    <Link href={`/app/talking-avatar?portrait=${encodeURIComponent(member.portraitJobId)}&castMember=${encodeURIComponent(member.speaker)}`} className="text-[10px] font-bold text-vx-accent underline">Use in Talking Avatar</Link>
+                                    <Link href={`/app/performance?workflow=talking-photo&recipe=talking-avatar&portrait=${encodeURIComponent(member.portraitJobId)}&castMember=${encodeURIComponent(member.speaker)}`} className="text-[10px] font-bold text-vx-accent underline">Use in Talking Avatar</Link>
                                     <Link href={`/app/film-studio?castPortrait=${encodeURIComponent(member.portraitJobId)}&castMember=${encodeURIComponent(member.speaker)}`} className="text-[10px] font-bold text-vx-accent underline">Prepare Film reference</Link>
                                     <button type="button" disabled={busy} onClick={() => unlinkProjectCastPortrait(cast.id, member.speaker)} className="min-h-7 text-[10px] font-bold text-vx-danger underline disabled:opacity-40">Unlink</button>
                                   </div>

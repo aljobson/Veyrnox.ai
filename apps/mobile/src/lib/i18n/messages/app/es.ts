@@ -6156,4 +6156,7 @@ export default {
   "create.firstRun.example.work.image": "Una foto de producto premium de un frasco de perfume de cristal sobre piedra mojada, luz suave de mañana",
   "create.firstRun.example.work.video": "Un anuncio de 10 segundos: café llenando una taza en cámara lenta, sube el vapor, luz cálida de estudio",
   "create.firstRun.example.work.audio": "Un jingle de marca animado de 30 segundos con guitarra suave y palmas",
+  "credits.planDetails.loading": "Cargando créditos de los planes…",
+  "credits.planDetails.failed": "No se pudieron cargar los créditos de los planes. Revisa tu conexión e inténtalo de nuevo.",
+  "credits.planDetails.retry": "Reintentar",
 } as const;

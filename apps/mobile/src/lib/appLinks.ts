@@ -97,3 +97,28 @@ export function mapAppLink(path: string): string {
     if (segments[0] !== 'app') return '/';
     return opened(segments.slice(1), url.searchParams);
 }
+
+const ROUTE_MAX_LENGTH = 1024;
+const STATIC_ROUTES = new Set<string>([...Object.values(SECTIONS), ...Object.values(PUBLISH_SECTIONS), '/cinema?section=profile']);
+const UUID = '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}';
+const TOKEN = '[A-Za-z0-9_-]+(?:\\.[A-Za-z0-9_-]+){1,3}';
+// The query a template hand-off carries (resolveAppLink): URLSearchParams output only, so no raw slash, colon, space or fragment.
+const ENCODED_QUERY = '(?:\\?[A-Za-z0-9._~*%+&=-]*)?';
+const ROUTE_SHAPES = [
+    new RegExp(`^/(?:job|chat|cinema|cinema/watch)/${UUID}$`),
+    /^\/cinema\/series\/[a-z0-9-]{1,80}$/,
+    new RegExp(`^/templates/[a-z0-9-]{1,40}${ENCODED_QUERY}$`),
+    new RegExp(`^/create/(?!\\.+(?:\\?|$))[A-Za-z0-9._-]{1,80}${ENCODED_QUERY}$`),
+    /^\/oauth-consent\?authorization_id=[A-Za-z0-9_-]{8,128}$/,
+    new RegExp(`^/(?:team-invite|review)\\?token=${TOKEN}$`),
+];
+
+/**
+ * Whether a string is an in-app route this file (or resolveAppLink, for a template hand-off) can produce. Used before a
+ * route is kept for later (pendingLink.ts): one leading slash, no scheme, no host, nothing outside the shapes above.
+ * Keep it in step with mapAppLink.
+ */
+export function isAppLinkRoute(route: unknown): route is string {
+    if (typeof route !== 'string' || route.length > ROUTE_MAX_LENGTH || !route.startsWith('/') || route.startsWith('//')) return false;
+    return STATIC_ROUTES.has(route) || ROUTE_SHAPES.some(shape => shape.test(route));
+}

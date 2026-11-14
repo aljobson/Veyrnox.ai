@@ -6224,4 +6224,7 @@ export default {
   "create.firstRun.example.work.image": "Премиальное предметное фото стеклянного флакона духов на мокром камне, мягкий утренний свет",
   "create.firstRun.example.work.video": "10-секундная реклама: кофе в замедленной съёмке наполняет чашку, поднимается пар, тёплый студийный свет",
   "create.firstRun.example.work.audio": "Бодрый 30-секундный джингл бренда с лёгкой гитарой и хлопками",
+  "credits.planDetails.loading": "Загружаем кредиты тарифов…",
+  "credits.planDetails.failed": "Не удалось загрузить кредиты тарифов. Проверьте подключение и повторите попытку.",
+  "credits.planDetails.retry": "Повторить",
 } as const;
