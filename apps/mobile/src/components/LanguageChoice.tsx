@@ -43,7 +43,12 @@ export function LanguageChoice({ returnPath, active = ACTIVE_LOCALES, onComplete
             : await changeLanguage(picked, returnPath, { signedIn: status === 'signedIn', canReloadSession }, {
                 active, onChosen: code => status === 'signedIn' ? saveAccountLanguage(api, code) : Promise.resolve(),
             }));
-        if (ok && unchanged) { if (onComplete) onComplete(); else router.back(); }
+        if (ok && unchanged) {
+            if (onComplete) onComplete();
+            // A reload leaves nothing behind this screen: go to Account instead of a back that does nothing.
+            else if (router.canGoBack()) router.back();
+            else router.replace('/account' as never);
+        }
         if (!ok) setFailed(true);
         setBusy(false);
         running.current = false;

@@ -49,7 +49,9 @@ function ThemeRouteRestorer() {
     const pathname = usePathname();
     useEffect(() => {
         void takeThemeReturnPath().then((next) => {
-            if (next && next !== pathname) router.replace(next as never);
+            if (!next || next === pathname) return;
+            // Landing on Home after a reload: push, so the restored screen keeps Home behind it (a native back chip, and back works).
+            if (pathname === '/') router.push(next as never); else router.replace(next as never);
         }).catch(() => captureIssue('theme_return_failed', {}));
     }, [pathname, router]);
     return null;
