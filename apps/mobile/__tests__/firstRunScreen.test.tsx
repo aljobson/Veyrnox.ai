@@ -6,6 +6,7 @@ import { t } from '../src/lib/i18n';
 import { writeFirstGoal } from '../src/lib/firstGoalStore';
 import { loadFirstAnswers, writeFirstProfile } from '../src/lib/firstProfileStore';
 import { pushFirstAnswers } from '../src/lib/firstProfileSync';
+import { markWelcomeSeen } from '../src/lib/markWelcomeSeen';
 
 const mockPush = jest.fn();
 const mockReplace = jest.fn();
@@ -15,6 +16,7 @@ jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({
 jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalogCached: jest.fn() }));
 jest.mock('../src/lib/firstGoalStore', () => ({ writeFirstGoal: jest.fn(async () => undefined) }));
 jest.mock('../src/lib/firstProfileStore', () => ({ loadFirstAnswers: jest.fn(), writeFirstProfile: jest.fn(async () => ({})) }));
+jest.mock('../src/lib/markWelcomeSeen', () => ({ markWelcomeSeen: jest.fn(async () => undefined) }));
 jest.mock('../src/lib/firstProfileSync', () => ({ pushFirstAnswers: jest.fn(async () => undefined) }));
 jest.mock('../src/lib/analytics/events', () => ({ captureEvent: jest.fn() }));
 jest.mock('../src/auth/AuthProvider', () => { const api = {}; return { useAuth: () => ({ api }) }; });
@@ -30,7 +32,7 @@ const skip = () => press(t('create.firstGoal.skip'));
 beforeEach(async () => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
     root = createRoot();
-    for (const fn of [mockPush, mockReplace, writeFirstGoal, writeFirstProfile, pushFirstAnswers] as jest.Mock[]) fn.mockClear();
+    for (const fn of [mockPush, mockReplace, writeFirstGoal, writeFirstProfile, pushFirstAnswers, markWelcomeSeen] as jest.Mock[]) fn.mockClear();
     jest.mocked(loadFirstAnswers).mockReset().mockResolvedValue({ goal: null, role: null, destination: null });
     jest.mocked(fetchCatalogCached).mockReset().mockResolvedValue({ value: [mockPrompt], meta: { fromCache: false, stale: false, savedAt: Date.now(), ageMs: 0 } } as never);
 });
@@ -90,4 +92,20 @@ test('an account that already answered is not asked again and goes straight on',
     await act(async () => root.render(<FirstRun />));
     expect(mockReplace).toHaveBeenCalledWith('/');
     expect(hasText(t('create.firstRun.roleTitle'))).toBe(false);
+});
+
+test('the welcome is marked seen only when the questions end, so quitting part-way brings them back next launch', async () => {
+    await act(async () => root.render(<FirstRun />));
+    await press(t('create.firstRun.role.creator'));
+    await press(t('create.firstGoal.video'));
+    expect(markWelcomeSeen).not.toHaveBeenCalled();
+    await press(t('create.firstRun.dest.reels'));
+    expect(markWelcomeSeen).toHaveBeenCalledTimes(1);
+});
+
+test('an account that already answered is marked seen at once, so it is never looped back to the welcome', async () => {
+    jest.mocked(loadFirstAnswers).mockResolvedValue({ goal: null, role: 'skipped', destination: null });
+    await act(async () => root.render(<FirstRun />));
+    expect(markWelcomeSeen).toHaveBeenCalledTimes(1);
+    expect(mockReplace).toHaveBeenCalledWith('/');
 });

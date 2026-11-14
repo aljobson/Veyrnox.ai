@@ -107,7 +107,9 @@ describe('where the welcome shows', () => {
         expect(decision).toContain("return '/welcome'");
         expect(decision).toContain('appStorage.get(FIRST_RUN_SLOT)');
         const screen = read('app', '(app)', 'welcome.tsx');
-        expect(screen).toContain('markWelcomeSeen');
+        // Seen is recorded when the first-run questions end, not when the cards end (quitting during the questions brings them back).
+        expect(screen).not.toContain('markWelcomeSeen');
+        expect(read('app', '(app)', 'first-run.tsx')).toContain('void markWelcomeSeen()');
         expect(read('lib', 'markWelcomeSeen.ts')).toContain('appStorage.set(FIRST_RUN_SLOT, seen)');
         expect(screen).toContain("t('welcome.skip')");
     });

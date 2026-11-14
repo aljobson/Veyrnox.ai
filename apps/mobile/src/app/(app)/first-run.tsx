@@ -11,6 +11,7 @@ import { firstGoalTarget, FIRST_GOALS, type FirstGoal, type StoredFirstGoal } fr
 import { writeFirstGoal } from '../../lib/firstGoalStore';
 import { FIRST_DESTINATIONS, FIRST_ROLES, needsFirstRun, type StoredDestination, type StoredRole } from '../../lib/firstProfile';
 import { loadFirstAnswers, writeFirstProfile } from '../../lib/firstProfileStore';
+import { markWelcomeSeen } from '../../lib/markWelcomeSeen';
 import { pushFirstAnswers } from '../../lib/firstProfileSync';
 import { firstRunExample } from '../../lib/firstRunExamples';
 import { afterWelcomeHref, hardPaywallEnabled } from '../../lib/hardPaywall';
@@ -61,6 +62,9 @@ export default function FirstRun() {
     const leave = useCallback(() => {
         if (leaving.current) return;
         leaving.current = true;
+        // The welcome counts as seen only once these questions are answered, skipped or already on record, so quitting the
+        // app part-way brings them back next launch. Anyone who answered one is not asked again (needsFirstRun).
+        void markWelcomeSeen();
         router.replace(afterWelcomeHref(hardPaywallEnabled(), CREATOR_PROFILE_ENABLED));
     }, [router]);
 

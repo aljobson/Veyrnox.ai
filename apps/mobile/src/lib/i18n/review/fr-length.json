@@ -4044,12 +4044,6 @@
     "ratio": 1.83
   },
   {
-    "id": "welcome.hello.body",
-    "english": "I am the app’s guide character. Make images, video and audio from a few words.",
-    "translation": "Je suis le personnage qui vous guide dans l’application. Créez des images, des vidéos et de l’audio à partir de quelques mots.",
-    "ratio": 1.62
-  },
-  {
     "id": "welcome.hello.title",
     "english": "Hi, I am Vey",
     "translation": "Bonjour, je suis Vey",
