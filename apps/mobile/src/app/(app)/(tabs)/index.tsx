@@ -4,11 +4,12 @@ import { CheckInEntry } from '../../../components/credits/CheckInEntry';
 import { Link, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { type ComponentRef, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { ScrollView, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { celebrateFinished } from '../../../lib/celebrate';
 import { ALL_CATEGORIES, ALL_TYPES, filterPresets, firstModelFor, pickUp, promptHref, recentCreations, type TypeFilter } from '../../../lib/explore';
-import { t } from '../../../lib/i18n';
+import { plural, t } from '../../../lib/i18n';
+import { rawText } from '../../../lib/i18n/translate';
 import { useAnnouncement } from '../../../lib/useAnnouncement';
 import { fetchCatalogCached, mediaApi, type CatalogModel, type Job, type Kind } from '../../../lib/media';
 import { LowBalanceNote } from '../../../components/LowBalanceNote';
@@ -196,6 +197,7 @@ export default function Explore() {
 
     const empty = prompt.trim().length === 0;
     const label = (j: Job) => j.label || t('edit.untitled');
+    const cost = (j: Job) => (j.credits > 0 ? plural('library.cost', j.credits) : t('library.costFree'));
 
     const searchShown = searchOpen || query.length > 0;
 
@@ -365,35 +367,33 @@ export default function Explore() {
                         <Text variant="title3" style={styles.subheading} accessibilityRole="header">
                             {t('explore.recent')}
                         </Text>
-                        <ScrollView keyboardShouldPersistTaps="handled" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-                            {resume ? (
-                                <Button
-                                    variant="secondary"
-                                    size="md"
-                                    label={t(resume.kind === 'making' ? 'explore.pickUp.making' : 'explore.pickUp.latest', { label: label(resume.job) })}
-                                    onPress={() =>
-                                        router.push({
-                                            pathname: '/job/[id]',
-                                            params: { id: resume.job.job_id },
-                                        })
-                                    }
-                                />
-                            ) : null}
+                        {resume?.kind === 'making' ? (
+                            <Button
+                                variant="secondary"
+                                size="md"
+                                label={t('explore.pickUp.making', { label: label(resume.job) })}
+                                onPress={() =>
+                                    router.push({
+                                        pathname: '/job/[id]',
+                                        params: { id: resume.job.job_id },
+                                    })
+                                }
+                            />
+                        ) : null}
+                        <View accessibilityRole="list">
                             {recent.map((j) => (
-                                <Button
+                                <Pressable
                                     key={j.job_id}
-                                    variant="secondary"
-                                    size="md"
-                                    label={label(j)}
-                                    onPress={() =>
-                                        router.push({
-                                            pathname: '/job/[id]',
-                                            params: { id: j.job_id },
-                                        })
-                                    }
-                                />
+                                    accessibilityRole="button"
+                                    accessibilityLabel={rawText(`${label(j)}, ${cost(j)}`)}
+                                    style={({ pressed }) => [styles.receiptLine, pressed && styles.receiptPressed]}
+                                    onPress={() => router.push({ pathname: '/job/[id]', params: { id: j.job_id } })}
+                                >
+                                    <Text numberOfLines={1} style={styles.receiptLabel}>{label(j)}</Text>
+                                    <Text style={styles.receiptAmount}>{cost(j)}</Text>
+                                </Pressable>
                             ))}
-                        </ScrollView>
+                        </View>
                     </>
                 ) : null}
 
@@ -443,6 +443,19 @@ const sheets = themedStyles((p, ramp) => ({
     heading: { color: p.textPrimary },
     count: { color: p.textTertiary },
     subheading: { color: p.textTertiary, marginTop: 8 },
+    receiptLine: {
+        flexDirection: 'row',
+        alignItems: 'baseline',
+        justifyContent: 'space-between',
+        gap: ds.space.lg,
+        minHeight: 44,
+        paddingVertical: ds.space.md,
+        borderBottomColor: p.borderSubtle,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+    },
+    receiptLabel: { flex: 1, color: p.textPrimary },
+    receiptAmount: { color: p.textSecondary, fontVariant: ['tabular-nums'], textAlign: 'right' },
+    receiptPressed: { backgroundColor: p.surfacePressed },
     chips: { flexDirection: 'row', gap: ds.space.sm, paddingVertical: ds.space.xxs },
     // Only the chosen chip is a pill; the rest are plain words, so one thing in the row is lit.
     search: {

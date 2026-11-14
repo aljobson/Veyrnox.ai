@@ -158,8 +158,9 @@ decision. Everything else on the critic's list is still open.
 
 - The hero no longer has a "Start creating" pill; Generate on the slip is the
   one primary action. Restoring it is one line in `hero.js`.
-- The headline halo and the two dots are gone (see audit 2). Revert is
-  `.vx-title-glow` in `veyrnox.css`.
+- The headline halo and the two dots are gone (see audit 2). The obsolete
+  `.vx-title-glow` hook was later removed; restoring it requires adding both
+  the hero class and its CSS rule back.
 - `home.hero.start` is now an unused key in all eleven catalogs.
 - Still open from the audit: Publish section composition, the roller and the
   wall showing the same templates twice, identical section padding, the 16:9
