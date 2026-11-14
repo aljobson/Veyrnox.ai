@@ -25,12 +25,26 @@ test('the rest of 0447 is kept: expiry, holds, SKIP LOCKED, the reap queue and p
 
 test('every ON DELETE RESTRICT reference to assets is skipped by expiry', () => {
   // A new table that pins assets ON DELETE RESTRICT must be added to expire_assets too,
-  // or the first due row stalls expiry again.
+  // or the first due row stalls expiry again. Pairs are (table, column), so a new table
+  // reusing a column name already handled elsewhere is still caught.
   const pins = new Set();
   for (const name of readdirSync(DIR).filter((n) => /^\d{4}_.*\.sql$/.test(n))) {
     const sql = read(name).replace(/--[^\n]*/g, '');
-    for (const m of sql.matchAll(/(\w+)\s+UUID[^,\n]*REFERENCES public\.assets\(id\) ON DELETE RESTRICT/gi)) pins.add(m[1]);
+    for (const table of sql.matchAll(/CREATE TABLE(?: IF NOT EXISTS)? public\.(\w+)\s*\(([\s\S]*?)\n\);/gi)) {
+      for (const m of table[2].matchAll(/(\w+)\s+UUID[^,\n]*REFERENCES public\.assets\(id\) ON DELETE RESTRICT/gi)) pins.add(`${table[1]}.${m[1]}`);
+    }
+    for (const m of sql.matchAll(/ALTER TABLE public\.(\w+)[^;]*?ADD COLUMN(?: IF NOT EXISTS)? (\w+)\s+UUID[^;]*?REFERENCES public\.assets\(id\) ON DELETE RESTRICT/gi)) pins.add(`${m[1]}.${m[2]}`);
   }
   assert.ok(pins.size > 0, 'no RESTRICT reference found: the scan is broken');
-  for (const column of pins) assert.ok(code.includes(`.${column} = a.id`), `expire_assets must skip ${column}`);
+  for (const pin of pins) {
+    const [table, column] = pin.split('.');
+    const clause = code.match(new RegExp(`FROM public\\.${table} (\\w+)[^)]*?\\b\\1\\.${column} = a\\.id`));
+    assert.ok(clause, `expire_assets must skip ${pin}`);
+  }
+});
+
+test('the pair scan would catch a new table that reuses a pinned column name', () => {
+  const clause = (table, column) => code.match(new RegExp(`FROM public\\.${table} (\\w+)[^)]*?\\b\\1\\.${column} = a\\.id`));
+  assert.ok(clause('music_song_versions', 'audio_asset_id'));
+  assert.equal(clause('some_new_table', 'audio_asset_id'), null);
 });
