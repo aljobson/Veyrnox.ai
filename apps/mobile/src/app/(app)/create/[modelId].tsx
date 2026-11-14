@@ -276,8 +276,7 @@ export default function CreateWithModel() {
     const freeLeft = freeLoading ? 0 : freeLeftFor(freeMap, model.id);
     // The camera words go into the prompt for image and video models; the price and the model do not change.
     const takesCharacter = kindOf(model.modality) === 'image' && textInput(model)?.key === 'prompt';
-    const takesCamera = (kindOf(model.modality) === 'image' || isVideo) && textInput(model)?.key === 'prompt' && !isAudioDriven(model);
-    const speech = isSpeechModel(model);
+    const takesCamera = (kindOf(model.modality) === 'image' || isVideo) && textInput(model)?.key === 'prompt' && !isAudioDriven(model), speech = isSpeechModel(model);
     // Character first, then the camera, as on the web. Both only rewrite the prompt.
     const withCharacter = takesCharacter && characterOn ? buildCharacterPrompt(prompt, character) : prompt === presetPrompt || prompt === recoveredPrompt ? prompt : prompt.trim();
     const text = takesCamera && cameraOn ? buildCinemaPrompt(withCharacter, cinema) : withCharacter;
@@ -311,8 +310,7 @@ export default function CreateWithModel() {
     // Only an unchanged request retains its confirmed items and retry price.
     const quote = matchingRetry?.quote ?? pending.current.snapshot(request, n, matchingRetry?.unit ?? unit, freeLeft);
     const price = quote.total;
-    const stillNeeded = missingRequiredSlots(model, references, !!startFile);
-    const stageLine = template
+    const stillNeeded = missingRequiredSlots(model, references, !!startFile), stageLine = template
         ? t('create.workspace.stageTemplate', { name: template.title })
         : hasReference && stillNeeded.length ? t('create.workspace.stageNeeds', { items: stillNeeded.join(', ') })
         : t(hasReference ? 'create.workspace.stageReference' : text.trim() ? 'create.workspace.stagePrompt' : 'create.workspace.stageEmpty');
