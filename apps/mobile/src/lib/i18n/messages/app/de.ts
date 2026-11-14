@@ -2807,6 +2807,7 @@ export default {
   "job.deleteThis": "Diese Kreation löschen",
   "job.deleting": "Wird gelöscht…",
   "job.failed": "Das wurde nicht abgeschlossen. Deine Credits wurden erstattet.",
+  "job.err.merge_failed": "Diese Clips konnten nicht zusammengefügt werden. Deine Credits wurden erstattet. Versuche es erneut oder nimm Clips derselben Art.",
   "job.keepsRunning": "Deine Kreation wird weiter erstellt und erscheint in deiner Bibliothek. Falls sie fehlschlägt, werden deine Credits erstattet.",
   "job.next.edit": "Dieses Video bearbeiten",
   "job.next.makeAnother": "Noch etwas erstellen",

@@ -2861,6 +2861,7 @@ export default {
   "job.deleteThis": "Eliminar esta creación",
   "job.deleting": "Eliminando…",
   "job.failed": "No terminó. Tus créditos se reembolsaron.",
+  "job.err.merge_failed": "No se pudieron unir estos clips. Tus créditos se reembolsaron. Inténtalo de nuevo o prueba con clips del mismo tipo.",
   "job.keepsRunning": "Tu creación sigue en curso y aparecerá en tu Biblioteca. Si falla, tus créditos se reembolsan.",
   "job.next.edit": "Editar este vídeo",
   "job.next.makeAnother": "Crear otra",

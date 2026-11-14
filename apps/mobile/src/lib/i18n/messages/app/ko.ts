@@ -2753,6 +2753,7 @@ export default {
   "job.deleteThis": "이 창작물 삭제",
   "job.deleting": "삭제 중…",
   "job.failed": "완료되지 않았습니다. 크레딧은 환불되었습니다.",
+  "job.err.merge_failed": "이 클립들을 합치지 못했습니다. 크레딧은 환불되었습니다. 다시 시도하거나 같은 종류의 클립을 사용해 보세요.",
   "job.keepsRunning": "생성은 계속 진행되며 라이브러리에 표시됩니다. 실패하면 크레딧이 환불됩니다.",
   "job.next.edit": "이 영상 편집",
   "job.next.makeAnother": "하나 더 만들기",

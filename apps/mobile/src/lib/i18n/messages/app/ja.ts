@@ -2753,6 +2753,7 @@ export default {
   "job.deleteThis": "この作品を削除",
   "job.deleting": "削除中…",
   "job.failed": "完了しませんでした。クレジットは返金されました。",
+  "job.err.merge_failed": "これらのクリップを結合できませんでした。クレジットは返金されました。再試行するか、同じ種類のクリップをお試しください。",
   "job.keepsRunning": "作品の作成は続き、ライブラリに表示されます。失敗した場合はクレジットが返金されます。",
   "job.next.edit": "この動画を編集",
   "job.next.makeAnother": "もう1つ作る",

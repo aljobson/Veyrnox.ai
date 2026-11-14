@@ -108,3 +108,11 @@ test.each([true, false, undefined])('unknown and cancelled jobs retain the calle
         expect(failedJobMessage(code, refunded, 'existing screen copy')).toBe('existing screen copy');
     }
 });
+
+describe('edit-chain step failures', () => {
+    it('names a failed clip merge once the refund has landed, and keeps the generic line before that', () => {
+        expect(failedJobMessage('merge_failed', true)).toBe(t('job.err.merge_failed'));
+        expect(failedJobMessage('merge_failed', true)).not.toBe(t('job.failed'));
+        expect(failedJobMessage('merge_failed', false, 'fallback')).toBe('fallback');
+    });
+});
