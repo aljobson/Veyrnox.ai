@@ -1,12 +1,12 @@
 import { rawText } from '../../lib/i18n/translate';
 import { useState } from 'react';
 import { useKeyboardOpen } from '../../lib/useKeyboardOpen';
-import { Keyboard, Modal, Pressable, ScrollView, View } from 'react-native';
+import { Keyboard, Modal, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { cleanOptions, thinkingExtra, webExtra, type ChatModel, type ReplyOptions } from '../../lib/chat';
 import type { ChatImage } from '../../lib/chatAttach';
 import { plural, t } from '../../lib/i18n';
 import type { Kind } from '../../lib/media';
-import { radius } from '../../theme';
+import { ds, radius } from '../../theme';
 import { Button, Chip, Text, TextField, themedStyles, useThemedStyles } from '../ui';
 import { AttachStrip, AttachThumbs } from './AttachStrip';
 import { ReplyOptionChip } from './ReplyOptionChip';
@@ -43,11 +43,21 @@ const TYPES = [
     { id: 'audio', key: 'chat.make.kind.audio' },
 ] as const;
 
-// With the keyboard open the whole deck (modes, model, attach strip, text box) is taller than
-// the space above the keyboard, so the text box ends up under it. While typing, show only the input row.
+// The message box spans the deck's full width and shows four lines of 17 pt text before any typing.
+// It grows with the text to 40% of the screen, then scrolls inside. With the keyboard up the
+// setup chips hide and the box stops at 25%, so the newest message stays visible above it.
+export const COMPOSER_FONT_SIZE = 17;
+export const COMPOSER_LINE_HEIGHT = 22;
+export const COMPOSER_MIN_LINES = 4;
+export const COMPOSER_MIN_HEIGHT = COMPOSER_MIN_LINES * COMPOSER_LINE_HEIGHT + 2 * ds.space.md;
+export function composerMaxHeight(windowHeight: number, typing: boolean): number {
+    return Math.max(COMPOSER_MIN_HEIGHT, Math.round(windowHeight * (typing ? 0.25 : 0.4)));
+}
+
 export function ChatComposerDeck(props: Props) {
     const styles = useThemedStyles(sheets);
     const typing = useKeyboardOpen();
+    const { height } = useWindowDimensions();
     const [sheet, setSheet] = useState(false);
     const thinking = thinkingExtra(props.model);
     const web = webExtra(props.model);
@@ -69,20 +79,21 @@ export function ChatComposerDeck(props: Props) {
                     {web !== null ? <ReplyOptionChip label={t('chat.opt.web')} extra={web} selected={chosen.web} toggle disabled={props.sending} onPress={() => props.onOptions({ ...chosen, web: !chosen.web })} /> : null}
                 </ScrollView>}
                 <AttachThumbs items={props.images} disabled={props.sending} onRemove={props.onRemoveImage} />
-                <View style={styles.inputRow}>
+                <TextField containerStyle={styles.field} style={[styles.input, { maxHeight: composerMaxHeight(height, typing) }]}
+                    value={props.draft} onChangeText={props.onDraft} textAlignVertical="top" scrollEnabled
+                    placeholder={props.placeholder} accessibilityLabel={t('chat.composer.message')} multiline maxLength={8000} />
+                <View style={styles.actionRow}>
                     <Button variant="secondary" size="md" icon="plus" iconOnly label={t('chat.make.title')} accessibilityRole="button" accessibilityLabel={t('chat.make.title')}
                         disabled={props.sending} containerStyle={styles.plus} onPress={() => { Keyboard.dismiss(); setSheet(true); }} />
-                    <TextField containerStyle={styles.field} style={typing ? styles.inputTyping : styles.input} value={props.draft} onChangeText={props.onDraft}
-                        placeholder={props.placeholder} accessibilityLabel={t('chat.composer.message')} multiline maxLength={8000} />
                     {props.sending ? (
                         <Button variant="secondary" size="md" label={props.stopping ? '…' : t('chat.stop')}
                             accessibilityRole="button" accessibilityLabel={rawText(props.stopping ? t('chat.stopping') : t('chat.stopLabel'))}
                             disabled={props.stopping} containerStyle={styles.action} onPress={props.onStop} />
                     ) : (
-                        <View style={styles.action}>
-                            <Button variant="primary" size="md" label={t('chat.send')} accessibilityRole="button"
-                                accessibilityLabel={rawText(props.free ? t('chatDepth.sendFree') : plural('chat.sendPrice', props.price))} disabled={!props.canSend} onPress={props.onSend} />
+                        <View style={styles.sendGroup}>
                             <Text variant="caption" tone="warning" style={styles.sendPrice}>{props.free ? t('chatDepth.free') : plural('chat.sendPriceShort', props.price)}</Text>
+                            <Button variant="primary" size="md" label={t('chat.send')} accessibilityRole="button" containerStyle={styles.action}
+                                accessibilityLabel={rawText(props.free ? t('chatDepth.sendFree') : plural('chat.sendPrice', props.price))} disabled={!props.canSend} onPress={props.onSend} />
                         </View>
                     )}
                 </View>
@@ -115,16 +126,15 @@ export function ChatComposerDeck(props: Props) {
 const sheets = themedStyles((p) => ({
     deck: { overflow: 'hidden', borderRadius: 28, borderWidth: 1, borderColor: p.borderSubtle, backgroundColor: p.bgElevated1 },
     setupRow: { minHeight: 48, gap: 6, alignItems: 'center', paddingHorizontal: 10, borderBottomWidth: 1, borderBottomColor: p.borderSubtle },
-    inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, paddingHorizontal: 8, paddingVertical: 7 },
-    plus: { minWidth: 44 },
-    field: { flex: 1 },
+    field: { paddingHorizontal: ds.space.sm, paddingTop: ds.space.sm },
+    input: { fontSize: COMPOSER_FONT_SIZE, lineHeight: COMPOSER_LINE_HEIGHT, minHeight: COMPOSER_MIN_HEIGHT, alignSelf: 'stretch' },
+    actionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: ds.space.sm, paddingHorizontal: ds.space.sm, paddingVertical: ds.space.sm },
+    plus: { minWidth: 44, minHeight: 44 },
+    sendGroup: { flexDirection: 'row', alignItems: 'center', gap: ds.space.sm },
     backdrop: { flex: 1, backgroundColor: p.scrim },
     sheet: { backgroundColor: p.bg, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: 16, paddingBottom: 28, gap: 12 },
     types: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-    input: { minHeight: 44, maxHeight: 132 },
-    // Keyboard up: cap the box at about three lines so the conversation keeps its room.
-    inputTyping: { minHeight: 44, maxHeight: 84 },
-    action: { maxWidth: 150 },
-    sendPrice: { textAlign: 'center', marginTop: 4 },
+    action: { minHeight: 44, maxWidth: 150 },
+    sendPrice: { textAlign: 'right', flexShrink: 1 },
     policy: { paddingHorizontal: 5, paddingTop: 5 },
 }));
