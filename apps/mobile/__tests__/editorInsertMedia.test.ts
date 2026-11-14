@@ -86,3 +86,15 @@ describe('QA build 50 F10: a new clip never lands on top of another clip', () =>
         expect(inserted(first, { id: 'next', kind: 'audio', frames: 30 }, 90).timeline.tracks.filter(track => track.kind === 'audio')).toHaveLength(1);
     });
 });
+
+test('music longer than the video stops at the video end, so the project does not grow', () => {
+    const withVideo = inserted(emptyTimeline(), { id: 'v', kind: 'video', frames: 150 }, 0).timeline;
+    const song = inserted(withVideo, { id: 'song', kind: 'audio', frames: 1800 }, 0);
+    expect(song.timeline.audio[0]).toMatchObject({ start: 0, len: 150 });
+    const late = inserted(withVideo, { id: 'song2', kind: 'audio', frames: 1800 }, 100);
+    expect(late.timeline.audio[0]).toMatchObject({ start: 100, len: 50 });
+});
+
+test('audio with no video on the timeline keeps its full length', () => {
+    expect(inserted(emptyTimeline(), { id: 'song', kind: 'audio', frames: 1800 }, 0).timeline.audio[0].len).toBe(1800);
+});
