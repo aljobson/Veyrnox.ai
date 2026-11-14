@@ -368,6 +368,7 @@ const zh = {
     'presets.use.photoReplace': '替换',
     'presets.fidelity.photosUnavailable': '此模板需要的照片数量超过模型目前支持的数量。请选择其他模板或稍后重试。',
     'templates.kind.label': '模板类型',
+    'templates.kind.image': '图片',
     'templates.kind.video': '视频',
     'templates.kind.audio': '音频',
     'audioTemplates.all': '全部',

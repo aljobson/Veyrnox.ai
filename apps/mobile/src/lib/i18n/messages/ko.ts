@@ -368,6 +368,7 @@ const ko = {
     'presets.use.photoReplace': '교체',
     'presets.fidelity.photosUnavailable': '이 템플릿에는 현재 모델이 지원하는 수보다 많은 사진이 필요합니다. 다른 템플릿을 선택하거나 나중에 다시 시도하세요.',
     'templates.kind.label': '템플릿 유형',
+    'templates.kind.image': '이미지',
     'templates.kind.video': '비디오',
     'templates.kind.audio': '오디오',
     'audioTemplates.all': '전체',
