@@ -16,6 +16,7 @@ import { realpathSync } from 'node:fs';
 import { deflateSync } from 'node:zlib';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { PRESETS } from '../app/veyrnox/_lib/templates.js';
 import { audit } from './audit-template-fidelity.mjs';
 import { BROKEN_TEMPLATE_IDS } from '../app/veyrnox/_lib/brokenTemplateIds.js';
 import { AI_ENVIRONMENTS } from '../packages/security/environments.js';
@@ -165,7 +166,7 @@ async function main(argv) {
   const stillPublic = BROKEN_TEMPLATE_IDS.filter(id => stagingIds.has(id));
   const missing = picks.filter(p => !stagingIds.has(p.contract.id)).map(p => p.contract.id);
   console.log(`STAGING ${run ? 'RUN' : 'DRY RUN'} | cap ${cap} credits | projected ${projected} credits (~$${(projected * USD_PER_CREDIT_ESTIMATE).toFixed(2)} provider, estimate)`);
-  console.log(`staging lists ${stagingIds.size} templates (main: 749); ${stillPublic.length} withdrawn templates are still public there: staging has not been deployed from main.`);
+  console.log(`staging lists ${stagingIds.size} templates (local checkout: ${PRESETS.length}); ${stillPublic.length} withdrawn templates are still public there: staging has not been deployed from main.`);
   if (missing.length) throw new Error(`Probe templates missing from staging: ${missing.join(', ')}`);
   if (projected > cap) throw new Error(`Projected ${projected} credits is above the ${cap}-credit cap`);
   const results = picks.map(p => ({ label: p.label, id: p.contract.id, modelId: p.contract.modelId, class: p.contract.class, photos: photoCount(p.contract), quoted: paid(p) ? quoteCredits(unit[p.contract.modelId], p.contract.duration) : 0 }));

@@ -12,7 +12,7 @@ jest.mock('../src/lib/analytics/generations', () => ({ noteGenerationSubmitted: 
 const fixtureData = JSON.parse(execFileSync(process.execPath, [resolve('../../tests/fixtures/templateFidelityParity.mjs')], { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024, env: { ...process.env, NODE_NO_WARNINGS: '1' } }));
 const fixtures = fixtureData.inventory;
 test('all exact templates have provider-field parity through feed, parser, handoff and request', async () => {
-    expect(fixtures).toHaveLength(749);
+    expect(fixtures).toHaveLength(749 + 46);
     const parity: Record<string, unknown> = {};
     for (const { feed, model, body, contract } of fixtures) {
         const [parsed] = parsePresets({ presets: [feed] });
@@ -100,7 +100,7 @@ const createRequest = new Function('context', `with (context) { ${ts.transpileMo
 
 test('all bound contracts use ordered references and the same bound transport on web and mobile', async () => {
     const { templateRoute } = require('../src/lib/templateFidelity');
-    expect(fixtureData.boundInventory).toHaveLength(162);
+    expect(fixtureData.boundInventory).toHaveLength(162 + 9);
     for (const { feed, model, body, contract, serverCheck } of fixtureData.boundInventory) {
         const [parsed] = parsePresets({ presets: [feed] });
         const route = templateRoute(parsed, parsed.modelId, body.references.length);

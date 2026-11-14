@@ -1,11 +1,10 @@
+import { SYNTX_100_IMAGE_TEMPLATES } from './imageTemplatesSyntx100.js';
 import { IMAGE_SOURCE_PROMPT_RECORDS } from './imageSourcePromptRecords.js';
 
-// Publication only; no provider calls, preview generation or prices here.
-export function imageTemplatesEnabled(env = process.env) {
-  return env?.IMAGE_TEMPLATES_ENABLED === 'true';
-}
+import { imageTemplatesEnabled } from './imageTemplatesFlag.js';
+export { imageTemplatesEnabled } from './imageTemplatesFlag.js';
 
-export const IMAGE_TEMPLATES = Object.freeze([
+const CHRISTMAS_IMAGE_TEMPLATES = [
   { id: 'flying-elf', name: 'FLYING ELF', model: 'nano-banana-kie', aspect: '16:9',
     prompt: IMAGE_SOURCE_PROMPT_RECORDS['flying-elf'].prompt, promptOrigin: 'community-source-exact' },
   { id: 'christmas-tree-ornament', name: 'CHRISTMAS TREE ORNAMENT', model: 'nano-banana-pro-edit-grsai', aspect: '3:4',
@@ -16,7 +15,9 @@ export const IMAGE_TEMPLATES = Object.freeze([
   previewAspect: template.aspect.replace(':', ' / '),
   previewImage: `/showcase/christmas/${template.id}.webp`,
   bg: 'linear-gradient(145deg, #163d35, #702e35 65%, #c59a54)',
-})));
+}));
+
+export const IMAGE_TEMPLATES = Object.freeze([...CHRISTMAS_IMAGE_TEMPLATES, ...SYNTX_100_IMAGE_TEMPLATES]);
 
 export const isImageTemplate = (template) => template?.kind === 'image';
 export function publishedImageTemplates() {

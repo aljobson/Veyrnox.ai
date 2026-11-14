@@ -1,4 +1,5 @@
-import { registerPhotoArrivalTests } from './helpers/imageTemplatePhotoChecks.mjs';
+import { IMAGE_TEMPLATES } from '../app/veyrnox/_lib/imageTemplates.js';
+import { registerPhotoArrivalTests, registerSyntxOverrideArrivalTests } from './helpers/imageTemplatePhotoChecks.mjs';
 import * as imageTemplateModels from '../app/veyrnox/_lib/imageTemplateModels.js';
 import test from 'node:test';
 import { fromFallback as imageFallbackCatalog } from '../app/veyrnox/_lib/useCatalog.js';
@@ -466,3 +467,5 @@ test('selecting a real image card inside Create replaces a video recipe and subm
 });
 
 registerPhotoArrivalTests({ harness, generate, prompt, sourcePickers });
+
+registerSyntxOverrideArrivalTests({ harness, generate, sourcePickers, templates: IMAGE_TEMPLATES });

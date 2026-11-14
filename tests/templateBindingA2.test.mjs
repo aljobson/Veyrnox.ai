@@ -41,7 +41,7 @@ test('shared detectors distinguish source dependencies from generated or negated
 });
 test('audit classification, reasons, source hashes and non-token bytes are locked', () => {
   const report = audit();
-  assert.deepEqual(report.totals, {"like-for-like-safe":232,"bound":162,"blocked-needs-video":355,"unsupported":0});
+  assert.deepEqual(report.totals, {"like-for-like-safe":232 + 0,"bound":162 + 9,"blocked-needs-video":355 + 37,"unsupported":0});
   assert.deepEqual(report.unsupportedReasons, {});
   for (const p of PRESETS) {
     const c = report.contracts[p.id];
@@ -92,13 +92,13 @@ test('default feed/detail/Create routing, price, attribution and exact-count adm
 test('the generated contract covers all exact-source templates', () => {
   // The repository's English markup baseline exercises rendering separately.
   const { templates } = contractData(JSON.parse(readFileSync(new URL('../lib/templateFidelityContracts.json', import.meta.url))));
-  assert.equal(Object.keys(templates).length, 749);
+  assert.equal(Object.keys(templates).length, 749 + 46);
 });
 
 test('reviewed overlapping reason counts are pinned across all classes', () => {
   const counts = {};
   for (const c of Object.values(audit().contracts)) for (const reason of c.reasons) counts[reason] = (counts[reason] || 0) + 1;
-  assert.deepEqual(counts, { 'reference-video-required': 355, 'source-audio-not-audited': 62, 'unmapped-image-reference': 27, 'unmapped-placeholder': 122, 'too-many-image-slots': 2 });
+  assert.deepEqual(counts, { 'reference-video-required': 355 + 37, 'source-audio-not-audited': 62 + 9, 'unmapped-image-reference': 27, 'unmapped-placeholder': 122, 'too-many-image-slots': 2 });
 });
 
 test('all bound detail pages offer exactly N fixed required slots', async t => {

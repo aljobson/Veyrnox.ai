@@ -167,7 +167,8 @@ test('Create blocks edited video templates using its separate guard before start
 test('duration fixes move zero inventory templates to unsupported and preserve 34 literal-token transports', async () => {
   const { audit } = await import('../scripts/audit-template-fidelity.mjs');
   const report = audit();
-  assert.deepEqual(report.totals, {"like-for-like-safe":232,"bound":162,"blocked-needs-video":355,"unsupported":0});
+  // Baseline classifications plus the independently audited 46-video split (syntx100Templates.test.mjs).
+  assert.deepEqual(report.totals, {"like-for-like-safe":232 + 0,"bound":162 + 9,"blocked-needs-video":355 + 37,"unsupported":0});
   const cs = Object.values(report.contracts);
   assert.equal(cs.filter(c => c.reasons.includes('unsupported-duration')).length, 0);
   for (const c of cs.filter(c => c.class === 'exact-transport-unbound-tokens')) {

@@ -38,23 +38,27 @@ async function withFlag(value, fn) {
   }
 }
 
-test('two image records, both hash-locked captures and no authored originals', () => {
-  assert.equal(IMAGE_TEMPLATES.length, 2);
-  assert.equal(ids.size, 2);
+test('52 image records, all hash-locked captures and no authored originals', () => {
+  assert.equal(IMAGE_TEMPLATES.length, 52);
+  assert.equal(ids.size, 52);
   assert.equal(IMAGE_TEMPLATES.filter(p => p.promptOrigin === 'original').length, 0);
   for (const p of IMAGE_TEMPLATES) {
     assert.equal(p.kind, 'image');
-    assert.equal(p.category, 'CHRISTMAS');
+    assert.ok(galleryCategories().includes(p.category) || p.category === 'CHRISTMAS');
     assert.ok(IMAGE_TEMPLATE_MODELS.includes(p.model));
     assert.ok(p.prompt.length > 100);
-    assert.match(p.previewImage, /^\/showcase\/christmas\/[a-z-]+\.webp$/);
+    assert.match(p.previewImage, /^\/showcase\/(?:christmas|images)\/[a-z0-9-]+\.webp$/);
     assert.match(p.bg, /gradient/);
     for (const key of ['clipKey', 'durationSeconds', 'credits', 'needs']) assert.equal(key in p, false, `${p.id}: ${key}`);
     assert.equal(hasTemplateVideo(p), false);
     assert.equal(SOURCE_TEMPLATES.some(t => t.id === p.id), false);
     assert.equal(ALL_TEMPLATES.some(t => t.id === p.id), false);
     assert.equal(PRESETS.some(t => t.id === p.id), false);
-    assert.doesNotMatch(p.prompt, /@image|uploaded|reference photo|Disney|Pixar|Marvel|Coca-Cola|Taylor Swift/i);
+    if (!p.photo?.required) assert.doesNotMatch(p.prompt, /@image|uploaded|reference (?:photo|image)|provided (?:photo|image)/i);
+    if (p.category === 'CHRISTMAS') {
+      assert.doesNotMatch(p.prompt, /Disney|Pixar|Marvel|Coca-Cola|Taylor Swift/i);
+      assert.equal(p.previewImage, `/showcase/christmas/${p.id}.webp`);
+    }
   }
   const captured = IMAGE_SOURCE_PROMPT_RECORDS['flying-elf'];
   const hash = '8adc8eaedc6089dd5703d4a5a99b104c568436299b1d8388aa78c9a53e8c20ab';
@@ -65,10 +69,10 @@ test('two image records, both hash-locked captures and no authored originals', (
   assert.equal(captured.sourceModel, 'banana2');
 });
 
-test('both image recipes have unique public ids and names, supported aspects and no duration', async () => {
+test('all image recipes have unique public ids and names, supported aspects and no duration', async () => {
   const { assertAvailablePublicIds } = await import('../scripts/lib/template-public-id.mjs');
-  assert.equal(IMAGE_TEMPLATES.length, 2);
-  assert.equal(new Set(IMAGE_TEMPLATES.map(p => p.name)).size, 2);
+  assert.equal(IMAGE_TEMPLATES.length, 52);
+  assert.equal(new Set(IMAGE_TEMPLATES.map(p => p.name)).size, 52);
   // Exclude only these image records from reservations; retain videos and public renames.
   assert.doesNotThrow(() => assertAvailablePublicIds([...ids], [...ids]));
   for (const template of IMAGE_TEMPLATES) {
@@ -90,7 +94,7 @@ test('publication gate controls list, search, detail, categories and hard 404 in
     assert.equal(imageTemplatesEnabled(), enabled);
     const response = await list.GET(new Request('https://example.test/api/templates'));
     const body = await response.json();
-    assert.equal(body.templates.filter(t => ids.has(t.id)).length, enabled ? 2 : 0);
+    assert.equal(body.templates.filter(t => ids.has(t.id)).length, enabled ? 52 : 0);
     assert.equal(body.categories.includes('CHRISTMAS'), enabled);
     const search = await list.GET(new Request('https://example.test/api/templates?q=CHRISTMAS'));
     assert.equal((await search.json()).ids.filter(id => ids.has(id)).length, enabled ? 2 : 0);
@@ -162,7 +166,6 @@ function pageFixture(onConnection = () => {}) {
     'next/server': { connection: async () => onConnection() },
     'next/navigation': { notFound() { throw Error('NOT_FOUND'); }, permanentRedirect() { throw Error('REDIRECT'); } },
     '../../_components/TemplateRecipe': { TemplateRecipe: () => null },
-    '../../_components/TemplateImage': { TemplateImage: () => null },
     '../lib/publicCatalog.js': { readPublicCatalog: async () => [] },
     './veyrnox/_lib/modelPages': { listModelsForDetails: async () => [], shelfModels: () => [] },
   } });
@@ -234,13 +237,16 @@ test('missing preview art keeps the gradient and removes the broken image', () =
   let failed = null;
   const f = fixture('en', '/', { moduleMocks: { '../../../components/I18nProvider.jsx': { useI18n: () => ({ t: key => key }) }, react: { ...React, useState: () => [failed, value => { failed = value; }] } } });
   const { TemplateImage } = f.load('app/veyrnox/_components/TemplateImage.js');
-  const preset = IMAGE_TEMPLATES[0];
-  let tree = TemplateImage({ preset });
-  assert.equal(tree.props.style.background, preset.bg);
-  nodes(tree).find(node => node.type === 'img').props.onError();
-  tree = TemplateImage({ preset });
-  assert.equal(nodes(tree).some(node => node.type === 'img'), false);
-  assert.equal(tree.props.style.background, preset.bg);
+  for (const preset of IMAGE_TEMPLATES.slice(0, 2)) {
+    failed = null;
+    let tree = TemplateImage({ preset });
+    assert.equal(tree.props.style.background, preset.bg);
+    nodes(tree).find(node => node.type === 'img').props.onError();
+    tree = TemplateImage({ preset });
+    assert.equal(nodes(tree).some(node => node.type === 'img'), false);
+    assert.equal(tree.props.style.background, preset.bg);
+    assert.equal(nodes(tree).some(node => node.type === 'p'), Boolean(preset.photo));
+  }
 });
 
 test('the rendered image card and picker use the real resolver and catalog price', () => {
@@ -255,7 +261,7 @@ test('the rendered image card and picker use the real resolver and catalog price
   const { TemplatePicker } = f.load('app/veyrnox/_components/TemplatePicker.js');
   const tree = TemplatePicker({ models, goal: 'image', onPick: p => { picked = p; }, onClose() {} });
   const choices = nodes(tree).filter(node => node.props?.['data-testid']?.startsWith('create-template-') && node.type === 'button');
-  assert.equal(choices.length, 2);
+  assert.equal(choices.length, 52);
   choices.find(node => node.props['data-testid'] === `create-template-${chosen.id}`).props.onClick();
   assert.equal(picked.id, chosen.id);
   const { PresetCard } = f.load('app/veyrnox/_components/PresetCard.js');
@@ -301,16 +307,41 @@ test('ornament exact bytes, metadata, photo requirement and fallback absence are
   assert.equal(record.sourceAspect, '3:4');
   assert.deepEqual(ornament.photo, { required: true, count: 1 });
   assert.equal(ornament.model, 'nano-banana-pro-edit-grsai');
-  assert.deepEqual(IMAGE_TEMPLATES.filter(p => p.promptOrigin === 'community-source-exact').map(p => p.id).sort(), ['christmas-tree-ornament', 'flying-elf']);
+  assert.deepEqual(IMAGE_TEMPLATES.filter(p => p.promptOrigin === 'community-source-exact').map(p => p.id).sort(), Object.keys(IMAGE_SOURCE_PROMPT_RECORDS).sort());
   assert.equal(IMAGE_TEMPLATES.some(p => p.id === 'pet-in-a-santa-hat'), false);
   assert.equal(fromFallback().some(m => m.id === ornament.model), false);
   assert.equal(presetCredits(ornament, fromFallback()), null);
 });
 
-test('photo artwork renders the requirement without any preview image', () => {
+test('photo artwork renders both the requirement and available preview', () => {
   const f = fixture('en', '/');
   const { TemplateImage } = f.load('app/veyrnox/_components/TemplateImage.js');
   const html = f.render(React.createElement(TemplateImage, { preset: ornament }));
   assert.match(html, /This template needs your photo/);
-  assert.doesNotMatch(html, /<img/);
+  assert.match(html, /<img/);
+  assert.ok(html.includes(ornament.previewImage));
 });
+
+test('photo-required and text-only previews render on the real card, picker and detail page', async () => withFlag('true', async () => {
+  const chosen = ['the-glass', 'cinematic-portrait'].map(id => templateCards().find(p => p.id === id));
+  const f = fixture('en', '/', { moduleMocks: {
+    '../_lib/useTemplates': { useTemplateCards: () => ({ templates: chosen }), useTemplateSearch: rows => rows },
+    './Modal': { Modal: ({ children }) => React.createElement('div', null, children) },
+  } });
+  const { PresetCard } = f.load('app/veyrnox/_components/PresetCard.js');
+  const { TemplatePicker } = f.load('app/veyrnox/_components/TemplatePicker.js');
+  const picker = f.render(React.createElement(TemplatePicker, { models, goal: 'image', onPick() {}, onClose() {} }));
+  const detail = pageFixture();
+  const page = detail.load('app/veyrnox/presets/[id]/page.js');
+  for (const preset of chosen) {
+    const card = f.render(React.createElement(PresetCard, { preset, catalog: models }));
+    const html = detail.render(await page.default({ params: Promise.resolve({ id: preset.id }) }));
+    for (const rendered of [card, picker, html]) assert.ok(rendered.includes(`src="${preset.previewImage}"`), preset.id);
+    const pickerTile = f.render(React.createElement(TemplatePicker, { models, goal: 'image', onPick() {}, onClose() {} }));
+    for (const rendered of [card, html, pickerTile.slice(pickerTile.indexOf(`data-testid="create-template-${preset.id}"`)).split('</button>')[0]]) {
+      assert.equal(rendered.includes('This template needs your photo'), Boolean(preset.photo));
+      assert.equal(rendered.includes('Needs your photo'), Boolean(preset.photo));
+      if (preset.photo) { assert.match(rendered, /<p class="[^"]*\bhidden @xs:block\b[^"]*">This template needs your photo/); assert.match(rendered, /<p class="[^"]*@xs:hidden\b[^"]*">Needs your photo/); }
+    }
+  }
+}));

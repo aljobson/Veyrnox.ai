@@ -1,3 +1,6 @@
+import { SYNTX_100_VIDEO_RECORDS } from '../app/veyrnox/_lib/syntx100VideoRecords.js';
+import { SYNTX_100_IMAGE_RECORDS } from '../app/veyrnox/_lib/syntx100ImageRecords.js';
+const SYNTX_100_RECORDS = { ...SYNTX_100_VIDEO_RECORDS, ...SYNTX_100_IMAGE_RECORDS };
 import { HF_REPLACEMENTS_RECORDS } from '../app/veyrnox/_lib/higgsfieldReplacementRecords.js';
 import { SYNTX_REPLACEMENTS_RECORDS } from '../app/veyrnox/_lib/syntxReplacementRecords.js';
 import test from 'node:test';
@@ -21,9 +24,10 @@ test('every detected raw-prompt hygiene match is inventoried without altering ca
     ['higgsfield-category-fill-30', HIGGSFIELD_CATEGORY_FILL_RECORDS, 28],
     ['higgsfield-replacements-12', HF_REPLACEMENTS_RECORDS, 11],
     ['syntx-replacements-4', SYNTX_REPLACEMENTS_RECORDS, 3],
+    ['syntx-100-exact', SYNTX_100_RECORDS, 96],
   ]) {
     assert.equal(Object.keys(records).length, count);
-    const audit = JSON.parse(readFileSync(new URL('../docs/product/source-audit/' + name + (name.includes('replacements') ? '-2026-11-07.json' : '-2026-11-05.json'), import.meta.url)));
+    const audit = JSON.parse(readFileSync(new URL('../docs/product/source-audit/' + name + (name === 'syntx-100-exact' ? '-2026-11-13.json' : name.includes('replacements') ? '-2026-11-07.json' : '-2026-11-05.json'), import.meta.url)));
     assert.deepEqual(audit.publicPromptHygiene, publicPromptHygiene(Object.entries(records).map(([id, r]) => ({id, prompt:r.prompt}))), name);
   }
   assert.deepEqual(promptHygieneKinds(HIGGSFIELD_300_SOURCE_PROMPT_RECORDS['community-interactive-ar-showroom'].prompt), ['address', 'handle']);
@@ -37,7 +41,7 @@ test('shared source audit parser includes all four reference-number conventions'
   assert.equal(referenceCount('video_2.mov', 'video'), 2);
 });
 
-test('source-reference-gaps inventory equals the detector across all five captures', () => {
+test('source-reference-gaps inventory equals the detector across all six captures', () => {
   const ids = [];
   for (const [name, records, expected] of [
     ['higgsfield-300-exact', HIGGSFIELD_300_SOURCE_PROMPT_RECORDS, 17],
@@ -45,8 +49,9 @@ test('source-reference-gaps inventory equals the detector across all five captur
     ['higgsfield-category-fill-30', HIGGSFIELD_CATEGORY_FILL_RECORDS, 2],
     ['higgsfield-replacements-12', HF_REPLACEMENTS_RECORDS, 0],
     ['syntx-replacements-4', SYNTX_REPLACEMENTS_RECORDS, 0],
+    ['syntx-100-exact', SYNTX_100_RECORDS, 2],
   ]) {
-    const audit = JSON.parse(readFileSync(new URL('../docs/product/source-audit/' + name + (name.includes('replacements') ? '-2026-11-07.json' : '-2026-11-05.json'), import.meta.url)));
+    const audit = JSON.parse(readFileSync(new URL('../docs/product/source-audit/' + name + (name === 'syntx-100-exact' ? '-2026-11-13.json' : name.includes('replacements') ? '-2026-11-07.json' : '-2026-11-05.json'), import.meta.url)));
     const input = audit.records.map(r => ({ id: r.id, prompt: records[r.id].prompt, inputAssetCount: r.inputAssetCount }));
     assert.deepEqual(audit['source-reference-gaps'], sourceReferenceGaps(input), name);
     assert.equal(audit['source-reference-gaps'].count, expected, name);
@@ -59,7 +64,7 @@ test('source-reference-gaps inventory equals the detector across all five captur
 });
 
 test('ending triage keeps ambiguous and origin-stripped endings and rejects only the reviewed clipped list', () => {
-  const records = [HIGGSFIELD_300_SOURCE_PROMPT_RECORDS, SYNTX_64_SOURCE_PROMPT_RECORDS, HIGGSFIELD_CATEGORY_FILL_RECORDS, HF_REPLACEMENTS_RECORDS, SYNTX_REPLACEMENTS_RECORDS];
+  const records = [HIGGSFIELD_300_SOURCE_PROMPT_RECORDS, SYNTX_64_SOURCE_PROMPT_RECORDS, HIGGSFIELD_CATEGORY_FILL_RECORDS, HF_REPLACEMENTS_RECORDS, SYNTX_REPLACEMENTS_RECORDS, SYNTX_100_RECORDS];
   const endings = records.flatMap(batch => sourcePromptEndingReview(Object.entries(batch).map(([id, r]) => ({ id, prompt: r.prompt }))).inventory);
   assert.deepEqual(endings.filter(r => r.status === 'clipped'), []);
   const dragon = endings.find(r => r.id === 'community-dragon-summoner');
@@ -75,7 +80,7 @@ test('ending triage keeps ambiguous and origin-stripped endings and rejects only
   assert.equal(sourcePromptEnding({ id: dragon.id, prompt: HIGGSFIELD_300_SOURCE_PROMPT_RECORDS[dragon.id].prompt }), null, 'generic detector does not encode a named record judgment');
 });
 
-test('ending-review inventories equal the detector and reviewed list across all five captures', () => {
+test('ending-review inventories equal the detector and reviewed list across all six captures', () => {
   let unpunctuated = 0;
   const reviewed = [];
   for (const [name, records] of [
@@ -84,14 +89,15 @@ test('ending-review inventories equal the detector and reviewed list across all 
     ['higgsfield-category-fill-30', HIGGSFIELD_CATEGORY_FILL_RECORDS],
     ['higgsfield-replacements-12', HF_REPLACEMENTS_RECORDS],
     ['syntx-replacements-4', SYNTX_REPLACEMENTS_RECORDS],
+    ['syntx-100-exact', SYNTX_100_RECORDS],
   ]) {
-    const audit = JSON.parse(readFileSync(new URL('../docs/product/source-audit/' + name + (name.includes('replacements') ? '-2026-11-07.json' : '-2026-11-05.json'), import.meta.url)));
+    const audit = JSON.parse(readFileSync(new URL('../docs/product/source-audit/' + name + (name === 'syntx-100-exact' ? '-2026-11-13.json' : name.includes('replacements') ? '-2026-11-07.json' : '-2026-11-05.json'), import.meta.url)));
     const output = sourcePromptEndingReview(Object.entries(records).map(([id, r]) => ({ id, prompt: r.prompt })));
     assert.deepEqual(audit['ending-review'], output, name);
     unpunctuated += output.ambiguousUnpunctuatedCount;
     reviewed.push(...output.inventory.filter(r => r.kind === 'reviewed').map(({ id, reason }) => ({ id, reason })));
   }
-  assert.equal(unpunctuated, 74);
+  assert.equal(unpunctuated, 74 + 16);
   assert.deepEqual(reviewed, REVIEWED_AMBIGUOUS_ENDINGS, 'every separately reviewed ID is present exactly once');
 });
 
