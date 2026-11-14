@@ -52,6 +52,9 @@ await c.query('BEGIN');
 try {
     const migration = await readFile(new URL('../packages/db/schema/supabase/0351_delete_user_job.sql', import.meta.url), 'utf8');
     await c.query('SAVEPOINT again'); await c.query(migration); await c.query(migration); await c.query('RELEASE SAVEPOINT again');
+    // The function production runs: 0508 on top of 0351, applied twice to prove it is replay-safe.
+    const latest = await readFile(new URL('../packages/db/schema/supabase/0508_library_delete_settled_jobs.sql', import.meta.url), 'utf8');
+    await c.query('SAVEPOINT latest'); await c.query(latest); await c.query(latest); await c.query('RELEASE SAVEPOINT latest');
 
     const alice = await signUp();
     const bob = await signUp();
