@@ -15,7 +15,7 @@ import { appCache, getCacheUser, subscribeCacheUser } from '../../../lib/appCach
 import { fetchCatalogCached, type CatalogModel } from '../../../lib/media';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { accessibleStage, emptyFilm, FILM_STAGES, stageIssues, type Film } from '../../../lib/filmStudio';
 import { clearOpenedFilm, getActiveCloudLink, getFilmGeneration, loadActiveStudio } from '../../../lib/filmCloud';
@@ -140,7 +140,7 @@ export default function FilmWorkspace() {
                     </Pressable>;
                 })}
             </ScrollView>
-            <ScrollView keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets keyboardDismissMode="interactive" contentContainerStyle={styles.content}>
+            <ScrollView keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'} contentContainerStyle={styles.content}>
                 <View style={styles.titleRow}>
                     <View style={{ flex: 1 }}><Text style={styles.kicker}>{t('film.sTAGEOF7', { value1: stage + 1 })}</Text><Text style={styles.title} accessibilityRole="header">{FILM_STAGES[stage][1]}</Text></View>
                     <Pressable accessibilityRole="button" style={styles.smallButton} onPress={newFilm}><Text style={styles.smallButtonText}>{t('film.new')}</Text></Pressable>

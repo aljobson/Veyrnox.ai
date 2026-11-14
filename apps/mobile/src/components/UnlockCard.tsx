@@ -5,6 +5,7 @@ import { useBilling } from '../billing/BillingProvider';
 import { touchTarget } from '../lib/a11y';
 import { renewalTerms, toDisplayPackages } from '../lib/billing';
 import { t } from '../lib/i18n';
+import { useAnnouncement } from '../lib/useAnnouncement';
 import { VeyCardPeek, peekRoom } from './VeyCardPeek';
 import { colors } from '../theme';
 
@@ -21,8 +22,10 @@ export function UnlockCard({ feature, onUnlocked }: { feature: LockedFeature; on
     const [message, setMessage] = useState<string | null>(null);
 
     const plans = toDisplayPackages(offerings?.all.publish?.availablePackages ?? []).filter((p) => p.interval !== null);
-    const chosen = plans.find((p) => p.id === (selected ?? plans.find((x) => x.interval === 'year')?.id)) ?? null;
+    const chosen = plans.find((p) => p.id === (selected ?? (plans.find((x) => x.interval === 'year') ?? plans[0])?.id)) ?? null;
     const canBuy = status === 'ready' && plans.length > 0;
+
+    useAnnouncement(t(`unlock.${feature}.body`), { onMount: true });
 
     async function subscribe() {
         const pkg = offerings?.all.publish?.availablePackages.find((p) => p.identifier === chosen?.id);

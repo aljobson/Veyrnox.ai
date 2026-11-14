@@ -17,7 +17,7 @@ export default {
     "publish.1Creation": "1. Creation",
     "publish.nofinishedimagesorvideosyetMake": "No finished images or videos yet. Make one in Create first.",
     "publish.2Accounts": "2. Accounts",
-    "publish.noconnectedaccountcanpostayet": "No connected account can post a {value1} yet. Connect one on veyrnox.ai.",
+    "publish.noconnectedaccountcanpostayet": "No connected account can post {value1} files yet. Connect one on veyrnox.ai.",
     "publish.3Text": "3. Text",
     "publish.writethecaption": "Write the caption",
     "publish.caption": "Caption",

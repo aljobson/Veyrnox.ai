@@ -14,6 +14,7 @@ import { ComposePresets } from '../../../components/publish/ComposePresets';
 import { brandStore } from '../../../lib/publishBrand';
 import { presetScopeToken } from '../../../lib/publishPresets';
 import { PublishMediaSelection } from '../../../components/PublishMediaSelection';
+import { PlanLocked } from '../../../components/publish/PlanLocked';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -206,9 +207,9 @@ export default function Compose() {
         }
     }
 
-    if (role !== null && !canPublish(role)) return <View style={styles.screen}><ThemedText>{t('publishParity.compose.readOnly')}</ThemedText></View>;
-    if (error) return <View style={styles.screen}><Text style={styles.error}>{error}</Text></View>;
-    if (role === null || !gates || !picks || !accounts) return <View style={styles.screen}><ActivityIndicator color={colors.accent} /></View>;
+    if (role !== null && !canPublish(role)) return <View style={styles.screen}><Stack.Screen options={{ title: t('publish.newpost') }} /><ThemedText>{t('publishParity.compose.readOnly')}</ThemedText></View>;
+    if (error) return <View style={styles.screen}><Stack.Screen options={{ title: t('publish.newpost') }} /><Text style={styles.error}>{error}</Text></View>;
+    if (role === null || !gates || !picks || !accounts) return <View style={styles.screen}><Stack.Screen options={{ title: t('publish.newpost') }} /><ActivityIndicator color={colors.accent} /></View>;
 
     return (
         <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
@@ -255,7 +256,7 @@ export default function Compose() {
                         <TextInput style={styles.input} multiline value={text} onChangeText={setText} placeholder={t('publish.writethecaption')} accessibilityLabel={t('publish.caption')} placeholderTextColor={colors.muted} maxLength={MAX_TEXT} />
                         <Text style={styles.muted}>{text.length} / {MAX_TEXT}</Text>
                         {warn ? <Text style={styles.warn}>{warn}</Text> : null}
-                        {gates.variants ? <NetworkTextFields networks={networks} values={networkText} onChange={(n, v) => setNetworkText((m) => ({ ...m, [n]: v }))} /> : <ThemedText tone="secondary">{t(freePlan ? 'publishCompose.differenttextforeachnetworkneedsthe' : 'publishLinks.variantsOffNote')}</ThemedText>}
+                        {gates.variants ? <NetworkTextFields networks={networks} values={networkText} onChange={(n, v) => setNetworkText((m) => ({ ...m, [n]: v }))} /> : freePlan ? <PlanLocked message={t('publishCompose.differenttextforeachnetworkneedsthe')} /> : <ThemedText tone="secondary">{t('publishLinks.variantsOffNote')}</ThemedText>}
                         <NetworkPreviews api={api} accounts={selected} choice={chosen} text={text} networkText={networkText} variants={gates.variants} />
                         {showYoutube ? gates.youtubeVisibility ? <><YoutubeVisibilityChips value={ytVisibility} onChange={setYtVisibility} /><ThemedText tone="secondary">{t(`publishParity.youtube.${ytVisibility}`)}</ThemedText><ThemedText tone="secondary">{t('publishParity.youtube.only')}</ThemedText></> : <ThemedText tone="secondary">{t('publishParity.youtube.publicDefault')}</ThemedText> : null}
 

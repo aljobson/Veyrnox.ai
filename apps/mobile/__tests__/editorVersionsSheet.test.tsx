@@ -64,7 +64,7 @@ test('lists current and restored-from, loads older, previews clip count and conf
     await open(); expect(text('Version 4 (current)').length).toBeGreaterThan(0);
     expect(root.container.queryAll(node => node.children.some(child => typeof child === 'string' && child.includes('Restored from version 2'))).length).toBeGreaterThan(0);
     await press('Load older'); await row('Version 2'); expect(text('0 clips').length).toBeGreaterThan(0);
-    await press('Restore'); expect(Alert.alert).toHaveBeenCalledWith(t('projects.restoreversion'), t('projects.thissavesanewversioncopiedfrom'), expect.any(Array));
+    await press('Restore'); expect(Alert.alert).toHaveBeenCalledWith(t('projects.restoreversion', { value1: 2 }), t('projects.thissavesanewversioncopiedfrom'), expect.any(Array));
     await act(async () => jest.mocked(Alert.alert).mock.calls.at(-1)![2]![1].onPress!());
     expect(JSON.parse(puts()[0][1].body)).toEqual({ expected_revision: 4, restore_revision: 2 });
     expect(puts()[0][1].headers['Idempotency-Key']).toBeTruthy(); expect(session.document?.brief).toBe('restored'); expect(session.revision).toBe(5);

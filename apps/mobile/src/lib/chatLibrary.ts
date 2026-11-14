@@ -140,7 +140,8 @@ export function chatLibraryErrorMessage(err: unknown): string {
     if (code === 'invalid_persona_name') return t('chatLibrary.thatpersonanameisnotallowedUse');
     if (code === 'invalid_instructions') return t('chatLibrary.checktheinstructionstheycannotbeempty');
     if (code === 'invalid_name') return t('chatLibrary.thatnameisnotallowedUse1');
-    if (code === 'FOLDER_LIMIT') return t('chatLibrary.youhavetoomanyfoldersDeleteone');
+    if (code === 'folder_exists' || code === 'FOLDER_EXISTS') return t('chatLibrary.afolderwiththatnamealreadyexists');
+    if (code === 'FOLDER_LIMIT' || code === 'folder_limit') return t('chatLibrary.youhavetoomanyfoldersDeleteone');
     if (code === 'persona_exists') return t('chatLibrary.youalreadyhaveapersonawiththat');
     if (code === 'personas_unavailable') return t('chatLibrary.personasarenotavailableyet');
     if (code === 'persona_not_found' || code === 'folder_not_found') return t('chatLibrary.thatisnolongerthere');

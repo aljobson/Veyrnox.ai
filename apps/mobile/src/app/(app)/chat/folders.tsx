@@ -32,10 +32,14 @@ export default function Folders() {
     async function save() {
         const checked = validateFolderName(name);
         if (!checked.ok) return setProblem(checked.message);
+        if (editing && checked.value === editing.name) { setEditing(null); setName(''); setProblem(null); return; }
         setBusy(true);
         try {
-            if (editing) await renameFolder(api, editing.id, checked.value);
-            else await createFolder(api, checked.value);
+            if (editing) {
+                await renameFolder(api, editing.id, checked.value);
+                // Show the new name at once; the reload below confirms it from the server.
+                setFolders((list) => (list ?? []).map((f) => (f.id === editing.id ? { ...f, name: checked.value } : f)));
+            } else await createFolder(api, checked.value);
             setName('');
             setEditing(null);
             await load();

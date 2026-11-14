@@ -6,7 +6,7 @@ import { appCache, bindCacheUser, getCacheUser, resetCacheUser, wipeCache } from
 import * as cloud from '../src/lib/filmCloud';
 import * as store from '../src/lib/filmStudioStore';
 import { emptyFilm, FILM_STAGES, parseFilm, SHOT_LANES, stageIssues, type Film } from '../src/lib/filmStudio';
-import { newShot } from '../src/lib/filmStudioOptions';
+import { fillShotDefaults, newShot, scriptBeats } from '../src/lib/filmStudioOptions';
 import type { CatalogModel } from '../src/lib/media';
 import { t } from '../src/lib/i18n';
 const mockRequest = jest.fn(), mockApi = { request: mockRequest };
@@ -71,24 +71,61 @@ test('the shot list shows Shot 1, Shot 2 while the stored id stays the raw id', 
     const film = ready(); film.shots = [newShot(film)]; film.shots.push(newShot({ ...film, shots: film.shots }));
     await mount(film); await stage(2);
     expect(controls('button').some(n => String(n.props.accessibilityLabel ?? '').startsWith(`${t('filmWorkspace.shotCards')}, ${t('filmWorkspace.shotLabel', { value1: 1 })}`))).toBe(true);
-    expect(has('sc01-sh01')).toBe(true); // the ID field still holds the stored value
+    expect(field(t('filmStudio.sceneshotID')).props.value).toBe('sc01-sh01');
     await tick(); expect((await saved())?.shots.map(s => s.id)).toEqual(['sc01-sh01', 'sc01-sh02']);
 });
 test('Fill sensible defaults fills only empty fields, keeps typed values and leaves the one-action box for the user', async () => {
     await mount(ready()); await stage(2); await press(t('film.addshot'));
-    expect(stageIssues(ready(), 2)).toBeDefined();
+    await tick();
+    expect(stageIssues((await saved())!, 2).length).toBeGreaterThan(1);
     await type(t('filmStudio.description'), 'Maya pours the first coffee. She smiles.');
     await type(t('filmStudio.timeofday'), 'Dusk');
+    const requestsBefore = mockRequest.mock.calls.length, catalogCallsBefore = mockFetch.mock.calls.length;
     await press(t('filmWorkspace.fillDefaults'));
-    expect(has(t('filmWorkspace.defaultsFilled', { value1: 15 }))).toBe(true);
+    expect(has(t('filmWorkspace.defaultsFilledRemaining', { value1: 14, value2: 1 }))).toBe(true);
+    await tick(100);
+    expect(RN.AccessibilityInfo.announceForAccessibility).toHaveBeenCalledWith(t('filmWorkspace.defaultsFilledRemaining', { value1: 14, value2: 1 }));
     expect(field(t('filmStudio.timeofday')).props.value).toBe('Dusk');
     expect(field(t('filmStudio.description')).props.value).toBe('Maya pours the first coffee. She smiles.');
-    expect(field(t('filmStudio.shotgoal')).props.value).toBe('Show: Maya pours the first coffee.');
-    expect(field(t('filmStudio.locationasset')).props.value).toBe('@location:v1');
+    expect(field(t('filmStudio.shotgoal')).props.value).toBe('Show: Maya pours the first coffee. She smiles.');
+    expect(field(t('filmStudio.locationasset')).props.value).toBe('');
+    expect(mockRequest).toHaveBeenCalledTimes(requestsBefore);
+    expect(mockFetch).toHaveBeenCalledTimes(catalogCallsBefore);
     await tick();
     const shot = (await saved())!.shots[0];
     expect(shot.oneAction).toBe(false);
-    expect(stageIssues((await saved())!, 2)).toEqual(['sc01-sh01: ' + t('filmStudio.confirmthattheclipcontainsoneaction')]);
+    const issues = stageIssues((await saved())!, 2);
+    expect(issues).toContain('sc01-sh01: ' + t('filmStudio.confirmthattheclipcontainsoneaction'));
+    expect(issues.some(issue => issue.endsWith(t('filmStudio.useanexactlocationtagandversion')))).toBe(true);
     await press(t('filmWorkspace.fillDefaults'));
-    expect(has(t('filmWorkspace.defaultsNone'))).toBe(true);
+    expect(has(t('filmWorkspace.defaultsRemaining', { value1: 1 }))).toBe(true);
+});
+test('Fill sensible defaults reuses a real location and preserves missing validation without a real beat', () => {
+    const film = ready(); film.script = '';
+    film.assets.push({ tag: '@room', version: 1, type: 'location', descriptor: '', references: [], tests: {} });
+    const first = newShot(film); first.location = '@room:v1';
+    film.shots = [first]; const second = newShot(film); film.shots.push(second);
+    const result = fillShotDefaults(film, 1);
+    expect(result.film.shots[1].location).toBe('@room:v1');
+    expect(result.film.shots[1].description).toBe('');
+    expect(result.film.shots[1].goal).toBe('');
+    expect(result.film.shots[1].oneAction).toBe(false);
+});
+test('Fill sensible defaults does not copy an invalid location value', () => {
+    const film = ready(); const first = newShot(film); first.location = 'kitchen';
+    film.shots = [first]; const second = newShot(film); film.shots.push(second);
+    const result = fillShotDefaults(film, 1);
+    expect(result.film.shots[1].location).toBe('');
+    expect(result.remaining).toBeGreaterThan(0);
+});
+test('Fill sensible defaults selects the script beat at the shot position', () => {
+    const film = ready(); film.script = 'Maya wakes.\nShe pours coffee.';
+    film.shots = [newShot(film)]; film.shots.push(newShot(film));
+    const first = fillShotDefaults(film, 0), second = fillShotDefaults(film, 1);
+    expect(first.film.shots[0].description).toBe('Maya wakes.');
+    expect(second.film.shots[1].description).toBe('She pours coffee.');
+});
+test('script beats preserve abbreviations and decimals while excluding screenplay headings', () => {
+    expect(scriptBeats('INT. KITCHEN - DAY\nMAYA\n(quietly)\nGood morning.\nMaya crosses the room.\nCUT TO:\nDr. Reyes walks 3.5 metres.\n第三段。\nمشهد هادئ.\nदृश्य शांत है।'))
+        .toEqual(['Maya crosses the room.', 'Dr. Reyes walks 3.5 metres.', '第三段。', 'مشهد هادئ.', 'दृश्य शांत है।']);
 });

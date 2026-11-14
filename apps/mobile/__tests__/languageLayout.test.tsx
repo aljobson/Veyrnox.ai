@@ -14,6 +14,9 @@ import { DEFAULT_APPEARANCE } from '../src/theme';
 let mockStored: string | null = null;
 let mockStatus = 'signedOut';
 const mockBack = jest.fn();
+declare const __dirname: string;
+const mockReplace = jest.fn();
+let mockCanGoBack = true;
 const mockScreens: any[] = [];
 const spanish = CATALOGS.es as Record<string, string>;
 const originalTab = spanish['tabs.library'];
@@ -29,7 +32,7 @@ jest.mock('expo-router', () => {
     const React = require('react');
     const Tabs = ({ children }: any) => React.createElement('tabs', null, children);
     Tabs.Screen = (props: any) => { mockScreens.push(props); return null; };
-    return { Tabs, useGlobalSearchParams: () => ({}), useSegments: () => [], usePathname: () => '/sign-in', useRouter: () => ({ back: mockBack }) };
+    return { Tabs, useGlobalSearchParams: () => ({}), useSegments: () => [], usePathname: () => '/sign-in', useRouter: () => ({ back: mockBack, replace: mockReplace, canGoBack: () => mockCanGoBack }) };
 });
 jest.mock('../src/components/HeaderChips', () => ({ HeaderRight: () => null }));
 jest.mock('../src/components/Logo', () => ({ Logo: () => null }));
@@ -49,7 +52,7 @@ jest.mock('../src/components/ui', () => {
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
 void [RN.View, RN.ScrollView, DEFAULT_APPEARANCE];
 let root: Root;
-beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; mockStored = null; mockStatus = 'signedOut'; jest.clearAllMocks(); mockScreens.length = 0; spanish['tabs.library'] = 'Biblioteca'; setLocaleFromDevice(['en']); root = createRoot(); });
+beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; mockStored = null; mockStatus = 'signedOut'; jest.clearAllMocks(); mockCanGoBack = true; mockScreens.length = 0; spanish['tabs.library'] = 'Biblioteca'; setLocaleFromDevice(['en']); root = createRoot(); });
 afterEach(async () => { await act(async () => root.unmount()); if (originalTab === undefined) delete spanish['tabs.library']; else spanish['tabs.library'] = originalTab; });
 test('reloading an already mounted LTR layout remounts its titles and accessibility labels in Spanish', async () => {
     await act(async () => root.render(<TabsLayout />));
@@ -101,6 +104,28 @@ test('Account chooser returns on reselecting the current language without storag
     expect(mockBack).toHaveBeenCalledTimes(1);
     expect(saveLanguage).not.toHaveBeenCalled();
     expect(reloadAppAsync).not.toHaveBeenCalled();
+});
+test('after a reload nothing is behind the screen: Continue goes to Account instead of doing nothing', async () => {
+    mockStatus = 'signedIn';
+    mockCanGoBack = false;
+    await act(async () => root.render(<LanguageChoice active={['en', 'es']} returnPath="/account" />));
+    await act(async () => root.container.queryAll(n => n.type === 'button')[0].props.onPress());
+    expect(mockBack).not.toHaveBeenCalled();
+    expect(mockReplace).toHaveBeenCalledWith('/account');
+});
+test('Account chooser lists all eleven languages and applies a pick only on Continue', async () => {
+    mockStatus = 'signedIn';
+    await act(async () => root.render(<LanguageChoice returnPath="/account" />));
+    const chips = () => root.container.queryAll(n => n.type === 'chip');
+    expect(chips()).toHaveLength(11);
+    await act(async () => chips()[5].props.onPress());
+    expect(chips()[5].props.selected).toBe(true);
+    expect(getLocale()).toBe('en');
+    expect(reloadAppAsync).not.toHaveBeenCalled();
+});
+test('the language screen returns to Account after a reload', () => {
+    const src = require('fs').readFileSync(require('path').join(__dirname, '../src/app/(app)/language.tsx'), 'utf8');
+    expect(src).toContain('returnPath="/account"');
 });
 test('first launch fades the brand page into the language choice, which sits underneath from the start', async () => {
     await act(async () => root.render(<LanguageGate active={['en', 'es']}><RN.Text>Sign-in fixture</RN.Text></LanguageGate>));

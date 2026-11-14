@@ -1,6 +1,8 @@
 import { rawText } from '../../../lib/i18n/translate';
 import { usePublishScope } from '../../../lib/usePublishScope';
 import { Text as StatusText } from '../../../components/ui/Text';
+import { PlanLocked } from '../../../components/publish/PlanLocked';
+import { isPlanLockMessage } from '../../../lib/publishPlanLocked';
 import { Stack } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -137,7 +139,7 @@ export default function TeamScreen() {
         <ScrollView style={styles.screen} contentContainerStyle={styles.body} refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.accent} onRefresh={async () => { setRefreshing(true); await load(); }} />}>
             <Stack.Screen options={{ title: t('team.title') }} />
             {error ? (
-                <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{error}</StatusText>
+                isPlanLockMessage(error) ? <PlanLocked message={error} /> : <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{error}</StatusText>
             ) : !team ? (
                 <ActivityIndicator color={colors.accent} />
             ) : (

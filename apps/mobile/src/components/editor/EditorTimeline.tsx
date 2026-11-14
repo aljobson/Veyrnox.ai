@@ -12,7 +12,7 @@ import { useReducedMotion } from '../ui/useReducedMotion';
 import { styles } from './fullEditorStyles';
 
 type Props = {
-    timeline: Timeline; selections: readonly Selection[]; ppf: number; total: number; frame: number; playing: boolean; snap: boolean;
+    timeline: Timeline; selections: readonly Selection[]; ppf: number; total: number; frame: number; playing: boolean; snap: boolean; ripple?: 'none' | 'lane' | 'all';
     onGestureActive?(active: boolean): void;
     // A picture of the clip's source, shown at the start of the clip block. Absent: text only.
     clipThumb?(mediaId: string): ReactNode;
@@ -26,7 +26,7 @@ type Gesture = {
 const ROW = 56;
 const position = (item: Clip | TextClip, ppf: number) => ({ position: 'absolute' as const, left: item.start * ppf, top: 6, width: Math.max(8, item.len * ppf - 2), height: 44 });
 
-export function EditorTimeline({ timeline, selections, ppf, total, frame, playing, snap, onSeek, onSelect, onApply, onViewport, onGestureActive, clipThumb }: Props) {
+export function EditorTimeline({ timeline, selections, ppf, total, frame, playing, snap, ripple, onSeek, onSelect, onApply, onViewport, onGestureActive, clipThumb }: Props) {
     const scroller = useRef<ComponentRef<typeof ScrollView>>(null);
     const gesture = useRef<Gesture | null>(null);
     const sentActive = useRef(false), gestureCallback = useRef(onGestureActive); gestureCallback.current = onGestureActive;
@@ -73,7 +73,7 @@ export function EditorTimeline({ timeline, selections, ppf, total, frame, playin
         }
         const delta = Math.round(dx / ppf);
         const item = clipAt(g.timeline, g.selection)!;
-        if (g.edge) g.preview = trimItem(g.timeline, g.selection, g.edge, delta, snap, frame);
+        if (g.edge) g.preview = trimItem(g.timeline, g.selection, g.edge, delta, snap, frame, ripple);
         else {
             const row = Math.floor((g.row * ROW + g.offset + dy) / ROW);
             const target = g.timeline.tracks[row];
@@ -155,7 +155,7 @@ export function EditorTimeline({ timeline, selections, ppf, total, frame, playin
                                 {active && !track.locked && canTrim(item) ? (['in', 'out'] as const).map(edge => <View key={edge} testID={`trim-${item.id}-${edge}`} style={[local.handle, edge === 'in' ? { left: 0 } : { right: 0 }]} hitSlop={{ top: 0, bottom: 0, left: 14, right: 14 }}
                                     accessibilityRole="adjustable" accessibilityLabel={rawText(edge === 'in' ? t('editorCore.trimStart', { name }) : t('editorCore.trimEnd', { name }))}
                                     accessibilityValue={{ text: formatTimecode(edge === 'in' ? item.start : item.start + item.len, timeline.fps) }} accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
-                                    onAccessibilityAction={event => commit(trimItem(timeline, selection, edge, event.nativeEvent.actionName === 'increment' ? 1 : -1, false, frame))}
+                                    onAccessibilityAction={event => commit(trimItem(timeline, selection, edge, event.nativeEvent.actionName === 'increment' ? 1 : -1, false, frame, ripple))}
                                     onStartShouldSetResponder={() => true} onResponderGrant={event => begin(event, selection, row, edge)} onResponderMove={move} onResponderRelease={release}
                                     onResponderTerminationRequest={() => false} onResponderTerminate={cancel}><View pointerEvents="none" style={local.handleLine} /></View>) : null}
                             </View>;

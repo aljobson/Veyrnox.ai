@@ -32,7 +32,7 @@ export function FilmPromptsStage({ film, change, catalog, live }: StageProps) {
         } catch (e) { setError(filmErrorText(e)); }
     };
     return <View style={{ gap: 16 }}>
-        <FilmSelect label={t('film.shot')} value={shot.id} options={film.shots.map(s => ({ value: s.id, label: s.id }))} onChange={v => {
+        <FilmSelect label={t('film.shot')} value={shot.id} options={film.shots.map((s, index) => ({ value: s.id, label: `${t('filmWorkspace.shotLabel', { value1: index + 1 })} · ${s.id}` }))} onChange={v => {
             setSelected(v); setDetails({}); setRevision(null); setResult(''); setChanged(t('filmOutput.first')); setVerdict('rejected'); setChecks([]); setError('');
         }} />
         {!current ? <>
