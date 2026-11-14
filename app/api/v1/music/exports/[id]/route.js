@@ -8,8 +8,9 @@ const DOWNLOAD_TTL_SECONDS = 300;
 const FORMAT_MIME_TYPES = Object.freeze({
     mp3: new Set(['audio/mpeg', 'audio/mp3']),
     wav: new Set(['audio/wav', 'audio/x-wav', 'audio/wave']),
+    flac: new Set(['audio/flac', 'audio/x-flac']),
 });
-const CANONICAL_MIME_TYPES = Object.freeze({ mp3: 'audio/mpeg', wav: 'audio/wav' });
+const CANONICAL_MIME_TYPES = Object.freeze({ mp3: 'audio/mpeg', wav: 'audio/wav', flac: 'audio/flac' });
 const reply = (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
 
 export async function GET(request, { params }) {
