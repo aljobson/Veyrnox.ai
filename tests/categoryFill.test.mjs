@@ -1,3 +1,4 @@
+import { SYNTX_100_VIDEO_RECORDS } from '../app/veyrnox/_lib/syntx100VideoRecords.js';
 import { IMAGE_SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/imageSourcePromptRecords.js';
 import { HF_REPLACEMENTS_RECORDS } from '../app/veyrnox/_lib/higgsfieldReplacementRecords.js';
 import { SYNTX_REPLACEMENTS_RECORDS } from '../app/veyrnox/_lib/syntxReplacementRecords.js';
@@ -50,7 +51,7 @@ test('category fill preserves the 800 surviving baseline templates and their vis
   const oldPlacements = Object.fromEntries(baseline.visualPlacementIds.map(id => [id, visual.placements[baseline.publicIdRenames[id]?.id || id] || baseline.rejectedVisualPlacements[id]]));
   assert.equal(sha(JSON.stringify(oldPlacements)), baseline.visualPlacementsSha256);
   assert.deepEqual(Object.keys(visual.placements).sort(), Object.keys(AUDIT_SHOWCASE_CLIPS).sort());
-  assert.equal(new Set(Object.values(visual.placements).map(v => v.signature)).size, 931);
+  assert.equal(new Set(Object.values(visual.placements).map(v => v.signature)).size, 931 + 46);
 });
 
 test('28 accepted category records preserve exact text, manifest categories and existing model guidance', () => {
@@ -165,7 +166,7 @@ test('the incomplete record remains rejected, with hashes but no prompt or media
 });
 
 test('source record registry contains every module key without collisions', () => {
-  const modules = [IMAGE_SOURCE_PROMPT_RECORDS, GENJUTSU_SOURCE_PROMPT_RECORDS, HIGGSFIELD_90_SOURCE_PROMPT_RECORDS, HIGGSFIELD_300_SOURCE_PROMPT_RECORDS, SYNTX_SOURCE_PROMPT_RECORDS, SEEDANCE_SOURCE_PROMPT_RECORDS, SYNTX_64_SOURCE_PROMPT_RECORDS, HIGGSFIELD_CATEGORY_FILL_RECORDS, HF_REPLACEMENTS_RECORDS, SYNTX_REPLACEMENTS_RECORDS];
+  const modules = [SYNTX_100_VIDEO_RECORDS, IMAGE_SOURCE_PROMPT_RECORDS, GENJUTSU_SOURCE_PROMPT_RECORDS, HIGGSFIELD_90_SOURCE_PROMPT_RECORDS, HIGGSFIELD_300_SOURCE_PROMPT_RECORDS, SYNTX_SOURCE_PROMPT_RECORDS, SEEDANCE_SOURCE_PROMPT_RECORDS, SYNTX_64_SOURCE_PROMPT_RECORDS, HIGGSFIELD_CATEGORY_FILL_RECORDS, HF_REPLACEMENTS_RECORDS, SYNTX_REPLACEMENTS_RECORDS];
   const keys = modules.flatMap(records => Object.keys(records));
   assert.equal(new Set(keys).size, keys.length, 'source modules must not overwrite each other');
   assert.deepEqual(Object.keys(SOURCE_PROMPT_RECORDS).sort(), keys.sort());

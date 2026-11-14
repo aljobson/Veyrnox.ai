@@ -1,0 +1,32 @@
+[
+  {
+    "slug": "wing-backflip",
+    "sourceRecordId": "01a0694c-98b6-716b-a5fc-6c38372475db",
+    "reason": "rejected by earlier host screening recorded in ADR-0325 (staged real-event realism)"
+  },
+  {
+    "slug": "bed-trap",
+    "sourceRecordId": "01a0658b-f7b4-7014-baeb-478188b239a5",
+    "reason": "rejected by earlier host screening recorded in ADR-0325 (sexualised body focus)"
+  },
+  {
+    "slug": "the-mouse-king",
+    "sourceRecordId": "01a01022-eeba-7133-a511-aa30bd366e72",
+    "reason": "rejected by earlier host screening recorded in ADR-0325 (requires a storyboard sheet no slot can supply)"
+  },
+  {
+    "slug": "classroom",
+    "sourceRecordId": "01a0117c-b842-7027-8c49-86baa9f79734",
+    "reason": "refused by the 64-batch content screen (minors term); depicts schoolchildren; not re-approved by the owner"
+  },
+  {
+    "slug": "dark-couture",
+    "sourceRecordId": "01a01433-052e-709d-9867-5f2f8845094e",
+    "reason": "Platform-word stripping removes nine SYNTX AI typography mentions, materially rewriting the community prompt."
+  },
+  {
+    "slug": "the-push-2",
+    "sourceRecordId": "01a04d51-65da-7037-9ae4-b9d8c8772ec8",
+    "reason": "two separate character references cannot be bound by any offered route"
+  }
+]

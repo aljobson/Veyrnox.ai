@@ -3724,6 +3724,190 @@
     "window-explode": {
       "frames": 5,
       "signature": "a908d9101a258267d6cd00ba8cf94129260930f21ba18b7304b90f748072129f"
+    },
+    "london-london": {
+      "frames": 12,
+      "signature": "d89640da74e4d099df1874ed83f4e6a7e0d8fed4158689986b5fc3bd1abfe579"
+    },
+    "hand-frame-switch": {
+      "frames": 8,
+      "signature": "e6da70ab9e2a70d619219719efc95b100a31d9ef5ea39e993be08304886583ff"
+    },
+    "blow-and-throw": {
+      "frames": 9,
+      "signature": "81391922fe877c0b0d63f47a8873e3cf544d8989907485020a45328dbe49af9d"
+    },
+    "light-and-blow": {
+      "frames": 10,
+      "signature": "e1837746a033cbb22dda686df9cc6311c80259857b2e9a16da3bbbce0824299c"
+    },
+    "cake-in-the-fridge": {
+      "frames": 17,
+      "signature": "7c9c0bffb746a79e8a4a289ed8b45fda2cecfc24b1e0c1a70e9c5ac7dbff3534"
+    },
+    "one-breath-wish": {
+      "frames": 8,
+      "signature": "14066deb088bff44db43429fb04a3cdcbae7d81f786db2fa73c58a23442adf2c"
+    },
+    "flaming-candle-blowout": {
+      "frames": 8,
+      "signature": "0ec29df107a613f43d6e73e36d7009f0d615d7ebb205685b8da62db2cc948581"
+    },
+    "make-a-wish": {
+      "frames": 20,
+      "signature": "03b17dac1352d272c6d367e03764d03e5a88cf19063525092fb44f78d8c32e8d"
+    },
+    "stage-performer-recast": {
+      "frames": 16,
+      "signature": "8e71534cca11e0bdfafe9320778ad9149c6cb9412e9996c0b125aa25b4cc63e5"
+    },
+    "ride-the-beat": {
+      "frames": 30,
+      "signature": "bc9f2294e66896eafdb1fa5da35f13fe98f080adde93c720afe627b2de1b8f2b"
+    },
+    "epic-arrival": {
+      "frames": 10,
+      "signature": "c45e25c013c8ffeb13f230630055774d90b1582cebd5df096d415e01b7fccd52"
+    },
+    "football-duo-recast": {
+      "frames": 8,
+      "signature": "029b1960b0881d5deae42f11cf47046d5ee923715e6c34c6406874766f3923ad"
+    },
+    "retro-groove": {
+      "frames": 20,
+      "signature": "03071d53b7f6956cf31da3ca88530ea8b029d6c100f911ce983dab34403f9bec"
+    },
+    "kick-and-run": {
+      "frames": 11,
+      "signature": "0d3973838fec6b2dd9bbd3faa1aefd05716a5479b9ff604dcaba89d7c83d16fc"
+    },
+    "surprise-knockout-kick": {
+      "frames": 14,
+      "signature": "5d68c4d630cc521e592b996f038adc76a7ab4982b49ae7f7516c1d8bf11b6307"
+    },
+    "fans-go-wild": {
+      "frames": 13,
+      "signature": "d6c8281a6ae0b627d3b5c7eedf65fd1fee75519c8ab29b1c7185b4f16ec62876"
+    },
+    "outfit-transition-gone-crazy": {
+      "frames": 7,
+      "signature": "d0988fdb7a07fa7b7624355e0f2b1f0137aa75541d8c50a16af4f6810d6cbf16"
+    },
+    "carousel": {
+      "frames": 10,
+      "signature": "c539d2514470274c501c4588eae2f80f78557c8eb708276214b884421a2b0135"
+    },
+    "wish-a-merry-christmas": {
+      "frames": 14,
+      "signature": "153c3ab38a4b61b7c6f3a5b095455c5a200a0de2f7c31387c69dfb0b18dabbe3"
+    },
+    "desert-chase": {
+      "frames": 21,
+      "signature": "006730387ec63f7ecb580d17bd13ed578e4395f7b2b9b6927c493ddd19621f4d"
+    },
+    "storybook-reality-recast": {
+      "frames": 15,
+      "signature": "b70d4b790cfacace3ae9ce3be09eec18646d619904714f2decdd429f451d7714"
+    },
+    "street-phantom": {
+      "frames": 8,
+      "signature": "4c1e1457d2ba6ce6ce264ac2d5151df051c6fd64921f52618356ed1695c83049"
+    },
+    "on-the-winter-roof": {
+      "frames": 15,
+      "signature": "257e8e8534bc694943077bee3f681088b1aa92ab74a4fd20f392c13d05502fdf"
+    },
+    "new-year-on-the-nose": {
+      "frames": 13,
+      "signature": "b602a35da60fc3377bc85061717f7af910a65c1af3c94b9e46b1101a8f2a2728"
+    },
+    "game-character-rig": {
+      "frames": 20,
+      "signature": "53297fe80c8c4c285516dfc1df4dacc2888ae0026251a20d8213336cc7c5d357"
+    },
+    "holiday-heist-run": {
+      "frames": 20,
+      "signature": "9f29ac123980c1efd5b8b489e1443ffd1ccaf5eedfff0b9b6578d5c7ac916b28"
+    },
+    "holiday-home-recast": {
+      "frames": 14,
+      "signature": "0a671f2bc9c7fd1df99f3754f6287fe844c1e3253f7924138f3113abbb30c6a5"
+    },
+    "the-winning-gift": {
+      "frames": 12,
+      "signature": "5a74eb0b224356af5b33e77a04208bbd6d21b12e39800b57135220d6d0a77b65"
+    },
+    "dance-in-the-snow": {
+      "frames": 13,
+      "signature": "60dea3f0adf6038ffb25cfb29c030e9a0dcbfd4da6e1962bbd895b82c28f2987"
+    },
+    "the-bigger-gift": {
+      "frames": 25,
+      "signature": "185ba0122eba04170706e48e171a6d529519f7c3734ca7f3f9b772e2f9bda424"
+    },
+    "one-more-dance": {
+      "frames": 25,
+      "signature": "320aef0134c92b88b87b23edde5e3e97099c41db64cb21a7517e988c609b4f23"
+    },
+    "snowball-revenge": {
+      "frames": 25,
+      "signature": "8cfcbd922cad99e919ddce4a6e7f762b670e0a20c6288baa957431ca5be5c6fe"
+    },
+    "drift-therapy": {
+      "frames": 10,
+      "signature": "d4878b44691f3958e06de6fad13079c29d02be47eb53e369593c547cb1d869ba"
+    },
+    "dj-performance": {
+      "frames": 29,
+      "signature": "f7ddf764d3b5798bdd30b5a9f4250475c3b9a82dc70d20354134bec21761034f"
+    },
+    "summer-romance-recast": {
+      "frames": 25,
+      "signature": "4e361081850a73021a531108e2d98f847e3d129829a84302cfb12e30e78d709a"
+    },
+    "athlete-flex": {
+      "frames": 9,
+      "signature": "5be545c9415166f01bdbdb2eb08ee6283262232fbeb43fb6387cd35221ce0fef"
+    },
+    "3-friends": {
+      "frames": 20,
+      "signature": "2e61bf1cce8f89fadf223177dc0b13cb4ffaea961592b6e5d46611e6c22f1b4b"
+    },
+    "landing": {
+      "frames": 16,
+      "signature": "390ebb4c4e8d0f96ce0a422dec684638fd7f537269a0346d591d1685345bf05d"
+    },
+    "fridge-down": {
+      "frames": 11,
+      "signature": "658aa2dca6dffec3ebd1fedac2a6b71e62078ec4c73a92fb9979b8bbe6a96d2c"
+    },
+    "hyenas-run": {
+      "frames": 17,
+      "signature": "0d4d21e1e8ff3d83fdbbd9aa45427eb0807cbefcb4cfcb489869dd33baf2f1a9"
+    },
+    "burn-it-to-ashes": {
+      "frames": 15,
+      "signature": "0b2698cd89badac29b40e4a27314a2b0df2cadc05bee05990e82c6655620f71d"
+    },
+    "taxi-chase": {
+      "frames": 16,
+      "signature": "b91eb3895e6e1343dcd58de0428664b0ccb4e181fa4f406538255596732fdb15"
+    },
+    "helicopter-jump": {
+      "frames": 16,
+      "signature": "ccb1b2b8f1f2700f2ed5688dd83e42e5022af684bd3bf467cdc8a5c5f1746a0e"
+    },
+    "rope-swing": {
+      "frames": 14,
+      "signature": "74eff30d19b9dfa76f18faf51a320d0a0b7e5d70d4ae2620cdb3cf6cd499c7dd"
+    },
+    "fairytale-villain-recast": {
+      "frames": 15,
+      "signature": "bc383b3a9261d7a3ff39c0ab60133b260bdd910542322420cb7938c077fe811d"
+    },
+    "helicopter-jump-two": {
+      "frames": 16,
+      "signature": "5ad52dacc81307300f252012e78bdcc24a3534732bc88e8bce8ea42838be688e"
     }
   }
 }

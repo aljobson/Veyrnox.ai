@@ -1,11 +1,11 @@
 # Landing showcase clips
 
-The current public gallery has 749 exact community templates; the homepage wall
+The current public gallery has 795 exact community templates; the homepage wall
 has 14. Seven dedicated landing placements retain their previews separately; Nano Banana is also an independent landing key sharing a retained template clip.
 Clip keys resolve through their owning templates, so `wall-event-character-swap`
 remains published while `wall-product-hero-360` is hidden with Miniature Crew.
 The explicit `model-video` and `ace-step` landing placements remain available.
-All 931 retained placements have unique shipped video/poster hashes.
+All 977 retained placements have unique shipped video/poster hashes.
 
 Community prompts are exact-only. Both API prompt fields carry the same text;
 audit compatibility is informational and never activates copy-only blocking.
@@ -260,7 +260,7 @@ five-second visual signatures also found no duplicate against the previous 58
 Syntx previews. The full evidence is in the
 [40-record machine-readable manifest](source-audit/syntx-40-2026-10-29.json).
 
-The current SHA-256 uniqueness checks cover all 841 retained source templates,
+The current SHA-256 uniqueness checks cover all 887 retained source templates,
 including 70 hidden rows: 27 promptless, 42 unavailable and one truncated.
 
 The kids-birthday expansion originally added twelve cards in a dedicated
@@ -959,3 +959,108 @@ The [replacement audit](source-audit/syntx-replacements-4-2026-11-07.json) locks
 | `red-crystal-amulet` | Red Crystal Amulet | FANTASY | [Source asset](https://r2.syntx.ai/ERP/media-library/trends/variants/lq2aV7Gb4ItVddNMCCKTuNeoLRu1MKD7qnu0R4yq.webm) | 0 s |
 | `window-explode` | Window Explode | CINEMATIC | [Source asset](https://r2.syntx.ai/ERP/media-library/trends/variants/XikI8sWIP9KVlndGx8a9qCflOHi4TN6rzcHM4lH9.webm) | 0 s |
 <!-- END SYNTX_REPLACEMENTS EXACT -->
+
+<!-- BEGIN SYNTX 100 EXACT -->
+## 13 November 2026: 46 video and 50 image Syntx captures
+
+Exact gallery media, encoded by the host and shipped by owner decision. All original and prepared asset hashes are verified offline; video previews start at 0 seconds and contain exactly one video stream with no audio or data tracks. Prompts remain byte-exact. See [the audit](source-audit/syntx-100-exact-2026-11-13.json) and [ADR-0341](../adr/0341-syntx-50-video-50-image-exact.md).
+
+| Public id | Kind | Source title | Source asset |
+| --- | --- | --- | --- |
+| london-london | video | London London | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/QNtIT9yEeNSmf9ztE46lFlN8yH8hGT6aQBx2lPrc.mp4) |
+| hand-frame-switch | video | Hand Frame Switch | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/h6YZrjHo57z2oZhBOeLmH7Wq7L5OKiYSY9aSdszZ.mp4) |
+| blow-and-throw | video | Blow and Throw | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/cZP7nxXXJRpT6E0MHsZo4iW6tg6QTzRxzUW5yToJ.mp4) |
+| light-and-blow | video | Light And Blow | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/4RXyg9iOyd7qVmJItuGs676lRZcimglwBwhDkLJI.mp4) |
+| cake-in-the-fridge | video | Cake In the Fridge | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/4HiPdzVf0fvlo95Ta1KqTkxXH0eo3pE4bf7wDC62.mp4) |
+| one-breath-wish | video | One Breath Wish | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/uhTB6BqnI75GrHz4Zp8bBv8pPpY8khGKw0qBtesc.mp4) |
+| flaming-candle-blowout | video | Flaming Candle Blowout | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/w3jKPNkV1q37aVKWwSOBpYrNZwZZ4tEJwSPZIL1h.mp4) |
+| make-a-wish | video | Make a Wish | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/OuFGuwSxYAWGfrAlCBkuUTusAq9d43kEZUK0tWYT.mp4) |
+| stage-performer-recast | video | Lil Tjan | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/iqTPYHuVcSeYendmz2mgKRqHTRZFke909c6raIeo.mp4) |
+| ride-the-beat | video | Ride the Beat | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/4IEzTNCuJKzYQiRMMHplzaIUASkz8y9vaj3wRXVY.mp4) |
+| epic-arrival | video | Epic Arrival | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/WNkYbgq8VUgowobSj5tfK22wMFOxg3XHh5y3BPRR.mp4) |
+| football-duo-recast | video | Football Legends | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/wwlheuyFvwAdAWCf1ikMuwtzweQ3ELZjLHRduCLF.mp4) |
+| retro-groove | video | Retro Groove | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/axjJVdL6Zq0lgBw0SzjzBDYpXRnNyipaUasuoww2.mp4) |
+| kick-and-run | video | Kick and Run | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/NNxQyr1DCiM2pgd5MHPVgeCVAefZUD03TWpHThNh.mp4) |
+| surprise-knockout-kick | video | Surprise Knockout Kick | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/8xN7pb4iv4Qj5RrMah61a9IKJvs9ysTlWTPcBJUk.mp4) |
+| fans-go-wild | video | Fans Go Wild | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/u5DtsHA1P2CTn5ShorFfURFj1oOWrDfITQE9TNiL.mp4) |
+| outfit-transition-gone-crazy | video | Outfit Transition Gone Crazy | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/QR26x9ggwaBXJidoLIB9RxCsTJQNAOBu6LNU90fB.mp4) |
+| carousel | video | Carousel | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/HEo4bf5dpdYgUhbZd6pTwfn0dnIoEoVgCMOgyXbq.mp4) |
+| wish-a-merry-christmas | video | Wish a Merry Christmas | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/jvCtukbilYxv9EXsOoksomsISE1XKGCXziUNQKj2.mp4) |
+| desert-chase | video | Desert Chase | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/EZonSqyrN5oUsNIgSA1iCb59IfFaWZLkaOTI0gal.mp4) |
+| storybook-reality-recast | video | Reality in Wonderland | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/AW0ryTpdlJlqOskrVTp1rCHHFzvO4yWdTbED2Xlw.mp4) |
+| street-phantom | video | Street Phantom | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/PYZ0aCtp2JhYBnqf0g6yGS4WFF14R7IP7Id9sko2.mp4) |
+| on-the-winter-roof | video | On the Winter Roof | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/4erLU0JiiVkpRaawsX3TEWeLMTcZJYYAb4Hk00DZ.mp4) |
+| new-year-on-the-nose | video | New Year on the Nose | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/uM8fl3wGRLa3z1f5CIhZY6zQAqtZ8Ifpqeq0tW8L.mp4) |
+| game-character-rig | video | Rig It Right For GTA | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/bB5mLTqwSmSXnmWwTHiBBKCD2onKVNqINYe9Rhkz.mp4) |
+| holiday-heist-run | video | Bad Santa Run | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/YSG7zKK9WiDSjTlUgFsCDxCRnt7DKMnQnFvP373L.mp4) |
+| holiday-home-recast | video | Home Alone Again | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/OomXfnTknHtFwUIGgt1QTlL4mfKmrVae756SyqIM.mp4) |
+| the-winning-gift | video | The Winning Gift | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/MbTUjn2IV5lq38rF3wpQOamYpwUKL7yTt4vIkvXk.mp4) |
+| dance-in-the-snow | video | Dance in the Snow | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/E1detIjNVEc3y0a0tB0oCvycmAGnnqENbSwZrclm.mp4) |
+| the-bigger-gift | video | The Bigger Gift | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/1SiH0gqlvYqskehe3y0MiTvPcuhdm0eK9tdHpXLk.mp4) |
+| one-more-dance | video | One More Dance | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/YKWVw079BMqhoh5r9VZnZp8J1iN2DEIrlP6WaKGO.mp4) |
+| snowball-revenge | video | Snowball Revenge | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/SSJD28WOUYJ3FAqVnM06UF9Td89NW029imXoCUN0.mp4) |
+| drift-therapy | video | Drift Therapy | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/RBCWNdLkw7whOfiyihSST8KY3PTQOil6BrDkMcJ1.mp4) |
+| dj-performance | video | DJ Performance | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/dHOBKiDCr90ZhYVCCuLBvU0VuJDjzKCi9b6PeqY6.mp4) |
+| summer-romance-recast | video | 500 Days of Summer | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/VyrVXpZz6Fnp4aRnhTZgNa9uv5Q3Y0nNySykz2Ml.mp4) |
+| athlete-flex | video | Athlete Flex | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/g6FlBGFSLyjsHElBsAN5o2okkKcPQveusZjUalml.mp4) |
+| 3-friends | video | 3 Friends | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/MOashlV57Hms2HA2ZGVXSldyHr2KgcSQPeekfTLd.mp4) |
+| helicopter-jump-two | video | Helicopter Jump 2 | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/cN5QMbHOTDABMzh9hmoEwa5h5BXKJ5sLLSJxgBxb.mp4) |
+| landing | video | Landing | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/QJDJGcDMQGJCt0S9uj3acH7esu5isnrk4xSVpV7O.mp4) |
+| fridge-down | video | Fridge Down | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/JAwmAC5N1bvLuNzhxTxCM0LN9ZlZkOp68I0wgkEz.mp4) |
+| hyenas-run | video | Hyenas Run | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/TRT9skxPVDG5oVS5PoMKq88V3nd6ZGcwECIyYOlM.mp4) |
+| burn-it-to-ashes | video | Burn it to Ashes | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/MV4x6scl2JD7VrMbrKrPjpYqaLQmLQJsk25QffIK.mp4) |
+| taxi-chase | video | Taxi Chase | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/LWXSiYfh53FtSWAHlCXOqrc4FpfV11k0JkKG1B6F.mp4) |
+| helicopter-jump | video | Helicopter Jump | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/znacSIonZJahp6l8y9KwxMkWQJJmDs8HYBOwaHUI.mp4) |
+| rope-swing | video | Rope Swing | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/TkR4n3wylxll6iQzwwaDG6VtvnColjohOMPOmd82.mp4) |
+| fairytale-villain-recast | video | Rumpelstiltskin | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/variants/pBVsc0nF3R1FfmtUtZTb9gb71TOkS2j61HzFGXBy.mp4) |
+| moody-filter | image | Moody Filter | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/x5CxvtGHHEbBqXC03EOCj2GRJJP5fm3IWMLHOjvG.jpg) |
+| particle-filter | image | Particle Filter | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/lF1MX5vqnFiP81zn5TAlAY7Qgl0l413mE5dg5LFo.jpg) |
+| red-light-filter | image | Red Light Filter | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/AK0IGZfMjWLRxiGO2zfxQy4RMMM8b5yjD5dY7zNH.jpg) |
+| 2000s-filter | image | 2000s Filter | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/6AeoC2GplAuE4Yplah5ZEABc1WMhx38Vi9nYJROv.jpg) |
+| ccd-night-shot-filter | image | CCD Night Shot Filter | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/JMPweI34JBhE2QDjmjDF4aXUNiZA6poeaLY0wVbD.jpg) |
+| dark-aesthetic-filter | image | Dark Aesthetic Filter | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/cVCx4Qplxx1yYL91BDgjroTG4YydqfsJKtjUzp3B.jpg) |
+| cinematic-filter | image | Cinematic Filter | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/gQR4wx7BJDqw6qx1d31Edn0De3Rkw36oAxLralCe.jpg) |
+| handheld-blur-effect | image | iPhone Blurry Effect | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/JI8J3VeKUNBQoZIbD3i2W5p27aWrGwLpcLJshLMJ.jpg) |
+| triptych-shooting | image | Triptych shooting | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/FH6rcuqzGquFKXeOv311O5AYNRsU6VZARSEFk0DH.jpg) |
+| bubble-head | image | Bubble Head | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/9WbAsxHYQv4reJDuTYvULV8uQ9jQM9SbScQymSeh.png) |
+| kissed-in-silence | image | Kissed in Silence | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/rbPkJabmiMsK0QVieqUrtvsPuHVcr6FByduyaRpi.jpg) |
+| midnight-fuel-stop | image | Midnight Fuel Stop | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/uDsdhowMSXPMuTizC9CONwwus0n07hsLCmpWchie.jpg) |
+| black-horsepower | image | Black Horsepower | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/GhCIv7M9RkPTPH7xobN8sOR5X4hEamWeh5Vfoogk.jpg) |
+| face-the-dark | image | Face the Dark | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/YD8VGIu2phbg6J0FDXGXR1ZMk9CEEC3XrRpwBAhr.jpg) |
+| upside-down-habit | image | Upside Down Habit | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/Pb2k99MOfNt1DBvCBMWw2WxWclm6tKsvT9twZjU7.jpg) |
+| stylized-caricature | image | Stylized Caricature | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/DlYjeDdhcc7O3B3vcEK5Hg7E9iJPTsKqOSMLyX7c.jpg) |
+| life-simulation-portrait | image | Sims Style | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/nXx6nXTxt1LYDac6RnnAwsIgai3CjnhncUMKWcps.png) |
+| ugly-and-funny-doodle-2 | image | Ugly and Funny Doodle 2 | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/EP1SctGP8iB89IXoPXGcL3etjZnNwTtPFJIIuwFn.png) |
+| viral-doodle | image | Viral Doodle | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/2x0DiLaIT4SB560miYONHYmHp1UJyZi3hYFnfRUz.png) |
+| neon-city-game-portrait | image | GTA VI Style | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/2ZobVHTn5SYjQaoIciipuNVuJbE9I5HLNajEkTRh.jpg) |
+| bold-type-product | image | Bold Type Product | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/Utpy7FUQTtaPMrtMqxcjRABJvEzmHYAuTHyWcAE0.png) |
+| toy-brick-portrait | image | Lego Style | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/UccAUHQw1RsYXxD7YTKJkci9G4TVIcvv63jcWkye.png) |
+| retro-game-loading-portrait | image | GTA:SA Style | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/QlIvc2MatRZFUGtOInPZALMC0R5x3DfFF0GcA1dC.jpg) |
+| shadow-beard-portrait | image | Black & White | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/ZHPGJDrhNf2w0Qum3gBNRxu8dsra5XPpNdSOzIyV.jpg) |
+| cinematic-portrait | image | Cinematic Portrait | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/UEmQAdmyJj8EQxFAIYgqDTipee6IpNnDp3RJYFGM.jpg) |
+| hotel-corridor | image | Hotel Corridor | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/djIJ2Q9FepJIdaJmQdXKbmHTRoZGyEtjSlSKE5We.jpg) |
+| pool-toys | image | Pool Toys | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/2x3zvSRUpJ3AZvGzS8BVz1badpIlQ4Em5y6k32Oe.jpg) |
+| climbing | image | Climbing | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/dQ1NLRtsHlDZKwGt268lgl6Vpd26kMrEJWs6sfar.jpg) |
+| stained-glass-window | image | Stained Glass Window | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/Zm34fvj4qstYeIPXRnXxS4rWx0xuyOOpTSQlWSY0.jpg) |
+| ripple-light-portrait | image | Black & White | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/TME9CTOZRgMyKSlAr73bRKfsbe31GlowoxK2mP5Z.jpg) |
+| sunflower-field | image | Sunflower Field | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/Sc0kpzUEo5dd3wLKcBC87DMrNK4HgM2KVUDV5Gwt.jpg) |
+| massive-ocean-wave | image | Massive Ocean Wave | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/e8Bx3tDqO1ITBZrY6xy3kMciTBfbIj3Ptt9Nu4hW.jpg) |
+| towering-cliffs | image | Towering Cliffs | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/m8eVLJBWAgM2bLvTHXmXCH1QnOmapKiNAvaFSOTG.jpg) |
+| swim-rings | image | Swim Rings | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/m7BUehaIUmrVeKFpFO1zgxSdi9ijzotVAGAJZWp4.jpg) |
+| giant-footballs | image | Giant Footballs | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/RiLFpXX81w88tszmjKnG2lNaENUNkzOAgHpmxiXC.jpg) |
+| enormous-basketballs | image | Enormous Basketballs | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/INTa8DcXTGj9KgqtBwLt6PP7QShsmGcuhoo9VE5L.jpg) |
+| borscht | image | Borscht | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/stw6NcVNOLjmW2mxT5n5gl6jcdj90VhFGsHR9Jlj.png) |
+| huge-model | image | Huge Model | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/QLsEZavnOnTryI3oIyqGJ1ETaPz5BmogY2fVcPP0.jpg) |
+| bottle-of-red-wine | image | Bottle of Red Wine | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/9CivLvNP8tmluaK7Dq7qST0Dzf2wtuIqJkDsI9jK.png) |
+| melting-deforming | image | Melting & Deforming | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/qihRHCyFTNclfCLn5kmqU6EhpLMykhwsGm1IpvKB.jpg) |
+| a-wet-transparent-glass | image | A Wet Transparent Glass | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/Ud4sesCdZndZuW2PhodEI2wWkZo5IJS3tq0aLIwS.jpg) |
+| composition-of-yuzu | image | Composition of Yuzu | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/TAroQeeXchRwkmbTVDovgBAYMRsdDFGyq0YgRdK4.jpg) |
+| floral-perfume-campaign | image | Floral Perfume Campaign | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/vAAkrleagc4bhl3HKHstYstCLjEw37FppJpvc1tM.jpg) |
+| the-glass | image | The Glass | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/tDznPq36I05SUY8Hvt1ZFF8R1AkH26l2t8TecWOr.jpg) |
+| silhouette | image | Silhouette | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/QHEFMnC2YM1ME0L6JLhlkKbgAp7PCyeFMmtLbTi7.jpg) |
+| stretch-effect | image | Stretch Effect | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/SKaQ287JiwFtAq43QP7DRCiIuvHfL74uEitkhj9p.jpg) |
+| monochromatic | image | Monochromatic | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/4DeMdwsXKfbwdlE9rO1NThTgtnIJQOxH2T3qyPxX.jpg) |
+| sneaker-campaign | image | Sneaker Campaign | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/TmzeYCJkWGoymm2wJipxJOE4J6LNO049adpfiYNi.jpg) |
+| a-clear-bottle | image | A Clear Bottle | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/8K3haGLAb2Zqmay24xUygQLRzvSh4NditcKANwbh.jpg) |
+| pomegranate-jewel | image | Pomegranate Jewel | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/X2oRdKYVUGhzBqL8Fcmjc5f9KY0KXd0xGLnzlaiX.jpg) |
+<!-- END SYNTX 100 EXACT -->

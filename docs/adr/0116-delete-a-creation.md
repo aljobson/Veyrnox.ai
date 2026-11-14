@@ -80,3 +80,26 @@ No flag. Production vars are at the 77-binding cap, and the route is inert until
 - `tests/jobDeleteRoute.test.mjs` covers the route: 401 before any outbound call, the status and code for every refusal, 429, and a 502 that leaks nothing.
 - No new table references `users`, so the drift guard in `scripts/test-account-deletion.mjs` needs no entry.
 - The mobile app (ADR-0106..0109) adds a delete action on a creation and wires it to this call.
+
+## Amendment (0508, 2026-11-14): a settled creation can be deleted again; Music answers `used_by_music`
+
+The `job_in_progress` rule said a job could not be deleted while "its fal request has not closed".
+Nothing moves an accepted fal request to `CLOSED`: rows close only when they were never sent (`0230`)
+or the job was cancelled (`0359`). So every creation sent through durable dispatch answered
+`job_in_progress` for good, and could never be deleted.
+
+From `0508`, once the job itself is settled (`STORED`, `FAILED`, `REFUNDED`), a fal request that is
+`ACCEPTED` or `REJECTED` counts as finished. A request still `READY`, `STARTED` or `UNKNOWN` may yet
+reach fal and still blocks, as before.
+
+A job that belongs to Music (a song version, a generation candidate, a stem, target-stem or track-add
+request, or a file a song version or target stem points at) answers **409 `used_by_music`**. Music keeps
+its own songs and versions, and those tables hold their files `ON DELETE RESTRICT`, so deleting one from
+the general Library would otherwise fail on a foreign key. The mobile app shows its generic
+"could not delete it, nothing was changed" for this code until it gets its own message.
+
+Proof: `scripts/test-job-deletion.mjs` now deletes settled jobs whose request is `ACCEPTED` or
+`REJECTED`, and still refuses `UNKNOWN`; `tests/libraryDeleteSettledJobs.test.mjs` pins the rule and
+the Music checks. Run on staging inside a transaction that rolled back: a stored image job with an
+accepted request deleted and queued its file; a Music job answered `USED_BY_MUSIC`; `UNKNOWN` still
+answered `IN_PROGRESS`; `REJECTED` deleted.

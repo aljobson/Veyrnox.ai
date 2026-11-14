@@ -26,7 +26,7 @@
  * file and the prompt go, the job row and every ledger entry stay, no refund.
  *   200 { deleted: true, replayed }       (the same request again: replayed true)
  *   404 not_found                          (missing, someone else's, or a chat reply)
- *   409 job_in_progress | job_on_hold | used_by_post | used_by_cinema | used_by_library
+ *   409 job_in_progress | job_on_hold | used_by_post | used_by_cinema | used_by_library | used_by_music
  *   403 account_frozen   429 rate_limited
  * Irreversible: there is no restore.
  */
@@ -76,6 +76,7 @@ const DELETE_REFUSALS = {
     USED_BY_POST: [409, 'used_by_post'],
     USED_BY_CINEMA: [409, 'used_by_cinema'],
     USED_BY_LIBRARY: [409, 'used_by_library'],
+    USED_BY_MUSIC: [409, 'used_by_music'],
 };
 
 export async function DELETE(req, { params }) {

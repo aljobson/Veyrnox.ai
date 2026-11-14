@@ -1,5 +1,7 @@
+import { SYNTX_100_IMAGE_RECORDS } from './syntx100ImageRecords.js';
 // Captured from the Syntx public feed, 2026-11-12. Prompt bytes are hash-locked in tests.
 export const IMAGE_SOURCE_PROMPT_RECORDS = Object.freeze({
+  ...SYNTX_100_IMAGE_RECORDS,
   'flying-elf': Object.freeze({
   "sourcePromptAvailable": true,
   "sourceAuditStatus": "captured-2026-11-12",

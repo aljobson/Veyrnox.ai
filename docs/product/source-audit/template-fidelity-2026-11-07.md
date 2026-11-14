@@ -3,13 +3,13 @@
 Offline structural audit, contract version 1. Reproduce with `node scripts/audit-template-fidelity.mjs`; regenerate with `--write`.
 
 - like-for-like-safe: 232
-- bound: 162
-- blocked-needs-video: 355
+- bound: 171
+- blocked-needs-video: 392
 - unsupported: 0
 
 Original source hashes remain unchanged. Only recognized image tokens change in bound text; bound hashes and occurrence maps are recorded in `lib/templateFidelityContracts.json`. Bound templates use Seedance reference with 1–9 ordered photos, fixed generated audio, and catalog pricing. No external source audio can be supplied by an active template route.
 
-A2-3 routes all 162 bound templates by the contract model on feed, card, detail and Create. Web and mobile show exactly N required, ordered photo slots; only complete valid photo selections carry template_id. The web handoff holds up to nine photos in memory only; the mobile handoff uses the existing short-lived, owner-scoped memory store. Unsupported templates remain admitted with the notice. Source-video dependencies are blocked, including harmless prompt edits; independent custom text is admitted.
+A2-3 routes all 171 bound templates by the contract model on feed, card, detail and Create. Web and mobile show exactly N required, ordered photo slots; only complete valid photo selections carry template_id. The web handoff holds up to nine photos in memory only; the mobile handoff uses the existing short-lived, owner-scoped memory store. Unsupported templates remain admitted with the notice. Source-video dependencies are blocked, including harmless prompt edits; independent custom text is admitted.
 
 Structurally validated, not output-verified. No paid provider call, migration, flag or price configuration change. TemplateRecipe and detail markup remain unchanged for non-bound, non-blocked recipes; bound detail model links/names and obsolete crop hints follow the effective model; prose-only video-blocked recipes now show the existing source-video note. Edited-prompt PHOTO_CHARACTER_LINE is preserved.
 
@@ -17,8 +17,8 @@ Owner decision, 7 November 2026: higher Seedance-reference quotes for token-bear
 
 ## All-class reason counts (overlapping)
 
-- reference-video-required: 355
-- source-audio-not-audited: 62
+- reference-video-required: 392
+- source-audio-not-audited: 71
 - unmapped-image-reference: 27
 - unmapped-placeholder: 122
 - too-many-image-slots: 2
@@ -386,3 +386,40 @@ These include reasons secondary to a video block. Source-audio dependencies in t
 - seedance-morning-parking-vibe: reference-video-required
 - seedance-hotel-lobby-2: reference-video-required
 - seedance-hotel-lobby: reference-video-required, source-audio-not-audited
+- london-london: reference-video-required, source-audio-not-audited
+- hand-frame-switch: reference-video-required
+- blow-and-throw: reference-video-required
+- light-and-blow: reference-video-required
+- one-breath-wish: reference-video-required
+- flaming-candle-blowout: reference-video-required
+- make-a-wish: reference-video-required
+- stage-performer-recast: reference-video-required, source-audio-not-audited
+- ride-the-beat: reference-video-required, source-audio-not-audited
+- epic-arrival: reference-video-required, source-audio-not-audited
+- football-duo-recast: reference-video-required, source-audio-not-audited
+- retro-groove: reference-video-required
+- kick-and-run: reference-video-required, source-audio-not-audited
+- surprise-knockout-kick: reference-video-required
+- fans-go-wild: reference-video-required, source-audio-not-audited
+- outfit-transition-gone-crazy: reference-video-required
+- carousel: reference-video-required
+- wish-a-merry-christmas: reference-video-required
+- desert-chase: reference-video-required
+- street-phantom: reference-video-required
+- new-year-on-the-nose: reference-video-required
+- holiday-home-recast: reference-video-required
+- dance-in-the-snow: reference-video-required
+- drift-therapy: reference-video-required
+- dj-performance: reference-video-required
+- summer-romance-recast: reference-video-required, source-audio-not-audited
+- athlete-flex: reference-video-required
+- 3-friends: reference-video-required
+- helicopter-jump-two: reference-video-required
+- landing: reference-video-required
+- fridge-down: reference-video-required
+- hyenas-run: reference-video-required, source-audio-not-audited
+- burn-it-to-ashes: reference-video-required
+- taxi-chase: reference-video-required
+- helicopter-jump: reference-video-required
+- rope-swing: reference-video-required
+- fairytale-villain-recast: reference-video-required

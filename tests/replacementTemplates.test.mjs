@@ -102,22 +102,23 @@ test('all old records, recipes, visual signatures and hidden rows remain unchang
   for (const [id, signature] of Object.entries(baseline.visual)) assert.deepEqual(visual.placements[id], signature, id);
   assert.deepEqual(REMOVED_PROMPT_GAP_TEMPLATE_IDS, baseline.hidden);
   assert.equal(REMOVED_PROMPT_GAP_TEMPLATE_IDS.length, 70);
-  assert.equal(SOURCE_TEMPLATES.length, 841);
-  assert.equal(PRESETS.length, 749);
-  assert.equal(ALL_TEMPLATES.length, 1791);
+  assert.equal(SOURCE_TEMPLATES.length, 841 + 46);
+  assert.equal(PRESETS.length, 749 + 46);
+  assert.equal(ALL_TEMPLATES.length, 1791 + 46);
   const deltas = { REALISTIC: 4, CINEMATIC: 2, UGC: 2, CARTOONS: 1, VFX: 1, MOVIES: 1, FASHION: 1, PRODUCTS: 1, FANTASY: 1 };
+  const expansion = { MOVIES: 6, CINEMATIC: 15, REALISTIC: 23, FASHION: 1, CARTOONS: 1 };
   const withdrawn = {};
   for (const t of new Map(SOURCE_TEMPLATES.concat(HF_REPLACEMENTS_TEMPLATES, SYNTX_REPLACEMENTS_TEMPLATES).map(t => [t.id, t])).values()) if (BROKEN_TEMPLATE_IDS.includes(publicTemplateId(t.id))) withdrawn[t.category] = (withdrawn[t.category] || 0) + 1;
   for (const category of new Set([...Object.keys(baseline.categories), ...PRESETS.map(t => t.category)])) {
-    assert.equal(PRESETS.filter(t => t.category === category).length, (baseline.categories[category] || 0) + (deltas[category] || 0) - (withdrawn[category] || 0), category);
+    assert.equal(PRESETS.filter(t => t.category === category).length, (baseline.categories[category] || 0) + (deltas[category] || 0) + (expansion[category] || 0) - (withdrawn[category] || 0), category);
   }
 });
 
 test('replacement media match supplied hashes, five-second silent video budgets and distinct decoded signatures', () => {
   assert.equal(visual.method, VISUAL_SIGNATURE_METHOD);
   assert.deepEqual(Object.keys(visual.placements).sort(), Object.keys(AUDIT_SHOWCASE_CLIPS).sort());
-  assert.equal(Object.keys(visual.placements).length, 931);
-  assert.equal(new Set(Object.values(visual.placements).map(r => r.signature)).size, 931);
+  assert.equal(Object.keys(visual.placements).length, 931 + 46);
+  assert.equal(new Set(Object.values(visual.placements).map(r => r.signature)).size, 931 + 46);
   for (const audit of audits) {
     let bytes = 0;
     assert.equal(audit.visualSignatureMethod, VISUAL_SIGNATURE_METHOD);
