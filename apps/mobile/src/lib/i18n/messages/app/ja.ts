@@ -691,6 +691,8 @@ export default {
   "chat.composer.chat": "チャット",
   "chat.composer.label": "Veyrnox.aiで作成",
   "chat.composer.message": "メッセージ",
+  "chat.composer.longMessage": "長いメッセージ: +{price}",
+  "chat.composer.tooLong": "このモデルには長すぎます。短くするか別のモデルを選んでください。",
   "chat.composer.policy": "この返信の料金です。テキストが表示された後に停止すると、表示済みの内容が残り、料金は戻りません。何も届かなければクレジットが返金されます。",
   "chat.composer.setup": "返信設定",
   "chat.couldnotloadmodels": "モデルを読み込めませんでした。",

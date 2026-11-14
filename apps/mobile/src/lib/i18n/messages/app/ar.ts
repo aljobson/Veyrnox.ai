@@ -726,6 +726,8 @@ export default {
   "chat.composer.chat": "الدردشة",
   "chat.composer.label": "أنشئ باستخدام Veyrnox.ai",
   "chat.composer.message": "رسالة",
+  "chat.composer.longMessage": "رسالة طويلة: +{price}",
+  "chat.composer.tooLong": "طويلة جدًا لهذا النموذج. اختصرها أو اختر نموذجًا آخر.",
   "chat.composer.policy": "لهذا الرد. إذا توقفت بعد ظهور النص، فستحتفظ به وتُحتسب تكلفته. إذا لم يصل شيء، يعود الرصيد.",
   "chat.composer.setup": "إعداد الرد",
   "chat.couldnotloadmodels": "تعذّر تحميل النماذج.",

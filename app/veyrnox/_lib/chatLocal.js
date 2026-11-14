@@ -1,3 +1,4 @@
+import { CHAT_USER_TEXT_MAX } from '../../../lib/chatLimits.js';
 // Chat conveniences kept in this browser only, like the library favourites:
 // an unsent draft per chat, the notice that goes with it (and, for a warning
 // that stands for several messages, the list of them), and the replies a
@@ -15,7 +16,7 @@ const TURNS_PREFIX = 'veyrnox_chat_turns_v1:'; // beside a chat's notice: the tu
 // The v1 draft and star keys had no user id in them. They are never read, only removed.
 const ALL_PREFIXES = [DRAFT_PREFIX, STAR_PREFIX, NOTICE_PREFIX, TURNS_PREFIX, 'veyrnox_oddling_chat_thread_v2:', 'veyrnox_chat_draft_v1:', 'veyrnox_chat_stars_v1:'];
 export const NEW_CHAT = 'new';
-export const MAX_DRAFT = 8000;
+export const MAX_DRAFT = CHAT_USER_TEXT_MAX;
 export const MAX_STARS = 200;
 export const MAX_NOTICE = 120; // characters of one stored notice: a code, the number its words may need, and for a warning its one turn (95 at most)
 export const MAX_TURNS = 4;    // turns one warning can list. One more and it lists none: it is then never asked about (turnsFor below)

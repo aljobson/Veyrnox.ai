@@ -5,8 +5,9 @@ import { estimateTokens, trimHistoryToTokens, MAX_USER_TEXT_TOKENS, MAX_SYSTEM_P
 
 test('the caps the flat price depends on', () => {
     assert.equal(MAX_REPLY_TOKENS, 1024); assert.equal(MAX_HISTORY_CHARS, 24000);
-    // The price assumes four characters a token: 6,000 + 2,000 + 1,000 = the 9,000 input tokens in ADR-0067.
-    assert.deepEqual([MAX_HISTORY_TOKENS, MAX_USER_TEXT_TOKENS, MAX_SYSTEM_PROMPT_TOKENS], [6000, 2000, 1000]);
+    // Four characters a token: 6,000 + 7,500 + 1,000 = 14,500 input tokens for a long message (ADR-0067 amendment 17); the flat
+    // price alone covers a 2,000-token message, 9,000 in all, and the long-message extra pays for the rest.
+    assert.deepEqual([MAX_HISTORY_TOKENS, MAX_USER_TEXT_TOKENS, MAX_SYSTEM_PROMPT_TOKENS], [6000, 7500, 1000]);
 });
 
 // Audit 2026-10-09 M-06: the character caps alone let CJK text carry four times the tokens the price assumed.
@@ -22,8 +23,8 @@ test('estimateTokens: a quarter per ASCII character, one per anything else', () 
 
 test('a message is refused once its estimated tokens pass the cap, even inside the character cap', () => {
     const key = 'abcdefgh1234';
-    assert.equal(validateTurn({ text: '日'.repeat(2000), idempotency_key: key }).ok, true, '2,000 CJK characters is the token cap');
-    assert.deepEqual(validateTurn({ text: '日'.repeat(2001), idempotency_key: key }), { ok: false, error: 'invalid_text' });
+    assert.equal(validateTurn({ text: '日'.repeat(7500), idempotency_key: key }).ok, true, '7,500 CJK characters is the token cap');
+    assert.deepEqual(validateTurn({ text: '日'.repeat(7501), idempotency_key: key }), { ok: false, error: 'invalid_text' });
     assert.deepEqual(validateThreadPatch({ system_prompt: '日'.repeat(1001) }), { ok: false, error: 'invalid_system_prompt' });
     assert.equal(validateThreadPatch({ system_prompt: '日'.repeat(1000) }).ok, true);
 });
@@ -46,16 +47,17 @@ test('only the exact string "true" turns chat on', () => {
     assert.equal(chatEnabled({}), false); assert.equal(chatEnabled(undefined), false);
 });
 
+const SEND_ID = 'abcdefgh1234';
 test('validateTurn', () => {
     assert.deepEqual(validateTurn({ text: '  hi  ', idempotency_key: 'abcdefgh1234' }), { ok: true, text: 'hi', key: 'abcdefgh1234', options: { thinking: false, web: false }, attachments: [] });
     for (const [b, error] of [
         [null, 'invalid_body'], [[], 'invalid_body'], ['x', 'invalid_body'],
         [{ idempotency_key: 'abcdefgh1234' }, 'invalid_text'], [{ text: '   ', idempotency_key: 'abcdefgh1234' }, 'invalid_text'],
-        [{ text: 5, idempotency_key: 'abcdefgh1234' }, 'invalid_text'], [{ text: 'x'.repeat(8001), idempotency_key: 'abcdefgh1234' }, 'invalid_text'],
+        [{ text: 5, idempotency_key: SEND_ID }, 'invalid_text'], [{ text: 'x'.repeat(30001), idempotency_key: SEND_ID }, 'invalid_text'],
         [{ text: 'hi' }, 'idempotency_key_required'], [{ text: 'hi', idempotency_key: 'short' }, 'idempotency_key_required'],
         [{ text: 'hi', idempotency_key: 'has space in it' }, 'idempotency_key_required'], [{ text: 'hi', idempotency_key: 'x'.repeat(129) }, 'idempotency_key_required'],
     ]) assert.deepEqual(validateTurn(b), { ok: false, error }, JSON.stringify(b));
-    assert.equal(validateTurn({ text: 'x'.repeat(8000), idempotency_key: 'abcdefgh1234' }).ok, true, '8,000 is allowed');
+    assert.equal(validateTurn({ text: 'x'.repeat(30000), idempotency_key: SEND_ID }).ok, true, '30,000 is allowed');
 });
 
 test('validateThreadPatch accepts known keys, refuses unknown ones and bad values', () => {

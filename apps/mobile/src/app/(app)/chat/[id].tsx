@@ -24,7 +24,7 @@ import { MakePanel } from '../../../components/chat/MakePanel';
 import { LibraryImagePicker } from '../../../components/chat/LibraryImagePicker';
 import { ApiError } from '../../../lib/api';
 import { MIN_TARGET } from '../../../lib/a11y';
-import { chatApi, cleanOptions, cleanTitle, imagesExtra, isModelSwitch, NO_OPTIONS, replyPrice, sendKeyFor, type ChatMessage, type ChatModel, type PendingSend, type ReplyOptions } from '../../../lib/chat';
+import { chatApi, cleanOptions, cleanTitle, imagesExtra, isLongText, isModelSwitch, longTextState, NO_OPTIONS, replyPrice, sendKeyFor, type ChatMessage, type ChatModel, type PendingSend, type ReplyOptions } from '../../../lib/chat';
 import { attachmentRefs, MAX_ATTACHMENTS, roomFor, type ChatImage } from '../../../lib/chatAttach';
 import { pickPhotos, pickVideoFrames, uploadChatImages } from '../../../lib/chatPhotos';
 import { fetchCatalog, type CatalogModel, type Kind } from '../../../lib/media';
@@ -39,6 +39,7 @@ const ERROR_TEXT: Record<string, string> = {
     insufficient_balance: t('chat.notenoughcreditsforthisreply'),
     rate_limited: t('chat.toomanymessagesWaitamoment'),
     option_unavailable: t('chat.thatchoiceisnotavailableforthis'),
+    invalid_text: t('chat.composer.tooLong'),
     chat_not_open: t('chat.chatisnotavailablerightnow'),
     consent_declined: t('chat.youneedtoagreetoAIsharing'),
 };
@@ -362,7 +363,7 @@ export default function Conversation() {
     }
 
     const imageExtra = model ? imagesExtra(model) : null;
-    const price = model ? replyPrice(model, options, imageExtra !== null ? images.length : 0) : null;
+    const price = model ? replyPrice(model, options, imageExtra !== null ? images.length : 0, draft.trim()) : null;
     async function addPhotos() {
         const r = await pickPhotos(roomFor(images.length, maxImages)).catch(() => ({ images: [] as ChatImage[], problem: 'failed' as const }));
         if (r.images.length) setImages((cur) => [...cur, ...r.images]);
@@ -375,10 +376,11 @@ export default function Conversation() {
         if (r.images.length) setImages(cur => [...cur, ...r.images].slice(0, maxImages));
         setNotice(r.problem ? t(r.problem === 'room' ? 'chatDepth.videoRoom' : 'chatDepth.videoFailed', { count: maxImages }) : null);
     }
-    const isFree = !busy.current && loadedFor === round && !!model && freeLeftFor(left, model.id) > 0 && !options.thinking && !options.web && images.length === 0;
-    const canSend = !sending && !!draft.trim() && price !== null;
+    const isFree = !busy.current && loadedFor === round && !!model && freeLeftFor(left, model.id) > 0 && !options.thinking && !options.web && images.length === 0 && !isLongText(draft.trim());
+    const canSend = !sending && !!draft.trim() && price !== null && !longTextState(model, draft.trim()).tooLong;
     const last = messages && messages.length >= 2 ? messages[messages.length - 1] : null;
     const lastUser = last?.role === 'assistant' && last.content ? messages![messages!.length - 2] : null;
+    const againPrice = model && lastUser ? replyPrice(model, options, imageExtra !== null ? images.length : 0, lastUser.content) : price;
 
     return (
         <KeyboardScreen style={styles.screen}>
@@ -423,9 +425,9 @@ export default function Conversation() {
                         messages === null ? undefined : starredOnly ?<Text>{t('chatDepth.noStars')}</Text> : <ConversationEmpty lockedIds={oddLocked ? ['oddling-continuity'] : []} selectedIds={selectedIds} saving={savingSkills} onToggle={toggleSkill} />
                     }
                     ListFooterComponent={
-                        lastUser && !sending && model && price !== null ? (
-                            <Button accessibilityRole="button" accessibilityLabel={rawText(plural('chat.againLabel', price))} containerStyle={styles.again} onPress={() => void send(lastUser.content)} variant="tertiary" size="md" label={plural('chat.againLabel', price)}>
-                                <Text variant="callout" tone="warning">{plural('chat.again', price)}</Text>
+                        lastUser && !sending && model && againPrice !== null ? (
+                            <Button accessibilityRole="button" accessibilityLabel={rawText(plural('chat.againLabel', againPrice ?? 0))} containerStyle={styles.again} onPress={() => void send(lastUser.content)} variant="tertiary" size="md" label={plural('chat.againLabel', againPrice ?? 0)}>
+                                <Text variant="callout" tone="warning">{plural('chat.again', againPrice ?? 0)}</Text>
                             </Button>
                         ) : undefined
                     }

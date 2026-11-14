@@ -12,6 +12,8 @@ import { gatewayFetch } from '../../_lib/gateway';
 import { getStoredUserId, onSessionChange } from '../../../lib/authClient';
 import { chatApi, chatErrorCopy } from '../../_lib/chatApi';
 import { takeTemplateChatDraft } from '../../_lib/chatTemplateDraft';
+import { longTextState } from '../../_lib/chatLongText';
+import { CHAT_USER_TEXT_MAX } from '../../../../lib/chatLimits.js';
 import { attachmentLabel } from '../../_lib/chatImages';
 import { NEW_CHAT, addToDraft, clearNotice, readCreditsWarning, readDraft, readNotice, writeDraft, writeNotice, readStars, toggleStar } from '../../_lib/chatLocal';
 import { useFreeAllowance } from '../../_lib/useFreeAllowance';
@@ -54,7 +56,7 @@ function errorText(t, error) {
 }
 
 function credits(t, locale, n) { return t(pluralKey(t, locale, 'app.chat.settings.credits', n), { count: locale === 'en' ? String(n) : n.toLocaleString(localeTag(locale)) }); }
-const MAX_TEXT = 8000;
+const MAX_TEXT = CHAT_USER_TEXT_MAX; // the composer holds up to this; the model's own limit is checked before Send
 const MAX_PROMPT = 4000;
 const store = () => { try { return window.localStorage; } catch { return null; } };
 const saveDraft = (chatId, text) => writeDraft(store(), getStoredUserId(), chatId, text);
@@ -217,13 +219,15 @@ export function ChatWorkspace() {
   const chosen = researchOn ? { research: true } : { thinking: opts.thinking && !!offer.thinking, web: opts.web && !!offer.web };
   const hasImages = att.items.length > 0;
   const imagesBlocked = hasImages && (!offer.images || researchOn); // images are chosen but this model or option cannot read them
+  // A long message adds the model's catalog extra (ADR-0067 amendment 17); the server prices the turn the same way.
+  const longText = longTextState(model, text);
   const price = researchOn
     ? (model?.credits_per_reply ?? 0) + offer.research.extra_credits
     : (model?.credits_per_reply ?? 0) + (chosen.thinking ? offer.thinking.extra_credits : 0) + (chosen.web ? offer.web.extra_credits : 0)
-      + (hasImages && offer.images ? offer.images.extra_credits : 0);
+      + (hasImages && offer.images ? offer.images.extra_credits : 0) + longText.extra;
   // A plain reply (no paid option) can use a free allowance; the server decides, this only labels the button.
   const freeLeft = freeLeftFor(freeMap, model?.id);
-  const isFree = freeLeft > 0 && !researchOn && !chosen.thinking && !chosen.web && !hasImages;
+  const isFree = freeLeft > 0 && !researchOn && !chosen.thinking && !chosen.web && !hasImages && !longText.long;
   const open = async (id) => {
     ask(chatView.current, id);
     try {
@@ -643,8 +647,13 @@ export function ChatWorkspace() {
               <div className="px-3 pt-3">
                 <label className="sr-only" htmlFor="chat-msg">{t("app.chat.message")}</label>
                 <textarea id="chat-msg" rows={3} value={text} maxLength={MAX_TEXT} placeholder={skillIds.length ? tOr(t, `app.chat.skill.${skillIds[0]}.starter`, skillById(skillIds[0])?.starter || t('app.chat.ask')) : t('app.chat.ask')} onChange={(e) => setText(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (!oddlingSendPending) send(); } }}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (!oddlingSendPending && !longText.tooLong) send(); } }}
                   className="max-h-56 min-h-[4.5rem] w-full resize-none bg-transparent px-1 py-1 text-[15px] text-vx-fg outline-hidden placeholder:text-vx-fg-faint" />
+                {longText.showCounter && <p aria-live="polite" className={`px-1 pb-1 text-end text-xs ${longText.tooLong ? 'font-bold text-vx-danger' : 'text-vx-fg-muted'}`}>
+                  <span className="font-vx-mono vx-num">{longText.count}/{longText.limit}</span>
+                  {longText.extra > 0 && <>{' · '}{t('app.chat.workspace.longMessage', { price: credits(t, locale, longText.extra) })}</>}
+                  {longText.tooLong && <>{' · '}{t('app.chat.error.invalid_text')}</>}
+                </p>}
               </div>
               <div className="flex items-center gap-2 border-t border-vx-border/60 bg-vx-base/40 px-2 py-2">
                 {offer.images && <AttachButton onPick={att.add} disabled={busy} full={att.items.length >= limits.maxAttachments} />}
@@ -654,7 +663,7 @@ export function ChatWorkspace() {
                 <EnhanceButton disabled={busy} text={text} />
                 {busy
                   ? <button type="button" onClick={stop} disabled={stopping || checking} className="shrink-0 rounded-full border border-vx-border px-5 py-2.5 text-sm font-semibold disabled:opacity-50">{stopping ? t("app.chat.workspace.stopping") : checking ? t("app.chat.workspace.checking") : t("app.chat.workspace.stop")}</button>
-                  : <button type="button" onClick={send} disabled={!text.trim() || imagesBlocked || oddlingSendPending} className="shrink-0 rounded-full bg-vx-accent px-4 py-2.5 text-sm font-semibold text-vx-accent-ink transition-colors hover:bg-vx-accent-hover disabled:opacity-50">{isFree ? t("app.chat.workspace.sendFree") : t('app.chat.workspace.send', { price: credits(t, locale, price) })}</button>}
+                  : <button type="button" onClick={send} disabled={!text.trim() || imagesBlocked || oddlingSendPending || longText.tooLong} className="shrink-0 rounded-full bg-vx-accent px-4 py-2.5 text-sm font-semibold text-vx-accent-ink transition-colors hover:bg-vx-accent-hover disabled:opacity-50">{isFree ? t("app.chat.workspace.sendFree") : t('app.chat.workspace.send', { price: credits(t, locale, price) })}</button>}
               </div>
               </> : <MediaComposer kind={composerKind} media={mediaGeneration} prompt={mediaPrompt} onPrompt={setMediaPrompt} />}
             </div>

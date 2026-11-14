@@ -13,8 +13,8 @@ function deferred() { let resolve!: () => void; const promise = new Promise<void
 
 test('bounds, invalid ids, whitespace removal, per-account reads and clear', async () => {
     const { cache } = await setup();
-    await writeDraft('thread', 'x'.repeat(9000), cache);
-    expect((await readDraft('thread', cache)).length).toBe(8000);
+    await writeDraft('thread', 'x'.repeat(31000), cache);
+    expect((await readDraft('thread', cache)).length).toBe(30000);
     await writeDraft('../bad', 'private', cache); expect(await readDraft('../bad', cache)).toBe('');
     await writeDraft('thread', '  ', cache); expect(await readDraft('thread', cache)).toBe('');
     for (let i = 0; i < 51; i++) await writeDraft(`t${i}`, 'text', cache);
@@ -81,9 +81,9 @@ test('restore merges without cutting newer text and refuses an account change', 
     expect(await restoreDraft('t', 'sent', capture, cache)).toBe('sent');
     expect(await restoreDraft('t', 'sent', capture, cache)).toBe('sent');
     await writeDraft('t', 'newer', cache); expect(await restoreDraft('t', 'sent', capture, cache)).toBe('sent\n\nnewer');
-    const newer = 'n'.repeat(7990); await writeDraft('t', newer, cache);
+    const newer = 'n'.repeat(29990); await writeDraft('t', newer, cache);
     expect(await restoreDraft('t', 'returned text', capture, cache)).toBe('returned\n\n' + newer);
-    await writeDraft('t', 'n'.repeat(8000), cache); expect(await restoreDraft('t', 'sent', capture, cache)).toBe('n'.repeat(8000));
+    await writeDraft('t', 'n'.repeat(30000), cache); expect(await restoreDraft('t', 'sent', capture, cache)).toBe('n'.repeat(30000));
     await bindCacheUser('B', cache, storage, docs); expect(await restoreDraft('t', 'sent', capture, cache)).toBeNull();
 });
 test('hook restores once, debounces typing, flushes on unmount and drops sign-out timers', async () => {

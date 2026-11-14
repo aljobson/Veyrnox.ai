@@ -89,7 +89,7 @@ test('models: only what a user needs, never cost, endpoint or provider', async (
     catalogRows = [{ id: 'chat-fast', name: 'Fast', credits_5s: 2, gated_flag: false, provider_cost_per_unit: 0.0004, provider_endpoint: 'vendor/fast', provider: 'openrouter-chat' }];
     const res = await getModels(req());
     const j = await res.json();
-    assert.deepEqual(j, { models: [{ id: 'chat-fast', name: 'Fast', maker: 'other', maker_label: 'Other', credits_per_reply: 2, gated: false, max_reply_tokens: 1024, options: { thinking: null, web: null, images: null } }], max_reply_tokens: 1024, max_attachments: 4, max_image_edge: 2048 });
+    assert.deepEqual(j, { models: [{ id: 'chat-fast', name: 'Fast', maker: 'other', maker_label: 'Other', credits_per_reply: 2, gated: false, max_reply_tokens: 1024, max_message_chars: 8000, options: { thinking: null, web: null, images: null, long_text: null } }], max_reply_tokens: 1024, standard_message_chars: 8000, max_attachments: 4, max_image_edge: 2048 });
     const q = new URL(calls.find((c) => c.url.includes('model_catalog')).url).searchParams;
     assert.equal(q.get('modality'), 'eq.text'); assert.equal(q.get('provider'), 'eq.openrouter-chat'); assert.equal(q.get('active'), 'eq.true');
     // The endpoint is read only to name the model family; it never reaches the response, and neither does the cost.
@@ -100,7 +100,7 @@ test('models: only what a user needs, never cost, endpoint or provider', async (
 test('models: a row with its own reply cap reports it; reasoning effort is never exposed', async () => {
     catalogRows = [{ id: 'chat-deep', name: 'Deep', credits_5s: 4, gated_flag: false, provider: 'openrouter-chat', chat_max_reply_tokens: 4096, chat_reasoning_effort: 'low' }];
     const j = await (await getModels(req())).json();
-    assert.deepEqual(j.models, [{ id: 'chat-deep', name: 'Deep', maker: 'other', maker_label: 'Other', credits_per_reply: 4, gated: false, max_reply_tokens: 4096, options: { thinking: null, web: null, images: null } }]);
+    assert.deepEqual(j.models, [{ id: 'chat-deep', name: 'Deep', maker: 'other', maker_label: 'Other', credits_per_reply: 4, gated: false, max_reply_tokens: 4096, max_message_chars: 8000, options: { thinking: null, web: null, images: null, long_text: null } }]);
     assert.ok(!JSON.stringify(j).includes('reasoning'));
     const q = new URL(calls.find((c) => c.url.includes('model_catalog')).url).searchParams;
     assert.match(q.get('select'), /chat_max_reply_tokens/);
@@ -221,7 +221,7 @@ test('models: the options a row offers are reported with their extra Credits; ef
     catalogRows = [{ id: 'chat-deep', name: 'Deep', credits_5s: 4, gated_flag: false, provider: 'openrouter-chat', chat_max_reply_tokens: 4096, chat_reasoning_effort: 'low',
         chat_thinking_effort: 'high', chat_thinking_max_reply_tokens: 8192, chat_thinking_extra_credits: 3, chat_web_extra_credits: 2, chat_images_extra_credits: 1 }];
     const j = await (await getModels(req())).json();
-    assert.deepEqual(j.models[0].options, { thinking: { extra_credits: 3 }, web: { extra_credits: 2 }, images: { extra_credits: 1 } });
+    assert.deepEqual(j.models[0].options, { thinking: { extra_credits: 3 }, web: { extra_credits: 2 }, images: { extra_credits: 1 }, long_text: null });
     assert.ok(!JSON.stringify(j).includes('effort') && !JSON.stringify(j).includes('8192'));
     const q = new URL(calls.find((c) => c.url.includes('model_catalog')).url).searchParams;
     assert.match(q.get('select'), /chat_thinking_extra_credits/); assert.match(q.get('select'), /chat_web_extra_credits/); assert.match(q.get('select'), /chat_images_extra_credits/);

@@ -691,6 +691,8 @@ export default {
   "chat.composer.chat": "채팅",
   "chat.composer.label": "Veyrnox.ai로 만들기",
   "chat.composer.message": "메시지",
+  "chat.composer.longMessage": "긴 메시지: +{price}",
+  "chat.composer.tooLong": "이 모델에는 너무 깁니다. 줄이거나 다른 모델을 선택하세요.",
   "chat.composer.policy": "이 답변의 비용입니다. 텍스트가 나타난 후 중지하면 텍스트가 유지되고 비용이 청구됩니다. 아무 답변도 없으면 크레딧이 반환됩니다.",
   "chat.composer.setup": "답변 설정",
   "chat.couldnotloadmodels": "모델을 불러오지 못했습니다.",

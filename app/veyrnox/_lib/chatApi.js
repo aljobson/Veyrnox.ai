@@ -71,7 +71,7 @@ export function chatErrorCopy(code, { credits } = {}) {
     case 'attachment_check_failed': return 'We could not check your image just now. Try again. No Credits were used.';
     case 'invalid_attachments': return 'You can attach up to 4 different images. No Credits were used.';
     case 'upload_failed': case 'image_unreadable': return 'The image did not upload. Try again, or pick another. No Credits were used.';
-    case 'invalid_text': return 'Messages can be up to 8,000 characters.';
+    case 'invalid_text': return 'This message is too long for this model. Shorten it or pick another model. No Credits were used.';
     case 'turn_not_saved': return 'We could not save that reply, so you will not be charged.';
     case 'instructions_unavailable': return 'We could not lock the Oddling canon to this chat. Your message was not sent and no Credits were used. Try again.';
     case 'reply_not_saved': return 'We could not save that reply to the chat. You received it, so its Credits were used.';
