@@ -86,13 +86,13 @@ export const VEY_FACES = {
     eyes: <><OpenEye cx={59} dx={-2} dy={1} /><OpenEye cx={101} dx={-2} dy={1} /></>,
     brows: <><Brow d="M49 33 Q59 27 68 33" /><Brow d="M92 36 H111" /></>,
     mouth: MOUTHS.o,
-    prop: <><rect x="124" y="82" width="26" height="20" rx="3" fill="none" stroke={AMBER} strokeWidth="2" strokeDasharray="3 3" /><text x="137" y="97" textAnchor="middle" fontSize="12" fill={AMBER}>?</text></>,
+    prop: <><rect x="6" y="12" width="26" height="20" rx="3" fill="none" stroke={AMBER} strokeWidth="2" strokeDasharray="3 3" /><text x="19" y="27" textAnchor="middle" fontSize="12" fill={AMBER}>?</text></>,
   },
   welcome: {
     blink: true,
     eyes: <><OpenEye cx={59} ry={16} /><OpenEye cx={101} ry={16} /></>,
     mouth: MOUTHS.big,
-    prop: <><circle cx="146" cy="62" r="7" fill="#eaf2f3" stroke="#83a6aa" strokeWidth="2" /><path d="M137 48 Q142 44 147 48 M141 40 Q147 34 153 40" fill="none" stroke={TEAL} strokeWidth="2" strokeLinecap="round" /></>,
+    prop: <path d="M128 46 Q133 40 128 34 M134 50 Q142 40 134 30" fill="none" stroke={TEAL} strokeWidth="2" strokeLinecap="round" />,
   },
   playful: {
     eyes: <><OpenEye cx={59} /><ArcEye cx={101} /></>,
@@ -102,14 +102,14 @@ export const VEY_FACES = {
   sleepy: {
     eyes: <><SleepEye cx={59} /><SleepEye cx={101} /></>,
     mouth: MOUTHS.dim,
-    prop: <><path d="M126 30 Q138 18 150 30 M131 36 Q138 30 145 36" fill="none" stroke="#888780" strokeWidth="2.5" strokeLinecap="round" /><circle cx="138" cy="42" r="2" fill="#888780" /><path d="M124 46 L152 16" stroke={RED} strokeWidth="2.5" strokeLinecap="round" /><text x="26" y="24" fontSize="12" fill="#888780">z</text><text x="14" y="36" fontSize="11" fill="#888780">z</text></>,
+    prop: <><path d="M126 20 Q138 8 150 20 M131 26 Q138 20 145 26" fill="none" stroke="#888780" strokeWidth="2.5" strokeLinecap="round" /><circle cx="138" cy="32" r="2" fill="#888780" /><path d="M124 36 L152 6" stroke={RED} strokeWidth="2.5" strokeLinecap="round" /><text x="26" y="24" fontSize="12" fill="#888780">z</text><text x="14" y="36" fontSize="11" fill="#888780">z</text></>,
   },
   firm: {
     blink: true,
     eyes: <><OpenEye cx={59} ry={12} /><OpenEye cx={101} ry={12} /></>,
     brows: <><Brow d="M49 32 L68 40" /><Brow d="M92 40 L111 32" /></>,
     mouth: MOUTHS.flat,
-    prop: <><path d="M138 14 L152 19 V33 Q152 45 138 50 Q124 45 124 33 V19Z" fill="none" stroke={RED} strokeWidth="2.5" strokeLinejoin="round" /><path d="M138 24 V36" stroke={RED} strokeWidth="3" strokeLinecap="round" /><circle cx="138" cy="42" r="1.8" fill={RED} /></>,
+    prop: <><path d="M22 12 L36 17 V31 Q36 43 22 48 Q8 43 8 31 V17Z" fill="none" stroke={RED} strokeWidth="2.5" strokeLinejoin="round" /><path d="M22 22 V34" stroke={RED} strokeWidth="3" strokeLinecap="round" /><circle cx="22" cy="40" r="1.8" fill={RED} /></>,
   },
 };
 

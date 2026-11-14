@@ -54,13 +54,15 @@ export default function VeyCharacter({ pose: poseProp = 'idle', mood = null, red
 
   const leftArmAnimation = animated(reducedMotion,
     cheering
-      ? { rotate: [92, 112, 92] }
+      ? { rotate: [70, 82, 70] }
       : drooping
         ? { rotate: [-38, -36, -38] }
-        : firm
-          ? { rotate: [4, 4, 4] }
+        : waving
+          ? { rotate: [-20, -18, -20] }
+          : firm
+          ? { rotate: [-38, -36, -38] }
       : worried
-        ? { rotate: [-4, 2, -4] }
+        ? { rotate: [50, 56, 50] }
     : walking
       ? { rotate: [24, -18, 24] }
       : listening
@@ -68,19 +70,19 @@ export default function VeyCharacter({ pose: poseProp = 'idle', mood = null, red
         : thinking
           ? { rotate: [2, 10, 2] }
           : { rotate: [5, -5, 5] },
-    { rotate: cheering ? 100 : drooping ? -38 : listening ? -18 : 0 });
+    { rotate: cheering ? 76 : drooping || firm ? -38 : worried ? 53 : waving ? -20 : listening ? -18 : 0 });
 
   const rightArmAnimation = animated(reducedMotion,
     cheering
-      ? { rotate: [-36, -54, -36] }
+      ? { rotate: [-1, -13, -1] }
       : waving
         ? { rotate: [-62, -42, -62] }
         : drooping
           ? { rotate: [98, 100, 98] }
           : firm
-            ? { rotate: [-78, -74, -78] }
+            ? { rotate: [-50, -46, -50] }
       : worried
-        ? { rotate: [20, 26, 20] }
+        ? { rotate: [16, 22, 16] }
     : tapping
       ? { rotate: [-34, -39, -34], x: [0, 5, 0] }
       : pointing
@@ -90,7 +92,7 @@ export default function VeyCharacter({ pose: poseProp = 'idle', mood = null, red
           : walking
             ? { rotate: [-18, 24, -18] }
             : { rotate: [12, 5, 12] },
-    { rotate: cheering ? -44 : pointing ? -34 : thinking ? -60 : drooping ? 98 : worried ? 22 : 8 });
+    { rotate: cheering ? -7 : pointing ? -34 : thinking ? -60 : waving ? -52 : firm ? -48 : drooping ? 98 : worried ? 19 : 8 });
 
   const armTransition = cheering ? CHEER_LOOP : walking ? QUICK_LOOP : LOOP;
   const jump = animated(reducedMotion,
