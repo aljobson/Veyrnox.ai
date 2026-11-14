@@ -319,3 +319,5 @@ dae2edacf363878ee7beededb7694a87dbcfdb03:scripts/probe-video-templates-staging.m
 7efd92a8d1deff0dff0b23b3482eb0153b69a08a:app/veyrnox/_lib/dialogueDubbingHandoff.js:generic-api-key:3
 7efd92a8d1deff0dff0b23b3482eb0153b69a08a:app/veyrnox/_lib/voiceFavourites.js:generic-api-key:3
 7efd92a8d1deff0dff0b23b3482eb0153b69a08a:app/veyrnox/_lib/voicePalettes.js:generic-api-key:7
+# Preview clip filename ("viral-….mp4") in a template clip list on a wip branch, not a credential.
+601d018e88f1b2c9d95a4eee2dab6744e2d76623:app/veyrnox/_lib/templateClips.js:generic-api-key:264
