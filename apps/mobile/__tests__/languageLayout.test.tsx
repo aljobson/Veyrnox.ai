@@ -14,6 +14,7 @@ import { DEFAULT_APPEARANCE } from '../src/theme';
 let mockStored: string | null = null;
 let mockStatus = 'signedOut';
 const mockBack = jest.fn();
+declare const __dirname: string;
 const mockReplace = jest.fn();
 let mockCanGoBack = true;
 const mockScreens: any[] = [];
