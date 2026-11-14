@@ -1,7 +1,7 @@
 // Data for the public /models pages and the sitemap. The live catalog is
 // authoritative; public pages use the checked-in fallback only when that
 // catalog cannot be reached.
-import { PRESETS } from './templates.js';
+import { GALLERY_PRESETS } from './templates.js';
 import { modelBadges, modelSummary } from './modelSummaries.js';
 import { kindOf, templateModelId } from './tokens.js';
 import { outputDurationLabel } from './chatMedia.js';
@@ -89,5 +89,5 @@ export function modelDetail(model) {
 
 /** Templates wired to this exact model id, not fuzzy name matching. */
 export function templatesForModel(modelId, limit = 6) {
-  return PRESETS.filter((preset) => templateModelId(preset) === modelId).slice(0, limit);
+  return GALLERY_PRESETS.filter((preset) => templateModelId(preset) === modelId).slice(0, limit);
 }

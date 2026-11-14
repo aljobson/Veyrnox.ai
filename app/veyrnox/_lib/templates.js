@@ -17,6 +17,7 @@ import { SHOWCASE_CLIPS } from './showcase.js';
 import { isPublishableSourcePromptTemplate } from './sourcePromptAudit.js';
 import { publicTemplateId } from './templateIds.js';
 import { BROKEN_TEMPLATE_IDS } from './brokenTemplateIds.js';
+import { VIDEO_GALLERY_TEMPLATE_IDS } from './videoTemplateGallery.js';
 import {
   HIGGSFIELD_90_WALL_CLIP_KEYS,
 } from './sourceTemplateExpansion12.js';
@@ -54,12 +55,17 @@ export const LEGACY_TEMPLATE_IDS = Object.freeze(TEMPLATE_CANDIDATES
 export const WALL_CLIP_KEYS = DECLARED_WALL_CLIP_KEYS.filter((key) => ALL_TEMPLATES.some((template) => template.clipKey === key));
 export const hasTemplateVideo = (preset) => Boolean(preset?.clipKey && SHOWCASE_CLIPS[preset.clipKey]?.video);
 export const PRESETS = ALL_TEMPLATES.filter(hasTemplateVideo);
+// The listed video gallery: the capped keep list (videoTemplateGallery.js), in catalog order. Every public list
+// (gallery, search, /api/templates, /api/presets, sitemap, model pages) reads this; PRESETS stays the full
+// preview-backed set the audits check, and every template stays addressable by id.
+const VIDEO_GALLERY_ID_SET = new Set(VIDEO_GALLERY_TEMPLATE_IDS);
+export const GALLERY_PRESETS = PRESETS.filter((preset) => VIDEO_GALLERY_ID_SET.has(preset.id));
 export const WALL_PRESETS = WALL_CLIP_KEYS.map((key) => ALL_TEMPLATES.find((p) => p.clipKey === key)).filter(Boolean);
-export const PRESET_CATEGORIES = ['ALL', 'NEW', ...CATEGORY_ORDER.filter((category) => PRESETS.some((p) => p.category === category))];
+export const PRESET_CATEGORIES = ['ALL', 'NEW', ...CATEGORY_ORDER.filter((category) => GALLERY_PRESETS.some((p) => p.category === category))];
 // Video exports remain stable for legacy clients and generated fidelity data.
 // Web discovery reads the gate at request time, including after a cached video list.
 export const allPublishedTemplates = () => [...ALL_TEMPLATES, ...publishedImageTemplates()];
-export const galleryTemplates = () => [...PRESETS, ...publishedImageTemplates()];
+export const galleryTemplates = () => [...GALLERY_PRESETS, ...publishedImageTemplates()];
 export function galleryCategories() {
   const templates = galleryTemplates();
   return ['ALL', 'NEW', ...CATEGORY_ORDER.filter(category => templates.some(p => p.category === category))];

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { register } from 'node:module';
-import { PRESETS } from '../app/veyrnox/_lib/templates.js';
+import { GALLERY_PRESETS, PRESETS } from '../app/veyrnox/_lib/templates.js';
 import { GENJUTSU_SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/genjutsuSourcePromptRecords.js';
 import { SOURCE_PROMPT_RECORDS, exactSourcePromptRecord } from '../app/veyrnox/_lib/sourcePromptRecords.js';
 import { SEEDANCE_200_TEMPLATE_METADATA } from '../app/veyrnox/_lib/seedanceTemplateMetadata.js';
@@ -21,7 +21,7 @@ const catalog = MODELS.map((m) => ({ id: m.id, name: m.name, modality: m.kind, c
 
 test('every web preset is listed, available, and priced from its active catalog row', () => {
     const list = toPublicPresets(catalog);
-    assert.equal(list.length, PRESETS.length);
+    assert.equal(list.length, GALLERY_PRESETS.length);
     for (const p of list) {
         const row = catalog.find((m) => m.id === p.modelId);
         assert.ok(row, `${p.id}: model ${p.modelId} is not in the catalog`);
@@ -35,15 +35,15 @@ test('every web preset is listed, available, and priced from its active catalog 
 });
 
 test('a preset whose model is not active stays listed with the web fallback price and is unavailable', () => {
-    const some = PRESETS.find((p) => p.durationSeconds === 10 && modelIdForName(p.model));
+    const some = GALLERY_PRESETS.find((p) => p.durationSeconds === 10 && modelIdForName(p.model));
     const without = catalog.filter((m) => m.id !== modelIdForName(some.model));
     const fallback = toPublicPresets(without).find((p) => p.id === some.id);
-    assert.equal(toPublicPresets(without).length, PRESETS.length);
+    assert.equal(toPublicPresets(without).length, GALLERY_PRESETS.length);
     assert.equal(fallback.available, false);
     assert.equal(fallback.credits, some.credits * (some.durationSeconds === 10 ? 2 : 1));
 
     for (const list of [toPublicPresets([]), toPublicPresets(undefined)]) {
-        assert.equal(list.length, PRESETS.length);
+        assert.equal(list.length, GALLERY_PRESETS.length);
         assert.ok(list.every((p) => p.available === false));
         assert.ok(list.every((p) => p.modality));
     }
@@ -57,20 +57,21 @@ test('preview and poster addresses are absolute https on our own host', () => {
 });
 
 test('the payload carries source framing and exact public source prompts but no per-user, internal or source-platform field', () => {
-    // Source records stay keyed by original id; published ids name no source platform.
+    // Source records stay keyed by original id; published ids name no source platform. The serializer is checked
+    // over every preview-backed template, not only the capped gallery the route lists.
     const sourceRecord = recordLookup(SOURCE_PROMPT_RECORDS), genjutsuRecord = recordLookup(GENJUTSU_SOURCE_PROMPT_RECORDS);
     const seedanceMeta = recordLookup(SEEDANCE_200_TEMPLATE_METADATA);
     const allowed = new Set(['id', 'title', 'category', 'theme', 'slotCount', 'boundModelId', 'modelId', 'modelName', 'modality', 'prompt', 'promptOrigin', 'sourcePrompt', 'sourcePromptOrigin', 'sourcePromptStatus', 'sourcePromptRunnable', 'sourcePromptIssues', 'sourcePromptModelPromptMax', 'sourcePromptCharacterCount', 'sourcePromptReferenceImageCount', 'sourcePromptReferenceVideoCount', 'sourcePromptDuplicateOf', 'needs', 'sourceAspect', 'durationSeconds', 'credits', 'gated', 'available', 'isNew', 'previewUrl', 'posterUrl', 'previewAspect']);
-    for (const p of toPublicPresets(catalog)) for (const k of Object.keys(p)) assert.ok(allowed.has(k), `unexpected field ${k}`);
-    for (const p of toPublicPresets(catalog)) {
+    for (const p of toPublicPresets(catalog, PRESETS)) for (const k of Object.keys(p)) assert.ok(allowed.has(k), `unexpected field ${k}`);
+    for (const p of toPublicPresets(catalog, PRESETS)) {
         assert.doesNotMatch(p.id, /higgs|syntx/i);
         for (const k of ['sourceModel', 'sourcePlatform', 'sourceUrl']) assert.equal(k in p, false, `${p.id}: ${k}`);
         for (const u of [p.previewUrl, p.posterUrl, p.sourcePromptDuplicateOf]) assert.doesNotMatch(u ?? '', /higgs|syntx/i, p.id);
     }
-    const framed = toPublicPresets(catalog).filter((p) => p.sourceAspect);
+    const framed = toPublicPresets(catalog, PRESETS).filter((p) => p.sourceAspect);
     assert.equal(framed.length, 673 + 46);
     assert.ok(framed.every((p) => /^(?:1:1|4:3|9:16|16:9)$/.test(p.sourceAspect)));
-    const exact = toPublicPresets(catalog).filter((p) => p.sourcePromptOrigin === 'community-source-exact');
+    const exact = toPublicPresets(catalog, PRESETS).filter((p) => p.sourcePromptOrigin === 'community-source-exact');
     assert.equal(exact.length, 749 + 46);
     assert.ok(exact.every((p) => typeof p.sourcePrompt === 'string' && p.sourcePrompt.length > 0));
     assert.ok(exact.every((p) => p.prompt.length <= 30000));
@@ -78,7 +79,7 @@ test('the payload carries source framing and exact public source prompts but no 
     assert.ok(exact.every(p => p.sourcePrompt === sourceRecord(p.id).prompt.replace(/\b(?:higgsfield|syntx)\s+/gi, '')), 'only the frozen platform-word transformation applies, including punctuation-bearing names');
     assert.equal(exact.filter((p) => genjutsuRecord(p.id)).length, 55);
     assert.equal(exact.filter((p) => sourceRecord(p.id) && !genjutsuRecord(p.id)).length, 694 + 46);
-    const statuses = Object.groupBy(toPublicPresets(catalog), (p) => p.sourcePromptStatus);
+    const statuses = Object.groupBy(toPublicPresets(catalog, PRESETS), (p) => p.sourcePromptStatus);
     assert.equal(statuses.exact.length, 749 + 46);
     assert.equal(statuses['adaptation-only'], undefined);
     assert.equal(statuses['exact-truncated'], undefined);
@@ -92,7 +93,7 @@ test('the payload carries source framing and exact public source prompts but no 
     assert.equal(exact.filter((p) => p.sourcePromptIssues.includes('audio-preservation-not-supported')).length, 208 + 41);
     assert.equal(exact.filter((p) => p.sourcePromptDuplicateOf).length, 2);
     // Provenance stays in the source metadata, not in the feed.
-    const seedance = toPublicPresets(catalog).filter((p) => seedanceMeta(p.id)?.sourceModel?.startsWith('Seedance'));
+    const seedance = toPublicPresets(catalog, PRESETS).filter((p) => seedanceMeta(p.id)?.sourceModel?.startsWith('Seedance'));
     assert.equal(seedance.length, 194);
     assert.equal(seedance.filter((p) => seedanceMeta(p.id).sourcePlatform === 'Syntx').length, 115);
     assert.equal(seedance.filter((p) => seedanceMeta(p.id).sourcePlatform === 'Higgsfield').length, 79);
@@ -127,7 +128,7 @@ test('the route answers 200 with cached public headers and ignores identity head
         assert.match(res.headers.get('cache-control'), /^public,/);
         const body = await res.json();
         assert.deepEqual(Object.keys(body), ['presets']);
-        assert.equal(body.presets.length, PRESETS.length);
+        assert.equal(body.presets.length, GALLERY_PRESETS.length);
         assert.ok(body.presets.every((p) => p.available === false));
     } finally { restore(); }
 });
@@ -152,7 +153,7 @@ test('all 299 retained API rows expose one exact prompt and informational compat
     const { sourcePromptAuditForModel } = await import('../app/veyrnox/_lib/sourcePromptAudit.js');
     const { fallbackCapabilitiesFor } = await import('../lib/fallbackModelCapabilities.js');
     const ids = new Set(HIGGSFIELD_300_TEMPLATE_IDS);
-    const rows = toPublicPresets(catalog).filter(row => ids.has(row.id));
+    const rows = toPublicPresets(catalog, PRESETS).filter(row => ids.has(row.id));
     assert.equal(rows.length, 295);
     assert.equal(rows.filter(row => row.sourcePromptRunnable).length, 100);
     assert.equal(rows.filter(row => !row.sourcePromptRunnable).length, 195);
@@ -184,7 +185,7 @@ test('legacy mobile route excludes images with publication both on and off', asy
       const res = await route.GET();
       assert.equal(res.status, 200);
       const { presets } = await res.json();
-      assert.equal(presets.length, PRESETS.length);
+      assert.equal(presets.length, GALLERY_PRESETS.length);
       assert.ok(presets.every(p => p.category !== 'CHRISTMAS' && p.modality !== 'text-to-image'));
     }
   } finally {
