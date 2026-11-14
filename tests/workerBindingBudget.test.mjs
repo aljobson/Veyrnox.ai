@@ -66,7 +66,7 @@ test('maximum-charge enforcement ships disabled pending capped durable admission
     assert.equal(config.env.staging.vars.MAX_CHARGE_ENABLED, undefined);
 });
 
-test('production Music is wired through one binding while unverified provider actions stay closed', () => {
+test('production Music is wired through one binding, with the seven editing actions on (0511)', () => {
     const flags = JSON.parse(config.vars.MUSIC_RUNTIME_FLAGS);
     for (const name of [
         'ui', 'schema', 'library', 'generation', 'dispatch', 'sources', 'distribution',
@@ -74,8 +74,11 @@ test('production Music is wired through one binding while unverified provider ac
     ]) assert.equal(flags[name], true, name);
     assert.equal(flags.references, false, 'provider reference-link ingestion stays closed');
     assert.equal(JSON.parse(config.env.staging.vars.MUSIC_RUNTIME_FLAGS).references, false, 'provider reference-link ingestion stays closed in staging');
+    // Proven by billed staging runs on 2026-11-13/14; their catalog rows are activated by 0511.
+    const stagingFlags = JSON.parse(config.env.staging.vars.MUSIC_RUNTIME_FLAGS);
     for (const name of ['cover', 'stems', 'targetStems', 'trackAdd', 'extend', 'replace', 'addSection']) {
-        assert.equal(flags[name], false, name);
+        assert.equal(flags[name], true, name);
+        assert.equal(stagingFlags[name], true, `staging ${name}`);
     }
     for (const name of ['MUSIC_UI_ENABLED', 'MUSIC_SCHEMA_ENABLED', 'MUSIC_LIBRARY_ENABLED', 'MUSIC_GENERATION_ENABLED']) {
         assert.equal(Object.hasOwn(config.vars, name), false, `${name} must stay consolidated`);
