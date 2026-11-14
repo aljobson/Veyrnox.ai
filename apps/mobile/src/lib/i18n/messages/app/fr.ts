@@ -6210,6 +6210,8 @@ export default {
   "toolDirectory.bestValue": "Meilleur prix",
   "toolDirectory.lowerPrice": "Moins cher",
   "filmCloud.linkFailed": "Impossible de charger vos films enregistrés. Réessayez plus tard.",
+  "filmCloud.linkOffline": "Impossible de charger vos films enregistrés. Vérifiez votre connexion Internet et réessayez.",
+  "filmCloud.linkAccount": "Impossible de charger vos films enregistrés, car nous n’avons pas pu confirmer votre compte. Déconnectez-vous, reconnectez-vous, puis réessayez.",
   "create.workspace.referencesLimit.one": "Jusqu'à {count} fichier",
   "create.workspace.referencesLimit.many": "Jusqu'à {count} fichiers",
   "create.workspace.referencesLimit.other": "Jusqu'à {count} fichiers",

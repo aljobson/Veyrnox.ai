@@ -6138,6 +6138,8 @@ export default {
   "toolDirectory.bestValue": "Bester Preis",
   "toolDirectory.lowerPrice": "Günstiger",
   "filmCloud.linkFailed": "Deine gespeicherten Filme konnten nicht geladen werden. Versuche es später erneut.",
+  "filmCloud.linkOffline": "Deine gespeicherten Filme konnten nicht geladen werden. Prüfe deine Internetverbindung und versuche es erneut.",
+  "filmCloud.linkAccount": "Deine gespeicherten Filme konnten nicht geladen werden, weil wir dein Konto nicht bestätigen konnten. Melde dich ab und wieder an und versuche es erneut.",
   "create.workspace.referencesLimit.one": "Bis zu {count} Datei",
   "create.workspace.referencesLimit.other": "Bis zu {count} Dateien",
 } as const;

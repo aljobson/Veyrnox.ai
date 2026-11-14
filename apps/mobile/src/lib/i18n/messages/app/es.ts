@@ -6210,6 +6210,8 @@ export default {
   "toolDirectory.bestValue": "Mejor precio",
   "toolDirectory.lowerPrice": "Más barato",
   "filmCloud.linkFailed": "No se pudieron cargar tus películas guardadas. Inténtalo más tarde.",
+  "filmCloud.linkOffline": "No se pudieron cargar tus películas guardadas. Comprueba tu conexión a Internet y vuelve a intentarlo.",
+  "filmCloud.linkAccount": "No se pudieron cargar tus películas guardadas porque no pudimos confirmar tu cuenta. Cierra sesión, vuelve a iniciarla e inténtalo de nuevo.",
   "create.workspace.referencesLimit.one": "Hasta {count} archivo",
   "create.workspace.referencesLimit.many": "Hasta {count} archivos",
   "create.workspace.referencesLimit.other": "Hasta {count} archivos",

@@ -6282,6 +6282,8 @@ export default {
   "toolDirectory.bestValue": "Лучшая цена",
   "toolDirectory.lowerPrice": "Дешевле",
   "filmCloud.linkFailed": "Не удалось загрузить сохранённые фильмы. Попробуйте позже.",
+  "filmCloud.linkOffline": "Не удалось загрузить сохранённые фильмы. Проверьте подключение к Интернету и повторите попытку.",
+  "filmCloud.linkAccount": "Не удалось загрузить сохранённые фильмы, потому что мы не смогли подтвердить ваш аккаунт. Выйдите из аккаунта, войдите снова и повторите попытку.",
   "create.workspace.referencesLimit.one": "До {count} файла",
   "create.workspace.referencesLimit.few": "До {count} файлов",
   "create.workspace.referencesLimit.many": "До {count} файлов",

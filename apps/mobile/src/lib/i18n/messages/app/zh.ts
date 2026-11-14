@@ -6066,5 +6066,7 @@ export default {
   "toolDirectory.bestValue": "最划算",
   "toolDirectory.lowerPrice": "价格更低",
   "filmCloud.linkFailed": "无法加载你保存的影片。请稍后再试。",
+  "filmCloud.linkOffline": "无法加载你保存的影片。请检查网络连接后重试。",
+  "filmCloud.linkAccount": "无法加载你保存的影片，因为我们无法确认你的账户。请退出登录后重新登录，然后再试一次。",
   "create.workspace.referencesLimit.other": "最多 {count} 个文件",
 } as const;
