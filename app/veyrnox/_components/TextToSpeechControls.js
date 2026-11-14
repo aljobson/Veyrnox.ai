@@ -23,7 +23,7 @@ import {
 import { VOICE_TEMPLATE_LANGUAGES, voiceTemplateSample } from '../_lib/voiceTemplateSamples';
 import { MAX_AUDITION_VOICES, toggleAuditionVoice } from '../_lib/voiceAuditions';
 
-const pressable = 'transition-[border-color,background-color,color,transform] duration-150 active:scale-[0.96]';
+const pressable = 'transition-[border-color,background-color,color,scale] duration-[120ms] ease-(--vx-ease-out) motion-safe:active:scale-[0.97]';
 const selectClass = 'min-h-11 rounded-xl border border-vx-border bg-vx-panel px-3 text-sm font-semibold text-vx-fg outline-hidden transition-[border-color,box-shadow] focus:border-vx-accent focus:shadow-[0_0_0_3px_rgba(102,232,207,0.12)]';
 const pillClass = `${pressable} min-h-10 rounded-full border border-vx-border bg-vx-panel px-3 py-2 text-[11px] font-bold text-vx-fg-muted hover:border-vx-accent hover:text-vx-fg`;
 

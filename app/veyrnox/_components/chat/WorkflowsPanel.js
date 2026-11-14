@@ -33,7 +33,7 @@ export function WorkflowsPanel() {
       <ul className="mt-5 grid gap-3 md:grid-cols-2">
         {STUDIO_WORKFLOWS.map((workflow) => (
           <li key={workflow.id}>
-            <button type="button" onClick={() => setDetailWorkflow(workflow)} className="group flex h-full w-full flex-col rounded-2xl border border-vx-border bg-vx-panel p-5 text-start transition hover:-translate-y-0.5 hover:border-vx-accent hover:shadow-xl">
+            <button type="button" onClick={() => setDetailWorkflow(workflow)} className="group flex h-full w-full flex-col rounded-2xl border border-vx-border bg-vx-panel p-5 text-start transition motion-safe:hover:-translate-y-0.5 hover:border-vx-accent hover:shadow-xl">
               <span className="flex w-full items-start gap-4">
                 <StudioWorkflowIcon workflow={workflow} />
                 <span className="min-w-0 flex-1">

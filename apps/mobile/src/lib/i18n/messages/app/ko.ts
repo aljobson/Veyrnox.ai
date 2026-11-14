@@ -2761,6 +2761,7 @@ export default {
   "jobCancel.cancelledFree": "취소되었습니다. 청구된 비용이 없습니다.",
   "jobCancel.cancelling": "취소 중…",
   "jobCancel.confirm": "취소",
+  "jobCancel.confirmAction": "생성 취소",
   "jobCancel.confirmFree": "아직 모델에 전송되지 않았다면 중지하고 사용한 무료 횟수를 사용한 날짜에 돌려줍니다. 이후 날짜에 무료 횟수가 추가되지는 않습니다. 이미 시작했다면 중지할 수 없습니다.",
   "jobCancel.confirmPaid.other": "아직 모델에 전송되지 않았다면 중지하고 사용한 {count}크레딧을 원래 출처로 환불합니다. 이미 종료된 기간의 구독 크레딧은 다시 만료됩니다. 이미 시작했다면 중지할 수 없습니다. 정상적으로 완료되며 실패한 생성은 환불됩니다.",
   "jobCancel.confirmTitle": "이 생성을 취소할까요?",
@@ -6020,4 +6021,7 @@ export default {
   "create.firstRun.example.work.image": "젖은 돌 위에 놓인 유리 향수병의 프리미엄 제품 사진, 부드러운 아침 햇살",
   "create.firstRun.example.work.video": "10초 광고: 커피가 슬로모션으로 컵에 채워지고 김이 피어오르는 따뜻한 스튜디오 조명",
   "create.firstRun.example.work.audio": "가벼운 기타와 박수가 들어간 경쾌한 30초 브랜드 징글",
+  "acct.profileError": "내 정보를 불러오지 못했습니다.",
+  "explore.noMatchQuery": "“{query}”에 일치하는 템플릿이 없습니다.",
+  "common.clearFilters": "필터 지우기",
 } as const;

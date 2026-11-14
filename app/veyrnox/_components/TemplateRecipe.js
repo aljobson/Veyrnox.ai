@@ -49,12 +49,12 @@ export function TemplateRecipe({ preset, generatedPreview = false }) {
   return (
     <>
       {(sourcePromptUnavailable || sourcePromptNotRecorded) && (
-        <div role="note" data-source-prompt-status={preset.sourcePromptStatus} className="mt-8 rounded-xl border border-amber-400/40 bg-amber-400/[0.08] px-4 py-3 text-[13px] text-vx-fg-body">
+        <div role="note" data-source-prompt-status={preset.sourcePromptStatus} className="mt-8 rounded-xl border border-vx-warn/40 bg-vx-warn/[0.07] px-4 py-3 text-[13px] text-vx-fg-body">
           {t(sourcePromptUnavailable ? "public.TemplateRecipe.sourcePromptUnavailable" : "public.TemplateRecipe.sourcePromptNotRecorded")}
         </div>
       )}
       {sourceUnsupported && (
-        <div role="note" data-source-unsupported className="mt-8 rounded-xl border border-amber-400/40 bg-amber-400/[0.08] px-4 py-3 text-[13px] text-vx-fg-body">
+        <div role="note" data-source-unsupported className="mt-8 rounded-xl border border-vx-warn/40 bg-vx-warn/[0.07] px-4 py-3 text-[13px] text-vx-fg-body">
           {t("public.TemplateRecipe.sourceVideoUnsupported")}
           {swapSceneAvailable && <Link href={`/app/create?swap=${encodeURIComponent(preset.id)}`} data-swap-scene-cta className="mt-2 block font-bold underline">{t("public.TemplateRecipe.swapSceneCta")}</Link>}
         </div>
@@ -66,7 +66,7 @@ export function TemplateRecipe({ preset, generatedPreview = false }) {
       {tooLong && <p role="alert" className="mt-3 text-[13px] font-bold text-vx-danger">{t("public.TemplateRecipe.productPromptTooLong", { count: prompt.length, max: TEMPLATE_PROMPT_MAX })}</p>}
       <p className="mt-3 text-[13px] text-vx-fg-muted">{hasExactSourcePrompt ? t("public.TemplateRecipe.exactCommunityPromptHelp") : generatedPreview ? t("public.TemplateRecipe.thePreviewWasGeneratedUsingThis") : preset.inspired ? t("public.TemplateRecipe.adaptedForTheModelBelowTo") : t("public.TemplateRecipe.editItHereOrInThe")}</p>
       {templateClip && <p className="mt-3 text-[13px] text-vx-fg-muted">{t("public.TemplateRecipe.templateClipUsed")}</p>}
-      {hasExactSourcePrompt && sourcePromptTruncated && <p role="note" data-source-prompt-status="exact-truncated" className="mt-3 rounded-xl border border-amber-400/40 bg-amber-400/[0.08] px-4 py-3 text-[13px] text-vx-fg-body">{t("public.TemplateRecipe.sourcePromptTruncated")}</p>}
+      {hasExactSourcePrompt && sourcePromptTruncated && <p role="note" data-source-prompt-status="exact-truncated" className="mt-3 rounded-xl border border-vx-warn/40 bg-vx-warn/[0.07] px-4 py-3 text-[13px] text-vx-fg-body">{t("public.TemplateRecipe.sourcePromptTruncated")}</p>}
       {hasExactSourcePrompt && sourcePromptDuplicate && <p role="note" data-source-prompt-duplicate-of={preset.sourcePromptDuplicateOf} className="mt-3 rounded-xl border border-vx-border px-4 py-3 text-[13px] text-vx-fg-body">{t("public.TemplateRecipe.sourcePromptDuplicate")}</p>}
       {preset.steps && (
         <ol className="mt-5 list-decimal space-y-2 ps-5 text-sm text-vx-fg-body">

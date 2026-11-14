@@ -18,6 +18,7 @@ export function MobileMenu({ items: allItems, className = '', buttonLabel = 'Men
   const items = [...new Map(allItems.map((it) => [it.href, it])).values()];
   const [open, setOpen] = useState(false);
   const triggerRef = useRef(null);
+  const wrapRef = useRef(null);
   const oddlingsPublic = useOddlingsPublic();
   const { t, href: localHref } = useI18n();
 
@@ -37,10 +38,14 @@ export function MobileMenu({ items: allItems, className = '', buttonLabel = 'Men
       setOpen(false);
       triggerRef.current?.focus();
     };
+    // Tabbing past the last link leaves the panel: close it, or focus goes on behind an open menu.
+    const onFocusIn = (e) => { if (!wrapRef.current?.contains(e.target)) setOpen(false); };
     window.addEventListener('keydown', onKey);
+    document.addEventListener('focusin', onFocusIn);
     return () => {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', onKey);
+      document.removeEventListener('focusin', onFocusIn);
     };
   }, [open]);
 
@@ -74,7 +79,7 @@ export function MobileMenu({ items: allItems, className = '', buttonLabel = 'Men
   });
 
   return (
-    <div className={className} data-print="hide">
+    <div ref={wrapRef} className={className} data-print="hide">
       <button
         ref={triggerRef}
         type="button"

@@ -5,6 +5,7 @@ export default {
     'jobCancel.confirmFree': 'If it has not been sent to the model yet, it stops and its free use is handed back to the day it was taken. That does not add a free use to a later day. If it has already started, it cannot be stopped.',
     'jobCancel.keep': 'Keep creating',
     'jobCancel.confirm': 'Cancel',
+    'jobCancel.confirmAction': 'Cancel creation',
     'jobCancel.cancelling': 'Cancelling…',
     'jobCancel.done': 'Cancelled. Checking this creation now.',
     'jobCancel.cancelled.one': 'Cancelled. The {count} credit it took was refunded.',

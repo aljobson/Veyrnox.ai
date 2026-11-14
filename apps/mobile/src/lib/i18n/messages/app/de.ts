@@ -2812,6 +2812,7 @@ export default {
   "jobCancel.cancelledFree": "Abgebrochen. Es wurde nichts berechnet.",
   "jobCancel.cancelling": "Wird abgebrochen…",
   "jobCancel.confirm": "Abbrechen",
+  "jobCancel.confirmAction": "Kreation abbrechen",
   "jobCancel.confirmFree": "Falls sie noch nicht an das Modell gesendet wurde, wird sie gestoppt und die kostenlose Nutzung dem ursprünglichen Tag zurückgegeben. Das fügt einem späteren Tag keine kostenlose Nutzung hinzu. Falls sie bereits gestartet ist, kann sie nicht gestoppt werden.",
   "jobCancel.confirmPaid.one": "Falls sie noch nicht an das Modell gesendet wurde, wird sie gestoppt und der verbrauchte {count} Credit an seine Quelle erstattet. Abo-Credits aus einem bereits beendeten Zeitraum verfallen erneut. Falls sie bereits gestartet ist, kann sie nicht gestoppt werden: Sie wird normal abgeschlossen, und fehlgeschlagene Kreationen werden erstattet.",
   "jobCancel.confirmPaid.other": "Falls sie noch nicht an das Modell gesendet wurde, wird sie gestoppt und die verbrauchten {count} Credits an ihre Quelle erstattet. Abo-Credits aus einem bereits beendeten Zeitraum verfallen erneut. Falls sie bereits gestartet ist, kann sie nicht gestoppt werden: Sie wird normal abgeschlossen, und fehlgeschlagene Kreationen werden erstattet.",
@@ -6088,4 +6089,7 @@ export default {
   "create.firstRun.example.work.image": "Ein hochwertiges Produktfoto einer gläsernen Parfümflasche auf nassem Stein, weiches Morgenlicht",
   "create.firstRun.example.work.video": "Eine 10-Sekunden-Werbung: Kaffee füllt in Zeitlupe eine Tasse, Dampf steigt auf, warmes Studiolicht",
   "create.firstRun.example.work.audio": "Ein fröhlicher 30-Sekunden-Markenjingle mit leichter Gitarre und Klatschen",
+  "acct.profileError": "Deine Angaben konnten nicht geladen werden.",
+  "explore.noMatchQuery": "Keine Vorlagen passen zu „{query}“.",
+  "common.clearFilters": "Filter zurücksetzen",
 } as const;

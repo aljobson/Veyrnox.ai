@@ -122,7 +122,7 @@ test('unmount or changing jobs suppresses late results and stops future work', a
 
 test('Library, Create and Clip Editor wire all media errors to recovery and expose retry', () => {
     const read = (path) => readFileSync(new globalThis.URL(path, import.meta.url), 'utf8');
-    const library = read('../app/veyrnox/app/library/page.js');
+    const library = read('../app/veyrnox/_components/LibraryJobCard.js');
     const preview = read('../app/veyrnox/_components/JobAssetPreview.js');
     const sheet = read('../app/veyrnox/_components/EditSheet.js');
     for (const [source, count] of [[library, 3], [preview, 3], [sheet, 1]]) {

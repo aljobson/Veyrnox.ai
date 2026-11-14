@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { MediaTile } from '../_components/MediaTile';
 import { TemplateRoller } from '../_components/TemplateRoller';
 import { PremiumTag } from '../_components/PremiumTag';
+import { PrintOnView } from '../_components/PrintOnView';
 import { SHOWCASE_CLIPS, MODEL_SHOWCASE_KEYS } from '../_lib/showcase';
 import { modelPriceUnit } from '../_lib/modelPricing';
 import { WALL_PRESETS } from '../_lib/templates';
@@ -19,11 +20,19 @@ import { localizedHref } from '../../../lib/i18n/locales.mjs';
 
 /* ─── Preset wall: the real presets ─── */
 
+// The wall's clips are 9:16, 16:9 and squarer. At their own shapes in CSS
+// columns the last column held one tile and the third hung 400px low. One
+// frame for all of them (MediaTile `ambient`: the clip whole, a blurred copy
+// of its poster in the bars) gives two even rows.
+const WALL_FRAME = '4 / 5';
+
 export async function PresetWall({ catalog }) {
   const { locale, t } = await getT();
   const presets = WALL_PRESETS.slice(0, LANDING_TEMPLATE_LIMIT);
   // The client roller gets each card's preview with it; it does not import the showcase data.
-  const rollerPresets = presets.map((p) => ({ ...p, clip: SHOWCASE_CLIPS[p.clipKey] ?? null }));
+  // It prints no prompt, so the prompts stay on the server: the eight of them
+  // were 115 KB of this page's payload.
+  const rollerPresets = presets.map(({ prompt: _prompt, sourcePrompt: _sourcePrompt, ...p }) => ({ ...p, clip: SHOWCASE_CLIPS[p.clipKey] ?? null }));
   return (
     <section data-vey-perch className="px-4 sm:px-6 pt-28 sm:pt-36 max-w-[1300px] mx-auto">
       <div className="flex items-end justify-between mb-8 flex-wrap gap-4">
@@ -32,8 +41,8 @@ export async function PresetWall({ catalog }) {
           {t('home.templates.all')}
         </Link>
       </div>
-      <TemplateRoller presets={rollerPresets} catalog={catalog} className="mb-8" />
-      <div className="columns-1 sm:columns-2 lg:columns-4 gap-3 [&>a]:mb-6 [&>a]:break-inside-avoid">
+      <TemplateRoller presets={rollerPresets} catalog={catalog} className="mb-8" headingLevel={3} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-3 gap-y-8">
         {presets.map((preset) => {
           const clip = SHOWCASE_CLIPS[preset.clipKey];
           return (
@@ -43,15 +52,15 @@ export async function PresetWall({ catalog }) {
               ariaLabel={t('home.templates.open', { name: presetTitle(preset.name), n: presetCredits(preset, catalog) })}
               clip={clip && { ...clip, objectFit: 'contain' }}
               imageSizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 25vw"
-              className="block text-left w-full"
+              className="block text-start w-full"
               mediaClassName="rounded-2xl"
-              mediaStyle={{ background: preset.bg, aspectRatio: clip?.aspectRatio || '4 / 5' }}
+              ambient
+              mediaStyle={{ background: preset.bg, aspectRatio: WALL_FRAME }}
               footer={
                 <div className="pt-3 flex items-baseline justify-between gap-3">
                   <div className="min-w-0">
                     <div className="font-black tracking-tight text-[15px]">{presetTitle(preset.name)}</div>
                     <div className="mt-0.5 text-vx-fg-muted truncate text-xs">{preset.model}</div>
-                    <p className="mt-2 line-clamp-2 text-xs leading-5 text-vx-fg-muted">{preset.prompt}</p>
                   </div>
                   <div className="shrink-0 font-vx-mono font-bold text-vx-money vx-num text-[13px]">{presetCredits(preset, catalog)} cr</div>
                 </div>
@@ -80,6 +89,10 @@ export const GROUP_KEYS = {
   audio: { label: 'home.models.audio', unit: 'home.models.unitAudio' },
 };
 
+// A kind wears the hue it has in the mobile app (PresetCard.tsx): video iris,
+// image sky, audio rose. On the heading only: prices stay amber.
+export const KIND_HUE = { video: 'text-vx-hue-iris', image: 'text-vx-hue-sky', audio: 'text-vx-hue-rose' };
+
 // The three group tiles share one square frame. Their clips come in 4:3, 1:2
 // and 1:1, and drawn at their own shape the three headings sat 480px apart
 // across the row, so no price list lined up with another. Each clip stays
@@ -97,7 +110,7 @@ export async function ModelShelf({ catalog }) {
   const total = groups.reduce((n, g) => n + g.rows.length, 0);
 
   return (
-    <section data-vey-perch id="models" className="px-4 sm:px-6 pt-28 sm:pt-36 max-w-[1300px] mx-auto">
+    <section data-vey-perch id="models" className="px-4 sm:px-6 pt-20 sm:pt-24 max-w-[1300px] mx-auto">
       <h2 className="vx-display text-[40px] sm:text-[56px]">{t('home.models.title')}</h2>
       <p className="mt-4 text-lg text-vx-fg-body max-w-[48ch] leading-[1.5]">
         {t('home.models.lead', { total })}
@@ -121,29 +134,31 @@ export async function ModelShelf({ catalog }) {
                 mediaStyle={{ aspectRatio: SHELF_FRAME }}
                 footer={
                   <div className="pt-3 flex items-baseline justify-between gap-3">
-                    <h3 className="text-xl font-black">{t(GROUP_KEYS[g.kind].label)}</h3>
+                    <h3 className={`text-xl font-black ${KIND_HUE[g.kind] || ''}`}>{t(GROUP_KEYS[g.kind].label)}</h3>
                     <span className="text-[13px] text-vx-fg-body">{t(GROUP_KEYS[g.kind].unit)}</span>
                   </div>
                 }
               />
+              <PrintOnView>
               <ul className="mt-2 font-vx-mono text-[14px] vx-num">
-                {representativeRows.map((m) => (
-                  <li key={m.id}>
+                {representativeRows.map((m, i) => (
+                  <li key={m.id} className="vx-feed-line" style={{ '--vx-i': i }}>
                     <Link
                       href={`/app/create?model=${encodeURIComponent(m.id)}`}
-                      className="group flex items-baseline gap-2 py-2 text-vx-fg-body hover:text-vx-fg"
+                      className="group block py-2 text-vx-fg-body hover:text-vx-fg"
                     >
-                      <span className="min-w-0">
-                        <span className="block truncate group-hover:underline underline-offset-4">{g.nameOf(m)}</span>
-                        <span className="block text-[11px] text-vx-fg-muted">{modelPriceUnit(m, t)}</span>
+                      <span className="flex items-baseline gap-2">
+                        <span className="min-w-0 truncate group-hover:underline underline-offset-4">{g.nameOf(m)}</span>
+                        {m.gated && <PremiumTag className="shrink-0" />}
+                        <span aria-hidden className="vx-leader flex-1" />
+                        <span className="shrink-0 font-bold text-vx-money">{m.credits} cr</span>
                       </span>
-                      {m.gated && <PremiumTag className="shrink-0" />}
-                      <span aria-hidden className="vx-leader flex-1" />
-                      <span className="shrink-0 font-bold text-vx-money">{m.credits} cr</span>
+                      <span className="block text-[11px] text-vx-fg-muted">{modelPriceUnit(m, t)}</span>
                     </Link>
                   </li>
                 ))}
               </ul>
+              </PrintOnView>
             </div>
           );
         })}

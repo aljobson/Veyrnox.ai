@@ -46,6 +46,10 @@ The goal is met when:
   `text-vx-accent`…), and both themes are checked.
 - Amber (`money` / `warning`) appears only on money and credit amounts. Aqua
   (`accent`) marks actions. `danger` marks errors and destructive actions only.
+- Feature hues (iris, sky and rose; mint is the accent) name a feature: its
+  icon or its kicker. They are the same three on mobile (`featureHue`) and on
+  the web (`text-vx-hue-iris`, `text-vx-hue-sky`, `text-vx-hue-rose`). A hue
+  never marks an action or a money amount.
 - Text on its background is at least 4.5:1 (3:1 for large text and for icons
   and borders that carry meaning), in light, dark and OLED, and for each of
   the five mobile accents.

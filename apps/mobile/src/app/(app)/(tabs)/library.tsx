@@ -6,7 +6,7 @@ import { applyStatus, inFlightIds, mergePage } from '../../../lib/libraryPoll';
 import { Text, Button, Chip, themedStyles, useThemedStyles } from '../../../components/ui';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AppState, FlatList, ScrollView, View } from 'react-native';
+import { AppState, FlatList, RefreshControl, ScrollView, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { LibraryItem } from '../../../components/LibraryItem';
 import { StaleNote } from '../../../components/StaleNote';
@@ -20,6 +20,7 @@ import { publishHref, askAboutHref } from '../../../lib/nextSteps';
 import { creativeReuseHref } from '../../../lib/creativeReuse';
 import { ds, LIST_END_PADDING } from '../../../theme';
 import { t } from '../../../lib/i18n';
+import { useAnnouncement } from '../../../lib/useAnnouncement';
 import { retryDelayMs } from '../../../lib/retryDelay';
 
 import { EmptyState } from '../../../components/EmptyState';
@@ -206,6 +207,25 @@ export default function Library() {
         }
     }, [api]);
 
+    // Pull to refresh shows its spinner for as long as the read takes.
+    const [refreshing, setRefreshing] = useState(false);
+    const refresh = useCallback(async () => {
+        setRefreshing(true);
+        try { await load(); } finally { setRefreshing(false); }
+    }, [load]);
+
+    // What is switched on in the filter row, in its own words, so an empty result can say what was asked for.
+    const activeFilters = [
+        kindFilter !== 'all' ? t(`library.type.${kindFilter}`) : null,
+        favOnly ? t('library.type.favourites') : null,
+        stateFilter !== 'all' ? t(`library.state.${stateFilter}`) : null,
+    ].filter((label): label is string => label !== null);
+    function clearFilters() {
+        setKindFilter('all');
+        setStateFilter('all');
+        setFavOnly(false);
+    }
+
     useFocusEffect(
         useCallback(() => {
             setFocused(true);
@@ -244,12 +264,18 @@ export default function Library() {
         }
     }
 
+    // Said once when the filters leave nothing to show.
+    const noMatch = !failed && !!jobs && jobs.length > 0 && shown.length === 0;
+    useAnnouncement(noMatch ? t(next ? 'library.noMatchOlder' : 'library.noMatch') : null, { everywhere: true });
+
     return (
         <View style={styles.screen}>
             <Stack.Screen options={{ title: t('label.Library') }} />
             <Text variant="title2" tone="primary" style={styles.heading} accessibilityRole="header">{t('label.Library')}</Text>
+            <View style={styles.headerActions}>
             <Button variant="primary" accessibilityRole="button" accessibilityLabel={t('app.library.openSmartCut')} accessibilityHint={t('app.explore.smartCutStart')} onPress={() => router.push('/smart-cut')} label={t('app.library.openSmartCut')} />
             <Button variant="secondary" accessibilityRole="button" accessibilityLabel={t('library.videoFilesLabel')} onPress={() => router.push('/library/files')} label={t('library.videoFiles')} />
+            </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.barScroll} contentContainerStyle={styles.bar} accessibilityLabel={t('library.filter.type')}>
                 {KIND_FILTERS.map((f) => (
                     <Chip key={f} label={t(`library.type.${f}`)} selected={kindFilter === f} onPress={() => setKindFilter(f)} />
@@ -279,11 +305,16 @@ export default function Library() {
                     ListHeaderComponent={<StaleNote meta={saved} />}
                     keyExtractor={(j) => j.job_id}
                     onEndReached={more}
-                    onRefresh={load}
-                    refreshing={false}
+                    onRefresh={refresh}
+                    refreshing={refreshing}
+                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={styles.accentInk.color} colors={[styles.accentInk.color]} />}
                     ListEmptyComponent={
                         jobs && jobs.length > 0 ? (
-                            <Text variant="body" tone="tertiary" style={styles.muted}>{next ? t('library.noMatchOlder') : t('library.noMatch')}</Text>
+                            <View style={styles.noMatch}>
+                                <Text variant="body" tone="tertiary">{next ? t('library.noMatchOlder') : t('library.noMatch')}</Text>
+                                {activeFilters.length > 0 ? <Text variant="footnote" tone="secondary">{activeFilters.join(' · ')}</Text> : null}
+                                {activeFilters.length > 0 ? <Button variant="secondary" size="md" label={t('common.clearFilters')} onPress={clearFilters} /> : null}
+                            </View>
                         ) : (
                             <EmptyState title={t('empty.library.title')} body={t('library.empty')} actionLabel={t('empty.library.action')} href="/create" />
                         )
@@ -326,7 +357,8 @@ const sheets = themedStyles((p) => ({
     list: { paddingBottom: LIST_END_PADDING },
     barScroll: { flexGrow: 0, flexShrink: 0, marginBottom: ds.space.sm },
     bar: { flexDirection: 'row', gap: ds.space.sm },
-    screen: { flex: 1, backgroundColor: p.bg, padding: ds.space.lg },
+    screen: { flex: 1, backgroundColor: p.bg, paddingHorizontal: ds.space.gutter, paddingVertical: ds.space.lg },
     heading: { color: p.textPrimary, marginBottom: ds.space.xs },
-    muted: { color: p.textTertiary },
+    headerActions: { gap: ds.space.sm },
+    noMatch: { alignItems: 'flex-start', gap: ds.space.sm, paddingVertical: ds.space.md },
 }));

@@ -1,5 +1,6 @@
 import { MarketingNav } from '../_components/NavBar';
 import { Main } from '../_components/Main';
+import { FooterForest } from '../_sections/footer';
 import { PresetGallery } from '../_components/PresetGallery';
 import { redirect } from 'next/navigation';
 import { TemplateKindSwitch } from '../_components/TemplateKindSwitch';
@@ -8,7 +9,7 @@ import { templateCards, templateCategories } from '../../../lib/clientTemplates.
 
 // Public preset gallery. No card, no cost until you generate.
 export default async function Gallery({ searchParams }) {
-  const { t } = await getT();
+  const { locale, t } = await getT();
   const { kind } = await searchParams;
   // ?kind=audio sends old links to Music Discover, ?kind=image the still-image templates; everything else is the video gallery.
   if (kind === 'audio') redirect('/app/music/discover');
@@ -26,6 +27,7 @@ export default async function Gallery({ searchParams }) {
         </p>
         <PresetGallery kind={galleryKind} initial={{ templates: templateCards(), categories: templateCategories() }} />
       </Main>
+      <FooterForest locale={locale} t={t} flush />
     </div>
   );
 }

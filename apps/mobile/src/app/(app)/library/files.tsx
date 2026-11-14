@@ -7,7 +7,7 @@ import { useAuth } from '../../../auth/AuthProvider';
 import { touchTarget } from '../../../lib/a11y';
 import { expiryLabel, fetchFileLink, fetchMasters, fetchRenders, fileErrorMessage, lengthLabel, resolutionLabel, sizeLabel, type FileKind, type LibraryFile } from '../../../lib/libraryFiles';
 import { saveOutput, shareOutput } from '../../../lib/output';
-import { colors } from '../../../theme';
+import { colors, noticeColor } from '../../../theme';
 
 const TABS: { kind: FileKind; label: string }[] = [
     { kind: 'masters', label: t('files.filmmasters') },
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
     row: { paddingVertical: 14, borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth, gap: 3 },
     name: { color: colors.text, fontSize: 16 },
     muted: { color: colors.muted, fontSize: 13 },
-    warn: { color: colors.money },
+    warn: { color: noticeColor },
     actions: { flexDirection: 'row', gap: 8, marginTop: 6 },
     action: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 14, borderRadius: 10, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
     off: { opacity: 0.4 },

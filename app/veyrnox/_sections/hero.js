@@ -15,8 +15,6 @@ export async function Hero({ models }) {
   const { locale, t } = await getT();
   return (
     <section className="relative">
-      <h2 className="sr-only">Veyrnox.ai</h2>
-      <p className="sr-only">{t('home.breakthrough.film')}</p>
       {/* The headline says the price is on the receipt, so the receipt is
           under it, printing in the first screen. The slip's Generate button
           is the page's one primary action, which is why there is no second
@@ -47,6 +45,7 @@ export async function Hero({ models }) {
             it (phones, and the two-column layout until the container stops
             at 1300px) the column keeps 3.5rem clear on that side. */}
         <div className="mx-auto w-full max-w-[420px] max-sm:pe-14 lg:max-w-[460px] lg:max-[1360px]:pe-14">
+          <p className="sr-only">{t('home.breakthrough.film')}</p>
           <FilmPlayer film={BREAKTHROUGH_FILM} label={t('public.film.robot')} aspectRatio="9 / 16" controlsBelow />
         </div>
       </div>
@@ -77,7 +76,7 @@ export async function FeaturedHeroCards({ catalog }) {
           padding keeps the rise and the focus ring inside the scroller,
           which clips both axes. Every tile shares one frame, so the
           captions and prices sit on one line across the row. */}
-      <div role="region" aria-labelledby="featured-title" aria-describedby="featured-scroll-hint" className="-mx-4 -my-2 flex snap-x snap-mandatory items-start gap-x-3 gap-y-6 overflow-x-auto scroll-pl-4 px-4 py-2 sm:mx-0 sm:my-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:py-0 lg:grid-cols-5">
+      <div role="region" aria-labelledby="featured-title" aria-describedby="featured-scroll-hint" className="-mx-4 -my-2 flex snap-x snap-mandatory items-start gap-x-3 gap-y-6 overflow-x-auto scroll-ps-4 px-4 py-2 sm:mx-0 sm:my-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:py-0 lg:grid-cols-5">
         {FEATURE_CARDS.map((f, i) => {
           const row = rowOf(modelOf(f.href));
           const clip = SHOWCASE_CLIPS[f.key];
@@ -89,7 +88,7 @@ export async function FeaturedHeroCards({ catalog }) {
               clip={clip && { ...clip, objectFit: 'contain' }}
               imageSizes="(max-width: 639px) 72vw, (max-width: 1023px) 50vw, 20vw"
               ariaLabel={t('home.cards.open', { title })}
-              className="vx-rise block w-[72%] shrink-0 snap-start text-left sm:w-auto"
+              className="vx-rise block w-[72%] shrink-0 snap-start text-start sm:w-auto"
               style={{ '--vx-i': i }}
               mediaClassName="rounded-2xl"
               ambient

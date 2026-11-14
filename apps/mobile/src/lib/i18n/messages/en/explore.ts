@@ -46,6 +46,7 @@ export default {
     'explore.collageHint': 'Swipe to browse templates',
     'explore.audioSoon': 'Audio templates are coming soon.',
     'explore.noMatch': 'No templates match.',
+    'explore.noMatchQuery': 'No templates match “{query}”.',
     'explore.oddlings.title': 'Oddlings',
     'explore.oddlings.body': 'Original characters you can browse, then make into a portrait or a short.',
     'explore.oddlings.hint': 'Opens the Oddlings area.',

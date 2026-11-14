@@ -1,8 +1,11 @@
 import { rawText } from '../lib/i18n/translate';
 import { Text, Button, Card, themedStyles, useThemedStyles } from './ui';
-import { StyleSheet, View } from 'react-native';
+import { useReducedMotion } from './ui/useReducedMotion';
+import { useEffect, useMemo, useState } from 'react';
+import { Animated, Easing, StyleSheet, View } from 'react-native';
 
 import { formatLocale, plural, t } from '../lib/i18n';
+import { playSelection } from '../lib/haptics';
 import { retentionOf, rowStatus } from '../lib/libraryView';
 import type { Job, Kind } from '../lib/media';
 import { LibraryMedia, type LibraryMediaProps } from './library/LibraryMedia';
@@ -27,6 +30,9 @@ interface Props {
     readonly onReuse: () => void;
 }
 
+// One pulse when a creation becomes a favourite: up to this scale and back.
+const STAR_PULSE = 1.06;
+
 // One creation in the Library: what it is, its state, its price, when its file goes, and the actions that apply.
 // A failed job says how many credits came back; a file near the end of its life says when.
 export function LibraryItem({ job, retentionKnown, now, name, kind, grid, starred, canSchedule, canReuse, canAsk, onAsk, onOpen, onStar, onSchedule, onReuse, media }: Props) {
@@ -45,13 +51,27 @@ export function LibraryItem({ job, retentionKnown, now, name, kind, grid, starre
             }) : null;
     const urgent = retention.kind === 'ended' || (retention.kind === 'expires' && retention.urgent);
     const bad = status === 'refunded' || status === 'failed';
+    const reduced = useReducedMotion();
+    const [pop] = useState(() => new Animated.Value(1));
+    const popStyle = useMemo(() => ({ transform: [{ scale: pop }] }), [pop]);
+    useEffect(() => () => pop.stopAnimation(), [pop]);
+    function toggleStar() {
+        void playSelection();
+        if (!starred && !reduced) {
+            Animated.sequence([
+                Animated.timing(pop, { toValue: STAR_PULSE, duration: ds.motion.press, easing: Easing.out(Easing.ease), useNativeDriver: true }),
+                Animated.timing(pop, { toValue: 1, duration: ds.motion.press, easing: Easing.in(Easing.ease), useNativeDriver: true }),
+            ]).start();
+        }
+        onStar();
+    }
 
     return (
         <Card style={[styles.card, grid ? styles.gridCard : styles.listRow]}>
             <Card accessibilityRole="button" accessibilityLabel={rawText([name, statusText, cost, when, retentionText].filter(Boolean).join(', '))} style={[styles.main, !grid && styles.horizontal]} onPress={onOpen}>
                 <View style={grid ? styles.square : styles.thumbnail}>
                     <LibraryMedia job={job} kind={kind} {...media} />
-                    {grid ? <View style={styles.statusChip}><Text variant="caption" tone={bad ? 'danger' : 'accent'}>{statusText}</Text></View> : null}
+                    {grid && status !== 'ready' ? <View style={styles.statusChip}><Text variant="caption" tone={bad ? 'danger' : 'accent'}>{statusText}</Text></View> : null}
                 </View>
                 <View style={styles.copy}>
                 <Text variant="bodyStrong" tone="primary" style={styles.name} numberOfLines={grid ? 2 : 1}>{name}</Text>
@@ -61,12 +81,15 @@ export function LibraryItem({ job, retentionKnown, now, name, kind, grid, starre
                 </View>
             </Card>
             <View style={styles.actions}>
-                <Button variant="tertiary" accessibilityRole="button" accessibilityLabel={rawText(t('library.favouriteLabel', { name }))} accessibilityState={{ selected: starred }} onPress={onStar} label={t('library.favouriteLabel', { name })} icon={starred ? 'starFill' : 'star'} iconOnly />
-                {canSchedule ? (
+                <Animated.View style={popStyle}>
+                    <Button variant="tertiary" accessibilityRole="button" accessibilityLabel={rawText(t('library.favouriteLabel', { name }))} accessibilityState={{ selected: starred }} onPress={toggleStar} label={t('library.favouriteLabel', { name })} icon={starred ? 'starFill' : 'star'} iconOnly />
+                </Animated.View>
+                {/* A half-width tile keeps the star only; Schedule, Ask and Reuse are on the creation's own screen. */}
+                {canSchedule && !grid ? (
                     <Button variant="secondary" accessibilityRole="button" accessibilityLabel={rawText(t('library.scheduleLabel', { name }))} onPress={onSchedule} label={t('library.schedule')} />
                 ) : null}
-                {canAsk ? <Button variant="secondary" label={t('chatDepth.ask')} accessibilityLabel={rawText(t('chatDepth.askLabel', { name }))} onPress={onAsk} /> : null}
-                {canReuse ? (
+                {canAsk && !grid ? <Button variant="secondary" label={t('chatDepth.ask')} accessibilityLabel={rawText(t('chatDepth.askLabel', { name }))} onPress={onAsk} /> : null}
+                {canReuse && !grid ? (
                     <Button variant="secondary" accessibilityRole="button" accessibilityLabel={rawText(t('library.reuseLabel', { name }))} onPress={onReuse} label={t('library.reuse')} />
                 ) : null}
             </View>
@@ -84,7 +107,7 @@ const sheets = themedStyles((p) => ({
     thumbnail: { width: 72, height: 72 },
     horizontal: { flexDirection: 'row' },
     copy: { flex: 1, gap: ds.space.xs },
-    statusChip: { position: 'absolute', top: 4, start: 4, borderRadius: 8, padding: 4, backgroundColor: p.bgElevated1 },
+    statusChip: { position: 'absolute', top: ds.space.xs, start: ds.space.xs, borderRadius: ds.radius.xs, padding: ds.space.xs, backgroundColor: p.bgElevated1 },
     name: { color: p.textPrimary, },
     status: { color: p.accent, },
     statusBad: { color: p.danger },

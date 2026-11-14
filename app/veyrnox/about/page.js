@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ENTITY } from '../../legal/_lib/entity';
 import { OPEN_GRAPH_BASE } from '../../seo';
 import { Main } from '../_components/Main';
+import { FooterForest } from '../_sections/footer';
 import { MarketingNav } from '../_components/NavBar';
 import { getT } from '../../../lib/i18n/server';
 import { pageAlternates, openGraphLocale } from '../../../lib/i18n/metadata.mjs';
@@ -21,13 +22,13 @@ export async function generateMetadata() {
 }
 
 export default async function AboutPage() {
-  const { t } = await getT();
+  const { locale, t } = await getT();
   return (
     <div className="min-h-dvh">
       <MarketingNav />
       <Main className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-14 sm:pt-20 pb-28">
         <article className="max-w-[760px]">
-          <p className="font-vx-mono text-[12px] font-bold tracking-[0.18em] uppercase text-vx-accent">{t('about.kicker')}</p>
+          <p className="font-vx-mono text-[12px] font-bold tracking-[0.18em] uppercase text-vx-fg-muted">{t('about.kicker')}</p>
           <h1 className="vx-display vx-title-index mt-5">{t('about.title')}</h1>
           <p className="mt-7 text-lg sm:text-xl text-vx-fg-body leading-[1.6]">
             {t('about.lead')}
@@ -61,6 +62,7 @@ export default async function AboutPage() {
           </section>
         </article>
       </Main>
+      <FooterForest locale={locale} t={t} flush />
     </div>
   );
 }

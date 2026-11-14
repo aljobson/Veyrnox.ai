@@ -67,7 +67,7 @@ export function MarketingNav({ hideAnnouncementOnMobile = false }) {
               aria-current={active ? 'page' : undefined}
               className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-2 transition-colors ${
                 active
-                  ? 'bg-vx-accent text-vx-accent-ink'
+                  ? 'vx-side-row text-vx-fg'
                   : featured
                     ? 'border border-vx-accent/50 bg-vx-accent/10 text-vx-accent hover:bg-vx-accent/20'
                     : 'vx-side-row text-vx-fg-body'
@@ -88,6 +88,7 @@ export function MarketingNav({ hideAnnouncementOnMobile = false }) {
           items={NAV_CATEGORIES}
           grouped
           buttonLabel={t('ui.moreNav')}
+          navLabel={t('ui.moreNav')}
         />
       </div>
       </div>
@@ -424,6 +425,11 @@ export function AppNav({ balance, active, readAccount = true }) {
   const assets = summary?.assets ?? null;
   const shown = balance != null ? balance : summary?.credits ?? null;
   const fmt = shown != null ? new Intl.NumberFormat(localeTag(locale, 'en-US')).format(shown) : '—';
+  // The figure rolls only when it replaces one already shown here, never on mount:
+  // the nav remounts on every route change and the balance has not changed then.
+  const [figure, setFigure] = useState({ last: null, current: fmt });
+  if (figure.current !== fmt) setFigure({ last: figure.current, current: fmt });
+  const ticks = figure.last !== null && figure.last !== '—';
   const assetFmt = assets != null ? new Intl.NumberFormat(localeTag(locale, 'en-US')).format(assets) : '—';
   const assetWord = t(pluralKey(t, locale, 'app.nav.asset', assets ?? 0));
   return (
@@ -492,10 +498,10 @@ export function AppNav({ balance, active, readAccount = true }) {
                 href="/app/credits"
                 data-testid="app-credit-balance"
                 aria-label={t('app.nav.balance', { count: fmt })}
-                className="flex min-h-6 items-center gap-1.5 py-1 leading-none transition-opacity hover:opacity-80"
+                className="flex min-h-6 items-center gap-1.5 py-1 leading-none transition-opacity hover:opacity-80 max-[429px]:pointer-coarse:min-h-11"
               >
                 <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-vx-money" />
-                <span className="font-vx-mono text-[11px] font-bold text-vx-money vx-num">{fmt} cr</span>
+                <span className="font-vx-mono text-[11px] font-bold text-vx-money vx-num"><span key={fmt} className={ticks ? 'vx-tick' : undefined}>{fmt}</span> cr</span>
               </Link>
               <Link
                 href="/app/library"

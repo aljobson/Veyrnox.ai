@@ -70,7 +70,7 @@ test('the linked template summary targets the existing Create controls instead o
     assert.match(create, new RegExp(`${target}: '\\\[data-assistant-target="create\\.${target}"\\\]'`));
   }
   assert.doesNotMatch(create, /create\.\$\{target\}/);
-  assert.match(create, /section\.scrollIntoView\(\{ behavior: 'smooth', block: 'center' \}\)/);
+  assert.match(create, /section\.scrollIntoView\(\{ behavior: window\.matchMedia\?\.\('\(prefers-reduced-motion: reduce\)'\)\.matches \? 'auto' : 'smooth', block: 'center' \}\)/);
   assert.match(create, /candidate\.getClientRects\(\)\.length > 0/);
   assert.match(create, /control\.focus\(\{ preventScroll: true \}\)/);
 });

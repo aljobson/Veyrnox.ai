@@ -18,7 +18,7 @@ import {
     type LedgerEntry,
     type Usage,
 } from '../../lib/creditHistory';
-import { colors } from '../../theme';
+import { colors, ds } from '../../theme';
 import { SlowLoader } from '../../components/SlowLoader';
 
 export default function History() {
@@ -124,12 +124,14 @@ function Entry({ entry }: { entry: LedgerEntry }) {
     const date = entryDate(entry.createdAt);
     return (
         <View style={styles.row} accessible accessibilityLabel={rawText(`${label}, ${amount}, ${date}${note ? `, ${note}` : ''}`)}>
-            <View style={styles.rowText}>
+            {/* A statement line, as on the web: label, dotted leader, amount. The leader is decoration only. */}
+            <View style={styles.line}>
                 <Text style={styles.name}>{label}</Text>
-                <Text style={styles.muted}>{date}</Text>
-                {note ? <Text style={styles.muted}>{note}</Text> : null}
+                <View style={styles.leader} accessibilityElementsHidden importantForAccessibility="no" />
+                <Text style={styles.amount}>{amount}</Text>
             </View>
-            <Text style={[styles.amount, entry.delta < 0 ? styles.out : styles.in]}>{amount}</Text>
+            <Text style={styles.muted}>{date}</Text>
+            {note ? <Text style={styles.muted}>{note}</Text> : null}
         </View>
     );
 }
@@ -141,13 +143,12 @@ const styles = StyleSheet.create({
     summary: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 16, gap: 4, marginBottom: 6 },
     label: { color: colors.muted, fontSize: 13, textTransform: 'uppercase' },
     summaryLine: { color: colors.text, fontSize: 15 },
-    row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 16 },
-    rowText: { flex: 1, gap: 2 },
-    name: { color: colors.text, fontSize: 16, fontWeight: '600' },
+    row: { gap: ds.space.xxs, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 16 },
+    line: { flexDirection: 'row', alignItems: 'flex-end', gap: ds.space.sm },
+    leader: { flex: 1, minWidth: ds.space.lg, marginBottom: ds.space.xs, borderBottomWidth: 1, borderStyle: 'dotted', borderBottomColor: colors.muted },
+    name: { flexShrink: 1, color: colors.text, fontSize: 16, fontWeight: '600' },
     muted: { color: colors.muted, fontSize: 13 },
-    amount: { fontSize: 16, fontWeight: '700' },
-    in: { color: colors.accent },
-    out: { color: colors.text },
+    amount: { color: colors.money, fontSize: 16, fontWeight: '700', fontVariant: ['tabular-nums'] },
     error: { color: colors.danger },
     retry: { ...touchTarget, alignItems: 'center', borderColor: colors.border, borderWidth: 1, borderRadius: 12, paddingHorizontal: 16 },
     retryText: { color: colors.text, fontWeight: '600' },

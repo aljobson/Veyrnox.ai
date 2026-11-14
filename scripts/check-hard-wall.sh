@@ -44,6 +44,7 @@ SCOPE=(
   'lib/i18n/legal'
   'lib/i18n/messages'
   'lib/i18n/messages/legal'
+  'apps/mobile/src/lib/i18n/messages'
   'app/layout.js'
   'app/sitemap.js'
   'components'

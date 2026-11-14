@@ -10,12 +10,14 @@ export function announcementText(node: ReactNode): string {
 }
 // Deduplicate rendered status text, not renders, timers or object identities.
 // Android implements live regions and alerts; iOS needs explicit announcements for both.
-export function useAnnouncement(message: string | null | undefined, { onMount = false }: { onMount?: boolean } = {}) {
+// `everywhere`: for a status with no live region or alert on screen, so Android
+// would otherwise say nothing (the no-results lines on Home and Library).
+export function useAnnouncement(message: string | null | undefined, { onMount = false, everywhere = false }: { onMount?: boolean; everywhere?: boolean } = {}) {
     const last = useRef<string | null>(onMount ? null : message?.trim() || null);
     useEffect(() => {
         const next = message?.trim() || null;
         if (next === last.current) return;
         last.current = next;
-        if (next && Platform.OS === 'ios') AccessibilityInfo.announceForAccessibility(rawText(next));
-    }, [message]);
+        if (next && (everywhere || Platform.OS === 'ios')) AccessibilityInfo.announceForAccessibility(rawText(next));
+    }, [message, everywhere]);
 }

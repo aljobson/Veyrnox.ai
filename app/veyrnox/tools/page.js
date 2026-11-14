@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { MarketingNav } from '../_components/NavBar';
 import { Main } from '../_components/Main';
+import { FooterForest } from '../_sections/footer';
 import { listModelsForDetails } from '../_lib/modelPages';
 import { toolGroups, toolNeeds } from '../_lib/tools';
 import { OPEN_GRAPH_BASE } from '../../seo';
@@ -65,7 +66,7 @@ export default async function Tools() {
                     </div>
                     <div className="mt-1 flex items-center justify-between gap-3 text-[13px] text-vx-fg-muted">
                       <span>{t('tools.needs', { what: toolNeeds(m, t) })}</span>
-                      <Link href={`/app/create?model=${encodeURIComponent(m.id)}`} className="shrink-0 font-bold text-vx-fg-body underline underline-offset-4 hover:text-vx-fg">{t('tools.use')}</Link>
+                      <Link href={`/app/create?model=${encodeURIComponent(m.id)}`} className="shrink-0 inline-flex items-center pointer-coarse:min-h-11 font-bold text-vx-fg-body underline underline-offset-4 hover:text-vx-fg">{t('tools.use')}</Link>
                     </div>
                   </li>
                 ))}
@@ -74,6 +75,7 @@ export default async function Tools() {
           ))}
         </div>
       </Main>
+      <FooterForest locale={locale} t={t} flush />
     </div>
   );
 }

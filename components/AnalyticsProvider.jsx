@@ -60,8 +60,10 @@ export default function AnalyticsProvider({ children }) {
       }}
       serverOptions={{ host: 'https://eu.i.posthog.com' }}
     >
-      {children}
+      {/* Before the page in the DOM, so Tab reaches the consent choices first;
+          the bar itself is fixed to the bottom edge. */}
       <PostHogManager />
+      {children}
     </PostHogProvider>
   );
 }

@@ -1,6 +1,7 @@
 // English strings for common. Add keys here; keep their original wording and placeholders.
 export default {
     'common.back': 'Back',
+    'common.clearFilters': 'Clear filters',
     'common.close': 'Close',
     'common.comingToApp': 'This feature is coming to the app.',
     'common.error': 'Something went wrong. Try again.',

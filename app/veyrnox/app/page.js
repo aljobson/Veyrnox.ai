@@ -24,18 +24,29 @@ function StarterIcon({ name }) {
   );
 }
 
+// Each start wears its feature hue on the icon, the same hues the mobile Home
+// uses (docs/design-goal-criteria.md). The hover edge and the arrow answer
+// the pointer, so they stay aqua.
+const STARTER_HUE = {
+  create: 'bg-vx-accent/10 text-vx-accent',
+  chat: 'bg-vx-hue-sky/10 text-vx-hue-sky',
+  film: 'bg-vx-hue-iris/10 text-vx-hue-iris',
+  'smart-cut': 'bg-vx-hue-rose/10 text-vx-hue-rose',
+};
+
 function StarterCard({ href, label, description, icon, suggested }) {
+  const hue = STARTER_HUE[icon] || STARTER_HUE.create;
   return (
     <Link
       href={href}
       onClick={() => { void recordHomeStart(icon); }}
       data-testid={`explore-starter-${icon}`}
-      className="group flex min-h-48 flex-col rounded-[20px] border border-vx-border bg-vx-panel p-5 transition-[border-color,background-color,scale] duration-150 ease-(--vx-ease-out) hover:border-vx-accent hover:bg-vx-base active:scale-[0.96]"
+      className={`group flex min-h-48 flex-col rounded-2xl border border-vx-border bg-vx-panel p-5 transition-[border-color,background-color,scale] duration-150 ease-(--vx-ease-out) hover:border-vx-accent hover:bg-vx-base active:scale-[0.97]`}
     >
-      <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-vx-accent/10 text-vx-accent">
+      <span className={`inline-flex h-10 w-10 items-center justify-center rounded-xl ${hue}`}>
         <StarterIcon name={icon} />
       </span>
-      {suggested && <span data-testid="explore-starter-suggested" className="mb-2 mt-4 w-fit rounded-full bg-vx-accent/10 px-2.5 py-1 font-vx-mono text-[10px] font-bold tracking-[0.12em] text-vx-accent">{suggested}</span>}
+      {suggested && <span data-testid="explore-starter-suggested" className="mb-2 mt-4 w-fit rounded-full bg-vx-fg/10 px-2.5 py-1 font-vx-mono text-[11px] font-bold tracking-[0.12em] text-vx-fg-body">{suggested}</span>}
       <span className={`${suggested ? 'mt-1' : 'mt-5'} text-xl font-bold tracking-[-0.02em]`}>{label}</span>
       <span className="mt-2 text-pretty text-sm leading-6 text-vx-fg-body">{description}</span>
       <span aria-hidden="true" className="mt-auto pt-5 text-lg leading-none text-vx-accent transition-transform duration-150 ease-(--vx-ease-out) group-hover:translate-x-1 rtl:group-hover:-translate-x-1">→</span>
@@ -74,7 +85,7 @@ export default function Explore() {
 
         <YourWinsCard />
         <VibeOffer status={vibe.status} onSkipped={vibe.reload} />
-        <Link href="/app/oddlings" className="group mb-12 grid overflow-hidden rounded-[20px] border border-vx-border bg-vx-panel transition-[border-color,scale] duration-150 ease-(--vx-ease-out) hover:border-vx-accent active:scale-[0.96] lg:grid-cols-[.9fr_1.1fr]">
+        <Link href="/app/oddlings" className="group mb-12 grid overflow-hidden rounded-2xl border border-vx-border bg-vx-panel transition-[border-color,scale] duration-150 ease-(--vx-ease-out) hover:border-vx-accent active:scale-[0.99] lg:grid-cols-[.9fr_1.1fr]">
           <div className="relative min-h-52 overflow-hidden bg-vx-base lg:min-h-64">
             <Image
               src="/oddlings/oddling-body-chaos.webp"

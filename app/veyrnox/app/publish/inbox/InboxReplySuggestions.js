@@ -23,7 +23,7 @@ export default function InboxReplySuggestions({ threadId, suggestions, onUse, on
   return <section aria-label={t("app.publish.inbox.suggestions")} className="border-t border-vx-border bg-vx-accent/[0.05] p-4">
     <h3 className="text-sm font-black">{t("app.publish.inbox.suggestions")}</h3>
     <p className="mt-1 text-xs text-vx-fg-muted">{t("app.publish.inbox.suggestionsIntro")}</p>
-    <ul className="mt-3 space-y-2">{pending.map((item) => <li key={item.id} className="rounded-xl border border-vx-border bg-vx-bg p-3">
+    <ul className="mt-3 space-y-2">{pending.map((item) => <li key={item.id} className="rounded-xl border border-vx-border bg-vx-base p-3">
       <p className="text-xs font-bold text-vx-accent">{item.workflow_name} · “{item.keyword}”</p>
       <p className="mt-2 whitespace-pre-wrap text-sm">{item.suggested_reply}</p>
       <div className="mt-3 flex gap-2"><button className={button} type="button" disabled={busy === item.id} onClick={() => choose(item, 'use')}>{t("app.publish.inbox.useSuggestion")}</button>

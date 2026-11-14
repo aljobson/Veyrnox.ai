@@ -148,11 +148,11 @@ function Plan() {
             {on && <VeyCardPeek />}
             <div className="flex items-center justify-between gap-3">
               <p className="text-xs font-bold uppercase tracking-widest text-vx-accent">{cadence(plan.billing_interval)}</p>
-              {best && <span className="rounded-full bg-vx-accent px-2.5 py-1 text-[0.65rem] font-black uppercase tracking-wide text-black">{t("app.publish.plan.save")}</span>}
+              {best && <span className="rounded-full bg-vx-accent px-2.5 py-1 text-[0.65rem] font-black uppercase tracking-wide text-vx-accent-ink">{t("app.publish.plan.save")}</span>}
             </div>
             <p className="mt-4 text-[44px] font-black leading-none">{money.format(plan.price_usd_cents / 100)}<span className="text-base font-normal text-vx-fg-muted"> / {interval(plan.billing_interval)}</span></p>
             {best && <p className="mt-2 text-xs text-vx-fg-muted">{t('app.publish.plan.equivalent', { price: money.format(plan.price_usd_cents / 1200) })}</p>}
-            <button type="button" aria-pressed={on} className={`${button} mt-5 w-full py-3 ${on ? 'border-vx-accent bg-vx-accent text-black' : 'hover:border-vx-accent'}`} onClick={() => { setSelectedPlanId(plan.id); setAgreed(false); }}>
+            <button type="button" aria-pressed={on} className={`${button} mt-5 w-full py-3 ${on ? 'border-vx-accent bg-vx-accent text-vx-accent-ink' : 'hover:border-vx-accent'}`} onClick={() => { setSelectedPlanId(plan.id); setAgreed(false); }}>
               {on ? t("public.subscription.selected") : t('app.publish.plan.choose', { interval: cadence(plan.billing_interval) })}
             </button>
             <ul className="mt-6 space-y-2.5 border-t border-vx-border pt-5 text-[13px] text-vx-fg-body">
@@ -170,7 +170,7 @@ function Plan() {
           <input type="checkbox" className="mt-1" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} />
           <span lang="en" dir="ltr">Start my Publish Plan at {legalMoney.format(selectedPlan.price_usd_cents / 100)} plus tax every {intervalName(selectedPlan.billing_interval)}. I understand it renews automatically until I cancel.</span>
         </label></BindingText>
-        <button type="button" disabled={busy || !agreed} className={`${button} mt-5 border-vx-accent bg-vx-accent text-black`} onClick={() => start(selectedPlan.id)}>
+        <button type="button" disabled={busy || !agreed} className={`${button} mt-5 border-vx-accent bg-vx-accent text-vx-accent-ink`} onClick={() => start(selectedPlan.id)}>
           {busy ? t("app.publish.plan.opening") : t("app.publish.plan.upgrade")}
         </button>
       </>}

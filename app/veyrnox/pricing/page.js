@@ -122,7 +122,7 @@ export default function Pricing() {
         <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-4">
           <Link
             href="/app/create"
-            className="vx-press rounded-full bg-vx-fg text-vx-base px-7 py-3.5 text-[15px] font-extrabold hover:bg-vx-fg/85"
+            className="vx-press rounded-full bg-vx-accent text-vx-accent-ink px-7 py-3.5 text-[15px] font-extrabold hover:bg-vx-accent-hover"
           >
             {t('home.cta.open')}
           </Link>
@@ -201,15 +201,15 @@ export default function Pricing() {
                 <tbody>
                   {g.rows.map((m) => (
                     <tr key={m.id} className="border-b border-vx-border">
-                      <th scope="row" className="py-3 pr-3 text-left font-normal">
+                      <th scope="row" className="py-3 pe-3 text-start font-normal">
                         <span className="text-[15px] font-bold">{m.name}</span>
-                        {m.gated && <PremiumTag className="ml-2" />}
+                        {m.gated && <PremiumTag className="ms-2" />}
                         <span className="block mt-1 text-[12px] text-vx-fg-muted">{modelPriceUnit(m, t)}</span>
                       </th>
-                      <td className="py-3 text-right font-vx-mono text-[16px] font-bold text-vx-money vx-num whitespace-nowrap">
+                      <td className="py-3 text-end font-vx-mono text-[16px] font-bold text-vx-money vx-num whitespace-nowrap">
                         {m.credits} cr
                       </td>
-                      <td className="py-3 pl-2 sm:pl-4 text-right font-vx-mono text-[12px] sm:text-[14px] text-vx-fg-muted vx-num whitespace-nowrap">
+                      <td className="py-3 ps-2 sm:ps-4 text-end font-vx-mono text-[12px] sm:text-[14px] text-vx-fg-muted vx-num whitespace-nowrap">
                         <PackValue credits={m.credits} packState={packState} />
                       </td>
                     </tr>

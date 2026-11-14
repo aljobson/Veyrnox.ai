@@ -41,8 +41,11 @@ test('touch autoplay stops within the WCAG 2.2.2 five second line', () => {
 test('Library clips play by the same policy as the landing tiles, never on their own', () => {
     const read = (p) => readFileSync(new URL(`../app/veyrnox/${p}`, import.meta.url), 'utf8');
     // They used to loop from page load with no way to stop them (WCAG 2.2.2).
-    assert.doesNotMatch(read('app/library/page.js'), /autoPlay/);
-    assert.match(read('app/library/page.js'), /<LibraryClip cardRef=\{card\} /);
+    // The card the page renders, not a copy of it: the page once kept a correct card nobody used.
+    assert.match(read('app/library/page.js'), /import\('\.\.\/\.\.\/_components\/LibraryJobCard'\)/);
+    assert.doesNotMatch(read('app/library/page.js'), /function JobCard|<video/);
+    assert.doesNotMatch(read('_components/LibraryJobCard.js'), /autoPlay|<video/);
+    assert.match(read('_components/LibraryJobCard.js'), /<LibraryClip cardRef=\{card\} /);
     const clip = read('_components/LibraryClip.js');
     assert.match(clip, /useClipPlayback\(cardRef, videoRef\)/);
     assert.doesNotMatch(clip, /autoPlay|controls/);

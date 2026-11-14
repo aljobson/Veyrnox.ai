@@ -1,20 +1,27 @@
 import { rawText } from '../../lib/i18n/translate';
 import { Image } from 'expo-image';
 import { Link, type Href } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { t } from '../../lib/i18n';
-import { Card, Text, themedStyles, useThemedStyles } from '../ui';
+import { ds } from '../../theme';
+import { Card, Text, themedStyles, usePressStyle, useThemedStyles } from '../ui';
 
 type Props = { href: Href; accessibilityLabel: string; accessibilityHint: string; imageUrl: string; title: string; body: string; action: string };
 export function OddlingsBanner({ href, accessibilityLabel, accessibilityHint, imageUrl, title, body, action }: Props) {
     const styles = useThemedStyles(sheets);
+    const pressStyle = usePressStyle('card');
+    // Link asChild takes one flat style object, so the pressed look is tracked here, not in a style function.
+    const [pressed, setPressed] = useState(false);
     return (
         <Link href={href} asChild>
             <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={rawText(accessibilityLabel)}
                 accessibilityHint={rawText(accessibilityHint)}
-                style={styles.heroCard}
+                onPressIn={() => setPressed(true)}
+                onPressOut={() => setPressed(false)}
+                style={pressed ? pressStyle : undefined}
             >
                 <Card style={styles.mediaCard}>
                     <View style={styles.heroMedia}>
@@ -52,23 +59,22 @@ export function OddlingsBanner({ href, accessibilityLabel, accessibilityHint, im
 }
 const sheets = themedStyles((p) => ({
     mediaCard: { padding: 0, overflow: 'hidden' },
-    heroCard: {},
     heroMedia: { height: 205, backgroundColor: p.borderSubtle },
     heroShade: { position: 'absolute', inset: 0, backgroundColor: p.mediaShade },
     heroLabel: {
         position: 'absolute',
-        start: 14,
-        bottom: 14,
-        borderRadius: 999,
+        start: ds.space.md,
+        bottom: ds.space.md,
+        borderRadius: ds.radius.pill,
         borderWidth: 1,
         borderColor: p.borderStrong,
         backgroundColor: p.mediaShade,
-        paddingHorizontal: 11,
-        paddingVertical: 6,
+        paddingHorizontal: ds.space.md,
+        paddingVertical: ds.space.xs,
     },
     heroLabelText: { color: p.onMedia },
-    heroCopy: { padding: 20, gap: 10 },
+    heroCopy: { padding: ds.space.xl, gap: ds.space.sm },
     heroTitle: { color: p.textPrimary },
     heroBody: { color: p.textSecondary },
-    heroAction: { color: p.accent, marginTop: 2 },
+    heroAction: { color: p.accent, marginTop: ds.space.xxs },
 }));

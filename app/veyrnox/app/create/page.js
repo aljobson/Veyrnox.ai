@@ -59,6 +59,7 @@ import { TemplateHandoffCard } from '../../_components/TemplateHandoffCard';
 import { TemplatePicker } from '../../_components/TemplatePicker';
 import { CreateGoalPicker } from '../../_components/CreateGoalPicker';
 import { FirstGoalCard } from '../../_components/FirstGoalCard';
+import { GeneratingProgress } from './GeneratingProgress';
 import { useFirstRunCreate } from '../../_lib/useFirstRunCreate';
 import { TIERS, TIER_LABEL, filterByTier } from '../../_lib/modelTiers';
 import { modelsForGoal, starterModel } from '../../_lib/starterModels';
@@ -433,6 +434,11 @@ export default function CreateStudio() {
   const activeBatch = batchView?.identity === formIdentity ? batchView : null;
   const quote = activeBatch?.quote ?? allocationSnapshot(activeBatch ?? { accepted: Array(n).fill(null), unknown: new Set() }, activeBatch?.unit ?? unitCost, freeLeft);
   const cost = quote.total;
+  // Presentation only: the total rolls in when it changes, not on the first
+  // paint and not when the catalog first arrives.
+  const [costShown, setCostShown] = useState(cost);
+  const [costMoved, setCostMoved] = useState(false);
+  if (!Object.is(costShown, cost)) { setCostShown(cost); if (!catalogLoading) setCostMoved(true); }
   // Unknown items replay their retained key, so only the rest must be affordable.
   const payable = quote.payable ?? cost;
   const durationKey = durations.join(',');
@@ -812,7 +818,7 @@ export default function CreateStudio() {
     const selector = CREATE_CONTROL_TARGETS[target];
     const section = selector ? document.querySelector(selector) : null;
     if (!section) return;
-    section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    section.scrollIntoView({ behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
     const focusable = [
       'button:not([disabled])',
       'input:not([disabled])',
@@ -866,7 +872,7 @@ export default function CreateStudio() {
                       <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent">
                         <span aria-hidden="true">●</span> {tOr(t, `app.library.status.${job.state === 'failed' && job.refunded !== true ? 'failed_pending' : job.state}`, jobStateUi(job).label)} · {resultModelName.toUpperCase()}
                       </div>
-                      <div className="mt-2 font-vx-mono text-[42px] font-bold vx-num">…</div>
+                      <GeneratingProgress jobId={job.job_id} />
                       {SLOW_MODEL_WAIT[job?.model_id] && (
                         <div className="text-xs text-vx-fg-body mt-2">{tOr(t, `app.data.wait.${job.model_id}`, SLOW_MODEL_WAIT[job.model_id])}</div>
                       )}
@@ -966,7 +972,7 @@ export default function CreateStudio() {
                   {[oddlingTransfer.body_type, oddlingTransfer.wardrobe_style, oddlingTransfer.hair].filter(Boolean).join(' · ')}
                 </p>
               </div>
-              {model?.kind === 'image' && <button type="button" onClick={() => document.querySelector('[data-assistant-target="create.character"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="vx-press min-h-11 shrink-0 rounded-full border border-vx-accent/50 px-3 py-2 text-xs font-extrabold text-vx-accent hover:bg-vx-accent/10">
+              {model?.kind === 'image' && <button type="button" onClick={() => document.querySelector('[data-assistant-target="create.character"]')?.scrollIntoView({ behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' })} className="vx-press min-h-11 shrink-0 rounded-full border border-vx-accent/50 px-3 py-2 text-xs font-extrabold text-vx-accent hover:bg-vx-accent/10">
                 {t("app.create.reviewCharacter")}</button>}
             </section>
           )}
@@ -1038,7 +1044,7 @@ export default function CreateStudio() {
               {t('app.create.balanceLabel',{count:balance == null ? '—' : balance.toLocaleString(localeTag(locale, 'en-US'))})}
             </span>
           </div>
-          <div className="mt-1 font-vx-mono text-[36px] font-bold text-vx-money vx-num">{generationCostLabel(cost)}</div>
+          <div key={cost} className={`mt-1 font-vx-mono text-[36px] font-bold text-vx-money vx-num${costMoved ? ' block vx-tick' : ''}`}>{generationCostLabel(cost)}</div>
           {freeLeft > 0 && (
             <div role="status" className="mt-1 font-vx-mono text-[11px] tracking-[0.08em] text-vx-accent">
               {n > freeLeft ? t(pluralKey(t,locale,'app.create.freePartial',freeLeft),{free:number(freeLeft),total:number(n),left:number(freeLeft)}) : t(pluralKey(t,locale,'app.create.freeLeft',freeLeft),{count:number(freeLeft)})}
@@ -1058,7 +1064,7 @@ export default function CreateStudio() {
             <span>{sending ? t("app.publish.inbox.sending") : hasJobs && !activeBatch ? t("app.create.newGeneration") : model?.gated ? t("app.create.premiumGated") : n > 1 ? t('app.create.generateCount',{count:number(n)}) : t("label.Generate")}</span>
             <span className="font-vx-mono text-sm">{hasJobs && !activeBatch ? t("app.create.noCharge") : generationCostLabel(cost)}</span>
           </ParticleButton>
-          <div className="mt-2 font-vx-mono text-[9.5px] tracking-[0.1em] text-vx-fg-faint text-center">
+          <div className="mt-2 font-vx-mono text-[11px] tracking-[0.1em] text-vx-fg-muted text-center">
             {model?.gated ? t("app.create.premiumClosed") : t("mobile.refund")}
           </div>
           <p className="mt-3 text-center text-[11px] leading-relaxed text-vx-fg-muted">

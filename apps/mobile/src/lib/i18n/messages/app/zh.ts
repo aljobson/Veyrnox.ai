@@ -2761,6 +2761,7 @@ export default {
   "jobCancel.cancelledFree": "已取消。未扣费。",
   "jobCancel.cancelling": "正在取消…",
   "jobCancel.confirm": "取消",
+  "jobCancel.confirmAction": "取消创作",
   "jobCancel.confirmFree": "如果尚未发送给模型，任务会停止，免费次数会退回到原来使用的日期，不会增加之后日期的免费次数。如果已经开始，则无法停止。",
   "jobCancel.confirmPaid.other": "如果尚未发送给模型，任务会停止，消耗的 {count} 积分会按原来源退回。已结束周期的订阅积分会再次过期。如果已经开始，则无法停止：任务会正常完成，失败则退款。",
   "jobCancel.confirmTitle": "取消此创作？",
@@ -6020,4 +6021,7 @@ export default {
   "create.firstRun.example.work.image": "一瓶玻璃香水放在湿润石头上的高端产品照片，柔和的晨光",
   "create.firstRun.example.work.video": "10 秒广告：咖啡慢动作注入杯中，热气升腾，温暖的影棚灯光",
   "create.firstRun.example.work.audio": "30 秒轻快的品牌广告曲，轻柔吉他与拍手声",
+  "acct.profileError": "无法加载你的信息。",
+  "explore.noMatchQuery": "没有与“{query}”匹配的模板。",
+  "common.clearFilters": "清除筛选",
 } as const;

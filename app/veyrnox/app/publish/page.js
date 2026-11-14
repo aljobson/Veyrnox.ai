@@ -281,7 +281,7 @@ function PublishControls({ initialJobId, initialUploadId }) {
 
     <section className="rounded-2xl border border-vx-border p-5">
       <h2 className="font-bold mb-4">{t("app.publish.connect.scheduled")}</h2>
-      <ScheduledPosts refreshToken={postsRefreshToken} scheduleEnabled={paid} onReuse={canPublish ? (post) => { setReusablePost({ ...post, reuseKey: Date.now() }); document.getElementById('schedule')?.scrollIntoView({ behavior: 'smooth' }); } : undefined} />
+      <ScheduledPosts refreshToken={postsRefreshToken} scheduleEnabled={paid} onReuse={canPublish ? (post) => { setReusablePost({ ...post, reuseKey: Date.now() }); document.getElementById('schedule')?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); } : undefined} />
     </section>
   </div>;
 }

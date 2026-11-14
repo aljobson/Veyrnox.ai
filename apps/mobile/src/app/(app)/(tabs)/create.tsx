@@ -3,7 +3,7 @@ import { rawText } from '../../../lib/i18n/translate';
 import { useFaceFiltersAvailable } from '../../../lib/useFaceFiltersAvailable';
 import { createTileColumns } from '../../../lib/createLayout';
 import { SectionLabel } from '../../../components/create/SectionLabel';
-import { Button, Text, Icon, IconBadge, ListRow, themedStyles, useThemedStyles, useAppearance } from '../../../components/ui';
+import { Button, Text, Icon, IconBadge, ListRow, themedStyles, usePressStyle, useThemedStyles, useAppearance } from '../../../components/ui';
 
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -31,11 +31,11 @@ export function EntryTile({ icon, label, accessibilityLabel, onPress }: { readon
     return <ListRow icon={icon} title={label} accessibilityLabel={rawText(accessibilityLabel ?? label)} onPress={onPress} style={[styles.entry, { width: single ? '100%' : '48.7%' }]} />;
 }
 
-// Goal cards, in the colour of what they make: blue for images, violet for video, amber for sound (featureIcons).
+// Goal cards, in the colour of what they make: blue for images, violet for video, pink for sound (featureIcons).
 const MAKE: readonly { readonly kind: Kind; readonly label: string; readonly badge: FeatureIcon }[] = [
     { kind: 'image', label: 'create.goal.image', badge: { icon: 'image', hue: 'sky' } },
     { kind: 'video', label: 'create.goal.video', badge: { icon: 'video', hue: 'iris' } },
-    { kind: 'audio', label: 'create.goal.audio', badge: { icon: 'audio', hue: 'amber' } },
+    { kind: 'audio', label: 'create.goal.audio', badge: { icon: 'audio', hue: 'rose' } },
 ];
 
 // Create starts from what you want to make, not from a list of models. Each goal opens the form with its starter
@@ -45,6 +45,7 @@ export default function Create() {
     const faceAvailable = useFaceFiltersAvailable();
     const { scheme } = useAppearance();
     const styles = useThemedStyles(sheets);
+    const pressStyle = usePressStyle();
     const router = useRouter();
     const [models, setModels] = useState<CatalogModel[] | null>(null);
     const [failed, setFailed] = useState(false);
@@ -118,7 +119,7 @@ export default function Create() {
                         {starters.map((goal) => (
                             <Pressable key={goal.kind} accessibilityRole="button" accessibilityLabel={t(goal.label)}
                                 onPress={() => goal.model && router.push({ pathname: '/create/[modelId]', params: { modelId: goal.model.id } })}
-                                style={({ pressed }) => [styles.goal, pressed && styles.pressed]}>
+                                style={({ pressed }) => [styles.goal, pressed && pressStyle]}>
                                 <IconBadge {...goal.badge} size="lg" />
                                 <Text variant="bodyStrong" tone="primary" style={styles.goalText}>{t(goal.label)}</Text>
                                 <Icon name="caretRight" size={20} />
@@ -147,8 +148,8 @@ export default function Create() {
 
 const sheets = themedStyles((p) => ({
     screen: { flex: 1, backgroundColor: p.bg },
-    body: { padding: ds.space.lg },
-    list: { padding: ds.space.lg, paddingTop: ds.space.xl, paddingBottom: LIST_END_PADDING, gap: ds.space.md },
+    body: { paddingHorizontal: ds.space.gutter, paddingVertical: ds.space.lg },
+    list: { paddingHorizontal: ds.space.gutter, paddingTop: ds.space.xl, paddingBottom: LIST_END_PADDING, gap: ds.space.md },
     intro: { gap: ds.space.sm },
     heading: { color: p.textPrimary },
     introText: { color: p.textSecondary, maxWidth: 520 },
@@ -156,7 +157,6 @@ const sheets = themedStyles((p) => ({
     goals: { gap: ds.space.sm },
     goal: { minHeight: 76, flexDirection: 'row', alignItems: 'center', gap: ds.space.md, paddingHorizontal: ds.space.md, paddingVertical: ds.space.md, borderRadius: ds.radius.lg, backgroundColor: p.bgElevated1, borderColor: p.borderSubtle, borderWidth: 1 },
     goalText: { flex: 1, color: p.textPrimary },
-    pressed: { opacity: 0.7, transform: [{ scale: 0.98 }] },
     entries: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: ds.space.sm },
     entry: { minHeight: 58, flexDirection: 'row', alignItems: 'center', gap: ds.space.sm, padding: ds.space.sm, borderRadius: ds.radius.md, backgroundColor: p.bgElevated1, borderColor: p.borderSubtle, borderWidth: 1 },
     error: { color: p.danger },

@@ -2,6 +2,7 @@
 import { DictateButton, EnhanceButton, appendSpoken, ENHANCE_HANDOFF_KEY } from '../PromptTools';
 import { helperCopy } from '../../../../lib/i18n/helperCopy.mjs';
 import { useI18n } from '../../../../components/I18nProvider';
+import { BusyDoneStatus } from '../../../../components/BusyDoneStatus';
 import { localeTag } from '../../../../lib/i18n/locales.mjs';
 import { pluralKey, tOr } from '../../../../lib/i18n/translate.mjs';
 import Link from 'next/link';
@@ -482,6 +483,9 @@ export function ChatWorkspace() {
     errorCopy: (code, extra) => ({ code, extra }),
     unchargedCopy: (code, extra, warning) => ({ code, extra, before: { code: warning.code, extra: warning } }),
   });
+  // Said once to screen readers when a send ends with a saved reply. An error notice is its own alert, so it stays silent then.
+  const lastMessage = messages[messages.length - 1];
+  const replyDone = !error && lastMessage?.role === 'assistant' && lastMessage.status === 'complete' ? t('app.chat.workspace.replyDone') : '';
 
   if (!ready) return <div className="p-8 text-sm text-vx-fg-muted" role="status">{t("app.chat.loading")}</div>;
   const view = chatScreen({ closed, signedOut, loadFailed, modelCount: models.length });
@@ -516,9 +520,9 @@ export function ChatWorkspace() {
     <div className="mx-auto flex h-[calc(100dvh-64px)] max-w-[1500px]">
       <aside className="hidden w-[280px] shrink-0 border-e border-vx-border bg-vx-panel md:block">{list}</aside>
       {drawer && (
-        <div className="fixed inset-0 z-40 flex md:hidden" role="dialog" aria-modal="true" data-testid="chat-drawer" aria-label={t("app.chat.chats")}>
-          <div className="w-[300px] bg-vx-panel">{list}</div>
-          <button type="button" aria-label={t("app.chat.closeChats")} className="flex-1 bg-black/50" onClick={() => setDrawer(false)} />
+        <div className="vx-fade-in fixed inset-0 z-40 flex bg-black/50 md:hidden" role="dialog" aria-modal="true" data-testid="chat-drawer" aria-label={t("app.chat.chats")}>
+          <div className="vx-slide-start w-[300px] bg-vx-panel">{list}</div>
+          <button type="button" aria-label={t("app.chat.closeChats")} className="flex-1" onClick={() => setDrawer(false)} />
         </div>
       )}
       <section className="flex min-w-0 flex-1 flex-col" data-testid="chat-conversation" aria-label={t("app.chat.conversation")}>
@@ -535,6 +539,7 @@ export function ChatWorkspace() {
             className="rounded-full border border-vx-border px-3 py-1.5 text-sm aria-pressed:border-vx-accent disabled:opacity-50">{t("app.chat.workspace.starred")}</button>}
         </div>
 
+        <BusyDoneStatus busy={busy} label={replyDone} />
         <div className="flex-1 overflow-y-auto">
           {composerKind !== COMPOSER_KINDS.CHAT ? <MediaCanvas kind={composerKind} media={mediaGeneration} /> : <div className="mx-auto max-w-[760px] space-y-6 px-4 py-6">
             {messages.length === 0 && (
@@ -570,7 +575,7 @@ export function ChatWorkspace() {
                       )}
                     </>
                   )
-                    : <div aria-live={m.status === 'streaming' ? 'polite' : undefined}>{m.content ? <ChatText text={m.content} /> : <p className="text-vx-fg-muted">{m.status === 'saving' ? t("app.chat.workspace.stopping") : m.status === 'lost' ? t("app.chat.workspace.connectionChecking") : helperCopy(t, locale, researchProgressLabel(progress)) || t("app.chat.settings.thinking")}</p>}</div>}
+                    : <div>{m.content ? <ChatText text={m.content} /> : <p role="status" className="text-vx-fg-muted"><span aria-hidden="true" className="me-2 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-vx-accent align-middle" />{m.status === 'saving' ? t("app.chat.workspace.stopping") : m.status === 'lost' ? t("app.chat.workspace.connectionChecking") : helperCopy(t, locale, researchProgressLabel(progress)) || t("app.chat.settings.thinking")}</p>}</div>}
                   {(m.status === 'saving' || m.status === 'lost') && m.content && <p role="status" className="mt-2 font-vx-mono text-xs text-vx-fg-muted">{m.status === 'saving' ? t("app.chat.workspace.savingStopped") : t("app.chat.workspace.connectionLost")}</p>}
                   {m.role === 'assistant' && !isLive(m) && !oddlingCanonBlocked && <StudioDraftCards text={m.content} models={studioModels} oddlingHandoff={oddlingContext} />}
                   {m.role === 'assistant' && !isLive(m) && <Footer m={m} starred={stars.includes(m.id)} onStar={() => star(m.id)} onMusicReturn={musicHandoff && (musicHandoff.mode === 'selection' ? parseMusicLyricReplacementReply(m.content) : parseMusicLyricAssistantReply(m.content)) ? () => returnLyricsToMusic(m.content) : null} />}
@@ -661,7 +666,7 @@ export function ChatWorkspace() {
       </section>
             {composerKind === COMPOSER_KINDS.CHAT && pickingLibrary && <LibraryPicker onPick={pickFromLibrary} onClose={() => setPickingLibrary(false)} />}
       {settingsOpen && (
-        <Modal onCancel={() => setSettingsOpen(false)} initialFocusRef={settingsCloseRef} role="dialog" aria-modal="true" aria-label={t("label.Chat settings")} className="justify-end">
+        <Modal onCancel={() => setSettingsOpen(false)} initialFocusRef={settingsCloseRef} role="dialog" aria-modal="true" aria-label={t("label.Chat settings")} className="vx-overlay-side justify-end">
           <div className="relative w-[340px] max-w-[90vw] bg-vx-base">
             <button ref={settingsCloseRef} type="button" aria-label={t("app.chat.closeSettings")} className="absolute end-3 top-3 z-10 rounded-full border border-vx-border px-3 py-1 text-sm" onClick={() => setSettingsOpen(false)}>{t("authGate.close")}</button>
             <div className="h-full pt-10">{settings}</div>

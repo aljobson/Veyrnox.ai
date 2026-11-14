@@ -26,7 +26,7 @@ export function EditorTransport({frame,total,playing,preparing,disabled,onPlay,o
         <div dir="ltr" className="flex items-center gap-1">
             <Control name="start" label={t("app.editor.transport.start")} disabled={empty||disabled} onClick={()=>onSeek(0)} />
             <Control name="previous" label={t("app.editor.transport.previous")} disabled={empty||disabled||frame<=0} onClick={()=>onSeek(frame-1)} />
-            <button type="button" className="grid size-9 shrink-0 place-items-center rounded-full bg-vx-accent text-vx-accent-ink transition-transform enabled:hover:scale-105 disabled:opacity-35" aria-label={playing||preparing?t("app.editor.transport.pause"):t("app.editor.transport.play")} disabled={empty||disabled} onClick={playing||preparing?onPause:onPlay}><Icon name={playing||preparing?'pause':'play'} /></button>
+            <button type="button" className="grid size-9 shrink-0 place-items-center rounded-full bg-vx-accent text-vx-accent-ink transition-transform motion-safe:enabled:hover:scale-105 disabled:opacity-35" aria-label={playing||preparing?t("app.editor.transport.pause"):t("app.editor.transport.play")} disabled={empty||disabled} onClick={playing||preparing?onPause:onPlay}><Icon name={playing||preparing?'pause':'play'} /></button>
             <Control name="next" label={t("app.editor.transport.next")} disabled={empty||disabled||frame>=total-1} onClick={()=>onSeek(frame+1)} />
             <Control name="end" label={t("app.editor.transport.end")} disabled={empty||disabled} onClick={()=>onSeek(Math.max(0,total-1))} />
         </div>

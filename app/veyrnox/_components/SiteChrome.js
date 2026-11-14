@@ -210,7 +210,7 @@ function StorageNotice({ onDismiss }) {
           type="button"
           data-storage-dismiss
           onClick={onDismiss}
-          className="shrink-0 self-start rounded-full bg-vx-accent px-5 py-2 text-[13px] font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover sm:self-auto"
+          className="shrink-0 self-start rounded-full bg-vx-accent px-5 py-2 text-[13px] font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover pointer-coarse:min-h-11 sm:self-auto"
         >
           {t('chrome.gotIt')}</button>
       </div>

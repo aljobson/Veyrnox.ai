@@ -646,14 +646,14 @@ function Billing({ account, recovery, setRecovery }) {
                 </p>
                 {catalog.trial_days > 0 ? (
                   <button
-                    className="mt-4 rounded-full bg-vx-accent px-5 py-3 font-bold text-vx-accent-ink disabled:opacity-50"
+                    className="vx-press mt-4 rounded-full bg-vx-accent px-5 py-3 font-bold text-vx-accent-ink disabled:opacity-50"
                     disabled={busy || !agreed}
                     onClick={checkout}
                   >
                     {t('app.credits.subscription.checkoutTrial', { days: catalog.trial_days })}</button>
                 ) : (
                   <button
-                    className="mt-4 rounded-full bg-vx-accent px-5 py-3 font-bold text-vx-accent-ink disabled:opacity-50"
+                    className="vx-press mt-4 rounded-full bg-vx-accent px-5 py-3 font-bold text-vx-accent-ink disabled:opacity-50"
                     disabled={busy || !agreed}
                     onClick={checkout}
                   >

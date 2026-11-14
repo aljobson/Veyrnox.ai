@@ -13,7 +13,7 @@ import { NETWORKS } from '../../../lib/socialConnectClient.js';
 import { approveDraftBatch, discardDrafts, listSocialDrafts } from '../../../lib/socialPostsClient.js';
 
 const button = 'rounded-full border border-vx-border px-4 py-2 text-sm font-bold disabled:opacity-50';
-const primaryButton = 'rounded-full bg-vx-accent text-black px-4 py-2 text-sm font-bold disabled:opacity-50';
+const primaryButton = 'rounded-full bg-vx-accent text-vx-accent-ink px-4 py-2 text-sm font-bold disabled:opacity-50';
 const networkLabel = (key) => NETWORKS.find((n) => n.key === key)?.label || key;
 
 function groupByBatch(drafts) {

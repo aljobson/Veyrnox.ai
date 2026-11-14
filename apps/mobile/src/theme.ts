@@ -151,6 +151,7 @@ const dark = {
     textTertiary: '#8b8b94',
     success: '#4ade80',
     warning: '#e4a93c',
+    notice: '#8ba7ff',
     danger: '#ff5c47',
     scrim: 'rgba(0,0,0,0.56)',
     onMedia: '#ffffff',
@@ -169,6 +170,7 @@ const light: typeof dark = {
     textTertiary: '#6b6b73',
     success: '#15803d',
     warning: '#8a5a00',
+    notice: '#2b4ebe',
     danger: '#c4241a',
     scrim: 'rgba(10,10,11,0.40)',
     onMedia: '#ffffff',
@@ -199,6 +201,7 @@ export function tokensForScheme(value: Scheme, settings: AppearanceSettings = cu
 }
 export type Tokens = ReturnType<typeof tokensForScheme>;
 // A feature colour (icon tiles on Tools, Face filters and Studio skills): the icon's ink and the tile's soft wash and edge.
+// 'amber' is the money colour: kept in the type for older callers, not to be used for a feature.
 export type FeatureHue = 'mint' | 'iris' | 'sky' | 'rose' | 'amber';
 export function featureHue(hue: FeatureHue, value: Scheme) {
     const ink = hue === 'amber' ? (value === 'light' ? light : dark).warning : accentPairs[hue][value][0];
@@ -232,6 +235,10 @@ const dynamicColor = (l: string, d: string): string => {
 const lightPalette = paletteForScheme('light'),
     darkPalette = paletteForScheme('dark');
 export const colors = Object.fromEntries(Object.keys(darkPalette).map((k) => [k, dynamicColor(lightPalette[k as keyof Palette], darkPalette[k as keyof Palette])])) as Palette;
+// A notice that is not about money (the web's --vx-warn). Amber stays on credit and money amounts.
+export const noticeColor = dynamicColor(light.notice, dark.notice);
+// The printed receipt: the web's cool thermal paper (.vx-paper), the same in every theme. Money on paper is the light-theme amber.
+export const receipt = { paper: '#ecf0ee', ink: '#101614', inkMuted: '#4e5854', money: light.warning } as const;
 export const brandColors = {
     google: { light: { fill: '#ffffff', border: '#747775', text: '#1f1f1f' }, dark: { fill: '#131314', border: '#8e918f', text: '#e3e3e3' } },
     apple: { light: { fill: '#000000', text: '#ffffff' }, dark: { fill: '#ffffff', text: '#000000' } },

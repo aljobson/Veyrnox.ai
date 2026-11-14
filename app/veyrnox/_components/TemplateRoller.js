@@ -7,7 +7,8 @@ import styles from './TemplateRoller.module.css';
 
 // A compact two-row collage for scanning real previews quickly. The full card
 // layout remains immediately below it; this is an additional browsing path.
-export function TemplateRoller({ presets, catalog, className = '' }) {
+// `headingLevel` is 2, or 3 where the roller sits under a section that already has an h2.
+export function TemplateRoller({ presets, catalog, className = '', headingLevel = 2 }) {
   const { t } = useI18n();
   const trackRef = useRef(null);
   if (!presets?.length) return null;
@@ -15,19 +16,23 @@ export function TemplateRoller({ presets, catalog, className = '' }) {
   const move = (direction) => {
     const track = trackRef.current;
     if (!track) return;
-    track.scrollBy({ left: direction * Math.max(280, track.clientWidth * 0.78) });
+    // Right to left, the track starts at its right edge and scrolls towards negative offsets.
+    const rtl = getComputedStyle(track).direction === 'rtl';
+    track.scrollBy({ left: (rtl ? -1 : 1) * direction * Math.max(280, track.clientWidth * 0.78) });
   };
+
+  const Heading = headingLevel === 3 ? 'h3' : 'h2';
 
   return (
     <section className={className}>
       <div className="mb-3 flex items-end justify-between gap-4">
         <div>
-          <h2 id="template-roller-title" className="text-[15px] font-bold tracking-tight">{t('presets.quick.title')}</h2>
+          <Heading id="template-roller-title" className="text-[15px] font-bold tracking-tight">{t('presets.quick.title')}</Heading>
           <p className="mt-1 text-sm text-vx-fg-muted">{t('presets.quick.hint')}</p>
         </div>
         <div className="flex shrink-0 gap-2">
-          <button type="button" onClick={() => move(-1)} aria-label={t('presets.quick.previous')} className="vx-press inline-flex h-11 w-11 items-center justify-center rounded-full border border-vx-border text-lg text-vx-fg-body hover:border-vx-accent hover:text-vx-fg">←</button>
-          <button type="button" onClick={() => move(1)} aria-label={t('presets.quick.next')} className="vx-press inline-flex h-11 w-11 items-center justify-center rounded-full border border-vx-border text-lg text-vx-fg-body hover:border-vx-accent hover:text-vx-fg">→</button>
+          <button type="button" onClick={() => move(-1)} aria-label={t('presets.quick.previous')} className="vx-press inline-flex h-11 w-11 items-center justify-center rounded-full border border-vx-border text-lg text-vx-fg-body hover:border-vx-accent hover:text-vx-fg"><span aria-hidden="true" className="inline-block rtl:-scale-x-100">←</span></button>
+          <button type="button" onClick={() => move(1)} aria-label={t('presets.quick.next')} className="vx-press inline-flex h-11 w-11 items-center justify-center rounded-full border border-vx-border text-lg text-vx-fg-body hover:border-vx-accent hover:text-vx-fg"><span aria-hidden="true" className="inline-block rtl:-scale-x-100">→</span></button>
         </div>
       </div>
       <div
@@ -35,7 +40,7 @@ export function TemplateRoller({ presets, catalog, className = '' }) {
         data-testid="template-roller"
         role="region"
         aria-label={t('presets.quick.title')}
-        className="-mx-4 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0"
+        className="-mx-4 overflow-x-auto px-4 pb-2 motion-safe:scroll-smooth sm:mx-0 sm:px-0"
       >
         <div className="grid h-[220px] w-max auto-cols-[8rem] grid-flow-col-dense grid-rows-2 gap-2 sm:h-[252px] sm:auto-cols-[9rem]">
           {presets.map((preset) => (

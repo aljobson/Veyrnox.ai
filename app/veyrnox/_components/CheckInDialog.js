@@ -61,7 +61,7 @@ export function CheckInDialog({ status, onClose, onClaim, onDisabled }) {
         })}
       </ol>
       <p role="status" className="min-h-6 text-center text-sm">{error ? error : status.claimed_today ? t('checkin.claimed') : ''}</p>
-      <button type="button" onClick={claim} disabled={busy || status.claimed_today} className="mt-2 min-h-14 w-full rounded-full bg-vx-accent px-6 text-lg font-bold text-vx-accent-ink shadow-lg disabled:opacity-50">
+      <button type="button" onClick={claim} disabled={busy || status.claimed_today} className="vx-press mt-2 min-h-14 w-full rounded-full bg-vx-accent px-6 text-lg font-bold text-vx-accent-ink shadow-lg disabled:opacity-50">
         {t(busy ? 'checkin.claiming' : status.claimed_today ? 'checkin.claimed' : 'checkin.claim')}
       </button>
       <div className="mt-5 border-t border-vx-border pt-4 text-center">

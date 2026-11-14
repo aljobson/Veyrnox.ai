@@ -1,10 +1,17 @@
 import { View, Pressable, StyleSheet, type ViewProps, type PressableProps } from 'react-native';
 import { ds } from '../../theme';
 import { themedStyles, useThemedStyles } from './AppearanceContext';
-export function Card({ style, selected, onPress, disabled, ...props }: ViewProps & { selected?: boolean; onPress?: PressableProps['onPress']; disabled?: boolean }) {
+import { usePressStyle } from './usePressStyle';
+type CardProps = ViewProps & { selected?: boolean; onPress?: PressableProps['onPress']; disabled?: boolean };
+export function Card({ style, selected, onPress, disabled, ...props }: CardProps) {
     const s = useThemedStyles(sheets);
-    if (onPress) return <Pressable {...props} accessibilityRole={props.accessibilityRole ?? 'button'} disabled={disabled} onPress={onPress} style={[s.card, s.hit, selected && s.selected, style]} />;
+    if (onPress) return <PressableCard {...props} disabled={disabled} onPress={onPress} style={[s.card, s.hit, selected && s.selected, style]} />;
     return <View {...props} style={[s.card, selected && s.selected, style]} />;
+}
+// Only a card that is a button subscribes to Reduce Motion.
+function PressableCard({ style, ...props }: Omit<CardProps, 'selected'>) {
+    const pressStyle = usePressStyle();
+    return <Pressable {...props} accessibilityRole={props.accessibilityRole ?? 'button'} style={({ pressed }) => [style, pressed && pressStyle]} />;
 }
 const sheets = themedStyles((p, _, scheme) => ({
     hit: { minHeight: 44 },

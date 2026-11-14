@@ -35,7 +35,7 @@ export default function BlueskyConnect({ onConnected, onCancel }) {
         </label>
         {error && <p role="alert" className="text-sm text-vx-danger">{error}</p>}
         <div className="flex gap-3">
-            <button disabled={busy} className="rounded-full bg-vx-accent px-4 py-2 text-sm font-bold text-black disabled:opacity-50">{busy ? t("oauth.connecting") : t("app.publish.bluesky.connect")}</button>
+            <button disabled={busy} className="rounded-full bg-vx-accent px-4 py-2 text-sm font-bold text-vx-accent-ink disabled:opacity-50">{busy ? t("oauth.connecting") : t("app.publish.bluesky.connect")}</button>
             <button type="button" disabled={busy} onClick={onCancel} className="rounded-full border border-vx-border px-4 py-2 text-sm font-bold">{t("cinema.creatorWorkspace.cancel")}</button>
         </div>
     </form>;

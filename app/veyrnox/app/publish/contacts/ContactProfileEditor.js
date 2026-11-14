@@ -43,7 +43,7 @@ export default function ContactProfileEditor({ contact, editable, onSave }) {
     </label>
     <div className="flex items-center gap-3 sm:col-span-2">
       <button type="button" className={button} disabled={saving} onClick={save}>{saving ? t("social.saving") : t("app.publish.contactProfile.save")}</button>
-      {saved && <span role="status" className="text-sm font-bold text-vx-success">{t("cinema.socialCinema.saved")}</span>}
+      {saved && <span role="status" className="text-sm font-bold text-vx-accent">{t("cinema.socialCinema.saved")}</span>}
       {error && <span role="alert" className="text-sm text-vx-danger">{error}</span>}
     </div>
   </div>;
