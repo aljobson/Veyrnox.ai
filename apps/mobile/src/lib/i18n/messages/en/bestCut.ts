@@ -33,6 +33,7 @@ export default {
     "bestCut.consent": "To find your best take, the full video files you select are uploaded to Veyrnox.ai and sent to a speech-transcription service to read their audio. Your script and notes stay on this phone. Temporary transcription uploads are scheduled for deletion after 24 hours; cleanup may take longer. Transcripts are kept up to 30 days to avoid charging you twice. Account deletion removes transcripts. Library originals and project backups keep their own lifecycle. If nobody speaks you are not charged.",
     "bestCut.metadata": "Only selected files, their duration and content type, your account ID and request keys leave the phone. We do not strip location or EXIF metadata. No iOS Speech Recognition permission is needed.",
     "bestCut.agree": "I agree to this processing",
+    "bestCut.needsAgree": "Turn on “I agree to this processing” to enable this button.",
     "bestCut.cancel": "Cancel and check again later",
     "bestCut.refunded": "Refunded {n} credits",
     "bestCut.uploading": "Uploading clip {n}: {percent}%",

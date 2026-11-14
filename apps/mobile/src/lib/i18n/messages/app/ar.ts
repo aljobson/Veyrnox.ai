@@ -48,6 +48,7 @@ export default {
   "bestCut.language": "لغة الفيديو",
   "bestCut.auto": "اكتشاف تلقائي",
   "bestCut.agree": "أوافق على هذه المعالجة",
+  "bestCut.needsAgree": "فعّل «أوافق على هذه المعالجة» لتمكين هذا الزر.",
   "bestCut.cancel": "إلغاء والتحقق لاحقًا",
   "bestCut.refunded": "تم رد {n} رصيد",
   "bestCut.uploading": "جارٍ رفع المقطع {n}: {percent}%",

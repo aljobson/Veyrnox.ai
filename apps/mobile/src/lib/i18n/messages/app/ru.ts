@@ -48,6 +48,7 @@ export default {
   "bestCut.language": "Язык видео",
   "bestCut.auto": "Автоопределение",
   "bestCut.agree": "Я согласен с этой обработкой",
+  "bestCut.needsAgree": "Включите «Я согласен с этой обработкой», чтобы активировать эту кнопку.",
   "bestCut.cancel": "Отменить и проверить позже",
   "bestCut.refunded": "Возвращено {n} кредитов",
   "bestCut.uploading": "Загрузка клипа {n}: {percent}%",

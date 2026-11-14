@@ -39,6 +39,8 @@ try {
     await db.query(`UPDATE public.model_catalog
         SET provider='kie', provider_endpoint='market:google/nano-banana', provider_cost_per_unit=0.0200, credits_5s=2
         WHERE id='nano-banana-kie'`);
+    // 0519 re-recorded Mistral Small's worst case ($0.0020 -> $0.0022); 0222/0262 pin the cost they were written against.
+    await db.query("UPDATE public.model_catalog SET provider_cost_per_unit=0.0020 WHERE id='chat-mistral-small'");
     await check('0222 rejects its own already-applied target; 0262 repeats without changing it', async () => {
         assert.deepEqual(await state(), expected);
         await refuses(original, /Expected one chat-mistral-small row, updated 0/);

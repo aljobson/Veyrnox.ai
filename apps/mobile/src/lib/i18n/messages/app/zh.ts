@@ -47,6 +47,7 @@ export default {
   "bestCut.language": "视频语言",
   "bestCut.auto": "自动检测",
   "bestCut.agree": "我同意此处理方式",
+  "bestCut.needsAgree": "开启“我同意此处理方式”后才能使用此按钮。",
   "bestCut.cancel": "取消，稍后查看",
   "bestCut.refunded": "已退还 {n} 积分",
   "bestCut.uploading": "正在上传片段 {n}：{percent}%",

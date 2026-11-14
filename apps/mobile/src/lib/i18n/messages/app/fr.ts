@@ -49,6 +49,7 @@ export default {
   "bestCut.language": "Langue de la vidéo",
   "bestCut.auto": "Détection automatique",
   "bestCut.agree": "J’accepte ce traitement",
+  "bestCut.needsAgree": "Activez « J’accepte ce traitement » pour activer ce bouton.",
   "bestCut.cancel": "Annuler et vérifier plus tard",
   "bestCut.refunded": "{n} crédits remboursés",
   "bestCut.uploading": "Envoi du clip {n} : {percent}%",

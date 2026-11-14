@@ -48,6 +48,7 @@ export default {
   "bestCut.language": "वीडियो की भाषा",
   "bestCut.auto": "अपने आप पहचानें",
   "bestCut.agree": "मैं इस प्रोसेसिंग से सहमत हूँ",
+  "bestCut.needsAgree": "इस बटन को चालू करने के लिए “मैं इस प्रोसेसिंग से सहमत हूँ” चालू करें।",
   "bestCut.cancel": "रद्द करें और बाद में देखें",
   "bestCut.refunded": "{n} क्रेडिट वापस किए गए",
   "bestCut.uploading": "क्लिप {n} अपलोड हो रही है: {percent}%",
