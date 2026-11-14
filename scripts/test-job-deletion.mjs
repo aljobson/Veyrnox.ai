@@ -129,6 +129,15 @@ try {
     const open = await job(alice.userId, 'REFUNDED');
     await raw(`INSERT INTO public.fal_dispatch (job_id, endpoint, payload, state) VALUES ($1, 'fal-ai/test', '{"prompt":"x"}', 'UNKNOWN')`, [open.id]);
     await refuse('a fal request that has not closed', open, 'IN_PROGRESS');
+    // 0508: once the job is settled, an accepted or rejected fal request is finished, not open.
+    for (const dispatchState of ['ACCEPTED', 'REJECTED']) {
+        const settled = await job(alice.userId);
+        const settledKey = await asset(settled.id);
+        await raw(`INSERT INTO public.fal_dispatch (job_id, endpoint, payload, state) VALUES ($1, 'fal-ai/test', '{"prompt":"x"}', $2)`, [settled.id, dispatchState]);
+        assert.deepEqual(await del(alice.authId, settled.id), { ok: true, replayed: false }, `settled job, dispatch ${dispatchState}`);
+        assert.equal(await queued(settledKey), 1, `the file is queued for removal (${dispatchState})`);
+        assert.deepEqual((await one('SELECT payload FROM public.fal_dispatch WHERE job_id = $1', [settled.id])).payload, {});
+    }
 
     const heldJob = await job(alice.userId); const heldKey = await asset(heldJob.id, true);
     await refuse('an asset under a hold', heldJob, 'ON_HOLD', heldKey);

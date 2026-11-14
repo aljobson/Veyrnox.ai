@@ -54,6 +54,7 @@ test('every refusal has its status and a kebab_case code, with nothing else in t
     const cases = {
         ACCOUNT_FROZEN: [403, 'account_frozen'], IN_PROGRESS: [409, 'job_in_progress'], ON_HOLD: [409, 'job_on_hold'],
         USED_BY_POST: [409, 'used_by_post'], USED_BY_CINEMA: [409, 'used_by_cinema'], USED_BY_LIBRARY: [409, 'used_by_library'],
+        USED_BY_MUSIC: [409, 'used_by_music'],
         NOT_FOUND: [404, 'not_found'],
     };
     for (const [code, [status, error]] of Object.entries(cases)) {
