@@ -375,6 +375,12 @@ const ru = {
     'audioTemplates.cat.MUSIC': 'Музыка',
     'audioTemplates.cat.VOICE-OVER': 'Озвучка',
     'audioTemplates.cat.SOUND FX': 'Звуковые эффекты',
+    'templateClip.prompt': 'Промпт для клипа',
+    'templateClip.reset': 'Сбросить промпт',
+    'templateClip.addPhoto': 'Добавьте своё фото',
+    'templateClip.videoName': '@video1: клип шаблона',
+    'templateClip.photoName': '@image1: ваше фото',
+    'templateClip.invalid': 'Используйте @video1 и @image1 ровно по одному разу, не более 2000 символов.',
 } as const;
 
 export default ru;

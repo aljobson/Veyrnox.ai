@@ -375,6 +375,12 @@ const ko = {
     'audioTemplates.cat.MUSIC': '음악',
     'audioTemplates.cat.VOICE-OVER': '보이스오버',
     'audioTemplates.cat.SOUND FX': '효과음',
+    'templateClip.prompt': '클립 프롬프트',
+    'templateClip.reset': '프롬프트 초기화',
+    'templateClip.addPhoto': '사진 추가',
+    'templateClip.videoName': '@video1: 템플릿 클립',
+    'templateClip.photoName': '@image1: 내 사진',
+    'templateClip.invalid': '@video1과 @image1을 각각 한 번씩 사용하고 2000자 이내로 입력하세요.',
 } as const;
 
 export default ko;

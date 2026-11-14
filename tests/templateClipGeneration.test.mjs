@@ -4,7 +4,7 @@ import { register } from 'node:module';
 import { isDeepStrictEqual } from 'node:util';
 import { manifest, catalog, kieCatalog, kieSource } from './fixtures/templateClips.mjs';
 import { createFalWebhookHandler } from '../lib/falWebhookHandler.js';
-import { TEMPLATE_CLIP_PROMPT } from '../lib/templateClipPrompt.mjs';
+import { TEMPLATE_CLIP_PROMPT, templateClipProviderPrompt } from '../lib/templateClipPrompt.mjs';
 register('data:text/javascript,' + encodeURIComponent(`
 export async function resolve(s,c,next) { return next(s === 'next/server' ? 'next/server.js' : s,c); }
 export async function load(url,c,next) {
@@ -21,6 +21,7 @@ Object.assign(process.env, {
 const { POST } = await import('../app/api/v1/generations/route.js');
 const { GET } = await import('../app/api/catalog/route.js');
 const { TEMPLATE_CLIP_SOURCES } = await import('../lib/templateClipSources.js');
+const EFFECTIVE_PROMPT = templateClipProviderPrompt(TEMPLATE_CLIP_PROMPT, 'seedance-2.0-reference');
 const ID = 'medieval-runway-look';
 const AUTH = '11111111-1111-4111-8111-111111111111', JOB = '22222222-2222-4222-8222-222222222222';
 const PHOTO = '33333333-3333-4333-8333-333333333333';
@@ -31,7 +32,7 @@ function network(t, options = {}) {
   if (options.imageDimensions) {
     sourceJpeg.writeUInt16BE(options.imageDimensions.height, 7); sourceJpeg.writeUInt16BE(options.imageDimensions.width, 9);
   }
-  const debits = [], submits = [], calls = [], refunds = [], identities = new Map(); let charges = 0;
+  const freeAdmissions = [], debits = [], submits = [], calls = [], refunds = [], identities = new Map(); let charges = 0;
   // Mirrors migration 0399's non-chat identity; SQL itself is not run here.
   const identity = body => ({ model: body.p_model_id, inputs: Object.fromEntries(Object.entries(body.p_inputs).filter(([k]) => !['preset_id','source_keys','source_assets'].includes(k))) });
   t.mock.method(globalThis, 'fetch', async (target, init = {}) => {
@@ -56,6 +57,12 @@ function network(t, options = {}) {
         assert.equal(body.p_auth_id, AUTH);
         return Response.json({ ok: true, state: 'STORED', mime_type: 'image/jpeg', r2_key: `jobs/${PHOTO}/output.jpg` });
       }
+      if (name === 'submit_free_job') {
+        freeAdmissions.push(body); const value = identity(body), previous = identities.get(body.p_idempotency_key);
+        if (previous && !isDeepStrictEqual(previous, value)) return Response.json({ ok: false, code: 'IDEMPOTENCY_CONFLICT' });
+        if (!previous) identities.set(body.p_idempotency_key, value);
+        return Response.json({ ok: true, taken: true, idempotent: !!previous, job_id: JOB });
+      }
       if (name === 'ledger_refund') refunds.push(body);
       if (name === 'ledger_debit') {
         debits.push(body); const value = identity(body), previous = identities.get(body.p_idempotency_key);
@@ -79,7 +86,7 @@ function network(t, options = {}) {
     }
     throw Error(`Unexpected network ${url.hostname}${url.pathname}`);
   });
-  return { debits, submits, calls, refunds, charges: () => charges };
+  return { freeAdmissions, debits, submits, calls, refunds, charges: () => charges };
 }
 function post(overrides = {}) {
   return POST(new Request('https://veyrnox.test/api/v1/generations', { method: 'POST', headers: { 'x-veyrnox-auth-id': AUTH }, body: JSON.stringify({ model_id: 'seedance-2.0-reference', template_clip: 'medieval-runway-look',
@@ -94,14 +101,14 @@ test('catalog price, server prompt, signed video list and photo list use the exi
   const response = await get(ID), view = await response.json();
   assert.deepEqual(view, { id: ID, model: 'seedance-2.0-reference', credits: 85, durationSeconds: 5 });
   assert.equal(response.headers.get('cache-control'), 'no-store');
-  assert.equal((await post({ inputs: { prompt: 'untrusted green character' } })).status, 200);
+  assert.equal((await post({ inputs: { prompt: TEMPLATE_CLIP_PROMPT } })).status, 200);
   assert.equal(net.debits[0].p_credits, 85);
   assert.deepEqual(net.debits[0].p_inputs.template_source, { template: ID, version: 'v1', sha256: 'a'.repeat(64) });
-  assert.equal(net.debits[0].p_inputs.prompt, TEMPLATE_CLIP_PROMPT);
+  assert.equal(net.debits[0].p_inputs.prompt, EFFECTIVE_PROMPT);
   assert.deepEqual(net.debits[0].p_inputs.references, [photo]);
   assert.doesNotMatch(JSON.stringify(net.debits[0].p_inputs), /https:|template-clips\//);
   const payload = net.submits[0];
-  assert.equal(payload.prompt, TEMPLATE_CLIP_PROMPT);
+  assert.equal(payload.prompt, EFFECTIVE_PROMPT);
   assert.equal(payload.image_urls.length, 1); assert.equal(payload.video_urls.length, 1);
   const signed = new URL(payload.video_urls[0]);
   assert.ok(signed.pathname.endsWith(TEMPLATE_CLIP_SOURCES[ID].key));
@@ -136,10 +143,10 @@ for (const [change, error] of [[{ videoSeconds: 1 }, 'source_too_short'], [{ sec
   t.after(() => Object.assign(source, saved)); const net = network(t);
   assert.equal((await (await post()).json()).error, error); assert.equal(net.debits.length, 0);
 });
-test('replay ignores client prompt but binds photo, template, version and hash, surviving unpublication', async t => {
+test('replay binds effective prompt and photo, template, version and hash, surviving unpublication', async t => {
   const options = {}, net = network(t, options);
   assert.equal((await post()).status, 200);
-  assert.equal((await (await post({ inputs: { prompt: 'ignored even on replay' } })).json()).idempotent, true);
+  assert.equal((await (await post({ inputs: { prompt: TEMPLATE_CLIP_PROMPT } })).json()).idempotent, true);
   assert.equal((await post({ references: [{ ...photo, asset_id: AUTH }] })).status, 409);
   assert.equal((await post({ template_clip: 'other-template' })).status, 409);
   const source = TEMPLATE_CLIP_SOURCES[ID], saved = { ...source };
@@ -180,17 +187,17 @@ test('ordinary Seedance requests retain pre-clip validation and drop raw video U
   process.env.TEMPLATE_CLIP_ENABLED = 'true';
 });
 
-test('replay survives a change to the server prompt constant', async () => {
+test('omitted-prompt replay fails closed across a changed default constant', async () => {
   const { replayTemplateClip } = await import('../lib/templateClipReplay.js');
   const oldPrompt = 'An earlier server-owned prompt, before the current constant';
   assert.notEqual(oldPrompt, TEMPLATE_CLIP_PROMPT);
   const stored = { prompt: oldPrompt, duration_seconds: 5, references: [photo],
     template_source: { template: ID, version: 'v1', sha256: 'a'.repeat(64) } };
   const replay = await replayTemplateClip(AUTH, { model_id: 'seedance-2.0-reference', template_clip: ID,
-    inputs: { prompt: 'ignored client edit' }, consent: true, references: [photo], idempotency_key: 'earlier' }, {}, {
+    inputs: {}, consent: true, references: [photo], idempotency_key: 'earlier' }, {}, {
     manifest, read: async table => table === 'users' ? [{ id: AUTH }] : [{ id: JOB, model_id: 'seedance-2.0-reference', inputs: stored }],
   });
-  assert.deepEqual(replay, { status: 200, body: { job_id: JOB, idempotent: true } });
+  assert.deepEqual(replay, { status: 409, body: { error: 'idempotency_conflict' } });
 });
 
 test('accepted template job follows job_failed and exactly one provider-failure refund on duplicate delivery', async t => {
@@ -274,7 +281,7 @@ for (const [fal, kie, expected] of [[true, false, catalog[0].id], [false, true, 
 
 test('kie admission shapes the server prompt and private clip and replays without another charge', async t => {
   useKieSource(t); const net = network(t, { catalog: [kieCatalog] });
-  const request = { model_id: kieCatalog.id, inputs: { prompt: 'caller edit', aspect_ratio: '9:16' } };
+  const request = { model_id: kieCatalog.id, inputs: { prompt: TEMPLATE_CLIP_PROMPT, aspect_ratio: '9:16' } };
   assert.equal((await post(request)).status, 200);
   assert.equal((await (await post(request)).json()).idempotent, true);
   assert.equal(net.charges(), 1); assert.equal(net.submits.length, 1);
@@ -282,7 +289,7 @@ test('kie admission shapes the server prompt and private clip and replays withou
   assert.equal(payload.model, 'bytedance/seedance-2');
   assert.equal(payload.callBackUrl, 'https://veyrnox.test/api/webhook/kie');
   assert.deepEqual(Object.keys(payload.input).sort(), ['aspect_ratio', 'duration', 'generate_audio', 'prompt', 'reference_image_urls', 'reference_video_urls', 'resolution']);
-  assert.equal(payload.input.prompt, TEMPLATE_CLIP_PROMPT);
+  assert.equal(payload.input.prompt, EFFECTIVE_PROMPT);
   assert.equal(payload.input.duration, 5); assert.equal(payload.input.resolution, '720p');
   assert.equal(payload.input.generate_audio, true); assert.equal(payload.input.aspect_ratio, '9:16');
   assert.equal(payload.input.reference_image_urls.length, 1); assert.equal(payload.input.reference_video_urls.length, 1);
@@ -321,7 +328,7 @@ test('kie two-image request is refused before debit even with multi-reference en
 
 test('kie proven submit failure uses the catalog price for one refund', async t => {
   useKieSource(t); const net = network(t, { catalog: [kieCatalog], providerFailure: true });
-  const response = await post({ model_id: kieCatalog.id });
+  const response = await post({ model_id: kieCatalog.id, inputs: { prompt: 'Follow @video1 with @image1.' } });
   assert.equal(response.status, 502); assert.equal((await response.json()).error, 'provider_submit_failed');
   assert.deepEqual(net.refunds, [{ p_job_id: JOB, p_user_id: AUTH, p_credits: 70, p_reason: 'refund:submit_failed' }]);
 });
@@ -386,4 +393,54 @@ test('kie-only projection rejects a fal-era manifest and returns kie once measur
   assert.equal(available.status, 200);
   assert.deepEqual(await available.json(), { id: ID, model: kieCatalog.id, credits: 70, durationSeconds: 5 });
   assert.equal(net.debits.length, 0); assert.equal(net.submits.length, 0);
+});
+
+for (const row of [catalog[0], kieCatalog]) {
+  test(`${row.provider}: edited prompt retries, conflicts and concurrent admission share one job`, async t => {
+    if (row === kieCatalog) useKieSource(t);
+    const net = network(t, { catalog: [row] });
+    const request = { model_id: row.id, inputs: { prompt: '  Follow @VIDEO1.  Recast with @IMAGE1.  ' } };
+    const responses = await Promise.all([post(request), post(request)]);
+    assert.deepEqual(responses.map(r => r.status), [200, 200]);
+    assert.equal(net.charges(), 1);
+    assert.equal(net.submits.length, 1);
+    assert.equal(net.debits[0].p_inputs.prompt, 'Follow @Video1. Recast with @Image1.');
+    assert.equal((await (await post(request)).json()).idempotent, true);
+    const changed = await post({ ...request, inputs: { prompt: 'Change @video1 with @image1.' } });
+    assert.equal(changed.status, 409);
+    assert.equal((await changed.json()).error, 'idempotency_conflict');
+    assert.equal(net.charges(), 1);
+  });
+  test(`${row.provider}: omitted and explicit default have identical admission identity`, async t => {
+    if (row === kieCatalog) useKieSource(t);
+    const net = network(t, { catalog: [row] });
+    const responses = await Promise.all([post({ model_id: row.id }), post({ model_id: row.id, inputs: { prompt: TEMPLATE_CLIP_PROMPT } })]);
+    assert.deepEqual(responses.map(r => r.status), [200, 200]);
+    assert.equal(net.charges(), 1);
+    assert.equal((await (await post({ model_id: row.id })).json()).idempotent, true);
+  });
+  for (const prompt of ['no tags', '@video1 @video1 @image1', 'word@video1 @image1', '@video10 @image1', '@video1 @image1 ' + 'x'.repeat(2000), 3]) {
+    test(`${row.provider}: invalid prompt ${String(prompt).slice(0, 30)} refuses before debit`, async t => {
+      if (row === kieCatalog) useKieSource(t);
+      const net = network(t, { catalog: [row] });
+      const response = await post({ model_id: row.id, inputs: { prompt } });
+      assert.equal(response.status, 400);
+      assert.equal((await response.json()).error, 'template_clip_prompt_tags');
+      assert.equal(net.debits.length, 0);
+    });
+  }
+}
+
+for (const row of [catalog[0], kieCatalog]) test(`${row.provider}: free concurrent edited prompts bind the same identity as paid admission`, async t => {
+  if (row === kieCatalog) useKieSource(t);
+  process.env.FREE_ALLOWANCE_ENABLED = 'true';
+  t.after(() => { process.env.FREE_ALLOWANCE_ENABLED = 'false'; });
+  const net = network(t, { catalog: [{ ...row, free_allowance_per_day: 1 }] });
+  const request = { model_id: row.id, inputs: { prompt: 'Follow @video1 with @image1.' } };
+  const results = await Promise.all([post(request), post(request)]);
+  assert.deepEqual(results.map(r => r.status), [200, 200]);
+  assert.ok(net.freeAdmissions.length > 0);
+  assert.equal(net.debits.length, 0); assert.equal(net.submits.length, 1);
+  const changed = await post({ ...request, inputs: { prompt: 'Change @video1 with @image1.' } });
+  assert.equal(changed.status, 409); assert.equal((await changed.json()).error, 'idempotency_conflict');
 });

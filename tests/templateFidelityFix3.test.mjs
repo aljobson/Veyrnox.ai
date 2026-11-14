@@ -200,7 +200,7 @@ for (const mode of ['decode-failure', 'stale-selection', 'undersized', 'valid'])
     visit(ast);
     const file = { name: 'photo.png' }, sequence = { current: 0 }, state = {};
     let closed = 0;
-    const context = { photoSequence: sequence, contract: { ...contract, requiredReferences: { imageMin: 1, imageMax: 1 } }, auditedTemplateId: contract.id, templatePhotoError,
+    const context = { photoSequence: sequence, templateClip: null, contract: { ...contract, requiredReferences: { imageMin: 1, imageMax: 1 } }, auditedTemplateId: contract.id, templatePhotoError,
       templateImageFileError: () => null, prepareUpload: async () => file,
       setPhotoError: value => { state.photoError = value; }, setPhoto: value => { state.photo = value; },
       setPhotoBusy: value => { state.busy = value; }, setHandoffError: value => { state.handoffError = value; },

@@ -375,6 +375,12 @@ const ar = {
     'audioTemplates.cat.MUSIC': 'موسيقى',
     'audioTemplates.cat.VOICE-OVER': 'تعليق صوتي',
     'audioTemplates.cat.SOUND FX': 'مؤثرات صوتية',
+    'templateClip.prompt': 'وصف المقطع',
+    'templateClip.reset': 'إعادة ضبط الوصف',
+    'templateClip.addPhoto': 'أضف صورتك',
+    'templateClip.videoName': '@video1: مقطع القالب',
+    'templateClip.photoName': '@image1: صورتك',
+    'templateClip.invalid': 'استخدم @video1 و@image1 مرة واحدة لكل منهما، وبحد أقصى 2000 حرف.',
 } as const;
 
 export default ar;

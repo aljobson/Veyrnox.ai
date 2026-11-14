@@ -3346,5 +3346,17 @@
     "english": "All",
     "translation": "Todas",
     "ratio": 1.67
+  },
+  {
+    "id": "templateClip.prompt",
+    "english": "Clip prompt",
+    "translation": "Instrucciones del clip",
+    "ratio": 2
+  },
+  {
+    "id": "templateClip.reset",
+    "english": "Reset prompt",
+    "translation": "Restablecer instrucciones",
+    "ratio": 2.08
   }
 ]

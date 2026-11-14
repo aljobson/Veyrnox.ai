@@ -375,6 +375,12 @@ const fr = {
     'audioTemplates.cat.MUSIC': 'Musique',
     'audioTemplates.cat.VOICE-OVER': 'Voix off',
     'audioTemplates.cat.SOUND FX': 'Effets sonores',
+    'templateClip.prompt': 'Instructions du clip',
+    'templateClip.reset': 'Réinitialiser les instructions',
+    'templateClip.addPhoto': 'Ajoutez votre photo',
+    'templateClip.videoName': '@video1 : clip du modèle',
+    'templateClip.photoName': '@image1 : votre photo',
+    'templateClip.invalid': 'Utilisez @video1 et @image1 une seule fois, avec un maximum de 2000 caractères.',
 } as const;
 
 export default fr;

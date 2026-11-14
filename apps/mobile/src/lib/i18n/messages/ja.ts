@@ -375,6 +375,12 @@ const ja = {
     'audioTemplates.cat.MUSIC': '音楽',
     'audioTemplates.cat.VOICE-OVER': 'ナレーション',
     'audioTemplates.cat.SOUND FX': '効果音',
+    'templateClip.prompt': 'クリップのプロンプト',
+    'templateClip.reset': 'プロンプトをリセット',
+    'templateClip.addPhoto': '写真を追加',
+    'templateClip.videoName': '@video1: テンプレートのクリップ',
+    'templateClip.photoName': '@image1: あなたの写真',
+    'templateClip.invalid': '@video1 と @image1 をそれぞれ1回だけ使い、2000文字以内で入力してください。',
 } as const;
 
 export default ja;

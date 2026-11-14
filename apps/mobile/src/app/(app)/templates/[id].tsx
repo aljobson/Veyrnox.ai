@@ -1,6 +1,8 @@
 import { TemplatePhotoSlots } from '../../../components/TemplatePhotoSlots';
+import { TemplateClipComposer } from '../../../components/templates/TemplateClipComposer';
 import { stageCreativeSourceHandoff } from '../../../lib/creativeSourceHandoff';
 import { templatePhotoHints, templatePhotosUnavailable, templateContract } from '../../../lib/templateFidelity';
+import { TEMPLATE_CLIP_PROMPT, templateClipPhotoPrompt, validTemplateClipPrompt } from '../../../../../../lib/templateClipPrompt.mjs';
 import { rawText } from '../../../lib/i18n/translate';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, View } from 'react-native';
@@ -34,6 +36,7 @@ export default function TemplatePage() {
     const [failed, setFailed] = useState(false);
     const [attempt, setAttempt] = useState(0);
     const [prompt, setPrompt] = useState('');
+    const [clipPrompt, setClipPrompt] = useState(() => templateClipPhotoPrompt(TEMPLATE_CLIP_PROMPT, false));
     const [copied, setCopied] = useState<string | null>(null);
     // The photo and its upload state belong to the model they were picked for.
     // Bumped when the photo is dropped, so the picker remounts empty.
@@ -67,15 +70,17 @@ export default function TemplatePage() {
     const photo = photoSpec ? { ...photoSpec, maxFiles: 1 } : null;
     const boundCount = contract?.class === 'bound' ? contract.slotCount || 0 : 0;
     const bslot = photo && contract && model && options && (contract.class === 'bound' || templateRequest(preset!, model, { prompt, aspect: options.aspect, duration: options.duration }).templateId) ? { ...photo, maxFiles: 1, minSide: Math.max(photo.minSide || 0, contract.minPhotoDimension) } : photo;
-    const slot = templateClip && photo ? { ...photo, maxFiles: 1, label: t('presets.use.photoTitle') } : bslot;
+    const slot = templateClip && photo ? { ...photo, maxFiles: 1, label: t('templateClip.photoName') } : bslot;
     const inline = !photosUnavailable && !unsupported && !!preset && !!model && (!!templateClip || inlineBlockReason(preset, model, { photo: true }) === null);
     const mine = attached && attached.modelId === model?.id ? attached : null;
     const photos = mine?.refs ?? [];
     const photoBusy = mine?.busy === true;
     const photoReady = !photoBusy && (boundCount ? photos.length === boundCount : !slot || photos.length > 0);
-    const request = inline && preset && model && options && (templateClip || (!tooLong && prompt.trim())) ? templateRequest(preset, model, { prompt, aspect: options.aspect, duration: options.duration, references: slot ? photos : [], sourceRights: true, templateClip: templateClip?.id }) : null;
+    const request = inline && preset && model && options && (templateClip ? validTemplateClipPrompt(clipPrompt) : (!tooLong && prompt.trim())) ? templateRequest(preset, model, { prompt: templateClip ? clipPrompt : prompt, aspect: options.aspect, duration: options.duration, references: slot ? photos : [], sourceRights: true, templateClip: templateClip?.id }) : null;
     const generation = useTemplateGenerate(request, model && options ? estimateCredits(model, options.duration) : 0);
+    useEffect(() => { setClipPrompt(text => templateClipPhotoPrompt(text, photos.length > 0)); }, [photos.length]);
     useEffect(() => {
+        setClipPrompt(templateClipPhotoPrompt(TEMPLATE_CLIP_PROMPT, false));
         let live = true; setLoading(true); setFailed(false); setCopied(null); setChoices({}); setAttached(null); setPickerEpoch(n => n + 1);
         fetchPresets().then(all => { if (live) { const found = all.find(p => p.id === id) ?? null; setPreset(found); setPrompt(found ? (found.sourcePromptOrigin === 'community-source-exact' && found.sourcePrompt ? found.sourcePrompt : found.prompt) : ''); } }).catch(() => { if (live) setFailed(true); }).finally(() => { if (live) setLoading(false); });
         return () => { live = false; };
@@ -95,12 +100,13 @@ export default function TemplatePage() {
             {preset.previewUrl ? <InlineMedia url={preset.previewUrl} label={t('job.playVideo')} /> : preset.posterUrl ? <Image source={{ uri: preset.posterUrl }} cachePolicy="memory" contentFit="contain" style={{ width: '100%', aspectRatio: previewRatio(preset) }} accessibilityLabel={rawText(preset.title)} /> : null}
             {sourcePromptUnavailable ? <Card><Text>{t('public.TemplateRecipe.sourcePromptUnavailable')}</Text></Card> : null}
             {sourcePromptNotRecorded ? <Card><Text>{t('public.TemplateRecipe.sourcePromptNotRecorded')}</Text></Card> : null}
+            {templateClip && slot && model && available && inline ? <TemplateClipComposer poster={preset.posterUrl} prompt={clipPrompt} attached={photos.length > 0} onChange={setClipPrompt} picker={<SourcePicker key={`${model.id}:${pickerEpoch}`} slot={slot} api={generation.api} drawable={false} references={photos} onReferences={refs => setAttached(previous => ({ modelId: model.id, refs, busy: previous?.modelId === model.id && previous.busy }))} onBusy={busy => setAttached(previous => previous && previous.modelId !== model.id ? previous : { modelId: model.id, refs: previous?.refs ?? [], busy })} onChange={() => {}} onLibrary={() => {}} />} /> : null}
             <TextField label={promptLabel} accessibilityLabel={promptLabel} value={displayPrompt} editable={templateClip ? false : undefined} onChangeText={value => { setPrompt(value); setCopied(null); }} multiline scrollEnabled style={hasExactSourcePrompt ? [styles.promptBox, { writingDirection: 'auto', textAlign: 'auto' }] : styles.promptBox} />
             <Button label={t(hasExactSourcePrompt ? 'public.TemplateRecipe.copyExactCommunityPrompt' : 'editor.copy')} onPress={async () => setCopied(t(await copyText(displayPrompt) ? 'libraryCreate.copied' : 'libraryCreate.copyFailed'))} />
             {copied ? <Text accessibilityLiveRegion="polite">{copied}</Text> : null}
             {tooLong ? <Text tone="danger" accessibilityLiveRegion="polite">{t('public.TemplateRecipe.productPromptTooLong', { count: prompt.length, max: TEMPLATE_PROMPT_MAX })}</Text> : null}
             {hasExactSourcePrompt ? <Text>{t('public.TemplateRecipe.exactCommunityPromptHelp')}</Text> : null}
-            {templateClip ? <Text>{t('public.TemplateRecipe.templateClipUsed')}</Text> : null}
+            {templateClip ? <><Text>{t('public.TemplateRecipe.templateClipUsed')}</Text><Text>{t('app.create.referenceLikenessNotice')}</Text></> : null}
             {hasExactSourcePrompt && sourcePromptTruncated ? <Card><Text>{t('public.TemplateRecipe.sourcePromptTruncated')}</Text></Card> : null}
             {hasExactSourcePrompt && sourcePromptDuplicate ? <Card><Text>{t('public.TemplateRecipe.sourcePromptDuplicate')}</Text></Card> : null}
             {models.length > 1 ? <><Text>{t('create.model')}</Text><View style={styles.choices}>
@@ -117,8 +123,7 @@ export default function TemplatePage() {
             </View></> : null}
             <Text tone="warning">{templatePrice(model && options ? { ...preset, credits: estimateCredits(model, options.duration), durationSeconds: options.duration } : preset)}</Text>
             {photosUnavailable ? <Card><Text accessibilityLiveRegion="polite">{t('presets.fidelity.photosUnavailable')}</Text></Card> : unsupported ? <Card><Text accessibilityLiveRegion="polite">{t('public.TemplateRecipe.sourceVideoUnsupported')}</Text></Card> : available && inline ? <>
-                {boundCount && model ? <TemplatePhotoSlots key={`${preset.id}:${model.id}:${pickerEpoch}`} count={boundCount} hints={templatePhotoHints(contract)} model={model} api={generation.api} references={photos} onReferences={refs => setAttached(previous => ({ modelId: model.id, refs, busy: previous?.busy || false }))} onBusy={busy => setAttached(previous => ({ modelId: model.id, refs: previous?.refs ?? [], busy }))} /> : slot && model ? <View style={{ gap: 12 }}>
-                    {templateClip ? <Text>{t('app.create.referenceLikenessNotice')}</Text> : null}
+                {boundCount && model ? <TemplatePhotoSlots key={`${preset.id}:${model.id}:${pickerEpoch}`} count={boundCount} hints={templatePhotoHints(contract)} model={model} api={generation.api} references={photos} onReferences={refs => setAttached(previous => ({ modelId: model.id, refs, busy: previous?.busy || false }))} onBusy={busy => setAttached(previous => ({ modelId: model.id, refs: previous?.refs ?? [], busy }))} /> : !templateClip && slot && model ? <View style={{ gap: 12 }}>
                     <SourcePicker key={`${model.id}:${pickerEpoch}`} slot={slot} api={generation.api} drawable={false} references={photos} onReferences={refs => setAttached(previous => ({ modelId: model.id, refs, busy: previous?.modelId === model.id && previous.busy }))} onBusy={busy => setAttached(previous => previous && previous.modelId !== model.id ? previous : { modelId: model.id, refs: previous?.refs ?? [], busy })} onChange={() => {}} onLibrary={() => {}} />
                 </View> : null}
                 {generation.run && model ? <CreateResult api={generation.api} batch={{ ids: [...generation.run.ids], modelId: generation.run.modelId, kind: kindOf(model.modality), aspect: options?.aspect ?? null, duration: options?.duration ?? null, count: 1 }} catalog={catalog ?? []} onTerminal={generation.settled} /> : null}
