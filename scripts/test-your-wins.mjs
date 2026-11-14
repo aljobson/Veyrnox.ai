@@ -90,6 +90,33 @@ try {
     assert.equal((await wins(routed)).all.video_seconds,10,'unverified completed route cannot inherit a newly supported catalog endpoint');
     await job(routed,routedModel,{inputs:{duration_seconds:5}});
     assert.equal((await wins(routed)).all.video_seconds,15,'legacy jobs without attempt records retain the documented catalog fallback');
+    // 0513 (QA build 50, F08): a measured MP4 length counts for every stored video, edits included.
+    const lengths=await readFile(new URL('../packages/db/schema/supabase/0513_your_wins_measured_video_length.sql',import.meta.url),'utf8');
+    await q(lengths);await q(lengths);
+    const mp4=async (jobId,{label=null,held=false}={})=>{const key=`wins/${randomUUID()}.mp4`;
+        await q(`INSERT INTO public.assets(job_id,r2_key,mime_type,size_bytes,sha256,output_label,held_at) VALUES($1,$2,'video/mp4',100,$3,$4,CASE WHEN $5 THEN now() END)`,[jobId,key,randomUUID().replaceAll('-','').padEnd(64,'0'),label,held]);return key;};
+    const listed=async a=>scalar('SELECT public.list_unmeasured_videos($1,20) AS r',[a.auth]);
+    const record=async (a,jobId,key,ms)=>scalar('SELECT public.record_video_duration($1,$2,$3,$4) AS r',[a.auth,jobId,key,ms]);
+    const viewer=await user(), stranger=await user(), veo=await model('text-to-video','crun:google/veo3-1-lite-t2v','crun'), sound=await model('video-to-video','fal-ai/mmaudio-v2');
+    const veoJob=await job(viewer,veo,{provider:'crun',inputs:{duration_seconds:8}}), soundJob=await job(viewer,sound,{inputs:{}}), klingJob=await job(viewer,vid,{inputs:{duration_seconds:5}});
+    assert.equal((await wins(viewer)).all.video_seconds,5,'before measuring, only the exact-length endpoint counts');
+    const veoKey=await mp4(veoJob), soundKey=await mp4(soundJob), heldJob=await job(viewer,veo,{provider:'crun'});await mp4(heldJob,{held:true});
+    assert.deepEqual((await listed(viewer)).map(v=>v.job_id).sort(),[veoJob,soundJob].sort(),'held assets and jobs without an MP4 are not listed');
+    assert.deepEqual(await listed(stranger),[]);
+    assert.deepEqual(await record(stranger,veoJob,veoKey,8000),{ok:true,recorded:false},'another account cannot record a length');
+    assert.equal((await record(viewer,veoJob,veoKey,0)).code,'INVALID_DURATION');
+    assert.deepEqual(await record(viewer,veoJob,veoKey,8000),{ok:true,recorded:true});
+    assert.deepEqual(await record(viewer,veoJob,veoKey,9000),{ok:true,recorded:false},'write-once: a replay is a no-op');
+    assert.deepEqual(await record(viewer,soundJob,soundKey,8040),{ok:true,recorded:true});
+    let measured=await wins(viewer);
+    assert.equal(measured.all.video_seconds,21,'Veo 8 s + MMAudio 8.04 s + Kling 5 s');assert.equal(measured.week.video_seconds,21);
+    const klingKey=await mp4(klingJob);assert.deepEqual(await record(viewer,klingJob,klingKey,5040),{ok:true,recorded:true});
+    assert.equal((await wins(viewer)).all.video_seconds,21,'a measured length replaces the requested one, never adds to it');
+    const brokenJob=await job(viewer,veo,{provider:'crun'}), brokenKey=await mp4(brokenJob);
+    assert.deepEqual(await record(viewer,brokenJob,brokenKey,null),{ok:true,recorded:true});
+    assert.deepEqual(await listed(viewer),[],'an unreadable file is marked and not listed again');
+    for(const role of ['anon','authenticated']) for(const fn of ['list_unmeasured_videos(text,integer)','record_video_duration(text,uuid,text,integer)'])
+        assert.equal(await scalar(`SELECT has_function_privilege($1,'public.${fn}','EXECUTE') AS r`,[role]),false,`${role} cannot execute ${fn}`);
     // Credit fixtures only use the money RPCs, including compensating refunds.
     const spender=await user(), chatOnly=await user();
     for(const a of [spender,chatOnly]) await scalar("SELECT public.ledger_grant($1,100,'grant:wins-test',$2) AS r",[a.id,randomUUID()]);
