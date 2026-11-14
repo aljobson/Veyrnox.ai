@@ -6367,4 +6367,9 @@ export default {
   "credits.planDetails.loading": "جارٍ تحميل كريدت الخطط…",
   "credits.planDetails.failed": "تعذّر تحميل كريدت الخطط. تحقق من اتصالك وأعد المحاولة.",
   "credits.planDetails.retry": "إعادة المحاولة",
+  "job.patient": "يُرجى الانتظار قليلًا. النتائج الجيدة تحتاج إلى بعض الوقت.",
+  "job.progressLabel": "تقدّم الإنشاء",
+  "job.percent": "{percent}٪",
+  "job.elapsedMinutes": "{minutes} د {seconds} ث",
+  "job.elapsedSoFar": "مضى {elapsed}",
 } as const;

@@ -6095,4 +6095,9 @@ export default {
   "credits.planDetails.loading": "प्लान के क्रेडिट लोड हो रहे हैं…",
   "credits.planDetails.failed": "प्लान के क्रेडिट लोड नहीं हो सके। अपना कनेक्शन जाँचकर फिर कोशिश करें।",
   "credits.planDetails.retry": "फिर कोशिश करें",
+  "job.patient": "कृपया धैर्य रखें। अच्छे नतीजों में थोड़ा समय लगता है।",
+  "job.progressLabel": "बनाने की प्रगति",
+  "job.percent": "{percent}%",
+  "job.elapsedMinutes": "{minutes} मिनट {seconds} सेकंड",
+  "job.elapsedSoFar": "अब तक {elapsed}",
 } as const;

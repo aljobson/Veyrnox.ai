@@ -6027,4 +6027,9 @@ export default {
   "credits.planDetails.loading": "正在加载套餐积分…",
   "credits.planDetails.failed": "无法加载套餐的积分数量。请检查网络后重试。",
   "credits.planDetails.retry": "重试",
+  "job.patient": "请耐心等待，好作品需要一点时间。",
+  "job.progressLabel": "生成进度",
+  "job.percent": "{percent}%",
+  "job.elapsedMinutes": "{minutes} 分 {seconds} 秒",
+  "job.elapsedSoFar": "已用时 {elapsed}",
 } as const;

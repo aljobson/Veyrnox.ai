@@ -1,10 +1,11 @@
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { Animated, Easing, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Text, Button, Card, themedStyles, useThemedStyles } from '../ui';
 import { useReducedMotion } from '../ui/useReducedMotion';
 import { VeyCharacter } from '../VeyCharacter';
+import { GenerationProgress } from '../GenerationProgress';
 import { ds } from '../../theme';
 import { InlineMedia } from '../InlineMedia';
 import { GeneratedChip } from '../library/GeneratedChip';
@@ -39,16 +40,10 @@ function ResultTile({ api, id, batch, catalog, onTerminal, onSuccess }: { api: A
     const result = useJobResult(api, id);
     const success = useRef(onSuccess); success.current = onSuccess;
     const callback = useRef(onTerminal); callback.current = onTerminal;
-    const [seconds, setSeconds] = useState(0);
     const terminal = result.state === 'succeeded' || result.state === 'failed';
     const refunded = result.job?.refunded;
     useEffect(() => { if (terminal && result.job) callback.current(); }, [terminal, !!result.job, refunded]);
     useEffect(() => { if (result.asset) success.current(id, result.asset.mime_type); }, [id, result.asset]);
-    useEffect(() => {
-        if (terminal) return;
-        const timer = setInterval(() => setSeconds(s => s + 1), 1000);
-        return () => clearInterval(timer);
-    }, [terminal]);
     const file = result.asset;
     const batchTile = batch.count > 1;
     const open = () => router.push({ pathname: '/job/[id]', params: { id, fromCreate: '1' } });
@@ -65,7 +60,7 @@ function ResultTile({ api, id, batch, catalog, onTerminal, onSuccess }: { api: A
                 : file ? <>{file.output_stems?.length ? <Text>{t('libraryCreate.stems')}</Text> : file.mime_type.startsWith('image/') ? <Image source={{ uri: file.url }} cachePolicy="memory" contentFit="contain" style={styles.image} accessible accessibilityRole="image" accessibilityLabel={t('job.title')} /> : <InlineMedia url={file.url} audio={!file.mime_type.startsWith('video/')} label={t(file.mime_type.startsWith('video/') ? 'job.playVideo' : 'job.playAudio')} />}<GeneratedChip /></>
                 : result.state === 'failed' ? <Text tone="danger">{result.job?.error_code === 'user_cancelled'
                     ? failure : failedJobMessage(result.job?.error_code, refunded, failure)}</Text>
-                : <><View accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><VeyCharacter width={batchTile ? 40 : 48} mood="working" /></View><Text>{t(result.state === 'queued' ? 'job.queued' : 'job.running')}</Text><Text>{t('job.waiting', { elapsed: t('libraryCreate.elapsed', { seconds: String(seconds) }) })}</Text><Text>{t('job.keepsRunning')}</Text></>}
+                : <><View accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><VeyCharacter width={batchTile ? 40 : 48} mood="working" /></View><Text>{t(result.state === 'queued' ? 'job.queued' : 'job.running')}</Text><GenerationProgress jobId={id} modelId={batch.modelId} kind={batch.kind} compact={batchTile} /><Text>{t('job.keepsRunning')}</Text></>}
         </View>
         <Button variant="secondary" label={t('publishReporting.open')} onPress={open} />
         {sound?.kind === 'tooLong' ? <Text>{t('libraryCreate.soundTooLong', { seconds: String(sound.seconds) })}</Text> : sound ? <Card>

@@ -6095,4 +6095,9 @@ export default {
   "credits.planDetails.loading": "Abo-Credits werden geladen…",
   "credits.planDetails.failed": "Die Credits der Abos konnten nicht geladen werden. Prüfe deine Verbindung und versuche es erneut.",
   "credits.planDetails.retry": "Erneut versuchen",
+  "job.patient": "Bitte hab etwas Geduld. Gute Ergebnisse brauchen ein wenig Zeit.",
+  "job.progressLabel": "Fortschritt der Erstellung",
+  "job.percent": "{percent} %",
+  "job.elapsedMinutes": "{minutes} Min. {seconds} Sek.",
+  "job.elapsedSoFar": "Bisher {elapsed}",
 } as const;

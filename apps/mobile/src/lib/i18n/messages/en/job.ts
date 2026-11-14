@@ -30,4 +30,9 @@ export default {
     'job.holdToDelete': "Hold to delete",
     'job.holdToDeleteHint': "Press and hold to delete this creation for good. Letting go early cancels.",
     'job.holdToDeleteTap': "Keep holding the button to delete this creation.",
+    'job.patient': "Please be patient. Good results take a little time.",
+    'job.progressLabel': "Generation progress",
+    'job.percent': "{percent}%",
+    'job.elapsedMinutes': "{minutes} min {seconds} s",
+    'job.elapsedSoFar': "{elapsed} so far",
 } as const;

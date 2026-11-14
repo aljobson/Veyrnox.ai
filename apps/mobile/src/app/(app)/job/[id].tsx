@@ -6,6 +6,7 @@ import { subscribeCacheUser } from '../../../lib/appCache';
 import { GeneratedChip } from '../../../components/library/GeneratedChip';
 import { ApiError } from '../../../lib/api';
 import { FacelessSoundCard } from '../../../components/FacelessSoundCard';
+import { GenerationProgress } from '../../../components/GenerationProgress';
 import { Text, Button, themedStyles, useThemedStyles } from '../../../components/ui';
 import { useReducedMotion } from '../../../components/ui/useReducedMotion';
 import { Image } from 'expo-image';
@@ -44,11 +45,6 @@ const LABEL: Record<JobState, string> = {
     failed: 'job.failed',
 };
 
-function elapsed(seconds: number): string {
-    const m = Math.floor(seconds / 60);
-    return m > 0 ? `${m}m ${seconds % 60}s` : `${seconds}s`;
-}
-
 export default function JobScreen() {
     const styles = useThemedStyles(sheets);
     const reduced = useReducedMotion();
@@ -76,7 +72,6 @@ export default function JobScreen() {
     const [error, setError] = useState(false);
     const [pollEnded, setPollEnded] = useState(false);
     const [attempt, setAttempt] = useState(0);
-    const [seconds, setSeconds] = useState(0);
     const [note, setNote] = useState<string | null>(null);
     useAnnouncement(note);
     const [acting, setActing] = useState<'save' | 'share' | null>(null);
@@ -103,7 +98,7 @@ export default function JobScreen() {
     useRatingFocusEffect(useCallback(() => () => ratingAbort.current?.abort(), []));
 
     useEffect(() => {
-        setError(false); setPollEnded(false); setSeconds(0);
+        setError(false); setPollEnded(false);
         setFailedJob(null);
         setHeld(false); setAsset(null); setStems([]); setExpiresAt(null); setLookup('pending');
         setResultReady(false);
@@ -179,11 +174,6 @@ export default function JobScreen() {
     // Succeeded, but the file is still being fetched or no longer exists: never show a bare "Done".
     const hasFinishedWithoutFile = state === 'succeeded' && !asset && !held && !error && (lookup === 'pending' || lookup === 'missing');
     const waiting = !pollEnded && !held && !asset && !error && (state === 'queued' || state === 'running');
-    useEffect(() => {
-        if (!waiting) return;
-        const timer = setInterval(() => setSeconds((s) => s + 1), 1000);
-        return () => clearInterval(timer);
-    }, [waiting]);
 
     async function run(kind: 'save' | 'share') {
         if (!asset || acting) return;
@@ -320,9 +310,7 @@ export default function JobScreen() {
                         <Button variant="secondary" accessibilityRole="button" accessibilityLabel={t(cancelling ? 'jobCancel.cancelling' : 'jobCancel.confirm')} accessibilityState={{ busy: cancelling, disabled: cancelling }} disabled={cancelling} onPress={confirmCancel} label={t(cancelling ? 'jobCancel.cancelling' : 'jobCancel.confirm')} />
                     ) : null}
                     {waiting ? (
-                        <Text variant="body" tone="tertiary" style={styles.hint}>
-                            {t('job.waiting', { elapsed: elapsed(seconds) })}
-                        </Text>
+                        <GenerationProgress key={id} jobId={id} modelId={modelId} />
                     ) : null}
                     {waiting ? (
                         <>

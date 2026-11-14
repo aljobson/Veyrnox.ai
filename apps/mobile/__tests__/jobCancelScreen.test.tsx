@@ -1,5 +1,6 @@
 import { act } from 'react';
 import * as RN from 'react-native';
+import { formatElapsed } from '../src/components/GenerationProgress';
 import { createRoot, type Root } from 'test-renderer';
 import JobScreen from '../src/app/(app)/job/[id]';
 import { ApiError } from '../src/lib/api';
@@ -143,10 +144,10 @@ test('poll exhaustion shows still-working copy and stops the elapsed timer', asy
     try {
         await render(); await act(async () => onState('running'));
         await act(async () => jest.advanceTimersByTime(5000));
-        expect(text(t('job.waiting', { elapsed: '5s' }))).toHaveLength(1);
+        expect(text(t('job.waiting', { elapsed: formatElapsed(5) }))).toHaveLength(1);
         await act(async () => finish('running'));
         expect(text(t('job.stillWorking'))).toHaveLength(1);
-        expect(text(t('job.waiting', { elapsed: '5s' }))).toHaveLength(0);
+        expect(text(t('job.waiting', { elapsed: formatElapsed(5) }))).toHaveLength(0);
         const elapsedTimer = interval.mock.results[interval.mock.calls.findIndex(([, ms]) => ms === 1000)].value;
         expect(clear).toHaveBeenCalledWith(elapsedTimer);
         interval.mockClear();

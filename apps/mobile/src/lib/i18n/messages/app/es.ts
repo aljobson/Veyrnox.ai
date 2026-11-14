@@ -6163,4 +6163,9 @@ export default {
   "credits.planDetails.loading": "Cargando créditos de los planes…",
   "credits.planDetails.failed": "No se pudieron cargar los créditos de los planes. Revisa tu conexión e inténtalo de nuevo.",
   "credits.planDetails.retry": "Reintentar",
+  "job.patient": "Ten paciencia. Un buen resultado lleva un poco de tiempo.",
+  "job.progressLabel": "Progreso de la creación",
+  "job.percent": "{percent} %",
+  "job.elapsedMinutes": "{minutes} min {seconds} s",
+  "job.elapsedSoFar": "Han pasado {elapsed}",
 } as const;
