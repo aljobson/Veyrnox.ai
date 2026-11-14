@@ -19,6 +19,8 @@ export default function VeyCharacter({ pose: poseProp = 'idle', mood = null, red
   const waving = pose === 'wave';
   const drooping = pose === 'droop';
   const firm = pose === 'firm';
+  const shrugging = pose === 'shrug';
+  const playing = pose === 'play';
   const walking = pose === 'walking';
   const pointing = pose === 'guiding' || pose === 'tapping';
   const tapping = pose === 'tapping';
@@ -58,9 +60,11 @@ export default function VeyCharacter({ pose: poseProp = 'idle', mood = null, red
       : drooping
         ? { rotate: [-52, -50, -52] }
         : waving
-          ? { rotate: [-20, -18, -20] }
-          : firm
-          ? { rotate: [-38, -36, -38] }
+          ? { rotate: [-30, -28, -30] }
+          : firm || playing
+          ? { rotate: [-35, -34, -35] }
+          : shrugging
+            ? { rotate: [18, 22, 18] }
       : worried
         ? { rotate: [50, 56, 50] }
     : walking
@@ -70,17 +74,21 @@ export default function VeyCharacter({ pose: poseProp = 'idle', mood = null, red
         : thinking
           ? { rotate: [2, 10, 2] }
           : { rotate: [5, -5, 5] },
-    { rotate: cheering ? 76 : drooping ? -52 : firm ? -38 : worried ? 53 : waving ? -20 : listening ? -18 : 0 });
+    { rotate: cheering ? 76 : drooping ? -52 : firm || playing ? -35 : shrugging ? 20 : worried ? 53 : waving ? -30 : listening ? -18 : 0 });
 
   const rightArmAnimation = animated(reducedMotion,
     cheering
       ? { rotate: [-1, -13, -1] }
       : waving
-        ? { rotate: [-62, -42, -62] }
+        ? { rotate: [-20, -14, -20] }
+        : playing
+          ? { rotate: [-22, -26, -22] }
+          : shrugging
+            ? { rotate: [38, 42, 38] }
         : drooping
           ? { rotate: [116, 118, 116] }
           : firm
-            ? { rotate: [-50, -46, -50] }
+            ? { rotate: [-10, -8, -10] }
       : worried
         ? { rotate: [16, 22, 16] }
     : tapping
@@ -92,7 +100,7 @@ export default function VeyCharacter({ pose: poseProp = 'idle', mood = null, red
           : walking
             ? { rotate: [-18, 24, -18] }
             : { rotate: [12, 5, 12] },
-    { rotate: cheering ? -7 : pointing ? -34 : thinking ? -60 : waving ? -52 : firm ? -48 : drooping ? 116 : worried ? 19 : 8 });
+    { rotate: cheering ? -7 : pointing ? -34 : thinking ? -60 : waving ? -17 : playing ? -24 : shrugging ? 40 : firm ? -9 : drooping ? 116 : worried ? 19 : 8 });
 
   const armTransition = cheering ? CHEER_LOOP : walking ? QUICK_LOOP : LOOP;
   const jump = animated(reducedMotion,
@@ -208,8 +216,8 @@ export default function VeyCharacter({ pose: poseProp = 'idle', mood = null, red
         <motion.g
           data-part="right-hand"
           style={{ transformBox: 'fill-box', transformOrigin: 'left bottom' }}
-          animate={animated(reducedMotion, tapping ? { x: [0, 5, 0], rotate: [0, -3, 0] } : { rotate: [0, 3, 0] }, { x: tapping ? 4 : 0 })}
-          transition={tapping ? { duration: 0.36, repeat: Infinity, ease: 'easeInOut' } : LOOP}
+          animate={animated(reducedMotion, tapping ? { x: [0, 5, 0], rotate: [0, -3, 0] } : waving ? { rotate: [-24, 12, -24] } : firm ? { rotate: -38 } : shrugging ? { rotate: 24 } : { rotate: [0, 3, 0] }, { x: tapping ? 4 : 0, rotate: waving ? 0 : firm ? -38 : shrugging ? 24 : 0 })}
+          transition={tapping ? { duration: 0.36, repeat: Infinity, ease: 'easeInOut' } : waving ? { duration: 0.55, repeat: Infinity, ease: 'easeInOut' } : LOOP}
         >
           <path d="M139 59 C137 54 139 50 143 50 C146 50 147 53 146 56 L153 48 C156 45 160 48 158 52 L151 62 C149 68 143 72 138 69 C134 67 134 62 139 59Z" fill="#172329" stroke="#6b858b" strokeWidth="1.5" />
           <path d="M146 56 L151 61 M149 53 L154 58" stroke="#92adb1" strokeWidth="1" strokeLinecap="round" />

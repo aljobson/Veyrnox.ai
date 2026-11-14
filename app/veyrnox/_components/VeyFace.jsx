@@ -97,7 +97,7 @@ export const VEY_FACES = {
   playful: {
     eyes: <><OpenEye cx={59} /><ArcEye cx={101} /></>,
     mouth: MOUTHS.big,
-    prop: <><Coin x={138} y={24} r={11} symbol="+" /><Sparkle x={18} y={30} s={7} /></>,
+    prop: <><Coin x={138} y={36} r={10} symbol="+" /><Sparkle x={18} y={30} s={7} /></>,
   },
   sleepy: {
     eyes: <><SleepEye cx={59} /><SleepEye cx={101} /></>,
