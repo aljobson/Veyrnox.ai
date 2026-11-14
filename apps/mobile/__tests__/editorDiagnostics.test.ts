@@ -1,4 +1,5 @@
-jest.mock('expo-constants', () => ({ __esModule: true, default: { expoConfig: { version: '1.0.0' }, nativeBuildVersion: '31' } }));
+jest.mock('expo-constants', () => ({ __esModule: true, default: { expoConfig: { version: '1.0.0' } } }));
+jest.mock('expo-application', () => ({ nativeBuildVersion: '31' }));
 
 function load(editor: string | undefined, full: string | undefined) {
     jest.resetModules();
