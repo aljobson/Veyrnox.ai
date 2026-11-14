@@ -1,21 +1,23 @@
 import { View } from 'react-native';
 import { ds } from '../theme';
 import { plural, t } from '../lib/i18n';
-import { SIGNUP_FREE_CREDITS } from '../lib/signupOffer';
+import { HARD_PAYWALL_STARTER_CREDITS, hardPaywallEnabled } from '../lib/hardPaywall';
+import { signupOfferCopy } from '../lib/signupOffer';
 import { Icon, Text, themedStyles, useThemedStyles } from './ui';
 
 // The new-account gift, shown above the sign-in options so the reason to sign up is on screen before the buttons.
 export function SignupOffer() {
     const s = useThemedStyles(sheets);
+    const copy = signupOfferCopy(hardPaywallEnabled() ? HARD_PAYWALL_STARTER_CREDITS : null);
     return (
         <View accessible accessibilityRole="summary" style={s.card}>
             <View style={s.coin}>
                 <Icon name="coins" size={24} tint={s.coinInk.color} />
             </View>
             <View style={s.copy}>
-                <Text variant="title3">{plural('signIn.offer.title', SIGNUP_FREE_CREDITS)}</Text>
+                <Text variant="title3">{plural('signIn.offer.title', copy.count)}</Text>
                 <Text variant="footnote" tone="secondary">
-                    {t('signIn.offer.body')}
+                    {t(copy.body, copy.params)}
                 </Text>
             </View>
         </View>
