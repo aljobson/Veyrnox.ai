@@ -46,7 +46,7 @@ test('the tables are locked down, erased with the account, and skipped by the Mu
     assert.match(sql, /r\.relname NOT IN \('music_reference_links', 'music_song_reactions', 'music_creator_follows', 'music_social_mutations'\)/);
     assert.match(sql, /AFTER UPDATE OF deleted_at ON public\.users/);
     for (const fn of ['music_social_summary(TEXT,TEXT,TEXT)', 'music_set_song_reaction(TEXT,TEXT,TEXT,TEXT)', 'music_set_creator_follow(TEXT,TEXT,BOOLEAN,TEXT)']) {
-        assert.match(sql, new RegExp(`GRANT EXECUTE ON FUNCTION public\\.${fn.replace(/[()]/g, '\\$&')} TO service_role`));
+        assert.ok(sql.includes(`GRANT EXECUTE ON FUNCTION public.${fn} TO service_role`), fn);
     }
 });
 
