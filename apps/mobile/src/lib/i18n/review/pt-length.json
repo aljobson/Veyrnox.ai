@@ -3210,6 +3210,12 @@
     "ratio": 1.75
   },
   {
+    "id": "credits.planDetails.retry",
+    "english": "Try again",
+    "translation": "Tentar novamente",
+    "ratio": 1.78
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",

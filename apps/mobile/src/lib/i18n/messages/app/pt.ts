@@ -6157,6 +6157,6 @@ export default {
   "create.firstRun.example.work.video": "Um anúncio de 10 segundos: café enchendo uma xícara em câmera lenta, vapor subindo, luz quente de estúdio",
   "create.firstRun.example.work.audio": "Um jingle de marca animado de 30 segundos com violão leve e palmas",
   "credits.planDetails.loading": "Carregando créditos dos planos…",
-  "credits.planDetails.failed": "Não foi possível carregar os créditos dos planos. Verifique sua conexão e tente de novo.",
-  "credits.planDetails.retry": "Tentar de novo",
+  "credits.planDetails.failed": "Não foi possível carregar os créditos dos planos. Verifique sua conexão e tente novamente.",
+  "credits.planDetails.retry": "Tentar novamente",
 } as const;
