@@ -1,4 +1,9 @@
 export default {
+    "filmWorkspace.fillDefaults": "Fill sensible defaults",
+    "filmWorkspace.fillDefaultsHelp": "Fills only the empty fields on this shot from its description and your film setup. Nothing is sent and no credits are used. Check each value before you continue.",
+    "filmWorkspace.defaultsFilled": "{value1} fields filled with suggestions. Check them before you continue.",
+    "filmWorkspace.defaultsNone": "Nothing to fill: every field already has a value.",
+    "filmWorkspace.shotLabel": "Shot {value1}",
     "filmWorkspace.saved": "Saved on this phone",
     "filmWorkspace.studio": "Veyrnox.ai Studio",
     "filmWorkspace.external": "External app or workflow",
