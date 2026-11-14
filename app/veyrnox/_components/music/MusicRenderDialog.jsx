@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { gatewayFetch } from '../../_lib/gateway';
+import { MusicPrivateAudio } from '../../_lib/useMusicAudioSrc';
 
 export function MusicRenderDialog({ song, onClose, onSaved }) {
   const closeRef = useRef(null);
@@ -75,7 +76,7 @@ export function MusicRenderDialog({ song, onClose, onSaved }) {
           <button ref={closeRef} type="button" aria-label="Close" onClick={onClose} className="grid min-h-11 min-w-11 place-items-center rounded-full border border-vx-border">×</button>
         </div>
         <p className="mt-4 text-sm leading-6 text-vx-fg-muted">Create a new exportable PCM WAV master. The source stays intact in version history. Reorder swaps two sections; speed changes duration and pitch together; Remaster removes channel DC bias and applies linked peak normalization without inventing spectral detail.</p>
-        <audio controls preload="metadata" src={song.audio_url} aria-label={`Preview original ${song.title}`} className="mt-5 w-full" onLoadedMetadata={(event) => { const value = event.currentTarget.duration; if (Number.isFinite(value)) { setDuration(value); setSplitAt(Math.max(1, Math.min(value - 1, value / 2))); } }} />
+        <MusicPrivateAudio controls preload="metadata" src={song.audio_url} aria-label={`Preview original ${song.title}`} className="mt-5 w-full" onLoadedMetadata={(event) => { const value = event.currentTarget.duration; if (Number.isFinite(value)) { setDuration(value); setSplitAt(Math.max(1, Math.min(value - 1, value / 2))); } }} />
         <div role="tablist" aria-label="Rendered edit" className="mt-5 flex rounded-full border border-vx-border bg-vx-base p-1 text-sm font-bold">
           <button type="button" role="tab" aria-selected={operation === 'fade'} onClick={() => { setOperation('fade'); setError(''); }} className={`min-h-10 flex-1 rounded-full px-4 ${operation === 'fade' ? 'bg-vx-fg text-vx-base' : 'text-vx-fg-muted'}`}>Fade</button>
           <button type="button" role="tab" aria-selected={operation === 'speed'} onClick={() => { setOperation('speed'); setError(''); }} className={`min-h-10 flex-1 rounded-full px-4 ${operation === 'speed' ? 'bg-vx-fg text-vx-base' : 'text-vx-fg-muted'}`}>Speed</button>

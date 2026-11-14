@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { gatewayFetch } from '../../_lib/gateway';
+import { MusicPrivateAudio } from '../../_lib/useMusicAudioSrc';
 
 const TERMINAL = new Set(['succeeded', 'partial', 'failed', 'refunded']);
 
@@ -109,7 +110,7 @@ export function MusicExtendDialog({ song, onClose, onSaved }) {
         ) : (
           <section aria-live="polite" className="mt-6">
             <p className="font-bold text-vx-fg">{terminal ? 'Extension pair finished' : 'Creating two tail continuations…'}</p>
-            <ul className="mt-4 space-y-3">{candidates.map((candidate) => <li key={candidate.job_id || candidate.ordinal} className="rounded-2xl border border-vx-border bg-vx-base p-4"><div className="flex items-center justify-between gap-3"><strong>Continuation {candidate.label || candidate.ordinal}</strong><span className="text-sm capitalize text-vx-fg-muted">{candidate.state}</span></div>{candidate.audio_url ? <audio controls preload="none" src={candidate.audio_url} aria-label={`Play extension ${candidate.label || candidate.ordinal}`} className="mt-3 w-full" /> : null}</li>)}</ul>
+            <ul className="mt-4 space-y-3">{candidates.map((candidate) => <li key={candidate.job_id || candidate.ordinal} className="rounded-2xl border border-vx-border bg-vx-base p-4"><div className="flex items-center justify-between gap-3"><strong>Continuation {candidate.label || candidate.ordinal}</strong><span className="text-sm capitalize text-vx-fg-muted">{candidate.state}</span></div>{candidate.audio_url ? <MusicPrivateAudio controls preload="none" src={candidate.audio_url} aria-label={`Play extension ${candidate.label || candidate.ordinal}`} className="mt-3 w-full" /> : null}</li>)}</ul>
             {terminal ? <button type="button" onClick={finish} className="mt-5 min-h-11 w-full rounded-full border border-vx-border px-5 font-bold">Return to version history</button> : null}
           </section>
         )}
