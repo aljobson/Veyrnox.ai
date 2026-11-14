@@ -88,7 +88,7 @@ test('Fill sensible defaults fills only empty fields, keeps typed values and lea
     await tick();
     const shot = (await saved())!.shots[0];
     expect(shot.oneAction).toBe(false);
-    expect(stageIssues((await saved())!, 2)).toEqual([t('filmStudio.confirmthattheclipcontainsoneaction')]);
+    expect(stageIssues((await saved())!, 2)).toEqual(['sc01-sh01: ' + t('filmStudio.confirmthattheclipcontainsoneaction')]);
     await press(t('filmWorkspace.fillDefaults'));
     expect(has(t('filmWorkspace.defaultsNone'))).toBe(true);
 });
