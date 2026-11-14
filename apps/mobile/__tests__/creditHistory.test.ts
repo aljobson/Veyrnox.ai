@@ -78,3 +78,34 @@ test('mergePages ignores a repeated row', () => {
     const e = (id: string) => ({ id, delta: 1, freeDelta: 0, kind: 'top_up', createdAt: '2026-10-18T09:30:00Z' });
     expect(mergePages([e('a'), e('b')], [e('b'), e('c')]).map((x) => x.id)).toEqual(['a', 'b', 'c']);
 });
+
+describe('names on creation rows', () => {
+    const JOB = '7a9f0c2e-1b34-4c56-8d78-9e0f1a2b3c4d';
+    const row = (kind: string, jobId?: string) => ({ id: ID, delta: -5, freeDelta: 0, kind, createdAt: '2026-10-18T09:30:00Z', ...(jobId ? { jobId } : {}) });
+    const { entryTitle, resolveJobNames } = require('../src/lib/creditHistory');
+
+    test('a creation row reads as the model, a refund says refund and names it, anything else keeps its wording', () => {
+        const names = new Map([[JOB, 'Veo 3.1 Lite']]);
+        expect(entryTitle(row('generation', JOB), names)).toBe('Veo 3.1 Lite');
+        expect(entryTitle(row('generation_refund', JOB), names)).toBe('Refund: Veo 3.1 Lite');
+        expect(entryTitle(row('generation', JOB), new Map())).toBe('Creation');
+        expect(entryTitle(row('top_up'), names)).toBe('Credits bought');
+    });
+
+    test('the ledger job id is read, and a malformed one is dropped', async () => {
+        const { api } = apiWith({ entries: [{ id: ID, delta: -5, created_at: 'x', kind: 'generation', job_id: JOB }, { id: ID, delta: -5, created_at: 'x', kind: 'generation', job_id: 'nope' }], next: null });
+        const page = await fetchHistoryPage(api);
+        expect(page.entries[0].jobId).toBe(JOB);
+        expect(page.entries[1].jobId).toBeUndefined();
+    });
+
+    test('names come from the jobs list by model, falling back to the job label, over as few pages as needed', async () => {
+        const OTHER = '11111111-2222-4333-8444-555555555555';
+        const request = jest.fn()
+            .mockResolvedValueOnce({ jobs: [{ job_id: OTHER, model_id: 'x' }], next: { before: 't', before_id: 'i' } })
+            .mockResolvedValueOnce({ jobs: [{ job_id: JOB, model_id: 'veo', label: 'Lite' }], next: { before: 't2', before_id: 'i2' } });
+        const names = await resolveJobNames({ request } as unknown as ApiClient, [row('generation', JOB)], new Map(), new Map([['veo', 'Veo 3.1 Lite']]));
+        expect(names.get(JOB)).toBe('Veo 3.1 Lite');
+        expect(request).toHaveBeenCalledTimes(2);
+    });
+});

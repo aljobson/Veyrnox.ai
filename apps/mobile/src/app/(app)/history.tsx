@@ -7,12 +7,13 @@ import { useAuth } from '../../auth/AuthProvider';
 import { touchTarget } from '../../lib/a11y';
 import {
     creditsDelta,
+    entryTitle,
     entryDate,
     fetchHistoryPage,
     fetchUsage,
     freeNote,
-    kindLabel,
     mergePages,
+    resolveJobNames,
     usageLines,
     type HistoryCursor,
     type LedgerEntry,
@@ -20,6 +21,7 @@ import {
 } from '../../lib/creditHistory';
 import { colors, ds } from '../../theme';
 import { SlowLoader } from '../../components/SlowLoader';
+import { fetchAllCatalog } from '../../lib/media';
 
 export default function History() {
     const { api } = useAuth();
@@ -32,6 +34,22 @@ export default function History() {
     const busy = useRef(false);
     const [attempt, setAttempt] = useState(0);
     const latest = useRef(0);
+    const [names, setNames] = useState<ReadonlyMap<string, string>>(new Map());
+    const namesRef = useRef(names);
+    namesRef.current = names;
+    const models = useRef<Map<string, string> | null>(null);
+
+    // Model names for the rows shown. A failure leaves the plain wording in place.
+    useEffect(() => {
+        if (!entries?.some((e) => e.jobId && !namesRef.current.has(e.jobId))) return;
+        let live = true;
+        void (async () => {
+            models.current ??= new Map((await fetchAllCatalog().catch(() => [])).map((m) => [m.id, m.name]));
+            const found = await resolveJobNames(api, entries, namesRef.current, models.current);
+            if (live) setNames(found);
+        })().catch(() => undefined);
+        return () => { live = false; };
+    }, [api, entries]);
 
     const load = useCallback(async () => {
         const mine = ++latest.current;
@@ -101,7 +119,7 @@ export default function History() {
                         ) : undefined
                     }
                     ListEmptyComponent={<Text style={styles.muted}>{t('history.nothinghereyetCreditsyougetspend')}</Text>}
-                    renderItem={({ item }) => <Entry entry={item} />}
+                    renderItem={({ item }) => <Entry entry={item} names={names} />}
                     ListFooterComponent={
                         loadingMore ? (
                             <ActivityIndicator color={colors.accent} />
@@ -117,10 +135,10 @@ export default function History() {
     );
 }
 
-function Entry({ entry }: { entry: LedgerEntry }) {
+function Entry({ entry, names }: { entry: LedgerEntry; names: ReadonlyMap<string, string> }) {
     const note = freeNote(entry);
     const amount = creditsDelta(entry.delta);
-    const label = kindLabel(entry.kind);
+    const label = entryTitle(entry, names);
     const date = entryDate(entry.createdAt);
     return (
         <View style={styles.row} accessible accessibilityLabel={rawText(`${label}, ${amount}, ${date}${note ? `, ${note}` : ''}`)}>

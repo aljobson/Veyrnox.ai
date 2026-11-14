@@ -1697,6 +1697,7 @@ export default {
   "creditHistory.free_credit_expiry": "انتهت صلاحية الأرصدة المجانية",
   "creditHistory.generation": "إنشاء",
   "creditHistory.generation_refund": "استرداد لعملية إنشاء لم تكتمل",
+  "creditHistory.refundNamed": "استرداد: {name}",
   "creditHistory.month": "آخر 30 يومًا: {credits}",
   "creditHistory.monthAtLeast": "آخر 30 يومًا: {credits} على الأقل",
   "creditHistory.payment_adjustment": "تعديل الدفع",

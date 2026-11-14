@@ -1557,6 +1557,7 @@ export default {
   "creditHistory.free_credit_expiry": "無料クレジットの期限切れ",
   "creditHistory.generation": "作品",
   "creditHistory.generation_refund": "未完了の作品への返金",
+  "creditHistory.refundNamed": "返金：{name}",
   "creditHistory.month": "過去30日間：{credits}",
   "creditHistory.monthAtLeast": "過去30日間：少なくとも{credits}",
   "creditHistory.payment_adjustment": "支払いの調整",

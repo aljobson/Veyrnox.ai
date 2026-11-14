@@ -21,6 +21,7 @@ import { StemList } from '../../../components/StemList';
 import { CONFIRM_MESSAGE, CONFIRM_TITLE, deleteCreation, deleteMessage, isAlreadyGone } from '../../../lib/deleteCreation';
 import { HoldToConfirmButton } from '../../../components/HoldToConfirmButton';
 import { afterCelebration, celebrateOutput, type CelebrationResult } from '../../../lib/celebrate';
+import { settleFirstMilestones } from '../../../lib/milestoneHistory';
 import { REVIEW_ASK_DELAY_MS, claimReviewAsk, shouldAskForReview } from '../../../lib/reviewAsk';
 import { loadReviewAsk } from '../../../lib/storeReview';
 import { retentionOf, type Retention } from '../../../lib/libraryView';
@@ -172,6 +173,8 @@ export default function JobScreen() {
                 setLookup('file');
                 setExpiresAt(a.asset_expires_at ?? null);
                 setStems(a.output_stems ?? []);
+                await settleFirstMilestones(api);
+                if (controller.signal.aborted) return;
                 const celebration = celebrateOutput(id, a.mime_type, waited);
                 // Keep the original rating eligibility, and wait for the celebration to finish.
                 const asked = await loadReviewAsk();

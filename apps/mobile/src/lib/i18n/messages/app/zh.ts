@@ -1557,6 +1557,7 @@ export default {
   "creditHistory.free_credit_expiry": "免费积分已过期",
   "creditHistory.generation": "作品",
   "creditHistory.generation_refund": "未完成创作的退款",
+  "creditHistory.refundNamed": "退款：{name}",
   "creditHistory.month": "过去 30 天：{credits}",
   "creditHistory.monthAtLeast": "过去 30 天：至少 {credits}",
   "creditHistory.payment_adjustment": "付款调整",

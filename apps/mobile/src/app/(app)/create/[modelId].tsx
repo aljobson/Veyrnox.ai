@@ -366,7 +366,7 @@ export default function CreateWithModel() {
     const missing = complete ? 0 : shortfall(balance, payable);
     const disabled = busy || waiting || (!complete && (freeLoading || (!ready && !matchingRetry) || missing > 0));
     // A swap scene, a Tools recipe or a bound template is made for one model; anywhere else the model row opens the picker.
-    const choices = modelChoices(catalog, model), changeModel = choices.length > 1 && !swapScene && !creativeFeature(typeof recipe === 'string' ? recipe : undefined) && !boundCount && !busy && !waiting ? modelSwitch.open : undefined;
+    const choices = modelChoices(catalog, model, references.length > 0), changeModel = choices.length > 1 && !swapScene && !creativeFeature(typeof recipe === 'string' ? recipe : undefined) && !boundCount && !busy && !waiting ? modelSwitch.open : undefined;
     const generateLabel = matchingRetry?.quote ? t('app.create.confirmPrice', { credits: String(price) }) : `${n > 1 ? t('opt.generateCount', { count: String(n) }) : t('slip.generate')}. ${costLine(price, n, freeLeft, unit)}`;
     return (
         <KeyboardScreen style={styles.screen}>
