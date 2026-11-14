@@ -3,7 +3,7 @@ import { LOCALES, isLocalizedPath, languageAlternates, localesEnabled } from '..
 import { listModelsForDetails, shelfModels } from './veyrnox/_lib/modelPages';
 import { readPublicCatalog } from '../lib/publicCatalog.js';
 import { comparisonSlugs } from '../lib/comparePairs';
-import { PRESETS } from './veyrnox/_lib/templates';
+import { GALLERY_PRESETS } from './veyrnox/_lib/templates';
 import { publishedImageTemplates } from './veyrnox/_lib/imageTemplates.js';
 import { GUIDES } from './veyrnox/_lib/guides';
 import { oddlingSitemapPaths, oddlingsPublicEnabled } from './veyrnox/_lib/oddlingsPublic';
@@ -11,7 +11,7 @@ import { editorialSeries } from './veyrnox/social-cinema/editorialSeries';
 
 // Request-time metadata: image URLs follow the current publication gate.
 // Video paths are bundled once; they require no catalog lookup or page rendering.
-const videoTemplatePaths = PRESETS.map(template => `/presets/${template.id}`);
+const videoTemplatePaths = GALLERY_PRESETS.map(template => `/presets/${template.id}`);
 export const dynamic = 'force-dynamic';
 
 // Public sitemap for veyrnox.ai. Every URL is the public path produced by the
