@@ -10,7 +10,7 @@ import { useAuth } from '../auth/AuthProvider';
 import { fetchProfile, type Profile } from '../lib/auth/accountCalls';
 import { HEADER_MAX_FONT_SCALE, MIN_TARGET } from '../lib/a11y';
 import { t } from '../lib/i18n';
-import { HOME_ICON, MENU_SECTIONS, TAB_KEYS, activeItemKey } from '../lib/menu';
+import { HOME_ICON, MENU_FOOTER, MENU_SECTIONS, activeItemKey } from '../lib/menu';
 import { ThemeButton } from './HeaderChips';
 import { type MenuIcon } from '../lib/menuIcons';
 import { type Palette } from '../theme';
@@ -118,7 +118,7 @@ function MenuDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
                         {MENU_SECTIONS.map((section) => {
                             const collapsed = closed[section.id] === true;
                             const name = t(section.label);
-                            const shown = section.items.filter(item => !TAB_KEYS.has(item.key));
+                            const shown = section.items;
                             return (
                                 <View key={section.id}>
                                     <Button label={name} variant="tertiary"
@@ -141,6 +141,11 @@ function MenuDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
                                 </View>
                             );
                         })}
+                        <View style={styles.footer}>
+                            {MENU_FOOTER.map((item) => (
+                                <Row key={item.key} label={t(item.label)} icon={item.icon} active={active === item.key} onPress={() => go(item.href)} />
+                            ))}
+                        </View>
                     </ScrollView>
                 </Animated.View>
             </View>
@@ -187,6 +192,7 @@ const sheets = themedStyles((p) => ({
     heading: { justifyContent: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: MIN_TARGET, paddingHorizontal: 12, marginTop: 8 },
     headingText: { color: p.textSecondary },
     grid: { flexDirection: 'row', flexWrap: 'wrap' },
+    footer: { marginTop: 16, paddingTop: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: p.borderSubtle },
     row: { justifyContent: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: MIN_TARGET, paddingHorizontal: 12, borderRadius: 14 },
     half: { width: '50%' },
     rowActive: { backgroundColor: p.accentSubtle },

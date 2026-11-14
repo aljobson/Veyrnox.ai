@@ -1,6 +1,8 @@
 // The grouped drawer menu: every entry opens a screen that exists and is named in the English catalog.
 import en from '../src/lib/i18n/messages/en';
-import { MENU_SECTIONS } from '../src/lib/menu';
+import { MENU_FOOTER, MENU_SECTIONS } from '../src/lib/menu';
+
+const ALL_ITEMS = [...MENU_SECTIONS.flatMap((s) => s.items), ...MENU_FOOTER];
 declare const require: (id: string) => any;
 declare const __dirname: string;
 const fs = require('fs') as { existsSync: (p: string) => boolean; readFileSync: (p: string, e: 'utf8') => string };
@@ -13,9 +15,29 @@ const ROUTE_FILES = (href: string) => {
 };
 
 describe('grouped menu', () => {
-    test('holds only the destinations the bottom tabs do not carry', () => {
+    test('matches the web sidebar: same groups, same order, Help at the foot', () => {
         expect(MENU_SECTIONS.map((s) => s.id)).toEqual(['tools', 'assets']);
-        expect(MENU_SECTIONS.flatMap((s) => s.items.map((i) => i.key))).toEqual(['cinema', 'chat', 'help', 'credits']);
+        expect(MENU_SECTIONS.map((s) => [s.id, s.items.map((i) => i.key)])).toEqual([
+            ['tools', ['create', 'editor', 'publish', 'cinema']],
+            ['assets', ['library', 'brandKit', 'credits', 'chat']],
+        ]);
+        expect(MENU_FOOTER.map((i) => i.key)).toEqual(['help']);
+    });
+
+    test('each drawer item opens its mobile screen', () => {
+        expect(Object.fromEntries(ALL_ITEMS.map((i) => [i.key, i.href]))).toEqual({
+            create: '/create', editor: '/editor', publish: '/publish', cinema: '/cinema',
+            library: '/library', brandKit: '/brand-kit', credits: '/credits', chat: '/chat', help: '/help',
+        });
+    });
+
+    test('keeps the web key order inside each group', () => {
+        // Web (studioNavigation.js) lists Audio between Create and Video editor; the phone has no Audio screen yet.
+        const web = { tools: ['create', 'audio', 'editor', 'publish', 'cinema'], assets: ['library', 'brandKit', 'credits', 'chat'] };
+        for (const section of MENU_SECTIONS) {
+            const keys = section.items.map((i) => i.key);
+            expect(web[section.id as 'tools' | 'assets'].filter((k) => keys.includes(k))).toEqual(keys);
+        }
     });
 
     test('every entry and heading is in the English catalog', () => {
@@ -24,19 +46,21 @@ describe('grouped menu', () => {
             expect(catalog[section.label]).toEqual(expect.any(String));
             for (const item of section.items) expect(catalog[item.label]).toEqual(expect.any(String));
         }
+        for (const item of MENU_FOOTER) expect(catalog[item.label]).toEqual(expect.any(String));
+        expect(catalog['menu.videoEditor']).toBe('Video editor');
         for (const key of ['menu.open', 'menu.close', 'menu.home', 'menu.sectionOpen', 'menu.sectionClosed']) {
             expect(catalog[key]).toEqual(expect.any(String));
         }
     });
 
     test('every entry opens a screen that exists', () => {
-        for (const item of MENU_SECTIONS.flatMap((s) => s.items)) {
+        for (const item of ALL_ITEMS) {
             expect(ROUTE_FILES(item.href).some((f) => fs.existsSync(f))).toBe(true);
         }
     });
 
     test('entries are unique', () => {
-        const hrefs = MENU_SECTIONS.flatMap((s) => s.items.map((i) => i.href));
+        const hrefs = ALL_ITEMS.map((i) => i.href);
         expect(new Set(hrefs).size).toBe(hrefs.length);
     });
 
@@ -60,17 +84,23 @@ describe('the current screen in the menu', () => {
 
     test('Home is lit only on the home screen', () => {
         expect(activeItemKey('/')).toBe('home');
-        expect(activeItemKey('/library')).toBeNull();
+        expect(activeItemKey('/library')).toBe('library');
     });
 
     test('a screen inside a section lights its own item', () => {
         expect(activeItemKey('/cinema/watch/abc')).toBe('cinema');
         expect(activeItemKey('/chat/abc-123')).toBe('chat');
         expect(activeItemKey('/credits')).toBe('credits');
+        expect(activeItemKey('/create/agent')).toBe('create');
+        expect(activeItemKey('/editor/p-1')).toBe('editor');
+        expect(activeItemKey('/publish/compose')).toBe('publish');
+        expect(activeItemKey('/library/files')).toBe('library');
+        expect(activeItemKey('/brand-kit')).toBe('brandKit');
+        expect(activeItemKey('/help')).toBe('help');
     });
 
-    test('screens that left the drawer light nothing but stay routable', () => {
-        for (const href of ['/create', '/create/agent', '/features', '/oddlings/x', '/projects', '/brand-kit', '/models']) {
+    test('screens not in the drawer light nothing but stay routable', () => {
+        for (const href of ['/features', '/oddlings/x', '/projects', '/models', '/faceless-reel']) {
             expect(activeItemKey(href)).toBeNull();
         }
     });
@@ -82,11 +112,10 @@ describe('the current screen in the menu', () => {
 
     test('every menu icon has an image', () => {
         const { MENU_ICONS } = require('../src/lib/menuIcons') as { MENU_ICONS: Record<string, unknown> };
-        for (const item of MENU_SECTIONS.flatMap((s) => s.items)) expect(MENU_ICONS[item.icon]).toBeDefined();
+        for (const item of ALL_ITEMS) expect(MENU_ICONS[item.icon]).toBeDefined();
     });
 });
 
 test('Faceless reel is not repeated in the drawer', () => {
-    const items = MENU_SECTIONS.flatMap(s => s.items);
-    expect(items.some(i => i.href === '/faceless-reel')).toBe(false);
+    expect(ALL_ITEMS.some(i => i.href === '/faceless-reel')).toBe(false);
 });
