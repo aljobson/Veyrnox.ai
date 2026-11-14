@@ -324,3 +324,98 @@ is insufficient). No Crun route is added here.
 
 - Migration number 0454 was free on `origin/main` and in all open PRs when this branch was prepared (checked 2026-11-07); re-check at merge time.
 - Known fail-closed edge: if object storage answers a photo GET with 200 and no `Content-Length`, the kie image-size bound sees an unknown size and refuses the request before any debit (`source_size_unknown`). Confirm at the staging probe that R2 always returns a size, or have the source resolver report the bytes read.
+
+## Amendment 2 — all video previews and editable reference chips (2026-11-08)
+
+Frozen PLAN-CHIPS SHA256:
+`02981ed0fb9ba034ae689f5b95e662ac9dbc1e8bee210ac33ab6ef03190cfd1d`.
+C-03′ supersedes C-03 and the original F6 decision above. No migration,
+provider route, price, environment variable or production setting changes.
+The manifest remains empty and `TEMPLATE_CLIP_ENABLED` remains absent.
+
+### Registry and import
+
+Eligibility is a published `ALL_TEMPLATES` entry whose resolved `MODELS` kind
+is `video` and whose showcase video is a direct `/showcase/<filename>.mp4`.
+Image models and absent/non-MP4 previews are excluded; recast wording, needs,
+aspect and duration do not restrict eligibility. The generator currently
+finds 771 entries, including photo-only recipes. Every local file exists.
+Unavailable entries retain their existing default path.
+`scripts/gen-template-clip-registry.mjs` generates only ids and preview file
+names. The runtime module imports no catalog. The existing public projection
+shape is retained; its compatibility `kind: 'recast'` describes this operation,
+not an eligibility gate. Display names in that projection are derived from
+ids; actual page titles still come from their existing catalogs.
+
+The owner can dry-run `node scripts/import-template-clips.mjs --all`.
+`--chunk-size 50` controls checkpoint frequency, `--offset N` skips a leading
+part, and `--resume /private/path/template-clips-...` reuses completed files
+only after hash, measured metadata and selected-model bounds verification.
+Resume must keep the same model and upload mode. Failed entries are retried.
+Files are read locally from registry-derived names; symlinks outside showcase
+are refused. Only absent files fall back to the existing strict HTTPS source.
+Per-template failures are reported and omitted, without aborting other clips.
+`report.json`, `report.txt`, checkpoint, normalized media, candidate JSON and
+candidate JS stay outside the checkout. Normalization and fal/kie bounds are
+unchanged. Upload still requires approved private decisions, `--upload` and
+`--confirm-bucket`; `--all` alone never authorizes upload. Missing decisions
+are reported as skipped. A partially successful normalization batch can yield
+an intentionally partial manifest; all included uploads must verify before
+it is publishable. Failed uploads produce no publishable candidate.
+
+Candidate JS encodes entries as tuples and reconstructs keys/version and
+constant metadata once. A 900-entry synthetic candidate must remain below
+150,000 bytes; the importer refuses a larger module before upload. The JSON
+review artifact is deliberately expanded. No populated manifest is installed.
+
+### Prompt, replay and money
+
+Default text now uses lowercase UI tags. Both clients send the actual edited
+text. The shared contract requires 3–2000 trimmed characters and exactly one
+whole `@video1` and `@image1`, case insensitive (Unicode word boundaries).
+Whitespace is collapsed and tokens lowercased for client continuation identity;
+admission uses the same normalization, then the per-model mapping emits
+`@Video1`/`@Image1` for fal and kie. Missing/empty prompt uses the current
+default. Invalid prompts return `400 template_clip_prompt_tags` before debit.
+Client video remains forbidden in every previous form.
+
+The effective provider prompt is stored verbatim as `inputs.prompt` and is
+part of identity along with template id/version/hash, photo and model. There
+is no provenance/default-mode field. Replay uses the same function as admission.
+The existing `generation_request_identity` (0399) already includes prompt,
+so atomic paid/free admissions and read-only replay agree without DB changes.
+An omitted-prompt retry crossing a deploy that changes the default now fails
+closed with `idempotency_conflict`: it never charges again under that key.
+The person starts a new request. Our clients always send their displayed text.
+Unchanged prompt retries retain their key; edits invalidate quotes,
+confirmation and continuation. Existing catalog pricing and refunds remain.
+
+### Clients and owner checks
+
+Web uses separate native editable text segments around atomic thumbnail chips.
+Video chips are outside editing hosts; removing the photo removes its chip,
+attaching restores it, and reset restores default wording. Paste inserts plain
+text only and IME composition is committed after composition ends. Photo
+conversion, limits and upload stay on the existing path, with an explicit
+rights checkbox and real-person warning. The clip branch bypasses legacy
+`needs` wording gates but still requires a usable projected model and a ready
+photo. Native uses the existing photo picker thumbnail/removal row beside the
+video poster and an ordinary multiline TextInput with literal tokens, as
+permitted by E; no existing highlighted TextInput pattern is reused. The exact
+community prompt remains separately visible and read-only in clip mode.
+Flag-off render snapshots compare against the frozen checkout. Shared new
+copy is translated in all eleven locales and mirrored through mobile webKeys.
+
+Owner activation checklist (all previous blockers still apply):
+1. Record the rights decision for the showcase set privately, including each
+   clip's likeness and soundtrack rights.
+2. Run the bulk dry run, review passed/failed/skipped ids and the selected
+   five-second windows, then upload with owner credentials and copy only the
+   reviewed manifest in a separate source change. Failures stay unavailable.
+3. Perform billed staging probes with a video and a real selfie for both
+   providers; confirm price, real-person acceptance, kie bounds interpretation
+   and `@Video1`/`@Image1` syntax before activation.
+4. Free a Worker binding and add the flag only after those checks pass.
+
+Verification limitations and per-line design criteria are recorded in
+`docs/template-clip-chips-review.md`. No browser/device proof is claimed.

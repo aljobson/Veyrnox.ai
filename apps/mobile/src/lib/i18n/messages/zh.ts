@@ -375,6 +375,12 @@ const zh = {
     'audioTemplates.cat.MUSIC': '音乐',
     'audioTemplates.cat.VOICE-OVER': '配音',
     'audioTemplates.cat.SOUND FX': '音效',
+    'templateClip.prompt': '片段提示词',
+    'templateClip.reset': '重置提示词',
+    'templateClip.addPhoto': '添加你的照片',
+    'templateClip.videoName': '@video1：模板片段',
+    'templateClip.photoName': '@image1：你的照片',
+    'templateClip.invalid': '请各使用一次 @video1 和 @image1，且不超过2000个字符。',
 } as const;
 
 export default zh;
