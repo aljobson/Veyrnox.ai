@@ -17,3 +17,12 @@ test('minute tick drains under content_scan heartbeat only while flag is enabled
  await worker.scheduled({cron:'* * * * *'},{...env,CONTENT_SCAN_ENABLED:'false'},{});
  assert.deepEqual(calls,[]);
 });
+
+test('the five-minute tick never drains content scans, so it stays inside the isolate memory', async () => {
+ const drained=[];
+ globalThis.__drain=async()=>{drained.push('drain');return {ok:true};};
+ globalThis.fetch=async()=>Response.json({ok:true});
+ const env={SUPABASE_URL:'https://db.test',SUPABASE_SERVICE_ROLE_KEY:'test',CONTENT_SCAN_ENABLED:'true'};
+ await worker.scheduled({cron:'*/5 * * * *'},env,{waitUntil(){}});
+ assert.deepEqual(drained,[]);
+});
