@@ -38,7 +38,7 @@ export const styles = StyleSheet.create({
     toolRail: { flexGrow: 0, flexShrink: 0, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border, backgroundColor: colors.surface }, toolContent: { minWidth: '100%', paddingHorizontal: 5, paddingVertical: 5, gap: 2 },
     tool: { flex: 1, minWidth: 67, minHeight: 50, alignItems: 'center', justifyContent: 'center', gap: 2, borderRadius: 9, borderWidth: 1, borderColor: 'transparent' },
     toolActive: { borderColor: colors.accent, backgroundColor: colors.accentSoft }, toolIcon: { color: colors.body, fontSize: 16, fontWeight: '800' }, toolIconActive: { color: colors.accent }, toolLabel: { color: colors.muted, fontSize: 9, fontWeight: '700' }, toolLabelActive: { color: colors.accent },
-    inspector: { flex: 1, minHeight: 64 }, inspectorContent: { padding: 12, paddingBottom: 34, gap: 11 }, panelHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    inspector: { flex: 1, minHeight: 220 }, inspectorContent: { padding: 12, paddingBottom: 34, gap: 11 }, panelHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     sectionTitle: { color: colors.text, fontFamily: fonts.display, fontSize: 17 }, panelDetail: { color: colors.muted, fontSize: 10, fontWeight: '600' },
     body: { color: colors.body, fontSize: 14, lineHeight: 20 }, muted: { color: colors.muted, fontSize: 11 },
     mediaRow: { minHeight: 51, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 7, borderRadius: 10, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }, mediaRowSelected: { borderColor: colors.accent },

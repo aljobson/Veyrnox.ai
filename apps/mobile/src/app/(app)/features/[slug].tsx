@@ -14,7 +14,7 @@ import { readCreativeReuse, type CreativeReuse } from '../../../lib/creativeReus
 import { stageCreativeSourceHandoff } from '../../../lib/creativeSourceHandoff';
 import { fetchCatalog, type CatalogModel } from '../../../lib/media';
 import { requiredNamedSlots, type Slot, type GenerationReference, replaceSlotReferences, type SlotName } from '../../../lib/sources';
-import { t } from '../../../lib/i18n';
+import { plural, t } from '../../../lib/i18n';
 import { colors, fonts } from '../../../theme';
 
 export default function CreativeFeatureDetail() {
@@ -82,7 +82,7 @@ function FeatureStudio({ feature, reuse }: { feature: CreativeFeature; reuse: Cr
         </View>
         <View style={styles.card}><Text style={styles.kicker}>{t('features.rEQUIREDSOURCES')}</Text><Text style={styles.cardTitle}>{required.length ? required.join(' + ') : t('features.nomediarequired')}</Text>{model && slots.length ? slots.map((slot) => <SourcePicker key={slot.slot} slot={slot} api={api} references={references.filter(ref => ref.slot === slot.slot)} onReferences={files => { setReferences(all => replaceSlotReferences(all, slot.slot, files)); }} onChange={() => {}} onLibrary={() => {}} onBusy={(busy) => setSending((current) => ({ ...current, [slot.slot]: busy }))} hint={t('features.requiredfor', { value1: feature.title })} initialReady={reuse?.kind === slot.slot} initialReadyLabel={reuse?.kind === slot.slot ? t('features.reuse.selected') : undefined} />) : <Text style={styles.note}>{required.length ? t('features.checkingtheliveuploadrequirements') : t('features.yourscriptisthesourceforthis')}</Text>}</View>
         <View style={styles.card}><Text style={styles.kicker}>{t('features.wORKFLOW')}</Text>{feature.steps.map((step, index) => <View key={step} style={styles.step}><Text style={styles.number}>0{index + 1}</Text><Text style={styles.stepText}>{step}</Text></View>)}</View>
-        <View style={styles.card}><Text style={styles.kicker}>{t('features.lIVEMODEL')}</Text>{model === undefined ? <ActivityIndicator color={colors.accent} /> : <Text style={styles.cardTitle}>{model ? t('features.veyrnoxmodelcredits', { value1: feature.kind, value2: model.credits }) : t('features.unavailable')}</Text>}{error ? <StatusText variant="inherit" accessibilityRole="alert" style={styles.error}>{error}</StatusText> : null}<Pressable accessibilityRole="button" disabled={model === undefined || waiting} style={[styles.primary, (model === undefined || waiting) && styles.off]} onPress={openCreate}><Text style={styles.primaryText}>{t('features.continuetofinalreview')}</Text></Pressable><Text style={styles.note}>{t('features.youwillseetheexactpricebefore')}</Text></View>
+        <View style={styles.card}><Text style={styles.kicker}>{t('features.lIVEMODEL')}</Text>{model === undefined ? <ActivityIndicator color={colors.accent} /> : <Text style={styles.cardTitle}>{model ? plural('features.modelCredits', model.credits, { name: feature.title }) : t('features.unavailable')}</Text>}{error ? <StatusText variant="inherit" accessibilityRole="alert" style={styles.error}>{error}</StatusText> : null}<Pressable accessibilityRole="button" disabled={model === undefined || waiting} style={[styles.primary, (model === undefined || waiting) && styles.off]} onPress={openCreate}><Text style={styles.primaryText}>{t('features.continuetofinalreview')}</Text></Pressable><Text style={styles.note}>{t('features.youwillseetheexactpricebefore')}</Text></View>
     </ScrollView>;
 }
 

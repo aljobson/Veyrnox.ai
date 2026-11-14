@@ -66,6 +66,7 @@ const tools: readonly { id: Tool; icon: string; label: string }[] = [
     { id: 'adjust', icon: '☷', label: t('editor.adjust2') },
 ];
 const seconds = (frames = 0, fps = 30) => `${formatNumber(Math.max(0, frames / fps), 1)}s`;
+import { overlaySpan } from '../../lib/editorOverlay';
 import { useFullEditorSession } from './useFullEditorSession';
 export function FullEditorScreen({ projectId, jobId, startAdvanced = false, startBestCut = false }: { projectId: string; jobId?: string; startAdvanced?: boolean; startBestCut?: boolean }) {
     const mounted = useRef(true);
@@ -105,7 +106,7 @@ export function FullEditorScreen({ projectId, jobId, startAdvanced = false, star
     useAnnouncement(problem);
     // Short phones: shrink the preview so the toolbars and tool rail are never pushed off screen.
     const { height: windowHeight } = useWindowDimensions();
-    const previewHeight = Math.max(96, Math.min(178, Math.round(windowHeight * 0.14)));
+    const previewHeight = Math.max(72, Math.min(178, Math.round(windowHeight * (panelOpen || advanced ? 0.1 : 0.14))));
     if (!document) return <View style={styles.loading}><Stack.Screen options={{ title: t('editor.title') }} /><ActivityIndicator color={colors.accent} /><Text style={styles.muted}>{problem ?? t('editor.fullLoading')}</Text></View>;
     const canvas = canvasOf(document.canvas);
     const timeline = timelineOf(document.timeline);
@@ -155,15 +156,19 @@ export function FullEditorScreen({ projectId, jobId, startAdvanced = false, star
         setSelections(result.selections);
         setSelection(result.selections.at(-1) ?? null);
     };
-    const addText = () => {
+    const addOverlay = (kind: 'title' | 'caption') => {
         const seq = timeline.seq + 1;
         const trackId = timeline.tracks.find((track) => track.kind === 'text' && !track.locked)?.id;
-        const item: TextClip = { id: `t${seq}`, text: t('editor.yourtitle'), start: Math.min(frameStore.get(), Math.max(0, total)), len: 90, x: 0.5, y: 0.85, size: 6, trackId, style: DEFAULT_TEXT_STYLE };
+        const caption = kind === 'caption';
+        const span = overlaySpan(timeline, frameStore.get(), caption ? Math.round(timeline.fps * 2) : 90);
+        const item: TextClip = { id: `t${seq}`, text: caption ? t('editor.captiondefault') : t('editor.yourtitle'), ...span, x: 0.5, y: caption ? 0.92 : 0.85, size: caption ? 4 : 6, trackId, style: DEFAULT_TEXT_STYLE };
         applyTimeline({ ...timeline, seq, text: [...timeline.text, item] });
         setSelection({ track: 'text', id: item.id });
         setSelections([{ track: 'text', id: item.id }]);
-        setTool('text');
+        setTool(caption ? 'captions' : 'text');
     };
+    const addText = () => addOverlay('title');
+    const addCaption = () => addOverlay('caption');
     const updateSelectedText = (text: string) => {
         if (selection?.track !== 'text') return;
         applyTimeline(updateClip(timeline, selection, { text: text.slice(0, 1000) }));
@@ -356,7 +361,7 @@ export function FullEditorScreen({ projectId, jobId, startAdvanced = false, star
             {bestCut.result}
             <View style={styles.previewHeading}>
                 <Text style={styles.eyebrow}>{t('editor.pREVIEW')}</Text>
-                <Text style={styles.previewMeta}>{clipCount ? t('editor.layers', { value1: clipCount }) : t('editor.emptysequence')}</Text>
+                <Text style={styles.previewMeta}>{clipCount ? plural('editor.clipsOnTimelineCount', clipCount) : t('editor.emptysequence')}</Text>
             </View>
             <View style={[styles.previewFrame, advanced || panelOpen ? { height: previewHeight } : styles.simpleFill]}>
                 <View style={[styles.canvas, { aspectRatio: canvas.aspect_ratio === '9:16' ? 9 / 16 : canvas.aspect_ratio === '1:1' ? 1 : 16 / 9 }]}>
@@ -369,7 +374,7 @@ export function FullEditorScreen({ projectId, jobId, startAdvanced = false, star
         <View style={styles.timelineSection}>
             <View style={styles.timelineHeading}>
                 <Text style={styles.eyebrow}>{t('editor.tIMELINE')}</Text>
-                <Text style={styles.timelineHelp}>{multiSelect ? t('editor.selectedtapclipstoadd', { value1: selections.length }) : selection ? t('editor.tapacommandtoeditselection') : t('editor.tapacliptoselect')}</Text>
+                <Text style={styles.timelineHelp}>{multiSelect ? t('editor.selectedtapclipstoadd', { value1: selections.length }) : selection ? (advanced ? t('editor.tapacommandtoeditselection') : t('editor.clipSelectedUseButtons')) : t('editor.tapacliptoselect')}</Text>
             </View>
             <PlaybackTimeline clipThumb={mediaId => mediaId.startsWith('j-') ? <JobThumb links={thumbLinks} jobId={mediaId.slice(2)} size={36} /> : null} onGestureActive={returns.gestureActive} timeline={timeline} selections={selections} ppf={zoom} total={total} frameStore={frameStore} playing={playing} snap={snap} onViewport={setViewport} onSeek={value => { setPlaying(false); setFrame(value); }} onSelect={selectClip} onApply={applyTimeline} />
         </View>
@@ -396,7 +401,7 @@ export function FullEditorScreen({ projectId, jobId, startAdvanced = false, star
             {tool === 'generate' ? <EditorGeneratePanel rows={returns.rows} note={returns.note} onOpen={() => openGenerate('video')} onAdd={id => void returns.addAtPlayhead(id, clampFrame(frameStore.get()))} onDismiss={id => void returns.dismiss(id)} /> : null}
 
             {tool === 'text' ? <>
-                <PanelHeading title={t('editor.text2')} detail={selection?.track === 'text' ? t('editor.layerselected') : t('editor.layers', { value1: timeline.text.length })} />
+                <PanelHeading title={t('editor.text2')} detail={selection?.track === 'text' ? t('editor.layerselected') : plural('editor.textLayersCount', timeline.text.length)} />
                 <Pressable accessibilityRole="button" accessibilityLabel={t('editor.addText')} style={({ pressed }) => [styles.primary, touchTarget, pressed && styles.pressed]} onPress={addText}><Text style={styles.primaryText}>＋ {t('editor.addText')}</Text></Pressable>
                 {selection?.track === 'text' && selected && 'text' in selected ? <>
                     <LabeledInput label={t('editor.words')} value={selected.text} onChangeText={updateSelectedText} />
@@ -409,7 +414,8 @@ export function FullEditorScreen({ projectId, jobId, startAdvanced = false, star
             </> : null}
             {tool === 'captions' ? <>
                 <PanelHeading title={t('editor.captions')} detail={timeline.text.length ? t('editor.textcues', { value1: timeline.text.length }) : t('editor.nocues')} />
-                <Action label={t('editor.addcaptionatplayhead')} onPress={addText} />
+                <Action label={t('editor.addcaptionatplayhead')} onPress={addCaption} />
+                {selection?.track === 'text' && selected && 'text' in selected ? <LabeledInput label={t('editor.words')} value={selected.text} onChangeText={updateSelectedText} /> : null}
                 {timeline.text.map((item) => <TranscriptRow key={item.id} item={item} fps={timeline.fps} selected={selection?.track === 'text' && selection.id === item.id} onPress={() => { selectClip({ track: 'text', id: item.id }); setFrame(item.start); }} />)}
             </> : null}
             {tool === 'transcript' ? <>
