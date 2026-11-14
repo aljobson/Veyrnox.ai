@@ -134,8 +134,9 @@ ADR-0304 replaced the save-and-compose fallback with a bare "Export isn't availa
 yet." shown only after a tap. With `EXPO_PUBLIC_EDITOR_SERVER_EXPORT_ENABLED` off, the
 More sheet now says up front that Export is not in the app yet, and a tap saves the
 project and explains that it can be exported from the editor on veyrnox.ai (phone
-Photos and Files clips must be added there again). The same text is shown when the
-server refuses the account (`preview_only`, `not_enabled`, 501, 404).
+Photos and Files clips must be added there again). When the build switch is on
+but the server refuses the account (`preview_only`, `not_enabled`, 501, 404), the
+shorter "Export isn't available yet." stays, since the app does have Export then.
 
 Export from the phone works only when both are true: the EAS profile sets
 `EXPO_PUBLIC_EDITOR_SERVER_EXPORT_ENABLED=true` (a new build), and production
