@@ -1613,6 +1613,7 @@ export default {
   "creditHistory.free_credit_expiry": "Créditos grátis expirados",
   "creditHistory.generation": "Criação",
   "creditHistory.generation_refund": "Reembolso por uma criação que não foi concluída",
+  "creditHistory.refundNamed": "Reembolso: {name}",
   "creditHistory.month": "Últimos 30 dias: {credits}",
   "creditHistory.monthAtLeast": "Últimos 30 dias: pelo menos {credits}",
   "creditHistory.payment_adjustment": "Ajuste de pagamento",

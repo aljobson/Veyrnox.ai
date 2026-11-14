@@ -1585,6 +1585,7 @@ export default {
   "creditHistory.free_credit_expiry": "Kostenlose Credits abgelaufen",
   "creditHistory.generation": "Kreation",
   "creditHistory.generation_refund": "Erstattung für eine nicht abgeschlossene Kreation",
+  "creditHistory.refundNamed": "Erstattung: {name}",
   "creditHistory.month": "Letzte 30 Tage: {credits}",
   "creditHistory.monthAtLeast": "Letzte 30 Tage: mindestens {credits}",
   "creditHistory.payment_adjustment": "Zahlungsanpassung",

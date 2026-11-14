@@ -12,6 +12,7 @@ import { GeneratedChip } from '../library/GeneratedChip';
 import { useJobResult, soundPassFor } from '../../lib/createResult';
 import { stageCreativeSourceHandoff } from '../../lib/creativeSourceHandoff';
 import { celebrateOutput } from '../../lib/celebrate';
+import { settleFirstMilestones } from '../../lib/milestoneHistory';
 import { parseRatio } from '../../lib/templateHandoff';
 import type { ApiClient } from '../../lib/api';
 import type { CatalogModel, Kind } from '../../lib/media';
@@ -30,7 +31,7 @@ export function CreateResult({ api, batch, catalog, onTerminal }: { api: ApiClie
         celebrated.current = true;
         // The rating ask waits until the person has opened the result (the job screen asks); it no longer
         // appears while the result is still arriving on Create (QA-006).
-        celebrateOutput(id, mime, true);
+        void settleFirstMilestones(api, catalog).then(() => celebrateOutput(id, mime, true));
     };
     return <View style={batch.count > 1 ? styles.grid : styles.single}>{batch.ids.map(id => <ResultTile key={id} api={api} id={id} batch={batch} catalog={catalog} onTerminal={onTerminal} onSuccess={celebrate} />)}</View>;
 }
@@ -45,7 +46,9 @@ function ResultTile({ api, id, batch, catalog, onTerminal, onSuccess }: { api: A
     useEffect(() => { if (terminal && result.job) callback.current(); }, [terminal, !!result.job, refunded]);
     useEffect(() => { if (result.asset) success.current(id, result.asset.mime_type); }, [id, result.asset]);
     const file = result.asset;
-    const batchTile = batch.count > 1;
+    // A 2-up grid only suits finished pictures. A job still running (or failed) takes the full row, so its text and bar
+    // are not squeezed into half the screen inside a square frame.
+    const batchTile = batch.count > 1 && !!file;
     const open = () => router.push({ pathname: '/job/[id]', params: { id, fromCreate: '1' } });
     const sound = !batchTile ? soundPassFor({ catalog, modelId: batch.modelId, durationSeconds: batch.duration, result }) : null;
     function addSound() {

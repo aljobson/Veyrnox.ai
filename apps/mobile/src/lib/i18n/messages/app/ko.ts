@@ -1557,6 +1557,7 @@ export default {
   "creditHistory.free_credit_expiry": "무료 크레딧 만료",
   "creditHistory.generation": "창작물",
   "creditHistory.generation_refund": "완료되지 않은 생성 환불",
+  "creditHistory.refundNamed": "환불: {name}",
   "creditHistory.month": "최근 30일: {credits}",
   "creditHistory.monthAtLeast": "최근 30일: 최소 {credits}",
   "creditHistory.payment_adjustment": "결제 조정",

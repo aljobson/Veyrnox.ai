@@ -61,6 +61,15 @@ async function click(control: any) { await act(async () => control.props.onClick
 async function render() { await act(async () => root.render(<Create />)); }
 async function count(n: number) { await act(async () => mockOptions.onChange({ ...mockOptions.values, count: n })); }
 async function tick(ms: number) { await act(async () => { await jest.advanceTimersByTimeAsync(ms); }); }
+test('N1: a running two-picture batch keeps full-width cards with the whole progress text; finished pictures form the grid', async () => {
+    const two: ResultBatch = { ...batch, ids: ['a', 'b'], count: 2 };
+    const halfWidth = () => root.container.queryAll(n => (RN.StyleSheet.flatten(n.props.style) as any)?.width === '48%');
+    mockJob.mockResolvedValue({ state: 'running', credits: 10, model_id: 'm', refunded: false });
+    await act(async () => root.render(<CreateResult api={mockApi as unknown as ApiClient} batch={two} catalog={[]} onTerminal={() => {}} />));
+    expect(halfWidth()).toHaveLength(0);
+    expect(text(t('job.keepsRunning'))).toHaveLength(2);
+    expect(text(t('job.patient')).length).toBeGreaterThan(0);
+});
 const batch: ResultBatch = { ids: ['job'], count: 1, modelId: 'm', kind: 'image', aspect: null, duration: null };
 beforeEach(() => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; jest.useFakeTimers(); jest.clearAllMocks(); mockOwner = 'owner';

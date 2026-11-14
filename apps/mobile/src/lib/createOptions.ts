@@ -39,12 +39,27 @@ export function pickerModels(models: readonly CatalogModel[], current: CatalogMo
     return models.filter((m) => !m.gated && kindOf(m.modality) === kind && needsUpload(m) === needsUpload(current)).sort(cheapestFirst);
 }
 
-// What the Create form's model row offers: every open model of the same kind, cheapest first by the catalog price of
-// its shortest run. The current model is always listed, so the sheet can show which one is in use.
-export function modelChoices(models: readonly CatalogModel[], current: CatalogModel): CatalogModel[] {
+// Audio is five different jobs behind one kind. A music picker must not offer speech, voice cloning or stem splitting.
+export type AudioFamily = 'speech' | 'clone' | 'stems' | 'effects' | 'music';
+export function audioFamily(m: CatalogModel): AudioFamily {
+    const text = `${m.id} ${m.name} ${m.modality}`.toLowerCase();
+    if (/clone|cloning/.test(text)) return 'clone';
+    if (/stem|demucs|separat|isolat/.test(text)) return 'stems';
+    if (/speech|voice|tts|narrat/.test(text)) return 'speech';
+    if (/sfx|sound[- ]?effect|foley|video-to-audio|mmaudio/.test(text)) return 'effects';
+    return 'music';
+}
+
+// What the Create form's model row offers: open models of the same kind that do the same job, cheapest catalog price
+// first. A form that starts from words lists only models that start from words: tools that need a picture (retouch,
+// background removal, upscale, edit) belong to their own pages, and appear here only once a file is already attached
+// (`hasInput`). A tool's own form lists its siblings. The current model is always listed.
+export function modelChoices(models: readonly CatalogModel[], current: CatalogModel, hasInput = false): CatalogModel[] {
     const kind = kindOf(current.modality);
+    const family = kind === 'audio' ? audioFamily(current) : null;
     const from = (m: CatalogModel) => estimateCredits(m, m.durations[0] ?? null);
-    return models.filter((m) => m.id === current.id || (!m.gated && kindOf(m.modality) === kind))
+    const sameJob = (m: CatalogModel) => (needsUpload(current) ? needsUpload(m) : hasInput || !needsUpload(m)) && (family === null || audioFamily(m) === family);
+    return models.filter((m) => m.id === current.id || (!m.gated && kindOf(m.modality) === kind && sameJob(m)))
         .sort((a, b) => from(a) - from(b) || a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
 }
 

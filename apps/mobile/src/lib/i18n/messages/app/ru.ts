@@ -1641,6 +1641,7 @@ export default {
   "creditHistory.free_credit_expiry": "Бесплатные кредиты истекли",
   "creditHistory.generation": "Работа",
   "creditHistory.generation_refund": "Возврат за незавершённую генерацию",
+  "creditHistory.refundNamed": "Возврат: {name}",
   "creditHistory.month": "За 30 дней: {credits}",
   "creditHistory.monthAtLeast": "За 30 дней: не менее {credits}",
   "creditHistory.payment_adjustment": "Корректировка платежа",

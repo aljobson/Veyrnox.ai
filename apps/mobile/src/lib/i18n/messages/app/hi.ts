@@ -1585,6 +1585,7 @@ export default {
   "creditHistory.free_credit_expiry": "मुफ़्त क्रेडिट की अवधि समाप्त",
   "creditHistory.generation": "क्रिएशन",
   "creditHistory.generation_refund": "पूरा न हुए क्रिएशन का रिफंड",
+  "creditHistory.refundNamed": "रिफंड: {name}",
   "creditHistory.month": "पिछले 30 दिन: {credits}",
   "creditHistory.monthAtLeast": "पिछले 30 दिन: कम से कम {credits}",
   "creditHistory.payment_adjustment": "भुगतान समायोजन",

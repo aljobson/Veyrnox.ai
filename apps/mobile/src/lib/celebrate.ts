@@ -80,6 +80,22 @@ export function noteLocalSubmission(jobId: string): void {
     submissions = [...submissions.filter((entry) => entry.jobId !== jobId), { jobId, expiresAt: Date.now() + DAY }].slice(-50);
     persist();
 }
+// "First" is a fact about the account, not this phone: a person who already made things (on another phone, or before
+// a reinstall) has no first creation or first video left. The server's job list tells us; the flags then stay set.
+export function isLocalSubmission(jobId: string): boolean {
+    return submissions.some((entry) => entry.jobId === jobId && entry.expiresAt > Date.now());
+}
+export function settleMilestones(earlier: { creation: boolean; video: boolean }): void {
+    if (earlier.creation && !firstShown) {
+        firstShown = true;
+        write(FIRST_SLOT, '1');
+    }
+    if (earlier.video && !videoShown) {
+        videoShown = true;
+        write(VIDEO_SLOT, '1');
+    }
+}
+export const milestonesOpen = (): boolean => !firstShown || !videoShown;
 export function noteOnboardingCompleted(): void {
     onboarding = true;
     write(ONBOARDING_SLOT, '1');
