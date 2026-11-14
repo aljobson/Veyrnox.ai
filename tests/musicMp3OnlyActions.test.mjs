@@ -12,12 +12,12 @@ process.env.MUSIC_RUNTIME_FLAGS = JSON.stringify({ ui: true, schema: true, libra
 const { GET } = await import('../app/api/v1/music/songs/[id]/route.js');
 
 const SONG = '123e4567-e89b-42d3-a456-426614174000';
-const AUTH = '223e4567-e89b-42d3-a456-426614174000';
+const USER_ID = '223e4567-e89b-42d3-a456-426614174000';
 async function actionsFor(operation) {
     const real = globalThis.fetch;
     globalThis.fetch = async () => Response.json({ ok: true, song: { id: SONG, actions: [], current_version: { operation } } });
     try {
-        const res = await GET(new Request('https://x.invalid', { headers: { 'x-veyrnox-auth-id': AUTH } }), { params: Promise.resolve({ id: SONG }) });
+        const res = await GET(new Request('https://x.invalid', { headers: { 'x-veyrnox-auth-id': USER_ID } }), { params: Promise.resolve({ id: SONG }) });
         assert.equal(res.status, 200);
         return (await res.json()).actions;
     } finally { globalThis.fetch = real; }
