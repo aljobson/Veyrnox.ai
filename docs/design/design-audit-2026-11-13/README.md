@@ -175,13 +175,13 @@ Signed-in web app: "Try again" on a failed generation (it resubmits a paid
 action, so it wants its own change and test); twelve Music dialogs and
 thirteen other hand-rolled dialogs have no shared focus trap or entrance;
 the top-up receipt is a second, hex-coloured paper; `shadow-2xl` in 48
-places; refund amounts in aqua; the Create cost card shows the balance
+places; the Create cost card shows the balance
 twice; job status words differ from mobile ("RUNNING / DONE" against
 "Creating / Ready").
 
 Mobile: 665 off-scale spacing and radius values in 187 files outside the
-guard; legacy weight 800 and one hex literal on `features/*`, `mcp.tsx`,
-`editor/new.tsx`; Home "Recent" is text buttons; one icon for several
+guard; legacy weight 800 and one hex literal on `features/*` and
+`editor/new.tsx` (`mcp.tsx` is at 700 since the follow-up); Home "Recent" is text buttons; one icon for several
 things on Create, Home and Account; the service banner may sit under the
 status bar on the tabs route; the banners need real offline and warning
 icons (new assets).
@@ -199,3 +199,14 @@ Not checked by eye: any signed-in state (balance, Create while generating,
 Library, Credits, toasts), the other ten languages, tablet widths, and the
 mobile app on a simulator or device. Mobile changes rest on jest, the type
 check and code review only.
+
+## Settled after the merge
+
+- **Refund amounts stay aqua.** Not an oversight: money coming in is aqua and
+  a debit is amber, a rule `tests/amberRule.test.mjs` pins (U3).
+- **The chat waiting dot stays aqua**, the same status dot Create uses.
+- **`explore.templatesError` stays** in the mobile catalogs, unused. Removing
+  it changes the pinned hash of the historical key order
+  (`apps/mobile/__tests__/catalogRegistry.test.ts`), which is worth more
+  than one spare string.
+- **The mobile MCP screen** uses weight 700 instead of 800 and 900 (ADR-0264).
