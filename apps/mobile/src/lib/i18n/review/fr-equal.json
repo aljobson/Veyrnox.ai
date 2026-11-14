@@ -218,5 +218,6 @@
   "brand.swatch.orange": "Orange is the same word in this language.",
   "create.firstRun.dest.tiktok": "Product name written the same in this language: TikTok.",
   "create.firstRun.dest.reels": "Product name written the same in this language: Instagram Reels.",
-  "create.firstRun.dest.youtube": "Product name written the same in this language: YouTube."
+  "create.firstRun.dest.youtube": "Product name written the same in this language: YouTube.",
+  "job.elapsedMinutes": "Standard abbreviations for minutes and seconds in this language: min and s."
 }

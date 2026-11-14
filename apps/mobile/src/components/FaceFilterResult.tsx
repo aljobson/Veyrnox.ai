@@ -2,12 +2,13 @@ import { Text as StatusText } from './ui/Text';
 import { Image } from 'expo-image';
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ApiError, type ApiClient } from '../lib/api';
 import { getCacheUser, subscribeCacheUser } from '../lib/appCache';
 import { kindForMime } from '../lib/creativeReuse';
 import { comparisonUri, faceFilterMessage } from '../lib/faceFilters';
 import { mediaApi, waitForJob, type JobState } from '../lib/media';
+import { GenerationProgress } from './GenerationProgress';
 import { saveOutput, shareOutput } from '../lib/output';
 import { t } from '../lib/i18n';
 import { colors } from '../theme';
@@ -83,7 +84,7 @@ export function FaceFilterResult({ api, owner, id, original, onAnother, onApplyR
     return <ScrollView style={styles.screen} contentContainerStyle={styles.body}>
         <Stack.Screen options={{ title: t('faceFilters.title') }} />
         <Text style={styles.heading} accessibilityRole="header">{t(`job.${state}`)}</Text>
-        {!settled && !asset ? <ActivityIndicator /> : null}
+        {!settled && !asset ? <GenerationProgress key={id} jobId={id} kind="image" /> : null}
         {asset ? <>
             <View style={styles.toggle}>{(['before', 'after'] as const).map(choice => <Pressable key={choice} accessibilityRole="button" accessibilityLabel={t(`faceFilters.${choice}`)} accessibilityState={{ selected: view === choice }} style={[styles.button, view === choice && styles.selected]} onPress={() => setView(choice)}><Text style={styles.text}>{t(`faceFilters.${choice}`)}</Text></Pressable>)}</View>
             <Image source={{ uri: comparisonUri(view, original, asset.url) }} accessibilityLabel={t(`faceFilters.${view}`)} cachePolicy="none" transition={0} contentFit="contain" style={styles.photo} onError={view === 'before' ? onOriginalError : undefined} onLoad={view === 'before' ? onOriginalLoad : undefined} />

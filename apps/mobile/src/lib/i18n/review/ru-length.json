@@ -3520,5 +3520,11 @@
     "english": "Add",
     "translation": "Добавить",
     "ratio": 2.67
+  },
+  {
+    "id": "templates.kind.image",
+    "english": "Image",
+    "translation": "Изображение",
+    "ratio": 2.2
   }
 ]

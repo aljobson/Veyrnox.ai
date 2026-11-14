@@ -368,6 +368,7 @@ const de = {
     'presets.use.photoReplace': 'Ersetzen',
     'presets.fidelity.photosUnavailable': 'Diese Vorlage benötigt mehr Fotos, als das Modell derzeit unterstützt. Wähle eine andere Vorlage oder versuche es später erneut.',
     'templates.kind.label': 'Vorlagentyp',
+    'templates.kind.image': 'Bild',
     'templates.kind.video': 'Video',
     'templates.kind.audio': 'Audio',
     'audioTemplates.all': 'Alle',

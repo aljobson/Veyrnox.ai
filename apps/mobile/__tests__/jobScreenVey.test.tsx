@@ -1,5 +1,6 @@
 import { act } from 'react';
 import * as RN from 'react-native';
+import { formatElapsed } from '../src/components/GenerationProgress';
 import { createRoot, type Root } from 'test-renderer';
 import JobScreen from '../src/app/(app)/job/[id]';
 import { mediaApi, waitForJob, type JobState } from '../src/lib/media';
@@ -47,7 +48,7 @@ test('waiting uses interactive working Vey, no spinner, and unchanged status and
     await act(async () => update('running')); live(t('job.running'));
     expect(vey()[0].props.mood).toBe('working');
     expect(root.container.queryAll(n => n.props.accessibilityLabel === t('job.stopWaiting'))).toHaveLength(1);
-    expect(root.container.queryAll(n => n.children.includes(t('job.waiting', { elapsed: '0s' })))).toHaveLength(1);
+    expect(root.container.queryAll(n => n.children.includes(t('job.waiting', { elapsed: formatElapsed(0) })))).toHaveLength(1);
 });
 test('poll-ended still-working status retains working Vey', async () => {
     await render(); await complete('running'); expect(vey()[0].props.mood).toBe('working'); live(t('job.stillWorking'));
@@ -66,4 +67,11 @@ test('result replaces Vey', async () => {
     getJob.mockResolvedValue({ state: 'succeeded', model_id: 'model' });
     await render(); await complete('succeeded'); expect(vey()).toHaveLength(0);
     expect(root.container.queryAll(n => n.props.source?.uri === 'https://file')).toHaveLength(1);
+});
+test('a video result keeps its full height so the actions scroll under it, not over it', async () => {
+    getJob.mockResolvedValue({ state: 'succeeded', model_id: 'model' });
+    getAsset.mockResolvedValue({ url: 'https://file', mime_type: 'video/mp4' });
+    await render(); await complete('succeeded');
+    const box = RN.StyleSheet.flatten(root.container.queryAll(n => n.props.testID === 'job-output')[0].props.style);
+    expect(box).toMatchObject({ flexShrink: 0, flexBasis: 'auto', overflow: 'hidden' });
 });

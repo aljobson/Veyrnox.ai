@@ -368,6 +368,7 @@ const es = {
     'presets.use.photoReplace': 'Reemplazar',
     'presets.fidelity.photosUnavailable': 'Esta plantilla necesita más fotos de las que admite el modelo actualmente. Elige otra plantilla o inténtalo más tarde.',
     'templates.kind.label': 'Tipo de plantilla',
+    'templates.kind.image': 'Imagen',
     'templates.kind.video': 'Vídeo',
     'templates.kind.audio': 'Audio',
     'audioTemplates.all': 'Todas',
