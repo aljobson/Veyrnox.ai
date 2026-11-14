@@ -82,4 +82,7 @@ export default {
     'credits.hardPaywall.back': "Back",
     'credits.hardPaywall.trialTerms': "Free for {days} days, then {price} per {interval}. Cancel before the trial ends and you pay nothing.",
     'credits.hardPaywall.buyTrial': "Start {days}-day free trial",
+    'credits.planDetails.loading': 'Loading plan credits…',
+    'credits.planDetails.failed': 'Plan credit amounts could not be loaded. Check your connection and try again.',
+    'credits.planDetails.retry': 'Try again',
 } as const;

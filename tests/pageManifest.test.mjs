@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildPageManifest, PAGE_TEMPLATES, sitemapPaths, templateMatches } from '../e2e/page-manifest.mjs';
+import { buildPageManifest, DARK_ROUTES, PAGE_TEMPLATES, sitemapPaths, templateMatches } from '../e2e/page-manifest.mjs';
+import { photoStudioRouteDisabled } from '../lib/photoStudioGate.mjs';
 
 test('page sweep covers every canonical template and expands all concrete public paths', () => {
   const manifest = buildPageManifest(['/presets/a', '/presets/b', '/legal/privacy']);
@@ -54,4 +55,20 @@ test('only an explicit valid saved-version fixture can classify Editor Review as
     assert.equal(entry.pathname, `${reviewRoute}${query}`);
     assert.equal(entry.sensitive, true);
   }
+});
+
+test('a route the Worker answers 404 while its flag is off is swept as a dark route, not a render', () => {
+  assert.deepEqual([...DARK_ROUTES], ['/app/photo-studio']);
+  for (const route of DARK_ROUTES) {
+    assert.ok(PAGE_TEMPLATES.some(entry => entry.route === route), `${route} is still in the route inventory`);
+    assert.equal(photoStudioRouteDisabled(route, {}), true, 'the flag ships off, so the Worker answers 404');
+    assert.equal(photoStudioRouteDisabled(route, { PHOTO_STUDIO_ENABLED: 'true' }), false);
+    for (const sitemap of [[], [route]]) {
+      const entries = buildPageManifest(sitemap).filter(entry => entry.template === route);
+      assert.deepEqual(entries.map(({ pathname, mode, access }) => ({ pathname, mode, access })), [{ pathname: route, mode: 'dark-route', access: 'account' }]);
+    }
+  }
+  const modes = new Set(buildPageManifest([]).map(({ mode }) => mode));
+  assert.deepEqual([...modes].sort(), ['dark-route', 'negative-path', 'render']);
+  assert.equal(buildPageManifest([]).filter(({ mode }) => mode === 'dark-route').length, DARK_ROUTES.size);
 });

@@ -6364,4 +6364,7 @@ export default {
   "acct.profileError": "تعذّر تحميل بياناتك.",
   "explore.noMatchQuery": "لا توجد قوالب مطابقة لـ «{query}».",
   "common.clearFilters": "مسح عوامل التصفية",
+  "credits.planDetails.loading": "جارٍ تحميل كريدت الخطط…",
+  "credits.planDetails.failed": "تعذّر تحميل كريدت الخطط. تحقق من اتصالك وأعد المحاولة.",
+  "credits.planDetails.retry": "إعادة المحاولة",
 } as const;

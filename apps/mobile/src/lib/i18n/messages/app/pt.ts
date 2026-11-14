@@ -6160,4 +6160,7 @@ export default {
   "acct.profileError": "Não foi possível carregar seus dados.",
   "explore.noMatchQuery": "Nenhum template corresponde a “{query}”.",
   "common.clearFilters": "Limpar filtros",
+  "credits.planDetails.loading": "Carregando créditos dos planos…",
+  "credits.planDetails.failed": "Não foi possível carregar os créditos dos planos. Verifique sua conexão e tente de novo.",
+  "credits.planDetails.retry": "Tentar de novo",
 } as const;

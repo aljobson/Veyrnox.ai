@@ -6024,4 +6024,7 @@ export default {
   "acct.profileError": "无法加载你的信息。",
   "explore.noMatchQuery": "没有与“{query}”匹配的模板。",
   "common.clearFilters": "清除筛选",
+  "credits.planDetails.loading": "正在加载套餐积分…",
+  "credits.planDetails.failed": "无法加载套餐的积分数量。请检查网络后重试。",
+  "credits.planDetails.retry": "重试",
 } as const;

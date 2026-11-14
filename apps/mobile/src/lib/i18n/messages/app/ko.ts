@@ -6024,4 +6024,7 @@ export default {
   "acct.profileError": "내 정보를 불러오지 못했습니다.",
   "explore.noMatchQuery": "“{query}”에 일치하는 템플릿이 없습니다.",
   "common.clearFilters": "필터 지우기",
+  "credits.planDetails.loading": "요금제 크레딧을 불러오는 중…",
+  "credits.planDetails.failed": "요금제 크레딧을 불러오지 못했어요. 연결을 확인하고 다시 시도하세요.",
+  "credits.planDetails.retry": "다시 시도",
 } as const;

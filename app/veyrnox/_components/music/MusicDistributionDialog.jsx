@@ -201,6 +201,7 @@ export function MusicDistributionDialog({ mode, song, onClose }) {
             >
               <option value="mp3">MP3</option>
               <option value="wav">WAV</option>
+              <option value="flac">FLAC</option>
             </select>
             {!quote ? <button type="button" disabled={busy} onClick={reviewExport} className="mt-5 min-h-11 rounded-full bg-vx-accent px-5 font-bold text-vx-accent-ink disabled:opacity-50">{busy ? 'Checking…' : `Review ${format.toUpperCase()} allowance`}</button> : (
               <div className="mt-5 rounded-2xl border border-vx-border bg-vx-base p-4">

@@ -6092,4 +6092,7 @@ export default {
   "acct.profileError": "आपकी जानकारी लोड नहीं हो सकी।",
   "explore.noMatchQuery": "“{query}” से कोई टेम्पलेट मेल नहीं खाता।",
   "common.clearFilters": "फ़िल्टर साफ़ करें",
+  "credits.planDetails.loading": "प्लान के क्रेडिट लोड हो रहे हैं…",
+  "credits.planDetails.failed": "प्लान के क्रेडिट लोड नहीं हो सके। अपना कनेक्शन जाँचकर फिर कोशिश करें।",
+  "credits.planDetails.retry": "फिर कोशिश करें",
 } as const;

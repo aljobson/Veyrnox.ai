@@ -8,8 +8,8 @@ const wavMigrationUrl = new URL('../packages/db/schema/supabase/0467_music_wav_e
 const quoteRouteUrl = new URL('../app/api/v1/music/songs/[id]/export-quotes/route.js', import.meta.url);
 const startRouteUrl = new URL('../app/api/v1/music/songs/[id]/exports/route.js', import.meta.url);
 const exportRouteUrl = new URL('../app/api/v1/music/exports/[id]/route.js', import.meta.url);
-const sharedRouteUrl = new URL('../app/api/v1/music/shared/[token]/route.js', import.meta.url);
-const sharedAssetRouteUrl = new URL('../app/api/v1/music/shared/[token]/asset/route.js', import.meta.url);
+const sharedRouteUrl = new URL('../app/api/music/shared/[token]/route.js', import.meta.url);
+const sharedAssetRouteUrl = new URL('../app/api/music/shared/[token]/asset/route.js', import.meta.url);
 
 test('private distribution migration hashes links and claims MP3 allowance at most once', async () => {
   const sql = await readFile(migrationUrl, 'utf8');

@@ -6092,4 +6092,7 @@ export default {
   "acct.profileError": "Deine Angaben konnten nicht geladen werden.",
   "explore.noMatchQuery": "Keine Vorlagen passen zu „{query}“.",
   "common.clearFilters": "Filter zurücksetzen",
+  "credits.planDetails.loading": "Abo-Credits werden geladen…",
+  "credits.planDetails.failed": "Die Credits der Abos konnten nicht geladen werden. Prüfe deine Verbindung und versuche es erneut.",
+  "credits.planDetails.retry": "Erneut versuchen",
 } as const;

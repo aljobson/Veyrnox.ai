@@ -1,6 +1,6 @@
-import { rpc, envConfig } from '../../../../../../packages/db/supabase-client.js';
-import { musicDistributionEnabled } from '../../../../../../lib/musicBackend.js';
-import { hashMusicShareToken } from '../../../../../../lib/musicDistribution.js';
+import { rpc, envConfig } from '../../../../../packages/db/supabase-client.js';
+import { musicDistributionEnabled } from '../../../../../lib/musicBackend.js';
+import { hashMusicShareToken } from '../../../../../lib/musicDistribution.js';
 
 const TOKEN_RE = /^[A-Za-z0-9_-]{43}$/;
 const reply = (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
@@ -18,7 +18,7 @@ export async function GET(_request, { params }) {
             title: result.song.title,
             version_number: result.song.version_number,
             created_at: result.song.created_at,
-            audio_url: `/api/v1/music/shared/${token}/asset`,
+            audio_url: `/api/music/shared/${token}/asset`,
         } });
     } catch (error) {
         console.error('[music/shared] resolve failed:', error?.message);

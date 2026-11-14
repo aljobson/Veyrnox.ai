@@ -3510,6 +3510,12 @@
     "ratio": 1.64
   },
   {
+    "id": "credits.planDetails.retry",
+    "english": "Try again",
+    "translation": "Erneut versuchen",
+    "ratio": 1.78
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

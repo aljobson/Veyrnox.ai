@@ -6024,4 +6024,7 @@ export default {
   "acct.profileError": "アカウント情報を読み込めませんでした。",
   "explore.noMatchQuery": "「{query}」に一致するテンプレートはありません。",
   "common.clearFilters": "フィルターをクリア",
+  "credits.planDetails.loading": "プランのクレジットを読み込み中…",
+  "credits.planDetails.failed": "プランのクレジット数を読み込めませんでした。接続を確認して再試行してください。",
+  "credits.planDetails.retry": "再試行",
 } as const;

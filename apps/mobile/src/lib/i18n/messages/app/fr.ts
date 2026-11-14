@@ -6160,4 +6160,7 @@ export default {
   "acct.profileError": "Impossible de charger vos informations.",
   "explore.noMatchQuery": "Aucun modèle prédéfini pour « {query} ».",
   "common.clearFilters": "Effacer les filtres",
+  "credits.planDetails.loading": "Chargement des crédits des forfaits…",
+  "credits.planDetails.failed": "Impossible de charger les crédits des forfaits. Vérifiez votre connexion et réessayez.",
+  "credits.planDetails.retry": "Réessayer",
 } as const;

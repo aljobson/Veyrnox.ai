@@ -1,0 +1,7 @@
+# ZAP baseline rules for .github/workflows/zap-baseline.yml: <id>	<IGNORE|WARN|FAIL>	<reason>
+# Only findings assessed as false positives are ignored. Anything not listed keeps ZAP's default (WARN).
+10099	IGNORE	Source Code Disclosure: matches English interface copy in the embedded translation catalogue
+10031	IGNORE	User Controlled HTML Element Attribute: query values appear JSON-escaped in the React flight payload only
+10015	IGNORE	Re-examine Cache-control Directives: pages are deliberately no-store
+10098	IGNORE	Cross-Domain Misconfiguration: /api/developer/openapi is a public read-only contract
+10055	WARN	CSP style-src unsafe-inline: a real finding, kept visible

@@ -1,13 +1,15 @@
 import { Stack } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { CatalogList, kindTitleKey } from '../../components/CatalogList';
 import { PlanCards } from '../../components/credits/PlanCards';
+import { PlanCatalogNotice } from '../../components/credits/PlanCatalogNotice';
 import { PackCard, PackTaxNote } from '../../components/credits/PackCard';
 import { Chip, Text, themedStyles, useThemedStyles } from '../../components/ui';
 import { useAuth } from '../../auth/AuthProvider';
 import { useBilling } from '../../billing/BillingProvider';
-import { isWebParityPack, parseGenerationCatalog, toDisplayPackages, type GenerationCatalogPlan } from '../../lib/billing';
+import { isWebParityPack, toDisplayPackages } from '../../lib/billing';
+import { usePlanCatalog } from '../../lib/usePlanCatalog';
 import { bestPackId, packSavingPercent } from '../../lib/creditOffers';
 import { priceLines } from '../../lib/catalogPages';
 import { t } from '../../lib/i18n';
@@ -17,15 +19,15 @@ import { ds } from '../../theme';
 // bought in the store, and nothing on this screen links anywhere to buy them.
 export default function Pricing() {
     const styles = useThemedStyles(sheets), billing = useBilling(), { api } = useAuth();
-    const [catalog, setCatalog] = useState<GenerationCatalogPlan[]>([]);
+    const { catalog, status: catalogStatus, retry: retryCatalog } = usePlanCatalog(api);
     const plans = useMemo(() => toDisplayPackages(billing.offerings?.all.generation?.availablePackages ?? []).filter(p => p.generationPlan), [billing.offerings]);
     const packs = useMemo(() => toDisplayPackages(billing.offerings?.all.credits?.availablePackages ?? []).filter(isWebParityPack), [billing.offerings]);
-    useEffect(() => { let live = true; void api.request<unknown>('/api/credit-subscription-plans').then(value => { if (live) setCatalog(parseGenerationCatalog(value)); }).catch(() => {}); return () => { live = false; }; }, [api]);
     return <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
         <Stack.Screen options={{ title: t('prc.title') }} />
         <Text variant="body" tone="secondary">{t('prc.intro')}</Text>
         {billing.status === 'ready' && plans.length > 0 ? <View style={styles.section}>
             <Text variant="title2" accessibilityRole="header">{t('creditsPage.subscriptions')}</Text>
+            <PlanCatalogNotice status={catalogStatus} onRetry={retryCatalog} />
             <PlanCards readOnly plans={plans} packs={packs} credits={new Map(catalog.map(p => [p.id, p.credits]))} />
         </View> : null}
         {billing.status === 'ready' && packs.length > 0 ? <View style={styles.section}>

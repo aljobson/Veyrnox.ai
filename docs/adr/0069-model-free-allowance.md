@@ -243,3 +243,28 @@ second connection for price locking. The ledger workflow runs it immediately
 after the complete migration replay, before legacy tests replace function bodies.
 The adapter is not a live PostgREST schema-cache test; that remains a staging
 release check. No deployment, live migration or flag activation is part of PR B.
+
+## Amendment: the jobs credits check has one name again (0504, 2026-11-13)
+
+`0206` created `jobs_credits_or_free_check` (`credits > 0 OR free_allowance`).
+`0472` meant to replace it when local Music WAV renders needed a zero-credit job,
+but dropped `jobs_credits_check`, a name `0206` had already removed, and added a
+new `jobs_credits_check` beside the old constraint. CHECK constraints are ANDed,
+so every local render commit (crop, fade, speed, reorder, remaster) was refused
+with 23514, on staging and in production.
+
+`0504` drops `jobs_credits_or_free_check`. The rule for a job's credits is now
+`jobs_credits_check` alone, as last defined in `0486`:
+
+- `credits > 0`, or
+- `free_allowance` (this ADR's waiver, unchanged), or
+- `credits = 0` for a `music-local-*` model with provider `local` and state
+  `STORED`: a render done in the Worker, with no provider call and no ledger row.
+
+Nothing else is loosened: the first two branches are the `0206` rule. The drop is
+refused if `jobs_credits_check` is missing, so `jobs.credits` is never left
+unchecked. An auditor reading `jobs` will now see zero-credit rows for local
+Music renders; they carry no debit and need no refund. Proof: the migration was
+run on staging inside a transaction that rolled back, where a local zero-credit
+`STORED` job was accepted and a zero-credit job for a paid model was still
+refused; `tests/musicPublishSlugAndRenderCheck.test.mjs` pins both properties.

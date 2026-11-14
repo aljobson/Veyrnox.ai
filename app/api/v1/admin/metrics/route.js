@@ -26,10 +26,12 @@ import { requireDashboardAccess } from '../../../../../lib/accessJwt.js';
 const NOT_ADMIN = '42501';
 
 // Off until at least one admin has enrolled a factor in Supabase Auth —
-// turning it on first locks every admin out of their own dashboard. Flip the
-// Worker var to 'true' straight after enrolment (ADR-0001 §MFA, Phase 4).
-// A flag rather than a hard requirement because there is no third state to
-// get right: either MFA exists for admins or it does not.
+// turning it on first locks every admin out of their own dashboard. Once the
+// admin account(s) have enrolled TOTP, set the Worker var to 'true' in BOTH
+// staging and production (ADR-0001 §MFA, Phase 4); it is defense-in-depth on
+// the highest-value credential in the product and should not be left off in a
+// deployed environment. A flag rather than a hard-coded `true` because there
+// is no third state to get right: either MFA exists for admins or it does not.
 const requireAal2 = () => process.env.ADMIN_REQUIRE_AAL2 === 'true';
 
 export async function GET(req) {

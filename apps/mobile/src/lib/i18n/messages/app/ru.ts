@@ -6228,4 +6228,7 @@ export default {
   "acct.profileError": "Не удалось загрузить ваши данные.",
   "explore.noMatchQuery": "Нет шаблонов по запросу «{query}».",
   "common.clearFilters": "Сбросить фильтры",
+  "credits.planDetails.loading": "Загружаем кредиты тарифов…",
+  "credits.planDetails.failed": "Не удалось загрузить кредиты тарифов. Проверьте подключение и повторите попытку.",
+  "credits.planDetails.retry": "Повторить",
 } as const;

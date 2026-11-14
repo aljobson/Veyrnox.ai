@@ -26,6 +26,7 @@ import { forgetMfaCleared } from '../lib/mfaCheck';
 import { bindCacheUser, clearExportFiles, userIdFromToken, wipeCache } from '../lib/appCache';
 import { cinemaProgressIdentity } from '../lib/cinemaProgress';
 import { clearRefreshToken, readRefreshToken, writeRefreshToken } from '../lib/auth/sessionStore';
+import { forgetPendingLink } from '../lib/pendingLink';
 import {
     AuthError,
     passkeySignInOptions,
@@ -367,6 +368,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const signOut = useCallback(async (expected?: number) => {
         if (expected !== undefined && expected !== generationRef.current) return;
         const token = sessionRef.current?.accessToken;
+        forgetPendingLink(); // a destination kept from a link never outlives a sign-out
         await drop();
         if (token) await revokeSession(token);
     }, [drop]);

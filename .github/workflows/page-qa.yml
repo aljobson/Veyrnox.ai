@@ -61,7 +61,9 @@ jobs:
             test-results/page-qa-anonymous/
           retention-days: 7
 
-      - name: Prepare authenticated staging session
+      # The refresh cookie rotates on first use, so a saved session serves one
+      # project only: each authenticated project signs in for its own.
+      - name: Prepare authenticated staging sessions
         id: auth_session
         if: always()
         env:
@@ -69,14 +71,22 @@ jobs:
           E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
         run: |
           mkdir -p .scratch
-          node e2e/create-qa-state.mjs
-      - name: Sweep every page on authenticated desktop and mobile
+          QA_STORAGE_STATE=.scratch/qa-session-desktop.json node e2e/create-qa-state.mjs
+          QA_STORAGE_STATE=.scratch/qa-session-mobile.json node e2e/create-qa-state.mjs
+      - name: Sweep every page on authenticated desktop
         if: always() && steps.auth_session.outcome == 'success'
         env:
           QA_BASE_URL: https://veyrnox-ai-staging.al-jobson.workers.dev
-          QA_STORAGE_STATE: .scratch/qa-session.json
-          QA_REPORT_DIR: page-coverage-report/authenticated
-        run: npx playwright test -c e2e/page-coverage.config.mjs --project desktop-authenticated --project mobile-authenticated --output test-results/page-qa-authenticated
+          QA_STORAGE_STATE: .scratch/qa-session-desktop.json
+          QA_REPORT_DIR: page-coverage-report/authenticated/desktop
+        run: npx playwright test -c e2e/page-coverage.config.mjs --project desktop-authenticated --output test-results/page-qa-authenticated/desktop
+      - name: Sweep every page on authenticated mobile
+        if: always() && steps.auth_session.outcome == 'success'
+        env:
+          QA_BASE_URL: https://veyrnox-ai-staging.al-jobson.workers.dev
+          QA_STORAGE_STATE: .scratch/qa-session-mobile.json
+          QA_REPORT_DIR: page-coverage-report/authenticated/mobile
+        run: npx playwright test -c e2e/page-coverage.config.mjs --project mobile-authenticated --output test-results/page-qa-authenticated/mobile
       - name: Retain authenticated page coverage
         if: always() && steps.auth_session.outcome == 'success'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9

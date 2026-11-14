@@ -8,6 +8,14 @@ Three journeys against **staging**, in Chromium (docs/product/ISSUES.md I5):
 | `generate.spec.mjs` | sign-in, `/api/v1/account`, the catalog, the create form | `POST /api/v1/generations` is answered with `insufficient_balance` |
 | `buy.spec.mjs` | sign-in, `/api/v1/balance`, `/api/v1/credit-packs`, consent gate | `POST /api/v1/top-ups` and the Stripe page are answered by the test |
 
+`playwright.config.mjs` runs exactly these three plus `model-switch.spec.mjs`
+(every listed model is selected and sends its own request; the POST is answered
+with `insufficient_balance`). The other specs in this directory are not part of
+the smoke; each runs from its own config: `page-coverage.config.mjs`,
+`music-preview.config.mjs`, `music-server.config.mjs` and
+`authenticated-fixtures.config.mjs`. A new smoke spec has to be added to
+`testMatch` (`tests/e2eSmokeScope.test.mjs` fails on a spec no config claims).
+
 The three ordinary smoke tests never debit credits, call a provider, or write
 a Top-up, so they need no staging clean-up. Production is refused
 (`e2e/env.mjs`). The workflow also has a separate manual-only Kling O1

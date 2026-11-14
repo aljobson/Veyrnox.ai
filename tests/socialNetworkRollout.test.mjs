@@ -7,7 +7,7 @@ import { postCapabilityError } from '../lib/social/postCapabilities.js';
 register('data:text/javascript,' + encodeURIComponent(`export async function resolve(s,c,next) { return next(s === 'next/server' ? 'next/server.js' : s,c); }`));
 const auth = '11111111-1111-4111-8111-111111111111';
 const env = {
-    PUBLIC_HOST: 'https://veyrnox.test', SOCIAL_OAUTH_STATE_SECRET: 'test-state',
+    PUBLIC_HOST: 'https://veyrnox.test', SOCIAL_OAUTH_STATE_SECRET: 'test-only-oauth-state-secret-0123456789abcdef',
     SOCIAL_TOKEN_ENCRYPTION_KEY: Buffer.alloc(32, 1).toString('base64'),
     PUBLISH_RELEASED_NETWORKS: 'youtube', PUBLISH_EXTENDED_NETWORKS_ENABLED: 'true',
     YOUTUBE_CLIENT_ID: '123456-test.apps.googleusercontent.com', YOUTUBE_CLIENT_SECRET: 'test-secret',
