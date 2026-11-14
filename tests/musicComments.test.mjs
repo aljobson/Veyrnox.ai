@@ -51,11 +51,12 @@ test('the public projection never carries pending comments; own comments only fo
     assert.equal(publicMusicComments(result, { viewer: true }).own_comments[0].status, 'pending');
 });
 
-test('comments ship off behind their own switch', () => {
+test('comments sit behind their own switch, on in production and staging since 2026-11-14 (owner)', () => {
     assert.equal(musicRuntimeFlag('comments', { MUSIC_RUNTIME_FLAGS: '{}' }), false);
     assert.equal(musicRuntimeFlag('comments', { MUSIC_RUNTIME_FLAGS: '{"comments":true}' }), true);
-    const flags = read('../wrangler.jsonc').match(/MUSIC_RUNTIME_FLAGS"\s*:\s*"([^"]*)"/g) || [];
-    for (const line of flags) assert.doesNotMatch(line, /\\"comments\\":true/);
+    const flags = read('../wrangler.jsonc').split('\n').filter((line) => line.includes('"MUSIC_RUNTIME_FLAGS"'));
+    assert.equal(flags.length, 2);
+    for (const line of flags) assert.match(line, /\\"comments\\":true/);
 });
 
 test('every comment is held for review and only approved ones are read publicly', () => {
