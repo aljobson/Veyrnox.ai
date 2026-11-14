@@ -325,6 +325,8 @@ try {
         // Song reactions, creator follows and their write receipts (0515): ids and an emoji,
         // erased with the account. Counts are public; the generic export has no Music section yet.
         'music_song_reactions', 'music_creator_follows', 'music_social_mutations',
+        // Track comments, comment reports and their write receipts (0518): erased with the account.
+        'music_comments', 'music_comment_reports', 'music_comment_mutations',
         // Music export is deliberately not implied by the generic profile/jobs projections. Account
         // deletion refuses while this provider/media-backed content exists (0490).
         'music_collaboration_profiles', 'music_creator_profiles', 'music_download_claims', 'music_download_periods',

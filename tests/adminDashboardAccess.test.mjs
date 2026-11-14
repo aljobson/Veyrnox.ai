@@ -91,6 +91,8 @@ const ROUTES = [
     ['reports GET', '../app/api/v1/admin/reports/route.js', 'GET', '/api/v1/admin/reports', undefined],
     ['reports POST', '../app/api/v1/admin/reports/route.js', 'POST', '/api/v1/admin/reports', { report_id: USER, resolution: 'test' }],
     ['webhooks GET', '../app/api/v1/admin/webhooks/route.js', 'GET', '/api/v1/admin/webhooks', undefined],
+    ['music-comments GET', '../app/api/v1/admin/music-comments/route.js', 'GET', '/api/v1/admin/music-comments', undefined],
+    ['music-comments POST', '../app/api/v1/admin/music-comments/route.js', 'POST', '/api/v1/admin/music-comments', { action: 'resolve_report', id: USER, reason: 'test' }],
     ['security GET', '../app/api/v1/admin/security/route.js', 'GET', '/api/v1/admin/security', undefined],
     ['security alert POST', '../app/api/v1/admin/security/route.js', 'POST', '/api/v1/admin/security', { alert_id: USER, status: 'resolved' }],
 ];
