@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useI18n } from '../../../components/I18nProvider.jsx';
 import { TEMPLATE_CLIP_IMAGE_TOKEN, TEMPLATE_CLIP_PROMPT, TEMPLATE_CLIP_VIDEO_TOKEN, templateClipPhotoPrompt, templateClipSegments, validTemplateClipPrompt } from '../../../lib/templateClipPrompt.mjs';
 
@@ -30,13 +30,14 @@ function PromptText({ value, onChange, label }) {
 }
 
 function Thumb({ src, file }) {
-  const node = useRef(null);
+  const [objectUrl, setObjectUrl] = useState(null);
   useEffect(() => {
-    if (!file || !node.current) return;
-    const url = URL.createObjectURL(file); node.current.src = url;
+    if (!file) { setObjectUrl(null); return; }
+    const url = URL.createObjectURL(file);
+    setObjectUrl(url);
     return () => URL.revokeObjectURL(url);
   }, [file]);
-  return src || file ? <img ref={node} src={src || undefined} alt="" className="h-full w-full rounded-xl object-cover" /> : <span aria-hidden="true">＋</span>;
+  return src || objectUrl ? <img src={src || objectUrl} alt="" className="h-full w-full rounded-xl object-cover" /> : <span aria-hidden="true">＋</span>;
 }
 
 export function TemplateClipComposer({ preset, photo, value, onChange, onRemove }) {

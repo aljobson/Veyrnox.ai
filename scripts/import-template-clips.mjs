@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Owner-operated only. Dry runs download previews but never upload or install a manifest.
-import { readFile, writeFile, mkdir, mkdtemp, rm, realpath, stat } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, mkdtemp, rm, realpath, open } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -29,9 +29,15 @@ export function canonicalPreview(id) {
 }
 
 export function validateDecision(entry) {
-  const url = canonicalPreview(entry?.id);
+  return canonicalDecision(entry).url;
+}
+
+function canonicalDecision(entry) {
+  const clip = typeof entry?.id === 'string' ? TEMPLATE_CLIPS.find(candidate => candidate.id === entry.id) : null;
+  if (!clip) fail('unknown_template_clip');
+  const url = canonicalPreview(clip.id);
   if (entry.previewUrl !== undefined && sourceUrl(entry.previewUrl).href !== url) fail('template_preview_mismatch');
-  return url;
+  return { id: clip.id, url };
 }
 
 export async function downloadClip(raw, destination, fetchImpl = fetch) {
@@ -61,9 +67,14 @@ export async function localClip(id, destination, showcaseDir, download = downloa
     return download(url, destination);
   }
   if (path.dirname(resolved) !== await realpath(root)) fail('source_path_not_allowed');
-  if ((await stat(resolved)).size > MAX_BYTES) fail('source_over_cap');
-  const bytes = await readFile(resolved); assertMp4(bytes);
-  await writeFile(destination, bytes, { flag: 'wx' });
+  const handle = await open(resolved, 'r');
+  try {
+    if ((await handle.stat()).size > MAX_BYTES) fail('source_over_cap');
+    const bytes = await handle.readFile();
+    if (bytes.length > MAX_BYTES) fail('source_over_cap');
+    assertMp4(bytes);
+    await writeFile(destination, bytes, { flag: 'wx' });
+  } finally { await handle.close(); }
 }
 
 export function manifestModule(manifest) {
@@ -86,10 +97,10 @@ export async function importTemplateClips({ decisions, all = false, chunkSize = 
   const approved = [], seen = new Set();
   // Validate the entire list before downloading even one item.
   for (const entry of decisions) {
-    const url = validateDecision(entry);
-    if (seen.has(entry.id)) fail('duplicate_template_id');
-    seen.add(entry.id);
-    if (entry.approved === true) approved.push({ id: entry.id, url });
+    const canonical = canonicalDecision(entry);
+    if (seen.has(canonical.id)) fail('duplicate_template_id');
+    seen.add(canonical.id);
+    if (entry.approved === true) approved.push(canonical);
   }
   if (all) decisions = [...decisions, ...TEMPLATE_CLIPS.filter(c => !seen.has(c.id)).map(({ id }) => ({ id, approved: false }))];
   const base = await outsideRepo(outDir || tmpdir());
