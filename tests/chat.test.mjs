@@ -47,16 +47,17 @@ test('only the exact string "true" turns chat on', () => {
     assert.equal(chatEnabled({}), false); assert.equal(chatEnabled(undefined), false);
 });
 
+const SEND_ID = 'abcdefgh1234';
 test('validateTurn', () => {
     assert.deepEqual(validateTurn({ text: '  hi  ', idempotency_key: 'abcdefgh1234' }), { ok: true, text: 'hi', key: 'abcdefgh1234', options: { thinking: false, web: false }, attachments: [] });
     for (const [b, error] of [
         [null, 'invalid_body'], [[], 'invalid_body'], ['x', 'invalid_body'],
         [{ idempotency_key: 'abcdefgh1234' }, 'invalid_text'], [{ text: '   ', idempotency_key: 'abcdefgh1234' }, 'invalid_text'],
-        [{ text: 5, idempotency_key: 'abcdefgh1234' }, 'invalid_text'], [{ text: 'x'.repeat(30001), idempotency_key: 'abcdefgh1234' }, 'invalid_text'],
+        [{ text: 5, idempotency_key: SEND_ID }, 'invalid_text'], [{ text: 'x'.repeat(30001), idempotency_key: SEND_ID }, 'invalid_text'],
         [{ text: 'hi' }, 'idempotency_key_required'], [{ text: 'hi', idempotency_key: 'short' }, 'idempotency_key_required'],
         [{ text: 'hi', idempotency_key: 'has space in it' }, 'idempotency_key_required'], [{ text: 'hi', idempotency_key: 'x'.repeat(129) }, 'idempotency_key_required'],
     ]) assert.deepEqual(validateTurn(b), { ok: false, error }, JSON.stringify(b));
-    assert.equal(validateTurn({ text: 'x'.repeat(30000), idempotency_key: 'abcdefgh1234' }).ok, true, '30,000 is allowed');
+    assert.equal(validateTurn({ text: 'x'.repeat(30000), idempotency_key: SEND_ID }).ok, true, '30,000 is allowed');
 });
 
 test('validateThreadPatch accepts known keys, refuses unknown ones and bad values', () => {

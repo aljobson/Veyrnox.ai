@@ -319,3 +319,8 @@ dae2edacf363878ee7beededb7694a87dbcfdb03:scripts/probe-video-templates-staging.m
 7efd92a8d1deff0dff0b23b3482eb0153b69a08a:app/veyrnox/_lib/dialogueDubbingHandoff.js:generic-api-key:3
 7efd92a8d1deff0dff0b23b3482eb0153b69a08a:app/veyrnox/_lib/voiceFavourites.js:generic-api-key:3
 7efd92a8d1deff0dff0b23b3482eb0153b69a08a:app/veyrnox/_lib/voicePalettes.js:generic-api-key:7
+# PR #2212 first commit: synthetic chat idempotency keys in tests (not credentials); the follow-up commit moves them into SEND_ID.
+8225b6c94561447b196a2e2d3cb0088d758bbd81:tests/chat.test.mjs:generic-api-key:55
+8225b6c94561447b196a2e2d3cb0088d758bbd81:tests/chat.test.mjs:generic-api-key:59
+8225b6c94561447b196a2e2d3cb0088d758bbd81:tests/chatTurn.test.mjs:generic-api-key:73
+8225b6c94561447b196a2e2d3cb0088d758bbd81:tests/chatLongText.test.mjs:generic-api-key:10

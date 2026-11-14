@@ -7,7 +7,7 @@ import { runChatTurn } from '../lib/chatTurn.js';
 import { ChatProviderError } from '../packages/adapters/openrouterChat.js';
 import { longTextState, messageLimit } from '../app/veyrnox/_lib/chatLongText.js';
 
-const KEY = 'key-0123456789';
+const SEND_ID = 'turn-0123456789';
 const THREAD = '3f2b8c1e-5d4a-4c9b-8e7f-1a2b3c4d5e6f';
 const AUTH = '11111111-1111-4111-8111-111111111111';
 const JOB = '22222222-2222-4222-8222-222222222222';
@@ -16,9 +16,9 @@ const LONG = { ...BASE, chat_long_text_extra_credits: 1, chat_thinking_effort: '
 
 test('the limits: 30,000 characters and 7,500 tokens in all, 8,000 and 2,000 before the extra applies', () => {
     assert.deepEqual([CHAT_USER_TEXT_MAX, CHAT_USER_TEXT_STANDARD_MAX, MAX_USER_TEXT_TOKENS], [30000, 8000, 7500]);
-    assert.equal(validateTurn({ text: 'x'.repeat(30000), idempotency_key: KEY }).ok, true);
-    assert.deepEqual(validateTurn({ text: 'x'.repeat(30001), idempotency_key: KEY }), { ok: false, error: 'invalid_text' });
-    assert.deepEqual(validateTurn({ text: '日'.repeat(7501), idempotency_key: KEY }), { ok: false, error: 'invalid_text' }, 'CJK holds to the token cap');
+    assert.equal(validateTurn({ text: 'x'.repeat(30000), idempotency_key: SEND_ID }).ok, true);
+    assert.deepEqual(validateTurn({ text: 'x'.repeat(30001), idempotency_key: SEND_ID }), { ok: false, error: 'invalid_text' });
+    assert.deepEqual(validateTurn({ text: '日'.repeat(7501), idempotency_key: SEND_ID }), { ok: false, error: 'invalid_text' }, 'CJK holds to the token cap');
 });
 
 test('isLongText: over 8,000 characters or over 2,000 estimated tokens', () => {
@@ -81,7 +81,7 @@ function fakes({ model = LONG, replies = {}, stream } = {}) {
     return { calls, deps: { rpc, select, stream: s } };
 }
 const called = (f, name) => f.calls.filter(([n]) => n === name);
-const run = (f, text, env = { OPENROUTER_API_KEY: 'sk-test' }) => runChatTurn({ authId: AUTH, threadId: THREAD, body: { text, idempotency_key: KEY }, cfg: {}, env, deps: f.deps });
+const run = (f, text, env = { OPENROUTER_API_KEY: 'sk-test' }) => runChatTurn({ authId: AUTH, threadId: THREAD, body: { text, idempotency_key: SEND_ID }, cfg: {}, env, deps: f.deps });
 
 test('the turn: 8,000 characters is the flat price; 8,001 adds the extra and marks the job; 30,000 is accepted', async () => {
     for (const [len, credits, long] of [[8000, 2, false], [8001, 3, true], [30000, 3, true]]) {
