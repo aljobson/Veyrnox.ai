@@ -360,7 +360,7 @@ test('private distribution parsers bind share tokens, versions and export quotes
   });
   assert.equal(parseMusicShareLinkCreate({ version_id: versionId, token: 'weak', idempotency_key: 'share.12345678' }).error, 'share_token_invalid');
   assert.equal(parseMusicShareLinkCreate({ version_id: versionId, token, idempotency_key: 'share.12345678', public: true }).error, 'invalid_request');
-  assert.equal(parseMusicExportQuote({ version_id: versionId, format: 'flac' }).error, 'format_not_supported');
+  assert.equal(parseMusicExportQuote({ version_id: versionId, format: 'ogg' }).error, 'format_not_supported');
   assert.equal(parseMusicExportStart({ quote_id: quoteId, idempotency_key: 'short' }).error, 'idempotency_key_invalid');
 });
 
