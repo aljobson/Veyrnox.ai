@@ -21,6 +21,7 @@ export default function VeyCharacter({ pose: poseProp = 'idle', mood = null, red
   const firm = pose === 'firm';
   const shrugging = pose === 'shrug';
   const playing = pose === 'play';
+  const waiting = pose === 'wait';
   const walking = pose === 'walking';
   const pointing = pose === 'guiding' || pose === 'tapping';
   const tapping = pose === 'tapping';
@@ -56,11 +57,13 @@ export default function VeyCharacter({ pose: poseProp = 'idle', mood = null, red
 
   const leftArmAnimation = animated(reducedMotion,
     cheering
-      ? { rotate: [70, 82, 70] }
+      ? { rotate: [82, 92, 82] }
       : drooping
         ? { rotate: [-52, -50, -52] }
         : waving
           ? { rotate: [-30, -28, -30] }
+          : waiting
+          ? { rotate: [-14, -18, -14] }
           : firm || playing
           ? { rotate: [-35, -34, -35] }
           : shrugging
@@ -74,15 +77,17 @@ export default function VeyCharacter({ pose: poseProp = 'idle', mood = null, red
         : thinking
           ? { rotate: [2, 10, 2] }
           : { rotate: [5, -5, 5] },
-    { rotate: cheering ? 76 : drooping ? -52 : firm || playing ? -35 : shrugging ? 20 : worried ? 53 : waving ? -30 : listening ? -18 : 0 });
+    { rotate: cheering ? 86 : drooping ? -52 : waiting ? -14 : firm || playing ? -35 : shrugging ? 20 : worried ? 53 : waving ? -30 : listening ? -18 : 0 });
 
   const rightArmAnimation = animated(reducedMotion,
     cheering
-      ? { rotate: [-1, -13, -1] }
+      ? { rotate: [-14, -22, -14] }
       : waving
         ? { rotate: [-20, -14, -20] }
         : playing
           ? { rotate: [-22, -26, -22] }
+          : waiting
+            ? { rotate: [34, 38, 34] }
           : shrugging
             ? { rotate: [38, 42, 38] }
         : drooping
@@ -100,7 +105,7 @@ export default function VeyCharacter({ pose: poseProp = 'idle', mood = null, red
           : walking
             ? { rotate: [-18, 24, -18] }
             : { rotate: [12, 5, 12] },
-    { rotate: cheering ? -7 : pointing ? -34 : thinking ? -60 : waving ? -17 : playing ? -24 : shrugging ? 40 : firm ? -9 : drooping ? 116 : worried ? 19 : 8 });
+    { rotate: cheering ? -17 : pointing ? -34 : thinking ? -60 : waving ? -17 : playing ? -24 : waiting ? 36 : shrugging ? 40 : firm ? -9 : drooping ? 116 : worried ? 19 : 8 });
 
   const armTransition = cheering ? CHEER_LOOP : walking ? QUICK_LOOP : LOOP;
   const jump = animated(reducedMotion,
