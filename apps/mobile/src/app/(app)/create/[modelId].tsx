@@ -6,7 +6,7 @@ import { captureHandoffOwner } from '../../../lib/accountHandoffStore';
 import { createFormSheets as sheets } from '../../../components/create/createFormStyles';
 import { rememberFilmJob } from '../../../lib/filmGenerationReturns';
 import { rememberSubmitted } from '../../../lib/submittedRequests';
-import { acceptedSettings, nearestDuration, skillPromptHref } from '../../../lib/createHandoff';
+import { acceptedSettings, createHandoff, nearestDuration, skillPromptHref } from '../../../lib/createHandoff';
 import { useAnnouncement } from '../../../lib/useAnnouncement';
 import { rawText } from '../../../lib/i18n/translate';
 import { Image } from 'expo-image';
@@ -17,13 +17,15 @@ import type { SubmitRequest } from '../../../lib/generationSubmit';
 import { KeyboardFormScrollView } from '../../../components/KeyboardFormScrollView';
 import { KeyboardScreen } from '../../../components/KeyboardScreen';
 import { FormHeader } from '../../../components/create/FormHeader';
+import { ModelPickerSheet } from '../../../components/create/ModelPickerSheet';
+import { useModelSwitch } from '../../../components/create/useModelSwitch';
 import { SectionLabel } from '../../../components/create/SectionLabel';
 import { SourceDurationCard } from '../../../components/create/SourceDurationCard';
 import { Text, TextField, Button, Card, Chip, themedStyles, useThemedStyles } from '../../../components/ui';
 import { GENERATION_PROMPT_MAX } from '../../../lib/promptLimits';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Platform, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { API_BASE, ApiError } from '../../../lib/api';
 import { canDraw } from '../../../lib/drawOnImage';
@@ -37,7 +39,7 @@ import { SourcePicker } from '../../../components/SourcePicker';
 import { TemplateBanner } from '../../../components/TemplateBanner';
 import { DEFAULT_CINEMA, buildCinemaPrompt, sanitizeCinema, type Cinema } from '../../../lib/cinemaCamera';
 import { clearDraft, loadDraft, saveDraft } from '../../../lib/createDraftStore';
-import { SAVED_DRAFT_VERSION, type CreateDraft, audioLengthInvalid, freeLeftFor, hasAnyOption, imageCount, inputsForIndex, optionsFor, resolveAudio, resolveResolution, resolveTier, seedIsInvalid, settingsInputs, takesImageCount, voiceIsMissing } from '../../../lib/createOptions';
+import { SAVED_DRAFT_VERSION, modelChoices, type CreateDraft, audioLengthInvalid, freeLeftFor, hasAnyOption, imageCount, inputsForIndex, optionsFor, resolveAudio, resolveResolution, resolveTier, seedIsInvalid, settingsInputs, takesImageCount, voiceIsMissing } from '../../../lib/createOptions';
 import { loadVibe } from '../../../lib/creatorProfileStore';
 import { defaultAspect, readDestinationAspect } from '../../../lib/creatorTaste';
 import { nearestAspect, parseRatio, activeTemplate, normalizeTemplateCarry, templateOnOriginalModel } from '../../../lib/templateHandoff';
@@ -55,13 +57,7 @@ import { creativeFeature } from '../../../lib/creativeFeatures';
 import { consumeCreativeSourceHandoff, readCreativeSourceHandoff } from '../../../lib/creativeSourceHandoff';
 const PLACEHOLDER: Record<string, string> = { topic: 'form.topicPlaceholder' };
 // The host part of an address, or '' when it is not one.
-function hostOf(url: string): string {
-    try {
-        return new URL(url).hostname;
-    } catch {
-        return '';
-    }
-}
+const hostOf = (url: string): string => { try { return new URL(url).hostname; } catch { return ''; } };
 export default function CreateWithModel() {
     const styles = useThemedStyles(sheets);
     const { modelId, swap, prompt: presetPrompt, duration: presetDuration, aspect: presetAspect, startOddling, tpl, tid, tmodel, tneeds, tsource, tratio, tposter, tnegative, recipe, sourceHandoff, switched, followup, kind, sourceJob, filmId, shotId, promptVersion, promptContext } = useLocalSearchParams<{ modelId: string; swap?: string; prompt?: string; duration?: string; aspect?: string; startOddling?: string; tpl?: string; tid?: string; tmodel?: string; tneeds?: string; tsource?: string; tratio?: string; tposter?: string; tnegative?: string; recipe?: string; sourceHandoff?: string; switched?: string; followup?: string; kind?: string; sourceJob?: string; filmId?: string; shotId?: string; promptVersion?: string; promptContext?: string }>();
@@ -254,6 +250,7 @@ export default function CreateWithModel() {
     }, []);
     // Closing the screen saves what was typed in the last moments too.
     useEffect(() => () => void flushDraft(), [flushDraft]);
+    const modelSwitch = useModelSwitch(flushDraft, useCallback(() => setError(t('form.modelLoad')), []));
     const discardDraft = useCallback(() => {
         setPrompt('');
         setOpts((o) => ({ ...o, seed: '', negative: '', count: 1, voice: '', audioSeconds: '' }));
@@ -368,13 +365,16 @@ export default function CreateWithModel() {
     const payable = quote.payable ?? price;
     const missing = complete ? 0 : shortfall(balance, payable);
     const disabled = busy || waiting || (!complete && (freeLoading || (!ready && !matchingRetry) || missing > 0));
+    // A swap scene, a Tools recipe or a bound template is made for one model; anywhere else the model row opens the picker.
+    const choices = modelChoices(catalog, model), changeModel = choices.length > 1 && !swapScene && !creativeFeature(typeof recipe === 'string' ? recipe : undefined) && !boundCount && !busy && !waiting ? modelSwitch.open : undefined;
     const generateLabel = matchingRetry?.quote ? t('app.create.confirmPrice', { credits: String(price) }) : `${n > 1 ? t('opt.generateCount', { count: String(n) }) : t('slip.generate')}. ${costLine(price, n, freeLeft, unit)}`;
     return (
         <KeyboardScreen style={styles.screen}>
             <Stack.Screen options={{ title: t('label.Create') }} />
             <KeyboardFormScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
                 <FormHeader modelLabel={modelLabel} modality={kindOf(model.modality) ?? model.modality} stageLine={stageLine} stage={results ? <CreateResult api={api} batch={results} catalog={catalog} onTerminal={resultSettled} /> : undefined}
-                    onTemplates={!template && !results ? () => router.push('/create/presets') : undefined} />
+                    onChangeModel={changeModel} onTemplates={!template && !results ? () => router.push('/create/presets') : undefined} />
+                <ModelPickerSheet visible={modelSwitch.picking} models={choices} currentId={model.id} freeLeft={freeMap} onClose={modelSwitch.close} onPick={(id) => void modelSwitch.change(model, catalog.find(m => m.id === id), (target) => createHandoff(target, attachCarry, { opts, cameraOn, cinema, characterOn, character }, references, handedSources ?? undefined))} />
                 {contract && !boundCount && <Text accessibilityLiveRegion="polite">{t(contract.photoGuidance)}</Text>} {photosUnavailable && <Text tone="danger" accessibilityLiveRegion="polite">{t('presets.fidelity.photosUnavailable')}</Text>}
                 {contractMissing && (contractLoading ? <ActivityIndicator /> : <><Text accessibilityLiveRegion="polite">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text><Button label={t('recovery.retry')} onPress={retryContract} /></>)}
                 {fidelityBlocked(contract, template ? text : '') && <Text tone="danger" accessibilityLiveRegion="polite">{t('public.TemplateRecipe.sourceVideoUnsupported')}</Text>} {template && !templatePreset && <Text accessibilityLiveRegion="polite">{t('presets.fidelity.modelSwitch')}</Text>}
@@ -440,12 +440,11 @@ export default function CreateWithModel() {
                         <Button variant="tertiary" accessibilityRole="button" accessibilityLabel={t('opt.draftClear')} onPress={discardDraft} label={t('opt.draftClear')} />
                     </View>
                 ) : null}
-                
                 {((isVideo && model.durations.length > 1) || hasAnyOption(options) || takesImageCount(model) || takesCharacter || takesCamera) ? (
                     <View style={styles.settingsSection}>
                         <View style={styles.sectionTop}>
                             <SectionLabel style={styles.sectionLabel}>{t('create.workspace.settings')}</SectionLabel>
-                            <SectionLabel style={styles.sectionMeta}>{t('create.workspace.settingsMeta')}</SectionLabel>
+                            {changeModel ? <Pressable accessibilityRole="button" accessibilityLabel={rawText(`${t('create.workspace.settingsMeta')}. ${t('chat.model.change')}`)} onPress={changeModel} hitSlop={12}><SectionLabel style={[styles.sectionMeta, styles.accentInk]}>{t('create.workspace.settingsMeta')}</SectionLabel></Pressable> : <SectionLabel style={styles.sectionMeta}>{t('create.workspace.settingsMeta')}</SectionLabel>}
                         </View>
                         {isVideo && model.durations.length > 1 ? (
                             <View style={styles.chips}>

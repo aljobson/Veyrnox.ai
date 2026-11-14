@@ -4,7 +4,7 @@ import { rawText } from '../../lib/i18n/translate';
 import { plural, t } from '../../lib/i18n';
 import { freeLeftFor } from '../../lib/createOptions';
 import type { FreeLeft } from '../../lib/freeAllowance';
-import type { CatalogModel } from '../../lib/media';
+import { estimateCredits, type CatalogModel } from '../../lib/media';
 import { MIN_TARGET, selectedState } from '../../lib/a11y';
 import { ds } from '../../theme';
 
@@ -17,8 +17,9 @@ interface ModelPickerSheetProps {
     readonly onClose: () => void;
 }
 
-// "Change model" on the Create form: a native page sheet (swipe down to close) listing the models that do the same
-// job. Names only, with today's free runs where there are some; the form's Generate button shows the exact cost.
+// "Change model" on the Create form: a native page sheet (swipe down to close) listing the models of the same kind,
+// each with its catalog price for the shortest run ("from N credits") and today's free runs where there are some.
+// The form's Generate button still shows the exact cost for the chosen length and settings.
 export function ModelPickerSheet({ visible, models, currentId, freeLeft, onPick, onClose }: ModelPickerSheetProps) {
     const styles = useThemedStyles(sheets);
     return (
@@ -34,13 +35,15 @@ export function ModelPickerSheet({ visible, models, currentId, freeLeft, onPick,
                     {models.map((m) => {
                         const current = m.id === currentId;
                         const free = freeLeftFor(freeLeft, m.id);
+                        const from = plural('create.from', estimateCredits(m, m.durations[0] ?? null));
                         return (
                             <Pressable key={m.id} accessibilityRole="button" accessibilityState={selectedState(current)}
-                                accessibilityLabel={rawText(free > 0 ? t('create.freeLeftLabel', { name: m.name, count: String(free) }) : m.name)}
+                                accessibilityLabel={rawText(`${free > 0 ? t('create.freeLeftLabel', { name: m.name, count: String(free) }) : m.name}, ${from}`)}
                                 onPress={() => onPick(m.id)}
                                 style={({ pressed }) => [styles.row, current && styles.rowCurrent, pressed && styles.pressed]}>
                                 <View style={styles.rowText}>
                                     <Text variant="bodyStrong" tone="primary">{m.name}</Text>
+                                    <Text variant="footnote" tone="secondary">{from}</Text>
                                     {free > 0 ? <Text variant="footnote" tone="accent">{plural('create.freeLeft', free)}</Text> : null}
                                 </View>
                                 {current ? <Icon name="check" size={20} tint={styles.accentInk.color} /> : null}
