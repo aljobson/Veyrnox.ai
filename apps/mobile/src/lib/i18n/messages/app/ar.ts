@@ -3194,6 +3194,7 @@ export default {
   "menu.tools": "الأدوات",
   "menu.videoAgent": "وكيل الفيديو",
   "menu.videoAgentHint": "صف الفيديو ونحن ننجزه",
+  "menu.videoEditor": "محرر الفيديو",
   "menu.filmHint": "خطّط وأخرج فيلمًا متعدد اللقطات",
   "montage.describethevideoin3to500": "صف الفيديو في 3 إلى 500 حرف.",
   "montage.everyslotistakenrightnowTry": "كل الأماكن مشغولة حاليًا. حاول مجددًا بعد نحو {value1} دقيقة.",

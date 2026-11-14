@@ -3026,6 +3026,7 @@ export default {
   "menu.tools": "Outils",
   "menu.videoAgent": "Agent vidéo",
   "menu.videoAgentHint": "Décrivez une vidéo, nous la réalisons",
+  "menu.videoEditor": "Éditeur vidéo",
   "menu.filmHint": "Planifiez et dirigez un film en plusieurs plans",
   "montage.describethevideoin3to500": "Décrivez la vidéo en 3 à 500 caractères.",
   "montage.everyslotistakenrightnowTry": "Tous les créneaux sont occupés pour le moment. Réessayez dans environ {value1} minutes.",

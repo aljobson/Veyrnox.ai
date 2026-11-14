@@ -2914,6 +2914,7 @@ export default {
   "menu.tools": "ツール",
   "menu.videoAgent": "動画エージェント",
   "menu.videoAgentHint": "動画を説明するだけで作成します",
+  "menu.videoEditor": "動画エディター",
   "menu.filmHint": "複数ショットの映画を計画・演出します",
   "montage.describethevideoin3to500": "動画の内容を3〜500文字で説明してください。",
   "montage.everyslotistakenrightnowTry": "現在、すべての枠が埋まっています。約{value1}分後にもう一度お試しください。",

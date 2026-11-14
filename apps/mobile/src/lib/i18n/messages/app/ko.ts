@@ -2914,6 +2914,7 @@ export default {
   "menu.tools": "도구",
   "menu.videoAgent": "동영상 에이전트",
   "menu.videoAgentHint": "동영상을 설명하면 만들어 드립니다",
+  "menu.videoEditor": "동영상 편집기",
   "menu.filmHint": "여러 샷으로 된 영화를 기획하고 연출합니다",
   "montage.describethevideoin3to500": "영상을 3~500자로 설명하세요.",
   "montage.everyslotistakenrightnowTry": "현재 모든 자리가 사용 중입니다. 약 {value1}분 후 다시 시도하세요.",

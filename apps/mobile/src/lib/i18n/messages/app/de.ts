@@ -2970,6 +2970,7 @@ export default {
   "menu.tools": "Werkzeuge",
   "menu.videoAgent": "Video-Agent",
   "menu.videoAgentHint": "Beschreibe ein Video, wir erstellen es",
+  "menu.videoEditor": "Videoeditor",
   "menu.filmHint": "Plane und inszeniere einen Film aus mehreren Shots",
   "montage.describethevideoin3to500": "Beschreibe das Video in 3 bis 500 Zeichen.",
   "montage.everyslotistakenrightnowTry": "Alle Plätze sind gerade belegt. Versuche es in etwa {value1} Minuten erneut.",
