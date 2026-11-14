@@ -56,7 +56,7 @@ export default function VeyCharacter({ pose: poseProp = 'idle', mood = null, red
     cheering
       ? { rotate: [92, 112, 92] }
       : drooping
-        ? { rotate: [10, 12, 10] }
+        ? { rotate: [-38, -36, -38] }
         : firm
           ? { rotate: [4, 4, 4] }
       : worried
@@ -68,7 +68,7 @@ export default function VeyCharacter({ pose: poseProp = 'idle', mood = null, red
         : thinking
           ? { rotate: [2, 10, 2] }
           : { rotate: [5, -5, 5] },
-    { rotate: cheering ? 100 : listening ? -18 : 0 });
+    { rotate: cheering ? 100 : drooping ? -38 : listening ? -18 : 0 });
 
   const rightArmAnimation = animated(reducedMotion,
     cheering
@@ -76,7 +76,7 @@ export default function VeyCharacter({ pose: poseProp = 'idle', mood = null, red
       : waving
         ? { rotate: [-62, -42, -62] }
         : drooping
-          ? { rotate: [24, 26, 24] }
+          ? { rotate: [98, 100, 98] }
           : firm
             ? { rotate: [-78, -74, -78] }
       : worried
@@ -90,7 +90,7 @@ export default function VeyCharacter({ pose: poseProp = 'idle', mood = null, red
           : walking
             ? { rotate: [-18, 24, -18] }
             : { rotate: [12, 5, 12] },
-    { rotate: cheering ? -44 : pointing ? -34 : thinking ? -60 : worried ? 22 : 8 });
+    { rotate: cheering ? -44 : pointing ? -34 : thinking ? -60 : drooping ? 98 : worried ? 22 : 8 });
 
   const armTransition = cheering ? CHEER_LOOP : walking ? QUICK_LOOP : LOOP;
   const jump = animated(reducedMotion,
