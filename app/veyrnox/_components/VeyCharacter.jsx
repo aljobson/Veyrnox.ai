@@ -36,7 +36,7 @@ export default function VeyCharacter({ pose: poseProp = 'idle', mood = null, red
     cheering
       ? { rotate: [-5, 5, -5], y: [0, -4, 0] }
       : drooping
-        ? { rotate: [-6, -8, -6], y: [4, 5, 4] }
+        ? { rotate: [0, 0, 0], y: [0, 0, 0] }
         : waving
           ? { rotate: [3, 6, 3], y: [0, -2, 0] }
           : firm
@@ -56,7 +56,7 @@ export default function VeyCharacter({ pose: poseProp = 'idle', mood = null, red
     cheering
       ? { rotate: [70, 82, 70] }
       : drooping
-        ? { rotate: [-38, -36, -38] }
+        ? { rotate: [-52, -50, -52] }
         : waving
           ? { rotate: [-20, -18, -20] }
           : firm
@@ -70,7 +70,7 @@ export default function VeyCharacter({ pose: poseProp = 'idle', mood = null, red
         : thinking
           ? { rotate: [2, 10, 2] }
           : { rotate: [5, -5, 5] },
-    { rotate: cheering ? 76 : drooping || firm ? -38 : worried ? 53 : waving ? -20 : listening ? -18 : 0 });
+    { rotate: cheering ? 76 : drooping ? -52 : firm ? -38 : worried ? 53 : waving ? -20 : listening ? -18 : 0 });
 
   const rightArmAnimation = animated(reducedMotion,
     cheering
@@ -78,7 +78,7 @@ export default function VeyCharacter({ pose: poseProp = 'idle', mood = null, red
       : waving
         ? { rotate: [-62, -42, -62] }
         : drooping
-          ? { rotate: [98, 100, 98] }
+          ? { rotate: [116, 118, 116] }
           : firm
             ? { rotate: [-50, -46, -50] }
       : worried
@@ -92,7 +92,7 @@ export default function VeyCharacter({ pose: poseProp = 'idle', mood = null, red
           : walking
             ? { rotate: [-18, 24, -18] }
             : { rotate: [12, 5, 12] },
-    { rotate: cheering ? -7 : pointing ? -34 : thinking ? -60 : waving ? -52 : firm ? -48 : drooping ? 98 : worried ? 19 : 8 });
+    { rotate: cheering ? -7 : pointing ? -34 : thinking ? -60 : waving ? -52 : firm ? -48 : drooping ? 116 : worried ? 19 : 8 });
 
   const armTransition = cheering ? CHEER_LOOP : walking ? QUICK_LOOP : LOOP;
   const jump = animated(reducedMotion,
@@ -141,6 +141,8 @@ export default function VeyCharacter({ pose: poseProp = 'idle', mood = null, red
         transition={hopping ? HOP_ONCE : cheering ? CHEER_LOOP : walking ? QUICK_LOOP : LOOP}
       />
 
+      {drooping && <ellipse data-part="pillow" cx="30" cy="124" rx="24" ry="16" fill="#5aaee0" fillOpacity="0.35" stroke="#5aaee0" strokeWidth="1.5" />}
+      <g data-part="lying" transform={drooping ? 'translate(80 118) scale(0.85) rotate(-90) translate(-80 -100)' : undefined}>
       <motion.g data-part="figure" animate={jump} transition={jumpTransition}>
 
       <motion.g
@@ -267,6 +269,7 @@ export default function VeyCharacter({ pose: poseProp = 'idle', mood = null, red
         )}
       </motion.g>
       </motion.g>
+      </g>
 
       {face && <VeyMoodProp mood={mood} />}
 
