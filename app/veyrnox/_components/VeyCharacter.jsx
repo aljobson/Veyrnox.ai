@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { VEY_SHOULDER } from '../../../lib/veyPointer';
+import { veyPoseFor } from '../../../lib/veyMood';
 import { VeyFace, VeyMoodProp, VEY_FACES } from './VeyFace';
 
 const LOOP = { duration: 1.8, repeat: Infinity, ease: 'easeInOut' };
@@ -12,8 +13,12 @@ function animated(reducedMotion, active, still) {
 }
 
 // `mood` (lib/veyMood.js) swaps the face and adds a small prop; the body keeps animating from `pose`.
-export default function VeyCharacter({ pose = 'idle', mood = null, reducedMotion = false, hand = null }) {
+export default function VeyCharacter({ pose: poseProp = 'idle', mood = null, reducedMotion = false, hand = null }) {
   const face = mood ? VEY_FACES[mood] : null;
+  const pose = veyPoseFor(poseProp, mood);
+  const waving = pose === 'wave';
+  const drooping = pose === 'droop';
+  const firm = pose === 'firm';
   const walking = pose === 'walking';
   const pointing = pose === 'guiding' || pose === 'tapping';
   const tapping = pose === 'tapping';
@@ -30,6 +35,12 @@ export default function VeyCharacter({ pose = 'idle', mood = null, reducedMotion
   const headAnimation = animated(reducedMotion,
     cheering
       ? { rotate: [-5, 5, -5], y: [0, -4, 0] }
+      : drooping
+        ? { rotate: [-6, -8, -6], y: [4, 5, 4] }
+        : waving
+          ? { rotate: [3, 6, 3], y: [0, -2, 0] }
+          : firm
+            ? { rotate: [0, 0, 0], y: [0, -1, 0] }
       : worried
         ? { rotate: [-7, -3, -7], y: [1, 3, 1] }
     : thinking
@@ -44,6 +55,10 @@ export default function VeyCharacter({ pose = 'idle', mood = null, reducedMotion
   const leftArmAnimation = animated(reducedMotion,
     cheering
       ? { rotate: [92, 112, 92] }
+      : drooping
+        ? { rotate: [10, 12, 10] }
+        : firm
+          ? { rotate: [4, 4, 4] }
       : worried
         ? { rotate: [-4, 2, -4] }
     : walking
@@ -58,6 +73,12 @@ export default function VeyCharacter({ pose = 'idle', mood = null, reducedMotion
   const rightArmAnimation = animated(reducedMotion,
     cheering
       ? { rotate: [-36, -54, -36] }
+      : waving
+        ? { rotate: [-62, -42, -62] }
+        : drooping
+          ? { rotate: [24, 26, 24] }
+          : firm
+            ? { rotate: [-78, -74, -78] }
       : worried
         ? { rotate: [20, 26, 20] }
     : tapping

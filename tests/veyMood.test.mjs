@@ -35,3 +35,13 @@ test('the helper listens for mood signals and goes sleepy offline', async () => 
   assert.match(source, /VEY_MOOD_EVENT/);
   assert.match(source, /offline \? 'sleepy'/);
 });
+
+test('each mood moves the arms, but never interrupts walking or pointing', async () => {
+  const { VEY_MOOD_POSE, veyPoseFor } = await import('../lib/veyMood.js');
+  assert.deepEqual(Object.keys(VEY_MOOD_POSE).sort(), [...VEY_MOODS].sort());
+  assert.equal(veyPoseFor('idle', 'welcome'), 'wave');
+  assert.equal(veyPoseFor('listening', 'sleepy'), 'droop');
+  assert.equal(veyPoseFor('walking', 'happy'), 'walking');
+  assert.equal(veyPoseFor('guiding', 'firm'), 'guiding');
+  assert.equal(veyPoseFor('idle', null), 'idle');
+});
