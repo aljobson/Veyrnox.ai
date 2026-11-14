@@ -6063,5 +6063,7 @@ export default {
   "toolDirectory.bestValue": "お得",
   "toolDirectory.lowerPrice": "より安い",
   "filmCloud.linkFailed": "保存した映画を読み込めませんでした。後でもう一度お試しください。",
+  "filmCloud.linkOffline": "保存した映画を読み込めませんでした。インターネット接続を確認して、もう一度お試しください。",
+  "filmCloud.linkAccount": "アカウントを確認できなかったため、保存した映画を読み込めませんでした。一度サインアウトしてから再度サインインし、もう一度お試しください。",
   "create.workspace.referencesLimit.other": "最大{count}ファイル",
 } as const;

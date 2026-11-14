@@ -6423,6 +6423,8 @@ export default {
   "toolDirectory.bestValue": "أفضل قيمة",
   "toolDirectory.lowerPrice": "سعر أقل",
   "filmCloud.linkFailed": "تعذّر تحميل أفلامك المحفوظة. حاول لاحقًا.",
+  "filmCloud.linkOffline": "تعذّر تحميل أفلامك المحفوظة. تحقّق من اتصالك بالإنترنت وحاول مرة أخرى.",
+  "filmCloud.linkAccount": "تعذّر تحميل أفلامك المحفوظة لأننا لم نتمكن من تأكيد حسابك. سجّل الخروج ثم سجّل الدخول مجددًا وحاول مرة أخرى.",
   "create.workspace.referencesLimit.zero": "حتى {count} ملف",
   "create.workspace.referencesLimit.one": "حتى {count} ملف",
   "create.workspace.referencesLimit.two": "حتى {count} ملف",

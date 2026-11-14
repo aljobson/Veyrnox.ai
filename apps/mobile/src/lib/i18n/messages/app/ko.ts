@@ -6063,5 +6063,7 @@ export default {
   "toolDirectory.bestValue": "최저가",
   "toolDirectory.lowerPrice": "더 저렴함",
   "filmCloud.linkFailed": "저장된 영화를 불러오지 못했습니다. 나중에 다시 시도하세요.",
+  "filmCloud.linkOffline": "저장된 영화를 불러오지 못했습니다. 인터넷 연결을 확인하고 다시 시도하세요.",
+  "filmCloud.linkAccount": "계정을 확인할 수 없어 저장된 영화를 불러오지 못했습니다. 로그아웃한 다음 다시 로그인하고 다시 시도하세요.",
   "create.workspace.referencesLimit.other": "최대 {count}개 파일",
 } as const;

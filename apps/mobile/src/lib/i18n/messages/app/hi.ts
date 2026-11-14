@@ -6135,6 +6135,8 @@ export default {
   "toolDirectory.bestValue": "सबसे अच्छी कीमत",
   "toolDirectory.lowerPrice": "कम कीमत",
   "filmCloud.linkFailed": "आपकी सहेजी गई फ़िल्में लोड नहीं हो सकीं। बाद में फिर कोशिश करें।",
+  "filmCloud.linkOffline": "आपकी सहेजी गई फ़िल्में लोड नहीं हो सकीं। अपना इंटरनेट कनेक्शन जाँचें और फिर कोशिश करें।",
+  "filmCloud.linkAccount": "आपकी सहेजी गई फ़िल्में लोड नहीं हो सकीं क्योंकि हम आपके खाते की पुष्टि नहीं कर पाए। साइन आउट करके दोबारा साइन इन करें, फिर कोशिश करें।",
   "create.workspace.referencesLimit.one": "अधिकतम {count} फ़ाइल",
   "create.workspace.referencesLimit.other": "अधिकतम {count} फ़ाइलें",
 } as const;
