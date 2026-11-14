@@ -371,5 +371,11 @@
   "audioTemplates.all",
   "audioTemplates.cat.MUSIC",
   "audioTemplates.cat.VOICE-OVER",
-  "audioTemplates.cat.SOUND FX"
+  "audioTemplates.cat.SOUND FX",
+  "templateClip.prompt",
+  "templateClip.reset",
+  "templateClip.addPhoto",
+  "templateClip.videoName",
+  "templateClip.photoName",
+  "templateClip.invalid"
 ]

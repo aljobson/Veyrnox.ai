@@ -17,7 +17,9 @@ import { clipCredits, modelAspectRatios, templateModelId, presetCredits, presetH
 import { CHAT_USER_TEXT_MAX } from '../../../lib/chatLimits.js';
 import { Spinner } from './Spinner';
 import { TemplateGenerate } from './TemplateGenerate';
-import { inlineBlockReason, templateInputs } from '../_lib/templateGenerate';
+import { TemplateClipComposer } from './TemplateClipComposer';
+import { TEMPLATE_CLIP_PROMPT, templateClipPhotoPrompt } from '../../../lib/templateClipPrompt.mjs';
+import { inlineBlockReason, clipInlineEligible, templateInputs } from '../_lib/templateGenerate';
 import { imageTemplateNeedsPhoto, imageTemplateModelAvailable } from '../_lib/imageTemplateModels.js';
 import { nearestOption } from '../../../lib/aspectShapes.mjs';
 
@@ -53,6 +55,7 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked:
   const [handoffError, setHandoffError] = useState('');
   const [opening, setOpening] = useState(false);
   const [photo, setPhoto] = useState(null);
+  const [clipPrompt, setClipPrompt] = useState(() => templateClipPhotoPrompt(TEMPLATE_CLIP_PROMPT, false));
   const [singlePhotoBusy, setPhotoBusy] = useState(false);
   const [photoError, setPhotoError] = useState('');
   const [photos, setPhotos] = useState(() => photo ? [photo] : []);
@@ -70,12 +73,15 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked:
   const generationDisabled = (imagePhotoRequired && !photo) || generationBlocked || promptBlocked || !model || photoBusy || !boundReady;
   const chatBlocked = !prompt.trim() || prompt.length > CHAT_USER_TEXT_MAX;
   const requiredImage = imagePhotoRequired || model?.media?.image?.required === true;
-  // Photo image recipes continue to Create with the existing handoff; video inline generation stays unchanged.
-  const inline = !imagePhotoRequired && inlineBlockReason(preset, model, { photo: true }) === null;
+  // Photo image recipes continue to Create; supported template clips generate inline with their fixed model.
+  const inline = templateClip ? clipInlineEligible(templateClip, model) : !imagePhotoRequired && inlineBlockReason(preset, model, { photo: true }) === null;
 
   async function choosePhoto(file) {
     const sequence = ++photoSequence.current;
     setPhotoError('');
+    if (templateClip) {
+      setClipPrompt(text => templateClipPhotoPrompt(text, false));
+    }
     if (!file) {
       setPhoto(null);
       setPhotoBusy(false);
@@ -107,6 +113,7 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked:
         if (dimensionError) { setPhotoError(dimensionError); return; }
       }
       setPhoto(ready);
+      if (templateClip) setClipPrompt(text => templateClipPhotoPrompt(text, true));
     } catch {
       if (photoSequence.current === sequence) setHandoffError('mediaFile');
     } finally {
@@ -179,6 +186,7 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked:
         </fieldset>
       )}
       {imagePhotoRequired && !photo && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t('presets.use.photoRequired')}</p>}
+      {templateClip && inline && <TemplateClipComposer preset={preset} photo={photo} value={clipPrompt} onChange={setClipPrompt} onRemove={() => choosePhoto(null)} />}
       {imagePhotoRequired && !model && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t('presets.fidelity.blocked')}</p>}
       {model && pickedModel !== originalId && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t('presets.fidelity.modelSwitch')}</p>}
       {(preset.kind !== 'image' && live && model && !generationBlocked && !auditedTemplateId) && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t('presets.fidelity.previewNotice')}</p>}
@@ -186,7 +194,7 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked:
       {generationBlocked && !sourceGenerationBlocked && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t(photosUnavailable ? 'presets.fidelity.photosUnavailable' : 'public.TemplateRecipe.sourceVideoUnsupported')}</p>}
       {photoError && <p role="alert" className="mt-3 text-sm text-vx-danger">{t(photoError)}</p>}
       {inline && !(generationBlocked || promptBlocked || !model) && (
-        <TemplateGenerate preset={preset} model={model} prompt={prompt} aspect={aspect} aspectOptions={aspectOptions} durationSeconds={durationSeconds} unitCost={credits} photo={requiredImage ? photo : null} photos={boundCount ? photos : undefined} requiredCount={boundCount} preparing={photoBusy} needsPhoto={requiredImage} templateClip={templateClip} />
+        <TemplateGenerate preset={preset} model={model} prompt={templateClip ? clipPrompt : prompt} aspect={aspect} aspectOptions={aspectOptions} durationSeconds={durationSeconds} unitCost={credits} photo={requiredImage ? photo : null} photos={boundCount ? photos : undefined} requiredCount={boundCount} preparing={photoBusy} needsPhoto={requiredImage} templateClip={templateClip} />
       )}
       {!templateClip && <button
         type="button"

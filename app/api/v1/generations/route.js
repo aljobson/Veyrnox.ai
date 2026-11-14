@@ -33,7 +33,7 @@ import { providerSpendBody, providerSpendError, providerSpendLimit } from '../..
 import { clientTemplateVideo, checkTemplateClipRequest, resolveTemplateClipVideo } from '../../../../lib/templateClipGeneration.js';
 import { loadTemplateClip } from '../../../../lib/templateClipGate.js';
 import { replayTemplateClip } from '../../../../lib/templateClipReplay.js';
-import { TEMPLATE_CLIP_PROMPT } from '../../../../lib/templateClipPrompt.mjs';
+import { templateClipProviderPrompt } from '../../../../lib/templateClipPrompt.mjs';
 import { tieredCredits } from '../../../../lib/resolutionTiers.js';
 
 // The wording version an upload consent attests to (ADR-0330: the Terms and AUP, no tick). Bump when the wording
@@ -226,7 +226,9 @@ export async function POST(req) {
     if (templateClip) {
         const error = checkTemplateClipRequest(body, references.references, templateClip.modelRow.id);
         if (error) return NextResponse.json({ error }, { status: 400 });
-        inputs = { ...inputs, prompt: TEMPLATE_CLIP_PROMPT, duration_seconds: 5 };
+        const prompt = templateClipProviderPrompt(body.inputs?.prompt, body.model_id);
+        if (!prompt) return NextResponse.json({ error: 'template_clip_prompt_tags' }, { status: 400 });
+        inputs = { ...inputs, prompt, duration_seconds: 5 };
         const checked = validateInputs(inputs);
         if (!checked.ok) return NextResponse.json({ error: checked.error }, { status: 400 });
     }
