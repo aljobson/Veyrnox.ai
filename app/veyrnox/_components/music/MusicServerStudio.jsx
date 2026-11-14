@@ -5,6 +5,7 @@ import { getStoredUserId } from '../../../lib/authClient';
 import { addToDraft, NEW_CHAT, readDraft } from '../../_lib/chatLocal';
 import { Modal } from '../Modal';
 import { useMusicServerState } from './useMusicServerState';
+import { MusicPrivateAudio } from '../../_lib/useMusicAudioSrc';
 import { useMusicCustomDraft } from './useMusicCustomDraft';
 import { MusicSourceUploadPanel } from './MusicSourceUploadPanel';
 import { MusicSampleSeedCard } from './MusicSampleSeedCard';
@@ -168,7 +169,7 @@ function ServerCandidate({ candidate, title }) {
         </div>
       ) : null}
       {state === 'ready' && candidate.audio_url ? (
-        <audio className="mt-5 w-full" controls preload="none" src={candidate.audio_url} aria-label={`Play version ${label}`} />
+        <MusicPrivateAudio className="mt-5 w-full" controls preload="none" src={candidate.audio_url} aria-label={`Play version ${label}`} />
       ) : null}
       {state === 'refunded' ? <p className="mt-4 text-sm text-vx-fg-body">This version did not complete and its candidate charge was returned.</p> : null}
       {state === 'failed' ? <p className="mt-4 text-sm text-vx-fg-body">This version did not complete. Check your balance before retrying.</p> : null}

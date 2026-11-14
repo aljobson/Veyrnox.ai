@@ -9,6 +9,7 @@ import dynamic from 'next/dynamic';
 import { MusicStudioLatencyCalibration } from './MusicStudioLatencyCalibration';
 import { MusicStudioMidi } from './MusicStudioMidi';
 import { MusicStudioRecorder } from './MusicStudioRecorder';
+import { MusicPrivateAudio } from '../../_lib/useMusicAudioSrc';
 
 // Browser-only (Web Audio, IndexedDB): keep it out of the server render and the Worker bundle's size budget.
 const MusicStudioInstrumentTakes = dynamic(() => import('./MusicStudioInstrumentTakes').then((module) => module.MusicStudioInstrumentTakes), { ssr: false });
@@ -88,7 +89,7 @@ export function MusicStudioWorkspace({ id }) {
               </div>
             </div>
           </div>
-          <audio ref={audioRef} src={song.audio_url} loop={loop} muted={effectsActive ? false : muted} volume={effectsActive ? 1 : volume} onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onTimeUpdate={(event) => setCurrent(event.currentTarget.currentTime)} onLoadedMetadata={(event) => setDuration(event.currentTarget.duration)} onEnded={() => setPlaying(false)} className="sr-only" />
+          <MusicPrivateAudio ref={audioRef} src={song.audio_url} loop={loop} muted={effectsActive ? false : muted} volume={effectsActive ? 1 : volume} onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onTimeUpdate={(event) => setCurrent(event.currentTarget.currentTime)} onLoadedMetadata={(event) => setDuration(event.currentTarget.duration)} onEnded={() => setPlaying(false)} className="sr-only" />
           <MusicStudioEffects sourceAudioRef={audioRef} playheadSeconds={current} duration={duration} manualVolume={volume} muted={muted} onActiveChange={setEffectsActive} />
           <MusicStudioClipEditor sourceAudioRef={audioRef} sourceTitle={song.title} duration={duration} />
           <MusicStudioRecorder tempo={tempo} signature={signature} sourceAudioRef={audioRef} />

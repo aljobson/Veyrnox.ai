@@ -7,6 +7,7 @@ import { MusicSongActions } from './MusicSongActions';
 import { SavedMusicMixes } from './SavedMusicMixes';
 import { MusicWorkspaceCollaboration } from './MusicWorkspaceCollaboration';
 import { useMusicLibraryState } from './useMusicLibraryState';
+import { MusicPrivateAudio } from '../../_lib/useMusicAudioSrc';
 
 function ServerSongRow({ song, checked, onToggle, onFeedback, onTrash, busy }) {
   return (
@@ -22,7 +23,7 @@ function ServerSongRow({ song, checked, onToggle, onFeedback, onTrash, busy }) {
             <MusicSongActions songId={song.id} jobId={song.job_id} title={song.title} actions={['view_lineage', 'open_editor', 'organize']} />
           </div>
           <p className="mt-2 text-sm text-vx-fg-muted">{song.workspace_name}</p>
-          {song.audio_url ? <audio className="mt-3 w-full" controls preload="none" src={song.audio_url} aria-label={`Play ${song.title}`} /> : null}
+          {song.audio_url ? <MusicPrivateAudio className="mt-3 w-full" controls preload="none" src={song.audio_url} aria-label={`Play ${song.title}`} /> : null}
           <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label={`Feedback for ${song.title}`}>
             <button type="button" aria-pressed={song.feedback === 'like'} onClick={() => onFeedback(song.id, song.feedback === 'like' ? null : 'like')} className={`min-h-10 rounded-full border px-4 text-sm font-bold ${song.feedback === 'like' ? 'border-vx-accent bg-vx-accent/15 text-vx-accent' : 'border-vx-border text-vx-fg-body'}`}>Like</button>
             <button type="button" aria-pressed={song.feedback === 'dislike'} onClick={() => onFeedback(song.id, song.feedback === 'dislike' ? null : 'dislike')} className={`min-h-10 rounded-full border px-4 text-sm font-bold ${song.feedback === 'dislike' ? 'border-vx-danger bg-vx-danger/10 text-vx-danger' : 'border-vx-border text-vx-fg-body'}`}>Dislike</button>
