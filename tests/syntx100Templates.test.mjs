@@ -82,7 +82,7 @@ test('image photo policy, source aspects, translated categories and catalog mode
     if (overrides[raw.sourceSlug]) assert.ok(raw.prompt.includes(overrides[raw.sourceSlug]));
     assert.deepEqual(image.photo, needsPhoto ? { required: true, count: 1 } : undefined);
     assert.equal(image.model, needsPhoto ? 'nano-banana-pro-edit-grsai' : 'nano-banana-kie');
-    assert.equal(image.aspect, raw.sourceAspect === '2:3' ? '3:4' : raw.sourceAspect);
+    assert.equal(image.aspect, raw.sourceAspect);
     const row = audit.records.find(r => r.id === image.id);
     assert.equal(image.previewImage, `/showcase/images/${image.id}.webp`);
     assert.equal(image.previewImage, row.previewPath);
@@ -242,7 +242,7 @@ test('video review categories and model labels are explicit while raw model ids 
     counts[recipe.category] = (counts[recipe.category] || 0) + 1;
   }
   assert.deepEqual(counts, { MOVIES: 6, CINEMATIC: 15, REALISTIC: 23, FASHION: 1, CARTOONS: 1 });
-  assert.deepEqual(audit.records.filter(r => r.kind === 'image' && r.aspect !== r.sourceAspect).map(r => r.id).sort(), ['2000s-filter', 'moody-filter', 'particle-filter', 'red-light-filter', 'retro-game-loading-portrait', 'silhouette', 'viral-doodle']);
+  assert.deepEqual(audit.records.filter(r => r.kind === 'image' && r.aspect !== r.sourceAspect).map(r => r.id), []);
 });
 
 test('every content-screen match has exactly its reviewed decision', () => {
