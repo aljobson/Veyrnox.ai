@@ -29,7 +29,7 @@ test('Video Agent owns descriptive no-index metadata', async () => {
   const { generateMetadata } = fixture('en', '/app/video-agent').load('app/veyrnox/app/video-agent/layout.js');
   const metadata = await generateMetadata();
   assert.equal(metadata.title, 'Video Agent');
-  assert.equal(metadata.description, 'Turn a creative brief into a planned, credit-priced video workflow with Veyrnox.');
+  assert.equal(metadata.description, 'Turn a creative brief into a planned, credit-priced video workflow with Veyrnox.ai.');
   assert.deepEqual(metadata.alternates, { canonical: '/app/video-agent' });
   assert.deepEqual(metadata.robots, { index: false, follow: false });
 });

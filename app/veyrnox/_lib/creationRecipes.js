@@ -61,7 +61,7 @@ export const CREATION_RECIPES = Object.freeze([
   },
   {
     id: 'voice-profile', family: 'speech', title: 'Voice profile', status: 'blocked', icon: 'blocked',
-    description: 'Reusable voice cloning is unavailable under the current Veyrnox policy.',
+    description: 'Reusable voice cloning is unavailable under the current Veyrnox.ai policy.',
     outputKind: 'audio', href: null, sourceSlots: ['Voice sample', 'Consent evidence'],
     steps: ['Policy approval', 'Strong identity verification', 'Consent and revocation', 'Provider-side deletion'],
     rights: ['voice', 'consent'], riskLevel: 'prohibited', blockedReason: 'Voice cloning is prohibited by the current Acceptable Use Policy.',
@@ -84,7 +84,7 @@ export const CREATION_RECIPES = Object.freeze([
     id: 'minor-portrait', family: 'identity', title: 'Child portrait generator', status: 'blocked', icon: 'blocked',
     description: 'Minor-centred identity generation is unavailable while the child-safety policy is unresolved.',
     outputKind: 'image', href: null, sourceSlots: ['Parent references'], steps: ['Adopt policy', 'Design guardian consent', 'Add abuse controls', 'Independent safety review'],
-    rights: ['minor', 'guardian-consent'], riskLevel: 'prohibited', blockedReason: 'Veyrnox has not adopted the safeguards required for minor-centred generation.',
+    rights: ['minor', 'guardian-consent'], riskLevel: 'prohibited', blockedReason: 'Veyrnox.ai has not adopted the safeguards required for minor-centred generation.',
   },
   {
     id: 'lip-sync', family: 'performance', title: 'Video lip sync', status: 'live', icon: 'performance',

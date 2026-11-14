@@ -138,7 +138,7 @@ export default {
     "app.create.retryIn": " Retry in {seconds}s.",
     "app.smartCut.name": "SMART CUT",
     "app.smartCut.entry.title": "Make a first cut in minutes.",
-    "app.smartCut.entry.intro": "Pick up to 10 finished videos, choose the pace, and review every suggested section before Veyrnox creates the edit. Planning is local and free; the render price is shown before you confirm.",
+    "app.smartCut.entry.intro": "Pick up to 10 finished videos, choose the pace, and review every suggested section before Veyrnox.ai creates the edit. Planning is local and free; the render price is shown before you confirm.",
     "app.smartCut.entry.step.pick.title": "Pick clips",
     "app.smartCut.notice.localCreated": "Local preview created. Review every section before applying it.",
     "app.smartCut.notice.failed": "Smart Cut could not create a plan.",

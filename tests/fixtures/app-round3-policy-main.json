@@ -4,7 +4,7 @@
   "app.editor.person.reshapeHelp": "Negative values narrow or shorten; positive values widen or lengthen. The 2D warp follows the largest detected person. Face uses the detected face region; body uses the full silhouette. Nearby background can bend. Review the result.",
   "app.projects.limit": "Showing the 100 most recent projects. Search filters this list.",
   "app.projects.nameHelp": "Choose a name you will recognise. Up to 120 characters.",
-  "app.publish.ads.spendPolicy": " Veyrnox saves campaign plans here. Launching spend stays disabled until the selected provider account, ad permissions and billing are connected.",
+  "app.publish.ads.spendPolicy": " Veyrnox.ai saves campaign plans here. Launching spend stays disabled until the selected provider account, ad permissions and billing are connected.",
   "app.credits.subscription.coolingHelp": "Request cancellation and a full refund within fourteen days of the initial paid cycle, only if this cycle’s Credits are unspent. The server checks eligibility; pending refunds are not complete.",
   "app.credits.subscription.intro": "Choose an optional monthly subscription. It renews automatically every month until cancelled. Credits expire at each cycle end and do not roll over. Tax and the final total are shown at checkout.",
   "app.credits.subscription.renewalHelp": "You can stop renewal here. An unused initial cycle may qualify for a full cooling-off refund within fourteen days.",

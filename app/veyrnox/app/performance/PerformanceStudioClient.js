@@ -86,7 +86,7 @@ function TalkingPhotoSamples({ selectedId, loadingId, onSelect, disabled }) {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="font-vx-mono text-[10px] font-bold tracking-[0.12em] text-vx-accent">FICTIONAL STARTERS</p>
-          <h3 id="talking-photo-samples-title" className="mt-1 text-sm font-black">Choose a Veyrnox-original portrait</h3>
+          <h3 id="talking-photo-samples-title" className="mt-1 text-sm font-black">Choose a Veyrnox.ai-original portrait</h3>
         </div>
         <p className="max-w-sm text-[10px] leading-4 text-vx-fg-muted">Original fictional adults · no competitor media · selecting costs nothing</p>
       </div>
@@ -162,7 +162,7 @@ function SourceCard({ workflow, source, onPick, onLibrary, onSample, sampleLoadi
         <TalkingPhotoSamples selectedId={source?.sampleId || null} loadingId={sampleLoadingId} onSelect={onSample} disabled={disabled} />
       )}
       {workflow.id === 'singing-photo' && (
-        <p className="mt-3 text-xs leading-5 text-vx-fg-muted">Current Veyrnox rendering supports one portrait and one cleared song clip up to 10 seconds. Multi-scene and full-song rendering are not offered yet.</p>
+        <p className="mt-3 text-xs leading-5 text-vx-fg-muted">Current Veyrnox.ai rendering supports one portrait and one cleared song clip up to 10 seconds. Multi-scene and full-song rendering are not offered yet.</p>
       )}
       {workflow.id === 'video-dubbing' && (
         <p className="mt-3 text-xs leading-5 text-vx-fg-muted">This workflow accepts one MP4 with a visible speaker, up to {workflow.maxSeconds} seconds with the selected engine. It creates one reviewed locale version per render.</p>
@@ -266,7 +266,7 @@ function DubbingBrief({ settings, onSettings, disabled, importedSpeakerCount = 1
         <div>
           <p className="font-vx-mono text-[10px] font-bold tracking-[0.14em] text-vx-accent">LOCALISATION CONTRACT</p>
           <h2 id="dubbing-brief-title" className="mt-1 text-lg font-black">Reviewed translation, single locale or batch</h2>
-          <p className="mt-1 max-w-3xl text-xs leading-5 text-vx-fg-muted">Choose the language of your approved translation. Veyrnox creates stock-voice speech first, then lip-syncs that reusable audio to the source video.</p>
+          <p className="mt-1 max-w-3xl text-xs leading-5 text-vx-fg-muted">Choose the language of your approved translation. Veyrnox.ai creates stock-voice speech first, then lip-syncs that reusable audio to the source video.</p>
         </div>
         <Chip tone="accent">Manual review path</Chip>
       </div>
@@ -445,7 +445,7 @@ function PreviewGate() {
           <p className="font-vx-mono text-[10px] font-bold tracking-[0.16em] text-vx-accent">CLEAN-ROOM PREVIEW</p>
           <h1 className="mt-3 text-3xl font-black sm:text-4xl">Performance Studio is behind a browser preview flag.</h1>
           <p className="mt-4 max-w-2xl text-sm leading-6 text-vx-fg-muted">
-            This first slice uses Veyrnox&apos;s existing model catalog, consent record, upload validation, credit ledger and refund path. It does not copy competitor media, code or private behavior.
+            This first slice uses Veyrnox.ai&apos;s existing model catalog, consent record, upload validation, credit ledger and refund path. It does not copy competitor media, code or private behavior.
           </p>
           <div className="mt-6 flex flex-wrap items-center gap-4">
             <Button onClick={() => enablePerformancePreview()}>Enable this preview</Button>
@@ -1709,7 +1709,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
             </div>
             <h1 className="vx-display mt-3 text-[40px] leading-[0.95] sm:text-[58px]">{dedicatedTalkingAvatar ? 'Reuse the face. Change the message.' : dedicatedLipSync ? (workflow.id === 'video-lip-sync' ? 'Keep the performance. Change the words.' : 'Turn one portrait into a speaker.') : workflow.id === 'singing-photo' ? 'Turn a portrait into a performance.' : workflow.id === 'video-dubbing' ? 'Localise the voice. Keep the performance.' : workflow.id === 'product-presenter' ? 'Make the product pitch feel human.' : workflow.id === 'baby-podcast' ? 'Host a tiny podcast—synthetically.' : workflow.id === 'talking-object' ? 'Give an object a point of view.' : workflow.id === 'talking-animal' ? 'Give an animal a voice.' : workflow.id === 'talking-cartoon' ? 'Make an illustration speak.' : 'Give a face the right words.'}</h1>
             <p className="mt-4 max-w-2xl text-sm leading-6 text-vx-fg-muted sm:text-base">
-              {dedicatedTalkingAvatar ? 'Choose a saved avatar passport, an approved portrait, an owned Library image, or a Veyrnox-original starter. Then write a script, upload owned audio, or record in the browser. The ten-second model limit, consent gate, exact staged quote, refunds, download and provenance stay visible.' : dedicatedLipSync ? 'Start with a permitted video or portrait, then write a script, upload owned audio, or record in the browser. Source limits, the two-stage speech charge, consent, and the final quote stay visible before anything runs.' : workflow.id === 'singing-photo' ? 'Start with one permitted portrait, then upload or record a cleared song clip. Veyrnox shows the real model limit and price before anything runs.' : workflow.id === 'video-dubbing' ? 'Start with a short source video and a reviewed translation or owned dub. Veyrnox shows the stock-voice and lip-sync charges before either job runs.' : workflow.id === 'product-presenter' ? 'Start with an approved presenter-and-product composite, then write, upload or record the pitch. Veyrnox shows the separate speech and animation charges before either job runs.' : workflow.id === 'baby-podcast' ? 'Start with a fully synthetic baby character, then add a short script, cleared adult audio or an adult recording. Real child identities and voices are outside this workflow.' : workflow.id === 'talking-object' ? 'Start with one original object character—a product, food item, toy, package or everyday object—then write, upload or record its line. The experimental 10-second contract and full credit path stay visible.' : workflow.id === 'talking-animal' ? 'Start with one permitted pet, wildlife or mascot image, then write, upload or record the speech. Veyrnox keeps the experimental 10-second model contract and full credit path visible.' : workflow.id === 'talking-cartoon' ? 'Start with one original or licensed character, then write, upload or record the speech. Veyrnox keeps the renderer’s 10-second compatibility limit and full credit path visible.' : 'Start with a portrait or video, then write, upload or record the speech. Veyrnox shows the whole credit path before anything runs.'}
+              {dedicatedTalkingAvatar ? 'Choose a saved avatar passport, an approved portrait, an owned Library image, or a Veyrnox.ai-original starter. Then write a script, upload owned audio, or record in the browser. The ten-second model limit, consent gate, exact staged quote, refunds, download and provenance stay visible.' : dedicatedLipSync ? 'Start with a permitted video or portrait, then write a script, upload owned audio, or record in the browser. Source limits, the two-stage speech charge, consent, and the final quote stay visible before anything runs.' : workflow.id === 'singing-photo' ? 'Start with one permitted portrait, then upload or record a cleared song clip. Veyrnox.ai shows the real model limit and price before anything runs.' : workflow.id === 'video-dubbing' ? 'Start with a short source video and a reviewed translation or owned dub. Veyrnox.ai shows the stock-voice and lip-sync charges before either job runs.' : workflow.id === 'product-presenter' ? 'Start with an approved presenter-and-product composite, then write, upload or record the pitch. Veyrnox.ai shows the separate speech and animation charges before either job runs.' : workflow.id === 'baby-podcast' ? 'Start with a fully synthetic baby character, then add a short script, cleared adult audio or an adult recording. Real child identities and voices are outside this workflow.' : workflow.id === 'talking-object' ? 'Start with one original object character—a product, food item, toy, package or everyday object—then write, upload or record its line. The experimental 10-second contract and full credit path stay visible.' : workflow.id === 'talking-animal' ? 'Start with one permitted pet, wildlife or mascot image, then write, upload or record the speech. Veyrnox.ai keeps the experimental 10-second model contract and full credit path visible.' : workflow.id === 'talking-cartoon' ? 'Start with one original or licensed character, then write, upload or record the speech. Veyrnox.ai keeps the renderer’s 10-second compatibility limit and full credit path visible.' : 'Start with a portrait or video, then write, upload or record the speech. Veyrnox.ai shows the whole credit path before anything runs.'}
             </p>
           </div>
           <div className="max-w-xs lg:text-right">
@@ -1764,7 +1764,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
                 );
               })}
             </div>
-            <div className="border-t border-vx-border bg-vx-base/60 px-4 py-3 text-[11px] leading-5 text-vx-fg-muted sm:px-5">Price comes from the live catalog after the source and speech path are known. Veyrnox shows the exact staged quote before any paid job runs.</div>
+            <div className="border-t border-vx-border bg-vx-base/60 px-4 py-3 text-[11px] leading-5 text-vx-fg-muted sm:px-5">Price comes from the live catalog after the source and speech path are known. Veyrnox.ai shows the exact staged quote before any paid job runs.</div>
           </section>
         )}
 
@@ -1993,7 +1993,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
                   onChange={(event) => setConsent(event.target.checked)} />
                 <span>
                   {visual?.sampleId
-                    ? 'I am using this Veyrnox-original fictional portrait only for an authorized synthetic performance. I own or may use the speech and will disclose synthetic media where required.'
+                    ? 'I am using this Veyrnox.ai-original fictional portrait only for an authorized synthetic performance. I own or may use the speech and will disclose synthetic media where required.'
                     : workflow.id === 'singing-photo'
                     ? 'I own or license the composition, master recording and performance, and I have permission from everyone identifiable in the portrait or audio.'
                     : workflow.id === 'video-dubbing'
@@ -2051,7 +2051,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
                 {workflow.id === 'talking-photo' && recipeId === 'talking-avatar' && <TalkingAvatarCompositionPreview settings={composition} background={background} visual={visual} script={script} />}
               </div>
               <p className="border-t border-vx-border px-5 py-3 text-[11px] leading-5 text-vx-fg-muted">
-                Veyrnox does not embed a content credential in the generated file.
+                Veyrnox.ai does not embed a content credential in the generated file.
               </p>
               <OutputFileDisclosure className="mx-5 my-4" />
               <div className="flex flex-wrap gap-2 border-t border-vx-border px-5 py-4">

@@ -162,7 +162,7 @@
   },
   "app/veyrnox/app/video-agent/layout.js": {
     "title": "Video Agent",
-    "description": "Turn a creative brief into a planned, credit-priced video workflow with Veyrnox.",
+    "description": "Turn a creative brief into a planned, credit-priced video workflow with Veyrnox.ai.",
     "alternates": {
       "canonical": "/app/video-agent"
     },

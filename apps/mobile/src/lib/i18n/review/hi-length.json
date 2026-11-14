@@ -1326,12 +1326,6 @@
     "ratio": 2
   },
   {
-    "id": "rate.cta",
-    "english": "Rate Veyrnox",
-    "translation": "Veyrnox को रेटिंग दें",
-    "ratio": 1.75
-  },
-  {
     "id": "report.report",
     "english": "Report",
     "translation": "रिपोर्ट करें",
@@ -1519,9 +1513,9 @@
   },
   {
     "id": "analyticsConsent.title",
-    "english": "Help improve Veyrnox?",
-    "translation": "Veyrnox को बेहतर बनाने में मदद करें?",
-    "ratio": 1.71
+    "english": "Help improve Veyrnox.ai?",
+    "translation": "Veyrnox.ai को बेहतर बनाने में मदद करें?",
+    "ratio": 1.63
   },
   {
     "id": "analyticsConsent.allow",

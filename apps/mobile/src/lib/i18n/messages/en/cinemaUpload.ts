@@ -37,7 +37,7 @@ export default {
     'cinemaUpload.preparing': 'Preparing…',
     'cinemaUpload.checking': 'Checking your video…',
     'cinemaUpload.resume': 'Resume upload',
-    'cinemaUpload.keepOpen': 'Keep Veyrnox open while uploading',
+    'cinemaUpload.keepOpen': 'Keep Veyrnox.ai open while uploading',
     'cinemaUpload.progress': '{percent}% · {sent} MB of {total} MB sent',
     'cinemaUpload.progressLabel': 'Video upload progress',
     'cinemaUpload.pause': 'Pause',

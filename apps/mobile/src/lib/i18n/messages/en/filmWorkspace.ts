@@ -1,6 +1,6 @@
 export default {
     "filmWorkspace.saved": "Saved on this phone",
-    "filmWorkspace.studio": "Veyrnox Studio",
+    "filmWorkspace.studio": "Veyrnox.ai Studio",
     "filmWorkspace.external": "External app or workflow",
     "filmWorkspace.imageWorkflow": "Image workflow",
     "filmWorkspace.videoWorkflow": "Video workflow",

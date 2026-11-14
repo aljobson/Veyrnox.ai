@@ -32,7 +32,7 @@ const exceptions = [
   { file: /^app\/veyrnox\/_lib\/performanceStudio\.js$/, pattern: /./, reason: 'canonical workflow and provider contract catalog data; localized display labels are resolved by the consuming UI' },
   { file: /^(?:app\/layout\.js|app\/veyrnox\/_components\/ThemeToggle\.js|lib\/themePreference\.mjs)$/, pattern: /^(?:\(prefers-color-scheme: (?:light|dark)\)|= ; Path=\/; Max-Age= ; SameSite=Lax)$/, reason: 'CSS media query and cookie attributes for the theme preference, not copy' },
   ...helperExceptions,
-  { file: /^app\/s\/\[slug\]\/page\.js$/, pattern: /^(?:— Veyrnox|bg-\[#080b14\] text-white|bg-\[#f5f5f2\] text-\[#171717\]|bg-gradient-to-br from-\[#35133d\] via-\[#9d3155\] to-\[#f49b55\] text-white)$/, reason: 'Brand suffix and the three exact theme CSS class lists; no visitor prose.' },
+  { file: /^app\/s\/\[slug\]\/page\.js$/, pattern: /^(?:— Veyrnox(?:\.ai)?|bg-\[#080b14\] text-white|bg-\[#f5f5f2\] text-\[#171717\]|bg-gradient-to-br from-\[#35133d\] via-\[#9d3155\] to-\[#f49b55\] text-white)$/, reason: 'Brand suffix and the three exact theme CSS class lists; no visitor prose.' },
   { file: /\/_lib\/(?:showcase|sourceTemplateExpansion\d*|character|characterOptions|oddlingCatalog)\.js$/, pattern: /./, reason: 'source catalog names, descriptors and prompts remain unchanged (ADR-0107)' },
   { file: /\/_lib\/audioTemplates\.js$/, pattern: /./, reason: 'audio template names and generation prompts stay English, like the video template catalog (ADR-0107)' },
   { file: /^lib\/musicDiscover\.js$/, pattern: /./, reason: 'original beat titles and canonical generation recipes are creative catalog data, matching the existing audio template policy (ADR-0107)' },

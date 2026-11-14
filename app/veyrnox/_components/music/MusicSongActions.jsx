@@ -216,7 +216,7 @@ export function MusicSongActions({
           ) : null}
           {canEditor ? (
             <Link ref={!canViewLineage && !canShare && !canDownload && !canPublish && !canCover && !canExtend && !canReplace && !canAddSection && !canReuse && !canStems && !canTargetStem && !canAddTrack && !canCrop && !canRender && !canStudio ? firstItemRef : undefined} role="menuitem" href={`/app/editor?job=${encodeURIComponent(jobId)}&name=${encodeURIComponent(title)}`} className={itemClass}>
-              Open in Veyrnox Edit
+              Open in Veyrnox.ai Edit
             </Link>
           ) : null}
           {canOrganize ? (

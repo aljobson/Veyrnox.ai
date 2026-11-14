@@ -4,7 +4,7 @@ export default {
     "files.thatfilecouldnotbeopened": "That file could not be opened.",
     "files.savedtoyourPhotos": "Saved to your Photos.",
     "files.photosaccessisoff": "Photos access is off",
-    "files.allowaddingtoPhotosforVeyrnoxin": "Allow adding to Photos for Veyrnox in Settings to save videos.",
+    "files.allowaddingtoPhotosforVeyrnoxin": "Allow adding to Photos for Veyrnox.ai in Settings to save videos.",
     "files.videofiles": "Video files",
     "files.openyourfilminFilmStudio": "Open your film in Film Studio",
     "files.taptoretry": "{value1} Tap to retry.",
