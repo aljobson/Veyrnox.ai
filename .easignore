@@ -100,3 +100,13 @@ page-coverage-report/
 *.mobileprovision
 *.pem
 .env*.local
+
+# Website-only content: the phone build never reads it (EAS uploads the whole repo).
+# apps/mobile/scripts/prepare-live-edit.mjs reads public/photo-studio/wigs, so keep it,
+# and public/editor-vision if a local copy exists (it falls back to a download).
+/public/*
+!/public/photo-studio/
+!/public/editor-vision/
+/docs/
+/e2e/
+/replica/
