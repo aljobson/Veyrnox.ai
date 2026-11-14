@@ -1,4 +1,5 @@
-import { Redirect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
+import { SignedInRedirect } from '../components/SignedInRedirect';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEffect, useRef, useState, type ComponentRef } from 'react';
 import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, TextInput, View } from 'react-native';
@@ -95,7 +96,7 @@ export default function EmailAuth() {
         return () => clearTimeout(t);
     }, [resetKey]);
 
-    if (status === 'signedIn') return <Redirect href="/(app)/(tabs)" />;
+    if (status === 'signedIn') return <SignedInRedirect />;
 
     function onCaptcha(m: TurnstileMessage) {
         if (m.type === 'interactive') return;

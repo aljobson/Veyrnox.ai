@@ -7,11 +7,13 @@ import { useBilling } from '../billing/BillingProvider';
 import { useStorePurchase } from '../billing/useStorePurchase';
 import { LEGAL_LINKS } from '../lib/account';
 import { confirmSignOut } from '../lib/confirmSignOut';
-import { gateTrialByEligibility, parseGenerationCatalog, renewalTerms, toDisplayPackages, type GenerationCatalogPlan } from '../lib/billing';
+import { gateTrialByEligibility, renewalTerms, toDisplayPackages } from '../lib/billing';
+import { usePlanCatalog } from '../lib/usePlanCatalog';
 import { HARD_PAYWALL_STARTER_CREDITS, HARD_PAYWALL_STEP_COUNT, hardPaywallEnabled, hardPaywallState, hasIntroSteps, introTrialDays, isHardPaywallExempt, onLockedAttempt, setHardPaywallLocked } from '../lib/hardPaywall';
 import { t } from '../lib/i18n';
 import { Button, Text, themedStyles, useThemedStyles } from './ui';
 import { PlanCards, initialCadence, type Cadence } from './credits/PlanCards';
+import { PlanCatalogNotice } from './credits/PlanCatalogNotice';
 import { VeyCharacter } from './VeyCharacter';
 
 const ENABLED = hardPaywallEnabled();
@@ -43,14 +45,9 @@ function LockedScreen({ checking, onClose }: { checking: boolean; onClose: () =>
     const purchase = useStorePurchase();
     const [cadenceChoice, setCadence] = useState<Cadence | null>(null);
     const [chosenId, setChosenId] = useState<string | null>(null);
-    const [catalog, setCatalog] = useState<GenerationCatalogPlan[]>([]);
+    const { catalog, status: catalogStatus, retry: retryCatalog } = usePlanCatalog(api);
     const [step, setStep] = useState(1);
     useEffect(() => { void billing.refreshSales(); }, [billing.refreshSales]);
-    useEffect(() => {
-        let live = true;
-        void api.request<unknown>('/api/credit-subscription-plans').then(v => { if (live) setCatalog(parseGenerationCatalog(v)); }).catch(() => {});
-        return () => { live = false; };
-    }, [api]);
     const packages = useMemo(() => (billing.offerings?.all.generation?.availablePackages ?? []).filter(pkg => pkg?.product), [billing.offerings]);
     const rawPlans = useMemo(() => toDisplayPackages(packages).filter(plan => plan.generationPlan !== null && plan.interval !== null), [packages]);
     const store = Platform.OS === 'ios' ? 'ios' : 'android';
@@ -113,6 +110,7 @@ function LockedScreen({ checking, onClose }: { checking: boolean; onClose: () =>
             <Button variant="secondary" label={t('credits.hardPaywall.retry')} onPress={() => { void billing.refreshSales(); void billing.refreshGenerationAccess(); }} />
         </> : null}
         {plans.length > 0 && !intro ? <>
+            <PlanCatalogNotice status={catalogStatus} onRetry={retryCatalog} />
             <PlanCards plans={plans} packs={[]} credits={new Map(catalog.map(plan => [plan.id, plan.credits]))}
                 cadence={cadence} chosenId={chosen?.id} disabled={purchase.busy}
                 onCadence={next => { setCadence(next); setChosenId(null); }} onChoose={setChosenId} />

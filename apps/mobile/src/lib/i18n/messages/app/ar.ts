@@ -6360,4 +6360,7 @@ export default {
   "create.firstRun.example.work.image": "صورة منتج فاخرة لزجاجة عطر زجاجية على حجر مبلل، بضوء صباحي ناعم",
   "create.firstRun.example.work.video": "إعلان مدته 10 ثوانٍ: قهوة تملأ فنجانًا بحركة بطيئة، يتصاعد البخار، إضاءة استوديو دافئة",
   "create.firstRun.example.work.audio": "جِنغل علامة تجارية مبهج مدته 30 ثانية بجيتار خفيف وتصفيق",
+  "credits.planDetails.loading": "جارٍ تحميل كريدت الخطط…",
+  "credits.planDetails.failed": "تعذّر تحميل كريدت الخطط. تحقق من اتصالك وأعد المحاولة.",
+  "credits.planDetails.retry": "إعادة المحاولة",
 } as const;

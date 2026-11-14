@@ -6088,4 +6088,7 @@ export default {
   "create.firstRun.example.work.image": "गीले पत्थर पर रखी काँच की इत्र की शीशी की प्रीमियम प्रोडक्ट फ़ोटो, सुबह की मुलायम रोशनी",
   "create.firstRun.example.work.video": "10 सेकंड का विज्ञापन: धीमी गति में कप में कॉफ़ी भरती है, भाप उठती है, गर्म स्टूडियो रोशनी",
   "create.firstRun.example.work.audio": "हल्के गिटार और तालियों के साथ 30 सेकंड की जोशीली ब्रांड जिंगल",
+  "credits.planDetails.loading": "प्लान के क्रेडिट लोड हो रहे हैं…",
+  "credits.planDetails.failed": "प्लान के क्रेडिट लोड नहीं हो सके। अपना कनेक्शन जाँचकर फिर कोशिश करें।",
+  "credits.planDetails.retry": "फिर कोशिश करें",
 } as const;

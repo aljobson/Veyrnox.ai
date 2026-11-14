@@ -7,7 +7,8 @@ import { AGE_CONFIRMATION_VERSION, ageCheckFrom, confirmAge } from '../src/lib/a
 import { ApiError } from '../src/lib/api';
 import { t } from '../src/lib/i18n';
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: jest.fn() }));
-jest.mock('expo-router', () => ({ useRouter: () => ({ push: jest.fn() }), usePathname: () => '/' }));
+const mockPush = jest.fn();
+jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }), usePathname: () => '/' }));
 jest.mock('expo-clipboard', () => ({ setStringAsync: jest.fn() }), { virtual: true });
 
 describe('what the server says', () => {
@@ -56,5 +57,14 @@ describe('the gate', () => {
         await press(t('app.age.decline', { age: 18 }));
         expect(root.container.queryAll(n => n.children.includes(t('app.age.declined'))).length).toBeGreaterThan(0);
         expect(request).toHaveBeenCalledTimes(1);
+    });
+    test('declining always offers Delete account, whatever the build flag says', async () => {
+        expect(require('../src/lib/accountDeletion')).not.toHaveProperty('ACCOUNT_DELETION_ENABLED');
+        await mount(jest.fn(async () => ({ age_confirmation_required: true })));
+        await press(t('app.age.decline', { age: 18 }));
+        const remove = root.container.queryAll(n => n.props.accessibilityLabel === t('app.age.delete') && n.props.onClick);
+        expect(remove.length).toBeGreaterThan(0);
+        await act(async () => remove[0].props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }));
+        expect(mockPush).toHaveBeenCalledWith('/delete-account');
     });
 });

@@ -5,13 +5,20 @@ import path from 'node:path';
 import { buildPageManifest, sitemapPaths } from './page-manifest.mjs';
 
 async function handlePrivacyChoices(page) {
-  const privacyChoices = page.locator('[data-storage-notice="analytics"]');
   // Consent hydrates after the document loads; handle it at actionability time,
   // within the original action timeout, using the normal essential-only choice.
-  await page.addLocatorHandler(privacyChoices, async () => {
-    await privacyChoices.locator('[data-storage-decline]').click();
-    await expect(privacyChoices).toBeHidden();
-  });
+  // Both notices are fixed to the bottom edge: PostHogManager's analytics choice,
+  // and SiteChrome's essential-only notice shown when analytics is not configured.
+  for (const [notice, control] of [
+    ['[data-storage-notice="analytics"]', '[data-storage-decline]'],
+    ['[data-storage-notice="essential"]', '[data-storage-dismiss]'],
+  ]) {
+    const privacyChoices = page.locator(notice);
+    await page.addLocatorHandler(privacyChoices, async () => {
+      await privacyChoices.locator(control).click();
+      await expect(privacyChoices).toBeHidden();
+    });
+  }
 }
 
 async function assertAuthenticatedPage(page, baseURL) {
@@ -42,11 +49,24 @@ function watchAuthentication(context, baseURL) {
 }
 
 function browserErrorDetails(errors, entry) {
-  return errors.map(message => entry.sensitive
-    ? message.replaceAll(entry.pathname, entry.template)
+  const redact = text => entry.sensitive
+    ? text.replaceAll(entry.pathname, entry.template)
       .replaceAll(entry.pathname.split(/[?#]/, 1)[0], entry.template)
-    : message);
+    : text;
+  // Each error carries the address of the document that raised it.
+  return errors.map(({ url, message }) => ({ url: redact(url), message: redact(message) }));
 }
+
+function darkRouteOutcome(status) {
+  // worker.js answers a route behind an off flag with an empty 404; switched on,
+  // the route renders like any other. Anything else, a 5xx above all, is a defect.
+  if (status === 200) return 'render';
+  if (status === 404) return 'dark';
+  throw new Error(`Dark route answered ${status}; expected 200 (flag on) or 404 (flag off)`);
+}
+
+// One batch of template cards on /app and /presets (#1631).
+const GALLERY_BATCH = 50;
 
 test('every page template and every sitemap page renders within accessibility and performance budgets', async ({ page, context, request, baseURL }, testInfo) => {
   await handlePrivacyChoices(page);
@@ -95,9 +115,23 @@ test('every page template and every sitemap page renders within accessibility an
     results.push(result);
     await test.step(`${label} [${entry.mode}; ${entry.access}]`, async () => {
       const errors = [];
-      const onError = (error) => errors.push(error.stack || error.message);
-      page.on('pageerror', onError);
+      const watched = page;
+      const onError = (error) => errors.push({ url: watched.url(), message: error.stack || error.message });
+      // Unload the previous document first, so an error it raises late is not recorded against this entry.
+      await watched.goto('about:blank');
+      watched.on('pageerror', onError);
       try {
+        if (entry.mode === 'dark-route' && darkRouteOutcome((await request.get(entry.pathname)).status()) === 'dark') {
+          // Chromium will not commit an empty 404 (net::ERR_HTTP_RESPONSE_CODE_FAILURE), so page.goto rejects.
+          const darkStatus = await page.goto(entry.pathname, { waitUntil: 'load' }).then(res => res?.status() || 0, (error) => {
+            if (error.message.includes('ERR_HTTP_RESPONSE_CODE_FAILURE')) return 404;
+            throw error;
+          });
+          Object.assign(result, { status: darkStatus, dark: true });
+          expect(darkStatus, `dark route stays a controlled 404: ${label}`).toBe(404);
+          expect(errors.length, `uncaught errors on dark route: ${label}`).toBe(0);
+          return;
+        }
         const res = await page.goto(entry.pathname, { waitUntil: 'load' });
         if (entry.pathname === '/m') await page.waitForURL(new URL('/m/create', baseURL).href, { waitUntil: 'load' });
         const status = res?.status() || 0;
@@ -126,12 +160,14 @@ test('every page template and every sitemap page renders within accessibility an
         expect(metrics.htmlBytes, `uncompressed HTML budget: ${label}`).toBeLessThan(800 * 1024);
         expect(metrics.ttfbMs, `cold navigation TTFB budget: ${label}`).toBeLessThan(5000);
         if (entry.pathname === '/app' || entry.pathname === '/presets') {
-          // One batch of 50 template cards (#1631), each with a poster image, plus the roller's sample of up to 48.
-          expect(await page.locator('#preset-gallery-results img').count(), 'first gallery batch is bounded').toBeLessThanOrEqual(50);
+          // The first batch is rendered on the client, so wait for it rather than counting too early.
+          const cards = page.locator('#preset-gallery-results > a');
+          await expect(cards, 'first gallery batch renders').toHaveCount(GALLERY_BATCH);
+          // Each card has a poster image, plus the roller's sample of up to 48.
+          expect(await page.locator('#preset-gallery-results img').count(), 'first gallery batch is bounded').toBeLessThanOrEqual(GALLERY_BATCH);
           expect(metrics.images, 'first gallery page is bounded').toBeLessThanOrEqual(110);
-          const before = await page.locator('#preset-gallery-results > a').count();
           await page.getByRole('button', { name: 'Show more templates' }).click();
-          await expect(page.locator('#preset-gallery-results > a')).toHaveCount(before + 50);
+          await expect(cards).toHaveCount(GALLERY_BATCH * 2);
         }
         let timer;
         let scan;
@@ -157,7 +193,7 @@ test('every page template and every sitemap page renders within accessibility an
         expect(errors.length, `uncaught browser errors: ${label}`).toBe(0);
       } finally {
         result.browserErrors = browserErrorDetails(errors, entry);
-        page.off('pageerror', onError);
+        watched.off('pageerror', onError);
       }
     }).catch((error) => {
       result.failure = entry.sensitive ? error.message.replaceAll(entry.pathname, label) : error.message;

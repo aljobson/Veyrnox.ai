@@ -5,9 +5,8 @@ import { ApiError, type ApiClient } from './api';
 // POST /api/v1/account/deletion says what would be lost and what stops it and
 // hands back a single-use token; DELETE /api/v1/account with that token erases.
 
-// Build-time switch, like store billing. The server answers 404 while its own
-// ACCOUNT_DELETION_ENABLED is off, which the screen reads as "not available yet".
-export const ACCOUNT_DELETION_ENABLED = process.env.EXPO_PUBLIC_ACCOUNT_DELETION_ENABLED === 'true';
+// There is no build-time switch: every entry to the screen is always shown. The server answers 404 while its
+// own ACCOUNT_DELETION_ENABLED is off, which the screen reads as "not available yet".
 
 // What the server can list as stopping a deletion, with the words the person sees.
 const BLOCKER_COPY: Record<string, string> = {

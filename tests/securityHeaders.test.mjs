@@ -147,3 +147,16 @@ test('the camera is allowed on Photo Studio only; microphone and geolocation sta
         assert.doesNotMatch(policy, /\*/, group.source); // no wildcard origin delegation
     }
 });
+
+// The gate's own 401/403/429 answers are built in middleware.js and never pass
+// through next.config's headers(), so they carry their own copy of each header.
+test('the gate\'s error responses carry every hardening header', async () => {
+    const { readFile } = await import('node:fs/promises');
+    const source = await readFile(new URL('../middleware.js', import.meta.url), 'utf8');
+    const block = source.slice(source.indexOf('const ERROR_HEADERS = {'), source.indexOf('function jsonError('));
+    for (const header of ["'content-security-policy': \"default-src 'none'", "'strict-transport-security': 'max-age=63072000; includeSubDomains; preload'",
+        "'x-content-type-options': 'nosniff'", "'x-frame-options': 'DENY'", "'referrer-policy': 'strict-origin-when-cross-origin'",
+        "'permissions-policy': 'camera=(), microphone=(), geolocation=()'"]) {
+        assert.ok(block.includes(header), `ERROR_HEADERS lacks ${header}`);
+    }
+});

@@ -229,6 +229,7 @@ developer surface is `/api/v1/developer/*` and requires a verified OAuth
     search for the web so no page bundles the catalog). Nothing per-user. `/api/templates`
     carries no price and reads no database. `/api/catalog?template_clip=<id>` is an anonymous no-store availability/price projection (ADR-0333); no identity or source media is exposed.
   - `/api/cinema/voting`, `/api/cinema/discovery`, `/api/cinema/winners`, `/api/cinema/comments`, `/api/cinema/story-polls`, `/api/credit-subscription-plans`, `/api/cinema-pass-plans` — anonymous read-only, explicitly gated, no-store projections. Factories use `authed: false`, ignore inbound identity headers, and never return another account’s votes, pending comments, reports or billing records.
+  - `/api/music/public/:slug[/asset]`, `/api/music/profiles/:handle`, `/api/music/shared/:token[/asset]` — anonymous, GET-only, no-store reads behind the published Music pages and listen-only links. Each is off unless its Music switch (`publication` / `distribution`) is on, checks a strict id shape, and returns only the public projection (no job id or storage key; audio is a 302 to a 5-minute presigned URL). A share token is matched by its hash. They read no identity header.
   - `/api/webhook/*` — the provider's signature (see Provider webhooks).
   - `/api/admin/*` — Cloudflare Access plus a shared token; cron callers only.
   - `/media/social/:token` — a short-lived HMAC token naming one R2 object.

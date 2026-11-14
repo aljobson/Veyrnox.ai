@@ -5,7 +5,8 @@ name: zap-baseline
 # flags and leaked info; it sends no attack payloads. Anonymous only, so it
 # cannot reach /app or /api/v1 behind the gate. Warnings (exit 2) do not
 # fail the run; a FAIL-level finding (exit 1) does. The HTML/MD reports are
-# kept as an artifact.
+# kept as an artifact. .zap/rules.tsv lists the findings already assessed as
+# false positives, each with its reason, so they are not reported again.
 
 on:
   schedule:
@@ -28,12 +29,16 @@ jobs:
     permissions:
       contents: read
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
       - name: Scan
         run: |
           mkdir -p zap-wrk && chmod 777 zap-wrk
+          # -c is read from /zap/wrk, the mounted working directory.
+          cp .zap/rules.tsv zap-wrk/rules.tsv
           set +e
           docker run --rm -v "$PWD/zap-wrk:/zap/wrk:rw" ghcr.io/zaproxy/zaproxy:stable \
-            zap-baseline.py -t "$TARGET" -m 2 -I \
+            zap-baseline.py -t "$TARGET" -m 2 -I -c rules.tsv \
             -r zap-report.html -w zap-report.md
           code=$?
           echo "zap exit: $code"

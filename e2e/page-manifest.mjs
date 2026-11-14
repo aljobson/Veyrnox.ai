@@ -1,6 +1,8 @@
 import { AUTO_PRODUCT_INVENTORY } from '../lib/generatedProductInventory.js';
 
 export const PAGE_TEMPLATES = AUTO_PRODUCT_INVENTORY.map(({ route, source }) => ({ route, source }));
+// Routes worker.js answers with an empty 404 while their flag is off (lib/photoStudioGate.mjs).
+export const DARK_ROUTES = new Set(['/app/photo-studio']);
 const escape = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 export function templateMatches(template, pathname) {
   const pattern = template.split('/').map((part) => /^\[.+\]$/.test(part) ? '[^/]+' : escape(part)).join('/');
@@ -32,7 +34,7 @@ export function buildPageManifest(sitemapPaths = [], fixtures = {}) {
     const paths = fixture ? [fixture] : concrete.length ? concrete : [route.replace(/\[[^\]]+\]/g, 'qa-missing-fixture')];
     return paths.map((pathname) => ({ template: route, source, pathname,
       sensitive: Boolean(fixture),
-      mode: (route === '/app/editor/review' && !validSavedReviewFixture(fixture)) || (!fixture && !concrete.length && route.includes('[')) ? 'negative-path' : 'render',
+      mode: DARK_ROUTES.has(route) ? 'dark-route' : (route === '/app/editor/review' && !validSavedReviewFixture(fixture)) || (!fixture && !concrete.length && route.includes('[')) ? 'negative-path' : 'render',
       access: route.startsWith('/app/admin') ? 'admin-gate' : route.startsWith('/app') || route === '/oauth/consent' ? 'account' : 'public',
     }));
   });

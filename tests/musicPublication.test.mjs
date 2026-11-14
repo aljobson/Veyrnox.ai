@@ -5,8 +5,8 @@ import { parseMusicPublish, parseMusicUnpublish } from '../lib/musicPublication.
 
 const migrationUrl = new URL('../packages/db/schema/supabase/0463_music_publication.sql', import.meta.url);
 const ownerRouteUrl = new URL('../app/api/v1/music/songs/[id]/publication/route.js', import.meta.url);
-const publicRouteUrl = new URL('../app/api/v1/music/public/[slug]/route.js', import.meta.url);
-const assetRouteUrl = new URL('../app/api/v1/music/public/[slug]/asset/route.js', import.meta.url);
+const publicRouteUrl = new URL('../app/api/music/public/[slug]/route.js', import.meta.url);
+const assetRouteUrl = new URL('../app/api/music/public/[slug]/asset/route.js', import.meta.url);
 
 test('publication parser requires exact permissions, rights and creator identity', () => {
   const body = {

@@ -13,10 +13,12 @@ const baseRow = { id: '11111111-1111-1111-1111-111111111111', plan_id: 'starter-
 let mockRow: any = null;
 let mockBalance = { balance: 1234, free_credits: 20, free_expires_at: '2026-11-01T00:00:00Z' };
 const mockPost = jest.fn();
+const mockPlansOk = async (): Promise<unknown> => ({ plans: [{ id: 'starter-monthly', credits: 200 }, { id: 'starter-yearly', credits: 200 }] });
+let mockPlans = mockPlansOk;
 const mockApi = { getBalance: jest.fn(async () => mockBalance), request: jest.fn(async (path: string, init?: RequestInit) => {
     if (init?.method === 'POST') return mockPost(path, init);
     if (path === '/api/v1/subscriptions') return { subscription: mockRow };
-    return { plans: [{ id: 'starter-monthly', credits: 200 }, { id: 'starter-yearly', credits: 200 }] };
+    return mockPlans();
 }) };
 const mockBilling = { status: 'ready', canPurchase: true, canRestore: true, refreshSales: jest.fn(), generationActive: false, generationAccessResolved: true, generationPurchaseReady: true,
     activeProductIds: [] as string[], managementURL: null, offerings: { all: { generation: { availablePackages: [monthly, annual] }, credits: { availablePackages: [pkg('pack', 'ai.veyrnox.credits.209', 10), pkg('large', 'ai.veyrnox.credits.1571', 70)] } } },
@@ -47,7 +49,7 @@ async function cancel(label = t('creditsPage.cancel')) {
 beforeEach(async () => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; setLocaleFromDevice(['en']); markOnline();
     await wipeCache(); await bindCacheUser(`credits-${++serial}`); root = createRoot();
-    mockRow = null; mockBalance = { balance: 1234, free_credits: 20, free_expires_at: '2026-11-01T00:00:00Z' };
+    mockRow = null; mockPlans = mockPlansOk; mockBalance = { balance: 1234, free_credits: 20, free_expires_at: '2026-11-01T00:00:00Z' };
     mockApi.getBalance.mockReset().mockImplementation(async () => mockBalance); mockApi.request.mockClear(); mockPost.mockReset();
     mockBilling.status = 'ready'; mockBilling.canPurchase = true; mockBilling.canRestore = true; mockBilling.refreshSales.mockClear();
     mockBilling.offerings = { all: { generation: { availablePackages: [monthly, annual] }, credits: { availablePackages: [pkg('pack', 'ai.veyrnox.credits.209', 10), pkg('large', 'ai.veyrnox.credits.1571', 70)] } } };
@@ -228,4 +230,19 @@ test.each(['missing', 'null-products', 'error'])('catalog %s shows unavailable c
     await mount(); expect(text()).toContain(t('credits.unavailable'));
     expect(text()).not.toContain('£'); expect(text()).not.toContain('$');
     expect(root.container.queryAll(n => n.props.accessibilityRole === 'radio')).toHaveLength(0);
+});
+test('a failed plan-credits load shows an error with a retry beside the plan cards; retrying loads the amounts', async () => {
+    mockPlans = async () => { throw new Error('offline'); };
+    await mount();
+    expect(text()).toContain(t('credits.planDetails.failed')); expect(text()).not.toContain('200 creation credits each month');
+    expect(root.container.queryAll(n => n.props.accessibilityRole === 'radio').length).toBeGreaterThan(0);
+    mockPlans = mockPlansOk; await press(t('credits.planDetails.retry'));
+    expect(text()).not.toContain(t('credits.planDetails.failed')); expect(text()).toContain('200 creation credits each month');
+});
+test('plan credits show a loading line while the request is open', async () => {
+    let answer!: (value: unknown) => void;
+    mockPlans = () => new Promise(resolve => { answer = resolve; });
+    await mount(); expect(text()).toContain(t('credits.planDetails.loading'));
+    await act(async () => answer({ plans: [{ id: 'starter-monthly', credits: 200 }] }));
+    expect(text()).not.toContain(t('credits.planDetails.loading')); expect(text()).toContain('200 creation credits each month');
 });

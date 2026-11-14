@@ -6020,4 +6020,7 @@ export default {
   "create.firstRun.example.work.image": "濡れた石の上に置かれたガラスの香水瓶の高級感ある商品写真、やわらかな朝の光",
   "create.firstRun.example.work.video": "10秒の広告：コーヒーがスローモーションでカップに注がれ、湯気が立ちのぼる、温かいスタジオ照明",
   "create.firstRun.example.work.audio": "軽やかなギターと手拍子の、明るい30秒のブランドジングル",
+  "credits.planDetails.loading": "プランのクレジットを読み込み中…",
+  "credits.planDetails.failed": "プランのクレジット数を読み込めませんでした。接続を確認して再試行してください。",
+  "credits.planDetails.retry": "再試行",
 } as const;

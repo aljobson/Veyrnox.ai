@@ -118,7 +118,7 @@ function SourceCard({ workflow, source, onPick, onLibrary, onSample, sampleLoadi
   const isObject = workflow.id === 'talking-object';
   const isProductPresenter = workflow.id === 'product-presenter';
   const portraitCreatorHref = isProductPresenter
-    ? '/app/product-avatar?recipe=product-presenter'
+    ? '/app/create?recipe=product-presenter'
     : (isBabyPodcast || isObject || isAnimal || isCartoon)
       ? '/app/oddlings?recipe=synthetic-avatar'
       : '/app/create?recipe=synthetic-avatar';
