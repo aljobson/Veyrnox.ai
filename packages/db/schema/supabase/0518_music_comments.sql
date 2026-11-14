@@ -26,6 +26,8 @@ CREATE TABLE IF NOT EXISTS public.music_comments (
 CREATE INDEX IF NOT EXISTS music_comments_publication_idx ON public.music_comments(publication_id, status, created_at DESC, id);
 CREATE INDEX IF NOT EXISTS music_comments_author_idx ON public.music_comments(author_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS music_comments_pending_idx ON public.music_comments(created_at, id) WHERE status = 'pending';
+CREATE INDEX IF NOT EXISTS music_comments_parent_idx ON public.music_comments(parent_id);
+CREATE INDEX IF NOT EXISTS music_comments_reviewed_by_idx ON public.music_comments(reviewed_by);
 
 CREATE TABLE IF NOT EXISTS public.music_comment_reports (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
