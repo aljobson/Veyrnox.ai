@@ -69,7 +69,7 @@ test('all recorded exact community prompts fit the new contract without truncati
   const prompts = Object.values(sourceRecords)
     .filter((record) => record.sourcePromptAvailable && typeof record.prompt === 'string')
     .map((record) => record.prompt);
-  assert.equal(prompts.length, 774); // 772 video captures plus two exact image prompts.
+  assert.equal(prompts.length, 774 + 96); // 818 video captures plus 52 exact image prompts (module union tested separately).
   assert.ok(prompts.includes(sourceRecords['flying-elf'].prompt));
   assert.ok(prompts.includes(sourceRecords['christmas-tree-ornament'].prompt));
   assert.ok(Math.max(...prompts.map((prompt) => prompt.length)) <= GENERATION_PROMPT_MAX);

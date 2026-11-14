@@ -1,10 +1,10 @@
 # Video template recipes
 
-The community registry retains 841 rows and publishes 749 complete exact
+The community registry retains 887 rows and publishes 795 complete exact
 prompt/video pairs. Seventy rows are hidden: 27 without captured community text,
 42 with unavailable text and one truncated record. `PRESETS` drives the gallery,
 mobile presets API, search and sitemap. The homepage wall has 14 retained cards.
-`ALL_TEMPLATES` has 1,791 addressable recipes, including 1,036 independent effect
+`ALL_TEMPLATES` has 1,837 addressable recipes, including 1,036 independent effect
 concepts and six reference recipes that are unchanged and have no gallery video.
 
 Each community prompt is joined from its source record at registration time.
@@ -16,9 +16,9 @@ only hashes remain in the removal fixture. Names, categories, guidance, steps,
 models, credits, duration, previews and posters of existing rows are unchanged.
 
 Compatibility flags are informational by owner decision: 285 public exact
-prompts are compatible and 464 incompatible with the audited source contract.
-400 contain explicit numbered reference slots the app cannot fill. The broader
-audit counts 424 prompts with image/video requirements. The exact text is still
+prompts are compatible and 510 incompatible with the audited source contract.
+446 contain explicit numbered reference slots the app cannot fill. The broader
+audit counts 470 prompts with image/video requirements. The exact text is still
 handed to the selected model; no missing reference is silently substituted.
 No prompt exceeds the assigned model's verified 30,000-character limit.
 No model, pricing, upload requirement, consent or limit logic changes here.

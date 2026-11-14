@@ -1,3 +1,4 @@
+import { SYNTX_100_VIDEO_RECORDS } from './syntx100VideoRecords.js';
 import { IMAGE_SOURCE_PROMPT_RECORDS } from './imageSourcePromptRecords.js';
 import { SYNTX_REPLACEMENTS_RECORDS } from './syntxReplacementRecords.js';
 import { HF_REPLACEMENTS_RECORDS } from './higgsfieldReplacementRecords.js';
@@ -14,6 +15,7 @@ import { recordLookup } from './templateIds.js';
 // Media fields are optional; video consumers must start from SOURCE_TEMPLATES.
 export const SOURCE_PROMPT_RECORDS = Object.freeze({
   ...IMAGE_SOURCE_PROMPT_RECORDS,
+  ...SYNTX_100_VIDEO_RECORDS,
   ...GENJUTSU_SOURCE_PROMPT_RECORDS,
   ...HIGGSFIELD_90_SOURCE_PROMPT_RECORDS,
   ...HIGGSFIELD_300_SOURCE_PROMPT_RECORDS,

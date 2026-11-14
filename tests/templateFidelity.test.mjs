@@ -8,7 +8,8 @@ import { templateSourceUnsupported } from '../app/veyrnox/_lib/templateSourceBlo
 const report = audit();
 const contracts = Object.values(report.contracts);
 test('fidelity classification totals and generated contract bytes are pinned', () => {
-  assert.deepEqual(report.totals, {"like-for-like-safe":232,"bound":162,"blocked-needs-video":355,"unsupported":0});
+  // Baseline classifications plus the independently audited 46-video split (syntx100Templates.test.mjs).
+  assert.deepEqual(report.totals, {"like-for-like-safe":232 + 0,"bound":162 + 9,"blocked-needs-video":355 + 37,"unsupported":0});
   const stored = JSON.parse(readFileSync(new URL('../lib/templateFidelityContracts.json', import.meta.url)));
   const packed = packContracts(report.contracts);
   // The prompts and rows are compressed on disk (Worker size budget); compare what they inflate to, not the compressed bytes.

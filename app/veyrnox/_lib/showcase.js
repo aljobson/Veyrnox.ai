@@ -1,3 +1,4 @@
+import { SYNTX_100_SHOWCASE_CLIPS } from './sourceTemplateExpansion19.js';
 import { SYNTX_REPLACEMENTS_SHOWCASE_CLIPS } from './sourceTemplateExpansion18.js';
 import { HF_REPLACEMENTS_SHOWCASE_CLIPS } from './sourceTemplateExpansion17.js';
 import { CATEGORY_FILL_SHOWCASE_CLIPS } from './sourceTemplateExpansion16.js';
@@ -474,6 +475,7 @@ export const AUDIT_SHOWCASE_CLIPS = {
   ...SEEDANCE_SOURCE_SHOWCASE_CLIPS,
 
   ...SHOWCASE_CLIP_EXPANSION_6,
+  ...SYNTX_100_SHOWCASE_CLIPS,
 };
 
 // The ACE Step clip is also a landing feature preview, so it remains public

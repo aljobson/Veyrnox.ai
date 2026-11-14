@@ -27,7 +27,7 @@ const tree = (file, source) => ts.createSourceFile(file, source, ts.ScriptTarget
 
 test('all template needs and 16 distinct steps have exact English and ten translated display entries', () => {
   const original = JSON.stringify(ALL_TEMPLATES);
-  assert.equal(ALL_TEMPLATES.length, 1791);
+  assert.equal(ALL_TEMPLATES.length, 1791 + 46);
   const audit = JSON.parse(readFileSync(new URL('../docs/product/source-audit/seedance-200-exact-2026-10-29.json', import.meta.url)));
   const syntxAudit = JSON.parse(readFileSync(new URL('../docs/product/source-audit/syntx-64-exact-2026-11-05.json', import.meta.url)));
   const syntxTextOnlyIds = syntxAudit.records.filter(r => r.referenceImageCount === 0 && r.referenceVideoCount === 0 && !/\b(audio|music|soundtrack|speech|lip[ -]?sync|voice|dialogue)\b/i.test(r.prompt) && r.prompt.length <= 30000).map(r => r.id);

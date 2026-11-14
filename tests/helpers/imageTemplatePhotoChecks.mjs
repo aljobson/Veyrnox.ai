@@ -67,3 +67,32 @@ export function registerPhotoArrivalTests({ harness, generate, prompt, sourcePic
     }
   });
 }
+
+export function registerSyntxOverrideArrivalTests({ harness, generate, sourcePickers, templates }) {
+  for (const id of ['the-glass', 'a-clear-bottle']) test(`${id}: Generate needs a photo and sends the handed image reference`, async () => {
+    const preset = templates.find(p => p.id === id);
+    assert.deepEqual(preset.photo, { required: true, count: 1 });
+    for (const withPhoto of [false, true]) {
+      const photo = new File(['photo'], 'product.png', { type: 'image/png' });
+      const h = harness({ preset: id, model: preset.model }, { fetchedPreset: preset, models: [ornamentModel],
+        handoff: withPhoto ? photo : undefined, handoffTemplateId: id, upload: async file => {
+          assert.equal(file, photo); return photoKey;
+        } });
+      try {
+        const tree = await h.settle();
+        assert.equal(generate(tree).props.disabled, !withPhoto);
+        if (withPhoto) assert.equal(sourcePickers(tree).props.sources.image.file, photo);
+        await generate(tree).props.onClick();
+        assert.equal(h.requests.length, withPhoto ? 1 : 0);
+        if (withPhoto) {
+          const request = h.requests[0];
+          assert.equal(request.model_id, preset.model);
+          assert.equal(request.inputs.prompt, preset.prompt);
+          assert.equal(request.inputs.aspect_ratio, preset.aspect);
+          assert.deepEqual(request.references, [{ slot: 'image', origin: 'upload', key: photoKey }]);
+          assert.equal(request.template_id, undefined);
+        }
+      } finally { h.close(); }
+    }
+  });
+}

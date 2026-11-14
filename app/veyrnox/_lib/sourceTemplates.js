@@ -1,3 +1,4 @@
+import { SYNTX_100_VIDEO_TEMPLATES } from './sourceTemplateExpansion19.js';
 import { SYNTX_REPLACEMENTS_TEMPLATES } from './sourceTemplateExpansion18.js';
 import { HF_REPLACEMENTS_TEMPLATES } from './sourceTemplateExpansion17.js';
 import { CATEGORY_FILL_TEMPLATES } from './sourceTemplateExpansion16.js';
@@ -376,6 +377,7 @@ export const SOURCE_TEMPLATES = [
   ...HF_REPLACEMENTS_TEMPLATES,
   ...SYNTX_REPLACEMENTS_TEMPLATES,
   ...SEEDANCE_SOURCE_TEMPLATE_EXPANSION,
+  ...SYNTX_100_VIDEO_TEMPLATES,
 ].map((template) => {
   const source = SEEDANCE_200_TEMPLATE_METADATA[template.id];
   const reference = takesReferenceModel(source);

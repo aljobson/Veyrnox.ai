@@ -51,3 +51,9 @@ test('old template addresses redirect permanently, with or without a language pr
   assert.match(config, /source: '\/presets\/seedance-:platform\(higgs\|syntx\)-:rest\(\[a-z0-9-\]\+\)', destination: '\/presets\/seedance-:rest', permanent: true/);
   assert.match(config, /source: '\/:locale\(\[a-z\]\[a-z\]\)\/presets\/seedance-:platform\(higgs\|syntx\)-:rest\(\[a-z0-9-\]\+\)', destination: '\/:locale\/presets\/seedance-:rest', permanent: true/);
 });
+
+test('generated middleware ids match the complete registry byte for byte', async () => {
+  const { spawnSync } = await import('node:child_process');
+  const result = spawnSync(process.execPath, ['scripts/generate-public-template-ids.mjs', '--check'], { encoding: 'utf8' });
+  assert.equal(result.status, 0, 'Run node scripts/generate-public-template-ids.mjs\n' + result.stdout + result.stderr);
+});

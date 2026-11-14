@@ -117,5 +117,5 @@ test('actual web Create preparation accepts only exactly N filled slots for ever
       else await assert.rejects(run({ ...inputs }), { code: 'template_references_invalid' });
     }
   }
-  assert.equal(tested, 162);
+  assert.equal(tested, 162 + 9, 'baseline bound contracts plus the 9 audited Syntx bindings');
 });

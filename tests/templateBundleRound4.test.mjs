@@ -56,7 +56,7 @@ test('routing, discovery and client entry graphs cannot import the full table or
     assert.ok(![...imports].some(p => /^(jose|tsx|@supabase\/supabase-js)(\/|$)/.test(p)), root);
   }
 });
-test('all 771 detail payloads reproduce only the UI fields of their original contracts', () => {
+test('all generated detail payloads reproduce only the UI fields of their original contracts', () => {
   for (const id of Object.keys(contractData(data).templates)) {
     const full = fullContract(id), ui = templateDetail(id).fidelity;
     assert.ok(ui, id);

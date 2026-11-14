@@ -11,19 +11,19 @@ prompts survive only as hashes in the regression fixture.
 
 Publication requires a complete source prompt, scoped to `SOURCE_TEMPLATES`.
 The 27 promptless adaptations join the 42 unavailable and one truncated row:
-70 hidden rows, 841 retained community rows, 749 public exact templates.
+70 hidden rows, 887 retained community rows, 795 public exact templates.
 Of 64 prepared Syntx pairs, 63 add 126 local assets; Dark Couture is rejected because stripping nine typography mentions materially rewrites its prompt. Source media, hashes and
 provenance remain evidence. Clip publication uses template ownership, with
 explicit independent landing placements; clip keys need not equal template IDs.
 Ten promptless homepage wall cards are removed, leaving 14.
 
 `sourcePromptRunnable` is informational by owner decision: 285 public templates
-are audit-compatible and 464 incompatible. The application sends the selected
+are audit-compatible and 510 incompatible. The application sends the selected
 exact text even when reference slots cannot be filled. This decision does not
 change limits, pricing contracts, required-input validation or consent. The Syntx route correction described below follows the existing importer precedent. All three
 assigned model routes currently have a 30,000-character prompt limit; none of
-the public exact prompts exceeds it. There are 400 prompts with explicit
-`@imageN`, `@videoN` or angle-bracket slots, and 424 with reference requirements
+the public exact prompts exceeds it. There are 446 prompts with explicit
+`@imageN`, `@videoN` or angle-bracket slots, and 470 with reference requirements
 under the broader audit parser. No reference is silently invented or substituted.
 
 Both API prompt fields remain populated for installed mobile versions. Unedited
@@ -51,7 +51,7 @@ work order. ADR number is the next free local number; the host resolves collisio
 
 The exact-only visual check uses the permitted ffprobe path: one 32×32 grayscale
 frame per second, then SHA-256 of the newline-joined frame Adler-32 checksums.
-All 931 retained placements have distinct signatures under that common method.
+All 977 retained placements have distinct signatures under that common method.
 The 63 accepted new audit rows declare this method, and the full comparison is locked in
 `tests/fixtures/exactOnlyVisualSignatures.json`. Earlier raw-frame SHA-256
 signatures remain unchanged in the historical captures. No video was encoded.
@@ -86,7 +86,7 @@ The eleven renamed Syntx entries now also use neutral public IDs, clip keys and 
 The broader added-corpus scan also identified the Hoonigan brand: `community-hoonigan-custom-swap` becomes `community-custom-drift-car-swap` / CUSTOM DRIFT CAR SWAP under the same owner decision, with exact prompts and media bytes preserved.
 
 <!-- BEGIN PUBLIC PROMPT HYGIENE -->
-Captured public text remains verbatim by owner decision, including third-party handles, plates, addresses, domains, promo codes and upload filenames. These are pattern-detected candidates, not verified identities. No redaction or publication change is applied. The shared offline scanner and regression test cover all 299 + 63 + 28 + 11 + 3 accepted raw prompts.
+Captured public text remains verbatim by owner decision, including third-party handles, plates, addresses, domains, promo codes and upload filenames. These are pattern-detected candidates, not verified identities. No redaction or publication change is applied. The shared offline scanner and regression test cover all 299 + 63 + 28 + 11 + 3 + 96 accepted raw prompts.
 
 | Capture | Affected public id | Detected kinds |
 | --- | --- | --- |
@@ -98,12 +98,13 @@ Captured public text remains verbatim by owner decision, including third-party h
 | higgsfield-300-exact | `community-urban-sedan-pursuit` | plate |
 | syntx-64-exact | `frozen-time` | domain |
 | higgsfield-category-fill-30 | `community-macro-product-montage` | domain, promo code |
+| syntx-100-exact | `neon-city-game-portrait` | domain |
 <!-- END PUBLIC PROMPT HYGIENE -->
 
 <!-- BEGIN CLIPPED SOURCE REVIEW -->
 The final ending review rejected `community-miniature-desktop-chase`: Incomplete source prompt ends with an unfinished environment/lighting list and a trailing comma. Only audit identifiers, hashes and reasons remain; the rejected records, recipes, clips, media and active fixtures were removed. The 300-record capture now retains 299 pairs. Historical stage-1 counts above describe the earlier snapshot.
 
-The detector reports 74 ambiguous unpunctuated endings, plus 1 separately reviewed ambiguity. These rows remain published. A trailing connector without an origin-gap pattern stays ambiguous; a connector alone never auto-rejects or hides a row. Origin-stripped connectors remain under the source-reference-gaps policy. The complete id/reason/tail inventories are generated in the five audit JSONs under `ending-review`.
+The detector reports 90 ambiguous unpunctuated endings, plus 1 separately reviewed ambiguity. These rows remain published. A trailing connector without an origin-gap pattern stays ambiguous; a connector alone never auto-rejects or hides a row. Origin-stripped connectors remain under the source-reference-gaps policy. The complete id/reason/tail inventories are generated in the six audit JSONs under `ending-review`.
 
 Connector endings and separately reviewed ambiguities are listed below. Tails contain the last 80 characters (or the whole prompt if shorter); `\r` and `\n` represent captured line endings.
 
@@ -118,7 +119,7 @@ Connector endings and separately reviewed ambiguities are listed below. Tails co
 <!-- BEGIN SOURCE REFERENCE GAPS -->
 ## source-reference-gaps (informational)
 
-20 retained rows across the five captures are exact as published but incomplete by origin: source feeds delete reference mentions. The owner may hide them. Their captured bytes, publication and `sourcePromptRunnable` flags remain unchanged. Input-asset counts corroborate missing mentions where the capture records them; Syntx does not supply that count in this audit. The detector uses grammatical gaps, not upload counts alone, and does not guarantee detection of every missing mention.
+22 retained rows across the six captures are exact as published but incomplete by origin: source feeds delete reference mentions. The owner may hide them. Their captured bytes, publication and `sourcePromptRunnable` flags remain unchanged. Input-asset counts corroborate missing mentions where the capture records them; Older Syntx audits omit that count; the 13 November capture retains source minimum-file counts. The detector uses grammatical gaps, not upload counts alone, and does not guarantee detection of every missing mention.
 
 | Capture | Affected public id | Detected gaps | Captured input assets |
 | --- | --- | --- | ---: |
@@ -142,6 +143,8 @@ Connector endings and separately reviewed ambiguities are listed below. Tails co
 | syntx-64-exact | `grab-heist` | empty reference before punctuation, missing conditional subject | not recorded |
 | higgsfield-category-fill-30 | `community-supercar-night-drive` | empty reference before punctuation | 1 |
 | higgsfield-category-fill-30 | `community-apocalypse-terrace` | empty reference before punctuation | 1 |
+| syntx-100-exact | `triptych-shooting` | empty reference before punctuation | 1 |
+| syntx-100-exact | `monochromatic` | empty reference before punctuation | 1 |
 <!-- END SOURCE REFERENCE GAPS -->
 
 ## Amendment 2: fourteen self-contained replacement templates — 7 November 2026
