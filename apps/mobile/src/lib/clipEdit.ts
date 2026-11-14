@@ -28,6 +28,8 @@ export interface Clip {
     readonly length: number | null;
     readonly start: number;
     readonly end: number;
+    // Width / height from the stored file; absent or null when it could not be read.
+    readonly aspect?: number | null;
 }
 
 // A sound laid under the video: one of the person's own audio creations, starting `offset` seconds in (ADR-0157).
@@ -68,6 +70,27 @@ export async function fetchClipLength(api: ApiClient, jobId: string): Promise<nu
     }
 }
 
+// Same 3% rule as the server (lib/clipEdit.js sameShape): two "9:16" files a few pixels apart are one shape. QA F12.
+export const SAME_SHAPE_TOLERANCE = 0.03;
+export const sameShape = (a: number, b: number): boolean => Math.abs(a - b) / Math.max(a, b) <= SAME_SHAPE_TOLERANCE;
+
+// True when a clip with a known shape differs from the first clip with a known shape.
+export function mixedShapes(clips: readonly Pick<Clip, 'aspect'>[]): boolean {
+    const known = clips.map((c) => c.aspect).filter((a): a is number => typeof a === 'number' && a > 0);
+    return known.some((a) => !sameShape(a, known[0] as number));
+}
+
+// The video's width / height from GET /api/v1/jobs/:id/media-info, or null on any failure (the server checks again).
+export async function fetchClipShape(api: ApiClient, jobId: string): Promise<number | null> {
+    try {
+        const res = await api.request<{ width?: unknown; height?: unknown } | null>(`/api/v1/jobs/${encodeURIComponent(jobId)}/media-info`);
+        const w = res?.width, h = res?.height;
+        return typeof w === 'number' && typeof h === 'number' && w > 0 && h > 0 ? w / h : null;
+    } catch {
+        return null;
+    }
+}
+
 export function stepStart(c: Clip, delta: number): Clip {
     return { ...c, start: round2(clamp(c.start + delta, 0, Math.max(0, c.end - MIN_CLIP_S))) };
 }
@@ -89,7 +112,7 @@ export function moveClip(clips: readonly Clip[], index: number, dir: -1 | 1): Cl
 export const clipSeconds = (c: Clip): number => Math.max(0, round2(c.end - c.start));
 export const totalSeconds = (clips: readonly Clip[]): number => round2(clips.reduce((n, c) => n + clipSeconds(c), 0));
 
-export type EditProblem = 'audio_offset' | 'no_clips' | 'too_many' | 'unknown_length' | 'bad_range' | 'too_long' | 'nothing_to_do';
+export type EditProblem = 'audio_offset' | 'no_clips' | 'too_many' | 'unknown_length' | 'bad_range' | 'too_long' | 'nothing_to_do' | 'mixed_shape';
 
 export function validateEdit(clips: readonly Clip[], captions: string | null, audio: AudioTrack | null = null): EditProblem | null {
     if (clips.length === 0) return 'no_clips';
@@ -100,6 +123,7 @@ export function validateEdit(clips: readonly Clip[], captions: string | null, au
     }
     if (totalSeconds(clips) > MAX_OUTPUT_S + EPSILON) return 'too_long';
     if (audio && !(audio.offset >= 0 && audio.offset < totalSeconds(clips))) return 'audio_offset';
+    if (mixedShapes(clips)) return 'mixed_shape';
     const only = clips[0] as Clip;
     if (clips.length === 1 && !captions && !audio && only.start === 0 && (only.length as number) - only.end < 0.15) return 'nothing_to_do';
     return null;

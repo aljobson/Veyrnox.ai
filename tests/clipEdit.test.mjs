@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { validateEdit, planEdit, editUnits, start, onStepOutcome, parentRef, CAPTION_PRESETS, CAPTIONS_UNITS, clipCaptionsEnabled, SLOW_FACTORS, SLOW_UNITS_PER_SECOND, SLOW_MAX_SOURCE_S, clipSlowEnabled } from '../lib/clipEdit.js';
+import { sameShape, validateEdit, planEdit, editUnits, start, onStepOutcome, parentRef, CAPTION_PRESETS, CAPTIONS_UNITS, clipCaptionsEnabled, SLOW_FACTORS, SLOW_UNITS_PER_SECOND, SLOW_MAX_SOURCE_S, clipSlowEnabled } from '../lib/clipEdit.js';
 import { handleStepCallback, falOutcome, failureReason } from '../lib/autoShortWebhook.js';
 
 const JOB = '11111111-2222-4333-8444-555555555555';
@@ -62,6 +62,12 @@ test('validateEdit refuses bad ranges, mixed aspect, over-long output and no-op 
     assert.equal(validateEdit({ clips: [clip('k', 3, 2)] }).error, 'clip_range');
     assert.equal(validateEdit({ clips: [clip('k', 0, 11)] }).error, 'clip_range');
     assert.equal(validateEdit({ clips: [clip('a', 0, 5), { ...clip('b', 0, 5), aspect: '16:9' }] }).error, 'mixed_aspect');
+    // QA build 50, F12: shapes within 3% join; portrait with landscape or square does not.
+    assert.equal(validateEdit({ clips: [{ ...clip('a', 0, 5), aspect: '0.56' }, { ...clip('b', 0, 5), aspect: '0.57' }] }).error, undefined);
+    assert.equal(validateEdit({ clips: [{ ...clip('a', 0, 5), aspect: '0.56' }, { ...clip('b', 0, 5), aspect: '1.78' }] }).error, 'mixed_aspect');
+    assert.equal(validateEdit({ clips: [{ ...clip('a', 0, 5), aspect: '0.56' }, { ...clip('b', 0, 5), aspect: '0.80' }] }).error, 'mixed_aspect');
+    assert.equal(sameShape('0.56', '0.57'), true);
+    assert.equal(sameShape('1.00', '1.04'), false);
     assert.equal(validateEdit({ clips: Array(7).fill(clip('k', 0, 10)) }).error, 'too_long');
     assert.equal(validateEdit({ clips: [clip('k', 0, 10)] }).error, 'nothing_to_do');
     assert.equal(validateEdit({ clips: [clip('k', 0, 4)], audio: { key: 'a', offset_s: 4 } }).error, 'audio_invalid');

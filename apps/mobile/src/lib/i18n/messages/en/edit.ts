@@ -35,6 +35,7 @@ export default {
     'edit.problem.unknown_length': 'Wait until every video length has been read.',
     'edit.problem.bad_range': 'Each video needs an end after its start.',
     'edit.problem.too_long': 'The result can be at most 60 seconds.',
+    'edit.problem.mixed_shape': "These videos have different shapes, so they can't be joined. Pick videos that are all upright, all wide or all square.",
     'edit.problem.nothing_to_do': 'Trim a video, join two, or add captions.',
     'edit.err.busy': 'Too many edits are running. Try again in a moment.',
     'edit.err.captionsOff': 'Captions are not available right now. Nothing was charged.',

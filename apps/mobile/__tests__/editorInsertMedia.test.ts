@@ -57,3 +57,32 @@ test('AI-06 holdsClip is false when only timeline.media holds the id after remov
     expect(removed.media[media.id]).toEqual(media);
     expect(holdsClip(removed, media.id)).toBe(false);
 });
+
+describe('QA build 50 F10: a new clip never lands on top of another clip', () => {
+    test('a clip at the playhead over an existing clip goes on a new video track', () => {
+        const first = inserted(emptyTimeline(), { id: 'boat', kind: 'video', frames: 219 }, 0).timeline;
+        const result = inserted(first, { id: 'lantern', kind: 'image', frames: 150 }, 0);
+        const tracks = result.timeline.tracks.filter(track => track.kind === 'video');
+        expect(tracks).toHaveLength(2);
+        const [boat, lantern] = result.timeline.video;
+        expect(boat.trackId).toBe(tracks[0].id);
+        expect(lantern).toMatchObject({ mediaId: 'lantern', start: 0, trackId: tracks[1].id });
+        expect(tracks[1]).toMatchObject({ name: 'Video 2', locked: false, hidden: false });
+        expect(result.selection).toEqual({ track: 'video', id: lantern.id });
+    });
+
+    test('a free gap on the first track is used, and a busy first track falls through to a free second one', () => {
+        const first = inserted(emptyTimeline(), media, 0).timeline;
+        expect(inserted(first, { id: 'later', kind: 'video', frames: 30 }, 90).timeline.tracks.filter(track => track.kind === 'video')).toHaveLength(1);
+        const two = inserted(first, { id: 'second', kind: 'video', frames: 30 }, 0).timeline;
+        const third = inserted(two, { id: 'third', kind: 'video', frames: 30 }, 60).timeline;
+        expect(third.tracks.filter(track => track.kind === 'video')).toHaveLength(2);
+        expect(third.video.at(-1)!.trackId).toBe(third.tracks.filter(track => track.kind === 'video')[1].id);
+    });
+
+    test('audio over audio gets its own audio track; a clip that ends exactly at the playhead does not count as overlap', () => {
+        const first = inserted(emptyTimeline(), { id: 'music', kind: 'audio', frames: 90 }, 0).timeline;
+        expect(inserted(first, { id: 'voice', kind: 'audio', frames: 30 }, 10).timeline.tracks.filter(track => track.kind === 'audio')).toHaveLength(2);
+        expect(inserted(first, { id: 'next', kind: 'audio', frames: 30 }, 90).timeline.tracks.filter(track => track.kind === 'audio')).toHaveLength(1);
+    });
+});

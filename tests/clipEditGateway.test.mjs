@@ -86,6 +86,10 @@ test('resolveEdit refuses another user\'s Asset, the wrong media, mixed frames a
     assert.equal((await resolveEdit('auth-1', one(A, { audio: { asset_id: B, offset_s: 0 } }), deps())).error, 'audio_not_audio');
     const landscape = { ...FRAMES, 'jobs/b.mp4': { seconds: 8, width: 1280, height: 720 } };
     assert.equal((await resolveEdit('auth-1', { clips: [{ asset_id: A, in_s: 0, out_s: 2 }, { asset_id: B, in_s: 0, out_s: 2 }] }, deps(landscape))).error, 'mixed_aspect');
+    // QA build 50, F12: two 9:16 files a few pixels apart ("0.56" vs "0.57") are the same shape.
+    const nearly = { 'jobs/a.mp4': { seconds: 5, width: 1080, height: 1920 }, 'jobs/b.mp4': { seconds: 8, width: 1088, height: 1920 } };
+    const joined = await resolveEdit('auth-1', { clips: [{ asset_id: A, in_s: 0, out_s: 2 }, { asset_id: B, in_s: 0, out_s: 2 }] }, deps(nearly));
+    assert.notEqual(joined.error, 'mixed_aspect');
     assert.equal((await resolveEdit('auth-1', one(A), deps({}))).error, 'clip_unreadable');
 });
 

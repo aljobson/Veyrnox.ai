@@ -18,6 +18,8 @@ import {
     STEP_S,
     clipSeconds,
     editErrorKey,
+    fetchClipShape,
+    mixedShapes,
     moveClip,
     priceChanged,
     quoteEdit,
@@ -109,11 +111,12 @@ export default function SmartCutRoute() {
         setProblem(null);
         setPendingIds((ids) => [...ids, jobId]);
         try {
-            const media = await libraryMedia(api, { jobId, name }, 'video');
+            const [media, aspect] = await Promise.all([libraryMedia(api, { jobId, name }, 'video'), fetchClipShape(api, jobId)]);
             if (!alive.current || !task.current()) return;
             if (!media?.frames) { setProblem(t('edit.unreadable')); return; }
             const length = Math.floor((media.frames / 30) * 100) / 100;
-            setClips((current) => [...current, { jobId, label: name, length, start: 0, end: length }]);
+            const added: Clip = { jobId, label: name, length, start: 0, end: length, aspect };
+            setClips((current) => [...current, added]);
             setPlan(null);
             setSnapshot(null);
         } catch {
@@ -254,6 +257,8 @@ export default function SmartCutRoute() {
 
                 {stage === 'plan' ? <>
                     <SectionHeading title={t('app.smartCut.entry.step.pick.title')} detail={t('chatDepth.selected', { count: selectedCount, max: MAX_CLIPS })} />
+                    {/* QA F12: warn as soon as clips of different shapes are picked, not after planning and pricing. */}
+                    {mixedShapes(clips) ? <Text tone="danger" accessibilityRole="alert">{t('edit.problem.mixed_shape')}</Text> : null}
                     {jobs === null ? <Text tone="secondary">{t('common.loading')}</Text> : videos.length === 0 ? <Text tone="secondary">{t('edit.none')}</Text> : videos.map((video) => {
                         const selected = clips.some((clip) => clip.jobId === video.jobId);
                         const pending = pendingIds.includes(video.jobId);
@@ -263,7 +268,7 @@ export default function SmartCutRoute() {
                                 <Text variant="bodyStrong" numberOfLines={1}>{video.name}</Text>
                                 <Text variant="footnote" tone="secondary">{new Date(video.createdAt).toLocaleDateString(formatLocale())}</Text>
                             </View>
-                            <Button label={selected ? t('edit.remove') : pending ? t('edit.reading') : t('edit.add')} size="md" variant={selected ? 'tertiary' : 'secondary'} loading={pending} disabled={pending || (!selected && selectedCount >= MAX_CLIPS)} onPress={() => selected ? removeTake(video.jobId) : void addTake(video.jobId, video.name)} />
+                            <Button label={selected ? t('edit.remove') : pending ? t('edit.reading') : t('editorSimple.add')} accessibilityLabel={selected || pending ? undefined : t('edit.add')} size="md" variant={selected ? 'tertiary' : 'secondary'} loading={pending} disabled={pending || (!selected && selectedCount >= MAX_CLIPS)} onPress={() => selected ? removeTake(video.jobId) : void addTake(video.jobId, video.name)} />
                         </Card>;
                     })}
                     {next ? <Button label={t('library.older')} variant="tertiary" loading={loadingMore} onPress={() => void loadOlder()} /> : null}

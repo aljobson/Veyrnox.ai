@@ -1873,6 +1873,7 @@ export default {
   "edit.problem.no_clips": "Adicione pelo menos um vídeo.",
   "edit.problem.nothing_to_do": "Corte um vídeo, junte dois ou adicione legendas.",
   "edit.problem.too_long": "O resultado pode ter no máximo 60 segundos.",
+  "edit.problem.mixed_shape": "Estes vídeos têm formatos diferentes e não podem ser unidos. Escolha vídeos todos verticais, todos horizontais ou todos quadrados.",
   "edit.problem.too_many": "Você pode juntar até 10 vídeos.",
   "edit.problem.unknown_length": "Aguarde até a duração de todos os vídeos ser lida.",
   "edit.reading": "Lendo a duração do vídeo...",

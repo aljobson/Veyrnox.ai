@@ -1873,6 +1873,7 @@ export default {
   "edit.problem.no_clips": "Ajoutez au moins une vidéo.",
   "edit.problem.nothing_to_do": "Raccourcissez une vidéo, assemblez-en deux ou ajoutez des sous-titres.",
   "edit.problem.too_long": "Le résultat peut durer 60 secondes maximum.",
+  "edit.problem.mixed_shape": "Ces vidéos n’ont pas la même forme et ne peuvent pas être assemblées. Choisissez des vidéos toutes verticales, horizontales ou carrées.",
   "edit.problem.too_many": "Vous pouvez assembler jusqu’à 10 vidéos.",
   "edit.problem.unknown_length": "Attendez que la durée de chaque vidéo ait été lue.",
   "edit.reading": "Lecture de la durée de la vidéo…",

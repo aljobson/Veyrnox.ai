@@ -7,6 +7,9 @@ import {
     editBody,
     editErrorKey,
     fetchClipLength,
+    fetchClipShape,
+    mixedShapes,
+    sameShape,
     moveClip,
     newClip,
     priceChanged,
@@ -251,5 +254,31 @@ describe('stems', () => {
         expect(request).toHaveBeenCalledWith('/api/v1/jobs/j1/asset?stem=drums');
         await mediaApi({ request } as never).getAsset('j1');
         expect(request).toHaveBeenLastCalledWith('/api/v1/jobs/j1/asset');
+    });
+});
+
+describe('QA build 50 F12: clip shapes', () => {
+    const v = (aspect: number | null | undefined) => ({ ...newClip({ jobId: 'j', label: 'v' }, 5), aspect });
+    test('two 9:16 files a few pixels apart are one shape; upright with wide or square is not', () => {
+        expect(sameShape(1080 / 1920, 1088 / 1920)).toBe(true);
+        expect(sameShape(720 / 1280, 1280 / 720)).toBe(false);
+        expect(sameShape(720 / 1280, 1)).toBe(false);
+        expect(mixedShapes([v(1080 / 1920), v(1088 / 1920)])).toBe(false);
+        expect(mixedShapes([v(720 / 1280), v(1280 / 720)])).toBe(true);
+    });
+    test('an unknown shape never blocks; the server checks again', () => {
+        expect(mixedShapes([v(null), v(1280 / 720), v(undefined)])).toBe(false);
+        expect(mixedShapes([v(null), v(0.5625), v(1.7778)])).toBe(true);
+    });
+    test('validateEdit refuses mixed shapes before any quote', () => {
+        expect(validateEdit([v(0.5625), v(1.7778)], null)).toBe('mixed_shape');
+        expect(validateEdit([v(0.5625), v(0.5667)], null)).toBeNull();
+    });
+    test('fetchClipShape reads width / height from media-info and gives null on failure', async () => {
+        const { api, request } = apiWith(() => ({ seconds: 8, width: 1080, height: 1920 }));
+        expect(await fetchClipShape(api, 'job one/2')).toBeCloseTo(0.5625);
+        expect(request.mock.calls[0][0]).toBe('/api/v1/jobs/job%20one%2F2/media-info');
+        expect(await fetchClipShape(apiWith(() => ({ seconds: 8, width: 0, height: 1920 })).api, 'j')).toBeNull();
+        expect(await fetchClipShape(apiWith(() => new ApiError(422, 'unreadable', { error: 'unreadable' })).api, 'j')).toBeNull();
     });
 });
