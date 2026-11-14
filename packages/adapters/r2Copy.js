@@ -74,13 +74,19 @@ async function readCapped(stream, maxBytes) {
  */
 /** ISO base media (MP4/MOV): bytes 4..8 are 'ftyp'. */
 const isMp4 = (b) => b.length >= 8 && b[4] === 0x66 && b[5] === 0x74 && b[6] === 0x79 && b[7] === 0x70;
+// A ZIP archive opens with a local file header, 'PK' 03 04 (APPNOTE 4.3.7).
+const isZip = (b) => b.length >= 30 && b[0] === 0x50 && b[1] === 0x4b && b[2] === 0x03 && b[3] === 0x04;
 
 /**
  * `expectMp4`: the output must be an MP4 whatever its Content-Type says. fal's
  * compose serves application/octet-stream (Auto Short slice 0), so the type is
  * taken from the bytes and anything else is refused.
+ *
+ * `expectZip`: the same for an archive. The generic sniffer serves media only, so a
+ * ZIP would otherwise be stored as application/octet-stream, and the Music stem
+ * readers, which ask for application/zip, would never find it (0480).
  */
-export async function copyUrlToR2(sourceUrl, r2Key, cfg, { timeoutMs = 30000, maxBytes = COPY_MAX_BYTES, provider = 'fal', authorization, expectMp4 = false } = {}) {
+export async function copyUrlToR2(sourceUrl, r2Key, cfg, { timeoutMs = 30000, maxBytes = COPY_MAX_BYTES, provider = 'fal', authorization, expectMp4 = false, expectZip = false } = {}) {
     // Outbound fetch targets must be constants or provider CDNs (CLAUDE.md
     // OWASP #10). The URL comes from a provider payload, so pin the host.
     let parsed;
@@ -138,6 +144,9 @@ export async function copyUrlToR2(sourceUrl, r2Key, cfg, { timeoutMs = 30000, ma
         if (expectMp4) {
             if (!isMp4(bytes)) return { ok: false, error: 'source not mp4' };
             contentType = 'video/mp4';
+        } else if (expectZip) {
+            if (!isZip(bytes)) return { ok: false, error: 'source not zip' };
+            contentType = 'application/zip';
         } else {
             // One of the media types we actually serve, or nothing: an unknown
             // format is stored as a download rather than as something a
