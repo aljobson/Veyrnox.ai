@@ -20,6 +20,7 @@ import { templateInputs, submitTemplate, templateRun } from '../app/veyrnox/_lib
 import { fromFallback } from '../app/veyrnox/_lib/useCatalog.js';
 import { templateRecipe } from '../app/veyrnox/_lib/templateRecipe.js';
 import { isUnknownStaticPage } from '../lib/unknownStaticPage.js';
+import { createTemplatesFor } from '../app/veyrnox/_lib/createTemplates.js';
 
 register('data:text/javascript,' + encodeURIComponent(`export async function resolve(s,c,next) { return next(s === 'next/server' ? 'next/server.js' : s,c); }`));
 const list = await import('../app/api/templates/route.js');
@@ -251,19 +252,19 @@ test('missing preview art keeps the gradient and removes the broken image', () =
 
 test('the rendered image card and picker use the real resolver and catalog price', () => {
   const chosen = IMAGE_TEMPLATES[1];
+  const createChoice = createTemplatesFor('image')[1];
   let picked;
   const f = fixture('en', '/', { moduleMocks: {
     react: { ...React, useState: initial => [initial, () => {}], useMemo: fn => fn(), useRef: initial => ({ current: initial }) },
     '../../../components/I18nProvider.jsx': { useI18n: () => ({ t: key => key }) },
     '../../../components/I18nProvider': { useI18n: () => ({ t: key => key }) },
-    '../_lib/useTemplates': { useTemplateCards: () => ({ templates: IMAGE_TEMPLATES }), useTemplateSearch: rows => rows },
   } });
   const { TemplatePicker } = f.load('app/veyrnox/_components/TemplatePicker.js');
   const tree = TemplatePicker({ models, goal: 'image', onPick: p => { picked = p; }, onClose() {} });
   const choices = nodes(tree).filter(node => node.props?.['data-testid']?.startsWith('create-template-') && node.type === 'button');
-  assert.equal(choices.length, 52);
-  choices.find(node => node.props['data-testid'] === `create-template-${chosen.id}`).props.onClick();
-  assert.equal(picked.id, chosen.id);
+  assert.equal(choices.length, 3);
+  choices.find(node => node.props['data-testid'] === `create-template-${createChoice.id}`).props.onClick();
+  assert.equal(picked.id, createChoice.id);
   const { PresetCard } = f.load('app/veyrnox/_components/PresetCard.js');
   const card = PresetCard({ preset: chosen, catalog: models });
   assert.match(JSON.stringify(card.props.footer), /37/);
@@ -322,23 +323,17 @@ test('photo artwork renders both the requirement and available preview', () => {
   assert.ok(html.includes(ornament.previewImage));
 });
 
-test('photo-required and text-only previews render on the real card, picker and detail page', async () => withFlag('true', async () => {
+test('photo-required and text-only previews render on the real card and detail page', async () => withFlag('true', async () => {
   const chosen = ['the-glass', 'cinematic-portrait'].map(id => templateCards().find(p => p.id === id));
-  const f = fixture('en', '/', { moduleMocks: {
-    '../_lib/useTemplates': { useTemplateCards: () => ({ templates: chosen }), useTemplateSearch: rows => rows },
-    './Modal': { Modal: ({ children }) => React.createElement('div', null, children) },
-  } });
+  const f = fixture('en', '/');
   const { PresetCard } = f.load('app/veyrnox/_components/PresetCard.js');
-  const { TemplatePicker } = f.load('app/veyrnox/_components/TemplatePicker.js');
-  const picker = f.render(React.createElement(TemplatePicker, { models, goal: 'image', onPick() {}, onClose() {} }));
   const detail = pageFixture();
   const page = detail.load('app/veyrnox/presets/[id]/page.js');
   for (const preset of chosen) {
     const card = f.render(React.createElement(PresetCard, { preset, catalog: models }));
     const html = detail.render(await page.default({ params: Promise.resolve({ id: preset.id }) }));
-    for (const rendered of [card, picker, html]) assert.ok(rendered.includes(`src="${preset.previewImage}"`), preset.id);
-    const pickerTile = f.render(React.createElement(TemplatePicker, { models, goal: 'image', onPick() {}, onClose() {} }));
-    for (const rendered of [card, html, pickerTile.slice(pickerTile.indexOf(`data-testid="create-template-${preset.id}"`)).split('</button>')[0]]) {
+    for (const rendered of [card, html]) assert.ok(rendered.includes(`src="${preset.previewImage}"`), preset.id);
+    for (const rendered of [card, html]) {
       assert.equal(rendered.includes('This template needs your photo'), Boolean(preset.photo));
       assert.equal(rendered.includes('Needs your photo'), Boolean(preset.photo));
       if (preset.photo) { assert.match(rendered, /<p class="[^"]*\bhidden @xs:block\b[^"]*">This template needs your photo/); assert.match(rendered, /<p class="[^"]*@xs:hidden\b[^"]*">Needs your photo/); }

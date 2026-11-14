@@ -1006,7 +1006,7 @@ export default function CreateStudio() {
           {attachNotice && <p role="status" className="mt-2 text-xs text-vx-fg-muted">{attachNotice}</p>}
           {switchOffer && <button type="button" onClick={switchForFiles} className="mt-2 rounded-full border border-vx-border px-3 py-1.5 text-xs text-vx-fg hover:border-vx-accent">{t('app.create.attach.switchTo', { name: switchOffer.model.name })}</button>}
           {addFilesOpen && !photosUnavailable && <AddFilesDialog capacity={attachCapacity(model)} onAdd={attachFiles} onClose={() => setAddFilesOpen(false)} />}
-          {templatesOpen && <TemplatePicker models={models} goal={goal} onPick={applyTemplate} onClose={() => setTemplatesOpen(false)} />}
+          {templatesOpen && <TemplatePicker models={models} goal={goal} selectedKind={model?.kind} onPick={applyTemplate} onClose={() => setTemplatesOpen(false)} />}
           {['swap-recast', 'swap-quick'].includes(modelId) && <p role="note" data-testid="swap-consent-notice" className="mt-2 text-xs text-vx-fg-muted">{t('app.create.swapConsentNotice')}</p>}
           {modelId === SEEDANCE_REFERENCE_MODEL_ID && <p role="note" data-testid="reference-likeness-notice" className="mt-2 text-xs text-vx-fg-muted">{t('app.create.referenceLikenessNotice')}</p>}
           <div className="scroll-mt-24" data-assistant-target={Object.keys(media).length ? 'create.upload' : undefined}>

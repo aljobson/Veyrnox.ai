@@ -89,7 +89,7 @@ export function TemplateHandoffCard({ preset, canChooseSource = false, onChooseS
         )}
         <div className="mt-3 flex flex-wrap gap-3 text-xs font-bold">
           {canChooseSource && <button type="button" onClick={onChooseSource} className="rounded-full border border-vx-accent/50 px-3 py-2 text-vx-accent hover:bg-vx-accent/10">{t('app.create.chooseTemplateSource')}</button>}
-          <Link href={`/presets/${encodeURIComponent(preset.id)}`} className="rounded-full border border-vx-border px-3 py-2 text-vx-fg-body hover:border-vx-fg-muted">{t('app.create.reviewTemplate')}</Link>
+          {!preset.createOnly && <Link href={`/presets/${encodeURIComponent(preset.id)}`} className="rounded-full border border-vx-border px-3 py-2 text-vx-fg-body hover:border-vx-fg-muted">{t('app.create.reviewTemplate')}</Link>}
         </div>
       </div>
     </section>
