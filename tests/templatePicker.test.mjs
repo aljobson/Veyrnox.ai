@@ -8,6 +8,7 @@ import ts from 'typescript';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import * as createTemplates from '../app/veyrnox/_lib/createTemplates.js';
+import * as runnableTemplates from '../app/veyrnox/_lib/runnableTemplates.js';
 import * as tokens from '../app/veyrnox/_lib/tokens.js';
 import { templateById } from '../app/veyrnox/_lib/templates.js';
 import { templateDetail } from '../lib/clientTemplates.js';
@@ -19,6 +20,7 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf
 const local = {
   'next/link': ({ href, children, ...props }) => createElement('a', { href, ...props }, children),
   '../_lib/createTemplates.js': createTemplates,
+  '../_lib/runnableTemplates.js': runnableTemplates,
   '../_lib/tokens.js': tokens,
   './Modal': { Modal: ({ children, onCancel, initialFocusRef, ...labels }) => createElement('dialog', { open: true, ...labels }, children) },
 };
@@ -95,11 +97,11 @@ test('Create offers exactly three audio templates with real licensed song previe
   assert.match(html, /href="\/app\/music\/discover"/);
 });
 
-test('the three choices remain visible but disabled when their models are unavailable', () => {
+test('templates whose models are unavailable are omitted', () => {
   const html = renderPicker('image', []);
-  assert.equal(templateButtons(html), 3);
-  assert.equal([...html.matchAll(/Model unavailable/g)].length, 6);
-  assert.equal([...html.matchAll(/ disabled=""/g)].length, 3);
+  assert.equal(templateButtons(html), 0);
+  assert.match(html, /data-testid="create-template-picker-empty"/);
+  assert.doesNotMatch(html, /Model unavailable/);
 });
 
 test('template metadata keeps human model names and grammatically correct credit labels', () => {
