@@ -309,11 +309,9 @@ export default function CreateWithModel() {
     const matchingRetry = retry.current?.signature === signature ? retry.current : null;
     // Only an unchanged request retains its confirmed items and retry price.
     const quote = matchingRetry?.quote ?? pending.current.snapshot(request, n, matchingRetry?.unit ?? unit, freeLeft);
-    const price = quote.total;
-    const stillNeeded = missingRequiredSlots(model, references, !!startFile), stageLine = template
-        ? t('create.workspace.stageTemplate', { name: template.title })
-        : hasReference && stillNeeded.length ? t('create.workspace.stageNeeds', { items: stillNeeded.join(', ') })
-        : t(hasReference ? 'create.workspace.stageReference' : text.trim() ? 'create.workspace.stagePrompt' : 'create.workspace.stageEmpty');
+    const price = quote.total, stillNeeded = missingRequiredSlots(model, references, !!startFile);
+    const stageLine = template ? t('create.workspace.stageTemplate', { name: template.title })
+        : hasReference && stillNeeded.length ? t('create.workspace.stageNeeds', { items: stillNeeded.join(', ') }) : t(hasReference ? 'create.workspace.stageReference' : text.trim() ? 'create.workspace.stagePrompt' : 'create.workspace.stageEmpty');
     const modelLabel = swapScene?.name ?? creativeFeature(typeof recipe === 'string' ? recipe : undefined)?.title ?? model.name;
     async function generate() {
         if (!model || (!ready && !matchingRetry) || busy || freeLoading || waiting) return;
