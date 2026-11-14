@@ -299,7 +299,7 @@ export default function JobScreen() {
                     <GeneratedChip /><StemList onReady={outputReady} api={api} jobId={id} stems={stems} />
                 </ScrollView>
             ) : asset ? (
-                <View style={styles.output}>
+                <View style={[styles.output, !asset.mime.startsWith('image/') && styles.outputFixed]} testID="job-output">
                     {asset.mime.startsWith('image/') ? <Image onLoad={outputReady} source={{ uri: asset.url }} style={styles.image} contentFit="contain" transition={reduced ? 0 : { duration: ds.motion.enter, effect: 'cross-dissolve', timing: 'ease-out' }} cachePolicy="memory" accessibilityLabel={t('job.title')} accessibilityIgnoresInvertColors />
                         : <InlineMedia onReady={outputReady} key={asset.url} url={asset.url} audio={!asset.mime.startsWith('video/')} label={asset.mime.startsWith('video/') ? t('job.playVideo') : t('job.playAudio')} />}
                     <GeneratedChip />
@@ -391,7 +391,10 @@ const sheets = themedStyles((p) => ({
     status: { color: p.textSecondary, },
     hint: { color: p.textTertiary, textAlign: 'center' },
     error: { color: p.danger, textAlign: 'center' },
-    output: { flex: 1, justifyContent: 'center' },
+    output: { flex: 1, justifyContent: 'center', overflow: 'hidden' },
+    // The player has a fixed height, so its box must not shrink under it when the actions below grow
+    // (opening "How this was made"); the actions scroll instead of being drawn over.
+    outputFixed: { flexShrink: 0, flexBasis: 'auto' },
     image: { flex: 1, width: '100%' },
     actions: { flexGrow: 0, flexShrink: 1 },
     nextBlock: { gap: ds.space.sm },

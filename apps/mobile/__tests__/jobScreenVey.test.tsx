@@ -67,3 +67,10 @@ test('result replaces Vey', async () => {
     await render(); await complete('succeeded'); expect(vey()).toHaveLength(0);
     expect(root.container.queryAll(n => n.props.source?.uri === 'https://file')).toHaveLength(1);
 });
+test('a video result keeps its full height so the actions scroll under it, not over it', async () => {
+    getJob.mockResolvedValue({ state: 'succeeded', model_id: 'model' });
+    getAsset.mockResolvedValue({ url: 'https://file', mime_type: 'video/mp4' });
+    await render(); await complete('succeeded');
+    const box = RN.StyleSheet.flatten(root.container.queryAll(n => n.props.testID === 'job-output')[0].props.style);
+    expect(box).toMatchObject({ flexShrink: 0, flexBasis: 'auto', overflow: 'hidden' });
+});

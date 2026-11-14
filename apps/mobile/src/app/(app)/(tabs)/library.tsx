@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { useVideoPlayer, type VideoThumbnail } from 'expo-video';
 import { createAssetLinks, type AssetLink } from '../../../lib/libraryMedia';
 import { posterFor, clearPosters } from '../../../lib/videoPoster';
-import { applyStatus, inFlightIds, mergePage } from '../../../lib/libraryPoll';
+import { appendPage, applyStatus, inFlightIds, mergePage } from '../../../lib/libraryPoll';
 import { Text, Button, Chip, themedStyles, useThemedStyles } from '../../../components/ui';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -255,7 +255,7 @@ export default function Library() {
             const page = await observe(mediaApi(api).listJobs(next));
             if (generation !== version.current) return;
             page.jobs.forEach(job => retentionPending.current.delete(job.job_id));
-            setJobs((j) => mergePage(j ?? [], page.jobs));
+            setJobs((j) => appendPage(j ?? [], page.jobs));
             setNext(page.next);
         } catch {
             if (generation === version.current) setOlderFailed(true);

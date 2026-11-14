@@ -1,4 +1,4 @@
-import { applyStatus, inFlightIds, mergePage } from '../src/lib/libraryPoll';
+import { appendPage, applyStatus, inFlightIds, mergePage } from '../src/lib/libraryPoll';
 import type { Job } from '../src/lib/media';
 const job = (job_id: string, state: Job['state'] = 'queued'): Job => ({ job_id, state, credits: 10, model_id: 'model', created_at: '', has_asset: false });
 test('in-flight ids have a limit and exclude terminal jobs', () => {
@@ -12,4 +12,8 @@ test('unchanged status preserves the same array and row objects', () => {
 test('page updates replace in place and preserve older rows with new ids first', () => {
     const rows = [job('a'), job('b'), job('old')]; const updated = job('b', 'succeeded');
     expect(mergePage(rows, [updated, job('new')])).toEqual([job('new'), rows[0], updated, rows[2]]);
+});
+test('an older page goes after loaded rows, replacing repeats in place', () => {
+    const rows = [job('new'), job('mid')]; const repeat = job('mid', 'succeeded');
+    expect(appendPage(rows, [repeat, job('old')])).toEqual([rows[0], repeat, job('old')]);
 });
