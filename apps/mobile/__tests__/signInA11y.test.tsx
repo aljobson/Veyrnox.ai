@@ -22,7 +22,7 @@ jest.mock('../src/auth/AuthProvider', () => ({
     useAuth: () => ({ status: 'signedOut', appleNativeAvailable: false, signInWithApple: jest.fn(), signInWithOAuth: jest.fn(), signInWithEmail: jest.fn() }),
 }));
 jest.mock('expo-router', () => ({ Link: ({ children }: any) => children, Redirect: () => null, useRouter: () => ({ replace: jest.fn(), push: jest.fn(), back: jest.fn() }) }));
-jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0 }) }));
+jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 54, bottom: 0 }) }));
 jest.mock('../src/components/BrandIntro', () => ({ BrandIntro: () => null }));
 jest.mock('../src/components/SignupOffer', () => ({ SignupOffer: () => null }));
 jest.mock('../src/lib/passkeys', () => ({ passkeyGate: () => false }));
@@ -93,5 +93,14 @@ describe('sign-in screen', () => {
         await act(async () => root.container.queryAll((n) => n.props.testID === 'consent')[0].props.onChange(true));
         expect(announce).toHaveBeenCalledTimes(1);
         expect(announce).toHaveBeenCalledWith(t('signIn.ready'));
+    });
+
+    test('scrolled content stays below the status bar', async () => {
+        await act(async () => root.render(<SignIn />));
+        const scroll = root.container.queryAll((n) => n.type === 'RCTScrollView' || n.props.keyboardShouldPersistTaps === 'handled')[0];
+        const frame = scroll.parent!;
+        expect(RN.StyleSheet.flatten(frame.props.style)).toMatchObject({ paddingTop: 54 });
+        expect(RN.StyleSheet.flatten(frame.props.style).backgroundColor).toBeTruthy();
+        expect(RN.StyleSheet.flatten(scroll.props.contentContainerStyle).paddingTop).toBeLessThan(54);
     });
 });
