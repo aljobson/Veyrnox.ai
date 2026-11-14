@@ -9,7 +9,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { AppState, Platform, ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { AppState, InputAccessoryView, Keyboard, Platform, ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { ApiError, type ApiClient } from '../lib/api';
 import { getCacheUser, subscribeCacheUser } from '../lib/appCache';
 import { faceDefaults, faceFilterMessage, faceFilterUploadMessage, faceFilters, faceInputs, faceRequest, faceSelectors, type FaceValues } from '../lib/faceFilters';
@@ -36,6 +36,7 @@ import { GENERATION_PROMPT_MAX } from '../lib/promptLimits';
 export const RESULT_LINK_REFRESH_MS = 10 * 60 * 1000;
 type ResultSource = { jobId: string; uri: string; fetchedAt: number };
 
+const AGE_DONE_ID = 'face-age-done';
 export function FaceFiltersFlow({ api, owner }: { api: ApiClient; owner: string }) {
     const router = useRouter();
     const balance = useBalance();
@@ -271,7 +272,7 @@ export function FaceFiltersFlow({ api, owner }: { api: ApiClient; owner: string 
     if (job && (photo || fromResult)) return <FaceFilterResult api={api} owner={owner} id={job} original={original!} onAnother={() => reset(model)} onApplyResult={applyResult}
         onOriginalError={fromResult ? resultImageError : undefined} onOriginalLoad={fromResult ? resultImageLoaded : undefined} originalFallback={unavailable} />;
     return (
-        <ScrollView style={styles.screen} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+        <ScrollView style={styles.screen} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" automaticallyAdjustKeyboardInsets>
             <Stack.Screen options={{ title: t('faceFilters.title') }} />
             {PHOTO_STUDIO_ENABLED ? <Button variant="secondary" label={t('liveEdit.title')} onPress={() => router.push('/live-edit')} /> : null}
             <View style={[styles.stage, { height: Math.round(screenWidth * 1.25) }]}>
@@ -298,7 +299,8 @@ export function FaceFiltersFlow({ api, owner }: { api: ApiClient; owner: string 
                 </View>)}
                 {selectors?.age ? <>
                     <Text style={styles.text}>{t('faceFilters.target_age', { min: String(selectors.age.min), max: String(selectors.age.max) })}</Text>
-                    <TextInput accessibilityLabel={rawText(t('faceFilters.target_age', { min: String(selectors.age.min), max: String(selectors.age.max) }))} keyboardType="number-pad" style={styles.input} editable={!busy} value={String(values.target_age ?? '')} placeholderTextColor={colors.muted} maxLength={3} onChangeText={value => { setValues(v => ({ ...v, target_age: value })); }} />
+                    <TextInput accessibilityLabel={rawText(t('faceFilters.target_age', { min: String(selectors.age.min), max: String(selectors.age.max) }))} keyboardType="number-pad" returnKeyType="done" blurOnSubmit onSubmitEditing={Keyboard.dismiss} inputAccessoryViewID={AGE_DONE_ID} style={styles.input} editable={!busy} value={String(values.target_age ?? '')} placeholderTextColor={colors.muted} maxLength={3} onChangeText={value => { setValues(v => ({ ...v, target_age: value })); }} />
+                    {Platform.OS === 'ios' ? <InputAccessoryView nativeID={AGE_DONE_ID}><View style={styles.accessory}><Pressable accessibilityRole="button" accessibilityLabel={t('faceFilters.keyboardDone')} hitSlop={12} onPress={Keyboard.dismiss}><Text style={styles.accessoryText}>{t('faceFilters.keyboardDone')}</Text></Pressable></View></InputAccessoryView> : null}
                     {invalid ? <Text style={styles.error}>{t('faceFilters.invalidAge')}</Text> : null}
                 </> : null}
                 {selectors?.identity ? <Pressable accessibilityRole="checkbox" accessibilityLabel={t('faceFilters.preserve_identity')} accessibilityState={{ checked: values.preserve_identity === true, disabled: busy }} disabled={busy} style={styles.card} onPress={() => { setValues(v => ({ ...v, preserve_identity: !v.preserve_identity })); }}><Text style={styles.text}>{values.preserve_identity ? '☑ ' : '☐ '}{t('faceFilters.preserve_identity')}</Text></Pressable> : null}
@@ -316,6 +318,7 @@ export function FaceFiltersFlow({ api, owner }: { api: ApiClient; owner: string 
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background }, body: { gap: 12, paddingBottom: 100 },
     content: { paddingHorizontal: 16, gap: 12 },
+    accessory: { alignItems: 'flex-end', paddingHorizontal: 16, paddingVertical: 10, backgroundColor: colors.surface }, accessoryText: { color: colors.accent, fontSize: 17, fontWeight: '600' },
     stage: { backgroundColor: '#000', overflow: 'hidden', justifyContent: 'flex-end' },
     empty: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', gap: 8 },
     pill: { position: 'absolute', top: 12, right: 12, minHeight: 36, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, borderRadius: 18, backgroundColor: 'rgba(0,0,0,0.55)' },

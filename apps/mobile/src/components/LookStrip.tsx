@@ -3,7 +3,7 @@ import { Pressable } from 'react-native';
 import type { CatalogModel } from '../lib/media';
 import { LOOK_IDS, lookMatrix, type LookId } from '../lib/instantLooks';
 import { faceIcon } from '../lib/featureIcons';
-import { t } from '../lib/i18n';
+import { plural, t } from '../lib/i18n';
 import { colors } from '../theme';
 import { IconBadge } from './ui';
 import { InstantPhoto } from './InstantPhoto';
@@ -48,7 +48,7 @@ export function LookStrip({ thumb, enabled, live, look, modelId, models, busy, o
                             <View style={styles.badge}><Text style={styles.badgeText}>{t('faceFilters.aiBadge')}</Text></View>
                         </View>
                         <Text numberOfLines={2} style={[styles.name, styles.nameAi, selected && styles.nameOn]}>{m.name}</Text>
-                        <Text style={styles.price}>{m.credits}</Text>
+                        <Text style={styles.price}>{plural('faceFilters.chipCredits', m.credits)}</Text>
                     </Pressable>
                 );
             })}
