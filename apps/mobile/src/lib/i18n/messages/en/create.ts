@@ -100,4 +100,6 @@ export default {
     'create.firstRun.example.work.image': 'A premium product photo of a glass perfume bottle on wet stone, soft morning light',
     'create.firstRun.example.work.video': 'A 10-second ad: coffee filling a cup in slow motion, steam rising, warm studio light',
     'create.firstRun.example.work.audio': 'An upbeat 30-second brand jingle with light guitar and claps',
+    'create.workspace.script': "Script",
+    'create.workspace.stageNeeds': "Still needed: {items}",
 } as const;

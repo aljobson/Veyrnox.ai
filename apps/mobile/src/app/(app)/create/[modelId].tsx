@@ -48,6 +48,7 @@ import { buildCharacterPrompt, sanitizePicks, type Picks } from '../../../lib/od
 import { useBalance } from '../../../lib/useBalance';
 import { shortfall } from '../../../lib/lowBalance';
 import { useFreeLeftState } from '../../../lib/useFreeLeft';
+import { isAudioDriven, isSpeechModel, missingRequiredSlots } from '../../../lib/createModelKind';
 import { estimateCredits, fetchCatalog, kindOf, promptRequired, textInput, type CatalogModel } from '../../../lib/media';
 import { MIN_TARGET, selectedState } from '../../../lib/a11y';
 import { portraitAsPickedFile, startOddlingId } from '../../../lib/oddlingsAnimate';
@@ -275,7 +276,7 @@ export default function CreateWithModel() {
     const freeLeft = freeLoading ? 0 : freeLeftFor(freeMap, model.id);
     // The camera words go into the prompt for image and video models; the price and the model do not change.
     const takesCharacter = kindOf(model.modality) === 'image' && textInput(model)?.key === 'prompt';
-    const takesCamera = (kindOf(model.modality) === 'image' || isVideo) && textInput(model)?.key === 'prompt';
+    const takesCamera = (kindOf(model.modality) === 'image' || isVideo) && textInput(model)?.key === 'prompt' && !isAudioDriven(model), speech = isSpeechModel(model);
     // Character first, then the camera, as on the web. Both only rewrite the prompt.
     const withCharacter = takesCharacter && characterOn ? buildCharacterPrompt(prompt, character) : prompt === presetPrompt || prompt === recoveredPrompt ? prompt : prompt.trim();
     const text = takesCamera && cameraOn ? buildCinemaPrompt(withCharacter, cinema) : withCharacter;
@@ -308,10 +309,9 @@ export default function CreateWithModel() {
     const matchingRetry = retry.current?.signature === signature ? retry.current : null;
     // Only an unchanged request retains its confirmed items and retry price.
     const quote = matchingRetry?.quote ?? pending.current.snapshot(request, n, matchingRetry?.unit ?? unit, freeLeft);
-    const price = quote.total;
-    const stageLine = template
-        ? t('create.workspace.stageTemplate', { name: template.title })
-        : t(hasReference ? 'create.workspace.stageReference' : text.trim() ? 'create.workspace.stagePrompt' : 'create.workspace.stageEmpty');
+    const price = quote.total, stillNeeded = missingRequiredSlots(model, references, !!startFile);
+    const stageLine = template ? t('create.workspace.stageTemplate', { name: template.title })
+        : hasReference && stillNeeded.length ? t('create.workspace.stageNeeds', { items: stillNeeded.join(', ') }) : t(hasReference ? 'create.workspace.stageReference' : text.trim() ? 'create.workspace.stagePrompt' : 'create.workspace.stageEmpty');
     const modelLabel = swapScene?.name ?? creativeFeature(typeof recipe === 'string' ? recipe : undefined)?.title ?? model.name;
     async function generate() {
         if (!model || (!ready && !matchingRetry) || busy || freeLoading || waiting) return;
@@ -414,16 +414,16 @@ export default function CreateWithModel() {
                 {text_ ? (
                     <View style={styles.section}>
                         <View style={styles.sectionTop}>
-                            <SectionLabel style={styles.sectionLabel}>{text_.key === 'topic' ? t('form.topic') : t('create.workspace.prompt')}</SectionLabel>
+                            <SectionLabel style={styles.sectionLabel}>{text_.key === 'topic' ? t('form.topic') : speech ? t('create.workspace.script') : t('create.workspace.prompt')}</SectionLabel>
                             <Text variant="footnote" tone="secondary">{text.length}/{text_.max}</Text>
                         </View>
                         <TextField
                             style={[styles.prompt, text_.key === 'topic' && styles.topic]}
                             value={prompt}
                             onChangeText={setPrompt}
-                            placeholder={t(PLACEHOLDER[text_.key] ?? (promptRequired(model) ? 'form.describeCreate' : 'form.describeChange'))}
+                            placeholder={t(PLACEHOLDER[text_.key] ?? (speech ? 'form.describeSpeech' : promptRequired(model) ? 'form.describeCreate' : 'form.describeChange'))}
                             placeholderTextColor={styles.mutedInk.color}
-                            accessibilityLabel={rawText(text_.key === 'topic' ? t('form.topic') : t('mobile.prompt'))}
+                            accessibilityLabel={rawText(text_.key === 'topic' ? t('form.topic') : speech ? t('create.workspace.script') : t('mobile.prompt'))}
                             multiline
                         />
                         {promptTooLong ? <Text tone="danger" accessibilityLiveRegion="polite">{t(text_.key === 'topic' ? 'public.TemplateRecipe.topicTooLong' : text_.max < GENERATION_PROMPT_MAX ? 'public.TemplateRecipe.promptTooLong' : 'public.TemplateRecipe.productPromptTooLong', { count: text.length, max: text_.max })}</Text> : null}

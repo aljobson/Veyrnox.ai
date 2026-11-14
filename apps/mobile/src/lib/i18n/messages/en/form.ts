@@ -22,4 +22,5 @@ export default {
     'form.err.topicRefused': 'That topic was not accepted. Try different words. You were not charged.',
     'form.err.tryAgain': 'Please try again.',
     'form.err.default': 'That could not start. You were not charged.',
+    'form.describeSpeech': "Words to speak",
 } as const;
