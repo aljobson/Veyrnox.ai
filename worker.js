@@ -99,7 +99,11 @@ export default {
 
     async scheduled(event, env, ctx) {
         const results = await Promise.allSettled([
-            ...(env.CONTENT_SCAN_ENABLED === 'true' ? [observeRecovery('content_scan', () => drainContentScans(
+            // Minute tick only. On the five-minute tick it ran beside every other sweep and the
+            // full app load of the top-up backfill, and together they exceeded the isolate's
+            // 128 MB (staging, 2026-11-14: every five-minute tick ended exceededMemory). It
+            // still drains every minute.
+            ...(env.CONTENT_SCAN_ENABLED === 'true' && event.cron === '* * * * *' ? [observeRecovery('content_scan', () => drainContentScans(
                 { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY }, r2EnvFrom(env), env,
             ), env)] : []),
             // ADR-0113: tells people a generation finished. It only reads finished jobs, never
