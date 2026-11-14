@@ -1836,6 +1836,7 @@ export default {
   "edit.problem.no_clips": "Füge mindestens ein Video hinzu.",
   "edit.problem.nothing_to_do": "Kürze ein Video, verbinde zwei oder füge Untertitel hinzu.",
   "edit.problem.too_long": "Das Ergebnis darf höchstens 60 Sekunden lang sein.",
+  "edit.problem.mixed_shape": "Diese Videos haben unterschiedliche Formate und lassen sich nicht verbinden. Wähle nur Hochformat, nur Querformat oder nur quadratische Videos.",
   "edit.problem.too_many": "Du kannst bis zu 10 Videos verbinden.",
   "edit.problem.unknown_length": "Warte, bis alle Videolängen gelesen wurden.",
   "edit.reading": "Videolänge wird gelesen...",

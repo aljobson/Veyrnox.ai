@@ -1984,6 +1984,7 @@ export default {
   "edit.problem.no_clips": "أضف فيديو واحدًا على الأقل.",
   "edit.problem.nothing_to_do": "قصّ فيديو أو ادمج اثنين أو أضف نصوصًا مصاحبة.",
   "edit.problem.too_long": "يجب ألا تتجاوز النتيجة 60 ثانية.",
+  "edit.problem.mixed_shape": "هذه الفيديوهات بأشكال مختلفة ولا يمكن دمجها. اختر فيديوهات كلها عمودية أو كلها أفقية أو كلها مربعة.",
   "edit.problem.too_many": "يمكنك دمج حتى 10 فيديوهات.",
   "edit.problem.unknown_length": "انتظر حتى تُقرأ مدة كل فيديو.",
   "edit.reading": "جارٍ قراءة مدة الفيديو...",

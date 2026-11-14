@@ -1799,6 +1799,7 @@ export default {
   "edit.problem.no_clips": "请至少添加一个视频。",
   "edit.problem.nothing_to_do": "裁剪视频、拼接两段视频或添加字幕。",
   "edit.problem.too_long": "成片最长为 60 秒。",
+  "edit.problem.mixed_shape": "这些视频的形状不同，无法拼接。请选择全部竖屏、全部横屏或全部方形的视频。",
   "edit.problem.too_many": "最多可拼接 10 段视频。",
   "edit.problem.unknown_length": "请等待所有视频时长读取完成。",
   "edit.reading": "正在读取视频时长…",

@@ -1799,6 +1799,7 @@ export default {
   "edit.problem.no_clips": "動画を1本以上追加してください。",
   "edit.problem.nothing_to_do": "動画のトリミング、2本の結合、または字幕の追加を行ってください。",
   "edit.problem.too_long": "完成動画は最大60秒です。",
+  "edit.problem.mixed_shape": "動画の形が異なるため、つなげられません。すべて縦長、すべて横長、またはすべて正方形の動画を選んでください。",
   "edit.problem.too_many": "最大10本の動画を結合できます。",
   "edit.problem.unknown_length": "すべての動画の長さを読み込むまでお待ちください。",
   "edit.reading": "動画の長さを読み込み中…",

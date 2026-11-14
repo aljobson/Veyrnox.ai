@@ -1799,6 +1799,7 @@ export default {
   "edit.problem.no_clips": "영상을 하나 이상 추가하세요.",
   "edit.problem.nothing_to_do": "영상을 자르거나 두 영상을 연결하거나 자막을 추가하세요.",
   "edit.problem.too_long": "결과는 최대 60초까지 가능합니다.",
+  "edit.problem.mixed_shape": "영상의 모양이 서로 달라 이어 붙일 수 없어요. 모두 세로, 모두 가로 또는 모두 정사각형인 영상을 고르세요.",
   "edit.problem.too_many": "영상을 최대 10개까지 연결할 수 있습니다.",
   "edit.problem.unknown_length": "모든 영상의 길이를 읽을 때까지 기다려 주세요.",
   "edit.reading": "영상 길이 읽는 중...",

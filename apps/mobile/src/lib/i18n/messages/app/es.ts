@@ -1873,6 +1873,7 @@ export default {
   "edit.problem.no_clips": "Añade al menos un vídeo.",
   "edit.problem.nothing_to_do": "Recorta un vídeo, une dos o añade subtítulos.",
   "edit.problem.too_long": "El resultado puede durar como máximo 60 segundos.",
+  "edit.problem.mixed_shape": "Estos vídeos tienen formas distintas y no se pueden unir. Elige vídeos que sean todos verticales, todos horizontales o todos cuadrados.",
   "edit.problem.too_many": "Puedes unir hasta 10 vídeos.",
   "edit.problem.unknown_length": "Espera hasta que se haya leído la duración de todos los vídeos.",
   "edit.reading": "Leyendo la duración del vídeo...",
