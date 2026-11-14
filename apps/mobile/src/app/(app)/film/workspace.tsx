@@ -140,7 +140,7 @@ export default function FilmWorkspace() {
                     </Pressable>;
                 })}
             </ScrollView>
-            <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
+            <ScrollView keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets keyboardDismissMode="interactive" contentContainerStyle={styles.content}>
                 <View style={styles.titleRow}>
                     <View style={{ flex: 1 }}><Text style={styles.kicker}>{t('film.sTAGEOF7', { value1: stage + 1 })}</Text><Text style={styles.title} accessibilityRole="header">{FILM_STAGES[stage][1]}</Text></View>
                     <Pressable accessibilityRole="button" style={styles.smallButton} onPress={newFilm}><Text style={styles.smallButtonText}>{t('film.new')}</Text></Pressable>

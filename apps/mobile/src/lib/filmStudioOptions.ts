@@ -68,3 +68,32 @@ export function promptOpenState(model: CatalogModel | null | undefined, options:
     if (options.aspect && aspects.length && !aspects.includes(options.aspect)) return { ok: false, reason: 'aspect' };
     return { ok: true };
 }
+
+const present = (v: unknown): boolean => typeof v === 'string' && v.trim().length > 0;
+const clip = (text: string, max: number): string => text.length <= max ? text : `${text.slice(0, max - 1).trimEnd()}…`;
+const firstSentence = (text: string): string => (text.trim().split(/(?<=[.!?])\s|\n/)[0] ?? '').trim();
+
+// Quick start for one shot card. Fills only the fields that are empty, from the shot's own description (or the film's
+// script) and the film setup. Plain local text: no network, no credits. The user reviews every value; the one-action
+// confirmation is never ticked for them. Returns how many fields were filled.
+export function fillShotDefaults(film: Film, index: number): { film: Film; filled: number } {
+    const shot = film.shots[index];
+    if (!shot) return { film, filled: 0 };
+    const beat = firstSentence(String(shot.description ?? '')) || firstSentence(film.script) || `Shot ${index + 1}`;
+    const known = film.shots.find((s, i) => i !== index && present(s.location))?.location;
+    const suggestions: Record<string, string> = {
+        location: String(known ?? '@location:v1'), time: 'Day', description: clip(beat, 400), complexity: 'Simple',
+        goal: clip(`Show: ${beat}`, 200), action: 'Show', dramaturgy: 'Set up the moment, then let it land',
+        blocking: 'Subject stays in one place in frame', acting: 'Natural and understated', style: 'Naturalistic',
+        size: 'Medium', movement: 'Static', lens: '35mm', angle: 'Eye level', cut: 'Hard cut', pace: 'Steady', transition: 'Cut',
+        seconds: film.stack.seconds || '10', characters: 'none', props: 'none', dialogue: 'none',
+    };
+    const next: Record<string, string | boolean> = { ...shot };
+    let filled = 0;
+    SHOT_LANES.flatMap(([, fields]) => fields).forEach(([key]) => {
+        if (key === 'id' || present(shot[key]) || !(key in suggestions)) return;
+        next[key] = suggestions[key]; filled++;
+    });
+    if (!filled) return { film, filled: 0 };
+    return { film: { ...film, shots: film.shots.map((s, i) => i === index ? next as Shot : s) }, filled };
+}
