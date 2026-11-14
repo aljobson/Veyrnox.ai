@@ -2861,6 +2861,7 @@ export default {
   "job.deleteThis": "Supprimer cette création",
   "job.deleting": "Suppression…",
   "job.failed": "La création n’a pas abouti. Vos crédits ont été remboursés.",
+  "job.err.merge_failed": "Ces clips n’ont pas pu être assemblés. Vos crédits ont été remboursés. Réessayez ou choisissez des clips du même type.",
   "job.keepsRunning": "Votre création se poursuit et apparaîtra dans votre bibliothèque. En cas d’échec, vos crédits seront remboursés.",
   "job.next.edit": "Monter cette vidéo",
   "job.next.makeAnother": "Créer à nouveau",

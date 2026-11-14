@@ -10,6 +10,7 @@ export default {
     'job.running': 'Creating…',
     'job.succeeded': 'Done',
     'job.failed': 'This did not finish. Your credits were refunded.',
+    'job.err.merge_failed': "These clips couldn't be joined. Your credits were refunded. Try again, or try clips of the same kind.",
     'job.title': 'Your creation',
     'job.savedPhotos': 'Saved to your photos.',
     'job.allowPhotos': 'Allow adding to Photos in Settings to save.',

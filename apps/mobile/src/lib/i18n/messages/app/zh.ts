@@ -2753,6 +2753,7 @@ export default {
   "job.deleteThis": "删除此作品",
   "job.deleting": "正在删除…",
   "job.failed": "此次创作未完成。你的积分已退回。",
+  "job.err.merge_failed": "无法合并这些片段。你的积分已退回。请重试，或使用同类型的片段。",
   "job.keepsRunning": "创作会继续进行，结果会显示在素材库中。如果失败，积分会退回。",
   "job.next.edit": "编辑此视频",
   "job.next.makeAnother": "再做一个",

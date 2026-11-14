@@ -251,7 +251,11 @@ test('fal reporting an unreachable source URL is the one transient failure', () 
     // The same words in the error string alone still count; anything else does not.
     assert.equal(falOutcome({ step: 'captions' }, { status: 'ERROR', error: 'host_unreachable' }).transient, true);
     const speech = { status: 'ERROR', payload: { detail: [{ msg: 'No speech detected in the video', type: 'transcription_error' }] } };
-    assert.deepEqual(falOutcome({ step: 'captions' }, speech), { state: 'fail', errorCode: 'provider_failed' });
+    // Another fal error class is recorded for diagnosis but is never retried.
+    assert.deepEqual(falOutcome({ step: 'captions' }, speech), { state: 'fail', errorCode: 'provider_failed', reason: 'transcription_error' });
+    assert.deepEqual(falOutcome({ step: 'merge' }, { status: 'ERROR', error: 'boom' }), { state: 'fail', errorCode: 'provider_failed' });
+    // A hostile type (URL, spaces, capitals) is not stored.
+    assert.equal(falOutcome({ step: 'merge' }, { status: 'ERROR', payload: { detail: [{ type: 'https://x/?k=1' }] } }).reason, undefined);
     assert.equal(failureReason(undefined, null, ''), null);
     assert.equal(failureReason({ circular: (() => { const a = {}; a.a = a; return a; })() }), null, 'an unserialisable body is no reason');
 });
