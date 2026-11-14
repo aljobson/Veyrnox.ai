@@ -291,7 +291,7 @@ export const FAQ = [
   { q: 'What happens if a generation fails?',
     a: 'Automatic refund, ledger-backed. Provider safety rejects, provider timeouts and model errors all refund. Failed rows still show in your Library so you can retry.' },
   { q: 'Can I use the output commercially?',
-    a: 'Commercial use varies by model and provider; check the current provider terms before publishing or selling an output.',
+    a: 'Yes, within limits. Section 4 of our Terms allows personal and commercial use of generated outputs, subject to those Terms and the licence of the model provider you used. Licences vary by model and provider, so check the current provider terms before publishing or selling an output.',
     link: { label: 'See our Terms of Service', href: '/legal/terms' } },
   { q: 'How do I exercise my data rights?',
     a: 'Access, export and deletion requests go through the Data Rights page.',

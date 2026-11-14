@@ -65,11 +65,13 @@ test('About publishes only verified company facts and is discoverable', () => {
   assert.match(footer, /ENTITY\.jurisdiction/);
 });
 
-test('commercial-use copy directs visitors to current provider terms without promising rights', () => {
+test('commercial-use copy points to Terms section 4 and the provider terms without promising more', () => {
   const tokens = read('app/veyrnox/_lib/tokens.js');
 
-  assert.match(tokens, /Commercial use varies by model and provider/);
+  // It may say what Terms section 4 grants, never more, and keeps both limits.
+  assert.match(tokens, /Section 4 of our Terms allows personal and commercial use of generated outputs, subject to those Terms and the licence of the model provider you used/);
   assert.match(tokens, /check the current provider terms before publishing/);
+  assert.match(read('lib/i18n/messages/legal/en/terms.mjs'), /Subject to these terms and each underlying model provider’s licence, you may use generated outputs for personal and commercial purposes/);
   assert.doesNotMatch(tokens, /Outputs are yours to use commercially/);
 });
 
