@@ -56,6 +56,7 @@ export default {
     'create.workspace.modelLabel': 'Live model: {name}',
     'create.workspace.stageEmpty': 'Type a prompt or add a reference',
     'create.workspace.stageReference': 'Your reference is ready',
+    'create.workspace.stagePrompt': 'Your prompt is ready',
     'create.workspace.stageTemplate': '{name} is ready',
     'create.workspace.stageHelp': 'Your result opens as soon as the job starts. You can leave while it is being made.',
     'create.workspace.references': 'References',

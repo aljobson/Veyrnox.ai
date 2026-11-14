@@ -1,12 +1,14 @@
-import { useCallback, useEffect, useRef, type ComponentRef } from 'react';
+import { useCallback, useEffect, useImperativeHandle, useRef, type ComponentRef, type Ref } from 'react';
 import { Keyboard, ScrollView, TextInput, type ScrollViewProps } from 'react-native';
 import { KeyboardFocusContext } from './KeyboardFocusContext';
 
 // The shared KeyboardScreen resizes for the real header. Scroll the actual focused
 // native input as well: resizing alone does not reveal a field far down a form. A drag closes the keyboard: a multiline
 // prompt's Return key adds a line, so otherwise nothing closes it on a form like Create.
-export function KeyboardFormScrollView(props: ScrollViewProps) {
+// A screen may hold the scroll view too (Create scrolls its result into view), so the inner ref is handed out.
+export function KeyboardFormScrollView({ ref, ...props }: ScrollViewProps & { ref?: Ref<ComponentRef<typeof ScrollView>> }) {
     const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
+    useImperativeHandle(ref, () => scroll.current as ComponentRef<typeof ScrollView>, []);
     const frame = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
     const reveal = useCallback(() => {
         if (frame.current) clearTimeout(frame.current);

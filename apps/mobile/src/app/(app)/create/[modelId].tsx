@@ -16,6 +16,7 @@ import { getCacheUser, subscribeCacheUser } from '../../../lib/appCache';
 import type { SubmitRequest } from '../../../lib/generationSubmit';
 import { KeyboardFormScrollView } from '../../../components/KeyboardFormScrollView';
 import { KeyboardScreen } from '../../../components/KeyboardScreen';
+import { RevealOnFirstLayout } from '../../../components/create/RevealOnFirstLayout';
 import { FormHeader } from '../../../components/create/FormHeader';
 import { ModelPickerSheet } from '../../../components/create/ModelPickerSheet';
 import { useModelSwitch } from '../../../components/create/useModelSwitch';
@@ -24,7 +25,7 @@ import { SourceDurationCard } from '../../../components/create/SourceDurationCar
 import { Text, TextField, Button, Card, Chip, themedStyles, useThemedStyles } from '../../../components/ui';
 import { GENERATION_PROMPT_MAX } from '../../../lib/promptLimits';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
 import { ActivityIndicator, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { API_BASE, ApiError } from '../../../lib/api';
@@ -68,6 +69,7 @@ export default function CreateWithModel() {
     const { api } = useAuth();
     const router = useRouter();
     const sceneServices = useRef({ api, router });
+    const scrollRef = useRef<ComponentRef<typeof ScrollView> | null>(null);
     useEffect(() => { sceneServices.current = { api, router }; }, [api, router]);
     const loadedEntry = useRef<{ swap?: string; modelId: string } | null>(null);
     const [model, setModel] = useState<CatalogModel | null>(null);
@@ -309,9 +311,7 @@ export default function CreateWithModel() {
     const price = quote.total;
     const stageLine = template
         ? t('create.workspace.stageTemplate', { name: template.title })
-        : hasReference
-            ? t('create.workspace.stageReference')
-            : t('create.workspace.stageEmpty');
+        : t(hasReference ? 'create.workspace.stageReference' : text.trim() ? 'create.workspace.stagePrompt' : 'create.workspace.stageEmpty');
     const modelLabel = swapScene?.name ?? creativeFeature(typeof recipe === 'string' ? recipe : undefined)?.title ?? model.name;
     async function generate() {
         if (!model || (!ready && !matchingRetry) || busy || freeLoading || waiting) return;
@@ -371,8 +371,8 @@ export default function CreateWithModel() {
     return (
         <KeyboardScreen style={styles.screen}>
             <Stack.Screen options={{ title: t('label.Create') }} />
-            <KeyboardFormScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-                <FormHeader modelLabel={modelLabel} modality={kindOf(model.modality) ?? model.modality} stageLine={stageLine} stage={results ? <CreateResult api={api} batch={results} catalog={catalog} onTerminal={resultSettled} /> : undefined}
+            <KeyboardFormScrollView ref={scrollRef} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+                <FormHeader modelLabel={modelLabel} modality={kindOf(model.modality) ?? model.modality} stageLine={stageLine} stage={results ? <RevealOnFirstLayout scroll={scrollRef}><CreateResult api={api} batch={results} catalog={catalog} onTerminal={resultSettled} /></RevealOnFirstLayout> : undefined}
                     onChangeModel={changeModel} onTemplates={!template && !results ? () => router.push('/create/presets') : undefined} />
                 <ModelPickerSheet visible={modelSwitch.picking} models={choices} currentId={model.id} freeLeft={freeMap} onClose={modelSwitch.close} onPick={(id) => void modelSwitch.change(model, catalog.find(m => m.id === id), (target) => createHandoff(target, attachCarry, { opts, cameraOn, cinema, characterOn, character }, references, handedSources ?? undefined))} />
                 {contract && !boundCount && <Text accessibilityLiveRegion="polite">{t(contract.photoGuidance)}</Text>} {photosUnavailable && <Text tone="danger" accessibilityLiveRegion="polite">{t('presets.fidelity.photosUnavailable')}</Text>}

@@ -11,12 +11,18 @@ let mockWaited = true;
 let mockFromCreate: string | undefined;
 let mockRefocus: (() => void) | undefined;
 let mockBlur: (() => void) | undefined;
+let mockLeave: (() => void) | undefined;
+const mockNavigation = { addListener: (event: string, cb: () => void) => {
+    if (event === 'beforeRemove') mockLeave = cb;
+    return () => { if (mockLeave === cb) mockLeave = undefined; };
+} };
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi }) }));
 jest.mock('expo-router', () => ({
     Stack: { Screen: () => null },
     Link: () => null,
     useLocalSearchParams: () => ({ id: 'job-id', fromCreate: mockFromCreate }),
     useRouter: () => ({ replace: jest.fn(), push: mockPush }),
+    useNavigation: () => mockNavigation,
     useFocusEffect: (fn: () => () => void) =>
         require('react').useEffect(() => {
             mockRefocus = () => { mockBlur = fn(); };
@@ -49,6 +55,7 @@ beforeEach(() => {
     resetReviewAskClaim();
     mockWaited = true;
     mockFromCreate = undefined;
+    mockLeave = undefined;
     mockAsset.mockResolvedValue({ url: 'https://example.test/result.png', mime_type: 'image/png' });
     mockCelebrate.mockReturnValue({ big: false, done: Promise.resolve() });
 });
@@ -56,6 +63,10 @@ afterEach(async () => {
     await act(async () => root.unmount());
     jest.useRealTimers();
 });
+// Going back from the job screen: the ask is made only then, once the result has been seen.
+async function leave() {
+    await act(async () => { mockLeave?.(); jest.advanceTimersByTime(0); });
+}
 async function render(ready = true) {
     await act(async () => root.render(<JobScreen />));
     if (ready) await act(async () => root.container.queryAll(n => n.props.onLoad && n.props.source?.uri === 'https://example.test/result.png')[0]?.props.onLoad());
@@ -80,7 +91,18 @@ test('QA-006: a finished result opened from Create counts as the first win and a
     await render();
     expect(mockCelebrate).toHaveBeenCalledWith('job-id', 'image/png', true);
     await act(async () => jest.advanceTimersByTime(5000));
+    expect(mockPush).not.toHaveBeenCalled();
+    await leave();
     expect(mockPush).toHaveBeenCalledWith('/rate');
+});
+test('QA create-result: leaving before the result has been seen does not ask and leaves the ask unclaimed', async () => {
+    mockFromCreate = '1';
+    await render();
+    await act(async () => jest.advanceTimersByTime(1000));
+    await leave();
+    await act(async () => jest.advanceTimersByTime(5000));
+    expect(mockPush).not.toHaveBeenCalled();
+    expect(claimReviewAsk()).toBe(true);
 });
 test('rating is pushed only after the celebration promise resolves', async () => {
     let done!: () => void;
@@ -97,6 +119,8 @@ test('rating is pushed only after the celebration promise resolves', async () =>
     await act(async () => done());
     expect(mockPush).not.toHaveBeenCalled();
     await act(async () => jest.advanceTimersByTime(2000));
+    expect(mockPush).not.toHaveBeenCalled();
+    await leave();
     expect(mockPush).toHaveBeenCalledWith('/rate');
     expect(claimReviewAsk()).toBe(false);
 });
@@ -135,7 +159,10 @@ test('an output URL alone is not a seen result; loading media starts the viewing
     expect(mockPush).not.toHaveBeenCalled();
     await act(async () => root.container.queryAll(n => n.props.onLoad && n.props.source?.uri === 'https://example.test/result.png')[0].props.onLoad());
     await act(async () => jest.advanceTimersByTime(1999));
+    await leave();
     expect(mockPush).not.toHaveBeenCalled();
     await act(async () => jest.advanceTimersByTime(1));
+    expect(mockPush).not.toHaveBeenCalled();
+    await leave();
     expect(mockPush).toHaveBeenCalledWith('/rate');
 });
