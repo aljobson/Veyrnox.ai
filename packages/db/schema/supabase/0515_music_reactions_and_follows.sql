@@ -212,3 +212,26 @@ REVOKE ALL ON FUNCTION public.music_set_song_reaction(TEXT,TEXT,TEXT,TEXT) FROM 
 GRANT EXECUTE ON FUNCTION public.music_set_song_reaction(TEXT,TEXT,TEXT,TEXT) TO service_role;
 REVOKE ALL ON FUNCTION public.music_set_creator_follow(TEXT,TEXT,BOOLEAN,TEXT) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.music_set_creator_follow(TEXT,TEXT,BOOLEAN,TEXT) TO service_role;
+
+-- Admit the new signed-in route in the privacy-safe route telemetry allowlist.
+-- Same wrapper pattern as 0493 to 0507: renaming preserves the revoked ACL.
+DO $$
+BEGIN
+    IF to_regprocedure('public.telemetry_path_allowed_pre_0515(text)') IS NULL THEN
+        ALTER FUNCTION public.telemetry_path_allowed(TEXT)
+            RENAME TO telemetry_path_allowed_pre_0515;
+    END IF;
+END $$;
+
+CREATE OR REPLACE FUNCTION public.telemetry_path_allowed(p_path TEXT)
+RETURNS BOOLEAN
+LANGUAGE sql
+IMMUTABLE
+SET search_path = ''
+AS $$
+    SELECT p_path = '/api/v1/music/social'
+        OR public.telemetry_path_allowed_pre_0515(p_path)
+$$;
+
+REVOKE ALL ON FUNCTION public.telemetry_path_allowed(TEXT)
+    FROM PUBLIC, anon, authenticated, service_role;
