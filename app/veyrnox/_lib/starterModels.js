@@ -46,3 +46,32 @@ export function affordableStarterModel(models, preferredId, maxCredits) {
     || String(a.id).localeCompare(String(b.id))
   ))[0] || starterModel(models, 'all');
 }
+
+// What the slip charges before the visitor touches the length: 5 s when the
+// model sells it, else its first length, doubled for 10 s (the slip's rule).
+export function defaultLengthCredits(model) {
+  if (model.kind !== 'video' || !model.durations?.length) return model.credits;
+  const seconds = model.durations.includes(5) ? 5 : model.durations[0];
+  return model.credits * (seconds === 10 ? 2 : 1);
+}
+
+// The cheapest prompt-only video the welcome balance pays for at its default
+// length, or null when the live catalog has none.
+export function affordableVideoModel(models, maxCredits) {
+  return modelsForGoal(models, 'video')
+    .filter(canStartFromPrompt)
+    .filter((model) => defaultLengthCredits(model) <= maxCredits)
+    .sort((a, b) => (
+      defaultLengthCredits(a) - defaultLengthCredits(b)
+      || String(a.name || a.id).localeCompare(String(b.name || b.id))
+      || String(a.id).localeCompare(String(b.id))
+    ))[0] || null;
+}
+
+// The slip's free-credit line: what the welcome balance has left after this
+// price, or how much of the price it covers.
+export function freeCreditLine(cost, grant) {
+  return cost <= grant
+    ? { fits: true, left: grant - cost }
+    : { fits: false, covered: grant, cost };
+}

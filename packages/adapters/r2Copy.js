@@ -7,6 +7,7 @@
 
 import { putObject, sha256Hex } from './r2.js';
 import { sniffProviderOutputType } from '../../lib/providerOutputType.js';
+import { flacToWav, looksLikeFlac } from '../../lib/flacToWav.js';
 
 // Hosts each provider serves generated assets from. Anything else is refused
 // by copyUrlToR2 — the URL arrives in a provider payload, never trusted
@@ -85,8 +86,12 @@ const isZip = (b) => b.length >= 30 && b[0] === 0x50 && b[1] === 0x4b && b[2] ==
  * `expectZip`: the same for an archive. The generic sniffer serves media only, so a
  * ZIP would otherwise be stored as application/octet-stream, and the Music stem
  * readers, which ask for application/zip, would never find it (0480).
+ *
+ * `flacToWav`: a FLAC output is stored as the PCM WAV it decodes to (lossless, same
+ * format), so Music editing and local renders can read it. Anything else is stored
+ * as it is, and a FLAC that fails to decode is stored as FLAC.
  */
-export async function copyUrlToR2(sourceUrl, r2Key, cfg, { timeoutMs = 30000, maxBytes = COPY_MAX_BYTES, provider = 'fal', authorization, expectMp4 = false, expectZip = false } = {}) {
+export async function copyUrlToR2(sourceUrl, r2Key, cfg, { timeoutMs = 30000, maxBytes = COPY_MAX_BYTES, provider = 'fal', authorization, expectMp4 = false, expectZip = false, flacToWav: convertFlac = false } = {}) {
     // Outbound fetch targets must be constants or provider CDNs (CLAUDE.md
     // OWASP #10). The URL comes from a provider payload, so pin the host.
     let parsed;
@@ -152,6 +157,14 @@ export async function copyUrlToR2(sourceUrl, r2Key, cfg, { timeoutMs = 30000, ma
             // format is stored as a download rather than as something a
             // browser will render.
             contentType = sniffProviderOutputType(bytes) || 'application/octet-stream';
+            if (convertFlac && looksLikeFlac(bytes)) {
+                try {
+                    bytes = flacToWav(bytes).wav;
+                    contentType = 'audio/wav';
+                } catch (err) {
+                    console.error('R2 copy FLAC to WAV failed, storing FLAC:', err && err.message);
+                }
+            }
         }
         // Hash the provider's bytes before they are stored, so the digest
         // describes what the user receives (ADR-0025 option E). The delivery

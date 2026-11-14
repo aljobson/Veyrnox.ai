@@ -6068,7 +6068,7 @@
       "referenceVideoCount": 0,
       "name": "MOODY FILTER",
       "model": "nano-banana-pro-edit-grsai",
-      "aspect": "3:4",
+      "aspect": "2:3",
       "photo": {
         "required": true,
         "count": 1
@@ -6078,7 +6078,7 @@
       "previewAspect": "720 / 1080",
       "bg": "linear-gradient(145deg,#152a38,#61516c 65%,#be9b7d)",
       "promptOrigin": "community-source-exact",
-      "runtimeAspect": "3:4",
+      "runtimeAspect": "2:3",
       "previewPath": "/showcase/images/moody-filter.webp",
       "photoOverride": null,
       "localPreviewSha256": "cad53ecc51a1ab1c441cdebaa71f73cb618be23df1a9dcab5cd5de757e05aa3b",
@@ -6165,7 +6165,7 @@
       "referenceVideoCount": 0,
       "name": "PARTICLE FILTER",
       "model": "nano-banana-pro-edit-grsai",
-      "aspect": "3:4",
+      "aspect": "2:3",
       "photo": {
         "required": true,
         "count": 1
@@ -6175,7 +6175,7 @@
       "previewAspect": "720 / 1080",
       "bg": "linear-gradient(145deg,#152a38,#61516c 65%,#be9b7d)",
       "promptOrigin": "community-source-exact",
-      "runtimeAspect": "3:4",
+      "runtimeAspect": "2:3",
       "previewPath": "/showcase/images/particle-filter.webp",
       "photoOverride": null,
       "localPreviewSha256": "10e8b923bebb01a06049273de166bf67cbda02675d965d81bf4f47abbfa0bd41",
@@ -6262,7 +6262,7 @@
       "referenceVideoCount": 0,
       "name": "RED LIGHT FILTER",
       "model": "nano-banana-pro-edit-grsai",
-      "aspect": "3:4",
+      "aspect": "2:3",
       "photo": {
         "required": true,
         "count": 1
@@ -6272,7 +6272,7 @@
       "previewAspect": "720 / 1080",
       "bg": "linear-gradient(145deg,#152a38,#61516c 65%,#be9b7d)",
       "promptOrigin": "community-source-exact",
-      "runtimeAspect": "3:4",
+      "runtimeAspect": "2:3",
       "previewPath": "/showcase/images/red-light-filter.webp",
       "photoOverride": null,
       "localPreviewSha256": "f88fe3fe350766511012031404f145f59b9ae405cda9eb2373a9af0dab5e37cc",
@@ -6357,7 +6357,7 @@
       "referenceVideoCount": 0,
       "name": "2000S FILTER",
       "model": "nano-banana-pro-edit-grsai",
-      "aspect": "3:4",
+      "aspect": "2:3",
       "photo": {
         "required": true,
         "count": 1
@@ -6367,7 +6367,7 @@
       "previewAspect": "720 / 1080",
       "bg": "linear-gradient(145deg,#152a38,#61516c 65%,#be9b7d)",
       "promptOrigin": "community-source-exact",
-      "runtimeAspect": "3:4",
+      "runtimeAspect": "2:3",
       "previewPath": "/showcase/images/2000s-filter.webp",
       "photoOverride": null,
       "localPreviewSha256": "47621c1b685b586a290303737b5fbbdc266ce371bf47639e4fa5ddfd01a4c196",
@@ -7756,7 +7756,7 @@
       "referenceVideoCount": 0,
       "name": "VIRAL DOODLE",
       "model": "nano-banana-pro-edit-grsai",
-      "aspect": "3:4",
+      "aspect": "2:3",
       "photo": {
         "required": true,
         "count": 1
@@ -7766,7 +7766,7 @@
       "previewAspect": "720 / 1080",
       "bg": "linear-gradient(145deg,#152a38,#61516c 65%,#be9b7d)",
       "promptOrigin": "community-source-exact",
-      "runtimeAspect": "3:4",
+      "runtimeAspect": "2:3",
       "previewPath": "/showcase/images/viral-doodle.webp",
       "photoOverride": null,
       "localPreviewSha256": "88239598348c0cfb9fd121b17af8f291333f8997394aeea76b0e612becdd38c1",
@@ -8128,7 +8128,7 @@
       "referenceVideoCount": 0,
       "name": "RETRO GAME LOADING PORTRAIT",
       "model": "nano-banana-pro-edit-grsai",
-      "aspect": "3:4",
+      "aspect": "2:3",
       "photo": {
         "required": true,
         "count": 1
@@ -8138,7 +8138,7 @@
       "previewAspect": "725 / 1080",
       "bg": "linear-gradient(145deg,#152a38,#61516c 65%,#be9b7d)",
       "promptOrigin": "community-source-exact",
-      "runtimeAspect": "3:4",
+      "runtimeAspect": "2:3",
       "previewPath": "/showcase/images/retro-game-loading-portrait.webp",
       "photoOverride": null,
       "localPreviewSha256": "aaf75496c899623b3737223699f456ba3174e86fcdd8e8612b46de3bdfc42313",
@@ -10088,7 +10088,7 @@
       "referenceVideoCount": 0,
       "name": "SILHOUETTE",
       "model": "nano-banana-pro-edit-grsai",
-      "aspect": "3:4",
+      "aspect": "2:3",
       "photo": {
         "required": true,
         "count": 1
@@ -10098,7 +10098,7 @@
       "previewAspect": "608 / 1080",
       "bg": "linear-gradient(145deg,#152a38,#61516c 65%,#be9b7d)",
       "promptOrigin": "community-source-exact",
-      "runtimeAspect": "3:4",
+      "runtimeAspect": "2:3",
       "previewPath": "/showcase/images/silhouette.webp",
       "photoOverride": null,
       "localPreviewSha256": "ec0ed0460054eb0e8876bb68e942d107bf8b7abddb87daaf96e8052d8b7c852b",

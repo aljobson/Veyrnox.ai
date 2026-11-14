@@ -22,14 +22,14 @@ The captured registry contains 772 + 46 = 818 video prompts and 2 + 50 = 52 imag
 
 Thirty-seven images require one photo, using `nano-banana-pro-edit-grsai`; thirteen text-only images use `nano-banana-kie`. Prices come from the catalog. `sourceMinFiles` stays as provenance; `the-glass` and `a-clear-bottle` additionally require a photo because their prompts explicitly demand the supplied product/photo. No image requires more than one photo.
 
-The aspect must pass both model capabilities and the gateway allowlist. Seven photo templates substitute 3:4 for source 2:3: `moody-filter`, `particle-filter`, `red-light-filter`, `2000s-filter`, `viral-doodle`, `retro-game-loading-portrait` and `silhouette`. Text-only rows keep the source aspect. No gateway capability or price is changed.
+The aspect must pass both model capabilities and the gateway allowlist. Every image template keeps its source aspect. Seven photo templates with source 2:3 (`moody-filter`, `particle-filter`, `red-light-filter`, `2000s-filter`, `viral-doodle`, `retro-game-loading-portrait` and `silhouette`) first shipped with 3:4, because the gateway allowlist then refused 2:3; the allowlist now accepts every shape a model declares (`lib/generationAspectRatios.js`), so they use 2:3. No price is changed.
 
 | Public id | Source model | Runtime model | Source / runtime aspect | Photo | Category |
 | --- | --- | --- | --- | --- | --- |
-| moody-filter | seedream-5.0-pro | nano-banana-pro-edit-grsai | 2:3 / 3:4 | 1 required | YOUR PHOTO |
-| particle-filter | seedream-5.0-pro | nano-banana-pro-edit-grsai | 2:3 / 3:4 | 1 required | VFX |
-| red-light-filter | seedream-5.0-pro | nano-banana-pro-edit-grsai | 2:3 / 3:4 | 1 required | YOUR PHOTO |
-| 2000s-filter | seedream-5.0-pro | nano-banana-pro-edit-grsai | 2:3 / 3:4 | 1 required | YOUR PHOTO |
+| moody-filter | seedream-5.0-pro | nano-banana-pro-edit-grsai | 2:3 / 2:3 | 1 required | YOUR PHOTO |
+| particle-filter | seedream-5.0-pro | nano-banana-pro-edit-grsai | 2:3 / 2:3 | 1 required | VFX |
+| red-light-filter | seedream-5.0-pro | nano-banana-pro-edit-grsai | 2:3 / 2:3 | 1 required | YOUR PHOTO |
+| 2000s-filter | seedream-5.0-pro | nano-banana-pro-edit-grsai | 2:3 / 2:3 | 1 required | YOUR PHOTO |
 | ccd-night-shot-filter | seedream-5.0-pro | nano-banana-pro-edit-grsai | 3:4 / 3:4 | 1 required | YOUR PHOTO |
 | dark-aesthetic-filter | seedream-5.0-pro | nano-banana-pro-edit-grsai | 3:4 / 3:4 | 1 required | YOUR PHOTO |
 | cinematic-filter | seedream-5.0-pro | nano-banana-pro-edit-grsai | 3:4 / 3:4 | 1 required | YOUR PHOTO |
@@ -44,11 +44,11 @@ The aspect must pass both model capabilities and the gateway allowlist. Seven ph
 | stylized-caricature | gpt-image-2.5-sunburst | nano-banana-pro-edit-grsai | 4:5 / 4:5 | 1 required | CARTOONS |
 | life-simulation-portrait | gpt-image-2 | nano-banana-pro-edit-grsai | 4:5 / 4:5 | 1 required | CARTOONS |
 | ugly-and-funny-doodle-2 | gpt-image-2 | nano-banana-pro-edit-grsai | 3:4 / 3:4 | 1 required | CARTOONS |
-| viral-doodle | gpt-image-2 | nano-banana-pro-edit-grsai | 2:3 / 3:4 | 1 required | CARTOONS |
+| viral-doodle | gpt-image-2 | nano-banana-pro-edit-grsai | 2:3 / 2:3 | 1 required | CARTOONS |
 | neon-city-game-portrait | banana3 | nano-banana-pro-edit-grsai | 9:16 / 9:16 | 1 required | CARTOONS |
 | bold-type-product | gpt-image-2 | nano-banana-pro-edit-grsai | 9:16 / 9:16 | 1 required | PRODUCTS |
 | toy-brick-portrait | gpt-image-2 | nano-banana-pro-edit-grsai | 4:5 / 4:5 | 1 required | CARTOONS |
-| retro-game-loading-portrait | banana3 | nano-banana-pro-edit-grsai | 2:3 / 3:4 | 1 required | CARTOONS |
+| retro-game-loading-portrait | banana3 | nano-banana-pro-edit-grsai | 2:3 / 2:3 | 1 required | CARTOONS |
 | shadow-beard-portrait | gpt-image-2 | nano-banana-pro-edit-grsai | 3:4 / 3:4 | 1 required | YOUR PHOTO |
 | cinematic-portrait | banana3 | nano-banana-kie | 3:4 / 3:4 | none | REALISTIC |
 | hotel-corridor | banana2 | nano-banana-kie | 3:4 / 3:4 | none | REALISTIC |
@@ -70,7 +70,7 @@ The aspect must pass both model capabilities and the gateway allowlist. Seven ph
 | composition-of-yuzu | banana3 | nano-banana-pro-edit-grsai | 3:4 / 3:4 | 1 required | PRODUCTS |
 | floral-perfume-campaign | banana3 | nano-banana-pro-edit-grsai | 3:4 / 3:4 | 1 required | PRODUCTS |
 | the-glass | banana3 | nano-banana-pro-edit-grsai | 3:4 / 3:4 | 1 required | PRODUCTS |
-| silhouette | seedream-5.0-pro | nano-banana-pro-edit-grsai | 2:3 / 3:4 | 1 required | PRODUCTS |
+| silhouette | seedream-5.0-pro | nano-banana-pro-edit-grsai | 2:3 / 2:3 | 1 required | PRODUCTS |
 | stretch-effect | banana3 | nano-banana-pro-edit-grsai | 3:4 / 3:4 | 1 required | PRODUCTS |
 | monochromatic | banana3 | nano-banana-pro-edit-grsai | 3:4 / 3:4 | 1 required | PRODUCTS |
 | sneaker-campaign | banana3 | nano-banana-pro-edit-grsai | 3:4 / 3:4 | 1 required | YOUR PHOTO |
@@ -79,16 +79,10 @@ The aspect must pass both model capabilities and the gateway allowlist. Seven ph
 
 Reviewed image categories total YOUR PHOTO 17, CARTOONS 8, REALISTIC 13, PRODUCTS 11 and VFX 1. `sneaker-campaign` needs a person's photo and belongs to YOUR PHOTO; the text-only `bottle-of-red-wine` still life belongs to REALISTIC. These keys already have translations in all eleven locales.
 
-Sixteen output defaults differ materially from preview shape after the seven substitutions. Recorded source settings remain provenance; supported output defaults can differ from the preview:
+Ten output defaults differ materially from preview shape. Each default is the recorded source setting; the preview is the source's own media, whose shape can differ from that setting:
 
 | Public id | Source setting | Output default | Preview dimensions |
 | --- | --- | --- | --- |
-| moody-filter | 2:3 | 3:4 | 720 × 1080 |
-| particle-filter | 2:3 | 3:4 | 720 × 1080 |
-| red-light-filter | 2:3 | 3:4 | 720 × 1080 |
-| 2000s-filter | 2:3 | 3:4 | 720 × 1080 |
-| viral-doodle | 2:3 | 3:4 | 720 × 1080 |
-| retro-game-loading-portrait | 2:3 | 3:4 | 725 × 1080 |
 | cinematic-portrait | 3:4 | 3:4 | 603 × 1080 |
 | climbing | 3:4 | 3:4 | 603 × 1080 |
 | giant-footballs | 3:4 | 3:4 | 870 × 1080 |
@@ -96,11 +90,11 @@ Sixteen output defaults differ materially from preview shape after the seven sub
 | a-wet-transparent-glass | 3:4 | 3:4 | 725 × 1080 |
 | composition-of-yuzu | 3:4 | 3:4 | 725 × 1080 |
 | floral-perfume-campaign | 3:4 | 3:4 | 725 × 1080 |
-| silhouette | 2:3 | 3:4 | 608 × 1080 |
+| silhouette | 2:3 | 2:3 | 608 × 1080 |
 | monochromatic | 3:4 | 3:4 | 870 × 1080 |
 | a-clear-bottle | 3:4 | 3:4 | 608 × 1080 |
 
-Ten previews differ in shape from their recorded source setting, which is kept: cinematic-portrait, climbing, a-clear-bottle and silhouette are approximately 9:16; a-wet-transparent-glass, composition-of-yuzu and floral-perfume-campaign approximately 2:3; giant-footballs, enormous-basketballs and monochromatic approximately 4:5. Six more previews are approximately 2:3 while their default is the substituted 3:4.
+Ten previews differ in shape from their recorded source setting, which is kept: cinematic-portrait, climbing, a-clear-bottle and silhouette are approximately 9:16; a-wet-transparent-glass, composition-of-yuzu and floral-perfume-campaign approximately 2:3; giant-footballs, enormous-basketballs and monochromatic approximately 4:5.
 
 The Crun image route trims edge whitespace: `sunflower-field` ends with a newline and is sent one character short on that route. Stored job inputs keep the exact prompt.
 

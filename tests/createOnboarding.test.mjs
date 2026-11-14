@@ -6,7 +6,10 @@ import { fromApi } from '../app/veyrnox/_lib/useCatalog.js';
 import { readFileSync } from 'node:fs';
 import {
   affordableStarterModel,
+  affordableVideoModel,
   CREATE_GOALS,
+  defaultLengthCredits,
+  freeCreditLine,
   modelsForGoal,
   starterModel,
 } from '../app/veyrnox/_lib/starterModels.js';
@@ -47,6 +50,28 @@ test('affordable starter keeps a preferred live model only while it fits the wel
   assert.equal(affordableStarterModel(models, 'image-expensive', 10)?.id, 'image-expensive');
   assert.equal(affordableStarterModel(models, 'image-expensive', 5)?.id, 'image-cheap');
   assert.equal(affordableStarterModel(models.filter((model) => model.kind === 'audio'), 'audio-gated', 10)?.id, 'audio-open');
+});
+
+test('the affordable video chip is the cheapest open prompt video the grant pays for at its default length', () => {
+  const videos = [
+    { id: 'video-cheap', name: 'Video cheap', kind: 'video', credits: 3, media: {}, takesPrompt: true },
+    { id: 'video-ten-only', name: 'Video ten only', kind: 'video', credits: 2, durations: [10], media: {}, takesPrompt: true },
+    { id: 'video-gated', name: 'Video gated', kind: 'video', credits: 1, media: {}, takesPrompt: true, gated: true },
+    { id: 'video-upload', name: 'Video upload', kind: 'video', credits: 1, media: { image: { required: true } }, takesPrompt: true },
+    { id: 'video-dear', name: 'Video dear', kind: 'video', credits: 17, durations: [5, 10], media: {}, takesPrompt: true },
+    { id: 'image-free', name: 'Image free', kind: 'image', credits: 0, media: {}, takesPrompt: true },
+  ];
+  assert.equal(defaultLengthCredits(videos[1]), 4, 'a 10 s-only model is priced at 10 s');
+  assert.equal(affordableVideoModel(videos, 10)?.id, 'video-cheap');
+  assert.equal(affordableVideoModel(videos, 3)?.id, 'video-cheap');
+  assert.equal(affordableVideoModel(videos, 2), null, 'no fallback past the grant');
+  assert.equal(affordableVideoModel(videos.filter((m) => m.id === 'video-dear'), 10), null);
+});
+
+test('the free-credit slip line shows what is left, or how much of the price the grant covers', () => {
+  assert.deepEqual(freeCreditLine(3, 10), { fits: true, left: 7 });
+  assert.deepEqual(freeCreditLine(10, 10), { fits: true, left: 0 });
+  assert.deepEqual(freeCreditLine(17, 10), { fits: false, covered: 10, cost: 17 });
 });
 
 test('the shipped fallback gives a new creator an image within the 10-credit signup balance', () => {
