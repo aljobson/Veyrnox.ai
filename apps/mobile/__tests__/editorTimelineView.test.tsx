@@ -13,8 +13,8 @@ const onSeek = jest.fn(), onSelect = jest.fn(), onApply = jest.fn(), onViewport 
 const selected = { track: 'video' as const, id: 'v1' };
 const event = (pageX = 0, pageY = 0, locationX = 0, locationY = 10) => ({ nativeEvent: { pageX, pageY, locationX, locationY } });
 const node = (id: string) => root.container.queryAll(n => n.props.testID === id)[0];
-async function render(selections = [selected], snap = false) {
-    await act(async () => root.render(<EditorTimeline timeline={timeline} selections={selections} ppf={2} total={300} frame={0} playing={false} snap={snap} onSeek={onSeek} onSelect={onSelect} onApply={onApply} onViewport={onViewport} />));
+async function render(selections = [selected], snap = false, ripple?: 'none' | 'lane' | 'all') {
+    await act(async () => root.render(<EditorTimeline timeline={timeline} selections={selections} ppf={2} total={300} frame={0} playing={false} snap={snap} ripple={ripple} onSeek={onSeek} onSelect={onSelect} onApply={onApply} onViewport={onViewport} />));
 }
 async function call(id: string, prop: string, value = event()) { await act(async () => node(id).props[prop](value)); }
 beforeEach(() => {
@@ -72,4 +72,12 @@ test('accessibility actions move one second and trim one frame, protected clips 
 });
 test('tapping empty lane space seeks without an edit', async () => {
     await render(); await call('lane-audio-0', 'onResponderGrant', event(10, 10, 120)); await call('lane-audio-0', 'onResponderRelease', event(10, 10)); expect(onSeek).toHaveBeenCalledWith(60); expect(onApply).not.toHaveBeenCalled();
+});
+
+test('dragging the right trim handle left closes the gap for the next clip when ripple is on, and leaves it when off', async () => {
+    timeline.video.push({ id: 'v2', start: 150, len: 90, in: 0, mediaId: 'm', trackId: 'video-0' });
+    await render([selected], false, 'lane'); await call('trim-v1-out', 'onResponderGrant'); await call('trim-v1-out', 'onResponderRelease', event(-60));
+    expect(onApply.mock.calls[0][0].video.map((c: any) => [c.id, c.start, c.len])).toEqual([['v1', 60, 60], ['v2', 120, 90]]);
+    onApply.mockClear(); await render([selected], false, 'none'); await call('trim-v1-out', 'onResponderGrant'); await call('trim-v1-out', 'onResponderRelease', event(-60));
+    expect(onApply.mock.calls[0][0].video.map((c: any) => [c.id, c.start, c.len])).toEqual([['v1', 60, 60], ['v2', 150, 90]]);
 });
