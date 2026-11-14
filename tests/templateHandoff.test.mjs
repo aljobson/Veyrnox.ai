@@ -57,6 +57,7 @@ test('template preview is reference-only and source requirements stay explicit',
   for (const setting of ['model', 'aspect', 'duration', 'cost', 'source']) assert.match(component, new RegExp(`id: '${setting}'`));
   assert.match(component, /id: 'cost', target: 'cost'/);
   assert.match(component, /TemplateArtwork/);
+  assert.match(component, /!preset\.createOnly && <Link href=\{`\/presets\/\$\{encodeURIComponent\(preset\.id\)\}`\}/);
   assert.doesNotMatch(component, /OriginalTemplateArtwork/);
   assert.doesNotMatch(component, /setSources|writeStudioDraft|Generate/);
 });
