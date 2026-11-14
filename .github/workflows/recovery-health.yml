@@ -3,6 +3,11 @@ on:
   schedule:
     - cron: '8,38 * * * *'
   workflow_dispatch:
+    inputs:
+      test_alert:
+        description: 'Exercise issue delivery after a clean recovery check; no production state changes'
+        type: boolean
+        default: false
 permissions: {}
 jobs:
   check:
@@ -14,18 +19,28 @@ jobs:
     outputs:
       exit: ${{ steps.check.outputs.exit }}
       report: ${{ steps.check.outputs.report }}
+      test_mode: ${{ steps.check.outputs.test_mode }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: '22'
       - id: check
+        env:
+          TEST_ALERT: ${{ github.event_name == 'workflow_dispatch' && inputs.test_alert && 'true' || 'false' }}
         run: |
           set +e
           node scripts/check-recovery-health.mjs > report.txt 2>&1
           code=$?
+          test_mode=false
+          if [ "$code" -eq 0 ] && [ "$TEST_ALERT" = 'true' ]; then
+            cat report.txt
+            printf '%s\n' 'TEST ONLY: recovery-health alert delivery exercise. Live recovery metrics passed; no production task, queue, payment, or database state changed.' > report.txt
+            test_mode=true
+          fi
           cat report.txt
           echo "exit=$code" >> "$GITHUB_OUTPUT"
+          echo "test_mode=$test_mode" >> "$GITHUB_OUTPUT"
           {
             echo 'report<<RECOVERY_REPORT_EOF'
             cat report.txt
@@ -34,7 +49,13 @@ jobs:
           exit "$code"
   alert:
     needs: check
-    if: always() && (needs.check.outputs.exit == '1' || needs.check.outputs.exit == '2') && github.ref == 'refs/heads/main'
+    if: >-
+      always() && github.ref == 'refs/heads/main' &&
+      (needs.check.outputs.exit == '1' || needs.check.outputs.exit == '2' ||
+      needs.check.outputs.test_mode == 'true')
+    concurrency:
+      group: ${{ needs.check.outputs.test_mode == 'true' && 'recovery-health-alert-test' || format('recovery-health-alert-real-{0}', github.run_id) }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -45,9 +66,38 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           REPORT: ${{ needs.check.outputs.report }}
+          TEST_MODE: ${{ needs.check.outputs.test_mode }}
+          RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          gh label create recovery-health --color B60205 --description 'Recovery task or queue needs operator attention' 2>/dev/null || true
-          existing=$(gh issue list --label recovery-health --state open --json number --jq '.[0].number // empty')
-          if [ -n "$existing" ]; then exit 0; fi
-          printf '%s\n\n%s\n' 'Recovery health failed. Follow docs/operations/recovery-health.md. Owner: repository owner/on-call operator.' "$REPORT" > body.md
-          gh issue create --title 'Recovery health needs attention' --label recovery-health --body-file body.md
+          set -euo pipefail
+          label=recovery-health
+          title='Recovery health needs attention'
+          description='Recovery task or queue needs operator attention'
+          color=B60205
+          if [ "$TEST_MODE" = 'true' ]; then
+            label=recovery-health-test
+            title='TEST: recovery-health alert delivery'
+            description='Non-destructive recovery alert delivery exercise'
+            color=FBCA04
+          fi
+          gh label create "$label" --color "$color" --description "$description" 2>/dev/null || true
+          set +e
+          existing=$(gh issue list --label "$label" --state open --json number --jq '.[0].number // empty')
+          lookup_code=$?
+          set -e
+          if [ "$lookup_code" -ne 0 ]; then
+            if [ "$TEST_MODE" = 'true' ]; then
+              printf '%s\n' 'Could not verify that no earlier recovery-health test issue is open.' >&2
+              exit 1
+            fi
+            existing=''
+          fi
+          if [ -n "$existing" ]; then
+            if [ "$TEST_MODE" = 'true' ]; then
+              printf 'An open recovery-health test issue already exists: #%s. Close it before running another delivery exercise.\n' "$existing" >&2
+              exit 1
+            fi
+            exit 0
+          fi
+          printf '%s\n\n%s\n\nDiagnostic run: %s\n' "$title. Follow docs/operations/recovery-health.md. Owner: repository owner/on-call operator." "$REPORT" "$RUN_URL" > body.md
+          gh issue create --title "$title" --label "$label" --body-file body.md

@@ -18,6 +18,27 @@ stored in Actions. Missing or >45-minute-old snapshots fail closed and open
 one recovery-health issue, just like an unhealthy queue. Underlying scans run
 only in the trusted fifteen-minute cron, never from an anonymous request.
 
+## Controlled alert delivery exercise
+
+Confirm `RECOVERY_HEALTH_WATCH_ENABLED=true`, close any previous open
+`recovery-health-test` issue, then dispatch the `recovery-health` workflow from
+`main` with `test_alert=true`. A disabled watcher skips the check; a non-main
+dispatch never opens an issue. The workflow first runs the normal read-only
+production health check. It exercises issue delivery only when that check is
+clean; a real unhealthy or unreadable result stays on the normal incident
+path. The exercise does not change a task, queue, payment, or database row.
+If the live check fails, no test issue is created and that run is not delivery
+evidence. Triage the real incident or existing `recovery-health` issue first,
+then repeat the exercise after the check is clean.
+
+A successful delivery creates one open issue titled
+`TEST: recovery-health alert delivery` with label `recovery-health-test` and a
+link to the diagnostic run. Confirm the issue arrived, record the run and issue
+links in the launch evidence, then close the test issue. Never close a real
+`recovery-health` incident as part of this exercise. If an earlier test issue
+is still open, a later exercise fails explicitly and names that issue rather
+than treating old delivery as new evidence.
+
 ## Triage
 
 - Unhealthy task: check deployment/runtime configuration and logs for the named
