@@ -71,5 +71,6 @@
   "bestCut.language.de": "Native language name, intentionally shared across locales.",
   "bestCut.language.ko": "Native language name, intentionally shared across locales.",
   "create.firstRun.dest.tiktok": "Product name written the same in this language: TikTok.",
-  "create.firstRun.dest.youtube": "Product name written the same in this language: YouTube."
+  "create.firstRun.dest.youtube": "Product name written the same in this language: YouTube.",
+  "job.percent": "Percent sign directly after the number is the standard form in this language."
 }
