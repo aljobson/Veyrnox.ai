@@ -82,4 +82,7 @@ export default {
     'faceFilters.light': 'Light',
     'faceFilters.medium': 'Medium',
     'faceFilters.heavy': 'Heavy',
+    'faceFilters.chipCredits.one': "{count} credit",
+    'faceFilters.chipCredits.other': "{count} credits",
+    'faceFilters.keyboardDone': "Done",
 } as const;

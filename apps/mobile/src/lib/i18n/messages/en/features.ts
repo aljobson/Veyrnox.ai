@@ -39,4 +39,6 @@ export default {
     "features.maketheexactthingyouneed": "Make the exact thing you need",
     "features.chooseaworkflowVeyrnoxsetstheright": "Choose a workflow. Veyrnox.ai sets the right model, prompt shape and required uploads, then opens the final review in Create.",
     "features.tools": "{value1} tools",
+    'features.modelCredits.one': "{name} · {count} credit",
+    'features.modelCredits.other': "{name} · {count} credits",
 } as const;

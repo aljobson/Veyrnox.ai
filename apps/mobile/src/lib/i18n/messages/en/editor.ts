@@ -284,4 +284,10 @@ export default {
     "editor.imageFallback": "image",
     "editor.diagnostics": "Build {version} ({build}) · editor switch {editor} · full editor {full} · workspaces {workspaces}",
     "editor.diagnosticsHttp": "Server reply: {status}",
+    'editor.captiondefault': "Caption",
+    'editor.clipSelectedUseButtons': "Clip selected. Use the buttons above to split, copy or delete.",
+    'editor.clipsOnTimelineCount.one': "{count} clip",
+    'editor.clipsOnTimelineCount.other': "{count} clips",
+    'editor.textLayersCount.one': "{count} text layer",
+    'editor.textLayersCount.other': "{count} text layers",
 } as const;
