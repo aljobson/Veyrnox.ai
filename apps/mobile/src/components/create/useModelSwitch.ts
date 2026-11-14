@@ -8,7 +8,8 @@ type Route = ReturnType<typeof createHandoff>;
 
 // "Change model" on the Create form: picking another model reopens the form on it, carrying the words, settings and
 // files typed or added so far. The draft is saved first, and a blur or account change in between cancels the switch.
-export function useModelSwitch(flush: () => Promise<void>) {
+// A switch that fails (navigation refused, say) leaves the form as it was and calls onFail, so the person is told.
+export function useModelSwitch(flush: () => Promise<void>, onFail: () => void) {
     const router = useRouter();
     const beginHandoff = useHandoffScope();
     const [picking, setPicking] = useState(false);
@@ -18,8 +19,12 @@ export function useModelSwitch(flush: () => Promise<void>) {
         setPicking(false);
         if (!target || target.id === current.id) return;
         const valid = beginHandoff();
-        await flush();
-        if (valid()) router.replace(route(target));
-    }, [beginHandoff, flush, router]);
+        try {
+            await flush();
+            if (valid()) router.replace(route(target));
+        } catch {
+            if (valid()) onFail();
+        }
+    }, [beginHandoff, flush, router, onFail]);
     return { picking, open, close, change };
 }

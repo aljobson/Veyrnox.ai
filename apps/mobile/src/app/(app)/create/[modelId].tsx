@@ -250,7 +250,7 @@ export default function CreateWithModel() {
     }, []);
     // Closing the screen saves what was typed in the last moments too.
     useEffect(() => () => void flushDraft(), [flushDraft]);
-    const modelSwitch = useModelSwitch(flushDraft);
+    const modelSwitch = useModelSwitch(flushDraft, useCallback(() => setError(t('form.modelLoad')), []));
     const discardDraft = useCallback(() => {
         setPrompt('');
         setOpts((o) => ({ ...o, seed: '', negative: '', count: 1, voice: '', audioSeconds: '' }));

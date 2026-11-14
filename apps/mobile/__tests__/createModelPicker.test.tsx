@@ -97,3 +97,12 @@ test('with only one model of the kind there is no picker', async () => {
     await render();
     expect(modelRow()).toHaveLength(0);
 });
+
+test('a switch that fails keeps the form and says so', async () => {
+    mockReplace.mockImplementationOnce(() => { throw new Error('navigation refused'); });
+    await render();
+    await act(async () => modelRow()[0].props.onClick(event));
+    await act(async () => byLabel(`${seedream.name}, ${plural('create.from', 6)}`)[0].props.onClick(event));
+    expect(root.container.queryAll(n => n.children.includes(t('form.modelLoad'))).length).toBeGreaterThan(0);
+    expect(modelRow()).toHaveLength(1);
+});
