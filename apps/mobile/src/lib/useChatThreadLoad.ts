@@ -13,6 +13,9 @@ export interface ThreadLoadHandlers {
     stop(): void;
 }
 
+// Chats currently open, so a chat left and opened again at once is never removed by the earlier screen's cleanup.
+const openNow = new Map<string, number>();
+
 // Loads one chat. It runs again when the account changes (`generation`) or the person taps Try again (`retry`),
 // so a failed first load, such as an expired session or a 429, does not strand the chat until the app is reopened.
 export function useChatThreadLoad(api: ApiClient, id: string, generation: number, handlers: ThreadLoadHandlers) {
@@ -26,11 +29,13 @@ export function useChatThreadLoad(api: ApiClient, id: string, generation: number
     const openedEmpty = useRef(false);
     useEffect(() => {
         openedEmpty.current = false;
+        openNow.set(id, (openNow.get(id) ?? 0) + 1);
         return () => {
+            openNow.set(id, (openNow.get(id) ?? 1) - 1);
             if (!openedEmpty.current) return;
             const threads = chatApi(api);
             void Promise.resolve().then(() => threads.getThread(id)).then(async (r) => {
-                if (r.messages.length > 0 || r.thread.system_prompt) return;
+                if (openNow.get(id)! > 0 || r.messages.length > 0 || r.thread.system_prompt) return;
                 await threads.deleteThread(id);
                 await forgetThread(id);
             }).catch(() => undefined);

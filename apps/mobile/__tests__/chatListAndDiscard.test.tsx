@@ -47,3 +47,17 @@ test('a chat opened with messages or instructions is kept', async () => {
     await openAndLeave({ thread: { id: 't1', system_prompt: 'Be brief' }, messages: [] }, empty);
     expect(mockCalls.del).not.toHaveBeenCalled();
 });
+
+test('a chat opened again before the check finishes is kept', async () => {
+    (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+    mockCalls.get.mockReset().mockResolvedValue(empty);
+    mockCalls.del.mockClear();
+    const a = createRoot();
+    await act(async () => a.render(<Probe />));
+    await act(async () => { await Promise.resolve(); });
+    const b = createRoot();
+    await act(async () => { a.unmount(); b.render(<Probe />); });
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    expect(mockCalls.del).not.toHaveBeenCalled();
+    await act(async () => b.unmount());
+});
