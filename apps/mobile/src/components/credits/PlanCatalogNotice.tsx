@@ -13,9 +13,10 @@ interface PlanCatalogNoticeProps {
 export function PlanCatalogNotice({ status, onRetry }: PlanCatalogNoticeProps) {
     const s = useThemedStyles(sheets);
     if (status === 'ready') return null;
-    if (status === 'loading') return <View style={s.row} accessible accessibilityLiveRegion="polite">
-        <ActivityIndicator color={s.spinner.color} />
-        <Text variant="footnote" tone="secondary">{t('credits.planDetails.loading')}</Text>
+    // The live region sits on the shared Text, which also announces on iOS (a native View's live region is Android-only).
+    if (status === 'loading') return <View style={s.row}>
+        <ActivityIndicator color={s.spinner.color} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" />
+        <Text variant="footnote" tone="secondary" accessibilityLiveRegion="polite">{t('credits.planDetails.loading')}</Text>
     </View>;
     return <View style={s.group}>
         <Text variant="footnote" tone="secondary" accessibilityRole="alert" accessibilityLiveRegion="polite">{t('credits.planDetails.failed')}</Text>
