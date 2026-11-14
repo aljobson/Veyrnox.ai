@@ -9,7 +9,7 @@ const env = { PUBLIC_HOST: 'https://veyrnox.ai', PUBLISH_ENABLED: 'true',
  PUBLISH_RELEASED_NETWORKS: 'youtube,linkedin,twitter,tiktok', PUBLISH_EXTENDED_NETWORKS_ENABLED: 'false',
  META_REVIEW_ENABLED: 'true', META_REVIEW_AUTH_IDS: auth,
  META_APP_ID: '2428989684301953', META_APP_SECRET: 'test-only-secret-value',
- SOCIAL_OAUTH_STATE_SECRET: 'test-only-state', SOCIAL_TOKEN_ENCRYPTION_KEY: Buffer.alloc(32, 5).toString('base64') };
+ SOCIAL_OAUTH_STATE_SECRET: 'test-only-oauth-state-secret-0123456789abcdef', SOCIAL_TOKEN_ENCRYPTION_KEY: Buffer.alloc(32, 5).toString('base64') };
 test('both Meta platforms require exact server opt-in and verified allowlisted subject', () => {
  for (const network of ['facebook','instagram']) {
   assert.equal(metaReviewAllowed(network, auth, env), true);

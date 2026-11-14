@@ -23,6 +23,7 @@ import { metaAvailable } from '../../../../../../../lib/social/metaReview.js';
 import { envConfig } from '../../../../../../../packages/db/supabase-client.js';
 import { instagramConfig, buildAuthorizeUrl } from '../../../../../../../packages/adapters/social/instagram.js';
 import { issueOAuthState } from '../../../../../../../lib/social/oauthStateStore.js';
+import { oauthStateSecretValid } from '../../../../../../../lib/social/oauthState.js';
 
 import { isUuidLoose } from '../../../../../../../lib/validate.js';
 
@@ -38,7 +39,7 @@ export async function POST(req) {
     const igCfg = instagramConfig();
     const stateSecret = process.env.SOCIAL_OAUTH_STATE_SECRET;
     const publicHost = process.env.PUBLIC_HOST;
-    if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !igCfg || !stateSecret || !publicHost) {
+    if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !igCfg || !oauthStateSecretValid() || !publicHost) {
         return NextResponse.json({ error: 'instagram_not_configured' }, { status: 503 });
     }
 

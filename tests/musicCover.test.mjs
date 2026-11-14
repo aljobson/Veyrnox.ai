@@ -63,3 +63,16 @@ test('Cover routes measure and sign the server-owned asset without accepting a b
   assert.match(confirmRoute, /p_source_audio_url: inspected\.url/);
   assert.match(confirmRoute, /Math\.abs\(inspected\.seconds - Number\(context\.source_duration_seconds\)\) > 0\.1/);
 });
+
+test('0502 sends the Cover bitrate as the string the provider schema requires', async () => {
+  // fal-ai/stable-audio-3/small/music/audio-to-audio: bitrate is a string, default '192k'.
+  // 0479 sent the number 192 and every Cover job was refused with HTTP 422.
+  const fix = await readFile(
+    new URL('../packages/db/schema/supabase/0502_music_cover_bitrate_string.sql', import.meta.url), 'utf8');
+  assert.match(fix, /^CREATE OR REPLACE FUNCTION public\.music_submit_cover_pair\(/m);
+  assert.match(fix, /'output_format'\s*,\s*'mp3'\s*,\s*'bitrate'\s*,\s*'192k'\)/);
+  assert.doesNotMatch(fix, /'bitrate'\s*,\s*\d/);
+  assert.match(fix, /length\(p_source_audio_url\) > 2008/);
+  assert.match(fix, /^REVOKE ALL ON FUNCTION public\.music_submit_cover_pair\(TEXT,UUID,UUID,TEXT,TEXT\) FROM PUBLIC,anon,authenticated;/m);
+  assert.match(fix, /^GRANT EXECUTE ON FUNCTION public\.music_submit_cover_pair\(TEXT,UUID,UUID,TEXT,TEXT\) TO service_role;/m);
+});

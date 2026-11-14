@@ -25,6 +25,7 @@ import { networkReleased } from '../../../../../../../lib/social/networks.js';
 import { envConfig } from '../../../../../../../packages/db/supabase-client.js';
 import { xConfig, buildAuthorizeUrl } from '../../../../../../../packages/adapters/social/twitter.js';
 import { issueOAuthState } from '../../../../../../../lib/social/oauthStateStore.js';
+import { oauthStateSecretValid } from '../../../../../../../lib/social/oauthState.js';
 
 import { isUuidLoose } from '../../../../../../../lib/validate.js';
 
@@ -40,7 +41,7 @@ export async function POST(req) {
     const xCfg = xConfig();
     const stateSecret = process.env.SOCIAL_OAUTH_STATE_SECRET;
     const publicHost = process.env.PUBLIC_HOST;
-    if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !xCfg || !stateSecret || !publicHost) {
+    if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !xCfg || !oauthStateSecretValid() || !publicHost) {
         return NextResponse.json({ error: 'twitter_not_configured' }, { status: 503 });
     }
 

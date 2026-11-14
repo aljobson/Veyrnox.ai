@@ -16,7 +16,7 @@ function setConfigured() {
     Object.assign(process.env, {
         SUPABASE_URL: 'https://db.test', SUPABASE_SERVICE_ROLE_KEY: 'test-only',
         META_APP_ID: '123456789012345', META_APP_SECRET: 'b'.repeat(32),
-        SOCIAL_OAUTH_STATE_SECRET: 'state-secret-value', PUBLIC_HOST: 'https://veyrnox.ai',
+        SOCIAL_OAUTH_STATE_SECRET: 'test-only-oauth-state-secret-0123456789abcdef', PUBLIC_HOST: 'https://veyrnox.ai',
         SOCIAL_TOKEN_ENCRYPTION_KEY: Buffer.alloc(32, 5).toString('base64'),
     });
 }

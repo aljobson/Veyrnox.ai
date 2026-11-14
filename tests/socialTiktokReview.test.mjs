@@ -20,7 +20,7 @@ const env = {
     PUBLISH_RELEASED_NETWORKS: 'youtube,linkedin', TIKTOK_REVIEW_ENABLED: 'true', TIKTOK_REVIEW_AUTH_IDS: auth,
     TIKTOK_REVIEW_CLIENT_KEY: 'sandboxclientkey', TIKTOK_REVIEW_CLIENT_SECRET: 'sandbox-secret',
     TIKTOK_CLIENT_KEY: 'productionclientkey', TIKTOK_CLIENT_SECRET: 'production-secret', TIKTOK_ANALYTICS_SCOPE_ENABLED: 'true',
-    PUBLIC_HOST: 'https://veyrnox.ai', SOCIAL_OAUTH_STATE_SECRET: 'test-state', SOCIAL_TOKEN_ENCRYPTION_KEY: key,
+    PUBLIC_HOST: 'https://veyrnox.ai', SOCIAL_OAUTH_STATE_SECRET: 'test-only-oauth-state-secret-0123456789abcdef', SOCIAL_TOKEN_ENCRYPTION_KEY: key,
     SUPABASE_URL: 'https://db.test', SUPABASE_SERVICE_ROLE_KEY: 'test-only',
 };
 async function configured(run) {

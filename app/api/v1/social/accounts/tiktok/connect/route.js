@@ -22,6 +22,7 @@ import { tiktokConnectionConfig } from '../../../../../../../lib/social/tiktokRe
 import { envConfig } from '../../../../../../../packages/db/supabase-client.js';
 import { buildAuthorizeUrl } from '../../../../../../../packages/adapters/social/tiktok.js';
 import { issueOAuthState } from '../../../../../../../lib/social/oauthStateStore.js';
+import { oauthStateSecretValid } from '../../../../../../../lib/social/oauthState.js';
 
 import { isUuidLoose } from '../../../../../../../lib/validate.js';
 
@@ -37,7 +38,7 @@ export async function POST(req) {
     const ttCfg = tiktokConnectionConfig(authId);
     const stateSecret = process.env.SOCIAL_OAUTH_STATE_SECRET;
     const publicHost = process.env.PUBLIC_HOST;
-    if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !ttCfg || !stateSecret || !publicHost) {
+    if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !ttCfg || !oauthStateSecretValid() || !publicHost) {
         return NextResponse.json({ error: 'tiktok_not_configured' }, { status: 503 });
     }
 

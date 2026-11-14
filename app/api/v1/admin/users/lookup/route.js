@@ -17,6 +17,8 @@ import { isUuid } from '../../../../../../lib/validate.js';
 // an address we send to. Bounded so it cannot be a payload.
 const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,190}$/;
 
+// Ships off; set to 'true' in staging and production once admins have enrolled
+// TOTP. See app/api/v1/admin/metrics/route.js for the full rationale.
 const requireAal2 = () => process.env.ADMIN_REQUIRE_AAL2 === 'true';
 
 export async function GET(req) {
