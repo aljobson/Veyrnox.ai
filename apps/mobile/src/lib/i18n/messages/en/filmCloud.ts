@@ -22,4 +22,5 @@ export default {
     'filmCloud.linkCount.other': '{count} films',
     "filmCloud.signintokeepastudioon": "Sign in to keep a studio on this phone.",
     "filmCloud.untitledfilm": "Untitled film",
+    "filmCloud.linkFailed": "Your saved films could not be loaded. Try again later.",
 } as const;

@@ -1,4 +1,4 @@
-import { PHONE_ONLY, TOOL_TASKS, isTool, requiresSource, toolGroups, toolNeeds } from '../src/lib/toolDirectory';
+import { PHONE_ONLY, TOOL_TASKS, isTool, requiresSource, toolGroups, toolNeeds, toolQualifiers } from '../src/lib/toolDirectory';
 import type { CatalogModel } from '../src/lib/media';
 
 declare const require: (id: string) => any;
@@ -55,4 +55,27 @@ describe('tool groups', () => {
         expect(g[0].tools[0].id).toBe('brand-new-tool');
     });
     test('nothing in the catalog is no groups', () => expect(toolGroups([])).toEqual([]));
+});
+
+describe('rows with the same public name are told apart from catalog data', () => {
+    const named = (id: string, credits: number, presentation: Record<string, unknown> = {}, bestValue = false): CatalogModel => ({
+        id, name: 'Kling 3.0 Pro I2V', modality: 'image-to-video', credits, gated: false, bestValue, durations: [5], capabilities: { inputs: {}, media: {}, presentation },
+    });
+    test('sound in, sound out: each row says which', () => {
+        const q = toolQualifiers([named('kling-3.0-i2v', 40, { audioIncluded: true }), named('kling-3.0-i2v-kie', 29, { audioIncluded: false })]);
+        expect(q.get('kling-3.0-i2v')).toBe('With sound');
+        expect(q.get('kling-3.0-i2v-kie')).toBe('No sound');
+    });
+    test('the same output: the cheaper one says so, from its catalog price', () => {
+        const q = toolQualifiers([named('a', 9), named('b', 2)]);
+        expect(q.get('b')).toBe('Lower price');
+        expect(q.has('a')).toBe(false);
+    });
+    test('the same output: a best-value row is named first', () => {
+        const q = toolQualifiers([named('a', 9), named('b', 9, {}, true)]);
+        expect(q.get('b')).toBe('Best value');
+    });
+    test('distinct names get no qualifier', () => {
+        expect(toolQualifiers([model('a'), model('b')]).size).toBe(0);
+    });
 });

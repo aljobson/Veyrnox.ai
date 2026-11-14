@@ -9,6 +9,8 @@ import { ImageTemplateCard } from '../../../components/templates/ImageTemplateCa
 import { fetchImageTemplates, imageCategoriesOf, imageTemplatesIn, type ImageTemplate } from '../../../lib/imageTemplates';
 import { audioCategoriesOf, audioTemplatesIn, fetchAudioTemplates, type AudioTemplate } from '../../../lib/audioTemplates';
 import { promptHref } from '../../../lib/explore';
+import { priceLines } from '../../../lib/catalogPages';
+import { fetchCatalogCached, type CatalogModel } from '../../../lib/media';
 import { t } from '../../../lib/i18n';
 import { fetchPresets, searchPresets, themeTitle, type Preset } from '../../../lib/presets';
 import { fetchPopularIds, templateChips, templatesFor, previewRatio, templatePageHref } from '../../../lib/templateFilters';
@@ -38,6 +40,7 @@ export default function Templates() {
     const [audio, setAudio] = useState<AudioTemplate[] | null>(null);
     const [audioFailed, setAudioFailed] = useState(false);
     const [audioChip, setAudioChip] = useState('ALL');
+    const [catalog, setCatalog] = useState<CatalogModel[] | null>(null);
     const vibe = useVibeAnswers(attempt);
     useEffect(() => {
         let live = true; setFailed(false);
@@ -49,6 +52,8 @@ export default function Templates() {
         if (kind !== 'audio') return;
         let live = true; setAudioFailed(false);
         fetchAudioTemplates().then(value => { if (live) setAudio(value); }).catch(() => { if (live) setAudioFailed(true); });
+        // Audio templates carry no price; the card shows the catalog price of the template's model when it is listed.
+        fetchCatalogCached(list => { if (live) setCatalog(list); }).catch(() => { /* Cards stay without a price. */ });
         return () => { live = false; };
     }, [kind, attempt]);
     useEffect(() => {
@@ -69,6 +74,7 @@ export default function Templates() {
         return audioTemplatesIn(audio ?? [], audioChip).filter(a => !words || a.name.toLowerCase().includes(words) || a.prompt.toLowerCase().includes(words));
     }, [audio, audioChip, query]);
     const imagesShown = useMemo(() => imageTemplatesIn(images ?? [], imageChip, query), [images, imageChip, query]);
+    const audioCredits = useMemo(() => new Map((catalog ?? []).map(m => [m.id, priceLines(m)[0]?.credits])), [catalog]);
     const openAudio = (a: AudioTemplate) => router.push(promptHref(a.modelId, a.prompt));
     const openImage = (i: ImageTemplate) => router.push(promptHref(i.modelId, i.prompt));
     const retry = <View><Text tone="danger">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text><Button label={t('recovery.retry')} onPress={() => setAttempt(n => n + 1)} /></View>;
@@ -96,7 +102,7 @@ export default function Templates() {
                     <ScrollView horizontal contentContainerStyle={styles.chips}>{['ALL', ...audioCategoriesOf(audio)].map(c => <Chip key={c} selected={audioChip === c} accessibilityState={{ selected: audioChip === c }} label={c === 'ALL' ? t('audioTemplates.all') : t(`audioTemplates.cat.${c}`)} onPress={() => setAudioChip(c)} />)}</ScrollView>
                 </View>}
                 ListEmptyComponent={<Text tone="secondary">{t(query ? 'presets.nomatchingeffects' : 'presets.notemplatesavailablerightnow')}</Text>}
-                renderItem={({ item }) => <AudioTemplateCard template={item} onOpen={() => openAudio(item)} />} />)
+                renderItem={({ item }) => <AudioTemplateCard template={item} credits={audioCredits.get(item.modelId)} onOpen={() => openAudio(item)} />} />)
         : failed ? <View><Text tone="danger">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text><Button label={t('recovery.retry')} onPress={() => setAttempt(n => n + 1)} /></View>
             : presets === null ? <ActivityIndicator /> : <FlatList key="video" data={shown.slice(0, limit)} numColumns={2} keyExtractor={p => p.id} contentContainerStyle={styles.list}
                 ListHeaderComponent={<View style={styles.header}>
