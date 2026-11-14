@@ -424,7 +424,7 @@ test('offline SSR: version-bound legal declarations remain exact English inside 
   const unlock = 'Unlock now and add it to my account for good. I understand this spends credits straight away and that my right to cancel ends once I press play.';
   const rights = 'I own or hold the rights to everything in this title, including any real people, voices, music and footage, and I have declared its AI use truthfully.';
   const safety = 'This title contains no nudity, pornography, explicit sexual content, sexualised minors, non-consensual intimate imagery, sexual violence, or sexual deepfake of a real person. I have read the Cinema Content Policy.';
-  const malware = 'I have not intentionally included malware, executable code, disguised files or links intended to compromise viewers or Veyrnox.';
+  const malware = 'I have not intentionally included malware, executable code, disguised files or links intended to compromise viewers or Veyrnox.ai.';
   const title = { id: '12345678-1234-1234-1234-123456789abc', title: 'Catalog title', content_type: 'FILM', access: 'locked', credits: 5, duration_seconds: 120, ai_disclosures: ['generated_video'] };
   for (const locale of ['de', 'ar']) {
     for (const [file, component, states, props, legal] of [
