@@ -50,7 +50,7 @@ test('native video availability is derived from exact opt-in, released networks,
         assert.equal(editorDestinations(data).find(n => n.key === key).ready, true);
         assert.equal(editorDestinations({ ...data, networks: [{ key, available: true, media: ['image'] }] }).find(n => n.key === key).ready, false);
     }
-    const ready = networkReadiness({ PUBLIC_HOST: 'https://veyrnox.test', SOCIAL_OAUTH_STATE_SECRET: 'state', SOCIAL_TOKEN_ENCRYPTION_KEY: Buffer.alloc(32, 1).toString('base64'), META_APP_ID: '123456', META_APP_SECRET: 's'.repeat(20) });
+    const ready = networkReadiness({ PUBLIC_HOST: 'https://veyrnox.test', SOCIAL_OAUTH_STATE_SECRET: 'test-only-oauth-state-secret-0123456789abcdef', SOCIAL_TOKEN_ENCRYPTION_KEY: Buffer.alloc(32, 1).toString('base64'), META_APP_ID: '123456', META_APP_SECRET: 's'.repeat(20) });
     assert.deepEqual(ready.find(n => n.key === 'instagram').media, ['image']); assert.deepEqual(networkMedia('youtube', {}), ['video']);
 });
 

@@ -27,6 +27,7 @@ import { networkReleased } from '../../../../../../../lib/social/networks.js';
 import { rpc, envConfig, SupabaseError } from '../../../../../../../packages/db/supabase-client.js';
 import { xConfig, exchangeCodeForToken, fetchConnectedAccount, X_SCOPES } from '../../../../../../../packages/adapters/social/twitter.js';
 import { consumeOAuthState } from '../../../../../../../lib/social/oauthStateStore.js';
+import { oauthStateSecretValid } from '../../../../../../../lib/social/oauthState.js';
 import { tokenCryptoConfig, encryptToken } from '../../../../../../../lib/social/tokenCrypto.js';
 
 import { isUuidLoose } from '../../../../../../../lib/validate.js';
@@ -46,7 +47,7 @@ export async function POST(req) {
     const stateSecret = process.env.SOCIAL_OAUTH_STATE_SECRET;
     const cryptoCfg = tokenCryptoConfig();
     const publicHost = process.env.PUBLIC_HOST;
-    if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !xCfg || !stateSecret || !cryptoCfg || !publicHost) {
+    if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !xCfg || !oauthStateSecretValid() || !cryptoCfg || !publicHost) {
         return NextResponse.json({ error: 'twitter_not_configured' }, { status: 503 });
     }
 

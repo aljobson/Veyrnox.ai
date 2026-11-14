@@ -1,10 +1,29 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createOAuthState, oauthStateDigest, verifyOAuthState } from '../lib/social/oauthState.js';
+import { createOAuthState, oauthStateConfig, oauthStateSecretValid, oauthStateDigest, verifyOAuthState } from '../lib/social/oauthState.js';
 import { consumeOAuthState, issueOAuthState } from '../lib/social/oauthStateStore.js';
 
 const secret = 'test-only-secret-value';
 const authId = '11111111-1111-4111-8111-111111111111';
+
+test('a missing or too-weak state secret is reported as unconfigured, not valid', () => {
+    // < 32 bytes of entropy — the entropy floor, mirroring tokenCryptoConfig.
+    const short = 'x'.repeat(31);
+    assert.equal(oauthStateConfig({}), null);
+    assert.equal(oauthStateConfig({ SOCIAL_OAUTH_STATE_SECRET: '' }), null);
+    assert.equal(oauthStateConfig({ SOCIAL_OAUTH_STATE_SECRET: short }), null);
+    assert.equal(oauthStateSecretValid({ SOCIAL_OAUTH_STATE_SECRET: short }), false);
+});
+
+test('a 32-byte-or-stronger state secret validates', () => {
+    const strong = 'x'.repeat(32);
+    assert.deepEqual(oauthStateConfig({ SOCIAL_OAUTH_STATE_SECRET: strong }), { secret: strong });
+    assert.equal(oauthStateSecretValid({ SOCIAL_OAUTH_STATE_SECRET: strong }), true);
+    // Multi-byte UTF-8 is measured by byte length, not character count.
+    const lock = String.fromCodePoint(0x1f512); // 4 UTF-8 bytes
+    assert.equal(oauthStateSecretValid({ SOCIAL_OAUTH_STATE_SECRET: lock.repeat(8) }), true); // 32 bytes
+    assert.equal(oauthStateSecretValid({ SOCIAL_OAUTH_STATE_SECRET: lock.repeat(7) }), false); // 28 bytes
+});
 
 test('round-trips and verifies against the same caller/network', async () => {
     const token = await createOAuthState({ authId, network: 'instagram' }, secret);

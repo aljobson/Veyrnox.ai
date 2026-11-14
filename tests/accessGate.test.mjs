@@ -107,15 +107,23 @@ test('the Worker cron is internal: no cf-ray, so it passes the door and still ne
     assert.deepEqual(await requireAccess(internal, ENV), { ok: true, via: 'internal' });
 });
 
-test('with Access unconfigured the endpoint still answers, and says so in the log', async () => {
+test('an external request with Access unconfigured fails closed and says so in the log', async () => {
     const said = [];
     const realError = console.error;
     console.error = (...a) => said.push(a.join(' '));
     try {
+        // No ACCESS_TEAM_DOMAIN / ACCESS_AUD, but a cf-ray means it reached the
+        // Worker from the internet: it must be refused, not waved through to the
+        // shared bearer token alone (the hardening fix — mirrors requireDashboardAccess).
         const r = await requireAccess(external({}), { });
-        assert.deepEqual(r, { ok: true, via: 'unconfigured' });
+        assert.deepEqual(r, { ok: false });
     } finally { console.error = realError; }
-    assert.match(said.join('\n'), /reachable from the internet behind its shared secret alone/);
+    assert.match(said.join('\n'), /refused: ACCESS_TEAM_DOMAIN\/ACCESS_AUD unset/);
+});
+
+test('with Access unconfigured an internal request (no cf-ray) still passes the door', async () => {
+    const internal = new Request('https://veyrnox.ai/api/admin/reap-assets', { method: 'POST' });
+    assert.deepEqual(await requireAccess(internal, { }), { ok: true, via: 'internal' });
 });
 
 // Access rotates its signing key on its own schedule. A warm isolate holds

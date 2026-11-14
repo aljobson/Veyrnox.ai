@@ -41,6 +41,8 @@ const MAX_BODY_BYTES = 4 * 1024;
 // record one strike, not two (0253, audit P-07).
 import { IDEMPOTENCY_RE } from '../../../../../lib/idempotency.js';
 
+// Ships off; set to 'true' in staging and production once admins have enrolled
+// TOTP. See app/api/v1/admin/metrics/route.js for the full rationale.
 const requireAal2 = () => process.env.ADMIN_REQUIRE_AAL2 === 'true';
 
 async function gate(req) {

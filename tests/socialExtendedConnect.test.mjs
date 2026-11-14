@@ -11,7 +11,7 @@ const auth = '11111111-1111-4111-8111-111111111111';
 const selectionId = '22222222-2222-4222-8222-222222222222';
 Object.assign(process.env, { PUBLISH_EXTENDED_NETWORKS_ENABLED: 'true', PUBLIC_HOST: 'https://staging.test',
     SUPABASE_URL: 'https://db.test', SUPABASE_SERVICE_ROLE_KEY: 'service-test',
-    SOCIAL_TOKEN_ENCRYPTION_KEY: Buffer.alloc(32, 7).toString('base64'), SOCIAL_OAUTH_STATE_SECRET: 'state-test',
+    SOCIAL_TOKEN_ENCRYPTION_KEY: Buffer.alloc(32, 7).toString('base64'), SOCIAL_OAUTH_STATE_SECRET: 'test-only-oauth-state-secret-0123456789abcdef',
     META_APP_ID: '123456789', META_APP_SECRET: 'secret-test', GMB_CLIENT_ID: 'client123', GMB_CLIENT_SECRET: 'secret-test' });
 const cryptoCfg = tokenCryptoConfig();
 const request = (body, identity = auth) => new Request('https://staging.test/api/v1/social/accounts/facebook/callback', {
