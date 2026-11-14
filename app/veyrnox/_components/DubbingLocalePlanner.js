@@ -82,7 +82,7 @@ export function DubbingLocalePlanner({
       </summary>
       <div className="border-t border-vx-border p-4 sm:p-5">
         <div className="rounded-xl border border-vx-accent/30 bg-vx-accent/[0.06] px-4 py-3 text-xs leading-5 text-vx-fg-muted">
-          <strong className="text-vx-fg">Reviewed text only.</strong> Veyrnox does not auto-translate here. Editing and loading examples cost nothing; only the explicit batch button below can submit work.
+          <strong className="text-vx-fg">Reviewed text only.</strong> Veyrnox.ai does not auto-translate here. Editing and loading examples cost nothing; only the explicit batch button below can submit work.
         </div>
         <div className="mt-4 flex flex-wrap items-end gap-3">
           <label className="min-w-0 flex-1 text-xs font-extrabold">Project name

@@ -186,7 +186,7 @@ export function MusicDistributionDialog({ mode, song, onClose }) {
           </div>
         ) : (
           <div className="mt-6">
-            <p className="text-sm leading-6 text-vx-fg-muted">Choose the format already stored for this immutable version. Veyrnox does not relabel or transcode the source. Review the exact allowance impact before claiming the download.</p>
+            <p className="text-sm leading-6 text-vx-fg-muted">Choose the format already stored for this immutable version. Veyrnox.ai does not relabel or transcode the source. Review the exact allowance impact before claiming the download.</p>
             <label className="mt-5 block text-sm font-bold text-vx-fg" htmlFor="music-download-format">Stored audio format</label>
             <select
               id="music-download-format"

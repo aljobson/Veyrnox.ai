@@ -194,7 +194,7 @@ export const LONG_FORM_SYNC_MODES = Object.freeze([
 ]);
 
 export const SPEECH_SOURCES = [
-  { id: 'script', label: 'Write a script', description: 'Veyrnox creates speech, then lip-syncs it.' },
+  { id: 'script', label: 'Write a script', description: 'Veyrnox.ai creates speech, then lip-syncs it.' },
   { id: 'upload', label: 'Upload audio', description: 'Use an MP3 or WAV you already own.' },
   { id: 'record', label: 'Record', description: 'Capture speech here and review it first.' },
 ];

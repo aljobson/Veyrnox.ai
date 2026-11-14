@@ -24,7 +24,7 @@ test('completed Music versions expose a direct account-checked Edit handoff', as
     source('app/api/v1/music/songs/[id]/route.js'),
   ]);
   assert.match(actions, /\/app\/editor\?job=\$\{encodeURIComponent\(jobId\)\}&name=\$\{encodeURIComponent\(title\)\}/);
-  assert.match(actions, /Open in Veyrnox Edit/);
+  assert.match(actions, /Open in Veyrnox\.ai Edit/);
   assert.match(library, /jobId=\{song\.job_id\}[\s\S]*open_editor/);
   assert.match(detail, /jobId=\{song\.job_id\}/);
   assert.match(route, /isUuid\(result\.song\?\.job_id \|\| ''\) \? \['open_editor'\] : \[\]/);

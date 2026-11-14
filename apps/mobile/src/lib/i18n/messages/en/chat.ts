@@ -16,7 +16,7 @@ export default {
     'chat.sendPrice.other': 'Send, {count} credits',
     'chat.sendPriceShort.one': '{count} credit',
     'chat.sendPriceShort.other': '{count} credits',
-    'chat.composer.label': 'Create with Veyrnox',
+    'chat.composer.label': 'Create with Veyrnox.ai',
     'chat.composer.setup': 'Reply setup',
     'chat.composer.chat': 'Chat',
     'chat.composer.message': 'Message',
@@ -55,7 +55,7 @@ export default {
     'chat.updateFailed': 'Could not update this chat. Try again.',
     // Chat image attachments and Studio skills (ADR-0167)
     'chat.attach.library': 'Library',
-    'chat.attach.libraryLabel': 'Choose an image from your Veyrnox Library',
+    'chat.attach.libraryLabel': 'Choose an image from your Veyrnox.ai Library',
     'chat.attach.photos': 'Photos',
     'chat.attach.photosLabel': 'Attach photos from this device',
     'chat.attach.extra.one': 'Images add {count} credit',

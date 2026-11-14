@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { parsePerformanceProjectManifest, PERFORMANCE_PROJECT_MAX_BYTES } from '../_lib/performanceProjectManifest';
 
 const MESSAGES = {
-  invalid_project_json: 'Choose a valid Veyrnox project JSON file.',
-  unsupported_project_schema: 'That file is not a supported Veyrnox Performance project.',
+  invalid_project_json: 'Choose a valid Veyrnox.ai project JSON file.',
+  unsupported_project_schema: 'That file is not a supported Veyrnox.ai Performance project.',
   unsupported_project_workflow: 'That project uses a workflow this Studio cannot open.',
 };
 

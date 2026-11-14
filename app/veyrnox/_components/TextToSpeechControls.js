@@ -232,7 +232,7 @@ export function TextToSpeechControls({
             <span>Voice Palettes <span className="vx-num ml-1 text-vx-fg-muted">{BUILTIN_VOICE_PALETTES.length + personalPalettes.length}</span></span>
             <Chevron open={false} />
           </summary>
-          <p className="mt-1 max-w-2xl text-[11px] leading-4 text-vx-fg-muted">Start from a Veyrnox delivery recipe or save your current stock voice, language and performance controls as a personal palette.</p>
+          <p className="mt-1 max-w-2xl text-[11px] leading-4 text-vx-fg-muted">Start from a Veyrnox.ai delivery recipe or save your current stock voice, language and performance controls as a personal palette.</p>
           <label className="mt-3 flex flex-wrap items-center gap-2 text-[11px] font-extrabold text-vx-fg">Template language
             <select aria-label="Template language" value={templateLanguage} onChange={(event) => setTemplateLanguage(event.target.value)} className={selectClass}>
               {VOICE_TEMPLATE_LANGUAGES.map((language) => <option key={language} value={language}>{language}</option>)}

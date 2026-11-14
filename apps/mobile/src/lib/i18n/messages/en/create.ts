@@ -82,7 +82,7 @@ export default {
     "create.s": "{value1}s",
     "create.lengthCost": "{value1}s \u00b7 {credits} cr",
     'create.firstRun.personalise': 'We\'ll use this to personalise your experience',
-    'create.firstRun.label': 'Personalise Veyrnox',
+    'create.firstRun.label': 'Personalise Veyrnox.ai',
     'create.firstRun.roleTitle': 'Which describes you best?',
     'create.firstRun.role.creator': 'Content creator',
     'create.firstRun.role.business': 'Business or marketer',

@@ -12,7 +12,7 @@ export default function MusicSoundsPage() {
       <header>
         <p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-accent">Verified reusable audio tools</p>
         <h1 className="mt-2 font-vx text-4xl font-black tracking-tight sm:text-5xl">Create a sound or seamless loop.</h1>
-        <p className="mt-3 max-w-2xl leading-7 text-vx-fg-body">Open an existing Veyrnox text-to-sound model. The destination shows its exact credit price before you confirm and returns failed generations through the normal refund path.</p>
+        <p className="mt-3 max-w-2xl leading-7 text-vx-fg-body">Open an existing Veyrnox.ai text-to-sound model. The destination shows its exact credit price before you confirm and returns failed generations through the normal refund path.</p>
       </header>
       <section aria-label="Text to sound models" className="mt-8 grid gap-4 md:grid-cols-2">
         <article className="rounded-2xl border border-vx-border bg-vx-panel p-6 shadow-lg">

@@ -16,7 +16,7 @@ export default {
     'insights.weeks.one': '{count} week',
     'insights.weeks.other': '{count} weeks',
     'insights.noScore': 'no measured posts',
-    'insights.disclaimer': 'This is past performance on posts Veyrnox has collected. It does not predict your audience or show that posting more causes more engagement.',
+    'insights.disclaimer': 'This is past performance on posts Veyrnox.ai has collected. It does not predict your audience or show that posting more causes more engagement.',
     'insights.noAccounts': 'No connected accounts yet.',
     'insights.err.plan': 'Best time needs a Publish Plan on this brand.',
     'insights.err.notOpen': 'Best time is not open yet.',

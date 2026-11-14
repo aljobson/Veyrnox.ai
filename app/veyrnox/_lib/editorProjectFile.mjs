@@ -9,7 +9,7 @@ const LOCAL_PROJECT_ID = '00000000-0000-4000-8000-000000000000';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const encoder = new TextEncoder();
 const sizeProblem = 'This project file exceeds the 32 KiB document limit. Use fewer clips or caption lines, or shorten its brief.';
-const fileProblem = 'Choose a Veyrnox project JSON file up to 32 KiB.';
+const fileProblem = 'Choose a Veyrnox.ai project JSON file up to 32 KiB.';
 const validDocument = value => {
     try { return UUID.test(value?.project_id) && validProjectDocument(value, value.project_id); }
     catch { return false; }

@@ -21,7 +21,7 @@ export function MusicSampleSeedCard({ seed, mix: rawMix, onRemove }) {
         <button type="button" onClick={onRemove} aria-label={`Remove ${seed.title} seed`} className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-vx-border text-lg font-bold text-vx-fg-muted hover:border-vx-danger hover:text-vx-danger">×</button>
       </div>
       {shaped ? <p className="border-t border-vx-border px-3 py-2 font-vx-mono text-[10px] font-bold text-vx-accent">Mix attached · drums {mix.drums}% · bass {mix.bass}% · melody {mix.melody}%</p> : null}
-      <p className="border-t border-vx-border px-3 py-2 text-[11px] leading-4 text-vx-fg-faint">The preview recording is not copied. Its Veyrnox production recipe and mix directions shape a new, distinct instrumental.</p>
+      <p className="border-t border-vx-border px-3 py-2 text-[11px] leading-4 text-vx-fg-faint">The preview recording is not copied. Its Veyrnox.ai production recipe and mix directions shape a new, distinct instrumental.</p>
     </section>
   );
 }

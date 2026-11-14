@@ -25,7 +25,7 @@ export default {
     "features.ihavepermissiontousethesesources2": "{value1} I have permission to use these sources to generate AI content.",
     "features.wORKFLOW": "WORKFLOW",
     "features.lIVEMODEL": "LIVE MODEL",
-    "features.veyrnoxmodelcredits": "Veyrnox {value1} model · {value2} credits",
+    "features.veyrnoxmodelcredits": "Veyrnox.ai {value1} model · {value2} credits",
     "features.unavailable": "Unavailable",
     "features.continuetofinalreview": "Continue to final review",
     "features.youwillseetheexactpricebefore": "You will see the exact price before generating. A failed generation is refunded automatically.",
@@ -37,6 +37,6 @@ export default {
     "features.creativetools": "Creative tools",
     "features.gUIDEDCREATION": "GUIDED CREATION",
     "features.maketheexactthingyouneed": "Make the exact thing you need",
-    "features.chooseaworkflowVeyrnoxsetstheright": "Choose a workflow. Veyrnox sets the right model, prompt shape and required uploads, then opens the final review in Create.",
+    "features.chooseaworkflowVeyrnoxsetstheright": "Choose a workflow. Veyrnox.ai sets the right model, prompt shape and required uploads, then opens the final review in Create.",
     "features.tools": "{value1} tools",
 } as const;

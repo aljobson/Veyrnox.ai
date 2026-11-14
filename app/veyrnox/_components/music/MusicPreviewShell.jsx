@@ -76,7 +76,7 @@ export function MusicPreviewShell({ children, initialEnabled = false, serverMode
           <div className="border-b border-vx-border bg-vx-panel/80">
             <div className="mx-auto flex max-w-7xl flex-col items-start gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
               <div>
-                <p className="font-vx text-lg font-black tracking-tight">Veyrnox Music</p>
+                <p className="font-vx text-lg font-black tracking-tight">Veyrnox.ai Music</p>
                 <p className="text-xs text-vx-fg-muted">{libraryMode ? 'Private beta · authenticated creation and organization' : serverMode ? 'Private beta · authenticated server generation' : 'Local prototype · no provider connected'}</p>
               </div>
               <nav aria-label="Music preview" className="flex max-w-full overflow-x-auto rounded-full border border-vx-border bg-vx-base p-1 text-sm font-bold">

@@ -110,7 +110,7 @@ test('starter questions follow the current workspace', () => {
         for (const starter of helpStartersForPath('/oddlings')) assert.equal(isGroundedQuestion(starter, env), true, starter);
     }
     assert.match(helpStartersForPath('/app/film-studio')[0], /Film Studio/);
-    assert.equal(helpStartersForPath('/app')[0], 'What can I create in Veyrnox?');
+    assert.equal(helpStartersForPath('/app')[0], 'What can I create in Veyrnox.ai?');
 });
 
 test('help requests are bounded and target ids are allowlisted', () => {

@@ -159,7 +159,7 @@ export function AudioReferenceShelf({ audio, disabled, onUse }) {
     event.target.value = '';
     if (!file || manifestBusy) return;
     if (file.size > 262144) {
-      setNotice('That manifest is too large. Choose a Veyrnox Audio Shelf JSON file under 256 KB.');
+      setNotice('That manifest is too large. Choose a Veyrnox.ai Audio Shelf JSON file under 256 KB.');
       return;
     }
     setManifestBusy(true);
@@ -180,7 +180,7 @@ export function AudioReferenceShelf({ audio, disabled, onUse }) {
       setListeningSets(result.listeningSets);
       setNotice(`Imported ${result.imported} owned reference${result.imported === 1 ? '' : 's'}. ${result.existing} already existed, ${result.unavailable} could not be revalidated, ${result.capacitySkipped} exceeded shelf capacity, and ${result.rejected} invalid entr${result.rejected === 1 ? 'y was' : 'ies were'} ignored.`);
     } catch {
-      setNotice('That file is not a valid Veyrnox Audio Shelf manifest. Nothing was imported.');
+      setNotice('That file is not a valid Veyrnox.ai Audio Shelf manifest. Nothing was imported.');
     } finally {
       setManifestBusy(false);
     }

@@ -165,14 +165,14 @@
   },
   {
     "area": "credits",
-    "text": "Editor &amp; Credits×Your editor is includedCreate freely. Top up only when you generate.Editing does not require a paid plan. Buy non-expiring Credits only when you want to generate image, video or audio.IncludedVeyrnox Editor$0✓Full multitrack video editor✓Local preview and export✓Cloud projects and version history✓No card requiredTop up when you need to.One-off Credit Packs. No renewal. Purchased Credits never expire.Open Credits &amp; billingCredit Pack1,234cr1,234 credits — $10 + applicable taxOne-off purchase · Never expiresBuy 1,234 creditsPrices are in USD and exclude tax. Stripe, Inc. is the Merchant of Record for Credit Pack purchases and shows the final total before payment. The existing Credits &amp; billing flow requires purchase consent before opening Stripe Checkout. Refund policy.",
+    "text": "Editor &amp; Credits×Your editor is includedCreate freely. Top up only when you generate.Editing does not require a paid plan. Buy non-expiring Credits only when you want to generate image, video or audio.IncludedVeyrnox.ai Editor$0✓Full multitrack video editor✓Local preview and export✓Cloud projects and version history✓No card requiredTop up when you need to.One-off Credit Packs. No renewal. Purchased Credits never expire.Open Credits &amp; billingCredit Pack1,234cr1,234 credits — $10 + applicable taxOne-off purchase · Never expiresBuy 1,234 creditsPrices are in USD and exclude tax. Stripe, Inc. is the Merchant of Record for Credit Pack purchases and shows the final total before payment. The existing Credits &amp; billing flow requires purchase consent before opening Stripe Checkout. Refund policy.",
     "labels": [
       "aria-label=\"Close Editor and Credits\""
     ]
   },
   {
     "area": "credits",
-    "text": "Editor &amp; Credits×Your editor is includedCreate freely. Top up only when you generate.Editing does not require a paid plan. Buy non-expiring Credits only when you want to generate image, video or audio.IncludedVeyrnox Editor$0✓Full multitrack video editor✓Local preview and export✓Cloud projects and version history✓No card requiredTop up when you need to.One-off Credit Packs. No renewal. Purchased Credits never expire.Open Credits &amp; billingCould not load RetryPrices are in USD and exclude tax. Stripe, Inc. is the Merchant of Record for Credit Pack purchases and shows the final total before payment. The existing Credits &amp; billing flow requires purchase consent before opening Stripe Checkout. Refund policy.",
+    "text": "Editor &amp; Credits×Your editor is includedCreate freely. Top up only when you generate.Editing does not require a paid plan. Buy non-expiring Credits only when you want to generate image, video or audio.IncludedVeyrnox.ai Editor$0✓Full multitrack video editor✓Local preview and export✓Cloud projects and version history✓No card requiredTop up when you need to.One-off Credit Packs. No renewal. Purchased Credits never expire.Open Credits &amp; billingCould not load RetryPrices are in USD and exclude tax. Stripe, Inc. is the Merchant of Record for Credit Pack purchases and shows the final total before payment. The existing Credits &amp; billing flow requires purchase consent before opening Stripe Checkout. Refund policy.",
     "labels": [
       "aria-label=\"Close Editor and Credits\""
     ]
@@ -351,12 +351,12 @@
   },
   {
     "area": "oauth",
-    "text": "Connected assistantsReview and revoke apps connected through Veyrnox OAuth. Revoking also ends that client’s active sessions.RefreshNo assistants are connected.",
+    "text": "Connected assistantsReview and revoke apps connected through Veyrnox.ai OAuth. Revoking also ends that client’s active sessions.RefreshNo assistants are connected.",
     "labels": []
   },
   {
     "area": "oauth",
-    "text": "Connected assistantsReview and revoke apps connected through Veyrnox OAuth. Revoking also ends that client’s active sessions.RefreshUser assistant unchangedAccess: openid · Connected 10/1/2026https://example.test/Revoke accessRevoke User assistant unchanged?The assistant will be signed out and must ask for approval again before it can read your Veyrnox data.Revoke access",
+    "text": "Connected assistantsReview and revoke apps connected through Veyrnox.ai OAuth. Revoking also ends that client’s active sessions.RefreshUser assistant unchangedAccess: openid · Connected 10/1/2026https://example.test/Revoke accessRevoke User assistant unchanged?The assistant will be signed out and must ask for approval again before it can read your Veyrnox.ai data.Revoke access",
     "labels": []
   },
   {

@@ -273,7 +273,7 @@ test('smart-link SSR preserves creator data and translates only chrome and defau
       assert.ok(html.includes(creator.title)); assert.ok(html.includes('Creator’s own label'));
       assert.ok(html.includes('/s/test-slug/go/item-id')); assert.ok(html.includes(t('smartlink.madeWith')));
       const metadata = await page.generateMetadata({ params: Promise.resolve({ slug: 'test-slug' }) });
-      assert.equal(metadata.title, 'My Creator Title — Veyrnox'); assert.equal(metadata.description, t('smartlink.description'));
+      assert.equal(metadata.title, 'My Creator Title — Veyrnox.ai'); assert.equal(metadata.description, t('smartlink.description'));
       creator.bio = 'Creator bio stays exact.';
       assert.equal((await page.generateMetadata({ params: Promise.resolve({ slug: 'test-slug' }) })).description, creator.bio);
       creator.bio = '';
