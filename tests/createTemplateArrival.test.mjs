@@ -28,6 +28,7 @@ const jsxRuntime = {
 };
 const original = { id: 'kling-2.6-pro-kie', name: 'Kling 2.6 Pro', kind: 'video', modality: 'image-to-video', credits: 17, durations: [5, 10], aspects: ['16:9', '9:16'], takesNegative: true };
 const other = { ...original, id: 'wan-2.5-kie', name: 'Wan 2.5', credits: 31, aspects: ['1:1', '4:5'] };
+const audio = { ...original, id: 'ace-step-1-5', name: 'ACE-Step 1.5', kind: 'audio', modality: 'text-to-audio', durations: [] };
 const preset = { id: 'exact-template', name: 'Exact template', model: original.name, prompt: 'Exact community prompt with reference images.', sourcePromptOrigin: 'community-source-exact', sourcePromptRunnable: false, aspect: '9:16', durationSeconds: 10, negativePrompt: 'No distortion' };
 const source = readFileSync(new URL('../app/veyrnox/app/create/page.js', import.meta.url), 'utf8');
 assert.match(source, /takeTemplateMediaHandoff\(window, preset\.id, wanted\)/);
@@ -63,7 +64,7 @@ function harness(params, { saved, handoff, handoffModelId, handoffTemplateId = p
     addEventListener() {}, removeEventListener() {},
   };
   if (handoff) templateMediaHandoff.writeTemplateMediaHandoff(globalThis.window, { templateId: handoffTemplateId, modelId: handoffModelId || params.model || original.id, image: handoff });
-  const slots = [], effects = [], requests = [];
+  const slots = [], effects = [], requests = [], navigations = [];
   let cursor = 0, dirty = true, tree, catalog = { models, loading, live: !loading };
   const changed = (before, after) => !before || !after || before.length !== after.length || before.some((value, index) => !Object.is(value, after[index]));
   const react = {
@@ -114,11 +115,13 @@ function harness(params, { saved, handoff, handoffModelId, handoffTemplateId = p
     '../../_components/TemplateHandoffCard': { TemplateHandoffCard: HandoffCard },
     '../../_components/SourcePickers': { SourcePickers },
     '../../_components/AddFilesDialog': { AddFilesDialog },
+    'next/navigation': { useRouter: () => ({ push: path => navigations.push(path) }) },
   };
   const output = { exports: {} };
   new Function('require', 'module', 'exports', code)(id => stubs[id] || (id === 'react/jsx-runtime' ? jsxRuntime : new Proxy({}, { get: () => () => null })), output, output.exports);
   return {
     requests,
+    navigations,
     async settle() {
       for (let i = 0; i < 20; i++) {
         if (dirty) { cursor = 0; dirty = false; tree = output.exports.default(); }
@@ -132,6 +135,32 @@ function harness(params, { saved, handoff, handoffModelId, handoffTemplateId = p
     close() { for (const slot of slots) slot?.cleanup?.(); globalThis.window = previousWindow; },
   };
 }
+
+test('Create opens audio templates in-page and leaves the current draft mounted', async () => {
+  const h = harness({ preset: '', model: audio.id }, { fetchedPreset: null, models: [original, audio] });
+  try {
+    const tree = await h.settle();
+    const button = find(tree, node => node.props?.['data-testid'] === 'create-open-templates');
+    assert.equal(button.props.children, 'app.create.templates.open');
+    button.props.onClick();
+    const after = await h.settle();
+    assert.deepEqual(h.navigations, []);
+    assert.ok(find(after, node => node.type === TemplatePicker));
+  } finally { h.close(); }
+});
+
+test('Create keeps image template browsing in its picker with the generic label', async () => {
+  const h = harness({ preset: '', model: original.id }, { fetchedPreset: null, models: [original, audio] });
+  try {
+    let tree = await h.settle();
+    const button = find(tree, node => node.props?.['data-testid'] === 'create-open-templates');
+    assert.equal(button.props.children, 'app.create.templates.open');
+    button.props.onClick();
+    tree = await h.settle();
+    assert.ok(find(tree, node => node.type === TemplatePicker));
+    assert.deepEqual(h.navigations, []);
+  } finally { h.close(); }
+});
 
 test('Create arrival applies URL recipe and submits original-model attribution only on the original model', async () => {
   for (const model of [original, other]) for (const durationSeconds of [5, 10]) for (const blocked of [false, true]) {
