@@ -324,3 +324,5 @@ dae2edacf363878ee7beededb7694a87dbcfdb03:scripts/probe-video-templates-staging.m
 8225b6c94561447b196a2e2d3cb0088d758bbd81:tests/chat.test.mjs:generic-api-key:59
 8225b6c94561447b196a2e2d3cb0088d758bbd81:tests/chatTurn.test.mjs:generic-api-key:73
 8225b6c94561447b196a2e2d3cb0088d758bbd81:tests/chatLongText.test.mjs:generic-api-key:10
+# Preview clip filename ("viral-….mp4") in a template clip list on a wip branch, not a credential.
+601d018e88f1b2c9d95a4eee2dab6744e2d76623:app/veyrnox/_lib/templateClips.js:generic-api-key:264
