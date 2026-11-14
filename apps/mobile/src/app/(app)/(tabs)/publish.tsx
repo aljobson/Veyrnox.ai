@@ -106,7 +106,7 @@ export default function Publish() {
     const brandName = chosenBrand?.label ?? t('brands.mine');
     const paid = data ? hasPublishPlan(data) || publishActive : publishActive;
     const plans = toDisplayPackages(offerings?.all.publish?.availablePackages ?? []).filter((plan) => plan.interval !== null);
-    const chosenPlan = plans.find((plan) => plan.id === (selectedPlan ?? plans.find((item) => item.interval === 'year')?.id)) ?? null;
+    const chosenPlan = plans.find((plan) => plan.id === (selectedPlan ?? (plans.find((item) => item.interval === 'year') ?? plans[0])?.id)) ?? null;
     const canCreate = data ? canPublish(data.brandRole) : false;
     // Social OAuth currently belongs to the person's default brand. Never send a client-brand collaborator through a
     // flow that would silently connect the account somewhere else, and respect the account limit before offering it.
@@ -226,6 +226,7 @@ export default function Publish() {
                                         ))}
                                     </View>
                                     {chosenPlan?.interval ? <PriceText accessibilityLanguage="en" variant="caption" tone="secondary" text={renewalTerms(chosenPlan.interval, chosenPlan.priceString, store)} price={chosenPlan.priceString} /> : null}
+                                    {!canPurchase ? <Text variant="footnote" style={styles.muted}>{t('unlock.notOpen')}</Text> : null}
                                     <Button label={t('unlock.subscribe')} variant="secondary" accessibilityRole="button" disabled={!canPurchase || busy || !chosenPlan}  onPress={() => void subscribe()}>
                                         {busy ? <ActivityIndicator color={styles.textInk.color} /> : <Text variant="bodyStrong">{t('unlock.subscribe')}</Text>}
                                     </Button>
