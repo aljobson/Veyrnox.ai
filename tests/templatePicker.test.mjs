@@ -32,12 +32,12 @@ const models = fromFallback();
 const renderPicker = (goal, catalog = models) => renderToStaticMarkup(createElement(compiledModule.exports.TemplatePicker, { models: catalog, goal, onPick() {}, onClose() {} }));
 const templateButtons = (html) => [...html.matchAll(/data-testid="create-template-(?!picker)[^"]+"/g)].length;
 
-test('the curated Create catalog has three valid templates per medium and bundled previews', () => {
-  assert.equal(createTemplates.CREATE_TEMPLATES.length, 9);
-  assert.equal(new Set(createTemplates.CREATE_TEMPLATES.map((item) => item.id)).size, 9);
+test('the curated Create catalog has three valid image and audio templates, no video, and bundled previews', () => {
+  assert.equal(createTemplates.CREATE_TEMPLATES.length, 6);
+  assert.equal(new Set(createTemplates.CREATE_TEMPLATES.map((item) => item.id)).size, 6);
   for (const kind of createTemplates.CREATE_TEMPLATE_KINDS) {
     const choices = createTemplates.createTemplatesFor(kind);
-    assert.equal(choices.length, 3);
+    assert.equal(choices.length, kind === 'video' ? 0 : 3);
     for (const choice of choices) {
       assert.equal(models.find((model) => model.id === tokens.templateModelId(choice))?.kind, kind);
       assert.equal(templateById(choice.id), null);
@@ -63,13 +63,15 @@ test('the curated Create catalog has three valid templates per medium and bundle
   }
 });
 
-test('Create offers exactly three curated video templates', () => {
+test('Create offers no video starts and points to the template gallery instead', () => {
   const html = renderPicker('video');
   assert.match(html, /<dialog[^>]*aria-labelledby="create-template-picker-title"/);
-  assert.match(html, /TEMPLATES · 3/);
-  assert.equal(templateButtons(html), 3);
-  for (const title of ['CCTV Night', 'Sunset Drift', 'Rainy Taxi']) assert.match(html, new RegExp(title));
-  assert.doesNotMatch(html, /Search templates/);
+  assert.equal(templateButtons(html), 0);
+  assert.doesNotMatch(html, /TEMPLATES · 0/);
+  assert.match(html, /data-testid="create-template-picker-empty"/);
+  assert.match(html, /Video templates that use your own photo are in the template gallery/);
+  assert.match(html, /href="\/presets"[^>]*>Open the template gallery</);
+  for (const title of ['CCTV Night', 'Sunset Drift', 'Rainy Taxi']) assert.doesNotMatch(html, new RegExp(title));
 });
 
 test('Create offers exactly three image templates using bundled Veyrnox images', () => {
@@ -101,11 +103,6 @@ test('the three choices remain visible but disabled when their models are unavai
 });
 
 test('template metadata keeps human model names and grammatically correct credit labels', () => {
-  const videoWithoutLiveCatalog = renderPicker('video', []);
-  assert.match(videoWithoutLiveCatalog, /Wan 2\.5 · 17 credits/);
-  assert.doesNotMatch(videoWithoutLiveCatalog, /wan-2\.5-kie/);
-  assert.doesNotMatch(videoWithoutLiveCatalog, />\s*· 17 credits/);
-
   const image = renderPicker('image');
   assert.match(image, /Nano Banana · 1 credit/);
   assert.doesNotMatch(image, /1 credits/);

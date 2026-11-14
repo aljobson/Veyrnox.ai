@@ -10,7 +10,7 @@ import { Modal } from './Modal';
 
 const CREATE_KINDS = new Set(['video', 'image', 'audio']);
 
-/** Three curated, runnable starts for the medium selected in Create. */
+/** Curated, runnable starts for the medium selected in Create; none for video, which points to the template gallery. */
 export function TemplatePicker({ models, goal, selectedKind, onPick, onClose }) {
   const { t, locale } = useI18n();
   const firstChoice = useRef(null);
@@ -30,13 +30,18 @@ export function TemplatePicker({ models, goal, selectedKind, onPick, onClose }) 
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-accent">{t('app.create.templates.title')} · {t(`app.create.goal.${kind}`)}</div>
-            <h2 id="create-template-picker-title" className="mt-1 text-xl font-extrabold text-vx-fg">{t('app.create.templates.title')} · {rows.length}</h2>
+            <h2 id="create-template-picker-title" className="mt-1 text-xl font-extrabold text-vx-fg">{rows.length ? `${t('app.create.templates.title')} · ${rows.length}` : t('app.create.templates.title')}</h2>
           </div>
           <button ref={closeButton} type="button" onClick={onClose} aria-label={t('authGate.close')} className="min-h-11 min-w-11 text-vx-fg-muted hover:text-vx-fg">✕</button>
         </div>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-vx-fg-muted">{t('app.create.templates.help')}</p>
+        {rows.length ? <p className="mt-2 max-w-2xl text-sm leading-6 text-vx-fg-muted">{t('app.create.templates.help')}</p> : (
+          <div data-testid="create-template-picker-empty" className="mt-4 rounded-xl border border-dashed border-vx-border p-6 text-center">
+            <p className="mx-auto max-w-xl text-sm leading-6 text-vx-fg-body">{t(kind === 'video' ? 'app.create.templates.videoGallery' : 'app.create.templates.empty')}</p>
+            {kind === 'video' && <Link href="/presets" onClick={onClose} className="vx-press mt-4 inline-flex min-h-11 items-center justify-center rounded-full bg-vx-accent px-5 text-sm font-extrabold text-vx-accent-ink">{t('app.create.templates.openGallery')}</Link>}
+          </div>
+        )}
 
-        <ul className="mt-5 grid gap-4 sm:grid-cols-3">
+        {rows.length > 0 && <ul className="mt-5 grid gap-4 sm:grid-cols-3">
           {rows.map(({ preset, model, modelName, credits }, index) => {
             const title = presetTitle(preset.name);
             return (
@@ -73,7 +78,7 @@ export function TemplatePicker({ models, goal, selectedKind, onPick, onClose }) 
               </li>
             );
           })}
-        </ul>
+        </ul>}
 
         {kind === 'audio' && <div className="mt-4 text-right text-xs"><Link href="/app/music/discover" className="font-bold text-vx-accent underline underline-offset-2">{t('musicDiscover.title')}</Link></div>}
       </div>

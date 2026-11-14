@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   MUSIC_DISCOVER_BEATS,
+  MUSIC_DISCOVER_LISTED_BEATS,
   MUSIC_DISCOVER_MOODS,
   MUSIC_DISCOVER_SECTIONS,
   normalizeMusicSampleMix,
@@ -258,7 +259,7 @@ export function MusicDiscover({ initialSample = null, initialMix = null, initial
 
   const visible = useMemo(() => {
     const query = search.trim().toLowerCase();
-    return MUSIC_DISCOVER_BEATS.filter((beat) => (mood === 'All' || beat.mood === mood)
+    return MUSIC_DISCOVER_LISTED_BEATS.filter((beat) => (mood === 'All' || beat.mood === mood)
       && (!query || [beat.title, beat.creator, beat.mood, beat.musicalKey].some((value) => value.toLowerCase().includes(query))));
   }, [mood, search]);
   const displayed = visible.slice(0, visibleCount);
@@ -333,7 +334,7 @@ export function MusicDiscover({ initialSample = null, initialMix = null, initial
         <p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-accent">{t('musicDiscover.eyebrow')}</p>
         <h1 className="mt-2 font-vx text-4xl font-black tracking-tight sm:text-6xl">{t('musicDiscover.title')}</h1>
         <p className="mt-4 text-lg leading-8 text-vx-fg-body">{t('musicDiscover.lead')}</p>
-        <div className="mt-5 flex flex-wrap gap-2 text-xs font-bold text-vx-fg-muted"><span className="rounded-full border border-vx-border px-3 py-1.5">100 original samples</span><span className="rounded-full border border-vx-border px-3 py-1.5">20 genres</span><span className="rounded-full border border-vx-border px-3 py-1.5">Tempo + 3-layer mixer</span></div>
+        <div className="mt-5 flex flex-wrap gap-2 text-xs font-bold text-vx-fg-muted"><span className="rounded-full border border-vx-border px-3 py-1.5">{MUSIC_DISCOVER_LISTED_BEATS.length} original samples</span><span className="rounded-full border border-vx-border px-3 py-1.5">{MUSIC_DISCOVER_MOODS.length - 1} genres</span><span className="rounded-full border border-vx-border px-3 py-1.5">Tempo + 3-layer mixer</span></div>
       </header>
 
       <section aria-label={t('musicDiscover.filters')} className="mt-8 rounded-2xl border border-vx-border bg-vx-panel p-4 sm:p-5">
@@ -343,7 +344,7 @@ export function MusicDiscover({ initialSample = null, initialMix = null, initial
           </div>
           <label className="relative block lg:w-72"><span className="sr-only">{t('musicDiscover.searchLabel')}</span><input type="search" value={search} onChange={(event) => { setSearch(event.target.value); setVisibleCount(PAGE_SIZE); }} placeholder={t('musicDiscover.searchPlaceholder')} className="min-h-11 w-full rounded-full border border-vx-border-boost bg-vx-base px-4 text-sm text-vx-fg placeholder:text-vx-fg-faint focus:border-vx-accent focus:outline-none" /></label>
         </div>
-        <p className="mt-3 font-vx-mono text-[11px] font-bold text-vx-fg-faint">Showing {displayed.length} of {visible.length} matching sample beats · 100 total</p>
+        <p className="mt-3 font-vx-mono text-[11px] font-bold text-vx-fg-faint">Showing {displayed.length} of {visible.length} matching sample beats · {MUSIC_DISCOVER_LISTED_BEATS.length} total</p>
       </section>
 
       {audioError ? <p role="alert" className="mt-5 rounded-2xl border border-vx-danger/50 bg-vx-danger/10 px-4 py-3 text-sm text-vx-danger">{audioError}</p> : null}
