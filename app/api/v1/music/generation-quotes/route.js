@@ -59,6 +59,13 @@ export async function POST(request) {
                 p_style_influence: input.styleInfluence,
                 p_exclude_styles: input.excludeStyles,
                 p_duration_seconds: input.durationSeconds,
+                // Sent only when used, so a quote without them still reaches the
+                // 8-argument function if 0514 is not applied yet.
+                ...(input.bpm !== null || input.keyScale !== null || input.timeSignature !== null ? {
+                    p_bpm: input.bpm,
+                    p_key_scale: input.keyScale,
+                    p_time_signature: input.timeSignature,
+                } : {}),
             }, cfg);
     } catch (error) {
         console.error('[music/quotes] rpc failed:', error?.message);
