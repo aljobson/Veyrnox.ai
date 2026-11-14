@@ -70,7 +70,7 @@ test('refuses what is wrong before touching money', async () => {
     assert.equal((await run(f, { threadId: 'not-a-uuid' })).status, 404);
     assert.equal((await run(f, { body: { text: '', idempotency_key: 'key-0123456789' } })).status, 400);
     assert.equal((await run(f, { body: { text: 'hi', idempotency_key: 'short' } })).status, 400);
-    assert.equal((await run(f, { body: { text: 'x'.repeat(8001), idempotency_key: 'key-0123456789' } })).status, 400);
+    assert.equal((await run(f, { body: { text: 'x'.repeat(30001), idempotency_key: 'key-0123456789' } })).status, 400);
     assert.equal((await run(f, { env: {} })).status, 503);
     assert.equal(f.calls.length, 0, 'no RPC ran');
 });

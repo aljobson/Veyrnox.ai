@@ -20,6 +20,8 @@ export default {
     'chat.composer.setup': 'Reply setup',
     'chat.composer.chat': 'Chat',
     'chat.composer.message': 'Message',
+    'chat.composer.longMessage': 'Long message: +{price}',
+    'chat.composer.tooLong': 'Too long for this model. Shorten it or pick another model.',
     'chat.composer.ask': 'Ask anything…',
     'chat.composer.policy': 'for this reply. Stop after text appears and you keep it and the price. If nothing arrives, the Credits come back.',
     'chat.workspace.title': 'What do you want to work on?',

@@ -67,7 +67,7 @@ test('the deck retains modes, option prices, multiline constraints and send/stop
         onDraft: jest.fn(), onModel: jest.fn(), onOptions, onLibrary: jest.fn(), onPhotos: jest.fn(),
         onRemoveImage: jest.fn(), onMake, onSend, onStop };
     await act(async () => root.render(<ChatComposerDeck {...props} />));
-    expect(control(t('chat.composer.message')).props).toMatchObject({ multiline: true, maxLength: 8000, value: 'Hello' });
+    expect(control(t('chat.composer.message')).props).toMatchObject({ multiline: true, maxLength: 30000, value: 'Hello' });
     // Modes and attachments live in one sheet, opened with the plus button beside the text box.
     const openSheet = () => act(async () => control(t('chat.make.title')).props.onClick(event));
     for (const kind of ['image', 'video', 'audio'] as const) {

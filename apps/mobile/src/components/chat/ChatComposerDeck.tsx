@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useKeyboardOpen } from '../../lib/useKeyboardOpen';
 import { Keyboard, Modal, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { cleanOptions, thinkingExtra, webExtra, type ChatModel, type ReplyOptions } from '../../lib/chat';
+import { CHAT_USER_TEXT_MAX, longTextState } from '../../lib/chatLongText';
 import type { ChatImage } from '../../lib/chatAttach';
 import { plural, t } from '../../lib/i18n';
 import type { Kind } from '../../lib/media';
@@ -62,6 +63,8 @@ export function ChatComposerDeck(props: Props) {
     const thinking = thinkingExtra(props.model);
     const web = webExtra(props.model);
     const chosen = cleanOptions(props.model, props.options);
+    // Long messages (ADR-0067 amendment 17): the count and the model's extra show next to Send once the text is long.
+    const longText = longTextState(props.model, props.draft.trim());
     const pick = (action: () => void) => () => { setSheet(false); action(); };
     return (
         <View>
@@ -81,7 +84,10 @@ export function ChatComposerDeck(props: Props) {
                 <AttachThumbs items={props.images} disabled={props.sending} onRemove={props.onRemoveImage} />
                 <TextField containerStyle={styles.field} style={[styles.input, { maxHeight: composerMaxHeight(height, typing) }]}
                     value={props.draft} onChangeText={props.onDraft} textAlignVertical="top" scrollEnabled
-                    placeholder={props.placeholder} accessibilityLabel={t('chat.composer.message')} multiline maxLength={8000} />
+                    placeholder={props.placeholder} accessibilityLabel={t('chat.composer.message')} multiline maxLength={CHAT_USER_TEXT_MAX} />
+                {longText.showCounter ? <Text variant="caption" tone={longText.tooLong ? 'danger' : 'secondary'} style={styles.counter} accessibilityLiveRegion="polite">
+                    {`${longText.count}/${longText.limit}`}{longText.extra > 0 ? ` · ${t('chat.composer.longMessage', { price: plural('chat.sendPriceShort', longText.extra) })}` : ''}{longText.tooLong ? ` · ${t('chat.composer.tooLong')}` : ''}
+                </Text> : null}
                 <View style={styles.actionRow}>
                     <Button variant="secondary" size="md" icon="plus" iconOnly label={t('chat.make.title')} accessibilityRole="button" accessibilityLabel={t('chat.make.title')}
                         disabled={props.sending} containerStyle={styles.plus} onPress={() => { Keyboard.dismiss(); setSheet(true); }} />
@@ -136,5 +142,6 @@ const sheets = themedStyles((p) => ({
     types: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     action: { minHeight: 44, maxWidth: 150 },
     sendPrice: { textAlign: 'right', flexShrink: 1 },
+    counter: { textAlign: 'right', paddingHorizontal: ds.space.md, paddingTop: ds.space.xs },
     policy: { paddingHorizontal: 5, paddingTop: 5 },
 }));

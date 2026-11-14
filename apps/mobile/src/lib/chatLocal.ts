@@ -1,5 +1,6 @@
 import { appCache, getCacheUser, subscribeCacheUser } from './appCache';
 import { POLICIES, type Cache, type CachePolicy } from './cache';
+import { CHAT_USER_TEXT_MAX } from './chatLongText';
 
 const ID = /^[A-Za-z0-9_-]{1,64}$/;
 let epoch = 0;
@@ -28,7 +29,7 @@ function cleanDrafts(v: unknown): Drafts {
     const valid = new Map(entries);
     // JSON objects enumerate integer-like ids numerically, so keep recency explicitly.
     const order = [...new Set([...(Array.isArray(v.order) ? v.order.filter((id): id is string => typeof id === 'string') : []), ...valid.keys()])].filter(id => valid.has(id)).slice(0, 50);
-    return { drafts: Object.fromEntries(order.map(id => [id, (valid.get(id) as string).slice(0, 8000)])), deleted, order };
+    return { drafts: Object.fromEntries(order.map(id => [id, (valid.get(id) as string).slice(0, CHAT_USER_TEXT_MAX)])), deleted, order };
 }
 function cleanStars(v: unknown): Record<string, string[]> {
     if (!object(v)) return {};
@@ -65,11 +66,11 @@ function draftMutation(threadId: string, text: string, restore: boolean, cache: 
         if (!ID.test(threadId) || c.threadId !== threadId || !currentCapture(c, cache)) return null;
         const r = cleanDrafts(await readValue(cache, POLICIES.chatDrafts, c.owner));
         if (!currentCapture(c, cache) || r.deleted.includes(threadId)) return null;
-        let next = text.slice(0, 8000);
+        let next = text.slice(0, CHAT_USER_TEXT_MAX);
         if (restore) {
             const was = own(r.drafts, threadId) ?? '';
-            if (was === next || (was && 8000 - was.length - 2 <= 0)) return was;
-            if (was) next = `${next.slice(0, 8000 - was.length - 2)}\n\n${was}`;
+            if (was === next || (was && CHAT_USER_TEXT_MAX - was.length - 2 <= 0)) return was;
+            if (was) next = `${next.slice(0, CHAT_USER_TEXT_MAX - was.length - 2)}\n\n${was}`;
         }
         delete r.drafts[threadId];
         r.order = [...next.trim() ? [threadId] : [], ...r.order.filter(id => id !== threadId)].slice(0, 50);

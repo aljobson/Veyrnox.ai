@@ -705,6 +705,8 @@ export default {
   "chat.composer.chat": "Chat",
   "chat.composer.label": "Crie com Veyrnox.ai",
   "chat.composer.message": "Mensagem",
+  "chat.composer.longMessage": "Mensagem longa: +{price}",
+  "chat.composer.tooLong": "Longo demais para este modelo. Encurte-o ou escolha outro modelo.",
   "chat.composer.policy": "para esta resposta. Se parar depois que o texto aparecer, você mantém o texto e a cobrança. Se nada chegar, os créditos são devolvidos.",
   "chat.composer.setup": "Configuração da resposta",
   "chat.couldnotloadmodels": "Não foi possível carregar os modelos.",

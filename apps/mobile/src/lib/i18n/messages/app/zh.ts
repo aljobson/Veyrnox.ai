@@ -691,6 +691,8 @@ export default {
   "chat.composer.chat": "聊天",
   "chat.composer.label": "用 Veyrnox.ai 创作",
   "chat.composer.message": "消息",
+  "chat.composer.longMessage": "长消息：+{price}",
+  "chat.composer.tooLong": "对该模型来说太长。请缩短或选择其他模型。",
   "chat.composer.policy": "用于本次回复。文字出现后停止，已生成文字会保留并按显示价格扣费。若未收到任何内容，积分会退回。",
   "chat.composer.setup": "回复设置",
   "chat.couldnotloadmodels": "无法加载模型。",

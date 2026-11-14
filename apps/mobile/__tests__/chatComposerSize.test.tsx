@@ -41,7 +41,7 @@ test('the message box shows four 17 pt lines and grows to 40% of the screen, 25%
 test('the rendered box is multiline, top-aligned and scrolls inside past its cap', async () => {
     await act(async () => root.render(<ChatComposerDeck {...props} />));
     const input = control(t('chat.composer.message'));
-    expect(input.props).toMatchObject({ multiline: true, scrollEnabled: true, textAlignVertical: 'top', maxLength: 8000 });
+    expect(input.props).toMatchObject({ multiline: true, scrollEnabled: true, textAlignVertical: 'top', maxLength: 30000 });
     const style = flat(input.props.style);
     expect(style).toMatchObject({ fontSize: 17, lineHeight: COMPOSER_LINE_HEIGHT, minHeight: COMPOSER_MIN_HEIGHT });
     expect(style?.maxHeight).toBe(composerMaxHeight(RN.Dimensions.get('window').height, false));
