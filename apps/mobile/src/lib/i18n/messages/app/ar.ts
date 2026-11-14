@@ -966,6 +966,7 @@ export default {
   "chatLibrary.personasarenotavailableyet": "الشخصيات غير متاحة بعد.",
   "chatLibrary.somethingwentwrongTryagain": "حدث خطأ. حاول مجددًا.",
   "chatLibrary.thatisnolongerthere": "لم يعد ذلك موجودًا.",
+  "chatLibrary.afolderwiththatnamealreadyexists": "لديك مجلد بهذا الاسم بالفعل.",
   "chatLibrary.thatnameisnotallowedUse1": "هذا الاسم غير مسموح. استخدم من 1 إلى 60 حرفًا.",
   "chatLibrary.thatpersonanameisnotallowedUse": "اسم الشخصية هذا غير مسموح. استخدم من 1 إلى 60 حرفًا.",
   "chatLibrary.theinstructionscanbeatmostcharacters": "يجب ألا تتجاوز التعليمات {value1} حرفًا.",

@@ -5,9 +5,9 @@ import { Link, Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
-import { chatApi, pinnedFirst, searchThreads, type ChatThread } from '../../lib/chat';
+import { chatApi, pinnedFirst, searchThreads, threadSubtitle, type ChatModel, type ChatThread } from '../../lib/chat';
 import { fetchFolders, type Folder } from '../../lib/chatLibrary';
-import { t } from '../../lib/i18n';
+import { formatLocale, t } from '../../lib/i18n';
 
 import { Text, TextField, Button, Card, Chip, Icon, themedStyles, useThemedStyles } from '../ui';
 import { radius } from '../../theme';
@@ -19,6 +19,7 @@ export function ChatLibraryScreen() {
     const [threads, setThreads] = useState<ChatThread[] | null>(null);
     const [failed, setFailed] = useState(false);
     const [folders, setFolders] = useState<Folder[]>([]);
+    const [models, setModels] = useState<ChatModel[]>([]);
     const [query, setQuery] = useState('');
     const [filter, setFilter] = useState<string | null | undefined>(undefined);
 
@@ -27,6 +28,7 @@ export function ChatLibraryScreen() {
         try {
             setThreads(await chatApi(api).listThreads());
             fetchFolders(api).then(setFolders, () => undefined);
+            chatApi(api).listModels().then(setModels, () => undefined);
         } catch {
             setFailed(true);
         }
@@ -94,7 +96,7 @@ export function ChatLibraryScreen() {
                                 <View style={styles.badge}><Icon name="chat" /></View>
                                 <View style={styles.rowText}>
                                     <Text variant="bodyStrong" style={styles.rowTitle} numberOfLines={1}>{item.pinned ? `${t('chat.pinned')} · ` : ''}{item.title || t('chat.newchat')}</Text>
-                                    <Text style={styles.muted} numberOfLines={1}>{item.model_id}</Text>
+                                    <Text style={styles.muted} numberOfLines={1}>{threadSubtitle(item, models, formatLocale())}</Text>
                                 </View>
                             </Card>
                             <Button accessibilityRole="button" accessibilityLabel={rawText(t('chat.delete.label', { name: item.title || t('chat.newChatFallback') }))} containerStyle={styles.deleteButton} onPress={() => confirmDelete(item)} variant="tertiary" size="md" label={t('chat.delete.label', { name: item.title || t('chat.newChatFallback') })}>

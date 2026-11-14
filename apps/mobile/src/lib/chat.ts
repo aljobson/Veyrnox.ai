@@ -251,3 +251,14 @@ export function searchThreads<T extends { readonly title: string | null }>(threa
     const q = query.trim().toLowerCase();
     return q ? threads.filter((t) => (t.title ?? '').toLowerCase().includes(q)) : [...threads];
 }
+
+// The line under a chat in the list: the model's name (never its id) and when the chat last changed. A model the list
+// no longer offers falls back to its id with the dashes read as spaces, so no row is blank.
+export function threadSubtitle(thread: Pick<ChatThread, 'model_id' | 'updated_at'>, models: readonly Pick<ChatModel, 'id' | 'name'>[], locale: string | undefined, now: Date = new Date()): string {
+    const name = models.find((m) => m.id === thread.model_id)?.name ?? thread.model_id.replace(/[-_]+/g, ' ');
+    const at = new Date(thread.updated_at);
+    if (Number.isNaN(at.getTime())) return name;
+    const sameDay = at.toDateString() === now.toDateString();
+    const when = sameDay ? at.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' }) : at.toLocaleDateString(locale, { month: 'short', day: 'numeric' });
+    return `${name} · ${when}`;
+}

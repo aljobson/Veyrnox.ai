@@ -871,6 +871,7 @@ export default {
   "chatLibrary.personasarenotavailableyet": "페르소나는 아직 이용할 수 없습니다.",
   "chatLibrary.somethingwentwrongTryagain": "문제가 발생했습니다. 다시 시도해 주세요.",
   "chatLibrary.thatisnolongerthere": "더 이상 존재하지 않습니다.",
+  "chatLibrary.afolderwiththatnamealreadyexists": "같은 이름의 폴더가 이미 있습니다.",
   "chatLibrary.thatnameisnotallowedUse1": "사용할 수 없는 이름입니다. 1~60자를 사용하세요.",
   "chatLibrary.thatpersonanameisnotallowedUse": "사용할 수 없는 페르소나 이름입니다. 1~60자를 사용하세요.",
   "chatLibrary.theinstructionscanbeatmostcharacters": "지침은 최대 {value1}자까지 입력할 수 있습니다.",

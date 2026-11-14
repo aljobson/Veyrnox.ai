@@ -928,6 +928,7 @@ export default {
   "chatLibrary.personasarenotavailableyet": "Персоны пока недоступны.",
   "chatLibrary.somethingwentwrongTryagain": "Что-то пошло не так. Повторите попытку.",
   "chatLibrary.thatisnolongerthere": "Этого больше нет.",
+  "chatLibrary.afolderwiththatnamealreadyexists": "Папка с таким именем уже есть.",
   "chatLibrary.thatnameisnotallowedUse1": "Недопустимое название. Используйте от 1 до 60 символов.",
   "chatLibrary.thatpersonanameisnotallowedUse": "Недопустимое имя персоны. Используйте от 1 до 60 символов.",
   "chatLibrary.theinstructionscanbeatmostcharacters": "Инструкции должны содержать не более {value1} символов.",
