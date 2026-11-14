@@ -138,10 +138,9 @@ Home.
    Replace the performer…"). The template page still shows the exact prompt.
 2. **The same eight templates twice on the home page**: the carousel, then
    the wall. A test requires the carousel there, so it stays.
-3. **The fixed contact button on phones** covers a price row and body text
-   (`SiteChrome.js`). It is mounted on every page, including signed-in pages
-   that have no footer, so hiding it on phones would remove the only support
-   link there. Needs a contact entry in the phone menu first, then it can hide.
+3. **The fixed contact button on phones: done.** It covered a price row and
+   body text. Below 640 px it is hidden and the phone menu (public and
+   signed-in) has a "Contact support" entry with the same address.
 4. **Dark on the web, light on mobile.** The web says dark is the brand; the
    app starts light on every cold launch and ignores a saved theme
    (`theme.ts`). Deliberate in code, in no ADR.
