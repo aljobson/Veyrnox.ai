@@ -36,6 +36,9 @@ test('the working hero price slip starts on the shared affordable model', () => 
   assert.match(page, /takesPlan: !!m\.capabilities\?\.inputs\?\.plan_id/);
   assert.match(slip, /affordableStarterModel\(open, AFFORDABLE_START_MODEL_ID, SIGNUP_CREDITS\)/);
   assert.match(slip, /useState\(starter\?\.id/);
+  assert.match(slip, /affordableVideoModel\(open, SIGNUP_CREDITS\)/);
+  assert.match(slip, /\[starter\?\.id, starterVideo\?\.id, \.\.\.FEATURED\]/);
+  assert.match(slip, /freeCreditLine\(cost, SIGNUP_CREDITS\)/);
 });
 
 test('the featured carousel is named and explains horizontal scrolling', () => {
