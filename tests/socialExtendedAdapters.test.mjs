@@ -21,7 +21,7 @@ function sequence(steps) {
 }
 
 test('readiness exposes eleven networks but no credentials, with explicit flag and config gates', () => {
-    const env = { PUBLIC_HOST: 'https://staging.test', SOCIAL_OAUTH_STATE_SECRET: 'state-secret',
+    const env = { PUBLIC_HOST: 'https://staging.test', SOCIAL_OAUTH_STATE_SECRET: 'test-only-oauth-state-secret-0123456789abcdef',
         SOCIAL_TOKEN_ENCRYPTION_KEY: Buffer.alloc(32, 7).toString('base64'), PUBLISH_EXTENDED_NETWORKS_ENABLED: 'true',
         PINTEREST_CLIENT_ID: 'client123', PINTEREST_CLIENT_SECRET: 'secret-test' };
     const networks = networkReadiness(env);

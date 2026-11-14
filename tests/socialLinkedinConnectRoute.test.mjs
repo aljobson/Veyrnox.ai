@@ -12,7 +12,7 @@ function setConfigured() {
     Object.assign(process.env, {
         SUPABASE_URL: 'https://db.test', SUPABASE_SERVICE_ROLE_KEY: 'test-only',
         LINKEDIN_CLIENT_ID: 'testclientid123', LINKEDIN_CLIENT_SECRET: 'b'.repeat(20),
-        SOCIAL_OAUTH_STATE_SECRET: 'state-secret-value', PUBLIC_HOST: 'https://veyrnox.ai',
+        SOCIAL_OAUTH_STATE_SECRET: 'test-only-oauth-state-secret-0123456789abcdef', PUBLIC_HOST: 'https://veyrnox.ai',
     });
 }
 const request = (body, headers = {}) => new Request('https://veyrnox.test/api/v1/social/accounts/linkedin/connect', {
