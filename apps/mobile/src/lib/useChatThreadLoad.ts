@@ -29,7 +29,7 @@ export function useChatThreadLoad(api: ApiClient, id: string, generation: number
         return () => {
             if (!openedEmpty.current) return;
             const threads = chatApi(api);
-            void threads.getThread(id).then(async (r) => {
+            void Promise.resolve().then(() => threads.getThread(id)).then(async (r) => {
                 if (r.messages.length > 0 || r.thread.system_prompt) return;
                 await threads.deleteThread(id);
                 await forgetThread(id);
