@@ -5822,6 +5822,8 @@ export default {
   "editorSimple.closePanel": "完了",
   "editorSimple.voiceoverHint": "マイクで録音",
   "editorSimple.exportHint": "動画を書き出して保存",
+  "editorSimple.exportOffHint": "アプリではまだ使えません。veyrnox.ai をご利用ください",
+  "editorSimple.exportOff": "書き出しはまだアプリにありません。編集は保存済みです。veyrnox.ai のエディタで開いて書き出してください。この端末の写真やファイルから追加したクリップは、そこで追加し直してください。",
     "editorAi.describe": "編集内容を説明",
     "editorAi.instruction": "どのように変更しますか？",
     "editorAi.price": "{n}クレジット",

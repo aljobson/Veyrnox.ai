@@ -31,6 +31,7 @@ import { useEffect, useRef, useState } from 'react';
 import { EDITOR_SERVER_EXPORT_ENABLED } from '../../lib/editorFlag';
 import { requireOnline, OFFLINE_PAID_MESSAGE } from '../../lib/network';
 import { exportUnavailable } from '../../lib/editorServerExport';
+import { EDITOR_EXPORT_GATE as exportGate } from '../../lib/editorExportGate';
 import { ServerExportSheet } from './ServerExportSheet';
 import { styles } from './fullEditorStyles';
 import { SimpleEditorBar, SimpleEditorSheet, type SheetRow, type SimpleSheetName } from './SimpleEditorChrome';
@@ -265,7 +266,7 @@ export function FullEditorScreen({ projectId, jobId, startAdvanced = false, star
         const saved = await save();
         if (saved) router.push(path as never);
     };
-    const openExport = async () => { if (!EDITOR_SERVER_EXPORT_ENABLED) { setProblem(t('handoff.exportUnavailable')); return; } try { requireOnline(); } catch { setProblem(OFFLINE_PAID_MESSAGE); return; } if (exportUnavailable()) { setProblem(t('handoff.exportUnavailable')); return; } if (await savedDocument()) setExportVisible(true); };
+    const openExport = async () => { if (!exportGate.available) { if (await save()) setProblem(t(exportGate.messageKey)); return; } try { requireOnline(); } catch { setProblem(OFFLINE_PAID_MESSAGE); return; } if (exportUnavailable()) { setProblem(t(exportGate.messageKey)); return; } if (await savedDocument()) setExportVisible(true); };
     // Simple view: three entries open sheets that reuse the same handlers as the full tool set.
     const showPanel = (next: Tool) => { setTool(next); setPanelOpen(true); };
     const addRows: SheetRow[] = [
@@ -287,13 +288,13 @@ export function FullEditorScreen({ projectId, jobId, startAdvanced = false, star
     ];
     const moreRows: SheetRow[] = [
         { id: 'text', icon: 'T', label: t('editor.addText'), hint: t('editorSimple.textHint'), onPress: () => { addText(); setPanelOpen(true); } },
-        { id: 'export', icon: '⇩', label: t('editor.export'), hint: t('editorSimple.exportHint'), onPress: () => void openExport() },
+        { id: 'export', icon: '⇩', label: t('editor.export'), hint: t(exportGate.hintKey), onPress: () => void openExport() },
         { id: 'versions', icon: '↺', label: t('editorSave.versions'), hint: t('editorSimple.versionsHint'), onPress: sync.openVersions },
         { id: 'all-tools', icon: '☷', label: t('editorSimple.allTools'), hint: t('editorSimple.allToolsHint'), onPress: () => setAdvanced(true) },
     ];
     // Tool panels are inline workspace sections with no close action; sheets below own their dismissal.
     return <View style={styles.screen}>
-        {EDITOR_SERVER_EXPORT_ENABLED ? <ServerExportSheet api={api} router={router} now={Date.now} projectId={projectId} name={name} document={document} dirty={dirty} visible={exportVisible} onOpen={() => setExportVisible(true)} onClose={() => setExportVisible(false)} onFallback={() => { setExportVisible(false); setProblem(t('handoff.exportUnavailable')); }} /> : null}
+        {EDITOR_SERVER_EXPORT_ENABLED ? <ServerExportSheet api={api} router={router} now={Date.now} projectId={projectId} name={name} document={document} dirty={dirty} visible={exportVisible} onOpen={() => setExportVisible(true)} onClose={() => setExportVisible(false)} onFallback={() => { setExportVisible(false); setProblem(t(exportGate.messageKey)); }} /> : null}
         <Stack.Screen options={{ title: t('editor.cut'), headerRight: () => <HeaderAction label={t('editor.done')} onPress={guard.done} /> }} />
         <View style={styles.projectBar}>
             {advanced ? <View style={styles.cutBadge}><Text style={styles.cutMark}>{t('editor.v')}</Text><Text style={styles.cutLabel}>{t('editor.cUT')}</Text></View> : null}

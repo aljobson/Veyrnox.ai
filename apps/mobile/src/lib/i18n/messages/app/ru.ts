@@ -6026,6 +6026,8 @@ export default {
   "editorSimple.closePanel": "Готово",
   "editorSimple.voiceoverHint": "Запись с микрофона",
   "editorSimple.exportHint": "Отрендерить и сохранить видео",
+  "editorSimple.exportOffHint": "Пока нет в приложении. Откройте veyrnox.ai",
+  "editorSimple.exportOff": "Экспорта в приложении пока нет. Монтаж сохранён: откройте его в редакторе на veyrnox.ai, чтобы экспортировать. Клипы из «Фото» или «Файлов» нужно будет добавить там заново.",
     "editorAi.describe": "Описать правку",
     "editorAi.instruction": "Что вы хотите изменить?",
     "editorAi.price": "{n} кредитов",

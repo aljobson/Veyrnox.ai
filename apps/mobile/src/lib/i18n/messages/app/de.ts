@@ -5890,6 +5890,8 @@ export default {
   "editorSimple.closePanel": "Fertig",
   "editorSimple.voiceoverHint": "Mit dem Mikrofon aufnehmen",
   "editorSimple.exportHint": "Video rendern und speichern",
+  "editorSimple.exportOffHint": "Noch nicht in der App. Nutze veyrnox.ai",
+  "editorSimple.exportOff": "Export gibt es in der App noch nicht. Dein Schnitt ist gespeichert: Öffne ihn im Editor auf veyrnox.ai, um ihn zu exportieren. Clips aus Fotos oder Dateien musst du dort neu hinzufügen.",
     "editorAi.describe": "Bearbeitung beschreiben",
     "editorAi.instruction": "Was möchtest du ändern?",
     "editorAi.price": "{n} Credits",

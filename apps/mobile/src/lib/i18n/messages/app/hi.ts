@@ -5890,6 +5890,8 @@ export default {
   "editorSimple.closePanel": "हो गया",
   "editorSimple.voiceoverHint": "माइक्रोफ़ोन से रिकॉर्ड करें",
   "editorSimple.exportHint": "वीडियो रेंडर करें और सेव करें",
+  "editorSimple.exportOffHint": "ऐप में अभी नहीं। veyrnox.ai इस्तेमाल करें",
+  "editorSimple.exportOff": "एक्सपोर्ट अभी ऐप में नहीं है। आपका एडिट सेव है: एक्सपोर्ट के लिए इसे veyrnox.ai के एडिटर में खोलें। इस फ़ोन की Photos या Files से जोड़ी गई क्लिप वहाँ फिर से जोड़ें।",
     "editorAi.describe": "संपादन का वर्णन करें",
     "editorAi.instruction": "आप क्या बदलना चाहते हैं?",
     "editorAi.price": "{n} क्रेडिट",
