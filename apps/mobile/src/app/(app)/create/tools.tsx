@@ -7,7 +7,7 @@ import { Icon, IconBadge, Text, themedStyles, useThemedStyles } from '../../../c
 import { toolIcon } from '../../../lib/featureIcons';
 import { plural, t } from '../../../lib/i18n';
 import { fetchCatalogCached, type CatalogModel } from '../../../lib/media';
-import { TOOL_TASKS, inputTools, toolGroups, toolNeeds, type ToolGroup } from '../../../lib/toolDirectory';
+import { TOOL_TASKS, inputTools, toolGroups, toolNeeds, toolQualifiers, type ToolGroup } from '../../../lib/toolDirectory';
 import { ds, LIST_END_PADDING } from '../../../theme';
 
 const FACE = 'face-filters';
@@ -57,7 +57,7 @@ export default function CreateTools() {
                 <ActivityIndicator color={styles.accentInk.color} />
             ) : groups.length === 0 ? (
                 <Text variant="footnote" tone="secondary">{t('toolsDir.empty')}</Text>
-            ) : groups.map((g) => g.key === FACE ? (
+            ) : groups.map((g) => { const qualifiers = toolQualifiers(g.tools); return g.key === FACE ? (
                 <Pressable key={g.key} accessibilityRole="button" accessibilityLabel={rawText(`${g.label}. ${g.blurb}`)} onPress={() => router.push('/face-filters')}
                     style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
                     <View style={styles.head}>
@@ -78,21 +78,22 @@ export default function CreateTools() {
                             <Text variant="footnote" tone="secondary">{g.blurb}</Text>
                         </View>
                     </View>
-                    {g.tools.map((m) => (
+                    {g.tools.map((m) => { const qualifier = qualifiers.get(m.id); return (
                         <Pressable key={m.id} accessibilityRole="button"
-                            accessibilityLabel={rawText(`${m.name}. ${t('toolsDir.needs', { what: toolNeeds(m) })}. ${plural('library.cost', m.credits)}`)}
+                            accessibilityLabel={rawText(`${m.name}${qualifier ? `, ${qualifier}` : ''}. ${t('toolsDir.needs', { what: toolNeeds(m) })}. ${plural('library.cost', m.credits)}`)}
                             onPress={() => router.push({ pathname: '/create/[modelId]', params: { modelId: m.id } })}
                             style={({ pressed }) => [styles.tool, pressed && styles.pressed]}>
                             <View style={styles.toolText}>
                                 <Text variant="callout" tone="primary">{m.name}</Text>
+                                {qualifier ? <Text variant="footnote" tone="secondary">{qualifier}</Text> : null}
                                 <Text variant="footnote" tone="secondary">{t('toolsDir.needs', { what: toolNeeds(m) })}</Text>
                             </View>
                             <Text variant="footnote" tone="secondary" style={styles.price}>{plural('library.cost', m.credits)}</Text>
                             <Icon name="caretRight" size={16} />
                         </Pressable>
-                    ))}
+                    ); })}
                 </View>
-            ))}
+            ); })}
         </ScrollView>
     );
 }

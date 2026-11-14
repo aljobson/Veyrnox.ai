@@ -75,3 +75,12 @@ test('a multi-file slot shows how many files it holds, and names each @Image1, @
     expect(renderedText()).toContain('@Image1');
     expect(renderedText()).toContain('@Image2');
 });
+
+test('a Library creation already in the slot shows its picture, not a blank box', async () => {
+    const api = { request: jest.fn((path: string) => path === '/api/v1/jobs/job-1/asset' ? Promise.resolve({ url: 'https://r2.example/a.png', mime_type: 'image/png' }) : Promise.reject(new Error('unexpected'))) } as any;
+    const slot = { slot: 'image', kind: 'image', label: 'Image', required: true } as const;
+    await act(async () => root.render(<SourcePicker slot={slot} api={api} references={[{ slot: 'image', origin: 'asset', asset_id: 'job-1' }]} onReferences={jest.fn()} onChange={onChange} onBusy={onBusy} />));
+    await act(async () => { await Promise.resolve(); });
+    const images = root.container.queryAll(n => n.props.source?.uri === 'https://r2.example/a.png');
+    expect(images.length).toBeGreaterThan(0);
+});

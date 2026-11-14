@@ -9,6 +9,7 @@ import { getCacheUser, subscribeCacheUser } from '../lib/appCache';
 import { claimDrawFile, deleteDrawFile, isDrawFile, releaseDrawFile } from '../lib/drawFiles';
 import { loadDrawOnImage } from '../lib/drawLoader';
 import type { ApiClient } from '../lib/api';
+import { JobThumb, useAssetLinks } from './JobThumb';
 import { LibraryChooser } from './LibraryChooser';
 import { t, plural } from '../lib/i18n';
 import type { LibraryChoice } from '../lib/librarySource';
@@ -107,6 +108,7 @@ function ReferencePicker(props: SourcePickerProps) {
             {props.tokens && <Text variant="caption" tone="tertiary" style={styles.hint} accessibilityLabel={`${NOUN[props.slot.kind]} ${index + 1}`}>{`@${TOKEN[props.slot.kind]}${index + 1}`}</Text>}
             <SourceFilePicker {...props} slot={{ ...props.slot, required: props.slot.required && index === 0 }}
                 initial={row.id === 0 ? props.initial : null} initialReady={!!row.reference}
+                initialAssetId={row.reference?.origin === 'asset' ? row.reference.asset_id : undefined}
                 onChange={key => reference(row.id, key ? { slot: props.slot.slot, origin: 'upload', key } : undefined, 'upload')}
                 onLibrary={props.onLibrary ? asset_id => reference(row.id, asset_id ? { slot: props.slot.slot, origin: 'asset', asset_id } : undefined, 'asset') : undefined}
                 onBusy={value => { if (value) busy.current.add(row.id); else busy.current.delete(row.id); props.onBusy(busy.current.size > 0); }} />
@@ -119,8 +121,11 @@ function ReferencePicker(props: SourcePickerProps) {
     </View>;
 }
 
-function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, drawable = false, replaceable = false, hint, initialReady = false, initialReadyLabel }: SourcePickerProps) {
+function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, drawable = false, replaceable = false, hint, initialReady = false, initialReadyLabel, initialAssetId }: SourcePickerProps & { readonly initialAssetId?: string }) {
     const styles = useThemedStyles(sheets);
+    const links = useAssetLinks(api);
+    // The Library creation in this slot, so its picture shows beside it (nothing is uploaded for it).
+    const [libraryJob, setLibraryJob] = useState<string | null>(initialAssetId ?? null);
     const [status, setStatus] = useState<Status>(initialReady ? { step: 'ready' } : { step: 'empty' });
     const [preview, setPreview] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -207,6 +212,7 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
         setPreview(slot.kind === 'image' ? file.uri : null);
         // An upload replaces a Library file chosen earlier for this slot.
         setLibraryName(null);
+        setLibraryJob(null);
         onLibrary?.(undefined);
         setStatus({ step: 'uploading', fraction: 0 });
         onChange(undefined);
@@ -249,6 +255,7 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
         setError(null);
         setPreview(null);
         setLibraryName(choice.name);
+        setLibraryJob(choice.jobId);
         setStatus({ step: 'ready' });
         onChange(undefined);
         onLibrary?.(choice.jobId);
@@ -260,6 +267,7 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
         setDrawing(null);
         controller.current?.abort();
         setLibraryName(null);
+        setLibraryJob(null);
         onLibrary?.(undefined);
         uploading.current = false;
         onBusy(false);
@@ -280,7 +288,7 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
                 <Button variant="secondary" accessibilityRole="button" accessibilityLabel={rawText(t('sourcePicker.choosefor', { value1: NOUN[slot.kind], value2: slot.label }))} onPress={pick} icon="paperclip" label={t('sourcePicker.choose', { value1: NOUN[slot.kind] })} />
             ) : (
                 <View style={styles.row}>
-                    {preview ? <Image source={{ uri: preview }} style={styles.thumb} contentFit="cover" /> : <View style={[styles.thumb, styles.thumbPlain]} />}
+                    {preview ? <Image source={{ uri: preview }} style={styles.thumb} contentFit="cover" /> : libraryJob ? <JobThumb links={links} jobId={libraryJob} size={64} /> : <View style={[styles.thumb, styles.thumbPlain]} />}
                     <View style={styles.grow}>
                         {status.step === 'uploading' ? (
                             <View style={styles.status}>

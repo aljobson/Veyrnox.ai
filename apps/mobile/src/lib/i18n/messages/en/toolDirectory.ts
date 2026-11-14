@@ -26,4 +26,9 @@ export default {
     "toolDirectory.videoInput": "a video",
     'toolDirectory.audioInput': 'audio',
     'toolDirectory.joinInputs': '{first} and {next}',
+    "toolDirectory.facefiltersBlurb": "Retouch, relight or restyle the face in your own photo.",
+    "toolDirectory.withSound": "With sound",
+    "toolDirectory.noSound": "No sound",
+    "toolDirectory.bestValue": "Best value",
+    "toolDirectory.lowerPrice": "Lower price",
 } as const;

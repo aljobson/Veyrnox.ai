@@ -80,3 +80,13 @@ test('stale list response is ignored after switching accounts', async () => {
     await act(async () => bindCacheUser('bob'));
     await act(async () => resolve({ projects: [row] })); expect(has('Films saved to your account')).toBe(false);
 });
+test('no saved films says so under the intro', async () => {
+    await mount();
+    expect(has('No films are saved to your account yet.')).toBe(true);
+    expect(has('could not be loaded')).toBe(false);
+});
+test('a failed list says the saved films could not be loaded', async () => {
+    mockRequest.mockRejectedValue(new ApiError(503, 'unknown')); await mount();
+    expect(has('Your saved films could not be loaded. Try again later.')).toBe(true);
+    expect(has('No films are saved')).toBe(false);
+});

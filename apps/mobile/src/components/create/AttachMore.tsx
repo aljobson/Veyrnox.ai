@@ -1,6 +1,6 @@
 import { useState, type ComponentProps } from 'react';
 import { View } from 'react-native';
-import { t } from '../../lib/i18n';
+import { plural, t } from '../../lib/i18n';
 import { attachCapacity } from '../../lib/attachModel';
 import type { CatalogModel } from '../../lib/media';
 import { MAX_UNUSED_UPLOADS } from '../../lib/uploads';
@@ -26,5 +26,5 @@ export function AttachMore({ hasSlots, ...attach }: Props) {
 export function UploadLimitNote({ model }: { readonly model: CatalogModel }) {
     // The server takes at most 3 references of one kind (lib/generationSources.js), whatever the model's slots declare.
     const count = Object.values(attachCapacity(model)).reduce((sum, n) => sum + Math.min(n, 3), 0);
-    return <Text variant="caption" tone="tertiary">{t('create.workspace.referencesLimit', { count })}. {t('uploads.holdLimit', { max: MAX_UNUSED_UPLOADS })}</Text>;
+    return <Text variant="caption" tone="tertiary">{plural('create.workspace.referencesLimit', count)}. {t('uploads.holdLimit', { max: MAX_UNUSED_UPLOADS })}</Text>;
 }

@@ -23,7 +23,7 @@ export const TOOL_TASKS: readonly ToolTask[] = [
     { key: 'background', label: t('toolDirectory.removebackground'), blurb: t('toolDirectory.cutthesubjectoutofaphoto'), ids: ['bria-bg-remove'] },
     { key: 'expand', label: t('toolDirectory.expand'), blurb: t('toolDirectory.extendanimagebeyonditsedges'), ids: ['bria-expand'] },
     { key: 'edit', label: t('toolDirectory.editwithaprompt'), blurb: t('toolDirectory.changeanimagebydescribingthechange'), ids: ['nano-banana-pro-edit', 'nano-banana-pro-edit-grsai'] },
-    { key: 'face-filters', label: t('toolDirectory.facefilters'), blurb: 'Retouch, relight or restyle the face in your own photo.', ids: ['face-retouch', 'face-enhance', 'face-relight', 'face-makeup', 'face-age', 'face-costume'] },
+    { key: 'face-filters', label: t('toolDirectory.facefilters'), blurb: t('toolDirectory.facefiltersBlurb'), ids: ['face-retouch', 'face-enhance', 'face-relight', 'face-makeup', 'face-age', 'face-costume'] },
     { key: 'animate', label: t('toolDirectory.phototovideo'), blurb: t('toolDirectory.turnastillimageintoamoving'), ids: ['kling-3.0-i2v', 'kling-3.0-i2v-kie'] },
     { key: 'avatar', label: t('toolDirectory.talkingavatar'), blurb: t('toolDirectory.makeaphotospeakavoiceclip'), ids: ['kling-avatar-v2'] },
     { key: 'lipsync', label: t('toolDirectory.lipsync'), blurb: t('toolDirectory.matchavideoslipstonew'), ids: ['latentsync'] },
@@ -68,6 +68,35 @@ export function toolGroups(models: readonly CatalogModel[], includeOptional = fa
     const groups: ToolGroup[] = TOOL_TASKS.map((t) => ({ key: t.key, label: t.label, blurb: t.blurb, tools: tools.filter((m) => t.ids.includes(m.id)) }));
     groups.push({ ...OTHER, tools: tools.filter((m) => !named.has(m.id)) });
     return groups.filter((g) => g.tools.length > 0);
+}
+
+// Two rows of one task can carry the same public name (the catalog hides the supplier). This gives each such row a
+// short qualifier from its own catalog data: output size, sound, and, when those match, which one costs less.
+export function toolQualifiers(tools: readonly CatalogModel[]): ReadonlyMap<string, string> {
+    const out = new Map<string, string>();
+    const byName = new Map<string, CatalogModel[]>();
+    for (const m of tools) byName.set(m.name, [...(byName.get(m.name) ?? []), m]);
+    for (const same of byName.values()) {
+        if (same.length < 2) continue;
+        const traits = same.map((m) => {
+            const shown = m.capabilities?.presentation;
+            const words: string[] = [];
+            if (shown?.resolutionLabel) words.push(shown.resolutionLabel);
+            if (shown?.audioIncluded === true) words.push(t('toolDirectory.withSound'));
+            if (shown?.audioIncluded === false) words.push(t('toolDirectory.noSound'));
+            return words.join(' · ');
+        });
+        const traitsDiffer = new Set(traits).size === same.length;
+        const cheapest = Math.min(...same.map((m) => m.credits));
+        const cheapestCount = same.filter((m) => m.credits === cheapest).length;
+        same.forEach((m, i) => {
+            const words = traits[i] ? [traits[i]] : [];
+            if (!traitsDiffer && m.bestValue) words.push(t('toolDirectory.bestValue'));
+            else if (!traitsDiffer && cheapestCount === 1 && m.credits === cheapest) words.push(t('toolDirectory.lowerPrice'));
+            if (words.length) out.set(m.id, words.join(' · '));
+        });
+    }
+    return out;
 }
 
 export function inputTools(models: readonly CatalogModel[], source: 'image' | 'video' | null, mode?: string): CatalogModel[] {

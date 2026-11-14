@@ -16,6 +16,7 @@ export default function FilmStudio() {
     const router = useRouter();
     const { api } = useAuth();
     const [cloudCount, setCloudCount] = useState<number | null>(null);
+    const [cloudFailed, setCloudFailed] = useState(false);
     const generation = useRef(0);
     const loadToken = useRef(0);
     const [film, setFilm] = useState<Film | null>(null);
@@ -49,14 +50,18 @@ export default function FilmStudio() {
             if (!owner) return;
             try {
                 const rows = await fetchCloudFilms(api);
-                if (session === generation.current && owner === getCacheUser()) setCloudCount(rows.length);
-            } catch { /* The optional row stays absent on every failure. */ }
+                if (session === generation.current && owner === getCacheUser()) { setCloudCount(rows.length); setCloudFailed(false); }
+            } catch {
+                // The intro promises saved films, so say they could not be read rather than show nothing.
+                if (session === generation.current && owner === getCacheUser()) setCloudFailed(true);
+            }
         };
         const unsubscribe = subscribeCacheUser(() => {
             ++generation.current;
             setFilm(null);
             setSavedAt(null);
             setCloudCount(null);
+            setCloudFailed(false);
             setLoading(true);
             reload();
             void fetchCount();
@@ -85,7 +90,7 @@ export default function FilmStudio() {
                 <Pressable accessibilityRole="button" style={styles.primary} onPress={() => router.push('/film/workspace')}>
                     <Text style={styles.primaryText}>{t('film.startanewfilm')}</Text>
                 </Pressable>
-                <Links router={router} cloudCount={cloudCount} />
+                <Links router={router} cloudCount={cloudCount} cloudFailed={cloudFailed} />
             </ScrollView>
         );
     }
@@ -133,12 +138,12 @@ export default function FilmStudio() {
             <Pressable accessibilityRole="button" style={[styles.secondary, touchTarget]} onPress={remove}>
                 <Text style={styles.secondaryText}>{t('film.removefromthisphone')}</Text>
             </Pressable>
-            <Links router={router} cloudCount={cloudCount} />
+            <Links router={router} cloudCount={cloudCount} cloudFailed={cloudFailed} />
         </ScrollView>
     );
 }
 
-function Links({ router, cloudCount }: { router: ReturnType<typeof useRouter>; cloudCount: number | null }) {
+function Links({ router, cloudCount, cloudFailed }: { router: ReturnType<typeof useRouter>; cloudCount: number | null; cloudFailed: boolean }) {
     return (
         <View style={styles.links}>
             {cloudCount !== null && cloudCount >= 1 ? (
@@ -146,6 +151,10 @@ function Links({ router, cloudCount }: { router: ReturnType<typeof useRouter>; c
                     <Text style={styles.name}>{t('filmCloud.linkTitle')}</Text>
                     <Text style={styles.muted}>{plural('filmCloud.linkCount', cloudCount)}</Text>
                 </Pressable>
+            ) : cloudFailed ? (
+                <Text style={[styles.muted, styles.row]}>{t('filmCloud.linkFailed')}</Text>
+            ) : cloudCount === 0 ? (
+                <Text style={[styles.muted, styles.row]}>{t('filmCloud.empty')}</Text>
             ) : null}
             <Pressable accessibilityRole="button" style={[styles.row, touchTarget]} onPress={() => router.push('/chat/new')}>
                 <Text style={styles.name}>{t('film.filmchats')}</Text>
