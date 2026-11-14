@@ -34,7 +34,7 @@ export function AnalyticsChoices({ onChosen }: { onChosen?: () => void }) {
                 <Chip label={t('analyticsConsent.allow')} selected={choice === 'granted'} disabled={busy} onPress={() => void choose('granted')} />
                 <Chip label={t('analyticsConsent.decline')} selected={choice === 'denied'} disabled={busy} onPress={() => void choose('denied')} />
             </>}
-            {error ? <Text tone="danger">{t('analyticsConsent.saveError')}</Text> : null}
+            {error ? <Text tone="danger" accessibilityRole="alert">{t('analyticsConsent.saveError')}</Text> : null}
         </Card>
     </ScrollView>;
 }
