@@ -1,6 +1,6 @@
-import { rpc, envConfig } from '../../../../../../../packages/db/supabase-client.js';
-import { musicPublicationEnabled } from '../../../../../../../lib/musicBackend.js';
-import { envConfig as r2EnvConfig, isConfigured as r2IsConfigured, presignGetUrl } from '../../../../../../../packages/adapters/r2.js';
+import { rpc, envConfig } from '../../../../../../packages/db/supabase-client.js';
+import { musicPublicationEnabled } from '../../../../../../lib/musicBackend.js';
+import { envConfig as r2EnvConfig, isConfigured as r2IsConfigured, presignGetUrl } from '../../../../../../packages/adapters/r2.js';
 
 const SLUG_RE = /^[a-f0-9]{24}$/;
 export async function GET(_request, { params }) {

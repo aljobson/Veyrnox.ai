@@ -33,11 +33,32 @@ jobs:
       - name: Lighthouse
         run: npx --yes @lhci/cli@0.15.1 autorun --config=.github/lighthouse/lighthouserc.json
 
+      # manifest.json marks one run per page as representative: the median run.
+      - name: Print the median scores
+        if: always()
+        run: |
+          node - <<'NODE' | tee -a "$GITHUB_STEP_SUMMARY"
+          const { existsSync, readFileSync } = require('node:fs');
+          const file = '.lighthouseci/manifest.json';
+          if (!existsSync(file)) { console.log('No Lighthouse manifest was written, so there are no scores to print.'); process.exit(0); }
+          const categories = ['performance', 'accessibility', 'best-practices', 'seo'];
+          const score = (value) => (typeof value === 'number' ? String(Math.round(value * 100)) : 'n/a');
+          console.log('### Lighthouse median scores');
+          console.log('');
+          console.log(`| Page | ${categories.join(' | ')} |`);
+          console.log(`|---|${categories.map(() => '---:').join('|')}|`);
+          for (const run of JSON.parse(readFileSync(file, 'utf8')).filter((entry) => entry.isRepresentativeRun)) {
+            console.log(`| ${run.url} | ${categories.map((name) => score(run.summary?.[name])).join(' | ')} |`);
+          }
+          NODE
+
       - name: Keep the reports
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: lighthouse-reports
           path: .lighthouseci/
+          # The directory name starts with a dot; without this nothing is uploaded.
+          include-hidden-files: true
           if-no-files-found: ignore
           retention-days: 30

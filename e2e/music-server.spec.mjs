@@ -2160,7 +2160,7 @@ test('F16-H3 publication creates a reversible profile listing with honest rights
     if (path.endsWith(`/music/songs/${songId}/publication`) && request.method() === 'DELETE') { published = false; return route.fulfill({ json: { ok: true } }); }
     if (path.endsWith(`/music/public/${slug}/asset`) && request.method() === 'GET') return route.fulfill({ status: 200, contentType: 'audio/mpeg', body: Buffer.from('ID3') });
     if (path.endsWith(`/music/public/${slug}`) && request.method() === 'GET') return published
-      ? route.fulfill({ json: { track: { title: 'Rights in daylight', version_number: 1, published_at: '2026-11-10T12:00:00Z', allow_comments: false, allow_remixes: true, commercial_status: 'plan_eligible_terms_apply', handle: 'night_signal', display_name: 'Night Signal', audio_url: `/api/v1/music/public/${slug}/asset` } } })
+      ? route.fulfill({ json: { track: { title: 'Rights in daylight', version_number: 1, published_at: '2026-11-10T12:00:00Z', allow_comments: false, allow_remixes: true, commercial_status: 'plan_eligible_terms_apply', handle: 'night_signal', display_name: 'Night Signal', audio_url: `/api/music/public/${slug}/asset` } } })
       : route.fulfill({ status: 404, json: { error: 'not_found' } });
     if (path.endsWith('/music/profiles/night_signal') && request.method() === 'GET') return route.fulfill({ json: { profile: { handle: 'night_signal', display_name: 'Night Signal' }, tracks: published ? [{ slug, title: 'Rights in daylight', published_at: '2026-11-10T12:00:00Z', commercial_status: 'plan_eligible_terms_apply' }] : [] } });
     return route.abort('failed');
@@ -3238,9 +3238,9 @@ test('F16-H2 a private link is listen-only and fails closed after revocation', a
   const token = 'A'.repeat(43);
   // App Router can cancel a duplicate Strict Mode read while the fulfilled
   // read still drives the asserted UI state below.
-  page.expectedRequestFailures.add(`http://127.0.0.1:4402/api/v1/music/shared/${token}`);
+  page.expectedRequestFailures.add(`http://127.0.0.1:4402/api/music/shared/${token}`);
   let active = true;
-  await page.route(`**/api/v1/music/shared/${token}`, async (route) => {
+  await page.route(`**/api/music/shared/${token}`, async (route) => {
     if (!active) return route.fulfill({ status: 404, json: { error: 'not_found' } });
     return route.fulfill({ json: { song: {
       id: 'f6ed2d0d-8276-4fbb-9c4f-39f401a3158f',
@@ -3248,10 +3248,10 @@ test('F16-H2 a private link is listen-only and fails closed after revocation', a
       version_id: 'f7ed2d0d-8276-4fbb-9c4f-39f401a31580',
       version_number: 3,
       created_at: '2026-11-10T12:00:00Z',
-      audio_url: `/api/v1/music/shared/${token}/asset`,
+      audio_url: `/api/music/shared/${token}/asset`,
     } } });
   });
-  await page.route(`**/api/v1/music/shared/${token}/asset`, (route) => route.fulfill({
+  await page.route(`**/api/music/shared/${token}/asset`, (route) => route.fulfill({
     status: 200, contentType: 'audio/mpeg', body: Buffer.from('ID3'),
   }));
 
@@ -3266,7 +3266,7 @@ test('F16-H2 a private link is listen-only and fails closed after revocation', a
   expect(accessibility.violations, accessibility.violations.map((item) => `${item.id}: ${item.help}`).join('\n')).toEqual([]);
 
   active = false;
-  const revokedUrl = `${new URL(page.url()).origin}/api/v1/music/shared/${token}`;
+  const revokedUrl = `${new URL(page.url()).origin}/api/music/shared/${token}`;
   page.expectedConsoleErrorUrls.add(revokedUrl);
   page.expectedRequestFailures.add(revokedUrl);
   await page.reload();

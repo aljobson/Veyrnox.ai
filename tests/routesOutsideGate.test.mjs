@@ -54,6 +54,11 @@ const OUTSIDE = {
     'app/api/publish/v1/posts/route.js': 'publish API key',
     'app/s/[slug]/go/[itemId]/route.js': 'public SmartLink redirect',
     'app/api/turnstile-failure/route.js': 'rate limit + fixed body',
+    'app/api/music/public/[slug]/route.js': 'public music read',
+    'app/api/music/public/[slug]/asset/route.js': 'public music read',
+    'app/api/music/profiles/[handle]/route.js': 'public music read',
+    'app/api/music/shared/[token]/route.js': 'unguessable share token, stored as a hash',
+    'app/api/music/shared/[token]/asset/route.js': 'unguessable share token, stored as a hash',
 };
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -118,7 +123,28 @@ test('the anonymous report is rate limited in the Worker and handled in one plac
 
 test('CLAUDE.md names the public routes', () => {
     const rules = readFileSync(join(ROOT, 'CLAUDE.md'), 'utf8');
-    for (const path of ['/api/catalog', '/api/status', '/api/developer/openapi', '/api/credit-packs', '/api/cinema/titles', '/api/cinema/posters/:id', '/api/cinema/voting', '/api/cinema/discovery', '/api/cinema/winners', '/api/cinema/comments', '/api/cinema/story-polls', '/api/credit-subscription-plans', '/api/cinema-pass-plans', '/api/webhook/*', '/api/admin/*', '/media/social/:token', '/api/social/approvals/:token', '/api/social/team/:token', '/api/publish/v1/*', '/api/turnstile-failure']) {
+    for (const path of ['/api/catalog', '/api/status', '/api/developer/openapi', '/api/credit-packs', '/api/cinema/titles', '/api/cinema/posters/:id', '/api/cinema/voting', '/api/cinema/discovery', '/api/cinema/winners', '/api/cinema/comments', '/api/cinema/story-polls', '/api/credit-subscription-plans', '/api/cinema-pass-plans', '/api/webhook/*', '/api/admin/*', '/media/social/:token', '/api/social/approvals/:token', '/api/social/team/:token', '/api/publish/v1/*', '/api/turnstile-failure', '/api/music/public/:slug', '/api/music/profiles/:handle', '/api/music/shared/:token']) {
         assert.ok(rules.includes(path), `CLAUDE.md does not mention ${path}`);
+    }
+});
+
+// The public Music pages are read by signed-out visitors with a plain fetch, so
+// their reads cannot live under /api/v1: the middleware answers 401 there before
+// any handler runs. Each stays behind its own feature switch and a strict id shape.
+test('public Music reads live outside the gate and their pages call them there', () => {
+    const publicMusic = found.filter((f) => f.startsWith('app/api/music/'));
+    assert.equal(publicMusic.length, 5);
+    for (const file of publicMusic) {
+        const src = readFileSync(join(ROOT, file), 'utf8');
+        assert.equal(src.match(/^export /gm).length, 1, `${file} answers GET only`);
+        assert.match(src, /export async function GET\(/, file);
+        assert.match(src, /music(?:Publication|Distribution)Enabled\(\)/, `${file} has no feature switch`);
+        assert.match(src, /_RE\.test\(/, `${file} does not check its id shape`);
+        assert.ok(!src.includes('/api/v1/'), `${file} points a visitor at a gated address`);
+    }
+    for (const name of ['MusicPublicTrack.jsx', 'MusicPublicProfile.jsx', 'MusicSharedSong.jsx']) {
+        const src = readFileSync(join(ROOT, 'app/veyrnox/_components/music', name), 'utf8');
+        assert.ok(!/fetch\(`\/api\/v1\//.test(src), `${name} reads a gated address with no token`);
+        assert.match(src, /fetch\(`\/api\/music\//, name);
     }
 });

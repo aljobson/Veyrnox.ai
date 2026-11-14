@@ -3,7 +3,6 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Modal, ScrollView, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { PRIVACY_EMAIL } from '../../lib/account';
-import { ACCOUNT_DELETION_ENABLED } from '../../lib/accountDeletion';
 import { AGE_READ_RETRY_MS, confirmAge, isAccountNotReady, MIN_AGE, readAgeCheck } from '../../lib/ageConfirmation';
 import { confirmSignOut } from '../../lib/confirmSignOut';
 import { t } from '../../lib/i18n';
@@ -89,7 +88,7 @@ export function AgeConfirmationGate({ children }: { children: ReactNode }) {
                     ) : (
                         <View style={styles.group}>
                             <Text>{t('app.age.declined')}</Text>
-                            {ACCOUNT_DELETION_ENABLED ? <Button variant="secondary" label={t('app.age.delete')} onPress={() => router.push('/delete-account')} /> : null}
+                            <Button variant="secondary" label={t('app.age.delete')} onPress={() => router.push('/delete-account')} />
                             <Text variant="footnote" tone="secondary">{t('app.age.contact')}</Text>
                             <Text selectable variant="bodyStrong">{PRIVACY_EMAIL}</Text>
                             <Button variant="tertiary" tone="secondary" accessibilityRole="button" label={t('app.age.signOut')} onPress={() => confirmSignOut(signOut)} />

@@ -6020,4 +6020,7 @@ export default {
   "create.firstRun.example.work.image": "一瓶玻璃香水放在湿润石头上的高端产品照片，柔和的晨光",
   "create.firstRun.example.work.video": "10 秒广告：咖啡慢动作注入杯中，热气升腾，温暖的影棚灯光",
   "create.firstRun.example.work.audio": "30 秒轻快的品牌广告曲，轻柔吉他与拍手声",
+  "credits.planDetails.loading": "正在加载套餐积分…",
+  "credits.planDetails.failed": "无法加载套餐的积分数量。请检查网络后重试。",
+  "credits.planDetails.retry": "重试",
 } as const;

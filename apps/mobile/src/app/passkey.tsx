@@ -1,5 +1,6 @@
 import { Text as StatusText } from '../components/ui/Text';
-import { Redirect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
+import { SignedInRedirect } from '../components/SignedInRedirect';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text } from 'react-native';
@@ -15,7 +16,7 @@ export default function PasskeyAuth() {
     const { status } = useAuth();
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    if (status === 'signedIn') return <Redirect href="/(app)/(tabs)" />;
+    if (status === 'signedIn') return <SignedInRedirect />;
     return (
         <ScrollView style={styles.screen} contentContainerStyle={[styles.body, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 }]}>
             <Pressable accessibilityRole="button" accessibilityLabel={t('public.vey.back')} style={touchTarget} onPress={() => (router.canGoBack() ? router.back() : router.replace('/sign-in'))}>

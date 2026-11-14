@@ -82,10 +82,13 @@ test('SQL and code allowlists agree for all inventory patterns; telemetry has no
  const replacement=await readFile(new URL('../packages/db/schema/supabase/0455_best_cut.sql',import.meta.url),'utf8');
  const names=(await readdir(new URL('../packages/db/schema/supabase/',import.meta.url))).filter(n=>/^\d{4}_.*\.sql$/.test(n)&&n>'0455').sort();
  const base=replacement.match(/SELECT p_path = ANY \(ARRAY\[([^\]]+)\]::text\[\]\)/)[1].split(',').map(p=>p.slice(1,-1));
- const added=[];
- for(const name of names){const m=(await readFile(new URL('../packages/db/schema/supabase/'+name,import.meta.url),'utf8')).match(/SELECT (p_path (?:= '[^']+'|IN \([^)]+\)))\s+OR public\.telemetry_path_allowed_pre_\d{4}\(p_path\)/);if(m)added.push(...[...m[1].matchAll(/'([^']+)'/g)].map(x=>x[1]));}
+ const added=[];const removed=new Set();
+ for(const name of names){const sqlText=await readFile(new URL('../packages/db/schema/supabase/'+name,import.meta.url),'utf8');const m=sqlText.match(/SELECT (p_path (?:= '[^']+'|IN \([^)]+\)))\s+OR public\.telemetry_path_allowed_pre_\d{4}\(p_path\)/);if(m)added.push(...[...m[1].matchAll(/'([^']+)'/g)].map(x=>x[1]));
+  // A route that moved is dropped by the same wrapper: `... AND p_path NOT IN (...)` (0507).
+  const gone=sqlText.match(/telemetry_path_allowed_pre_\d{4}\(p_path\)\s+AND p_path NOT IN \(([^)]+)\)/);
+  if(gone)for(const x of gone[1].matchAll(/'([^']+)'/g))removed.add(x[1]);}
  assert.ok(added.includes('/app/music/instruments'),'route migrations must extend the prior telemetry allowlist');
- const actual=[...new Set([...base,...added])].sort();
+ const actual=[...new Set([...base,...added])].filter(p=>!removed.has(p)).sort();
  assert.deepEqual(actual,expected,'update SQL patterns with inventory; the generic 404 catch-all never emits');
  assert.doesNotMatch(sql,/REFERENCES (?:public\.)?users|user_id|user_agent|ip_address/);
 });

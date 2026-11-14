@@ -299,11 +299,6 @@ test('handlers read no x-veyrnox-* request header outside IDENTITY_HEADERS', () 
 const ANSWERS_ANYONE = {
     'app/api/v1/[[...path]]/route.js': 404, // the catch-all: no such route, whoever asks
     'app/api/v1/health/route.js': 503,      // echoes the id back; reads nothing of the caller's
-    'app/api/v1/music/profiles/[handle]/route.js': 404,
-    'app/api/v1/music/public/[slug]/route.js': 404,
-    'app/api/v1/music/public/[slug]/asset/route.js': 404,
-    'app/api/v1/music/shared/[token]/route.js': 404,
-    'app/api/v1/music/shared/[token]/asset/route.js': 404,
 };
 // These three check the body before the caller, so an empty one would be answered 400.
 const BODIES = {
