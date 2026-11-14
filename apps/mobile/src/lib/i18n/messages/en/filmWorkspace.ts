@@ -1,8 +1,10 @@
 export default {
     "filmWorkspace.fillDefaults": "Fill sensible defaults",
-    "filmWorkspace.fillDefaultsHelp": "Fills only the empty fields on this shot from its description and your film setup. Nothing is sent and no credits are used. Check each value before you continue.",
-    "filmWorkspace.defaultsFilled": "{value1} fields filled with suggestions. Check them before you continue.",
-    "filmWorkspace.defaultsNone": "Nothing to fill: every field already has a value.",
+    "filmWorkspace.fillDefaultsHelp": "Fills only empty fields from this shot’s description, its matching script beat and your film setup; it may reuse an exact location tag from another shot once that location has a passport. Suggestions are in English because generation prompts are written in English. Nothing is sent and no credits are used. Check each value before you continue.",
+    "filmWorkspace.defaultsFilled": "Suggestions applied to fields: {value1}. Check them before you continue.",
+    "filmWorkspace.defaultsFilledRemaining": "Suggestions applied: {value1}. Empty fields still need your input: {value2}. Check every value before you continue.",
+    "filmWorkspace.defaultsRemaining": "No safe suggestions are available for the remaining empty fields: {value1}. Fill them before you continue.",
+    "filmWorkspace.defaultsNone": "No empty fields were changed. Review validation below before continuing.",
     "filmWorkspace.shotLabel": "Shot {value1}",
     "filmWorkspace.saved": "Saved on this phone",
     "filmWorkspace.studio": "Veyrnox.ai Studio",
