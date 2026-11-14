@@ -8,6 +8,7 @@ import { touchTarget } from '../../lib/a11y';
 import { GENERATION_PROMPT_MAX } from '../../lib/promptLimits';
 import { colors } from '../../theme';
 import { Button } from '../ui';
+import { Text as StatusText } from '../ui/Text';
 import { Field } from './FilmFields';
 import { FilmSelect } from './FilmSelect';
 
@@ -47,7 +48,7 @@ export function FilmBreakdownStage({ film, change }: { film: Film; change: (film
         <Button label={t('film.addshot')} disabled={film.shots.length >= 200} onPress={add} />
         {shot ? <>
             <Button variant="secondary" label={t('filmWorkspace.fillDefaults')} onPress={fillDefaults} />
-            <Text style={{ color: colors.muted }} accessibilityLiveRegion="polite">{filledNote === null ? t('filmWorkspace.fillDefaultsHelp') : filledNote ? t('filmWorkspace.defaultsFilled', { value1: filledNote }) : t('filmWorkspace.defaultsNone')}</Text>
+            <StatusText variant="inherit" accessibilityLiveRegion="polite" style={{ color: colors.muted }}>{filledNote === null ? t('filmWorkspace.fillDefaultsHelp') : filledNote ? t('filmWorkspace.defaultsFilled', { value1: filledNote }) : t('filmWorkspace.defaultsNone')}</StatusText>
             <Button variant="tertiary" tone="danger" label={t('film.remove')} onPress={() => { change({ ...film, shots: film.shots.filter((_, i) => i !== index) }); setSelected(0); resetDraft(); }} />
             {SHOT_LANES.map(([lane, fields]) => <View key={lane} style={{ gap: 10 }}>
                 <Text accessibilityRole="header" style={{ color: colors.accent, fontWeight: '700' }}>{lane}</Text>
