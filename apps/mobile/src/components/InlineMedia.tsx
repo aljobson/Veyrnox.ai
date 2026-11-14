@@ -65,7 +65,7 @@ const POSTER_AT_S = 0.5;
 const sheets = themedStyles(p => ({
     poster: { position: 'absolute', top: 0, start: 0, end: 0, bottom: 0, borderRadius: ds.radius.md, overflow: 'hidden', backgroundColor: p.bgElevated1, alignItems: 'center', justifyContent: 'center' },
     fill: { position: 'absolute', top: 0, start: 0, end: 0, bottom: 0 },
-    play: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center' },
+    play: { width: 56, height: 56, borderRadius: 28, backgroundColor: p.bgElevated1, alignItems: 'center', justifyContent: 'center' },
     media: { width: '100%', height: 260, backgroundColor: p.bgElevated1, borderRadius: ds.radius.md },
     audio: { height: 96 },
     deck: { gap: ds.space.md },
