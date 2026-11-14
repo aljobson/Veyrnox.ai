@@ -4,7 +4,7 @@ export default {
     // App-only: screens.
     'signIn.kicker': 'YOUR CREATIVE STUDIO',
     'signIn.title': 'Start with something real.',
-    'signIn.subtitle': 'Sign in, then choose a photo, video, reference or idea to make your first creation.',
+    'signIn.subtitle': 'Sign in, then turn an idea, a photo or a video into your first creation.',
     'signIn.promiseLabel': 'Create from a photo, video or idea',
     'signIn.photo': 'Photos that move',
     'signIn.video': 'Videos that transform',

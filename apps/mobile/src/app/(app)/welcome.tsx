@@ -1,5 +1,6 @@
 import { rawText } from '../../lib/i18n/translate';
 import { captureEvent } from '../../lib/analytics/events';
+import { useAnnouncement } from '../../lib/useAnnouncement';
 import { markWelcomeSeen } from '../../lib/markWelcomeSeen';
 import { noteOnboardingCompleted } from '../../lib/celebrate';
 import { HARD_PAYWALL_STARTER_CREDITS, hardPaywallEnabled } from '../../lib/hardPaywall';
@@ -38,6 +39,11 @@ export default function Welcome() {
     const card = WELCOME_CARDS[index] ?? 'hello';
     const last = index === WELCOME_CARDS.length - 1;
     const credits = creditsCardKeys(free, hardPaywallEnabled() ? HARD_PAYWALL_STARTER_CREDITS : null);
+    const stepLabel = rawText(t('welcome.step', { n: index + 1, total: WELCOME_CARDS.length }));
+    const cardTitle = card === 'hello' ? t('welcome.hello.title') : card === 'credits' ? t(credits.title) : t('welcome.start.title');
+    // Next and Back swap the card under a button that keeps focus, so a screen reader is told the new card's title and step.
+    // Not on first show: the screen is read then anyway. `everywhere`: there is no live region here for Android to use.
+    useAnnouncement(`${rawText(cardTitle)}. ${stepLabel}`, { everywhere: true });
 
     async function done(action: 'next' | 'skip' = 'next') {
         captureEvent('onboarding_step', { step: 'welcome', action });
@@ -94,7 +100,7 @@ export default function Welcome() {
                 ) : null}
             </ScrollView>
             <View style={styles.footer}>
-                <Text style={styles.step} accessibilityLabel={rawText(t('welcome.step', { n: index + 1, total: WELCOME_CARDS.length }))}>
+                <Text style={styles.step} accessibilityLabel={stepLabel}>
                     {index + 1} / {WELCOME_CARDS.length}
                 </Text>
                 <Button label={last ? t('welcome.go') : t('welcome.next')} onPress={() => (last ? void done() : (captureEvent('onboarding_step', { step: 'welcome', action: 'next' }), setIndex(index + 1)))} />

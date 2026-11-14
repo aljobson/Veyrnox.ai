@@ -8,7 +8,7 @@ export default {
     'welcome.credits.generic': 'Each creation costs a few credits. You can see the price before anything is charged.',
     'welcome.credits.price': 'The price is shown before you confirm, and a creation that fails is refunded.',
     'welcome.start.title': 'Ready when you are',
-    'welcome.start.body': 'Next, choose what you are starting with: a photo, video, reference or just an idea.',
+    'welcome.start.body': 'Start from an idea in a few words, or bring a photo or video to work from.',
     'welcome.next': 'Next',
     'welcome.skip': 'Skip',
     'welcome.go': 'Start creating',

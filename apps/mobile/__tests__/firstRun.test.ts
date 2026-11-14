@@ -77,7 +77,7 @@ describe('where the welcome shows', () => {
         expect(signIn).toMatch(/<AuthProviderButton\s+provider="google"/);
         expect(signIn).toContain('if (!agreed || busy || running.current) return');
         expect(copy).toContain("'signIn.title': 'Start with something real.'");
-        expect(copy).toContain('photo, video, reference or idea');
+        expect(copy).toContain('turn an idea, a photo or a video into your first creation');
     });
 
     test('email authentication keeps the same visual momentum', () => {

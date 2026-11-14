@@ -40,6 +40,8 @@ const PAGE = 50;
 // The type chips are always all four, so an empty type can say it is coming soon instead of vanishing.
 const TYPES: readonly TypeFilter[] = [ALL_TYPES, 'image', 'video', 'audio'];
 const RECENT = 6;
+// Longest the start rows wait for the first-run answers before showing in the default order.
+const START_ORDER_WAIT_MS = 1200;
 
 
 // Explore is the home: say what to make, or start from a template, or pick up what you were making.
@@ -62,6 +64,18 @@ export default function Explore() {
         }, 350);
         return () => clearTimeout(timer);
     }, [focusIdea, router]));
+    // The start order is decided once and then kept, so a row never moves under a finger: by the first-run answers when
+    // they arrive, or the default order if they take longer than START_ORDER_WAIT_MS.
+    const [timedOut, setTimedOut] = useState(false);
+    useEffect(() => {
+        if (profile.ready) return;
+        const timer = setTimeout(() => setTimedOut(true), START_ORDER_WAIT_MS);
+        return () => clearTimeout(timer);
+    }, [profile.ready]);
+    // Answers that land after the wait are ignored here, so the default order shown then stays put.
+    const starts = timedOut
+        ? { keys: phoneStarts(null, null), suggested: false }
+        : profile.ready ? { keys: phoneStarts(profile.role, profile.goal), suggested: hasRealAnswer(profile) } : null;
     const [prompt, setPrompt] = useState('');
     const [catalog, setCatalog] = useState<CatalogModel[]>([]);
     const [note, setNote] = useState<string | null>(null);
@@ -199,10 +213,11 @@ export default function Explore() {
                 </View>
 
                 <YourWinsCard />
-                <Card style={styles.startGroup} accessibilityLabel={t('explore.start.title')}>
-                    {phoneStarts(profile.ready ? profile.role : null, profile.ready ? profile.goal : null).map((key, index) => {
+                {/* Until the order is settled the rows hold their space unseen and untappable. */}
+                <Card style={[styles.startGroup, !starts && styles.unsettled]} accessibilityLabel={t('explore.start.title')} accessibilityElementsHidden={!starts} importantForAccessibility={starts ? 'auto' : 'no-hide-descendants'} pointerEvents={starts ? 'auto' : 'none'}>
+                    {(starts?.keys ?? phoneStarts(null, null)).map((key, index) => {
                         // The first-run answers (ADR-0339) set the order; the first option says it is suggested.
-                        const badge = index === 0 && profile.ready && hasRealAnswer(profile) ? t('create.firstRun.suggested') : undefined;
+                        const badge = index === 0 && starts?.suggested ? t('create.firstRun.suggested') : undefined;
                         const onPress = () => void recordHomeStart(api, key);
                         const divided = index > 0;
                         if (key === 'create') return <StartOption href="/create" hue="mint" key={key} onPress={onPress} style={styles.startOption} icon="sparkle" title={t('menu.create')} body={t('explore.start.create.body')} hint={t('explore.start.create.hint')} divided={divided} badge={badge} />;
@@ -403,6 +418,7 @@ const sheets = themedStyles((p, ramp) => ({
     pageTitle: { color: p.textPrimary },
     pageIntro: { color: p.textSecondary, maxWidth: 520 },
     startGroup: { overflow: 'hidden', padding: 0 },
+    unsettled: { opacity: 0 },
     startOption: { minHeight: 80 },
     composer: { gap: ds.space.md },
     composerTitle: { color: p.textPrimary },

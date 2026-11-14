@@ -7,10 +7,11 @@ import { nextMilestone } from '../../lib/yourWins';
 import { t, formatNumber, plural } from '../../lib/i18n';
 import { ds } from '../../theme';
 export function YourWinsCard({ linkOnly = false }: { linkOnly?: boolean }) {
-    const { data } = useYourWins(!linkOnly);
+    const { data, loading } = useYourWins(!linkOnly);
     const router = useRouter();
     const styles = useThemedStyles(sheets);
-    if (!data) return null;
+    // While loading, hold the card's space so what is below does not jump down under a finger when it arrives.
+    if (!data) return loading && !linkOnly ? <Card style={[styles.card, styles.placeholder]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" /> : null;
     const open = () => router.push('/wins' as never);
     if (linkOnly) return <ListRow title={t('wins.title')} onPress={open} accessibilityRole="button" />;
     const next = nextMilestone(data);
@@ -26,6 +27,8 @@ export function YourWinsCard({ linkOnly = false }: { linkOnly?: boolean }) {
 }
 const sheets = themedStyles(p => ({
     card: { marginTop: peekRoom() + ds.space.lg, marginBottom: ds.space.lg, padding: ds.space.lg, overflow: 'visible', minHeight: 44 },
+    // About the height of the loaded card (title, one row of numbers, the next milestone and its bar).
+    placeholder: { minHeight: 200 },
     stats: { flexDirection: 'row', flexWrap: 'wrap', gap: ds.space.lg, marginVertical: ds.space.lg },
     stat: { flexGrow: 1, flexBasis: 80 },
     number: { fontVariant: ['tabular-nums'] },
