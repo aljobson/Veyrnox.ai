@@ -47,6 +47,9 @@ export default function AppearanceScreen() {
                 <Stack.Screen options={{ title: t('acct.appearance') }} />
                 <ScrollView contentContainerStyle={styles.body}>
                     <PendingPreview draft={draft} />
+                    {/* Every cold launch starts in Light whatever is chosen here (src/theme.ts, pull request 1996); a choice holds until the
+                        app is next launched. No existing string says so, and new copy needs all 11 locales, so this
+                        screen has no note yet. */}
                     <Text variant="title3">{t('appearance.theme')}</Text>
                     <View style={styles.grid} accessibilityRole="radiogroup" accessibilityLabel={t('appearance.theme')}>
                         {THEME_PREFERENCES.map((theme) => <ThemeOption key={theme} theme={theme} draft={draft} />)}

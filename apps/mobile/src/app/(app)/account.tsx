@@ -154,8 +154,13 @@ export default function Account() {
                 </Link>
             </Section>
 
-            <Section title={t('acct.appearance')}>
-                {process.env.EXPO_PUBLIC_BEST_CUT_ENABLED === 'true' ? <BestCutSettings /> : null}
+            {process.env.EXPO_PUBLIC_BEST_CUT_ENABLED === 'true' ? (
+                <Section title={t('bestCut.settings')}>
+                    <BestCutSettings />
+                </Section>
+            ) : null}
+
+            <Section title={t('opt.settings')}>
                 {ACTIVE_LOCALES.length > 1 ? <ListRow icon="globe" title={t('language.title')} onPress={() => router.push('/language' as never)} /> : null}
                 {isAnalyticsEnabled() ? <ListRow icon="shieldCheck" title={t('analyticsConsent.choices')} onPress={() => router.push('/privacy-choices')} /> : null}
                 <ListRow icon="swatches" title={t('acct.appearance')} onPress={() => router.push('/appearance')} />

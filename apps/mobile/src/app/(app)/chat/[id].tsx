@@ -63,7 +63,7 @@ export default function Conversation() {
     const [lowBalance, setLowBalance] = useState(false);
     const [notice, setNotice] = useState<string | null>(null);
     // Kept only while a send is unsettled, so a retry of the same message with the same choices is charged once.
-    const { messageList, onContentSizeChange, onScrollBeginDrag } = useChatAutoScroll(messages?.length ?? 0, sending);
+    const { messageList, ...follow } = useChatAutoScroll(messages?.length ?? 0, sending, typing);
     const pendingKey = useRef<PendingSend | null>(null);
     const [model, setModel] = useState<ChatModel | null>(null);
     const [options, setOptions] = useState<ReplyOptions>(NO_OPTIONS);
@@ -412,8 +412,8 @@ export default function Conversation() {
                 <FlatList
                     ref={messageList}
                     keyboardDismissMode="on-drag"
-                    onContentSizeChange={onContentSizeChange}
-                    onScrollBeginDrag={onScrollBeginDrag}
+                    {...follow}
+                    scrollEventThrottle={64}
                     style={styles.messageList}
                     data={starredOnly ? (messages ?? []).filter(message => message.role === 'assistant' && stars.includes(message.id)) : messages ?? []}
                     keyExtractor={(m) => m.id}
