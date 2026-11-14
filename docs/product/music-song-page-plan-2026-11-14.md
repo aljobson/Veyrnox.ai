@@ -34,7 +34,7 @@ Each slice ships behind a new `MUSIC_RUNTIME_FLAGS` key that starts `false` (no 
 
 ### Slice 3: comments (about 2 days)
 - Copy the Cinema model: `music_comments` (text only, 1-1000 chars, optional timestamp in the song, one level of replies), `music_comment_reports`, `music_comment_mutations`.
-- Visible only on public songs. Decide moderation before build (see open questions).
+- Visible only on public songs. Every comment is held for administrator approval before anyone else sees it (owner, 2026-11-14), using the Cinema review queue pattern.
 - Comment likes: `music_comment_likes`.
 - Blocks: reuse the Cinema block list or add a Music one.
 - Flag: `comments`.
@@ -49,7 +49,7 @@ Each slice ships behind a new `MUSIC_RUNTIME_FLAGS` key that starts `false` (no 
 - All new strings in the 11 locales. UI ends with the design goal criteria lines.
 
 ## Open questions for the owner
-1. **Comment moderation.** Cinema holds every comment for admin approval. Same for Music, or publish immediately with report and hide?
+1. ~~Comment moderation~~ **Decided 2026-11-14: every comment waits for administrator approval, as in Cinema.**
 2. **Who can comment.** Any signed-in account, or only accounts on a paid plan?
 3. **Notifications.** Should a follow or a reply notify the creator (push and email exist)?
 4. **Order.** Ship slices 1 and 2 first and decide comments later, or build all three before any goes on?
