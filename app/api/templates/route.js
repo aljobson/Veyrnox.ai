@@ -10,19 +10,18 @@
  * shape. The query is cut at 80 characters.
  *
  * With ?kind=image or ?kind=audio it answers { templates: [{ id, name, category, modelId, prompt, previewImage?, previewAspect?,
- * photoRequired?, previewAudio?, previewAttribution? }], categories } for the mobile app (lib/kindTemplates.js).
+ * photoRequired?, previewAudio?, previewAttribution? }], categories } for the mobile app (lib/clientTemplates.js).
  *
  * Errors: 400 invalid_query.
  */
 import { NextResponse } from 'next/server';
-import { kindTemplates } from '../../../lib/kindTemplates.js';
-import { SEARCH_QUERY_MAX, searchTemplateIds, templateCards, templateCategories } from '../../../lib/clientTemplates.js';
+import { SEARCH_QUERY_MAX, kindTemplates, searchTemplateIds, templateCards, templateCategories } from '../../../lib/clientTemplates.js';
 
 const CACHE = 'public, max-age=60, s-maxage=300, stale-while-revalidate=300';
 
 export function GET(request) {
     const params = new URL(request.url).searchParams;
-    // ?kind=image|audio: the mobile app's image and audio tabs (lib/kindTemplates.js). Any other kind falls through to the gallery.
+    // ?kind=image|audio: the mobile app's image and audio tabs (lib/clientTemplates.js). Any other kind falls through to the gallery.
     const byKind = kindTemplates(params.get('kind'));
     if (byKind) return NextResponse.json(byKind, { headers: { 'Cache-Control': CACHE } });
     const q = params.get('q');

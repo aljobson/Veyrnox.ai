@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { register } from 'node:module';
-import { kindTemplates } from '../lib/kindTemplates.js';
+import { kindTemplates } from '../lib/clientTemplates.js';
 import { createTemplatesFor } from '../app/veyrnox/_lib/createTemplates.js';
 import { MODELS } from '../app/veyrnox/_lib/tokens.js';
 
