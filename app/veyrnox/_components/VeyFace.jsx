@@ -71,7 +71,7 @@ export const VEY_FACES = {
     eyes: <><OpenEye cx={59} ry={13} /><OpenEye cx={101} ry={13} /></>,
     brows: <><Brow d="M49 41 L68 33" /><Brow d="M92 33 L111 41" /></>,
     mouth: MOUTHS.frown,
-    prop: <><path d="M138 26 Q144 35 138 42 Q132 35 138 26Z" fill={BLUE} /><Coin x={24} y={102} r={9} symbol="+" /></>,
+    prop: <><path d="M138 26 Q144 35 138 42 Q132 35 138 26Z" fill={BLUE} /><Coin x={136} y={106} r={9} symbol="+" /></>,
   },
   broke: {
     blink: true,
