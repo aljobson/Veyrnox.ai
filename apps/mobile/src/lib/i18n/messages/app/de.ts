@@ -4963,6 +4963,7 @@ export default {
   "filmWorkspace.defaultsFilled": "Angewendete Vorschläge: {value1}. Prüfe sie, bevor du fortfährst.",
   "filmWorkspace.defaultsFilledRemaining": "Angewendete Vorschläge: {value1}. Leere Felder brauchen noch deine Eingabe: {value2}. Prüfe jeden Wert, bevor du fortfährst.",
   "filmWorkspace.defaultsRemaining": "Für die übrigen leeren Felder sind keine sicheren Vorschläge verfügbar: {value1}. Fülle sie aus, bevor du fortfährst.",
+  "filmWorkspace.defaultsNeedYou": "Zwei Dinge kannst nur du ausfüllen. Erstens das Orts-Tag: ein @, ein kurzer Name, ein Doppelpunkt, dann v und eine Zahl, zum Beispiel @desk:v1. Zweitens hakst du „Dieser Clip enthält eine Aktion“ an, sobald die Einstellung wirklich nur eine Aktion ist.",
   "filmWorkspace.defaultsNone": "Es wurden keine leeren Felder geändert. Prüfe vor dem Fortfahren die Validierung unten.",
   "filmWorkspace.shotLabel": "Aufnahme {value1}",
   "filmWorkspace.saved": "Auf diesem Telefon gespeichert",

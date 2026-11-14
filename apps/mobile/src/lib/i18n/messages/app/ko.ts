@@ -4893,6 +4893,7 @@ export default {
   "filmWorkspace.defaultsFilled": "제안값을 적용한 칸: {value1}개. 계속하기 전에 확인하세요.",
   "filmWorkspace.defaultsFilledRemaining": "제안값을 적용한 칸: {value1}개. 직접 입력해야 하는 빈 칸: {value2}개. 계속하기 전에 모든 값을 확인하세요.",
   "filmWorkspace.defaultsRemaining": "남은 빈 칸에 사용할 안전한 제안이 없습니다: {value1}개. 계속하기 전에 입력하세요.",
+  "filmWorkspace.defaultsNeedYou": "두 가지는 직접 채워야 합니다. 첫째, 장소 태그: @, 짧은 이름, 콜론, v와 숫자 순서로, 예를 들어 @desk:v1 입니다. 둘째, 샷이 정말 하나의 동작일 때 “이 클립에는 하나의 동작이 있습니다”를 체크하세요.",
   "filmWorkspace.defaultsNone": "빈 필드는 변경되지 않았습니다. 계속하기 전에 아래 검증 결과를 확인하세요.",
   "filmWorkspace.shotLabel": "샷 {value1}",
   "filmWorkspace.saved": "이 휴대폰에 저장되었습니다",

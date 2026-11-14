@@ -4963,6 +4963,7 @@ export default {
   "filmWorkspace.defaultsFilled": "लागू किए गए सुझाव: {value1}। आगे बढ़ने से पहले जाँचें।",
   "filmWorkspace.defaultsFilledRemaining": "लागू किए गए सुझाव: {value1}। खाली फ़ील्ड में अभी आपका इनपुट चाहिए: {value2}। आगे बढ़ने से पहले हर मान जाँचें।",
   "filmWorkspace.defaultsRemaining": "बाकी खाली फ़ील्ड के लिए सुरक्षित सुझाव उपलब्ध नहीं हैं: {value1}। आगे बढ़ने से पहले उन्हें भरें।",
+  "filmWorkspace.defaultsNeedYou": "दो चीज़ें सिर्फ़ आप भर सकते हैं। पहली, लोकेशन टैग: एक @, एक छोटा नाम, कोलन, फिर v और एक संख्या, जैसे @desk:v1। दूसरी, जब शॉट सच में एक ही क्रिया हो, तब “इस क्लिप में एक क्रिया है” पर टिक करें।",
   "filmWorkspace.defaultsNone": "कोई खाली फ़ील्ड नहीं बदला गया। आगे बढ़ने से पहले नीचे की जाँच देखें।",
   "filmWorkspace.shotLabel": "शॉट {value1}",
   "filmWorkspace.saved": "इस फ़ोन पर सहेजा गया",

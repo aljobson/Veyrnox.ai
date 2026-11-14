@@ -4893,6 +4893,7 @@ export default {
   "filmWorkspace.defaultsFilled": "提案を適用した欄: {value1} 件。続ける前に確認してください。",
   "filmWorkspace.defaultsFilledRemaining": "提案を適用した欄: {value1} 件。入力が必要な空欄: {value2} 件。続ける前にすべての値を確認してください。",
   "filmWorkspace.defaultsRemaining": "残りの空欄に安全な提案はありません: {value1} 件。続ける前に入力してください。",
+  "filmWorkspace.defaultsNeedYou": "次の2つはあなたにしか入力できません。1つ目はロケーションのタグです。@、短い名前、コロン、v と数字の順で、例は @desk:v1 です。2つ目は、ショットが本当に1つの動作だけなら「このクリップには1つの動作が含まれます」にチェックを入れてください。",
   "filmWorkspace.defaultsNone": "空欄は変更されませんでした。続ける前に下の検証結果を確認してください。",
   "filmWorkspace.shotLabel": "ショット {value1}",
   "filmWorkspace.saved": "この端末に保存しました",

@@ -5033,6 +5033,7 @@ export default {
   "filmWorkspace.defaultsFilled": "Sugestões aplicadas: {value1}. Confira-as antes de continuar.",
   "filmWorkspace.defaultsFilledRemaining": "Sugestões aplicadas: {value1}. Os campos vazios ainda precisam da sua entrada: {value2}. Confira cada valor antes de continuar.",
   "filmWorkspace.defaultsRemaining": "Não há sugestões seguras para os campos vazios restantes: {value1}. Preencha-os antes de continuar.",
+  "filmWorkspace.defaultsNeedYou": "Só você pode preencher duas coisas. Primeiro, a etiqueta do local: um @, um nome curto, dois-pontos, depois v e um número, por exemplo @desk:v1. Segundo, marque “Este clipe contém uma única ação” quando o plano for mesmo uma só ação.",
   "filmWorkspace.defaultsNone": "Nenhum campo vazio foi alterado. Confira a validação abaixo antes de continuar.",
   "filmWorkspace.shotLabel": "Plano {value1}",
   "filmWorkspace.saved": "Salvo neste celular",
