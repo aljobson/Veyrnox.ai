@@ -1,3 +1,5 @@
+import { soundDuration, soundTicks } from './beatSounds.mjs';
+import { audioFragment, clampFades, tickSeconds } from './beatAudioSegments.mjs';
 import { BEAT_LIMITS, validateBeat } from './beatDocument.mjs';
 // Beat documents contain only JSON values; object property order is not an edit.
 function equalValue(a, b) {
@@ -11,6 +13,10 @@ function equalValue(a, b) {
 function edit(doc, now, change) {
   const next = structuredClone(doc);
   change(next);
+  if (next.assets) {
+    const used = new Set(next.tracks.flatMap((t) => t.regions.map((r) => r.assetId)));
+    for (const id of Object.keys(next.assets)) if (!used.has(id)) delete next.assets[id];
+  }
   if (equalValue(next, doc)) return doc;
   next.updatedAt = Math.max(now, doc.updatedAt);
   const result = validateBeat(next);
@@ -35,11 +41,16 @@ export const cycleVelocity = (doc, pad, step, dir = 1, now = Date.now()) => edit
 });
 export const addHitAtStep = (doc, pad, step, now = Date.now()) => hits(doc, pad).some(([s]) => s === step)
   ? doc : edit(doc, now, (d) => put(d, pad, step, 100));
-export const setTempo = (doc, bpm, now = Date.now()) => edit(doc, now, (d) => { d.tempo.bpm = bpm; });
+export const setTempo = (doc, bpm, now = Date.now()) => edit(doc, now, (d) => {
+  if (!Number.isFinite(bpm) || bpm < 40 || bpm > 240) throw new BeatRefusal('Enter a tempo from 40 to 240 BPM.');
+  d.tempo.bpm = bpm;
+  for (const asset of Object.values(d.assets || {})) if (asset.source === 'sound') asset.durationSec = soundDuration(asset.ref, bpm);
+  for (const track of d.tracks) for (const region of track.regions) if (region.assetId) clampFades(region, bpm);
+});
 export const setSwing = (doc, value, now = Date.now()) => edit(doc, now, (d) => { d.swing = value; });
 export const setSteps = (doc, steps, now = Date.now()) => edit(doc, now, (d) => {
   d.steps = steps;
-  for (const track of d.tracks) for (const region of track.regions) region.offset %= steps * 240;
+  for (const track of d.tracks) for (const region of track.regions) if (!region.assetId) region.offset %= steps * 240;
 });
 export const selectPattern = (doc, slot, now = Date.now()) => slot === doc.currentPattern
   ? doc : edit(doc, now, (d) => { d.currentPattern = slot; });
@@ -70,14 +81,19 @@ function regionById(doc, id) {
   throw new BeatRefusal('That region no longer exists.');
 }
 function nextId(doc, prefix) {
-  const ids = new Set(doc.tracks.flatMap((t) => [t.id, ...t.regions.map((r) => r.id)]));
+  const ids = new Set([...Object.keys(doc.assets || {}), ...doc.tracks.flatMap((t) => [t.id, ...t.regions.map((r) => r.id)])]);
   let n = 1;
   while (ids.has(prefix + n.toString(36))) n++;
   return prefix + n.toString(36);
 }
 const mod = (n, length) => ((n % length) + length) % length;
+function fragment(doc, region, start, length) {
+  return region.assetId ? audioFragment(region, start, length, doc.assets[region.assetId], doc.tempo.bpm)
+    : { ...region, start, length, offset: mod(region.offset + start - region.start, doc.steps * 240) };
+}
 // The edited region wins. Preserve the phase of every surviving fragment.
 function place(doc, track, edited) {
+  if (Boolean(edited.assetId) !== (track.kind === 'audio')) throw new BeatRefusal('Audio and drum regions need tracks of the same kind.');
   const end = edited.start + edited.length;
   const survivors = [];
   if (!track.regions.some((r) => r.id === edited.id)) track.regions = [...track.regions, edited];
@@ -85,11 +101,10 @@ function place(doc, track, edited) {
     if (other.id === edited.id) continue;
     const otherEnd = other.start + other.length;
     if (otherEnd <= edited.start || other.start >= end) { survivors.push(other); continue; }
-    if (other.start < edited.start) survivors.push({ ...other, length: edited.start - other.start });
+    if (other.start < edited.start) survivors.push(fragment(doc, other, other.start, edited.start - other.start));
     if (otherEnd > end) {
       const id = other.start < edited.start ? nextId(doc, 'r') : other.id;
-      const right = { ...other, id, start: end, length: otherEnd - end,
-        offset: mod(other.offset + end - other.start, doc.steps * 240) };
+      const right = { ...fragment(doc, other, end, otherEnd - end), id };
       survivors.push(right);
       // Reserve generated ids while processing additional fragments.
       if (id !== other.id) track.regions = [...track.regions, right];
@@ -98,12 +113,12 @@ function place(doc, track, edited) {
   track.regions = [...survivors, edited].sort((a, b) => a.start - b.start);
 }
 export const addTrack = (doc, kit, now = Date.now()) => edit(doc, now, (d) => {
-  d.tracks.push({ id: nextId(d, 't'), name: `Drums ${d.tracks.length + 1}`, kit,
+  d.tracks.push({ id: nextId(d, 't'), name: `Drums ${d.tracks.length + 1}`, ...(d.version === 3 ? { kind: 'drums' } : {}), kit,
     mute: false, solo: false, gain: 1, pan: 0, regions: [] });
 });
 export const removeTrack = (doc, id, now = Date.now()) => edit(doc, now, (d) => {
   trackById(d, id);
-  if (d.tracks.length === 1) throw new BeatRefusal('Keep at least one drum track.');
+  if (d.tracks.length === 1) throw new BeatRefusal('Keep at least one track.');
   d.tracks = d.tracks.filter((t) => t.id !== id);
 });
 const trackField = (field) => (doc, id, value, now = Date.now()) => edit(doc, now, (d) => { trackById(d, id)[field] = value; });
@@ -132,20 +147,21 @@ export const copyRegion = (doc, id, start, trackId, now = Date.now()) => edit(do
 export const resizeRegion = (doc, id, length, now = Date.now()) => edit(doc, now, (d) => {
   const { track, region } = regionById(d, id);
   if (length < 240) throw new BeatRefusal('A region must be at least one step long.');
-  place(d, track, { ...region, length });
+  const resized = length < region.length ? fragment(d, region, region.start, length) : { ...region, length };
+  if (region.assetId && length > region.length) clampFades(resized, d.tempo.bpm);
+  place(d, track, resized);
 });
 export const trimRegionStart = (doc, id, start, now = Date.now()) => edit(doc, now, (d) => {
   const { track, region } = regionById(d, id);
   const length = region.start + region.length - start;
   if (start < 0 || length < 240) throw new BeatRefusal('Keep the start before the end and inside the song.');
-  place(d, track, { ...region, start, length, offset: mod(region.offset + start - region.start, d.steps * 240) });
+  place(d, track, fragment(d, region, start, length));
 });
 export const splitRegion = (doc, id, atTick, now = Date.now()) => edit(doc, now, (d) => {
   const { track, region } = regionById(d, id);
   if (atTick <= region.start || atTick >= region.start + region.length) throw new BeatRefusal('Place the playhead inside the region to split it.');
-  const right = { ...region, id: nextId(d, 'r'), start: atTick, length: region.start + region.length - atTick,
-    offset: mod(region.offset + atTick - region.start, d.steps * 240) };
-  region.length = atTick - region.start;
+  const right = { ...fragment(d, region, atTick, region.start + region.length - atTick), id: nextId(d, 'r') };
+  Object.assign(region, fragment(d, region, region.start, atTick - region.start));
   track.regions.push(right);
   track.regions.sort((a, b) => a.start - b.start);
 });
@@ -167,3 +183,27 @@ export const addHitToPattern = (doc, pattern, pad, step, now = Date.now()) => {
     rows[pad] = [...(rows[pad] || []), [step, 100]].sort((a, b) => a[0] - b[0]);
   });
 };
+
+export const addAudioTrack = (doc, now = Date.now()) => edit(doc, now, (d) => {
+  d.tracks.push({ id: nextId(d, 't'), name: `Audio ${d.tracks.filter((t) => t.kind === 'audio').length + 1}`, kind: 'audio', mute: false, solo: false, gain: 1, pan: 0, regions: [] });
+});
+export const addAudioRegion = (doc, asset, trackId, start, now = Date.now()) => edit(doc, now, (d) => {
+  let track = trackId && trackById(d, trackId);
+  if (track && track.kind !== 'audio') throw new BeatRefusal('Choose an audio track for this sound.');
+  if (!track) {
+    track = { id: nextId(d, 't'), name: `Audio ${d.tracks.filter((t) => t.kind === 'audio').length + 1}`, kind: 'audio', mute: false, solo: false, gain: 1, pan: 0, regions: [] };
+    d.tracks.push(track);
+  }
+  const existing = Object.entries(d.assets).find(([, a]) => JSON.stringify(a) === JSON.stringify(asset));
+  const assetId = existing?.[0] || nextId(d, 'a');
+  d.assets[assetId] = structuredClone(asset);
+  const length = asset.source === 'sound' ? soundTicks(asset.ref) : Math.max(240, Math.round(asset.durationSec / tickSeconds(240, d.tempo.bpm)) * 240);
+  place(d, track, { id: nextId(d, 'r'), start, length, assetId,
+    ...(asset.source === 'sound' ? { phaseTicks: 0 } : { phaseSec: 0 }), gainDb: 0, fadeIn: null, fadeOut: null, reverse: false });
+});
+export const setAudioRegion = (doc, id, patch, now = Date.now()) => edit(doc, now, (d) => {
+  const { region } = regionById(d, id);
+  if (!region.assetId || Object.keys(patch).some((k) => !['gainDb', 'fadeIn', 'fadeOut', 'reverse'].includes(k))) throw new BeatRefusal('Choose an audio region.');
+  Object.assign(region, patch);
+  if (Object.hasOwn(patch, 'fadeIn') || Object.hasOwn(patch, 'fadeOut')) clampFades(region, d.tempo.bpm);
+});

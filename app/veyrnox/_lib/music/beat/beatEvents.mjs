@@ -8,6 +8,7 @@ export const editTrack = (doc, id) => doc.tracks.find((track) => track.id === id
 export const effectiveTrackGain = (doc, id) => editTrack(doc, id).gain;
 const modulo = (n, length) => ((n % length) + length) % length;
 export function recordTarget(doc, globalStep, editTrackId) {
+  if (editTrack(doc, editTrackId).kind === 'audio') return null;
   if (doc.view === 'pattern') return { pattern: doc.currentPattern, step: modulo(globalStep, doc.steps) };
   const tick = globalStep * 240;
   const region = editTrack(doc, editTrackId).regions.find((r) => r.start <= tick && tick < r.start + r.length);
@@ -17,6 +18,7 @@ export function eventsAtStep(doc, globalStep, { editTrackId } = {}) {
   const tracks = doc.view === 'pattern' ? [editTrack(doc, editTrackId)] : doc.tracks;
   const solo = doc.tracks.some((track) => track.solo);
   return tracks.flatMap((track) => {
+    if (track.kind === 'audio') return [];
     if (doc.view === 'song' && (track.mute || (solo && !track.solo))) return [];
     const target = recordTarget(doc, globalStep, track.id);
     if (!target) return [];

@@ -1,17 +1,22 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { songEnd } from '../../../_lib/music/beat/beatDocument.mjs';
-import { clampLocator, snapTick } from '../../../_lib/music/beat/beatTime.mjs';
+import { clampLocator, snapTick, formatPosition } from '../../../_lib/music/beat/beatTime.mjs';
 import * as ops from '../../../_lib/music/beat/beatOps.mjs';
 import BeatRuler from './BeatRuler';
 import BeatTrackHeader from './BeatTrackHeader';
 import BeatRegion from './BeatRegion';
+import BeatRegionInspector from './BeatRegionInspector';
+import BeatLibrary from './BeatLibrary';
+import { prepareAsset, syncAssetTempo } from '../../../_lib/music/beat/beatAssets';
+import { soundDuration } from '../../../_lib/music/beat/beatSounds.mjs';
 import BeatRegionActions from './BeatRegionActions';
 import useRegionDrag from './useRegionDrag';
 import { button, input } from './beatStyles';
 
 export default function BeatArrangement({ doc, edit, selectPattern, editTrackId, setEditTrackId,
   locator, setLocator, playhead, runId, announce }) {
+  useEffect(() => { syncAssetTempo(doc.tempo.bpm); }, [doc.tempo.bpm]);
   const [zoom, setZoom] = useState(96);
   const [snapValue, setSnapValue] = useState('240');
   const snap = snapValue === 'off' ? 240 : Number(snapValue);
@@ -36,14 +41,29 @@ export default function BeatArrangement({ doc, edit, selectPattern, editTrackId,
     }
   }, [playhead, runId, zoom, doc.view]);
   function choose(region, track) {
-    setSelectedId(region.id); setEditTrackId(track.id); selectPattern(region.pattern);
-    announce(`Editing pattern ${region.pattern} on ${track.name}`);
+    setSelectedId(region.id); setEditTrackId(track.id); if (region.pattern) selectPattern(region.pattern);
+    announce(region.assetId ? `Editing ${doc.assets[region.assetId].name} on ${track.name}` : `Editing pattern ${region.pattern} on ${track.name}`);
   }
   function laneTick(event) {
     return Math.max(0, Math.min(512 * 3840 - 240,
       snapTick((event.clientX - event.currentTarget.getBoundingClientRect().left) / zoom * 3840, snap)));
   }
-  return <section className="min-w-0 max-w-full space-y-3" aria-label="Song arrangement">
+  async function addSound(item, trackId, start = locator) {
+    try {
+      const asset = await prepareAsset(item, doc.tempo.bpm);
+      edit((d) => ops.addAudioRegion(d, asset.source === 'sound' ? { ...asset, durationSec: soundDuration(asset.ref, d.tempo.bpm) } : asset, trackId, start), { label: 'add audio region', start });
+    } catch (error) { announce(error.message || 'Could not add sound.'); }
+  }
+  function drop(event, trackId) {
+    event.preventDefault();
+    const payload = event.dataTransfer.getData('application/x-beat-sound');
+    if (!payload) return;
+    const start = laneTick(event);
+    try { void addSound(JSON.parse(payload), trackId, start); } catch { announce('Could not read that sound.'); }
+  }
+  return <div className="grid min-w-0 gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
+    <BeatLibrary bpm={doc.tempo.bpm} announce={announce} onAdd={(item) => addSound(item, doc.tracks.find((t) => t.id === editTrackId)?.kind === 'audio' ? editTrackId : null)} />
+    <section className="min-w-0 max-w-full space-y-3" aria-label="Song arrangement">
     <div className="flex flex-wrap items-center gap-2">
       <label>Snap <select className={input} value={snapValue} onChange={(e) => setSnapValue(e.target.value)}>
         <option value={3840}>Bar</option><option value={960}>1/4</option><option value={480}>1/8</option>
@@ -52,11 +72,11 @@ export default function BeatArrangement({ doc, edit, selectPattern, editTrackId,
       <button className={button} aria-label="Zoom out" disabled={zoom === 32} onClick={() => setZoom(Math.max(32, zoom - 32))}>−</button>
       <span className="text-xs">{zoom} px/bar</span>
       <button className={button} aria-label="Zoom in" disabled={zoom === 256} onClick={() => setZoom(Math.min(256, zoom + 32))}>+</button>
-      <span className="text-xs">Playhead: bar {locator / 3840 + 1}</span>
+      <span className="text-xs">Playhead: {formatPosition(locator)}</span>
     </div>
     <div className="flex min-w-0 max-w-full rounded-xl border border-vx-border">
       <div className="z-20 w-16 shrink-0 md:w-64">
-        <div className="flex h-24 items-center text-xs font-bold md:px-3">Drum tracks</div>
+        <div className="flex h-24 items-center text-xs font-bold md:px-3">Tracks</div>
         {doc.tracks.map((track) => <BeatTrackHeader key={track.id} track={track} edit={edit} locator={locator}
           last={doc.tracks.length === 1} selected={track.id === editTrackId} onSelect={() => setEditTrackId(track.id)} />)}
       </div>
@@ -71,10 +91,11 @@ export default function BeatArrangement({ doc, edit, selectPattern, editTrackId,
           <BeatRuler bars={bars} zoom={zoom} snap={snap} locator={locator} end={end}
             setLocator={setLocator} cycle={doc.cycle} edit={edit} announce={announce} />
           {doc.tracks.map((track) => <div key={track.id} data-track-lane={track.id}
+            onDragOver={(e) => e.preventDefault()} onDrop={(e) => drop(e, track.id)}
             className="relative h-48 border-b border-vx-border bg-vx-base md:h-80"
             onClick={(event) => { if (event.target === event.currentTarget) setLocator(clampLocator(laneTick(event), end)); }}
             onDoubleClick={(event) => {
-              if (event.target !== event.currentTarget) return;
+              if (event.target !== event.currentTarget || track.kind === 'audio') return;
               const at = laneTick(event); setLocator(at);
               edit((d) => ops.addRegion(d, track.id, at, d.currentPattern), { label: 'add region', trackId: track.id, start: at });
             }}>
@@ -89,6 +110,7 @@ export default function BeatArrangement({ doc, edit, selectPattern, editTrackId,
               {drag.preview.pattern}
             </div>}
           </div>)}
+          <div className="h-20 border-b border-dashed border-vx-border p-3 text-sm text-vx-fg-muted" onDragOver={(e) => e.preventDefault()} onDrop={(e) => drop(e, null)}>Drop a sound here to add an audio track</div>
           {doc.view === 'song' && <div aria-hidden="true"
             className="pointer-events-none absolute inset-y-0 z-20 w-0.5 bg-vx-accent"
             style={{ left: (playhead >= 0 ? playhead * 240 : locator) / 3840 * zoom }} />}
@@ -97,13 +119,14 @@ export default function BeatArrangement({ doc, edit, selectPattern, editTrackId,
     </div>
     <button className={button} disabled={doc.tracks.length >= 16} aria-describedby="track-limit"
       onClick={() => edit((d) => ops.addTrack(d, '808'), { label: 'add track' })}>+ Add drum track</button>
+    <button className={button} disabled={doc.tracks.length >= 16} onClick={() => edit((d) => ops.addAudioTrack(d), { label: 'add track' })}>+ Add audio track</button>
     {doc.tracks.length >= 16 && <p id="track-limit" className="text-xs">A song can have at most 16 tracks.</p>}
     {selectedRegion && <div className="hidden flex-wrap gap-2 md:flex" role="group" aria-label="Selected region">
-      <label>Region pattern <select className={input} value={selectedRegion.pattern} onChange={(e) => {
+      {!selectedRegion.assetId && <label>Region pattern <select className={input} value={selectedRegion.pattern} onChange={(e) => {
         const slot = e.target.value;
         edit((d) => ops.setRegionPattern(d, selectedRegion.id, slot), { label: 'change region pattern', regionId: selectedRegion.id });
         selectPattern(slot);
-      }}>{['A', 'B', 'C', 'D'].map((slot) => <option key={slot}>{slot}</option>)}</select></label>
+      }}>{['A', 'B', 'C', 'D'].map((slot) => <option key={slot}>{slot}</option>)}</select></label>}
       <button className={button} onClick={() => edit((d) => ops.splitRegion(d, selectedRegion.id, locator),
         { label: 'split region', regionId: selectedRegion.id })}>Split at playhead</button>
       <button className={button} onClick={() => edit((d) => ops.duplicateRegion(d, selectedRegion.id),
@@ -111,11 +134,12 @@ export default function BeatArrangement({ doc, edit, selectPattern, editTrackId,
       <button className={button} onClick={() => edit((d) => ops.deleteRegion(d, selectedRegion.id),
         { label: 'delete region', regionId: selectedRegion.id })}>Delete region</button>
     </div>}
+    {selectedRegion?.assetId && <BeatRegionInspector region={selectedRegion} asset={doc.assets[selectedRegion.assetId]} edit={edit} />}
     <BeatRegionActions region={selectedRegion} track={selectedTrack} locator={locator} snap={snap} edit={edit} selectPattern={selectPattern}
       movePlayhead={(delta) => setLocator(clampLocator(locator + delta, end))} />
     <p className="text-xs text-vx-fg-muted">Drag to move; Alt-drag to copy. Drag edges to trim or loop.
       Focus a region: arrows move; Shift+arrows resize; [ and ] trim; Ctrl/⌘+D duplicates;
       Ctrl/⌘+E splits at the playhead; Delete removes; Enter edits its pattern.
       Focus the ruler: arrows move the playhead, Page Up/Down move a bar, Home/End jump.</p>
-  </section>;
+  </section></div>;
 }

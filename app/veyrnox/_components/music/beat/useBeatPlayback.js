@@ -1,4 +1,6 @@
 'use client';
+import { cachedAsset, loadAsset, syncAssetTempo } from '../../../_lib/music/beat/beatAssets.js';
+import { playAudioSegment } from '../../../_lib/music/beat/beatAudioGraph.js';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createBeatEngine } from '../../../_lib/music/beat/beatEngine.js';
 import { createScheduler } from '../../../_lib/music/beat/beatScheduler.mjs';
@@ -56,10 +58,18 @@ export function useBeatPlayback(current, edit, announce, options) {
         announce('Nothing to play. Add a region first.');
         return;
       }
-      const run = instance.startRun();
+      let run = instance.startRun();
       const scheduled = [];
       const scheduler = createScheduler({
         clock: instance.now, setTimer: setTimeout, clearTimer: clearTimeout, isHidden: () => document.hidden,
+        onAudio: (segment, time) => {
+          const doc = current.current, asset = doc.assets[segment.assetId];
+          const buffer = asset && cachedAsset(asset, doc.tempo.bpm, segment.reverse);
+          if (!buffer) { if (asset) void loadAsset(asset, doc.tempo.bpm, segment.reverse); return; }
+          const track = doc.tracks.find((t) => t.id === segment.trackId);
+          const region = track.regions.find((r) => r.id === segment.regionId);
+          playAudioSegment(instance.context, instance.setTrackMix(run, track.id, track.gain, track.pan), buffer, segment, region, doc.tempo.bpm, time);
+        },
         onEvent: (event, time) => {
           const track = editTrack(current.current, event.trackId);
           const destination = instance.setTrackMix(run, track.id, track.gain, track.pan);
@@ -81,7 +91,12 @@ export function useBeatPlayback(current, edit, announce, options) {
       });
       scheduler.updateSequence(() => sequenceFor(current.current,
         optionsRef.current?.locator || 0, optionsRef.current?.editTrackId));
-      active.current = { run, scheduler, scheduled };
+      active.current = { run, scheduler, scheduled, doc: current.current, restart(tick) {
+        scheduler.stop(); instance.stopRun(run); run = instance.startRun(); scheduled.length = 0;
+        active.current.run = run; active.current.endTime = undefined;
+        scheduler.updateSequence(() => sequenceFor(current.current, tick, optionsRef.current?.editTrackId));
+        scheduler.start(instance.now() + 0.03); setRunId(run.id);
+      } };
       scheduler.start(instance.now() + 0.03);
       setAudioError(''); setRunId(run.id);
     } catch (failure) {
@@ -109,7 +124,7 @@ export function useBeatPlayback(current, edit, announce, options) {
       }
       await resumed;
       if (!mounted.current) return;
-      instance.playPad(pad, 100 / 127, instance.now(), instance.master, editTrack(current.current, optionsRef.current?.editTrackId).kit);
+      instance.playPad(pad, 100 / 127, instance.now(), instance.master, editTrack(current.current, optionsRef.current?.editTrackId).kit || '808');
     } catch (failure) { setAudioError(failure.message); announce(failure.message); }
   }
   function setRecord(value) { record.current = value; setRecording(value); }
@@ -127,6 +142,21 @@ export function useBeatPlayback(current, edit, announce, options) {
       const playing = active.current;
       if (playing && engine.current) {
         const instance = engine.current;
+        const doc = current.current;
+        syncAssetTempo(doc.tempo.bpm);
+        if (playing.doc !== doc) {
+          // Restart edited arrangements through the existing 10 ms run fade.
+          const old = playing.doc;
+          const arrangement = (d) => JSON.stringify(d.tracks.map((t) => [t.id, t.kind, t.mute, t.solo, t.regions]));
+          const changed = old.tempo.bpm !== doc.tempo.bpm || old.view !== doc.view || JSON.stringify(old.cycle) !== JSON.stringify(doc.cycle) || arrangement(old) !== arrangement(doc);
+          if (changed) {
+            const nearest = playing.scheduler.nearestStepAt(instance.now());
+            playing.restart((nearest?.step ?? 0) * 240);
+            playing.doc = doc;
+            frame = requestAnimationFrame(animate); return;
+          }
+          playing.doc = doc;
+        }
         const audible = instance.now() - (instance.context.outputLatency || instance.context.baseLatency || 0);
         for (const track of current.current.tracks) instance.setTrackMix(playing.run, track.id, track.gain, track.pan);
         if (playing.endTime !== undefined && audible >= playing.endTime) {

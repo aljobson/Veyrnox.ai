@@ -3,7 +3,7 @@ import { stepSeconds } from './beatTime.mjs';
 
 export class BeatExportError extends RangeError {}
 export function exportRange(doc) {
-  if (!validateBeat(doc).ok || doc.version !== 2) throw new BeatExportError('Invalid song or cycle range.');
+  if (!validateBeat(doc).ok || ![2, 3].includes(doc.version)) throw new BeatExportError('Invalid song or cycle range.');
   return doc.cycle.on ? { startStep: doc.cycle.start / 240, endStep: doc.cycle.end / 240 }
     : { startStep: 0, endStep: Math.max(songEnd(doc) / 240, doc.steps) };
 }

@@ -1,5 +1,6 @@
+import { formatPosition } from './beatTime.mjs';
 const regions = (doc) => doc.tracks.flatMap((track) => track.regions.map((region) => ({ track, region })));
-const bars = (region) => `${region.start / 3840 + 1} to ${(region.start + region.length) / 3840}`;
+const bars = (region) => `${formatPosition(region.start)} to ${formatPosition(region.start + region.length)}`;
 
 // Read committed results, including overlap resolution, for every input method.
 export function arrangementMessage(before, after, { label, regionId, trackId, start }) {
@@ -7,8 +8,12 @@ export function arrangementMessage(before, after, { label, regionId, trackId, st
   const current = regions(after).find(({ region }) => region.id === regionId);
   const track = after.tracks.find((item) => item.id === trackId);
   switch (label) {
+    case 'add audio region': {
+      const added = regions(after).find(({ region }) => !regions(before).some((old) => old.region.id === region.id) && region.assetId);
+      return added ? `Added ${after.assets[added.region.assetId].name} at ${formatPosition(added.region.start)}` : 'Added sound';
+    }
     case 'move region':
-      return `Moved to bar ${current.region.start / 3840 + 1} on ${current.track.name}`;
+      return `Moved to ${formatPosition(current.region.start)} on ${current.track.name}`;
     case 'copy region':
     case 'duplicate region':
     case 'add region': {
@@ -16,19 +21,19 @@ export function arrangementMessage(before, after, { label, regionId, trackId, st
       const at = label === 'duplicate region' ? previous.region.start + previous.region.length : start;
       const placed = after.tracks.find((item) => item.id === destination).regions.find((region) => region.start === at);
       const verb = label === 'copy region' ? 'Copied to' : label === 'duplicate region' ? 'Duplicated to' : 'Added at';
-      return `${verb} bars ${bars(placed)}`;
+      return `${verb} ${bars(placed)}`;
     }
     case 'resize region':
     case 'trim region':
-      return `Now bars ${bars(current.region)}`;
+      return `Now ${bars(current.region)}`;
     case 'split region':
-      return `Split at bar ${(current.region.start + current.region.length) / 3840 + 1}`;
+      return `Split at ${formatPosition(current.region.start + current.region.length)}`;
     case 'delete region': return 'Region deleted';
     case 'change region pattern': return `Region now uses pattern ${current.region.pattern}`;
     case 'add track': return `Track added: ${after.tracks.find((item) => !before.tracks.some((old) => old.id === item.id)).name}`;
     case 'delete track': return `Track deleted: ${before.tracks.find((item) => item.id === trackId).name}`;
     case 'change track kit': return `${track.name} kit: ${track.kit}`;
-    case 'change cycle': return `Cycle bars ${after.cycle.start / 3840 + 1} to ${after.cycle.end / 3840}`;
+    case 'change cycle': return `Cycle ${formatPosition(after.cycle.start)} to ${formatPosition(after.cycle.end)}`;
     default:
       if (track && label === `${track.mute ? 'mute' : 'unmute'} ${track.name}`) {
         return `${track.name} ${track.mute ? 'muted' : 'unmuted'}`;

@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { BEAT_LIMITS } from '../../../_lib/music/beat/beatDocument.mjs';
+import { formatPosition } from '../../../_lib/music/beat/beatTime.mjs';
 import * as ops from '../../../_lib/music/beat/beatOps.mjs';
 import { action, button, input } from './beatStyles';
 
@@ -17,7 +18,7 @@ export default function BeatTransport({ doc, edit, selectPattern, playing, toggl
   function commitCycle(field) {
     const draft = cycleDrafts[field];
     if (draft === null) return;
-    const value = (Number(draft) - 1) * 3840;
+    const value = (Math.round(Number(draft)) - 1) * 3840;
     const result = draft.trim() === '' ? { refused: 'Enter a bar number.' }
       : ops.tryOp(doc, (d) => ops.setCycle(d, { ...d.cycle, [field]: value }));
     if (result.refused) {
@@ -64,8 +65,8 @@ export default function BeatTransport({ doc, edit, selectPattern, playing, toggl
       <button className={button} aria-pressed={doc.cycle.on} onClick={() => cycle('on', !doc.cycle.on)}>Cycle</button>
       {['start', 'end'].map((field) => <label key={field}>
         {field === 'start' ? 'Start bar' : 'End bar'} <input className={`${input} w-24`} type="number"
-          min={field === 'start' ? '1' : '1.0625'} max={field === 'start' ? '512' : '513'} step="0.0625"
-          value={cycleDrafts[field] ?? String(doc.cycle[field] / 3840 + 1)}
+          min={field === 'start' ? '1' : '2'} max={field === 'start' ? '512' : '513'} step="1"
+          value={cycleDrafts[field] ?? String(Math.floor(doc.cycle[field] / 3840) + 1)}
           aria-invalid={Boolean(cycleErrors[field])}
           aria-describedby={cycleErrors[field] ? `cycle-${field}-error` : undefined}
           onChange={(e) => {
@@ -80,6 +81,7 @@ export default function BeatTransport({ doc, edit, selectPattern, playing, toggl
               setCycleErrors((errors) => ({ ...errors, [field]: '' }));
             }
           }} />
+        {doc.cycle[field] % 3840 !== 0 && <span className="ml-2 text-xs">{formatPosition(doc.cycle[field])}</span>}
         {cycleErrors[field] && <span id={`cycle-${field}-error`} className="ml-2 text-sm">{cycleErrors[field]}</span>}
       </label>)}
       <span className="text-xs text-vx-fg-muted">End is exclusive.</span>

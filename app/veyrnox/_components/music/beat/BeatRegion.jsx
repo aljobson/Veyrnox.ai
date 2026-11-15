@@ -1,11 +1,15 @@
 'use client';
+import BeatAudioRegion from './BeatAudioRegion';
+import { formatPosition } from '../../../_lib/music/beat/beatTime.mjs';
+import { tickSeconds } from '../../../_lib/music/beat/beatAudioSegments.mjs';
 import * as ops from '../../../_lib/music/beat/beatOps.mjs';
 
 export default function BeatRegion({ region, track, doc, zoom, snap, locator, selected, select, edit, drag }) {
   const position = { left: region.start / 3840 * zoom, width: region.length / 3840 * zoom };
-  const loops = region.length / (doc.steps * 240);
-  const name = `${selected ? 'Selected, ' : ''}Pattern ${region.pattern} on ${track.name}, ` +
-    `bars ${region.start / 3840 + 1} to ${(region.start + region.length) / 3840}, looped ${loops === 1 ? 'once' : `${loops} times`}`;
+  const asset = region.assetId && doc.assets[region.assetId];
+  const loops = Math.floor(asset ? tickSeconds(region.length, doc.tempo.bpm) / asset.durationSec : region.length / (doc.steps * 240));
+  const name = `${selected ? 'Selected, ' : ''}${asset ? `Audio ${asset.name}` : `Pattern ${region.pattern}`} on ${track.name}, ` +
+    `${formatPosition(region.start)} to ${formatPosition(region.start + region.length)}, looped ${loops} times${asset ? `, gain ${region.gainDb} dB` : ''}`;
   function key(event) {
     const command = event.ctrlKey || event.metaKey;
     let operation, label;
@@ -38,10 +42,10 @@ export default function BeatRegion({ region, track, doc, zoom, snap, locator, se
       });
     }
   }
-  const dots = Object.values(doc.patterns[region.pattern].rows).flat().slice(0, 32);
+  const dots = asset ? [] : Object.values(doc.patterns[region.pattern].rows).flat().slice(0, 32);
   return <div className="absolute top-4 h-16" style={position}>
     <button data-region-id={region.id} className={`absolute inset-0 min-h-11 touch-none overflow-hidden rounded-lg
-      border border-vx-hue-iris bg-vx-hue-iris/35 text-vx-fg focus-visible:z-20 focus-visible:outline
+      border ${asset ? 'border-vx-hue-sky bg-vx-hue-sky/35' : 'border-vx-hue-iris bg-vx-hue-iris/35'} text-vx-fg focus-visible:z-20 focus-visible:outline
       focus-visible:outline-2 focus-visible:outline-vx-accent ${selected ? 'ring-2 ring-vx-accent' : ''}`}
       aria-label={name} aria-pressed={selected} onKeyDown={key}
       onPointerDown={(event) => drag.begin(event, region, track.id)}
@@ -50,11 +54,11 @@ export default function BeatRegion({ region, track, doc, zoom, snap, locator, se
         if (event.detail !== 0 && drag.consumeClick()) return;
         select();
       }} onDoubleClick={(event) => event.stopPropagation()}>
-      <span className="block truncate px-3 font-bold">{region.pattern}</span>
+      <span className="block">{asset ? <BeatAudioRegion region={region} asset={asset} bpm={doc.tempo.bpm} zoom={zoom} /> : region.pattern}</span>
       <span aria-hidden="true" className="block truncate px-3 text-xs">{dots.map(() => '•').join(' ')}</span>
     </button>
     {['trim', 'resize'].map((mode) => <span key={mode} aria-hidden="true"
-      className={`absolute top-0 z-10 h-16 w-3 touch-none cursor-ew-resize rounded bg-vx-hue-iris/25
+      className={`absolute top-0 z-10 h-16 w-3 touch-none cursor-ew-resize rounded ${asset ? 'bg-vx-hue-sky/25' : 'bg-vx-hue-iris/25'}
         ${mode === 'trim' ? 'left-0' : 'right-0'}`}
       onPointerDown={(event) => drag.begin(event, region, track.id, mode)}
       onClick={(event) => {
