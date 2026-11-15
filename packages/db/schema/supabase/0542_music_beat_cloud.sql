@@ -265,4 +265,19 @@ GRANT EXECUTE ON FUNCTION private.read_music_beat_take(uuid,uuid) TO authenticat
 REVOKE ALL ON FUNCTION public.read_music_beat_take(uuid,uuid) FROM PUBLIC, anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.read_music_beat_take(uuid,uuid) TO authenticated;
 
+-- Admin telemetry: count the new routes (wrapper pattern from 0521/0538).
+DO $$
+BEGIN
+    IF to_regprocedure('public.telemetry_path_allowed_pre_0542(text)') IS NULL THEN
+        ALTER FUNCTION public.telemetry_path_allowed(TEXT) RENAME TO telemetry_path_allowed_pre_0542;
+    END IF;
+END $$;
+CREATE OR REPLACE FUNCTION public.telemetry_path_allowed(p_path TEXT)
+RETURNS BOOLEAN LANGUAGE sql IMMUTABLE SET search_path = '' AS $$
+    SELECT p_path IN ('/api/v1/music/beat-projects', '/api/v1/music/beat-projects/:id',
+        '/api/v1/music/beat-projects/:id/takes', '/api/v1/music/beat-projects/:id/takes/:id',
+        '/api/v1/music/beat-projects/:id/versions', '/api/v1/music/beat-projects/:id/versions/:id')
+        OR public.telemetry_path_allowed_pre_0542(p_path)
+$$;
+REVOKE ALL ON FUNCTION public.telemetry_path_allowed(TEXT) FROM PUBLIC, anon, authenticated, service_role;
 COMMIT;
