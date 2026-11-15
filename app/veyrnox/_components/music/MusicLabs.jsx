@@ -2,14 +2,17 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { LAB_GENRES, spinGenre } from '../../_lib/music/labs.mjs';
+
+const MusicLabsRank = dynamic(() => import('./MusicLabsRank').then((module) => module.MusicLabsRank), { ssr: false });
 
 /**
  * Labs (Suno parity S-U3): small experiments that cost nothing to try. The genre
  * wheel only opens Create with a starting idea; Create still shows the price
  * before anything is charged.
  */
-export function MusicLabs({ beatsEnabled = false }) {
+export function MusicLabs({ beatsEnabled = false, rankingEnabled = false }) {
   const [pick, setPick] = useState(null);
 
   function spin() {
@@ -44,6 +47,8 @@ export function MusicLabs({ beatsEnabled = false }) {
           </div>
         </div>
       </section>
+
+      {rankingEnabled ? <MusicLabsRank /> : null}
 
       {beatsEnabled ? (
         <section aria-labelledby="sequencer-title" className="mt-6 rounded-2xl border border-vx-border bg-vx-panel p-6 sm:p-8">
