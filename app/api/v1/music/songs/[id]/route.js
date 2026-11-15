@@ -5,7 +5,7 @@ import {
 } from '../../../../../../packages/adapters/r2.js';
 import { publishFalDispatchWakeup } from '../../../../../../lib/falDispatchWakeup.js';
 import { inspectStoredSource } from '../../../../../../lib/resolveSource.js';
-import { musicAddSectionEnabled, musicCoverEnabled, musicDistributionEnabled, musicEditingEnabled, musicExtendEnabled, musicLibraryEnabled, musicPromptPolicy, musicPublicationEnabled, musicReplaceEnabled, musicReuseEnabled, musicReverseEnabled, musicRpcStatus, musicSchemaEnabled, musicStemsEnabled, musicStudioEnabled, musicTargetStemsEnabled, musicTrackAddEnabled, parseMusicGeneration, parseMusicSongLifecycle, publicMusicError, readMusicJson, validMusicAuthId } from '../../../../../../lib/musicBackend.js';
+import { musicAddSectionEnabled, musicCoverEnabled, musicDistributionEnabled, musicEditingEnabled, musicExtendEnabled, musicLibraryEnabled, musicPromptPolicy, musicPublicationEnabled, musicRankingEnabled, musicReplaceEnabled, musicReuseEnabled, musicReverseEnabled, musicRpcStatus, musicSchemaEnabled, musicStemsEnabled, musicStudioEnabled, musicTargetStemsEnabled, musicTrackAddEnabled, parseMusicGeneration, parseMusicSongLifecycle, publicMusicError, readMusicJson, validMusicAuthId } from '../../../../../../lib/musicBackend.js';
 import { musicLyricsEnabled, publicLyrics } from '../../../../../../lib/musicLyrics.js';
 import {
     MUSIC_MASHUP_SECONDS_MAX, MUSIC_MASHUP_SECONDS_MIN, mashupSeconds, musicRemixEnabled,
@@ -66,6 +66,7 @@ export async function GET(request, { params }) {
             actions: [...new Set([
                 ...distributionActions,
                 ...(musicPublicationEnabled() ? ['publish'] : []),
+                ...(musicRankingEnabled() ? ['rank'] : []),
                 ...(musicCoverEnabled() ? ['cover'] : []),
                 ...(musicRemixEnabled() ? ['mashup', 'sample'] : []),
                 ...(musicExtendEnabled() ? ['extend'] : []),
