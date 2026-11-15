@@ -497,3 +497,13 @@ socialActivityCursor timezone assertion; those tests are untouched. Focused suit
 state code. Locale parity, knowledge freshness and `git diff --check` pass.
 
 Slice 5 flow, limits, retention deviations and acceptance: [device-files appendix](0261-editor-server-render-device-files.md).
+
+## Amendment 2 (2026-11-15): a phone export is a flat 3 credits
+
+Owner decision: editing stays free; **exporting costs 3 credits**, at any length and either resolution, refunded on failure as before. This amends decision 4 ("credits per output second") and ADR-0247 D5 ("in-page export is free") for the server/phone export path only.
+
+- The price stays in the catalog: `model_catalog.editor_render_rates->>'flat_credits'` on the `editor-server-render` row (migration 0530, value 3). `private.editor_render_credits` returns it when it is a whole number of 1 to 9999; absent or invalid, the per-second rates apply, so deleting the key is the rollback.
+- `quote_server_render` and `admit_server_render` keep their signatures, so the quote, the `PRICE_CHANGED` consent check, the single `ledger_debit` and the refund/cancel/sweep paths are unchanged.
+- Nothing is switched on: the render flag, the build flag, the Fly runner and the row's availability are unchanged. This only fixes what an export costs once those exist.
+- Margin: 3 credits is about $0.10 at the current credit price. Check it against the real runner cost (Fly performance-4x, about 0.6x to 2.4x realtime) before the flags go on (ADR-0014 50% floor).
+- Tests: PostgreSQL acceptance (`tests/editorServerRenderDatabase.test.mjs`, 27 pass on PG17) covers flat 3 at 0.01 s to 120/300 s, quote equals debit, price drift without debit, original-price replay, invalid flat values falling back to per-second, and the replayed migration.
