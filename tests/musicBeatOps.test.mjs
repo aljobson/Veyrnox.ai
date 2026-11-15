@@ -5,12 +5,20 @@ import * as ops from '../app/veyrnox/_lib/music/beat/beatOps.mjs';
 import { patternEvents } from '../app/veyrnox/_lib/music/beat/beatEvents.mjs';
 const make = () => createBeat({ id: 'e40439d1-646a-4c11-9c12-69fa3a851234', now: 0 });
 function freeze(value) { if (value && typeof value === 'object') { Object.freeze(value); Object.values(value).forEach(freeze); } return value; }
+test('selecting the current pattern preserves the document and timestamp', () => {
+  for (const slot of ['A', 'B', 'C', 'D']) {
+    const doc = freeze(ops.selectPattern(make(), slot, 10));
+    const next = ops.selectPattern(doc, slot, 2000);
+    assert.equal(next, doc);
+    assert.equal(next.updatedAt, doc.updatedAt);
+  }
+});
 test('all edits are immutable, valid, and stamp injected time', () => {
   const doc = freeze(make());
   const operations = [
     () => ops.toggleStep(doc, 'kick', 1, 20), () => ops.cycleVelocity(doc, 'kick', 0, 1, 20),
     () => ops.addHitAtStep(doc, 'clap', 3, 20), () => ops.setTempo(doc, 120, 20), () => ops.setSwing(doc, 0.5, 20),
-    () => ops.setKit(doc, 'lofi', 20), () => ops.setSteps(doc, 32, 20), () => ops.selectPattern(doc, 'C', 20),
+    () => ops.setTrackKit(doc, 't1', 'lofi', 20), () => ops.setSteps(doc, 32, 20), () => ops.selectPattern(doc, 'C', 20),
     () => ops.copyPattern(doc, 'A', 'B', 20), () => ops.clearPattern(doc, 20), () => ops.rename(doc, 'Beat', 20),
     () => ops.setMetronome(doc, true, 20), () => ops.restorePattern(doc, 'B', doc.patterns.A, 20),
   ];
