@@ -57,11 +57,11 @@ test('PostgreSQL: settlement, refund races, shared capacity and evidence preserv
     t.beforeEach(() => query(`UPDATE public.jobs SET created_at=least(created_at,now()-interval '2 minutes') WHERE user_id='${U}';`));
     await quoteDatabaseTests(t, { query, json, authId: A, userId: U });
     await uploadDatabaseTests(t, { query, json, authId: A, userId: U });
-    await t.test('active catalog bills exact 10s/15s units, rounds up and enforces v1 caps', async () => {
+    await t.test('active catalog bills a flat 3 credits at every length and enforces v1 caps', async () => {
         assert.equal(await query("SELECT active AND cost_unit='per_second' AND credits_5s=1 AND billing_seconds=10 FROM public.model_catalog WHERE id='editor-server-render';"), 't');
         for (const [resolution, seconds, credits] of [
-            ['1080p', .01, 1], ['1080p', 10, 1], ['1080p', 10.001, 2], ['1080p', 120, 12],
-            ['720p', .01, 1], ['720p', 15, 1], ['720p', 15.001, 2], ['720p', 300, 20],
+            ['1080p', .01, 3], ['1080p', 10, 3], ['1080p', 10.001, 3], ['1080p', 120, 3],
+            ['720p', .01, 3], ['720p', 15, 3], ['720p', 15.001, 3], ['720p', 300, 3],
         ]) {
             const result = await json(`SELECT public.admit_server_render('${A}','price-${resolution}-${seconds}',${q(JSON.stringify({ timeline: document }))}::jsonb,'${resolution}',${seconds},'Test');`);
             assert.equal(result.credits, credits);

@@ -8,6 +8,17 @@ export function beatOutput(context) {
   master.connect(compressor).connect(context.destination);
   return master;
 }
+export function connectTrackChannel(context, destination, gain = 1, pan = 0) {
+  const input = context.createGain();
+  input.channelCount = 2;
+  input.channelCountMode = 'explicit';
+  input.channelInterpretation = 'speakers';
+  input.gain.value = gain;
+  const panner = context.createStereoPanner();
+  panner.pan.value = pan;
+  input.connect(panner).connect(destination);
+  return { input, panner };
+}
 export function createBeatEngine() {
   const Audio = window.AudioContext || window.webkitAudioContext;
   if (!Audio) throw new Error("Sound isn't available in this browser");
@@ -24,9 +35,21 @@ export function createBeatEngine() {
     startRun() {
       const bus = context.createGain();
       bus.connect(master);
-      const run = { id: ++sequence, bus };
+      const run = { id: ++sequence, bus, channels: new Map() };
       runs.add(run);
       return run;
+    },
+    trackChannel(run, trackId, gain = 1, pan = 0) {
+      if (!run.channels.has(trackId)) run.channels.set(trackId, { ...connectTrackChannel(context, run.bus, gain, pan), gain, pan });
+      return run.channels.get(trackId);
+    },
+    setTrackMix(run, trackId, gain, pan) {
+      const channel = this.trackChannel(run, trackId, gain, pan);
+      // Avoid rescheduling the target every animation frame when nothing changed.
+      if (channel.gain !== gain) channel.input.gain.setTargetAtTime(gain, context.currentTime, 0.01);
+      if (channel.pan !== pan) channel.panner.pan.setTargetAtTime(pan, context.currentTime, 0.01);
+      channel.gain = gain; channel.pan = pan;
+      return channel.input;
     },
     stopRun(run) {
       if (!run || !runs.has(run)) return;
