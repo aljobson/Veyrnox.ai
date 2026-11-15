@@ -8,7 +8,15 @@ import { SavedMusicMixes } from './SavedMusicMixes';
 import { MusicWorkspaceCollaboration } from './MusicWorkspaceCollaboration';
 import { useMusicLibraryState } from './useMusicLibraryState';
 import { MusicPrivateAudio } from '../../_lib/useMusicAudioSrc';
-import { MusicCoverArtCollection, MusicHistoryCollection, MusicHooksCollection, MusicWaveform, recordMusicListen } from './MusicLibraryTabs';
+import dynamic from 'next/dynamic';
+import { recordMusicListen } from './musicListen';
+
+// The Library tabs load only when the switch is on and a tab or the waveform view opens.
+const lazyTab = (name) => dynamic(() => import('./MusicLibraryTabs').then((module) => module[name]), { ssr: false });
+const MusicHistoryCollection = lazyTab('MusicHistoryCollection');
+const MusicHooksCollection = lazyTab('MusicHooksCollection');
+const MusicCoverArtCollection = lazyTab('MusicCoverArtCollection');
+const MusicWaveform = lazyTab('MusicWaveform');
 
 function ServerSongRow({ song, checked, onToggle, onFeedback, onTrash, busy, waveform = false, tabsEnabled = false }) {
   return (

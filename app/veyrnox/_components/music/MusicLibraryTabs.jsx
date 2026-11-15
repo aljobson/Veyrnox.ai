@@ -4,13 +4,10 @@ import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { gatewayFetch } from '../../_lib/gateway';
 import { MusicPrivateAudio, useMusicAudioSrc } from '../../_lib/useMusicAudioSrc';
+import { recordMusicListen } from './musicListen';
 
 const BARS = 48;
 
-/** Record a play in the person's own History. Best effort: a failed write never stops playback. */
-export function recordMusicListen(songId) {
-  gatewayFetch('/music/history', { method: 'POST', body: JSON.stringify({ song_id: songId }), promptOnAuth: false }).catch(() => {});
-}
 
 /** A private image (cover art) through the same signed-URL route as private audio. */
 export function MusicPrivateImage({ src, alt, className }) {
