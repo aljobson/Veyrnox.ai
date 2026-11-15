@@ -3908,6 +3908,126 @@
     "helicopter-jump-two": {
       "frames": 16,
       "signature": "5ad52dacc81307300f252012e78bdcc24a3534732bc88e8bce8ea42838be688e"
+    },
+    "community-dramatic-fire-walk": {
+      "frames": 5,
+      "signature": "568f35819bb21cac18291777ccf17bbf162e35e515dff10483e6942edbca0f21"
+    },
+    "community-beachside-dance": {
+      "frames": 5,
+      "signature": "457eebc406632a1bb7cbe611052ceb041d5760be80c6de2057fd1ef65b6bbf1d"
+    },
+    "community-metropolitan-crosswalk": {
+      "frames": 5,
+      "signature": "53ff17716f14631c7022c4676e9d3466ee7cc39c94a88e2fe88451c9f121b6d1"
+    },
+    "community-nightlife-dj-set": {
+      "frames": 5,
+      "signature": "aef2ab9432ff6a3150f1e73d46f5c21d73422732b9197586a89a7d7ce21a3dba"
+    },
+    "community-pigeon-recast": {
+      "frames": 5,
+      "signature": "53fa0e7a8930604a64cf5115c9945b2c99486f03bc33adc4022eb440c1f676c1"
+    },
+    "community-midnight-city-shuffle": {
+      "frames": 5,
+      "signature": "b163bf817735d35a8ad07ce8c06da6424d0c808657fd9225191e9bd2f386173e"
+    },
+    "community-supercar-flex": {
+      "frames": 5,
+      "signature": "2b46f9faebaa1acb8fdb486c04de5ac5a2b178860ad4b2de2b3a33dbf73c43da"
+    },
+    "community-retro-tracksuit-groove": {
+      "frames": 5,
+      "signature": "46add736f3671163875f4624f98cdcb19bbd316ed4eb7694aa7cb422dcca3a41"
+    },
+    "community-blonde-sport-set": {
+      "frames": 5,
+      "signature": "d813ae2a1a8dcd9fd0dd35d2df6fb57863fa08a35a6470e093f17c52e61adda7"
+    },
+    "community-street-style-strut": {
+      "frames": 5,
+      "signature": "2096facb5ca282931925040f5d39ffad42de817e23b6cb5c7a0b72cc2630d4fa"
+    },
+    "community-shoreline-gallop-swap": {
+      "frames": 5,
+      "signature": "5cb1cbb642016863153ca621b1a687c06a6946bfd29cca854395d87ab98cc56e"
+    },
+    "community-dragon-awakening": {
+      "frames": 5,
+      "signature": "b9e3eb10e167e28d26f49e29d40bd3b9f883d486890279924130ed39c5f025a2"
+    },
+    "community-restaurant-character-recast": {
+      "frames": 5,
+      "signature": "a4b6af813aabf10f183bc7638eb722d8324d530465ee7b034ebf317c9f063ccf"
+    },
+    "community-skyline-flamingo-prank": {
+      "frames": 5,
+      "signature": "effc0479462a2003cc0039f68c9601106306c8d84c589158e461df977898d9e0"
+    },
+    "community-stage-performer-swap": {
+      "frames": 5,
+      "signature": "2f3a1492044a3da09be026e7e9d0cb8ea8aa4a395229da48352321fb680b408b"
+    },
+    "community-championship-slap-duel": {
+      "frames": 5,
+      "signature": "8ac03f5275de4d5a6497cc741a00b2c794fe899d4bbe65089106d87c33c4f09f"
+    },
+    "community-industrial-street-flow": {
+      "frames": 5,
+      "signature": "f2daf386cafbbfca8e5862f7ede4ce98edd3bc7134303f6fc9c981626db5de46"
+    },
+    "community-urban-stride": {
+      "frames": 5,
+      "signature": "aecc02581935f62c1470aee652da83b3fcb680e576dc8992141cab240dd36dea"
+    },
+    "community-action-hero-swap": {
+      "frames": 5,
+      "signature": "6d335b2f0f726a4694b91886f4debf7481d8ec5177a3d9a189a8812707bc5c9e"
+    },
+    "community-supercar-night-fueling": {
+      "frames": 5,
+      "signature": "a0909744a84dafca7db0dbf667fb6f55f54b7d3bc35e36bccbd6ef6c35f2c19b"
+    },
+    "community-chauffeur-arrival-swap": {
+      "frames": 5,
+      "signature": "d94aaa693195d5627efce91a61306f1adaea5128674a4e3f8a4212bfa31c1113"
+    },
+    "community-kitchen-juggling-swap": {
+      "frames": 5,
+      "signature": "41cdff58323e028ee2becd51212648ab17b46982873b92e01faab63b0c9f2295"
+    },
+    "community-coastal-character-swap": {
+      "frames": 5,
+      "signature": "d1c0a8157b6ac1e4a15cd9ed50d057200ee0e44359891b4d9fd6a2e84bf2c0ab"
+    },
+    "community-kitten-holiday-dance": {
+      "frames": 5,
+      "signature": "24fb37bb98f6038b501a5c931fa3ad6ce8b6839c98c8a0d04e7d87c8dab67b81"
+    },
+    "community-bipedal-cat-stroll": {
+      "frames": 5,
+      "signature": "6867ac56c0afb00512deb75363a2fdecb1a3b4d17b631b119c33573c0c6093be"
+    },
+    "community-extreme-pizza-freefall": {
+      "frames": 5,
+      "signature": "fa85bc55d77e5e268659d438bd81ab5678fb0b4849a5b9987e0728023cd51376"
+    },
+    "community-truck-window-confrontation": {
+      "frames": 5,
+      "signature": "d4566096420983095ba7cea350479130aedecde892a0f6227dd7208bbef93fba"
+    },
+    "community-kitchen-fish-slice": {
+      "frames": 5,
+      "signature": "4e2b320e3c544916125afb117b1a1d697af85bb7e1b6aa33c6b5a79a87576131"
+    },
+    "community-urban-dance-recast": {
+      "frames": 5,
+      "signature": "053adeda1b6845a4ed836584a111ac4f7901107d904ad9fc2b300aa9a5084cb4"
+    },
+    "community-ballroom-tuxedo-shift": {
+      "frames": 5,
+      "signature": "a609e6cdfce8cd912c731effa36a07f42392b1e2305c4bcae1410ffca30ffac9"
     }
   }
 }
