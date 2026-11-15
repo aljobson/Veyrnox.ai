@@ -8,8 +8,17 @@ import { SavedMusicMixes } from './SavedMusicMixes';
 import { MusicWorkspaceCollaboration } from './MusicWorkspaceCollaboration';
 import { useMusicLibraryState } from './useMusicLibraryState';
 import { MusicPrivateAudio } from '../../_lib/useMusicAudioSrc';
+import dynamic from 'next/dynamic';
+import { recordMusicListen } from './musicListen';
 
-function ServerSongRow({ song, checked, onToggle, onFeedback, onTrash, busy }) {
+// The Library tabs load only when the switch is on and a tab or the waveform view opens.
+const lazyTab = (name) => dynamic(() => import('./MusicLibraryTabs').then((module) => module[name]), { ssr: false });
+const MusicHistoryCollection = lazyTab('MusicHistoryCollection');
+const MusicHooksCollection = lazyTab('MusicHooksCollection');
+const MusicCoverArtCollection = lazyTab('MusicCoverArtCollection');
+const MusicWaveform = lazyTab('MusicWaveform');
+
+function ServerSongRow({ song, checked, onToggle, onFeedback, onTrash, busy, waveform = false, tabsEnabled = false }) {
   return (
     <article className="rounded-2xl border border-vx-border bg-vx-panel p-4 shadow-lg">
       <div className="flex min-w-0 items-start gap-3">
@@ -23,7 +32,8 @@ function ServerSongRow({ song, checked, onToggle, onFeedback, onTrash, busy }) {
             <MusicSongActions songId={song.id} jobId={song.job_id} title={song.title} actions={['view_lineage', 'open_editor', 'organize']} />
           </div>
           <p className="mt-2 text-sm text-vx-fg-muted">{song.workspace_name}</p>
-          {song.audio_url ? <MusicPrivateAudio className="mt-3 w-full" controls preload="none" src={song.audio_url} aria-label={`Play ${song.title}`} /> : null}
+          {waveform && song.audio_url ? <MusicWaveform src={song.audio_url} label={song.title} /> : null}
+          {song.audio_url ? <MusicPrivateAudio className="mt-3 w-full" controls preload="none" src={song.audio_url} aria-label={`Play ${song.title}`} onPlay={tabsEnabled ? () => recordMusicListen(song.id) : undefined} /> : null}
           <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label={`Feedback for ${song.title}`}>
             <button type="button" aria-pressed={song.feedback === 'like'} onClick={() => onFeedback(song.id, song.feedback === 'like' ? null : 'like')} className={`min-h-10 rounded-full border px-4 text-sm font-bold ${song.feedback === 'like' ? 'border-vx-accent bg-vx-accent/15 text-vx-accent' : 'border-vx-border text-vx-fg-body'}`}>Like</button>
             <button type="button" aria-pressed={song.feedback === 'dislike'} onClick={() => onFeedback(song.id, song.feedback === 'dislike' ? null : 'dislike')} className={`min-h-10 rounded-full border px-4 text-sm font-bold ${song.feedback === 'dislike' ? 'border-vx-danger bg-vx-danger/10 text-vx-danger' : 'border-vx-border text-vx-fg-body'}`}>Dislike</button>
@@ -115,7 +125,10 @@ function MusicUploadsCollection({ active }) {
   );
 }
 
-export function MusicServerLibrary({ workspaceView = false, sourcesEnabled = false, collaborationEnabled = false }) {
+// Collections that replace the song list with their own panel.
+const PANEL_COLLECTIONS = ['uploads', 'trash', 'mixes', 'history', 'hooks', 'covers'];
+
+export function MusicServerLibrary({ workspaceView = false, sourcesEnabled = false, collaborationEnabled = false, tabsEnabled = false }) {
   const library = useMusicLibraryState();
   const [query, setQuery] = useState('');
   const [workspaceId, setWorkspaceId] = useState(workspaceView ? '' : 'all');
@@ -166,7 +179,7 @@ export function MusicServerLibrary({ workspaceView = false, sourcesEnabled = fal
 
       {library.error ? <div role="alert" className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-vx-danger/50 bg-vx-danger/10 px-4 py-3 text-sm text-vx-danger"><span>{library.error}</span><button type="button" onClick={library.load} className="min-h-10 rounded-full border border-current px-4 font-bold">Reload Library</button></div> : null}
 
-      {!['uploads', 'trash', 'mixes'].includes(collection) ? <section aria-label="Private workspaces" className="mt-8 rounded-2xl border border-vx-border bg-vx-panel p-4 sm:p-5">
+      {!PANEL_COLLECTIONS.includes(collection) ? <section aria-label="Private workspaces" className="mt-8 rounded-2xl border border-vx-border bg-vx-panel p-4 sm:p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0 flex-1">
             <h2 className="font-vx text-xl font-black">Choose a workspace</h2>
@@ -194,17 +207,23 @@ export function MusicServerLibrary({ workspaceView = false, sourcesEnabled = fal
             <button type="button" aria-pressed={collection === 'liked'} onClick={() => setCollection('liked')} className={`rounded-full px-3 py-2 ${collection === 'liked' ? 'bg-vx-fg text-vx-base' : 'text-vx-fg-muted'}`}>Liked</button>
             <button type="button" aria-pressed={collection === 'mixes'} onClick={() => setCollection('mixes')} className={`rounded-full px-3 py-2 ${collection === 'mixes' ? 'bg-vx-fg text-vx-base' : 'text-vx-fg-muted'}`}>Saved mixes</button>
             {sourcesEnabled ? <button type="button" aria-pressed={collection === 'uploads'} onClick={() => setCollection('uploads')} className={`rounded-full px-3 py-2 ${collection === 'uploads' ? 'bg-vx-fg text-vx-base' : 'text-vx-fg-muted'}`}>Uploads</button> : null}
+            {tabsEnabled ? <>
+              <button type="button" aria-pressed={collection === 'history'} onClick={() => setCollection('history')} className={`rounded-full px-3 py-2 ${collection === 'history' ? 'bg-vx-fg text-vx-base' : 'text-vx-fg-muted'}`}>History</button>
+              <button type="button" aria-pressed={collection === 'hooks'} onClick={() => setCollection('hooks')} className={`rounded-full px-3 py-2 ${collection === 'hooks' ? 'bg-vx-fg text-vx-base' : 'text-vx-fg-muted'}`}>Hooks</button>
+              <button type="button" aria-pressed={collection === 'covers'} onClick={() => setCollection('covers')} className={`rounded-full px-3 py-2 ${collection === 'covers' ? 'bg-vx-fg text-vx-base' : 'text-vx-fg-muted'}`}>Cover Art</button>
+            </> : null}
             <button type="button" aria-pressed={collection === 'trash'} onClick={() => { setCollection('trash'); if (!library.trashLoaded) library.loadTrash(); }} className={`rounded-full px-3 py-2 ${collection === 'trash' ? 'bg-vx-fg text-vx-base' : 'text-vx-fg-muted'}`}>Trash</button>
           </div>
-          {!['uploads', 'mixes'].includes(collection) ? <div role="group" aria-label="Library view" className="flex rounded-full border border-vx-border bg-vx-base p-1 text-sm font-bold">
+          {!['uploads', 'mixes', 'history', 'hooks', 'covers'].includes(collection) ? <div role="group" aria-label="Library view" className="flex rounded-full border border-vx-border bg-vx-base p-1 text-sm font-bold">
             <button type="button" aria-pressed={view === 'list'} onClick={() => setView('list')} className={`rounded-full px-3 py-2 ${view === 'list' ? 'bg-vx-fg text-vx-base' : 'text-vx-fg-muted'}`}>List</button>
             <button type="button" aria-pressed={view === 'grid'} onClick={() => setView('grid')} className={`rounded-full px-3 py-2 ${view === 'grid' ? 'bg-vx-fg text-vx-base' : 'text-vx-fg-muted'}`}>Grid</button>
+            {tabsEnabled ? <button type="button" aria-pressed={view === 'waveform'} onClick={() => setView('waveform')} className={`rounded-full px-3 py-2 ${view === 'waveform' ? 'bg-vx-fg text-vx-base' : 'text-vx-fg-muted'}`}>Waveform</button> : null}
           </div> : null}
-          {collection !== 'uploads' ? <><label className="sr-only" htmlFor="server-music-library-search">Search Music Library</label><input id="server-music-library-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={collection === 'mixes' ? 'Search saved mixes' : 'Search owned titles'} className="min-h-11 w-full rounded-xl border border-vx-border-boost bg-vx-base px-4 text-sm text-vx-fg placeholder:text-vx-fg-faint focus:border-vx-accent focus:outline-none sm:max-w-xs" /></> : null}
+          {!['uploads', 'history', 'hooks', 'covers'].includes(collection) ? <><label className="sr-only" htmlFor="server-music-library-search">Search Music Library</label><input id="server-music-library-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={collection === 'mixes' ? 'Search saved mixes' : 'Search owned titles'} className="min-h-11 w-full rounded-xl border border-vx-border-boost bg-vx-base px-4 text-sm text-vx-fg placeholder:text-vx-fg-faint focus:border-vx-accent focus:outline-none sm:max-w-xs" /></> : null}
         </div>
       </div>
 
-      {!['uploads', 'trash', 'mixes'].includes(collection) && library.selectedSongs.length ? (
+      {!PANEL_COLLECTIONS.includes(collection) && library.selectedSongs.length ? (
         <form onSubmit={move} className="mt-4 flex flex-col gap-3 rounded-2xl border border-vx-accent/50 bg-vx-accent/10 p-4 sm:flex-row sm:items-end">
           <label className="min-w-0 flex-1 text-sm font-bold text-vx-fg-body">Move {library.selectedSongs.length} selected {library.selectedSongs.length === 1 ? 'version' : 'versions'} to
             <select value={destinationId} onChange={(event) => setDestinationId(event.target.value)} className="mt-2 min-h-11 w-full rounded-xl border border-vx-border-boost bg-vx-base px-4 text-vx-fg focus:border-vx-accent focus:outline-none">
@@ -217,6 +236,11 @@ export function MusicServerLibrary({ workspaceView = false, sourcesEnabled = fal
       ) : null}
 
       {sourcesEnabled ? <MusicUploadsCollection active={collection === 'uploads'} /> : null}
+      {tabsEnabled ? <>
+        <MusicHistoryCollection active={collection === 'history'} />
+        <MusicHooksCollection active={collection === 'hooks'} songs={library.songs} />
+        <MusicCoverArtCollection active={collection === 'covers'} songs={library.songs} />
+      </> : null}
 
       {collection === 'mixes' ? <section aria-label="Saved sample mixes" className="mt-6"><SavedMusicMixes query={query} /></section> : null}
 
@@ -224,7 +248,7 @@ export function MusicServerLibrary({ workspaceView = false, sourcesEnabled = fal
 
       {workspaceView && collaborationEnabled ? <MusicWorkspaceCollaboration /> : null}
 
-      {!['uploads', 'mixes'].includes(collection) ? <section aria-label={collection === 'trash' ? 'Trashed music versions' : 'Owned music versions'} className="mt-6">
+      {!['uploads', 'mixes', 'history', 'hooks', 'covers'].includes(collection) ? <section aria-label={collection === 'trash' ? 'Trashed music versions' : 'Owned music versions'} className="mt-6">
         {collection === 'trash' && library.trashLoading ? (
           <div aria-busy="true" className="space-y-3"><div className="vx-shimmer h-24 rounded-2xl bg-vx-panel"/><div className="vx-shimmer h-24 rounded-2xl bg-vx-panel"/></div>
         ) : library.loading ? (
@@ -238,7 +262,7 @@ export function MusicServerLibrary({ workspaceView = false, sourcesEnabled = fal
         ) : (
           <>
             {collection !== 'trash' ? <label className="mb-3 flex min-h-10 items-center gap-3 text-sm font-bold text-vx-fg-body"><input type="checkbox" checked={allVisibleSelected} onChange={() => library.selectVisible(visible.map((song) => song.id))} className="h-5 w-5 accent-vx-accent" />Select all shown</label> : null}
-            <div data-testid="music-library-items" data-view={view} className={view === 'grid' ? 'grid gap-3 md:grid-cols-2' : 'space-y-3'}>{collection === 'trash' ? visible.map((song) => <TrashedSongRow key={song.id} song={song} onRestore={(item) => library.setSongLifecycle(item, 'restore')} busy={library.busy === `restore:${song.id}`} />) : visible.map((song) => <ServerSongRow key={song.id} song={song} checked={library.selectedIds.includes(song.id)} onToggle={library.toggle} onFeedback={library.setFeedback} onTrash={(item) => library.setSongLifecycle(item, 'trash')} busy={library.busy === `trash:${song.id}`} />)}</div>
+            <div data-testid="music-library-items" data-view={view} className={view === 'grid' ? 'grid gap-3 md:grid-cols-2' : 'space-y-3'}>{collection === 'trash' ? visible.map((song) => <TrashedSongRow key={song.id} song={song} onRestore={(item) => library.setSongLifecycle(item, 'restore')} busy={library.busy === `restore:${song.id}`} />) : visible.map((song) => <ServerSongRow key={song.id} song={song} checked={library.selectedIds.includes(song.id)} onToggle={library.toggle} onFeedback={library.setFeedback} onTrash={(item) => library.setSongLifecycle(item, 'trash')} busy={library.busy === `trash:${song.id}`} waveform={view === 'waveform'} tabsEnabled={tabsEnabled} />)}</div>
           </>
         )}
       </section> : null}
