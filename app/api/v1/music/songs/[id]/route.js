@@ -1,5 +1,5 @@
 import { rpc, envConfig } from '../../../../../../packages/db/supabase-client.js';
-import { musicAddSectionEnabled, musicCoverEnabled, musicDistributionEnabled, musicEditingEnabled, musicExtendEnabled, musicLibraryEnabled, musicPublicationEnabled, musicReplaceEnabled, musicReuseEnabled, musicRpcStatus, musicSchemaEnabled, musicStemsEnabled, musicStudioEnabled, musicTargetStemsEnabled, musicTrackAddEnabled, parseMusicSongLifecycle, publicMusicError, readMusicJson, validMusicAuthId } from '../../../../../../lib/musicBackend.js';
+import { musicAddSectionEnabled, musicCoverEnabled, musicDistributionEnabled, musicEditingEnabled, musicExtendEnabled, musicLibraryEnabled, musicPublicationEnabled, musicReplaceEnabled, musicReuseEnabled, musicReverseEnabled, musicRpcStatus, musicSchemaEnabled, musicStemsEnabled, musicStudioEnabled, musicTargetStemsEnabled, musicTrackAddEnabled, parseMusicSongLifecycle, publicMusicError, readMusicJson, validMusicAuthId } from '../../../../../../lib/musicBackend.js';
 
 import { isUuid } from '../../../../../../lib/validate.js';
 const reply = (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
@@ -39,6 +39,7 @@ export async function GET(request, { params }) {
                 ...(musicStudioEnabled() ? ['open_studio'] : []),
                 ...(isUuid(result.song?.job_id || '') ? ['open_editor'] : []),
                 ...(musicEditingEnabled() ? ['crop', 'render'] : []),
+                ...(musicReverseEnabled() ? ['reverse', 'speed'] : []),
             ])],
         });
     } catch (error) {
