@@ -73,6 +73,14 @@ order trim → stitch → audio, and only the steps the edit needs.
 - **Mixed aspect ratios.** `merge-videos` squashes a landscape and a
   portrait clip into a distorted square (§9, T9), so v1 rejects the mix.
   Letterboxing would need its own step and is later work.
+- **Mixed sound.** `merge-videos` is ffmpeg's concat, which needs an audio
+  stream in every clip or in none. A clip with sound beside a silent one
+  (a lip-sync clip and a Wan reel) failed the merge seconds after the charge
+  (QA builds 50 to 53). Reproduced with local ffmpeg only (`concat` with
+  `a=1`: "matches no streams"); not yet probed on fal. The gateway reads each
+  clip's audio track from its MP4 headers and refuses the mix (`mixed_audio`)
+  before the debit. Padding silence onto the silent clips would need a new
+  step kind (a migration) and a priced step, so it is later work.
 - A multi-track timeline, transitions, text/captions, keyframed effects,
   speed changes, colour.
 - **Uploaded media.** v1 edits generated Assets only. Uploads would bring

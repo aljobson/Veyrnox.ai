@@ -44,7 +44,7 @@ export default [
     "edit.remove", "edit.captionsOn", "edit.captionsWith", "edit.total", "edit.review", "edit.confirm",
     "edit.backToEditing", "edit.costs.one", "edit.costs.other", "edit.priceChanged", "edit.problem.no_clips", "edit.problem.too_many",
     "edit.problem.unknown_length", "edit.problem.bad_range", "edit.problem.too_long", "edit.problem.nothing_to_do", "edit.err.busy", "edit.err.captionsOff",
-    "edit.err.consent", "edit.err.clipRange", "edit.err.credits", "edit.err.gone", "edit.err.invalid", "edit.err.mixedAspect",
+    "edit.err.consent", "edit.err.clipRange", "edit.err.credits", "edit.err.gone", "edit.err.invalid", "edit.err.mixedAspect", "edit.err.mixedAudio",
     "edit.err.network", "edit.err.notVideo", "edit.err.nothingToDo", "edit.err.rate", "edit.err.tooLong", "edit.err.unreadable",
     "brands.title", "brands.intro", "brands.mine", "brands.mineNote", "brands.none", "brands.noPlan",
     "approvals.title", "approvals.intro", "approvals.none", "approvals.scheduledFor", "approvals.err.plan", "approvals.err.role",

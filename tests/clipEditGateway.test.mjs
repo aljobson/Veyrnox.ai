@@ -93,6 +93,16 @@ test('resolveEdit refuses another user\'s Asset, the wrong media, mixed frames a
     assert.equal((await resolveEdit('auth-1', one(A), deps({}))).error, 'clip_unreadable');
 });
 
+test('resolveEdit reads sound from the stored headers and refuses a join of sound with silence before any charge', async () => {
+    const both = (a, b) => ({ 'jobs/a.mp4': { seconds: 5, width: 720, height: 1280, audio: a }, 'jobs/b.mp4': { seconds: 8, width: 720, height: 1280, audio: b } });
+    const two = { clips: [{ asset_id: A, in_s: 0, out_s: 2 }, { asset_id: B, in_s: 0, out_s: 2 }] };
+    assert.equal((await resolveEdit('auth-1', two, deps(both(true, false)))).error, 'mixed_audio');
+    assert.equal((await resolveEdit('auth-1', two, deps(both(false, true)))).error, 'mixed_audio');
+    for (const [a, b] of [[true, true], [false, false], [null, true], [true, undefined]]) {
+        assert.equal((await resolveEdit('auth-1', two, deps(both(a, b)))).ok, true, `${a}/${b}`);
+    }
+});
+
 /** A minimal MP4: ftyp + moov(mvhd, one video tkhd). */
 function mp4(seconds, width, height) {
     const box = (type, payload) => { const b = Buffer.alloc(8 + payload.length); b.writeUInt32BE(b.length, 0); b.write(type, 4); payload.copy(b, 8); return b; };

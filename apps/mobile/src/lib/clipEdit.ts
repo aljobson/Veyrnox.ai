@@ -196,6 +196,8 @@ export function editErrorKey(err: unknown): string {
             return 'edit.err.nothingToDo';
         case 'mixed_aspect':
             return 'edit.err.mixedAspect';
+        case 'mixed_audio':
+            return 'edit.err.mixedAudio';
         case 'clip_not_video':
             return 'edit.err.notVideo';
         case 'clip_unreadable':
