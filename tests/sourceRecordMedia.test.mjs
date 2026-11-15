@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/sourcePromptRecords.js';
 import { IMAGE_SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/imageSourcePromptRecords.js';
 import { SYNTX_100_IMAGE_RECORDS } from '../app/veyrnox/_lib/syntx100ImageRecords.js';
+import { SYNTX_PHOTO_IMAGE_RECORDS } from '../app/veyrnox/_lib/syntxPhotoImageRecords.js';
 import { sourcePromptAuditRecord } from '../app/veyrnox/_lib/sourcePromptAudit.js';
 import { sourceMediaEntries, sourceRecordIdsForMedia, sameSourceMedia } from '../scripts/lib/source-record-media.mjs';
 import { assertAvailablePublicIds } from '../scripts/lib/template-public-id.mjs';
@@ -28,9 +29,9 @@ test('public-id reservations and exact-source audit remain safe without image me
   assert.equal(sourcePromptAuditRecord('flying-elf').status, 'exact');
   assert.equal(sourcePromptAuditRecord('flying-elf').runnable, true);
   const captured = Object.entries(SOURCE_PROMPT_RECORDS).filter(([, r]) => r.sourcePromptAvailable && typeof r.prompt === 'string');
-  assert.equal(captured.filter(([id]) => !Object.hasOwn(IMAGE_SOURCE_PROMPT_RECORDS, id)).length, 772 + 46 + 30);
-  assert.equal(captured.filter(([id]) => Object.hasOwn(IMAGE_SOURCE_PROMPT_RECORDS, id)).length, 52);
-  assert.equal(captured.length, 774 + 96 + 30);
+  assert.equal(captured.filter(([id]) => !Object.hasOwn(IMAGE_SOURCE_PROMPT_RECORDS, id)).length, 772 + 46 + 30 + 59);
+  assert.equal(captured.filter(([id]) => Object.hasOwn(IMAGE_SOURCE_PROMPT_RECORDS, id)).length, 52 + 40);
+  assert.equal(captured.length, 774 + 96 + 30 + 59 + 40);
 });
 
 test('migration, audit and replacement consumers use the guarded media identity operations', () => {
@@ -45,7 +46,7 @@ test('migration, audit and replacement consumers use the guarded media identity 
 
 test('the two Christmas records without media still have no media identity', () => {
   assert.deepEqual(Object.entries(IMAGE_SOURCE_PROMPT_RECORDS).filter(([, r]) => !r.sourceMediaId).map(([id]) => id).sort(), ['christmas-tree-ornament', 'flying-elf']);
-  assert.deepEqual(sourceMediaEntries(IMAGE_SOURCE_PROMPT_RECORDS).map(([id]) => id).sort(), Object.keys(SYNTX_100_IMAGE_RECORDS).sort());
+  assert.deepEqual(sourceMediaEntries(IMAGE_SOURCE_PROMPT_RECORDS).map(([id]) => id).sort(), [...Object.keys(SYNTX_100_IMAGE_RECORDS), ...Object.keys(SYNTX_PHOTO_IMAGE_RECORDS)].sort());
   assert.equal(Object.keys(SYNTX_100_IMAGE_RECORDS).length, 50);
   assert.deepEqual(sourceMediaEntries(Object.fromEntries(Object.entries(IMAGE_SOURCE_PROMPT_RECORDS).filter(([, r]) => !r.sourceMediaId))), []);
   for (const [id, record] of Object.entries(IMAGE_SOURCE_PROMPT_RECORDS).filter(([, r]) => !r.sourceMediaId)) {

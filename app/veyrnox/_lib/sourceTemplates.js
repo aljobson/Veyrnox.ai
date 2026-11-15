@@ -2,6 +2,7 @@ import { SYNTX_100_VIDEO_TEMPLATES } from './sourceTemplateExpansion19.js';
 import { SYNTX_REPLACEMENTS_TEMPLATES } from './sourceTemplateExpansion18.js';
 import { HF_REPLACEMENTS_TEMPLATES } from './sourceTemplateExpansion17.js';
 import { HF_PHOTO_30_TEMPLATES } from './sourceTemplateExpansion20.js';
+import { HF_PHOTO_59_TEMPLATES } from './sourceTemplateExpansion21.js';
 import { CATEGORY_FILL_TEMPLATES } from './sourceTemplateExpansion16.js';
 import { SYNTX_64_TEMPLATES } from './sourceTemplateExpansion15.js';
 import { SOURCE_TEMPLATE_EXPANSION_14 } from './sourceTemplateExpansion14.js';
@@ -377,6 +378,7 @@ export const SOURCE_TEMPLATES = [
   ...CATEGORY_FILL_TEMPLATES,
   ...HF_REPLACEMENTS_TEMPLATES,
   ...HF_PHOTO_30_TEMPLATES,
+  ...HF_PHOTO_59_TEMPLATES,
   ...SYNTX_REPLACEMENTS_TEMPLATES,
   ...SEEDANCE_SOURCE_TEMPLATE_EXPANSION,
   ...SYNTX_100_VIDEO_TEMPLATES,

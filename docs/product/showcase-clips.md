@@ -1,11 +1,11 @@
 # Landing showcase clips
 
-The current public gallery has 825 exact community templates; the homepage wall
+The current public gallery has 884 exact community templates; the homepage wall
 has 14. Seven dedicated landing placements retain their previews separately; Nano Banana is also an independent landing key sharing a retained template clip.
 Clip keys resolve through their owning templates, so `wall-event-character-swap`
 remains published while `wall-product-hero-360` is hidden with Miniature Crew.
 The explicit `model-video` and `ace-step` landing placements remain available.
-All 1007 retained placements have unique shipped video/poster hashes.
+All 1066 retained placements have unique shipped video/poster hashes.
 
 Community prompts are exact-only. Both API prompt fields carry the same text;
 audit compatibility is informational and never activates copy-only blocking.
@@ -260,7 +260,7 @@ five-second visual signatures also found no duplicate against the previous 58
 Syntx previews. The full evidence is in the
 [40-record machine-readable manifest](source-audit/syntx-40-2026-10-29.json).
 
-The current SHA-256 uniqueness checks cover all 917 retained source templates,
+The current SHA-256 uniqueness checks cover all 976 retained source templates,
 including 70 hidden rows: 27 promptless, 42 unavailable and one truncated.
 
 The kids-birthday expansion originally added twelve cards in a dedicated
@@ -1104,3 +1104,72 @@ The [audit](source-audit/higgsfield-photo-30-2026-11-15.json) locks exact prompt
 | `community-urban-dance-recast` | Urban Dance Recast | REALISTIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/f177d92d-e9ed-4a90-b9c4-b2e2fa8dcd5f/generation.mp4) | 0 s |
 | `community-ballroom-tuxedo-shift` | Ballroom Tuxedo Shift | FASHION | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/6e12077b-929b-4bb9-ade7-e03b1c4e1f19/generation.mp4) | 0 s |
 <!-- END HF_PHOTO_30 EXACT -->
+
+<!-- BEGIN HF_PHOTO_59 EXACT -->
+## 15 November 2026: Higgsfield community English single-photo templates (batch 2)
+
+59 of 72 prepared pairs accepted to bring the video gallery to 150; 8 rejected, 5 held in reserve.
+The [audit](source-audit/higgsfield-photo-59-2026-11-15.json) locks exact prompts, the bound one-photo route and source/shipped hashes.
+
+| Tile | Source title | Category | Source asset | Start |
+| --- | --- | --- | --- | --- |
+| `community-currency-phone-call` | Currency Phone Call | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/14966020-6ed7-44f4-a491-4f34ee2f1159/generation.mp4) | 0 s |
+| `community-window-dog` | Window Dog | REALISTIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/9ca78ccd-5d7e-4c86-8a97-aef94926313b/generation.mp4) | 0 s |
+| `community-subway-combat-strike` | Subway Combat Strike | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/2dea5425-c578-4e6e-9a94-76fde14ebb85/generation.mp4) | 0 s |
+| `community-street-shuffle-walk` | Street Shuffle Walk | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/b5e1b9b6-b4ef-438a-9242-d41964b65f2c/generation.mp4) | 0 s |
+| `community-purple-suit-slam` | Purple Suit Slam | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/be343d56-fa10-419d-8091-104cb4f26fa2/generation.mp4) | 0 s |
+| `community-highway-delivery-reveal` | Highway Delivery Reveal | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/a377b467-a639-4079-a77e-c9cd8905fa45/generation.mp4) | 0 s |
+| `community-delivery-van-loop` | Delivery Van Loop | FASHION | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/7fd0dd62-6358-4781-9b6f-4dc4e0448b24/generation.mp4) | 0 s |
+| `community-supercar-midnight-refuel` | Supercar Midnight Refuel | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/ef81e155-d5db-45b6-a4c2-0e5f55d7de50/generation.mp4) | 0 s |
+| `community-bus-chase-sprint` | Bus Chase Sprint | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/6deb407f-a960-421f-b673-bd7f6c0227b5/generation.mp4) | 0 s |
+| `community-drive-thru-dialogue` | Drive Thru Dialogue | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/c16095d8-90ac-4382-bfdb-14a2b57b9325/generation.mp4) | 0 s |
+| `community-highway-vehicle-swap` | Highway Vehicle Swap | FASHION | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/161f2f38-cb7d-480d-b379-e84214675df4/generation.mp4) | 0 s |
+| `community-urban-dance-walk` | Urban Dance Walk | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/727c1b24-6268-4e57-9550-8355bae9c63e/generation.mp4) | 0 s |
+| `community-dust-storm-escape` | Dust Storm Escape | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/2e3a5e64-60f7-49e8-aa49-d32672128347/generation.mp4) | 0 s |
+| `community-fridge-snack-swap` | Fridge Snack Swap | REALISTIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/a6bbd3f6-c966-4897-8fdc-504e87a0a15b/generation.mp4) | 0 s |
+| `community-city-plaza-dance` | City Plaza Dance | REALISTIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/cf32f925-616f-4c0b-806a-d03708031f64/generation.mp4) | 0 s |
+| `community-cliffside-character-swap` | Cliffside Character Swap | FASHION | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/da7d477f-b9a2-4784-a2bf-555040af22e7/generation.mp4) | 0 s |
+| `community-skyline-terrace-groove` | Skyline Terrace Groove | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/1fb7ad0a-f17a-4ebc-97af-d42015e2bd68/generation.mp4) | 0 s |
+| `community-equestrian-sunset-gallop` | Equestrian Sunset Gallop | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/1a188ded-0b44-4d9a-ba3f-1dc04d47503c/generation.mp4) | 0 s |
+| `community-illustration-street-stride` | Illustration Street Stride | FASHION | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/1945e3b3-2b45-4947-aa40-afbff5bb9db6/generation.mp4) | 0 s |
+| `community-london-gentleman-walk` | London Gentleman Walk | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/0715ff1a-104d-413b-83bb-effda93c28f7/generation.mp4) | 0 s |
+| `community-cinematic-actor-swap` | Cinematic Actor Swap | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/12bcdfb6-e64c-40f2-96c1-7d89dc8a611d/generation.mp4) | 0 s |
+| `community-industrial-cosplay-swap` | Industrial Cosplay Swap | FASHION | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/0ea4fe1c-a56d-4e2b-b5da-47978bf71f32/generation.mp4) | 0 s |
+| `community-formal-swagger` | Formal Swagger | REALISTIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/1263ba4d-4ca0-4e7b-bd4c-ab86306a22a6/generation.mp4) | 0 s |
+| `community-private-jet-swap` | Private Jet Swap | REALISTIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/3eb4f1de-0007-4e2c-94c4-94c03848dfd1/generation.mp4) | 0 s |
+| `community-character-recast` | Character Recast | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/8552f77e-5100-4cd8-9bff-aee5e28f2ea0/generation.mp4) | 0 s |
+| `community-urban-character-swap` | Urban Character Swap | FASHION | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/920f843e-84fe-42f6-b173-3ed9e4689c7a/generation.mp4) | 0 s |
+| `community-dragon-rider-encounter` | Dragon Rider Encounter | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/d68ad7d6-9062-4ea3-ac6b-6861305f70fd/generation.mp4) | 0 s |
+| `community-forest-umbrella-shift` | Forest Umbrella Shift | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/3cad83f2-f491-40bb-a063-94a9f225474d/generation.mp4) | 0 s |
+| `community-street-confrontation-swap` | Street Confrontation Swap | REALISTIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/13550509-0231-4007-b6fc-0fbfb5e79405/generation.mp4) | 0 s |
+| `community-victory-dance-shift` | Victory Dance Shift | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/37bcff04-1eb4-4a35-b783-1f2c5a65faf6/generation.mp4) | 0 s |
+| `community-synchronized-pet-portrait` | Synchronized Pet Portrait | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/afc19ed6-aacf-401f-85da-51f07d484591/generation.mp4) | 0 s |
+| `community-dramatic-office-outburst` | Dramatic Office Outburst | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/1c87b705-5375-4c14-8a18-30f2c12f2acf/generation.mp4) | 0 s |
+| `community-times-square-stage` | Times Square Stage | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/c48b78de-b47e-473a-a5cf-fef4854c5320/generation.mp4) | 0 s |
+| `community-midnight-forest-run` | Midnight Forest Run | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/d168c69e-b7a2-4cc3-9449-3b70759c015d/generation.mp4) | 0 s |
+| `community-coastal-driver-swap` | Coastal Driver Swap | FASHION | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/dd9093f5-d546-4033-9ae1-d26a46212d4c/generation.mp4) | 0 s |
+| `community-midnight-sports-drive` | Midnight Sports Drive | FASHION | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/fe57b73f-f038-4e5f-b241-92e49f4ed228/generation.mp4) | 0 s |
+| `community-shockwave-horizon-shift` | Shockwave Horizon Shift | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/8ef9da22-3588-44bd-884d-b79a5034719c/generation.mp4) | 0 s |
+| `community-street-dancer-recast` | Street Dancer Recast | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/1aa54303-ff95-4b29-9fbe-489b89d7a767/generation.mp4) | 0 s |
+| `community-boardwalk-dance-routine` | Boardwalk Dance Routine | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/c6bfdd3b-7693-4892-8526-5b05c41470f8/generation.mp4) | 0 s |
+| `community-face-swap` | Face Swap | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/95d16f6a-21f5-48a6-ab73-feda813b1819/generation.mp4) | 0 s |
+| `community-criminal-standoff-montage` | Criminal Standoff Montage | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/d30e01fe-32fb-405b-b262-240d7b249901/generation.mp4) | 0 s |
+| `community-strongman-deadlift-swap` | Strongman Deadlift Swap | REALISTIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/3ee784f6-8ba1-424e-88f8-857acb0d1df8/generation.mp4) | 0 s |
+| `community-studio-blast` | Studio Blast | REALISTIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/bfbac5c8-ecc8-4e4f-b86e-ce49c2dc7187/generation.mp4) | 0 s |
+| `community-subway-mascot-dance` | Subway Mascot Dance | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/934c7cf2-df3e-4d0c-ac29-3ac48c982b74/generation.mp4) | 0 s |
+| `community-laundry-swap` | Laundry Swap | REALISTIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/e4c25ef5-a655-424c-8f07-383ba5524ed4/generation.mp4) | 0 s |
+| `community-parkour-vault-shift` | Parkour Vault Shift | REALISTIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/d4962e15-5ffc-4aeb-aa09-0b06fcf14298/generation.mp4) | 0 s |
+| `community-corporate-icon-swap` | Corporate Icon Swap | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/3545cad0-dd94-4f98-939e-3cf4b410895d/generation.mp4) | 0 s |
+| `community-rustic-deck-flip` | Rustic Deck Flip | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/658aa301-2398-47c1-9cd3-7a539b572200/generation.mp4) | 0 s |
+| `community-stage-dance-sync` | Stage Dance Sync | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/9287633a-3b51-41f5-aa21-3c11d764d795/generation.mp4) | 0 s |
+| `community-officer-traffic-stop` | Officer Traffic Stop | REALISTIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/ba88a3d0-629c-4437-99cf-c6f10840e2d6/generation.mp4) | 0 s |
+| `community-cartoon-puppet-swap` | Cartoon Puppet Swap | REALISTIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/f95c2024-7523-4aad-a823-95a6adf6b3d3/generation.mp4) | 0 s |
+| `community-modern-listing-dolly` | Modern Listing Dolly | FASHION | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/228568ae-5569-47bb-a4b2-89f88213156d/generation.mp4) | 0 s |
+| `community-arctic-water-pour` | Arctic Water Pour | FASHION | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/aa929b05-47d2-487c-8da6-5150c7ab6a45/generation.mp4) | 0 s |
+| `community-sour-drink-reaction` | Sour Drink Reaction | REALISTIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/79cc6aae-b627-418b-aefb-f2f02965117d/generation.mp4) | 0 s |
+| `community-canyon-groove` | Canyon Groove | REALISTIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/b1a12c93-0bd4-492e-966f-da34304cd320/generation.mp4) | 0 s |
+| `community-redlight-club-sing` | Redlight Club Sing | REALISTIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/ef140316-c158-4d28-8efd-33cda4384ef4/generation.mp4) | 0 s |
+| `community-couch-blast` | Couch Blast | REALISTIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/e770267c-2f6c-4dfe-8215-121d9bb121b7/generation.mp4) | 0 s |
+| `community-station-dance-move` | Station Dance Move | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/6f9ee0d2-7f3b-4f03-8a5d-8ff4db32c9fb/generation.mp4) | 0 s |
+| `community-bubbly-morning-ritual` | Bubbly Morning Ritual | FASHION | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/67306ddf-114c-43e8-bbc2-3299d2a9310c/generation.mp4) | 0 s |
+<!-- END HF_PHOTO_59 EXACT -->

@@ -3,6 +3,7 @@ import { IMAGE_SOURCE_PROMPT_RECORDS } from './imageSourcePromptRecords.js';
 import { SYNTX_REPLACEMENTS_RECORDS } from './syntxReplacementRecords.js';
 import { HF_REPLACEMENTS_RECORDS } from './higgsfieldReplacementRecords.js';
 import { HF_PHOTO_30_RECORDS } from './higgsfieldPhotoRecords.js';
+import { HF_PHOTO_59_RECORDS } from './higgsfieldPhotoRecords2.js';
 import { HIGGSFIELD_CATEGORY_FILL_RECORDS } from './higgsfieldCategoryFillRecords.js';
 import { SYNTX_64_SOURCE_PROMPT_RECORDS } from './syntxSourcePromptExpansion64Records.js';
 import { HIGGSFIELD_300_SOURCE_PROMPT_RECORDS } from './higgsfieldCommunityExpansion300Records.js';
@@ -26,6 +27,7 @@ export const SOURCE_PROMPT_RECORDS = Object.freeze({
   ...HIGGSFIELD_CATEGORY_FILL_RECORDS,
   ...HF_REPLACEMENTS_RECORDS,
   ...HF_PHOTO_30_RECORDS,
+  ...HF_PHOTO_59_RECORDS,
   ...SYNTX_REPLACEMENTS_RECORDS,
 });
 

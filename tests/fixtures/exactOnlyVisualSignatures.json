@@ -4028,6 +4028,242 @@
     "community-ballroom-tuxedo-shift": {
       "frames": 5,
       "signature": "a609e6cdfce8cd912c731effa36a07f42392b1e2305c4bcae1410ffca30ffac9"
+    },
+    "community-currency-phone-call": {
+      "frames": 5,
+      "signature": "66fc5f64749182ece57e5d01cb5dd72d4b58931ddaf512cbc532d25b0c6a8184"
+    },
+    "community-window-dog": {
+      "frames": 5,
+      "signature": "5bd792e4fac4e05965e2e1fce0f18dc29eef00bacc1c93c98f0ecaa97c54c070"
+    },
+    "community-subway-combat-strike": {
+      "frames": 5,
+      "signature": "829703005f6bf2ab44cd8475fb419893b30b56cfbc6023b94ced36365d94aa7a"
+    },
+    "community-street-shuffle-walk": {
+      "frames": 5,
+      "signature": "497b062384bf2da346c521f4d8052411d1d2df9f8c0c66cf238400cc8e3faa20"
+    },
+    "community-purple-suit-slam": {
+      "frames": 5,
+      "signature": "f4dfd5e0086260ea095306c9583a19871e053ea0bc92063570dfbd427b45ce60"
+    },
+    "community-highway-delivery-reveal": {
+      "frames": 5,
+      "signature": "8ff5cd77fb27ee763b997b557b7435dea18100254a7bce075900ac07945001ba"
+    },
+    "community-delivery-van-loop": {
+      "frames": 5,
+      "signature": "550af04d53d55bff74bd64dccc78209b257f317bfa5d38cad1f0ee8d3761299f"
+    },
+    "community-supercar-midnight-refuel": {
+      "frames": 5,
+      "signature": "29487b5b9ac67e4831ce6121d5bdda0d5308e344f4650442b73e79e2223eb2c1"
+    },
+    "community-bus-chase-sprint": {
+      "frames": 5,
+      "signature": "a854fbbc086fb7a81db55b690699bd47e3e6be72f0ade68769d05cf87d3ca29e"
+    },
+    "community-drive-thru-dialogue": {
+      "frames": 5,
+      "signature": "369c7afbe7ddb5642d196df3db7e1f1dfe6de381d31f29a6da98a98087cf592b"
+    },
+    "community-highway-vehicle-swap": {
+      "frames": 5,
+      "signature": "2f41b54e9b295ea66e812a5f7a985b378843151370012277aa9109571bdda091"
+    },
+    "community-urban-dance-walk": {
+      "frames": 5,
+      "signature": "406b5a63fcfd320472483c04f2f32c383e98a5a1bf990ef4420f167393926784"
+    },
+    "community-dust-storm-escape": {
+      "frames": 5,
+      "signature": "952a81a2a08cfb3dbd8aeb260e254d3ded4ad15f4ebbc435d51bb4e6a5381cc9"
+    },
+    "community-fridge-snack-swap": {
+      "frames": 5,
+      "signature": "e52d6d250ba836fd3da8cc08abf78b1367fe0551ff9d5c2cdfae876cf58890c1"
+    },
+    "community-city-plaza-dance": {
+      "frames": 5,
+      "signature": "bc085f5f3b2ac2a6630965796deb8e9a2260c9a42014e13d9105a160a630cca2"
+    },
+    "community-cliffside-character-swap": {
+      "frames": 5,
+      "signature": "01075395098ac2e7e406519d9563ae936e29fbcf60ab56ef25ce876a6dfe7663"
+    },
+    "community-skyline-terrace-groove": {
+      "frames": 5,
+      "signature": "b90bf09c6418710b17c1fec46f48fcf4a88fc9027aa0eb0793d585d00635010e"
+    },
+    "community-equestrian-sunset-gallop": {
+      "frames": 5,
+      "signature": "29077c5748eae10b8f3d73ca65f827b8d3cc89ddffb5f709104fd3070a73e939"
+    },
+    "community-illustration-street-stride": {
+      "frames": 5,
+      "signature": "f484b7b364650e1ea331514fd656110512803dd2d0508c8994a8f24bfdbd0d3b"
+    },
+    "community-london-gentleman-walk": {
+      "frames": 5,
+      "signature": "a957f569beb0dd691a94b99f0a7581c3ed769117fe1d069bec2fac2f2b4cdc26"
+    },
+    "community-cinematic-actor-swap": {
+      "frames": 5,
+      "signature": "971d28547edd3514200e456afa10cc63b29e8da3bca69e303022ea13ae18ac44"
+    },
+    "community-industrial-cosplay-swap": {
+      "frames": 5,
+      "signature": "86457a0aed5da0243b0f84539ab071a225e31872ffee1ed74c35120e7ad1d78e"
+    },
+    "community-formal-swagger": {
+      "frames": 5,
+      "signature": "fde5c360a3a2b238dbf0d4a55afc24e642b5df1d484613f04bcd4b7f47e2d28b"
+    },
+    "community-private-jet-swap": {
+      "frames": 5,
+      "signature": "e51d28a4e4b81f0cfd2b88af4601e2c8ee0a8c2291239e1077fece8978fe6562"
+    },
+    "community-character-recast": {
+      "frames": 5,
+      "signature": "85d3a5bf4c87e382a63db49f98fc2f460e38beffab7457528af5fc86b3a88967"
+    },
+    "community-urban-character-swap": {
+      "frames": 5,
+      "signature": "3b3e0edac002f79e78e61a8193ca64d3eb3ba30fef84abaf1120901400fa933d"
+    },
+    "community-dragon-rider-encounter": {
+      "frames": 5,
+      "signature": "5876f98a7d04b2803c6cff3bff9e7ce53e82d52151e7cf345c47d0686221c308"
+    },
+    "community-forest-umbrella-shift": {
+      "frames": 5,
+      "signature": "b8710c96cebf2e2099e75db3a50ee448adbd5ace4b74d20b353470d107fe9e07"
+    },
+    "community-street-confrontation-swap": {
+      "frames": 5,
+      "signature": "62636ef3e475bd57270bd8a0d5ab73670cd22b8efdc3b26dc59b7d883f018bdf"
+    },
+    "community-victory-dance-shift": {
+      "frames": 5,
+      "signature": "ba63c69e0dd621fa4f9421ad7d0b5c0070c83558e9b6458d2d7556647a449c04"
+    },
+    "community-synchronized-pet-portrait": {
+      "frames": 5,
+      "signature": "b4b8d33a7fb175add1dc453474c575a38e9b44a8b24733cb37ac18019e9c086b"
+    },
+    "community-dramatic-office-outburst": {
+      "frames": 5,
+      "signature": "f4fa3d9ee320a8b0c3622e88f36e62359bef9fdea7b1a0cd64ba53ba0980253b"
+    },
+    "community-times-square-stage": {
+      "frames": 5,
+      "signature": "4e4a3383cf4683ac848a458a5ae7bc0c17e57d8f8307d75fc1531f077069a74f"
+    },
+    "community-midnight-forest-run": {
+      "frames": 5,
+      "signature": "c83b9cb313f03bfa6e03869b0647c93044b26c8daae793e945cf76e2b8a666c1"
+    },
+    "community-coastal-driver-swap": {
+      "frames": 5,
+      "signature": "0bf11de14f688103db860f244b4ac75e7f32c5779569cafdf3fa3bfa07ec67d0"
+    },
+    "community-midnight-sports-drive": {
+      "frames": 5,
+      "signature": "09b60236c7eca2247e635c878835ad3eef18a7fd047c5b40370c6af3386b1fd1"
+    },
+    "community-shockwave-horizon-shift": {
+      "frames": 5,
+      "signature": "378a76644bb9a8c306d3ac03a67e689cbc55e8eb07acb268acf84b7f075bdf97"
+    },
+    "community-street-dancer-recast": {
+      "frames": 5,
+      "signature": "81bdbc57d358268c495788d17ba50818cda2a2c40424c53522a48aa509f2bf98"
+    },
+    "community-boardwalk-dance-routine": {
+      "frames": 5,
+      "signature": "8541593dfad3d754098837c16f31545b706f9aa103fb64b3275344be76a1f7b2"
+    },
+    "community-face-swap": {
+      "frames": 5,
+      "signature": "7888d4ff7cd8762da1dc1703f058d508814d63d86c7108f4f3f06c63450c7e4c"
+    },
+    "community-criminal-standoff-montage": {
+      "frames": 5,
+      "signature": "76bd723d182d354b7d51d4db94bb30cd43612d2702aeac792c102021b77e3816"
+    },
+    "community-strongman-deadlift-swap": {
+      "frames": 5,
+      "signature": "1d35576c662f2f9aa1cbc387d112190fd6c89bd5b58eeedd6ecc7a37d860f455"
+    },
+    "community-studio-blast": {
+      "frames": 5,
+      "signature": "b7ff403655d10db68ed34ad3e1c52000027d7e823a56f9fc57a6e75cb6fdaf08"
+    },
+    "community-subway-mascot-dance": {
+      "frames": 5,
+      "signature": "48b8a63a24a8928ed09d030e1383b09af3c359316f3719b59375b1fff82819d4"
+    },
+    "community-laundry-swap": {
+      "frames": 5,
+      "signature": "24049ece94f073c375e8179d70148cca3688634f875fe32037f7f88c26ab8a09"
+    },
+    "community-parkour-vault-shift": {
+      "frames": 5,
+      "signature": "c466afc790473c41e578a4424ffd60d73f867190618cfff73780415faf6d2319"
+    },
+    "community-corporate-icon-swap": {
+      "frames": 5,
+      "signature": "2dedca366ad2b52300399941918b530cbaadc4b8fecd695ea34d610d643292ba"
+    },
+    "community-rustic-deck-flip": {
+      "frames": 5,
+      "signature": "5f935b82be525b00300d86c67fe51a70696eb4a0c79e9ab1ce60f29a8718a41d"
+    },
+    "community-stage-dance-sync": {
+      "frames": 5,
+      "signature": "ee08f4ac777eebefd8d2a356c3a35b09ee3d64346ec99f11040e4f1fb457bd6c"
+    },
+    "community-officer-traffic-stop": {
+      "frames": 5,
+      "signature": "fd039e356e9e3e6ed95eb1a47c023a08c796118b3d80779e8c54261241669a29"
+    },
+    "community-cartoon-puppet-swap": {
+      "frames": 5,
+      "signature": "46a9c24b518068d1e98808984699ad4a733e5215900f1bc882dead54a9992f28"
+    },
+    "community-modern-listing-dolly": {
+      "frames": 5,
+      "signature": "5d862e0702bb0cb8fd50e00438eb6aff46a15e59fa23a3be78b0f501c98f7696"
+    },
+    "community-arctic-water-pour": {
+      "frames": 5,
+      "signature": "32b2f0913d57a09e885fd0d1e92a113cd8cf1bf1b66febfde0914e1d6f7bfe86"
+    },
+    "community-sour-drink-reaction": {
+      "frames": 5,
+      "signature": "f5e15789a505fedcb1384d8c376f4617d47b8342064c16525b48c93a4760dfc3"
+    },
+    "community-canyon-groove": {
+      "frames": 5,
+      "signature": "3caf526cc760268c9427674c55a23340ef07f7b44c960805ac19c9554e1a0749"
+    },
+    "community-redlight-club-sing": {
+      "frames": 5,
+      "signature": "f020a3aa1f8ea49daeb79247c2e510d8bf3b257bb4a18dd61c358ec3b0310f86"
+    },
+    "community-couch-blast": {
+      "frames": 5,
+      "signature": "48deac73b603732b7e979fa8dde8456ff6d39635d0d0da5dfe901715cf98f5b6"
+    },
+    "community-station-dance-move": {
+      "frames": 5,
+      "signature": "e1705b568706f9f7e11bc15fc5f9fbba767dc03bc249417d50bdbed3e9271ff4"
+    },
+    "community-bubbly-morning-ritual": {
+      "frames": 5,
+      "signature": "fd8e64790c058cc5a419046dba3a8419d214f9cda6afea5fa7a7ddae00de1f67"
     }
   }
 }
