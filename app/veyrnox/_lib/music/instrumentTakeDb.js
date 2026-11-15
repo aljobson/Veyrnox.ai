@@ -3,17 +3,30 @@
 
 const DB_NAME = 'veyrnox-instrument-takes';
 const VERSION = 1;
+const connections = new Set();
+if (typeof window !== 'undefined') window.addEventListener('pagehide', () => {
+  for (const db of connections) db.close();
+  connections.clear();
+});
 export const TAKE_STORES = Object.freeze(['takes', 'shelf']);
 
 function open() {
   return new Promise((resolve, reject) => {
     if (typeof indexedDB === 'undefined') { reject(new Error('indexeddb_unavailable')); return; }
     const request = indexedDB.open(DB_NAME, VERSION);
+    let expired = false;
+    const timeout = setTimeout(() => { expired = true; reject(new Error('indexeddb_blocked')); }, 2000);
     request.onupgradeneeded = () => {
       TAKE_STORES.forEach((name) => { if (!request.result.objectStoreNames.contains(name)) request.result.createObjectStore(name, { keyPath: 'id' }); });
     };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      clearTimeout(timeout);
+      const db = request.result;
+      if (expired) { db.close(); return; }
+      db.onversionchange = () => { db.close(); connections.delete(db); };
+      connections.add(db); resolve(db);
+    };
+    request.onerror = () => { clearTimeout(timeout); reject(request.error); };
   });
 }
 
@@ -28,7 +41,7 @@ async function run(store, mode, action) {
       tx.onabort = () => reject(tx.error);
     });
   } finally {
-    db.close();
+    db.close(); connections.delete(db);
   }
 }
 

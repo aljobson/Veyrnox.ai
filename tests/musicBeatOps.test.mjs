@@ -49,7 +49,7 @@ test('copy, clear, restore, toggling and recording do not alias or duplicate', (
   assert.equal(patternEvents(original).find((e) => e.pad === 'kick').velocity, 100 / 127);
 });
 test('out-of-range edits reject', () => {
-  assert.throws(() => ops.setTempo(make(), 241), /invalid/);
+  assert.throws(() => ops.setTempo(make(), 241), /40 to 240 BPM/);
   assert.throws(() => ops.addHitAtStep(make(), 'kick', 32), /invalid/);
 });
 

@@ -16,7 +16,7 @@ test('new beat round trips and has only the A starter groove', () => {
 });
 const malformed = {
   null: () => null,
-  kind: (d) => { d.kind = 'other'; }, version: (d) => { d.version = 3; }, id: (d) => { d.id = '../bad'; },
+  kind: (d) => { d.kind = 'other'; }, version: (d) => { d.version = 4; }, id: (d) => { d.id = '../bad'; },
   extra: (d) => { d.extra = true; }, missing: (d) => { delete d.tracks; },
   longTitle: (d) => { d.title = 'x'.repeat(81); }, emptyTitle: (d) => { d.title = ' '; }, titleType: (d) => { d.title = 1; },
   createdAt: (d) => { d.createdAt = -1; }, updatedAt: (d) => { d.updatedAt = 9; }, timestamp: (d) => { d.updatedAt = 1.2; },

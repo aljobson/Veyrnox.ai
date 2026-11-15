@@ -26,3 +26,10 @@ export function moveLocator(tick, key, snap, end) {
 // Shared by the scheduler and mixdown; straight boundaries never accumulate swing.
 export const swingDelay = (step, bpm, swing) => step % 2 ? swing * stepSeconds(bpm) * 0.5 : 0;
 export const eventTime = (straight, step, bpm, swing) => straight + swingDelay(step, bpm, swing);
+
+export function formatPosition(ticks) {
+  const tick = Math.max(0, Math.floor(ticks));
+  const bar = Math.floor(tick / 3840) + 1, beat = Math.floor(tick % 3840 / 960) + 1;
+  const step = Math.floor(tick % 960 / 240) + 1;
+  return `bar ${bar}` + (tick % 3840 ? `, beat ${beat}` : '') + (tick % 960 ? `, step ${step}` : '');
+}
