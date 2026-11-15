@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { musicLibraryTabsEnabled, parseMusicCoverChoice, parseMusicHook, parseMusicListen } from '../lib/musicLibraryTabs.js';
 
 const ID = 'b6ed2d0d-8276-4fbb-9c4f-39f401a3158c';
-const sqlUrl = new URL('../packages/db/schema/supabase/0522_music_library_tabs.sql', import.meta.url);
+const sqlUrl = new URL('../packages/db/schema/supabase/0523_music_library_tabs.sql', import.meta.url);
 
 test('hook parser keeps a 5-30 s range and refuses extra keys', () => {
   const base = { song_id: ID, version_id: ID, title: ' Chorus ' };
@@ -30,7 +30,7 @@ test('Library tabs need the Library gate and their own switch, which ships false
   assert.equal((wrangler.match(/\\"libraryTabs\\":false/g) || []).length, 2);
 });
 
-test('0522 keeps everything private, erased with the account and free of credit writes', async () => {
+test('0523 keeps everything private, erased with the account and free of credit writes', async () => {
   const sql = await readFile(sqlUrl, 'utf8');
   for (const table of ['music_listen_history', 'music_hooks', 'music_song_covers']) assert.match(sql, new RegExp(`'${table}'`));
   assert.match(sql, /FORCE ROW LEVEL SECURITY/);

@@ -269,14 +269,14 @@ GRANT EXECUTE ON FUNCTION public.music_get_hook_source_context(TEXT,UUID,UUID) T
 -- Admit the new routes in the privacy-safe route telemetry allowlist.
 DO $$
 BEGIN
-    IF to_regprocedure('public.telemetry_path_allowed_pre_0522(text)') IS NULL THEN
-        ALTER FUNCTION public.telemetry_path_allowed(TEXT) RENAME TO telemetry_path_allowed_pre_0522;
+    IF to_regprocedure('public.telemetry_path_allowed_pre_0523(text)') IS NULL THEN
+        ALTER FUNCTION public.telemetry_path_allowed(TEXT) RENAME TO telemetry_path_allowed_pre_0523;
     END IF;
 END $$;
 CREATE OR REPLACE FUNCTION public.telemetry_path_allowed(p_path TEXT)
 RETURNS BOOLEAN LANGUAGE sql IMMUTABLE SET search_path = '' AS $$
     SELECT p_path IN ('/api/v1/music/history', '/api/v1/music/hooks', '/api/v1/music/hooks/:id',
                       '/api/v1/music/cover-art', '/api/v1/music/songs/:id/cover')
-        OR public.telemetry_path_allowed_pre_0522(p_path)
+        OR public.telemetry_path_allowed_pre_0523(p_path)
 $$;
 REVOKE ALL ON FUNCTION public.telemetry_path_allowed(TEXT) FROM PUBLIC, anon, authenticated, service_role;
