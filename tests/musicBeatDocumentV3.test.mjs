@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { make, legacy, v2, freeze } from './musicBeatFixtures.mjs';
+import { v3 as make, legacy, v2, freeze } from './musicBeatFixtures.mjs';
 import { audioDoc, audioRegion, soundAsset } from './musicBeatAudioFixtures.mjs';
 import { validateBeat, migrateBeat } from '../app/veyrnox/_lib/music/beat/beatDocument.mjs';
 import { eventsAtStep } from '../app/veyrnox/_lib/music/beat/beatEvents.mjs';
@@ -8,11 +8,12 @@ test('v3 validates and migrations keep drum events and leave inputs untouched', 
   assert.equal(make().version, 3);
   for (const source of [legacy(), v2()]) {
     const before = structuredClone(source), next = migrateBeat(freeze(source));
-    assert.equal(next.version, 3); assert.equal(validateBeat(next).ok, true); assert.deepEqual(source, before);
+    assert.equal(next.version, 4); assert.equal(validateBeat(next).ok, true); assert.deepEqual(source, before);
     const equivalent = source.version === 1 ? { ...v2(), view: 'pattern', steps: source.steps, patterns: source.patterns } : source;
     for (let step = 0; step < 64; step++) assert.deepEqual(eventsAtStep(next, step), eventsAtStep(equivalent, step));
   }
   const doc = audioDoc(); assert.deepEqual(validateBeat(doc), { ok: true, doc }); assert.equal(migrateBeat(doc), doc);
+  assert.deepEqual(migrateBeat(make()), { ...make(), version: 4, clips: {} });
 });
 const invalid = {
   '65 assets': (d) => { const a = d.assets.a1; for (let i = 2; i <= 65; i++) d.assets[`a${i}`] = a; },

@@ -4,7 +4,7 @@ import { stepSeconds } from './beatTime.mjs';
 
 export class BeatExportError extends RangeError {}
 export function exportRange(doc) {
-  if (!validateBeat(doc).ok || ![2, 3].includes(doc.version)) throw new BeatExportError('Invalid song or cycle range.');
+  if (!validateBeat(doc).ok || ![2, 3, 4].includes(doc.version)) throw new BeatExportError('Invalid song or cycle range.');
   return doc.cycle.on ? { startStep: doc.cycle.start / 240, endStep: doc.cycle.end / 240 }
     : { startStep: 0, endStep: Math.max(songEnd(doc) / 240, doc.steps) };
 }
@@ -27,7 +27,16 @@ export function playbackStart(doc, locator = 0) {
   if (end === 0) return null;
   return locator >= end ? 0 : locator / 240;
 }
-export function sequenceFor(doc, locator = 0, editTrackId) {
+export function sequenceFor(doc, locator = 0, editTrackId, regionId) {
+  if (doc.view === 'pattern') {
+    const track = patternTrack(doc, editTrackId);
+    if (track?.kind === 'midi') {
+      const region = track.regions.find((r) => r.id === regionId) || track.regions[0];
+      const length = region ? doc.clips[region.clipId].lengthTicks : 3840;
+      const preview = { ...doc, view: 'song', tracks: [{ ...track, regions: region ? [{ ...region, start: 0, length, phaseTicks: 0 }] : [] }] };
+      return { doc: preview, editTrackId: track.id, startStep: 0, endStep: length / 240, loop: { start: 0, end: length / 240 } };
+    }
+  }
   if (doc.view === 'pattern') return { doc, editTrackId: patternTrack(doc, editTrackId)?.id, startStep: 0, endStep: doc.steps, loop: { start: 0, end: doc.steps } };
   const endStep = songEnd(doc) / 240;
   if (!doc.cycle.on) return { doc, editTrackId, startStep: playbackStart(doc, locator) ?? 0, endStep, loop: null };

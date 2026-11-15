@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import BeatInstrumentLibrary from './BeatInstrumentLibrary';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { getSession, onSessionChange } from '../../../../lib/authClient';
 import { gatewayFetch } from '../../../_lib/gateway';
@@ -10,7 +11,7 @@ import { prepareAsset, loadAsset } from '../../../_lib/music/beat/beatAssets';
 import { createBeatEngine } from '../../../_lib/music/beat/beatEngine';
 import BeatLibraryItem from './BeatLibraryItem';
 import { button, input } from './beatStyles';
-export default function BeatLibrary({ bpm, onAdd, announce }) {
+export default function BeatLibrary({ bpm, onAdd, onAddInstrument, announce }) {
   const [tab, setTab] = useState('Sounds'), [mine, setMine] = useState('Takes');
   const [query, setQuery] = useState(''), [category, setCategory] = useState('All');
   const [songs, setSongs] = useState([]), [status, setStatus] = useState('idle'), [retry, setRetry] = useState(0);
@@ -78,7 +79,7 @@ export default function BeatLibrary({ bpm, onAdd, announce }) {
   function contents() {
     return <div className="space-y-3">
       <h2 className="text-lg font-bold">Library</h2>
-      <div className="flex gap-2" aria-label="Library tabs">{['Sounds', 'Mine'].map((name) => <button key={name} className={button} aria-pressed={tab === name} onClick={() => setTab(name)}>{name}</button>)}</div>
+      <div className="flex gap-2" aria-label="Library tabs">{['Sounds', 'Mine', 'Instruments'].map((name) => <button key={name} className={button} aria-pressed={tab === name} onClick={() => setTab(name)}>{name}</button>)}</div>
       {tab === 'Mine' && <div className="flex gap-2" aria-label="My library">{['Takes', 'Songs'].map((name) => <button key={name} className={button} aria-pressed={mine === name} onClick={() => setMine(name)}>{name}</button>)}</div>}
       <label className="block">Search by name<input className={`${input} w-full`} type="search" value={query} onChange={(e) => setQuery(e.target.value)} /></label>
       {tab === 'Sounds' && <><p className="text-sm">Key: A minor</p><label>Category <select className={input} value={category} onChange={(e) => setCategory(e.target.value)}>{['All', 'Bass', 'Keys', 'Synth', 'FX'].map((c) => <option key={c}>{c}</option>)}</select></label></>}
@@ -92,7 +93,8 @@ export default function BeatLibrary({ bpm, onAdd, announce }) {
       </div>}
       {tab === 'Mine' && mine === 'Takes' && !shelf.length && <p>No takes yet. <Link className="underline" href="/app/music/instruments">Open Instruments</Link></p>}
       {!filtered.length && !!items.length && <p>No sounds match &apos;{query}&apos;. <button className={button} onClick={() => { setQuery(''); setCategory('All'); }}>Clear</button> Try a shorter name or another category.</p>}
-      <ul className="max-h-[60vh] space-y-2 overflow-y-auto">{filtered.map((item) => <BeatLibraryItem key={item.id} item={item} active={active === item.id} audition={audition} add={add} busy={busy} />)}</ul>
+      {tab === 'Instruments' && <BeatInstrumentLibrary onAdd={onAddInstrument} announce={announce} query={query} />}
+      {tab !== 'Instruments' && <ul className="max-h-[60vh] space-y-2 overflow-y-auto">{filtered.map((item) => <BeatLibraryItem key={item.id} item={item} active={active === item.id} audition={audition} add={add} busy={busy} />)}</ul>}
     </div>;
   }
   return <>

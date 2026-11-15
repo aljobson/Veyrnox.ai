@@ -10,9 +10,13 @@ function equalValue(a, b) {
   return keys.length === Object.keys(b).length &&
     keys.every((key) => Object.hasOwn(b, key) && equalValue(a[key], b[key]));
 }
-function edit(doc, now, change) {
+export function edit(doc, now, change) {
   const next = structuredClone(doc);
   change(next);
+  if (next.clips) {
+    const used = new Set(next.tracks.flatMap((t) => t.regions.map((r) => r.clipId)));
+    for (const id of Object.keys(next.clips)) if (!used.has(id)) delete next.clips[id];
+  }
   if (next.assets) {
     const used = new Set(next.tracks.flatMap((t) => t.regions.map((r) => r.assetId)));
     for (const id of Object.keys(next.assets)) if (!used.has(id)) delete next.assets[id];
@@ -50,7 +54,7 @@ export const setTempo = (doc, bpm, now = Date.now()) => edit(doc, now, (d) => {
 export const setSwing = (doc, value, now = Date.now()) => edit(doc, now, (d) => { d.swing = value; });
 export const setSteps = (doc, steps, now = Date.now()) => edit(doc, now, (d) => {
   d.steps = steps;
-  for (const track of d.tracks) for (const region of track.regions) if (!region.assetId) region.offset %= steps * 240;
+  for (const track of d.tracks) for (const region of track.regions) if (region.pattern) region.offset %= steps * 240;
 });
 export const selectPattern = (doc, slot, now = Date.now()) => slot === doc.currentPattern
   ? doc : edit(doc, now, (d) => { d.currentPattern = slot; });
@@ -68,32 +72,32 @@ export function tryOp(doc, operation) {
     throw error;
   }
 }
-function trackById(doc, id) {
+export function trackById(doc, id) {
   const track = doc.tracks.find((t) => t.id === id);
   if (!track) throw new BeatRefusal('That track no longer exists.');
   return track;
 }
-function regionById(doc, id) {
+export function regionById(doc, id) {
   for (const track of doc.tracks) {
     const region = track.regions.find((r) => r.id === id);
     if (region) return { track, region };
   }
   throw new BeatRefusal('That region no longer exists.');
 }
-function nextId(doc, prefix) {
-  const ids = new Set([...Object.keys(doc.assets || {}), ...doc.tracks.flatMap((t) => [t.id, ...t.regions.map((r) => r.id)])]);
+export function nextId(doc, prefix) {
+  const ids = new Set([...Object.keys(doc.assets || {}), ...Object.keys(doc.clips || {}), ...doc.tracks.flatMap((t) => [t.id, ...t.regions.map((r) => r.id)])]);
   let n = 1;
   while (ids.has(prefix + n.toString(36))) n++;
   return prefix + n.toString(36);
 }
 const mod = (n, length) => ((n % length) + length) % length;
 function fragment(doc, region, start, length) {
-  return region.assetId ? audioFragment(region, start, length, doc.assets[region.assetId], doc.tempo.bpm)
+  return region.clipId ? { ...region, start, length, phaseTicks: mod(region.phaseTicks + start - region.start, doc.clips[region.clipId].lengthTicks) } : region.assetId ? audioFragment(region, start, length, doc.assets[region.assetId], doc.tempo.bpm)
     : { ...region, start, length, offset: mod(region.offset + start - region.start, doc.steps * 240) };
 }
 // The edited region wins. Preserve the phase of every surviving fragment.
-function place(doc, track, edited) {
-  if (Boolean(edited.assetId) !== (track.kind === 'audio')) throw new BeatRefusal('Audio and drum regions need tracks of the same kind.');
+export function place(doc, track, edited) {
+  if ((edited.clipId ? 'midi' : edited.assetId ? 'audio' : 'drums') !== (track.kind || 'drums')) throw new BeatRefusal('Regions need tracks of the same kind (drums, audio or MIDI).');
   const end = edited.start + edited.length;
   const survivors = [];
   if (!track.regions.some((r) => r.id === edited.id)) track.regions = [...track.regions, edited];
@@ -113,7 +117,7 @@ function place(doc, track, edited) {
   track.regions = [...survivors, edited].sort((a, b) => a.start - b.start);
 }
 export const addTrack = (doc, kit, now = Date.now()) => edit(doc, now, (d) => {
-  d.tracks.push({ id: nextId(d, 't'), name: `Drums ${d.tracks.length + 1}`, ...(d.version === 3 ? { kind: 'drums' } : {}), kit,
+  d.tracks.push({ id: nextId(d, 't'), name: `Drums ${d.tracks.length + 1}`, ...(d.version >= 3 ? { kind: 'drums' } : {}), kit,
     mute: false, solo: false, gain: 1, pan: 0, regions: [] });
 });
 export const removeTrack = (doc, id, now = Date.now()) => edit(doc, now, (d) => {

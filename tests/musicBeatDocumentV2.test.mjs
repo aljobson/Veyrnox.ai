@@ -9,7 +9,7 @@ test('v2 starter round trips with four bars, unity gain and song view', () => {
   assert.equal(doc.version, 2); assert.equal(doc.view, 'song'); assert.equal(doc.kit, undefined);
   assert.equal(songEnd(doc), 4 * 3840); assert.equal(effectiveTrackGain(doc, 't1'), 1);
   assert.deepEqual(validateBeat(JSON.parse(JSON.stringify(doc))), { ok: true, doc });
-  assert.equal(migrateBeat(doc).version, 3);
+  assert.equal(migrateBeat(doc).version, 4);
 });
 test('valid v1 migrates without changing pattern hits, kit or loudness; original remains untouched', () => {
   const original = legacy(); original.steps = 32; original.currentPattern = 'B'; original.kit = 'lofi';

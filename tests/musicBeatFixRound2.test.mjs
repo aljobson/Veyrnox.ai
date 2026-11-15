@@ -6,6 +6,19 @@ import { patternTrack, eventsAtStep, recordTarget } from '../app/veyrnox/_lib/mu
 import { sequenceFor } from '../app/veyrnox/_lib/music/beat/beatSequence.mjs';
 import { drumLoopLabel } from '../app/veyrnox/_lib/music/beat/beatPlaybackAudio.mjs';
 import { trackSummary } from '../app/veyrnox/_lib/music/beat/beatTrackSummary.mjs';
+import { midiDoc } from './musicBeatMidiFixtures.mjs';
+
+test('MIDI pattern sequences retain the selected clip and loop when restarted at another tick', () => {
+  const doc = midiDoc(); doc.view = 'pattern';
+  doc.clips.c2 = { name: 'Selected', lengthTicks: 7680, notes: [[240, 480, 48, 100]] };
+  doc.tracks[1].regions.push({ id: 'selected', start: 3840, length: 7680, clipId: 'c2', phaseTicks: 0 });
+  for (const tick of [0, 960, 3840]) {
+    const sequence = sequenceFor(doc, tick, 't2', 'selected');
+    assert.equal(sequence.doc.tracks[0].regions[0].clipId, 'c2');
+    assert.deepEqual(sequence.loop, { start: 0, end: 32 });
+    assert.equal(sequence.endStep, 32);
+  }
+});
 
 test('pattern playback and recording resolve an audio selection to the first drum kit', () => {
   const doc = addTrack(audioDoc(), 'lofi');

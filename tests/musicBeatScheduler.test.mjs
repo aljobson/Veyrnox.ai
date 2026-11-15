@@ -140,14 +140,14 @@ test('song end notifies once at the next straight boundary; no later hits or ste
   const before = structuredClone(f.events); f.scheduler.refill(); f.advance(10);
   assert.deepEqual(f.events, before); assert.equal(f.ends.length, 1);
 });
-test('outside-cycle locator starts at cycle start; live mute and solo affect unscheduled events', () => {
+test('outside-cycle locator starts at cycle start; muted tracks stay scheduled for live channel gain', () => {
   const doc = createBeat({ id: 'e40439d1-646a-4c11-9c12-69fa3a851234', now: 0 });
   doc.cycle = { on: true, start: 16 * 240, end: 32 * 240 };
   const f = songFixture(doc, 0); f.scheduler.start(0.03);
   assert.equal(f.steps[0].step, 16);
   const queued = structuredClone(f.events); doc.tracks[0].mute = true;
   for (let i = 0; i < 20; i++) f.advance(0.025);
-  assert.deepEqual(f.events, queued);
+  assert.ok(f.events.length > queued.length);
   doc.tracks[0].mute = false; doc.tracks[0].solo = true;
   for (let i = 0; i < 20; i++) f.advance(0.025);
   assert.ok(f.events.length > queued.length);

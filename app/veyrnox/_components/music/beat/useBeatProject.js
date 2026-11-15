@@ -1,5 +1,6 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { recordingEditAllowed, RECORDING_LOCK_REASON } from '../../../_lib/music/beat/beatRecordingPolicy.mjs';
 import { arrangementMessage } from '../../../_lib/music/beat/beatMessages.mjs';
 import * as historyOps from '../../../_lib/music/beat/beatHistory.mjs';
 import { tryOp, selectPattern as selectPatternOp } from '../../../_lib/music/beat/beatOps.mjs';
@@ -13,6 +14,10 @@ export function useBeatProject(id, announce) {
   const [conflict, setConflict] = useState(null);
   const [saveError, setSaveError] = useState(false);
   const current = useRef(null);
+  const beforeFlush = useRef(null);
+  const recordingState = useRef(() => false);
+  const registerRecordingState = useCallback((callback) => { recordingState.current = callback; }, []);
+  const registerFinalizer = useCallback((callback) => { beforeFlush.current = callback; }, []);
   const history = useRef(null);
   const unsaved = useRef(null);
   const revision = useRef(0);
@@ -77,14 +82,15 @@ export function useBeatProject(id, announce) {
       if (message.deleted) markConflict('deleted');
       else if (message.revision > revision.current) markConflict('changed');
     });
+    function lifecycleFlush() { beforeFlush.current?.(); void flush(); }
     function hidden() { if (document.hidden) void flush(); }
-    window.addEventListener('pagehide', flush);
+    window.addEventListener('pagehide', lifecycleFlush);
     document.addEventListener('visibilitychange', hidden);
     return () => {
       mounted.current = false;
-      void flush();
+      lifecycleFlush();
       unsubscribe();
-      window.removeEventListener('pagehide', flush);
+      window.removeEventListener('pagehide', lifecycleFlush);
       document.removeEventListener('visibilitychange', hidden);
     };
   }, [id, reload, markConflict, flush]);
@@ -94,6 +100,7 @@ export function useBeatProject(id, announce) {
   }, []);
   const edit = useCallback((change, options = {}) => {
     if (!current.current) return null;
+    if (!recordingEditAllowed(recordingState.current(), options)) { announce(RECORDING_LOCK_REASON); return null; }
     try {
       const result = tryOp(current.current, change);
       if (result.refused) { announce(result.refused); return null; }
@@ -117,13 +124,14 @@ export function useBeatProject(id, announce) {
     } catch { announce('That change is not valid.'); return null; }
   }, [announce, accept]);
   const selectPattern = useCallback((slot) => {
+    if (recordingState.current()) return;
     if (!current.current || slot === current.current.currentPattern) return;
     const next = selectPatternOp(current.current, slot);
     history.current = historyOps.replacePresent(history.current, next);
     accept(next);
   }, [accept]);
   const travel = useCallback((direction) => {
-    if (!history.current) return;
+    if (!history.current || recordingState.current()) return;
     const entry = (direction === 'undo' ? history.current.past : history.current.future).at(-1);
     if (!entry) return;
     history.current = historyOps[direction](history.current);
@@ -137,15 +145,17 @@ export function useBeatProject(id, announce) {
     const timer = setTimeout(flush, 800);
     return () => clearTimeout(timer);
   }, [doc, saved, conflict, flush]);
-  async function copy() {
-    if (!current.current) return null;
+  async function copy(source) {
+    const finalized = beforeFlush.current?.() || current.current;
+    const copyDoc = source || finalized;
+    if (!copyDoc) return null;
     const now = Date.now();
-    const next = { ...structuredClone(current.current), id: crypto.randomUUID(), title: `${current.current.title.slice(0, 73)} (copy)`, createdAt: now, updatedAt: now };
+    const next = { ...structuredClone(copyDoc), id: crypto.randomUUID(), title: `${copyDoc.title.slice(0, 73)} (copy)`, createdAt: now, updatedAt: now };
     const result = await store.createBeat(next);
     if (result.error) { announce(result.error === 'limit' ? 'This device has 50 beats. Delete one to make room for a copy.' : 'Could not save a copy.'); return null; }
     return next.id;
   }
-  return { doc, current, error, persistent, conflict, saveError, retry: flush, edit, reload, copy, selectPattern,
+  return { doc, current, registerFinalizer, registerRecordingState, error, persistent, conflict, saveError, retry: flush, edit, reload, copy, selectPattern,
     undo: () => travel('undo'), redo: () => travel('redo'),
     canUndo: Boolean(history.current && historyOps.canUndo(history.current)),
     canRedo: Boolean(history.current && historyOps.canRedo(history.current)),

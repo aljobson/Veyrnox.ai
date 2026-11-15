@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { songEnd } from '../../../_lib/music/beat/beatDocument.mjs';
 import { clampLocator, snapTick, formatPosition } from '../../../_lib/music/beat/beatTime.mjs';
+import * as midi from '../../../_lib/music/beat/beatMidiOps.mjs';
 import * as ops from '../../../_lib/music/beat/beatOps.mjs';
 import BeatRuler from './BeatRuler';
 import BeatTrackHeader from './BeatTrackHeader';
@@ -15,7 +16,7 @@ import useRegionDrag from './useRegionDrag';
 import { button, input } from './beatStyles';
 
 export default function BeatArrangement({ doc, edit, selectPattern, editTrackId, setEditTrackId,
-  locator, setLocator, playhead, runId, announce }) {
+  locator, setLocator, playhead, runId, announce, onSelectRegion }) {
   useEffect(() => () => clearBeatAssets(), []);
   useEffect(() => { syncAssetTempo(doc.tempo.bpm); }, [doc.tempo.bpm]);
   const [zoom, setZoom] = useState(96);
@@ -42,8 +43,8 @@ export default function BeatArrangement({ doc, edit, selectPattern, editTrackId,
     }
   }, [playhead, runId, zoom, doc.view]);
   function choose(region, track) {
-    setSelectedId(region.id); setEditTrackId(track.id); if (region.pattern) selectPattern(region.pattern);
-    announce(region.assetId ? `Editing ${doc.assets[region.assetId].name} on ${track.name}` : `Editing pattern ${region.pattern} on ${track.name}`);
+    setSelectedId(region.id); onSelectRegion(region.id); setEditTrackId(track.id); if (region.pattern) selectPattern(region.pattern);
+    announce(region.clipId ? `Editing ${doc.clips[region.clipId].name} on ${track.name}` : region.assetId ? `Editing ${doc.assets[region.assetId].name} on ${track.name}` : `Editing pattern ${region.pattern} on ${track.name}`);
   }
   function laneTick(event) {
     return Math.max(0, Math.min(512 * 3840 - 240,
@@ -69,7 +70,11 @@ export default function BeatArrangement({ doc, edit, selectPattern, editTrackId,
     try { void addSound(JSON.parse(payload), trackId, start); } catch { announce('Could not read that sound.'); }
   }
   return <div className="grid min-w-0 gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
-    <BeatLibrary bpm={doc.tempo.bpm} announce={announce} onAdd={(item) => addSound(item, doc.tracks.find((t) => t.id === editTrackId)?.kind === 'audio' ? editTrackId : null)} />
+    <BeatLibrary onAddInstrument={(instrument) => {
+      let added;
+      const result = edit((d) => { const next = midi.addMidiTrack(d, instrument); added = next.tracks.at(-1).id; return next; }, { label: 'add MIDI track', message: `Added ${instrument.preset} ${instrument.id} track` });
+      if (result) { setEditTrackId(added); onSelectRegion(null); }
+    }} bpm={doc.tempo.bpm} announce={announce} onAdd={(item) => addSound(item, doc.tracks.find((t) => t.id === editTrackId)?.kind === 'audio' ? editTrackId : null)} />
     <section className="min-w-0 max-w-full space-y-3" aria-label="Song arrangement">
     <div className="flex flex-wrap items-center gap-2">
       <label>Snap <select className={input} value={snapValue} onChange={(e) => setSnapValue(e.target.value)}>
@@ -85,7 +90,7 @@ export default function BeatArrangement({ doc, edit, selectPattern, editTrackId,
       <div className="z-20 w-16 shrink-0 md:w-64">
         <div className="flex h-24 items-center text-xs font-bold md:px-3">Tracks</div>
         {doc.tracks.map((track) => <BeatTrackHeader key={track.id} track={track} edit={edit} locator={locator}
-          last={doc.tracks.length === 1} selected={track.id === editTrackId} onSelect={() => setEditTrackId(track.id)} />)}
+          last={doc.tracks.length === 1} selected={track.id === editTrackId} onSelect={() => { setEditTrackId(track.id); onSelectRegion(track.regions[0]?.id || null); }} />)}
       </div>
       <div ref={scroller} className="min-w-0 flex-1 overflow-x-auto overflow-y-hidden" aria-label="Arrangement timeline"
         onWheel={() => { manualRun.current = runId; }}
@@ -104,7 +109,7 @@ export default function BeatArrangement({ doc, edit, selectPattern, editTrackId,
             onDoubleClick={(event) => {
               if (event.target !== event.currentTarget || track.kind === 'audio') return;
               const at = laneTick(event); setLocator(at);
-              edit((d) => ops.addRegion(d, track.id, at, d.currentPattern), { label: 'add region', trackId: track.id, start: at });
+              edit((d) => track.kind === 'midi' ? midi.addMidiRegion(d, track.id, at) : ops.addRegion(d, track.id, at, d.currentPattern), { label: 'add region', trackId: track.id, start: at });
             }}>
             {Array.from({ length: bars }, (_, i) => <span key={i} aria-hidden="true"
               className="pointer-events-none absolute inset-y-0 border-l border-vx-border" style={{ left: i * zoom }} />)}
@@ -129,7 +134,7 @@ export default function BeatArrangement({ doc, edit, selectPattern, editTrackId,
     <button className={button} disabled={doc.tracks.length >= 16} onClick={() => edit((d) => ops.addAudioTrack(d), { label: 'add track' })}>+ Add audio track</button>
     {doc.tracks.length >= 16 && <p id="track-limit" className="text-xs">A song can have at most 16 tracks.</p>}
     {selectedRegion && <div className="hidden flex-wrap gap-2 md:flex" role="group" aria-label="Selected region">
-      {!selectedRegion.assetId && <label>Region pattern <select className={input} value={selectedRegion.pattern} onChange={(e) => {
+      {selectedRegion.pattern && <label>Region pattern <select className={input} value={selectedRegion.pattern} onChange={(e) => {
         const slot = e.target.value;
         edit((d) => ops.setRegionPattern(d, selectedRegion.id, slot), { label: 'change region pattern', regionId: selectedRegion.id });
         selectPattern(slot);
@@ -141,6 +146,7 @@ export default function BeatArrangement({ doc, edit, selectPattern, editTrackId,
       <button className={button} onClick={() => edit((d) => ops.deleteRegion(d, selectedRegion.id),
         { label: 'delete region', regionId: selectedRegion.id })}>Delete region</button>
     </div>}
+    {selectedRegion?.pattern && <button className={button} onClick={() => edit((d) => midi.convertDrums(d, selectedRegion.id), { label: 'convert drums to MIDI', message: 'Converted to MIDI. The original drum region remains and its track is muted.' })}>Convert to MIDI</button>}
     {selectedRegion?.assetId && <BeatRegionInspector region={selectedRegion} edit={edit} />}
     <BeatRegionActions region={selectedRegion} track={selectedTrack} locator={locator} snap={snap} edit={edit} selectPattern={selectPattern}
       movePlayhead={(delta) => setLocator(clampLocator(locator + delta, end))} />

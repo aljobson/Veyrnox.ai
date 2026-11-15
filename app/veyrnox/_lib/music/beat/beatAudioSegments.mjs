@@ -8,18 +8,18 @@ export function envelopeGain(region, t, tempo) {
     * (a ? clamp((t - a.startSec) / (a.endSec - a.startSec)) : 1)
     * (b ? clamp((length - t - b.endBeforeEndSec) / (b.startBeforeEndSec - b.endBeforeEndSec)) : 1);
 }
-export function audioSegments(doc, fromSec, toSec, { tempo = doc.tempo.bpm } = {}) {
-  return segments(doc, fromSec, toSec, { tempo, startSec: fromSec, endSec: toSec });
+export function audioSegments(doc, fromSec, toSec, { tempo = doc.tempo.bpm, includeMuted = false } = {}) {
+  return segments(doc, fromSec, toSec, { tempo, includeMuted, startSec: fromSec, endSec: toSec });
 }
 // Playback admits whole pieces by start time, while export/partition queries clip
 // to their window. Only a transport start or cycle wrap may synthesize a mid-piece start.
-export function audioPieces(doc, fromSec, toSec, { startSec = 0, endSec = Infinity, tempo = doc.tempo.bpm } = {}) {
-  return segments(doc, fromSec, toSec, { tempo, startSec, endSec, startsOnly: true });
+export function audioPieces(doc, fromSec, toSec, { startSec = 0, endSec = Infinity, tempo = doc.tempo.bpm, includeMuted = false } = {}) {
+  return segments(doc, fromSec, toSec, { tempo, startSec, endSec, startsOnly: true, includeMuted });
 }
-function segments(doc, fromSec, toSec, { tempo, startSec, endSec, startsOnly = false }) {
+function segments(doc, fromSec, toSec, { tempo, startSec, endSec, startsOnly = false, includeMuted = false }) {
   const segments = [], solo = doc.tracks.some((t) => t.solo);
   for (const track of doc.tracks) {
-    if (track.kind !== 'audio' || track.mute || (solo && !track.solo)) continue;
+    if (track.kind !== 'audio' || (!includeMuted && (track.mute || (solo && !track.solo)))) continue;
     for (const region of track.regions) {
       const asset = doc.assets[region.assetId];
       const start = tickSeconds(region.start, tempo), end = start + tickSeconds(region.length, tempo);

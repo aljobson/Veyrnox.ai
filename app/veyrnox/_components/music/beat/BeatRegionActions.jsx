@@ -19,7 +19,7 @@ export default function BeatRegionActions({ region, track, locator, movePlayhead
       <button className={button} onClick={() => run((d) => ops.splitRegion(d, region.id, locator), 'split region')}>Split at playhead</button>
       <button className={button} onClick={() => run((d) => ops.duplicateRegion(d, region.id), 'duplicate region')}>Duplicate</button>
       <button className={button} onClick={() => run((d) => ops.deleteRegion(d, region.id), 'delete region')}>Delete</button>
-      {!region.assetId && <label>Pattern <select className={input} value={region.pattern}
+      {region.pattern && <label>Pattern <select className={input} value={region.pattern}
         onChange={(e) => {
           const slot = e.target.value;
           run((d) => ops.setRegionPattern(d, region.id, slot), 'change region pattern');

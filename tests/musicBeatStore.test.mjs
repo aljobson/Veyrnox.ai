@@ -119,20 +119,20 @@ test('a working store never falls back on transaction, abort, error or quota fai
   }
 });
 
-test('legacy reads migrate only valid records; first save writes v3 with original revision checks', async (t) => {
+test('legacy reads migrate only valid records; first save writes v4 with original revision checks', async (t) => {
   const previous = globalThis.indexedDB;
   const fake = fakeIndexedDB(); globalThis.indexedDB = fake;
   t.after(() => { globalThis.indexedDB = previous; });
   const isolated = await import('../app/veyrnox/_lib/music/beat/beatStore.js?migration');
-  const { tracks, cycle, view, assets, ...common } = createBeat({ id: randomUUID(), now: 1 });
+  const { tracks, cycle, view, assets, clips, ...common } = createBeat({ id: randomUUID(), now: 1 });
   const doc = { ...common, version: 1, kit: tracks[0].kit };
   fake.rows.set(doc.id, { id: doc.id, revision: 8, doc, updatedAt: 1 });
   const read = await isolated.getBeat(doc.id);
-  assert.equal(read.record.doc.version, 3); assert.equal(read.record.doc.view, 'pattern');
+  assert.equal(read.record.doc.version, 4); assert.equal(read.record.doc.view, 'pattern');
   assert.equal(read.record.revision, 8); assert.equal(fake.puts, 0);
-  assert.equal((await isolated.listBeats()).records[0].doc.version, 3);
+  assert.equal((await isolated.listBeats()).records[0].doc.version, 4);
   const saved = await isolated.updateBeat(rename(read.record.doc, 'Migrated', 2), 8);
-  assert.equal(saved.revision, 9); assert.equal(fake.rows.get(doc.id).doc.version, 3);
+  assert.equal(saved.revision, 9); assert.equal(fake.rows.get(doc.id).doc.version, 4);
   const bad = { ...doc, id: randomUUID(), kit: 'missing' };
   fake.rows.set(bad.id, { id: bad.id, revision: 1, doc: bad, updatedAt: 1 });
   assert.equal((await isolated.getBeat(bad.id)).error, 'damaged');

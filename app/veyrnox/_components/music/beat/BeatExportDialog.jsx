@@ -5,7 +5,7 @@ import { renderBeat, renderSong, loadSongBuffers } from '../../../_lib/music/bea
 import { encodeWavChannels } from '../../../_lib/music/beat/beatWav.mjs';
 import { action, button, input } from './beatStyles';
 
-export default function BeatExportDialog({ doc, editTrackId, announce }) {
+export default function BeatExportDialog({ doc, editTrackId, announce, finalize }) {
   const dialog = useRef(null);
   const mounted = useRef(true);
   const [loops, setLoops] = useState(1);
@@ -13,9 +13,11 @@ export default function BeatExportDialog({ doc, editTrackId, announce }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [progress, setProgress] = useState('');
+  const snapshot = useRef(null);
   const [prepared, setPrepared] = useState(null);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   async function download() {
+    const doc = snapshot.current;
     setBusy(true); setError('');
     try {
       let buffers;
@@ -43,7 +45,7 @@ export default function BeatExportDialog({ doc, editTrackId, announce }) {
     } finally { if (mounted.current) setBusy(false); }
   }
   return <>
-    <button className={action} onClick={() => { setPrepared(null); setError(''); dialog.current.showModal(); }}>Download WAV</button>
+    <button className={action} onClick={() => { snapshot.current = finalize?.() || doc; setPrepared(null); setError(''); dialog.current.showModal(); }}>Download WAV</button>
     <dialog ref={dialog} aria-labelledby="export-title" className="m-auto w-full max-w-sm rounded-2xl border border-vx-border bg-vx-panel p-5 text-vx-fg backdrop:bg-vx-base/80" onCancel={(e) => { if (busy) e.preventDefault(); }} onClose={() => setPrepared(null)}>
       <h2 id="export-title" className="text-xl font-bold">Download WAV</h2><p className="my-3 text-sm text-vx-fg-muted">Export with a 1.5 second tail and no metronome. Song uses the cycle range when Cycle is on.</p>
       <label className="flex items-center gap-3">Export<select className={input} value={kind}
