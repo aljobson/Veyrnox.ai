@@ -11,7 +11,9 @@ import {
   appendSpeechCue,
   pauseCue,
   voiceAuditionScript,
+  voiceGenderOptions,
 } from '../_lib/textToSpeech';
+import { useI18n } from '../../../components/I18nProvider';
 import { readVoiceFavourites, toggleVoiceFavourite } from '../_lib/voiceFavourites';
 import {
   BUILTIN_VOICE_PALETTES,
@@ -66,6 +68,8 @@ export function TextToSpeechControls({
   auditionVoices = [],
   onAuditionVoices,
 }) {
+  const { t } = useI18n();
+  const genderLabel = (voice) => t(`app.audio.voice.gender.${voice.gender}`);
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [templateLanguage, setTemplateLanguage] = useState('English');
   const [gender, setGender] = useState('all');
@@ -155,8 +159,8 @@ export function TextToSpeechControls({
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-vx-accent/30 bg-vx-accent/[0.08] font-vx-mono text-xs font-black text-vx-accent">{selectedVoice.label.split(' ').map((part) => part[0]).slice(0, 2).join('')}</span>
           <span className="min-w-0 flex-1">
             <span className="block font-vx-mono text-[9px] font-bold uppercase tracking-[0.12em] text-vx-fg-faint">Selected stock voice</span>
-            <span className="mt-0.5 block truncate text-sm font-extrabold text-vx-fg">{selectedVoice.label}</span>
-            <span className="mt-0.5 block text-xs text-vx-fg-muted">{selectedVoice.tone} · {settings.language === 'auto' ? 'Auto-detect language' : settings.language}</span>
+            <span className="mt-0.5 block text-sm font-extrabold text-pretty break-words text-vx-fg">{selectedVoice.label}</span>
+            <span className="mt-0.5 block text-xs text-vx-fg-muted">{genderLabel(selectedVoice)} · {selectedVoice.tone} · {settings.language === 'auto' ? 'Auto-detect language' : settings.language}</span>
           </span>
           <span className="flex shrink-0 items-center gap-2 text-xs font-bold text-vx-accent"><span className="hidden sm:inline">Browse voices</span><Chevron open={voiceOpen} /></span>
         </button>
@@ -170,7 +174,8 @@ export function TextToSpeechControls({
                 <input aria-label="Search stock voices" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search voice or tone" className="min-h-11 w-full rounded-xl border border-vx-border bg-vx-panel pl-10 pr-3 text-sm text-vx-fg outline-hidden transition-[border-color,box-shadow] placeholder:text-vx-fg-faint focus:border-vx-accent focus:shadow-[0_0_0_3px_rgba(102,232,207,0.12)]" />
               </label>
               <select aria-label="Voice presentation" value={gender} onChange={(event) => setGender(event.target.value)} className={`${selectClass} lg:w-40`}>
-                <option value="all">All voices</option><option value="female">Female</option><option value="male">Male</option><option value="neutral">Neutral</option>
+                <option value="all">All voices</option>
+                {voiceGenderOptions().map((option) => <option key={option} value={option}>{t(`app.audio.voice.gender.${option}`)}</option>)}
               </select>
               <select aria-label="Voice age" value={age} onChange={(event) => setAge(event.target.value)} className={`${selectClass} lg:w-40`}>
                 <option value="all">All ages</option><option value="young">Young</option><option value="middle">Middle-aged</option><option value="older">Older</option>
@@ -184,12 +189,12 @@ export function TextToSpeechControls({
               {(query || gender !== 'all' || age !== 'all' || favouriteOnly) && <button type="button" onClick={() => { setQuery(''); setGender('all'); setAge('all'); setFavouriteOnly(false); }} className={`${pressable} min-h-10 px-2 text-xs font-bold text-vx-accent`}>Clear filters</button>}
             </div>
             {voices.length ? (
-              <div className="mt-2 grid max-h-80 gap-2 overflow-y-auto pr-1 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="mt-2 grid max-h-80 grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-2 overflow-y-auto pr-1">
                 {voices.map((voice) => (
                   <div key={voice.id} className="flex min-h-16 overflow-hidden rounded-xl border border-vx-border bg-vx-panel hover:border-vx-accent">
-                    <button type="button" aria-pressed={settings.voice === voice.id} onClick={() => { patchSetting('voice', voice.id); setVoiceOpen(false); }} className={`${pressable} group flex min-w-0 flex-1 items-center gap-3 p-3 text-left aria-pressed:bg-vx-accent/[0.08]`}>
+                    <button type="button" aria-pressed={settings.voice === voice.id} aria-label={t('app.audio.voice.card', { name: voice.label, gender: genderLabel(voice), tone: voice.tone })} onClick={() => { patchSetting('voice', voice.id); setVoiceOpen(false); }} className={`${pressable} group flex min-w-0 flex-1 items-center gap-3 p-3 text-left aria-pressed:bg-vx-accent/[0.08]`}>
                       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-vx-border bg-vx-base font-vx-mono text-[10px] font-black text-vx-fg-muted group-aria-pressed:border-vx-accent/40 group-aria-pressed:text-vx-accent">{voice.label.split(' ').map((part) => part[0]).slice(0, 2).join('')}</span>
-                      <span className="min-w-0"><span className="block truncate text-sm font-extrabold">{voice.label}</span><span className="mt-0.5 block text-xs text-vx-fg-muted">{voice.tone}</span></span>
+                      <span className="min-w-0"><span className="block text-sm font-extrabold text-pretty break-words">{voice.label}</span><span className="mt-0.5 block text-xs text-vx-fg-muted">{genderLabel(voice)} · {voice.tone}</span></span>
                       <span aria-hidden="true" className="ml-auto h-2.5 w-2.5 shrink-0 rounded-full border border-vx-fg-faint group-aria-pressed:border-vx-accent group-aria-pressed:bg-vx-accent" />
                     </button>
                     <div className={`grid w-14 shrink-0 border-l border-vx-border ${onAuditionVoices ? 'grid-rows-3' : 'grid-rows-2'}`}>
