@@ -15,6 +15,8 @@ test('Codex is pinned to a commit, read-only, and reads the same instructions fi
     assert.match(wf, /permission-profile: ':read-only'/);
     assert.match(wf, /prompt-file: \$\{\{ steps\.prompt\.outputs\.file \}\}/);
     assert.doesNotMatch(wf, /safety-strategy: '?(unsafe|read-only)'?/);
+    // drop-sudo fails on Ubuntu 26.04 (openai/codex-action#188); keep the job on 24.04.
+    assert.match(wf, /runs-on: ubuntu-24\.04/);
 });
 
 test('the posted verdict says which reviewer produced it and still fails on no verdict or BLOCK', () => {
