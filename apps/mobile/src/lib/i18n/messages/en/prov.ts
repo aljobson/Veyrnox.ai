@@ -10,6 +10,13 @@ export default {
     'prov.hash': 'SHA-256 of the stored file',
     'prov.hashHelp': 'Hash the file you hold and compare it to this value to match it to this record.',
     'prov.noHash': 'This is a record of the generation. It cannot match a file you hold to it.',
+    'prov.prompt': 'Prompt',
+    'prov.promptNone': 'The prompt is not saved on this phone',
+    'prov.copyPrompt': 'Copy prompt',
+    'prov.tech': 'Technical details',
+    'prov.techShow': 'Show technical details',
+    'prov.techHide': 'Hide technical details',
+    'prov.exactTime': 'Exact time: {date}',
     'prov.error': 'Could not load the record.',
     'prov.notReady': 'There is no record until the file is stored.',
 } as const;
