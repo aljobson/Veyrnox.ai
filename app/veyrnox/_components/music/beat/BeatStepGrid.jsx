@@ -35,7 +35,7 @@ export default function BeatStepGrid({ doc, edit, playhead, runId }) {
       focusPending.current = true; setFocus(next);
       setPaging({ page: Math.floor(next.step / 8), manualRun: runId });
     } else if (['+', '=', '-'].includes(e.key)) {
-      e.preventDefault(); edit((d) => cycleVelocity(d, DRUM_PADS[row].id, step, e.key === '-' ? -1 : 1));
+      e.preventDefault(); edit((d) => cycleVelocity(d, DRUM_PADS[row].id, step, e.key === '-' ? -1 : 1), { label: 'change velocity' });
     }
   }
   function pageBy(delta) {
@@ -62,7 +62,7 @@ export default function BeatStepGrid({ doc, edit, playhead, runId }) {
                   e.currentTarget.setPointerCapture(e.pointerId);
                   clearTimeout(press.current.timer);
                   press.current = { x: e.clientX, y: e.clientY, suppress: false, timer: setTimeout(() => {
-                    press.current.suppress = true; edit((d) => cycleVelocity(d, pad.id, step));
+                    press.current.suppress = true; edit((d) => cycleVelocity(d, pad.id, step), { label: 'change velocity' });
                   }, 450) };
                 }}
                 onPointerMove={(e) => {
@@ -73,7 +73,7 @@ export default function BeatStepGrid({ doc, edit, playhead, runId }) {
                 onContextMenu={(e) => e.preventDefault()}
                 onClick={(e) => {
                   if (e.detail !== 0 && press.current.suppress) { press.current.suppress = false; return; }
-                  edit((d) => e.shiftKey ? cycleVelocity(d, pad.id, step) : toggleStep(d, pad.id, step));
+                  edit((d) => e.shiftKey ? cycleVelocity(d, pad.id, step) : toggleStep(d, pad.id, step), { label: e.shiftKey ? 'change velocity' : 'toggle step' });
                 }}>
                 <span aria-hidden="true">{step + 1}{velocity === 60 ? ' S' : velocity === 127 ? ' H' : ''}</span>
               </button>

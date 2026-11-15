@@ -62,7 +62,7 @@ export default function BeatsHome() {
           <label className="flex min-w-0 flex-1 flex-col gap-1">Beat title<input autoFocus className={input} maxLength={80} value={editing.title} onChange={(e) => setEditing({ ...editing, title: e.target.value })} /></label>
           <button className={action} disabled={busy || !editing.title.trim()}>Save name</button><button type="button" className={button} onClick={() => setEditing(null)}>Cancel</button>
         </form> : <h2 className="break-words text-xl font-bold">{record.doc.title}</h2>}
-        <p className="my-2 text-sm text-vx-fg-muted">{record.doc.tempo.bpm} BPM · {PRESETS.drums.find((kit) => kit.id === record.doc.kit)?.label} · Last edited {new Date(record.updatedAt).toLocaleString()}</p>
+        <p className="my-2 text-sm text-vx-fg-muted">{record.doc.tempo.bpm} BPM · {record.doc.tracks.length === 1 ? PRESETS.drums.find((kit) => kit.id === record.doc.tracks[0].kit)?.label : `${record.doc.tracks.length} drum tracks`} · Last edited {new Date(record.updatedAt).toLocaleString()}</p>
         <div className="flex flex-wrap gap-2"><Link className={`${action} inline-flex items-center`} href={`/app/music/beats/${record.id}`}>Open</Link>
           <button className={button} disabled={busy} onClick={() => setEditing({ ...record, title: record.doc.title })}>Rename</button><button className={button} disabled={busy} onClick={() => remove(record)}>Delete</button></div>
       </li>)}</ul>}
