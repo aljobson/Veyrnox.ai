@@ -61,7 +61,13 @@ export function LanguageChoice({ returnPath, active = ACTIVE_LOCALES, onComplete
                 <Text tone="secondary">{t('vibe.language.hint')}</Text>
                 <View style={s.options} accessibilityRole="radiogroup" accessibilityLabel={t('vibe.language.title')}>
                     {activeLanguages(active).map((l, i) => {
-                        const row = <Chip label={l.name} accessibilityLanguage={l.tag} accessibilityRole="radio" accessibilityState={{ checked: picked === l.code }} selected={picked === l.code} disabled={busy} fullWidth onPress={() => setPicked(l.code)} />;
+                        const on = picked === l.code;
+                        // The flag is decoration: the chip's own label (the plain native name) is what VoiceOver reads. A row (not a start-aligned
+                        // column) puts the flag at the reading start in RTL too, and the name wraps beside it at large text sizes.
+                        const row = <Chip label={l.name} accessibilityLanguage={l.tag} accessibilityRole="radio" accessibilityState={{ checked: on }} selected={on} disabled={busy} fullWidth onPress={() => setPicked(l.code)}>
+                            <Text variant="caption" testID={`language-flag-${l.code}`} accessible={false} accessibilityElementsHidden importantForAccessibility="no">{l.flag}</Text>
+                            <Text variant="caption" style={s.name} tone={on ? 'primary' : 'secondary'}>{l.name}</Text>
+                        </Chip>;
                         return brand ? <Reveal key={l.code} index={i} active={reveal}>{row}</Reveal> : <Fragment key={l.code}>{row}</Fragment>;
                     })}
                 </View>
@@ -81,6 +87,7 @@ const sheets = themedStyles(p => ({
     list: { flex: 1 },
     body: { flexGrow: 1, justifyContent: 'center', padding: ds.space.gutter, gap: ds.space.md },
     options: { gap: ds.space.md },
+    name: { flexShrink: 1, textAlign: 'center' },
     fade: { position: 'absolute', left: 0, right: 0, bottom: 0 },
     fadeStep: { height: ds.space.md, backgroundColor: p.bg },
     footer: { padding: ds.space.gutter },
