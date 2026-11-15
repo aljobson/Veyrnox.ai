@@ -14,9 +14,11 @@ import { editTrack, recordTarget } from '../../../_lib/music/beat/beatEvents.mjs
 import BeatStepGrid from './BeatStepGrid';
 import BeatPads from './BeatPads';
 import BeatExportDialog from './BeatExportDialog';
+import BeatMagicBar from './BeatMagicBar';
+import { useBeatLoopLayers } from './useBeatLoopLayers';
 import { action, button, input, storageWarning } from './beatStyles';
 
-export default function BeatEditor({ id }) {
+export default function BeatEditor({ id, magicBar = false }) {
   const router = useRouter();
   const [message, setMessage] = useState('');
   const announce = useCallback((text) => setMessage(text), []);
@@ -25,6 +27,7 @@ export default function BeatEditor({ id }) {
   const [locatorDraft, setLocator] = useState(0);
   const locator = project.doc ? clampLocator(locatorDraft, songEnd(project.doc)) : 0;
   const playback = useBeatPlayback(project.current, project.edit, announce, { editTrackId, locator });
+  const loops = useBeatLoopLayers(id, magicBar && Boolean(playback.runId));
   const [titleDraft, setTitleDraft] = useState(null);
   const [undo, setUndo] = useState(null);
   const undoTimer = useRef(null);
@@ -114,6 +117,7 @@ export default function BeatEditor({ id }) {
     <h2 className="font-bold">Editing pattern {doc.currentPattern} (used by {uses} {uses === 1 ? 'region' : 'regions'})</h2>
     <BeatStepGrid doc={doc} edit={edit} playhead={patternPlayhead} runId={playback.runId} />
     <BeatPads hit={playback.hit} record={playback.record} setRecord={playback.setRecord} />
+    {magicBar && <BeatMagicBar doc={doc} loops={loops} announce={announce} />}
     <p aria-live="polite" aria-atomic="true" className="min-h-6 text-sm text-vx-fg-muted">{message}</p>
   </div>;
 }
