@@ -4,7 +4,7 @@ import { createBeatEngine } from '../../../_lib/music/beat/beatEngine.js';
 import { createScheduler } from '../../../_lib/music/beat/beatScheduler.mjs';
 import { addHitToPattern } from '../../../_lib/music/beat/beatOps.mjs';
 import { editTrack, recordTarget } from '../../../_lib/music/beat/beatEvents.mjs';
-import { sequenceFor } from '../../../_lib/music/beat/beatSequence.mjs';
+import { playbackStart, sequenceFor } from '../../../_lib/music/beat/beatSequence.mjs';
 
 export function useBeatPlayback(current, edit, announce, options) {
   const engine = useRef(null);
@@ -40,6 +40,10 @@ export function useBeatPlayback(current, edit, announce, options) {
   }
   async function toggle() {
     if (active.current || starting.current) { stop(); return; }
+    if (playbackStart(current.current, optionsRef.current?.locator || 0) === null) {
+      announce('Nothing to play. Add a region first.');
+      return;
+    }
     // A separate token makes a late resume harmless after Stop or unmount.
     const token = {}; pending.current = token;
     starting.current = true;
@@ -48,6 +52,10 @@ export function useBeatPlayback(current, edit, announce, options) {
       await resumed;
       if (!mounted.current || pending.current !== token) return;
       starting.current = false;
+      if (playbackStart(current.current, optionsRef.current?.locator || 0) === null) {
+        announce('Nothing to play. Add a region first.');
+        return;
+      }
       const run = instance.startRun();
       const scheduled = [];
       const scheduler = createScheduler({

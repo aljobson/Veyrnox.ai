@@ -76,7 +76,7 @@ export default function BeatArrangement({ doc, edit, selectPattern, editTrackId,
             onDoubleClick={(event) => {
               if (event.target !== event.currentTarget) return;
               const at = laneTick(event); setLocator(at);
-              edit((d) => ops.addRegion(d, track.id, at, d.currentPattern), { label: 'add region' });
+              edit((d) => ops.addRegion(d, track.id, at, d.currentPattern), { label: 'add region', trackId: track.id, start: at });
             }}>
             {Array.from({ length: bars }, (_, i) => <span key={i} aria-hidden="true"
               className="pointer-events-none absolute inset-y-0 border-l border-vx-border" style={{ left: i * zoom }} />)}
@@ -101,15 +101,15 @@ export default function BeatArrangement({ doc, edit, selectPattern, editTrackId,
     {selectedRegion && <div className="hidden flex-wrap gap-2 md:flex" role="group" aria-label="Selected region">
       <label>Region pattern <select className={input} value={selectedRegion.pattern} onChange={(e) => {
         const slot = e.target.value;
-        edit((d) => ops.setRegionPattern(d, selectedRegion.id, slot), { label: 'change region pattern' });
+        edit((d) => ops.setRegionPattern(d, selectedRegion.id, slot), { label: 'change region pattern', regionId: selectedRegion.id });
         selectPattern(slot);
       }}>{['A', 'B', 'C', 'D'].map((slot) => <option key={slot}>{slot}</option>)}</select></label>
       <button className={button} onClick={() => edit((d) => ops.splitRegion(d, selectedRegion.id, locator),
-        { label: 'split region' })}>Split at playhead</button>
+        { label: 'split region', regionId: selectedRegion.id })}>Split at playhead</button>
       <button className={button} onClick={() => edit((d) => ops.duplicateRegion(d, selectedRegion.id),
-        { label: 'duplicate region' })}>Duplicate</button>
+        { label: 'duplicate region', regionId: selectedRegion.id })}>Duplicate</button>
       <button className={button} onClick={() => edit((d) => ops.deleteRegion(d, selectedRegion.id),
-        { label: 'delete region' })}>Delete region</button>
+        { label: 'delete region', regionId: selectedRegion.id })}>Delete region</button>
     </div>}
     <BeatRegionActions region={selectedRegion} track={selectedTrack} locator={locator} snap={snap} edit={edit} selectPattern={selectPattern}
       movePlayhead={(delta) => setLocator(clampLocator(locator + delta, end))} />

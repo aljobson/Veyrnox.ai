@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { make } from './musicBeatFixtures.mjs';
 import { eventsAtStep, recordTarget } from '../app/veyrnox/_lib/music/beat/beatEvents.mjs';
-import { exportRange, exportSize, BeatExportError, sequenceFor } from '../app/veyrnox/_lib/music/beat/beatSequence.mjs';
+import { exportRange, exportSize, BeatExportError, playbackStart, sequenceFor } from '../app/veyrnox/_lib/music/beat/beatSequence.mjs';
 import { addTrack, addHitToPattern } from '../app/veyrnox/_lib/music/beat/beatOps.mjs';
 import { clampLocator, moveLocator } from '../app/veyrnox/_lib/music/beat/beatTime.mjs';
 
@@ -54,9 +54,27 @@ test('sequence starts from locator inside cycle, cycle start outside it and loca
   assert.equal(sequenceFor(doc, 7680).startStep, 16);
   doc.cycle.on = false;
   assert.equal(sequenceFor(doc, 4800).startStep, 20);
-  assert.equal(sequenceFor(doc, 99999).startStep, 64);
+  assert.equal(sequenceFor(doc, 99999).startStep, 0);
   doc.view = 'pattern';
   assert.deepEqual(sequenceFor(doc, 4800).loop, { start: 0, end: 16 });
+});
+test('Play restarts at song end and declines an empty song unless a cycle or pattern is playing', () => {
+  const doc = make();
+  for (const locator of [64 * 240, 65 * 240]) {
+    assert.equal(playbackStart(doc, locator), 0);
+    assert.equal(sequenceFor(doc, locator).startStep, 0);
+  }
+  assert.equal(playbackStart(doc, 240), 1);
+  doc.tracks[0].regions = [];
+  assert.equal(playbackStart(doc, 0), null);
+  assert.equal(playbackStart(doc, 3840), null);
+  doc.cycle = { on: true, start: 3840, end: 7680 };
+  assert.equal(playbackStart(doc, 0), 16);
+  assert.equal(playbackStart(doc, 4800), 20);
+  assert.equal(playbackStart(doc, 7680), 16);
+  doc.view = 'pattern';
+  doc.cycle.on = false;
+  assert.equal(playbackStart(doc, 3840), 0);
 });
 test('keyboard locator snaps and clamps arrows, pages, Home and End', () => {
   assert.equal(clampLocator(-240, 15360), 0); assert.equal(clampLocator(99999, 15360), 15360);

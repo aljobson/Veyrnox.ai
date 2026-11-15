@@ -1,7 +1,17 @@
 import { BEAT_LIMITS, validateBeat } from './beatDocument.mjs';
+// Beat documents contain only JSON values; object property order is not an edit.
+function equalValue(a, b) {
+  if (a === b) return true;
+  if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false;
+  if (Array.isArray(a) !== Array.isArray(b)) return false;
+  const keys = Object.keys(a);
+  return keys.length === Object.keys(b).length &&
+    keys.every((key) => Object.hasOwn(b, key) && equalValue(a[key], b[key]));
+}
 function edit(doc, now, change) {
   const next = structuredClone(doc);
   change(next);
+  if (equalValue(next, doc)) return doc;
   next.updatedAt = Math.max(now, doc.updatedAt);
   const result = validateBeat(next);
   if (!result.ok) {

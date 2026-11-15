@@ -49,7 +49,7 @@ export default function useRegionDrag({ scroller, zoom, snap, edit, announce }) 
       edit((d) => mode === 'resize' ? ops.resizeRegion(d, region.id, value.length)
         : mode === 'trim' ? ops.trimRegionStart(d, region.id, value.start)
           : (copy ? ops.copyRegion : ops.moveRegion)(d, region.id, value.start, value.trackId),
-      { label, message: `${mode === 'move' ? (copy ? 'Copied' : 'Moved') : 'Edited'} to bar ${value.start / 3840 + 1}` });
+      { label, regionId: region.id, trackId: value.trackId, start: value.start });
     }
     function key(event) { if (event.key === 'Escape' && active.current) { event.preventDefault(); cancel(); } }
     window.addEventListener('pointermove', move);

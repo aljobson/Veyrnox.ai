@@ -7,7 +7,7 @@ import { button, input } from './beatStyles';
 export default function BeatTrackHeader({ track, edit, locator, last, selected, onSelect }) {
   const [nameDraft, setNameDraft] = useState(null);
   function field(op, value, label, key) {
-    edit((d) => op(d, track.id, value), { label, key: key && `${track.id}:${key}` });
+    edit((d) => op(d, track.id, value), { label, trackId: track.id, key: key && `${track.id}:${key}` });
   }
   function commitName() {
     if (nameDraft === null) return;
@@ -40,10 +40,10 @@ export default function BeatTrackHeader({ track, edit, locator, last, selected, 
           onChange={(e) => field(ops.setTrackPan, Number(e.target.value) / 100, 'change track pan', 'pan')} />
       </label>
       <button className={button} onClick={() => edit((d) => ops.addRegion(d, track.id, locator, d.currentPattern),
-        { label: 'add region' })}>Add region</button>
+        { label: 'add region', trackId: track.id, start: locator })}>Add region</button>
       <button className={button} disabled={last} title={last ? 'Keep at least one drum track.' : undefined}
         onClick={() => { if (window.confirm(`Delete ${track.name} and its regions?`)) {
-          edit((d) => ops.removeTrack(d, track.id), { label: 'delete track' });
+          edit((d) => ops.removeTrack(d, track.id), { label: 'delete track', trackId: track.id });
         } }}>Delete track</button>
     </div>;
   }

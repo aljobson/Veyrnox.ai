@@ -3,7 +3,7 @@ import * as ops from '../../../_lib/music/beat/beatOps.mjs';
 import { button, input } from './beatStyles';
 
 export default function BeatRegionActions({ region, track, locator, movePlayhead, snap, edit, selectPattern }) {
-  const run = (change, label) => edit(change, { label });
+  const run = (change, label) => edit(change, { label, regionId: region?.id });
   return <div className="flex flex-wrap gap-2 rounded-xl border border-vx-border bg-vx-panel p-2 md:hidden"
     role="group" aria-label="Region actions">
     <button className={button} aria-label="Move playhead left" onClick={() => movePlayhead(-snap)}>◀ playhead</button>

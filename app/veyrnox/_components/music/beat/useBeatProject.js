@@ -1,5 +1,6 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { arrangementMessage } from '../../../_lib/music/beat/beatMessages.mjs';
 import * as historyOps from '../../../_lib/music/beat/beatHistory.mjs';
 import { tryOp, selectPattern as selectPatternOp } from '../../../_lib/music/beat/beatOps.mjs';
 import * as store from '../../../_lib/music/beat/beatStore.js';
@@ -98,6 +99,7 @@ export function useBeatProject(id, announce) {
       if (result.refused) { announce(result.refused); return null; }
       const next = result.doc;
       if (next === current.current) return null;
+      const resultMessage = arrangementMessage(current.current, next, options);
       history.current = historyOps.record(history.current, next, options);
       accept(next);
       if (options.message || !options.key) {
@@ -108,7 +110,7 @@ export function useBeatProject(id, announce) {
             announce(options.message || 'Recorded hit');
           }
         } else {
-          announce(options.message || `Changed: ${options.label || 'edit beat'}`);
+          announce(options.message || resultMessage || `Changed: ${options.label || 'edit beat'}`);
         }
       }
       return history.current.past.at(-1)?.id;

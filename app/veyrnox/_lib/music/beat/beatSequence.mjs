@@ -16,12 +16,21 @@ export function exportSize(doc, sampleRate = 44100) {
   }
   return { ...range, seconds, frames };
 }
+// null means Play must stay stopped; an enabled cycle may intentionally be silent.
+export function playbackStart(doc, locator = 0) {
+  if (doc.view === 'pattern') return 0;
+  if (doc.cycle.on) {
+    return (locator >= doc.cycle.start && locator < doc.cycle.end ? locator : doc.cycle.start) / 240;
+  }
+  const end = songEnd(doc);
+  if (end === 0) return null;
+  return locator >= end ? 0 : locator / 240;
+}
 export function sequenceFor(doc, locator = 0, editTrackId) {
   if (doc.view === 'pattern') return { doc, editTrackId, startStep: 0, endStep: doc.steps, loop: { start: 0, end: doc.steps } };
   const endStep = songEnd(doc) / 240;
-  if (!doc.cycle.on) return { doc, editTrackId, startStep: Math.min(locator / 240, endStep), endStep, loop: null };
+  if (!doc.cycle.on) return { doc, editTrackId, startStep: playbackStart(doc, locator) ?? 0, endStep, loop: null };
   const loop = { start: doc.cycle.start / 240, end: doc.cycle.end / 240 };
-  const position = locator / 240;
-  return { doc, editTrackId, startStep: position >= loop.start && position < loop.end ? position : loop.start,
+  return { doc, editTrackId, startStep: playbackStart(doc, locator),
     endStep: loop.end, loop };
 }

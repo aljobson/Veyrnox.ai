@@ -17,6 +17,7 @@ export default function BeatRuler({ bars, zoom, snap, locator, end, setLocator, 
     return () => window.removeEventListener('keydown', cancel);
   }, [announce]);
   const band = preview || cycle;
+  const bandWidth = (band.end - band.start) / 3840 * zoom;
   function tick(event) { return snapTick((event.clientX - root.current.getBoundingClientRect().left) / zoom * 3840, snap); }
   return <div ref={root} className="relative h-24 border-b border-vx-border bg-vx-panel">
     <div role="slider" tabIndex={0} aria-label="Playhead position" aria-valuemin={0}
@@ -33,10 +34,10 @@ export default function BeatRuler({ bars, zoom, snap, locator, end, setLocator, 
       <span aria-hidden="true" className="absolute top-4 h-6 w-0.5 bg-vx-accent" style={{ left: locator / 3840 * zoom }} />
     </div>
     <div className={`absolute top-0 h-11 rounded border border-vx-accent ${cycle.on ? 'bg-vx-accent/25' : 'bg-vx-panel'}`}
-      style={{ left: band.start / 3840 * zoom, width: (band.end - band.start) / 3840 * zoom }}>
+      style={{ left: band.start / 3840 * zoom, width: bandWidth }}>
       <span className="pointer-events-none block truncate px-3 text-xs">Cycle</span>
       {['start', 'end'].map((edge) => <span key={edge} aria-hidden="true"
-        className={`absolute top-0 h-11 w-3 touch-none cursor-ew-resize bg-vx-accent/40 ${edge === 'start' ? 'left-0' : 'right-0'}`}
+        className={`absolute top-0 h-11 w-3 touch-none cursor-ew-resize bg-vx-accent/40 ${edge === 'start' ? '-left-1.5' : '-right-1.5'} ${edge === 'start' && bandWidth < 24 ? 'z-20' : 'z-10'}`}
         onPointerDown={(event) => {
           if (event.button !== 0) return;
           event.currentTarget.setPointerCapture(event.pointerId);

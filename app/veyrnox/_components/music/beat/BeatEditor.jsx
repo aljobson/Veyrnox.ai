@@ -102,13 +102,13 @@ export default function BeatEditor({ id }) {
     {!project.persistent && <p className="rounded-xl border border-vx-border bg-vx-panel p-3">{storageWarning}</p>}
     {project.conflict && <section className="space-y-3 rounded-xl border border-vx-border bg-vx-panel p-4" aria-label="Beat changed elsewhere"><h2 className="font-bold">{project.conflict === 'deleted' ? 'This beat was deleted in another tab' : 'This beat was changed in another tab'}</h2><div className="flex flex-wrap gap-2">{project.conflict !== 'deleted' && <button className={button} onClick={() => { playback.stop(); setTitleDraft(null); setUndo(null); setLocator(0); setEditTrackId(null); setReloadKey((value) => value + 1); project.reload(); }}>Reload</button>}<button className={action} disabled={copying} onClick={copy}>{project.conflict === 'deleted' ? 'Save as a new beat' : 'Save my version as a copy'}</button></div></section>}
     {playback.audioError && <p className="rounded-xl border border-vx-border p-3">{playback.audioError}</p>}
-    <BeatTransport key={reloadKey} doc={doc} edit={edit} selectPattern={project.selectPattern} playing={playback.playing} toggle={playback.toggle} clear={clear} announce={announce} />
+    <BeatTransport key={`transport-${reloadKey}`} doc={doc} edit={edit} selectPattern={project.selectPattern} playing={playback.playing} toggle={playback.toggle} clear={clear} announce={announce} />
     {undo && undo.id === project.undoId && <div className="flex items-center gap-3 rounded-xl bg-vx-panel p-3">
       <p>Pattern {undo.slot} cleared</p><button className={button} onClick={() => {
         project.undo(); setTitleDraft(null); setUndo(null); clearTimeout(undoTimer.current);
       }}>Undo</button>
     </div>}
-    <BeatArrangement key={reloadKey} doc={doc} edit={edit} selectPattern={project.selectPattern} editTrackId={track.id}
+    <BeatArrangement key={`arrangement-${reloadKey}`} doc={doc} edit={edit} selectPattern={project.selectPattern} editTrackId={track.id}
       setEditTrackId={setEditTrackId} locator={locator} setLocator={setLocator}
       playhead={playback.playhead} runId={playback.runId} announce={announce} />
     <h2 className="font-bold">Editing pattern {doc.currentPattern} (used by {uses} {uses === 1 ? 'region' : 'regions'})</h2>

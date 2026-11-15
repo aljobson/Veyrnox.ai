@@ -27,6 +27,24 @@ const operations = {
   setView: (d) => ops.setView(d, 'pattern', 10),
   addHitToPattern: (d) => ops.addHitToPattern(d, 'D', 'kick', 5, 10),
 };
+test('no-op move, kit and cycle edits preserve document identity and history', () => {
+  const doc = freeze(make());
+  const track = doc.tracks[0], region = track.regions[0];
+  const initial = history.createHistory(doc);
+  const changes = [
+    (d) => ops.moveRegion(d, region.id, Math.max(0, region.start - 240), track.id, 20),
+    (d) => ops.setTrackKit(d, track.id, track.kit, 20),
+    (d) => ops.setCycle(d, { ...d.cycle }, 20),
+    (d) => ops.setCycle(d, { end: d.cycle.end, start: d.cycle.start, on: d.cycle.on }, 20),
+  ];
+  for (const change of changes) {
+    const result = ops.tryOp(doc, change);
+    assert.equal(result.refused, undefined);
+    assert.equal(result.doc, doc);
+    assert.equal(history.record(initial, result.doc), initial);
+    assert.equal(result.doc.updatedAt, 0);
+  }
+});
 test('track rename trims the name and refuses an empty draft without changing the doc', () => {
   const doc = freeze(make());
   for (const name of ['', '   ', '\t\n']) {

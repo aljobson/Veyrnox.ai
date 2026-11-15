@@ -5,7 +5,7 @@ export default function BeatRegion({ region, track, doc, zoom, snap, locator, se
   const position = { left: region.start / 3840 * zoom, width: region.length / 3840 * zoom };
   const loops = region.length / (doc.steps * 240);
   const name = `${selected ? 'Selected, ' : ''}Pattern ${region.pattern} on ${track.name}, ` +
-    `bars ${region.start / 3840 + 1} to ${(region.start + region.length) / 3840}, looped ${loops} times`;
+    `bars ${region.start / 3840 + 1} to ${(region.start + region.length) / 3840}, looped ${loops === 1 ? 'once' : `${loops} times`}`;
   function key(event) {
     const command = event.ctrlKey || event.metaKey;
     let operation, label;
@@ -29,7 +29,7 @@ export default function BeatRegion({ region, track, doc, zoom, snap, locator, se
       label = 'delete region'; operation = (d) => ops.deleteRegion(d, region.id);
     } else if (event.key === 'Enter') { event.preventDefault(); select(); }
     if (operation) {
-      event.preventDefault(); edit(operation, { label });
+      event.preventDefault(); edit(operation, { label, regionId: region.id });
       // Moving between keyed lanes remounts the button. Keep keyboard editing continuous.
       requestAnimationFrame(() => {
         const buttons = document.querySelectorAll('[data-region-id]');
