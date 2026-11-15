@@ -9,16 +9,16 @@ test('gain, fades, reverse and track mix preserve the run; structural edits chan
   const doc = audioDoc(), signature = arrangementStructure(doc);
   const adjusted = structuredClone(doc), region = audioRegion(adjusted);
   Object.assign(region, { gainDb: -6, fadeIn: { startSec: 0, endSec: 1 }, fadeOut: { startBeforeEndSec: 1, endBeforeEndSec: 0 }, reverse: true });
+  adjusted.tracks[1].mute = true; adjusted.tracks[0].solo = true;
   adjusted.tracks[1].gain = 0.5; adjusted.tracks[1].pan = -1;
   assert.equal(arrangementStructure(adjusted), signature);
   for (const change of [
     (d) => { audioRegion(d).start += 240; }, (d) => { audioRegion(d).length += 240; },
     (d) => { d.tracks[1].regions = []; }, (d) => { d.tracks[1].regions.push({ ...audioRegion(d), id: 'rnew', start: 5000 }); },
-    (d) => { d.tracks[1].mute = true; }, (d) => { d.tracks[0].solo = true; },
   ]) { const next = structuredClone(doc); change(next); assert.notEqual(arrangementStructure(next), signature); }
 });
 
-test('preload covers the audible play range, both directions, and the full cycle after wrapping', () => {
+test('preload covers every track in the play range, both directions, and the full cycle after wrapping', () => {
   const doc = audioDoc(), region = audioRegion(doc);
   doc.view = 'song'; region.start = 960; region.length = 1920;
   doc.tracks[1].regions.push({ ...region, id: 'rsecond', start: 4000, reverse: true });
@@ -26,8 +26,8 @@ test('preload covers the audible play range, both directions, and the full cycle
   assert.deepEqual(playbackAssets(doc, 3500).map((item) => item.reverse), [true]);
   doc.cycle = { on: true, start: 0, end: 3840 };
   assert.deepEqual(playbackAssets(doc, 3000).map((item) => item.reverse), [false]);
-  doc.tracks[0].solo = true; assert.deepEqual(playbackAssets(doc, 0), []);
-  doc.tracks[0].solo = false; doc.tracks[1].mute = true; assert.deepEqual(playbackAssets(doc, 0), []);
+  doc.tracks[0].solo = true; assert.equal(playbackAssets(doc, 0).length, 1);
+  doc.tracks[0].solo = false; doc.tracks[1].mute = true; assert.equal(playbackAssets(doc, 0).length, 1);
   doc.tracks[1].mute = false; doc.view = 'pattern'; assert.deepEqual(playbackAssets(doc, 0), []);
 });
 

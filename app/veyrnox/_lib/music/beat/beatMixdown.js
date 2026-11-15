@@ -1,3 +1,6 @@
+import { startVoice, createVoicePool } from './beatVoices.js';
+import { midiNoteOnsInWindow } from './beatMidiWindow.mjs';
+import { effectiveGain } from './beatEvents.mjs';
 import { estimateExport, usedAssets } from './beatAudioRules.mjs';
 import { audioSegments } from './beatAudioSegments.mjs';
 import { playAudioSegment } from './beatAudioGraph.js';
@@ -58,22 +61,28 @@ export async function renderSong(doc, { buffers: prepared, progress } = {}) {
   const master = beatOutput(context);
   const noise = makeNoise(context);
   const channels = new Map(doc.tracks.map((track) => [track.id,
-    connectTrackChannel(context, master, track.gain, track.pan).input]));
+    connectTrackChannel(context, master, effectiveGain(doc, track.id, 'song'), track.pan).input]));
   const song = { ...doc, view: 'song' };
   for (let step = startStep; step < endStep; step++) {
     const time = eventTime((step - startStep) * stepSeconds(doc.tempo.bpm), step, doc.tempo.bpm, doc.swing);
-    for (const event of eventsAtStep(song, step)) {
+    for (const event of eventsAtStep(song, step, { includeMuted: true })) {
       const track = doc.tracks.find((t) => t.id === event.trackId);
       playEvent(context, channels.get(track.id), noise, 'drums', track.kit,
         { value: event.pad, vel: event.velocity }, time);
     }
   }
-  for (const segment of audioSegments(song, startStep * stepSeconds(doc.tempo.bpm), endStep * stepSeconds(doc.tempo.bpm))) {
+  for (const segment of audioSegments(song, startStep * stepSeconds(doc.tempo.bpm), endStep * stepSeconds(doc.tempo.bpm), { includeMuted: true })) {
     const loaded = buffers.get(segment.assetId), buffer = segment.reverse ? loaded?.reverse : loaded?.buffer;
     if (!buffer) continue;
     const region = doc.tracks.find((t) => t.id === segment.trackId).regions.find((r) => r.id === segment.regionId);
     playAudioSegment(context, channels.get(segment.trackId), buffer, segment, region, doc.tempo.bpm,
       segment.songTimeSec - startStep * stepSeconds(doc.tempo.bpm));
+  }
+  const pool = createVoicePool(), from = startStep * stepSeconds(doc.tempo.bpm), to = endStep * stepSeconds(doc.tempo.bpm);
+  for (const note of midiNoteOnsInWindow(song, from, to, { includeMuted: true, endSec: to })) {
+    const track = doc.tracks.find((t) => t.id === note.trackId), at = note.songTimeSec - from;
+    const voice = startVoice(context, channels.get(track.id), noise, track.instrument, note.pitch, note.velocity, at);
+    voice.release(at + note.durationSec); pool.add(track.id, voice, at);
   }
   const rendered = await context.startRendering();
   return { channels: [rendered.getChannelData(0), rendered.getChannelData(1)], sampleRate: rendered.sampleRate };

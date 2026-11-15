@@ -1,3 +1,4 @@
+import { startVoice, createVoicePool } from './beatVoices.js';
 import { makeNoise, playEvent } from '../instrumentEngine.js';
 
 // Shared output topology for live playback and offline export.
@@ -28,14 +29,16 @@ export function createBeatEngine() {
   let sequence = 0;
   const runs = new Set();
   const timers = new Set();
+  const pool = createVoicePool();
+  const live = { bus: master, channels: new Map() };
   return {
-    context, master,
+    context, master, live,
     now: () => context.currentTime,
     resume: () => context.resume(),
     startRun() {
       const bus = context.createGain();
       bus.connect(master);
-      const run = { id: ++sequence, bus, channels: new Map() };
+      const run = { id: ++sequence, bus, channels: new Map(), voices: new Set() };
       runs.add(run);
       return run;
     },
@@ -53,11 +56,18 @@ export function createBeatEngine() {
     },
     stopRun(run) {
       if (!run || !runs.has(run)) return;
+      for (const voice of run.voices) voice.stop(context.currentTime);
       run.bus.gain.cancelScheduledValues(context.currentTime);
       run.bus.gain.setValueAtTime(run.bus.gain.value, context.currentTime);
       run.bus.gain.linearRampToValueAtTime(0, context.currentTime + 0.01);
       const timer = setTimeout(() => { run.bus.disconnect(); runs.delete(run); timers.delete(timer); }, 60);
       timers.add(timer);
+    },
+    playMidi(track, pitch, velocity, at, run = live, gain = track.gain) {
+      const destination = this.setTrackMix(run, track.id, gain, track.pan);
+      const voice = pool.add(track.id, startVoice(context, destination, noise, track.instrument, pitch, velocity, at), at);
+      run.voices?.add(voice); voice.ended.then(() => run.voices?.delete(voice));
+      return voice;
     },
     playPad(pad, velocity, at, destination = master, kit = '808') {
       playEvent(context, destination, noise, 'drums', kit, { value: pad, vel: velocity }, at);
@@ -72,6 +82,7 @@ export function createBeatEngine() {
       oscillator.start(at); oscillator.stop(at + 0.05);
     },
     close() {
+      pool.stop(context.currentTime);
       for (const timer of timers) clearTimeout(timer);
       for (const run of runs) run.bus.disconnect();
       runs.clear();

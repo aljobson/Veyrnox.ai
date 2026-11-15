@@ -2,16 +2,16 @@ import { tickSeconds } from './beatAudioSegments.mjs';
 import { sequenceFor } from './beatSequence.mjs';
 
 export const arrangementStructure = (doc) => JSON.stringify(doc.tracks.map((track) =>
-  [track.id, track.kind, track.mute, track.solo, track.regions.map((region) =>
-    [region.id, region.start, region.length, region.assetId, region.pattern, region.phaseTicks, region.phaseSec])]));
+  [track.id, track.kind, track.regions.map((region) =>
+    [region.id, region.start, region.length, region.assetId, region.clipId, region.pattern, region.phaseTicks, region.phaseSec])]));
 
 export function playbackAssets(doc, locator) {
   if (doc.view !== 'song') return [];
-  const sequence = sequenceFor(doc, locator), solo = doc.tracks.some((track) => track.solo);
+  const sequence = sequenceFor(doc, locator);
   const from = (sequence.loop?.start ?? sequence.startStep) * 240, to = sequence.endStep * 240;
   const assets = new Map();
   for (const track of doc.tracks) {
-    if (track.kind !== 'audio' || track.mute || (solo && !track.solo)) continue;
+    if (track.kind !== 'audio') continue;
     for (const region of track.regions) {
       if (region.start >= to || region.start + region.length <= from) continue;
       assets.set(`${region.assetId}:${region.reverse}`, { asset: doc.assets[region.assetId], reverse: region.reverse });

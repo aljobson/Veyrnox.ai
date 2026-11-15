@@ -1,4 +1,5 @@
 'use client';
+import BeatMidiPreview from './BeatMidiPreview';
 import BeatAudioRegion, { BeatAudioRetry } from './BeatAudioRegion';
 import { formatPosition } from '../../../_lib/music/beat/beatTime.mjs';
 import { audioLoopLabel, drumLoopLabel } from '../../../_lib/music/beat/beatPlaybackAudio.mjs';
@@ -7,8 +8,9 @@ import * as ops from '../../../_lib/music/beat/beatOps.mjs';
 export default function BeatRegion({ region, track, doc, zoom, snap, locator, selected, select, edit, drag }) {
   const position = { left: region.start / 3840 * zoom, width: region.length / 3840 * zoom };
   const asset = region.assetId && doc.assets[region.assetId];
-  const loops = asset ? audioLoopLabel(region, asset, doc.tempo.bpm) : drumLoopLabel(region, doc.steps);
-  const name = `${selected ? 'Selected, ' : ''}${asset ? `Audio ${asset.name}` : `Pattern ${region.pattern}`} on ${track.name}, ` +
+  const clip = region.clipId && doc.clips[region.clipId];
+  const loops = clip ? `${Math.ceil(region.length / clip.lengthTicks)} clip loops` : asset ? audioLoopLabel(region, asset, doc.tempo.bpm) : drumLoopLabel(region, doc.steps);
+  const name = `${selected ? 'Selected, ' : ''}${clip ? `MIDI ${clip.name}` : asset ? `Audio ${asset.name}` : `Pattern ${region.pattern}`} on ${track.name}, ` +
     `${formatPosition(region.start)} to ${formatPosition(region.start + region.length)}, ${loops}${asset ? `, gain ${region.gainDb} dB` : ''}`;
   function key(event) {
     const command = event.ctrlKey || event.metaKey;
@@ -42,10 +44,10 @@ export default function BeatRegion({ region, track, doc, zoom, snap, locator, se
       });
     }
   }
-  const dots = asset ? [] : Object.values(doc.patterns[region.pattern].rows).flat().slice(0, 32);
+  const dots = asset || clip ? [] : Object.values(doc.patterns[region.pattern].rows).flat().slice(0, 32);
   return <div className="absolute top-4 h-16" style={position}>
     <button data-region-id={region.id} className={`absolute inset-0 min-h-11 touch-none overflow-hidden rounded-lg
-      border ${asset ? 'border-vx-hue-sky bg-vx-hue-sky/35' : 'border-vx-hue-iris bg-vx-hue-iris/35'} text-vx-fg focus-visible:z-20 focus-visible:outline
+      border ${clip ? 'border-vx-hue-rose bg-vx-hue-rose/35' : asset ? 'border-vx-hue-sky bg-vx-hue-sky/35' : 'border-vx-hue-iris bg-vx-hue-iris/35'} text-vx-fg focus-visible:z-20 focus-visible:outline
       focus-visible:outline-2 focus-visible:outline-vx-accent ${selected ? 'ring-2 ring-vx-accent' : ''}`}
       aria-label={name} aria-pressed={selected} onKeyDown={key}
       onPointerDown={(event) => drag.begin(event, region, track.id)}
@@ -54,7 +56,7 @@ export default function BeatRegion({ region, track, doc, zoom, snap, locator, se
         if (event.detail !== 0 && drag.consumeClick()) return;
         select();
       }} onDoubleClick={(event) => event.stopPropagation()}>
-      <span className="block">{asset ? <BeatAudioRegion region={region} asset={asset} bpm={doc.tempo.bpm} zoom={zoom} /> : region.pattern}</span>
+      <span className="block">{clip ? <BeatMidiPreview clip={clip} /> : asset ? <BeatAudioRegion region={region} asset={asset} bpm={doc.tempo.bpm} zoom={zoom} /> : region.pattern}</span>
       <span aria-hidden="true" className="block truncate px-3 text-xs">{dots.map(() => '•').join(' ')}</span>
     </button>
     {asset && <BeatAudioRetry asset={asset} bpm={doc.tempo.bpm} reverse={region.reverse} />}
