@@ -1,0 +1,13 @@
+{
+  "collection": "Veyrnox fictional talking-photo starters",
+  "created": "2026-10-24",
+  "provenance": "Generated specifically for Veyrnox with OpenAI image generation; no Lipsync.video or third-party portrait assets were used.",
+  "identity": "Every depicted adult is fictional and is not intended to represent a real person, celebrity or public figure.",
+  "useBoundary": "Starter source only. Users must still provide or own the speech, review the synthetic-media disclosure requirements, accept the rights statement and approve the live credit quote before generation.",
+  "assets": [
+    { "id": "mara", "file": "mara.png", "role": "Studio presenter" },
+    { "id": "ellis", "file": "ellis.png", "role": "Creative host" },
+    { "id": "nia", "file": "nia.png", "role": "Learning guide" },
+    { "id": "kenji", "file": "kenji.png", "role": "Product specialist" }
+  ]
+}
