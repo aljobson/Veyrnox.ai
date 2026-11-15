@@ -14,7 +14,8 @@ import { toPublicPresets } from '../lib/publicPresets.js';
 import { templateSourceUnsupported } from '../app/veyrnox/_lib/templateSourceBlock.js';
 
 const CAP = 100;
-const IMAGE_REF = /@image\d*/i;
+// The person's photo, as either spelling the community prompts use.
+const IMAGE_REF = /@image\d*|<<<\s*image[_ ]?\d+\s*>>>/i;
 const VIDEO_REF = /@video\d*/i;
 
 test('the video cap is 100 and the keep list is unique and within it', () => {
@@ -34,12 +35,16 @@ test('the video gallery lists exactly the keep list, at most 100', () => {
     assert.ok(listedVideo.length <= CAP);
 });
 
-test('every listed video template uses the person\'s photo, no @video, and can generate', () => {
+test('every listed video template binds the person\'s photo, needs no @video, and can generate', () => {
     for (const preset of PRESETS) {
         const detail = templateDetail(preset.id);
-        assert.match(detail.prompt, IMAGE_REF, `${preset.id} refers to @image`);
+        assert.match(detail.prompt, IMAGE_REF, `${preset.id} refers to the person's photo`);
         assert.doesNotMatch(detail.prompt, VIDEO_REF, `${preset.id} needs a source video we cannot supply`);
         assert.equal(templateSourceUnsupported(detail), false, `${preset.id} is blocked from generating`);
+        // The contract binds the cited photo to an upload slot the model really has (audit 2026-11-15: a prompt
+        // that cites photos with no slot cannot take the person's upload).
+        assert.equal(detail.fidelity?.class, 'bound', `${preset.id} has no slot for the photo its prompt cites`);
+        assert.ok(detail.fidelity.slotCount >= 1, preset.id);
     }
 });
 
