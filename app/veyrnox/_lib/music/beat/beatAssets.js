@@ -3,6 +3,7 @@ import { makeNoise, playEvent } from '../instrumentEngine.js';
 import { soundById, soundDuration } from './beatSounds.mjs';
 import { AUDIO_RATE, MB, admitDecode, checkDecoded, validAsset } from './beatAudioRules.mjs';
 import { offline, decodes, loadSong } from './beatSongAsset.js';
+import { clearTransientFailures, permanentAssetFailure } from './beatAssetFailures.mjs';
 export const yieldAudio = () => new Promise((resolve) => setTimeout(resolve, 0));
 const cache = new Map(), pending = new Map(), states = new Map(), listeners = new Set();
 let size = 0, activeTempo = null;
@@ -18,7 +19,12 @@ function retain(key, entry) {
   states.set(key, { status: 'ready' }); emit();
 }
 export function clearBeatAssets() { cache.clear(); states.clear(); size = 0; emit(); }
+export function retryBeatAssets(asset, bpm) {
+  clearTransientFailures(states, asset ? assetKey(asset, bpm) : undefined); emit();
+}
+if (typeof window !== 'undefined') window.addEventListener('online', () => retryBeatAssets());
 export function prepareExportCache(doc) {
+  retryBeatAssets();
   const used = new Map();
   for (const track of doc.tracks) for (const region of track.regions) if (region.assetId) {
     const key = assetKey(doc.assets[region.assetId], doc.tempo.bpm);
@@ -40,7 +46,7 @@ export function syncAssetTempo(bpm) {
 subscribeShelf(() => {
   const ids = new Set(getShelf().map((t) => t.id));
   for (const [key, entry] of cache) if (entry.source === 'take' && !ids.has(entry.ref)) {
-    remove(key); states.set(key, { status: 'missing', reason: 'This take was deleted' });
+    remove(key); states.set(key, { status: 'missing', reason: 'This take was deleted', permanent: true });
   }
   emit();
 });
@@ -131,7 +137,7 @@ export async function loadAsset(asset, bpm, reverse = false) {
       // Old tempo renders may finish after the project has already changed tempo.
       if (asset.source !== 'sound' || activeTempo === null || activeTempo === bpm) retain(key, entry);
       return reverse ? entry.reversed : entry.buffer;
-    } catch (error) { states.set(key, { status: 'missing', reason: error.message }); emit(); return null; }
+    } catch (error) { states.set(key, { status: 'missing', reason: error.message, permanent: permanentAssetFailure(error) }); emit(); return null; }
   })();
   pending.set(key, work);
   try { return await work; } finally { pending.delete(key); }

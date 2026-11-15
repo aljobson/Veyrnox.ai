@@ -51,7 +51,13 @@ export default function BeatArrangement({ doc, edit, selectPattern, editTrackId,
   async function addSound(item, trackId, start = locator) {
     try {
       const asset = await prepareAsset(item, doc.tempo.bpm);
-      edit((d) => ops.addAudioRegion(d, asset.source === 'sound' ? { ...asset, durationSec: soundDuration(asset.ref, d.tempo.bpm) } : asset, trackId, start), { label: 'add audio region', start });
+      let addedTrack;
+      const changed = edit((d) => {
+        const next = ops.addAudioRegion(d, asset.source === 'sound' ? { ...asset, durationSec: soundDuration(asset.ref, d.tempo.bpm) } : asset, trackId, start);
+        addedTrack = trackId || next.tracks.at(-1).id;
+        return next;
+      }, { label: 'add audio region', start });
+      if (changed && addedTrack) setEditTrackId(addedTrack);
     } catch (error) { announce(error.message || 'Could not add sound.'); }
   }
   function drop(event, trackId) {

@@ -1,5 +1,6 @@
 'use client';
-import { cachedAsset, loadAsset, syncAssetTempo } from '../../../_lib/music/beat/beatAssets.js';
+import { cachedAsset, loadAsset, syncAssetTempo, assetKey } from '../../../_lib/music/beat/beatAssets.js';
+import { arrangementStructure, lateAudioSegment, playbackAssets } from '../../../_lib/music/beat/beatPlaybackAudio.mjs';
 import { playAudioSegment } from '../../../_lib/music/beat/beatAudioGraph.js';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createBeatEngine } from '../../../_lib/music/beat/beatEngine.js';
@@ -21,6 +22,7 @@ export function useBeatPlayback(current, edit, announce, options) {
   const record = useRef(false);
   const [recording, setRecording] = useState(false);
   const [runId, setRunId] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [playhead, setPlayhead] = useState(-1);
   const [audioError, setAudioError] = useState(() => (window.AudioContext || window.webkitAudioContext) ? '' : "Sound isn't available in this browser");
   const stop = useCallback(() => {
@@ -32,7 +34,7 @@ export function useBeatPlayback(current, edit, announce, options) {
     }
     for (const run of tails.current.keys()) engine.current.stopRun(run);
     tails.current.clear();
-    setRunId(null); setPlayhead(-1);
+    setRunId(null); setPlayhead(-1); setLoading(false);
   }, []);
   function audio() {
     if (!engine.current) engine.current = createBeatEngine();
@@ -49,11 +51,21 @@ export function useBeatPlayback(current, edit, announce, options) {
     // A separate token makes a late resume harmless after Stop or unmount.
     const token = {}; pending.current = token;
     starting.current = true;
+    setLoading(true);
     try {
       const { instance, resumed } = audio();
       await resumed;
       if (!mounted.current || pending.current !== token) return;
+      // Edits remain available while loading. Recheck the latest play range before starting.
+      while (true) {
+        const doc = current.current, locator = optionsRef.current?.locator || 0;
+        syncAssetTempo(doc.tempo.bpm);
+        await Promise.all(playbackAssets(doc, locator).map(({ asset, reverse }) => loadAsset(asset, doc.tempo.bpm, reverse)));
+        if (!mounted.current || pending.current !== token) return;
+        if (doc === current.current && locator === (optionsRef.current?.locator || 0)) break;
+      }
       starting.current = false;
+      setLoading(false);
       if (playbackStart(current.current, optionsRef.current?.locator || 0) === null) {
         announce('Nothing to play. Add a region first.');
         return;
@@ -65,9 +77,27 @@ export function useBeatPlayback(current, edit, announce, options) {
         onAudio: (segment, time) => {
           const doc = current.current, asset = doc.assets[segment.assetId];
           const buffer = asset && cachedAsset(asset, doc.tempo.bpm, segment.reverse);
-          if (!buffer) { if (asset) void loadAsset(asset, doc.tempo.bpm, segment.reverse); return; }
+          if (!asset) return;
           const track = doc.tracks.find((t) => t.id === segment.trackId);
-          const region = track.regions.find((r) => r.id === segment.regionId);
+          const region = track?.regions.find((r) => r.id === segment.regionId);
+          if (!region) return;
+          if (!buffer) {
+            const scheduledRun = run;
+            void loadAsset(asset, doc.tempo.bpm, segment.reverse).then((loaded) => {
+              const latest = current.current;
+              if (!loaded || active.current?.run !== scheduledRun || latest.tempo.bpm !== doc.tempo.bpm
+                || arrangementStructure(latest) !== arrangementStructure(doc)
+                || assetKey(latest.assets[segment.assetId], latest.tempo.bpm) !== assetKey(asset, doc.tempo.bpm)) return;
+              const latestTrack = latest.tracks.find((t) => t.id === segment.trackId);
+              const latestRegion = latestTrack.regions.find((r) => r.id === segment.regionId);
+              if (latestRegion.reverse !== segment.reverse) return;
+              const now = instance.now(), remainder = lateAudioSegment(segment, time, now);
+              if (remainder) playAudioSegment(instance.context,
+                instance.setTrackMix(scheduledRun, latestTrack.id, latestTrack.gain, latestTrack.pan),
+                loaded, remainder, latestRegion, latest.tempo.bpm, Math.max(time, now));
+            });
+            return;
+          }
           playAudioSegment(instance.context, instance.setTrackMix(run, track.id, track.gain, track.pan), buffer, segment, region, doc.tempo.bpm, time);
         },
         onEvent: (event, time) => {
@@ -102,6 +132,7 @@ export function useBeatPlayback(current, edit, announce, options) {
     } catch (failure) {
       if (!mounted.current || pending.current !== token) return;
       starting.current = false;
+      setLoading(false);
       const message = failure.message || "Sound isn't available in this browser";
       setAudioError(message); announce(message);
     }
@@ -147,8 +178,7 @@ export function useBeatPlayback(current, edit, announce, options) {
         if (playing.doc !== doc) {
           // Restart edited arrangements through the existing 10 ms run fade.
           const old = playing.doc;
-          const arrangement = (d) => JSON.stringify(d.tracks.map((t) => [t.id, t.kind, t.mute, t.solo, t.regions]));
-          const changed = old.tempo.bpm !== doc.tempo.bpm || old.view !== doc.view || JSON.stringify(old.cycle) !== JSON.stringify(doc.cycle) || arrangement(old) !== arrangement(doc);
+          const changed = old.tempo.bpm !== doc.tempo.bpm || old.view !== doc.view || JSON.stringify(old.cycle) !== JSON.stringify(doc.cycle) || arrangementStructure(old) !== arrangementStructure(doc);
           if (changed) {
             const nearest = playing.scheduler.nearestStepAt(instance.now());
             playing.restart((nearest?.step ?? 0) * 240);
@@ -186,5 +216,5 @@ export function useBeatPlayback(current, edit, announce, options) {
       engine.current?.close().catch(() => {}); engine.current = null;
     };
   }, [current, stop]);
-  return { playing: runId !== null, runId, playhead, audioError, toggle, hit, stop, record: recording, setRecord };
+  return { playing: runId !== null, loading, runId, playhead, audioError, toggle, hit, stop, record: recording, setRecord };
 }

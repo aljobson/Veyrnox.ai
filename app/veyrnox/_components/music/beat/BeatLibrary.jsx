@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { getSession, onSessionChange } from '../../../../lib/authClient';
 import { gatewayFetch } from '../../../_lib/gateway';
 import { BEAT_SOUNDS } from '../../../_lib/music/beat/beatSounds.mjs';
+import { librarySongs } from '../../../_lib/music/beat/beatLibrarySongs.mjs';
 import { getShelf, getServerShelf, hydrateShelf, subscribeShelf } from '../../../_lib/music/instrumentShelf';
 import { prepareAsset, loadAsset } from '../../../_lib/music/beat/beatAssets';
 import { createBeatEngine } from '../../../_lib/music/beat/beatEngine';
@@ -60,8 +61,7 @@ export default function BeatLibrary({ bpm, onAdd, announce }) {
   }
   const items = tab === 'Sounds' ? BEAT_SOUNDS.map((s) => ({ ...s, source: 'sound', ref: s.id, bpm: null }))
     : mine === 'Takes' ? shelf.map((t) => ({ id: t.id, source: 'take', ref: t.id, name: t.label, durationSec: t.seconds, bpm: null }))
-      : songs.map((s) => ({ id: s.version_id, source: 'song', name: s.title || 'Untitled song', durationSec: s.duration_seconds,
-        bpm: Number(s.bpm || s.tempo) || null, ref: { songId: s.id, versionId: s.version_id, jobId: s.job_id } }));
+      : librarySongs(songs);
   const filtered = items.filter((i) => i.name.toLowerCase().includes(query.toLowerCase()) && (tab !== 'Sounds' || category === 'All' || i.category === category));
   function contents() {
     return <div className="space-y-3">
@@ -76,7 +76,7 @@ export default function BeatLibrary({ bpm, onAdd, announce }) {
         {status === 'offline' && <p>You are offline. Your songs need a connection. <button className={button} onClick={() => setRetry((n) => n + 1)}>Retry</button></p>}
         {status === 'error' && <p>Could not load your songs. <button className={button} onClick={() => setRetry((n) => n + 1)}>Retry</button></p>}
         {status === 'loading' && <p>Loading songs…</p>}
-        {status === 'ready' && !songs.length && <p>No songs yet. <Link className="underline" href="/app/music/create">Create a song</Link></p>}
+        {status === 'ready' && !items.length && <p>No songs yet. <Link className="underline" href="/app/music/create">Create a song</Link></p>}
       </div>}
       {tab === 'Mine' && mine === 'Takes' && !shelf.length && <p>No takes yet. <Link className="underline" href="/app/music/instruments">Open Instruments</Link></p>}
       {!filtered.length && !!items.length && <p>No sounds match &apos;{query}&apos;. <button className={button} onClick={() => { setQuery(''); setCategory('All'); }}>Clear</button> Try a shorter name or another category.</p>}

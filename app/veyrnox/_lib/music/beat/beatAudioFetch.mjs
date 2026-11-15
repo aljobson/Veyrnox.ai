@@ -26,24 +26,28 @@ async function request(fetchAudio, url, range = false) {
 export async function fetchAudioAsset(url, base, stored, { fetchAudio = fetch, decode }) {
   if (stored) admitDecode(stored);
   const response = await request(fetchAudio, url, true);
-  const total = response.status === 206 ? Number(response.headers.get('Content-Range')?.split('/')[1]) : Number(response.headers.get('Content-Length'));
-  try { admitScan(total); } catch (e) { await response.body?.cancel(); throw e; }
+  // The range reply supplies header bytes only. Content-Range is not CORS-safelisted.
+  const prefix = await readBounded(response, 65536, true);
+  const full = await request(fetchAudio, url);
+  const total = Number(full.headers.get('Content-Length'));
+  try { admitScan(total); } catch (e) { await full.body?.cancel(); throw e; }
   // Keep a cold load inside its preflight allocation. This is a capacity bound,
   // not a byte-for-byte drift test: smaller encodings still pass the exact-duration check.
-  if (stored && total > stored.encodedBytes) { await response.body?.cancel(); throw new Error('This sound changed size since it was added'); }
+  if (stored && total > stored.encodedBytes) { await full.body?.cancel(); throw new Error('This sound changed size since it was added'); }
   const releaseScan = await scans.acquire(total);
   let bytes;
   try {
-    const prefix = await readBounded(response, 65536, true);
-    const probe = probeAudioHeader(prefix, total); admitProbe(probe);
-    const provisional = { ...base, sourceChannels: probe.channels, durationSec: probe.durationSec, encodedBytes: total };
+    let probe = probeAudioHeader(prefix, total);
+    if (!probe.needsFullHeader) admitProbe(probe);
+    let provisional = { ...base, sourceChannels: probe.channels, durationSec: probe.durationSec, encodedBytes: total };
     // WAV/FLAC can fail stage 2 before their full body is fetched. MP3 is measured first.
-    if (probe.container !== 'mp3') admitDecode(provisional);
-    const full = await request(fetchAudio, url);
-    const stated = Number(full.headers.get('Content-Length'));
-    if (stated && stated > total) { await full.body?.cancel(); throw new Error('This sound changed size since it was added'); }
+    if (!probe.needsFullHeader && probe.container !== 'mp3') admitDecode(provisional);
     bytes = await readBounded(full, total);
     if (bytes.length !== total) throw new Error('This sound changed size since it was added');
+    if (probe.needsFullHeader) {
+      probe = probeAudioHeader(bytes, total); admitProbe(probe);
+      provisional = { ...provisional, sourceChannels: probe.channels, durationSec: probe.durationSec };
+    }
     if (probe.container === 'mp3') {
       const counter = mp3FrameCounter();
       for (let at = 0; at < bytes.length; at += 65536) {
@@ -61,5 +65,5 @@ export async function fetchAudioAsset(url, base, stored, { fetchAudio = fetch, d
       if (stored) checkDecoded(buffer, stored);
       return { asset: provisional, buffer };
     } finally { releaseDecode(); }
-  } finally { bytes = null; releaseScan(); }
+  } finally { await full.body?.cancel().catch(() => {}); bytes = null; releaseScan(); }
 }

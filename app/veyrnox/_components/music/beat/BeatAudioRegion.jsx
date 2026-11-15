@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useSyncExternalStore } from 'react';
-import { assetState, subscribeAssets, loadAsset, audioPeaks, yieldAudio } from '../../../_lib/music/beat/beatAssets';
+import { assetState, subscribeAssets, loadAsset, audioPeaks, yieldAudio, retryBeatAssets } from '../../../_lib/music/beat/beatAssets';
+import { button } from './beatStyles';
 import { tickSeconds, modulo } from '../../../_lib/music/beat/beatAudioSegments.mjs';
 export default function BeatAudioRegion({ region, asset, bpm, zoom }) {
   const canvas = useRef(null);
@@ -31,8 +32,16 @@ export default function BeatAudioRegion({ region, asset, bpm, zoom }) {
       context.stroke();
     }
     void draw(); return () => { live = false; };
-  }, [asset, bpm, region, zoom]);
+  }, [asset, bpm, region, zoom, state]);
   return <><span className="block truncate px-3 font-bold">{state.status === 'missing' ? 'Missing sound' : asset.name}</span>
-    <canvas ref={canvas} aria-hidden="true" className={`h-6 w-full text-vx-hue-sky ${state.status === 'ready' ? '' : 'hidden'}`} />
+    <canvas ref={canvas} aria-hidden="true" className="h-6 w-full text-vx-hue-sky" />
       {state.status !== 'ready' && <span className="block truncate px-3 text-xs" title={state.reason}>{state.status === 'missing' ? state.reason : 'Loading sound…'}</span>}</>;
+}
+
+// A sibling of the region button, so Retry never nests an interactive control.
+export function BeatAudioRetry({ asset, bpm, reverse }) {
+  const state = useSyncExternalStore(subscribeAssets, () => assetState(asset, bpm), () => assetState(asset, bpm));
+  if (state.status !== 'missing' || state.permanent) return null;
+  return <button className={`${button} absolute left-0 top-full z-20`} aria-label={`Retry ${asset.name}`}
+    onClick={(event) => { event.stopPropagation(); retryBeatAssets(asset, bpm); void loadAsset(asset, bpm, reverse); }}>Retry</button>;
 }

@@ -16,6 +16,9 @@ export function probeAudioHeader(input, totalBytes) {
         return { container: 'wav', channels, sampleRate, durationSec: size / align / sampleRate };
       }
       at += 8 + size + (size % 2);
+      if (at + 8 > b.length && at + 8 <= totalBytes) {
+        return { ...unknown, container: 'wav', needsFullHeader: true };
+      }
     }
     return unknown;
   }
@@ -26,7 +29,11 @@ export function probeAudioHeader(input, totalBytes) {
     return { container: 'flac', channels, sampleRate: rate, durationSec: rate && samples ? samples / rate : null };
   }
   let at = 0;
-  if (ascii(b, 0, 'ID3')) at = 10 + (b[6] << 21 | b[7] << 14 | b[8] << 7 | b[9]);
+  if (ascii(b, 0, 'ID3')) {
+    if ((b[6] | b[7] | b[8] | b[9]) & 128) return unknown;
+    at = 10 + (b[6] << 21 | b[7] << 14 | b[8] << 7 | b[9]);
+    if (at + 4 > b.length && at + 4 <= totalBytes) return { ...unknown, container: 'mp3', needsFullHeader: true };
+  }
   for (; at + 4 <= b.length; at++) {
     if (b[at] !== 255 || (b[at + 1] & 224) !== 224 || ((b[at + 1] >> 1) & 3) !== 1) continue;
     const version = (b[at + 1] >> 3) & 3, index = b[at + 2] >> 4;

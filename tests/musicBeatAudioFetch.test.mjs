@@ -8,16 +8,16 @@ function mp3(count) {
   text(bytes, 36, 'Xing'); v.setUint32(40, 1); v.setUint32(44, 1); // intentionally understated
   return bytes;
 }
-function network(bytes, ignoreRange = false) {
+function network(bytes, ignoreRange = false, { hiddenRange = false, stated = bytes.length } = {}) {
   const calls = [], reads = [], cancels = [];
   return { calls, reads, cancels, fetchAudio: async (url, options) => {
     const range = !!options.headers?.Range; calls.push({ url, range });
     let at = 0, read = 0;
     const source = range && !ignoreRange ? bytes.subarray(0, 65536) : bytes;
     return { ok: true, status: range && !ignoreRange ? 206 : 200,
-      headers: new Headers(range && !ignoreRange ? { 'Content-Range': `bytes 0-${source.length - 1}/${bytes.length}` } : { 'Content-Length': String(bytes.length) }),
+      headers: new Headers(range && !ignoreRange ? (hiddenRange ? {} : { 'Content-Range': `bytes 0-${source.length - 1}/${bytes.length}` }) : { 'Content-Length': String(stated) }),
       body: { cancel: async () => { cancels.push({ range, at, read }); }, getReader: () => ({ read: async () => {
-        assert.ok(scans.usage.count <= 2 && scans.usage.count > 0);
+        if (!range) assert.ok(scans.usage.count <= 2 && scans.usage.count > 0);
         read++; reads.push(range); if (at === source.length) return { done: true };
         const value = source.subarray(at, at + 32768); at += value.length; return { value, done: false };
       }, cancel: async () => { cancels.push({ range, at, read }); } }) } };
@@ -56,5 +56,39 @@ test('cold encoded growth is refused before streaming beyond its recorded alloca
   const stored = { durationSec: 400 * 1152 / 44100, sourceChannels: 2, encodedBytes: bytes.length - 1 };
   let called = false;
   await assert.rejects(fetchAudioAsset('signed', base, stored, { ...net, decode: async () => { called = true; } }), /changed size/);
-  assert.equal(called, false); assert.equal(net.reads.length, 0);
+  assert.equal(called, false); assert.ok(net.reads.every((range) => range));
+});
+
+test('hidden Content-Range works; full Content-Length rejects oversized or unknown bodies without reading them', async () => {
+  const bytes = mp3(400), net = network(bytes, false, { hiddenRange: true });
+  const loaded = await fetchAudioAsset('cross-origin', base, null, { ...net,
+    decode: async () => ({ length: Math.round(400 * 1152 / 44100 * 48000), sampleRate: 48000, numberOfChannels: 2 }) });
+  assert.equal(loaded.asset.encodedBytes, bytes.length);
+  for (const stated of [120000001, '']) {
+    const rejected = network(bytes, false, { hiddenRange: true, stated });
+    await assert.rejects(fetchAudioAsset('cross-origin', base, null, { ...rejected,
+      decode: async () => assert.fail('must not decode') }), /120 MB/);
+    assert.ok(rejected.reads.every((range) => range));
+    assert.deepEqual(rejected.cancels.at(-1), { range: false, at: 0, read: 0 });
+  }
+});
+
+test('large ID3 and WAV LIST metadata are parsed after bounded prefix sniffing', async () => {
+  const frames = mp3(400), tagSize = 70000, tagged = new Uint8Array(10 + tagSize + frames.length);
+  text(tagged, 0, 'ID3'); tagged[3] = 4;
+  for (let i = 0; i < 4; i++) tagged[6 + i] = (tagSize >> ((3 - i) * 7)) & 127;
+  tagged.set(frames, 10 + tagSize);
+  const dataAt = 44 + tagSize, wav = new Uint8Array(dataAt + 8 + 96000), v = new DataView(wav.buffer);
+  text(wav, 0, 'RIFF'); v.setUint32(4, wav.length - 8, true); text(wav, 8, 'WAVE');
+  text(wav, 12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true);
+  v.setUint16(22, 1, true); v.setUint32(24, 48000, true); v.setUint16(32, 2, true);
+  text(wav, 36, 'LIST'); v.setUint32(40, tagSize, true); text(wav, dataAt, 'data'); v.setUint32(dataAt + 4, 96000, true);
+  for (const [bytes, duration, channels] of [[tagged, 400 * 1152 / 44100, 2], [wav, 1, 1]]) {
+    const net = network(bytes, false, { hiddenRange: true }); let decoded = 0;
+    const result = await fetchAudioAsset('signed', base, null, { ...net, decode: async () => {
+      decoded++; return { length: Math.round(duration * 48000), sampleRate: 48000, numberOfChannels: channels };
+    } });
+    assert.equal(decoded, 1); assert.ok(Math.abs(result.asset.durationSec - duration) < 1e-8);
+    assert.equal(result.asset.sourceChannels, channels); assert.equal(net.cancels[0].at, 65536);
+  }
 });

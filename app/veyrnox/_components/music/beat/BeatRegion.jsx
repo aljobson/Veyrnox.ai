@@ -1,15 +1,15 @@
 'use client';
-import BeatAudioRegion from './BeatAudioRegion';
+import BeatAudioRegion, { BeatAudioRetry } from './BeatAudioRegion';
 import { formatPosition } from '../../../_lib/music/beat/beatTime.mjs';
-import { tickSeconds } from '../../../_lib/music/beat/beatAudioSegments.mjs';
+import { audioLoopLabel } from '../../../_lib/music/beat/beatPlaybackAudio.mjs';
 import * as ops from '../../../_lib/music/beat/beatOps.mjs';
 
 export default function BeatRegion({ region, track, doc, zoom, snap, locator, selected, select, edit, drag }) {
   const position = { left: region.start / 3840 * zoom, width: region.length / 3840 * zoom };
   const asset = region.assetId && doc.assets[region.assetId];
-  const loops = Math.floor(asset ? tickSeconds(region.length, doc.tempo.bpm) / asset.durationSec : region.length / (doc.steps * 240));
+  const loops = asset ? audioLoopLabel(region, asset, doc.tempo.bpm) : `looped ${Math.floor(region.length / (doc.steps * 240))} times`;
   const name = `${selected ? 'Selected, ' : ''}${asset ? `Audio ${asset.name}` : `Pattern ${region.pattern}`} on ${track.name}, ` +
-    `${formatPosition(region.start)} to ${formatPosition(region.start + region.length)}, looped ${loops} times${asset ? `, gain ${region.gainDb} dB` : ''}`;
+    `${formatPosition(region.start)} to ${formatPosition(region.start + region.length)}, ${loops}${asset ? `, gain ${region.gainDb} dB` : ''}`;
   function key(event) {
     const command = event.ctrlKey || event.metaKey;
     let operation, label;
@@ -57,6 +57,7 @@ export default function BeatRegion({ region, track, doc, zoom, snap, locator, se
       <span className="block">{asset ? <BeatAudioRegion region={region} asset={asset} bpm={doc.tempo.bpm} zoom={zoom} /> : region.pattern}</span>
       <span aria-hidden="true" className="block truncate px-3 text-xs">{dots.map(() => '•').join(' ')}</span>
     </button>
+    {asset && <BeatAudioRetry asset={asset} bpm={doc.tempo.bpm} reverse={region.reverse} />}
     {['trim', 'resize'].map((mode) => <span key={mode} aria-hidden="true"
       className={`absolute top-0 z-10 h-16 w-3 touch-none cursor-ew-resize rounded ${asset ? 'bg-vx-hue-sky/25' : 'bg-vx-hue-iris/25'}
         ${mode === 'trim' ? 'left-0' : 'right-0'}`}
