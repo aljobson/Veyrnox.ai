@@ -4997,6 +4997,7 @@ export default {
   "editorServerExport.cancelled": "Envoi annulé. Les fichiers terminés peuvent être réutilisés ici.",
   "editorServerExport.checkAgain": "Vérifier à nouveau",
   "editorServerExport.credits": "Obtenir des crédits",
+  "editorServerExport.save": "Enregistrer dans Photos",
   "editorServerExport.share": "Partager l’export",
   "editorServerExport.library": "Ouvrir dans la bibliothèque",
   "editorServerExport.publish": "Publier l’export",

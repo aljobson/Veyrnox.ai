@@ -5,7 +5,7 @@ import { ServerExportSheet } from '../src/components/editor/ServerExportSheet';
 import { ApiError, type ApiClient } from '../src/lib/api';
 import { emptyTimeline } from '../src/lib/nativeEditorModel';
 import { markOffline, markOnline, OFFLINE_PAID_MESSAGE } from '../src/lib/network';
-import { shareOutput } from '../src/lib/output';
+import { saveOutput, shareOutput } from '../src/lib/output';
 import { randomUUID } from 'expo-crypto';
 import { editorDeviceMedia } from '../src/lib/editorDeviceMedia';
 import * as exportUploads from '../src/lib/editorServerExportUploads';
@@ -20,7 +20,7 @@ jest.mock('../src/lib/appCache', () => { const listeners: (() => void)[] = []; r
 jest.mock('../src/lib/editorServerExportStore', () => ({ ...jest.requireActual('../src/lib/editorServerExportStore'), createExportStore: () => ({ read: async () => mockRecord, write: mockWrite, remove: mockRemove }) }));
 jest.mock('../src/lib/editorDeviceMedia', () => ({ editorDeviceMedia: { files: jest.fn().mockResolvedValue({}) } }));
 jest.mock('../src/lib/editorMediaDuration', () => ({ probeDuration: jest.fn() }));
-jest.mock('../src/lib/output', () => ({ shareOutput: jest.fn().mockResolvedValue(undefined) }));
+jest.mock('../src/lib/output', () => ({ shareOutput: jest.fn().mockResolvedValue(undefined), saveOutput: jest.fn().mockResolvedValue(true) }));
 jest.mock('expo-crypto', () => ({ randomUUID: jest.fn(() => '22222222-2222-4222-8222-222222222222') }));
 const document = { project_id: B, schema_version: 3 as const, canvas: { aspect_ratio: '16:9', frame_rate: 30 }, timeline: { ...emptyTimeline(), text: [{ id: 't1', text: 'Hello', start: 0, len: 90, x: .5, y: .85, size: 6 }] } };
 let root: Root, request: jest.Mock, push: jest.Mock, close: jest.Mock, open: jest.Mock;
@@ -75,6 +75,17 @@ test('succeeded offers Share, Library and Publish with the render job', async ()
     await press('Share export'); expect(shareOutput).toHaveBeenCalledWith('https://files.test/export', A, 'video/mp4');
     await press('Open in Library'); expect(push).toHaveBeenCalledWith('/library/files');
     await press('Publish export'); expect(push).toHaveBeenCalledWith({ pathname: '/publish/compose', params: { jobId: B } }); expect(mockRemove).toHaveBeenCalled();
+});
+test('succeeded offers Save to Photos and says when it saved or when Photos access is off', async () => {
+    const normal = request.getMockImplementation()!;
+    request.mockImplementation((path, init) => path.includes('?job_id=') ? Promise.resolve({ job_id: B, render_id: A, state: 'succeeded' }) : normal(path, init));
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    await render(); await press('Confirm export');
+    await press('Save to Photos'); expect(saveOutput).toHaveBeenCalledWith('https://files.test/export', A, 'video/mp4'); expect(visible('Saved to your Photos.')).toBe(true);
+    jest.mocked(saveOutput).mockResolvedValueOnce(false);
+    await press('Save to Photos'); expect(alert).toHaveBeenCalledWith('Photos access is off', expect.stringContaining('Photos'));
+    jest.mocked(saveOutput).mockRejectedValueOnce(new Error('disk full'));
+    await press('Save to Photos'); expect(visible('Saved to your Photos.')).toBe(false);
 });
 test('recovery on editor mount resumes polling without requoting', async () => {
     mockRecord = { owner: A, projectId: B, key: A, body: { document, resolution: '1080p', label: 'Old export', quoted_credits: 17 }, credits: 17, sentAt: 50, jobId: B };

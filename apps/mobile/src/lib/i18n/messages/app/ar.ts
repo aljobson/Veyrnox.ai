@@ -5207,6 +5207,7 @@ export default {
   "editorServerExport.cancelled": "أُلغي الرفع. يمكن إعادة استخدام الملفات المكتملة هنا.",
   "editorServerExport.checkAgain": "تحقق مجددًا",
   "editorServerExport.credits": "الحصول على رصيد",
+  "editorServerExport.save": "حفظ في الصور",
   "editorServerExport.share": "مشاركة التصدير",
   "editorServerExport.library": "فتح في المكتبة",
   "editorServerExport.publish": "نشر التصدير",

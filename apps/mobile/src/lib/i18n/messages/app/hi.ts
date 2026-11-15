@@ -4927,6 +4927,7 @@ export default {
   "editorServerExport.cancelled": "अपलोड रद्द हुआ। पूरी हो चुकी फ़ाइलें यहाँ फिर इस्तेमाल की जा सकती हैं।",
   "editorServerExport.checkAgain": "दोबारा जाँचें",
   "editorServerExport.credits": "क्रेडिट लें",
+  "editorServerExport.save": "फ़ोटो में सहेजें",
   "editorServerExport.share": "निर्यात साझा करें",
   "editorServerExport.library": "लाइब्रेरी में खोलें",
   "editorServerExport.publish": "निर्यात प्रकाशित करें",
