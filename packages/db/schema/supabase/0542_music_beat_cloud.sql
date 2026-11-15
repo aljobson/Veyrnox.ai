@@ -2,7 +2,7 @@
 BEGIN;
 CREATE TABLE IF NOT EXISTS public.music_beat_projects (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
- beat_id uuid NOT NULL, title text NOT NULL CHECK (char_length(btrim(title)) BETWEEN 1 AND 80),
+ beat_id uuid NOT NULL, title text NOT NULL CHECK (char_length(title) <= 80 AND pg_catalog.btrim(title, E' \t\n\r') <> ''),
  doc_json text NOT NULL CHECK (octet_length(doc_json) <= 262144),
  doc_version smallint NOT NULL CHECK (doc_version BETWEEN 1 AND 4),
  revision integer NOT NULL DEFAULT 1 CHECK (revision > 0), create_key text NOT NULL, last_key text NOT NULL,
@@ -12,7 +12,7 @@ CREATE INDEX IF NOT EXISTS music_beat_projects_updated ON public.music_beat_proj
 CREATE TABLE IF NOT EXISTS public.music_beat_project_versions (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(), project_id uuid NOT NULL REFERENCES public.music_beat_projects(id) ON DELETE CASCADE,
  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE, revision integer NOT NULL CHECK (revision > 0),
- title text NOT NULL CHECK (char_length(btrim(title)) BETWEEN 1 AND 80),
+ title text NOT NULL CHECK (char_length(title) <= 80 AND pg_catalog.btrim(title, E' \t\n\r') <> ''),
  doc_json text NOT NULL CHECK (octet_length(doc_json) <= 262144),
  reason text NOT NULL CHECK (reason IN ('autosave','checkpoint','conflict','stash')),
  request_key text, saved_at timestamptz NOT NULL DEFAULT now()
@@ -91,7 +91,7 @@ BEGIN
  PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(actor::text,542));
  IF p_beat_id IS NULL OR p_expected_revision IS NULL OR p_expected_revision NOT BETWEEN 0 AND 2147483646
  OR p_idempotency_key IS NULL OR p_idempotency_key !~ '^[A-Za-z0-9._-]{8,128}$'
- OR p_title IS NULL OR pg_catalog.char_length(pg_catalog.btrim(p_title)) NOT BETWEEN 1 AND 80
+ OR p_title IS NULL OR pg_catalog.char_length(p_title) > 80 OR pg_catalog.btrim(p_title, E' \t\n\r') = ''
  OR p_doc IS NULL OR pg_catalog.octet_length(p_doc)>262144
  OR p_mode IS NULL OR p_mode NOT IN ('autosave','checkpoint','stash') THEN
  RAISE EXCEPTION 'INVALID_REQUEST' USING ERRCODE = 'PT400'; END IF;
@@ -100,7 +100,7 @@ BEGIN
  IF pg_catalog.jsonb_typeof(parsed) IS DISTINCT FROM 'object' OR parsed->>'kind' IS DISTINCT FROM 'veyrnox.music.beat'
  OR parsed->'version' NOT IN ('1'::jsonb,'2'::jsonb,'3'::jsonb,'4'::jsonb) OR parsed->'version' IS NULL
  OR pg_catalog.lower(parsed->>'id') IS DISTINCT FROM p_beat_id::text
- OR parsed->>'title' IS DISTINCT FROM pg_catalog.btrim(p_title) THEN RAISE EXCEPTION 'invalid'; END IF;
+ OR parsed->>'title' IS DISTINCT FROM p_title THEN RAISE EXCEPTION 'invalid'; END IF;
  IF (parsed->>'version')::integer >= 2 THEN
  IF pg_catalog.jsonb_typeof(parsed->'tracks') IS DISTINCT FROM 'array' THEN RAISE EXCEPTION 'invalid'; END IF;
  IF pg_catalog.jsonb_array_length(parsed->'tracks')>16 THEN RAISE EXCEPTION 'invalid'; END IF;
@@ -113,20 +113,20 @@ BEGIN
  IF saved.revision<>p_expected_revision THEN RAISE EXCEPTION 'VERSION_CONFLICT' USING ERRCODE='PT409'; END IF;
  SELECT * INTO stashed FROM public.music_beat_project_versions WHERE project_id=saved.id AND request_key=p_idempotency_key;
  IF FOUND THEN
- IF stashed.doc_json<>p_doc OR stashed.title<>pg_catalog.btrim(p_title) THEN RAISE EXCEPTION 'IDEMPOTENCY_CONFLICT' USING ERRCODE='PT409'; END IF;
+ IF stashed.doc_json<>p_doc OR stashed.title<>p_title THEN RAISE EXCEPTION 'IDEMPOTENCY_CONFLICT' USING ERRCODE='PT409'; END IF;
  replay := true;
  ELSE
  IF saved.revision<>p_expected_revision THEN RAISE EXCEPTION 'VERSION_CONFLICT' USING ERRCODE='PT409'; END IF;
  PERFORM private.consume_music_beat_save(actor);
  INSERT INTO public.music_beat_project_versions(project_id,user_id,revision,title,doc_json,reason,request_key)
- VALUES(saved.id,actor,p_expected_revision,pg_catalog.btrim(p_title),p_doc,'stash',p_idempotency_key);
+ VALUES(saved.id,actor,p_expected_revision,p_title,p_doc,'stash',p_idempotency_key);
  END IF;
  ELSE
  IF p_expected_revision=0 THEN
  IF saved.id IS NOT NULL THEN
  IF saved.create_key=p_idempotency_key THEN
  IF saved.revision>1 THEN RAISE EXCEPTION 'VERSION_CONFLICT' USING ERRCODE='PT409'; END IF;
- IF saved.doc_json<>p_doc OR saved.title<>pg_catalog.btrim(p_title) THEN RAISE EXCEPTION 'IDEMPOTENCY_CONFLICT' USING ERRCODE='PT409'; END IF;
+ IF saved.doc_json<>p_doc OR saved.title<>p_title THEN RAISE EXCEPTION 'IDEMPOTENCY_CONFLICT' USING ERRCODE='PT409'; END IF;
  replay:=true;
  ELSE RAISE EXCEPTION 'VERSION_CONFLICT' USING ERRCODE='PT409'; END IF;
  ELSIF (SELECT pg_catalog.count(*) FROM public.music_beat_projects WHERE user_id=actor)>=50 THEN
@@ -134,7 +134,7 @@ BEGIN
  ELSE
  IF saved.id IS NULL THEN RAISE EXCEPTION 'NOT_FOUND' USING ERRCODE='PT404'; END IF;
  IF saved.last_key=p_idempotency_key AND saved.revision=p_expected_revision+1 THEN
- IF saved.doc_json<>p_doc OR saved.title<>pg_catalog.btrim(p_title) THEN RAISE EXCEPTION 'IDEMPOTENCY_CONFLICT' USING ERRCODE='PT409'; END IF;
+ IF saved.doc_json<>p_doc OR saved.title<>p_title THEN RAISE EXCEPTION 'IDEMPOTENCY_CONFLICT' USING ERRCODE='PT409'; END IF;
  replay:=true;
  ELSIF saved.revision<>p_expected_revision THEN RAISE EXCEPTION 'VERSION_CONFLICT' USING ERRCODE='PT409'; END IF;
  END IF;
@@ -142,9 +142,9 @@ BEGIN
  PERFORM private.consume_music_beat_save(actor);
  IF saved.id IS NULL THEN
  INSERT INTO public.music_beat_projects(user_id,beat_id,title,doc_json,doc_version,create_key,last_key)
- VALUES(actor,p_beat_id,pg_catalog.btrim(p_title),p_doc,(parsed->>'version')::smallint,p_idempotency_key,p_idempotency_key) RETURNING * INTO saved;
+ VALUES(actor,p_beat_id,p_title,p_doc,(parsed->>'version')::smallint,p_idempotency_key,p_idempotency_key) RETURNING * INTO saved;
  ELSE
- UPDATE public.music_beat_projects SET title=pg_catalog.btrim(p_title),doc_json=p_doc,doc_version=(parsed->>'version')::smallint,
+ UPDATE public.music_beat_projects SET title=p_title,doc_json=p_doc,doc_version=(parsed->>'version')::smallint,
  revision=revision+1,last_key=p_idempotency_key,updated_at=pg_catalog.now() WHERE id=saved.id RETURNING * INTO saved;
  END IF;
  IF p_mode='checkpoint' AND prior.id IS NOT NULL THEN
@@ -264,4 +264,5 @@ REVOKE ALL ON FUNCTION private.read_music_beat_take(uuid,uuid) FROM PUBLIC, anon
 GRANT EXECUTE ON FUNCTION private.read_music_beat_take(uuid,uuid) TO authenticated;
 REVOKE ALL ON FUNCTION public.read_music_beat_take(uuid,uuid) FROM PUBLIC, anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.read_music_beat_take(uuid,uuid) TO authenticated;
+
 COMMIT;

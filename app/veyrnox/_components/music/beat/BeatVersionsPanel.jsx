@@ -4,6 +4,7 @@ import { onSessionChange } from '../../../../lib/authClient.js';
 import { listVersions, getVersion } from '../../../_lib/music/beat/beatCloud.js';
 import { validateBeat, migrateBeat } from '../../../_lib/music/beat/beatDocument.mjs';
 import { restoreVersion } from '../../../_lib/music/beat/beatOps.mjs';
+import { versionReason, versionTime } from '../../../_lib/music/beat/beatVersionLabels.mjs';
 import { action, button } from './beatStyles';
 export default function BeatVersionsPanel({ beatId, project, sync }) {
   const dialog = useRef(null), [rows, setRows] = useState([]), [busy, setBusy] = useState(false), [error, setError] = useState('');
@@ -39,7 +40,7 @@ export default function BeatVersionsPanel({ beatId, project, sync }) {
       {error && <p role="alert">{error} <button className={button} onClick={load}>Retry</button></p>}
       {!busy && !error && !rows.length && <p>No saved versions yet</p>}
       <ul className="space-y-3">{rows.map(row => <li key={row.id} className="space-y-2 border-b border-vx-border py-3">
-        <p>{row.title}</p><p className="text-sm text-vx-fg-muted">{new Date(row.saved_at).toLocaleString()} · revision {row.revision} · {row.reason}</p>
+        <p>{row.title}</p><p className="text-sm text-vx-fg-muted">{versionTime(row.saved_at)} · revision {row.revision} · {versionReason(row.reason)}</p>
         <button className={button} disabled={busy} onClick={() => restore(row)}>Restore</button>
       </li>)}</ul>
     </dialog>

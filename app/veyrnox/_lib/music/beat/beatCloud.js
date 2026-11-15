@@ -24,7 +24,7 @@ export const listTakes = (id, options) => call(`${path(id)}/takes`, {}, options)
 export const takeUrl = (id, take, options) => call(`${path(id)}/takes/${encodeURIComponent(take)}`, {}, options);
 export async function uploadTake(id, asset, row, options) {
   const confirm = take => call(`${path(id)}/takes/${encodeURIComponent(take)}`, { method: 'POST', body: '{}' }, options);
-  return recoverTake({ row, confirm,
+  const ready = await recoverTake({ row, confirm,
     reserve: async () => {
       await hydrateShelf();
       const take = getShelf().find(t => t.id === asset.ref);
@@ -38,4 +38,5 @@ export async function uploadTake(id, asset, row, options) {
       return fetch(reserved.upload_url, { method: 'PUT', headers: reserved.upload_headers, body: options.uploadData, signal: options.signal, credentials: 'omit' });
     },
   });
+  return { ...ready, byte_size: options.uploadData?.byteLength ?? row?.byte_size, duration_sec: asset.durationSec };
 }

@@ -141,7 +141,7 @@ export default function BeatEditor({ id, magicBar = false, cloud = false }) {
     {playback.takeError && <div role="alert" className="rounded-xl border border-vx-border p-3">{playback.takeError}<button className={button} onClick={playback.finalizeRecording}>Try again</button><button className={button} onClick={async () => { try { const take = playback.takeAsBeat(); const id = take && await project.copy(take); if (id) { playback.discardSavedTake(); router.push(`/app/music/beats/${id}`); } } catch (e) { announce(e.message); } }}>Save take as a new beat</button></div>}
     {cloud && <section className="flex flex-wrap items-center gap-3" aria-label="Account save">
       <p>{sync.message}</p>
-      {sync.state === 'unlinked' && <button className={button} onClick={sync.link}>Save to your account</button>}
+      {['unlinked', 'removed'].includes(sync.state) && <button className={button} onClick={sync.link}>Save to your account</button>}
       {sync.state === 'signed_out' && <Link className={button} href="/app/account">Sign in</Link>}
       {['error', 'offline', 'limit', 'rate_limited', 'conflict'].includes(sync.state) && <button className={button} onClick={sync.retry}>Retry</button>}
       <BeatVersionsPanel beatId={id} project={project} sync={sync} />

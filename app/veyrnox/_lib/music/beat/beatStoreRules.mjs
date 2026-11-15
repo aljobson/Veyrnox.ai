@@ -1,8 +1,9 @@
 import { validateBeat, validBeatId } from './beatDocument.mjs';
 export function validCloudLink(link) {
-  return Boolean(link && Object.keys(link).sort().join(',') === 'projectId,revision,syncedUpdatedAt,userId' &&
+  return Boolean(link && (Object.keys(link).sort().join(',') === 'projectId,revision,syncedUpdatedAt,userId' ||
+    (link.projectId === null && Object.keys(link).sort().join(',') === 'projectId,revision,userId')) &&
     validBeatId(link.userId) && (link.projectId === null ? link.revision === 0 : validBeatId(link.projectId) && Number.isSafeInteger(link.revision) && link.revision > 0) &&
-    Number.isSafeInteger(link.syncedUpdatedAt) && link.syncedUpdatedAt >= 0);
+    (!Object.hasOwn(link, 'syncedUpdatedAt') || (Number.isSafeInteger(link.syncedUpdatedAt) && link.syncedUpdatedAt >= 0)));
 }
 export function decideCloudLink(existing, captured, link) {
   if (!existing || !validRecord(existing) || !validCloudLink(link)) return { error: 'invalid' };

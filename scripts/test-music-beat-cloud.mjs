@@ -48,6 +48,29 @@ try {
     await rejects(save, saveArgs(0, raw, 'autosave', 'another-create'), 'PT409', 'VERSION_CONFLICT');
     assert.equal(Number(await value('SELECT count(id) FROM public.music_beat_project_versions')), 1);
   });
+  await check('whitespace titles round-trip exactly through create, update, stash and replay', async () => {
+    await query('SAVEPOINT title_cases');
+    for (const title of ['My beat ', 'My beat\t', 'My beat\n']) {
+      const id = randomUUID(), d = { ...doc, id, title }, text = JSON.stringify(d);
+      const args = [id, 0, text, title, 'autosave', 'title-create'];
+      const created = await value(save, args);
+      assert.equal(created.title, title);
+      assert.equal((await value(save, args)).idempotent, true);
+      const changedTitle = ` ${title}`, changedText = JSON.stringify({ ...d, title: changedTitle });
+      const updated = [id, 1, changedText, changedTitle, 'checkpoint', 'title-update'];
+      assert.equal((await value(save, updated)).title, changedTitle);
+      assert.equal((await value(save, updated)).idempotent, true);
+      const stashed = [id, 2, text, title, 'stash', 'title-stash'];
+      await value(save, stashed); assert.equal((await value(save, stashed)).idempotent, true);
+      assert.equal(await value("SELECT title FROM public.music_beat_project_versions WHERE project_id=$1 AND reason='stash'", [created.id]), title);
+      assert.equal(await value('SELECT doc_json FROM public.music_beat_projects WHERE id=$1', [created.id]), changedText);
+    }
+    for (const title of ['', ' \t\n\r', 'x'.repeat(80) + ' ']) {
+      const id = randomUUID();
+      await rejects(save, [id, 0, JSON.stringify({ ...doc, id, title }), title, 'autosave', 'invalid-title'], 'PT400');
+    }
+    await query('ROLLBACK TO SAVEPOINT title_cases');
+  });
   await check('invalid document, keys, track count, mode and size are refused', async () => {
     for (const content of ['{', 'null', '[]', '{}', JSON.stringify({ ...doc, id: other }), JSON.stringify({ ...doc, version: 5 }), JSON.stringify({ ...doc, tracks: Array(17).fill({}) }), raw + ' '.repeat(262144)])
       await rejects(save, [beatId, 1, content, doc.title, 'autosave', 'invalid-doc'], 'PT400');

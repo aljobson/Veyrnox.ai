@@ -5,10 +5,11 @@ import * as api from '../../../_lib/music/beat/beatCloud.js';
 import * as store from '../../../_lib/music/beat/beatStore.js';
 import { migrateBeat, validateBeat } from '../../../_lib/music/beat/beatDocument.mjs';
 import { configureCloudTakes } from '../../../_lib/music/beat/beatAssets.js';
-import { errorCode, errorState, maySync, needsSync, retryDelay, saveRequest, takesToUpload, takeAssets, sameAccount } from '../../../_lib/music/beat/beatCloudRules.mjs';
+import { errorCode, errorState, maySync, needsSync, retryDelay, saveRequest, takesToUpload, takeAssets, sameAccount, isRemoved, removedLink } from '../../../_lib/music/beat/beatCloudRules.mjs';
 const messages = { synced: 'Saved to your account', syncing: 'Saving to your account…', offline: 'Only on this device — offline',
   error: 'Not saved to your account — Retry', limit: 'Your account holds 50 beats. This one stays on this device.',
   rate_limited: 'Saving paused. Trying again in a minute.', conflict: 'Your account has another version of this beat.',
+  removed: 'Removed from your account — Save to your account',
   unlinked: 'Only on this device — Save to your account', other: 'Saved to another account', signed_out: 'Only on this device — Sign in to save to your account' };
 export function useBeatCloudSync({ beatId, project, cloud, announce }) {
   const latest = useRef(project);
@@ -19,15 +20,15 @@ export function useBeatCloudSync({ beatId, project, cloud, announce }) {
     if (!cloud) return;
     let active = true, generation = 0, userId = getStoredUserId(), controller = new AbortController();
     let timer, mediaTimer, firstQueued = 0, busy = false, conflict = null, paused = false, attempt = 0, retryAt = 0, terminal = false, pending = null;
-    // Revalidate with a revisioned save on open; a timestamp alone cannot prove document equality.
-    let syncedLocalRevision = null, state = '', refused = new Set(), takeRows = [];
+    // An unchanged beat checks the account on open without consuming a write.
+    let opened = false, syncedLocalRevision = null, state = '', refused = new Set(), takeRows = [];
     const capture = () => ({ userId, generation, signal: controller.signal });
     const current = token => active && sameAccount(token, { userId: getStoredUserId(), generation }) && !token.signal.aborted;
     const check = token => { if (!current(token)) throw Object.assign(new Error('Account changed'), { code: 'account_changed' }); };
-    function show(next, extra = {}) {
+    function show(next, extra = {}, notify = true) {
       if (!active) return;
       setView(v => ({ ...v, state: next, conflict, busy, userId, ...extra }));
-      if (next !== state && messages[next]) announce(messages[next]);
+      if (notify && next !== state && messages[next]) announce(messages[next]);
       state = next;
     }
     function schedule(delay = 10000) {
@@ -44,21 +45,41 @@ export function useBeatCloudSync({ beatId, project, cloud, announce }) {
       return result.takes;
     }
     async function media(doc, token, required = false) {
-      let rows = await rowsFor(token), failures = [];
-      for (const asset of takesToUpload(doc, rows, required ? new Set() : refused)) {
+      clearTimeout(mediaTimer);
+      if (!takeAssets(doc).length) { setView(v => ({ ...v, media: [] })); return; }
+      const rows = [...await rowsFor(token)], failures = [];
+      const pendingTakes = takesToUpload(doc, rows, required ? new Set() : refused);
+      for (const [index, asset] of pendingTakes.entries()) {
         check(token);
-        try { await api.uploadTake(beatId, asset, rows.find(r => r.take_ref === asset.ref), { ...token }); check(token); }
-        catch (error) {
+        try {
+          const ready = await api.uploadTake(beatId, asset, rows.find(r => r.take_ref === asset.ref), { ...token }); check(token);
+          const row = { ...ready, take_ref: asset.ref, status: 'ready' };
+          const existing = rows.findIndex(r => r.take_ref === asset.ref);
+          if (existing < 0) rows.push(row); else rows[existing] = { ...rows[existing], ...row };
+        } catch (error) {
           check(token); failures.push(asset.name);
-          if (['TAKE_CHANGED', 'LIMIT_REACHED', 'TAKE_UNAVAILABLE'].includes(errorCode(error))) refused.add(asset.ref);
+          const code = errorCode(error);
+          if (['TAKE_CHANGED', 'LIMIT_REACHED', 'TAKE_UNAVAILABLE'].includes(code)) refused.add(asset.ref);
+          if (code === 'LIMIT_REACHED') pendingTakes.slice(index).forEach(a => refused.add(a.ref));
+          if (['RATE_LIMITED', 'LIMIT_REACHED'].includes(code)) break;
         }
       }
-      rows = await rowsFor(token);
+      takeRows = rows;
+      configureCloudTakes({ beatId, userId: token.userId, rows, load: take => api.takeUrl(beatId, take.id, token), signal: token.signal });
       const missing = takesToUpload(doc, rows);
       setView(v => ({ ...v, media: missing.map(a => a.name) }));
-      clearTimeout(mediaTimer);
       if (!required && missing.some(a => !refused.has(a.ref))) mediaTimer = setTimeout(() => void cycle(), 60000);
       if (required && missing.length) throw Object.assign(new Error(`Could not save these takes to your account: ${missing.map(a => a.name).join(', ')}. Retry or Keep mine.`), { code: 'MEDIA_REQUIRED', names: failures });
+    }
+    async function markRemoved(token) {
+      terminal = true; pending = null; conflict = null; paused = false;
+      clearTimeout(timer); clearTimeout(mediaTimer);
+      const { record } = await store.getBeat(beatId); check(token);
+      if (record?.cloud?.userId === token.userId) {
+        const result = await store.setCloudLink(beatId, record.cloud, removedLink(token.userId)); check(token);
+        if (result.error) { show('error'); return; }
+      }
+      show('removed');
     }
     async function getTheirs(token) {
       const result = await api.getCloudBeat(beatId, token); check(token);
@@ -88,20 +109,44 @@ export function useBeatCloudSync({ beatId, project, cloud, announce }) {
         if (mode === 'checkpoint' || lifecycle) { await latest.current.flushLatest(); check(token); }
         const { record } = await store.getBeat(beatId); check(token);
         if (!record) return;
-        if (!maySync(record.cloud, userId)) { show(record.cloud ? 'other' : 'unlinked'); return; }
+        if (!maySync(record.cloud, userId)) { show(record.cloud?.userId === userId && isRemoved(record.cloud) ? 'removed' : record.cloud ? 'other' : 'unlinked'); return; }
         const save = mode === 'checkpoint' || needsSync(record, userId, syncedLocalRevision);
         if (lifecycle && (!save || new TextEncoder().encode(JSON.stringify(saveRequest(record.doc, record.cloud.revision, mode))).length > 64000)) return;
-        show('syncing');
+        syncedLocalRevision ??= record.revision;
+        let mediaDoc = record.doc, updatedFromCloud = false;
+        if (!save && !opened && !lifecycle) {
+          const theirs = await api.getCloudBeat(beatId, token); check(token);
+          const doc = JSON.parse(theirs.doc_json);
+          if (!validateBeat(doc).ok || doc.id !== beatId) throw new Error('Invalid account beat');
+          opened = true;
+          if (theirs.project.revision > record.cloud.revision) {
+            await latest.current.replaceFromCloud(migrateBeat(doc), theirs.project.revision, null, null,
+              () => current(token), theirs.project.id, record);
+            check(token);
+            const updated = await store.getBeat(beatId); check(token);
+            syncedLocalRevision = updated.record.revision;
+            mediaDoc = updated.record.doc; updatedFromCloud = true;
+          }
+        }
+        if (save) show('syncing');
         if (save) await write(record, { ...token, keepalive: lifecycle }, mode);
-        if (!lifecycle) await media(record.doc, token);
-        check(token); attempt = 0; retryAt = 0; show('synced');
+        if (!lifecycle) await media(mediaDoc, token);
+        check(token); attempt = 0; retryAt = 0; show('synced', {}, !updatedFromCloud);
         const fresh = await store.getBeat(beatId); check(token);
         if (fresh.record && needsSync(fresh.record, userId, syncedLocalRevision)) schedule();
       } catch (error) {
         if (!current(token)) return;
+        if (errorCode(error) === 'LOCAL_CONFLICT') { schedule(); return; }
         const next = errorState(error);
-        if (next === 'conflict') {
-          try { await getTheirs(token); } catch { if (current(token)) { show('offline'); retryAt = Date.now() + 10000; schedule(); } }
+        if (next === 'removed') {
+          await markRemoved(token);
+        } else if (next === 'conflict') {
+          try { await getTheirs(token); } catch (readError) {
+            if (current(token)) {
+              if (errorState(readError) === 'removed') await markRemoved(token);
+              else { show('offline'); retryAt = Date.now() + 10000; schedule(); }
+            }
+          }
         } else {
           show(next); const delay = retryDelay(attempt++, error);
           if (delay === null) terminal = true;
@@ -112,8 +157,8 @@ export function useBeatCloudSync({ beatId, project, cloud, announce }) {
     async function link() {
       if (!userId || busy) return;
       const token = capture(), { record } = await store.getBeat(beatId); check(token);
-      if (!record || record.cloud) return;
-      const result = await store.setCloudLink(beatId, null, { userId, projectId: null, revision: 0, syncedUpdatedAt: 0 }); check(token);
+      if (!record || (record.cloud && !(record.cloud.userId === userId && isRemoved(record.cloud)))) return;
+      const result = await store.setCloudLink(beatId, record.cloud || null, { userId, projectId: null, revision: 0, syncedUpdatedAt: 0 }); check(token);
       if (result.error) { show('error'); return; }
       terminal = false; await cycle();
     }
@@ -133,11 +178,13 @@ export function useBeatCloudSync({ beatId, project, cloud, announce }) {
               const { record } = await store.getBeat(beatId); check(token);
               await write({ ...record, doc }, token, 'stash', theirs.revision);
             }, doc => media(doc, token, true), () => current(token), theirs.projectId);
+          syncedLocalRevision = null;
         }
         check(token); conflict = null; paused = false; show('synced'); schedule();
       } catch (error) {
         if (!current(token)) return;
-        if (errorCode(error) === 'VERSION_CONFLICT') {
+        if (errorState(error) === 'removed') await markRemoved(token);
+        else if (errorCode(error) === 'VERSION_CONFLICT') {
           try { await getTheirs(token); } catch { if (current(token)) show('conflict', { detail: 'Could not load the latest account version. Retry.' }); }
         }
         else show('conflict', { detail: errorCode(error) === 'MEDIA_REQUIRED' ? error.message : 'Your beat is still on this device. Retry or Keep mine.' });
@@ -147,7 +194,7 @@ export function useBeatCloudSync({ beatId, project, cloud, announce }) {
       const next = getStoredUserId(); if (next === userId) return;
       generation++; controller.abort(); controller = new AbortController();
       clearTimeout(timer); clearTimeout(mediaTimer); firstQueued = 0; busy = false; conflict = null; paused = false;
-      pending = null; syncedLocalRevision = null; refused = new Set(); takeRows = []; terminal = false; retryAt = 0; userId = next;
+      pending = null; opened = false; syncedLocalRevision = null; refused = new Set(); takeRows = []; terminal = false; retryAt = 0; userId = next;
       configureCloudTakes(null); show(userId ? 'unlinked' : 'signed_out', { media: [], detail: '' });
       if (userId) schedule(0);
     }

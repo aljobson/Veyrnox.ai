@@ -94,3 +94,16 @@ test('ready take GET returns five-minute URL and pending is refused', async () =
   globalThis.fetch = async () => Response.json({ r2_key: key, byte_size: 44, status: 'pending' });
   await error(await take(req(), params), 404, 'NOT_FOUND');
 });
+
+
+test('PUT preserves trailing space, tab and newline titles exactly', async () => {
+  for (const title of ['My beat ', 'My beat\t', 'My beat\n']) {
+    const text = JSON.stringify({ ...doc, title });
+    globalThis.fetch = async (url, init) => {
+      const sent = JSON.parse(init.body);
+      assert.equal(sent.p_title, title); assert.equal(sent.p_doc, text);
+      return Response.json({ ...metadata, title });
+    };
+    assert.equal((await PUT(req('PUT', { ...body, doc_json: text }), params)).status, 201);
+  }
+});

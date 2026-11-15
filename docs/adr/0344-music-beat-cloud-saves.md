@@ -43,9 +43,14 @@ follow that classification; before activation, add an export section for beat do
 versions and take metadata (or obtain an explicit revised privacy-export decision).
 
 Activation: independently review, run unit/lint and database proofs, apply 0542 by the
-normal migration workflow, observe 24 hours of clean reconciliation, satisfy the privacy-export prerequisite, then enable staging
-and verify two browsers, media, keyboard access and both widths. Only the owner enables
-production. Turning off beatCloud hides the UI and refuses the routes.
+normal migration workflow, observe 24 hours of clean reconciliation, satisfy the
+privacy-export prerequisite, then the owner adds `"beatCloud":true` to the staging
+`MUSIC_RUNTIME_FLAGS` string
+in `wrangler.jsonc`, updating the matching pin in `tests/runtimeSwitches.test.mjs` if required,
+and verifies two browsers, media, keyboard access and both widths. Only the owner enables
+production by adding the same key to its `MUSIC_RUNTIME_FLAGS` string and updating its
+test pin if required. The absent key means off; no binding is added. Turning off
+beatCloud hides the UI and refuses the routes.
 
 Proof: `npm test && npm run lint`; local migration replay followed by
 `scripts/test-music-beat-cloud.mjs`, default-privileges, account-deletion and privacy-export
@@ -53,7 +58,7 @@ acceptance; Worker build below 60,500 KiB; regenerated Vey inventory; host UI ch
 Builder evidence and any unavailable checks are reported separately. ADR-0344/0542
 were free locally; the open-PR allocation check could not reach GitHub in the sandbox.
 
-The authenticated wrappers are also reachable directly through PostgREST. Therefore
-raw storage keys are omitted from our gateway responses and column grants, but the
-reserve/read RPC results are not technically Worker-only. Enforcing that stronger
-boundary would require a separately trusted role/capability and a revised ADR.
+Security: a signed-in user can call reserve/read directly through PostgREST with their
+own JWT and see their own object keys. Keys are not credentials: R2 access still
+requires a Worker-signed URL. This owner-visible key surface is accepted. Gateway
+responses and column grants continue to omit raw object keys.

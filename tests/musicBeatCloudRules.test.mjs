@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { sameAccount, maySync, needsSync, errorState, retryDelay, conflictRequest, takesToUpload, replaceAfterStash, recoverTake, syncDocumentThenMedia } from '../app/veyrnox/_lib/music/beat/beatCloudRules.mjs';
+import { sameAccount, removedLink, isRemoved, maySync, needsSync, errorState, retryDelay, conflictRequest, takesToUpload, replaceAfterStash, recoverTake, syncDocumentThenMedia } from '../app/veyrnox/_lib/music/beat/beatCloudRules.mjs';
 import { createBeat } from '../app/veyrnox/_lib/music/beat/beatDocument.mjs';
 import { validRecord, decideUpdate, validCloudLink, decideCloudLink } from '../app/veyrnox/_lib/music/beat/beatStoreRules.mjs';
 import { restoreVersion } from '../app/veyrnox/_lib/music/beat/beatOps.mjs';
@@ -106,5 +106,37 @@ test('same-timestamp and backwards-clock edits still sync by local revision', ()
   const record = { doc, cloud: link, revision: 4 };
   assert.equal(needsSync(record, userId, 3), true);
   assert.equal(needsSync(record, userId, 4), false);
-  assert.equal(needsSync(record, userId, null), true, 'opening revalidates against the account revision');
+  assert.equal(needsSync(record, userId, null), false, 'opening checks the account with a read');
+});
+
+
+test('removed projects stop retries and require explicit relinking even after reopening', () => {
+  const removed = removedLink(userId);
+  assert.deepEqual(removed, { userId, projectId: null, revision: 0 });
+  assert.equal(validCloudLink(removed), true);
+  assert.equal(isRemoved(removed), true);
+  assert.equal(maySync(removed, userId), false);
+  assert.equal(needsSync({ doc, cloud: removed, revision: 1 }, userId), false);
+  assert.equal(errorState({ code: 'NOT_FOUND', status: 404 }), 'removed');
+  assert.equal(retryDelay(0, { code: 'NOT_FOUND', status: 404 }), null);
+  const relinked = decideCloudLink({ id, doc, updatedAt: 1, revision: 1, cloud: removed }, removed,
+    { ...removed, syncedUpdatedAt: 0 }).record;
+  assert.equal(needsSync(relinked, userId), true);
+});
+
+test('quiet replacement uses the atomic path without media or stash', async () => {
+  const events = [];
+  await replaceAfterStash({ latest: async () => ({ doc, revision: 1 }), current: () => true,
+    replace: async () => events.push('replace') });
+  assert.deepEqual(events, ['replace']);
+});
+
+test('version reasons and local Today time match the Versions labels', async () => {
+  const { versionReason, versionTime } = await import('../app/veyrnox/_lib/music/beat/beatVersionLabels.mjs');
+  for (const [reason, label] of Object.entries({ autosave: 'Autosave', checkpoint: 'Checkpoint',
+    conflict: 'Account version kept when you chose Keep mine', stash: 'Your changes kept when you chose Load theirs' }))
+    assert.equal(versionReason(reason), label);
+  const now = new Date(2026, 10, 15, 17, 0);
+  assert.equal(versionTime(new Date(2026, 10, 15, 14, 2), now), 'Today 14:02');
+  assert.match(versionTime(new Date(2026, 10, 14, 14, 2), now), /2026 14:02$/);
 });

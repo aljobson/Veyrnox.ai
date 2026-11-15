@@ -167,12 +167,17 @@ export function useBeatProject(id, announce) {
     await inFlight.current;
     if (blocked.current || unsaved.current) throw new Error('Local save incomplete');
   }
-  async function replaceFromCloud(theirsDoc, theirsRevision, stash, media, isCurrent, cloudProjectId) {
+  async function replaceFromCloud(theirsDoc, theirsRevision, stash, media, isCurrent, cloudProjectId, expected = null) {
     if (replacing.current || blocked.current) throw new Error('Local beat is busy');
     beforeFlush.current?.(); replacing.current = true;
     try {
       await replaceAfterStash({
-        latest: async () => { await inFlight.current; return { doc: current.current, revision: revision.current }; },
+        latest: async () => {
+          await inFlight.current;
+          if (expected && (revision.current !== expected.revision || JSON.stringify(current.current) !== JSON.stringify(expected.doc)))
+            throw Object.assign(new Error('Local beat changed'), { code: 'LOCAL_CONFLICT' });
+          return { doc: current.current, revision: revision.current };
+        },
         media, stash,
         current: captured => isCurrent() && !blocked.current && current.current === captured.doc && revision.current === captured.revision,
         replace: async captured => {
@@ -184,7 +189,7 @@ export function useBeatProject(id, announce) {
           await reload(); return result;
         },
       });
-      announce('Loaded the account version; your changes are saved in Versions');
+      announce(expected ? 'Updated from your account' : 'Loaded the account version; your changes are saved in Versions');
     } finally { replacing.current = false; void flush(); }
   }
   return { doc, saved, flushLatest, replaceFromCloud, current, registerFinalizer, registerRecordingState, error, persistent, conflict, saveError, retry: flush, edit, reload, copy, selectPattern,
