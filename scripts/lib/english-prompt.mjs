@@ -10,12 +10,12 @@ const FOREIGN = new Set(('der die das den dem mit und ist ein eine nicht ersetze
 // Vietnamese and similar scripts use Latin Extended Additional letters (U+1EA0-U+1EFF) throughout.
 const VIETNAMESE = /[\u1EA0-\u1EFF]/u;
 // Latin, punctuation, arrows, symbols and emoji are allowed; any other script is not English.
-const NON_LATIN = /[^\u0000-ɏḀ-ỿ -⁯₠-⃏℀-⇿←-⏿①-➿⬀-⯿️\u{1F000}-\u{1FAFF}]/u;
+const NON_LATIN = /[^\u0000-\u024F\u1E00-\u1EFF\u2000-\u206F\u20A0-\u20CF\u2100-\u23FF\u2460-\u27BF\u2B00-\u2BFF\uFE0F\u{1F000}-\u{1FAFF}]/u;
 
 export function isEnglishPrompt(prompt) {
   const text = String(prompt || '').replace(/<<<[^>]*>>>|@(?:image|video)\s*[_-]?\d*/gi, ' ');
   if (NON_LATIN.test(text) || VIETNAMESE.test(text)) return false;
-  const words = text.toLowerCase().match(/[a-zÀ-ɏ]+/g) || [];
+  const words = text.toLowerCase().match(/[a-z\u00C0-\u024F]+/g) || [];
   const english = words.filter(word => ENGLISH.has(word)).length;
   const foreign = words.filter(word => FOREIGN.has(word)).length;
   return english >= 2 && english > foreign * 2;
