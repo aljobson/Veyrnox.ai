@@ -63,3 +63,9 @@ test('both switches start off', () => {
     assert.equal(musicRuntimeFlag('follows', { MUSIC_RUNTIME_FLAGS: '{}' }), false);
     assert.equal(musicRuntimeFlag('reactions', { MUSIC_RUNTIME_FLAGS: '{"reactions":true}' }), true);
 });
+
+test('reactions, follows and rails are on in production and staging since 2026-11-15 (owner)', () => {
+    const lines = readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8').split('\n').filter((line) => line.includes('"MUSIC_RUNTIME_FLAGS"'));
+    assert.equal(lines.length, 2);
+    for (const line of lines) for (const key of ['reactions', 'follows', 'rails']) assert.ok(line.includes(`\\"${key}\\":true`), key);
+});
