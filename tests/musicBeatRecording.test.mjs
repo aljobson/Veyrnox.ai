@@ -144,3 +144,69 @@ test('unquantised overlapping loop onsets refuse atomically; take remains availa
   capture.on('same', 60, 80, 0); capture.off('same', 240);
   assert.equal(capture.finalize(doc, 480, () => true), doc); assert.match(capture.error, /same clip position/); assert.equal(capture.take.notes.length, 1);
 });
+
+test('capture reserves cumulative density incrementally and defers split notices until commit', () => {
+  const doc = empty(), messages = [], capture = createRecording(doc, 't2', 0, { announce: (message) => messages.push(message) });
+  for (let i = 0; i < 3000; i++) {
+    const tick = Math.floor(i / 1500) * BAR + Math.floor(i % 1500 / 88) * 60;
+    assert.equal(capture.on(`n${i}`, 21 + i % 88, 100, tick), true);
+    if (i) capture.off(`n${i}`, tick + 30);
+  }
+  assert.equal(capture.take.notes[0].end, BAR);
+  assert.equal(messages.some((message) => message.includes('Long notes were split')), false);
+  const next = capture.finalize(doc, 2 * BAR, () => true);
+  assert.equal(capture.error, null); assert.equal(validateBeat(next).ok, true);
+  assert.deepEqual(Object.values(next.clips).map((clip) => clip.notes.length), [1500, 1500]);
+  assert.equal(messages.filter((message) => message.includes('Long notes were split')).length, 1);
+});
+test('ordinary note-ons do not traverse the pending take or recount project notes', () => {
+  const doc = empty(), capture = createRecording(doc, 't2', 0);
+  Object.defineProperty(doc, 'clips', { get() { throw new Error('Unexpected project recount'); } });
+  const notes = [];
+  capture.take.notes = new Proxy(notes, { get(target, key) {
+    if (['filter', 'map', 'sort', Symbol.iterator].includes(key)) throw new Error('Unexpected full-take traversal');
+    return Reflect.get(target, key);
+  } });
+  for (let i = 0; i < 100; i++) {
+    assert.equal(capture.on(`n${i}`, 60, 100, i * 30), true);
+    capture.off(`n${i}`, i * 30 + 30);
+  }
+  assert.equal(notes.length, 100);
+});
+test('shared existing clips reserve note capacity across every referencing region', () => {
+  const doc = midiDoc(Array.from({ length: 1999 }, (_, i) => [i * 60, 30, 60, 100]));
+  doc.clips.c1.lengthTicks = 64 * BAR;
+  doc.tracks[1].regions.push({ id: 'r3', start: BAR, length: BAR, clipId: 'c1', phaseTicks: BAR });
+  const capture = createRecording(doc, 't2', 0);
+  assert.equal(capture.on('first', 62, 100, 0), true); capture.off('first', 240);
+  assert.equal(capture.on('second', 62, 100, BAR), false);
+  assert.equal(capture.accepting, false);
+});
+
+test('a held note at the exact time boundary carries into the latest free bar', () => {
+  const doc = empty(); doc.tempo.bpm = 240;
+  const capture = createRecording(doc, 't2', 0);
+  capture.on('first', 60, 100, 0); capture.off('first', 240);
+  capture.on('held', 62, 100, 63 * BAR);
+  capture.on('next', 64, 100, 64 * BAR); capture.off('next', 64 * BAR + 240);
+  capture.off('held', 65 * BAR);
+  const next = capture.finalize(doc, 65 * BAR, () => true);
+  assert.equal(capture.error, null); assert.equal(validateBeat(next).ok, true);
+  assert.equal(next.tracks[1].regions.length, 2);
+  assert.equal(next.tracks[1].regions[1].start, 63 * BAR);
+  assert.deepEqual(next.clips[next.tracks[1].regions[1].clipId].notes[0], [0, 2 * BAR, 62, 100]);
+});
+test('density cuts end a held note even when the next onset lands exactly on the bar line', () => {
+  const doc = empty(), capture = createRecording(doc, 't2', 0);
+  for (let i = 0; i < 2000; i++) {
+    const tick = Math.floor(i / 88) * 60;
+    capture.on(`n${i}`, 21 + i % 88, 100, tick);
+    if (i) capture.off(`n${i}`, tick + 30);
+  }
+  assert.equal(capture.on('next', 60, 100, BAR), true);
+  capture.update(2 * BAR);
+  assert.equal(capture.take.notes[0].end, BAR);
+  assert.equal(capture.held.has('n0'), false);
+  assert.equal(capture.finalize(doc, 2 * BAR, () => true).tracks[1].regions.length, 2);
+  assert.equal(capture.error, null);
+});

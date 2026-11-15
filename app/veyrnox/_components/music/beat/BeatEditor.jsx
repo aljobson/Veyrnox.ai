@@ -50,13 +50,16 @@ export default function BeatEditor({ id }) {
   useEffect(() => () => clearTimeout(undoTimer.current), []);
   // This state belongs to the displayed history entry, not to an effect or timer replay.
   if (undo && undo.id !== project.undoId) setUndo(null);
+  const keyState = useRef(null);
+  useEffect(() => { keyState.current = { doc, playback, project, editTrackId, octave, velocity }; });
   useEffect(() => {
     function key(event) {
+      const { doc, playback, project, editTrackId, octave, velocity } = keyState.current;
       if (event.defaultPrevented || event.repeat || !doc || document.querySelector('dialog[open]')) return;
       const target = event.target;
       const textInput = target.isContentEditable || target.closest('textarea, [role="textbox"]') ||
         (target.tagName === 'INPUT' && !['range', 'checkbox', 'radio', 'button', 'submit'].includes(target.type));
-      if (textInput) return;
+      if (textInput || target.closest('[data-beat-velocity]')) return;
       const inPianoRoll = Boolean(target.closest('[role="application"]'));
       const command = event.ctrlKey || event.metaKey || event.altKey;
       if ((event.ctrlKey || event.metaKey) && ['z', 'y'].includes(event.key.toLowerCase())) {
@@ -69,7 +72,7 @@ export default function BeatEditor({ id }) {
       if (command || target.closest('select')) return;
       if (event.code === 'Space' && (inPianoRoll || !target.closest('input, button, a, [role="button"]'))) { event.preventDefault(); playback.toggle(); return; }
       if (inPianoRoll) return;
-      const route = routeBeatKey({ key: event.key, repeat: event.repeat, command, textInput, kind: editTrack(doc, editTrackId).kind, octave, velocity });
+      const route = routeBeatKey({ key: event.key, repeat: event.repeat, command, textInput, kind: editTrack(doc, editTrackId)?.kind, octave, velocity });
       if (!route) return;
       event.preventDefault();
       if (route.type === 'pad') playback.hit(route.pad);
@@ -77,10 +80,10 @@ export default function BeatEditor({ id }) {
       if (route.type === 'octave') setOctave(route.value);
       if (route.type === 'velocity') setVelocity(route.value);
     }
-    const up = (event) => playback.noteOff(`typing:${event.key.toLowerCase()}`);
+    const up = (event) => keyState.current.playback.noteOff(`typing:${event.key.toLowerCase()}`);
     window.addEventListener('keydown', key); window.addEventListener('keyup', up);
     return () => { window.removeEventListener('keydown', key); window.removeEventListener('keyup', up); };
-  }, [doc, playback, project, editTrackId, octave, velocity]);
+  }, []);
   function clear() {
     clearTimeout(undoTimer.current);
     const id = edit((d) => ops.clearPattern(d), { label: 'clear pattern' });
@@ -121,7 +124,7 @@ export default function BeatEditor({ id }) {
       if (value.trim() && edit((d) => ops.rename(d, value), { key: 'title', label: 'rename beat' })) {
         setStoredTitle(value);
       }
-    }} onBlur={() => { if (title.trim()) setTitleDraft(null); }} /></label><BeatExportDialog finalize={() => { const finalized = playback.finalizeRecording(); playback.stop(); return finalized; }} doc={doc} editTrackId={track.id} announce={announce} /></div>
+    }} onBlur={() => { if (title.trim()) setTitleDraft(null); }} /></label><BeatExportDialog finalize={() => playback.isRecording() || playback.pending.current ? playback.stop() : project.current.current} doc={doc} editTrackId={track.id} announce={announce} /></div>
     {!title.trim() && <p id="title-error">Give your beat a title.</p>}
     <p className="text-sm text-vx-fg-muted">{project.conflict ? 'Autosave paused' : project.saveError ? <>{"Couldn't save on this device."} <button className={button} onClick={project.retry}>Retry</button></> : !project.persistent ? 'Kept in memory for this visit' : project.dirty ? 'Saving…' : 'Saved on this device'}</p>
     {!project.persistent && <p className="rounded-xl border border-vx-border bg-vx-panel p-3">{storageWarning}</p>}

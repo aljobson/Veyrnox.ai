@@ -12,11 +12,16 @@ export function bindMidiAccess(access, onMessage, onDevices) {
   const message = (e) => { const parsed = parseMidiMessage(e.data); if (parsed) onMessage(parsed, e.timeStamp); };
   function update() {
     if (disposed) return;
-    input?.removeEventListener('midimessage', message);
     const devices = [...access.inputs.values()].filter((d) => d.state !== 'disconnected');
-    input = devices.find((d) => d.id === selected) || devices[0] || null;
+    const next = devices.find((d) => d.id === selected) || devices[0] || null;
+    if (next !== input) {
+      input?.removeEventListener('midimessage', message);
+      input = next;
+      input?.addEventListener('midimessage', message);
+      // Event listeners do not implicitly open a Web MIDI input port.
+      try { input?.open?.()?.catch(() => {}); } catch { /* Permission/device changes may close the port. */ }
+    }
     selected = input?.id || null;
-    input?.addEventListener('midimessage', message);
     onDevices(devices, selected);
   }
   access.addEventListener('statechange', update); update();

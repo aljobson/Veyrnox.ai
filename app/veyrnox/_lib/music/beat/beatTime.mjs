@@ -33,3 +33,17 @@ export function formatPosition(ticks) {
   const step = Math.floor(tick % 960 / 240) + 1;
   return `bar ${bar}` + (tick % 3840 ? `, beat ${beat}` : '') + (tick % 960 ? `, step ${step}` : '');
 }
+// Durations are rounded to the nearest 1/64 note, never decimal beats.
+export function formatNoteLength(ticks) {
+  const units = Math.max(1, Math.round(ticks / 60));
+  const bars = Math.floor(units / 64), beats = Math.floor(units % 64 / 16), fraction = units % 16;
+  const parts = [];
+  if (bars) parts.push(`${bars} ${bars === 1 ? 'bar' : 'bars'}`);
+  if (beats) parts.push(`${beats} ${beats === 1 ? 'beat' : 'beats'}`);
+  if (fraction) {
+    let numerator = fraction, denominator = 64;
+    while (numerator % 2 === 0) { numerator /= 2; denominator /= 2; }
+    parts.push(`${numerator}/${denominator}`);
+  }
+  return parts.join(' ');
+}

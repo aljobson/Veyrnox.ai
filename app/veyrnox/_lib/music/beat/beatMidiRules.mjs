@@ -29,6 +29,14 @@ export function clipsError(clips) {
 }
 export const validMidiRegion = (r, clip) => !!clip && exact(r, ['id', 'start', 'length', 'clipId', 'phaseTicks']) && Number.isInteger(r.phaseTicks) && r.phaseTicks >= 0 && r.phaseTicks < clip.lengthTicks;
 export const noteKey = (note) => `${note[0]}:${note[2]}`;
+export function clipLengthFromBars(draft) {
+  if (!String(draft).trim() || !Number.isFinite(Number(draft))) return null;
+  return Math.max(240, Math.min(MIDI_LIMITS.clipTicks, Math.round(Number(draft) * 3840 / 240) * 240));
+}
+export function quantisedSelection(clip, keys, snap, strength) {
+  const selected = new Set(keys);
+  return [...new Set(clip.notes.filter((n) => selected.has(noteKey(n))).map((n) => noteKey(quantisedNote(n, clip.lengthTicks, snap, strength))))];
+}
 export const sortNotes = (notes) => notes.sort((a, b) => a[0] - b[0] || a[2] - b[2]);
 // Selection priority is retained separately from the transformed tuple.
 export function resolveNotes(entries) {

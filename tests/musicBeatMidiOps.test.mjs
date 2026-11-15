@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { midiDoc } from './musicBeatMidiFixtures.mjs';
+import { midiDoc, bass } from './musicBeatMidiFixtures.mjs';
 import * as midi from '../app/veyrnox/_lib/music/beat/beatMidiOps.mjs';
 import * as ops from '../app/veyrnox/_lib/music/beat/beatOps.mjs';
 import * as history from '../app/veyrnox/_lib/music/beat/beatHistory.mjs';
@@ -50,4 +50,31 @@ test('split and trim keep all retained onsets and durations except crossing cuts
   assert.deepEqual(after.map((n) => n.songTimeSec), before.map((n) => n.songTimeSec));
   assert.equal(after[0].durationSec, 0.25); assert.deepEqual(after.slice(1), before.slice(1));
   assert.deepEqual(midiNoteOnsInWindow(ops.trimRegionStart(doc, 'r2', 480), 0, 4), before.slice(1));
+});
+
+test('track additions use preset labels, unique suffixes and an explicit 16-track refusal', () => {
+  let doc = midiDoc();
+  assert.equal(doc.tracks.at(-1).name, 'Sub bass');
+  doc = midi.addMidiTrack(doc, bass);
+  assert.equal(doc.tracks.at(-1).name, 'Sub bass 2');
+  doc = midi.addMidiTrack(doc, { engine: 'wavetable', id: 'wavetable', preset: 'glass' });
+  assert.equal(doc.tracks.at(-1).name, 'Glass keys');
+  while (doc.tracks.length < 16) doc = midi.addMidiTrack(doc, bass);
+  assert.throws(() => midi.addMidiTrack(doc, bass), { message: 'A song can have at most 16 tracks.' });
+});
+
+import { clipLengthFromBars, quantisedSelection } from '../app/veyrnox/_lib/music/beat/beatMidiRules.mjs';
+test('clip length drafts round once at commit and clamp to valid bounds', () => {
+  for (const draft of ['', ' ', 'abc', 'Infinity']) assert.equal(clipLengthFromBars(draft), null);
+  for (const [draft, ticks] of [['1.', 3840], ['1.3', 5040], ['12', 46080], ['0', 240], ['-1', 240], ['100', 64 * 3840]]) assert.equal(clipLengthFromBars(draft), ticks);
+});
+test('quantise selection follows moved notes and collisions through a second quantise', () => {
+  const doc = midiDoc([[0, 240, 60, 110], [60, 240, 60, 80], [300, 240, 62, 100]]);
+  const keys = quantisedSelection(doc.clips.c1, ['60:60'], 240, 1);
+  const first = midi.quantiseNotes(doc, 'c1', ['60:60'], 240);
+  assert.deepEqual(keys, ['0:60']);
+  assert.deepEqual(first.clips.c1.notes, [[0, 240, 60, 80], [300, 240, 62, 100]]);
+  const second = midi.quantiseNotes(first, 'c1', keys, 240);
+  assert.deepEqual(second.clips.c1.notes, first.clips.c1.notes);
+  assert.deepEqual(quantisedSelection(doc.clips.c1, ['60:60'], 240, 0.5), ['30:60']);
 });

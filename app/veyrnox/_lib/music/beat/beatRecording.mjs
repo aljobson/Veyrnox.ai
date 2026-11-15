@@ -78,25 +78,78 @@ export function takeAsNewBeat(source, take, { id, now = Date.now() }) {
 export function createRecording(doc, trackId, startTick, { snap = 0, announce = () => {} } = {}) {
   const source = doc.tracks.find((t) => t.id === trackId);
   const take = { instrument: source?.instrument, name: source?.name || 'Recorded take', trackId, startTick, endLimit: recordingEndTick(doc.tempo.bpm), snap, notes: [] };
-  const held = new Map(), notices = new Set(), cuts = new Set();
+  const held = new Map(), notices = new Set(), splitNotices = new Set();
+  const projectNotes = noteCount(doc), barCounts = new Map(), clipCounts = new Map();
+  const availableClips = 64 - Object.keys(doc.clips).length;
+  const availableRegions = 400 - doc.tracks.reduce((n, t) => n + t.regions.length, 0);
+  const gaps = [], regions = source?.regions || [];
+  let gapStart = Math.floor(startTick / 3840) * 3840, reserved = 0;
+  for (const region of [...regions, { start: take.endLimit, length: 0 }]) {
+    if (region.start > gapStart) gaps.push({ start: gapStart, end: Math.min(region.start, take.endLimit), clips: [] });
+    gapStart = Math.max(gapStart, region.start + region.length);
+  }
   let accepting = true, finalized = false, failure = null;
   const tell = (message) => { if (!notices.has(message)) { notices.add(message); announce(message); } };
   const limit = (reason) => { accepting = false; tell(`Recording limit reached — stop to save. ${reason}`); };
   function update(tick) {
     for (const [key, note] of held) {
-      note.end = Math.min(...[...cuts].filter((line) => line >= note.start + 30), take.endLimit, note.start + MAX, Math.max(note.start + 30, Math.round(tick)));
+      note.end = Math.min(take.endLimit, note.start + MAX, Math.max(note.start + 30, Math.round(tick)));
       if (tick >= note.start + MAX) { held.delete(key); tell('Held note ended at 64 bars'); }
-      else if ([...cuts].some((line) => line > note.start && tick >= line)) held.delete(key);
     }
   }
-  function checkCapacity() {
-    const { groups, existing } = takeAllocation(doc, take);
-    if (Object.keys(doc.clips).length + groups.length > 64) return 'Clip limit reached';
-    if (doc.tracks.reduce((n, t) => n + t.regions.length, 0) + groups.length > 400) return 'Region limit reached';
-    for (const [id, notes] of existing) {
-      const region = targetRegion(doc, trackId, notes[0].start);
-      if (region.id === id && doc.clips[region.clipId].notes.length + notes.length > 2000) return 'Clip note limit reached';
+  function reservationError() {
+    if (reserved >= availableClips) return 'Clip limit reached';
+    if (reserved >= availableRegions) return 'Region limit reached';
+    return null;
+  }
+  // Count onsets incrementally. Only a prospective clip boundary inspects its
+  // own notes; sorting and full take partitioning are reserved for commit.
+  function reserveNote(note) {
+    const region = regions.find((r) => r.start <= note.start && note.start < r.start + r.length);
+    if (region) {
+      const count = clipCounts.get(region.clipId) ?? doc.clips[region.clipId].notes.length;
+      if (count >= 2000) return 'Clip note limit reached';
+      clipCounts.set(region.clipId, count + 1);
+      return null;
     }
+    const gap = gaps.find((g) => g.start <= note.start && note.start < g.end);
+    if (!gap) return 'No room for a recorded region';
+    let clip = gap.clips.find((c) => c.start <= note.start && note.start < c.end);
+    if (!clip) {
+      const error = reservationError();
+      if (error) return error;
+      const start = note.start >= gap.start + MAX ? Math.floor(note.start / 3840) * 3840 : gap.start;
+      clip = { start, end: gap.end, count: 0, notes: [] };
+      gap.clips.push(clip); reserved++;
+    }
+    while (note.start >= Math.floor((clip.start + MAX) / 3840) * 3840 || clip.count >= 2000) {
+      const error = reservationError();
+      if (error) return error;
+      const timeBoundary = Math.floor((clip.start + MAX) / 3840) * 3840;
+      const dense = clip.count >= 2000 && note.start < timeBoundary;
+      const heldNotes = new Set(held.values());
+      let line = dense ? Math.floor(note.start / 3840) * 3840 : timeBoundary;
+      if (!dense) {
+        for (let free = line; free > clip.start; free -= 3840) {
+          if (!clip.notes.some((n) => n.start < free && (n.end > free || (n.end === free && heldNotes.has(n))))) { line = free; break; }
+        }
+      }
+      if (line <= clip.start) return 'This bar has 2,000 onsets';
+      const carry = clip.notes.filter((n) => n.start >= line);
+      const previous = clip.notes.filter((n) => n.start < line);
+      for (const n of previous) if (n.end > line || (n.end === line && heldNotes.has(n))) {
+        // Preserve impossible sub-30-tick cuts for the existing recovery path.
+        if (line - n.start >= 30) n.end = line;
+        splitNotices.add(`Long notes were split at bar ${Math.floor(line / 3840) + 1}`);
+        for (const [key, heldNote] of held) if (heldNote === n) held.delete(key);
+      }
+      const end = clip.end;
+      clip.end = line; clip.notes = previous; clip.count = previous.length;
+      const start = !carry.length && note.start >= line + MAX ? Math.floor(note.start / 3840) * 3840 : line;
+      clip = { start, end, count: carry.length, notes: carry };
+      gap.clips.push(clip); reserved++;
+    }
+    clip.notes.push(note); clip.count++;
     return null;
   }
   return {
@@ -105,21 +158,14 @@ export function createRecording(doc, trackId, startTick, { snap = 0, announce = 
     on(key, pitch, velocity, tick) {
       if (!Number.isFinite(tick) || !Number.isInteger(pitch) || !Number.isInteger(velocity) || velocity < 1 || velocity > 127 || finalized || !accepting || held.has(key) || tick < startTick || Math.round(tick) > take.endLimit - 30 || pitch < 21 || pitch > 108) return false;
       update(tick);
-      if (noteCount(doc) + take.notes.length >= 5000) { limit('Project note limit reached'); return false; }
+      if (projectNotes + take.notes.length >= 5000) { limit('Project note limit reached'); return false; }
       const start = Math.max(startTick, Math.round(tick)), bar = Math.floor(start / 3840);
-      if (take.notes.filter((n) => Math.floor(n.start / 3840) === bar).length >= 2000) { tell('Recording limit reached — stop to save. This bar has 2,000 onsets'); return false; }
+      if ((barCounts.get(bar) || 0) >= 2000) { tell('Recording limit reached — stop to save. This bar has 2,000 onsets'); return false; }
       const note = { start, end: start + 30, pitch, velocity };
-      take.notes.push(note);
-      let reason;
-      try { reason = checkCapacity(); } catch (e) { reason = e.message; }
-      if (reason) { take.notes.pop(); limit(reason); return false; }
+      const reason = reserveNote(note);
+      if (reason) { limit(reason); return false; }
+      take.notes.push(note); barCounts.set(bar, (barCounts.get(bar) || 0) + 1);
       held.set(key, note);
-      const { groups } = takeAllocation(doc, take, tell);
-      for (const group of groups.slice(1)) {
-        const line = group.start;
-        cuts.add(line);
-        for (const [heldKey, n] of held) if (n.start < line && n.end > line) { if (line - n.start >= 30) n.end = line; held.delete(heldKey); }
-      }
       return true;
     },
     off(key, tick) { update(tick); held.delete(key); }, update,
@@ -127,6 +173,7 @@ export function createRecording(doc, trackId, startTick, { snap = 0, announce = 
       if (finalized) return currentDoc;
       update(tick); held.clear(); accepting = false;
       try {
+        for (const message of splitNotices) tell(message);
         const next = commitTake(currentDoc, take, Date.now(), tell);
         if (next !== currentDoc && !apply(next, take.notes.length)) throw new Error('Could not commit the recorded take.');
         finalized = true; failure = null; return next;

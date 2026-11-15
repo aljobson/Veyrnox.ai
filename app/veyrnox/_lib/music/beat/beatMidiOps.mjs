@@ -1,7 +1,13 @@
 import { edit, trackById, regionById, nextId, place, BeatRefusal } from './beatOps.mjs';
 import { GM_PADS, noteKey, sortNotes, resolveNotes, quantisedNote } from './beatMidiRules.mjs';
+import { PRESETS } from '../../../../../lib/musicInstruments.js';
+import { WAVETABLE_PRESETS } from './beatWavetable.js';
 export const addMidiTrack = (doc, instrument, now = Date.now()) => edit(doc, now, (d) => {
-  d.tracks.push({ id: nextId(d, 't'), name: `${instrument.id === 'wavetable' ? 'Wavetable' : instrument.id} ${d.tracks.length + 1}`, kind: 'midi', instrument: { ...instrument }, mute: false, solo: false, gain: 1, pan: 0, regions: [] });
+  if (d.tracks.length >= 16) throw new BeatRefusal('A song can have at most 16 tracks.');
+  const label = (instrument.engine === 'wavetable' ? WAVETABLE_PRESETS[instrument.preset] : PRESETS[instrument.id]?.find((p) => p.id === instrument.preset))?.label || 'Instrument';
+  let name = label, suffix = 2;
+  while (d.tracks.some((t) => t.name === name)) name = `${label} ${suffix++}`;
+  d.tracks.push({ id: nextId(d, 't'), name, kind: 'midi', instrument: { ...instrument }, mute: false, solo: false, gain: 1, pan: 0, regions: [] });
 });
 export function insertMidiRegion(d, trackId, start, lengthTicks = 3840, notes = [], name = 'MIDI clip') {
   const track = trackById(d, trackId);
