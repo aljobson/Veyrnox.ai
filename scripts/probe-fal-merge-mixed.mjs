@@ -21,7 +21,7 @@
  * After a run, read each request_id's billed cost on fal's usage page.
  */
 import { execFileSync } from 'node:child_process';
-import { readFile, mkdtemp, writeFile, rm } from 'node:fs/promises';
+import { readFile, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 
@@ -113,9 +113,8 @@ try {
     for (const [label, urls] of runs) {
         const r = await merge(label, urls);
         if (!r.ok) { console.log(`  [${label}] FAILED${r.seconds ? ` after ${r.seconds} s` : ''}: ${r.detail}`); continue; }
-        const local = join(dir, `${label.replace(/\W/g, '')}.mp4`);
-        await writeFile(local, Buffer.from(await (await fetch(r.outUrl)).arrayBuffer()));
-        console.log(`  [${label}] JOINED in ${r.seconds} s: ${JSON.stringify(streams(local))}`);
+        // ffprobe reads fal's output URL directly: nothing from the network is written to disk.
+        console.log(`  [${label}] JOINED in ${r.seconds} s: ${JSON.stringify(streams(r.outUrl))}`);
     }
     console.log('\nRead the lines above. Only a failure that names a missing audio stream confirms the cause.');
     console.log('A 403 / "permission" / auth error means THIS KEY cannot use the endpoint: the probe proved nothing.');
