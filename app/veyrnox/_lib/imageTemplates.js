@@ -18,8 +18,13 @@ const CHRISTMAS_IMAGE_TEMPLATES = [
 }));
 
 export const IMAGE_TEMPLATES = Object.freeze([...CHRISTMAS_IMAGE_TEMPLATES, ...SYNTX_100_IMAGE_TEMPLATES]);
+// Retain audited source records and ID reservations without publishing cards that have no artwork.
+export const UNPUBLISHED_IMAGE_TEMPLATE_IDS = Object.freeze(['flying-elf', 'christmas-tree-ornament']);
+const unpublishedImageTemplateIds = new Set(UNPUBLISHED_IMAGE_TEMPLATE_IDS);
 
 export const isImageTemplate = (template) => template?.kind === 'image';
 export function publishedImageTemplates() {
-  return imageTemplatesEnabled() ? IMAGE_TEMPLATES.filter(isImageTemplate) : [];
+  return imageTemplatesEnabled()
+    ? IMAGE_TEMPLATES.filter((template) => isImageTemplate(template) && !unpublishedImageTemplateIds.has(template.id))
+    : [];
 }
