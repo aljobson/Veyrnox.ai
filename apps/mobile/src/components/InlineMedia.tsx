@@ -14,7 +14,7 @@ export function InlineMedia({ url, label, audio = false, onReady }: { url: strin
     const styles = useThemedStyles(sheets);
     const started = useRef(false);
     const [playing, setPlaying] = useState(false);
-    const player = useVideoPlayer(url, instance => { instance.muted = true; instance.loop = false; if (audio) instance.timeUpdateEventInterval = 0.5; });
+    const player = useVideoPlayer(url, instance => { instance.muted = true; instance.loop = false; instance.timeUpdateEventInterval = 0.5; });
     useEffect(() => {
         if (player.status === 'readyToPlay') onReady?.();
         const ready = player.addListener('statusChange', ({ status }) => { if (status === 'readyToPlay') onReady?.(); });
@@ -58,9 +58,10 @@ export function InlineMedia({ url, label, audio = false, onReady }: { url: strin
             <AudioControls player={player} playing={playing} label={label} />
         </View>
     );
-    const view = <VideoView player={player} nativeControls contentFit="contain" accessibilityLabel={rawText(label)} style={styles.media} />;
+    const view = <VideoView player={player} nativeControls={false} contentFit="contain" accessibilityLabel={rawText(label)} style={styles.media} />;
     return (
-        <View>
+        <View style={styles.deck}>
+            <View>
             {view}
             {poster && resting && !playing ? (
                 <Pressable testID="inline-media-poster" accessibilityRole="button" accessibilityLabel={rawText(label)} onPress={() => { if (player.currentTime >= player.duration - 0.05) player.currentTime = 0; player.play(); }} style={styles.poster}>
@@ -68,6 +69,8 @@ export function InlineMedia({ url, label, audio = false, onReady }: { url: strin
                     <View style={styles.play}><Icon name="play" /></View>
                 </Pressable>
             ) : null}
+            </View>
+            <AudioControls player={player} playing={playing} label={label} />
         </View>
     );
 }

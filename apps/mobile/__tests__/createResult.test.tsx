@@ -60,6 +60,7 @@ const generate = () => root.container.queryAll(n => n.props.accessibilityRole ==
 async function click(control: any) { await act(async () => control.props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 })); }
 async function render() { await act(async () => root.render(<Create />)); }
 async function count(n: number) { await act(async () => mockOptions.onChange({ ...mockOptions.values, count: n })); }
+async function settleJobs() { mockJob.mockResolvedValue({ state: 'succeeded', credits: 10, model_id: 'm', refunded: false }); await tick(30_000); }
 async function tick(ms: number) { await act(async () => { await jest.advanceTimersByTimeAsync(ms); }); }
 test('N1: a running two-picture batch keeps full-width cards with the whole progress text; finished pictures form the grid', async () => {
     const two: ResultBatch = { ...batch, ids: ['a', 'b'], count: 2 };
@@ -84,7 +85,16 @@ afterEach(async () => { await act(async () => root.unmount()); publication.mockR
 test('Generate stays in place, shows a tile and re-reads balance; New generation clears without POST', async () => {
     await render(); await click(generate()); expect(mockRouter.replace).not.toHaveBeenCalled(); expect(controls(t('publishReporting.open'))).toHaveLength(1);
     expect(mockApi.getBalance).toHaveBeenCalled(); expect(publication).toHaveBeenCalledWith('owner', 20); expect(publication).not.toHaveBeenCalledWith('owner', 999);
-    await click(controls(t('libraryCreate.newNoCharge'))[0]); expect(mockPost).toHaveBeenCalledTimes(1); expect(controls(t('publishReporting.open'))).toHaveLength(0);
+    await settleJobs(); await click(controls(t('libraryCreate.newNoCharge'))[0]); expect(mockPost).toHaveBeenCalledTimes(1); expect(controls(t('publishReporting.open'))).toHaveLength(0);
+});
+test('the button stays disabled "Creating…" while the job runs and turns into New generation once it finishes', async () => {
+    await render(); await click(generate());
+    const busy = () => controls(t('job.running'))[0];
+    expect(busy().props.accessibilityState.disabled).toBe(true);
+    expect(controls(t('libraryCreate.newNoCharge'))).toHaveLength(0);
+    await settleJobs();
+    expect(controls(t('job.running'))).toHaveLength(0);
+    expect(controls(t('libraryCreate.newNoCharge'))).toHaveLength(1);
 });
 test.each([true, false, undefined])('failed result shows the specific reason with refund state %s', async refunded => {
     mockJob.mockResolvedValue({ state: 'failed', model_id: 'm', refunded, credits: 3, error_code: 'provider_timeout' });
@@ -100,7 +110,7 @@ test.each([true, false, undefined])('cancelled Create result retains its existin
 test('free allowance is refreshed after a run and Generate is disabled until the fresh answer', async () => {
     const fresh = deferred<any>(); mockFree.mockResolvedValueOnce({ enabled: true, left: { m: 1 } }).mockReturnValueOnce(fresh.promise);
     await render(); expect(text(t('create.workspace.generateFree')).length).toBeGreaterThan(0); await click(generate());
-    await click(controls(t('libraryCreate.newNoCharge'))[0]); expect(generate().props.accessibilityState.disabled).toBe(true);
+    await settleJobs(); await click(controls(t('libraryCreate.newNoCharge'))[0]); expect(generate().props.accessibilityState.disabled).toBe(true);
     expect(text(t('create.workspace.generate', { credits: '10' })).length).toBeGreaterThan(0);
     await act(async () => fresh.resolve({ enabled: true, left: {} })); expect(generate().props.accessibilityState.disabled).toBe(false);
 });
@@ -113,7 +123,7 @@ test('partial 2x10 batch retries at most ten with the same keys and two deduplic
     expect(mockPost.mock.calls[1][0].idempotency_key).toBe(mockPost.mock.calls[2][0].idempotency_key);
     expect(mockPost.mock.calls.slice(2).some(([request]) => request.idempotency_key === mockPost.mock.calls[0][0].idempotency_key)).toBe(false);
     expect(mockPost.mock.calls[2][0].max_charge_credits).toBe(10);
-    await click(controls(t('libraryCreate.newNoCharge'))[0]); await count(1); await click(generate()); expect(mockPost.mock.calls[3][0].idempotency_key).not.toBe(mockPost.mock.calls[0][0].idempotency_key);
+    await settleJobs(); await click(controls(t('libraryCreate.newNoCharge'))[0]); await count(1); await click(generate()); expect(mockPost.mock.calls[3][0].idempotency_key).not.toBe(mockPost.mock.calls[0][0].idempotency_key);
 });
 test('editing the prompt after zero jobs start submits the new prompt with a fresh key', async () => {
     mockPost.mockRejectedValueOnce(new ApiError(0, 'network'));
@@ -160,7 +170,7 @@ test('delayed refund changes wording and refreshes an exhausted balance', async 
     expect(text(t('library.status.failed'))).toHaveLength(1);
     mockJob.mockResolvedValue({ state: 'failed', model_id: 'm', refunded: true, credits: 10 }); mockApi.getBalance.mockResolvedValue(balance(10));
     await tick(5000); expect(text(plural('library.refunded', 10))).toHaveLength(1); expect(publication).toHaveBeenLastCalledWith('owner', 10);
-    await click(controls(t('libraryCreate.newNoCharge'))[0]); expect(generate().props.accessibilityState.disabled).toBe(false);
+    await settleJobs(); await click(controls(t('libraryCreate.newNoCharge'))[0]); expect(generate().props.accessibilityState.disabled).toBe(false);
 });
 test('overlapping balance reads publish only the newest; account and batch changes reject pending reads', async () => {
     const first = deferred<Balance>(), second = deferred<Balance>(); const seq = { current: 0 };

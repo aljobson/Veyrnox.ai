@@ -16,6 +16,7 @@ import { getCacheUser, subscribeCacheUser } from '../../../lib/appCache';
 import type { SubmitRequest } from '../../../lib/generationSubmit';
 import { KeyboardFormScrollView } from '../../../components/KeyboardFormScrollView';
 import { KeyboardScreen } from '../../../components/KeyboardScreen';
+import { CreateStatusNotes, costLine } from '../../../components/create/CreateStatusNotes';
 import { RevealOnFirstLayout } from '../../../components/create/RevealOnFirstLayout';
 import { FormHeader } from '../../../components/create/FormHeader';
 import { ModelPickerSheet } from '../../../components/create/ModelPickerSheet';
@@ -48,8 +49,9 @@ import { buildCharacterPrompt, sanitizePicks, type Picks } from '../../../lib/od
 import { useBalance } from '../../../lib/useBalance';
 import { shortfall } from '../../../lib/lowBalance';
 import { useFreeLeftState } from '../../../lib/useFreeLeft';
-import { isAudioDriven, isSoundPass, isSpeechModel, missingRequiredSlots } from '../../../lib/createModelKind';
+import { isAudioDriven, isSoundPass, isSpeechModel, missingNeedKey, missingRequiredSlots } from '../../../lib/createModelKind';
 import { estimateCredits, fetchCatalog, kindOf, promptRequired, textInput, type CatalogModel } from '../../../lib/media';
+import { expectedDurationMs } from '../../../lib/generationProgress';
 import { MIN_TARGET, selectedState } from '../../../lib/a11y';
 import { portraitAsPickedFile, startOddlingId } from '../../../lib/oddlingsAnimate';
 import { legacyReferences, replaceSlotReferences, slotsFor, type GenerationReference, type PickedFile, type SlotName } from '../../../lib/sources';
@@ -101,6 +103,7 @@ export default function CreateWithModel() {
     const [catalog, setCatalog] = useState<CatalogModel[]>([]);
     const [results, setResults] = useState<ResultBatch | null>(null);
     const [complete, setComplete] = useState(false);
+    const [settled, setSettled] = useState(0);
     const [attaching, setAttaching] = useState(false);
     const [confirmed, setConfirmed] = useState(0);
     const batch = useRef(0);
@@ -113,20 +116,20 @@ export default function CreateWithModel() {
     const pending = useRef(createGenerationSubmit());
     const draftReady = useRef(false);
     useEffect(() => {
-        const clear = () => { void Image.clearMemoryCache?.().catch(() => {}); batch.current++; balanceSeq.current++; pending.current.reset(); retry.current = null; setResults(null); setConfirmed(0); setComplete(false); setBusy(false); setPrompt(''); setReferences([]); unsaved.current = null; draftReady.current = false; };
+        const clear = () => { void Image.clearMemoryCache?.().catch(() => {}); batch.current++; balanceSeq.current++; pending.current.reset(); retry.current = null; setResults(null); setConfirmed(0); setComplete(false); setSettled(0); setBusy(false); setPrompt(''); setReferences([]); unsaved.current = null; draftReady.current = false; };
         const unsubscribe = subscribeCacheUser(clear);
         return () => { unsubscribe(); batch.current++; balanceSeq.current++; };
     }, []);
     function newGeneration() {
         if (busy) return;
         batch.current++; balanceSeq.current++; pending.current.reset(); retry.current = null;
-        setResults(null); setConfirmed(0); setComplete(false); setError(null); setNote(null);
+        setResults(null); setConfirmed(0); setComplete(false); setSettled(0); setError(null); setNote(null);
     }
     useEffect(() => {
         // Changing any identity input drops the quote and continuation, even if later changed back.
         if (!retry.current) return;
         batch.current++; balanceSeq.current++; pending.current.reset(); retry.current = null;
-        setResults(null); setConfirmed(0); setComplete(false); setError(null); setNote(null);
+        setResults(null); setConfirmed(0); setComplete(false); setSettled(0); setError(null); setNote(null);
         // busy stays set: the submit lock holds until the outstanding request settles (its finally clears it).
     }, [swap, modelId, prompt, duration, opts, references, cameraOn, cinema, characterOn, character, template?.id]);
     useEffect(() => {
@@ -361,12 +364,16 @@ export default function CreateWithModel() {
     }
     const generation = batch.current;
     const owner = getCacheUser();
-    const resultSettled = () => { if (generation === batch.current) void refreshBalance(api, owner, () => generation === batch.current, balanceSeq); };
+    const resultSettled = () => { if (generation !== batch.current) return; setSettled(count => count + 1); void refreshBalance(api, owner, () => generation === batch.current, balanceSeq); };
+    const inProgress = complete && settled < (results?.ids.length ?? 0);
     const payable = quote.payable ?? price;
     const missing = complete ? 0 : shortfall(balance, payable);
-    const disabled = busy || waiting || (!complete && (freeLoading || (!ready && !matchingRetry) || missing > 0));
+    const disabled = busy || waiting || inProgress || (!complete && (freeLoading || (!ready && !matchingRetry) || missing > 0));
     // A swap scene, a Tools recipe or a bound template is made for one model; anywhere else the model row opens the picker.
     const choices = modelChoices(catalog, model, references.length > 0), changeModel = choices.length > 1 && !swapScene && !creativeFeature(typeof recipe === 'string' ? recipe : undefined) && !boundCount && !busy && !waiting ? modelSwitch.open : undefined;
+    const needKey = complete || busy || waiting || inProgress || missing > 0 ? null : missingNeedKey(model, references, !!startFile, promptRequired(model) && !text.trim());
+    const needText = needKey ? t(needKey) : null;
+    const expectedMinutes = isVideo && (busy || inProgress) ? Math.max(1, Math.round(expectedDurationMs(model.id, 'video') / 60000)) : 0;
     const generateLabel = matchingRetry?.quote ? t('app.create.confirmPrice', { credits: String(price) }) : `${n > 1 ? t('opt.generateCount', { count: String(n) }) : t('slip.generate')}. ${costLine(price, n, freeLeft, unit)}`;
     return (
         <KeyboardScreen style={styles.screen}>
@@ -421,7 +428,7 @@ export default function CreateWithModel() {
                             style={[styles.prompt, text_.key === 'topic' && styles.topic]}
                             value={prompt}
                             onChangeText={setPrompt}
-                            placeholder={t(PLACEHOLDER[text_.key] ?? (speech ? 'form.describeSpeech' : promptRequired(model) || isSoundPass(model) ? 'form.describeCreate' : 'form.describeChange'))}
+                            placeholder={t(PLACEHOLDER[text_.key] ?? (speech ? 'form.describeSpeech' : promptRequired(model) || isSoundPass(model) ? 'form.describeCreate' : isVideo ? 'form.describeMotion' : kindOf(model.modality) === 'audio' ? 'form.describeSound' : 'form.describeChange'))}
                             placeholderTextColor={styles.mutedInk.color}
                             accessibilityLabel={rawText(text_.key === 'topic' ? t('form.topic') : speech ? t('create.workspace.script') : t('mobile.prompt'))}
                             multiline
@@ -477,7 +484,8 @@ export default function CreateWithModel() {
                         </View>
                         <Text variant="caption" tone="secondary" style={styles.balance}>{t('create.workspace.balance', { credits: balance === null ? '—' : String(balance) })}</Text>
                     </View>
-                    <Button variant="primary" accessibilityRole="button" accessibilityLabel={rawText(complete ? t('libraryCreate.newNoCharge') : generateLabel)} accessibilityState={{ busy, disabled }} disabled={disabled} onPress={complete ? newGeneration : generate} label={complete ? t('libraryCreate.newGeneration') : matchingRetry?.quote ? generateLabel : price === 0 ? t('create.workspace.generateFree') : t('create.workspace.generate', { credits: String(price) })} loading={busy} />
+                    <Button variant="primary" accessibilityRole="button" accessibilityLabel={rawText(inProgress ? t('job.running') : complete ? t('libraryCreate.newNoCharge') : generateLabel)} accessibilityHint={needText ? rawText(needText) : undefined} accessibilityState={{ busy: busy || inProgress, disabled }} disabled={disabled} onPress={complete ? newGeneration : generate} label={inProgress ? t('job.running') : complete ? t('libraryCreate.newGeneration') : matchingRetry?.quote ? generateLabel : price === 0 ? t('create.workspace.generateFree') : t('create.workspace.generate', { credits: String(price) })} loading={busy || inProgress} />
+                    <CreateStatusNotes need={needText} expectedMinutes={expectedMinutes} />
                     <SectionLabel style={styles.refund}>{t('create.workspace.refund')}</SectionLabel>
                     <View style={styles.terms}>
                         <Text variant="caption" tone="tertiary">{t('create.workspace.terms')}{' '}</Text>
@@ -487,11 +495,4 @@ export default function CreateWithModel() {
             </KeyboardFormScrollView>
         </KeyboardScreen>
     );
-}
-// What Generate will cost, said before it is pressed. Free runs left today are applied first.
-function costLine(price: number, n: number, freeLeft: number, unit: number): string {
-    if (price === 0) return t('opt.costFree');
-    if (n > 1 && freeLeft > 0) return plural('opt.costsPartial', price, { free: String(Math.min(freeLeft, n)), images: String(n) });
-    if (n > 1) return plural('opt.costsBatch', price, { images: String(n) });
-    return plural('form.costs', unit);
 }
