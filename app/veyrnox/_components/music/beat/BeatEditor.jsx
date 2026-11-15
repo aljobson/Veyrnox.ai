@@ -10,14 +10,17 @@ import BeatTransport from './BeatTransport';
 import BeatStepGrid from './BeatStepGrid';
 import BeatPads from './BeatPads';
 import BeatExportDialog from './BeatExportDialog';
+import BeatMagicBar from './BeatMagicBar';
+import { useBeatLoopLayers } from './useBeatLoopLayers';
 import { action, button, input, storageWarning } from './beatStyles';
 
-export default function BeatEditor({ id }) {
+export default function BeatEditor({ id, magicBar = false }) {
   const router = useRouter();
   const [message, setMessage] = useState('');
   const announce = useCallback((text) => setMessage(text), []);
   const project = useBeatProject(id, announce);
   const playback = useBeatPlayback(project.current, project.edit, announce);
+  const loops = useBeatLoopLayers(id, magicBar && Boolean(playback.runId));
   const [titleDraft, setTitleDraft] = useState(null);
   const [undo, setUndo] = useState(null);
   const undoTimer = useRef(null);
@@ -68,6 +71,7 @@ export default function BeatEditor({ id }) {
     {undo && <div className="flex items-center gap-3 rounded-xl bg-vx-panel p-3"><p>Pattern {undo.slot} cleared</p><button className={button} onClick={() => { edit((d) => ops.restorePattern(d, undo.slot, undo.pattern)); setUndo(null); clearTimeout(undoTimer.current); announce('Pattern restored'); }}>Undo</button></div>}
     <BeatStepGrid doc={doc} edit={edit} playhead={playback.playhead} runId={playback.runId} />
     <BeatPads hit={playback.hit} record={playback.record} setRecord={playback.setRecord} />
+    {magicBar && <BeatMagicBar doc={doc} loops={loops} announce={announce} />}
     <p aria-live="polite" aria-atomic="true" className="min-h-6 text-sm text-vx-fg-muted">{message}</p>
   </div>;
 }
