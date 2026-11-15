@@ -2,6 +2,7 @@ import { ApiError, type ApiClient, type Balance } from './api';
 import { appCache, getCacheUser } from './appCache';
 import { POLICIES } from './cache';
 import { publishBalance } from './balanceEvents';
+import { invalidateYourWins } from './yourWins';
 import { isBalance, isCheckinStatus, isCheckinClaim } from './responseShapes';
 
 export type CheckinStatus = {
@@ -25,6 +26,8 @@ export async function claimCheckin(api: ApiClient): Promise<CheckinClaim | null>
     try { result = await api.request<CheckinClaim>('/api/v1/checkin', { method: 'POST' }); }
     catch (err) { if (err instanceof ApiError && err.status === 404) return null; throw err; }
     if (!isCheckinClaim(result)) throw new ApiError(200, 'bad_response');
+    // The Explore wins card's streak comes from the server, not from this response: drop the 5-minute copy.
+    if (owner && owner === getCacheUser()) invalidateYourWins(owner);
     if (owner && owner === getCacheUser()) {
         // Refresh the spendable projection: ledger balance_after can include
         // expired Free/Subscription credits that the balance endpoint excludes.

@@ -3,7 +3,7 @@ import { AppState } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useAuth } from '../auth/AuthProvider';
 import { getCacheUser, subscribeCacheUser } from './appCache';
-import { fetchYourWins, YOUR_WINS_ENABLED, type YourWins } from './yourWins';
+import { fetchYourWins, subscribeYourWinsStale, YOUR_WINS_ENABLED, type YourWins } from './yourWins';
 import { cancelWinsCelebrations } from './veyMotion';
 import { winsCoordinator } from './yourWinsCelebrations';
 const useWinsFocus = YOUR_WINS_ENABLED ? useFocusEffect : useEffect;
@@ -25,8 +25,9 @@ export function useYourWins(celebrate = false) {
             }
         };
         void read();
+        const stop = subscribeYourWinsStale(() => { void read(); });
         const off = AppState.addEventListener('change', state => { if (state === 'active') void read(); });
-        return () => { live = false; off.remove(); };
+        return () => { live = false; stop(); off.remove(); };
     }, [api, owner, celebrate]));
     const current = state?.owner === owner ? state : null;
     return { data: YOUR_WINS_ENABLED ? current?.data ?? null : null,

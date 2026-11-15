@@ -7,7 +7,7 @@ const mockFetch = jest.fn();
 const mockApi = {};
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi }) }));
 jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => 'loading-viewer', subscribeCacheUser: () => () => {} }));
-jest.mock('../src/lib/yourWins', () => ({ YOUR_WINS_ENABLED: true, fetchYourWins: (...args: unknown[]) => mockFetch(...args) }));
+jest.mock('../src/lib/yourWins', () => ({ YOUR_WINS_ENABLED: true, subscribeYourWinsStale: () => () => {}, fetchYourWins: (...args: unknown[]) => mockFetch(...args) }));
 jest.mock('../src/lib/yourWinsCelebrations', () => ({ winsCoordinator: { update: jest.fn() } }));
 jest.mock('expo-router', () => ({ useFocusEffect: (fn: () => unknown) => require('react').useEffect(fn, [fn]), Stack: { Screen: () => null } }));
 jest.mock('../src/components/VeyCharacter', () => ({ VeyCharacter: (props: object) => require('react').createElement(require('react-native').View, { ...props, testID: 'loading-vey' }) }));
