@@ -17,7 +17,9 @@ test('Labs is behind its own switch, spends nothing and links only to Create and
   assert.equal(musicLabsEnabled({ MUSIC_RUNTIME_FLAGS: JSON.stringify({ ui: true, labs: true }) }), true);
   assert.equal(musicLabsEnabled({ MUSIC_RUNTIME_FLAGS: JSON.stringify({ ui: true }) }), false);
   const wrangler = await readFile(new URL('../wrangler.jsonc', import.meta.url), 'utf8');
-  assert.equal((wrangler.match(/\\"labs\\":false/g) || []).length, 2);
+  // Off in production; on in staging only (owner, 2026-11-15).
+  assert.equal((wrangler.match(/\\"labs\\":false/g) || []).length, 1);
+  assert.equal((wrangler.match(/\\"labs\\":true/g) || []).length, 1);
   const src = await readFile(new URL('../app/veyrnox/_components/music/MusicLabs.jsx', import.meta.url), 'utf8');
   assert.doesNotMatch(src, /gatewayFetch|fetch\(/);
   assert.match(src, /\/app\/music\/create\?sample=\$\{encodeURIComponent\(pick\.seed\.id\)\}/);

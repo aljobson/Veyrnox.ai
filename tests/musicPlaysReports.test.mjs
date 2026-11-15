@@ -25,7 +25,9 @@ test('both switches ship false and compose with publication', async () => {
   assert.equal(musicSongReportsEnabled(ready), true);
   assert.equal(musicPlaysEnabled({ ...ready, MUSIC_PLAYS_ENABLED: 'false' }), false);
   const wrangler = await readFile(new URL('../wrangler.jsonc', import.meta.url), 'utf8');
-  assert.equal((wrangler.match(/\\"plays\\":false,\\"songReports\\":false/g) || []).length, 2);
+  // Off in production; on in staging only (owner, 2026-11-15).
+  assert.equal((wrangler.match(/\\"plays\\":false,\\"songReports\\":false/g) || []).length, 1);
+  assert.equal((wrangler.match(/\\"plays\\":true,\\"songReports\\":true/g) || []).length, 1);
 });
 
 test('0533 keeps who played private, dedupes, skips the creator and lets listeners delete their account', async () => {
