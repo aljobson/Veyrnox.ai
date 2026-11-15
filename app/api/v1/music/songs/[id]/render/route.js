@@ -3,7 +3,7 @@ import { deleteObject, envConfig as r2EnvConfig, getObject, isConfigured as r2Is
 import { inspectStoredSource } from '../../../../../../../lib/resolveSource.js';
 import { musicEditingEnabled, musicReverseEnabled, musicRpcStatus, publicMusicError, readMusicJson, validMusicAuthId } from '../../../../../../../lib/musicBackend.js';
 import { parseMusicLocalRender } from '../../../../../../../lib/musicEditing.js';
-import { renderPcmWavFade, renderPcmWavRemaster, renderPcmWavReorder, renderPcmWavReverse, renderPcmWavSpeed } from '../../../../../../../lib/musicWavRender.js';
+import { pcmWavSeconds, renderPcmWavFade, renderPcmWavRemaster, renderPcmWavReorder, renderPcmWavReverse, renderPcmWavSpeed } from '../../../../../../../lib/musicWavRender.js';
 
 import { isUuid } from '../../../../../../../lib/validate.js';
 const reply = (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
@@ -50,6 +50,9 @@ export async function POST(request, { params }) {
         if (!stored.ok) return reply({ error: 'source_unavailable' }, 502);
         const source = new Uint8Array(await stored.response.arrayBuffer());
         if (source.length !== Number(context.size_bytes)) return reply({ error: 'source_changed' }, 409);
+        // The header estimate counts any chunk after the audio as sound; the render and its
+        // commit check measure frames, so the commit is given the frame length.
+        const sourceSeconds = pcmWavSeconds(source) ?? inspected.seconds;
         const rendered = input.operation === 'fade'
             ? renderPcmWavFade(source, input.parameters.fade_in_seconds, input.parameters.fade_out_seconds)
             : input.operation === 'speed'
@@ -74,7 +77,7 @@ export async function POST(request, { params }) {
             p_output_asset_id: outputAssetId, p_r2_key: outputKey,
             p_size_bytes: rendered.bytes.length, p_sha256: hash,
             p_operation: input.operation, p_parameters: input.parameters,
-            p_source_duration: inspected.seconds, p_output_duration: rendered.seconds,
+            p_source_duration: sourceSeconds, p_output_duration: rendered.seconds,
             p_idempotency_key: input.idempotencyKey,
         }, cfg);
         if (!result?.ok) {

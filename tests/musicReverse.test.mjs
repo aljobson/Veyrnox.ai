@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { renderPcmWavReverse } from '../lib/musicWavRender.js';
+import { pcmWavSeconds, renderPcmWavRemaster, renderPcmWavReverse } from '../lib/musicWavRender.js';
+import { wavSeconds } from '../lib/mediaLength.js';
 import { parseMusicLocalRender } from '../lib/musicEditing.js';
 import { musicReverseEnabled } from '../lib/musicBackend.js';
 
@@ -53,4 +54,18 @@ test('Reverse needs editing and its own switch, which ships false; 0534 admits i
   assert.doesNotMatch(sql, /ledger_|credit_balances/);
   const route = await readFile(new URL('../app/api/v1/music/songs/[id]/render/route.js', import.meta.url), 'utf8');
   assert.match(route, /input\.operation === 'reverse' && !musicReverseEnabled\(\)/);
+});
+
+test('a WAV with a chunk after its audio commits the frame length, not the header estimate', async () => {
+  const base = wav(Array.from({ length: 8000 }, (_, i) => i % 100));
+  const list = new Uint8Array(8 + 1200); list.set([0x4c, 0x49, 0x53, 0x54]); new DataView(list.buffer).setUint32(4, 1200, true);
+  const file = new Uint8Array(base.length + list.length); file.set(base); file.set(list, base.length);
+  new DataView(file.buffer).setUint32(4, file.length - 8, true);
+  assert.equal(pcmWavSeconds(file), 1);
+  assert.ok(wavSeconds(file, file.length) - 1 > 0.05);
+  assert.equal(renderPcmWavReverse(file).seconds, pcmWavSeconds(file));
+  assert.equal(renderPcmWavRemaster(file, -1).seconds, pcmWavSeconds(file));
+  const route = await readFile(new URL('../app/api/v1/music/songs/[id]/render/route.js', import.meta.url), 'utf8');
+  assert.match(route, /const sourceSeconds = pcmWavSeconds\(source\) \?\? inspected\.seconds;/);
+  assert.match(route, /p_source_duration: sourceSeconds,/);
 });
