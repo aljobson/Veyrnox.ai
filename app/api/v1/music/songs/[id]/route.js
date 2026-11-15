@@ -5,7 +5,7 @@ import {
 } from '../../../../../../packages/adapters/r2.js';
 import { publishFalDispatchWakeup } from '../../../../../../lib/falDispatchWakeup.js';
 import { inspectStoredSource } from '../../../../../../lib/resolveSource.js';
-import { musicAddSectionEnabled, musicCoverEnabled, musicDistributionEnabled, musicEditingEnabled, musicExtendEnabled, musicLibraryEnabled, musicPromptPolicy, musicPublicationEnabled, musicReplaceEnabled, musicReuseEnabled, musicRpcStatus, musicSchemaEnabled, musicStemsEnabled, musicStudioEnabled, musicTargetStemsEnabled, musicTrackAddEnabled, parseMusicGeneration, parseMusicSongLifecycle, publicMusicError, readMusicJson, validMusicAuthId } from '../../../../../../lib/musicBackend.js';
+import { musicAddSectionEnabled, musicCoverEnabled, musicDistributionEnabled, musicEditingEnabled, musicExtendEnabled, musicLibraryEnabled, musicPromptPolicy, musicPublicationEnabled, musicReplaceEnabled, musicReuseEnabled, musicReverseEnabled, musicRpcStatus, musicSchemaEnabled, musicStemsEnabled, musicStudioEnabled, musicTargetStemsEnabled, musicTrackAddEnabled, parseMusicGeneration, parseMusicSongLifecycle, publicMusicError, readMusicJson, validMusicAuthId } from '../../../../../../lib/musicBackend.js';
 import {
     MUSIC_MASHUP_SECONDS_MAX, MUSIC_MASHUP_SECONDS_MIN, mashupSeconds, musicRemixEnabled,
     parseMusicRemixQuote, remixSourceKey,
@@ -73,6 +73,7 @@ export async function GET(request, { params }) {
                 ...(musicStudioEnabled() ? ['open_studio'] : []),
                 ...(isUuid(result.song?.job_id || '') ? ['open_editor'] : []),
                 ...(musicEditingEnabled() ? ['crop', 'render'] : []),
+                ...(musicReverseEnabled() ? ['reverse', 'speed'] : []),
             ])],
         });
     } catch (error) {
