@@ -5,5 +5,5 @@ import { gatewayFetch } from '../../_lib/gateway';
 export function countMusicPlay(slug, counted) {
   if (counted.current || !getStoredUserId()) return;
   counted.current = true;
-  gatewayFetch('/music/plays', { method: 'POST', body: JSON.stringify({ slug }), promptOnAuth: false }).catch(() => {});
+  gatewayFetch('/music/comments', { method: 'POST', body: JSON.stringify({ action: 'count_play', slug }), promptOnAuth: false }).catch(() => {});
 }

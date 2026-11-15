@@ -29,7 +29,7 @@ export function MusicTrackReport({ slug }) {
     if (attempt.current?.signature !== signature) attempt.current = { signature, key: `song-report.${crypto.randomUUID()}` };
     setBusy(true); setError('');
     try {
-      await gatewayFetch('/music/song-reports', { method: 'POST', body: JSON.stringify({ slug, category, details: text, idempotency_key: attempt.current.key }) });
+      await gatewayFetch('/music/comments', { method: 'POST', body: JSON.stringify({ action: 'report_song', slug, category, details: text, idempotency_key: attempt.current.key }) });
       setNotice(t('music.track.reported')); setOpen(false); setDetails(''); attempt.current = null;
     } catch (e) {
       setError(e?.status === 429 ? t('music.track.reportSlowDown') : t('music.track.reportFailed'));

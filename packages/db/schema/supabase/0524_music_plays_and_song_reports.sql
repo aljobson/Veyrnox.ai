@@ -229,19 +229,6 @@ BEGIN
   RETURN v_blockers;
 END $$;
 
-DO $$
-BEGIN
-    IF to_regprocedure('public.telemetry_path_allowed_pre_0524(text)') IS NULL THEN
-        ALTER FUNCTION public.telemetry_path_allowed(TEXT) RENAME TO telemetry_path_allowed_pre_0524;
-    END IF;
-END $$;
-CREATE OR REPLACE FUNCTION public.telemetry_path_allowed(p_path TEXT)
-RETURNS BOOLEAN LANGUAGE sql IMMUTABLE SET search_path = '' AS $$
-    SELECT p_path IN ('/api/v1/music/plays', '/api/v1/music/song-reports')
-        OR public.telemetry_path_allowed_pre_0524(p_path)
-$$;
-REVOKE ALL ON FUNCTION public.telemetry_path_allowed(TEXT) FROM PUBLIC, anon, authenticated, service_role;
-
 REVOKE ALL ON FUNCTION private.account_deletion_blockers(UUID,TEXT) FROM PUBLIC, anon, authenticated, service_role;
 REVOKE ALL ON FUNCTION private.music_plays_reports_forget_erased_user() FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION private.music_plays_reports_forget_erased_user() TO service_role;

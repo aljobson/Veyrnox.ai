@@ -7,13 +7,13 @@ const SLUG = 'a1b2c3d4e5f60718293a4b5c';
 const sqlUrl = new URL('../packages/db/schema/supabase/0524_music_plays_and_song_reports.sql', import.meta.url);
 
 test('play and report parsers accept only bounded public fields', () => {
-  assert.deepEqual(parseMusicPlay({ slug: SLUG }), { ok: true, slug: SLUG });
-  assert.equal(parseMusicPlay({ slug: SLUG, user_id: 'x' }).error, 'invalid_request');
-  const ok = parseMusicSongReport({ slug: SLUG, category: 'rights', details: '  my recording  ', idempotency_key: 'song-report.0001' });
+  assert.deepEqual(parseMusicPlay({ action: 'count_play', slug: SLUG }), { ok: true, slug: SLUG });
+  assert.equal(parseMusicPlay({ action: 'count_play', slug: SLUG, user_id: 'x' }).error, 'invalid_request');
+  const ok = parseMusicSongReport({ action: 'report_song', slug: SLUG, category: 'rights', details: '  my recording  ', idempotency_key: 'song-report.0001' });
   assert.deepEqual(ok.payload, { action: 'report_song', slug: SLUG, category: 'rights', details: 'my recording' });
-  assert.equal(parseMusicSongReport({ slug: SLUG, category: 'nope', details: 'abc', idempotency_key: 'song-report.0001' }).error, 'category_invalid');
-  assert.equal(parseMusicSongReport({ slug: SLUG, category: 'spam', details: 'ab', idempotency_key: 'song-report.0001' }).error, 'details_invalid');
-  assert.equal(parseMusicSongReport({ slug: SLUG, category: 'spam', details: 'abc' }).error, 'idempotency_key_invalid');
+  assert.equal(parseMusicSongReport({ action: 'report_song', slug: SLUG, category: 'nope', details: 'abc', idempotency_key: 'song-report.0001' }).error, 'category_invalid');
+  assert.equal(parseMusicSongReport({ action: 'report_song', slug: SLUG, category: 'spam', details: 'ab', idempotency_key: 'song-report.0001' }).error, 'details_invalid');
+  assert.equal(parseMusicSongReport({ action: 'report_song', slug: SLUG, category: 'spam', details: 'abc' }).error, 'idempotency_key_invalid');
   assert.equal(parseMusicSongReportResolve({ action: 'resolve_song_report', id: 'b6ed2d0d-8276-4fbb-9c4f-39f401a3158c', reason: 'fine' }).ok, true);
   assert.equal(parseMusicSongReportResolve({ action: 'resolve_report', id: 'b6ed2d0d-8276-4fbb-9c4f-39f401a3158c', reason: 'fine' }).error, 'action_invalid');
   assert.equal(publicPlayCount({ play_count: '12', listeners: ['x'] }), 12);
@@ -41,11 +41,14 @@ test('0524 keeps who played private, dedupes, skips the creator and lets listene
 });
 
 test('the public read carries only the total and the admin queue tolerates a missing 0524', async () => {
-  const [pub, admin] = await Promise.all([
+  const [pub, admin, comments] = await Promise.all([
     readFile(new URL('../app/api/music/public/[slug]/route.js', import.meta.url), 'utf8'),
     readFile(new URL('../app/api/v1/admin/music-comments/route.js', import.meta.url), 'utf8'),
+    readFile(new URL('../app/api/v1/music/comments/route.js', import.meta.url), 'utf8'),
   ]);
   assert.match(pub, /plays: \{ count: publicPlayCount\(plays\) \}/);
   assert.match(admin, /music_song_report_list[\s\S]*\.catch\(\(\) => null\)/);
   assert.match(admin, /songReport \? 'music_song_report_resolve' : 'music_comment_review'/);
+  assert.match(comments, /action === 'count_play'[\s\S]*music_count_public_play/);
+  assert.match(comments, /action === 'report_song'[\s\S]*music_report_song/);
 });
