@@ -7,7 +7,7 @@ import { gatewayFetch } from '../../_lib/gateway';
 import { MUSIC_COMMENT_REPORT_CATEGORIES } from '../../../../lib/musicComments.js';
 
 /**
- * Report a public track (0524). Shown only when the public read says reports
+ * Report a public track (0533). Shown only when the public read says reports
  * are open. The creator cannot report their own song (the server refuses it).
  */
 export function MusicTrackReport({ slug }) {

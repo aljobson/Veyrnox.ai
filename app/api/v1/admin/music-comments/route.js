@@ -27,7 +27,7 @@ export async function GET(req) {
         return rpcFailure(err, WHERE);
     }
     if (!result || result.ok !== true) return rpcRefusal(result, 'queue_unavailable');
-    // Song reports (0524) join the same queue. Before 0524 is applied the RPC is
+    // Song reports (0533) join the same queue. Before 0533 is applied the RPC is
     // missing; the comment queue still loads and song_reports is left out.
     const songs = await rpc('music_song_report_list', { p_auth_id: g.authId }, g.cfg).catch(() => null);
     return NextResponse.json({

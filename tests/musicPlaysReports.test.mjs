@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { musicPlaysEnabled, musicSongReportsEnabled, parseMusicPlay, parseMusicSongReport, parseMusicSongReportResolve, publicPlayCount } from '../lib/musicPlays.js';
 
 const SLUG = 'a1b2c3d4e5f60718293a4b5c';
-const sqlUrl = new URL('../packages/db/schema/supabase/0524_music_plays_and_song_reports.sql', import.meta.url);
+const sqlUrl = new URL('../packages/db/schema/supabase/0533_music_plays_and_song_reports.sql', import.meta.url);
 
 test('play and report parsers accept only bounded public fields', () => {
   assert.deepEqual(parseMusicPlay({ action: 'count_play', slug: SLUG }), { ok: true, slug: SLUG });
@@ -28,7 +28,7 @@ test('both switches ship false and compose with publication', async () => {
   assert.equal((wrangler.match(/\\"plays\\":false,\\"songReports\\":false/g) || []).length, 2);
 });
 
-test('0524 keeps who played private, dedupes, skips the creator and lets listeners delete their account', async () => {
+test('0533 keeps who played private, dedupes, skips the creator and lets listeners delete their account', async () => {
   const sql = await readFile(sqlUrl, 'utf8');
   assert.match(sql, /interval '30 minutes'/);
   assert.match(sql, /IF v_pub\.user_id <> v_user THEN/);
@@ -40,7 +40,7 @@ test('0524 keeps who played private, dedupes, skips the creator and lets listene
   assert.doesNotMatch(sql, /GRANT EXECUTE[^;]*TO (authenticated|anon)/);
 });
 
-test('the public read carries only the total and the admin queue tolerates a missing 0524', async () => {
+test('the public read carries only the total and the admin queue tolerates a missing 0533', async () => {
   const [pub, admin, comments] = await Promise.all([
     readFile(new URL('../app/api/music/public/[slug]/route.js', import.meta.url), 'utf8'),
     readFile(new URL('../app/api/v1/admin/music-comments/route.js', import.meta.url), 'utf8'),

@@ -1,4 +1,4 @@
--- 0524: public play counts and song reports (Suno parity S-A4 Report, S-A5 play counts).
+-- 0533: public play counts and song reports (Suno parity S-A4 Report, S-A5 play counts).
 --
 -- Play counts: a signed-in listener's play of a published track counts once per
 -- 30 minutes; the creator's own plays do not count. Only the total is public.
