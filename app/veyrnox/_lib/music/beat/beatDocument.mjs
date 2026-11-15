@@ -1,3 +1,4 @@
+import { validAsset, validAudioRegion } from './beatAudioRules.mjs';
 import { DRUM_PADS, PRESETS } from '../../../../../lib/musicInstruments.js';
 
 export const BEAT_LIMITS = Object.freeze({ bpm: [40, 240], swing: [0, 0.6], steps: [16, 32], patterns: ['A', 'B', 'C', 'D'], tracks: 16, regions: 400, songTicks: 512 * 3840, seconds: 600, projects: 50, title: 80, velocities: [60, 100, 127] });
@@ -36,9 +37,9 @@ export function createBeat({ id, title = 'Untitled beat 1', now = Date.now() }) 
   patterns.A.rows.kick = [[0, 100], [8, 100]];
   patterns.A.rows.snare = [[4, 100], [12, 100]];
   patterns.A.rows.hat = Array.from({ length: 8 }, (_, i) => [i * 2, 100]);
-  const doc = { kind: 'veyrnox.music.beat', version: 2, id, title, createdAt: now, updatedAt: now,
+  const doc = { kind: 'veyrnox.music.beat', version: 3, assets: {}, id, title, createdAt: now, updatedAt: now,
     tempo: { bpm: 92 }, signature: [4, 4], swing: 0, metronome: false, steps: 16, currentPattern: 'A', patterns,
-    view: 'song', tracks: [{ id: 't1', name: 'Drums', kit: '808', mute: false, solo: false, gain: 1, pan: 0,
+    view: 'song', tracks: [{ id: 't1', kind: 'drums', name: 'Drums', kit: '808', mute: false, solo: false, gain: 1, pan: 0,
       regions: [{ id: 'r1', start: 0, length: 4 * 3840, offset: 0, pattern: 'A' }] }],
     cycle: { on: false, start: 0, end: 4 * 3840 } };
   if (!validateBeat(doc).ok) throw new Error('invalid');
@@ -51,22 +52,27 @@ const exact = (value, names) => keys(value, names) && names.every((name) => Obje
 export function arrangementError(doc) {
   if (!Array.isArray(doc.tracks) || !doc.tracks.length) return 'A song needs at least one track.';
   if (doc.tracks.length > BEAT_LIMITS.tracks) return 'A song can have at most 16 tracks.';
+  if (doc.version === 3 && (!object(doc.assets) || Object.keys(doc.assets).length > 64 ||
+    Object.entries(doc.assets).some(([id, a]) => !/^a[0-9a-z]{1,12}$/.test(id) || !validAsset(a, doc.tempo.bpm)))) return 'Invalid sound assets (maximum 64).';
   const ids = new Set(), regionIds = new Set();
   for (const track of doc.tracks) {
-    if (!exact(track, ['id', 'name', 'kit', 'mute', 'solo', 'gain', 'pan', 'regions']) ||
+    if (!object(track)) return 'Invalid track.';
+    const audio = doc.version === 3 && track.kind === 'audio';
+    const trackFields = ['id', 'name', 'mute', 'solo', 'gain', 'pan', 'regions', ...(audio ? [] : ['kit']), ...(doc.version === 3 ? ['kind'] : [])];
+    if (!exact(track, trackFields) || (doc.version === 3 && !['drums', 'audio'].includes(track.kind)) ||
       typeof track.id !== 'string' || !/^t[0-9a-z]{1,12}$/.test(track.id) || ids.has(track.id) ||
       typeof track.name !== 'string' || !track.name.trim() || track.name.length > 40 ||
-      !PRESETS.drums.some((kit) => kit.id === track.kit) || typeof track.mute !== 'boolean' ||
+      (!audio && !PRESETS.drums.some((kit) => kit.id === track.kit)) || typeof track.mute !== 'boolean' ||
       typeof track.solo !== 'boolean' || !finite(track.gain, 0, 1) || !finite(track.pan, -1, 1) ||
       !Array.isArray(track.regions)) return 'Invalid track.';
     ids.add(track.id);
     let end = 0;
     for (const region of track.regions) {
-      if (!exact(region, ['id', 'start', 'length', 'offset', 'pattern']) ||
+      if (!object(region)) return 'Invalid region.';
+      if ((audio ? !validAudioRegion(region, doc.assets[region.assetId]) :
+        (!exact(region, ['id', 'start', 'length', 'offset', 'pattern']) || !ticks(region.offset) || region.offset >= doc.steps * 240 || !BEAT_LIMITS.patterns.includes(region.pattern))) ||
         typeof region.id !== 'string' || !region.id.length || regionIds.has(region.id) ||
-        !ticks(region.start) || !ticks(region.length) || region.length < 240 ||
-        !ticks(region.offset) || region.offset >= doc.steps * 240 ||
-        !BEAT_LIMITS.patterns.includes(region.pattern)) return 'Invalid region id, pattern or ticks.';
+        !ticks(region.start) || !ticks(region.length) || region.length < 240) return 'Invalid region id, pattern or ticks.';
       if (region.start < end) return 'Regions on a track cannot overlap or be out of order.';
       end = region.start + region.length;
       regionIds.add(region.id);
@@ -86,20 +92,21 @@ export function validateBeat(doc) {
   if (doc?.version === 1) return validateBeatV1(doc);
   const invalid = { ok: false, error: 'invalid' };
   const v2Fields = [...fields.filter((field) => field !== 'kit'), 'view', 'tracks', 'cycle'];
-  if (!exact(doc, v2Fields) || doc.version !== 2 || !['song', 'pattern'].includes(doc.view)) return invalid;
+  if (!exact(doc, doc?.version === 3 ? [...v2Fields, 'assets'] : v2Fields) || ![2, 3].includes(doc.version) || !['song', 'pattern'].includes(doc.view)) return invalid;
   // Reuse the frozen v1 common-field validation without weakening legacy reads.
-  const { tracks, cycle, view, ...common } = doc;
+  const { tracks, cycle, view, assets, ...common } = doc;
   if (!validateBeatV1({ ...common, version: 1, kit: '808' }).ok) return invalid;
   const reason = arrangementError(doc);
   return reason ? { ...invalid, reason } : { ok: true, doc };
 }
 export function migrateBeat(doc) {
   if (!validateBeat(doc).ok) throw new Error('invalid');
-  if (doc.version === 2) return doc;
+  if (doc.version === 3) return doc;
+  if (doc.version === 2) return { ...structuredClone(doc), version: 3, assets: {}, tracks: doc.tracks.map((t) => ({ ...structuredClone(t), kind: 'drums' })) };
   const { kit, ...common } = structuredClone(doc);
   const length = doc.steps * 240;
-  return { ...common, version: 2, view: 'pattern',
-    tracks: [{ id: 't1', name: 'Drums', kit, mute: false, solo: false, gain: 1, pan: 0,
+  return { ...common, version: 3, assets: {}, view: 'pattern',
+    tracks: [{ id: 't1', kind: 'drums', name: 'Drums', kit, mute: false, solo: false, gain: 1, pan: 0,
       regions: [{ id: 'r1', start: 0, length, offset: 0, pattern: doc.currentPattern }] }],
     cycle: { on: false, start: 0, end: length } };
 }

@@ -23,12 +23,12 @@ export default function BeatTrackHeader({ track, edit, locator, last, selected, 
             if (e.key === 'Enter') { e.preventDefault(); commitName(); }
           }} />
       </label>
-      <label className="col-span-2 text-xs">Kit
+      {track.kind !== 'audio' && <label className="col-span-2 text-xs">Kit
         <select className={`${input} w-full`} value={track.kit}
           onChange={(e) => field(ops.setTrackKit, e.target.value, 'change track kit')}>
           {PRESETS.drums.map((kit) => <option key={kit.id} value={kit.id}>{kit.label}</option>)}
         </select>
-      </label>
+      </label>}
       <label className="min-w-0 text-xs">Gain {Math.round(track.gain * 100)}%
         <input aria-label={`${track.name} gain`} type="range" min="0" max="100" value={track.gain * 100}
           className="min-h-11 w-full accent-vx-accent focus-visible:outline-vx-accent"
@@ -39,9 +39,9 @@ export default function BeatTrackHeader({ track, edit, locator, last, selected, 
           className="min-h-11 w-full accent-vx-accent focus-visible:outline-vx-accent"
           onChange={(e) => field(ops.setTrackPan, Number(e.target.value) / 100, 'change track pan', 'pan')} />
       </label>
-      <button className={button} onClick={() => edit((d) => ops.addRegion(d, track.id, locator, d.currentPattern),
-        { label: 'add region', trackId: track.id, start: locator })}>Add region</button>
-      <button className={button} disabled={last} title={last ? 'Keep at least one drum track.' : undefined}
+      {track.kind !== 'audio' && <button className={button} onClick={() => edit((d) => ops.addRegion(d, track.id, locator, d.currentPattern),
+        { label: 'add region', trackId: track.id, start: locator })}>Add region</button>}
+      <button className={button} disabled={last} title={last ? 'Keep at least one track.' : undefined}
         onClick={() => { if (window.confirm(`Delete ${track.name} and its regions?`)) {
           edit((d) => ops.removeTrack(d, track.id), { label: 'delete track', trackId: track.id });
         } }}>Delete track</button>

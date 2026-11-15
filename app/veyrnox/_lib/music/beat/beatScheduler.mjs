@@ -1,8 +1,10 @@
+import { audioPieces, songWindowToContext } from './beatAudioSegments.mjs';
 import { stepSeconds, eventTime } from './beatTime.mjs';
 import { eventsAtStep, patternEvents } from './beatEvents.mjs';
 
 // Straight boundaries advance independently of swing and of wrapped song coordinates.
-export function createScheduler({ clock, setTimer, clearTimer, isHidden, onEvent, onStep, onEnd = () => {}, getSequence }) {
+export function createScheduler({ clock, setTimer, clearTimer, isHidden, onEvent, onStep, onAudio = () => {}, onEnd = () => {}, getSequence }) {
+  let audioCursor = 0, audioOrigin = 0, audioStart = 0;
   let read = getSequence, timer, running = false, generation = 0, nextStepIndex = 0;
   let boundary = 0, skipped = 0, first = true, ended = false, scheduled = [];
   function normalize(sequence) {
@@ -15,6 +17,28 @@ export function createScheduler({ clock, setTimer, clearTimer, isHidden, onEvent
     if (!running || ended) return;
     const now = clock();
     const horizon = now + (isHidden() ? 1.5 : 0.15);
+    const audioSequence = read();
+    if (!audioSequence.legacy && audioSequence.doc.view === 'song') {
+      const duration = stepSeconds(audioSequence.doc.tempo.bpm);
+      const until = Math.max(audioCursor, horizon - audioOrigin);
+      const cycle = audioSequence.loop && { start: audioSequence.loop.start * duration, end: audioSequence.loop.end * duration };
+      for (const window of songWindowToContext(audioCursor, until, { startSec: audioStart, contextStart: audioOrigin,
+        cycle, endSec: audioSequence.endStep * duration })) {
+        const wrapped = cycle && audioStart + window.contextTime - audioOrigin >= cycle.end - 1e-9;
+        for (const segment of audioPieces(audioSequence.doc, window.fromSec, window.toSec, {
+          startSec: wrapped ? cycle.start : audioStart, endSec: cycle?.end ?? audioSequence.endStep * duration,
+        })) {
+          const time = window.contextTime + segment.songTimeSec - window.fromSec;
+          if (time >= now) onAudio(segment, time);
+          else if (time + segment.durationSec > now) {
+            const late = now - time;
+            onAudio({ ...segment, songTimeSec: segment.songTimeSec + late, offsetSec: segment.offsetSec + late,
+              regionTimeSec: segment.regionTimeSec + late, durationSec: segment.durationSec - late, isRegionStart: false }, now);
+          }
+        }
+      }
+      audioCursor = until;
+    }
     while (running && !ended) {
       const sequence = read();
       const { doc } = sequence;
@@ -55,6 +79,7 @@ export function createScheduler({ clock, setTimer, clearTimer, isHidden, onEvent
       scheduled = []; first = true; ended = false;
       running = true; skipped = 0; nextStepIndex = read().startStep;
       boundary = Math.max(atTime, clock());
+      audioCursor = 0; audioOrigin = boundary; audioStart = nextStepIndex * stepSeconds(read().doc.tempo.bpm);
       tick(generation);
     },
     stop() { running = false; generation++; clearTimer(timer); },
