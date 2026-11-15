@@ -1,4 +1,4 @@
--- 0527: Music notifications (Suno parity S-U4) through the existing push outbox (0348, ADR-0113).
+-- 0536: Music notifications (Suno parity S-U4) through the existing push outbox (0348, ADR-0113).
 --
 -- Three events reach a person's phone:
 --   music_follower          someone followed you as a Music creator

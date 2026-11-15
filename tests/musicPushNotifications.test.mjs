@@ -25,8 +25,8 @@ test('Music pushes need the push switch and the Music notifications switch, whic
   assert.equal((wrangler.match(/\\"notifications\\":false/g) || []).length, 2);
 });
 
-test('0527 fills the outbox from a sweep, dedupes by event key, honours blocks and keeps the job claim intact', async () => {
-  const sql = await readFile(new URL('../packages/db/schema/supabase/0527_music_push_notifications.sql', import.meta.url), 'utf8');
+test('0536 fills the outbox from a sweep, dedupes by event key, honours blocks and keeps the job claim intact', async () => {
+  const sql = await readFile(new URL('../packages/db/schema/supabase/0536_music_push_notifications.sql', import.meta.url), 'utf8');
   assert.match(sql, /interval '15 minutes'/);
   assert.match(sql, /ON CONFLICT \(music_event_key\) WHERE music_event_key IS NOT NULL DO NOTHING/);
   assert.match(sql, /public\.user_blocks b WHERE b\.blocker_id = e\.user_id AND b\.blocked_id = e\.actor/);
