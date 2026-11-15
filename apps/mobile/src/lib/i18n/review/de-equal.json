@@ -205,5 +205,6 @@
   "brand.swatch.orange": "Orange is the same word in this language.",
   "create.firstRun.dest.tiktok": "Product name written the same in this language: TikTok.",
   "create.firstRun.dest.reels": "Product name written the same in this language: Instagram Reels.",
-  "create.firstRun.dest.youtube": "Product name written the same in this language: YouTube."
+  "create.firstRun.dest.youtube": "Product name written the same in this language: YouTube.",
+  "prov.prompt": "\"Prompt\" is the established loan word for the text instruction given to an AI model, used as is in this language."
 }
