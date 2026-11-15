@@ -14,7 +14,7 @@ const message = (code) =>
     access_required: 'Open this through the protected administrator site.',
     comments_not_open: 'Music comments are switched off.',
     self_review_forbidden:
-      'You cannot review a comment you wrote or one on your own track.',
+      'You cannot review your own comment, your own report or anything on your own track.',
     already_reviewed:
       'Another reviewer has decided this item. Refresh the queue.',
   })[code] || 'The action was not confirmed. Retry to check the same decision.';
@@ -134,6 +134,39 @@ function Queue() {
             </article>
           ))}
           {data.reports.length === 50 && <p>Showing the oldest 50 reports.</p>}
+          {Array.isArray(data.song_reports) && (
+            <>
+              <h2 className="mt-8 text-xl font-bold">Reported songs</h2>
+              {data.song_reports.length === 0 && (
+                <p role="status">No open song reports.</p>
+              )}
+              {data.song_reports.map((r) => (
+                <article
+                  key={r.id}
+                  className="mt-5 rounded-xl border border-vx-border p-4"
+                >
+                  <Link
+                    href={`/music/tracks/${r.slug}`}
+                    className="font-bold underline"
+                  >
+                    {r.title}
+                  </Link>
+                  <p className="mt-2 text-sm">
+                    {r.category} · {new Date(r.created_at).toLocaleString()} ·{' '}
+                    {r.open_reports} open {r.open_reports === 1 ? 'report' : 'reports'} on this song
+                  </p>
+                  <p className="mt-3 whitespace-pre-wrap wrap-break-word">
+                    Report: {r.details}
+                  </p>
+                  <p className="mt-2">Publication status: {r.publication_status}</p>
+                  <Decision action="resolve_song_report" id={r.id} onDone={load} />
+                </article>
+              ))}
+              {data.song_reports.length === 50 && (
+                <p>Showing the oldest 50 song reports.</p>
+              )}
+            </>
+          )}
         </>
       )}
     </div>
@@ -200,7 +233,7 @@ function Decision({ action, id, remove = false, onDone }) {
           ? 'Saving…'
           : remove
             ? 'Remove comment'
-            : action === 'resolve_report'
+            : action === 'resolve_report' || action === 'resolve_song_report'
               ? 'Resolve report'
               : 'Save comment decision'}
       </Button>

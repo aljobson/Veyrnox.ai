@@ -3,6 +3,7 @@ import { musicPublicationEnabled } from '../../../../../lib/musicBackend.js';
 import { musicSocialEnabled, publicMusicSocial } from '../../../../../lib/musicSocial.js';
 import { musicRailsEnabled, publicMusicRail } from '../../../../../lib/musicRails.js';
 import { musicCommentsEnabled, publicMusicComments } from '../../../../../lib/musicComments.js';
+import { musicPlaysEnabled, musicSongReportsEnabled, publicPlayCount } from '../../../../../lib/musicPlays.js';
 
 const SLUG_RE = /^[a-f0-9]{24}$/;
 const reply = (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
@@ -25,8 +26,13 @@ export async function GET(_request, { params }) {
         // Approved comments only; pending, rejected and removed ones are never in this read.
         const comments = musicCommentsEnabled()
             ? await rpc('music_comments_read', { p_slug: slug, p_auth_id: null, p_before_id: null }, cfg).catch(() => null) : null;
+        // The total only; who played is never public.
+        const plays = musicPlaysEnabled()
+            ? await rpc('music_public_play_count', { p_slug: slug }, cfg).catch(() => null) : null;
         return reply({
             track: { ...safe, audio_url: `/api/music/public/${slug}/asset` },
+            ...(plays?.ok ? { plays: { count: publicPlayCount(plays) } } : {}),
+            ...(musicSongReportsEnabled() ? { reports: { open: true } } : {}),
             ...(social?.ok ? { social: publicMusicSocial(social) } : {}),
             ...(comments?.ok ? { comments: publicMusicComments(comments) } : {}),
             ...(rails?.ok ? { rails: { by_creator: publicMusicRail(rails.by_creator), similar: publicMusicRail(rails.similar) } } : {}),
