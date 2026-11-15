@@ -1,0 +1,171 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 800" width="1280" height="800" font-family="Inter, Helvetica, Arial, sans-serif" font-size="12">
+  <title>Veyrnox Music beat editor: desktop sketch (1280 x 800)</title>
+  <desc>Low-fidelity layout sketch. Library on the left, arrangement timeline in the middle, inspector on the right, transport on top, step sequencer / piano roll editor docked at the bottom.</desc>
+  <rect width="1280" height="800" fill="#0d1113"/>
+
+  <!-- Top bar -->
+  <rect x="0" y="0" width="1280" height="44" fill="#151b1e"/>
+  <text x="16" y="27" fill="#9aa7ad">← Music</text>
+  <text x="96" y="28" fill="#eef3f5" font-size="15" font-weight="700">Night Drive (beat)</text>
+  <text x="250" y="27" fill="#6fe0c2">Saved · 2 s ago</text>
+  <rect x="900" y="9" width="34" height="26" rx="8" fill="none" stroke="#2a3439"/><text x="909" y="27" fill="#eef3f5">↶</text>
+  <rect x="940" y="9" width="34" height="26" rx="8" fill="none" stroke="#2a3439"/><text x="949" y="27" fill="#eef3f5">↷</text>
+  <rect x="990" y="9" width="84" height="26" rx="13" fill="none" stroke="#2a3439"/><text x="1010" y="27" fill="#eef3f5">Share</text>
+  <rect x="1084" y="9" width="96" height="26" rx="13" fill="#6fe0c2"/><text x="1106" y="27" fill="#0d1113" font-weight="700">Export</text>
+  <rect x="1190" y="9" width="76" height="26" rx="13" fill="none" stroke="#2a3439"/><text x="1203" y="27" fill="#eef3f5">Mixer</text>
+
+  <!-- Transport -->
+  <rect x="0" y="44" width="1280" height="48" fill="#11171a" stroke="#222b2f"/>
+  <circle cx="300" cy="68" r="14" fill="none" stroke="#2a3439"/><text x="293" y="73" fill="#eef3f5">⏮</text>
+  <circle cx="336" cy="68" r="16" fill="#6fe0c2"/><text x="331" y="73" fill="#0d1113">▶</text>
+  <circle cx="374" cy="68" r="14" fill="none" stroke="#ff6b6b"/><circle cx="374" cy="68" r="6" fill="#ff6b6b"/>
+  <rect x="400" y="56" width="54" height="24" rx="8" fill="#1e3a33"/><text x="410" y="72" fill="#6fe0c2">Cycle</text>
+  <rect x="460" y="56" width="40" height="24" rx="8" fill="none" stroke="#2a3439"/><text x="469" y="72" fill="#eef3f5">♩ 1</text>
+  <rect x="520" y="54" width="200" height="28" rx="8" fill="#0a0e10" stroke="#2a3439"/>
+  <text x="532" y="73" fill="#eef3f5" font-family="JetBrains Mono, monospace" font-size="14">005 . 3 . 1   0:09.0</text>
+  <text x="736" y="73" fill="#eef3f5" font-family="JetBrains Mono, monospace">92 BPM</text>
+  <text x="806" y="73" fill="#eef3f5" font-family="JetBrains Mono, monospace">4/4</text>
+  <text x="846" y="73" fill="#eef3f5" font-family="JetBrains Mono, monospace">F minor</text>
+  <rect x="930" y="56" width="74" height="24" rx="8" fill="none" stroke="#2a3439"/><text x="940" y="72" fill="#eef3f5">Snap 1/16</text>
+  <text x="1030" y="72" fill="#9aa7ad">Zoom  − ▬▬▬○▬ +</text>
+
+  <!-- Left library -->
+  <rect x="0" y="92" width="272" height="708" fill="#11171a" stroke="#222b2f"/>
+  <text x="16" y="118" fill="#eef3f5" font-weight="700">Library</text>
+  <rect x="12" y="128" width="248" height="28" rx="14" fill="#0a0e10" stroke="#2a3439"/>
+  <rect x="14" y="130" width="62" height="24" rx="12" fill="#1e3a33"/><text x="24" y="146" fill="#6fe0c2" font-size="11">Sounds</text>
+  <text x="84" y="146" fill="#9aa7ad" font-size="11">Instruments</text>
+  <text x="158" y="146" fill="#9aa7ad" font-size="11">Mine</text>
+  <text x="200" y="146" fill="#9aa7ad" font-size="11">Generate</text>
+  <rect x="12" y="166" width="248" height="30" rx="10" fill="#0a0e10" stroke="#2a3439"/><text x="24" y="185" fill="#66737a">Search loops, kits, one-shots…</text>
+  <text x="16" y="216" fill="#9aa7ad" font-size="11">Drums  Bass  Keys  Synth  Guitar  FX  Vox</text>
+  <text x="16" y="236" fill="#66737a" font-size="10">Match project: ☑ 92 BPM  ☑ F minor</text>
+  <g font-size="11">
+    <rect x="12" y="246" width="248" height="44" rx="10" fill="#172024"/><circle cx="32" cy="268" r="10" fill="none" stroke="#6fe0c2"/><text x="28" y="272" fill="#6fe0c2">▶</text><text x="50" y="264" fill="#eef3f5">Dusty Boom Bap Kit</text><text x="50" y="280" fill="#66737a">Kit · 16 pads</text><text x="236" y="272" fill="#66737a">⠿</text>
+    <rect x="12" y="296" width="248" height="44" rx="10" fill="#172024"/><circle cx="32" cy="318" r="10" fill="none" stroke="#6fe0c2"/><text x="28" y="322" fill="#6fe0c2">▶</text><text x="50" y="314" fill="#eef3f5">Lo-fi Rhodes Chords</text><text x="50" y="330" fill="#66737a">Loop · 4 bars · 90 BPM · Fm</text><text x="236" y="322" fill="#66737a">⠿</text>
+    <rect x="12" y="346" width="248" height="44" rx="10" fill="#172024"/><circle cx="32" cy="368" r="10" fill="none" stroke="#6fe0c2"/><text x="28" y="372" fill="#6fe0c2">▶</text><text x="50" y="364" fill="#eef3f5">Sub Bass Walk</text><text x="50" y="380" fill="#66737a">MIDI loop · 2 bars</text><text x="236" y="372" fill="#66737a">⠿</text>
+    <rect x="12" y="396" width="248" height="44" rx="10" fill="#172024"/><circle cx="32" cy="418" r="10" fill="none" stroke="#6fe0c2"/><text x="28" y="422" fill="#6fe0c2">▶</text><text x="50" y="414" fill="#eef3f5">Vinyl Crackle</text><text x="50" y="430" fill="#66737a">FX · 8 bars</text><text x="236" y="422" fill="#66737a">⠿</text>
+    <rect x="12" y="446" width="248" height="44" rx="10" fill="#172024"/><circle cx="32" cy="468" r="10" fill="none" stroke="#6fe0c2"/><text x="28" y="472" fill="#6fe0c2">▶</text><text x="50" y="464" fill="#eef3f5">Snare Roll Fill</text><text x="50" y="480" fill="#66737a">One-shot</text><text x="236" y="472" fill="#66737a">⠿</text>
+  </g>
+  <rect x="12" y="508" width="248" height="128" rx="14" fill="none" stroke="#6fe0c2" stroke-dasharray="4 4"/>
+  <text x="24" y="532" fill="#6fe0c2" font-weight="700">✦ Generate a part</text>
+  <rect x="24" y="542" width="224" height="40" rx="10" fill="#0a0e10" stroke="#2a3439"/><text x="34" y="566" fill="#66737a">"warm sax hook, 4 bars"</text>
+  <text x="24" y="604" fill="#9aa7ad" font-size="11">Fits 92 BPM · F minor · bars 5–8</text>
+  <rect x="160" y="590" width="88" height="28" rx="14" fill="#6fe0c2"/><text x="171" y="609" fill="#0d1113" font-weight="700" font-size="11">Make · 6 cr</text>
+  <text x="16" y="664" fill="#66737a" font-size="10">Drag any row onto a track or empty space.</text>
+
+  <!-- Arrangement area -->
+  <rect x="272" y="92" width="768" height="418" fill="#0d1113"/>
+  <!-- Ruler -->
+  <rect x="272" y="92" width="768" height="28" fill="#11171a" stroke="#222b2f"/>
+  <rect x="512" y="92" width="256" height="8" fill="#e8c36a" opacity="0.8"/>
+  <g fill="#66737a" font-family="JetBrains Mono, monospace" font-size="10">
+    <text x="452" y="114">1</text><text x="516" y="114">2</text><text x="580" y="114">3</text><text x="644" y="114">4</text><text x="708" y="114">5</text><text x="772" y="114">6</text><text x="836" y="114">7</text><text x="900" y="114">8</text><text x="964" y="114">9</text>
+  </g>
+  <!-- grid lines -->
+  <g stroke="#1a2226">
+    <line x1="448" y1="120" x2="448" y2="510"/><line x1="512" y1="120" x2="512" y2="510"/><line x1="576" y1="120" x2="576" y2="510"/><line x1="640" y1="120" x2="640" y2="510"/><line x1="704" y1="120" x2="704" y2="510"/><line x1="768" y1="120" x2="768" y2="510"/><line x1="832" y1="120" x2="832" y2="510"/><line x1="896" y1="120" x2="896" y2="510"/><line x1="960" y1="120" x2="960" y2="510"/>
+  </g>
+  <!-- Track headers -->
+  <g font-size="11">
+    <rect x="272" y="120" width="176" height="70" fill="#151b1e" stroke="#222b2f"/><rect x="272" y="120" width="4" height="70" fill="#e8c36a"/>
+    <text x="284" y="140" fill="#eef3f5" font-weight="700">Drums</text><text x="284" y="156" fill="#66737a">Boom Bap Kit</text>
+    <text x="380" y="140" fill="#9aa7ad">M  S  ●</text><text x="284" y="178" fill="#66737a">vol ▬▬▬○  pan ◦</text>
+
+    <rect x="272" y="190" width="176" height="70" fill="#151b1e" stroke="#222b2f"/><rect x="272" y="190" width="4" height="70" fill="#8fa8ff"/>
+    <text x="284" y="210" fill="#eef3f5" font-weight="700">Bass</text><text x="284" y="226" fill="#66737a">Sub synth</text>
+    <text x="380" y="210" fill="#9aa7ad">M  S  ●</text><text x="284" y="248" fill="#66737a">vol ▬▬○▬  pan ◦</text>
+
+    <rect x="272" y="260" width="176" height="70" fill="#1a2328" stroke="#6fe0c2"/><rect x="272" y="260" width="4" height="70" fill="#6fe0c2"/>
+    <text x="284" y="280" fill="#eef3f5" font-weight="700">Keys</text><text x="284" y="296" fill="#66737a">Rhodes loop (audio)</text>
+    <text x="380" y="280" fill="#9aa7ad">M  S  ●</text><text x="284" y="318" fill="#66737a">vol ▬▬▬○  pan ◦</text>
+
+    <rect x="272" y="330" width="176" height="70" fill="#151b1e" stroke="#222b2f"/><rect x="272" y="330" width="4" height="70" fill="#ff8fb1"/>
+    <text x="284" y="350" fill="#eef3f5" font-weight="700">✦ Sax hook</text><text x="284" y="366" fill="#66737a">Generated stem</text>
+    <text x="380" y="350" fill="#9aa7ad">M  S  ●</text><text x="284" y="388" fill="#66737a">vol ▬▬○▬  pan ◦</text>
+
+    <rect x="272" y="400" width="176" height="70" fill="#151b1e" stroke="#222b2f"/><rect x="272" y="400" width="4" height="70" fill="#c9a6ff"/>
+    <text x="284" y="420" fill="#eef3f5" font-weight="700">Vocal take</text><text x="284" y="436" fill="#66737a">Mic · 3 takes</text>
+    <text x="380" y="420" fill="#9aa7ad">M  S  ●</text><text x="284" y="458" fill="#66737a">vol ▬▬▬○  pan ◦</text>
+    <text x="284" y="496" fill="#6fe0c2">+ Add track</text>
+  </g>
+  <!-- Regions -->
+  <!-- drums: pattern regions with step dots -->
+  <rect x="450" y="126" width="126" height="58" rx="6" fill="#3a3220" stroke="#e8c36a"/><text x="456" y="140" fill="#e8c36a" font-size="10">Beat A</text>
+  <g fill="#e8c36a"><rect x="458" y="150" width="4" height="4"/><rect x="474" y="150" width="4" height="4"/><rect x="490" y="160" width="4" height="4"/><rect x="506" y="150" width="4" height="4"/><rect x="522" y="150" width="4" height="4"/><rect x="538" y="160" width="4" height="4"/><rect x="554" y="170" width="4" height="4"/><rect x="466" y="170" width="4" height="4"/></g>
+  <rect x="578" y="126" width="126" height="58" rx="6" fill="#3a3220" stroke="#e8c36a" stroke-dasharray="3 3"/><text x="584" y="140" fill="#e8c36a" font-size="10">↻ Beat A (loop)</text>
+  <rect x="706" y="126" width="252" height="58" rx="6" fill="#3a3220" stroke="#e8c36a"/><text x="712" y="140" fill="#e8c36a" font-size="10">Beat B</text><text x="944" y="180" fill="#e8c36a" font-size="11">↻</text>
+  <!-- bass MIDI -->
+  <rect x="514" y="196" width="444" height="58" rx="6" fill="#202a45" stroke="#8fa8ff"/><text x="520" y="210" fill="#8fa8ff" font-size="10">Sub Bass Walk</text>
+  <g stroke="#8fa8ff" stroke-width="3"><line x1="524" y1="240" x2="550" y2="240"/><line x1="560" y1="230" x2="580" y2="230"/><line x1="590" y1="236" x2="620" y2="236"/><line x1="652" y1="240" x2="678" y2="240"/><line x1="688" y1="226" x2="708" y2="226"/><line x1="780" y1="240" x2="806" y2="240"/><line x1="816" y1="230" x2="836" y2="230"/></g>
+  <!-- keys audio, selected -->
+  <rect x="450" y="266" width="252" height="58" rx="6" fill="#1b3c35" stroke="#6fe0c2" stroke-width="2"/><text x="456" y="280" fill="#6fe0c2" font-size="10">Lo-fi Rhodes Chords</text>
+  <path d="M456 300 l4 -10 l4 18 l4 -14 l4 10 l4 -16 l4 20 l4 -12 l4 8 l4 -14 l4 16 l4 -10 l4 6 l4 -12 l4 14 l4 -8 l4 10 l4 -16 l4 18 l4 -10 l4 6 l4 -12 l4 14 l4 -8 l4 10 l4 -16 l4 18 l4 -10 l4 6 l4 -12 l4 14 l4 -8 l4 10 l4 -16 l4 18 l4 -10 l4 6 l4 -12 l4 14 l4 -8 l4 10 l4 -16 l4 18 l4 -10 l4 6 l4 -12 l4 14 l4 -8 l4 10 l4 -16 l4 18 l4 -10 l4 6 l4 -12 l4 14 l4 -8 l4 10" fill="none" stroke="#6fe0c2" stroke-width="1"/>
+  <rect x="696" y="266" width="6" height="58" fill="#6fe0c2"/><text x="660" y="338" fill="#6fe0c2" font-size="10">trim ⇤⇥</text>
+  <path d="M702 266 L708 266 L708 272 Z" fill="#6fe0c2"/>
+  <rect x="704" y="266" width="254" height="58" rx="6" fill="#16302a" stroke="#6fe0c2" stroke-dasharray="3 3"/><text x="710" y="280" fill="#6fe0c2" font-size="10">↻ loop-extend (drag top-right corner)</text>
+  <!-- generated stem -->
+  <rect x="706" y="336" width="252" height="58" rx="6" fill="#3d2230" stroke="#ff8fb1"/><text x="712" y="350" fill="#ff8fb1" font-size="10">✦ Sax hook · v1 of 2</text>
+  <path d="M712 372 q10 -14 20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0" fill="none" stroke="#ff8fb1"/>
+  <!-- vocal with crossfade -->
+  <rect x="578" y="406" width="190" height="58" rx="6" fill="#2c2340" stroke="#c9a6ff"/><text x="584" y="420" fill="#c9a6ff" font-size="10">Take 2</text>
+  <rect x="756" y="406" width="200" height="58" rx="6" fill="#2c2340" stroke="#c9a6ff"/><text x="776" y="420" fill="#c9a6ff" font-size="10">Take 3</text>
+  <path d="M756 464 L768 406 M756 406 L768 464" stroke="#eef3f5" stroke-width="1"/><text x="740" y="478" fill="#9aa7ad" font-size="10">crossfade</text>
+  <!-- playhead -->
+  <line x1="736" y1="92" x2="736" y2="510" stroke="#ffffff" stroke-width="1.5"/>
+  <path d="M730 92 L742 92 L736 100 Z" fill="#ffffff"/>
+
+  <!-- Right inspector -->
+  <rect x="1040" y="92" width="240" height="418" fill="#11171a" stroke="#222b2f"/>
+  <text x="1056" y="118" fill="#eef3f5" font-weight="700">Region · Lo-fi Rhodes</text>
+  <g font-size="11" fill="#9aa7ad">
+    <text x="1056" y="146">Loop</text><text x="1210" y="146" fill="#6fe0c2">● On</text>
+    <text x="1056" y="170">Gain</text><text x="1180" y="170" fill="#eef3f5">−2.0 dB</text>
+    <text x="1056" y="194">Fade in / out</text><text x="1180" y="194" fill="#eef3f5">0 / 40 ms</text>
+    <text x="1056" y="218">Transpose</text><text x="1180" y="218" fill="#eef3f5">0 st</text>
+    <text x="1056" y="242">Follow tempo</text><text x="1210" y="242" fill="#6fe0c2">● On</text>
+    <text x="1056" y="266">Reverse</text><text x="1210" y="266" fill="#66737a">○ Off</text>
+  </g>
+  <line x1="1052" y1="282" x2="1268" y2="282" stroke="#222b2f"/>
+  <text x="1056" y="306" fill="#eef3f5" font-weight="700">Track · Keys</text>
+  <g font-size="11" fill="#9aa7ad">
+    <text x="1056" y="332">EQ</text><text x="1200" y="332" fill="#eef3f5">Warm ▾</text>
+    <text x="1056" y="356">Compressor</text><text x="1200" y="356" fill="#eef3f5">Gentle ▾</text>
+    <text x="1056" y="380">Reverb send</text><text x="1180" y="380" fill="#eef3f5">▬▬○▬▬</text>
+    <text x="1056" y="404">Delay send</text><text x="1180" y="404" fill="#eef3f5">▬○▬▬▬</text>
+    <text x="1056" y="428">Automation</text><text x="1200" y="428" fill="#6fe0c2">Show ▾</text>
+  </g>
+
+  <!-- Bottom editor: step sequencer -->
+  <rect x="272" y="510" width="1008" height="290" fill="#11171a" stroke="#222b2f"/>
+  <rect x="284" y="520" width="104" height="26" rx="13" fill="#1e3a33"/><text x="296" y="537" fill="#6fe0c2" font-size="11">Step sequencer</text>
+  <text x="404" y="537" fill="#9aa7ad" font-size="11">Piano roll</text>
+  <text x="484" y="537" fill="#9aa7ad" font-size="11">Audio editor</text>
+  <text x="600" y="537" fill="#eef3f5" font-size="11">Beat A · 1 bar · 16 steps</text>
+  <text x="900" y="537" fill="#9aa7ad" font-size="11">Swing 12%   Steps 16 ▾   Velocity ▾</text>
+  <g font-size="11" fill="#9aa7ad">
+    <text x="284" y="574">Kick</text><text x="284" y="604">Snare</text><text x="284" y="634">Clap</text><text x="284" y="664">Closed hat</text><text x="284" y="694">Open hat</text><text x="284" y="724">Perc</text><text x="284" y="754">Rim</text><text x="284" y="784">808</text>
+  </g>
+  <!-- 16x8 grid -->
+  <g id="grid">
+    <g fill="#1a2226" stroke="#222b2f">
+      <rect x="380" y="560" width="48" height="22" rx="4"/><rect x="432" y="560" width="48" height="22" rx="4"/><rect x="484" y="560" width="48" height="22" rx="4"/><rect x="536" y="560" width="48" height="22" rx="4"/>
+      <rect x="592" y="560" width="48" height="22" rx="4"/><rect x="644" y="560" width="48" height="22" rx="4"/><rect x="696" y="560" width="48" height="22" rx="4"/><rect x="748" y="560" width="48" height="22" rx="4"/>
+      <rect x="804" y="560" width="48" height="22" rx="4"/><rect x="856" y="560" width="48" height="22" rx="4"/><rect x="908" y="560" width="48" height="22" rx="4"/><rect x="960" y="560" width="48" height="22" rx="4"/>
+      <rect x="1016" y="560" width="48" height="22" rx="4"/><rect x="1068" y="560" width="48" height="22" rx="4"/><rect x="1120" y="560" width="48" height="22" rx="4"/><rect x="1172" y="560" width="48" height="22" rx="4"/>
+    </g>
+  </g>
+  <use href="#grid" y="30"/><use href="#grid" y="60"/><use href="#grid" y="90"/><use href="#grid" y="120"/><use href="#grid" y="150"/><use href="#grid" y="180"/><use href="#grid" y="210"/>
+  <!-- active steps (velocity = opacity) -->
+  <g fill="#e8c36a">
+    <rect x="380" y="560" width="48" height="22" rx="4"/><rect x="644" y="560" width="48" height="22" rx="4" opacity="0.7"/><rect x="804" y="560" width="48" height="22" rx="4"/><rect x="908" y="560" width="48" height="22" rx="4" opacity="0.6"/>
+    <rect x="592" y="590" width="48" height="22" rx="4"/><rect x="1016" y="590" width="48" height="22" rx="4"/>
+    <rect x="1172" y="620" width="48" height="22" rx="4" opacity="0.5"/>
+    <rect x="380" y="650" width="48" height="22" rx="4" opacity="0.8"/><rect x="484" y="650" width="48" height="22" rx="4" opacity="0.5"/><rect x="592" y="650" width="48" height="22" rx="4" opacity="0.8"/><rect x="696" y="650" width="48" height="22" rx="4" opacity="0.5"/><rect x="804" y="650" width="48" height="22" rx="4" opacity="0.8"/><rect x="908" y="650" width="48" height="22" rx="4" opacity="0.5"/><rect x="1016" y="650" width="48" height="22" rx="4" opacity="0.8"/><rect x="1120" y="650" width="48" height="22" rx="4" opacity="0.5"/>
+    <rect x="1120" y="680" width="48" height="22" rx="4" opacity="0.7"/>
+    <rect x="380" y="770" width="48" height="22" rx="4"/><rect x="856" y="770" width="48" height="22" rx="4" opacity="0.8"/>
+  </g>
+  <!-- step playhead -->
+  <rect x="694" y="556" width="52" height="240" fill="none" stroke="#ffffff" stroke-width="1.5" rx="6"/>
+  <text x="1236" y="574" fill="#66737a" font-size="10">beat 1</text>
+</svg>
