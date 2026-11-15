@@ -1,6 +1,7 @@
 # Music beat and song editor: design (2026-11-15)
 
-Status: design only, nothing built. Owner decisions are listed in section 9.
+Status: design accepted. On 2026-11-15 the owner took every recommendation in
+section 9 (D1–D9) and asked for phase 1 to start.
 Sketches: [desktop](music-beat-editor-desktop-2026-11-15.svg) and
 [phone](music-beat-editor-phone-2026-11-15.svg).
 
