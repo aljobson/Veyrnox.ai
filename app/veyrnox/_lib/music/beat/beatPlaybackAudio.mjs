@@ -35,3 +35,10 @@ export function audioLoopLabel(region, asset, bpm) {
   if (!full) return 'partial loop';
   return `${full} full ${full === 1 ? 'loop' : 'loops'}${partial ? ' and a partial loop' : ''}`;
 }
+
+export function drumLoopLabel(region, steps) {
+  const full = Math.floor(region.length / (steps * 240)), partial = region.length % (steps * 240) !== 0;
+  if (!full) return 'partial loop';
+  const label = full === 1 ? 'looped once' : full === 2 ? 'looped twice' : `looped ${full} times`;
+  return `${label}${partial ? ' and a partial loop' : ''}`;
+}

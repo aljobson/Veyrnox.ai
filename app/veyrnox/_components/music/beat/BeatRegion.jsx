@@ -1,13 +1,13 @@
 'use client';
 import BeatAudioRegion, { BeatAudioRetry } from './BeatAudioRegion';
 import { formatPosition } from '../../../_lib/music/beat/beatTime.mjs';
-import { audioLoopLabel } from '../../../_lib/music/beat/beatPlaybackAudio.mjs';
+import { audioLoopLabel, drumLoopLabel } from '../../../_lib/music/beat/beatPlaybackAudio.mjs';
 import * as ops from '../../../_lib/music/beat/beatOps.mjs';
 
 export default function BeatRegion({ region, track, doc, zoom, snap, locator, selected, select, edit, drag }) {
   const position = { left: region.start / 3840 * zoom, width: region.length / 3840 * zoom };
   const asset = region.assetId && doc.assets[region.assetId];
-  const loops = asset ? audioLoopLabel(region, asset, doc.tempo.bpm) : `looped ${Math.floor(region.length / (doc.steps * 240))} times`;
+  const loops = asset ? audioLoopLabel(region, asset, doc.tempo.bpm) : drumLoopLabel(region, doc.steps);
   const name = `${selected ? 'Selected, ' : ''}${asset ? `Audio ${asset.name}` : `Pattern ${region.pattern}`} on ${track.name}, ` +
     `${formatPosition(region.start)} to ${formatPosition(region.start + region.length)}, ${loops}${asset ? `, gain ${region.gainDb} dB` : ''}`;
   function key(event) {

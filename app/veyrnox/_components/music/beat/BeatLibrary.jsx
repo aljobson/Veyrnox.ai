@@ -18,24 +18,35 @@ export default function BeatLibrary({ bpm, onAdd, announce }) {
   const shelf = useSyncExternalStore(subscribeShelf, getShelf, getServerShelf);
   const dialog = useRef(null), engine = useRef(null), player = useRef(null), token = useRef(0);
   useEffect(() => { void hydrateShelf(); }, []);
-  useEffect(() => () => { token.current++; player.current?.stop(); engine.current?.close().catch(() => {}); }, []);
+  useEffect(() => {
+    function close() {
+      token.current++; player.current?.stop(); player.current = null;
+      engine.current?.close().catch(() => {}); engine.current = null;
+      setActive(null);
+    }
+    window.addEventListener('pagehide', close);
+    return () => { window.removeEventListener('pagehide', close); close(); };
+  }, []);
   useEffect(() => {
     const changed = () => setRetry((n) => n + 1);
-    window.addEventListener('online', changed); window.addEventListener('offline', changed);
+    window.addEventListener('online', changed); window.addEventListener('offline', changed); window.addEventListener('pageshow', changed);
     const unsubscribe = onSessionChange((session) => { if (session) changed(); else { setSongs([]); setStatus('expired'); } });
-    return () => { window.removeEventListener('online', changed); window.removeEventListener('offline', changed); unsubscribe(); };
+    return () => { window.removeEventListener('online', changed); window.removeEventListener('offline', changed); window.removeEventListener('pageshow', changed); unsubscribe(); };
   }, []);
   useEffect(() => {
     if (tab !== 'Mine' || mine !== 'Songs') return;
     let live = true;
+    const controller = new AbortController();
+    const abort = () => controller.abort();
+    window.addEventListener('pagehide', abort);
     async function read() {
       if (!navigator.onLine) { setStatus('offline'); return; }
       if (!getSession()) { setSongs([]); setStatus('signed-out'); return; }
       setStatus('loading');
-      try { const result = await gatewayFetch('/music/songs?limit=50'); if (live) { setSongs(result.songs || []); setStatus('ready'); } }
+      try { const result = await gatewayFetch('/music/songs?limit=50', { signal: controller.signal }); if (live) { setSongs(result.songs || []); setStatus('ready'); } }
       catch (e) { if (live) { setSongs([]); setStatus(e.status === 401 || e.code === 'account_changed' ? 'expired' : 'error'); } }
     }
-    void read(); return () => { live = false; };
+    void read(); return () => { live = false; controller.abort(); window.removeEventListener('pagehide', abort); };
   }, [tab, mine, retry]);
   function signIn(event) {
     event.preventDefault(); dialog.current?.close();
@@ -48,6 +59,7 @@ export default function BeatLibrary({ bpm, onAdd, announce }) {
     setActive(item.id);
     try {
       engine.current ||= createBeatEngine(); await engine.current.resume();
+      if (request !== token.current) return;
       const asset = await prepareAsset(item, bpm), buffer = await loadAsset(asset, bpm);
       if (request !== token.current || !buffer) return;
       const source = engine.current.context.createBufferSource(); source.buffer = buffer;

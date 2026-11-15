@@ -4,7 +4,7 @@ import { playAudioSegment } from './beatAudioGraph.js';
 import { SAMPLE_RATE } from '../../../../../lib/musicInstruments.js';
 import { makeNoise, playEvent } from '../instrumentEngine.js';
 import { beatOutput, connectTrackChannel } from './beatEngine.js';
-import { patternEvents, eventsAtStep, editTrack } from './beatEvents.mjs';
+import { patternEvents, eventsAtStep, patternTrack } from './beatEvents.mjs';
 import { loopSeconds, stepTime, stepSeconds, eventTime } from './beatTime.mjs';
 import { validateBeat } from './beatDocument.mjs';
 
@@ -19,7 +19,7 @@ export async function renderBeat(doc, loops, editTrackId) {
   const events = patternEvents(doc);
   for (let loop = 0; loop < loops; loop++) {
     for (const event of events) {
-      playEvent(context, master, noise, 'drums', doc.version === 1 ? doc.kit : (editTrack(doc, editTrackId).kit || '808'), { value: event.pad, vel: event.velocity }, loop * length + stepTime(event.step, doc.tempo.bpm, doc.swing));
+      playEvent(context, master, noise, 'drums', doc.version === 1 ? doc.kit : (patternTrack(doc, editTrackId)?.kit || '808'), { value: event.pad, vel: event.velocity }, loop * length + stepTime(event.step, doc.tempo.bpm, doc.swing));
     }
   }
   const rendered = await context.startRendering();
@@ -33,7 +33,7 @@ export async function loadSongBuffers(doc, progress = () => {}) {
   estimateExport(doc, frames); // cold-cache refusal before any fetch, decode, or output allocation
   const ids = usedAssets(doc), buffers = new Map();
   if (!ids.length) return buffers;
-  const { loadAsset, prepareExportCache } = await import('./beatAssets.js');
+  const { loadAssetBuffers, prepareExportCache } = await import('./beatAssets.js');
   prepareExportCache(doc);
   let index = 0, completed = 0;
   await Promise.all(Array.from({ length: Math.min(2, ids.length) }, async () => {
@@ -41,8 +41,8 @@ export async function loadSongBuffers(doc, progress = () => {}) {
       const id = ids[index++], asset = doc.assets[id];
       progress(`Loading ${++completed} of ${ids.length} sounds…`);
       const reversed = doc.tracks.some((t) => t.regions.some((r) => r.assetId === id && r.reverse));
-      const buffer = await loadAsset(asset, doc.tempo.bpm);
-      const reverse = buffer && reversed ? await loadAsset(asset, doc.tempo.bpm, true) : null;
+      const loaded = await loadAssetBuffers(asset, doc.tempo.bpm, reversed);
+      const buffer = loaded?.buffer, reverse = loaded?.reversed;
       buffers.set(id, { buffer, reverse, missing: !buffer || (reversed && !reverse) });
     }
   }));

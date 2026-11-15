@@ -1,4 +1,4 @@
-import { audioSegments, songWindowToContext } from './beatAudioSegments.mjs';
+import { audioPieces, songWindowToContext } from './beatAudioSegments.mjs';
 import { stepSeconds, eventTime } from './beatTime.mjs';
 import { eventsAtStep, patternEvents } from './beatEvents.mjs';
 
@@ -24,13 +24,16 @@ export function createScheduler({ clock, setTimer, clearTimer, isHidden, onEvent
       const cycle = audioSequence.loop && { start: audioSequence.loop.start * duration, end: audioSequence.loop.end * duration };
       for (const window of songWindowToContext(audioCursor, until, { startSec: audioStart, contextStart: audioOrigin,
         cycle, endSec: audioSequence.endStep * duration })) {
-        for (const segment of audioSegments(audioSequence.doc, window.fromSec, window.toSec)) {
+        const wrapped = cycle && audioStart + window.contextTime - audioOrigin >= cycle.end - 1e-9;
+        for (const segment of audioPieces(audioSequence.doc, window.fromSec, window.toSec, {
+          startSec: wrapped ? cycle.start : audioStart, endSec: cycle?.end ?? audioSequence.endStep * duration,
+        })) {
           const time = window.contextTime + segment.songTimeSec - window.fromSec;
           if (time >= now) onAudio(segment, time);
           else if (time + segment.durationSec > now) {
             const late = now - time;
             onAudio({ ...segment, songTimeSec: segment.songTimeSec + late, offsetSec: segment.offsetSec + late,
-              regionTimeSec: segment.regionTimeSec + late, durationSec: segment.durationSec - late }, now);
+              regionTimeSec: segment.regionTimeSec + late, durationSec: segment.durationSec - late, isRegionStart: false }, now);
           }
         }
       }

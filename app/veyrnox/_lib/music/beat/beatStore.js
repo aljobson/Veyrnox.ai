@@ -5,6 +5,13 @@ const NAME = 'veyrnox-beat-projects';
 const memory = new Map();
 let unavailable = false;
 let opened = false;
+const connections = new Set();
+let hidden = false;
+function closeConnections() { for (const db of connections) db.close(); connections.clear(); }
+if (typeof window !== 'undefined') {
+  window.addEventListener('pagehide', () => { hidden = true; closeConnections(); channel?.close(); channel = undefined; });
+  window.addEventListener('pageshow', () => { hidden = false; if (listeners.size) getChannel(); });
+}
 function open() {
   return new Promise((resolve, reject) => {
     if (typeof indexedDB === 'undefined') unavailable = true;
@@ -21,7 +28,11 @@ function open() {
     request.onsuccess = () => {
       clearTimeout(timeout);
       if (expired) request.result.close();
-      else { opened = true; resolve(request.result); }
+      else {
+        const db = request.result;
+        db.onversionchange = () => { db.close(); connections.delete(db); };
+        connections.add(db); opened = true; resolve(db);
+      }
     };
     request.onerror = () => { clearTimeout(timeout); reject(request.error); };
   });
@@ -29,7 +40,7 @@ function open() {
 let channel;
 const listeners = new Set();
 function getChannel() {
-  if (!channel && typeof BroadcastChannel !== 'undefined') {
+  if (!hidden && !channel && typeof BroadcastChannel !== 'undefined') {
     try {
       channel = new BroadcastChannel(NAME);
       channel.onmessage = ({ data }) => {
@@ -85,7 +96,7 @@ async function run(mode, decide) {
     if (result.action === 'put') memory.set(result.record.id, structuredClone(result.record));
     if (result.action === 'delete') memory.delete(result.id);
     return { ...result, persistent: false };
-  } finally { db?.close(); }
+  } finally { db?.close(); connections.delete(db); }
 }
 function writeResult(result) {
   if (result.action === 'put') {

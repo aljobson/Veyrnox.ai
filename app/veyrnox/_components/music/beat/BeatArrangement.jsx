@@ -8,7 +8,7 @@ import BeatTrackHeader from './BeatTrackHeader';
 import BeatRegion from './BeatRegion';
 import BeatRegionInspector from './BeatRegionInspector';
 import BeatLibrary from './BeatLibrary';
-import { prepareAsset, syncAssetTempo } from '../../../_lib/music/beat/beatAssets';
+import { prepareAsset, syncAssetTempo, clearBeatAssets } from '../../../_lib/music/beat/beatAssets';
 import { soundDuration } from '../../../_lib/music/beat/beatSounds.mjs';
 import BeatRegionActions from './BeatRegionActions';
 import useRegionDrag from './useRegionDrag';
@@ -16,6 +16,7 @@ import { button, input } from './beatStyles';
 
 export default function BeatArrangement({ doc, edit, selectPattern, editTrackId, setEditTrackId,
   locator, setLocator, playhead, runId, announce }) {
+  useEffect(() => () => clearBeatAssets(), []);
   useEffect(() => { syncAssetTempo(doc.tempo.bpm); }, [doc.tempo.bpm]);
   const [zoom, setZoom] = useState(96);
   const [snapValue, setSnapValue] = useState('240');
@@ -116,7 +117,7 @@ export default function BeatArrangement({ doc, edit, selectPattern, editTrackId,
               {drag.preview.pattern}
             </div>}
           </div>)}
-          <div className="h-20 border-b border-dashed border-vx-border p-3 text-sm text-vx-fg-muted" onDragOver={(e) => e.preventDefault()} onDrop={(e) => drop(e, null)}>Drop a sound here to add an audio track</div>
+          <div className="h-20 border-b border-dashed border-vx-border p-3 text-sm text-vx-fg-muted" onDragOver={(e) => e.preventDefault()} onDrop={(e) => drop(e, null)}>Drop a sound here to add an audio track. Use Add on touch screens.</div>
           {doc.view === 'song' && <div aria-hidden="true"
             className="pointer-events-none absolute inset-y-0 z-20 w-0.5 bg-vx-accent"
             style={{ left: (playhead >= 0 ? playhead * 240 : locator) / 3840 * zoom }} />}
@@ -140,7 +141,7 @@ export default function BeatArrangement({ doc, edit, selectPattern, editTrackId,
       <button className={button} onClick={() => edit((d) => ops.deleteRegion(d, selectedRegion.id),
         { label: 'delete region', regionId: selectedRegion.id })}>Delete region</button>
     </div>}
-    {selectedRegion?.assetId && <BeatRegionInspector region={selectedRegion} asset={doc.assets[selectedRegion.assetId]} edit={edit} />}
+    {selectedRegion?.assetId && <BeatRegionInspector region={selectedRegion} edit={edit} />}
     <BeatRegionActions region={selectedRegion} track={selectedTrack} locator={locator} snap={snap} edit={edit} selectPattern={selectPattern}
       movePlayhead={(delta) => setLocator(clampLocator(locator + delta, end))} />
     <p className="text-xs text-vx-fg-muted">Drag to move; Alt-drag to copy. Drag edges to trim or loop.

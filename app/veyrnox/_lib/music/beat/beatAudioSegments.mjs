@@ -9,6 +9,14 @@ export function envelopeGain(region, t, tempo) {
     * (b ? clamp((length - t - b.endBeforeEndSec) / (b.startBeforeEndSec - b.endBeforeEndSec)) : 1);
 }
 export function audioSegments(doc, fromSec, toSec, { tempo = doc.tempo.bpm } = {}) {
+  return segments(doc, fromSec, toSec, { tempo, startSec: fromSec, endSec: toSec });
+}
+// Playback admits whole pieces by start time, while export/partition queries clip
+// to their window. Only a transport start or cycle wrap may synthesize a mid-piece start.
+export function audioPieces(doc, fromSec, toSec, { startSec = 0, endSec = Infinity, tempo = doc.tempo.bpm } = {}) {
+  return segments(doc, fromSec, toSec, { tempo, startSec, endSec, startsOnly: true });
+}
+function segments(doc, fromSec, toSec, { tempo, startSec, endSec, startsOnly = false }) {
   const segments = [], solo = doc.tracks.some((t) => t.solo);
   for (const track of doc.tracks) {
     if (track.kind !== 'audio' || track.mute || (solo && !track.solo)) continue;
@@ -18,8 +26,12 @@ export function audioSegments(doc, fromSec, toSec, { tempo = doc.tempo.bpm } = {
       const duration = asset.source === 'sound' ? tickSeconds(asset.durationSec * doc.tempo.bpm / 60 * 960, tempo) : asset.durationSec;
       const phase = asset.source === 'sound' ? tickSeconds(region.phaseTicks, tempo) : region.phaseSec;
       let at = Math.max(fromSec, start);
-      const until = Math.min(toSec, end);
-      while (at < until - 1e-10) {
+      const until = Math.min(endSec, end);
+      if (startsOnly && at > Math.max(startSec, start) + 1e-9) {
+        const offset = modulo(phase + at - start, duration);
+        if (offset > 1e-9 && duration - offset > 1e-9) at += duration - offset;
+      }
+      while (at < Math.min(toSec, until) - 1e-10) {
         let offset = modulo(phase + at - start, duration);
         if (offset < 1e-9 || duration - offset < 1e-9) offset = 0;
         const length = Math.min(duration - offset, until - at);

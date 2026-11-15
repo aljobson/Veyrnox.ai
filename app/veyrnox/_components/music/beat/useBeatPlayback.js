@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { createBeatEngine } from '../../../_lib/music/beat/beatEngine.js';
 import { createScheduler } from '../../../_lib/music/beat/beatScheduler.mjs';
 import { addHitToPattern } from '../../../_lib/music/beat/beatOps.mjs';
-import { editTrack, recordTarget } from '../../../_lib/music/beat/beatEvents.mjs';
+import { editTrack, patternTrack, recordTarget } from '../../../_lib/music/beat/beatEvents.mjs';
 import { playbackStart, sequenceFor } from '../../../_lib/music/beat/beatSequence.mjs';
 
 export function useBeatPlayback(current, edit, announce, options) {
@@ -154,8 +154,8 @@ export function useBeatPlayback(current, edit, announce, options) {
         }
       }
       await resumed;
-      if (!mounted.current) return;
-      instance.playPad(pad, 100 / 127, instance.now(), instance.master, editTrack(current.current, optionsRef.current?.editTrackId).kit || '808');
+      if (!mounted.current || engine.current !== instance) return;
+      instance.playPad(pad, 100 / 127, instance.now(), instance.master, patternTrack(current.current, optionsRef.current?.editTrackId)?.kit || '808');
     } catch (failure) { setAudioError(failure.message); announce(failure.message); }
   }
   function setRecord(value) { record.current = value; setRecording(value); }
@@ -206,9 +206,15 @@ export function useBeatPlayback(current, edit, announce, options) {
       frame = requestAnimationFrame(animate);
     }
     function visibility() { if (document.hidden) active.current?.scheduler.refill(); }
+    function pagehide() {
+      stop();
+      engine.current?.close().catch(() => {}); engine.current = null;
+    }
+    window.addEventListener('pagehide', pagehide);
     frame = requestAnimationFrame(animate);
     document.addEventListener('visibilitychange', visibility);
     return () => {
+      window.removeEventListener('pagehide', pagehide);
       mounted.current = false; pending.current = null; starting.current = false;
       cancelAnimationFrame(frame); document.removeEventListener('visibilitychange', visibility);
       active.current?.scheduler.stop(); active.current = null;

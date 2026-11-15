@@ -22,14 +22,14 @@ function FadeField({ region, which, edit }) {
     {draft !== null && (!draft.trim() || !Number.isFinite(Number(draft)) || Number(draft) < 0 || Number(draft) > 10000) && <span className="text-xs">Enter 0–10000 ms.</span>}
   </label>;
 }
-export default function BeatRegionInspector({ region, asset, edit }) {
+export default function BeatRegionInspector({ region, edit }) {
   const controls = <div className="flex flex-wrap items-end gap-3">
     <label>Gain {region.gainDb} dB<input aria-label="Region gain (dB)" className="block min-h-11 accent-vx-accent focus-visible:outline-vx-accent" type="range" min="-24" max="6" step="1" value={region.gainDb}
       onChange={(e) => edit((d) => ops.setAudioRegion(d, region.id, { gainDb: Number(e.target.value) }), { key: `gain:${region.id}`, label: 'change region gain' })} /></label>
     <FadeField key={`${region.id}:in:${JSON.stringify(region.fadeIn)}`} region={region} which="fadeIn" edit={edit} />
     <FadeField key={`${region.id}:out:${JSON.stringify(region.fadeOut)}`} region={region} which="fadeOut" edit={edit} />
     <button className={button} aria-pressed={region.reverse} onClick={() => edit((d) => ops.setAudioRegion(d, region.id, { reverse: !region.reverse }), { label: 'reverse region' })}>Reverse</button>
-    {asset.source === 'song' && asset.bpm && <button className={button} onClick={() => edit((d) => ops.setTempo(d, asset.bpm), { label: 'match song tempo' })}>Match project tempo to this song ({asset.bpm} BPM)</button>}
+    {/* Match-song-tempo is deferred: the Music list payload does not provide tempo. */}
   </div>;
   return <><section className="hidden rounded-xl border border-vx-border p-3 lg:block" aria-label="Audio region inspector">{controls}</section>
     <details className="rounded-xl border border-vx-border p-3 lg:hidden"><summary className="flex min-h-11 cursor-pointer items-center focus-visible:outline-vx-accent">Audio region settings</summary>{controls}</details></>;

@@ -2,11 +2,11 @@ import { getShelf, hydrateShelf, subscribeShelf } from '../instrumentShelf.js';
 import { makeNoise, playEvent } from '../instrumentEngine.js';
 import { soundById, soundDuration } from './beatSounds.mjs';
 import { AUDIO_RATE, MB, admitDecode, checkDecoded, validAsset } from './beatAudioRules.mjs';
-import { offline, decodes, loadSong } from './beatSongAsset.js';
+import { offline, decodes, loadSong, cancelSongLoads } from './beatSongAsset.js';
 import { clearTransientFailures, permanentAssetFailure } from './beatAssetFailures.mjs';
 export const yieldAudio = () => new Promise((resolve) => setTimeout(resolve, 0));
 const cache = new Map(), pending = new Map(), states = new Map(), listeners = new Set();
-let size = 0, activeTempo = null;
+let size = 0, activeTempo = null, generation = 0, suspended = false;
 const emit = () => listeners.forEach((f) => f());
 export const subscribeAssets = (f) => { listeners.add(f); return () => listeners.delete(f); };
 export const assetKey = (asset, bpm) => JSON.stringify([asset.source, asset.ref, asset.durationSec, asset.sourceChannels, asset.encodedBytes, asset.source === 'sound' ? bpm : null]);
@@ -18,11 +18,15 @@ function retain(key, entry) {
   cache.set(key, entry); size += entry.bytes;
   states.set(key, { status: 'ready' }); emit();
 }
-export function clearBeatAssets() { cache.clear(); states.clear(); size = 0; emit(); }
+export function clearBeatAssets() { generation++; cancelSongLoads(); cache.clear(); states.clear(); size = 0; emit(); }
 export function retryBeatAssets(asset, bpm) {
   clearTransientFailures(states, asset ? assetKey(asset, bpm) : undefined); emit();
 }
-if (typeof window !== 'undefined') window.addEventListener('online', () => retryBeatAssets());
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', () => retryBeatAssets());
+  window.addEventListener('pagehide', () => { suspended = true; clearBeatAssets(); });
+  window.addEventListener('pageshow', () => { suspended = false; emit(); });
+}
 export function prepareExportCache(doc) {
   retryBeatAssets();
   const used = new Map();
@@ -50,8 +54,8 @@ subscribeShelf(() => {
   }
   emit();
 });
-const idle = Object.freeze({ status: 'loading' });
-export const assetState = (asset, bpm) => states.get(assetKey(asset, bpm)) || idle;
+const idle = Object.freeze({ status: 'loading' }), paused = Object.freeze({ status: 'loading' });
+export const assetState = (asset, bpm) => suspended ? paused : states.get(assetKey(asset, bpm)) || idle;
 export function cachedAsset(asset, bpm, reverse = false) {
   const key = assetKey(asset, bpm), entry = cache.get(key);
   if (!entry) return null;
@@ -85,11 +89,15 @@ async function takeBuffer(asset) {
   return context.startRendering();
 }
 export async function prepareAsset(item, bpm) {
+  if (suspended) throw new DOMException('Audio load cancelled', 'AbortError');
+  const token = generation;
   if (!item || !['song', 'sound', 'take'].includes(item.source) || typeof item.name !== 'string' || !item.name.trim()) throw new Error('Invalid sound.');
   let asset = { source: item.source, ref: item.ref, name: item.name.slice(0, 80), bpm: item.bpm || null };
   if (item.source === 'song') {
     if (!validAsset({ ...asset, durationSec: 1, sourceChannels: 2, encodedBytes: 0 }, bpm)) throw new Error('This song version is no longer available');
-    const loaded = await loadSong(asset); asset = loaded.asset;
+    const loaded = await loadSong(asset);
+    if (token !== generation) throw new DOMException('Audio load cancelled', 'AbortError');
+    asset = loaded.asset;
     retain(assetKey(asset, bpm), { ...loaded, ...asset, bpm, bytes: bytes(loaded.buffer) });
     return asset;
   }
@@ -102,16 +110,28 @@ export async function prepareAsset(item, bpm) {
   return asset;
 }
 export async function loadAsset(asset, bpm, reverse = false) {
+  const entry = await loadAssetBuffers(asset, bpm, reverse);
+  return (reverse ? entry?.reversed : entry?.buffer) || null;
+}
+// Return both directions from one retained entry. Export owns these references even
+// when another worker evicts the entry from the smaller live-playback LRU.
+export async function loadAssetBuffers(asset, bpm, reverse = false) {
+  if (suspended) return null;
+  const token = generation;
   const key = assetKey(asset, bpm);
-  let buffer = cachedAsset(asset, bpm, reverse);
-  if (buffer) return buffer;
-  if (pending.has(key)) { await pending.get(key); return loadAsset(asset, bpm, reverse); }
-  if (states.get(key)?.status === 'missing') return null;
+  let entry = cache.get(key);
+  while (pending.has(key)) entry = await pending.get(key);
+  if (token !== generation) return null;
+  if (entry && (!reverse || entry.reversed)) {
+    if (cache.has(key)) { cache.delete(key); cache.set(key, entry); }
+    return entry;
+  }
+  if (!entry && states.get(key)?.status === 'missing') return null;
   const work = (async () => {
     try {
       const reserve = admitDecode(asset);
-      let entry = cache.get(key);
       if (!entry) {
+        let buffer;
         states.set(key, idle); emit();
         if (asset.source === 'song') buffer = (await loadSong(asset, asset)).buffer;
         else {
@@ -122,6 +142,7 @@ export async function loadAsset(asset, bpm, reverse = false) {
         checkDecoded(buffer, asset);
         entry = { buffer, source: asset.source, ref: asset.ref, bpm, bytes: bytes(buffer) };
       }
+      if (token !== generation) return null;
       if (reverse && !entry.reversed) {
         const release = await decodes.acquire(bytes(entry.buffer) * 2);
         try {
@@ -134,10 +155,16 @@ export async function loadAsset(asset, bpm, reverse = false) {
           entry = { ...entry, reversed, bytes: bytes(entry.buffer) * 2 };
         } finally { release(); }
       }
+      if (token !== generation) return null;
       // Old tempo renders may finish after the project has already changed tempo.
       if (asset.source !== 'sound' || activeTempo === null || activeTempo === bpm) retain(key, entry);
-      return reverse ? entry.reversed : entry.buffer;
-    } catch (error) { states.set(key, { status: 'missing', reason: error.message, permanent: permanentAssetFailure(error) }); emit(); return null; }
+      return entry;
+    } catch (error) {
+      if (token === generation && error.name !== 'AbortError') {
+        states.set(key, { status: 'missing', reason: error.message, permanent: permanentAssetFailure(error) }); emit();
+      }
+      return null;
+    }
   })();
   pending.set(key, work);
   try { return await work; } finally { pending.delete(key); }

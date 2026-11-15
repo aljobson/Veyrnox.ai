@@ -15,12 +15,24 @@ async function readBounded(response, bound, prefix = false) {
       const piece = value.subarray(0, bound - length); bytes.set(piece, length); length += piece.length;
       if (prefix && length === bound) break;
     }
-  } finally { await reader.cancel(); }
+  } finally {
+    try { await reader.cancel(); } finally { reader.releaseLock?.(); }
+  }
   return bytes.subarray(0, length);
 }
 async function request(fetchAudio, url, range = false) {
-  const response = await fetchAudio(url, { credentials: 'same-origin', ...(range ? { headers: { Range: 'bytes=0-65535' } } : {}) });
-  if (!response.ok) { const error = new Error('This song version is no longer available'); error.status = response.status; throw error; }
+  let response;
+  try { response = await fetchAudio(url, { credentials: 'same-origin', ...(range ? { headers: { Range: 'bytes=0-65535' } } : {}) }); }
+  catch (cause) {
+    if (cause.name === 'AbortError') throw cause;
+    throw new Error('Could not load this song. Try again.', { cause });
+  }
+  if (!response.ok) {
+    await response.body?.cancel();
+    const error = new Error([403, 404, 410].includes(response.status)
+      ? 'This song version is no longer available' : 'Could not load this song. Try again.');
+    error.status = response.status; throw error;
+  }
   return response;
 }
 export async function fetchAudioAsset(url, base, stored, { fetchAudio = fetch, decode }) {

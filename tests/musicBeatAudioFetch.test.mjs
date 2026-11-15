@@ -92,3 +92,19 @@ test('large ID3 and WAV LIST metadata are parsed after bounded prefix sniffing',
     assert.equal(result.asset.sourceChannels, channels); assert.equal(net.cancels[0].at, 65536);
   }
 });
+
+
+test('HTTP failures distinguish unavailable versions from transient failures and cancel the body', async () => {
+  for (const status of [403, 404, 410, 429, 500, 502, 503]) {
+    let cancelled = false;
+    const expected = [403, 404, 410].includes(status) ? /no longer available/ : /Could not load.*Try again/;
+    await assert.rejects(fetchAudioAsset('signed', base, null, {
+      fetchAudio: async () => ({ ok: false, status, body: { cancel: async () => { cancelled = true; } } }),
+      decode: () => assert.fail('failed response must not decode'),
+    }), (error) => { assert.equal(error.status, status); assert.match(error.message, expected); return true; });
+    assert.equal(cancelled, true);
+  }
+  await assert.rejects(fetchAudioAsset('signed', base, null, {
+    fetchAudio: async () => { throw new TypeError('network failed'); }, decode: () => assert.fail(),
+  }), /Could not load.*Try again/);
+});
