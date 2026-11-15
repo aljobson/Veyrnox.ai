@@ -20,6 +20,7 @@ import { publicPromptHygiene } from '../scripts/lib/public-prompt-hygiene.mjs';
 import { sourceReferenceGaps } from '../scripts/lib/source-reference-gaps.mjs';
 import { sourcePromptEndingReview } from '../scripts/lib/source-prompt-endings.mjs';
 import { HF_PHOTO_30_TEMPLATES } from '../app/veyrnox/_lib/sourceTemplateExpansion20.js';
+import { HF_PHOTO_59_TEMPLATES } from '../app/veyrnox/_lib/sourceTemplateExpansion21.js';
 
 const json = file => JSON.parse(readFileSync(new URL(file, import.meta.url)));
 const sha = value => createHash('sha256').update(value).digest('hex');
@@ -103,14 +104,14 @@ test('all old records, recipes, visual signatures and hidden rows remain unchang
   for (const [id, signature] of Object.entries(baseline.visual)) assert.deepEqual(visual.placements[id], signature, id);
   assert.deepEqual(REMOVED_PROMPT_GAP_TEMPLATE_IDS, baseline.hidden);
   assert.equal(REMOVED_PROMPT_GAP_TEMPLATE_IDS.length, 70);
-  assert.equal(SOURCE_TEMPLATES.length, 841 + 46 + 30);
-  assert.equal(PRESETS.length, 749 + 46 + 30);
-  assert.equal(ALL_TEMPLATES.length, 1791 + 46 + 30);
+  assert.equal(SOURCE_TEMPLATES.length, 841 + 46 + 30 + 59);
+  assert.equal(PRESETS.length, 749 + 46 + 30 + 59);
+  assert.equal(ALL_TEMPLATES.length, 1791 + 46 + 30 + 59);
   const deltas = { REALISTIC: 4, CINEMATIC: 2, UGC: 2, CARTOONS: 1, VFX: 1, MOVIES: 1, FASHION: 1, PRODUCTS: 1, FANTASY: 1 };
   const expansion = { MOVIES: 6, CINEMATIC: 15, REALISTIC: 23, FASHION: 1, CARTOONS: 1 };
   // The 2026-11-15 single-photo import (scripts/import-higgsfield-photo-30.mjs), by category.
   const photo30 = {};
-  for (const t of HF_PHOTO_30_TEMPLATES) photo30[t.category] = (photo30[t.category] || 0) + 1;
+  for (const t of [...HF_PHOTO_30_TEMPLATES, ...HF_PHOTO_59_TEMPLATES]) photo30[t.category] = (photo30[t.category] || 0) + 1;
   const withdrawn = {};
   for (const t of new Map(SOURCE_TEMPLATES.concat(HF_REPLACEMENTS_TEMPLATES, SYNTX_REPLACEMENTS_TEMPLATES).map(t => [t.id, t])).values()) if (BROKEN_TEMPLATE_IDS.includes(publicTemplateId(t.id))) withdrawn[t.category] = (withdrawn[t.category] || 0) + 1;
   for (const category of new Set([...Object.keys(baseline.categories), ...PRESETS.map(t => t.category)])) {
@@ -121,8 +122,8 @@ test('all old records, recipes, visual signatures and hidden rows remain unchang
 test('replacement media match supplied hashes, five-second silent video budgets and distinct decoded signatures', () => {
   assert.equal(visual.method, VISUAL_SIGNATURE_METHOD);
   assert.deepEqual(Object.keys(visual.placements).sort(), Object.keys(AUDIT_SHOWCASE_CLIPS).sort());
-  assert.equal(Object.keys(visual.placements).length, 931 + 46 + 30);
-  assert.equal(new Set(Object.values(visual.placements).map(r => r.signature)).size, 931 + 46 + 30);
+  assert.equal(Object.keys(visual.placements).length, 931 + 46 + 30 + 59);
+  assert.equal(new Set(Object.values(visual.placements).map(r => r.signature)).size, 931 + 46 + 30 + 59);
   for (const audit of audits) {
     let bytes = 0;
     assert.equal(audit.visualSignatureMethod, VISUAL_SIGNATURE_METHOD);
