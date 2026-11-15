@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { parseLabsRankAction, publicPair } from '../app/veyrnox/_lib/music/labsRank.mjs';
+import { parseLabsRankAction, publicPair, rankLoadProblem } from '../app/veyrnox/_lib/music/labsRank.mjs';
 import { musicRankingEnabled } from '../lib/musicBackend.js';
 
 const ID = 'b6ed2d0d-8276-4fbb-9c4f-39f401a3158c';
@@ -27,7 +27,9 @@ test('ranking ships false, needs Labs and publication, and never touches credits
   assert.equal(musicRankingEnabled(on), true);
   assert.equal(musicRankingEnabled({ ...on, MUSIC_LABS_ENABLED: 'false' }), false);
   const wrangler = await readFile(new URL('../wrangler.jsonc', import.meta.url), 'utf8');
-  assert.equal((wrangler.match(/\\"ranking\\":false/g) || []).length, 2);
+  // Off in production; on in staging only (owner, 2026-11-15).
+  assert.equal((wrangler.match(/\\"ranking\\":false/g) || []).length, 1);
+  assert.equal((wrangler.match(/\\"ranking\\":true/g) || []).length, 1);
   const sql = await readFile(new URL('../packages/db/schema/supabase/0538_labs_listen_and_rank.sql', import.meta.url), 'utf8');
   assert.match(sql, /allow_ranking BOOLEAN NOT NULL DEFAULT false/);
   assert.match(sql, /interval '10 seconds'/);
@@ -36,4 +38,14 @@ test('ranking ships false, needs Labs and publication, and never touches credits
   assert.match(sql, /public\.user_blocks b WHERE b\.blocker_id = v_user/);
   assert.doesNotMatch(sql, /ledger_|credit_balances/);
   assert.doesNotMatch(sql, /GRANT EXECUTE[^;]*TO (authenticated|anon)/);
+});
+
+test('signed out is a prompt to sign in, not a load error', async () => {
+  assert.deepEqual(rankLoadProblem(401), { kind: 'signed_out', message: 'Sign in to rank tracks.' });
+  assert.equal(rankLoadProblem(429).kind, 'limit');
+  assert.equal(rankLoadProblem(500).kind, 'failed');
+  assert.equal(rankLoadProblem(undefined).kind, 'failed');
+  const card = await readFile(new URL('../app/veyrnox/_components/music/MusicLabsRank.jsx', import.meta.url), 'utf8');
+  assert.match(card, /if \(problem\.kind === 'signed_out'\) setSignedOut\(true\);/);
+  assert.match(card, /!error && !signedOut/);
 });
