@@ -10,7 +10,7 @@ import { useBeginTask, useProjectDocument, useProjectHistory, type RestoreBlock,
 import { VersionPreview } from '../../../components/projects/VersionPreview';
 import { touchTarget } from '../../../lib/a11y';
 import { getCacheUser, subscribeCacheUser } from '../../../lib/appCache';
-import { cleanProjectName, deleteProject, fetchProject, projectsErrorMessage, renameProject, versionLabel, type Project, type Version } from '../../../lib/projects';
+import { cleanProjectName, deleteProject, fetchProject, projectDates, projectsErrorMessage, renameProject, versionLabel, type Project, type Version } from '../../../lib/projects';
 import { EDITOR_ENABLED } from '../../../lib/editorFlag';
 import { formatLocale, t } from '../../../lib/i18n';
 import { REVISION_CAP } from '../../../lib/projectDocumentDraft';
@@ -210,7 +210,7 @@ function Detail({ id }: { id: string }) {
                         )}
                         {note ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{note.text}</StatusText> : null}
                         {note?.reload ? <Pressable accessibilityRole="button" accessibilityLabel={t('projectDocument.reloadLatest')} disabled={busy} style={touchTarget} onPress={() => void reloadLatest()}><Text style={styles.action}>{t('projectDocument.reloadLatest')}</Text></Pressable> : null}
-                        <Text style={styles.meta}>{t('projects.version', { value1: project.version, value2: project.createdAt ? t('projects.created', { value1: new Date(project.createdAt).toLocaleDateString(formatLocale()) }) : '', value3: project.updatedAt ? t('projects.updated', { value1: new Date(project.updatedAt).toLocaleString(formatLocale()) }) : '' })}</Text>
+                        <Text style={styles.meta}>{projectDates(project, true)}</Text>
                         <Text style={styles.heading} accessibilityRole="header">{t('projects.savedversions')}</Text>
                         {listBlock && listBlock !== 'current' && versions.length > 1 && !doc.dropped ? <Text style={styles.muted}>{blockReason(listBlock)}</Text> : null}
                         {listBlock === 'unloaded' && !doc.loading && !doc.dropped ? <Pressable accessibilityRole="button" accessibilityLabel={t('projectDocument.reloadText')} style={touchTarget} onPress={() => void doc.reload()}><Text style={styles.action}>{t('projectDocument.retry')}</Text></Pressable> : null}

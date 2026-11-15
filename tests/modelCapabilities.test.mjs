@@ -21,6 +21,9 @@ const CATALOG = [
     'fal-ai/minimax-h3-max-recast', 'crun:wan/2-2-animate-replace',
     'bytedance/seedance-2.0/reference-to-video', 'market:bytedance/seedance-2',
     'fal-ai/kling-video/o1/video-to-video/reference',
+    // ADR-0342 candidates staged inactive by migration 0520.
+    'market:kling-3.0/video-std', 'market:bytedance/seedance-2-mini',
+    'market:wan/2-6-flash-image-to-video', 'market:seedream/5-flash-text-to-image',
     'fal-ai/sana/v1.5/4.8b',
     'fal-ai/ace-step', 'fal-ai/ace-step-1.5', 'fal-ai/elevenlabs/sound-effects/v2', 'fal-ai/inworld-tts',
     'fal-ai/flux-2-pro', 'fal-ai/bytedance/seedream/v4/text-to-image', 'fal-ai/nano-banana',

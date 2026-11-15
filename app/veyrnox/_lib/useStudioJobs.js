@@ -42,7 +42,7 @@ export function useStudioJobs({ onUnreachable }) {
       const next = await gatewayFetch(`/jobs/${id}`);
       patch(id, next);
       if (next.state !== 'succeeded' && next.state !== 'failed') return;
-      markJobSettled(id, next.state);
+      markJobSettled(id, next.state, next.error_code);
       notifyBalanceChanged();
       if (next.state === 'succeeded') {
         const asset = await gatewayFetch(`/jobs/${id}/asset`);

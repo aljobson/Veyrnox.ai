@@ -38,7 +38,13 @@ export function createErrorMessage(errorCode: string | null | undefined, refunde
         : `${t('common.error')} ${t('app.data.refundPending')}`;
 }
 
+// Edit-chain steps name themselves in the code (clip-edit parent jobs: `merge_failed`). The copy says "refunded", so
+// it is only used once the job is REFUNDED; before that the screen's own fallback stands.
+const STEP_ERROR_KEYS: Readonly<Record<string, string>> = { merge_failed: 'job.err.merge_failed' };
+
 export function failedJobMessage(errorCode: string | null | undefined, refunded?: boolean, fallback = t('library.status.failed')): string {
     // Cancellation retains each screen's existing cancellation/refund presentation.
+    const stepKey = errorCode ? STEP_ERROR_KEYS[errorCode] : undefined;
+    if (stepKey && refunded === true) { const m = t(stepKey); if (m !== stepKey) return m; }
     return createErrorMessage(errorCode, refunded) ?? fallback;
 }

@@ -12,7 +12,12 @@ export function insertMediaAt(timeline: Timeline, media: Media, at: number): { t
     const open = timeline.tracks.filter(track => track.kind === kind && !track.locked);
     if (!open.length) return { error: 'track' };
     if ((!Object.hasOwn(timeline.media, media.id) && Object.keys(timeline.media).length >= 40) || timeline[kind].length >= 40) return { error: 'full' };
-    const start = clampFrame(at), len = Math.max(1, Math.min(media.frames || 90, SEQUENCE_MAX - start));
+    const start = clampFrame(at);
+    // QA build 52 (8.8): a song longer than the cut would stretch the project (a 60 s song made a 5 s edit 1:00:00,
+    // black after the clips). Audio that starts inside the video stops at the video's last frame.
+    const videoEnd = kind === 'audio' ? timeline.video.reduce((end, clip) => Math.max(end, clip.start + clip.len), 0) : 0;
+    const room = videoEnd > start ? videoEnd - start : SEQUENCE_MAX - start;
+    const len = Math.max(1, Math.min(media.frames || 90, room, SEQUENCE_MAX - start));
     // QA build 50 (F10): never stack a clip over another one. Use the first unlocked track that is
     // free at the playhead; if every one is busy there, the clip goes on a new track (its own layer).
     const free = (trackId: string) => !timeline[kind].some(clip => clip.trackId === trackId && clip.start < start + len && start < clip.start + clip.len);

@@ -8,7 +8,7 @@ import { EmptyState } from '../../../components/EmptyState';
 import { HeaderAction } from '../../../components/HeaderAction';
 import { useAuth } from '../../../auth/AuthProvider';
 import { touchTarget } from '../../../lib/a11y';
-import { cleanProjectName, createProject, fetchProjects, fetchWorkspaces, projectsErrorMessage, type Project, type Workspace } from '../../../lib/projects';
+import { cleanProjectName, createProject, fetchProjects, fetchWorkspaces, projectDates, projectsErrorMessage, type Project, type Workspace } from '../../../lib/projects';
 import { EDITOR_ENABLED } from '../../../lib/editorFlag';
 import { formatLocale, t } from '../../../lib/i18n';
 import { colors } from '../../../theme';
@@ -137,9 +137,9 @@ export default function Projects() {
                             ListEmptyComponent={<Text style={styles.muted}>{t('projects.noprojectsinthisworkspaceyet')}</Text>}
                             ListFooterComponent={<Text style={styles.note}>{t('projects.openaprojecttorenameitdelete')}</Text>}
                             renderItem={({ item }) => (
-                                <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('projects.version2', { value1: item.name, value2: item.version }))} style={styles.row} onPress={() => router.push({ pathname: '/projects/[id]', params: { id: item.id } })}>
+                                <Pressable accessibilityRole="button" accessibilityLabel={rawText(`${item.name}, ${projectDates(item)}`)} style={styles.row} onPress={() => router.push({ pathname: '/projects/[id]', params: { id: item.id } })}>
                                     <Text style={styles.name}>{item.name}</Text>
-                                    <Text style={styles.muted}>{t('projects.version3', { value1: item.version, value2: item.updatedAt ? t('projects.updated', { value1: new Date(item.updatedAt).toLocaleDateString(formatLocale()) }) : '' })}</Text>
+                                    <Text style={styles.muted}>{projectDates(item)}</Text>
                                 </Pressable>
                             )}
                         />

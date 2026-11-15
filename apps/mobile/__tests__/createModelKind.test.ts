@@ -1,4 +1,4 @@
-import { isAudioDriven, isSpeechModel, missingNeedKey, missingRequiredSlots } from '../src/lib/createModelKind';
+import { isAudioDriven, isSoundPass, isSpeechModel, missingNeedKey, missingRequiredSlots } from '../src/lib/createModelKind';
 import type { CatalogModel } from '../src/lib/media';
 
 const model = (id: string, modality: string, media: NonNullable<CatalogModel['capabilities']>['media'] = {}): CatalogModel => ({ id, name: id, modality, credits: 1, gated: false, durations: [5], capabilities: { inputs: { prompt: {} }, media } });
@@ -9,6 +9,10 @@ describe('create model kinds', () => {
         expect(isAudioDriven(avatar)).toBe(true);
         expect(isAudioDriven(model('kling', 'text-to-video'))).toBe(false);
         expect(isAudioDriven(model('seed', 'image-to-video', { image: { required: true } }))).toBe(false);
+    });
+    it('recognises the add-sound tool, so lens words and the "describe the change" hint are not offered for it', () => {
+        expect(isSoundPass(model('mmaudio-v2-video', 'video-to-video'))).toBe(true);
+        expect(isSoundPass(model('kling', 'text-to-video'))).toBe(false);
     });
     it('recognises speech models, not music', () => {
         expect(isSpeechModel(model('elevenlabs-tts-turbo', 'text-to-speech'))).toBe(true);

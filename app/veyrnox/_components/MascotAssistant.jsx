@@ -38,6 +38,7 @@ import { EditorHelperLauncher } from './editor/EditorHelperLauncher';
 import { splitLocalePath } from '../../../lib/i18n/locales.mjs';
 import { clampVeyPosition, VEY_SIZE as CHARACTER } from '../../../lib/veyPointer';
 import { shouldShowVeyCharacter } from '../../../lib/veyVisibility';
+import { VEY_MOOD_EVENT, veyMoodFor } from '../../../lib/veyMood';
 
 const HOME = { x: 18, y: 0 };
 const WELCOME = (t) => (t("public.vey.welcome"));
@@ -85,6 +86,32 @@ export default function MascotAssistant() {
   const [position, setPosition] = useState(HOME);
   const { manualPosition, panelSide, setManualPosition, movePanels, resetPosition } = useVeyPlacement();
   const { character, setCharacter } = useVeyCharacter();
+  // A face for the situation the app reports (lib/veyMood.js): offline is held while the connection is gone,
+  // everything else settles back after a few seconds.
+  const [signalMood, setSignalMood] = useState(null);
+  const [offline, setOffline] = useState(false);
+  useEffect(() => {
+    let timer;
+    const onMood = (event) => {
+      const next = veyMoodFor(event.detail?.situation);
+      if (!next) return;
+      clearTimeout(timer);
+      setSignalMood(next);
+      timer = setTimeout(() => setSignalMood(null), event.detail?.holdMs || 6000);
+    };
+    const sync = () => setOffline(typeof navigator !== 'undefined' && navigator.onLine === false);
+    sync();
+    window.addEventListener(VEY_MOOD_EVENT, onMood);
+    window.addEventListener('online', sync);
+    window.addEventListener('offline', sync);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener(VEY_MOOD_EVENT, onMood);
+      window.removeEventListener('online', sync);
+      window.removeEventListener('offline', sync);
+    };
+  }, []);
+  const faceMood = offline ? 'sleepy' : signalMood;
   const [facing, setFacing] = useState(1);
   const [pendingTarget, setPendingTarget] = useState(null);
   const [pendingSavedId, setPendingSavedId] = useState(null);
@@ -431,7 +458,7 @@ export default function MascotAssistant() {
           <span id="vey-position-help" className="sr-only">{t("public.vey.drag")}</span>
           <span className="absolute inset-x-4 bottom-2 h-5 rounded-full bg-black/35 blur-md" aria-hidden="true" />
           <span className="relative block h-full w-full transition-[filter] group-hover:brightness-110">
-            <VeyAvatar character={character} pose={mood} reducedMotion={reduceMotion} hand={mobileLayout.hand} />
+            <VeyAvatar character={character} pose={mood} mood={busy || activeTarget ? null : faceMood} reducedMotion={reduceMotion} hand={mobileLayout.hand} />
           </span>
         </motion.button>
       </motion.div> : <button

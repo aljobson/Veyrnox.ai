@@ -27,6 +27,10 @@ test('positive generation capabilities use 30,000 or an explicit verified provid
   const providerCaps = new Map([
     ['fal-ai/minimax-h3-max-recast', 1000], // Frozen Swap contract (ADR-0329).
     ['market:bytedance/seedance-2', 20000], // Official kie reference contract (ADR-0333).
+    ['market:kling-3.0/video-std', 2000], // Staged kie contract (ADR-0342).
+    ['market:bytedance/seedance-2-mini', 2000], // Staged kie contract (ADR-0342).
+    ['market:wan/2-6-flash-image-to-video', 1500], // Staged kie contract (ADR-0342).
+    ['market:seedream/5-flash-text-to-image', 2000], // Staged kie contract (ADR-0342).
     ['market:wan/2-5-text-to-video', 800],
     ['market:kling-2.6/text-to-video', 1000],
     ['market:hailuo/02-text-to-video-standard', 1500],

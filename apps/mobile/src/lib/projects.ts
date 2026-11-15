@@ -1,4 +1,4 @@
-import { t } from './i18n';
+import { formatLocale, t } from './i18n';
 import type { ApiClient } from './api';
 
 // ADR-0131: workspaces and projects (the editor's cloud saves). Reading, plus create, rename, delete and restore a version (same routes as the web). The routes sit behind TENANT_PROJECTS_ENABLED
@@ -115,3 +115,11 @@ export function projectsErrorMessage(err: unknown): string {
     if (status === 502 || status === 503) return t('projects.theserviceisbusyTryagainin');
     return t('projects.somethingwentwrongTryagain');
 }
+
+// The project row's own `version` only counts renames, so every project reads "1". The dates are what people tell projects apart by;
+// the strings carry a leading " · " separator for the old "Version N" line, which is dropped here.
+export const projectDates = (p: Pick<Project, 'createdAt' | 'updatedAt'>, withTime = false): string => {
+    const when = (iso: string) => (withTime ? new Date(iso).toLocaleString(formatLocale()) : new Date(iso).toLocaleDateString(formatLocale()));
+    const line = `${p.createdAt ? t('projects.created', { value1: when(p.createdAt) }) : ''}${p.updatedAt ? t('projects.updated', { value1: when(p.updatedAt) }) : ''}`;
+    return line.replace(/^[\s·]+/, '');
+};

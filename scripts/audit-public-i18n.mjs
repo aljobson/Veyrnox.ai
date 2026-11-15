@@ -26,6 +26,8 @@ const privateFunctions = {
 
 // Exact public exceptions. Do not add blanket file exclusions for UI code.
 const exceptions = [
+  { file: /^lib\/templateClipPrompt\.mjs$/, pattern: /^@(?:video1|image1)$/, reason: 'canonical provider reference token, shared verbatim by the prompt editor and provider adapter' },
+  { file: /^lib\/templateClipPrompt\.mjs$/, pattern: /^Use @video1 as the scene reference\./, reason: 'canonical generation prompt sent to the provider, not localized UI copy (ADR-0333)' },
   { file: /^app\/veyrnox\/_components\/music\/(?!MusicPublicPrompt|MusicPublicProfile|MusicPublicTrack|MusicSharedSong)[^/]+\.jsx$/, pattern: /./, reason: 'disabled-by-default private Music preview copy remains English-only until rollout localization; public Music surfaces stay audited' },
   { file: /^app\/veyrnox\/app\/music\//, pattern: /./, reason: 'disabled-by-default private Music preview routes remain English-only until rollout localization; public Music surfaces stay audited' },
   { file: /^lib\/musicInstruments\.js$/, pattern: /./, reason: 'instrument and sound-template names for the disabled-by-default private Music preview, which stays English-only until rollout localization' },

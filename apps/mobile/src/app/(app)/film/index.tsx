@@ -7,16 +7,28 @@ import { shotRows, stageStatuses, summarize, type Film } from '../../../lib/film
 import { clearStudio } from '../../../lib/filmStudioStore';
 import { useAuth } from '../../../auth/AuthProvider';
 import { getCacheUser, subscribeCacheUser } from '../../../lib/appCache';
-import { clearOpenedFilm, fetchCloudFilms, loadActiveStudio } from '../../../lib/filmCloud';
+import { clearOpenedFilm, cloudStatus, fetchCloudFilms, loadActiveStudio } from '../../../lib/filmCloud';
 import { formatLocale, plural, t } from '../../../lib/i18n';
 import { colors } from '../../../theme';
+
+type CloudFailure = 'connection' | 'account' | 'server';
+const FAILURE_COPY = { connection: 'filmCloud.linkOffline', account: 'filmCloud.linkAccount', server: 'filmCloud.linkFailed' } as const;
+// null = show nothing: a 404 is the server's account-saving switch being off, not a fault to retry.
+function failureOf(err: unknown): CloudFailure | null {
+    switch (cloudStatus(err)) {
+        case 'offline': return 'connection';
+        case 'unavailable': return 'account';
+        case 'gone': return null;
+        default: return 'server';
+    }
+}
 
 // ADR-0210 and ADR-0252: open and edit a native film or a film saved to the account.
 export default function FilmStudio() {
     const router = useRouter();
     const { api } = useAuth();
     const [cloudCount, setCloudCount] = useState<number | null>(null);
-    const [cloudFailed, setCloudFailed] = useState(false);
+    const [cloudFailed, setCloudFailed] = useState<CloudFailure | null>(null);
     const generation = useRef(0);
     const loadToken = useRef(0);
     const [film, setFilm] = useState<Film | null>(null);
@@ -43,6 +55,9 @@ export default function FilmStudio() {
         return () => { ++loadToken.current; };
     }, [reload]));
 
+    const fetchCountRef = useRef<() => Promise<void>>(async () => undefined);
+    const retry = useCallback(() => { setCloudFailed(null); void fetchCountRef.current(); }, []);
+
     useEffect(() => {
         const fetchCount = async () => {
             const session = generation.current;
@@ -50,18 +65,20 @@ export default function FilmStudio() {
             if (!owner) return;
             try {
                 const rows = await fetchCloudFilms(api);
-                if (session === generation.current && owner === getCacheUser()) { setCloudCount(rows.length); setCloudFailed(false); }
-            } catch {
-                // The intro promises saved films, so say they could not be read rather than show nothing.
-                if (session === generation.current && owner === getCacheUser()) setCloudFailed(true);
+                if (session === generation.current && owner === getCacheUser()) { setCloudCount(rows.length); setCloudFailed(null); }
+            } catch (err) {
+                // The intro promises saved films, so say why they could not be read. A 404 means the
+                // server has account saving switched off: nothing to retry, so nothing is shown.
+                if (session === generation.current && owner === getCacheUser()) setCloudFailed(failureOf(err));
             }
         };
+        fetchCountRef.current = fetchCount;
         const unsubscribe = subscribeCacheUser(() => {
             ++generation.current;
             setFilm(null);
             setSavedAt(null);
             setCloudCount(null);
-            setCloudFailed(false);
+            setCloudFailed(null);
             setLoading(true);
             reload();
             void fetchCount();
@@ -90,7 +107,7 @@ export default function FilmStudio() {
                 <Pressable accessibilityRole="button" style={styles.primary} onPress={() => router.push('/film/workspace')}>
                     <Text style={styles.primaryText}>{t('film.startanewfilm')}</Text>
                 </Pressable>
-                <Links router={router} cloudCount={cloudCount} cloudFailed={cloudFailed} />
+                <Links router={router} cloudCount={cloudCount} cloudFailed={cloudFailed} onRetry={retry} />
             </ScrollView>
         );
     }
@@ -141,12 +158,12 @@ export default function FilmStudio() {
             <Pressable accessibilityRole="button" style={[styles.secondary, touchTarget]} onPress={remove}>
                 <Text style={styles.secondaryText}>{t('film.removefromthisphone')}</Text>
             </Pressable>
-            <Links router={router} cloudCount={cloudCount} cloudFailed={cloudFailed} />
+            <Links router={router} cloudCount={cloudCount} cloudFailed={cloudFailed} onRetry={retry} />
         </ScrollView>
     );
 }
 
-function Links({ router, cloudCount, cloudFailed }: { router: ReturnType<typeof useRouter>; cloudCount: number | null; cloudFailed: boolean }) {
+function Links({ router, cloudCount, cloudFailed, onRetry }: { router: ReturnType<typeof useRouter>; cloudCount: number | null; cloudFailed: CloudFailure | null; onRetry: () => void }) {
     return (
         <View style={styles.links}>
             {cloudCount !== null && cloudCount >= 1 ? (
@@ -155,7 +172,12 @@ function Links({ router, cloudCount, cloudFailed }: { router: ReturnType<typeof 
                     <Text style={styles.muted}>{plural('filmCloud.linkCount', cloudCount)}</Text>
                 </Pressable>
             ) : cloudFailed ? (
-                <Text style={[styles.muted, styles.row]}>{t('filmCloud.linkFailed')}</Text>
+                <View style={styles.row}>
+                    <Text style={styles.muted}>{t(FAILURE_COPY[cloudFailed])}</Text>
+                    <Pressable accessibilityRole="button" style={touchTarget} onPress={onRetry}>
+                        <Text style={styles.name}>{t('filmCloud.retry')}</Text>
+                    </Pressable>
+                </View>
             ) : cloudCount === 0 ? (
                 <Text style={[styles.muted, styles.row]}>{t('filmCloud.empty')}</Text>
             ) : null}

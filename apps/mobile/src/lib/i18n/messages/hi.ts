@@ -375,6 +375,12 @@ const hi = {
     'audioTemplates.cat.MUSIC': 'संगीत',
     'audioTemplates.cat.VOICE-OVER': 'वॉइस-ओवर',
     'audioTemplates.cat.SOUND FX': 'साउंड इफ़ेक्ट',
+    'templateClip.prompt': 'क्लिप प्रॉम्प्ट',
+    'templateClip.reset': 'प्रॉम्प्ट रीसेट करें',
+    'templateClip.addPhoto': 'अपनी फ़ोटो जोड़ें',
+    'templateClip.videoName': '@video1: टेम्पलेट क्लिप',
+    'templateClip.photoName': '@image1: आपकी फ़ोटो',
+    'templateClip.invalid': '@video1 और @image1 का ठीक एक-एक बार उपयोग करें, अधिकतम 2000 अक्षरों में।',
 } as const;
 
 export default hi;

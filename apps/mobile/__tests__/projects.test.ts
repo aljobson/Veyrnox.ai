@@ -116,3 +116,15 @@ describe('projectsErrorMessage', () => {
         expect(projectsErrorMessage(new Error('x'))).toMatch(/Something went wrong/);
     });
 });
+
+describe('projectDates', () => {
+    test('shows dates without the rename-only version and without a leading separator', () => {
+        const { projectDates } = require('../src/lib/projects');
+        const line = projectDates({ createdAt: '2026-11-01T10:00:00Z', updatedAt: '2026-11-02T10:00:00Z' });
+        expect(line).not.toMatch(/^[\s·]/);
+        expect(line).not.toMatch(/ersion/);
+        expect(line).toMatch(/updated/);
+        expect(projectDates({ createdAt: null, updatedAt: '2026-11-02T10:00:00Z' })).toMatch(/^updated/);
+        expect(projectDates({ createdAt: null, updatedAt: null })).toBe('');
+    });
+});

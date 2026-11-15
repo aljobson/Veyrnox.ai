@@ -375,6 +375,12 @@ const es = {
     'audioTemplates.cat.MUSIC': 'Música',
     'audioTemplates.cat.VOICE-OVER': 'Locución',
     'audioTemplates.cat.SOUND FX': 'Efectos de sonido',
+    'templateClip.prompt': 'Instrucciones del clip',
+    'templateClip.reset': 'Restablecer instrucciones',
+    'templateClip.addPhoto': 'Añade tu foto',
+    'templateClip.videoName': '@video1: clip de la plantilla',
+    'templateClip.photoName': '@image1: tu foto',
+    'templateClip.invalid': 'Usa @video1 y @image1 una sola vez, con un máximo de 2000 caracteres.',
 } as const;
 
 export default es;

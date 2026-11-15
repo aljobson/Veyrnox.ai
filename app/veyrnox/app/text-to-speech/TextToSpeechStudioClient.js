@@ -15,6 +15,7 @@ import { SaveToAudioShelfButton } from '../../_components/SaveToAudioShelfButton
 import { TextToSpeechControls } from '../../_components/TextToSpeechControls';
 import { VoiceRecipeLibrary } from '../../_components/VoiceRecipeLibrary';
 import { ERROR_COPY, failedJobCopy } from '../../_lib/createErrors';
+import useVeyErrorMood from '../../_lib/useVeyErrorMood';
 import { gatewayFetch, GatewayError, makeIdempotencyKey, notifyBalanceChanged } from '../../_lib/gateway';
 import { pushJobHistory } from '../../_lib/jobHistory';
 import { jobStateUi } from '../../_lib/studioStates';
@@ -51,6 +52,7 @@ export default function TextToSpeechStudio() {
   const [balance, setBalance] = useState(null);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
+  useVeyErrorMood(error?.code);
   const [auditionVoices, setAuditionVoices] = useState([]);
   const [reusedRecipe, setReusedRecipe] = useState(null);
   const inFlight = useRef(false);

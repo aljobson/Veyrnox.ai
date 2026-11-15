@@ -110,3 +110,18 @@ describe('fileErrorMessage', () => {
         expect(fileErrorMessage(new Error('x'))).toMatch(/Something went wrong/);
     });
 });
+
+describe('file row titles', () => {
+    test('shot codes and repeated shape words are dropped', () => {
+        const { cleanLabel } = require('../src/lib/libraryFiles');
+        expect(cleanLabel('Morning light — 16:9 — sc01-sh01 v2 — 16:9 master')).toBe('Morning light — 16:9');
+        expect(cleanLabel('sc01-sh01 v2')).toBeNull();
+    });
+    test('identical rows get their creation time', () => {
+        const { parseFiles } = require('../src/lib/libraryFiles');
+        const row = (id: string, at: string) => ({ id, label: 'Empty room — sc01-sh01 v3', created_at: at });
+        const { files } = parseFiles({ enabled: true, masters: [row('a', '2026-10-10T10:00:00Z'), row('b', '2026-10-10T11:30:00Z')] }, 'masters');
+        expect(files[0].label.startsWith('Empty room · ')).toBe(true);
+        expect(files[0].label).not.toBe(files[1].label);
+    });
+});

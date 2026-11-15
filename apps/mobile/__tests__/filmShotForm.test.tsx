@@ -129,3 +129,17 @@ test('script beats preserve abbreviations and decimals while excluding screenpla
     expect(scriptBeats('INT. KITCHEN - DAY\nMAYA\n(quietly)\nGood morning.\nMaya crosses the room.\nCUT TO:\nDr. Reyes walks 3.5 metres.\n第三段。\nمشهد هادئ.\nदृश्य शांत है।'))
         .toEqual(['Maya crosses the room.', 'Dr. Reyes walks 3.5 metres.', '第三段。', 'مشهد هادئ.', 'दृश्य शांत है।']);
 });
+test('typing into Location asset lands in that field, not the script box, and the buttons release the keyboard', async () => {
+    const dismiss = jest.spyOn(RN.Keyboard, 'dismiss').mockImplementation(() => {});
+    await mount(ready()); await stage(2); await press(t('film.addshot'));
+    expect(dismiss).toHaveBeenCalled();
+    await press(t('filmWorkspace.fillDefaults'));
+    expect(has(t('filmWorkspace.defaultsNeedYou'))).toBe(true);
+    for (const label of [t('filmStudio.locationasset'), t('filmStudio.timeofday')]) {
+        await type(label, '@desk:v1');
+        expect(field(label).props.value).toBe('@desk:v1');
+    }
+    expect(field(t('film.scripttreatmentoridea')).props.value).toBe('Script');
+    await click(controls('checkbox').find(n => n.props.accessibilityLabel === t('filmWorkspace.oneAction')));
+    expect(has(t('filmWorkspace.defaultsNeedYou'))).toBe(false);
+});

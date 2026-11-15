@@ -100,9 +100,9 @@ function CheckInForUser({ owner, api }: { owner: string; api: ApiClient }) {
                 </View>)}
             </View>
             <StatusText variant="inherit" accessibilityLiveRegion="polite" style={styles.message}>{error ? t(error) : status.claimed_today ? t('checkin.claimed') : ''}</StatusText>
-            <Pressable accessibilityRole="button" accessibilityLabel={t('checkin.claim')} accessibilityState={{ disabled: busy || status.claimed_today }} disabled={busy || status.claimed_today} onPress={claim} style={styles.primary}>
-                <Text style={styles.primaryText}>{t(busy ? 'checkin.claiming' : status.claimed_today ? 'checkin.claimed' : 'checkin.claim')}</Text>
-            </Pressable>
+            {status.claimed_today ? null : <Pressable accessibilityRole="button" accessibilityLabel={t('checkin.claim')} accessibilityState={{ disabled: busy }} disabled={busy} onPress={claim} style={styles.primary}>
+                <Text style={styles.primaryText}>{t(busy ? 'checkin.claiming' : 'checkin.claim')}</Text>
+            </Pressable>}
             <Pressable accessibilityRole="button" accessibilityLabel={t('checkin.close')} onPress={close} style={styles.close}><Text style={styles.body}>{t('checkin.close')}</Text></Pressable>
         </ScrollView></View>
     </Modal>;

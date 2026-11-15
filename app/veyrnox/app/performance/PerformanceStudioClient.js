@@ -24,6 +24,7 @@ import { DubbingLocalePlanner } from '../../_components/DubbingLocalePlanner';
 import { useCatalog } from '../../_lib/useCatalog';
 import { useStudioJobs } from '../../_lib/useStudioJobs';
 import { ERROR_COPY, failedJobCopy } from '../../_lib/createErrors';
+import useVeyErrorMood from '../../_lib/useVeyErrorMood';
 import { gatewayFetch, GatewayError, makeIdempotencyKey, notifyBalanceChanged } from '../../_lib/gateway';
 import { pushJobHistory } from '../../_lib/jobHistory';
 import { jobStateUi } from '../../_lib/studioStates';
@@ -502,6 +503,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
   const [stage, setStage] = useState('idle');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
+  useVeyErrorMood(error?.code);
   const [baseResult, setBaseResult] = useState(null);
   const [projectJobs, setProjectJobs] = useState([]);
   const [projectRestoreNotice, setProjectRestoreNotice] = useState('');

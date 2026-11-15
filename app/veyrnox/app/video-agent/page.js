@@ -11,6 +11,7 @@ import { Main } from '../../_components/Main';
 import { JobAssetPreview } from '../../_components/JobAssetPreview';
 import { gatewayFetch, notifyBalanceChanged, GatewayError } from '../../_lib/gateway';
 import { ERROR_COPY, failedJobCopy } from '../../_lib/createErrors';
+import useVeyErrorMood from '../../_lib/useVeyErrorMood';
 import { pushJobHistory, readJobHistory, jobsToWatch } from '../../_lib/jobHistory';
 import { pickResumable } from '../../_lib/videoAgentResume';
 import { useStudioJobs } from '../../_lib/useStudioJobs';
@@ -40,6 +41,7 @@ export default function VideoAgent() {
   const [plan, setPlan] = useState(null); // { plan_id, idempotency_key, plan, credits, expires_at, brief, aspect }
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  useVeyErrorMood(error?.code);
   const [narrationText, setNarrationText] = useState('');
   const [approving, setApproving] = useState(false);
   const inFlight = useRef(false);

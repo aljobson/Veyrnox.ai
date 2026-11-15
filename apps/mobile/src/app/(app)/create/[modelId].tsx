@@ -49,7 +49,7 @@ import { buildCharacterPrompt, sanitizePicks, type Picks } from '../../../lib/od
 import { useBalance } from '../../../lib/useBalance';
 import { shortfall } from '../../../lib/lowBalance';
 import { useFreeLeftState } from '../../../lib/useFreeLeft';
-import { isAudioDriven, isSpeechModel, missingNeedKey, missingRequiredSlots } from '../../../lib/createModelKind';
+import { isAudioDriven, isSoundPass, isSpeechModel, missingNeedKey, missingRequiredSlots } from '../../../lib/createModelKind';
 import { estimateCredits, fetchCatalog, kindOf, promptRequired, textInput, type CatalogModel } from '../../../lib/media';
 import { expectedDurationMs } from '../../../lib/generationProgress';
 import { MIN_TARGET, selectedState } from '../../../lib/a11y';
@@ -279,7 +279,7 @@ export default function CreateWithModel() {
     const freeLeft = freeLoading ? 0 : freeLeftFor(freeMap, model.id);
     // The camera words go into the prompt for image and video models; the price and the model do not change.
     const takesCharacter = kindOf(model.modality) === 'image' && textInput(model)?.key === 'prompt';
-    const takesCamera = (kindOf(model.modality) === 'image' || isVideo) && textInput(model)?.key === 'prompt' && !isAudioDriven(model), speech = isSpeechModel(model);
+    const takesCamera = (kindOf(model.modality) === 'image' || isVideo) && textInput(model)?.key === 'prompt' && !isAudioDriven(model) && !isSoundPass(model), speech = isSpeechModel(model);
     // Character first, then the camera, as on the web. Both only rewrite the prompt.
     const withCharacter = takesCharacter && characterOn ? buildCharacterPrompt(prompt, character) : prompt === presetPrompt || prompt === recoveredPrompt ? prompt : prompt.trim();
     const text = takesCamera && cameraOn ? buildCinemaPrompt(withCharacter, cinema) : withCharacter;
@@ -370,7 +370,7 @@ export default function CreateWithModel() {
     const missing = complete ? 0 : shortfall(balance, payable);
     const disabled = busy || waiting || inProgress || (!complete && (freeLoading || (!ready && !matchingRetry) || missing > 0));
     // A swap scene, a Tools recipe or a bound template is made for one model; anywhere else the model row opens the picker.
-    const choices = modelChoices(catalog, model), changeModel = choices.length > 1 && !swapScene && !creativeFeature(typeof recipe === 'string' ? recipe : undefined) && !boundCount && !busy && !waiting ? modelSwitch.open : undefined;
+    const choices = modelChoices(catalog, model, references.length > 0), changeModel = choices.length > 1 && !swapScene && !creativeFeature(typeof recipe === 'string' ? recipe : undefined) && !boundCount && !busy && !waiting ? modelSwitch.open : undefined;
     const needKey = complete || busy || waiting || inProgress || missing > 0 ? null : missingNeedKey(model, references, !!startFile, promptRequired(model) && !text.trim());
     const needText = needKey ? t(needKey) : null;
     const expectedMinutes = isVideo && (busy || inProgress) ? Math.max(1, Math.round(expectedDurationMs(model.id, 'video') / 60000)) : 0;
@@ -428,7 +428,7 @@ export default function CreateWithModel() {
                             style={[styles.prompt, text_.key === 'topic' && styles.topic]}
                             value={prompt}
                             onChangeText={setPrompt}
-                            placeholder={t(PLACEHOLDER[text_.key] ?? (speech ? 'form.describeSpeech' : promptRequired(model) ? 'form.describeCreate' : isVideo ? 'form.describeMotion' : kindOf(model.modality) === 'audio' ? 'form.describeSound' : 'form.describeChange'))}
+                            placeholder={t(PLACEHOLDER[text_.key] ?? (speech ? 'form.describeSpeech' : promptRequired(model) || isSoundPass(model) ? 'form.describeCreate' : isVideo ? 'form.describeMotion' : kindOf(model.modality) === 'audio' ? 'form.describeSound' : 'form.describeChange'))}
                             placeholderTextColor={styles.mutedInk.color}
                             accessibilityLabel={rawText(text_.key === 'topic' ? t('form.topic') : speech ? t('create.workspace.script') : t('mobile.prompt'))}
                             multiline

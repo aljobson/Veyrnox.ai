@@ -82,7 +82,7 @@ command-line tool is not installed) and read-only 21st searches.
   shows output in its second screen.
 - Price rows: the dotted leader starts at the name; the unit line sits under
   the row (home, /models, template cards).
-- The headline glow is gone (`.vx-title-glow` keeps the class a test pins).
+- The headline glow and its obsolete `.vx-title-glow` hook are gone.
 - Slips keep a darker edge on a light page.
 - The price list's lines stay visible to a keyboard: they are links, and were
   focusable while still invisible (a regression from the first pass).

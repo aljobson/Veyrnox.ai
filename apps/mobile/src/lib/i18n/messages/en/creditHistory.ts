@@ -4,6 +4,7 @@ export default {
     'creditHistory.free_credit_expiry': 'Free credits expired',
     'creditHistory.generation_refund': 'Refund for a creation that did not finish',
     'creditHistory.generation': 'Creation',
+    'creditHistory.refundNamed': 'Refund: {name}',
     'creditHistory.top_up': 'Credits bought',
     'creditHistory.referral_reward': 'Referral reward',
     'creditHistory.referral_reward_reversed': 'Referral reward taken back',
