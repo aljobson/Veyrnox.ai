@@ -1789,6 +1789,7 @@ export default {
   "edit.err.invalid": "无法提交此次编辑。请检查后重试。未扣费。",
   "edit.err.mixedAspect": "这些视频的画幅不同。请拼接画幅相同的视频。未扣费。",
   "edit.err.mixedAudio": "这些片段无法拼接：有的有声音，有的是静音。请选择全部有声或全部静音的片段。未扣费。",
+  "edit.openLocal": "在编辑器中打开（免费）",
   "edit.err.network": "网络未连接。未扣费。请重试。",
   "edit.err.notAudio": "该文件不是音频。",
   "edit.err.nothingToDo": "请裁剪视频、拼接两段视频或添加字幕。未扣费。",

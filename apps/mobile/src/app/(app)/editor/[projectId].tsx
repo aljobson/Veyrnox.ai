@@ -1,9 +1,10 @@
+import { decodeCuts } from '../../../lib/smartCutHandoff';
 import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { useAnnouncement } from '../../../lib/useAnnouncement';
 import { randomUUID } from 'expo-crypto';
 import { Stack, useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, AppState, Modal, Pressable, Text, View } from 'react-native';
 import type { WebViewMessageEvent } from 'react-native-webview';
 import { useAuth } from '../../../auth/AuthProvider';
@@ -36,9 +37,10 @@ function Button({ label, onPress, disabled = false }: { label: string; onPress()
     return <Pressable accessibilityRole="button" accessibilityLabel={rawText(label)} accessibilityState={{ disabled }} disabled={disabled} style={touchTarget} onPress={onPress}><Text style={{ color: colors.accent }}>{label}</Text></Pressable>;
 }
 export default function EditorRoute() {
-    const { projectId, jobId, bestCut } = useLocalSearchParams<{ projectId: string; jobId?: string; bestCut?: string }>();
+    const { projectId, jobId, bestCut, cuts } = useLocalSearchParams<{ projectId: string; jobId?: string; bestCut?: string; cuts?: string }>();
+    const planned = useMemo(() => decodeCuts(cuts), [cuts]);
     if (!EDITOR_ENABLED) return <View><Stack.Screen options={{ title: t('editor.title') }} /><Text>{t('editor.unavailable')}</Text></View>;
-    if (FULL_EDITOR_ENABLED) return <FullEditorScreen key={projectId} projectId={projectId} jobId={jobId} startBestCut={bestCut === '1'} />;
+    if (FULL_EDITOR_ENABLED) return <FullEditorScreen key={projectId} projectId={projectId} jobId={jobId} cuts={planned} startBestCut={bestCut === '1'} />;
     return <Editor key={projectId} projectId={projectId} jobId={jobId} />;
 }
 function Editor({ projectId, jobId }: { projectId: string; jobId?: string }) {

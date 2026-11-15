@@ -49,7 +49,7 @@ describe('the screens use them', () => {
     });
 
     test('the Editor and the composer read the job id they are given', () => {
-        expect(screen('editor/new.tsx')).toContain('useLocalSearchParams<{ jobId?: string; blank?: string }>()');
+        expect(screen('editor/new.tsx')).toContain('useLocalSearchParams<{ jobId?: string; blank?: string; cuts?: string }>()');
         expect(screen('edit/index.tsx')).toContain("pathname: '/editor/new', params: { jobId }");
         expect(screen('publish/compose.tsx')).toContain("jobId: presetJob");
     });
