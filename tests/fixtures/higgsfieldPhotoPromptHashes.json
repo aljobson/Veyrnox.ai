@@ -4,11 +4,9 @@
   "community-metropolitan-crosswalk": "63da978cc46435bb3e791f2a03e9c4206aa146c68455e421b48a583bb4db8279",
   "community-nightlife-dj-set": "a5f3fbedcc923a91e3839528136a48258ee088818ab547b1e53d1d2a290a7259",
   "community-pigeon-recast": "3720c40cef323812fb79bddca976257ddf22801f641a4a7994d28989b84e05c2",
-  "community-tracksuit-heist-swap": "213c4af3fa95bd10bbf4adb0cb18e92f8daff71b450dc47f8fcc63573f29988e",
   "community-midnight-city-shuffle": "14b254f72b1329ade1f2e73fdf13b2166fe4ed8790c2ac7c18860df208ce038b",
   "community-supercar-flex": "d964f2c75488bb67372a82a881aa5141d22dae8e31bd39d0da65bbc3fc854e5a",
   "community-retro-tracksuit-groove": "39457aea1c3b19ca33d5de0aa0cde2160674bb1cb4b49d0a48f1a12a72373d3d",
-  "community-motion-transfer": "ff6396ccd8c406136e2c7bbef4560ca5c91c8762ddba97159548059e294a0520",
   "community-blonde-sport-set": "dabe75c373414f3607d7c1dbbd3e469ee76e401995e54ac7df5a256cfed341dc",
   "community-street-style-strut": "b7b83bc8a99725c81ba5c03e45a2f69b0f6f73f50907052b2d380d00b971adc0",
   "community-shoreline-gallop-swap": "cfd3d320baebffa1c9f0946762cd1d2753ac1ec533a0bf0424a397be5eae6b66",
@@ -16,9 +14,7 @@
   "community-restaurant-character-recast": "63b19cfad61c2f6539df495934422a4e58c7ed5b9dbe1338f0f0f09d1fae0c1d",
   "community-skyline-flamingo-prank": "40306afd70112e6cd10bc455f1c245e3b0ed771a4ac5946006346d3d252f3384",
   "community-stage-performer-swap": "7564a0fde78421f1a1964cc1edbfb860c6dd6391556fe0e6d19baa2b8ffaca71",
-  "community-martial-arts-leap": "5e4801aad3c0ed3881c048d7650675d228643168651f3667c0d26cdf4d9d0bf1",
   "community-championship-slap-duel": "1e2a916945b9456ec775bca321b6d39ad52ed35e2f1b627985904afed1cd7bff",
-  "community-rocket-product-launch": "9b14650f01a9b3e85500e6730d4ad6339ff342327c94e6af2f1e5499f8482890",
   "community-industrial-street-flow": "a027a4985aa9fc47b677249f8c5993492430eedf031f991ec7dbe2b12a33c904",
   "community-urban-stride": "74f6ff2b38f4504f71714cc1cad6d8bb6bb8cd40d82ca26ca0669a0ee9c47c26",
   "community-action-hero-swap": "82f7f6b1f4651541ea363ff2e01b528188c61390827e35b6c6bd98fccd5b0ab6",
@@ -28,5 +24,9 @@
   "community-coastal-character-swap": "0f62d1804219512f979f830c899df8b5acda1d4ef2d83c3bd68595e61a5391b2",
   "community-kitten-holiday-dance": "533a5c3ae7f208404387cd9d04303352a158cf7cca772eb77a8316a3e20778ba",
   "community-bipedal-cat-stroll": "66de5e217e04a09720e38d2a4d6659ff1edf31f12506a611bd06838f41b0a994",
-  "community-extreme-pizza-freefall": "c5192002486a58457bd4d2d3c50d88edcb7dd9f9ecd48030245eab81ee0adff5"
+  "community-extreme-pizza-freefall": "c5192002486a58457bd4d2d3c50d88edcb7dd9f9ecd48030245eab81ee0adff5",
+  "community-truck-window-confrontation": "1ece63f789dfb6c3a5b25ea71986a08b77b005e4e4a0d65f78e517cd02b071bb",
+  "community-kitchen-fish-slice": "c9d70ad0c690085d454b3bd77b2a96af4c60b8484a29915694c9e67ed386d99e",
+  "community-urban-dance-recast": "9318cf171d9d11f800b8ffc8f5bedb542ebfef917f087c70fbb8e634e453aa2d",
+  "community-ballroom-tuxedo-shift": "888f647015622e8dba7a81ae742fff5df44358ee8324d3904840786ac971015d"
 }

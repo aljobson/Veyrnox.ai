@@ -3929,10 +3929,6 @@
       "frames": 5,
       "signature": "53fa0e7a8930604a64cf5115c9945b2c99486f03bc33adc4022eb440c1f676c1"
     },
-    "community-tracksuit-heist-swap": {
-      "frames": 5,
-      "signature": "11dede244082cdc436e6e7fed9d104f538cc86b97dfb904f1e101434dadcda74"
-    },
     "community-midnight-city-shuffle": {
       "frames": 5,
       "signature": "b163bf817735d35a8ad07ce8c06da6424d0c808657fd9225191e9bd2f386173e"
@@ -3944,10 +3940,6 @@
     "community-retro-tracksuit-groove": {
       "frames": 5,
       "signature": "46add736f3671163875f4624f98cdcb19bbd316ed4eb7694aa7cb422dcca3a41"
-    },
-    "community-motion-transfer": {
-      "frames": 5,
-      "signature": "9cc17e0f9072b708519b514bde7fe2ffb1d8dcce2242bb307aa23dcc6d143843"
     },
     "community-blonde-sport-set": {
       "frames": 5,
@@ -3977,17 +3969,9 @@
       "frames": 5,
       "signature": "2f3a1492044a3da09be026e7e9d0cb8ea8aa4a395229da48352321fb680b408b"
     },
-    "community-martial-arts-leap": {
-      "frames": 5,
-      "signature": "a6a2e68f492e88d0b7ac13ff5149de7fc1377b866935c02c4ecdb54d2e340f97"
-    },
     "community-championship-slap-duel": {
       "frames": 5,
       "signature": "8ac03f5275de4d5a6497cc741a00b2c794fe899d4bbe65089106d87c33c4f09f"
-    },
-    "community-rocket-product-launch": {
-      "frames": 5,
-      "signature": "087b5b0fbcff7d54abd12d541f6d658bb34535c97ebd9fb10a3ae10b76279e70"
     },
     "community-industrial-street-flow": {
       "frames": 5,
@@ -4028,6 +4012,22 @@
     "community-extreme-pizza-freefall": {
       "frames": 5,
       "signature": "fa85bc55d77e5e268659d438bd81ab5678fb0b4849a5b9987e0728023cd51376"
+    },
+    "community-truck-window-confrontation": {
+      "frames": 5,
+      "signature": "d4566096420983095ba7cea350479130aedecde892a0f6227dd7208bbef93fba"
+    },
+    "community-kitchen-fish-slice": {
+      "frames": 5,
+      "signature": "4e2b320e3c544916125afb117b1a1d697af85bb7e1b6aa33c6b5a79a87576131"
+    },
+    "community-urban-dance-recast": {
+      "frames": 5,
+      "signature": "053adeda1b6845a4ed836584a111ac4f7901107d904ad9fc2b300aa9a5084cb4"
+    },
+    "community-ballroom-tuxedo-shift": {
+      "frames": 5,
+      "signature": "a609e6cdfce8cd912c731effa36a07f42392b1e2305c4bcae1410ffca30ffac9"
     }
   }
 }

@@ -33,11 +33,11 @@ export const VIDEO_GALLERY_TEMPLATE_IDS = Object.freeze([
   'game-character-rig', 'holiday-heist-run',
   // Added 2026-11-15: 30 top-liked Higgsfield single-photo templates (scripts/import-higgsfield-photo-30.mjs).
   'community-dramatic-fire-walk', 'community-beachside-dance', 'community-metropolitan-crosswalk', 'community-nightlife-dj-set',
-  'community-pigeon-recast', 'community-tracksuit-heist-swap', 'community-midnight-city-shuffle', 'community-supercar-flex',
-  'community-retro-tracksuit-groove', 'community-motion-transfer', 'community-blonde-sport-set', 'community-street-style-strut',
-  'community-shoreline-gallop-swap', 'community-dragon-awakening', 'community-restaurant-character-recast', 'community-skyline-flamingo-prank',
-  'community-stage-performer-swap', 'community-martial-arts-leap', 'community-championship-slap-duel', 'community-rocket-product-launch',
+  'community-pigeon-recast', 'community-midnight-city-shuffle', 'community-supercar-flex', 'community-retro-tracksuit-groove',
+  'community-blonde-sport-set', 'community-street-style-strut', 'community-shoreline-gallop-swap', 'community-dragon-awakening',
+  'community-restaurant-character-recast', 'community-skyline-flamingo-prank', 'community-stage-performer-swap', 'community-championship-slap-duel',
   'community-industrial-street-flow', 'community-urban-stride', 'community-action-hero-swap', 'community-supercar-night-fueling',
   'community-chauffeur-arrival-swap', 'community-kitchen-juggling-swap', 'community-coastal-character-swap', 'community-kitten-holiday-dance',
-  'community-bipedal-cat-stroll', 'community-extreme-pizza-freefall',
+  'community-bipedal-cat-stroll', 'community-extreme-pizza-freefall', 'community-truck-window-confrontation', 'community-kitchen-fish-slice',
+  'community-urban-dance-recast', 'community-ballroom-tuxedo-shift',
 ]);

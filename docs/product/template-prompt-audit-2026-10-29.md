@@ -45,7 +45,7 @@ The previous stage had 244 compatible and 423 incompatible public exact prompts.
 | More than one image reference | 288 |
 | More than two image references | 108 |
 | Video reference | 238 |
-| Audio/music/voice/dialogue/lip-sync mention | 250 |
+| Audio/music/voice/dialogue/lip-sync mention | 251 |
 
 All assigned route limits are 30,000 characters: `kling-3.0-i2v`,
 `seedance-2.0-fast`, `seedance-2.0-reference`. None is shortened. The longest
@@ -106,13 +106,13 @@ The source categories follow the manifest except Cartoon Hero Swap, corrected fr
 | Content category | Public exact templates |
 | --- | ---: |
 | YOUR PHOTO | 13 |
-| CINEMATIC | 167 |
+| CINEMATIC | 165 |
 | ANIME | 12 |
 | CARTOONS | 23 |
 | MOVIES | 38 |
 | FANTASY | 105 |
-| REALISTIC | 126 |
-| FASHION | 126 |
+| REALISTIC | 129 |
+| FASHION | 125 |
 | PRODUCTS | 52 |
 | VFX | 114 |
 | UGC | 33 |

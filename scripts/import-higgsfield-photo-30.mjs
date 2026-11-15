@@ -4,7 +4,7 @@ import { sameSourceMedia } from './lib/source-record-media.mjs';
 // photo on Kling 3.0 I2V (class "bound" in scripts/audit-template-fidelity.mjs), like the 70 already listed.
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { readFileSync, writeFileSync, copyFileSync, existsSync, readdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, copyFileSync, existsSync, readdirSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { visualSignature, VISUAL_SIGNATURE_METHOD } from './lib/source-visual-signature.mjs';
@@ -47,6 +47,14 @@ const publicId = m => 'community-' + m.name.toLowerCase().replace(/[^a-z0-9]+/g,
 const route = Object.freeze({ model: 'Kling 3.0 · I2V', credits: 32, durationSeconds: 10,
   needsKey: 'community.cinematic', needs: 'A clear full-body portrait with room for cinematic movement' });
 
+// Reviewed 2026-11-15 after reading every prompt in full: refused before any other check.
+const REVIEWED_REJECTS = Object.freeze({
+  'community-tracksuit-heist-swap': 'asks to replace the guns with assault rifles',
+  'community-motion-transfer': 'not a prompt: a command word and the photo token only',
+  'community-martial-arts-leap': 'asks to change the race and gender of the other people in the scene',
+  'community-rocket-product-launch': 'names a branded supplement product',
+  'community-model-car-swap': 'names a car brand and model',
+});
 assert.equal(manifest.length, PREPARED);
 assert.equal(encodes.length, PREPARED);
 const records = {}, recipes = [], audit = [], rejected = [], reserve = [];
@@ -98,6 +106,19 @@ for (const m of [...manifest].sort((a, b) => a.rank - b.rank)) {
   const sourceAspect = Math.abs(Math.log(m.width / m.height)) < 0.16 ? '1:1' : m.width > m.height ? '16:9' : '9:16';
   if (audit.length >= TARGET) { reserve.push({ ...identity, rank: m.rank, title: m.title }); continue; }
   const reject = reason => { rejected.push({ ...identity, rank: m.rank, reason }); console.log('Rejected ' + id + ': ' + reason); };
+  if (Object.hasOwn(REVIEWED_REJECTS, id)) {
+    reject('reviewed: ' + REVIEWED_REJECTS[id]);
+    for (const {ext, hash} of assets) {
+      const path = resolve(root, 'public/showcase/creator-' + id + '.' + ext);
+      if (!existsSync(path)) continue;
+      assert.equal(sha(readFileSync(path)), hash, id + ': rejected media');
+      assert.equal(checkOnly, false, id + ': rejected media must be absent');
+      rmSync(path);
+    }
+    assert.equal(Object.hasOwn(visual.placements, id) && checkOnly, false, id + ': rejected placement must be absent');
+    delete visual.placements[id];
+    continue;
+  }
   // The same contract the gallery cap test requires: one photo slot bound on the people model.
   // Like the shipped recipes, no fixed aspect: the photo sets the shape on Kling 3.0 I2V.
   const contract = auditTemplate({ id, model: route.model, sourcePrompt: m.prompt,
