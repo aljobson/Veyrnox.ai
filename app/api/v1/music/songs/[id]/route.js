@@ -251,6 +251,24 @@ export async function POST(request, { params }) {
         }, result.idempotent ? 200 : 202);
     } catch (error) {
         console.error('[music/songs/remix] admission failed:', error?.message);
+        if (preparedKey) await discardUnclaimedSource(preparedKey, { authId, id, input, cfg, r2cfg });
         return reply({ error: 'pair_acceptance_unknown' }, 503);
+    }
+}
+
+// The prepared mix must not outlive a failed admission. If the submit RPC never
+// committed (no request under this idempotency key), nothing references the
+// object, so it is deleted. If the request exists, music_remix_sources holds it
+// and the settled pair queues it for reaping. If even the check fails, the key
+// is logged so the reaper can be pointed at it.
+async function discardUnclaimedSource(key, { authId, id, input, cfg, r2cfg }) {
+    try {
+        const check = await rpc('music_get_remix_dispatch_context', {
+            p_auth_id: authId, p_song_id: id, p_quote_id: input.quoteId, p_idempotency_key: input.idempotencyKey,
+        }, cfg);
+        if (check?.ok && check.idempotent) return;
+        await deleteObject(key, r2cfg);
+    } catch {
+        console.error('[music/songs/remix] prepared source left for reaping:', key);
     }
 }

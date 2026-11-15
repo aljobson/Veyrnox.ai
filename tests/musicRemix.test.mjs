@@ -85,3 +85,9 @@ test('the song route measures stored Remix audio and never accepts a browser URL
   assert.match(route, /p_prepared_audio_url: signed\.url/);
   assert.match(route, /await deleteObject\(preparedKey, r2cfg\)/);
 });
+
+test('a thrown admission never leaves an unclaimed prepared mix in storage', async () => {
+  const route = await readFile(new URL('../app/api/v1/music/songs/[id]/route.js', import.meta.url), 'utf8');
+  assert.match(route, /if \(preparedKey\) await discardUnclaimedSource\(preparedKey/);
+  assert.match(route, /if \(check\?\.ok && check\.idempotent\) return;\s+await deleteObject\(key, r2cfg\);/);
+});
