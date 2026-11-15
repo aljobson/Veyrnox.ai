@@ -80,11 +80,12 @@ function useCollection(path, key, active) {
       setState('ready');
     } catch { setState('error'); }
   }, [path, key]);
+  // Load each time the tab is opened, so a play or a new hook since the last visit shows.
   useEffect(() => {
-    if (!active || state !== 'idle') return undefined;
+    if (!active) return undefined;
     const timer = window.setTimeout(load, 0);
     return () => window.clearTimeout(timer);
-  }, [active, load, state]);
+  }, [active, load]);
   return { items, state, load, setItems };
 }
 
