@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { gatewayFetch } from '../../_lib/gateway';
+import { rankLoadProblem } from '../../_lib/music/labsRank.mjs';
 
 /**
  * Listen and rank (0538): two published tracks whose creators opted in; pick the
@@ -14,15 +15,18 @@ export function MusicLabsRank() {
   const [count, setCount] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [signedOut, setSignedOut] = useState(false);
 
   const next = useCallback(async () => {
-    setError(''); setReady(false);
+    setError(''); setReady(false); setSignedOut(false);
     try {
       const result = await gatewayFetch('/music/labs-rank', { promptOnAuth: false });
       setPair(result.pair || null);
     } catch (reason) {
       setPair(null);
-      setError(reason?.status === 429 ? 'That is enough for today. Come back tomorrow.' : 'A pair could not be loaded.');
+      const problem = rankLoadProblem(reason?.status);
+      if (problem.kind === 'signed_out') setSignedOut(true);
+      else setError(problem.message);
     }
   }, []);
 
@@ -50,7 +54,8 @@ export function MusicLabsRank() {
       <h2 id="rank-title" className="font-vx text-2xl font-black">Listen and rank</h2>
       <p className="mt-2 text-sm text-vx-fg-muted">Hear two tracks from other creators and pick the one you like more. It helps good music get found. No credits are paid.</p>
       {pair === undefined ? <div aria-busy="true" aria-label="Loading a pair" className="vx-shimmer mt-5 h-40 rounded-2xl bg-vx-base" /> : null}
-      {pair === null && !error ? <p className="mt-5 rounded-2xl border border-dashed border-vx-border p-6 text-sm text-vx-fg-muted">No tracks to rank right now. Creators choose whether their tracks appear here.</p> : null}
+      {signedOut ? <p className="mt-5 rounded-2xl border border-dashed border-vx-border p-6 text-sm text-vx-fg-muted">{rankLoadProblem(401).message}</p> : null}
+      {pair === null && !error && !signedOut ? <p className="mt-5 rounded-2xl border border-dashed border-vx-border p-6 text-sm text-vx-fg-muted">No tracks to rank right now. Creators choose whether their tracks appear here.</p> : null}
       {pair ? (
         <div className="mt-5 grid gap-3 md:grid-cols-2">
           {['a', 'b'].map((side) => (
