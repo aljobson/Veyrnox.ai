@@ -134,7 +134,7 @@ test('CLAUDE.md names the public routes', () => {
 // any handler runs. Each stays behind its own feature switch and a strict id shape.
 test('public Music reads live outside the gate and their pages call them there', () => {
     const publicMusic = found.filter((f) => f.startsWith('app/api/music/'));
-    assert.equal(publicMusic.length, 6); // + /api/music/best-of (0526)
+    assert.equal(publicMusic.length, 6); // + /api/music/best-of (0535)
     for (const file of publicMusic) {
         const src = readFileSync(join(ROOT, file), 'utf8');
         assert.equal(src.match(/^export /gm).length, 1, `${file} answers GET only`);

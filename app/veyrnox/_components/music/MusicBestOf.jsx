@@ -6,7 +6,7 @@ import { useI18n } from '../../../../components/I18nProvider';
 import { tOr } from '../../../../lib/i18n/translate.mjs';
 
 /**
- * Explore "Best of <genre>" playlists (0526): published tracks only, most
+ * Explore "Best of <genre>" playlists (0535): published tracks only, most
  * reactions first. The route answers 404 while the switch is off, and then
  * nothing renders.
  */

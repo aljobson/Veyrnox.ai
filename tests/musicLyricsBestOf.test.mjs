@@ -30,8 +30,8 @@ test('both switches ship false', async () => {
   assert.equal((wrangler.match(/\\"lyrics\\":false,\\"bestOf\\":false/g) || []).length, 2);
 });
 
-test('0526 reads published tracks only, bounded, and grants nothing to browsers', async () => {
-  const sql = await readFile(new URL('../packages/db/schema/supabase/0526_music_lyrics_and_best_of.sql', import.meta.url), 'utf8');
+test('0535 reads published tracks only, bounded, and grants nothing to browsers', async () => {
+  const sql = await readFile(new URL('../packages/db/schema/supabase/0535_music_lyrics_and_best_of.sql', import.meta.url), 'utf8');
   assert.match(sql, /WHERE status = 'published' ORDER BY published_at DESC LIMIT 200/);
   assert.match(sql, /WHERE n <= 8/);
   assert.match(sql, /p\.slug = p_slug AND p\.status = 'published'/);

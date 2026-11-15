@@ -28,7 +28,7 @@ export async function GET(request, { params }) {
             ? [...actions, 'share_link', 'download_mp3'] : actions;
         return reply({
             ...result.song,
-            // The lyrics the song was made from (0526); a failed read leaves them out.
+            // The lyrics the song was made from (0535); a failed read leaves them out.
             ...(lyrics?.ok && publicLyrics(lyrics.lyrics) ? { lyrics: publicLyrics(lyrics.lyrics) } : {}),
             actions: [...new Set([
                 ...distributionActions,

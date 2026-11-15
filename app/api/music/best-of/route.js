@@ -8,7 +8,7 @@ const QUERY_RE = /^$/;
 const reply = (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
 
 /**
- * Anonymous, read-only "Best of <genre>" playlists for Explore (0526). Published
+ * Anonymous, read-only "Best of <genre>" playlists for Explore (0535). Published
  * tracks only, public rail fields only; it reads no identity header.
  */
 export async function GET(request) {

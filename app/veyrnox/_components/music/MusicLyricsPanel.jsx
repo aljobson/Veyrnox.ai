@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useI18n } from '../../../../components/I18nProvider';
 import { tOr } from '../../../../lib/i18n/translate.mjs';
 
-/** Lyrics as plain text with a copy button (0526). Renders nothing for an instrumental. */
+/** Lyrics as plain text with a copy button (0535). Renders nothing for an instrumental. */
 export function MusicLyricsPanel({ lyrics }) {
   const { t } = useI18n();
   const [status, setStatus] = useState('');
