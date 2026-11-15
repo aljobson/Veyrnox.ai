@@ -25,3 +25,10 @@ export function publicPair(pair) {
     const a = side(pair.a); const b = side(pair.b);
     return a && b ? { id: pair.id, a, b } : null;
 }
+
+/** How the ranking card explains a failed load: signed out is a prompt, not an error. */
+export function rankLoadProblem(status) {
+    if (status === 401) return { kind: 'signed_out', message: 'Sign in to rank tracks.' };
+    if (status === 429) return { kind: 'limit', message: 'That is enough for today. Come back tomorrow.' };
+    return { kind: 'failed', message: 'A pair could not be loaded.' };
+}
