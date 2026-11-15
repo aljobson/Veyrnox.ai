@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { gatewayFetch } from '../../_lib/gateway';
 import { MusicDistributionDialog } from './MusicDistributionDialog';
@@ -8,7 +9,6 @@ import { MusicPublicationDialog } from './MusicPublicationDialog';
 import { MusicCropDialog } from './MusicCropDialog';
 import { MusicRenderDialog } from './MusicRenderDialog';
 import { MusicCoverDialog } from './MusicCoverDialog';
-import { MusicRemixDialog } from './MusicRemixDialog';
 import { MusicStemDialog } from './MusicStemDialog';
 import { MusicTargetStemDialog } from './MusicTargetStemDialog';
 import { MusicTrackAddDialog } from './MusicTrackAddDialog';
@@ -18,6 +18,11 @@ import { MusicAddSectionDialog } from './MusicAddSectionDialog';
 import { MusicReuseDialog } from './MusicReuseDialog';
 import { MusicSongActions } from './MusicSongActions';
 import { MusicPrivateAudio } from '../../_lib/useMusicAudioSrc';
+
+const MusicRemixDialog = dynamic(
+  () => import('./MusicRemixDialog').then((module) => module.MusicRemixDialog),
+  { ssr: false },
+);
 
 const OPERATION_LABELS = {
   generation: 'Original generation',
