@@ -8,7 +8,7 @@ import { readFile } from 'node:fs/promises';
 import pg from 'pg';
 
 // Plan credits set by 0381 (Starter and Plus change with the yearly limits, ADR-0037 amendment 2).
-const S = 398, P = 1171;
+const S = 297, P = 924;
 const url = process.env.DATABASE_URL;
 if (!url) throw new Error('DATABASE_URL is required');
 const c = new pg.Client({ connectionString: url });
@@ -69,14 +69,14 @@ try {
     // ── Plans: the four monthly tiers and their four yearly twins (0383, activated by 0385), cheapest first. ──
     assert.deepEqual((await rpc('public.list_credit_subscription_plans()')).map((p) => [p.id, p.price_usd_cents, p.credits]),
         [
-            ['lite-monthly', 1000, 209],
+            ['lite-monthly', 1000, 157],
             ['starter-monthly', 1900, S],
             ['plus-monthly', 5900, P],
-            ['lite-yearly', 10899, 209],
-            ['ultra-monthly', 12900, 2411],
-            ['starter-yearly', 20900, S],
-            ['plus-yearly', 60900, P],
-            ['ultra-yearly', 123840, 2411],
+            ['lite-yearly', 9699, 157],
+            ['ultra-monthly', 12900, 2011],
+            ['starter-yearly', 18299, S],
+            ['plus-yearly', 56900, P],
+            ['ultra-yearly', 123840, 2011],
         ]);
 
     // ── Start: idempotent on its key; the key cannot be moved to another plan. ──

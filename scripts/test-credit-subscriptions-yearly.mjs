@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import pg from 'pg';
 
-const S = 398; // starter-yearly credits a month
+const S = 297; // starter-yearly credits a month
 const url = process.env.DATABASE_URL;
 if (!url) throw new Error('DATABASE_URL is required');
 const c = new pg.Client({ connectionString: url });
@@ -63,7 +63,7 @@ try {
     // ── The four yearly plans exist and are active (0385), on App Store price points (0407). ──
     const plans = await q(`SELECT id, price_usd_cents, credits, active FROM public.credit_subscription_plans WHERE billing_interval = 'year' ORDER BY price_usd_cents`);
     assert.deepEqual(plans.map((p) => [p.id, p.price_usd_cents, p.credits, p.active]),
-        [['lite-yearly', 10899, 209, true], ['starter-yearly', 20900, 398, true], ['plus-yearly', 60900, 1171, true], ['ultra-yearly', 123840, 2411, true]]);
+        [['lite-yearly', 9699, 157, true], ['starter-yearly', 18299, 297, true], ['plus-yearly', 56900, 924, true], ['ultra-yearly', 123840, 2011, true]]);
 
     // ── Month 1 comes with the invoice and ends in a month, not a year. ──
     const a = await yearly();
@@ -83,7 +83,7 @@ try {
     assert.equal((await rpc(`public.ledger_debit($1, $2, 100, 'debit:generation', 'seedance-2.0-fast', '{}'::jsonb)`, [a.u.id, randomUUID()])).ok, true);
     await later(a.id, a.u.id, 1);
     assert.equal((await sweep()).granted >= 1, true);
-    assert.deepEqual(await buckets(a.u), [S + 10, 10, S], 'no rollover: 298 expired, 398 granted');
+    assert.deepEqual(await buckets(a.u), [S + 10, 10, S], 'no rollover: 197 expired, 297 granted');
     assert.equal((await row(a.id)).cycles_granted, 2);
     assert.equal((await sweep()).granted, 0, 'a second sweep grants nothing more');
     assert.equal((await one(`SELECT count(*)::int AS n FROM public.ledger_entries WHERE user_id = $1 AND reason LIKE 'grant:subscription:ysub_%_c2'`, [a.u.id])).n, 1);
@@ -124,7 +124,7 @@ try {
 
     // ── A yearly subscription cancelled at period end still gets its months; an ended one does not. ──
     const d = await yearly('lite-yearly');
-    assert.equal((await buckets(d.u))[2], 209);
+    assert.equal((await buckets(d.u))[2], 157);
 
     // ── Privileges: only the service role runs the sweep. ──
     for (const [role, expected] of [['anon', false], ['authenticated', false], ['service_role', true]]) {

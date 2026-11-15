@@ -93,5 +93,13 @@ BEGIN
     END IF;
 END $$;
 
+-- The admin panel may pause or resume only the web packs on this list (0430). Point it at the new ids so
+-- the owner can still manage the packs that are sold; the retired ids drop off.
+CREATE OR REPLACE FUNCTION public.admin_editable_pack_ids() RETURNS TEXT[]
+LANGUAGE sql IMMUTABLE SET search_path='' AS $$
+ SELECT ARRAY['web-156','web-392','web-1177']::text[];
+$$;
+REVOKE ALL ON FUNCTION public.admin_editable_pack_ids() FROM PUBLIC,anon,authenticated,service_role;
+
 NOTIFY pgrst, 'reload schema';
 COMMIT;
