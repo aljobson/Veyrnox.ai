@@ -1,5 +1,7 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import * as historyOps from '../../../_lib/music/beat/beatHistory.mjs';
+import { tryOp, selectPattern as selectPatternOp } from '../../../_lib/music/beat/beatOps.mjs';
 import * as store from '../../../_lib/music/beat/beatStore.js';
 
 export function useBeatProject(id, announce) {
@@ -10,6 +12,7 @@ export function useBeatProject(id, announce) {
   const [conflict, setConflict] = useState(null);
   const [saveError, setSaveError] = useState(false);
   const current = useRef(null);
+  const history = useRef(null);
   const unsaved = useRef(null);
   const revision = useRef(0);
   const blocked = useRef(null);
@@ -60,6 +63,7 @@ export function useBeatProject(id, announce) {
       return;
     }
     revision.current = result.record.revision; current.current = result.record.doc; blocked.current = null;
+    history.current = historyOps.createHistory(result.record.doc);
     unsaved.current = null; flushRequested.current = false;
     setDoc(result.record.doc); setSaved(result.record.doc); setConflict(null); setError(''); setSaveError(false);
   }, [id, markConflict]);
@@ -82,15 +86,39 @@ export function useBeatProject(id, announce) {
       document.removeEventListener('visibilitychange', hidden);
     };
   }, [id, reload, markConflict, flush]);
-  const edit = useCallback((change) => {
-    if (!current.current) return;
+  const accept = useCallback((next) => {
+    unsaved.current = next;
+    current.current = next; setDoc(next); setSaveError(false);
+  }, []);
+  const edit = useCallback((change, options = {}) => {
+    if (!current.current) return null;
     try {
-      const next = change(current.current);
-      if (next === current.current) return;
-      unsaved.current = next;
-      current.current = next; setDoc(next); setSaveError(false);
-    } catch { announce('That change is not valid.'); }
-  }, [announce]);
+      const result = tryOp(current.current, change);
+      if (result.refused) { announce(result.refused); return null; }
+      const next = result.doc;
+      if (next === current.current) return null;
+      history.current = historyOps.record(history.current, next, options);
+      accept(next);
+      announce(options.message || `Changed: ${options.label || 'edit beat'}`);
+      return history.current.past.at(-1)?.id;
+    } catch { announce('That change is not valid.'); return null; }
+  }, [announce, accept]);
+  const selectPattern = useCallback((slot) => {
+    if (!current.current) return;
+    const next = selectPatternOp(current.current, slot);
+    history.current = historyOps.replacePresent(history.current, next);
+    accept(next);
+  }, [accept]);
+  const travel = useCallback((direction) => {
+    if (!history.current) return;
+    const entry = (direction === 'undo' ? history.current.past : history.current.future).at(-1);
+    if (!entry) return;
+    history.current = historyOps[direction](history.current);
+    const next = { ...history.current.present, updatedAt: Math.max(Date.now(), current.current.updatedAt) };
+    history.current = historyOps.replacePresent(history.current, next);
+    accept(next);
+    announce(`${direction === 'undo' ? 'Undid' : 'Redid'}: ${entry.label}`);
+  }, [accept, announce]);
   useEffect(() => {
     if (!doc || doc === saved || conflict) return;
     const timer = setTimeout(flush, 800);
@@ -104,5 +132,9 @@ export function useBeatProject(id, announce) {
     if (result.error) { announce(result.error === 'limit' ? 'This device has 50 beats. Delete one to make room for a copy.' : 'Could not save a copy.'); return null; }
     return next.id;
   }
-  return { doc, current, error, persistent, conflict, saveError, retry: flush, edit, reload, copy, dirty: doc !== saved };
+  return { doc, current, error, persistent, conflict, saveError, retry: flush, edit, reload, copy, selectPattern,
+    undo: () => travel('undo'), redo: () => travel('redo'),
+    canUndo: Boolean(history.current && historyOps.canUndo(history.current)),
+    canRedo: Boolean(history.current && historyOps.canRedo(history.current)),
+    undoId: history.current?.past.at(-1)?.id, dirty: doc !== saved };
 }

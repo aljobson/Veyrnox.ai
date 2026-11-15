@@ -2,10 +2,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createBeatEngine } from '../../../_lib/music/beat/beatEngine.js';
 import { createScheduler } from '../../../_lib/music/beat/beatScheduler.mjs';
-import { addHitAtStep } from '../../../_lib/music/beat/beatOps.mjs';
+import { addHitToPattern } from '../../../_lib/music/beat/beatOps.mjs';
+import { editTrack, recordTarget } from '../../../_lib/music/beat/beatEvents.mjs';
+import { sequenceFor } from '../../../_lib/music/beat/beatSequence.mjs';
 
-export function useBeatPlayback(current, edit, announce) {
+export function useBeatPlayback(current, edit, announce, options) {
   const engine = useRef(null);
+  const gapAnnouncement = useRef(-Infinity);
+  const optionsRef = useRef(options);
+  useEffect(() => { optionsRef.current = options; }, [options]);
   const active = useRef(null);
   const pending = useRef(0);
   const starting = useRef(false);
@@ -44,7 +49,12 @@ export function useBeatPlayback(current, edit, announce) {
       const scheduled = [];
       const scheduler = createScheduler({
         clock: instance.now, setTimer: setTimeout, clearTimer: clearTimeout, isHidden: () => document.hidden,
-        onEvent: (event, time) => instance.playPad(event.pad, event.velocity, time, run.bus, current.current.kit),
+        onEvent: (event, time) => {
+          const track = editTrack(current.current, event.trackId);
+          const destination = instance.setTrackMix(run, track.id, track.gain, track.pan);
+          instance.playPad(event.pad, event.velocity, time, destination, track.kit);
+        },
+        onEnd: (time) => { if (active.current?.run === run) active.current.endTime = time; },
         onStep: (step, time) => {
           const doc = current.current;
           const oldest = instance.now() - 2;
@@ -53,7 +63,8 @@ export function useBeatPlayback(current, edit, announce) {
           if (doc.metronome && step % 4 === 0) instance.click(time, step % 16 === 0, run.bus);
         },
       });
-      scheduler.update(() => current.current);
+      scheduler.updateSequence(() => sequenceFor(current.current,
+        optionsRef.current?.locator || 0, optionsRef.current?.editTrackId));
       active.current = { run, scheduler, scheduled };
       scheduler.start(instance.now() + 0.03);
       setAudioError(''); setRunId(run.id);
@@ -73,11 +84,16 @@ export function useBeatPlayback(current, edit, announce) {
       if (record.current && tappedRun) {
         tappedRun.scheduler.refill();
         const nearest = tappedRun.scheduler.nearestStepAt(tappedAt);
-        if (nearest) edit((d) => addHitAtStep(d, pad, nearest.step));
+        const target = nearest && recordTarget(current.current, nearest.step, optionsRef.current?.editTrackId);
+        if (target) edit((d) => addHitToPattern(d, target.pattern, pad, target.step), { label: 'record hit' });
+        else if (instance.now() - gapAnnouncement.current >= 2) {
+          gapAnnouncement.current = instance.now();
+          announce(`No region under the playhead on ${editTrack(current.current, optionsRef.current?.editTrackId).name}`);
+        }
       }
       await resumed;
       if (!mounted.current) return;
-      instance.playPad(pad, 100 / 127, instance.now(), instance.master, current.current.kit);
+      instance.playPad(pad, 100 / 127, instance.now(), instance.master, editTrack(current.current, optionsRef.current?.editTrackId).kit);
     } catch (failure) { setAudioError(failure.message); announce(failure.message); }
   }
   function setRecord(value) { record.current = value; setRecording(value); }
@@ -89,6 +105,12 @@ export function useBeatPlayback(current, edit, announce) {
       if (playing && engine.current) {
         const instance = engine.current;
         const audible = instance.now() - (instance.context.outputLatency || instance.context.baseLatency || 0);
+        for (const track of current.current.tracks) instance.setTrackMix(playing.run, track.id, track.gain, track.pan);
+        if (playing.endTime !== undefined && audible >= playing.endTime) {
+          stop();
+          frame = requestAnimationFrame(animate);
+          return;
+        }
         let latest;
         for (const step of playing.scheduled) if (step.run === playing.run.id && step.time <= audible) latest = step;
         if (latest) setPlayhead(latest.step);
@@ -106,6 +128,6 @@ export function useBeatPlayback(current, edit, announce) {
       active.current?.scheduler.stop(); active.current = null;
       engine.current?.close().catch(() => {}); engine.current = null;
     };
-  }, []);
+  }, [current, stop]);
   return { playing: runId !== null, runId, playhead, audioError, toggle, hit, stop, record: recording, setRecord };
 }

@@ -10,7 +10,7 @@ test('all edits are immutable, valid, and stamp injected time', () => {
   const operations = [
     () => ops.toggleStep(doc, 'kick', 1, 20), () => ops.cycleVelocity(doc, 'kick', 0, 1, 20),
     () => ops.addHitAtStep(doc, 'clap', 3, 20), () => ops.setTempo(doc, 120, 20), () => ops.setSwing(doc, 0.5, 20),
-    () => ops.setKit(doc, 'lofi', 20), () => ops.setSteps(doc, 32, 20), () => ops.selectPattern(doc, 'C', 20),
+    () => ops.setTrackKit(doc, 't1', 'lofi', 20), () => ops.setSteps(doc, 32, 20), () => ops.selectPattern(doc, 'C', 20),
     () => ops.copyPattern(doc, 'A', 'B', 20), () => ops.clearPattern(doc, 20), () => ops.rename(doc, 'Beat', 20),
     () => ops.setMetronome(doc, true, 20), () => ops.restorePattern(doc, 'B', doc.patterns.A, 20),
   ];
