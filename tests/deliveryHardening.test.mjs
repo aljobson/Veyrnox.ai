@@ -62,6 +62,11 @@ test('production rolls retained static assets forward across releases', () => {
     assert.match(workflow, /recent_deploy_count" -ge 20.*all_required_found" = true[\s\S]*break/,
         'history scanning stops once the bounded recent set and live builds are found');
     assert.match(workflow, /Live build \$deployed_sha has no retained static artifact; refusing an unprotected cutover/);
+    // A failed or cancelled run of the live commit (no artifact) must not block deploys while another run of the
+    // same commit saved its files; only a live commit with no artifact anywhere is refused.
+    assert.match(workflow,
+        /covered=false[\s\S]*\$\{selected_run_shas\[\$other_run\]\}" != "\$deployed_sha"[\s\S]*covered=true[\s\S]*another run of live build \$deployed_sha does; skipping it[\s\S]*Live build \$deployed_sha has no retained static artifact/,
+        'same-commit runs without files are skipped when a sibling run has them');
 });
 
 test('production bootstraps retention once, then enforces old references on every later deploy', () => {

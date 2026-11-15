@@ -268,6 +268,26 @@ jobs:
             if [ -z "$artifact_size" ]; then
               deployed_sha="${selected_run_shas[$previous_run]}"
               if [[ -n "${required_live_lookup[$deployed_sha]+present}" ]] && [ "$deployed_sha" != "$retention_bootstrap_predecessor" ]; then
+                # Several runs can share the live commit: a manual dispatch that was cancelled, or a
+                # push run that failed before saving anything. Those have no artifact but must not
+                # block every later deploy while another run of the SAME commit did save its files
+                # (2026-11-15: two such runs stopped production deploys for over an hour).
+                covered=false
+                for other_run in "${successful_deploy_runs[@]}"; do
+                  if [ "$other_run" = "$previous_run" ] || [ "${selected_run_shas[$other_run]}" != "$deployed_sha" ]; then
+                    continue
+                  fi
+                  other_size=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$other_run/artifacts" \
+                    --jq '[.artifacts[] | select(.name == "production-next-static" and .expired == false)][0].size_in_bytes // empty')
+                  if [ -n "$other_size" ]; then
+                    covered=true
+                    break
+                  fi
+                done
+                if [ "$covered" = true ]; then
+                  echo "::notice::Run $previous_run has no retained static artifact, but another run of live build $deployed_sha does; skipping it."
+                  continue
+                fi
                 echo "::error::Live build $deployed_sha has no retained static artifact; refusing an unprotected cutover."
                 exit 1
               fi
