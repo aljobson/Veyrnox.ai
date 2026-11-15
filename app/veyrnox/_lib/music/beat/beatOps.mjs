@@ -31,7 +31,8 @@ export const setSteps = (doc, steps, now = Date.now()) => edit(doc, now, (d) => 
   d.steps = steps;
   for (const track of d.tracks) for (const region of track.regions) region.offset %= steps * 240;
 });
-export const selectPattern = (doc, slot, now = Date.now()) => edit(doc, now, (d) => { d.currentPattern = slot; });
+export const selectPattern = (doc, slot, now = Date.now()) => slot === doc.currentPattern
+  ? doc : edit(doc, now, (d) => { d.currentPattern = slot; });
 export const copyPattern = (doc, from, to, now = Date.now()) => edit(doc, now, (d) => { d.patterns[to] = structuredClone(d.patterns[from]); });
 export const clearPattern = (doc, now = Date.now()) => edit(doc, now, (d) => { d.patterns[d.currentPattern] = { rows: {} }; });
 export const rename = (doc, title, now = Date.now()) => edit(doc, now, (d) => { d.title = title; });
@@ -96,7 +97,11 @@ export const removeTrack = (doc, id, now = Date.now()) => edit(doc, now, (d) => 
   d.tracks = d.tracks.filter((t) => t.id !== id);
 });
 const trackField = (field) => (doc, id, value, now = Date.now()) => edit(doc, now, (d) => { trackById(d, id)[field] = value; });
-export const renameTrack = trackField('name');
+export const renameTrack = (doc, id, name, now = Date.now()) => edit(doc, now, (d) => {
+  const track = trackById(d, id);
+  if (typeof name !== 'string' || !name.trim()) throw new BeatRefusal('Give the track a name.');
+  track.name = name.trim();
+});
 export const setTrackKit = trackField('kit');
 export const setTrackMute = trackField('mute');
 export const setTrackSolo = trackField('solo');

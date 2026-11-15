@@ -12,6 +12,7 @@ export function useBeatPlayback(current, edit, announce, options) {
   const optionsRef = useRef(options);
   useEffect(() => { optionsRef.current = options; }, [options]);
   const active = useRef(null);
+  const tails = useRef(new Map());
   const pending = useRef(0);
   const starting = useRef(false);
   const mounted = useRef(true);
@@ -27,6 +28,8 @@ export function useBeatPlayback(current, edit, announce, options) {
       engine.current.stopRun(active.current.run);
       active.current = null;
     }
+    for (const run of tails.current.keys()) engine.current.stopRun(run);
+    tails.current.clear();
     setRunId(null); setPlayhead(-1);
   }, []);
   function audio() {
@@ -54,7 +57,12 @@ export function useBeatPlayback(current, edit, announce, options) {
           const destination = instance.setTrackMix(run, track.id, track.gain, track.pan);
           instance.playPad(event.pad, event.velocity, time, destination, track.kit);
         },
-        onEnd: (time) => { if (active.current?.run === run) active.current.endTime = time; },
+        onEnd: (time) => {
+          if (active.current?.run === run) {
+            active.current.endTime = time;
+            active.current.endStep = sequenceFor(current.current).endStep;
+          }
+        },
         onStep: (step, time) => {
           const doc = current.current;
           const oldest = instance.now() - 2;
@@ -99,15 +107,25 @@ export function useBeatPlayback(current, edit, announce, options) {
   function setRecord(value) { record.current = value; setRecording(value); }
   useEffect(() => {
     mounted.current = true;
+    const ringing = tails.current;
     let frame;
     function animate() {
+      for (const [run, endTime] of ringing) {
+        if (engine.current && engine.current.now() >= endTime + 1.5) {
+          engine.current.stopRun(run);
+          ringing.delete(run);
+        }
+      }
       const playing = active.current;
       if (playing && engine.current) {
         const instance = engine.current;
         const audible = instance.now() - (instance.context.outputLatency || instance.context.baseLatency || 0);
         for (const track of current.current.tracks) instance.setTrackMix(playing.run, track.id, track.gain, track.pan);
         if (playing.endTime !== undefined && audible >= playing.endTime) {
-          stop();
+          playing.scheduler.stop();
+          ringing.set(playing.run, playing.endTime);
+          active.current = null;
+          setRunId(null); setPlayhead(playing.endStep);
           frame = requestAnimationFrame(animate);
           return;
         }
@@ -126,6 +144,7 @@ export function useBeatPlayback(current, edit, announce, options) {
       mounted.current = false; pending.current = null; starting.current = false;
       cancelAnimationFrame(frame); document.removeEventListener('visibilitychange', visibility);
       active.current?.scheduler.stop(); active.current = null;
+      ringing.clear();
       engine.current?.close().catch(() => {}); engine.current = null;
     };
   }, [current, stop]);

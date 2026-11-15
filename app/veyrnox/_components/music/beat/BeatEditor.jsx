@@ -31,6 +31,11 @@ export default function BeatEditor({ id }) {
   const [reloadKey, setReloadKey] = useState(0);
   const [copying, setCopying] = useState(false);
   const { doc, edit } = project;
+  const [storedTitle, setStoredTitle] = useState(doc?.title);
+  if (storedTitle !== doc?.title) {
+    setStoredTitle(doc?.title);
+    setTitleDraft(null);
+  }
   useEffect(() => () => clearTimeout(undoTimer.current), []);
   // This state belongs to the displayed history entry, not to an effect or timer replay.
   if (undo && undo.id !== project.undoId) setUndo(null);
@@ -44,6 +49,7 @@ export default function BeatEditor({ id }) {
       if ((event.ctrlKey || event.metaKey) && ['z', 'y'].includes(event.key.toLowerCase())) {
         event.preventDefault();
         if (event.key.toLowerCase() === 'y' || event.shiftKey) project.redo(); else project.undo();
+        setTitleDraft(null);
         return;
       }
       if (event.ctrlKey || event.metaKey || event.altKey || target.closest('input, select')) return;
@@ -79,12 +85,17 @@ export default function BeatEditor({ id }) {
   const uses = doc.tracks.flatMap((t) => t.regions).filter((r) => r.pattern === doc.currentPattern).length;
   return <div className="mx-auto min-w-0 w-full max-w-7xl space-y-5 px-2 py-6 md:px-6">
     <header className="flex flex-wrap items-center gap-3">{back}<h1 className="text-2xl font-black">Beat editor</h1>
-      <button className={button} aria-disabled={!project.canUndo} onClick={project.undo}>Undo</button>
-      <button className={button} aria-disabled={!project.canRedo} onClick={project.redo}>Redo</button>
+      <button className={button} aria-disabled={!project.canUndo}
+        onClick={() => { project.undo(); setTitleDraft(null); }}>Undo</button>
+      <button className={button} aria-disabled={!project.canRedo}
+        onClick={() => { project.redo(); setTitleDraft(null); }}>Redo</button>
     </header>
     <div className="flex flex-wrap items-end justify-between gap-3"><label className="flex min-w-0 flex-1 flex-col gap-1">Title<input className={`${input} w-full text-xl font-bold`} maxLength={80} value={title} aria-invalid={!title.trim()} aria-describedby={!title.trim() ? 'title-error' : undefined} onChange={(e) => {
-      setTitleDraft(e.target.value);
-      if (e.target.value.trim()) edit((d) => ops.rename(d, e.target.value), { key: 'title', label: 'rename beat' });
+      const value = e.target.value;
+      setTitleDraft(value);
+      if (value.trim() && edit((d) => ops.rename(d, value), { key: 'title', label: 'rename beat' })) {
+        setStoredTitle(value);
+      }
     }} onBlur={() => { if (title.trim()) setTitleDraft(null); }} /></label><BeatExportDialog doc={doc} editTrackId={track.id} announce={announce} /></div>
     {!title.trim() && <p id="title-error">Give your beat a title.</p>}
     <p className="text-sm text-vx-fg-muted">{project.conflict ? 'Autosave paused' : project.saveError ? <>{"Couldn't save on this device."} <button className={button} onClick={project.retry}>Retry</button></> : !project.persistent ? 'Kept in memory for this visit' : project.dirty ? 'Saving…' : 'Saved on this device'}</p>
@@ -94,7 +105,7 @@ export default function BeatEditor({ id }) {
     <BeatTransport key={reloadKey} doc={doc} edit={edit} selectPattern={project.selectPattern} playing={playback.playing} toggle={playback.toggle} clear={clear} announce={announce} />
     {undo && undo.id === project.undoId && <div className="flex items-center gap-3 rounded-xl bg-vx-panel p-3">
       <p>Pattern {undo.slot} cleared</p><button className={button} onClick={() => {
-        project.undo(); setUndo(null); clearTimeout(undoTimer.current);
+        project.undo(); setTitleDraft(null); setUndo(null); clearTimeout(undoTimer.current);
       }}>Undo</button>
     </div>}
     <BeatArrangement key={reloadKey} doc={doc} edit={edit} selectPattern={project.selectPattern} editTrackId={track.id}

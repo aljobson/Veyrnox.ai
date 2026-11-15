@@ -5,6 +5,14 @@ import * as ops from '../app/veyrnox/_lib/music/beat/beatOps.mjs';
 import { patternEvents } from '../app/veyrnox/_lib/music/beat/beatEvents.mjs';
 const make = () => createBeat({ id: 'e40439d1-646a-4c11-9c12-69fa3a851234', now: 0 });
 function freeze(value) { if (value && typeof value === 'object') { Object.freeze(value); Object.values(value).forEach(freeze); } return value; }
+test('selecting the current pattern preserves the document and timestamp', () => {
+  for (const slot of ['A', 'B', 'C', 'D']) {
+    const doc = freeze(ops.selectPattern(make(), slot, 10));
+    const next = ops.selectPattern(doc, slot, 2000);
+    assert.equal(next, doc);
+    assert.equal(next.updatedAt, doc.updatedAt);
+  }
+});
 test('all edits are immutable, valid, and stamp injected time', () => {
   const doc = freeze(make());
   const operations = [

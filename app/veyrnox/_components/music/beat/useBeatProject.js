@@ -20,6 +20,7 @@ export function useBeatProject(id, announce) {
   const flushRequested = useRef(false);
   const mounted = useRef(false);
   const generation = useRef(0);
+  const recordedAnnouncement = useRef(-Infinity);
   const markConflict = useCallback((kind) => {
     blocked.current = kind;
     if (mounted.current) {
@@ -99,12 +100,22 @@ export function useBeatProject(id, announce) {
       if (next === current.current) return null;
       history.current = historyOps.record(history.current, next, options);
       accept(next);
-      announce(options.message || `Changed: ${options.label || 'edit beat'}`);
+      if (options.message || !options.key) {
+        if (options.label === 'record hit') {
+          const now = Date.now();
+          if (now - recordedAnnouncement.current >= 2000) {
+            recordedAnnouncement.current = now;
+            announce(options.message || 'Recorded hit');
+          }
+        } else {
+          announce(options.message || `Changed: ${options.label || 'edit beat'}`);
+        }
+      }
       return history.current.past.at(-1)?.id;
     } catch { announce('That change is not valid.'); return null; }
   }, [announce, accept]);
   const selectPattern = useCallback((slot) => {
-    if (!current.current) return;
+    if (!current.current || slot === current.current.currentPattern) return;
     const next = selectPatternOp(current.current, slot);
     history.current = historyOps.replacePresent(history.current, next);
     accept(next);

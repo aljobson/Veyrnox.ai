@@ -1,17 +1,27 @@
 'use client';
+import { useState } from 'react';
 import { PRESETS } from '../../../../../lib/musicInstruments.js';
 import * as ops from '../../../_lib/music/beat/beatOps.mjs';
 import { button, input } from './beatStyles';
 
 export default function BeatTrackHeader({ track, edit, locator, last, selected, onSelect }) {
+  const [nameDraft, setNameDraft] = useState(null);
   function field(op, value, label, key) {
     edit((d) => op(d, track.id, value), { label, key: key && `${track.id}:${key}` });
+  }
+  function commitName() {
+    if (nameDraft === null) return;
+    field(ops.renameTrack, nameDraft.trim(), 'rename track', 'name');
+    setNameDraft(null);
   }
   function settings() {
     return <div className="grid min-w-0 grid-cols-2 gap-1">
       <label className="col-span-2 text-xs">Name
         <input aria-label={`Track name for ${track.name}`} className={`${input} w-full`} maxLength={40}
-          value={track.name} onChange={(e) => field(ops.renameTrack, e.target.value, 'rename track', 'name')} />
+          value={nameDraft ?? track.name} onChange={(e) => setNameDraft(e.target.value)}
+          onBlur={commitName} onKeyDown={(e) => {
+            if (e.key === 'Enter') { e.preventDefault(); commitName(); }
+          }} />
       </label>
       <label className="col-span-2 text-xs">Kit
         <select className={`${input} w-full`} value={track.kit}

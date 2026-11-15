@@ -6,11 +6,28 @@ import { action, button, input } from './beatStyles';
 
 export default function BeatTransport({ doc, edit, selectPattern, playing, toggle, clear, announce }) {
   const [bpmDraft, setBpmDraft] = useState(null);
+  const [cycleDrafts, setCycleDrafts] = useState({ start: null, end: null });
+  const [cycleErrors, setCycleErrors] = useState({ start: '', end: '' });
   const bpm = bpmDraft ?? String(doc.tempo.bpm);
   const invalid = bpm.trim() === '' || !Number.isFinite(Number(bpm)) || Number(bpm) < 40 || Number(bpm) > 240;
   function pattern(slot) { selectPattern(slot); announce(`Pattern ${slot}`); }
   function cycle(field, value) {
     edit((d) => ops.setCycle(d, { ...d.cycle, [field]: value }), { label: 'change cycle' });
+  }
+  function commitCycle(field) {
+    const draft = cycleDrafts[field];
+    if (draft === null) return;
+    const value = (Number(draft) - 1) * 3840;
+    const result = draft.trim() === '' ? { refused: 'Enter a bar number.' }
+      : ops.tryOp(doc, (d) => ops.setCycle(d, { ...d.cycle, [field]: value }));
+    if (result.refused) {
+      setCycleErrors((errors) => ({ ...errors, [field]: result.refused }));
+      announce(result.refused);
+      return;
+    }
+    cycle(field, value);
+    setCycleDrafts((drafts) => ({ ...drafts, [field]: null }));
+    setCycleErrors((errors) => ({ ...errors, [field]: '' }));
   }
   return <section aria-label="Transport" className="space-y-4 rounded-2xl border border-vx-border bg-vx-panel p-3">
     <div className="flex flex-wrap items-end gap-3">
@@ -45,10 +62,26 @@ export default function BeatTransport({ doc, edit, selectPattern, playing, toggl
     {invalid && <p id="bpm-error" className="text-sm text-vx-fg">Enter a tempo from 40 to 240 BPM.</p>}
     <div className="flex flex-wrap items-center gap-3">
       <button className={button} aria-pressed={doc.cycle.on} onClick={() => cycle('on', !doc.cycle.on)}>Cycle</button>
-      <label>Start bar <input className={`${input} w-24`} type="number" min="1" max="512" step="0.0625"
-        value={doc.cycle.start / 3840 + 1} onChange={(e) => cycle('start', (Number(e.target.value) - 1) * 3840)} /></label>
-      <label>End bar <input className={`${input} w-24`} type="number" min="1.0625" max="513" step="0.0625"
-        value={doc.cycle.end / 3840 + 1} onChange={(e) => cycle('end', (Number(e.target.value) - 1) * 3840)} /></label>
+      {['start', 'end'].map((field) => <label key={field}>
+        {field === 'start' ? 'Start bar' : 'End bar'} <input className={`${input} w-24`} type="number"
+          min={field === 'start' ? '1' : '1.0625'} max={field === 'start' ? '512' : '513'} step="0.0625"
+          value={cycleDrafts[field] ?? String(doc.cycle[field] / 3840 + 1)}
+          aria-invalid={Boolean(cycleErrors[field])}
+          aria-describedby={cycleErrors[field] ? `cycle-${field}-error` : undefined}
+          onChange={(e) => {
+            const value = e.target.value;
+            setCycleDrafts((drafts) => ({ ...drafts, [field]: value }));
+            setCycleErrors((errors) => ({ ...errors, [field]: '' }));
+          }} onBlur={() => commitCycle(field)} onKeyDown={(e) => {
+            if (e.key === 'Enter') { e.preventDefault(); commitCycle(field); }
+            if (e.key === 'Escape') {
+              e.preventDefault();
+              setCycleDrafts((drafts) => ({ ...drafts, [field]: null }));
+              setCycleErrors((errors) => ({ ...errors, [field]: '' }));
+            }
+          }} />
+        {cycleErrors[field] && <span id={`cycle-${field}-error`} className="ml-2 text-sm">{cycleErrors[field]}</span>}
+      </label>)}
       <span className="text-xs text-vx-fg-muted">End is exclusive.</span>
     </div>
     <div className="flex flex-wrap items-center gap-3">

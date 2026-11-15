@@ -27,6 +27,18 @@ const operations = {
   setView: (d) => ops.setView(d, 'pattern', 10),
   addHitToPattern: (d) => ops.addHitToPattern(d, 'D', 'kick', 5, 10),
 };
+test('track rename trims the name and refuses an empty draft without changing the doc', () => {
+  const doc = freeze(make());
+  for (const name of ['', '   ', '\t\n']) {
+    const result = ops.tryOp(doc, (d) => ops.renameTrack(d, 't1', name, 20));
+    assert.equal(result.doc, doc);
+    assert.equal(result.refused, 'Give the track a name.');
+  }
+  const renamed = ops.renameTrack(doc, 't1', '  Drum kit  ', 20);
+  assert.equal(renamed.tracks[0].name, 'Drum kit');
+  assert.equal(renamed.updatedAt, 20);
+  assert.equal(doc.tracks[0].name, 'Drums');
+});
 for (const [name, operation] of Object.entries(operations)) test(`${name} is immutable, validated, stamped and undoable`, () => {
   const doc = freeze(ops.addTrack(make(), '808', 10)); const before = structuredClone(doc);
   const next = operation(doc);
