@@ -46,7 +46,10 @@ test('native media never autoplays, unmutes on deliberate play only once, and pa
     await act(async () => root.render(<InlineMedia url="https://media.example/clip.mp4" label="Finished video" />));
     const player = mockPlayers[0];
     expect(player.muted).toBe(true); expect(player.play).not.toHaveBeenCalled(); expect(player.loop).toBe(false);
-    expect(root.container.queryAll(n => n.type === 'VideoView')[0].props.nativeControls).toBe(true);
+    expect(root.container.queryAll(n => n.type === 'VideoView')[0].props.nativeControls).toBe(false);
+    // Play/pause and a scrub bar with the time sit under the video, since the native bar did not show on device.
+    expect(root.container.queryAll(n => n.props?.testID === 'inline-audio-toggle').length).toBeGreaterThan(0);
+    expect(root.container.queryAll(n => n.props?.testID === 'inline-audio-position').length).toBeGreaterThan(0);
     await act(async () => player.listeners.playingChange({ isPlaying: true }));
     expect(player.muted).toBe(false);
     player.muted = true; // A later user mute choice must survive pause/resume.

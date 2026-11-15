@@ -1,4 +1,4 @@
-import { isAudioDriven, isSoundPass, isSpeechModel, missingRequiredSlots } from '../src/lib/createModelKind';
+import { isAudioDriven, isSoundPass, isSpeechModel, missingNeedKey, missingRequiredSlots } from '../src/lib/createModelKind';
 import type { CatalogModel } from '../src/lib/media';
 
 const model = (id: string, modality: string, media: NonNullable<CatalogModel['capabilities']>['media'] = {}): CatalogModel => ({ id, name: id, modality, credits: 1, gated: false, durations: [5], capabilities: { inputs: { prompt: {} }, media } });
@@ -23,5 +23,14 @@ describe('create model kinds', () => {
         expect(missingRequiredSlots(avatar, [{ slot: 'audio' }], false)).toEqual(['Image']);
         expect(missingRequiredSlots(avatar, [{ slot: 'audio' }], true)).toEqual([]);
         expect(missingRequiredSlots(avatar, [], false)).toEqual(['Image', 'Audio']);
+    });
+    it('names what Generate is waiting for, for every kind of required slot', () => {
+        expect(missingNeedKey(avatar, [{ slot: 'image' }], false, false)).toBe('create.needs.audio');
+        expect(missingNeedKey(avatar, [{ slot: 'audio' }], false, false)).toBe('create.needs.image');
+        expect(missingNeedKey(avatar, [{ slot: 'audio' }], true, false)).toBeNull();
+        const clip = model('clip', 'video-to-video', { video: { required: true, label: 'Video' } });
+        expect(missingNeedKey(clip, [], false, false)).toBe('create.needs.video');
+        expect(missingNeedKey(model('t2i', 'text-to-image'), [], false, true)).toBe('create.needs.prompt');
+        expect(missingNeedKey(model('t2i', 'text-to-image'), [], false, false)).toBeNull();
     });
 });

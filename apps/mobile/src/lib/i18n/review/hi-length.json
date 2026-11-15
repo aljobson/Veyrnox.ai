@@ -1188,6 +1188,12 @@
     "ratio": 1.82
   },
   {
+    "id": "prov.copyPrompt",
+    "english": "Copy prompt",
+    "translation": "प्रॉम्प्ट कॉपी करें",
+    "ratio": 1.73
+  },
+  {
     "id": "publish.assign",
     "english": "Assign",
     "translation": "असाइन करें",

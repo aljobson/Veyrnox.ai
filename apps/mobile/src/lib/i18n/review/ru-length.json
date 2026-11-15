@@ -2262,6 +2262,12 @@
     "ratio": 2.22
   },
   {
+    "id": "prov.copyPrompt",
+    "english": "Copy prompt",
+    "translation": "Скопировать промпт",
+    "ratio": 1.64
+  },
+  {
     "id": "publish.cancelpost",
     "english": "Cancel post",
     "translation": "Отменить публикацию",

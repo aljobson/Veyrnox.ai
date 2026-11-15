@@ -8,6 +8,8 @@ import { ApiError } from '../lib/api';
 import { formatLocale, plural, t } from '../lib/i18n';
 import { parseProvenance, sizeLabel, type Provenance } from '../lib/libraryView';
 import { mediaApi } from '../lib/media';
+import { copyText } from '../lib/clipboard';
+import { submittedRequests } from '../lib/submittedRequests';
 import type { ApiClient } from '../lib/api';
 import { ds } from '../theme';
 
@@ -19,13 +21,17 @@ export function JobProvenance({ api, jobId }: { readonly api: ApiClient; readonl
     const [open, setOpen] = useState(false);
     const [state, setState] = useState<'idle' | 'loading' | 'error' | 'notReady'>('idle');
     const [prov, setProv] = useState<Provenance | null>(null);
+    const [tech, setTech] = useState(false);
+    // The prompt is kept on this phone only (the server's record carries no prompt text), so it is absent for a
+    // creation made on another device or before the request was remembered.
+    const [prompt, setPrompt] = useState<string | null>(null);
+    const [copyNote, setCopyNote] = useState<string | null>(null);
 
     const visibleText = !open ? null : state === 'error' ? t('prov.error') : state === 'notReady' ? t('prov.notReady') : prov ? [
         t('prov.model', { model: prov.model }),
-        prov.madeAt ? t('prov.when', { date: new Date(prov.madeAt).toLocaleString(formatLocale()) }) : '',
+        prov.madeAt ? t('prov.when', { date: new Date(prov.madeAt).toLocaleDateString(formatLocale()) }) : '',
         prov.credits !== null ? t('prov.cost', { credits: prov.credits > 0 ? plural('library.cost', prov.credits) : t('library.costFree') }) : '',
-        prov.mime ? t('prov.file', { type: prov.mime, size: sizeLabel(prov.sizeBytes) ?? '—' }) : '',
-        prov.sha256 ? `${t('prov.hash')}. ${prov.sha256}. ${t('prov.hashHelp')}` : t('prov.noHash'),
+        prompt ? `${t('prov.prompt')}: ${prompt}` : t('prov.promptNone'),
     ].filter(Boolean).join('. ') : null;
     useAnnouncement(visibleText);
 
@@ -38,6 +44,8 @@ export function JobProvenance({ api, jobId }: { readonly api: ApiClient; readonl
             const p = parseProvenance(await mediaApi(api).getProvenance(jobId));
             setProv(p);
             setState(p ? 'idle' : 'error');
+            const saved = (await submittedRequests.list().catch(() => [])).find((r) => r.id === jobId);
+            setPrompt(saved?.request.prompt?.trim() || null);
         } catch (err) {
             setState(err instanceof ApiError && err.status === 409 ? 'notReady' : 'error');
         }
@@ -54,18 +62,34 @@ export function JobProvenance({ api, jobId }: { readonly api: ApiClient; readonl
                     {prov ? (
                         <>
                             <Text variant="body" tone="secondary" style={styles.line}>{t('prov.model', { model: prov.model })}</Text>
-                            {prov.madeAt ? <Text variant="body" tone="secondary" style={styles.line}>{t('prov.when', { date: new Date(prov.madeAt).toLocaleString(formatLocale()) })}</Text> : null}
+                            {prov.madeAt ? <Text variant="body" tone="secondary" style={styles.line}>{t('prov.when', { date: new Date(prov.madeAt).toLocaleDateString(formatLocale()) })}</Text> : null}
                             {prov.credits !== null ? <Text variant="body" tone="warning">{t('prov.cost', { credits: prov.credits > 0 ? plural('library.cost', prov.credits) : t('library.costFree') })}</Text> : null}
-                            {prov.mime ? <Text variant="body" tone="secondary" style={styles.line}>{t('prov.file', { type: prov.mime, size: sizeLabel(prov.sizeBytes) ?? '—' })}</Text> : null}
-                            {prov.sha256 ? (
+                            {prompt ? (
                                 <>
-                                    <Text variant="footnote" tone="tertiary" style={styles.muted}>{t('prov.hash')}</Text>
-                                    <Text variant="body" tone="primary" style={styles.hash} selectable>{prov.sha256}</Text>
-                                    <Text variant="footnote" tone="tertiary" style={styles.muted}>{t('prov.hashHelp')}</Text>
+                                    <Text variant="footnote" tone="tertiary" style={styles.muted}>{t('prov.prompt')}</Text>
+                                    <Text variant="body" tone="primary" style={styles.line} selectable>{prompt}</Text>
+                                    <Button variant="tertiary" label={t('prov.copyPrompt')} accessibilityRole="button" onPress={async () => setCopyNote(t(await copyText(prompt) ? 'libraryCreate.copied' : 'libraryCreate.copyFailed'))} />
+                                    {copyNote ? <Text variant="footnote" tone="tertiary" style={styles.muted} accessibilityLiveRegion="polite">{copyNote}</Text> : null}
                                 </>
                             ) : (
-                                <Text variant="footnote" tone="tertiary" style={styles.muted}>{t('prov.noHash')}</Text>
+                                <Text variant="footnote" tone="tertiary" style={styles.muted}>{t('prov.promptNone')}</Text>
                             )}
+                            <Button variant="tertiary" label={t('prov.tech')} accessibilityRole="button" accessibilityLabel={rawText(tech ? t('prov.techHide') : t('prov.techShow'))} accessibilityState={{ expanded: tech }} icon={tech ? 'caretDown' : 'caretRight'} onPress={() => setTech(!tech)} />
+                            {tech ? (
+                                <View testID="provenance-technical" style={styles.body}>
+                                    {prov.madeAt ? <Text variant="body" tone="secondary" style={styles.line}>{t('prov.exactTime', { date: new Date(prov.madeAt).toLocaleString(formatLocale()) })}</Text> : null}
+                                    {prov.mime ? <Text variant="body" tone="secondary" style={styles.line}>{t('prov.file', { type: prov.mime, size: sizeLabel(prov.sizeBytes) ?? '—' })}</Text> : null}
+                                    {prov.sha256 ? (
+                                        <>
+                                            <Text variant="footnote" tone="tertiary" style={styles.muted}>{t('prov.hash')}</Text>
+                                            <Text variant="body" tone="primary" style={styles.hash} selectable>{prov.sha256}</Text>
+                                            <Text variant="footnote" tone="tertiary" style={styles.muted}>{t('prov.hashHelp')}</Text>
+                                        </>
+                                    ) : (
+                                        <Text variant="footnote" tone="tertiary" style={styles.muted}>{t('prov.noHash')}</Text>
+                                    )}
+                                </View>
+                            ) : null}
                         </>
                     ) : null}
                 </View>
