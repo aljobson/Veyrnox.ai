@@ -1,6 +1,7 @@
 import { rpc, envConfig } from '../../../../../../packages/db/supabase-client.js';
 import { musicAddSectionEnabled, musicCoverEnabled, musicDistributionEnabled, musicEditingEnabled, musicExtendEnabled, musicLibraryEnabled, musicPublicationEnabled, musicReplaceEnabled, musicReuseEnabled, musicRpcStatus, musicSchemaEnabled, musicStemsEnabled, musicStudioEnabled, musicTargetStemsEnabled, musicTrackAddEnabled, parseMusicSongLifecycle, publicMusicError, readMusicJson, validMusicAuthId } from '../../../../../../lib/musicBackend.js';
 
+import { musicRemixEnabled } from '../../../../../../lib/musicRemix.js';
 import { isUuid } from '../../../../../../lib/validate.js';
 const reply = (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
 
@@ -29,6 +30,7 @@ export async function GET(request, { params }) {
                 ...distributionActions,
                 ...(musicPublicationEnabled() ? ['publish'] : []),
                 ...(musicCoverEnabled() ? ['cover'] : []),
+                ...(musicRemixEnabled() ? ['mashup', 'sample'] : []),
                 ...(musicExtendEnabled() ? ['extend'] : []),
                 ...(musicReplaceEnabled() ? ['replace_section'] : []),
                 ...(musicAddSectionEnabled() ? ['add_section'] : []),
