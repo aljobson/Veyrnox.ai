@@ -62,9 +62,9 @@ test('all record modules and shared provenance contain no identity or normalized
     }
   }
   const captured = Object.entries(SOURCE_PROMPT_RECORDS).filter(([, r]) => r.sourcePromptAvailable && typeof r.prompt === 'string');
-  assert.equal(captured.filter(([id]) => Object.hasOwn(IMAGE_SOURCE_PROMPT_RECORDS, id)).length, 52);
-  assert.equal(captured.filter(([id]) => !Object.hasOwn(IMAGE_SOURCE_PROMPT_RECORDS, id)).length, 772 + 46 + 30);
-  assert.equal(captured.length, 774 + 96 + 30);
+  assert.equal(captured.filter(([id]) => Object.hasOwn(IMAGE_SOURCE_PROMPT_RECORDS, id)).length, 52 + 40);
+  assert.equal(captured.filter(([id]) => !Object.hasOwn(IMAGE_SOURCE_PROMPT_RECORDS, id)).length, 772 + 46 + 30 + 59);
+  assert.equal(captured.length, 774 + 96 + 30 + 59 + 40);
 });
 
 test('image photo policy, source aspects, translated categories and catalog models are preserved', () => {
@@ -118,7 +118,7 @@ test('original-media provenance and all 142 shipped previews are hash-locked wit
   }
   assert.equal(files, 46 * 2 + 50); assert.equal(bytes, 65619847); // Sum of revised host videoBytes + unchanged posterBytes/imageBytes.
   assert.equal(visual.method, VISUAL_SIGNATURE_METHOD);
-  assert.equal(new Set(Object.values(visual.placements).map(r => r.signature)).size, 931 + 46 + 30);
+  assert.equal(new Set(Object.values(visual.placements).map(r => r.signature)).size, 931 + 46 + 30 + 59);
 });
 
 test('all new videos pass through the unchanged fidelity classifier', () => {
