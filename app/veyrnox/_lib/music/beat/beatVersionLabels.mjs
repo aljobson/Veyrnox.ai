@@ -1,7 +1,7 @@
 const reasons = {
   autosave: 'Autosave',
   checkpoint: 'Checkpoint',
-  conflict: 'Account version kept when you chose Keep mine',
+  conflict: 'Earlier account version (kept before your save replaced it)',
   stash: 'Your changes kept when you chose Load theirs',
 };
 export const versionReason = reason => reasons[reason] || reason;

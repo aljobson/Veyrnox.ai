@@ -155,6 +155,39 @@ test('NOT_FOUND clears the link, stops automatic saves and re-creates only on th
   assert.equal(h.sync.output.state, 'synced');
 });
 const takes = Object.fromEntries(['one', 'two', 'three'].map(ref => [`a${ref}`, { source: 'take', ref, name: ref, durationSec: 1, sourceChannels: 1, encodedBytes: 44, bpm: null }]));
+for (const [status, code] of [[400, 'INVALID_REQUEST'], [401, 'UNAUTHORIZED'], [403, 'TAKE_UPLOAD_FAILED'],
+  [404, 'NOT_FOUND'], [409, 'take_upload_invalid'], [413, 'TAKE_UPLOAD_FAILED'], [429, 'OTHER_LIMIT']]) {
+  test(`${status} ${code} refuses only that take and stops its retry timer`, async t => {
+    const h = await setup(t, { assets: takes });
+    fixture.upload = async asset => {
+      if (asset.ref === 'one') throw { status, code };
+      return { id: asset.ref, status: 'ready' };
+    };
+    await h.run();
+    assert.deepEqual(h.sync.output.media, ['one']);
+    assert.equal(h.timers.size, 0);
+    // Later document saves must not retry the refused ref either.
+    await h.sync.output.checkpoint(); await h.settle();
+    assert.equal(fixture.calls.filter(c => Array.isArray(c) && c[0] === 'upload' && c[1] === 'one').length, 1);
+    assert.deepEqual(h.sync.output.media, ['one']);
+    assert.equal(h.timers.size, 0);
+  });
+}
+for (const error of [{ status: 503, code: 'TAKE_UPLOAD_FAILED' }, { code: 'NETWORK_ERROR' },
+  { status: 409, code: 'take_upload_missing' }]) {
+  test(`${error.code} ${error.status || 'network'} keeps the existing media retry`, async t => {
+    const h = await setup(t, { assets: { aone: takes.aone } });
+    fixture.upload = async () => { throw error; };
+    await h.run();
+    assert.deepEqual(h.sync.output.media, ['one']);
+    assert.deepEqual([...h.timers.values()].map(timer => timer.delay), [60000]);
+    fixture.upload = async asset => ({ id: asset.ref, status: 'ready' });
+    await h.run(60000);
+    assert.deepEqual(h.sync.output.media, []);
+    assert.equal(fixture.calls.filter(c => Array.isArray(c) && c[0] === 'upload').length, 2);
+    assert.equal(h.timers.size, 0);
+  });
+}
 test('takes list once per cycle and successful uploads need no second listing', async t => {
   const h = await setup(t, { assets: takes }); await h.run();
   assert.equal(fixture.calls.filter(c => c === 'takes').length, 1);

@@ -134,7 +134,7 @@ test('quiet replacement uses the atomic path without media or stash', async () =
 test('version reasons and local Today time match the Versions labels', async () => {
   const { versionReason, versionTime } = await import('../app/veyrnox/_lib/music/beat/beatVersionLabels.mjs');
   for (const [reason, label] of Object.entries({ autosave: 'Autosave', checkpoint: 'Checkpoint',
-    conflict: 'Account version kept when you chose Keep mine', stash: 'Your changes kept when you chose Load theirs' }))
+    conflict: 'Earlier account version (kept before your save replaced it)', stash: 'Your changes kept when you chose Load theirs' }))
     assert.equal(versionReason(reason), label);
   const now = new Date(2026, 10, 15, 17, 0);
   assert.equal(versionTime(new Date(2026, 10, 15, 14, 2), now), 'Today 14:02');

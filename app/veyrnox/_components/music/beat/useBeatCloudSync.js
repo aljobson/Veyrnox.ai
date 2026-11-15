@@ -48,7 +48,7 @@ export function useBeatCloudSync({ beatId, project, cloud, announce }) {
       clearTimeout(mediaTimer);
       if (!takeAssets(doc).length) { setView(v => ({ ...v, media: [] })); return; }
       const rows = [...await rowsFor(token)], failures = [];
-      const pendingTakes = takesToUpload(doc, rows, required ? new Set() : refused);
+      const pendingTakes = takesToUpload(doc, rows, refused);
       for (const [index, asset] of pendingTakes.entries()) {
         check(token);
         try {
@@ -59,7 +59,9 @@ export function useBeatCloudSync({ beatId, project, cloud, announce }) {
         } catch (error) {
           check(token); failures.push(asset.name);
           const code = errorCode(error);
-          if (['TAKE_CHANGED', 'LIMIT_REACHED', 'TAKE_UNAVAILABLE'].includes(code)) refused.add(asset.ref);
+          const retryable = code === 'RATE_LIMITED' || (error.status === 409 && code === 'TAKE_UPLOAD_MISSING') ||
+            !error.status || (error.status >= 500 && error.status < 600);
+          if (!retryable || ['TAKE_CHANGED', 'LIMIT_REACHED', 'TAKE_UNAVAILABLE'].includes(code)) refused.add(asset.ref);
           if (code === 'LIMIT_REACHED') pendingTakes.slice(index).forEach(a => refused.add(a.ref));
           if (['RATE_LIMITED', 'LIMIT_REACHED'].includes(code)) break;
         }

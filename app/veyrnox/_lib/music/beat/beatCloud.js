@@ -29,6 +29,9 @@ export async function uploadTake(id, asset, row, options) {
       await hydrateShelf();
       const take = getShelf().find(t => t.id === asset.ref);
       if (!take) throw Object.assign(new Error('Only on this device'), { code: 'TAKE_UNAVAILABLE' });
+      // The upload is mono 16-bit PCM with a 44-byte header. Check before encoding or reserving.
+      if (44 + take.samples.length * 2 > 60000000 || take.seconds > 600)
+        throw Object.assign(new Error('Only on this device'), { code: 'INVALID_REQUEST', status: 400 });
       const data = encodeWavChannels([take.samples], take.sampleRate);
       options.uploadData = data;
       return call(`${path(id)}/takes`, { method: 'POST', body: JSON.stringify({ take_ref: asset.ref, byte_size: data.byteLength, duration_sec: take.seconds }) }, options);

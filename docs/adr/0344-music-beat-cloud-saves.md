@@ -51,6 +51,7 @@ and verifies two browsers, media, keyboard access and both widths. Only the owne
 production by adding the same key to its `MUSIC_RUNTIME_FLAGS` string and updating its
 test pin if required. The absent key means off; no binding is added. Turning off
 beatCloud hides the UI and refuses the routes.
+beatCloud is deliberately absent from wrangler.jsonc until activation (runtimeSwitches pins the bindings); absent means off.
 
 Proof: `npm test && npm run lint`; local migration replay followed by
 `scripts/test-music-beat-cloud.mjs`, default-privileges, account-deletion and privacy-export
