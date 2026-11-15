@@ -22,7 +22,9 @@ test('Music pushes need the push switch and the Music notifications switch, whic
   assert.equal(musicPushEnabled({ PUSH_NOTIFICATIONS_ENABLED: 'false', MUSIC_RUNTIME_FLAGS: '{"notifications":true}' }), false);
   assert.equal(musicPushEnabled({ PUSH_NOTIFICATIONS_ENABLED: 'true', MUSIC_RUNTIME_FLAGS: '{}' }), false);
   const wrangler = await readFile(new URL('../wrangler.jsonc', import.meta.url), 'utf8');
-  assert.equal((wrangler.match(/\\"notifications\\":false/g) || []).length, 2);
+  // Off in production; on in staging only (owner, 2026-11-15).
+  assert.equal((wrangler.match(/\\"notifications\\":false/g) || []).length, 1);
+  assert.equal((wrangler.match(/\\"notifications\\":true/g) || []).length, 1);
 });
 
 test('0536 fills the outbox from a sweep, dedupes by event key, honours blocks and keeps the job claim intact', async () => {
