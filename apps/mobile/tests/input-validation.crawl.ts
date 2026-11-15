@@ -80,7 +80,9 @@ for (const route of ROUTES) {
           }
           log({ route, field: field.name, payload: id, sent: value.length, kept, counter: counter ? counter[0] : null, note });
         } catch (error) {
-          log({ route, field: field.name, payload: id, sent: value.length, harness_error: String(error).slice(0, 140) });
+          const detail = String(error).slice(0, 140);
+          log({ route, field: field.name, payload: id, sent: value.length, harness_error: detail });
+          failures.push(`${route} > ${field.name} < ${id}: harness error: ${detail}`);
           await new Promise(resolve => setTimeout(resolve, 6_000));
         }
         try { await device.dismissKeyboard(); } catch { /* ignore */ }

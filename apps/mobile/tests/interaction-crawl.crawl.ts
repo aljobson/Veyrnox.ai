@@ -64,6 +64,7 @@ for (const route of ROUTES) {
         await app.screenshot(`crawl-${route.replace(/\//g, '_')}-${tapped}-${control.name.slice(0, 24).replace(/\W+/g, '_')}`);
       } catch (error) {
         note = `tap failed: ${String(error).slice(0, 160)}`;
+        failures.push(`${route} > ${control.name}: ${note}`);
         log({ route, event: 'tap-failed', control: control.name, note });
       }
       log({ route, event: 'tapped', role: control.role, control: control.name, note });

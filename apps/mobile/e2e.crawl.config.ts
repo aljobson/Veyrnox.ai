@@ -7,7 +7,9 @@ const iphone = mobile({
 });
 
 export default {
-  tests: 'tests/**/*.e2e.ts',
+  // Keep the exhaustive crawl suites opt-in. The normal E2E configuration
+  // deliberately matches only *.e2e.ts and must stay fast enough for CI.
+  tests: 'tests/**/*.crawl.ts',
   targets: [
     {
       name: 'ios-simulator',
@@ -26,9 +28,11 @@ export default {
         ],
         command: {
           executable: 'node',
-          args: ['dev/e2e-stack.mjs'],
-          log: '.e2e/logs/stack.log',
-          reuseExisting: true,
+          args: ['dev/e2e-crawl-stack.mjs'],
+          log: '.e2e/logs/crawl-stack.log',
+          // A regular E2E stack on the same Metro port does not include the
+          // fault proxy. Reusing it would make the fault suites false-pass.
+          reuseExisting: false,
           startupTimeout: 120_000,
         },
         readyUrl: 'http://localhost:8081/status',
