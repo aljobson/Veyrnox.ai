@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 const jobIdPattern = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 
 export function MusicSongActions({
-  songId, jobId, title, actions = ['view_lineage', 'organize'], onViewLineage, onShare, onDownload, onPublish, onCover, onMashup, onSample, onExtend, onReplace, onAddSection, onReuse, onStems, onTargetStem, onAddTrack, onCrop, onRender,
+  songId, jobId, title, actions = ['view_lineage', 'organize'], onViewLineage, onShare, onDownload, onPublish, onCover, onMashup, onSample, onExtend, onReplace, onAddSection, onReuse, onStems, onTargetStem, onAddTrack, onCrop, onRender, onReverse, onSpeed,
   externalTriggerRef,
 }) {
   const [open, setOpen] = useState(false);
@@ -33,6 +33,9 @@ export function MusicSongActions({
   const canStudio = enabled.has('open_studio');
   const canCrop = enabled.has('crop') && typeof onCrop === 'function';
   const canRender = enabled.has('render') && typeof onRender === 'function';
+  // Reverse and Speed open the Render dialog on that tab, so Render always comes first.
+  const canReverse = canRender && enabled.has('reverse') && typeof onReverse === 'function';
+  const canSpeed = canRender && enabled.has('speed') && typeof onSpeed === 'function';
   const canEditor = enabled.has('open_editor') && jobIdPattern.test(jobId || '');
   const canOrganize = enabled.has('organize');
 
@@ -220,6 +223,16 @@ export function MusicSongActions({
               type="button" role="menuitem" onClick={() => { setOpen(false); onRender(); }} className={itemClass}
             >
               Fade, speed, reorder, or remaster
+            </button>
+          ) : null}
+          {canReverse ? (
+            <button type="button" role="menuitem" onClick={() => { setOpen(false); onReverse(); }} className={itemClass}>
+              Reverse
+            </button>
+          ) : null}
+          {canSpeed ? (
+            <button type="button" role="menuitem" onClick={() => { setOpen(false); onSpeed(); }} className={itemClass}>
+              Adjust speed
             </button>
           ) : null}
           {canStudio ? (
