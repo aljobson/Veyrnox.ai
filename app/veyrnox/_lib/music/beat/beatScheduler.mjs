@@ -1,58 +1,73 @@
-import { stepSeconds } from './beatTime.mjs';
-import { patternEvents } from './beatEvents.mjs';
+import { stepSeconds, eventTime } from './beatTime.mjs';
+import { eventsAtStep, patternEvents } from './beatEvents.mjs';
 
-// The straight sixteenth boundary is kept separately from the swung event time.
-// Edits affect only steps not yet emitted; no timer callback plays an event at "now".
-export function createScheduler({ clock, setTimer, clearTimer, isHidden, onEvent, onStep }) {
-  let getDoc, timer, running = false, generation = 0, nextStepIndex = 0, boundary = 0, skipped = 0, first = true;
-  let scheduled = [];
+// Straight boundaries advance independently of swing and of wrapped song coordinates.
+export function createScheduler({ clock, setTimer, clearTimer, isHidden, onEvent, onStep, onEnd = () => {}, getSequence }) {
+  let read = getSequence, timer, running = false, generation = 0, nextStepIndex = 0;
+  let boundary = 0, skipped = 0, first = true, ended = false, scheduled = [];
+  function normalize(sequence) {
+    if (sequence.loop) {
+      const { start, end } = sequence.loop;
+      if (nextStepIndex >= end || nextStepIndex < start) nextStepIndex = start;
+    }
+  }
   function pass() {
-    if (!running) return;
+    if (!running || ended) return;
     const now = clock();
     const horizon = now + (isHidden() ? 1.5 : 0.15);
-    while (running) {
-      const doc = getDoc();
-      nextStepIndex %= doc.steps;
+    while (running && !ended) {
+      const sequence = read();
+      const { doc } = sequence;
+      normalize(sequence);
       const duration = stepSeconds(doc.tempo.bpm);
       const straight = first ? boundary : boundary + duration;
-      const time = straight + (nextStepIndex % 2 ? doc.swing * duration * 0.5 : 0);
+      if (!sequence.loop && nextStepIndex >= sequence.endStep) {
+        if (straight >= horizon) break;
+        ended = true;
+        onEnd(straight);
+        break;
+      }
+      const time = eventTime(straight, nextStepIndex, doc.tempo.bpm, doc.swing);
       if (time >= horizon) break;
       if (time < now) skipped++;
       else {
         scheduled.push({ step: nextStepIndex, time });
         onStep(nextStepIndex, time);
-        for (const event of patternEvents(doc)) if (event.step === nextStepIndex) onEvent(event, time);
+        const events = sequence.legacy ? patternEvents(doc).filter((e) => e.step === nextStepIndex)
+          : eventsAtStep(doc, nextStepIndex, { editTrackId: sequence.editTrackId });
+        for (const event of events) onEvent(event, time);
       }
-      boundary = straight; first = false;
-      nextStepIndex = (nextStepIndex + 1) % doc.steps;
+      boundary = straight; first = false; nextStepIndex++;
     }
     scheduled = scheduled.filter((step) => step.time >= now - 2);
   }
   function tick(token) {
     if (!running || token !== generation) return;
     pass();
-    timer = setTimer(() => tick(token), 25);
+    if (!ended && running) timer = setTimer(() => tick(token), 25);
   }
   return {
-    update(read) { getDoc = read; },
+    // Retain the phase 1 adapter and its timing tests; new callers provide a sequence.
+    update(getDoc) { read = () => { const doc = getDoc(); return { doc, legacy: true, startStep: 0, endStep: doc.steps, loop: { start: 0, end: doc.steps } }; }; },
+    updateSequence(get) { read = get; },
     start(atTime) {
       this.stop();
-      scheduled = []; first = true;
-      running = true; skipped = 0; nextStepIndex = 0; boundary = Math.max(atTime, clock());
+      scheduled = []; first = true; ended = false;
+      running = true; skipped = 0; nextStepIndex = read().startStep;
+      boundary = Math.max(atTime, clock());
       tick(generation);
     },
     stop() { running = false; generation++; clearTimer(timer); },
     refill: pass,
     nearestStepAt(at) {
       if (!running) return null;
-      const doc = getDoc();
-      const step = nextStepIndex % doc.steps;
-      // At slow tempos the nearest future step can sit just beyond the lookahead.
-      // Project that next boundary without scheduling extra audio ahead of edits.
-      const duration = stepSeconds(doc.tempo.bpm);
-      const straight = first ? boundary : boundary + duration;
-      const next = { step, time: straight + (step % 2 ? doc.swing * duration * 0.5 : 0) };
-      return [...scheduled, next].reduce((best, item) => !best || Math.abs(item.time - at) < Math.abs(best.time - at) ? item : best, null);
+      const sequence = read();
+      normalize(sequence);
+      const { doc } = sequence;
+      const straight = first ? boundary : boundary + stepSeconds(doc.tempo.bpm);
+      const next = { step: nextStepIndex, time: eventTime(straight, nextStepIndex, doc.tempo.bpm, doc.swing) };
+      const candidates = !ended && (sequence.loop || nextStepIndex < sequence.endStep) ? [...scheduled, next] : scheduled;
+      return candidates.reduce((best, item) => !best || Math.abs(item.time - at) < Math.abs(best.time - at) ? item : best, null);
     },
     get skipped() { return skipped; },
   };
