@@ -38,7 +38,12 @@ export async function uploadTake(id, asset, row, options) {
     },
     put: reserved => {
       if (options.signal?.aborted || options.userId !== getStoredUserId()) throw Object.assign(new Error('Account changed'), { code: 'account_changed' });
-      return fetch(reserved.upload_url, { method: 'PUT', headers: reserved.upload_headers, body: options.uploadData, signal: options.signal, credentials: 'omit' });
+      // A dropped connection rejects with an untagged TypeError: tag it as a transient network failure.
+      return fetch(reserved.upload_url, { method: 'PUT', headers: reserved.upload_headers, body: options.uploadData, signal: options.signal, credentials: 'omit' })
+        .catch(error => {
+          if (options.signal?.aborted || error?.name === 'AbortError') throw error;
+          throw Object.assign(new Error('Network error'), { code: 'NETWORK_ERROR' });
+        });
     },
   });
   return { ...ready, byte_size: options.uploadData?.byteLength ?? row?.byte_size, duration_sec: asset.durationSec };

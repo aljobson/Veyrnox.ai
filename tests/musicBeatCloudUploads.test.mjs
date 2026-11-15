@@ -2,14 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { registerHooks } from 'node:module';
 
-let shelf, calls;
+let shelf, calls, gatewayAnswer = () => ({ take_id: 'take', status: 'ready' });
 globalThis.beatUploadFixture = {
   getStoredUserId: () => 'owner',
   getShelf: () => shelf,
   hydrateShelf: async () => {},
   gatewayFetch: async (url, init) => {
     calls.push({ url, body: JSON.parse(init.body) });
-    return { take_id: 'take', status: 'ready' };
+    return gatewayAnswer(url);
   },
 };
 const exportsByFile = {
@@ -43,4 +43,25 @@ test('a take at the duration limit still reserves its measured WAV size', async 
   assert.equal(result.status, 'ready');
   assert.deepEqual(calls, [{ url: '/music/beat-projects/beat/takes',
     body: { take_ref: 'local', byte_size: 1244, duration_sec: 600 } }]);
+});
+test('a dropped signed PUT is a transient NETWORK_ERROR and the next attempt recovers', async t => {
+  calls = [];
+  shelf = [{ id: 'local', samples: new Float32Array(10), sampleRate: 48000, seconds: 10 / 48000 }];
+  gatewayAnswer = url => url.endsWith('/takes')
+    ? { take_id: 'take', status: 'pending', upload_url: 'https://r2.example.invalid/put', upload_headers: { 'Content-Type': 'audio/wav', 'If-None-Match': '*' } }
+    : { take_id: 'take', status: 'ready' };
+  t.mock.method(globalThis, 'fetch', async () => { throw new TypeError('Failed to fetch'); });
+  await assert.rejects(uploadTake('beat', { ref: 'local', durationSec: 10 / 48000 }, null, { userId: 'owner' }), { code: 'NETWORK_ERROR' });
+  globalThis.fetch.mock.mockImplementation(async () => new Response(null, { status: 200 }));
+  const result = await uploadTake('beat', { ref: 'local', durationSec: 10 / 48000 }, null, { userId: 'owner' });
+  assert.equal(result.status, 'ready');
+  gatewayAnswer = () => ({ take_id: 'take', status: 'ready' });
+});
+test('an aborted signed PUT is not reported as a network error', async t => {
+  shelf = [{ id: 'local', samples: new Float32Array(10), sampleRate: 48000, seconds: 10 / 48000 }];
+  gatewayAnswer = url => url.endsWith('/takes')
+    ? { take_id: 'take', status: 'pending', upload_url: 'https://r2.example.invalid/put', upload_headers: {} } : { take_id: 'take', status: 'ready' };
+  t.mock.method(globalThis, 'fetch', async () => { throw new DOMException('Aborted', 'AbortError'); });
+  await assert.rejects(uploadTake('beat', { ref: 'local', durationSec: 10 / 48000 }, null, { userId: 'owner' }), { name: 'AbortError' });
+  gatewayAnswer = () => ({ take_id: 'take', status: 'ready' });
 });
