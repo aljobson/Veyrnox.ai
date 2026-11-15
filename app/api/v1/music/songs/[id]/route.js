@@ -5,7 +5,8 @@ import {
 } from '../../../../../../packages/adapters/r2.js';
 import { publishFalDispatchWakeup } from '../../../../../../lib/falDispatchWakeup.js';
 import { inspectStoredSource } from '../../../../../../lib/resolveSource.js';
-import { musicAddSectionEnabled, musicCoverEnabled, musicDistributionEnabled, musicEditingEnabled, musicExtendEnabled, musicLibraryEnabled, musicPromptPolicy, musicPublicationEnabled, musicRankingEnabled, musicReplaceEnabled, musicReuseEnabled, musicRpcStatus, musicSchemaEnabled, musicStemsEnabled, musicStudioEnabled, musicTargetStemsEnabled, musicTrackAddEnabled, parseMusicGeneration, parseMusicSongLifecycle, publicMusicError, readMusicJson, validMusicAuthId } from '../../../../../../lib/musicBackend.js';
+import { musicAddSectionEnabled, musicCoverEnabled, musicDistributionEnabled, musicEditingEnabled, musicExtendEnabled, musicLibraryEnabled, musicPromptPolicy, musicPublicationEnabled, musicRankingEnabled, musicReplaceEnabled, musicReuseEnabled, musicReverseEnabled, musicRpcStatus, musicSchemaEnabled, musicStemsEnabled, musicStudioEnabled, musicTargetStemsEnabled, musicTrackAddEnabled, parseMusicGeneration, parseMusicSongLifecycle, publicMusicError, readMusicJson, validMusicAuthId } from '../../../../../../lib/musicBackend.js';
+import { musicLyricsEnabled, publicLyrics } from '../../../../../../lib/musicLyrics.js';
 import {
     MUSIC_MASHUP_SECONDS_MAX, MUSIC_MASHUP_SECONDS_MIN, mashupSeconds, musicRemixEnabled,
     parseMusicRemixQuote, remixSourceKey,
@@ -48,6 +49,8 @@ export async function GET(request, { params }) {
     try {
         const result = await rpc('music_get_song', { p_auth_id: authId, p_song_id: id }, cfg);
         if (!result?.ok) return reply({ error: 'not_found' }, 404);
+        const lyrics = musicLyricsEnabled()
+            ? await rpc('music_get_song_lyrics', { p_auth_id: authId, p_song_id: id }, cfg).catch(() => null) : null;
         const actions = Array.isArray(result.song?.actions) ? result.song.actions : [];
         // Stems and Track add take an MP3 source only (Mureka), and the only Music
         // version stored as MP3 is a Cover. Offering them on any other version led
@@ -58,6 +61,8 @@ export async function GET(request, { params }) {
             ? [...actions, 'share_link', 'download_mp3'] : actions;
         return reply({
             ...result.song,
+            // The lyrics the song was made from (0535); a failed read leaves them out.
+            ...(lyrics?.ok && publicLyrics(lyrics.lyrics) ? { lyrics: publicLyrics(lyrics.lyrics) } : {}),
             actions: [...new Set([
                 ...distributionActions,
                 ...(musicPublicationEnabled() ? ['publish'] : []),
@@ -74,6 +79,7 @@ export async function GET(request, { params }) {
                 ...(musicStudioEnabled() ? ['open_studio'] : []),
                 ...(isUuid(result.song?.job_id || '') ? ['open_editor'] : []),
                 ...(musicEditingEnabled() ? ['crop', 'render'] : []),
+                ...(musicReverseEnabled() ? ['reverse', 'speed'] : []),
             ])],
         });
     } catch (error) {

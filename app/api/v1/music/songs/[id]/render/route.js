@@ -1,9 +1,9 @@
 import { rpc, envConfig } from '../../../../../../../packages/db/supabase-client.js';
 import { deleteObject, envConfig as r2EnvConfig, getObject, isConfigured as r2IsConfigured, putObject, sha256Hex } from '../../../../../../../packages/adapters/r2.js';
 import { inspectStoredSource } from '../../../../../../../lib/resolveSource.js';
-import { musicEditingEnabled, musicRpcStatus, publicMusicError, readMusicJson, validMusicAuthId } from '../../../../../../../lib/musicBackend.js';
+import { musicEditingEnabled, musicReverseEnabled, musicRpcStatus, publicMusicError, readMusicJson, validMusicAuthId } from '../../../../../../../lib/musicBackend.js';
 import { parseMusicLocalRender } from '../../../../../../../lib/musicEditing.js';
-import { renderPcmWavFade, renderPcmWavRemaster, renderPcmWavReorder, renderPcmWavSpeed } from '../../../../../../../lib/musicWavRender.js';
+import { renderPcmWavFade, renderPcmWavRemaster, renderPcmWavReorder, renderPcmWavReverse, renderPcmWavSpeed } from '../../../../../../../lib/musicWavRender.js';
 
 import { isUuid } from '../../../../../../../lib/validate.js';
 const reply = (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
@@ -21,6 +21,7 @@ export async function POST(request, { params }) {
     if (!decoded.ok) return reply({ error: decoded.error }, decoded.error === 'body_too_large' ? 413 : 400);
     const input = parseMusicLocalRender(decoded.value);
     if (!input.ok) return reply({ error: input.error }, 400);
+    if (input.operation === 'reverse' && !musicReverseEnabled()) return reply({ error: 'music_reverse_unavailable' }, 404);
     try {
         const context = await rpc(input.operation === 'reorder' ? 'music_get_reorder_render_context' : 'music_get_local_render_context', {
             p_auth_id: authId, p_song_id: id, p_version_id: input.versionId,
@@ -55,7 +56,9 @@ export async function POST(request, { params }) {
                 ? renderPcmWavSpeed(source, input.parameters.speed_ratio)
                 : input.operation === 'reorder'
                     ? renderPcmWavReorder(source, input.parameters.split_seconds, input.parameters.order)
-                    : renderPcmWavRemaster(source, input.parameters.target_peak_dbfs);
+                    : input.operation === 'reverse'
+                        ? renderPcmWavReverse(source)
+                        : renderPcmWavRemaster(source, input.parameters.target_peak_dbfs);
         if (!rendered.ok) return reply({ error: rendered.error }, 400);
 
         const outputVersionId = crypto.randomUUID();

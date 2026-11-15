@@ -327,6 +327,11 @@ try {
         'music_song_reactions', 'music_creator_follows', 'music_social_mutations',
         // Track comments, comment reports and their write receipts (0518): erased with the account.
         'music_comments', 'music_comment_reports', 'music_comment_mutations',
+        // Library History, hooks and chosen cover art (0532): ids, ranges and counts on the person's own
+        // songs, erased with the account. The generic export has no Music section yet.
+        'music_listen_history', 'music_hooks', 'music_song_covers',
+        // Who played a public track (for the 30-minute check) and song reports (0533): erased with the account.
+        'music_play_listens', 'music_song_reports',
         // Labs listen-and-rank pairs and votes (0538): ids and an a/b choice, erased with the account.
         'labs_rank_pairs',
         // Music export is deliberately not implied by the generic profile/jobs projections. Account
