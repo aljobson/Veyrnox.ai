@@ -67,19 +67,19 @@ async function renderSimple() {
 }
 const labelled = (label: string) => root.container.queryAll((node) => node.props.accessibilityLabel === label);
 
-test('opens in the simple view: Add, AI Edit and More, with the full toolbars hidden', async () => {
+test('opens in the simple view: Add, Quick tools and More, with the full toolbars hidden', async () => {
     await renderSimple();
     expect(visible('Native cut')).toBe(true);
     expect(visible('PREVIEW')).toBe(true);
     expect(visible('TIMELINE')).toBe(true);
-    for (const label of ['Add', 'AI Edit', 'More', 'Undo', 'Redo', 'Export']) expect(labelled(label).length).toBeGreaterThan(0);
+    for (const label of ['Add', 'Quick tools', 'More', 'Undo', 'Redo', 'Export']) expect(labelled(label).length).toBeGreaterThan(0);
     for (const label of ['Media', 'Audio', 'Captions', 'Transitions', 'Filters', 'Markers', 'Adjust', 'Snap', 'Zoom out', 'Add video track']) expect(labelled(label)).toHaveLength(0);
     expect(root.container.queryAll((node) => node.props.testID === 'editor-tool-rail')).toHaveLength(0);
 });
 
 test('the simple view opens a sheet from each entry and All editing tools reveals the full set', async () => {
     await renderSimple();
-    await press('AI Edit');
+    await press('Quick tools');
     for (const label of ['Smart Cut', 'Make a clip with AI', 'Voice or music with AI', 'Captions']) expect(labelled(label).length).toBeGreaterThan(0);
     await press('Close');
     await press('Add');
@@ -466,4 +466,28 @@ test('Add text at the end of the video puts the title inside the video and does 
     expect(title.start).toBeGreaterThanOrEqual(0);
     expect(title.start + title.len).toBeLessThanOrEqual(videoEnd);
     expect(Math.max(...[...tl.video, ...tl.text].map((clip: any) => clip.start + clip.len))).toBe(videoEnd);
+});
+
+const tracks = [{ id: 'video-0', kind: 'video', name: 'Video 1', locked: false, muted: false, hidden: false }, { id: 'audio-0', kind: 'audio', name: 'Audio 1', locked: false, muted: false, hidden: false }, { id: 'text-0', kind: 'text', name: 'Text 1', locked: false, muted: false, hidden: false }];
+const cutTimeline = { schemaVersion: 3, fps: 30, seq: 2, aspect: '16:9', background: '#000000', media: { media1: { id: 'media1', kind: 'video', name: 'Scene one', frames: 60 }, song: { id: 'song', kind: 'audio', name: 'Song', frames: 60 } }, video: [{ id: 'v1', mediaId: 'media1', start: 0, in: 0, len: 60, trackId: 'video-0' }], audio: [{ id: 'a1', mediaId: 'song', start: 0, in: 0, len: 60, trackId: 'audio-0', volume: 1 }], text: [], tracks, markers: [] };
+
+test('the simple Cut screen has a Close gaps toggle (ripple), off by default', async () => {
+    serverDocument = { ...document, schema_version: 3, timeline: cutTimeline };
+    await renderSimple();
+    await act(async () => root.container.queryAll(node => node.props.testID === 'clip-v1')[0].props.onAccessibilityTap());
+    const toggle = () => root.container.queryAll(node => node.props.accessibilityLabel === 'Close gaps')[0];
+    expect(toggle()).toBeDefined();
+    expect(toggle().props.accessibilityState?.selected).toBe(false);
+    await press('Close gaps');
+    expect(toggle().props.accessibilityState?.selected).toBe(true);
+});
+
+test('a selected audio clip has a Volume button in the simple view that opens its volume control', async () => {
+    serverDocument = { ...document, schema_version: 3, timeline: cutTimeline };
+    await renderSimple();
+    expect(labelled('Volume')).toHaveLength(0);
+    await act(async () => root.container.queryAll(node => node.props.testID === 'clip-a1')[0].props.onAccessibilityTap());
+    await press('Volume');
+    expect(visible('Volume')).toBe(true);
+    expect(labelled('Volume').length).toBeGreaterThan(0);
 });

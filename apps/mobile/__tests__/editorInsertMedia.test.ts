@@ -1,5 +1,5 @@
 import { clampFrame, holdsClip, insertMediaAt } from '../src/lib/editorInsertMedia';
-import { emptyTimeline, removeSelections, type Timeline } from '../src/lib/nativeEditorModel';
+import { emptyTimeline, framesIn, removeSelections, type Timeline } from '../src/lib/nativeEditorModel';
 
 const media = { id: 'source', kind: 'video', frames: 90 };
 function inserted(timeline = emptyTimeline(), item = media, at = 0) {
@@ -97,4 +97,21 @@ test('music longer than the video stops at the video end, so the project does no
 
 test('audio with no video on the timeline keeps its full length', () => {
     expect(inserted(emptyTimeline(), { id: 'song', kind: 'audio', frames: 1800 }, 0).timeline.audio[0].len).toBe(1800);
+});
+
+test('music dropped at or past the video end is pulled back inside, never past the end', () => {
+    const withVideo = inserted(emptyTimeline(), { id: 'v', kind: 'video', frames: 150 }, 0).timeline;
+    for (const at of [150, 400]) {
+        const song = inserted(withVideo, { id: `song${at}`, kind: 'audio', frames: 1800 }, at);
+        expect(song.timeline.audio[0].start + song.timeline.audio[0].len).toBeLessThanOrEqual(150);
+        expect(framesIn(song.timeline)).toBe(150);
+    }
+    const jingle = inserted(withVideo, { id: 'jingle', kind: 'audio', frames: 40 }, 400);
+    expect(jingle.timeline.audio[0]).toMatchObject({ start: 110, len: 40 });
+});
+
+test('the result says when music was trimmed to the video', () => {
+    const withVideo = inserted(emptyTimeline(), { id: 'v', kind: 'video', frames: 150 }, 0).timeline;
+    expect(inserted(withVideo, { id: 'song', kind: 'audio', frames: 1800 }, 0)).toMatchObject({ trimmed: true });
+    expect(inserted(withVideo, { id: 'short', kind: 'audio', frames: 60 }, 0)).toMatchObject({ trimmed: false });
 });
