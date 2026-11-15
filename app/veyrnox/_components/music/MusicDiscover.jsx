@@ -16,6 +16,7 @@ import {
   saveMusicSavedMix,
 } from '../../_lib/music/savedMixes.js';
 import { LicensedMusicLibrary } from './LicensedMusicLibrary.jsx';
+import { MusicBestOf } from './MusicBestOf';
 import { useI18n } from '../../../../components/I18nProvider';
 import { tOr } from '../../../../lib/i18n/translate.mjs';
 
@@ -350,6 +351,7 @@ export function MusicDiscover({ initialSample = null, initialMix = null, initial
       {audioError ? <p role="alert" className="mt-5 rounded-2xl border border-vx-danger/50 bg-vx-danger/10 px-4 py-3 text-sm text-vx-danger">{audioError}</p> : null}
       {mixingBeat ? <SampleMixLab beat={mixingBeat} mix={mix} mixName={mixName} savedMixId={activeSavedMixId} saveNotice={saveNotice} playing={playingKey === `mix:${mixingBeat.id}`} progress={playingKey === `mix:${mixingBeat.id}` ? progress : 0} onChange={updateMix} onNameChange={(value) => { setMixName(value); setSaveNotice(null); }} onSave={saveMix} onToggle={() => toggle(mixingBeat, mix, `mix:${mixingBeat.id}`)} onClose={() => { stopPlayback(); setMixingId(null); setSaveNotice(null); }} /> : null}
 
+      <MusicBestOf />
       {MUSIC_DISCOVER_SECTIONS.map((section) => {
         const beats = displayed.filter((beat) => beat.section === section);
         if (!beats.length) return null;
