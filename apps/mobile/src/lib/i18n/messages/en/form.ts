@@ -5,6 +5,8 @@ export default {
     'form.modelLoad': 'Could not load this model.',
     'form.describeCreate': 'Describe what to create',
     'form.describeChange': 'Describe the change (optional)',
+    'form.describeMotion': 'Describe the motion (optional)',
+    'form.describeSound': 'Describe the sound (optional)',
     'form.topic': 'Topic',
     'form.consent': 'Your file is sent to the AI provider that makes this. It is deleted after a day.',
     'form.sourceRights': 'I own these files, or I have permission from everyone identifiable in them. No real person’s face, body or voice is used without consent, and I hold the rights to any brand, artwork or recording.',

@@ -6069,4 +6069,11 @@ export default {
   "filmCloud.linkOffline": "保存した映画を読み込めませんでした。インターネット接続を確認して、もう一度お試しください。",
   "filmCloud.linkAccount": "アカウントを確認できなかったため、保存した映画を読み込めませんでした。一度サインアウトしてから再度サインインし、もう一度お試しください。",
   "create.workspace.referencesLimit.other": "最大{count}ファイル",
+  "create.needs.image": "続けるには写真を追加してください",
+  "create.needs.video": "続けるには動画を追加してください",
+  "create.needs.audio": "続けるには音声クリップを追加してください",
+  "create.needs.prompt": "続けるにはプロンプトを入力してください",
+  "create.expectedVideo": "動画は通常、約{minutes}分かかります",
+  "form.describeMotion": "動きを説明（任意）",
+  "form.describeSound": "音を説明（任意）",
 } as const;
