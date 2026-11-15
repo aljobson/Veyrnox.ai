@@ -5,7 +5,7 @@ import { ApiError, type ApiClient } from './api';
 import { OFFLINE_PAID_MESSAGE, OfflineError } from './network';
 import { inputsForIndex } from './createOptions';
 import { mediaApi, type GenerationRequest } from './media';
-import { t } from './i18n';
+import { plural, t } from './i18n';
 import { createErrorMessage } from './failedJob';
 
 export type SubmitRequest = Omit<GenerationRequest, 'idempotencyKey'>;
@@ -129,7 +129,7 @@ export function generationMessage(err: unknown): string {
             return (createErrorMessage(err.code) ?? t('form.err.rate'))
                 + (err.retryAfterSeconds === undefined ? '' : t('app.create.retryIn', { seconds: err.retryAfterSeconds }));
         case 'credit_confirmation_mismatch':
-            return err.body.expected_credits === undefined ? t('form.err.priceChangedUnknown') : t('form.err.priceChanged', { credits: String(err.body.expected_credits) });
+            return err.body.expected_credits === undefined ? t('form.err.priceChangedUnknown') : plural('form.err.priceChanged', Number(err.body.expected_credits));
         case 'network':
             return t('form.err.network');
         case 'source_not_found':

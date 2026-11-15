@@ -6,7 +6,7 @@ import { Button, Card, Icon, Text, themedStyles, useThemedStyles } from '../../.
 import { fetchCatalog, type CatalogModel } from '../../../lib/media';
 import { fetchPremiumModels } from '../../../lib/premiumModels';
 import { modelFacts, priceUnit } from '../../../lib/modelFacts';
-import { t } from '../../../lib/i18n';
+import { plural, t } from '../../../lib/i18n';
 import { MIN_TARGET } from '../../../lib/a11y';
 import { LIST_END_PADDING } from '../../../theme';
 
@@ -49,7 +49,7 @@ export default function ModelDetail() {
                 <Text tone="secondary">{priceUnit(model)}</Text>
                 {model.gated ? <Button label={t('projectHome.premiumClosed')} disabled accessibilityState={{ disabled: true }} style={styles.target} />
                     : <Button label={`${t('modelPage.generate', { title: model.name })} · ${t('modelPage.price', { credits: model.credits })}`}
-                    accessibilityLabel={rawText(t('modelPage.generateLabel', { title: model.name, credits: model.credits }))}
+                    accessibilityLabel={rawText(plural('modelPage.generateLabel', model.credits, { title: model.name }))}
                     onPress={() => router.push({ pathname: '/create/[modelId]', params: { modelId: model.id } })} style={styles.target} />}
                 <Button variant="secondary" label={t('modelPage.packs')} onPress={() => router.push('/pricing')} style={styles.target} />
                 <Text variant="footnote" tone="secondary">{t('modelPage.note')}</Text>

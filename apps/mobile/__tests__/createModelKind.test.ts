@@ -13,6 +13,7 @@ describe('create model kinds', () => {
     it('recognises the add-sound tool, so lens words and the "describe the change" hint are not offered for it', () => {
         expect(isSoundPass(model('mmaudio-v2-video', 'video-to-video'))).toBe(true);
         expect(isSoundPass(model('kling', 'text-to-video'))).toBe(false);
+        expect(isSoundPass(model('mmaudio-v3', 'video-to-audio'))).toBe(true);
     });
     it('recognises speech models, not music', () => {
         expect(isSpeechModel(model('elevenlabs-tts-turbo', 'text-to-speech'))).toBe(true);

@@ -428,7 +428,7 @@ export default function CreateWithModel() {
                             style={[styles.prompt, text_.key === 'topic' && styles.topic]}
                             value={prompt}
                             onChangeText={setPrompt}
-                            placeholder={t(PLACEHOLDER[text_.key] ?? (speech ? 'form.describeSpeech' : promptRequired(model) || isSoundPass(model) ? 'form.describeCreate' : isVideo ? 'form.describeMotion' : kindOf(model.modality) === 'audio' ? 'form.describeSound' : 'form.describeChange'))}
+                            placeholder={t(PLACEHOLDER[text_.key] ?? (speech ? 'form.describeSpeech' : isSoundPass(model) ? 'form.describeSoundPass' : promptRequired(model) ? 'form.describeCreate' : isVideo ? 'form.describeMotion' : kindOf(model.modality) === 'audio' ? 'form.describeSound' : 'form.describeChange'))}
                             placeholderTextColor={styles.mutedInk.color}
                             accessibilityLabel={rawText(text_.key === 'topic' ? t('form.topic') : speech ? t('create.workspace.script') : t('mobile.prompt'))}
                             multiline
