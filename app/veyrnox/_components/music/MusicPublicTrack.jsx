@@ -3,11 +3,15 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { useI18n } from '../../../../components/I18nProvider';
-import { MusicTrackReport, countMusicPlay } from './MusicTrackReport';
+import dynamic from 'next/dynamic';
+import { countMusicPlay } from './musicPlayCount';
 import { MusicPrivateAudio } from '../../_lib/useMusicAudioSrc';
 import { MusicSocialBar } from './MusicSocialBar';
 import { MusicTrackRails } from './MusicTrackRails';
 import { MusicTrackComments } from './MusicTrackComments';
+
+// Loaded only when song reports are on for this track.
+const MusicTrackReport = dynamic(() => import('./MusicTrackReport').then((module) => module.MusicTrackReport), { ssr: false });
 
 export function MusicPublicTrack({ slug }) {
   const { t } = useI18n();

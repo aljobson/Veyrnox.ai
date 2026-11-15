@@ -62,10 +62,3 @@ export function MusicTrackReport({ slug }) {
     </div>
   );
 }
-
-/** Count a signed-in play once per page view. Anonymous plays are not counted. */
-export function countMusicPlay(slug, counted) {
-  if (counted.current || !getStoredUserId()) return;
-  counted.current = true;
-  gatewayFetch('/music/plays', { method: 'POST', body: JSON.stringify({ slug }), promptOnAuth: false }).catch(() => {});
-}
