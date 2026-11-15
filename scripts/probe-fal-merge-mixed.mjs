@@ -12,6 +12,9 @@
  *                           error text on failure, or the output's streams on success.
  *          --control        Also run [SILENT, SILENT] (expected to join, as Slice 0 T6 did).
  *          --reverse        Also run [SILENT, SOUND] (does the order matter?).
+ *          --trim-control   Also run fal-ai/workflow-utilities/trim-video (the endpoint production
+ *                           already uses) on the same key. Trim works + merge 403 = fal refuses
+ *                           merge-videos for this account; both 403 = the key itself is limited.
  *
  * Usage (a silent key prompt; the key is never printed):
  *   node scripts/probe-fal-merge-mixed.mjs
@@ -67,8 +70,8 @@ function streams(src) {
 }
 
 /** One merge job. Resolves to { ok, requestId, detail, outUrl }. */
-async function merge(label, urls) {
-    const post = await fetchRetry(`${FAL_QUEUE_BASE}/${ENDPOINT}`, { method: 'POST', headers: authHeader(), body: JSON.stringify({ video_urls: urls }) });
+async function merge(label, urls, endpoint = ENDPOINT, input = { video_urls: urls }) {
+    const post = await fetchRetry(`${FAL_QUEUE_BASE}/${endpoint}`, { method: 'POST', headers: authHeader(), body: JSON.stringify(input) });
     if (!post.ok) return { ok: false, detail: `submit ${post.status} ${(await post.text().catch(() => '')).slice(0, 400)}` };
     const q = await post.json();
     console.log(`  [${label}] request_id ${q.request_id}`);
@@ -110,8 +113,10 @@ try {
     if (args.includes('--reverse')) runs.push(['SILENT+SOUND', [uSilent, uSound]]);
     if (args.includes('--control')) runs.push(['SILENT+SILENT', [uSilent, uSilent2]]);
 
-    for (const [label, urls] of runs) {
-        const r = await merge(label, urls);
+    if (args.includes('--trim-control')) runs.push(['TRIM-CONTROL', [uSound], 'fal-ai/workflow-utilities/trim-video', { video_url: uSound, start_time: 0, end_time: 1 }]);
+
+    for (const [label, urls, endpoint, input] of runs) {
+        const r = await merge(label, urls, endpoint, input);
         if (!r.ok) { console.log(`  [${label}] FAILED${r.seconds ? ` after ${r.seconds} s` : ''}: ${r.detail}`); continue; }
         // ffprobe reads fal's output URL directly: nothing from the network is written to disk.
         console.log(`  [${label}] JOINED in ${r.seconds} s: ${JSON.stringify(streams(r.outUrl))}`);
