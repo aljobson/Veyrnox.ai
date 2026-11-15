@@ -274,6 +274,7 @@ export default function JobScreen() {
             }) : null;
     const urgent = retention.kind === 'ended' || (retention.kind === 'expires' && retention.urgent);
 
+    const retentionFooter = retentionText && !hasFinishedWithoutFile ? <Text variant="caption" tone={urgent ? 'danger' : 'tertiary'}>{retentionText}</Text> : null;
     const canSave = !!asset && (asset.mime.startsWith('image/') || asset.mime.startsWith('video/'));
 
     async function reopen(replace: boolean, targetModelId?: string) {
@@ -296,8 +297,10 @@ export default function JobScreen() {
                     <Button variant="secondary" accessibilityRole="button" onPress={() => setAttempt((n) => n + 1)} label={t('job.checkAgain')} />
                 </View>
             ) : asset && stems.length > 0 ? (
-                <ScrollView contentContainerStyle={styles.actionsBody}>
+                <ScrollView style={styles.grow} contentContainerStyle={styles.actionsBody}>
                     <GeneratedChip /><StemList onReady={outputReady} api={api} jobId={id} stems={stems} />
+                    {/* Inside the scroll content so the player sits above it, never under it. */}
+                    {retentionFooter}
                 </ScrollView>
             ) : asset ? (
                 <View style={[styles.output, !asset.mime.startsWith('image/') && styles.outputFixed]} testID="job-output">
@@ -339,7 +342,7 @@ export default function JobScreen() {
                     ) : null}
                 </View>
             )}
-            {retentionText && !hasFinishedWithoutFile ? <Text variant="caption" tone={urgent ? 'danger' : 'tertiary'}>{retentionText}</Text> : null}
+            {stems.length > 0 && asset ? null : retentionFooter}
             {asset && stems.length === 0 ? (
                 <ScrollView style={styles.actions} contentContainerStyle={styles.actionsBody}>
                     {next.edit || next.publish || next.makeAnother || next.reuse ? (
