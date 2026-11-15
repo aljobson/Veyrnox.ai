@@ -16,14 +16,14 @@ test('new beat round trips and has only the A starter groove', () => {
 });
 const malformed = {
   null: () => null,
-  kind: (d) => { d.kind = 'other'; }, version: (d) => { d.version = 2; }, id: (d) => { d.id = '../bad'; },
-  extra: (d) => { d.extra = true; }, missing: (d) => { delete d.kit; },
+  kind: (d) => { d.kind = 'other'; }, version: (d) => { d.version = 3; }, id: (d) => { d.id = '../bad'; },
+  extra: (d) => { d.extra = true; }, missing: (d) => { delete d.tracks; },
   longTitle: (d) => { d.title = 'x'.repeat(81); }, emptyTitle: (d) => { d.title = ' '; }, titleType: (d) => { d.title = 1; },
   createdAt: (d) => { d.createdAt = -1; }, updatedAt: (d) => { d.updatedAt = 9; }, timestamp: (d) => { d.updatedAt = 1.2; },
   tempo: (d) => { d.tempo = {}; }, lowBpm: (d) => { d.tempo.bpm = 39; }, highBpm: (d) => { d.tempo.bpm = 241; }, nanBpm: (d) => { d.tempo.bpm = NaN; }, stringBpm: (d) => { d.tempo.bpm = '92'; },
   signature: (d) => { d.signature = [3, 4]; }, longSignature: (d) => { d.signature.push(4); },
   negativeSwing: (d) => { d.swing = -0.1; }, highSwing: (d) => { d.swing = 0.61; }, swingType: (d) => { d.swing = '0'; },
-  metronome: (d) => { d.metronome = 1; }, kit: (d) => { d.kit = 'unknown'; }, steps: (d) => { d.steps = 24; },
+  metronome: (d) => { d.metronome = 1; }, kit: (d) => { d.tracks[0].kit = 'unknown'; }, steps: (d) => { d.steps = 24; },
   currentPattern: (d) => { d.currentPattern = 'E'; }, missingPattern: (d) => { delete d.patterns.B; }, extraPattern: (d) => { d.patterns.E = { rows: {} }; },
   rows: (d) => { d.patterns.A.rows = []; }, pad: (d) => { d.patterns.A.rows.other = []; },
   duplicate: (d) => { d.patterns.A.rows.kick = [[0, 100], [0, 100]]; }, unsorted: (d) => { d.patterns.A.rows.kick.reverse(); },
