@@ -4,17 +4,24 @@ import { decideCreate, decideUpdate, decideDelete, validRecord } from './beatSto
 const NAME = 'veyrnox-beat-projects';
 const memory = new Map();
 let unavailable = false;
+let opened = false;
 function open() {
   return new Promise((resolve, reject) => {
-    if (unavailable || typeof indexedDB === 'undefined') { reject(new Error('unavailable')); return; }
-    const request = indexedDB.open(NAME, 1);
+    if (typeof indexedDB === 'undefined') unavailable = true;
+    if (unavailable) { reject(new Error('unavailable')); return; }
+    let request;
+    try { request = indexedDB.open(NAME, 1); }
+    catch (error) {
+      if (!opened && ['SecurityError', 'InvalidStateError'].includes(error.name)) unavailable = true;
+      reject(error); return;
+    }
     let expired = false;
     const timeout = setTimeout(() => { expired = true; reject(new Error('blocked')); }, 2000);
     request.onupgradeneeded = () => request.result.createObjectStore('projects', { keyPath: 'id' });
     request.onsuccess = () => {
       clearTimeout(timeout);
       if (expired) request.result.close();
-      else resolve(request.result);
+      else { opened = true; resolve(request.result); }
     };
     request.onerror = () => { clearTimeout(timeout); reject(request.error); };
   });
@@ -56,9 +63,11 @@ async function run(mode, decide) {
       const read = store.getAll();
       let result;
       read.onsuccess = () => {
-        result = decide(read.result);
-        if (result.action === 'put') store.put(result.record);
-        if (result.action === 'delete') store.delete(result.id);
+        try {
+          result = decide(read.result);
+          if (result.action === 'put') store.put(result.record);
+          if (result.action === 'delete') store.delete(result.id);
+        } catch (error) { tx.abort(); reject(error); }
       };
       tx.oncomplete = () => {
         memory.clear();
@@ -71,7 +80,7 @@ async function run(mode, decide) {
       tx.onerror = () => reject(tx.error);
     });
   } catch {
-    unavailable = true;
+    if (!unavailable) return { error: 'storage' };
     const result = decide([...memory.values()]);
     if (result.action === 'put') memory.set(result.record.id, structuredClone(result.record));
     if (result.action === 'delete') memory.delete(result.id);

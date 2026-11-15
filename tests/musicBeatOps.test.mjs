@@ -44,3 +44,26 @@ test('out-of-range edits reject', () => {
   assert.throws(() => ops.setTempo(make(), 241), /invalid/);
   assert.throws(() => ops.addHitAtStep(make(), 'kick', 32), /invalid/);
 });
+
+test('a backwards clock never reduces updatedAt or invalidates a new beat', () => {
+  const doc = freeze(createBeat({ id: make().id, now: 100 }));
+  const changed = ops.rename(doc, 'After clock rollback', 50);
+  const later = ops.setTempo(changed, 120, 150);
+  const rolledBack = ops.setSwing(later, 0.5, 75);
+
+  assert.equal(changed.updatedAt, 100);
+  assert.equal(later.updatedAt, 150);
+  assert.equal(rolledBack.updatedAt, 150);
+  assert.equal(validateBeat(changed).ok, true);
+  assert.equal(validateBeat(rolledBack).ok, true);
+});
+
+test('recording over an existing hit preserves its velocity and document identity', () => {
+  for (const direction of [-1, 0, 1]) {
+    const doc = freeze(direction ? ops.cycleVelocity(make(), 'kick', 0, direction, 10) : make());
+    const recorded = ops.addHitAtStep(doc, 'kick', 0, 20);
+
+    assert.equal(recorded, doc);
+    assert.equal(recorded.patterns.A.rows.kick[0][1], direction === -1 ? 60 : direction === 1 ? 127 : 100);
+  }
+});

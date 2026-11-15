@@ -27,3 +27,94 @@ test('unavailable IndexedDB preserves editing in memory, enforces revisions, del
   assert.equal(listed.records.length, 50); assert.equal(listed.count, 50);
   assert.equal(listed.records[0].updatedAt, 49); assert.equal(listed.records[49].updatedAt, 0);
 });
+
+function fakeIndexedDB() {
+  const rows = new Map();
+  const fake = {
+    rows, fault: null, puts: 0,
+    open() {
+      if (fake.fault === 'open') throw new DOMException('Temporary failure', 'QuotaExceededError');
+      const request = {};
+      queueMicrotask(() => {
+        request.result = {
+          close() {},
+          transaction() {
+            if (fake.fault === 'transaction') throw new DOMException('Temporary failure', 'InvalidStateError');
+            let aborted = false;
+            const tx = {
+              abort() { aborted = true; queueMicrotask(() => tx.onabort()); },
+              objectStore() {
+                return {
+                  getAll() {
+                    const read = {};
+                    queueMicrotask(() => {
+                      if (fake.fault === 'abort') { tx.abort(); return; }
+                      if (fake.fault === 'error') { tx.onerror(); return; }
+                      read.result = structuredClone([...rows.values()]);
+                      read.onsuccess();
+                      if (!aborted) tx.oncomplete();
+                    });
+                    return read;
+                  },
+                  put(record) {
+                    if (fake.fault === 'put') throw new DOMException('Full', 'QuotaExceededError');
+                    fake.puts++; rows.set(record.id, structuredClone(record));
+                  },
+                  delete(id) { rows.delete(id); },
+                };
+              },
+            };
+            return tx;
+          },
+        };
+        request.onsuccess();
+      });
+      return request;
+    },
+  };
+  return fake;
+}
+
+test('a transient open failure returns storage and the next call writes to IndexedDB', async (t) => {
+  const previous = globalThis.indexedDB;
+  const fake = fakeIndexedDB(); globalThis.indexedDB = fake;
+  t.after(() => { globalThis.indexedDB = previous; });
+  const isolated = await import('../app/veyrnox/_lib/music/beat/beatStore.js?transient-open');
+  const doc = createBeat({ id: randomUUID(), now: 1 });
+  fake.fault = 'open';
+
+  assert.deepEqual(await isolated.createBeat(doc), { error: 'storage' });
+  assert.equal(fake.puts, 0);
+  fake.fault = null;
+  const result = await isolated.createBeat(doc);
+
+  assert.equal(result.persistent, true);
+  assert.equal(result.revision, 1);
+  assert.equal(fake.puts, 1);
+  assert.deepEqual(fake.rows.get(doc.id).doc, doc);
+});
+
+test('a working store never falls back on transaction, abort, error or quota failures', async (t) => {
+  for (const fault of ['transaction', 'abort', 'error', 'put', 'open']) {
+    await t.test(fault, async (t) => {
+      const previous = globalThis.indexedDB;
+      const fake = fakeIndexedDB(); globalThis.indexedDB = fake;
+      t.after(() => { globalThis.indexedDB = previous; });
+      const isolated = await import(`../app/veyrnox/_lib/music/beat/beatStore.js?transient-${fault}-after-success`);
+      const doc = createBeat({ id: randomUUID(), now: 1 });
+      await isolated.createBeat(doc);
+      const changed = rename(doc, 'Retry this edit', 2);
+      fake.fault = fault;
+
+      assert.deepEqual(await isolated.updateBeat(changed, 1), { error: 'storage' });
+      assert.equal(fake.rows.get(doc.id).revision, 1);
+      fake.fault = null;
+      const result = await isolated.updateBeat(changed, 1);
+
+      assert.equal(result.persistent, true);
+      assert.equal(result.revision, 2);
+      assert.equal(fake.puts, 2);
+      assert.deepEqual(fake.rows.get(doc.id).doc, changed);
+    });
+  }
+});

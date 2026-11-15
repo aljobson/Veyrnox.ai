@@ -60,7 +60,7 @@ export default function BeatEditor({ id }) {
       if (e.target.value.trim()) edit((d) => ops.rename(d, e.target.value));
     }} onBlur={() => { if (title.trim()) setTitleDraft(null); }} /></label><BeatExportDialog doc={doc} announce={announce} /></div>
     {!title.trim() && <p id="title-error">Give your beat a title.</p>}
-    <p className="text-sm text-vx-fg-muted">{project.conflict ? 'Autosave paused' : !project.persistent ? 'Kept in memory for this visit' : project.dirty ? 'Saving…' : 'Saved on this device'}</p>
+    <p className="text-sm text-vx-fg-muted">{project.conflict ? 'Autosave paused' : project.saveError ? <>{"Couldn't save on this device."} <button className={button} onClick={project.retry}>Retry</button></> : !project.persistent ? 'Kept in memory for this visit' : project.dirty ? 'Saving…' : 'Saved on this device'}</p>
     {!project.persistent && <p className="rounded-xl border border-vx-border bg-vx-panel p-3">{storageWarning}</p>}
     {project.conflict && <section className="space-y-3 rounded-xl border border-vx-border bg-vx-panel p-4" aria-label="Beat changed elsewhere"><h2 className="font-bold">{project.conflict === 'deleted' ? 'This beat was deleted in another tab' : 'This beat was changed in another tab'}</h2><div className="flex flex-wrap gap-2">{project.conflict !== 'deleted' && <button className={button} onClick={() => { playback.stop(); setTitleDraft(null); setUndo(null); setReloadKey((value) => value + 1); project.reload(); }}>Reload</button>}<button className={action} disabled={copying} onClick={copy}>{project.conflict === 'deleted' ? 'Save as a new beat' : 'Save my version as a copy'}</button></div></section>}
     {playback.audioError && <p className="rounded-xl border border-vx-border p-3">{playback.audioError}</p>}

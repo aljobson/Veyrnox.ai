@@ -2,7 +2,7 @@ import { BEAT_LIMITS, validateBeat } from './beatDocument.mjs';
 function edit(doc, now, change) {
   const next = structuredClone(doc);
   change(next);
-  next.updatedAt = now;
+  next.updatedAt = Math.max(now, doc.updatedAt);
   if (!validateBeat(next).ok) throw new Error('invalid');
   return next;
 }
@@ -19,7 +19,8 @@ export const cycleVelocity = (doc, pad, step, dir = 1, now = Date.now()) => edit
   const hit = hits(d, pad).find(([s]) => s === step);
   if (hit) put(d, pad, step, BEAT_LIMITS.velocities[(BEAT_LIMITS.velocities.indexOf(hit[1]) + (dir < 0 ? 2 : 1)) % 3]);
 });
-export const addHitAtStep = (doc, pad, step, now = Date.now()) => edit(doc, now, (d) => put(d, pad, step, 100));
+export const addHitAtStep = (doc, pad, step, now = Date.now()) => hits(doc, pad).some(([s]) => s === step)
+  ? doc : edit(doc, now, (d) => put(d, pad, step, 100));
 export const setTempo = (doc, bpm, now = Date.now()) => edit(doc, now, (d) => { d.tempo.bpm = bpm; });
 export const setSwing = (doc, value, now = Date.now()) => edit(doc, now, (d) => { d.swing = value; });
 export const setKit = (doc, kit, now = Date.now()) => edit(doc, now, (d) => { d.kit = kit; });

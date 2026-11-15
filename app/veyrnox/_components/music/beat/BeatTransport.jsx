@@ -16,8 +16,7 @@ export default function BeatTransport({ doc, edit, playing, toggle, clear, annou
       <label className="flex flex-col gap-1">BPM<input className={`${input} w-24`} type="number" min="40" max="240" step="any" value={bpm} aria-invalid={invalid} aria-describedby={invalid ? 'bpm-error' : undefined} onChange={(e) => {
         const value = e.target.value; setBpmDraft(value);
         if (value.trim() && Number.isFinite(Number(value)) && Number(value) >= 40 && Number(value) <= 240) edit((d) => ops.setTempo(d, Number(value)));
-        else announce('Enter a tempo from 40 to 240 BPM.');
-      }} onBlur={() => { if (!invalid) setBpmDraft(null); }} /></label>
+      }} onBlur={() => { if (invalid) announce('Enter a tempo from 40 to 240 BPM.'); else setBpmDraft(null); }} /></label>
       <label className="flex flex-col gap-1">Swing {Math.round(doc.swing * 100)}%<input className="min-h-11 w-36 accent-vx-accent focus-visible:outline-vx-accent" type="range" min="0" max="60" value={Math.round(doc.swing * 100)} onChange={(e) => edit((d) => ops.setSwing(d, Number(e.target.value) / 100))} /></label>
       <label className="flex min-h-11 items-center gap-2"><input type="checkbox" checked={doc.metronome} onChange={(e) => edit((d) => ops.setMetronome(d, e.target.checked))} />Metronome</label>
       <label className="flex flex-col gap-1">Steps<select className={input} value={doc.steps} onChange={(e) => edit((d) => ops.setSteps(d, Number(e.target.value)))}><option value={16}>16 · 1 bar</option><option value={32}>32 · 2 bars</option></select></label>

@@ -47,6 +47,8 @@ export function useBeatPlayback(current, edit, announce) {
         onEvent: (event, time) => instance.playPad(event.pad, event.velocity, time, run.bus, current.current.kit),
         onStep: (step, time) => {
           const doc = current.current;
+          const oldest = instance.now() - 2;
+          while (scheduled.length && scheduled[0].time < oldest) scheduled.shift();
           scheduled.push({ step, time, run: run.id, pattern: doc.currentPattern });
           if (doc.metronome && step % 4 === 0) instance.click(time, step % 16 === 0, run.bus);
         },
