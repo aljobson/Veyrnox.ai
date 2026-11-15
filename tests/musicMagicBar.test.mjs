@@ -30,6 +30,8 @@ test('loop layers keep only well-formed private song references', () => {
   assert.equal(writeLayers('beat', [good, { ...good, songId: 'x', audioUrl: 'https://evil.test/a.mp3' }], storage), true);
   assert.deepEqual(readLayers('beat', storage), [good]);
   assert.deepEqual(readLayers('beat', { getItem: () => { throw new Error('blocked'); } }), []);
+  writeLayers('beat', [{ ...good, audioUrl: `/api/v1/jobs/${'-'.repeat(36)}/asset` }], storage);
+  assert.deepEqual(readLayers('beat', storage), []);
 });
 
 test('Magic Bar needs the beat editor, Create and its own switch, which ships false', async () => {

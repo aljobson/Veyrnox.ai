@@ -39,7 +39,9 @@ export function magicQuoteBody({ prompt, bpm, bars, title }) {
 
 const LAYER_KEY = (beatId) => `veyrnox.beat.layers.${beatId}`;
 const UUID = /^[\da-f]{8}-[\da-f]{4}-[1-8][\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/i;
-const validLayer = (layer) => layer && UUID.test(layer.songId || '') && /^\/api\/v1\/jobs\/[\da-f-]{36}\/asset$/i.test(layer.audioUrl || '')
+const JOB_ASSET = /^\/api\/v1\/jobs\/([^/]+)\/asset$/;
+const validAudioUrl = (url) => { const match = JOB_ASSET.exec(url || ''); return Boolean(match && UUID.test(match[1])); };
+const validLayer = (layer) => layer && UUID.test(layer.songId || '') && validAudioUrl(layer.audioUrl)
   && typeof layer.title === 'string' && MAGIC_BARS.includes(layer.bars) && Number.isFinite(layer.bpm) && typeof layer.muted === 'boolean';
 
 /**
