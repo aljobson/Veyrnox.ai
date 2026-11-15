@@ -28,9 +28,9 @@ test('public-id reservations and exact-source audit remain safe without image me
   assert.equal(sourcePromptAuditRecord('flying-elf').status, 'exact');
   assert.equal(sourcePromptAuditRecord('flying-elf').runnable, true);
   const captured = Object.entries(SOURCE_PROMPT_RECORDS).filter(([, r]) => r.sourcePromptAvailable && typeof r.prompt === 'string');
-  assert.equal(captured.filter(([id]) => !Object.hasOwn(IMAGE_SOURCE_PROMPT_RECORDS, id)).length, 772 + 46);
+  assert.equal(captured.filter(([id]) => !Object.hasOwn(IMAGE_SOURCE_PROMPT_RECORDS, id)).length, 772 + 46 + 30);
   assert.equal(captured.filter(([id]) => Object.hasOwn(IMAGE_SOURCE_PROMPT_RECORDS, id)).length, 52);
-  assert.equal(captured.length, 774 + 96);
+  assert.equal(captured.length, 774 + 96 + 30);
 });
 
 test('migration, audit and replacement consumers use the guarded media identity operations', () => {

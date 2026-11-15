@@ -11,19 +11,19 @@ prompts survive only as hashes in the regression fixture.
 
 Publication requires a complete source prompt, scoped to `SOURCE_TEMPLATES`.
 The 27 promptless adaptations join the 42 unavailable and one truncated row:
-70 hidden rows, 887 retained community rows, 795 public exact templates.
+70 hidden rows, 917 retained community rows, 825 public exact templates.
 Of 64 prepared Syntx pairs, 63 add 126 local assets; Dark Couture is rejected because stripping nine typography mentions materially rewrites its prompt. Source media, hashes and
 provenance remain evidence. Clip publication uses template ownership, with
 explicit independent landing placements; clip keys need not equal template IDs.
 Ten promptless homepage wall cards are removed, leaving 14.
 
 `sourcePromptRunnable` is informational by owner decision: 285 public templates
-are audit-compatible and 510 incompatible. The application sends the selected
+are audit-compatible and 540 incompatible. The application sends the selected
 exact text even when reference slots cannot be filled. This decision does not
 change limits, pricing contracts, required-input validation or consent. The Syntx route correction described below follows the existing importer precedent. All three
 assigned model routes currently have a 30,000-character prompt limit; none of
-the public exact prompts exceeds it. There are 446 prompts with explicit
-`@imageN`, `@videoN` or angle-bracket slots, and 470 with reference requirements
+the public exact prompts exceeds it. There are 476 prompts with explicit
+`@imageN`, `@videoN` or angle-bracket slots, and 500 with reference requirements
 under the broader audit parser. No reference is silently invented or substituted.
 
 Both API prompt fields remain populated for installed mobile versions. Unedited
@@ -51,7 +51,7 @@ work order. ADR number is the next free local number; the host resolves collisio
 
 The exact-only visual check uses the permitted ffprobe path: one 32×32 grayscale
 frame per second, then SHA-256 of the newline-joined frame Adler-32 checksums.
-All 977 retained placements have distinct signatures under that common method.
+All 1007 retained placements have distinct signatures under that common method.
 The 63 accepted new audit rows declare this method, and the full comparison is locked in
 `tests/fixtures/exactOnlyVisualSignatures.json`. Earlier raw-frame SHA-256
 signatures remain unchanged in the historical captures. No video was encoded.
