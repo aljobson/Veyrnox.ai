@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs';
 import { register } from 'node:module';
 import * as React from 'react';
 import { fixture } from './helpers/publicSiteRender.mjs';
-import { IMAGE_TEMPLATES, imageTemplatesEnabled } from '../app/veyrnox/_lib/imageTemplates.js';
+import { IMAGE_TEMPLATES, UNPUBLISHED_IMAGE_TEMPLATE_IDS, imageTemplatesEnabled } from '../app/veyrnox/_lib/imageTemplates.js';
 import { IMAGE_SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/imageSourcePromptRecords.js';
 import { IMAGE_TEMPLATE_MODELS } from '../app/veyrnox/_lib/imageTemplateModels.js';
 import { ALL_TEMPLATES, PRESETS, GALLERY_PRESETS, galleryTemplates, galleryCategories, templateById, templatesIn, hasTemplateVideo } from '../app/veyrnox/_lib/templates.js';
@@ -27,6 +27,8 @@ register('data:text/javascript,' + encodeURIComponent(`export async function res
 const list = await import('../app/api/templates/route.js');
 const one = await import('../app/api/templates/[id]/route.js');
 const ids = new Set(IMAGE_TEMPLATES.map(p => p.id));
+const unpublishedIds = new Set(UNPUBLISHED_IMAGE_TEMPLATE_IDS);
+const visibleImageTemplates = IMAGE_TEMPLATES.filter((template) => !unpublishedIds.has(template.id));
 const models = fromFallback().filter(model => IMAGE_TEMPLATE_MODELS.includes(model.id)).map(model => ({ ...model, modality: 'text-to-image', credits: 37 }));
 models.push(ornamentModel);
 const nodes = tree => Array.isArray(tree) ? tree.flatMap(nodes) : tree && typeof tree === 'object' ? [tree, ...nodes(tree.props?.children)] : [];
@@ -47,8 +49,8 @@ test('52 image records, all hash-locked captures and no authored originals', asy
   assert.equal(IMAGE_TEMPLATES.filter(p => p.promptOrigin === 'original').length, 0);
   for (const p of IMAGE_TEMPLATES) {
     assert.equal(p.kind, 'image');
-    // With the gate on, every image category is a gallery filter (the image set alone can supply one since the 2026-11-14 video cap).
-    assert.ok(galleryCategoriesWithImages.includes(p.category));
+    // Only categories with at least one published image remain available as gallery filters.
+    assert.equal(galleryCategoriesWithImages.includes(p.category), !unpublishedIds.has(p.id));
     assert.ok(IMAGE_TEMPLATE_MODELS.includes(p.model));
     assert.ok(p.prompt.length > 100);
     assert.match(p.previewImage, /^\/showcase\/(?:christmas|images)\/[a-z0-9-]+\.webp$/);
@@ -98,18 +100,19 @@ test('publication gate controls list, search, detail, categories and hard 404 in
     assert.equal(imageTemplatesEnabled(), enabled);
     const response = await list.GET(new Request('https://example.test/api/templates'));
     const body = await response.json();
-    assert.equal(body.templates.filter(t => ids.has(t.id)).length, enabled ? 52 : 0);
-    assert.equal(body.categories.includes('CHRISTMAS'), enabled);
+    assert.equal(body.templates.filter(t => ids.has(t.id)).length, enabled ? 50 : 0);
+    assert.equal(body.categories.includes('CHRISTMAS'), false);
     const search = await list.GET(new Request('https://example.test/api/templates?q=CHRISTMAS'));
-    assert.equal((await search.json()).ids.filter(id => ids.has(id)).length, enabled ? 2 : 0);
+    assert.equal((await search.json()).ids.filter(id => ids.has(id)).length, 0);
     for (const p of IMAGE_TEMPLATES) {
-      assert.equal(Boolean(templateById(p.id)), enabled);
-      assert.equal(Boolean(templateDetail(p.id)), enabled);
-      assert.equal(searchTemplateIds(p.id.replaceAll('-', ' ')).includes(p.id), enabled);
+      const published = enabled && !unpublishedIds.has(p.id);
+      assert.equal(Boolean(templateById(p.id)), published);
+      assert.equal(Boolean(templateDetail(p.id)), published);
+      assert.equal(searchTemplateIds(p.id.replaceAll('-', ' ')).includes(p.id), published);
       const res = await one.GET(null, { params: Promise.resolve({ id: p.id }) });
-      assert.equal(res.status, enabled ? 200 : 404);
-      assert.equal(isUnknownStaticPage(`/presets/${p.id}`), !enabled);
-      assert.equal(isUnknownStaticPage(`/veyrnox/presets/${p.id}`), !enabled);
+      assert.equal(res.status, published ? 200 : 404);
+      assert.equal(isUnknownStaticPage(`/presets/${p.id}`), !published);
+      assert.equal(isUnknownStaticPage(`/veyrnox/presets/${p.id}`), !published);
     }
     // ADR-0325's ten-per-category floor gave way to the 2026-11-14 cap (100 video templates that use the person's photo);
     // every listed category still has a template, so no filter is empty.
@@ -122,7 +125,9 @@ test('publication gate controls list, search, detail, categories and hard 404 in
 });
 
 test('image cards are additive, have no video key and price only from the catalog', async () => withFlag('true', () => {
-  for (const p of IMAGE_TEMPLATES) {
+  assert.deepEqual(UNPUBLISHED_IMAGE_TEMPLATE_IDS, ['flying-elf', 'christmas-tree-ornament']);
+  for (const id of UNPUBLISHED_IMAGE_TEMPLATE_IDS) assert.equal(templateCards().some((card) => card.id === id), false);
+  for (const p of visibleImageTemplates) {
     const card = templateCards().find(c => c.id === p.id);
     assert.equal(card.kind, 'image');
     assert.equal(card.previewImage, p.previewImage);
@@ -189,8 +194,9 @@ test('actual detail static params, notFound and sitemap follow both gate states'
     assert.deepEqual(urls.filter(url => PRESETS.some(p => url.endsWith(`/presets/${p.id}`))).map(url => url.split('/').pop()).sort(), GALLERY_PRESETS.map(p => p.id).sort());
     for (const p of IMAGE_TEMPLATES) {
       assert.equal(params.some(row => row.id === p.id), false, 'images are request-only in both gate states');
-      assert.equal(urls.some(url => url.endsWith(`/presets/${p.id}`)), enabled);
-      if (!enabled) await assert.rejects(page.default({ params: Promise.resolve({ id: p.id }) }), /NOT_FOUND/);
+      const published = enabled && !unpublishedIds.has(p.id);
+      assert.equal(urls.some(url => url.endsWith(`/presets/${p.id}`)), published);
+      if (!published) await assert.rejects(page.default({ params: Promise.resolve({ id: p.id }) }), /NOT_FOUND/);
     }
   });
 });
@@ -204,14 +210,14 @@ test('only image detail lookup crosses the explicit request boundary; video stat
   await page.generateMetadata({ params: Promise.resolve({ id: PRESETS[0].id }) });
   assert.equal(requests, 0);
   for (const flag of ['true', undefined, 'true']) await withFlag(flag, async () => {
-    const params = Promise.resolve({ id: IMAGE_TEMPLATES[0].id });
+    const params = Promise.resolve({ id: visibleImageTemplates[0].id });
     if (flag === 'true') await page.default({ params });
     else await assert.rejects(page.default({ params }), /NOT_FOUND/);
   });
   assert.equal(requests, 3);
 });
 
-test('actual detail recipes render original provenance and the exact Flying Elf audit', async () => withFlag('true', async () => {
+test('actual detail recipes render original provenance for published images', async () => withFlag('true', async () => {
   const f = pageFixture();
   const page = f.load('app/veyrnox/presets/[id]/page.js');
   const recipeFixture = fixture('en', '/', { moduleMocks: {
@@ -220,7 +226,7 @@ test('actual detail recipes render original provenance and the exact Flying Elf 
     '../_lib/useSwapSceneAvailable': { useSwapSceneAvailable: () => false },
   } });
   const { TemplateRecipe } = recipeFixture.load('app/veyrnox/_components/TemplateRecipe.js');
-  for (const p of IMAGE_TEMPLATES.slice(0, 2)) {
+  for (const p of visibleImageTemplates.slice(0, 2)) {
     const tree = await page.default({ params: Promise.resolve({ id: p.id }) });
     const recipe = nodes(tree).find(node => node.props && 'generatedPreview' in node.props)?.props.preset;
     assert.deepEqual(recipe, templateRecipe(p));
@@ -242,7 +248,7 @@ test('missing preview art keeps the gradient and removes the broken image', () =
   let failed = null;
   const f = fixture('en', '/', { moduleMocks: { '../../../components/I18nProvider.jsx': { useI18n: () => ({ t: key => key }) }, react: { ...React, useState: () => [failed, value => { failed = value; }] } } });
   const { TemplateImage } = f.load('app/veyrnox/_components/TemplateImage.js');
-  for (const preset of IMAGE_TEMPLATES.slice(0, 2)) {
+  for (const preset of visibleImageTemplates.slice(0, 2)) {
     failed = null;
     let tree = TemplateImage({ preset });
     assert.equal(tree.props.style.background, preset.bg);
@@ -255,7 +261,7 @@ test('missing preview art keeps the gradient and removes the broken image', () =
 });
 
 test('the rendered image card and picker use the real resolver and catalog price', () => {
-  const chosen = IMAGE_TEMPLATES[1];
+  const chosen = visibleImageTemplates[1];
   const createChoice = createTemplatesFor('image')[1];
   let picked;
   const t = translator('en');
