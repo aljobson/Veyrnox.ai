@@ -117,8 +117,9 @@ try {
         await writeFile(local, Buffer.from(await (await fetch(r.outUrl)).arrayBuffer()));
         console.log(`  [${label}] JOINED in ${r.seconds} s: ${JSON.stringify(streams(local))}`);
     }
-    console.log('\nSOUND+SILENT FAILED = cause confirmed on fal (PR refuses that mix before the charge).');
-    console.log('SOUND+SILENT JOINED = cause is something else; keep digging. Read each request_id\'s billed cost on fal\'s usage page.');
+    console.log('\nRead the lines above. Only a failure that names a missing audio stream confirms the cause.');
+    console.log('A 403 / "permission" / auth error means THIS KEY cannot use the endpoint: the probe proved nothing.');
+    console.log('A join of SOUND+SILENT means the cause is something else. Read each request_id\'s billed cost on fal\'s usage page.');
 } finally {
     await rm(dir, { recursive: true, force: true });
 }
