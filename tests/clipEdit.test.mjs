@@ -56,6 +56,22 @@ function world(edit) {
     return { job, steps, calls, deps, deliver };
 }
 
+test('validateEdit refuses a join of clips where only some carry sound (merge-videos fails on that mix)', () => {
+    // QA build 50-53: a lip-sync clip (has audio) + a faceless Wan clip (silent) planned, were charged, then
+    // fal's merge step failed in seconds. ffmpeg's concat needs an audio stream in every input or in none.
+    const withSound = { ...clip('a', 0, 5), has_audio: true };
+    const silent = { ...clip('b', 0, 5), has_audio: false };
+    assert.equal(validateEdit({ clips: [withSound, silent] }).error, 'mixed_audio');
+    assert.equal(validateEdit({ clips: [silent, withSound] }).error, 'mixed_audio');
+    // All the same kind joins, and so does a clip whose headers did not say (unknown never blocks).
+    assert.equal(validateEdit({ clips: [withSound, { ...withSound, key: 'c' }] }).error, undefined);
+    assert.equal(validateEdit({ clips: [silent, { ...silent, key: 'c' }] }).error, undefined);
+    assert.equal(validateEdit({ clips: [withSound, clip('c', 0, 5)] }).error, undefined);
+    // One clip is never joined, so its sound does not matter; and the flag is not stored on the edit.
+    assert.equal(validateEdit({ clips: [{ ...withSound, in_s: 1 }] }).error, undefined);
+    assert.equal('has_audio' in validateEdit({ clips: [withSound, { ...withSound, key: 'c' }] }).clips[0], false);
+});
+
 test('validateEdit refuses bad ranges, mixed aspect, over-long output and no-op edits', () => {
     assert.equal(validateEdit({ clips: [] }).error, 'clips_count');
     assert.equal(validateEdit({ clips: Array(11).fill(clip('k', 0, 1)) }).error, 'clips_count');

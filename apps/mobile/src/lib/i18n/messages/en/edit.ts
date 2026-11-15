@@ -45,6 +45,7 @@ export default {
     'edit.err.gone': 'One of those videos is no longer available.',
     'edit.err.invalid': 'This edit could not be sent. Check it and try again. Nothing was charged.',
     'edit.err.mixedAspect': 'These videos have different shapes. Join videos with the same shape. Nothing was charged.',
+    'edit.err.mixedAudio': 'These clips can\'t be joined: some have sound and some are silent. Pick clips that all have sound, or all silent. Nothing was charged.',
     'edit.err.network': 'No connection. Nothing was charged. Try again.',
     'edit.err.notVideo': 'Only videos can be edited. Nothing was charged.',
     'edit.err.nothingToDo': 'Trim a video, join two, or add captions. Nothing was charged.',
