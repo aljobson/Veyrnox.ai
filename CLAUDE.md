@@ -46,6 +46,7 @@ If a build starts failing after a dependency change, bisect these three first.
   `private` schema must stay out of the API's exposed schemas — the wrappers
   exist so it never has to be exposed. Anything added to this surface goes on
   the allowlist in `scripts/test-default-privileges.mjs` on purpose.
+  Music beat cloud (ADR-0344) adds owner-only SELECT on `music_beat_projects`, `music_beat_project_versions` and `music_beat_project_takes` and the `save_music_beat_project` / `remove_music_beat_project` / `reserve_music_beat_take` / `confirm_music_beat_take` / `read_music_beat_take` invoker wrappers to this user-JWT surface.
   Film Studio (ADR-0245) adds owner-only SELECT on `film_studio_projects` and the `save_film_studio` / `remove_film_studio` invoker wrappers to this user-JWT surface.
 - **Ledger is append-only** — enforced by trigger `ledger_entries_append_only`.
   Never `UPDATE` or `DELETE` a ledger row. Corrections are compensating rows

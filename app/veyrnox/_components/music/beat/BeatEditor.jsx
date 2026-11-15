@@ -2,6 +2,9 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useBeatCloudSync } from './useBeatCloudSync';
+import BeatCloudConflictDialog from './BeatCloudConflictDialog';
+import BeatVersionsPanel from './BeatVersionsPanel';
 import BeatKeyboard from './BeatKeyboard';
 import BeatPianoRoll from './BeatPianoRoll';
 import { useRecordingLock } from './useRecordingLock';
@@ -21,11 +24,12 @@ import BeatMagicBar from './BeatMagicBar';
 import { useBeatLoopLayers } from './useBeatLoopLayers';
 import { action, button, input, storageWarning } from './beatStyles';
 
-export default function BeatEditor({ id, magicBar = false }) {
+export default function BeatEditor({ id, magicBar = false, cloud = false }) {
   const router = useRouter();
   const [message, setMessage] = useState('');
   const announce = useCallback((text) => setMessage(text), []);
   const project = useBeatProject(id, announce);
+  const sync = useBeatCloudSync({ beatId: id, project, cloud, announce });
   const root = useRef(null);
   const [selectedRegionId, setSelectedRegionId] = useState(null), [rollOpen, setRollOpen] = useState(true);
   const [snap, setSnap] = useState(240), [octave, setOctave] = useState(0), [velocity, setVelocity] = useState(100);
@@ -135,6 +139,15 @@ export default function BeatEditor({ id, magicBar = false }) {
     {playback.audioError && <p className="rounded-xl border border-vx-border p-3">{playback.audioError}</p>}
     {playback.recordingRun && <p role="status">Stop recording to edit · {playback.overlay.length} pending notes</p>}
     {playback.takeError && <div role="alert" className="rounded-xl border border-vx-border p-3">{playback.takeError}<button className={button} onClick={playback.finalizeRecording}>Try again</button><button className={button} onClick={async () => { try { const take = playback.takeAsBeat(); const id = take && await project.copy(take); if (id) { playback.discardSavedTake(); router.push(`/app/music/beats/${id}`); } } catch (e) { announce(e.message); } }}>Save take as a new beat</button></div>}
+    {cloud && <section className="flex flex-wrap items-center gap-3" aria-label="Account save">
+      <p>{sync.message}</p>
+      {sync.state === 'unlinked' && <button className={button} onClick={sync.link}>Save to your account</button>}
+      {sync.state === 'signed_out' && <Link className={button} href="/app/account">Sign in</Link>}
+      {['error', 'offline', 'limit', 'rate_limited', 'conflict'].includes(sync.state) && <button className={button} onClick={sync.retry}>Retry</button>}
+      <BeatVersionsPanel beatId={id} project={project} sync={sync} />
+      {sync.media.length > 0 && <p className="w-full text-sm text-vx-fg-muted">Only on this device: {sync.media.join(', ')}</p>}
+      <BeatCloudConflictDialog sync={sync} />
+    </section>}
     <BeatTransport key={`transport-${reloadKey}`} doc={doc} edit={lockedEdit} selectPattern={project.selectPattern} playing={playback.playing} loading={playback.loading} toggle={playback.toggle} clear={clear} announce={announce} />
     {undo && undo.id === project.undoId && <div className="flex items-center gap-3 rounded-xl bg-vx-panel p-3">
       <p>Pattern {undo.slot} cleared</p><button className={button} onClick={() => {

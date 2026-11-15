@@ -22,6 +22,17 @@ const BROWSER_CALLABLE = new Set([
     'public.spend_watch_status()',              // 0444, anon: spend-watch; verdict only, no figures (ADR-0328)
     'public.recovery_status()',                 // 0131, anon: recovery-health
     // ADR-0245 film studio cloud
+    // ADR-0344 music beat cloud
+    'public.save_music_beat_project(uuid,integer,text,text,text,text)',
+    'private.save_music_beat_project(uuid,integer,text,text,text,text)',
+    'public.remove_music_beat_project(uuid,integer)',
+    'private.remove_music_beat_project(uuid,integer)',
+    'public.reserve_music_beat_take(uuid,text,bigint,numeric)',
+    'private.reserve_music_beat_take(uuid,text,bigint,numeric)',
+    'public.confirm_music_beat_take(uuid,uuid,bigint)',
+    'private.confirm_music_beat_take(uuid,uuid,bigint)',
+    'public.read_music_beat_take(uuid,uuid)',
+    'private.read_music_beat_take(uuid,uuid)',
     'public.save_film_studio(uuid,integer,text,text,text)',
     'public.remove_film_studio(uuid,integer)',
     'private.save_film_studio(uuid,integer,text,text,text)',
