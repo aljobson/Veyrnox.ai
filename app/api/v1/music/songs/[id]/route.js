@@ -1,7 +1,7 @@
 import { rpc, envConfig } from '../../../../../../packages/db/supabase-client.js';
 import { musicAddSectionEnabled, musicCoverEnabled, musicDistributionEnabled, musicEditingEnabled, musicExtendEnabled, musicLibraryEnabled, musicPublicationEnabled, musicReplaceEnabled, musicReuseEnabled, musicRpcStatus, musicSchemaEnabled, musicStemsEnabled, musicStudioEnabled, musicTargetStemsEnabled, musicTrackAddEnabled, parseMusicSongLifecycle, publicMusicError, readMusicJson, validMusicAuthId } from '../../../../../../lib/musicBackend.js';
 
-import { musicLyricsEnabled } from '../../../../../../lib/musicLyrics.js';
+import { musicLyricsEnabled, publicLyrics } from '../../../../../../lib/musicLyrics.js';
 import { isUuid } from '../../../../../../lib/validate.js';
 const reply = (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
 
@@ -16,6 +16,8 @@ export async function GET(request, { params }) {
     try {
         const result = await rpc('music_get_song', { p_auth_id: authId, p_song_id: id }, cfg);
         if (!result?.ok) return reply({ error: 'not_found' }, 404);
+        const lyrics = musicLyricsEnabled()
+            ? await rpc('music_get_song_lyrics', { p_auth_id: authId, p_song_id: id }, cfg).catch(() => null) : null;
         const actions = Array.isArray(result.song?.actions) ? result.song.actions : [];
         // Stems and Track add take an MP3 source only (Mureka), and the only Music
         // version stored as MP3 is a Cover. Offering them on any other version led
@@ -26,6 +28,8 @@ export async function GET(request, { params }) {
             ? [...actions, 'share_link', 'download_mp3'] : actions;
         return reply({
             ...result.song,
+            // The lyrics the song was made from (0526); a failed read leaves them out.
+            ...(lyrics?.ok && publicLyrics(lyrics.lyrics) ? { lyrics: publicLyrics(lyrics.lyrics) } : {}),
             actions: [...new Set([
                 ...distributionActions,
                 ...(musicPublicationEnabled() ? ['publish'] : []),
@@ -40,7 +44,6 @@ export async function GET(request, { params }) {
                 ...(musicStudioEnabled() ? ['open_studio'] : []),
                 ...(isUuid(result.song?.job_id || '') ? ['open_editor'] : []),
                 ...(musicEditingEnabled() ? ['crop', 'render'] : []),
-                ...(musicLyricsEnabled() ? ['lyrics'] : []),
             ])],
         });
     } catch (error) {

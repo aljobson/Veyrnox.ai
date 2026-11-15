@@ -88,7 +88,7 @@ BEGIN
 END $$;
 CREATE OR REPLACE FUNCTION public.telemetry_path_allowed(p_path TEXT)
 RETURNS BOOLEAN LANGUAGE sql IMMUTABLE SET search_path = '' AS $$
-    SELECT p_path IN ('/api/music/best-of', '/api/v1/music/songs/:id/lyrics')
+    SELECT p_path IN ('/api/music/best-of')
         OR public.telemetry_path_allowed_pre_0526(p_path)
 $$;
 REVOKE ALL ON FUNCTION public.telemetry_path_allowed(TEXT) FROM PUBLIC, anon, authenticated, service_role;

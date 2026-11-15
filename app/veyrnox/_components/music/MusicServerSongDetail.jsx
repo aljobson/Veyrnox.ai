@@ -43,7 +43,6 @@ export function MusicServerSongDetail({ id }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [distributionMode, setDistributionMode] = useState(null);
-  const [lyrics, setLyrics] = useState(null);
   const lineageRef = useRef(null);
   const actionsTriggerRef = useRef(null);
   const load = useCallback(async () => {
@@ -64,17 +63,6 @@ export function MusicServerSongDetail({ id }) {
     const timer = window.setTimeout(load, 0);
     return () => window.clearTimeout(timer);
   }, [load]);
-
-  const lyricsOn = Array.isArray(song?.actions) && song.actions.includes('lyrics');
-  const lyricsVersion = song?.version_id;
-  useEffect(() => {
-    if (!lyricsOn || !lyricsVersion) return undefined;
-    let live = true;
-    gatewayFetch(`/music/songs/${id}/lyrics`, { promptOnAuth: false })
-      .then((result) => { if (live) setLyrics(typeof result?.lyrics === 'string' ? result.lyrics : null); })
-      .catch(() => { if (live) setLyrics(null); });
-    return () => { live = false; };
-  }, [id, lyricsOn, lyricsVersion]);
 
   const versions = useMemo(() => {
     if (Array.isArray(song?.versions) && song.versions.length) return song.versions;
@@ -134,7 +122,7 @@ export function MusicServerSongDetail({ id }) {
           </div>
         </div>
         <div className="border-t border-vx-border p-6 sm:p-8"><MusicPrivateAudio className="w-full" controls preload="metadata" src={playbackUrl} aria-label={`Play ${song.title}`} />{crop ? <p className="mt-2 text-xs text-vx-fg-muted">{canonicalCrop ? `Rendered WAV master from ${Number(crop.start_seconds).toFixed(1)}s–${Number(crop.end_seconds).toFixed(1)}s · the original remains in version history.` : `Preview range ${Number(crop.start_seconds).toFixed(1)}s–${Number(crop.end_seconds).toFixed(1)}s · export requires a rendered master.`}</p> : null}{fade ? <p className="mt-2 text-xs text-vx-fg-muted">Rendered WAV master · {Number(fade.fade_in_seconds).toFixed(1)}s fade in · {Number(fade.fade_out_seconds).toFixed(1)}s fade out · source preserved in history.</p> : null}{speed ? <p className="mt-2 text-xs text-vx-fg-muted">Rendered WAV master at {Number(speed.speed_ratio).toFixed(2)}× speed and linked pitch · source preserved in history.</p> : null}{reorder ? <p className="mt-2 text-xs text-vx-fg-muted">Rendered WAV master · split at {Number(reorder.split_seconds).toFixed(1)}s and moved section 2 before section 1 · source preserved in history.</p> : null}{remaster ? <p className="mt-2 text-xs text-vx-fg-muted">Remastered WAV · DC-corrected with linked gain to {Number(remaster.target_peak_dbfs).toFixed(0)} dBFS peak · source preserved in history.</p> : null}</div>
-        {lyrics ? <div className="border-t border-vx-border px-6 pb-6 sm:px-8"><MusicLyricsPanel lyrics={lyrics} /></div> : null}
+        {song.lyrics ? <div className="border-t border-vx-border px-6 pb-6 sm:px-8"><MusicLyricsPanel lyrics={song.lyrics} /></div> : null}
         <section id="lineage" ref={lineageRef} tabIndex={-1} aria-labelledby="lineage-title" className="border-t border-vx-border p-6 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-vx-accent sm:p-8">
           <p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-accent">Recoverable history</p>
           <h2 id="lineage-title" className="mt-2 font-vx text-2xl font-black">Version lineage</h2>
