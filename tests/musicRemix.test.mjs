@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { mashupSeconds, musicRemixEnabled, parseMusicRemixQuote, remixSourceKey } from '../lib/musicRemix.js';
 import { renderPcmWavMix } from '../lib/musicWavRender.js';
 
-const sqlUrl = new URL('../packages/db/schema/supabase/0522_music_mashup_sample.sql', import.meta.url);
+const sqlUrl = new URL('../packages/db/schema/supabase/0531_music_mashup_sample.sql', import.meta.url);
 const routeUrl = new URL('../app/api/v1/music/songs/[id]/route.js', import.meta.url);
 const V1 = 'b6ed2d0d-8276-4fbb-9c4f-39f401a3158c';
 const S2 = '7d2a3c1e-4b5f-4a6d-8e9f-0a1b2c3d4e5f';
@@ -60,7 +60,7 @@ test('WAV mix halves each input, keeps the shorter length and refuses mismatched
   assert.match(remixSourceKey(V1), /^music-remix-sources\/b6ed2d0d-8276-4fbb-9c4f-39f401a3158c\/[0-9a-f-]{36}\.wav$/);
 });
 
-test('0522 stages both rows inactive, prices from the catalog and sends schema-typed payloads', async () => {
+test('0531 stages both rows inactive, prices from the catalog and sends schema-typed payloads', async () => {
   const sql = await readFile(sqlUrl, 'utf8');
   assert.match(sql, /'stable-audio-3-mashup'[\s\S]*?'fal-ai\/stable-audio-3\/small\/music\/audio-to-audio'[\s\S]*?2,0\.0248,'per_generation',NULL,false,false/);
   assert.match(sql, /'stable-audio-3-sample'[\s\S]*?'fal-ai\/stable-audio-3\/small\/music\/audio-outpainting'[\s\S]*?2,0\.0265,'per_generation',NULL,false,false/);
