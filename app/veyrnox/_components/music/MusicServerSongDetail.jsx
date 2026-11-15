@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { gatewayFetch } from '../../_lib/gateway';
 import { MusicDistributionDialog } from './MusicDistributionDialog';
@@ -18,9 +19,16 @@ import { MusicReuseDialog } from './MusicReuseDialog';
 import { MusicSongActions } from './MusicSongActions';
 import { MusicPrivateAudio } from '../../_lib/useMusicAudioSrc';
 
+const MusicRemixDialog = dynamic(
+  () => import('./MusicRemixDialog').then((module) => module.MusicRemixDialog),
+  { ssr: false },
+);
+
 const OPERATION_LABELS = {
   generation: 'Original generation',
   cover: 'Cover branch',
+  mashup: 'Mashup',
+  sample: 'Sampled song',
   extend: 'Extended branch',
   speed: 'Speed variation',
   fade: 'Faded version',
@@ -117,7 +125,7 @@ export function MusicServerSongDetail({ id }) {
           <div className="grid min-h-72 place-items-center rounded-2xl border border-vx-border bg-vx-panel-raised"><div className="text-center"><span aria-hidden="true" className="font-vx text-8xl font-black text-vx-accent">♪</span><p className="mt-3 font-vx-mono text-xs uppercase tracking-widest text-vx-fg-muted">Private server version</p></div></div>
           <div className="min-w-0 self-center">
             <div className="flex flex-wrap items-center gap-2"><span className="rounded-full bg-vx-accent/15 px-3 py-1 text-xs font-bold text-vx-accent">Ready</span><span className="rounded-full border border-vx-border px-3 py-1 text-xs text-vx-fg-muted">Private</span></div>
-            <div className="mt-4 flex items-start gap-3"><h1 className="min-w-0 flex-1 break-words font-vx text-4xl font-black tracking-tight sm:text-5xl">{song.title}</h1><MusicSongActions songId={song.id} jobId={song.job_id} title={song.title} actions={song.actions} onViewLineage={focusLineage} onShare={() => setDistributionMode('share')} onDownload={() => setDistributionMode('download')} onPublish={() => setDistributionMode('publish')} onCover={() => setDistributionMode('cover')} onExtend={() => setDistributionMode('extend')} onReplace={() => setDistributionMode('replace')} onAddSection={() => setDistributionMode('add-section')} onReuse={() => setDistributionMode('reuse')} onStems={() => setDistributionMode('stems')} onTargetStem={() => setDistributionMode('target-stem')} onAddTrack={() => setDistributionMode('add-track')} onCrop={() => setDistributionMode('crop')} onRender={() => setDistributionMode('render')} onReverse={() => setDistributionMode('render-reverse')} onSpeed={() => setDistributionMode('render-speed')} externalTriggerRef={actionsTriggerRef} /></div>
+            <div className="mt-4 flex items-start gap-3"><h1 className="min-w-0 flex-1 break-words font-vx text-4xl font-black tracking-tight sm:text-5xl">{song.title}</h1><MusicSongActions songId={song.id} jobId={song.job_id} title={song.title} actions={song.actions} onViewLineage={focusLineage} onShare={() => setDistributionMode('share')} onDownload={() => setDistributionMode('download')} onPublish={() => setDistributionMode('publish')} onCover={() => setDistributionMode('cover')} onMashup={() => setDistributionMode('mashup')} onSample={() => setDistributionMode('sample')} onExtend={() => setDistributionMode('extend')} onReplace={() => setDistributionMode('replace')} onAddSection={() => setDistributionMode('add-section')} onReuse={() => setDistributionMode('reuse')} onStems={() => setDistributionMode('stems')} onTargetStem={() => setDistributionMode('target-stem')} onAddTrack={() => setDistributionMode('add-track')} onCrop={() => setDistributionMode('crop')} onRender={() => setDistributionMode('render')} onReverse={() => setDistributionMode('render-reverse')} onSpeed={() => setDistributionMode('render-speed')} externalTriggerRef={actionsTriggerRef} /></div>
             <dl className="mt-6 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2"><div className="rounded-2xl bg-vx-base p-3"><dt className="text-vx-fg-muted">Created</dt><dd className="mt-1 text-vx-fg">{new Date(song.created_at).toLocaleDateString()}</dd></div><div className="rounded-2xl bg-vx-base p-3"><dt className="text-vx-fg-muted">Visibility</dt><dd className="mt-1 capitalize text-vx-fg">{String(song.visibility || 'private').replace('_', ' ')}</dd></div></dl>
           </div>
         </div>
@@ -151,6 +159,7 @@ export function MusicServerSongDetail({ id }) {
       </article>
       {distributionMode === 'publish' ? <MusicPublicationDialog song={song} onClose={closeDistribution} /> : null}
       {distributionMode === 'cover' ? <MusicCoverDialog song={song} onClose={closeDistribution} onSaved={load} /> : null}
+      {distributionMode === 'mashup' || distributionMode === 'sample' ? <MusicRemixDialog kind={distributionMode} song={song} onClose={closeDistribution} /> : null}
       {distributionMode === 'extend' ? <MusicExtendDialog song={song} onClose={closeDistribution} onSaved={load} /> : null}
       {distributionMode === 'replace' ? <MusicReplaceSectionDialog song={song} onClose={closeDistribution} onSaved={load} /> : null}
       {distributionMode === 'add-section' ? <MusicAddSectionDialog song={song} onClose={closeDistribution} onSaved={load} /> : null}
@@ -161,7 +170,7 @@ export function MusicServerSongDetail({ id }) {
       {distributionMode === 'crop' ? <MusicCropDialog song={song} onClose={closeDistribution} onSaved={load} /> : null}
       {distributionMode === 'render' ? <MusicRenderDialog song={song} onClose={closeDistribution} onSaved={load} /> : null}
       {distributionMode === 'render-reverse' || distributionMode === 'render-speed' ? <MusicRenderDialog song={song} onClose={closeDistribution} onSaved={load} initialOperation={distributionMode === 'render-reverse' ? 'reverse' : 'speed'} /> : null}
-      {distributionMode && !['publish', 'cover', 'extend', 'replace', 'add-section', 'reuse', 'stems', 'target-stem', 'add-track', 'crop', 'render', 'render-reverse', 'render-speed'].includes(distributionMode) ? <MusicDistributionDialog mode={distributionMode} song={song} onClose={closeDistribution} /> : null}
+      {distributionMode && !['publish', 'cover', 'mashup', 'sample', 'extend', 'replace', 'add-section', 'reuse', 'stems', 'target-stem', 'add-track', 'crop', 'render', 'render-reverse', 'render-speed'].includes(distributionMode) ? <MusicDistributionDialog mode={distributionMode} song={song} onClose={closeDistribution} /> : null}
     </div>
   );
 }

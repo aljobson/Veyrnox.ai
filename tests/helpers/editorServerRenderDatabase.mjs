@@ -63,5 +63,6 @@ ${editor.slice(0, editor.indexOf('SELECT cron.schedule'))} COMMIT;
 ${sql('0396_editor_server_render.sql')}
 ${sql('0397_editor_server_render_library.sql')}
 ${sql('0398_editor_server_render_quote.sql')}
+${sql('0530_editor_export_flat_credits.sql')}
 `;
 }

@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 const jobIdPattern = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 
 export function MusicSongActions({
-  songId, jobId, title, actions = ['view_lineage', 'organize'], onViewLineage, onShare, onDownload, onPublish, onCover, onExtend, onReplace, onAddSection, onReuse, onStems, onTargetStem, onAddTrack, onCrop, onRender, onReverse, onSpeed,
+  songId, jobId, title, actions = ['view_lineage', 'organize'], onViewLineage, onShare, onDownload, onPublish, onCover, onMashup, onSample, onExtend, onReplace, onAddSection, onReuse, onStems, onTargetStem, onAddTrack, onCrop, onRender, onReverse, onSpeed,
   externalTriggerRef,
 }) {
   const [open, setOpen] = useState(false);
@@ -20,6 +20,9 @@ export function MusicSongActions({
   const canDownload = enabled.has('download_mp3') && typeof onDownload === 'function';
   const canPublish = enabled.has('publish') && typeof onPublish === 'function';
   const canCover = enabled.has('cover') && typeof onCover === 'function';
+  // Remix needs Cover's gates, so Cover always comes first and takes the focus ref.
+  const canMashup = canCover && enabled.has('mashup') && typeof onMashup === 'function';
+  const canSample = canCover && enabled.has('sample') && typeof onSample === 'function';
   const canExtend = enabled.has('extend') && typeof onExtend === 'function';
   const canReplace = enabled.has('replace_section') && typeof onReplace === 'function';
   const canAddSection = enabled.has('add_section') && typeof onAddSection === 'function';
@@ -147,6 +150,16 @@ export function MusicSongActions({
               type="button" role="menuitem" onClick={() => { setOpen(false); onCover(); }} className={itemClass}
             >
               Create a cover variation
+            </button>
+          ) : null}
+          {canMashup ? (
+            <button type="button" role="menuitem" onClick={() => { setOpen(false); onMashup(); }} className={itemClass}>
+              Mash up with another song
+            </button>
+          ) : null}
+          {canSample ? (
+            <button type="button" role="menuitem" onClick={() => { setOpen(false); onSample(); }} className={itemClass}>
+              Sample this song
             </button>
           ) : null}
           {canStems ? (
