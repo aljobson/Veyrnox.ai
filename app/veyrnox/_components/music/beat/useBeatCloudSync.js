@@ -21,7 +21,7 @@ export function useBeatCloudSync({ beatId, project, cloud, announce }) {
     let active = true, generation = 0, userId = getStoredUserId(), controller = new AbortController();
     let timer, mediaTimer, firstQueued = 0, busy = false, conflict = null, paused = false, attempt = 0, retryAt = 0, terminal = false, pending = null;
     // An unchanged beat checks the account on open without consuming a write.
-    let opened = false, syncedLocalRevision = null, state = '', refused = new Set(), takeRows = [];
+    let opened = false, syncedLocalRevision = null, state = '', refused = new Set(), takeRows = [], mediaRetryAt = 0;
     const capture = () => ({ userId, generation, signal: controller.signal });
     const current = token => active && sameAccount(token, { userId: getStoredUserId(), generation }) && !token.signal.aborted;
     const check = token => { if (!current(token)) throw Object.assign(new Error('Account changed'), { code: 'account_changed' }); };
@@ -48,8 +48,11 @@ export function useBeatCloudSync({ beatId, project, cloud, announce }) {
       clearTimeout(mediaTimer);
       if (!takeAssets(doc).length) { setView(v => ({ ...v, media: [] })); return; }
       const rows = [...await rowsFor(token)], failures = [];
+      // A transient upload failure backs off for 60 s even when document saves keep running.
+      // Only an explicit Load theirs (required) retries before the deadline.
+      const waiting = !required && Date.now() < mediaRetryAt;
       // An explicit Load theirs retries every take, including ones a background cycle refused.
-      const pendingTakes = takesToUpload(doc, rows, required ? new Set() : refused);
+      const pendingTakes = waiting ? [] : takesToUpload(doc, rows, required ? new Set() : refused);
       for (const [index, asset] of pendingTakes.entries()) {
         check(token);
         try {
@@ -68,6 +71,7 @@ export function useBeatCloudSync({ beatId, project, cloud, announce }) {
             (error.status >= 500 && error.status < 600);
           if (!retryable || ['TAKE_CHANGED', 'LIMIT_REACHED', 'TAKE_UNAVAILABLE'].includes(code)) refused.add(asset.ref);
           if (code === 'LIMIT_REACHED') pendingTakes.slice(index).forEach(a => refused.add(a.ref));
+          if (retryable && !refused.has(asset.ref)) mediaRetryAt = Date.now() + 60000;
           if (['RATE_LIMITED', 'LIMIT_REACHED'].includes(code) || error.status === 429) break;
         }
       }
@@ -75,7 +79,8 @@ export function useBeatCloudSync({ beatId, project, cloud, announce }) {
       configureCloudTakes({ beatId, userId: token.userId, rows, load: take => api.takeUrl(beatId, take.id, token), signal: token.signal });
       const missing = takesToUpload(doc, rows);
       setView(v => ({ ...v, media: missing.map(a => a.name) }));
-      if (!required && missing.some(a => !refused.has(a.ref))) mediaTimer = setTimeout(() => void cycle(), 60000);
+      if (!required && missing.some(a => !refused.has(a.ref))) mediaTimer = setTimeout(() => { mediaRetryAt = 0; void cycle(); },
+        mediaRetryAt ? Math.max(1000, Math.ceil((mediaRetryAt - Date.now()) / 1000) * 1000) : 60000);
       if (required && missing.length) throw Object.assign(new Error(`Could not save these takes to your account: ${missing.map(a => a.name).join(', ')}. Retry or Keep mine.`), { code: 'MEDIA_REQUIRED', names: failures });
     }
     async function markRemoved(token) {
@@ -201,7 +206,7 @@ export function useBeatCloudSync({ beatId, project, cloud, announce }) {
       const next = getStoredUserId(); if (next === userId) return;
       generation++; controller.abort(); controller = new AbortController();
       clearTimeout(timer); clearTimeout(mediaTimer); firstQueued = 0; busy = false; conflict = null; paused = false;
-      pending = null; opened = false; syncedLocalRevision = null; refused = new Set(); takeRows = []; terminal = false; retryAt = 0; userId = next;
+      pending = null; opened = false; syncedLocalRevision = null; refused = new Set(); takeRows = []; mediaRetryAt = 0; terminal = false; retryAt = 0; userId = next;
       configureCloudTakes(null); show(userId ? 'unlinked' : 'signed_out', { media: [], detail: '' });
       if (userId) schedule(0);
     }

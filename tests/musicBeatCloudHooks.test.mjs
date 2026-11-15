@@ -243,3 +243,17 @@ test('Load theirs retries a take that a background cycle refused', async t => {
   assert.equal(fixture.calls.filter(c => Array.isArray(c) && c[0] === 'upload').length, before + 1);
   assert.deepEqual(h.sync.output.media, []);
 });
+test('a transient upload failure is not retried by a document save before its deadline', async t => {
+  const h = await setup(t, { edited: true, assets: { aone: takes.aone } });
+  fixture.upload = async () => { throw { status: 429, code: 'TAKE_UPLOAD_FAILED' }; };
+  await h.run();
+  const uploads = () => fixture.calls.filter(c => Array.isArray(c) && c[0] === 'upload').length;
+  assert.equal(uploads(), 1);
+  fixture.upload = async asset => ({ id: asset.ref, status: 'ready' });
+  await h.sync.output.checkpoint(); await h.settle();
+  assert.ok(saves().length >= 2, 'the document save still runs');
+  assert.equal(uploads(), 1, 'the take waits for its retry deadline');
+  assert.deepEqual(h.sync.output.media, ['one']);
+  await h.run(60000);
+  assert.equal(uploads(), 2); assert.deepEqual(h.sync.output.media, []);
+});
