@@ -2,7 +2,7 @@
  * /api/v1/admin/music-comments — the Music comment review queue (0518).
  *
  *   GET                                              pending comments and open reports, oldest first, 50 each
- *   POST { action, id, decision?, reason }           approve, reject or remove a comment, or resolve a report
+ *   POST { action, id, decision?, reason }           approve, reject or remove a comment, or resolve a comment or song report
  *        (Idempotency-Key header)
  *
  * Same four gates as /api/v1/admin/metrics (lib/adminGate.js). The queue stays
@@ -13,6 +13,7 @@ import { NextResponse } from 'next/server';
 import { rpc } from '../../../../../packages/db/supabase-client.js';
 import { adminGate, idempotencyKey, rpcFailure, rpcRefusal, readJsonObject, NO_STORE } from '../../../../../lib/adminGate.js';
 import { parseMusicCommentReview } from '../../../../../lib/musicComments.js';
+import { parseMusicSongReportResolve } from '../../../../../lib/musicPlays.js';
 
 const WHERE = 'api/v1/admin/music-comments';
 
@@ -26,7 +27,14 @@ export async function GET(req) {
         return rpcFailure(err, WHERE);
     }
     if (!result || result.ok !== true) return rpcRefusal(result, 'queue_unavailable');
-    return NextResponse.json({ comments: Array.isArray(result.comments) ? result.comments : [], reports: Array.isArray(result.reports) ? result.reports : [] }, { headers: NO_STORE });
+    // Song reports (0524) join the same queue. Before 0524 is applied the RPC is
+    // missing; the comment queue still loads and song_reports is left out.
+    const songs = await rpc('music_song_report_list', { p_auth_id: g.authId }, g.cfg).catch(() => null);
+    return NextResponse.json({
+        comments: Array.isArray(result.comments) ? result.comments : [],
+        reports: Array.isArray(result.reports) ? result.reports : [],
+        ...(songs?.ok === true ? { song_reports: Array.isArray(songs.song_reports) ? songs.song_reports : [] } : {}),
+    }, { headers: NO_STORE });
 }
 
 export async function POST(req) {
@@ -36,11 +44,12 @@ export async function POST(req) {
     if (key.response) return key.response;
     const b = await readJsonObject(req);
     if (b.response) return b.response;
-    const input = parseMusicCommentReview(b.body);
+    const songReport = b.body?.action === 'resolve_song_report';
+    const input = songReport ? parseMusicSongReportResolve(b.body) : parseMusicCommentReview(b.body);
     if (!input.ok) return NextResponse.json({ error: input.error }, { status: 400, headers: NO_STORE });
     let result;
     try {
-        result = await rpc('music_comment_review', { p_auth_id: g.authId, p_idempotency_key: key.key, p_payload: input.payload }, g.cfg);
+        result = await rpc(songReport ? 'music_song_report_resolve' : 'music_comment_review', { p_auth_id: g.authId, p_idempotency_key: key.key, p_payload: input.payload }, g.cfg);
     } catch (err) {
         return rpcFailure(err, WHERE);
     }

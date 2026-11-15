@@ -327,6 +327,8 @@ try {
         'music_song_reactions', 'music_creator_follows', 'music_social_mutations',
         // Track comments, comment reports and their write receipts (0518): erased with the account.
         'music_comments', 'music_comment_reports', 'music_comment_mutations',
+        // Who played a public track (for the 30-minute check) and song reports (0524): erased with the account.
+        'music_play_listens', 'music_song_reports',
         // Music export is deliberately not implied by the generic profile/jobs projections. Account
         // deletion refuses while this provider/media-backed content exists (0490).
         'music_collaboration_profiles', 'music_creator_profiles', 'music_download_claims', 'music_download_periods',
