@@ -96,3 +96,59 @@ test('recording quantizes to the closest audio step, including a slow future ste
   assert.equal(f.scheduler.nearestStepAt(0.1).step, 0);
   f.scheduler.stop(); assert.equal(f.scheduler.nearestStepAt(1), null);
 });
+
+// Arrangement cases use the new sequence API; all phase 1 cases above remain.
+import { sequenceFor } from '../app/veyrnox/_lib/music/beat/beatSequence.mjs';
+import { eventTime } from '../app/veyrnox/_lib/music/beat/beatTime.mjs';
+function songFixture(doc, locator = 0) {
+  let now = 0, callback;
+  const steps = [], events = [], ends = [];
+  const scheduler = createScheduler({ clock: () => now, isHidden: () => false,
+    setTimer: (fn) => { callback = fn; return fn; }, clearTimer: () => {},
+    getSequence: () => sequenceFor(doc, locator),
+    onStep: (step, time) => steps.push({ step, time }),
+    onEvent: (event, time) => events.push({ ...event, time }), onEnd: (time) => ends.push(time) });
+  return { scheduler, steps, events, ends, get now() { return now; }, advance(delta) { now += delta; callback?.(); } };
+}
+test('song cycle wraps exactly over 3 jittered minutes, including odd cycle edges and shared export timing', () => {
+  const doc = createBeat({ id: 'e40439d1-646a-4c11-9c12-69fa3a851234', now: 0 });
+  doc.swing = 0.6; doc.cycle = { on: true, start: 3 * 240, end: 20 * 240 };
+  const f = songFixture(doc, 5 * 240), duration = stepSeconds(doc.tempo.bpm);
+  f.scheduler.start(0.03);
+  let seed = 1234;
+  while (f.now < 180) { seed = (seed * 1664525 + 1013904223) >>> 0; f.advance(0.025 + seed / 2 ** 32 * 0.04); }
+  assert.equal(f.scheduler.skipped, 0); assert.equal(f.ends.length, 0);
+  for (let i = 0; i < f.steps.length; i++) {
+    const step = i < 15 ? 5 + i : 3 + (i - 15) % 17;
+    assert.equal(f.steps[i].step, step);
+    const expected = eventTime(0.03 + i * duration, step, doc.tempo.bpm, doc.swing);
+    assert.ok(Math.abs(f.steps[i].time - expected) < 1e-9);
+    if (i >= 15 && i < 32) {
+      const offlineTime = eventTime((step - 3) * duration, step, doc.tempo.bpm, doc.swing);
+      assert.ok(Math.abs(f.steps[i].time - (0.03 + 15 * duration) - offlineTime) < 1e-9);
+    }
+  }
+});
+test('song end notifies once at the next straight boundary; no later hits or steps', () => {
+  const doc = createBeat({ id: 'e40439d1-646a-4c11-9c12-69fa3a851234', now: 0 });
+  doc.tempo.bpm = 120; doc.tracks[0].regions[0].length = 8 * 240;
+  const f = songFixture(doc, 6 * 240);
+  f.scheduler.start(0.03);
+  for (let i = 0; i < 100; i++) f.advance(0.025);
+  assert.deepEqual(f.steps.map((s) => s.step), [6, 7]);
+  assert.deepEqual(f.ends, [0.28]);
+  const before = structuredClone(f.events); f.scheduler.refill(); f.advance(10);
+  assert.deepEqual(f.events, before); assert.equal(f.ends.length, 1);
+});
+test('outside-cycle locator starts at cycle start; live mute and solo affect unscheduled events', () => {
+  const doc = createBeat({ id: 'e40439d1-646a-4c11-9c12-69fa3a851234', now: 0 });
+  doc.cycle = { on: true, start: 16 * 240, end: 32 * 240 };
+  const f = songFixture(doc, 0); f.scheduler.start(0.03);
+  assert.equal(f.steps[0].step, 16);
+  const queued = structuredClone(f.events); doc.tracks[0].mute = true;
+  for (let i = 0; i < 20; i++) f.advance(0.025);
+  assert.deepEqual(f.events, queued);
+  doc.tracks[0].mute = false; doc.tracks[0].solo = true;
+  for (let i = 0; i < 20; i++) f.advance(0.025);
+  assert.ok(f.events.length > queued.length);
+});
