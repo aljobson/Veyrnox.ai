@@ -65,3 +65,15 @@ test('an aborted signed PUT is not reported as a network error', async t => {
   await assert.rejects(uploadTake('beat', { ref: 'local', durationSec: 10 / 48000 }, null, { userId: 'owner' }), { name: 'AbortError' });
   gatewayAnswer = () => ({ take_id: 'take', status: 'ready' });
 });
+test('a reservation whose body failed mid-read is a transient NETWORK_ERROR, then recovers', async t => {
+  shelf = [{ id: 'local', samples: new Float32Array(10), sampleRate: 48000, seconds: 10 / 48000 }];
+  for (const broken of [null, {}, { take_id: 'take', status: 'pending' }]) {
+    gatewayAnswer = url => url.endsWith('/takes') ? broken : { take_id: 'take', status: 'ready' };
+    await assert.rejects(uploadTake('beat', { ref: 'local', durationSec: 10 / 48000 }, null, { userId: 'owner' }), { code: 'NETWORK_ERROR' });
+  }
+  gatewayAnswer = url => url.endsWith('/takes')
+    ? { take_id: 'take', status: 'pending', upload_url: 'https://r2.example.invalid/put', upload_headers: {} } : { take_id: 'take', status: 'ready' };
+  t.mock.method(globalThis, 'fetch', async () => new Response(null, { status: 200 }));
+  assert.equal((await uploadTake('beat', { ref: 'local', durationSec: 10 / 48000 }, null, { userId: 'owner' })).status, 'ready');
+  gatewayAnswer = () => ({ take_id: 'take', status: 'ready' });
+});

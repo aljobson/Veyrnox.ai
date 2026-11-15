@@ -80,7 +80,7 @@ test('missing object is reserved and uploaded; 412 proceeds to confirmation', as
   for (const status of [200, 412]) {
     const calls = [];
     await recoverTake({ row: { id: 'old', status: 'pending' }, confirm: async id => { calls.push(`confirm:${id}`); if (id === 'old') throw { code: 'take_upload_missing' }; },
-      reserve: async () => { calls.push('reserve'); return { take_id: 'new', status: 'pending' }; },
+      reserve: async () => { calls.push('reserve'); return { take_id: 'new', status: 'pending', upload_url: 'https://r2.example.invalid/put' }; },
       put: async () => { calls.push('put'); return { ok: status === 200, status }; } });
     assert.deepEqual(calls, ['confirm:old', 'reserve', 'put', 'confirm:new']);
   }

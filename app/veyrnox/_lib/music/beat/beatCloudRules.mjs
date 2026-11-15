@@ -37,6 +37,11 @@ export async function recoverTake({ row, confirm, reserve, put }) {
     catch (error) { if (errorCode(error) !== 'TAKE_UPLOAD_MISSING') throw error; }
   }
   const reserved = await reserve();
+  // A body that failed mid-read comes back empty from the gateway: treat any unusable
+  // reservation as a transient network failure, never as a permanent refusal.
+  if (!reserved || typeof reserved.take_id !== 'string' || !['ready', 'pending'].includes(reserved.status) ||
+    (reserved.status === 'pending' && typeof reserved.upload_url !== 'string'))
+    throw Object.assign(new Error('Network error'), { code: 'NETWORK_ERROR' });
   if (reserved.status === 'ready') return { id: reserved.take_id, status: 'ready' };
   const response = await put(reserved);
   if (!response.ok && response.status !== 412) throw Object.assign(new Error('Take upload failed'), { status: response.status, code: 'TAKE_UPLOAD_FAILED' });
