@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { startVoice, voiceEnvelopePlan, createVoicePool } from '../app/veyrnox/_lib/music/beat/beatVoices.js';
-import { renderSong } from '../app/veyrnox/_lib/music/beat/beatMixdown.js';
+import { renderBeat, renderSong } from '../app/veyrnox/_lib/music/beat/beatMixdown.js';
 import { audioMock } from './musicBeatVoiceFixtures.mjs';
 import { midiDoc } from './musicBeatMidiFixtures.mjs';
 test('gated voices hold indefinitely, release at the note end, stop in 10ms and resolve ended', async () => {
@@ -36,8 +36,8 @@ test('voice pool steals oldest first above 32 per track and retires elapsed voic
   const quiet = createVoicePool(); for (let i = 0; i < 50; i++) quiet.add('t1', voice(i, i + 0.5), i);
   assert.equal(stopped.length, 2);
 });
-test('song export schedules the shared MIDI voice at its window time through stereo channels', async () => {
-  const old = globalThis.window, context = audioMock();
+for (const cancelAndHold of [true, false]) test(`song export schedules the shared MIDI voice through stereo channels (cancelAndHold=${cancelAndHold})`, async () => {
+  const old = globalThis.window, context = audioMock({ cancelAndHold });
   globalThis.window = { OfflineAudioContext: function () { return context; } };
   try {
     const doc = midiDoc([[960, 480, 48, 100]]); doc.tracks[0].regions = [];
@@ -47,4 +47,30 @@ test('song export schedules the shared MIDI voice at its window time through ste
     assert.equal(bass.startedAt, 0.5);
     assert.ok(bass.stops.some((at) => Math.abs(at - 1.66) < 1e-9));
   } finally { globalThis.window = old; }
+});
+test('missing cancelAndHoldAtTime preserves attack, sustain and release levels for release and stop', () => {
+  const context = audioMock({ cancelAndHold: false });
+  const voice = startVoice(context, {}, {}, { engine: 'voice', id: 'bass', preset: 'sub' }, 48, 100, 1);
+  const gain = context.nodes[0].gain;
+  assert.equal(gain.cancelAndHoldAtTime, undefined);
+  voice.release(1.003);
+  const held = gain.calls.find((c) => c[0] === 'setValueAtTime' && c[2] === 1.003);
+  assert.ok(Math.abs(held[1] - 0.01) < 1e-9);
+  assert.ok(gain.calls.some((c) => c[0] === 'exponentialRampToValueAtTime' && c[2] === 1.003));
+  voice.stop(1.453);
+  const stopped = gain.calls.find((c) => c[0] === 'setValueAtTime' && c[2] === 1.453);
+  assert.ok(Math.abs(stopped[1] - 0.001) < 1e-9);
+  assert.ok(gain.calls.some((c) => c[0] === 'cancelScheduledValues' && c[1] === 1.453));
+  assert.equal(voice.endTime, 1.463);
+  for (const [id, preset] of [['wavetable', 'glass'], ['piano', 'organ'], ['synth', 'pad'], ['guitar', 'nylon'], ['drums', '808']]) {
+    const ctx = audioMock({ cancelAndHold: false });
+    const v = startVoice(ctx, {}, {}, { engine: id === 'wavetable' ? 'wavetable' : 'voice', id, preset }, 36, 100, 1);
+    v.release(2); v.stop(2.05);
+    const value = ctx.nodes[0].gain.calls.findLast((c) => c[0] === 'setValueAtTime')[1];
+    assert.ok(Number.isFinite(value) && value >= 0 && value <= 1);
+    assert.ok(Math.abs(v.endTime - 2.06) < 1e-9);
+  }
+});
+test('pattern export refuses a MIDI edit track before allocating audio', async () => {
+  await assert.rejects(renderBeat(midiDoc(), 1, 't2'), /Use song export to export MIDI tracks/);
 });

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { midiDoc, bass } from './musicBeatMidiFixtures.mjs';
-import { createRecording, commitTake, partitionTake, recordingSequence, recordingEndTick, contextTimeToSongTick } from '../app/veyrnox/_lib/music/beat/beatRecording.mjs';
+import { createRecording, commitTake, partitionTake, recordingSequence, recordingEndTick, contextTimeToSongTick, takeAsNewBeat } from '../app/veyrnox/_lib/music/beat/beatRecording.mjs';
 import { createScheduler } from '../app/veyrnox/_lib/music/beat/beatScheduler.mjs';
 import { validateBeat } from '../app/veyrnox/_lib/music/beat/beatDocument.mjs';
 import { setTrackMute } from '../app/veyrnox/_lib/music/beat/beatOps.mjs';
@@ -107,12 +107,37 @@ test('impossible sub-30-tick forced cuts retain the original take rather than si
   assert.equal(capture.finalize(doc, BAR * 2, () => true), doc);
   assert.match(capture.error, /boundary/); assert.deepEqual(capture.take, before);
 });
-test('recording in a partial-bar gap keeps notes pending if bar-aligned placement is impossible', () => {
+test('recording in a partial-bar gap commits after the existing region without overwriting it', () => {
   const doc = midiDoc(); doc.tracks[1].regions[0].length = 240;
   const capture = createRecording(doc, 't2', 0);
   assert.equal(capture.on('gap', 60, 100, 480), true); capture.off('gap', 720);
-  assert.equal(capture.finalize(doc, 960, () => true), doc); assert.match(capture.error, /inside a bar/);
-  assert.equal(capture.take.notes.length, 1);
+  const next = capture.finalize(doc, 960, () => true);
+  assert.equal(capture.error, null); assert.equal(validateBeat(next).ok, true);
+  assert.deepEqual(next.tracks[1].regions[0], doc.tracks[1].regions[0]);
+  const region = next.tracks[1].regions[1];
+  assert.equal(region.start, 240); assert.equal(region.start + region.length, BAR);
+  assert.deepEqual(next.clips[region.clipId].notes, [[240, 240, 60, 100]]);
+});
+test('partial-bar gaps partition at subsequent bar lines within the 64-bar cap', () => {
+  const groups = partitionTake([note(480), note(64 * BAR)], 240, 100 * BAR);
+  assert.equal(groups[0].start, 240); assert.equal(groups[1].start, 64 * BAR);
+  assert.ok(groups.every((g) => g.end - g.start <= 64 * BAR));
+  const dense = Array.from({ length: 2500 }, (_, i) => note(Math.floor(i / 1500) * BAR + 480 + Math.floor(i % 1500 / 88) * 60, 21 + i % 88, 30));
+  const partitioned = partitionTake(dense, 240, 100 * BAR);
+  assert.equal(partitioned[1].start, BAR);
+  assert.equal(partitioned.flatMap((g) => g.notes).length, 2500);
+});
+test('saving a take as a new beat keeps source timing and track mix', () => {
+  const source = empty(); source.tempo.bpm = 137; source.swing = 0.4; source.steps = 32;
+  source.tracks[1].gain = 0.6; source.tracks[1].pan = -0.3;
+  const capture = createRecording(source, 't2', 0);
+  capture.on('a', 48, 90, 240); capture.off('a', 720);
+  const saved = takeAsNewBeat(source, capture.take, { id: 'a40439d1-646a-4c11-9c12-69fa3a851234', now: 1000 });
+  assert.equal(validateBeat(saved).ok, true);
+  for (const field of ['tempo', 'swing', 'signature', 'steps']) assert.deepEqual(saved[field], source[field]);
+  assert.equal(saved.tracks[0].gain, 0.6); assert.equal(saved.tracks[0].pan, -0.3);
+  assert.deepEqual(saved.clips.c1.notes, [[240, 480, 48, 90]]);
+  assert.notEqual(saved.tempo, source.tempo); assert.notEqual(saved.signature, source.signature);
 });
 test('unquantised overlapping loop onsets refuse atomically; take remains available for a separate beat', () => {
   const doc = midiDoc([[0, 240, 60, 100]]), capture = createRecording(doc, 't2', 0);

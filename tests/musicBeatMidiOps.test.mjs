@@ -22,12 +22,13 @@ test('quantise resolves 0/60 collision, keeps 30-tick lengths, clamps ends and r
 });
 test('atomic shortening updates shared/split phases, removes short remnants and undo restores all', () => {
   let doc = midiDoc([[0, 960, 60, 100], [460, 30, 61, 100], [600, 60, 62, 100]]);
-  doc = ops.splitRegion(doc, 'r2', 720);
-  const next = midi.setClipLength(doc, 'c1', 480);
+  doc = ops.splitRegion(doc, 'r2', 720, 1000);
+  const next = midi.setClipLength(doc, 'c1', 480, 2000);
   assert.deepEqual(next.clips.c1.notes, [[0, 480, 60, 100]]);
   assert.equal(next.tracks[1].regions[1].phaseTicks, 240);
-  const recorded = history.record(history.createHistory(doc), next, { label: 'shorten' });
-  assert.deepEqual(history.undo(recorded).present, doc);
+  const recorded = history.record(history.createHistory(doc), next, { label: 'shorten', now: 2000 });
+  // Undo restores musical content while keeping the latest save timestamp.
+  assert.deepEqual(history.undo(recorded).present, { ...doc, updatedAt: 2000 });
 });
 test('duplicates share; make unique copies; last region removal prunes and undo restores', () => {
   const doc = midiDoc([[0, 240, 60, 100]]), copy = ops.duplicateRegion(doc, 'r2');

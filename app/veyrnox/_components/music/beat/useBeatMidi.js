@@ -1,10 +1,9 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { rememberTake, readPendingTake, forgetTake } from '../../../_lib/music/beat/beatPendingTake.mjs';
-import { createRecording, contextTimeToSongTick, commitTake } from '../../../_lib/music/beat/beatRecording.mjs';
+import { createRecording, contextTimeToSongTick, takeAsNewBeat } from '../../../_lib/music/beat/beatRecording.mjs';
 import { inputContextTime } from '../../../_lib/music/beat/beatWebMidi.mjs';
 import { effectiveGain, editTrack } from '../../../_lib/music/beat/beatEvents.mjs';
-import { createBeat } from '../../../_lib/music/beat/beatDocument.mjs';
 export function useBeatMidi(current, edit, announce, engine, active, optionsRef, audio, terminate) {
   const pending = useRef(null), live = useRef(new Map()), mapping = useRef(null);
   const [overlay, setOverlay] = useState([]), [takeError, setTakeError] = useState('');
@@ -74,10 +73,7 @@ export function useBeatMidi(current, edit, announce, engine, active, optionsRef,
   }
   function takeAsBeat() {
     if (!pending.current) return null;
-    const take = pending.current.take, now = Date.now();
-    const doc = createBeat({ id: crypto.randomUUID(), title: 'Recorded take', now });
-    doc.tracks = [{ id: 't1', name: take.name, kind: 'midi', instrument: structuredClone(take.instrument), gain: 1, pan: 0, mute: false, solo: false, regions: [] }];
-    return commitTake(doc, { ...pending.current.take, trackId: 't1' });
+    return takeAsNewBeat(current.current, pending.current.take, { id: crypto.randomUUID() });
   }
   function discardSavedTake() { forgetTake(current.current.id); pending.current = null; setTakeError(''); setOverlay([]); }
   return { pending, recordingRun, overlay, takeError, quantise, setQuantise, countIn, setCountIn,

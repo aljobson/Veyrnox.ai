@@ -57,7 +57,8 @@ export default function BeatEditor({ id }) {
       const textInput = target.isContentEditable || target.closest('textarea, [role="textbox"]') ||
         (target.tagName === 'INPUT' && !['range', 'checkbox', 'radio', 'button', 'submit'].includes(target.type));
       if (textInput) return;
-      if (target.closest('[role="application"]')) return;
+      const inPianoRoll = Boolean(target.closest('[role="application"]'));
+      const command = event.ctrlKey || event.metaKey || event.altKey;
       if ((event.ctrlKey || event.metaKey) && ['z', 'y'].includes(event.key.toLowerCase())) {
         event.preventDefault();
         if (playback.recordingRun) return;
@@ -65,9 +66,10 @@ export default function BeatEditor({ id }) {
         setTitleDraft(null);
         return;
       }
-      if (event.ctrlKey || event.metaKey || event.altKey || target.closest('input, select')) return;
-      if (event.code === 'Space'  && !target.closest('button, a, [role="button"]')) { event.preventDefault(); playback.toggle(); return; }
-      const route = routeBeatKey({ key: event.key, kind: editTrack(doc, editTrackId).kind, octave, velocity });
+      if (command || target.closest('select')) return;
+      if (event.code === 'Space' && (inPianoRoll || !target.closest('input, button, a, [role="button"]'))) { event.preventDefault(); playback.toggle(); return; }
+      if (inPianoRoll) return;
+      const route = routeBeatKey({ key: event.key, repeat: event.repeat, command, textInput, kind: editTrack(doc, editTrackId).kind, octave, velocity });
       if (!route) return;
       event.preventDefault();
       if (route.type === 'pad') playback.hit(route.pad);

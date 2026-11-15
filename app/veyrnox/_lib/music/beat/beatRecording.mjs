@@ -3,6 +3,7 @@ import { insertMidiRegion } from './beatMidiOps.mjs';
 import { noteCount, noteKey, quantisedNote, resolveNotes } from './beatMidiRules.mjs';
 import { modulo } from './beatAudioSegments.mjs';
 import { partitionTake, recordingEndTick } from './beatTakePartition.mjs';
+import { createBeat } from './beatDocument.mjs';
 export { contextTimeToSongTick } from './beatMidiWindow.mjs';
 export { partitionTake, recordingEndTick } from './beatTakePartition.mjs';
 const MAX = 64 * 3840;
@@ -53,7 +54,6 @@ export function commitTake(doc, take, now = Date.now(), announce = () => {}) {
       clip.notes = resolveNotes(entries);
     }
     for (const group of groups) {
-      if (group.start < group.gapStart) throw new BeatRefusal('This recording gap starts inside a bar. Save the take as a new beat.');
       const length = group.end - group.start;
       const notes = group.notes.map((n) => {
         const note = [n.start - group.start, n.end - n.start, n.pitch, n.velocity];
@@ -65,6 +65,14 @@ export function commitTake(doc, take, now = Date.now(), announce = () => {}) {
         resolveNotes(notes.map((note) => ({ note, selected: true, original: note[0] }))), `${track.name} take`);
     }
   });
+}
+export function takeAsNewBeat(source, take, { id, now = Date.now() }) {
+  const doc = createBeat({ id, title: 'Recorded take', now });
+  for (const field of ['tempo', 'swing', 'signature', 'steps']) doc[field] = structuredClone(source[field]);
+  const track = source.tracks.find((t) => t.id === take.trackId);
+  doc.tracks = [{ id: 't1', name: take.name, kind: 'midi', instrument: structuredClone(take.instrument),
+    gain: track?.gain ?? 1, pan: track?.pan ?? 0, mute: false, solo: false, regions: [] }];
+  return commitTake(doc, { ...take, trackId: 't1' }, now);
 }
 // Pending state is deliberately outside the document. Capture never rebuilds a scheduler.
 export function createRecording(doc, trackId, startTick, { snap = 0, announce = () => {} } = {}) {

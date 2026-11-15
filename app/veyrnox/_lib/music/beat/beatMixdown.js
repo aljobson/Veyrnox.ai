@@ -13,6 +13,7 @@ import { validateBeat } from './beatDocument.mjs';
 
 export async function renderBeat(doc, loops, editTrackId) {
   if (!validateBeat(doc).ok || ![1, 2, 4, 8].includes(loops)) throw new Error('Invalid beat or loop count');
+  if (doc.version !== 1 && patternTrack(doc, editTrackId)?.kind === 'midi') throw new Error('Use song export to export MIDI tracks. Pattern export is for drum tracks.');
   const Offline = window.OfflineAudioContext || window.webkitOfflineAudioContext;
   if (!Offline) throw new Error("Sound isn't available in this browser");
   const length = loopSeconds(doc.tempo.bpm, doc.steps);

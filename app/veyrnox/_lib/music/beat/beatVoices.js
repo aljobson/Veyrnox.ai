@@ -49,14 +49,37 @@ export function startVoice(context, out, noise, instrument, pitch, velocity, at)
   const initial = id === 'drums' ? [['setValueAtTime', 1, at]] : voiceEnvelopePlan(instrument, instrument.preset, at);
   for (const [method, ...args] of initial) gate.gain[method](...args);
   if (Number.isFinite(endTime)) sentinel.stop(endTime);
+  let releaseLevel = 1, stoppedAt = Infinity, stoppedLevel = 1;
+  function levelAt(time) {
+    if (time >= stoppedAt) return stoppedLevel * Math.max(0, 1 - (time - stoppedAt) / 0.01);
+    if (time >= released) {
+      const elapsed = time - released, tail = gated ? timing.release : 0.12;
+      if (id === 'wavetable') return 0.0001 + (releaseLevel - 0.0001) * Math.exp(-elapsed / Math.max(0.005, tail / 3));
+      if (gated) return releaseLevel * (0.0001 / releaseLevel) ** Math.min(1, elapsed / tail);
+      return Math.max(0, 1 - elapsed / tail);
+    }
+    const fraction = Math.max(0, Math.min(1, (time - at) / timing.attack));
+    return !gated ? 1 : id === 'wavetable' ? Math.max(0.0001, fraction) : 0.0001 ** (1 - fraction);
+  }
+  function hold(time, level) {
+    if (typeof gate.gain.cancelAndHoldAtTime === 'function') gate.gain.cancelAndHoldAtTime(time);
+    else {
+      gate.gain.cancelScheduledValues(time);
+      // Cancellation removes a future ramp endpoint. Restore its prefix so a
+      // scheduled short note still attacks (or releases) up to the hold time.
+      if (time >= stoppedAt || (time >= released && !gated)) gate.gain.linearRampToValueAtTime(level, time);
+      else if ((time < released && gated && time <= at + timing.attack) || (time >= released && gated && id !== 'wavetable')) {
+        gate.gain[id === 'wavetable' ? 'linearRampToValueAtTime' : 'exponentialRampToValueAtTime'](level, time);
+      }
+    }
+    gate.gain.setValueAtTime(level, time);
+  }
   return {
     get endTime() { return endTime; }, ended,
     release(time) {
       if (done || id === 'drums' || time >= released || time >= endTime) return;
-      released = Math.max(at, time);
-      const fraction = Math.max(0, Math.min(1, (released - at) / timing.attack));
-      const level = !gated ? 1 : id === 'wavetable' ? Math.max(0.0001, fraction) : 0.0001 ** (1 - fraction);
-      gate.gain.cancelAndHoldAtTime(released); gate.gain.setValueAtTime(level, released);
+      const when = Math.max(at, time), level = levelAt(when);
+      hold(when, level); released = when; releaseLevel = level;
       const tail = gated ? timing.release : 0.12;
       if (id === 'wavetable') gate.gain.setTargetAtTime(0.0001, released, Math.max(0.005, tail / 3));
       else if (gated) gate.gain.exponentialRampToValueAtTime(0.0001, released + tail);
@@ -65,8 +88,9 @@ export function startVoice(context, out, noise, instrument, pitch, velocity, at)
     },
     stop(time) {
       if (done) return;
-      const when = Math.max(at, time);
-      gate.gain.cancelAndHoldAtTime(when); gate.gain.linearRampToValueAtTime(0, when + 0.01); finish(when + 0.01);
+      const when = Math.max(at, time), level = levelAt(when);
+      hold(when, level); stoppedAt = when; stoppedLevel = level;
+      gate.gain.linearRampToValueAtTime(0, when + 0.01); finish(when + 0.01);
     },
   };
 }

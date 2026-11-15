@@ -36,11 +36,14 @@ export default function BeatPianoRoll({ doc, region, edit, snap, setSnap, close,
   function velocity(delta) { run((d) => midi.velocityNotes(d, region.clipId, selected, delta), 'change velocity'); }
   function remove() { run((d) => midi.deleteNotes(d, region.clipId, selected), 'delete notes'); setSelection([]); }
   function key(event, note) {
-    event.stopPropagation();
-    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'a') { event.preventDefault(); setSelection(clip.notes.map(noteKey)); return; }
+    if (event.metaKey || event.ctrlKey) {
+      if (event.key.toLowerCase() === 'a') { event.stopPropagation(); event.preventDefault(); setSelection(clip.notes.map(noteKey)); }
+      return;
+    }
     const horizontal = event.key === 'ArrowLeft' ? -unit : event.key === 'ArrowRight' ? unit : 0;
     const vertical = event.key === 'ArrowUp' ? 1 : event.key === 'ArrowDown' ? -1 : 0;
     if (horizontal || vertical) {
+      event.stopPropagation();
       event.preventDefault();
       if (note) {
         const keys = selected.includes(noteKey(note)) ? selected : [noteKey(note)];
@@ -54,9 +57,11 @@ export default function BeatPianoRoll({ doc, region, edit, snap, setSnap, close,
         }
       } else setCursor((c) => ({ tick: clamp(c.tick + horizontal, 0, clip.lengthTicks - 30), pitch: clamp(c.pitch + vertical, low, high) }));
     } else if (event.key === 'Enter' && !note) {
+      event.stopPropagation();
       event.preventDefault(); const existing = clip.notes.find((n) => n[0] === cursor.tick && n[2] === cursor.pitch);
       run((d) => existing ? midi.deleteNotes(d, region.clipId, [noteKey(existing)]) : midi.addNote(d, region.clipId, [cursor.tick, Math.min(unit, clip.lengthTicks - cursor.tick), cursor.pitch, 100]), 'toggle note');
     } else if (['Delete', 'Backspace', '+', '-', '='].includes(event.key)) {
+      event.stopPropagation();
       event.preventDefault(); const keys = note && !selected.includes(noteKey(note)) ? [noteKey(note)] : selected;
       run((d) => ['Delete', 'Backspace'].includes(event.key) ? midi.deleteNotes(d, region.clipId, keys) : midi.velocityNotes(d, region.clipId, keys, event.key === '-' ? -16 : 16), 'edit notes');
       if (['Delete', 'Backspace'].includes(event.key)) requestAnimationFrame(() => scroller.current?.querySelector('[role="application"]')?.focus());
@@ -70,7 +75,7 @@ export default function BeatPianoRoll({ doc, region, edit, snap, setSnap, close,
     e.stopPropagation(); e.currentTarget.setPointerCapture(e.pointerId);
     const keys = note ? e.shiftKey ? [...new Set([...selected, noteKey(note)])] : selected.includes(noteKey(note)) ? selected : [noteKey(note)] : [];
     if (note) setSelection(keys);
-    drag.current = { x: e.clientX, y: e.clientY, note, keys, lane, resize: note && !lane && e.clientX > e.currentTarget.getBoundingClientRect().left + Math.max(4, note[1] * SCALE) - 14, point: !note ? point(e) : null };
+    drag.current = { x: e.clientX, y: e.clientY, note, keys, lane, resize: note && !lane && e.clientX > e.currentTarget.getBoundingClientRect().right - 14, point: !note ? point(e) : null };
   }
   function up(e) {
     const start = drag.current; drag.current = null; setBox(null);

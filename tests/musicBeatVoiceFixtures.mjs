@@ -1,8 +1,9 @@
-export function audioMock() {
+export function audioMock({ cancelAndHold = true } = {}) {
   const nodes = [], calls = [];
   const param = (name) => {
     const p = { value: 1, calls: [] };
     for (const method of ['setValueAtTime', 'linearRampToValueAtTime', 'exponentialRampToValueAtTime', 'setTargetAtTime', 'cancelScheduledValues', 'cancelAndHoldAtTime']) p[method] = (...args) => { p.calls.push([method, ...args]); calls.push([name, method, ...args]); };
+    if (!cancelAndHold) delete p.cancelAndHoldAtTime;
     return p;
   };
   const context = { currentTime: 0, sampleRate: 44100, destination: {}, nodes, calls,

@@ -7,7 +7,7 @@ test('one router directs pads or all seventeen musical typing keys by track kind
   assert.equal(routeBeatKey({ key: 'a', kind: 'audio' }), null);
 });
 test('repeat, text fields and commands are ignored; octave and velocity are bounded', () => {
-  for (const flag of ['repeat', 'textInput', 'command']) assert.equal(routeBeatKey({ key: 'a', kind: 'midi', [flag]: true }), null);
+  for (const flag of ['repeat', 'textInput', 'command']) for (const key of ['a', 'z', 'x', 'c', 'v']) assert.equal(routeBeatKey({ key, kind: 'midi', [flag]: true }), null);
   for (const [key, type, value] of [['z', 'octave', -1], ['x', 'octave', 1], ['c', 'velocity', 84], ['v', 'velocity', 116]]) assert.deepEqual(routeBeatKey({ key, kind: 'midi' }), { type, value });
   assert.equal(routeBeatKey({ key: 'z', kind: 'midi', octave: -3 }).value, -3);
   assert.equal(routeBeatKey({ key: 'v', kind: 'midi', velocity: 127 }).value, 127);

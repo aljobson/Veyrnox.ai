@@ -120,7 +120,9 @@ export function useBeatPlayback(current, edit, announce, options) {
         },
         onMidi: (note, time) => {
           const doc = current.current, track = doc.tracks.find((t) => t.id === note.trackId);
-          if (track) instance.playMidi(track, note.pitch, note.velocity, time, run, gain(doc, track)).release(time + note.durationSec);
+          try {
+            if (track) instance.playMidi(track, note.pitch, note.velocity, time, run, gain(doc, track)).release(time + note.durationSec);
+          } catch (failure) { setAudioError(failure.message); announce(failure.message); }
         },
         onEvent: (event, time) => {
           const track = editTrack(current.current, event.trackId);
@@ -145,7 +147,7 @@ export function useBeatPlayback(current, edit, announce, options) {
       active.current = { run, scheduler, scheduled, recording: isRecording, doc: current.current, restart(tick) {
         scheduler.stop(); instance.stopRun(run); run = instance.startRun(); scheduled.length = 0;
         active.current.run = run; active.current.endTime = undefined;
-        scheduler.updateSequence(() => sequenceFor(current.current, tick, optionsRef.current?.editTrackId));
+        scheduler.updateSequence(() => sequenceFor(current.current, tick, optionsRef.current?.editTrackId, optionsRef.current?.selectedRegionId));
         scheduler.start(instance.now() + 0.03); setRunId(run.id);
       } };
       const contextStart = instance.now() + 0.03;
