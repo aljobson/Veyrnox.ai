@@ -69,3 +69,11 @@ test('audio pauses when the screen loses focus', async () => {
     await act(async () => root.render(<></>));
     expect(mockPlayer.pause).toHaveBeenCalled();
 });
+
+test('the control strip never shrinks below the 56pt play button plus padding, so a parent cannot clip it', async () => {
+    await act(async () => root.render(<InlineMedia url="https://clip" label="Play video" />));
+    const strip = byId('inline-audio-toggle').parent!;
+    const style = RN.StyleSheet.flatten(strip.props.style);
+    expect(style.flexShrink).toBe(0);
+    expect(style.minHeight).toBeGreaterThanOrEqual(44);
+});

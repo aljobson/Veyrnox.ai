@@ -1825,6 +1825,7 @@ export default {
   "edit.err.gone": "Eines der Videos ist nicht mehr verfügbar.",
   "edit.err.invalid": "Diese Bearbeitung konnte nicht gesendet werden. Prüfe sie und versuche es erneut. Es wurde nichts berechnet.",
   "edit.err.mixedAspect": "Diese Videos haben unterschiedliche Seitenverhältnisse. Verbinde Videos mit gleichem Seitenverhältnis. Es wurde nichts berechnet.",
+  "edit.err.mixedAudio": "Diese Clips lassen sich nicht verbinden: Einige haben Ton, andere sind stumm. Wähle nur Clips mit Ton oder nur stumme Clips. Es wurde nichts berechnet.",
   "edit.err.network": "Keine Verbindung. Es wurde nichts berechnet. Versuche es erneut.",
   "edit.err.notAudio": "Diese Datei ist keine Audiodatei.",
   "edit.err.nothingToDo": "Kürze ein Video, verbinde zwei oder füge Untertitel hinzu. Es wurde nichts berechnet.",

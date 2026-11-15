@@ -48,3 +48,10 @@ test('LatentSync refuses speech longer than proven visual coverage and unknown l
   assert.deepEqual(shapePayload(latent, { video_url: 'https://media.test/video.mp4', audio_url: 'https://media.test/audio.wav' }), { video_url: 'https://media.test/video.mp4', audio_url: 'https://media.test/audio.wav' });
   assert.deepEqual(checkSource(capabilityFor('fal-ai/mmaudio-v2'), { video_url: { seconds: 5, videoSeconds: null } }), { ok: true });
 });
+
+test('mp4Info says whether the file carries an audio track (true, false, or null when a track cannot be read)', async () => {
+  assert.equal((await info(lipSyncMp4({ video: 5, audio: 5 }))).audio, true);
+  assert.equal((await info(lipSyncMp4({ video: 5 }))).audio, false);
+  assert.equal((await info(lipSyncMp4({ video: 5, handler: 'soun' }))).audio, true);
+  assert.equal((await info(lipSyncMp4({ video: 5, duplicateHandler: true }))).audio, null);
+});

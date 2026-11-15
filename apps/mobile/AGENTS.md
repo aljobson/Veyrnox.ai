@@ -23,6 +23,10 @@ npx expo install --fix      # fix incompatible package versions
 
 Run lint and typecheck before declaring any task done.
 
+## Simulator builds
+
+Build the iOS simulator app with `npm run build:ios-simulator`, not plain `eas build`: it gives the build the current TestFlight/production build number. Check the installed app with `npm run sim:verify`. Details: `docs/mobile/SIMULATOR-BUILD-NUMBER.md`.
+
 ## Navigation & Routing
 
 - Use **Expo Router** for all navigation. Routes live in `src/app/` — every file there is a screen, `_layout.tsx` files define navigators. Keep non-route code (components, hooks, utils) outside `src/app/`.

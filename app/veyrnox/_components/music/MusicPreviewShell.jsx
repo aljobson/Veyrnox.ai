@@ -15,6 +15,7 @@ const LINKS = [
   { href: '/app/music/workspaces', label: 'Workspaces' },
   { href: '/app/music/playlists', label: 'Playlists' },
   { href: '/app/music/sounds', label: 'Sounds', independent: true },
+  { href: '/app/music/beats', label: 'Beats', beats: true },
   { href: '/app/music/studio', label: 'Studio', studio: true },
 ];
 
@@ -32,7 +33,7 @@ const subscribePreview = (onChange) => {
   };
 };
 
-export function MusicPreviewShell({ children, initialEnabled = false, serverMode = false, libraryMode = false, playlistsMode = false, studioMode = false }) {
+export function MusicPreviewShell({ children, initialEnabled = false, serverMode = false, libraryMode = false, playlistsMode = false, studioMode = false, beatsMode = false }) {
   const pathname = usePathname().replace(/^\/veyrnox/, '');
   const [enabled, setEnabled] = useState(initialEnabled);
 
@@ -82,6 +83,7 @@ export function MusicPreviewShell({ children, initialEnabled = false, serverMode
               <nav aria-label="Music preview" className="flex max-w-full overflow-x-auto rounded-full border border-vx-border bg-vx-base p-1 text-sm font-bold">
                 {LINKS.filter((link) => {
                   if (link.independent) return serverMode;
+                  if (link.beats) return beatsMode;
                   if (link.studio) return studioMode;
                   if (link.discover) return true;
                   if (link.href.endsWith('/playlists')) return playlistsMode;
@@ -89,7 +91,7 @@ export function MusicPreviewShell({ children, initialEnabled = false, serverMode
                 }).map((link) => {
                   const active = pathname === link.href || pathname.startsWith(`${link.href}/`) || (link.href.includes('library') && pathname.includes('/songs/'));
                   return (
-                    <Link key={link.href} href={link.href} aria-current={active ? 'page' : undefined} className={`vx-press rounded-full px-4 py-2 ${active ? 'bg-vx-fg text-vx-base' : 'text-vx-fg-body hover:text-vx-fg'}`}>
+                    <Link key={link.href} href={link.href} aria-current={active ? 'page' : undefined} className={`vx-press rounded-full px-4 py-2 ${link.beats ? 'inline-flex min-h-11 items-center' : ''} ${active ? 'bg-vx-fg text-vx-base' : 'text-vx-fg-body hover:text-vx-fg'}`}>
                       {link.label}
                     </Link>
                   );
