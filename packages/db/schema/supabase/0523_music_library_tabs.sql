@@ -26,7 +26,9 @@ CREATE TABLE IF NOT EXISTS public.music_hooks (
     title TEXT NOT NULL CHECK (char_length(title) BETWEEN 1 AND 80),
     start_seconds NUMERIC(10,3) NOT NULL CHECK (start_seconds >= 0),
     end_seconds NUMERIC(10,3) NOT NULL,
+    idempotency_key TEXT NOT NULL CHECK (idempotency_key ~ '^[A-Za-z0-9._-]{8,120}$'),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (user_id, idempotency_key),
     CHECK (end_seconds - start_seconds BETWEEN 5 AND 30),
     FOREIGN KEY (song_id, user_id) REFERENCES public.music_songs(id, user_id) ON DELETE CASCADE,
     FOREIGN KEY (version_id, user_id, song_id) REFERENCES public.music_song_versions(id, user_id, song_id) ON DELETE CASCADE
@@ -137,11 +139,13 @@ BEGIN
 END $$;
 
 CREATE OR REPLACE FUNCTION public.music_create_hook(
-    p_auth_id TEXT, p_song_id UUID, p_version_id UUID, p_title TEXT, p_start NUMERIC, p_end NUMERIC, p_duration NUMERIC
+    p_auth_id TEXT, p_song_id UUID, p_version_id UUID, p_title TEXT, p_start NUMERIC, p_end NUMERIC, p_duration NUMERIC,
+    p_idempotency_key TEXT
 ) RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
-DECLARE v_user UUID; v_id UUID;
+DECLARE v_user UUID; v_id UUID; v_old public.music_hooks%ROWTYPE;
 BEGIN
-    IF p_song_id IS NULL OR p_version_id IS NULL OR p_title IS NULL
+    IF p_idempotency_key IS NULL OR p_idempotency_key !~ '^[A-Za-z0-9._-]{8,120}$'
+       OR p_song_id IS NULL OR p_version_id IS NULL OR p_title IS NULL
        OR char_length(btrim(p_title)) NOT BETWEEN 1 AND 80
        OR p_start IS NULL OR p_end IS NULL OR p_start<0 OR p_end-p_start NOT BETWEEN 5 AND 30
        OR p_duration IS NULL OR p_end>p_duration+0.001 THEN
@@ -149,6 +153,15 @@ BEGIN
     END IF;
     SELECT id INTO v_user FROM public.users WHERE auth_id=p_auth_id AND deleted_at IS NULL FOR UPDATE;
     IF v_user IS NULL THEN RETURN jsonb_build_object('ok',false,'code','NOT_FOUND'); END IF;
+    -- A replay with the same key is a no-op; the same key for a different hook is refused.
+    SELECT * INTO v_old FROM public.music_hooks WHERE user_id=v_user AND idempotency_key=p_idempotency_key;
+    IF FOUND THEN
+        IF v_old.song_id<>p_song_id OR v_old.version_id<>p_version_id OR v_old.title<>btrim(p_title)
+           OR v_old.start_seconds<>p_start OR v_old.end_seconds<>p_end THEN
+            RETURN jsonb_build_object('ok',false,'code','IDEMPOTENCY_CONFLICT');
+        END IF;
+        RETURN jsonb_build_object('ok',true,'hook_id',v_old.id,'idempotent',true);
+    END IF;
     IF NOT EXISTS(SELECT 1 FROM public.music_songs s JOIN public.music_song_versions v
         ON v.id=p_version_id AND v.song_id=s.id AND v.user_id=v_user
         WHERE s.id=p_song_id AND s.user_id=v_user AND s.status='active') THEN
@@ -157,8 +170,8 @@ BEGIN
     IF (SELECT count(*) FROM public.music_hooks WHERE user_id=v_user)>=100 THEN
         RETURN jsonb_build_object('ok',false,'code','LIMIT_REACHED');
     END IF;
-    INSERT INTO public.music_hooks(user_id,song_id,version_id,title,start_seconds,end_seconds)
-    VALUES(v_user,p_song_id,p_version_id,btrim(p_title),p_start,p_end) RETURNING id INTO v_id;
+    INSERT INTO public.music_hooks(user_id,song_id,version_id,title,start_seconds,end_seconds,idempotency_key)
+    VALUES(v_user,p_song_id,p_version_id,btrim(p_title),p_start,p_end,p_idempotency_key) RETURNING id INTO v_id;
     RETURN jsonb_build_object('ok',true,'hook_id',v_id);
 END $$;
 
@@ -235,14 +248,14 @@ END $$;
 
 REVOKE ALL ON FUNCTION public.music_record_listen(TEXT,UUID) FROM PUBLIC,anon,authenticated;
 REVOKE ALL ON FUNCTION public.music_list_listen_history(TEXT,INTEGER) FROM PUBLIC,anon,authenticated;
-REVOKE ALL ON FUNCTION public.music_create_hook(TEXT,UUID,UUID,TEXT,NUMERIC,NUMERIC,NUMERIC) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION public.music_create_hook(TEXT,UUID,UUID,TEXT,NUMERIC,NUMERIC,NUMERIC,TEXT) FROM PUBLIC,anon,authenticated;
 REVOKE ALL ON FUNCTION public.music_list_hooks(TEXT) FROM PUBLIC,anon,authenticated;
 REVOKE ALL ON FUNCTION public.music_delete_hook(TEXT,UUID) FROM PUBLIC,anon,authenticated;
 REVOKE ALL ON FUNCTION public.music_list_cover_art(TEXT) FROM PUBLIC,anon,authenticated;
 REVOKE ALL ON FUNCTION public.music_set_song_cover(TEXT,UUID,UUID) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.music_record_listen(TEXT,UUID) TO service_role;
 GRANT EXECUTE ON FUNCTION public.music_list_listen_history(TEXT,INTEGER) TO service_role;
-GRANT EXECUTE ON FUNCTION public.music_create_hook(TEXT,UUID,UUID,TEXT,NUMERIC,NUMERIC,NUMERIC) TO service_role;
+GRANT EXECUTE ON FUNCTION public.music_create_hook(TEXT,UUID,UUID,TEXT,NUMERIC,NUMERIC,NUMERIC,TEXT) TO service_role;
 GRANT EXECUTE ON FUNCTION public.music_list_hooks(TEXT) TO service_role;
 GRANT EXECUTE ON FUNCTION public.music_delete_hook(TEXT,UUID) TO service_role;
 GRANT EXECUTE ON FUNCTION public.music_list_cover_art(TEXT) TO service_role;
@@ -275,8 +288,7 @@ BEGIN
 END $$;
 CREATE OR REPLACE FUNCTION public.telemetry_path_allowed(p_path TEXT)
 RETURNS BOOLEAN LANGUAGE sql IMMUTABLE SET search_path = '' AS $$
-    SELECT p_path IN ('/api/v1/music/history', '/api/v1/music/hooks', '/api/v1/music/hooks/:id',
-                      '/api/v1/music/cover-art', '/api/v1/music/songs/:id/cover')
+    SELECT p_path IN ('/api/v1/music/library-tabs')
         OR public.telemetry_path_allowed_pre_0523(p_path)
 $$;
 REVOKE ALL ON FUNCTION public.telemetry_path_allowed(TEXT) FROM PUBLIC, anon, authenticated, service_role;

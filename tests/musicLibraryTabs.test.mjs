@@ -1,14 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { musicLibraryTabsEnabled, parseMusicCoverChoice, parseMusicHook, parseMusicListen } from '../lib/musicLibraryTabs.js';
+import { musicLibraryTabsEnabled, parseMusicCoverChoice, parseMusicHook, parseMusicLibraryTabAction, parseMusicListen } from '../lib/musicLibraryTabs.js';
 
 const ID = 'b6ed2d0d-8276-4fbb-9c4f-39f401a3158c';
 const sqlUrl = new URL('../packages/db/schema/supabase/0523_music_library_tabs.sql', import.meta.url);
 
 test('hook parser keeps a 5-30 s range and refuses extra keys', () => {
-  const base = { song_id: ID, version_id: ID, title: ' Chorus ' };
-  assert.deepEqual(parseMusicHook({ ...base, start_seconds: 10, end_seconds: 25 }), { ok: true, songId: ID, versionId: ID, title: 'Chorus', start: 10, end: 25 });
+  const base = { song_id: ID, version_id: ID, title: ' Chorus ', idempotency_key: 'hook.0001' };
+  assert.deepEqual(parseMusicHook({ ...base, start_seconds: 10, end_seconds: 25 }), { ok: true, songId: ID, versionId: ID, title: 'Chorus', start: 10, end: 25, idempotencyKey: 'hook.0001' });
   assert.equal(parseMusicHook({ ...base, start_seconds: 0, end_seconds: 4 }).error, 'hook_range_invalid');
   assert.equal(parseMusicHook({ ...base, start_seconds: 0, end_seconds: 31 }).error, 'hook_range_invalid');
   assert.equal(parseMusicHook({ ...base, start_seconds: 0, end_seconds: 10, audio_url: 'x' }).error, 'invalid_request');
@@ -42,8 +42,16 @@ test('0523 keeps everything private, erased with the account and free of credit 
   assert.doesNotMatch(sql, /GRANT EXECUTE[^;]*TO (authenticated|anon)/);
 });
 
-test('hook route measures the stored audio before saving', async () => {
-  const route = await readFile(new URL('../app/api/v1/music/hooks/route.js', import.meta.url), 'utf8');
+test('one route measures the stored audio before saving a hook, with a replay-safe key', async () => {
+  assert.equal(parseMusicHook({ song_id: ID, version_id: ID, title: 'x', start_seconds: 0, end_seconds: 10 }).error, 'idempotency_key_invalid');
+  assert.equal(parseMusicLibraryTabAction({ action: 'delete_hook', hook_id: ID }).hookId, ID);
+  assert.equal(parseMusicLibraryTabAction({ action: 'set_cover', song_id: ID, job_id: null }).jobId, null);
+  assert.equal(parseMusicLibraryTabAction({ action: 'drop_table' }).error, 'action_invalid');
+  const sql = await readFile(sqlUrl, 'utf8');
+  assert.match(sql, /UNIQUE \(user_id, idempotency_key\)/);
+  assert.match(sql, /'IDEMPOTENCY_CONFLICT'/);
+  const route = await readFile(new URL('../app/api/v1/music/library-tabs/route.js', import.meta.url), 'utf8');
+  assert.match(route, /p_idempotency_key: input\.idempotencyKey/);
   assert.match(route, /inspectStoredSource\(source\.r2_key/);
   assert.match(route, /p_duration: inspected\.seconds/);
 });

@@ -107,7 +107,7 @@ function Failure({ what, onRetry }) {
 const Loading = ({ label }) => <div aria-busy="true" aria-label={label} className="space-y-3"><div className="vx-shimmer h-24 rounded-2xl bg-vx-panel" /><div className="vx-shimmer h-24 rounded-2xl bg-vx-panel" /></div>;
 
 export function MusicHistoryCollection({ active }) {
-  const { items, state, load } = useCollection('/music/history', 'songs', active);
+  const { items, state, load } = useCollection('/music/library-tabs?tab=history', 'songs', active);
   if (!active) return null;
   return (
     <Shell id="music-history-title" title="History" intro="Songs you played most recently. Only you can see this.">
@@ -129,12 +129,19 @@ export function MusicHistoryCollection({ active }) {
 }
 
 export function MusicHooksCollection({ active, songs }) {
-  const { items, state, load } = useCollection('/music/hooks', 'hooks', active);
+  const { items, state, load } = useCollection('/music/library-tabs?tab=hooks', 'hooks', active);
   const [songId, setSongId] = useState('');
   const [title, setTitle] = useState('');
   const [start, setStart] = useState(0);
   const [length, setLength] = useState(15);
   const [busy, setBusy] = useState('');
+  const attempt = useRef(null);
+  // One key per distinct hook, so a retry after a timeout saves it once.
+  const hookKey = () => {
+    const signature = JSON.stringify([songId, title.trim(), start, length]);
+    if (attempt.current?.signature !== signature) attempt.current = { signature, key: `hook.${crypto.randomUUID()}` };
+    return attempt.current.key;
+  };
   const [error, setError] = useState('');
   if (!active) return null;
   const song = songs.find((item) => item.id === songId);
@@ -144,8 +151,8 @@ export function MusicHooksCollection({ active, songs }) {
     if (!song || busy) return;
     setBusy('create'); setError('');
     try {
-      await gatewayFetch('/music/hooks', { method: 'POST', body: JSON.stringify({ song_id: song.id, version_id: song.version_id, title: title.trim() || `${song.title} hook`, start_seconds: start, end_seconds: start + length }) });
-      setTitle(''); await load();
+      await gatewayFetch('/music/library-tabs', { method: 'POST', body: JSON.stringify({ action: 'create_hook', idempotency_key: hookKey(), song_id: song.id, version_id: song.version_id, title: title.trim() || `${song.title} hook`, start_seconds: start, end_seconds: start + length }) });
+      setTitle(''); attempt.current = null; await load();
     } catch (reason) {
       setError(reason?.code === 'hook_range_invalid' ? 'That range is past the end of the song. Choose an earlier start.'
         : reason?.code === 'limit_reached' ? 'You have 100 hooks. Delete one to save another.' : 'The hook could not be saved.');
@@ -154,7 +161,7 @@ export function MusicHooksCollection({ active, songs }) {
 
   async function remove(id) {
     setBusy(id); setError('');
-    try { await gatewayFetch(`/music/hooks/${id}`, { method: 'DELETE' }); await load(); }
+    try { await gatewayFetch('/music/library-tabs', { method: 'POST', body: JSON.stringify({ action: 'delete_hook', hook_id: id }) }); await load(); }
     catch { setError('The hook could not be deleted.'); }
     finally { setBusy(''); }
   }
@@ -184,7 +191,7 @@ export function MusicHooksCollection({ active, songs }) {
 }
 
 export function MusicCoverArtCollection({ active, songs, onChanged }) {
-  const { items: images, state, load } = useCollection('/music/cover-art', 'images', active);
+  const { items: images, state, load } = useCollection('/music/library-tabs?tab=covers', 'images', active);
   const [covers, setCovers] = useState({});
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
@@ -192,7 +199,7 @@ export function MusicCoverArtCollection({ active, songs, onChanged }) {
   useEffect(() => {
     if (!active || state !== 'ready') return undefined;
     let live = true;
-    gatewayFetch('/music/cover-art', { promptOnAuth: false })
+    gatewayFetch('/music/library-tabs?tab=covers', { promptOnAuth: false })
       .then((result) => { if (live) setCovers(Object.fromEntries((result.covers || []).map((cover) => [cover.song_id, cover]))); })
       .catch(() => {});
     return () => { live = false; };
@@ -203,7 +210,7 @@ export function MusicCoverArtCollection({ active, songs, onChanged }) {
   async function choose(songId, jobId) {
     setBusy(songId); setError('');
     try {
-      const result = await gatewayFetch(`/music/songs/${songId}/cover`, { method: 'PUT', body: JSON.stringify({ job_id: jobId || null }) });
+      const result = await gatewayFetch('/music/library-tabs', { method: 'POST', body: JSON.stringify({ action: 'set_cover', song_id: songId, job_id: jobId || null }) });
       setCovers((current) => {
         const next = { ...current };
         if (result.cover_url) next[songId] = { song_id: songId, job_id: jobId, image_url: result.cover_url };
