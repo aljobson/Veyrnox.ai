@@ -105,7 +105,9 @@ export function MusicRemixDialog({ kind, song, onClose }) {
     if (busy) return;
     setBusy(true); setError(''); setQuote(null);
     try {
-      setQuote(await gatewayFetch(`/music/songs/${song.id}/remix-quotes`, { method: 'POST', body: JSON.stringify(body()) }));
+      setQuote(await gatewayFetch(`/music/songs/${song.id}`, {
+        method: 'POST', body: JSON.stringify({ phase: 'quote', ...body() }),
+      }));
     } catch (reason) { setError(friendlyError(reason)); }
     finally { setBusy(false); }
   }
@@ -116,8 +118,8 @@ export function MusicRemixDialog({ kind, song, onClose }) {
     const key = attemptRef.current || `${kind}.${crypto.randomUUID()}`;
     attemptRef.current = key;
     try {
-      const accepted = await gatewayFetch(`/music/songs/${song.id}/remixes`, {
-        method: 'POST', body: JSON.stringify({ quote_id: quote.quote_id, idempotency_key: key }),
+      const accepted = await gatewayFetch(`/music/songs/${song.id}`, {
+        method: 'POST', body: JSON.stringify({ phase: 'confirm', quote_id: quote.quote_id, idempotency_key: key }),
       });
       attemptRef.current = null;
       setGeneration({ id: accepted.generation_id, state: accepted.state, candidates: accepted.candidates });

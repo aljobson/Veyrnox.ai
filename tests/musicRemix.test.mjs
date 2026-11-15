@@ -5,8 +5,7 @@ import { mashupSeconds, musicRemixEnabled, parseMusicRemixQuote, remixSourceKey 
 import { renderPcmWavMix } from '../lib/musicWavRender.js';
 
 const sqlUrl = new URL('../packages/db/schema/supabase/0522_music_mashup_sample.sql', import.meta.url);
-const quoteUrl = new URL('../app/api/v1/music/songs/[id]/remix-quotes/route.js', import.meta.url);
-const confirmUrl = new URL('../app/api/v1/music/songs/[id]/remixes/route.js', import.meta.url);
+const routeUrl = new URL('../app/api/v1/music/songs/[id]/route.js', import.meta.url);
 const V1 = 'b6ed2d0d-8276-4fbb-9c4f-39f401a3158c';
 const S2 = '7d2a3c1e-4b5f-4a6d-8e9f-0a1b2c3d4e5f';
 const V2 = '1c2d3e4f-5a6b-4c7d-8e9f-a0b1c2d3e4f5';
@@ -76,12 +75,13 @@ test('0522 stages both rows inactive, prices from the catalog and sends schema-t
   assert.doesNotMatch(sql, /IF [^;]*CASE [^;]*THEN[^;]*END THEN/);
 });
 
-test('Remix routes measure stored audio and never accept a browser URL', async () => {
-  const [quote, confirm] = await Promise.all([readFile(quoteUrl, 'utf8'), readFile(confirmUrl, 'utf8')]);
-  assert.match(quote, /inspectStoredSource\(source\.r2_key/);
-  assert.match(quote, /p_source_duration_seconds: duration/);
-  assert.match(confirm, /renderPcmWavMix\(sources\[0\], sources\[1\]/);
-  assert.match(confirm, /renderPcmWavCrop\(sources\[0\]/);
-  assert.match(confirm, /p_prepared_audio_url: signed\.url/);
-  assert.match(confirm, /await deleteObject\(preparedKey, r2cfg\)/);
+test('the song route measures stored Remix audio and never accepts a browser URL', async () => {
+  const route = await readFile(routeUrl, 'utf8');
+  assert.match(route, /phase !== 'quote' && phase !== 'confirm'/);
+  assert.match(route, /inspectStoredSource\(source\.r2_key/);
+  assert.match(route, /p_source_duration_seconds: duration/);
+  assert.match(route, /renderPcmWavMix\(sources\[0\], sources\[1\]/);
+  assert.match(route, /renderPcmWavCrop\(sources\[0\]/);
+  assert.match(route, /p_prepared_audio_url: signed\.url/);
+  assert.match(route, /await deleteObject\(preparedKey, r2cfg\)/);
 });

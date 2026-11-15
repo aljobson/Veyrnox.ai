@@ -547,17 +547,3 @@ GRANT EXECUTE ON FUNCTION public.music_create_remix_quote(TEXT,TEXT,UUID,UUID,UU
 GRANT EXECUTE ON FUNCTION public.music_get_remix_dispatch_context(TEXT,UUID,UUID,TEXT) TO service_role;
 GRANT EXECUTE ON FUNCTION public.music_submit_remix_pair(TEXT,UUID,UUID,TEXT,TEXT,TEXT,NUMERIC) TO service_role;
 GRANT EXECUTE ON FUNCTION public.music_project_candidate(UUID) TO service_role;
-
--- Admit the two new routes in the privacy-safe route telemetry allowlist.
-DO $$
-BEGIN
-    IF to_regprocedure('public.telemetry_path_allowed_pre_0522(text)') IS NULL THEN
-        ALTER FUNCTION public.telemetry_path_allowed(TEXT) RENAME TO telemetry_path_allowed_pre_0522;
-    END IF;
-END $$;
-CREATE OR REPLACE FUNCTION public.telemetry_path_allowed(p_path TEXT)
-RETURNS BOOLEAN LANGUAGE sql IMMUTABLE SET search_path = '' AS $$
-    SELECT p_path IN ('/api/v1/music/songs/:id/remix-quotes', '/api/v1/music/songs/:id/remixes')
-        OR public.telemetry_path_allowed_pre_0522(p_path)
-$$;
-REVOKE ALL ON FUNCTION public.telemetry_path_allowed(TEXT) FROM PUBLIC, anon, authenticated, service_role;
