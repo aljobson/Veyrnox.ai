@@ -1,4 +1,5 @@
 import { SYNTX_100_IMAGE_TEMPLATES } from './imageTemplatesSyntx100.js';
+import { SYNTX_PHOTO_IMAGE_TEMPLATES } from './imageTemplatesSyntxPhoto.js';
 import { IMAGE_SOURCE_PROMPT_RECORDS } from './imageSourcePromptRecords.js';
 
 import { imageTemplatesEnabled } from './imageTemplatesFlag.js';
@@ -17,7 +18,7 @@ const CHRISTMAS_IMAGE_TEMPLATES = [
   bg: 'linear-gradient(145deg, #163d35, #702e35 65%, #c59a54)',
 }));
 
-export const IMAGE_TEMPLATES = Object.freeze([...CHRISTMAS_IMAGE_TEMPLATES, ...SYNTX_100_IMAGE_TEMPLATES]);
+export const IMAGE_TEMPLATES = Object.freeze([...CHRISTMAS_IMAGE_TEMPLATES, ...SYNTX_100_IMAGE_TEMPLATES, ...SYNTX_PHOTO_IMAGE_TEMPLATES]);
 // Retain audited source records and ID reservations without publishing cards that have no artwork.
 export const UNPUBLISHED_IMAGE_TEMPLATE_IDS = Object.freeze(['flying-elf', 'christmas-tree-ornament']);
 const unpublishedImageTemplateIds = new Set(UNPUBLISHED_IMAGE_TEMPLATE_IDS);

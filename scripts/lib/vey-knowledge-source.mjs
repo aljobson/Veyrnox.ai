@@ -90,7 +90,9 @@ async function resolveImport(specifier, importer, productRoot) {
 async function collectRouteSources(pageFile, productRoot, sourceCache) {
   const visited = new Set();
   const queue = [pageFile];
-  while (queue.length && visited.size < 96) {
+  // 128, not 96, since the 2026-11-15 template imports: each import batch adds a data module to the catalog's
+  // import graph, and at 96 the home page's receipt component fell outside the walk.
+  while (queue.length && visited.size < 128) {
     const file = queue.shift();
     if (visited.has(file)) continue;
     visited.add(file);
