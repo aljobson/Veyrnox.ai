@@ -5154,6 +5154,12 @@
     "ratio": 1.71
   },
   {
+    "id": "notFound.action",
+    "english": "Go to Home",
+    "translation": "Aller à l’accueil",
+    "ratio": 1.7
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",
