@@ -12,10 +12,15 @@ import { LICENSED_MUSIC_TRACKS } from '../lib/licensedMusicCatalog.js';
 import { templateCards, templateDetail } from '../lib/clientTemplates.js';
 import { toPublicPresets } from '../lib/publicPresets.js';
 import { templateSourceUnsupported } from '../app/veyrnox/_lib/templateSourceBlock.js';
+import { imageSlots } from '../lib/templateBinding.js';
 
 const CAP = 100;
-const IMAGE_REF = /@image\d*/i;
 const VIDEO_REF = /@video\d*/i;
+const MULTI_PHOTO_EXCLUSIONS = Object.freeze([
+    'community-spinning-wardrobe-swap',
+    'community-supercar-driver-swap',
+    'community-sunlit-bedroom-dance',
+]);
 
 test('the video cap is 100 and the keep list is unique and within it', () => {
     assert.equal(VIDEO_TEMPLATE_CAP, CAP);
@@ -34,12 +39,26 @@ test('the video gallery lists exactly the keep list, at most 100', () => {
     assert.ok(listedVideo.length <= CAP);
 });
 
-test('every listed video template uses the person\'s photo, no @video, and can generate', () => {
+test('every listed video template binds the person\'s photo, needs no @video, and can generate', () => {
     for (const preset of PRESETS) {
         const detail = templateDetail(preset.id);
-        assert.match(detail.prompt, IMAGE_REF, `${preset.id} refers to @image`);
+        const citedSlots = imageSlots(detail.prompt);
+        assert.ok(citedSlots.length >= 1, `${preset.id} refers to the person's photo`);
         assert.doesNotMatch(detail.prompt, VIDEO_REF, `${preset.id} needs a source video we cannot supply`);
         assert.equal(templateSourceUnsupported(detail), false, `${preset.id} is blocked from generating`);
+        // The contract binds the cited photo to an upload slot the model really has (audit 2026-11-15: a prompt
+        // that cites photos with no slot cannot take the person's upload).
+        assert.equal(detail.fidelity?.class, 'bound', `${preset.id} has no slot for the photo its prompt cites`);
+        assert.ok(detail.fidelity.slotCount >= 1, preset.id);
+        assert.equal(citedSlots.length, detail.fidelity.slotCount,
+            `${preset.id} cites a different number of photos than its model accepts`);
+    }
+});
+
+test('the three audited multi-photo templates stay hidden but keep resolving by direct link', () => {
+    for (const id of MULTI_PHOTO_EXCLUSIONS) {
+        assert.equal(VIDEO_GALLERY_TEMPLATE_IDS.includes(id), false, `${id} needs more photos than its one slot accepts`);
+        assert.equal(templateById(id)?.id, id, `${id} still resolves from a saved or direct link`);
     }
 });
 
