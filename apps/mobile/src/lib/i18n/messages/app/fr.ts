@@ -1863,6 +1863,7 @@ export default {
   "edit.err.invalid": "Ce montage n’a pas pu être envoyé. Vérifiez-le et réessayez. Rien n’a été facturé.",
   "edit.err.mixedAspect": "Ces vidéos ont des formats d’image différents. Assemblez des vidéos de même format. Rien n’a été facturé.",
   "edit.err.mixedAudio": "Ces clips ne peuvent pas être assemblés : certains ont du son, d’autres sont muets. Choisissez des clips tous sonores ou tous muets. Rien n’a été facturé.",
+  "edit.openLocal": "Ouvrir dans l’éditeur (gratuit)",
   "edit.err.network": "Aucune connexion. Rien n’a été facturé. Réessayez.",
   "edit.err.notAudio": "Ce fichier n’est pas un fichier audio.",
   "edit.err.notVideo": "Seules les vidéos peuvent être montées. Rien n’a été facturé.",

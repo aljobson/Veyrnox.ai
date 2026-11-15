@@ -13,6 +13,7 @@ import { LibraryChooser } from '../../../components/LibraryChooser';
 import { touchTarget } from '../../../lib/a11y';
 import { ApiError, type ApiClient } from '../../../lib/api';
 import { getCacheUser, subscribeCacheUser } from '../../../lib/appCache';
+import { decodeCuts, encodeCuts } from '../../../lib/smartCutHandoff';
 import { MEDIA_ID } from '../../../lib/editorBridge';
 import { EDITOR_ENABLED } from '../../../lib/editorFlag';
 import { createProject, defaultWorkspace, editorErrorKey } from '../../../lib/editorProjects';
@@ -45,7 +46,8 @@ function Choice({ icon, title, body, disabled, onPress }: { readonly icon: MenuI
 function NewEditor() {
     const { api } = useAuth();
     const router = useRouter();
-    const { jobId, blank } = useLocalSearchParams<{ jobId?: string; blank?: string }>();
+    const { jobId, blank, cuts } = useLocalSearchParams<{ jobId?: string; blank?: string; cuts?: string }>();
+    const planned = useMemo(() => decodeCuts(cuts), [cuts]);
     const key = useRef<string | null>(null);
     key.current ??= randomUUID();
     const owner = useRef(getCacheUser());
@@ -72,18 +74,19 @@ function NewEditor() {
             if (!run.workspaceId) throw new ApiError(404, 'unavailable');
             if (!current()) return;
             const project = await createProject(api, run.workspaceId, run.name, key.current!);
-            if (current()) router.replace({ pathname: '/editor/[projectId]', params: { projectId: project.id, ...(run.jobId ? { jobId: run.jobId } : {}) } });
+            if (current()) router.replace({ pathname: '/editor/[projectId]', params: { projectId: project.id, ...(planned ? { cuts: encodeCuts(planned) } : run.jobId ? { jobId: run.jobId } : {}) } });
         } catch (err) {
             if (current()) { setProblem(err instanceof OfflineError || (err as ApiError).status === 0 ? 'editor.createOffline' : editorErrorKey((err as ApiError).status)); setProblemStatus(typeof (err as ApiError).status === 'number' ? (err as ApiError).status : null); }
         } finally { busy.current = false; if (current()) setPending(false); }
     }
     useEffect(() => {
-        if (jobId || blank === '1') void create(jobId);
+        if (planned) void create(planned[0].jobId, t('app.smartCut.name'));
+        else if (jobId || blank === '1') void create(jobId);
         const unsub = subscribeCacheUser(() => { if (owner.current !== getCacheUser()) { alive.current = false; setChoosing(false); router.back(); } });
         return () => { alive.current = false; unsub(); };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
-    const automatic = Boolean(jobId || blank === '1');
+    const automatic = Boolean(planned || jobId || blank === '1');
     return <View style={styles.screen}>
         <Stack.Screen options={{ title: t('editor.new') }} />
         <StatusBar style={isDark ? 'light' : 'dark'} />
