@@ -338,7 +338,7 @@ try {
         'music_reuse_draft_receipts', 'music_rights_attestations', 'music_share_links', 'music_song_feedback',
         'music_song_versions', 'music_songs', 'music_source_assets', 'music_stem_quotes', 'music_stem_requests',
         'music_target_stem_assets', 'music_target_stem_quotes', 'music_target_stem_requests', 'music_track_add_quotes',
-        'music_track_add_requests', 'music_version_operation_receipts', 'music_version_sources',
+        'music_remix_sources', 'music_track_add_requests', 'music_version_operation_receipts', 'music_version_sources',
         'music_workspace_invitations', 'music_workspace_members', 'music_workspace_moves', 'music_workspaces',
     ]);
     const refs = await q(`SELECT DISTINCT c.conrelid::regclass::text AS tbl FROM pg_constraint c
