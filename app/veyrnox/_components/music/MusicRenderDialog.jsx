@@ -4,10 +4,11 @@ import { useEffect, useRef, useState } from 'react';
 import { gatewayFetch } from '../../_lib/gateway';
 import { MusicPrivateAudio } from '../../_lib/useMusicAudioSrc';
 
-export function MusicRenderDialog({ song, onClose, onSaved }) {
+export function MusicRenderDialog({ song, onClose, onSaved, initialOperation = 'fade' }) {
+  const reverseEnabled = Array.isArray(song?.actions) && song.actions.includes('reverse');
   const closeRef = useRef(null);
   const attemptRef = useRef(null);
-  const [operation, setOperation] = useState('fade');
+  const [operation, setOperation] = useState(initialOperation === 'reverse' && !reverseEnabled ? 'fade' : initialOperation);
   const [duration, setDuration] = useState(0);
   const [fadeIn, setFadeIn] = useState(1);
   const [fadeOut, setFadeOut] = useState(1);
@@ -27,6 +28,7 @@ export function MusicRenderDialog({ song, onClose, onSaved }) {
   const parameters = operation === 'fade'
     ? { fade_in_seconds: fadeIn, fade_out_seconds: fadeOut }
     : operation === 'speed' ? { speed_ratio: speed }
+      : operation === 'reverse' ? {}
       : operation === 'reorder' ? { split_seconds: splitAt, order: [2, 1] }
         : { target_peak_dbfs: targetPeak };
   const signature = JSON.stringify({ operation, ...parameters, version_id: song.version_id });
@@ -36,7 +38,8 @@ export function MusicRenderDialog({ song, onClose, onSaved }) {
   const reorderInvalid = duration < 2 || splitAt < 1 || splitAt > duration - 1;
   const operationInvalid = operation === 'fade' ? fadeInvalid
     : operation === 'speed' ? speedInvalid
-      : operation === 'reorder' ? reorderInvalid : ![-3, -2, -1].includes(targetPeak);
+      : operation === 'reorder' ? reorderInvalid
+        : operation === 'reverse' ? !duration : ![-3, -2, -1].includes(targetPeak);
 
   async function save() {
     if (busy || operationInvalid) return;
@@ -82,6 +85,8 @@ export function MusicRenderDialog({ song, onClose, onSaved }) {
           <button type="button" role="tab" aria-selected={operation === 'speed'} onClick={() => { setOperation('speed'); setError(''); }} className={`min-h-10 flex-1 rounded-full px-4 ${operation === 'speed' ? 'bg-vx-fg text-vx-base' : 'text-vx-fg-muted'}`}>Speed</button>
           <button type="button" role="tab" aria-selected={operation === 'reorder'} onClick={() => { setOperation('reorder'); setError(''); }} className={`min-h-10 flex-1 rounded-full px-4 ${operation === 'reorder' ? 'bg-vx-fg text-vx-base' : 'text-vx-fg-muted'}`}>Reorder</button>
           <button type="button" role="tab" aria-selected={operation === 'remaster'} onClick={() => { setOperation('remaster'); setError(''); }} className={`min-h-10 flex-1 rounded-full px-4 ${operation === 'remaster' ? 'bg-vx-fg text-vx-base' : 'text-vx-fg-muted'}`}>Remaster</button>
+
+          {reverseEnabled ? <button type="button" role="tab" aria-selected={operation === 'reverse'} onClick={() => { setOperation('reverse'); setError(''); }} className={`min-h-10 flex-1 rounded-full px-4 ${operation === 'reverse' ? 'bg-vx-fg text-vx-base' : 'text-vx-fg-muted'}`}>Reverse</button> : null}
         </div>
         {operation === 'fade' ? (
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
@@ -91,6 +96,8 @@ export function MusicRenderDialog({ song, onClose, onSaved }) {
           </div>
         ) : operation === 'speed' ? (
           <label className="mt-5 block text-sm font-bold">Speed <span className="font-vx-mono text-vx-accent">{speed.toFixed(2)}×</span><input aria-label="Speed ratio" type="range" min="0.5" max="2" step="0.05" value={speed} onChange={(event) => setSpeed(Number(event.target.value))} className="mt-3 w-full accent-vx-accent" /><span className="mt-2 flex justify-between text-xs font-normal text-vx-fg-muted"><span>0.5× slower</span><span>2× faster</span></span></label>
+        ) : operation === 'reverse' ? (
+          <p className="mt-5 rounded-xl border border-vx-border bg-vx-base p-3 text-sm text-vx-fg-muted">The whole song plays backwards, from the last sample to the first. Length and pitch stay the same. The original stays in version history.</p>
         ) : operation === 'reorder' ? (
           <div className="mt-5">
             <label className="block text-sm font-bold">Split after <span className="font-vx-mono text-vx-accent">{splitAt.toFixed(1)}s</span><input aria-label="Section split time" type="range" min="1" max={Math.max(1, duration - 1)} step="0.1" value={splitAt} onChange={(event) => setSplitAt(Number(event.target.value))} className="mt-3 w-full accent-vx-accent" /></label>
@@ -102,7 +109,7 @@ export function MusicRenderDialog({ song, onClose, onSaved }) {
             <p className="mt-3 rounded-xl border border-vx-border bg-vx-base p-3 text-sm text-vx-fg-muted">All channels keep one linked gain, preserving the stereo image. This is deterministic level cleanup—not AI mastering, compression, EQ, or loudness matching.</p>
           </div>
         )}
-        <button type="button" onClick={save} disabled={busy || operationInvalid} className="mt-6 min-h-11 w-full rounded-full bg-vx-accent px-5 font-bold text-vx-accent-ink disabled:opacity-40">{busy ? 'Rendering new master…' : operation === 'fade' ? 'Save faded WAV as new version' : operation === 'speed' ? 'Save speed-adjusted WAV as new version' : operation === 'reorder' ? 'Save reordered WAV as new version' : 'Save remastered WAV as new version'}</button>
+        <button type="button" onClick={save} disabled={busy || operationInvalid} className="mt-6 min-h-11 w-full rounded-full bg-vx-accent px-5 font-bold text-vx-accent-ink disabled:opacity-40">{busy ? 'Rendering new master…' : operation === 'fade' ? 'Save faded WAV as new version' : operation === 'speed' ? 'Save speed-adjusted WAV as new version' : operation === 'reverse' ? 'Save reversed WAV as new version' : operation === 'reorder' ? 'Save reordered WAV as new version' : 'Save remastered WAV as new version'}</button>
         {error ? <p role="alert" className="mt-4 rounded-xl border border-vx-danger/40 bg-vx-danger/10 p-3 text-sm text-vx-danger">{error}</p> : null}
       </section>
     </div>
