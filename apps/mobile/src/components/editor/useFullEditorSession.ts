@@ -116,17 +116,20 @@ export function useFullEditorSession({ projectId, jobId, cuts, onOwnerChange = (
                 const trackId = base.tracks.find(track => track.kind === 'video' && !track.locked)?.id;
                 if (!trackId) { setProblem(t('editor.unlockoraddatrackfirst', { value1: 'video' })); return; }
                 const media: Record<string, Media> = { ...base.media };
+                const byJob = new Map<string, Media>();
                 for (const cut of cuts) {
-                    if (media[`j-${cut.jobId}`]) continue;
+                    if (byJob.has(cut.jobId)) continue;
                     const found = await libraryMedia(api, { jobId: cut.jobId, name: projectName.current || t('editor.libraryvideo2') }, 'video', () => token.valid());
                     if (found === LIBRARY_STOPPED || !token.valid()) return;
                     if (!found) { setProblem(t('editorCore.lengthUnknown')); return; }
                     media[found.id] = found;
+                    byJob.set(cut.jobId, found);
                 }
                 let seq = base.seq, at = 0;
                 const video = [...base.video];
                 for (const cut of cuts) {
-                    const frames = cutFrames(cut), source = media[`j-${cut.jobId}`];
+                    const frames = cutFrames(cut), source = byJob.get(cut.jobId);
+                    if (!source) { setProblem(t('editorCore.lengthUnknown')); return; }
                     const len = Math.min(frames.len, Math.max(1, (source.frames ?? frames.in + frames.len) - frames.in), SEQUENCE_MAX - at);
                     if (len < 1) break;
                     seq += 1;
