@@ -40,7 +40,7 @@ test('Dashboard authenticated balance, template pagination and filters remain re
   await expect(page.getByTestId('app-credit-balance')).toBeVisible();
   await expect(page.locator('#preset-gallery-results > a')).toHaveCount(50);
   await page.getByRole('button', { name: 'Show more templates', exact: true }).click();
-  await expect(page.locator('#preset-gallery-results > a')).toHaveCount(100);
+  await expect(page.locator('#preset-gallery-results > a')).toHaveCount(70); // the gallery lists the 70 video templates that bind a photo (#2249)
   const filters = page.getByRole('group', { name: 'Filter templates', exact: true });
   await filters.getByRole('button', { name: 'New', exact: true }).click();
   await expect(filters.getByRole('button', { name: 'New', exact: true })).toHaveAttribute('aria-pressed', 'true');
