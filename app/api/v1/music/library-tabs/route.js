@@ -1,4 +1,4 @@
-// Music Library tabs (0523): History, Hooks and Cover Art in one route, to
+// Music Library tabs (0532): History, Hooks and Cover Art in one route, to
 // keep the Worker bundle inside its budget.
 //   GET  ?tab=history|hooks|covers
 //   POST { action: 'listen', song_id }
