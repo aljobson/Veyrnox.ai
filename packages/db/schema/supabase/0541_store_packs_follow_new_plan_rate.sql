@@ -1,22 +1,23 @@
 -- 0541 — iOS and Android Credit Packs carry the same credits as the new web packs (ADR-0343,
 -- amends ADR-0312 amendment 1).
 --
--- 0540 moved the web packs to 186 / 467 / 1,401 credits. The store packs follow, with the 50% worst-case
+-- 0540 moved the web packs to 156 / 392 / 1,177 credits. The store packs follow, with the 50% worst-case
 -- margin held after the store's fee. At the Small Business rate (15%) the credits now fit the ordinary
 -- App Store points again, so the store prices fall back from 0421's $10.99 / $26.99 / $89.99:
 --
 --   store product              now (0421)             after
---   ai.veyrnox.credits.209     209 cr  $10.99         ai.veyrnox.credits.186   186 cr  $9.99
---   ai.veyrnox.credits.523     523 cr  $26.99         ai.veyrnox.credits.467   467 cr  $24.99
---   ai.veyrnox.credits.1571    1571 cr $89.99         ai.veyrnox.credits.1401  1401 cr $74.99
+--   ai.veyrnox.credits.209     209 cr  $10.99         ai.veyrnox.credits.156   156 cr  $9.99
+--   ai.veyrnox.credits.523     523 cr  $26.99         ai.veyrnox.credits.392   392 cr  $24.99
+--   ai.veyrnox.credits.1571    1571 cr $89.99         ai.veyrnox.credits.1177  1177 cr $74.99
 --
 -- A store product id is permanent and the app reads the credit count from it, so these are new products
 -- that must also exist in App Store Connect, Play Console and RevenueCat before an app build offers them.
 -- The old rows stay, inactive, so a refund or delayed event for an old transaction still resolves.
 --
 -- 50% at a 15% fee, every credit at the worst-case provider cost $0.01796 (no flat fee):
--- price_cents*350 >= credits*1796:  $9.99: 349650 >= 334056 (51.6%)   $24.99: 874650 >= 838732 (51.4%)
--- $74.99: 2624650 >= 2516196 (51.4%). Needs the Small Business Program; at 30% none of the three meets 50%. They clear credit_packs_net_floor (0344, written at 30%) and the sticker floor (0121).
+-- price_cents*350 >= credits*1796:  $9.99: 349650 >= 280176 (57.0%)   $24.99: 874650 >= 704032 (56.8%)
+-- $74.99: 2624650 >= 2113892 (56.8%). Needs the Small Business Program; at 30% none of the three meets 50%.
+-- They clear credit_packs_net_floor (0344, written at 30%) and the sticker floor (0121).
 -- Rollback: a forward migration that reactivates the old three and deactivates these.
 -- Idempotent: INSERT ... ON CONFLICT DO NOTHING and absolute assignments.
 
@@ -26,23 +27,23 @@ DO $$
 DECLARE affected INTEGER;
 BEGIN
     INSERT INTO public.credit_packs (id, sales_channel, credits, price_usd_cents, store_product_id, active)
-    VALUES ('ios-186', 'ios', 186, 999, 'ai.veyrnox.credits.186', true),
-           ('ios-467', 'ios', 467, 2499, 'ai.veyrnox.credits.467', true),
-           ('ios-1401', 'ios', 1401, 7499, 'ai.veyrnox.credits.1401', true),
-           ('android-186', 'android', 186, 999, 'ai.veyrnox.credits.186', true),
-           ('android-467', 'android', 467, 2499, 'ai.veyrnox.credits.467', true),
-           ('android-1401', 'android', 1401, 7499, 'ai.veyrnox.credits.1401', true)
+    VALUES ('ios-156', 'ios', 156, 999, 'ai.veyrnox.credits.156', true),
+           ('ios-392', 'ios', 392, 2499, 'ai.veyrnox.credits.392', true),
+           ('ios-1177', 'ios', 1177, 7499, 'ai.veyrnox.credits.1177', true),
+           ('android-156', 'android', 156, 999, 'ai.veyrnox.credits.156', true),
+           ('android-392', 'android', 392, 2499, 'ai.veyrnox.credits.392', true),
+           ('android-1177', 'android', 1177, 7499, 'ai.veyrnox.credits.1177', true)
     ON CONFLICT (id) DO NOTHING;
     IF (SELECT count(*) FROM public.credit_packs
         WHERE (sales_channel, credits, price_usd_cents, store_product_id) IN (
-            ('ios', 186, 999, 'ai.veyrnox.credits.186'), ('ios', 467, 2499, 'ai.veyrnox.credits.467'),
-            ('ios', 1401, 7499, 'ai.veyrnox.credits.1401'), ('android', 186, 999, 'ai.veyrnox.credits.186'),
-            ('android', 467, 2499, 'ai.veyrnox.credits.467'), ('android', 1401, 7499, 'ai.veyrnox.credits.1401'))) <> 6 THEN
+            ('ios', 156, 999, 'ai.veyrnox.credits.156'), ('ios', 392, 2499, 'ai.veyrnox.credits.392'),
+            ('ios', 1177, 7499, 'ai.veyrnox.credits.1177'), ('android', 156, 999, 'ai.veyrnox.credits.156'),
+            ('android', 392, 2499, 'ai.veyrnox.credits.392'), ('android', 1177, 7499, 'ai.veyrnox.credits.1177'))) <> 6 THEN
         RAISE EXCEPTION 'New store credit pack rows missing or changed';
     END IF;
 
     UPDATE public.credit_packs SET active = true, updated_at = now()
-    WHERE store_product_id IN ('ai.veyrnox.credits.186', 'ai.veyrnox.credits.467', 'ai.veyrnox.credits.1401')
+    WHERE store_product_id IN ('ai.veyrnox.credits.156', 'ai.veyrnox.credits.392', 'ai.veyrnox.credits.1177')
       AND sales_channel IN ('ios', 'android');
     GET DIAGNOSTICS affected = ROW_COUNT;
     IF affected <> 6 THEN
@@ -76,7 +77,7 @@ BEGIN
 
     IF (SELECT string_agg(sales_channel || ':' || credits || ':' || price_usd_cents || ':' || store_product_id, ',' ORDER BY sales_channel, credits)
         FROM public.credit_packs WHERE sales_channel IN ('ios', 'android') AND active)
-       IS DISTINCT FROM 'android:186:999:ai.veyrnox.credits.186,android:467:2499:ai.veyrnox.credits.467,android:1401:7499:ai.veyrnox.credits.1401,ios:186:999:ai.veyrnox.credits.186,ios:467:2499:ai.veyrnox.credits.467,ios:1401:7499:ai.veyrnox.credits.1401' THEN
+       IS DISTINCT FROM 'android:156:999:ai.veyrnox.credits.156,android:392:2499:ai.veyrnox.credits.392,android:1177:7499:ai.veyrnox.credits.1177,ios:156:999:ai.veyrnox.credits.156,ios:392:2499:ai.veyrnox.credits.392,ios:1177:7499:ai.veyrnox.credits.1177' THEN
         RAISE EXCEPTION 'Active store credit packs are not the expected six';
     END IF;
 END $$;

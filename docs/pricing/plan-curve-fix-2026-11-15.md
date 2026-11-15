@@ -85,3 +85,7 @@ The curve is flat to falling (5.41¢ down to 5.35¢) and no longer inverted. Yea
 4. Store plans (Apple/Google, ADR-0312 amendment 1) carry 15–30% fees and need their own price points; they are not covered here.
 5. Existing subscribers: new rows with new ids, old rows deactivated (the 0121, 0365, 0420 pattern); nobody's current plan changes silently.
 6. Needs: an ADR, a migration with exact-shape guards and asserted row counts, number of the migration taken from `main` after checking open PRs, and a flagged rollout.
+
+## Final decision, 2026-11-15
+
+Superseded by [ADR-0343](../adr/0343-uniform-yearly-discount-plan-credits.md): one price list on web, iOS and Android; yearly 20% off (rounded up to store points); 50% held in the stores at a 15% fee. That sets monthly credits to 157 / 297 / 924 / 2,011 and packs to 156 / 392 / 1,177 at $9.99 / $24.99 / $74.99. Earlier options in this file (A, B, E, separate store credits) are history.
