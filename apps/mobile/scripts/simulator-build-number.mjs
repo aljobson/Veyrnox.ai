@@ -11,6 +11,8 @@ import { fileURLToPath } from 'node:url';
 export const BUNDLE_ID = 'ai.veyrnox.app';
 export const VARIABLE = 'VEYRNOX_SIMULATOR_BUILD_NUMBER';
 const DEFAULT_UDID = 'booted';
+// Pinned so a newly published eas-cli cannot run unreviewed in a build script; bump deliberately.
+export const EAS_CLI = 'eas-cli@27.10.0';
 
 export function parseBuildNumber(output) {
     const match = /buildNumber\s*-\s*([1-9][0-9]{0,8})\b/.exec(String(output));
@@ -25,7 +27,7 @@ export function describeMatch(installed, production) {
 }
 
 function eas(args, options = {}) {
-    return spawnSync('npx', ['-y', 'eas-cli@latest', ...args], { encoding: 'utf8', ...options });
+    return spawnSync('npx', ['-y', EAS_CLI, ...args], { encoding: 'utf8', ...options });
 }
 
 export function productionBuildNumber() {
