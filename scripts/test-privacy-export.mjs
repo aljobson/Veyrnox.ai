@@ -330,6 +330,8 @@ try {
         // Library History, hooks and chosen cover art (0532): ids, ranges and counts on the person's own
         // songs, erased with the account. The generic export has no Music section yet.
         'music_listen_history', 'music_hooks', 'music_song_covers',
+        // Who played a public track (for the 30-minute check) and song reports (0533): erased with the account.
+        'music_play_listens', 'music_song_reports',
         // Music export is deliberately not implied by the generic profile/jobs projections. Account
         // deletion refuses while this provider/media-backed content exists (0490).
         'music_collaboration_profiles', 'music_creator_profiles', 'music_download_claims', 'music_download_periods',
