@@ -1,4 +1,4 @@
-import { BEAT_LIMITS, validateBeat, validBeatId } from './beatDocument.mjs';
+import { BEAT_LIMITS, validateBeat, migrateBeat, validBeatId } from './beatDocument.mjs';
 import { decideCreate, decideUpdate, decideDelete, validRecord } from './beatStoreRules.mjs';
 
 const NAME = 'veyrnox-beat-projects';
@@ -111,12 +111,12 @@ export async function deleteBeat(id, expectedRevision) {
   return writeResult(await run('readwrite', (rows) => ({ ...decideDelete(rows.find((r) => r.id === id), expectedRevision), id })));
 }
 export async function listBeats() {
-  return run('readonly', (rows) => ({ records: rows.filter(validRecord).sort((a, b) => b.updatedAt - a.updatedAt), count: rows.length }));
+  return run('readonly', (rows) => ({ records: rows.filter(validRecord).map((r) => ({ ...r, doc: migrateBeat(r.doc) })).sort((a, b) => b.updatedAt - a.updatedAt), count: rows.length }));
 }
 export async function getBeat(id) {
   if (!validBeatId(id)) return { error: 'not_found' };
   return run('readonly', (rows) => {
     const record = rows.find((r) => r.id === id);
-    return !record ? { error: 'not_found' } : !validRecord(record) ? { error: 'damaged' } : { record };
+    return !record ? { error: 'not_found' } : !validRecord(record) ? { error: 'damaged' } : { record: { ...record, doc: migrateBeat(record.doc) } };
   });
 }

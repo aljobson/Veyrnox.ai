@@ -15,3 +15,14 @@ export function nearestStep(offset, bpm, swing, steps) {
   }
   return best;
 }
+
+export const barTicks = 3840;
+export const snapTick = (tick, snap = stepTicks) => Math.round(tick / snap) * snap;
+export const clampLocator = (tick, end) => Math.max(0, Math.min(end, snapTick(tick)));
+export function moveLocator(tick, key, snap, end) {
+  const delta = { ArrowLeft: -snap, ArrowRight: snap, PageUp: -barTicks, PageDown: barTicks }[key];
+  return clampLocator(key === 'Home' ? 0 : key === 'End' ? end : tick + (delta || 0), end);
+}
+// Shared by the scheduler and mixdown; straight boundaries never accumulate swing.
+export const swingDelay = (step, bpm, swing) => step % 2 ? swing * stepSeconds(bpm) * 0.5 : 0;
+export const eventTime = (straight, step, bpm, swing) => straight + swingDelay(step, bpm, swing);
