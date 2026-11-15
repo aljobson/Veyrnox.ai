@@ -36,13 +36,13 @@ test('the render parser takes reverse with no parameters and refuses extras', ()
   assert.equal(parseMusicLocalRender({ operation: 'reverse', version_id: ID, idempotency_key: 'reverse.0001', speed_ratio: 2 }).error, 'invalid_request');
 });
 
-test('Reverse needs editing and its own switch, which ships false; 0525 admits it everywhere it must', async () => {
+test('Reverse needs editing and its own switch, which ships false; 0534 admits it everywhere it must', async () => {
   const on = { MUSIC_RUNTIME_FLAGS: JSON.stringify({ ui: true, schema: true, library: true, editing: true, reverse: true }) };
   assert.equal(musicReverseEnabled(on), true);
   assert.equal(musicReverseEnabled({ ...on, MUSIC_REVERSE_ENABLED: 'false' }), false);
   const wrangler = await readFile(new URL('../wrangler.jsonc', import.meta.url), 'utf8');
   assert.equal((wrangler.match(/\\"reverse\\":false/g) || []).length, 2);
-  const sql = await readFile(new URL('../packages/db/schema/supabase/0525_music_reverse_render.sql', import.meta.url), 'utf8');
+  const sql = await readFile(new URL('../packages/db/schema/supabase/0534_music_reverse_render.sql', import.meta.url), 'utf8');
   assert.match(sql, /'music-local-reverse'/);
   assert.match(sql, /'remaster','reverse'\)\);/);
   assert.match(sql, /'mashup','sample','reverse'\)\);/);

@@ -3,7 +3,7 @@
 -- canonical WAV version; the source stays in version history. No provider, no
 -- credits (a zero-credit 'local' STORED job, as for the other local renders).
 -- The two functions are 0486's bodies with 'reverse' admitted. The version
--- operation list also keeps 'mashup' and 'sample' from PR #2262 (0522), so the
+-- operation list also keeps 'mashup' and 'sample' from PR #2262 (0531), so the
 -- two migrations can apply in either order.
 -- Off until MUSIC_RUNTIME_FLAGS.reverse is true.
 
