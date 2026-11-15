@@ -23,6 +23,7 @@
         "EXPO_PUBLIC_APP_ENV": "staging",
         "EXPO_PUBLIC_EDITOR_ENABLED": "true",
         "EXPO_PUBLIC_FULL_EDITOR_ENABLED": "true",
+        "EXPO_PUBLIC_EDITOR_SERVER_EXPORT_ENABLED": "true",
         "EXPO_PUBLIC_STORE_BILLING_ENABLED": "true",
         "VEYRNOX_NATIVE_PURCHASES": "1",
         "SENTRY_DISABLE_AUTO_UPLOAD": "true",

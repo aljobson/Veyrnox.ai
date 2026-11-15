@@ -57,3 +57,9 @@ test('one route measures the stored audio before saving a hook, with a replay-sa
   assert.match(route, /inspectStoredSource\(source\.r2_key/);
   assert.match(route, /p_duration: inspected\.seconds/);
 });
+
+test('History, Hooks and Cover Art reload each time their tab is opened', async () => {
+  const source = await readFile(new URL('../app/veyrnox/_components/music/MusicLibraryTabs.jsx', import.meta.url), 'utf8');
+  assert.doesNotMatch(source, /state !== 'idle'/);
+  assert.match(source, /if \(!active\) return undefined;\n    const timer = window\.setTimeout\(load, 0\);/);
+});
