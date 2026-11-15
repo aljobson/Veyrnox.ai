@@ -4,7 +4,8 @@
 // photo the prompt cites (class "bound", lib/templateFidelityContracts.json). The prompt writes the photo as @image1
 // or <<<image_1>>>. Audit of 2026-11-15: 73 of the 795 preview-backed templates are bound; three of those are left
 // out because their prompt asks for more photos than the one slot takes (community-spinning-wardrobe-swap,
-// community-sunlit-bedroom-dance, community-supercar-driver-swap). Templates that need @video, or photos their
+// community-sunlit-bedroom-dance, community-supercar-driver-swap). 30 more were imported on 2026-11-15 to reach 100
+// (docs/product/source-audit/higgsfield-photo-30-2026-11-15.json). Templates that need @video, or photos their
 // model has no slot for, stay hidden until a route can take them. Hidden templates leave the gallery, search,
 // /api/templates, /api/presets and the sitemap; their direct links still resolve (templateById reads ALL_TEMPLATES).
 // tests/videoTemplateCap.test.mjs pins the cap and the rule.
@@ -30,4 +31,13 @@ export const VIDEO_GALLERY_TEMPLATE_IDS = Object.freeze([
   'seedance-popcorn-eruption', 'seedance-rescue-myself', 'seedance-quick-change-2', 'seedance-quick-change',
   'seedance-roof-jump', 'seedance-glass-cube', 'seedance-subway-fight', 'cake-in-the-fridge',
   'game-character-rig', 'holiday-heist-run',
+  // Added 2026-11-15: 30 top-liked Higgsfield single-photo templates (scripts/import-higgsfield-photo-30.mjs).
+  'community-dramatic-fire-walk', 'community-beachside-dance', 'community-metropolitan-crosswalk', 'community-nightlife-dj-set',
+  'community-pigeon-recast', 'community-tracksuit-heist-swap', 'community-midnight-city-shuffle', 'community-supercar-flex',
+  'community-retro-tracksuit-groove', 'community-motion-transfer', 'community-blonde-sport-set', 'community-street-style-strut',
+  'community-shoreline-gallop-swap', 'community-dragon-awakening', 'community-restaurant-character-recast', 'community-skyline-flamingo-prank',
+  'community-stage-performer-swap', 'community-martial-arts-leap', 'community-championship-slap-duel', 'community-rocket-product-launch',
+  'community-industrial-street-flow', 'community-urban-stride', 'community-action-hero-swap', 'community-supercar-night-fueling',
+  'community-chauffeur-arrival-swap', 'community-kitchen-juggling-swap', 'community-coastal-character-swap', 'community-kitten-holiday-dance',
+  'community-bipedal-cat-stroll', 'community-extreme-pizza-freefall',
 ]);
