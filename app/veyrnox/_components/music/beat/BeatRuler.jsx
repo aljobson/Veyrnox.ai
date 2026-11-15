@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { clampLocator, moveLocator, snapTick } from '../../../_lib/music/beat/beatTime.mjs';
+import { clampLocator, moveLocator, snapTick, formatPosition } from '../../../_lib/music/beat/beatTime.mjs';
 import { setCycle } from '../../../_lib/music/beat/beatOps.mjs';
 
 export default function BeatRuler({ bars, zoom, snap, locator, end, setLocator, cycle, edit, announce }) {
@@ -22,7 +22,7 @@ export default function BeatRuler({ bars, zoom, snap, locator, end, setLocator, 
   return <div ref={root} className="relative h-24 border-b border-vx-border bg-vx-panel">
     <div role="slider" tabIndex={0} aria-label="Playhead position" aria-valuemin={0}
       aria-valuemax={end / 240} aria-valuenow={locator / 240}
-      aria-valuetext={`Bar ${Math.floor(locator / 3840) + 1}, beat ${Math.floor(locator % 3840 / 960) + 1}`}
+      aria-valuetext={formatPosition(locator)}
       className="absolute inset-x-0 bottom-0 h-11 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-vx-accent"
       onClick={(event) => setLocator(clampLocator(tick(event), end))}
       onKeyDown={(event) => {
