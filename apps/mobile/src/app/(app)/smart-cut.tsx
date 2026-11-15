@@ -31,6 +31,8 @@ import {
     type Clip,
 } from '../../lib/clipEdit';
 import { libraryMedia } from '../../lib/editorLibraryLength';
+import { FULL_EDITOR_ENABLED } from '../../lib/editorFlag';
+import { encodeCuts } from '../../lib/smartCutHandoff';
 import { formatLocale, plural, t } from '../../lib/i18n';
 import { libraryChoices } from '../../lib/librarySource';
 import { fetchCatalog, mediaApi, type CatalogModel, type Job, type JobPage } from '../../lib/media';
@@ -319,7 +321,8 @@ export default function SmartCutRoute() {
                     <View style={styles.switchRow}><Text variant="bodyStrong">{t('edit.captionsOn')}</Text><Switch accessibilityLabel={rawText(t('edit.captionsOn'))} value={captionsOn} onValueChange={setCaptionsOn} /></View>
                     {captionsOn ? <><Text variant="footnote" tone="secondary">{t('app.editor.sheet.style')}</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>{CAPTION_PRESETS.map((preset) => <Chip key={preset} selected={captionPreset === preset} label={preset} onPress={() => setCaptionPreset(preset)} />)}</ScrollView></> : null}
                     <Text tone={total > MAX_OUTPUT_S ? 'danger' : 'secondary'}>{t('edit.total', { seconds: seconds(total), max: MAX_OUTPUT_S })}</Text>
-                    <Button label={t('edit.review')} loading={busy} disabled={busy} onPress={() => void reviewPrice()} />
+                    {FULL_EDITOR_ENABLED && clips.length > 0 && clips.length <= MAX_CLIPS ? <Button label={t('edit.openLocal')} onPress={() => router.push({ pathname: '/editor/new', params: { cuts: encodeCuts(clips.map((clip) => ({ jobId: clip.jobId, start: clip.start, end: clip.end }))) } })} /> : null}
+                    <Button variant="secondary" label={t('edit.review')} loading={busy} disabled={busy} onPress={() => void reviewPrice()} />
                 </>}
                 {problem ? <Text tone="danger" accessibilityRole="alert">{problem}</Text> : null}
             </ScrollView>

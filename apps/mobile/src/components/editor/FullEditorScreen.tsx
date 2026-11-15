@@ -30,6 +30,7 @@ import { EditorVersionsSheet } from './EditorVersionsSheet';
 import { Button } from '../ui/Button';
 import { useEffect, useRef, useState } from 'react';
 import { EDITOR_SERVER_EXPORT_ENABLED } from '../../lib/editorFlag';
+import type { Cut } from '../../lib/smartCutHandoff';
 import { requireOnline, OFFLINE_PAID_MESSAGE } from '../../lib/network';
 import { exportUnavailable } from '../../lib/editorServerExport';
 import { EDITOR_EXPORT_GATE as exportGate } from '../../lib/editorExportGate';
@@ -69,7 +70,7 @@ const tools: readonly { id: Tool; icon: string; label: string }[] = [
 const seconds = (frames = 0, fps = 30) => `${formatNumber(Math.max(0, frames / fps), 1)}s`;
 import { overlaySpan } from '../../lib/editorOverlay';
 import { useFullEditorSession } from './useFullEditorSession';
-export function FullEditorScreen({ projectId, jobId, startAdvanced = false, startBestCut = false }: { projectId: string; jobId?: string; startAdvanced?: boolean; startBestCut?: boolean }) {
+export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false, startBestCut = false }: { projectId: string; jobId?: string; cuts?: readonly Cut[] | null; startAdvanced?: boolean; startBestCut?: boolean }) {
     const mounted = useRef(true);
     const [libraryPending, setLibraryPending] = useState(false);
     const [viewport, setViewport] = useState(0);
@@ -81,7 +82,7 @@ export function FullEditorScreen({ projectId, jobId, startAdvanced = false, star
     const [advanced, setAdvanced] = useState(startAdvanced);
     const [sheet, setSheet] = useState<SimpleSheetName | null>(null);
     const [panelOpen, setPanelOpen] = useState(false);
-    const session = useFullEditorSession({ projectId, jobId, onOwnerChange: () => guard.teardown(() => router.back()), onCopy: id => guard.teardown(() => router.replace({ pathname: '/editor/[projectId]', params: { projectId: id } })) });
+    const session = useFullEditorSession({ projectId, jobId, cuts, onOwnerChange: () => guard.teardown(() => router.back()), onCopy: id => guard.teardown(() => router.replace({ pathname: '/editor/[projectId]', params: { projectId: id } })) });
     const { getEditRevision, beginImport, replacing, leaveEditor, saveStatus, sync, currentDocument, preparePicked, savedDocument, api, router, name, document, dirty, problem, setProblem, tool, setTool, selection, setSelection, selections, setSelections, multiSelect, setMultiSelect, clipboard, setClipboard, snap, setSnap, ripple, setRipple, zoom, setZoom, privacyNotice, history, frameStore, setFrame, playing, setPlaying, projectAssets, localMediaUris, libraryKind, setLibraryKind, markDocument, save, acknowledgePrivacy, travel } = session;
     const bestCut = useBestCutEditor(session, projectId, startBestCut);
     const thumbLinks = useAssetLinks(api);

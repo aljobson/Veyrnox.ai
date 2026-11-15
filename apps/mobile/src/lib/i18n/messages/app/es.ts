@@ -1863,6 +1863,7 @@ export default {
   "edit.err.invalid": "No se pudo enviar esta edición. Revísala e inténtalo de nuevo. No se cobró nada.",
   "edit.err.mixedAspect": "Estos vídeos tienen distintas proporciones. Une vídeos con las mismas proporciones. No se cobró nada.",
   "edit.err.mixedAudio": "Estos clips no se pueden unir: unos tienen sonido y otros son mudos. Elige clips que tengan todos sonido o todos sin sonido. No se cobró nada.",
+  "edit.openLocal": "Abrir en el editor (gratis)",
   "edit.err.network": "Sin conexión. No se cobró nada. Inténtalo de nuevo.",
   "edit.err.notAudio": "Ese archivo no es de audio.",
   "edit.err.notVideo": "Solo se pueden editar vídeos. No se cobró nada.",

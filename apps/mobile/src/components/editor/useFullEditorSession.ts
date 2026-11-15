@@ -1,6 +1,7 @@
 import { createFrameStore } from './editorFrameStore';
 import { PPF_DEFAULT, SEQUENCE_MAX } from '../../lib/editorTimeline';
 import { libraryMedia, LIBRARY_STOPPED } from '../../lib/editorLibraryLength';
+import { cutFrames, type Cut } from '../../lib/smartCutHandoff';
 import { isAccountChanged } from '../../auth/sessionTask';
 import { useEditorSaveSync, type EditorSaveSync } from './useEditorSaveSync';
 import * as SecureStore from 'expo-secure-store';
@@ -23,7 +24,7 @@ import type { SlotKind } from '../../lib/sources';
 type Tool = 'media' | 'audio' | 'generate' | 'text' | 'captions' | 'transcript' | 'effects' | 'transitions' | 'filters' | 'animation' | 'markers' | 'brand' | 'adjust';
 type Ripple = 'none' | 'lane' | 'all';
 
-export function useFullEditorSession({ projectId, jobId, onOwnerChange = () => {}, onCopy = () => {} }: { projectId: string; jobId?: string; onOwnerChange?: () => void; onCopy?: (id: string) => void }) {
+export function useFullEditorSession({ projectId, jobId, cuts, onOwnerChange = () => {}, onCopy = () => {} }: { projectId: string; jobId?: string; cuts?: readonly Cut[] | null; onOwnerChange?: () => void; onCopy?: (id: string) => void }) {
     const { api, beginSessionTask } = useAuth();
     const router = useRouter();
     const mounted = useRef(true);
@@ -103,10 +104,42 @@ export function useFullEditorSession({ projectId, jobId, onOwnerChange = () => {
         }).catch(() => {});
     }, [projectId]);
     const entryImport = useCallback(async () => {
-        if (!jobId || initialImport.current) return;
+        if ((!jobId && !cuts) || initialImport.current) return;
         const token = syncRef.current?.beginImport(); if (!token) return;
         initialImport.current = true;
         try {
+            if (cuts) {
+                // Smart Cut's plan: each segment becomes a trimmed clip on the first video track, joined on the phone.
+                const current = documentRef.current; if (!current) return;
+                const base = timelineOf(current.timeline);
+                if (base.video.length > 0) return;
+                const trackId = base.tracks.find(track => track.kind === 'video' && !track.locked)?.id;
+                if (!trackId) { setProblem(t('editor.unlockoraddatrackfirst', { value1: 'video' })); return; }
+                const media: Record<string, Media> = { ...base.media };
+                const byJob = new Map<string, Media>();
+                for (const cut of cuts) {
+                    if (byJob.has(cut.jobId)) continue;
+                    const found = await libraryMedia(api, { jobId: cut.jobId, name: projectName.current || t('editor.libraryvideo2') }, 'video', () => token.valid());
+                    if (found === LIBRARY_STOPPED || !token.valid()) return;
+                    if (!found) { setProblem(t('editorCore.lengthUnknown')); return; }
+                    media[found.id] = found;
+                    byJob.set(cut.jobId, found);
+                }
+                let seq = base.seq, at = 0;
+                const video = [...base.video];
+                for (const cut of cuts) {
+                    const frames = cutFrames(cut), source = byJob.get(cut.jobId);
+                    if (!source) { setProblem(t('editorCore.lengthUnknown')); return; }
+                    const len = Math.min(frames.len, Math.max(1, (source.frames ?? frames.in + frames.len) - frames.in), SEQUENCE_MAX - at);
+                    if (len < 1) break;
+                    seq += 1;
+                    video.push({ id: `v${seq}`, mediaId: source.id, start: at, in: frames.in, len, trackId, volume: 1, transition: 0, rate: 1 });
+                    at += len;
+                }
+                markDocument({ ...current, schema_version: 3, timeline: { ...base, seq, media, video } });
+                return;
+            }
+            if (!jobId) return;
             if (timelineOf(documentRef.current?.timeline).media[`j-${jobId}`]) return;
             const media = await libraryMedia(api, { jobId, name: projectName.current || t('editor.libraryvideo2') }, 'video', () => token.valid());
             if (media === LIBRARY_STOPPED || !token.valid()) return;
@@ -119,7 +152,7 @@ export function useFullEditorSession({ projectId, jobId, onOwnerChange = () => {
             markDocument({ ...current, schema_version: 3, timeline: { ...base, seq, media: { ...base.media, [media.id]: media }, video: [...base.video, { id: `v${seq}`, mediaId: media.id, start: 0, in: 0, len: Math.min(media.frames!, SEQUENCE_MAX), trackId, volume: 1, transition: 0, rate: 1 }] } });
         } catch (error) { if (isAccountChanged(error)) syncRef.current?.accountChanged(); else if (token.valid()) setProblem(t('editorCore.lengthUnknown')); }
         finally { token.end(); }
-    }, [api, jobId, markDocument]);
+    }, [api, jobId, cuts, markDocument]);
     const sync = useEditorSaveSync({ api, projectId, name, documentRef, revisionRef, dirtyRef, baseline, markDocument, mergeBackups, problem, setProblem, onOwnerChange, onCopy, entryImport,
         clearDocument: () => { editRevisionRef.current++; documentRef.current = null; setDocument(null); setPlaying(false); },
     });
