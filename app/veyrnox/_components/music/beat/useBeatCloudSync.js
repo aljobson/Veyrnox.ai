@@ -48,7 +48,8 @@ export function useBeatCloudSync({ beatId, project, cloud, announce }) {
       clearTimeout(mediaTimer);
       if (!takeAssets(doc).length) { setView(v => ({ ...v, media: [] })); return; }
       const rows = [...await rowsFor(token)], failures = [];
-      const pendingTakes = takesToUpload(doc, rows, refused);
+      // An explicit Load theirs retries every take, including ones a background cycle refused.
+      const pendingTakes = takesToUpload(doc, rows, required ? new Set() : refused);
       for (const [index, asset] of pendingTakes.entries()) {
         check(token);
         try {
@@ -56,14 +57,18 @@ export function useBeatCloudSync({ beatId, project, cloud, announce }) {
           const row = { ...ready, take_ref: asset.ref, status: 'ready' };
           const existing = rows.findIndex(r => r.take_ref === asset.ref);
           if (existing < 0) rows.push(row); else rows[existing] = { ...rows[existing], ...row };
+          refused.delete(asset.ref);
         } catch (error) {
           check(token); failures.push(asset.name);
           const code = errorCode(error);
+          // Transient: rate limits, timeouts, 5xx and transport failures. A statusless local failure
+          // (encoding, missing samples) is permanent so it cannot burn the write window every minute.
           const retryable = code === 'RATE_LIMITED' || (error.status === 409 && code === 'TAKE_UPLOAD_MISSING') ||
-            !error.status || (error.status >= 500 && error.status < 600);
+            [408, 425, 429].includes(error.status) || (!error.status && code === 'NETWORK_ERROR') ||
+            (error.status >= 500 && error.status < 600);
           if (!retryable || ['TAKE_CHANGED', 'LIMIT_REACHED', 'TAKE_UNAVAILABLE'].includes(code)) refused.add(asset.ref);
           if (code === 'LIMIT_REACHED') pendingTakes.slice(index).forEach(a => refused.add(a.ref));
-          if (['RATE_LIMITED', 'LIMIT_REACHED'].includes(code)) break;
+          if (['RATE_LIMITED', 'LIMIT_REACHED'].includes(code) || error.status === 429) break;
         }
       }
       takeRows = rows;

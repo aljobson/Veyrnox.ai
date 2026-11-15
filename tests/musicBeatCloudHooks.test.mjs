@@ -156,7 +156,7 @@ test('NOT_FOUND clears the link, stops automatic saves and re-creates only on th
 });
 const takes = Object.fromEntries(['one', 'two', 'three'].map(ref => [`a${ref}`, { source: 'take', ref, name: ref, durationSec: 1, sourceChannels: 1, encodedBytes: 44, bpm: null }]));
 for (const [status, code] of [[400, 'INVALID_REQUEST'], [401, 'UNAUTHORIZED'], [403, 'TAKE_UPLOAD_FAILED'],
-  [404, 'NOT_FOUND'], [409, 'take_upload_invalid'], [413, 'TAKE_UPLOAD_FAILED'], [429, 'OTHER_LIMIT']]) {
+  [404, 'NOT_FOUND'], [409, 'take_upload_invalid'], [413, 'TAKE_UPLOAD_FAILED'], [undefined, 'ENCODE_FAILED']]) {
   test(`${status} ${code} refuses only that take and stops its retry timer`, async t => {
     const h = await setup(t, { assets: takes });
     fixture.upload = async asset => {
@@ -174,7 +174,8 @@ for (const [status, code] of [[400, 'INVALID_REQUEST'], [401, 'UNAUTHORIZED'], [
   });
 }
 for (const error of [{ status: 503, code: 'TAKE_UPLOAD_FAILED' }, { code: 'NETWORK_ERROR' },
-  { status: 409, code: 'take_upload_missing' }]) {
+  { status: 409, code: 'take_upload_missing' }, { status: 408, code: 'TAKE_UPLOAD_FAILED' },
+  { status: 429, code: 'TAKE_UPLOAD_FAILED' }, { status: 429, code: 'OTHER_LIMIT' }]) {
   test(`${error.code} ${error.status || 'network'} keeps the existing media retry`, async t => {
     const h = await setup(t, { assets: { aone: takes.aone } });
     fixture.upload = async () => { throw error; };
@@ -225,4 +226,20 @@ test('removal while resolving Keep mine clears the conflict and stops retries', 
   await h.sync.output.resolve('mine'); await h.settle();
   assert.equal(h.sync.output.state, 'removed'); assert.equal(h.sync.output.conflict, null);
   assert.equal(h.timers.size, 0);
+});
+test('Load theirs retries a take that a background cycle refused', async t => {
+  const h = await setup(t, { edited: true, assets: { aone: takes.aone } });
+  fixture.upload = async () => { throw { status: 403, code: 'TAKE_UPLOAD_FAILED' }; };
+  await h.run();
+  assert.deepEqual(h.sync.output.media, ['one']);
+  fixture.record = { ...fixture.record, doc: { ...fixture.record.doc, updatedAt: 5 }, updatedAt: 5 };
+  fixture.save = async () => { throw { code: 'VERSION_CONFLICT', status: 409 }; };
+  fixture.get = async () => ({ project: { id: fixture.record.cloud.projectId, revision: 2 }, doc_json: JSON.stringify({ ...fixture.record.doc, title: 'Theirs', updatedAt: 6 }) });
+  await h.sync.output.checkpoint(); await h.settle();
+  assert.equal(h.sync.output.state, 'conflict');
+  const before = fixture.calls.filter(c => Array.isArray(c) && c[0] === 'upload').length;
+  fixture.upload = async asset => ({ id: asset.ref, status: 'ready' });
+  await h.sync.output.resolve('theirs'); await h.settle();
+  assert.equal(fixture.calls.filter(c => Array.isArray(c) && c[0] === 'upload').length, before + 1);
+  assert.deepEqual(h.sync.output.media, []);
 });
