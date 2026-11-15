@@ -27,3 +27,9 @@ test.each<ThemePreference>(['light', 'dark', 'oled'])('back button uses a 44pt t
     await act(async () => button.props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }));
     expect(mockReplace).toHaveBeenCalledWith('/');
 });
+
+test('back button keeps the soft lift of the native chip, not a flat ring', async () => {
+    await act(async () => root.render(<AppearanceContext.Provider value={DEFAULT_APPEARANCE}><HomeBackButton /></AppearanceContext.Provider>));
+    const button = root.container.queryAll((n) => n.props.accessibilityRole === 'button')[0];
+    expect(RN.StyleSheet.flatten(button.props.style)).toMatchObject({ shadowOpacity: expect.any(Number), shadowRadius: 8 });
+});
