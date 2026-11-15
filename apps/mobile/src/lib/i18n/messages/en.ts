@@ -80,7 +80,6 @@ import area_editorProjects from './en/editorProjects';
 import area_editorSave from './en/editorSave';
 import area_editorServerExport from './en/editorServerExport';
 import area_editorSimple from './en/editorSimple';
-import area_notFound from './en/notFound';
 import area_editorSpeech from './en/editorSpeech';
 import area_editorSpike from './en/editorSpike';
 import area_editorVoiceover from './en/editorVoiceover';
@@ -133,6 +132,7 @@ import area_montage from './en/montage';
 import area_nativeEditorModel from './en/nativeEditorModel';
 import area_net from './en/net';
 import area_network from './en/network';
+import area_notFound from './en/notFound';
 import area_oac from './en/oac';
 import area_oauth from './en/oauth';
 import area_oddlings from './en/oddlings';
@@ -298,7 +298,6 @@ const catalog = {
     ...area_editorSave,
     ...area_editorServerExport,
     ...area_editorSimple,
-    ...area_notFound,
     ...area_editorSpeech,
     ...area_editorSpike,
     ...area_editorVoiceover,
@@ -351,6 +350,7 @@ const catalog = {
     ...area_nativeEditorModel,
     ...area_net,
     ...area_network,
+    ...area_notFound,
     ...area_oac,
     ...area_oauth,
     ...area_oddlings,
