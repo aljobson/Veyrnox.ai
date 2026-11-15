@@ -3516,6 +3516,12 @@
     "ratio": 1.78
   },
   {
+    "id": "create.needs.video",
+    "english": "Add a video to continue",
+    "translation": "Füge ein Video hinzu, um fortzufahren",
+    "ratio": 1.61
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

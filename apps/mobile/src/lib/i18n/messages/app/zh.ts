@@ -6069,4 +6069,11 @@ export default {
   "filmCloud.linkOffline": "无法加载你保存的影片。请检查网络连接后重试。",
   "filmCloud.linkAccount": "无法加载你保存的影片，因为我们无法确认你的账户。请退出登录后重新登录，然后再试一次。",
   "create.workspace.referencesLimit.other": "最多 {count} 个文件",
+  "create.needs.image": "添加照片以继续",
+  "create.needs.video": "添加视频以继续",
+  "create.needs.audio": "添加语音片段以继续",
+  "create.needs.prompt": "输入提示词以继续",
+  "create.expectedVideo": "视频通常需要约 {minutes} 分钟",
+  "form.describeMotion": "描述动作（可选）",
+  "form.describeSound": "描述声音（可选）",
 } as const;

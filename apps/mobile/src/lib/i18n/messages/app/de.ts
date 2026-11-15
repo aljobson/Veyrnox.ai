@@ -6142,4 +6142,11 @@ export default {
   "filmCloud.linkAccount": "Deine gespeicherten Filme konnten nicht geladen werden, weil wir dein Konto nicht bestätigen konnten. Melde dich ab und wieder an und versuche es erneut.",
   "create.workspace.referencesLimit.one": "Bis zu {count} Datei",
   "create.workspace.referencesLimit.other": "Bis zu {count} Dateien",
+  "create.needs.image": "Füge ein Foto hinzu, um fortzufahren",
+  "create.needs.video": "Füge ein Video hinzu, um fortzufahren",
+  "create.needs.audio": "Füge einen Sprachclip hinzu, um fortzufahren",
+  "create.needs.prompt": "Schreibe einen Prompt, um fortzufahren",
+  "create.expectedVideo": "Videos dauern meist etwa {minutes} Min.",
+  "form.describeMotion": "Bewegung beschreiben (optional)",
+  "form.describeSound": "Klang beschreiben (optional)",
 } as const;

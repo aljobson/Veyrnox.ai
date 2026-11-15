@@ -6215,4 +6215,11 @@ export default {
   "create.workspace.referencesLimit.one": "Hasta {count} archivo",
   "create.workspace.referencesLimit.many": "Hasta {count} archivos",
   "create.workspace.referencesLimit.other": "Hasta {count} archivos",
+  "create.needs.image": "Añade una foto para continuar",
+  "create.needs.video": "Añade un vídeo para continuar",
+  "create.needs.audio": "Añade un clip de voz para continuar",
+  "create.needs.prompt": "Escribe una descripción para continuar",
+  "create.expectedVideo": "Los vídeos suelen tardar unos {minutes} min",
+  "form.describeMotion": "Describe el movimiento (opcional)",
+  "form.describeSound": "Describe el sonido (opcional)",
 } as const;
