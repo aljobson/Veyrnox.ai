@@ -399,7 +399,7 @@ const sheets = themedStyles((p) => ({
     output: { flex: 1, justifyContent: 'center', overflow: 'hidden' },
     // The player has a fixed height, so its box must not shrink under it when the actions below grow
     // (opening "How this was made"); the actions scroll instead of being drawn over.
-    outputFixed: { flexShrink: 0, flexBasis: 'auto' },
+    outputFixed: { flexGrow: 0, flexShrink: 0, flexBasis: 'auto', overflow: 'visible', justifyContent: 'flex-start' },
     image: { flex: 1, width: '100%' },
     actions: { flexGrow: 0, flexShrink: 1 },
     nextBlock: { gap: ds.space.sm },
