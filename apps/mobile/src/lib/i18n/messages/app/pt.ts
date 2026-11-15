@@ -1862,6 +1862,7 @@ export default {
   "edit.err.gone": "Um desses vídeos não está mais disponível.",
   "edit.err.invalid": "Não foi possível enviar esta edição. Verifique e tente novamente. Nada foi cobrado.",
   "edit.err.mixedAspect": "Estes vídeos têm proporções diferentes. Junte vídeos com a mesma proporção. Nada foi cobrado.",
+  "edit.err.mixedAudio": "Estes clipes não podem ser juntados: alguns têm som e outros são mudos. Escolha clipes todos com som ou todos mudos. Nada foi cobrado.",
   "edit.err.network": "Sem conexão. Nada foi cobrado. Tente novamente.",
   "edit.err.notAudio": "Esse arquivo não é de áudio.",
   "edit.err.notVideo": "Apenas vídeos podem ser editados. Nada foi cobrado.",

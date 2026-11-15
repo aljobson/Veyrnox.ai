@@ -17,6 +17,8 @@ export function HomeBackButton() {
 }
 
 const sheets = themedStyles((p, _, scheme) => ({
-    button: { alignItems: 'center', justifyContent: 'center', width: 44, height: 44, borderRadius: ds.radius.pill, backgroundColor: scheme === 'dark' ? p.surface : p.bgElevated1 },
+    button: { alignItems: 'center', justifyContent: 'center', width: 44, height: 44, borderRadius: ds.radius.pill, backgroundColor: scheme === 'dark' ? p.surface : p.bgElevated1,
+        // The soft lift the native back chip has on every other screen, so this one reads as the same round button.
+        shadowColor: '#000', shadowOpacity: scheme === 'dark' ? 0.4 : 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 3 },
     ink: { color: p.textPrimary },
 }));

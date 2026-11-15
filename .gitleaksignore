@@ -328,5 +328,6 @@ dae2edacf363878ee7beededb7694a87dbcfdb03:scripts/probe-video-templates-staging.m
 601d018e88f1b2c9d95a4eee2dab6744e2d76623:app/veyrnox/_lib/templateClips.js:generic-api-key:264
 725e640b940f458ce281b8bfe1a38704b1243008:tests/fixtures/replacementTemplatesBaseline.json:generic-api-key:2
 f25829679e1f1ab62948c814e2628dd1fc364e5e:tests/fixtures/replacementTemplatesBaseline.json:generic-api-key:2
+# Same preview clip filename ("viral-….mp4"), moved to line 272 by the template clip prompt edit (#2218 and its branch).
 8808f2a05e0078a68bac0239ca63ae298af011ef:app/veyrnox/_lib/templateClips.js:generic-api-key:272
 aadccca615b1debc43a1a782e81c5d7a1649ea02:app/veyrnox/_lib/templateClips.js:generic-api-key:272
