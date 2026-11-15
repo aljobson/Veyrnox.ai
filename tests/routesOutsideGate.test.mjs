@@ -57,6 +57,7 @@ const OUTSIDE = {
     'app/api/music/public/[slug]/route.js': 'public music read',
     'app/api/music/public/[slug]/asset/route.js': 'public music read',
     'app/api/music/profiles/[handle]/route.js': 'public music read',
+    'app/api/music/best-of/route.js': 'public music read',
     'app/api/music/shared/[token]/route.js': 'unguessable share token, stored as a hash',
     'app/api/music/shared/[token]/asset/route.js': 'unguessable share token, stored as a hash',
 };
@@ -123,7 +124,7 @@ test('the anonymous report is rate limited in the Worker and handled in one plac
 
 test('CLAUDE.md names the public routes', () => {
     const rules = readFileSync(join(ROOT, 'CLAUDE.md'), 'utf8');
-    for (const path of ['/api/catalog', '/api/status', '/api/developer/openapi', '/api/credit-packs', '/api/cinema/titles', '/api/cinema/posters/:id', '/api/cinema/voting', '/api/cinema/discovery', '/api/cinema/winners', '/api/cinema/comments', '/api/cinema/story-polls', '/api/credit-subscription-plans', '/api/cinema-pass-plans', '/api/webhook/*', '/api/admin/*', '/media/social/:token', '/api/social/approvals/:token', '/api/social/team/:token', '/api/publish/v1/*', '/api/turnstile-failure', '/api/music/public/:slug', '/api/music/profiles/:handle', '/api/music/shared/:token']) {
+    for (const path of ['/api/catalog', '/api/status', '/api/developer/openapi', '/api/credit-packs', '/api/cinema/titles', '/api/cinema/posters/:id', '/api/cinema/voting', '/api/cinema/discovery', '/api/cinema/winners', '/api/cinema/comments', '/api/cinema/story-polls', '/api/credit-subscription-plans', '/api/cinema-pass-plans', '/api/webhook/*', '/api/admin/*', '/media/social/:token', '/api/social/approvals/:token', '/api/social/team/:token', '/api/publish/v1/*', '/api/turnstile-failure', '/api/music/public/:slug', '/api/music/profiles/:handle', '/api/music/shared/:token', '/api/music/best-of']) {
         assert.ok(rules.includes(path), `CLAUDE.md does not mention ${path}`);
     }
 });
@@ -133,7 +134,7 @@ test('CLAUDE.md names the public routes', () => {
 // any handler runs. Each stays behind its own feature switch and a strict id shape.
 test('public Music reads live outside the gate and their pages call them there', () => {
     const publicMusic = found.filter((f) => f.startsWith('app/api/music/'));
-    assert.equal(publicMusic.length, 5);
+    assert.equal(publicMusic.length, 6); // + /api/music/best-of (0526)
     for (const file of publicMusic) {
         const src = readFileSync(join(ROOT, file), 'utf8');
         assert.equal(src.match(/^export /gm).length, 1, `${file} answers GET only`);
