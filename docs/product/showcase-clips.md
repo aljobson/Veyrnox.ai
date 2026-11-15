@@ -1,11 +1,11 @@
 # Landing showcase clips
 
-The current public gallery has 795 exact community templates; the homepage wall
+The current public gallery has 825 exact community templates; the homepage wall
 has 14. Seven dedicated landing placements retain their previews separately; Nano Banana is also an independent landing key sharing a retained template clip.
 Clip keys resolve through their owning templates, so `wall-event-character-swap`
 remains published while `wall-product-hero-360` is hidden with Miniature Crew.
 The explicit `model-video` and `ace-step` landing placements remain available.
-All 977 retained placements have unique shipped video/poster hashes.
+All 1007 retained placements have unique shipped video/poster hashes.
 
 Community prompts are exact-only. Both API prompt fields carry the same text;
 audit compatibility is informational and never activates copy-only blocking.
@@ -260,7 +260,7 @@ five-second visual signatures also found no duplicate against the previous 58
 Syntx previews. The full evidence is in the
 [40-record machine-readable manifest](source-audit/syntx-40-2026-10-29.json).
 
-The current SHA-256 uniqueness checks cover all 887 retained source templates,
+The current SHA-256 uniqueness checks cover all 917 retained source templates,
 including 70 hidden rows: 27 promptless, 42 unavailable and one truncated.
 
 The kids-birthday expansion originally added twelve cards in a dedicated
@@ -1064,3 +1064,43 @@ Exact gallery media, encoded by the host and shipped by owner decision. All orig
 | a-clear-bottle | image | A Clear Bottle | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/8K3haGLAb2Zqmay24xUygQLRzvSh4NditcKANwbh.jpg) |
 | pomegranate-jewel | image | Pomegranate Jewel | [Syntx](https://r2.syntx.ai/ERP/media-library/trends/X2oRdKYVUGhzBqL8Fcmjc5f9KY0KXd0xGLnzlaiX.jpg) |
 <!-- END SYNTX 100 EXACT -->
+
+<!-- BEGIN HF_PHOTO_30 EXACT -->
+## 15 November 2026: Higgsfield community single-photo templates
+
+30 of 39 prepared pairs accepted to bring the video gallery to 100; 5 rejected, 4 held in reserve.
+The [audit](source-audit/higgsfield-photo-30-2026-11-15.json) locks exact prompts, the bound one-photo route and source/shipped hashes.
+
+| Tile | Source title | Category | Source asset | Start |
+| --- | --- | --- | --- | --- |
+| `community-dramatic-fire-walk` | Dramatic Fire Walk | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/33187969-7364-48d4-b9d0-d49f14f791cd/generation.mp4) | 0 s |
+| `community-beachside-dance` | Beachside Dance | REALISTIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/cb5de870-4ecd-4658-88d0-9c7399752e04/generation.mp4) | 0 s |
+| `community-metropolitan-crosswalk` | Metropolitan Crosswalk | FASHION | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/c2e3d5e0-c9c5-4b96-8318-ed77fa83d750/generation.mp4) | 0 s |
+| `community-nightlife-dj-set` | Nightlife DJ Set | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/a026021c-e55f-4104-bba8-690d2dbf19d1/generation.mp4) | 0 s |
+| `community-pigeon-recast` | Pigeon Recast | REALISTIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/228be651-3668-4c61-ace0-a31002f9fada/generation.mp4) | 0 s |
+| `community-midnight-city-shuffle` | Midnight City Shuffle | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/94ef194b-c5f1-4f37-8786-1722c84b57f2/generation.mp4) | 0 s |
+| `community-supercar-flex` | Supercar Flex | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/18eee563-fe3d-46f5-9843-c6c9da88cced/generation.mp4) | 0 s |
+| `community-retro-tracksuit-groove` | Retro Tracksuit Groove | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/7f0c7ea4-dae5-44d7-b58d-ebbc7c58ee16/generation.mp4) | 0 s |
+| `community-blonde-sport-set` | Blonde Sport Set | FASHION | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/0a103fd9-90e2-44a2-9748-bc640ddd7324/generation.mp4) | 0 s |
+| `community-street-style-strut` | Street Style Strut | FASHION | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/728350b7-4249-4fa5-ac7f-c2f3f8d7e80e/generation.mp4) | 0 s |
+| `community-shoreline-gallop-swap` | Shoreline Gallop Swap | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/013e1ba3-14d9-4790-89cf-76fc11ecea18/generation.mp4) | 0 s |
+| `community-dragon-awakening` | Dragon Awakening | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/672b7e1f-562a-44b8-83d4-b4cc6d1eb074/generation.mp4) | 0 s |
+| `community-restaurant-character-recast` | Restaurant Character Recast | REALISTIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/0b50e8fa-4ad0-41eb-8c98-0e7d0b530289/generation.mp4) | 0 s |
+| `community-skyline-flamingo-prank` | Skyline Flamingo Prank | REALISTIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/bb4a3910-d84d-4cfe-aee2-873ca97baa9a/generation.mp4) | 0 s |
+| `community-stage-performer-swap` | Stage Performer Swap | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/a89a2e1e-9a65-4aba-aba3-71ec253c11be/generation.mp4) | 0 s |
+| `community-championship-slap-duel` | Championship Slap Duel | REALISTIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/8042bc9f-9cf8-4715-a906-a77d51554e8c/generation.mp4) | 0 s |
+| `community-industrial-street-flow` | Industrial Street Flow | FASHION | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/8dca9e97-4ebf-4247-8ba7-221c42bfc667/generation.mp4) | 0 s |
+| `community-urban-stride` | Urban Stride | FASHION | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/98167cd3-a390-4e52-8420-74fe97829512/generation.mp4) | 0 s |
+| `community-action-hero-swap` | Action Hero Swap | REALISTIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/35c7b5db-30a5-4d84-b669-7db127f753a5/generation.mp4) | 0 s |
+| `community-supercar-night-fueling` | Supercar Night Fueling | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/3f2c760c-8f9f-459d-87df-d7d24a9642f9/generation.mp4) | 0 s |
+| `community-chauffeur-arrival-swap` | Chauffeur Arrival Swap | FASHION | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/d42acb6d-49d9-4fcf-b73a-31a324cab556/generation.mp4) | 0 s |
+| `community-kitchen-juggling-swap` | Kitchen Juggling Swap | REALISTIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/709c98d4-c7f8-4b49-a8e0-a462c8ebccae/generation.mp4) | 0 s |
+| `community-coastal-character-swap` | Coastal Character Swap | REALISTIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/76767823-4ee0-420f-bf27-97798cb4f0eb/generation.mp4) | 0 s |
+| `community-kitten-holiday-dance` | Kitten Holiday Dance | REALISTIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/f8323c99-0dc7-4eeb-92ff-f2fd931069fb/generation.mp4) | 0 s |
+| `community-bipedal-cat-stroll` | Bipedal Cat Stroll | REALISTIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/2c07a1fd-fb65-452b-8611-25b79980159b/generation.mp4) | 0 s |
+| `community-extreme-pizza-freefall` | Extreme Pizza Freefall | CINEMATIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/9dfa4b70-84b6-4dc5-be52-638741b18cbf/generation.mp4) | 0 s |
+| `community-truck-window-confrontation` | Truck Window Confrontation | REALISTIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/4e85625a-f037-467f-ba49-35e6ccc6e0c8/generation.mp4) | 0 s |
+| `community-kitchen-fish-slice` | Kitchen Fish Slice | REALISTIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/583bfded-d3e0-43ff-beb5-151504ec2ae1/generation.mp4) | 0 s |
+| `community-urban-dance-recast` | Urban Dance Recast | REALISTIC | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/f177d92d-e9ed-4a90-b9c4-b2e2fa8dcd5f/generation.mp4) | 0 s |
+| `community-ballroom-tuxedo-shift` | Ballroom Tuxedo Shift | FASHION | [Source asset](https://d8j0ntlcm91z4.cloudfront.net/community-presets/6e12077b-929b-4bb9-ade7-e03b1c4e1f19/generation.mp4) | 0 s |
+<!-- END HF_PHOTO_30 EXACT -->
