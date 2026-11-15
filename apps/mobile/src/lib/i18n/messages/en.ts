@@ -80,6 +80,7 @@ import area_editorProjects from './en/editorProjects';
 import area_editorSave from './en/editorSave';
 import area_editorServerExport from './en/editorServerExport';
 import area_editorSimple from './en/editorSimple';
+import area_notFound from './en/notFound';
 import area_editorSpeech from './en/editorSpeech';
 import area_editorSpike from './en/editorSpike';
 import area_editorVoiceover from './en/editorVoiceover';
@@ -297,6 +298,7 @@ const catalog = {
     ...area_editorSave,
     ...area_editorServerExport,
     ...area_editorSimple,
+    ...area_notFound,
     ...area_editorSpeech,
     ...area_editorSpike,
     ...area_editorVoiceover,

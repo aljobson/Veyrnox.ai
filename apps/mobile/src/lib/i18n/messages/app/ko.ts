@@ -6085,4 +6085,7 @@ export default {
   "create.expectedVideo": "동영상은 보통 약 {minutes}분 걸립니다",
   "form.describeMotion": "움직임 설명 (선택)",
   "form.describeSound": "소리 설명 (선택)",
+  "notFound.title": "이 링크를 열 수 없습니다",
+  "notFound.body": "링크가 잘못 입력되었거나 오래되었을 수 있습니다. 변경된 내용은 없습니다.",
+  "notFound.action": "홈으로 가기",
 } as const;

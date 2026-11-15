@@ -6158,4 +6158,7 @@ export default {
   "create.expectedVideo": "Videos dauern meist etwa {minutes} Min.",
   "form.describeMotion": "Bewegung beschreiben (optional)",
   "form.describeSound": "Klang beschreiben (optional)",
+  "notFound.title": "Dieser Link kann nicht geöffnet werden",
+  "notFound.body": "Der Link ist vielleicht falsch geschrieben oder veraltet. Es wurde nichts geändert.",
+  "notFound.action": "Zur Startseite",
 } as const;

@@ -6085,4 +6085,7 @@ export default {
   "create.expectedVideo": "動画は通常、約{minutes}分かかります",
   "form.describeMotion": "動きを説明（任意）",
   "form.describeSound": "音を説明（任意）",
+  "notFound.title": "このリンクは開けません",
+  "notFound.body": "リンクが間違っているか、古くなっている可能性があります。何も変更されていません。",
+  "notFound.action": "ホームへ",
 } as const;
