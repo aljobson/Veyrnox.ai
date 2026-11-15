@@ -6137,4 +6137,11 @@ export default {
   "filmCloud.linkFailed": "आपकी सहेजी गई फ़िल्में लोड नहीं हो सकीं। बाद में फिर कोशिश करें।",
   "create.workspace.referencesLimit.one": "अधिकतम {count} फ़ाइल",
   "create.workspace.referencesLimit.other": "अधिकतम {count} फ़ाइलें",
+  "create.needs.image": "जारी रखने के लिए फ़ोटो जोड़ें",
+  "create.needs.video": "जारी रखने के लिए वीडियो जोड़ें",
+  "create.needs.audio": "जारी रखने के लिए वॉइस क्लिप जोड़ें",
+  "create.needs.prompt": "जारी रखने के लिए प्रॉम्प्ट लिखें",
+  "create.expectedVideo": "वीडियो में आम तौर पर लगभग {minutes} मिनट लगते हैं",
+  "form.describeMotion": "गति का वर्णन करें (वैकल्पिक)",
+  "form.describeSound": "ध्वनि का वर्णन करें (वैकल्पिक)",
 } as const;

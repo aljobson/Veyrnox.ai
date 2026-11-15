@@ -17,3 +17,12 @@ export function missingRequiredSlots(model: CatalogModel, references: readonly P
         .filter((slot) => slot.required && !references.some((ref) => ref.slot === slot.slot) && !(slot.slot === 'image' && hasStartFile))
         .map((slot) => slot.label);
 }
+
+export type NeedKey = 'create.needs.image' | 'create.needs.video' | 'create.needs.audio' | 'create.needs.prompt';
+
+/** The message naming the first thing Generate is waiting for (a required file of any kind, or the words), or null. */
+export function missingNeedKey(model: CatalogModel, references: readonly Pick<GenerationReference, 'slot'>[], hasStartFile: boolean, promptMissing: boolean): NeedKey | null {
+    const slot = slotsFor(model).find((s) => s.required && !references.some((ref) => ref.slot === s.slot) && !(s.slot === 'image' && hasStartFile));
+    if (slot) return `create.needs.${slot.kind}` as NeedKey;
+    return promptMissing ? 'create.needs.prompt' : null;
+}

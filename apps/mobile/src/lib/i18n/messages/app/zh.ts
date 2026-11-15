@@ -6064,4 +6064,11 @@ export default {
   "toolDirectory.lowerPrice": "价格更低",
   "filmCloud.linkFailed": "无法加载你保存的影片。请稍后再试。",
   "create.workspace.referencesLimit.other": "最多 {count} 个文件",
+  "create.needs.image": "添加照片以继续",
+  "create.needs.video": "添加视频以继续",
+  "create.needs.audio": "添加语音片段以继续",
+  "create.needs.prompt": "输入提示词以继续",
+  "create.expectedVideo": "视频通常需要约 {minutes} 分钟",
+  "form.describeMotion": "描述动作（可选）",
+  "form.describeSound": "描述声音（可选）",
 } as const;

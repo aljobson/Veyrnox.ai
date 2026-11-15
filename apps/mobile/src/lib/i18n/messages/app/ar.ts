@@ -6429,4 +6429,11 @@ export default {
   "create.workspace.referencesLimit.few": "حتى {count} ملفات",
   "create.workspace.referencesLimit.many": "حتى {count} ملفًا",
   "create.workspace.referencesLimit.other": "حتى {count} ملف",
+  "create.needs.image": "أضف صورة للمتابعة",
+  "create.needs.video": "أضف فيديو للمتابعة",
+  "create.needs.audio": "أضف مقطعًا صوتيًا للمتابعة",
+  "create.needs.prompt": "اكتب وصفًا للمتابعة",
+  "create.expectedVideo": "تستغرق الفيديوهات عادةً حوالي {minutes} دقيقة",
+  "form.describeMotion": "صف الحركة (اختياري)",
+  "form.describeSound": "صف الصوت (اختياري)",
 } as const;

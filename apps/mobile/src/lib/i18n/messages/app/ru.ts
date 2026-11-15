@@ -6283,4 +6283,11 @@ export default {
   "create.workspace.referencesLimit.few": "До {count} файлов",
   "create.workspace.referencesLimit.many": "До {count} файлов",
   "create.workspace.referencesLimit.other": "До {count} файла",
+  "create.needs.image": "Добавьте фото, чтобы продолжить",
+  "create.needs.video": "Добавьте видео, чтобы продолжить",
+  "create.needs.audio": "Добавьте голосовой клип, чтобы продолжить",
+  "create.needs.prompt": "Напишите запрос, чтобы продолжить",
+  "create.expectedVideo": "Видео обычно занимает около {minutes} мин",
+  "form.describeMotion": "Опишите движение (необязательно)",
+  "form.describeSound": "Опишите звук (необязательно)",
 } as const;

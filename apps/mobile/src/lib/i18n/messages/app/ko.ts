@@ -6064,4 +6064,11 @@ export default {
   "toolDirectory.lowerPrice": "더 저렴함",
   "filmCloud.linkFailed": "저장된 영화를 불러오지 못했습니다. 나중에 다시 시도하세요.",
   "create.workspace.referencesLimit.other": "최대 {count}개 파일",
+  "create.needs.image": "계속하려면 사진을 추가하세요",
+  "create.needs.video": "계속하려면 동영상을 추가하세요",
+  "create.needs.audio": "계속하려면 음성 클립을 추가하세요",
+  "create.needs.prompt": "계속하려면 프롬프트를 입력하세요",
+  "create.expectedVideo": "동영상은 보통 약 {minutes}분 걸립니다",
+  "form.describeMotion": "움직임 설명 (선택)",
+  "form.describeSound": "소리 설명 (선택)",
 } as const;
