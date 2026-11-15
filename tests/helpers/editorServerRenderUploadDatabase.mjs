@@ -31,7 +31,7 @@ export async function uploadDatabaseTests(t, { query, json, authId, userId }) {
         const handlers = editorServerRenderHandlers(deps, { enabled: true });
         const request = (doc = document) => new Request('https://app.test/api/v1/editor/server-render', { method: 'POST', headers: {
             'x-veyrnox-auth-id': authId, 'x-request-id': id, 'idempotency-key': 'real-upload-replay', 'content-type': 'application/json',
-        }, body: JSON.stringify({ document: doc, resolution: '1080p', label: 'Device export', quoted_credits: 1 }) });
+        }, body: JSON.stringify({ document: doc, resolution: '1080p', label: 'Device export', quoted_credits: 3 }) });
         assert.equal((await json(`SELECT public.server_render_source('${authId}','u-${id}');`)).ok, true);
         const first = await handlers.create(request()); assert.equal(first.status, 202); const admitted = await first.json();
         await query(`UPDATE public.upload_reservations SET created_at=now()-interval '23 hours' WHERE r2_key=${quote(key)};`);
