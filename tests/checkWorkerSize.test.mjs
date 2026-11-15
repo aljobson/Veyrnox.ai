@@ -20,9 +20,9 @@ test('size guard uses the larger measurement and rejects either over-budget resu
     measure: async () => disk * 1024, report: (line) => lines.push(line),
   });
   assert.equal(await checkWorkerSize(options(54000, 55000)), 55000);
-  assert.equal(await checkWorkerSize(options(59000, 55000)), 59000);
-  await assert.rejects(checkWorkerSize(options(60490, 55000)), /exceeds/);
-  await assert.rejects(checkWorkerSize(options(54000, 59000.01)), /exceeds/);
+  assert.equal(await checkWorkerSize(options(60500, 55000)), 60500);
+  await assert.rejects(checkWorkerSize(options(60600, 55000)), /exceeds/);
+  await assert.rejects(checkWorkerSize(options(54000, 60500.01)), /exceeds/);
   await assert.rejects(checkWorkerSize(options(54000, 0)), /no measurable/);
   await assert.rejects(checkWorkerSize({ ...options(1, 1), run: async () => { throw new Error('dry-run failed'); } }), /dry-run failed/);
   assert.match(lines[0], /55000.00 KiB/);
