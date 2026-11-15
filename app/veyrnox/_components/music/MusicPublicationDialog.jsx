@@ -6,7 +6,7 @@ import { gatewayFetch } from '../../_lib/gateway';
 
 const key = () => `publish.${globalThis.crypto.randomUUID()}`;
 
-// Shown only when Labs ranking (0529) is on for this song.
+// Shown only when Labs ranking (0538) is on for this song.
 const MusicRankingOptIn = dynamic(() => import('./MusicLabsRank').then((module) => module.MusicRankingOptIn), { ssr: false });
 
 export function MusicPublicationDialog({ song, onClose }) {

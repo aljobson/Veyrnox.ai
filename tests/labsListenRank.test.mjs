@@ -28,7 +28,7 @@ test('ranking ships false, needs Labs and publication, and never touches credits
   assert.equal(musicRankingEnabled({ ...on, MUSIC_LABS_ENABLED: 'false' }), false);
   const wrangler = await readFile(new URL('../wrangler.jsonc', import.meta.url), 'utf8');
   assert.equal((wrangler.match(/\\"ranking\\":false/g) || []).length, 2);
-  const sql = await readFile(new URL('../packages/db/schema/supabase/0529_labs_listen_and_rank.sql', import.meta.url), 'utf8');
+  const sql = await readFile(new URL('../packages/db/schema/supabase/0538_labs_listen_and_rank.sql', import.meta.url), 'utf8');
   assert.match(sql, /allow_ranking BOOLEAN NOT NULL DEFAULT false/);
   assert.match(sql, /interval '10 seconds'/);
   assert.match(sql, />= 200 THEN/);

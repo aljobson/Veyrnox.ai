@@ -1,4 +1,4 @@
-// Labs listen-and-rank without rewards (0529). No credits move.
+// Labs listen-and-rank without rewards (0538). No credits move.
 //   GET                     the next pair for this listener (or pair: null)
 //   GET ?song_id=<uuid>     the creator's own opt-in for one published song
 //   POST { action: 'vote', pair_id, winner: 'a'|'b' }

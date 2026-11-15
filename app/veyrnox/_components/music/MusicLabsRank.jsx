@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { gatewayFetch } from '../../_lib/gateway';
 
 /**
- * Listen and rank (0529): two published tracks whose creators opted in; pick the
+ * Listen and rank (0538): two published tracks whose creators opted in; pick the
  * one you like more. No credits are paid. A choice counts only after you have
  * had time to listen, so the buttons wait 10 seconds.
  */

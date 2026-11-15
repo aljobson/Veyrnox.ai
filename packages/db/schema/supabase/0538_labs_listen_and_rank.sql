@@ -1,4 +1,4 @@
--- 0529: Labs listen-and-rank WITHOUT rewards (proposal #2273, decisions L2 and L4).
+-- 0538: Labs listen-and-rank WITHOUT rewards (proposal #2273, decisions L2 and L4).
 --
 -- A signed-in listener hears two published tracks and picks the one they like
 -- more. No credits move: there is no ledger write anywhere here (decision L3,
@@ -128,14 +128,14 @@ CREATE TRIGGER users_labs_rank_forget_erased AFTER UPDATE OF deleted_at ON publi
 
 DO $$
 BEGIN
-    IF to_regprocedure('public.telemetry_path_allowed_pre_0529(text)') IS NULL THEN
-        ALTER FUNCTION public.telemetry_path_allowed(TEXT) RENAME TO telemetry_path_allowed_pre_0529;
+    IF to_regprocedure('public.telemetry_path_allowed_pre_0538(text)') IS NULL THEN
+        ALTER FUNCTION public.telemetry_path_allowed(TEXT) RENAME TO telemetry_path_allowed_pre_0538;
     END IF;
 END $$;
 CREATE OR REPLACE FUNCTION public.telemetry_path_allowed(p_path TEXT)
 RETURNS BOOLEAN LANGUAGE sql IMMUTABLE SET search_path = '' AS $$
     SELECT p_path IN ('/api/v1/music/labs-rank')
-        OR public.telemetry_path_allowed_pre_0529(p_path)
+        OR public.telemetry_path_allowed_pre_0538(p_path)
 $$;
 REVOKE ALL ON FUNCTION public.telemetry_path_allowed(TEXT) FROM PUBLIC, anon, authenticated, service_role;
 

@@ -1,4 +1,4 @@
-// Labs listen-and-rank (0529): request parsing shared by the route and tests.
+// Labs listen-and-rank (0538): request parsing shared by the route and tests.
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SLUG_RE = /^[a-f0-9]{24}$/;
 const plain = (v) => v && typeof v === 'object' && !Array.isArray(v);
