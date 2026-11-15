@@ -75,6 +75,9 @@
     "update:production": "eas update --channel production",
     "lint": "expo lint",
     "prepare:live-edit": "node scripts/prepare-live-edit.mjs",
+    "sim:build-number": "node scripts/simulator-build-number.mjs number",
+    "sim:verify": "node scripts/simulator-build-number.mjs verify",
+    "build:ios-simulator": "node scripts/simulator-build-number.mjs build",
     "eas-build-post-install": "node scripts/build-live-edit.mjs"
   },
   "private": true,
