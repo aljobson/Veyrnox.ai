@@ -16,6 +16,7 @@ const LINKS = [
   { href: '/app/music/playlists', label: 'Playlists' },
   { href: '/app/music/sounds', label: 'Sounds', independent: true },
   { href: '/app/music/beats', label: 'Beats', beats: true },
+  { href: '/app/music/labs', label: 'Labs', labs: true },
   { href: '/app/music/studio', label: 'Studio', studio: true },
 ];
 
@@ -33,7 +34,7 @@ const subscribePreview = (onChange) => {
   };
 };
 
-export function MusicPreviewShell({ children, initialEnabled = false, serverMode = false, libraryMode = false, playlistsMode = false, studioMode = false, beatsMode = false }) {
+export function MusicPreviewShell({ children, initialEnabled = false, serverMode = false, libraryMode = false, playlistsMode = false, studioMode = false, beatsMode = false, labsMode = false }) {
   const pathname = usePathname().replace(/^\/veyrnox/, '');
   const [enabled, setEnabled] = useState(initialEnabled);
 
@@ -84,6 +85,7 @@ export function MusicPreviewShell({ children, initialEnabled = false, serverMode
                 {LINKS.filter((link) => {
                   if (link.independent) return serverMode;
                   if (link.beats) return beatsMode;
+                  if (link.labs) return labsMode;
                   if (link.studio) return studioMode;
                   if (link.discover) return true;
                   if (link.href.endsWith('/playlists')) return playlistsMode;
