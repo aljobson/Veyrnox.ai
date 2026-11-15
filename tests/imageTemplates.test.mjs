@@ -42,10 +42,10 @@ async function withFlag(value, fn) {
   }
 }
 
-test('52 image records, all hash-locked captures and no authored originals', async () => {
+test('92 image records (52 + 40 English photo images, 2026-11-15), all hash-locked captures and no authored originals', async () => {
   const galleryCategoriesWithImages = await withFlag('true', () => galleryCategories());
-  assert.equal(IMAGE_TEMPLATES.length, 52);
-  assert.equal(ids.size, 52);
+  assert.equal(IMAGE_TEMPLATES.length, 52 + 40);
+  assert.equal(ids.size, 52 + 40);
   assert.equal(IMAGE_TEMPLATES.filter(p => p.promptOrigin === 'original').length, 0);
   for (const p of IMAGE_TEMPLATES) {
     assert.equal(p.kind, 'image');
@@ -77,8 +77,8 @@ test('52 image records, all hash-locked captures and no authored originals', asy
 
 test('all image recipes have unique public ids and names, supported aspects and no duration', async () => {
   const { assertAvailablePublicIds } = await import('../scripts/lib/template-public-id.mjs');
-  assert.equal(IMAGE_TEMPLATES.length, 52);
-  assert.equal(new Set(IMAGE_TEMPLATES.map(p => p.name)).size, 52);
+  assert.equal(IMAGE_TEMPLATES.length, 52 + 40);
+  assert.equal(new Set(IMAGE_TEMPLATES.map(p => p.name)).size, 52 + 40);
   // Exclude only these image records from reservations; retain videos and public renames.
   assert.doesNotThrow(() => assertAvailablePublicIds([...ids], [...ids]));
   for (const template of IMAGE_TEMPLATES) {
@@ -100,7 +100,7 @@ test('publication gate controls list, search, detail, categories and hard 404 in
     assert.equal(imageTemplatesEnabled(), enabled);
     const response = await list.GET(new Request('https://example.test/api/templates'));
     const body = await response.json();
-    assert.equal(body.templates.filter(t => ids.has(t.id)).length, enabled ? 50 : 0);
+    assert.equal(body.templates.filter(t => ids.has(t.id)).length, enabled ? 50 + 40 : 0);
     assert.equal(body.categories.includes('CHRISTMAS'), false);
     const search = await list.GET(new Request('https://example.test/api/templates?q=CHRISTMAS'));
     assert.equal((await search.json()).ids.filter(id => ids.has(id)).length, 0);
