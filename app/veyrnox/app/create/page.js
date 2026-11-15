@@ -27,6 +27,7 @@ import { StudioJobGrid } from '../../_components/StudioJobGrid';
 import { useStudioJobs } from '../../_lib/useStudioJobs';
 import { IMAGE_COUNTS, takesImageCount, imageCount, inputsForIndex, batchNote, sendInOrder, submitErrorCode, createBatch, allocationSnapshot } from '../../_lib/imageBatch';
 import { useCatalog } from '../../_lib/useCatalog';
+import { useOnlineStatus } from '../../_lib/useOnlineStatus';
 import { useFreeAllowance } from '../../_lib/useFreeAllowance';
 import { freeLeftFor } from '../../_lib/freeAllowance';
 import { sourceDurationLimit } from '../../_lib/modelPricing';
@@ -185,14 +186,8 @@ export default function CreateStudio() {
   // True while a batch is still being sent, so New generation cannot clear it halfway.
   const [sending, setSending] = useState(false);
   // Offline notice: drafts stay readable, and the notice says why Generate will not work.
-  const [online, setOnline] = useState(true);
-  useEffect(() => {
-    const sync = () => setOnline(navigator.onLine);
-    sync();
-    window.addEventListener('online', sync);
-    window.addEventListener('offline', sync);
-    return () => { window.removeEventListener('online', sync); window.removeEventListener('offline', sync); };
-  }, []);
+  // Confirmed with a real request, not navigator.onLine alone (see useOnlineStatus).
+  const online = useOnlineStatus();
   const incomingDraft = useRef(false);
   // Keep the requested ratio until the live catalog (or the complete registry-derived
   // fallback after a failed read) resolves the selected model's real capabilities.
