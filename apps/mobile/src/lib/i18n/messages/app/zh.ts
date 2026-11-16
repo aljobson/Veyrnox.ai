@@ -5930,6 +5930,7 @@ export default {
     "editorSpeech.clip": "选择片段",
     "editorSpeech.uploadFirst": "请先上传此片段",
     "editorSpeech.unsupported": "此片段暂不支持此功能",
+    "editorSpeech.sourceRejected": "语音工具无法使用此片段的文件。它可能超过 100 MB、每秒视频超过约 2 MB，或格式无法读取。请尝试更短或更小的片段。未扣除任何积分。",
     "editorSpeech.tooLong": "请选择不超过60秒的源片段。",
     "editorSpeech.durationChanged": "源文件时长已更改。请重新加载片段后重试。",
     "editorSpeech.price": "每次分析 {n} 点数",

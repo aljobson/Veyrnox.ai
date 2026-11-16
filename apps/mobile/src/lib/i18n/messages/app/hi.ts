@@ -6008,6 +6008,7 @@ export default {
     "editorSpeech.clip": "क्लिप चुनें",
     "editorSpeech.uploadFirst": "पहले यह क्लिप अपलोड करें",
     "editorSpeech.unsupported": "इस क्लिप के लिए अभी उपलब्ध नहीं है",
+    "editorSpeech.sourceRejected": "वॉइस टूल इस क्लिप की फ़ाइल का उपयोग नहीं कर सके। यह 100 MB से बड़ी, वीडियो के प्रति सेकंड लगभग 2 MB से अधिक, या न पढ़े जा सकने वाले फ़ॉर्मैट में हो सकती है। छोटा या हल्का क्लिप आज़माएँ। कोई क्रेडिट खर्च नहीं हुआ।",
     "editorSpeech.tooLong": "60 सेकंड से लंबी स्रोत क्लिप न चुनें।",
     "editorSpeech.durationChanged": "स्रोत की अवधि बदल गई है। क्लिप फिर लोड करके दोबारा कोशिश करें।",
     "editorSpeech.price": "हर विश्लेषण के लिए {n} क्रेडिट",
