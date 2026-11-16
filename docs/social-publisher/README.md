@@ -129,7 +129,7 @@ should look*.
    parallel with engineering, not after. Per-network status as of 2026-10-08 is in
    [06-oauth-review-runbook.md §6.0](06-oauth-review-runbook.md#60-review-status-by-network-2026-10-08).
 3. **Publish billing** — built and on in production (`PUBLISH_RUNTIME_FLAGS.plans` is `"true"`; migrations 0293 and 0298
-   are applied, consent version `publish-plan-annual-2026-10-17`). Post now on one connected account remains free; $4.99/week, $15/month or $125.99/year
+   are applied, consent version `publish-plan-annual-2026-11-16`). Post now on one connected account remains free; $4.99/week, $15/month or $125.99/year
    unlocks up to five accounts, scheduling, analytics and best-time recommendations.
 4. **Does Veyrnox already have a Metricool account for its own brand?** Yes — `getBrandSettings`
    shows a connected brand (`Veyrnox`, blogId `6457974`) with Instagram/X/LinkedIn/TikTok/YouTube
