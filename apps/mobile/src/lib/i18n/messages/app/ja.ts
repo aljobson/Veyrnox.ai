@@ -4858,6 +4858,7 @@ export default {
   "editorServerExport.cancelled": "アップロードをキャンセルしました。完了したファイルはここで再利用できます。",
   "editorServerExport.checkAgain": "再確認",
   "editorServerExport.credits": "クレジットを取得",
+  "editorServerExport.save": "写真に保存",
   "editorServerExport.share": "書き出しを共有",
   "editorServerExport.library": "ライブラリで開く",
   "editorServerExport.publish": "書き出しを公開",

@@ -5068,6 +5068,7 @@ export default {
   "editorServerExport.cancelled": "Загрузка отменена. Готовые файлы можно использовать здесь повторно.",
   "editorServerExport.checkAgain": "Проверить ещё раз",
   "editorServerExport.credits": "Получить кредиты",
+  "editorServerExport.save": "Сохранить в Фото",
   "editorServerExport.share": "Поделиться экспортом",
   "editorServerExport.library": "Открыть в библиотеке",
   "editorServerExport.publish": "Опубликовать экспорт",

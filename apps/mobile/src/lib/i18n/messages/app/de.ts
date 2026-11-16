@@ -4928,6 +4928,7 @@ export default {
   "editorServerExport.cancelled": "Upload abgebrochen. Fertige Dateien können hier wiederverwendet werden.",
   "editorServerExport.checkAgain": "Erneut prüfen",
   "editorServerExport.credits": "Credits kaufen",
+  "editorServerExport.save": "In Fotos sichern",
   "editorServerExport.share": "Export teilen",
   "editorServerExport.library": "In der Bibliothek öffnen",
   "editorServerExport.publish": "Export veröffentlichen",

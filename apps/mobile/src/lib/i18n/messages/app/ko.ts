@@ -4858,6 +4858,7 @@ export default {
   "editorServerExport.cancelled": "업로드가 취소되었습니다. 완료된 파일은 여기서 다시 사용할 수 있습니다.",
   "editorServerExport.checkAgain": "다시 확인",
   "editorServerExport.credits": "크레딧 받기",
+  "editorServerExport.save": "사진에 저장",
   "editorServerExport.share": "내보내기 공유",
   "editorServerExport.library": "라이브러리에서 열기",
   "editorServerExport.publish": "내보내기 게시",

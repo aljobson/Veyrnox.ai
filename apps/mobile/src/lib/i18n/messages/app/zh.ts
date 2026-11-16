@@ -4858,6 +4858,7 @@ export default {
   "editorServerExport.cancelled": "上传已取消。已完成的文件可在此重复使用。",
   "editorServerExport.checkAgain": "再次检查",
   "editorServerExport.credits": "获取积分",
+  "editorServerExport.save": "保存到照片",
   "editorServerExport.share": "分享导出",
   "editorServerExport.library": "在媒体库中打开",
   "editorServerExport.publish": "发布导出",

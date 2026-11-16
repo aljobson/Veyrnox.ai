@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { AppState } from 'react-native';
+import { Alert, AppState } from 'react-native';
 import { randomUUID } from 'expo-crypto';
 import type { ApiClient } from '../../lib/api';
 import { ApiError } from '../../lib/api';
@@ -12,7 +12,7 @@ import { uploadExportFiles, type ExportFile, type UploadedFile } from '../../lib
 import { requireOnline } from '../../lib/network';
 import { publishBalance } from '../../lib/balanceEvents';
 import { fetchFileLink } from '../../lib/libraryFiles';
-import { shareOutput } from '../../lib/output';
+import { saveOutput, shareOutput } from '../../lib/output';
 import { t } from '../../lib/i18n';
 import { useAnnouncement } from '../../lib/useAnnouncement';
 
@@ -227,9 +227,19 @@ export function useServerExport(props: ServerExportProps) {
         try { const link = await fetchFileLink(api, 'renders', job.renderId); if (!link) throw new ApiError(404, 'missing'); if (current()) await shareOutput(link.url, job.renderId, link.mimeType); }
         catch (error) { if (current()) setMessage(exportError(error)); }
     }
+    // Adds the finished video to Photos (add-only access). The link lasts about 15 minutes, so it is fetched on the tap.
+    async function save() {
+        if (!job?.renderId || !current()) return;
+        try {
+            const link = await fetchFileLink(api, 'renders', job.renderId); if (!link) throw new ApiError(404, 'missing');
+            if (!current()) return;
+            if (await saveOutput(link.url, job.renderId, link.mimeType)) { if (current()) setMessage(t('files.savedtoyourPhotos')); }
+            else if (current()) Alert.alert(t('files.photosaccessisoff'), t('files.allowaddingtoPhotosforVeyrnoxin'));
+        } catch (error) { if (current()) setMessage(exportError(error)); }
+    }
     function close() { generation.current++; activeFile.current?.abort(); if (!attempt.current && (!job || job.phase !== 'rendering')) { setPhase('idle'); setQuote(null); setJob(null); snapshot.current = null; } latest.current.onClose(); }
     function choose(value: ExportBody['resolution']) { if (busy.current || attempt.current) return; setResolution(value); void prepare(value); }
     return { phase, message, resolution, limits, quote, blocked, files, job, unavailable, needsCredits, progress, credits: attempt.current?.credits ?? quote?.credits ?? 0,
-        confirm, cancel, retry, share, close, choose, publish: () => router.push({ pathname: '/publish/compose', params: { jobId: job?.jobId } } as never), library: () => router.push('/library/files' as never), buyCredits: () => router.push('/credits' as never),
+        confirm, cancel, retry, share, save, close, choose, publish: () => router.push({ pathname: '/publish/compose', params: { jobId: job?.jobId } } as never), library: () => router.push('/library/files' as never), buyCredits: () => router.push('/credits' as never),
         fallback: () => { close(); latest.current.onFallback(); } };
 }

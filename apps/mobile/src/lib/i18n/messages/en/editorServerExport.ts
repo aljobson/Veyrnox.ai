@@ -18,6 +18,7 @@ export default {
     'editorServerExport.cancelled': 'Upload cancelled. Completed files can be reused here.',
     'editorServerExport.checkAgain': 'Check again',
     'editorServerExport.credits': 'Get credits',
+    'editorServerExport.save': 'Save to Photos',
     'editorServerExport.share': 'Share export',
     'editorServerExport.library': 'Open in Library',
     'editorServerExport.publish': 'Publish export',
